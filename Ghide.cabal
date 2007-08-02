@@ -1,0 +1,9 @@
+Name:	Ghide
+Version: 0.1
+Build-depends: base, Cabal, gtk, sourceview
+
+Executable: Ghide
+Extensions:
+Main-Is: Main.hs
+Other-Modules: 
+
