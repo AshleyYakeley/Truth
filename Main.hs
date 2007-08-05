@@ -1,9 +1,13 @@
-
 module Main where
 {
+	import Partial;
+	import Browser;
+	import Interpret;
 	import Distribution.PackageDescription;
 	import Graphics.UI.Gtk;
 	import Graphics.UI.Gtk.SourceView;
+	import Data.ByteString as BS;
+	import Data.Word;
 
 	makePane :: IO ScrolledWindow;
 	makePane = do
@@ -15,79 +19,54 @@ module Main where
 		return w;
 	};
 
-	makeItem :: TreeStore -> Maybe TreeIter -> String -> String -> IO TreeIter;
-	makeItem store mt s0 s1 = do
+	createWindowFromBrowser :: Browser a -> IO Window;
+	createWindowFromBrowser browser = do
 	{
-		iter <- treeStoreAppend store mt;
-		treeStoreSetValue store iter 0 (GVstring (Just s0));
-		treeStoreSetValue store iter 1 (GVstring (Just s1));
-		return iter;
+		window <- windowNew;
+		onDestroy window mainQuit;
+		split <- hPanedNew;
+		w2 <- makePane;
+		((\(MkBrowser w _ _ _) -> panedAdd1 split w) browser);
+		panedAdd2 split w2;
+		set window [containerChild := split];
+		return window;
 	};
 
-	makeModuleItem :: TreeStore -> TreeIter -> String -> IO TreeIter;
-	makeModuleItem store ti fname = makeItem store (Just ti) fname "hs";
-	
-	addBuildInfo :: TreeStore -> TreeIter -> BuildInfo -> IO ();
-	addBuildInfo store ti info = do
+	createBrowserFromInterpreter :: forall b. (forall a. Browser a -> IO b) -> Interpreter -> IO [Word8] -> IO b;
+	createBrowserFromInterpreter withBrowser (MkInterpreter objType codec) getter = do
 	{
-		itHidden <- makeItem store (Just ti) "Hidden" "";
-		mapM_ (makeModuleItem store itHidden) (otherModules info);
-	};
-	
-	makeLibraryFolder :: TreeStore -> (Maybe TreeIter) -> Library -> IO ();
-	makeLibraryFolder store mti lib = do
-	{
-		itLib <- makeItem store mti "Library" "";
-		mapM_ (makeModuleItem store itLib) (exposedModules lib);
-		addBuildInfo store itLib (libBuildInfo lib);
-	};
-	
-	makeExecutableFolder :: TreeStore -> (Maybe TreeIter) -> Executable -> IO ();
-	makeExecutableFolder store mti exe = do
-	{
-		itExe <- makeItem store mti (exeName exe) "";
-		makeModuleItem store itExe (modulePath exe);
-		addBuildInfo store itExe (buildInfo exe);
-	};
-
-	makeTreeView :: PackageDescription -> IO TreeView;
-	makeTreeView descr = do
-	{
-		store <- treeStoreNew [TMstring,TMstring];
-		case library descr of
+		browser <- (pickBrowser objType) (do
 		{
-			Just lib -> makeLibraryFolder store Nothing lib;
-			_ -> return ();
-		};
-		mapM_ (makeExecutableFolder store Nothing) (executables descr);
-		itProps <- makeItem store Nothing "Properties" "";
-		tv <- treeViewNewWithModel store;
-		rText <- cellRendererTextNew;
-		c0 <- treeViewColumnNewWithAttributes "Name" rText [("text",0)];
- 		treeViewAppendColumn tv c0;
-		treeViewSetHeadersVisible tv True;
-		return tv;
+			bytes <- getter;
+			case (decode codec bytes) of
+			{
+				Just a -> return a;
+				_ -> fail "decode error";
+			};
+		}) (\_ -> return ());
+		withBrowser browser;
 	};
+
+	data MIMEFile = MkMIMEFile MIMEType FilePath;
+	
+	myFile :: MIMEFile;
+	myFile = MkMIMEFile (MkMIMEType "text" "cabal" []) "Ghide.cabal";
 
 	main :: IO ();
 	main = do
 	{
 		initGUI;
-		descr <- readPackageDescription "Ghide.cabal";
-		window <- windowNew;
-		onDestroy window mainQuit;
-		split <- hPanedNew;
-		tv <- makeTreeView descr;
-		w2 <- makePane;
-		onCursorChanged tv (do
+		let
 		{
-			sel <- treeViewGetSelection tv;
-			(Just ti) <- treeSelectionGetSelected sel;
-			putStrLn "select";
-		});
-		panedAdd1 split tv;
-		panedAdd2 split w2;
-		set window [containerChild := split];
+			MkMIMEFile mtype fname = myFile;
+			interpreter = interpret mtype;
+			getter = do
+			{
+				bs <- BS.readFile "Ghide.cabal";
+				return (unpack bs);
+			}
+		};
+		window <- createBrowserFromInterpreter createWindowFromBrowser interpreter getter;
 		widgetShowAll window;
 		mainGUI;
 	};

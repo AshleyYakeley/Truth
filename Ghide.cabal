@@ -3,7 +3,10 @@ Version: 0.1
 Build-depends: base, Cabal, gtk, sourceview
 
 Executable: Ghide
-Extensions:
+Extensions: FunctionalDependencies
 Main-Is: Main.hs
 Other-Modules: 
-
+	Partial
+	Browser
+	Object
+	Interpret
