@@ -7,6 +7,7 @@ module Browser where
 	import Graphics.UI.Gtk.SourceView;
 	import Distribution.PackageDescription;
 	import Distribution.Simple.Utils;
+	import Distribution.PreProcess;
 	import Data.Maybe;
 	import Data.Word;	
 	
@@ -96,10 +97,13 @@ module Browser where
 			return iter;
 		};
 
+		suffixes :: [String];
+		suffixes = (fmap fst knownSuffixHandlers) ++ ["hs","lhs"];
+
 		makeModuleItem :: TreeStore -> TreeIter -> BuildInfo -> String -> IO TreeIter;
 		makeModuleItem store ti info fname = do
 		{
-			pathl <- moduleToFilePath (hsSourceDirs info) fname ["chs","hs"];
+			pathl <- moduleToFilePath (hsSourceDirs info) fname suffixes;
 			mpath <- case pathl of
 			{
 				path:_ -> return (Just path);
