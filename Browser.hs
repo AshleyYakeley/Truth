@@ -1,15 +1,13 @@
 module Browser where
 {
-	import Partial;
+--	import Partial;
 	import Object;
 	import GnomeVFS;
 	import Graphics.UI.Gtk hiding (Object);
-	import Graphics.UI.Gtk.SourceView;
 	import Distribution.PackageDescription;
 	import Distribution.Simple.Utils;
 	import Distribution.PreProcess;
 	import Data.Maybe;
-	import Data.Word;	
 	
 	data Browser a = forall w. (WidgetClass w) => MkBrowser
 	{
@@ -74,7 +72,7 @@ module Browser where
 	};
 	
 	cabalBrowser :: BrowserFactory PackageDescription;
-	cabalBrowser getter onSel = do
+	cabalBrowser getter _ = do
 	{
 		pd <- getter;
 		view <- makeTreeView "file:///home/ashley/Projects/Ghide/Ghide.cabal" pd;
@@ -145,7 +143,7 @@ module Browser where
 				_ -> return ();
 			};
 			mapM_ (makeExecutableFolder store Nothing) (executables descr);
-			itProps <- makeItem store Nothing "Properties" Nothing;
+			_ <- makeItem store Nothing "Properties" Nothing;
 			tv <- treeViewNewWithModel store;
 			rText <- cellRendererTextNew;
 			c0 <- treeViewColumnNewWithAttributes "Name" rText [("text",0)];
@@ -155,7 +153,7 @@ module Browser where
 			{
 				sel <- treeViewGetSelection tv;
 				(Just ti) <- treeSelectionGetSelected sel;
-				(GVstring (Just s)) <- treeModelGetValue store ti 0;
+				(GVstring (Just _)) <- treeModelGetValue store ti 0;
 				v1 <- treeModelGetValue store ti 1;
 				case v1 of
 				{

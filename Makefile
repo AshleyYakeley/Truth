@@ -6,6 +6,7 @@ EXE		= dist/build/Ghide/Ghide
 
 clean:
 	runhaskell Setup.hs clean
+	rm -f *.chi GnomeVFS.h
 
 configure:
 	runhaskell Setup.hs configure

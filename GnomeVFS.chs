@@ -1,9 +1,16 @@
+{-# OPTIONS -w #-}
 -- This is Haskell
 #include "libgnomevfs/gnome-vfs.h"
 
-module GnomeVFS where
+module GnomeVFS
+(
+	GnomeVFS.init,shutdown,
+	getMIMEType,
+	uriMakeFullFromRelative
+) where
 
-import C2HS;
+import Foreign;
+import Foreign.C;
 
 -- gboolean gnome_vfs_init();
 init :: IO Bool
@@ -25,4 +32,8 @@ getMIMEType = {#fun gnome_vfs_get_mime_type {`String'} -> `Maybe String' peekCSt
 -- char* gnome_vfs_uri_make_full_from_relative(const char *base_uri,const char *relative_uri);
 uriMakeFullFromRelative :: String -> String -> IO String;
 uriMakeFullFromRelative  = {#fun gnome_vfs_uri_make_full_from_relative {`String',`String'} -> `String' #}
+
+cToBool :: Num a => a -> Bool
+cToBool  = toBool
+
 

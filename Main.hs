@@ -1,10 +1,9 @@
 module Main where
 {
-	import qualified GnomeVFS;
-	import Partial;
+--	import Partial;
 	import Browser;
 	import Interpret;
-	import Distribution.PackageDescription;
+	import qualified GnomeVFS;
 	import Graphics.UI.Gtk;
 	import Graphics.UI.Gtk.SourceView;
 	import qualified Data.ByteString as BS;
@@ -64,7 +63,7 @@ module Main where
 			interpreter = interpret mtype;
 			getter = do
 			{
-				bs <- BS.readFile "Ghide.cabal";
+				bs <- BS.readFile fname;
 				return (BS.unpack bs);
 			}
 		};

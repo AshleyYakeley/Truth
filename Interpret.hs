@@ -33,7 +33,7 @@ module Interpret where
 			ParseOk _ pd -> Just pd;
 			_ -> Nothing;
 		})
-		(\pd -> "");
+		(\_ -> "");
 	
 	data Interpreter = forall a. MkInterpreter (ObjectType a) (Codec [Word8] a);
 
