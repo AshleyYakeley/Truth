@@ -2,9 +2,12 @@ module Browser where
 {
 	import Partial;
 	import Object;
+	import GnomeVFS;
 	import Graphics.UI.Gtk hiding (Object);
 	import Graphics.UI.Gtk.SourceView;
 	import Distribution.PackageDescription;
+	import Distribution.Simple.Utils;
+	import Data.Maybe;
 	import Data.Word;	
 	
 	data Browser a = forall w. (WidgetClass w) => MkBrowser
@@ -15,6 +18,13 @@ module Browser where
 		closeBrowser :: IO ()
 	};
 	
+	instance Show GenericValue where
+	{
+		show (GVstring (Just s)) = show s;
+		show (GVstring _) = "<null string>";
+		show _ = "<other type>"
+	};
+
 	type BrowserFactory a = IO a -> ([Object] -> IO ()) -> IO (Browser a);
 	
 	pickBrowser :: ObjectType a -> BrowserFactory a;
@@ -66,7 +76,7 @@ module Browser where
 	cabalBrowser getter onSel = do
 	{
 		pd <- getter;
-		view <- makeTreeView pd;
+		view <- makeTreeView "file:///home/ashley/Projects/Ghide/Ghide.cabal" pd;
 		return
 		(MkBrowser
 			view
@@ -77,43 +87,52 @@ module Browser where
 	}
 	where
 	{
-		makeItem :: TreeStore -> Maybe TreeIter -> String -> String -> IO TreeIter;
-		makeItem store mt s0 s1 = do
+		makeItem :: TreeStore -> Maybe TreeIter -> String -> Maybe String -> IO TreeIter;
+		makeItem store mt s0 ms1 = do
 		{
 			iter <- treeStoreAppend store mt;
 			treeStoreSetValue store iter 0 (GVstring (Just s0));
-			treeStoreSetValue store iter 1 (GVstring (Just s1));
+			treeStoreSetValue store iter 1 (GVstring ms1);
 			return iter;
 		};
 
-		makeModuleItem :: TreeStore -> TreeIter -> String -> IO TreeIter;
-		makeModuleItem store ti fname = makeItem store (Just ti) fname "hs";
+		makeModuleItem :: TreeStore -> TreeIter -> BuildInfo -> String -> IO TreeIter;
+		makeModuleItem store ti info fname = do
+		{
+			pathl <- moduleToFilePath (hsSourceDirs info) fname ["chs","hs"];
+			mpath <- case pathl of
+			{
+				path:_ -> return (Just path);
+				_ -> return Nothing;
+			};
+			makeItem store (Just ti) fname mpath;
+		};
 		
 		addBuildInfo :: TreeStore -> TreeIter -> BuildInfo -> IO ();
 		addBuildInfo store ti info = do
 		{
-			itHidden <- makeItem store (Just ti) "Hidden" "";
-			mapM_ (makeModuleItem store itHidden) (otherModules info);
+			itHidden <- makeItem store (Just ti) "Hidden" Nothing;
+			mapM_ (makeModuleItem store itHidden info) (otherModules info);
 		};
 		
 		makeLibraryFolder :: TreeStore -> (Maybe TreeIter) -> Library -> IO ();
 		makeLibraryFolder store mti lib = do
 		{
-			itLib <- makeItem store mti "Library" "";
-			mapM_ (makeModuleItem store itLib) (exposedModules lib);
+			itLib <- makeItem store mti "Library" Nothing;
+			mapM_ (makeModuleItem store itLib (libBuildInfo lib)) (exposedModules lib);
 			addBuildInfo store itLib (libBuildInfo lib);
 		};
 		
 		makeExecutableFolder :: TreeStore -> (Maybe TreeIter) -> Executable -> IO ();
 		makeExecutableFolder store mti exe = do
 		{
-			itExe <- makeItem store mti (exeName exe) "";
-			makeModuleItem store itExe (modulePath exe);
+			itExe <- makeItem store mti (exeName exe) Nothing;
+			makeItem store (Just itExe) (modulePath exe) (Just (modulePath exe));
 			addBuildInfo store itExe (buildInfo exe);
 		};
 
-		makeTreeView :: PackageDescription -> IO TreeView;
-		makeTreeView descr = do
+		makeTreeView :: String -> PackageDescription -> IO TreeView;
+		makeTreeView baseURI descr = do
 		{
 			store <- treeStoreNew [TMstring,TMstring];
 			case library descr of
@@ -122,7 +141,7 @@ module Browser where
 				_ -> return ();
 			};
 			mapM_ (makeExecutableFolder store Nothing) (executables descr);
-			itProps <- makeItem store Nothing "Properties" "";
+			itProps <- makeItem store Nothing "Properties" Nothing;
 			tv <- treeViewNewWithModel store;
 			rText <- cellRendererTextNew;
 			c0 <- treeViewColumnNewWithAttributes "Name" rText [("text",0)];
@@ -133,7 +152,17 @@ module Browser where
 				sel <- treeViewGetSelection tv;
 				(Just ti) <- treeSelectionGetSelected sel;
 				(GVstring (Just s)) <- treeModelGetValue store ti 0;
-				putStrLn ("select " ++ s);
+				v1 <- treeModelGetValue store ti 1;
+				case v1 of
+				{
+					GVstring (Just fp) -> do
+					{
+						uri <- uriMakeFullFromRelative baseURI fp;
+						mmime <- getMIMEType uri;
+						putStrLn ("select " ++ uri ++ " ("++(fromMaybe "<unknown>" mmime)++")");
+					};
+					_ -> return ();
+				};
 			});
 			return tv;
 		};

@@ -1,12 +1,13 @@
 module Main where
 {
+	import qualified GnomeVFS;
 	import Partial;
 	import Browser;
 	import Interpret;
 	import Distribution.PackageDescription;
 	import Graphics.UI.Gtk;
 	import Graphics.UI.Gtk.SourceView;
-	import Data.ByteString as BS;
+	import qualified Data.ByteString as BS;
 	import Data.Word;
 
 	makePane :: IO ScrolledWindow;
@@ -55,6 +56,7 @@ module Main where
 	main :: IO ();
 	main = do
 	{
+		GnomeVFS.init;
 		initGUI;
 		let
 		{
@@ -63,12 +65,13 @@ module Main where
 			getter = do
 			{
 				bs <- BS.readFile "Ghide.cabal";
-				return (unpack bs);
+				return (BS.unpack bs);
 			}
 		};
 		window <- createBrowserFromInterpreter createWindowFromBrowser interpreter getter;
 		widgetShowAll window;
 		mainGUI;
+		GnomeVFS.shutdown;
 	};
 
 }

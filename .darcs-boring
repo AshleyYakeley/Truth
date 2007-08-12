@@ -35,4 +35,6 @@
 (^|/)autom4te\.cache($|/)
 ^\.setup-config$
 ^dist($|/)
-
+^GnomeVFS\.h$
+^GnomeVFS\.hs$
+\.chi$

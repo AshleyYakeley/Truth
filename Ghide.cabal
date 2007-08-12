@@ -1,12 +1,21 @@
 Name:	Ghide
 Version: 0.1
-Build-depends: base, Cabal, gtk, sourceview
+Build-depends: base, Cabal, gtk, sourceview, haskell98
 
 Executable: Ghide
-Extensions: FunctionalDependencies
+Extensions: FunctionalDependencies ForeignFunctionInterface
 Main-Is: Main.hs
 Other-Modules: 
 	Partial
 	Browser
 	Object
 	Interpret
+	GnomeVFS
+	C2HS
+HS-Source-Dirs: . /usr/lib/c2hs-0.14.5
+Include-Dirs:
+	/usr/include/gnome-vfs-2.0
+	/usr/include/glib-2.0
+	/usr/lib/glib-2.0/include
+Extra-Libraries:
+	gnomevfs-2
