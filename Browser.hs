@@ -1,19 +1,28 @@
 module Browser where
 {
 --	import Partial;
+	import Interpret;
 	import Object;
-	import GnomeVFS;
+	import Data.Witness;
+	import System.Gnome.VFS;
+	import System.Gnome.VFS.Types;
 	import Graphics.UI.Gtk hiding (Object);
 	import Distribution.PackageDescription;
 	import Distribution.Simple.Utils;
 	import Distribution.PreProcess;
-	import Data.Maybe;
+	import Text.Read;
+--	import Data.Maybe;
+--	import Data.Word;
+	import Data.ByteString hiding (putStrLn);
+	import Prelude hiding (read);
+	
+	type Selection = [AnyObject];
 	
 	data Browser a = forall w. (WidgetClass w) => MkBrowser
 	{
 		browserWidget :: w,
-		browserChanged :: IO (Maybe (IO a)),
-		browserSelection :: IO [Object],
+--		browserChanged :: IO (Maybe (IO a)),
+		browserSelection :: IO Selection,
 		closeBrowser :: IO ()
 	};
 	
@@ -24,17 +33,56 @@ module Browser where
 		show _ = "<other type>"
 	};
 
-	type BrowserFactory a = IO a -> ([Object] -> IO ()) -> IO (Browser a);
+	uriObject :: URI -> Object (Maybe ByteString);
+	uriObject uri = MkObject uri (MkReference getURI setURI) where
+	{
+		getURI :: IO (Maybe ByteString);
+		getURI = do
+		{
+			catch (do
+			{
+				h <- openURI uri OpenRead;
+				info <- getFileInfoFromHandle h [FileInfoDefault];
+				Just fs <- return (fileInfoSize info);
+				bs <- System.Gnome.VFS.read h fs;
+				close h;
+				return (Just bs);
+			})
+			(\_ -> return Nothing);
+		};
+		
+		setURI :: Maybe ByteString -> IO ();
+		setURI Nothing = unlinkFromURI uri;
+		setURI (Just bs) = do
+		{
+			h <- openURI uri OpenWrite;
+			write h bs;
+			close h;
+		};
+	};
+
+	type BrowserFactory a = Object a -> (Selection -> IO ()) -> IO (Browser a);
 	
-	pickBrowser :: ObjectType a -> BrowserFactory a;
-	pickBrowser TextObjectType = textBrowser;
-	pickBrowser PackageDescriptionObjectType = cabalBrowser;
-	pickBrowser _ = lastResortBrowser;
+	pickBrowser :: ValueType a -> BrowserFactory a;
+	pickBrowser t@(MaybeValueType ot) = maybeBrowser t (pickBrowser ot);
+	pickBrowser TextValueType = textBrowser;
+	pickBrowser PackageDescriptionValueType = cabalBrowser;
+	pickBrowser t = lastResortBrowser t;
+
+	pickObjBrowser ::forall r. AnyObject -> (Selection -> IO ()) -> (forall a. Browser a -> IO r) -> IO r;
+	pickObjBrowser (MkAnyF ot obj) onSel withBrowser = do
+	{
+		browser <- pickBrowser ot obj onSel;
+		withBrowser browser;
+	};
+
+	maybeBrowser :: ValueType (Maybe a) -> BrowserFactory a -> BrowserFactory (Maybe a);
+	maybeBrowser t _ obj onSel = lastResortBrowser t obj onSel;
 
 	textBrowser :: BrowserFactory String;
-	textBrowser getter onSel = do
+	textBrowser (MkObject context ref) onSel = do
 	{
-		text <- getter;
+		text <- getRef ref;
 		buffer <- textBufferNew Nothing;
 		textBufferSetText buffer text;
 		view <- textViewNewWithBuffer buffer;
@@ -46,41 +94,59 @@ module Browser where
 		return 
 		(MkBrowser
 			view
-			(return Nothing)
+--			(return Nothing)
 			(getBufferSelection buffer)
 			(return ())
 		);
 	} where
 	{
-		getBufferSelection :: TextBuffer -> IO [Object];
+		getBufferSelection :: TextBuffer -> IO Selection;
 		getBufferSelection buffer = do
 		{
 			m1 <- textBufferGetInsert buffer;
-			i1 <- textBufferGetIterAtMark buffer m1;
 			m2 <- textBufferGetSelectionBound buffer;
-			i2 <- textBufferGetIterAtMark buffer m2;
-			text <- textBufferGetSlice buffer i1 i2 True;
-			return [MkObject TextObjectType text];
+			return [MkAnyF TextValueType (MkObject context (MkReference (bufferGet m1 m2) (bufferSet m1 m2)))];
+		} where
+		{
+			bufferGet :: TextMark -> TextMark -> IO String;
+			bufferGet m1 m2 = do
+			{
+				i1 <- textBufferGetIterAtMark buffer m1;
+				i2 <- textBufferGetIterAtMark buffer m2;
+				textBufferGetSlice buffer i1 i2 True;
+			};
+
+			bufferSet :: TextMark -> TextMark -> String -> IO ();
+			bufferSet m1 m2 text = do
+			{
+				i1 <- textBufferGetIterAtMark buffer m1;
+				i2 <- textBufferGetIterAtMark buffer m2;
+				textBufferDelete buffer i1 i2;
+				inew <- textBufferGetIterAtMark buffer m1;
+				textBufferInsert buffer inew text;
+			};
 		};
 	};
 	
-	lastResortBrowser :: BrowserFactory a;
-	lastResortBrowser _ _ = do
+	lastResortBrowser :: ValueType a -> BrowserFactory a;
+	lastResortBrowser t _ _ = do
 	{
-		w <- labelNew (Just "No Browser");
-		return (MkBrowser w (return Nothing) (return []) (return ()));
+		w <- labelNew (Just ("No Browser for "++(show t)));
+		return (MkBrowser w 
+--		(return Nothing)
+		 (return []) (return ()));
 	};
 	
 	cabalBrowser :: BrowserFactory PackageDescription;
-	cabalBrowser getter _ = do
+	cabalBrowser (MkObject context ref) onSel = do
 	{
-		pd <- getter;
-		view <- makeTreeView "file:///home/ashley/Projects/Ghide/Ghide.cabal" pd;
+		pd <- getRef ref;
+		(store,view) <- makeTreeView context pd;
 		return
 		(MkBrowser
 			view
-			(return Nothing)
-			(return [])
+--			(return Nothing)
+			(getSelection context store view)
 			(return ())
 		);
 	}
@@ -133,7 +199,35 @@ module Browser where
 			addBuildInfo store itExe (buildInfo exe);
 		};
 
-		makeTreeView :: String -> PackageDescription -> IO TreeView;
+		getSelection :: URI -> TreeStore -> TreeView -> IO Selection;
+		getSelection baseURI store tv = do
+		{
+			sel <- treeViewGetSelection tv;
+			(Just ti) <- treeSelectionGetSelected sel;
+			(GVstring (Just _)) <- treeModelGetValue store ti 0;
+			v1 <- treeModelGetValue store ti 1;
+			case v1 of
+			{
+				GVstring (Just fp) -> case uriAppendFileName baseURI fp of
+				{
+					Just uri -> do
+					{
+						mime <- getMIMETypeCommon uri;
+						let 
+						{
+							interpreter = mimeInterpreter (Text.Read.read mime);
+							uriobj = codecMapObj byteStringCodec (uriObject uri);
+							selectedObj = interpretMaybe interpreter uriobj;
+						};
+						return [selectedObj];
+					};
+					_ -> return [];
+				};
+				_ -> return [];
+			};
+		};
+
+		makeTreeView :: URI -> PackageDescription -> IO (TreeStore,TreeView);
 		makeTreeView baseURI descr = do
 		{
 			store <- treeStoreNew [TMstring,TMstring];
@@ -151,22 +245,10 @@ module Browser where
 			treeViewSetHeadersVisible tv True;
 			onCursorChanged tv (do
 			{
-				sel <- treeViewGetSelection tv;
-				(Just ti) <- treeSelectionGetSelected sel;
-				(GVstring (Just _)) <- treeModelGetValue store ti 0;
-				v1 <- treeModelGetValue store ti 1;
-				case v1 of
-				{
-					GVstring (Just fp) -> do
-					{
-						uri <- uriMakeFullFromRelative baseURI fp;
-						mmime <- getMIMEType uri;
-						putStrLn ("select " ++ uri ++ " ("++(fromMaybe "<unknown>" mmime)++")");
-					};
-					_ -> return ();
-				};
+				sel <- getSelection baseURI store tv;
+				onSel sel;
 			});
-			return tv;
+			return (store,tv);
 		};
 	};
 }

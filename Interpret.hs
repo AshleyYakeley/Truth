@@ -1,15 +1,14 @@
 module Interpret where
 {
+	import MIME;
 	import Object;
 	import Distribution.PackageDescription;
+	import Data.Witness;
+	import Control.Compositor;
+	import Data.Traversable;
 	import Data.Char;
 	import Data.Word;
-	
-	class Compositor comp where
-	{
-		identity :: comp a a;
-		compose :: comp b c -> comp a b -> comp a c;
-	};
+	import Data.ByteString;
 	
 	data Codec a b = MkCodec
 	{
@@ -23,6 +22,45 @@ module Interpret where
 		compose (MkCodec bmc cb) (MkCodec amb ba) = MkCodec (\a -> (amb a) >>= bmc) (ba . cb);
 	};
 	
+	codecRef :: Codec a b -> Reference a -> Reference b;
+	codecRef codec ref = MkReference
+	{
+		getRef = do
+		{
+			a <- getRef ref;
+			case (decode codec a) of
+			{
+				Just b -> return b;
+				_ -> fail "decode error";
+			};
+		},
+		setRef = \b -> setRef ref (encode codec b)
+	};
+	
+	codecObj :: Codec a b -> Object a -> Object b;
+	codecObj codec (MkObject context ref) = MkObject context (codecRef codec ref);
+	
+	codecMapRef :: (Traversable f) => Codec a b -> Reference (f a) -> Reference (f b);
+	codecMapRef codec ref = MkReference
+	{
+		getRef = do
+		{
+			fa <- getRef ref;
+			case (sequenceA (fmap (decode codec) fa)) of
+			{
+				Just fb -> return fb;
+				_ -> fail "decode error";
+			};
+		},
+		setRef = \fb -> setRef ref (fmap (encode codec) fb)
+	};
+	
+	codecMapObj :: (Traversable f) => Codec a b -> Object (f a) -> Object (f b);
+	codecMapObj codec (MkObject context ref) = MkObject context (codecMapRef codec ref);
+	
+	byteStringCodec :: Codec ByteString [Word8];
+	byteStringCodec = MkCodec (Just . unpack) pack;
+	
 	latin1 :: Codec [Word8] String;
 	latin1 = MkCodec (Just . (fmap (chr . fromIntegral))) (fmap (fromIntegral . ord));
 	
@@ -35,12 +73,32 @@ module Interpret where
 		})
 		(\_ -> "");
 	
-	data Interpreter = forall a. MkInterpreter (ObjectType a) (Codec [Word8] a);
-
-	data MIMEType = MkMIMEType String String [(String,String)];
+	data Interpreter base = forall a. MkInterpreter (ValueType a) (Codec base a);
 	
-	interpret :: MIMEType -> Interpreter;
-	interpret (MkMIMEType "text" "cabal" _) = MkInterpreter PackageDescriptionObjectType (compose packageDescriptionCodec latin1);
-	interpret (MkMIMEType "text" _ _) = MkInterpreter TextObjectType latin1;
-	interpret _ = MkInterpreter BytesObjectType identity;
+	interpret :: Interpreter base -> Object base -> AnyObject;
+	interpret (MkInterpreter ot codec) obj = MkAnyF ot (codecObj codec obj);
+	
+	interpretMaybe :: Interpreter base -> Object (Maybe base) -> AnyObject;
+	interpretMaybe (MkInterpreter ot codec) obj = MkAnyF (MaybeValueType ot) (codecMapObj codec obj);
+	
+	mimeInterpreter :: MIMEType -> Interpreter [Word8];
+	mimeInterpreter (MkMIMEType "text" "cabal" _) = MkInterpreter PackageDescriptionValueType (compose packageDescriptionCodec latin1);
+	mimeInterpreter (MkMIMEType "text" "plain" _) = MkInterpreter TextValueType latin1;
+	mimeInterpreter (MkMIMEType "text" subtype _) = MkInterpreter (SourceValueType subtype) latin1;
+	mimeInterpreter _ = MkInterpreter BytesValueType identity;
+	
+	data Lens a b = MkLens
+	{
+		lensGet :: a -> b,
+		lensSet :: b -> a -> a
+	};
+	
+	instance Compositor Lens where
+	{
+		identity = MkLens id (\b _ -> b);
+		compose (MkLens bc cbb) (MkLens ab baa) = MkLens (bc . ab) (\c a -> baa (cbb c (ab a)) a);
+	};
+	
+	pairFirst :: Lens (a,b) a;
+	pairFirst = MkLens fst (\a (_,b) -> (a,b));
 }

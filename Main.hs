@@ -1,14 +1,19 @@
 module Main where
 {
 --	import Partial;
+	import MIME;
 	import Browser;
+	import Object;
 	import Interpret;
-	import qualified GnomeVFS;
-	import Graphics.UI.Gtk;
-	import Graphics.UI.Gtk.SourceView;
+	import Data.Witness;
+	import System.Gnome.VFS;
+	import Graphics.UI.Gtk hiding (Object);
+--	import Graphics.UI.Gtk.SourceView;
 	import qualified Data.ByteString as BS;
+	import Data.Maybe;
 	import Data.Word;
 
+{-
 	makePane :: IO ScrolledWindow;
 	makePane = do
 	{
@@ -18,59 +23,85 @@ module Main where
 		scrolledWindowSetPolicy w PolicyAutomatic PolicyAutomatic;
 		return w;
 	};
+-}
 
-	createWindowFromBrowser :: Browser a -> IO Window;
-	createWindowFromBrowser browser = do
+	createPanedWindow :: IO (Window,HPaned);
+	createPanedWindow = do
 	{
 		window <- windowNew;
 		onDestroy window mainQuit;
 		split <- hPanedNew;
-		w2 <- makePane;
-		((\(MkBrowser w _ _ _) -> panedAdd1 split w) browser);
-		panedAdd2 split w2;
 		set window [containerChild := split];
-		return window;
+		return (window,split);
 	};
 
-	createBrowserFromInterpreter :: forall b. (forall a. Browser a -> IO b) -> Interpreter -> IO [Word8] -> IO b;
-	createBrowserFromInterpreter withBrowser (MkInterpreter objType codec) getter = do
+	browserAddToPane1 :: HPaned -> Browser a -> IO ();
+	browserAddToPane1 split browser = (\(MkBrowser w _ _) -> panedAdd1 split w) browser;
+
+	browserAddToPane2 :: HPaned -> Browser a -> IO ();
+	browserAddToPane2 split browser = (\(MkBrowser w _ _) -> panedAdd2 split w) browser;
+
+	showObjects :: [AnyObject] -> IO ();
+	showObjects [] = return ();
+	showObjects (MkAnyF t obj:objs) = do
 	{
-		browser <- (pickBrowser objType) (do
+		putStrLn ("select "++(uriToString (objContext obj) URIHideNone) ++ " (" ++ (show t)++")");
+		showObjects objs;
+	};
+	
+	onSelPane2 :: HPaned -> Selection -> IO ();
+	onSelPane2 split sel = do
+	{
+		showObjects sel;
+		case sel of
 		{
-			bytes <- getter;
-			case (decode codec bytes) of
+			[s1] -> pickObjBrowser s1 (\_ -> return ()) (\b2 -> do
 			{
-				Just a -> return a;
-				_ -> fail "decode error";
-			};
-		}) (\_ -> return ());
-		withBrowser browser;
+				putStrLn "Adding";
+				browserAddToPane2 split b2;
+			});
+			_ -> return ();
+		};
 	};
 
-	data MIMEFile = MkMIMEFile MIMEType FilePath;
+	data MIMEFile = MkMIMEFile MIME.MIMEType FilePath;
+
+	mySubject :: URI;
+	mySubject = (fromMaybe undefined (uriFromString "file:///home/ashley/Projects/Ghide/Ghide.cabal"));
 	
 	myFile :: MIMEFile;
 	myFile = MkMIMEFile (MkMIMEType "text" "cabal" []) "Ghide.cabal";
 
+	myContext :: URI;
+	myContext = (fromMaybe undefined (uriFromString "file:///home/ashley/Projects/Ghide/"));
+
+	fileReference :: FilePath -> Reference [Word8];
+	fileReference fname = MkReference
+	{
+		getRef = do
+		{
+			bs <- BS.readFile fname;
+			return (BS.unpack bs);
+		},
+		setRef = \_ -> return ()	-- NYI
+	};
+
 	main :: IO ();
 	main = do
 	{
-		GnomeVFS.init;
+		System.Gnome.VFS.init;
 		initGUI;
 		let
 		{
 			MkMIMEFile mtype fname = myFile;
-			interpreter = interpret mtype;
-			getter = do
-			{
-				bs <- BS.readFile fname;
-				return (BS.unpack bs);
-			}
+			interpreter = mimeInterpreter mtype;
+			--obj = uriObject mySubject;
+			obj = MkObject myContext (fileReference fname);
 		};
-		window <- createBrowserFromInterpreter createWindowFromBrowser interpreter getter;
+		(window,split) <- createPanedWindow;
+		pickObjBrowser (interpret interpreter obj) (onSelPane2 split) (browserAddToPane1 split);
 		widgetShowAll window;
 		mainGUI;
-		GnomeVFS.shutdown;
+		System.Gnome.VFS.shutdown;
 	};
-
 }
