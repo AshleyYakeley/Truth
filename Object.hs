@@ -11,8 +11,8 @@ module Object where
 		CollectionValueType :: ListType ValueType a -> ValueType a;
 		MaybeValueType :: ValueType a -> ValueType (Maybe a);
 		ListValueType :: ValueType a -> ValueType [a];
-		BytesValueType :: ValueType [Word8];
-		TextValueType :: ValueType String;
+		OctetValueType :: ValueType Word8;
+		CharValueType :: ValueType Char;
 		SourceValueType :: String -> ValueType String;
 		PackageDescriptionValueType :: ValueType PackageDescription;
 	};
@@ -25,8 +25,8 @@ module Object where
 	defaultValue (CollectionValueType lt) = defaultListValue lt;
 	defaultValue (MaybeValueType _) = Nothing;
 	defaultValue (ListValueType _) = [];
-	defaultValue BytesValueType = [];
-	defaultValue TextValueType = [];
+	defaultValue OctetValueType = 0;
+	defaultValue CharValueType = '\0';
 	defaultValue (SourceValueType _) = [];
 	defaultValue (PackageDescriptionValueType) = emptyPackageDescription;
 	
@@ -35,8 +35,8 @@ module Object where
 		matchWitnessF (CollectionValueType lwa) (CollectionValueType lwb) = matchWitnessF lwa lwb;
 		matchWitnessF (MaybeValueType wa) (MaybeValueType wb) = fmap mapCompose (matchWitnessF wa wb);
 		matchWitnessF (ListValueType wa) (ListValueType wb) = fmap mapCompose (matchWitnessF wa wb);
-		matchWitnessF BytesValueType BytesValueType = Just identity;
-		matchWitnessF TextValueType TextValueType = Just identity;
+		matchWitnessF OctetValueType OctetValueType = Just identity;
+		matchWitnessF CharValueType CharValueType = Just identity;
 		matchWitnessF (SourceValueType sa) (SourceValueType sb) | sa == sb = Just identity;
 		matchWitnessF PackageDescriptionValueType PackageDescriptionValueType = Just identity;
 		matchWitnessF _ _ = Nothing;
@@ -46,9 +46,9 @@ module Object where
 	{
 		show (CollectionValueType _) = "collection";	-- should show types here
 		show (MaybeValueType ot) = "maybe "++(show ot);
-		show BytesValueType = "list of octets";
 		show (ListValueType t) = "list of " ++ (show t);
-		show TextValueType = "text";
+		show OctetValueType = "octet";
+		show CharValueType = "char";
 		show (SourceValueType s) = "source code "++s;
 		show PackageDescriptionValueType = "Cabal package description";
 	};

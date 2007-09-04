@@ -83,9 +83,9 @@ module Interpret where
 	
 	mimeInterpreter :: MIMEType -> Interpreter [Word8];
 	mimeInterpreter (MkMIMEType "text" "cabal" _) = MkInterpreter PackageDescriptionValueType (compose packageDescriptionCodec latin1);
-	mimeInterpreter (MkMIMEType "text" "plain" _) = MkInterpreter TextValueType latin1;
+	mimeInterpreter (MkMIMEType "text" "plain" _) = MkInterpreter (ListValueType CharValueType) latin1;
 	mimeInterpreter (MkMIMEType "text" subtype _) = MkInterpreter (SourceValueType subtype) latin1;
-	mimeInterpreter _ = MkInterpreter BytesValueType identity;
+	mimeInterpreter _ = MkInterpreter (ListValueType OctetValueType) identity;
 	
 	data Lens a b = MkLens
 	{

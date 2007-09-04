@@ -65,7 +65,7 @@ module Browser where
 	
 	pickBrowser :: ValueType a -> BrowserFactory a;
 	pickBrowser t@(MaybeValueType ot) = maybeBrowser t (pickBrowser ot);
-	pickBrowser TextValueType = textBrowser;
+	pickBrowser (ListValueType CharValueType) = textBrowser;
 	pickBrowser PackageDescriptionValueType = cabalBrowser;
 	pickBrowser t = lastResortBrowser t;
 
@@ -105,7 +105,7 @@ module Browser where
 		{
 			m1 <- textBufferGetInsert buffer;
 			m2 <- textBufferGetSelectionBound buffer;
-			return [MkAnyF TextValueType (MkObject context (MkReference (bufferGet m1 m2) (bufferSet m1 m2)))];
+			return [MkAnyF (ListValueType CharValueType) (MkObject context (MkReference (bufferGet m1 m2) (bufferSet m1 m2)))];
 		} where
 		{
 			bufferGet :: TextMark -> TextMark -> IO String;
