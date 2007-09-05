@@ -8,22 +8,9 @@ module Main where
 	import Data.Witness;
 	import System.Gnome.VFS;
 	import Graphics.UI.Gtk hiding (Object);
---	import Graphics.UI.Gtk.SourceView;
 	import qualified Data.ByteString as BS;
 	import Data.Maybe;
 	import Data.Word;
-
-{-
-	makePane :: IO ScrolledWindow;
-	makePane = do
-	{
-		s <- sourceViewNew;
-		w <- scrolledWindowNew Nothing Nothing;
-		containerAdd w s;
-		scrolledWindowSetPolicy w PolicyAutomatic PolicyAutomatic;
-		return w;
-	};
--}
 
 	createPanedWindow :: IO (Window,HPaned);
 	createPanedWindow = do
@@ -37,9 +24,6 @@ module Main where
 
 	browserAddToPane1 :: HPaned -> Browser a -> IO ();
 	browserAddToPane1 split browser = (\(MkBrowser w _ _) -> panedAdd1 split w) browser;
-
-	browserAddToPane2 :: HPaned -> Browser a -> IO ();
-	browserAddToPane2 split browser = (\(MkBrowser w _ _) -> panedAdd2 split w) browser;
 
 	showObjects :: [AnyObject] -> IO ();
 	showObjects [] = return ();
@@ -55,10 +39,10 @@ module Main where
 		showObjects sel;
 		case sel of
 		{
-			[s1] -> pickObjBrowser s1 (\_ -> return ()) (\b2 -> do
+			[s1] -> pickObjBrowser s1 (\_ -> return ()) (\(MkBrowser w _ _) -> do
 			{
-				putStrLn "Adding";
-				browserAddToPane2 split b2;
+				panedAdd2 split w;
+				widgetShowAll w;
 			});
 			_ -> return ();
 		};
