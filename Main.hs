@@ -23,8 +23,8 @@ module Main where
 		return (window,split);
 	};
 
-	browserAddToPane1 :: HPaned -> Browser a -> IO ();
-	browserAddToPane1 split browser = (\(MkBrowser w _ _) -> panedAdd1 split w) browser;
+	browserAddToPane1 :: HPaned -> Browser -> IO ();
+	browserAddToPane1 split (MkBrowser w _ _) = panedAdd1 split w;
 
 	showObjects :: [AnyObject] -> IO ();
 	showObjects [] = return ();
@@ -40,8 +40,9 @@ module Main where
 		showObjects sel;
 		case sel of
 		{
-			[s1] -> pickObjBrowser s1 (\_ -> return ()) (\newB@(MkBrowser w _ _) -> do
+			[s1] -> do
 			{
+				newB@(MkBrowser w _ _) <- pickObjBrowser s1 (\_ -> return ());
 				closer <- readIORef lastBrowser;
 				canClose <- closer;
 				if canClose then do
@@ -50,7 +51,7 @@ module Main where
 					widgetShowAll w;
 					writeIORef lastBrowser (closeBrowser newB);
 				} else return ();
-			});
+			};
 			_ -> return ();
 		};
 	};
@@ -91,7 +92,8 @@ module Main where
 		};
 		(window,split) <- createPanedWindow;
 		lastBrowser <- newIORef (return True);
-		pickObjBrowser (interpret interpreter obj) (onSelPane2 split lastBrowser) (browserAddToPane1 split);
+		browser <- pickObjBrowser (interpret interpreter obj) (onSelPane2 split lastBrowser);
+		browserAddToPane1 split browser;
 		widgetShowAll window;
 		mainGUI;
 		System.Gnome.VFS.shutdown;

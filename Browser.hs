@@ -18,10 +18,9 @@ module Browser where
 	
 	type Selection = [AnyObject];
 	
-	data Browser a = forall w. (WidgetClass w) => MkBrowser
+	data Browser = forall w. (WidgetClass w) => MkBrowser
 	{
 		browserWidget :: w,
---		browserChanged :: IO (Maybe (IO a)),
 		browserSelection :: IO Selection,
 		closeBrowser :: IO Bool
 	};
@@ -61,23 +60,39 @@ module Browser where
 		};
 	};
 
-	type BrowserFactory a = Object a -> (Selection -> IO ()) -> IO (Browser a);
+	type BrowserFactory a = Object a -> (Selection -> IO ()) -> IO Browser;
 	
 	pickBrowser :: ValueType a -> BrowserFactory a;
 	pickBrowser t@(MaybeValueType ot) = maybeBrowser t (pickBrowser ot);
 	pickBrowser (ListValueType CharValueType) = textBrowser;
 	pickBrowser PackageDescriptionValueType = cabalBrowser;
+	pickBrowser (SourceValueType _) = textBrowser;
 	pickBrowser t = lastResortBrowser t;
 
-	pickObjBrowser ::forall r. AnyObject -> (Selection -> IO ()) -> (forall a. Browser a -> IO r) -> IO r;
-	pickObjBrowser (MkAnyF ot obj) onSel withBrowser = do
+	pickObjBrowser :: AnyObject -> (Selection -> IO ()) -> IO Browser;
+	pickObjBrowser (MkAnyF ot obj) = pickBrowser ot obj;
+
+	unMaybeObj :: Object (Maybe a) -> IO (Maybe (Object a));
+	unMaybeObj (MkObject context ref) = do
 	{
-		browser <- pickBrowser ot obj onSel;
-		withBrowser browser;
+		ma <- getRef ref;
+		case ma of
+		{
+			Just a -> return (Just (MkObject context (MkReference (return a) (\a' -> setRef ref (Just a')))));
+			_ -> return Nothing;
+		};
 	};
 
 	maybeBrowser :: ValueType (Maybe a) -> BrowserFactory a -> BrowserFactory (Maybe a);
-	maybeBrowser t _ obj onSel = lastResortBrowser t obj onSel;
+	maybeBrowser t factory objm onSel = do
+	{
+		mobj <- unMaybeObj objm;
+		case mobj of
+		{
+			Just obj -> factory obj onSel;
+			_ -> lastResortBrowser t objm onSel;
+		};
+	};
 
 	textBrowser :: BrowserFactory String;
 	textBrowser (MkObject context ref) onSel = do
