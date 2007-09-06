@@ -11,6 +11,7 @@ module Main where
 	import qualified Data.ByteString as BS;
 	import Data.Maybe;
 	import Data.Word;
+	import Data.IORef;
 
 	createPanedWindow :: IO (Window,HPaned);
 	createPanedWindow = do
@@ -33,16 +34,22 @@ module Main where
 		showObjects objs;
 	};
 	
-	onSelPane2 :: HPaned -> Selection -> IO ();
-	onSelPane2 split sel = do
+	onSelPane2 :: HPaned -> IORef (IO Bool) -> Selection -> IO ();
+	onSelPane2 split lastBrowser sel = do
 	{
 		showObjects sel;
 		case sel of
 		{
-			[s1] -> pickObjBrowser s1 (\_ -> return ()) (\(MkBrowser w _ _) -> do
+			[s1] -> pickObjBrowser s1 (\_ -> return ()) (\newB@(MkBrowser w _ _) -> do
 			{
-				panedAdd2 split w;
-				widgetShowAll w;
+				closer <- readIORef lastBrowser;
+				canClose <- closer;
+				if canClose then do
+				{
+					panedAdd2 split w;
+					widgetShowAll w;
+					writeIORef lastBrowser (closeBrowser newB);
+				} else return ();
 			});
 			_ -> return ();
 		};
@@ -83,7 +90,8 @@ module Main where
 			obj = MkObject myContext (fileReference fname);
 		};
 		(window,split) <- createPanedWindow;
-		pickObjBrowser (interpret interpreter obj) (onSelPane2 split) (browserAddToPane1 split);
+		lastBrowser <- newIORef (return True);
+		pickObjBrowser (interpret interpreter obj) (onSelPane2 split lastBrowser) (browserAddToPane1 split);
 		widgetShowAll window;
 		mainGUI;
 		System.Gnome.VFS.shutdown;

@@ -23,7 +23,7 @@ module Browser where
 		browserWidget :: w,
 --		browserChanged :: IO (Maybe (IO a)),
 		browserSelection :: IO Selection,
-		closeBrowser :: IO ()
+		closeBrowser :: IO Bool
 	};
 	
 	instance Show GenericValue where
@@ -96,7 +96,7 @@ module Browser where
 			view
 --			(return Nothing)
 			(getBufferSelection buffer)
-			(return ())
+			(return True)
 		);
 	} where
 	{
@@ -134,7 +134,7 @@ module Browser where
 		w <- labelNew (Just ("No Browser for "++(show t)));
 		return (MkBrowser w 
 --		(return Nothing)
-		 (return []) (return ()));
+		 (return []) (return True));
 	};
 	
 	cabalBrowser :: BrowserFactory PackageDescription;
@@ -147,7 +147,7 @@ module Browser where
 			view
 --			(return Nothing)
 			(getSelection context store view)
-			(return ())
+			(return True)
 		);
 	}
 	where
