@@ -2,32 +2,27 @@ module Interpret where
 {
 	import MIME;
 	import Object;
+	import Codec;
 	import Distribution.PackageDescription;
 	import Data.Witness;
-	import Control.Compositor;
+	import Control.Category;
 	import Data.Traversable;
 	import Data.Char;
 	import Data.Word;
 	import Data.ByteString;
+	import Data.IORef;
+
+	--	pullEdits :: IO (a,IO (Maybe (Edit a))),
+	--	pushEdit :: Edit a -> IO (Maybe (Edit a))
 	
-	data Codec a b = MkCodec
+	codecObj :: Codec a b -> Object a -> Object b;
+	codecObj codec ref = MkReference
 	{
-		decode :: a -> Maybe b,
-		encode :: b -> a
-	};
-	
-	instance Compositor Codec where
-	{
-		identity = MkCodec Just id;
-		compose (MkCodec bmc cb) (MkCodec amb ba) = MkCodec (\a -> (amb a) >>= bmc) (ba . cb);
-	};
-	
-	codecRef :: Codec a b -> Reference a -> Reference b;
-	codecRef codec ref = MkReference
-	{
-		getRef = do
+		objContext = objContext ref,
+		pullEdits = do
 		{
-			a <- getRef ref;
+			(a,puller) <- pullEdits ref;
+			state <- newIORef a;
 			case (decode codec a) of
 			{
 				Just b -> return b;
@@ -36,9 +31,6 @@ module Interpret where
 		},
 		setRef = \b -> setRef ref (encode codec b)
 	};
-	
-	codecObj :: Codec a b -> Object a -> Object b;
-	codecObj codec (MkObject context ref) = MkObject context (codecRef codec ref);
 	
 	codecMapRef :: (Traversable f) => Codec a b -> Reference (f a) -> Reference (f b);
 	codecMapRef codec ref = MkReference
@@ -86,19 +78,4 @@ module Interpret where
 	mimeInterpreter (MkMIMEType "text" "plain" _) = MkInterpreter (ListValueType CharValueType) latin1;
 	mimeInterpreter (MkMIMEType "text" subtype _) = MkInterpreter (SourceValueType subtype) latin1;
 	mimeInterpreter _ = MkInterpreter (ListValueType OctetValueType) identity;
-	
-	data Lens a b = MkLens
-	{
-		lensGet :: a -> b,
-		lensSet :: b -> a -> a
-	};
-	
-	instance Compositor Lens where
-	{
-		identity = MkLens id (\b _ -> b);
-		compose (MkLens bc cbb) (MkLens ab baa) = MkLens (bc . ab) (\c a -> baa (cbb c (ab a)) a);
-	};
-	
-	pairFirst :: Lens (a,b) a;
-	pairFirst = MkLens fst (\a (_,b) -> (a,b));
 }

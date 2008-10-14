@@ -4,6 +4,8 @@ module Main where
 	import MIME;
 	import Browser;
 	import Object;
+	import File;
+	import Lens;
 	import Interpret;
 	import Data.Witness;
 	import System.Gnome.VFS;

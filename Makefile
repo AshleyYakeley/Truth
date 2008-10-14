@@ -8,7 +8,7 @@ clean:
 	runhaskell Setup.hs clean
 
 configure:
-	runhaskell Setup.hs configure
+	runhaskell Setup.hs configure --user
 
 build: configure
 	runhaskell Setup.hs build

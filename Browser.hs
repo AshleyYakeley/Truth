@@ -9,7 +9,7 @@ module Browser where
 	import Graphics.UI.Gtk hiding (Object);
 	import Distribution.PackageDescription;
 	import Distribution.Simple.Utils;
-	import Distribution.PreProcess;
+--	import Distribution.PreProcess;
 	import Text.Read;
 --	import Data.Maybe;
 --	import Data.Word;
