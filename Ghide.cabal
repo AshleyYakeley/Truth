@@ -1,6 +1,6 @@
-Name:	Ghide
-Version: 0.1
-Build-depends:
+name:	Ghide
+version: 0.1
+build-depends:
 	base>=2.0, 
 	stm>=2.0, 
 	Cabal>=1.1.6, 
@@ -9,10 +9,12 @@ Build-depends:
 	gnomevfs>=0.9.12.2, 
 	sourceview>=0.9.12.2, 
 	witness>=0.1
-Executable: Ghide
-Extensions: FunctionalDependencies ForeignFunctionInterface GADTs RankNTypes ScopedTypeVariables
-Main-Is: Main.hs
-Other-Modules: 
+build-type:	Simple
+
+executable:	Ghide
+extensions: FunctionalDependencies ForeignFunctionInterface GADTs RankNTypes ScopedTypeVariables
+main-is: Main.hs
+other-modules: 
 	Partial
 	ValueType
 	Edit
@@ -23,10 +25,9 @@ Other-Modules:
 	Codec
 	MIME
 	Interpret
-Include-Dirs:
+include-dirs:
 	/usr/include/gnome-vfs-2.0
 	/usr/include/glib-2.0
 	/usr/lib/glib-2.0/include
-Extra-Libraries:
+extra-libraries:
 	gnomevfs-2
-GHC-Options: -Wall -Werror

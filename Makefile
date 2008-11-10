@@ -5,19 +5,19 @@ EXE		= dist/build/Ghide/Ghide
 # Building
 
 clean:
-	runhaskell Setup.hs clean
+	cabal clean
 
 configure:
-	runhaskell Setup.hs configure --user
+	cabal configure
 
 build: configure
-	runhaskell Setup.hs build
+	cabal build --ghc-options="-Wall -Werror"
 
 haddock: configure
-	runhaskell Setup.hs haddock
+	cabal haddock
 
 install: build haddock
-	sudo runhaskell Setup.hs install
+	cabal install --user
 
 run: build
 	$(EXE)
