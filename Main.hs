@@ -8,7 +8,7 @@ module Main where
 	import Lens;
 	import Interpret;
 	import Data.Witness;
-	import System.Gnome.VFS;
+--	import System.Gnome.VFS;
 	import Graphics.UI.Gtk hiding (Object);
 	import qualified Data.ByteString as BS;
 	import Data.Maybe;

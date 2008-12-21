@@ -62,6 +62,7 @@ module Lens where
 	};
 	-}
 
+
 	data Flens s t = MkFlens
 	{
 		flensGet :: s -> t,
@@ -85,7 +86,7 @@ module Lens where
 		flensPutback = \md _ -> fmap (encode codec) md
 	};
 	
-	-- This is not the "arr" of an Arrow, because it wouldn't satisfy arr id = identity
+	-- This is not the "arr" of an Arrow, because it wouldn't satisfy "arr id = id"
 	readOnlyFlens :: (a -> b) -> Flens a b;
 	readOnlyFlens ab = MkFlens
 	{

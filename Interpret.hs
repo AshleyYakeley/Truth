@@ -3,22 +3,44 @@ module Interpret where
 	import MIME;
 	import Object;
 	import Codec;
+	import ValueType;
 	import Distribution.PackageDescription;
 	import Data.Witness;
 	import Control.Category;
+	import Prelude hiding (id,(.));
 	import Data.Traversable;
 	import Data.Char;
 	import Data.Word;
 	import Data.ByteString;
 	import Data.IORef;
 
+	data Reference a = MkReference
+	{
+		getRef :: IO a,
+		setRef :: a -> IO ()
+	};
+
 	--	pullEdits :: IO (a,IO (Maybe (Edit a))),
 	--	pushEdit :: Edit a -> IO (Maybe (Edit a))
 	
-	codecObj :: Codec a b -> Object a -> Object b;
-	codecObj codec ref = MkReference
+	data Subscription a = MkSubscription
 	{
-		objContext = objContext ref,
+		subInitial :: a,
+		subPull :: IO (Maybe (Edit a)),
+		subPush :: [Edit a] -> IO (Maybe [Edit a]),
+		subClose :: IO ()
+	};
+	
+	codecSubscription :: Codec a b -> Subscription a -> Subscription b;
+	codecSubscription codec sub = MkSubscription
+	{
+		subInitial = case (decode codec (subInitial sub)) of
+		{
+			Just b -> return b;
+			_ -> error "decode error";
+		};
+		subPull :: 
+		
 		pullEdits = do
 		{
 			(a,puller) <- pullEdits ref;
@@ -30,6 +52,17 @@ module Interpret where
 			};
 		},
 		setRef = \b -> setRef ref (encode codec b)
+	};
+	
+	codecObj :: Codec a b -> Object a -> Object b;
+	codecObj codec obj = MkObject
+	{
+		objContext = objContext obj,
+		subscribe = do
+		{
+			sub <- subscribe obj;
+			return (codecSubscription codec sub);
+		}
 	};
 	
 	codecMapRef :: (Traversable f) => Codec a b -> Reference (f a) -> Reference (f b);
@@ -56,6 +89,7 @@ module Interpret where
 	latin1 :: Codec [Word8] String;
 	latin1 = MkCodec (Just . (fmap (chr . fromIntegral))) (fmap (fromIntegral . ord));
 	
+	{-
 	packageDescriptionCodec :: Codec String PackageDescription;
 	packageDescriptionCodec = MkCodec
 		(\str -> case parseDescription str of
@@ -64,7 +98,7 @@ module Interpret where
 			_ -> Nothing;
 		})
 		(\_ -> "");
-	
+	-}
 	data Interpreter base = forall a. MkInterpreter (ValueType a) (Codec base a);
 	
 	interpret :: Interpreter base -> Object base -> AnyObject;
@@ -74,8 +108,8 @@ module Interpret where
 	interpretMaybe (MkInterpreter ot codec) obj = MkAnyF (MaybeValueType ot) (codecMapObj codec obj);
 	
 	mimeInterpreter :: MIMEType -> Interpreter [Word8];
-	mimeInterpreter (MkMIMEType "text" "cabal" _) = MkInterpreter PackageDescriptionValueType (compose packageDescriptionCodec latin1);
+--	mimeInterpreter (MkMIMEType "text" "cabal" _) = MkInterpreter PackageDescriptionValueType (packageDescriptionCodec . latin1);
 	mimeInterpreter (MkMIMEType "text" "plain" _) = MkInterpreter (ListValueType CharValueType) latin1;
 	mimeInterpreter (MkMIMEType "text" subtype _) = MkInterpreter (SourceValueType subtype) latin1;
-	mimeInterpreter _ = MkInterpreter (ListValueType OctetValueType) identity;
+	mimeInterpreter _ = MkInterpreter (ListValueType OctetValueType) id;
 }

@@ -17,6 +17,8 @@ module ValueType where
 		SourceValueType :: String -> ValueType String;
 		PackageDescriptionValueType :: ValueType PackageDescription;
 	};
+
+	type AnyV = AnyF ValueType;
 	
 	defaultListValue :: ListType ValueType a -> a;
 	defaultListValue NilListType = ();
@@ -32,7 +34,7 @@ module ValueType where
 	defaultValue (SourceValueType _) = [];
 	defaultValue (PackageDescriptionValueType) = emptyPackageDescription;
 	
-	instance Witness ValueType where
+	instance SimpleWitness ValueType where
 	{
 		matchWitness (CollectionValueType lwa) (CollectionValueType lwb) = matchWitness lwa lwb;
 		matchWitness (MaybeValueType wa) (MaybeValueType wb) = do

@@ -4,8 +4,8 @@ module Browser where
 	import Interpret;
 	import Object;
 	import Data.Witness;
-	import System.Gnome.VFS;
-	import System.Gnome.VFS.Types;
+--	import System.Gnome.VFS;
+--	import System.Gnome.VFS.Types;
 	import Graphics.UI.Gtk hiding (Object);
 	import Distribution.PackageDescription;
 	import Distribution.Simple.Utils;

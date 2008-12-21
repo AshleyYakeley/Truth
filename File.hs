@@ -3,9 +3,7 @@ module File where
 	import ValueType;
 	import Edit;
 	import Object;
-	import System.Gnome.VFS;
-	import System.Gnome.VFS.Ops(unlinkFromURI);
-	import System.Gnome.VFS.Types;
+	import System.GIO;
 	import Data.ByteString;
 	import Control.Concurrent.STM;
 	
@@ -28,7 +26,7 @@ module File where
 				else retry;
 			}),
 
-			subPush = \edits -> do
+			subPush = \edit -> do
 			{
 				current <- getter;
 				rr <- atomically (do
@@ -38,7 +36,7 @@ module File where
 					{
 						[] -> do
 						{
-							let {new = applyEdits edits old;};
+							let {new = applyEdit edit old;};
 							writeTVar stateVar new;
 							return (Right new);
 						};
@@ -65,7 +63,7 @@ module File where
 		});
 	};
 	
-	uriObject :: URI -> Object (Maybe ByteString);
+	uriObject :: File -> Object (Maybe ByteString);
 	uriObject uri = MkObject
 	{
 		objContext = uri,
@@ -77,23 +75,29 @@ module File where
 		{
 			catch (do
 			{
-				h <- openURI uri OpenRead;
-				info <- getFileInfoFromHandle h [FileInfoDefault];
+bs <- return empty;
+{-
+				info <- fileQueryInfo file "" [FileQueryInfoNofollowSymlinks] Nothing;
+				h <- fileRead uri Nothing;
 				Just fs <- return (fileInfoSize info);
 				bs <- System.Gnome.VFS.read h fs;
 				close h;
+-}
 				return (Just bs);
 			})
 			(\_ -> return Nothing);
 		};
 		
 		setURI :: Maybe ByteString -> IO ();
-		setURI Nothing = unlinkFromURI uri;
-		setURI (Just bs) = do
+		setURI Nothing = fileDelete uri Nothing;
+		setURI (Just _) = do
 		{
-			h <- openURI uri OpenWrite;
+return ();
+{-
+			h <- fileCreate uri Nothing;
 			write h bs;
 			close h;
+-}
 		};
 	};
 }

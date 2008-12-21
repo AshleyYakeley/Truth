@@ -1,26 +1,37 @@
 name:	Ghide
 version: 0.1
 build-depends:
-	base>=2.0, 
-	stm>=2.0, 
-	Cabal>=1.1.6, 
+	base>=2.0,
+	containers>=0.2,
+	stm>=2.0,
+	Cabal>=1.1.6,
 	bytestring>=0.9.0.1,
-	gtk>=0.9.12.2, 
-	gnomevfs>=0.9.12.2, 
-	sourceview>=0.9.12.2, 
-	witness>=0.1
+	gtk>=0.9.13,
+	gio>=0.9.13,
+	sourceview>=0.9.13,
+	witness>=0.2,
+	open-witness>=0.2
 build-type:	Simple
 
 executable:	Ghide
-extensions: FunctionalDependencies ForeignFunctionInterface GADTs RankNTypes ScopedTypeVariables
+extensions:
+	TypeFamilies
+	EmptyDataDecls
+	UndecidableInstances
+	FunctionalDependencies
+	ForeignFunctionInterface
+	GADTs
+	RankNTypes
+	ScopedTypeVariables
 main-is: Main.hs
-other-modules: 
+other-modules:
+	TypeFunc
 	Partial
 	ValueType
 	Edit
 	Browser
 	Object
-	File
+--	File
 	Lens
 	Codec
 	MIME
