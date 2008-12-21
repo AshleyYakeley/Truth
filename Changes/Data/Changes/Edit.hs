@@ -1,10 +1,9 @@
-module Edit where
+module Data.Changes.Edit where
 {
-	import ValueType;
 	import Data.Witness;
 	import Data.OpenWitness;
 	import Data.Maybe;
-	import TypeFunc;
+	import Data.TypeFunc;
 	import Control.Category;
 	import Prelude hiding (id,(.));
 
@@ -36,10 +35,6 @@ module Edit where
 	
 	invertEdit :: a -> Edit a -> Edit a;
 	invertEdit olda edit = snd (applyAndInvertEdit olda edit);
-
-	compareEdit :: (Eq a) => ValueType a -> a -> a -> [Edit a];
-	compareEdit _ old new | old == new = [];
-	compareEdit _ _ new = [ReplaceEdit new];
 	
 	commutableEdits :: (Eq a) => Edit a -> Edit a -> a -> Maybe a;
 	commutableEdits e1 e2 a = let

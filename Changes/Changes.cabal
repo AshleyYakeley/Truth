@@ -20,7 +20,7 @@ extensions:
 	RankNTypes
 	ScopedTypeVariables
 exposed-modules:
-	TypeFunc
-	ValueType
-	Edit
-	Object
+	Data.Store
+	Data.TypeFunc
+	Data.Changes.Edit
+	Data.Changes.Object

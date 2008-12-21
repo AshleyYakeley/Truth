@@ -1,8 +1,8 @@
-module Object where
+module Data.Changes.Object where
 {
-	import Edit;
+	import Data.Changes.Edit;
+	import Data.Store;
 	import Control.Concurrent.STM;
-	import Data.IntMap;
 	import Data.Traversable;
 	
 	data Subscription a = MkSubscription
@@ -112,23 +112,6 @@ module Object where
 		writeTVar lock False;
 		action;
 	};
-
-	data Store a = MkStore Int (IntMap a);
-
-	emptyStore :: Store a;
-	emptyStore = MkStore 0 empty;
-	
-	addStore :: a -> Store a -> (Int,Store a);
-	addStore a (MkStore i mp) = (i,MkStore (i+1) (insert i a mp));
-
-	lookupStore :: Store a -> Int -> a;
-	lookupStore (MkStore _ mp) i = mp ! i;
-	
-	deleteStore :: Int -> Store a -> Store a;
-	deleteStore i (MkStore n mp) = MkStore n (delete i mp);
-	
-	allStore :: Store a -> [a];
-	allStore (MkStore _ mp) = elems mp;
 
 	makeFreeObject :: context -> a -> IO (Object context a);
 	makeFreeObject context initial = do

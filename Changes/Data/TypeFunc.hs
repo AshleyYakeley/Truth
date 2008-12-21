@@ -1,4 +1,4 @@
-module TypeFunc where
+module Data.TypeFunc where
 {
 	import Data.Witness;
 
