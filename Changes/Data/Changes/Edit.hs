@@ -1,7 +1,8 @@
 module Data.Changes.Edit where
 {
-	import Data.OpenWitness;
+--	import Data.Codec;
 	import Data.TypeFunc;
+	import Data.OpenWitness;
 	import Control.Category;
 	import Prelude hiding (id,(.));
 
@@ -49,4 +50,33 @@ module Data.Changes.Edit where
 		slensGet :: state -> a -> b,
 		slensPutback :: state -> b -> a -> Maybe (a,state)
 	};
+	
+	data SimpleLens a b = MkSimpleLens
+	{
+		simpleLensWitness :: TFWitness IOWitness a b,
+		simpleLensUpdate :: a -> Edit a -> Maybe (Edit b),
+		simpleLensGet :: a -> b,
+		simpleLensPutback :: b -> a -> Maybe a
+	};
+	
+	voidStateWitness :: TFWitness IOWitness a ();
+	voidStateWitness = MkTFWitness (unsafeIOWitnessFromString "Data.Changes.Edit.void.state" :: IOWitness (TFConst ()));
+	
+	simpleStateLens :: SimpleLens a b -> StateLens () a b;
+	simpleStateLens lens = MkStateLens
+	{
+		slensWitness = simpleLensWitness lens,
+		slensStateWitness = voidStateWitness,
+		slensUpdate = \a edit _ -> ((),simpleLensUpdate lens a edit),
+		slensGet = \_ -> simpleLensGet lens,
+		slensPutback = \_ b a -> fmap (\newa -> (newa,())) (simpleLensPutback lens b a)
+	};
+	
+--	codecSimpleLens :: TFWitness IOWitness a b -> Codec a b -> SimpleLens a (Maybe b);
+--	codecSimpleLens wit codec = MkSimpleLens
+--	{
+--		simpleLensWitness = wit,
+--		simpleLensGet = decode codec;
+--		simpleLensPutback = \mb _ -> fmap (encode codec) mb
+--	};
 }

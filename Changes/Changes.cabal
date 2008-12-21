@@ -22,6 +22,7 @@ extensions:
 exposed-modules:
 	Data.Store
 	Data.TypeFunc
+	Data.Codec
 	Data.Changes
 other-modules:
 	Data.Changes.Edit

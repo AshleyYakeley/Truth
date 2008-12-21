@@ -22,10 +22,10 @@ module Data.Changes.List where
 	} where
 	{
 		sectionWitness :: TFWitness IOWitness [e] [e];
-		sectionWitness = MkTFWitness (unsafeIOWitnessFromString "Ghide.Edit.section" :: IOWitness TFIdentity);
+		sectionWitness = MkTFWitness (unsafeIOWitnessFromString "Data.Changes.List.listSection" :: IOWitness TFIdentity);
 
 		sectionStateWitness :: TFWitness IOWitness [e] (Int,Int);
-		sectionStateWitness = MkTFWitness (unsafeIOWitnessFromString "Ghide.Edit.section.state" :: IOWitness (TFConst (Int,Int)));
+		sectionStateWitness = MkTFWitness (unsafeIOWitnessFromString "Data.Changes.List.listSection.state" :: IOWitness (TFConst (Int,Int)));
 	
 		sectionUpdate :: [e] -> Edit [e] -> (Int,Int) -> ((Int,Int),Maybe (Edit [e]));
 		sectionUpdate olda edita state = 

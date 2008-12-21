@@ -1,4 +1,4 @@
-module Codec where
+module Data.Codec where
 {
 	import Control.Category;
 	import Prelude hiding (id,(.));
