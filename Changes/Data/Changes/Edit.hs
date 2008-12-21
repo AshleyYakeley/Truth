@@ -1,6 +1,6 @@
 module Data.Changes.Edit where
 {
---	import Data.Codec;
+	import Data.Codec;
 	import Data.TypeFunc;
 	import Data.OpenWitness;
 	import Control.Category;
@@ -72,11 +72,12 @@ module Data.Changes.Edit where
 		slensPutback = \_ b a -> fmap (\newa -> (newa,())) (simpleLensPutback lens b a)
 	};
 	
---	codecSimpleLens :: TFWitness IOWitness a b -> Codec a b -> SimpleLens a (Maybe b);
---	codecSimpleLens wit codec = MkSimpleLens
---	{
---		simpleLensWitness = wit,
---		simpleLensGet = decode codec;
---		simpleLensPutback = \mb _ -> fmap (encode codec) mb
---	};
+	codecSimpleLens :: TFWitness IOWitness a (Maybe b) -> Codec a b -> SimpleLens a (Maybe b);
+	codecSimpleLens wit codec = MkSimpleLens
+	{
+		simpleLensWitness = wit,
+		simpleLensUpdate = \a edit -> Just (ReplaceEdit (decode codec (applyEdit edit a))),
+		simpleLensGet = decode codec,
+		simpleLensPutback = \mb _ -> fmap (encode codec) mb
+	};
 }
