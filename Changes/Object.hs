@@ -1,7 +1,6 @@
 module Object where
 {
 	import Edit;
-	import System.GIO;
 	import Control.Concurrent.STM;
 	import Data.IntMap;
 	import Data.Traversable;
@@ -16,13 +15,13 @@ module Object where
 		subClose :: IO ()
 	};
 	
-	data Object a = MkObject
+	data Object context a = MkObject
 	{
-		objContext :: File,
+		objContext :: context,
 		subscribe :: forall r. (a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription a)
 	};
 	
-	readObject :: Object a -> IO a;
+	readObject :: Object context a -> IO a;
 	readObject obj = do
 	{
 		(a,sub) <- subscribe obj return (\_ _ -> return ());
@@ -30,7 +29,7 @@ module Object where
 		return a;
 	};
 
-	writeObject :: a -> Object a -> IO Bool;
+	writeObject :: a -> Object context a -> IO Bool;
 	writeObject a obj = do
 	{
 		(_,sub) <- subscribe obj return (\_ _ -> return ());
@@ -131,7 +130,7 @@ module Object where
 	allStore :: Store a -> [a];
 	allStore (MkStore _ mp) = elems mp;
 
-	makeFreeObject :: forall a. File -> a -> IO (Object a);
+	makeFreeObject :: context -> a -> IO (Object context a);
 	makeFreeObject context initial = do
 	{
 		stateVar <- newTVarIO initial;
@@ -170,7 +169,7 @@ module Object where
 		};
 	};
 
-	lensObject :: forall state a b. (Eq state) => StateLens state a b -> (a -> IO state) -> Object a -> Object b;
+	lensObject :: (Eq state) => StateLens state a b -> (a -> IO state) -> Object context a -> Object context b;
 	lensObject lens getstate obj = MkObject
 	{
 		objContext = objContext obj,

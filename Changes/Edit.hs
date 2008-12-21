@@ -1,7 +1,6 @@
 module Edit where
 {
 	import ValueType;
---	import Lens;
 	import Data.Witness;
 	import Data.OpenWitness;
 	import Data.Maybe;
@@ -12,7 +11,6 @@ module Edit where
 	data Edit a where
 	{
 		ReplaceEdit :: a -> Edit a;
---		MapEdit :: (Functor f) => Edit a -> Edit (f a);
 		StateLensEdit :: (Eq state) => StateLens state a b -> state -> Edit b -> Edit a;
 	};
 	
@@ -49,45 +47,6 @@ module Edit where
 		a1 = applyEdit e1 (applyEdit e2 a);
 		a2 = applyEdit e2 (applyEdit e1 a);
 	} in if a1 == a2 then Just a1 else Nothing;
-	
-{-	
-	data EditFunction a b = MkEditFunction
-	{
-		applyEditFunction :: a -> b,
-		applyEditFunctionEdit :: a -> Edit a -> Edit b
-	};
-	
-	simpleEditFunction :: (a -> b) -> EditFunction a b;
-	simpleEditFunction ab = MkEditFunction ab (\a edit -> ReplaceEdit (ab (applyEdit edit a)));
-	
-	instance Category EditFunction where
-	{
-		id = MkEditFunction id (\_ -> id);
-		(MkEditFunction bc bebec) . (MkEditFunction ab aeaeb) =
-			MkEditFunction (bc . ab) (\a ea -> bebec (ab a) (aeaeb a ea));
-	};
-	
-	--raiseEditFunction :: EditFunction a b -> EditFunction (f a) (f b);
-	--raiseEditFunction (MkEditFunction ab aeaeb) = MkEditFunction (fmap ab) (\fa efa -> 
--}
-
-{-	
-	
-	data AnyLensC a = forall b. MkAnyLensC (ValueType b) (LensC a b);
-	
-	lensableType :: ValueType a -> Maybe [AnyLensC a];
-	lensableType (CollectionValueType list) = Just (lensableListType list) where
-	{
-		consItem :: AnyLensC r -> AnyLensC (a,r);
-		consItem (MkAnyLensC vt lens) = (MkAnyLensC vt (consLens lens));
-	
-		lensableListType :: ListType ValueType a -> [AnyLensC a];
-		lensableListType NilListType = [];
-		lensableListType (ConsListType vt rt) = (MkAnyLensC vt firstLens):(fmap consItem (lensableListType rt));
-	};
-	lensableType _ = Nothing;
--}
-
 	
 	data StateLens state a b = MkStateLens
 	{
