@@ -1,8 +1,6 @@
 module File where
 {
-	import ValueType;
-	import Edit;
-	import Object;
+	import Data.Changes;
 	import System.GIO;
 	import Data.ByteString;
 	import Control.Concurrent.STM;

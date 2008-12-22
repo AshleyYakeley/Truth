@@ -1,12 +1,13 @@
 module Main where
 {
+	import Data.Changes;
 --	import Partial;
-	import MIME;
+--	import MIME;
 	import Browser;
-	import Object;
-	import File;
-	import Lens;
-	import Interpret;
+--	import Object;
+--	import File;
+--	import Lens;
+--	import Interpret;
 	import Data.Witness;
 --	import System.Gnome.VFS;
 	import Graphics.UI.Gtk hiding (Object);

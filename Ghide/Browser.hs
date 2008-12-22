@@ -1,9 +1,12 @@
 module Browser where
 {
+	import Data.Changes;
+	import File;
 --	import Partial;
-	import Interpret;
-	import Object;
+--	import Interpret;
+--	import Object;
 	import Data.Witness;
+	import System.Glib.StoreValue;
 --	import System.Gnome.VFS;
 --	import System.Gnome.VFS.Types;
 	import Graphics.UI.Gtk hiding (Object);
@@ -16,7 +19,7 @@ module Browser where
 	import Data.ByteString hiding (putStrLn);
 	import Prelude hiding (read);
 	
-	type Selection = [AnyObject];
+	type Selection context = [Any (Object context)];
 	
 	data Browser = forall w. (WidgetClass w) => MkBrowser
 	{
