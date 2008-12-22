@@ -20,6 +20,7 @@ extensions:
 	RankNTypes
 	ScopedTypeVariables
 exposed-modules:
+	Control.Concurrent.STM.TLock
 	Data.Store
 	Data.TypeFunc
 	Data.Codec

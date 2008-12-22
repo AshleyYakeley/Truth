@@ -2,6 +2,7 @@ module Data.Changes.Object where
 {
 	import Data.Changes.Edit;
 	import Data.Store;
+	import Control.Concurrent.STM.TLock;
 	import Control.Concurrent.STM;
 	import Data.Traversable;
 	
@@ -47,101 +48,33 @@ module Data.Changes.Object where
 		return success;
 	};
 
-	{-
-	modifyTVar :: TVar a -> (a -> a) -> STM ();
-	modifyTVar tv mp = do
-	{
-		a <- readTVar tv;
-		writeTVar tv (mp a);
-	};
-	
-	writeListTChan :: TChan a -> [a] -> STM ();
-	writeListTChan _ [] = return ();
-	writeListTChan chan (a:as) = do
-	{
-		writeTChan chan a;
-		writeListTChan chan as;
-	};
-	
-	stmMaybe :: STM a -> STM (Maybe a);
-	stmMaybe ma = orElse (do
-	{
-		a <- ma;
-		return (Just a);
-	}) (return Nothing);
-	
-	readMaybeTChan :: TChan a -> STM (Maybe a);
-	readMaybeTChan chan = stmMaybe (readTChan chan);
-	
-	collectStream :: (Monad m) => m (Maybe a) -> m [a];
-	collectStream mma = do
-	{
-		ma <- mma;
-		case ma of
-		{
-			(Just a) -> do
-			{
-				as <- collectStream mma;
-				return (a:as);
-			};
-			_ -> return [];
-		};
-	};
-	
-	readListTChan :: TChan a -> STM [a];
-	readListTChan chan = collectStream (readMaybeTChan chan);
--}
-
-	lockTVar :: TVar Bool -> STM a -> STM a;
-	lockTVar lock action = do
-	{
-		locked <- readTVar lock;
-		if locked
-		 then retry
-		 else do
-		{
-			a <- action;
-			writeTVar lock True;
-			return a;
-		};
-	};
-
-	unlockTVar :: TVar Bool -> STM a -> STM a;
-	unlockTVar lock action = do
-	{
-		writeTVar lock False;
-		action;
-	};
-
 	makeFreeObject :: context -> a -> IO (Object context a);
 	makeFreeObject context initial = do
 	{
 		stateVar <- newTVarIO initial;
 		updatesVar <- newTVarIO emptyStore;
-		lockVar <- newTVarIO False;
+		lock <- newTLockIO;
 		return MkObject
 		{
 			objContext = context,
 
 			subscribe = \initialise updater -> do
 			{
-				a <- atomically (lockTVar lockVar (readTVar stateVar));
-				r <- initialise a;
-				key <- atomically (unlockTVar lockVar (do
+				(r,key) <- withTLock lock (readTVar stateVar) initialise (\r -> do
 				{
 					store <- readTVar updatesVar;
 					let {(key,newstore) = addStore (updater r) store;};
 					writeTVar updatesVar newstore;
-					return key;
-				}));
+					return (r,key);
+				});
 				return (r,MkSubscription
 				{
-					subPush = \edit -> return (Just (do
-					{
-						updaters <- atomically (lockTVar lockVar (fmap allStore (readTVar updatesVar)));
-						forM updaters (\u -> u edit);
-						atomically (unlockTVar lockVar (return ()));
-					})),
+					subPush = \edit -> return (Just (
+					 withTLock lock 
+					  (fmap allStore (readTVar updatesVar)) 
+					  (\updaters -> forM updaters (\u -> u edit))
+					  (\_ -> return ())
+					)),
 					subClose = atomically (do
 					{
 						store <- readTVar updatesVar;
@@ -191,5 +124,4 @@ module Data.Changes.Object where
 			});
 		}
 	};
-	
 }
