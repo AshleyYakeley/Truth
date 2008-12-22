@@ -10,4 +10,10 @@ Test: Test.hs
 	diff -u $^
 
 run: Test.diff
+	@echo "Success!"
 
+clean:
+	rm -f *.out Test
+
+# switch off intermediate file deletion
+.SECONDARY:

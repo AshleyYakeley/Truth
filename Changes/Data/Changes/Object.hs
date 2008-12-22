@@ -71,7 +71,12 @@ module Data.Changes.Object where
 				{
 					subPush = \edit -> return (Just (
 					 withTLock lock 
-					  (fmap allStore (readTVar updatesVar)) 
+					  (do
+					  {
+					  	a <- readTVar stateVar;
+					  	writeTVar stateVar (applyEdit edit a); 
+					  	fmap allStore (readTVar updatesVar);
+					  })
 					  (\updaters -> forM updaters (\u -> u edit))
 					  (\_ -> return ())
 					)),

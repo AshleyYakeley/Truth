@@ -1,1 +1,10 @@
 Test
+main: initial "abcdef"
+Examining
+pushing
+main: edit: replace "pqrstu"
+main: update: "pqrstu"
+pushed
+copy: initial "pqrstu"
+sect: initial "rs"
+End
