@@ -1,0 +1,21 @@
+name:	Changes-Linux
+version: 0.1
+build-depends:
+	Changes==0.1,
+	hinotify>=0.2,
+	bytestring>=0.9.1.4,
+	base>=4.0
+build-type:	Simple
+
+extensions:
+	TypeFamilies
+	EmptyDataDecls
+	UndecidableInstances
+	FunctionalDependencies
+	ForeignFunctionInterface
+	GADTs
+	RankNTypes
+	ScopedTypeVariables
+exposed-modules:
+	Data.Changes.File.Linux
+other-modules:
