@@ -5,6 +5,51 @@ pushing
 main: edit: replace "pqrstu"
 main: update: "pqrstu"
 pushed
-copy: initial "pqrstu"
+current: "pqrstu"
 sect: initial "rs"
+Examining
+pushing
+main: edit: lens
+main: update: "pq12tu"
+sect: edit: lens
+sect: update: "12"
+pushed
+sect: "12"
+main: "pq12tu"
+Examining
+pushing
+main: edit: lens
+main: update: "pqxtu"
+sect: edit: lens
+sect: update: "x"
+pushed
+sect: "x"
+main: "pqxtu"
+Examining
+pushing
+main: edit: lens
+main: update: "pqABCtu"
+sect: edit: lens
+sect: update: "ABC"
+pushed
+sect: "ABC"
+main: "pqABCtu"
+Examining
+pushing
+main: edit: lens
+main: update: "pqtu"
+sect: edit: lens
+sect: update: ""
+pushed
+sect: ""
+main: "pqtu"
+Examining
+pushing
+main: edit: lens
+main: update: "pqZUMtu"
+sect: edit: lens
+sect: update: "ZUM"
+pushed
+sect: "ZUM"
+main: "pqZUMtu"
 End

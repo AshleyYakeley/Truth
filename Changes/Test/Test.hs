@@ -7,6 +7,12 @@ module Main where
 	showEdit (ReplaceEdit s) = "replace " ++ (show s);
 	showEdit _ = "lens";
 	
+	showObject :: (Show a) => String -> Object context a -> IO ();
+	showObject name obj = do
+	{
+		a <- readObject obj;
+		putStrLn (name ++ ": " ++ (show a));
+	};
 	
 	makeShowSubscription :: (Show a) => String -> Object context a -> IO (Subscription a);
 	makeShowSubscription name obj = do
@@ -53,11 +59,30 @@ module Main where
 		sub <- makeShowSubscription "main" obj;
 		showPushEdit sub (ReplaceEdit "pqrstu");
 		
-		sub2 <- makeShowSubscription "copy" obj;
+		showObject "current" obj;
 		
 		let {sectobj = lensObject listSection (\_ -> return (2,2)) obj;};
 		sectsub <- makeShowSubscription "sect" sectobj;		
 		
+		showPushEdit sectsub (ReplaceEdit "12");
+		showObject "sect" sectobj;
+		showObject "main" obj;
+		
+		showPushEdit sectsub (ReplaceEdit "x");
+		showObject "sect" sectobj;
+		showObject "main" obj;
+		
+		showPushEdit sectsub (ReplaceEdit "ABC");
+		showObject "sect" sectobj;
+		showObject "main" obj;
+		
+		showPushEdit sectsub (ReplaceEdit "");
+		showObject "sect" sectobj;
+		showObject "main" obj;
+		
+		showPushEdit sectsub (ReplaceEdit "ZUM");
+		showObject "sect" sectobj;
+		showObject "main" obj;
 		
 		subClose sub;
 		subClose sectsub;
