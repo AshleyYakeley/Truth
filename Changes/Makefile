@@ -17,6 +17,9 @@ haddock: configure
 install: build haddock
 	cabal install --user
 
+test: install
+	cd Test && make
+
 # switch off intermediate file deletion
 .SECONDARY:
 
