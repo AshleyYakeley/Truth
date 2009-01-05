@@ -1,0 +1,15 @@
+Test
+initINotify
+somefile: initial Just "ABCD\n"
+writing & waiting 100ms
+somefile: edit: replace Just "EFGH\n"
+somefile: update: Just "EFGH\n"
+writing & waiting 100ms
+somefile: edit: replace Just "IJK\n"
+somefile: update: Just "IJK\n"
+Examining
+pushing
+somefile: edit: replace Just "pqrstu"
+somefile: update: Just "pqrstu"
+pushed
+End

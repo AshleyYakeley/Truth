@@ -2,14 +2,16 @@ module Data.Changes.Object where
 {
 	import Data.Changes.Edit;
 	import Data.Store;
-	import Control.Concurrent.STM.TLock;
 	import Control.Concurrent.STM;
+	import Control.Concurrent.MVar;
+	import Data.IORef;
 	import Data.Traversable;
 	
 	data Subscription a = MkSubscription
 	{
 		-- change the object. Returned result is Nothing if the changes are impossible. 
 		-- If it's possible, action to change the object.
+		-- updates will be received before this action returns
 		subPush :: Edit a -> IO (Maybe (IO ())),
 		
 		-- close the subscription
@@ -51,40 +53,33 @@ module Data.Changes.Object where
 	makeFreeObject :: context -> a -> IO (Object context a);
 	makeFreeObject context initial = do
 	{
-		stateVar <- newTVarIO initial;
-		updatesVar <- newTVarIO emptyStore;
-		lock <- newTLockIO;
+		updatesVar <- newMVar emptyStore;
+		stateVar <- newIORef initial; -- this IORef is always protected by updatesVar
 		return MkObject
 		{
 			objContext = context,
 
 			subscribe = \initialise updater -> do
 			{
-				(r,key) <- withTLock lock (readTVar stateVar) initialise (\r -> do
+				(r,key) <- modifyMVar updatesVar (\store -> do
 				{
-					store <- readTVar updatesVar;
+					a <- readIORef stateVar;
+					r <- initialise a;
 					let {(key,newstore) = addStore (updater r) store;};
-					writeTVar updatesVar newstore;
-					return (r,key);
+					return (newstore,(r,key));
 				});
 				return (r,MkSubscription
 				{
 					subPush = \edit -> return (Just (
-					 withTLock lock 
-					  (do
-					  {
-					  	a <- readTVar stateVar;
-					  	writeTVar stateVar (applyEdit edit a); 
-					  	fmap allStore (readTVar updatesVar);
-					  })
-					  (\updaters -> forM updaters (\u -> u edit))
-					  (\_ -> return ())
+					 withMVar updatesVar (\store -> do
+					 {
+					 	a <- readIORef stateVar;
+						writeIORef stateVar (applyEdit edit a); 
+						forM (allStore store) (\u -> u edit);
+						return ();
+					 })
 					)),
-					subClose = atomically (do
-					{
-						store <- readTVar updatesVar;
-						writeTVar updatesVar (deleteStore key store);					
-					})
+					subClose = modifyMVar_ updatesVar (\store -> return (deleteStore key store))
 				});
 			}
 		};

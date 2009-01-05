@@ -2,8 +2,10 @@ name:	Changes-Linux
 version: 0.1
 build-depends:
 	Changes==0.1,
-	hinotify>=0.2,
+	hinotify>=0.3,
 	bytestring>=0.9.1.4,
+	unix>=2.3.1.0,
+	containers>=0.2.0.0,
 	base>=4.0
 build-type:	Simple
 
@@ -19,3 +21,4 @@ extensions:
 exposed-modules:
 	Data.Changes.File.Linux
 other-modules:
+	System.INotify.Balanced

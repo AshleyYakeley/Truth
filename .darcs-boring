@@ -34,8 +34,5 @@
 (^|/)Thumbs\.db$
 (^|/)autom4te\.cache($|/)
 ^\.setup-config$
-^dist($|/)
-^Changes/dist($|/)
-^GnomeVFS\.h$
-^GnomeVFS\.hs$
+(^|/)dist($|/)
 \.chi$
