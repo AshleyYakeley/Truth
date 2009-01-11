@@ -19,6 +19,7 @@ extensions:
 	GADTs
 	RankNTypes
 	ScopedTypeVariables
+	PatternGuards
 exposed-modules:
 	Data.Store
 	Data.TypeFunc
