@@ -6,6 +6,10 @@ module Data.Changes.Edit where
 	import Control.Category;
 	import Prelude hiding (id,(.));
 
+	type LensWitness = TFWitness (TFComposite IOWitness);
+	makeLensWitness :: IOWitness tf -> LensWitness x (TF tf x);
+	makeLensWitness wit = MkTFWitness (ConstTFComposite wit);
+
 	class (Functor f) => FunctorOne f where
 	{
 		retrieveOne :: f a -> Either (f b) a;
@@ -52,7 +56,7 @@ module Data.Changes.Edit where
 			Left _ -> Nothing;
 			Right oldb -> fmap FunctorOneEdit (invertEdit oldb editb);
 		};
-	};	
+	};
 	
 	applyEdit :: Edit a -> a -> a;
 	applyEdit edit olda = fst (applyAndInvertEdit olda edit);
@@ -73,8 +77,8 @@ module Data.Changes.Edit where
 	
 	data StateLens state a b = MkStateLens
 	{
-		slensWitness :: TFWitness IOWitness a b,
-		slensStateWitness :: TFWitness IOWitness a state,
+		slensWitness :: LensWitness a b,
+		slensStateWitness :: LensWitness a state,
 		slensUpdate :: a -> Edit a -> state -> (state,Maybe (Edit b)),
 		slensGet :: state -> a -> b,
 		slensPutback :: state -> b -> a -> Maybe (a,state)
@@ -83,8 +87,20 @@ module Data.Changes.Edit where
 	functorOneLens :: forall f state a b. (FunctorOne f) => StateLens state a b -> StateLens state (f a) (f b);
 	functorOneLens lens = MkStateLens
 	{
-		slensWitness = undefined,
-		slensStateWitness = undefined,
+		slensWitness = let
+		{
+			tfc = ConstTFComposite (unsafeIOWitnessFromString "Data.Changes.Edit.functorOne" :: IOWitness (TFApply TFMap));
+
+			ff :: LensWitness x y -> LensWitness (f x) (f y);
+			ff (MkTFWitness tc) = MkTFWitness (ApplyTFComposite tfc tc);
+		} in ff (slensWitness lens),
+		slensStateWitness = let
+		{
+			tfc = ConstTFComposite (unsafeIOWitnessFromString "Data.Changes.Edit.functorOneState" :: IOWitness (TFConverse TFB TFMatch));
+
+			ff :: LensWitness x state -> LensWitness (f x) state;
+			ff (MkTFWitness tc) = MkTFWitness (ApplyTFComposite tfc tc);
+		} in ff (slensStateWitness lens),
 		slensUpdate = update,
 		slensGet = get,
 		slensPutback = putback
@@ -118,14 +134,14 @@ module Data.Changes.Edit where
 
 	data SimpleLens a b = MkSimpleLens
 	{
-		simpleLensWitness :: TFWitness IOWitness a b,
+		simpleLensWitness :: LensWitness a b,
 		simpleLensUpdate :: a -> Edit a -> Maybe (Edit b),
 		simpleLensGet :: a -> b,
 		simpleLensPutback :: b -> a -> Maybe a
 	};
 	
-	voidStateWitness :: TFWitness IOWitness a ();
-	voidStateWitness = MkTFWitness (unsafeIOWitnessFromString "Data.Changes.Edit.void.state" :: IOWitness (TFConst ()));
+	voidStateWitness :: LensWitness a ();
+	voidStateWitness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.Edit.void.state" :: IOWitness (TFConst ()));
 	
 	simpleStateLens :: SimpleLens a b -> StateLens () a b;
 	simpleStateLens lens = MkStateLens
@@ -137,7 +153,7 @@ module Data.Changes.Edit where
 		slensPutback = \_ b a -> fmap (\newa -> (newa,())) (simpleLensPutback lens b a)
 	};
 	
-	codecSimpleLens :: TFWitness IOWitness a (Maybe b) -> Codec a b -> SimpleLens a (Maybe b);
+	codecSimpleLens :: LensWitness a (Maybe b) -> Codec a b -> SimpleLens a (Maybe b);
 	codecSimpleLens wit codec = MkSimpleLens
 	{
 		simpleLensWitness = wit,

@@ -21,11 +21,11 @@ module Data.Changes.List where
 		} in Just (before ++ newmiddle ++ after,(start,length newmiddle))
 	} where
 	{
-		sectionWitness :: TFWitness IOWitness [e] [e];
-		sectionWitness = MkTFWitness (unsafeIOWitnessFromString "Data.Changes.List.listSection" :: IOWitness TFIdentity);
+		sectionWitness :: LensWitness [e] [e];
+		sectionWitness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.List.listSection" :: IOWitness TFIdentity);
 
-		sectionStateWitness :: TFWitness IOWitness [e] (Int,Int);
-		sectionStateWitness = MkTFWitness (unsafeIOWitnessFromString "Data.Changes.List.listSection.state" :: IOWitness (TFConst (Int,Int)));
+		sectionStateWitness :: LensWitness [e] (Int,Int);
+		sectionStateWitness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.List.listSection.state" :: IOWitness (TFConst (Int,Int)));
 	
 		sectionUpdate :: [e] -> Edit [e] -> (Int,Int) -> ((Int,Int),Maybe (Edit [e]));
 		sectionUpdate olda edita state = 
