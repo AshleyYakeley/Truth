@@ -1,5 +1,6 @@
 module Data.Codec where
 {
+	import Data.Bijection;
 	import Control.Category;
 	import Data.Traversable;
 	import Prelude hiding (id,(.));
@@ -16,6 +17,9 @@ module Data.Codec where
 		id = MkCodec Just id;
 		(MkCodec bmc cb) . (MkCodec amb ba) = MkCodec (\a -> (amb a) >>= bmc) (ba . cb);
 	};
+	
+	bijectionCodec :: Bijection a b -> Codec a b;
+	bijectionCodec (MkBijection p q) = MkCodec (Just . p) q;
 	
 	traversableCodec :: (Traversable f) => Codec a b -> Codec (f a) (f b);
 	traversableCodec codec = MkCodec

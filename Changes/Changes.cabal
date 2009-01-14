@@ -24,6 +24,7 @@ extensions:
 exposed-modules:
 	Data.Store
 	Data.TypeFunc
+	Data.Bijection
 	Data.Codec
 	Data.Changes
 other-modules:

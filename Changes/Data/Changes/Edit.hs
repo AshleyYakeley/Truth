@@ -29,6 +29,11 @@ module Data.Changes.Edit where
 		retrieveOne (Left a) = Left (Left a);
 	};
 
+	instance FunctorOne ((,) p) where
+	{
+		retrieveOne (_,a) = Right a;
+	};
+
 	data Edit a where
 	{
 		ReplaceEdit :: a -> Edit a;
