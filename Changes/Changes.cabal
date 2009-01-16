@@ -21,7 +21,9 @@ extensions:
 	RankNTypes
 	ScopedTypeVariables
 	PatternGuards
+	ImpredicativeTypes
 exposed-modules:
+	Data.Result
 	Data.FunctorOne
 	Data.Store
 	Data.TypeFunc
