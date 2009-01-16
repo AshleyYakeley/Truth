@@ -4,48 +4,44 @@ module Data.Changes.Object where
 	import Data.Store;
 	import Control.Concurrent.STM;
 	import Control.Concurrent.MVar;
-	import Data.IORef;
 	import Data.Traversable;
 	
-	data Subscription a = MkSubscription
+	data Subscription token a = MkSubscription
 	{
-		-- change the object. Returned result is Nothing if the changes are impossible. 
-		-- If it's possible, action to change the object.
-		-- updates will be received before this action returns
-		subPush :: Edit a -> IO (Maybe (IO ())),
+		-- change the object.
+		-- returns Nothing if not synchronised.
+		-- returns Just Nothing if change is not allowed
+		-- returns Just (Just ()) if change succeeded, and updates will be received before this action returns
+		subPush :: token -> Edit a -> IO (Maybe (Maybe ())),
 		
 		-- close the subscription
 		subClose :: IO ()
 	};
 	
-	data Object context a = MkObject
+	data Object context a = forall token. MkObject
 	{
 		objContext :: context,
-		subscribe :: forall r. (a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription a)
+		objSubscribe :: forall r. (a -> IO r) -> (r -> token -> Edit a -> IO ()) -> IO (r, token, Subscription token a)
 	};
 	
 	readObject :: Object context a -> IO a;
-	readObject obj = do
+	readObject (MkObject _ subscribe) = do
 	{
-		(a,sub) <- subscribe obj return (\_ _ -> return ());
+		(a,_,sub) <- subscribe return (\_ _ _ -> return ());
 		subClose sub;
 		return a;
 	};
 
 	writeObject :: a -> Object context a -> IO Bool;
-	writeObject a obj = do
+	writeObject a (MkObject _ subscribe) = do
 	{
-		(_,sub) <- subscribe obj return (\_ _ -> return ());
-		mpush <- subPush sub (ReplaceEdit a);
-		success <- case mpush of
+		(_,token,sub) <- subscribe return (\_ _ _ -> return ());
+		mpush <- subPush sub token (ReplaceEdit a);
+		success <- return (case mpush of
 		{
-			Just push -> do
-			{
-				push;
-				return True;
-			};
-			_ -> return False;
-		};
+			Just (Just ()) -> True;
+			_ -> False;
+		});
 		subClose sub;
 		return success;
 	};
@@ -53,51 +49,54 @@ module Data.Changes.Object where
 	makeFreeObject :: context -> a -> IO (Object context a);
 	makeFreeObject context initial = do
 	{
-		updatesVar <- newMVar emptyStore;
-		stateVar <- newIORef initial; -- this IORef is always protected by updatesVar
+		stateVar <- newMVar (emptyStore,initial,0 :: Integer);
 		return MkObject
 		{
 			objContext = context,
 
-			subscribe = \initialise updater -> do
+			objSubscribe = \initialise updater -> do
 			{
-				(r,key) <- modifyMVar updatesVar (\store -> do
+				(r,key) <- modifyMVar stateVar (\(store,a,token) -> do
 				{
-					a <- readIORef stateVar;
 					r <- initialise a;
 					let {(key,newstore) = addStore (updater r) store;};
-					return (newstore,(r,key));
+					return ((newstore,a,token),(r,key));
 				});
-				return (r,MkSubscription
+				return (r,0 :: Integer,MkSubscription
 				{
-					subPush = \edit -> return (Just (
-					 withMVar updatesVar (\store -> do
-					 {
-					 	a <- readIORef stateVar;
-						writeIORef stateVar (applyEdit edit a); 
-						forM (allStore store) (\u -> u edit);
-						return ();
-					 })
-					)),
-					subClose = modifyMVar_ updatesVar (\store -> return (deleteStore key store))
+					subPush = \edittoken edit -> modifyMVar stateVar (\(store,a,token) -> do
+					{
+						if edittoken == token then let
+						{
+							token' = token + 1;
+							a' = applyEdit edit a;
+						}
+						in do
+						{
+							forM (allStore store) (\u -> u token' edit);
+							return ((store,a',token'),Just (Just ()));
+						}
+						else return ((store,a,token),Nothing);
+					}),
+					subClose = modifyMVar_ stateVar (\(store,a,token) -> return (deleteStore key store,a,token))
 				});
 			}
 		};
 	};
 
 	lensObject :: (Eq state) => StateLens state a b -> (a -> IO state) -> Object context a -> Object context b;
-	lensObject lens getstate obj = MkObject
+	lensObject lens getstate (MkObject context subscribe) = MkObject
 	{
-		objContext = objContext obj,
-		subscribe = \initialise updater -> do
+		objContext = context,
+		objSubscribe = \initialise updater -> do
 		{
-			((var,r),sub) <- subscribe obj (\a -> do
+			((var,r),token,sub) <- subscribe (\a -> do
 			{
 				state <- getstate a;
 				r <- initialise (slensGet lens state a);
 				var <- newTVarIO (a,state);
 				return (var,r);
-			}) (\(var,r) edita -> do
+			}) (\(var,r) token edita -> do
 			{
 				meditb <- atomically (do
 				{
@@ -109,16 +108,16 @@ module Data.Changes.Object where
 				});
 				case meditb of
 				{
-					Just editb -> updater r editb;
+					Just editb -> updater r token editb;
 					_ -> return ();
 				}
 			});
-			return (r,MkSubscription
+			return (r,token,MkSubscription
 			{
-				subPush = \edit -> do
+				subPush = \token' edit -> do
 				{
 					(_,state) <- atomically (readTVar var);
-					subPush sub (StateLensEdit lens state edit);
+					subPush sub token' (StateLensEdit lens state edit);
 				},
 				subClose = subClose sub
 			});
