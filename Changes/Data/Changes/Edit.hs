@@ -2,6 +2,7 @@ module Data.Changes.Edit where
 {
 	import Data.Codec;
 	import Data.TypeFunc;
+	import Data.FunctorOne;
 	import Data.OpenWitness;
 	import Control.Category;
 	import Prelude hiding (id,(.));
@@ -9,30 +10,6 @@ module Data.Changes.Edit where
 	type LensWitness = TFWitness (TFComposite IOWitness);
 	makeLensWitness :: IOWitness tf -> LensWitness x (TF tf x);
 	makeLensWitness wit = MkTFWitness (ConstTFComposite wit);
-
-	class (Functor f) => FunctorOne f where
-	{
-		retrieveOne :: f a -> Either (f b) a;
-	};
-	-- retrieveOne (fmap f w) = fmap f (retrieveOne w)
-	-- case (retrieveOne w) of {Left w' -> fmap f w';Right a -> fmap (\_ -> a) w;} = w
-
-	instance FunctorOne Maybe where
-	{
-		retrieveOne (Just a) = Right a;
-		retrieveOne Nothing = Left Nothing;
-	};
-	
-	instance FunctorOne (Either a) where
-	{
-		retrieveOne (Right b) = Right b;
-		retrieveOne (Left a) = Left (Left a);
-	};
-
-	instance FunctorOne ((,) p) where
-	{
-		retrieveOne (_,a) = Right a;
-	};
 
 	data Edit a where
 	{

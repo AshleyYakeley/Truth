@@ -22,6 +22,7 @@ extensions:
 	ScopedTypeVariables
 	PatternGuards
 exposed-modules:
+	Data.FunctorOne
 	Data.Store
 	Data.TypeFunc
 	Data.Bijection
