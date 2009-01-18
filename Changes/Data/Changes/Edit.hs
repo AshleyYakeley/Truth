@@ -1,5 +1,6 @@
 module Data.Changes.Edit where
 {
+	import Data.Bijection;
 	import Data.Codec;
 	import Data.TypeFunc;
 	import Data.FunctorOne;
@@ -142,5 +143,14 @@ module Data.Changes.Edit where
 		fixedLensUpdate = \a edit -> Just (ReplaceEdit (decode codec (applyEdit edit a))),
 		fixedLensGet = decode codec,
 		fixedLensPutback = \mb _ -> fmap (encode codec) mb
+	};
+	
+	bijectionFixedLens :: LensWitness a b -> Bijection a b -> FixedLens a b;
+	bijectionFixedLens wit bi = MkFixedLens
+	{
+		fixedLensWitness = wit,
+		fixedLensUpdate = \a edit -> Just (ReplaceEdit (biForwards bi (applyEdit edit a))),
+		fixedLensGet = biForwards bi,
+		fixedLensPutback = \b _ -> Just (biBackwards bi b)
 	};
 }
