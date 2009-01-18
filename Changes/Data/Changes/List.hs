@@ -7,14 +7,14 @@ module Data.Changes.List where
 	import Data.TypeFunc;
 	import Prelude hiding (id,(.));
 
-	listSection :: forall e. StateLens (Int,Int) [e] [e];
-	listSection = MkStateLens
+	listSection :: forall e. FloatingLens (Int,Int) [e] [e];
+	listSection = MkFloatingLens
 	{
-		slensWitness = sectionWitness,
-		slensStateWitness = sectionStateWitness,
-		slensUpdate = sectionUpdate,
-		slensGet = \(start,len) list -> take len (drop start list),
-		slensPutback = \(start,len) newmiddle list -> let
+		lensWitness = sectionWitness,
+		lensStateWitness = sectionStateWitness,
+		lensUpdate = sectionUpdate,
+		lensGet = \(start,len) list -> take len (drop start list),
+		lensPutback = \(start,len) newmiddle list -> let
 		{
 			(before,rest) = splitAt start list;
 			(_,after) = splitAt len rest;
@@ -29,7 +29,7 @@ module Data.Changes.List where
 	
 		sectionUpdate :: [e] -> Edit [e] -> (Int,Int) -> ((Int,Int),Maybe (Edit [e]));
 		sectionUpdate olda edita state = 
-		  fromMaybe (state,Just (ReplaceEdit (slensGet listSection state (applyEdit edita olda)))) update_ where
+		  fromMaybe (state,Just (ReplaceEdit (lensGet listSection state (applyEdit edita olda)))) update_ where
 		{
 		{-
 			toNatural :: Int -> Either Int Int;
@@ -60,11 +60,11 @@ module Data.Changes.List where
 			{
 				StateLensEdit editlens editlensstate editbedit -> do
 				{
-					MkEqualType <- matchTWitness (Type :: Type [e]) sectionWitness (slensWitness editlens);
-					MkEqualType <- matchWitness sectionStateWitness (slensStateWitness editlens);
+					MkEqualType <- matchTWitness (Type :: Type [e]) sectionWitness (lensWitness editlens);
+					MkEqualType <- matchWitness sectionStateWitness (lensStateWitness editlens);
 					let
 					{
-						oldb = slensGet editlens editlensstate olda;
+						oldb = lensGet editlens editlensstate olda;
 						newb = applyEdit editbedit oldb;
 						newlen = length newb;
 						(newstate,mclip) = updateSection state editlensstate newlen;

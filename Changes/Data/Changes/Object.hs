@@ -106,7 +106,7 @@ module Data.Changes.Object where
 		};
 	};
 
-	lensObject :: (Eq state) => StateLens state a b -> (a -> IO state) -> Object context a -> Object context b;
+	lensObject :: (Eq state) => FloatingLens state a b -> (a -> IO state) -> Object context a -> Object context b;
 	lensObject lens getstate (MkObject context subscribe) = MkObject
 	{
 		objContext = context,
@@ -115,7 +115,7 @@ module Data.Changes.Object where
 			mstuff <- subscribe (\a -> do
 			{
 				state <- getstate a;
-				r <- initialise (slensGet lens state a);
+				r <- initialise (lensGet lens state a);
 				var <- newTVarIO (a,state);
 				return (var,r);
 			}) (\(var,r) token edita -> do
@@ -123,7 +123,7 @@ module Data.Changes.Object where
 				meditb <- atomically (do
 				{
 					(olda,oldstate) <- readTVar var;
-					(newstate,meditb) <- return (slensUpdate lens olda edita oldstate);
+					(newstate,meditb) <- return (lensUpdate lens olda edita oldstate);
 					newa <- return (applyEdit edita olda);
 					writeTVar var (newa,newstate);
 					return meditb;
