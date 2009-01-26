@@ -1,7 +1,7 @@
 name:	Changes
 version: 0.1
 build-depends:
-	base>=2.0,
+	base>=4.0,
 	containers>=0.2,
 	stm>=2.0,
 	Cabal>=1.1.6,
@@ -22,7 +22,10 @@ extensions:
 	ScopedTypeVariables
 	PatternGuards
 	ImpredicativeTypes
+	ImplicitParams
+	GeneralizedNewtypeDeriving
 exposed-modules:
+	Control.Wait
 	Data.Result
 	Data.FunctorOne
 	Data.Store

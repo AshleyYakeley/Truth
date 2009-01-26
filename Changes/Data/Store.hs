@@ -1,11 +1,15 @@
 module Data.Store where
 {
 	import Data.IntMap;
+	import Prelude hiding (null);
 
 	data Store a = MkStore Int (IntMap a);
 
 	emptyStore :: Store a;
 	emptyStore = MkStore 0 empty;
+	
+	isEmptyStore :: Store a -> Bool;
+	isEmptyStore (MkStore _ mp) = null mp;
 	
 	addStore :: a -> Store a -> (Int,Store a);
 	addStore a (MkStore i mp) = (i,MkStore (i+1) (insert i a mp));

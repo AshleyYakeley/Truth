@@ -8,7 +8,7 @@ module Data.FunctorOne where
 		retrieveOne :: f a -> Either (forall b. f b) a;
 	};
 	-- retrieveOne (fmap f w) = fmap f (retrieveOne w)
-	-- case (retrieveOne w) of {Left w' -> fmap f w';Right a -> fmap (\_ -> a) w;} = w
+	-- case (retrieveOne w) of {Left w' -> w';Right a -> fmap (\_ -> a) w;} = w
 
 	instance FunctorOne Maybe where
 	{

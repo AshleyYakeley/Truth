@@ -13,7 +13,7 @@ run: Test.diff
 	@echo "Success!"
 
 clean:
-	rm -f *.out Test
+	rm -f *.o *.hi *.out Test
 
 # switch off intermediate file deletion
 .SECONDARY:

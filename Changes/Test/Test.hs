@@ -11,15 +11,11 @@ module Main where
 	showObject :: (Show a) => String -> Object context a -> IO ();
 	showObject name obj = do
 	{
-		ma <- readObject obj;
-		putStrLn (name ++ ": " ++ (case ma of
-		{
-			Just a -> show a;
-			_ -> "unsync";
-		}));
+		a <- readObject obj;
+		putStrLn (name ++ ": " ++ (show a));
 	};
 
-	withShowSubscription :: (Show a) => Object context a -> String -> ((Edit a -> IO (Maybe (Maybe ()))) -> IO (Maybe b)) -> IO (Maybe b);
+	withShowSubscription :: (Show a) => Object context a -> String -> (Object context a -> (Edit a -> IO (Maybe (Maybe ()))) -> IO (Maybe b)) -> IO (Maybe b);
 	withShowSubscription object name f = withSubscription object (MkEditor_
 	{
 		editorInit = \a -> do
@@ -35,7 +31,7 @@ module Main where
 			putStrLn (name ++ ": update: " ++ (show newa));
 			writeIORef ref (newa,Just newtoken);
 		},
-		editorDo = \ref oldtoken push -> f (\edit -> do
+		editorDo = \ref oldtoken obj push -> f obj (\edit -> do
 		{
 			putStrLn "Examining";
 			putStrLn "pushing";
@@ -55,8 +51,7 @@ module Main where
 	main = do
 	{
 		putStrLn "Test";
-		obj <- makeFreeObject () "abcdef";
-		withShowSubscription obj "main" (\push -> do
+		withShowSubscription (makeFreeObject () "abcdef") "main" (\obj push -> do
 		{
 			push (ReplaceEdit "pqrstu");
 			showObject "current" obj;
@@ -64,8 +59,7 @@ module Main where
 --			push (ReplaceEdit "PQRSTU");
 --			showObject "current" obj;
 
-			let {sectobj = lensObject listSection (\_ -> return (2,2)) obj;};
-			withShowSubscription sectobj "sect" (\pushSect -> do
+			withShowSubscription (lensObject listSection (2,2) obj) "sect" (\sectobj pushSect -> do
 			{
 				pushSect (ReplaceEdit "12");
 				showObject "sect" sectobj;
