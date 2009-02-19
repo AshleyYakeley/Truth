@@ -36,3 +36,5 @@
 ^\.setup-config$
 (^|/)dist($|/)
 \.chi$
+/Test/Test$
+/Test/.*\.out$
