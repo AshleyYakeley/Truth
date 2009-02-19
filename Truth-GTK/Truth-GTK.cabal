@@ -1,0 +1,25 @@
+name: Truth-GTK
+version: 0.1
+build-depends:
+	base>=4.0,
+	Changes==0.1
+build-type:	Simple
+
+extensions:
+	TypeFamilies
+	EmptyDataDecls
+	UndecidableInstances
+	FlexibleInstances
+	FunctionalDependencies
+	ForeignFunctionInterface
+	GADTs
+	RankNTypes
+	ScopedTypeVariables
+	PatternGuards
+	ImpredicativeTypes
+	ImplicitParams
+	GeneralizedNewtypeDeriving
+exposed-modules:
+	UI.Truth.GTK.SourceView
+other-modules:
+
