@@ -6,38 +6,6 @@ module Data.Changes.Object where
 	import Control.Exception hiding (catch);
 	import Data.Traversable;
 
-{-
-	FilePath -> Object	-- subscriptions float
-	
-	-- Subscription -> IO (a,token) -- get snapshot
-	
-	subWithLock :: Subscription -> (a -> (Edit a -> IO (Maybe ())) -> IO b) -> IO b -- use lock
-	
-	subPush :: Subscription -> token -> Edit a -> IO (Maybe (Maybe ()) -- push change
-		
-	getFloatingLensObject :: FloatingLens -> state -> Subscription -> Object
-	
-	fixedLensObject :: FixedLens -> Subscription -> Subscription
-	
-	objSubscribe :: forall r. (a -> IO r) -> (r -> token -> Edit a -> IO ()) -> IO (Maybe (r, token, Subscription token a))
-	
-	subContext :: Subscription -> IO context
-	
-	subObject :: Subscription -> Object
-	
-	type Reference = forall r. (a -> IO r) -> (r -> token -> Edit a -> IO ()) -> IO (Maybe (r, token, Subscription token a))
-	
-	\obj -> do
-	{
-		sub <- objSubscribe obj;
-		newsub1 <- getFloatingLensObject lens state sub;
-		newsub2 <- getFloatingLensObject lens state sub;
-		subPush sub token edit;
-		-- lens state in newsub1, newsub2 changed
-	}
--}
-
-
 	data Subscription context token a = MkSubscription
 	{
 		subGetContext :: IO context,
@@ -60,13 +28,13 @@ module Data.Changes.Object where
 	data Object context a = forall token. (Eq token) => MkObject
 	{
 		-- | blocks if the object is busy
-		objSubscribe :: forall r. (a -> IO r) -> (r -> token -> Edit a -> IO ()) -> IO (r, token, Subscription context token a)
+		objSubscribe :: forall r. (a -> IO r) -> (r -> token -> Maybe (Edit a) -> IO ()) -> IO (r, token, Subscription context token a)
 	};
 	
 	data Editor_ token context a b = forall r. MkEditor_
 	{
 		editorInit :: a -> IO r,
-		editorUpdate :: r -> token -> Edit a -> IO (),
+		editorUpdate :: r -> token -> Maybe (Edit a) -> IO (),
 		editorDo :: r -> token -> Object context a -> (token -> Edit a -> IO (Maybe (Maybe ()))) -> IO b
 	};
 	
@@ -108,13 +76,13 @@ module Data.Changes.Object where
 	nextToken :: IntegerToken -> IntegerToken;
 	nextToken (MkIntegerToken i) = MkIntegerToken (i + 1);
 
-	pushStore :: forall token a. Store (token -> Edit a -> IO ()) -> token -> Edit a -> IO ();
-	pushStore store token edit = forM (allStore store) (\u -> u token edit) >> return ();
+	pushStore :: forall token a. Store (token -> Maybe (Edit a) -> IO ()) -> token -> Maybe (Edit a) -> IO ();
+	pushStore store token medit = forM (allStore store) (\u -> u token medit) >> return ();
 	
 	makeFreeObject :: forall context a. context -> a -> Object context a;
 	makeFreeObject context initial = let
 	{
-		objsub :: forall r. MVar (Store (IntegerToken -> Edit a -> IO ()), a, IntegerToken) -> (a -> IO r) -> (r -> IntegerToken -> Edit a -> IO ()) -> IO (r, IntegerToken, Subscription context IntegerToken a);
+		objsub :: forall r. MVar (Store (IntegerToken -> Maybe (Edit a) -> IO ()), a, IntegerToken) -> (a -> IO r) -> (r -> IntegerToken -> Maybe (Edit a) -> IO ()) -> IO (r, IntegerToken, Subscription context IntegerToken a);
 		objsub svar = \initialise updater -> do
 		{
 			(r,key,firsttoken) <- modifyMVar svar (\(store,a,token) -> do
@@ -139,7 +107,7 @@ module Data.Changes.Object where
 					}
 					in do
 					{
-						pushStore store token' edit;
+						pushStore store token' (Just edit);
 						return ((store,a',token'),Just (Just ()));
 					}
 					else return ((store,a,token),Nothing);
@@ -161,9 +129,9 @@ module Data.Changes.Object where
 	lensObject lens firststate (MkObject subscribe) = let
 	{
 		objsub :: forall r token. (Eq token) => 
-			MVar (Store (token -> Edit b -> IO ()), state, token, a) ->
+			MVar (Store (token -> Maybe (Edit b) -> IO ()), state, token, a) ->
 			Subscription context token a ->
-			(b -> IO r) -> (r -> token -> Edit b -> IO ()) -> IO (r, token, Subscription context token b);
+			(b -> IO r) -> (r -> token -> Maybe (Edit b) -> IO ()) -> IO (r, token, Subscription context token b);
 		objsub var sub = \initialise updater -> do
 		{
 			(r,firsttoken,key) <- modifyMVar var (\(store,state,token,a) -> do
@@ -213,17 +181,17 @@ module Data.Changes.Object where
 				var <- newEmptyMVar;
 				return (var,a);
 			}) 
-			 (\(var,_) token edita -> modifyMVar_ var (\(store,oldstate,_,olda) -> let
+			 (\(var,_) token medita -> modifyMVar_ var (\(store,oldstate,_,olda) -> let
 			{
-				(newstate,meditb) = lensUpdate lens olda edita oldstate;
+				(newa,(newstate,meditb)) = case medita of
+				{
+					Just edita -> (applyEdit edita olda,lensUpdate lens olda edita oldstate);
+					_ -> (olda,(oldstate,Nothing));
+				};
 			} in do
 			{
-				case meditb of
-				{
-					Just editb -> pushStore store token editb;
-					_ -> return ();
-				};
-				return (store,newstate,token,applyEdit edita olda);
+				pushStore store token meditb;
+				return (store,newstate,token,newa);
 			}));
 			putMVar var (emptyStore,firststate,firsttoken,firsta);
 			

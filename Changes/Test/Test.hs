@@ -23,13 +23,21 @@ module Main where
 			putStrLn (name ++ ": initial " ++ (show a));
 			newIORef (a,Nothing);
 		},
-		editorUpdate = \ref newtoken edit -> do
+		editorUpdate = \ref newtoken medit -> case medit of
 		{
-			putStrLn (name ++ ": edit: " ++ (showEdit edit));
-			(olda,_) <- readIORef ref;
-			let {newa = applyEdit edit olda;};
-			putStrLn (name ++ ": update: " ++ (show newa));
-			writeIORef ref (newa,Just newtoken);
+			Just edit -> do
+			{
+				putStrLn (name ++ ": edit: " ++ (showEdit edit));
+				(olda,_) <- readIORef ref;
+				let {newa = applyEdit edit olda;};
+				putStrLn (name ++ ": update: " ++ (show newa));
+				writeIORef ref (newa,Just newtoken);
+			};
+			_ -> do
+			{
+				(a,_) <- readIORef ref;
+				writeIORef ref (a,Just newtoken);
+			};
 		},
 		editorDo = \ref oldtoken obj push -> f obj (\edit -> do
 		{
@@ -65,23 +73,40 @@ module Main where
 				showObject "sect" sectobj;
 				showObject "main" obj;
 		
-				pushSect (ReplaceEdit "x");
-				showObject "sect" sectobj;
-				showObject "main" obj;
-		
-				pushSect (ReplaceEdit "ABC");
-				showObject "sect" sectobj;
-				showObject "main" obj;
-		
-				pushSect (ReplaceEdit "");
-				showObject "sect" sectobj;
-				showObject "main" obj;
-		
-				pushSect (ReplaceEdit "ZUM");
-				showObject "sect" sectobj;
-				showObject "main" obj;
+				withShowSubscription (lensObject listElement 4 obj) "elem" (\elemobj pushElem -> do
+				{		
+					--pushElem (ReplaceEdit (Just 'p'));
+					--showObject "elem" elemobj;
+					--showObject "sect" sectobj;
+					--showObject "main" obj;
 
-				return (Just ());
+					pushSect (ReplaceEdit "x");
+					showObject "elem" elemobj;
+					showObject "sect" sectobj;
+					showObject "main" obj;
+		
+					pushSect (ReplaceEdit "ABC");
+					showObject "elem" elemobj;
+					showObject "sect" sectobj;
+					showObject "main" obj;
+		
+					pushSect (ReplaceEdit "");
+					showObject "elem" elemobj;
+					showObject "sect" sectobj;
+					showObject "main" obj;
+		
+					pushSect (ReplaceEdit "ZUM");
+					showObject "elem" elemobj;
+					showObject "sect" sectobj;
+					showObject "main" obj;
+		
+					pushElem (ReplaceEdit (Just 'Q'));
+					showObject "elem" elemobj;
+					showObject "sect" sectobj;
+					showObject "main" obj;
+
+					return (Just ());
+				});
 			});
 		});
 

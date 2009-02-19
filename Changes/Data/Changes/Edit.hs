@@ -5,6 +5,7 @@ module Data.Changes.Edit where
 	import Data.TypeFunc;
 	import Data.FunctorOne;
 	import Data.OpenWitness;
+	import Data.Witness;
 	import Control.Category;
 	import Prelude hiding (id,(.));
 
@@ -66,6 +67,17 @@ module Data.Changes.Edit where
 		lensGet :: state -> a -> b,
 		lensPutback :: state -> b -> a -> Maybe (a,state)
 	};
+
+	matchLens :: FloatingLens state1 a b1 -> FloatingLens state2 a b2 -> Maybe (EqualType state1 state2,EqualType b1 b2);
+	matchLens lens1 lens2 = do
+	{
+		MkEqualType <- matchWitness (lensWitness lens1) (lensWitness lens2);
+		MkEqualType <- matchWitness (lensStateWitness lens1) (lensStateWitness lens2);
+		return (MkEqualType,MkEqualType);
+	};
+
+	matchTLens :: Type a -> FloatingLens state1 a b1 -> FloatingLens state2 a b2 -> Maybe (EqualType state1 state2,EqualType b1 b2);
+	matchTLens _ = matchLens;
 
 	functorOneLens :: forall f state a b. (FunctorOne f) => FloatingLens state a b -> FloatingLens state (f a) (f b);
 	functorOneLens lens = MkFloatingLens

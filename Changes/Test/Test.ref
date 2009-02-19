@@ -16,6 +16,7 @@ sect: update: "12"
 pushed
 sect: "12"
 main: "pq12tu"
+elem: initial Just 't'
 Examining
 pushing
 main: edit: lens
@@ -23,6 +24,7 @@ main: update: "pqxtu"
 sect: edit: lens
 sect: update: "x"
 pushed
+elem: Just 't'
 sect: "x"
 main: "pqxtu"
 Examining
@@ -32,6 +34,7 @@ main: update: "pqABCtu"
 sect: edit: lens
 sect: update: "ABC"
 pushed
+elem: Just 't'
 sect: "ABC"
 main: "pqABCtu"
 Examining
@@ -41,6 +44,7 @@ main: update: "pqtu"
 sect: edit: lens
 sect: update: ""
 pushed
+elem: Just 't'
 sect: ""
 main: "pqtu"
 Examining
@@ -50,6 +54,17 @@ main: update: "pqZUMtu"
 sect: edit: lens
 sect: update: "ZUM"
 pushed
+elem: Just 't'
 sect: "ZUM"
 main: "pqZUMtu"
+Examining
+pushing
+main: edit: lens
+main: update: "pqZUMQu"
+elem: edit: replace Just 'Q'
+elem: update: Just 'Q'
+pushed
+elem: Just 'Q'
+sect: "ZUM"
+main: "pqZUMQu"
 End
