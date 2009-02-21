@@ -16,35 +16,30 @@ module Main where
 	};
 
 	withShowSubscription :: (Show a) => Object context a -> String -> (Object context a -> (Edit a -> IO (Maybe (Maybe ()))) -> IO (Maybe b)) -> IO (Maybe b);
-	withShowSubscription object name f = withSubscription object (MkEditor_
+	withShowSubscription object name f = withSubscription object (MkEditor
 	{
 		editorInit = \a -> do
 		{
 			putStrLn (name ++ ": initial " ++ (show a));
-			newIORef (a,Nothing);
+			newIORef a;
 		},
-		editorUpdate = \ref newtoken medit -> case medit of
+		editorUpdate = \ref medit -> case medit of
 		{
 			Just edit -> do
 			{
 				putStrLn (name ++ ": edit: " ++ (showEdit edit));
-				(olda,_) <- readIORef ref;
+				olda <- readIORef ref;
 				let {newa = applyEdit edit olda;};
 				putStrLn (name ++ ": update: " ++ (show newa));
-				writeIORef ref (newa,Just newtoken);
+				writeIORef ref newa;
 			};
-			_ -> do
-			{
-				(a,_) <- readIORef ref;
-				writeIORef ref (a,Just newtoken);
-			};
+			_ -> return ();
 		},
-		editorDo = \ref oldtoken obj push -> f obj (\edit -> do
+		editorDo = \ref obj push -> f obj (\edit -> do
 		{
 			putStrLn "Examining";
 			putStrLn "pushing";
-			(_,mnewtoken) <- readIORef ref;
-			result <- push (fromMaybe oldtoken mnewtoken) edit;
+			result <- push (return edit);
 			putStrLn (case result of
 			{
 				Just (Just _) -> "pushed";
