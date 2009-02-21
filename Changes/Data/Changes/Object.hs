@@ -26,13 +26,13 @@ module Data.Changes.Object where
 	data Object context a = MkObject
 	{
 		-- | blocks if the object is busy
-		objSubscribe :: forall r. (a -> IO r) -> (r -> Maybe (Edit a) -> IO ()) -> IO (r, Subscription context a)
+		objSubscribe :: forall r. (a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription context a)
 	};
 	
 	data Editor context a b = forall r. MkEditor
 	{
 		editorInit :: a -> IO r,
-		editorUpdate :: r -> Maybe (Edit a) -> IO (),
+		editorUpdate :: r -> Edit a -> IO (),
 		editorDo :: r -> Object context a -> (IO (Edit a) -> IO (Maybe (Maybe ()))) -> IO b
 	};
 
@@ -72,18 +72,18 @@ module Data.Changes.Object where
 		intobjClose :: IO ()
 	};
 
-	makeObject :: forall context a. ((Maybe (Edit a) -> IO ()) -> IO (InternalObject context a)) -> Object context a;
+	makeObject :: forall context a. ((Edit a -> IO ()) -> IO (InternalObject context a)) -> Object context a;
 	makeObject getIntObject = MkObject
 	{
 		objSubscribe = \initialise' updater' -> do
 		{
 			storevar <- newMVar emptyStore;
-			intobj <- getIntObject (\medit -> withMVar storevar (\store -> forM (allStore store) (\u -> u medit) >> return ()));
+			intobj <- getIntObject (\edit -> withMVar storevar (\store -> forM (allStore store) (\u -> u edit) >> return ()));
 			let
 			{
 				objSub :: forall r.
 					(a -> IO r) -> 
-					(r -> Maybe (Edit a) -> IO ()) -> 
+					(r -> Edit a -> IO ()) -> 
 					IO (r, Subscription context a);
 				objSub initialise updater = do
 				{
@@ -129,7 +129,7 @@ module Data.Changes.Object where
 			intobjPush = \ioedit -> modifyMVar statevar (\a -> do
 			{
 				edit <- ioedit;
-				pushOut (Just edit);
+				pushOut edit;
 				return (applyEdit edit a,Just (Just ()));
 			}),
 			intobjClose = return ()
@@ -145,17 +145,17 @@ module Data.Changes.Object where
 			statevar <- newEmptyMVar;
 			return (statevar,a);
 		}) 
-		 (\(statevar,_) medita -> modifyMVar_ statevar (\(oldstate,olda) -> let
+		 (\(statevar,_) edita -> modifyMVar_ statevar (\(oldstate,olda) -> let
 		{
-			(newa,(newstate,meditb)) = case medita of
-			{
-				Just edita -> (applyEdit edita olda,lensUpdate lens olda edita oldstate);
-				_ -> (olda,(oldstate,Nothing));
-			};
+			(newstate,meditb) = lensUpdate lens olda edita oldstate;
 		} in do
 		{
-			pushOut meditb;
-			return (newstate,newa);
+			case meditb of
+			{
+				Just editb -> pushOut editb;
+				_ -> return ();
+			};
+			return (newstate,applyEdit edita olda);
 		}));
 		putMVar statevar (firststate,firsta);
 		return (MkInternalObject

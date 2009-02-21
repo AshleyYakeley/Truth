@@ -180,7 +180,7 @@ module Data.Changes.File.Linux
 			wd <- addWatchB inotify [Modify,MoveSelf,DeleteSelf] path (\_ -> do
 			{
 				newa <- fsGet fs;
-				pushout (Just (ReplaceEdit newa));
+				pushout (ReplaceEdit newa);
 			});
 			return wd;
 		});

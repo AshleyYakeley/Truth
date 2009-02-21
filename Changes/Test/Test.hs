@@ -23,17 +23,13 @@ module Main where
 			putStrLn (name ++ ": initial " ++ (show a));
 			newIORef a;
 		},
-		editorUpdate = \ref medit -> case medit of
+		editorUpdate = \ref edit -> do
 		{
-			Just edit -> do
-			{
-				putStrLn (name ++ ": edit: " ++ (showEdit edit));
-				olda <- readIORef ref;
-				let {newa = applyEdit edit olda;};
-				putStrLn (name ++ ": update: " ++ (show newa));
-				writeIORef ref newa;
-			};
-			_ -> return ();
+			putStrLn (name ++ ": edit: " ++ (showEdit edit));
+			olda <- readIORef ref;
+			let {newa = applyEdit edit olda;};
+			putStrLn (name ++ ": update: " ++ (show newa));
+			writeIORef ref newa;
 		},
 		editorDo = \ref obj push -> f obj (\edit -> do
 		{
