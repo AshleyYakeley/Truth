@@ -44,23 +44,29 @@ module Data.Changes.File.Linux
 		 }));
 	};
 	
-	waitOpenFileRead :: INotifyB -> FilePath -> IO (Maybe Handle);
-	waitOpenFileRead inotify path = loopOnCloseWatch inotify path (catch 
+	-- returns Nothing if busy, Just Nothing if non-existent, Just Just handle if successful
+	checkOpenFileRead :: FilePath -> IO (Maybe (Maybe Handle));
+	checkOpenFileRead path = catch 
 	 (fmap (Just . Just) (openFile path ReadMode))
 	 (\ioerror -> if isDoesNotExistError ioerror
 	  then return (Just Nothing)
 	  else if isAlreadyInUseError ioerror
 	  then return Nothing
-	  else ioError ioerror)
-	 );
+	  else ioError ioerror);
 	
-	waitOpenFileReadWrite :: INotifyB -> FilePath -> IO Handle;
-	waitOpenFileReadWrite inotify path = loopOnCloseWatch inotify path (catch 
+	waitOpenFileRead :: INotifyB -> FilePath -> IO (Maybe Handle);
+	waitOpenFileRead inotify path = loopOnCloseWatch inotify path (checkOpenFileRead path);
+	
+	-- returns Nothing if busy, Just handle if successful
+	checkOpenFileReadWrite :: FilePath -> IO (Maybe Handle);
+	checkOpenFileReadWrite path = catch 
 	 (fmap Just (openFile path ReadWriteMode))
 	 (\ioerror -> if isAlreadyInUseError ioerror
 	  then return Nothing
-	  else ioError ioerror)
-	);
+	  else ioError ioerror);
+	
+	waitOpenFileReadWrite :: INotifyB -> FilePath -> IO Handle;
+	waitOpenFileReadWrite inotify path = loopOnCloseWatch inotify path (checkOpenFileReadWrite path);
 	
 	data FileState = MkFileState
 	{
@@ -97,16 +103,16 @@ module Data.Changes.File.Linux
 	{
 		opened <- modifyMVar (fsHandleVar fs) (\mh -> case mh of
 		{
-			Just _ -> return (mh,False);
+			Just _ -> return (mh, False);
 			_ -> if write then do
 			{
 				h <- waitOpenFileReadWrite (fsNotify fs) (fsPath fs);
-				return (Just h,True);
+				return (Just h, True);
 			}
 			else do
 			{
 				mh' <- waitOpenFileRead (fsNotify fs) (fsPath fs);
-				return (mh',True);
+				return (mh', True);
 			};
 		});
 		if opened
@@ -146,7 +152,7 @@ module Data.Changes.File.Linux
 		};
 		_ -> error "missing ReadWrite handle";
 	}));
-	fsPut fs _ = modifyMVar_ (fsHandleVar fs) (\mh -> do
+	fsPut fs _ = modifyMVar (fsHandleVar fs) (\mh -> do
 	{
 		mh' <- case mh of
 		{
@@ -155,60 +161,62 @@ module Data.Changes.File.Linux
 		};
 		case mh' of
 		{
-			Just h -> do
+			(Just h) -> do
 			{
 				hClose h;
 				removeLink (fsPath fs);
-				return Nothing;
 			};
-			_ -> return Nothing;
+			_ -> return ();
 		};
+		return (Nothing,());
 	});
 
 	linuxFileObject :: INotifyB -> FilePath -> Object FilePath (Maybe ByteString);
-	linuxFileObject inotify path = MkObject
+	linuxFileObject inotify path = makeObject (\pushout -> do
 	{
-		objContext = path,
-		subscribe = \getFirst getUpdate -> do
+		fs <- newFileState inotify path;
+		wd <- fsWithRead fs (do
 		{
-			fs <- newFileState inotify path;
-			(r,wd) <- fsWithRead fs (do
+			wd <- addWatchB inotify [Modify,MoveSelf,DeleteSelf] path (\_ -> do
+			{
+				newa <- fsGet fs;
+				pushout (Just (ReplaceEdit newa));
+			});
+			return wd;
+		});
+		return (MkInternalObject
+		{
+			intobjGetInitial = \aior -> fsWithRead fs (do
 			{
 				a <- fsGet fs;
-				r <- getFirst a;
-				wd <- addWatchB inotify [Modify,MoveSelf,DeleteSelf] path (\_ -> do
-				{
-					newa <- fsGet fs;
-					getUpdate r (ReplaceEdit newa);
-				});
-				return (r,wd);
-			});
-			return (r,MkSubscription
+				aior a;
+			}),
+			intobjGetContext = return path,
+			intobjPush = \ioedit -> do
 			{
-				subPush = \edit -> return (Just (do
+				(wdCheck,sem) <- fsWithReadWrite fs (do
 				{
-					(wdCheck,sem) <- fsWithReadWrite fs (do
+					edit <- ioedit;
+					newa <- case edit of
 					{
-						newa <- case edit of
+						ReplaceEdit newa -> return newa;
+						_ -> do
 						{
-							ReplaceEdit newa -> return newa;
-							_ -> do
-							{
-								olda <- fsGet fs;
-								return (applyEdit edit olda);
-							};
+							olda <- fsGet fs;
+							return (applyEdit edit olda);
 						};
-						fsPut fs newa;
-						sem <- newQSem 1;
-					 	waitQSem sem;
-						wdCheck <- addWatchB inotify [Close] path (\_ -> signalQSem sem);
-						return (wdCheck,sem);
-					});
-					waitQSem sem;
-					removeWatchB inotify wdCheck;
-				})),
-				subClose = removeWatchB inotify wd
-			});
-		}
-	};
+					};
+					fsPut fs newa;
+					sem <- newQSem 1;
+				 	waitQSem sem;
+					wdCheck <- addWatchB inotify [Close] path (\_ -> signalQSem sem);
+					return (wdCheck,sem);
+				});
+				waitQSem sem;
+				removeWatchB inotify wdCheck;
+				return (Just (Just ()));
+			},
+			intobjClose = removeWatchB inotify wd
+		});
+	});
 }
