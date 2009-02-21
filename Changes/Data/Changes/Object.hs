@@ -79,40 +79,72 @@ module Data.Changes.Object where
 	pushStore :: forall token a. Store (token -> Maybe (Edit a) -> IO ()) -> token -> Maybe (Edit a) -> IO ();
 	pushStore store token medit = forM (allStore store) (\u -> u token medit) >> return ();
 	
+	type StoreVar token a = MVar (Store (token -> Maybe (Edit a) -> IO ()));
+
+	newStoreVar :: IO (StoreVar token a);
+	newStoreVar = newMVar emptyStore;
+
+	closeStoreVar :: StoreVar token a -> Int -> IO () -> IO ();
+	closeStoreVar var key doclose = modifyMVar_ var (\store -> let
+	{
+		newstore = deleteStore key store;
+	} in do
+	{
+		if isEmptyStore newstore
+		 then doclose
+		 else return ();
+		return newstore;
+	});
+	
+	addStoreVar :: StoreVar token a -> (token -> Maybe (Edit a) -> IO ()) -> IO Int;
+	addStoreVar storevar update = modifyMVar storevar (\store -> do
+	{
+		let {(key,newstore) = addStore update store;};
+		return (newstore,key);
+	});
+	
+	pushStoreVar :: StoreVar token a -> token -> Maybe (Edit a) -> IO ();
+	pushStoreVar storevar token medit = withMVar storevar (\store -> pushStore store token medit);
+	
 	makeFreeObject :: forall context a. context -> a -> Object context a;
 	makeFreeObject context initial = let
 	{
-		objsub :: forall r. MVar (Store (IntegerToken -> Maybe (Edit a) -> IO ()), a, IntegerToken) -> (a -> IO r) -> (r -> IntegerToken -> Maybe (Edit a) -> IO ()) -> IO (r, IntegerToken, Subscription context IntegerToken a);
-		objsub svar = \initialise updater -> do
+		objsub :: forall r. 
+			StoreVar IntegerToken a ->
+			MVar (a, IntegerToken) ->
+			(a -> IO r) -> 
+			(r -> IntegerToken -> Maybe (Edit a) -> IO ()) -> 
+			IO (r, IntegerToken, Subscription context IntegerToken a);
+		objsub storevar statevar initialise updater = do
 		{
-			(r,key,firsttoken) <- modifyMVar svar (\(store,a,token) -> do
+			(r,key,firsttoken) <- withMVar statevar (\(a,token) -> do
 			{
 				r <- initialise a;
-				let {(key,newstore) = addStore (updater r) store;};
-				return ((newstore,a,token),(r,key,token));
+				key <- addStoreVar storevar (updater r);
+				return (r,key,token);
 			});
 			return (r,firsttoken,MkSubscription
 			{
 				subObject = MkObject
 				{
-					objSubscribe = objsub svar
+					objSubscribe = objsub storevar statevar
 				},
 				subGetContext = return context,
-				subPush = \edittoken edit -> modifyMVar svar (\(store,a,token) -> do
+				subPush = \pushtoken edit -> modifyMVar statevar (\(a,token) -> do
 				{
-					if edittoken == token then let
+					if pushtoken == token then let
 					{
 						token' = nextToken token;
 						a' = applyEdit edit a;
 					}
 					in do
 					{
-						pushStore store token' (Just edit);
-						return ((store,a',token'),Just (Just ()));
+						pushStoreVar storevar token' (Just edit);
+						return ((a',token'),Just (Just ()));
 					}
-					else return ((store,a,token),Nothing);
+					else return ((a,token),Nothing);
 				}),
-				subClose = modifyMVar_ svar (\(store,a,token) -> return (deleteStore key store,a,token))
+				subClose = closeStoreVar storevar key (return ())
 			});
 		};
 	}
@@ -120,68 +152,24 @@ module Data.Changes.Object where
 	{
 		objSubscribe = \initialise updater -> do
 		{
-			stateVar <- newMVar (emptyStore,initial,firstToken);
-			objsub stateVar initialise updater
+			storevar <- newStoreVar;
+			stateVar <- newMVar (initial,firstToken);
+			objsub storevar stateVar initialise updater
 		}
 	};
 
 	lensObject :: forall context state a b. (Eq state) => FloatingLens state a b -> state -> Object context a -> Object context b;
 	lensObject lens firststate (MkObject subscribe) = let
 	{
-		objsub :: forall r token. (Eq token) => 
-			MVar (Store (token -> Maybe (Edit b) -> IO ()), state, token, a) ->
-			Subscription context token a ->
-			(b -> IO r) -> (r -> token -> Maybe (Edit b) -> IO ()) -> IO (r, token, Subscription context token b);
-		objsub var sub = \initialise updater -> do
+		makeLensObject pushOut = do
 		{
-			(r,firsttoken,key) <- modifyMVar var (\(store,state,token,a) -> do
-			{
-				r <- initialise (lensGet lens state a);			
-				let {(key,newstore) = addStore (updater r) store;};
-				return ((newstore,state,token,a),(r,token,key));
-			});
-			
-			return (r,firsttoken,MkSubscription
-			{
-				subObject = MkObject
-				{
-					objSubscribe = objsub var sub
-				},
-				subGetContext = subGetContext sub,
-				subPush = \pushtoken edit -> do
-				{
-					mstate <- withMVar var (\(_,state,curtoken,_) -> return
-					 (if pushtoken == curtoken then Just state else Nothing));
-					case mstate of
-					{
-						Just state -> subPush sub pushtoken (StateLensEdit lens state edit);
-						_ -> return Nothing;
-					};
-				},
-				subClose = modifyMVar_ var (\(store,state,token',a) -> let
-				{
-					newstore = deleteStore key store;
-				} in do
-				{
-					if isEmptyStore newstore
-					 then subClose sub
-					 else return ();
-					return (newstore,state,token',a);
-				})
-			});
-		}
-	}
-	in MkObject
-	{
-		objSubscribe = \initialise updater -> do
-		{
-			((var,firsta),firsttoken,sub) <- subscribe 
+			((statevar,firsta),firsttoken,sub) <- subscribe 
 			 (\a -> do
 			{
-				var <- newEmptyMVar;
-				return (var,a);
+				statevar <- newEmptyMVar;
+				return (statevar,a);
 			}) 
-			 (\(var,_) token medita -> modifyMVar_ var (\(store,oldstate,_,olda) -> let
+			 (\(statevar,_) token medita -> modifyMVar_ statevar (\(oldstate,_,olda) -> let
 			{
 				(newa,(newstate,meditb)) = case medita of
 				{
@@ -190,12 +178,56 @@ module Data.Changes.Object where
 				};
 			} in do
 			{
-				pushStore store token meditb;
-				return (store,newstate,token,newa);
+				pushOut token meditb;
+				return (newstate,token,newa);
 			}));
-			putMVar var (emptyStore,firststate,firsttoken,firsta);
-			
-			objsub var sub initialise updater;
+			putMVar statevar (firststate,firsttoken,firsta);
+			return (statevar,sub);
+		};
+	
+		objsub :: forall r token. (Eq token) => 
+			StoreVar token b ->
+			MVar (state, token, a) ->
+			Subscription context token a ->
+			(b -> IO r) -> 
+			(r -> token -> Maybe (Edit b) -> IO ()) -> 
+			IO (r, token, Subscription context token b);
+		objsub storevar statevar sub initialise updater = do
+		{
+			(r,key,firsttoken) <- withMVar statevar (\(state,token,a) -> do
+			{
+				r <- initialise (lensGet lens state a);		
+				key <- addStoreVar storevar (updater r);
+				return (r,key,token);
+			});		
+			return (r,firsttoken,MkSubscription
+			{
+				subObject = MkObject
+				{
+					objSubscribe = objsub storevar statevar sub
+				},
+				subGetContext = subGetContext sub,
+				subPush = \pushtoken edit -> do
+				{
+					mstate <- withMVar statevar (\(state,curtoken,_) -> return
+					 (if pushtoken == curtoken then Just state else Nothing));
+					case mstate of
+					{
+						Just state -> subPush sub pushtoken (StateLensEdit lens state edit);
+						_ -> return Nothing;
+					};
+				},
+				subClose = closeStoreVar storevar key (subClose sub)
+			});
+		}
+	}
+	in MkObject
+	{
+		objSubscribe = \initialise updater -> do
+		{
+			storevar <- newStoreVar;
+			(statevar,sub) <- makeLensObject (pushStoreVar storevar);
+			objsub storevar statevar sub initialise updater;
 		}
 	};
 }
