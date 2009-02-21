@@ -64,145 +64,110 @@ module Data.Changes.Object where
 		editorDo = \_ _ push -> push (return (ReplaceEdit a))
 	});
 
-	pushStore :: forall a. Store (Maybe (Edit a) -> IO ()) -> Maybe (Edit a) -> IO ();
-	pushStore store medit = forM (allStore store) (\u -> u medit) >> return ();
-	
-	type StoreVar a = MVar (Store (Maybe (Edit a) -> IO ()));
+	data InternalObject context a = MkInternalObject
+	{
+		intobjGetInitial :: forall r. (a -> IO r) -> IO r,
+		intobjGetContext :: IO context,
+		intobjPush :: IO (Edit a) -> IO (Maybe (Maybe ())),
+		intobjClose :: IO ()
+	};
 
-	newStoreVar :: IO (StoreVar a);
-	newStoreVar = newMVar emptyStore;
-
-	closeStoreVar :: StoreVar a -> Int -> IO () -> IO ();
-	closeStoreVar var key doclose = modifyMVar_ var (\store -> let
+	makeObject :: forall context a. ((Maybe (Edit a) -> IO ()) -> IO (InternalObject context a)) -> Object context a;
+	makeObject getIntObject = MkObject
 	{
-		newstore = deleteStore key store;
-	} in do
-	{
-		if isEmptyStore newstore
-		 then doclose
-		 else return ();
-		return newstore;
-	});
-	
-	addStoreVar :: StoreVar a -> (Maybe (Edit a) -> IO ()) -> IO Int;
-	addStoreVar storevar update = modifyMVar storevar (\store -> do
-	{
-		let {(key,newstore) = addStore update store;};
-		return (newstore,key);
-	});
-	
-	pushStoreVar :: StoreVar a -> Maybe (Edit a) -> IO ();
-	pushStoreVar storevar medit = withMVar storevar (\store -> pushStore store medit);
+		objSubscribe = \initialise' updater' -> do
+		{
+			storevar <- newMVar emptyStore;
+			intobj <- getIntObject (\medit -> withMVar storevar (\store -> forM (allStore store) (\u -> u medit) >> return ()));
+			let
+			{
+				objSub :: forall r.
+					(a -> IO r) -> 
+					(r -> Maybe (Edit a) -> IO ()) -> 
+					IO (r, Subscription context a);
+				objSub initialise updater = do
+				{
+					r <- intobjGetInitial intobj initialise;
+					key <- modifyMVar storevar (\store -> do
+					{
+						let {(key,newstore) = addStore (updater r) store;};
+						return (newstore,key);
+					});
+					return (r,MkSubscription
+					{
+						subObject = MkObject
+						{
+							objSubscribe = objSub
+						},
+						subGetContext = intobjGetContext intobj,
+						subPush = intobjPush intobj,
+						subClose = modifyMVar_ storevar (\store -> let
+						{
+							newstore = deleteStore key store;
+						} in do
+						{
+							if isEmptyStore newstore
+							 then (intobjClose intobj)
+							 else return ();
+							return newstore;
+						})
+					});
+				};
+			};
+			objSub initialise' updater';
+		}
+	};
 	
 	makeFreeObject :: forall context a. context -> a -> Object context a;
-	makeFreeObject context initial = let
+	makeFreeObject context initial = makeObject (\pushOut -> do
 	{
-		objsub :: forall r. 
-			StoreVar a ->
-			MVar a ->
-			(a -> IO r) -> 
-			(r -> Maybe (Edit a) -> IO ()) -> 
-			IO (r, Subscription context a);
-		objsub storevar statevar initialise updater = do
+		statevar <- newMVar initial;
+		return (MkInternalObject
 		{
-			(r,key) <- withMVar statevar (\a -> do
+			intobjGetInitial = withMVar statevar,
+			intobjGetContext = return context,
+			intobjPush = \ioedit -> modifyMVar statevar (\a -> do
 			{
-				r <- initialise a;
-				key <- addStoreVar storevar (updater r);
-				return (r,key);
-			});
-			return (r,MkSubscription
-			{
-				subObject = MkObject
-				{
-					objSubscribe = objsub storevar statevar
-				},
-				subGetContext = return context,
-				subPush = \ioedit -> modifyMVar statevar (\a -> do
-				{
-					edit <- ioedit;
-					pushStoreVar storevar (Just edit);
-					return (applyEdit edit a,Just (Just ()));
-				}),
-				subClose = closeStoreVar storevar key (return ())
-			});
-		};
-	}
-	in MkObject
-	{
-		objSubscribe = \initialise updater -> do
-		{
-			storevar <- newStoreVar;
-			stateVar <- newMVar initial;
-			objsub storevar stateVar initialise updater
-		}
-	};
+				edit <- ioedit;
+				pushOut (Just edit);
+				return (applyEdit edit a,Just (Just ()));
+			}),
+			intobjClose = return ()
+		});
+	});
 
 	lensObject :: forall context state a b. (Eq state) => FloatingLens state a b -> state -> Object context a -> Object context b;
-	lensObject lens firststate (MkObject subscribe) = let
+	lensObject lens firststate (MkObject subscribe) = makeObject (\pushOut -> do
 	{
-		makeLensObject pushOut = do
+		((statevar,firsta),sub) <- subscribe 
+		 (\a -> do
 		{
-			((statevar,firsta),sub) <- subscribe 
-			 (\a -> do
-			{
-				statevar <- newEmptyMVar;
-				return (statevar,a);
-			}) 
-			 (\(statevar,_) medita -> modifyMVar_ statevar (\(oldstate,olda) -> let
-			{
-				(newa,(newstate,meditb)) = case medita of
-				{
-					Just edita -> (applyEdit edita olda,lensUpdate lens olda edita oldstate);
-					_ -> (olda,(oldstate,Nothing));
-				};
-			} in do
-			{
-				pushOut meditb;
-				return (newstate,newa);
-			}));
-			putMVar statevar (firststate,firsta);
-			return (statevar,sub);
-		};
-	
-		objsub :: 
-			StoreVar b ->
-			MVar (state, a) ->
-			Subscription context a ->
-			(b -> IO r) -> 
-			(r -> Maybe (Edit b) -> IO ()) -> 
-			IO (r, Subscription context b);
-		objsub storevar statevar sub initialise updater = do
+			statevar <- newEmptyMVar;
+			return (statevar,a);
+		}) 
+		 (\(statevar,_) medita -> modifyMVar_ statevar (\(oldstate,olda) -> let
 		{
-			(r,key) <- withMVar statevar (\(state,a) -> do
+			(newa,(newstate,meditb)) = case medita of
 			{
-				r <- initialise (lensGet lens state a);		
-				key <- addStoreVar storevar (updater r);
-				return (r,key);
-			});		
-			return (r,MkSubscription
-			{
-				subObject = MkObject
-				{
-					objSubscribe = objsub storevar statevar sub
-				},
-				subGetContext = subGetContext sub,
-				subPush = \ioedit -> subPush sub (withMVar statevar (\(state,_) -> do
-				{
-					edit <- ioedit;
-					return (StateLensEdit lens state edit);
-				})),
-				subClose = closeStoreVar storevar key (subClose sub)
-			});
-		}
-	}
-	in MkObject
-	{
-		objSubscribe = \initialise updater -> do
+				Just edita -> (applyEdit edita olda,lensUpdate lens olda edita oldstate);
+				_ -> (olda,(oldstate,Nothing));
+			};
+		} in do
 		{
-			storevar <- newStoreVar;
-			(statevar,sub) <- makeLensObject (pushStoreVar storevar);
-			objsub storevar statevar sub initialise updater;
-		}
-	};
+			pushOut meditb;
+			return (newstate,newa);
+		}));
+		putMVar statevar (firststate,firsta);
+		return (MkInternalObject
+		{
+			intobjGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (lensGet lens state a)),
+			intobjGetContext = subGetContext sub,
+			intobjPush = \ioedit -> subPush sub (withMVar statevar (\(state,_) -> do
+			{
+				edit <- ioedit;
+				return (StateLensEdit lens state edit);
+			})),
+			intobjClose = subClose sub
+		});
+	});
 }
