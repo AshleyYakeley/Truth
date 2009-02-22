@@ -15,4 +15,16 @@ pushing
 somefile: edit: replace Nothing
 somefile: update: Nothing
 pushed
+pushing
+somefile: edit: replace Nothing
+somefile: update: Nothing
+pushed
+pushing
+somefile: edit: replace Just "ABCdef"
+somefile: update: Just "ABCdef"
+pushed
+pushing
+somefile: edit: replace Nothing
+somefile: update: Nothing
+pushed
 End

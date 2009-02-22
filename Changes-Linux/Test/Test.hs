@@ -110,7 +110,9 @@ module Main where
 			subClose sectsub;
 	-}
 			showPushEdit sub (ReplaceEdit Nothing);
-			threadDelay 100000;
+			showPushEdit sub (ReplaceEdit Nothing);
+			showPushEdit sub (ReplaceEdit (Just (pack (fmap (fromIntegral . ord) "ABCdef"))));
+			showPushEdit sub (ReplaceEdit Nothing);
 
 			subClose sub;
 			putStrLn "End";
