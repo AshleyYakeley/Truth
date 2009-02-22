@@ -23,6 +23,7 @@ extensions:
  ImpredicativeTypes
  ImplicitParams
  GeneralizedNewtypeDeriving
+ ExistentialQuantification
 exposed-modules:
  UI.Truth.GTK.SourceView
 other-modules:
@@ -35,5 +36,20 @@ build-depends:
  gtk==0.10.0,
  Changes==0.1,
  Changes-Linux==0.1
+extensions:
+ TypeFamilies
+ EmptyDataDecls
+ UndecidableInstances
+ FlexibleInstances
+ FunctionalDependencies
+ ForeignFunctionInterface
+ GADTs
+ RankNTypes
+ ScopedTypeVariables
+ PatternGuards
+ ImpredicativeTypes
+ ImplicitParams
+ GeneralizedNewtypeDeriving
+ ExistentialQuantification
 main-is: Main.hs
 }

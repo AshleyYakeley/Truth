@@ -11,7 +11,7 @@ module Main where
 		initGUI;
 		view <- sourceViewBrowser (linuxFileObject inotify "somefile");
 		window <- windowNew;
-		set window [containerChild := view];
+		(\(MkView w _) -> set window [containerChild := w]) view;
 		onDestroy window mainQuit;
 		widgetShowAll window;
 		mainGUI;
