@@ -7,9 +7,12 @@ somefile: update: Just "EFGH\n"
 writing & waiting 100ms
 somefile: edit: replace Just "IJK\n"
 somefile: update: Just "IJK\n"
-Examining
 pushing
 somefile: edit: replace Just "pqrstu"
 somefile: update: Just "pqrstu"
+pushed
+pushing
+somefile: edit: replace Nothing
+somefile: update: Nothing
 pushed
 End

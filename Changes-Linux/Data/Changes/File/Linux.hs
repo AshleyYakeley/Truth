@@ -34,14 +34,22 @@ module Data.Changes.File.Linux
 	loopOnCloseWatch :: INotifyB -> FilePath -> IO (Maybe r) -> IO r;
 	loopOnCloseWatch inotify path f = do
 	{
-		sem <- newQSem 1;
-		withWatch inotify [Close] path 
-		 (\_ -> signalQSem sem)
-		 (loop (do
-		 {
-		 	waitQSem sem;
-		 	f;
-		 }));
+		mr <- f;
+		case mr of
+		{
+			Just r -> return r;
+			_ -> do
+			{
+				sem <- newQSem 1;
+				withWatch inotify [Close] path 
+				 (\_ -> signalQSem sem)
+				 (loop (do
+				 {
+				 	waitQSem sem;
+				 	f;
+				 }));
+			};
+		};
 	};
 	
 	-- returns Nothing if busy, Just Nothing if non-existent, Just Just handle if successful
@@ -72,18 +80,23 @@ module Data.Changes.File.Linux
 	{
 		fsNotify :: INotifyB,
 		fsPath :: FilePath,
-		fsHandleVar :: MVar (Maybe Handle)
+		fsHandleVar :: MVar (Maybe Handle),
+		fsPushout :: Edit (Maybe ByteString) -> IO (),
+		fsWatchVar :: MVar (Maybe WatchDescriptorB)
 	};
 	
-	newFileState :: INotifyB -> FilePath -> IO FileState;
-	newFileState notify path = do
+	newFileState :: INotifyB -> FilePath -> (Edit (Maybe ByteString) -> IO ()) -> IO FileState;
+	newFileState notify path pushout = do
 	{
 		var <- newMVar Nothing;
+		watchVar <- newMVar Nothing;
 		return (MkFileState
 		{
 			fsNotify = notify,
 			fsPath = path,
-			fsHandleVar = var
+			fsHandleVar = var,
+			fsPushout = pushout,
+			fsWatchVar = watchVar
 		});
 	};
 	
@@ -101,19 +114,37 @@ module Data.Changes.File.Linux
 	fsWith :: Bool -> FileState -> IO r -> IO r;
 	fsWith write fs f = do
 	{
-		opened <- modifyMVar (fsHandleVar fs) (\mh -> case mh of
+		opened <- modifyMVar (fsHandleVar fs) (\mh -> do
 		{
-			Just _ -> return (mh, False);
-			_ -> if write then do
+			rr@(mh',_) <- case mh of
 			{
-				h <- waitOpenFileReadWrite (fsNotify fs) (fsPath fs);
-				return (Just h, True);
-			}
-			else do
-			{
-				mh' <- waitOpenFileRead (fsNotify fs) (fsPath fs);
-				return (mh', True);
+				Just _ -> return (mh, False);
+				_ -> if write then do
+				{
+					h <- waitOpenFileReadWrite (fsNotify fs) (fsPath fs);
+					return (Just h, True);
+				}
+				else do
+				{
+					mh' <- waitOpenFileRead (fsNotify fs) (fsPath fs);
+					return (mh', True);
+				};
 			};
+			modifyMVar_ (fsWatchVar fs) (\mwd -> case (mh',mwd) of
+			{
+				(Nothing,Just _) -> return Nothing;	-- file no longer exists, just forget wd
+				(Just _,Nothing) -> do	-- file now exists, create a wd for it
+				{
+					wd <- addWatchB (fsNotify fs) [Modify,MoveSelf,DeleteSelf] (fsPath fs) (\_ -> do
+					{
+						newa <- fsGet fs;
+						fsPushout fs (ReplaceEdit newa);
+					});
+					return (Just wd);
+				};
+				_ -> return mwd;
+			});
+			return rr;
 		});
 		if opened
 		 then finally f (fsClose fs)
@@ -134,7 +165,7 @@ module Data.Changes.File.Linux
 			-- Get the contents of a h without closing it
 			hSeek h AbsoluteSeek 0;
 			len <- hFileSize h;
-			bs <- hGet h (fromIntegral len);	
+			bs <- hGet h (fromIntegral len);
 			return (Just bs);
 		};
 		_ -> return Nothing;
@@ -171,19 +202,24 @@ module Data.Changes.File.Linux
 		return (Nothing,());
 	});
 
+	makeWaitForEvent :: INotifyB -> [EventVariety] -> FilePath -> IO (IO ());
+	makeWaitForEvent inotify evs path = do
+	{
+		sem <- newQSem 1;
+	 	waitQSem sem;
+		wd <- addWatchB inotify evs path (\_ -> signalQSem sem);
+		return (do
+		{
+			waitQSem sem;
+			removeWatchB inotify wd;
+		});
+	};
+
 	linuxFileObject :: INotifyB -> FilePath -> Object FilePath (Maybe ByteString);
 	linuxFileObject inotify path = makeObject (\pushout -> do
 	{
-		fs <- newFileState inotify path;
-		wd <- fsWithRead fs (do
-		{
-			wd <- addWatchB inotify [Modify,MoveSelf,DeleteSelf] path (\_ -> do
-			{
-				newa <- fsGet fs;
-				pushout (ReplaceEdit newa);
-			});
-			return wd;
-		});
+		fs <- newFileState inotify path pushout;
+		fsWithRead fs (return ());
 		return (MkInternalObject
 		{
 			intobjGetInitial = \aior -> fsWithRead fs (do
@@ -194,7 +230,7 @@ module Data.Changes.File.Linux
 			intobjGetContext = return path,
 			intobjPush = \ioedit -> do
 			{
-				(wdCheck,sem) <- fsWithReadWrite fs (do
+				waitClose <- fsWithReadWrite fs (do
 				{
 					edit <- ioedit;
 					newa <- case edit of
@@ -206,17 +242,27 @@ module Data.Changes.File.Linux
 							return (applyEdit edit olda);
 						};
 					};
+					waitClose <- case newa of
+					{
+						-- all write notifications will run before receiving this Close notification
+						Just _ -> makeWaitForEvent inotify [Close] path;
+						_ -> makeWaitForEvent inotify [DeleteSelf] path;
+					};
 					fsPut fs newa;
-					sem <- newQSem 1;
-				 	waitQSem sem;
-					wdCheck <- addWatchB inotify [Close] path (\_ -> signalQSem sem);
-					return (wdCheck,sem);
+					return waitClose;
 				});
-				waitQSem sem;
-				removeWatchB inotify wdCheck;
+				waitClose;
 				return (Just (Just ()));
 			},
-			intobjClose = removeWatchB inotify wd
+			intobjClose = fsWithRead fs (modifyMVar_ (fsWatchVar fs) (\mwd -> case mwd of
+			{
+				Just wd -> do
+				{
+					removeWatchB inotify wd;
+					return Nothing;
+				};
+				_ -> return Nothing;
+			}))
 		});
 	});
 }

@@ -19,10 +19,10 @@ module Main where
 		putStrLn (name ++ ": " ++ (show a));
 	};
 	
-	makeShowSubscription :: (Show a) => String -> Object context a -> IO (Subscription a);
+	makeShowSubscription :: (Show a) => String -> Object context a -> IO (Subscription context a);
 	makeShowSubscription name obj = do
 	{
-		(_,sub) <- subscribe obj 
+		(_,sub) <- objSubscribe obj 
 			(\a -> do
 			{
 				putStrLn (name ++ ": initial " ++ (show a));
@@ -39,20 +39,16 @@ module Main where
 		return sub;
 	};
 	
-	showPushEdit :: Subscription a -> Edit a -> IO ();
+	showPushEdit :: Subscription context a -> Edit a -> IO ();
 	showPushEdit sub edit = do
 	{
-		mio <- subPush sub edit;
-		putStrLn "Examining";
-		case mio of
+		putStrLn "pushing";
+		mm <- subPush sub (return edit);
+		case mm of
 		{
-			Just io -> do
-			{
-				putStrLn "pushing";
-				io;
-				putStrLn "pushed";
-			};
-			_ -> putStrLn "impossible";
+			Just (Just _) -> putStrLn "pushed";
+			Just _ -> putStrLn "impossible";
+			_ -> putStrLn "unsync";
 		};
 	};
 	
@@ -113,6 +109,9 @@ module Main where
 		
 			subClose sectsub;
 	-}
+			showPushEdit sub (ReplaceEdit Nothing);
+			threadDelay 100000;
+
 			subClose sub;
 			putStrLn "End";
 		});

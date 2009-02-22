@@ -94,7 +94,7 @@ module System.INotify.Balanced
 			}
 			else do
 			{
-				addMapWatch inotify path cbmap';
+				Prelude.catch (addMapWatch inotify path cbmap' >> return ()) (\_ -> return ());	-- don't worry about non-existent inodes
 				return (insert wd (path,cbmap') wdmap);
 			};
 		};
