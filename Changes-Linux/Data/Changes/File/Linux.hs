@@ -252,7 +252,7 @@ module Data.Changes.File.Linux
 					return waitClose;
 				});
 				waitClose;
-				return (Just (Just ()));
+				return (Just ());
 			},
 			intobjClose = fsWithRead fs (modifyMVar_ (fsWatchVar fs) (\mwd -> case mwd of
 			{

@@ -15,7 +15,7 @@ module Main where
 		putStrLn (name ++ ": " ++ (show a));
 	};
 
-	withShowSubscription :: (Show a) => Object context a -> String -> (Object context a -> (Edit a -> IO (Maybe (Maybe ()))) -> IO (Maybe b)) -> IO (Maybe b);
+	withShowSubscription :: (Show a) => Object context a -> String -> (Object context a -> (Edit a -> IO (Maybe ())) -> IO (Maybe b)) -> IO (Maybe b);
 	withShowSubscription object name f = withSubscription object (MkEditor
 	{
 		editorInit = \a -> do
@@ -33,14 +33,12 @@ module Main where
 		},
 		editorDo = \ref obj push -> f obj (\edit -> do
 		{
-			putStrLn "Examining";
 			putStrLn "pushing";
 			result <- push (return edit);
 			putStrLn (case result of
 			{
-				Just (Just _) -> "pushed";
-				Just _ -> "impossible";
-				_ -> "unsync";
+				Just _ -> "pushed";
+				_ -> "impossible";
 			});
 			return result;
 		})

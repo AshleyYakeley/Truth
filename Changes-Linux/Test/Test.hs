@@ -46,9 +46,8 @@ module Main where
 		mm <- subPush sub (return edit);
 		case mm of
 		{
-			Just (Just _) -> putStrLn "pushed";
-			Just _ -> putStrLn "impossible";
-			_ -> putStrLn "unsync";
+			Just _ -> putStrLn "pushed";
+			_ -> putStrLn "impossible";
 		};
 	};
 	

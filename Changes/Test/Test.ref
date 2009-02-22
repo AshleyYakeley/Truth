@@ -1,13 +1,11 @@
 Test
 main: initial "abcdef"
-Examining
 pushing
 main: edit: replace "pqrstu"
 main: update: "pqrstu"
 pushed
 current: "pqrstu"
 sect: initial "rs"
-Examining
 pushing
 main: edit: lens
 main: update: "pq12tu"
@@ -17,7 +15,6 @@ pushed
 sect: "12"
 main: "pq12tu"
 elem: initial Just 't'
-Examining
 pushing
 main: edit: lens
 main: update: "pqxtu"
@@ -27,7 +24,6 @@ pushed
 elem: Just 't'
 sect: "x"
 main: "pqxtu"
-Examining
 pushing
 main: edit: lens
 main: update: "pqABCtu"
@@ -37,7 +33,6 @@ pushed
 elem: Just 't'
 sect: "ABC"
 main: "pqABCtu"
-Examining
 pushing
 main: edit: lens
 main: update: "pqtu"
@@ -47,7 +42,6 @@ pushed
 elem: Just 't'
 sect: ""
 main: "pqtu"
-Examining
 pushing
 main: edit: lens
 main: update: "pqZUMtu"
@@ -57,7 +51,6 @@ pushed
 elem: Just 't'
 sect: "ZUM"
 main: "pqZUMtu"
-Examining
 pushing
 main: edit: lens
 main: update: "pqZUMQu"

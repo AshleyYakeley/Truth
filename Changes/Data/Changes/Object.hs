@@ -13,11 +13,10 @@ module Data.Changes.Object where
 		subObject :: Object context a,
 
 		-- | change the object.
-		-- the action argument and subscription updates are mutually excluded
-		-- returns Nothing if not synchronised (i.e. further subscription updates to run)
-		-- returns Just Nothing if change is not allowed
-		-- returns Just (Just ()) if change succeeded, and updates will be received before this action returns
-		subPush :: IO (Edit a) -> IO (Maybe (Maybe ())),
+		-- The action argument and subscription updates are mutually excluded.
+		-- Returns Nothing if change is not allowed.
+		-- Returns Just () if change succeeded, and updates will be received before this action returns.
+		subPush :: IO (Edit a) -> IO (Maybe ()),
 		
 		-- | close the subscription
 		subClose :: IO ()
@@ -33,7 +32,7 @@ module Data.Changes.Object where
 	{
 		editorInit :: a -> IO r,
 		editorUpdate :: r -> Edit a -> IO (),
-		editorDo :: r -> Object context a -> (IO (Edit a) -> IO (Maybe (Maybe ()))) -> IO b
+		editorDo :: r -> Object context a -> (IO (Edit a) -> IO (Maybe ())) -> IO b
 	};
 
 	withSubscription :: Object context a -> Editor context a b -> IO b;
@@ -56,7 +55,7 @@ module Data.Changes.Object where
 		editorDo = \a _ _ -> return a
 	});
 
-	writeObject :: a -> Object context a -> IO (Maybe (Maybe ()));
+	writeObject :: a -> Object context a -> IO (Maybe ());
 	writeObject a object = withSubscription object (MkEditor
 	{
 		editorInit = return,
@@ -68,7 +67,7 @@ module Data.Changes.Object where
 	{
 		intobjGetInitial :: forall r. (a -> IO r) -> IO r,
 		intobjGetContext :: IO context,
-		intobjPush :: IO (Edit a) -> IO (Maybe (Maybe ())),
+		intobjPush :: IO (Edit a) -> IO (Maybe ()),
 		intobjClose :: IO ()
 	};
 
@@ -130,7 +129,7 @@ module Data.Changes.Object where
 			{
 				edit <- ioedit;
 				pushOut edit;
-				return (applyEdit edit a,Just (Just ()));
+				return (applyEdit edit a,Just ());
 			}),
 			intobjClose = return ()
 		});
