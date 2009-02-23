@@ -13,29 +13,18 @@ module UI.Truth.GTK.SourceView where
 	--type ViewFactory context a = Object context a -> (Selection -> IO ()) -> IO View;
 	type ViewFactory context a = Object context a -> IO View;
 
-	checkButtonViewFactory :: String -> ViewFactory context Bool;
-	checkButtonViewFactory name obj = do
+	data InternalViewFactory a = forall w. (WidgetClass w) => MkInternalViewFactory
 	{
-		(widget,sub) <- objSubscribe obj (\s -> do
-		{
-			widget <- checkButtonNew;
-			set widget [buttonLabel := name,toggleButtonActive := s];
-			return widget;
-		})
-		(\widget edit -> do
-		{
-			s <- get widget toggleButtonActive;
-			set widget [toggleButtonActive := (applyEdit edit s)];
-		});
-		onClicked widget (do
-		{
-			_ <- subPush sub (do
-			{
-				s <- get widget toggleButtonActive;
-				return (ReplaceEdit s);
-			});
-			return ();
-		});
+		ivNew :: a -> IO w,
+		ivUpdate :: w -> Edit a -> IO (),
+		ivSetPush :: w -> (IO (Edit a) -> IO (Maybe ())) -> IO ()
+	};
+
+	ivfViewFactory :: InternalViewFactory a -> ViewFactory context a;
+	ivfViewFactory (MkInternalViewFactory new update setpush) obj = do
+	{
+		(widget,sub) <- objSubscribe obj new update;
+		setpush widget (subPush sub);
 		return (MkView
 		{
 			viewWidget = widget,
@@ -46,6 +35,32 @@ module UI.Truth.GTK.SourceView where
 			}
 		});
 	};
+
+	checkButtonIVF :: String -> InternalViewFactory Bool;
+	checkButtonIVF name = MkInternalViewFactory
+	{
+		ivNew = \s -> do
+		{
+			widget <- checkButtonNew;
+			set widget [buttonLabel := name,toggleButtonActive := s];
+			return widget;
+		},
+		ivUpdate = \widget edit -> do
+		{
+			s <- get widget toggleButtonActive;
+			set widget [toggleButtonActive := (applyEdit edit s)];
+		},
+		ivSetPush = \widget push -> do
+		{
+			_ <- push (do
+			{
+				s <- get widget toggleButtonActive;
+				return (ReplaceEdit s);
+			});
+			return ();
+		}
+	};
+
 {-
 	maybeViewFactory :: a -> ViewFactory context a -> ViewFactory context (Maybe a);
 	maybeViewFactory emptyval factory objma = do
