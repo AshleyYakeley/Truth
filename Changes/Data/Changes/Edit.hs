@@ -2,6 +2,7 @@ module Data.Changes.Edit where
 {
 	import Data.Bijection;
 	import Data.Codec;
+	import Data.Result;
 	import Data.TypeFunc;
 	import Data.FunctorOne;
 	import Data.OpenWitness;
@@ -148,21 +149,47 @@ module Data.Changes.Edit where
 		lensPutback = \_ b a -> fmap (\newa -> (newa,())) (fixedLensPutback lens b a)
 	};
 	
-	codecFixedLens :: LensWitness a (Maybe b) -> Codec a b -> FixedLens a (Maybe b);
-	codecFixedLens wit codec = MkFixedLens
+	data SimpleLens a b = MkSimpleLens
 	{
-		fixedLensWitness = wit,
-		fixedLensUpdate = \a edit -> Just (ReplaceEdit (decode codec (applyEdit edit a))),
-		fixedLensGet = decode codec,
-		fixedLensPutback = \mb _ -> fmap (encode codec) mb
+		simpleLensWitness :: LensWitness a b,
+		simpleLensGet :: a -> b,
+		simpleLensPutback :: b -> a -> Maybe a
 	};
 	
-	bijectionFixedLens :: LensWitness a b -> Bijection a b -> FixedLens a b;
-	bijectionFixedLens wit bi = MkFixedLens
+	simpleFixedLens :: SimpleLens a b  -> FixedLens a b;
+	simpleFixedLens lens = MkFixedLens
 	{
-		fixedLensWitness = wit,
-		fixedLensUpdate = \a edit -> Just (ReplaceEdit (biForwards bi (applyEdit edit a))),
-		fixedLensGet = biForwards bi,
-		fixedLensPutback = \b _ -> Just (biBackwards bi b)
+		fixedLensWitness = simpleLensWitness lens,
+		fixedLensUpdate = \a edit -> Just (ReplaceEdit (simpleLensGet lens (applyEdit edit a))),
+		fixedLensGet = simpleLensGet lens,
+		fixedLensPutback = simpleLensPutback lens
 	};
+	
+	resultSimpleLens :: LensWitness a (Result e b) -> (a -> Result e b) -> (b -> a) -> SimpleLens a (Result e b);
+	resultSimpleLens witness decode' encode' = MkSimpleLens
+	{
+		simpleLensWitness = witness,
+		simpleLensGet = decode',
+		simpleLensPutback = \r _ -> case r of
+		{
+			SuccessResult b -> Just (encode' b);
+			_ -> Nothing;
+		}
+	};
+	
+	codecFixedLens :: LensWitness a (Maybe b) -> Codec a b -> FixedLens a (Maybe b);
+	codecFixedLens wit codec = simpleFixedLens (MkSimpleLens
+	{
+		simpleLensWitness = wit,
+		simpleLensGet = decode codec,
+		simpleLensPutback = \mb _ -> fmap (encode codec) mb
+	});
+	
+	bijectionFixedLens :: LensWitness a b -> Bijection a b -> FixedLens a b;
+	bijectionFixedLens wit bi = simpleFixedLens (MkSimpleLens
+	{
+		simpleLensWitness = wit,
+		simpleLensGet = biForwards bi,
+		simpleLensPutback = \b _ -> Just (biBackwards bi b)
+	});
 }
