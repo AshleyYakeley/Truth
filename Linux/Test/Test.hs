@@ -5,6 +5,7 @@ module Main where
 	import Data.ByteString hiding (putStrLn);
 	import Data.Char;
 	import Data.IORef;
+	import Data.Result;
 	import Control.Concurrent;
 	import Prelude hiding (readFile,writeFile);
 	
@@ -17,6 +18,17 @@ module Main where
 	{
 		a <- readObject obj;
 		putStrLn (name ++ ": " ++ (show a));
+	};
+	
+	instance Show ListError where
+	{
+		show (MkListError i) = "error at item " ++ (show i);
+	};
+	
+	instance (Show e,Show a) => Show (Result e a) where
+	{
+		show (FailureResult e) = "failure: " ++ (show e);
+		show (SuccessResult a) = "success: " ++ (show a);
 	};
 	
 	makeShowSubscription :: (Show a) => String -> Object context a -> IO (Subscription context a);
@@ -62,8 +74,10 @@ module Main where
 		{
 			writeFile path (pack [65,66,67,68,10]);
 			fileobj <- return (linuxFileObject inotify path);
+			stringobj <- return (lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens packBSLens)))) () fileobj);
+			textobj <- return (lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens utf8Lens)))) () stringobj);
 		
-			sub <- makeShowSubscription path fileobj;		
+			sub <- makeShowSubscription path textobj;
 
 			putStrLn "writing & waiting 100ms";
 			writeFile path (pack [69,70,71,72,10]);
@@ -73,7 +87,7 @@ module Main where
 			writeFile path (pack [73,74,75,10]);
 			threadDelay 100000;
 
-			showPushEdit sub (ReplaceEdit (Just (pack (fmap (fromIntegral . ord) "pqrstu"))));
+			showPushEdit sub (ReplaceEdit (Just (SuccessResult "pqrstu")));
 
 	--		writeFile path (pack [65,66,67,68,10]);
 	{-		
@@ -110,7 +124,7 @@ module Main where
 	-}
 			showPushEdit sub (ReplaceEdit Nothing);
 			showPushEdit sub (ReplaceEdit Nothing);
-			showPushEdit sub (ReplaceEdit (Just (pack (fmap (fromIntegral . ord) "ABCdef"))));
+			showPushEdit sub (ReplaceEdit (Just (SuccessResult "ABCdef")));
 			showPushEdit sub (ReplaceEdit Nothing);
 
 			subClose sub;

@@ -5,6 +5,7 @@ module Data.Changes.Edit where
 	import Data.Result;
 	import Data.TypeFunc;
 	import Data.FunctorOne;
+	import Data.Traversable;
 	import Data.OpenWitness;
 	import Data.Witness;
 	import Control.Category;
@@ -156,7 +157,7 @@ module Data.Changes.Edit where
 		simpleLensPutback :: b -> a -> Maybe a
 	};
 	
-	simpleFixedLens :: SimpleLens a b  -> FixedLens a b;
+	simpleFixedLens :: SimpleLens a b -> FixedLens a b;
 	simpleFixedLens lens = MkFixedLens
 	{
 		fixedLensWitness = simpleLensWitness lens,
@@ -165,31 +166,64 @@ module Data.Changes.Edit where
 		fixedLensPutback = simpleLensPutback lens
 	};
 	
-	resultSimpleLens :: LensWitness a (Result e b) -> (a -> Result e b) -> (b -> a) -> SimpleLens a (Result e b);
-	resultSimpleLens witness decode' encode' = MkSimpleLens
+	data WholeLens a b = MkWholeLens
 	{
-		simpleLensWitness = witness,
-		simpleLensGet = decode',
-		simpleLensPutback = \r _ -> case r of
+		wholeLensWitness :: LensWitness a b,
+		wholeLensGet :: a -> b,
+		wholeLensPutback :: b -> Maybe a
+	};
+	
+	wholeSimpleLens :: WholeLens a b -> SimpleLens a b;
+	wholeSimpleLens lens = MkSimpleLens
+	{
+		simpleLensWitness = wholeLensWitness lens,
+		simpleLensGet = wholeLensGet lens,
+		simpleLensPutback = \b _ -> wholeLensPutback lens b
+	};
+
+	traversableWholeLens :: forall f a b. (Traversable f) => WholeLens a b -> WholeLens (f a) (f b);
+	traversableWholeLens lens = MkWholeLens
+	{
+		wholeLensWitness = let
+		{
+			tfc = ConstTFComposite (unsafeIOWitnessFromString "Data.Changes.Edit.functor" :: IOWitness (TFApply TFMap));
+
+			ff :: LensWitness x y -> LensWitness (f x) (f y);
+			ff (MkTFWitness tc) = MkTFWitness (ApplyTFComposite tfc tc);
+		} in ff (wholeLensWitness lens),
+		wholeLensGet = fmap (wholeLensGet lens),
+		wholeLensPutback = putback
+	}
+	where
+	{
+		putback fb = sequenceA (fmap (wholeLensPutback lens) fb);
+	};
+	
+	resultWholeLens :: LensWitness a (Result e b) -> (a -> Result e b) -> (b -> a) -> WholeLens a (Result e b);
+	resultWholeLens witness decode' encode' = MkWholeLens
+	{
+		wholeLensWitness = witness,
+		wholeLensGet = decode',
+		wholeLensPutback = \r -> case r of
 		{
 			SuccessResult b -> Just (encode' b);
 			_ -> Nothing;
 		}
 	};
 	
-	codecSimpleLens :: LensWitness a (Maybe b) -> Codec a b -> SimpleLens a (Maybe b);
-	codecSimpleLens wit codec = MkSimpleLens
+	codecWholeLens :: LensWitness a (Maybe b) -> Codec a b -> WholeLens a (Maybe b);
+	codecWholeLens wit codec = MkWholeLens
 	{
-		simpleLensWitness = wit,
-		simpleLensGet = decode codec,
-		simpleLensPutback = \mb _ -> fmap (encode codec) mb
+		wholeLensWitness = wit,
+		wholeLensGet = decode codec,
+		wholeLensPutback = fmap (encode codec)
 	};
 	
-	bijectionSimpleLens :: LensWitness a b -> Bijection a b -> SimpleLens a b;
-	bijectionSimpleLens wit bi = MkSimpleLens
+	bijectionWholeLens :: LensWitness a b -> Bijection a b -> WholeLens a b;
+	bijectionWholeLens wit bi = MkWholeLens
 	{
-		simpleLensWitness = wit,
-		simpleLensGet = biForwards bi,
-		simpleLensPutback = \b _ -> Just (biBackwards bi b)
+		wholeLensWitness = wit,
+		wholeLensGet = biForwards bi,
+		wholeLensPutback = Just . (biBackwards bi)
 	};
 }

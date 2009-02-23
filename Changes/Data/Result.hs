@@ -2,6 +2,10 @@ module Data.Result where
 {
 	import Data.Bijection;
 	import Control.Monad;
+	import Data.Traversable;
+	import Control.Applicative;
+	import Data.Foldable;
+	import Data.Monoid;
 
 	data Result e a = SuccessResult a | FailureResult e;
 	
@@ -9,6 +13,20 @@ module Data.Result where
 	{
 		fmap ab (SuccessResult a) = SuccessResult (ab a);
 		fmap _ (FailureResult e) = FailureResult e;
+	};
+
+	instance Foldable (Result e) where
+	{
+		foldMap am (SuccessResult a) = am a; 
+		foldMap _ (FailureResult _) = mempty; 
+	};
+
+	instance Traversable (Result e) where
+	{
+		traverse afb (SuccessResult a) = fmap SuccessResult (afb a);
+		traverse _ (FailureResult e) = pure (FailureResult e);
+		sequenceA (SuccessResult fa) = fmap SuccessResult fa;
+		sequenceA (FailureResult e) = pure (FailureResult e);
 	};
 
 	instance Monad (Result e) where

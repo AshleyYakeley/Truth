@@ -11,8 +11,8 @@ module Data.Changes.Text where
 	import Control.Monad.State;
 --	import Prelude hiding (id,(.));
 
-	packBSLens :: SimpleLens ByteString [Word8];
-	packBSLens = bijectionSimpleLens witness (MkBijection unpack pack) where
+	packBSLens :: WholeLens ByteString [Word8];
+	packBSLens = bijectionWholeLens witness (MkBijection unpack pack) where
 	{
 		witness :: LensWitness ByteString [Word8];
 		witness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.Text.packBSLens" :: IOWitness 
@@ -22,8 +22,8 @@ module Data.Changes.Text where
 	
 	data ListError = MkListError Int;
 	
-	utf8Lens :: SimpleLens [Word8] (Result ListError String);
-	utf8Lens = resultSimpleLens witness decode encode where
+	utf8Lens :: WholeLens [Word8] (Result ListError String);
+	utf8Lens = resultWholeLens witness decode encode where
 	{
 		witness :: LensWitness [Word8] (Result ListError String);
 		witness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.Text.Lens" :: IOWitness 

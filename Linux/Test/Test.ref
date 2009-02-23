@@ -1,15 +1,15 @@
 Test
 initINotify
-somefile: initial Just "ABCD\n"
+somefile: initial Just success: "ABCD\n"
 writing & waiting 100ms
-somefile: edit: replace Just "EFGH\n"
-somefile: update: Just "EFGH\n"
+somefile: edit: replace Just success: "EFGH\n"
+somefile: update: Just success: "EFGH\n"
 writing & waiting 100ms
-somefile: edit: replace Just "IJK\n"
-somefile: update: Just "IJK\n"
+somefile: edit: replace Just success: "IJK\n"
+somefile: update: Just success: "IJK\n"
 pushing
-somefile: edit: replace Just "pqrstu"
-somefile: update: Just "pqrstu"
+somefile: edit: replace Just success: "pqrstu"
+somefile: update: Just success: "pqrstu"
 pushed
 pushing
 somefile: edit: replace Nothing
@@ -20,8 +20,8 @@ somefile: edit: replace Nothing
 somefile: update: Nothing
 pushed
 pushing
-somefile: edit: replace Just "ABCdef"
-somefile: update: Just "ABCdef"
+somefile: edit: replace Just success: "ABCdef"
+somefile: update: Just success: "ABCdef"
 pushed
 pushing
 somefile: edit: replace Nothing
