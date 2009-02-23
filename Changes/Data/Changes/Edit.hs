@@ -177,7 +177,7 @@ module Data.Changes.Edit where
 		}
 	};
 	
-	codecSimpleLens :: LensWitness a (Maybe b) -> Codec a b -> FixedLens a (Maybe b);
+	codecSimpleLens :: LensWitness a (Maybe b) -> Codec a b -> SimpleLens a (Maybe b);
 	codecSimpleLens wit codec = MkSimpleLens
 	{
 		simpleLensWitness = wit,
@@ -185,7 +185,7 @@ module Data.Changes.Edit where
 		simpleLensPutback = \mb _ -> fmap (encode codec) mb
 	};
 	
-	bijectionSimpleLens :: LensWitness a b -> Bijection a b -> FixedLens a b;
+	bijectionSimpleLens :: LensWitness a b -> Bijection a b -> SimpleLens a b;
 	bijectionSimpleLens wit bi = MkSimpleLens
 	{
 		simpleLensWitness = wit,

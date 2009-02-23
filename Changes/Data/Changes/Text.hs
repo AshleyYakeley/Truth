@@ -11,8 +11,8 @@ module Data.Changes.Text where
 	import Control.Monad.State;
 --	import Prelude hiding (id,(.));
 
-	packBSLens :: FixedLens ByteString [Word8];
-	packBSLens = bijectionFixedLens witness (MkBijection unpack pack) where
+	packBSLens :: SimpleLens ByteString [Word8];
+	packBSLens = bijectionSimpleLens witness (MkBijection unpack pack) where
 	{
 		witness :: LensWitness ByteString [Word8];
 		witness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.Text.packBSLens" :: IOWitness 
