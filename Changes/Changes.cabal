@@ -34,8 +34,8 @@ exposed-modules:
 	Data.Bijection
 	Data.Codec
 	Data.Changes
-other-modules:
 	Data.Changes.Edit
 	Data.Changes.Object
 	Data.Changes.List
 	Data.Changes.Text
+other-modules:

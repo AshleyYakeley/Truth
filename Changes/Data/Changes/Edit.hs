@@ -177,19 +177,19 @@ module Data.Changes.Edit where
 		}
 	};
 	
-	codecFixedLens :: LensWitness a (Maybe b) -> Codec a b -> FixedLens a (Maybe b);
-	codecFixedLens wit codec = simpleFixedLens (MkSimpleLens
+	codecSimpleLens :: LensWitness a (Maybe b) -> Codec a b -> FixedLens a (Maybe b);
+	codecSimpleLens wit codec = MkSimpleLens
 	{
 		simpleLensWitness = wit,
 		simpleLensGet = decode codec,
 		simpleLensPutback = \mb _ -> fmap (encode codec) mb
-	});
+	};
 	
-	bijectionFixedLens :: LensWitness a b -> Bijection a b -> FixedLens a b;
-	bijectionFixedLens wit bi = simpleFixedLens (MkSimpleLens
+	bijectionSimpleLens :: LensWitness a b -> Bijection a b -> FixedLens a b;
+	bijectionSimpleLens wit bi = MkSimpleLens
 	{
 		simpleLensWitness = wit,
 		simpleLensGet = biForwards bi,
 		simpleLensPutback = \b _ -> Just (biBackwards bi b)
-	});
+	};
 }
