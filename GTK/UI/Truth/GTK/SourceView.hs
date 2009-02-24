@@ -13,54 +13,146 @@ module UI.Truth.GTK.SourceView where
 	--type ViewFactory context a = Object context a -> (Selection -> IO ()) -> IO View;
 	type ViewFactory context a = Object context a -> IO View;
 
-	data InternalViewFactory a = forall w. (WidgetClass w) => MkInternalViewFactory
+	data InternalView a = forall w. (WidgetClass w) => MkInternalView
 	{
-		ivNew :: a -> IO w,
-		ivUpdate :: w -> Edit a -> IO (),
-		ivSetPush :: w -> (IO (Edit a) -> IO (Maybe ())) -> IO ()
+		ivWidget :: w,
+		ivUpdate :: Edit a -> IO (),
+		ivSetPush :: (IO (Edit a) -> IO (Maybe ())) -> IO ()
 	};
 
+	type InternalViewFactory a = a -> IO (InternalView a);
+
 	ivfViewFactory :: InternalViewFactory a -> ViewFactory context a;
-	ivfViewFactory (MkInternalViewFactory new update setpush) obj = do
+	ivfViewFactory ivf obj = do
 	{
-		(widget,sub) <- objSubscribe obj new update;
-		setpush widget (subPush sub);
-		return (MkView
+		(view,sub) <- objSubscribe obj ivf ivUpdate;
+		case view of
 		{
-			viewWidget = widget,
-			viewRequestClose = do
+			(MkInternalView widget _ setpush) -> do
 			{
-				subClose sub;
-				return True;
-			}
-		});
+				setpush (subPush sub);
+				return (MkView
+				{
+					viewWidget = widget,
+					viewRequestClose = do
+					{
+						subClose sub;
+						return True;
+					}
+				});
+			};
+		};
 	};
 
 	checkButtonIVF :: String -> InternalViewFactory Bool;
-	checkButtonIVF name = MkInternalViewFactory
+	checkButtonIVF name initial = do
 	{
-		ivNew = \s -> do
+		widget <- checkButtonNew;
+		set widget [buttonLabel := name,toggleButtonActive := initial];
+		return (MkInternalView
 		{
-			widget <- checkButtonNew;
-			set widget [buttonLabel := name,toggleButtonActive := s];
-			return widget;
-		},
-		ivUpdate = \widget edit -> do
-		{
-			s <- get widget toggleButtonActive;
-			set widget [toggleButtonActive := (applyEdit edit s)];
-		},
-		ivSetPush = \widget push -> do
-		{
-			_ <- push (do
+			ivWidget = widget,
+			ivUpdate = \edit -> do
 			{
 				s <- get widget toggleButtonActive;
-				return (ReplaceEdit s);
-			});
-			return ();
-		}
+				set widget [toggleButtonActive := (applyEdit edit s)];
+			},
+			ivSetPush = \push -> do
+			{
+				_ <- push (do
+				{
+					s <- get widget toggleButtonActive;
+					return (ReplaceEdit s);
+				});
+				return ();
+			}
+		});
 	};
-
+{-
+	maybeIVF :: a -> InternalViewFactory a -> InternalViewFactory (Maybe a);
+	maybeIVF emptyval factory initial = do
+	{
+		frame <- frameNew;
+		createButton <- buttonNew;
+		set createButton [buttonLabel := "Create"];
+		miv <- case initial of
+		{
+			Just a -> do
+			{
+				iv <- factory a;				
+				set frame [containerChild := (viewWidget iv)];
+				return (Just iv);
+			};
+			_ -> do
+			{
+				set frame [containerChild := createButton];
+				return Nothing;
+			};
+		};
+		stateRef <- newIORef miv;
+		return (MkInternalView
+		{
+			ivWidget = frame,
+			ivUpdate = \edit -> do
+			{
+				case edit of
+				{
+					ReplaceEdit Nothing -> do
+					{
+						miv <- readIORef stateRef;
+						case miv of
+						{
+							Nothing -> return ();
+							Just iv -> do
+							{
+								set frame [containerChild := createButton];
+								widgetDestroy (ivWidget iv);
+								writeIORef stateRef Nothing;
+							};
+						};
+					};
+					ReplaceEdit (Just a) -> do
+					{
+						miv <- readIORef stateRef;
+						case miv of
+						{
+							Nothing -> do
+							{
+								iv <- factory a;				
+								set frame [containerChild := (viewWidget iv)];
+								writeIORef stateRef (Just iv);
+								ivSetPush iv (\ioea -> push (do
+								{
+									ea <- ioea;
+									return (FunctorOneEdit ea);
+								}))
+							};
+							Just iv -> do
+							{
+								set frame [containerChild := createButton];
+								widgetDestroy (ivWidget iv);
+							};
+						};
+					};
+				};
+			},
+			ivSetPush = \push -> do
+			{
+				onClicked createButton (push (return (ReplaceEdit emptyval)));
+				case miv of
+				{
+					Just iv -> ivSetPush iv (\ioea -> push (do
+					{
+						ea <- ioea;
+						return (FunctorOneEdit ea);
+					}));
+					_ -> return ();
+				};
+				return ();
+			}
+		});
+	};
+-}
 {-
 	maybeViewFactory :: a -> ViewFactory context a -> ViewFactory context (Maybe a);
 	maybeViewFactory emptyval factory objma = do
