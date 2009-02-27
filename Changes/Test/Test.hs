@@ -18,12 +18,13 @@ module Main where
 	withShowSubscription :: (Show a) => Object context a -> String -> (Object context a -> (Edit a -> IO (Maybe ())) -> IO (Maybe b)) -> IO (Maybe b);
 	withShowSubscription object name f = withSubscription object (MkEditor
 	{
-		editorInit = \a -> do
+		editorInit = \a push -> do
 		{
 			putStrLn (name ++ ": initial " ++ (show a));
-			newIORef a;
+			ref <- newIORef a;
+			return (ref,push);
 		},
-		editorUpdate = \ref edit -> do
+		editorUpdate = \(ref,push) edit -> do
 		{
 			putStrLn (name ++ ": edit: " ++ (showEdit edit));
 			olda <- readIORef ref;
@@ -31,7 +32,7 @@ module Main where
 			putStrLn (name ++ ": update: " ++ (show newa));
 			writeIORef ref newa;
 		},
-		editorDo = \ref obj push -> f obj (\edit -> do
+		editorDo = \(ref,push) obj -> f obj (\edit -> do
 		{
 			putStrLn "pushing";
 			result <- push (return edit);

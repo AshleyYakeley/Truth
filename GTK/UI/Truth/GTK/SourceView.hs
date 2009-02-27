@@ -16,11 +16,10 @@ module UI.Truth.GTK.SourceView where
 	data InternalView a = forall w. (WidgetClass w) => MkInternalView
 	{
 		ivWidget :: w,
-		ivUpdate :: Edit a -> IO (),
-		ivSetPush :: (IO (Edit a) -> IO (Maybe ())) -> IO ()
+		ivUpdate :: Edit a -> IO ()
 	};
 
-	type InternalViewFactory a = a -> IO (InternalView a);
+	type InternalViewFactory a = a -> Push a -> IO (InternalView a);
 
 	ivfViewFactory :: InternalViewFactory a -> ViewFactory context a;
 	ivfViewFactory ivf obj = do
@@ -28,9 +27,8 @@ module UI.Truth.GTK.SourceView where
 		(view,sub) <- objSubscribe obj ivf ivUpdate;
 		case view of
 		{
-			(MkInternalView widget _ setpush) -> do
+			(MkInternalView widget _) -> do
 			{
-				setpush (subPush sub);
 				return (MkView
 				{
 					viewWidget = widget,
@@ -45,10 +43,19 @@ module UI.Truth.GTK.SourceView where
 	};
 
 	checkButtonIVF :: String -> InternalViewFactory Bool;
-	checkButtonIVF name initial = do
+	checkButtonIVF name initial push = do
 	{
 		widget <- checkButtonNew;
 		set widget [buttonLabel := name,toggleButtonActive := initial];
+		onClicked widget (do
+		{
+			_ <- push (do
+			{
+				s <- get widget toggleButtonActive;
+				return (ReplaceEdit s);
+			});
+			return ();
+		});
 		return (MkInternalView
 		{
 			ivWidget = widget,
@@ -56,15 +63,6 @@ module UI.Truth.GTK.SourceView where
 			{
 				s <- get widget toggleButtonActive;
 				set widget [toggleButtonActive := (applyEdit edit s)];
-			},
-			ivSetPush = \push -> do
-			{
-				_ <- push (do
-				{
-					s <- get widget toggleButtonActive;
-					return (ReplaceEdit s);
-				});
-				return ();
 			}
 		});
 	};

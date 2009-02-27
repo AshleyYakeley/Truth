@@ -6,17 +6,18 @@ module Data.Changes.Object where
 	import Control.Exception hiding (catch);
 	import Data.Traversable;
 
+	-- | change the object.
+	-- The action argument and subscription updates are mutually excluded.
+	-- Returns Nothing if change is not allowed.
+	-- Returns Just () if change succeeded, and updates will be received before this action returns.
+	;
+	type Push a = IO (Edit a) -> IO (Maybe ());
+
 	data Subscription context a = MkSubscription
 	{
 		subGetContext :: IO context,
 
 		subObject :: Object context a,
-
-		-- | change the object.
-		-- The action argument and subscription updates are mutually excluded.
-		-- Returns Nothing if change is not allowed.
-		-- Returns Just () if change succeeded, and updates will be received before this action returns.
-		subPush :: IO (Edit a) -> IO (Maybe ()),
 		
 		-- | close the subscription
 		subClose :: IO ()
@@ -25,14 +26,14 @@ module Data.Changes.Object where
 	data Object context a = MkObject
 	{
 		-- | blocks if the object is busy
-		objSubscribe :: forall r. (a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription context a)
+		objSubscribe :: forall r. (a -> Push a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription context a)
 	};
 	
 	data Editor context a b = forall r. MkEditor
 	{
-		editorInit :: a -> IO r,
+		editorInit :: a -> Push a -> IO r,
 		editorUpdate :: r -> Edit a -> IO (),
-		editorDo :: r -> Object context a -> (IO (Edit a) -> IO (Maybe ())) -> IO b
+		editorDo :: r -> Object context a -> IO b
 	};
 
 	withSubscription :: Object context a -> Editor context a b -> IO b;
@@ -42,7 +43,7 @@ module Data.Changes.Object where
 		{
 			(r, sub) <- subscribe initr update;
 			finally
-				(f r (subObject sub) (subPush sub))
+				(f r (subObject sub))
 				(subClose sub);
 		};
 	};
@@ -50,24 +51,24 @@ module Data.Changes.Object where
 	readObject :: Object context a -> IO a;
 	readObject object = withSubscription object (MkEditor
 	{
-		editorInit = return,
+		editorInit = \a _ -> return a,
 		editorUpdate = \_ _ -> return (),
-		editorDo = \a _ _ -> return a
+		editorDo = \a _ -> return a
 	});
 
 	writeObject :: a -> Object context a -> IO (Maybe ());
 	writeObject a object = withSubscription object (MkEditor
 	{
-		editorInit = return,
+		editorInit = \_ push -> return push,
 		editorUpdate = \_ _ -> return (),
-		editorDo = \_ _ push -> push (return (ReplaceEdit a))
+		editorDo = \push _ -> push (return (ReplaceEdit a))
 	});
 
 	data InternalObject context a = MkInternalObject
 	{
 		intobjGetInitial :: forall r. (a -> IO r) -> IO r,
 		intobjGetContext :: IO context,
-		intobjPush :: IO (Edit a) -> IO (Maybe ()),
+		intobjPush :: Push a,
 		intobjClose :: IO ()
 	};
 
@@ -81,12 +82,12 @@ module Data.Changes.Object where
 			let
 			{
 				objSub :: forall r.
-					(a -> IO r) -> 
+					(a -> Push a -> IO r) -> 
 					(r -> Edit a -> IO ()) -> 
 					IO (r, Subscription context a);
 				objSub initialise updater = do
 				{
-					r <- intobjGetInitial intobj initialise;
+					r <- intobjGetInitial intobj (\a -> initialise a (intobjPush intobj));
 					key <- modifyMVar storevar (\store -> do
 					{
 						let {(key,newstore) = addStore (updater r) store;};
@@ -99,7 +100,6 @@ module Data.Changes.Object where
 							objSubscribe = objSub
 						},
 						subGetContext = intobjGetContext intobj,
-						subPush = intobjPush intobj,
 						subClose = modifyMVar_ storevar (\store -> let
 						{
 							newstore = deleteStore key store;
@@ -138,13 +138,13 @@ module Data.Changes.Object where
 	lensObject :: forall context state a b. (Eq state) => FloatingLens state a b -> state -> Object context a -> Object context b;
 	lensObject lens firststate (MkObject subscribe) = makeObject (\pushOut -> do
 	{
-		((statevar,firsta),sub) <- subscribe 
-		 (\a -> do
+		((statevar,firsta,push),sub) <- subscribe 
+		 (\a push -> do
 		{
 			statevar <- newEmptyMVar;
-			return (statevar,a);
+			return (statevar,a,push);
 		}) 
-		 (\(statevar,_) edita -> modifyMVar_ statevar (\(oldstate,olda) -> let
+		 (\(statevar,_,_) edita -> modifyMVar_ statevar (\(oldstate,olda) -> let
 		{
 			(newstate,meditb) = lensUpdate lens olda edita oldstate;
 		} in do
@@ -161,7 +161,7 @@ module Data.Changes.Object where
 		{
 			intobjGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (lensGet lens state a)),
 			intobjGetContext = subGetContext sub,
-			intobjPush = \ioedit -> subPush sub (withMVar statevar (\(state,_) -> do
+			intobjPush = \ioedit -> push (withMVar statevar (\(state,_) -> do
 			{
 				edit <- ioedit;
 				return (StateLensEdit lens state edit);

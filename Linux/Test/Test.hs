@@ -31,16 +31,17 @@ module Main where
 		show (SuccessResult a) = "success: " ++ (show a);
 	};
 	
-	makeShowSubscription :: (Show a) => String -> Object context a -> IO (Subscription context a);
+	makeShowSubscription :: (Show a) => String -> Object context a -> IO (Push a,Subscription context a);
 	makeShowSubscription name obj = do
 	{
-		(_,sub) <- objSubscribe obj 
-			(\a -> do
+		((_,push),sub) <- objSubscribe obj 
+			(\a push -> do
 			{
 				putStrLn (name ++ ": initial " ++ (show a));
-				newIORef a;
+				ref <- newIORef a;
+				return (ref,push);
 			}) 
-			(\ref edit -> do
+			(\(ref,_) edit -> do
 			{
 				putStrLn (name ++ ": edit: " ++ (showEdit edit));
 				olda <- readIORef ref;
@@ -48,14 +49,14 @@ module Main where
 				putStrLn (name ++ ": update: " ++ (show newa));
 				writeIORef ref newa;
 			});
-		return sub;
+		return (push,sub);
 	};
 	
-	showPushEdit :: Subscription context a -> Edit a -> IO ();
-	showPushEdit sub edit = do
+	showPushEdit :: Push a -> Edit a -> IO ();
+	showPushEdit push edit = do
 	{
 		putStrLn "pushing";
-		mm <- subPush sub (return edit);
+		mm <- push (return edit);
 		case mm of
 		{
 			Just _ -> putStrLn "pushed";
@@ -77,7 +78,7 @@ module Main where
 			stringobj <- return (lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens packBSLens)))) () fileobj);
 			textobj <- return (lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens utf8Lens)))) () stringobj);
 		
-			sub <- makeShowSubscription path textobj;
+			(push,sub) <- makeShowSubscription path textobj;
 
 			putStrLn "writing & waiting 100ms";
 			writeFile path (pack [69,70,71,72,10]);
@@ -87,7 +88,7 @@ module Main where
 			writeFile path (pack [73,74,75,10]);
 			threadDelay 100000;
 
-			showPushEdit sub (ReplaceEdit (Just (SuccessResult "pqrstu")));
+			showPushEdit push (ReplaceEdit (Just (SuccessResult "pqrstu")));
 
 	--		writeFile path (pack [65,66,67,68,10]);
 	{-		
@@ -122,10 +123,10 @@ module Main where
 		
 			subClose sectsub;
 	-}
-			showPushEdit sub (ReplaceEdit Nothing);
-			showPushEdit sub (ReplaceEdit Nothing);
-			showPushEdit sub (ReplaceEdit (Just (SuccessResult "ABCdef")));
-			showPushEdit sub (ReplaceEdit Nothing);
+			showPushEdit push (ReplaceEdit Nothing);
+			showPushEdit push (ReplaceEdit Nothing);
+			showPushEdit push (ReplaceEdit (Just (SuccessResult "ABCdef")));
+			showPushEdit push (ReplaceEdit Nothing);
 
 			subClose sub;
 			putStrLn "End";
