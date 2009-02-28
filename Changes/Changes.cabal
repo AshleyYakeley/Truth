@@ -25,17 +25,23 @@ extensions:
 	ImpredicativeTypes
 	ImplicitParams
 	GeneralizedNewtypeDeriving
+	MultiParamTypeClasses
+	FlexibleContexts
 exposed-modules:
 	Control.Wait
 	Data.Result
 	Data.FunctorOne
 	Data.Store
+	Data.Chain
+	Data.TypeFunc.TF
+	Data.TypeFunc.Witness
 	Data.TypeFunc
 	Data.Bijection
 	Data.Codec
 	Data.Changes
 	Data.Changes.Edit
 	Data.Changes.Object
+	Data.Changes.Tuple
 	Data.Changes.List
 	Data.Changes.Text
 other-modules:

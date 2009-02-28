@@ -5,15 +5,16 @@ module Data.Changes.Edit where
 	import Data.Result;
 	import Data.TypeFunc;
 	import Data.FunctorOne;
+	import Data.Chain;
 	import Data.Traversable;
 	import Data.OpenWitness;
 	import Data.Witness;
 	import Control.Category;
 	import Prelude hiding (id,(.));
 
-	type LensWitness = TFWitness (TFComposite IOWitness);
+	type LensWitness = Chain (TFWitness (TFMappable IOWitness));
 	makeLensWitness :: IOWitness tf -> LensWitness x (TF tf x);
-	makeLensWitness wit = MkTFWitness (ConstTFComposite wit);
+	makeLensWitness wit = singleChain (MkTFWitness (SimpleTFMappable wit));
 
 	data Edit a where
 	{
@@ -84,20 +85,12 @@ module Data.Changes.Edit where
 	functorOneLens :: forall f state a b. (FunctorOne f) => FloatingLens state a b -> FloatingLens state (f a) (f b);
 	functorOneLens lens = MkFloatingLens
 	{
-		lensWitness = let
-		{
-			tfc = ConstTFComposite (unsafeIOWitnessFromString "Data.Changes.Edit.functorOne" :: IOWitness (TFApply TFMap));
-
-			ff :: LensWitness x y -> LensWitness (f x) (f y);
-			ff (MkTFWitness tc) = MkTFWitness (ApplyTFComposite tfc tc);
-		} in ff (lensWitness lens),
+		lensWitness = cfmap (lensWitness lens),
 		lensStateWitness = let
 		{
-			tfc = ConstTFComposite (unsafeIOWitnessFromString "Data.Changes.Edit.functorOneState" :: IOWitness (TFConverse TFB TFMatch));
-
-			ff :: LensWitness x state -> LensWitness (f x) state;
-			ff (MkTFWitness tc) = MkTFWitness (ApplyTFComposite tfc tc);
-		} in ff (lensStateWitness lens),
+			wit :: IOWitness TFMatch;
+			wit = unsafeIOWitnessFromString "Data.Changes.Edit.functorOneState";
+		} in (lensStateWitness lens) . (singleChain (MkTFWitness (SimpleTFMappable wit))),
 		lensUpdate = update,
 		lensGet = get,
 		lensPutback = putback
@@ -137,6 +130,32 @@ module Data.Changes.Edit where
 		fixedLensPutback :: b -> a -> Maybe a
 	};
 	
+	instance Category FixedLens where
+	{
+		id = MkFixedLens
+		{
+			fixedLensWitness = id,
+			fixedLensUpdate = \_ -> Just,
+			fixedLensGet = id,
+			fixedLensPutback = \b _ -> Just b
+		};
+		bc . ab = MkFixedLens
+		{
+			fixedLensWitness = (fixedLensWitness bc) . (fixedLensWitness ab),
+			fixedLensUpdate = \a edita -> do
+			{
+				editb <- fixedLensUpdate ab a edita;
+				fixedLensUpdate bc (fixedLensGet ab a) editb;
+			},
+			fixedLensGet = (fixedLensGet bc) . (fixedLensGet ab),
+			fixedLensPutback = \c olda -> do
+			{
+				b <- fixedLensPutback bc c (fixedLensGet ab olda);
+				fixedLensPutback ab b olda;
+			}
+		};
+	};
+	
 	voidStateWitness :: LensWitness a ();
 	voidStateWitness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.Edit.void.state" :: IOWitness (TFConst ()));
 	
@@ -157,6 +176,26 @@ module Data.Changes.Edit where
 		simpleLensPutback :: b -> a -> Maybe a
 	};
 	
+	instance Category SimpleLens where
+	{
+		id = MkSimpleLens
+		{
+			simpleLensWitness = id,
+			simpleLensGet = id,
+			simpleLensPutback = \b _ -> Just b
+		};
+		bc . ab = MkSimpleLens
+		{
+			simpleLensWitness = (simpleLensWitness bc) . (simpleLensWitness ab),
+			simpleLensGet = (simpleLensGet bc) . (simpleLensGet ab),
+			simpleLensPutback = \c olda -> do
+			{
+				b <- simpleLensPutback bc c (simpleLensGet ab olda);
+				simpleLensPutback ab b olda;
+			}
+		};
+	};
+	
 	simpleFixedLens :: SimpleLens a b -> FixedLens a b;
 	simpleFixedLens lens = MkFixedLens
 	{
@@ -173,6 +212,22 @@ module Data.Changes.Edit where
 		wholeLensPutback :: b -> Maybe a
 	};
 	
+	instance Category WholeLens where
+	{
+		id = MkWholeLens
+		{
+			wholeLensWitness = id,
+			wholeLensGet = id,
+			wholeLensPutback = Just
+		};
+		bc . ab = MkWholeLens
+		{
+			wholeLensWitness = (wholeLensWitness bc) . (wholeLensWitness ab),
+			wholeLensGet = (wholeLensGet bc) . (wholeLensGet ab),
+			wholeLensPutback = \c -> (wholeLensPutback bc c) >>= (wholeLensPutback ab)
+		};
+	};
+	
 	wholeSimpleLens :: WholeLens a b -> SimpleLens a b;
 	wholeSimpleLens lens = MkSimpleLens
 	{
@@ -184,13 +239,7 @@ module Data.Changes.Edit where
 	traversableWholeLens :: forall f a b. (Traversable f) => WholeLens a b -> WholeLens (f a) (f b);
 	traversableWholeLens lens = MkWholeLens
 	{
-		wholeLensWitness = let
-		{
-			tfc = ConstTFComposite (unsafeIOWitnessFromString "Data.Changes.Edit.functor" :: IOWitness (TFApply TFMap));
-
-			ff :: LensWitness x y -> LensWitness (f x) (f y);
-			ff (MkTFWitness tc) = MkTFWitness (ApplyTFComposite tfc tc);
-		} in ff (wholeLensWitness lens),
+		wholeLensWitness = cfmap (wholeLensWitness lens),
 		wholeLensGet = fmap (wholeLensGet lens),
 		wholeLensPutback = putback
 	}
