@@ -78,8 +78,8 @@ module Data.Changes.Tuple where
 	data TFTuple;
 	type instance TF TFTuple a = Tuple a;
 
-	tupleWholeWitness :: IsTuple a => WholeLens a (Tuple a);
-	tupleWholeWitness = MkWholeLens
+	tupleWholeLens :: IsTuple a => WholeLens a (Tuple a);
+	tupleWholeLens = MkWholeLens
 	{
 		wholeLensWitness = let
 		{
@@ -91,7 +91,7 @@ module Data.Changes.Tuple where
 	};
 
 	tupleFixedLens :: IsTuple a => FixedLens a (Tuple a);
-	tupleFixedLens = simpleFixedLens (wholeSimpleLens tupleWholeWitness);
+	tupleFixedLens = simpleFixedLens (wholeSimpleLens tupleWholeLens);
 
 	firstTupleFixedLens :: (IsTuple a, (t0,rest) ~ Tuple a) => FixedLens a t0;
 	firstTupleFixedLens = headFixedLens . tupleFixedLens;
