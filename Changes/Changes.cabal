@@ -44,4 +44,5 @@ exposed-modules:
 	Data.Changes.Tuple
 	Data.Changes.List
 	Data.Changes.Text
+	Data.Changes.Context
 other-modules:

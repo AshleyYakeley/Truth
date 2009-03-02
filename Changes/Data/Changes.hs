@@ -5,6 +5,7 @@ module Data.Changes
 	module Data.Changes.Tuple,
 	module Data.Changes.List,
 	module Data.Changes.Text,
+	module Data.Changes.Context,
 ) where
 {
 	import Data.Changes.Edit;
@@ -12,4 +13,5 @@ module Data.Changes
 	import Data.Changes.Tuple;
 	import Data.Changes.List;
 	import Data.Changes.Text;
+	import Data.Changes.Context;
 }
