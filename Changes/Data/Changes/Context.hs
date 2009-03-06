@@ -2,8 +2,32 @@ module Data.Changes.Context where
 {
 	import Data.Changes.Tuple;
 	import Data.Changes.Edit;
+	import Data.FunctorOne;
+	import Data.Traversable;
+	import Data.Foldable;
 
 	data WithContext context content = MkWithContext context content;
+
+	instance Functor (WithContext context) where
+	{
+		fmap ab (MkWithContext context a) = MkWithContext context (ab a);
+	};
+
+	instance Foldable (WithContext context) where
+	{
+		foldMap am (MkWithContext _ a) = am a;
+	};
+
+	instance Traversable (WithContext context) where
+	{
+		traverse afb (MkWithContext context a) = fmap (MkWithContext context) (afb a);
+		sequenceA (MkWithContext context fa) = fmap (MkWithContext context) fa;
+	};
+
+	instance FunctorOne (WithContext context) where
+	{
+		retrieveOne (MkWithContext _ a) = Right a;
+	};
 	
 	instance IsTuple (WithContext context content) where
 	{

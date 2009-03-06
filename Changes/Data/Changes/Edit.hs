@@ -169,6 +169,9 @@ module Data.Changes.Edit where
 		lensPutback = \_ b a -> fmap (\newa -> (newa,())) (fixedLensPutback lens b a)
 	};
 	
+	fixedLensEdit :: FixedLens a b -> Edit b -> Edit a;
+	fixedLensEdit lens edit = StateLensEdit (fixedFloatingLens lens) () edit;
+	
 	data SimpleLens a b = MkSimpleLens
 	{
 		simpleLensWitness :: LensWitness a b,

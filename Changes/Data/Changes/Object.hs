@@ -13,30 +13,28 @@ module Data.Changes.Object where
 	;
 	type Push a = IO (Edit a) -> IO (Maybe ());
 
-	data Subscription context a = MkSubscription
+	data Subscription a = MkSubscription
 	{
-		subGetContext :: IO context,
-
-		subObject :: Object context a,
+		subObject :: Object a,
 		
 		-- | close the subscription
 		subClose :: IO ()
 	};
 	
-	data Object context a = MkObject
+	data Object a = MkObject
 	{
 		-- | blocks if the object is busy
-		objSubscribe :: forall r. (a -> Push a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription context a)
+		objSubscribe :: forall r. (a -> Push a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription a)
 	};
 	
-	data Editor context a b = forall r. MkEditor
+	data Editor a b = forall r. MkEditor
 	{
 		editorInit :: a -> Push a -> IO r,
 		editorUpdate :: r -> Edit a -> IO (),
-		editorDo :: r -> Object context a -> IO b
+		editorDo :: r -> Object a -> IO b
 	};
 
-	withSubscription :: Object context a -> Editor context a b -> IO b;
+	withSubscription :: Object a -> Editor a b -> IO b;
 	withSubscription (MkObject subscribe) editor = case editor of 
 	{
 		(MkEditor initr update f) -> do
@@ -48,7 +46,7 @@ module Data.Changes.Object where
 		};
 	};
 	
-	readObject :: Object context a -> IO a;
+	readObject :: Object a -> IO a;
 	readObject object = withSubscription object (MkEditor
 	{
 		editorInit = \a _ -> return a,
@@ -56,7 +54,7 @@ module Data.Changes.Object where
 		editorDo = \a _ -> return a
 	});
 
-	writeObject :: a -> Object context a -> IO (Maybe ());
+	writeObject :: a -> Object a -> IO (Maybe ());
 	writeObject a object = withSubscription object (MkEditor
 	{
 		editorInit = \_ push -> return push,
@@ -64,15 +62,14 @@ module Data.Changes.Object where
 		editorDo = \push _ -> push (return (ReplaceEdit a))
 	});
 
-	data InternalObject context a = MkInternalObject
+	data InternalObject a = MkInternalObject
 	{
 		intobjGetInitial :: forall r. (a -> IO r) -> IO r,
-		intobjGetContext :: IO context,
 		intobjPush :: Push a,
 		intobjClose :: IO ()
 	};
 
-	makeObject :: forall context a. ((Edit a -> IO ()) -> IO (InternalObject context a)) -> Object context a;
+	makeObject :: forall a. ((Edit a -> IO ()) -> IO (InternalObject a)) -> Object a;
 	makeObject getIntObject = MkObject
 	{
 		objSubscribe = \initialise' updater' -> do
@@ -84,7 +81,7 @@ module Data.Changes.Object where
 				objSub :: forall r.
 					(a -> Push a -> IO r) -> 
 					(r -> Edit a -> IO ()) -> 
-					IO (r, Subscription context a);
+					IO (r, Subscription a);
 				objSub initialise updater = do
 				{
 					r <- intobjGetInitial intobj (\a -> initialise a (intobjPush intobj));
@@ -99,7 +96,6 @@ module Data.Changes.Object where
 						{
 							objSubscribe = objSub
 						},
-						subGetContext = intobjGetContext intobj,
 						subClose = modifyMVar_ storevar (\store -> let
 						{
 							newstore = deleteStore key store;
@@ -117,14 +113,13 @@ module Data.Changes.Object where
 		}
 	};
 	
-	makeFreeObject :: forall context a. context -> a -> Object context a;
-	makeFreeObject context initial = makeObject (\pushOut -> do
+	makeFreeObject :: forall a. a -> Object a;
+	makeFreeObject initial = makeObject (\pushOut -> do
 	{
 		statevar <- newMVar initial;
 		return (MkInternalObject
 		{
 			intobjGetInitial = withMVar statevar,
-			intobjGetContext = return context,
 			intobjPush = \ioedit -> modifyMVar statevar (\a -> do
 			{
 				edit <- ioedit;
@@ -135,7 +130,7 @@ module Data.Changes.Object where
 		});
 	});
 
-	lensObject :: forall context state a b. (Eq state) => FloatingLens state a b -> state -> Object context a -> Object context b;
+	lensObject :: forall state a b. (Eq state) => FloatingLens state a b -> state -> Object a -> Object b;
 	lensObject lens firststate (MkObject subscribe) = makeObject (\pushOut -> do
 	{
 		((statevar,firsta,push),sub) <- subscribe 
@@ -160,7 +155,6 @@ module Data.Changes.Object where
 		return (MkInternalObject
 		{
 			intobjGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (lensGet lens state a)),
-			intobjGetContext = subGetContext sub,
 			intobjPush = \ioedit -> push (withMVar statevar (\(state,_) -> do
 			{
 				edit <- ioedit;

@@ -8,14 +8,14 @@ module Main where
 	showEdit (ReplaceEdit s) = "replace " ++ (show s);
 	showEdit _ = "lens";
 	
-	showObject :: (Show a) => String -> Object context a -> IO ();
+	showObject :: (Show a) => String -> Object a -> IO ();
 	showObject name obj = do
 	{
 		a <- readObject obj;
 		putStrLn (name ++ ": " ++ (show a));
 	};
 
-	withShowSubscription :: (Show a) => Object context a -> String -> (Object context a -> (Edit a -> IO (Maybe ())) -> IO (Maybe b)) -> IO (Maybe b);
+	withShowSubscription :: (Show a) => Object a -> String -> (Object a -> (Edit a -> IO (Maybe ())) -> IO (Maybe b)) -> IO (Maybe b);
 	withShowSubscription object name f = withSubscription object (MkEditor
 	{
 		editorInit = \a push -> do
@@ -49,7 +49,7 @@ module Main where
 	main = do
 	{
 		putStrLn "Test";
-		withShowSubscription (makeFreeObject () "abcdef") "main" (\obj push -> do
+		withShowSubscription (makeFreeObject "abcdef") "main" (\obj push -> do
 		{
 			push (ReplaceEdit "pqrstu");
 			showObject "current" obj;

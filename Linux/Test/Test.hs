@@ -13,7 +13,7 @@ module Main where
 	showEdit (ReplaceEdit s) = "replace " ++ (show s);
 	showEdit _ = "lens";
 	
-	showObject :: (Show a) => String -> Object context a -> IO ();
+	showObject :: (Show a) => String -> Object a -> IO ();
 	showObject name obj = do
 	{
 		a <- readObject obj;
@@ -31,7 +31,7 @@ module Main where
 		show (SuccessResult a) = "success: " ++ (show a);
 	};
 	
-	makeShowSubscription :: (Show a) => String -> Object context a -> IO (Push a,Subscription context a);
+	makeShowSubscription :: (Show a) => String -> Object a -> IO (Push a,Subscription a);
 	makeShowSubscription name obj = do
 	{
 		((_,push),sub) <- objSubscribe obj 
@@ -75,7 +75,8 @@ module Main where
 		{
 			writeFile path (pack [65,66,67,68,10]);
 			fileobj <- return (linuxFileObject inotify path);
-			stringobj <- return (lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens packBSLens)))) () fileobj);
+			contentobj <- return (lensObject (fixedFloatingLens contentFixedLens) () fileobj);
+			stringobj <- return (lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens packBSLens)))) () contentobj);
 			textobj <- return (lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens utf8Lens)))) () stringobj);
 		
 			(push,sub) <- makeShowSubscription path textobj;
