@@ -41,6 +41,7 @@ exposed-modules:
 	Data.Codec
 	Data.Changes
 	Data.Changes.Edit
+	Data.Changes.FixedLens
 	Data.Changes.Object
 	Data.Changes.Tuple
 	Data.Changes.List

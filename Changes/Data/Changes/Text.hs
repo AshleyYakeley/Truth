@@ -1,5 +1,6 @@
 module Data.Changes.Text where
 {
+	import Data.Changes.FixedLens;
 	import Data.Changes.Edit;
 	import Data.Result;
 	import Data.OpenWitness;

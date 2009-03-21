@@ -2,7 +2,7 @@ module Data.Changes.Context where
 {
 	import Data.Result;
 	import Data.Changes.Tuple;
-	import Data.Changes.Edit;
+	import Data.Changes.FixedLens;
 	import Data.FunctorOne;
 	import Data.Traversable;
 	import Data.Foldable;
