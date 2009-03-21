@@ -5,10 +5,12 @@ module Data.Changes.Edit where
 	import Data.Result;
 	import Data.TypeFunc;
 	import Data.FunctorOne;
+	import Data.ConstFunction;
 	import Data.Chain;
 	import Data.Traversable;
 	import Data.OpenWitness;
 	import Data.Witness;
+	import Control.Applicative;
 	import Control.Category;
 	import Prelude hiding (id,(.));
 
@@ -23,37 +25,64 @@ module Data.Changes.Edit where
 		FunctorOneEdit :: (FunctorOne f) => Edit b -> Edit (f b);
 	};
 	
-	applyAndInvertEdit :: a -> Edit a -> (a,Maybe (Edit a));
-	applyAndInvertEdit olda (ReplaceEdit newa) = (newa,Just (ReplaceEdit olda));
-	applyAndInvertEdit olda (StateLensEdit lens oldstate editb) = result where
+	applyAndInvertEditCF :: Edit a -> (ConstFunction a a,a -> Maybe (Edit a));
+	applyAndInvertEditCF (ReplaceEdit newa) = (pure newa,Just . ReplaceEdit);
+	applyAndInvertEditCF (StateLensEdit lens oldstate editb) = result where
 	{
-		oldb = lensGet lens oldstate olda;
-		(newb,invb) = applyAndInvertEdit oldb editb;
-		result = case lensPutback lens oldstate newb olda of
+		oldaoldb = lensGet lens oldstate;
+		(foldbnewb,oldbminvb) = applyAndInvertEditCF editb;
+		
+		mapa = do
 		{
-			Just (newa,newstate) -> (newa,fmap (StateLensEdit lens newstate) invb);
-			_ -> error "bad lens edit";
+			newb <- cofmap1CF oldaoldb foldbnewb;
+			mas <- lensPutback lens oldstate newb;
+			case mas of
+			{
+				Just as -> return as;
+				_ -> error "bad lens edit";
+			};
+		};
+		
+		result = (fmap fst mapa,\olda -> let
+		{
+			minvb = oldbminvb (oldaoldb olda);
+			(_,newstate) = applyConstFunction mapa olda;
+			minva = fmap (StateLensEdit lens newstate) minvb;
+		} in minva);
+	};
+	applyAndInvertEditCF (FunctorOneEdit editb) = (cfmap (applyEditCF editb),mneweditfb) where
+	{
+		mneweditfb = \oldfb -> case (retrieveOne oldfb) of
+		{
+			SuccessResult oldb -> fmap FunctorOneEdit (invertEditCF editb oldb);
+			_ -> Nothing;
 		};
 	};
-	applyAndInvertEdit oldfb (FunctorOneEdit editb) = (newfb,mneweditfb) where
+	
+	applyEditCF :: Edit a -> ConstFunction a a;
+	applyEditCF edit = fst (applyAndInvertEditCF edit);
+	
+	applyEditsCF :: [Edit a] -> ConstFunction a a;
+	applyEditsCF [] = id;
+	applyEditsCF (e:es) = (applyEditsCF es) . (applyEditCF e);
+	
+	invertEditCF :: Edit a -> a -> Maybe (Edit a);
+	invertEditCF edit = snd (applyAndInvertEditCF edit);
+	
+	applyAndInvertEdit :: a -> Edit a -> (a,Maybe (Edit a));
+	applyAndInvertEdit a edit = (applyConstFunction ae a,ie a) where
 	{
-		newfb = fmap (applyEdit editb) oldfb;
-		mneweditfb = case (retrieveOne oldfb) of
-		{
-			Left _ -> Nothing;
-			Right oldb -> fmap FunctorOneEdit (invertEdit oldb editb);
-		};
+		(ae,ie) = applyAndInvertEditCF edit;
 	};
 	
 	applyEdit :: Edit a -> a -> a;
-	applyEdit edit olda = fst (applyAndInvertEdit olda edit);
+	applyEdit = applyConstFunction . applyEditCF;
 	
 	applyEdits :: [Edit a] -> a -> a;
-	applyEdits [] = id;
-	applyEdits (e:es) = (applyEdits es) . (applyEdit e);
+	applyEdits = applyConstFunction . applyEditsCF;
 	
 	invertEdit :: a -> Edit a -> Maybe (Edit a);
-	invertEdit olda edit = snd (applyAndInvertEdit olda edit);
+	invertEdit olda edit =invertEditCF edit olda;
 	
 	commutableEdits :: (Eq a) => Edit a -> Edit a -> a -> Maybe a;
 	commutableEdits e1 e2 a = let
@@ -66,9 +95,9 @@ module Data.Changes.Edit where
 	{
 		lensWitness :: LensWitness a b,
 		lensStateWitness :: LensWitness a state,
-		lensUpdate :: a -> Edit a -> state -> (state,Maybe (Edit b)),
+		lensUpdate :: Edit a -> state -> ConstFunction a (state,Maybe (Edit b)),
 		lensGet :: state -> a -> b,
-		lensPutback :: state -> b -> a -> Maybe (a,state)
+		lensPutback :: state -> b -> ConstFunction a (Maybe (a,state))
 	};
 
 	matchLens :: FloatingLens state1 a b1 -> FloatingLens state2 a b2 -> Maybe (EqualType state1 state2,EqualType b1 b2);
@@ -91,67 +120,91 @@ module Data.Changes.Edit where
 			wit :: IOWitness TFMatch;
 			wit = unsafeIOWitnessFromString "Data.Changes.Edit.functorOneState";
 		} in (lensStateWitness lens) . (singleChain (MkTFWitness (SimpleTFMappable wit))),
-		lensUpdate = update,
+		lensUpdate = updateCF,
 		lensGet = get,
 		lensPutback = putback
 	}
 	where
 	{
-		update :: f a -> Edit (f a) -> state -> (state,Maybe (Edit (f b)));
-		update fa (FunctorOneEdit ea) state | Right a <- retrieveOne fa = let
+		updateCF :: Edit (f a) -> state -> ConstFunction (f a) (state,Maybe (Edit (f b)));
+		updateCF (FunctorOneEdit ea) state = do 
 		{
-			(state',meb) = lensUpdate lens a ea state;
-		} in (state',fmap FunctorOneEdit meb);
-		update fa efa state = (state,Just (ReplaceEdit (get state (applyEdit efa fa))));
-		
+			eit <- cofmap1CF retrieveOne (cfmap (lensUpdate lens ea state));
+			case eit of
+			{
+				SuccessResult (state',meb) -> return (state',fmap FunctorOneEdit meb);
+				_ -> return (state,Nothing);
+			};
+		};
+		updateCF efa state = fmap (\newfa -> (state,Just (ReplaceEdit (get state newfa)))) (applyEditCF efa);
+
 		get state = fmap (lensGet lens state);
 
-		putback state fb fa = case retrieveOne fb of
+		--lensPutback :: state -> (f b) -> ConstFunction (f a) (Maybe (f a,state))
+		putback state fb = case retrieveOne fb of
 		{
-			-- Left fa' -> Just (fa',state);
-			Left _ -> Nothing;		-- pushing nothing on something fails
-			Right b -> case retrieveOne fa of
+			SuccessResult b -> FunctionConstFunction (\fa -> case retrieveOne fa of
 			{
-				Left _ -> Nothing;	-- pushing something on nothing fails
-				Right a -> do
+				SuccessResult a -> do
 				{
-					(a',state') <- lensPutback lens state b a;
+					(a',state') <- applyConstFunction (lensPutback lens state b) a;
 					return (fmap (\_ -> a') fa,state');
 				};
-			};
+				_ -> Nothing;	-- pushing something on nothing fails
+			});
+			-- FailureResult fa' -> Just (fa',state);
+			_ -> pure Nothing;		-- pushing nothing on something fails
 		};
 	};
 
 	data FixedLens a b = MkFixedLens
 	{
 		fixedLensWitness :: LensWitness a b,
-		fixedLensUpdate :: a -> Edit a -> Maybe (Edit b),
+		fixedLensUpdateCF :: Edit a -> ConstFunction a (Maybe (Edit b)),
 		fixedLensGet :: a -> b,
-		fixedLensPutback :: b -> a -> Maybe a
+		fixedLensPutback :: b -> ConstFunction a (Maybe a)
 	};
+	
+	makeFixedLensUpdateCF :: (a -> b) -> (Edit a -> Maybe (ConstFunction a (Maybe (Edit b)))) -> (Edit a -> ConstFunction a (Maybe (Edit b)));
+	makeFixedLensUpdateCF getter ff edit = case ff edit of
+	{
+		Just ameb -> ameb;
+		_ -> fmap (Just . ReplaceEdit . getter) (applyEditCF edit);
+	};
+	
+	fixedLensUpdate :: FixedLens a b -> a -> Edit a -> Maybe (Edit b);
+	fixedLensUpdate lens olda edit = applyConstFunction (fixedLensUpdateCF lens edit) olda;
 	
 	instance Category FixedLens where
 	{
 		id = MkFixedLens
 		{
 			fixedLensWitness = id,
-			fixedLensUpdate = \_ -> Just,
+			fixedLensUpdateCF = \edit -> pure (Just edit),
 			fixedLensGet = id,
-			fixedLensPutback = \b _ -> Just b
+			fixedLensPutback = \b -> pure (Just b)
 		};
 		bc . ab = MkFixedLens
 		{
 			fixedLensWitness = (fixedLensWitness bc) . (fixedLensWitness ab),
-			fixedLensUpdate = \a edita -> do
+			fixedLensUpdateCF = \edita -> do
 			{
-				editb <- fixedLensUpdate ab a edita;
-				fixedLensUpdate bc (fixedLensGet ab a) editb;
+				meb <- fixedLensUpdateCF ab edita;
+				case meb of
+				{
+					Just editb -> cofmap1CF (fixedLensGet ab) (fixedLensUpdateCF bc editb);
+					_ -> return Nothing;
+				};
 			},
 			fixedLensGet = (fixedLensGet bc) . (fixedLensGet ab),
-			fixedLensPutback = \c olda -> do
+			fixedLensPutback = \c -> do
 			{
-				b <- fixedLensPutback bc c (fixedLensGet ab olda);
-				fixedLensPutback ab b olda;
+				mb <- cofmap1CF (fixedLensGet ab) (fixedLensPutback bc c);
+				case mb of
+				{
+					Just b -> fixedLensPutback ab b;
+					_ -> return Nothing;
+				}
 			}
 		};
 	};
@@ -164,9 +217,17 @@ module Data.Changes.Edit where
 	{
 		lensWitness = fixedLensWitness lens,
 		lensStateWitness = voidStateWitness,
-		lensUpdate = \a edit _ -> ((),fixedLensUpdate lens a edit),
+		lensUpdate = \edit _ -> do
+		{
+			meb <- fixedLensUpdateCF lens edit;
+			return ((),meb);
+		},
 		lensGet = \_ -> fixedLensGet lens,
-		lensPutback = \_ b a -> fmap (\newa -> (newa,())) (fixedLensPutback lens b a)
+		lensPutback = \_ b -> do
+		{
+			ma <- fixedLensPutback lens b;
+			return (fmap (\newa -> (newa,())) ma);
+		}		
 	};
 	
 	fixedLensEdit :: FixedLens a b -> Edit b -> Edit a;
@@ -176,7 +237,7 @@ module Data.Changes.Edit where
 	{
 		simpleLensWitness :: LensWitness a b,
 		simpleLensGet :: a -> b,
-		simpleLensPutback :: b -> a -> Maybe a
+		simpleLensPutback :: b -> ConstFunction a (Maybe a)
 	};
 	
 	instance Category SimpleLens where
@@ -185,16 +246,20 @@ module Data.Changes.Edit where
 		{
 			simpleLensWitness = id,
 			simpleLensGet = id,
-			simpleLensPutback = \b _ -> Just b
+			simpleLensPutback = \b -> pure (Just b)
 		};
 		bc . ab = MkSimpleLens
 		{
 			simpleLensWitness = (simpleLensWitness bc) . (simpleLensWitness ab),
 			simpleLensGet = (simpleLensGet bc) . (simpleLensGet ab),
-			simpleLensPutback = \c olda -> do
+			simpleLensPutback = \c -> do
 			{
-				b <- simpleLensPutback bc c (simpleLensGet ab olda);
-				simpleLensPutback ab b olda;
+				mb <- cofmap1CF (simpleLensGet ab) (simpleLensPutback bc c);
+				case mb of
+				{
+					Just b -> simpleLensPutback ab b;
+					_ -> return Nothing;
+				}
 			}
 		};
 	};
@@ -203,7 +268,7 @@ module Data.Changes.Edit where
 	simpleFixedLens lens = MkFixedLens
 	{
 		fixedLensWitness = simpleLensWitness lens,
-		fixedLensUpdate = \a edit -> Just (ReplaceEdit (simpleLensGet lens (applyEdit edit a))),
+		fixedLensUpdateCF = makeFixedLensUpdateCF (simpleLensGet lens) (\_ -> Nothing),
 		fixedLensGet = simpleLensGet lens,
 		fixedLensPutback = simpleLensPutback lens
 	};
@@ -236,7 +301,7 @@ module Data.Changes.Edit where
 	{
 		simpleLensWitness = wholeLensWitness lens,
 		simpleLensGet = wholeLensGet lens,
-		simpleLensPutback = \b _ -> wholeLensPutback lens b
+		simpleLensPutback = \b -> pure (wholeLensPutback lens b)
 	};
 
 	traversableWholeLens :: forall f a b. (Traversable f) => WholeLens a b -> WholeLens (f a) (f b);

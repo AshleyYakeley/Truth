@@ -29,6 +29,14 @@ module Data.Result where
 		sequenceA (FailureResult e) = pure (FailureResult e);
 	};
 
+	instance Applicative (Result e) where
+	{
+		pure = SuccessResult;
+		(SuccessResult ab) <*> (SuccessResult a) = SuccessResult (ab a);
+		(SuccessResult _) <*> (FailureResult e) = FailureResult e;
+		(FailureResult e) <*> _ = FailureResult e;
+	};
+
 	instance Monad (Result e) where
 	{
 		return = SuccessResult;

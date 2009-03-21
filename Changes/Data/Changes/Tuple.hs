@@ -5,6 +5,8 @@ module Data.Changes.Tuple where
 	import Data.OpenWitness;
 	import Data.TypeFunc;
 	import Control.Monad;
+	import Control.Applicative;
+	import Control.Arrow;
 	import Control.Category;
 	import Prelude hiding (id,(.));
 
@@ -16,7 +18,7 @@ module Data.Changes.Tuple where
 			wit :: IOWitness TFMatch1;
 			wit = unsafeIOWitnessFromString "Data.Changes.Tuple.headSimpleLens";
 		} in makeLensWitness wit,
-		fixedLensUpdate = \a edit -> let
+		fixedLensUpdateCF = \edit -> let
 		{
 			matchEdit :: Edit (head,tail) -> Maybe (Maybe (Edit head));
 			matchEdit (StateLensEdit lens _ editb) = do
@@ -31,11 +33,11 @@ module Data.Changes.Tuple where
 			matchEdit _ = Nothing;
 		} in case matchEdit edit of
 		{
-			Just mnewedit -> mnewedit;
-			_ -> Just (ReplaceEdit (fst (applyEdit edit a)));
+			Just mnewedit -> pure mnewedit;
+			_ -> fmap (Just . ReplaceEdit . fst) (applyEditCF edit);
 		},
 		fixedLensGet = fst,
-		fixedLensPutback = \b a -> Just (b,snd a)
+		fixedLensPutback = \b -> arr (\a -> Just (b,snd a))
 	};
 
 	tailFixedLens :: FixedLens (head,tail) tail;
@@ -46,7 +48,7 @@ module Data.Changes.Tuple where
 			wit :: IOWitness TFMatch;
 			wit = unsafeIOWitnessFromString "Data.Changes.Tuple.tailSimpleLens";
 		} in makeLensWitness wit,
-		fixedLensUpdate = \a edit -> let
+		fixedLensUpdateCF = \edit -> let
 		{
 			matchEdit :: Edit (head,tail) -> Maybe (Maybe (Edit tail));
 			matchEdit (StateLensEdit lens _ editb) = do
@@ -61,11 +63,11 @@ module Data.Changes.Tuple where
 			matchEdit _ = Nothing;
 		} in case matchEdit edit of
 		{
-			Just mnewedit -> mnewedit;
-			_ -> Just (ReplaceEdit (snd (applyEdit edit a)));
+			Just mnewedit -> pure mnewedit;
+			_ -> fmap (Just . ReplaceEdit . snd) (applyEditCF edit);
 		},
 		fixedLensGet = snd,
-		fixedLensPutback = \b a -> Just (fst a,b)
+		fixedLensPutback = \b -> arr (\a -> Just (fst a,b))
 	};
 
 	class (Is (ListType Type) (Tuple a)) => IsTuple a where

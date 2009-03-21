@@ -1,6 +1,8 @@
 module Data.Changes.List(listElement,listSection) where
 {
 	import Data.Changes.Edit;
+	import Control.Arrow;
+	import Data.ConstFunction;
 	import Data.Witness;
 	import Data.OpenWitness;
 	import Control.Monad;
@@ -32,11 +34,17 @@ module Data.Changes.List(listElement,listSection) where
 		lensStateWitness = elementStateWitness,
 		lensUpdate = elementUpdate,
 		lensGet = \i list -> if i < 0 then Nothing else elementGet i list,
-		lensPutback = \i me list -> if i < 0 then Nothing else do
+		lensPutback = \i me -> if i < 0 then return Nothing else do
 		{
-			e <- me;
-			newlist <- elementPutback i e list;
-			return (newlist,i);
+			case me of
+			{
+				Nothing -> return Nothing;
+				Just e -> arr (\list -> do
+				{
+					newlist <- elementPutback i e list;
+					return (newlist,i);
+				});
+			};
 		}
 	} where
 	{
@@ -64,32 +72,32 @@ module Data.Changes.List(listElement,listSection) where
 			return (e:xs);
 		};
 	
-		elementUpdate :: [e] -> Edit [e] -> Int -> (Int,Maybe (Edit (Maybe e)));
-		elementUpdate olda edita state = 
-		  fromMaybe (state,Just (ReplaceEdit (lensGet listElement state (applyEdit edita olda)))) update_ where
+		--lensUpdate :: Edit a -> state -> ConstFunction a (state,Maybe (Edit b)),
+
+		elementUpdate :: Edit [e] -> Int -> ConstFunction [e] (Int,Maybe (Edit (Maybe e)));
+		elementUpdate edita state = 
+		  fromMaybe (fmap (\newa -> (state,Just (ReplaceEdit (lensGet listElement state newa)))) (applyEditCF edita)) update_ where
 		{
-			update_ :: Maybe (Int,Maybe (Edit (Maybe e)));
+			update_ :: Maybe (ConstFunction [e] (Int,Maybe (Edit (Maybe e))));
 			update_ = case edita of
 			{
 				StateLensEdit editlens editlensstate editbedit -> do
 				{
 					(MkEqualType,MkEqualType) <- matchTLens (Type :: Type [e]) editlens listSection;
+					return (FunctionConstFunction (\olda ->
 					let
 					{
 						oldb = lensGet editlens editlensstate olda;
 						newb = applyEdit editbedit oldb;
 						newlen = length newb;
 						((newstate,_),mclip) = updateSection (state,1) editlensstate newlen;
-					};
-					--if (newstatelen > 0)
-					-- then 
-					return (newstate,fmap (\_ -> ReplaceEdit (elementGet newstate newb)) mclip);
+					} in (newstate,fmap (\_ -> ReplaceEdit (elementGet newstate newb)) mclip) ));
 				} `mplus` do
 				{
 					(MkEqualType,MkEqualType) <- matchTLens (Type :: Type [e]) editlens listElement;
-					if (editlensstate == state)
-					 then return (state,Just editbedit)
-					 else return (state,Nothing);
+					return (return (state,
+						if (editlensstate == state) then Just editbedit else Nothing
+						));
 				};
 				_ -> Nothing;
 			};
@@ -103,11 +111,11 @@ module Data.Changes.List(listElement,listSection) where
 		lensStateWitness = sectionStateWitness,
 		lensUpdate = sectionUpdate,
 		lensGet = \(start,len) list -> take len (drop start list),
-		lensPutback = \(start,len) newmiddle list -> let
+		lensPutback = \(start,len) newmiddle -> arr (\list -> return (let
 		{
 			(before,rest) = splitAt start list;
 			(_,after) = splitAt len rest;
-		} in Just (before ++ newmiddle ++ after,(start,length newmiddle))
+		} in (before ++ newmiddle ++ after,(start,length newmiddle)) ))
 	} where
 	{
 		sectionWitness :: LensWitness [e] [e];
@@ -116,27 +124,28 @@ module Data.Changes.List(listElement,listSection) where
 		sectionStateWitness :: LensWitness [e] (Int,Int);
 		sectionStateWitness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.List.listSection.state" :: IOWitness (TFConst (Int,Int)));
 	
-		sectionUpdate :: [e] -> Edit [e] -> (Int,Int) -> ((Int,Int),Maybe (Edit [e]));
-		sectionUpdate olda edita state = 
-		  fromMaybe (state,Just (ReplaceEdit (lensGet listSection state (applyEdit edita olda)))) update_ where
+		sectionUpdate :: Edit [e] -> (Int,Int) -> ConstFunction [e] ((Int,Int),Maybe (Edit [e]));
+		sectionUpdate edita state = 
+		  fromMaybe (fmap (\newa -> (state,Just (ReplaceEdit (lensGet listSection state newa)))) (applyEditCF edita)) update_ where
 		{
-			update_ :: Maybe ((Int,Int),Maybe (Edit [e]));
+			update_ :: Maybe (ConstFunction [e] ((Int,Int),Maybe (Edit [e])));
 			update_ = case edita of
 			{
 				StateLensEdit editlens editlensstate editbedit -> do
 				{
 					(MkEqualType,MkEqualType) <- matchTLens (Type :: Type [e]) editlens listSection;
+					return (FunctionConstFunction (\olda ->
 					let
 					{
 						oldb = lensGet editlens editlensstate olda;
 						newb = applyEdit editbedit oldb;
 						newlen = length newb;
 						(newstate,mclip) = updateSection state editlensstate newlen;
-					};
-					return (newstate,fmap (\clip -> StateLensEdit editlens clip editbedit) mclip);
+					} in (newstate,fmap (\clip -> StateLensEdit editlens clip editbedit) mclip) ));
 				} `mplus` do
 				{
 					(MkEqualType,MkEqualType) <- matchTLens (Type :: Type [e]) editlens listElement;
+					return (FunctionConstFunction (\olda ->
 					let
 					{
 						oldb = lensGet editlens editlensstate olda;
@@ -147,8 +156,7 @@ module Data.Changes.List(listElement,listSection) where
 							_ -> 0;
 						};
 						(newstate,mclip) = updateSection state (editlensstate,1) newlen;
-					};
-					return (newstate,fmap (\(clip,_) -> StateLensEdit editlens clip editbedit) mclip);					
+					} in (newstate,fmap (\(clip,_) -> StateLensEdit editlens clip editbedit) mclip) ));					
 				};
 				_ -> Nothing;
 			};

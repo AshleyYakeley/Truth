@@ -1,10 +1,12 @@
 module Data.Changes.Context where
 {
+	import Data.Result;
 	import Data.Changes.Tuple;
 	import Data.Changes.Edit;
 	import Data.FunctorOne;
 	import Data.Traversable;
 	import Data.Foldable;
+	import Control.Arrow;
 
 	data WithContext context content = MkWithContext context content;
 
@@ -26,7 +28,8 @@ module Data.Changes.Context where
 
 	instance FunctorOne (WithContext context) where
 	{
-		retrieveOne (MkWithContext _ a) = Right a;
+		retrieveOne (MkWithContext _ a) = SuccessResult a;
+		getPureOne = arr (\(MkWithContext context _) content -> (MkWithContext context content));
 	};
 	
 	instance IsTuple (WithContext context content) where

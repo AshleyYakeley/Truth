@@ -10,8 +10,8 @@ module UI.Truth.GTK.SourceView where
 		viewRequestClose :: IO Bool
 	};
 
-	--type ViewFactory context a = Object context a -> (Selection -> IO ()) -> IO View;
-	type ViewFactory context a = Object context a -> IO View;
+	--type ViewFactory a = Object a -> (Selection -> IO ()) -> IO View;
+	type ViewFactory a = Object a -> IO View;
 
 	data InternalView a = forall w. (WidgetClass w) => MkInternalView
 	{
@@ -21,7 +21,7 @@ module UI.Truth.GTK.SourceView where
 
 	type InternalViewFactory a = a -> Push a -> IO (InternalView a);
 
-	ivfViewFactory :: InternalViewFactory a -> ViewFactory context a;
+	ivfViewFactory :: InternalViewFactory a -> ViewFactory a;
 	ivfViewFactory ivf obj = do
 	{
 		(view,sub) <- objSubscribe obj ivf ivUpdate;
@@ -179,7 +179,7 @@ module UI.Truth.GTK.SourceView where
 		});
 	};
 -}
-	sourceViewBrowser :: ViewFactory context a;
+	sourceViewBrowser :: ViewFactory a;
 	sourceViewBrowser _ = do
 	{
 		button <- buttonNew;

@@ -4,6 +4,7 @@ module Data.Changes.Object where
 	import Data.Store;
 	import Control.Concurrent.MVar;
 	import Control.Exception hiding (catch);
+	import Data.ConstFunction;
 	import Data.Traversable;
 
 	-- | change the object.
@@ -141,7 +142,7 @@ module Data.Changes.Object where
 		}) 
 		 (\(statevar,_,_) edita -> modifyMVar_ statevar (\(oldstate,olda) -> let
 		{
-			(newstate,meditb) = lensUpdate lens olda edita oldstate;
+			(newstate,meditb) = applyConstFunction (lensUpdate lens edita oldstate) olda;
 		} in do
 		{
 			case meditb of

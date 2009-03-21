@@ -1,35 +1,55 @@
+{-# OPTIONS -fno-warn-orphans #-}
 module Data.FunctorOne where
 {
+	import Data.Chain;
+	import Data.ConstFunction;
 	import Data.Result;
+	import Control.Applicative;
 	import Control.Monad.Instances();
 
 	class (Functor f) => FunctorOne f where
 	{
-		retrieveOne :: f a -> Either (forall b. f b) a;
+		retrieveOne :: f a -> Result (forall b. f b) a;
+		getPureOne :: ConstFunction (f a) (b -> f b);
 	};
 	-- retrieveOne (fmap f w) = fmap f (retrieveOne w)
 	-- case (retrieveOne w) of {Left w' -> w';Right a -> fmap (\_ -> a) w;} = w
 
 	instance FunctorOne Maybe where
 	{
-		retrieveOne (Just a) = Right a;
-		retrieveOne Nothing = Left Nothing;
+		retrieveOne (Just a) = SuccessResult a;
+		retrieveOne Nothing = FailureResult Nothing;
+		getPureOne = return pure;
 	};
 	
 	instance FunctorOne (Either a) where
 	{
-		retrieveOne (Right b) = Right b;
-		retrieveOne (Left a) = Left (Left a);
+		retrieveOne (Right b) = SuccessResult b;
+		retrieveOne (Left a) = FailureResult (Left a);
+		getPureOne = return Right;
 	};
 
 	instance FunctorOne ((,) p) where
 	{
-		retrieveOne (_,a) = Right a;
+		retrieveOne (_,a) = SuccessResult a;
+		getPureOne = FunctionConstFunction (\fa b -> fmap (const b) fa);
 	};
 
 	instance FunctorOne (Result e) where
 	{
-		retrieveOne (SuccessResult a) = Right a;
-		retrieveOne (FailureResult e) = Left (FailureResult e);
+		retrieveOne (SuccessResult a) = SuccessResult a;
+		retrieveOne (FailureResult e) = FailureResult (FailureResult e);
+		getPureOne = return pure;
+	};
+	
+	-- not quite as general as (->) which has (Functor f)
+	instance (FunctorOne f) => CatFunctor ConstFunction f where
+	{
+		cfmap (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
+		cfmap (ConstConstFunction b) = do
+		{
+			bfb <- getPureOne;
+			return (bfb b);
+		};
 	};
 }
