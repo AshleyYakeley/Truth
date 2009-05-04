@@ -2,6 +2,7 @@ module UI.Truth.GTK.SourceView where
 {
 	import Graphics.UI.Gtk hiding (Object);
 	import Data.Changes;
+	import Data.IORef;
 	
 	data View = forall w. (WidgetClass w) => MkView
 	{
@@ -66,19 +67,37 @@ module UI.Truth.GTK.SourceView where
 			}
 		});
 	};
-{-
-	maybeIVF :: a -> InternalViewFactory a -> InternalViewFactory (Maybe a);
-	maybeIVF emptyval factory initial = do
+
+	maybeIVF :: forall a. a -> InternalViewFactory a -> InternalViewFactory (Maybe a);
+	maybeIVF (emptyval :: a) (factory :: InternalViewFactory a) (initial :: Maybe a) (push :: Push (Maybe a)) = 
+	let
+	{
+		mpush :: Push a;
+		mpush ioea = push (do
+		{
+			ea <- ioea;
+			return (FunctorOneEdit ea);
+		});
+	} in do
 	{
 		frame <- frameNew;
 		createButton <- buttonNew;
 		set createButton [buttonLabel := "Create"];
-		miv <- case initial of
+		onClicked createButton (do
+		{
+			result <- push (return (ReplaceEdit (Just emptyval)));
+			case result of
+			{
+				Just _ -> return ();	-- succeeded
+				_ -> return ();	-- failed. Could possibly do something here.
+			};
+		});
+		initialmiv :: Maybe (InternalView a) <- case initial of
 		{
 			Just a -> do
 			{
-				iv <- factory a;				
-				set frame [containerChild := (viewWidget iv)];
+				iv@(MkInternalView widget _) <- factory a mpush;				
+				set frame [containerChild := widget];
 				return (Just iv);
 			};
 			_ -> do
@@ -87,70 +106,48 @@ module UI.Truth.GTK.SourceView where
 				return Nothing;
 			};
 		};
-		stateRef <- newIORef miv;
+		stateRef :: IORef (Maybe (InternalView a)) <- newIORef initialmiv;
 		return (MkInternalView
 		{
 			ivWidget = frame,
 			ivUpdate = \edit -> do
 			{
-				case edit of
+				miv :: Maybe (InternalView a) <- readIORef stateRef;
+				newma <- applyConstFunctionA (applyEditCF edit) (do
 				{
-					ReplaceEdit Nothing -> do
+					
+				}) :: IO (Maybe a) -> IO (Maybe a);
+				case newma of
+				{
+					Nothing -> case miv of
 					{
-						miv <- readIORef stateRef;
-						case miv of
+						Nothing -> return ();
+						Just (MkInternalView widget _) -> do
 						{
-							Nothing -> return ();
-							Just iv -> do
-							{
-								set frame [containerChild := createButton];
-								widgetDestroy (ivWidget iv);
-								writeIORef stateRef Nothing;
-							};
+							set frame [containerChild := createButton];
+							widgetDestroy widget;
+							writeIORef stateRef Nothing;
 						};
 					};
-					ReplaceEdit (Just a) -> do
+					Just a -> case miv of
 					{
-						miv <- readIORef stateRef;
-						case miv of
+						Nothing -> do
 						{
-							Nothing -> do
-							{
-								iv <- factory a;				
-								set frame [containerChild := (viewWidget iv)];
-								writeIORef stateRef (Just iv);
-								ivSetPush iv (\ioea -> push (do
-								{
-									ea <- ioea;
-									return (FunctorOneEdit ea);
-								}))
-							};
-							Just iv -> do
-							{
-								set frame [containerChild := createButton];
-								widgetDestroy (ivWidget iv);
-							};
+							iv@(MkInternalView widget _) <- factory a mpush;				
+							set frame [containerChild := widget];
+							writeIORef stateRef (Just iv);
+						};
+						Just (MkInternalView widget _) -> do
+						{
+							set frame [containerChild := createButton];
+							widgetDestroy widget;
 						};
 					};
 				};
-			},
-			ivSetPush = \push -> do
-			{
-				onClicked createButton (push (return (ReplaceEdit emptyval)));
-				case miv of
-				{
-					Just iv -> ivSetPush iv (\ioea -> push (do
-					{
-						ea <- ioea;
-						return (FunctorOneEdit ea);
-					}));
-					_ -> return ();
-				};
-				return ();
 			}
-		});
+		} :: InternalView (Maybe a));
 	};
--}
+
 {-
 	maybeViewFactory :: a -> ViewFactory context a -> ViewFactory context (Maybe a);
 	maybeViewFactory emptyval factory objma = do
