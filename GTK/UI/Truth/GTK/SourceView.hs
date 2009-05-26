@@ -2,6 +2,7 @@ module UI.Truth.GTK.SourceView where
 {
 	import Graphics.UI.Gtk hiding (Object);
 	import Data.Changes;
+--	import Data.ConstFunction;
 	import Data.IORef;
 	
 	data View = forall w. (WidgetClass w) => MkView
@@ -53,7 +54,7 @@ module UI.Truth.GTK.SourceView where
 			_ <- push (do
 			{
 				s <- get widget toggleButtonActive;
-				return (ReplaceEdit s);
+				return (Just (ReplaceEdit s));
 			});
 			return ();
 		});
@@ -68,15 +69,19 @@ module UI.Truth.GTK.SourceView where
 		});
 	};
 
-	maybeIVF :: forall a. a -> InternalViewFactory a -> InternalViewFactory (Maybe a);
+	maybeIVF :: forall a. (Data.Changes.Editable a) => a -> InternalViewFactory a -> InternalViewFactory (Maybe a);
 	maybeIVF (emptyval :: a) (factory :: InternalViewFactory a) (initial :: Maybe a) (push :: Push (Maybe a)) = 
 	let
 	{
 		mpush :: Push a;
 		mpush ioea = push (do
 		{
-			ea <- ioea;
-			return (FunctorOneEdit ea);
+			mea <- ioea;
+			return (do
+			{
+				ea <- mea;
+				return (PartEdit (JustEdit ea));
+			});
 		});
 	} in do
 	{
@@ -85,7 +90,7 @@ module UI.Truth.GTK.SourceView where
 		set createButton [buttonLabel := "Create"];
 		onClicked createButton (do
 		{
-			result <- push (return (ReplaceEdit (Just emptyval)));
+			result <- push (return (Just (ReplaceEdit (Just emptyval))));
 			case result of
 			{
 				Just _ -> return ();	-- succeeded
@@ -113,35 +118,27 @@ module UI.Truth.GTK.SourceView where
 			ivUpdate = \edit -> do
 			{
 				miv :: Maybe (InternalView a) <- readIORef stateRef;
-				newma <- applyConstFunctionA (applyEditCF edit) (do
+				case miv of
 				{
-					
-				}) :: IO (Maybe a) -> IO (Maybe a);
-				case newma of
-				{
-					Nothing -> case miv of
+					Just (MkInternalView widget update) -> case extractJustEdit edit of
 					{
-						Nothing -> return ();
-						Just (MkInternalView widget _) -> do
+						Just edita -> update edita;
+						Nothing -> do
 						{
 							set frame [containerChild := createButton];
 							widgetDestroy widget;
 							writeIORef stateRef Nothing;
 						};
 					};
-					Just a -> case miv of
+					Nothing -> case edit of
 					{
-						Nothing -> do
+						ReplaceEdit (Just a) -> do
 						{
 							iv@(MkInternalView widget _) <- factory a mpush;				
 							set frame [containerChild := widget];
 							writeIORef stateRef (Just iv);
 						};
-						Just (MkInternalView widget _) -> do
-						{
-							set frame [containerChild := createButton];
-							widgetDestroy widget;
-						};
+						_ -> return ();
 					};
 				};
 			}

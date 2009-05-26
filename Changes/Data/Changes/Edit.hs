@@ -9,6 +9,7 @@ module Data.Changes.Edit where
 	import Data.Witness;
 	import Control.Applicative;
 	import Control.Category;
+	import Data.Word;
 	import Prelude hiding (id,(.));
 
 	type LensWitness = Chain (TFWitness (TFMappable IOWitness));
@@ -34,6 +35,16 @@ module Data.Changes.Edit where
 --		data PartEdit ();
 --		applyPartEdit _ = id;
 --		invertPartEdit _ _ = Nothing;
+	};
+
+	instance Editable Bool where
+	{
+		type PartEdit Bool = Nothing;
+	};
+
+	instance Editable Word8 where
+	{
+		type PartEdit Word8 = Nothing;
 	};
 
 	data Edit a = ReplaceEdit a | PartEdit (PartEdit a);
