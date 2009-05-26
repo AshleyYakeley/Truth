@@ -9,6 +9,10 @@ module Data.Result where
 
 	data Result e a = SuccessResult a | FailureResult e;
 	
+	resultToMaybe :: Result e a -> Maybe a;
+	resultToMaybe (SuccessResult a) = Just a;
+	resultToMaybe _ = Nothing;
+	
 	instance Functor (Result e) where
 	{
 		fmap ab (SuccessResult a) = SuccessResult (ab a);

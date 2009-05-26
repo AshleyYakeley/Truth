@@ -12,7 +12,7 @@ module Data.Changes.Object where
 	-- Returns Nothing if change is not allowed.
 	-- Returns Just () if change succeeded, and updates will be received before this action returns.
 	;
-	type Push a = IO (Edit a) -> IO (Maybe ());
+	type Push a = IO (Maybe (Edit a)) -> IO (Maybe ());
 
 	data Subscription a = MkSubscription
 	{
@@ -54,7 +54,7 @@ module Data.Changes.Object where
 		editorUpdate = \_ _ -> return (),
 		editorDo = \a _ -> return a
 	});
-
+{-
 	writeObject :: a -> Object a -> IO (Maybe ());
 	writeObject a object = withSubscription object (MkEditor
 	{
@@ -62,7 +62,7 @@ module Data.Changes.Object where
 		editorUpdate = \_ _ -> return (),
 		editorDo = \push _ -> push (return (ReplaceEdit a))
 	});
-
+-}
 	data InternalObject a = MkInternalObject
 	{
 		intobjGetInitial :: forall r. (a -> IO r) -> IO r,
@@ -114,7 +114,7 @@ module Data.Changes.Object where
 		}
 	};
 	
-	makeFreeObject :: forall a. a -> Object a;
+	makeFreeObject :: forall a. (Editable a) => a -> Object a;
 	makeFreeObject initial = makeObject (\pushOut -> do
 	{
 		statevar <- newMVar initial;
@@ -123,15 +123,22 @@ module Data.Changes.Object where
 			intobjGetInitial = withMVar statevar,
 			intobjPush = \ioedit -> modifyMVar statevar (\a -> do
 			{
-				edit <- ioedit;
-				pushOut edit;
-				return (applyEdit edit a,Just ());
+				medit <- ioedit;
+				case medit of
+				{
+					Just edit -> do
+					{
+						pushOut edit;
+						return (applyEdit edit a,Just ());
+					};
+					Nothing -> return (a,Nothing);
+				};
 			}),
 			intobjClose = return ()
 		});
 	});
 
-	lensObject :: forall state a b. (Eq state) => FloatingLens state a b -> state -> Object a -> Object b;
+	lensObject :: forall state a b. (Editable a,Eq state) => FloatingLens state a b -> state -> Object a -> Object b;
 	lensObject lens firststate (MkObject subscribe) = makeObject (\pushOut -> do
 	{
 		((statevar,firsta,push),sub) <- subscribe 
@@ -156,10 +163,14 @@ module Data.Changes.Object where
 		return (MkInternalObject
 		{
 			intobjGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (lensGet lens state a)),
-			intobjPush = \ioedit -> push (withMVar statevar (\(state,_) -> do
+			intobjPush = \ioedit -> push (withMVar statevar (\(state,a) -> do
 			{
-				edit <- ioedit;
-				return (StateLensEdit lens state edit);
+				medit <- ioedit;
+				return (do
+				{
+					edit <- medit;
+					applyConstFunction (lensPutEdit lens state edit) a;
+				});
 			})),
 			intobjClose = subClose sub
 		});

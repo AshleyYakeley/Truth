@@ -3,10 +3,12 @@ module Data.Changes.Context where
 	import Data.Result;
 	import Data.Changes.Tuple;
 	import Data.Changes.FixedLens;
+	import Data.Changes.Edit;
 	import Data.FunctorOne;
 	import Data.Traversable;
 	import Data.Foldable;
 	import Control.Arrow;
+	import Control.Monad.Identity;
 
 	data WithContext context content = MkWithContext context content;
 
@@ -32,17 +34,25 @@ module Data.Changes.Context where
 		getPureOne = arr (\(MkWithContext context _) content -> (MkWithContext context content));
 	};
 	
-	instance IsTuple (WithContext context content) where
+	instance (Editable context,Editable content) => Editable (WithContext context content) where
 	{
-		type Tuple (WithContext context content) = (content,(context,()));
+		type PartEdit (WithContext context content) = TListPartEdit (content,(context,()));
+	};
+	
+	instance (Editable context,Editable content) => IsTuple (WithContext context content) where
+	{
+		type TList (WithContext context content) = (content,(context,()));
 		fromListTuple (content,(context,())) = MkWithContext context content;
 		toListTuple (MkWithContext context content) = (content,(context,()));
 	};
 
-	contentFixedLens :: FixedLens (WithContext context content) content;
-	contentFixedLens = firstTupleFixedLens;
+--	tupleElementCleanLens :: (IsTuple t,Editable a,PartEdit t ~ TListPartEdit (TList t)) => TListElement (TList t) a -> CleanLens' Identity t a;
 
-	contextFixedLens :: FixedLens (WithContext context content) context;
-	contextFixedLens = secondTupleFixedLens;
+
+	contentCleanLens :: (Editable context,Editable content) => CleanLens' Identity (WithContext context content) content;
+	contentCleanLens = tupleElementCleanLens HeadTListElement;
+
+	contextCleanLens :: (Editable context,Editable content) => CleanLens' Identity (WithContext context content) context;
+	contextCleanLens = tupleElementCleanLens (TailTListElement HeadTListElement);
 }
 

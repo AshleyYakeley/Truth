@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Changes.Text where
 {
 	import Data.Changes.FixedLens;
@@ -10,7 +11,18 @@ module Data.Changes.Text where
 	import Data.Word;
 	import Data.Bits;
 	import Control.Monad.State;
---	import Prelude hiding (id,(.));
+--	import Control.Category;
+	import Prelude hiding (id,(.));
+
+	instance Editable Char where
+	{
+		type PartEdit Char = Nothing;
+	};
+
+	instance Editable ByteString where
+	{
+		type PartEdit ByteString = Nothing;
+	};
 
 	packBSLens :: WholeLens ByteString [Word8];
 	packBSLens = bijectionWholeLens witness (MkBijection unpack pack) where

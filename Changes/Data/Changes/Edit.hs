@@ -1,6 +1,6 @@
 module Data.Changes.Edit where
 {
-	import Data.Result;
+--	import Data.Result;
 	import Data.TypeFunc;
 	import Data.FunctorOne;
 	import Data.ConstFunction;
@@ -15,6 +15,84 @@ module Data.Changes.Edit where
 	makeLensWitness :: IOWitness tf -> LensWitness x (TF tf x);
 	makeLensWitness wit = singleChain (MkTFWitness (SimpleTFMappable wit));
 
+	class EditScheme partedit a where
+	{
+		applyPartEdit :: partedit -> ConstFunction a a;
+		invertPartEdit :: partedit -> a -> Maybe (Edit a);	-- "Nothing" means no change
+	};
+
+	class (EditScheme (PartEdit a) a) => Editable a where
+	{
+		type PartEdit a :: *;
+--		applyPartEdit :: PartEdit a -> ConstFunction a a;
+--		invertPartEdit :: PartEdit a -> a -> Maybe (Edit a);	-- "Nothing" means no change
+	};
+
+	instance Editable () where
+	{
+		type PartEdit () = Nothing;
+--		data PartEdit ();
+--		applyPartEdit _ = id;
+--		invertPartEdit _ _ = Nothing;
+	};
+
+	data Edit a = ReplaceEdit a | PartEdit (PartEdit a);
+
+--	type Edit a = Edit' (PartEdit a) a;
+
+	data Nothing;
+
+	instance EditScheme Nothing a where
+	{
+		applyPartEdit _ = id;
+		invertPartEdit _ _ = Nothing;
+	};
+
+	newtype JustEdit a = JustEdit (Edit a);
+
+	instance (Editable a) => EditScheme (JustEdit a) (Maybe a) where
+	{
+		applyPartEdit (JustEdit edita) = cfmap (applyEditCF edita);
+
+		invertPartEdit (JustEdit edita) (Just olda) = fmap (PartEdit . JustEdit) (invertEditCF edita olda);
+		invertPartEdit (JustEdit _) _ = Nothing;
+	};
+
+	applyEditCF :: (Editable a) => Edit a -> ConstFunction a a;
+	applyEditCF (ReplaceEdit newa) = pure newa;
+	applyEditCF (PartEdit pea) = applyPartEdit pea;
+
+	invertEditCF :: (Editable a) => Edit a -> a -> Maybe (Edit a);
+	invertEditCF (ReplaceEdit _) olda = Just (ReplaceEdit olda);
+	invertEditCF (PartEdit pea) olda = invertPartEdit pea olda;
+
+	applyAndInvertEditCF :: (Editable a) => Edit a -> (ConstFunction a a,a -> Maybe (Edit a));
+	applyAndInvertEditCF edit = (applyEditCF edit,invertEditCF edit);
+{-
+	applyEditCF :: (Editable a) => Edit a -> ConstFunction a a;
+	applyEditCF (ReplaceEdit newa) = pure newa;
+	applyEditCF (PartEdit pea) = applyPartEdit pea;
+
+	invertEditCF :: (Editable a) => Edit a -> a -> Maybe (Edit a);
+	invertEditCF (ReplaceEdit _) olda = Just (ReplaceEdit olda);
+	invertEditCF (PartEdit pea) olda = invertPartEdit pea olda;
+-}
+	instance (Editable a) => Editable (Maybe a) where
+	{
+		type PartEdit (Maybe a) = JustEdit a;
+--		data PartEdit (Maybe a) = JustEdit (Edit a);
+
+--		applyPartEdit (JustEdit edita) = cfmap (applyEditCF edita);
+
+--		invertPartEdit (JustEdit edita) (Just olda) = fmap (PartEdit . JustEdit) (invertEditCF edita olda);
+--		invertPartEdit (JustEdit _) _ = Nothing;
+	};
+
+	extractJustEdit :: Edit (Maybe a) -> Maybe (Edit a);
+	extractJustEdit (PartEdit (JustEdit ea)) = Just ea; 
+	extractJustEdit (ReplaceEdit (Just a)) = Just (ReplaceEdit a); 
+	extractJustEdit (ReplaceEdit Nothing) = Nothing; 
+{-
 	data Edit a where
 	{
 		ReplaceEdit :: a -> Edit a;
@@ -55,49 +133,82 @@ module Data.Changes.Edit where
 			_ -> Nothing;
 		};
 	};
+-}	
+--	applyEditCF :: Edit a -> ConstFunction a a;
+--	applyEditCF edit = fst (applyAndInvertEditCF edit);
 	
-	applyEditCF :: Edit a -> ConstFunction a a;
-	applyEditCF edit = fst (applyAndInvertEditCF edit);
-	
-	applyEditsCF :: [Edit a] -> ConstFunction a a;
+	applyEditsCF :: (Editable a) => [Edit a] -> ConstFunction a a;
 	applyEditsCF [] = id;
 	applyEditsCF (e:es) = (applyEditsCF es) . (applyEditCF e);
 	
-	invertEditCF :: Edit a -> a -> Maybe (Edit a);
-	invertEditCF edit = snd (applyAndInvertEditCF edit);
+--	invertEditCF :: Edit a -> a -> Maybe (Edit a);
+--	invertEditCF edit = snd (applyAndInvertEditCF edit);
 	
-	applyAndInvertEdit :: a -> Edit a -> (a,Maybe (Edit a));
+	applyAndInvertEdit :: (Editable a) => a -> Edit a -> (a,Maybe (Edit a));
 	applyAndInvertEdit a edit = (applyConstFunction ae a,ie a) where
 	{
 		(ae,ie) = applyAndInvertEditCF edit;
 	};
 	
-	applyEdit :: Edit a -> a -> a;
+	applyEdit :: (Editable a) => Edit a -> a -> a;
 	applyEdit = applyConstFunction . applyEditCF;
 	
-	applyEdits :: [Edit a] -> a -> a;
+	applyEdits :: (Editable a) => [Edit a] -> a -> a;
 	applyEdits = applyConstFunction . applyEditsCF;
 	
-	invertEdit :: a -> Edit a -> Maybe (Edit a);
+	invertEdit :: (Editable a) => a -> Edit a -> Maybe (Edit a);
 	invertEdit olda edit =invertEditCF edit olda;
 	
-	commutableEdits :: (Eq a) => Edit a -> Edit a -> a -> Maybe a;
+	commutableEdits :: (Editable a,Eq a) => Edit a -> Edit a -> a -> Maybe a;
 	commutableEdits e1 e2 a = let
 	{
 		a1 = applyEdit e1 (applyEdit e2 a);
 		a2 = applyEdit e2 (applyEdit e1 a);
 	} in if a1 == a2 then Just a1 else Nothing;
+{-	
+	class PutType q where
+	{
+		toPutMaybe :: q a b -> ConstFunction a (Maybe b);
+	}
 	
-	data FloatingLens state a b = MkFloatingLens
+	instance 
+-}	
+	data FloatingLens' m state a b = MkFloatingLens
 	{
 		lensWitness :: LensWitness a b,
 		lensStateWitness :: LensWitness a state,
 		lensUpdate :: Edit a -> state -> ConstFunction a (state,Maybe (Edit b)),
 		lensGet :: state -> a -> b,
-		lensPutback :: state -> b -> ConstFunction a (Maybe (a,state))
+--		lensPutback :: state -> b -> ConstFunction a (Maybe (a,state)),
+		lensPutEdit :: state -> Edit b -> ConstFunction a (m (Edit a))	-- m failure means impossible
+	};
+	
+	type FloatingLens = FloatingLens' Maybe;
+	
+	toFloatingLens :: (FunctorOne m) => FloatingLens' m state a b -> FloatingLens state a b;
+	toFloatingLens lens = MkFloatingLens
+	{
+		lensWitness = lensWitness lens,
+		lensStateWitness = lensStateWitness lens,
+		lensUpdate = lensUpdate lens,
+		lensGet = lensGet lens,
+		lensPutEdit = \state edit -> fmap getMaybeOne (lensPutEdit lens state edit)
 	};
 
-	matchLens :: FloatingLens state1 a b1 -> FloatingLens state2 a b2 -> Maybe (EqualType state1 state2,EqualType b1 b2);
+	
+{-
+	lensPutback' :: (Editable a) => FloatingLens state a b -> state -> b -> ConstFunction a (Maybe (a,state));
+	lensPutback' lens state b = case lensPutEdit lens state (ReplaceEdit b) of
+	{
+		Just (edita,newstate) -> do
+		{
+			newa <- applyEditCF edita;
+			return (Just (newa,newstate));
+		};
+		Nothing -> pure Nothing;
+	};
+-}
+	matchLens :: FloatingLens' m state1 a b1 -> FloatingLens' m state2 a b2 -> Maybe (EqualType state1 state2,EqualType b1 b2);
 	matchLens lens1 lens2 = do
 	{
 		MkEqualType <- matchWitness (lensWitness lens1) (lensWitness lens2);
@@ -105,9 +216,10 @@ module Data.Changes.Edit where
 		return (MkEqualType,MkEqualType);
 	};
 
-	matchTLens :: Type a -> FloatingLens state1 a b1 -> FloatingLens state2 a b2 -> Maybe (EqualType state1 state2,EqualType b1 b2);
+	matchTLens :: Type a -> FloatingLens' m state1 a b1 -> FloatingLens' m state2 a b2 -> Maybe (EqualType state1 state2,EqualType b1 b2);
 	matchTLens _ = matchLens;
 
+{-
 	functorOneLens :: forall f state a b. (FunctorOne f) => FloatingLens state a b -> FloatingLens state (f a) (f b);
 	functorOneLens lens = MkFloatingLens
 	{
@@ -133,7 +245,7 @@ module Data.Changes.Edit where
 				_ -> return (state,Nothing);
 			};
 		};
-		updateCF efa state = fmap (\newfa -> (state,Just (ReplaceEdit (get state newfa)))) (applyEditCF efa);
+		updateCF efa state = fmap (\newfa -> (state,Just (replaceEdit (get state newfa)))) (applyEditCF efa);
 
 		get state = fmap (lensGet lens state);
 
@@ -153,4 +265,5 @@ module Data.Changes.Edit where
 			_ -> pure Nothing;		-- pushing nothing on something fails
 		};
 	};
+-}
 }

@@ -6,9 +6,11 @@ module Data.Changes.File.Linux
 	import Data.Changes;
 	import System.INotify.Balanced;
 	import System.Posix.Files;
+--	import Data.ConstFunction;
 	import Data.ByteString;
 	import Control.Concurrent.QSem;
 	import Control.Concurrent.MVar;
+	import Control.Monad.Identity;
 	import Control.Monad.State;
 	import Control.Monad.Error;
 	import Control.OldException hiding (catch);
@@ -174,7 +176,7 @@ module Data.Changes.File.Linux
 				wd <- addWatchB (fsNotify ?fs) [Modify,MoveSelf,DeleteSelf] path (\_ -> do
 				{
 					(MkWithContext _ newa) <- runFSAction fsGet;
-					fsPushout ?fs (fixedLensEdit contentFixedLens (ReplaceEdit newa));
+					fsPushout ?fs (runIdentity (cleanLensPutEdit contentCleanLens (ReplaceEdit newa)));
 				});
 				return (Just wd);
 			};
@@ -275,53 +277,61 @@ module Data.Changes.File.Linux
 				})),
 				intobjPush = \ioedit -> do
 				{
-					waitClose <- runFSAction (fsWithReadWrite (do
+					(waitClose,result) <- runFSAction (fsWithReadWrite (do
 					{
-						edit <- liftIO ioedit;
-						(mnewpath,mnewmbs) <- case edit of
+						medit <- liftIO ioedit;
+						case medit of
 						{
-							ReplaceEdit (MkWithContext newpath newmbs) -> return (Just newpath,Just newmbs);
-							_ -> do
+							Just edit -> do
 							{
-								olda <- fsGet;
-								return ((\(MkWithContext newpath newmbs) -> (Just newpath,Just newmbs)) (applyEdit edit olda));
-							};
-						};
-						case mnewpath of
-						{
-							Just newpath ->do
-							{
-								(oldpath,_) <- get;
-								if oldpath == newpath
-								 then return ()
-								 else do
+								(mnewpath,mnewmbs) <- case edit of
 								{
-									fsClose;
-									liftIO (rename oldpath newpath);
-									put (newpath,Nothing);
+									ReplaceEdit (MkWithContext newpath newmbs) -> return (Just newpath,Just newmbs);
+									_ -> do
+									{
+										olda <- fsGet;
+										return ((\(MkWithContext newpath newmbs) -> (Just newpath,Just newmbs)) (applyEdit edit olda));
+									};
 								};
-							};
-							_ -> return ();
-						};
-						case mnewmbs of
-						{
-							Just newmbs -> do
-							{
-								(path,_) <- get;
-								waitClose <- case newmbs of
+								case mnewpath of
 								{
-									-- all write notifications will run before receiving this Close notification
-									Just _ -> liftIO (makeWaitForEvent inotify [Close] path);
-									_ -> liftIO (makeWaitForEvent inotify [DeleteSelf] path);
+									Just newpath ->do
+									{
+										(oldpath,_) <- get;
+										if oldpath == newpath
+										 then return ()
+										 else do
+										{
+											fsClose;
+											liftIO (rename oldpath newpath);
+											put (newpath,Nothing);
+										};
+									};
+									_ -> return ();
 								};
-								fsPut newmbs;
-								return waitClose;
+								waitClose <- case mnewmbs of
+								{
+									Just newmbs -> do
+									{
+										(path,_) <- get;
+										waitClose <- case newmbs of
+										{
+											-- all write notifications will run before receiving this Close notification
+											Just _ -> liftIO (makeWaitForEvent inotify [Close] path);
+											_ -> liftIO (makeWaitForEvent inotify [DeleteSelf] path);
+										};
+										fsPut newmbs;
+										return waitClose;
+									};
+									_ -> return (return ());
+								};
+								return (waitClose,Just ());
 							};
-							_ -> return (return ());
+							Nothing -> return (return (),Nothing);
 						};
 					}));
 					waitClose;
-					return (Just ());
+					return result;
 				},
 				intobjClose = runFSAction (fsWithRead (liftIO (modifyMVar_ (fsWatchVar ?fs) (\mwd -> case mwd of
 				{
