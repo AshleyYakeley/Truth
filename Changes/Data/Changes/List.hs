@@ -40,8 +40,6 @@ module Data.Changes.List(listElement,listSection) where
 
 	instance (Editable a) => EditScheme (ListPartEdit a) [a] where
 	{
---		data PartEdit [a] = ItemEdit Int (Edit a) | ReplaceSectionEdit (Int,Int) [a];
-
 		applyPartEdit (ItemEdit i _) | i < 0 = id;
 		applyPartEdit (ItemEdit i edita) = arr (elementModify i (applyConstFunction (applyEditCF edita))) where
 		{
@@ -96,20 +94,6 @@ module Data.Changes.List(listElement,listSection) where
 		lensStateWitness = elementStateWitness,
 		lensUpdate = elementUpdate,
 		lensGet = \i list -> if i < 0 then Nothing else elementGet i list,
-{-
-		lensPutback = \i me -> if i < 0 then return Nothing else do
-		{
-			case me of
-			{
-				Nothing -> return Nothing;
-				Just e -> arr (\list -> do
-				{
-					newlist <- elementPutback i e list;
-					return (newlist,i);
-				});
-			};
-		},
--}
 		lensPutEdit = \i eme -> pure (do
 		{
 			ee <- extractJustEdit eme;
@@ -159,13 +143,6 @@ module Data.Changes.List(listElement,listSection) where
 		lensStateWitness = sectionStateWitness,
 		lensUpdate = sectionUpdate,
 		lensGet = \(start,len) list -> take len (drop start list),
-{-
-		lensPutback = \(start,len) newmiddle -> arr (\list -> return (let
-		{
-			(before,rest) = splitAt start list;
-			(_,after) = splitAt len rest;
-		} in (before ++ newmiddle ++ after,(start,length newmiddle)) )),
--}
 		lensPutEdit = \clip@(start,_) ele -> pure (Just (case ele of
 		{
 			ReplaceEdit newlist -> PartEdit (ReplaceSectionEdit clip newlist);

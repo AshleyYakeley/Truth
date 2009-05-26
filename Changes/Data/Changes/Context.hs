@@ -46,9 +46,6 @@ module Data.Changes.Context where
 		toListTuple (MkWithContext context content) = (content,(context,()));
 	};
 
---	tupleElementCleanLens :: (IsTuple t,Editable a,PartEdit t ~ TListPartEdit (TList t)) => TListElement (TList t) a -> CleanLens' Identity t a;
-
-
 	contentCleanLens :: (Editable context,Editable content) => CleanLens' Identity (WithContext context content) content;
 	contentCleanLens = tupleElementCleanLens HeadTListElement;
 

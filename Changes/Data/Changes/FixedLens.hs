@@ -21,7 +21,6 @@ module Data.Changes.FixedLens where
 		fixedLensWitness :: LensWitness a b,
 		fixedLensUpdateCF :: Edit a -> ConstFunction a (Maybe (Edit b)),
 		fixedLensGet :: a -> b,
---		fixedLensPutback :: b -> ConstFunction a (Maybe a)
 		fixedLensPutEdit :: Edit b -> ConstFunction a (m (Edit a))
 	};
 	
@@ -45,7 +44,6 @@ module Data.Changes.FixedLens where
 			fixedLensUpdateCF = \edit -> pure (Just edit),
 			fixedLensGet = id,
 			fixedLensPutEdit = \editb -> pure (pure editb)
---			fixedLensPutback = \b -> pure (Just b)
 		};
 		bc . ab = MkFixedLens
 		{
@@ -60,17 +58,6 @@ module Data.Changes.FixedLens where
 				};
 			},
 			fixedLensGet = (fixedLensGet bc) . (fixedLensGet ab),
-{-
-			fixedLensPutback = \c -> do
-			{
-				mb <- cofmap1CF (fixedLensGet ab) (fixedLensPutback bc c);
-				case mb of
-				{
-					Just b -> fixedLensPutback ab b;
-					_ -> return Nothing;
-				}
-			}
--}
 			fixedLensPutEdit = \editc -> do
 			{
 				meditb <- cofmap1CF (fixedLensGet ab) (fixedLensPutEdit bc editc);
@@ -97,13 +84,6 @@ module Data.Changes.FixedLens where
 			return ((),meb);
 		},
 		lensGet = \_ -> fixedLensGet lens,
-{-
-		lensPutback = \_ b -> do
-		{
-			ma <- fixedLensPutback lens b;
-			return (fmap (\newa -> (newa,())) ma);
-		},
--}
 		lensPutEdit = \_ -> fixedLensPutEdit lens
 	};
 	
@@ -152,9 +132,6 @@ module Data.Changes.FixedLens where
 		fixedLensGet = cleanLensGet lens,
 		fixedLensPutEdit = \edit -> pure (cleanLensPutEdit lens edit)
 	};
-	
---	fixedLensEdit :: FixedLens a b -> Edit b -> Edit a;
---	fixedLensEdit lens edit = StateLensEdit (fixedFloatingLens lens) () edit;
 	
 	-- | A SimpleLens is a FixedLens that doesn't bother with Edits.
 	;

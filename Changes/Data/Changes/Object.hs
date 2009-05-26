@@ -54,15 +54,15 @@ module Data.Changes.Object where
 		editorUpdate = \_ _ -> return (),
 		editorDo = \a _ -> return a
 	});
-{-
+
 	writeObject :: a -> Object a -> IO (Maybe ());
 	writeObject a object = withSubscription object (MkEditor
 	{
 		editorInit = \_ push -> return push,
 		editorUpdate = \_ _ -> return (),
-		editorDo = \push _ -> push (return (ReplaceEdit a))
+		editorDo = \push _ -> push (return (Just (ReplaceEdit a)))
 	});
--}
+
 	data InternalObject a = MkInternalObject
 	{
 		intobjGetInitial :: forall r. (a -> IO r) -> IO r,

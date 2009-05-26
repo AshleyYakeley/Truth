@@ -11,7 +11,6 @@ module Data.Changes.Text where
 	import Data.Word;
 	import Data.Bits;
 	import Control.Monad.State;
---	import Control.Category;
 	import Prelude hiding (id,(.));
 
 	instance Editable Char where
