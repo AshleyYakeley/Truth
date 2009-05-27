@@ -4,8 +4,6 @@ module Data.Changes.Text where
 	import Data.Changes.FixedLens;
 	import Data.Changes.Edit;
 	import Data.Result;
-	import Data.OpenWitness;
-	import Data.TypeFunc;
 	import Data.Bijection;
 	import Data.ByteString;
 	import Data.Word;
@@ -24,24 +22,13 @@ module Data.Changes.Text where
 	};
 
 	packBSLens :: WholeLens ByteString [Word8];
-	packBSLens = bijectionWholeLens witness (MkBijection unpack pack) where
-	{
-		witness :: LensWitness ByteString [Word8];
-		witness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.Text.packBSLens" :: IOWitness 
-			(TFConst [Word8])
-			);
-	};
+	packBSLens = bijectionWholeLens (MkBijection unpack pack);
 	
 	data ListError = MkListError Int;
 	
 	utf8Lens :: WholeLens [Word8] (Result ListError String);
-	utf8Lens = resultWholeLens witness decode encode where
+	utf8Lens = resultWholeLens decode encode where
 	{
-		witness :: LensWitness [Word8] (Result ListError String);
-		witness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.Text.Lens" :: IOWitness 
-			(TFConst (Result ListError String))
-			);
-		
 		decode :: [Word8] -> Result ListError String;
 		decode os = evalStateT parse (os,0) where
 		{

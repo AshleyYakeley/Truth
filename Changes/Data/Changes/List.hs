@@ -4,9 +4,7 @@ module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 	import Data.Changes.Edit;
 	import Control.Arrow;
 	import Data.ConstFunction;
-	import Data.OpenWitness;
 	import Data.Maybe;
-	import Data.TypeFunc;
 	import Control.Category;
 	import Control.Applicative;
 	import Prelude hiding (id,(.));
@@ -90,8 +88,6 @@ module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 	listElement :: forall e. (Editable e) => FloatingLens Int [e] (Maybe e);
 	listElement = MkFloatingLens
 	{
-		lensWitness = elementWitness,
-		lensStateWitness = elementStateWitness,
 		lensUpdate = elementUpdate,
 		lensGet = \i list -> if i < 0 then Nothing else elementGet i list,
 		lensPutEdit = \i eme -> pure (do
@@ -101,18 +97,6 @@ module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 		})
 	} where
 	{
-		elementWitness :: LensWitness [e] (Maybe e);
-		elementWitness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.List.listElement" :: IOWitness 
-			(TFCompose (TFApply Maybe) TFMatch)
-			);
-
-		elementStateWitness :: LensWitness [e] Int;
-		elementStateWitness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.List.listElement.state" :: IOWitness
-			(TFConst Int)
-			);
-	
-		--lensUpdate :: Edit a -> state -> ConstFunction a (state,Maybe (Edit b)),
-
 		elementUpdate :: (Editable e) => Edit [e] -> Int -> ConstFunction [e] (Int,Maybe (Edit (Maybe e)));
 		elementUpdate edita state = 
 		  fromMaybe (fmap (\newa -> (state,Just (ReplaceEdit (lensGet listElement state newa)))) (applyEditCF edita)) update_ where
@@ -139,8 +123,6 @@ module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 	listSection :: forall e. (Editable e) => FloatingLens (Int,Int) [e] [e];
 	listSection = MkFloatingLens
 	{
-		lensWitness = sectionWitness,
-		lensStateWitness = sectionStateWitness,
 		lensUpdate = sectionUpdate,
 		lensGet = \(start,len) list -> take len (drop start list),
 		lensPutEdit = \clip@(start,_) ele -> pure (Just (case ele of
@@ -151,12 +133,6 @@ module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 		}))
 	} where
 	{
-		sectionWitness :: LensWitness [e] [e];
-		sectionWitness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.List.listSection" :: IOWitness TFIdentity);
-
-		sectionStateWitness :: LensWitness [e] (Int,Int);
-		sectionStateWitness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.List.listSection.state" :: IOWitness (TFConst (Int,Int)));
-	
 		sectionUpdate :: (Editable e) => Edit [e] -> (Int,Int) -> ConstFunction [e] ((Int,Int),Maybe (Edit [e]));
 		sectionUpdate edita state = 
 		  fromMaybe (fmap (\newa -> (state,Just (ReplaceEdit (lensGet listSection state newa)))) (applyEditCF edita)) update_ where

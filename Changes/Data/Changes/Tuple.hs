@@ -90,15 +90,6 @@ module Data.Changes.Tuple where
 	tupleElementCleanLens :: (IsTuple t,Editable a,PartEdit t ~ TListPartEdit (TList t)) => TListElement (TList t) a -> CleanLens' Identity t a;
 	tupleElementCleanLens n = MkCleanLens
 	{
-		cleanLensWitness = undefined,
-{-
-		cleanLensWitness = let
-		{
-			wit :: IOWitness TFMatch1;
-			wit = unsafeIOWitnessFromString "Data.Changes.TList.headSimpleLens";
-		} in makeLensWitness wit,
--}
-
 		cleanLensUpdateCF = \edit -> case edit of
 		{
 			(PartEdit (TListPartEdit n' edita)) -> do

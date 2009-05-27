@@ -1,20 +1,13 @@
 module Data.Changes.Edit where
 {
-	import Data.TypeFunc;
 	import Data.FunctorOne;
 	import Data.ConstFunction;
 	import Data.Result;
 	import Data.Chain;
-	import Data.OpenWitness;
-	import Data.Witness;
 	import Control.Applicative;
 	import Control.Category;
 	import Data.Word;
 	import Prelude hiding (id,(.));
-
-	type LensWitness = Chain (TFWitness (TFMappable IOWitness));
-	makeLensWitness :: IOWitness tf -> LensWitness x (TF tf x);
-	makeLensWitness wit = singleChain (MkTFWitness (SimpleTFMappable wit));
 
 	class EditScheme partedit a where
 	{
@@ -122,8 +115,6 @@ module Data.Changes.Edit where
 
 	data FloatingLens' m state a b = MkFloatingLens
 	{
-		lensWitness :: LensWitness a b,
-		lensStateWitness :: LensWitness a state,
 		lensUpdate :: Edit a -> state -> ConstFunction a (state,Maybe (Edit b)),
 		lensGet :: state -> a -> b,
 		lensPutEdit :: state -> Edit b -> ConstFunction a (m (Edit a))	-- m failure means impossible
@@ -134,21 +125,8 @@ module Data.Changes.Edit where
 	toFloatingLens :: (FunctorOne m) => FloatingLens' m state a b -> FloatingLens state a b;
 	toFloatingLens lens = MkFloatingLens
 	{
-		lensWitness = lensWitness lens,
-		lensStateWitness = lensStateWitness lens,
 		lensUpdate = lensUpdate lens,
 		lensGet = lensGet lens,
 		lensPutEdit = \state edit -> fmap getMaybeOne (lensPutEdit lens state edit)
 	};
-
-	matchLens :: FloatingLens' m state1 a b1 -> FloatingLens' m state2 a b2 -> Maybe (EqualType state1 state2,EqualType b1 b2);
-	matchLens lens1 lens2 = do
-	{
-		MkEqualType <- matchWitness (lensWitness lens1) (lensWitness lens2);
-		MkEqualType <- matchWitness (lensStateWitness lens1) (lensStateWitness lens2);
-		return (MkEqualType,MkEqualType);
-	};
-
-	matchTLens :: Type a -> FloatingLens' m state1 a b1 -> FloatingLens' m state2 a b2 -> Maybe (EqualType state1 state2,EqualType b1 b2);
-	matchTLens _ = matchLens;
 }

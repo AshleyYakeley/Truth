@@ -4,11 +4,8 @@ module Data.Changes.FixedLens where
 	import Data.Bijection;
 	import Data.Codec;
 	import Data.Result;
-	import Data.TypeFunc;
 	import Data.ConstFunction;
-	import Data.Chain;
 	import Data.Traversable;
-	import Data.OpenWitness;
 	import Data.FunctorOne;
 	import Control.Applicative;
 	import Control.Category;
@@ -18,7 +15,6 @@ module Data.Changes.FixedLens where
 	;
 	data FixedLens' m a b = MkFixedLens
 	{
-		fixedLensWitness :: LensWitness a b,
 		fixedLensUpdateCF :: Edit a -> ConstFunction a (Maybe (Edit b)),
 		fixedLensGet :: a -> b,
 		fixedLensPutEdit :: Edit b -> ConstFunction a (m (Edit a))
@@ -40,14 +36,12 @@ module Data.Changes.FixedLens where
 	{
 		id = MkFixedLens
 		{
-			fixedLensWitness = id,
 			fixedLensUpdateCF = \edit -> pure (Just edit),
 			fixedLensGet = id,
 			fixedLensPutEdit = \editb -> pure (pure editb)
 		};
 		bc . ab = MkFixedLens
 		{
-			fixedLensWitness = (fixedLensWitness bc) . (fixedLensWitness ab),
 			fixedLensUpdateCF = \edita -> do
 			{
 				meb <- fixedLensUpdateCF ab edita;
@@ -70,14 +64,9 @@ module Data.Changes.FixedLens where
 		};
 	};
 	
-	voidStateWitness :: LensWitness a ();
-	voidStateWitness = makeLensWitness (unsafeIOWitnessFromString "Data.Changes.Edit.void.state" :: IOWitness (TFConst ()));
-	
 	fixedFloatingLens :: FixedLens' m a b -> FloatingLens' m () a b;
 	fixedFloatingLens lens = MkFloatingLens
 	{
-		lensWitness = fixedLensWitness lens,
-		lensStateWitness = voidStateWitness,
 		lensUpdate = \edit _ -> do
 		{
 			meb <- fixedLensUpdateCF lens edit;
@@ -89,7 +78,6 @@ module Data.Changes.FixedLens where
 	
 	data CleanLens' m a b = MkCleanLens
 	{
-		cleanLensWitness :: LensWitness a b,
 		cleanLensUpdateCF :: Edit a -> Maybe (Edit b),
 		cleanLensGet :: a -> b,
 		cleanLensPutEdit :: Edit b -> m (Edit a)
@@ -101,14 +89,12 @@ module Data.Changes.FixedLens where
 	{
 		id = MkCleanLens
 		{
-			cleanLensWitness = id,
 			cleanLensUpdateCF = Just,
 			cleanLensGet = id,
 			cleanLensPutEdit = return
 		};
 		bc . ab = MkCleanLens
 		{
-			cleanLensWitness = (cleanLensWitness bc) . (cleanLensWitness ab),
 			cleanLensUpdateCF = \edita -> do
 			{
 				editb <- cleanLensUpdateCF ab edita;
@@ -127,7 +113,6 @@ module Data.Changes.FixedLens where
 	cleanFixedLens :: CleanLens' m a b -> FixedLens' m a b;
 	cleanFixedLens lens = MkFixedLens
 	{
-		fixedLensWitness = cleanLensWitness lens,
 		fixedLensUpdateCF = \edit -> pure (cleanLensUpdateCF lens edit),
 		fixedLensGet = cleanLensGet lens,
 		fixedLensPutEdit = \edit -> pure (cleanLensPutEdit lens edit)
@@ -137,7 +122,6 @@ module Data.Changes.FixedLens where
 	;
 	data SimpleLens' m a b = MkSimpleLens
 	{
-		simpleLensWitness :: LensWitness a b,
 		simpleLensGet :: a -> b,
 		simpleLensPutback :: b -> ConstFunction a (m a)
 	};
@@ -148,13 +132,11 @@ module Data.Changes.FixedLens where
 	{
 		id = MkSimpleLens
 		{
-			simpleLensWitness = id,
 			simpleLensGet = id,
 			simpleLensPutback = \b -> pure (pure b)
 		};
 		bc . ab = MkSimpleLens
 		{
-			simpleLensWitness = (simpleLensWitness bc) . (simpleLensWitness ab),
 			simpleLensGet = (simpleLensGet bc) . (simpleLensGet ab),
 			simpleLensPutback = \c -> do
 			{
@@ -171,11 +153,8 @@ module Data.Changes.FixedLens where
 	simpleFixedLens :: (Functor m,Editable a,Editable b) => SimpleLens' m a b -> FixedLens' m a b;
 	simpleFixedLens lens = MkFixedLens
 	{
-		fixedLensWitness = simpleLensWitness lens,
 		fixedLensUpdateCF = makeFixedLensUpdateCF (simpleLensGet lens) (\_ -> Nothing),
 		fixedLensGet = simpleLensGet lens,
---		fixedLensPutback = simpleLensPutback lens
---		fixedLensPutEdit :: Edit b -> ConstFunction a (Maybe (Edit a))
 		fixedLensPutEdit = \editb -> do
 		{
 			newb <- cofmap1CF (simpleLensGet lens) (applyEditCF editb);
@@ -186,7 +165,6 @@ module Data.Changes.FixedLens where
 	
 	data WholeLens' m a b = MkWholeLens
 	{
-		wholeLensWitness :: LensWitness a b,
 		wholeLensGet :: a -> b,
 		wholeLensPutback :: b -> m a
 	};
@@ -197,13 +175,11 @@ module Data.Changes.FixedLens where
 	{
 		id = MkWholeLens
 		{
-			wholeLensWitness = id,
 			wholeLensGet = id,
 			wholeLensPutback = pure
 		};
 		bc . ab = MkWholeLens
 		{
-			wholeLensWitness = (wholeLensWitness bc) . (wholeLensWitness ab),
 			wholeLensGet = (wholeLensGet bc) . (wholeLensGet ab),
 			wholeLensPutback = \c -> case retrieveOne (wholeLensPutback bc c) of
 			{
@@ -216,7 +192,6 @@ module Data.Changes.FixedLens where
 	wholeSimpleLens :: WholeLens' m a b -> SimpleLens' m a b;
 	wholeSimpleLens lens = MkSimpleLens
 	{
-		simpleLensWitness = wholeLensWitness lens,
 		simpleLensGet = wholeLensGet lens,
 		simpleLensPutback = \b -> pure (wholeLensPutback lens b)
 	};
@@ -224,7 +199,6 @@ module Data.Changes.FixedLens where
 	traversableWholeLens :: forall f m a b. (Traversable f,Applicative m) => WholeLens' m a b -> WholeLens' m (f a) (f b);
 	traversableWholeLens lens = MkWholeLens
 	{
-		wholeLensWitness = cfmap (wholeLensWitness lens),
 		wholeLensGet = fmap (wholeLensGet lens),
 		wholeLensPutback = putback
 	}
@@ -233,10 +207,9 @@ module Data.Changes.FixedLens where
 		putback fb = sequenceA (fmap (wholeLensPutback lens) fb);
 	};
 	
-	resultWholeLens :: LensWitness a (Result e b) -> (a -> Result e b) -> (b -> a) -> WholeLens' Maybe a (Result e b);
-	resultWholeLens witness decode' encode' = MkWholeLens
+	resultWholeLens :: (a -> Result e b) -> (b -> a) -> WholeLens' Maybe a (Result e b);
+	resultWholeLens decode' encode' = MkWholeLens
 	{
-		wholeLensWitness = witness,
 		wholeLensGet = decode',
 		wholeLensPutback = \r -> case r of
 		{
@@ -245,18 +218,16 @@ module Data.Changes.FixedLens where
 		}
 	};
 	
-	codecWholeLens :: LensWitness a (Maybe b) -> Codec a b -> WholeLens' Maybe a (Maybe b);
-	codecWholeLens wit codec = MkWholeLens
+	codecWholeLens :: Codec a b -> WholeLens' Maybe a (Maybe b);
+	codecWholeLens codec = MkWholeLens
 	{
-		wholeLensWitness = wit,
 		wholeLensGet = decode codec,
 		wholeLensPutback = fmap (encode codec)
 	};
 	
-	bijectionWholeLens :: (Applicative m) => LensWitness a b -> Bijection a b -> WholeLens' m a b;
-	bijectionWholeLens wit bi = MkWholeLens
+	bijectionWholeLens :: (Applicative m) => Bijection a b -> WholeLens' m a b;
+	bijectionWholeLens bi = MkWholeLens
 	{
-		wholeLensWitness = wit,
 		wholeLensGet = biForwards bi,
 		wholeLensPutback = pure . (biBackwards bi)
 	};
