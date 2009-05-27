@@ -44,6 +44,9 @@ module Data.Changes.Edit where
 	data Edit a = ReplaceEdit a | PartEdit (PartEdit a);
 
 	data Nothing;
+	
+	never :: Nothing -> a;
+	never n = seq n undefined;
 
 	instance EditScheme Nothing a where
 	{

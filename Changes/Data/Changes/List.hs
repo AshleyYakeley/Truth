@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Data.Changes.List(listElement,listSection) where
+module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 {
 	import Data.Changes.Edit;
 	import Control.Arrow;

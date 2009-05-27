@@ -1,12 +1,32 @@
+{-# LANGUAGE FlexibleContexts,UndecidableInstances #-}
 module Main where
 {
+	import Data.Changes.List;
 	import Data.Changes;
 	import Data.Maybe;
 	import Data.IORef;
 	
-	showEdit :: (Show s) => Edit s -> String;
-	showEdit (ReplaceEdit s) = "replace " ++ (show s);
-	showEdit _ = "lens";
+	instance Show Nothing where
+	{
+		show = never;
+	};
+	
+	instance (Show a,Show (PartEdit a)) => Show (ListPartEdit a) where
+	{
+		show (ItemEdit i edit) = "item " ++ (show i) ++ " " ++ show edit;
+		show (ReplaceSectionEdit i sect) = "section " ++ (show i) ++ " " ++ show sect;
+	};
+	
+	instance (Show a,Show (PartEdit a)) => Show (JustEdit a) where
+	{
+		show (JustEdit s) = "Just " ++ (show s);
+	};
+	
+	instance (Show a,Show (PartEdit a)) => Show (Edit a) where
+	{
+		show (ReplaceEdit s) = "replace " ++ (show s);
+		show (PartEdit pe) = "part " ++ (show pe);
+	};
 	
 	showObject :: (Show a) => String -> Object a -> IO ();
 	showObject name obj = do
@@ -15,7 +35,7 @@ module Main where
 		putStrLn (name ++ ": " ++ (show a));
 	};
 
-	withShowSubscription :: (Show a) => Object a -> String -> (Object a -> (Edit a -> IO (Maybe ())) -> IO (Maybe b)) -> IO (Maybe b);
+	withShowSubscription :: (Show a,Editable a,Show (PartEdit a)) => Object a -> String -> (Object a -> (Edit a -> IO (Maybe ())) -> IO (Maybe b)) -> IO (Maybe b);
 	withShowSubscription object name f = withSubscription object (MkEditor
 	{
 		editorInit = \a push -> do
@@ -26,7 +46,7 @@ module Main where
 		},
 		editorUpdate = \(ref,push) edit -> do
 		{
-			putStrLn (name ++ ": edit: " ++ (showEdit edit));
+			putStrLn (name ++ ": edit: " ++ (show edit));
 			olda <- readIORef ref;
 			let {newa = applyEdit edit olda;};
 			putStrLn (name ++ ": update: " ++ (show newa));
@@ -35,7 +55,7 @@ module Main where
 		editorDo = \(ref,push) obj -> f obj (\edit -> do
 		{
 			putStrLn "pushing";
-			result <- push (return edit);
+			result <- push (return (Just edit));
 			putStrLn (case result of
 			{
 				Just _ -> "pushed";

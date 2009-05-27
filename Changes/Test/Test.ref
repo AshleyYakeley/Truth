@@ -7,54 +7,54 @@ pushed
 current: "pqrstu"
 sect: initial "rs"
 pushing
-main: edit: lens
+main: edit: part section (2,2) "12"
 main: update: "pq12tu"
-sect: edit: lens
+sect: edit: part section (0,2) "12"
 sect: update: "12"
 pushed
 sect: "12"
 main: "pq12tu"
 elem: initial Just 't'
 pushing
-main: edit: lens
+main: edit: part section (2,2) "x"
 main: update: "pqxtu"
-sect: edit: lens
+sect: edit: part section (0,2) "x"
 sect: update: "x"
 pushed
 elem: Just 't'
 sect: "x"
 main: "pqxtu"
 pushing
-main: edit: lens
+main: edit: part section (2,1) "ABC"
 main: update: "pqABCtu"
-sect: edit: lens
+sect: edit: part section (0,1) "ABC"
 sect: update: "ABC"
 pushed
 elem: Just 't'
 sect: "ABC"
 main: "pqABCtu"
 pushing
-main: edit: lens
+main: edit: part section (2,3) ""
 main: update: "pqtu"
-sect: edit: lens
+sect: edit: part section (0,3) ""
 sect: update: ""
 pushed
 elem: Just 't'
 sect: ""
 main: "pqtu"
 pushing
-main: edit: lens
+main: edit: part section (2,0) "ZUM"
 main: update: "pqZUMtu"
-sect: edit: lens
+sect: edit: part section (0,0) "ZUM"
 sect: update: "ZUM"
 pushed
 elem: Just 't'
 sect: "ZUM"
 main: "pqZUMtu"
 pushing
-main: edit: lens
+main: edit: part item 5 replace 'Q'
 main: update: "pqZUMQu"
-elem: edit: replace Just 'Q'
+elem: edit: part Just replace 'Q'
 elem: update: Just 'Q'
 pushed
 elem: Just 'Q'
