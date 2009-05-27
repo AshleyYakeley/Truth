@@ -3,6 +3,7 @@ module Data.Changes.Edit where
 	import Data.TypeFunc;
 	import Data.FunctorOne;
 	import Data.ConstFunction;
+	import Data.Result;
 	import Data.Chain;
 	import Data.OpenWitness;
 	import Data.Witness;
@@ -56,12 +57,25 @@ module Data.Changes.Edit where
 
 	newtype JustEdit a = JustEdit (Edit a);
 
-	instance (Editable a) => EditScheme (JustEdit a) (Maybe a) where
+	instance (Editable a,FunctorOne f,PartEdit (f a) ~ JustEdit a) => EditScheme (JustEdit a) (f a) where
 	{
 		applyPartEdit (JustEdit edita) = cfmap (applyEditCF edita);
 
-		invertPartEdit (JustEdit edita) (Just olda) = fmap (PartEdit . JustEdit) (invertEditCF edita olda);
-		invertPartEdit (JustEdit _) _ = Nothing;
+		invertPartEdit (JustEdit edita) molda = case retrieveOne molda of
+		{
+			SuccessResult olda -> fmap (PartEdit . JustEdit) (invertEditCF edita olda);
+			_ -> Nothing;
+		};
+	};
+
+	instance (Editable a) => Editable (Result err a) where
+	{
+		type PartEdit (Result err a) = JustEdit a;
+	};
+
+	instance (Editable a) => Editable (Maybe a) where
+	{
+		type PartEdit (Maybe a) = JustEdit a;
 	};
 
 	applyEditCF :: (Editable a) => Edit a -> ConstFunction a a;
@@ -74,11 +88,6 @@ module Data.Changes.Edit where
 
 	applyAndInvertEditCF :: (Editable a) => Edit a -> (ConstFunction a a,a -> Maybe (Edit a));
 	applyAndInvertEditCF edit = (applyEditCF edit,invertEditCF edit);
-
-	instance (Editable a) => Editable (Maybe a) where
-	{
-		type PartEdit (Maybe a) = JustEdit a;
-	};
 
 	extractJustEdit :: Edit (Maybe a) -> Maybe (Edit a);
 	extractJustEdit (PartEdit (JustEdit ea)) = Just ea; 

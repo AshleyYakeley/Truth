@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts,UndecidableInstances #-}
 module Main where
 {
 	import Data.Changes.File.Linux;
@@ -9,9 +10,27 @@ module Main where
 	import Control.Concurrent;
 	import Prelude hiding (readFile,writeFile);
 	
-	showEdit :: (Show s) => Edit s -> String;
-	showEdit (ReplaceEdit s) = "replace " ++ (show s);
-	showEdit _ = "lens";
+	instance Show Nothing where
+	{
+		show = never;
+	};
+	
+	instance (Show a,Show (PartEdit a)) => Show (ListPartEdit a) where
+	{
+		show (ItemEdit i edit) = "item " ++ (show i) ++ " " ++ show edit;
+		show (ReplaceSectionEdit i sect) = "section " ++ (show i) ++ " " ++ show sect;
+	};
+	
+	instance (Show a,Show (PartEdit a)) => Show (JustEdit a) where
+	{
+		show (JustEdit s) = "Just " ++ (show s);
+	};
+	
+	instance (Show a,Show (PartEdit a)) => Show (Edit a) where
+	{
+		show (ReplaceEdit s) = "replace " ++ (show s);
+		show (PartEdit pe) = "part " ++ (show pe);
+	};
 	
 	showObject :: (Show a) => String -> Object a -> IO ();
 	showObject name obj = do
@@ -31,7 +50,7 @@ module Main where
 		show (SuccessResult a) = "success: " ++ (show a);
 	};
 	
-	makeShowSubscription :: (Show a) => String -> Object a -> IO (Push a,Subscription a);
+	makeShowSubscription :: (Show a,Show (PartEdit a),Editable a) => String -> Object a -> IO (Push a,Subscription a);
 	makeShowSubscription name obj = do
 	{
 		((_,push),sub) <- objSubscribe obj 
@@ -43,7 +62,7 @@ module Main where
 			}) 
 			(\(ref,_) edit -> do
 			{
-				putStrLn (name ++ ": edit: " ++ (showEdit edit));
+				putStrLn (name ++ ": edit: " ++ (show edit));
 				olda <- readIORef ref;
 				let {newa = applyEdit edit olda;};
 				putStrLn (name ++ ": update: " ++ (show newa));
@@ -56,7 +75,7 @@ module Main where
 	showPushEdit push edit = do
 	{
 		putStrLn "pushing";
-		mm <- push (return edit);
+		mm <- push (return (Just edit));
 		case mm of
 		{
 			Just _ -> putStrLn "pushed";
@@ -74,10 +93,13 @@ module Main where
 		withINotifyB (\inotify -> do
 		{
 			writeFile path (pack [65,66,67,68,10]);
-			fileobj <- return (linuxFileObject inotify path);
-			contentobj <- return (lensObject (fixedFloatingLens contentFixedLens) () fileobj);
-			stringobj <- return (lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens packBSLens)))) () contentobj);
-			textobj <- return (lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens utf8Lens)))) () stringobj);
+			let
+			{
+				fileobj = linuxFileObject inotify path;
+				contentobj = lensObject (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () fileobj;
+				stringobj = lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens packBSLens)))) () contentobj;
+				textobj = lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens utf8Lens)))) () stringobj;
+			};
 		
 			(push,sub) <- makeShowSubscription path textobj;
 
