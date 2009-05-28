@@ -13,7 +13,7 @@ module UI.Truth.GTK.SourceView where
 	};
 
 	--type ViewFactory a = Subscribe a -> (Selection -> IO ()) -> IO View;
-	type ViewFactory a = Subscribe a -> IO View;
+	type ViewFactory a = Subscribe a -> IO (Subscribe a,View);
 
 	data InternalView a = forall w. (WidgetClass w) => MkInternalView
 	{
@@ -31,7 +31,7 @@ module UI.Truth.GTK.SourceView where
 		{
 			(MkInternalView widget _) -> do
 			{
-				return (MkView
+				return (subCopy sub,MkView
 				{
 					viewWidget = widget,
 					viewRequestClose = do
@@ -49,7 +49,7 @@ module UI.Truth.GTK.SourceView where
 	{
 		widget <- checkButtonNew;
 		set widget [buttonLabel := name,toggleButtonActive := initial];
-		onClicked widget (do
+		clickConnection <- onClicked widget (do
 		{
 			_ <- push (do
 			{
@@ -64,7 +64,9 @@ module UI.Truth.GTK.SourceView where
 			ivUpdate = \edit -> do
 			{
 				newstate <- applyConstFunctionA (applyEdit edit) (get widget toggleButtonActive);
+				signalBlock clickConnection;
 				set widget [toggleButtonActive := newstate];
+				signalUnblock clickConnection;
 			}
 		});
 	};
@@ -144,7 +146,7 @@ module UI.Truth.GTK.SourceView where
 			}
 		} :: InternalView (Maybe a));
 	};
-
+{-
 	sourceViewBrowser :: ViewFactory a;
 	sourceViewBrowser _ = do
 	{
@@ -157,4 +159,5 @@ module UI.Truth.GTK.SourceView where
 			viewRequestClose = return True
 		});
 	};
+-}
 }

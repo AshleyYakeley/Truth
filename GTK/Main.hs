@@ -2,18 +2,27 @@ module Main where
 {
 	import UI.Truth.GTK.SourceView;
 	import Graphics.UI.Gtk hiding (Object);
-	--import Data.Changes;
+	import Data.Changes;
 	import Data.Changes.File.Linux;
 
-	main :: IO ();
-	main = withINotifyB (\inotify -> do
+	makeWindow :: String -> Subscribe Bool -> IO (Subscribe Bool);
+	makeWindow name sub = do
 	{
-		initGUI;
-		view <- sourceViewBrowser (linuxFileObject inotify "somefile");
+		(sub',view) <- ivfViewFactory (checkButtonIVF name) sub;
 		window <- windowNew;
 		(\(MkView w _) -> set window [containerChild := w]) view;
 		onDestroy window mainQuit;
 		widgetShowAll window;
+		return sub';
+	};
+
+	main :: IO ();
+	main = withINotifyB (\_inotify -> do
+	{
+		initGUI;
+		--view <- sourceViewBrowser (linuxFileObject inotify "somefile");
+		sub <- makeWindow "A" (freeObjSubscribe False);
+		makeWindow "B" sub;
 		mainGUI;
 	});	
 }

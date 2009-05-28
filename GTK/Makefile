@@ -1,5 +1,8 @@
 default: build
 
+run: build
+	dist/build/truth/truth
+
 # Building
 
 clean:
