@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts,UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts,UndecidableInstances,RankNTypes #-}
 module Main where
 {
 	import Data.Changes.File.Linux;
@@ -52,9 +52,9 @@ module Main where
 	};
 	
 	makeShowSubscription :: (Show a,Show (PartEdit a),Editable a) => String -> Object a -> IO (Push a,Subscription a);
-	makeShowSubscription name obj = do
+	makeShowSubscription name subscribe = do
 	{
-		((_,push),sub) <- objSubscribe obj 
+		((_,push),sub) <- subscribe
 			(\a push -> do
 			{
 				putStrLn (name ++ ": initial " ++ (show a));

@@ -23,11 +23,9 @@ module Data.Changes.Object where
 		subClose :: IO ()
 	};
 	
-	data Object a = MkObject
-	{
-		-- | blocks if the object is busy
-		objSubscribe :: forall r. (a -> Push a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription a)
-	};
+	-- | blocks if the object is busy
+	;
+	type Object a = forall r. (a -> Push a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription a);
 	
 	data Editor a b = forall r. MkEditor
 	{
@@ -37,7 +35,7 @@ module Data.Changes.Object where
 	};
 
 	withSubscription :: Object a -> Editor a b -> IO b;
-	withSubscription (MkObject subscribe) editor = case editor of 
+	withSubscription subscribe editor = case editor of 
 	{
 		(MkEditor initr update f) -> do
 		{
@@ -72,47 +70,41 @@ module Data.Changes.Object where
 	};
 
 	makeObject :: forall a. ((Edit a -> IO ()) -> IO (InternalObject a)) -> Object a;
-	makeObject getIntObject = MkObject
+	makeObject getIntObject initialise' updater' = do
 	{
-		objSubscribe = \initialise' updater' -> do
+		storevar <- newMVar emptyStore;
+		intobj <- getIntObject (\edit -> withMVar storevar (\store -> forM (allStore store) (\u -> u edit) >> return ()));
+		let
 		{
-			storevar <- newMVar emptyStore;
-			intobj <- getIntObject (\edit -> withMVar storevar (\store -> forM (allStore store) (\u -> u edit) >> return ()));
-			let
+			objSub :: forall r.
+				(a -> Push a -> IO r) -> 
+				(r -> Edit a -> IO ()) -> 
+				IO (r, Subscription a);
+			objSub initialise updater = do
 			{
-				objSub :: forall r.
-					(a -> Push a -> IO r) -> 
-					(r -> Edit a -> IO ()) -> 
-					IO (r, Subscription a);
-				objSub initialise updater = do
+				r <- intobjGetInitial intobj (\a -> initialise a (intobjPush intobj));
+				key <- modifyMVar storevar (\store -> do
 				{
-					r <- intobjGetInitial intobj (\a -> initialise a (intobjPush intobj));
-					key <- modifyMVar storevar (\store -> do
+					let {(key,newstore) = addStore (updater r) store;};
+					return (newstore,key);
+				});
+				return (r,MkSubscription
+				{
+					subObject = objSub,
+					subClose = modifyMVar_ storevar (\store -> let
 					{
-						let {(key,newstore) = addStore (updater r) store;};
-						return (newstore,key);
-					});
-					return (r,MkSubscription
+						newstore = deleteStore key store;
+					} in do
 					{
-						subObject = MkObject
-						{
-							objSubscribe = objSub
-						},
-						subClose = modifyMVar_ storevar (\store -> let
-						{
-							newstore = deleteStore key store;
-						} in do
-						{
-							if isEmptyStore newstore
-							 then (intobjClose intobj)
-							 else return ();
-							return newstore;
-						})
-					});
-				};
+						if isEmptyStore newstore
+						 then (intobjClose intobj)
+						 else return ();
+						return newstore;
+					})
+				});
 			};
-			objSub initialise' updater';
-		}
+		};
+		objSub initialise' updater';
 	};
 	
 	makeFreeObject :: forall a. (Editable a) => a -> Object a;
@@ -140,7 +132,7 @@ module Data.Changes.Object where
 	});
 
 	lensObject :: forall state a b. (Editable a,Eq state) => FloatingLens state a b -> state -> Object a -> Object b;
-	lensObject lens firststate (MkObject subscribe) = makeObject (\pushOut -> do
+	lensObject lens firststate subscribe = makeObject (\pushOut -> do
 	{
 		((statevar,firsta,push),sub) <- subscribe 
 		 (\a push -> do

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts,UndecidableInstances #-}
+{-# LANGUAGE FlexibleContexts,UndecidableInstances,RankNTypes #-}
 module Main where
 {
 	import Data.Changes.List;

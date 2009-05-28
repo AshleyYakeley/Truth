@@ -24,9 +24,9 @@ module UI.Truth.GTK.SourceView where
 	type InternalViewFactory a = a -> Push a -> IO (InternalView a);
 
 	ivfViewFactory :: InternalViewFactory a -> ViewFactory a;
-	ivfViewFactory ivf obj = do
+	ivfViewFactory ivf subscribe = do
 	{
-		(view,sub) <- objSubscribe obj ivf ivUpdate;
+		(view,sub) <- subscribe ivf ivUpdate;
 		case view of
 		{
 			(MkInternalView widget _) -> do
