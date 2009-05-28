@@ -101,21 +101,4 @@ module Data.Changes.Edit where
 		a12 = applyConstFunction cf12 a;
 		a21 = applyConstFunction cf21 a;
 	} in if a12 == a21 then Just a12 else Nothing;
-
-	data FloatingLens' m state a b = MkFloatingLens
-	{
-		lensUpdate :: Edit a -> state -> ConstFunction a (state,Maybe (Edit b)),
-		lensGet :: state -> a -> b,
-		lensPutEdit :: state -> Edit b -> ConstFunction a (m (Edit a))	-- m failure means impossible
-	};
-	
-	type FloatingLens = FloatingLens' Maybe;
-	
-	toFloatingLens :: (FunctorOne m) => FloatingLens' m state a b -> FloatingLens state a b;
-	toFloatingLens lens = MkFloatingLens
-	{
-		lensUpdate = lensUpdate lens,
-		lensGet = lensGet lens,
-		lensPutEdit = \state edit -> fmap getMaybeOne (lensPutEdit lens state edit)
-	};
 }

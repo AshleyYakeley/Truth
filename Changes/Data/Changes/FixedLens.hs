@@ -1,5 +1,6 @@
 module Data.Changes.FixedLens where
 {
+	import Data.Changes.FloatingLens;
 	import Data.Changes.Edit;
 	import Data.Bijection;
 	import Data.Codec;

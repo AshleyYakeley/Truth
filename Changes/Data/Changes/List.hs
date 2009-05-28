@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 {
+	import Data.Changes.FloatingLens;
 	import Data.Changes.Edit;
 	import Control.Arrow;
 	import Data.ConstFunction;

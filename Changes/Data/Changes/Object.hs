@@ -1,5 +1,6 @@
 module Data.Changes.Object where
 {
+	import Data.Changes.FloatingLens;
 	import Data.Changes.Edit;
 	import Data.Store;
 	import Control.Concurrent.MVar;

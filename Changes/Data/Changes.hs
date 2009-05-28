@@ -1,6 +1,7 @@
 module Data.Changes
 (
 	module Data.Changes.Edit,
+	module Data.Changes.FloatingLens,
 	module Data.Changes.FixedLens,
 	module Data.Changes.Object,
 	module Data.Changes.Tuple,
@@ -10,6 +11,7 @@ module Data.Changes
 ) where
 {
 	import Data.Changes.Edit;
+	import Data.Changes.FloatingLens;
 	import Data.Changes.FixedLens;
 	import Data.Changes.Object;
 	import Data.Changes.Tuple;
