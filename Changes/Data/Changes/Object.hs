@@ -129,7 +129,7 @@ module Data.Changes.Object where
 					Just edit -> do
 					{
 						pushOut edit;
-						return (applyConstFunction (applyEditCF edit) a,Just ());
+						return (applyConstFunction (applyEdit edit) a,Just ());
 					};
 					Nothing -> return (a,Nothing);
 				};
@@ -157,7 +157,7 @@ module Data.Changes.Object where
 				Just editb -> pushOut editb;
 				_ -> return ();
 			};
-			return (newstate,applyConstFunction (applyEditCF edita) olda);
+			return (newstate,applyConstFunction (applyEdit edita) olda);
 		}));
 		putMVar statevar (firststate,firsta);
 		return (MkInternalObject

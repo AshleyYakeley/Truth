@@ -52,11 +52,11 @@ module Data.Changes.Edit where
 
 	instance (Editable a,FunctorOne f,PartEdit (f a) ~ JustEdit a) => EditScheme (JustEdit a) (f a) where
 	{
-		applyPartEdit (JustEdit edita) = cfmap (applyEditCF edita);
+		applyPartEdit (JustEdit edita) = cfmap (applyEdit edita);
 
 		invertPartEdit (JustEdit edita) molda = case retrieveOne molda of
 		{
-			SuccessResult olda -> fmap (PartEdit . JustEdit) (invertEditCF edita olda);
+			SuccessResult olda -> fmap (PartEdit . JustEdit) (invertEdit edita olda);
 			_ -> Nothing;
 		};
 	};
@@ -71,31 +71,31 @@ module Data.Changes.Edit where
 		type PartEdit (Maybe a) = JustEdit a;
 	};
 
-	applyEditCF :: (Editable a) => Edit a -> ConstFunction a a;
-	applyEditCF (ReplaceEdit newa) = pure newa;
-	applyEditCF (PartEdit pea) = applyPartEdit pea;
+	applyEdit :: (Editable a) => Edit a -> ConstFunction a a;
+	applyEdit (ReplaceEdit newa) = pure newa;
+	applyEdit (PartEdit pea) = applyPartEdit pea;
 
-	invertEditCF :: (Editable a) => Edit a -> a -> Maybe (Edit a);
-	invertEditCF (ReplaceEdit _) olda = Just (ReplaceEdit olda);
-	invertEditCF (PartEdit pea) olda = invertPartEdit pea olda;
+	invertEdit :: (Editable a) => Edit a -> a -> Maybe (Edit a);
+	invertEdit (ReplaceEdit _) olda = Just (ReplaceEdit olda);
+	invertEdit (PartEdit pea) olda = invertPartEdit pea olda;
 
-	applyAndInvertEditCF :: (Editable a) => Edit a -> (ConstFunction a a,a -> Maybe (Edit a));
-	applyAndInvertEditCF edit = (applyEditCF edit,invertEditCF edit);
+	applyAndInvertEdit :: (Editable a) => Edit a -> (ConstFunction a a,a -> Maybe (Edit a));
+	applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
 
 	extractJustEdit :: Edit (Maybe a) -> Maybe (Edit a);
 	extractJustEdit (PartEdit (JustEdit ea)) = Just ea; 
 	extractJustEdit (ReplaceEdit (Just a)) = Just (ReplaceEdit a); 
 	extractJustEdit (ReplaceEdit Nothing) = Nothing; 
 	
-	applyEditsCF :: (Editable a) => [Edit a] -> ConstFunction a a;
-	applyEditsCF [] = id;
-	applyEditsCF (e:es) = (applyEditsCF es) . (applyEditCF e);
+	applyEdits :: (Editable a) => [Edit a] -> ConstFunction a a;
+	applyEdits [] = id;
+	applyEdits (e:es) = (applyEdits es) . (applyEdit e);
 
 	commutableEdits :: (Editable a,Eq a) => Edit a -> Edit a -> a -> Maybe a;
 	commutableEdits e1 e2 a = let
 	{
-		cf1 = applyEditCF e1;
-		cf2 = applyEditCF e2;
+		cf1 = applyEdit e1;
+		cf2 = applyEdit e2;
 		cf12 = cf1 . cf2;
 		cf21 = cf2 . cf1;
 		a12 = applyConstFunction cf12 a;

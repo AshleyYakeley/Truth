@@ -63,7 +63,7 @@ module UI.Truth.GTK.SourceView where
 			ivWidget = widget,
 			ivUpdate = \edit -> do
 			{
-				newstate <- applyConstFunctionA (applyEditCF edit) (get widget toggleButtonActive);
+				newstate <- applyConstFunctionA (applyEdit edit) (get widget toggleButtonActive);
 				set widget [toggleButtonActive := newstate];
 			}
 		});

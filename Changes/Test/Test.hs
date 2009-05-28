@@ -48,7 +48,7 @@ module Main where
 		editorUpdate = \(ref,push) edit -> do
 		{
 			putStrLn (name ++ ": edit: " ++ (show edit));
-			newa <- applyConstFunctionA (applyEditCF edit) (readIORef ref);
+			newa <- applyConstFunctionA (applyEdit edit) (readIORef ref);
 			putStrLn (name ++ ": update: " ++ (show newa));
 			writeIORef ref newa;
 		},

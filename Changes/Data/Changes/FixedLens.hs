@@ -15,39 +15,36 @@ module Data.Changes.FixedLens where
 	;
 	data FixedLens' m a b = MkFixedLens
 	{
-		fixedLensUpdateCF :: Edit a -> ConstFunction a (Maybe (Edit b)),
+		fixedLensUpdate :: Edit a -> ConstFunction a (Maybe (Edit b)),
 		fixedLensGet :: a -> b,
 		fixedLensPutEdit :: Edit b -> ConstFunction a (m (Edit a))
 	};
 	
 	type FixedLens = FixedLens' Maybe;
 	
-	makeFixedLensUpdateCF :: (Editable a) => (a -> b) -> (Edit a -> Maybe (ConstFunction a (Maybe (Edit b)))) -> (Edit a -> ConstFunction a (Maybe (Edit b)));
-	makeFixedLensUpdateCF getter ff edit = case ff edit of
+	makeFixedLensUpdate :: (Editable a) => (a -> b) -> (Edit a -> Maybe (ConstFunction a (Maybe (Edit b)))) -> (Edit a -> ConstFunction a (Maybe (Edit b)));
+	makeFixedLensUpdate getter ff edit = case ff edit of
 	{
 		Just ameb -> ameb;
-		_ -> fmap (Just . ReplaceEdit . getter) (applyEditCF edit);
+		_ -> fmap (Just . ReplaceEdit . getter) (applyEdit edit);
 	};
-	
-	fixedLensUpdate :: FixedLens' m a b -> a -> Edit a -> Maybe (Edit b);
-	fixedLensUpdate lens olda edit = applyConstFunction (fixedLensUpdateCF lens edit) olda;
 	
 	instance (Applicative m,FunctorOne m) => Category (FixedLens' m) where
 	{
 		id = MkFixedLens
 		{
-			fixedLensUpdateCF = \edit -> pure (Just edit),
+			fixedLensUpdate = \edit -> pure (Just edit),
 			fixedLensGet = id,
 			fixedLensPutEdit = \editb -> pure (pure editb)
 		};
 		bc . ab = MkFixedLens
 		{
-			fixedLensUpdateCF = \edita -> do
+			fixedLensUpdate = \edita -> do
 			{
-				meb <- fixedLensUpdateCF ab edita;
+				meb <- fixedLensUpdate ab edita;
 				case meb of
 				{
-					Just editb -> cofmap1CF (fixedLensGet ab) (fixedLensUpdateCF bc editb);
+					Just editb -> cofmap1CF (fixedLensGet ab) (fixedLensUpdate bc editb);
 					_ -> return Nothing;
 				};
 			},
@@ -69,7 +66,7 @@ module Data.Changes.FixedLens where
 	{
 		lensUpdate = \edit _ -> do
 		{
-			meb <- fixedLensUpdateCF lens edit;
+			meb <- fixedLensUpdate lens edit;
 			return ((),meb);
 		},
 		lensGet = \_ -> fixedLensGet lens,
@@ -78,7 +75,7 @@ module Data.Changes.FixedLens where
 	
 	data CleanLens' m a b = MkCleanLens
 	{
-		cleanLensUpdateCF :: Edit a -> Maybe (Edit b),
+		cleanLensUpdate :: Edit a -> Maybe (Edit b),
 		cleanLensGet :: a -> b,
 		cleanLensPutEdit :: Edit b -> m (Edit a)
 	};
@@ -89,16 +86,16 @@ module Data.Changes.FixedLens where
 	{
 		id = MkCleanLens
 		{
-			cleanLensUpdateCF = Just,
+			cleanLensUpdate = Just,
 			cleanLensGet = id,
 			cleanLensPutEdit = return
 		};
 		bc . ab = MkCleanLens
 		{
-			cleanLensUpdateCF = \edita -> do
+			cleanLensUpdate = \edita -> do
 			{
-				editb <- cleanLensUpdateCF ab edita;
-				cleanLensUpdateCF bc editb;
+				editb <- cleanLensUpdate ab edita;
+				cleanLensUpdate bc editb;
 			},
 			cleanLensGet = (cleanLensGet bc) . (cleanLensGet ab),
 
@@ -113,7 +110,7 @@ module Data.Changes.FixedLens where
 	cleanFixedLens :: CleanLens' m a b -> FixedLens' m a b;
 	cleanFixedLens lens = MkFixedLens
 	{
-		fixedLensUpdateCF = \edit -> pure (cleanLensUpdateCF lens edit),
+		fixedLensUpdate = \edit -> pure (cleanLensUpdate lens edit),
 		fixedLensGet = cleanLensGet lens,
 		fixedLensPutEdit = \edit -> pure (cleanLensPutEdit lens edit)
 	};
@@ -153,11 +150,11 @@ module Data.Changes.FixedLens where
 	simpleFixedLens :: (Functor m,Editable a,Editable b) => SimpleLens' m a b -> FixedLens' m a b;
 	simpleFixedLens lens = MkFixedLens
 	{
-		fixedLensUpdateCF = makeFixedLensUpdateCF (simpleLensGet lens) (\_ -> Nothing),
+		fixedLensUpdate = makeFixedLensUpdate (simpleLensGet lens) (\_ -> Nothing),
 		fixedLensGet = simpleLensGet lens,
 		fixedLensPutEdit = \editb -> do
 		{
-			newb <- cofmap1CF (simpleLensGet lens) (applyEditCF editb);
+			newb <- cofmap1CF (simpleLensGet lens) (applyEdit editb);
 			ma <- simpleLensPutback lens newb;
 			return (fmap ReplaceEdit ma);
 		}

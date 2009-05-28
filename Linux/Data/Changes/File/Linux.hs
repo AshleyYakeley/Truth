@@ -289,7 +289,7 @@ module Data.Changes.File.Linux
 									ReplaceEdit (MkWithContext newpath newmbs) -> return (Just newpath,Just newmbs);
 									_ -> do
 									{
-										newa <- applyConstFunctionA (applyEditCF edit) fsGet;
+										newa <- applyConstFunctionA (applyEdit edit) fsGet;
 										return ((\(MkWithContext newpath newmbs) -> (Just newpath,Just newmbs)) newa);
 									};
 								};

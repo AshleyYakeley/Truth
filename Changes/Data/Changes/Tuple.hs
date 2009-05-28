@@ -57,13 +57,13 @@ module Data.Changes.Tuple where
 	};
 
 	applyTuplePartEdit :: TListPartEdit t -> t -> t;
-	applyTuplePartEdit (TListPartEdit n edit) t = putTListElement n (applyConstFunction (applyEditCF edit) (getTListElement n t)) t;
+	applyTuplePartEdit (TListPartEdit n edit) t = putTListElement n (applyConstFunction (applyEdit edit) (getTListElement n t)) t;
 
 	invertTuplePartEdit :: TListPartEdit t -> t -> Maybe (TListPartEdit t);
 
 	invertTuplePartEdit (TListPartEdit n edit) t = do
 	{
-		unedit <- invertEditCF edit (getTListElement n t);
+		unedit <- invertEdit edit (getTListElement n t);
 		return (TListPartEdit n unedit);
 	};
 
@@ -90,7 +90,7 @@ module Data.Changes.Tuple where
 	tupleElementCleanLens :: (IsTuple t,Editable a,PartEdit t ~ TListPartEdit (TList t)) => TListElement (TList t) a -> CleanLens' Identity t a;
 	tupleElementCleanLens n = MkCleanLens
 	{
-		cleanLensUpdateCF = \edit -> case edit of
+		cleanLensUpdate = \edit -> case edit of
 		{
 			(PartEdit (TListPartEdit n' edita)) -> do
 			{

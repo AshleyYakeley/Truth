@@ -39,7 +39,7 @@ module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 	instance (Editable a) => EditScheme (ListPartEdit a) [a] where
 	{
 		applyPartEdit (ItemEdit i _) | i < 0 = id;
-		applyPartEdit (ItemEdit i edita) = arr (elementModify i (applyConstFunction (applyEditCF edita))) where
+		applyPartEdit (ItemEdit i edita) = arr (elementModify i (applyConstFunction (applyEdit edita))) where
 		{
 		};
 
@@ -54,7 +54,7 @@ module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 		invertPartEdit (ItemEdit i edita) oldlist = do
 		{
 			oldelement <- elementGet i oldlist;
-			invedita <- invertEditCF edita oldelement;
+			invedita <- invertEdit edita oldelement;
 			return (PartEdit (ItemEdit i invedita));
 		} where
 		{
@@ -99,7 +99,7 @@ module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 	{
 		elementUpdate :: (Editable e) => Edit [e] -> Int -> ConstFunction [e] (Int,Maybe (Edit (Maybe e)));
 		elementUpdate edita state = 
-		  fromMaybe (fmap (\newa -> (state,Just (ReplaceEdit (lensGet listElement state newa)))) (applyEditCF edita)) update_ where
+		  fromMaybe (fmap (\newa -> (state,Just (ReplaceEdit (lensGet listElement state newa)))) (applyEdit edita)) update_ where
 		{
 			update_ :: Maybe (ConstFunction [e] (Int,Maybe (Edit (Maybe e))));
 			update_ = case edita of
@@ -135,7 +135,7 @@ module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 	{
 		sectionUpdate :: (Editable e) => Edit [e] -> (Int,Int) -> ConstFunction [e] ((Int,Int),Maybe (Edit [e]));
 		sectionUpdate edita state = 
-		  fromMaybe (fmap (\newa -> (state,Just (ReplaceEdit (lensGet listSection state newa)))) (applyEditCF edita)) update_ where
+		  fromMaybe (fmap (\newa -> (state,Just (ReplaceEdit (lensGet listSection state newa)))) (applyEdit edita)) update_ where
 		{
 			update_ :: Maybe (ConstFunction [e] ((Int,Int),Maybe (Edit [e])));
 			update_ = case edita of
@@ -151,7 +151,7 @@ module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 				let
 				{
 					oldb = lensGet listElement editlensstate olda;
-					newb = applyConstFunctionA (applyEditCF editbedit) oldb;
+					newb = applyConstFunctionA (applyEdit editbedit) oldb;
 					newlen = case newb of
 					{
 						Just _ -> 1;
