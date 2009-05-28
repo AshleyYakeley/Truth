@@ -33,10 +33,10 @@ module Main where
 		show (PartEdit pe) = "part " ++ (show pe);
 	};
 	
-	showObject :: (Show a) => String -> Object a -> IO ();
+	showObject :: (Show a) => String -> Subscribe a -> IO ();
 	showObject name obj = do
 	{
-		a <- readObject obj;
+		a <- subscribeRead obj;
 		putStrLn (name ++ ": " ++ (show a));
 	};
 	
@@ -51,7 +51,7 @@ module Main where
 		show (SuccessResult a) = "success: " ++ (show a);
 	};
 	
-	makeShowSubscription :: (Show a,Show (PartEdit a),Editable a) => String -> Object a -> IO (Push a,Subscription a);
+	makeShowSubscription :: (Show a,Show (PartEdit a),Editable a) => String -> Subscribe a -> IO (Push a,Subscription a);
 	makeShowSubscription name subscribe = do
 	{
 		((_,push),sub) <- subscribe
@@ -96,9 +96,9 @@ module Main where
 			let
 			{
 				fileobj = linuxFileObject inotify path;
-				contentobj = lensObject (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () fileobj;
-				stringobj = lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens packBSLens)))) () contentobj;
-				textobj = lensObject (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens utf8Lens)))) () stringobj;
+				contentobj = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () fileobj;
+				stringobj = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens packBSLens)))) () contentobj;
+				textobj = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens utf8Lens)))) () stringobj;
 			};
 		
 			(push,sub) <- makeShowSubscription path textobj;
@@ -115,13 +115,13 @@ module Main where
 
 	--		writeFile path (pack [65,66,67,68,10]);
 	{-		
-			obj <- makeFreeObject () "abcdef";
+			obj <- freeObjSubscribe () "abcdef";
 			sub <- makeShowSubscription "main" obj;
 			showPushEdit sub (ReplaceEdit "pqrstu");
 		
 			showObject "current" obj;
 		
-			let {sectobj = lensObject listSection (\_ -> return (2,2)) obj;};
+			let {sectobj = lensSubscribe listSection (\_ -> return (2,2)) obj;};
 			sectsub <- makeShowSubscription "sect" sectobj;		
 		
 			showPushEdit sectsub (ReplaceEdit "12");

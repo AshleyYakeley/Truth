@@ -261,21 +261,21 @@ module Data.Changes.File.Linux
 		});
 	};
 
-	linuxFileObject :: INotifyB -> FilePath -> Object (WithContext FilePath (Maybe ByteString));
-	linuxFileObject inotify initialpath = makeObject (\pushout -> do
+	linuxFileObject :: INotifyB -> FilePath -> Subscribe (WithContext FilePath (Maybe ByteString));
+	linuxFileObject inotify initialpath = objSubscribe (\pushout -> do
 	{
 		fs <- newFileState inotify initialpath pushout;
 		let {?fs = fs;} in do
 		{
 			runFSAction (fsWithRead (return ()));
-			return (MkInternalObject
+			return (MkObject
 			{
-				intobjGetInitial = \aior -> runFSAction (fsWithRead (do
+				objGetInitial = \aior -> runFSAction (fsWithRead (do
 				{
 					a <- fsGet;
 					liftIO (aior a);
 				})),
-				intobjPush = \ioedit -> do
+				objPush = \ioedit -> do
 				{
 					(waitClose,result) <- runFSAction (fsWithReadWrite (do
 					{
@@ -333,7 +333,7 @@ module Data.Changes.File.Linux
 					waitClose;
 					return result;
 				},
-				intobjClose = runFSAction (fsWithRead (liftIO (modifyMVar_ (fsWatchVar ?fs) (\mwd -> case mwd of
+				objClose = runFSAction (fsWithRead (liftIO (modifyMVar_ (fsWatchVar ?fs) (\mwd -> case mwd of
 				{
 					Just wd -> do
 					{

@@ -29,15 +29,15 @@ module Main where
 		show (PartEdit pe) = "part " ++ (show pe);
 	};
 	
-	showObject :: (Show a) => String -> Object a -> IO ();
+	showObject :: (Show a) => String -> Subscribe a -> IO ();
 	showObject name obj = do
 	{
-		a <- readObject obj;
+		a <- subscribeRead obj;
 		putStrLn (name ++ ": " ++ (show a));
 	};
 
-	withShowSubscription :: (Show a,Editable a,Show (PartEdit a)) => Object a -> String -> (Object a -> (Edit a -> IO (Maybe ())) -> IO (Maybe b)) -> IO (Maybe b);
-	withShowSubscription object name f = withSubscription object (MkEditor
+	withShowSubscription :: (Show a,Editable a,Show (PartEdit a)) => Subscribe a -> String -> (Subscribe a -> (Edit a -> IO (Maybe ())) -> IO (Maybe b)) -> IO (Maybe b);
+	withShowSubscription object name f = subscribeEdit object (MkEditor
 	{
 		editorInit = \a push -> do
 		{
@@ -69,7 +69,7 @@ module Main where
 	main = do
 	{
 		putStrLn "Test";
-		withShowSubscription (makeFreeObject "abcdef") "main" (\obj push -> do
+		withShowSubscription (freeObjSubscribe "abcdef") "main" (\obj push -> do
 		{
 			push (ReplaceEdit "pqrstu");
 			showObject "current" obj;
@@ -77,13 +77,13 @@ module Main where
 --			push (ReplaceEdit "PQRSTU");
 --			showObject "current" obj;
 
-			withShowSubscription (lensObject listSection (2,2) obj) "sect" (\sectobj pushSect -> do
+			withShowSubscription (lensSubscribe listSection (2,2) obj) "sect" (\sectobj pushSect -> do
 			{
 				pushSect (ReplaceEdit "12");
 				showObject "sect" sectobj;
 				showObject "main" obj;
 		
-				withShowSubscription (lensObject listElement 4 obj) "elem" (\elemobj pushElem -> do
+				withShowSubscription (lensSubscribe listElement 4 obj) "elem" (\elemobj pushElem -> do
 				{		
 					--pushElem (ReplaceEdit (Just 'p'));
 					--showObject "elem" elemobj;

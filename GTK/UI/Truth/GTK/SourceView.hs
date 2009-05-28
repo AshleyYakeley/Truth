@@ -12,8 +12,8 @@ module UI.Truth.GTK.SourceView where
 		viewRequestClose :: IO Bool
 	};
 
-	--type ViewFactory a = Object a -> (Selection -> IO ()) -> IO View;
-	type ViewFactory a = Object a -> IO View;
+	--type ViewFactory a = Subscribe a -> (Selection -> IO ()) -> IO View;
+	type ViewFactory a = Subscribe a -> IO View;
 
 	data InternalView a = forall w. (WidgetClass w) => MkInternalView
 	{
@@ -145,34 +145,6 @@ module UI.Truth.GTK.SourceView where
 		} :: InternalView (Maybe a));
 	};
 
-{-
-	maybeViewFactory :: a -> ViewFactory context a -> ViewFactory context (Maybe a);
-	maybeViewFactory emptyval factory objma = do
-	{
-		(widget,sub) <- objSubscribe objma (\a -> do
-		{
-			frame <- frameNew;
-			createButton <- buttonNew;
-			case a of
-			{
-				Just _ -> set frame [containerChild := w]
-		})
-		(\widget edit -> do
-		{
-		})
-		;
-		onClicked createButton (subPush (return (ReplaceEdit emptyval)));
-		return (MkView
-		{
-			viewWidget = widget,
-			viewRequestClose = do
-			{
-				subClose sub;
-				return True;
-			}
-		});
-	};
--}
 	sourceViewBrowser :: ViewFactory a;
 	sourceViewBrowser _ = do
 	{

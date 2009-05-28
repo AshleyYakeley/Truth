@@ -17,7 +17,7 @@ module Data.Changes.Object where
 
 	data Subscription a = MkSubscription
 	{
-		subObject :: Object a,
+		subCopy :: Subscribe a,
 		
 		-- | close the subscription
 		subClose :: IO ()
@@ -25,52 +25,52 @@ module Data.Changes.Object where
 	
 	-- | blocks if the object is busy
 	;
-	type Object a = forall r. (a -> Push a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription a);
+	type Subscribe a = forall r. (a -> Push a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription a);
 	
 	data Editor a b = forall r. MkEditor
 	{
 		editorInit :: a -> Push a -> IO r,
 		editorUpdate :: r -> Edit a -> IO (),
-		editorDo :: r -> Object a -> IO b
+		editorDo :: r -> Subscribe a -> IO b
 	};
 
-	withSubscription :: Object a -> Editor a b -> IO b;
-	withSubscription subscribe editor = case editor of 
+	subscribeEdit :: Subscribe a -> Editor a b -> IO b;
+	subscribeEdit subscribe editor = case editor of 
 	{
 		(MkEditor initr update f) -> do
 		{
 			(r, sub) <- subscribe initr update;
 			finally
-				(f r (subObject sub))
+				(f r (subCopy sub))
 				(subClose sub);
 		};
 	};
 	
-	readObject :: Object a -> IO a;
-	readObject object = withSubscription object (MkEditor
+	subscribeRead :: Subscribe a -> IO a;
+	subscribeRead object = subscribeEdit object (MkEditor
 	{
 		editorInit = \a _ -> return a,
 		editorUpdate = \_ _ -> return (),
 		editorDo = \a _ -> return a
 	});
 
-	writeObject :: a -> Object a -> IO (Maybe ());
-	writeObject a object = withSubscription object (MkEditor
+	subscribeWrite :: a -> Subscribe a -> IO (Maybe ());
+	subscribeWrite a object = subscribeEdit object (MkEditor
 	{
 		editorInit = \_ push -> return push,
 		editorUpdate = \_ _ -> return (),
 		editorDo = \push _ -> push (return (Just (ReplaceEdit a)))
 	});
 
-	data InternalObject a = MkInternalObject
+	data Object a = MkObject
 	{
-		intobjGetInitial :: forall r. (a -> IO r) -> IO r,
-		intobjPush :: Push a,
-		intobjClose :: IO ()
+		objGetInitial :: forall r. (a -> IO r) -> IO r,
+		objPush :: Push a,
+		objClose :: IO ()
 	};
 
-	makeObject :: forall a. ((Edit a -> IO ()) -> IO (InternalObject a)) -> Object a;
-	makeObject getIntObject initialise' updater' = do
+	objSubscribe :: forall a. ((Edit a -> IO ()) -> IO (Object a)) -> Subscribe a;
+	objSubscribe getIntObject initialise' updater' = do
 	{
 		storevar <- newMVar emptyStore;
 		intobj <- getIntObject (\edit -> withMVar storevar (\store -> forM (allStore store) (\u -> u edit) >> return ()));
@@ -82,7 +82,7 @@ module Data.Changes.Object where
 				IO (r, Subscription a);
 			objSub initialise updater = do
 			{
-				r <- intobjGetInitial intobj (\a -> initialise a (intobjPush intobj));
+				r <- objGetInitial intobj (\a -> initialise a (objPush intobj));
 				key <- modifyMVar storevar (\store -> do
 				{
 					let {(key,newstore) = addStore (updater r) store;};
@@ -90,14 +90,14 @@ module Data.Changes.Object where
 				});
 				return (r,MkSubscription
 				{
-					subObject = objSub,
+					subCopy = objSub,
 					subClose = modifyMVar_ storevar (\store -> let
 					{
 						newstore = deleteStore key store;
 					} in do
 					{
 						if isEmptyStore newstore
-						 then (intobjClose intobj)
+						 then (objClose intobj)
 						 else return ();
 						return newstore;
 					})
@@ -107,14 +107,14 @@ module Data.Changes.Object where
 		objSub initialise' updater';
 	};
 	
-	makeFreeObject :: forall a. (Editable a) => a -> Object a;
-	makeFreeObject initial = makeObject (\pushOut -> do
+	freeObjSubscribe :: forall a. (Editable a) => a -> Subscribe a;
+	freeObjSubscribe initial = objSubscribe (\pushOut -> do
 	{
 		statevar <- newMVar initial;
-		return (MkInternalObject
+		return (MkObject
 		{
-			intobjGetInitial = withMVar statevar,
-			intobjPush = \ioedit -> modifyMVar statevar (\a -> do
+			objGetInitial = withMVar statevar,
+			objPush = \ioedit -> modifyMVar statevar (\a -> do
 			{
 				medit <- ioedit;
 				case medit of
@@ -127,12 +127,12 @@ module Data.Changes.Object where
 					Nothing -> return (a,Nothing);
 				};
 			}),
-			intobjClose = return ()
+			objClose = return ()
 		});
 	});
 
-	lensObject :: forall state a b. (Editable a,Eq state) => FloatingLens state a b -> state -> Object a -> Object b;
-	lensObject lens firststate subscribe = makeObject (\pushOut -> do
+	lensSubscribe :: forall state a b. (Editable a,Eq state) => FloatingLens state a b -> state -> Subscribe a -> Subscribe b;
+	lensSubscribe lens firststate subscribe = objSubscribe (\pushOut -> do
 	{
 		((statevar,firsta,push),sub) <- subscribe 
 		 (\a push -> do
@@ -153,10 +153,10 @@ module Data.Changes.Object where
 			return (newstate,applyConstFunction (applyEdit edita) olda);
 		}));
 		putMVar statevar (firststate,firsta);
-		return (MkInternalObject
+		return (MkObject
 		{
-			intobjGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (lensGet lens state a)),
-			intobjPush = \ioedit -> push (withMVar statevar (\(state,a) -> do
+			objGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (lensGet lens state a)),
+			objPush = \ioedit -> push (withMVar statevar (\(state,a) -> do
 			{
 				medit <- ioedit;
 				return (do
@@ -165,7 +165,7 @@ module Data.Changes.Object where
 					applyConstFunction (lensPutEdit lens state edit) a;
 				});
 			})),
-			intobjClose = subClose sub
+			objClose = subClose sub
 		});
 	});
 }
