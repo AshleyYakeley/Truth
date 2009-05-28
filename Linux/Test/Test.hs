@@ -3,6 +3,7 @@ module Main where
 {
 	import Data.Changes.File.Linux;
 	import Data.Changes;
+	import Data.ConstFunction;
 	import Data.ByteString hiding (putStrLn);
 	import Data.Char;
 	import Data.IORef;
@@ -63,8 +64,7 @@ module Main where
 			(\(ref,_) edit -> do
 			{
 				putStrLn (name ++ ": edit: " ++ (show edit));
-				olda <- readIORef ref;
-				let {newa = applyEdit edit olda;};
+				newa <- applyConstFunctionA (applyEditCF edit) (readIORef ref);
 				putStrLn (name ++ ": update: " ++ (show newa));
 				writeIORef ref newa;
 			});

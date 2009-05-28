@@ -6,7 +6,7 @@ module Data.Changes.File.Linux
 	import Data.Changes;
 	import System.INotify.Balanced;
 	import System.Posix.Files;
---	import Data.ConstFunction;
+	import Data.ConstFunction;
 	import Data.ByteString;
 	import Control.Concurrent.QSem;
 	import Control.Concurrent.MVar;
@@ -289,8 +289,8 @@ module Data.Changes.File.Linux
 									ReplaceEdit (MkWithContext newpath newmbs) -> return (Just newpath,Just newmbs);
 									_ -> do
 									{
-										olda <- fsGet;
-										return ((\(MkWithContext newpath newmbs) -> (Just newpath,Just newmbs)) (applyEdit edit olda));
+										newa <- applyConstFunctionA (applyEditCF edit) fsGet;
+										return ((\(MkWithContext newpath newmbs) -> (Just newpath,Just newmbs)) newa);
 									};
 								};
 								case mnewpath of

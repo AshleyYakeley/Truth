@@ -90,28 +90,17 @@ module Data.Changes.Edit where
 	applyEditsCF :: (Editable a) => [Edit a] -> ConstFunction a a;
 	applyEditsCF [] = id;
 	applyEditsCF (e:es) = (applyEditsCF es) . (applyEditCF e);
-	
-	applyAndInvertEdit :: (Editable a) => a -> Edit a -> (a,Maybe (Edit a));
-	applyAndInvertEdit a edit = (applyConstFunction ae a,ie a) where
-	{
-		(ae,ie) = applyAndInvertEditCF edit;
-	};
-	
-	applyEdit :: (Editable a) => Edit a -> a -> a;
-	applyEdit = applyConstFunction . applyEditCF;
-	
-	applyEdits :: (Editable a) => [Edit a] -> a -> a;
-	applyEdits = applyConstFunction . applyEditsCF;
-	
-	invertEdit :: (Editable a) => a -> Edit a -> Maybe (Edit a);
-	invertEdit olda edit =invertEditCF edit olda;
-	
+
 	commutableEdits :: (Editable a,Eq a) => Edit a -> Edit a -> a -> Maybe a;
 	commutableEdits e1 e2 a = let
 	{
-		a1 = applyEdit e1 (applyEdit e2 a);
-		a2 = applyEdit e2 (applyEdit e1 a);
-	} in if a1 == a2 then Just a1 else Nothing;
+		cf1 = applyEditCF e1;
+		cf2 = applyEditCF e2;
+		cf12 = cf1 . cf2;
+		cf21 = cf2 . cf1;
+		a12 = applyConstFunction cf12 a;
+		a21 = applyConstFunction cf21 a;
+	} in if a12 == a21 then Just a12 else Nothing;
 
 	data FloatingLens' m state a b = MkFloatingLens
 	{

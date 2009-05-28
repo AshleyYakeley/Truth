@@ -2,7 +2,7 @@ module UI.Truth.GTK.SourceView where
 {
 	import Graphics.UI.Gtk hiding (Object);
 	import Data.Changes;
---	import Data.ConstFunction;
+	import Data.ConstFunction;
 	import Data.IORef;
 	
 	data View = forall w. (WidgetClass w) => MkView
@@ -63,8 +63,8 @@ module UI.Truth.GTK.SourceView where
 			ivWidget = widget,
 			ivUpdate = \edit -> do
 			{
-				s <- get widget toggleButtonActive;
-				set widget [toggleButtonActive := (applyEdit edit s)];
+				newstate <- applyConstFunctionA (applyEditCF edit) (get widget toggleButtonActive);
+				set widget [toggleButtonActive := newstate];
 			}
 		});
 	};

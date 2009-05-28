@@ -48,3 +48,4 @@ exposed-modules:
 	Data.Changes.Text
 	Data.Changes.Context
 other-modules:
+	Control.Instances

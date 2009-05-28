@@ -1,5 +1,6 @@
 module Data.ConstFunction where
 {
+	import Control.Instances();
 	import Control.Arrow;
 	import Control.Category;
 	import Control.Applicative;

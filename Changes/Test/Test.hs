@@ -2,6 +2,7 @@
 module Main where
 {
 	import Data.Changes.List;
+	import Data.ConstFunction;
 	import Data.Changes;
 	import Data.Maybe;
 	import Data.IORef;
@@ -47,8 +48,7 @@ module Main where
 		editorUpdate = \(ref,push) edit -> do
 		{
 			putStrLn (name ++ ": edit: " ++ (show edit));
-			olda <- readIORef ref;
-			let {newa = applyEdit edit olda;};
+			newa <- applyConstFunctionA (applyEditCF edit) (readIORef ref);
 			putStrLn (name ++ ": update: " ++ (show newa));
 			writeIORef ref newa;
 		},

@@ -151,7 +151,7 @@ module Data.Changes.List(listElement,listSection,ListPartEdit(..)) where
 				let
 				{
 					oldb = lensGet listElement editlensstate olda;
-					newb = fmap (applyEdit editbedit) oldb;
+					newb = applyConstFunctionA (applyEditCF editbedit) oldb;
 					newlen = case newb of
 					{
 						Just _ -> 1;
