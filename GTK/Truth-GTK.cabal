@@ -7,6 +7,7 @@ library
 {
 build-depends:
  base>=4.0,
+ glib==0.10.1,
  gtk==0.10.1,
  Changes==0.1
 extensions:
@@ -25,7 +26,11 @@ extensions:
  GeneralizedNewtypeDeriving
  ExistentialQuantification
 exposed-modules:
+ UI.Truth.GTK.View
+ UI.Truth.GTK.Maybe
+ UI.Truth.GTK.CheckButton
  UI.Truth.GTK.SourceView
+ UI.Truth.GTK
 other-modules:
 }
 
@@ -33,6 +38,7 @@ executable truth
 {
 build-depends:
  base>=4.0,
+ glib==0.10.1,
  gtk==0.10.1,
  Changes==0.1,
  Changes-Linux==0.1

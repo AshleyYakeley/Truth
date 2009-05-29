@@ -1,6 +1,6 @@
 module Main where
 {
-	import UI.Truth.GTK.SourceView;
+	import UI.Truth.GTK;
 	import Graphics.UI.Gtk hiding (Object);
 	import Data.Changes;
 	import Data.Changes.File.Linux;
@@ -8,7 +8,7 @@ module Main where
 	makeWindow :: String -> Subscribe Bool -> IO (Subscribe Bool);
 	makeWindow name sub = do
 	{
-		(sub',view) <- ivfViewFactory (checkButtonIVF name) sub;
+		(sub',view) <- makeView (checkButtonIVF name) sub;
 		window <- windowNew;
 		(\(MkView w _) -> set window [containerChild := w]) view;
 		onDestroy window mainQuit;
