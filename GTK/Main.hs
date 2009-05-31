@@ -1,17 +1,21 @@
 module Main where
 {
 	import UI.Truth.GTK;
-	import Graphics.UI.Gtk hiding (Object);
+	import Graphics.UI.Gtk;
 	import Data.Changes;
 	import Data.Changes.File.Linux;
 	import Data.IORef;
 
-	makeWindow :: IORef Int -> String -> Subscribe Bool -> IO (Subscribe Bool);
-	makeWindow windowCount name sub = do
+	makeWindow :: IORef Int -> InternalViewFactory a -> Subscribe a -> IO (Subscribe a);
+	makeWindow windowCount ivf sub = do
 	{
-		(sub',view) <- makeView (checkButtonIVF name) sub;
+		(sub',view) <- makeView ivf sub;
 		window <- windowNew;
-		(\(MkView w _) -> set window [containerChild := w]) view;
+		(\(MkView w _) -> do
+		{
+			set window [containerChild := w];
+			widgetShow w;
+		}) view;
 		onDestroy window (do
 		{
 			viewRequestClose view;
@@ -22,10 +26,13 @@ module Main where
 			 else return ();
 		});
 		i <- readIORef windowCount;
-		writeIORef windowCount (i + 1);		
-		widgetShowAll window;
+		writeIORef windowCount (i + 1);
+		widgetShow window;
 		return sub';
 	};
+
+	initial :: Maybe Bool;
+	initial = Just True;
 
 	main :: IO ();
 	main = withINotifyB (\_inotify -> do
@@ -33,9 +40,9 @@ module Main where
 		initGUI;
 		windowCount <- newIORef 0;
 		--view <- sourceViewBrowser (linuxFileObject inotify "somefile");
-		sub <- makeWindow windowCount "A" (freeObjSubscribe False);
-		makeWindow windowCount "B" sub;
-		makeWindow windowCount "C" sub;
+		sub <- makeWindow windowCount (maybeIVF False (checkButtonIVF "A")) (freeObjSubscribe initial);
+		makeWindow windowCount (maybeIVF False (checkButtonIVF "B")) sub;
+		makeWindow windowCount (maybeIVF True (checkButtonIVF "C")) sub;
 		mainGUI;
-	});	
+	});
 }
