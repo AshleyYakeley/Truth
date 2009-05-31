@@ -40,9 +40,9 @@ module Main where
 		initGUI;
 		windowCount <- newIORef 0;
 		--view <- sourceViewBrowser (linuxFileObject inotify "somefile");
-		sub <- makeWindow windowCount (maybeIVF False (checkButtonIVF "A")) (freeObjSubscribe initial);
-		makeWindow windowCount (maybeIVF False (checkButtonIVF "B")) sub;
-		makeWindow windowCount (maybeIVF True (checkButtonIVF "C")) sub;
+		sub <- makeWindow windowCount (maybeIVF False (checkButtonIVF "AAAAAAAAAAAAAAAAAAAAAAAAAA")) (freeObjSubscribe initial);
+		makeWindow windowCount (maybeIVF False (checkButtonIVF "BBBBBBBBBBBBBBBBBBBBBBBBBBBBB")) sub;
+		makeWindow windowCount (maybeIVF True (checkButtonIVF "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")) sub;
 		mainGUI;
 	});
 }

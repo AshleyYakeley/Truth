@@ -3,7 +3,10 @@ module UI.Truth.GTK.Maybe where
 	import UI.Truth.GTK.View;
 	import Graphics.UI.Gtk;
 	import Data.Changes;
+	import Data.FunctorOne;
+	import Data.Result;
 	import Data.IORef;
+	import Control.Applicative;
 
 	pushButton :: Push a -> Edit a -> String -> IO Button;
 	pushButton push edit name = do
@@ -36,8 +39,23 @@ module UI.Truth.GTK.Maybe where
 		widgetDestroy w2;
 	};
 
-	maybeIVF :: forall a. (Data.Changes.Editable a) => a -> InternalViewFactory a -> InternalViewFactory (Maybe a);
-	maybeIVF (emptyval :: a) (factory :: InternalViewFactory a) (initial :: Maybe a) (push :: Push (Maybe a)) = 
+	doIf :: Maybe a -> (a -> IO b) -> IO (Maybe b);
+	doIf (Just a) f = fmap Just (f a);
+	doIf Nothing _ = return Nothing;
+
+	createButton :: a -> Push a -> IO Button;
+	createButton val push = pushButton push (ReplaceEdit val) "Create";
+
+	functorOneIVF :: forall f a w. 
+	(
+		Applicative f,
+		FunctorOne f,
+		PartEdit (f a) ~ JustEdit a,
+		Data.Changes.Editable a,
+		WidgetClass w
+	) =>
+	  Maybe (forall b. f b) -> (Push (f a) -> IO w) -> InternalViewFactory a -> InternalViewFactory (f a);
+	functorOneIVF mDeleteValue makeEmptywidget factory initial push = 
 	let
 	{
 		mpush :: Push a;
@@ -53,20 +71,20 @@ module UI.Truth.GTK.Maybe where
 	} in do
 	{
 		box <- vBoxNew True 0;
-		createButton <- pushButton push (ReplaceEdit (Just emptyval)) "Create";
-		deleteButton <- pushButton push (ReplaceEdit Nothing) "Delete";
-		initialmiv :: Maybe (InternalView a) <- case initial of
+		emptyWidget <- makeEmptywidget push;
+		mDeleteButton <- doIf mDeleteValue (\deleteValue -> pushButton push (ReplaceEdit deleteValue) "Delete");
+		initialmiv :: Maybe (InternalView a) <- case retrieveOne initial of
 		{
-			Just a -> do
+			SuccessResult a -> do
 			{
 				iv@(MkInternalView widget _) <- factory a mpush;
-				containerAddShow box deleteButton;
+				doIf mDeleteButton (containerAddShow box);
 				containerAddShow box widget;
 				return (Just iv);
 			};
 			_ -> do
 			{
-				containerAddShow box createButton;
+				containerAddShow box emptyWidget;
 				return Nothing;
 			};
 		};
@@ -84,26 +102,30 @@ module UI.Truth.GTK.Maybe where
 						Just edita -> update edita;
 						Nothing -> do
 						{
-							containerAddShow box createButton;
+							containerAddShow box emptyWidget;
 							containerRemoveDestroy box widget;
-							containerRemove box deleteButton;
+							doIf mDeleteButton (containerRemove box);
 							writeIORef stateRef Nothing;
 						};
 					};
 					Nothing -> case edit of
 					{
-						ReplaceEdit (Just a) -> do
+						ReplaceEdit fa | SuccessResult a <- retrieveOne fa -> do
 						{
 							iv@(MkInternalView widget _) <- factory a mpush;				
-							containerAddShow box deleteButton;
+							doIf mDeleteButton (containerAddShow box);
 							containerAddShow box widget;
-							containerRemove box createButton;
+							containerRemove box emptyWidget;
 							writeIORef stateRef (Just iv);
 						};
 						_ -> return ();
 					};
 				};
 			}
-		} :: InternalView (Maybe a));
+		});
 	};
+
+	maybeIVF :: (Data.Changes.Editable a) =>
+	  a -> InternalViewFactory a -> InternalViewFactory (Maybe a);
+	maybeIVF initialVal = functorOneIVF (Just Nothing) (createButton (Just initialVal));
 }

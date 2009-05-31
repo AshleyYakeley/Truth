@@ -82,10 +82,13 @@ module Data.Changes.Edit where
 	applyAndInvertEdit :: (Editable a) => Edit a -> (ConstFunction a a,a -> Maybe (Edit a));
 	applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
 
-	extractJustEdit :: Edit (Maybe a) -> Maybe (Edit a);
+	extractJustEdit :: (FunctorOne f,PartEdit (f a) ~ JustEdit a) => Edit (f a) -> Maybe (Edit a);
 	extractJustEdit (PartEdit (JustEdit ea)) = Just ea; 
-	extractJustEdit (ReplaceEdit (Just a)) = Just (ReplaceEdit a); 
-	extractJustEdit (ReplaceEdit Nothing) = Nothing; 
+	extractJustEdit (ReplaceEdit fa) = case retrieveOne fa of
+	{
+		SuccessResult a -> Just (ReplaceEdit a);
+		_ -> Nothing;
+	};
 	
 	applyEdits :: (Editable a) => [Edit a] -> ConstFunction a a;
 	applyEdits [] = id;
