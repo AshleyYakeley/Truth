@@ -6,10 +6,12 @@ module Main where
 	import Data.ConstFunction;
 	import Data.ByteString hiding (putStrLn);
 	import Data.Char;
+	import Data.Chain;
 	import Data.IORef;
 	import Data.Result;
 	import Control.Concurrent;
-	import Prelude hiding (readFile,writeFile);
+	import Control.Category;
+	import Prelude hiding (readFile,writeFile,id,(.));
 	
 	instance Show Nothing where
 	{
@@ -97,8 +99,7 @@ module Main where
 			{
 				fileobj = linuxFileObject inotify path;
 				contentobj = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () fileobj;
-				stringobj = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens packBSLens)))) () contentobj;
-				textobj = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (traversableWholeLens utf8Lens)))) () stringobj;
+				textobj = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () contentobj;
 			};
 		
 			(push,sub) <- makeShowSubscription path textobj;
