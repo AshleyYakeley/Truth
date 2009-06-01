@@ -11,6 +11,16 @@ pushing
 somefile: edit: replace Just success: "pqrstu"
 somefile: update: Just success: "pqrstu"
 pushed
+waiting 10s
+somefile: edit: replace Just success: "pqrstuyyzz\n"
+somefile: update: Just success: "pqrstuyyzz\n"
+somefile: edit: replace Just success: "xfxfx\n"
+somefile: update: Just success: "xfxfx\n"
+somefile: edit: replace Just success: "xfxfx\n"
+somefile: update: Just success: "xfxfx\n"
+somefile: edit: replace Just success: "xfxfx\npqpr\n"
+somefile: update: Just success: "xfxfx\npqpr\n"
+deleting
 pushing
 somefile: edit: replace Nothing
 somefile: update: Nothing

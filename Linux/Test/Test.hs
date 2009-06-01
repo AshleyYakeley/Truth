@@ -147,6 +147,11 @@ module Main where
 		
 			subClose sectsub;
 	-}
+
+			putStrLn "waiting 10s";
+			threadDelay 10000000;
+
+			putStrLn "deleting";
 			showPushEdit push (ReplaceEdit Nothing);
 			showPushEdit push (ReplaceEdit Nothing);
 			showPushEdit push (ReplaceEdit (Just (SuccessResult "ABCdef")));
