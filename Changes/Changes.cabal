@@ -17,7 +17,6 @@ extensions:
 	UndecidableInstances
 	FlexibleInstances
 	FunctionalDependencies
-	ForeignFunctionInterface
 	GADTs
 	RankNTypes
 	ScopedTypeVariables
@@ -27,6 +26,7 @@ extensions:
 	GeneralizedNewtypeDeriving
 	MultiParamTypeClasses
 	FlexibleContexts
+	TypeSynonymInstances
 exposed-modules:
 	Control.Wait
 	Data.Result

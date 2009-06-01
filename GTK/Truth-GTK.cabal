@@ -29,6 +29,7 @@ exposed-modules:
  UI.Truth.GTK.View
  UI.Truth.GTK.Maybe
  UI.Truth.GTK.CheckButton
+ UI.Truth.GTK.Text
  UI.Truth.GTK.SourceView
  UI.Truth.GTK
 other-modules:

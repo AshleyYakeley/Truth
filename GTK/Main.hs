@@ -4,7 +4,13 @@ module Main where
 	import Graphics.UI.Gtk;
 	import Data.Changes;
 	import Data.Changes.File.Linux;
+	import Data.Result;
+	import Data.Chain;
 	import Data.IORef;
+	import System.Environment;
+	import Data.Foldable;
+	import Control.Category;
+	import Prelude hiding (id,(.));
 
 	makeWindow :: IORef Int -> InternalViewFactory a -> Subscribe a -> IO (Subscribe a);
 	makeWindow windowCount ivf sub = do
@@ -35,14 +41,27 @@ module Main where
 	initial = Just True;
 
 	main :: IO ();
-	main = withINotifyB (\_inotify -> do
+	main = withINotifyB (\inotify -> do
 	{
-		initGUI;
+		args <- getArgs;
 		windowCount <- newIORef 0;
-		--view <- sourceViewBrowser (linuxFileObject inotify "somefile");
+		initGUI;
+		for_ args (\arg -> let
+		{
+			file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)
+			content = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () file; -- (Maybe ByteString)
+			mrtext = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () content; -- Maybe (Result ListError String)
+			
+			ivf = maybeIVF (SuccessResult "") (resultIVF textIVF);
+		} in do
+		{
+			makeWindow windowCount ivf mrtext;
+		});
+		{-
 		sub <- makeWindow windowCount (maybeIVF False (checkButtonIVF "AAAAAAAAAAAAAAAAAAAAAAAAAA")) (freeObjSubscribe initial);
 		makeWindow windowCount (maybeIVF False (checkButtonIVF "BBBBBBBBBBBBBBBBBBBBBBBBBBBBB")) sub;
 		makeWindow windowCount (maybeIVF True (checkButtonIVF "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")) sub;
+		-}
 		mainGUI;
 	});
 }

@@ -128,4 +128,14 @@ module UI.Truth.GTK.Maybe where
 	maybeIVF :: (Data.Changes.Editable a) =>
 	  a -> InternalViewFactory a -> InternalViewFactory (Maybe a);
 	maybeIVF initialVal = functorOneIVF (Just Nothing) (createButton (Just initialVal));
+	
+	placeholderLabel :: IO Label;
+	placeholderLabel = do
+	{
+		label <- labelNew (Just "Placeholder");
+		return label;
+	};
+	
+	resultIVF :: (Data.Changes.Editable a) => InternalViewFactory a -> InternalViewFactory (Result err a);
+	resultIVF = functorOneIVF Nothing (\_ -> placeholderLabel);
 }

@@ -8,6 +8,7 @@ module Data.Changes.FixedLens where
 	import Data.ConstFunction;
 	import Data.Traversable;
 	import Data.FunctorOne;
+	import Data.Chain;
 	import Control.Applicative;
 	import Control.Category;
 	import Prelude hiding (id,(.));
@@ -187,22 +188,20 @@ module Data.Changes.FixedLens where
 		};
 	};
 	
+	instance (Traversable f,Applicative m) => CatFunctor (WholeLens' m) f where
+	{
+		cfmap lens = MkWholeLens
+		{
+			wholeLensGet = fmap (wholeLensGet lens),
+			wholeLensPutback = traverse (wholeLensPutback lens)
+		};
+	};
+	
 	wholeSimpleLens :: WholeLens' m a b -> SimpleLens' m a b;
 	wholeSimpleLens lens = MkSimpleLens
 	{
 		simpleLensGet = wholeLensGet lens,
 		simpleLensPutback = \b -> pure (wholeLensPutback lens b)
-	};
-
-	traversableWholeLens :: forall f m a b. (Traversable f,Applicative m) => WholeLens' m a b -> WholeLens' m (f a) (f b);
-	traversableWholeLens lens = MkWholeLens
-	{
-		wholeLensGet = fmap (wholeLensGet lens),
-		wholeLensPutback = putback
-	}
-	where
-	{
-		putback fb = sequenceA (fmap (wholeLensPutback lens) fb);
 	};
 	
 	resultWholeLens :: (a -> Result e b) -> (b -> a) -> WholeLens' Maybe a (Result e b);

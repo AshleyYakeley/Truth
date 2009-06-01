@@ -1,7 +1,10 @@
 default: build
 
-run: build
-	dist/build/truth/truth
+run: build testfile
+	dist/build/truth/truth testfile
+
+testfile: Makefile
+	cat $^ > $@
 
 # Building
 
