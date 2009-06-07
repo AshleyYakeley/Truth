@@ -7,9 +7,9 @@ module Main where
 	import Data.Result;
 	import Data.Chain;
 	import Data.IORef;
-	import System.Environment;
 	import Data.Foldable;
 	import Control.Category;
+	import Control.Concurrent;
 	import Prelude hiding (id,(.));
 
 	makeWindow :: IORef Int -> InternalViewFactory a -> Subscribe a -> IO (Subscribe a);
@@ -43,9 +43,9 @@ module Main where
 	main :: IO ();
 	main = withINotifyB (\inotify -> do
 	{
-		args <- getArgs;
 		windowCount <- newIORef 0;
-		initGUI;
+		args <- initGUI;
+		idleAdd (yield >> return True) priorityDefaultIdle;
 		for_ args (\arg -> let
 		{
 			file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)
