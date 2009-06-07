@@ -45,7 +45,7 @@ module Main where
 	{
 		windowCount <- newIORef 0;
 		args <- initGUI;
-		idleAdd (yield >> return True) priorityDefaultIdle;
+		timeoutAddFull (yield >> return True) priorityDefaultIdle 50;
 		for_ args (\arg -> let
 		{
 			file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)
