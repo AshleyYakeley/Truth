@@ -3,10 +3,7 @@ module UI.Truth.GTK.Text where
 	import UI.Truth.GTK.View;
 	import Graphics.UI.Gtk;
 	import Data.Changes;
---	import Data.FunctorOne;
---	import Data.Result;
---	import Data.IORef;
---	import Control.Applicative;
+	import Control.Concurrent.MVar;
 
 	replaceText :: TextBuffer -> (Int,Int) -> String -> IO ();
 	replaceText buffer (start,len) text = do
@@ -25,15 +22,29 @@ module UI.Truth.GTK.Text where
 	};
 
 	textIVF :: InternalViewFactory String;
-	textIVF initial _push = do
+	textIVF initial push = do
 	{
 		buffer <- textBufferNew Nothing;
 		textBufferSetText buffer initial;
+		mv <- newMVar ();
+		onBufferInsertText buffer (\iter text -> ifMVar mv (do
+		{
+			signalStopEmission buffer "insert-text";
+			i <- textIterGetOffset iter;
+			push (return (Just (PartEdit (ReplaceSectionEdit (i,0) text))));
+		}));
+		onDeleteRange buffer (\iter1 iter2 -> ifMVar mv (do
+		{
+			signalStopEmission buffer "delete-range";
+			i1 <- textIterGetOffset iter1;
+			i2 <- textIterGetOffset iter2;
+			push (return (Just (PartEdit (ReplaceSectionEdit (i1,i2 - i1) ""))));
+		}));
 		textView <- textViewNewWithBuffer buffer;
 		return (MkInternalView
 		{
 			ivWidget = textView,
-			ivUpdate = \edit -> (putStrLn "edit") >> (case edit of
+			ivUpdate = \edit -> withMVar mv (\_ -> case edit of
 			{
 				ReplaceEdit text -> textBufferSetText buffer text;
 				PartEdit (ReplaceSectionEdit bounds text) -> replaceText buffer bounds text;
