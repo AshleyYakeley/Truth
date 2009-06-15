@@ -1,4 +1,4 @@
-module UI.Truth.GTK.Text where
+module UI.Truth.GTK.Text(textView) where
 {
 	import UI.Truth.GTK.View;
 	import Graphics.UI.Gtk;

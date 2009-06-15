@@ -30,12 +30,12 @@ module Main where
 			ivf = maybeView (SuccessResult "") (resultView textView);
 		} in do
 		{
-			makeWindow windowCount ivf mrtext;
+			makeWindowCountRef windowCount ivf mrtext;
 		});
 		{-
-		sub <- makeWindow windowCount (maybeIVF False (checkButtonIVF "AAAAAAAAAAAAAAAAAAAAAAAAAA")) (freeObjSubscribe initial);
-		makeWindow windowCount (maybeIVF False (checkButtonIVF "BBBBBBBBBBBBBBBBBBBBBBBBBBBBB")) sub;
-		makeWindow windowCount (maybeIVF True (checkButtonIVF "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")) sub;
+		sub <- makeWindowCountRef windowCount (maybeIVF False (checkButtonIVF "AAAAAAAAAAAAAAAAAAAAAAAAAA")) (freeObjSubscribe initial);
+		makeWindowCountRef windowCount (maybeIVF False (checkButtonIVF "BBBBBBBBBBBBBBBBBBBBBBBBBBBBB")) sub;
+		makeWindowCountRef windowCount (maybeIVF True (checkButtonIVF "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")) sub;
 		-}
 		mainGUI;
 	});
