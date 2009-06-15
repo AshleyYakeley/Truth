@@ -5,7 +5,7 @@ module UI.Truth.GTK.CheckButton where
 	import Data.Changes;
 	import Data.ConstFunction;
 	
-	checkButtonIVF :: String -> InternalViewFactory Bool;
+	checkButtonIVF :: String -> InternalViewFactory CheckButton Bool;
 	checkButtonIVF name initial push = do
 	{
 		widget <- checkButtonNew;

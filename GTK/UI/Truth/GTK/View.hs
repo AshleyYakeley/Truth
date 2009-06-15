@@ -6,7 +6,7 @@ module UI.Truth.GTK.View where
 	import Control.Exception;
 	import Control.Concurrent.MVar;
 	
-	data View = forall w. (WidgetClass w) => MkView
+	data View w = MkView
 	{
 		viewWidget :: w,
 		--viewSelection :: IO Selection,
@@ -14,17 +14,17 @@ module UI.Truth.GTK.View where
 	};
 
 	--type ViewFactory a = Subscribe a -> (Selection -> IO ()) -> IO View;
-	type ViewFactory a = Subscribe a -> IO (Subscribe a,View);
+	type ViewFactory w a = Subscribe a -> IO (Subscribe a,View w);
 
-	data InternalView a = forall w. (WidgetClass w) => MkInternalView
+	data InternalView w a = MkInternalView
 	{
 		ivWidget :: w,
 		ivUpdate :: Edit a -> IO ()
 	};
 
-	type InternalViewFactory a = a -> Push a -> IO (InternalView a);
+	type InternalViewFactory w a = a -> Push a -> IO (InternalView w a);
 
-	makeView :: InternalViewFactory a -> ViewFactory a;
+	makeView :: InternalViewFactory w a -> ViewFactory w a;
 	makeView ivf subscribe = do
 	{
 		(view,sub) <- subscribe ivf ivUpdate;

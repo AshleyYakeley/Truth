@@ -21,7 +21,7 @@ module UI.Truth.GTK.Text where
 		};
 	};
 
-	textIVF :: InternalViewFactory String;
+	textIVF :: InternalViewFactory TextView String;
 	textIVF initial push = do
 	{
 		buffer <- textBufferNew Nothing;

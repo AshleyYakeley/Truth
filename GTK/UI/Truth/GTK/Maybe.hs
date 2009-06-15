@@ -46,15 +46,16 @@ module UI.Truth.GTK.Maybe where
 	createButton :: a -> Push a -> IO Button;
 	createButton val push = pushButton push (ReplaceEdit val) "Create";
 
-	functorOneIVF :: forall f a w. 
+	functorOneIVF :: forall f a w wd. 
 	(
 		Applicative f,
 		FunctorOne f,
 		PartEdit (f a) ~ JustEdit a,
 		Data.Changes.Editable a,
-		WidgetClass w
+		WidgetClass w,
+		WidgetClass wd
 	) =>
-	  Maybe (forall b. f b) -> (Push (f a) -> IO w) -> InternalViewFactory a -> InternalViewFactory (f a);
+	  Maybe (forall b. f b) -> (Push (f a) -> IO wd) -> InternalViewFactory w a -> InternalViewFactory VBox (f a);
 	functorOneIVF mDeleteValue makeEmptywidget factory initial push = 
 	let
 	{
@@ -65,7 +66,7 @@ module UI.Truth.GTK.Maybe where
 		box <- vBoxNew True 0;
 		emptyWidget <- makeEmptywidget push;
 		mDeleteButton <- doIf mDeleteValue (\deleteValue -> pushButton push (ReplaceEdit deleteValue) "Delete");
-		initialmiv :: Maybe (InternalView a) <- case retrieveOne initial of
+		initialmiv :: Maybe (InternalView w a) <- case retrieveOne initial of
 		{
 			SuccessResult a -> do
 			{
@@ -80,13 +81,13 @@ module UI.Truth.GTK.Maybe where
 				return Nothing;
 			};
 		};
-		stateRef :: IORef (Maybe (InternalView a)) <- newIORef initialmiv;
+		stateRef :: IORef (Maybe (InternalView w a)) <- newIORef initialmiv;
 		return (MkInternalView
 		{
 			ivWidget = box,
 			ivUpdate = \edit -> do
 			{
-				miv :: Maybe (InternalView a) <- readIORef stateRef;
+				miv :: Maybe (InternalView w a) <- readIORef stateRef;
 				case miv of
 				{
 					Just (MkInternalView widget update) -> case extractJustEdit edit of
@@ -117,8 +118,8 @@ module UI.Truth.GTK.Maybe where
 		});
 	};
 
-	maybeIVF :: (Data.Changes.Editable a) =>
-	  a -> InternalViewFactory a -> InternalViewFactory (Maybe a);
+	maybeIVF :: (Data.Changes.Editable a,WidgetClass w) =>
+	  a -> InternalViewFactory w a -> InternalViewFactory VBox (Maybe a);
 	maybeIVF initialVal = functorOneIVF (Just Nothing) (createButton (Just initialVal));
 	
 	placeholderLabel :: IO Label;
@@ -128,6 +129,6 @@ module UI.Truth.GTK.Maybe where
 		return label;
 	};
 	
-	resultIVF :: (Data.Changes.Editable a) => InternalViewFactory a -> InternalViewFactory (Result err a);
+	resultIVF :: (Data.Changes.Editable a,WidgetClass w) => InternalViewFactory w a -> InternalViewFactory VBox (Result err a);
 	resultIVF = functorOneIVF Nothing (\_ -> placeholderLabel);
 }

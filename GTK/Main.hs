@@ -12,7 +12,7 @@ module Main where
 	import Control.Concurrent;
 	import Prelude hiding (id,(.));
 
-	makeWindow :: IORef Int -> InternalViewFactory a -> Subscribe a -> IO (Subscribe a);
+	makeWindow :: (WidgetClass w) => IORef Int -> InternalViewFactory w a -> Subscribe a -> IO (Subscribe a);
 	makeWindow windowCount ivf sub = do
 	{
 		(sub',view) <- makeView ivf sub;
