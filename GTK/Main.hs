@@ -12,28 +12,6 @@ module Main where
 	import Control.Concurrent;
 	import Prelude hiding (id,(.));
 
-	makeWindow :: (WidgetClass w) => IORef Int -> InternalViewFactory w a -> Subscribe a -> IO (Subscribe a);
-	makeWindow windowCount ivf sub = do
-	{
-		(sub',w,close) <- makeView ivf sub;
-		window <- windowNew;
-		set window [containerChild := w];
-		widgetShow w;
-		onDestroy window (do
-		{
-			close;
-			i <- readIORef windowCount;
-			writeIORef windowCount (i - 1);
-			if i == 1
-			 then mainQuit
-			 else return ();
-		});
-		i <- readIORef windowCount;
-		writeIORef windowCount (i + 1);
-		widgetShow window;
-		return sub';
-	};
-
 	initial :: Maybe Bool;
 	initial = Just True;
 

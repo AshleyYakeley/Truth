@@ -27,6 +27,7 @@ extensions:
  ExistentialQuantification
 exposed-modules:
  UI.Truth.GTK.View
+ UI.Truth.GTK.Window
  UI.Truth.GTK.Maybe
  UI.Truth.GTK.CheckButton
  UI.Truth.GTK.Text
