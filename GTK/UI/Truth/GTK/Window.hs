@@ -5,7 +5,7 @@ module UI.Truth.GTK.Window where
 	import Data.Changes;
 	import Data.IORef;
 
-	makeWindow :: (WidgetClass w) => IORef Int -> InternalViewFactory w a -> Subscribe a -> IO (Subscribe a);
+	makeWindow :: (WidgetClass w) => IORef Int -> View w a -> Subscribe a -> IO (Subscribe a);
 	makeWindow windowCount ivf sub = do
 	{
 		(sub',w,close) <- makeView ivf sub;

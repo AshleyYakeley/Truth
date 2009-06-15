@@ -21,8 +21,8 @@ module UI.Truth.GTK.Text where
 		};
 	};
 
-	textIVF :: InternalViewFactory TextView String;
-	textIVF initial push = do
+	textView :: View TextView String;
+	textView initial push = do
 	{
 		buffer <- textBufferNew Nothing;
 		textBufferSetText buffer initial;
@@ -48,11 +48,11 @@ module UI.Truth.GTK.Text where
 				_ -> signalStopEmission buffer "delete-range";
 			};
 		}));
-		textView <- textViewNewWithBuffer buffer;
-		return (MkInternalView
+		tv <- textViewNewWithBuffer buffer;
+		return (MkViewResult
 		{
-			ivWidget = textView,
-			ivUpdate = \edit -> withMVar mv (\_ -> case edit of
+			vrWidget = tv,
+			vrUpdate = \edit -> withMVar mv (\_ -> case edit of
 			{
 				ReplaceEdit text -> textBufferSetText buffer text;
 				PartEdit (ReplaceSectionEdit bounds text) -> replaceText buffer bounds text;

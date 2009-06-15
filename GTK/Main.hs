@@ -27,7 +27,7 @@ module Main where
 			content = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () file; -- (Maybe ByteString)
 			mrtext = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () content; -- Maybe (Result ListError String)
 			
-			ivf = maybeIVF (SuccessResult "") (resultIVF textIVF);
+			ivf = maybeView (SuccessResult "") (resultView textView);
 		} in do
 		{
 			makeWindow windowCount ivf mrtext;

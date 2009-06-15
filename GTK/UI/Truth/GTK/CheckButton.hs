@@ -5,8 +5,8 @@ module UI.Truth.GTK.CheckButton where
 	import Data.Changes;
 	import Data.ConstFunction;
 	
-	checkButtonIVF :: String -> InternalViewFactory CheckButton Bool;
-	checkButtonIVF name initial push = do
+	checkButtonView :: String -> View CheckButton Bool;
+	checkButtonView name initial push = do
 	{
 		widget <- checkButtonNew;
 		set widget [buttonLabel := name,toggleButtonActive := initial];
@@ -16,10 +16,10 @@ module UI.Truth.GTK.CheckButton where
 			push (ReplaceEdit s);
 			return ();
 		});
-		return (MkInternalView
+		return (MkViewResult
 		{
-			ivWidget = widget,
-			ivUpdate = \edit -> do
+			vrWidget = widget,
+			vrUpdate = \edit -> do
 			{
 				newstate <- applyConstFunctionA (applyEdit edit) (get widget toggleButtonActive);
 				withSignalBlocked clickConnection

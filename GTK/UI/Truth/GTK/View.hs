@@ -6,19 +6,19 @@ module UI.Truth.GTK.View where
 	import Control.Exception;
 	import Control.Concurrent.MVar;
 
-	data InternalView w a = MkInternalView
+	data ViewResult w a = MkViewResult
 	{
-		ivWidget :: w,
-		ivUpdate :: Edit a -> IO ()
+		vrWidget :: w,
+		vrUpdate :: Edit a -> IO ()
 	};
 
-	type InternalViewFactory w a = a -> Push a -> IO (InternalView w a);
+	type View w a = a -> Push a -> IO (ViewResult w a);
 
-	makeView :: InternalViewFactory w a -> Subscribe a -> IO (Subscribe a,w,IO ());
-	makeView ivf subscribe = do
+	makeView :: View w a -> Subscribe a -> IO (Subscribe a,w,IO ());
+	makeView view subscribe = do
 	{
-		(view,sub) <- subscribe ivf ivUpdate;
-		return (subCopy sub,ivWidget view,subClose sub);
+		(vr,sub) <- subscribe view vrUpdate;
+		return (subCopy sub,vrWidget vr,subClose sub);
 	};
 	
 	withSignalBlocked :: (GObjectClass obj) => ConnectId obj -> IO a -> IO a;
