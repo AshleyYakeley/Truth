@@ -1,25 +1,9 @@
-module UI.Truth.GTK.View where
+module UI.Truth.GTK.Useful where
 {
 	import Graphics.UI.Gtk;
 	import System.Glib.Types;
-	import Data.Changes;
 	import Control.Exception;
 	import Control.Concurrent.MVar;
-
-	data ViewResult w a = MkViewResult
-	{
-		vrWidget :: w,
-		vrUpdate :: Edit a -> IO ()
-	};
-
-	type View w a = a -> Push a -> IO (ViewResult w a);
-
-	makeView :: View w a -> Subscribe a -> IO (Subscribe a,w,IO ());
-	makeView view subscribe = do
-	{
-		(vr,sub) <- subscribe view vrUpdate;
-		return (subCopy sub,vrWidget vr,subClose sub);
-	};
 	
 	withSignalBlocked :: (GObjectClass obj) => ConnectId obj -> IO a -> IO a;
 	withSignalBlocked conn = bracket_ (signalBlock conn) (signalUnblock conn);

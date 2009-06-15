@@ -1,6 +1,5 @@
 module UI.Truth.GTK.Window where
 {
-	import UI.Truth.GTK.View;
 	import Graphics.UI.Gtk;
 	import Data.Changes;
 	import Data.IORef;
@@ -8,7 +7,7 @@ module UI.Truth.GTK.Window where
 	makeWindow :: (WidgetClass w) => IO () -> View w a -> Subscribe a -> IO (Subscribe a);
 	makeWindow tellclose view sub = do
 	{
-		(sub',w,close) <- makeView view sub;
+		(sub',w,close) <- subscribeView view sub;
 		window <- windowNew;
 		set window [containerChild := w];
 		widgetShow w;

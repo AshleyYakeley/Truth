@@ -8,6 +8,7 @@ module Data.Changes
 	module Data.Changes.List,
 	module Data.Changes.Text,
 	module Data.Changes.Context,
+	module Data.Changes.View,
 ) where
 {
 	import Data.Changes.Edit;
@@ -18,4 +19,5 @@ module Data.Changes
 	import Data.Changes.List;
 	import Data.Changes.Text;
 	import Data.Changes.Context;
+	import Data.Changes.View;
 }

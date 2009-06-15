@@ -1,6 +1,5 @@
 module UI.Truth.GTK.Maybe (maybeView,resultView) where
 {
-	import UI.Truth.GTK.View;
 	import Graphics.UI.Gtk;
 	import Data.Changes;
 	import Data.FunctorOne;
