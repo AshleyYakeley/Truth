@@ -41,26 +41,33 @@ module Main where
 	{
 		editorInit = \a push -> do
 		{
-			putStrLn (name ++ ": initial " ++ (show a));
+			putStrLn (name ++ ": initial: " ++ (show a));
 			ref <- newIORef a;
 			return (ref,push);
 		},
 		editorUpdate = \(ref,push) edit -> do
 		{
-			putStrLn (name ++ ": edit: " ++ (show edit));
+			putStrLn (name ++ ": update: " ++ (show edit));
 			newa <- applyConstFunctionA (applyEdit edit) (readIORef ref);
-			putStrLn (name ++ ": update: " ++ (show newa));
+			putStrLn (name ++ ": update: new value: " ++ (show newa));
 			writeIORef ref newa;
 		},
 		editorDo = \(ref,push) obj -> f obj (\edit -> do
 		{
-			putStrLn "pushing";
-			result <- push (return (Just edit));
-			putStrLn (case result of
+			putStrLn (name ++ ": push: " ++ (show edit));
+			result <- push edit;
+			case result of
 			{
-				Just _ -> "pushed";
-				_ -> "impossible";
-			});
+				Just _ -> do
+				{
+					putStrLn (name ++ ": push: accepted");
+					newa <- applyConstFunctionA (applyEdit edit) (readIORef ref);
+					putStrLn (name ++ ": push: new value: " ++ (show newa));
+					writeIORef ref newa;
+					putStrLn (name ++ ": push: done");
+				};
+				_ -> putStrLn (name ++ ": push: rejected");
+			};
 			return result;
 		})
 	});
@@ -72,7 +79,7 @@ module Main where
 		withShowSubscription (freeObjSubscribe "abcdef") "main" (\obj push -> do
 		{
 			push (ReplaceEdit "pqrstu");
-			showObject "current" obj;
+			showObject "main" obj;
 
 --			push (ReplaceEdit "PQRSTU");
 --			showObject "current" obj;

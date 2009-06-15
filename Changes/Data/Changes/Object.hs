@@ -4,6 +4,7 @@ module Data.Changes.Object where
 	import Data.Changes.Edit;
 	import Data.Store;
 	import Control.Concurrent.MVar;
+	import Control.Monad.Fix;
 	import Control.Exception hiding (catch);
 	import Data.ConstFunction;
 	import Data.Traversable;
@@ -13,7 +14,7 @@ module Data.Changes.Object where
 	-- Returns Nothing if change is not allowed.
 	-- Returns Just () if change succeeded, and updates will be received before this action returns.
 	;
-	type Push a = IO (Maybe (Edit a)) -> IO (Maybe ());
+	type Push a = Edit a -> IO (Maybe ());
 
 	data Subscription a = MkSubscription
 	{
@@ -59,7 +60,7 @@ module Data.Changes.Object where
 	{
 		editorInit = \_ push -> return push,
 		editorUpdate = \_ _ -> return (),
-		editorDo = \push _ -> push (return (Just (ReplaceEdit a)))
+		editorDo = \push _ -> push (ReplaceEdit a)
 	});
 
 	data Object a = MkObject
@@ -70,63 +71,66 @@ module Data.Changes.Object where
 	};
 
 	objSubscribe :: forall a. ((Edit a -> IO ()) -> IO (Object a)) -> Subscribe a;
-	objSubscribe getIntObject initialise' updater' = do
+	objSubscribe getObject initialise' updater' = do
 	{
 		storevar <- newMVar emptyStore;
-		intobj <- getIntObject (\edit -> withMVar storevar (\store -> forM (allStore store) (\u -> u edit) >> return ()));
+		obj <- getObject (\edit -> withMVar storevar (\store -> forM (allStore store) (\u -> u edit) >> return ()));
 		let
 		{
-			objSub :: forall r.
-				(a -> Push a -> IO r) -> 
-				(r -> Edit a -> IO ()) -> 
-				IO (r, Subscription a);
-			objSub initialise updater = do
+			keyPush :: Int -> Push a;
+			keyPush key edita = withMVar storevar (\store -> do
 			{
-				r <- objGetInitial intobj (\a -> initialise a (objPush intobj));
+				mv <- objPush obj edita;
+				case mv of
+				{
+					Just _ -> forM (allStoreExcept store key) (\u -> u edita) >> return ();
+					_ -> return ();
+				};
+				return mv;
+			});
+
+			keyClose :: Int -> IO ();
+			keyClose key = modifyMVar_ storevar (\store -> let
+			{
+				newstore = deleteStore key store;
+			} in do
+			{
+				if isEmptyStore newstore
+				 then (objClose obj)
+				 else return ();
+				return newstore;
+			});
+
+			keySubscription :: Int -> Subscription a;
+			keySubscription key = MkSubscription
+			{
+				subCopy = objSub,
+				subClose = keyClose key
+			};
+
+			objSub :: Subscribe a;
+			objSub initialise updater = mfix (\result -> do
+			{
 				key <- modifyMVar storevar (\store -> do
 				{
-					let {(key,newstore) = addStore (updater r) store;};
+					let {(key,newstore) = addStore (updater (fst result)) store;};
 					return (newstore,key);
 				});
-				return (r,MkSubscription
-				{
-					subCopy = objSub,
-					subClose = modifyMVar_ storevar (\store -> let
-					{
-						newstore = deleteStore key store;
-					} in do
-					{
-						if isEmptyStore newstore
-						 then (objClose intobj)
-						 else return ();
-						return newstore;
-					})
-				});
-			};
+				r <- objGetInitial obj (\a -> initialise a (keyPush key));
+				return (r,keySubscription key);
+			});
 		};
 		objSub initialise' updater';
 	};
 	
 	freeObjSubscribe :: forall a. (Editable a) => a -> Subscribe a;
-	freeObjSubscribe initial = objSubscribe (\pushOut -> do
+	freeObjSubscribe initial = objSubscribe (\_ -> do
 	{
 		statevar <- newMVar initial;
 		return (MkObject
 		{
 			objGetInitial = withMVar statevar,
-			objPush = \ioedit -> modifyMVar statevar (\a -> do
-			{
-				medit <- ioedit;
-				case medit of
-				{
-					Just edit -> do
-					{
-						pushOut edit;
-						return (applyConstFunction (applyEdit edit) a,Just ());
-					};
-					Nothing -> return (a,Nothing);
-				};
-			}),
+			objPush = \edit -> modifyMVar statevar (\a -> return (applyConstFunction (applyEdit edit) a,Just ())),
 			objClose = return ()
 		});
 	});
@@ -156,15 +160,23 @@ module Data.Changes.Object where
 		return (MkObject
 		{
 			objGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (lensGet lens state a)),
-			objPush = \ioedit -> push (withMVar statevar (\(state,a) -> do
+			objPush = \editb -> modifyMVar statevar (\olds@(oldstate,olda) -> case applyConstFunction (lensPutEdit lens oldstate editb) olda of
 			{
-				medit <- ioedit;
-				return (do
+				Just edita -> do
 				{
-					edit <- medit;
-					applyConstFunction (lensPutEdit lens state edit) a;
-				});
-			})),
+					mv <- push edita;
+					case mv of
+					{
+						Just _ -> do
+						{
+							let {(newstate,_) = applyConstFunction (lensUpdate lens edita oldstate) olda;};
+							return ((newstate,applyConstFunction (applyEdit edita) olda),mv);
+						};
+						_ -> return (olds,mv);
+					};
+				};
+				_ -> return (olds,Nothing);
+			}),
 			objClose = subClose sub
 		});
 	});

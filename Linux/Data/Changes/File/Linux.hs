@@ -149,8 +149,8 @@ module Data.Changes.File.Linux
 		put (path,Nothing);
 	};
 	
-	fsWith :: Bool -> FSAction r -> FSAction r;
-	fsWith write f = do
+	fsOpenHandle :: Bool -> FSAction Bool;
+	fsOpenHandle write = do
 	{
 		(path,mh) <- get;
 		(mh',opened) <- case mh of
@@ -168,7 +168,14 @@ module Data.Changes.File.Linux
 			};
 		};
 		put (path,mh');
-		liftIO (modifyMVar_ (fsWatchVar ?fs) (\mwd -> case (mh',mwd) of
+		return opened;
+	};
+	
+	fsAddWatch :: FSAction ();
+	fsAddWatch = do
+	{
+		(path,mh) <- get;
+		liftIO (modifyMVar_ (fsWatchVar ?fs) (\mwd -> case (mh,mwd) of
 		{
 			(Nothing,Just _) -> return Nothing;	-- file no longer exists, just forget wd
 			(Just _,Nothing) -> do	-- file now exists, create a wd for it
@@ -182,15 +189,47 @@ module Data.Changes.File.Linux
 			};
 			_ -> return mwd;
 		}));
+	};
+	
+	fsRemoveWatch :: FSAction ();
+	fsRemoveWatch = liftIO (modifyMVar_ (fsWatchVar ?fs) (\mwd -> case mwd of
+	{
+		Just wd -> do
+		{
+			removeWatchB (fsNotify ?fs) wd;
+			return Nothing;
+		};
+		_ -> return Nothing;
+	}));
+	
+	fsWithOpen :: Bool -> FSAction r -> FSAction r;
+	fsWithOpen write f = do
+	{
+		opened <- fsOpenHandle write;
 		if opened
 		 then finallyError f fsClose
 		 else f;
 	};
 	
-	fsWithRead :: FSAction r -> FSAction r;
-	fsWithRead = fsWith False;
+	fsWith :: Bool -> Bool -> FSAction r -> FSAction r;
+	fsWith write watch f = fsWithOpen write (do
+	{
+		if watch then do
+		{
+			fsAddWatch;
+			f;
+		}
+		else do
+		{
+			fsRemoveWatch;
+			finallyError f (fsWithOpen write fsAddWatch);
+		};
+	});
 	
-	fsWithReadWrite :: FSAction r -> FSAction r;
+	fsWithRead :: FSAction r -> FSAction r;
+	fsWithRead = fsWith False True;
+	
+	fsWithReadWrite :: Bool -> FSAction r -> FSAction r;
 	fsWithReadWrite = fsWith True;
 	
 	fsGet :: FSAction (WithContext FilePath (Maybe ByteString));
@@ -213,7 +252,7 @@ module Data.Changes.File.Linux
 	});
 	
 	fsPut :: Maybe ByteString -> FSAction ();
-	fsPut (Just bs) = fsWithReadWrite (do
+	fsPut (Just bs) = fsWithReadWrite False (do
 	{
 		(path,mh) <- get;
 		case mh of
@@ -226,7 +265,7 @@ module Data.Changes.File.Linux
 				put (path,Just h);
 			};
 			_ -> error "missing ReadWrite handle";
-		}
+		};
 	});
 	fsPut _ = do
 	{
@@ -248,19 +287,6 @@ module Data.Changes.File.Linux
 		put (path,Nothing);
 	};
 
-	makeWaitForEvent :: INotifyB -> [EventVariety] -> FilePath -> IO (IO ());
-	makeWaitForEvent inotify evs path = do
-	{
-		sem <- newQSem 1;
-	 	waitQSem sem;
-		wd <- addWatchB inotify evs path (\_ -> signalQSem sem);
-		return (do
-		{
-			waitQSem sem;
-			removeWatchB inotify wd;
-		});
-	};
-
 	linuxFileObject :: INotifyB -> FilePath -> Subscribe (WithContext FilePath (Maybe ByteString));
 	linuxFileObject inotify initialpath = objSubscribe (\pushout -> do
 	{
@@ -275,73 +301,41 @@ module Data.Changes.File.Linux
 					a <- fsGet;
 					liftIO (aior a);
 				})),
-				objPush = \ioedit -> do
+				objPush = \edit -> runFSAction (do
 				{
-					(waitClose,result) <- runFSAction (fsWithReadWrite (do
+					(mnewpath,mnewmbs) <- case edit of
 					{
-						medit <- liftIO ioedit;
-						case medit of
+						ReplaceEdit (MkWithContext newpath newmbs) -> return (Just newpath,Just newmbs);
+						_ -> do
 						{
-							Just edit -> do
-							{
-								(mnewpath,mnewmbs) <- case edit of
-								{
-									ReplaceEdit (MkWithContext newpath newmbs) -> return (Just newpath,Just newmbs);
-									_ -> do
-									{
-										newa <- applyConstFunctionA (applyEdit edit) fsGet;
-										return ((\(MkWithContext newpath newmbs) -> (Just newpath,Just newmbs)) newa);
-									};
-								};
-								case mnewpath of
-								{
-									Just newpath ->do
-									{
-										(oldpath,_) <- get;
-										if oldpath == newpath
-										 then return ()
-										 else do
-										{
-											fsClose;
-											liftIO (rename oldpath newpath);
-											put (newpath,Nothing);
-										};
-									};
-									_ -> return ();
-								};
-								waitClose <- case mnewmbs of
-								{
-									Just newmbs -> do
-									{
-										(path,_) <- get;
-										waitClose <- case newmbs of
-										{
-											-- all write notifications will run before receiving this Close notification
-											Just _ -> liftIO (makeWaitForEvent inotify [Close] path);
-											_ -> liftIO (makeWaitForEvent inotify [DeleteSelf] path);
-										};
-										fsPut newmbs;
-										return waitClose;
-									};
-									_ -> return (return ());
-								};
-								return (waitClose,Just ());
-							};
-							Nothing -> return (return (),Nothing);
+							newa <- applyConstFunctionA (applyEdit edit) fsGet;
+							return ((\(MkWithContext newpath newmbs) -> (Just newpath,Just newmbs)) newa);
 						};
-					}));
-					waitClose;
-					return result;
-				},
-				objClose = runFSAction (fsWithRead (liftIO (modifyMVar_ (fsWatchVar ?fs) (\mwd -> case mwd of
-				{
-					Just wd -> do
-					{
-						removeWatchB inotify wd;
-						return Nothing;
 					};
-					_ -> return Nothing;
-				}))))
+					case mnewpath of
+					{
+						Just newpath ->do
+						{
+							(oldpath,_) <- get;
+							if oldpath == newpath
+							 then return ()
+							 else do
+							{
+								fsClose;
+								liftIO (rename oldpath newpath);
+								put (newpath,Nothing);
+							};
+						};
+						_ -> return ();
+					};
+					case mnewmbs of
+					{
+						Just newmbs -> fsPut newmbs;
+						_ -> return ();
+					};
+					return (Just ());
+				}),
+				objClose = runFSAction (fsWithRead fsRemoveWatch)
 			});
 		};
 	});

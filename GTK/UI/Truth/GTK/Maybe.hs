@@ -15,7 +15,7 @@ module UI.Truth.GTK.Maybe where
 		set button [buttonLabel := name];
 		onClicked button (do
 		{
-			result <- push (return (Just edit));
+			result <- push edit;
 			case result of
 			{
 				Just _ -> return ();	-- succeeded
@@ -59,15 +59,7 @@ module UI.Truth.GTK.Maybe where
 	let
 	{
 		mpush :: Push a;
-		mpush ioea = push (do
-		{
-			mea <- ioea;
-			return (do
-			{
-				ea <- mea;
-				return (PartEdit (JustEdit ea));
-			});
-		});
+		mpush ea = push (PartEdit (JustEdit ea));
 	} in do
 	{
 		box <- vBoxNew True 0;

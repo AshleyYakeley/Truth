@@ -7,9 +7,7 @@ somefile: update: Just success: "EFGH\n"
 writing & waiting 100ms
 somefile: edit: replace Just success: "IJK\n"
 somefile: update: Just success: "IJK\n"
-pushing
-somefile: edit: replace Just success: "pqrstu"
-somefile: update: Just success: "pqrstu"
+pushing replace Just success: "pqrstu"
 pushed
 waiting 10s
 somefile: edit: replace Just success: "pqrstuyyzz\n"
@@ -21,20 +19,12 @@ somefile: update: Just success: "xfxfx\n"
 somefile: edit: replace Just success: "xfxfx\npqpr\n"
 somefile: update: Just success: "xfxfx\npqpr\n"
 deleting
-pushing
-somefile: edit: replace Nothing
-somefile: update: Nothing
+pushing replace Nothing
 pushed
-pushing
-somefile: edit: replace Nothing
-somefile: update: Nothing
+pushing replace Nothing
 pushed
-pushing
-somefile: edit: replace Just success: "ABCdef"
-somefile: update: Just success: "ABCdef"
+pushing replace Just success: "ABCdef"
 pushed
-pushing
-somefile: edit: replace Nothing
-somefile: update: Nothing
+pushing replace Nothing
 pushed
 End

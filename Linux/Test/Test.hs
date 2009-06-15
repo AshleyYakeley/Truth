@@ -73,11 +73,11 @@ module Main where
 		return (push,sub);
 	};
 	
-	showPushEdit :: Push a -> Edit a -> IO ();
+	showPushEdit :: (Show a,Show (PartEdit a)) => Push a -> Edit a -> IO ();
 	showPushEdit push edit = do
 	{
-		putStrLn "pushing";
-		mm <- push (return (Just edit));
+		putStrLn ("pushing " ++ (show edit));
+		mm <- push edit;
 		case mm of
 		{
 			Just _ -> putStrLn "pushed";

@@ -12,11 +12,8 @@ module UI.Truth.GTK.CheckButton where
 		set widget [buttonLabel := name,toggleButtonActive := initial];
 		clickConnection <- onClicked widget (do
 		{
-			_ <- push (do
-			{
-				s <- get widget toggleButtonActive;
-				return (Just (ReplaceEdit s));
-			});
+			s <- get widget toggleButtonActive;
+			push (ReplaceEdit s);
 			return ();
 		});
 		return (MkInternalView
