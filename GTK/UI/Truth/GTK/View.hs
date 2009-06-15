@@ -5,16 +5,6 @@ module UI.Truth.GTK.View where
 	import Data.Changes;
 	import Control.Exception;
 	import Control.Concurrent.MVar;
-	
-	data View w = MkView
-	{
-		viewWidget :: w,
-		--viewSelection :: IO Selection,
-		viewRequestClose :: IO Bool
-	};
-
-	--type ViewFactory a = Subscribe a -> (Selection -> IO ()) -> IO View;
-	type ViewFactory w a = Subscribe a -> IO (Subscribe a,View w);
 
 	data InternalView w a = MkInternalView
 	{
@@ -24,25 +14,11 @@ module UI.Truth.GTK.View where
 
 	type InternalViewFactory w a = a -> Push a -> IO (InternalView w a);
 
-	makeView :: InternalViewFactory w a -> ViewFactory w a;
+	makeView :: InternalViewFactory w a -> Subscribe a -> IO (Subscribe a,w,IO ());
 	makeView ivf subscribe = do
 	{
 		(view,sub) <- subscribe ivf ivUpdate;
-		case view of
-		{
-			(MkInternalView widget _) -> do
-			{
-				return (subCopy sub,MkView
-				{
-					viewWidget = widget,
-					viewRequestClose = do
-					{
-						subClose sub;
-						return True;
-					}
-				});
-			};
-		};
+		return (subCopy sub,ivWidget view,subClose sub);
 	};
 	
 	withSignalBlocked :: (GObjectClass obj) => ConnectId obj -> IO a -> IO a;

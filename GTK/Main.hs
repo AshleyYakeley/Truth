@@ -15,16 +15,13 @@ module Main where
 	makeWindow :: (WidgetClass w) => IORef Int -> InternalViewFactory w a -> Subscribe a -> IO (Subscribe a);
 	makeWindow windowCount ivf sub = do
 	{
-		(sub',view) <- makeView ivf sub;
+		(sub',w,close) <- makeView ivf sub;
 		window <- windowNew;
-		(\(MkView w _) -> do
-		{
-			set window [containerChild := w];
-			widgetShow w;
-		}) view;
+		set window [containerChild := w];
+		widgetShow w;
 		onDestroy window (do
 		{
-			viewRequestClose view;
+			close;
 			i <- readIORef windowCount;
 			writeIORef windowCount (i - 1);
 			if i == 1
