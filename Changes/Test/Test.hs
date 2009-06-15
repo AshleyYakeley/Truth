@@ -3,6 +3,7 @@ module Main where
 {
 	import Data.Changes.List;
 	import Data.ConstFunction;
+	import Data.Changes.Editor;
 	import Data.Changes;
 	import Data.Maybe;
 	import Data.IORef;

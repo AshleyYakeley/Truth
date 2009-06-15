@@ -5,7 +5,6 @@ module Data.Changes.Object where
 	import Data.Store;
 	import Control.Concurrent.MVar;
 	import Control.Monad.Fix;
-	import Control.Exception hiding (catch);
 	import Data.ConstFunction;
 	import Data.Traversable;
 
@@ -27,41 +26,6 @@ module Data.Changes.Object where
 	-- | blocks if the object is busy
 	;
 	type Subscribe a = forall r. (a -> Push a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription a);
-	
-	data Editor a b = forall r. MkEditor
-	{
-		editorInit :: a -> Push a -> IO r,
-		editorUpdate :: r -> Edit a -> IO (),
-		editorDo :: r -> Subscribe a -> IO b
-	};
-
-	subscribeEdit :: Subscribe a -> Editor a b -> IO b;
-	subscribeEdit subscribe editor = case editor of 
-	{
-		(MkEditor initr update f) -> do
-		{
-			(r, sub) <- subscribe initr update;
-			finally
-				(f r (subCopy sub))
-				(subClose sub);
-		};
-	};
-	
-	subscribeRead :: Subscribe a -> IO a;
-	subscribeRead object = subscribeEdit object (MkEditor
-	{
-		editorInit = \a _ -> return a,
-		editorUpdate = \_ _ -> return (),
-		editorDo = \a _ -> return a
-	});
-
-	subscribeWrite :: a -> Subscribe a -> IO (Maybe ());
-	subscribeWrite a object = subscribeEdit object (MkEditor
-	{
-		editorInit = \_ push -> return push,
-		editorUpdate = \_ _ -> return (),
-		editorDo = \push _ -> push (ReplaceEdit a)
-	});
 
 	data Object a = MkObject
 	{

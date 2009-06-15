@@ -2,6 +2,7 @@
 module Main where
 {
 	import Data.Changes.File.Linux;
+	import Data.Changes.Editor;
 	import Data.Changes;
 	import Data.ConstFunction;
 	import Data.ByteString hiding (putStrLn);
