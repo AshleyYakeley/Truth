@@ -7,12 +7,14 @@ library
 {
 build-depends:
  base>=4.0,
+ witness==0.2,
  glib==0.10.1,
  gtk==0.10.1,
  Changes==0.1
 extensions:
  TypeFamilies
  EmptyDataDecls
+ MultiParamTypeClasses
  UndecidableInstances
  FlexibleInstances
  FunctionalDependencies
@@ -30,6 +32,7 @@ exposed-modules:
  UI.Truth.GTK.Maybe
  UI.Truth.GTK.CheckButton
  UI.Truth.GTK.Text
+ UI.Truth.GTK.Tuple
  UI.Truth.GTK.SourceView
  UI.Truth.GTK
 other-modules:
@@ -47,6 +50,7 @@ build-depends:
 extensions:
  TypeFamilies
  EmptyDataDecls
+ MultiParamTypeClasses
  UndecidableInstances
  FlexibleInstances
  FunctionalDependencies

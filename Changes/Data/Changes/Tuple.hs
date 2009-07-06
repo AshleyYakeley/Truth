@@ -9,27 +9,6 @@ module Data.Changes.Tuple where
 	import Control.Category;
 	import Prelude hiding (id,(.));
 
-	data TListElement t a where
-	{
-		HeadTListElement :: TListElement (h,r) h;
-		TailTListElement :: TListElement r a -> TListElement (h,r) a;
-	};
-
-	instance SimpleWitness1 TListElement where
-	{
-		matchWitness1 HeadTListElement HeadTListElement = Just MkEqualType;
-		matchWitness1 (TailTListElement wa) (TailTListElement wb) = matchWitness1 wa wb;
-		matchWitness1 _ _ = Nothing
-	};
-
-	getTListElement :: TListElement t a -> t -> a;
-	getTListElement HeadTListElement (h,_) = h;
-	getTListElement (TailTListElement n) (_,r) = getTListElement n r;
-
-	putTListElement :: TListElement t a -> a -> t -> t;
-	putTListElement HeadTListElement a (_,r) = (a,r);
-	putTListElement (TailTListElement n) a (h,r) = (h,putTListElement n a r);
-
 	class (Is (ListType Type) (TList a) {-, Editable (TList a)-}) => IsTuple a where
 	{
 		type TList a;
@@ -53,17 +32,17 @@ module Data.Changes.Tuple where
 
 	data TListPartEdit t where
 	{
-		TListPartEdit :: (Editable a) => TListElement t a -> Edit a -> TListPartEdit t;
+		TListPartEdit :: (Editable a) => ListElementType t a -> Edit a -> TListPartEdit t;
 	};
 
 	applyTuplePartEdit :: TListPartEdit t -> t -> t;
-	applyTuplePartEdit (TListPartEdit n edit) t = putTListElement n (applyConstFunction (applyEdit edit) (getTListElement n t)) t;
+	applyTuplePartEdit (TListPartEdit n edit) t = putListElement n (applyConstFunction (applyEdit edit) (getListElement n t)) t;
 
 	invertTuplePartEdit :: TListPartEdit t -> t -> Maybe (TListPartEdit t);
 
 	invertTuplePartEdit (TListPartEdit n edit) t = do
 	{
-		unedit <- invertEdit edit (getTListElement n t);
+		unedit <- invertEdit edit (getListElement n t);
 		return (TListPartEdit n unedit);
 	};
 
@@ -80,14 +59,12 @@ module Data.Changes.Tuple where
 		};
 	};
 
---	nthTuplePartEdit :: 
-
 	instance (Editable a,Editable b) => Editable (a,b) where
 	{
 		type PartEdit (a,b) = TListPartEdit (a,(b,()));
 	};
 	
-	tupleElementCleanLens :: (IsTuple t,Editable a,PartEdit t ~ TListPartEdit (TList t)) => TListElement (TList t) a -> CleanLens' Identity t a;
+	tupleElementCleanLens :: (IsTuple t,Editable a,PartEdit t ~ TListPartEdit (TList t)) => ListElementType (TList t) a -> CleanLens' Identity t a;
 	tupleElementCleanLens n = MkCleanLens
 	{
 		cleanLensUpdate = \edit -> case edit of
@@ -97,11 +74,9 @@ module Data.Changes.Tuple where
 				MkEqualType <- matchWitness n n';
 				return edita;
 			};
-			ReplaceEdit t -> Just (ReplaceEdit (getTListElement n (toListTuple t)));
+			ReplaceEdit t -> Just (ReplaceEdit (getListElement n (toListTuple t)));
 		},
-
-		cleanLensGet = (getTListElement n) . toListTuple,
+		cleanLensGet = (getListElement n) . toListTuple,
 		cleanLensPutEdit = \editb -> Identity (PartEdit (TListPartEdit n editb))
-
 	};
 }

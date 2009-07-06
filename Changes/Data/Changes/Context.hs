@@ -5,6 +5,7 @@ module Data.Changes.Context where
 	import Data.Changes.FixedLens;
 	import Data.Changes.Edit;
 	import Data.FunctorOne;
+	import Data.Witness;
 	import Data.Traversable;
 	import Data.Foldable;
 	import Control.Arrow;
@@ -47,9 +48,9 @@ module Data.Changes.Context where
 	};
 
 	contentCleanLens :: (Editable context,Editable content) => CleanLens' Identity (WithContext context content) content;
-	contentCleanLens = tupleElementCleanLens HeadTListElement;
+	contentCleanLens = tupleElementCleanLens HeadListElementType;
 
 	contextCleanLens :: (Editable context,Editable content) => CleanLens' Identity (WithContext context content) context;
-	contextCleanLens = tupleElementCleanLens (TailTListElement HeadTListElement);
+	contextCleanLens = tupleElementCleanLens (TailListElementType HeadListElementType);
 }
 
