@@ -1,5 +1,7 @@
-module UI.Truth.GTK.Text(textView) where
+{-# OPTIONS -fno-warn-orphans #-}
+module UI.Truth.GTK.Text() where
 {
+	import UI.Truth.GTK.GView;
 	import UI.Truth.GTK.Useful;
 	import Graphics.UI.Gtk;
 	import Data.Changes;
@@ -21,7 +23,7 @@ module UI.Truth.GTK.Text(textView) where
 		};
 	};
 
-	textView :: View TextView String;
+	textView :: GView String;
 	textView initial push = do
 	{
 		buffer <- textBufferNew Nothing;
@@ -51,7 +53,7 @@ module UI.Truth.GTK.Text(textView) where
 		tv <- textViewNewWithBuffer buffer;
 		return (MkViewResult
 		{
-			vrWidget = tv,
+			vrWidget = toWidget tv,
 			vrUpdate = \edit -> withMVar mv (\_ -> case edit of
 			{
 				ReplaceEdit text -> textBufferSetText buffer text;
@@ -60,5 +62,10 @@ module UI.Truth.GTK.Text(textView) where
 				_ -> return ();
 			})
 		});
+	};
+
+	instance HasGView String where
+	{
+		gView = textView;
 	};
 }

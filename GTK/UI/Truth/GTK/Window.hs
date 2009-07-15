@@ -1,13 +1,14 @@
 module UI.Truth.GTK.Window where
 {
+	import UI.Truth.GTK.GView;
 	import Graphics.UI.Gtk;
 	import Data.Changes;
 	import Data.IORef;
 
-	makeWindow :: (WidgetClass w) => IO () -> View w a -> Subscribe a -> IO (Subscribe a);
-	makeWindow tellclose view sub = do
+	makeWindow :: (HasGView a) => IO () -> Subscribe a -> IO (Subscribe a);
+	makeWindow tellclose sub = do
 	{
-		(sub',w,close) <- subscribeView view sub;
+		(sub',w,close) <- subscribeView gView sub;
 		window <- windowNew;
 		set window [containerChild := w];
 		widgetShow w;
@@ -20,8 +21,8 @@ module UI.Truth.GTK.Window where
 		return sub';
 	};
 
-	makeWindowCountRef :: (WidgetClass w) => IORef Int -> View w a -> Subscribe a -> IO (Subscribe a);
-	makeWindowCountRef windowCount view sub = do
+	makeWindowCountRef :: (HasGView a) => IORef Int -> Subscribe a -> IO (Subscribe a);
+	makeWindowCountRef windowCount sub = do
 	{
 		sub' <- makeWindow (do
 		{
@@ -30,7 +31,7 @@ module UI.Truth.GTK.Window where
 			if i == 1
 			 then mainQuit
 			 else return ();
-		}) view sub;
+		}) sub;
 		i <- readIORef windowCount;
 		writeIORef windowCount (i + 1);
 		return sub';

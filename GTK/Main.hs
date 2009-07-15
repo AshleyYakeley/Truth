@@ -4,7 +4,6 @@ module Main where
 	import Graphics.UI.Gtk;
 	import Data.Changes;
 	import Data.Changes.File.Linux;
-	import Data.Result;
 	import Data.Chain;
 	import Data.IORef;
 	import Data.Foldable;
@@ -26,16 +25,14 @@ module Main where
 			file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)
 			content = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () file; -- (Maybe ByteString)
 			mrtext = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () content; -- Maybe (Result ListError String)
-			
-			ivf = maybeView (SuccessResult "") (resultView textView);
 		} in do
 		{
-			makeWindowCountRef windowCount ivf mrtext;
+			makeWindowCountRef windowCount mrtext;
 		});
 		{-
-		sub <- makeWindowCountRef windowCount (maybeIVF False (checkButtonIVF "AAAAAAAAAAAAAAAAAAAAAAAAAA")) (freeObjSubscribe initial);
-		makeWindowCountRef windowCount (maybeIVF False (checkButtonIVF "BBBBBBBBBBBBBBBBBBBBBBBBBBBBB")) sub;
-		makeWindowCountRef windowCount (maybeIVF True (checkButtonIVF "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")) sub;
+		sub <- makeWindowCountRef windowCount (maybeIVF False (gNamedView "AAAAAAAAAAAAAAAAAAAAAAAAAA")) (freeObjSubscribe initial);
+		makeWindowCountRef windowCount (maybeIVF False (gNamedView "BBBBBBBBBBBBBBBBBBBBBBBBBBBBB")) sub;
+		makeWindowCountRef windowCount (maybeIVF True (gNamedView "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")) sub;
 		-}
 		mainGUI;
 	});

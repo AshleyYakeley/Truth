@@ -1,11 +1,13 @@
-module UI.Truth.GTK.CheckButton where
+{-# OPTIONS -fno-warn-orphans #-}
+module UI.Truth.GTK.CheckButton() where
 {
+	import UI.Truth.GTK.GView;
 	import UI.Truth.GTK.Useful;
 	import Graphics.UI.Gtk;
 	import Data.Changes;
 	import Data.ConstFunction;
 	
-	checkButtonView :: String -> View CheckButton Bool;
+	checkButtonView :: String -> GView Bool;
 	checkButtonView name initial push = do
 	{
 		widget <- checkButtonNew;
@@ -18,7 +20,7 @@ module UI.Truth.GTK.CheckButton where
 		});
 		return (MkViewResult
 		{
-			vrWidget = widget,
+			vrWidget = toWidget widget,
 			vrUpdate = \edit -> do
 			{
 				newstate <- applyConstFunctionA (applyEdit edit) (get widget toggleButtonActive);
@@ -26,5 +28,10 @@ module UI.Truth.GTK.CheckButton where
 					(set widget [toggleButtonActive := newstate]);
 			}
 		});
+	};
+
+	instance HasNamedGView Bool where
+	{
+		gNamedView = checkButtonView;
 	};
 }

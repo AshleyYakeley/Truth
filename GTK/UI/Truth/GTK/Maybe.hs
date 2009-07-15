@@ -1,5 +1,7 @@
-module UI.Truth.GTK.Maybe (maybeView,resultView) where
+{-# OPTIONS -fno-warn-orphans #-}
+module UI.Truth.GTK.Maybe () where
 {
+	import UI.Truth.GTK.GView;
 	import Graphics.UI.Gtk;
 	import Data.Changes;
 	import Data.FunctorOne;
@@ -45,16 +47,15 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
 	createButton :: a -> Push a -> IO Button;
 	createButton val push = pushButton push (ReplaceEdit val) "Create";
 
-	functorOneIVF :: forall f a w wd. 
+	functorOneIVF :: forall f a wd. 
 	(
 		Applicative f,
 		FunctorOne f,
 		PartEdit (f a) ~ JustEdit a,
 		Data.Changes.Editable a,
-		WidgetClass w,
 		WidgetClass wd
 	) =>
-	  Maybe (forall b. f b) -> (Push (f a) -> IO wd) -> View w a -> View VBox (f a);
+	  Maybe (forall b. f b) -> (Push (f a) -> IO wd) -> GView a -> GView (f a);
 	functorOneIVF mDeleteValue makeEmptywidget factory initial push = 
 	let
 	{
@@ -65,7 +66,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
 		box <- vBoxNew True 0;
 		emptyWidget <- makeEmptywidget push;
 		mDeleteButton <- doIf mDeleteValue (\deleteValue -> pushButton push (ReplaceEdit deleteValue) "Delete");
-		initialmiv :: Maybe (ViewResult w a) <- case retrieveOne initial of
+		initialmiv :: Maybe (GViewResult a) <- case retrieveOne initial of
 		{
 			SuccessResult a -> do
 			{
@@ -80,13 +81,13 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
 				return Nothing;
 			};
 		};
-		stateRef :: IORef (Maybe (ViewResult w a)) <- newIORef initialmiv;
+		stateRef :: IORef (Maybe (GViewResult a)) <- newIORef initialmiv;
 		return (MkViewResult
 		{
-			vrWidget = box,
+			vrWidget = toWidget box,
 			vrUpdate = \edit -> do
 			{
-				miv :: Maybe (ViewResult w a) <- readIORef stateRef;
+				miv :: Maybe (GViewResult a) <- readIORef stateRef;
 				case miv of
 				{
 					Just (MkViewResult widget update) -> case extractJustEdit edit of
@@ -117,8 +118,8 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
 		});
 	};
 
-	maybeView :: (Data.Changes.Editable a,WidgetClass w) =>
-	  a -> View w a -> View VBox (Maybe a);
+	maybeView :: (Data.Changes.Editable a) =>
+	  a -> GView a -> GView (Maybe a);
 	maybeView initialVal = functorOneIVF (Just Nothing) (createButton (Just initialVal));
 	
 	placeholderLabel :: IO Label;
@@ -128,6 +129,16 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
 		return label;
 	};
 	
-	resultView :: (Data.Changes.Editable a,WidgetClass w) => View w a -> View VBox (Result err a);
+	resultView :: (Data.Changes.Editable a) => GView a -> GView (Result err a);
 	resultView = functorOneIVF Nothing (\_ -> placeholderLabel);
+	
+	instance (HasGView a) => HasGView (Result err a) where
+	{
+		gView = resultView gView;
+	};
+
+	instance (HasNewValue a,HasGView a) => HasGView (Maybe a) where
+	{
+		gView = maybeView newValue gView;
+	};
 }
