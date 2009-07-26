@@ -40,6 +40,8 @@ exposed-modules:
 	Data.Bijection
 	Data.Codec
 	Data.Changes
+	Data.Changes.HasNewValue
+	Data.Changes.HasTypeRep
 	Data.Changes.Edit
 	Data.Changes.FloatingLens
 	Data.Changes.FixedLens

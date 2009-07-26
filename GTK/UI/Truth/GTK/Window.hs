@@ -10,8 +10,8 @@ module UI.Truth.GTK.Window where
 	{
 		(sub',w,close) <- subscribeView gView sub;
 		window <- windowNew;
-		set window [containerChild := w];
-		widgetShow w;
+		set window [containerChild := wsWidget w];
+		widgetShow (wsWidget w);
 		onDestroy window (do
 		{
 			close;

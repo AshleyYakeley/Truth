@@ -1,5 +1,6 @@
 module Data.Changes
 (
+	module Data.Changes.HasNewValue,
 	module Data.Changes.Edit,
 	module Data.Changes.FloatingLens,
 	module Data.Changes.FixedLens,
@@ -11,6 +12,7 @@ module Data.Changes
 	module Data.Changes.View,
 ) where
 {
+	import Data.Changes.HasNewValue;
 	import Data.Changes.Edit;
 	import Data.Changes.FloatingLens;
 	import Data.Changes.FixedLens;

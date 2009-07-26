@@ -53,7 +53,11 @@ module UI.Truth.GTK.Text() where
 		tv <- textViewNewWithBuffer buffer;
 		return (MkViewResult
 		{
-			vrWidget = toWidget tv,
+			vrWidget = MkWidgetStuff (toWidget tv) (do
+			{
+				-- get selection...
+				return Nothing;
+			}),
 			vrUpdate = \edit -> withMVar mv (\_ -> case edit of
 			{
 				ReplaceEdit text -> textBufferSetText buffer text;

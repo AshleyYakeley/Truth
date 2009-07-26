@@ -2,30 +2,21 @@ module UI.Truth.GTK.GView where
 {
 	import Graphics.UI.Gtk;
 	import Data.Changes;
-	import Data.Result;
-	
-	class HasNewValue a where
+	import Data.OpenWitness.OpenRep;
+
+	data Thing where
 	{
-		newValue :: a;
+		MkThing :: forall a. OpenRep a -> Subscribe a -> Thing;
 	};
 
-	instance HasNewValue [a] where
+	data WidgetStuff = MkWidgetStuff
 	{
-		newValue = [];
+		wsWidget :: Widget,
+		wsGetSelection :: IO (Maybe Thing)
 	};
 
-	instance HasNewValue (Maybe a) where
-	{
-		newValue = Nothing;
-	};
-
-	instance (HasNewValue a) => HasNewValue (Result err a) where
-	{
-		newValue = SuccessResult newValue;
-	};
-
-	type GView a = View Widget a;
-	type GViewResult = ViewResult Widget;
+	type GView a = View WidgetStuff a;
+	type GViewResult = ViewResult WidgetStuff;
 
 	class (Data.Changes.Editable a) => HasGView a where
 	{

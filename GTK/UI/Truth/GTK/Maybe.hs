@@ -70,9 +70,9 @@ module UI.Truth.GTK.Maybe () where
 		{
 			SuccessResult a -> do
 			{
-				iv@(MkViewResult widget _) <- factory a mpush;
+				iv@(MkViewResult ws _) <- factory a mpush;
 				doIf mDeleteButton (containerAddShow box);
-				containerAddShow box widget;
+				containerAddShow box (wsWidget ws);
 				return (Just iv);
 			};
 			_ -> do
@@ -84,19 +84,27 @@ module UI.Truth.GTK.Maybe () where
 		stateRef :: IORef (Maybe (GViewResult a)) <- newIORef initialmiv;
 		return (MkViewResult
 		{
-			vrWidget = toWidget box,
+			vrWidget = MkWidgetStuff (toWidget box) (do
+			{
+				miv :: Maybe (GViewResult a) <- readIORef stateRef;
+				case miv of
+				{
+					Just (MkViewResult ws _) -> wsGetSelection ws;
+					Nothing -> return Nothing;
+				};
+			}),
 			vrUpdate = \edit -> do
 			{
 				miv :: Maybe (GViewResult a) <- readIORef stateRef;
 				case miv of
 				{
-					Just (MkViewResult widget update) -> case extractJustEdit edit of
+					Just (MkViewResult ws update) -> case extractJustEdit edit of
 					{
 						Just edita -> update edita;
 						Nothing -> do
 						{
 							containerAddShow box emptyWidget;
-							containerRemoveDestroy box widget;
+							containerRemoveDestroy box (wsWidget ws);
 							doIf mDeleteButton (containerRemove box);
 							writeIORef stateRef Nothing;
 						};
@@ -105,9 +113,9 @@ module UI.Truth.GTK.Maybe () where
 					{
 						ReplaceEdit fa | SuccessResult a <- retrieveOne fa -> do
 						{
-							iv@(MkViewResult widget _) <- factory a mpush;				
+							iv@(MkViewResult ws _) <- factory a mpush;				
 							doIf mDeleteButton (containerAddShow box);
-							containerAddShow box widget;
+							containerAddShow box (wsWidget ws);
 							containerRemove box emptyWidget;
 							writeIORef stateRef (Just iv);
 						};
