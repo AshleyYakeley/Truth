@@ -1,23 +1,23 @@
 {-# LANGUAGE ViewPatterns, FlexibleContexts #-}
 module UI.Truth.GTK.Window where
 {
-    import UI.Truth.GTK.Text;
-	import UI.Truth.GTK.Maybe;
-	import UI.Truth.GTK.GView;
-	import Graphics.UI.Gtk;
-	import Data.Changes;
-	import Data.OpenWitness.OpenRep;
-	import Data.Witness;
-	import Data.IORef;
+    --import UI.Truth.GTK.Text;
+    import UI.Truth.GTK.Maybe;
+    import UI.Truth.GTK.GView;
+    import Graphics.UI.Gtk;
+    import Data.Changes;
+    import Data.OpenWitness.OpenRep;
+    import Data.Witness;
+    import Data.IORef;
 
-	makeButton :: String -> IO () -> IO Button;
-	makeButton name action = do
-	{
-		button <- buttonNew;
-		set button [buttonLabel := name];
-		onClicked button action;
-		return button;
-	};
+    makeButton :: String -> IO () -> IO Button;
+    makeButton name action = do
+    {
+        button <- buttonNew;
+        set button [buttonLabel := name];
+        onClicked button action;
+        return button;
+    };
 
     lastResortView :: GView a edit;
     lastResortView = undefined;
@@ -90,47 +90,47 @@ module UI.Truth.GTK.Window where
     };
     theView _ _ = lastResortView;
 -}
-	makeWindow :: (HasTypeRep a, HasTypeRep edit, CompleteEditScheme a edit,HasNewValue a) => IORef Int -> IO () -> Subscribe a edit -> IO ();
-	makeWindow ref tellclose sub = do
-	{
-		(sub',w,close) <- subscribeView (theView matchViews typeRep typeRep) sub;
-		window <- windowNew;
-		_selectionButton <- makeButton "Selection" (do
-		{
-		    msel <- wsGetSelection w;
-		    case msel of
-		    {
-		        Just (MkSelection lens state) -> do
-		        {
-		            makeWindowCountRef ref (lensSubscribe lens state sub');
-		        };
-		        _ -> return ();
-		    };
-		});
-		set window [containerChild := wsWidget w];
-		widgetShow (wsWidget w);
-		onDestroy window (do
-		{
-			close;
-			tellclose;
-		});
-		widgetShow window;
-		return ();
-	};
+    makeWindow :: (HasTypeRep a, HasTypeRep edit, CompleteEditScheme a edit,HasNewValue a) => IORef Int -> IO () -> Subscribe a edit -> IO ();
+    makeWindow ref tellclose sub = do
+    {
+        (sub',w,close) <- subscribeView (theView matchViews typeRep typeRep) sub;
+        window <- windowNew;
+        _selectionButton <- makeButton "Selection" (do
+        {
+            msel <- wsGetSelection w;
+            case msel of
+            {
+                Just (MkSelection lens state) -> do
+                {
+                    makeWindowCountRef ref (lensSubscribe lens state sub');
+                };
+                _ -> return ();
+            };
+        });
+        set window [containerChild := wsWidget w];
+        widgetShow (wsWidget w);
+        onDestroy window (do
+        {
+            close;
+            tellclose;
+        });
+        widgetShow window;
+        return ();
+    };
 
-	makeWindowCountRef :: (HasTypeRep a, HasTypeRep edit, CompleteEditScheme a edit,HasNewValue a) => IORef Int -> Subscribe a edit -> IO ();
-	makeWindowCountRef windowCount sub = do
-	{
-		makeWindow windowCount (do
-		{
-			i <- readIORef windowCount;
-			writeIORef windowCount (i - 1);
-			if i == 1
-			 then mainQuit
-			 else return ();
-		}) sub;
-		i <- readIORef windowCount;
-		writeIORef windowCount (i + 1);
-		return ();
-	};
+    makeWindowCountRef :: (HasTypeRep a, HasTypeRep edit, CompleteEditScheme a edit,HasNewValue a) => IORef Int -> Subscribe a edit -> IO ();
+    makeWindowCountRef windowCount sub = do
+    {
+        makeWindow windowCount (do
+        {
+            i <- readIORef windowCount;
+            writeIORef windowCount (i - 1);
+            if i == 1
+             then mainQuit
+             else return ();
+        }) sub;
+        i <- readIORef windowCount;
+        writeIORef windowCount (i + 1);
+        return ();
+    };
 }

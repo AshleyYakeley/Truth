@@ -1,7 +1,7 @@
 name: Truth-GTK
 version: 0.1
 cabal-version: >= 1.2
-build-type:	Simple
+build-type:    Simple
 
 library
 {

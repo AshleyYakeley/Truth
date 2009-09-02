@@ -1,6 +1,6 @@
 default: build
 
-EXE		= dist/build/Ghide/Ghide
+EXE = dist/build/Ghide/Ghide
 
 # Building
 
