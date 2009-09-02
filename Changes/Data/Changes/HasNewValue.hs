@@ -1,6 +1,7 @@
 module Data.Changes.HasNewValue where
 {
 	import Data.Result;
+	import Data.Witness;
 
 	class HasNewValue a where
 	{
@@ -20,5 +21,25 @@ module Data.Changes.HasNewValue where
 	instance (HasNewValue a) => HasNewValue (Result err a) where
 	{
 		newValue = SuccessResult newValue;
+	};
+	
+	class HasNewValue1 p where
+	{
+	    newValue1 :: forall a r. (HasNewValue a) => Type (p a) -> ((HasNewValue (p a)) => r) -> r;
+	};
+
+	instance HasNewValue1 [] where
+	{
+		newValue1 _ r = r;
+	};
+
+	instance HasNewValue1 Maybe where
+	{
+		newValue1 _ r = r;
+	};
+
+	instance HasNewValue1 (Result err) where
+	{
+		newValue1 _ r = r;
 	};
 }

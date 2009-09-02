@@ -1,10 +1,12 @@
 module UI.Truth.GTK.Tuple where
 {
+{-
 	import Data.Changes;
 	import Data.Witness;
 	import Data.Traversable;
 	import Data.TypeFunc;
-
+-}
+{-
 	type family ListMap tf l;
 	type instance ListMap tf () = ();
 	type instance ListMap tf (h,r) = (TF tf h,ListMap tf r);
@@ -36,8 +38,10 @@ module UI.Truth.GTK.Tuple where
 	type instance TF (TFView w) a = View w a;
 	data TFViewResult w;
 	type instance TF (TFViewResult w) a = ViewResult w a;
+-}
 
-	tupleView :: forall a w. (IsTuple a, PartEdit a ~ TListPartEdit (TList a)) =>
+{-
+	tupleView :: forall a w. (IsTuple a) =>
 	 ListType EditableWit (TList a) -> ([w] -> IO w) -> ListMap (TFView w) (TList a) -> View w a;
 	tupleView editablewit aggregate  views ia pusha = let
 	{
@@ -52,7 +56,7 @@ module UI.Truth.GTK.Tuple where
 		{
 			view = getListElement (mapListElement tfView elemwit) views;
 			ielem = getListElement elemwit (toListTuple ia);
-			pushelem editelem = pusha (PartEdit (TListPartEdit elemwit editelem));
+			pushelem editelem = pusha (TListEdit elemwit editelem);
 		} in view ielem pushelem);
 		let
 		{
@@ -65,14 +69,14 @@ module UI.Truth.GTK.Tuple where
 		iow <- aggregate (fmap pickWidget (getListElementTypes editablewit));
 		return (MkViewResult iow (\edita -> case edita of
 		{
-			ReplaceEdit a -> (let
+			ReplaceTListEdit a -> (let
 			{
 				tla = toListTuple a;
 			} in forM (getListElementTypes editablewit)
-			 (\(MkAnyF _ elemwit) -> vrUpdate (getVR elemwit) (ReplaceEdit (getListElement elemwit tla)))
+			 (\(MkAnyF _ elemwit) -> vrUpdate (getVR elemwit) (replaceEdit (getListElement elemwit tla)))
 			) >> return ();
-			PartEdit (TListPartEdit elemwit edite) -> vrUpdate (getVR elemwit) edite;
+			TListEdit elemwit edite -> vrUpdate (getVR elemwit) edite;
 		})); 
 	};
-
+-}
 }

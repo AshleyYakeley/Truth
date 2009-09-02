@@ -1,5 +1,5 @@
 {-# OPTIONS -fno-warn-orphans #-}
-module UI.Truth.GTK.CheckButton() where
+module UI.Truth.GTK.CheckButton where
 {
 	import UI.Truth.GTK.GView;
 	import UI.Truth.GTK.Useful;
@@ -7,7 +7,7 @@ module UI.Truth.GTK.CheckButton() where
 	import Data.Changes;
 	import Data.ConstFunction;
 	
-	checkButtonView :: String -> GView Bool;
+	checkButtonView :: String -> GView Bool (WholeEdit Bool);
 	checkButtonView name initial push = do
 	{
 		widget <- checkButtonNew;
@@ -15,7 +15,7 @@ module UI.Truth.GTK.CheckButton() where
 		clickConnection <- onClicked widget (do
 		{
 			s <- get widget toggleButtonActive;
-			push (ReplaceEdit s);
+			push (replaceEdit s);
 			return ();
 		});
 		return (MkViewResult
@@ -28,10 +28,5 @@ module UI.Truth.GTK.CheckButton() where
 					(set widget [toggleButtonActive := newstate]);
 			}
 		});
-	};
-
-	instance HasNamedGView Bool where
-	{
-		gNamedView = checkButtonView;
 	};
 }

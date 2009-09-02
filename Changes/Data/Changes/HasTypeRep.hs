@@ -2,6 +2,7 @@ module Data.Changes.HasTypeRep where
 {
 	import Data.OpenWitness.OpenRep;
 	import Data.OpenWitness;
+	import Data.Witness;
 	import Data.Word;
 	import Data.Result;
 
@@ -69,4 +70,12 @@ module Data.Changes.HasTypeRep where
 	{
 		typeRep2 = SimpleOpenRep2 (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Result");
 	};
+
+    type RepDict = WitnessFDict OpenRep;
+    
+    repDictLookup :: (HasTypeRep a) => RepDict f -> Maybe (f a);
+    repDictLookup = witnessFDictLookup typeRep;
+    
+    repDictAdd :: (HasTypeRep a) => f a -> RepDict f -> RepDict f;
+    repDictAdd = witnessFDictAdd typeRep;
 }

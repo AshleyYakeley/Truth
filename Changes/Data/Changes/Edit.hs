@@ -1,107 +1,124 @@
 module Data.Changes.Edit where
 {
-	import Data.FunctorOne;
-	import Data.ConstFunction;
+{-
+--	import Data.Changes.Context;
+--	import Data.Changes.Tuple;
+	import Data.Changes.List;
+	import Data.Changes.JustEdit;
+	import Data.Changes.WholeEdit;
+	import Data.Changes.EditScheme;
+	import Data.ByteString;
 	import Data.Result;
-	import Data.Chain;
-	import Control.Applicative;
-	import Control.Category;
 	import Data.Word;
-	import Prelude hiding (id,(.));
 
-	class EditScheme partedit a where
-	{
-		applyPartEdit :: partedit -> ConstFunction a a;
-		invertPartEdit :: partedit -> a -> Maybe (Edit a);	-- "Nothing" means no change
-	};
+--	data Edit' pe a = ReplaceEdit a | PartEdit pe;
 
-	class (EditScheme (PartEdit a) a) => Editable a where
+	class (CompleteEditScheme a (Edit a)) => Editable a where
 	{
-		type PartEdit a :: *;
+		type Edit a :: *;
 	};
 
 	instance Editable () where
 	{
-		type PartEdit () = Nothing;
+		type Edit () = WholeEdit ();
 	};
 
 	instance Editable Bool where
 	{
-		type PartEdit Bool = Nothing;
+		type Edit Bool = WholeEdit Bool;
 	};
 
 	instance Editable Word8 where
 	{
-		type PartEdit Word8 = Nothing;
+		type Edit Word8 = WholeEdit Word8;
 	};
 
-	data Edit a = ReplaceEdit a | PartEdit (PartEdit a);
-
-	data Nothing;
-	
-	never :: Nothing -> a;
-	never n = seq n undefined;
-
-	instance EditScheme Nothing a where
+	instance Editable Char where
 	{
-		applyPartEdit _ = id;
-		invertPartEdit _ _ = Nothing;
+		type Edit Char = WholeEdit Char;
 	};
 
-	newtype JustEdit a = JustEdit (Edit a);
-
-	instance (Editable a,FunctorOne f,PartEdit (f a) ~ JustEdit a) => EditScheme (JustEdit a) (f a) where
+	instance Editable ByteString where
 	{
-		applyPartEdit (JustEdit edita) = cfmap (applyEdit edita);
-
-		invertPartEdit (JustEdit edita) molda = case retrieveOne molda of
-		{
-			SuccessResult olda -> fmap (PartEdit . JustEdit) (invertEdit edita olda);
-			_ -> Nothing;
-		};
+		type Edit ByteString = WholeEdit ByteString;
 	};
 
 	instance (Editable a) => Editable (Result err a) where
 	{
-		type PartEdit (Result err a) = JustEdit a;
+		type Edit (Result err a) = JustEdit (Result err a) (Edit a);
 	};
 
 	instance (Editable a) => Editable (Maybe a) where
 	{
-		type PartEdit (Maybe a) = JustEdit a;
+		type Edit (Maybe a) = JustEdit (Maybe a) (Edit a);
 	};
 
-	applyEdit :: (Editable a) => Edit a -> ConstFunction a a;
-	applyEdit (ReplaceEdit newa) = pure newa;
-	applyEdit (PartEdit pea) = applyPartEdit pea;
+	instance (Editable a) => Editable [a] where
+	{
+		type Edit [a] = ListEdit [a] (Edit a);
+	};
+	
+-}	
 
-	invertEdit :: (Editable a) => Edit a -> a -> Maybe (Edit a);
-	invertEdit (ReplaceEdit _) olda = Just (ReplaceEdit olda);
-	invertEdit (PartEdit pea) olda = invertPartEdit pea olda;
+{-
+	instance (Editable a,Editable b) => Editable (a,b) where
+	{
+		type Edit (a,b) = TListEdit (a,(b,())) (Edit a,(Edit b,()));
+	};
+	
+	instance (Editable context,Editable content) => Editable (WithContext context content) where
+	{
+		type Edit (WithContext context content) = TListEdit (content,(context,())) (Edit content,(Edit context,()));
+	};
+-}
 
-	applyAndInvertEdit :: (Editable a) => Edit a -> (ConstFunction a a,a -> Maybe (Edit a));
-	applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
+{-
+	instance (Editable context,Editable content) => Editable (WithContext context content) where
+	{
+		type Edit (WithContext context content) = ContextContentEdit (Edit content) (Edit context);
+	};
+-}
 
-	extractJustEdit :: (FunctorOne f,PartEdit (f a) ~ JustEdit a) => Edit (f a) -> Maybe (Edit a);
-	extractJustEdit (PartEdit (JustEdit ea)) = Just ea; 
+
+{-
+	data WitnessJustEdit f a where
+	{
+	    MkWitnessJustEdit :: (PartEdit (f a) ~ JustEdit a) => WitnessJustEdit f a;
+	};
+	
+	class HasJustEdit f where
+	{
+	    witnessJustEdit :: forall a. WitnessJustEdit f a;
+	};
+
+    instance HasJustEdit (Result err) where
+    {
+        witnessJustEdit = MkWitnessJustEdit;
+    };
+
+    instance HasJustEdit Maybe where
+    {
+        witnessJustEdit = MkWitnessJustEdit;
+    };
+
+    justEdit :: forall f a. (HasJustEdit f) => Type (f ()) -> Edit a -> PartEdit (f a);
+    justEdit _ = case witnessJustEdit :: WitnessJustEdit f a of
+	{
+	    MkWitnessJustEdit -> JustEdit;
+	};
+
+	extractJustEdit :: forall f a. (FunctorOne f,HasJustEdit f) => Edit (f a) -> Maybe (Edit a);
+	extractJustEdit (PartEdit jea) = case witnessJustEdit :: WitnessJustEdit f a of
+	{
+	    MkWitnessJustEdit -> case jea of
+        {
+            JustEdit ea -> Just ea;
+        };
+    };
 	extractJustEdit (ReplaceEdit fa) = case retrieveOne fa of
 	{
 		SuccessResult a -> Just (ReplaceEdit a);
 		_ -> Nothing;
 	};
-	
-	applyEdits :: (Editable a) => [Edit a] -> ConstFunction a a;
-	applyEdits [] = id;
-	applyEdits (e:es) = (applyEdits es) . (applyEdit e);
-
-	commutableEdits :: (Editable a,Eq a) => Edit a -> Edit a -> a -> Maybe a;
-	commutableEdits e1 e2 a = let
-	{
-		cf1 = applyEdit e1;
-		cf2 = applyEdit e2;
-		cf12 = cf1 . cf2;
-		cf21 = cf2 . cf1;
-		a12 = applyConstFunction cf12 a;
-		a21 = applyConstFunction cf21 a;
-	} in if a12 == a21 then Just a12 else Nothing;
+-}
 }

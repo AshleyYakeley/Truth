@@ -2,29 +2,27 @@
 module Data.Changes.Text where
 {
 	import Data.Changes.FixedLens;
-	import Data.Changes.Edit;
+--	import Data.Changes.Edit;
+	import Data.Changes.HasTypeRep;
 	import Data.Result;
 	import Data.Bijection;
+	import Data.OpenWitness.OpenRep;
+	import Data.OpenWitness;
 	import Data.ByteString;
 	import Data.Word;
 	import Data.Bits;
 	import Control.Monad.State;
 	import Prelude hiding (id,(.));
 
-	instance Editable Char where
-	{
-		type PartEdit Char = Nothing;
-	};
-
-	instance Editable ByteString where
-	{
-		type PartEdit ByteString = Nothing;
-	};
-
 	packBSLens :: WholeLens ByteString [Word8];
 	packBSLens = bijectionWholeLens (MkBijection unpack pack);
 	
 	data ListError = MkListError Int;
+
+    instance HasTypeRep ListError where
+    {
+        typeRep = SimpleOpenRep (unsafeIOWitnessFromString "Data.Changes.Text.ListError");
+    };
 	
 	utf8Lens :: WholeLens [Word8] (Result ListError String);
 	utf8Lens = resultWholeLens decode encode where

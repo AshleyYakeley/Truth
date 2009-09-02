@@ -1,5 +1,5 @@
 {-# OPTIONS -fno-warn-orphans #-}
-module UI.Truth.GTK.Text() where
+module UI.Truth.GTK.Text (textView) where
 {
 	import UI.Truth.GTK.GView;
 	import UI.Truth.GTK.Useful;
@@ -23,7 +23,7 @@ module UI.Truth.GTK.Text() where
 		};
 	};
 
-	textView :: GView String;
+	textView :: GView String (ListEdit String (WholeEdit Char));
 	textView initial push = do
 	{
 		buffer <- textBufferNew Nothing;
@@ -32,7 +32,7 @@ module UI.Truth.GTK.Text() where
 		onBufferInsertText buffer (\iter text -> ifMVar mv (do
 		{
 			i <- textIterGetOffset iter;
-			ms <- push (PartEdit (ReplaceSectionEdit (i,0) text));
+			ms <- push (ReplaceSectionEdit (i,0) text);
 			case ms of
 			{
 				Just _ -> return ();
@@ -43,7 +43,7 @@ module UI.Truth.GTK.Text() where
 		{
 			i1 <- textIterGetOffset iter1;
 			i2 <- textIterGetOffset iter2;
-			ms <- push (PartEdit (ReplaceSectionEdit (i1,i2 - i1) ""));
+			ms <- push (ReplaceSectionEdit (i1,i2 - i1) "");
 			case ms of
 			{
 				Just _ -> return ();
@@ -55,21 +55,18 @@ module UI.Truth.GTK.Text() where
 		{
 			vrWidget = MkWidgetStuff (toWidget tv) (do
 			{
+				(iter1,iter2) <- textBufferGetSelectionBounds buffer;
+				o1 <- textIterGetOffset iter1;
+				o2 <- textIterGetOffset iter2;
 				-- get selection...
-				return Nothing;
+				return (Just (MkSelection listSection (o1,o2)));
 			}),
 			vrUpdate = \edit -> withMVar mv (\_ -> case edit of
 			{
-				ReplaceEdit text -> textBufferSetText buffer text;
-				PartEdit (ReplaceSectionEdit bounds text) -> replaceText buffer bounds text;
-				PartEdit (ItemEdit i (ReplaceEdit c)) -> replaceText buffer (i,1) [c];
-				_ -> return ();
+				ReplaceListEdit text -> textBufferSetText buffer text;
+				ReplaceSectionEdit bounds text -> replaceText buffer bounds text;
+				ItemEdit i (MkWholeEdit c) -> replaceText buffer (i,1) [c];
 			})
 		});
-	};
-
-	instance HasGView String where
-	{
-		gView = textView;
 	};
 }

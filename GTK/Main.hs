@@ -5,6 +5,7 @@ module Main where
 	import Data.Changes;
 	import Data.Changes.File.Linux;
 	import Data.Chain;
+	import Data.Result;
 	import Data.IORef;
 	import Data.Foldable;
 	import Control.Category;
@@ -24,7 +25,8 @@ module Main where
 		{
 			file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)
 			content = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () file; -- (Maybe ByteString)
-			mrtext = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () content; -- Maybe (Result ListError String)
+			mrtext :: Subscribe (Maybe (Result ListError String)) (WholeEdit (Maybe (Result ListError String))) =
+			 lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () content;
 		} in do
 		{
 			makeWindowCountRef windowCount mrtext;

@@ -84,7 +84,7 @@ module Data.Changes.File.Linux
 	{
 		fsNotify :: INotifyB,
 		fsHandleVar :: MVar (FilePath,Maybe Handle),
-		fsPushout :: Edit (WithContext FilePath (Maybe ByteString)) -> IO (),
+		fsPushout :: ContextContentEdit (WholeEdit FilePath) (JustEdit (Maybe ByteString) (WholeEdit ByteString)) -> IO (),
 		fsWatchVar :: MVar (Maybe WatchDescriptorB)
 	};
 	
@@ -123,7 +123,7 @@ module Data.Changes.File.Linux
 		};
 	};
 
-	newFileState :: INotifyB -> FilePath -> (Edit (WithContext FilePath (Maybe ByteString)) -> IO ()) -> IO FileState;
+	newFileState :: INotifyB -> FilePath -> (ContextContentEdit (WholeEdit FilePath) (JustEdit (Maybe ByteString) (WholeEdit ByteString)) -> IO ()) -> IO FileState;
 	newFileState notify path pushout = do
 	{
 		var <- newMVar (path,Nothing);
@@ -183,7 +183,7 @@ module Data.Changes.File.Linux
 				wd <- addWatchB (fsNotify ?fs) [Modify,MoveSelf,DeleteSelf] path (\_ -> do
 				{
 					(MkWithContext _ newa) <- runFSAction fsGet;
-					fsPushout ?fs (runIdentity (cleanLensPutEdit contentCleanLens (ReplaceEdit newa)));
+					fsPushout ?fs (runIdentity (cleanLensPutEdit contentCleanLens (replaceEdit newa)));
 				});
 				return (Just wd);
 			};
@@ -287,7 +287,10 @@ module Data.Changes.File.Linux
 		put (path,Nothing);
 	};
 
-	linuxFileObject :: INotifyB -> FilePath -> Subscribe (WithContext FilePath (Maybe ByteString));
+	linuxFileObject :: INotifyB -> FilePath ->
+	 Subscribe 
+	  (WithContext FilePath (Maybe ByteString)) 
+	  (ContextContentEdit (WholeEdit FilePath) (JustEdit (Maybe ByteString) (WholeEdit ByteString)));
 	linuxFileObject inotify initialpath = objSubscribe (\pushout -> do
 	{
 		fs <- newFileState inotify initialpath pushout;
@@ -305,7 +308,6 @@ module Data.Changes.File.Linux
 				{
 					(mnewpath,mnewmbs) <- case edit of
 					{
-						ReplaceEdit (MkWithContext newpath newmbs) -> return (Just newpath,Just newmbs);
 						_ -> do
 						{
 							newa <- applyConstFunctionA (applyEdit edit) fsGet;

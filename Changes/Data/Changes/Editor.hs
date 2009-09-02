@@ -1,17 +1,17 @@
 module Data.Changes.Editor where
 {
 	import Data.Changes.Object;
-	import Data.Changes.Edit;
+	import Data.Changes.EditScheme;
 	import Control.Exception hiding (catch);
 
-	data Editor a b = forall r. MkEditor
+	data Editor a edit b = forall r. MkEditor
 	{
-		editorInit :: a -> Push a -> IO r,
-		editorUpdate :: r -> Edit a -> IO (),
-		editorDo :: r -> Subscribe a -> IO b
+		editorInit :: a -> Push edit -> IO r,
+		editorUpdate :: r -> edit -> IO (),
+		editorDo :: r -> Subscribe a edit -> IO b
 	};
 
-	subscribeEdit :: Subscribe a -> Editor a b -> IO b;
+	subscribeEdit :: Subscribe a edit -> Editor a edit b -> IO b;
 	subscribeEdit subscribe editor = case editor of 
 	{
 		(MkEditor initr update f) -> do
@@ -23,7 +23,7 @@ module Data.Changes.Editor where
 		};
 	};
 	
-	subscribeRead :: Subscribe a -> IO a;
+	subscribeRead :: Subscribe a edit -> IO a;
 	subscribeRead object = subscribeEdit object (MkEditor
 	{
 		editorInit = \a _ -> return a,
@@ -31,11 +31,11 @@ module Data.Changes.Editor where
 		editorDo = \a _ -> return a
 	});
 
-	subscribeWrite :: a -> Subscribe a -> IO (Maybe ());
+	subscribeWrite :: (CompleteEditScheme a edit) => a -> Subscribe a edit -> IO (Maybe ());
 	subscribeWrite a object = subscribeEdit object (MkEditor
 	{
 		editorInit = \_ push -> return push,
 		editorUpdate = \_ _ -> return (),
-		editorDo = \push _ -> push (ReplaceEdit a)
+		editorDo = \push _ -> push (replaceEdit a)
 	});
 }

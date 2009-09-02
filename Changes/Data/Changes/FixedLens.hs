@@ -1,7 +1,7 @@
 module Data.Changes.FixedLens where
 {
 	import Data.Changes.FloatingLens;
-	import Data.Changes.Edit;
+	import Data.Changes.EditScheme;
 	import Data.Bijection;
 	import Data.Codec;
 	import Data.Result;
@@ -15,31 +15,38 @@ module Data.Changes.FixedLens where
 
 	-- | A FixedLens is a lens without state
 	;
-	data FixedLens' m a b = MkFixedLens
+	data FixedLens' m a edita b editb = MkFixedLens
 	{
-		fixedLensUpdate :: Edit a -> ConstFunction a (Maybe (Edit b)),
+		fixedLensUpdate :: edita -> ConstFunction a (Maybe editb),
 		fixedLensGet :: a -> b,
-		fixedLensPutEdit :: Edit b -> ConstFunction a (m (Edit a))
+		fixedLensPutEdit :: editb -> ConstFunction a (m edita)
 	};
 	
 	type FixedLens = FixedLens' Maybe;
 	
-	makeFixedLensUpdate :: (Editable a) => (a -> b) -> (Edit a -> Maybe (ConstFunction a (Maybe (Edit b)))) -> (Edit a -> ConstFunction a (Maybe (Edit b)));
+	makeFixedLensUpdate :: (EditScheme a edita,CompleteEditScheme b editb) =>
+	 (a -> b) -> (edita -> Maybe (ConstFunction a (Maybe editb))) -> (edita -> ConstFunction a (Maybe editb));
 	makeFixedLensUpdate getter ff edit = case ff edit of
 	{
 		Just ameb -> ameb;
-		_ -> fmap (Just . ReplaceEdit . getter) (applyEdit edit);
+		_ -> fmap (Just . replaceEdit . getter) (applyEdit edit);
 	};
 	
-	instance (Applicative m,FunctorOne m) => Category (FixedLens' m) where
+	class DoubleCategory t where
 	{
-		id = MkFixedLens
+	    doubleId :: t a1 a2 a1 a2;
+	    doubleCompose :: t b1 b2 c1 c2 -> t a1 a2 b1 b2 -> t a1 a2 c1 c2;
+	};
+	
+	instance (Applicative m,FunctorOne m) => DoubleCategory (FixedLens' m) where
+	{
+		doubleId = MkFixedLens
 		{
 			fixedLensUpdate = \edit -> pure (Just edit),
 			fixedLensGet = id,
 			fixedLensPutEdit = \editb -> pure (pure editb)
 		};
-		bc . ab = MkFixedLens
+		doubleCompose bc ab = MkFixedLens
 		{
 			fixedLensUpdate = \edita -> do
 			{
@@ -63,7 +70,7 @@ module Data.Changes.FixedLens where
 		};
 	};
 	
-	fixedFloatingLens :: FixedLens' m a b -> FloatingLens' m () a b;
+	fixedFloatingLens :: FixedLens' m a edita b editb -> FloatingLens' m () a edita b editb;
 	fixedFloatingLens lens = MkFloatingLens
 	{
 		lensUpdate = \edit _ -> do
@@ -75,24 +82,24 @@ module Data.Changes.FixedLens where
 		lensPutEdit = \_ -> fixedLensPutEdit lens
 	};
 	
-	data CleanLens' m a b = MkCleanLens
+	data CleanLens' m a edita b editb = MkCleanLens
 	{
-		cleanLensUpdate :: Edit a -> Maybe (Edit b),
+		cleanLensUpdate :: edita -> Maybe editb,
 		cleanLensGet :: a -> b,
-		cleanLensPutEdit :: Edit b -> m (Edit a)
+		cleanLensPutEdit :: editb -> m edita
 	};
 	
 	--type CleanLens = CleanLens' Maybe;
 	
-	instance (Monad m) => Category (CleanLens' m) where
+	instance (Monad m) => DoubleCategory (CleanLens' m) where
 	{
-		id = MkCleanLens
+		doubleId = MkCleanLens
 		{
 			cleanLensUpdate = Just,
 			cleanLensGet = id,
 			cleanLensPutEdit = return
 		};
-		bc . ab = MkCleanLens
+		doubleCompose bc ab = MkCleanLens
 		{
 			cleanLensUpdate = \edita -> do
 			{
@@ -109,7 +116,7 @@ module Data.Changes.FixedLens where
 		};
 	};
 	
-	cleanFixedLens :: CleanLens' m a b -> FixedLens' m a b;
+	cleanFixedLens :: CleanLens' m a edita b editb -> FixedLens' m a edita b editb;
 	cleanFixedLens lens = MkFixedLens
 	{
 		fixedLensUpdate = \edit -> pure (cleanLensUpdate lens edit),
@@ -149,7 +156,7 @@ module Data.Changes.FixedLens where
 		};
 	};
 	
-	simpleFixedLens :: (Functor m,Editable a,Editable b) => SimpleLens' m a b -> FixedLens' m a b;
+	simpleFixedLens :: (Functor m,CompleteEditScheme a edita,CompleteEditScheme b editb) => SimpleLens' m a b -> FixedLens' m a edita b editb;
 	simpleFixedLens lens = MkFixedLens
 	{
 		fixedLensUpdate = makeFixedLensUpdate (simpleLensGet lens) (\_ -> Nothing),
@@ -158,7 +165,7 @@ module Data.Changes.FixedLens where
 		{
 			newb <- cofmap1CF (simpleLensGet lens) (applyEdit editb);
 			ma <- simpleLensPutback lens newb;
-			return (fmap ReplaceEdit ma);
+			return (fmap replaceEdit ma);
 		}
 	};
 	

@@ -1,7 +1,7 @@
 module Data.Changes.Object where
 {
 	import Data.Changes.FloatingLens;
-	import Data.Changes.Edit;
+	import Data.Changes.EditScheme;
 	import Data.Store;
 	import Control.Concurrent.MVar;
 	import Control.Monad.Fix;
@@ -13,11 +13,11 @@ module Data.Changes.Object where
 	-- Returns Nothing if change is not allowed.
 	-- Returns Just () if change succeeded, and updates will be received before this action returns.
 	;
-	type Push a = Edit a -> IO (Maybe ());
+	type Push edit = edit -> IO (Maybe ());
 
-	data Subscription a = MkSubscription
+	data Subscription a edit = MkSubscription
 	{
-		subCopy :: Subscribe a,
+		subCopy :: Subscribe a edit,
 		
 		-- | close the subscription
 		subClose :: IO ()
@@ -25,23 +25,23 @@ module Data.Changes.Object where
 	
 	-- | blocks if the object is busy
 	;
-	type Subscribe a = forall r. (a -> Push a -> IO r) -> (r -> Edit a -> IO ()) -> IO (r, Subscription a);
+	type Subscribe a edit = forall r. (a -> Push edit -> IO r) -> (r -> edit -> IO ()) -> IO (r, Subscription a edit);
 
-	data Object a = MkObject
+	data Object a edit = MkObject
 	{
 		objGetInitial :: forall r. (a -> IO r) -> IO r,
-		objPush :: Push a,
+		objPush :: Push edit,
 		objClose :: IO ()
 	};
 
-	objSubscribe :: forall a. ((Edit a -> IO ()) -> IO (Object a)) -> Subscribe a;
+	objSubscribe :: forall a edit. ((edit -> IO ()) -> IO (Object a edit)) -> Subscribe a edit;
 	objSubscribe getObject initialise' updater' = do
 	{
 		storevar <- newMVar emptyStore;
 		obj <- getObject (\edit -> withMVar storevar (\store -> forM (allStore store) (\u -> u edit) >> return ()));
 		let
 		{
-			keyPush :: Int -> Push a;
+			keyPush :: Int -> Push edit;
 			keyPush key edita = withMVar storevar (\store -> do
 			{
 				mv <- objPush obj edita;
@@ -65,14 +65,14 @@ module Data.Changes.Object where
 				return newstore;
 			});
 
-			keySubscription :: Int -> Subscription a;
+			keySubscription :: Int -> Subscription a edit;
 			keySubscription key = MkSubscription
 			{
 				subCopy = objSub,
 				subClose = keyClose key
 			};
 
-			objSub :: Subscribe a;
+			objSub :: Subscribe a edit;
 			objSub initialise updater = mfix (\result -> do
 			{
 				key <- modifyMVar storevar (\store -> do
@@ -87,7 +87,7 @@ module Data.Changes.Object where
 		objSub initialise' updater';
 	};
 	
-	freeObjSubscribe :: forall a. (Editable a) => a -> Subscribe a;
+	freeObjSubscribe :: forall a edit. (EditScheme a edit) => a -> Subscribe a edit;
 	freeObjSubscribe initial = objSubscribe (\_ -> do
 	{
 		statevar <- newMVar initial;
@@ -99,7 +99,7 @@ module Data.Changes.Object where
 		});
 	});
 
-	lensSubscribe :: forall state a b. (Editable a,Eq state) => FloatingLens state a b -> state -> Subscribe a -> Subscribe b;
+	lensSubscribe :: forall state a edita b editb. (EditScheme a edita,Eq state) => FloatingLens state a edita b editb -> state -> Subscribe a edita -> Subscribe b editb;
 	lensSubscribe lens firststate subscribe = objSubscribe (\pushOut -> do
 	{
 		((statevar,firsta,push),sub) <- subscribe 
