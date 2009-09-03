@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts,UndecidableInstances,RankNTypes #-}
+{-# LANGUAGE FlexibleContexts,UndecidableInstances,RankNTypes,ScopedTypeVariables #-}
 module Main where
 {
     import Data.Changes.File.Linux;
@@ -14,29 +14,25 @@ module Main where
     import Control.Category;
     import Prelude hiding (readFile,writeFile,id,(.));
     
-    instance Show Nothing where
-    {
-        show = never;
-    };
-    
-    instance (Show a,Show (PartEdit a)) => Show (ListPartEdit a) where
+    instance (Show a,Show edit) => Show (ListEdit a edit) where
     {
         show (ItemEdit i edit) = "item " ++ (show i) ++ " " ++ show edit;
         show (ReplaceSectionEdit i sect) = "section " ++ (show i) ++ " " ++ show sect;
+        show (ReplaceListEdit la) = "replace " ++ (show la);
     };
     
-    instance (Show a,Show (PartEdit a)) => Show (JustEdit a) where
+    instance (Show a,Show edit) => Show (JustEdit a edit) where
     {
-        show (JustEdit s) = "Just " ++ (show s);
+        show (JustEdit edit) = "Just " ++ (show edit);
+        show (ReplaceJustEdit a) = "replace " ++ (show a);
     };
-    
-    instance (Show a,Show (PartEdit a)) => Show (Edit a) where
+   
+    instance (Show a) => Show (WholeEdit a) where
     {
-        show (ReplaceEdit s) = "replace " ++ (show s);
-        show (PartEdit pe) = "part " ++ (show pe);
+        show (MkWholeEdit s) = "replace " ++ (show s);
     };
-    
-    showObject :: (Show a) => String -> Subscribe a -> IO ();
+   
+    showObject :: (Show a) => String -> Subscribe a edit -> IO ();
     showObject name obj = do
     {
         a <- subscribeRead obj;
@@ -54,7 +50,7 @@ module Main where
         show (SuccessResult a) = "success: " ++ (show a);
     };
     
-    makeShowSubscription :: (Show a,Show (PartEdit a),Editable a) => String -> Subscribe a -> IO (Push a,Subscription a);
+    makeShowSubscription :: (Show a,Show edit,EditScheme a edit) => String -> Subscribe a edit -> IO (Push edit,Subscription a edit);
     makeShowSubscription name subscribe = do
     {
         ((_,push),sub) <- subscribe
@@ -74,7 +70,7 @@ module Main where
         return (push,sub);
     };
     
-    showPushEdit :: (Show a,Show (PartEdit a)) => Push a -> Edit a -> IO ();
+    showPushEdit :: (Show edit) => Push edit -> edit -> IO ();
     showPushEdit push edit = do
     {
         putStrLn ("pushing " ++ (show edit));
@@ -100,7 +96,8 @@ module Main where
             {
                 fileobj = linuxFileObject inotify path;
                 contentobj = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () fileobj;
-                textobj = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () contentobj;
+                textobj :: Subscribe (Maybe (Result ListError String)) (WholeEdit (Maybe (Result ListError String)))
+                 = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () contentobj;
             };
         
             (push,sub) <- makeShowSubscription path textobj;
@@ -113,7 +110,7 @@ module Main where
             writeFile path (pack [73,74,75,10]);
             threadDelay 100000;
 
-            showPushEdit push (ReplaceEdit (Just (SuccessResult "pqrstu")));
+            showPushEdit push (MkWholeEdit (Just (SuccessResult "pqrstu")));
 
     --        writeFile path (pack [65,66,67,68,10]);
     {-        
@@ -153,10 +150,10 @@ module Main where
             threadDelay 10000000;
 
             putStrLn "deleting";
-            showPushEdit push (ReplaceEdit Nothing);
-            showPushEdit push (ReplaceEdit Nothing);
-            showPushEdit push (ReplaceEdit (Just (SuccessResult "ABCdef")));
-            showPushEdit push (ReplaceEdit Nothing);
+            showPushEdit push (MkWholeEdit Nothing);
+            showPushEdit push (MkWholeEdit Nothing);
+            showPushEdit push (MkWholeEdit (Just (SuccessResult "ABCdef")));
+            showPushEdit push (MkWholeEdit Nothing);
 
             subClose sub;
             putStrLn "End";

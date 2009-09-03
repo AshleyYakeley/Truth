@@ -7,37 +7,34 @@ module Main where
     import Data.Changes;
     import Data.Maybe;
     import Data.IORef;
-    
-    instance Show Nothing where
-    {
-        show = never;
-    };
-    
-    instance (Show a,Show (PartEdit a)) => Show (ListPartEdit a) where
+
+    instance (Show a,Show edit) => Show (ListEdit a edit) where
     {
         show (ItemEdit i edit) = "item " ++ (show i) ++ " " ++ show edit;
         show (ReplaceSectionEdit i sect) = "section " ++ (show i) ++ " " ++ show sect;
+        show (ReplaceListEdit la) = "replace " ++ (show la);
     };
     
-    instance (Show a,Show (PartEdit a)) => Show (JustEdit a) where
+    instance (Show a,Show edit) => Show (JustEdit a edit) where
     {
-        show (JustEdit s) = "Just " ++ (show s);
+        show (JustEdit edit) = "Just " ++ (show edit);
+        show (ReplaceJustEdit a) = "replace " ++ (show a);
     };
-    
-    instance (Show a,Show (PartEdit a)) => Show (Edit a) where
+   
+    instance (Show a) => Show (WholeEdit a) where
     {
-        show (ReplaceEdit s) = "replace " ++ (show s);
-        show (PartEdit pe) = "part " ++ (show pe);
+        show (MkWholeEdit s) = "replace " ++ (show s);
     };
-    
-    showObject :: (Show a) => String -> Subscribe a -> IO ();
+   
+    showObject :: (Show a) => String -> Subscribe a edit -> IO ();
     showObject name obj = do
     {
         a <- subscribeRead obj;
         putStrLn (name ++ ": " ++ (show a));
     };
 
-    withShowSubscription :: (Show a,Editable a,Show (PartEdit a)) => Subscribe a -> String -> (Subscribe a -> (Edit a -> IO (Maybe ())) -> IO (Maybe b)) -> IO (Maybe b);
+    withShowSubscription :: (Show a, Show edit,EditScheme a edit) =>
+     Subscribe a edit -> String -> (Subscribe a edit -> (edit -> IO (Maybe ())) -> IO (Maybe b)) -> IO (Maybe b);
     withShowSubscription object name f = subscribeEdit object (MkEditor
     {
         editorInit = \a push -> do
@@ -77,9 +74,9 @@ module Main where
     main = do
     {
         putStrLn "Test";
-        withShowSubscription (freeObjSubscribe "abcdef") "main" (\obj push -> do
+        withShowSubscription (freeObjSubscribe "abcdef" :: Subscribe String (ListEdit String (WholeEdit Char))) "main" (\obj push -> do
         {
-            push (ReplaceEdit "pqrstu");
+            push (replaceEdit "pqrstu");
             showObject "main" obj;
 
 --            push (ReplaceEdit "PQRSTU");
@@ -87,7 +84,7 @@ module Main where
 
             withShowSubscription (lensSubscribe listSection (2,2) obj) "sect" (\sectobj pushSect -> do
             {
-                pushSect (ReplaceEdit "12");
+                pushSect (replaceEdit "12");
                 showObject "sect" sectobj;
                 showObject "main" obj;
         
@@ -98,27 +95,27 @@ module Main where
                     --showObject "sect" sectobj;
                     --showObject "main" obj;
 
-                    pushSect (ReplaceEdit "x");
+                    pushSect (replaceEdit "x");
                     showObject "elem" elemobj;
                     showObject "sect" sectobj;
                     showObject "main" obj;
         
-                    pushSect (ReplaceEdit "ABC");
+                    pushSect (replaceEdit "ABC");
                     showObject "elem" elemobj;
                     showObject "sect" sectobj;
                     showObject "main" obj;
         
-                    pushSect (ReplaceEdit "");
+                    pushSect (replaceEdit "");
                     showObject "elem" elemobj;
                     showObject "sect" sectobj;
                     showObject "main" obj;
         
-                    pushSect (ReplaceEdit "ZUM");
+                    pushSect (replaceEdit "ZUM");
                     showObject "elem" elemobj;
                     showObject "sect" sectobj;
                     showObject "main" obj;
         
-                    pushElem (ReplaceEdit (Just 'Q'));
+                    pushElem (replaceEdit (Just 'Q'));
                     showObject "elem" elemobj;
                     showObject "sect" sectobj;
                     showObject "main" obj;

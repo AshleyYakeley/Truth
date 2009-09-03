@@ -7,7 +7,7 @@ main: push: done
 main: "pqrstu"
 sect: initial: "rs"
 sect: push: replace "12"
-main: update: part section (2,2) "12"
+main: update: section (2,2) "12"
 main: update: new value: "pq12tu"
 sect: push: accepted
 sect: push: new value: "12"
@@ -16,7 +16,7 @@ sect: "12"
 main: "pq12tu"
 elem: initial: Just 't'
 sect: push: replace "x"
-main: update: part section (2,2) "x"
+main: update: section (2,2) "x"
 main: update: new value: "pqxtu"
 sect: push: accepted
 sect: push: new value: "x"
@@ -25,7 +25,7 @@ elem: Just 't'
 sect: "x"
 main: "pqxtu"
 sect: push: replace "ABC"
-main: update: part section (2,1) "ABC"
+main: update: section (2,1) "ABC"
 main: update: new value: "pqABCtu"
 sect: push: accepted
 sect: push: new value: "ABC"
@@ -34,7 +34,7 @@ elem: Just 't'
 sect: "ABC"
 main: "pqABCtu"
 sect: push: replace ""
-main: update: part section (2,3) ""
+main: update: section (2,3) ""
 main: update: new value: "pqtu"
 sect: push: accepted
 sect: push: new value: ""
@@ -43,7 +43,7 @@ elem: Just 't'
 sect: ""
 main: "pqtu"
 sect: push: replace "ZUM"
-main: update: part section (2,0) "ZUM"
+main: update: section (2,0) "ZUM"
 main: update: new value: "pqZUMtu"
 sect: push: accepted
 sect: push: new value: "ZUM"
@@ -52,7 +52,7 @@ elem: Just 't'
 sect: "ZUM"
 main: "pqZUMtu"
 elem: push: replace Just 'Q'
-main: update: part item 5 replace 'Q'
+main: update: item 5 replace 'Q'
 main: update: new value: "pqZUMQu"
 elem: push: accepted
 elem: push: new value: Just 'Q'
