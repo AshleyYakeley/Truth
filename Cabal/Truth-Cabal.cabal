@@ -6,26 +6,26 @@ build-type:    Simple
 library
 {
 build-depends:
- base>=4.0,
- Cabal>=1.6,
- Changes==0.1
+    base>=4.0,
+    Cabal>=1.6,
+    Truth-Core==0.1
 extensions:
- TypeFamilies
- EmptyDataDecls
- UndecidableInstances
- FlexibleInstances
- FunctionalDependencies
- ForeignFunctionInterface
- GADTs
- RankNTypes
- ScopedTypeVariables
- PatternGuards
- ImpredicativeTypes
- ImplicitParams
- GeneralizedNewtypeDeriving
- ExistentialQuantification
+    TypeFamilies
+    EmptyDataDecls
+    UndecidableInstances
+    FlexibleInstances
+    FunctionalDependencies
+    ForeignFunctionInterface
+    GADTs
+    RankNTypes
+    ScopedTypeVariables
+    PatternGuards
+    ImpredicativeTypes
+    ImplicitParams
+    GeneralizedNewtypeDeriving
+    ExistentialQuantification
 exposed-modules:
- Data.Changes.Cabal
+    Data.Changes.Cabal
 other-modules:
 }
 
