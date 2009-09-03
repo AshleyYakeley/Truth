@@ -8,19 +8,8 @@ module Data.Changes.EditScheme where
     {
         applyEdit :: edit -> ConstFunction a a;
         invertEdit :: edit -> a -> Maybe edit;    -- "Nothing" means no change
-        {-
-        applyPartEdit :: partedit -> ConstFunction a a;
-        invertPartEdit :: partedit -> a -> Maybe (Edit' partedit a);    -- "Nothing" means no change
-        -}
     };
 
-{-
-    applyEdit (ReplaceEdit newa) = pure newa;
-    applyEdit (PartEdit pea) = applyPartEdit pea;
-
-    invertEdit (ReplaceEdit _) olda = Just (ReplaceEdit olda);
-    invertEdit (PartEdit pea) olda = invertPartEdit pea olda;
--}
     applyAndInvertEdit :: (EditScheme a edit) => edit -> (ConstFunction a a,a -> Maybe edit);
     applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
     
