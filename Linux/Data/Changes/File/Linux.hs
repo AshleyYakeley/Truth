@@ -84,7 +84,7 @@ module Data.Changes.File.Linux
     {
         fsNotify :: INotifyB,
         fsHandleVar :: MVar (FilePath,Maybe Handle),
-        fsPushout :: ContextContentEdit (WholeEdit FilePath) (JustEdit (Maybe ByteString) (WholeEdit ByteString)) -> IO (),
+        fsPushout :: ContextContentEdit (WholeEdit FilePath) (JustEdit Maybe (WholeEdit ByteString)) -> IO (),
         fsWatchVar :: MVar (Maybe WatchDescriptorB)
     };
     
@@ -123,7 +123,7 @@ module Data.Changes.File.Linux
         };
     };
 
-    newFileState :: INotifyB -> FilePath -> (ContextContentEdit (WholeEdit FilePath) (JustEdit (Maybe ByteString) (WholeEdit ByteString)) -> IO ()) -> IO FileState;
+    newFileState :: INotifyB -> FilePath -> (ContextContentEdit (WholeEdit FilePath) (JustEdit Maybe (WholeEdit ByteString)) -> IO ()) -> IO FileState;
     newFileState notify path pushout = do
     {
         var <- newMVar (path,Nothing);
@@ -289,8 +289,7 @@ module Data.Changes.File.Linux
 
     linuxFileObject :: INotifyB -> FilePath ->
      Subscribe 
-      (WithContext FilePath (Maybe ByteString)) 
-      (ContextContentEdit (WholeEdit FilePath) (JustEdit (Maybe ByteString) (WholeEdit ByteString)));
+      (ContextContentEdit (WholeEdit FilePath) (JustEdit Maybe (WholeEdit ByteString)));
     linuxFileObject inotify initialpath = objSubscribe (\pushout -> do
     {
         fs <- newFileState inotify initialpath pushout;

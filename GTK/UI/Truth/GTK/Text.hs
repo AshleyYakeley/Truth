@@ -23,7 +23,7 @@ module UI.Truth.GTK.Text (textView) where
         };
     };
 
-    textView :: GView String (ListEdit String (WholeEdit Char));
+    textView :: GView (ListEdit (WholeEdit Char));
     textView initial push = do
     {
         buffer <- textBufferNew Nothing;

@@ -7,7 +7,7 @@ module UI.Truth.GTK.CheckButton where
     import Data.Changes;
     import Data.ConstFunction;
     
-    checkButtonView :: String -> GView Bool (WholeEdit Bool);
+    checkButtonView :: String -> GView (WholeEdit Bool);
     checkButtonView name initial push = do
     {
         widget <- checkButtonNew;

@@ -41,6 +41,7 @@ exposed-modules:
     Data.Codec
     Data.Changes
     Data.Changes.HasNewValue
+    Data.Changes.EditRep
     Data.Changes.HasTypeRep
     Data.Changes.EditScheme
     Data.Changes.WholeEdit

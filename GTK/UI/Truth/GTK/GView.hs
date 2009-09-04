@@ -10,21 +10,21 @@ module UI.Truth.GTK.GView where
         MkThing :: forall a. OpenRep a -> Subscribe a -> Thing;
     };
 -}
-    data Selection a edita where
+    data Selection edit where
     {
         MkSelection :: 
-         forall b editb state. (Eq state,HasTypeRep b,HasTypeRep editb,HasNewValue b,CompleteEditScheme b editb) =>
-          FloatingLens state a edita b editb -> state -> Selection a edita;
+         forall editb state. (Eq state,HasTypeRepT editb,HasNewValue (Subject editb),Edit editb) =>
+          FloatingLens state edita editb -> state -> Selection edita;
     };
 
-    data WidgetStuff a edita = MkWidgetStuff
+    data WidgetStuff edit = MkWidgetStuff
     {
         wsWidget :: Widget,
-        wsGetSelection :: IO (Maybe (Selection a edita))
+        wsGetSelection :: IO (Maybe (Selection edit))
     };
 
-    type GView a edita = View (WidgetStuff a edita) a edita;
-    type GViewResult a edita = ViewResult (WidgetStuff a edita) edita;
+    type GView edit = View (WidgetStuff edit) edit;
+    type GViewResult edit = ViewResult (WidgetStuff edit) edit;
 
 {-
     class (Data.Changes.Editable a) => HasGView a where

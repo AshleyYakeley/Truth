@@ -15,38 +15,38 @@ module Data.Changes.FixedLens where
 
     -- | A FixedLens is a lens without state
     ;
-    data FixedLens' m a edita b editb = MkFixedLens
+    data FixedLens' m edita editb = MkFixedLens
     {
-        fixedLensUpdate :: edita -> ConstFunction a (Maybe editb),
-        fixedLensGet :: a -> b,
-        fixedLensPutEdit :: editb -> ConstFunction a (m edita)
+        fixedLensUpdate :: edita -> ConstFunction (Subject edita) (Maybe editb),
+        fixedLensGet :: Subject edita -> Subject editb,
+        fixedLensPutEdit :: editb -> ConstFunction (Subject edita) (m edita)
     };
     
     type FixedLens = FixedLens' Maybe;
     
-    makeFixedLensUpdate :: (EditScheme a edita,CompleteEditScheme b editb) =>
-     (a -> b) -> (edita -> Maybe (ConstFunction a (Maybe editb))) -> (edita -> ConstFunction a (Maybe editb));
+    makeFixedLensUpdate :: (Edit edita,Edit editb) =>
+     (Subject edita -> Subject editb) -> (edita -> Maybe (ConstFunction (Subject edita) (Maybe editb))) -> (edita -> ConstFunction (Subject edita) (Maybe editb));
     makeFixedLensUpdate getter ff edit = case ff edit of
     {
         Just ameb -> ameb;
         _ -> fmap (Just . replaceEdit . getter) (applyEdit edit);
     };
-    
+{-    
     class DoubleCategory t where
     {
         doubleId :: t a1 a2 a1 a2;
         doubleCompose :: t b1 b2 c1 c2 -> t a1 a2 b1 b2 -> t a1 a2 c1 c2;
     };
-    
-    instance (Applicative m,FunctorOne m) => DoubleCategory (FixedLens' m) where
+-}   
+    instance (Applicative m,FunctorOne m) => Category (FixedLens' m) where
     {
-        doubleId = MkFixedLens
+        id = MkFixedLens
         {
             fixedLensUpdate = \edit -> pure (Just edit),
             fixedLensGet = id,
             fixedLensPutEdit = \editb -> pure (pure editb)
         };
-        doubleCompose bc ab = MkFixedLens
+        bc . ab = MkFixedLens
         {
             fixedLensUpdate = \edita -> do
             {
@@ -70,7 +70,7 @@ module Data.Changes.FixedLens where
         };
     };
     
-    fixedFloatingLens :: FixedLens' m a edita b editb -> FloatingLens' m () a edita b editb;
+    fixedFloatingLens :: FixedLens' m edita editb -> FloatingLens' m () edita editb;
     fixedFloatingLens lens = MkFloatingLens
     {
         lensUpdate = \edit _ -> do
@@ -82,24 +82,24 @@ module Data.Changes.FixedLens where
         lensPutEdit = \_ -> fixedLensPutEdit lens
     };
     
-    data CleanLens' m a edita b editb = MkCleanLens
+    data CleanLens' m edita editb = MkCleanLens
     {
         cleanLensUpdate :: edita -> Maybe editb,
-        cleanLensGet :: a -> b,
+        cleanLensGet :: (Subject edita) -> (Subject editb),
         cleanLensPutEdit :: editb -> m edita
     };
     
     --type CleanLens = CleanLens' Maybe;
     
-    instance (Monad m) => DoubleCategory (CleanLens' m) where
+    instance (Monad m) => Category (CleanLens' m) where
     {
-        doubleId = MkCleanLens
+        id = MkCleanLens
         {
             cleanLensUpdate = Just,
             cleanLensGet = id,
             cleanLensPutEdit = return
         };
-        doubleCompose bc ab = MkCleanLens
+        bc . ab = MkCleanLens
         {
             cleanLensUpdate = \edita -> do
             {
@@ -116,7 +116,7 @@ module Data.Changes.FixedLens where
         };
     };
     
-    cleanFixedLens :: CleanLens' m a edita b editb -> FixedLens' m a edita b editb;
+    cleanFixedLens :: CleanLens' m edita editb -> FixedLens' m edita editb;
     cleanFixedLens lens = MkFixedLens
     {
         fixedLensUpdate = \edit -> pure (cleanLensUpdate lens edit),
@@ -156,7 +156,7 @@ module Data.Changes.FixedLens where
         };
     };
     
-    simpleFixedLens :: (Functor m,CompleteEditScheme a edita,CompleteEditScheme b editb) => SimpleLens' m a b -> FixedLens' m a edita b editb;
+    simpleFixedLens :: (Functor m,Edit edita,Edit editb) => SimpleLens' m (Subject edita) (Subject editb) -> FixedLens' m edita editb;
     simpleFixedLens lens = MkFixedLens
     {
         fixedLensUpdate = makeFixedLensUpdate (simpleLensGet lens) (\_ -> Nothing),

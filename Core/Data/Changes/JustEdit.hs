@@ -2,18 +2,25 @@ module Data.Changes.JustEdit where
 {
     import Data.Changes.EditScheme;
     import Data.Changes.HasTypeRep;
+    import Data.Changes.EditRep;
     import Data.FunctorOne;
     import Data.Result;
     import Data.Chain;
-    import Data.OpenWitness.OpenRep;
     import Data.OpenWitness;
     import Control.Applicative;
     import Prelude hiding (id,(.));
 
-    data JustEdit a edit = ReplaceJustEdit a | JustEdit edit;
-
-    instance (EditScheme a edit,FunctorOne f) => EditScheme (f a) (JustEdit (f a) edit) where
+    data JustEdit f edit = ReplaceJustEdit (f (Subject edit)) | JustEdit edit;
+    
+    instance HasTypeRepKKTTKTT JustEdit where
     {
+        typeRepKKTTKTT = EditRepKKTTKTT (unsafeIOWitnessFromString "Data.Changes.JustEdit.JustEdit");
+    };
+
+    instance (Edit edit,FunctorOne f) => Edit (JustEdit f edit) where
+    {
+        type Subject (JustEdit f edit) = f (Subject edit);
+    
         applyEdit (ReplaceJustEdit a) = pure a;
         applyEdit (JustEdit edita) = cfmap (applyEdit edita);
 
@@ -23,23 +30,15 @@ module Data.Changes.JustEdit where
             SuccessResult olda -> fmap JustEdit (invertEdit edita olda);
             _ -> Nothing;
         };
-    };
-    
-    instance (EditScheme a edit,FunctorOne f) => CompleteEditScheme (f a) (JustEdit (f a) edit) where
-    {
+
         replaceEdit = ReplaceJustEdit;
     };
 
-    extractJustEdit :: forall f a edit. (FunctorOne f,CompleteEditScheme a edit) => JustEdit (f a) edit -> Maybe edit;
+    extractJustEdit :: forall f edit. (FunctorOne f,Edit edit) => JustEdit f edit -> Maybe edit;
     extractJustEdit (JustEdit edit) = Just edit;
     extractJustEdit (ReplaceJustEdit fa) = case retrieveOne fa of
     {
         SuccessResult a -> Just (replaceEdit a);
         _ -> Nothing;
-    };
-    
-    instance HasTypeRep2 JustEdit where
-    {
-        typeRep2 = SimpleOpenRep2 (unsafeIOWitnessFromString "Data.Changes.JustEdit.JustEdit");
     };
 }

@@ -7,16 +7,16 @@ module Data.Changes.FloatingLens where
     import Data.Chain;
     import Control.Applicative;
 
-    data FloatingLens' m state a edita b editb = MkFloatingLens
+    data FloatingLens' m state edita editb = MkFloatingLens
     {
-        lensUpdate :: edita -> state -> ConstFunction a (state,Maybe editb),
-        lensGet :: state -> a -> b,
-        lensPutEdit :: state -> editb -> ConstFunction a (m edita)    -- m failure means impossible
+        lensUpdate :: edita -> state -> ConstFunction (Subject edita) (state,Maybe editb),
+        lensGet :: state -> Subject edita -> Subject editb,
+        lensPutEdit :: state -> editb -> ConstFunction (Subject edita) (m edita)    -- m failure means impossible
     };
     
     type FloatingLens = FloatingLens' Maybe;
     
-    toFloatingLens :: (FunctorOne m) => FloatingLens' m state a edita b editb -> FloatingLens state a edita b editb;
+    toFloatingLens :: (FunctorOne m) => FloatingLens' m state edita editb -> FloatingLens state edita editb;
     toFloatingLens lens = MkFloatingLens
     {
         lensUpdate = lensUpdate lens,
@@ -25,8 +25,8 @@ module Data.Changes.FloatingLens where
     };
 
     -- suitable for Results, trying to put a failure code will be rejected 
-    resultLens :: forall f state a edita b editb. (FunctorOne f,CompleteEditScheme a edita,CompleteEditScheme b editb) =>
-     FloatingLens state a edita b editb -> FloatingLens state (f a) (JustEdit (f a) edita) (f b) (JustEdit (f b) editb);
+    resultLens :: forall f state edita editb. (FunctorOne f,Edit edita,Edit editb) =>
+     FloatingLens state edita editb -> FloatingLens state (JustEdit f edita) (JustEdit f editb);
     resultLens lens  = MkFloatingLens
     {
         lensUpdate = \editfa state -> case extractJustEdit editfa of

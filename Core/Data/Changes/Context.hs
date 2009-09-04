@@ -10,6 +10,7 @@ module Data.Changes.Context where
     import Data.Traversable;
     import Data.Foldable;
     import Control.Arrow;
+    import Control.Applicative;
     import Control.Monad.Identity;
 
     data WithContext context content = MkWithContext context content;
@@ -52,18 +53,24 @@ module Data.Changes.Context where
     contextCleanLens = tupleElementCleanLens (TailDoubleListElementType HeadDoubleListElementType);
 -}
 
-    data ContextContentEdit editx editn = ContextEdit editx | ContentEdit editn;
+    data ContextContentEdit editx editn = ReplaceContextContentEdit (WithContext (Subject editx) (Subject editn)) | ContextEdit editx | ContentEdit editn;
 
-    instance (EditScheme context editx,EditScheme content editn) =>
-     EditScheme (WithContext context content) (ContextContentEdit editx editn) where
+    instance (Edit editx, context ~ Subject editx,Edit editn, content ~ Subject editn) =>
+     Edit (ContextContentEdit editx editn) where
     {
+        type Subject (ContextContentEdit editx editn) = WithContext (Subject editx) (Subject editn);
+    
         applyEdit (ContextEdit edit) = arr (\(MkWithContext x n) -> MkWithContext (applyConstFunction (applyEdit edit) x) n);
         applyEdit (ContentEdit edit) = arr (\(MkWithContext x n) -> MkWithContext x (applyConstFunction (applyEdit edit) n));
+        applyEdit (ReplaceContextContentEdit a) = pure a;
         invertEdit (ContextEdit edit) (MkWithContext a _) = fmap ContextEdit (invertEdit edit a);
         invertEdit (ContentEdit edit) (MkWithContext _ a) = fmap ContentEdit (invertEdit edit a);
+        invertEdit (ReplaceContextContentEdit _) a = Just (ReplaceContextContentEdit a);
+        
+        replaceEdit = ReplaceContextContentEdit;
     };
 
-    contextCleanLens :: CleanLens' Identity (WithContext context content) (ContextContentEdit editx editn) context editx;
+    contextCleanLens :: CleanLens' Identity (ContextContentEdit editx editn) editx;
     contextCleanLens = MkCleanLens
     {
         cleanLensUpdate = \ccedit -> case ccedit of
@@ -75,7 +82,7 @@ module Data.Changes.Context where
         cleanLensPutEdit = Identity . ContextEdit
     };
 
-    contentCleanLens :: CleanLens' Identity (WithContext context content) (ContextContentEdit editx editn) content editn;
+    contentCleanLens :: CleanLens' Identity (ContextContentEdit editx editn) editn;
     contentCleanLens = MkCleanLens
     {
         cleanLensUpdate = \ccedit -> case ccedit of

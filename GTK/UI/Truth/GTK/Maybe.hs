@@ -45,19 +45,19 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
     doIf (Just a) f = fmap Just (f a);
     doIf Nothing _ = return Nothing;
 
-    createButton :: (CompleteEditScheme a edit) => a -> Push edit -> IO Button;
+    createButton :: (Edit edit) => Subject edit -> Push edit -> IO Button;
     createButton val push = pushButton push (replaceEdit val) "Create";
 
-    functorOneIVF :: forall f a edit wd. 
+    functorOneIVF :: forall f edit wd. 
     (
-        HasTypeRep1 f,
+        HasTypeRepKTT f,
         HasNewValue1 f,
         Applicative f,
         FunctorOne f,
-        CompleteEditScheme a edit,
+        Edit edit,
         WidgetClass wd
     ) =>
-      Maybe (forall b. f b) -> (Push (JustEdit (f a) edit) -> IO wd) -> GView a edit -> GView (f a) (JustEdit (f a) edit);
+      Maybe (forall b. f b) -> (Push (JustEdit f edit) -> IO wd) -> GView edit -> GView (JustEdit f edit);
     functorOneIVF mDeleteValue makeEmptywidget factory initial push = let
     {
         mpush :: Push edit;
@@ -67,7 +67,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
         box <- vBoxNew True 0;
         emptyWidget <- makeEmptywidget push;
         mDeleteButton <- doIf mDeleteValue (\deleteValue -> pushButton push (replaceEdit (deleteValue :: f a)) "Delete");
-        initialmiv :: Maybe (GViewResult a edit) <- case retrieveOne initial of
+        initialmiv :: Maybe (GViewResult edit) <- case retrieveOne initial of
         {
             SuccessResult a -> do
             {
@@ -82,12 +82,12 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
                 return Nothing;
             };
         };
-        stateRef :: IORef (Maybe (GViewResult a edit)) <- newIORef initialmiv;
+        stateRef :: IORef (Maybe (GViewResult edit)) <- newIORef initialmiv;
         return (MkViewResult
         {
             vrWidget = MkWidgetStuff (toWidget box) (do
             {
-                miv :: Maybe (GViewResult a edit) <- readIORef stateRef;
+                miv :: Maybe (GViewResult edit) <- readIORef stateRef;
                 case miv of
                 {
                     Just (MkViewResult ws _) -> do
@@ -95,8 +95,8 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
                         msel <- wsGetSelection ws;
                         return (do
                         {
-                            MkSelection (lens :: FloatingLens state a edit b editb) state <- msel;
-                            return ((newValue1 (Type :: Type (f b)) MkSelection) (resultLens lens) state);
+                            MkSelection (lens :: FloatingLens state edit editb) state <- msel;
+                            return ((newValue1 (Type :: Type (f (Subject editb))) MkSelection) (resultLens lens) state);
                         });
                     };
                     Nothing -> return Nothing;
@@ -104,7 +104,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
             }),
             vrUpdate = \edit -> do
             {
-                miv :: Maybe (GViewResult a edit) <- readIORef stateRef;
+                miv :: Maybe (GViewResult edit) <- readIORef stateRef;
                 case miv of
                 {
                     Just (MkViewResult ws update) -> case extractJustEdit edit of
@@ -135,8 +135,8 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
         });
     };
 
-    maybeView :: (CompleteEditScheme a edit) =>
-      a -> GView a edit -> GView (Maybe a) (JustEdit (Maybe a) edit);
+    maybeView :: (Edit edit) =>
+      Subject edit -> GView edit -> GView (JustEdit Maybe edit);
     maybeView initialVal = functorOneIVF (Just Nothing) (createButton (Just initialVal));
     
     placeholderLabel :: IO Label;
@@ -146,6 +146,6 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
         return label;
     };
     
-    resultView :: (CompleteEditScheme a edit,HasTypeRep err) => GView a edit -> GView (Result err a) (JustEdit (Result err a) edit);
+    resultView :: (Edit edit,HasTypeRepT err) => GView edit -> GView (JustEdit (Result err) edit);
     resultView = functorOneIVF Nothing (\_ -> placeholderLabel);
 }

@@ -1,5 +1,6 @@
 module Data.Changes
 (
+    module Data.Changes.EditRep,
     module Data.Changes.HasTypeRep,
     module Data.Changes.HasNewValue,
     module Data.Changes.EditScheme,
@@ -17,6 +18,7 @@ module Data.Changes
 --    module Data.Changes.Editable1,
 ) where
 {
+    import Data.Changes.EditRep;
     import Data.Changes.HasTypeRep;
     import Data.Changes.HasNewValue;
     import Data.Changes.EditScheme;

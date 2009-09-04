@@ -25,7 +25,7 @@ module Main where
         {
             file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)
             content = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () file; -- (Maybe ByteString)
-            mrtext :: Subscribe (Maybe (Result ListError String)) (WholeEdit (Maybe (Result ListError String))) =
+            mrtext :: Subscribe (WholeEdit (Maybe (Result ListError String))) =
              lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () content;
         } in do
         {

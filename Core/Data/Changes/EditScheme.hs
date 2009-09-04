@@ -4,20 +4,22 @@ module Data.Changes.EditScheme where
     import Control.Category;
     import Prelude hiding (id,(.));
 
-    class EditScheme a edit where
+    class Edit edit where
     {
-        applyEdit :: edit -> ConstFunction a a;
-        invertEdit :: edit -> a -> Maybe edit;    -- "Nothing" means no change
+        type Subject edit;
+        applyEdit :: edit -> ConstFunction (Subject edit) (Subject edit);
+        invertEdit :: edit -> Subject edit -> Maybe edit;    -- "Nothing" means no change
+        replaceEdit :: Subject edit -> edit;
     };
 
-    applyAndInvertEdit :: (EditScheme a edit) => edit -> (ConstFunction a a,a -> Maybe edit);
+    applyAndInvertEdit :: (Edit edit) => edit -> (ConstFunction (Subject edit) (Subject edit),(Subject edit) -> Maybe edit);
     applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
     
-    applyEdits :: (EditScheme a edit) => [edit] -> ConstFunction a a;
+    applyEdits :: (Edit edit) => [edit] -> ConstFunction (Subject edit) (Subject edit);
     applyEdits [] = id;
     applyEdits (e:es) = (applyEdits es) . (applyEdit e);
 
-    commutableEdits :: (EditScheme a edit,Eq a) => edit -> edit -> a -> Maybe a;
+    commutableEdits :: (Edit edit, Eq (Subject edit)) => edit -> edit -> Subject edit -> Maybe (Subject edit);
     commutableEdits e1 e2 a = let
     {
         cf1 = applyEdit e1;
@@ -27,9 +29,4 @@ module Data.Changes.EditScheme where
         a12 = applyConstFunction cf12 a;
         a21 = applyConstFunction cf21 a;
     } in if a12 == a21 then Just a12 else Nothing;
-    
-    class (EditScheme a edit) => CompleteEditScheme a edit where
-    {
-        replaceEdit :: a -> edit;
-    };
 }

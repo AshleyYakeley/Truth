@@ -2,11 +2,10 @@
 module Data.Changes.Text where
 {
     import Data.Changes.FixedLens;
---    import Data.Changes.Edit;
     import Data.Changes.HasTypeRep;
+    import Data.Changes.EditRep;
     import Data.Result;
     import Data.Bijection;
-    import Data.OpenWitness.OpenRep;
     import Data.OpenWitness;
     import Data.ByteString;
     import Data.Word;
@@ -19,9 +18,9 @@ module Data.Changes.Text where
     
     data ListError = MkListError Int;
 
-    instance HasTypeRep ListError where
+    instance HasTypeRepT ListError where
     {
-        typeRep = SimpleOpenRep (unsafeIOWitnessFromString "Data.Changes.Text.ListError");
+        typeRepT = EditRepT (unsafeIOWitnessFromString "Data.Changes.Text.ListError");
     };
     
     utf8Lens :: WholeLens [Word8] (Result ListError String);

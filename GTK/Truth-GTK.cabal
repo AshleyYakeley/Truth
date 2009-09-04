@@ -19,6 +19,7 @@ extensions:
     TypeSynonymInstances
     UndecidableInstances
     FlexibleInstances
+    FlexibleContexts
     FunctionalDependencies
     ForeignFunctionInterface
     GADTs
@@ -57,6 +58,7 @@ extensions:
     TypeSynonymInstances
     UndecidableInstances
     FlexibleInstances
+    FlexibleContexts
     FunctionalDependencies
     ForeignFunctionInterface
     GADTs

@@ -1,81 +1,91 @@
 module Data.Changes.HasTypeRep where
 {
-    import Data.OpenWitness.OpenRep;
+    import Data.Changes.EditRep;
     import Data.OpenWitness;
     import Data.Witness;
     import Data.Word;
     import Data.Result;
 
-    class HasTypeRep a where
+    class HasTypeRepT a where
     {
-        typeRep :: OpenRep a;
+        typeRepT :: EditRepT a;
     };
 
-    instance HasTypeRep () where
+    instance HasTypeRepT () where
     {
-        typeRep = SimpleOpenRep (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.()");
+        typeRepT = EditRepT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.()");
     };
 
-    instance HasTypeRep Bool where
+    instance HasTypeRepT Bool where
     {
-        typeRep = SimpleOpenRep (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Bool");
+        typeRepT = EditRepT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Bool");
     };
 
-    instance HasTypeRep Word8 where
+    instance HasTypeRepT Word8 where
     {
-        typeRep = SimpleOpenRep (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Word8");
+        typeRepT = EditRepT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Word8");
     };
 
-    instance HasTypeRep Char where
+    instance HasTypeRepT Char where
     {
-        typeRep = SimpleOpenRep (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Char");
+        typeRepT = EditRepT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Char");
     };
 
-    class HasTypeRep1 a where
+    class HasTypeRepKTT a where
     {
-        typeRep1 :: OpenRep1 a;
+        typeRepKTT :: EditRepKTT a;
     };
 
-    instance (HasTypeRep1 f,HasTypeRep a) => HasTypeRep (f a) where
+    instance (HasTypeRepKTT f,HasTypeRepT a) => HasTypeRepT (f a) where
     {
-        typeRep = ApplyOpenRep typeRep1 typeRep;
+        typeRepT = TEditRepT typeRepKTT typeRepT;
     };
 
-    instance HasTypeRep1 Maybe where
+    instance HasTypeRepKTT Maybe where
     {
-        typeRep1 = SimpleOpenRep1 (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Maybe");
+        typeRepKTT = EditRepKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Maybe");
     };
 
-    instance HasTypeRep1 [] where
+    instance HasTypeRepKTT [] where
     {
-        typeRep1 = SimpleOpenRep1 (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.[]");
+        typeRepKTT = EditRepKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.[]");
     };
 
-    class HasTypeRep2 a where
+    class HasTypeRepKTKTT a where
     {
-        typeRep2 :: OpenRep2 a;
+        typeRepKTKTT :: EditRepKTKTT a;
     };
 
-    instance (HasTypeRep2 f,HasTypeRep a) => HasTypeRep1 (f a) where
+    instance (HasTypeRepKTKTT f,HasTypeRepT a) => HasTypeRepKTT (f a) where
     {
-        typeRep1 = ApplyOpenRep1 typeRep2 typeRep;
+        typeRepKTT = TEditRepKTT typeRepKTKTT typeRepT;
     };
 
-    instance HasTypeRep2 (->) where
+    instance HasTypeRepKTKTT (->) where
     {
-        typeRep2 = SimpleOpenRep2 (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.->");
+        typeRepKTKTT = EditRepKTKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.->");
     };
 
-    instance HasTypeRep2 Result where
+    instance HasTypeRepKTKTT Result where
     {
-        typeRep2 = SimpleOpenRep2 (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Result");
+        typeRepKTKTT = EditRepKTKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Result");
     };
 
-    type RepDict = WitnessFDict OpenRep;
+    class HasTypeRepKKTTKTT a where
+    {
+        typeRepKKTTKTT :: EditRepKKTTKTT a;
+    };
+
+    instance (HasTypeRepKKTTKTT f,HasTypeRepKTT a) => HasTypeRepKTT (f a) where
+    {
+        typeRepKTT = KTTEditRepKTT typeRepKKTTKTT typeRepKTT;
+    };
+
+    type RepDict = WitnessFDict EditRepT;
     
-    repDictLookup :: (HasTypeRep a) => RepDict f -> Maybe (f a);
-    repDictLookup = witnessFDictLookup typeRep;
+    repDictLookup :: (HasTypeRepT a) => RepDict f -> Maybe (f a);
+    repDictLookup = witnessFDictLookup typeRepT;
     
-    repDictAdd :: (HasTypeRep a) => f a -> RepDict f -> RepDict f;
-    repDictAdd = witnessFDictAdd typeRep;
+    repDictAdd :: (HasTypeRepT a) => f a -> RepDict f -> RepDict f;
+    repDictAdd = witnessFDictAdd typeRepT;
 }

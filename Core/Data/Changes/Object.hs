@@ -15,9 +15,9 @@ module Data.Changes.Object where
     ;
     type Push edit = edit -> IO (Maybe ());
 
-    data Subscription a edit = MkSubscription
+    data Subscription edit = MkSubscription
     {
-        subCopy :: Subscribe a edit,
+        subCopy :: Subscribe edit,
         
         -- | close the subscription
         subClose :: IO ()
@@ -25,16 +25,16 @@ module Data.Changes.Object where
     
     -- | blocks if the object is busy
     ;
-    type Subscribe a edit = forall r. (a -> Push edit -> IO r) -> (r -> edit -> IO ()) -> IO (r, Subscription a edit);
+    type Subscribe edit = forall r. (Subject edit -> Push edit -> IO r) -> (r -> edit -> IO ()) -> IO (r, Subscription edit);
 
-    data Object a edit = MkObject
+    data Object edit = MkObject
     {
-        objGetInitial :: forall r. (a -> IO r) -> IO r,
+        objGetInitial :: forall r. (Subject edit -> IO r) -> IO r,
         objPush :: Push edit,
         objClose :: IO ()
     };
 
-    objSubscribe :: forall a edit. ((edit -> IO ()) -> IO (Object a edit)) -> Subscribe a edit;
+    objSubscribe :: forall edit. ((edit -> IO ()) -> IO (Object edit)) -> Subscribe edit;
     objSubscribe getObject initialise' updater' = do
     {
         storevar <- newMVar emptyStore;
@@ -65,14 +65,14 @@ module Data.Changes.Object where
                 return newstore;
             });
 
-            keySubscription :: Int -> Subscription a edit;
+            keySubscription :: Int -> Subscription edit;
             keySubscription key = MkSubscription
             {
                 subCopy = objSub,
                 subClose = keyClose key
             };
 
-            objSub :: Subscribe a edit;
+            objSub :: Subscribe edit;
             objSub initialise updater = mfix (\result -> do
             {
                 key <- modifyMVar storevar (\store -> do
@@ -87,7 +87,7 @@ module Data.Changes.Object where
         objSub initialise' updater';
     };
     
-    freeObjSubscribe :: forall a edit. (EditScheme a edit) => a -> Subscribe a edit;
+    freeObjSubscribe :: forall edit. (Edit edit) => Subject edit -> Subscribe edit;
     freeObjSubscribe initial = objSubscribe (\_ -> do
     {
         statevar <- newMVar initial;
@@ -99,7 +99,7 @@ module Data.Changes.Object where
         });
     });
 
-    lensSubscribe :: forall state a edita b editb. (EditScheme a edita,Eq state) => FloatingLens state a edita b editb -> state -> Subscribe a edita -> Subscribe b editb;
+    lensSubscribe :: forall state edita editb. (Edit edita,Eq state) => FloatingLens state edita editb -> state -> Subscribe edita -> Subscribe editb;
     lensSubscribe lens firststate subscribe = objSubscribe (\pushOut -> do
     {
         ((statevar,firsta,push),sub) <- subscribe 
