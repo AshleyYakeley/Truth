@@ -14,14 +14,14 @@ module Main where
     import Control.Category;
     import Prelude hiding (readFile,writeFile,id,(.));
     
-    instance (Show a,Show edit) => Show (ListEdit a edit) where
+    instance (Show (Subject edit),Show edit) => Show (ListEdit edit) where
     {
         show (ItemEdit i edit) = "item " ++ (show i) ++ " " ++ show edit;
         show (ReplaceSectionEdit i sect) = "section " ++ (show i) ++ " " ++ show sect;
         show (ReplaceListEdit la) = "replace " ++ (show la);
     };
     
-    instance (Show a,Show edit) => Show (JustEdit a edit) where
+    instance (Show (f (Subject edit)),Show edit) => Show (JustEdit f edit) where
     {
         show (JustEdit edit) = "Just " ++ (show edit);
         show (ReplaceJustEdit a) = "replace " ++ (show a);
@@ -32,7 +32,7 @@ module Main where
         show (MkWholeEdit s) = "replace " ++ (show s);
     };
    
-    showObject :: (Show a) => String -> Subscribe a edit -> IO ();
+    showObject :: (Show (Subject edit)) => String -> Subscribe edit -> IO ();
     showObject name obj = do
     {
         a <- subscribeRead obj;
@@ -50,7 +50,7 @@ module Main where
         show (SuccessResult a) = "success: " ++ (show a);
     };
     
-    makeShowSubscription :: (Show a,Show edit,EditScheme a edit) => String -> Subscribe a edit -> IO (Push edit,Subscription a edit);
+    makeShowSubscription :: (Show (Subject edit),Show edit,Edit edit) => String -> Subscribe edit -> IO (Push edit,Subscription edit);
     makeShowSubscription name subscribe = do
     {
         ((_,push),sub) <- subscribe
@@ -96,7 +96,7 @@ module Main where
             {
                 fileobj = linuxFileObject inotify path;
                 contentobj = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () fileobj;
-                textobj :: Subscribe (Maybe (Result ListError String)) (WholeEdit (Maybe (Result ListError String)))
+                textobj :: Subscribe (WholeEdit (Maybe (Result ListError String)))
                  = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () contentobj;
             };
         

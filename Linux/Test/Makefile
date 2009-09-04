@@ -1,7 +1,7 @@
 default: run
 
 Test: Test.hs
-	ghc $^ -o $@ -package Changes -package Changes-Linux
+	ghc $^ -o $@ -hide-all-packages -package base -package bytestring -package Truth-Core -package Truth-Linux
 
 %.out: %
 	./$< > $@ &

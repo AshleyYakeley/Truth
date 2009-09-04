@@ -8,14 +8,14 @@ module Main where
     import Data.Maybe;
     import Data.IORef;
 
-    instance (Show a,Show edit) => Show (ListEdit a edit) where
+    instance (Show (Subject edit),Show edit) => Show (ListEdit edit) where
     {
         show (ItemEdit i edit) = "item " ++ (show i) ++ " " ++ show edit;
         show (ReplaceSectionEdit i sect) = "section " ++ (show i) ++ " " ++ show sect;
         show (ReplaceListEdit la) = "replace " ++ (show la);
     };
     
-    instance (Show a,Show edit) => Show (JustEdit a edit) where
+    instance (Show (f (Subject edit)),Show edit) => Show (JustEdit f edit) where
     {
         show (JustEdit edit) = "Just " ++ (show edit);
         show (ReplaceJustEdit a) = "replace " ++ (show a);
@@ -26,15 +26,15 @@ module Main where
         show (MkWholeEdit s) = "replace " ++ (show s);
     };
    
-    showObject :: (Show a) => String -> Subscribe a edit -> IO ();
+    showObject :: (Show (Subject edit)) => String -> Subscribe edit -> IO ();
     showObject name obj = do
     {
         a <- subscribeRead obj;
         putStrLn (name ++ ": " ++ (show a));
     };
 
-    withShowSubscription :: (Show a, Show edit,EditScheme a edit) =>
-     Subscribe a edit -> String -> (Subscribe a edit -> (edit -> IO (Maybe ())) -> IO (Maybe b)) -> IO (Maybe b);
+    withShowSubscription :: (Show (Subject edit), Show edit,Edit edit) =>
+     Subscribe edit -> String -> (Subscribe edit -> (edit -> IO (Maybe ())) -> IO (Maybe b)) -> IO (Maybe b);
     withShowSubscription object name f = subscribeEdit object (MkEditor
     {
         editorInit = \a push -> do
@@ -74,7 +74,7 @@ module Main where
     main = do
     {
         putStrLn "Test";
-        withShowSubscription (freeObjSubscribe "abcdef" :: Subscribe String (ListEdit String (WholeEdit Char))) "main" (\obj push -> do
+        withShowSubscription (freeObjSubscribe "abcdef" :: Subscribe (ListEdit (WholeEdit Char))) "main" (\obj push -> do
         {
             push (replaceEdit "pqrstu");
             showObject "main" obj;
