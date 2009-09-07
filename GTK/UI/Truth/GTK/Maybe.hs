@@ -27,10 +27,10 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
         return button;
     };
 
-    containerAddShow :: (ContainerClass w1, WidgetClass w2) => w1 -> w2 -> IO ();
-    containerAddShow w1 w2 = do
+    boxAddShow :: (BoxClass w1, WidgetClass w2) => Packing -> w1 -> w2 -> IO ();
+    boxAddShow packing w1 w2 = do
     {
-        containerAdd w1 w2;
+        boxPackStart w1 w2 packing 0;
         widgetShow w2;
     };
 
@@ -72,13 +72,13 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
             SuccessResult a -> do
             {
                 iv@(MkViewResult ws _) <- factory a mpush;
-                doIf mDeleteButton (containerAddShow box);
-                containerAddShow box (vwsWidget ws);
+                doIf mDeleteButton (boxAddShow PackNatural box);
+                boxAddShow PackGrow box (vwsWidget ws);
                 return (Just iv);
             };
             _ -> do
             {
-                containerAddShow box emptyWidget;
+                boxAddShow PackGrow box emptyWidget;
                 return Nothing;
             };
         };
@@ -112,7 +112,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
                         Just edita -> update edita;
                         Nothing -> do
                         {
-                            containerAddShow box emptyWidget;
+                            boxAddShow PackGrow box emptyWidget;
                             containerRemoveDestroy box (vwsWidget ws);
                             doIf mDeleteButton (containerRemove box);
                             writeIORef stateRef Nothing;
@@ -123,8 +123,8 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
                         ReplaceJustEdit fa | SuccessResult a <- retrieveOne fa -> do
                         {
                             iv@(MkViewResult ws _) <- factory a mpush;                
-                            doIf mDeleteButton (containerAddShow box);
-                            containerAddShow box (vwsWidget ws);
+                            doIf mDeleteButton (boxAddShow PackNatural box);
+                            boxAddShow PackGrow box (vwsWidget ws);
                             containerRemove box emptyWidget;
                             writeIORef stateRef (Just iv);
                         };

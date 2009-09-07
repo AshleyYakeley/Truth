@@ -24,14 +24,8 @@ module Data.Changes.View where
         vrWidgetStuff :: ViewWidgetStuff w edit,
         vrUpdate :: edit -> IO ()
     };
-    
-    -- mapViewResult :: (w1 -> w2) -> ViewResult w1 edit -> ViewResult w2 edit;
-    -- mapViewResult f (MkViewResult w1 u) = MkViewResult (f w1) u;
 
     type View w edit = Subject edit -> Push edit -> IO (ViewResult w edit);
-    
-    -- mapView :: (w1 -> w2) -> View w1 edit -> View w2 edit;
-    -- mapView f view a push = fmap (mapViewResult f) (view a push);
 
     subscribeView :: View w edit -> Subscribe edit -> IO (Subscribe edit,ViewWidgetStuff w edit,IO ());
     subscribeView view subscribe = do
