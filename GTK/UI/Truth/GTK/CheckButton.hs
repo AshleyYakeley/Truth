@@ -20,7 +20,7 @@ module UI.Truth.GTK.CheckButton where
         });
         return (MkViewResult
         {
-            vrWidget = MkWidgetStuff (toWidget widget) (return Nothing),
+            vrWidgetStuff = MkViewWidgetStuff (toWidget widget) (return Nothing),
             vrUpdate = \edit -> do
             {
                 newstate <- applyConstFunctionA (applyEdit edit) (get widget toggleButtonActive);

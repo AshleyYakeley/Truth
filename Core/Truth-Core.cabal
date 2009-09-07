@@ -43,11 +43,9 @@ exposed-modules:
     Data.Changes.HasNewValue
     Data.Changes.EditRep
     Data.Changes.HasTypeRep
-    Data.Changes.EditScheme
+    Data.Changes.Edit
     Data.Changes.WholeEdit
     Data.Changes.JustEdit
-    Data.Changes.Edit
-    Data.Changes.Editable1
     Data.Changes.FloatingLens
     Data.Changes.FixedLens
     Data.Changes.Object

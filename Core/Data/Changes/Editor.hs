@@ -1,7 +1,7 @@
 module Data.Changes.Editor where
 {
     import Data.Changes.Object;
-    import Data.Changes.EditScheme;
+    import Data.Changes.Edit;
     import Control.Exception hiding (catch);
 
     data Editor edit b = forall r. MkEditor

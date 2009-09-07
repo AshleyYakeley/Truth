@@ -1,7 +1,7 @@
 module Data.Changes.Object where
 {
     import Data.Changes.FloatingLens;
-    import Data.Changes.EditScheme;
+    import Data.Changes.Edit;
     import Data.Store;
     import Control.Concurrent.MVar;
     import Control.Monad.Fix;

@@ -3,8 +3,7 @@ module Data.Changes.Tuple where
 {
 {-
     import Data.Changes.FixedLens;
---    import Data.Changes.Edit;
-    import Data.Changes.EditScheme;
+    import Data.Changes.Edit;
     import Data.Witness;
     import Data.ConstFunction;
     import Control.Monad.Identity;

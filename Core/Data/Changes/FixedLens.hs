@@ -1,7 +1,7 @@
 module Data.Changes.FixedLens where
 {
     import Data.Changes.FloatingLens;
-    import Data.Changes.EditScheme;
+    import Data.Changes.Edit;
     import Data.Bijection;
     import Data.Codec;
     import Data.Result;
@@ -31,13 +31,7 @@ module Data.Changes.FixedLens where
         Just ameb -> ameb;
         _ -> fmap (Just . replaceEdit . getter) (applyEdit edit);
     };
-{-    
-    class DoubleCategory t where
-    {
-        doubleId :: t a1 a2 a1 a2;
-        doubleCompose :: t b1 b2 c1 c2 -> t a1 a2 b1 b2 -> t a1 a2 c1 c2;
-    };
--}   
+  
     instance (Applicative m,FunctorOne m) => Category (FixedLens' m) where
     {
         id = MkFixedLens

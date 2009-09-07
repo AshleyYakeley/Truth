@@ -53,7 +53,7 @@ module UI.Truth.GTK.Text (textView) where
         tv <- textViewNewWithBuffer buffer;
         return (MkViewResult
         {
-            vrWidget = MkWidgetStuff (toWidget tv) (do
+            vrWidgetStuff = MkViewWidgetStuff (toWidget tv) (do
             {
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
                 o1 <- textIterGetOffset iter1;

@@ -3,7 +3,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
 {
     import Data.Changes.FloatingLens;
     import Data.Changes.JustEdit;
-    import Data.Changes.EditScheme;
+    import Data.Changes.Edit;
     import Data.Changes.HasTypeRep;
     import Data.Changes.EditRep;
     import Data.Changes.HasNewValue;

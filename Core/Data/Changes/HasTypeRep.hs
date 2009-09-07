@@ -2,7 +2,6 @@ module Data.Changes.HasTypeRep where
 {
     import Data.Changes.EditRep;
     import Data.OpenWitness;
-    import Data.Witness;
     import Data.Word;
     import Data.Result;
 
@@ -80,12 +79,4 @@ module Data.Changes.HasTypeRep where
     {
         typeRepKTT = KTTEditRepKTT typeRepKKTTKTT typeRepKTT;
     };
-
-    type RepDict = WitnessFDict EditRepT;
-    
-    repDictLookup :: (HasTypeRepT a) => RepDict f -> Maybe (f a);
-    repDictLookup = witnessFDictLookup typeRepT;
-    
-    repDictAdd :: (HasTypeRepT a) => f a -> RepDict f -> RepDict f;
-    repDictAdd = witnessFDictAdd typeRepT;
 }

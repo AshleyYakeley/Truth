@@ -24,7 +24,7 @@ module UI.Truth.GTK.Window where
     lastResortView = \_ _ -> do
     {
         w <- labelNew (Just "Uneditable");
-        return (MkViewResult (MkWidgetStuff (toWidget w) (return Nothing)) (\_ -> return ()));
+        return (MkViewResult (MkViewWidgetStuff (toWidget w) (return Nothing)) (\_ -> return ()));
     };
 
     type MatchView = forall edit. (Edit edit,HasNewValue (Subject edit)) => EditRepT edit -> Maybe (GView edit);
@@ -101,7 +101,7 @@ module UI.Truth.GTK.Window where
         
         selectionButton <- makeButton "Selection" (do
         {
-            msel <- wsGetSelection w;
+            msel <- vwsGetSelection w;
             case msel of
             {
                 Just (MkSelection repsel lens state) -> do
@@ -113,12 +113,10 @@ module UI.Truth.GTK.Window where
         });
         
         boxPackStart box selectionButton PackNatural 0;
-        widgetShow selectionButton;
-        boxPackStart box (wsWidget w) PackGrow 0;
-        widgetShow (wsWidget w);
+        boxPackStart box (vwsWidget w) PackGrow 0;
         
         set window [containerChild := box];
-        widgetShow (wsWidget w);
+        widgetShow (vwsWidget w);
         onDestroy window (do
         {
             close;

@@ -3,7 +3,7 @@ module Data.Changes
     module Data.Changes.EditRep,
     module Data.Changes.HasTypeRep,
     module Data.Changes.HasNewValue,
-    module Data.Changes.EditScheme,
+    module Data.Changes.Edit,
     module Data.Changes.WholeEdit,
     module Data.Changes.JustEdit,
     module Data.Changes.FloatingLens,
@@ -14,14 +14,12 @@ module Data.Changes
     module Data.Changes.Text,
     module Data.Changes.Context,
     module Data.Changes.View,
---    module Data.Changes.Edit,
---    module Data.Changes.Editable1,
 ) where
 {
     import Data.Changes.EditRep;
     import Data.Changes.HasTypeRep;
     import Data.Changes.HasNewValue;
-    import Data.Changes.EditScheme;
+    import Data.Changes.Edit;
     import Data.Changes.WholeEdit;
     import Data.Changes.JustEdit;
     import Data.Changes.FloatingLens;
@@ -32,6 +30,4 @@ module Data.Changes
     import Data.Changes.Text;
     import Data.Changes.Context;
     import Data.Changes.View;
---    import Data.Changes.Edit;
---    import Data.Changes.Editable1;
 }

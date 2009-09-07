@@ -1,7 +1,7 @@
 module Data.Changes.FloatingLens where
 {
     import Data.Changes.JustEdit;
-    import Data.Changes.EditScheme;
+    import Data.Changes.Edit;
     import Data.FunctorOne;
     import Data.ConstFunction;
     import Data.Chain;
@@ -57,15 +57,4 @@ module Data.Changes.FloatingLens where
             Nothing -> pure Nothing;
         }
     };
-{-    
-    instance CatFunctor (FloatingLens state) (Result err) where
-    {
-        cfmap = resultLens;
-    };
-    
-    instance CatFunctor (FloatingLens state) Maybe where
-    {
-        cfmap = resultLens;
-    };
--}
 }

@@ -74,7 +74,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
             {
                 iv@(MkViewResult ws _) <- factory a mpush;
                 doIf mDeleteButton (containerAddShow box);
-                containerAddShow box (wsWidget ws);
+                containerAddShow box (vwsWidget ws);
                 return (Just iv);
             };
             _ -> do
@@ -86,14 +86,14 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
         stateRef :: IORef (Maybe (GViewResult edit)) <- newIORef initialmiv;
         return (MkViewResult
         {
-            vrWidget = MkWidgetStuff (toWidget box) (do
+            vrWidgetStuff = MkViewWidgetStuff (toWidget box) (do
             {
                 miv :: Maybe (GViewResult edit) <- readIORef stateRef;
                 case miv of
                 {
                     Just (MkViewResult ws _) -> do
                     {
-                        msel <- wsGetSelection ws;
+                        msel <- vwsGetSelection ws;
                         return (do
                         {
                             MkSelection rep (lens :: FloatingLens state edit editb) state <- msel;
@@ -114,7 +114,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
                         Nothing -> do
                         {
                             containerAddShow box emptyWidget;
-                            containerRemoveDestroy box (wsWidget ws);
+                            containerRemoveDestroy box (vwsWidget ws);
                             doIf mDeleteButton (containerRemove box);
                             writeIORef stateRef Nothing;
                         };
@@ -125,7 +125,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
                         {
                             iv@(MkViewResult ws _) <- factory a mpush;                
                             doIf mDeleteButton (containerAddShow box);
-                            containerAddShow box (wsWidget ws);
+                            containerAddShow box (vwsWidget ws);
                             containerRemove box emptyWidget;
                             writeIORef stateRef (Just iv);
                         };
