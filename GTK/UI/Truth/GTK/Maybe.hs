@@ -50,7 +50,6 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
 
     functorOneIVF :: forall f edit wd. 
     (
-        --HasTypeRepKTT f,
         HasNewValue1 f,
         Applicative f,
         FunctorOne f,
@@ -65,7 +64,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
         mpush ea = push (JustEdit ea);
     } in do
     {
-        box <- vBoxNew True 0;
+        box <- vBoxNew False 0;
         emptyWidget <- makeEmptywidget push;
         mDeleteButton <- doIf mDeleteValue (\deleteValue -> pushButton push (replaceEdit (deleteValue :: f a)) "Delete");
         initialmiv :: Maybe (GViewResult edit) <- case retrieveOne initial of

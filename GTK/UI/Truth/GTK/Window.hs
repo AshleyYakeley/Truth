@@ -96,8 +96,7 @@ module UI.Truth.GTK.Window where
     {
         (sub',w,close) <- subscribeView (theView matchViews rep) sub;
         window <- windowNew;
-        box <- vBoxNew True 0;
-        boxSetHomogeneous box False;
+        box <- vBoxNew False 0;
         
         selectionButton <- makeButton "Selection" (do
         {
