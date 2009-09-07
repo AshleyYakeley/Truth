@@ -19,5 +19,8 @@ module Data.Changes.WholeEdit where
         applyEdit (MkWholeEdit a) = pure a;
         invertEdit _ = Just . MkWholeEdit;
         replaceEdit = MkWholeEdit;
+
+        type EditEvidence (WholeEdit a) = ();
+        editEvidence _ = ();
     };
 }

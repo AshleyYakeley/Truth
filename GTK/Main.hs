@@ -25,11 +25,11 @@ module Main where
         {
             file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)
             content = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () file; -- (Maybe ByteString)
-            mrtext :: Subscribe (WholeEdit (Maybe (Result ListError String))) =
+            mrtext :: Subscribe (JustEdit Maybe (JustEdit (Result ListError) (ListEdit (WholeEdit Char)))) =
              lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () content;
         } in do
         {
-            makeWindowCountRef windowCount mrtext;
+            makeWindowCountRef typeRepT windowCount mrtext;
         });
         {-
         sub <- makeWindowCountRef windowCount (maybeIVF False (gNamedView "AAAAAAAAAAAAAAAAAAAAAAAAAA")) (freeObjSubscribe initial);

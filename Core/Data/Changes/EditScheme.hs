@@ -1,6 +1,7 @@
 module Data.Changes.EditScheme where
 {
     import Data.ConstFunction;
+    import Data.Witness;
     import Control.Category;
     import Prelude hiding (id,(.));
 
@@ -10,6 +11,16 @@ module Data.Changes.EditScheme where
         applyEdit :: edit -> ConstFunction (Subject edit) (Subject edit);
         invertEdit :: edit -> Subject edit -> Maybe edit;    -- "Nothing" means no change
         replaceEdit :: Subject edit -> edit;
+        
+        --type EditEvidence edit = ();
+        type EditEvidence edit;
+        editEvidence :: Type edit -> EditEvidence edit;
+        --editEvidence _ = ();
+    };
+
+    data EditInst edit where
+    {
+        MkEditInst :: forall edit. (Edit edit) => EditInst edit;
     };
 
     applyAndInvertEdit :: (Edit edit) => edit -> (ConstFunction (Subject edit) (Subject edit),(Subject edit) -> Maybe edit);

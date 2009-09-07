@@ -3,6 +3,7 @@ module Data.Changes.JustEdit where
     import Data.Changes.EditScheme;
     import Data.Changes.HasTypeRep;
     import Data.Changes.EditRep;
+    import Data.Changes.HasNewValue;
     import Data.FunctorOne;
     import Data.Result;
     import Data.Chain;
@@ -17,7 +18,7 @@ module Data.Changes.JustEdit where
         typeRepKKTTKTT = EditRepKKTTKTT (unsafeIOWitnessFromString "Data.Changes.JustEdit.JustEdit");
     };
 
-    instance (Edit edit,FunctorOne f) => Edit (JustEdit f edit) where
+    instance (HasNewValue (Subject edit),Edit edit,FunctorOne f) => Edit (JustEdit f edit) where
     {
         type Subject (JustEdit f edit) = f (Subject edit);
     
@@ -32,6 +33,9 @@ module Data.Changes.JustEdit where
         };
 
         replaceEdit = ReplaceJustEdit;
+
+        type EditEvidence (JustEdit f edit) = (HasNewValueInst (Subject edit),FunctorOneInst f,EditInst edit);
+        editEvidence _ = (MkHasNewValueInst,MkFunctorOneInst,MkEditInst);
     };
 
     extractJustEdit :: forall f edit. (FunctorOne f,Edit edit) => JustEdit f edit -> Maybe edit;

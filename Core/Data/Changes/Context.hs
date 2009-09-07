@@ -55,7 +55,7 @@ module Data.Changes.Context where
 
     data ContextContentEdit editx editn = ReplaceContextContentEdit (WithContext (Subject editx) (Subject editn)) | ContextEdit editx | ContentEdit editn;
 
-    instance (Edit editx, context ~ Subject editx,Edit editn, content ~ Subject editn) =>
+    instance (Edit editx, Edit editn) =>
      Edit (ContextContentEdit editx editn) where
     {
         type Subject (ContextContentEdit editx editn) = WithContext (Subject editx) (Subject editn);
@@ -68,6 +68,9 @@ module Data.Changes.Context where
         invertEdit (ReplaceContextContentEdit _) a = Just (ReplaceContextContentEdit a);
         
         replaceEdit = ReplaceContextContentEdit;
+
+        type EditEvidence (ContextContentEdit editx editn) = (EditInst editx,EditInst editn);
+        editEvidence _ = (MkEditInst,MkEditInst);
     };
 
     contextCleanLens :: CleanLens' Identity (ContextContentEdit editx editn) editx;

@@ -6,6 +6,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
     import Data.Changes.EditScheme;
     import Data.Changes.HasTypeRep;
     import Data.Changes.EditRep;
+    import Data.Changes.HasNewValue;
     import Control.Arrow;
     import Data.ConstFunction;
     import Data.OpenWitness;
@@ -77,6 +78,9 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
         };
 
         replaceEdit = ReplaceListEdit;
+
+        type EditEvidence (ListEdit edit) = EditInst edit;
+        editEvidence _ = MkEditInst;
     };
 
     updateSection :: (Int,Int) -> (Int,Int) -> Int -> ((Int,Int),Maybe (Int,Int));
@@ -96,7 +100,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
          else ((start,len+newlen-editlen),Just (editstart-start,editlen)); -- within
         
 
-    listElement :: forall edit. (Edit edit) => FloatingLens Int (ListEdit edit) (JustEdit Maybe edit);
+    listElement :: forall edit. (HasNewValue (Subject edit),Edit edit) => FloatingLens Int (ListEdit edit) (JustEdit Maybe edit);
     listElement = MkFloatingLens
     {
         lensUpdate = elementUpdate,
@@ -134,7 +138,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
         };
     };
 
-    listSection :: forall edit. (Edit edit) => FloatingLens (Int,Int) (ListEdit edit) (ListEdit edit);
+    listSection :: forall edit. (HasNewValue (Subject edit),Edit edit) => FloatingLens (Int,Int) (ListEdit edit) (ListEdit edit);
     listSection = MkFloatingLens
     {
         lensUpdate = sectionUpdate,

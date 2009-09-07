@@ -3,10 +3,11 @@ module UI.Truth.GTK.Window where
 {
     import UI.Truth.GTK.Text;
     import UI.Truth.GTK.CheckButton;
-    --import UI.Truth.GTK.Maybe;
+    import UI.Truth.GTK.Maybe;
     import UI.Truth.GTK.GView;
     import Graphics.UI.Gtk;
     import Data.Changes;
+    import Data.Result;
     import Data.Witness;
     import Data.IORef;
 
@@ -20,18 +21,51 @@ module UI.Truth.GTK.Window where
     };
 
     lastResortView :: GView edit;
-    lastResortView = undefined;
+    lastResortView = \_ _ -> do
+    {
+        w <- labelNew (Just "Uneditable");
+        return (MkViewResult (MkWidgetStuff (toWidget w) (return Nothing)) (\_ -> return ()));
+    };
 
     type MatchView = forall edit. (Edit edit,HasNewValue (Subject edit)) => EditRepT edit -> Maybe (GView edit);
-{-
-    maybeMatchView :: forall edit. (Edit edit,HasNewValue (Subject edit)) => EditRepT edit -> Maybe (GView edit);
-    maybeMatchView (TEditRepT repJM rep) = do
+
+    maybeMatchView :: MatchView;
+    maybeMatchView = foo MkEditInst where
     {
-        MkEqualType <- matchEditRepKTT repJM (typeRepKTT :: EditRepKTT (JustEdit Maybe));
-        return (maybeView newValue (theView matchViews rep));
+        foo :: forall edit. EditInst edit -> EditRepT edit -> Maybe (GView edit);
+        foo inst (TEditRepT repJM rep) = do
+        {
+            MkEqualType <- matchEditRepKTT repJM (typeRepKTT :: EditRepKTT (JustEdit Maybe));
+            case inst of
+            {
+                MkEditInst -> case editEvidence (Type :: Type edit) of
+                {
+                    (MkHasNewValueInst,_,MkEditInst) -> return (maybeView newValue (theView matchViews rep));
+                };
+            };
+        };
+        foo _ _ = Nothing;
     };
-    maybeMatchView _ = Nothing;
--}
+
+    resultMatchView :: MatchView;
+    resultMatchView = foo MkEditInst where
+    {
+        foo :: forall edit. EditInst edit -> EditRepT edit -> Maybe (GView edit);
+        foo inst (TEditRepT (KTTEditRepKTT repJustEdit (TEditRepKTT repResult reperr)) rep) = do
+        {
+            MkEqualType <- matchEditRepKKTTKTT repJustEdit (typeRepKKTTKTT :: EditRepKKTTKTT JustEdit);
+            MkEqualType <- matchEditRepKTKTT repResult (typeRepKTKTT :: EditRepKTKTT Result);
+            case inst of
+            {
+                MkEditInst -> case editEvidence (Type :: Type edit) of
+                {
+                    (MkHasNewValueInst,_,MkEditInst) -> return (resultView reperr (theView matchViews rep));
+                };
+            };
+        };
+        foo _ _ = Nothing;
+    };
+
     checkButtonMatchView :: MatchView;
     checkButtonMatchView rep = do
     {
@@ -47,7 +81,7 @@ module UI.Truth.GTK.Window where
     };
 
     matchViews :: [MatchView];
-    matchViews = [checkButtonMatchView,textMatchView{-,maybeMatchView-}];
+    matchViews = [checkButtonMatchView,textMatchView,maybeMatchView,resultMatchView];
 
     theView :: forall edit. (Edit edit,HasNewValue (Subject edit)) => [MatchView] -> EditRepT edit -> GView edit;
     theView [] _ = lastResortView;
@@ -57,38 +91,47 @@ module UI.Truth.GTK.Window where
         _ -> theView mviews editrep;
     };
     
-    makeWindow :: (HasTypeRepT edit, Edit edit, HasNewValue (Subject edit)) => IORef Int -> IO () -> Subscribe edit -> IO ();
-    makeWindow ref tellclose sub = do
+    makeWindow :: (Edit edit, HasNewValue (Subject edit)) => EditRepT edit -> IORef Int -> IO () -> Subscribe edit -> IO ();
+    makeWindow rep ref tellclose sub = do
     {
-        (sub',w,close) <- subscribeView (theView matchViews typeRepT) sub;
+        (sub',w,close) <- subscribeView (theView matchViews rep) sub;
         window <- windowNew;
-        _selectionButton <- makeButton "Selection" (do
+        box <- vBoxNew True 0;
+        boxSetHomogeneous box False;
+        
+        selectionButton <- makeButton "Selection" (do
         {
             msel <- wsGetSelection w;
             case msel of
             {
-                Just (MkSelection lens state) -> do
+                Just (MkSelection repsel lens state) -> do
                 {
-                    makeWindowCountRef ref (lensSubscribe lens state sub');
+                    makeWindowCountRef repsel ref (lensSubscribe lens state sub');
                 };
                 _ -> return ();
             };
         });
-        set window [containerChild := wsWidget w];
+        
+        boxPackStart box selectionButton PackNatural 0;
+        widgetShow selectionButton;
+        boxPackStart box (wsWidget w) PackGrow 0;
+        widgetShow (wsWidget w);
+        
+        set window [containerChild := box];
         widgetShow (wsWidget w);
         onDestroy window (do
         {
             close;
             tellclose;
         });
-        widgetShow window;
+        widgetShowAll window;
         return ();
     };
 
-    makeWindowCountRef :: (HasTypeRepT edit, Edit edit, HasNewValue (Subject edit)) => IORef Int -> Subscribe edit -> IO ();
-    makeWindowCountRef windowCount sub = do
+    makeWindowCountRef :: (Edit edit, HasNewValue (Subject edit)) => EditRepT edit -> IORef Int -> Subscribe edit -> IO ();
+    makeWindowCountRef rep windowCount sub = do
     {
-        makeWindow windowCount (do
+        makeWindow rep windowCount (do
         {
             i <- readIORef windowCount;
             writeIORef windowCount (i - 1);

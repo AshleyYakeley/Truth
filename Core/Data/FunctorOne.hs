@@ -19,6 +19,11 @@ module Data.FunctorOne where
     -- retrieveOne (fmap f w) = fmap f (retrieveOne w)
     -- case (retrieveOne w) of {Left w' -> w';Right a -> fmap (\_ -> a) w;} = w
 
+    data FunctorOneInst f where
+    {
+        MkFunctorOneInst :: forall f. (FunctorOne f) => FunctorOneInst f;
+    };
+
     instance Applicative Identity where
     {
         pure = Identity;

@@ -13,8 +13,8 @@ module UI.Truth.GTK.GView where
     data Selection edit where
     {
         MkSelection :: 
-         forall editb state. (Eq state,HasTypeRepT editb,HasNewValue (Subject editb),Edit editb) =>
-          FloatingLens state edita editb -> state -> Selection edita;
+         forall editb state. (Eq state,HasNewValue (Subject editb),Edit editb) =>
+          EditRepT editb -> FloatingLens state edita editb -> state -> Selection edita;
     };
 
     data WidgetStuff edit = MkWidgetStuff

@@ -2,10 +2,32 @@ module Data.Changes.HasNewValue where
 {
     import Data.Result;
     import Data.Witness;
+    import Data.ByteString;
+    import Data.Word;
 
     class HasNewValue a where
     {
         newValue :: a;
+    };
+
+    data HasNewValueInst f where
+    {
+        MkHasNewValueInst :: forall f. (HasNewValue f) => HasNewValueInst f;
+    };
+
+    instance HasNewValue ByteString where
+    {
+        newValue = empty;
+    };
+
+    instance HasNewValue Word8 where
+    {
+        newValue = 0;
+    };
+
+    instance HasNewValue Char where
+    {
+        newValue = '\0';
     };
 
     instance HasNewValue [a] where

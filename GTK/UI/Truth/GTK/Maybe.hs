@@ -50,15 +50,16 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
 
     functorOneIVF :: forall f edit wd. 
     (
-        HasTypeRepKTT f,
+        --HasTypeRepKTT f,
         HasNewValue1 f,
         Applicative f,
         FunctorOne f,
+        HasNewValue (Subject edit),
         Edit edit,
         WidgetClass wd
     ) =>
-      Maybe (forall b. f b) -> (Push (JustEdit f edit) -> IO wd) -> GView edit -> GView (JustEdit f edit);
-    functorOneIVF mDeleteValue makeEmptywidget factory initial push = let
+      EditRepKTT f -> Maybe (forall b. f b) -> (Push (JustEdit f edit) -> IO wd) -> GView edit -> GView (JustEdit f edit);
+    functorOneIVF repf mDeleteValue makeEmptywidget factory initial push = let
     {
         mpush :: Push edit;
         mpush ea = push (JustEdit ea);
@@ -95,8 +96,8 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
                         msel <- wsGetSelection ws;
                         return (do
                         {
-                            MkSelection (lens :: FloatingLens state edit editb) state <- msel;
-                            return ((newValue1 (Type :: Type (f (Subject editb))) MkSelection) (resultLens lens) state);
+                            MkSelection rep (lens :: FloatingLens state edit editb) state <- msel;
+                            return ((newValue1 (Type :: Type (f (Subject editb))) MkSelection) (TEditRepT (KTTEditRepKTT typeRepKKTTKTT repf) rep) (resultLens lens) state);
                         });
                     };
                     Nothing -> return Nothing;
@@ -135,9 +136,9 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
         });
     };
 
-    maybeView :: (Edit edit) =>
+    maybeView :: (HasNewValue (Subject edit),Edit edit) =>
       Subject edit -> GView edit -> GView (JustEdit Maybe edit);
-    maybeView initialVal = functorOneIVF (Just Nothing) (createButton (Just initialVal));
+    maybeView initialVal = functorOneIVF typeRepKTT (Just Nothing) (createButton (Just initialVal));
     
     placeholderLabel :: IO Label;
     placeholderLabel = do
@@ -146,6 +147,6 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
         return label;
     };
     
-    resultView :: (Edit edit,HasTypeRepT err) => GView edit -> GView (JustEdit (Result err) edit);
-    resultView = functorOneIVF Nothing (\_ -> placeholderLabel);
+    resultView :: (HasNewValue (Subject edit),Edit edit) => EditRepT err -> GView edit -> GView (JustEdit (Result err) edit);
+    resultView reperr = functorOneIVF (TEditRepKTT typeRepKTKTT reperr) Nothing (\_ -> placeholderLabel);
 }
