@@ -95,8 +95,8 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
                         msel <- vwsGetSelection ws;
                         return (do
                         {
-                            MkSelection rep (lens :: FloatingLens state edit editb) state <- msel;
-                            return ((newValue1 (Type :: Type (f (Subject editb))) MkSelection) (TEditRepT (KTTEditRepKTT typeRepKKTTKTT repf) rep) (resultLens lens) state);
+                            MkSelection rep (lens :: FloatingLens state edit editb) <- msel;
+                            return ((newValue1 (Type :: Type (f (Subject editb))) MkSelection) (TEditRepT (KTTEditRepKTT typeRepKKTTKTT repf) rep) (resultLens lens));
                         });
                     };
                     Nothing -> return Nothing;

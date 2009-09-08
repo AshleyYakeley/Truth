@@ -7,6 +7,7 @@ library
 {
 build-depends:
     base>=4.0,
+    bytestring>=0.9.0.1,
     witness==0.2,
     open-witness==0.2,
     glib==0.10.1,

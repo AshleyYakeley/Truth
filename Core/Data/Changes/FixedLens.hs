@@ -1,6 +1,7 @@
 module Data.Changes.FixedLens where
 {
     import Data.Changes.FloatingLens;
+    import Data.Changes.WholeEdit;
     import Data.Changes.Edit;
     import Data.Bijection;
     import Data.Codec;
@@ -67,6 +68,7 @@ module Data.Changes.FixedLens where
     fixedFloatingLens :: FixedLens' m edita editb -> FloatingLens' m () edita editb;
     fixedFloatingLens lens = MkFloatingLens
     {
+        lensInitial = (),
         lensUpdate = \edit _ -> do
         {
             meb <- fixedLensUpdate lens edit;
@@ -148,6 +150,14 @@ module Data.Changes.FixedLens where
                 }
             }
         };
+    };
+    
+    simpleWholeFixedLens :: (Functor m) => SimpleLens' m a b -> FixedLens' m (WholeEdit a) (WholeEdit b);
+    simpleWholeFixedLens lens = MkFixedLens
+    {
+        fixedLensUpdate = \(MkWholeEdit a) -> pure (Just (MkWholeEdit (simpleLensGet lens a))),
+        fixedLensGet = simpleLensGet lens,
+        fixedLensPutEdit = \(MkWholeEdit newb) -> fmap (fmap MkWholeEdit) (simpleLensPutback lens newb)
     };
     
     simpleFixedLens :: (Functor m,Edit edita,Edit editb) => SimpleLens' m (Subject edita) (Subject editb) -> FixedLens' m edita editb;

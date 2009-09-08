@@ -8,6 +8,7 @@ module Main where
     import Data.Result;
     import Data.IORef;
     import Data.Foldable;
+    import Data.ByteString;
     import Control.Category;
     import Control.Concurrent;
     import Prelude hiding (id,(.));
@@ -24,9 +25,10 @@ module Main where
         for_ args (\arg -> let
         {
             file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)
-            content = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () file; -- (Maybe ByteString)
-            mrtext :: Subscribe (JustEdit Maybe (JustEdit (Result ListError) (ListEdit (WholeEdit Char)))) =
-             lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () content;
+            content :: Subscribe (JustEdit Maybe (WholeEdit ByteString))
+             = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) file; -- (Maybe ByteString)
+            mrtext :: Subscribe (JustEdit Maybe (JustEdit (Result ListError) (ListEdit (WholeEdit Char))))
+             = lensSubscribe (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens)))) content;
         } in do
         {
             makeWindowCountRef typeRepT windowCount mrtext;

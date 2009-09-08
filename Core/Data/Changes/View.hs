@@ -10,7 +10,7 @@ module Data.Changes.View where
     {
         MkSelection :: 
          forall editb state. (Eq state,HasNewValue (Subject editb),Edit editb) =>
-          EditRepT editb -> FloatingLens state edita editb -> state -> Selection edita;
+          EditRepT editb -> FloatingLens state edita editb -> Selection edita;
     };
 
     data ViewWidgetStuff w edit = MkViewWidgetStuff

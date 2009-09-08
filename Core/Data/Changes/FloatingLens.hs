@@ -9,6 +9,7 @@ module Data.Changes.FloatingLens where
 
     data FloatingLens' m state edita editb = MkFloatingLens
     {
+        lensInitial :: state,
         lensUpdate :: edita -> state -> ConstFunction (Subject edita) (state,Maybe editb),
         lensGet :: state -> Subject edita -> Subject editb,
         lensPutEdit :: state -> editb -> ConstFunction (Subject edita) (m edita)    -- m failure means impossible
@@ -19,6 +20,7 @@ module Data.Changes.FloatingLens where
     toFloatingLens :: (FunctorOne m) => FloatingLens' m state edita editb -> FloatingLens state edita editb;
     toFloatingLens lens = MkFloatingLens
     {
+        lensInitial = lensInitial lens,
         lensUpdate = lensUpdate lens,
         lensGet = lensGet lens,
         lensPutEdit = \state edit -> fmap getMaybeOne (lensPutEdit lens state edit)
@@ -29,6 +31,7 @@ module Data.Changes.FloatingLens where
      FloatingLens state edita editb -> FloatingLens state (JustEdit f edita) (JustEdit f editb);
     resultLens lens  = MkFloatingLens
     {
+        lensInitial = lensInitial lens,
         lensUpdate = \editfa state -> case extractJustEdit editfa of
         {
             Just edita -> do

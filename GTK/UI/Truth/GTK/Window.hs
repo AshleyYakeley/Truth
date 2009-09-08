@@ -103,9 +103,9 @@ module UI.Truth.GTK.Window where
             msel <- vwsGetSelection w;
             case msel of
             {
-                Just (MkSelection repsel lens state) -> do
+                Just (MkSelection repsel lens) -> do
                 {
-                    makeWindowCountRef repsel ref (lensSubscribe lens state sub');
+                    makeWindowCountRef repsel ref (lensSubscribe lens sub');
                 };
                 _ -> return ();
             };

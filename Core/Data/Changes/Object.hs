@@ -1,6 +1,8 @@
 module Data.Changes.Object where
 {
+    import Data.Changes.FixedLens;
     import Data.Changes.FloatingLens;
+    import Data.Changes.WholeEdit;
     import Data.Changes.Edit;
     import Data.Store;
     import Control.Concurrent.MVar;
@@ -99,49 +101,150 @@ module Data.Changes.Object where
         });
     });
 
-    lensSubscribe :: forall state edita editb. (Edit edita,Eq state) => FloatingLens state edita editb -> state -> Subscribe edita -> Subscribe editb;
-    lensSubscribe lens firststate subscribe = objSubscribe (\pushOut -> do
+    class EditLens lens where
     {
-        ((statevar,firsta,push),sub) <- subscribe 
-         (\a push -> do
+        type LensDomain lens;
+        type LensRange lens;
+    
+        lensSubscribe :: lens -> Subscribe (LensDomain lens) -> Subscribe (LensRange lens);
+    };
+
+    instance (Edit edita,Eq state) => EditLens (FloatingLens state edita editb) where
+    {
+        type LensDomain (FloatingLens state edita editb) = edita;
+        type LensRange (FloatingLens state edita editb) = editb;
+    
+        lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
         {
-            statevar <- newEmptyMVar;
-            return (statevar,a,push);
-        }) 
-         (\(statevar,_,_) edita -> modifyMVar_ statevar (\(oldstate,olda) -> let
-        {
-            (newstate,meditb) = applyConstFunction (lensUpdate lens edita oldstate) olda;
-        } in do
-        {
-            case meditb of
+            ((statevar,firsta,push),sub) <- subscribe 
+             (\a push -> do
             {
-                Just editb -> pushOut editb;
-                _ -> return ();
-            };
-            return (newstate,applyConstFunction (applyEdit edita) olda);
-        }));
-        putMVar statevar (firststate,firsta);
-        return (MkObject
-        {
-            objGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (lensGet lens state a)),
-            objPush = \editb -> modifyMVar statevar (\olds@(oldstate,olda) -> case applyConstFunction (lensPutEdit lens oldstate editb) olda of
+                statevar <- newEmptyMVar;
+                return (statevar,a,push);
+            }) 
+             (\(statevar,_,_) edita -> modifyMVar_ statevar (\(oldstate,olda) -> let
             {
-                Just edita -> do
+                (newstate,meditb) = applyConstFunction (lensUpdate lens edita oldstate) olda;
+            } in do
+            {
+                case meditb of
                 {
-                    mv <- push edita;
-                    case mv of
-                    {
-                        Just _ -> do
-                        {
-                            let {(newstate,_) = applyConstFunction (lensUpdate lens edita oldstate) olda;};
-                            return ((newstate,applyConstFunction (applyEdit edita) olda),mv);
-                        };
-                        _ -> return (olds,mv);
-                    };
+                    Just editb -> pushOut editb;
+                    _ -> return ();
                 };
-                _ -> return (olds,Nothing);
-            }),
-            objClose = subClose sub
+                return (newstate,applyConstFunction (applyEdit edita) olda);
+            }));
+            putMVar statevar (lensInitial lens,firsta);
+            return (MkObject
+            {
+                objGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (lensGet lens state a)),
+                objPush = \editb -> modifyMVar statevar (\olds@(oldstate,olda) -> case applyConstFunction (lensPutEdit lens oldstate editb) olda of
+                {
+                    Just edita -> do
+                    {
+                        mv <- push edita;
+                        case mv of
+                        {
+                            Just _ -> do
+                            {
+                                let {(newstate,_) = applyConstFunction (lensUpdate lens edita oldstate) olda;};
+                                return ((newstate,applyConstFunction (applyEdit edita) olda),mv);
+                            };
+                            _ -> return (olds,mv);
+                        };
+                    };
+                    _ -> return (olds,Nothing);
+                }),
+                objClose = subClose sub
+            });
         });
-    });
+    };
+
+    instance (Edit edita) => EditLens (FixedLens edita editb) where
+    {
+        type LensDomain (FixedLens edita editb) = edita;
+        type LensRange (FixedLens edita editb) = editb;
+    
+        lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
+        {
+            ((statevar,firsta,push),sub) <- subscribe 
+             (\a push -> do
+            {
+                statevar <- newEmptyMVar;
+                return (statevar,a,push);
+            }) 
+             (\(statevar,_,_) edita -> modifyMVar_ statevar (\olda -> let
+            {
+                meditb = applyConstFunction (fixedLensUpdate lens edita) olda;
+            } in do
+            {
+                case meditb of
+                {
+                    Just editb -> pushOut editb;
+                    _ -> return ();
+                };
+                return (applyConstFunction (applyEdit edita) olda);
+            }));
+            putMVar statevar firsta;
+            return (MkObject
+            {
+                objGetInitial = \initialise -> withMVar statevar (\a -> initialise (fixedLensGet lens a)),
+                objPush = \editb -> modifyMVar statevar (\olda -> case applyConstFunction (fixedLensPutEdit lens editb) olda of
+                {
+                    Just edita -> do
+                    {
+                        mv <- push edita;
+                        return (case mv of
+                        {
+                            Just _ -> applyConstFunction (applyEdit edita) olda;
+                            _ -> olda;
+                        },mv);
+                    };
+                    _ -> return (olda,Nothing);
+                }),
+                objClose = subClose sub
+            });
+        });
+    };
+
+    instance EditLens (SimpleLens a b) where
+    {
+        type LensDomain (SimpleLens a b) = WholeEdit a;
+        type LensRange (SimpleLens a b) = WholeEdit b;
+
+        lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
+        {
+            ((statevar,firsta,push),sub) <- subscribe 
+             (\a push -> do
+            {
+                statevar <- newEmptyMVar;
+                return (statevar,a,push);
+            }) 
+             (\(statevar,_,_) (MkWholeEdit newa) -> modifyMVar_ statevar (\_ -> do
+            {
+                pushOut (MkWholeEdit (simpleLensGet lens newa));
+                return newa;
+            }));
+            putMVar statevar firsta;
+            return (MkObject
+            {
+                objGetInitial = \initialise -> withMVar statevar (\a -> initialise (simpleLensGet lens a)),
+                objPush = \(MkWholeEdit newb) -> modifyMVar statevar (\olda ->
+                 case applyConstFunction (simpleLensPutback lens newb) olda of
+                {
+                    Just newa -> do
+                    {
+                        mv <- push (MkWholeEdit newa);
+                        return (case mv of
+                        {
+                            Just _ -> newa;
+                            _ -> olda;
+                        },mv);
+                    };
+                    _ -> return (olda,Nothing);
+                }),
+                objClose = subClose sub
+            });
+        });
+    };
 }
