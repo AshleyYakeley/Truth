@@ -12,7 +12,7 @@ module Data.Changes.FixedLens where
     import Data.Chain;
     import Control.Applicative;
     import Control.Category;
-    import Prelude hiding (id,(.));
+    import Prelude hiding (id,(.),sequence);
 
     -- | A FixedLens is a lens without state
     ;
@@ -148,6 +148,23 @@ module Data.Changes.FixedLens where
                     SuccessResult b -> simpleLensPutback ab b;
                     FailureResult ff -> return ff;
                 }
+            }
+        };
+    };
+    
+    instance (Traversable f,FunctorOne f,Applicative m) => CatFunctor (SimpleLens' m) f where
+    {
+        cfmap lens = MkSimpleLens
+        {
+            simpleLensGet = fmap (simpleLensGet lens),
+            simpleLensPutback = \fb -> do
+            {
+                fma <- case retrieveOne fb of
+                {
+                    SuccessResult b -> cfmap (simpleLensPutback lens b);
+                    FailureResult fx -> return fx;
+                };
+                return (sequenceA fma);
             }
         };
     };

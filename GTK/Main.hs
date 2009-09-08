@@ -28,7 +28,7 @@ module Main where
             content :: Subscribe (JustEdit Maybe (WholeEdit ByteString))
              = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) file; -- (Maybe ByteString)
             mrtext :: Subscribe (JustEdit Maybe (JustEdit (Result ListError) (ListEdit (WholeEdit Char))))
-             = lensSubscribe (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens)))) content;
+             = lensSubscribe (simpleFixedLens (cfmap (wholeSimpleLens (utf8Lens . packBSLens)))) content;
         } in do
         {
             makeWindowCountRef typeRepT windowCount mrtext;
