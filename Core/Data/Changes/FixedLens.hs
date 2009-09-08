@@ -159,12 +159,8 @@ module Data.Changes.FixedLens where
             simpleLensGet = fmap (simpleLensGet lens),
             simpleLensPutback = \fb -> do
             {
-                fma <- case retrieveOne fb of
-                {
-                    SuccessResult b -> cfmap (simpleLensPutback lens b);
-                    FailureResult fx -> return fx;
-                };
-                return (sequenceA fma);
+                ffa <- traverse (\b -> cfmap (simpleLensPutback lens b)) fb;
+                return (sequenceA (joinOne ffa));
             }
         };
     };

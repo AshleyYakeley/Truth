@@ -19,6 +19,20 @@ module Data.FunctorOne where
     -- retrieveOne (fmap f w) = fmap f (retrieveOne w)
     -- case (retrieveOne w) of {Left w' -> w';Right a -> fmap (\_ -> a) w;} = w
 
+    bindOne :: (FunctorOne f) => f a -> (a -> f b) -> f b;
+    bindOne fa afb = case retrieveOne fa of
+    {
+        SuccessResult a -> afb a;
+        FailureResult fx -> fx;
+    };
+
+    joinOne :: (FunctorOne f) => f (f a) -> f a;
+    joinOne ffa = case retrieveOne ffa of
+    {
+        SuccessResult fa -> fa;
+        FailureResult fx -> fx;
+    };
+
     data FunctorOneInst f where
     {
         MkFunctorOneInst :: forall f. (FunctorOne f) => FunctorOneInst f;
