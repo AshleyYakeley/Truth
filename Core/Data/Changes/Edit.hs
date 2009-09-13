@@ -2,6 +2,7 @@ module Data.Changes.Edit where
 {
     import Data.ConstFunction;
     import Data.Witness;
+    import Data.Nothing;
     import Control.Category;
     import Prelude hiding (id,(.));
 
@@ -48,5 +49,36 @@ module Data.Changes.Edit where
     data FullEditInst edit where
     {
         MkFullEditInst :: forall edit. (FullEdit edit) => FullEditInst edit;
+    };
+     
+    newtype NoEdit a = MkNoEdit Nothing;
+
+    instance Edit (NoEdit a) where
+    {
+        type Subject (NoEdit a) = a;
+        applyEdit (MkNoEdit n) = never n;
+        invertEdit (MkNoEdit n) = never n;
+        
+        type EditEvidence (NoEdit a) = ();
+        editEvidence _ = ();
+    };
+   
+    instance (Edit ea,Edit eb,Subject ea ~ Subject eb) => Edit (Either ea eb) where
+    {
+        type Subject (Either ea eb) = Subject ea;
+        
+        applyEdit (Left edit) = applyEdit edit;
+        applyEdit (Right edit) = applyEdit edit;
+        
+        invertEdit (Left edit) s = fmap Left (invertEdit edit s);
+        invertEdit (Right edit) s = fmap Right (invertEdit edit s);
+        
+        type EditEvidence (Either ea eb) = ();
+        editEvidence _ = ();
+    };
+   
+    instance (FullEdit ea,Edit eb,Subject ea ~ Subject eb) => FullEdit (Either ea eb) where
+    {
+        replaceEdit s = Left (replaceEdit s);
     };
 }
