@@ -35,7 +35,7 @@ module UI.Truth.GTK.Window where
         foo :: forall edit. FullEditInst edit -> EditRepT edit -> Maybe (GView edit);
         foo inst (TEditRepT repJM rep) = do
         {
-            MkEqualType <- matchEditRepKTT repJM (typeRepKTT :: EditRepKTT (JustEdit Maybe));
+            MkEqualType <- matchEditRepKTT repJM (typeRepKTT :: EditRepKTT (JustRepEdit Maybe));
             case inst of
             {
                 MkFullEditInst -> case editEvidence (Type :: Type edit) of
@@ -53,7 +53,7 @@ module UI.Truth.GTK.Window where
         foo :: forall edit. FullEditInst edit -> EditRepT edit -> Maybe (GView edit);
         foo inst (TEditRepT (KTTEditRepKTT repJustEdit (TEditRepKTT repResult reperr)) rep) = do
         {
-            MkEqualType <- matchEditRepKKTTKTT repJustEdit (typeRepKKTTKTT :: EditRepKKTTKTT JustEdit);
+            MkEqualType <- matchEditRepKKTTKTT repJustEdit (typeRepKKTTKTT :: EditRepKKTTKTT JustRepEdit);
             MkEqualType <- matchEditRepKTKTT repResult (typeRepKTKTT :: EditRepKTKTT Result);
             case inst of
             {

@@ -11,16 +11,16 @@ module Data.Changes.JustEdit where
     import Control.Applicative;
     import Prelude hiding (id,(.));
 
-    data JustEdit f edit = ReplaceJustEdit (f (Subject edit)) | JustEdit edit;
+    data JustRepEdit f edit = ReplaceJustEdit (f (Subject edit)) | JustEdit edit;
     
-    instance HasTypeRepKKTTKTT JustEdit where
+    instance HasTypeRepKKTTKTT JustRepEdit where
     {
         typeRepKKTTKTT = EditRepKKTTKTT (unsafeIOWitnessFromString "Data.Changes.JustEdit.JustEdit");
     };
 
-    instance (HasNewValue (Subject edit),FullEdit edit,FunctorOne f) => Edit (JustEdit f edit) where
+    instance (HasNewValue (Subject edit),FullEdit edit,FunctorOne f) => Edit (JustRepEdit f edit) where
     {
-        type Subject (JustEdit f edit) = f (Subject edit);
+        type Subject (JustRepEdit f edit) = f (Subject edit);
     
         applyEdit (ReplaceJustEdit a) = pure a;
         applyEdit (JustEdit edita) = cfmap (applyEdit edita);
@@ -32,16 +32,16 @@ module Data.Changes.JustEdit where
             _ -> Nothing;
         };
 
-        type EditEvidence (JustEdit f edit) = (HasNewValueInst (Subject edit),FunctorOneInst f,FullEditInst edit);
+        type EditEvidence (JustRepEdit f edit) = (HasNewValueInst (Subject edit),FunctorOneInst f,FullEditInst edit);
         editEvidence _ = (MkHasNewValueInst,MkFunctorOneInst,MkFullEditInst);
     };
 
-    instance (HasNewValue (Subject edit),FullEdit edit,FunctorOne f) => FullEdit (JustEdit f edit) where
+    instance (HasNewValue (Subject edit),FullEdit edit,FunctorOne f) => FullEdit (JustRepEdit f edit) where
     {
         replaceEdit = ReplaceJustEdit;
     };
 
-    extractJustEdit :: forall f edit. (FunctorOne f,FullEdit edit) => JustEdit f edit -> Maybe edit;
+    extractJustEdit :: forall f edit. (FunctorOne f,FullEdit edit) => JustRepEdit f edit -> Maybe edit;
     extractJustEdit (JustEdit edit) = Just edit;
     extractJustEdit (ReplaceJustEdit fa) = case retrieveOne fa of
     {

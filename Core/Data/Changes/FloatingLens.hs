@@ -28,7 +28,7 @@ module Data.Changes.FloatingLens where
 
     -- suitable for Results, trying to put a failure code will be rejected 
     resultLens :: forall f state edita editb. (FunctorOne f,FullEdit edita,FullEdit editb) =>
-     FloatingLens state edita editb -> FloatingLens state (JustEdit f edita) (JustEdit f editb);
+     FloatingLens state edita editb -> FloatingLens state (JustRepEdit f edita) (JustRepEdit f editb);
     resultLens lens  = MkFloatingLens
     {
         lensInitial = lensInitial lens,

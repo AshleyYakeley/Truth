@@ -25,9 +25,9 @@ module Main where
         for_ args (\arg -> let
         {
             file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)
-            content :: Subscribe (JustEdit Maybe (WholeEdit ByteString))
+            content :: Subscribe (JustRepEdit Maybe (WholeEdit ByteString))
              = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) file; -- (Maybe ByteString)
-            mrtext :: Subscribe (JustEdit Maybe (JustEdit (Result ListError) (ListEdit (WholeEdit Char))))
+            mrtext :: Subscribe (JustRepEdit Maybe (JustRepEdit (Result ListError) (ListEdit (WholeEdit Char))))
              = lensSubscribe (simpleFixedLens (cfmap (wholeSimpleLens (utf8Lens . packBSLens)))) content;
         } in do
         {
