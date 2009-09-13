@@ -1,6 +1,7 @@
 module Data.Changes.FixedLens where
 {
     import Data.Changes.FloatingLens;
+    --import Data.Changes.JustEdit;
     import Data.Changes.WholeEdit;
     import Data.Changes.Edit;
     import Data.Bijection;
@@ -64,7 +65,41 @@ module Data.Changes.FixedLens where
             }
         };
     };
-    
+{-
+    instance (FunctorOne f,Applicative m) => CatFunctor (FixedLens' m) (JustEdit f) where
+    {
+        cfmap lens = MkFixedLens
+        {
+            fixedLensUpdate = \jfedita -> case jfedita of
+            {
+                ReplaceJustEdit fa -> return (Just (ReplaceJustEdit (fmap (fixedLensGet lens) fa)));
+                JustEdit edita -> do
+                {
+                    fmeditb <- cfmap (fixedLensUpdate lens edita);
+                    return (case retrieveOne fmeditb of
+                    {
+                        SuccessResult (Just editb) -> Just (JustEdit editb);
+                        _ -> Nothing;
+                    });
+                }
+            },
+            fixedLensGet = fmap (fixedLensGet lens),
+            fixedLensPutEdit = \jfeditb -> case jfeditb of
+            {
+                ReplaceJustEdit _fb -> undefined;   -- NYI
+                JustEdit editb -> do
+                {
+                    fmedita <- cfmap (fixedLensPutEdit lens editb);
+                    return (case retrieveOne fmedita of
+                    {
+                        SuccessResult medita -> fmap JustEdit medita;
+                        FailureResult _fx -> pure (JustEdit undefined); -- any JustEdit edit will do
+                    });
+                };
+            }
+        };
+    };
+-}    
     fixedFloatingLens :: FixedLens' m edita editb -> FloatingLens' m () edita editb;
     fixedFloatingLens lens = MkFloatingLens
     {
