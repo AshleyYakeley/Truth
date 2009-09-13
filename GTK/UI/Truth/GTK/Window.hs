@@ -27,20 +27,20 @@ module UI.Truth.GTK.Window where
         return (MkViewResult (MkViewWidgetStuff (toWidget w) (return Nothing)) (\_ -> return ()));
     };
 
-    type MatchView = forall edit. (Edit edit,HasNewValue (Subject edit)) => EditRepT edit -> Maybe (GView edit);
+    type MatchView = forall edit. (FullEdit edit,HasNewValue (Subject edit)) => EditRepT edit -> Maybe (GView edit);
 
     maybeMatchView :: MatchView;
-    maybeMatchView = foo MkEditInst where
+    maybeMatchView = foo MkFullEditInst where
     {
-        foo :: forall edit. EditInst edit -> EditRepT edit -> Maybe (GView edit);
+        foo :: forall edit. FullEditInst edit -> EditRepT edit -> Maybe (GView edit);
         foo inst (TEditRepT repJM rep) = do
         {
             MkEqualType <- matchEditRepKTT repJM (typeRepKTT :: EditRepKTT (JustEdit Maybe));
             case inst of
             {
-                MkEditInst -> case editEvidence (Type :: Type edit) of
+                MkFullEditInst -> case editEvidence (Type :: Type edit) of
                 {
-                    (MkHasNewValueInst,_,MkEditInst) -> return (maybeView newValue (theView matchViews rep));
+                    (MkHasNewValueInst,_,MkFullEditInst) -> return (maybeView newValue (theView matchViews rep));
                 };
             };
         };
@@ -48,18 +48,18 @@ module UI.Truth.GTK.Window where
     };
 
     resultMatchView :: MatchView;
-    resultMatchView = foo MkEditInst where
+    resultMatchView = foo MkFullEditInst where
     {
-        foo :: forall edit. EditInst edit -> EditRepT edit -> Maybe (GView edit);
+        foo :: forall edit. FullEditInst edit -> EditRepT edit -> Maybe (GView edit);
         foo inst (TEditRepT (KTTEditRepKTT repJustEdit (TEditRepKTT repResult reperr)) rep) = do
         {
             MkEqualType <- matchEditRepKKTTKTT repJustEdit (typeRepKKTTKTT :: EditRepKKTTKTT JustEdit);
             MkEqualType <- matchEditRepKTKTT repResult (typeRepKTKTT :: EditRepKTKTT Result);
             case inst of
             {
-                MkEditInst -> case editEvidence (Type :: Type edit) of
+                MkFullEditInst -> case editEvidence (Type :: Type edit) of
                 {
-                    (MkHasNewValueInst,_,MkEditInst) -> return (resultView reperr (theView matchViews rep));
+                    (MkHasNewValueInst,_,MkFullEditInst) -> return (resultView reperr (theView matchViews rep));
                 };
             };
         };
@@ -83,7 +83,7 @@ module UI.Truth.GTK.Window where
     matchViews :: [MatchView];
     matchViews = [checkButtonMatchView,textMatchView,maybeMatchView,resultMatchView];
 
-    theView :: forall edit. (Edit edit,HasNewValue (Subject edit)) => [MatchView] -> EditRepT edit -> GView edit;
+    theView :: forall edit. (FullEdit edit,HasNewValue (Subject edit)) => [MatchView] -> EditRepT edit -> GView edit;
     theView [] _ = lastResortView;
     theView (mview:mviews) editrep = case mview editrep of
     {
@@ -91,7 +91,7 @@ module UI.Truth.GTK.Window where
         _ -> theView mviews editrep;
     };
     
-    makeWindow :: (Edit edit, HasNewValue (Subject edit)) => EditRepT edit -> IORef Int -> IO () -> Subscribe edit -> IO ();
+    makeWindow :: (FullEdit edit, HasNewValue (Subject edit)) => EditRepT edit -> IORef Int -> IO () -> Subscribe edit -> IO ();
     makeWindow rep ref tellclose sub = do
     {
         (sub',w,close) <- subscribeView (theView matchViews rep) sub;
@@ -125,7 +125,7 @@ module UI.Truth.GTK.Window where
         return ();
     };
 
-    makeWindowCountRef :: (Edit edit, HasNewValue (Subject edit)) => EditRepT edit -> IORef Int -> Subscribe edit -> IO ();
+    makeWindowCountRef :: (FullEdit edit, HasNewValue (Subject edit)) => EditRepT edit -> IORef Int -> Subscribe edit -> IO ();
     makeWindowCountRef rep windowCount sub = do
     {
         makeWindow rep windowCount (do

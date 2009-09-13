@@ -77,10 +77,13 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
             (oldmiddle,_) = splitAt len rest;
         };
 
-        replaceEdit = ReplaceListEdit;
-
         type EditEvidence (ListEdit edit) = EditInst edit;
         editEvidence _ = MkEditInst;
+    };
+
+    instance (Edit edit) => FullEdit (ListEdit edit) where
+    {
+        replaceEdit = ReplaceListEdit;
     };
 
     updateSection :: (Int,Int) -> (Int,Int) -> Int -> ((Int,Int),Maybe (Int,Int));
@@ -100,7 +103,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
          else ((start,len+newlen-editlen),Just (editstart-start,editlen)); -- within
         
 
-    listElement :: forall edit. (HasNewValue (Subject edit),Edit edit) => Int -> FloatingLens Int (ListEdit edit) (JustEdit Maybe edit);
+    listElement :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => Int -> FloatingLens Int (ListEdit edit) (JustEdit Maybe edit);
     listElement initial = MkFloatingLens
     {
         lensInitial = initial,
@@ -139,7 +142,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
         };
     };
 
-    listSection :: forall edit. (HasNewValue (Subject edit),Edit edit) => (Int,Int) -> FloatingLens (Int,Int) (ListEdit edit) (ListEdit edit);
+    listSection :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => (Int,Int) -> FloatingLens (Int,Int) (ListEdit edit) (ListEdit edit);
     listSection initial = MkFloatingLens
     {
         lensInitial = initial,

@@ -66,11 +66,15 @@ module Data.Changes.Context where
         invertEdit (ContextEdit edit) (MkWithContext a _) = fmap ContextEdit (invertEdit edit a);
         invertEdit (ContentEdit edit) (MkWithContext _ a) = fmap ContentEdit (invertEdit edit a);
         invertEdit (ReplaceContextContentEdit _) a = Just (ReplaceContextContentEdit a);
-        
-        replaceEdit = ReplaceContextContentEdit;
 
         type EditEvidence (ContextContentEdit editx editn) = (EditInst editx,EditInst editn);
         editEvidence _ = (MkEditInst,MkEditInst);
+    };
+
+    instance (Edit editx, Edit editn) =>
+     FullEdit (ContextContentEdit editx editn) where
+    {
+        replaceEdit = ReplaceContextContentEdit;
     };
 
     contextCleanLens :: CleanLens' Identity (ContextContentEdit editx editn) editx;

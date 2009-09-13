@@ -10,7 +10,6 @@ module Data.Changes.Edit where
         type Subject edit;
         applyEdit :: edit -> ConstFunction (Subject edit) (Subject edit);
         invertEdit :: edit -> Subject edit -> Maybe edit;    -- "Nothing" means no change
-        replaceEdit :: Subject edit -> edit;
         
         --type EditEvidence edit = ();
         type EditEvidence edit;
@@ -40,4 +39,14 @@ module Data.Changes.Edit where
         a12 = applyConstFunction cf12 a;
         a21 = applyConstFunction cf21 a;
     } in if a12 == a21 then Just a12 else Nothing;
+    
+    class (Edit edit) => FullEdit edit where
+    {
+        replaceEdit :: Subject edit -> edit;
+    };
+
+    data FullEditInst edit where
+    {
+        MkFullEditInst :: forall edit. (FullEdit edit) => FullEditInst edit;
+    };
 }

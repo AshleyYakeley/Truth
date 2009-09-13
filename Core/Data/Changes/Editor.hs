@@ -31,7 +31,7 @@ module Data.Changes.Editor where
         editorDo = \a _ -> return a
     });
 
-    subscribeWrite :: (Edit edit) => Subject edit -> Subscribe edit -> IO (Maybe ());
+    subscribeWrite :: (FullEdit edit) => Subject edit -> Subscribe edit -> IO (Maybe ());
     subscribeWrite a object = subscribeEdit object (MkEditor
     {
         editorInit = \_ push -> return push,

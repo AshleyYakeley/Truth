@@ -18,7 +18,7 @@ module Data.Changes.JustEdit where
         typeRepKKTTKTT = EditRepKKTTKTT (unsafeIOWitnessFromString "Data.Changes.JustEdit.JustEdit");
     };
 
-    instance (HasNewValue (Subject edit),Edit edit,FunctorOne f) => Edit (JustEdit f edit) where
+    instance (HasNewValue (Subject edit),FullEdit edit,FunctorOne f) => Edit (JustEdit f edit) where
     {
         type Subject (JustEdit f edit) = f (Subject edit);
     
@@ -32,13 +32,16 @@ module Data.Changes.JustEdit where
             _ -> Nothing;
         };
 
-        replaceEdit = ReplaceJustEdit;
-
-        type EditEvidence (JustEdit f edit) = (HasNewValueInst (Subject edit),FunctorOneInst f,EditInst edit);
-        editEvidence _ = (MkHasNewValueInst,MkFunctorOneInst,MkEditInst);
+        type EditEvidence (JustEdit f edit) = (HasNewValueInst (Subject edit),FunctorOneInst f,FullEditInst edit);
+        editEvidence _ = (MkHasNewValueInst,MkFunctorOneInst,MkFullEditInst);
     };
 
-    extractJustEdit :: forall f edit. (FunctorOne f,Edit edit) => JustEdit f edit -> Maybe edit;
+    instance (HasNewValue (Subject edit),FullEdit edit,FunctorOne f) => FullEdit (JustEdit f edit) where
+    {
+        replaceEdit = ReplaceJustEdit;
+    };
+
+    extractJustEdit :: forall f edit. (FunctorOne f,FullEdit edit) => JustEdit f edit -> Maybe edit;
     extractJustEdit (JustEdit edit) = Just edit;
     extractJustEdit (ReplaceJustEdit fa) = case retrieveOne fa of
     {

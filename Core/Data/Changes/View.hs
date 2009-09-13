@@ -9,7 +9,7 @@ module Data.Changes.View where
     data Selection edit where
     {
         MkSelection :: 
-         forall editb state. (Eq state,HasNewValue (Subject editb),Edit editb) =>
+         forall editb state. (Eq state,HasNewValue (Subject editb),FullEdit editb) =>
           EditRepT editb -> FloatingLens state edita editb -> Selection edita;
     };
 

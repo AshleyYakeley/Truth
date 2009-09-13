@@ -26,7 +26,7 @@ module Data.Changes.FixedLens where
     
     type FixedLens = FixedLens' Maybe;
     
-    makeFixedLensUpdate :: (Edit edita,Edit editb) =>
+    makeFixedLensUpdate :: (Edit edita,FullEdit editb) =>
      (Subject edita -> Subject editb) -> (edita -> Maybe (ConstFunction (Subject edita) (Maybe editb))) -> (edita -> ConstFunction (Subject edita) (Maybe editb));
     makeFixedLensUpdate getter ff edit = case ff edit of
     {
@@ -208,7 +208,7 @@ module Data.Changes.FixedLens where
         fixedLensPutEdit = \(MkWholeEdit newb) -> fmap (fmap MkWholeEdit) (simpleLensPutback lens newb)
     };
     
-    simpleFixedLens :: (Functor m,Edit edita,Edit editb) => SimpleLens' m (Subject edita) (Subject editb) -> FixedLens' m edita editb;
+    simpleFixedLens :: (Functor m,FullEdit edita,FullEdit editb) => SimpleLens' m (Subject edita) (Subject editb) -> FixedLens' m edita editb;
     simpleFixedLens lens = MkFixedLens
     {
         fixedLensUpdate = makeFixedLensUpdate (simpleLensGet lens) (\_ -> Nothing),

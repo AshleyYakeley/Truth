@@ -45,7 +45,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
     doIf (Just a) f = fmap Just (f a);
     doIf Nothing _ = return Nothing;
 
-    createButton :: (Edit edit) => Subject edit -> Push edit -> IO Button;
+    createButton :: (FullEdit edit) => Subject edit -> Push edit -> IO Button;
     createButton val push = pushButton push (replaceEdit val) "Create";
 
     functorOneIVF :: forall f edit wd. 
@@ -54,7 +54,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
         Applicative f,
         FunctorOne f,
         HasNewValue (Subject edit),
-        Edit edit,
+        FullEdit edit,
         WidgetClass wd
     ) =>
       EditRepKTT f -> Maybe (forall b. f b) -> (Push (JustEdit f edit) -> IO wd) -> GView edit -> GView (JustEdit f edit);
@@ -135,7 +135,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
         });
     };
 
-    maybeView :: (HasNewValue (Subject edit),Edit edit) =>
+    maybeView :: (HasNewValue (Subject edit),FullEdit edit) =>
       Subject edit -> GView edit -> GView (JustEdit Maybe edit);
     maybeView initialVal = functorOneIVF typeRepKTT (Just Nothing) (createButton (Just initialVal));
     
@@ -146,6 +146,6 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
         return label;
     };
     
-    resultView :: (HasNewValue (Subject edit),Edit edit) => EditRepT err -> GView edit -> GView (JustEdit (Result err) edit);
+    resultView :: (HasNewValue (Subject edit),FullEdit edit) => EditRepT err -> GView edit -> GView (JustEdit (Result err) edit);
     resultView reperr = functorOneIVF (TEditRepKTT typeRepKTKTT reperr) Nothing (\_ -> placeholderLabel);
 }
