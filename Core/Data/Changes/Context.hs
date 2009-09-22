@@ -3,6 +3,7 @@ module Data.Changes.Context where
     import Data.Result;
 --    import Data.Changes.Tuple;
     import Data.Changes.FixedLens;
+    import Data.Changes.SimpleLens;
     import Data.Changes.Edit;
     import Data.FunctorOne;
 --    import Data.Witness;
@@ -59,7 +60,7 @@ module Data.Changes.Context where
      Edit (ContextContentEdit editx editn) where
     {
         type Subject (ContextContentEdit editx editn) = WithContext (Subject editx) (Subject editn);
-    
+
         applyEdit (ContextEdit edit) = arr (\(MkWithContext x n) -> MkWithContext (applyConstFunction (applyEdit edit) x) n);
         applyEdit (ContentEdit edit) = arr (\(MkWithContext x n) -> MkWithContext x (applyConstFunction (applyEdit edit) n));
         applyEdit (ReplaceContextContentEdit a) = pure a;
@@ -85,7 +86,11 @@ module Data.Changes.Context where
             ContextEdit edit -> Just edit;
             _ -> Nothing;
         },
-        cleanLensGet = \(MkWithContext a _) -> a,
+        cleanLensSimple = MkSimpleLens
+        {
+            simpleLensGet = \(MkWithContext a _) -> a,
+            simpleLensPutback = \a -> arr (\(MkWithContext _ x) -> Identity (MkWithContext a x))
+        },
         cleanLensPutEdit = Identity . ContextEdit
     };
 
@@ -97,7 +102,11 @@ module Data.Changes.Context where
             ContentEdit edit -> Just edit;
             _ -> Nothing;
         },
-        cleanLensGet = \(MkWithContext _ a) -> a,
+        cleanLensSimple = MkSimpleLens
+        {
+            simpleLensGet = \(MkWithContext _ a) -> a,
+            simpleLensPutback = \a -> arr (\(MkWithContext x _) -> Identity (MkWithContext x a))
+        },
         cleanLensPutEdit = Identity . ContentEdit
     };
 }

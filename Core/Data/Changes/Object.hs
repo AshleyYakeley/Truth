@@ -2,6 +2,7 @@ module Data.Changes.Object where
 {
     import Data.Changes.FixedLens;
     import Data.Changes.FloatingLens;
+    import Data.Changes.SimpleLens;
     import Data.Changes.WholeEdit;
     import Data.Changes.Edit;
     import Data.Store;
@@ -20,11 +21,11 @@ module Data.Changes.Object where
     data Subscription edit = MkSubscription
     {
         subCopy :: Subscribe edit,
-        
+
         -- | close the subscription
         subClose :: IO ()
     };
-    
+
     -- | blocks if the object is busy
     ;
     type Subscribe edit = forall r. (Subject edit -> Push edit -> IO r) -> (r -> edit -> IO ()) -> IO (r, Subscription edit);
@@ -88,7 +89,7 @@ module Data.Changes.Object where
         };
         objSub initialise' updater';
     };
-    
+
     freeObjSubscribe :: forall edit. (Edit edit) => Subject edit -> Subscribe edit;
     freeObjSubscribe initial = objSubscribe (\_ -> do
     {
@@ -105,7 +106,7 @@ module Data.Changes.Object where
     {
         type LensDomain lens;
         type LensRange lens;
-    
+
         lensSubscribe :: lens -> Subscribe (LensDomain lens) -> Subscribe (LensRange lens);
     };
 
@@ -113,15 +114,15 @@ module Data.Changes.Object where
     {
         type LensDomain (FloatingLens state edita editb) = edita;
         type LensRange (FloatingLens state edita editb) = editb;
-    
+
         lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
         {
-            ((statevar,firsta,push),sub) <- subscribe 
+            ((statevar,firsta,push),sub) <- subscribe
              (\a push -> do
             {
                 statevar <- newEmptyMVar;
                 return (statevar,a,push);
-            }) 
+            })
              (\(statevar,_,_) edita -> modifyMVar_ statevar (\(oldstate,olda) -> let
             {
                 (newstate,meditb) = applyConstFunction (lensUpdate lens edita oldstate) olda;
@@ -164,15 +165,15 @@ module Data.Changes.Object where
     {
         type LensDomain (FixedLens edita editb) = edita;
         type LensRange (FixedLens edita editb) = editb;
-    
+
         lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
         {
-            ((statevar,firsta,push),sub) <- subscribe 
+            ((statevar,firsta,push),sub) <- subscribe
              (\a push -> do
             {
                 statevar <- newEmptyMVar;
                 return (statevar,a,push);
-            }) 
+            })
              (\(statevar,_,_) edita -> modifyMVar_ statevar (\olda -> let
             {
                 meditb = applyConstFunction (fixedLensUpdate lens edita) olda;
@@ -188,7 +189,7 @@ module Data.Changes.Object where
             putMVar statevar firsta;
             return (MkObject
             {
-                objGetInitial = \initialise -> withMVar statevar (\a -> initialise (fixedLensGet lens a)),
+                objGetInitial = \initialise -> withMVar statevar (\a -> initialise (simpleLensGet (fixedLensSimple lens) a)),
                 objPush = \editb -> modifyMVar statevar (\olda -> case applyConstFunction (fixedLensPutEdit lens editb) olda of
                 {
                     Just edita -> do
@@ -214,12 +215,12 @@ module Data.Changes.Object where
 
         lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
         {
-            ((statevar,firsta,push),sub) <- subscribe 
+            ((statevar,firsta,push),sub) <- subscribe
              (\a push -> do
             {
                 statevar <- newEmptyMVar;
                 return (statevar,a,push);
-            }) 
+            })
              (\(statevar,_,_) (MkWholeEdit newa) -> modifyMVar_ statevar (\_ -> do
             {
                 pushOut (MkWholeEdit (simpleLensGet lens newa));

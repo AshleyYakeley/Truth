@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Changes.Text where
 {
-    import Data.Changes.FixedLens;
+    import Data.Changes.WholeLens;
     import Data.Changes.HasTypeRep;
     import Data.Changes.EditRep;
     import Data.Result;
@@ -15,14 +15,14 @@ module Data.Changes.Text where
 
     packBSLens :: WholeLens ByteString [Word8];
     packBSLens = bijectionWholeLens (MkBijection unpack pack);
-    
+
     data ListError = MkListError Int;
 
     instance HasTypeRepT ListError where
     {
         typeRepT = EditRepT (unsafeIOWitnessFromString "Data.Changes.Text.ListError");
     };
-    
+
     utf8Lens :: WholeLens [Word8] (Result ListError String);
     utf8Lens = resultWholeLens decode encode where
     {
@@ -35,10 +35,10 @@ module Data.Changes.Text where
                 b:bs -> (Just b,(bs,i+1));
                 [] -> (Nothing,s);
             }));
-        
+
             listError :: StateT (s,Int) (Result ListError) a;
             listError = StateT (\(_,i) -> FailureResult (MkListError i));
-        
+
             parse :: StateT ([Word8],Int) (Result ListError) String;
             parse = do
             {
@@ -53,7 +53,7 @@ module Data.Changes.Text where
                     _ -> return [];
                 };
             };
-        
+
             parseChar :: StateT ([Word8],Int) (Result ListError) (Maybe Char);
             parseChar = do
             {
@@ -71,7 +71,7 @@ module Data.Changes.Text where
                              then listError
                              else do
                         {
-                            let {w0 = fromIntegral (0x7 .&. b0);}; 
+                            let {w0 = fromIntegral (0x7 .&. b0);};
                             w1 <- get10Bits;
                             w2 <- get10Bits;
                             w3 <- get10Bits;
@@ -84,7 +84,7 @@ module Data.Changes.Text where
                         }
                             else do
                         {
-                            let {w0 = fromIntegral (0xF .&. b0);}; 
+                            let {w0 = fromIntegral (0xF .&. b0);};
                             w1 <- get10Bits;
                             w2 <- get10Bits;
                             convertOut (
@@ -95,7 +95,7 @@ module Data.Changes.Text where
                         }
                            else do
                         {
-                            let {w0 = fromIntegral (0x1F .&. b0);}; 
+                            let {w0 = fromIntegral (0x1F .&. b0);};
                             w1 <- get10Bits;
                             convertOut (
                                 (shift w0 6) .|. w1
@@ -112,7 +112,7 @@ module Data.Changes.Text where
                 extract10Bits :: (Maybe Word8) -> StateT ([Word8],Int) (Result ListError) Word8;
                 extract10Bits (Just w) | 0xC0 .&. w == 0x80 = return (0x3F .&. w);
                 extract10Bits _ = listError;
-        
+
                 get10Bits :: StateT ([Word8],Int) (Result ListError) Word32;
                 get10Bits = do
                 {
@@ -172,7 +172,7 @@ module Data.Changes.Text where
                 trailingByte 6,
                 trailingByte 0
                 ]
-            else 
+            else
                 [
                 0xFC .|. (shiftToByte 30),
                 trailingByte 24,

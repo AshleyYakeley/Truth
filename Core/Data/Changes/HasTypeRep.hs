@@ -65,6 +65,11 @@ module Data.Changes.HasTypeRep where
         typeRepKTKTT = EditRepKTKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.->");
     };
 
+    instance HasTypeRepKTKTT Either where
+    {
+        typeRepKTKTT = EditRepKTKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Either");
+    };
+
     instance HasTypeRepKTKTT Result where
     {
         typeRepKTKTT = EditRepKTKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Result");

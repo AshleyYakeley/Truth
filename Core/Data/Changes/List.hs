@@ -1,7 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Changes.List(listElement,listSection,ListEdit(..)) where
 {
+    import Data.Changes.IndexEdit;
     import Data.Changes.FloatingLens;
+    import Data.Changes.SimpleLens;
     import Data.Changes.JustEdit;
     import Data.Changes.Edit;
     import Data.Changes.HasTypeRep;
@@ -15,30 +17,8 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
     import Control.Applicative;
     import Prelude hiding (id,(.));
 
-    elementModify :: Int -> (e -> e) -> [e] -> [e];
-    elementModify 0 f (e:es) = (f e):es;
-    elementModify _ _ [] = [];
-    elementModify i f (e:es) = e:(elementModify (i - 1) f es);
+    data ListEdit edit = ReplaceListEdit [Subject edit] | ItemEdit (IndexEdit [Subject edit] Int edit) | ReplaceSectionEdit (Int,Int) [Subject edit];
 
-    elementGet :: Int -> [e] -> Maybe e;
-    elementGet 0 (e:_) = Just e;
-    elementGet _ [] = Nothing;
-    elementGet i (_:es) = elementGet (i - 1) es;
-{-        
-    elementPutback :: Int -> e -> [e] -> Maybe [e];
-    elementPutback _ _ [] = Nothing;
-    elementPutback 0 x (_:es) = Just (x:es);
-    elementPutback i x (e:es) = do
-    {
-        xs <- elementPutback (i - 1) x es;
-        return (e:xs);
-    };
--}
-
---    data FixedListEdit edit = MkFixedListEdit Int edit;
-
-    data ListEdit edit =  ReplaceListEdit [Subject edit] | ItemEdit Int edit | ReplaceSectionEdit (Int,Int) [Subject edit];
-    
     instance HasTypeRepKTT ListEdit where
     {
         typeRepKTT = EditRepKTT (unsafeIOWitnessFromString "Data.Changes.List.ListEdit");
@@ -47,12 +27,9 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
     instance (Edit edit) => Edit (ListEdit edit) where
     {
         type Subject (ListEdit edit) = [Subject edit];
-    
+
         applyEdit (ReplaceListEdit a) = pure a;
-        applyEdit (ItemEdit i _) | i < 0 = id;
-        applyEdit (ItemEdit i edita) = arr (elementModify i (applyConstFunction (applyEdit edita))) where
-        {
-        };
+        applyEdit (ItemEdit edit) = applyEdit edit;
         applyEdit (ReplaceSectionEdit (start,_) _) | start < 0 = id;
         applyEdit (ReplaceSectionEdit (start,len) newmiddle) = arr (\list -> let
         {
@@ -61,15 +38,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
         } in before ++ newmiddle ++ after);
 
         invertEdit (ReplaceListEdit _) a = Just (ReplaceListEdit a);
-        invertEdit (ItemEdit i _) _ | i < 0 = Nothing;
-        invertEdit (ItemEdit i edita) oldlist = do
-        {
-            oldelement <- elementGet i oldlist;
-            invedita <- invertEdit edita oldelement;
-            return (ItemEdit i invedita);
-        } where
-        {
-        };        
+        invertEdit (ItemEdit edit) oldlist = fmap ItemEdit (invertEdit edit oldlist);
         invertEdit (ReplaceSectionEdit (start,_) _) _ | start < 0 = Nothing;
         invertEdit (ReplaceSectionEdit (start,len) newmiddle) oldlist = Just (ReplaceSectionEdit (start,length newmiddle) oldmiddle) where
         {
@@ -101,26 +70,26 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
        else if editend > end    -- no clip start
          then ((start,editstart-start+newlen),Just (editstart-start,len-editstart+start)) -- no clip start, clip end
          else ((start,len+newlen-editlen),Just (editstart-start,editlen)); -- within
-        
+
 
     listElement :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => Int -> FloatingLens Int (ListEdit edit) (JustRepEdit Maybe edit);
     listElement initial = MkFloatingLens
     {
         lensInitial = initial,
         lensUpdate = elementUpdate,
-        lensGet = \i list -> if i < 0 then Nothing else elementGet i list,
+        lensSimple = \i -> indexLens i,
         lensPutEdit = \i eme -> pure (do
         {
             ee <- extractJustEdit eme;
-            return (ItemEdit i ee);
+            return (ItemEdit (MkIndexEdit i ee));
         })
     } where
     {
         listElement' :: Int -> FloatingLens Int (ListEdit edit) (JustRepEdit Maybe edit);
         listElement' = listElement;
-    
+
         elementUpdate :: ListEdit edit -> Int -> ConstFunction [Subject edit] (Int,Maybe (JustRepEdit Maybe edit));
-        elementUpdate edita state = 
+        elementUpdate edita state =
           fromMaybe (fmap (\newa -> (state,Just (replaceEdit (lensGet (listElement' state) state newa)))) (applyEdit edita)) update_ where
         {
             update_ :: Maybe (ConstFunction [Subject edit] (Int,Maybe (JustRepEdit Maybe edit)));
@@ -133,8 +102,8 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
                 } in (newstate,fmap (\_ -> replaceEdit (elementGet newstate newb)) mclip)
                 ));
 
-                ItemEdit editlensstate editbedit -> Just (pure
-                    (state,if (editlensstate == state) then Just (JustEdit editbedit) else Nothing)
+                ItemEdit (MkIndexEdit editlensstate editbedit) -> Just (pure
+                    (state,if (editlensstate == state) then Just (Right (MkJustEdit editbedit)) else Nothing)
                 );
 
                 _ -> Nothing;
@@ -147,23 +116,27 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
     {
         lensInitial = initial,
         lensUpdate = sectionUpdate,
-        lensGet = \(start,len) list -> take len (drop start list),
+        lensSimple = \(start,len) -> MkSimpleLens
+        {
+            simpleLensGet = \list -> take len (drop start list),
+            simpleLensPutback = \section -> arr (\list -> Just ((take start list) ++ section ++ (drop (start + len) list)))
+        },
         lensPutEdit = \clip@(start,_) ele -> pure (Just (case ele of
         {
             ReplaceListEdit newlist -> ReplaceSectionEdit clip newlist;
-            ItemEdit i edit -> ItemEdit (start + i) edit;
+            ItemEdit (MkIndexEdit i edit) -> ItemEdit (MkIndexEdit (start + i) edit);
             ReplaceSectionEdit (s,len) newlist -> ReplaceSectionEdit (start + s,len) newlist;
         }))
     } where
     {
         listSection' :: (Int,Int) -> FloatingLens (Int,Int) (ListEdit edit) (ListEdit edit);
         listSection' = listSection;
-    
+
         listElement' :: Int -> FloatingLens Int (ListEdit edit) (JustRepEdit Maybe edit);
         listElement' = listElement;
-    
+
         sectionUpdate :: ListEdit edit -> (Int,Int) -> ConstFunction [Subject edit] ((Int,Int),Maybe (ListEdit edit));
-        sectionUpdate edita state = 
+        sectionUpdate edita state =
           fromMaybe (fmap (\newa -> (state,Just (replaceEdit (lensGet (listSection' state) state newa)))) (applyEdit edita)) update_ where
         {
             update_ :: Maybe (ConstFunction [Subject edit] ((Int,Int),Maybe (ListEdit edit)));
@@ -176,7 +149,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
                 } in (newstate,fmap (\clip -> ReplaceSectionEdit clip newb) mclip)
                 ));
 
-                ItemEdit editlensstate editbedit -> Just (FunctionConstFunction (\olda ->
+                ItemEdit (MkIndexEdit editlensstate editbedit) -> Just (FunctionConstFunction (\olda ->
                 let
                 {
                     oldb = lensGet (listElement' editlensstate) editlensstate olda;
@@ -187,7 +160,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
                         _ -> 0;
                     };
                     (newstate,mclip) = updateSection state (editlensstate,1) newlen;
-                } in (newstate,fmap (\(clip,_) -> ItemEdit clip editbedit) mclip) ));
+                } in (newstate,fmap (\(clip,_) -> ItemEdit (MkIndexEdit clip editbedit)) mclip) ));
 
                 _ -> Nothing;
             };

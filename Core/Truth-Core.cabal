@@ -46,6 +46,9 @@ exposed-modules:
     Data.Changes.Edit
     Data.Changes.WholeEdit
     Data.Changes.JustEdit
+    Data.Changes.IndexEdit
+    Data.Changes.WholeLens
+    Data.Changes.SimpleLens
     Data.Changes.FloatingLens
     Data.Changes.FixedLens
     Data.Changes.Object

@@ -48,7 +48,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
     createButton :: (FullEdit edit) => Subject edit -> Push edit -> IO Button;
     createButton val push = pushButton push (replaceEdit val) "Create";
 
-    functorOneIVF :: forall f edit wd. 
+    functorOneIVF :: forall f edit wd.
     (
         HasNewValue1 f,
         Applicative f,
@@ -61,7 +61,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
     functorOneIVF repf mDeleteValue makeEmptywidget factory initial push = let
     {
         mpush :: Push edit;
-        mpush ea = push (JustEdit ea);
+        mpush ea = push (Right (MkJustEdit ea));
     } in do
     {
         box <- vBoxNew False 0;
@@ -96,7 +96,12 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
                         return (do
                         {
                             MkSelection rep (lens :: FloatingLens state edit editb) <- msel;
-                            return ((newValue1 (Type :: Type (f (Subject editb))) MkSelection) (TEditRepT (KTTEditRepKTT typeRepKKTTKTT repf) rep) (resultLens lens));
+                            return
+                             (
+                             (newValue1 (Type :: Type (f (Subject editb))) MkSelection)
+                             (TEditRepT (KTTEditRepKTT typeRepKKTTKTT repf) rep)    -- JustEdit repf rep
+                             (resultLens lens)
+                             );
                         });
                     };
                     Nothing -> return Nothing;
@@ -120,9 +125,9 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
                     };
                     Nothing -> case edit of
                     {
-                        ReplaceJustEdit fa | SuccessResult a <- retrieveOne fa -> do
+                        Left (MkWholeEdit fa) | SuccessResult a <- retrieveOne fa -> do
                         {
-                            iv@(MkViewResult ws _) <- factory a mpush;                
+                            iv@(MkViewResult ws _) <- factory a mpush;
                             doIf mDeleteButton (boxAddShow PackNatural box);
                             boxAddShow PackGrow box (vwsWidget ws);
                             containerRemove box emptyWidget;
@@ -138,14 +143,14 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
     maybeView :: (HasNewValue (Subject edit),FullEdit edit) =>
       Subject edit -> GView edit -> GView (JustRepEdit Maybe edit);
     maybeView initialVal = functorOneIVF typeRepKTT (Just Nothing) (createButton (Just initialVal));
-    
+
     placeholderLabel :: IO Label;
     placeholderLabel = do
     {
         label <- labelNew (Just "Placeholder");
         return label;
     };
-    
+
     resultView :: (HasNewValue (Subject edit),FullEdit edit) => EditRepT err -> GView edit -> GView (JustRepEdit (Result err) edit);
     resultView reperr = functorOneIVF (TEditRepKTT typeRepKTKTT reperr) Nothing (\_ -> placeholderLabel);
 }
