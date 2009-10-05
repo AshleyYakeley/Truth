@@ -1,20 +1,22 @@
 module Data.Changes.Edit where
 {
+    import Data.Changes.HasTypeRep;
+    import Data.Changes.EditRep;
+    import Data.OpenWitness;
     import Data.ConstFunction;
-    import Data.Witness;
     import Data.Nothing;
     import Control.Category;
     import Prelude hiding (id,(.));
 
-    class Edit edit where
+    class (HasTypeRepT edit,HasTypeRepT (Subject edit)) => Edit edit where
     {
         type Subject edit;
         applyEdit :: edit -> ConstFunction (Subject edit) (Subject edit);
         invertEdit :: edit -> Subject edit -> Maybe edit;    -- "Nothing" means no change
-        
+
         --type EditEvidence edit = ();
         type EditEvidence edit;
-        editEvidence :: Type edit -> EditEvidence edit;
+        editEvidence :: forall r. r edit -> EditEvidence edit;
         --editEvidence _ = ();
     };
 
@@ -25,7 +27,7 @@ module Data.Changes.Edit where
 
     applyAndInvertEdit :: (Edit edit) => edit -> (ConstFunction (Subject edit) (Subject edit),(Subject edit) -> Maybe edit);
     applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
-    
+
     applyEdits :: (Edit edit) => [edit] -> ConstFunction (Subject edit) (Subject edit);
     applyEdits [] = id;
     applyEdits (e:es) = (applyEdits es) . (applyEdit e);
@@ -40,7 +42,7 @@ module Data.Changes.Edit where
         a12 = applyConstFunction cf12 a;
         a21 = applyConstFunction cf21 a;
     } in if a12 == a21 then Just a12 else Nothing;
-    
+
     class (Edit edit) => FullEdit edit where
     {
         replaceEdit :: Subject edit -> edit;
@@ -50,33 +52,38 @@ module Data.Changes.Edit where
     {
         MkFullEditInst :: forall edit. (FullEdit edit) => FullEditInst edit;
     };
-     
+
     newtype NoEdit a = MkNoEdit Nothing;
 
-    instance Edit (NoEdit a) where
+    instance HasTypeRepKTT NoEdit where
+    {
+        typeRepKTT = EditRepKTT (unsafeIOWitnessFromString "Data.Changes.Edit.NoEdit");
+    };
+
+    instance (HasTypeRepT a) => Edit (NoEdit a) where
     {
         type Subject (NoEdit a) = a;
         applyEdit (MkNoEdit n) = never n;
         invertEdit (MkNoEdit n) = never n;
-        
+
         type EditEvidence (NoEdit a) = ();
         editEvidence _ = ();
     };
-   
+
     instance (Edit ea,Edit eb,Subject ea ~ Subject eb) => Edit (Either ea eb) where
     {
         type Subject (Either ea eb) = Subject ea;
-        
+
         applyEdit (Left edit) = applyEdit edit;
         applyEdit (Right edit) = applyEdit edit;
-        
+
         invertEdit (Left edit) s = fmap Left (invertEdit edit s);
         invertEdit (Right edit) s = fmap Right (invertEdit edit s);
-        
-        type EditEvidence (Either ea eb) = ();
-        editEvidence _ = ();
+
+        type EditEvidence (Either ea eb) = (EditInst ea,EditInst eb);
+        editEvidence _ = (MkEditInst,MkEditInst);
     };
-   
+
     instance (FullEdit ea,Edit eb,Subject ea ~ Subject eb) => FullEdit (Either ea eb) where
     {
         replaceEdit s = Left (replaceEdit s);

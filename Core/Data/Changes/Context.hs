@@ -5,6 +5,9 @@ module Data.Changes.Context where
     import Data.Changes.FixedLens;
     import Data.Changes.SimpleLens;
     import Data.Changes.Edit;
+    import Data.Changes.HasTypeRep;
+    import Data.Changes.EditRep;
+    import Data.OpenWitness;
     import Data.FunctorOne;
 --    import Data.Witness;
     import Data.ConstFunction;
@@ -15,6 +18,11 @@ module Data.Changes.Context where
     import Control.Monad.Identity;
 
     data WithContext context content = MkWithContext context content;
+
+    instance HasTypeRepKTKTT WithContext where
+    {
+        typeRepKTKTT = EditRepKTKTT (unsafeIOWitnessFromString "Data.Changes.Context.MkWithContext");
+    };
 
     instance Functor (WithContext context) where
     {
@@ -55,6 +63,11 @@ module Data.Changes.Context where
 -}
 
     data ContextContentEdit editx editn = ReplaceContextContentEdit (WithContext (Subject editx) (Subject editn)) | ContextEdit editx | ContentEdit editn;
+
+    instance HasTypeRepKTKTT ContextContentEdit where
+    {
+        typeRepKTKTT = EditRepKTKTT (unsafeIOWitnessFromString "Data.Changes.Context.ContextContentEdit");
+    };
 
     instance (Edit editx, Edit editn) =>
      Edit (ContextContentEdit editx editn) where

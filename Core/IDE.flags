@@ -1,0 +1,12 @@
+Config flags:  ""
+Build flags:   "--ghc-options=-Wall\ -Werror"
+Haddock flags: ""
+Executable flags:
+               ""
+Install flags: ""
+Register flags:
+               ""
+Unregister flags:
+               ""
+Source Distribution flags:
+               ""

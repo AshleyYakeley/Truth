@@ -7,13 +7,13 @@ module Data.Changes.WholeEdit where
     import Control.Applicative;
 
     newtype WholeEdit a = MkWholeEdit a;
-    
+
     instance HasTypeRepKTT WholeEdit where
     {
         typeRepKTT = EditRepKTT (unsafeIOWitnessFromString "Data.Changes.WholeEdit.WholeEdit");
     };
 
-    instance Edit (WholeEdit a) where
+    instance (HasTypeRepT a) => Edit (WholeEdit a) where
     {
         type Subject (WholeEdit a) = a;
         applyEdit (MkWholeEdit a) = pure a;
@@ -23,7 +23,7 @@ module Data.Changes.WholeEdit where
         editEvidence _ = ();
     };
 
-    instance FullEdit (WholeEdit a) where
+    instance (HasTypeRepT a) => FullEdit (WholeEdit a) where
     {
         replaceEdit = MkWholeEdit;
     };

@@ -95,12 +95,12 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
                         msel <- vwsGetSelection ws;
                         return (do
                         {
-                            MkSelection rep (lens :: FloatingLens state edit editb) <- msel;
+                            MkSelection _ (lens :: FloatingLens state edit editb) <- msel;
                             return
                              (
-                             (newValue1 (Type :: Type (f (Subject editb))) MkSelection)
-                             (TEditRepT (KTTEditRepKTT typeRepKKTTKTT repf) rep)    -- JustEdit repf rep
-                             (resultLens lens)
+                                (newValue1 (Type :: Type (f (Subject editb))) MkSelection)
+                                (justWholeEditRep repf)                             -- (TEditRepT (KTTEditRepKTT typeRepKKTTKTT repf) rep)    -- JustEdit repf rep
+                                (resultLens lens)
                              );
                         });
                     };
@@ -141,8 +141,8 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
     };
 
     maybeView :: (HasNewValue (Subject edit),FullEdit edit) =>
-      Subject edit -> GView edit -> GView (JustRepEdit Maybe edit);
-    maybeView initialVal = functorOneIVF typeRepKTT (Just Nothing) (createButton (Just initialVal));
+      GView edit -> GView (JustRepEdit Maybe edit);
+    maybeView = functorOneIVF typeRepKTT (Just Nothing) (createButton (Just newValue));
 
     placeholderLabel :: IO Label;
     placeholderLabel = do

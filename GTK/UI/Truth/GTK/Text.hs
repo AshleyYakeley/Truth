@@ -65,7 +65,7 @@ module UI.Truth.GTK.Text (textView) where
             {
                 ReplaceListEdit text -> textBufferSetText buffer text;
                 ReplaceSectionEdit bounds text -> replaceText buffer bounds text;
-                ItemEdit i (MkWholeEdit c) -> replaceText buffer (i,1) [c];
+                ItemEdit (MkIndexEdit i (MkWholeEdit c)) -> replaceText buffer (i,1) [c];
             })
         });
     };

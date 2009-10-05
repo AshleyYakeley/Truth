@@ -2,11 +2,19 @@ module Data.Changes.IndexEdit where
 {
     import Data.Changes.SimpleLens;
     import Data.Changes.Edit;
+    import Data.Changes.HasTypeRep;
+    import Data.Changes.EditRep;
+    import Data.OpenWitness;
     import Data.ConstFunction;
     import Control.Arrow;
     import Prelude hiding (id,(.));
 
     data IndexEdit a i edit = MkIndexEdit i edit;
+
+    instance HasTypeRepKTKTKTT IndexEdit where
+    {
+        typeRepKTKTKTT = EditRepKTKTKTT (unsafeIOWitnessFromString "Data.Changes.IndexEdit.IndexEdit");
+    };
 
     class Container a where
     {
@@ -78,7 +86,7 @@ module Data.Changes.IndexEdit where
         };
     };
 
-    instance (Edit edit,Container container,Part container ~ Maybe (Subject edit),index ~ Index container) =>
+    instance (HasTypeRepT container,HasTypeRepT index,Edit edit,Container container,Part container ~ Maybe (Subject edit),index ~ Index container) =>
      Edit (IndexEdit container index edit) where
     {
         type Subject (IndexEdit container index edit) = container;

@@ -30,40 +30,53 @@ module UI.Truth.GTK.Window where
     type MatchView = forall edit. (FullEdit edit,HasNewValue (Subject edit)) => EditRepT edit -> Maybe (GView edit);
 
     maybeMatchView :: MatchView;
-    maybeMatchView = foo MkFullEditInst where
+    maybeMatchView repT = do
     {
-        foo :: forall edit. FullEditInst edit -> EditRepT edit -> Maybe (GView edit);
-        foo inst (TEditRepT repJM rep) = do
+        ff <- matchJustWholeEditRep repT;
+        ff (foo repT);
+    } where
+    {
+        foo :: forall t f edit. (Edit t) =>
+          EditRepT t ->
+          EqualType t (JustRepEdit f edit) -> EditRepKTT f -> EditRepT edit -> EditRepT (Subject edit) -> Maybe (GView t);
+        foo repT MkEqualType repF repEdit repSubj = case editEvidence repT of
         {
-            MkEqualType <- matchEditRepKTT repJM (typeRepKTT :: EditRepKTT (JustRepEdit Maybe));
-            case inst of
+            (_,MkEditInst) -> case editEvidence (Type :: Type (JustEdit f edit)) of
             {
-                MkFullEditInst -> case editEvidence (Type :: Type edit) of
+                (MkHasNewValueInst,_,MkFullEditInst) -> do
                 {
-                    (MkHasNewValueInst,_,MkFullEditInst) -> return (maybeView newValue (theView matchViews rep));
+                    MkEqualType <- matchEditRepKTT repF (typeRepKTT :: EditRepKTT Maybe);
+                    return (maybeView (theView matchViews repEdit))
                 };
             };
         };
-        foo _ _ = Nothing;
     };
 
     resultMatchView :: MatchView;
-    resultMatchView = foo MkFullEditInst where
+    resultMatchView repT = do
     {
-        foo :: forall edit. FullEditInst edit -> EditRepT edit -> Maybe (GView edit);
-        foo inst (TEditRepT (KTTEditRepKTT repJustEdit (TEditRepKTT repResult reperr)) rep) = do
+        ff <- matchJustWholeEditRep repT;
+        ff (foo repT);
+    } where
+    {
+        foo :: forall t f edit. (Edit t) =>
+          EditRepT t ->
+          EqualType t (JustRepEdit f edit) -> EditRepKTT f -> EditRepT edit -> EditRepT (Subject edit) -> Maybe (GView t);
+        foo repT MkEqualType repF repEdit repSubj = case editEvidence repT of
         {
-            MkEqualType <- matchEditRepKKTTKTT repJustEdit (typeRepKKTTKTT :: EditRepKKTTKTT JustRepEdit);
-            MkEqualType <- matchEditRepKTKTT repResult (typeRepKTKTT :: EditRepKTKTT Result);
-            case inst of
+            (_,MkEditInst) -> case editEvidence (Type :: Type (JustEdit f edit)) of
             {
-                MkFullEditInst -> case editEvidence (Type :: Type edit) of
+                (MkHasNewValueInst,_,MkFullEditInst) -> case repF of
                 {
-                    (MkHasNewValueInst,_,MkFullEditInst) -> return (resultView reperr (theView matchViews rep));
+                    (TEditRepKTT repR repErr) -> do
+                    {
+                        MkEqualType <- matchEditRepKTKTT repR (typeRepKTKTT :: EditRepKTKTT Result);
+                        return (resultView repErr (theView matchViews repEdit))
+                    };
+                    _ -> Nothing;
                 };
             };
         };
-        foo _ _ = Nothing;
     };
 
     checkButtonMatchView :: MatchView;
@@ -90,14 +103,14 @@ module UI.Truth.GTK.Window where
         Just gview -> gview;
         _ -> theView mviews editrep;
     };
-    
+
     makeWindow :: (FullEdit edit, HasNewValue (Subject edit)) => EditRepT edit -> IORef Int -> IO () -> Subscribe edit -> IO ();
     makeWindow rep ref tellclose sub = do
     {
         (sub',w,close) <- subscribeView (theView matchViews rep) sub;
         window <- windowNew;
         box <- vBoxNew False 0;
-        
+
         selectionButton <- makeButton "Selection" (do
         {
             msel <- vwsGetSelection w;
@@ -110,10 +123,10 @@ module UI.Truth.GTK.Window where
                 _ -> return ();
             };
         });
-        
+
         boxPackStart box selectionButton PackNatural 0;
         boxPackStart box (vwsWidget w) PackGrow 0;
-        
+
         set window [containerChild := box];
         widgetShow (vwsWidget w);
         onDestroy window (do

@@ -2,8 +2,12 @@ module Data.Changes.HasTypeRep where
 {
     import Data.Changes.EditRep;
     import Data.OpenWitness;
-    import Data.Word;
     import Data.Result;
+    import Data.ByteString;
+    import Data.Word;
+
+
+    -- T
 
     class HasTypeRepT a where
     {
@@ -30,6 +34,19 @@ module Data.Changes.HasTypeRep where
         typeRepT = EditRepT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Char");
     };
 
+    instance HasTypeRepT Int where
+    {
+        typeRepT = EditRepT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Int");
+    };
+
+    instance HasTypeRepT ByteString where
+    {
+        typeRepT = EditRepT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.ByteString");
+    };
+
+
+    -- KTT
+
     class HasTypeRepKTT a where
     {
         typeRepKTT :: EditRepKTT a;
@@ -49,6 +66,9 @@ module Data.Changes.HasTypeRep where
     {
         typeRepKTT = EditRepKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.[]");
     };
+
+
+    -- KTKTT
 
     class HasTypeRepKTKTT a where
     {
@@ -75,6 +95,9 @@ module Data.Changes.HasTypeRep where
         typeRepKTKTT = EditRepKTKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Result");
     };
 
+
+    -- KKTTKTT
+
     class HasTypeRepKKTTKTT a where
     {
         typeRepKKTTKTT :: EditRepKKTTKTT a;
@@ -83,5 +106,18 @@ module Data.Changes.HasTypeRep where
     instance (HasTypeRepKKTTKTT f,HasTypeRepKTT a) => HasTypeRepKTT (f a) where
     {
         typeRepKTT = KTTEditRepKTT typeRepKKTTKTT typeRepKTT;
+    };
+
+
+    -- KTKTKTT
+
+    class HasTypeRepKTKTKTT a where
+    {
+        typeRepKTKTKTT :: EditRepKTKTKTT a;
+    };
+
+    instance (HasTypeRepKTKTKTT f,HasTypeRepT a) => HasTypeRepKTKTT (f a) where
+    {
+        typeRepKTKTT = TEditRepKTKTT typeRepKTKTKTT typeRepT;
     };
 }

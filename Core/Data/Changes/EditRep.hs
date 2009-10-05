@@ -22,20 +22,61 @@ module Data.Changes.EditRep where
         matchWitnessEditRep :: rep -> Maybe (IOWitness (RepT rep));
     };
 
+
+    -- KTKTKTT
+
+	data EditRepKTKTKTT p where
+	{
+		EditRepKTKTKTT :: IOWitness (p () () ()) -> EditRepKTKTKTT p;
+	};
+
+	matchEditRepKTKTKTT :: EditRepKTKTKTT a -> EditRepKTKTKTT b -> Maybe (EqualType (a () () ()) (b () () ()));
+	matchEditRepKTKTKTT (EditRepKTKTKTT wa) (EditRepKTKTKTT wb) = matchWitness wa wb;
+
+    instance IsWitnessEditRep (EditRepKTKTKTT p) where
+    {
+        type RepT (EditRepKTKTKTT p) = p () () ();
+        witnessEditRep = EditRepKTKTKTT;
+        matchWitnessEditRep (EditRepKTKTKTT wit) = Just wit;
+    };
+
+
+    -- KTKTT
+
 	data EditRepKTKTT p where
 	{
 		EditRepKTKTT :: IOWitness (p () ()) -> EditRepKTKTT p;
+		TEditRepKTKTT :: EditRepKTKTKTT p -> EditRepT a -> EditRepKTKTT (p a);
 	};
 
 	matchEditRepKTKTT :: EditRepKTKTT a -> EditRepKTKTT b -> Maybe (EqualType (a () ()) (b () ()));
 	matchEditRepKTKTT (EditRepKTKTT wa) (EditRepKTKTT wb) = matchWitness wa wb;
+	matchEditRepKTKTT (TEditRepKTKTT tfa ta) (TEditRepKTKTT tfb tb) = do
+	{
+		MkEqualType <- matchEditRepKTKTKTT tfa tfb;
+		MkEqualType <- matchWitness ta tb;
+		return MkEqualType;
+	};
+	matchEditRepKTKTT _ _ = Nothing;
 
     instance IsWitnessEditRep (EditRepKTKTT p) where
     {
         type RepT (EditRepKTKTT p) = p () ();
         witnessEditRep = EditRepKTKTT;
         matchWitnessEditRep (EditRepKTKTT wit) = Just wit;
+        matchWitnessEditRep _ = Nothing;
     };
+
+    instance IsApplyEditRep (EditRepKTKTKTT p) (EditRepT a) where
+    {
+        type ApplyEditRep (EditRepKTKTKTT p) (EditRepT a) = EditRepKTKTT (p a);
+        applyEditRep = TEditRepKTKTT;
+        matchApplyEditRep (TEditRepKTKTT p a) = Just (p,a);
+        matchApplyEditRep _ = Nothing;
+    };
+
+
+    -- KKTTKTT
 
 	data EditRepKKTTKTT p where
 	{
@@ -51,6 +92,9 @@ module Data.Changes.EditRep where
         witnessEditRep = EditRepKKTTKTT;
         matchWitnessEditRep (EditRepKKTTKTT wit) = Just wit;
     };
+
+
+    -- KTT
 
 	data EditRepKTT p where
 	{
@@ -98,6 +142,9 @@ module Data.Changes.EditRep where
         matchApplyEditRep (KTTEditRepKTT p a) = Just (p,a);
         matchApplyEditRep _ = Nothing;
     };
+
+
+    -- T
 
 	data EditRepT a where
 	{
