@@ -2,7 +2,9 @@ module Data.Changes.Edit where
 {
     import Data.Changes.HasTypeRep;
     import Data.Changes.EditRep;
+    import Data.TypeKT.WitnessKT;
     import Data.OpenWitness;
+    import Data.Witness;
     import Data.ConstFunction;
     import Data.Nothing;
     import Control.Category;
@@ -18,12 +20,19 @@ module Data.Changes.Edit where
         type EditEvidence edit;
         editEvidence :: forall r. r edit -> EditEvidence edit;
         --editEvidence _ = ();
+
+        data EditMatch edit :: * -> *;
+        eMatch1 :: EditMatch edit edit;
+        eMatch2 :: forall t. (Edit t) => EditRepT t -> Maybe (EditMatch edit t);
     };
 
     data EditInst edit where
     {
         MkEditInst :: forall edit. (Edit edit) => EditInst edit;
     };
+
+    editInstEvidence :: EditInst edit -> EditEvidence edit;
+    editInstEvidence ei@MkEditInst = editEvidence ei;
 
     applyAndInvertEdit :: (Edit edit) => edit -> (ConstFunction (Subject edit) (Subject edit),(Subject edit) -> Maybe edit);
     applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
@@ -68,7 +77,22 @@ module Data.Changes.Edit where
 
         type EditEvidence (NoEdit a) = ();
         editEvidence _ = ();
+
+        data EditMatch (NoEdit a) t = MkNoEditMatch;
+        eMatch1 = MkNoEditMatch;
+        eMatch2 (TEditRepT repNoEdit repA) = do
+        {
+            MkEqualType <- matchWitnessKTT repNoEdit (typeRepKTT :: EditRepKTT NoEdit);
+            MkEqualType <- matchWitnessT repA (typeRepT :: EditRepT a);
+            return MkNoEditMatch;
+        };
+        eMatch2 _ = Nothing;
     };
+
+        data EitherMatch t where
+        {
+            MkEitherMatch :: forall ea' eb'. (Edit ea',Edit eb') => EitherMatch (Either ea' eb');
+        };
 
     instance (Edit ea,Edit eb,Subject ea ~ Subject eb) => Edit (Either ea eb) where
     {
@@ -82,6 +106,25 @@ module Data.Changes.Edit where
 
         type EditEvidence (Either ea eb) = (EditInst ea,EditInst eb);
         editEvidence _ = (MkEditInst,MkEditInst);
+
+{-
+        data EditMatch (Either ea eb) t where
+        {
+            MkEitherMatch' :: forall ea' eb'. (Edit ea',Edit eb') => EditMatch (Either ea eb) (Either ea' eb');
+        };
+        eMatch1 = MkEitherMatch';
+-}
+        data EditMatch (Either ea eb) t = MkEEMatch (EitherMatch t);
+        eMatch1 = MkEEMatch MkEitherMatch;
+
+        eMatch2 (TEditRepT (TEditRepKTT repEither repEA) repEB) = do
+        {
+            MkEqualType <- matchWitnessKTKTT repEither (typeRepKTKTT :: EditRepKTKTT Either);
+            MkEqualType <- matchWitnessT repEA (typeRepT :: EditRepT ea);
+            MkEqualType <- matchWitnessT repEB (typeRepT :: EditRepT eb);
+            return (MkEEMatch MkEitherMatch);
+        };
+        eMatch2 _ = Nothing;
     };
 
     instance (FullEdit ea,Edit eb,Subject ea ~ Subject eb) => FullEdit (Either ea eb) where

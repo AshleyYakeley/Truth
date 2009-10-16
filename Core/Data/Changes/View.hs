@@ -3,14 +3,13 @@ module Data.Changes.View where
     import Data.Changes.Object;
     import Data.Changes.FloatingLens;
     import Data.Changes.Edit;
-    import Data.Changes.EditRep;
     import Data.Changes.HasNewValue;
 
     data Selection edit where
     {
-        MkSelection :: 
+        MkSelection ::
          forall editb state. (Eq state,HasNewValue (Subject editb),FullEdit editb) =>
-          EditRepT editb -> FloatingLens state edita editb -> Selection edita;
+          FloatingLens state edita editb -> Selection edita;
     };
 
     data ViewWidgetStuff w edit = MkViewWidgetStuff

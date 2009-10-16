@@ -1,5 +1,6 @@
 module Data.Changes.EditRep where
 {
+    import Data.TypeKT.WitnessKT;
 	import Data.Witness;
 	import Data.OpenWitness;
 	import Data.Maybe;
@@ -30,8 +31,10 @@ module Data.Changes.EditRep where
 		EditRepKTKTKTT :: IOWitness (p () () ()) -> EditRepKTKTKTT p;
 	};
 
-	matchEditRepKTKTKTT :: EditRepKTKTKTT a -> EditRepKTKTKTT b -> Maybe (EqualType (a () () ()) (b () () ()));
-	matchEditRepKTKTKTT (EditRepKTKTKTT wa) (EditRepKTKTKTT wb) = matchWitness wa wb;
+    instance WitnessKTKTKTT EditRepKTKTKTT where
+    {
+	    matchWitnessKTKTKTT (EditRepKTKTKTT wa) (EditRepKTKTKTT wb) = matchWitnessT wa wb;
+	};
 
     instance IsWitnessEditRep (EditRepKTKTKTT p) where
     {
@@ -49,15 +52,17 @@ module Data.Changes.EditRep where
 		TEditRepKTKTT :: EditRepKTKTKTT p -> EditRepT a -> EditRepKTKTT (p a);
 	};
 
-	matchEditRepKTKTT :: EditRepKTKTT a -> EditRepKTKTT b -> Maybe (EqualType (a () ()) (b () ()));
-	matchEditRepKTKTT (EditRepKTKTT wa) (EditRepKTKTT wb) = matchWitness wa wb;
-	matchEditRepKTKTT (TEditRepKTKTT tfa ta) (TEditRepKTKTT tfb tb) = do
-	{
-		MkEqualType <- matchEditRepKTKTKTT tfa tfb;
-		MkEqualType <- matchWitness ta tb;
-		return MkEqualType;
+    instance WitnessKTKTT EditRepKTKTT where
+    {
+	    matchWitnessKTKTT (EditRepKTKTT wa) (EditRepKTKTT wb) = matchWitnessT wa wb;
+	    matchWitnessKTKTT (TEditRepKTKTT tfa ta) (TEditRepKTKTT tfb tb) = do
+	    {
+		    MkEqualType <- matchWitnessKTKTKTT tfa tfb;
+		    MkEqualType <- matchWitnessT ta tb;
+		    return MkEqualType;
+	    };
+	    matchWitnessKTKTT _ _ = Nothing;
 	};
-	matchEditRepKTKTT _ _ = Nothing;
 
     instance IsWitnessEditRep (EditRepKTKTT p) where
     {
@@ -80,15 +85,17 @@ module Data.Changes.EditRep where
 
 	data EditRepKKTTKTT p where
 	{
-		EditRepKKTTKTT :: IOWitness (p EditRepT ()) -> EditRepKKTTKTT p;
+		EditRepKKTTKTT :: IOWitness (p Maybe ()) -> EditRepKKTTKTT p;
 	};
 
-	matchEditRepKKTTKTT :: EditRepKKTTKTT a -> EditRepKKTTKTT b -> Maybe (EqualType (a EditRepT ()) (b EditRepT ()));
-	matchEditRepKKTTKTT (EditRepKKTTKTT wa) (EditRepKKTTKTT wb) = matchWitness wa wb;
+    instance WitnessKKTTKTT EditRepKKTTKTT where
+    {
+    	matchWitnessKKTTKTT (EditRepKKTTKTT wa) (EditRepKKTTKTT wb) = matchWitnessT wa wb;
+	};
 
     instance IsWitnessEditRep (EditRepKKTTKTT p) where
     {
-        type RepT (EditRepKKTTKTT p) = p EditRepT ();
+        type RepT (EditRepKKTTKTT p) = p Maybe ();
         witnessEditRep = EditRepKKTTKTT;
         matchWitnessEditRep (EditRepKKTTKTT wit) = Just wit;
     };
@@ -103,21 +110,23 @@ module Data.Changes.EditRep where
 		KTTEditRepKTT :: EditRepKKTTKTT p -> EditRepKTT a -> EditRepKTT (p a);
 	};
 
-	matchEditRepKTT :: EditRepKTT a -> EditRepKTT b -> Maybe (EqualType (a ()) (b ()));
-	matchEditRepKTT (EditRepKTT wa) (EditRepKTT wb) = matchWitness wa wb;
-	matchEditRepKTT (TEditRepKTT tfa ta) (TEditRepKTT tfb tb) = do
-	{
-		MkEqualType <- matchEditRepKTKTT tfa tfb;
-		MkEqualType <- matchWitness ta tb;
-		return MkEqualType;
-	};
-	matchEditRepKTT (KTTEditRepKTT tfa ta) (KTTEditRepKTT tfb tb) = do
-	{
-		MkEqualType <- matchEditRepKKTTKTT tfa tfb;
-		MkEqualType <- matchEditRepKTT ta tb;
-		return MkEqualType;
-	};
-	matchEditRepKTT _ _ = Nothing;
+    instance WitnessKTT EditRepKTT where
+    {
+	    matchWitnessKTT (EditRepKTT wa) (EditRepKTT wb) = matchWitness wa wb;
+	    matchWitnessKTT (TEditRepKTT tfa ta) (TEditRepKTT tfb tb) = do
+	    {
+		    MkEqualType <- matchWitnessKTKTT tfa tfb;
+		    MkEqualType <- matchWitnessT ta tb;
+		    return MkEqualType;
+	    };
+	    matchWitnessKTT (KTTEditRepKTT tfa ta) (KTTEditRepKTT tfb tb) = do
+	    {
+		    MkEqualType <- matchWitnessKKTTKTT tfa tfb;
+		    MkEqualType <- matchWitnessKTT ta tb;
+		    return MkEqualType;
+	    };
+	    matchWitnessKTT _ _ = Nothing;
+    };
 
     instance IsWitnessEditRep (EditRepKTT p) where
     {
@@ -173,8 +182,8 @@ module Data.Changes.EditRep where
 		matchWitness (EditRepT wa) (EditRepT wb) = matchWitness wa wb;
 		matchWitness (TEditRepT tfa ta) (TEditRepT tfb tb) = do
 		{
-			MkEqualType <- matchEditRepKTT tfa tfb;
-			MkEqualType <- matchWitness ta tb;
+			MkEqualType <- matchWitnessKTT tfa tfb;
+			MkEqualType <- matchWitnessT ta tb;
 			return MkEqualType;
 		};
 		matchWitness _ _ = Nothing;

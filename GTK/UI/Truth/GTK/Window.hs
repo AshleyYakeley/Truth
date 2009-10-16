@@ -27,8 +27,31 @@ module UI.Truth.GTK.Window where
         return (MkViewResult (MkViewWidgetStuff (toWidget w) (return Nothing)) (\_ -> return ()));
     };
 
-    type MatchView = forall edit. (FullEdit edit,HasNewValue (Subject edit)) => EditRepT edit -> Maybe (GView edit);
+    type MatchView = forall edit. (FullEdit edit,HasNewValue (Subject edit)) => Maybe (GView edit);
 
+    matchJRE :: (HasTypeRepT edit) => Maybe (MatchJRE edit);
+    matchJRE = Nothing;
+
+    data MatchJRE edit where
+    {
+        MkMatchJRE :: (FullEdit edit,HasNewValue (Subject edit)) => TypeRepKTT f -> MatchJRE (JustRepEdit f edit);
+    };
+
+    maybeMatchView :: forall edit. (FullEdit edit,HasNewValue (Subject edit)) => Maybe (GView edit);
+    maybeMatchView = do
+    {
+        MkMatchJRE repF <- matchJRE :: Maybe (MatchJRE edit);
+        MkEqualType <- matchEditRepKTT repF (MkTypeRepKTT :: TypeRepKTT Maybe);
+        return (maybeView (theView matchViews));
+    };
+
+    resultMatchView :: forall edit. (FullEdit edit,HasNewValue (Subject edit)) => Maybe (GView edit);
+    resultMatchView = do
+    {
+        MkMatchJRE repF <- matchJRE :: Maybe (MatchJRE edit);
+        return (resultView (theView matchViews));
+    };
+{-
     maybeMatchView :: MatchView;
     maybeMatchView repT = do
     {
@@ -78,36 +101,36 @@ module UI.Truth.GTK.Window where
             };
         };
     };
-
-    checkButtonMatchView :: MatchView;
-    checkButtonMatchView rep = do
+-}
+    checkButtonMatchView :: forall edit. (FullEdit edit,HasNewValue (Subject edit)) => Maybe (GView edit);
+    checkButtonMatchView = do
     {
-        MkEqualType <- matchWitness rep (typeRepT :: EditRepT (WholeEdit Bool));
+        MkEqualType <- matchWitness (typeRepT :: EditRepT edit) (typeRepT :: EditRepT (WholeEdit Bool));
         return (checkButtonView "");
     };
 
-    textMatchView :: MatchView;
-    textMatchView rep = do
+    textMatchView :: forall edit. (FullEdit edit,HasNewValue (Subject edit)) => Maybe (GView edit);
+    textMatchView = do
     {
-        MkEqualType <- matchWitness rep (typeRepT :: EditRepT (ListEdit (WholeEdit Char)));
+        MkEqualType <- matchWitness (typeRepT :: EditRepT edit) (typeRepT :: EditRepT (ListEdit (WholeEdit Char)));
         return textView;
     };
 
     matchViews :: [MatchView];
     matchViews = [checkButtonMatchView,textMatchView,maybeMatchView,resultMatchView];
 
-    theView :: forall edit. (FullEdit edit,HasNewValue (Subject edit)) => [MatchView] -> EditRepT edit -> GView edit;
-    theView [] _ = lastResortView;
-    theView (mview:mviews) editrep = case mview editrep of
+    theView :: forall edit. (FullEdit edit,HasNewValue (Subject edit)) => [MatchView] -> GView edit;
+    theView [] = lastResortView;
+    theView (mview:mviews) = case mview of
     {
         Just gview -> gview;
-        _ -> theView mviews editrep;
+        _ -> theView mviews;
     };
 
-    makeWindow :: (FullEdit edit, HasNewValue (Subject edit)) => EditRepT edit -> IORef Int -> IO () -> Subscribe edit -> IO ();
-    makeWindow rep ref tellclose sub = do
+    makeWindow :: (FullEdit edit, HasNewValue (Subject edit)) => IORef Int -> IO () -> Subscribe edit -> IO ();
+    makeWindow ref tellclose sub = do
     {
-        (sub',w,close) <- subscribeView (theView matchViews rep) sub;
+        (sub',w,close) <- subscribeView (theView matchViews) sub;
         window <- windowNew;
         box <- vBoxNew False 0;
 
@@ -116,9 +139,9 @@ module UI.Truth.GTK.Window where
             msel <- vwsGetSelection w;
             case msel of
             {
-                Just (MkSelection repsel lens) -> do
+                Just (MkSelection lens) -> do
                 {
-                    makeWindowCountRef repsel ref (lensSubscribe lens sub');
+                    makeWindowCountRef ref (lensSubscribe lens sub');
                 };
                 _ -> return ();
             };
@@ -138,10 +161,10 @@ module UI.Truth.GTK.Window where
         return ();
     };
 
-    makeWindowCountRef :: (FullEdit edit, HasNewValue (Subject edit)) => EditRepT edit -> IORef Int -> Subscribe edit -> IO ();
-    makeWindowCountRef rep windowCount sub = do
+    makeWindowCountRef :: (FullEdit edit, HasNewValue (Subject edit)) => IORef Int -> Subscribe edit -> IO ();
+    makeWindowCountRef windowCount sub = do
     {
-        makeWindow rep windowCount (do
+        makeWindow windowCount (do
         {
             i <- readIORef windowCount;
             writeIORef windowCount (i - 1);

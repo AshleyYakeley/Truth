@@ -21,6 +21,9 @@ module Data.Changes.Text where
     instance HasTypeRepT ListError where
     {
         typeRepT = EditRepT (unsafeIOWitnessFromString "Data.Changes.Text.ListError");
+
+        type TypeRepTEvidence ListError = ();
+        typeRepTEvidence _ = ();
     };
 
     utf8Lens :: WholeLens [Word8] (Result ListError String);
