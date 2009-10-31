@@ -16,16 +16,11 @@ module Data.Changes.Edit where
         applyEdit :: edit -> ConstFunction (Subject edit) (Subject edit);
         invertEdit :: edit -> Subject edit -> Maybe edit;    -- "Nothing" means no change
 
-        --type EditEvidence edit = ();
-        type EditEvidence edit;
-        editEvidence :: forall r. r edit -> EditEvidence edit;
-        --editEvidence _ = ();
-
-        data EditMatch edit :: * -> *;
-        eMatch1 :: EditMatch edit edit;
-        eMatch2 :: forall t. (Edit t) => EditRepT t -> Maybe (EditMatch edit t);
+        type EditStructure edit :: * -> *;
+        editStructure :: EditStructure edit edit;
+        matchEditStructure :: forall t. (Edit t) => EditRepT t -> Maybe (EditStructure edit t);
     };
-
+{-
     data EditInst edit where
     {
         MkEditInst :: forall edit. (Edit edit) => EditInst edit;
@@ -33,7 +28,7 @@ module Data.Changes.Edit where
 
     editInstEvidence :: EditInst edit -> EditEvidence edit;
     editInstEvidence ei@MkEditInst = editEvidence ei;
-
+-}
     applyAndInvertEdit :: (Edit edit) => edit -> (ConstFunction (Subject edit) (Subject edit),(Subject edit) -> Maybe edit);
     applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
 
@@ -56,17 +51,22 @@ module Data.Changes.Edit where
     {
         replaceEdit :: Subject edit -> edit;
     };
-
+{-
     data FullEditInst edit where
     {
         MkFullEditInst :: forall edit. (FullEdit edit) => FullEditInst edit;
     };
-
+-}
     newtype NoEdit a = MkNoEdit Nothing;
 
     instance HasTypeRepKTT NoEdit where
     {
         typeRepKTT = EditRepKTT (unsafeIOWitnessFromString "Data.Changes.Edit.NoEdit");
+    };
+
+    data NoStructure edit where
+    {
+        MkNoStructure :: forall a. (HasTypeRepT a) => NoStructure (NoEdit a);
     };
 
     instance (HasTypeRepT a) => Edit (NoEdit a) where
@@ -75,24 +75,21 @@ module Data.Changes.Edit where
         applyEdit (MkNoEdit n) = never n;
         invertEdit (MkNoEdit n) = never n;
 
-        type EditEvidence (NoEdit a) = ();
-        editEvidence _ = ();
-
-        data EditMatch (NoEdit a) t = MkNoEditMatch;
-        eMatch1 = MkNoEditMatch;
-        eMatch2 (TEditRepT repNoEdit repA) = do
+        type EditStructure (NoEdit a) = NoStructure;
+        editStructure = MkNoStructure;
+        matchEditStructure (TEditRepT repNoEdit repA) = do
         {
             MkEqualType <- matchWitnessKTT repNoEdit (typeRepKTT :: EditRepKTT NoEdit);
             MkEqualType <- matchWitnessT repA (typeRepT :: EditRepT a);
-            return MkNoEditMatch;
+            return MkNoStructure;
         };
-        eMatch2 _ = Nothing;
+        matchEditStructure _ = Nothing;
     };
 
-        data EitherMatch t where
-        {
-            MkEitherMatch :: forall ea' eb'. (Edit ea',Edit eb') => EitherMatch (Either ea' eb');
-        };
+    data EitherStructure t where
+    {
+        MkEitherStructure :: forall ea' eb'. (Edit ea',Edit eb') => EitherStructure (Either ea' eb');
+    };
 
     instance (Edit ea,Edit eb,Subject ea ~ Subject eb) => Edit (Either ea eb) where
     {
@@ -104,9 +101,6 @@ module Data.Changes.Edit where
         invertEdit (Left edit) s = fmap Left (invertEdit edit s);
         invertEdit (Right edit) s = fmap Right (invertEdit edit s);
 
-        type EditEvidence (Either ea eb) = (EditInst ea,EditInst eb);
-        editEvidence _ = (MkEditInst,MkEditInst);
-
 {-
         data EditMatch (Either ea eb) t where
         {
@@ -114,17 +108,17 @@ module Data.Changes.Edit where
         };
         eMatch1 = MkEitherMatch';
 -}
-        data EditMatch (Either ea eb) t = MkEEMatch (EitherMatch t);
-        eMatch1 = MkEEMatch MkEitherMatch;
+        type EditStructure (Either ea eb) = EitherStructure;
+        editStructure = MkEitherStructure;
 
-        eMatch2 (TEditRepT (TEditRepKTT repEither repEA) repEB) = do
+        matchEditStructure (TEditRepT (TEditRepKTT repEither repEA) repEB) = do
         {
             MkEqualType <- matchWitnessKTKTT repEither (typeRepKTKTT :: EditRepKTKTT Either);
             MkEqualType <- matchWitnessT repEA (typeRepT :: EditRepT ea);
             MkEqualType <- matchWitnessT repEB (typeRepT :: EditRepT eb);
-            return (MkEEMatch MkEitherMatch);
+            return MkEitherStructure;
         };
-        eMatch2 _ = Nothing;
+        matchEditStructure _ = Nothing;
     };
 
     instance (FullEdit ea,Edit eb,Subject ea ~ Subject eb) => FullEdit (Either ea eb) where

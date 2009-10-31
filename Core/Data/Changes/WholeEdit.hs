@@ -13,14 +13,20 @@ module Data.Changes.WholeEdit where
         typeRepKTT = EditRepKTT (unsafeIOWitnessFromString "Data.Changes.WholeEdit.WholeEdit");
     };
 
+    data WholeEditStructure edit where
+    {
+        MkWholeEditStructure :: forall a. (HasTypeRepT a) => WholeEditStructure (WholeEdit a);
+    };
+
     instance (HasTypeRepT a) => Edit (WholeEdit a) where
     {
         type Subject (WholeEdit a) = a;
         applyEdit (MkWholeEdit a) = pure a;
         invertEdit _ = Just . MkWholeEdit;
 
-        type EditEvidence (WholeEdit a) = ();
-        editEvidence _ = ();
+        type EditStructure (WholeEdit a) = WholeEditStructure;
+        editStructure = MkWholeEditStructure;
+        matchEditStructure
     };
 
     instance (HasTypeRepT a) => FullEdit (WholeEdit a) where
