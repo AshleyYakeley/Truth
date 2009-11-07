@@ -3,7 +3,9 @@ module Data.Changes.WholeEdit where
     import Data.Changes.Edit;
     import Data.Changes.HasTypeRep;
     import Data.Changes.EditRep;
+    import Data.TypeKT.WitnessKT;
     import Data.OpenWitness;
+    import Data.Witness;
     import Control.Applicative;
 
     newtype WholeEdit a = MkWholeEdit a;
@@ -15,7 +17,7 @@ module Data.Changes.WholeEdit where
 
     data WholeEditStructure edit where
     {
-        MkWholeEditStructure :: forall a. (HasTypeRepT a) => WholeEditStructure (WholeEdit a);
+        MkWholeEditStructure :: forall a. (HasTypeRepT a) => EditRepT a -> WholeEditStructure (WholeEdit a);
     };
 
     instance (HasTypeRepT a) => Edit (WholeEdit a) where
@@ -25,8 +27,14 @@ module Data.Changes.WholeEdit where
         invertEdit _ = Just . MkWholeEdit;
 
         type EditStructure (WholeEdit a) = WholeEditStructure;
-        editStructure = MkWholeEditStructure;
-        matchEditStructure
+        editStructure = (MkWholeEditStructure typeRepT);
+        matchEditStructure _ (TEditRepT repF repA) = do
+        {
+            MkEqualType <- matchWitnessKTT repF (typeRepKTT :: EditRepKTT WholeEdit);
+            MkEqualType <- matchWitnessT repA (typeRepT :: EditRepT a);
+            return (MkWholeEditStructure repA);
+        };
+        matchEditStructure _ _ = Nothing;
     };
 
     instance (HasTypeRepT a) => FullEdit (WholeEdit a) where
