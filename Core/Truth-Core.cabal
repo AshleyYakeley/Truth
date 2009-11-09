@@ -1,63 +1,62 @@
 name: Truth-Core
 version: 0.1
-build-depends:
-    base>=4.0,
-    containers>=0.2,
-    mtl>=1.1.0.2,
-    stm>=2.0,
-    Cabal>=1.1.6,
-    bytestring>=0.9.0.1,
-    witness>=0.2,
-    open-witness>=0.2
+cabal-version: -any
 build-type: Simple
-
-extensions:
-    TypeFamilies
-    EmptyDataDecls
-    UndecidableInstances
-    FlexibleInstances
-    FunctionalDependencies
-    GADTs
-    RankNTypes
-    ScopedTypeVariables
-    PatternGuards
-    ImpredicativeTypes
-    ImplicitParams
-    GeneralizedNewtypeDeriving
-    MultiParamTypeClasses
-    FlexibleContexts
-    TypeSynonymInstances
-exposed-modules:
-    Control.Wait
-    Data.Result
-    Data.FunctorOne
-    Data.ConstFunction
-    Data.Store
-    Data.Chain
-    Data.TypeKT.WitnessKT
-    Data.TypeFunc.TF
-    Data.TypeFunc.Witness
-    Data.TypeFunc
-    Data.Bijection
-    Data.Codec
-    Data.Changes
-    Data.Changes.HasNewValue
-    Data.Changes.EditRep
-    Data.Changes.HasTypeRep
-    Data.Changes.Edit
-    Data.Changes.WholeEdit
-    Data.Changes.JustEdit
-    Data.Changes.IndexEdit
-    Data.Changes.WholeLens
-    Data.Changes.SimpleLens
-    Data.Changes.FloatingLens
-    Data.Changes.FixedLens
-    Data.Changes.Object
-    Data.Changes.Tuple
-    Data.Changes.List
-    Data.Changes.Text
-    Data.Changes.Context
-    Data.Changes.View
-    Data.Changes.Editor
-other-modules:
-    Control.Instances
+license: AllRightsReserved
+license-file: ""
+copyright:
+maintainer:
+build-depends: base >=4.0, containers >=0.2, mtl >=1.1.0.2,
+               stm >=2.0, Cabal >=1.1.6, bytestring >=0.9.0.1, witness >=0.2,
+               open-witness >=0.2
+stability:
+homepage:
+package-url:
+bug-reports:
+synopsis:
+description:
+category:
+author:
+tested-with:
+data-files:
+data-dir: ""
+extra-source-files:
+extra-tmp-files:
+exposed-modules: Data.TypeKT.IOWitnessKT Control.Wait Data.Result
+                 Data.FunctorOne Data.ConstFunction Data.Store Data.Chain
+                 Data.TypeKT.WitnessKT Data.TypeFunc.TF Data.TypeFunc.Witness
+                 Data.TypeFunc Data.Bijection Data.Codec Data.Changes
+                 Data.Changes.HasNewValue Data.Changes.EditRep
+                 Data.Changes.HasTypeRep Data.Changes.Edit Data.Changes.WholeEdit
+                 Data.Changes.JustEdit Data.Changes.IndexEdit Data.Changes.WholeLens
+                 Data.Changes.SimpleLens Data.Changes.FloatingLens
+                 Data.Changes.FixedLens Data.Changes.Object Data.Changes.Tuple
+                 Data.Changes.List Data.Changes.Text Data.Changes.Context
+                 Data.Changes.View Data.Changes.Editor
+exposed: True
+buildable: True
+build-tools:
+cpp-options:
+cc-options:
+ld-options:
+pkgconfig-depends:
+frameworks:
+c-sources:
+extensions: TypeFamilies EmptyDataDecls UndecidableInstances
+            FlexibleInstances FunctionalDependencies GADTs RankNTypes
+            ScopedTypeVariables PatternGuards ImpredicativeTypes ImplicitParams
+            GeneralizedNewtypeDeriving MultiParamTypeClasses FlexibleContexts
+            TypeSynonymInstances
+extra-libraries:
+extra-lib-dirs:
+includes:
+install-includes:
+include-dirs:
+hs-source-dirs: .
+other-modules: Control.Instances
+ghc-prof-options:
+ghc-shared-options:
+ghc-options:
+hugs-options:
+nhc98-options:
+jhc-options:

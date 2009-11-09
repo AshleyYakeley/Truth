@@ -1,5 +1,6 @@
 module Data.Changes.EditRep where
 {
+    import Data.TypeKT.IOWitnessKT;
     import Data.TypeKT.WitnessKT;
 	import Data.Witness;
 	import Data.OpenWitness;
@@ -7,55 +8,74 @@ module Data.Changes.EditRep where
 
     -- K and T represent kinds. T represents *, and Kxy represents x -> y.
 
-    class IsApplyEditRep f x where
+    class IsApplyWit f x where
     {
-        type ApplyEditRep f x;
+        type ApplyWit f x;
 
-        applyEditRep :: f -> x -> ApplyEditRep f x;
-        matchApplyEditRep :: ApplyEditRep f x -> Maybe (f,x);
+        applyWit :: f -> x -> ApplyWit f x;
+        matchApplyWit :: ApplyWit f x -> Maybe (f,x);
     };
 
-    class IsWitnessEditRep rep where
+    class IsAtomWit rep where
     {
         type RepT rep;
 
-        witnessEditRep :: IOWitness (RepT rep) -> rep;
-        matchWitnessEditRep :: rep -> Maybe (IOWitness (RepT rep));
+        witnessWit :: IOWitness (RepT rep) -> rep;
+        matchWitnessWit :: rep -> Maybe (IOWitness (RepT rep));
     };
 
 
     -- KTKTKTT
 
-	data EditRepKTKTKTT p where
+    data FactKTKTKTT a where
+    {
+        MkFactKTKTKTT :: forall f a. IOWitnessKTKTKTKTT f -> f a -> FactKTKTKTT a;
+    };
+
+    data TypeKTKTKTT a = MkTypeKTKTKTT [FactKTKTKTT a] (WitKTKTKTT a);
+
+    instance WitnessKTKTKTT TypeKTKTKTT where
+    {
+        matchWitnessKTKTKTT (MkTypeKTKTKTT wa) (MkTypeKTKTKTT wb) = matchWitnessKTKTKTT wa wb;
+    };
+
+	data WitKTKTKTT p where
 	{
-		EditRepKTKTKTT :: IOWitness (p () () ()) -> EditRepKTKTKTT p;
+		WitKTKTKTT :: IOWitnessKTKTKTT p -> WitKTKTKTT p;
 	};
 
-    instance WitnessKTKTKTT EditRepKTKTKTT where
+    instance WitnessKTKTKTT WitKTKTKTT where
     {
-	    matchWitnessKTKTKTT (EditRepKTKTKTT wa) (EditRepKTKTKTT wb) = matchWitnessT wa wb;
+	    matchWitnessKTKTKTT (WitKTKTKTT wa) (WitKTKTKTT wb) = matchWitnessT wa wb;
 	};
 
-    instance IsWitnessEditRep (EditRepKTKTKTT p) where
+    instance IsAtomWit (WitKTKTKTT p) where
     {
-        type RepT (EditRepKTKTKTT p) = p () () ();
-        witnessEditRep = EditRepKTKTKTT;
-        matchWitnessEditRep (EditRepKTKTKTT wit) = Just wit;
+        type RepT (WitKTKTKTT p) = p () () ();
+        witnessWit = WitKTKTKTT;
+        matchWitnessWit (WitKTKTKTT wit) = Just wit;
     };
 
 
     -- KTKTT
 
-	data EditRepKTKTT p where
+    data FactKTKTT a where
+    {
+        forall f a. IOWitnessKTKTKTT f -> f a -> FactKTKTT a;
+    };
+
+    data TypeKTKTT a = MkRepKTKTT [FactKTKTT a] (WitKTKTT a);
+
+	data WitKTKTT p where
 	{
-		EditRepKTKTT :: IOWitness (p () ()) -> EditRepKTKTT p;
-		TEditRepKTKTT :: EditRepKTKTKTT p -> EditRepT a -> EditRepKTKTT (p a);
+		WitKTKTT :: IOWitnessKTKTT p -> WitKTKTT p;
+		TWitKTKTT :: TypeKTKTKTT p -> TypeT a -> WitKTKTT (p a);
 	};
 
-    instance WitnessKTKTT EditRepKTKTT where
+    instance WitnessKTKTT WitKTKTT where
     {
-	    matchWitnessKTKTT (EditRepKTKTT wa) (EditRepKTKTT wb) = matchWitnessT wa wb;
-	    matchWitnessKTKTT (TEditRepKTKTT tfa ta) (TEditRepKTKTT tfb tb) = do
+	    matchWitnessKTKTT (WitKTKTT wa) (WitKTKTT wb) = matchWitnessT wa wb;
+	    matchWitnessKTKTT (TWitKTKTT tfa ta) (TWitKTKTT tfb tb) = do
 	    {
 		    MkEqualType <- matchWitnessKTKTKTT tfa tfb;
 		    MkEqualType <- matchWitnessT ta tb;
@@ -64,62 +84,76 @@ module Data.Changes.EditRep where
 	    matchWitnessKTKTT _ _ = Nothing;
 	};
 
-    instance IsWitnessEditRep (EditRepKTKTT p) where
+    instance IsAtomWit (WitKTKTT p) where
     {
-        type RepT (EditRepKTKTT p) = p () ();
-        witnessEditRep = EditRepKTKTT;
-        matchWitnessEditRep (EditRepKTKTT wit) = Just wit;
-        matchWitnessEditRep _ = Nothing;
+        type RepT (WitKTKTT p) = p () ();
+        witnessWit = WitKTKTT;
+        matchWitnessWit (WitKTKTT wit) = Just wit;
+        matchWitnessWit _ = Nothing;
     };
 
-    instance IsApplyEditRep (EditRepKTKTKTT p) (EditRepT a) where
+    instance IsApplyWit (WitKTKTKTT p) (WitT a) where
     {
-        type ApplyEditRep (EditRepKTKTKTT p) (EditRepT a) = EditRepKTKTT (p a);
-        applyEditRep = TEditRepKTKTT;
-        matchApplyEditRep (TEditRepKTKTT p a) = Just (p,a);
-        matchApplyEditRep _ = Nothing;
+        type ApplyWit (WitKTKTKTT p) (WitT a) = WitKTKTT (p a);
+        applyWit = TWitKTKTT;
+        matchApplyWit (TWitKTKTT p a) = Just (p,a);
+        matchApplyWit _ = Nothing;
     };
 
 
     -- KKTTKTT
 
-	data EditRepKKTTKTT p where
+    data FactKKTTKTT a where
+    {
+        forall f a. IOWitnessKTKKTTKTT f -> f a -> FactKKTTKTT a;
+    };
+
+    data TypeKKTTKTT a = MkRepKKTTKTT [FactKKTTKTT a] (WitKKTTKTT a);
+
+	data WitKKTTKTT p where
 	{
-		EditRepKKTTKTT :: IOWitness (p Maybe ()) -> EditRepKKTTKTT p;
+		WitKKTTKTT :: IOWitness (p Maybe ()) -> WitKKTTKTT p;
 	};
 
-    instance WitnessKKTTKTT EditRepKKTTKTT where
+    instance WitnessKKTTKTT WitKKTTKTT where
     {
-    	matchWitnessKKTTKTT (EditRepKKTTKTT wa) (EditRepKKTTKTT wb) = matchWitnessT wa wb;
+    	matchWitnessKKTTKTT (WitKKTTKTT wa) (WitKKTTKTT wb) = matchWitnessT wa wb;
 	};
 
-    instance IsWitnessEditRep (EditRepKKTTKTT p) where
+    instance IsAtomWit (WitKKTTKTT p) where
     {
-        type RepT (EditRepKKTTKTT p) = p Maybe ();
-        witnessEditRep = EditRepKKTTKTT;
-        matchWitnessEditRep (EditRepKKTTKTT wit) = Just wit;
+        type RepT (WitKKTTKTT p) = p Maybe ();
+        witnessWit = WitKKTTKTT;
+        matchWitnessWit (WitKKTTKTT wit) = Just wit;
     };
 
 
     -- KTT
 
-	data EditRepKTT p where
+    data FactKTT a where
+    {
+        forall f a. IOWitnessKTKTT f -> f a -> FactKTT a;
+    };
+
+    data TypeKTT a = MkRepKTT [FactKTT a] (WitKTT a);
+
+	data WitKTT a where
 	{
-		EditRepKTT :: IOWitness (p ()) -> EditRepKTT p;
-		TEditRepKTT :: EditRepKTKTT p -> EditRepT a -> EditRepKTT (p a);
-		KTTEditRepKTT :: EditRepKKTTKTT p -> EditRepKTT a -> EditRepKTT (p a);
+		WitKTT :: IOWitnessKTT a -> WitKTT a;
+		TWitKTT :: TypeKTKTT f -> TypeT a -> WitKTT (f a);
+		KTTWitKTT :: TypeKKTTKTT f -> TypeKTT a -> WitKTT (f a);
 	};
 
-    instance WitnessKTT EditRepKTT where
+    instance WitnessKTT WitKTT where
     {
-	    matchWitnessKTT (EditRepKTT wa) (EditRepKTT wb) = matchWitness wa wb;
-	    matchWitnessKTT (TEditRepKTT tfa ta) (TEditRepKTT tfb tb) = do
+	    matchWitnessKTT (WitKTT wa) (WitKTT wb) = matchWitness wa wb;
+	    matchWitnessKTT (TWitKTT tfa ta) (TWitKTT tfb tb) = do
 	    {
 		    MkEqualType <- matchWitnessKTKTT tfa tfb;
 		    MkEqualType <- matchWitnessT ta tb;
 		    return MkEqualType;
 	    };
-	    matchWitnessKTT (KTTEditRepKTT tfa ta) (KTTEditRepKTT tfb tb) = do
+	    matchWitnessKTT (KTTWitKTT tfa ta) (KTTWitKTT tfb tb) = do
 	    {
 		    MkEqualType <- matchWitnessKKTTKTT tfa tfb;
 		    MkEqualType <- matchWitnessKTT ta tb;
@@ -128,59 +162,66 @@ module Data.Changes.EditRep where
 	    matchWitnessKTT _ _ = Nothing;
     };
 
-    instance IsWitnessEditRep (EditRepKTT p) where
+    instance IsAtomWit (WitKTT p) where
     {
-        type RepT (EditRepKTT p) = p ();
-        witnessEditRep = EditRepKTT;
-        matchWitnessEditRep (EditRepKTT wit) = Just wit;
-        matchWitnessEditRep _ = Nothing;
+        type RepT (WitKTT p) = p ();
+        witnessWit = WitKTT;
+        matchWitnessWit (WitKTT wit) = Just wit;
+        matchWitnessWit _ = Nothing;
     };
 
-    instance IsApplyEditRep (EditRepKTKTT p) (EditRepT a) where
+    instance IsApplyWit (WitKTKTT p) (WitT a) where
     {
-        type ApplyEditRep (EditRepKTKTT p) (EditRepT a) = EditRepKTT (p a);
-        applyEditRep = TEditRepKTT;
-        matchApplyEditRep (TEditRepKTT p a) = Just (p,a);
-        matchApplyEditRep _ = Nothing;
+        type ApplyWit (WitKTKTT p) (WitT a) = WitKTT (p a);
+        applyWit = TWitKTT;
+        matchApplyWit (TWitKTT p a) = Just (p,a);
+        matchApplyWit _ = Nothing;
     };
 
-    instance IsApplyEditRep (EditRepKKTTKTT p) (EditRepKTT a) where
+    instance IsApplyWit (WitKKTTKTT p) (WitKTT a) where
     {
-        type ApplyEditRep (EditRepKKTTKTT p) (EditRepKTT a) = EditRepKTT (p a);
-        applyEditRep = KTTEditRepKTT;
-        matchApplyEditRep (KTTEditRepKTT p a) = Just (p,a);
-        matchApplyEditRep _ = Nothing;
+        type ApplyWit (WitKKTTKTT p) (WitKTT a) = WitKTT (p a);
+        applyWit = KTTWitKTT;
+        matchApplyWit (KTTWitKTT p a) = Just (p,a);
+        matchApplyWit _ = Nothing;
     };
 
 
     -- T
 
-	data EditRepT a where
+    data FactT a where
+    {
+        forall f a. IOWitnessKTT f -> f a -> FactT a;
+    };
+
+    data TypeT a = MkRepT [FactT a] (WitT a);
+
+	data WitT a where
 	{
-		EditRepT :: IOWitness a -> EditRepT a;
-		TEditRepT :: EditRepKTT p -> EditRepT a -> EditRepT (p a);
+		WitT :: IOWitnessT a -> WitT a;
+		TWitT :: TypeKTT p -> TypeT a -> WitT (p a);
 	};
 
-    instance IsWitnessEditRep (EditRepT p) where
+    instance IsAtomWit (WitT p) where
     {
-        type RepT (EditRepT p) = p;
-        witnessEditRep = EditRepT;
-        matchWitnessEditRep (EditRepT wit) = Just wit;
-        matchWitnessEditRep _ = Nothing;
+        type RepT (WitT p) = p;
+        witnessWit = WitT;
+        matchWitnessWit (WitT wit) = Just wit;
+        matchWitnessWit _ = Nothing;
     };
 
-    instance IsApplyEditRep (EditRepKTT p) (EditRepT a) where
+    instance IsApplyWit (WitKTT p) (WitT a) where
     {
-        type ApplyEditRep (EditRepKTT p) (EditRepT a) = EditRepT (p a);
-        applyEditRep = TEditRepT;
-        matchApplyEditRep (TEditRepT p a) = Just (p,a);
-        matchApplyEditRep _ = Nothing;
+        type ApplyWit (WitKTT p) (WitT a) = WitT (p a);
+        applyWit = TWitT;
+        matchApplyWit (TWitT p a) = Just (p,a);
+        matchApplyWit _ = Nothing;
     };
 
-	instance SimpleWitness EditRepT where
+	instance SimpleWitness WitT where
 	{
-		matchWitness (EditRepT wa) (EditRepT wb) = matchWitness wa wb;
-		matchWitness (TEditRepT tfa ta) (TEditRepT tfb tb) = do
+		matchWitness (WitT wa) (WitT wb) = matchWitness wa wb;
+		matchWitness (TWitT tfa ta) (TWitT tfb tb) = do
 		{
 			MkEqualType <- matchWitnessKTT tfa tfb;
 			MkEqualType <- matchWitnessT ta tb;
@@ -189,7 +230,7 @@ module Data.Changes.EditRep where
 		matchWitness _ _ = Nothing;
 	};
 
-	instance Eq1 EditRepT where
+	instance Eq1 WitT where
 	{
 		equals1 r1 r2 = isJust (matchWitness r1 r2);
 	};
