@@ -4,6 +4,7 @@ module Data.Changes.Text where
     import Data.Changes.WholeLens;
     import Data.Changes.HasTypeRep;
     import Data.Changes.EditRep;
+    import Data.Changes.Edit;
     import Data.Result;
     import Data.Bijection;
     import Data.OpenWitness;

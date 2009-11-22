@@ -1,5 +1,6 @@
 module Data.TypeKT.WitnessKT where
 {
+    import Data.TypeKT.IOWitnessKT;
     import Data.Witness;
 
     -- T = *
@@ -17,7 +18,7 @@ module Data.TypeKT.WitnessKT where
 
 
     -- KTT = * -> *
-    type EqualTypeKTT a b = EqualTypeT (a ()) (b ());
+    type EqualTypeKTT a b = EqualTypeT (a FT) (b FT);
 
     class WitnessKTT w where
     {
@@ -26,7 +27,7 @@ module Data.TypeKT.WitnessKT where
 
 
     -- KKTTT = (* -> *) -> *
-    type EqualTypeKKTTT a b = EqualTypeT (a Maybe) (b Maybe);
+    type EqualTypeKKTTT a b = EqualTypeT (a FKTT) (b FKTT);
 
     class WitnessKKTTT w where
     {
@@ -35,7 +36,7 @@ module Data.TypeKT.WitnessKT where
 
 
     -- KTKTT = * -> * -> *
-    type EqualTypeKTKTT a b = EqualTypeKTT (a ()) (b ());
+    type EqualTypeKTKTT a b = EqualTypeKTT (a FT) (b FT);
 
     class WitnessKTKTT w where
     {
@@ -44,7 +45,7 @@ module Data.TypeKT.WitnessKT where
 
 
     -- KKTTKTT = (* -> *) -> * -> *
-    type EqualTypeKKTTKTT a b = EqualTypeKTT (a Maybe) (b Maybe);
+    type EqualTypeKKTTKTT a b = EqualTypeKTT (a FKTT) (b FKTT);
 
     class WitnessKKTTKTT w where
     {
@@ -53,7 +54,7 @@ module Data.TypeKT.WitnessKT where
 
 
     -- KTKTKTT = * -> * -> * -> *
-    type EqualTypeKTKTKTT a b = EqualTypeKTKTT (a ()) (b ());
+    type EqualTypeKTKTKTT a b = EqualTypeKTKTT (a FT) (b FT);
 
     class WitnessKTKTKTT w where
     {

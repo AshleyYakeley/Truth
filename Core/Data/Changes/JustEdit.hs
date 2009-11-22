@@ -15,18 +15,7 @@ module Data.Changes.JustEdit where
 
     newtype JustEdit f edit = MkJustEdit edit;
 
-    instance HasTypeRepKKTTKTT JustEdit where
-    {
-        typeRepKKTTKTT = EditRepKKTTKTT (unsafeIOWitnessFromString "Data.Changes.JustEdit.JustEdit");
-    };
-
-    data JustEditStructure edit where
-    {
-        MkJustEditStructure :: forall f edit. (HasTypeRepKTT f,HasNewValue (Subject edit),FullEdit edit,FunctorOne f) =>
-         EditRepKTT f -> EditRepT edit -> JustEditStructure (JustEdit f edit);
-    };
-
-    instance (HasTypeRepKTT f,HasNewValue (Subject edit),FullEdit edit,FunctorOne f) => Edit (JustEdit f edit) where
+    instance (HasNewValue (Subject edit),FullEdit edit,FunctorOne f) => Edit (JustEdit f edit) where
     {
         type Subject (JustEdit f edit) = f (Subject edit);
 
@@ -37,21 +26,21 @@ module Data.Changes.JustEdit where
             SuccessResult olda -> fmap MkJustEdit (invertEdit edita olda);
             _ -> Nothing;
         };
+    };
 
-        type EditStructure (JustEdit f edit) = JustEditStructure;
-        editStructure = MkJustEditStructure typeRepKTT typeRepT;
-        matchEditStructure _ (TEditRepT (KTTEditRepKTT repThis repF) repEdit) = do
+    instance HasTypeKKTTKTT JustEdit where
+    {
+        witKKTTKTT = WitKKTTKTT (unsafeIOWitnessFromString "Data.Changes.JustEdit.JustEdit");
+        infoKKTTKTT = mkInfoKKTTKTT witEditInst (\tf tedit -> do
         {
-            MkEqualType <- matchWitnessKKTTKTT repThis (typeRepKKTTKTT :: EditRepKKTTKTT JustEdit);
-            MkEqualType <- matchWitnessKTT repF (typeRepKTT :: EditRepKTT f);
-            MkEqualType <- matchWitnessT repEdit (typeRepT :: EditRepT edit);
-            return (MkJustEditStructure repF repEdit);
-        };
-        matchEditStructure _ _ = Nothing;
+            MkEditInst tsubj <- typeFactT witEditInst tedit;
+            MkFullEditInst <- typeFactT witFullEditInst tedit;
+            return (MkEditInst (applyTTypeT tf tsubj));
+        });
     };
 
     type JustRepEdit f edit = Either (WholeEdit (f (Subject edit))) (JustEdit f edit);
-
+{-
     justWholeEditRep' :: forall f edit. (HasTypeRepT edit,HasTypeRepT (Subject edit),HasTypeRepKTT f) =>
      TypeRepT (JustRepEdit f edit);
     justWholeEditRep' = MkTypeRepT;
@@ -61,6 +50,8 @@ module Data.Changes.JustEdit where
     justWholeEditRep repF = applyEditRep
      (applyEditRep typeRepKTKTT (applyEditRep typeRepKTT (applyEditRep repF typeRepT)))
      (applyEditRep (applyEditRep typeRepKKTTKTT repF) typeRepT);
+-}
+
 
 {-
     f1 :: EditEvidence (Either x y) -> EitherMatch (Either x y);
@@ -82,7 +73,7 @@ module Data.Changes.JustEdit where
     };
 -}
     --matchEditStructure :: (Edit a,Edit b) => EditRepT b -> Maybe (EditStructure a b);
-
+{-
     matchJustWholeEditRep ::
      forall t. (Edit t) => EditRepT t -> Maybe (forall r.
      (forall f edit. EqualType t (JustRepEdit f edit) -> EditRepKTT f -> EditRepT edit -> EditRepT (Subject edit) -> r) -> r
@@ -103,7 +94,7 @@ module Data.Changes.JustEdit where
             _ -> Nothing;
         };
     };
-
+-}
 {-
     matchJustWholeEditRep
      (TEditRepT (TEditRepKTT repEither (TEditRepT repWholeEdit (TEditRepT repF repSubj))) (TEditRepT (KTTEditRepKTT repJustEdit repF') repEdit)) = do
