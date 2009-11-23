@@ -2,7 +2,6 @@
 module Data.FunctorOne where
 {
     import Data.Changes.EditRep;
-    import Data.TypeKT.IOWitnessKT;
     import Data.OpenWitness;
     import Data.Chain;
     import Data.ConstFunction;

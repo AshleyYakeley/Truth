@@ -5,12 +5,10 @@ module Data.Changes.JustEdit where
     import Data.Changes.HasTypeRep;
     import Data.Changes.EditRep;
     import Data.Changes.HasNewValue;
-    import Data.TypeKT.WitnessKT;
     import Data.FunctorOne;
     import Data.Result;
     import Data.Chain;
     import Data.OpenWitness;
-    import Data.Witness;
     import Prelude;
 
     newtype JustEdit f edit = MkJustEdit edit;

@@ -2,7 +2,6 @@ module Data.Changes.HasTypeRep where
 {
     import Data.Changes.HasNewValue;
     import Data.Changes.EditRep;
-    import Data.TypeKT.IOWitnessKT;
     import Data.FunctorOne;
     import Data.OpenWitness;
     import Data.Result;

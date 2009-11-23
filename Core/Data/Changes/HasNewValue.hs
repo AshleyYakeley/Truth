@@ -1,7 +1,6 @@
 module Data.Changes.HasNewValue where
 {
     import Data.Changes.EditRep;
-    import Data.TypeKT.IOWitnessKT;
     import Data.Result;
     import Data.OpenWitness;
     import Data.Witness;
