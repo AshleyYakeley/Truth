@@ -23,9 +23,11 @@ module Data.Changes.WholeEdit where
 
     instance HasTypeKTT WholeEdit where
     {
-        witKTT = WitKTT (unsafeIOWitnessFromString "Data.Changes.WholeEdit.WholeEdit");
-        infoKTT =
-         (mkInfoKTT witEditInst (\ta -> return (MkEditInst ta))) `mappend`
-         (mkInfoKTT witFullEditInst (\_ -> return MkFullEditInst));
+        typeKTT = MkTypeKTT
+            (WitKTT (unsafeIOWitnessFromString "Data.Changes.WholeEdit.WholeEdit"))
+            (
+                (mkTInfoKTT (\ta -> return (MkEditInst ta))) `mappend`
+                (mkTInfoKTT (\_ -> return MkFullEditInst))
+            );
     };
 }

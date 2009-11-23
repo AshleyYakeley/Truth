@@ -27,8 +27,11 @@ module Data.Changes.Edit where
     {
         MkEditInst :: forall edit. (Edit edit) => TypeT (Subject edit) -> EditInst edit;
     };
-    witEditInst :: IOWitness (SatKTT EditInst);
-    witEditInst = unsafeIOWitnessFromString "Data.Changes.Edit.EditInst";
+
+    instance TypeFactT EditInst where
+    {
+        witFactT = unsafeIOWitnessFromString "Data.Changes.Edit.EditInst";
+    };
 
     applyAndInvertEdit :: (Edit edit) => edit -> (ConstFunction (Subject edit) (Subject edit),(Subject edit) -> Maybe edit);
     applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
@@ -57,8 +60,11 @@ module Data.Changes.Edit where
     {
         MkFullEditInst :: forall edit. (FullEdit edit) => FullEditInst edit;
     };
-    witFullEditInst :: IOWitness (SatKTT FullEditInst);
-    witFullEditInst = unsafeIOWitnessFromString "Data.Changes.Edit.FullEditInst";
+
+    instance TypeFactT FullEditInst where
+    {
+        witFactT = unsafeIOWitnessFromString "Data.Changes.Edit.FullEditInst";
+    };
 
     newtype NoEdit a = MkNoEdit Nothing;
 
@@ -71,8 +77,9 @@ module Data.Changes.Edit where
 
     instance HasTypeKTT NoEdit where
     {
-        witKTT = WitKTT (unsafeIOWitnessFromString "Data.Changes.Edit.NoEdit");
-        infoKTT = mkInfoKTT witEditInst (\ta -> return (MkEditInst ta));
+        typeKTT = MkTypeKTT
+            (WitKTT (unsafeIOWitnessFromString "Data.Changes.Edit.NoEdit"))
+            (mkTInfoKTT (\ta -> return (MkEditInst ta)));
     };
 
     instance (Edit ea,Edit eb,Subject ea ~ Subject eb) => Edit (Either ea eb) where
@@ -93,22 +100,24 @@ module Data.Changes.Edit where
 
     instance HasTypeKTKTT Either where
     {
-        witKTKTT = WitKTKTT (unsafeIOWitnessFromString "Data.Changes.Edit.Either");
-
-        infoKTKTT = (mkInfoKTKTT witEditInst (\ta tb -> do
-        {
-            MkEditInst sa <- typeFactT witEditInst ta;
-            MkEditInst sb <- typeFactT witEditInst tb;
-            MkEqualType <- matchWitnessT sa sb;
-            return (MkEditInst sa);
-        }) :: InfoKTKTT Either) `mappend`
-        (mkInfoKTKTT witFullEditInst (\ta tb -> do
-        {
-            MkEditInst sa <- typeFactT witEditInst ta;
-            MkFullEditInst <- typeFactT witFullEditInst ta;
-            MkEditInst sb <- typeFactT witEditInst tb;
-            MkEqualType <- matchWitnessT sa sb;
-            return MkFullEditInst;
-        }) :: InfoKTKTT Either);
+        typeKTKTT = MkTypeKTKTT
+            (WitKTKTT (unsafeIOWitnessFromString "Data.Changes.Edit.Either"))
+            (
+                (mkTInfoKTKTT_ (witFactT :: IOWitness (SatKTT EditInst)) (\ta tb -> do
+                {
+                    MkEditInst sa <- typeFactT ta;
+                    MkEditInst sb <- typeFactT tb;
+                    MkEqualType <- matchWitnessT sa sb;
+                    return (MkEditInst sa);
+                }) :: InfoKTKTT Either) `mappend`
+                (mkTInfoKTKTT_ (witFactT :: IOWitness (SatKTT FullEditInst)) (\ta tb -> do
+                {
+                    MkEditInst sa <- typeFactT ta;
+                    MkFullEditInst <- typeFactT ta;
+                    MkEditInst sb <- typeFactT tb;
+                    MkEqualType <- matchWitnessT sa sb;
+                    return MkFullEditInst;
+                }) :: InfoKTKTT Either)
+            );
     };
 }

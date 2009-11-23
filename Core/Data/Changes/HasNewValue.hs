@@ -1,6 +1,9 @@
 module Data.Changes.HasNewValue where
 {
+    import Data.Changes.EditRep;
+    import Data.TypeKT.IOWitnessKT;
     import Data.Result;
+    import Data.OpenWitness;
     import Data.Witness;
     import Data.ByteString;
     import Data.Word;
@@ -13,6 +16,26 @@ module Data.Changes.HasNewValue where
     data HasNewValueInst f where
     {
         MkHasNewValueInst :: forall f. (HasNewValue f) => HasNewValueInst f;
+    };
+
+    instance TypeFactT HasNewValueInst where
+    {
+        witFactT = unsafeIOWitnessFromString "Data.Changes.HasNewValue.HasNewValueInst";
+    };
+
+    instance HasNewValue () where
+    {
+        newValue = ();
+    };
+
+    instance HasNewValue Bool where
+    {
+        newValue = False;
+    };
+
+    instance HasNewValue Int where
+    {
+        newValue = 0;
     };
 
     instance HasNewValue ByteString where
@@ -44,7 +67,7 @@ module Data.Changes.HasNewValue where
     {
         newValue = SuccessResult newValue;
     };
-    
+
     class HasNewValue1 p where
     {
         newValue1 :: forall a r. (HasNewValue a) => Type (p a) -> ((HasNewValue (p a)) => r) -> r;

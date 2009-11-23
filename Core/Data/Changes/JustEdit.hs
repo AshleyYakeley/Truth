@@ -30,13 +30,17 @@ module Data.Changes.JustEdit where
 
     instance HasTypeKKTTKTT JustEdit where
     {
-        witKKTTKTT = WitKKTTKTT (unsafeIOWitnessFromString "Data.Changes.JustEdit.JustEdit");
-        infoKKTTKTT = mkInfoKKTTKTT witEditInst (\tf tedit -> do
-        {
-            MkEditInst tsubj <- typeFactT witEditInst tedit;
-            MkFullEditInst <- typeFactT witFullEditInst tedit;
-            return (MkEditInst (applyTTypeT tf tsubj));
-        });
+        typeKKTTKTT = MkTypeKKTTKTT
+            (WitKKTTKTT (unsafeIOWitnessFromString "Data.Changes.JustEdit.JustEdit"))
+            (mkTInfoKKTTKTT (\tf tedit -> do
+                {
+                    MkEditInst tsubj <- typeFactT tedit;
+                    MkFullEditInst <- typeFactT tedit;
+                    MkHasNewValueInst <- typeFactT tsubj;
+                    MkFunctorOneInst <- typeFactKTT tf;
+                    return (MkEditInst (applyTTypeT tf tsubj));
+                })
+            );
     };
 
     type JustRepEdit f edit = Either (WholeEdit (f (Subject edit))) (JustEdit f edit);

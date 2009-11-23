@@ -1,6 +1,9 @@
 module Data.Changes.HasTypeRep where
 {
+    import Data.Changes.HasNewValue;
     import Data.Changes.EditRep;
+    import Data.TypeKT.IOWitnessKT;
+    import Data.FunctorOne;
     import Data.OpenWitness;
     import Data.Result;
     import Data.ByteString;
@@ -8,59 +11,54 @@ module Data.Changes.HasTypeRep where
     import Data.Monoid;
 
 
+
     -- T
 
     class HasTypeT a where
     {
-        witT :: WitT a;
-        infoT :: InfoT a;
-        infoT = mempty;
+        typeT :: TypeT a;
     };
 
-    typeT :: (HasTypeT a) => TypeT a;
-    typeT = MkTypeT infoT witT;
-{-
-    data HasTypeTInst a where
-    {
-        MkHasTypeTInst :: forall a. (HasTypeT a) => HasTypeTInst a;
-    };
-
-    typeRepTWitness :: HasTypeTInst a -> TypeT a;
-    typeRepTWitness MkHasTypeTInst = typeT;
-
-    instance SimpleWitness HasTypeTInst where
-    {
-        matchWitness a b = matchWitnessT (typeRepTWitness a) (typeRepTWitness b);
-    };
--}
     instance HasTypeT () where
     {
-        witT = WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.()");
+        typeT = MkTypeT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.()"))
+            (mkTInfoT (return MkHasNewValueInst));
     };
 
     instance HasTypeT Bool where
     {
-        witT = WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Bool");
+        typeT = MkTypeT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Bool"))
+            (mkTInfoT (return MkHasNewValueInst));
     };
 
     instance HasTypeT Word8 where
     {
-        witT = WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Word8");
+        typeT = MkTypeT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Word8"))
+            (mkTInfoT (return MkHasNewValueInst));
     };
 
     instance HasTypeT Char where
     {
-        witT = WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Char");
+        typeT = MkTypeT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Char"))
+            (mkTInfoT (return MkHasNewValueInst));
     };
 
     instance HasTypeT Int where
     {
-        witT = WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Int");
+        typeT = MkTypeT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Int"))
+            (mkTInfoT (return MkHasNewValueInst));
     };
 
     instance HasTypeT ByteString where
     {
-        witT = WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.ByteString");
+        typeT = MkTypeT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.ByteString"))
+            (mkTInfoT (return MkHasNewValueInst));
     };
 
 
@@ -68,41 +66,30 @@ module Data.Changes.HasTypeRep where
 
     class HasTypeKTT a where
     {
-        witKTT :: WitKTT a;
-        infoKTT :: InfoKTT a;
-        infoKTT = mempty;
+        typeKTT :: TypeKTT a;
     };
 
-    typeKTT :: (HasTypeKTT a) => TypeKTT a;
-    typeKTT = MkTypeKTT infoKTT witKTT;
-{-
-    data TypeRepKTT a where
-    {
-        MkTypeRepKTT :: forall a. (HasTypeRepKTT a) => TypeRepKTT a;
-    };
-
-    typeRepKTTWitness :: TypeRepKTT a -> EditRepKTT a;
-    typeRepKTTWitness MkTypeRepKTT = typeRepKTT;
-
-    instance WitnessKTT TypeRepKTT where
-    {
-        matchWitnessKTT a b = matchWitnessKTT (typeRepKTTWitness a) (typeRepKTTWitness b);
-    };
--}
     instance (HasTypeKTT f,HasTypeT a) => HasTypeT (f a) where
     {
-        witT = TWitT typeKTT typeT;
-        infoT = deriveTInfoT (infoKTT :: InfoKTT f) (typeT :: TypeT a);
+        typeT = applyTTypeT typeKTT typeT;
     };
 
     instance HasTypeKTT Maybe where
     {
-        witKTT = WitKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Maybe");
+        typeKTT = MkTypeKTT
+            (WitKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Maybe"))
+            (mconcat
+            [
+                mkTInfoKTT (\_ -> return MkHasNewValueInst),
+                mkKTTInfoKTT (return MkFunctorOneInst)
+            ]);
     };
 
     instance HasTypeKTT [] where
     {
-        witKTT = WitKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.[]");
+        typeKTT = MkTypeKTT
+            (WitKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.[]"))
+            (mkTInfoKTT (\_ -> return MkHasNewValueInst));
     };
 
 
@@ -110,41 +97,33 @@ module Data.Changes.HasTypeRep where
 
     class HasTypeKTKTT a where
     {
-        witKTKTT :: WitKTKTT a;
-        infoKTKTT :: InfoKTKTT a;
-        infoKTKTT = mempty;
+        typeKTKTT :: TypeKTKTT a;
     };
 
-    typeKTKTT :: (HasTypeKTKTT a) => TypeKTKTT a;
-    typeKTKTT = MkTypeKTKTT infoKTKTT witKTKTT;
-{-
-    data TypeRepKTKTT a where
-    {
-        MkTypeRepKTKTT :: forall a. (HasTypeRepKTKTT a) => TypeRepKTKTT a;
-    };
-
-    typeRepKTKTTWitness :: TypeRepKTKTT a -> EditRepKTKTT a;
-    typeRepKTKTTWitness MkTypeRepKTKTT = typeRepKTKTT;
-
-    instance WitnessKTKTT TypeRepKTKTT where
-    {
-        matchWitnessKTKTT a b = matchWitnessKTKTT (typeRepKTKTTWitness a) (typeRepKTKTTWitness b);
-    };
--}
     instance (HasTypeKTKTT f,HasTypeT a) => HasTypeKTT (f a) where
     {
-        witKTT = TWitKTT typeKTKTT typeT;
-        infoKTT = deriveTInfoKTT (infoKTKTT :: InfoKTKTT f) (typeT :: TypeT a);
+        typeKTT = applyTTypeKTT typeKTKTT typeT;
     };
 
     instance HasTypeKTKTT (->) where
     {
-        witKTKTT = WitKTKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.->");
+        typeKTKTT = MkTypeKTKTT
+            (WitKTKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.->"))
+            mempty;
     };
 
     instance HasTypeKTKTT Result where
     {
-        witKTKTT = WitKTKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Result");
+        typeKTKTT = MkTypeKTKTT
+            (WitKTKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Result"))
+            (mconcat [
+                mkTInfoKTKTT (\_ ta -> do
+                {
+                    MkHasNewValueInst <- typeFactT ta;
+                    return MkHasNewValueInst;
+                }),
+                mkKTTInfoKTKTT (\_ -> return MkFunctorOneInst)
+            ]);
     };
 
 
@@ -152,31 +131,12 @@ module Data.Changes.HasTypeRep where
 
     class HasTypeKKTTKTT a where
     {
-        witKKTTKTT :: WitKKTTKTT a;
-        infoKKTTKTT :: InfoKKTTKTT a;
-        infoKKTTKTT = mempty;
+        typeKKTTKTT :: TypeKKTTKTT a;
     };
 
-    typeKKTTKTT :: (HasTypeKKTTKTT a) => TypeKKTTKTT a;
-    typeKKTTKTT = MkTypeKKTTKTT infoKKTTKTT witKKTTKTT;
-{-
-    data TypeRepKKTTKTT a where
-    {
-        MkTypeRepKKTTKTT :: forall a. (HasTypeRepKKTTKTT a) => TypeRepKKTTKTT a;
-    };
-
-    typeRepKKTTKTTWitness :: TypeRepKKTTKTT a -> EditRepKKTTKTT a;
-    typeRepKKTTKTTWitness MkTypeRepKKTTKTT = typeRepKKTTKTT;
-
-    instance WitnessKKTTKTT TypeRepKKTTKTT where
-    {
-        matchWitnessKKTTKTT a b = matchWitnessKKTTKTT (typeRepKKTTKTTWitness a) (typeRepKKTTKTTWitness b);
-    };
--}
     instance (HasTypeKKTTKTT f,HasTypeKTT a) => HasTypeKTT (f a) where
     {
-        witKTT = KTTWitKTT typeKKTTKTT typeKTT;
-        infoKTT = deriveKTTInfoKTT (infoKKTTKTT :: InfoKKTTKTT f) (typeKTT :: TypeKTT a);
+        typeKTT = applyKTTTypeKTT typeKKTTKTT typeKTT;
     };
 
 
@@ -184,30 +144,11 @@ module Data.Changes.HasTypeRep where
 
     class HasTypeKTKTKTT a where
     {
-        witKTKTKTT :: WitKTKTKTT a;
-        infoKTKTKTT :: InfoKTKTKTT a;
-        infoKTKTKTT = mempty;
+        typeKTKTKTT :: TypeKTKTKTT a;
     };
 
-    typeKTKTKTT :: (HasTypeKTKTKTT a) => TypeKTKTKTT a;
-    typeKTKTKTT = MkTypeKTKTKTT infoKTKTKTT witKTKTKTT;
-{-
-    data TypeRepKTKTKTT a where
-    {
-        MkTypeRepKTKTKTT :: forall a. (HasTypeRepKTKTKTT a) => TypeRepKTKTKTT a;
-    };
-
-    typeRepKTKTKTTWitness :: TypeRepKTKTKTT a -> EditRepKTKTKTT a;
-    typeRepKTKTKTTWitness MkTypeRepKTKTKTT = typeRepKTKTKTT;
-
-    instance WitnessKTKTKTT TypeRepKTKTKTT where
-    {
-        matchWitnessKTKTKTT a b = matchWitnessKTKTKTT (typeRepKTKTKTTWitness a) (typeRepKTKTKTTWitness b);
-    };
--}
     instance (HasTypeKTKTKTT f,HasTypeT a) => HasTypeKTKTT (f a) where
     {
-        witKTKTT = TWitKTKTT typeKTKTKTT typeT;
-        infoKTKTT = deriveTInfoKTKTT (infoKTKTKTT :: InfoKTKTKTT f) (typeT :: TypeT a);
+        typeKTKTT = applyTTypeKTKTT typeKTKTKTT typeT;
     };
 }

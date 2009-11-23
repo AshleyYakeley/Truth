@@ -1,6 +1,9 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Data.FunctorOne where
 {
+    import Data.Changes.EditRep;
+    import Data.TypeKT.IOWitnessKT;
+    import Data.OpenWitness;
     import Data.Chain;
     import Data.ConstFunction;
     import Data.Traversable;
@@ -34,13 +37,13 @@ module Data.FunctorOne where
     {
         traverse _ (Left p) = pure (Left p);
         traverse amb (Right a) = fmap Right (amb a);
- 
+
         sequenceA (Left p) = pure (Left p);
         sequenceA (Right ma) = fmap Right ma;
- 
+
         mapM _ (Left p) = return (Left p);
         mapM amb (Right a) = liftM Right (amb a);
- 
+
         sequence (Left p) = return (Left p);
         sequence (Right ma) = liftM Right ma;
     };
@@ -62,7 +65,7 @@ module Data.FunctorOne where
     {
         retrieveOne :: f a -> Result (forall b. f b) a;
         getPureOne :: ConstFunction (f a) (b -> f b);
-    
+
         getMaybeOne :: f a -> Maybe a;
         getMaybeOne fa = resultToMaybe (retrieveOne fa);
     };
@@ -102,6 +105,11 @@ module Data.FunctorOne where
         MkFunctorOneInst :: forall f. (FunctorOne f) => FunctorOneInst f;
     };
 
+    instance TypeFactKTT FunctorOneInst where
+    {
+        witFactKTT = unsafeIOWitnessFromString "Data.FunctorOne.FunctorOneInst";
+    };
+
     instance Applicative Identity where
     {
         pure = Identity;
@@ -122,7 +130,7 @@ module Data.FunctorOne where
         getPureOne = return pure;
         getMaybeOne = id;
     };
-    
+
     instance FunctorOne (Either a) where
     {
         retrieveOne (Right b) = SuccessResult b;
@@ -143,7 +151,7 @@ module Data.FunctorOne where
         getPureOne = return pure;
         getMaybeOne = resultToMaybe;
     };
-    
+
     -- not quite as general as (->) which has (Functor f)
     instance (FunctorOne f) => CatFunctor ConstFunction f where
     {
