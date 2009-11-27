@@ -281,9 +281,6 @@ module Data.Changes.EditRep
     typeFactKKTTKTT :: (TypeFactKKTTKTT f) => TypeKKTTKTT a -> Maybe (f a);
     typeFactKKTTKTT (MkTypeKKTTKTT _ info) = infoFactKKTTKTT info witFactKKTTKTT;
 
---    mkKTTInfoKTKTT_ :: IOWitness (SatKKTTT f) -> (forall i. TypeT i -> Maybe (f (a i))) -> InfoKTKTT a;
-
-
     mkTInfoKKTTKTT_ :: IOWitness (SatKTT f) -> (forall i1 i2. TypeKTT i1 -> TypeT i2 -> Maybe (f (a i1 i2))) -> InfoKKTTKTT a;
     mkTInfoKKTTKTT_ witF f = MkInfoKKTTKTT (\_ -> Nothing) (\ta -> mkTInfoKTT_ witF (f ta));
 
@@ -334,5 +331,11 @@ module Data.Changes.EditRep
 
     typeFactKTKTKTT :: (TypeFactKTKTKTT f) => TypeKTKTKTT a -> Maybe (f a);
     typeFactKTKTKTT (MkTypeKTKTKTT _ info) = infoFactKTKTKTT info witFactKTKTKTT;
+
+    mkTInfoKTKTKTT_ :: IOWitness (SatKTT f) -> (forall i1 i2 i3. TypeT i1 -> TypeT i2 -> TypeT i3 -> Maybe (f (a i1 i2 i3))) -> InfoKTKTKTT a;
+    mkTInfoKTKTKTT_ witF f = MkInfoKTKTKTT (\_ -> Nothing) (\t1 -> mkTInfoKTKTT_ witF (f t1));
+
+    mkTInfoKTKTKTT :: forall f a. (TypeFactT f) => (forall i1 i2 i3. TypeT i1 -> TypeT i2 -> TypeT i3 -> Maybe (f (a i1 i2 i3))) -> InfoKTKTKTT a;
+    mkTInfoKTKTKTT = mkTInfoKTKTKTT_ witFactT;
 }
 

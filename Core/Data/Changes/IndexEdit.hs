@@ -11,11 +11,6 @@ module Data.Changes.IndexEdit where
 
     data IndexEdit a i edit = MkIndexEdit i edit;
 
-    instance HasTypeRepKTKTKTT IndexEdit where
-    {
-        typeRepKTKTKTT = EditRepKTKTKTT (unsafeIOWitnessFromString "Data.Changes.IndexEdit.IndexEdit");
-    };
-
     class Container a where
     {
         type Index a;
@@ -24,6 +19,16 @@ module Data.Changes.IndexEdit where
         sameIndex :: a -> Index a -> Index a -> Bool;
 
         indexLens :: Index a -> SimpleLens a (Part a);
+    };
+
+    data ContainerInst a where
+    {
+        MkContainerInst :: forall a. (Container a) => TypeT (Index a) -> TypeT (Part a) -> Container a;
+    };
+
+    instance TypeFactT ContainerInst where
+    {
+        witFactT = unsafeIOWitnessFromString "Data.Changes.IndexEdit.ContainerInst";
     };
 
     instance (Eq a) => Container (a -> b) where
@@ -86,7 +91,7 @@ module Data.Changes.IndexEdit where
         };
     };
 
-    instance (HasTypeRepT container,HasTypeRepT index,Edit edit,Container container,Part container ~ Maybe (Subject edit),index ~ Index container) =>
+    instance (Edit edit,Container container,Part container ~ Maybe (Subject edit),index ~ Index container) =>
      Edit (IndexEdit container index edit) where
     {
         type Subject (IndexEdit container index edit) = container;
@@ -99,8 +104,23 @@ module Data.Changes.IndexEdit where
             invedita <- invertEdit edita oldpart;
             return (MkIndexEdit i invedita);
         };
+    };
 
-        type EditEvidence (IndexEdit container index edit) = EditInst edit;
-        editEvidence _ = MkEditInst;
+    instance HasTypeKTKTKTT IndexEdit where
+    {
+        typeKTKTKTT = MkTypeKTKTKTT
+            (WitKTKTKTT (unsafeIOWitnessFromString "Data.Changes.IndexEdit.IndexEdit"))
+            (mkTInfoKTKTKTT (\tcontainer tindex tedit -> do
+                {
+                    MkContainerInst tcindex tcpart <- typeFactT tcontainer;
+
+
+                    MkEditInst tsubj <- typeFactT tedit;
+                    MkFullEditInst <- typeFactT tedit;
+                    MkHasNewValueInst <- typeFactT tsubj;
+                    MkFunctorOneInst <- typeFactKTT tf;
+                    return (MkEditInst (applyTTypeT tf tsubj));
+                })
+            );
     };
 }
