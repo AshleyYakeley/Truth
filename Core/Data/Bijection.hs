@@ -1,5 +1,6 @@
 module Data.Bijection where
 {
+    import Data.Chain;
     import Control.Category;
     import Prelude hiding (id,(.));
 
@@ -18,11 +19,13 @@ module Data.Bijection where
         (MkBijection p1 q1) . (MkBijection p2 q2) = MkBijection (p1 . p2) (q2 . q1);
     };
 
-    functorBijection :: (Functor f) => Bijection a b -> Bijection (f a) (f b);
-    functorBijection bi = MkBijection
+    instance (Functor f) => CatFunctor Bijection f where
     {
-        biForwards = fmap (biForwards bi),
-        biBackwards = fmap (biBackwards bi)
+        cfmap bi = MkBijection
+        {
+            biForwards = fmap (biForwards bi),
+            biBackwards = fmap (biBackwards bi)
+        };
     };
 
     biSwap :: Bijection (a,b) (b,a);

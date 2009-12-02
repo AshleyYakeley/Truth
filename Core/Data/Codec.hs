@@ -1,5 +1,6 @@
 module Data.Codec where
 {
+    import Data.Chain;
     import Data.Bijection;
     import Control.Category;
     import Data.Traversable;
@@ -11,20 +12,22 @@ module Data.Codec where
         encode :: b -> a
     };
     -- must have decode . encode = Just
-    
+
     instance Category Codec where
     {
         id = MkCodec Just id;
         (MkCodec bmc cb) . (MkCodec amb ba) = MkCodec (\a -> (amb a) >>= bmc) (ba . cb);
     };
-    
+
     bijectionCodec :: Bijection a b -> Codec a b;
     bijectionCodec (MkBijection p q) = MkCodec (Just . p) q;
-    
-    traversableCodec :: (Traversable f) => Codec a b -> Codec (f a) (f b);
-    traversableCodec codec = MkCodec
+
+    instance (Traversable f) => CatFunctor Codec f where
     {
-        decode = traverse (decode codec),
-        encode = fmap (encode codec)
+        cfmap codec = MkCodec
+        {
+            decode = traverse (decode codec),
+            encode = fmap (encode codec)
+        };
     };
 }
