@@ -19,11 +19,6 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
 
     data ListEdit edit = ReplaceListEdit [Subject edit] | ItemEdit (IndexEdit [Subject edit] Int edit) | ReplaceSectionEdit (Int,Int) [Subject edit];
 
-    instance HasTypeRepKTT ListEdit where
-    {
-        typeRepKTT = EditRepKTT (unsafeIOWitnessFromString "Data.Changes.List.ListEdit");
-    };
-
     instance (Edit edit) => Edit (ListEdit edit) where
     {
         type Subject (ListEdit edit) = [Subject edit];
@@ -45,14 +40,30 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
             (_,rest) = splitAt start oldlist;
             (oldmiddle,_) = splitAt len rest;
         };
-
-        type EditEvidence (ListEdit edit) = EditInst edit;
-        editEvidence _ = MkEditInst;
     };
 
     instance (Edit edit) => FullEdit (ListEdit edit) where
     {
         replaceEdit = ReplaceListEdit;
+    };
+
+    instance HasTypeKTT ListEdit where
+    {
+        typeKTT = MkTypeKTT
+            (WitKTT (unsafeIOWitnessFromString "Data.Changes.List.ListEdit"))
+            (
+                (mkTInfoKTT (\tedit -> do
+                    {
+                        MkEditInst tsubj <- typeFactT tedit;
+                        return (MkEditInst (applyTTypeT (typeKTT :: TypeKTT []) tsubj));
+                    })
+                ) `mappend`
+                (mkTInfoKTT (\tedit -> do
+                    {
+                        MkEditInst _ <- typeFactT tedit;
+                        return MkFullEditInst;
+                    }))
+            );
     };
 
     updateSection :: (Int,Int) -> (Int,Int) -> Int -> ((Int,Int),Maybe (Int,Int));

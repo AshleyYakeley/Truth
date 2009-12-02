@@ -4,7 +4,10 @@ module Data.Changes.IndexEdit where
     import Data.Changes.Edit;
     import Data.Changes.HasTypeRep;
     import Data.Changes.EditRep;
+    import Data.TypeKT.WitnessKT;
+    import Data.TypeKT.IOWitnessKT;
     import Data.OpenWitness;
+    import Data.Witness;
     import Data.ConstFunction;
     import Control.Arrow;
     import Prelude hiding (id,(.));
@@ -17,13 +20,12 @@ module Data.Changes.IndexEdit where
         type Part a;
 
         sameIndex :: a -> Index a -> Index a -> Bool;
-
         indexLens :: Index a -> SimpleLens a (Part a);
     };
 
     data ContainerInst a where
     {
-        MkContainerInst :: forall a. (Container a) => TypeT (Index a) -> TypeT (Part a) -> Container a;
+        MkContainerInst :: forall a. (Container a) => TypeT (Index a) -> TypeT (Part a) -> ContainerInst a;
     };
 
     instance TypeFactT ContainerInst where
@@ -110,16 +112,13 @@ module Data.Changes.IndexEdit where
     {
         typeKTKTKTT = MkTypeKTKTKTT
             (WitKTKTKTT (unsafeIOWitnessFromString "Data.Changes.IndexEdit.IndexEdit"))
-            (mkTInfoKTKTKTT (\tcontainer tindex tedit -> do
+            (mkTInfoKTKTKTT_ (witFactT :: IOWitness (SatKTT EditInst)) (\tcontainer tindex tedit -> do
                 {
-                    MkContainerInst tcindex tcpart <- typeFactT tcontainer;
-
-
                     MkEditInst tsubj <- typeFactT tedit;
-                    MkFullEditInst <- typeFactT tedit;
-                    MkHasNewValueInst <- typeFactT tsubj;
-                    MkFunctorOneInst <- typeFactKTT tf;
-                    return (MkEditInst (applyTTypeT tf tsubj));
+                    MkContainerInst tcindex tcpart <- typeFactT tcontainer;
+                    MkEqualType <- matchWitnessT tindex tcindex;
+                    MkEqualType <- matchWitnessT tcpart (applyTTypeT (typeKTT :: TypeKTT Maybe) tsubj);
+                    return (MkEditInst tcontainer);
                 })
             );
     };

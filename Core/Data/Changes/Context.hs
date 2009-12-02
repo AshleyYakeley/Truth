@@ -19,11 +19,6 @@ module Data.Changes.Context where
 
     data WithContext context content = MkWithContext context content;
 
-    instance HasTypeRepKTKTT WithContext where
-    {
-        typeRepKTKTT = EditRepKTKTT (unsafeIOWitnessFromString "Data.Changes.Context.MkWithContext");
-    };
-
     instance Functor (WithContext context) where
     {
         fmap ab (MkWithContext context a) = MkWithContext context (ab a);
@@ -45,6 +40,17 @@ module Data.Changes.Context where
         retrieveOne (MkWithContext _ a) = SuccessResult a;
         getPureOne = arr (\(MkWithContext context _) content -> (MkWithContext context content));
     };
+
+    instance HasTypeKTKTT WithContext where
+    {
+        typeKTKTT = MkTypeKTKTT
+            (WitKTKTT (unsafeIOWitnessFromString "Data.Changes.Context.WithContext"))
+            (mkKTTInfoKTKTT (\_ -> do
+                {
+                    return MkFunctorOneInst;
+                })
+            );
+    };
 {-
     instance IsTuple (WithContext context content) where
     {
@@ -62,12 +68,8 @@ module Data.Changes.Context where
     contextCleanLens = tupleElementCleanLens (TailDoubleListElementType HeadDoubleListElementType);
 -}
 
-    data ContextContentEdit editx editn = ReplaceContextContentEdit (WithContext (Subject editx) (Subject editn)) | ContextEdit editx | ContentEdit editn;
-
-    instance HasTypeRepKTKTT ContextContentEdit where
-    {
-        typeRepKTKTT = EditRepKTKTT (unsafeIOWitnessFromString "Data.Changes.Context.ContextContentEdit");
-    };
+    data ContextContentEdit editx editn =
+     ReplaceContextContentEdit (WithContext (Subject editx) (Subject editn)) | ContextEdit editx | ContentEdit editn;
 
     instance (Edit editx, Edit editn) =>
      Edit (ContextContentEdit editx editn) where
@@ -80,15 +82,33 @@ module Data.Changes.Context where
         invertEdit (ContextEdit edit) (MkWithContext a _) = fmap ContextEdit (invertEdit edit a);
         invertEdit (ContentEdit edit) (MkWithContext _ a) = fmap ContentEdit (invertEdit edit a);
         invertEdit (ReplaceContextContentEdit _) a = Just (ReplaceContextContentEdit a);
-
-        type EditEvidence (ContextContentEdit editx editn) = (EditInst editx,EditInst editn);
-        editEvidence _ = (MkEditInst,MkEditInst);
     };
 
     instance (Edit editx, Edit editn) =>
      FullEdit (ContextContentEdit editx editn) where
     {
         replaceEdit = ReplaceContextContentEdit;
+    };
+
+    instance HasTypeKTKTT ContextContentEdit where
+    {
+        typeKTKTT = MkTypeKTKTT
+            (WitKTKTT (unsafeIOWitnessFromString "Data.Changes.Context.ContextContentEdit"))
+            (
+                (mkTInfoKTKTT (\tx tn -> do
+                    {
+                        MkEditInst tsx <- typeFactT tx;
+                        MkEditInst tsn <- typeFactT tn;
+                        return (MkEditInst (applyTTypeT (applyTTypeKTT (typeKTKTT :: TypeKTKTT WithContext) tsx) tsn));
+                    })
+                ) `mappend`
+                (mkTInfoKTKTT (\tx tn -> do
+                    {
+                        MkEditInst _ <- typeFactT tx;
+                        MkEditInst _ <- typeFactT tn;
+                        return MkFullEditInst;
+                    }))
+            );
     };
 
     contextCleanLens :: CleanLens' Identity (ContextContentEdit editx editn) editx;

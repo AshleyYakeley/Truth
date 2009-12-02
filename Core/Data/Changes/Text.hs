@@ -4,7 +4,6 @@ module Data.Changes.Text where
     import Data.Changes.WholeLens;
     import Data.Changes.HasTypeRep;
     import Data.Changes.EditRep;
-    import Data.Changes.Edit;
     import Data.Result;
     import Data.Bijection;
     import Data.OpenWitness;
@@ -19,12 +18,11 @@ module Data.Changes.Text where
 
     data ListError = MkListError Int;
 
-    instance HasTypeRepT ListError where
+    instance HasTypeT ListError where
     {
-        typeRepT = EditRepT (unsafeIOWitnessFromString "Data.Changes.Text.ListError");
-
-        type TypeRepTEvidence ListError = ();
-        typeRepTEvidence _ = ();
+        typeT = MkTypeT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.Text.ListError"))
+            mempty;
     };
 
     utf8Lens :: WholeLens [Word8] (Result ListError String);
