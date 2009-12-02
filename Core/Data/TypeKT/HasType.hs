@@ -1,7 +1,7 @@
-module Data.Changes.HasTypeRep where
+module Data.TypeKT.HasType where
 {
     import Data.Changes.HasNewValue;
-    import Data.Changes.EditRep;
+    import Data.TypeKT.Type;
     import Data.FunctorOne;
     import Data.OpenWitness;
     import Data.Result;

@@ -1,6 +1,6 @@
-module Data.TypeKT.WitnessKT where
+module Data.TypeKT.Witness where
 {
-    import Data.TypeKT.IOWitnessKT;
+    import Data.TypeKT.Basic;
     import Data.Witness;
 
     -- T = *

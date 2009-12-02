@@ -1,4 +1,4 @@
-module Data.TypeKT.IOWitnessKT where
+module Data.TypeKT.Basic where
 {
     data FT;
     data FKTT (a0 :: *);

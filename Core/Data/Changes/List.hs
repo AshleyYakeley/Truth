@@ -6,8 +6,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
     import Data.Changes.SimpleLens;
     import Data.Changes.JustEdit;
     import Data.Changes.Edit;
-    import Data.Changes.HasTypeRep;
-    import Data.Changes.EditRep;
+    import Data.TypeKT;
     import Data.Changes.HasNewValue;
     import Control.Arrow;
     import Data.ConstFunction;

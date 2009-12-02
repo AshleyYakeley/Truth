@@ -1,10 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Data.Changes.Edit where
 {
-    import Data.Changes.HasTypeRep;
-    import Data.Changes.EditRep;
-    import Data.TypeKT.WitnessKT;
-    import Data.TypeKT.IOWitnessKT;
+    import Data.TypeKT;
     import Data.OpenWitness;
     import Data.Witness;
     import Data.ConstFunction;

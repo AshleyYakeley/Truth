@@ -5,8 +5,7 @@ module Data.Changes.Context where
     import Data.Changes.FixedLens;
     import Data.Changes.SimpleLens;
     import Data.Changes.Edit;
-    import Data.Changes.HasTypeRep;
-    import Data.Changes.EditRep;
+    import Data.TypeKT;
     import Data.OpenWitness;
     import Data.FunctorOne;
 --    import Data.Witness;

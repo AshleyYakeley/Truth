@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Data.FunctorOne where
 {
-    import Data.Changes.EditRep;
+    import Data.TypeKT.Type;
     import Data.OpenWitness;
     import Data.Chain;
     import Data.ConstFunction;

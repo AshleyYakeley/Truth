@@ -1,11 +1,11 @@
-module Data.Changes.EditRep
+module Data.TypeKT.Type
 (
-    module Data.Changes.EditRep,
+    module Data.TypeKT.Type,
     Monoid(..)
 ) where
 {
-    import Data.TypeKT.IOWitnessKT;
-    import Data.TypeKT.WitnessKT;
+    import Data.TypeKT.Basic;
+    import Data.TypeKT.Witness;
 	import Data.Witness;
 	import Data.OpenWitness;
 	import Data.Maybe;

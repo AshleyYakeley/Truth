@@ -2,10 +2,7 @@ module Data.Changes.IndexEdit where
 {
     import Data.Changes.SimpleLens;
     import Data.Changes.Edit;
-    import Data.Changes.HasTypeRep;
-    import Data.Changes.EditRep;
-    import Data.TypeKT.WitnessKT;
-    import Data.TypeKT.IOWitnessKT;
+    import Data.TypeKT;
     import Data.OpenWitness;
     import Data.Witness;
     import Data.ConstFunction;

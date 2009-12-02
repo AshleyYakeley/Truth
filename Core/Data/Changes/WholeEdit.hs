@@ -1,8 +1,7 @@
 module Data.Changes.WholeEdit where
 {
     import Data.Changes.Edit;
-    import Data.Changes.HasTypeRep;
-    import Data.Changes.EditRep;
+    import Data.TypeKT;
     import Data.OpenWitness;
     import Control.Applicative;
     import Data.Monoid;

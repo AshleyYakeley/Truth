@@ -22,12 +22,12 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Data.TypeKT.IOWitnessKT Control.Wait Data.Result
+exposed-modules: Data.TypeKT.Basic Control.Wait Data.Result
                  Data.FunctorOne Data.ConstFunction Data.Store Data.Chain
-                 Data.TypeKT.WitnessKT Data.TypeFunc.TF Data.TypeFunc.Witness
+                 Data.TypeKT.Witness Data.TypeFunc.TF Data.TypeFunc.Witness
                  Data.TypeFunc Data.Bijection Data.Codec Data.Changes
-                 Data.Changes.HasNewValue Data.Changes.EditRep
-                 Data.Changes.HasTypeRep Data.Changes.Edit Data.Changes.WholeEdit
+                 Data.Changes.HasNewValue Data.TypeKT.Type
+                 Data.TypeKT.HasType Data.TypeKT Data.Changes.Edit Data.Changes.WholeEdit
                  Data.Changes.JustEdit Data.Changes.IndexEdit Data.Changes.WholeLens
                  Data.Changes.SimpleLens Data.Changes.FloatingLens
                  Data.Changes.FixedLens Data.Changes.Object Data.Changes.Tuple

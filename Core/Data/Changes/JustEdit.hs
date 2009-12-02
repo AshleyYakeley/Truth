@@ -2,8 +2,7 @@ module Data.Changes.JustEdit where
 {
     import Data.Changes.WholeEdit;
     import Data.Changes.Edit;
-    import Data.Changes.HasTypeRep;
-    import Data.Changes.EditRep;
+    import Data.TypeKT;
     import Data.Changes.HasNewValue;
     import Data.FunctorOne;
     import Data.Result;

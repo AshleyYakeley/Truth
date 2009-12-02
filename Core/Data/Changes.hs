@@ -1,7 +1,6 @@
 module Data.Changes
 (
-    module Data.Changes.EditRep,
-    module Data.Changes.HasTypeRep,
+    module Data.TypeKT,
     module Data.Changes.HasNewValue,
     module Data.Changes.Edit,
     module Data.Changes.WholeEdit,
@@ -19,8 +18,7 @@ module Data.Changes
     module Data.Changes.View,
 ) where
 {
-    import Data.Changes.EditRep;
-    import Data.Changes.HasTypeRep;
+    import Data.TypeKT;
     import Data.Changes.HasNewValue;
     import Data.Changes.Edit;
     import Data.Changes.WholeEdit;
