@@ -1,8 +1,6 @@
 module Data.Changes.HasNewValue where
 {
-    import Data.TypeKT.Type;
     import Data.Result;
-    import Data.OpenWitness;
     import Data.Witness;
     import Data.ByteString;
     import Data.Word;
@@ -10,16 +8,6 @@ module Data.Changes.HasNewValue where
     class HasNewValue a where
     {
         newValue :: a;
-    };
-
-    data HasNewValueInst f where
-    {
-        MkHasNewValueInst :: forall f. (HasNewValue f) => HasNewValueInst f;
-    };
-
-    instance TypeFactT HasNewValueInst where
-    {
-        witFactT = unsafeIOWitnessFromString "Data.Changes.HasNewValue.HasNewValueInst";
     };
 
     instance HasNewValue () where

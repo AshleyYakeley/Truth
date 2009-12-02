@@ -10,6 +10,26 @@ module Data.TypeKT.HasType where
     import Data.Monoid;
 
 
+    data FunctorOneInst f where
+    {
+        MkFunctorOneInst :: forall f. (FunctorOne f) => FunctorOneInst f;
+    };
+
+    instance TypeFactKTT FunctorOneInst where
+    {
+        witFactKTT = unsafeIOWitnessFromString "Data.FunctorOne.FunctorOneInst";
+    };
+
+    data HasNewValueInst f where
+    {
+        MkHasNewValueInst :: forall f. (HasNewValue f) => HasNewValueInst f;
+    };
+
+    instance TypeFactT HasNewValueInst where
+    {
+        witFactT = unsafeIOWitnessFromString "Data.Changes.HasNewValue.HasNewValueInst";
+    };
+
 
     -- T
 

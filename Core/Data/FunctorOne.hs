@@ -1,8 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Data.FunctorOne where
 {
-    import Data.TypeKT.Type;
-    import Data.OpenWitness;
     import Data.Chain;
     import Data.ConstFunction;
     import Data.Traversable;
@@ -97,16 +95,6 @@ module Data.FunctorOne where
     {
         SuccessResult fa -> fa;
         FailureResult fx -> fx;
-    };
-
-    data FunctorOneInst f where
-    {
-        MkFunctorOneInst :: forall f. (FunctorOne f) => FunctorOneInst f;
-    };
-
-    instance TypeFactKTT FunctorOneInst where
-    {
-        witFactKTT = unsafeIOWitnessFromString "Data.FunctorOne.FunctorOneInst";
     };
 
     instance Applicative Identity where
