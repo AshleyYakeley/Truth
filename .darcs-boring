@@ -38,3 +38,4 @@
 \.chi$
 /Test/Test$
 /Test/.*\.out$
+(^|/)IDE\.session$
