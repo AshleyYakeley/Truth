@@ -1,6 +1,7 @@
 name: Truth-Linux
 version: 0.1
 build-depends:
+    Truth-Shapes==0.1,
     Truth-Core==0.1,
     hinotify>=0.3,
     bytestring>=0.9.1.4,

@@ -1,4 +1,4 @@
-name: Truth-Core
+name: Truth-Shapes
 version: 0.1
 cabal-version: -any
 build-type: Simple
@@ -6,9 +6,7 @@ license: AllRightsReserved
 license-file: ""
 copyright:
 maintainer:
-build-depends: base >=4.0, containers >=0.2, mtl >=1.1.0.2,
-               stm >=2.0, Cabal >=1.1.6, bytestring >=0.9.0.1, witness >=0.2,
-               open-witness >=0.2, Truth-Shapes == 0.1
+build-depends: base >=4.0, containers >=0.2, mtl >=1.1.0.2, witness >=0.2
 stability:
 homepage:
 package-url:
@@ -22,16 +20,15 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Data.TypeKT.Basic  
-                 Data.TypeKT.Witness Data.TypeFunc.TF Data.TypeFunc.Witness
-                 Data.TypeFunc   Data.Changes
-                 Data.Changes.HasNewValue Data.TypeKT.Type
-                 Data.TypeKT.HasType Data.TypeKT Data.Changes.Edit Data.Changes.WholeEdit
-                 Data.Changes.JustEdit Data.Changes.IndexEdit Data.Changes.WholeLens
-                 Data.Changes.SimpleLens Data.Changes.FloatingLens
-                 Data.Changes.FixedLens Data.Changes.Object Data.Changes.Tuple
-                 Data.Changes.List Data.Changes.Text Data.Changes.Context
-                 Data.Changes.View Data.Changes.Editor
+exposed-modules: 
+    Data.Chain
+    Data.Bijection
+    Data.Codec
+    Data.ConstFunction
+    Control.Wait
+    Data.Store
+    Data.Result
+    Data.FunctorOne
 exposed: True
 buildable: True
 build-tools:
@@ -53,6 +50,7 @@ install-includes:
 include-dirs:
 hs-source-dirs: .
 other-modules:
+    Control.Instances
 ghc-prof-options:
 ghc-shared-options:
 ghc-options:

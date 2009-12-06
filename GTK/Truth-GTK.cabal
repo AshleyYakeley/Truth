@@ -12,6 +12,7 @@ build-depends:
     open-witness==0.2,
     glib==0.10.1,
     gtk==0.10.1,
+    Truth-Shapes==0.1,
     Truth-Core==0.1
 extensions:
     TypeFamilies
@@ -50,6 +51,7 @@ build-depends:
     base>=4.0,
     glib==0.10.1,
     gtk==0.10.1,
+    Truth-Shapes==0.1,
     Truth-Core==0.1,
     Truth-Linux==0.1
 extensions:
