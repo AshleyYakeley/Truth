@@ -3,8 +3,11 @@ module Data.Changes
     module Data.TypeKT,
     module Data.Changes.HasNewValue,
     module Data.Changes.Edit,
+    module Data.Changes.NoEdit,
+    module Data.Changes.Either,
     module Data.Changes.WholeEdit,
     module Data.Changes.JustEdit,
+    module Data.Changes.JustWholeEdit,
     module Data.Changes.IndexEdit,
     module Data.Changes.WholeLens,
     module Data.Changes.SimpleLens,
@@ -21,8 +24,11 @@ module Data.Changes
     import Data.TypeKT;
     import Data.Changes.HasNewValue;
     import Data.Changes.Edit;
+    import Data.Changes.NoEdit;
+    import Data.Changes.Either;
     import Data.Changes.WholeEdit;
     import Data.Changes.JustEdit;
+    import Data.Changes.JustWholeEdit;
     import Data.Changes.IndexEdit;
     import Data.Changes.WholeLens;
     import Data.Changes.SimpleLens;

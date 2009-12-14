@@ -4,6 +4,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
     import Data.Changes.IndexEdit;
     import Data.Changes.FloatingLens;
     import Data.Changes.SimpleLens;
+    import Data.Changes.JustWholeEdit;
     import Data.Changes.JustEdit;
     import Data.Changes.Edit;
     import Data.TypeKT;

@@ -14,11 +14,7 @@ homepage:
 package-url:
 bug-reports:
 synopsis:
-description:  
-             .
-             .
-             .
-             .
+description: .
 category:
 author:
 tested-with:
@@ -26,7 +22,8 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Data.Changes Data.TypeFunc Data.TypeKT
+exposed-modules: Data.Changes.JustWholeEdit Data.Changes.NoEdit
+                 Data.Changes.Either Data.Changes Data.TypeFunc Data.TypeKT
                  Data.Changes.List Data.Changes.IndexEdit Data.Changes.Object
                  Data.Changes.Text Data.Changes.WholeLens Data.Changes.SimpleLens
                  Data.Changes.FloatingLens Data.Changes.FixedLens

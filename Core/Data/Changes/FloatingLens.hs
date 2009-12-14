@@ -1,6 +1,7 @@
 module Data.Changes.FloatingLens where
 {
     import Data.Changes.SimpleLens;
+    import Data.Changes.JustWholeEdit;
     import Data.Changes.JustEdit;
     import Data.Changes.WholeEdit;
     import Data.Changes.Edit;
