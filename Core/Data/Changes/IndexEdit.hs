@@ -9,8 +9,6 @@ module Data.Changes.IndexEdit where
     import Control.Arrow;
     import Prelude hiding (id,(.));
 
-    data IndexEdit a i edit = MkIndexEdit i edit;
-
     class Container a where
     {
         type Index a;
@@ -18,16 +16,6 @@ module Data.Changes.IndexEdit where
 
         sameIndex :: a -> Index a -> Index a -> Bool;
         indexLens :: Index a -> SimpleLens a (Part a);
-    };
-
-    data ContainerInst a where
-    {
-        MkContainerInst :: forall a. (Container a) => TypeT (Index a) -> TypeT (Part a) -> ContainerInst a;
-    };
-
-    instance TypeFactT ContainerInst where
-    {
-        witFactT = unsafeIOWitnessFromString "Data.Changes.IndexEdit.ContainerInst";
     };
 
     instance (Eq a) => Container (a -> b) where
@@ -90,6 +78,23 @@ module Data.Changes.IndexEdit where
         };
     };
 
+    data ContainerInst a where
+    {
+        MkContainerInst :: forall a. (Container a) => InfoT (Index a) -> InfoT (Part a) -> ContainerInst a;
+    };
+
+    instance PropertyT ContainerInst where
+    {
+        matchPropertyT = matchPropertyT_Fact;
+    };
+
+    instance FactT ContainerInst where
+    {
+        witFactT = unsafeIOWitnessFromString "Data.Changes.IndexEdit.ContainerInst";
+    };
+
+    data IndexEdit a i edit = MkIndexEdit i edit;
+
     instance (Edit edit,Container container,Part container ~ Maybe (Subject edit),index ~ Index container) =>
      Edit (IndexEdit container index edit) where
     {
@@ -105,16 +110,16 @@ module Data.Changes.IndexEdit where
         };
     };
 
-    instance HasTypeKTKTKTT IndexEdit where
+    instance HasInfoKTKTKTT IndexEdit where
     {
-        typeKTKTKTT = MkTypeKTKTKTT
+        infoKTKTKTT = MkInfoKTKTKTT
             (WitKTKTKTT (unsafeIOWitnessFromString "Data.Changes.IndexEdit.IndexEdit"))
-            (mkTInfoKTKTKTT_ (witFactT :: IOWitness (SatKTT EditInst)) (\tcontainer tindex tedit -> do
+            (mkTFactsKTKTKTT_ (witFactT :: IOWitness (SatKTT EditInst)) (\tcontainer tindex tedit -> do
                 {
-                    MkEditInst tsubj <- typeFactT tedit;
-                    MkContainerInst tcindex tcpart <- typeFactT tcontainer;
+                    MkEditInst tsubj <- matchPropertyT tedit;
+                    MkContainerInst tcindex tcpart <- matchPropertyT tcontainer;
                     MkEqualType <- matchWitnessT tindex tcindex;
-                    MkEqualType <- matchWitnessT tcpart (applyTTypeT (typeKTT :: TypeKTT Maybe) tsubj);
+                    MkEqualType <- matchWitnessT tcpart (applyTInfoT (infoKTT :: InfoKTT Maybe) tsubj);
                     return (MkEditInst tcontainer);
                 })
             );

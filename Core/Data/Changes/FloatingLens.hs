@@ -18,12 +18,12 @@ module Data.Changes.FloatingLens where
 
     lensGet :: FloatingLens' m state edita editb -> state -> Subject edita -> Subject editb;
     lensGet lens state = simpleLensGet (lensSimple lens state);
-    
+
     lensPutback :: FloatingLens' m state edita editb -> state -> Subject editb -> ConstFunction (Subject edita) (m (Subject edita));
     lensPutback lens state = simpleLensPutback (lensSimple lens state);
-    
+
     type FloatingLens = FloatingLens' Maybe;
-    
+
     toFloatingLens :: (FunctorOne m) => FloatingLens' m state edita editb -> FloatingLens state edita editb;
     toFloatingLens lens = MkFloatingLens
     {
@@ -64,7 +64,7 @@ module Data.Changes.FloatingLens where
         }
     };
 
-    -- suitable for Results, trying to put a failure code will be rejected 
+    -- suitable for Results, trying to put a failure code will be rejected
     resultJustLens :: forall f state edita editb. (FunctorOne f,Edit edita,Edit editb) =>
      FloatingLens state edita editb -> FloatingLens state (JustEdit f edita) (JustEdit f editb);
     resultJustLens lens = MkFloatingLens
@@ -91,8 +91,8 @@ module Data.Changes.FloatingLens where
         }
     };
 
-    -- suitable for Results, trying to put a failure code will be rejected 
+    -- suitable for Results, trying to put a failure code will be rejected
     resultLens :: forall f state edita editb. (FunctorOne f,FullEdit edita,FullEdit editb) =>
-     FloatingLens state edita editb -> FloatingLens state (JustRepEdit f edita) (JustRepEdit f editb);
+     FloatingLens state edita editb -> FloatingLens state (JustWholeEdit f edita) (JustWholeEdit f editb);
     resultLens lens = fullLens (resultJustLens lens);
 }

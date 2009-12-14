@@ -6,15 +6,19 @@ license: AllRightsReserved
 license-file: ""
 copyright:
 maintainer:
-build-depends: base >=4.0, containers >=0.2, mtl >=1.1.0.2,
-               stm >=2.0, Cabal >=1.1.6, bytestring >=0.9.0.1, witness >=0.2,
-               open-witness >=0.2, Truth-Shapes == 0.1
+build-depends: Cabal >=1.1.6, Truth-Shapes ==0.1, base >=4.0,
+               bytestring >=0.9.0.1, containers >=0.2, mtl >=1.1.0.2,
+               open-witness >=0.2, stm >=2.0, witness >=0.2
 stability:
 homepage:
 package-url:
 bug-reports:
 synopsis:
-description:
+description:  
+             .
+             .
+             .
+             .
 category:
 author:
 tested-with:
@@ -22,16 +26,16 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Data.TypeKT.Basic  
-                 Data.TypeKT.Witness Data.TypeFunc.TF Data.TypeFunc.Witness
-                 Data.TypeFunc   Data.Changes
-                 Data.Changes.HasNewValue Data.TypeKT.Type
-                 Data.TypeKT.HasType Data.TypeKT Data.Changes.Edit Data.Changes.WholeEdit
-                 Data.Changes.JustEdit Data.Changes.IndexEdit Data.Changes.WholeLens
-                 Data.Changes.SimpleLens Data.Changes.FloatingLens
-                 Data.Changes.FixedLens Data.Changes.Object Data.Changes.Tuple
-                 Data.Changes.List Data.Changes.Text Data.Changes.Context
-                 Data.Changes.View Data.Changes.Editor
+exposed-modules: Data.Changes Data.TypeFunc Data.TypeKT
+                 Data.Changes.List Data.Changes.IndexEdit Data.Changes.Object
+                 Data.Changes.Text Data.Changes.WholeLens Data.Changes.SimpleLens
+                 Data.Changes.FloatingLens Data.Changes.FixedLens
+                 Data.Changes.Context Data.Changes.View Data.Changes.Tuple
+                 Data.Changes.Editor Data.Changes.Edit Data.Changes.JustEdit
+                 Data.Changes.HasNewValue Data.Changes.WholeEdit
+                 Data.TypeKT.Construct Data.TypeKT.Witness Data.TypeKT.Type
+                 Data.TypeKT.Basic Data.TypeKT.HasType Data.TypeFunc.Witness
+                 Data.TypeFunc.TF
 exposed: True
 buildable: True
 build-tools:
@@ -41,11 +45,11 @@ ld-options:
 pkgconfig-depends:
 frameworks:
 c-sources:
-extensions: TypeFamilies EmptyDataDecls UndecidableInstances
-            FlexibleInstances FunctionalDependencies GADTs RankNTypes
-            ScopedTypeVariables PatternGuards ImpredicativeTypes ImplicitParams
-            GeneralizedNewtypeDeriving MultiParamTypeClasses FlexibleContexts
-            TypeSynonymInstances
+extensions: UndecidableInstances MultiParamTypeClasses
+            FunctionalDependencies RankNTypes ScopedTypeVariables
+            ImplicitParams FlexibleContexts FlexibleInstances EmptyDataDecls
+            TypeSynonymInstances PatternGuards GeneralizedNewtypeDeriving
+            TypeFamilies GADTs ImpredicativeTypes
 extra-libraries:
 extra-lib-dirs:
 includes:

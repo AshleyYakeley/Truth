@@ -16,7 +16,10 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
     import Control.Applicative;
     import Prelude hiding (id,(.));
 
-    data ListEdit edit = ReplaceListEdit [Subject edit] | ItemEdit (IndexEdit [Subject edit] Int edit) | ReplaceSectionEdit (Int,Int) [Subject edit];
+    data ListEdit edit =
+        ReplaceListEdit [Subject edit]                  |
+        ItemEdit (IndexEdit [Subject edit] Int edit)    |
+        ReplaceSectionEdit (Int,Int) [Subject edit]     ;
 
     instance (Edit edit) => Edit (ListEdit edit) where
     {
@@ -46,20 +49,20 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
         replaceEdit = ReplaceListEdit;
     };
 
-    instance HasTypeKTT ListEdit where
+    instance HasInfoKTT ListEdit where
     {
-        typeKTT = MkTypeKTT
+        infoKTT = MkInfoKTT
             (WitKTT (unsafeIOWitnessFromString "Data.Changes.List.ListEdit"))
             (
-                (mkTInfoKTT (\tedit -> do
+                (mkTFactsKTT (\tedit -> do
                     {
-                        MkEditInst tsubj <- typeFactT tedit;
-                        return (MkEditInst (applyTTypeT (typeKTT :: TypeKTT []) tsubj));
+                        MkEditInst tsubj <- matchPropertyT tedit;
+                        return (MkEditInst (applyTInfoT (infoKTT :: InfoKTT []) tsubj));
                     })
                 ) `mappend`
-                (mkTInfoKTT (\tedit -> do
+                (mkTFactsKTT (\tedit -> do
                     {
-                        MkEditInst _ <- typeFactT tedit;
+                        MkEditInst _ <- matchPropertyT tedit;
                         return MkFullEditInst;
                     }))
             );
@@ -82,7 +85,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
          else ((start,len+newlen-editlen),Just (editstart-start,editlen)); -- within
 
 
-    listElement :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => Int -> FloatingLens Int (ListEdit edit) (JustRepEdit Maybe edit);
+    listElement :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => Int -> FloatingLens Int (ListEdit edit) (JustWholeEdit Maybe edit);
     listElement initial = MkFloatingLens
     {
         lensInitial = initial,
@@ -90,19 +93,19 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
         lensSimple = \i -> indexLens i,
         lensPutEdit = \i eme -> pure (do
         {
-            ee <- extractJustEdit eme;
+            ee <- extractJustWholeEdit eme;
             return (ItemEdit (MkIndexEdit i ee));
         })
     } where
     {
-        listElement' :: Int -> FloatingLens Int (ListEdit edit) (JustRepEdit Maybe edit);
+        listElement' :: Int -> FloatingLens Int (ListEdit edit) (JustWholeEdit Maybe edit);
         listElement' = listElement;
 
-        elementUpdate :: ListEdit edit -> Int -> ConstFunction [Subject edit] (Int,Maybe (JustRepEdit Maybe edit));
+        elementUpdate :: ListEdit edit -> Int -> ConstFunction [Subject edit] (Int,Maybe (JustWholeEdit Maybe edit));
         elementUpdate edita state =
           fromMaybe (fmap (\newa -> (state,Just (replaceEdit (lensGet (listElement' state) state newa)))) (applyEdit edita)) update_ where
         {
-            update_ :: Maybe (ConstFunction [Subject edit] (Int,Maybe (JustRepEdit Maybe edit)));
+            update_ :: Maybe (ConstFunction [Subject edit] (Int,Maybe (JustWholeEdit Maybe edit)));
             update_ = case edita of
             {
                 ReplaceSectionEdit editlensstate newb -> Just (pure (let
@@ -142,7 +145,7 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
         listSection' :: (Int,Int) -> FloatingLens (Int,Int) (ListEdit edit) (ListEdit edit);
         listSection' = listSection;
 
-        listElement' :: Int -> FloatingLens Int (ListEdit edit) (JustRepEdit Maybe edit);
+        listElement' :: Int -> FloatingLens Int (ListEdit edit) (JustWholeEdit Maybe edit);
         listElement' = listElement;
 
         sectionUpdate :: ListEdit edit -> (Int,Int) -> ConstFunction [Subject edit] ((Int,Int),Maybe (ListEdit edit));

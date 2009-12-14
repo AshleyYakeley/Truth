@@ -17,9 +17,9 @@ module Data.Changes.Text where
 
     data ListError = MkListError Int;
 
-    instance HasTypeT ListError where
+    instance HasInfoT ListError where
     {
-        typeT = MkTypeT
+        infoT = MkInfoT
             (WitT (unsafeIOWitnessFromString "Data.Changes.Text.ListError"))
             mempty;
     };

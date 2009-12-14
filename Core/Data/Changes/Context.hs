@@ -40,11 +40,11 @@ module Data.Changes.Context where
         getPureOne = arr (\(MkWithContext context _) content -> (MkWithContext context content));
     };
 
-    instance HasTypeKTKTT WithContext where
+    instance HasInfoKTKTT WithContext where
     {
-        typeKTKTT = MkTypeKTKTT
+        infoKTKTT = MkInfoKTKTT
             (WitKTKTT (unsafeIOWitnessFromString "Data.Changes.Context.WithContext"))
-            (mkKTTInfoKTKTT (\_ -> do
+            (mkKTTFactsKTKTT (\_ -> do
                 {
                     return MkFunctorOneInst;
                 })
@@ -89,22 +89,22 @@ module Data.Changes.Context where
         replaceEdit = ReplaceContextContentEdit;
     };
 
-    instance HasTypeKTKTT ContextContentEdit where
+    instance HasInfoKTKTT ContextContentEdit where
     {
-        typeKTKTT = MkTypeKTKTT
+        infoKTKTT = MkInfoKTKTT
             (WitKTKTT (unsafeIOWitnessFromString "Data.Changes.Context.ContextContentEdit"))
             (
-                (mkTInfoKTKTT (\tx tn -> do
+                (mkTFactsKTKTT (\tx tn -> do
                     {
-                        MkEditInst tsx <- typeFactT tx;
-                        MkEditInst tsn <- typeFactT tn;
-                        return (MkEditInst (applyTTypeT (applyTTypeKTT (typeKTKTT :: TypeKTKTT WithContext) tsx) tsn));
+                        MkEditInst tsx <- matchPropertyT tx;
+                        MkEditInst tsn <- matchPropertyT tn;
+                        return (MkEditInst (applyTInfoT (applyTInfoKTT (infoKTKTT :: InfoKTKTT WithContext) tsx) tsn));
                     })
                 ) `mappend`
-                (mkTInfoKTKTT (\tx tn -> do
+                (mkTFactsKTKTT (\tx tn -> do
                     {
-                        MkEditInst _ <- typeFactT tx;
-                        MkEditInst _ <- typeFactT tn;
+                        MkEditInst _ <- matchPropertyT tx;
+                        MkEditInst _ <- matchPropertyT tn;
                         return MkFullEditInst;
                     }))
             );

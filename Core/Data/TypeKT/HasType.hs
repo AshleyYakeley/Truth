@@ -1,6 +1,7 @@
 module Data.TypeKT.HasType where
 {
     import Data.Changes.HasNewValue;
+    import Data.TypeKT.Construct;
     import Data.TypeKT.Type;
     import Data.FunctorOne;
     import Data.OpenWitness;
@@ -15,7 +16,12 @@ module Data.TypeKT.HasType where
         MkFunctorOneInst :: forall f. (FunctorOne f) => FunctorOneInst f;
     };
 
-    instance TypeFactKTT FunctorOneInst where
+    instance PropertyKTT FunctorOneInst where
+    {
+        matchPropertyKTT = matchPropertyKTT_Fact;
+    };
+
+    instance FactKTT FunctorOneInst where
     {
         witFactKTT = unsafeIOWitnessFromString "Data.FunctorOne.FunctorOneInst";
     };
@@ -25,7 +31,12 @@ module Data.TypeKT.HasType where
         MkHasNewValueInst :: forall f. (HasNewValue f) => HasNewValueInst f;
     };
 
-    instance TypeFactT HasNewValueInst where
+    instance PropertyT HasNewValueInst where
+    {
+        matchPropertyT = matchPropertyT_Fact;
+    };
+
+    instance FactT HasNewValueInst where
     {
         witFactT = unsafeIOWitnessFromString "Data.Changes.HasNewValue.HasNewValueInst";
     };
@@ -33,141 +44,141 @@ module Data.TypeKT.HasType where
 
     -- T
 
-    class HasTypeT a where
+    class HasInfoT a where
     {
-        typeT :: TypeT a;
+        infoT :: InfoT a;
     };
 
-    instance HasTypeT () where
+    instance HasInfoT () where
     {
-        typeT = MkTypeT
-            (WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.()"))
-            (mkTInfoT (return MkHasNewValueInst));
+        infoT = MkInfoT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.HasInfoRep.()"))
+            (mkTFactsT (return MkHasNewValueInst));
     };
 
-    instance HasTypeT Bool where
+    instance HasInfoT Bool where
     {
-        typeT = MkTypeT
-            (WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Bool"))
-            (mkTInfoT (return MkHasNewValueInst));
+        infoT = MkInfoT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.HasInfoRep.Bool"))
+            (mkTFactsT (return MkHasNewValueInst));
     };
 
-    instance HasTypeT Word8 where
+    instance HasInfoT Word8 where
     {
-        typeT = MkTypeT
-            (WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Word8"))
-            (mkTInfoT (return MkHasNewValueInst));
+        infoT = MkInfoT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.HasInfoRep.Word8"))
+            (mkTFactsT (return MkHasNewValueInst));
     };
 
-    instance HasTypeT Char where
+    instance HasInfoT Char where
     {
-        typeT = MkTypeT
-            (WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Char"))
-            (mkTInfoT (return MkHasNewValueInst));
+        infoT = MkInfoT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.HasInfoRep.Char"))
+            (mkTFactsT (return MkHasNewValueInst));
     };
 
-    instance HasTypeT Int where
+    instance HasInfoT Int where
     {
-        typeT = MkTypeT
-            (WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.Int"))
-            (mkTInfoT (return MkHasNewValueInst));
+        infoT = MkInfoT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.HasInfoRep.Int"))
+            (mkTFactsT (return MkHasNewValueInst));
     };
 
-    instance HasTypeT ByteString where
+    instance HasInfoT ByteString where
     {
-        typeT = MkTypeT
-            (WitT (unsafeIOWitnessFromString "Data.Changes.HasTypeRep.ByteString"))
-            (mkTInfoT (return MkHasNewValueInst));
+        infoT = MkInfoT
+            (WitT (unsafeIOWitnessFromString "Data.Changes.HasInfoRep.ByteString"))
+            (mkTFactsT (return MkHasNewValueInst));
     };
 
 
     -- KTT
 
-    class HasTypeKTT a where
+    class HasInfoKTT a where
     {
-        typeKTT :: TypeKTT a;
+        infoKTT :: InfoKTT a;
     };
 
-    instance (HasTypeKTT f,HasTypeT a) => HasTypeT (f a) where
+    instance (HasInfoKTT f,HasInfoT a) => HasInfoT (f a) where
     {
-        typeT = applyTTypeT typeKTT typeT;
+        infoT = applyTInfoT infoKTT infoT;
     };
 
-    instance HasTypeKTT Maybe where
+    instance HasInfoKTT Maybe where
     {
-        typeKTT = MkTypeKTT
-            (WitKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Maybe"))
+        infoKTT = MkInfoKTT
+            (WitKTT (unsafeIOWitnessFromString "Data.Changes.HasInfoRepT.Maybe"))
             (mconcat
             [
-                mkTInfoKTT (\_ -> return MkHasNewValueInst),
-                mkKTTInfoKTT (return MkFunctorOneInst)
+                mkTFactsKTT (\_ -> return MkHasNewValueInst),
+                mkKTTFactsKTT (return MkFunctorOneInst)
             ]);
     };
 
-    instance HasTypeKTT [] where
+    instance HasInfoKTT [] where
     {
-        typeKTT = MkTypeKTT
-            (WitKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.[]"))
-            (mkTInfoKTT (\_ -> return MkHasNewValueInst));
+        infoKTT = MkInfoKTT
+            (WitKTT (unsafeIOWitnessFromString "Data.Changes.HasInfoRepT.[]"))
+            (mkTFactsKTT (\_ -> return MkHasNewValueInst));
     };
 
 
     -- KTKTT
 
-    class HasTypeKTKTT a where
+    class HasInfoKTKTT a where
     {
-        typeKTKTT :: TypeKTKTT a;
+        infoKTKTT :: InfoKTKTT a;
     };
 
-    instance (HasTypeKTKTT f,HasTypeT a) => HasTypeKTT (f a) where
+    instance (HasInfoKTKTT f,HasInfoT a) => HasInfoKTT (f a) where
     {
-        typeKTT = applyTTypeKTT typeKTKTT typeT;
+        infoKTT = applyTInfoKTT infoKTKTT infoT;
     };
 
-    instance HasTypeKTKTT (->) where
+    instance HasInfoKTKTT (->) where
     {
-        typeKTKTT = MkTypeKTKTT
-            (WitKTKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.->"))
+        infoKTKTT = MkInfoKTKTT
+            (WitKTKTT (unsafeIOWitnessFromString "Data.Changes.HasInfoRepT.->"))
             mempty;
     };
 
-    instance HasTypeKTKTT Result where
+    instance HasInfoKTKTT Result where
     {
-        typeKTKTT = MkTypeKTKTT
-            (WitKTKTT (unsafeIOWitnessFromString "Data.Changes.HasTypeRepT.Result"))
+        infoKTKTT = MkInfoKTKTT
+            (WitKTKTT (unsafeIOWitnessFromString "Data.Changes.HasInfoRepT.Result"))
             (mconcat [
-                mkTInfoKTKTT (\_ ta -> do
+                mkTFactsKTKTT (\_ ta -> do
                 {
-                    MkHasNewValueInst <- typeFactT ta;
+                    MkHasNewValueInst <- matchPropertyT ta;
                     return MkHasNewValueInst;
                 }),
-                mkKTTInfoKTKTT (\_ -> return MkFunctorOneInst)
+                mkKTTFactsKTKTT (\_ -> return MkFunctorOneInst)
             ]);
     };
 
 
     -- KKTTKTT
 
-    class HasTypeKKTTKTT a where
+    class HasInfoKKTTKTT a where
     {
-        typeKKTTKTT :: TypeKKTTKTT a;
+        infoKKTTKTT :: InfoKKTTKTT a;
     };
 
-    instance (HasTypeKKTTKTT f,HasTypeKTT a) => HasTypeKTT (f a) where
+    instance (HasInfoKKTTKTT f,HasInfoKTT a) => HasInfoKTT (f a) where
     {
-        typeKTT = applyKTTTypeKTT typeKKTTKTT typeKTT;
+        infoKTT = applyKTTInfoKTT infoKKTTKTT infoKTT;
     };
 
 
     -- KTKTKTT
 
-    class HasTypeKTKTKTT a where
+    class HasInfoKTKTKTT a where
     {
-        typeKTKTKTT :: TypeKTKTKTT a;
+        infoKTKTKTT :: InfoKTKTKTT a;
     };
 
-    instance (HasTypeKTKTKTT f,HasTypeT a) => HasTypeKTKTT (f a) where
+    instance (HasInfoKTKTKTT f,HasInfoT a) => HasInfoKTKTT (f a) where
     {
-        typeKTKTT = applyTTypeKTKTT typeKTKTKTT typeT;
+        infoKTKTT = applyTInfoKTKTT infoKTKTKTT infoT;
     };
 }
