@@ -6,7 +6,8 @@ module UI.Truth.GTK.CheckButton where
     import Graphics.UI.Gtk;
     import Data.Changes;
     import Data.ConstFunction;
-    
+    import Data.Witness;
+
     checkButtonView :: String -> GView (WholeEdit Bool);
     checkButtonView name initial push = do
     {
@@ -28,5 +29,12 @@ module UI.Truth.GTK.CheckButton where
                     (set widget [toggleButtonActive := newstate]);
             }
         });
+    };
+
+    checkButtonMatchView :: MatchView;
+    checkButtonMatchView tedit = do
+    {
+        MkEqualType <- matchWitnessT tedit (infoT :: InfoT (WholeEdit Bool));
+        return (checkButtonView "");
     };
 }

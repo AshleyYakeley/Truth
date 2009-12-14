@@ -1,11 +1,12 @@
 {-# OPTIONS -fno-warn-orphans #-}
-module UI.Truth.GTK.Text (textView) where
+module UI.Truth.GTK.Text (textMatchView) where
 {
     import UI.Truth.GTK.GView;
     import UI.Truth.GTK.Useful;
     import Graphics.UI.Gtk;
     import Data.Changes;
     import Control.Concurrent.MVar;
+    import Data.Witness;
 
     replaceText :: TextBuffer -> (Int,Int) -> String -> IO ();
     replaceText buffer (start,len) text = do
@@ -68,5 +69,12 @@ module UI.Truth.GTK.Text (textView) where
                 ItemEdit (MkIndexEdit i (MkWholeEdit c)) -> replaceText buffer (i,1) [c];
             })
         });
+    };
+
+    textMatchView :: MatchView;
+    textMatchView tedit = do
+    {
+        MkEqualType <- matchWitness tedit (infoT :: InfoT (ListEdit (WholeEdit Char)));
+        return textView;
     };
 }

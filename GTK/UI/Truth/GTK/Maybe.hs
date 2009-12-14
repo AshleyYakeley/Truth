@@ -1,8 +1,9 @@
 {-# OPTIONS -fno-warn-orphans #-}
-module UI.Truth.GTK.Maybe (maybeView,resultView) where
+module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
 {
     import UI.Truth.GTK.GView;
     import Graphics.UI.Gtk;
+    import Data.Witness;
     import Data.Changes;
     import Data.FunctorOne;
     import Data.Result;
@@ -153,4 +154,27 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
 
     resultView :: (HasNewValue (Subject edit),FullEdit edit) => w edit -> InfoT err -> GView edit -> GView (JustWholeEdit (Result err) edit);
     resultView _ terr = functorOneIVF (applyTInfoKTT infoKTKTT terr) Nothing (\_ -> placeholderLabel);
+
+    maybeMatchView :: GetView -> MatchView;
+    maybeMatchView getView tedit = do
+    {
+        MkMatchJustWholeEdit tf te _ta <- matchPropertyT_ (Type :: Type (MatchJustWholeEdit FT)) tedit;
+        MkEqualType <- matchWitnessKTT tf (infoKTT :: InfoKTT Maybe);
+        MkEditInst tsubj <- matchPropertyT te;
+        MkFullEditInst <- matchPropertyT te;
+        MkHasNewValueInst <- matchPropertyT tsubj;
+        return (maybeView te (getView te));
+    };
+
+    resultMatchView :: GetView -> MatchView;
+    resultMatchView getView tedit = do
+    {
+        MkMatchJustWholeEdit tf te _ta <- matchPropertyT_ (Type :: Type (MatchJustWholeEdit FT)) tedit;
+        MkTMatchKTT tr terr <- matchPropertyKTT_ (Type :: Type (TMatchKTT FKTT)) tf;
+        MkEqualType <- matchWitnessKTKTT tr (infoKTKTT :: InfoKTKTT Result);
+        MkEditInst tsubj <- matchPropertyT te;
+        MkFullEditInst <- matchPropertyT te;
+        MkHasNewValueInst <- matchPropertyT tsubj;
+        return (resultView te terr (getView te));
+    };
 }
