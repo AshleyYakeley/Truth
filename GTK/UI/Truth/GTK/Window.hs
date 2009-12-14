@@ -27,7 +27,7 @@ module UI.Truth.GTK.Window where
         return (MkViewResult (MkViewWidgetStuff (toWidget w) (return Nothing)) (\_ -> return ()));
     };
 
-    type MatchView = forall edit. (FullEdit edit,HasNewValue (Subject edit)) => InfoT edit -> Maybe (GView edit);
+    type MatchView = forall edit. (Edit edit) => InfoT edit -> Maybe (GView edit);
 
     maybeMatchView :: MatchView;
     maybeMatchView tedit = do
@@ -69,7 +69,7 @@ module UI.Truth.GTK.Window where
     matchViews :: [MatchView];
     matchViews = [checkButtonMatchView,textMatchView,maybeMatchView,resultMatchView];
 
-    theView :: forall edit. (FullEdit edit,HasNewValue (Subject edit)) => [MatchView] -> InfoT edit -> GView edit;
+    theView :: forall edit. (Edit edit) => [MatchView] -> InfoT edit -> GView edit;
     theView [] tedit = lastResortView tedit;
     theView (mview:mviews) tedit = case mview tedit of
     {
@@ -77,7 +77,7 @@ module UI.Truth.GTK.Window where
         _ -> theView mviews tedit;
     };
 
-    makeWindow :: (FullEdit edit, HasNewValue (Subject edit)) => InfoT edit -> IORef Int -> IO () -> Subscribe edit -> IO ();
+    makeWindow :: (Edit edit) => InfoT edit -> IORef Int -> IO () -> Subscribe edit -> IO ();
     makeWindow te ref tellclose sub = do
     {
         (sub',w,close) <- subscribeView (theView matchViews te) sub;
@@ -111,7 +111,7 @@ module UI.Truth.GTK.Window where
         return ();
     };
 
-    makeWindowCountRef :: (FullEdit edit, HasNewValue (Subject edit)) => InfoT edit -> IORef Int -> Subscribe edit -> IO ();
+    makeWindowCountRef :: (Edit edit) => InfoT edit -> IORef Int -> Subscribe edit -> IO ();
     makeWindowCountRef te windowCount sub = do
     {
         makeWindow te windowCount (do

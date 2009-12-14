@@ -4,7 +4,6 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
     import UI.Truth.GTK.GView;
     import Graphics.UI.Gtk;
     import Data.Changes;
-    import Data.Witness;
     import Data.FunctorOne;
     import Data.Result;
     import Data.IORef;
@@ -50,7 +49,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
 
     functorOneIVF :: forall f edit wd.
     (
-        HasNewValue1 f,
+--        HasNewValue1 f,
         Applicative f,
         FunctorOne f,
         HasNewValue (Subject edit),
@@ -98,7 +97,7 @@ module UI.Truth.GTK.Maybe (maybeView,resultView) where
                             MkSelection teditb tsubj (lens :: FloatingLens state edit editb) <- msel;
                             return
                              (
-                                (newValue1 (Type :: Type (f (Subject editb))) MkSelection)
+                                MkSelection
                                 (constructT (MkMatchJustWholeEdit tf teditb tsubj))
                                 (applyTInfoT tf tsubj)
                                 (resultLens lens)

@@ -93,7 +93,7 @@ module Data.Changes.FloatingLens where
     };
 
     -- suitable for Results, trying to put a failure code will be rejected
-    resultLens :: forall f state edita editb. (FunctorOne f,FullEdit edita,FullEdit editb) =>
+    resultLens :: forall f state edita editb. (FunctorOne f,Edit edita,Edit editb) =>
      FloatingLens state edita editb -> FloatingLens state (JustWholeEdit f edita) (JustWholeEdit f editb);
     resultLens lens = fullLens (resultJustLens lens);
 }

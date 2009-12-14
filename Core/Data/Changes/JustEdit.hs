@@ -2,7 +2,6 @@ module Data.Changes.JustEdit where
 {
     import Data.Changes.Edit;
     import Data.TypeKT;
-    import Data.Changes.HasNewValue;
     import Data.FunctorOne;
     import Data.Result;
     import Data.Chain;
@@ -10,7 +9,7 @@ module Data.Changes.JustEdit where
 
     newtype JustEdit (f :: * -> *) edit = MkJustEdit edit;
 
-    instance (HasNewValue (Subject edit),FullEdit edit,FunctorOne f) => Edit (JustEdit f edit) where
+    instance (FunctorOne f,Edit edit) => Edit (JustEdit f edit) where
     {
         type Subject (JustEdit f edit) = f (Subject edit);
 
