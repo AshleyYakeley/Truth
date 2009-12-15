@@ -60,7 +60,7 @@ module UI.Truth.GTK.Text (textMatchView) where
                 o1 <- textIterGetOffset iter1;
                 o2 <- textIterGetOffset iter2;
                 -- get selection...
-                return (Just (MkSelection infoT infoT (listSection (o1,o2 - o1))));
+                return (Just (MkAspect infoT infoT (listSection (o1,o2 - o1))));
             }),
             vrUpdate = \edit -> withMVar mv (\_ -> case edit of
             {

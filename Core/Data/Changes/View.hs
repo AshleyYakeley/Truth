@@ -5,17 +5,17 @@ module Data.Changes.View where
     import Data.Changes.Edit;
     import Data.TypeKT;
 
-    data Selection edit where
+    data Aspect edit where
     {
-        MkSelection ::
+        MkAspect ::
          forall editb state. (Eq state,Edit editb) =>
-          InfoT editb -> InfoT (Subject editb) -> FloatingLens state edita editb -> Selection edita;
+          InfoT editb -> InfoT (Subject editb) -> FloatingLens state edita editb -> Aspect edita;
     };
 
     data ViewWidgetStuff w edit = MkViewWidgetStuff
     {
         vwsWidget :: w,
-        vwsGetSelection :: IO (Maybe (Selection edit))
+        vwsGetSelection :: IO (Maybe (Aspect edit))
     };
 
     data ViewResult w edit = MkViewResult

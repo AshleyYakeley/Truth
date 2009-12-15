@@ -48,9 +48,15 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
     createButton :: (FullEdit edit) => Subject edit -> Push edit -> IO Button;
     createButton val push = pushButton push (replaceEdit val) "Create";
 
+    mapSelection :: forall f edit. (FunctorOne f, Edit edit) =>
+     InfoKTT f -> Aspect edit -> Aspect (JustWholeEdit f edit);
+    mapSelection tf (MkAspect teditb tsubj (lens :: FloatingLens state edit editb)) = MkAspect
+     (constructT (MkMatchJustWholeEdit tf teditb tsubj))
+     (applyTInfoT tf tsubj)
+     (resultLens lens);
+
     functorOneIVF :: forall f edit wd.
     (
---        HasNewValue1 f,
         Applicative f,
         FunctorOne f,
         HasNewValue (Subject edit),
@@ -93,17 +99,7 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
                     Just (MkViewResult ws _) -> do
                     {
                         msel <- vwsGetSelection ws;
-                        return (do
-                        {
-                            MkSelection teditb tsubj (lens :: FloatingLens state edit editb) <- msel;
-                            return
-                             (
-                                MkSelection
-                                (constructT (MkMatchJustWholeEdit tf teditb tsubj))
-                                (applyTInfoT tf tsubj)
-                                (resultLens lens)
-                             );
-                        });
+                        return (fmap (mapSelection tf) msel);
                     };
                     Nothing -> return Nothing;
                 };
