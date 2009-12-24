@@ -1,4 +1,4 @@
-default: build
+default: complete
 
 run: build testfile
 	dist/build/truth/truth testfile
@@ -20,8 +20,13 @@ build: configure
 haddock: configure
 	cabal haddock
 
-install: build haddock
+install: build
 	cabal install --user
+
+complete: install haddock
+
+sdist: configure
+	cabal sdist
 
 test: install
 	cd Test && make clean && make
@@ -29,4 +34,4 @@ test: install
 # switch off intermediate file deletion
 .SECONDARY:
 
-.PHONY: default configure build haddock install test
+.PHONY: default configure build haddock install complete test sdist run

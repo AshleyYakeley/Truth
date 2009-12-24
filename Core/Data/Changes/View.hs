@@ -8,7 +8,7 @@ module Data.Changes.View where
     data Aspect edit where
     {
         MkAspect ::
-         forall editb state. (Eq state,Edit editb) =>
+         forall edita editb state. (Eq state,Edit editb) =>
           InfoT editb -> InfoT (Subject editb) -> FloatingLens state edita editb -> Aspect edita;
     };
 

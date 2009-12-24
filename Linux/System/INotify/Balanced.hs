@@ -77,7 +77,7 @@ module System.INotify.Balanced
                 _ -> singleton uniq (evs,callback);
             };
         };
-        addMapWatch inotify path cbmap;
+        _ <- addMapWatch inotify path cbmap;
         return (insert wd (path,cbmap) wdmap,MkWatchDescriptorB wd uniq);
     });
     

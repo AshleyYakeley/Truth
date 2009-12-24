@@ -8,7 +8,6 @@ module Data.TypeKT.HasType where
     import Data.Result;
     import Data.ByteString;
     import Data.Word;
-    import Data.Monoid;
 
 
     data FunctorOneInst f where

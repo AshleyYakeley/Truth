@@ -4,7 +4,6 @@ module Data.Changes.WholeEdit where
     import Data.TypeKT;
     import Data.OpenWitness;
     import Control.Applicative;
-    import Data.Monoid;
 
     newtype WholeEdit a = MkWholeEdit a;
 

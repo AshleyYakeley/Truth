@@ -1,7 +1,6 @@
 module Data.Result where
 {
     import Data.Bijection;
-    import Control.Monad;
     import Data.Traversable;
     import Control.Applicative;
     import Data.Foldable;

@@ -1,4 +1,4 @@
-default: build
+default: complete
 
 test:
 	cd Shapes && make install
@@ -7,12 +7,12 @@ test:
 	cd GTK && make install
 	cd Cabal && make install
 
-build:
-	cd Shapes && make install
-	cd Core && make install
-	cd Linux && make install
-	cd GTK && make install
-	cd Cabal && make install
+complete:
+	cd Shapes && make complete
+	cd Core && make complete
+	cd Linux && make complete
+	cd GTK && make complete
+	cd Cabal && make complete
 
 clean:
 	cd Shapes && make clean

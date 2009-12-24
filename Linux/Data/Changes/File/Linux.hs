@@ -13,7 +13,7 @@ module Data.Changes.File.Linux
     import Control.Monad.Identity;
     import Control.Monad.State;
     import Control.Monad.Error;
-    import Control.OldException hiding (catch);
+    import Control.Exception hiding (catch);
     import System.IO.Error hiding (try);
     import System.IO (Handle,IOMode(..),openFile,hClose,hSeek,SeekMode(AbsoluteSeek),hFileSize,hSetFileSize);
     import Prelude hiding (length,readFile,writeFile,catch);
@@ -98,7 +98,7 @@ module Data.Changes.File.Linux
     tryError :: (MonadError e m) => m a -> m (Either e a);
     tryError f = catchError (f >>= (return . Right)) (return . Left);
     
-    finallyError :: (MonadError e m) => m a -> m b -> m a;
+    finallyError :: (MonadError e m) => m a -> m () -> m a;
     finallyError f after = do
     {
         eea <- tryError f;
