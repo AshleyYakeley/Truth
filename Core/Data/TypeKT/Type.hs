@@ -28,6 +28,7 @@ module Data.TypeKT.Type
 	{
 		WitT :: IOWitness (SatT a) -> WitT a;
 		TWitT :: InfoKTT p -> InfoT a -> WitT (p a);
+		KTTWitT :: InfoKKTTT p -> InfoKTT a -> WitT (p a);
 	};
 
 	instance SimpleWitness WitT where
@@ -37,6 +38,12 @@ module Data.TypeKT.Type
 		{
 			MkEqualType <- matchWitnessKTT tfa tfb;
 			MkEqualType <- matchWitnessT ta tb;
+			return MkEqualType;
+		};
+		matchWitness (KTTWitT tfa ta) (KTTWitT tfb tb) = do
+		{
+			MkEqualType <- matchWitnessKKTTT tfa tfb;
+			MkEqualType <- matchWitnessKTT ta tb;
 			return MkEqualType;
 		};
 		matchWitness _ _ = Nothing;
@@ -193,6 +200,14 @@ module Data.TypeKT.Type
 	    matchWitnessKTKTT _ _ = Nothing;
 	};
 
+    class PropertyKTKTT f where
+    {
+        matchPropertyKTKTT :: forall t. InfoKTKTT t -> Maybe (f t);
+    };
+
+    matchPropertyKTKTT_ :: (PropertyKTKTT f) => Type (f FKTKTT) -> InfoKTKTT t -> Maybe (f t);
+    matchPropertyKTKTT_ _ = matchPropertyKTKTT;
+
     data FactsKTKTT a = MkFactsKTKTT
     {
         infoFactKTKTT :: forall f. IOWitness (SatKKTKTTT f) -> Maybe (f a),
@@ -207,13 +222,13 @@ module Data.TypeKT.Type
          (\info -> mappend (d1 info) (d2 info));
     };
 
-    class FactKTKTT f where
+    class (PropertyKTKTT f) => FactKTKTT f where
     {
         witFactKTKTT :: IOWitness (SatKKTKTTT f);
     };
 
-    matchPropertyKTKTT :: (FactKTKTT f) => InfoKTKTT a -> Maybe (f a);
-    matchPropertyKTKTT (MkInfoKTKTT _ info) = infoFactKTKTT info witFactKTKTT;
+    matchPropertyKTKTT_Fact :: (FactKTKTT f) => InfoKTKTT a -> Maybe (f a);
+    matchPropertyKTKTT_Fact (MkInfoKTKTT _ info) = infoFactKTKTT info witFactKTKTT;
 
     mkTFactsKTKTT_ :: IOWitness (SatKTT f) -> (forall i1 i2. InfoT i1 -> InfoT i2 -> Maybe (f (a i1 i2))) -> FactsKTKTT a;
     mkTFactsKTKTT_ witF f = MkFactsKTKTT (\_ -> Nothing) (\ta -> mkTFactsKTT_ witF (f ta));
@@ -230,7 +245,30 @@ module Data.TypeKT.Type
 
     -- KKTTT
 
-    -- add it if you need it
+    data InfoKKTTT a = MkInfoKKTTT (WitKKTTT a) (FactsKKTTT a);
+
+    instance WitnessKKTTT InfoKKTTT where
+    {
+        matchWitnessKKTTT (MkInfoKKTTT wa _) (MkInfoKKTTT wb _) = matchWitnessKKTTT wa wb;
+    };
+
+	data WitKKTTT p where
+	{
+		WitKKTTT :: IOWitness (SatKKTTT p) -> WitKKTTT p;
+	};
+
+    instance WitnessKKTTT WitKKTTT where
+    {
+    	matchWitnessKKTTT (WitKKTTT wa) (WitKKTTT wb) = matchWitnessT wa wb;
+	};
+
+    class PropertyKKTTT f where
+    {
+        matchPropertyKKTTT :: forall t. InfoKKTTT t -> Maybe (f t);
+    };
+
+    matchPropertyKKTTT_ :: (PropertyKKTTT f) => Type (f FKKTTT) -> InfoKKTTT t -> Maybe (f t);
+    matchPropertyKKTTT_ _ = matchPropertyKKTTT;
 
     data FactsKKTTT a = MkFactsKKTTT
     {
@@ -245,6 +283,20 @@ module Data.TypeKT.Type
          (\w -> mplus (f1 w) (f2 w))
          (\info -> mappend (d1 info) (d2 info));
     };
+
+    class (PropertyKKTTT f) => FactKKTTT f where
+    {
+        witFactKKTTT :: IOWitness (SatKKKTTTT f);
+    };
+
+    matchPropertyKKTTT_Fact :: (FactKKTTT f) => InfoKKTTT a -> Maybe (f a);
+    matchPropertyKKTTT_Fact (MkInfoKKTTT _ info) = infoFactKKTTT info witFactKKTTT;
+
+    mkTFactsKKTTT_ :: IOWitness (SatKTT f) -> (forall i1. InfoKTT i1 -> Maybe (f (a i1))) -> FactsKKTTT a;
+    mkTFactsKKTTT_ witF f = MkFactsKKTTT (\_ -> Nothing) (\ta -> mkTFactsT_ witF (f ta));
+
+    mkTFactsKKTTT :: forall f a. (FactT f) => (forall i1. InfoKTT i1 -> Maybe (f (a i1))) -> FactsKKTTT a;
+    mkTFactsKKTTT = mkTFactsKKTTT_ witFactT;
 
 
     -- KKTTKTT

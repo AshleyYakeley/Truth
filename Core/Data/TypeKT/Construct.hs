@@ -54,6 +54,25 @@ module Data.TypeKT.Construct where
         constructKTT (MkTMatchKTT tf ta) = applyTInfoKTT tf ta;
     };
 
+    data KTTMatchT t where
+    {
+        MkKTTMatchT :: forall f a. InfoKKTTT f -> InfoKTT a -> KTTMatchT (f a);
+    };
+
+    instance PropertyT KTTMatchT where
+    {
+        matchPropertyT (MkInfoT (KTTWitT tf ta) _) = return (MkKTTMatchT tf ta);
+        matchPropertyT _ = Nothing;
+    };
+
+    applyKTTInfoT :: InfoKKTTT f -> InfoKTT a -> InfoT (f a);
+    applyKTTInfoT tf@(MkInfoKKTTT _ inf) ta = MkInfoT (KTTWitT tf ta) (deriveKTTFactsT inf ta);
+
+    instance ConstructT KTTMatchT where
+    {
+        constructT (MkKTTMatchT tf ta) = applyKTTInfoT tf ta;
+    };
+
     data KTTMatchKTT t where
     {
         MkKTTMatchKTT :: forall f a. InfoKKTTKTT f -> InfoKTT a -> KTTMatchKTT (f a);
