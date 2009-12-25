@@ -14,22 +14,26 @@ module Main where
     import Control.Category;
     import Prelude hiding (readFile,writeFile,id,(.));
     
+    instance (Show edit,Show i) => Show (IndexEdit a i edit) where
+    {
+        show (MkIndexEdit i edit) = (show i) ++ " " ++ show edit;
+    };
+
     instance (Show (Subject edit),Show edit) => Show (ListEdit edit) where
     {
-        show (ItemEdit i edit) = "item " ++ (show i) ++ " " ++ show edit;
+        show (ItemEdit edit) = "item " ++ show edit;
         show (ReplaceSectionEdit i sect) = "section " ++ (show i) ++ " " ++ show sect;
         show (ReplaceListEdit la) = "replace " ++ (show la);
     };
     
     instance (Show (f (Subject edit)),Show edit) => Show (JustEdit f edit) where
     {
-        show (JustEdit edit) = "Just " ++ (show edit);
-        show (ReplaceJustEdit a) = "replace " ++ (show a);
+        show (MkJustEdit edit) = show edit;
     };
    
     instance (Show a) => Show (WholeEdit a) where
     {
-        show (MkWholeEdit s) = "replace " ++ (show s);
+        show (MkWholeEdit s) = show s;
     };
    
     showObject :: (Show (Subject edit)) => String -> Subscribe edit -> IO ();
@@ -95,9 +99,9 @@ module Main where
             let
             {
                 fileobj = linuxFileObject inotify path;
-                contentobj = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) () fileobj;
+                contentobj = lensSubscribe (toFixedLens (cleanFixedLens contentCleanLens)) fileobj;
                 textobj :: Subscribe (WholeEdit (Maybe (Result ListError String)))
-                 = lensSubscribe (fixedFloatingLens (simpleFixedLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) () contentobj;
+                 = lensSubscribe (simpleFixedLens (toSimpleLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) contentobj;
             };
         
             (push,sub) <- makeShowSubscription path textobj;

@@ -2,29 +2,29 @@ Test
 initINotify
 somefile: initial Just success: "ABCD\n"
 writing & waiting 100ms
-somefile: edit: replace Just success: "EFGH\n"
+somefile: edit: Just success: "EFGH\n"
 somefile: update: Just success: "EFGH\n"
 writing & waiting 100ms
-somefile: edit: replace Just success: "IJK\n"
+somefile: edit: Just success: "IJK\n"
 somefile: update: Just success: "IJK\n"
-pushing replace Just success: "pqrstu"
+pushing Just success: "pqrstu"
 pushed
 waiting 10s
-somefile: edit: replace Just success: "pqrstuyyzz\n"
+somefile: edit: Just success: "pqrstuyyzz\n"
 somefile: update: Just success: "pqrstuyyzz\n"
-somefile: edit: replace Just success: "xfxfx\n"
+somefile: edit: Just success: "xfxfx\n"
 somefile: update: Just success: "xfxfx\n"
-somefile: edit: replace Just success: "xfxfx\n"
+somefile: edit: Just success: "xfxfx\n"
 somefile: update: Just success: "xfxfx\n"
-somefile: edit: replace Just success: "xfxfx\npqpr\n"
+somefile: edit: Just success: "xfxfx\npqpr\n"
 somefile: update: Just success: "xfxfx\npqpr\n"
 deleting
-pushing replace Nothing
+pushing Nothing
 pushed
-pushing replace Nothing
+pushing Nothing
 pushed
-pushing replace Just success: "ABCdef"
+pushing Just success: "ABCdef"
 pushed
-pushing replace Nothing
+pushing Nothing
 pushed
 End

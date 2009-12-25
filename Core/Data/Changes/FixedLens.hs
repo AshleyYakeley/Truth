@@ -24,6 +24,14 @@ module Data.Changes.FixedLens where
 
     type FixedLens = FixedLens' Maybe;
 
+    toFixedLens :: (FunctorOne m) => FixedLens' m edita editb -> FixedLens edita editb;
+    toFixedLens lens = MkFixedLens
+    {
+        fixedLensUpdate = fixedLensUpdate lens,
+        fixedLensSimple = toSimpleLens (fixedLensSimple lens),
+        fixedLensPutEdit = \editb -> fmap getMaybeOne (fixedLensPutEdit lens editb)
+    };
+
     makeFixedLensUpdate :: (Edit edita,FullEdit editb) =>
      (Subject edita -> Subject editb) -> (edita -> Maybe (ConstFunction (Subject edita) (Maybe editb))) -> (edita -> ConstFunction (Subject edita) (Maybe editb));
     makeFixedLensUpdate getter ff edit = case ff edit of
