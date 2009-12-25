@@ -11,8 +11,8 @@ module Data.Changes
     module Data.Changes.IndexEdit,
     module Data.Changes.WholeLens,
     module Data.Changes.SimpleLens,
-    module Data.Changes.FloatingLens,
-    module Data.Changes.FixedLens,
+    module Data.Changes.FloatingEditLens,
+    module Data.Changes.FixedEditLens,
     module Data.Changes.Object,
 --    module Data.Changes.Tuple,
     module Data.Changes.List,
@@ -32,8 +32,8 @@ module Data.Changes
     import Data.Changes.IndexEdit;
     import Data.Changes.WholeLens;
     import Data.Changes.SimpleLens;
-    import Data.Changes.FloatingLens;
-    import Data.Changes.FixedLens;
+    import Data.Changes.FloatingEditLens;
+    import Data.Changes.FixedEditLens;
     import Data.Changes.Object;
 --    import Data.Changes.Tuple;
     import Data.Changes.List;

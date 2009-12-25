@@ -50,7 +50,7 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
 
     mapSelection :: forall f edit. (FunctorOne f, Edit edit) =>
      InfoKTT f -> Aspect edit -> Aspect (JustWholeEdit f edit);
-    mapSelection tf (MkAspect teditb tsubj (lens :: FloatingLens state edit editb)) = MkAspect
+    mapSelection tf (MkAspect teditb tsubj (lens :: FloatingEditLens state edit editb)) = MkAspect
      (constructT (MkMatchJustWholeEdit tf teditb tsubj))
      (applyTInfoT tf tsubj)
      (resultLens lens);

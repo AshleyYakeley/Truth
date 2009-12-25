@@ -15,9 +15,9 @@ module Data.Changes.WholeLens where
         wholeLensGet :: a -> b,
         wholeLensPutback :: b -> m a
     };
-    
+
     type WholeLens = WholeLens' Maybe;
-    
+
     instance (Applicative m,FunctorOne m) => Category (WholeLens' m) where
     {
         id = MkWholeLens
@@ -35,7 +35,7 @@ module Data.Changes.WholeLens where
             }
         };
     };
-    
+
     instance (Traversable f,Applicative m) => CatFunctor (WholeLens' m) f where
     {
         cfmap lens = MkWholeLens
@@ -44,8 +44,8 @@ module Data.Changes.WholeLens where
             wholeLensPutback = traverse (wholeLensPutback lens)
         };
     };
-    
-    resultWholeLens :: (a -> Result e b) -> (b -> a) -> WholeLens' Maybe a (Result e b);
+
+    resultWholeLens :: (a -> Result e b) -> (b -> a) -> WholeLens a (Result e b);
     resultWholeLens decode' encode' = MkWholeLens
     {
         wholeLensGet = decode',
@@ -55,14 +55,14 @@ module Data.Changes.WholeLens where
             _ -> Nothing;
         }
     };
-    
-    codecWholeLens :: Codec a b -> WholeLens' Maybe a (Maybe b);
+
+    codecWholeLens :: Codec a b -> WholeLens a (Maybe b);
     codecWholeLens codec = MkWholeLens
     {
         wholeLensGet = decode codec,
         wholeLensPutback = fmap (encode codec)
     };
-    
+
     bijectionWholeLens :: (Applicative m) => Bijection a b -> WholeLens' m a b;
     bijectionWholeLens bi = MkWholeLens
     {

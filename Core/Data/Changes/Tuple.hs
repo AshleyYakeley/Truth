@@ -2,7 +2,7 @@
 module Data.Changes.Tuple where
 {
 {-
-    import Data.Changes.FixedLens;
+    import Data.Changes.FixedEditLens;
     import Data.Changes.Edit;
     import Data.Witness;
     import Data.ConstFunction;

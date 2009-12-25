@@ -1,7 +1,7 @@
 module Data.Changes.Object where
 {
-    import Data.Changes.FixedLens;
-    import Data.Changes.FloatingLens;
+    import Data.Changes.FixedEditLens;
+    import Data.Changes.FloatingEditLens;
     import Data.Changes.SimpleLens;
     import Data.Changes.WholeEdit;
     import Data.Changes.Edit;
@@ -110,10 +110,10 @@ module Data.Changes.Object where
         lensSubscribe :: lens -> Subscribe (LensDomain lens) -> Subscribe (LensRange lens);
     };
 
-    instance (Edit edita,Eq state) => EditLens (FloatingLens state edita editb) where
+    instance (Edit edita,Eq state) => EditLens (FloatingEditLens state edita editb) where
     {
-        type LensDomain (FloatingLens state edita editb) = edita;
-        type LensRange (FloatingLens state edita editb) = editb;
+        type LensDomain (FloatingEditLens state edita editb) = edita;
+        type LensRange (FloatingEditLens state edita editb) = editb;
 
         lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
         {
@@ -125,7 +125,7 @@ module Data.Changes.Object where
             })
              (\(statevar,_,_) edita -> modifyMVar_ statevar (\(oldstate,olda) -> let
             {
-                (newstate,meditb) = applyConstFunction (lensUpdate lens edita oldstate) olda;
+                (newstate,meditb) = applyConstFunction (floatingLensUpdate lens edita oldstate) olda;
             } in do
             {
                 case meditb of
@@ -135,11 +135,11 @@ module Data.Changes.Object where
                 };
                 return (newstate,applyConstFunction (applyEdit edita) olda);
             }));
-            putMVar statevar (lensInitial lens,firsta);
+            putMVar statevar (floatingLensInitial lens,firsta);
             return (MkObject
             {
-                objGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (lensGet lens state a)),
-                objPush = \editb -> modifyMVar statevar (\olds@(oldstate,olda) -> case applyConstFunction (lensPutEdit lens oldstate editb) olda of
+                objGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (floatingLensGet lens state a)),
+                objPush = \editb -> modifyMVar statevar (\olds@(oldstate,olda) -> case applyConstFunction (floatingLensPutEdit lens oldstate editb) olda of
                 {
                     Just edita -> do
                     {
@@ -148,7 +148,7 @@ module Data.Changes.Object where
                         {
                             Just _ -> do
                             {
-                                let {(newstate,_) = applyConstFunction (lensUpdate lens edita oldstate) olda;};
+                                let {(newstate,_) = applyConstFunction (floatingLensUpdate lens edita oldstate) olda;};
                                 return ((newstate,applyConstFunction (applyEdit edita) olda),mv);
                             };
                             _ -> return (olds,mv);
@@ -161,10 +161,10 @@ module Data.Changes.Object where
         });
     };
 
-    instance (Edit edita) => EditLens (FixedLens edita editb) where
+    instance (Edit edita) => EditLens (FixedEditLens edita editb) where
     {
-        type LensDomain (FixedLens edita editb) = edita;
-        type LensRange (FixedLens edita editb) = editb;
+        type LensDomain (FixedEditLens edita editb) = edita;
+        type LensRange (FixedEditLens edita editb) = editb;
 
         lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
         {

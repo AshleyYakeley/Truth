@@ -26,8 +26,8 @@ exposed-modules: Data.Changes.Anything Data.Changes.JustWholeEdit
                  Data.Changes.NoEdit Data.Changes.Either Data.Changes Data.TypeFunc
                  Data.TypeKT Data.Changes.List Data.Changes.IndexEdit
                  Data.Changes.Object Data.Changes.Text Data.Changes.WholeLens
-                 Data.Changes.SimpleLens Data.Changes.FloatingLens
-                 Data.Changes.FixedLens Data.Changes.Context Data.Changes.View
+                 Data.Changes.SimpleLens Data.Changes.FloatingEditLens
+                 Data.Changes.FixedEditLens Data.Changes.Context Data.Changes.View
                  Data.Changes.Tuple Data.Changes.Editor Data.Changes.Edit
                  Data.Changes.JustEdit Data.Changes.HasNewValue
                  Data.Changes.WholeEdit Data.TypeKT.Construct Data.TypeKT.Witness

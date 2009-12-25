@@ -10,7 +10,7 @@ module Data.Changes.SimpleLens where
     import Control.Category;
     import Prelude hiding (id,(.),sequence);
 
-    -- | A SimpleLens is a FixedLens that doesn't bother with Edits.
+    -- | A SimpleLens is a FixedEditLens that doesn't bother with Edits.
     ;
     data SimpleLens' m a b = MkSimpleLens
     {

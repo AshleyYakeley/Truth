@@ -1,7 +1,7 @@
 module Data.Changes.View where
 {
     import Data.Changes.Object;
-    import Data.Changes.FloatingLens;
+    import Data.Changes.FloatingEditLens;
     import Data.Changes.Edit;
     import Data.TypeKT;
 
@@ -9,7 +9,7 @@ module Data.Changes.View where
     {
         MkAspect ::
          forall edita editb state. (Eq state,Edit editb) =>
-          InfoT editb -> InfoT (Subject editb) -> FloatingLens state edita editb -> Aspect edita;
+          InfoT editb -> InfoT (Subject editb) -> FloatingEditLens state edita editb -> Aspect edita;
     };
 
     data ViewWidgetStuff w edit = MkViewWidgetStuff

@@ -2,7 +2,7 @@ module Data.Changes.Context where
 {
     import Data.Result;
 --    import Data.Changes.Tuple;
-    import Data.Changes.FixedLens;
+    import Data.Changes.FixedEditLens;
     import Data.Changes.SimpleLens;
     import Data.Changes.Edit;
     import Data.TypeKT;

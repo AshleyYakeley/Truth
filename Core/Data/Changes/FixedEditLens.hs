@@ -1,6 +1,6 @@
-module Data.Changes.FixedLens where
+module Data.Changes.FixedEditLens where
 {
-    import Data.Changes.FloatingLens;
+    import Data.Changes.FloatingEditLens;
     import Data.Changes.JustEdit;
     import Data.Changes.SimpleLens;
     import Data.Changes.WholeEdit;
@@ -13,18 +13,18 @@ module Data.Changes.FixedLens where
     import Control.Category;
     import Prelude hiding (id,(.),sequence);
 
-    -- | A FixedLens is a lens without state
+    -- | A FixedEditLens is a lens without state
     ;
-    data FixedLens' m edita editb = MkFixedLens
+    data FixedEditLens' m edita editb = MkFixedLens
     {
         fixedLensUpdate :: edita -> ConstFunction (Subject edita) (Maybe editb),
         fixedLensSimple :: SimpleLens' m (Subject edita) (Subject editb),
         fixedLensPutEdit :: editb -> ConstFunction (Subject edita) (m edita)
     };
 
-    type FixedLens = FixedLens' Maybe;
+    type FixedEditLens = FixedEditLens' Maybe;
 
-    toFixedLens :: (FunctorOne m) => FixedLens' m edita editb -> FixedLens edita editb;
+    toFixedLens :: (FunctorOne m) => FixedEditLens' m edita editb -> FixedEditLens edita editb;
     toFixedLens lens = MkFixedLens
     {
         fixedLensUpdate = fixedLensUpdate lens,
@@ -40,7 +40,7 @@ module Data.Changes.FixedLens where
         _ -> fmap (Just . replaceEdit . getter) (applyEdit edit);
     };
 
-    instance (Applicative m,FunctorOne m) => Category (FixedLens' m) where
+    instance (Applicative m,FunctorOne m) => Category (FixedEditLens' m) where
     {
         id = MkFixedLens
         {
@@ -72,7 +72,7 @@ module Data.Changes.FixedLens where
         };
     };
 
-    instance (FunctorOne f,Applicative m) => CatFunctor (FixedLens' m) (JustEdit f) where
+    instance (FunctorOne f,Applicative m) => CatFunctor (FixedEditLens' m) (JustEdit f) where
     {
         cfmap lens = MkFixedLens
         {
@@ -98,17 +98,17 @@ module Data.Changes.FixedLens where
         };
     };
 
-    fixedFloatingLens :: FixedLens' m edita editb -> FloatingLens' m () edita editb;
+    fixedFloatingLens :: FixedEditLens' m edita editb -> FloatingEditLens' m () edita editb;
     fixedFloatingLens lens = MkFloatingLens
     {
-        lensInitial = (),
-        lensUpdate = \edit _ -> do
+        floatingLensInitial = (),
+        floatingLensUpdate = \edit _ -> do
         {
             meb <- fixedLensUpdate lens edit;
             return ((),meb);
         },
-        lensSimple = \_ -> fixedLensSimple lens,
-        lensPutEdit = \_ -> fixedLensPutEdit lens
+        floatingLensSimple = \_ -> fixedLensSimple lens,
+        floatingLensPutEdit = \_ -> fixedLensPutEdit lens
     };
 
     data CleanLens' m edita editb = MkCleanLens
@@ -145,7 +145,7 @@ module Data.Changes.FixedLens where
         };
     };
 
-    cleanFixedLens :: CleanLens' m edita editb -> FixedLens' m edita editb;
+    cleanFixedLens :: CleanLens' m edita editb -> FixedEditLens' m edita editb;
     cleanFixedLens lens = MkFixedLens
     {
         fixedLensUpdate = \edit -> pure (cleanLensUpdate lens edit),
@@ -153,7 +153,7 @@ module Data.Changes.FixedLens where
         fixedLensPutEdit = \edit -> pure (cleanLensPutEdit lens edit)
     };
 
-    simpleWholeFixedLens :: (Functor m) => SimpleLens' m a b -> FixedLens' m (WholeEdit a) (WholeEdit b);
+    simpleWholeFixedLens :: (Functor m) => SimpleLens' m a b -> FixedEditLens' m (WholeEdit a) (WholeEdit b);
     simpleWholeFixedLens lens = MkFixedLens
     {
         fixedLensUpdate = \(MkWholeEdit a) -> pure (Just (MkWholeEdit (simpleLensGet lens a))),
@@ -161,7 +161,7 @@ module Data.Changes.FixedLens where
         fixedLensPutEdit = \(MkWholeEdit newb) -> fmap (fmap MkWholeEdit) (simpleLensPutback lens newb)
     };
 
-    simpleFixedLens :: (Functor m,FullEdit edita,FullEdit editb) => SimpleLens' m (Subject edita) (Subject editb) -> FixedLens' m edita editb;
+    simpleFixedLens :: (Functor m,FullEdit edita,FullEdit editb) => SimpleLens' m (Subject edita) (Subject editb) -> FixedEditLens' m edita editb;
     simpleFixedLens lens = MkFixedLens
     {
         fixedLensUpdate = makeFixedLensUpdate (simpleLensGet lens) (\_ -> Nothing),
