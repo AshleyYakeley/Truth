@@ -24,6 +24,8 @@ exposed-modules:
     Data.Chain
     Data.Bijection
     Data.Codec
+    Data.Injection
+    Data.Lens
     Data.ConstFunction
     Control.Wait
     Data.Store

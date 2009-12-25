@@ -2,9 +2,9 @@ module Data.Changes.FixedEditLens where
 {
     import Data.Changes.FloatingEditLens;
     import Data.Changes.JustEdit;
-    import Data.Changes.SimpleLens;
     import Data.Changes.WholeEdit;
     import Data.Changes.Edit;
+    import Data.Lens;
     import Data.Result;
     import Data.ConstFunction;
     import Data.FunctorOne;
@@ -18,7 +18,7 @@ module Data.Changes.FixedEditLens where
     data FixedEditLens' m edita editb = MkFixedLens
     {
         fixedLensUpdate :: edita -> ConstFunction (Subject edita) (Maybe editb),
-        fixedLensSimple :: SimpleLens' m (Subject edita) (Subject editb),
+        fixedLensSimple :: Lens' m (Subject edita) (Subject editb),
         fixedLensPutEdit :: editb -> ConstFunction (Subject edita) (m edita)
     };
 
@@ -28,7 +28,7 @@ module Data.Changes.FixedEditLens where
     toFixedLens lens = MkFixedLens
     {
         fixedLensUpdate = fixedLensUpdate lens,
-        fixedLensSimple = toSimpleLens (fixedLensSimple lens),
+        fixedLensSimple = toLens (fixedLensSimple lens),
         fixedLensPutEdit = \editb -> fmap getMaybeOne (fixedLensPutEdit lens editb)
     };
 
@@ -55,14 +55,14 @@ module Data.Changes.FixedEditLens where
                 meb <- fixedLensUpdate ab edita;
                 case meb of
                 {
-                    Just editb -> cofmap1CF (simpleLensGet (fixedLensSimple ab)) (fixedLensUpdate bc editb);
+                    Just editb -> cofmap1CF (lensGet (fixedLensSimple ab)) (fixedLensUpdate bc editb);
                     _ -> return Nothing;
                 };
             },
             fixedLensSimple = (fixedLensSimple bc) . (fixedLensSimple ab),
             fixedLensPutEdit = \editc -> do
             {
-                meditb <- cofmap1CF (simpleLensGet (fixedLensSimple ab)) (fixedLensPutEdit bc editc);
+                meditb <- cofmap1CF (lensGet (fixedLensSimple ab)) (fixedLensPutEdit bc editc);
                 case retrieveOne meditb of
                 {
                     SuccessResult editb -> fixedLensPutEdit ab editb;
@@ -114,7 +114,7 @@ module Data.Changes.FixedEditLens where
     data CleanLens' m edita editb = MkCleanLens
     {
         cleanLensUpdate :: edita -> Maybe editb,
-        cleanLensSimple :: SimpleLens' m (Subject edita) (Subject editb),
+        cleanLensSimple :: Lens' m (Subject edita) (Subject editb),
         cleanLensPutEdit :: editb -> m edita
     };
 
@@ -153,23 +153,23 @@ module Data.Changes.FixedEditLens where
         fixedLensPutEdit = \edit -> pure (cleanLensPutEdit lens edit)
     };
 
-    simpleWholeFixedLens :: (Functor m) => SimpleLens' m a b -> FixedEditLens' m (WholeEdit a) (WholeEdit b);
+    simpleWholeFixedLens :: (Functor m) => Lens' m a b -> FixedEditLens' m (WholeEdit a) (WholeEdit b);
     simpleWholeFixedLens lens = MkFixedLens
     {
-        fixedLensUpdate = \(MkWholeEdit a) -> pure (Just (MkWholeEdit (simpleLensGet lens a))),
+        fixedLensUpdate = \(MkWholeEdit a) -> pure (Just (MkWholeEdit (lensGet lens a))),
         fixedLensSimple = lens,
-        fixedLensPutEdit = \(MkWholeEdit newb) -> fmap (fmap MkWholeEdit) (simpleLensPutback lens newb)
+        fixedLensPutEdit = \(MkWholeEdit newb) -> fmap (fmap MkWholeEdit) (lensPutback lens newb)
     };
 
-    simpleFixedLens :: (Functor m,FullEdit edita,FullEdit editb) => SimpleLens' m (Subject edita) (Subject editb) -> FixedEditLens' m edita editb;
+    simpleFixedLens :: (Functor m,FullEdit edita,FullEdit editb) => Lens' m (Subject edita) (Subject editb) -> FixedEditLens' m edita editb;
     simpleFixedLens lens = MkFixedLens
     {
-        fixedLensUpdate = makeFixedLensUpdate (simpleLensGet lens) (\_ -> Nothing),
+        fixedLensUpdate = makeFixedLensUpdate (lensGet lens) (\_ -> Nothing),
         fixedLensSimple = lens,
         fixedLensPutEdit = \editb -> do
         {
-            newb <- cofmap1CF (simpleLensGet lens) (applyEdit editb);
-            ma <- simpleLensPutback lens newb;
+            newb <- cofmap1CF (lensGet lens) (applyEdit editb);
+            ma <- lensPutback lens newb;
             return (fmap replaceEdit ma);
         }
     };

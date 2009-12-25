@@ -4,6 +4,8 @@ module Main where
     import Graphics.UI.Gtk;
     import Data.Changes;
     import Data.Changes.File.Linux;
+    import Data.Lens;
+    import Data.Injection;
     import Data.Chain;
     import Data.Result;
     import Data.IORef;
@@ -28,7 +30,7 @@ module Main where
             content :: Subscribe (JustWholeEdit Maybe (WholeEdit ByteString))
              = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) file; -- (Maybe ByteString)
             mrtext :: Subscribe (JustWholeEdit Maybe (JustWholeEdit (Result ListError) (ListEdit (WholeEdit Char))))
-             = lensSubscribe (simpleFixedLens (cfmap (wholeSimpleLens (utf8Lens . packBSLens)))) content;
+             = lensSubscribe (simpleFixedLens (cfmap (injectionLens (utf8Injection . (bijectionInjection packBijection))))) content;
         } in do
         {
             makeWindowCountRef infoT windowCount mrtext;

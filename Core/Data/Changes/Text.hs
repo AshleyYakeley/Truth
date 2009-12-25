@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Changes.Text where
 {
-    import Data.Changes.WholeLens;
     import Data.TypeKT;
+    import Data.Injection;
     import Data.Result;
     import Data.Bijection;
     import Data.OpenWitness;
@@ -12,8 +12,8 @@ module Data.Changes.Text where
     import Control.Monad.State;
     import Prelude hiding (id,(.));
 
-    packBSLens :: WholeLens ByteString [Word8];
-    packBSLens = bijectionWholeLens (MkBijection unpack pack);
+    packBijection :: Bijection ByteString [Word8];
+    packBijection = MkBijection unpack pack;
 
     data ListError = MkListError Int;
 
@@ -24,8 +24,8 @@ module Data.Changes.Text where
             mempty;
     };
 
-    utf8Lens :: WholeLens [Word8] (Result ListError String);
-    utf8Lens = resultWholeLens decode encode where
+    utf8Injection :: Injection [Word8] (Result ListError String);
+    utf8Injection = resultInjection decode encode where
     {
         decode :: [Word8] -> Result ListError String;
         decode os = evalStateT parse (os,0) where

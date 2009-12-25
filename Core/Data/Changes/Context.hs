@@ -1,14 +1,14 @@
 module Data.Changes.Context where
 {
-    import Data.Result;
 --    import Data.Changes.Tuple;
     import Data.Changes.FixedEditLens;
-    import Data.Changes.SimpleLens;
     import Data.Changes.Edit;
     import Data.TypeKT;
     import Data.OpenWitness;
     import Data.FunctorOne;
 --    import Data.Witness;
+    import Data.Lens;
+    import Data.Result;
     import Data.ConstFunction;
     import Data.Traversable;
     import Data.Foldable;
@@ -118,10 +118,10 @@ module Data.Changes.Context where
             ContextEdit edit -> Just edit;
             _ -> Nothing;
         },
-        cleanLensSimple = MkSimpleLens
+        cleanLensSimple = MkLens
         {
-            simpleLensGet = \(MkWithContext a _) -> a,
-            simpleLensPutback = \a -> arr (\(MkWithContext _ x) -> Identity (MkWithContext a x))
+            lensGet = \(MkWithContext a _) -> a,
+            lensPutback = \a -> arr (\(MkWithContext _ x) -> Identity (MkWithContext a x))
         },
         cleanLensPutEdit = Identity . ContextEdit
     };
@@ -134,10 +134,10 @@ module Data.Changes.Context where
             ContentEdit edit -> Just edit;
             _ -> Nothing;
         },
-        cleanLensSimple = MkSimpleLens
+        cleanLensSimple = MkLens
         {
-            simpleLensGet = \(MkWithContext _ a) -> a,
-            simpleLensPutback = \a -> arr (\(MkWithContext x _) -> Identity (MkWithContext x a))
+            lensGet = \(MkWithContext _ a) -> a,
+            lensPutback = \a -> arr (\(MkWithContext x _) -> Identity (MkWithContext x a))
         },
         cleanLensPutEdit = Identity . ContentEdit
     };

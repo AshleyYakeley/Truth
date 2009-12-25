@@ -3,16 +3,16 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
 {
     import Data.Changes.IndexEdit;
     import Data.Changes.FloatingEditLens;
-    import Data.Changes.SimpleLens;
     import Data.Changes.JustWholeEdit;
     import Data.Changes.JustEdit;
     import Data.Changes.Edit;
-    import Data.TypeKT;
     import Data.Changes.HasNewValue;
-    import Control.Arrow;
+    import Data.TypeKT;
+    import Data.Lens;
     import Data.ConstFunction;
     import Data.OpenWitness;
     import Data.Maybe;
+    import Control.Arrow;
     import Control.Category;
     import Control.Applicative;
     import Prelude hiding (id,(.));
@@ -130,10 +130,10 @@ module Data.Changes.List(listElement,listSection,ListEdit(..)) where
     {
         floatingLensInitial = initial,
         floatingLensUpdate = sectionUpdate,
-        floatingLensSimple = \(start,len) -> MkSimpleLens
+        floatingLensSimple = \(start,len) -> MkLens
         {
-            simpleLensGet = \list -> take len (drop start list),
-            simpleLensPutback = \section -> arr (\list -> Just ((take start list) ++ section ++ (drop (start + len) list)))
+            lensGet = \list -> take len (drop start list),
+            lensPutback = \section -> arr (\list -> Just ((take start list) ++ section ++ (drop (start + len) list)))
         },
         floatingLensPutEdit = \clip@(start,_) ele -> pure (Just (case ele of
         {

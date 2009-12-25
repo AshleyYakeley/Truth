@@ -1,10 +1,10 @@
 module Data.Changes.FloatingEditLens where
 {
-    import Data.Changes.SimpleLens;
     import Data.Changes.JustWholeEdit;
     import Data.Changes.JustEdit;
     import Data.Changes.WholeEdit;
     import Data.Changes.Edit;
+    import Data.Lens;
     import Data.FunctorOne;
     import Data.ConstFunction;
     import Data.Chain;
@@ -12,16 +12,16 @@ module Data.Changes.FloatingEditLens where
     data FloatingEditLens' m state edita editb = MkFloatingLens
     {
         floatingLensInitial :: state,
-        floatingLensSimple :: state -> SimpleLens' m (Subject edita) (Subject editb),
+        floatingLensSimple :: state -> Lens' m (Subject edita) (Subject editb),
         floatingLensUpdate :: edita -> state -> ConstFunction (Subject edita) (state,Maybe editb),
         floatingLensPutEdit :: state -> editb -> ConstFunction (Subject edita) (m edita)    -- m failure means impossible
     };
 
     floatingLensGet :: FloatingEditLens' m state edita editb -> state -> Subject edita -> Subject editb;
-    floatingLensGet lens state = simpleLensGet (floatingLensSimple lens state);
+    floatingLensGet lens state = lensGet (floatingLensSimple lens state);
 
     floatingLensPutback :: FloatingEditLens' m state edita editb -> state -> Subject editb -> ConstFunction (Subject edita) (m (Subject edita));
-    floatingLensPutback lens state = simpleLensPutback (floatingLensSimple lens state);
+    floatingLensPutback lens state = lensPutback (floatingLensSimple lens state);
 
     type FloatingEditLens = FloatingEditLens' Maybe;
 
@@ -29,7 +29,7 @@ module Data.Changes.FloatingEditLens where
     toFloatingLens lens = MkFloatingLens
     {
         floatingLensInitial = floatingLensInitial lens,
-        floatingLensSimple = \state -> toSimpleLens (floatingLensSimple lens state),
+        floatingLensSimple = \state -> toLens (floatingLensSimple lens state),
         floatingLensUpdate = floatingLensUpdate lens,
         floatingLensPutEdit = \state edit -> fmap getMaybeOne (floatingLensPutEdit lens state edit)
     };

@@ -9,8 +9,6 @@ module Data.Changes
     module Data.Changes.JustEdit,
     module Data.Changes.JustWholeEdit,
     module Data.Changes.IndexEdit,
-    module Data.Changes.WholeLens,
-    module Data.Changes.SimpleLens,
     module Data.Changes.FloatingEditLens,
     module Data.Changes.FixedEditLens,
     module Data.Changes.Object,
@@ -30,8 +28,6 @@ module Data.Changes
     import Data.Changes.JustEdit;
     import Data.Changes.JustWholeEdit;
     import Data.Changes.IndexEdit;
-    import Data.Changes.WholeLens;
-    import Data.Changes.SimpleLens;
     import Data.Changes.FloatingEditLens;
     import Data.Changes.FixedEditLens;
     import Data.Changes.Object;

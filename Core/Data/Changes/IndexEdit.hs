@@ -1,8 +1,8 @@
 module Data.Changes.IndexEdit where
 {
-    import Data.Changes.SimpleLens;
     import Data.Changes.Edit;
     import Data.TypeKT;
+    import Data.Lens;
     import Data.OpenWitness;
     import Data.Witness;
     import Data.ConstFunction;
@@ -15,7 +15,7 @@ module Data.Changes.IndexEdit where
         type Part a;
 
         sameIndex :: a -> Index a -> Index a -> Bool;
-        indexLens :: Index a -> SimpleLens a (Part a);
+        indexLens :: Index a -> Lens a (Part a);
     };
 
     instance (Eq a) => Container (a -> b) where
@@ -25,10 +25,10 @@ module Data.Changes.IndexEdit where
 
         sameIndex = \_ -> (==);
 
-        indexLens a = MkSimpleLens
+        indexLens a = MkLens
         {
-            simpleLensGet = \ab -> ab a,
-            simpleLensPutback = \b -> arr (\ab -> Just (\a' -> if a == a' then b else ab a'))
+            lensGet = \ab -> ab a,
+            lensPutback = \b -> arr (\ab -> Just (\a' -> if a == a' then b else ab a'))
         };
     };
 
@@ -58,19 +58,19 @@ module Data.Changes.IndexEdit where
 
         sameIndex = \_ -> (==);
 
-        indexLens i | i < 0 = MkSimpleLens
+        indexLens i | i < 0 = MkLens
         {
-            simpleLensGet = \_ -> Nothing,
-            simpleLensPutback = \ma -> case ma of
+            lensGet = \_ -> Nothing,
+            lensPutback = \ma -> case ma of
             {
                 Nothing -> arr Just;
                 _ -> return Nothing;
             }
         };
-        indexLens i = MkSimpleLens
+        indexLens i = MkLens
         {
-            simpleLensGet = elementGet i,
-            simpleLensPutback = \ma -> case ma of
+            lensGet = elementGet i,
+            lensPutback = \ma -> case ma of
             {
                 Just a -> arr (elementPutback i a);
                 Nothing -> arr (\list -> if i < length list then Nothing else Just list);
@@ -100,11 +100,11 @@ module Data.Changes.IndexEdit where
     {
         type Subject (IndexEdit container index edit) = container;
 
-        applyEdit (MkIndexEdit i edita) = arr (simpleLensMap (indexLens i) (fmap (applyConstFunction (applyEdit edita))));
+        applyEdit (MkIndexEdit i edita) = arr (lensMap (indexLens i) (fmap (applyConstFunction (applyEdit edita))));
 
         invertEdit (MkIndexEdit i edita) oldcont = do
         {
-            oldpart <- simpleLensGet (indexLens i) oldcont;
+            oldpart <- lensGet (indexLens i) oldcont;
             invedita <- invertEdit edita oldpart;
             return (MkIndexEdit i invedita);
         };

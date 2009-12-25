@@ -2,9 +2,12 @@ module Data.Changes.Object where
 {
     import Data.Changes.FixedEditLens;
     import Data.Changes.FloatingEditLens;
-    import Data.Changes.SimpleLens;
     import Data.Changes.WholeEdit;
     import Data.Changes.Edit;
+    import Data.Lens;
+    import Data.Injection;
+    import Data.Codec;
+    import Data.Bijection;
     import Data.Store;
     import Control.Concurrent.MVar;
     import Control.Monad.Fix;
@@ -189,7 +192,7 @@ module Data.Changes.Object where
             putMVar statevar firsta;
             return (MkObject
             {
-                objGetInitial = \initialise -> withMVar statevar (\a -> initialise (simpleLensGet (fixedLensSimple lens) a)),
+                objGetInitial = \initialise -> withMVar statevar (\a -> initialise (lensGet (fixedLensSimple lens) a)),
                 objPush = \editb -> modifyMVar statevar (\olda -> case applyConstFunction (fixedLensPutEdit lens editb) olda of
                 {
                     Just edita -> do
@@ -208,10 +211,10 @@ module Data.Changes.Object where
         });
     };
 
-    instance EditLens (SimpleLens a b) where
+    instance EditLens (Lens a b) where
     {
-        type LensDomain (SimpleLens a b) = WholeEdit a;
-        type LensRange (SimpleLens a b) = WholeEdit b;
+        type LensDomain (Lens a b) = WholeEdit a;
+        type LensRange (Lens a b) = WholeEdit b;
 
         lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
         {
@@ -223,15 +226,15 @@ module Data.Changes.Object where
             })
              (\(statevar,_,_) (MkWholeEdit newa) -> modifyMVar_ statevar (\_ -> do
             {
-                pushOut (MkWholeEdit (simpleLensGet lens newa));
+                pushOut (MkWholeEdit (lensGet lens newa));
                 return newa;
             }));
             putMVar statevar firsta;
             return (MkObject
             {
-                objGetInitial = \initialise -> withMVar statevar (\a -> initialise (simpleLensGet lens a)),
+                objGetInitial = \initialise -> withMVar statevar (\a -> initialise (lensGet lens a)),
                 objPush = \(MkWholeEdit newb) -> modifyMVar statevar (\olda ->
-                 case applyConstFunction (simpleLensPutback lens newb) olda of
+                 case applyConstFunction (lensPutback lens newb) olda of
                 {
                     Just newa -> do
                     {
@@ -247,5 +250,29 @@ module Data.Changes.Object where
                 objClose = subClose sub
             });
         });
+    };
+
+    instance EditLens (Injection a b) where
+    {
+        type LensDomain (Injection a b) = WholeEdit a;
+        type LensRange (Injection a b) = WholeEdit b;
+
+        lensSubscribe inj = lensSubscribe (injectionLens inj);
+    };
+
+    instance EditLens (Bijection a b) where
+    {
+        type LensDomain (Bijection a b) = WholeEdit a;
+        type LensRange (Bijection a b) = WholeEdit b;
+
+        lensSubscribe bi = lensSubscribe (bijectionInjection bi);
+    };
+
+    instance EditLens (Codec a b) where
+    {
+        type LensDomain (Codec a b) = WholeEdit a;
+        type LensRange (Codec a b) = WholeEdit (Maybe b);
+
+        lensSubscribe codec = lensSubscribe (codecInjection codec);
     };
 }
