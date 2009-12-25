@@ -51,8 +51,8 @@ sect: push: done
 elem: Just 't'
 sect: "ZUM"
 main: "pqZUMtu"
-elem: push: replace Just 'Q'
-main: update: item 5 replace 'Q'
+elem: push: Left Just 'Q'
+main: update: item 5 'Q'
 main: update: new value: "pqZUMQu"
 elem: push: accepted
 elem: push: new value: Just 'Q'

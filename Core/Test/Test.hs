@@ -8,22 +8,26 @@ module Main where
     import Data.Maybe;
     import Data.IORef;
 
+    instance (Show edit,Show i) => Show (IndexEdit a i edit) where
+    {
+        show (MkIndexEdit i edit) = (show i) ++ " " ++ show edit;
+    };
+
     instance (Show (Subject edit),Show edit) => Show (ListEdit edit) where
     {
-        show (ItemEdit i edit) = "item " ++ (show i) ++ " " ++ show edit;
+        show (ItemEdit edit) = "item " ++ show edit;
         show (ReplaceSectionEdit i sect) = "section " ++ (show i) ++ " " ++ show sect;
         show (ReplaceListEdit la) = "replace " ++ (show la);
     };
     
     instance (Show (f (Subject edit)),Show edit) => Show (JustEdit f edit) where
     {
-        show (JustEdit edit) = "Just " ++ (show edit);
-        show (ReplaceJustEdit a) = "replace " ++ (show a);
+        show (MkJustEdit edit) = show edit;
     };
    
     instance (Show a) => Show (WholeEdit a) where
     {
-        show (MkWholeEdit s) = "replace " ++ (show s);
+        show (MkWholeEdit s) = show s;
     };
    
     showObject :: (Show (Subject edit)) => String -> Subscribe edit -> IO ();
@@ -82,13 +86,13 @@ module Main where
 --            push (ReplaceEdit "PQRSTU");
 --            showObject "current" obj;
 
-            withShowSubscription (lensSubscribe listSection (2,2) obj) "sect" (\sectobj pushSect -> do
+            withShowSubscription (lensSubscribe (listSection (2,2)) obj) "sect" (\sectobj pushSect -> do
             {
                 pushSect (replaceEdit "12");
                 showObject "sect" sectobj;
                 showObject "main" obj;
         
-                withShowSubscription (lensSubscribe listElement 4 obj) "elem" (\elemobj pushElem -> do
+                withShowSubscription (lensSubscribe (listElement 4) obj) "elem" (\elemobj pushElem -> do
                 {        
                     --pushElem (ReplaceEdit (Just 'p'));
                     --showObject "elem" elemobj;
