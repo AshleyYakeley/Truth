@@ -30,7 +30,7 @@ module Main where
             content :: Subscribe (JustWholeEdit Maybe (WholeEdit ByteString))
              = lensSubscribe (toFloatingLens (fixedFloatingLens (cleanFixedLens contentCleanLens))) file; -- (Maybe ByteString)
             mrtext :: Subscribe (JustWholeEdit Maybe (JustWholeEdit (Result ListError) (ListEdit (WholeEdit Char))))
-             = lensSubscribe (simpleFixedLens (cfmap (injectionLens (utf8Injection . (bijectionInjection packBijection))))) content;
+             = lensSubscribe (convertFixedEditLens . (simpleFixedLens (cfmap (injectionLens (utf8Injection . (bijectionInjection packBijection))))) . convertFixedEditLens) content;
         } in do
         {
             makeWindowCountRef infoT windowCount mrtext;

@@ -32,14 +32,6 @@ module Data.Changes.FixedEditLens where
         fixedLensPutEdit = \editb -> fmap getMaybeOne (fixedLensPutEdit lens editb)
     };
 
-    makeFixedLensUpdate :: (Edit edita,FullEdit editb) =>
-     (Subject edita -> Subject editb) -> (edita -> Maybe (ConstFunction (Subject edita) (Maybe editb))) -> (edita -> ConstFunction (Subject edita) (Maybe editb));
-    makeFixedLensUpdate getter ff edit = case ff edit of
-    {
-        Just ameb -> ameb;
-        _ -> fmap (Just . replaceEdit . getter) (applyEdit edit);
-    };
-
     instance (Applicative m,FunctorOne m) => Category (FixedEditLens' m) where
     {
         id = MkFixedLens
@@ -153,18 +145,18 @@ module Data.Changes.FixedEditLens where
         fixedLensPutEdit = \edit -> pure (cleanLensPutEdit lens edit)
     };
 
-    simpleWholeFixedLens :: (Functor m) => Lens' m a b -> FixedEditLens' m (WholeEdit a) (WholeEdit b);
-    simpleWholeFixedLens lens = MkFixedLens
+    simpleFixedLens :: (Functor m) => Lens' m a b -> FixedEditLens' m (WholeEdit a) (WholeEdit b);
+    simpleFixedLens lens = MkFixedLens
     {
         fixedLensUpdate = \(MkWholeEdit a) -> pure (Just (MkWholeEdit (lensGet lens a))),
         fixedLensSimple = lens,
         fixedLensPutEdit = \(MkWholeEdit newb) -> fmap (fmap MkWholeEdit) (lensPutback lens newb)
     };
 
-    simpleFixedLens :: (Functor m,FullEdit edita,FullEdit editb) => Lens' m (Subject edita) (Subject editb) -> FixedEditLens' m edita editb;
-    simpleFixedLens lens = MkFixedLens
+    simpleConvertFixedLens :: (Functor m,FullEdit edita,FullEdit editb) => Lens' m (Subject edita) (Subject editb) -> FixedEditLens' m edita editb;
+    simpleConvertFixedLens lens = MkFixedLens
     {
-        fixedLensUpdate = makeFixedLensUpdate (lensGet lens) (\_ -> Nothing),
+        fixedLensUpdate = \edit -> fmap (Just . replaceEdit . (lensGet lens)) (applyEdit edit),
         fixedLensSimple = lens,
         fixedLensPutEdit = \editb -> do
         {
@@ -172,5 +164,13 @@ module Data.Changes.FixedEditLens where
             ma <- lensPutback lens newb;
             return (fmap replaceEdit ma);
         }
+    };
+
+    convertFixedEditLens :: (Applicative m,FunctorOne m,FullEdit edita,FullEdit editb,Subject edita ~ Subject editb) => FixedEditLens' m edita editb;
+    convertFixedEditLens = MkFixedLens
+    {
+        fixedLensUpdate = \edit -> fmap (Just . replaceEdit) (applyEdit edit),
+        fixedLensSimple = id,
+        fixedLensPutEdit = \edit -> fmap (pure . replaceEdit) (applyEdit edit)
     };
 }
