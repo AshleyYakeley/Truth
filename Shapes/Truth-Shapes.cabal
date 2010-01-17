@@ -6,7 +6,8 @@ license: AllRightsReserved
 license-file: ""
 copyright:
 maintainer:
-build-depends: base >=4.0, containers >=0.2, mtl >=1.1.0.2, witness >=0.2
+build-depends: base >=4.0, containers >=0.2, mtl >=1.1.0.2,
+               witness >=0.2
 stability:
 homepage:
 package-url:
@@ -20,17 +21,9 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: 
-    Data.Chain
-    Data.Bijection
-    Data.Codec
-    Data.Injection
-    Data.Lens
-    Data.ConstFunction
-    Control.Wait
-    Data.Store
-    Data.Result
-    Data.FunctorOne
+exposed-modules: Data.IsTuple Data.Chain Data.Bijection Data.Codec
+                 Data.Injection Data.Lens Data.ConstFunction Control.Wait Data.Store
+                 Data.Result Data.FunctorOne
 exposed: True
 buildable: True
 build-tools:
@@ -51,8 +44,7 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: .
-other-modules:
-    Control.Instances
+other-modules: Control.Instances
 ghc-prof-options:
 ghc-shared-options:
 ghc-options: -fno-warn-deprecated-flags
