@@ -166,11 +166,15 @@ module Data.Changes.FixedEditLens where
         }
     };
 
-    convertFixedEditLens :: (Applicative m,FunctorOne m,FullEdit edita,FullEdit editb,Subject edita ~ Subject editb) => FixedEditLens' m edita editb;
-    convertFixedEditLens = MkFixedLens
+    convertFixedEditLens' :: (Applicative m,FunctorOne m,FullEdit edita,FullEdit editb,Subject edita ~ Subject editb) => FixedEditLens' m edita editb;
+    convertFixedEditLens' = MkFixedLens
     {
         fixedLensUpdate = \edit -> fmap (Just . replaceEdit) (applyEdit edit),
         fixedLensSimple = id,
         fixedLensPutEdit = \edit -> fmap (pure . replaceEdit) (applyEdit edit)
     };
+
+    convertFixedEditLens :: (FullEdit edita,FullEdit editb,Subject edita ~ Subject editb) => FixedEditLens edita editb;
+    convertFixedEditLens = convertFixedEditLens';
+
 }

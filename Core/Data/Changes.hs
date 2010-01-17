@@ -12,6 +12,7 @@ module Data.Changes
     module Data.Changes.FloatingEditLens,
     module Data.Changes.FixedEditLens,
     module Data.Changes.Object,
+    module Data.Changes.GeneralLens,
 --    module Data.Changes.Tuple,
     module Data.Changes.List,
     module Data.Changes.Text,
@@ -31,6 +32,7 @@ module Data.Changes
     import Data.Changes.FloatingEditLens;
     import Data.Changes.FixedEditLens;
     import Data.Changes.Object;
+    import Data.Changes.GeneralLens;
 --    import Data.Changes.Tuple;
     import Data.Changes.List;
     import Data.Changes.Text;

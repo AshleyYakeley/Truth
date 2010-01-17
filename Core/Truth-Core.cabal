@@ -22,16 +22,17 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Data.Changes.Anything Data.Changes.JustWholeEdit
-                 Data.Changes.NoEdit Data.Changes.Either Data.Changes Data.TypeFunc
-                 Data.TypeKT Data.Changes.List Data.Changes.IndexEdit
-                 Data.Changes.Object Data.Changes.Text Data.Changes.FloatingEditLens
-                 Data.Changes.FixedEditLens Data.Changes.Context Data.Changes.View
-                 Data.Changes.Tuple Data.Changes.Editor Data.Changes.Edit
-                 Data.Changes.JustEdit Data.Changes.HasNewValue
-                 Data.Changes.WholeEdit Data.TypeKT.Construct Data.TypeKT.Witness
-                 Data.TypeKT.Type Data.TypeKT.Basic Data.TypeKT.HasType
-                 Data.TypeFunc.Witness Data.TypeFunc.TF
+exposed-modules: Data.Changes.GeneralLens Data.Changes.Anything
+                 Data.Changes.JustWholeEdit Data.Changes.NoEdit Data.Changes.Either
+                 Data.Changes Data.TypeFunc Data.TypeKT Data.Changes.List
+                 Data.Changes.IndexEdit Data.Changes.Object Data.Changes.Text
+                 Data.Changes.FloatingEditLens Data.Changes.FixedEditLens
+                 Data.Changes.Context Data.Changes.View Data.Changes.Tuple
+                 Data.Changes.Editor Data.Changes.Edit Data.Changes.JustEdit
+                 Data.Changes.HasNewValue Data.Changes.WholeEdit
+                 Data.TypeKT.Construct Data.TypeKT.Witness Data.TypeKT.Type
+                 Data.TypeKT.Basic Data.TypeKT.HasType Data.TypeFunc.Witness
+                 Data.TypeFunc.TF
 exposed: True
 buildable: True
 build-tools:
