@@ -1,5 +1,6 @@
 module Data.IsTuple where
 {
+    import Data.Bijection;
     import Data.Witness;
 
     class (Is (ListType Type) (ListTuple a)) => IsTuple a where
@@ -22,4 +23,7 @@ module Data.IsTuple where
         fromListTuple (a,(b,(c,()))) = (a,b,c);
         toListTuple (a,b,c) = (a,(b,(c,())));
     };
+
+    listTupleBijection :: (IsTuple t) => Bijection t (ListTuple t);
+    listTupleBijection = MkBijection toListTuple fromListTuple;
 }

@@ -5,15 +5,13 @@ module Data.Changes.Context where
     import Data.Changes.Edit;
     import Data.TypeKT;
     import Data.OpenWitness;
+    import Data.Witness;
     import Data.FunctorOne;
-    import Data.Lens;
     import Data.Result;
-    import Data.ConstFunction;
     import Data.Traversable;
     import Data.Foldable;
     import Data.IsTuple;
     import Control.Arrow;
-    import Control.Applicative;
     import Control.Monad.Identity;
 
     data WithContext context content = MkWithContext context content;

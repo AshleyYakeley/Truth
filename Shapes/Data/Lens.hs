@@ -1,11 +1,14 @@
 module Data.Lens where
 {
     import Data.Injection;
+    import Data.Bijection;
     import Data.Result;
     import Data.ConstFunction;
     import Data.Traversable;
     import Data.FunctorOne;
     import Data.Chain;
+    import Data.Witness;
+    import Control.Monad.Identity;
     import Control.Applicative;
     import Control.Category;
     import Prelude hiding (id,(.),sequence);
@@ -62,6 +65,23 @@ module Data.Lens where
         };
     };
 
+    instance (Applicative m, FunctorOne m) => CategoryOr (Lens' m) where
+    {
+        ac ||| bc = MkLens
+        {
+            lensGet = \eab -> case eab of
+            {
+                Left a -> lensGet ac a;
+                Right b -> lensGet bc b;
+            },
+            lensPutback = \c -> FunctionConstFunction (\eab -> case eab of
+            {
+                Left a -> fmap Left (applyConstFunction (lensPutback ac c) a);
+                Right b -> fmap Right (applyConstFunction (lensPutback bc c) b);
+            })
+        };
+    };
+
     instance (FunctorOne f,Applicative m) => CatFunctor (Lens' m) f where
     {
         cfmap lens = MkLens
@@ -75,10 +95,21 @@ module Data.Lens where
         };
     };
 
+    bijectionLens :: Bijection a b -> Lens' Identity a b;
+    bijectionLens (MkBijection ab ba) = MkLens ab (\b -> ConstConstFunction (return (ba b)));
+
     injectionLens :: Injection a b -> Lens a b;
     injectionLens lens = MkLens
     {
         lensGet = injForwards lens,
         lensPutback = \b -> pure (injBackwards lens b)
+    };
+
+    listElementLens :: (HasListElement n l) =>
+       Nat n -> Lens' Identity l (ListElement n l);
+    listElementLens n = MkLens
+    {
+        lensGet = getListElement n,
+        lensPutback = \e -> FunctionConstFunction (return . (putListElement n e))
     };
 }
