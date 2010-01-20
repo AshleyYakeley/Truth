@@ -1,12 +1,11 @@
 module Data.Changes.Context where
 {
---    import Data.Changes.Tuple;
+    import Data.Changes.Tuple;
     import Data.Changes.FixedEditLens;
     import Data.Changes.Edit;
     import Data.TypeKT;
     import Data.OpenWitness;
     import Data.FunctorOne;
---    import Data.Witness;
     import Data.Lens;
     import Data.Result;
     import Data.ConstFunction;
@@ -59,89 +58,12 @@ module Data.Changes.Context where
         toListTuple (MkWithContext context content) = (content,(context,()));
     };
 
-{-
-    contentCleanLens :: (CompleteEditScheme content editn) =>
-     CleanLens' Identity (WithContext context content) (TListEdit (content,(context,())) (editn,(editx,()))) content editn;
-    contentCleanLens = tupleElementCleanLens HeadDoubleListElementType;
+    type ContextContentEdit editx editn = TupleWholeEdit (editn,(editx,())) (WithContext (Subject editx) (Subject editn));
 
-    contextCleanLens :: (CompleteEditScheme context editx) =>
-     CleanLens' Identity (WithContext context content) (TListEdit (content,(context,())) (editn,(editx,()))) context editx;
-    contextCleanLens = tupleElementCleanLens (TailDoubleListElementType HeadDoubleListElementType);
--}
+    contextCleanLens :: (FullEdit editx,FullEdit editn) => CleanLens' Identity (ContextContentEdit editx editn) editx;
+    contextCleanLens = tupleElementCleanLens (SuccNat ZeroNat);
 
-    data ContextContentEdit editx editn =
-     ReplaceContextContentEdit (WithContext (Subject editx) (Subject editn)) | ContextEdit editx | ContentEdit editn;
-
-    instance (Edit editx, Edit editn) =>
-     Edit (ContextContentEdit editx editn) where
-    {
-        type Subject (ContextContentEdit editx editn) = WithContext (Subject editx) (Subject editn);
-
-        applyEdit (ContextEdit edit) = arr (\(MkWithContext x n) -> MkWithContext (applyConstFunction (applyEdit edit) x) n);
-        applyEdit (ContentEdit edit) = arr (\(MkWithContext x n) -> MkWithContext x (applyConstFunction (applyEdit edit) n));
-        applyEdit (ReplaceContextContentEdit a) = pure a;
-        invertEdit (ContextEdit edit) (MkWithContext a _) = fmap ContextEdit (invertEdit edit a);
-        invertEdit (ContentEdit edit) (MkWithContext _ a) = fmap ContentEdit (invertEdit edit a);
-        invertEdit (ReplaceContextContentEdit _) a = Just (ReplaceContextContentEdit a);
-    };
-
-    instance (Edit editx, Edit editn) =>
-     FullEdit (ContextContentEdit editx editn) where
-    {
-        replaceEdit = ReplaceContextContentEdit;
-    };
-
-    instance HasInfoKTKTT ContextContentEdit where
-    {
-        infoKTKTT = MkInfoKTKTT
-            (WitKTKTT (unsafeIOWitnessFromString "Data.Changes.Context.ContextContentEdit"))
-            (
-                (mkTFactsKTKTT (\tx tn -> do
-                    {
-                        MkEditInst tsx <- matchPropertyT tx;
-                        MkEditInst tsn <- matchPropertyT tn;
-                        return (MkEditInst (applyTInfoT (applyTInfoKTT (infoKTKTT :: InfoKTKTT WithContext) tsx) tsn));
-                    })
-                ) `mappend`
-                (mkTFactsKTKTT (\tx tn -> do
-                    {
-                        MkEditInst _ <- matchPropertyT tx;
-                        MkEditInst _ <- matchPropertyT tn;
-                        return MkFullEditInst;
-                    }))
-            );
-    };
-
-    contextCleanLens :: CleanLens' Identity (ContextContentEdit editx editn) editx;
-    contextCleanLens = MkCleanLens
-    {
-        cleanLensUpdate = \ccedit -> case ccedit of
-        {
-            ContextEdit edit -> Just edit;
-            _ -> Nothing;
-        },
-        cleanLensSimple = MkLens
-        {
-            lensGet = \(MkWithContext a _) -> a,
-            lensPutback = \a -> arr (\(MkWithContext _ x) -> Identity (MkWithContext a x))
-        },
-        cleanLensPutEdit = Identity . ContextEdit
-    };
-
-    contentCleanLens :: CleanLens' Identity (ContextContentEdit editx editn) editn;
-    contentCleanLens = MkCleanLens
-    {
-        cleanLensUpdate = \ccedit -> case ccedit of
-        {
-            ContentEdit edit -> Just edit;
-            _ -> Nothing;
-        },
-        cleanLensSimple = MkLens
-        {
-            lensGet = \(MkWithContext _ a) -> a,
-            lensPutback = \a -> arr (\(MkWithContext x _) -> Identity (MkWithContext x a))
-        },
-        cleanLensPutEdit = Identity . ContentEdit
-    };
+    contentCleanLens :: (FullEdit editx,FullEdit editn) => CleanLens' Identity (ContextContentEdit editx editn) editn;
+    contentCleanLens = tupleElementCleanLens ZeroNat;
 }
 
