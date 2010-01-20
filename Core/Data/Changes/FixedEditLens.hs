@@ -177,4 +177,15 @@ module Data.Changes.FixedEditLens where
     convertFixedEditLens :: (FullEdit edita,FullEdit editb,Subject edita ~ Subject editb) => FixedEditLens edita editb;
     convertFixedEditLens = convertFixedEditLens';
 
+    withWholeLens :: (Functor m,FullEdit editb) => CleanLens' m edita editb -> CleanLens' m (Either (WholeEdit (Subject edita)) edita) editb;
+    withWholeLens lens = MkCleanLens
+    {
+        cleanLensUpdate = \editewa -> case editewa of
+        {
+            Left (MkWholeEdit a) -> Just (replaceEdit (lensGet (cleanLensSimple lens) a));
+            Right edita -> cleanLensUpdate lens edita;
+        },
+        cleanLensSimple = cleanLensSimple lens,
+        cleanLensPutEdit = \editb -> fmap Right (cleanLensPutEdit lens editb)
+    };
 }

@@ -12,6 +12,7 @@ module Data.Changes.Context where
     import Data.ConstFunction;
     import Data.Traversable;
     import Data.Foldable;
+    import Data.IsTuple;
     import Control.Arrow;
     import Control.Applicative;
     import Control.Monad.Identity;
@@ -50,14 +51,15 @@ module Data.Changes.Context where
                 })
             );
     };
-{-
+
     instance IsTuple (WithContext context content) where
     {
-        type TList (WithContext context content) = (content,(context,()));
+        type ListTuple (WithContext context content) = (content,(context,()));
         fromListTuple (content,(context,())) = MkWithContext context content;
         toListTuple (MkWithContext context content) = (content,(context,()));
     };
 
+{-
     contentCleanLens :: (CompleteEditScheme content editn) =>
      CleanLens' Identity (WithContext context content) (TListEdit (content,(context,())) (editn,(editx,()))) content editn;
     contentCleanLens = tupleElementCleanLens HeadDoubleListElementType;
