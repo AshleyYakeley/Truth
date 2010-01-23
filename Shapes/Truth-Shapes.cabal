@@ -7,7 +7,7 @@ license-file: ""
 copyright:
 maintainer:
 build-depends: base >=4.0, containers >=0.2, mtl >=1.1.0.2,
-               witness >=0.2
+               witness >=0.2, bytestring >=0.9.1.5
 stability:
 homepage:
 package-url:
@@ -23,7 +23,7 @@ extra-source-files:
 extra-tmp-files:
 exposed-modules: Data.IsTuple Data.Chain Data.Bijection Data.Codec
                  Data.Injection Data.Lens Data.ConstFunction Control.Wait Data.Store
-                 Data.Result Data.FunctorOne
+                 Data.Result Data.FunctorOne Data.HasNewValue
 exposed: True
 buildable: True
 build-tools:

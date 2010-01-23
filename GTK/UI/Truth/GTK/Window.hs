@@ -6,7 +6,9 @@ module UI.Truth.GTK.Window where
     import UI.Truth.GTK.Maybe;
     import UI.Truth.GTK.GView;
     import Graphics.UI.Gtk;
-    import Data.Changes;
+    import Truth.Object;
+    import Truth.Edit;
+    import Truth.TypeKT;
     import Data.IORef;
 
     makeButton :: String -> IO () -> IO Button;

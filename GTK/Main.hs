@@ -2,8 +2,10 @@ module Main where
 {
     import UI.Truth.GTK;
     import Graphics.UI.Gtk;
-    import Data.Changes;
-    import Data.Changes.File.Linux;
+    import Truth.Linux.File;
+    import Truth.Object;
+    import Truth.Edit;
+    import Truth.TypeKT;
     import Data.Lens;
     import Data.Injection;
     import Data.Chain;

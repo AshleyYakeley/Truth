@@ -3,8 +3,11 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
 {
     import UI.Truth.GTK.GView;
     import Graphics.UI.Gtk;
+    import Truth.Object;
+    import Truth.Edit;
+    import Truth.TypeKT;
+    import Data.HasNewValue;
     import Data.Witness;
-    import Data.Changes;
     import Data.FunctorOne;
     import Data.Result;
     import Data.IORef;

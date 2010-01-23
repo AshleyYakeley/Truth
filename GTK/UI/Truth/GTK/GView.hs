@@ -1,7 +1,9 @@
 module UI.Truth.GTK.GView where
 {
     import Graphics.UI.Gtk;
-    import Data.Changes;
+    import Truth.Object;
+    import Truth.Edit;
+    import Truth.TypeKT;
 
     type GView edit = View Widget edit;
     type GViewResult edit = ViewResult Widget edit;

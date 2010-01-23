@@ -22,17 +22,17 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Data.Changes.GeneralLens Data.Changes.Anything
-                 Data.Changes.JustWholeEdit Data.Changes.NoEdit Data.Changes.Either
-                 Data.Changes Data.TypeFunc Data.TypeKT Data.Changes.List
-                 Data.Changes.IndexEdit Data.Changes.Object Data.Changes.Text
-                 Data.Changes.FloatingEditLens Data.Changes.FixedEditLens
-                 Data.Changes.Context Data.Changes.View Data.Changes.Tuple
-                 Data.Changes.Editor Data.Changes.Edit Data.Changes.JustEdit
-                 Data.Changes.HasNewValue Data.Changes.WholeEdit
-                 Data.TypeKT.Construct Data.TypeKT.Witness Data.TypeKT.Type
-                 Data.TypeKT.Basic Data.TypeKT.HasType Data.TypeFunc.Witness
-                 Data.TypeFunc.TF
+exposed-modules: Truth.Object.GeneralLens Truth.Edit.Anything
+                 Truth.Edit.JustWholeEdit Truth.Edit.NoEdit Truth.Edit.Either
+                 Truth.Edit Truth.Edit.List
+                 Truth.Edit.IndexEdit Truth.Object.Object Truth.Edit.Text
+                 Truth.Edit.FloatingEditLens Truth.Edit.FixedEditLens
+                 Truth.Edit.Context Truth.Object.View Truth.Edit.Tuple
+                 Truth.Object.Editor Truth.Edit.Edit Truth.Edit.JustEdit
+                 Truth.Edit.WholeEdit
+                 Truth.Object
+                 Truth.TypeKT.Construct Truth.TypeKT.Witness Truth.TypeKT.Type
+                 Truth.TypeKT.Basic Truth.TypeKT.HasType Truth.TypeKT
 exposed: True
 buildable: True
 build-tools:
@@ -46,14 +46,14 @@ extensions: UndecidableInstances MultiParamTypeClasses
             FunctionalDependencies RankNTypes ScopedTypeVariables
             ImplicitParams FlexibleContexts FlexibleInstances EmptyDataDecls
             TypeSynonymInstances PatternGuards GeneralizedNewtypeDeriving
-            TypeFamilies GADTs ImpredicativeTypes
+            TypeFamilies GADTs ImpredicativeTypes NoImplicitPrelude
 extra-libraries:
 extra-lib-dirs:
 includes:
 install-includes:
 include-dirs:
 hs-source-dirs: .
-other-modules:
+other-modules: Truth.Edit.Import
 ghc-prof-options:
 ghc-shared-options:
 ghc-options: -fno-warn-deprecated-flags

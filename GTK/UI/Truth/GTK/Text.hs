@@ -4,7 +4,9 @@ module UI.Truth.GTK.Text (textMatchView) where
     import UI.Truth.GTK.GView;
     import UI.Truth.GTK.Useful;
     import Graphics.UI.Gtk;
-    import Data.Changes;
+    import Truth.Object;
+    import Truth.Edit;
+    import Truth.TypeKT;
     import Control.Concurrent.MVar;
     import Data.Witness;
 

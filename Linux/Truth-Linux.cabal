@@ -22,6 +22,6 @@ extensions:
     ScopedTypeVariables
     ImplicitParams
 exposed-modules:
-    Data.Changes.File.Linux
+    Truth.Linux.File
 other-modules:
     System.INotify.Balanced
