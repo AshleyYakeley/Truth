@@ -7,8 +7,8 @@ license-file: ""
 copyright:
 maintainer:
 build-depends: Cabal >=1.1.6, Truth-Shapes ==0.1, base >=4.0,
-               bytestring >=0.9.1.5, containers >=0.2, mtl >=1.1.0.2,
-               open-witness >=0.2, witness >=0.2
+               bytestring >=0.9.1.5, containers >=0.2, mime >=0.3.2,
+               mtl >=1.1.0.2, open-witness >=0.2, witness >=0.2
 stability:
 homepage:
 package-url:
@@ -22,17 +22,16 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Truth.Object.GeneralLens Truth.Edit.Anything
-                 Truth.Edit.JustWholeEdit Truth.Edit.NoEdit Truth.Edit.Either
-                 Truth.Edit Truth.Edit.List
-                 Truth.Edit.IndexEdit Truth.Object.Object Truth.Edit.Text
-                 Truth.Edit.FloatingEditLens Truth.Edit.FixedEditLens
-                 Truth.Edit.Context Truth.Object.View Truth.Edit.Tuple
-                 Truth.Object.Editor Truth.Edit.Edit Truth.Edit.JustEdit
+exposed-modules: Truth.Edit.MIME Truth.Object Truth.TypeKT
+                 Truth.Edit Truth.Object.GeneralLens Truth.Object.Object
+                 Truth.Object.View Truth.Object.Editor Truth.TypeKT.Construct
+                 Truth.TypeKT.Witness Truth.TypeKT.Type Truth.TypeKT.Basic
+                 Truth.TypeKT.HasType Truth.Edit.List Truth.Edit.IndexEdit
+                 Truth.Edit.Text Truth.Edit.Either Truth.Edit.NoEdit
+                 Truth.Edit.Context Truth.Edit.JustWholeEdit Truth.Edit.Tuple
+                 Truth.Edit.Anything Truth.Edit.FixedEditLens
+                 Truth.Edit.FloatingEditLens Truth.Edit.Edit Truth.Edit.JustEdit
                  Truth.Edit.WholeEdit
-                 Truth.Object
-                 Truth.TypeKT.Construct Truth.TypeKT.Witness Truth.TypeKT.Type
-                 Truth.TypeKT.Basic Truth.TypeKT.HasType Truth.TypeKT
 exposed: True
 buildable: True
 build-tools:
@@ -45,8 +44,8 @@ c-sources:
 extensions: UndecidableInstances MultiParamTypeClasses
             FunctionalDependencies RankNTypes ScopedTypeVariables
             ImplicitParams FlexibleContexts FlexibleInstances EmptyDataDecls
-            TypeSynonymInstances PatternGuards GeneralizedNewtypeDeriving
-            TypeFamilies GADTs ImpredicativeTypes NoImplicitPrelude
+            TypeSynonymInstances NoImplicitPrelude PatternGuards
+            GeneralizedNewtypeDeriving TypeFamilies GADTs ImpredicativeTypes
 extra-libraries:
 extra-lib-dirs:
 includes:

@@ -13,6 +13,7 @@ module Truth.Edit
     module Truth.Edit.List,
     module Truth.Edit.Text,
     module Truth.Edit.Context,
+    module Truth.Edit.MIME,
 ) where
 {
     import Truth.Edit.Edit;
@@ -28,4 +29,5 @@ module Truth.Edit
     import Truth.Edit.List;
     import Truth.Edit.Text;
     import Truth.Edit.Context;
+    import Truth.Edit.MIME;
 }

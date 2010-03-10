@@ -52,4 +52,32 @@ module Truth.Edit.Tuple where
     tupleElementCleanLens :: (IsTuple t,HasListElement n (ListTuple t),ListElement n (ListTuple t) ~ Subject (ListElement n editlist),FullEdit (ListElement n editlist)) =>
        Nat n -> CleanLens' Identity (TupleWholeEdit editlist t) (ListElement n editlist);
     tupleElementCleanLens n = withWholeLens (tupleElementCleanLens' n);
+
+    data TupleItemEdit n edit t where
+    {
+        MkTupleItemEdit :: forall n edit t. edit -> TupleItemEdit n edit t;
+    };
+
+    instance
+    (
+        Is Nat n,
+        IsTuple t,
+        HasListElement n (ListTuple t),
+        Subject edit ~ ListElement n (ListTuple t),
+        Edit edit
+    )
+     => Edit (TupleItemEdit n edit t) where
+    {
+        type Subject (TupleItemEdit n edit t) = t;
+
+        applyEdit (MkTupleItemEdit edit) = FunctionConstFunction (
+            fromListTuple . modifyListElement (representative :: Nat n) (applyConstFunction (applyEdit edit)) . toListTuple
+        );
+
+        invertEdit (MkTupleItemEdit edit) t = do
+        {
+            edit' <- invertEdit edit (getListElement (representative :: Nat n) (toListTuple t));
+            return (MkTupleItemEdit edit');
+        };
+    };
 }
