@@ -39,3 +39,4 @@
 /Test/Test$
 /Test/.*\.out$
 (^|/)IDE\.session$
+^Application/testfile$

@@ -1,17 +1,19 @@
-name: Truth-GTK
+name: Truth-Application
 version: 0.1
 cabal-version: >= 1.2
 build-type: Simple
 
+executable truth
+{
 build-depends:
     base>=4.0,
     bytestring>=0.9.0.1,
-    witness==0.2,
-    open-witness==0.2,
     glib==0.10.1,
     gtk==0.10.1,
     Truth-Shapes==0.1,
-    Truth-Core==0.1
+    Truth-Core==0.1,
+    Truth-Linux==0.1,
+    Truth-GTK==0.1
 extensions:
     TypeFamilies
     EmptyDataDecls
@@ -30,14 +32,5 @@ extensions:
     ImplicitParams
     GeneralizedNewtypeDeriving
     ExistentialQuantification
-exposed-modules:
-    UI.Truth.GTK
-other-modules:
-    UI.Truth.GTK.Useful
-    UI.Truth.GTK.GView
-    UI.Truth.GTK.Window
-    UI.Truth.GTK.Maybe
-    UI.Truth.GTK.CheckButton
-    UI.Truth.GTK.Text
-    UI.Truth.GTK.Tuple
-    UI.Truth.GTK.SourceView
+main-is: Main.hs
+}

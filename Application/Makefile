@@ -1,5 +1,11 @@
 default: complete
 
+run: build testfile
+	dist/build/truth/truth testfile
+
+testfile: Makefile
+	cat $^ > $@
+
 # Building
 
 clean:
@@ -28,4 +34,4 @@ test: install
 # switch off intermediate file deletion
 .SECONDARY:
 
-.PHONY: default configure build haddock install complete test sdist
+.PHONY: default configure build haddock install complete test sdist run
