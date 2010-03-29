@@ -8,7 +8,7 @@ module Truth.Edit
     module Truth.Edit.JustWholeEdit,
     module Truth.Edit.IndexEdit,
     module Truth.Edit.FloatingEditLens,
-    module Truth.Edit.FixedEditLens,
+    module Truth.Edit.EditLens,
     module Truth.Edit.Tuple,
     module Truth.Edit.List,
     module Truth.Edit.Text,
@@ -24,7 +24,7 @@ module Truth.Edit
     import Truth.Edit.JustWholeEdit;
     import Truth.Edit.IndexEdit;
     import Truth.Edit.FloatingEditLens;
-    import Truth.Edit.FixedEditLens;
+    import Truth.Edit.EditLens;
     import Truth.Edit.Tuple;
     import Truth.Edit.List;
     import Truth.Edit.Text;

@@ -22,14 +22,14 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Truth.Edit.MIME Truth.Object Truth.TypeKT
-                 Truth.Edit Truth.Object.GeneralLens Truth.Object.Object
-                 Truth.Object.View Truth.Object.Editor Truth.TypeKT.Construct
-                 Truth.TypeKT.Witness Truth.TypeKT.Type Truth.TypeKT.Basic
-                 Truth.TypeKT.HasType Truth.Edit.List Truth.Edit.IndexEdit
-                 Truth.Edit.Text Truth.Edit.Either Truth.Edit.NoEdit
-                 Truth.Edit.Context Truth.Edit.JustWholeEdit Truth.Edit.Tuple
-                 Truth.Edit.Anything Truth.Edit.FixedEditLens
+exposed-modules: Truth.Object.SavableBuffer Truth.Edit.MIME
+                 Truth.Object Truth.TypeKT Truth.Edit Truth.Object.GeneralLens
+                 Truth.Object.Object Truth.Object.View Truth.Object.Editor
+                 Truth.TypeKT.Construct Truth.TypeKT.Witness Truth.TypeKT.Type
+                 Truth.TypeKT.Basic Truth.TypeKT.HasType Truth.Edit.List
+                 Truth.Edit.IndexEdit Truth.Edit.Text Truth.Edit.Either
+                 Truth.Edit.NoEdit Truth.Edit.Context Truth.Edit.JustWholeEdit
+                 Truth.Edit.Tuple Truth.Edit.Anything Truth.Edit.EditLens
                  Truth.Edit.FloatingEditLens Truth.Edit.Edit Truth.Edit.JustEdit
                  Truth.Edit.WholeEdit
 exposed: True

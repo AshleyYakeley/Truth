@@ -1,10 +1,10 @@
 {-# LANGUAGE FlexibleContexts,UndecidableInstances,RankNTypes #-}
 module Main where
 {
-    import Data.Changes.List;
+    import Truth.Object.Editor;
+    import Truth.Object;
+    import Truth.Edit;
     import Data.ConstFunction;
-    import Data.Changes.Editor;
-    import Data.Changes;
     import Data.Maybe;
     import Data.IORef;
 

@@ -6,58 +6,66 @@ module Truth.Edit.FloatingEditLens where
     import Truth.Edit.Edit;
     import Truth.Edit.Import;
 
-    data FloatingEditLens' m state edita editb = MkFloatingLens
+    data FloatingEditLens' m state edita editb = MkFloatingEditLens
     {
-        floatingLensInitial :: state,
-        floatingLensSimple :: state -> Lens' m (Subject edita) (Subject editb),
-        floatingLensUpdate :: edita -> state -> ConstFunction (Subject edita) (state,Maybe editb),
-        floatingLensPutEdit :: state -> editb -> ConstFunction (Subject edita) (m edita)    -- m failure means impossible
+        floatingEditLensSimple :: FloatingLens' m state (Subject edita) (Subject editb),
+        floatingEditLensUpdate :: edita -> state -> ConstFunction (Subject edita) (state,Maybe editb),
+        floatingEditLensPutEdit :: state -> editb -> ConstFunction (Subject edita) (m (state,edita))    -- m failure means impossible
     };
 
-    floatingLensGet :: FloatingEditLens' m state edita editb -> state -> Subject edita -> Subject editb;
-    floatingLensGet lens state = lensGet (floatingLensSimple lens state);
+    floatingEditLensInitial :: FloatingEditLens' m state edita editb -> state;
+    floatingEditLensInitial = floatingLensInitial . floatingEditLensSimple;
 
-    floatingLensPutback :: FloatingEditLens' m state edita editb -> state -> Subject editb -> ConstFunction (Subject edita) (m (Subject edita));
-    floatingLensPutback lens state = lensPutback (floatingLensSimple lens state);
+    floatingEditLensGet :: FloatingEditLens' m state edita editb -> state -> Subject edita -> Subject editb;
+    floatingEditLensGet = floatingLensGet . floatingEditLensSimple;
+
+    floatingEditLensPutback :: FloatingEditLens' m state edita editb -> state -> Subject editb -> ConstFunction (Subject edita) (m (state,Subject edita));
+    floatingEditLensPutback = floatingLensPutback . floatingEditLensSimple;
 
     type FloatingEditLens = FloatingEditLens' Maybe;
 
-    toFloatingLens :: (FunctorOne m) => FloatingEditLens' m state edita editb -> FloatingEditLens state edita editb;
-    toFloatingLens lens = MkFloatingLens
+    toFloatingEditLens :: (FunctorOne m) => FloatingEditLens' m state edita editb -> FloatingEditLens state edita editb;
+    toFloatingEditLens lens = MkFloatingEditLens
     {
-        floatingLensInitial = floatingLensInitial lens,
-        floatingLensSimple = \state -> toLens (floatingLensSimple lens state),
-        floatingLensUpdate = floatingLensUpdate lens,
-        floatingLensPutEdit = \state edit -> fmap getMaybeOne (floatingLensPutEdit lens state edit)
+        floatingEditLensSimple = toFloatingLens (floatingEditLensSimple lens),
+        floatingEditLensUpdate = floatingEditLensUpdate lens,
+        floatingEditLensPutEdit = \state edit -> fmap getMaybeOne (floatingEditLensPutEdit lens state edit)
     };
 
     fullLens ::
      FloatingEditLens state edita editb ->
      FloatingEditLens state (Either (WholeEdit (Subject edita)) edita) (Either (WholeEdit (Subject editb)) editb);
-    fullLens lens = MkFloatingLens
+    fullLens lens = MkFloatingEditLens
     {
-        floatingLensInitial = floatingLensInitial lens,
-        floatingLensSimple = floatingLensSimple lens,
-        floatingLensUpdate = \pedita oldstate -> case pedita of
+        floatingEditLensSimple = floatingEditLensSimple lens,
+        floatingEditLensUpdate = \pedita oldstate -> case pedita of
         {
-            Left (MkWholeEdit a) -> return (oldstate,Just (Left (MkWholeEdit (floatingLensGet lens oldstate a))));
+            Left (MkWholeEdit a) -> return (oldstate,Just (Left (MkWholeEdit (floatingEditLensGet lens oldstate a))));
             Right edita -> do
             {
-                (newstate,meditb) <- floatingLensUpdate lens edita oldstate;
+                (newstate,meditb) <- floatingEditLensUpdate lens edita oldstate;
                 return (newstate,fmap Right meditb);
             };
         },
-        floatingLensPutEdit = \state peditb -> case peditb of
+        floatingEditLensPutEdit = \state peditb -> case peditb of
         {
             Left (MkWholeEdit b) -> do
             {
-                ma <- floatingLensPutback lens state b;
-                return (fmap (Left . MkWholeEdit) ma);
+                msa <- floatingEditLensPutback lens state b;
+                return (do
+                {
+                    (newstate,a) <- msa;
+                    return (newstate,Left (MkWholeEdit a));
+                });
             };
             Right editb -> do
             {
-                medita <- floatingLensPutEdit lens state editb;
-                return (fmap Right medita);
+                msedita <- floatingEditLensPutEdit lens state editb;
+                return (do
+                {
+                    (newstate,edita) <- msedita;
+                    return (newstate,Right edita);
+                });
             };
         }
     };
@@ -65,25 +73,24 @@ module Truth.Edit.FloatingEditLens where
     -- suitable for Results, trying to put a failure code will be rejected
     resultJustLens :: forall f state edita editb. (FunctorOne f,Edit edita,Edit editb) =>
      FloatingEditLens state edita editb -> FloatingEditLens state (JustEdit f edita) (JustEdit f editb);
-    resultJustLens lens = MkFloatingLens
+    resultJustLens lens = MkFloatingEditLens
     {
-        floatingLensInitial = floatingLensInitial lens,
-        floatingLensUpdate = \(MkJustEdit edita) state -> do
+        floatingEditLensSimple = cfmap (floatingEditLensSimple lens),
+        floatingEditLensUpdate = \(MkJustEdit edita) state -> do
         {
-            msmeb <-  cofmap1CF getMaybeOne (cfmap (floatingLensUpdate lens edita state));
+            msmeb <-  cofmap1CF getMaybeOne (cfmap (floatingEditLensUpdate lens edita state));
             return (case msmeb of
             {
                 Just (newstate,meditb) -> (newstate,fmap MkJustEdit meditb);
                 Nothing -> (state,Nothing);
             });
         },
-        floatingLensSimple = \state -> cfmap (floatingLensSimple lens state),
-        floatingLensPutEdit = \state (MkJustEdit editb) -> do
+        floatingEditLensPutEdit = \state (MkJustEdit editb) -> do
         {
-            mmea <- cofmap1CF getMaybeOne (cfmap (floatingLensPutEdit lens state editb));
-            return (case mmea of
+            mmsea <- cofmap1CF getMaybeOne (cfmap (floatingEditLensPutEdit lens state editb));
+            return (case mmsea of
             {
-                Just (Just edita) -> Just (MkJustEdit edita);
+                Just (Just (newstate,edita)) -> Just (newstate,MkJustEdit edita);
                 _ -> Nothing;
             });
         }

@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Truth.Edit.Tuple where
 {
-    import Truth.Edit.FixedEditLens;
+    import Truth.Edit.EditLens;
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Edit;
     import Truth.Edit.Import;
@@ -52,6 +52,11 @@ module Truth.Edit.Tuple where
     tupleElementCleanLens :: (IsTuple t,HasListElement n (ListTuple t),ListElement n (ListTuple t) ~ Subject (ListElement n editlist),FullEdit (ListElement n editlist)) =>
        Nat n -> CleanLens' Identity (TupleWholeEdit editlist t) (ListElement n editlist);
     tupleElementCleanLens n = withWholeLens (tupleElementCleanLens' n);
+
+
+    type PairEdit edita editb = TupleWholeEdit (edita,(editb,())) (Subject edita,Subject editb);
+
+
 
     data TupleItemEdit n edit t where
     {

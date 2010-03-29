@@ -7,6 +7,7 @@ module Truth.Edit.Import
     module Data.IsTuple,
     module Data.Codec,
     module Data.Lens,
+    module Data.FloatingLens,
     module Data.Chain,
     module Data.Nothing,
     module Data.Bijection,
@@ -50,6 +51,7 @@ where
     import Data.IsTuple;
     import Data.Codec;
     import Data.Lens;
+    import Data.FloatingLens;
     import Data.Chain;
     import Data.Nothing;
     import Data.Bijection;

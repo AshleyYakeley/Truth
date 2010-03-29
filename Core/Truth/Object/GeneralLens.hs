@@ -41,16 +41,16 @@ module Truth.Object.GeneralLens where
     {
         IdGeneralLens :: forall t. GeneralLens t t;
         SimpleGeneralLens :: forall a b. Lens a b -> GeneralLens a b;
-        FixedGeneralLens ::
+        EditGeneralLens ::
          forall edita editb. (FullEdit edita,FullEdit editb) =>
          SubjectEditWitness (Subject edita) edita ->
          SubjectEditWitness (Subject editb) editb ->
-         FixedEditLens edita editb ->
+         EditLens edita editb ->
          GeneralLens (Subject edita) (Subject editb);
     };
 
-    toFixedGeneralLens :: Lens a b -> GeneralLens a b;
-    toFixedGeneralLens lens = FixedGeneralLens wholeSubjectEditWitness wholeSubjectEditWitness (simpleFixedLens lens);
+    toEditGeneralLens :: Lens a b -> GeneralLens a b;
+    toEditGeneralLens lens = EditGeneralLens wholeSubjectEditWitness wholeSubjectEditWitness (simpleEditLens lens);
 
     instance Category GeneralLens where
     {
@@ -59,12 +59,12 @@ module Truth.Object.GeneralLens where
         IdGeneralLens . lens = lens;
         lens . IdGeneralLens = lens;
         (SimpleGeneralLens bc) . (SimpleGeneralLens ab) = SimpleGeneralLens (bc . ab);
-        (SimpleGeneralLens bc) . fab@(FixedGeneralLens _ _ _) = (toFixedGeneralLens bc) . fab;
-        fbc@(FixedGeneralLens _ _ _) . (SimpleGeneralLens ab) = fbc . (toFixedGeneralLens ab);
-        (FixedGeneralLens sewb1 sewc bc) . (FixedGeneralLens sewa sewb2 ab) = case matchWitnessT sewb1 sewb2 of
+        (SimpleGeneralLens bc) . fab@(EditGeneralLens _ _ _) = (toEditGeneralLens bc) . fab;
+        fbc@(EditGeneralLens _ _ _) . (SimpleGeneralLens ab) = fbc . (toEditGeneralLens ab);
+        (EditGeneralLens sewb1 sewc bc) . (EditGeneralLens sewa sewb2 ab) = case matchWitnessT sewb1 sewb2 of
         {
-            Just MkEqualType -> FixedGeneralLens sewa sewc (bc . ab);
-            _ -> FixedGeneralLens sewa sewc (bc . convertFixedEditLens . ab);
+            Just MkEqualType -> EditGeneralLens sewa sewc (bc . ab);
+            _ -> EditGeneralLens sewa sewc (bc . convertEditLens . ab);
         };
     };
 
@@ -76,7 +76,7 @@ module Truth.Object.GeneralLens where
     generalLensSubscribe :: GeneralLens a b -> GeneralLensSubscribe a -> GeneralLensSubscribe b;
     generalLensSubscribe IdGeneralLens sub = sub;
     generalLensSubscribe (SimpleGeneralLens lens) (MkGeneralLensSubscribe sub) =
-     MkGeneralLensSubscribe (lensSubscribe lens (lensSubscribe convertFixedEditLens sub));
-    generalLensSubscribe (FixedGeneralLens _ _ lens) (MkGeneralLensSubscribe sub) =
-     MkGeneralLensSubscribe (lensSubscribe lens (lensSubscribe convertFixedEditLens sub));
+     MkGeneralLensSubscribe (lensSubscribe lens (lensSubscribe convertEditLens sub));
+    generalLensSubscribe (EditGeneralLens _ _ lens) (MkGeneralLensSubscribe sub) =
+     MkGeneralLensSubscribe (lensSubscribe lens (lensSubscribe convertEditLens sub));
 }
