@@ -111,10 +111,10 @@ module Truth.Object.Object where
         lensSubscribe :: lens -> Subscribe (LensDomain lens) -> Subscribe (LensRange lens);
     };
 
-    instance (Edit edita,Eq state) => IsEditLens (FloatingEditLens state edita editb) where
+    instance (FunctorOne m,Edit edita,Eq state) => IsEditLens (FloatingEditLens' state m edita editb) where
     {
-        type LensDomain (FloatingEditLens state edita editb) = edita;
-        type LensRange (FloatingEditLens state edita editb) = editb;
+        type LensDomain (FloatingEditLens' state m edita editb) = edita;
+        type LensRange (FloatingEditLens' state m edita editb) = editb;
 
         lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
         {
@@ -140,7 +140,8 @@ module Truth.Object.Object where
             return (MkObject
             {
                 objGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (floatingEditLensGet lens state a)),
-                objPush = \editb -> modifyMVar statevar (\olds@(oldstate,olda) -> case applyConstFunction (floatingEditLensPutEdit lens oldstate editb) olda of
+                objPush = \editb -> modifyMVar statevar
+                 (\olds@(oldstate,olda) -> case getMaybeOne (applyConstFunction (floatingEditLensPutEdit lens oldstate editb) olda) of
                 {
                     Just (newstate,edita) -> do
                     {
@@ -158,10 +159,10 @@ module Truth.Object.Object where
         });
     };
 
-    instance (Edit edita) => IsEditLens (EditLens edita editb) where
+    instance (FunctorOne m,Edit edita) => IsEditLens (EditLens' m edita editb) where
     {
-        type LensDomain (EditLens edita editb) = edita;
-        type LensRange (EditLens edita editb) = editb;
+        type LensDomain (EditLens' m edita editb) = edita;
+        type LensRange (EditLens' m edita editb) = editb;
 
         lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
         {
@@ -187,7 +188,8 @@ module Truth.Object.Object where
             return (MkObject
             {
                 objGetInitial = \initialise -> withMVar statevar (\a -> initialise (lensGet (editLensSimple lens) a)),
-                objPush = \editb -> modifyMVar statevar (\olda -> case applyConstFunction (editLensPutEdit lens editb) olda of
+                objPush = \editb -> modifyMVar statevar
+                 (\olda -> case getMaybeOne (applyConstFunction (editLensPutEdit lens editb) olda) of
                 {
                     Just edita -> do
                     {
@@ -205,10 +207,18 @@ module Truth.Object.Object where
         });
     };
 
-    instance IsEditLens (Lens a b) where
+    instance (FunctorOne m,Edit edita) => IsEditLens (CleanEditLens' m edita editb) where
     {
-        type LensDomain (Lens a b) = WholeEdit a;
-        type LensRange (Lens a b) = WholeEdit b;
+        type LensDomain (CleanEditLens' m edita editb) = edita;
+        type LensRange (CleanEditLens' m edita editb) = editb;
+
+        lensSubscribe celens = lensSubscribe (cleanEditLens celens);
+    };
+
+    instance (FunctorOne m) => IsEditLens (Lens' m a b) where
+    {
+        type LensDomain (Lens' m a b) = WholeEdit a;
+        type LensRange (Lens' m a b) = WholeEdit b;
 
         lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
         {
@@ -228,7 +238,7 @@ module Truth.Object.Object where
             {
                 objGetInitial = \initialise -> withMVar statevar (\a -> initialise (lensGet lens a)),
                 objPush = \(MkWholeEdit newb) -> modifyMVar statevar (\olda ->
-                 case applyConstFunction (lensPutback lens newb) olda of
+                 case getMaybeOne (applyConstFunction (lensPutback lens newb) olda) of
                 {
                     Just newa -> do
                     {
@@ -246,10 +256,10 @@ module Truth.Object.Object where
         });
     };
 
-    instance IsEditLens (Injection a b) where
+    instance (FunctorOne m) => IsEditLens (Injection' m a b) where
     {
-        type LensDomain (Injection a b) = WholeEdit a;
-        type LensRange (Injection a b) = WholeEdit b;
+        type LensDomain (Injection' m a b) = WholeEdit a;
+        type LensRange (Injection' m a b) = WholeEdit b;
 
         lensSubscribe inj = lensSubscribe (injectionLens inj);
     };

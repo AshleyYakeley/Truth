@@ -1,5 +1,6 @@
 module Data.Lens where
 {
+    import Data.Codec;
     import Data.Injection;
     import Data.Bijection;
     import Data.Result;
@@ -32,15 +33,17 @@ module Data.Lens where
 
     type Lens = Lens' Maybe;
 
-    toLens :: (FunctorOne m) => Lens' m edita editb -> Lens edita editb;
-    toLens lens = MkLens
+    instance IsBiMap Lens' where
     {
-        lensGet = lensGet lens,
-        lensPutback = \b -> do
+        mapBiMapM ff lens = MkLens
         {
-            ma <- lensPutback lens b;
-            return (getMaybeOne ma);
-        }
+            lensGet = lensGet lens,
+            lensPutback = \b -> do
+            {
+                ma <- lensPutback lens b;
+                return (ff ma);
+            }
+        };
     };
 
     instance (Applicative m,FunctorOne m) => Category (Lens' m) where
@@ -98,7 +101,7 @@ module Data.Lens where
     bijectionLens :: Bijection a b -> Lens' Identity a b;
     bijectionLens (MkBijection ab ba) = MkLens ab (\b -> ConstConstFunction (return (ba b)));
 
-    injectionLens :: Injection a b -> Lens a b;
+    injectionLens :: Injection' m a b -> Lens' m a b;
     injectionLens lens = MkLens
     {
         lensGet = injForwards lens,

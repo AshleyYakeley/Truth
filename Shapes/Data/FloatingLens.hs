@@ -1,20 +1,21 @@
 module Data.FloatingLens where
 {
     import Data.Lens;
+    import Data.Codec;
     import Data.ConstFunction;
     import Data.Traversable;
     import Data.FunctorOne;
     import Data.Chain;
     import Control.Applicative;
 
-    data FloatingLens' m state a b = MkFloatingLens
+    data FloatingLens' state m a b = MkFloatingLens
     {
         floatingLensInitial :: state,
         floatingLensGet :: state -> a -> b,
         floatingLensPutback :: state -> b -> ConstFunction a (m (state,a))
     };
 
-    fixedFloatingLens :: (Functor m) => Lens' m a b -> FloatingLens' m () a b;
+    fixedFloatingLens :: (Functor m) => Lens' m a b -> FloatingLens' () m a b;
     fixedFloatingLens lens = MkFloatingLens
     {
         floatingLensInitial = (),
@@ -26,7 +27,7 @@ module Data.FloatingLens where
         }
     };
 
-    instance (FunctorOne f,Applicative m) => CatFunctor (FloatingLens' m state) f where
+    instance (FunctorOne f,Applicative m) => CatFunctor (FloatingLens' state m) f where
     {
         cfmap flens = MkFloatingLens
         {
@@ -44,13 +45,19 @@ module Data.FloatingLens where
         };
     };
 
-    type FloatingLens = FloatingLens' Maybe;
+    type FloatingLens state = FloatingLens' state Maybe;
 
-    toFloatingLens :: (FunctorOne m) => FloatingLens' m state a b -> FloatingLens state a b;
-    toFloatingLens flens = MkFloatingLens
+    instance IsBiMap (FloatingLens' state) where
     {
-        floatingLensInitial = floatingLensInitial flens,
-        floatingLensGet = floatingLensGet flens,
-        floatingLensPutback = \state b -> fmap getMaybeOne (floatingLensPutback flens state b)
+        mapBiMapM ff flens = MkFloatingLens
+        {
+            floatingLensInitial = floatingLensInitial flens,
+            floatingLensGet = floatingLensGet flens,
+            floatingLensPutback = \state b -> do
+            {
+                msa <- floatingLensPutback flens state b;
+                return (ff msa);
+            }
+        };
     };
 }

@@ -49,10 +49,10 @@ module Truth.Edit.Context where
 
     type ContextContentEdit editx editn = TupleWholeEdit (editn,(editx,())) (WithContext (Subject editx) (Subject editn));
 
-    contextCleanLens :: (FullEdit editx,FullEdit editn) => CleanLens' Identity (ContextContentEdit editx editn) editx;
+    contextCleanLens :: (FullEdit editx,FullEdit editn) => CleanEditLens' Identity (ContextContentEdit editx editn) editx;
     contextCleanLens = tupleElementCleanLens (SuccNat ZeroNat);
 
-    contentCleanLens :: (FullEdit editx,FullEdit editn) => CleanLens' Identity (ContextContentEdit editx editn) editn;
+    contentCleanLens :: (FullEdit editx,FullEdit editn) => CleanEditLens' Identity (ContextContentEdit editx editn) editn;
     contentCleanLens = tupleElementCleanLens ZeroNat;
 }
 

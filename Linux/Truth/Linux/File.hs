@@ -184,7 +184,7 @@ module Truth.Linux.File
                 wd <- addWatchB (fsNotify ?fs) [Modify,MoveSelf,DeleteSelf] path (\_ -> do
                 {
                     (MkWithContext _ newa) <- runFSAction fsGet;
-                    fsPushout ?fs (runIdentity (cleanLensPutEdit contentCleanLens (replaceEdit newa)));
+                    fsPushout ?fs (runIdentity (cleanEditLensPutEdit contentCleanLens (replaceEdit newa)));
                 });
                 return (Just wd);
             };

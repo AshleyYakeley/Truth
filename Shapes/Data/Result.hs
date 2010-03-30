@@ -7,11 +7,11 @@ module Data.Result where
     import Data.Monoid;
 
     data Result e a = SuccessResult a | FailureResult e;
-    
+
     resultToMaybe :: Result e a -> Maybe a;
     resultToMaybe (SuccessResult a) = Just a;
     resultToMaybe _ = Nothing;
-    
+
     instance Functor (Result e) where
     {
         fmap ab (SuccessResult a) = SuccessResult (ab a);
@@ -20,8 +20,8 @@ module Data.Result where
 
     instance Foldable (Result e) where
     {
-        foldMap am (SuccessResult a) = am a; 
-        foldMap _ (FailureResult _) = mempty; 
+        foldMap am (SuccessResult a) = am a;
+        foldMap _ (FailureResult _) = mempty;
     };
 
     instance Traversable (Result e) where
@@ -47,16 +47,20 @@ module Data.Result where
         (SuccessResult a) >>= amq = amq a;
         fail _ = FailureResult undefined;
     };
-    
+
     mapResult :: Bijection (Result e2 (Result e1 a)) (Result (Either e2 e1) a);
     mapResult = MkBijection forwards backwards where
     {
         forwards (SuccessResult (SuccessResult a)) = SuccessResult a;
         forwards (SuccessResult (FailureResult e1)) = FailureResult (Right e1);
         forwards (FailureResult e2) = FailureResult (Left e2);
-        
+
         backwards (SuccessResult a) = SuccessResult (SuccessResult a);
         backwards (FailureResult (Right e1)) = SuccessResult (FailureResult e1);
         backwards (FailureResult (Left e2)) = FailureResult e2;
     };
+
+    mapResultFailure :: (e1 -> e2) -> Result e1 a -> Result e2 a;
+    mapResultFailure _ (SuccessResult a) = SuccessResult a;
+    mapResultFailure e1e2 (FailureResult e1) = FailureResult (e1e2 e1);
 }

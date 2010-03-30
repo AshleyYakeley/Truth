@@ -5,15 +5,26 @@ module Data.Injection where
     import Data.Result;
     import Data.Traversable;
     import Data.Chain;
-    import Control.Applicative;
     import Control.Category;
+    import Control.Monad.Identity;
     import Prelude hiding (id,(.),sequence);
 
-    data Injection a b = MkInjection
+    data Injection' m a b = MkInjection
     {
         injForwards :: a -> b,
-        injBackwards :: b -> Maybe a
+        injBackwards :: b -> m a
     };
+
+    instance IsBiMap Injection' where
+    {
+        mapBiMapM ff inj = MkInjection
+        {
+            injForwards = injForwards inj,
+            injBackwards = \b -> ff (injBackwards inj b)
+        };
+    };
+
+    type Injection = Injection' Maybe;
 
     instance Category Injection where
     {
@@ -53,17 +64,17 @@ module Data.Injection where
         }
     };
 
-    codecInjection :: Codec a b -> Injection a (Maybe b);
+    codecInjection :: (Functor m) => Codec' m a b -> Injection' m a (m b);
     codecInjection codec = MkInjection
     {
         injForwards = decode codec,
         injBackwards = fmap (encode codec)
     };
 
-    bijectionInjection :: Bijection a b -> Injection a b;
+    bijectionInjection :: Bijection a b -> Injection' Identity a b;
     bijectionInjection bi = MkInjection
     {
         injForwards = biForwards bi,
-        injBackwards = pure . (biBackwards bi)
+        injBackwards = Identity . (biBackwards bi)
     };
 }

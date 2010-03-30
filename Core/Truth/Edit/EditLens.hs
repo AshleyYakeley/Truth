@@ -10,31 +10,34 @@ module Truth.Edit.EditLens where
     ;
     data EditLens' m edita editb = MkEditLens
     {
-        editLensUpdate :: edita -> ConstFunction (Subject edita) (Maybe editb),
         editLensSimple :: Lens' m (Subject edita) (Subject editb),
+        editLensUpdate :: edita -> ConstFunction (Subject edita) (Maybe editb),
         editLensPutEdit :: editb -> ConstFunction (Subject edita) (m edita)
     };
 
     type EditLens = EditLens' Maybe;
 
-    toEditLens :: (FunctorOne m) => EditLens' m edita editb -> EditLens edita editb;
-    toEditLens lens = MkEditLens
+    instance IsBiMap EditLens' where
     {
-        editLensUpdate = editLensUpdate lens,
-        editLensSimple = toLens (editLensSimple lens),
-        editLensPutEdit = \editb -> fmap getMaybeOne (editLensPutEdit lens editb)
+        mapBiMapM ff elens = MkEditLens
+        {
+            editLensSimple = mapBiMapM ff (editLensSimple elens),
+            editLensUpdate = editLensUpdate elens,
+            editLensPutEdit = \editb -> fmap ff (editLensPutEdit elens editb)
+        };
     };
 
     instance (Applicative m,FunctorOne m) => Category (EditLens' m) where
     {
         id = MkEditLens
         {
-            editLensUpdate = \edit -> pure (Just edit),
             editLensSimple = id,
+            editLensUpdate = \edit -> pure (Just edit),
             editLensPutEdit = \editb -> pure (pure editb)
         };
         bc . ab = MkEditLens
         {
+            editLensSimple = (editLensSimple bc) . (editLensSimple ab),
             editLensUpdate = \edita -> do
             {
                 meb <- editLensUpdate ab edita;
@@ -44,7 +47,6 @@ module Truth.Edit.EditLens where
                     _ -> return Nothing;
                 };
             },
-            editLensSimple = (editLensSimple bc) . (editLensSimple ab),
             editLensPutEdit = \editc -> do
             {
                 meditb <- cofmap1CF (lensGet (editLensSimple ab)) (editLensPutEdit bc editc);
@@ -83,7 +85,7 @@ module Truth.Edit.EditLens where
         };
     };
 
-    fixedFloatingEditLens :: (Functor m) => EditLens' m edita editb -> FloatingEditLens' m () edita editb;
+    fixedFloatingEditLens :: (Functor m) => EditLens' m edita editb -> FloatingEditLens' () m edita editb;
     fixedFloatingEditLens lens = MkFloatingEditLens
     {
         floatingEditLensSimple = fixedFloatingLens (editLensSimple lens),
@@ -99,46 +101,56 @@ module Truth.Edit.EditLens where
         }
     };
 
-    data CleanLens' m edita editb = MkCleanLens
+    data CleanEditLens' m edita editb = MkCleanEditLens
     {
-        cleanLensUpdate :: edita -> Maybe editb,
-        cleanLensSimple :: Lens' m (Subject edita) (Subject editb),
-        cleanLensPutEdit :: editb -> m edita
+        cleanEditLensSimple :: Lens' m (Subject edita) (Subject editb),
+        cleanEditLensUpdate :: edita -> Maybe editb,
+        cleanEditLensPutEdit :: editb -> m edita
     };
 
-    --type CleanLens = CleanLens' Maybe;
+    --type CleanEditLens = CleanEditLens' Maybe;
 
-    instance (Applicative m,Monad m,FunctorOne m) => Category (CleanLens' m) where
+    instance (Applicative m,Monad m,FunctorOne m) => Category (CleanEditLens' m) where
     {
-        id = MkCleanLens
+        id = MkCleanEditLens
         {
-            cleanLensUpdate = Just,
-            cleanLensSimple = id,
-            cleanLensPutEdit = pure
+            cleanEditLensUpdate = Just,
+            cleanEditLensSimple = id,
+            cleanEditLensPutEdit = pure
         };
-        bc . ab = MkCleanLens
+        bc . ab = MkCleanEditLens
         {
-            cleanLensUpdate = \edita -> do
+            cleanEditLensUpdate = \edita -> do
             {
-                editb <- cleanLensUpdate ab edita;
-                cleanLensUpdate bc editb;
+                editb <- cleanEditLensUpdate ab edita;
+                cleanEditLensUpdate bc editb;
             },
-            cleanLensSimple = (cleanLensSimple bc) . (cleanLensSimple ab),
+            cleanEditLensSimple = (cleanEditLensSimple bc) . (cleanEditLensSimple ab),
 
-            cleanLensPutEdit = \editc -> do
+            cleanEditLensPutEdit = \editc -> do
             {
-                editb <- cleanLensPutEdit bc editc;
-                cleanLensPutEdit ab editb;
+                editb <- cleanEditLensPutEdit bc editc;
+                cleanEditLensPutEdit ab editb;
             }
         };
     };
 
-    cleanEditLens :: CleanLens' m edita editb -> EditLens' m edita editb;
+    instance IsBiMap CleanEditLens' where
+    {
+        mapBiMapM ff clens = MkCleanEditLens
+        {
+            cleanEditLensSimple = mapBiMapM ff (cleanEditLensSimple clens),
+            cleanEditLensUpdate = cleanEditLensUpdate clens,
+            cleanEditLensPutEdit = ff . (cleanEditLensPutEdit clens)
+        };
+    };
+
+    cleanEditLens :: CleanEditLens' m edita editb -> EditLens' m edita editb;
     cleanEditLens lens = MkEditLens
     {
-        editLensUpdate = \edit -> pure (cleanLensUpdate lens edit),
-        editLensSimple = cleanLensSimple lens,
-        editLensPutEdit = \edit -> pure (cleanLensPutEdit lens edit)
+        editLensUpdate = \edit -> pure (cleanEditLensUpdate lens edit),
+        editLensSimple = cleanEditLensSimple lens,
+        editLensPutEdit = \edit -> pure (cleanEditLensPutEdit lens edit)
     };
 
     simpleEditLens :: (Functor m) => Lens' m a b -> EditLens' m (WholeEdit a) (WholeEdit b);
@@ -173,15 +185,15 @@ module Truth.Edit.EditLens where
     convertEditLens :: (FullEdit edita,FullEdit editb,Subject edita ~ Subject editb) => EditLens edita editb;
     convertEditLens = convertEditLens';
 
-    withWholeLens :: (Functor m,FullEdit editb) => CleanLens' m edita editb -> CleanLens' m (Either (WholeEdit (Subject edita)) edita) editb;
-    withWholeLens lens = MkCleanLens
+    withWholeLens :: (Functor m,FullEdit editb) => CleanEditLens' m edita editb -> CleanEditLens' m (Either (WholeEdit (Subject edita)) edita) editb;
+    withWholeLens lens = MkCleanEditLens
     {
-        cleanLensUpdate = \editewa -> case editewa of
+        cleanEditLensUpdate = \editewa -> case editewa of
         {
-            Left (MkWholeEdit a) -> Just (replaceEdit (lensGet (cleanLensSimple lens) a));
-            Right edita -> cleanLensUpdate lens edita;
+            Left (MkWholeEdit a) -> Just (replaceEdit (lensGet (cleanEditLensSimple lens) a));
+            Right edita -> cleanEditLensUpdate lens edita;
         },
-        cleanLensSimple = cleanLensSimple lens,
-        cleanLensPutEdit = \editb -> fmap Right (cleanLensPutEdit lens editb)
+        cleanEditLensSimple = cleanEditLensSimple lens,
+        cleanEditLensPutEdit = \editb -> fmap Right (cleanEditLensPutEdit lens editb)
     };
 }

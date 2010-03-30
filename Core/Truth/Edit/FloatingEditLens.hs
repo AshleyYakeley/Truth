@@ -6,30 +6,32 @@ module Truth.Edit.FloatingEditLens where
     import Truth.Edit.Edit;
     import Truth.Edit.Import;
 
-    data FloatingEditLens' m state edita editb = MkFloatingEditLens
+    data FloatingEditLens' state m edita editb = MkFloatingEditLens
     {
-        floatingEditLensSimple :: FloatingLens' m state (Subject edita) (Subject editb),
+        floatingEditLensSimple :: FloatingLens' state m (Subject edita) (Subject editb),
         floatingEditLensUpdate :: edita -> state -> ConstFunction (Subject edita) (state,Maybe editb),
         floatingEditLensPutEdit :: state -> editb -> ConstFunction (Subject edita) (m (state,edita))    -- m failure means impossible
     };
 
-    floatingEditLensInitial :: FloatingEditLens' m state edita editb -> state;
+    floatingEditLensInitial :: FloatingEditLens' state m edita editb -> state;
     floatingEditLensInitial = floatingLensInitial . floatingEditLensSimple;
 
-    floatingEditLensGet :: FloatingEditLens' m state edita editb -> state -> Subject edita -> Subject editb;
+    floatingEditLensGet :: FloatingEditLens' state m edita editb -> state -> Subject edita -> Subject editb;
     floatingEditLensGet = floatingLensGet . floatingEditLensSimple;
 
-    floatingEditLensPutback :: FloatingEditLens' m state edita editb -> state -> Subject editb -> ConstFunction (Subject edita) (m (state,Subject edita));
+    floatingEditLensPutback :: FloatingEditLens' state m edita editb -> state -> Subject editb -> ConstFunction (Subject edita) (m (state,Subject edita));
     floatingEditLensPutback = floatingLensPutback . floatingEditLensSimple;
 
-    type FloatingEditLens = FloatingEditLens' Maybe;
+    type FloatingEditLens state = FloatingEditLens' state Maybe;
 
-    toFloatingEditLens :: (FunctorOne m) => FloatingEditLens' m state edita editb -> FloatingEditLens state edita editb;
-    toFloatingEditLens lens = MkFloatingEditLens
+    instance IsBiMap (FloatingEditLens' state) where
     {
-        floatingEditLensSimple = toFloatingLens (floatingEditLensSimple lens),
-        floatingEditLensUpdate = floatingEditLensUpdate lens,
-        floatingEditLensPutEdit = \state edit -> fmap getMaybeOne (floatingEditLensPutEdit lens state edit)
+        mapBiMapM ff felens = MkFloatingEditLens
+        {
+            floatingEditLensSimple = mapBiMapM ff (floatingEditLensSimple felens),
+            floatingEditLensUpdate = floatingEditLensUpdate felens,
+            floatingEditLensPutEdit = \state edit -> fmap ff (floatingEditLensPutEdit felens state edit)
+        };
     };
 
     fullLens ::

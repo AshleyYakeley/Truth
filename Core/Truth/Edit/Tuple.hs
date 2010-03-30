@@ -37,20 +37,20 @@ module Truth.Edit.Tuple where
     type TupleWholeEdit editlist t = Either (WholeEdit t) (TupleEdit editlist t);
 
     tupleElementCleanLens' :: (IsTuple t,HasListElement n (ListTuple t),ListElement n (ListTuple t) ~ Subject (ListElement n editlist),Edit (ListElement n editlist)) =>
-       Nat n -> CleanLens' Identity (TupleEdit editlist t) (ListElement n editlist);
-    tupleElementCleanLens' n = MkCleanLens
+       Nat n -> CleanEditLens' Identity (TupleEdit editlist t) (ListElement n editlist);
+    tupleElementCleanLens' n = MkCleanEditLens
     {
-        cleanLensUpdate = \(MkTupleEdit n' edit) -> do
+        cleanEditLensUpdate = \(MkTupleEdit n' edit) -> do
         {
             MkEqualType <- matchWitness n n';
             return edit;
         },
-        cleanLensSimple = (listElementLens n) . (bijectionLens listTupleBijection),
-        cleanLensPutEdit = \edit -> return (MkTupleEdit n edit)
+        cleanEditLensSimple = (listElementLens n) . (bijectionLens listTupleBijection),
+        cleanEditLensPutEdit = \edit -> return (MkTupleEdit n edit)
     };
 
     tupleElementCleanLens :: (IsTuple t,HasListElement n (ListTuple t),ListElement n (ListTuple t) ~ Subject (ListElement n editlist),FullEdit (ListElement n editlist)) =>
-       Nat n -> CleanLens' Identity (TupleWholeEdit editlist t) (ListElement n editlist);
+       Nat n -> CleanEditLens' Identity (TupleWholeEdit editlist t) (ListElement n editlist);
     tupleElementCleanLens n = withWholeLens (tupleElementCleanLens' n);
 
 
