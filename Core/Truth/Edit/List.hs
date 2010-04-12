@@ -8,10 +8,13 @@ module Truth.Edit.List(listElement,listSection,ListEdit(..)) where
     import Truth.Edit.Edit;
     import Truth.Edit.Import;
 
+    type ListPoint = Int;
+    data ListRegion = MkListRegion Int Int;
+
     data ListEdit edit =
         ReplaceListEdit [Subject edit]                  |
-        ItemEdit (IndexEdit [Subject edit] Int edit)    |
-        ReplaceSectionEdit (Int,Int) [Subject edit]     ;
+        ItemEdit (IndexEdit [Subject edit] ListPoint edit)    |
+        ReplaceSectionEdit ListRegion [Subject edit]     ;
 
     instance (Edit edit) => Edit (ListEdit edit) where
     {
@@ -19,8 +22,8 @@ module Truth.Edit.List(listElement,listSection,ListEdit(..)) where
 
         applyEdit (ReplaceListEdit a) = pure a;
         applyEdit (ItemEdit edit) = applyEdit edit;
-        applyEdit (ReplaceSectionEdit (start,_) _) | start < 0 = id;
-        applyEdit (ReplaceSectionEdit (start,len) newmiddle) = arr (\list -> let
+        applyEdit (ReplaceSectionEdit (MkListRegion start _) _) | start < 0 = id;
+        applyEdit (ReplaceSectionEdit (MkListRegion start len) newmiddle) = arr (\list -> let
         {
             (before,rest) = splitAt start list;
             (_,after) = splitAt len rest;
@@ -28,12 +31,18 @@ module Truth.Edit.List(listElement,listSection,ListEdit(..)) where
 
         invertEdit (ReplaceListEdit _) a = Just (ReplaceListEdit a);
         invertEdit (ItemEdit edit) oldlist = fmap ItemEdit (invertEdit edit oldlist);
-        invertEdit (ReplaceSectionEdit (start,_) _) _ | start < 0 = Nothing;
-        invertEdit (ReplaceSectionEdit (start,len) newmiddle) oldlist = Just (ReplaceSectionEdit (start,length newmiddle) oldmiddle) where
+        invertEdit (ReplaceSectionEdit (MkListRegion start _) _) _ | start < 0 = Nothing;
+        invertEdit (ReplaceSectionEdit (MkListRegion start len) newmiddle) oldlist =
+         Just (ReplaceSectionEdit (MkListRegion start (length newmiddle)) oldmiddle) where
         {
             (_,rest) = splitAt start oldlist;
             (oldmiddle,_) = splitAt len rest;
         };
+
+        updateEdit (ItemEdit _) edit = edit;
+        updateEdit (ReplaceListEdit _) edit = edit;
+        updateEdit (ReplaceSectionEdit _ _) edit@(ReplaceListEdit _) = edit;
+        updateEdit _ edit = edit;
     };
 
     instance (Edit edit) => FullEdit (ListEdit edit) where
@@ -60,24 +69,57 @@ module Truth.Edit.List(listElement,listSection,ListEdit(..)) where
             );
     };
 
-    updateSection :: (Int,Int) -> (Int,Int) -> Int -> ((Int,Int),Maybe (Int,Int));
-    updateSection (start,len) (editstart,editlen) newlen = let
+    moveListRegion :: Int -> ListRegion -> ListRegion;
+    moveListRegion n (MkListRegion start len) = MkListRegion (start + n) len;
+
+    mkListRegion :: Int -> Int -> ListRegion;
+    mkListRegion start end = MkListRegion start (end - start);
+
+    intersectListRegion :: ListRegion -> ListRegion -> Maybe ListRegion;
+    intersectListRegion a@(MkListRegion start len) b@(MkListRegion editstart editlen) = let
     {
         end = start + len;
         editend = editstart + editlen;
-    } in if editend == start && editstart == end then ((start,newlen),Just (0,0)) -- point expansion
-     else if editend <= start then ((start+newlen-editlen,len),Nothing) -- entirely before
-     else if editstart >= end then ((start,len),Nothing) -- entirely after
-     else if editstart < start
+    } in if editend <= start then Nothing
+     else if editstart >= end then Nothing
+     else Just (if editstart < start
        then if editend > end    -- clip start
-         then ((editstart,newlen),Just (0,len)) -- clip both
-         else ((editstart,end-editend+newlen),Just (0,editend-start)) -- clip start, no clip end
+         then a -- clip both
+         else (MkListRegion start (editend - start)) -- clip start, no clip end
        else if editend > end    -- no clip start
-         then ((start,editstart-start+newlen),Just (editstart-start,len-editstart+start)) -- no clip start, clip end
-         else ((start,len+newlen-editlen),Just (editstart-start,editlen)); -- within
+         then (MkListRegion editstart (end - editstart)) -- no clip start, clip end
+         else b);  -- within
 
+    relativeListSection :: ListRegion -> ListRegion -> Maybe ListRegion;
+    relativeListSection state@(MkListRegion statestart _) edit = do
+    {
+        r <- intersectListRegion state edit;
+        return (moveListRegion (- statestart) r);
+    };
 
-    listElement :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => Int -> FloatingEditLens Int (ListEdit edit) (JustWholeEdit Maybe edit);
+    updateSection' :: ListRegion -> ListRegion -> Int -> ListRegion;
+    updateSection' state@(MkListRegion statestart statelen) _edit@(MkListRegion editstart editlen) newlen = let
+    {
+        stateend = statestart + statelen;
+        editend = editstart + editlen;
+        lendiff = newlen-editlen;
+        -- lendiff = neweditend - editend;
+        neweditend = editstart + newlen;
+    } in if editend == statestart && editstart == stateend then MkListRegion statestart newlen -- point expansion
+     else if editend <= statestart then moveListRegion lendiff state -- entirely before
+     else if editstart >= stateend then state -- entirely after
+     else if editstart < statestart
+       then if editend > stateend    -- clip start
+         then mkListRegion editstart neweditend -- clip both
+         else mkListRegion editstart (stateend + lendiff) -- clip start, no clip end
+       else if editend > stateend    -- no clip start
+         then mkListRegion statestart neweditend -- no clip start, clip end
+         else moveListRegion lendiff state; -- within
+
+    updateSection :: ListRegion -> ListRegion -> Int -> (ListRegion,Maybe ListRegion);
+    updateSection state edit newlen = (updateSection' state edit newlen,relativeListSection state edit);
+
+    listElement :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => ListPoint -> FloatingEditLens ListPoint (ListEdit edit) (JustWholeEdit Maybe edit);
     listElement initial = MkFloatingEditLens
     {
         floatingEditLensUpdate = elementUpdate,
@@ -100,20 +142,20 @@ module Truth.Edit.List(listElement,listSection,ListEdit(..)) where
         })
     } where
     {
-        listElement' :: Int -> FloatingEditLens Int (ListEdit edit) (JustWholeEdit Maybe edit);
+        listElement' :: ListPoint -> FloatingEditLens ListPoint (ListEdit edit) (JustWholeEdit Maybe edit);
         listElement' = listElement;
 
-        elementUpdate :: ListEdit edit -> Int -> ConstFunction [Subject edit] (Int,Maybe (JustWholeEdit Maybe edit));
+        elementUpdate :: ListEdit edit -> ListPoint -> ConstFunction [Subject edit] (ListPoint,Maybe (JustWholeEdit Maybe edit));
         elementUpdate edita state =
           fromMaybe (fmap (\newa -> (state,Just (replaceEdit (floatingEditLensGet (listElement' state) state newa)))) (applyEdit edita)) update_ where
         {
-            update_ :: Maybe (ConstFunction [Subject edit] (Int,Maybe (JustWholeEdit Maybe edit)));
+            update_ :: Maybe (ConstFunction [Subject edit] (ListPoint,Maybe (JustWholeEdit Maybe edit)));
             update_ = case edita of
             {
                 ReplaceSectionEdit editlensstate newb -> Just (pure (let
                 {
                     newlen = length newb;
-                    ((newstate,_),mclip) = updateSection (state,1) editlensstate newlen;
+                    ((MkListRegion newstate _),mclip) = updateSection (MkListRegion state 1) editlensstate newlen;
                 } in (newstate,fmap (\_ -> replaceEdit (elementGet newstate newb)) mclip)
                 ));
 
@@ -126,35 +168,37 @@ module Truth.Edit.List(listElement,listSection,ListEdit(..)) where
         };
     };
 
-    listSection :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => (Int,Int) -> FloatingEditLens (Int,Int) (ListEdit edit) (ListEdit edit);
+    listSection :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => ListRegion -> FloatingEditLens ListRegion (ListEdit edit) (ListEdit edit);
     listSection initial = MkFloatingEditLens
     {
         floatingEditLensUpdate = sectionUpdate,
         floatingEditLensSimple = MkFloatingLens
         {
             floatingLensInitial = initial,
-            floatingLensGet = \(start,len) list -> take len (drop start list),
-            floatingLensPutback = \(start,len) section -> arr (\list -> Just ((start,length section),(take start list) ++ section ++ (drop (start + len) list)))
+            floatingLensGet = \(MkListRegion start len) list -> take len (drop start list),
+            floatingLensPutback = \(MkListRegion start len) section ->
+             arr (\list -> Just ((MkListRegion start (length section)),(take start list) ++ section ++ (drop (start + len) list)))
         },
-        floatingEditLensPutEdit = \clip@(start,clen) ele -> pure (Just (case ele of
+        floatingEditLensPutEdit = \clip@(MkListRegion start clen) ele -> pure (Just (case ele of
         {
-            ReplaceListEdit newlist -> ((start,length newlist),ReplaceSectionEdit clip newlist);
+            ReplaceListEdit newlist -> ((MkListRegion start (length newlist)),ReplaceSectionEdit clip newlist);
             ItemEdit (MkIndexEdit i edit) -> (clip,ItemEdit (MkIndexEdit (start + i) edit));
-            ReplaceSectionEdit (s,len) newlist -> ((start,clen + (length newlist) - len),ReplaceSectionEdit (start + s,len) newlist);
+            ReplaceSectionEdit (MkListRegion s len) newlist ->
+             ((MkListRegion start (clen + (length newlist) - len)),ReplaceSectionEdit (MkListRegion (start + s) len) newlist);
         }))
     } where
     {
-        listSection' :: (Int,Int) -> FloatingEditLens (Int,Int) (ListEdit edit) (ListEdit edit);
+        listSection' :: ListRegion -> FloatingEditLens ListRegion (ListEdit edit) (ListEdit edit);
         listSection' = listSection;
 
-        listElement' :: Int -> FloatingEditLens Int (ListEdit edit) (JustWholeEdit Maybe edit);
+        listElement' :: ListPoint -> FloatingEditLens ListPoint (ListEdit edit) (JustWholeEdit Maybe edit);
         listElement' = listElement;
 
-        sectionUpdate :: ListEdit edit -> (Int,Int) -> ConstFunction [Subject edit] ((Int,Int),Maybe (ListEdit edit));
+        sectionUpdate :: ListEdit edit -> ListRegion -> ConstFunction [Subject edit] (ListRegion,Maybe (ListEdit edit));
         sectionUpdate edita state =
           fromMaybe (fmap (\newa -> (state,Just (replaceEdit (floatingEditLensGet (listSection' state) state newa)))) (applyEdit edita)) update_ where
         {
-            update_ :: Maybe (ConstFunction [Subject edit] ((Int,Int),Maybe (ListEdit edit)));
+            update_ :: Maybe (ConstFunction [Subject edit] (ListRegion,Maybe (ListEdit edit)));
             update_ = case edita of
             {
                 ReplaceSectionEdit editlensstate newb -> Just (pure (let
@@ -174,8 +218,8 @@ module Truth.Edit.List(listElement,listSection,ListEdit(..)) where
                         Just _ -> 1;
                         _ -> 0;
                     };
-                    (newstate,mclip) = updateSection state (editlensstate,1) newlen;
-                } in (newstate,fmap (\(clip,_) -> ItemEdit (MkIndexEdit clip editbedit)) mclip) ));
+                    (newstate,mclip) = updateSection state (MkListRegion editlensstate 1) newlen;
+                } in (newstate,fmap (\(MkListRegion clip _) -> ItemEdit (MkIndexEdit clip editbedit)) mclip) ));
 
                 _ -> Nothing;
             };

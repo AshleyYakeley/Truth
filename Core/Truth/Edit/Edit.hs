@@ -7,6 +7,8 @@ module Truth.Edit.Edit where
         type Subject edit;
         applyEdit :: edit -> ConstFunction (Subject edit) (Subject edit);
         invertEdit :: edit -> Subject edit -> Maybe edit;    -- "Nothing" means no change
+        updateEdit :: edit -> edit -> edit;
+        updateEdit _ = id;
     };
 
     subjectRepT :: HasInfoT (Subject edit) => InfoT edit -> InfoT (Subject edit);
@@ -37,10 +39,8 @@ module Truth.Edit.Edit where
     commutableEdits :: (Edit edit, Eq (Subject edit)) => edit -> edit -> Subject edit -> Maybe (Subject edit);
     commutableEdits e1 e2 a = let
     {
-        cf1 = applyEdit e1;
-        cf2 = applyEdit e2;
-        cf12 = cf1 . cf2;
-        cf21 = cf2 . cf1;
+        cf12 = (applyEdit (updateEdit e2 e1)) . (applyEdit e2);
+        cf21 = (applyEdit (updateEdit e1 e2)) . (applyEdit e1);
         a12 = applyConstFunction cf12 a;
         a21 = applyConstFunction cf21 a;
     } in if a12 == a21 then Just a12 else Nothing;
