@@ -1,100 +1,44 @@
+{-# LANGUAGE CPP #-}
 module Truth.TypeKT.Construct where
 {
     import Truth.TypeKT.Type;
     import Data.Maybe;
     import Control.Monad;
 
-    class (PropertyT f) => ConstructT f where
-    {
-        constructT :: f t -> InfoT t;
+#define DECL_Construct(P)\
+    class (Property##P f) => Construct##P f where\
+    {\
+        construct##P :: f t -> Info##P t;\
     };
 
-
-    data TMatchT t where
-    {
-        MkTMatchT :: forall f a. InfoKTT f -> InfoT a -> TMatchT (f a);
+#define DECL_Match(P,Q)\
+    data Q##Match##P t where\
+    {\
+        Mk##Q##Match##P :: forall f a. InfoK##Q##P f -> Info##Q a -> Q##Match##P (f a);\
+    };\
+\
+    instance Property##P Q##Match##P where\
+    {\
+        matchProperty##P (MkInfo##P (Q##Wit##P tf ta) _) = return (Mk##Q##Match##P tf ta);\
+        matchProperty##P _ = Nothing;\
+    };\
+\
+    apply##Q##Info##P :: InfoK##Q##P f -> Info##Q a -> Info##P (f a);\
+    apply##Q##Info##P tf@(MkInfoK##Q##P _ inf) ta = MkInfo##P (Q##Wit##P tf ta) (derive##Q##Facts##P inf ta);\
+\
+    instance Construct##P Q##Match##P where\
+    {\
+        construct##P (Mk##Q##Match##P tf ta) = apply##Q##Info##P tf ta;\
     };
 
-    instance PropertyT TMatchT where
-    {
-        matchPropertyT (MkInfoT (TWitT tf ta) _) = return (MkTMatchT tf ta);
-        matchPropertyT _ = Nothing;
-    };
+DECL_Construct(T)
+DECL_Match(T,T)
+DECL_Match(T,KTT)
 
-    applyTInfoT :: InfoKTT f -> InfoT a -> InfoT (f a);
-    applyTInfoT tf@(MkInfoKTT _ inf) ta = MkInfoT (TWitT tf ta) (deriveTFactsT inf ta);
+DECL_Construct(KTT)
+DECL_Match(KTT,T)
+DECL_Match(KTT,KTT)
 
-    instance ConstructT TMatchT where
-    {
-        constructT (MkTMatchT tf ta) = applyTInfoT tf ta;
-    };
-
-
-    class (PropertyKTT f) => ConstructKTT f where
-    {
-        constructKTT :: f t -> InfoKTT t;
-    };
-
-
-
-    data TMatchKTT t where
-    {
-        MkTMatchKTT :: forall f a. InfoKTKTT f -> InfoT a -> TMatchKTT (f a);
-    };
-
-    instance PropertyKTT TMatchKTT where
-    {
-        matchPropertyKTT (MkInfoKTT (TWitKTT tf ta) _) = return (MkTMatchKTT tf ta);
-        matchPropertyKTT _ = Nothing;
-    };
-
-    applyTInfoKTT :: InfoKTKTT f -> InfoT a -> InfoKTT (f a);
-    applyTInfoKTT tf@(MkInfoKTKTT _ inf) ta = MkInfoKTT (TWitKTT tf ta) (deriveTFactsKTT inf ta);
-
-    instance ConstructKTT TMatchKTT where
-    {
-        constructKTT (MkTMatchKTT tf ta) = applyTInfoKTT tf ta;
-    };
-
-    data KTTMatchT t where
-    {
-        MkKTTMatchT :: forall f a. InfoKKTTT f -> InfoKTT a -> KTTMatchT (f a);
-    };
-
-    instance PropertyT KTTMatchT where
-    {
-        matchPropertyT (MkInfoT (KTTWitT tf ta) _) = return (MkKTTMatchT tf ta);
-        matchPropertyT _ = Nothing;
-    };
-
-    applyKTTInfoT :: InfoKKTTT f -> InfoKTT a -> InfoT (f a);
-    applyKTTInfoT tf@(MkInfoKKTTT _ inf) ta = MkInfoT (KTTWitT tf ta) (deriveKTTFactsT inf ta);
-
-    instance ConstructT KTTMatchT where
-    {
-        constructT (MkKTTMatchT tf ta) = applyKTTInfoT tf ta;
-    };
-
-    data KTTMatchKTT t where
-    {
-        MkKTTMatchKTT :: forall f a. InfoKKTTKTT f -> InfoKTT a -> KTTMatchKTT (f a);
-    };
-
-    instance PropertyKTT KTTMatchKTT where
-    {
-        matchPropertyKTT (MkInfoKTT (KTTWitKTT tf ta) _) = return (MkKTTMatchKTT tf ta);
-        matchPropertyKTT _ = Nothing;
-    };
-
-    applyKTTInfoKTT :: InfoKKTTKTT f -> InfoKTT a -> InfoKTT (f a);
-    applyKTTInfoKTT tf@(MkInfoKKTTKTT _ inf) ta = MkInfoKTT (KTTWitKTT tf ta) (deriveKTTFactsKTT inf ta);
-
-    instance ConstructKTT KTTMatchKTT where
-    {
-        constructKTT (MkKTTMatchKTT tf ta) = applyKTTInfoKTT tf ta;
-    };
-
-    applyTInfoKTKTT :: InfoKTKTKTT f -> InfoT a -> InfoKTKTT (f a);
-    applyTInfoKTKTT tf@(MkInfoKTKTKTT _ inf) ta = MkInfoKTKTT (TWitKTKTT tf ta) (deriveTFactsKTKTT inf ta);
-
+DECL_Construct(KTKTT)
+DECL_Match(KTKTT,T)
 }

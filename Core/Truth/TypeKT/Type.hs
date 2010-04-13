@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Truth.TypeKT.Type
 (
     module Truth.TypeKT.Type,
@@ -15,22 +16,82 @@ module Truth.TypeKT.Type
 
     -- K and T represent kinds. T represents *, and Kxy represents x -> y.
 
+#define DECL_Info1(P,CLASS,FUNC)\
+    data Info##P a = MkInfo##P (Wit##P a) (Facts##P a);\
+\
+    instance CLASS Info##P where\
+    {\
+        FUNC (MkInfo##P wa _) (MkInfo##P wb _) = matchWitness##P wa wb;\
+    };
+
+#define DECL_Info(P) DECL_Info1(P,Witness##P,matchWitness##P)
+
+#define CONS_Wit(P,Q) Q##Wit##P :: InfoK##Q##P p -> Info##Q a -> Wit##P (p a);
+
+#define DECL_Wit(P,CONS)\
+	data Wit##P p where\
+	{\
+		Wit##P :: IOWitness (Sat##P p) -> Wit##P p;\
+		CONS\
+	};
+
+#define EQN_matchWitness(P,Q)\
+	    matchWitness##P (Q##Wit##P tfa ta) (Q##Wit##P tfb tb) = do\
+	    {\
+		    MkEqualType <- matchWitnessK##Q##P tfa tfb;\
+		    MkEqualType <- matchWitness##Q ta tb;\
+		    return MkEqualType;\
+	    };
+
+#define EQN_matchWitnessDefault(P) matchWitness##P _ _ = Nothing;
+
+#define DECL_instance_Witness_Wit(P,EQNS)\
+    instance Witness##P Wit##P where\
+    {\
+	    matchWitness##P (Wit##P wa) (Wit##P wb) = matchWitnessT wa wb;\
+EQNS\
+	};
+
+#define DECL_Property(P)\
+    class Property##P f where\
+    {\
+        matchProperty##P :: forall t. Info##P t -> Maybe (f t);\
+    };\
+\
+    matchProperty##P##_ :: (Property##P f) => Type (f F##P) -> Info##P t -> Maybe (f t);\
+    matchProperty##P##_ _ = matchProperty##P;
+
+
+#define MEMBER_deriveFacts(P,Q) ,derive##P##Facts##Q :: forall i. Info##P i -> Facts##Q (a i)
+
+#define DECL_Facts(P,MEMBERS)\
+    data Facts##P a = MkFacts##P\
+    {\
+        infoFact##P :: forall f. IOWitness (SatK##P##T f) -> Maybe (f a)\
+        MEMBERS\
+    };\
+\
+    instance Monoid (Facts##P a) where\
+    {\
+        mempty = MkFacts##P (\_ -> Nothing) (\_ -> mempty);\
+        mappend (MkFacts##P f1 d1) (MkFacts##P f2 d2) = MkFacts##P\
+         (\w -> mplus (f1 w) (f2 w))\
+         (\info -> mappend (d1 info) (d2 info));\
+    };
+
+#define DECL_Fact(P)\
+    class (Property##P f) => Fact##P f where\
+    {\
+        witFact##P :: IOWitness (SatK##P##T f);\
+    };\
+\
+    matchProperty##P##_Fact :: (Fact##P f) => Info##P a -> Maybe (f a);\
+    matchProperty##P##_Fact (MkInfo##P _ info) = infoFact##P info witFact##P;
 
     -- T
 
-    data InfoT a = MkInfoT (WitT a) (FactsT a);
-
-    instance SimpleWitness InfoT where
-    {
-        matchWitness (MkInfoT wa _) (MkInfoT wb _) = matchWitness wa wb;
-    };
-
-	data WitT a where
-	{
-		WitT :: IOWitness (SatT a) -> WitT a;
-		TWitT :: InfoKTT p -> InfoT a -> WitT (p a);
-		KTTWitT :: InfoKKTTT p -> InfoKTT a -> WitT (p a);
-	};
+DECL_Info1(T,SimpleWitness,matchWitness)
+DECL_Wit(T,CONS_Wit(T,T) CONS_Wit(T,KTT))
 
 	instance SimpleWitness WitT where
 	{
@@ -55,13 +116,7 @@ module Truth.TypeKT.Type
 		equals1 r1 r2 = isJust (matchWitness r1 r2);
 	};
 
-    class PropertyT f where
-    {
-        matchPropertyT :: forall t. InfoT t -> Maybe (f t);
-    };
-
-    matchPropertyT_ :: (PropertyT f) => Type (f FT) -> InfoT t -> Maybe (f t);
-    matchPropertyT_ _ = matchPropertyT;
+DECL_Property(T)
 
     data FactsT a = MkFactsT
     {
@@ -74,13 +129,7 @@ module Truth.TypeKT.Type
         mappend (MkFactsT f1) (MkFactsT f2) = MkFactsT (\w -> mplus (f1 w) (f2 w));
     };
 
-    class (PropertyT f) => FactT f where
-    {
-        witFactT :: IOWitness (SatKTT f);
-    };
-
-    matchPropertyT_Fact :: (FactT f) => InfoT a -> Maybe (f a);
-    matchPropertyT_Fact (MkInfoT _ info) = infoFactT info witFactT;
+DECL_Fact(T)
 
     mkTFactsT_ :: IOWitness (SatKTT f) -> Maybe (f a) -> FactsT a;
     mkTFactsT_ witF f = MkFactsT (\wit -> do
@@ -94,68 +143,12 @@ module Truth.TypeKT.Type
 
 
     -- KTT
-
-    data InfoKTT a = MkInfoKTT (WitKTT a) (FactsKTT a);
-
-    instance WitnessKTT InfoKTT where
-    {
-        matchWitnessKTT (MkInfoKTT wa _) (MkInfoKTT wb _) = matchWitnessKTT wa wb;
-    };
-
-	data WitKTT a where
-	{
-		WitKTT :: IOWitness (SatKTT a) -> WitKTT a;
-		TWitKTT :: InfoKTKTT f -> InfoT a -> WitKTT (f a);
-		KTTWitKTT :: InfoKKTTKTT f -> InfoKTT a -> WitKTT (f a);
-	};
-
-    instance WitnessKTT WitKTT where
-    {
-	    matchWitnessKTT (WitKTT wa) (WitKTT wb) = matchWitness wa wb;
-	    matchWitnessKTT (TWitKTT tfa ta) (TWitKTT tfb tb) = do
-	    {
-		    MkEqualType <- matchWitnessKTKTT tfa tfb;
-		    MkEqualType <- matchWitnessT ta tb;
-		    return MkEqualType;
-	    };
-	    matchWitnessKTT (KTTWitKTT tfa ta) (KTTWitKTT tfb tb) = do
-	    {
-		    MkEqualType <- matchWitnessKKTTKTT tfa tfb;
-		    MkEqualType <- matchWitnessKTT ta tb;
-		    return MkEqualType;
-	    };
-	    matchWitnessKTT _ _ = Nothing;
-    };
-
-    class PropertyKTT f where
-    {
-        matchPropertyKTT :: forall t. InfoKTT t -> Maybe (f t);
-    };
-
-    matchPropertyKTT_ :: (PropertyKTT f) => Type (f FKTT) -> InfoKTT t -> Maybe (f t);
-    matchPropertyKTT_ _ = matchPropertyKTT;
-
-    data FactsKTT a = MkFactsKTT
-    {
-        infoFactKTT :: forall f. IOWitness (SatKKTTT f) -> Maybe (f a),
-        deriveTFactsT :: forall i. InfoT i -> FactsT (a i)
-    };
-
-    instance Monoid (FactsKTT a) where
-    {
-        mempty = MkFactsKTT (\_ -> Nothing) (\_ -> mempty);
-        mappend (MkFactsKTT f1 d1) (MkFactsKTT f2 d2) = MkFactsKTT
-         (\w -> mplus (f1 w) (f2 w))
-         (\info -> mappend (d1 info) (d2 info));
-    };
-
-    class (PropertyKTT f) => FactKTT f where
-    {
-        witFactKTT :: IOWitness (SatKKTTT f);
-    };
-
-    matchPropertyKTT_Fact :: (FactKTT f) => InfoKTT a -> Maybe (f a);
-    matchPropertyKTT_Fact (MkInfoKTT _ info) = infoFactKTT info witFactKTT;
+DECL_Info(KTT)
+DECL_Wit(KTT,CONS_Wit(KTT,T) CONS_Wit(KTT,KTT))
+DECL_instance_Witness_Wit(KTT,EQN_matchWitness(KTT,T) EQN_matchWitness(KTT,KTT) EQN_matchWitnessDefault(KTT))
+DECL_Property(KTT)
+DECL_Facts(KTT,MEMBER_deriveFacts(T,T))
+DECL_Fact(KTT)
 
     mkTFactsKTT_ :: IOWitness (SatKTT f) -> (forall i. InfoT i -> Maybe (f (a i))) -> FactsKTT a;
     mkTFactsKTT_ witF f = MkFactsKTT (\_ -> Nothing) (mkTFactsT_ witF . f);
@@ -175,61 +168,12 @@ module Truth.TypeKT.Type
 
 
     -- KTKTT
-
-    data InfoKTKTT a = MkInfoKTKTT (WitKTKTT a) (FactsKTKTT a);
-
-    instance WitnessKTKTT InfoKTKTT where
-    {
-        matchWitnessKTKTT (MkInfoKTKTT wa _) (MkInfoKTKTT wb _) = matchWitnessKTKTT wa wb;
-    };
-
-	data WitKTKTT p where
-	{
-		WitKTKTT :: IOWitness (SatKTKTT p) -> WitKTKTT p;
-		TWitKTKTT :: InfoKTKTKTT p -> InfoT a -> WitKTKTT (p a);
-	};
-
-    instance WitnessKTKTT WitKTKTT where
-    {
-	    matchWitnessKTKTT (WitKTKTT wa) (WitKTKTT wb) = matchWitnessT wa wb;
-	    matchWitnessKTKTT (TWitKTKTT tfa ta) (TWitKTKTT tfb tb) = do
-	    {
-		    MkEqualType <- matchWitnessKTKTKTT tfa tfb;
-		    MkEqualType <- matchWitnessT ta tb;
-		    return MkEqualType;
-	    };
-	    matchWitnessKTKTT _ _ = Nothing;
-	};
-
-    class PropertyKTKTT f where
-    {
-        matchPropertyKTKTT :: forall t. InfoKTKTT t -> Maybe (f t);
-    };
-
-    matchPropertyKTKTT_ :: (PropertyKTKTT f) => Type (f FKTKTT) -> InfoKTKTT t -> Maybe (f t);
-    matchPropertyKTKTT_ _ = matchPropertyKTKTT;
-
-    data FactsKTKTT a = MkFactsKTKTT
-    {
-        infoFactKTKTT :: forall f. IOWitness (SatKKTKTTT f) -> Maybe (f a),
-        deriveTFactsKTT :: forall i. InfoT i -> FactsKTT (a i)
-    };
-
-    instance Monoid (FactsKTKTT a) where
-    {
-        mempty = MkFactsKTKTT (\_ -> Nothing) (\_ -> mempty);
-        mappend (MkFactsKTKTT f1 d1) (MkFactsKTKTT f2 d2) = MkFactsKTKTT
-         (\w -> mplus (f1 w) (f2 w))
-         (\info -> mappend (d1 info) (d2 info));
-    };
-
-    class (PropertyKTKTT f) => FactKTKTT f where
-    {
-        witFactKTKTT :: IOWitness (SatKKTKTTT f);
-    };
-
-    matchPropertyKTKTT_Fact :: (FactKTKTT f) => InfoKTKTT a -> Maybe (f a);
-    matchPropertyKTKTT_Fact (MkInfoKTKTT _ info) = infoFactKTKTT info witFactKTKTT;
+DECL_Info(KTKTT)
+DECL_Wit(KTKTT,CONS_Wit(KTKTT,T))
+DECL_instance_Witness_Wit(KTKTT,EQN_matchWitness(KTKTT,T) EQN_matchWitnessDefault(KTKTT))
+DECL_Property(KTKTT)
+DECL_Facts(KTKTT,MEMBER_deriveFacts(T,KTT))
+DECL_Fact(KTKTT)
 
     mkTFactsKTKTT_ :: IOWitness (SatKTT f) -> (forall i1 i2. InfoT i1 -> InfoT i2 -> Maybe (f (a i1 i2))) -> FactsKTKTT a;
     mkTFactsKTKTT_ witF f = MkFactsKTKTT (\_ -> Nothing) (\ta -> mkTFactsKTT_ witF (f ta));
@@ -245,53 +189,12 @@ module Truth.TypeKT.Type
 
 
     -- KKTTT
-
-    data InfoKKTTT a = MkInfoKKTTT (WitKKTTT a) (FactsKKTTT a);
-
-    instance WitnessKKTTT InfoKKTTT where
-    {
-        matchWitnessKKTTT (MkInfoKKTTT wa _) (MkInfoKKTTT wb _) = matchWitnessKKTTT wa wb;
-    };
-
-	data WitKKTTT p where
-	{
-		WitKKTTT :: IOWitness (SatKKTTT p) -> WitKKTTT p;
-	};
-
-    instance WitnessKKTTT WitKKTTT where
-    {
-    	matchWitnessKKTTT (WitKKTTT wa) (WitKKTTT wb) = matchWitnessT wa wb;
-	};
-
-    class PropertyKKTTT f where
-    {
-        matchPropertyKKTTT :: forall t. InfoKKTTT t -> Maybe (f t);
-    };
-
-    matchPropertyKKTTT_ :: (PropertyKKTTT f) => Type (f FKKTTT) -> InfoKKTTT t -> Maybe (f t);
-    matchPropertyKKTTT_ _ = matchPropertyKKTTT;
-
-    data FactsKKTTT a = MkFactsKKTTT
-    {
-        infoFactKKTTT :: forall f. IOWitness (SatKKKTTTT f) -> Maybe (f a),
-        deriveKTTFactsT :: forall i. InfoKTT i -> FactsT (a i)
-    };
-
-    instance Monoid (FactsKKTTT a) where
-    {
-        mempty = MkFactsKKTTT (\_ -> Nothing) (\_ -> mempty);
-        mappend (MkFactsKKTTT f1 d1) (MkFactsKKTTT f2 d2) = MkFactsKKTTT
-         (\w -> mplus (f1 w) (f2 w))
-         (\info -> mappend (d1 info) (d2 info));
-    };
-
-    class (PropertyKKTTT f) => FactKKTTT f where
-    {
-        witFactKKTTT :: IOWitness (SatKKKTTTT f);
-    };
-
-    matchPropertyKKTTT_Fact :: (FactKKTTT f) => InfoKKTTT a -> Maybe (f a);
-    matchPropertyKKTTT_Fact (MkInfoKKTTT _ info) = infoFactKKTTT info witFactKKTTT;
+DECL_Info(KKTTT)
+DECL_Wit(KKTTT,)
+DECL_instance_Witness_Wit(KKTTT,)
+DECL_Property(KKTTT)
+DECL_Facts(KKTTT,MEMBER_deriveFacts(KTT,T))
+DECL_Fact(KKTTT)
 
     mkTFactsKKTTT_ :: IOWitness (SatKTT f) -> (forall i1. InfoKTT i1 -> Maybe (f (a i1))) -> FactsKKTTT a;
     mkTFactsKKTTT_ witF f = MkFactsKKTTT (\_ -> Nothing) (\ta -> mkTFactsT_ witF (f ta));
@@ -301,45 +204,12 @@ module Truth.TypeKT.Type
 
 
     -- KKTTKTT
-
-    data InfoKKTTKTT a = MkInfoKKTTKTT (WitKKTTKTT a) (FactsKKTTKTT a);
-
-    instance WitnessKKTTKTT InfoKKTTKTT where
-    {
-        matchWitnessKKTTKTT (MkInfoKKTTKTT wa _) (MkInfoKKTTKTT wb _) = matchWitnessKKTTKTT wa wb;
-    };
-
-	data WitKKTTKTT p where
-	{
-		WitKKTTKTT :: IOWitness (SatKKTTKTT p) -> WitKKTTKTT p;
-	};
-
-    instance WitnessKKTTKTT WitKKTTKTT where
-    {
-    	matchWitnessKKTTKTT (WitKKTTKTT wa) (WitKKTTKTT wb) = matchWitnessT wa wb;
-	};
-
-    data FactsKKTTKTT a = MkFactsKKTTKTT
-    {
-        infoFactKKTTKTT :: forall f. IOWitness (SatKKKTTKTTT f) -> Maybe (f a),
-        deriveKTTFactsKTT :: forall i. InfoKTT i -> FactsKTT (a i)
-    };
-
-    instance Monoid (FactsKKTTKTT a) where
-    {
-        mempty = MkFactsKKTTKTT (\_ -> Nothing) (\_ -> mempty);
-        mappend (MkFactsKKTTKTT f1 d1) (MkFactsKKTTKTT f2 d2) = MkFactsKKTTKTT
-         (\w -> mplus (f1 w) (f2 w))
-         (\info -> mappend (d1 info) (d2 info));
-    };
-
-    class FactKKTTKTT f where
-    {
-        witFactKKTTKTT :: IOWitness (SatKKKTTKTTT f);
-    };
-
-    matchPropertyKKTTKTT :: (FactKKTTKTT f) => InfoKKTTKTT a -> Maybe (f a);
-    matchPropertyKKTTKTT (MkInfoKKTTKTT _ info) = infoFactKKTTKTT info witFactKKTTKTT;
+DECL_Info(KKTTKTT)
+DECL_Wit(KKTTKTT,)
+DECL_instance_Witness_Wit(KKTTKTT,)
+DECL_Property(KKTTKTT)
+DECL_Facts(KKTTKTT,MEMBER_deriveFacts(KTT,KTT))
+DECL_Fact(KKTTKTT)
 
     mkTFactsKKTTKTT_ :: IOWitness (SatKTT f) -> (forall i1 i2. InfoKTT i1 -> InfoT i2 -> Maybe (f (a i1 i2))) -> FactsKKTTKTT a;
     mkTFactsKKTTKTT_ witF f = MkFactsKKTTKTT (\_ -> Nothing) (\ta -> mkTFactsKTT_ witF (f ta));
@@ -349,45 +219,12 @@ module Truth.TypeKT.Type
 
 
     -- KTKTKTT
-
-    data InfoKTKTKTT a = MkInfoKTKTKTT (WitKTKTKTT a) (FactsKTKTKTT a);
-
-    instance WitnessKTKTKTT InfoKTKTKTT where
-    {
-        matchWitnessKTKTKTT (MkInfoKTKTKTT wa _) (MkInfoKTKTKTT wb _) = matchWitnessKTKTKTT wa wb;
-    };
-
-	data WitKTKTKTT p where
-	{
-		WitKTKTKTT :: IOWitness (SatKTKTKTT p) -> WitKTKTKTT p;
-	};
-
-    instance WitnessKTKTKTT WitKTKTKTT where
-    {
-	    matchWitnessKTKTKTT (WitKTKTKTT wa) (WitKTKTKTT wb) = matchWitnessT wa wb;
-	};
-
-    data FactsKTKTKTT a = MkFactsKTKTKTT
-    {
-        infoFactKTKTKTT :: forall f. IOWitness (SatKKTKTKTTT f) -> Maybe (f a),
-        deriveTFactsKTKTT :: forall i. InfoT i -> FactsKTKTT (a i)
-    };
-
-    instance Monoid (FactsKTKTKTT a) where
-    {
-        mempty = MkFactsKTKTKTT (\_ -> Nothing) (\_ -> mempty);
-        mappend (MkFactsKTKTKTT f1 d1) (MkFactsKTKTKTT f2 d2) = MkFactsKTKTKTT
-         (\w -> mplus (f1 w) (f2 w))
-         (\info -> mappend (d1 info) (d2 info));
-    };
-
-    class FactKTKTKTT f where
-    {
-        witFactKTKTKTT :: IOWitness (SatKKTKTKTTT f);
-    };
-
-    matchPropertyKTKTKTT :: (FactKTKTKTT f) => InfoKTKTKTT a -> Maybe (f a);
-    matchPropertyKTKTKTT (MkInfoKTKTKTT _ info) = infoFactKTKTKTT info witFactKTKTKTT;
+DECL_Info(KTKTKTT)
+DECL_Wit(KTKTKTT,)
+DECL_instance_Witness_Wit(KTKTKTT,)
+DECL_Property(KTKTKTT)
+DECL_Facts(KTKTKTT,MEMBER_deriveFacts(T,KTKTT))
+DECL_Fact(KTKTKTT)
 
     mkTFactsKTKTKTT_ :: IOWitness (SatKTT f) -> (forall i1 i2 i3. InfoT i1 -> InfoT i2 -> InfoT i3 -> Maybe (f (a i1 i2 i3))) -> FactsKTKTKTT a;
     mkTFactsKTKTKTT_ witF f = MkFactsKTKTKTT (\_ -> Nothing) (\t1 -> mkTFactsKTKTT_ witF (f t1));
