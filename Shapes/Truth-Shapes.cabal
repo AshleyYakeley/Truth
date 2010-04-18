@@ -21,8 +21,8 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Data.FloatingLens Data.IsTuple Data.Chain
-                 Data.Bijection Data.Codec Data.Injection Data.Lens
+exposed-modules: Data.Countable Data.FloatingLens Data.IsTuple
+                 Data.Chain Data.Bijection Data.Codec Data.Injection Data.Lens
                  Data.ConstFunction Control.Wait Data.Store Data.Result
                  Data.FunctorOne Data.HasNewValue
 exposed: True
