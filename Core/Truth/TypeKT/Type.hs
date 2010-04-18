@@ -16,15 +16,13 @@ module Truth.TypeKT.Type
 
     -- K and T represent kinds. T represents *, and Kxy represents x -> y.
 
-#define DECL_Info1(P,CLASS,FUNC)\
+#define DECL_Info(P)\
     data Info##P a = MkInfo##P (Wit##P a) (Facts##P a);\
 \
-    instance CLASS Info##P where\
+    instance Witness##P Info##P where\
     {\
-        FUNC (MkInfo##P wa _) (MkInfo##P wb _) = matchWitness##P wa wb;\
+        matchWitness##P (MkInfo##P wa _) (MkInfo##P wb _) = matchWitness##P wa wb;\
     };
-
-#define DECL_Info(P) DECL_Info1(P,Witness##P,matchWitness##P)
 
 #define CONS_Wit(P,Q) Q##Wit##P :: InfoK##Q##P p -> Info##Q a -> Wit##P (p a);
 
@@ -90,30 +88,13 @@ EQNS\
 
     -- T
 
-DECL_Info1(T,SimpleWitness,matchWitness)
+DECL_Info(T)
 DECL_Wit(T,CONS_Wit(T,T) CONS_Wit(T,KTT))
-
-	instance SimpleWitness WitT where
-	{
-		matchWitness (WitT wa) (WitT wb) = matchWitness wa wb;
-		matchWitness (TWitT tfa ta) (TWitT tfb tb) = do
-		{
-			MkEqualType <- matchWitnessKTT tfa tfb;
-			MkEqualType <- matchWitnessT ta tb;
-			return MkEqualType;
-		};
-		matchWitness (KTTWitT tfa ta) (KTTWitT tfb tb) = do
-		{
-			MkEqualType <- matchWitnessKKTTT tfa tfb;
-			MkEqualType <- matchWitnessKTT ta tb;
-			return MkEqualType;
-		};
-		matchWitness _ _ = Nothing;
-	};
+DECL_instance_Witness_Wit(T,EQN_matchWitness(T,T) EQN_matchWitness(T,KTT) EQN_matchWitnessDefault(T))
 
 	instance Eq1 WitT where
 	{
-		equals1 r1 r2 = isJust (matchWitness r1 r2);
+		equals1 r1 r2 = isJust (matchWitnessT r1 r2);
 	};
 
 DECL_Property(T)

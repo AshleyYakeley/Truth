@@ -15,22 +15,22 @@ module Truth.Object.GeneralLens where
     wholeSubjectEditWitness :: SubjectEditWitness a (WholeEdit a);
     wholeSubjectEditWitness = SubjectSubjectEditWitness MkEqualType infoKTT;
 
-    instance SimpleWitness1 SubjectEditWitness where
+    instance WitnessT (SubjectEditWitness a) where
     {
-        matchWitness1 (EditSubjectEditWitness iea) (EditSubjectEditWitness ieb) = matchWitnessT iea ieb;
-        matchWitness1 (SubjectSubjectEditWitness _ ika) (SubjectSubjectEditWitness _ ikb) = do
+        matchWitnessT (EditSubjectEditWitness iea) (EditSubjectEditWitness ieb) = matchWitnessT iea ieb;
+        matchWitnessT (SubjectSubjectEditWitness _ ika) (SubjectSubjectEditWitness _ ikb) = do
         {
             MkEqualType <- matchWitnessKTT ika ikb;
             return MkEqualType;
         };
-        matchWitness1 (SubjectSubjectEditWitness eqSubj (ika :: InfoKTT k)) (EditSubjectEditWitness ieb) = do
+        matchWitnessT (SubjectSubjectEditWitness eqSubj (ika :: InfoKTT k)) (EditSubjectEditWitness ieb) = do
         {
             MkTMatchT (ika' :: InfoKTT k') (_ibs :: InfoT a') <- matchPropertyT_ (Type :: Type (SatKTT TMatchT)) ieb;
             MkEqualType <- matchWitnessKTT ika ika';
             MkEqualType <- return (eqSubj :: (EqualTypeT a' (Subject (k a'))));
             return MkEqualType;
         };
-        matchWitness1 ia@(EditSubjectEditWitness _) ib@(SubjectSubjectEditWitness _ _) = do
+        matchWitnessT ia@(EditSubjectEditWitness _) ib@(SubjectSubjectEditWitness _ _) = do
         {
             MkEqualType <- matchWitnessT ib ia;
             return MkEqualType;
