@@ -4,7 +4,7 @@ module Data.Searchable () where
     import Data.Countable;
     import Data.Maybe;
     import Control.Applicative;
-    import Prelude;
+    import Data.Nothing;
 
     class Searchable a where
     {
@@ -74,6 +74,16 @@ module Data.Searchable () where
 
     finiteSearch :: (Finite a) => (a -> Maybe b) -> Maybe b;
     finiteSearch p = firstInList (fmap p allValues);
+
+    instance Searchable Nothing where
+    {
+        search = finiteSearch;
+    };
+
+    instance Finite Nothing where
+    {
+        allValues = [];
+    };
 
     instance Searchable () where
     {
