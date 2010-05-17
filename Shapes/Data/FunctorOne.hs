@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Data.FunctorOne where
 {
-    import Data.Chain;
+--    import Data.Chain;
     import Data.ConstFunction;
     import Data.Traversable;
     import Data.Foldable;
@@ -61,7 +61,9 @@ module Data.FunctorOne where
     class (Traversable f) => FunctorOne f where
     {
         retrieveOne :: f a -> Result (forall b. f b) a;
+
         getPureOne :: ConstFunction (f a) (b -> f b);
+        getPureOne = FunctionConstFunction (\fa b -> fmap (const b) fa);
 
         getMaybeOne :: f a -> Maybe a;
         getMaybeOne fa = resultToMaybe (retrieveOne fa);
@@ -128,7 +130,6 @@ module Data.FunctorOne where
     instance FunctorOne ((,) p) where
     {
         retrieveOne (_,a) = SuccessResult a;
-        getPureOne = FunctionConstFunction (\fa b -> fmap (const b) fa);
     };
 
     instance FunctorOne (Result e) where
@@ -138,15 +139,23 @@ module Data.FunctorOne where
         getPureOne = return pure;
         getMaybeOne = resultToMaybe;
     };
-
+{-
     -- not quite as general as (->) which has (Functor f)
     instance (FunctorOne f) => CatFunctor ConstFunction f where
     {
         cfmap (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
-        cfmap (ConstConstFunction b) = do
+        cfmap (ConstConstFunction b) = fmap (\bfb -> bfb b) getPureOne;
         {
             bfb <- getPureOne;
             return (bfb b);
         };
     };
+-}
+{-
+    instance (Applicative f) => CatFunctor ConstFunction f where
+    {
+        cfmap (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
+        cfmap (ConstConstFunction b) = ConstConstFunction (pure b);
+    };
+-}
 }

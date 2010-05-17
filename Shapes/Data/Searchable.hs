@@ -57,6 +57,36 @@ module Data.Searchable () where
         };
     };
 
+    instance Searchable [Bool] where
+    {
+        search lmb = lmb (find_i (isJust . lmb)) where
+        {
+            prepend :: b -> [b] -> [b];
+            prepend = (:);
+
+            find_i :: ([Bool] -> Bool) -> [Bool];
+            find_i lbb = let { b = forsome(lbb . (prepend True)); } in
+             prepend b (find_i (lbb . (prepend b)));
+        };
+    };
+{-
+    instance (Countable c,Searchable s) => Searchable (c -> s) where
+    {
+        search csmb = csmb (find_i (isJust . csmb)) where
+        {
+            prepend :: s -> (c -> s) -> c -> s;
+            prepend s cs c = case countPrevious c of
+            {
+                Just c' -> cs c';
+                Nothing -> s;
+            };
+
+            find_i :: ((c -> s) -> Bool) -> c -> s;
+            find_i csb = let { s = search (\s' -> if forsome(csb . (prepend s')) then Just s' else Nothing); } in
+             prepend s (find_i (csb . (prepend s)));
+        };
+    };
+-}
     instance (Searchable a,Eq b) => Eq (a -> b) where
     {
         p == q = forevery (\a -> p a == q a);
@@ -119,4 +149,51 @@ module Data.Searchable () where
     {
         allValues = liftA2 (,) allValues allValues;
     };
+{-
+    type Thing t a = (a -> t) -> t;
+
+    Thing t (a -> t) = Thing t a -> t
+
+
+    search :: forall b. Thing (Maybe b) a
+
+
+    forsome :: Thing Bool a
+    forsome :: Thing Bool (c -> Bool) = Thing Bool c -> Bool
+
+
+
+    find_i :: Thing Bool c -> c -> Bool
+
+    cbb :: Thing Bool c
+
+
+    cbb . (prepend b) = \
+
+
+        search cbmb = cbmb (find_i (isJust . cbmb)) where
+        {
+            prepend :: b -> (c -> b) -> c -> b;
+            prepend b cb c = case countPrevious c of
+            {
+                Just c' -> cb c';
+                Nothing -> b;
+            };
+
+            find_i :: ((c -> Bool) -> Bool) -> c -> Bool;
+            find_i cbb = let { b = forsome(cbb . (prepend True)); } in
+             prepend b (find_i (cbb . (prepend b)));
+        };
+
+
+    assemble :: (Applicative f,Finite a,Eq a) => (a -> f b) -> f (a -> b);
+    assemble afb = fmap listLookup (traverse (\a -> fmap (\b -> (a,b)) (afb a)) allValues)
+
+    [(a,b)] -> (a -> b)
+    (a -> b) -> [(a,b)]
+
+
+    eq :: a -> a -> Bool
+    eq a0 a1 =
+-}
 }
