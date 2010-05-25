@@ -1,6 +1,7 @@
 module Data.Lens where
 {
     import Data.Codec;
+--    import Data.Searchable;
     import Data.Injection;
     import Data.Bijection;
     import Data.Result;
@@ -99,10 +100,11 @@ module Data.Lens where
     };
 
 {-
-b -> a -> m a
+    listLookup :: Int -> Bool;
+    listLookup _ = undefined;
 
-(p -> b) -> (p -> a) -> m (p -> a)
-
+    assemble :: (Applicative f,Finite a,Eq a) => (a -> f b) -> f (a -> b);
+    assemble afb = fmap listLookup (traverse (\a -> fmap (\b -> (a,b)) (afb a)) allValues)
 
     liftFLens :: (Applicative m) => Lens' m a b -> Lens' m (p -> a) (p -> b);
     liftFLens lens = MkLens
@@ -114,6 +116,12 @@ b -> a -> m a
             return (assemble pma);
         }
     };
+
+b -> a -> m a
+
+(p -> b) -> (p -> a) -> m (p -> a)
+
+
 -}
     bijectionLens :: Bijection a b -> Lens' Identity a b;
     bijectionLens (MkBijection ab ba) = MkLens ab (\b -> ConstConstFunction (return (ba b)));
