@@ -1,6 +1,6 @@
 module Data.ConstFunction where
 {
-    import Data.Chain;
+--    import Data.Chain;
     import Control.Instances();
     import Control.Arrow;
     import Control.Category;
@@ -59,10 +59,11 @@ module Data.ConstFunction where
 
         first abc = FunctionConstFunction (\(b,d) -> (applyConstFunction abc b,d));
     };
-
+{-
     instance (Applicative f) => CatFunctor ConstFunction f where
     {
         cfmap (ConstConstFunction b) = ConstConstFunction (pure b);
         cfmap (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
     };
+-}
 }

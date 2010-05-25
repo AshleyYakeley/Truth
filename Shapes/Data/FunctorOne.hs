@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Data.FunctorOne where
 {
---    import Data.Chain;
+    import Data.Chain;
     import Data.ConstFunction;
     import Data.Traversable;
     import Data.Foldable;
@@ -139,18 +139,14 @@ module Data.FunctorOne where
         getPureOne = return pure;
         getMaybeOne = resultToMaybe;
     };
-{-
+
     -- not quite as general as (->) which has (Functor f)
     instance (FunctorOne f) => CatFunctor ConstFunction f where
     {
         cfmap (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
         cfmap (ConstConstFunction b) = fmap (\bfb -> bfb b) getPureOne;
-        {
-            bfb <- getPureOne;
-            return (bfb b);
-        };
     };
--}
+
 {-
     instance (Applicative f) => CatFunctor ConstFunction f where
     {

@@ -98,6 +98,12 @@ module Data.Lens where
         };
     };
 
+{-
+b -> a -> m a
+
+(p -> b) -> (p -> a) -> m (p -> a)
+
+
     liftFLens :: (Applicative m) => Lens' m a b -> Lens' m (p -> a) (p -> b);
     liftFLens lens = MkLens
     {
@@ -105,10 +111,10 @@ module Data.Lens where
         lensPutback = \pb -> do
         {
             pma <- cfmap (lensPutback lens);
-            return assemble pma;
+            return (assemble pma);
         }
     };
-
+-}
     bijectionLens :: Bijection a b -> Lens' Identity a b;
     bijectionLens (MkBijection ab ba) = MkLens ab (\b -> ConstConstFunction (return (ba b)));
 

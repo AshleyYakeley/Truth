@@ -10,8 +10,8 @@ module UI.Truth.GTK.Text (textMatchView) where
     import Control.Concurrent.MVar;
     import Data.Witness;
 
-    replaceText :: TextBuffer -> (Int,Int) -> String -> IO ();
-    replaceText buffer (start,len) text = do
+    replaceText :: TextBuffer -> ListRegion -> String -> IO ();
+    replaceText buffer (MkListRegion start len) text = do
     {
         startIter <- textBufferGetIterAtOffset buffer start;
         if len > 0 then do
@@ -35,7 +35,7 @@ module UI.Truth.GTK.Text (textMatchView) where
         onBufferInsertText buffer (\iter text -> ifMVar mv (do
         {
             i <- textIterGetOffset iter;
-            ms <- push (ReplaceSectionEdit (i,0) text);
+            ms <- push (ReplaceSectionEdit (MkListRegion i 0) text);
             case ms of
             {
                 Just _ -> return ();
@@ -46,7 +46,7 @@ module UI.Truth.GTK.Text (textMatchView) where
         {
             i1 <- textIterGetOffset iter1;
             i2 <- textIterGetOffset iter2;
-            ms <- push (ReplaceSectionEdit (i1,i2 - i1) "");
+            ms <- push (ReplaceSectionEdit (MkListRegion i1 (i2 - i1)) "");
             case ms of
             {
                 Just _ -> return ();
@@ -62,13 +62,13 @@ module UI.Truth.GTK.Text (textMatchView) where
                 o1 <- textIterGetOffset iter1;
                 o2 <- textIterGetOffset iter2;
                 -- get selection...
-                return (Just (MkAspect infoT infoT (listSection (o1,o2 - o1))));
+                return (Just (MkAspect infoT infoT (listSection (MkListRegion o1 (o2 - o1)))));
             }),
             vrUpdate = \edit -> withMVar mv (\_ -> case edit of
             {
                 ReplaceListEdit text -> textBufferSetText buffer text;
                 ReplaceSectionEdit bounds text -> replaceText buffer bounds text;
-                ItemEdit (MkIndexEdit i (MkWholeEdit c)) -> replaceText buffer (i,1) [c];
+                ItemEdit (MkIndexEdit i (MkWholeEdit c)) -> replaceText buffer (MkListRegion i 1) [c];
             })
         });
     };
@@ -76,7 +76,7 @@ module UI.Truth.GTK.Text (textMatchView) where
     textMatchView :: MatchView;
     textMatchView tedit = do
     {
-        MkEqualType <- matchWitness tedit (infoT :: InfoT (ListEdit (WholeEdit Char)));
+        MkEqualType <- matchWitnessT tedit (infoT :: InfoT (ListEdit (WholeEdit Char)));
         return textView;
     };
 }

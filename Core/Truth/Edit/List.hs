@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Truth.Edit.List(listElement,listSection,ListEdit(..)) where
+module Truth.Edit.List(listElement,listSection,ListEdit(..),ListPoint,ListRegion(..)) where
 {
     import Truth.Edit.IndexEdit;
     import Truth.Edit.FloatingEditLens;
@@ -9,7 +9,7 @@ module Truth.Edit.List(listElement,listSection,ListEdit(..)) where
     import Truth.Edit.Import;
 
     type ListPoint = Int;
-    data ListRegion = MkListRegion Int Int;
+    data ListRegion = MkListRegion Int Int deriving (Eq);
 
     data ListEdit edit =
         ReplaceListEdit [Subject edit]                  |
