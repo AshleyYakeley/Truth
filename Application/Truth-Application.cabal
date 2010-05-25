@@ -33,4 +33,5 @@ extensions:
     GeneralizedNewtypeDeriving
     ExistentialQuantification
 main-is: Main.hs
+ghc-options: -Wall
 }

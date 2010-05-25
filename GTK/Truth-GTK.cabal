@@ -41,3 +41,4 @@ other-modules:
     UI.Truth.GTK.Text
     UI.Truth.GTK.Tuple
     UI.Truth.GTK.SourceView
+ghc-options: -Wall

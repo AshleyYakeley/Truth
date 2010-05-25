@@ -48,7 +48,7 @@ hs-source-dirs: .
 other-modules: Control.Instances
 ghc-prof-options:
 ghc-shared-options:
-ghc-options: -fno-warn-deprecated-flags
+ghc-options: -Wall -fno-warn-deprecated-flags
 hugs-options:
 nhc98-options:
 jhc-options:

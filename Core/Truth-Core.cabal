@@ -55,7 +55,7 @@ hs-source-dirs: .
 other-modules: Truth.Edit.Import
 ghc-prof-options:
 ghc-shared-options:
-ghc-options: -fno-warn-deprecated-flags -pgmPcpphs
+ghc-options: -Wall -fno-warn-deprecated-flags -pgmPcpphs
 hugs-options:
 nhc98-options:
 jhc-options:

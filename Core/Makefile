@@ -9,7 +9,7 @@ configure:
 	cabal configure
 
 build: configure
-	cabal build --ghc-options="-Wall -Werror"
+	cabal build --ghc-options=-Werror
 
 haddock: configure
 	cabal haddock

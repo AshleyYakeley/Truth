@@ -25,3 +25,4 @@ exposed-modules:
     Truth.Linux.File
 other-modules:
     System.INotify.Balanced
+ghc-options: -Wall
