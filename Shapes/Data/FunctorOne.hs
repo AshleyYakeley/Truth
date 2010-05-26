@@ -140,18 +140,12 @@ module Data.FunctorOne where
         getMaybeOne = resultToMaybe;
     };
 
-    -- not quite as general as (->) which has (Functor f)
+    cfmapFunctorOne :: (FunctorOne f) => ConstFunction a b -> ConstFunction (f a) (f b);
+    cfmapFunctorOne (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
+    cfmapFunctorOne (ConstConstFunction b) = fmap (\bfb -> bfb b) getPureOne;
+
     instance (FunctorOne f) => CatFunctor ConstFunction f where
     {
-        cfmap (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
-        cfmap (ConstConstFunction b) = fmap (\bfb -> bfb b) getPureOne;
+        cfmap = cfmapFunctorOne;
     };
-
-{-
-    instance (Applicative f) => CatFunctor ConstFunction f where
-    {
-        cfmap (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
-        cfmap (ConstConstFunction b) = ConstConstFunction (pure b);
-    };
--}
 }

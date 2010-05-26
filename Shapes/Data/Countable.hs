@@ -3,7 +3,7 @@ module Data.Countable where
     import Data.Maybe;
     import Data.Nothing;
 
-    class Countable a where
+    class (Eq a) => Countable a where
     {
         countPrevious :: a -> Maybe a;
         countMaybeNext :: Maybe a -> Maybe a;

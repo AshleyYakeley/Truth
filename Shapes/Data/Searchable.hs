@@ -4,6 +4,7 @@ module Data.Searchable where
     import Data.Countable;
     import Data.Maybe;
     import Control.Applicative;
+    import Data.Traversable;
     import Data.Nothing;
 
     class Searchable a where
@@ -80,6 +81,15 @@ module Data.Searchable where
     class (Searchable a,Countable a) => Finite a where
     {
         allValues :: [a];
+
+        assemble :: forall f b. (Applicative f) => (a -> f b) -> f (a -> b);
+        assemble afb = fmap listLookup (traverse (\a -> fmap (\b -> (a,b)) (afb a)) allValues) where
+        {
+            listLookup :: [(a,b)] -> a -> b;
+            listLookup [] _ = error "missing value";    -- this should never happen
+            listLookup ((a,b):_) a' | a == a' = b;
+            listLookup (_:l) a' = listLookup l a';
+        };
     };
 
     firstInList :: [Maybe a] -> Maybe a;
@@ -108,6 +118,7 @@ module Data.Searchable where
     instance Finite () where
     {
         allValues = [()];
+        assemble afb = liftA (\v _ -> v) (afb ());
     };
 
     instance Searchable Bool where
@@ -118,6 +129,7 @@ module Data.Searchable where
     instance Finite Bool where
     {
         allValues = [False,True];
+        assemble afb = liftA2 (\f t x -> if x then t else f) (afb False) (afb True);
     };
 
     instance (Finite a) => Finite (Maybe a) where

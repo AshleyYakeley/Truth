@@ -59,11 +59,19 @@ module Data.ConstFunction where
 
         first abc = FunctionConstFunction (\(b,d) -> (applyConstFunction abc b,d));
     };
+
+    cfmapFunctor :: (Functor f) => ConstFunction a b -> ConstFunction (f a) (f b);
+    cfmapFunctor (ConstConstFunction b) = FunctionConstFunction (fmap (\_ -> b));
+    cfmapFunctor (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
+
+    cfmapApplicative :: (Applicative f) => ConstFunction a b -> ConstFunction (f a) (f b);
+    cfmapApplicative (ConstConstFunction b) = ConstConstFunction (pure b);
+    cfmapApplicative (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
+
 {-
     instance (Applicative f) => CatFunctor ConstFunction f where
     {
-        cfmap (ConstConstFunction b) = ConstConstFunction (pure b);
-        cfmap (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
+        cfmap = cfmapApplicative;
     };
 -}
 }
