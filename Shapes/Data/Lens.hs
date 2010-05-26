@@ -1,7 +1,6 @@
 module Data.Lens where
 {
     import Data.Codec;
-    import Data.Searchable;
     import Data.Injection;
     import Data.Bijection;
     import Data.Result;
@@ -86,24 +85,13 @@ module Data.Lens where
         };
     };
 
-    instance (FunctorOne f,Applicative m) => CatFunctor (Lens' m) f where
+    instance (Traversable f,FunctorBind f,FunctorGetPure f,Applicative m) => CatFunctor (Lens' m) f where
     {
         cfmap lens = MkLens
         {
             lensGet = fmap (lensGet lens),
-            lensPutback = \fb -> do
-            {
-                ffa <- traverse (\b -> cfmap (lensPutback lens b)) fb;
-                return (sequenceA (joinOne ffa));
-            }
+            lensPutback = (fmap (sequenceA . exec)) . (traverse (cfmap . (lensPutback lens)))
         };
-    };
-
-    liftFLens :: (Applicative m,Finite p) => Lens' m a b -> Lens' m (p -> a) (p -> b);
-    liftFLens lens = MkLens
-    {
-        lensGet = \pa p -> lensGet lens (pa p),
-        lensPutback = (fmap (assemble . (\ppb p -> ppb p p))) . cfmapApplicative . assemble . (\pb -> (lensPutback lens) . pb)
     };
 
     bijectionLens :: Bijection a b -> Lens' Identity a b;

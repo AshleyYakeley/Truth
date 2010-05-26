@@ -1,6 +1,6 @@
 module Data.ConstFunction where
 {
---    import Data.Chain;
+    import Data.Chain;
     import Control.Instances();
     import Control.Arrow;
     import Control.Category;
@@ -60,18 +60,23 @@ module Data.ConstFunction where
         first abc = FunctionConstFunction (\(b,d) -> (applyConstFunction abc b,d));
     };
 
-    cfmapFunctor :: (Functor f) => ConstFunction a b -> ConstFunction (f a) (f b);
-    cfmapFunctor (ConstConstFunction b) = FunctionConstFunction (fmap (\_ -> b));
-    cfmapFunctor (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
-
-    cfmapApplicative :: (Applicative f) => ConstFunction a b -> ConstFunction (f a) (f b);
-    cfmapApplicative (ConstConstFunction b) = ConstConstFunction (pure b);
-    cfmapApplicative (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
-
-{-
-    instance (Applicative f) => CatFunctor ConstFunction f where
+    class (Functor f) => FunctorGetPure f where
     {
-        cfmap = cfmapApplicative;
+        getPure :: forall a b. ConstFunction (f a) (b -> f b);
+        getPure = FunctionConstFunction (\fa b -> fmap (const b) fa);
     };
--}
+
+    applicativeGetPure :: (Applicative f) => ConstFunction (f a) (b -> f b);
+    applicativeGetPure = ConstConstFunction pure;
+
+    instance FunctorGetPure ((->) p) where
+    {
+        getPure = applicativeGetPure;
+    };
+
+    instance (FunctorGetPure f) => CatFunctor ConstFunction f where
+    {
+        cfmap (ConstConstFunction b) = fmap (\bfb -> bfb b) getPure;
+        cfmap (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
+    };
 }

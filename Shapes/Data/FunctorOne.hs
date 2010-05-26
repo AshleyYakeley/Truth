@@ -1,7 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Data.FunctorOne where
 {
-    import Data.Chain;
     import Data.ConstFunction;
     import Data.Traversable;
     import Data.Foldable;
@@ -22,6 +21,12 @@ module Data.FunctorOne where
         sequenceA (Identity ma) = fmap Identity ma;
         mapM amb (Identity a) = liftM Identity (amb a);
         sequence (Identity ma) = liftM Identity ma;
+    };
+
+    instance Applicative Identity where
+    {
+        pure = Identity;
+        (Identity f) <*> (Identity a) = Identity (f a);
     };
 
     instance Foldable (Either p) where
@@ -45,6 +50,14 @@ module Data.FunctorOne where
         sequence (Right ma) = liftM Right ma;
     };
 
+    instance Applicative (Either p) where
+    {
+        pure = Right;
+        (Left p) <*> _ = Left p;
+        (Right _) <*> (Left p) = Left p;
+        (Right f) <*> (Right a) = Right (f a);
+    };
+
     instance Foldable ((,) p) where
     {
         foldMap am (_,a) = am a;
@@ -58,12 +71,23 @@ module Data.FunctorOne where
         sequence (p,ma) = liftM ((,) p) ma;
     };
 
-    class (Traversable f) => FunctorOne f where
+    -- | should be superclass of Monad
+    ;
+    class (Functor f) => FunctorBind f where
+    {
+        bind :: f a -> (a -> f b) -> f b;
+        exec :: f (f a) -> f a;
+        exec ffa = bind ffa id;
+    };
+
+    instance FunctorBind ((->) p) where
+    {
+        bind = (>>=);
+    };
+
+    class (Traversable f,FunctorBind f,FunctorGetPure f) => FunctorOne f where
     {
         retrieveOne :: f a -> Result (forall b. f b) a;
-
-        getPureOne :: ConstFunction (f a) (b -> f b);
-        getPureOne = FunctionConstFunction (\fa b -> fmap (const b) fa);
 
         getMaybeOne :: f a -> Maybe a;
         getMaybeOne fa = resultToMaybe (retrieveOne fa);
@@ -92,39 +116,64 @@ module Data.FunctorOne where
         FailureResult fx -> fx;
     };
 
-    joinOne :: (FunctorOne f) => f (f a) -> f a;
-    joinOne ffa = case retrieveOne ffa of
+    instance FunctorBind Identity where
     {
-        SuccessResult fa -> fa;
-        FailureResult fx -> fx;
+        bind = (>>=);
     };
 
-    instance Applicative Identity where
+    instance FunctorGetPure Identity where
     {
-        pure = Identity;
-        (Identity f) <*> (Identity a) = Identity (f a);
+        getPure = applicativeGetPure;
     };
 
     instance FunctorOne Identity where
     {
         retrieveOne (Identity a) = SuccessResult a;
-        getPureOne = return Identity;
         getMaybeOne (Identity a) = Just a;
+    };
+
+    instance FunctorBind Maybe where
+    {
+        bind = (>>=);
+    };
+
+    instance FunctorGetPure Maybe where
+    {
+        getPure = applicativeGetPure;
     };
 
     instance FunctorOne Maybe where
     {
         retrieveOne (Just a) = SuccessResult a;
         retrieveOne Nothing = FailureResult Nothing;
-        getPureOne = return pure;
         getMaybeOne = id;
     };
 
-    instance FunctorOne (Either a) where
+    instance FunctorBind (Either p) where
+    {
+        bind (Left p) _ = Left p;
+        bind (Right a) afb = afb a;
+    };
+
+    instance FunctorGetPure (Either p) where
+    {
+        getPure = applicativeGetPure;
+    };
+
+    instance FunctorOne (Either p) where
     {
         retrieveOne (Right b) = SuccessResult b;
         retrieveOne (Left a) = FailureResult (Left a);
-        getPureOne = return Right;
+    };
+
+    instance FunctorBind ((,) p) where
+    {
+        bind (_p,a) afb = afb a;
+    };
+
+    instance FunctorGetPure ((,) p) where
+    {
+        getPure = FunctionConstFunction (\(p,_a) b -> (p,b));
     };
 
     instance FunctorOne ((,) p) where
@@ -132,20 +181,20 @@ module Data.FunctorOne where
         retrieveOne (_,a) = SuccessResult a;
     };
 
+    instance FunctorBind (Result e) where
+    {
+        bind = (>>=);
+    };
+
+    instance FunctorGetPure (Result e) where
+    {
+        getPure = applicativeGetPure;
+    };
+
     instance FunctorOne (Result e) where
     {
         retrieveOne (SuccessResult a) = SuccessResult a;
         retrieveOne (FailureResult e) = FailureResult (FailureResult e);
-        getPureOne = return pure;
         getMaybeOne = resultToMaybe;
-    };
-
-    cfmapFunctorOne :: (FunctorOne f) => ConstFunction a b -> ConstFunction (f a) (f b);
-    cfmapFunctorOne (FunctionConstFunction ab) = FunctionConstFunction (fmap ab);
-    cfmapFunctorOne (ConstConstFunction b) = fmap (\bfb -> bfb b) getPureOne;
-
-    instance (FunctorOne f) => CatFunctor ConstFunction f where
-    {
-        cfmap = cfmapFunctorOne;
     };
 }

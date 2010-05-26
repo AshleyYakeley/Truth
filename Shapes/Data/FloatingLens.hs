@@ -40,7 +40,7 @@ module Data.FloatingLens where
                 {
                     Just (newstate,_) -> newstate;
                     _ -> state;
-                },fmap snd fsa)) (sequenceA (joinOne ffmsa)));
+                },fmap snd fsa)) (sequenceA (exec ffmsa)));
             }
         };
     };

@@ -2,8 +2,10 @@
 module Data.Searchable where
 {
     import Data.Countable;
+    import Data.Monoid;
     import Data.Maybe;
     import Control.Applicative;
+    import Data.Foldable hiding (find);
     import Data.Traversable;
     import Data.Nothing;
 
@@ -90,6 +92,16 @@ module Data.Searchable where
             listLookup ((a,b):_) a' | a == a' = b;
             listLookup (_:l) a' = listLookup l a';
         };
+    };
+
+    instance (Finite t) => Foldable ((->) t) where
+    {
+        foldMap am ta = mconcat (fmap (am . ta) allValues);
+    };
+
+    instance (Finite a) => Traversable ((->) a) where
+    {
+        sequenceA = assemble;
     };
 
     firstInList :: [Maybe a] -> Maybe a;
