@@ -171,10 +171,7 @@ module Data.FunctorOne where
         bind (_p,a) afb = afb a;
     };
 
-    instance FunctorGetPure ((,) p) where
-    {
-        getPure = FunctionConstFunction (\(p,_a) b -> (p,b));
-    };
+    instance FunctorGetPure ((,) p);
 
     instance FunctorOne ((,) p) where
     {

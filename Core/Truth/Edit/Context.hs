@@ -23,10 +23,16 @@ module Truth.Edit.Context where
         sequenceA (MkWithContext context fa) = fmap (MkWithContext context) fa;
     };
 
+    instance FunctorBind (WithContext context) where
+    {
+        bind (MkWithContext _ content) afb = afb content;
+    };
+
+    instance FunctorGetPure (WithContext context);
+
     instance FunctorOne (WithContext context) where
     {
         retrieveOne (MkWithContext _ a) = SuccessResult a;
-        getPureOne = arr (\(MkWithContext context _) content -> (MkWithContext context content));
     };
 
     instance HasInfoKTKTT WithContext where
