@@ -8,8 +8,8 @@ build-depends:
     bytestring>=0.9.0.1,
     witness==0.2,
     open-witness==0.2,
-    glib==0.10.1,
-    gtk==0.10.1,
+    glib==0.11.0,
+    gtk==0.11.0,
     Truth-Shapes==0.1,
     Truth-Core==0.1
 extensions:
@@ -41,4 +41,4 @@ other-modules:
     UI.Truth.GTK.Text
     UI.Truth.GTK.Tuple
     UI.Truth.GTK.SourceView
-ghc-options: -Wall
+ghc-options: -Wall -fno-warn-deprecated-flags

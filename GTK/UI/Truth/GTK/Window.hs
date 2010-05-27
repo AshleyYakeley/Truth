@@ -16,7 +16,7 @@ module UI.Truth.GTK.Window where
     {
         button <- buttonNew;
         set button [buttonLabel := name];
-        onClicked button action;
+        _ <- onClicked button action;
         return button;
     };
 
@@ -67,7 +67,7 @@ module UI.Truth.GTK.Window where
 
         set window [containerChild := box];
         widgetShow (vwsWidget w);
-        onDestroy window (do
+        _ <- onDestroy window (do
         {
             close;
             tellclose;

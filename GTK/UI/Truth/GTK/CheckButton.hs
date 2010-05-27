@@ -18,7 +18,7 @@ module UI.Truth.GTK.CheckButton where
         clickConnection <- onClicked widget (do
         {
             s <- get widget toggleButtonActive;
-            push (replaceEdit s);
+            _ <- push (replaceEdit s);
             return ();
         });
         return (MkViewResult

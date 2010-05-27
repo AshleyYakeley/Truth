@@ -61,7 +61,7 @@ module Data.Searchable where
                 {
                     mx = search (\s' -> do
                     {
-                        search (csm . (prepend s'));
+                        _ <- search (csm . (prepend s'));
                         return s';
                     });
                     s = case mx of

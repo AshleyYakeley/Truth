@@ -26,7 +26,7 @@ module Main where
     {
         windowCount <- newIORef 0;
         args <- initGUI;
-        timeoutAddFull (yield >> return True) priorityDefaultIdle 50;
+        _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50;
         for_ args (\arg -> let
         {
             file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)

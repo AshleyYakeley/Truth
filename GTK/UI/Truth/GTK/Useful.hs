@@ -1,7 +1,6 @@
 module UI.Truth.GTK.Useful where
 {
     import Graphics.UI.Gtk;
-    import System.Glib.Types;
     import Control.Exception;
     import Control.Concurrent.MVar;
     

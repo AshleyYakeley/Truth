@@ -1,6 +1,5 @@
 module Data.Countable where
 {
-    import Data.Maybe;
     import Data.Nothing;
 
     class (Eq a) => Countable a where

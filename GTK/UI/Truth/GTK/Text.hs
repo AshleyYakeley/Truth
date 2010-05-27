@@ -32,7 +32,7 @@ module UI.Truth.GTK.Text (textMatchView) where
         buffer <- textBufferNew Nothing;
         textBufferSetText buffer initial;
         mv <- newMVar ();
-        onBufferInsertText buffer (\iter text -> ifMVar mv (do
+        _ <- onBufferInsertText buffer (\iter text -> ifMVar mv (do
         {
             i <- textIterGetOffset iter;
             ms <- push (ReplaceSectionEdit (MkListRegion i 0) text);
@@ -42,7 +42,7 @@ module UI.Truth.GTK.Text (textMatchView) where
                 _ -> signalStopEmission buffer "insert-text";
             };
         }));
-        onDeleteRange buffer (\iter1 iter2 -> ifMVar mv (do
+        _ <- onDeleteRange buffer (\iter1 iter2 -> ifMVar mv (do
         {
             i1 <- textIterGetOffset iter1;
             i2 <- textIterGetOffset iter2;

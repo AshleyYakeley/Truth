@@ -18,7 +18,7 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
     {
         button <- buttonNew;
         set button [buttonLabel := name];
-        onClicked button (do
+        _ <- onClicked button (do
         {
             result <- push edit;
             case result of
@@ -81,7 +81,7 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
             SuccessResult a -> do
             {
                 iv@(MkViewResult ws _) <- factory a mpush;
-                doIf mDeleteButton (boxAddShow PackNatural box);
+                _ <- doIf mDeleteButton (boxAddShow PackNatural box);
                 boxAddShow PackGrow box (vwsWidget ws);
                 return (Just iv);
             };
@@ -119,7 +119,7 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
                         {
                             boxAddShow PackGrow box emptyWidget;
                             containerRemoveDestroy box (vwsWidget ws);
-                            doIf mDeleteButton (containerRemove box);
+                            _ <- doIf mDeleteButton (containerRemove box);
                             writeIORef stateRef Nothing;
                         };
                     };
@@ -128,7 +128,7 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
                         Left (MkWholeEdit fa) | SuccessResult a <- retrieveOne fa -> do
                         {
                             iv@(MkViewResult ws _) <- factory a mpush;
-                            doIf mDeleteButton (boxAddShow PackNatural box);
+                            _ <- doIf mDeleteButton (boxAddShow PackNatural box);
                             boxAddShow PackGrow box (vwsWidget ws);
                             containerRemove box emptyWidget;
                             writeIORef stateRef (Just iv);
