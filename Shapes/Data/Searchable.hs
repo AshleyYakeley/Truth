@@ -47,7 +47,7 @@ module Data.Searchable where
     {
         search csmx = case search Just of
         {
-            Just first -> let
+            Just def -> let
             {
                 prepend :: s -> (c -> s) -> c -> s;
                 prepend s cs c = case countPrevious c of
@@ -67,7 +67,7 @@ module Data.Searchable where
                     s = case mx of
                     {
                         Just s' -> s';
-                        _ -> first;
+                        _ -> def;
                     };
                 } in prepend s (find (csm . (prepend s)));
             } in csmx (find csmx);
@@ -104,13 +104,34 @@ module Data.Searchable where
         sequenceA = assemble;
     };
 
-    firstInList :: [Maybe a] -> Maybe a;
-    firstInList [] = Nothing;
-    firstInList ((Just a):_) = Just a;
-    firstInList (Nothing:mas) = firstInList mas;
+    firstJust :: [Maybe a] -> Maybe a;
+    firstJust [] = Nothing;
+    firstJust ((Just a):_) = Just a;
+    firstJust (Nothing:mas) = firstJust mas;
 
     finiteSearch :: (Finite a) => (a -> Maybe b) -> Maybe b;
-    finiteSearch p = firstInList (fmap p allValues);
+    finiteSearch p = firstJust (fmap p allValues);
+
+    finiteCountPrevious :: (Finite a) => a -> Maybe a;
+    finiteCountPrevious x = findp Nothing allValues where
+    {
+        findp ma (a:_) | a == x = ma;
+        findp _ (a:as) = findp (Just a) as;
+        findp _ [] = seq x (error "missing value");
+    };
+
+    firstItem :: [a] -> Maybe a;
+    firstItem [] = Nothing;
+    firstItem (a:_) = Just a;
+
+    finiteCountMaybeNext :: (Finite a) => Maybe a -> Maybe a;
+    finiteCountMaybeNext Nothing = firstItem allValues;
+    finiteCountMaybeNext (Just x) = findmn allValues where
+    {
+        findmn (a:as) | x == a = firstItem as;
+        findmn (_:as) = findmn as;
+        findmn [] = seq x (error "missing value");
+    };
 
     instance Searchable Nothing where
     {

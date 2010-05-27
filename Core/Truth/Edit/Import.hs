@@ -14,6 +14,8 @@ module Truth.Edit.Import
     module Data.Injection,
     module Data.HasNewValue,
     module Data.Store,
+    module Data.Countable,
+    module Data.Searchable,
 
     module Data.OpenWitness,
     module Data.Witness,
@@ -58,6 +60,8 @@ where
     import Data.Injection;
     import Data.HasNewValue;
     import Data.Store;
+    import Data.Countable;
+    import Data.Searchable;
 
     import Data.OpenWitness;
     import Data.Witness;

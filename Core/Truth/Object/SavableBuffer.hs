@@ -4,29 +4,46 @@ module Truth.Object.SavableBuffer where
     import Truth.Edit;
     import Truth.Edit.Import;
 
-    data Savable a = MkSavable
+    data SavableVersion = SavableOriginal | SavableCurrent deriving Eq;
+
+    instance Countable SavableVersion where
     {
-        savableOriginal :: a,
-        savableCurrent :: a
+        countPrevious = finiteCountPrevious;
+        countMaybeNext = finiteCountMaybeNext;
     };
 
-    currentLens :: Lens' Identity (Savable a) a;
-    currentLens = MkLens
+    instance Searchable SavableVersion where
     {
-        lensGet = \(MkSavable _ a) -> a,
-        lensPutback = \a -> arr (\(MkSavable original _) -> Identity (MkSavable original a))
+        search = finiteSearch;
     };
+
+    instance Finite SavableVersion where
+    {
+        allValues = [SavableOriginal,SavableCurrent];
+    };
+
+    type Savable a = SavableVersion -> a;
+
+    mkSavable :: a -> a -> Savable a;
+    mkSavable a _ SavableOriginal = a;
+    mkSavable _ a SavableCurrent = a;
+
+    savableVersionLens :: SavableVersion -> Lens' Identity (Savable a) a;
+    savableVersionLens = pickLens;
 
     data SavableEdit edit = SEEdit edit | SESave;
 
     instance (Edit edit) => Edit (SavableEdit edit) where
     {
         type Subject (SavableEdit edit) = Savable (Subject edit);
-        applyEdit (SEEdit edit) = arr (\(MkSavable original a) -> MkSavable original (applyConstFunction (applyEdit edit) a));
-        applyEdit SESave = arr (\(MkSavable _ a) -> MkSavable a a);
+        applyEdit (SEEdit edit) = arr (\sav -> mkSavable (sav SavableOriginal) (applyConstFunction (applyEdit edit) (sav SavableCurrent)));
+        applyEdit SESave = arr (\sav -> mkSavable (sav SavableCurrent) (sav SavableCurrent));
 
         invertEdit = undefined; -- BUG
     };
+
+    savableLens :: (Applicative m) => Lens' m a b -> Lens' m (Savable a) (Savable b);
+    savableLens = cfmap;
 
     --objSubscribe :: forall edit. ((edit -> IO ()) -> IO (Object edit)) -> Subscribe edit;
 

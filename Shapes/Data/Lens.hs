@@ -94,6 +94,13 @@ module Data.Lens where
         };
     };
 
+    pickLens :: (Eq p) => p -> Lens' Identity (p -> a) a;
+    pickLens p = MkLens
+    {
+        lensGet = \pa -> pa p,
+        lensPutback = \a -> FunctionConstFunction (\pa -> Identity (\p' -> if p == p' then a else pa p'))
+    };
+
     bijectionLens :: Bijection a b -> Lens' Identity a b;
     bijectionLens (MkBijection ab ba) = MkLens ab (\b -> ConstConstFunction (return (ba b)));
 
