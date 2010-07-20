@@ -13,7 +13,7 @@ module Truth.Edit.List(listElement,listSection,ListEdit(..),ListPoint,ListRegion
 
     data ListEdit edit =
         ReplaceListEdit [Subject edit]                  |
-        ItemEdit (IndexEdit [Subject edit] ListPoint edit)    |
+        ItemEdit (IndexEdit [Subject edit] edit)    |
         ReplaceSectionEdit ListRegion [Subject edit]     ;
 
     instance (Edit edit) => Edit (ListEdit edit) where
@@ -39,7 +39,8 @@ module Truth.Edit.List(listElement,listSection,ListEdit(..),ListPoint,ListRegion
             (oldmiddle,_) = splitAt len rest;
         };
 
-        updateEdit (ItemEdit _) edit = edit;
+        -- WRONG
+        updateEdit (ItemEdit iedit') (ItemEdit iedit) = ItemEdit (updateEdit iedit' iedit);
         updateEdit (ReplaceListEdit _) edit = edit;
         updateEdit (ReplaceSectionEdit _ _) edit@(ReplaceListEdit _) = edit;
         updateEdit _ edit = edit;
@@ -50,23 +51,25 @@ module Truth.Edit.List(listElement,listSection,ListEdit(..),ListPoint,ListRegion
         replaceEdit = ReplaceListEdit;
     };
 
-    instance HasInfoKTT ListEdit where
+    instance HasInfo (Type_KTT ListEdit) where
     {
-        infoKTT = MkInfoKTT
-            (WitKTT (unsafeIOWitnessFromString "Truth.Edit.List.ListEdit"))
-            (
-                (mkTFactsKTT (\tedit -> do
-                    {
-                        MkEditInst tsubj <- matchPropertyT tedit;
-                        return (MkEditInst (applyTInfoT (infoKTT :: InfoKTT []) tsubj));
-                    })
-                ) `mappend`
-                (mkTFactsKTT (\tedit -> do
-                    {
-                        MkEditInst _ <- matchPropertyT tedit;
-                        return MkFullEditInst;
-                    }))
-            );
+        info = mkSimpleInfo $(iowitness[t| Type_KTT ListEdit |])
+        [
+            mkFacts (MkFactS (\tedit -> MkFactZ (do
+            {
+                Edit_Inst tsubj <- matchProp $(type1[t|Edit_Inst|]) tedit;
+                return (Edit_Inst (applyInfo (info :: Info (Type_KTT [])) tsubj));
+            }))
+            :: FactS FactZ Edit_Inst (Type_KTT ListEdit)
+            ),
+            mkFacts (MkFactS (\tedit -> MkFactZ (do
+            {
+                Edit_Inst _ <- matchProp $(type1[t|Edit_Inst|]) tedit;
+                return (FullEdit_Inst);
+            }))
+            :: FactS FactZ FullEdit_Inst (Type_KTT ListEdit)
+            )
+        ];
     };
 
     moveListRegion :: Int -> ListRegion -> ListRegion;

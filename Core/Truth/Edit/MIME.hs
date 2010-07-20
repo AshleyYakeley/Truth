@@ -11,11 +11,13 @@ module Truth.Edit.MIME where
         newValue = Codec.MIME.Type.Type (Codec.MIME.Type.Application "octet-stream") [];
     };
 
-    instance HasInfoT MIMEContentType where
+    instance HasInfo (Type_T MIMEContentType) where
     {
-        infoT = MkInfoT
-            (WitT (unsafeIOWitnessFromString "Truth.Edit.MIME.MIMEContentType"))
-            (mkTFactsT (return MkHasNewValueInst));
+        info = mkSimpleInfo $(iowitness[t| Type_T MIMEContentType |])
+        [
+            mkFacts0 (return HasNewValue_Inst),
+            mkFacts0 (return Eq_Inst)
+        ];
     };
 
     data MIMEContent = MkMIMEContent MIMEContentType [Word8];
@@ -25,11 +27,13 @@ module Truth.Edit.MIME where
         newValue = MkMIMEContent newValue [];
     };
 
-    instance HasInfoT MIMEContent where
+    instance HasInfo (Type_T MIMEContent) where
     {
-        infoT = MkInfoT
-            (WitT (unsafeIOWitnessFromString "Truth.Edit.MIME.MIMEContent"))
-            (mkTFactsT (return MkHasNewValueInst));
+        info = mkSimpleInfo $(iowitness[t| Type_T MIMEContent |])
+        [
+            mkFacts0 (return HasNewValue_Inst)
+            -- ,mkFacts0 (return Eq_Inst)
+        ];
     };
 
     instance IsTuple MIMEContent where
@@ -39,10 +43,22 @@ module Truth.Edit.MIME where
         toListTuple (MkMIMEContent t content) = (content,(t,()));
     };
 
+{-
+    data Anything where
+    {
+        MkAnything :: forall a. Info (Type_T a) -> a -> Anything;
+    };
+-}
+
+    data AnyCodec where
+    {
+        MkAnyCodec :: forall a. Info (Type_T a) -> Codec [Word8] a -> AnyCodec;
+    };
+
     data MIMEKnowledge = MkMIMEKnowledge
     {
-        findMIMECodecByMIME :: MIMEContentType -> Maybe (AnyF InfoT (Codec [Word8])),
-        findMIMECodecByInfoT :: forall b. InfoT b -> Maybe (MIMEContentType,Codec [Word8] b)
+        findMIMECodecByMIME :: MIMEContentType -> Maybe AnyCodec,
+        findMIMECodecByInfoT :: forall b. Info (Type_T b) -> Maybe (MIMEContentType,Codec [Word8] b)
     };
 
     interpretInjection :: (?mimeKnowledge :: MIMEKnowledge) => Injection MIMEContent (Maybe Anything);
@@ -51,7 +67,7 @@ module Truth.Edit.MIME where
         -- injForwards :: MIMEContent -> Maybe Anything
         injForwards = \(MkMIMEContent t content) -> do
         {
-            (MkAnyF isubj codec) <- findMIMECodecByMIME ?mimeKnowledge t;
+            (MkAnyCodec isubj codec) <- findMIMECodecByMIME ?mimeKnowledge t;
             b <- decode codec content;
             return (MkAnything isubj b);
         },

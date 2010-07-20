@@ -18,18 +18,21 @@ module Truth.Edit.JustEdit where
         };
     };
 
-    instance HasInfoKKTTKTT JustEdit where
+    instance HasInfo (Type_KKTTKTT JustEdit) where
     {
-        infoKKTTKTT = MkInfoKKTTKTT
-            (WitKKTTKTT (unsafeIOWitnessFromString "Truth.Edit.JustEdit.JustEdit"))
-            (mkTFactsKKTTKTT (\tf tedit -> do
-                {
-                    MkEditInst tsubj <- matchPropertyT tedit;
-                    MkFullEditInst <- matchPropertyT tedit;
-                    MkHasNewValueInst <- matchPropertyT tsubj;
-                    MkFunctorOneInst <- matchPropertyKTT tf;
-                    return (MkEditInst (applyTInfoT tf tsubj));
-                })
-            );
+        info = mkSimpleInfo $(iowitness[t| Type_KKTTKTT JustEdit |])
+        [
+            -- instance (FunctorOne f,Edit edit) => Edit (JustEdit f edit)
+            mkFacts (MkFactS (\tf -> MkFactS (\tedit -> MkFactZ (do
+            {
+                Edit_Inst tsubj <- matchProp $(type1[t|Edit_Inst|]) tedit;
+                FullEdit_Inst <- matchProp $(type1[t|FullEdit_Inst|]) tedit;
+                HasNewValue_Inst <- matchProp $(type1[t|HasNewValue_Inst|]) tsubj;
+                FunctorOne_Inst <- matchProp $(type1[t|FunctorOne_Inst|]) tf;
+                return (Edit_Inst (applyInfo tf tsubj));
+            })))
+            :: FactS (FactS FactZ) Edit_Inst (Type_KKTTKTT JustEdit)
+            )
+        ];
     };
 }

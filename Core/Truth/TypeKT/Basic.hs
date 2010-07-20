@@ -1,5 +1,6 @@
 module Truth.TypeKT.Basic where
 {
+{-
     data FT;
     data FKTT (a0 :: *);
     data FKKTTT (a0 :: * -> *);
@@ -19,4 +20,5 @@ module Truth.TypeKT.Basic where
     type SatKKKTTTT a = a FKKTTT;
     type SatKKTKTKTTT a = a FKTKTKTT;
     type SatKKKTTKTTT a = a FKKTTKTT;
+-}
 }

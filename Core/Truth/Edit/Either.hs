@@ -20,42 +20,53 @@ module Truth.Edit.Either where
         replaceEdit s = Left (replaceEdit s);
     };
 
-    instance HasInfoKTKTT Either where
+    instance HasInfo (Type_KTKTT Either) where
     {
-        infoKTKTT = MkInfoKTKTT
-            (WitKTKTT (unsafeIOWitnessFromString "Truth.Edit.Edit.Either"))
-            (
-                (mkTFactsKTKTT_ (witFactT :: IOWitness (SatKTT EditInst)) (\ta tb -> do
+        info = MkInfo
+            (SimpleWit $(iowitness[t| Type_KTKTT Either |]))
+            (mconcat
+            [
+                -- instance (Edit ea,Edit eb,Subject ea ~ Subject eb) => Edit (Either ea eb)
+                mkFacts (MkFactS (\ea -> MkFactS (\eb -> MkFactZ (do
                 {
-                    MkEditInst sa <- matchPropertyT ta;
-                    MkEditInst sb <- matchPropertyT tb;
-                    MkEqualType <- matchWitnessT sa sb;
-                    return (MkEditInst sa);
-                }) :: FactsKTKTT Either) `mappend`
-                (mkTFactsKTKTT_ (witFactT :: IOWitness (SatKTT FullEditInst)) (\ta tb -> do
+                    Edit_Inst sa <- matchProp $(type1[t|Edit_Inst|]) ea;
+                    Edit_Inst sb <- matchProp $(type1[t|Edit_Inst|]) eb;
+                    MkEqualType <- matchWitness sa sb;
+                    return (Edit_Inst sa);
+                })))
+                :: FactS (FactS FactZ) Edit_Inst (Type_KTKTT Either)
+                ),
+
+                -- instance (FullEdit ea,Edit eb,Subject ea ~ Subject eb) => FullEdit (Either ea eb)
+                mkFacts (MkFactS (\ea -> MkFactS (\eb -> MkFactZ (do
                 {
-                    MkEditInst sa <- matchPropertyT ta;
-                    MkFullEditInst <- matchPropertyT ta;
-                    MkEditInst sb <- matchPropertyT tb;
-                    MkEqualType <- matchWitnessT sa sb;
-                    return MkFullEditInst;
-                }) :: FactsKTKTT Either)
-            );
+                    Edit_Inst sa <- matchProp $(type1[t|Edit_Inst|]) ea;
+                    FullEdit_Inst <- matchProp $(type1[t|FullEdit_Inst|]) ea;
+                    Edit_Inst sb <- matchProp $(type1[t|Edit_Inst|]) eb;
+                    MkEqualType <- matchWitness sa sb;
+                    return FullEdit_Inst;
+                })))
+                :: FactS (FactS FactZ) FullEdit_Inst (Type_KTKTT Either)
+                )
+            ]);
     };
 
     data MatchEither t where
     {
-        MkMatchEither :: forall a b. InfoT a -> InfoT b -> MatchEither (Either a b);
+        MkMatchEither :: forall a b. Info (Type_T a) -> Info (Type_T b) -> MatchEither (Type_T (Either a b));
     };
 
-    instance PropertyT MatchEither where
+    instance Property MatchEither where
     {
-        matchPropertyT tt = do
+        matchProperty a = do
         {
-            MkTMatchT tea tb <- matchPropertyT_ (Type :: Type (TMatchT FT)) tt;
-            MkTMatchKTT teither ta <- matchPropertyKTT_ (Type :: Type (TMatchKTT FKTT)) tea;
-            MkEqualType <- matchWitnessKTKTT teither (infoKTKTT :: InfoKTKTT Either);
+            MkMatch tea tb <- matchProp $(type1[t|Match|]) a;
+            MkMatch teither ta <- matchProp $(type1[t|Match|]) tea;
+            MkEqualType <- matchProp $(type1[t|EqualType (Type_KTKTT Either)|]) teither;
+            Kind_T <- matchProp $(type1[t|Kind_T|]) ta;
+            Kind_T <- matchProp $(type1[t|Kind_T|]) tb;
             return (MkMatchEither ta tb);
         };
     };
+
 }

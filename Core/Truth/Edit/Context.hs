@@ -35,15 +35,18 @@ module Truth.Edit.Context where
         retrieveOne (MkWithContext _ a) = SuccessResult a;
     };
 
-    instance HasInfoKTKTT WithContext where
+    instance HasInfo (Type_KTKTT WithContext) where
     {
-        infoKTKTT = MkInfoKTKTT
-            (WitKTKTT (unsafeIOWitnessFromString "Truth.Edit.Context.WithContext"))
-            (mkKTTFactsKTKTT (\_ -> do
-                {
-                    return MkFunctorOneInst;
-                })
-            );
+        info = mkSimpleInfo $(iowitness[t| Type_KTKTT WithContext |])
+        [
+            mkFacts (MkFactS (\a0 -> MkFactZ (do
+            {
+                Kind_T <- matchProp $(type1[t|Kind_T|]) a0;
+                return FunctorOne_Inst;
+            }))
+            :: FactS FactZ FunctorOne_Inst (Type_KTKTT WithContext)
+            )
+        ];
     };
 
     instance IsTuple (WithContext context content) where

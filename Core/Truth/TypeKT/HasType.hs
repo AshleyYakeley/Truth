@@ -1,209 +1,269 @@
+{-# OPTIONS -fno-warn-orphans #-}
 module Truth.TypeKT.HasType where
 {
-    import Truth.TypeKT.Construct;
+    import Truth.TypeKT.HasInfo;
     import Truth.TypeKT.Type;
+    import Truth.TypeKT.Kind;
+    import Truth.TypeKT.TH;
     import Control.Monad;
     import Data.HasNewValue;
     import Data.FunctorOne;
     import Data.OpenWitness;
     import Data.Witness;
     import Data.Result;
-    import Data.ByteString;
+    import Data.ByteString hiding (concat);
     import Data.Maybe;
     import Data.Word;
     import Data.Bool;
     import Data.Char;
     import Data.Int;
+    import Data.Eq;
 
 
-    data FunctorOneInst f where
+    data Eq_Inst t where
     {
-        MkFunctorOneInst :: forall f. (FunctorOne f) => FunctorOneInst f;
+        Eq_Inst :: forall a. (Eq a) => Eq_Inst (Type_T a);
+    };
+    $(factInstances [t|Eq_Inst|]);
+
+    data FunctorOne_Inst t where
+    {
+        FunctorOne_Inst :: forall a. (FunctorOne a) => FunctorOne_Inst (Type_KTT a);
+    };
+    $(factInstances [t|FunctorOne_Inst|]);
+
+    data HasNewValue_Inst t where
+    {
+        HasNewValue_Inst :: forall a. (HasNewValue a) => HasNewValue_Inst (Type_T a);
+    };
+    $(factInstances [t|HasNewValue_Inst|]);
+
+
+
+
+
+    instance HasInfo (Type_T ()) where
+    {
+        info = mkSimpleInfo $(iowitness[t| Type_T () |])
+        [
+            mkFacts (MkFactZ (do
+            {
+                return HasNewValue_Inst;
+            })
+            :: FactZ HasNewValue_Inst (Type_T ())
+            ),
+            mkFacts (MkFactZ (do
+            {
+                return Eq_Inst;
+            })
+            :: FactZ Eq_Inst (Type_T ())
+            )
+        ];
     };
 
-    instance PropertyKTT FunctorOneInst where
+    instance HasInfo (Type_KTT Maybe) where
     {
-        matchPropertyKTT = matchPropertyKTT_Fact;
+        info = mkSimpleInfo $(iowitness[t| Type_KTT Maybe |])
+        [
+            -- instance () => HasNewValue (Maybe a)
+            mkFacts (MkFactS (\a -> MkFactZ (do
+            {
+                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
+                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
+                return HasNewValue_Inst;
+            }))
+            :: FactS FactZ HasNewValue_Inst (Type_KTT Maybe)
+            ),
+
+            -- instance (Eq a) => Eq (Maybe a)
+            mkFacts (MkFactS (\a -> MkFactZ (do
+            {
+                Eq_Inst <- matchProp $(type1[t|Eq_Inst|]) a;
+                return Eq_Inst;
+            }))
+            :: FactS FactZ Eq_Inst (Type_KTT Maybe)
+            ),
+
+            -- instance FunctorOne Maybe
+            mkFacts (MkFactZ (do
+            {
+                return FunctorOne_Inst;
+            })
+            :: FactZ FunctorOne_Inst (Type_KTT Maybe)
+            )
+        ];
     };
 
-    instance FactKTT FunctorOneInst where
+    instance HasInfo (Type_KTT []) where
     {
-        witFactKTT = unsafeIOWitnessFromString "Truth.TypeKT.HasType.FunctorOneInst";
+        info = mkSimpleInfo $(iowitness[t| Type_KTT [] |])
+        [
+            -- instance () => HasNewValue ([] a)
+            mkFacts (MkFactS (\a -> MkFactZ (do
+            {
+                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
+                return HasNewValue_Inst;
+            }))
+            :: FactS FactZ HasNewValue_Inst (Type_KTT [])
+            ),
+
+            -- instance (Eq a) => Eq ([] a)
+            mkFacts (MkFactS (\a -> MkFactZ (do
+            {
+                Eq_Inst <- matchProp $(type1[t|Eq_Inst|]) a;
+                return Eq_Inst;
+            }))
+            :: FactS FactZ Eq_Inst (Type_KTT [])
+            )
+        ];
     };
 
-    data HasNewValueInst f where
-    {
-        MkHasNewValueInst :: forall f. (HasNewValue f) => HasNewValueInst f;
-    };
 
-    instance PropertyT HasNewValueInst where
-    {
-        matchPropertyT = matchPropertyT_Fact;
-    };
 
-    instance FactT HasNewValueInst where
-    {
-        witFactT = unsafeIOWitnessFromString "Truth.TypeKT.HasType.HasNewValueInst";
-    };
+
+
 
 
     -- T
-
-    class HasInfoT a where
+{-
+    instance HasInfo (Type_T ()) where
     {
-        infoT :: InfoT a;
+        info = MkInfo
+            Kind_T
+            (SimpleWit $(iowitness[t| Type_T () |]))
+            (
+                (mkFacts (return HasNewValue_Inst)) `mappend`
+                (mkFacts (return Eq_Inst))
+            );
+    };
+-}
+    instance HasInfo (Type_T Bool) where
+    {
+        info = mkSimpleInfo $(iowitness[t| Type_T Bool |])
+        [
+            mkFacts0 (return HasNewValue_Inst),
+            mkFacts0 (return Eq_Inst)
+        ];
     };
 
-    instance HasInfoT () where
+    instance HasInfo (Type_T Word8) where
     {
-        infoT = MkInfoT
-            (WitT (unsafeIOWitnessFromString "Truth.TypeKT.HasType.()"))
-            (mkTFactsT (return MkHasNewValueInst));
+        info = mkSimpleInfo $(iowitness[t| Type_T Word8 |])
+        [
+            mkFacts0 (return HasNewValue_Inst),
+            mkFacts0 (return Eq_Inst)
+        ];
     };
 
-    instance HasInfoT Bool where
+    instance HasInfo (Type_T Char) where
     {
-        infoT = MkInfoT
-            (WitT (unsafeIOWitnessFromString "Truth.TypeKT.HasType.Bool"))
-            (mkTFactsT (return MkHasNewValueInst));
+        info = mkSimpleInfo $(iowitness[t| Type_T Char |])
+        [
+            mkFacts0 (return HasNewValue_Inst),
+            mkFacts0 (return Eq_Inst)
+        ];
     };
 
-    instance HasInfoT Word8 where
+    instance HasInfo (Type_T Int) where
     {
-        infoT = MkInfoT
-            (WitT (unsafeIOWitnessFromString "Truth.TypeKT.HasType.Word8"))
-            (mkTFactsT (return MkHasNewValueInst));
+        info = mkSimpleInfo $(iowitness[t| Type_T Int |])
+        [
+            mkFacts0 (return HasNewValue_Inst),
+            mkFacts0 (return Eq_Inst)
+        ];
     };
 
-    instance HasInfoT Char where
+    instance HasInfo (Type_T ByteString) where
     {
-        infoT = MkInfoT
-            (WitT (unsafeIOWitnessFromString "Truth.TypeKT.HasType.Char"))
-            (mkTFactsT (return MkHasNewValueInst));
-    };
-
-    instance HasInfoT Int where
-    {
-        infoT = MkInfoT
-            (WitT (unsafeIOWitnessFromString "Truth.TypeKT.HasType.Int"))
-            (mkTFactsT (return MkHasNewValueInst));
-    };
-
-    instance HasInfoT ByteString where
-    {
-        infoT = MkInfoT
-            (WitT (unsafeIOWitnessFromString "Truth.TypeKT.HasType.ByteString"))
-            (mkTFactsT (return MkHasNewValueInst));
+        info = mkSimpleInfo $(iowitness[t| Type_T ByteString |])
+        [
+            mkFacts0 (return HasNewValue_Inst),
+            mkFacts0 (return Eq_Inst)
+        ];
     };
 
 
     -- KTT
-
-    class HasInfoKTT a where
+{-
+    instance (HasInfo (Type_KTT f),HasInfo (Type_T a)) => HasInfo (Type_T (f a)) where
     {
-        infoKTT :: InfoKTT a;
+        info = applyInfo info info;
     };
 
-    instance (HasInfoKTT f,HasInfoT a) => HasInfoT (f a) where
+    instance HasInfo (Type_KTT Maybe) where
     {
-        infoT = applyTInfoT infoKTT infoT;
-    };
-
-    instance HasInfoKTT Maybe where
-    {
-        infoKTT = MkInfoKTT
-            (WitKTT (unsafeIOWitnessFromString "Truth.TypeKT.HasType.Maybe"))
+        info = MkInfo
+            (SimpleWit $(iowitness[t| Type_KTT Maybe |]))
             (mconcat
             [
-                mkTFactsKTT (\_ -> return MkHasNewValueInst),
-                mkKTTFactsKTT (return MkFunctorOneInst)
+                mkFacts (\_ -> return HasNewValue_Inst),
+                mkFacts (\t -> do
+                {
+                    Eq_Inst <- matchProperty t;
+                    return Eq_Inst;
+                }),
+                mkFacts (return FunctorOne_Inst)
             ]);
     };
 
-    instance HasInfoKTT [] where
+    instance HasInfo (Type_KTT []) where
     {
-        infoKTT = MkInfoKTT
-            (WitKTT (unsafeIOWitnessFromString "Truth.TypeKT.HasType.[]"))
-            (mkTFactsKTT (\_ -> return MkHasNewValueInst));
+        info = MkInfo
+            (SimpleWit $(iowitness[t| Type_KTT [] |]))
+            (mconcat
+            [
+                mkFacts (\_ -> return HasNewValue_Inst),
+                mkFacts (\t -> do
+                {
+                    Eq_Inst <- matchProperty t;
+                    return Eq_Inst;
+                })
+            ]);
     };
-
+-}
 
     -- KTKTT
 
-    class HasInfoKTKTT a where
+    instance HasInfo (Type_KTKTT (->)) where
     {
-        infoKTKTT :: InfoKTKTT a;
+        info = mkSimpleInfo $(iowitness[t| Type_KTKTT (->) |])
+        [
+        ];
     };
 
-    instance (HasInfoKTKTT f,HasInfoT a) => HasInfoKTT (f a) where
+    instance HasInfo (Type_KTKTT Result) where
     {
-        infoKTT = applyTInfoKTT infoKTKTT infoT;
-    };
+        info = mkSimpleInfo $(iowitness[t| Type_KTKTT Result |])
+        [
+            -- instance (HasNewValue a1) => HasNewValue (Result a0 a1)
+            mkFacts (MkFactS (\a0 -> MkFactS (\a1 -> MkFactZ (do
+            {
+                Kind_T <- matchProp $(type1[t|Kind_T|]) a0;
+                Kind_T <- matchProp $(type1[t|Kind_T|]) a1;
+                HasNewValue_Inst <- matchProp $(type1[t|HasNewValue_Inst|]) a1;
+                return HasNewValue_Inst;
+            })))
+            :: FactS (FactS FactZ) HasNewValue_Inst (Type_KTKTT Result)
+            ),
 
-    instance HasInfoKTKTT (->) where
-    {
-        infoKTKTT = MkInfoKTKTT
-            (WitKTKTT (unsafeIOWitnessFromString "Truth.TypeKT.HasType.->"))
-            mempty;
-    };
-
-    instance HasInfoKTKTT Result where
-    {
-        infoKTKTT = MkInfoKTKTT
-            (WitKTKTT (unsafeIOWitnessFromString "Truth.TypeKT.HasType.Result"))
-            (mconcat [
-                mkTFactsKTKTT (\_ ta -> do
-                {
-                    MkHasNewValueInst <- matchPropertyT ta;
-                    return MkHasNewValueInst;
-                }),
-                mkKTTFactsKTKTT (\_ -> return MkFunctorOneInst)
-            ]);
+            -- mkFacts1 (\_ -> return FunctorOne_Inst)
+            mkFacts (MkFactS (\a0 -> MkFactZ (do
+            {
+                Kind_T <- matchProp $(type1[t|Kind_T|]) a0;
+                return FunctorOne_Inst;
+            }))
+            :: FactS FactZ FunctorOne_Inst (Type_KTKTT Result)
+            )
+        ];
     };
 
 
     -- KKTTT
 
-    class HasInfoKKTTT a where
+    instance HasInfo (Type_KKTTT Any) where
     {
-        infoKKTTT :: InfoKKTTT a;
-    };
-
-    instance (HasInfoKKTTT f,HasInfoKTT a) => HasInfoT (f a) where
-    {
-        infoT = applyKTTInfoT infoKKTTT infoKTT;
-    };
-
-    instance HasInfoKKTTT Any where
-    {
-        infoKKTTT = MkInfoKKTTT
-            (WitKKTTT (unsafeIOWitnessFromString "Truth.TypeKT.HasType.Any"))
-            mempty;
-    };
-
-
-    -- KKTTKTT
-
-    class HasInfoKKTTKTT a where
-    {
-        infoKKTTKTT :: InfoKKTTKTT a;
-    };
-
-    instance (HasInfoKKTTKTT f,HasInfoKTT a) => HasInfoKTT (f a) where
-    {
-        infoKTT = applyKTTInfoKTT infoKKTTKTT infoKTT;
-    };
-
-
-    -- KTKTKTT
-
-    class HasInfoKTKTKTT a where
-    {
-        infoKTKTKTT :: InfoKTKTKTT a;
-    };
-
-    instance (HasInfoKTKTKTT f,HasInfoT a) => HasInfoKTKTT (f a) where
-    {
-        infoKTKTT = applyTInfoKTKTT infoKTKTKTT infoT;
+        info = mkSimpleInfo $(iowitness[t| Type_KKTTT Any |])
+        [
+        ];
     };
 }

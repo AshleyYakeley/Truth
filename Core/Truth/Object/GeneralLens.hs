@@ -4,35 +4,49 @@ module Truth.Object.GeneralLens where
     import Truth.Edit;
     import Truth.Edit.Import;
 
-    type ArgSubjWit k = forall a'. EqualTypeT a' (Subject (k a'));
+    type ArgSubjWit k = forall a'. EqualType a' (Subject (k a'));
 
     data SubjectEditWitness a edit where
     {
-        EditSubjectEditWitness :: forall edit. InfoT edit -> SubjectEditWitness (Subject edit) edit;
-        SubjectSubjectEditWitness :: forall k a. ArgSubjWit k -> InfoKTT k -> SubjectEditWitness a (k a);
+        EditSubjectEditWitness :: forall edit. Info (Type_T edit) -> SubjectEditWitness (Subject edit) edit;
+        SubjectSubjectEditWitness :: forall k a. ArgSubjWit k -> Info (Type_KTT k) -> SubjectEditWitness a (k a);
     };
 
     wholeSubjectEditWitness :: SubjectEditWitness a (WholeEdit a);
-    wholeSubjectEditWitness = SubjectSubjectEditWitness MkEqualType infoKTT;
+    wholeSubjectEditWitness = SubjectSubjectEditWitness MkEqualType info;
 
-    instance WitnessT (SubjectEditWitness a) where
+    instance SimpleWitness1 SubjectEditWitness where
     {
-        matchWitnessT (EditSubjectEditWitness iea) (EditSubjectEditWitness ieb) = matchWitnessT iea ieb;
-        matchWitnessT (SubjectSubjectEditWitness _ ika) (SubjectSubjectEditWitness _ ikb) = do
+        matchWitness1 (EditSubjectEditWitness iea) (EditSubjectEditWitness ieb) = do
         {
-            MkEqualType <- matchWitnessKTT ika ikb;
+            MkEqualType <- matchWitness iea ieb;
             return MkEqualType;
         };
-        matchWitnessT (SubjectSubjectEditWitness eqSubj (ika :: InfoKTT k)) (EditSubjectEditWitness ieb) = do
+        matchWitness1 (SubjectSubjectEditWitness _ ika) (SubjectSubjectEditWitness _ ikb) = do
         {
-            MkTMatchT (ika' :: InfoKTT k') (_ibs :: InfoT a') <- matchPropertyT_ (Type :: Type (SatKTT TMatchT)) ieb;
-            MkEqualType <- matchWitnessKTT ika ika';
-            MkEqualType <- return (eqSubj :: (EqualTypeT a' (Subject (k a'))));
+            MkEqualType <- matchWitness ika ikb;
             return MkEqualType;
         };
-        matchWitnessT ia@(EditSubjectEditWitness _) ib@(SubjectSubjectEditWitness _ _) = do
+        matchWitness1 (SubjectSubjectEditWitness eqSubj ika) (EditSubjectEditWitness ieb) = do
         {
-            MkEqualType <- matchWitnessT ib ia;
+            MkMatch ikb isb <- matchProp $(type1[t|Match|]) ieb;
+            MkEqualType <- matchWitness ika ikb;
+            Kind_T <- matchProp $(type1[t|Kind_T|]) isb;
+            return (f2 isb eqSubj);
+        } where
+        {
+            f1 :: forall k sb. Type (k ()) -> Info (Type_T sb) -> ArgSubjWit k -> EqualType sb (Subject (k sb));
+            f1 _ _ e = e;
+
+            kmap :: Type (k ()) -> EqualType a b -> EqualType (k b) (k a);
+            kmap _ MkEqualType = MkEqualType;
+
+            f2 :: forall k sb. Info (Type_T sb) -> ArgSubjWit k -> EqualType (k (Subject (k sb))) (k sb);
+            f2 i a = kmap (Type :: Type (k ()) ) (f1 (Type :: Type (k ()) ) i a);
+        };
+        matchWitness1 ia@(EditSubjectEditWitness _) ib@(SubjectSubjectEditWitness _ _) = do
+        {
+            MkEqualType <- matchWitness ib ia;
             return MkEqualType;
         };
     };
@@ -61,7 +75,7 @@ module Truth.Object.GeneralLens where
         (SimpleGeneralLens bc) . (SimpleGeneralLens ab) = SimpleGeneralLens (bc . ab);
         (SimpleGeneralLens bc) . fab@(EditGeneralLens _ _ _) = (toEditGeneralLens bc) . fab;
         fbc@(EditGeneralLens _ _ _) . (SimpleGeneralLens ab) = fbc . (toEditGeneralLens ab);
-        (EditGeneralLens sewb1 sewc bc) . (EditGeneralLens sewa sewb2 ab) = case matchWitnessT sewb1 sewb2 of
+        (EditGeneralLens sewb1 sewc bc) . (EditGeneralLens sewa sewb2 ab) = case matchWitness sewb1 sewb2 of
         {
             Just MkEqualType -> EditGeneralLens sewa sewc (bc . ab);
             _ -> EditGeneralLens sewa sewc (bc . convertEditLens . ab);

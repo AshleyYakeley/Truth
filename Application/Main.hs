@@ -36,7 +36,7 @@ module Main where
              = lensSubscribe (convertEditLens . (simpleEditLens (cfmap (injectionLens (utf8Injection . (toBiMapMaybe (bijectionInjection packBijection)))))) . convertEditLens) content;
         } in do
         {
-            makeWindowCountRef infoT windowCount mrtext;
+            makeWindowCountRef info windowCount mrtext;
         });
         {-
         sub <- makeWindowCountRef windowCount (maybeIVF False (gNamedView "AAAAAAAAAAAAAAAAAAAAAAAAAA")) (freeObjSubscribe initial);

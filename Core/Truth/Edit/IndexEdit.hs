@@ -1,5 +1,7 @@
 module Truth.Edit.IndexEdit where
 {
+    import Truth.Edit.NoEdit;
+    import Truth.Edit.Either();
     import Truth.Edit.Edit;
     import Truth.Edit.Import;
 
@@ -72,27 +74,18 @@ module Truth.Edit.IndexEdit where
         };
     };
 
-    data ContainerInst a where
+    data Container_Inst a where
     {
-        MkContainerInst :: forall a. (Container a) => InfoT (Index a) -> InfoT (Part a) -> ContainerInst a;
+        Container_Inst :: forall a. (Container a) => Info (Type_T (Index a)) -> Info (Type_T (Part a)) -> Container_Inst (Type_T a);
     };
+    $(factInstances [t|Container_Inst|]);
 
-    instance PropertyT ContainerInst where
+    data IndexEdit container edit = MkIndexEdit (Index container) edit;
+
+    instance (Eq (Index container),Edit edit,Container container,Part container ~ Maybe (Subject edit)) =>
+     Edit (IndexEdit container edit) where
     {
-        matchPropertyT = matchPropertyT_Fact;
-    };
-
-    instance FactT ContainerInst where
-    {
-        witFactT = unsafeIOWitnessFromString "Truth.Edit.IndexEdit.ContainerInst";
-    };
-
-    data IndexEdit a i edit = MkIndexEdit i edit;
-
-    instance (Edit edit,Container container,Part container ~ Maybe (Subject edit),index ~ Index container) =>
-     Edit (IndexEdit container index edit) where
-    {
-        type Subject (IndexEdit container index edit) = container;
+        type Subject (IndexEdit container edit) = container;
 
         applyEdit (MkIndexEdit i edita) = arr (lensMap (indexLens i) (fmap (applyConstFunction (applyEdit edita))));
 
@@ -102,20 +95,50 @@ module Truth.Edit.IndexEdit where
             invedita <- invertEdit edita oldpart;
             return (MkIndexEdit i invedita);
         };
+
+        updateEdit (MkIndexEdit i' edit') (MkIndexEdit i edit) | i' == i = MkIndexEdit i (updateEdit edit' edit);
+        updateEdit _ edit = edit;
     };
 
-    instance HasInfoKTKTKTT IndexEdit where
+    instance HasInfo (Type_KTKTT IndexEdit) where
     {
-        infoKTKTKTT = MkInfoKTKTKTT
-            (WitKTKTKTT (unsafeIOWitnessFromString "Truth.Edit.IndexEdit.IndexEdit"))
-            (mkTFactsKTKTKTT_ (witFactT :: IOWitness (SatKTT EditInst)) (\tcontainer tindex tedit -> do
-                {
-                    MkEditInst tsubj <- matchPropertyT tedit;
-                    MkContainerInst tcindex tcpart <- matchPropertyT tcontainer;
-                    MkEqualType <- matchWitnessT tindex tcindex;
-                    MkEqualType <- matchWitnessT tcpart (applyTInfoT (infoKTT :: InfoKTT Maybe) tsubj);
-                    return (MkEditInst tcontainer);
-                })
-            );
+        info = mkSimpleInfo $(iowitness[t| Type_KTKTT IndexEdit |])
+        [
+            -- instance (Eq (Index container),Edit edit,Container container,Part container ~ Maybe (Subject edit)) =>
+            --  Edit (IndexEdit container edit)
+            mkFacts (MkFactS (\tcontainer -> MkFactS (\tedit -> MkFactZ (do
+            {
+                Edit_Inst tsubj <- matchProp $(type1[t|Edit_Inst|]) tedit;
+                Container_Inst tindex tpart <- matchProp $(type1[t|Container_Inst|]) tcontainer;
+                Eq_Inst <- matchProp $(type1[t|Eq_Inst|]) tindex;
+                MkEqualType <- matchWitness tpart (applyInfo (info :: Info (Type_KTT Maybe)) tsubj);
+                return (Edit_Inst tcontainer);
+            })))
+            :: FactS (FactS FactZ) Edit_Inst (Type_KTKTT IndexEdit)
+            )
+        ];
     };
+
+    class (Edit edit) => FloatingPointer ptr edit where
+    {
+        updatePointer :: Subject edit -> edit -> ptr -> ptr;
+    };
+
+    instance FloatingPointer ptr (NoEdit subj) where
+    {
+        updatePointer _subj (MkNoEdit edit) _ptr = never edit;
+    };
+
+    instance (FloatingPointer ptr edita,FloatingPointer ptr editb,Subject edita ~ Subject editb) =>
+     FloatingPointer ptr (Either edita editb) where
+    {
+        updatePointer subj (Left edit) ptr = updatePointer subj edit ptr;
+        updatePointer subj (Right edit) ptr = updatePointer subj edit ptr;
+    };
+
+    instance (Eq index,Edit edit,Container container,Part container ~ Maybe (Subject edit),index ~ Index container)
+     => FloatingPointer index (IndexEdit container edit) where
+    {
+        updatePointer _ _ ptr = ptr;
+    }
 }

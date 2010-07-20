@@ -8,7 +8,7 @@ module Truth.Object.View where
     {
         MkAspect ::
          forall edita editb state. (Eq state,Edit editb) =>
-          InfoT editb -> InfoT (Subject editb) -> FloatingEditLens state edita editb -> Aspect edita;
+          Info (Type_T editb) -> Info (Type_T (Subject editb)) -> FloatingEditLens state edita editb -> Aspect edita;
     };
 
     data ViewWidgetStuff w edit = MkViewWidgetStuff

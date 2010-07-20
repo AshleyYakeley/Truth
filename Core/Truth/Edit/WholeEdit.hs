@@ -17,13 +17,25 @@ module Truth.Edit.WholeEdit where
         replaceEdit = MkWholeEdit;
     };
 
-    instance HasInfoKTT WholeEdit where
+    instance HasInfo (Type_KTT WholeEdit) where
     {
-        infoKTT = MkInfoKTT
-            (WitKTT (unsafeIOWitnessFromString "Truth.Edit.WholeEdit.WholeEdit"))
-            (
-                (mkTFactsKTT (\ta -> return (MkEditInst ta))) `mappend`
-                (mkTFactsKTT (\_ -> return MkFullEditInst))
-            );
+        info = mkSimpleInfo $(iowitness[t| Type_KTT WholeEdit |])
+        [
+            -- instance Edit (WholeEdit a)
+            mkFacts (MkFactS (\a -> MkFactZ (do
+            {
+                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
+                return (Edit_Inst a);
+            }))
+            :: FactS FactZ Edit_Inst (Type_KTT WholeEdit)
+            ),
+            mkFacts (MkFactS (\a -> MkFactZ (do
+            {
+                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
+                return FullEdit_Inst;
+            }))
+            :: FactS FactZ FullEdit_Inst (Type_KTT WholeEdit)
+            )
+        ];
     };
 }

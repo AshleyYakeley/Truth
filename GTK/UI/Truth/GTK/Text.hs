@@ -62,7 +62,7 @@ module UI.Truth.GTK.Text (textMatchView) where
                 o1 <- textIterGetOffset iter1;
                 o2 <- textIterGetOffset iter2;
                 -- get selection...
-                return (Just (MkAspect infoT infoT (listSection (MkListRegion o1 (o2 - o1)))));
+                return (Just (MkAspect info info (listSection (MkListRegion o1 (o2 - o1)))));
             }),
             vrUpdate = \edit -> withMVar mv (\_ -> case edit of
             {
@@ -76,7 +76,7 @@ module UI.Truth.GTK.Text (textMatchView) where
     textMatchView :: MatchView;
     textMatchView tedit = do
     {
-        MkEqualType <- matchWitnessT tedit (infoT :: InfoT (ListEdit (WholeEdit Char)));
+        MkEqualType <- matchProp $(type1[t|EqualType (Type_T (ListEdit (WholeEdit Char)))|]) tedit;
         return textView;
     };
 }

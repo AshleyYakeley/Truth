@@ -11,23 +11,14 @@ module Truth.Edit.Edit where
         updateEdit _ = id;
     };
 
-    subjectRepT :: HasInfoT (Subject edit) => InfoT edit -> InfoT (Subject edit);
-    subjectRepT _ = infoT;
+    -- subjectRep :: HasInfo (Type_T (Subject edit)) => Info (Type_T edit) -> Info (Type_T (Subject edit));
+    -- subjectRep _ = info;
 
-    data EditInst edit where
+    data Edit_Inst edit where
     {
-        MkEditInst :: forall edit. (Edit edit) => InfoT (Subject edit) -> EditInst edit;
+        Edit_Inst :: forall edit. (Edit edit) => Info (Type_T (Subject edit)) -> Edit_Inst (Type_T edit);
     };
-
-    instance PropertyT EditInst where
-    {
-        matchPropertyT = matchPropertyT_Fact;
-    };
-
-    instance FactT EditInst where
-    {
-        witFactT = unsafeIOWitnessFromString "Truth.Edit.Edit.EditInst";
-    };
+    $(factInstances [t|Edit_Inst|]);
 
     applyAndInvertEdit :: (Edit edit) => edit -> (ConstFunction (Subject edit) (Subject edit),(Subject edit) -> Maybe edit);
     applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
@@ -50,18 +41,9 @@ module Truth.Edit.Edit where
         replaceEdit :: Subject edit -> edit;
     };
 
-    data FullEditInst edit where
+    data FullEdit_Inst edit where
     {
-        MkFullEditInst :: forall edit. (FullEdit edit) => FullEditInst edit;
+        FullEdit_Inst :: forall edit. (FullEdit edit) => FullEdit_Inst (Type_T edit);
     };
-
-    instance PropertyT FullEditInst where
-    {
-        matchPropertyT = matchPropertyT_Fact;
-    };
-
-    instance FactT FullEditInst where
-    {
-        witFactT = unsafeIOWitnessFromString "Truth.Edit.Edit.FullEditInst";
-    };
+    $(factInstances [t|FullEdit_Inst|]);
 }

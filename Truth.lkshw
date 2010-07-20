@@ -1,10 +1,10 @@
 Version of workspace file format:
                1
 Time of storage:
-               "Thu May 27 00:05:23 PDT 2010"
+               "Tue Jul 20 02:04:22 PDT 2010"
 Name of the workspace:
                "Truth"
 File paths of contained packages:
                ["Shapes/Truth-Shapes.cabal","Core/Truth-Core.cabal","Linux/Truth-Linux.cabal","GTK/Truth-GTK.cabal","Application/Truth-Application.cabal"]
 Maybe file path of an active package:
-               Just "Shapes/Truth-Shapes.cabal"
+               Just "Application/Truth-Application.cabal"

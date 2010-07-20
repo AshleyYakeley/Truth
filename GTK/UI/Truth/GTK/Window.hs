@@ -42,7 +42,7 @@ module UI.Truth.GTK.Window where
         };
     };
 
-    makeWindow :: (Edit edit) => InfoT edit -> IORef Int -> IO () -> Subscribe edit -> IO ();
+    makeWindow :: (Edit edit) => Info (Type_T edit) -> IORef Int -> IO () -> Subscribe edit -> IO ();
     makeWindow te ref tellclose sub = do
     {
         (sub',w,close) <- subscribeView (getView te) sub;
@@ -76,7 +76,7 @@ module UI.Truth.GTK.Window where
         return ();
     };
 
-    makeWindowCountRef :: (Edit edit) => InfoT edit -> IORef Int -> Subscribe edit -> IO ();
+    makeWindowCountRef :: (Edit edit) => Info (Type_T edit) -> IORef Int -> Subscribe edit -> IO ();
     makeWindowCountRef te windowCount sub = do
     {
         makeWindow te windowCount (do

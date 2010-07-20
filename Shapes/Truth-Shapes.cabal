@@ -6,14 +6,18 @@ license: AllRightsReserved
 license-file: ""
 copyright:
 maintainer:
-build-depends: base >=4.0, containers >=0.2, mtl >=1.1.0.2,
-               witness >=0.2, bytestring >=0.9.1.5
+build-depends: base >=4.0, bytestring >=0.9.1.5, containers >=0.2,
+               mtl >=1.1.0.2, witness >=0.2
 stability:
 homepage:
 package-url:
 bug-reports:
 synopsis:
-description:
+description:  
+             .
+             .
+             .
+             .
 category:
 author:
 tested-with:
@@ -21,10 +25,10 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Data.Searchable Data.Countable Data.FloatingLens
-                 Data.IsTuple Data.Chain Data.Bijection Data.Codec Data.Injection
-                 Data.Lens Data.ConstFunction Control.Wait Data.Store Data.Result
-                 Data.FunctorOne Data.HasNewValue
+exposed-modules: Control.Wait Data.IsTuple Data.Chain Data.Result
+                 Data.FunctorOne Data.HasNewValue Data.Injection Data.Searchable
+                 Data.Bijection Data.Lens Data.FloatingLens Data.Countable
+                 Data.Store Data.ConstFunction Data.Codec
 exposed: True
 buildable: True
 build-tools:
@@ -34,11 +38,11 @@ ld-options:
 pkgconfig-depends:
 frameworks:
 c-sources:
-extensions: TypeFamilies EmptyDataDecls UndecidableInstances
-            FlexibleInstances FunctionalDependencies GADTs RankNTypes
-            ScopedTypeVariables PatternGuards ImpredicativeTypes ImplicitParams
-            GeneralizedNewtypeDeriving MultiParamTypeClasses FlexibleContexts
-            TypeSynonymInstances
+extensions: UndecidableInstances MultiParamTypeClasses
+            FunctionalDependencies RankNTypes ScopedTypeVariables
+            ImplicitParams FlexibleContexts FlexibleInstances EmptyDataDecls
+            TypeSynonymInstances TemplateHaskell PatternGuards
+            GeneralizedNewtypeDeriving TypeFamilies GADTs ImpredicativeTypes
 extra-libraries:
 extra-lib-dirs:
 includes:

@@ -6,26 +6,26 @@ module Truth.Edit.Anything where
 
     data Anything where
     {
-        MkAnything :: forall a. InfoT a -> a -> Anything;
+        MkAnything :: forall a. Info (Type_T a) -> a -> Anything;
     };
 
-    instance HasInfoT Anything where
+    instance HasInfo (Type_T Anything) where
     {
-        infoT = MkInfoT
-            (WitT (unsafeIOWitnessFromString "Truth.Edit.Anything.Anything"))
-            mempty;
+        info = mkSimpleInfo $(iowitness[t| Type_T Anything |])
+        [
+        ];
     };
 
     data AnyEdit where
     {
-        MkAnyEdit :: forall edit. (Edit edit) => InfoT edit -> InfoT (Subject edit) -> edit -> AnyEdit;
+        MkAnyEdit :: forall edit. (Edit edit) => Info (Type_T edit) -> Info (Type_T (Subject edit)) -> edit -> AnyEdit;
     };
 
     instance Edit AnyEdit where
     {
         type Subject AnyEdit = Anything;
 
-        applyEdit (MkAnyEdit _te tsubj edit) = FunctionConstFunction (\anya@(MkAnything ta a) -> case matchWitnessT tsubj ta of
+        applyEdit (MkAnyEdit _te tsubj edit) = FunctionConstFunction (\anya@(MkAnything ta a) -> case matchWitness tsubj ta of
         {
             Just MkEqualType -> MkAnything ta (applyConstFunction (applyEdit edit) a);
             _ -> anya;
@@ -33,17 +33,23 @@ module Truth.Edit.Anything where
 
         invertEdit (MkAnyEdit te tsubj edit) (MkAnything ta a) = do
         {
-            MkEqualType <- matchWitnessT tsubj ta;
+            MkEqualType <- matchWitness tsubj ta;
             newa <- invertEdit edit a;
             return (MkAnyEdit te tsubj newa);
         };
     };
 
-    instance HasInfoT AnyEdit where
+    instance HasInfo (Type_T AnyEdit) where
     {
-        infoT = MkInfoT
-            (WitT (unsafeIOWitnessFromString "Truth.Edit.Anything.AnyEdit"))
-            (mkTFactsT (return (MkEditInst infoT)));
+        info = mkSimpleInfo $(iowitness[t| Type_T AnyEdit |])
+        [
+            mkFacts (MkFactZ (do
+            {
+                return (Edit_Inst info);
+            })
+            :: FactZ Edit_Inst (Type_T AnyEdit)
+            )
+        ];
     };
 
     type AnyWholeEdit = Either (WholeEdit Anything) AnyEdit;

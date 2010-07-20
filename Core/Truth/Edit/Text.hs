@@ -8,11 +8,11 @@ module Truth.Edit.Text where
 
     data ListError = MkListError Int;
 
-    instance HasInfoT ListError where
+    instance HasInfo (Type_T ListError) where
     {
-        infoT = MkInfoT
-            (WitT (unsafeIOWitnessFromString "Truth.Edit.Text.ListError"))
-            mempty;
+        info = mkSimpleInfo $(iowitness[t| Type_T ListError |])
+        [
+        ];
     };
 
     utf8Injection :: Injection [Word8] (Result ListError String);

@@ -30,6 +30,7 @@ extensions:
     ImplicitParams
     GeneralizedNewtypeDeriving
     ExistentialQuantification
+    TemplateHaskell
 exposed-modules:
     UI.Truth.GTK
 other-modules:

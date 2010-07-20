@@ -52,10 +52,10 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
     createButton val push = pushButton push (replaceEdit val) "Create";
 
     mapSelection :: forall f edit. (FunctorOne f, Edit edit) =>
-     InfoKTT f -> Aspect edit -> Aspect (JustWholeEdit f edit);
+     Info (Type_KTT f) -> Aspect edit -> Aspect (JustWholeEdit f edit);
     mapSelection tf (MkAspect teditb tsubj (lens :: FloatingEditLens state edit editb)) = MkAspect
-     (constructT (MkMatchJustWholeEdit tf teditb tsubj))
-     (applyTInfoT tf tsubj)
+     (construct (MkMatchJustWholeEdit tf teditb tsubj))
+     (applyInfo tf tsubj)
      (resultLens lens);
 
     functorOneIVF :: forall f edit wd.
@@ -66,7 +66,7 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
         FullEdit edit,
         WidgetClass wd
     ) =>
-      InfoKTT f -> Maybe (forall b. f b) -> (Push (JustWholeEdit f edit) -> IO wd) -> GView edit -> GView (JustWholeEdit f edit);
+      Info (Type_KTT f) -> Maybe (forall b. f b) -> (Push (JustWholeEdit f edit) -> IO wd) -> GView edit -> GView (JustWholeEdit f edit);
     functorOneIVF tf mDeleteValue makeEmptywidget factory initial push = let
     {
         mpush :: Push edit;
@@ -141,8 +141,8 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
     };
 
     maybeView :: (HasNewValue (Subject edit),FullEdit edit) =>
-      w edit -> GView edit -> GView (JustWholeEdit Maybe edit);
-    maybeView _ = functorOneIVF infoKTT (Just Nothing) (createButton (Just newValue));
+      w (Type_T edit) -> GView edit -> GView (JustWholeEdit Maybe edit);
+    maybeView _ = functorOneIVF info (Just Nothing) (createButton (Just newValue));
 
     placeholderLabel :: IO Label;
     placeholderLabel = do
@@ -151,29 +151,30 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
         return label;
     };
 
-    resultView :: (HasNewValue (Subject edit),FullEdit edit) => w edit -> InfoT err -> GView edit -> GView (JustWholeEdit (Result err) edit);
-    resultView _ terr = functorOneIVF (applyTInfoKTT infoKTKTT terr) Nothing (\_ -> placeholderLabel);
+    resultView :: (HasNewValue (Subject edit),FullEdit edit) => w (Type_T edit) -> Info (Type_T err) -> GView edit -> GView (JustWholeEdit (Result err) edit);
+    resultView _ terr = functorOneIVF (applyInfo (info :: Info (Type_KTKTT Result)) terr) Nothing (\_ -> placeholderLabel);
 
     maybeMatchView :: GetView -> MatchView;
     maybeMatchView getView tedit = do
     {
-        MkMatchJustWholeEdit tf te _ta <- matchPropertyT_ (Type :: Type (MatchJustWholeEdit FT)) tedit;
-        MkEqualType <- matchWitnessKTT tf (infoKTT :: InfoKTT Maybe);
-        MkEditInst tsubj <- matchPropertyT te;
-        MkFullEditInst <- matchPropertyT te;
-        MkHasNewValueInst <- matchPropertyT tsubj;
+        MkMatchJustWholeEdit tf te _ta <- matchProp $(type1[t|MatchJustWholeEdit|]) tedit;
+        MkEqualType <- matchWitness tf (info :: Info (Type_KTT Maybe));
+        Edit_Inst tsubj <- matchProp $(type1[t|Edit_Inst|]) te;
+        FullEdit_Inst <- matchProp $(type1[t|FullEdit_Inst|]) te;
+        HasNewValue_Inst <- matchProp $(type1[t|HasNewValue_Inst|]) tsubj;
         return (maybeView te (getView te));
     };
 
     resultMatchView :: GetView -> MatchView;
     resultMatchView getView tedit = do
     {
-        MkMatchJustWholeEdit tf te _ta <- matchPropertyT_ (Type :: Type (MatchJustWholeEdit FT)) tedit;
-        MkTMatchKTT tr terr <- matchPropertyKTT_ (Type :: Type (TMatchKTT FKTT)) tf;
-        MkEqualType <- matchWitnessKTKTT tr (infoKTKTT :: InfoKTKTT Result);
-        MkEditInst tsubj <- matchPropertyT te;
-        MkFullEditInst <- matchPropertyT te;
-        MkHasNewValueInst <- matchPropertyT tsubj;
+        MkMatchJustWholeEdit tf te _ta <- matchProp $(type1[t|MatchJustWholeEdit|]) tedit;
+        MkMatch tr terr <- matchProp $(type1[t|Match|]) tf;
+        Kind_T <- matchProp $(type1[t|Kind_T|]) terr;
+        MkEqualType <- matchWitness tr (info :: Info (Type_KTKTT Result));
+        Edit_Inst tsubj <- matchProp $(type1[t|Edit_Inst|]) te;
+        FullEdit_Inst <- matchProp $(type1[t|FullEdit_Inst|]) te;
+        HasNewValue_Inst <- matchProp $(type1[t|HasNewValue_Inst|]) tsubj;
         return (resultView te terr (getView te));
     };
 }

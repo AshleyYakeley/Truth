@@ -12,10 +12,18 @@ module Truth.Edit.NoEdit where
         invertEdit (MkNoEdit n) = never n;
     };
 
-    instance HasInfoKTT NoEdit where
+    instance HasInfo (Type_KTT NoEdit) where
     {
-        infoKTT = MkInfoKTT
-            (WitKTT (unsafeIOWitnessFromString "Truth.Edit.Edit.NoEdit"))
-            (mkTFactsKTT (\ta -> return (MkEditInst ta)));
+        info = mkSimpleInfo $(iowitness[t| Type_KTT NoEdit |])
+        [
+            -- instance () => EditInst (NoEdit a)
+            mkFacts (MkFactS (\a -> MkFactZ (do
+            {
+                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
+                return (Edit_Inst a);
+            }))
+            :: FactS FactZ Edit_Inst (Type_KTT NoEdit)
+            )
+        ];
     };
 }

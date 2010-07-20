@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 module Truth.TypeKT.Witness where
 {
+{-
     import Truth.TypeKT.Basic;
     import Data.OpenWitness;
     import Data.Witness;
@@ -31,5 +32,5 @@ DECL(T,KTKTT)
     {
         matchWitnessT = matchWitness;
     };
-
+-}
 }
