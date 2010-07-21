@@ -2,8 +2,8 @@
 module Truth.TypeKT.HasInfo where
 {
     import Truth.TypeKT.Construct;
+    import Truth.TypeKT.Info;
     import Truth.TypeKT.Type;
-    import Truth.TypeKT.Kind;
     import Truth.TypeKT.TH;
     --import Truth.TypeKT.Basic;
     import qualified Language.Haskell.TH as TH;
@@ -45,7 +45,6 @@ module Truth.TypeKT.HasInfo where
         }
     )));
 
-
     factInstances :: TH.TypeQ -> TH.Q [TH.Dec];
     factInstances tq =
     {-
@@ -68,9 +67,6 @@ module Truth.TypeKT.HasInfo where
         TH.instanceD (return []) (TH.appT (TH.conT ''Fact) tq)
          [TH.valD (TH.varP 'witFact) (TH.normalB (iowitness (TH.appT tq (TH.tupleT 0)))) []]
     ];
-
-
-    --infoConstructed :: Info f -> Info a -> Info (TypeConstructed f a);
 
 
 {- TODO

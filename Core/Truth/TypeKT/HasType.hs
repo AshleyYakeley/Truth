@@ -2,8 +2,8 @@
 module Truth.TypeKT.HasType where
 {
     import Truth.TypeKT.HasInfo;
+    import Truth.TypeKT.Info;
     import Truth.TypeKT.Type;
-    import Truth.TypeKT.Kind;
     import Truth.TypeKT.TH;
     import Control.Monad;
     import Data.HasNewValue;
