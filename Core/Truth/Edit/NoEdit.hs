@@ -3,13 +3,13 @@ module Truth.Edit.NoEdit where
     import Truth.Edit.Edit;
     import Truth.Edit.Import;
 
-    newtype NoEdit a = MkNoEdit Nothing;
+    newtype NoEdit a = MkNoEdit Nothing deriving (Eq,Countable,Searchable,Finite,Empty);
 
     instance Edit (NoEdit a) where
     {
         type Subject (NoEdit a) = a;
-        applyEdit (MkNoEdit n) = never n;
-        invertEdit (MkNoEdit n) = never n;
+        applyEdit = never;
+        invertEdit = never;
     };
 
     instance HasInfo (Type_KTT NoEdit) where

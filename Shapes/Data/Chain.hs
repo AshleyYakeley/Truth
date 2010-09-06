@@ -1,6 +1,6 @@
 module Data.Chain where
 {
-    import Data.Witness;
+--    import Data.Witness;
     import Control.Category;
     import Prelude hiding (id,(.));
 
@@ -19,7 +19,7 @@ module Data.Chain where
         EmptyChain . chain = chain;
         (LinkChain link ab) . chain = LinkChain link (ab . chain);
     };
-
+{-
     instance (SimpleWitness1 link) => SimpleWitness1 (Chain link) where
     {
         matchWitness1 EmptyChain EmptyChain = Just MkEqualType;
@@ -30,7 +30,7 @@ module Data.Chain where
         };
         matchWitness1 _ _ = Nothing;
     };
-
+-}
     class CatFunctor t f where
     {
         cfmap :: t a b -> t (f a) (f b);

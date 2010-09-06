@@ -26,8 +26,8 @@ data-dir: ""
 extra-source-files:
 extra-tmp-files:
 exposed-modules: Control.Wait Data.IsTuple Data.Chain Data.Result
-                 Data.FunctorOne Data.HasNewValue Data.Injection Data.Searchable
-                 Data.Bijection Data.Lens Data.FloatingLens Data.Countable
+                 Data.FunctorOne Data.HasNewValue Data.Injection
+                 Data.Bijection Data.Lens Data.FloatingLens
                  Data.Store Data.ConstFunction Data.Codec
 exposed: True
 buildable: True

@@ -15,19 +15,19 @@ module Truth.Object.GeneralLens where
     wholeSubjectEditWitness :: SubjectEditWitness a (WholeEdit a);
     wholeSubjectEditWitness = SubjectSubjectEditWitness MkEqualType info;
 
-    instance SimpleWitness1 SubjectEditWitness where
+    instance SimpleWitness (SubjectEditWitness a) where
     {
-        matchWitness1 (EditSubjectEditWitness iea) (EditSubjectEditWitness ieb) = do
+        matchWitness (EditSubjectEditWitness iea) (EditSubjectEditWitness ieb) = do
         {
             MkEqualType <- matchWitness iea ieb;
             return MkEqualType;
         };
-        matchWitness1 (SubjectSubjectEditWitness _ ika) (SubjectSubjectEditWitness _ ikb) = do
+        matchWitness (SubjectSubjectEditWitness _ ika) (SubjectSubjectEditWitness _ ikb) = do
         {
             MkEqualType <- matchWitness ika ikb;
             return MkEqualType;
         };
-        matchWitness1 (SubjectSubjectEditWitness eqSubj ika) (EditSubjectEditWitness ieb) = do
+        matchWitness (SubjectSubjectEditWitness eqSubj ika) (EditSubjectEditWitness ieb) = do
         {
             MkMatch ikb isb <- matchProp $(type1[t|Match|]) ieb;
             MkEqualType <- matchWitness ika ikb;
@@ -38,13 +38,13 @@ module Truth.Object.GeneralLens where
             f1 :: forall k sb. Type (k ()) -> Info (Type_T sb) -> ArgSubjWit k -> EqualType sb (Subject (k sb));
             f1 _ _ e = e;
 
-            kmap :: Type (k ()) -> EqualType a b -> EqualType (k b) (k a);
+            kmap :: Type (k ()) -> EqualType a' b -> EqualType (k b) (k a');
             kmap _ MkEqualType = MkEqualType;
 
             f2 :: forall k sb. Info (Type_T sb) -> ArgSubjWit k -> EqualType (k (Subject (k sb))) (k sb);
             f2 i a = kmap (Type :: Type (k ()) ) (f1 (Type :: Type (k ()) ) i a);
         };
-        matchWitness1 ia@(EditSubjectEditWitness _) ib@(SubjectSubjectEditWitness _ _) = do
+        matchWitness ia@(EditSubjectEditWitness _) ib@(SubjectSubjectEditWitness _ _) = do
         {
             MkEqualType <- matchWitness ib ia;
             return MkEqualType;

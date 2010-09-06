@@ -9,7 +9,7 @@ module Truth.Edit.Import
     module Data.Lens,
     module Data.FloatingLens,
     module Data.Chain,
-    module Data.Nothing,
+    module Data.Empty,
     module Data.Bijection,
     module Data.Injection,
     module Data.HasNewValue,
@@ -55,7 +55,7 @@ where
     import Data.Lens;
     import Data.FloatingLens;
     import Data.Chain;
-    import Data.Nothing;
+    import Data.Empty;
     import Data.Bijection;
     import Data.Injection;
     import Data.HasNewValue;

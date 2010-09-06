@@ -7,9 +7,9 @@ license-file: ""
 copyright:
 maintainer:
 build-depends: Cabal >=1.1.6, Truth-Shapes ==0.1, base >=4.0,
-               bytestring >=0.9.1.5, containers >=0.2, mime >=0.3.2,
-               mtl >=1.1.0.2, open-witness >=0.2, template-haskell >=2.4,
-               witness >=0.2
+               bytestring >=0.9.1.5, containers >=0.2, countable >=0.1,
+               mime >=0.3.2, mtl >=1.1.0.2, open-witness >=0.2,
+               template-haskell >=2.4, witness >=0.2
 stability:
 homepage:
 package-url:
@@ -23,17 +23,16 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Truth.TypeKT.HasInfo Truth.TypeKT.Type
-                 Truth.TypeKT Truth.Edit Truth.Object Truth.TypeKT.Construct
-                 Truth.TypeKT.Info
-                 Truth.TypeKT.HasType Truth.Object.SavableBuffer
-                 Truth.Object.GeneralLens Truth.Object.View Truth.Object.Object
-                 Truth.Object.Editor Truth.Edit.Anything Truth.Edit.WholeEdit
-                 Truth.Edit.EditLens Truth.Edit.Edit Truth.Edit.IndexEdit
-                 Truth.Edit.List Truth.Edit.JustEdit Truth.Edit.FloatingEditLens
-                 Truth.Edit.MIME Truth.Edit.Either Truth.Edit.Context
-                 Truth.Edit.Tuple Truth.Edit.JustWholeEdit Truth.Edit.NoEdit
-                 Truth.Edit.Text
+exposed-modules: Truth.TypeKT Truth.Edit Truth.Object
+                 Truth.TypeKT.Construct Truth.TypeKT.Type Truth.TypeKT.Info
+                 Truth.TypeKT.HasInfo Truth.TypeKT.HasType
+                 Truth.Object.SavableBuffer Truth.Object.GeneralLens
+                 Truth.Object.View Truth.Object.Object Truth.Object.Editor
+                 Truth.Edit.Anything Truth.Edit.WholeEdit Truth.Edit.EditLens
+                 Truth.Edit.Edit Truth.Edit.IndexEdit Truth.Edit.List
+                 Truth.Edit.JustEdit Truth.Edit.FloatingEditLens Truth.Edit.MIME
+                 Truth.Edit.Either Truth.Edit.Context Truth.Edit.Tuple
+                 Truth.Edit.JustWholeEdit Truth.Edit.NoEdit Truth.Edit.Text
 exposed: True
 buildable: True
 build-tools:
