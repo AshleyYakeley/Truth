@@ -63,7 +63,7 @@ where
     import Data.Countable;
     import Data.Searchable;
 
-    import Data.OpenWitness hiding (unsafeIOWitnessFromString);
+    import Data.OpenWitness;
     import Data.Witness;
     import Data.ByteString (ByteString,unpack,pack);
 
