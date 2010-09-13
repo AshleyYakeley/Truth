@@ -31,15 +31,19 @@ module Truth.Object.SavableBuffer where
     savableVersionLens :: SavableVersion -> Lens' Identity (Savable a) a;
     savableVersionLens = pickLens;
 
-    data SavableEdit edit = SEEdit edit | SESave;
+    data SavableEdit edit = SEEdit edit | SESave | SEUnsave (Subject edit);
 
-    instance (Edit edit) => Edit (SavableEdit edit) where
+    instance (Eq (Subject edit), Edit edit) => Edit (SavableEdit edit) where
     {
         type Subject (SavableEdit edit) = Savable (Subject edit);
         applyEdit (SEEdit edit) = arr (\sav -> mkSavable (sav SavableOriginal) (applyConstFunction (applyEdit edit) (sav SavableCurrent)));
         applyEdit SESave = arr (\sav -> mkSavable (sav SavableCurrent) (sav SavableCurrent));
+        applyEdit (SEUnsave a) = arr (\sav -> mkSavable a (sav SavableCurrent));
 
-        invertEdit = undefined; -- BUG
+        invertEdit (SEEdit edit) sav = fmap SEEdit (invertEdit edit (sav SavableCurrent));
+        invertEdit SESave sav = Just (SEUnsave (sav SavableOriginal));
+        invertEdit (SEUnsave _) sav = Just
+         (if (sav SavableOriginal) == (sav SavableCurrent) then SESave else (SEUnsave (sav SavableOriginal)));
     };
 
     savableLens :: (Applicative m) => Lens' m a b -> Lens' m (Savable a) (Savable b);
