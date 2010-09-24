@@ -54,7 +54,7 @@ includes:
 install-includes:
 include-dirs:
 hs-source-dirs: .
-other-modules: Truth.TypeKT.TH Truth.Edit.Import
+other-modules: Truth.Edit.Merge Truth.TypeKT.TH Truth.Edit.Import
 ghc-prof-options:
 ghc-shared-options:
 ghc-options: -Wall -fno-warn-deprecated-flags -pgmPcpphs
