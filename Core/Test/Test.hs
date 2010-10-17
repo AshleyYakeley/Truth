@@ -85,6 +85,7 @@ module Main where
         putStrLn "Test";
         withShowSubscription (freeObjSubscribe "abcdef" :: Subscribe (ListEdit (WholeEdit Char))) "main" (\obj push -> do
         {
+            putStrLn ("-------");
             push (replaceEdit "pqrstu");
             showObject "main" obj;
 
@@ -93,6 +94,7 @@ module Main where
 
             withShowSubscription (lensSubscribe (listSection (MkListRegion 2 2)) obj) "sect" (\sectobj pushSect -> do
             {
+                putStrLn ("-------");
                 pushSect (replaceEdit "12");
                 showObject "sect" sectobj;
                 showObject "main" obj;
@@ -104,27 +106,62 @@ module Main where
                     --showObject "sect" sectobj;
                     --showObject "main" obj;
 
+                    putStrLn ("-------");
                     pushSect (replaceEdit "x");
                     showObject "elem" elemobj;
                     showObject "sect" sectobj;
                     showObject "main" obj;
-        
+
+                    putStrLn ("-------");
                     pushSect (replaceEdit "ABC");
                     showObject "elem" elemobj;
                     showObject "sect" sectobj;
                     showObject "main" obj;
-        
+
+                    putStrLn ("-------");
                     pushSect (replaceEdit "");
                     showObject "elem" elemobj;
                     showObject "sect" sectobj;
                     showObject "main" obj;
-        
+
+                    putStrLn ("-------");
                     pushSect (replaceEdit "ZUM");
                     showObject "elem" elemobj;
                     showObject "sect" sectobj;
                     showObject "main" obj;
-        
+
+                    putStrLn ("-------");
+                    pushSect (ItemEdit (MkIndexEdit 1 (replaceEdit 'g')));
+                    showObject "elem" elemobj;
+                    showObject "sect" sectobj;
+                    showObject "main" obj;
+
+                    putStrLn ("-------");
                     pushElem (replaceEdit (Just 'Q'));
+                    showObject "elem" elemobj;
+                    showObject "sect" sectobj;
+                    showObject "main" obj;
+
+                    putStrLn ("-------");
+                    push (ItemEdit (MkIndexEdit 5 (replaceEdit 'n')));
+                    showObject "elem" elemobj;
+                    showObject "sect" sectobj;
+                    showObject "main" obj;
+
+                    putStrLn ("-------");
+                    push (ReplaceListEdit "abcdefgh");
+                    showObject "elem" elemobj;
+                    showObject "sect" sectobj;
+                    showObject "main" obj;
+
+                    putStrLn ("-------");
+                    pushSect (ReplaceSectionEdit (MkListRegion 1 0) "X");
+                    showObject "elem" elemobj;
+                    showObject "sect" sectobj;
+                    showObject "main" obj;
+
+                    putStrLn ("-------");
+                    push (ReplaceSectionEdit (MkListRegion 3 0) "Y");
                     showObject "elem" elemobj;
                     showObject "sect" sectobj;
                     showObject "main" obj;

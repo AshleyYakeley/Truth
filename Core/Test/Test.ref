@@ -1,11 +1,13 @@
 Test
 main: initial: "abcdef"
+-------
 main: push: replace "pqrstu"
 main: push: accepted
 main: push: new value: "pqrstu"
 main: push: done
 main: "pqrstu"
 sect: initial: "rs"
+-------
 sect: push: replace "12"
 main: update: section 2+2 "12"
 main: update: new value: "pq12tu"
@@ -15,6 +17,7 @@ sect: push: done
 sect: "12"
 main: "pq12tu"
 elem: initial: Just 't'
+-------
 sect: push: replace "x"
 main: update: section 2+2 "x"
 main: update: new value: "pqxtu"
@@ -24,6 +27,7 @@ sect: push: done
 elem: Just 't'
 sect: "x"
 main: "pqxtu"
+-------
 sect: push: replace "ABC"
 main: update: section 2+1 "ABC"
 main: update: new value: "pqABCtu"
@@ -33,6 +37,7 @@ sect: push: done
 elem: Just 't'
 sect: "ABC"
 main: "pqABCtu"
+-------
 sect: push: replace ""
 main: update: section 2+3 ""
 main: update: new value: "pqtu"
@@ -42,6 +47,7 @@ sect: push: done
 elem: Just 't'
 sect: ""
 main: "pqtu"
+-------
 sect: push: replace "ZUM"
 main: update: section 2+0 "ZUM"
 main: update: new value: "pqZUMtu"
@@ -51,13 +57,66 @@ sect: push: done
 elem: Just 't'
 sect: "ZUM"
 main: "pqZUMtu"
+-------
+sect: push: item 1 'g'
+main: update: item 3 'g'
+main: update: new value: "pqZgMtu"
+sect: push: accepted
+sect: push: new value: "ZgM"
+sect: push: done
+elem: Just 't'
+sect: "ZgM"
+main: "pqZgMtu"
+-------
 elem: push: Left Just 'Q'
 main: update: item 5 'Q'
-main: update: new value: "pqZUMQu"
+main: update: new value: "pqZgMQu"
 elem: push: accepted
 elem: push: new value: Just 'Q'
 elem: push: done
 elem: Just 'Q'
-sect: "ZUM"
-main: "pqZUMQu"
+sect: "ZgM"
+main: "pqZgMQu"
+-------
+main: push: item 5 'n'
+elem: update: Right 'n'
+elem: update: new value: Just 'n'
+main: push: accepted
+main: push: new value: "pqZgMnu"
+main: push: done
+elem: Just 'n'
+sect: "ZgM"
+main: "pqZgMnu"
+-------
+main: push: replace "abcdefgh"
+sect: update: replace "cde"
+sect: update: new value: "cde"
+elem: update: Left Just 'f'
+elem: update: new value: Just 'f'
+main: push: accepted
+main: push: new value: "abcdefgh"
+main: push: done
+elem: Just 'f'
+sect: "cde"
+main: "abcdefgh"
+-------
+sect: push: section 1+0 "X"
+main: update: section 3+0 "X"
+main: update: new value: "abcXdefgh"
+sect: push: accepted
+sect: push: new value: "cXde"
+sect: push: done
+elem: Just 'f'
+sect: "cXde"
+main: "abcXdefgh"
+-------
+main: push: section 3+0 "Y"
+sect: update: section 1+0 "Y"
+sect: update: new value: "cYXde"
+main: push: accepted
+main: push: new value: "abcYXdefgh"
+main: push: done
+elem: Just 'f'
+sect: "cYXde"
+main: "abcYXdefgh"
 End
