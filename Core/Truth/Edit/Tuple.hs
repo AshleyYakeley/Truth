@@ -1,7 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Truth.Edit.Tuple where
 {
-    import Truth.Edit.EditLens;
+    import Truth.Edit.CleanEditLens;
+    import Truth.Edit.EditFunction;
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Edit;
     import Truth.Edit.Import;
@@ -36,16 +37,25 @@ module Truth.Edit.Tuple where
 
     type TupleWholeEdit editlist t = Either (WholeEdit t) (TupleEdit editlist t);
 
-    tupleElementCleanLens' :: (IsTuple t,HasListElement n (ListTuple t),ListElement n (ListTuple t) ~ Subject (ListElement n editlist),Edit (ListElement n editlist)) =>
-       Nat n -> CleanEditLens' Identity (TupleEdit editlist t) (ListElement n editlist);
+    tupleElementCleanLens' ::
+    (
+     IsTuple t,
+     HasListElement n (ListTuple t),
+     ListElement n (ListTuple t) ~ Subject (ListElement n editlist),
+     Edit (ListElement n editlist)
+    ) =>
+     Nat n -> CleanEditLens' Identity (TupleEdit editlist t) (ListElement n editlist);
     tupleElementCleanLens' n = MkCleanEditLens
     {
-        cleanEditLensUpdate = \(MkTupleEdit n' edit) -> do
+        cleanEditLensFunction = MkCleanEditFunction
         {
-            MkEqualType <- matchWitness n n';
-            return edit;
+            cleanEditGet = (getListElement n) . toListTuple,
+            cleanEditUpdate = \(MkTupleEdit n' edit) -> do
+            {
+                MkEqualType <- matchWitness n n';
+                return edit;
+            }
         },
-        cleanEditLensSimple = (listElementLens n) . (bijectionLens listTupleBijection),
         cleanEditLensPutEdit = \edit -> return (MkTupleEdit n edit)
     };
 

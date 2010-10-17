@@ -1,7 +1,7 @@
 module Truth.Edit.Context where
 {
     import Truth.Edit.Tuple;
-    import Truth.Edit.EditLens;
+    import Truth.Edit.CleanEditLens;
     import Truth.Edit.Edit;
     import Truth.Edit.Import;
 

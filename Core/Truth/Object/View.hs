@@ -7,7 +7,7 @@ module Truth.Object.View where
     data Aspect edit where
     {
         MkAspect ::
-         forall edita editb state. (Eq state,Edit editb) =>
+         forall edita editb state. (Eq state,FullEdit editb) =>
           Info (Type_T editb) -> Info (Type_T (Subject editb)) -> FloatingEditLens state edita editb -> Aspect edita;
     };
 
