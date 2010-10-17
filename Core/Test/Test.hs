@@ -19,17 +19,22 @@ module Main where
         show (ReplaceSectionEdit i sect) = "section " ++ (show i) ++ " " ++ show sect;
         show (ReplaceListEdit la) = "replace " ++ (show la);
     };
-    
+
     instance (Show (f (Subject edit)),Show edit) => Show (JustEdit f edit) where
     {
         show (MkJustEdit edit) = show edit;
     };
-   
+
     instance (Show a) => Show (WholeEdit a) where
     {
         show (MkWholeEdit s) = show s;
     };
-   
+
+    instance Show ListRegion where
+    {
+        show (MkListRegion a b) = (show a) ++ "+" ++ (show b);
+    };
+
     showObject :: (Show (Subject edit)) => String -> Subscribe edit -> IO ();
     showObject name obj = do
     {
@@ -86,7 +91,7 @@ module Main where
 --            push (ReplaceEdit "PQRSTU");
 --            showObject "current" obj;
 
-            withShowSubscription (lensSubscribe (listSection (2,2)) obj) "sect" (\sectobj pushSect -> do
+            withShowSubscription (lensSubscribe (listSection (MkListRegion 2 2)) obj) "sect" (\sectobj pushSect -> do
             {
                 pushSect (replaceEdit "12");
                 showObject "sect" sectobj;
