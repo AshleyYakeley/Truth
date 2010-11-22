@@ -8,7 +8,7 @@ module Main where
     import Data.Maybe;
     import Data.IORef;
 
-    instance (Show edit,Show i) => Show (IndexEdit a i edit) where
+    instance (Show edit,Show (Index c)) => Show (IndexEdit c edit) where
     {
         show (MkIndexEdit i edit) = (show i) ++ " " ++ show edit;
     };
@@ -82,7 +82,39 @@ module Main where
     main :: IO ();
     main = do
     {
-        putStrLn "Test";
+    
+        putStrLn ("=======");
+        putStrLn "Test Drop";
+        withShowSubscription (freeObjSubscribe "pq" :: Subscribe (ListEdit (WholeEdit Char))) "main" (\obj push -> do
+        {
+            withShowSubscription (lensSubscribe (listDrop 2) obj) "sect" (\sectobj pushSect -> do
+            {
+                putStrLn ("-------");
+                push (ReplaceSectionEdit (MkListRegion 2 0) "ZUM");
+                showObject "sect" sectobj;
+                showObject "main" obj;
+
+                return (Just ());
+            });
+        });
+    
+        putStrLn ("=======");
+        putStrLn "Test Take";
+        withShowSubscription (freeObjSubscribe "tu" :: Subscribe (ListEdit (WholeEdit Char))) "main" (\obj push -> do
+        {
+            withShowSubscription (lensSubscribe (listTake 0) obj) "sect" (\sectobj pushSect -> do
+            {
+                putStrLn ("-------");
+                push (ReplaceSectionEdit (MkListRegion 0 0) "ZUM");
+                showObject "sect" sectobj;
+                showObject "main" obj;
+
+                return (Just ());
+            });
+        });
+    
+        putStrLn ("=======");
+        putStrLn "Test Section";
         withShowSubscription (freeObjSubscribe "abcdef" :: Subscribe (ListEdit (WholeEdit Char))) "main" (\obj push -> do
         {
             putStrLn ("-------");

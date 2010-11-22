@@ -2,6 +2,7 @@
 module Data.FunctorOne where
 {
     import Data.ConstFunction;
+    import Data.Chain;
     import Data.Traversable;
     import Data.Foldable;
     import Data.Monoid;
@@ -193,5 +194,12 @@ module Data.FunctorOne where
         retrieveOne (SuccessResult a) = SuccessResult a;
         retrieveOne (FailureResult e) = FailureResult (FailureResult e);
         getMaybeOne = resultToMaybe;
+    };
+
+    constFunctionAp :: (FunctorOne f) => f (ConstFunction a b) -> ConstFunction (f a) (f b);
+    constFunctionAp fcab = case retrieveOne fcab of
+    {
+        FailureResult fx -> return fx;
+        SuccessResult cab -> cfmap cab;
     };
 }

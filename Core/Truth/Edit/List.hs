@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Truth.Edit.List(listElement,listSection,ListEdit(..),ListPoint,ListRegion(..)) where
+module Truth.Edit.List(listElement,listTake,listDrop,listSection,ListEdit(..),ListPoint,ListRegion(..)) where
 {
     import Truth.Edit.IndexEdit;
     import Truth.Edit.FloatingEditLens;
@@ -165,58 +165,79 @@ module Truth.Edit.List(listElement,listSection,ListEdit(..),ListPoint,ListRegion
         };
     };
 
-    listSection :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => ListRegion -> FloatingEditLens ListRegion (ListEdit edit) (ListEdit edit);
-    listSection initial = MkFloatingEditLens
+    listTake :: forall edit. ListPoint -> FloatingEditLens ListPoint (ListEdit edit) (ListEdit edit);
+    listTake initial = MkFloatingEditLens
     {
         floatingEditLensFunction = MkFloatingEditFunction
         {
             floatingEditInitial = initial,
-            floatingEditGet = \(MkListRegion start len) list -> take len (drop start list),
-            floatingEditUpdate = sectionUpdate
-        },
-        floatingEditLensPutEdit = \clip@(MkListRegion start _clen) ele -> pure (Just (case ele of
-        {
-            ReplaceListEdit newlist -> ReplaceSectionEdit clip newlist;
-            ItemEdit (MkIndexEdit i edit) -> ItemEdit (MkIndexEdit (start + i) edit);
-            ReplaceSectionEdit (MkListRegion s len) newlist -> ReplaceSectionEdit (MkListRegion (start + s) len) newlist;
-        }))
-    } where
-    {
-        listSection' :: ListRegion -> FloatingEditLens ListRegion (ListEdit edit) (ListEdit edit);
-        listSection' = listSection;
-
-        listElement' :: ListPoint -> FloatingEditLens ListPoint (ListEdit edit) (JustWholeEdit Maybe edit);
-        listElement' = listElement;
-
-        sectionUpdate :: ListEdit edit -> ListRegion -> ConstFunction [Subject edit] (ListRegion,Maybe (ListEdit edit));
-        sectionUpdate edita state =
-          fromMaybe (fmap (\newa -> (state,Just (replaceEdit (floatingEditGet (floatingEditLensFunction (listSection' state)) state newa)))) (applyEdit edita)) update_ where
-        {
-            update_ :: Maybe (ConstFunction [Subject edit] (ListRegion,Maybe (ListEdit edit)));
-            update_ = case edita of
+            floatingEditGet = \mark list -> take mark list,
+            floatingEditUpdate = \edita oldmark -> return (case edita of
             {
-                ReplaceSectionEdit editlensstate newb -> Just (pure (let
-                {
-                    newlen = length newb;
-                    (newstate,mclip) = updateSection state editlensstate newlen;
-                } in (newstate,fmap (\clip -> ReplaceSectionEdit clip newb) mclip)
-                ));
-
-                ItemEdit (MkIndexEdit editlensstate editbedit) -> Just (FunctionConstFunction (\olda ->
-                let
-                {
-                    oldb = floatingEditGet (floatingEditLensFunction (listElement' editlensstate)) editlensstate olda;
-                    newb = applyConstFunctionA (applyEdit editbedit) oldb;
-                    newlen = case newb of
-                    {
-                        Just _ -> 1;
-                        _ -> 0;
-                    };
-                    (newstate,mclip) = updateSection state (MkListRegion editlensstate 1) newlen;
-                } in (newstate,fmap (\(MkListRegion clip _) -> ItemEdit (MkIndexEdit clip editbedit)) mclip) ));
-
-                _ -> Nothing;
-            };
-        };
+                ReplaceListEdit list -> if oldmark == 0 then (oldmark,Nothing) else (length list, Just edita);
+                ItemEdit (MkIndexEdit item _editb) -> (oldmark,if item < oldmark
+                 then Just edita
+                 else Nothing);
+                ReplaceSectionEdit (MkListRegion s len) sec -> if s <= oldmark
+                 then let
+                 {
+                    newmark = oldmark + (length sec) - len;
+                 }
+                 in (newmark,Just (if s + len <= oldmark
+                   then edita  -- in lens part
+                   else ReplaceSectionEdit (MkListRegion s (oldmark - s)) (take (newmark - s) sec) -- partial
+                    ))
+                 else (oldmark,Nothing); -- in ignored part
+            })
+        },
+        floatingEditLensPutEdit = \mark editb -> return (return (case editb of
+        {
+            ReplaceListEdit newlist -> ReplaceSectionEdit (MkListRegion 0 mark) newlist;
+            ItemEdit _ -> editb;
+            ReplaceSectionEdit _ _ -> editb;
+        }))
     };
+
+    listDrop :: forall edit. ListPoint -> FloatingEditLens ListPoint (ListEdit edit) (ListEdit edit);
+    listDrop initial = MkFloatingEditLens
+    {
+        floatingEditLensFunction = MkFloatingEditFunction
+        {
+            floatingEditInitial = initial,
+            floatingEditGet = \mark list -> drop mark list,
+            floatingEditUpdate = \edita oldmark -> case edita of
+            {
+                ReplaceListEdit _list -> do
+                {
+                    olda <- id;
+                    return
+                     (if oldmark == (length olda)
+                      then (oldmark,Nothing)
+                      else (0, Just edita) );
+                };
+                ItemEdit (MkIndexEdit item editb) -> return (oldmark,if item >= oldmark
+                 then Just (ItemEdit (MkIndexEdit (item - oldmark) editb))
+                 else Nothing);
+                ReplaceSectionEdit (MkListRegion s len) sec -> return (if s + len >= oldmark
+                 then (oldmark,Just (if s >= oldmark
+                   then ReplaceSectionEdit (MkListRegion (s - oldmark) len) sec  -- in lens part
+                   else ReplaceSectionEdit (MkListRegion 0 (s - oldmark + len)) (drop (oldmark - s) sec) -- partial
+                    ))
+                 else (oldmark + (length sec) - len,Nothing) ); -- in ignored part
+            }
+        },
+        floatingEditLensPutEdit = \mark editb -> case editb of
+        {
+            ReplaceListEdit newlist -> do
+            {
+                olda <- id;
+                return (return (ReplaceSectionEdit (MkListRegion mark ((length olda) - mark)) newlist));
+            };
+            ItemEdit (MkIndexEdit i edit) -> return (return (ItemEdit (MkIndexEdit (mark + i) edit)));
+            ReplaceSectionEdit (MkListRegion s len) newlist -> return (return (ReplaceSectionEdit (MkListRegion (mark + s) len) newlist));
+        }
+    };
+
+    listSection :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => ListRegion -> FloatingEditLens (ListPoint,ListPoint) (ListEdit edit) (ListEdit edit);
+    listSection (MkListRegion start len) = composeFloating (listTake len) (listDrop start);
 }

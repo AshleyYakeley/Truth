@@ -82,4 +82,34 @@ module Truth.Edit.FloatingEditFunction  where
     justWholeFloatingEdit :: forall f state edita editb. (FunctorOne f,Edit edita,Edit editb) =>
      FloatingEditFunction state edita editb -> FloatingEditFunction state (JustWholeEdit f edita) (JustWholeEdit f editb);
     justWholeFloatingEdit lens = eitherWholeFloatingEdit (justFloatingEdit lens);
+
+    class FloatingMap ff where
+    {
+        identityFloating :: ff () a a;
+        composeFloating :: ff s2 b c -> ff s1 a b -> ff (s1,s2) a c;
+    };
+
+    instance FloatingMap FloatingEditFunction where
+    {
+        identityFloating = fixedFloatingEditFunction id;
+
+        composeFloating fef2 fef1 = MkFloatingEditFunction
+        {
+            floatingEditInitial = (floatingEditInitial fef1,floatingEditInitial fef2),
+            floatingEditGet = \(s1,s2) -> (floatingEditGet fef2 s2) . (floatingEditGet fef1 s1),
+            floatingEditUpdate = \ea (s1,s2) -> do
+            {
+                (s1',meb) <- floatingEditUpdate fef1 ea s1;
+                case meb of
+                {
+                    Just eb -> do
+                    {
+                        (s2',mec) <- cofmap1CF (floatingEditGet fef1 s1') (floatingEditUpdate fef2 eb s2);
+                        return ((s1',s2'),mec);
+                    };
+                    Nothing -> return ((s1',s2),Nothing);
+                };
+            }
+        };
+    };
 }

@@ -1,4 +1,31 @@
-Test
+=======
+Test Drop
+main: initial: "pq"
+sect: initial: ""
+-------
+main: push: section 2+0 "ZUM"
+sect: update: section 0+0 "ZUM"
+sect: update: new value: "ZUM"
+main: push: accepted
+main: push: new value: "pqZUM"
+main: push: done
+sect: "ZUM"
+main: "pqZUM"
+=======
+Test Take
+main: initial: "tu"
+sect: initial: ""
+-------
+main: push: section 0+0 "ZUM"
+sect: update: section 0+0 "ZUM"
+sect: update: new value: "ZUM"
+main: push: accepted
+main: push: new value: "ZUMtu"
+main: push: done
+sect: "ZUM"
+main: "ZUMtu"
+=======
+Test Section
 main: initial: "abcdef"
 -------
 main: push: replace "pqrstu"
@@ -89,34 +116,34 @@ sect: "ZgM"
 main: "pqZgMnu"
 -------
 main: push: replace "abcdefgh"
-sect: update: replace "cde"
-sect: update: new value: "cde"
+sect: update: replace "abcdefgh"
+sect: update: new value: "abcdefgh"
 elem: update: Left Just 'f'
 elem: update: new value: Just 'f'
 main: push: accepted
 main: push: new value: "abcdefgh"
 main: push: done
 elem: Just 'f'
-sect: "cde"
+sect: "abcdefgh"
 main: "abcdefgh"
 -------
 sect: push: section 1+0 "X"
-main: update: section 3+0 "X"
-main: update: new value: "abcXdefgh"
+main: update: section 1+0 "X"
+main: update: new value: "aXbcdefgh"
 sect: push: accepted
-sect: push: new value: "cXde"
+sect: push: new value: "aXbcdefgh"
 sect: push: done
 elem: Just 'f'
-sect: "cXde"
-main: "abcXdefgh"
+sect: "aXbcdefgh"
+main: "aXbcdefgh"
 -------
 main: push: section 3+0 "Y"
-sect: update: section 1+0 "Y"
-sect: update: new value: "cYXde"
+sect: update: section 3+0 "Y"
+sect: update: new value: "aXbYcdefgh"
 main: push: accepted
-main: push: new value: "abcYXdefgh"
+main: push: new value: "aXbYcdefgh"
 main: push: done
 elem: Just 'f'
-sect: "cYXde"
-main: "abcYXdefgh"
+sect: "aXbYcdefgh"
+main: "aXbYcdefgh"
 End

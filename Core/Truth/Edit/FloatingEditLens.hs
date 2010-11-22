@@ -8,14 +8,14 @@ module Truth.Edit.FloatingEditLens where
     import Truth.Edit.Edit;
     import Truth.Edit.Import;
 
-    data FloatingEditLens' state m edita editb = MkFloatingEditLens
+    data FloatingEditLens' m state edita editb = MkFloatingEditLens
     {
         floatingEditLensFunction :: FloatingEditFunction state edita editb,
         floatingEditLensPutEdit :: state -> editb -> ConstFunction (Subject edita) (m edita)
     };
 
-    type FloatingEditLens state = FloatingEditLens' state Maybe;
-
+    type FloatingEditLens = FloatingEditLens' Maybe;
+{-
     instance IsBiMap (FloatingEditLens' state) where
     {
         mapBiMapM ff felens = MkFloatingEditLens
@@ -24,12 +24,30 @@ module Truth.Edit.FloatingEditLens where
             floatingEditLensPutEdit = \state edit -> fmap ff (floatingEditLensPutEdit felens state edit)
         };
     };
-
-    fixedFloatingEditLens :: EditLens edita editb -> FloatingEditLens () edita editb;
+-}
+    fixedFloatingEditLens :: EditLens' m edita editb -> FloatingEditLens' m () edita editb;
     fixedFloatingEditLens lens = MkFloatingEditLens
     {
         floatingEditLensFunction = fixedFloatingEditFunction (editLensFunction lens),
         floatingEditLensPutEdit = \_ -> editLensPutEdit lens
+    };
+
+    instance (Applicative m,FunctorOne m) => FloatingMap (FloatingEditLens' m) where
+    {
+        identityFloating = fixedFloatingEditLens id;
+        composeFloating fel2 fel1 = MkFloatingEditLens
+        {
+            floatingEditLensFunction = composeFloating (floatingEditLensFunction fel2) (floatingEditLensFunction fel1),
+            floatingEditLensPutEdit = \(s1,s2) editc -> do
+            {
+                meditb <- cofmap1CF (floatingEditGet (floatingEditLensFunction fel1) s1) (floatingEditLensPutEdit fel2 s2 editc);
+                case retrieveOne meditb of
+                {
+                    SuccessResult editb -> floatingEditLensPutEdit fel1 s1 editb;
+                    FailureResult mx -> return mx;
+                };
+            }
+        };
     };
 
     eitherWholeFloatingEditLens ::
@@ -68,13 +86,6 @@ module Truth.Edit.FloatingEditLens where
                 _ -> Nothing;
             });
         }
-    };
-
-    constFunctionAp :: (FunctorOne f) => f (ConstFunction a b) -> ConstFunction (f a) (f b);
-    constFunctionAp fcab = case retrieveOne fcab of
-    {
-        FailureResult fx -> return fx;
-        SuccessResult cab -> cfmap cab;
     };
 
     -- suitable for Results, trying to put a failure code will be rejected

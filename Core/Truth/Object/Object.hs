@@ -106,10 +106,10 @@ module Truth.Object.Object where
         lensSubscribe :: lens -> Subscribe (LensDomain lens) -> Subscribe (LensRange lens);
     };
 
-    instance (FunctorOne m,Edit edita,Eq state) => IsEditLens (FloatingEditLens' state m edita editb) where
+    instance (FunctorOne m,Edit edita,Eq state) => IsEditLens (FloatingEditLens' m state edita editb) where
     {
-        type LensDomain (FloatingEditLens' state m edita editb) = edita;
-        type LensRange (FloatingEditLens' state m edita editb) = editb;
+        type LensDomain (FloatingEditLens' m state edita editb) = edita;
+        type LensRange (FloatingEditLens' m state edita editb) = editb;
 
         lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
         {
