@@ -172,13 +172,17 @@ module Truth.Edit.List(listElement,listTake,listDrop,listSection,ListEdit(..),Li
         {
             floatingEditInitial = initial,
             floatingEditGet = \mark list -> take mark list,
-            floatingEditUpdate = \edita oldmark -> return (case edita of
+            floatingEditUpdate = \edita oldmark -> case edita of
             {
-                ReplaceListEdit list -> if oldmark == 0 then (oldmark,Nothing) else (length list, Just edita);
-                ItemEdit (MkIndexEdit item _editb) -> (oldmark,if item < oldmark
+                ReplaceListEdit list -> do
+                {
+                    olda <- id;
+                    return (if (oldmark == 0) && ((length olda) > 0) then (oldmark,Nothing) else (length list, Just edita));
+                };
+                ItemEdit (MkIndexEdit item _editb) -> return (oldmark,if item < oldmark
                  then Just edita
                  else Nothing);
-                ReplaceSectionEdit (MkListRegion s len) sec -> if s <= oldmark
+                ReplaceSectionEdit (MkListRegion s len) sec -> return (if s <= oldmark
                  then let
                  {
                     newmark = oldmark + (length sec) - len;
@@ -187,8 +191,8 @@ module Truth.Edit.List(listElement,listTake,listDrop,listSection,ListEdit(..),Li
                    then edita  -- in lens part
                    else ReplaceSectionEdit (MkListRegion s (oldmark - s)) (take (newmark - s) sec) -- partial
                     ))
-                 else (oldmark,Nothing); -- in ignored part
-            })
+                 else (oldmark,Nothing)); -- in ignored part
+            }
         },
         floatingEditLensPutEdit = \mark editb -> return (return (case editb of
         {
@@ -211,7 +215,7 @@ module Truth.Edit.List(listElement,listTake,listDrop,listSection,ListEdit(..),Li
                 {
                     olda <- id;
                     return
-                     (if oldmark == (length olda)
+                     (if (oldmark == (length olda)) && ((length olda) > 0)
                       then (oldmark,Nothing)
                       else (0, Just edita) );
                 };

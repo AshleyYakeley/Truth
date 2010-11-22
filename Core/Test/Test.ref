@@ -11,6 +11,42 @@ main: push: new value: "pqZUM"
 main: push: done
 sect: "ZUM"
 main: "pqZUM"
+-------
+main: push: replace ""
+sect: update: replace ""
+sect: update: new value: ""
+main: push: accepted
+main: push: new value: ""
+main: push: done
+sect: ""
+main: ""
+-------
+main: push: section 0+0 "M"
+sect: update: section 0+0 "M"
+sect: update: new value: "M"
+main: push: accepted
+main: push: new value: "M"
+main: push: done
+sect: "M"
+main: "M"
+-------
+main: push: replace ""
+sect: update: replace ""
+sect: update: new value: ""
+main: push: accepted
+main: push: new value: ""
+main: push: done
+sect: ""
+main: ""
+-------
+main: push: replace "K"
+sect: update: replace "K"
+sect: update: new value: "K"
+main: push: accepted
+main: push: new value: "K"
+main: push: done
+sect: "K"
+main: "K"
 =======
 Test Take
 main: initial: "tu"
@@ -24,6 +60,42 @@ main: push: new value: "ZUMtu"
 main: push: done
 sect: "ZUM"
 main: "ZUMtu"
+-------
+main: push: replace ""
+sect: update: replace ""
+sect: update: new value: ""
+main: push: accepted
+main: push: new value: ""
+main: push: done
+sect: ""
+main: ""
+-------
+main: push: section 0+0 "M"
+sect: update: section 0+0 "M"
+sect: update: new value: "M"
+main: push: accepted
+main: push: new value: "M"
+main: push: done
+sect: "M"
+main: "M"
+-------
+main: push: replace ""
+sect: update: replace ""
+sect: update: new value: ""
+main: push: accepted
+main: push: new value: ""
+main: push: done
+sect: ""
+main: ""
+-------
+main: push: replace "K"
+sect: update: replace "K"
+sect: update: new value: "K"
+main: push: accepted
+main: push: new value: "K"
+main: push: done
+sect: "K"
+main: "K"
 =======
 Test Section
 main: initial: "abcdef"
@@ -146,4 +218,50 @@ main: push: done
 elem: Just 'f'
 sect: "aXbYcdefgh"
 main: "aXbYcdefgh"
+-------
+main: push: replace ""
+sect: update: replace ""
+sect: update: new value: ""
+elem: update: Left Nothing
+elem: update: new value: Nothing
+main: push: accepted
+main: push: new value: ""
+main: push: done
+elem: Nothing
+sect: ""
+main: ""
+-------
+main: push: section 0+0 "M"
+sect: update: section 0+0 "M"
+sect: update: new value: "M"
+main: push: accepted
+main: push: new value: "M"
+main: push: done
+elem: Nothing
+sect: "M"
+main: "M"
+-------
+main: push: replace ""
+sect: update: replace ""
+sect: update: new value: ""
+elem: update: Left Nothing
+elem: update: new value: Nothing
+main: push: accepted
+main: push: new value: ""
+main: push: done
+elem: Nothing
+sect: ""
+main: ""
+-------
+main: push: replace "K"
+sect: update: replace "K"
+sect: update: new value: "K"
+elem: update: Left Nothing
+elem: update: new value: Nothing
+main: push: accepted
+main: push: new value: "K"
+main: push: done
+elem: Nothing
+sect: "K"
+main: "K"
 End

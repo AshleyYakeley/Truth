@@ -94,6 +94,26 @@ module Main where
                 showObject "sect" sectobj;
                 showObject "main" obj;
 
+                putStrLn ("-------");
+                push (ReplaceListEdit "");
+                showObject "sect" sectobj;
+                showObject "main" obj;
+
+                putStrLn ("-------");
+                push (ReplaceSectionEdit (MkListRegion 0 0) "M");
+                showObject "sect" sectobj;
+                showObject "main" obj;
+
+                putStrLn ("-------");
+                push (ReplaceListEdit "");
+                showObject "sect" sectobj;
+                showObject "main" obj;
+
+                putStrLn ("-------");
+                push (ReplaceListEdit "K");
+                showObject "sect" sectobj;
+                showObject "main" obj;
+
                 return (Just ());
             });
         });
@@ -106,6 +126,26 @@ module Main where
             {
                 putStrLn ("-------");
                 push (ReplaceSectionEdit (MkListRegion 0 0) "ZUM");
+                showObject "sect" sectobj;
+                showObject "main" obj;
+
+                putStrLn ("-------");
+                push (ReplaceListEdit "");
+                showObject "sect" sectobj;
+                showObject "main" obj;
+
+                putStrLn ("-------");
+                push (ReplaceSectionEdit (MkListRegion 0 0) "M");
+                showObject "sect" sectobj;
+                showObject "main" obj;
+
+                putStrLn ("-------");
+                push (ReplaceListEdit "");
+                showObject "sect" sectobj;
+                showObject "main" obj;
+
+                putStrLn ("-------");
+                push (ReplaceListEdit "K");
                 showObject "sect" sectobj;
                 showObject "main" obj;
 
@@ -122,7 +162,7 @@ module Main where
             showObject "main" obj;
 
 --            push (ReplaceEdit "PQRSTU");
---            showObject "current" obj;
+--            showObject "main" obj;
 
             withShowSubscription (lensSubscribe (listSection (MkListRegion 2 2)) obj) "sect" (\sectobj pushSect -> do
             {
@@ -194,6 +234,30 @@ module Main where
 
                     putStrLn ("-------");
                     push (ReplaceSectionEdit (MkListRegion 3 0) "Y");
+                    showObject "elem" elemobj;
+                    showObject "sect" sectobj;
+                    showObject "main" obj;
+
+                    putStrLn ("-------");
+                    push (ReplaceListEdit "");
+                    showObject "elem" elemobj;
+                    showObject "sect" sectobj;
+                    showObject "main" obj;
+
+                    putStrLn ("-------");
+                    push (ReplaceSectionEdit (MkListRegion 0 0) "M");
+                    showObject "elem" elemobj;
+                    showObject "sect" sectobj;
+                    showObject "main" obj;
+
+                    putStrLn ("-------");
+                    push (ReplaceListEdit "");
+                    showObject "elem" elemobj;
+                    showObject "sect" sectobj;
+                    showObject "main" obj;
+
+                    putStrLn ("-------");
+                    push (ReplaceListEdit "K");
                     showObject "elem" elemobj;
                     showObject "sect" sectobj;
                     showObject "main" obj;
