@@ -1,28 +1,55 @@
 module Truth.Edit.NoEdit where
 {
     import Truth.Edit.Edit;
+    import Truth.Edit.Read;
     import Truth.Edit.Import;
 
-    newtype NoEdit a = MkNoEdit Nothing deriving (Eq,Countable,Searchable,Finite,Empty);
+    newtype NoReader (a :: *) (t :: *) = MkNoReader Nothing deriving (Eq,Countable,Searchable,Finite,Empty);
 
-    instance Edit (NoEdit a) where
+    instance Reader (NoReader a) where
     {
-        type Subject (NoEdit a) = a;
+        type Subject (NoReader a) = a;
+        readFromM _ = never;
+        readFrom _ = never;
+    };
+
+    instance HasInfo (Type_KTKTT NoReader) where
+    {
+        info = mkSimpleInfo $(iowitness[t| Type_KTKTT NoReader |])
+        [
+            -- instance () => Reader_Inst (NoReader a)
+            mkFacts (MkFactS (\a -> MkFactZ (do
+            {
+                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
+                return (Reader_Inst a);
+            }))
+            :: FactS FactZ Reader_Inst (Type_KTKTT NoReader)
+            )
+        ];
+    };
+
+    -- | Can't touch this.
+    newtype NoEdit (reader :: * -> *) = MkNoEdit Nothing deriving (Eq,Countable,Searchable,Finite,Empty);
+
+    instance (Reader reader) => Edit (NoEdit reader) where
+    {
+        type EditReader (NoEdit reader) = reader;
         applyEdit = never;
         invertEdit = never;
     };
 
-    instance HasInfo (Type_KTT NoEdit) where
+    instance HasInfo (Type_KKTTT NoEdit) where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_KTT NoEdit |])
+        info = mkSimpleInfo $(iowitness[t| Type_KKTTT NoEdit |])
         [
             -- instance () => EditInst (NoEdit a)
-            mkFacts (MkFactS (\a -> MkFactZ (do
+            mkFacts (MkFactS (\reader -> MkFactZ (do
             {
-                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
-                return (Edit_Inst a);
+                Kind_KTT <- matchProp $(type1[t|Kind_KTT|]) reader;
+                Reader_Inst _subject <- matchProp $(type1[t|Reader_Inst|]) reader;
+                return (Edit_Inst reader);
             }))
-            :: FactS FactZ Edit_Inst (Type_KTT NoEdit)
+            :: FactS FactZ Edit_Inst (Type_KKTTT NoEdit)
             )
         ];
     };

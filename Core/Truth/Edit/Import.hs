@@ -1,7 +1,7 @@
 module Truth.Edit.Import
 (
     module Truth.TypeKT,
-    module Data.ConstFunction,
+    module Control.Monad.Free,
     module Data.FunctorOne,
     module Data.Result,
     module Data.IsTuple,
@@ -21,6 +21,8 @@ module Truth.Edit.Import
     module Data.Witness,
     module Data.ByteString,
 
+    module Data.Functor.Compose,
+
     module Control.Exception,
     module System.IO,
     module Control.Concurrent.MVar,
@@ -31,8 +33,8 @@ module Truth.Edit.Import
     module Control.Arrow,
     module Control.Monad,
     module Control.Category,
-    module Control.Monad.State,
-    module Control.Monad.Identity,
+    module Control.Monad.Trans.State,
+    module Data.Functor.Identity,
     module Data.Tuple,
     module Data.Word,
     module Data.Char,
@@ -47,7 +49,7 @@ module Truth.Edit.Import
 where
 {
     import Truth.TypeKT;
-    import Data.ConstFunction;
+    import Control.Monad.Free;
     import Data.FunctorOne;
     import Data.Result;
     import Data.IsTuple;
@@ -67,6 +69,8 @@ where
     import Data.Witness;
     import Data.ByteString (ByteString,unpack,pack);
 
+    import Data.Functor.Compose;
+
     import Control.Exception hiding (catch);
     import System.IO;
     import Control.Concurrent.MVar;
@@ -77,8 +81,8 @@ where
     import Control.Arrow hiding ((|||),(<<<),(>>>));
     import Control.Monad (Functor(..),Monad(..));
     import Control.Category;
-    import Control.Monad.State (StateT(..),evalStateT);
-    import Control.Monad.Identity (Identity(..));
+    import Control.Monad.Trans.State (StateT(..),evalStateT);
+    import Data.Functor.Identity;
     import Data.Tuple;
     import Data.Word;
     import Data.Char;

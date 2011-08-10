@@ -2,7 +2,6 @@ module Data.FloatingLens where
 {
     import Data.Lens;
     import Data.Codec;
-    import Data.ConstFunction;
     import Data.Traversable;
     import Data.FunctorOne;
     import Data.Chain;
@@ -12,7 +11,7 @@ module Data.FloatingLens where
     {
         floatingLensInitial :: state,
         floatingLensGet :: state -> a -> b,
-        floatingLensPutback :: state -> b -> ConstFunction a (m (state,a))
+        floatingLensPutback :: state -> b -> a -> m (state,a)
     };
 
     fixedFloatingLens :: (Functor m) => Lens' m a b -> FloatingLens' () m a b;

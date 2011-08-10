@@ -3,27 +3,27 @@ module Data.IsTuple where
     import Data.Bijection;
     import Data.Witness;
 
-    class (Is (ListType Type) (ListTuple a)) => IsTuple a where
+    class (Is (ListType Type) (AggregateTuple a)) => Aggregate a where
     {
-        type ListTuple a;
-        fromListTuple :: ListTuple a -> a;
-        toListTuple :: a -> ListTuple a;
+        type AggregateTuple a;
+        fromAggregateTuple :: AggregateTuple a -> a;
+        toAggregateTuple :: a -> AggregateTuple a;
     };
 
-    instance IsTuple (a,b) where
+    instance Aggregate (a,b) where
     {
-        type ListTuple (a,b) = (a,(b,()));
-        fromListTuple (a,(b,())) = (a,b);
-        toListTuple (a,b) = (a,(b,()));
+        type AggregateTuple (a,b) = (a,(b,()));
+        fromAggregateTuple (a,(b,())) = (a,b);
+        toAggregateTuple (a,b) = (a,(b,()));
     };
 
-    instance IsTuple (a,b,c) where
+    instance Aggregate (a,b,c) where
     {
-        type ListTuple (a,b,c) = (a,(b,(c,())));
-        fromListTuple (a,(b,(c,()))) = (a,b,c);
-        toListTuple (a,b,c) = (a,(b,(c,())));
+        type AggregateTuple (a,b,c) = (a,(b,(c,())));
+        fromAggregateTuple (a,(b,(c,()))) = (a,b,c);
+        toAggregateTuple (a,b,c) = (a,(b,(c,())));
     };
 
-    listTupleBijection :: (IsTuple t) => Bijection t (ListTuple t);
-    listTupleBijection = MkBijection toListTuple fromListTuple;
+    aggregateTupleBijection :: (Aggregate t) => Bijection t (AggregateTuple t);
+    aggregateTupleBijection = MkBijection toAggregateTuple fromAggregateTuple;
 }

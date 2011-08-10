@@ -8,31 +8,13 @@ module Truth.TypeKT.Type where
     import Data.List;
     import Data.Char;
     import Control.Monad;
-	import Data.OpenWitness;
-
-    $(forM supportedKinds (\k ->
-        -- [d|data $(return (kindTypeName k)) (a :: $(return k))|];
-        do
-        {
-            ndecla <- newName "a";
-            return (DataD [] (kindTypeName k) [KindedTV ndecla k] [] []);
-        }
-    ));
+    import Data.OpenWitness;
 
     class (HasKind f, HasKind a, HasKind (TypeConstructed f a)) =>
          ConstructType f a where
     {
         type TypeConstructed f a :: *;
     };
-
-#define DECL_IsKind(p) data Kind_##p t where { Kind_##p :: forall a. Kind_##p (Type_##p a); };
-
-    DECL_IsKind(T)
-    DECL_IsKind(KTT)
-    DECL_IsKind(KTKTT)
-    DECL_IsKind(KTKTKTT)
-    DECL_IsKind(KKTTKTT)
-    DECL_IsKind(KKTTT)
 
     class IsKind k where
     {
@@ -45,9 +27,35 @@ module Truth.TypeKT.Type where
         typeKind :: TypeKind t t;
     };
 
-$(fmap concat (forM supportedKinds (\k -> let
+$(
+    forM supportedKinds (\k ->
+        -- [d|data $(return (kTypeTypeName k)) (a :: $(return k))|];
+        do
+        {
+            ndecla <- newName "a";
+            return (DataD [] (kTypeTypeName k) [KindedTV ndecla k] [] []);
+        }
+    )
+);
+$(
+    forM supportedKinds (\k ->
+    -- data Kind_##p (t :: *) where { Kind_##p :: forall a. Kind_##p (Type_##p a); };
+    -- data Kind_##p (t :: *) where { Kind_##p :: forall a. (t ~ Type_##p a) => Kind_##p t; };
+    do
     {
-        tkType = conT (mkName ("Kind_" ++ (kindCode k)));
+        t <- newName "t";
+        a <- newName "a";
+        return (
+            DataD [] (kKindTypeName k) [KindedTV t StarK]
+             [ForallC [KindedTV a k] [EqualP (VarT t) (AppT (kTypeType k) (VarT a))] (NormalC (kKindConsName k) [])]
+             []
+            );
+    })
+);
+$(
+    fmap concat (forM supportedKinds (\k -> let
+    {
+        tkType = return (kKindType k);
     } in
     [d|
         instance IsKind $(tkType) where
@@ -56,13 +64,12 @@ $(fmap concat (forM supportedKinds (\k -> let
         };
     |]))
 );
-
-
-$(fmap concat (forM supportedKinds (\k -> let
+$(
+    fmap concat (forM supportedKinds (\k -> let
     {
-        tt = kindTypeQ k;
-        tkType = conT (mkName ("Kind_" ++ (kindCode k)));
-        tkCons = conE (mkName ("Kind_" ++ (kindCode k)));
+        tt = return (kTypeType k);
+        tkType = return (kKindType k);
+        tkCons = conE (kKindConsName k);
     } in
     {-
     [d|
@@ -91,26 +98,25 @@ $(fmap concat (forM supportedKinds (\k -> let
     }
     ))
 );
-
 $(
     let
     {
         makeTypeDec :: TH.Kind -> Q Dec;
         makeTypeDec k =
-        -- [d|data $(return (kindTypeName k)) (a :: $(return k))|];
+        -- [d|data $(return (kTypeTypeName k)) (a :: $(return k))|];
         do
         {
             ndecla <- newName "a";
-            return (DataD [] (kindTypeName k) [KindedTV ndecla k] [] []);
+            return (DataD [] (kTypeTypeName k) [KindedTV ndecla k] [] []);
         };
 
         makeInstanceDecs :: TH.Kind -> Q [Dec];
         makeInstanceDecs StarK = return [];
         makeInstanceDecs kpq@(ArrowK kp kq) = let
         {
-            tp = kindTypeQ kp;
-            tq = kindTypeQ kq;
-            tpq = kindTypeQ kpq;
+            tp = kTypeTypeQ kp;
+            tq = kTypeTypeQ kq;
+            tpq = kTypeTypeQ kpq;
         } in
         {-
         [d|

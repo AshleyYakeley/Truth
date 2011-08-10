@@ -4,14 +4,16 @@ module Truth.Edit.EditLens where
     import Truth.Edit.JustEdit;
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Edit;
+    import Truth.Edit.ReadFunction;
+    import Truth.Edit.Read;
     import Truth.Edit.Import;
 
-    -- | A EditLens is a lens without state
+    -- | A EditLens is a lens that converts edits
     ;
     data EditLens' m edita editb = MkEditLens
     {
         editLensFunction :: EditFunction edita editb,
-        editLensPutEdit :: editb -> ConstFunction (Subject edita) (m edita)
+        editLensPutEdit :: editb -> Readable (EditReader edita) (m edita)
     };
 
     type EditLens = EditLens' Maybe;
@@ -37,11 +39,11 @@ module Truth.Edit.EditLens where
             editLensFunction = (editLensFunction bc) . (editLensFunction ab),
             editLensPutEdit = \editc -> do
             {
-                meditb <- cofmap1CF (editGet (editLensFunction ab)) (editLensPutEdit bc editc);
+                meditb <- mapReadable (editGet (editLensFunction ab)) (editLensPutEdit bc editc);
                 case retrieveOne meditb of
                 {
                     SuccessResult editb -> editLensPutEdit ab editb;
-                    FailureResult ff -> return ff;
+                    FailureResult (MkLimit ff) -> return ff;
                 };
             }
         };
@@ -54,7 +56,7 @@ module Truth.Edit.EditLens where
             editLensFunction = cfmap (editLensFunction lens),
             editLensPutEdit = \(MkJustEdit editb) -> do
             {
-                fmedita <- cfmap (editLensPutEdit lens editb);
+                fmedita <- liftJustReadable (editLensPutEdit lens editb);
                 return (case retrieveOne fmedita of
                 {
                     SuccessResult medita -> fmap MkJustEdit medita;
@@ -64,32 +66,53 @@ module Truth.Edit.EditLens where
         };
     };
 
-    simpleEditLens :: (Functor m) => Lens' m a b -> EditLens' m (WholeEdit a) (WholeEdit b);
+    simpleEditLens :: (Functor m) => Lens' m a b -> EditLens' m (WholeEdit (WholeReader a)) (WholeEdit (WholeReader b));
     simpleEditLens lens = MkEditLens
     {
         editLensFunction = editFunction (lensGet lens),
-        editLensPutEdit = \(MkWholeEdit newb) -> fmap (fmap MkWholeEdit) (lensPutback lens newb)
-    };
-
-    simpleConvertEditLens :: (Functor m,FullEdit edita,FullEdit editb) => Lens' m (Subject edita) (Subject editb) -> EditLens' m edita editb;
-    simpleConvertEditLens lens = MkEditLens
-    {
-        editLensFunction = simpleConvertEditFunction (lensGet lens),
-        editLensPutEdit = \editb -> do
+        editLensPutEdit = \(MkWholeEdit newb) -> do
         {
-            newb <- cofmap1CF (lensGet lens) (applyEdit editb);
-            ma <- lensPutback lens newb;
-            return (fmap replaceEdit ma);
+            olda <- fromReader;
+            let
+            {
+                newma = lensPutback lens newb olda;
+                medita = fmap MkWholeEdit newma;
+            };
+            return medita;
         }
     };
 
-    convertEditLens' :: (Applicative m,FunctorOne m,FullEdit edita,FullEdit editb,Subject edita ~ Subject editb) => EditLens' m edita editb;
+    simpleConvertEditLens :: (Functor m,FullEdit edita,FullEdit editb) =>
+     Lens' m (EditSubject edita) (EditSubject editb) -> EditLens' m edita editb;
+    simpleConvertEditLens lens = MkEditLens
+    {
+        editLensFunction = simpleConvertEditFunction (simpleReadFunction (lensGet lens)),
+        editLensPutEdit = \editb -> do
+        {
+            olda <- fromReader;
+            let
+            {
+                oldb = lensGet lens olda;
+                newb = fromReadFunction (applyEdit editb) oldb;
+                newma = lensPutback lens newb olda;
+                medita = fmap replaceEdit newma;
+            };
+            return medita;
+        }
+    };
+
+    convertEditLens' :: (Applicative m,FunctorOne m,FullEdit edita,FullEdit editb,EditSubject edita ~ EditSubject editb) => EditLens' m edita editb;
     convertEditLens' = MkEditLens
     {
         editLensFunction = convertEditFunction,
-        editLensPutEdit = \edit -> fmap (pure . replaceEdit) (applyEdit edit)
+
+        editLensPutEdit = \editb -> do
+        {
+            newa <- mapReadable convertReadFunction (mapReadable (applyEdit editb) fromReader);
+            return (pure (replaceEdit newa));
+        }
     };
 
-    convertEditLens :: (FullEdit edita,FullEdit editb,Subject edita ~ Subject editb) => EditLens edita editb;
+    convertEditLens :: (FullEdit edita,FullEdit editb,EditSubject edita ~ EditSubject editb) => EditLens edita editb;
     convertEditLens = convertEditLens';
 }

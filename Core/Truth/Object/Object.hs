@@ -10,6 +10,8 @@ module Truth.Object.Object where
     ;
     type Push edit = edit -> IO (Maybe ());
 
+    type Allowed edit = edit -> Bool;
+
     data Subscription edit = MkSubscription
     {
         subCopy :: Subscribe edit,
@@ -21,23 +23,23 @@ module Truth.Object.Object where
     -- | blocks if the object is busy
     ;
     type Subscribe edit = forall r.
-        (Subject edit -> Push edit -> IO r) ->
-        (r -> edit -> IO ()) ->
+        (Subject edit -> Allowed edit -> Push edit -> IO r) ->
+        (r -> edit -> Allowed edit -> IO ()) ->
         IO (r, Subscription edit);
 
     data Object edit = MkObject
     {
-        objGetInitial :: forall r. (Subject edit -> IO r) -> IO r,
-        objPush :: Push edit,
+        objGetInitial :: forall r. (Subject edit -> Allowed edit -> IO r) -> IO r,
+        objPush :: edit -> IO (Maybe (Allowed edit)),
         objClose :: IO ()
     };
 
     objSubscribe :: forall edit.
-     ((edit -> IO ()) -> IO (Object edit)) -> Subscribe edit;
+     ((edit -> Allowed edit -> IO ()) -> IO (Object edit)) -> Subscribe edit;
     objSubscribe getObject initialise' updater' = do
     {
-        storevar <- newMVar (emptyStore :: Store (edit -> IO ()));
-        obj <- getObject (\edit -> withMVar storevar (\store -> forM (allStore store) (\u -> u edit) >> return ()));
+        storevar <- newMVar (emptyStore :: Store (edit -> Allowed edit -> IO ()));
+        obj <- getObject (\edit allowed -> withMVar storevar (\store -> forM (allStore store) (\u -> u edit allowed) >> return ()));
         let
         {
             keyPush :: Int -> Push edit;
@@ -46,10 +48,10 @@ module Truth.Object.Object where
                 mv <- objPush obj push;
                 case mv of
                 {
-                    Just _ -> forM (allStoreExcept store key) (\u -> u push) >> return ();
+                    Just allowed -> forM (allStoreExcept store key) (\u -> u push allowed) >> return ();
                     _ -> return ();
                 };
-                return mv;
+                return (mv >> (return ()));
             });
 
             keyClose :: Int -> IO ();
@@ -79,21 +81,25 @@ module Truth.Object.Object where
                     let {(key,newstore) = addStore (updater (fst result)) store;};
                     return (newstore,key);
                 });
-                r <- objGetInitial obj (\a -> initialise a (keyPush key));
+                r <- objGetInitial obj (\a allowed -> initialise a allowed (keyPush key));
                 return (r,keySubscription key);
             });
         };
         objSub initialise' updater';
     };
 
-    freeObjSubscribe :: forall edit. (Edit edit) => Subject edit -> Subscribe edit;
-    freeObjSubscribe initial = objSubscribe (\_ -> do
+    freeObjSubscribe :: forall edit. (Edit edit) => Subject edit -> (Subject edit -> edit -> Bool) -> Subscribe edit;
+    freeObjSubscribe initial allowed = objSubscribe (\_ -> do
     {
         statevar <- newMVar initial;
         return (MkObject
         {
-            objGetInitial = withMVar statevar,
-            objPush = \edit -> modifyMVar statevar (\a -> return (applyConstFunction (applyEdit edit) a,Just ())),
+            objGetInitial = \sair -> withMVar statevar (\s -> sair s (allowed s)),
+            objPush = \edit -> modifyMVar statevar (\olda -> return (
+                if allowed olda edit
+                 then let {newa = applyConstFunction (applyEdit edit) olda;} in (newa,Just (allowed newa))
+                 else (olda,Nothing)
+                )),
             objClose = return ()
         });
     });
@@ -113,30 +119,32 @@ module Truth.Object.Object where
 
         lensSubscribe lens subscribe = objSubscribe (\pushOut -> do
         {
-            ((statevar,firsta,push),sub) <- subscribe
-             (\a push -> do
+            ((statevar,firsta,firstalloweda,push),sub) <- subscribe
+             (\a allowed push -> do
             {
-                statevar <- newEmptyMVar;
-                return (statevar,a,push);
+                statevar :: MVar (state,Subject edita,Allowed edita) <- newEmptyMVar;
+                return (statevar,a,allowed,push);
             })
-             (\(statevar,_,_) edita -> modifyMVar_ statevar (\(oldstate,olda) -> let
+             (\(statevar,_,_,_) edita newalloweda -> modifyMVar_ statevar (\(oldstate,olda,oldalloweda) -> let
             {
                 (newstate,meditb) = applyConstFunction (floatingEditUpdate (floatingEditLensFunction lens) edita oldstate) olda;
+                newa = applyConstFunction (applyEdit edita) olda;
+                allowedb = \editb -> applyConstFunction (floatingEditLensAllowed lens newstate editb) newa;
             } in do
             {
                 case meditb of
                 {
-                    Just editb -> pushOut editb;
+                    Just editb -> pushOut editb allowedb;
                     _ -> return ();
                 };
-                return (newstate,applyConstFunction (applyEdit edita) olda);
+                return (newstate,newa,newalloweda);
             }));
-            putMVar statevar (floatingEditInitial (floatingEditLensFunction lens),firsta);
+            putMVar statevar (floatingEditInitial (floatingEditLensFunction lens),firsta,firstalloweda);
             return (MkObject
             {
-                objGetInitial = \initialise -> withMVar statevar (\(state,a) -> initialise (floatingEditGet (floatingEditLensFunction lens) state a)),
+                objGetInitial = \initialise -> withMVar statevar (\(state,a,alloweda) -> initialise (floatingEditGet (floatingEditLensFunction lens) state a) alloweda),
                 objPush = \editb -> modifyMVar statevar
-                 (\olds@(oldstate,olda) -> case  (applyConstFunction (do
+                 (\olds@(oldstate,olda,oldalloweda) -> case (applyConstFunction (do
                  {
                     medita <- floatingEditLensPutEdit lens oldstate editb;
                     case getMaybeOne medita of

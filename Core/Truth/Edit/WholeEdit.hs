@@ -1,40 +1,79 @@
 module Truth.Edit.WholeEdit where
 {
     import Truth.Edit.Edit;
+    import Truth.Edit.ReadFunction;
+    import Truth.Edit.Read;
     import Truth.Edit.Import;
 
-    newtype WholeEdit a = MkWholeEdit a;
-
-    instance Edit (WholeEdit a) where
+    data WholeReader (a :: *) (t :: *) where
     {
-        type Subject (WholeEdit a) = a;
-        applyEdit (MkWholeEdit a) = pure a;
-        invertEdit _ = Just . MkWholeEdit;
+        ReadWhole :: forall t. WholeReader t t;
     };
 
-    instance FullEdit (WholeEdit a) where
+    instance Reader (WholeReader a) where
+    {
+        type Subject (WholeReader a) = a;
+        readFrom msubj ReadWhole = msubj;
+    };
+
+    instance FullReader (WholeReader a) where
+    {
+        fromReader = readable ReadWhole;
+    };
+
+    instance HasInfo (Type_KTKTT WholeReader) where
+    {
+        info = mkSimpleInfo $(iowitness[t| Type_KTKTT WholeReader |])
+        [
+            -- instance Reader (WholeReader a)
+            mkFacts (MkFactS (\a -> MkFactZ (do
+            {
+                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
+                return (Reader_Inst a);
+            }))
+            :: FactS FactZ Reader_Inst (Type_KTKTT WholeReader)
+            )
+        ];
+    };
+
+    newtype WholeEdit (reader :: * -> *) = MkWholeEdit (Subject reader);
+
+    instance (FullReader reader) => Edit (WholeEdit reader) where
+    {
+        type EditReader (WholeEdit reader) = reader;
+        applyEdit (MkWholeEdit a) = readFromM (return a);
+        invertEdit _ = do
+        {
+            a <- fromReader;
+            return (Just (MkWholeEdit a));
+        };
+    };
+
+    instance (FullReader reader) => FullEdit (WholeEdit reader) where
     {
         replaceEdit = MkWholeEdit;
     };
 
-    instance HasInfo (Type_KTT WholeEdit) where
+    instance HasInfo (Type_KKTTT WholeEdit) where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_KTT WholeEdit |])
+        info = mkSimpleInfo $(iowitness[t| Type_KKTTT WholeEdit |])
         [
-            -- instance Edit (WholeEdit a)
-            mkFacts (MkFactS (\a -> MkFactZ (do
+            -- instance Edit (WholeEdit reader)
+            mkFacts (MkFactS (\reader -> MkFactZ (do
             {
-                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
-                return (Edit_Inst a);
+                Kind_KTT <- matchProp $(type1[t|Kind_KTT|]) reader;
+                FullReader_Inst <- matchProp $(type1[t|FullReader_Inst|]) reader;
+                return (Edit_Inst reader);
             }))
-            :: FactS FactZ Edit_Inst (Type_KTT WholeEdit)
+            :: FactS FactZ Edit_Inst (Type_KKTTT WholeEdit)
             ),
-            mkFacts (MkFactS (\a -> MkFactZ (do
+            mkFacts (MkFactS (\reader -> MkFactZ (do
             {
-                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
+                Kind_KTT <- matchProp $(type1[t|Kind_KTT|]) reader;
+                FullReader_Inst <- matchProp $(type1[t|FullReader_Inst|]) reader;
                 return FullEdit_Inst;
             }))
-            :: FactS FactZ FullEdit_Inst (Type_KTT WholeEdit)
+            :: FactS FactZ FullEdit_Inst (Type_KKTTT WholeEdit)
             )
         ];
     };

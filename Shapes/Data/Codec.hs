@@ -2,7 +2,7 @@ module Data.Codec where
 {
     import Data.FunctorOne;
     import Data.Result;
-    import Control.Monad.Identity;
+    import Data.Functor.Identity;
     import Data.Chain;
     import Data.Bijection;
     import Control.Category;
@@ -21,7 +21,7 @@ module Data.Codec where
     toBiMapResult :: forall e bm m edita editb. (IsBiMap bm,FunctorOne m) => e -> bm m edita editb -> bm (Result e) edita editb;
     toBiMapResult e = mapBiMapM (mrf . retrieveOne) where
     {
-        mrf :: Result (forall b. m b) a -> Result e a;
+        mrf :: Result (Limit m) a -> Result e a;
         mrf (SuccessResult a) = SuccessResult a;
         mrf (FailureResult _) = FailureResult e;
     };

@@ -15,7 +15,7 @@ module Truth.TypeKT.HasInfo where
 --    import Data.Int;
 --    import Data.Eq;
     import Control.Monad;
-    import Prelude(Num(..),fromInteger);
+    -- import Prelude(Num(..),fromInteger);
 
     class HasInfo a where
     {
@@ -31,9 +31,9 @@ module Truth.TypeKT.HasInfo where
         {
             kpq@(TH.ArrowK kp kq) -> let
             {
-                tp = kindTypeQ kp;
-                tq = kindTypeQ kq;
-                tpq = kindTypeQ kpq;
+                tp = kTypeTypeQ kp;
+                tq = kTypeTypeQ kq;
+                tpq = kTypeTypeQ kpq;
             } in
             [d|
                 instance (HasInfo ($(tpq) f),HasInfo ($(tp) a)) => HasInfo ($(tq) (f a)) where

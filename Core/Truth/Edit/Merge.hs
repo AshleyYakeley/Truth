@@ -5,7 +5,7 @@ module Truth.Edit.Merge where
 
     data EditStep edit = MkEditStep edit [edit];
 
-    data Merge edit = MkMerge (Subject edit) [EditStep edit];
+    data Merge edit = MkMerge (EditSubject edit) [EditStep edit];
 
     data MergeEdit edit = AddOverEdit edit | RemoveOverEdit | UnderEdit edit;
 {-

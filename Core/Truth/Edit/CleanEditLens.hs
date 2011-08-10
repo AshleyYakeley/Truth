@@ -2,6 +2,7 @@ module Truth.Edit.CleanEditLens where
 {
     import Truth.Edit.EditLens;
     import Truth.Edit.EditFunction;
+    import Truth.Edit.Either;
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Edit;
     import Truth.Edit.Import;
@@ -36,12 +37,12 @@ module Truth.Edit.CleanEditLens where
         editLensPutEdit = \edit -> pure (cleanEditLensPutEdit lens edit)
     };
 
-    withWholeLens :: (Functor m,FullEdit editb) =>
+    withWholeLens :: (Functor m,Edit edita,FullEdit editb) =>
      CleanEditLens' m edita editb ->
-     CleanEditLens' m (Either (WholeEdit (Subject edita)) edita) editb;
+     CleanEditLens' m (EitherEdit (WholeEdit (EditReader edita)) edita) editb;
     withWholeLens lens = MkCleanEditLens
     {
         cleanEditLensFunction = withWholeEditFunction (cleanEditLensFunction lens),
-        cleanEditLensPutEdit = \editb -> fmap Right (cleanEditLensPutEdit lens editb)
+        cleanEditLensPutEdit = \editb -> fmap RightEdit (cleanEditLensPutEdit lens editb)
     };
 }

@@ -4,12 +4,11 @@ module Data.Lens where
     import Data.Injection;
     import Data.Bijection;
     import Data.Result;
-    import Data.ConstFunction;
     import Data.Traversable;
     import Data.FunctorOne;
     import Data.Chain;
     import Data.Witness;
-    import Control.Monad.Identity;
+    import Data.Functor.Identity;
     import Control.Applicative;
     import Control.Category;
     import Prelude hiding (id,(.),sequence);
@@ -18,11 +17,11 @@ module Data.Lens where
     data Lens' m a b = MkLens
     {
         lensGet :: a -> b,
-        lensPutback :: b -> ConstFunction a (m a)
+        lensPutback :: b -> a -> m a
     };
 
     lensModify :: Lens' m a b -> (b -> b) -> a -> m a;
-    lensModify lens bb a = applyConstFunction (lensPutback lens (bb (lensGet lens a))) a;
+    lensModify lens bb a = lensPutback lens (bb (lensGet lens a)) a;
 
     lensMap :: (FunctorOne m) => Lens' m a b -> (b -> b) -> (a -> a);
     lensMap lens bb a = case getMaybeOne (lensModify lens bb a) of
@@ -51,19 +50,15 @@ module Data.Lens where
         id = MkLens
         {
             lensGet = id,
-            lensPutback = \b -> pure (pure b)
+            lensPutback = \b _ -> pure b
         };
         bc . ab = MkLens
         {
             lensGet = (lensGet bc) . (lensGet ab),
-            lensPutback = \c -> do
+            lensPutback = \c a -> case retrieveOne (lensPutback bc c (lensGet ab a)) of
             {
-                mb <- cofmap1CF (lensGet ab) (lensPutback bc c);
-                case retrieveOne mb of
-                {
-                    SuccessResult b -> lensPutback ab b;
-                    FailureResult ff -> return ff;
-                }
+                SuccessResult b -> lensPutback ab b a;
+                FailureResult (MkLimit ff) -> ff;
             }
         };
     };
@@ -77,20 +72,20 @@ module Data.Lens where
                 Left a -> lensGet ac a;
                 Right b -> lensGet bc b;
             },
-            lensPutback = \c -> FunctionConstFunction (\eab -> case eab of
+            lensPutback = \c eab -> case eab of
             {
-                Left a -> fmap Left (applyConstFunction (lensPutback ac c) a);
-                Right b -> fmap Right (applyConstFunction (lensPutback bc c) b);
-            })
+                Left a -> fmap Left (lensPutback ac c a);
+                Right b -> fmap Right (lensPutback bc c b);
+            }
         };
     };
 
-    instance (Traversable f,FunctorBind f,FunctorGetPure f,Applicative m) => CatFunctor (Lens' m) f where
+    instance (Traversable f,FunctorAp f,Applicative m) => CatFunctor (Lens' m) f where
     {
         cfmap lens = MkLens
         {
             lensGet = fmap (lensGet lens),
-            lensPutback = (fmap (sequenceA . exec)) . (traverse (cfmap . (lensPutback lens)))
+            lensPutback = \fb fa -> sequenceA (liftF2 (lensPutback lens) fb fa)
         };
     };
 
@@ -98,11 +93,11 @@ module Data.Lens where
     pickLens p = MkLens
     {
         lensGet = \pa -> pa p,
-        lensPutback = \a -> FunctionConstFunction (\pa -> Identity (\p' -> if p == p' then a else pa p'))
+        lensPutback = \a pa -> Identity (\p' -> if p == p' then a else pa p')
     };
 
     bijectionLens :: Bijection a b -> Lens' Identity a b;
-    bijectionLens (MkBijection ab ba) = MkLens ab (\b -> ConstConstFunction (return (ba b)));
+    bijectionLens (MkBijection ab ba) = MkLens ab (\b _ -> return (ba b));
 
     injectionLens :: Injection' m a b -> Lens' m a b;
     injectionLens lens = MkLens
@@ -116,6 +111,6 @@ module Data.Lens where
     listElementLens n = MkLens
     {
         lensGet = getListElement n,
-        lensPutback = \e -> FunctionConstFunction (return . (putListElement n e))
+        lensPutback = \e -> return . (putListElement n e)
     };
 }

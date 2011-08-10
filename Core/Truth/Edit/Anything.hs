@@ -1,7 +1,8 @@
 module Truth.Edit.Anything where
 {
-    import Truth.Edit.WholeEdit;
-    import Truth.Edit.Edit;
+    --import Truth.Edit.WholeEdit;
+    --import Truth.Edit.Edit;
+    --import Truth.Edit.Read;
     import Truth.Edit.Import;
 
     data Anything where
@@ -15,17 +16,47 @@ module Truth.Edit.Anything where
         [
         ];
     };
+{-
+    data AnyRead t where
+    {
+        MkAnyRead :: forall reader t. (Reader reader) =>
+         Info (Type_KTT reader) -> Info (Type_T (Subject reader)) -> reader t -> AnyRead (Maybe t);
+    };
+
+    instance Reader AnyRead where
+    {
+        type Subject AnyRead = Anything;
+
+        -- | Make API calls when you've actually got the subject
+        -- readFromM :: forall m. (Applicative m,Monad m) => m (Subject reader) -> Structure m reader;
+        -- readFromM msubj reader = fmap (\subj -> readFrom subj reader) msubj;
+
+        -- readFrom :: Anything -> (forall t. AnyRead t -> t);
+        readFrom (MkAnything infoa a) (MkAnyRead infor infoa' reader) = do
+        {
+            MkEqualType <- matchWitness infoa infoa';
+            return (readFrom a reader);
+        };
+    };
+
 
     data AnyEdit where
     {
-        MkAnyEdit :: forall edit. (Edit edit) => Info (Type_T edit) -> Info (Type_T (Subject edit)) -> edit -> AnyEdit;
+        MkAnyEdit :: forall edit. (Edit edit) => Info (Type_T edit) -> Info (Type_KTT (EditReader edit)) -> edit -> AnyEdit;
     };
 
     instance Edit AnyEdit where
     {
-        type Subject AnyEdit = Anything;
+        type EditReader AnyEdit = AnyRead;
 
-        applyEdit (MkAnyEdit _te tsubj edit) = FunctionConstFunction (\anya@(MkAnything ta a) -> case matchWitness tsubj ta of
+        applyEdit (MkAnyEdit _te treader edit) ar@(MkAnyReader treader' ta' reader') = case matchWitness treader treader' of
+        {
+            Just MkEqualType -> ;
+            _ -> readable ar;
+        };
+
+
+        FunctionConstFunction (\anya@(MkAnything ta a) -> case matchWitness tsubj ta of
         {
             Just MkEqualType -> MkAnything ta (applyConstFunction (applyEdit edit) a);
             _ -> anya;
@@ -53,4 +84,5 @@ module Truth.Edit.Anything where
     };
 
     type AnyWholeEdit = Either (WholeEdit Anything) AnyEdit;
+-}
 }

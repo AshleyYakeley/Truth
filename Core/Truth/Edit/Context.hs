@@ -3,7 +3,9 @@ module Truth.Edit.Context where
     import Truth.Edit.Tuple;
     import Truth.Edit.CleanEditLens;
     import Truth.Edit.Edit;
+    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Data.ConstFunction;
 
     data WithContext context content = MkWithContext context content;
 
@@ -23,6 +25,11 @@ module Truth.Edit.Context where
         sequenceA (MkWithContext context fa) = fmap (MkWithContext context) fa;
     };
 
+    instance FunctorAp (WithContext context) where
+    {
+        fap (MkWithContext _n ab) (MkWithContext n a) = MkWithContext n (ab a);
+    };
+
     instance FunctorBind (WithContext context) where
     {
         bind (MkWithContext _ content) afb = afb content;
@@ -33,6 +40,11 @@ module Truth.Edit.Context where
     instance FunctorOne (WithContext context) where
     {
         retrieveOne (MkWithContext _ a) = SuccessResult a;
+    };
+
+    instance (HasNewValue context,HasNewValue content) => HasNewValue (WithContext context content) where
+    {
+        newValue = MkWithContext newValue newValue;
     };
 
     instance HasInfo (Type_KTKTT WithContext) where
@@ -49,19 +61,39 @@ module Truth.Edit.Context where
         ];
     };
 
-    instance IsTuple (WithContext context content) where
+    data WithContextAggregate editx editn edit where
     {
-        type ListTuple (WithContext context content) = (content,(context,()));
-        fromListTuple (content,(context,())) = MkWithContext context content;
-        toListTuple (MkWithContext context content) = (content,(context,()));
+        EditContext :: WithContextAggregate editx editn editx;
+        EditContent :: WithContextAggregate editx editn editn;
     };
 
-    type ContextContentEdit editx editn = TupleWholeEdit (editn,(editx,())) (WithContext (Subject editx) (Subject editn));
+    instance SimpleWitness (WithContextAggregate ea eb) where
+    {
+        matchWitness EditContext EditContext = Just MkEqualType;
+        matchWitness EditContent EditContent = Just MkEqualType;
+        matchWitness _ _ = Nothing;
+    };
 
-    contextCleanLens :: (FullEdit editx,FullEdit editn) => CleanEditLens' Identity (ContextContentEdit editx editn) editx;
-    contextCleanLens = tupleElementCleanLens (SuccNat ZeroNat);
+    instance (Edit editx,FullReader (EditReader editx),Edit editn,FullReader (EditReader editn)) =>
+        IsAggregate (WithContextAggregate editx editn) where
+    {
+        type AggregateSubject (WithContextAggregate editx editn) = WithContext (EditSubject editx) (EditSubject editn);
+        aggregateIsFullReaderEdit EditContext = MkIsFullReaderEdit;
+        aggregateIsFullReaderEdit EditContent = MkIsFullReaderEdit;
+        aggregateReadFrom EditContext (MkWithContext x _n) = x;
+        aggregateReadFrom EditContent (MkWithContext _x n) = n;
+        aggregateConstruct f = do
+        {
+            x <- f EditContext;
+            n <- f EditContent;
+            return (MkWithContext x n);
+        };
+    };
 
-    contentCleanLens :: (FullEdit editx,FullEdit editn) => CleanEditLens' Identity (ContextContentEdit editx editn) editn;
-    contentCleanLens = tupleElementCleanLens ZeroNat;
+    contextCleanLens :: CleanEditLens' Identity (AggregateEdit (WithContextAggregate editx editn)) editx;
+    contextCleanLens = aggregateLens EditContext;
+    contentCleanLens :: CleanEditLens' Identity (AggregateEdit (WithContextAggregate editx editn)) editn;
+    contentCleanLens = aggregateLens EditContent;
+
 }
 

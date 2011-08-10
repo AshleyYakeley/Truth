@@ -7,12 +7,12 @@ module Truth.TypeKT.Info
 ) where
 {
     import Truth.TypeKT.Type;
-	import Data.Witness;
-	import Data.OpenWitness;
-	import Data.Maybe;
+    import Data.Witness;
+    import Data.OpenWitness;
+    import Data.Maybe;
     import Control.Monad;
-	import Data.Monoid;
-	import Control.Category;
+    import Data.Monoid;
+    import Control.Category;
 
     import Truth.TypeKT.TH;
     import Data.List;

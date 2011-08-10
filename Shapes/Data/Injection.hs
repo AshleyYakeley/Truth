@@ -6,7 +6,7 @@ module Data.Injection where
     import Data.Traversable;
     import Data.Chain;
     import Control.Category;
-    import Control.Monad.Identity;
+    import Data.Functor.Identity;
     import Prelude hiding (id,(.),sequence);
 
     data Injection' m a b = MkInjection

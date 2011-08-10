@@ -68,21 +68,32 @@ module Truth.TypeKT.TH where
         StarK,
         ArrowK StarK StarK,
         ArrowK StarK (ArrowK StarK StarK),
+        ArrowK StarK (ArrowK StarK (ArrowK StarK StarK)),
         ArrowK (ArrowK StarK StarK) StarK,
         ArrowK (ArrowK StarK StarK) (ArrowK StarK StarK),
-        ArrowK StarK (ArrowK StarK (ArrowK StarK StarK))
+        ArrowK (ArrowK StarK StarK) (ArrowK StarK (ArrowK StarK StarK)),
+        ArrowK (ArrowK StarK StarK) (ArrowK (ArrowK StarK StarK) (ArrowK StarK StarK))
     ];
 
     kindCode :: Kind -> String;
     kindCode StarK = "T";
     kindCode (ArrowK a b) = "K" ++ (kindCode a) ++ (kindCode b);
 
-    kindTypeName :: Kind -> Name;
-    kindTypeName k = mkName ("Type_" ++ (kindCode k));
+    kTypeTypeName :: Kind -> Name;
+    kTypeTypeName k = mkName ("Type_" ++ (kindCode k));
 
-    kindTypeQ :: Kind -> TypeQ;
-    kindTypeQ k = return (ConT (kindTypeName k));
+    kTypeType :: Kind -> Type;
+    kTypeType k = ConT (kTypeTypeName k);
 
-    kindConsName :: Kind -> Name;
-    kindConsName k = mkName ("Kind_" ++ (kindCode k));
+    kTypeTypeQ :: Kind -> TypeQ;
+    kTypeTypeQ k = return (kTypeType k);
+
+    kKindTypeName :: Kind -> Name;
+    kKindTypeName k = mkName ("Kind_" ++ (kindCode k));
+
+    kKindType :: Kind -> Type;
+    kKindType k = ConT (kKindTypeName k);
+
+    kKindConsName :: Kind -> Name;
+    kKindConsName k = mkName ("Kind_" ++ (kindCode k));
 }

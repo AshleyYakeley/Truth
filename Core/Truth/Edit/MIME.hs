@@ -1,6 +1,10 @@
+{-# OPTIONS -fno-warn-orphans #-}
 module Truth.Edit.MIME where
 {
+    import Truth.Edit.Tuple;
     import Truth.Edit.Anything;
+    import Truth.Edit.Context;
+    import Truth.Edit.WholeEdit;
     import Truth.Edit.Import;
     import qualified Codec.MIME.Type;
 
@@ -20,8 +24,11 @@ module Truth.Edit.MIME where
         ];
     };
 
-    data MIMEContent = MkMIMEContent MIMEContentType [Word8];
+    type MIMEContent = WithContext MIMEContentType [Word8];
+    type MIMEAggregate edit = WithContextAggregate (WholeEdit (WholeReader MIMEContentType)) edit;
+    type MIMEContentEdit edit = AggregateEdit (MIMEAggregate edit);
 
+{-
     instance HasNewValue MIMEContent where
     {
         newValue = MkMIMEContent newValue [];
@@ -42,7 +49,7 @@ module Truth.Edit.MIME where
         fromListTuple (content,(t,())) = MkMIMEContent t content;
         toListTuple (MkMIMEContent t content) = (content,(t,()));
     };
-
+-}
 {-
     data Anything where
     {
@@ -65,7 +72,7 @@ module Truth.Edit.MIME where
     interpretInjection = MkInjection
     {
         -- injForwards :: MIMEContent -> Maybe Anything
-        injForwards = \(MkMIMEContent t content) -> do
+        injForwards = \(MkWithContext t content) -> do
         {
             (MkAnyCodec isubj codec) <- findMIMECodecByMIME ?mimeKnowledge t;
             b <- decode codec content;
@@ -77,7 +84,7 @@ module Truth.Edit.MIME where
             (Just (MkAnything ia a)) -> do
             {
                 (t,codec) <- findMIMECodecByInfoT ?mimeKnowledge ia;
-                return (MkMIMEContent t (encode codec a));
+                return (MkWithContext t (encode codec a));
             };
             _ -> Nothing;
         }

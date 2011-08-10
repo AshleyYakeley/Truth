@@ -6,11 +6,13 @@ module Truth.Edit.JustWholeEdit where
     import Truth.Edit.Edit;
     import Truth.Edit.Import;
 
-    type JustWholeEdit f edit = Either (WholeEdit (f (Subject edit))) (JustEdit f edit);
+    type EitherWholeEdit edit = EitherEdit (WholeEdit (EditReader edit)) edit;
+
+    type JustWholeEdit (f :: * -> *) edit = EitherWholeEdit (JustEdit f edit);
 
     extractJustWholeEdit :: forall f edit. (FunctorOne f,FullEdit edit) => JustWholeEdit f edit -> Maybe edit;
-    extractJustWholeEdit (Right (MkJustEdit edit)) = Just edit;
-    extractJustWholeEdit (Left (MkWholeEdit fa)) = case retrieveOne fa of
+    extractJustWholeEdit (RightEdit (MkJustEdit edit)) = Just edit;
+    extractJustWholeEdit (LeftEdit (MkWholeEdit fa)) = case retrieveOne fa of
     {
         SuccessResult a -> Just (replaceEdit a);
         _ -> Nothing;
@@ -19,34 +21,38 @@ module Truth.Edit.JustWholeEdit where
     data MatchJustWholeEdit t where
     {
         MkMatchJustWholeEdit ::
-         forall f edit. Info (Type_KTT f) -> Info (Type_T edit) -> Info (Type_T (Subject edit)) -> MatchJustWholeEdit (Type_T (JustWholeEdit f edit));
+         forall f edit. Edit_Inst (Type_T edit) -> Info (Type_KTT f) -> Info (Type_T edit) -> MatchJustWholeEdit (Type_T (JustWholeEdit f edit));
     };
 
     instance Property MatchJustWholeEdit where
     {
         matchProperty tt = do
         {
-            MkMatchEither twfa tjfe <- matchProp $(type1[t|MatchEither|]) tt;
-            MkMatch tjf te <- matchProp $(type1[t|Match|]) tjfe;
-            MkMatch tw tfa <- matchProp $(type1[t|Match|]) twfa;
-            MkEqualType <- matchProp $(type1[t|EqualType (Type_KTT WholeEdit)|]) tw;
-            MkMatch tj tf <- matchProp $(type1[t|Match|]) tjf;
+            MkMatchEitherEdit twjrfr tjefe <- matchProp $(type1[t|MatchEitherEdit|]) tt;
+            MkMatch tjef te <- matchProp $(type1[t|Match|]) tjefe;
+            MkMatch tw tjrfr <- matchProp $(type1[t|Match|]) twjrfr;
+            MkEqualType <- matchProp $(type1[t|EqualType (Type_KKTTT WholeEdit)|]) tw;
+            MkMatch tje tf <- matchProp $(type1[t|Match|]) tjef;
             Kind_KTT <- matchProp $(type1[t|Kind_KTT|]) tf;
-            MkEqualType <- matchProp $(type1[t|EqualType (Type_KKTTKTT JustEdit)|]) tj;
-            MkMatch tf' ta <- matchProp $(type1[t|Match|]) tfa;
+            MkEqualType <- matchProp $(type1[t|EqualType (Type_KKTTKTT JustEdit)|]) tje;
+            MkMatch tjrf tr <- matchProp $(type1[t|Match|]) tjrfr;
+            MkMatch tjr tf' <- matchProp $(type1[t|Match|]) tjrf;
+            MkEqualType <- matchProp $(type1[t|EqualType (Type_KKTTKKTTKTT JustReader)|]) tjr;
             MkEqualType <- matchWitness tf tf';
-            Edit_Inst ta' <- matchProp $(type1[t|Edit_Inst|]) te;
-            MkEqualType <- matchWitness ta ta';
-            return (MkMatchJustWholeEdit tf te ta);
+            ei@(Edit_Inst tr') <- matchProp $(type1[t|Edit_Inst|]) te;
+            MkEqualType <- matchWitness tr tr';
+            return (MkMatchJustWholeEdit ei tf te);
         };
     };
 
     instance Construct MatchJustWholeEdit where
     {
-        construct (MkMatchJustWholeEdit tf te ta) =
+        construct (MkMatchJustWholeEdit (Edit_Inst tr) tf te) =
             applyInfo
-             (applyInfo (info :: Info (Type_KTKTT Either))
-              (applyInfo (info :: Info (Type_KTT WholeEdit)) (applyInfo tf ta)))
+             (applyInfo (info :: Info (Type_KTKTT EitherEdit))
+              (applyInfo (info :: Info (Type_KKTTT WholeEdit))
+               (applyInfo (applyInfo (info :: Info (Type_KKTTKKTTKTT JustReader)) tf) tr)
+              ))
              (applyInfo (applyInfo (info :: Info (Type_KKTTKTT JustEdit)) tf) te);
     };
 }

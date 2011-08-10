@@ -1,17 +1,22 @@
 module Truth.Edit.IndexEdit where
 {
+    import Truth.Edit.EditLens;
+    import Truth.Edit.Function;
     import Truth.Edit.NoEdit;
-    import Truth.Edit.Either();
+    import Truth.Edit.Either;
     import Truth.Edit.Edit;
+    import Truth.Edit.Read;
     import Truth.Edit.Import;
 
-    class Container a where
+    class Container container where
     {
-        type Index a;
-        type Part a;
+        type Index container :: *;
+        type Part container :: *;
 
-        sameIndex :: a -> Index a -> Index a -> Bool;
-        indexLens :: Index a -> Lens a (Part a);
+        sameIndex :: forall reader. (FullReader reader,Subject reader ~ container) =>
+            Index container -> Index container -> Readable reader Bool;
+        indexLens :: forall partedit. (Edit partedit, EditSubject partedit ~ Part container) =>
+            Index container -> FloatingEditLens (Index container) (IndexEdit container edit) (PartEdit edit);
     };
 
     instance (Eq a) => Container (a -> b) where
@@ -19,7 +24,7 @@ module Truth.Edit.IndexEdit where
         type Index (a -> b) = a;
         type Part (a -> b) = b;
 
-        sameIndex = \_ -> (==);
+        sameIndex a1 a2 = return (a1 == a2);
 
         indexLens a = MkLens
         {
@@ -80,14 +85,42 @@ module Truth.Edit.IndexEdit where
     };
     $(factInstances [t|Container_Inst|]);
 
+
+    data IndexReader container reader t where
+    {
+        ReadIndex :: reader t -> (Index container) -> IndexReader container reader t;
+    };
+
+        -- indexLens :: index -> Lens container part;
+
+    instance (Reader reader,Subject reader ~ Part container) => Reader (IndexReader container reader) where
+    {
+        type Subject (IndexReader container reader) = container;
+
+        -- readFrom :: container -> (forall t. IndexReader container reader t -> t);
+        readFrom container (ReadIndex reader index) = readFrom (lensGet (indexLens index) container) reader;
+
+
+        -- fromReader :: forall m. (Monad m) => (forall t. IndexReader container reader t -> m t) -> m container;
+        -- fromReader read =
+    };
+
     data IndexEdit container edit = MkIndexEdit (Index container) edit;
 
-    instance (Eq (Index container),Edit edit,Container container,Part container ~ Maybe (Subject edit)) =>
+    instance (Eq (Index container),Edit edit,Container container,Part container ~ Maybe (EditSubject edit)) =>
      Edit (IndexEdit container edit) where
     {
-        type Subject (IndexEdit container edit) = container;
+        type EditReader (IndexEdit container edit) = IndexReader container (EditReader edit);
 
-        applyEdit (MkIndexEdit i edita) = arr (lensMap (indexLens i) (fmap (applyConstFunction (applyEdit edita))));
+        -- applyEdit :: IndexEdit container edit ->
+        --   IndexReader container (EditReader edit) t -> Readable (IndexReader container (EditReader edit)) t;
+        applyEdit (MkIndexEdit i edita) (ReadIndex reader i') =
+
+
+
+
+
+        arr (lensMap (indexLens i) (fmap (applyConstFunction (applyEdit edita))));
 
         invertEdit (MkIndexEdit i edita) oldcont = do
         {
@@ -121,24 +154,24 @@ module Truth.Edit.IndexEdit where
 
     class (Edit edit) => FloatingPointer ptr edit where
     {
-        updatePointer :: Subject edit -> edit -> ptr -> ptr;
+        updatePointer :: edit -> ptr -> Readable (EditReader edit) ptr;
     };
 
     instance FloatingPointer ptr (NoEdit subj) where
     {
-        updatePointer _subj (MkNoEdit edit) _ptr = never edit;
+        updatePointer (MkNoEdit edit) = never edit;
     };
 
     instance (FloatingPointer ptr edita,FloatingPointer ptr editb,Subject edita ~ Subject editb) =>
-     FloatingPointer ptr (Either edita editb) where
+     FloatingPointer ptr (EitherEdit edita editb) where
     {
-        updatePointer subj (Left edit) ptr = updatePointer subj edit ptr;
-        updatePointer subj (Right edit) ptr = updatePointer subj edit ptr;
+        updatePointer (LeftEdit edit) = updatePointer edit;
+        updatePointer (RightEdit edit) = updatePointer edit;
     };
 
     instance (Eq index,Edit edit,Container container,Part container ~ Maybe (Subject edit),index ~ Index container)
      => FloatingPointer index (IndexEdit container edit) where
     {
-        updatePointer _ _ ptr = ptr;
+        updatePointer _ ptr = return ptr;
     }
 }

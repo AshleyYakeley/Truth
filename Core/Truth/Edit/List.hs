@@ -12,6 +12,12 @@ module Truth.Edit.List(listElement,listTake,listDrop,listSection,ListEdit(..),Li
     type ListPoint = Int;
     data ListRegion = MkListRegion Int Int deriving (Eq);
 
+    data ListRead a t where
+    {
+        ListReadLength :: ListRead a ListPoint;
+        ListReadSection :: ListRegion -> ListRead a [a];
+    };
+
     data ListEdit edit =
         ReplaceListEdit [Subject edit]                  |
         ItemEdit (IndexEdit [Subject edit] edit)    |

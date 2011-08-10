@@ -4,32 +4,35 @@ module Truth.Edit.EditFunction where
     import Truth.Edit.Either();
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Edit;
+    import Truth.Edit.Either;
+    import Truth.Edit.ReadFunction;
+    import Truth.Edit.Read;
     import Truth.Edit.Import;
 
     -- | A EditLens is a lens without state
     ;
     data EditFunction edita editb = MkEditFunction
     {
-        editGet :: Subject edita -> Subject editb,
-        editUpdate :: edita -> ConstFunction (Subject edita) (Maybe editb)
+        editGet :: ReadFunction (EditReader edita) (EditReader editb),
+        editUpdate :: edita -> Readable (EditReader edita) (Maybe editb)
     };
 
     instance Category EditFunction where
     {
         id = MkEditFunction
         {
-            editGet = id,
+            editGet = readable,
             editUpdate = \edit -> pure (Just edit)
         };
         bc . ab = MkEditFunction
         {
-            editGet = (editGet bc) . (editGet ab),
+            editGet = composeReadFunction (editGet bc) (editGet ab),
             editUpdate = \edita -> do
             {
                 meb <- editUpdate ab edita;
                 case meb of
                 {
-                    Just editb -> cofmap1CF (editGet ab) (editUpdate bc editb);
+                    Just editb -> mapReadable (editGet ab) (editUpdate bc editb);
                     _ -> return Nothing;
                 };
             }
@@ -42,20 +45,20 @@ module Truth.Edit.EditFunction where
         {
             editUpdate = \(MkJustEdit edita) ->  do
             {
-                fmeditb <- cfmap (editUpdate lens edita);
+                fmeditb <- liftJustReadable (editUpdate lens edita);
                 return (case retrieveOne fmeditb of
                 {
                     SuccessResult (Just editb) -> Just (MkJustEdit editb);
                     _ -> Nothing;
                 });
             },
-            editGet = cfmap (editGet lens)
+            editGet = liftJustReadFunction (editGet lens)
         };
     };
 
     data CleanEditFunction edita editb = MkCleanEditFunction
     {
-        cleanEditGet :: Subject edita -> Subject editb,
+        cleanEditGet :: CleanReadFunction (EditReader edita) (EditReader editb),
         cleanEditUpdate :: edita -> Maybe editb
     };
 
@@ -70,7 +73,7 @@ module Truth.Edit.EditFunction where
         };
         bc . ab = MkCleanEditFunction
         {
-            cleanEditGet = (cleanEditGet bc) . (cleanEditGet ab),
+            cleanEditGet = (cleanEditGet ab) . (cleanEditGet bc),
             cleanEditUpdate = \edita -> do
             {
                 editb <- cleanEditUpdate ab edita;
@@ -82,47 +85,49 @@ module Truth.Edit.EditFunction where
     cleanEditFunction :: CleanEditFunction edita editb -> EditFunction edita editb;
     cleanEditFunction ff = MkEditFunction
     {
-        editGet = cleanEditGet ff,
+        editGet = cleanReadFunction (cleanEditGet ff),
         editUpdate = \edit -> pure (cleanEditUpdate ff edit)
     };
 
-    editFunction :: (a -> b) -> EditFunction (WholeEdit a) (WholeEdit b);
+    editFunction :: (a -> b) -> EditFunction (WholeEdit (WholeReader a)) (WholeEdit (WholeReader b));
     editFunction ab = MkEditFunction
     {
-        editGet = ab,
+        editGet = simpleReadFunction ab,
         editUpdate = \(MkWholeEdit a) -> pure (Just (MkWholeEdit (ab a)))
     };
 
-    simpleConvertEditFunction :: (Edit edita,FullEdit editb) => (Subject edita -> Subject editb) -> EditFunction edita editb;
-    simpleConvertEditFunction ab = MkEditFunction
+    simpleConvertEditFunction ::
+     (Edit edita,FullEdit editb) => (ReadFunction (EditReader edita) (EditReader editb)) -> EditFunction edita editb;
+    simpleConvertEditFunction rfrarb = MkEditFunction
     {
-        editGet = ab,
-        editUpdate = \edit -> fmap (Just . replaceEdit . ab) (applyEdit edit)
+        editGet = rfrarb,
+
+        editUpdate = \edit -> do
+        {
+            b <- mapReadable (applyEdit edit) (mapReadable rfrarb fromReader);
+            return (Just (replaceEdit b));
+        }
     };
 
-    convertEditFunction :: (Edit edita,FullEdit editb,Subject edita ~ Subject editb) => EditFunction edita editb;
-    convertEditFunction = MkEditFunction
-    {
-        editGet = id,
-        editUpdate = \edit -> fmap (Just . replaceEdit) (applyEdit edit)
-    };
+    convertEditFunction :: (FullReader (EditReader edita),Edit edita,FullEdit editb,EditSubject edita ~ EditSubject editb) => EditFunction edita editb;
+    convertEditFunction = simpleConvertEditFunction convertReadFunction;
 
-    eitherEditFunction :: (Subject edit ~ Subject edit') => CleanEditFunction edit (Either edit' edit);
+    eitherEditFunction :: (EditReader edit ~ EditReader edit') => CleanEditFunction edit (EitherEdit edit' edit);
     eitherEditFunction = MkCleanEditFunction
     {
         cleanEditGet = id,
-        cleanEditUpdate = \edit -> Just (Right edit)
+        cleanEditUpdate = \edit -> Just (RightEdit edit)
     };
 
-    withWholeEditFunction :: (FullEdit editb) =>
-     CleanEditFunction edita editb -> CleanEditFunction (Either (WholeEdit (Subject edita)) edita) editb;
+    withWholeEditFunction :: (Edit edita,FullEdit editb) =>
+     CleanEditFunction edita editb -> CleanEditFunction (EitherEdit (WholeEdit (EditReader edita)) edita) editb;
     withWholeEditFunction cef = MkCleanEditFunction
     {
         cleanEditGet = cleanEditGet cef,
         cleanEditUpdate = \editewa -> case editewa of
         {
-            Left (MkWholeEdit a) -> Just (replaceEdit (cleanEditGet cef a));
-            Right edita -> cleanEditUpdate cef edita;
+            LeftEdit (MkWholeEdit a) -> Just (replaceEdit (fromCleanReadFunction (cleanEditGet cef) a));
+            RightEdit edita -> cleanEditUpdate cef edita;
         }
     };
 }

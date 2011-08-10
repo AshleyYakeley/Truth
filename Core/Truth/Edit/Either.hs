@@ -1,32 +1,47 @@
-{-# OPTIONS -fno-warn-orphans #-}
 module Truth.Edit.Either where
 {
     import Truth.Edit.Edit;
+    import Truth.Edit.Read;
     import Truth.Edit.Import;
 
-    instance (Edit ea,Edit eb,Subject ea ~ Subject eb) => Edit (Either ea eb) where
+    data EitherReader ra rb t = LeftReader (ra t) | RightReader (rb t);
+
+    instance (Reader ra,Reader rb,Subject ra ~ Subject rb) => Reader (EitherReader ra rb) where
     {
-        type Subject (Either ea eb) = Subject ea;
+        type Subject (EitherReader ra rb) = Subject ra;
 
-        applyEdit (Left edit) = applyEdit edit;
-        applyEdit (Right edit) = applyEdit edit;
+        readFromM msubj (LeftReader reader) = readFromM msubj reader;
+        readFromM msubj (RightReader reader) = readFromM msubj reader;
 
-        invertEdit (Left edit) s = fmap Left (invertEdit edit s);
-        invertEdit (Right edit) s = fmap Right (invertEdit edit s);
+        readFrom subj (LeftReader reader) = readFrom subj reader;
+        readFrom subj (RightReader reader) = readFrom subj reader;
     };
 
-    instance (FullEdit ea,Edit eb,Subject ea ~ Subject eb) => FullEdit (Either ea eb) where
+    data EitherEdit ea eb = LeftEdit ea | RightEdit eb;
+
+    instance (Edit ea,Edit eb,EditReader ea ~ EditReader eb) => Edit (EitherEdit ea eb) where
     {
-        replaceEdit s = Left (replaceEdit s);
+        type EditReader (EitherEdit ea eb) = EditReader ea;
+
+        applyEdit (LeftEdit edit) = applyEdit edit;
+        applyEdit (RightEdit edit) = applyEdit edit;
+
+        invertEdit (LeftEdit edit) = fmap (fmap LeftEdit) (invertEdit edit);
+        invertEdit (RightEdit edit) = fmap (fmap RightEdit) (invertEdit edit);
     };
 
-    instance HasInfo (Type_KTKTT Either) where
+    instance (FullEdit ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit (EitherEdit ea eb) where
+    {
+        replaceEdit s = LeftEdit (replaceEdit s);
+    };
+
+    instance HasInfo (Type_KTKTT EitherEdit) where
     {
         info = MkInfo
-            (SimpleWit $(iowitness[t| Type_KTKTT Either |]))
+            (SimpleWit $(iowitness[t| Type_KTKTT EitherEdit |]))
             (mconcat
             [
-                -- instance (Edit ea,Edit eb,Subject ea ~ Subject eb) => Edit (Either ea eb)
+                -- instance (Edit ea,Edit eb,EditReader ea ~ EditReader eb) => Edit (Either ea eb)
                 mkFacts (MkFactS (\ea -> MkFactS (\eb -> MkFactZ (do
                 {
                     Edit_Inst sa <- matchProp $(type1[t|Edit_Inst|]) ea;
@@ -34,10 +49,10 @@ module Truth.Edit.Either where
                     MkEqualType <- matchWitness sa sb;
                     return (Edit_Inst sa);
                 })))
-                :: FactS (FactS FactZ) Edit_Inst (Type_KTKTT Either)
+                :: FactS (FactS FactZ) Edit_Inst (Type_KTKTT EitherEdit)
                 ),
 
-                -- instance (FullEdit ea,Edit eb,Subject ea ~ Subject eb) => FullEdit (Either ea eb)
+                -- instance (FullEdit ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit (Either ea eb)
                 mkFacts (MkFactS (\ea -> MkFactS (\eb -> MkFactZ (do
                 {
                     Edit_Inst sa <- matchProp $(type1[t|Edit_Inst|]) ea;
@@ -46,26 +61,26 @@ module Truth.Edit.Either where
                     MkEqualType <- matchWitness sa sb;
                     return FullEdit_Inst;
                 })))
-                :: FactS (FactS FactZ) FullEdit_Inst (Type_KTKTT Either)
+                :: FactS (FactS FactZ) FullEdit_Inst (Type_KTKTT EitherEdit)
                 )
             ]);
     };
 
-    data MatchEither t where
+    data MatchEitherEdit t where
     {
-        MkMatchEither :: forall a b. Info (Type_T a) -> Info (Type_T b) -> MatchEither (Type_T (Either a b));
+        MkMatchEitherEdit :: forall a b. Info (Type_T a) -> Info (Type_T b) -> MatchEitherEdit (Type_T (EitherEdit a b));
     };
 
-    instance Property MatchEither where
+    instance Property MatchEitherEdit where
     {
         matchProperty a = do
         {
             MkMatch tea tb <- matchProp $(type1[t|Match|]) a;
             MkMatch teither ta <- matchProp $(type1[t|Match|]) tea;
-            MkEqualType <- matchProp $(type1[t|EqualType (Type_KTKTT Either)|]) teither;
+            MkEqualType <- matchProp $(type1[t|EqualType (Type_KTKTT EitherEdit)|]) teither;
             Kind_T <- matchProp $(type1[t|Kind_T|]) ta;
             Kind_T <- matchProp $(type1[t|Kind_T|]) tb;
-            return (MkMatchEither ta tb);
+            return (MkMatchEitherEdit ta tb);
         };
     };
 
