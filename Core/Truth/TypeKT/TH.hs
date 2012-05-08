@@ -3,7 +3,7 @@ module Truth.TypeKT.TH where
 {
     import Language.Haskell.TH;
     import Control.Monad;
-    import Prelude(Show(..),Eq(..),Num(..));
+    import Prelude(Show(..),Eq(..),Num(..),String);
     import qualified Data.Witness;
     import Data.List;
     import Data.Char;

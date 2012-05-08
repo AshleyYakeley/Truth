@@ -56,7 +56,7 @@ module Truth.TypeKT.HasInfo where
 
         instance Fact $(tq) where
         {
-            witFact = $(iowitness[t| $(tq) () |]);
+            witFact = $(iowitness[t|Type_KTT $(tq) |]);
         };
     |];
     -}
@@ -65,7 +65,7 @@ module Truth.TypeKT.HasInfo where
         TH.instanceD (return []) (TH.appT (TH.conT ''Property) tq)
          [TH.valD (TH.varP 'matchProperty) (TH.normalB (TH.varE 'matchProperty_Fact)) []],
         TH.instanceD (return []) (TH.appT (TH.conT ''Fact) tq)
-         [TH.valD (TH.varP 'witFact) (TH.normalB (iowitness (TH.appT tq (TH.tupleT 0)))) []]
+         [TH.valD (TH.varP 'witFact) (TH.normalB (iowitness (TH.appT (TH.conT ''Type_KTT) tq))) []]
     ];
 
 

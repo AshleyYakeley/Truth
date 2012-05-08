@@ -37,6 +37,7 @@ module Truth.Edit.Import
     module Data.Functor.Identity,
     module Data.Tuple,
     module Data.Word,
+    module Data.String,
     module Data.Char,
     module Data.Int,
     module Data.Either,
@@ -85,6 +86,7 @@ where
     import Data.Functor.Identity;
     import Data.Tuple;
     import Data.Word;
+    import Data.String;
     import Data.Char;
     import Data.Int;
     import Data.Either;

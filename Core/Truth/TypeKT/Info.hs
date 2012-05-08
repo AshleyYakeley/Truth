@@ -90,7 +90,7 @@ $(fmap concat (forM supportedKinds (\k -> do
 -}
     class (Property fact) => Fact fact where
     {
-        witFact :: IOWitness (fact ());
+        witFact :: IOWitness (Type_KTT fact);
     };
 
     matchProperty_Fact :: (Fact prop) => Info t -> Maybe (prop t);
@@ -114,14 +114,14 @@ $(fmap concat (forM supportedKinds (\k -> do
     mkFacts2 :: (Fact fact) => (forall t0 t1. Info t0 -> Info t1 -> Maybe (fact (TypeConstructed (TypeConstructed a t0) t1))) -> Facts a;
     mkFacts2 f = mkFacts (MkFactS (\a0 -> MkFactS (\a1 -> MkFactZ (f a0 a1))));
 
-    ffid :: forall fact t. (Fact fact) => (IOWitness (fact ()) -> Maybe (fact t)) -> Maybe (fact t);
+    ffid :: forall fact t. (Fact fact) => (IOWitness (Type_KTT fact) -> Maybe (fact t)) -> Maybe (fact t);
     ffid mft = mft witFact;
 
     instance FactChecker FactZ where
     {
         mkFacts (MkFactZ (f :: Maybe (fact a))) = MkFacts (ffid (\wit -> do
         {
-            MkEqualType <- matchWitness wit (witFact :: IOWitness (fact ()));
+            MkEqualType <- matchWitness wit (witFact :: IOWitness (Type_KTT fact));
             f;
         })) (\_ -> mempty);
     };
@@ -134,7 +134,7 @@ $(fmap concat (forM supportedKinds (\k -> do
     matchPropertyKind :: forall prop t. (IsKind prop) => Type (prop ()) -> Info t -> Maybe (prop t);
     matchPropertyKind _ (MkInfo _ _) = do
     {
-        MkEqualType <- matchWitness (witKind :: IOWitness (TypeKind t ())) (witKind :: IOWitness (prop ()));
+        MkEqualType <- matchWitness (witKind :: IOWitness (Type_KTT (TypeKind t))) (witKind :: IOWitness (Type_KTT prop));
         return typeKind;
     };
 

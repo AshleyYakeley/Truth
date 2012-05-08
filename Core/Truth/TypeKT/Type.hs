@@ -10,23 +10,6 @@ module Truth.TypeKT.Type where
     import Control.Monad;
     import Data.OpenWitness;
 
-    class (HasKind f, HasKind a, HasKind (TypeConstructed f a)) =>
-         ConstructType f a where
-    {
-        type TypeConstructed f a :: *;
-    };
-
-    class IsKind k where
-    {
-        witKind :: IOWitness (k ());
-    };
-
-    class (IsKind (TypeKind t)) => HasKind t where
-    {
-        type TypeKind t :: * -> *;
-        typeKind :: TypeKind t t;
-    };
-
 $(
     forM supportedKinds (\k ->
         -- [d|data $(return (kTypeTypeName k)) (a :: $(return k))|];
@@ -37,6 +20,23 @@ $(
         }
     )
 );
+
+    class IsKind k where
+    {
+        witKind :: IOWitness (Type_KTT k);
+    };
+
+    class (IsKind (TypeKind t)) => HasKind t where
+    {
+        type TypeKind t :: * -> *;
+        typeKind :: TypeKind t t;
+    };
+
+    class (HasKind f, HasKind a, HasKind (TypeConstructed f a)) =>
+         ConstructType f a where
+    {
+        type TypeConstructed f a :: *;
+    };
 $(
     forM supportedKinds (\k ->
     -- data Kind_##p (t :: *) where { Kind_##p :: forall a. Kind_##p (Type_##p a); };
@@ -60,7 +60,7 @@ $(
     [d|
         instance IsKind $(tkType) where
         {
-            witKind = $(iowitness [t|$(tkType) ()|]);
+            witKind = $(iowitness [t|Type_KTT $(tkType)|]);
         };
     |]))
 );
