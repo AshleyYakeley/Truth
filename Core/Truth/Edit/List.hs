@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Truth.Edit.List(listElement,listTake,listDrop,listSection,ListEdit(..),ListPoint,ListRegion(..)) where
+module Truth.Edit.List({- listElement,listTake,listDrop,listSection,ListEdit(..),ListPoint,ListRegion(..) -}) where
 {
+{-
     import Truth.Edit.IndexEdit;
     import Truth.Edit.FloatingEditLens;
     import Truth.Edit.FloatingEditFunction;
@@ -250,4 +251,5 @@ module Truth.Edit.List(listElement,listTake,listDrop,listSection,ListEdit(..),Li
 
     listSection :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => ListRegion -> FloatingEditLens (ListPoint,ListPoint) (ListEdit edit) (ListEdit edit);
     listSection (MkListRegion start len) = composeFloating (listTake len) (listDrop start);
+-}
 }

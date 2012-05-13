@@ -1,5 +1,7 @@
 module Truth.Edit.IndexEdit where
 {
+{-
+    import Truth.Edit.FloatingEditLens;
     import Truth.Edit.EditLens;
     import Truth.Edit.Function;
     import Truth.Edit.NoEdit;
@@ -174,4 +176,5 @@ module Truth.Edit.IndexEdit where
     {
         updatePointer _ ptr = return ptr;
     }
+-}
 }

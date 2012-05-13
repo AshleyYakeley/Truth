@@ -14,6 +14,7 @@ module Truth.Edit.FloatingEditLens where
     data FloatingEditLens' m state edita editb = MkFloatingEditLens
     {
         floatingEditLensFunction :: FloatingEditFunction state edita editb,
+        -- floatingEditLensPutEdit :: state -> Readable (EditReader edita) (editb -> m (Readable (EditReader edita) edita))
         floatingEditLensPutEdit :: state -> editb -> Readable (EditReader edita) (m edita)
     };
 

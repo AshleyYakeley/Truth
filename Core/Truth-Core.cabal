@@ -23,15 +23,16 @@ data-files:
 data-dir: ""
 extra-source-files:
 extra-tmp-files:
-exposed-modules: Truth.Edit.Function Truth.Edit.ReadFunction
-                 Truth.Edit.Read Truth.Edit Truth.Edit.Anything
-                 Truth.Edit.CleanEditLens Truth.Edit.Context Truth.Edit.Edit
-                 Truth.Edit.EditFunction Truth.Edit.EditLens Truth.Edit.Either
-                 Truth.Edit.FloatingEditFunction Truth.Edit.FloatingEditLens
-                 Truth.Edit.IndexEdit Truth.Edit.JustEdit Truth.Edit.JustWholeEdit
-                 Truth.Edit.List Truth.Edit.MIME Truth.Edit.NoEdit Truth.Edit.Text
-                 Truth.Edit.Tuple Truth.Edit.WholeEdit Truth.Object
-                 Truth.Object.Editor Truth.Object.GeneralLens Truth.Object.Object
+exposed-modules: Truth.Object.Subscribe Truth.Edit.Function
+                 Truth.Edit.ReadFunction Truth.Edit.Read Truth.Edit
+                 Truth.Edit.Anything Truth.Edit.CleanEditLens Truth.Edit.Context
+                 Truth.Edit.Edit Truth.Edit.EditFunction Truth.Edit.EditLens
+                 Truth.Edit.Either Truth.Edit.FloatingEditFunction
+                 Truth.Edit.FloatingEditLens Truth.Edit.IndexEdit
+                 Truth.Edit.JustEdit Truth.Edit.JustWholeEdit Truth.Edit.List
+                 Truth.Edit.MIME Truth.Edit.NoEdit Truth.Edit.Text Truth.Edit.Tuple
+                 Truth.Edit.WholeEdit Truth.Object Truth.Object.Editor
+                 Truth.Object.GeneralLens Truth.Object.Object
                  Truth.Object.SavableBuffer Truth.Object.View Truth.TypeKT
                  Truth.TypeKT.Construct Truth.TypeKT.HasInfo Truth.TypeKT.HasType
                  Truth.TypeKT.Info Truth.TypeKT.Type
