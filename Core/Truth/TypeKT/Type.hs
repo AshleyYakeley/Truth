@@ -1,15 +1,25 @@
-{-# LANGUAGE CPP #-}
 {-# OPTIONS -fno-warn-unused-binds -w #-}
 module Truth.TypeKT.Type where
 {
     import Truth.TypeKT.TH;
+    import Data.KindCategory;
     import qualified Language.Haskell.TH as TH;
     import Language.Haskell.TH hiding (Info,Type,Kind);
     import Data.List;
     import Data.Char;
     import Control.Monad;
     import Data.OpenWitness;
+    import Data.Witness;
+    import Data.Maybe;
+    import qualified Control.Category;
+    import GHC.Exts hiding (Any);
 
+
+
+
+    data WrappedType = forall a. WrapType a;
+
+{-
 $(
     forM supportedKinds (\k ->
         -- [d|data $(return (kTypeTypeName k)) (a :: $(return k))|];
@@ -20,10 +30,80 @@ $(
         }
     )
 );
+-}
 
-    class IsKind k where
+    data Kind_W :: WrappedType -> * where
     {
-        witKind :: IOWitness (Type_KTT k);
+        KindStar :: Kind_W (WrapType (WrapKind :: * -> WrappedKind));
+        KindConstraint :: Kind_W (WrapType (WrapKind :: Constraint -> WrappedKind));
+        KindArrow ::
+         Kind_W (WrapType (WrapKind :: kp -> WrappedKind)) ->
+         Kind_W (WrapType (WrapKind :: kq -> WrappedKind)) ->
+         Kind_W (WrapType (WrapKind :: (kp -> kq) -> WrappedKind));
+    };
+
+    instance SimpleWitness Kind_W where
+    {
+        matchWitness KindStar KindStar = Just MkEqualType;
+        matchWitness (KindArrow kp1 kq1) (KindArrow kp2 kq2) = do
+        {
+            MkEqualType <- matchWitness kp1 kp2;
+            MkEqualType <- matchWitness kq1 kq2;
+            return MkEqualType;
+        };
+        matchWitness _ _ = Nothing;
+    };
+
+    instance Eq1 Kind_W where
+    {
+        equals1 w1 w2 = isJust (matchWitness w1 w2);
+    };
+
+    instance Representative Kind_W where
+    {
+        getRepWitness KindStar = MkRepWitness;
+        getRepWitness KindConstraint = MkRepWitness;
+        getRepWitness (KindArrow kp kq) = case (getRepWitness kp,getRepWitness kq)
+        of
+        {
+            (MkRepWitness,MkRepWitness) -> MkRepWitness;
+        };
+    };
+
+    instance Is Kind_W (WrapType (WrapKind :: * -> WrappedKind)) where
+    {
+        representative = KindStar;
+    };
+
+    instance Is Kind_W (WrapType (WrapKind :: Constraint -> WrappedKind)) where
+    {
+        representative = KindConstraint;
+    };
+
+    instance
+    (
+        Is Kind_W (WrapType (WrapKind :: kp -> WrappedKind)),
+        Is Kind_W (WrapType (WrapKind :: kq -> WrappedKind))
+    ) => Is Kind_W (WrapType (WrapKind :: (kp -> kq) -> WrappedKind)) where
+    {
+        representative = KindArrow representative representative;
+    };
+
+    type IsKind (wk :: k -> WrappedKind) = (KindCategory wk,Is Kind_W (WrapType wk));
+
+    type Kind_X wk = Kind_W (WrapType wk);
+
+    witKind :: (IsKind wk) => Kind_X wk;
+    witKind = representative;
+
+    typeKind :: (IsKind (WrapKind :: k -> WrappedKind)) =>
+     Type (t :: k) -> Kind_X (WrapKind :: k -> WrappedKind);
+    typeKind _ = representative;
+
+{-
+    class IsKind (k :: * -> *) where
+    {
+        witKind :: IOWitness k;
     };
 
     class (IsKind (TypeKind t)) => HasKind t where
@@ -37,6 +117,32 @@ $(
     {
         type TypeConstructed f a :: *;
     };
+-}
+
+    type family WrapApply (f :: WrappedType) (x :: WrappedType) :: WrappedType;
+    type instance WrapApply (WrapType (f :: ka -> kfa)) (WrapType (a :: ka)) = WrapType (f a);
+
+--    constructKind :: WrapKind (WrapType :: k -> WrappedType)
+--    constructKind kf ka
+
+{-
+    class () =>
+        ConstructType (f :: WrappedType) (a :: WrappedType) where
+    {
+        type WrapApply f a :: WrappedType;
+        constructKind :: WrapKind (WrapType :: k -> WrappedType)
+    };
+
+
+    instance
+
+
+-}
+
+
+--    data Kind_X k (t :: *) where { Kind_X :: forall (a :: k). Kind_X (Type_X a); };
+
+{-
 $(
     forM supportedKinds (\k ->
     -- data Kind_##p (t :: *) where { Kind_##p :: forall a. Kind_##p (Type_##p a); };
@@ -60,7 +166,7 @@ $(
     [d|
         instance IsKind $(tkType) where
         {
-            witKind = $(iowitness [t|Type_KTT $(tkType)|]);
+            witKind = $(iowitness [t|Type_X $(tkType)|]);
         };
     |]))
 );
@@ -163,4 +269,5 @@ $(
         return (concat declist);
     }
 );
+-}
 }

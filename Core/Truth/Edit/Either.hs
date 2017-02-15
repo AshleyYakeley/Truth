@@ -19,6 +19,11 @@ module Truth.Edit.Either where
 
     data EitherEdit ea eb = LeftEdit ea | RightEdit eb;
 
+    instance Floating (EitherEdit ea eb) where
+    {
+        type FloatingEdit (EitherEdit ea eb) = EitherEdit ea eb;
+    };
+
     instance (Edit ea,Edit eb,EditReader ea ~ EditReader eb) => Edit (EitherEdit ea eb) where
     {
         type EditReader (EitherEdit ea eb) = EditReader ea;
@@ -34,7 +39,7 @@ module Truth.Edit.Either where
     {
         replaceEdit s = LeftEdit (replaceEdit s);
     };
-
+{-
     instance HasInfo (Type_KTKTT EitherEdit) where
     {
         info = MkInfo
@@ -83,5 +88,5 @@ module Truth.Edit.Either where
             return (MkMatchEitherEdit ta tb);
         };
     };
-
+-}
 }

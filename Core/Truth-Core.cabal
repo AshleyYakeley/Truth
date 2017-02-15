@@ -4,67 +4,40 @@ cabal-version: -any
 build-type: Simple
 license: AllRightsReserved
 license-file: ""
-copyright:
-maintainer:
-build-depends: Cabal >=1.1.6, Truth-Shapes ==0.1, base >=4.0,
-               bytestring >=0.9.1.5, containers >=0.2, countable >=0.1,
-               mime >=0.3.2.1, open-witness >=0.2, template-haskell >=2.4,
-               transformers >=0.2.2, witness >=0.2
-stability:
-homepage:
-package-url:
-bug-reports:
-synopsis:
 description: .
-category:
-author:
-tested-with:
-data-files:
 data-dir: ""
-extra-source-files:
-extra-tmp-files:
-exposed-modules: Truth.Object.Subscribe Truth.Edit.Function
-                 Truth.Edit.ReadFunction Truth.Edit.Read Truth.Edit
-                 Truth.Edit.Anything Truth.Edit.CleanEditLens Truth.Edit.Context
-                 Truth.Edit.Edit Truth.Edit.EditFunction Truth.Edit.EditLens
-                 Truth.Edit.Either Truth.Edit.FloatingEditFunction
-                 Truth.Edit.FloatingEditLens Truth.Edit.IndexEdit
-                 Truth.Edit.JustEdit Truth.Edit.JustWholeEdit Truth.Edit.List
-                 Truth.Edit.MIME Truth.Edit.NoEdit Truth.Edit.Text Truth.Edit.Tuple
-                 Truth.Edit.WholeEdit Truth.Object Truth.Object.Editor
-                 Truth.Object.GeneralLens Truth.Object.Object
-                 Truth.Object.SavableBuffer Truth.Object.View Truth.TypeKT
-                 Truth.TypeKT.Construct Truth.TypeKT.HasInfo Truth.TypeKT.HasType
-                 Truth.TypeKT.Info Truth.TypeKT.Type
-exposed: True
-buildable: True
-build-tools:
-cpp-options: --cpp -ansi
-cc-options:
-ld-options:
-pkgconfig-depends:
-frameworks:
-c-sources:
-default-language:
-other-languages:
-default-extensions:
-other-extensions:
-extensions: UndecidableInstances MultiParamTypeClasses
-            FunctionalDependencies RankNTypes ScopedTypeVariables
-            ImplicitParams FlexibleContexts FlexibleInstances EmptyDataDecls
-            TypeSynonymInstances TemplateHaskell NoImplicitPrelude
-            PatternGuards GeneralizedNewtypeDeriving TypeFamilies GADTs
-            ImpredicativeTypes
-extra-libraries:
-extra-lib-dirs:
-includes:
-install-includes:
-include-dirs:
-hs-source-dirs: .
-other-modules: Truth.TypeKT.TH Truth.Edit.Import Truth.Edit.Merge
-ghc-prof-options:
-ghc-shared-options:
-ghc-options: -Wall -fno-warn-deprecated-flags -pgmPcpphs
-hugs-options:
-nhc98-options:
-jhc-options:
+
+library
+    build-depends: Cabal >=1.1.6, Truth-Shapes ==0.1, base >=4.0,
+                   bytestring >=0.9.1.5, containers >=0.2, countable >=0.1,
+                   mime >=0.3.2.1, open-witness >=0.3, template-haskell >=2.4,
+                   transformers >=0.2.2, witness >=0.3
+    exposed-modules: Truth.Object.Subscribe Truth.Edit.Function
+                     Truth.Edit.ReadFunction Truth.Edit.Read Truth.Edit
+                     Truth.Edit.Anything Truth.Edit.CleanEditLens Truth.Edit.Context
+                     Truth.Edit.Edit Truth.Edit.EditFunction Truth.Edit.EditLens
+                     Truth.Edit.Either Truth.Edit.FloatingEditFunction
+                     Truth.Edit.FloatingEditLens Truth.Edit.IndexEdit
+                     Truth.Edit.JustEdit Truth.Edit.JustWholeEdit Truth.Edit.List
+                     Truth.Edit.MIME Truth.Edit.NoEdit Truth.Edit.Text Truth.Edit.Tuple
+                     Truth.Edit.WholeEdit Truth.Object Truth.Object.Editor
+                     Truth.Object.GeneralLens Truth.Object.Object
+                     Truth.Object.SavableBuffer Truth.Object.View Truth.TypeKT
+                     Truth.TypeKT.Construct Truth.TypeKT.HasInfo Truth.TypeKT.HasType
+                     Truth.TypeKT.Info Truth.TypeKT.Type
+    exposed: True
+    buildable: True
+    cpp-options: --cpp -ansi
+    extensions: UndecidableInstances MultiParamTypeClasses
+                FunctionalDependencies RankNTypes ScopedTypeVariables
+                ImplicitParams FlexibleContexts FlexibleInstances EmptyDataDecls
+                TypeSynonymInstances TemplateHaskell NoImplicitPrelude
+                PatternGuards GeneralizedNewtypeDeriving TypeFamilies GADTs
+                ImpredicativeTypes PolyKinds KindSignatures ConstraintKinds
+                DataKinds
+    hs-source-dirs: .
+    other-modules: Truth.Edit.Read.FullReader Truth.Edit.Read.Readable
+                   Truth.Edit.Read.Reader Truth.TypeKT.TH Truth.Edit.Import
+                   Truth.Edit.Merge
+    ghc-options: -Wall -fno-warn-deprecated-flags -pgmPcpphs
+

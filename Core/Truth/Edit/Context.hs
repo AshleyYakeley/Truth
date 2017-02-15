@@ -46,7 +46,7 @@ module Truth.Edit.Context where
     {
         newValue = MkWithContext newValue newValue;
     };
-
+{-
     instance HasInfo (Type_KTKTT WithContext) where
     {
         info = mkSimpleInfo $(iowitness[t| Type_KTKTT WithContext |])
@@ -60,7 +60,7 @@ module Truth.Edit.Context where
             )
         ];
     };
-
+-}
     data WithContextAggregate editx editn edit where
     {
         EditContext :: WithContextAggregate editx editn editx;

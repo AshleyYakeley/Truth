@@ -17,7 +17,7 @@ module Truth.Edit.JustWholeEdit where
         SuccessResult a -> Just (replaceEdit a);
         _ -> Nothing;
     };
-
+{-
     data MatchJustWholeEdit t where
     {
         MkMatchJustWholeEdit ::
@@ -55,4 +55,5 @@ module Truth.Edit.JustWholeEdit where
               ))
              (applyInfo (applyInfo (info :: Info (Type_KKTTKTT JustEdit)) tf) te);
     };
+-}
 }

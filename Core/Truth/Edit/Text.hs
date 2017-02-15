@@ -7,14 +7,14 @@ module Truth.Edit.Text where
     packBijection = MkBijection unpack pack;
 
     data ListError = MkListError Int;
-
+{-
     instance HasInfo (Type_T ListError) where
     {
         info = mkSimpleInfo $(iowitness[t| Type_T ListError |])
         [
         ];
     };
-
+-}
     utf8Injection :: Injection [Word8] (Result ListError String);
     utf8Injection = resultInjection decodeUTF8 encodeUTF8 where
     {

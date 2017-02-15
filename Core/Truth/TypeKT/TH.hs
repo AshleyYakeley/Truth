@@ -1,6 +1,7 @@
 {-# OPTIONS -fno-warn-unused-binds -w #-}
 module Truth.TypeKT.TH where
 {
+{-
     import Language.Haskell.TH;
     import Control.Monad;
     import Prelude(Show(..),Eq(..),Num(..),String);
@@ -80,7 +81,8 @@ module Truth.TypeKT.TH where
     kindCode (ArrowK a b) = "K" ++ (kindCode a) ++ (kindCode b);
 
     kTypeTypeName :: Kind -> Name;
-    kTypeTypeName k = mkName ("Type_" ++ (kindCode k));
+--    kTypeTypeName k = mkName ("Type_" ++ (kindCode k));
+    kTypeTypeName k = mkName ("Type_X");
 
     kTypeType :: Kind -> Type;
     kTypeType k = ConT (kTypeTypeName k);
@@ -96,4 +98,5 @@ module Truth.TypeKT.TH where
 
     kKindConsName :: Kind -> Name;
     kKindConsName k = mkName ("Kind_" ++ (kindCode k));
+-}
 }

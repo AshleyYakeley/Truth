@@ -2,9 +2,12 @@ module Truth.Edit.Import
 (
     module Truth.TypeKT,
     module Control.Monad.Free,
+    module Data.KindCategory,
+    module Data.Category,
     module Data.FunctorOne,
+    module Data.Compose,
     module Data.Result,
-    module Data.IsTuple,
+--    module Data.IsTuple,
     module Data.Codec,
     module Data.Lens,
     module Data.FloatingLens,
@@ -21,8 +24,6 @@ module Truth.Edit.Import
     module Data.Witness,
     module Data.ByteString,
 
-    module Data.Functor.Compose,
-
     module Control.Exception,
     module System.IO,
     module Control.Concurrent.MVar,
@@ -32,7 +33,7 @@ module Truth.Edit.Import
     module Data.Foldable,
     module Control.Arrow,
     module Control.Monad,
-    module Control.Category,
+    -- module Control.Category,
     module Control.Monad.Trans.State,
     module Data.Functor.Identity,
     module Data.Tuple,
@@ -51,9 +52,12 @@ where
 {
     import Truth.TypeKT;
     import Control.Monad.Free;
+    import Data.KindCategory;
+    import Data.Category;
     import Data.FunctorOne;
+    import Data.Compose;
     import Data.Result;
-    import Data.IsTuple;
+--    import Data.IsTuple;
     import Data.Codec;
     import Data.Lens;
     import Data.FloatingLens;
@@ -70,8 +74,6 @@ where
     import Data.Witness;
     import Data.ByteString (ByteString,unpack,pack);
 
-    import Data.Functor.Compose;
-
     import Control.Exception hiding (catch);
     import System.IO;
     import Control.Concurrent.MVar;
@@ -81,7 +83,7 @@ where
     import Data.Foldable;
     import Control.Arrow hiding ((|||),(<<<),(>>>));
     import Control.Monad (Functor(..),Monad(..));
-    import Control.Category;
+    -- import Control.Category;
     import Control.Monad.Trans.State (StateT(..),evalStateT);
     import Data.Functor.Identity;
     import Data.Tuple;

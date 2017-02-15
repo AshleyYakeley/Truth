@@ -20,7 +20,7 @@ module Truth.Edit.WholeEdit where
     {
         fromReader = readable ReadWhole;
     };
-
+{-
     instance HasInfo (Type_KTKTT WholeReader) where
     {
         info = mkSimpleInfo $(iowitness[t| Type_KTKTT WholeReader |])
@@ -35,8 +35,13 @@ module Truth.Edit.WholeEdit where
             )
         ];
     };
-
+-}
     newtype WholeEdit (reader :: * -> *) = MkWholeEdit (Subject reader);
+
+    instance Floating (WholeEdit reader) where
+    {
+        type FloatingEdit (WholeEdit reader) = WholeEdit reader;
+    };
 
     instance (FullReader reader) => Edit (WholeEdit reader) where
     {
@@ -53,7 +58,7 @@ module Truth.Edit.WholeEdit where
     {
         replaceEdit = MkWholeEdit;
     };
-
+{-
     instance HasInfo (Type_KKTTT WholeEdit) where
     {
         info = mkSimpleInfo $(iowitness[t| Type_KKTTT WholeEdit |])
@@ -77,4 +82,5 @@ module Truth.Edit.WholeEdit where
             )
         ];
     };
+-}
 }

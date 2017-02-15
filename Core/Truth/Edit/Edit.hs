@@ -4,24 +4,35 @@ module Truth.Edit.Edit where
     import Truth.Edit.Read;
     import Truth.Edit.Import;
 
-    class (Reader (EditReader edit)) => Edit edit where
+    class ({- Edit (FloatingEdit t) -}) => Floating (t :: *) where
+    {
+        type FloatingEdit t :: *;
+
+        floatingUpdate :: FloatingEdit t -> t -> t;
+        floatingUpdate _ = id;
+    };
+
+    class (Reader (EditReader edit),Floating edit,edit ~ FloatingEdit edit) => Edit (edit :: *) where
     {
         type EditReader edit :: * -> *;
         applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit);
         invertEdit :: edit -> Readable (EditReader edit) (Maybe edit);    -- "Nothing" means no change
-        updateEdit :: edit -> edit -> edit;
-        updateEdit _ = id;
     };
     type EditSubject edit = Subject (EditReader edit);
 
     -- subjectRep :: HasInfo (Type_T (Subject edit)) => Info (Type_T edit) -> Info (Type_T (Subject edit));
     -- subjectRep _ = info;
 
-    data Edit_Inst edit where
+
+    data Edit_Inst :: * -> * where
     {
-        Edit_Inst :: forall edit. (Edit edit) => Info (Type_KTT (EditReader edit)) -> Edit_Inst (Type_T edit);
+        Edit_Inst :: forall edit. (Edit edit) => Info_X (EditReader edit) -> Edit_Inst edit;
     };
-    $(factInstances [t|Edit_Inst|]);
+
+    instance HasInfo Edit_Inst where
+    {
+        info = mkSimpleInfo $(iowitness[t|WrapType Edit_Inst|]) [];
+    };
 
     applyAndInvertEdit :: (Edit edit) => edit -> (ReadFunction (EditReader edit) (EditReader edit),Readable (EditReader edit) (Maybe edit));
     applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
@@ -44,9 +55,8 @@ module Truth.Edit.Edit where
         replaceEdit :: EditSubject edit -> edit;
     };
 
-    data FullEdit_Inst edit where
+    instance HasInfo FullEdit where
     {
-        FullEdit_Inst :: forall edit. (FullEdit edit) => FullEdit_Inst (Type_T edit);
+        info = mkSimpleInfo $(iowitness[t|WrapType FullEdit|]) [];
     };
-    $(factInstances [t|FullEdit_Inst|]);
 }

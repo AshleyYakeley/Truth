@@ -54,6 +54,11 @@ module Truth.Object.SavableBuffer where
         SESave | -- sets Original to Current
         SEUnsave (EditSubject edit); -- sets Original to given (invert SESave)
 
+    instance Floating (SavableEdit edit) where
+    {
+        type FloatingEdit (SavableEdit edit) = SavableEdit edit;
+    };
+
     instance (Eq (EditSubject edit), FullReader (EditReader edit), Edit edit) => Edit (SavableEdit edit) where
     {
         type EditReader (SavableEdit edit) = SavableReader (EditReader edit);

@@ -1,32 +1,46 @@
 {-# OPTIONS -fno-warn-unused-binds -fno-warn-orphans #-}
 module Truth.TypeKT.HasInfo where
 {
-    import Truth.TypeKT.Construct;
+--    import Truth.TypeKT.Construct;
     import Truth.TypeKT.Info;
     import Truth.TypeKT.Type;
-    import Truth.TypeKT.TH;
+--    import Truth.TypeKT.TH;
     --import Truth.TypeKT.Basic;
-    import qualified Language.Haskell.TH as TH;
-    import Data.OpenWitness;
+--    import qualified Language.Haskell.TH as TH;
+--    import Data.OpenWitness;
     import Data.Witness;
-    import Data.List;
+--    import Data.List;
 --    import Data.Maybe;
 --    import Data.Bool;
 --    import Data.Int;
 --    import Data.Eq;
-    import Control.Monad;
+--    import Control.Monad;
     -- import Prelude(Num(..),fromInteger);
 
-    class HasInfo a where
+    class HasInfo (a :: k) where
     {
-        info :: Info a;
+        -- info :: Info_X a; http://hackage.haskell.org/trac/ghc/ticket/7503
+        info :: Info_W (WrapType a);
     };
 
-    instance (HasInfo a) => Property (EqualType a) where
+
+    instance (HasInfo a) => Property (EqualType (WrapType a)) where
     {
         matchProperty = matchWitness info;
     };
 
+
+    instance (HasInfo (t :: k -> *)) => Property (WrapArgType t) where
+    {
+        matchProperty = matchProperty_Fact;
+    };
+
+    instance (HasInfo (t :: k -> *)) => Fact (WrapArgType t) where
+    {
+        factInfoXW = MkInfoXW info;
+    };
+
+{-
     $(fmap concat (forM supportedKinds (\k -> case k of
         {
             kpq@(TH.ArrowK kp kq) -> let
@@ -44,7 +58,9 @@ module Truth.TypeKT.HasInfo where
             _ -> return [];
         }
     )));
+-}
 
+{-
     factInstances :: TH.TypeQ -> TH.Q [TH.Dec];
     factInstances tq =
     {-
@@ -67,7 +83,7 @@ module Truth.TypeKT.HasInfo where
         TH.instanceD (return []) (TH.appT (TH.conT ''Fact) tq)
          [TH.valD (TH.varP 'witFact) (TH.normalB (iowitness (TH.appT (TH.conT ''Type_KTT) tq))) []]
     ];
-
+-}
 
 {- TODO
     instanceFacts :: TH.Cxt -> TH.Name -> [TH.Type] -> TH.ExpQ;

@@ -1,10 +1,10 @@
 Version of workspace file format:
                1
 Time of storage:
-               "Tue Apr 24 01:13:35 PDT 2012"
+               "Thu Mar  6 01:52:49 PST 2014"
 Name of the workspace:
                "Truth"
 File paths of contained packages:
-               ["/home/ashley/Projects/Haskell/mime/mime.cabal","/home/ashley/Projects/Haskell/countable/countable.cabal","/home/ashley/Projects/Haskell/open-witness/open-witness.cabal","/home/ashley/Projects/Haskell/witness/witness.cabal","Shapes/Truth-Shapes.cabal","Core/Truth-Core.cabal","Linux/Truth-Linux.cabal","GTK/Truth-GTK.cabal","Application/Truth-Application.cabal"]
+               ["/home/ashley/Projects/Haskell/argo/argo.cabal","/home/ashley/Projects/Haskell/expression/expression.cabal","/home/ashley/Projects/Haskell/mime/mime.cabal","/home/ashley/Projects/Haskell/open-witness/open-witness.cabal","/home/ashley/Projects/Haskell/witness/witness.cabal","Shapes/Truth-Shapes.cabal"]
 Maybe file path of an active package:
-               Just "Core/Truth-Core.cabal"
+               Just "/home/ashley/Projects/Haskell/witness/witness.cabal"

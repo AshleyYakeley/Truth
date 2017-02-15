@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 module Truth.TypeKT.Construct where
 {
     import Truth.TypeKT.Info;
@@ -8,22 +7,26 @@ module Truth.TypeKT.Construct where
 
     class (Property f) => Construct f where
     {
-        construct :: f t -> Info t;
+        construct :: f t -> Info_W t;
     };
 
-    data Match t where
+    data Match :: WrappedType -> * where
     {
-        MkMatch :: forall f a. (ConstructType f a) => Info f -> Info a -> Match (TypeConstructed f a);
+        MkMatch :: forall f a. Info_W (WrapType f) -> Info_W (WrapType a) -> Match (WrapType (f a));
     };
 
     instance Property Match where
     {
-        matchProperty (MkInfo (ConsWit tf ta) _) = return (MkMatch tf ta);
+        matchProperty (MkInfo _ (ConsWit tf ta) _) = return (MkMatch tf ta);
         matchProperty _ = Nothing;
     };
 
-    applyInfo :: (ConstructType f a) => Info f -> Info a -> Info (TypeConstructed f a);
-    applyInfo tf@(MkInfo _ inf) ta@(MkInfo _ _) = MkInfo (ConsWit tf ta) (deriveFacts inf ta);
+    applyInfo :: Info_W (WrapType f) -> Info_W (WrapType a) -> Info_W (WrapType (f a));
+    applyInfo tf@(MkInfo (KindArrow _ kfa) _ inf) ta = MkInfo kfa (ConsWit tf ta) (deriveFacts inf ta);
+    applyInfo (MkInfo _ _ _) _ = undefined where
+    {
+        undefined = undefined;
+    };
 
     instance Construct Match where
     {

@@ -31,7 +31,7 @@ module Truth.Edit.JustEdit where
     liftJustReadable :: (Traversable f,FunctorBind f) => Readable reader a -> Readable (JustReader f reader) (f a);
     liftJustReadable rra = do
     {
-        fmfa <- getCompose (unReadable rra (\ra -> Compose (mmap toFreeMonad (readable (ReadWholeJust ra)))));
+        fmfa <- getCompose (unReadable rra (\ra -> MkCompose (mmap toFreeMonad (readable (ReadWholeJust ra)))));
         (MkAnyReturn return') <- readable ReadOther;
         return (fromFreeMonad return' bind fmfa);
     };
@@ -46,7 +46,7 @@ module Truth.Edit.JustEdit where
         -- fromReader :: ReadFunction (JustReader f reader) (f (Subject reader));
         fromReader = liftJustReadable fromReader;
     };
-
+{-
     instance HasInfo (Type_KKTTKKTTKTT JustReader) where
     {
         info = mkSimpleInfo $(iowitness[t| Type_KKTTKKTTKTT JustReader |])
@@ -62,8 +62,13 @@ module Truth.Edit.JustEdit where
             )
         ];
     };
-
+-}
     newtype JustEdit (f :: * -> *) edit = MkJustEdit edit;
+
+    instance Floating (JustEdit f edit) where
+    {
+        type FloatingEdit (JustEdit f edit) = JustEdit f edit;
+    };
 
     instance (FunctorOne f,Edit edit) => Edit (JustEdit f edit) where
     {
@@ -85,7 +90,7 @@ module Truth.Edit.JustEdit where
             });
         };
     };
-
+{-
     instance HasInfo (Type_KKTTKTT JustEdit) where
     {
         info = mkSimpleInfo $(iowitness[t| Type_KKTTKTT JustEdit |])
@@ -101,4 +106,5 @@ module Truth.Edit.JustEdit where
             )
         ];
     };
+-}
 }

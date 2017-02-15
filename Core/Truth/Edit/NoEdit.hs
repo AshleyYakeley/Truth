@@ -12,12 +12,12 @@ module Truth.Edit.NoEdit where
         readFromM _ = never;
         readFrom _ = never;
     };
-
-    instance HasInfo (Type_KTKTT NoReader) where
+{-
+    instance HasInfo NoReader where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_KTKTT NoReader |])
+        info = mkSimpleInfo $(iowitness[t|WrapType NoReader|])
         [
-            -- instance () => Reader_Inst (NoReader a)
+            -- instance Reader (NoReader a)
             mkFacts (MkFactS (\a -> MkFactZ (do
             {
                 Kind_T <- matchProp $(type1[t|Kind_T|]) a;
@@ -27,9 +27,14 @@ module Truth.Edit.NoEdit where
             )
         ];
     };
-
+-}
     -- | Can't touch this.
     newtype NoEdit (reader :: * -> *) = MkNoEdit Nothing deriving (Eq,Countable,Searchable,Finite,Empty);
+
+    instance Floating (NoEdit reader) where
+    {
+        type FloatingEdit (NoEdit reader) = NoEdit reader;
+    };
 
     instance (Reader reader) => Edit (NoEdit reader) where
     {
@@ -37,12 +42,12 @@ module Truth.Edit.NoEdit where
         applyEdit = never;
         invertEdit = never;
     };
-
-    instance HasInfo (Type_KKTTT NoEdit) where
+{-
+    instance HasInfo NoEdit where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_KKTTT NoEdit |])
+        info = mkSimpleInfo $(iowitness[t|WrapType NoEdit|])
         [
-            -- instance () => EditInst (NoEdit a)
+            -- instance (Reader reader) => Edit (NoEdit reader)
             mkFacts (MkFactS (\reader -> MkFactZ (do
             {
                 Kind_KTT <- matchProp $(type1[t|Kind_KTT|]) reader;
@@ -53,4 +58,5 @@ module Truth.Edit.NoEdit where
             )
         ];
     };
+-}
 }

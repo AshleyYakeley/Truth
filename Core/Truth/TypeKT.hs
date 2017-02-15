@@ -5,7 +5,7 @@ module Truth.TypeKT
     module Truth.TypeKT.Construct,
     module Truth.TypeKT.HasInfo,
     module Truth.TypeKT.HasType,
-    type1
+--    type1
 ) where
 {
     import Truth.TypeKT.Info;
@@ -13,5 +13,5 @@ module Truth.TypeKT
     import Truth.TypeKT.Construct;
     import Truth.TypeKT.HasInfo;
     import Truth.TypeKT.HasType;
-    import Truth.TypeKT.TH;
+--    import Truth.TypeKT.TH;
 }

@@ -2,13 +2,17 @@
 module Truth.TypeKT.HasType where
 {
     import Truth.TypeKT.HasInfo;
+    import Truth.TypeKT.Construct;
     import Truth.TypeKT.Info;
     import Truth.TypeKT.Type;
-    import Truth.TypeKT.TH;
+--    import Truth.TypeKT.TH;
+    import Data.KindCategory;
+    import Data.Compose;
     import Control.Monad;
     import Data.HasNewValue;
     import Data.FunctorOne;
     import Data.OpenWitness;
+
     import Data.Witness;
     import Data.Result;
     import Data.ByteString hiding (concat);
@@ -17,252 +21,262 @@ module Truth.TypeKT.HasType where
     import Data.Bool;
     import Data.Char;
     import Data.Int;
+
     import Data.Eq;
+    import GHC.Exts hiding (Any);
 
 
-    data Eq_Inst t where
+
+
+
+
+
+    instance (IsKind  (WrapKind :: a -> WrappedKind),IsKind  (WrapKind :: b -> WrappedKind)) =>
+     HasInfo (Compose :: (b -> *) -> (a -> b) -> a -> *) where
     {
-        Eq_Inst :: forall a. (Eq a) => Eq_Inst (Type_T a);
+        info = mkSimpleInfo $(iowitness[t|WrapType Compose|]) [];
     };
-    $(factInstances [t|Eq_Inst|]);
 
-    data FunctorOne_Inst t where
+    instance HasInfo ConstraintWitness where
     {
-        FunctorOne_Inst :: forall a. (FunctorOne a) => FunctorOne_Inst (Type_KTT a);
+        info = mkSimpleInfo $(iowitness[t|WrapType ConstraintWitness|]) [];
     };
-    $(factInstances [t|FunctorOne_Inst|]);
 
-    data HasNewValue_Inst t where
+
+
+{-
+    matchWit :: Wit f -> Wit fa -> Maybe (EqualType fa (f a),Wit a);
+    matchWit _wf SimpleWit = Nothing;
+    matchWit wf
+-}
+
+-- forall a. Info_X'' a -> Maybe (Info_X'' b,b -> a)
+
+
+    constraintMaybe :: Knowledge;
+    constraintMaybe = knowDependent (\w -> case w of
     {
-        HasNewValue_Inst :: forall a. (HasNewValue a) => HasNewValue_Inst (Type_T a);
+        ConsWit im (MkInfo (ka :: Kind_X (WrapKind :: kka -> WrappedKind)) (wa :: Wit_W (WrapType (t :: kka))) _) -> do
+        {
+            MkEqualType <- matchWitness (ka :: Kind_X (WrapKind :: kka -> WrappedKind)) (witKind :: Kind_X (WrapKind :: * -> WrappedKind));
+            MkEqualType <- matchWitness im (info :: Info_X Maybe);
+            return (wa :: Wit_W (WrapType (t' :: *)),Just);
+        };
+        _ -> Nothing;
+    });
+{-
+    constraintEqMaybe :: Knowledge;
+    constraintEqMaybe = knowDependent (\w -> case w of
+    {
+        ConsWit wc (ConsWit (we wm wa -> case matchWitness wf
+        _ -> Nothing;
+    });
+-}
+
+
+
+
+    type ConstraintFact (cons :: k -> Constraint) = WrapArgType (Compose ConstraintWitness cons :: k -> *);
+
+    matchConstraint :: forall (t :: *) (cons :: * -> Constraint).
+     (HasInfo cons) => Info_X' t -> Maybe (ConstraintWitness (cons t));
+    matchConstraint = matchConstraint' matchProperty where
+    {
+        -- see http://hackage.haskell.org/trac/ghc/ticket/7527
+        matchConstraint' :: forall (t' :: *) (cons' :: * -> Constraint).
+            -- (Property (ConstraintFact cons)) =>
+            (forall wt. Info_W wt -> Maybe (ConstraintFact cons' wt)) ->
+             Info_X' t' -> Maybe (ConstraintWitness (cons' t'));
+        matchConstraint' matchProperty' a = do
+        {
+            -- MkWrappedProperty :: KindProperty (WrapKind :: k -> WrappedKind) (WrapType t) <- matchProperty a;
+            MkWrapArgType (MkCompose cw) <- matchProperty' (a :: Info_X' t');
+            return cw;
+        };
     };
-    $(factInstances [t|HasNewValue_Inst|]);
 
-
-
-
-
-    instance HasInfo (Type_T ()) where
+{-
+    instance (HasInfo (cons :: k -> Constraint),IsKind  (WrapKind :: k -> WrappedKind)) => Property (ConstraintFact cons) where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_T () |])
+        matchProperty = matchProperty_Fact;
+    };
+
+    instance (HasInfo cons,IsKind  (WrapKind :: k -> WrappedKind)) => Fact (ConstraintFact (cons :: k -> Constraint)) where
+    {
+        factInfoXW = MkInfoXW info;
+    };
+-}
+    type Eq_Inst a = ConstraintFact Eq (WrapType a);
+    instance HasInfo Eq where
+    {
+        info = mkSimpleInfo $(iowitness[t|WrapType Eq|]) [];
+    };
+
+    type FunctorOne_Inst a = ConstraintFact FunctorOne (WrapType a);
+    instance HasInfo FunctorOne where
+    {
+        info = mkSimpleInfo $(iowitness[t|WrapType FunctorOne|]) [];
+    };
+
+    type HasNewValue_Inst a = ConstraintFact HasNewValue (WrapType a);
+    instance HasInfo HasNewValue where
+    {
+        info = mkSimpleInfo $(iowitness[t|WrapType HasNewValue|]) [];
+    };
+
+    instance (HasInfo f,HasInfo a) => HasInfo (f a) where
+    {
+        info = applyInfo info info;
+    };
+
+
+    instance HasInfo Maybe where
+    {
+        info = mkSimpleInfo $(iowitness[t|WrapType Maybe|])
         [
-            mkFacts (MkFactZ (do
+            -- instance HasNewValue (Maybe a)
+            mkFacts1 (\(a :: Info_W wt0) -> do
             {
-                return HasNewValue_Inst;
-            })
-            :: FactZ HasNewValue_Inst (Type_T ())
-            ),
-            mkFacts (MkFactZ (do
-            {
-                return Eq_Inst;
-            })
-            :: FactZ Eq_Inst (Type_T ())
-            )
-        ];
-    };
-
-    instance HasInfo (Type_KTT Maybe) where
-    {
-        info = mkSimpleInfo $(iowitness[t| Type_KTT Maybe |])
-        [
-            -- instance () => HasNewValue (Maybe a)
-            mkFacts (MkFactS (\a -> MkFactZ (do
-            {
-                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
-                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
-                return HasNewValue_Inst;
-            }))
-            :: FactS FactZ HasNewValue_Inst (Type_KTT Maybe)
+                -- MkInfo _ _ _ <- return a;
+                MkWrappedProperty :: KindProperty (WrapKind :: * -> WrappedKind) wt0 <- matchProperty a;
+                return (MkWrapArgType (MkCompose (MkConstraintWitness :: ConstraintWitness (HasNewValue (Maybe t)))));
+            }
+            :: Maybe (ConstraintFact HasNewValue (WrapApply (WrapType Maybe) wt0))
             ),
 
             -- instance (Eq a) => Eq (Maybe a)
-            mkFacts (MkFactS (\a -> MkFactZ (do
+            mkFacts (MkFactS_U (\(a :: Info_W wt0) -> MkFactZ_U (do
             {
-                Eq_Inst <- matchProp $(type1[t|Eq_Inst|]) a;
-                return Eq_Inst;
+                MkWrappedProperty :: KindProperty (WrapKind :: * -> WrappedKind) wt0 <- matchProperty a;
+                MkConstraintWitness :: ConstraintWitness (Eq t) <- matchConstraint a;
+                return (MkWrapArgType (MkCompose MkConstraintWitness));
             }))
-            :: FactS FactZ Eq_Inst (Type_KTT Maybe)
+            :: Fact_U (ConstraintFact Eq) (WrapType Maybe)
             ),
 
             -- instance FunctorOne Maybe
             mkFacts (MkFactZ (do
             {
-                return FunctorOne_Inst;
+                return (MkWrapArgType (MkCompose MkConstraintWitness));
             })
-            :: FactZ FunctorOne_Inst (Type_KTT Maybe)
+            :: FactZ (ConstraintFact FunctorOne) (WrapType Maybe)
             )
         ];
     };
 
-    instance HasInfo (Type_KTT []) where
+    instance HasInfo [] where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_KTT [] |])
+        info = mkSimpleInfo $(iowitness[t| WrapType [] |])
         [
             -- instance () => HasNewValue ([] a)
             mkFacts (MkFactS (\a -> MkFactZ (do
             {
-                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
-                return HasNewValue_Inst;
+                MkWrappedProperty :: KindProperty (WrapKind :: * -> WrappedKind) wtt <- matchProperty a;
+                return (MkWrapArgType (MkCompose MkConstraintWitness));
             }))
-            :: FactS FactZ HasNewValue_Inst (Type_KTT [])
+            :: FactS FactZ (ConstraintFact HasNewValue) (WrapType [])
             ),
 
             -- instance (Eq a) => Eq ([] a)
             mkFacts (MkFactS (\a -> MkFactZ (do
             {
-                Eq_Inst <- matchProp $(type1[t|Eq_Inst|]) a;
-                return Eq_Inst;
+                MkWrapArgType (MkCompose MkConstraintWitness) <- matchProp (Type :: Type (ConstraintFact Eq)) a;
+                return (MkWrapArgType (MkCompose MkConstraintWitness));
             }))
-            :: FactS FactZ Eq_Inst (Type_KTT [])
+            :: FactS FactZ (ConstraintFact Eq) (WrapType [])
             )
         ];
     };
 
-
-
-
-
-
-
-    -- T
-{-
-    instance HasInfo (Type_T ()) where
+    instance HasInfo () where
     {
-        info = MkInfo
-            Kind_T
-            (SimpleWit $(iowitness[t| Type_T () |]))
-            (
-                (mkFacts (return HasNewValue_Inst)) `mappend`
-                (mkFacts (return Eq_Inst))
-            );
-    };
--}
-    instance HasInfo (Type_T Bool) where
-    {
-        info = mkSimpleInfo $(iowitness[t| Type_T Bool |])
+        info = mkSimpleInfo $(iowitness[t| WrapType () |])
         [
-            mkFacts0 (return HasNewValue_Inst),
-            mkFacts0 (return Eq_Inst)
+            mkFacts0 (return (MkWrapArgType (MkCompose MkConstraintWitness) :: HasNewValue_Inst ())),
+            mkFacts0 (return (MkWrapArgType (MkCompose MkConstraintWitness) :: Eq_Inst ()))
         ];
     };
 
-    instance HasInfo (Type_T Word8) where
+    instance HasInfo Bool where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_T Word8 |])
+        info = mkSimpleInfo $(iowitness[t| WrapType Bool |])
         [
-            mkFacts0 (return HasNewValue_Inst),
-            mkFacts0 (return Eq_Inst)
+            mkFacts0 (return (MkWrapArgType (MkCompose MkConstraintWitness) :: HasNewValue_Inst Bool)),
+            mkFacts0 (return (MkWrapArgType (MkCompose MkConstraintWitness) :: Eq_Inst Bool))
         ];
     };
 
-    instance HasInfo (Type_T Char) where
+    instance HasInfo Word8 where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_T Char |])
+        info = mkSimpleInfo $(iowitness[t| WrapType Word8 |])
         [
-            mkFacts0 (return HasNewValue_Inst),
-            mkFacts0 (return Eq_Inst)
+            mkFacts0 (return (MkWrapArgType (MkCompose MkConstraintWitness) :: HasNewValue_Inst Word8)),
+            mkFacts0 (return (MkWrapArgType (MkCompose MkConstraintWitness) :: Eq_Inst Word8))
         ];
     };
 
-    instance HasInfo (Type_T Int) where
+    instance HasInfo Char where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_T Int |])
+        info = mkSimpleInfo $(iowitness[t| WrapType Char |])
         [
-            mkFacts0 (return HasNewValue_Inst),
-            mkFacts0 (return Eq_Inst)
+            mkFacts0 (return (MkWrapArgType (MkCompose MkConstraintWitness) :: HasNewValue_Inst Char)),
+            mkFacts0 (return (MkWrapArgType (MkCompose MkConstraintWitness) :: Eq_Inst Char))
         ];
     };
 
-    instance HasInfo (Type_T ByteString) where
+    instance HasInfo Int where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_T ByteString |])
+        info = mkSimpleInfo $(iowitness[t| WrapType Int |])
         [
-            mkFacts0 (return HasNewValue_Inst),
-            mkFacts0 (return Eq_Inst)
+            mkFacts0 (return (MkWrapArgType (MkCompose MkConstraintWitness) :: HasNewValue_Inst Int)),
+            mkFacts0 (return (MkWrapArgType (MkCompose MkConstraintWitness) :: Eq_Inst Int))
         ];
     };
 
-
-    -- KTT
-{-
-    instance (HasInfo (Type_KTT f),HasInfo (Type_T a)) => HasInfo (Type_T (f a)) where
+    instance HasInfo ByteString where
     {
-        info = applyInfo info info;
+        info = mkSimpleInfo $(iowitness[t| WrapType ByteString |])
+        [
+            mkFacts0 (return (MkWrapArgType (MkCompose MkConstraintWitness) :: HasNewValue_Inst ByteString)),
+            mkFacts0 (return (MkWrapArgType (MkCompose MkConstraintWitness) :: Eq_Inst ByteString))
+        ];
     };
 
-    instance HasInfo (Type_KTT Maybe) where
+    instance HasInfo (->) where
     {
-        info = MkInfo
-            (SimpleWit $(iowitness[t| Type_KTT Maybe |]))
-            (mconcat
-            [
-                mkFacts (\_ -> return HasNewValue_Inst),
-                mkFacts (\t -> do
-                {
-                    Eq_Inst <- matchProperty t;
-                    return Eq_Inst;
-                }),
-                mkFacts (return FunctorOne_Inst)
-            ]);
-    };
-
-    instance HasInfo (Type_KTT []) where
-    {
-        info = MkInfo
-            (SimpleWit $(iowitness[t| Type_KTT [] |]))
-            (mconcat
-            [
-                mkFacts (\_ -> return HasNewValue_Inst),
-                mkFacts (\t -> do
-                {
-                    Eq_Inst <- matchProperty t;
-                    return Eq_Inst;
-                })
-            ]);
-    };
--}
-
-    -- KTKTT
-
-    instance HasInfo (Type_KTKTT (->)) where
-    {
-        info = mkSimpleInfo $(iowitness[t| Type_KTKTT (->) |])
+        info = mkSimpleInfo $(iowitness[t| WrapType (->) |])
         [
         ];
     };
 
-    instance HasInfo (Type_KTKTT Result) where
+    instance HasInfo Result where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_KTKTT Result |])
+        info = mkSimpleInfo $(iowitness[t| WrapType Result |])
         [
             -- instance (HasNewValue a1) => HasNewValue (Result a0 a1)
             mkFacts (MkFactS (\a0 -> MkFactS (\a1 -> MkFactZ (do
             {
-                Kind_T <- matchProp $(type1[t|Kind_T|]) a0;
-                Kind_T <- matchProp $(type1[t|Kind_T|]) a1;
-                HasNewValue_Inst <- matchProp $(type1[t|HasNewValue_Inst|]) a1;
-                return HasNewValue_Inst;
+                MkWrappedProperty :: KindProperty (WrapKind :: * -> WrappedKind) wtt <- matchProperty a0;
+                MkWrapArgType (MkCompose MkConstraintWitness) <- matchProp (Type :: Type (ConstraintFact HasNewValue)) a1;
+                return (MkWrapArgType (MkCompose MkConstraintWitness));
             })))
-            :: FactS (FactS FactZ) HasNewValue_Inst (Type_KTKTT Result)
+            :: FactS (FactS FactZ) (ConstraintFact HasNewValue) (WrapType Result)
             ),
 
             -- mkFacts1 (\_ -> return FunctorOne_Inst)
             mkFacts (MkFactS (\a0 -> MkFactZ (do
             {
-                Kind_T <- matchProp $(type1[t|Kind_T|]) a0;
-                return FunctorOne_Inst;
+                MkWrappedProperty :: KindProperty (WrapKind :: * -> WrappedKind) wtt <- matchProperty a0;
+                return (MkWrapArgType (MkCompose MkConstraintWitness));
             }))
-            :: FactS FactZ FunctorOne_Inst (Type_KTKTT Result)
+            :: FactS FactZ (ConstraintFact FunctorOne) (WrapType Result)
             )
         ];
     };
 
-
-    -- KKTTT
-
-    instance HasInfo (Type_KKTTT Any) where
+    instance HasInfo Any where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_KKTTT Any |])
+        info = mkSimpleInfo $(iowitness[t| WrapType Any |])
         [
         ];
     };

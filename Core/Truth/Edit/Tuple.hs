@@ -71,7 +71,7 @@ module Truth.Edit.Tuple where
 
     instance (IsAggregate agg) => FullReader (AggregateEditReader agg) where
     {
-        fromReader = aggregateConstruct (\aggedit -> case aggregateIsFullReaderEdit aggedit of
+        fromReader = aggregateConstruct (\(aggedit :: agg edit) -> case aggregateIsFullReaderEdit aggedit of
         {
             MkIsFullReaderEdit -> mapCleanReadable (MkAggregateEditReader aggedit) fromReader;
         });
@@ -81,6 +81,11 @@ module Truth.Edit.Tuple where
     data AggregateEdit agg where
     {
         MkAggregateEdit :: agg edit -> edit -> AggregateEdit agg;
+    };
+
+    instance Floating (AggregateEdit agg) where
+    {
+        type FloatingEdit (AggregateEdit agg) = AggregateEdit agg;
     };
 
     instance (IsAggregate agg) => Edit (AggregateEdit agg) where

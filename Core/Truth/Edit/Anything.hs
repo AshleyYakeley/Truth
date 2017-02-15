@@ -7,15 +7,18 @@ module Truth.Edit.Anything where
 
     data Anything where
     {
-        MkAnything :: forall a. Info (Type_T a) -> a -> Anything;
+        MkAnything :: forall (a :: *). Info_X' a -> a -> Anything;
     };
-
+{-
     instance HasInfo (Type_T Anything) where
     {
         info = mkSimpleInfo $(iowitness[t| Type_T Anything |])
         [
         ];
     };
+-}
+
+
 {-
     data AnyRead t where
     {
