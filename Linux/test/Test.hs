@@ -99,9 +99,9 @@ module Main where
             let
             {
                 fileobj = linuxFileObject inotify path;
-                contentobj = lensSubscribe (toFixedLens (cleanFixedLens contentCleanLens)) fileobj;
+                contentobj = lensObject (toFixedLens (cleanFixedLens contentCleanLens)) fileobj;
                 textobj :: Subscribe (WholeEdit (Maybe (Result ListError String)))
-                 = lensSubscribe (simpleFixedLens (toSimpleLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) contentobj;
+                 = lensObject (simpleFixedLens (toSimpleLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) contentobj;
             };
         
             (push,sub) <- makeShowSubscription path textobj;
@@ -124,7 +124,7 @@ module Main where
         
             showObject "current" obj;
         
-            let {sectobj = lensSubscribe listSection (\_ -> return (2,2)) obj;};
+            let {sectobj = lensObject listSection (\_ -> return (2,2)) obj;};
             sectsub <- makeShowSubscription "sect" sectobj;        
         
             showPushEdit sectsub (ReplaceEdit "12");

@@ -34,6 +34,7 @@ library
         StandaloneDeriving
         RecordWildCards
         TypeOperators
+        RecursiveDo
     ghc-options: -Wall -Werror -fno-warn-deprecated-flags -pgmPcpphs
     cpp-options: --cpp -ansi
     build-depends:
@@ -50,7 +51,6 @@ library
         shapes ==0.1.0.0,
         reity
     exposed-modules:
-        Truth.Object.Subscribe
         Truth.Edit.Function
         Truth.Edit.ReadFunction
         Truth.Edit.Read
@@ -74,6 +74,7 @@ library
         Truth.Edit.Tuple
         Truth.Edit.WholeEdit
         Truth.Object
+        Truth.Object.Lens
         Truth.Object.Editor
         Truth.Object.GeneralLens
         Truth.Object.Object

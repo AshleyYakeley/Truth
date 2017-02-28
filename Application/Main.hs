@@ -31,9 +31,9 @@ module Main where
         {
             file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)
             content :: Subscribe (JustWholeEdit Maybe (WholeEdit ByteString))
-             = lensSubscribe (toBiMapMaybe contentCleanLens) file; -- (Maybe ByteString)
+             = lensObject (toBiMapMaybe contentCleanLens) file; -- (Maybe ByteString)
             mrtext :: Subscribe (JustWholeEdit Maybe (JustWholeEdit (Result ListError) (ListEdit (WholeEdit Char))))
-             = lensSubscribe (convertEditLens . (simpleEditLens (cfmap (injectionLens (utf8Injection . (toBiMapMaybe (bijectionInjection packBijection)))))) . convertEditLens) content;
+             = lensObject (convertEditLens . (simpleEditLens (cfmap (injectionLens (utf8Injection . (toBiMapMaybe (bijectionInjection packBijection)))))) . convertEditLens) content;
         } in do
         {
             makeWindowCountRef info windowCount mrtext;

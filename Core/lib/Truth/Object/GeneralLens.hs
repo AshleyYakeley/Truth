@@ -81,14 +81,14 @@ module Truth.Object.GeneralLens where
 
     data GeneralLensSubscribe a where
     {
-        MkGeneralLensSubscribe :: forall edit. (FullEdit edit) => Subscribe edit -> GeneralLensSubscribe (EditSubject edit);
+        MkGeneralLensSubscribe :: forall edit. (FullEdit edit) => Object edit -> GeneralLensSubscribe (EditSubject edit);
     };
 
     generalLensSubscribe :: GeneralLens a b -> GeneralLensSubscribe a -> GeneralLensSubscribe b;
     generalLensSubscribe IdGeneralLens sub = sub;
     generalLensSubscribe (SimpleGeneralLens lens) (MkGeneralLensSubscribe sub) =
-     MkGeneralLensSubscribe (lensSubscribe lens (lensSubscribe convertEditLens sub));
+     MkGeneralLensSubscribe (lensObject lens (lensObject convertEditLens sub));
     generalLensSubscribe (EditGeneralLens _ _ lens) (MkGeneralLensSubscribe sub) =
-     MkGeneralLensSubscribe (lensSubscribe lens (lensSubscribe convertEditLens sub));
+     MkGeneralLensSubscribe (lensObject lens (lensObject convertEditLens sub));
 -}
 }

@@ -90,9 +90,9 @@ module Truth.Object.SavableBuffer where
     savableLens :: (Applicative m) => Lens' m a b -> Lens' m (Savable a) (Savable b);
     savableLens = cfmap;
 
-    --objSubscribe :: forall edit. ((edit -> IO ()) -> IO (Object edit)) -> Subscribe edit;
+    --objSubscribe :: forall edit. ((edit -> IO ()) -> IO (Object edit)) -> Object edit;
 
-    --savable :: (FullEdit edit) => Subscribe edit -> Subscribe (SavableEdit edit);
+    --savable :: (FullEdit edit) => Object edit -> Object (SavableEdit edit);
     --savable sub = objSubscribe foo
 
     --    foo :: (SavableEdit edit -> IO ()) -> IO (Object (SavableEdit edit))

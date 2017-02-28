@@ -35,12 +35,14 @@ library
         Data.ConstFunction
         Data.Codec
         Data.Compose
+        Data.WitnessStore
     build-depends:
         base >= 4.9 && < 5,
         bytestring,
         containers,
         transformers,
-        witness
+        witness,
+        open-witness
     default-language: Haskell2010
     default-extensions:
         UndecidableInstances

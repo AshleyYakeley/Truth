@@ -25,7 +25,7 @@ module Truth.Object.View where
 
     type View w edit = forall token. LockAPI edit token -> IO (ViewResult w edit token,token);
 
-    subscribeView :: View w edit -> Subscribe edit -> IO (ViewWidgetStuff w edit,IO ());
+    subscribeView :: View w edit -> Object edit -> IO (ViewWidgetStuff w edit,IO ());
     subscribeView view subscribe = do
     {
         (vr,close) <- subscribe view vrUpdate;

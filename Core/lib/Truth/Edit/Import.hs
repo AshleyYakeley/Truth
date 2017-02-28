@@ -17,6 +17,7 @@ module Truth.Edit.Import
     module Data.Injection,
     module Data.HasNewValue,
     module Data.Store,
+    module Data.WitnessStore,
     module Data.Countable,
     module Data.Searchable,
 
@@ -28,6 +29,7 @@ module Truth.Edit.Import
     module System.IO,
     module Control.Concurrent.MVar,
     module Control.Monad.Fix,
+    module Control.Monad.Trans.Class,
     module Control.Applicative,
     module Data.Traversable,
     module Data.Foldable,
@@ -67,6 +69,7 @@ where
     import Data.Injection;
     import Data.HasNewValue;
     import Data.Store;
+    import Data.WitnessStore;
     import Data.Countable;
     import Data.Searchable;
 
@@ -78,6 +81,7 @@ where
     import System.IO;
     import Control.Concurrent.MVar;
     import Control.Monad.Fix;
+    import Control.Monad.Trans.Class;
     import Control.Applicative;
     import Data.Traversable;
     import Data.Foldable;

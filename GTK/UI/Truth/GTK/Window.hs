@@ -56,7 +56,7 @@ module UI.Truth.GTK.Window where
             {
                 Just (MkAspect tsel _ta lens) -> do
                 {
-                    makeWindowCountRef tsel ref (lensSubscribe lens sub');
+                    makeWindowCountRef tsel ref (lensObject lens sub');
                 };
                 _ -> return ();
             };

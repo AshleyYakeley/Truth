@@ -50,7 +50,7 @@ module Truth.Object.Editor where
         } in MkEditor{..};
     };
 
-    subscribeEdit :: Subscribe edit -> Editor edit r -> IO r;
+    subscribeEdit :: Object edit -> Editor edit r -> IO r;
     subscribeEdit subscribe editor = case editor of
     {
         (MkEditor initr update f) -> do
@@ -59,8 +59,6 @@ module Truth.Object.Editor where
             finally (f e) close;
         };
     };
-
-    newtype LockAPIW edit token = MkLockAPIW (LockAPI edit token);
 
     oneTransactionEditor :: forall edit r. (forall m. Monad m => API m edit () -> m r) -> Editor edit r;
     oneTransactionEditor f = let

@@ -87,7 +87,7 @@ module Main where
         putStrLn "Test Drop";
         withShowSubscription (freeObjSubscribe "pq" :: Subscribe (ListEdit (WholeEdit Char))) "main" (\obj push -> do
         {
-            withShowSubscription (lensSubscribe (listDrop 2) obj) "sect" (\sectobj pushSect -> do
+            withShowSubscription (lensObject (listDrop 2) obj) "sect" (\sectobj pushSect -> do
             {
                 putStrLn ("-------");
                 push (ReplaceSectionEdit (MkListRegion 2 0) "ZUM");
@@ -122,7 +122,7 @@ module Main where
         putStrLn "Test Take";
         withShowSubscription (freeObjSubscribe "tu" :: Subscribe (ListEdit (WholeEdit Char))) "main" (\obj push -> do
         {
-            withShowSubscription (lensSubscribe (listTake 0) obj) "sect" (\sectobj pushSect -> do
+            withShowSubscription (lensObject (listTake 0) obj) "sect" (\sectobj pushSect -> do
             {
                 putStrLn ("-------");
                 push (ReplaceSectionEdit (MkListRegion 0 0) "ZUM");
@@ -164,14 +164,14 @@ module Main where
 --            push (ReplaceEdit "PQRSTU");
 --            showObject "main" obj;
 
-            withShowSubscription (lensSubscribe (listSection (MkListRegion 2 2)) obj) "sect" (\sectobj pushSect -> do
+            withShowSubscription (lensObject (listSection (MkListRegion 2 2)) obj) "sect" (\sectobj pushSect -> do
             {
                 putStrLn ("-------");
                 pushSect (replaceEdit "12");
                 showObject "sect" sectobj;
                 showObject "main" obj;
         
-                withShowSubscription (lensSubscribe (listElement 4) obj) "elem" (\elemobj pushElem -> do
+                withShowSubscription (lensObject (listElement 4) obj) "elem" (\elemobj pushElem -> do
                 {        
                     --pushElem (ReplaceEdit (Just 'p'));
                     --showObject "elem" elemobj;
