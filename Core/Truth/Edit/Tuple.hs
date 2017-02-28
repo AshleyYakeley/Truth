@@ -13,7 +13,7 @@ module Truth.Edit.Tuple where
         MkIsFullReaderEdit :: (FullReader (EditReader edit),Edit edit) => IsFullReaderEdit edit;
     };
 
-    class (SimpleWitness agg) => IsAggregate (agg :: * -> *) where
+    class TestEquality agg => IsAggregate (agg :: * -> *) where
     {
         type AggregateSubject agg :: *;
         aggregateIsFullReaderEdit :: agg edit -> IsFullReaderEdit edit;
@@ -27,11 +27,11 @@ module Truth.Edit.Tuple where
             EditSecond :: PairAggregate ea eb eb;
         };
 
-        instance SimpleWitness (PairAggregate ea eb) where
+        instance TestEquality (PairAggregate ea eb) where
         {
-            matchWitness EditFirst EditFirst = Just MkEqualType;
-            matchWitness EditSecond EditSecond = Just MkEqualType;
-            matchWitness _ _ = Nothing;
+            testEquality EditFirst EditFirst = Just Refl;
+            testEquality EditSecond EditSecond = Just Refl;
+            testEquality _ _ = Nothing;
         };
 
         instance (Edit ea,FullReader (EditReader ea),Edit eb,FullReader (EditReader eb)) =>
@@ -62,7 +62,7 @@ module Truth.Edit.Tuple where
 
     instance (IsAggregate agg) => Reader (AggregateEditReader agg) where
     {
-        type Subject (AggregateEditReader agg) = AggregateSubject agg;
+        type ReaderSubject (AggregateEditReader agg) = AggregateSubject agg;
         readFrom a (MkAggregateEditReader aggedit reader) = case aggregateIsFullReaderEdit aggedit of
         {
             MkIsFullReaderEdit -> readFrom (aggregateReadFrom aggedit a) reader;
@@ -93,9 +93,9 @@ module Truth.Edit.Tuple where
         type EditReader (AggregateEdit agg) = AggregateEditReader agg;
 
         applyEdit (MkAggregateEdit aggedite edit) aggreader@(MkAggregateEditReader aggeditr reader) =
-            case (aggregateIsFullReaderEdit aggedite,matchWitness aggedite aggeditr) of
+            case (aggregateIsFullReaderEdit aggedite,testEquality aggedite aggeditr) of
             {
-                (MkIsFullReaderEdit,Just MkEqualType) -> mapCleanReadable (MkAggregateEditReader aggedite) (applyEdit edit reader);
+                (MkIsFullReaderEdit,Just Refl) -> mapCleanReadable (MkAggregateEditReader aggedite) (applyEdit edit reader);
                 _ -> readable aggreader;
             };
 
@@ -106,15 +106,15 @@ module Truth.Edit.Tuple where
         };
     };
 
-    aggregateLens :: (SimpleWitness agg) => agg edit -> CleanEditLens' Identity (AggregateEdit agg) edit;
+    aggregateLens :: TestEquality agg => agg edit -> CleanEditLens' Identity (AggregateEdit agg) edit;
     aggregateLens aggedit = MkCleanEditLens
     {
         cleanEditLensFunction = MkCleanEditFunction
         {
             cleanEditGet = MkAggregateEditReader aggedit,
-            cleanEditUpdate = \(MkAggregateEdit aggedit' edit) -> case matchWitness aggedit aggedit' of
+            cleanEditUpdate = \(MkAggregateEdit aggedit' edit) -> case testEquality aggedit aggedit' of
             {
-                Just MkEqualType -> Just edit;
+                Just Refl -> Just edit;
                 _ -> Nothing;
             }
         },

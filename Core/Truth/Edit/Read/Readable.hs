@@ -5,7 +5,7 @@ module Truth.Edit.Read.Readable where
 
     newtype Readable reader a = MkReadable { unReadable :: forall m. (Applicative m,Monad m) => Structure m reader -> m a};
 
-    fromReadable :: (Reader reader) => Readable reader t -> (Subject reader) -> t;
+    fromReadable :: (Reader reader) => Readable reader t -> (ReaderSubject reader) -> t;
     fromReadable rrt a = runIdentity (unReadable rrt (Identity . (readFrom a)));
 
     instance Functor (Readable reader) where

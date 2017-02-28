@@ -34,25 +34,25 @@ module ValueType where
     defaultValue (SourceValueType _) = [];
     defaultValue (PackageDescriptionValueType) = emptyPackageDescription;
     
-    instance SimpleWitness ValueType where
+    instance TestEquality ValueType where
     {
-        matchWitness (CollectionValueType lwa) (CollectionValueType lwb) = matchWitness lwa lwb;
-        matchWitness (MaybeValueType wa) (MaybeValueType wb) = do
+        testEquality (CollectionValueType lwa) (CollectionValueType lwb) = testEquality lwa lwb;
+        testEquality (MaybeValueType wa) (MaybeValueType wb) = do
         {
-            MkEqualType <- matchWitness wa wb;
-            return MkEqualType;
+            Refl <- testEquality wa wb;
+            return Refl;
         };
-        matchWitness (ListValueType wa) (ListValueType wb) = do
+        testEquality (ListValueType wa) (ListValueType wb) = do
         {
-            MkEqualType <- matchWitness wa wb;
-            return MkEqualType;
+            Refl <- testEquality wa wb;
+            return Refl;
         };
-        matchWitness OctetValueType OctetValueType = Just MkEqualType;
-        matchWitness CharValueType CharValueType = Just MkEqualType;
-        matchWitness ByteStringValueType ByteStringValueType = Just MkEqualType;
-        matchWitness (SourceValueType sa) (SourceValueType sb) | sa == sb = Just MkEqualType;
-        matchWitness PackageDescriptionValueType PackageDescriptionValueType = Just MkEqualType;
-        matchWitness _ _ = Nothing;
+        testEquality OctetValueType OctetValueType = Just Refl;
+        testEquality CharValueType CharValueType = Just Refl;
+        testEquality ByteStringValueType ByteStringValueType = Just Refl;
+        testEquality (SourceValueType sa) (SourceValueType sb) | sa == sb = Just Refl;
+        testEquality PackageDescriptionValueType PackageDescriptionValueType = Just Refl;
+        testEquality _ _ = Nothing;
     };
     
     instance Show (ValueType a) where

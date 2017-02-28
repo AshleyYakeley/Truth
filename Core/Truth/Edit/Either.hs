@@ -6,9 +6,9 @@ module Truth.Edit.Either where
 
     data EitherReader ra rb t = LeftReader (ra t) | RightReader (rb t);
 
-    instance (Reader ra,Reader rb,Subject ra ~ Subject rb) => Reader (EitherReader ra rb) where
+    instance (Reader ra,Reader rb,ReaderSubject ra ~ ReaderSubject rb) => Reader (EitherReader ra rb) where
     {
-        type Subject (EitherReader ra rb) = Subject ra;
+        type ReaderSubject (EitherReader ra rb) = ReaderSubject ra;
 
         readFromM msubj (LeftReader reader) = readFromM msubj reader;
         readFromM msubj (RightReader reader) = readFromM msubj reader;
@@ -51,7 +51,7 @@ module Truth.Edit.Either where
                 {
                     Edit_Inst sa <- matchProp $(type1[t|Edit_Inst|]) ea;
                     Edit_Inst sb <- matchProp $(type1[t|Edit_Inst|]) eb;
-                    MkEqualType <- matchWitness sa sb;
+                    Refl <- testEquality sa sb;
                     return (Edit_Inst sa);
                 })))
                 :: FactS (FactS FactZ) Edit_Inst (Type_KTKTT EitherEdit)
@@ -63,7 +63,7 @@ module Truth.Edit.Either where
                     Edit_Inst sa <- matchProp $(type1[t|Edit_Inst|]) ea;
                     FullEdit_Inst <- matchProp $(type1[t|FullEdit_Inst|]) ea;
                     Edit_Inst sb <- matchProp $(type1[t|Edit_Inst|]) eb;
-                    MkEqualType <- matchWitness sa sb;
+                    Refl <- testEquality sa sb;
                     return FullEdit_Inst;
                 })))
                 :: FactS (FactS FactZ) FullEdit_Inst (Type_KTKTT EitherEdit)
@@ -82,7 +82,7 @@ module Truth.Edit.Either where
         {
             MkMatch tea tb <- matchProp $(type1[t|Match|]) a;
             MkMatch teither ta <- matchProp $(type1[t|Match|]) tea;
-            MkEqualType <- matchProp $(type1[t|EqualType (Type_KTKTT EitherEdit)|]) teither;
+            Refl <- matchProp $(type1[t|EqualType (Type_KTKTT EitherEdit)|]) teither;
             Kind_T <- matchProp $(type1[t|Kind_T|]) ta;
             Kind_T <- matchProp $(type1[t|Kind_T|]) tb;
             return (MkMatchEitherEdit ta tb);

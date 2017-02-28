@@ -18,20 +18,20 @@ module Truth.Edit.Edit where
         applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit);
         invertEdit :: edit -> Readable (EditReader edit) (Maybe edit);    -- "Nothing" means no change
     };
-    type EditSubject edit = Subject (EditReader edit);
+    type EditSubject edit = ReaderSubject (EditReader edit);
 
-    -- subjectRep :: HasInfo (Type_T (Subject edit)) => Info (Type_T edit) -> Info (Type_T (Subject edit));
+    -- subjectRep :: HasInfo (Type_T (ReaderSubject edit)) => Info (Type_T edit) -> Info (Type_T (ReaderSubject edit));
     -- subjectRep _ = info;
 
 
     data Edit_Inst :: * -> * where
     {
-        Edit_Inst :: forall edit. (Edit edit) => Info_X (EditReader edit) -> Edit_Inst edit;
+        Edit_Inst :: forall edit. (Edit edit) => Info (EditReader edit) -> Edit_Inst edit;
     };
 
     instance HasInfo Edit_Inst where
     {
-        info = mkSimpleInfo $(iowitness[t|WrapType Edit_Inst|]) [];
+        info = mkSimpleInfo $(iowitness[t|Edit_Inst|]) [];
     };
 
     applyAndInvertEdit :: (Edit edit) => edit -> (ReadFunction (EditReader edit) (EditReader edit),Readable (EditReader edit) (Maybe edit));
@@ -57,6 +57,6 @@ module Truth.Edit.Edit where
 
     instance HasInfo FullEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|WrapType FullEdit|]) [];
+        info = mkSimpleInfo $(iowitness[t|FullEdit|]) [];
     };
 }

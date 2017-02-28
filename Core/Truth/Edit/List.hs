@@ -20,13 +20,13 @@ module Truth.Edit.List({- listElement,listTake,listDrop,listSection,ListEdit(..)
     };
 
     data ListEdit edit =
-        ReplaceListEdit [Subject edit]                  |
-        ItemEdit (IndexEdit [Subject edit] edit)    |
-        ReplaceSectionEdit ListRegion [Subject edit]     ;
+        ReplaceListEdit [ReaderSubject edit]                  |
+        ItemEdit (IndexEdit [ReaderSubject edit] edit)    |
+        ReplaceSectionEdit ListRegion [ReaderSubject edit]     ;
 
     instance (Edit edit) => Edit (ListEdit edit) where
     {
-        type Subject (ListEdit edit) = [Subject edit];
+        type ReaderSubject (ListEdit edit) = [ReaderSubject edit];
 
         applyEdit (ReplaceListEdit a) = pure a;
         applyEdit (ItemEdit edit) = applyEdit edit;
@@ -130,7 +130,7 @@ module Truth.Edit.List({- listElement,listTake,listDrop,listSection,ListEdit(..)
     updateSection :: ListRegion -> ListRegion -> Int -> (ListRegion,Maybe ListRegion);
     updateSection state edit newlen = (updateSection' state edit newlen,relativeListSection state edit);
 
-    listElement :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => ListPoint -> FloatingEditLens ListPoint (ListEdit edit) (JustWholeEdit Maybe edit);
+    listElement :: forall edit. (HasNewValue (ReaderSubject edit),FullEdit edit) => ListPoint -> FloatingEditLens ListPoint (ListEdit edit) (JustWholeEdit Maybe edit);
     listElement initial = MkFloatingEditLens
     {
         floatingEditLensFunction = MkFloatingEditFunction
@@ -149,11 +149,11 @@ module Truth.Edit.List({- listElement,listTake,listDrop,listSection,ListEdit(..)
         listElement' :: ListPoint -> FloatingEditLens ListPoint (ListEdit edit) (JustWholeEdit Maybe edit);
         listElement' = listElement;
 
-        elementUpdate :: ListEdit edit -> ListPoint -> ConstFunction [Subject edit] (ListPoint,Maybe (JustWholeEdit Maybe edit));
+        elementUpdate :: ListEdit edit -> ListPoint -> ConstFunction [ReaderSubject edit] (ListPoint,Maybe (JustWholeEdit Maybe edit));
         elementUpdate edita state =
           fromMaybe (fmap (\newa -> (state,Just (replaceEdit (floatingEditGet (floatingEditLensFunction (listElement' state)) state newa)))) (applyEdit edita)) update_ where
         {
-            update_ :: Maybe (ConstFunction [Subject edit] (ListPoint,Maybe (JustWholeEdit Maybe edit)));
+            update_ :: Maybe (ConstFunction [ReaderSubject edit] (ListPoint,Maybe (JustWholeEdit Maybe edit)));
             update_ = case edita of
             {
                 ReplaceSectionEdit editlensstate newb -> Just (pure (let
@@ -249,7 +249,7 @@ module Truth.Edit.List({- listElement,listTake,listDrop,listSection,ListEdit(..)
         }
     };
 
-    listSection :: forall edit. (HasNewValue (Subject edit),FullEdit edit) => ListRegion -> FloatingEditLens (ListPoint,ListPoint) (ListEdit edit) (ListEdit edit);
+    listSection :: forall edit. (HasNewValue (ReaderSubject edit),FullEdit edit) => ListRegion -> FloatingEditLens (ListPoint,ListPoint) (ListEdit edit) (ListEdit edit);
     listSection (MkListRegion start len) = composeFloating (listTake len) (listDrop start);
 -}
 }

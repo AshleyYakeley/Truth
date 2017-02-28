@@ -16,6 +16,14 @@ module Truth.Edit.EditLens where
         editLensPutEdit :: editb -> Readable (EditReader edita) (m edita)
     };
 
+    editLensAllowed :: (FunctorOne m) =>
+     EditLens' m edita editb -> editb -> Readable (EditReader edita) Bool;
+    editLensAllowed lens editb = do
+    {
+        medita <- editLensPutEdit lens editb;
+        return (isJust (getMaybeOne medita));
+    };
+
     type EditLens = EditLens' Maybe;
 
     instance IsBiMap EditLens' where
@@ -81,7 +89,7 @@ module Truth.Edit.EditLens where
             return medita;
         }
     };
-
+{-
     simpleConvertEditLens :: (Functor m,FullEdit edita,FullEdit editb) =>
      Lens' m (EditSubject edita) (EditSubject editb) -> EditLens' m edita editb;
     simpleConvertEditLens lens = MkEditLens
@@ -115,4 +123,5 @@ module Truth.Edit.EditLens where
 
     convertEditLens :: (FullEdit edita,FullEdit editb,EditSubject edita ~ EditSubject editb) => EditLens edita editb;
     convertEditLens = convertEditLens';
+-}
 }

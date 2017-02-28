@@ -11,7 +11,7 @@ module Truth.Edit.Merge where
 {-
     instance (Edit edit) => Edit (MergeEdit edit) where
     {
-        type Subject (MergeEdit edit) = Merge edit;
+        type ReaderSubject (MergeEdit edit) = Merge edit;
 
         applyEdit (AddOverEdit edit)
     };
@@ -19,9 +19,9 @@ module Truth.Edit.Merge where
     mergeSubjectLens :: EditLens' Identity (MergeEdit edit) edit;
     mergeSubjectLens = MkEditLens
     {
-        editLensSimple :: Lens' m (Subject edita) (Subject editb),
-        editLensUpdate :: edita -> ConstFunction (Subject edita) (Maybe editb),
-        editLensPutEdit :: editb -> ConstFunction (Subject edita) (m edita)
+        editLensSimple :: Lens' m (ReaderSubject edita) (ReaderSubject editb),
+        editLensUpdate :: edita -> ConstFunction (ReaderSubject edita) (Maybe editb),
+        editLensPutEdit :: editb -> ConstFunction (ReaderSubject edita) (m edita)
     };
 -}
 }

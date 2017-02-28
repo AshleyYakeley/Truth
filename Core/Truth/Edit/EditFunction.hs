@@ -6,7 +6,7 @@ module Truth.Edit.EditFunction where
     import Truth.Edit.Edit;
     import Truth.Edit.Either;
     import Truth.Edit.ReadFunction;
-    import Truth.Edit.Read;
+    --import Truth.Edit.Read;
     import Truth.Edit.Import;
 
     -- | A EditLens is a lens without state
@@ -14,7 +14,7 @@ module Truth.Edit.EditFunction where
     data EditFunction edita editb = MkEditFunction
     {
         editGet :: ReadFunction (EditReader edita) (EditReader editb),
-        editUpdate :: edita -> Readable (EditReader edita) (Maybe editb)
+        editUpdate :: edita -> Maybe editb
     };
 
     instance Category EditFunction where
@@ -22,19 +22,15 @@ module Truth.Edit.EditFunction where
         id = MkEditFunction
         {
             editGet = readable,
-            editUpdate = \edit -> pure (Just edit)
+            editUpdate = \edit -> Just edit
         };
         bc . ab = MkEditFunction
         {
             editGet = composeReadFunction (editGet bc) (editGet ab),
             editUpdate = \edita -> do
             {
-                meb <- editUpdate ab edita;
-                case meb of
-                {
-                    Just editb -> mapReadable (editGet ab) (editUpdate bc editb);
-                    _ -> return Nothing;
-                };
+                editb <- editUpdate ab edita;
+                editUpdate bc editb;
             }
         };
     };
@@ -43,14 +39,10 @@ module Truth.Edit.EditFunction where
     {
         cfmap lens = MkEditFunction
         {
-            editUpdate = \(MkJustEdit edita) ->  do
+            editUpdate = \(MkJustEdit edita) -> do
             {
-                fmeditb <- liftJustReadable (editUpdate lens edita);
-                return (case retrieveOne fmeditb of
-                {
-                    SuccessResult (Just editb) -> Just (MkJustEdit editb);
-                    _ -> Nothing;
-                });
+                editb <- editUpdate lens edita;
+                return $ MkJustEdit editb;
             },
             editGet = liftJustReadFunction (editGet lens)
         };
@@ -86,32 +78,35 @@ module Truth.Edit.EditFunction where
     cleanEditFunction ff = MkEditFunction
     {
         editGet = cleanReadFunction (cleanEditGet ff),
-        editUpdate = \edit -> pure (cleanEditUpdate ff edit)
+        editUpdate = cleanEditUpdate ff
     };
 
     editFunction :: (a -> b) -> EditFunction (WholeEdit (WholeReader a)) (WholeEdit (WholeReader b));
     editFunction ab = MkEditFunction
     {
         editGet = simpleReadFunction ab,
-        editUpdate = \(MkWholeEdit a) -> pure (Just (MkWholeEdit (ab a)))
+        editUpdate = \(MkWholeEdit a) -> Just $ MkWholeEdit $ ab a
     };
-
-    simpleConvertEditFunction ::
-     (Edit edita,FullEdit editb) => (ReadFunction (EditReader edita) (EditReader editb)) -> EditFunction edita editb;
-    simpleConvertEditFunction rfrarb = MkEditFunction
+{-
+    simpleConvertEditFunction :: forall edita editb.
+     (Edit edita,FullEdit editb) => ReadFunction (EditReader edita) (EditReader editb) -> EditFunction edita editb;
+    simpleConvertEditFunction rfrarb = let
     {
-        editGet = rfrarb,
+        editGet :: ReadFunction (EditReader edita) (EditReader editb);
+        editGet = rfrarb;
 
-        editUpdate = \edit -> do
+        editUpdate :: edita -> Maybe editb;
+        editUpdate edit = let
         {
-            b <- mapReadable (applyEdit edit) (mapReadable rfrarb fromReader);
-            return (Just (replaceEdit b));
-        }
-    };
+            olda = undefined;
+            newa = fromReadFunction (applyEdit edit) olda;
+            b = fromReadFunction rfrarb newa;
+        } in (Just $ replaceEdit b)
+    } in MkEditFunction{..};
 
     convertEditFunction :: (FullReader (EditReader edita),Edit edita,FullEdit editb,EditSubject edita ~ EditSubject editb) => EditFunction edita editb;
     convertEditFunction = simpleConvertEditFunction convertReadFunction;
-
+-}
     eitherEditFunction :: (EditReader edit ~ EditReader edit') => CleanEditFunction edit (EitherEdit edit' edit);
     eitherEditFunction = MkCleanEditFunction
     {

@@ -67,11 +67,11 @@ module Truth.Edit.Context where
         EditContent :: WithContextAggregate editx editn editn;
     };
 
-    instance SimpleWitness (WithContextAggregate ea eb) where
+    instance TestEquality (WithContextAggregate ea eb) where
     {
-        matchWitness EditContext EditContext = Just MkEqualType;
-        matchWitness EditContent EditContent = Just MkEqualType;
-        matchWitness _ _ = Nothing;
+        testEquality EditContext EditContext = Just Refl;
+        testEquality EditContent EditContent = Just Refl;
+        testEquality _ _ = Nothing;
     };
 
     instance (Edit editx,FullReader (EditReader editx),Edit editn,FullReader (EditReader editn)) =>

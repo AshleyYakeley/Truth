@@ -7,7 +7,7 @@ module Truth.Edit.Anything where
 
     data Anything where
     {
-        MkAnything :: forall (a :: *). Info_X' a -> a -> Anything;
+        MkAnything :: forall (a :: *). Info a -> a -> Anything;
     };
 {-
     instance HasInfo (Type_T Anything) where
@@ -23,21 +23,21 @@ module Truth.Edit.Anything where
     data AnyRead t where
     {
         MkAnyRead :: forall reader t. (Reader reader) =>
-         Info (Type_KTT reader) -> Info (Type_T (Subject reader)) -> reader t -> AnyRead (Maybe t);
+         Info (Type_KTT reader) -> Info (Type_T (ReaderSubject reader)) -> reader t -> AnyRead (Maybe t);
     };
 
     instance Reader AnyRead where
     {
-        type Subject AnyRead = Anything;
+        type ReaderSubject AnyRead = Anything;
 
         -- | Make API calls when you've actually got the subject
-        -- readFromM :: forall m. (Applicative m,Monad m) => m (Subject reader) -> Structure m reader;
+        -- readFromM :: forall m. (Applicative m,Monad m) => m (ReaderSubject reader) -> Structure m reader;
         -- readFromM msubj reader = fmap (\subj -> readFrom subj reader) msubj;
 
         -- readFrom :: Anything -> (forall t. AnyRead t -> t);
         readFrom (MkAnything infoa a) (MkAnyRead infor infoa' reader) = do
         {
-            MkEqualType <- matchWitness infoa infoa';
+            Refl <- testEquality infoa infoa';
             return (readFrom a reader);
         };
     };
@@ -52,22 +52,22 @@ module Truth.Edit.Anything where
     {
         type EditReader AnyEdit = AnyRead;
 
-        applyEdit (MkAnyEdit _te treader edit) ar@(MkAnyReader treader' ta' reader') = case matchWitness treader treader' of
+        applyEdit (MkAnyEdit _te treader edit) ar@(MkAnyReader treader' ta' reader') = case testEquality treader treader' of
         {
-            Just MkEqualType -> ;
+            Just Refl -> ;
             _ -> readable ar;
         };
 
 
-        FunctionConstFunction (\anya@(MkAnything ta a) -> case matchWitness tsubj ta of
+        FunctionConstFunction (\anya@(MkAnything ta a) -> case testEquality tsubj ta of
         {
-            Just MkEqualType -> MkAnything ta (applyConstFunction (applyEdit edit) a);
+            Just Refl -> MkAnything ta (applyConstFunction (applyEdit edit) a);
             _ -> anya;
         });
 
         invertEdit (MkAnyEdit te tsubj edit) (MkAnything ta a) = do
         {
-            MkEqualType <- matchWitness tsubj ta;
+            Refl <- testEquality tsubj ta;
             newa <- invertEdit edit a;
             return (MkAnyEdit te tsubj newa);
         };

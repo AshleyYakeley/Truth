@@ -76,7 +76,7 @@ module UI.Truth.GTK.Text (textMatchView) where
     textMatchView :: MatchView;
     textMatchView tedit = do
     {
-        MkEqualType <- matchProp $(type1[t|EqualType (Type_T (ListEdit (WholeEdit Char)))|]) tedit;
+        Refl <- matchProp $(type1[t|EqualType (Type_T (ListEdit (WholeEdit Char)))|]) tedit;
         return textView;
     };
 }

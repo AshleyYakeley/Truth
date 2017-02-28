@@ -15,7 +15,7 @@ module Truth.Edit.IndexEdit where
         type Index container :: *;
         type Part container :: *;
 
-        sameIndex :: forall reader. (FullReader reader,Subject reader ~ container) =>
+        sameIndex :: forall reader. (FullReader reader,ReaderSubject reader ~ container) =>
             Index container -> Index container -> Readable reader Bool;
         indexLens :: forall partedit. (Edit partedit, EditSubject partedit ~ Part container) =>
             Index container -> FloatingEditLens (Index container) (IndexEdit container edit) (PartEdit edit);
@@ -95,9 +95,9 @@ module Truth.Edit.IndexEdit where
 
         -- indexLens :: index -> Lens container part;
 
-    instance (Reader reader,Subject reader ~ Part container) => Reader (IndexReader container reader) where
+    instance (Reader reader,ReaderSubject reader ~ Part container) => Reader (IndexReader container reader) where
     {
-        type Subject (IndexReader container reader) = container;
+        type ReaderSubject (IndexReader container reader) = container;
 
         -- readFrom :: container -> (forall t. IndexReader container reader t -> t);
         readFrom container (ReadIndex reader index) = readFrom (lensGet (indexLens index) container) reader;
@@ -139,14 +139,14 @@ module Truth.Edit.IndexEdit where
     {
         info = mkSimpleInfo $(iowitness[t| Type_KTKTT IndexEdit |])
         [
-            -- instance (Eq (Index container),Edit edit,Container container,Part container ~ Maybe (Subject edit)) =>
+            -- instance (Eq (Index container),Edit edit,Container container,Part container ~ Maybe (ReaderSubject edit)) =>
             --  Edit (IndexEdit container edit)
             mkFacts (MkFactS (\tcontainer -> MkFactS (\tedit -> MkFactZ (do
             {
                 Edit_Inst tsubj <- matchProp $(type1[t|Edit_Inst|]) tedit;
                 Container_Inst tindex tpart <- matchProp $(type1[t|Container_Inst|]) tcontainer;
                 Eq_Inst <- matchProp $(type1[t|Eq_Inst|]) tindex;
-                MkEqualType <- matchWitness tpart (applyInfo (info :: Info (Type_KTT Maybe)) tsubj);
+                Refl <- testEquality tpart (applyInfo (info :: Info (Type_KTT Maybe)) tsubj);
                 return (Edit_Inst tcontainer);
             })))
             :: FactS (FactS FactZ) Edit_Inst (Type_KTKTT IndexEdit)
@@ -164,14 +164,14 @@ module Truth.Edit.IndexEdit where
         updatePointer (MkNoEdit edit) = never edit;
     };
 
-    instance (FloatingPointer ptr edita,FloatingPointer ptr editb,Subject edita ~ Subject editb) =>
+    instance (FloatingPointer ptr edita,FloatingPointer ptr editb,ReaderSubject edita ~ ReaderSubject editb) =>
      FloatingPointer ptr (EitherEdit edita editb) where
     {
         updatePointer (LeftEdit edit) = updatePointer edit;
         updatePointer (RightEdit edit) = updatePointer edit;
     };
 
-    instance (Eq index,Edit edit,Container container,Part container ~ Maybe (Subject edit),index ~ Index container)
+    instance (Eq index,Edit edit,Container container,Part container ~ Maybe (ReaderSubject edit),index ~ Index container)
      => FloatingPointer index (IndexEdit container edit) where
     {
         updatePointer _ ptr = return ptr;

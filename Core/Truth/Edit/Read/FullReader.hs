@@ -7,13 +7,13 @@ module Truth.Edit.Read.FullReader where
     class (Reader reader) => FullReader (reader :: * -> *) where
     {
         -- | Construct the subject by making API calls
-        fromReader :: Readable reader (Subject reader);
+        fromReader :: Readable reader (ReaderSubject reader);
     };
 
     instance HasInfo FullReader where
     {
-        info = mkSimpleInfo $(iowitness[t|WrapType FullReader|]) [];
+        info = mkSimpleInfo $(iowitness[t|FullReader|]) [];
     };
 
-    type FullReader_Inst a = ConstraintFact FullReader (WrapType a);
+    type FullReader_Inst a = ConstraintFact FullReader a;
 }

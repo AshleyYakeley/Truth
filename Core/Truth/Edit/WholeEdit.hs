@@ -12,7 +12,7 @@ module Truth.Edit.WholeEdit where
 
     instance Reader (WholeReader a) where
     {
-        type Subject (WholeReader a) = a;
+        type ReaderSubject (WholeReader a) = a;
         readFrom msubj ReadWhole = msubj;
     };
 
@@ -36,7 +36,7 @@ module Truth.Edit.WholeEdit where
         ];
     };
 -}
-    newtype WholeEdit (reader :: * -> *) = MkWholeEdit (Subject reader);
+    newtype WholeEdit (reader :: * -> *) = MkWholeEdit (ReaderSubject reader);
 
     instance Floating (WholeEdit reader) where
     {

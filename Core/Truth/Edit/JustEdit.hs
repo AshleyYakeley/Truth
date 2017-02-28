@@ -16,9 +16,9 @@ module Truth.Edit.JustEdit where
 
     instance (FunctorOne f,Reader reader) => Reader (JustReader f reader) where
     {
-        type Subject (JustReader f reader) = f (Subject reader);
+        type ReaderSubject (JustReader f reader) = f (ReaderSubject reader);
 
-        -- readFrom :: Subject (JustReader f reader) -> (forall t. JustReader f reader t -> t);
+        -- readFrom :: ReaderSubject (JustReader f reader) -> (forall t. JustReader f reader t -> t);
         readFrom fsubj ReadOther = MkAnyReturn (\a -> fmap (\_ -> a) fsubj);
         readFrom fsubj ReadIsJust = case retrieveOne fsubj of
         {
@@ -43,7 +43,7 @@ module Truth.Edit.JustEdit where
 
     instance (FunctorOne f,FullReader reader) => FullReader (JustReader f reader) where
     {
-        -- fromReader :: ReadFunction (JustReader f reader) (f (Subject reader));
+        -- fromReader :: ReadFunction (JustReader f reader) (f (ReaderSubject reader));
         fromReader = liftJustReadable fromReader;
     };
 {-

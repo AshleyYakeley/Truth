@@ -158,7 +158,7 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
     maybeMatchView getView tedit = do
     {
         MkMatchJustWholeEdit tf te _ta <- matchProp $(type1[t|MatchJustWholeEdit|]) tedit;
-        MkEqualType <- matchWitness tf (info :: Info (Type_KTT Maybe));
+        Refl <- testEquality tf (info :: Info (Type_KTT Maybe));
         Edit_Inst tsubj <- matchProp $(type1[t|Edit_Inst|]) te;
         FullEdit_Inst <- matchProp $(type1[t|FullEdit_Inst|]) te;
         HasNewValue_Inst <- matchProp $(type1[t|HasNewValue_Inst|]) tsubj;
@@ -171,7 +171,7 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
         MkMatchJustWholeEdit tf te _ta <- matchProp $(type1[t|MatchJustWholeEdit|]) tedit;
         MkMatch tr terr <- matchProp $(type1[t|Match|]) tf;
         Kind_T <- matchProp $(type1[t|Kind_T|]) terr;
-        MkEqualType <- matchWitness tr (info :: Info (Type_KTKTT Result));
+        Refl <- testEquality tr (info :: Info (Type_KTKTT Result));
         Edit_Inst tsubj <- matchProp $(type1[t|Edit_Inst|]) te;
         FullEdit_Inst <- matchProp $(type1[t|FullEdit_Inst|]) te;
         HasNewValue_Inst <- matchProp $(type1[t|HasNewValue_Inst|]) tsubj;

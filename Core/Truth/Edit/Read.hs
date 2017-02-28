@@ -22,7 +22,7 @@ module Truth.Edit.Read
     -- only reason to specify readFromM instead of readFrom?
     instance Reader (ConstReader a) where
     {
-        type Subject (ConstReader a) = a;
+        type ReaderSubject (ConstReader a) = a;
         readFromM _ (MkConstReader a) = return a;
     };
 }

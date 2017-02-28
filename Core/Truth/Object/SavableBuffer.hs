@@ -35,7 +35,7 @@ module Truth.Object.SavableBuffer where
 
     instance (Reader reader) => Reader (SavableReader reader) where
     {
-        type Subject (SavableReader reader) = Savable (Subject reader);
+        type ReaderSubject (SavableReader reader) = Savable (ReaderSubject reader);
         readFrom subj (MkSavableReader sv reader) = readFrom (subj sv) reader;
     };
 
@@ -100,12 +100,12 @@ module Truth.Object.SavableBuffer where
 {-
     data FloatingEditLens' m state edita editb = MkFloatingEditLens
     {
-        floatingEditLensSimple :: FloatingLens' m state (Subject edita) (Subject editb),
-        floatingEditLensUpdate :: edita -> state -> ConstFunction (Subject edita) (state,Maybe editb),
-        floatingEditLensPutEdit :: state -> editb -> ConstFunction (Subject edita) (m (state,edita))    -- m failure means impossible
+        floatingEditLensSimple :: FloatingLens' m state (ReaderSubject edita) (ReaderSubject editb),
+        floatingEditLensUpdate :: edita -> state -> ConstFunction (ReaderSubject edita) (state,Maybe editb),
+        floatingEditLensPutEdit :: state -> editb -> ConstFunction (ReaderSubject edita) (m (state,edita))    -- m failure means impossible
     };
 
-    savableLens :: FloatingEditLens' Identity (Maybe (Subject edit)) edit (SavableEdit edit);
+    savableLens :: FloatingEditLens' Identity (Maybe (ReaderSubject edit)) edit (SavableEdit edit);
     savableLens = MkFloatingEditLens
     {
 

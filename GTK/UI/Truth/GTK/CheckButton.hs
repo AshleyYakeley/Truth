@@ -36,7 +36,7 @@ module UI.Truth.GTK.CheckButton where
     checkButtonMatchView :: MatchView;
     checkButtonMatchView tedit = do
     {
-        MkEqualType <- matchProp $(type1[t|EqualType (Type_T (WholeEdit Bool))|]) tedit;
+        Refl <- matchProp $(type1[t|EqualType (Type_T (WholeEdit Bool))|]) tedit;
         return (checkButtonView "");
     };
 }

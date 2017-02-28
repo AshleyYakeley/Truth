@@ -12,7 +12,7 @@ module Truth.Edit.MIME where
 
     instance HasNewValue MIMEContentType where
     {
-        newValue = Codec.MIME.Type.Type (Codec.MIME.Type.Application "octet-stream") [];
+        newValue = Codec.MIME.Type.Type (Codec.MIME.Type.Application $ fromString "octet-stream") [];
     };
 {-
     instance HasInfo (Type_T MIMEContentType) where
@@ -59,13 +59,13 @@ module Truth.Edit.MIME where
 
     data AnyCodec where
     {
-        MkAnyCodec :: forall (a :: *). Info_X' a -> Codec [Word8] a -> AnyCodec;
+        MkAnyCodec :: forall (a :: *). Info a -> Codec [Word8] a -> AnyCodec;
     };
 
     data MIMEKnowledge = MkMIMEKnowledge
     {
         findMIMECodecByMIME :: MIMEContentType -> Maybe AnyCodec,
-        findMIMECodecByInfoT :: forall (b :: *). Info_X' b -> Maybe (MIMEContentType,Codec [Word8] b)
+        findMIMECodecByInfoT :: forall (b :: *). Info b -> Maybe (MIMEContentType,Codec [Word8] b)
     };
 
     interpretInjection :: (?mimeKnowledge :: MIMEKnowledge) => Injection MIMEContent (Maybe Anything);

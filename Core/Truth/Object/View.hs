@@ -8,7 +8,7 @@ module Truth.Object.View where
     {
         MkAspect ::
          forall edita editb state. (Eq state,FullEdit editb) =>
-          Info (Type_T editb) -> Info (Type_T (Subject editb)) -> FloatingEditLens state edita editb -> Aspect edita;
+          Info editb -> Info (EditSubject editb) -> FloatingEditLens state edita editb -> Aspect edita;
     };
 
     data ViewWidgetStuff w edit = MkViewWidgetStuff
@@ -17,18 +17,18 @@ module Truth.Object.View where
         vwsGetSelection :: IO (Maybe (Aspect edit))
     };
 
-    data ViewResult w edit = MkViewResult
+    data ViewResult w edit token = MkViewResult
     {
         vrWidgetStuff :: ViewWidgetStuff w edit,
-        vrUpdate :: edit -> IO ()
+        vrUpdate :: token -> edit -> IO token
     };
 
-    type View w edit = Subject edit -> Push edit -> IO (ViewResult w edit);
+    type View w edit = forall token. LockAPI edit token -> IO (ViewResult w edit token,token);
 
-    subscribeView :: View w edit -> Subscribe edit -> IO (Subscribe edit,ViewWidgetStuff w edit,IO ());
+    subscribeView :: View w edit -> Subscribe edit -> IO (ViewWidgetStuff w edit,IO ());
     subscribeView view subscribe = do
     {
-        (vr,sub) <- subscribe view vrUpdate;
-        return (subCopy sub,vrWidgetStuff vr,subClose sub);
+        (vr,close) <- subscribe view vrUpdate;
+        return (vrWidgetStuff vr,close);
     };
 }

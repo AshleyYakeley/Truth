@@ -4,18 +4,25 @@ module Truth.Edit.NoEdit where
     import Truth.Edit.Read;
     import Truth.Edit.Import;
 
-    newtype NoReader (a :: *) (t :: *) = MkNoReader Nothing deriving (Eq,Countable,Searchable,Finite,Empty);
+    newtype NoReader (a :: *) (t :: *) = MkNoReader None deriving (Eq,Countable,Searchable);
+
+    instance Finite (NoReader a t) where
+    {
+        allValues = [];
+    };
+
+    deriving instance Empty (NoReader a t);
 
     instance Reader (NoReader a) where
     {
-        type Subject (NoReader a) = a;
+        type ReaderSubject (NoReader a) = a;
         readFromM _ = never;
         readFrom _ = never;
     };
 {-
     instance HasInfo NoReader where
     {
-        info = mkSimpleInfo $(iowitness[t|WrapType NoReader|])
+        info = mkSimpleInfo $(iowitness[t|NoReader|])
         [
             -- instance Reader (NoReader a)
             mkFacts (MkFactS (\a -> MkFactZ (do
@@ -29,7 +36,14 @@ module Truth.Edit.NoEdit where
     };
 -}
     -- | Can't touch this.
-    newtype NoEdit (reader :: * -> *) = MkNoEdit Nothing deriving (Eq,Countable,Searchable,Finite,Empty);
+    newtype NoEdit (reader :: * -> *) = MkNoEdit None deriving (Eq,Countable,Searchable);
+
+    instance Finite (NoEdit reader) where
+    {
+        allValues = [];
+    };
+
+    deriving instance Empty (NoEdit reader);
 
     instance Floating (NoEdit reader) where
     {
@@ -45,7 +59,7 @@ module Truth.Edit.NoEdit where
 {-
     instance HasInfo NoEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|WrapType NoEdit|])
+        info = mkSimpleInfo $(iowitness[t|NoEdit|])
         [
             -- instance (Reader reader) => Edit (NoEdit reader)
             mkFacts (MkFactS (\reader -> MkFactZ (do

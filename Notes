@@ -1,0 +1,158 @@
+1 Examples
+
+1.1 File:
+
+    exists :: Path -> IO Bool
+    delete :: Path -> IO ()
+    create :: Path -> IO ()
+    createOpen :: Path -> IO Handle
+    open :: Path -> IO Handle
+    close :: Handle -> IO ()
+    read :: Handle -> Pos -> IO ByteString
+    write :: Handle -> Pos -> ByteString -> IO ()
+    length :: Handle -> IO Pos
+    setLength :: Handle -> Pos -> IO ()
+
+    type Pos = Int;
+    type Len = Int;
+
+    data BlockReader t where
+    {
+        BlockGetLength :: BlockReader Len;
+        BlockRead :: Pos -> Len -> BlockReader ByteString;
+    };
+
+    data BlockEdit = BlockWrite Pos ByteString | BlockSetLength Len;
+
+
+1.2 Incomplete loading of web-page:
+
+    type Partial reader = Structure Maybe reader;
+    subscribeUpdatesAsync :: forall a. (Partial reader -> IO ()) -> IO a -> IO a;
+
+-- Slow transfer from remote to local memory
+
+
+1.3 Database
+
+    type SQLStatement = String;
+    data SQLReader t where
+    {
+        SQLSelect :: SQLStatement -> SQLRowType t -> SQLReader [t]
+    };
+    data SQLEdit  = SQLWrite SQLStatement;
+
+
+2 Approaches
+
+Reads may block.
+Edits may block.
+Not all edits are allowed.
+Other editors may change the object:
+    all we may know is that the object might have changed
+Locks may apply to per-whole or per-part
+
+2.1 Simple
+
+    data Subscription edit = MkSubscription
+    {
+        subClose :: IO (),
+        subRead :: Structure IO (EditReader edit),
+        subChange :: edit -> IO ()
+    };
+    type Object edit = IO (Subscription edit);
+
+-- assumes all edits are allowed
+-- assumes nothing else will change the object
+
+2.2 Multiple editors
+
+editor: opening X
+object: this is the reader. this is the allowed-edit-set. call this to push updates
+editor: call this when updates (and new allowed-edit-set) comes in
+object: call this to release subscription. call this to aquire another subscription
+
+editor: release
+    -object: if all subscriptions are released, close underlying object
+
+Transactions on state...
+
+(token -> message -> Allowed message -> IO token)
+
+-- | note this has lock semantics but not transaction semantics.
+-- That is, no other caller can change the object while you have the lock,
+-- however, each call to apiEdit is a change, and these are not collected into and atomic transaction,
+-- and cannot be rolled back.
+data API m edit token = MkAPI
+{
+    apiRead :: Structure m (EditReader edit),
+    apiAllowed :: m (edit -> Bool),
+    apiEdit :: edit -> m token
+};
+
+type Handle edit token = forall r. (forall m. Monad m => token -> API m edit token -> m r) -> IO r;
+
+type Subscribe edit = forall token.
+    (Handle edit token -> IO token) -> -- initialise: provides read API, initial allowed, write API
+    (token -> edit -> (edit -> Bool) -> IO token) -> -- receive: get updates (both others and from your apiEdit calls)
+    IO (token, IO ());
+
+freeObjSubscribe :: EditSubject edit -> (EditSubject edit -> edit -> Bool) -> Subscribe edit;
+
+shareSubscribe :: Subscribe edit -> IO (Subscribe edit)
+
+
+-- subscribing to changes
+-- acquiring mutex lock for read/edit
+
+data Object edit = forall subscription lock. MkObject
+{
+    objOpenSubscribe :: (edit -> (edit -> Bool) -> IO ()) -> IO subscription,
+    objCloseSubscribe :: subscription -> IO (),
+    objOpenEditLock :: subscription -> IO lock,
+    objCloseEditLock :: lock -> IO (),
+    objAPI :: lock -> API IO edit ()
+};
+
+
+data Subscription edit = MkSubscription
+    {
+        subCopy :: Subscribe edit,
+
+        -- | close the subscription
+        subClose :: IO ()
+    };
+
+2.3 Implemented...
+
+    type Allowed edit = edit -> Bool;
+    type Send edit = edit -> IO (Maybe (Allowed edit));
+    type Subscribe t message = forall r.
+        (t -> Allowed message -> Send message -> IO r) -> -- initialise: provides read API, initial allowed, write API
+        (r -> message -> Allowed message -> IO ()) -> -- receive: provides updates ()
+        IO (r, Subscription t message);
+    data Subscription t edit = MkSubscription
+    {
+        subCopy :: Subscribe t edit,
+
+        -- | close the subscription
+        subClose :: IO ()
+    };
+
+    type Reference edit = Subscribe (StructureW IO (EditReader edit)) edit;
+
+    -- lenses transform Reference -> Reference (i.e., Subscribe -> Subscribe), using objSubscribe
+
+    data Object t message = MkObject
+    {
+        objGetInitial :: forall r. (Allowed message -> IO r) -> IO r,
+        objRead :: t, -- Structure IO (EditReader edit),
+        objSend :: Send message,
+        objClose :: IO ()
+    };
+
+    -- | This maintains all message passing of edits and updates.
+    objSubscribe :: forall t message.
+     ((message -> Allowed message -> IO ()) -> IO (Object t message)) -> Subscribe t message;
+
+    type EditObject edit = Object (StructureW IO (EditReader edit)) edit;

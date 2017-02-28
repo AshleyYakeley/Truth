@@ -104,25 +104,27 @@ module Truth.Object.Subscribe  where
         objClose :: IO ()
     };
 
-    objSubscribe :: forall t message.
-     ((message -> Allowed message -> IO ()) -> IO (Object t message)) -> Subscribe t message;
-    objSubscribe getObject initialise' recieve' = do
+    newtype Subscribe' t message = MkSubscribe' {unsubscribe' :: Subscribe t message};
+
+    objectGetSubscribe :: forall t message.
+     ((message -> Allowed message -> IO ()) -> IO (Object t message)) -> IO (Subscribe' t message);
+    objectGetSubscribe getObject = do
     {
         storevar <- newMVar (emptyStore :: Store (message -> Allowed message -> IO ()));
         let
         {
             sendDown :: message -> Allowed message -> IO ();
-            sendDown message allowed = withMVar storevar (\store -> do
+            sendDown message allowed = withMVar storevar $ \store -> do
             {
                 _ <- for (allStore store) (\u -> u message allowed);
                 return ();
-            });
+            };
         };
         obj <- getObject sendDown;
         let
         {
             keySendUp :: Int -> Send message;
-            keySendUp key message = withMVar storevar (\store -> do
+            keySendUp key message = withMVar storevar $ \store -> do
             {
                 mv <- objSend obj message;
                 case mv of
@@ -131,10 +133,10 @@ module Truth.Object.Subscribe  where
                     _ -> return ();
                 };
                 return mv;
-            });
+            };
 
             keyClose :: Int -> IO ();
-            keyClose key = modifyMVar_ storevar (\store -> let
+            keyClose key = modifyMVar_ storevar $ \store -> let
             {
                 newstore = deleteStore key store;
             } in do
@@ -143,7 +145,7 @@ module Truth.Object.Subscribe  where
                  then (objClose obj)
                  else return ();
                 return newstore;
-            });
+            };
 
             keySubscription :: Int -> Subscription t message;
             keySubscription key = MkSubscription
@@ -153,17 +155,25 @@ module Truth.Object.Subscribe  where
             };
 
             objSub :: Subscribe t message;
-            objSub initialise updater = mfix (\result -> do
+            objSub initialise updater = mfix $ \result -> do
             {
-                key <- modifyMVar storevar (\store -> do
+                key <- modifyMVar storevar $ \store -> do
                 {
                     let {(key,newstore) = addStore (updater (fst result)) store;};
                     return (newstore,key);
-                });
-                r <- objGetInitial obj (\allowed -> initialise (objRead obj) allowed (keySendUp key));
+                };
+                r <- objGetInitial obj $ \allowed -> initialise (objRead obj) allowed (keySendUp key);
                 return (r,keySubscription key);
-            });
+            };
         };
-        objSub initialise' recieve';
+        return $ MkSubscribe' objSub;
+    };
+
+    objSubscribe :: forall t message.
+     ((message -> Allowed message -> IO ()) -> IO (Object t message)) -> Subscribe t message;
+    objSubscribe getObject initialise recieve = do
+    {
+        MkSubscribe' sub <- objectGetSubscribe getObject;
+        sub initialise recieve;
     };
 }

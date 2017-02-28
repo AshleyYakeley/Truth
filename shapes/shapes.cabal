@@ -1,0 +1,69 @@
+cabal-version: >=1.14
+name: shapes
+version: 0.1.0.0
+-- synopsis:
+-- description:
+license:  BSD2
+license-file: LICENSE
+author: Ashley Yakeley
+maintainer: ashley@semantic.org
+-- copyright:
+category:            Data
+build-type:          Simple
+-- extra-source-files:
+
+library
+    hs-source-dirs: src
+    exposed-modules:
+        Data.KindCategory
+        Data.Free
+        Data.Category
+        Data.ApStore
+        Control.Applicative.Free
+        Data.Functor.Free
+        Control.Monad.Free
+        Control.Wait
+        Data.Chain
+        Data.Result
+        Data.FunctorOne
+        Data.HasNewValue
+        Data.Injection
+        Data.Bijection
+        Data.Lens
+        Data.FloatingLens
+        Data.Store
+        Data.ConstFunction
+        Data.Codec
+        Data.Compose
+    build-depends:
+        base >= 4.9 && < 5,
+        bytestring,
+        containers,
+        transformers,
+        witness
+    default-language: Haskell2010
+    default-extensions:
+        UndecidableInstances
+        MultiParamTypeClasses
+        FunctionalDependencies
+        RankNTypes
+        ScopedTypeVariables
+        ImplicitParams
+        FlexibleContexts
+        FlexibleInstances
+        UndecidableSuperClasses
+        EmptyDataDecls
+        TypeSynonymInstances
+        TemplateHaskell
+        PatternGuards
+        GeneralizedNewtypeDeriving
+        TypeInType
+        TypeFamilies
+        GADTs
+        PolyKinds
+        DataKinds
+        ConstraintKinds
+        AllowAmbiguousTypes
+        RecordWildCards
+    -- other-extensions:
+    ghc-options: -Wall -fno-warn-deprecated-flags

@@ -1,6 +1,6 @@
 module Truth.Edit.Import
 (
-    module Truth.TypeKT,
+    module Data.Reity,
     module Control.Monad.Free,
     module Data.KindCategory,
     module Data.Category,
@@ -33,7 +33,7 @@ module Truth.Edit.Import
     module Data.Foldable,
     module Control.Arrow,
     module Control.Monad,
-    -- module Control.Category,
+    module Control.Category,
     module Control.Monad.Trans.State,
     module Data.Functor.Identity,
     module Data.Tuple,
@@ -50,7 +50,7 @@ module Truth.Edit.Import
 )
 where
 {
-    import Truth.TypeKT;
+    import Data.Reity;
     import Control.Monad.Free;
     import Data.KindCategory;
     import Data.Category;
@@ -83,7 +83,7 @@ where
     import Data.Foldable;
     import Control.Arrow hiding ((|||),(<<<),(>>>));
     import Control.Monad (Functor(..),Monad(..));
-    -- import Control.Category;
+    import Control.Category;
     import Control.Monad.Trans.State (StateT(..),evalStateT);
     import Data.Functor.Identity;
     import Data.Tuple;
@@ -96,5 +96,5 @@ where
     import Data.List ((++),length,take,drop,splitAt);
     import Data.Bits;
     import Data.Bool;
-    import Prelude (undefined,Eq(..),Ord(..),Enum(..),Num(..),fromIntegral);
+    import Prelude (($),undefined,Eq(..),Ord(..),Enum(..),Num(..),fromIntegral);
 }
