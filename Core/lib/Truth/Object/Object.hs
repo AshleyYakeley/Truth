@@ -77,7 +77,6 @@ module Truth.Object.Object where
         (editor -> token -> edit -> IO token) -> -- receive: get updates (both others and from your apiEdit calls)
         IO (editor, IO ());
 
-
     newtype ObjectW edit = MkObjectW (Object edit);
 
     data StoreEntry edit token = MkStoreEntry (token -> edit -> IO token) token;
@@ -187,4 +186,14 @@ module Truth.Object.Object where
         };
         return $ MkObjectW child;
     };
+
+    shareLockAPI :: LockAPI edit token -> IO (ObjectW edit);
+    shareLockAPI lapi = shareObject $ \initr _update -> do
+    {
+        rec
+        {
+            (editor,token) <- initr $ mapLockAPIToken (\_ -> token) lapi;
+        };
+        return (editor,return ());
+    }
 }
