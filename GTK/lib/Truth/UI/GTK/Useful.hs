@@ -1,4 +1,4 @@
-module UI.Truth.GTK.Useful where
+module Truth.UI.GTK.Useful where
 {
     import Graphics.UI.Gtk;
     import Control.Exception;

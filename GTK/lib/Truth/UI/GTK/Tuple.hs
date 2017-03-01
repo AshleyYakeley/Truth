@@ -1,4 +1,4 @@
-module UI.Truth.GTK.Tuple where
+module Truth.UI.GTK.Tuple where
 {
 {-
     import Data.Changes;

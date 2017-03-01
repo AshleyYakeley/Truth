@@ -1,10 +1,10 @@
 {-# LANGUAGE ViewPatterns, FlexibleContexts #-}
-module UI.Truth.GTK.Window where
+module Truth.UI.GTK.Window where
 {
-    import UI.Truth.GTK.Text;
-    import UI.Truth.GTK.CheckButton;
-    import UI.Truth.GTK.Maybe;
-    import UI.Truth.GTK.GView;
+    import Truth.UI.GTK.Text;
+    import Truth.UI.GTK.CheckButton;
+    import Truth.UI.GTK.Maybe;
+    import Truth.UI.GTK.GView;
     import Graphics.UI.Gtk;
     import Truth.Object;
     import Truth.Edit;

@@ -1,8 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
-module UI.Truth.GTK.CheckButton where
+module Truth.UI.GTK.CheckButton where
 {
-    import UI.Truth.GTK.GView;
-    import UI.Truth.GTK.Useful;
+    import Truth.UI.GTK.GView;
+    import Truth.UI.GTK.Useful;
     import Graphics.UI.Gtk;
     import Truth.Object;
     import Truth.Edit;

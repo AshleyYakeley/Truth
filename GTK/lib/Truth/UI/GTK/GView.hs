@@ -1,4 +1,4 @@
-module UI.Truth.GTK.GView where
+module Truth.UI.GTK.GView where
 {
     import Graphics.UI.Gtk;
     import Data.Reity;

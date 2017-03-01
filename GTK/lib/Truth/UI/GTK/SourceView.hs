@@ -1,6 +1,6 @@
-module UI.Truth.GTK.SourceView where
+module Truth.UI.GTK.SourceView where
 {
---    import UI.Truth.GTK.Useful;
+--    import Truth.UI.GTK.Useful;
 --    import Graphics.UI.Gtk;
 --    import Data.Changes;
 --    import Data.ConstFunction;

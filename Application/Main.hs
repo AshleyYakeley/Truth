@@ -1,6 +1,6 @@
 module Main where
 {
-    import UI.Truth.GTK;
+    import Truth.UI.GTK;
     import Graphics.UI.Gtk;
     import Truth.Linux.File;
     import Truth.Object;

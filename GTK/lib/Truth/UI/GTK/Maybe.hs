@@ -1,7 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
-module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
+module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
 {
-    import UI.Truth.GTK.GView;
+    import Truth.UI.GTK.GView;
     import Graphics.UI.Gtk;
     import Truth.Object;
     import Truth.Edit;
