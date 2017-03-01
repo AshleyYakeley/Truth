@@ -4,25 +4,25 @@ module Data.Knowledge where
     import Data.Type.Equality;
     import Control.Monad;
 
-    newtype Knowledge (w :: * -> *) = MkKnowledge (forall (a :: *). Knowledge w -> w a -> Maybe a);
+    newtype Knowledge (w :: k -> *) (f :: k -> *) = MkKnowledge (forall (a :: k). Knowledge w f -> w a -> Maybe (f a));
 
-    instance Monoid (Knowledge w) where
+    instance Monoid (Knowledge w f) where
     {
         mempty = MkKnowledge (\_ _ -> mzero);
-        mappend (MkKnowledge fa) (MkKnowledge fb) = MkKnowledge (\k' w -> mplus (fa k' w) (fb k' w));
+        mappend (MkKnowledge kfa) (MkKnowledge kfb) = MkKnowledge (\k' w -> mplus (kfa k' w) (kfb k' w));
     };
 
-    ask :: Knowledge w -> w a -> Maybe a;
+    ask :: Knowledge w f -> w a -> Maybe (f a);
     ask k@(MkKnowledge f) w = f k w;
 
-    know :: forall w a. TestEquality w => w a -> a -> Knowledge w;
+    know :: forall w f a. TestEquality w => w a -> f a -> Knowledge w f;
     know w a = MkKnowledge (\_ w' -> do
     {
         Refl <- testEquality w w';
         return a;
     });
 
-    knowDependent :: forall w b. (forall a. w a -> Maybe (w b,b -> a)) -> Knowledge w;
+    knowDependent :: forall w f b. (forall a. w a -> Maybe (w b,f b -> f a)) -> Knowledge w f;
     knowDependent wamwbba = MkKnowledge (\k wa -> do
     {
         (wb,ba) <- wamwbba wa;

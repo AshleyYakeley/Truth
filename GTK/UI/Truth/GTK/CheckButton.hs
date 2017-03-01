@@ -6,37 +6,42 @@ module UI.Truth.GTK.CheckButton where
     import Graphics.UI.Gtk;
     import Truth.Object;
     import Truth.Edit;
-    import Truth.TypeKT;
-    import Data.ConstFunction;
-    import Data.Witness;
+    import Data.Reity;
+    import Data.Type.Heterogeneous;
 
-    checkButtonView :: String -> GView (WholeEdit Bool);
-    checkButtonView name initial push = do
+
+    checkButtonView :: String -> GView (WholeEdit (WholeReader Bool));
+    checkButtonView name = MkView $ \lapi -> do
     {
         widget <- checkButtonNew;
+        initial <- lapi $ \() api -> unReadable fromReader $ apiRead api;
         set widget [buttonLabel := name,toggleButtonActive := initial];
-        clickConnection <- onClicked widget (do
+        clickConnection <- onClicked widget $ lapi $ \() api -> do
         {
             s <- get widget toggleButtonActive;
-            _ <- push (replaceEdit s);
+            _ <- apiEdit api (replaceEdit s);
             return ();
-        });
-        return (MkViewResult
+        };
+
+        let
         {
-            vrWidgetStuff = MkViewWidgetStuff (toWidget widget) (return Nothing),
-            vrUpdate = \edit -> do
+            vrWidgetStuff = MkViewWidgetStuff (toWidget widget) (return Nothing);
+
+            vrUpdate () edit = do
             {
-                newstate <- applyConstFunctionA (applyEdit edit) (get widget toggleButtonActive);
-                withSignalBlocked clickConnection
-                    (set widget [toggleButtonActive := newstate]);
-            }
-        });
+                newstate <- fmap (fromReadFunction (applyEdit edit)) $ get widget toggleButtonActive;
+                withSignalBlocked clickConnection $ set widget [toggleButtonActive := newstate];
+                return ();
+            };
+        };
+        return (MkViewResult{..},());
     };
 
     checkButtonMatchView :: MatchView;
     checkButtonMatchView tedit = do
     {
-        Refl <- matchProp $(type1[t|EqualType (Type_T (WholeEdit Bool))|]) tedit;
-        return (checkButtonView "");
+        -- Refl <- matchProp $(type1[t|(:~:) (WholeEdit Bool)|]) tedit;
+        ReflH <- testHetEquality (info :: Info (WholeEdit (WholeReader Bool))) tedit;
+        return $ checkButtonView "";
     };
 }

@@ -1,32 +1,22 @@
 {-# OPTIONS -fno-warn-unused-binds -fno-warn-orphans #-}
 module Data.Reity.HasInfo where
 {
-    import Data.Compose;
-    import Data.KindCategory;
-
---    import Data.Reity.Construct;
+    import GHC.Types;
+    import Data.HasNewValue;
     import Data.Reity.Info;
     import Data.OpenWitness;
---    import Data.Witness;
---    import Data.List;
---    import Data.Maybe;
---    import Data.Bool;
---    import Data.Int;
---    import Data.Eq;
---    import Control.Monad;
-    -- import Prelude(Num(..),fromInteger);
 
-    import GHC.Types;
 
     class HasInfo (a :: k) where
     {
         info :: Info a;
     };
 
+    mkSimpleInfo :: forall (k :: *) (t :: k). HasInfo k => IOWitness t -> [ConstraintKnowledge] -> Info t;
+    mkSimpleInfo wit facts = MkInfo info $ SimpleWit wit $ mconcat facts;
 
-    mkSimpleInfo :: forall (k :: *) (t :: k). HasInfo k => IOWitness t -> [Facts t] -> Info t;
-    mkSimpleInfo wit facts = MkInfo info (SimpleWit wit) (mconcat facts);
 
+    -- Type
 
     instance HasInfo TYPE where
     {
@@ -60,12 +50,34 @@ module Data.Reity.HasInfo where
         info = applyInfo info info;
     };
 
-{-
-    instance (HasInfo a) => Property (EqualType t) where
-    {
-        matchProperty = testEquality info;
-    };
--}
 
-    type ConstraintFact (cons :: k -> Constraint) = (Compose ConstraintWitness cons :: k -> *);
+    -- basic types
+
+    instance HasInfo Eq where
+    {
+        info = mkSimpleInfo $(iowitness[t|Eq|]) [];
+    };
+
+    instance HasInfo HasNewValue where
+    {
+        info = mkSimpleInfo $(iowitness[t|HasNewValue|]) [];
+    };
+
+    instance HasInfo () where
+    {
+        info = mkSimpleInfo $(iowitness[t|()|])
+        [
+            knowConstraint (info :: Info (HasNewValue ())),
+            knowConstraint (info :: Info (Eq ()))
+        ];
+    };
+
+    instance HasInfo Bool where
+    {
+        info = mkSimpleInfo $(iowitness[t|Bool|])
+        [
+            knowConstraint (info :: Info (HasNewValue Bool)),
+            knowConstraint (info :: Info (Eq Bool))
+        ];
+    };
 }

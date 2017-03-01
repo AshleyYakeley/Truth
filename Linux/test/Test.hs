@@ -19,14 +19,14 @@ module Main where
         show (MkIndexEdit i edit) = (show i) ++ " " ++ show edit;
     };
 
-    instance (Show (Subject edit),Show edit) => Show (ListEdit edit) where
+    instance (Show (EditSubject edit),Show edit) => Show (ListEdit edit) where
     {
         show (ItemEdit edit) = "item " ++ show edit;
         show (ReplaceSectionEdit i sect) = "section " ++ (show i) ++ " " ++ show sect;
         show (ReplaceListEdit la) = "replace " ++ (show la);
     };
     
-    instance (Show (f (Subject edit)),Show edit) => Show (JustEdit f edit) where
+    instance (Show (f (EditSubject edit)),Show edit) => Show (JustEdit f edit) where
     {
         show (MkJustEdit edit) = show edit;
     };
@@ -36,7 +36,7 @@ module Main where
         show (MkWholeEdit s) = show s;
     };
    
-    showObject :: (Show (Subject edit)) => String -> Subscribe edit -> IO ();
+    showObject :: (Show (EditSubject edit)) => String -> Subscribe edit -> IO ();
     showObject name obj = do
     {
         a <- subscribeRead obj;
@@ -54,7 +54,7 @@ module Main where
         show (SuccessResult a) = "success: " ++ (show a);
     };
     
-    makeShowSubscription :: (Show (Subject edit),Show edit,Edit edit) => String -> Subscribe edit -> IO (Push edit,Subscription edit);
+    makeShowSubscription :: (Show (EditSubject edit),Show edit,Edit edit) => String -> Subscribe edit -> IO (Push edit,Subscription edit);
     makeShowSubscription name subscribe = do
     {
         ((_,push),sub) <- subscribe

@@ -5,13 +5,16 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
     import Graphics.UI.Gtk;
     import Truth.Object;
     import Truth.Edit;
-    import Truth.TypeKT;
+    import Data.Reity;
     import Data.HasNewValue;
     import Data.Witness;
     import Data.FunctorOne;
     import Data.Result;
     import Data.IORef;
     import Control.Applicative;
+
+
+    type Push edit = edit -> IO ();
 
     pushButton :: Push edit -> edit -> String -> IO Button;
     pushButton push edit name = do
@@ -48,11 +51,11 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
     doIf (Just a) f = fmap Just (f a);
     doIf Nothing _ = return Nothing;
 
-    createButton :: (FullEdit edit) => Subject edit -> Push edit -> IO Button;
+    createButton :: (FullEdit edit) => EditSubject edit -> Push edit -> IO Button;
     createButton val push = pushButton push (replaceEdit val) "Create";
 
     mapSelection :: forall f edit. (FunctorOne f, Edit edit) =>
-     Info (Type_KTT f) -> Aspect edit -> Aspect (JustWholeEdit f edit);
+     Info f -> Aspect edit -> Aspect (JustWholeEdit f edit);
     mapSelection tf (MkAspect teditb tsubj (lens :: FloatingEditLens state edit editb)) = MkAspect
      (construct (MkMatchJustWholeEdit tf teditb tsubj))
      (applyInfo tf tsubj)
@@ -62,11 +65,11 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
     (
         Applicative f,
         FunctorOne f,
-        HasNewValue (Subject edit),
+        HasNewValue (EditSubject edit),
         FullEdit edit,
         WidgetClass wd
     ) =>
-      Info (Type_KTT f) -> Maybe (forall b. f b) -> (Push (JustWholeEdit f edit) -> IO wd) -> GView edit -> GView (JustWholeEdit f edit);
+      Info f -> Maybe (forall b. f b) -> (Push (JustWholeEdit f edit) -> IO wd) -> GView edit -> GView (JustWholeEdit f edit);
     functorOneIVF tf mDeleteValue makeEmptywidget factory initial push = let
     {
         mpush :: Push edit;
@@ -140,8 +143,8 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
         });
     };
 
-    maybeView :: (HasNewValue (Subject edit),FullEdit edit) =>
-      w (Type_T edit) -> GView edit -> GView (JustWholeEdit Maybe edit);
+    maybeView :: (HasNewValue (EditSubject edit),FullEdit edit) =>
+      w edit -> GView edit -> GView (JustWholeEdit Maybe edit);
     maybeView _ = functorOneIVF info (Just Nothing) (createButton (Just newValue));
 
     placeholderLabel :: IO Label;
@@ -151,8 +154,8 @@ module UI.Truth.GTK.Maybe (maybeMatchView,resultMatchView) where
         return label;
     };
 
-    resultView :: (HasNewValue (Subject edit),FullEdit edit) => w (Type_T edit) -> Info (Type_T err) -> GView edit -> GView (JustWholeEdit (Result err) edit);
-    resultView _ terr = functorOneIVF (applyInfo (info :: Info (Type_KTKTT Result)) terr) Nothing (\_ -> placeholderLabel);
+    resultView :: (HasNewValue (EditSubject edit),FullEdit edit) => w edit -> Info err -> GView edit -> GView (JustWholeEdit (Result err) edit);
+    resultView _ terr = functorOneIVF (applyInfo (info :: Info Result) terr) Nothing (\_ -> placeholderLabel);
 
     maybeMatchView :: GetView -> MatchView;
     maybeMatchView getView tedit = do

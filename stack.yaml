@@ -3,7 +3,7 @@ packages:
 - shapes
 - Core
 #- Linux
-#- GTK
+- GTK
 #- Application
 
 resolver: lts-8.0

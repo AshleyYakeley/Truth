@@ -14,6 +14,4 @@ module Truth.Edit.Read.FullReader where
     {
         info = mkSimpleInfo $(iowitness[t|FullReader|]) [];
     };
-
-    type FullReader_Inst a = ConstraintFact FullReader a;
 }

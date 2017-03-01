@@ -20,7 +20,6 @@ library
     exposed-modules:
         Data.Knowledge
         Data.Reity.Info
-        Data.Reity.Construct
         Data.Reity.HasInfo
         Data.Reity
     -- other-modules:
