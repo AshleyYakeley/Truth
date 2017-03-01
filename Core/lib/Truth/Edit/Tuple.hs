@@ -4,7 +4,6 @@ module Truth.Edit.Tuple where
     import Truth.Edit.CleanEditLens;
     import Truth.Edit.EditFunction;
     import Truth.Edit.Edit;
-    import Truth.Edit.ReadFunction;
     import Truth.Edit.Read;
     import Truth.Edit.Import;
 

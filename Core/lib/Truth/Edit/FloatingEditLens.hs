@@ -7,9 +7,9 @@ module Truth.Edit.FloatingEditLens where
     import Truth.Edit.Either;
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Edit;
-    import Truth.Edit.ReadFunction;
     import Truth.Edit.Read;
     import Truth.Edit.Import;
+
 
     data FloatingEditLens' m state edita editb = MkFloatingEditLens
     {

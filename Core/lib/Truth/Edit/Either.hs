@@ -1,8 +1,9 @@
 module Truth.Edit.Either where
 {
-    import Truth.Edit.Edit;
-    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Truth.Edit.Read;
+    import Truth.Edit.Edit;
+
 
     data EitherReader ra rb t = LeftReader (ra t) | RightReader (rb t);
 

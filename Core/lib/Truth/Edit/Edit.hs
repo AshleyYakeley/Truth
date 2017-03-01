@@ -1,8 +1,7 @@
 module Truth.Edit.Edit where
 {
-    import Truth.Edit.ReadFunction;
-    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Truth.Edit.Read;
 
     class ({- Edit (FloatingEdit t) -}) => Floating (t :: *) where
     {
@@ -16,7 +15,7 @@ module Truth.Edit.Edit where
     {
         type EditReader edit :: * -> *;
         applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit);
-        invertEdit :: edit -> Readable (EditReader edit) (Maybe edit);    -- "Nothing" means no change
+        invertEdit :: edit -> Readable (EditReader edit) [edit];
     };
     type EditSubject edit = ReaderSubject (EditReader edit);
 
@@ -34,7 +33,7 @@ module Truth.Edit.Edit where
         info = mkSimpleInfo $(iowitness[t|Edit_Inst|]) [];
     };
 
-    applyAndInvertEdit :: (Edit edit) => edit -> (ReadFunction (EditReader edit) (EditReader edit),Readable (EditReader edit) (Maybe edit));
+    applyAndInvertEdit :: (Edit edit) => edit -> (ReadFunction (EditReader edit) (EditReader edit),Readable (EditReader edit) [edit]);
     applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
 
     applyEdits :: (Edit edit) => [edit] -> ReadFunction (EditReader edit) (EditReader edit);

@@ -5,8 +5,7 @@ module Truth.Edit.EditFunction where
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Edit;
     import Truth.Edit.Either;
-    import Truth.Edit.ReadFunction;
-    --import Truth.Edit.Read;
+    import Truth.Edit.Read;
     import Truth.Edit.Import;
 
     -- | A EditLens is a lens without state

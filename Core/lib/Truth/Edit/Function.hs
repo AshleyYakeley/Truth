@@ -1,9 +1,10 @@
 module Truth.Edit.Function where
 {
-    import Truth.Edit.Tuple;
-    import Truth.Edit.Edit;
-    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Truth.Edit.Read;
+    import Truth.Edit.Edit;
+    import Truth.Edit.Tuple;
+
 
     data FunctionAggregate a eb et where
     {

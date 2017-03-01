@@ -1,9 +1,9 @@
 module Truth.Edit.JustEdit where
 {
-    import Truth.Edit.Edit;
-    import Truth.Edit.ReadFunction;
-    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Truth.Edit.Read;
+    import Truth.Edit.Edit;
+
 
     newtype AnyReturn f = MkAnyReturn (forall a. a -> f a);
 
@@ -85,8 +85,8 @@ module Truth.Edit.JustEdit where
             fme <- liftJustReadable (invertEdit edita);
             return (case getMaybeOne fme of
             {
-                Just (Just edit) -> Just (MkJustEdit edit);
-                _ -> Nothing;
+                Just edits -> fmap MkJustEdit edits;
+                _ -> [];
             });
         };
     };

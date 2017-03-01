@@ -74,16 +74,16 @@ module Truth.Object.SavableBuffer where
         invertEdit SESave = do
         {
             so <- mapCleanReadable (MkSavableReader SavableOriginal) fromReader;
-            return (Just (SEUnsave so));
+            return [SEUnsave so];
         };
         invertEdit (SEUnsave _) = do
         {
             sav <- fromReader;
-            return (Just (let
+            return [let
             {
                 so = sav SavableOriginal;
                 sc = sav SavableCurrent;
-            } in if so == sc then SESave else SEUnsave so));
+            } in if so == sc then SESave else SEUnsave so];
         };
     };
 

@@ -1,7 +1,9 @@
-module Truth.Edit.ReadFunction where
+module Truth.Edit.Read.ReadFunction where
 {
-    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Truth.Edit.Read.Reader;
+    import Truth.Edit.Read.FullReader;
+    import Truth.Edit.Read.Readable;
 
     -- type ReadFunction readera readerb = forall t. readerb t -> Readable readera t;
     type ReadFunction readera readerb = Structure (Readable readera) readerb;

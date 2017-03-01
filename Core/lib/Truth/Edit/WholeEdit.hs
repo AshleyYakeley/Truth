@@ -1,9 +1,9 @@
 module Truth.Edit.WholeEdit where
 {
-    import Truth.Edit.Edit;
-    import Truth.Edit.ReadFunction;
-    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Truth.Edit.Read;
+    import Truth.Edit.Edit;
+
 
     data WholeReader (a :: *) (t :: *) where
     {
@@ -50,7 +50,7 @@ module Truth.Edit.WholeEdit where
         invertEdit _ = do
         {
             a <- fromReader;
-            return (Just (MkWholeEdit a));
+            return [MkWholeEdit a];
         };
     };
 

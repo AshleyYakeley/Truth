@@ -1,7 +1,6 @@
 module Truth.Edit
 (
     module Truth.Edit.Read,
-    module Truth.Edit.ReadFunction,
     module Truth.Edit.Edit,
     module Truth.Edit.NoEdit,
     module Truth.Edit.Either,
@@ -16,13 +15,13 @@ module Truth.Edit
     module Truth.Edit.FloatingEditLens,
     module Truth.Edit.Tuple,
     --module Truth.Edit.List,
+    module Truth.Edit.ByteString,
     module Truth.Edit.Text,
     module Truth.Edit.Context,
     module Truth.Edit.MIME,
 ) where
 {
     import Truth.Edit.Read;
-    import Truth.Edit.ReadFunction;
     import Truth.Edit.Edit;
     import Truth.Edit.NoEdit;
     import Truth.Edit.Either;
@@ -37,6 +36,7 @@ module Truth.Edit
     import Truth.Edit.FloatingEditLens;
     import Truth.Edit.Tuple;
     --import Truth.Edit.List;
+    import Truth.Edit.ByteString;
     import Truth.Edit.Text;
     import Truth.Edit.Context;
     import Truth.Edit.MIME;

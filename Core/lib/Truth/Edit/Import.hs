@@ -38,11 +38,13 @@ module Truth.Edit.Import
     module Control.Category,
     module Control.Monad.Trans.State,
     module Data.Functor.Identity,
+    module Data.Monoid,
     module Data.Tuple,
     module Data.Word,
     module Data.String,
     module Data.Char,
     module Data.Int,
+    module Data.Ord,
     module Data.Either,
     module Data.Maybe,
     module Data.List,
@@ -90,15 +92,17 @@ where
     import Control.Category;
     import Control.Monad.Trans.State (StateT(..),evalStateT);
     import Data.Functor.Identity;
+    import Data.Monoid hiding (Any(..));
     import Data.Tuple;
     import Data.Word;
     import Data.String;
     import Data.Char;
     import Data.Int;
+    import Data.Ord;
     import Data.Either;
     import Data.Maybe;
     import Data.List ((++),length,take,drop,splitAt);
     import Data.Bits;
     import Data.Bool;
-    import Prelude (($),undefined,Eq(..),Ord(..),Enum(..),Num(..),fromIntegral);
+    import Prelude (($),undefined,Eq(..),Ord(..),Enum(..),Num(..),fromIntegral,fromInteger,toInteger);
 }

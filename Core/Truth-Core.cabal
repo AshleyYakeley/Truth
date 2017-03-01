@@ -52,7 +52,6 @@ library
         reity
     exposed-modules:
         Truth.Edit.Function
-        Truth.Edit.ReadFunction
         Truth.Edit.Read
         Truth.Edit
         Truth.Edit.Anything
@@ -73,6 +72,7 @@ library
         Truth.Edit.Text
         Truth.Edit.Tuple
         Truth.Edit.WholeEdit
+        Truth.Edit.ByteString
         Truth.Object
         Truth.Object.Lens
         Truth.Object.Editor
@@ -80,9 +80,11 @@ library
         Truth.Object.Object
         Truth.Object.SavableBuffer
         Truth.Object.View
+        Truth.Object.File
     other-modules:
         Truth.Edit.Read.FullReader
         Truth.Edit.Read.Readable
         Truth.Edit.Read.Reader
+        Truth.Edit.Read.ReadFunction
         Truth.Edit.Import
         Truth.Edit.Merge

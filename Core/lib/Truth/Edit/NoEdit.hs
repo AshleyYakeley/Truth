@@ -1,8 +1,9 @@
 module Truth.Edit.NoEdit where
 {
-    import Truth.Edit.Edit;
-    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Truth.Edit.Read;
+    import Truth.Edit.Edit;
+
 
     newtype NoReader (a :: *) (t :: *) = MkNoReader None deriving (Eq,Countable,Searchable);
 

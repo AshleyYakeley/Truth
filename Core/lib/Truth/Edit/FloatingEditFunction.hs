@@ -6,9 +6,9 @@ module Truth.Edit.FloatingEditFunction  where
     import Truth.Edit.Either;
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Edit;
-    import Truth.Edit.ReadFunction;
     import Truth.Edit.Read;
     import Truth.Edit.Import;
+
 
     data FloatingEditFunction state edita editb = MkFloatingEditFunction
     {
