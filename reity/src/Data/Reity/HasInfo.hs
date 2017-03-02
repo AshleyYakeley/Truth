@@ -58,6 +58,21 @@ module Data.Reity.HasInfo where
         info = mkSimpleInfo $(iowitness[t|Eq|]) [];
     };
 
+    instance HasInfo Functor where
+    {
+        info = mkSimpleInfo $(iowitness[t|Functor|]) [];
+    };
+
+    instance HasInfo Applicative where
+    {
+        info = mkSimpleInfo $(iowitness[t|Applicative|]) [];
+    };
+
+    instance HasInfo Monad where
+    {
+        info = mkSimpleInfo $(iowitness[t|Monad|]) [];
+    };
+
     instance HasInfo HasNewValue where
     {
         info = mkSimpleInfo $(iowitness[t|HasNewValue|]) [];
@@ -78,6 +93,35 @@ module Data.Reity.HasInfo where
         [
             knowConstraint (info :: Info (HasNewValue Bool)),
             knowConstraint (info :: Info (Eq Bool))
+        ];
+    };
+
+    instance HasInfo Char where
+    {
+        info = mkSimpleInfo $(iowitness[t|Char|])
+        [
+            knowConstraint (info :: Info (HasNewValue Char)),
+            knowConstraint (info :: Info (Eq Char))
+        ];
+    };
+
+    instance HasInfo Maybe where
+    {
+        info = mkSimpleInfo $(iowitness[t|Maybe|])
+        [
+            knowConstraint (info :: Info (Functor Maybe)),
+            knowConstraint (info :: Info (Applicative Maybe)),
+            knowConstraint (info :: Info (Monad Maybe))
+        ];
+    };
+
+    instance HasInfo [] where
+    {
+        info = mkSimpleInfo $(iowitness[t|[]|])
+        [
+            knowConstraint (info :: Info (Functor Maybe)),
+            knowConstraint (info :: Info (Applicative Maybe)),
+            knowConstraint (info :: Info (Monad Maybe))
         ];
     };
 }

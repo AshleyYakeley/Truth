@@ -1,13 +1,13 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.CheckButton where
 {
+    import Graphics.UI.Gtk;
+    import Data.Type.Equality;
+    import Data.Reity;
+    import Truth.Edit;
+    import Truth.Object;
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Useful;
-    import Graphics.UI.Gtk;
-    import Truth.Object;
-    import Truth.Edit;
-    import Data.Reity;
-    import Data.Type.Heterogeneous;
 
 
     checkButtonView :: String -> GView (WholeEdit (WholeReader Bool));
@@ -40,8 +40,7 @@ module Truth.UI.GTK.CheckButton where
     checkButtonMatchView :: MatchView;
     checkButtonMatchView tedit = do
     {
-        -- Refl <- matchProp $(type1[t|(:~:) (WholeEdit Bool)|]) tedit;
-        ReflH <- testHetEquality (info :: Info (WholeEdit (WholeReader Bool))) tedit;
+        Refl <- testEquality (info :: Info (WholeEdit (WholeReader Bool))) tedit;
         return $ checkButtonView "";
     };
 }

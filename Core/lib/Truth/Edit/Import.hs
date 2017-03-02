@@ -23,6 +23,9 @@ module Truth.Edit.Import
 
     module Data.OpenWitness,
     module Data.Witness,
+
+    module Data.Sequences,
+    module Data.MonoTraversable,
     module Data.ByteString,
 
     module Control.Exception,
@@ -77,7 +80,10 @@ where
 
     import Data.OpenWitness;
     import Data.Witness;
-    import Data.ByteString (ByteString,unpack,pack);
+
+    import Data.Sequences;
+    import Data.MonoTraversable;
+    import Data.ByteString (ByteString);
 
     import Control.Exception hiding (catch);
     import System.IO;
@@ -86,7 +92,7 @@ where
     import Control.Monad.Trans.Class;
     import Control.Applicative;
     import Data.Traversable;
-    import Data.Foldable;
+    import Data.Foldable hiding (find);
     import Control.Arrow hiding ((|||),(<<<),(>>>));
     import Control.Monad (Functor(..),Monad(..));
     import Control.Category;
@@ -95,14 +101,14 @@ where
     import Data.Monoid hiding (Any(..));
     import Data.Tuple;
     import Data.Word;
-    import Data.String;
-    import Data.Char;
+    import Data.String hiding (words,unwords,lines,unlines);
+    import Data.Char hiding (toLower,toUpper);
     import Data.Int;
     import Data.Ord;
     import Data.Either;
-    import Data.Maybe;
-    import Data.List ((++),length,take,drop,splitAt);
+    import Data.Maybe hiding (catMaybes);
+    import Data.List ((++),length);
     import Data.Bits;
     import Data.Bool;
-    import Prelude (($),undefined,Eq(..),Ord(..),Enum(..),Num(..),fromIntegral,fromInteger,toInteger);
+    import Prelude (($),undefined,Eq(..),Ord(..),Enum(..),Num(..),Integral,fromIntegral,fromInteger,toInteger);
 }

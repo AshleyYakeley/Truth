@@ -48,7 +48,8 @@ library
         template-haskell >=2.4,
         transformers >=0.2.2,
         witness >=0.3,
-        shapes ==0.1.0.0,
+        mono-traversable,
+        shapes,
         reity
     exposed-modules:
         Truth.Edit.Function
@@ -72,7 +73,9 @@ library
         Truth.Edit.Text
         Truth.Edit.Tuple
         Truth.Edit.WholeEdit
+        Truth.Edit.Sequence
         Truth.Edit.ByteString
+        Truth.Edit.String
         Truth.Object
         Truth.Object.Lens
         Truth.Object.Editor
@@ -82,9 +85,9 @@ library
         Truth.Object.View
         Truth.Object.File
     other-modules:
+        Truth.Edit.Import
         Truth.Edit.Read.FullReader
         Truth.Edit.Read.Readable
         Truth.Edit.Read.Reader
         Truth.Edit.Read.ReadFunction
-        Truth.Edit.Import
         Truth.Edit.Merge

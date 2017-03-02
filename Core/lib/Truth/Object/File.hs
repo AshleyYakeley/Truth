@@ -5,17 +5,6 @@ module Truth.Object.File where
     import Truth.Edit;
     import Truth.Object.Object;
 
-{-
-    data API m edit token = MkAPI
-    {
-        apiRead :: Structure m (EditReader edit),
-        apiAllowed :: edit -> m Bool,
-        apiEdit :: edit -> m token
-    };
-
-    type LockAPI edit token = forall r. (token -> API IO edit token -> IO r) -> IO r;
--}
-
 
     fileLockAPI :: FilePath -> LockAPI ByteStringEdit ();
     fileLockAPI path ff = do
@@ -34,6 +23,7 @@ module Truth.Object.File where
             apiEdit (ByteStringSetLength len) = do
             {
                 hSetFileSize h $ toInteger len;
+                return $ Just ();
             };
             apiEdit (ByteStringWrite start bs) = do
             {
@@ -43,6 +33,7 @@ module Truth.Object.File where
                  else return ();
                 hSeek h AbsoluteSeek $ toInteger start;
                 hPut h bs;
+                return $ Just ();
             };
         };
         r <- ff () MkAPI{..};

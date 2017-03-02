@@ -39,10 +39,7 @@ module Truth.Edit.WholeEdit where
 
     newtype WholeEdit (reader :: * -> *) = MkWholeEdit (ReaderSubject reader);
 
-    instance Floating (WholeEdit reader) where
-    {
-        type FloatingEdit (WholeEdit reader) = WholeEdit reader;
-    };
+    instance Floating (WholeEdit reader) (WholeEdit reader);
 
     instance (FullReader reader) => Edit (WholeEdit reader) where
     {

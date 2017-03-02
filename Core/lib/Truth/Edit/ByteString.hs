@@ -39,10 +39,7 @@ module Truth.Edit.ByteString where
 
     data ByteStringEdit = ByteStringSetLength Int | ByteStringWrite Int ByteString;
 
-    instance Floating ByteStringEdit where
-    {
-        type FloatingEdit ByteStringEdit = ByteStringEdit;
-    };
+    instance Floating ByteStringEdit ByteStringEdit;
 
     instance Edit ByteStringEdit where
     {
@@ -63,13 +60,13 @@ module Truth.Edit.ByteString where
                 zerolen = blocklen - readlen;
             };
             if readlen < 0
-            then return $ replicate blocklen 0;
+            then return $ BS.replicate blocklen 0;
             else if zerolen < 0
             then readable $ ReadByteStringSection start blocklen
             else do
             {
                 bs1 <- readable $ ReadByteStringSection start readlen;
-                return $ mappend bs1 $ replicate zerolen 0;
+                return $ mappend bs1 $ BS.replicate zerolen 0;
             };
         };
         applyEdit (ByteStringWrite w bs) ReadByteStringLength = do

@@ -1,17 +1,18 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.Text (textMatchView) where
 {
+    import Graphics.UI.Gtk;
+    import Data.Reity;
+    import Truth.Edit;
+    import Truth.Object;
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Useful;
-    import Graphics.UI.Gtk;
-    import Truth.Object;
-    import Truth.Edit;
-    import Truth.TypeKT;
+
     import Control.Concurrent.MVar;
     import Data.Witness;
 
-    replaceText :: TextBuffer -> ListRegion -> String -> IO ();
-    replaceText buffer (MkListRegion start len) text = do
+    replaceText :: TextBuffer -> SequenceRun String -> String -> IO ();
+    replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)) text = do
     {
         startIter <- textBufferGetIterAtOffset buffer start;
         if len > 0 then do
@@ -26,57 +27,64 @@ module Truth.UI.GTK.Text (textMatchView) where
         };
     };
 
-    textView :: GView (ListEdit (WholeEdit Char));
-    textView initial push = do
+    textView :: GView (StringEdit String);
+    textView = MkView $ \lapi -> do
     {
         buffer <- textBufferNew Nothing;
+        initial <- lapi $ \() api -> unReadable fromReader $ apiRead api;
         textBufferSetText buffer initial;
         mv <- newMVar ();
-        _ <- onBufferInsertText buffer (\iter text -> ifMVar mv (do
+
+        _ <- onBufferInsertText buffer $ \iter text -> lapi $ \() api -> ifMVar mv $ do
         {
             i <- textIterGetOffset iter;
-            ms <- push (ReplaceSectionEdit (MkListRegion i 0) text);
+            ms <- apiEdit api $ StringReplaceSection (MkSequenceRun (MkSequencePoint i) 0) text;
             case ms of
             {
                 Just _ -> return ();
                 _ -> signalStopEmission buffer "insert-text";
             };
-        }));
-        _ <- onDeleteRange buffer (\iter1 iter2 -> ifMVar mv (do
+        };
+
+        _ <- onDeleteRange buffer $ \iter1 iter2 -> lapi $ \() api -> ifMVar mv $ do
         {
             i1 <- textIterGetOffset iter1;
             i2 <- textIterGetOffset iter2;
-            ms <- push (ReplaceSectionEdit (MkListRegion i1 (i2 - i1)) "");
+            ms <- apiEdit api $ StringReplaceSection (startEndRun (MkSequencePoint i1) (MkSequencePoint i2)) "";
             case ms of
             {
                 Just _ -> return ();
                 _ -> signalStopEmission buffer "delete-range";
             };
-        }));
-        tv <- textViewNewWithBuffer buffer;
-        return (MkViewResult
+        };
+
+        widget <- textViewNewWithBuffer buffer;
+        let
         {
-            vrWidgetStuff = MkViewWidgetStuff (toWidget tv) (do
+            vrWidgetStuff = MkViewWidgetStuff (toWidget widget) $ do
             {
+                {-
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
                 o1 <- textIterGetOffset iter1;
                 o2 <- textIterGetOffset iter2;
                 -- get selection...
-                return (Just (MkAspect info info (listSection (MkListRegion o1 (o2 - o1)))));
-            }),
-            vrUpdate = \edit -> withMVar mv (\_ -> case edit of
+                return (Just (MkAspect info info (listSection (MkSequenceRun o1 (o2 - o1)))));
+                -} return Nothing;
+            };
+
+            vrUpdate () edit = withMVar mv $ \_ -> case edit of
             {
-                ReplaceListEdit text -> textBufferSetText buffer text;
-                ReplaceSectionEdit bounds text -> replaceText buffer bounds text;
-                ItemEdit (MkIndexEdit i (MkWholeEdit c)) -> replaceText buffer (MkListRegion i 1) [c];
-            })
-        });
+                StringReplaceWhole text -> textBufferSetText buffer text;
+                StringReplaceSection bounds text -> replaceText buffer bounds text;
+            };
+        };
+        return (MkViewResult{..},());
     };
 
     textMatchView :: MatchView;
     textMatchView tedit = do
     {
-        Refl <- matchProp $(type1[t|EqualType (Type_T (ListEdit (WholeEdit Char)))|]) tedit;
+        Refl <- testEquality (info :: Info (StringEdit String)) tedit;
         return textView;
     };
 }

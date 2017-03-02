@@ -9,12 +9,12 @@ module Truth.Object.Object where
     {
         apiRead :: Structure m (EditReader edit),
         apiAllowed :: edit -> m Bool,
-        apiEdit :: edit -> m token
+        apiEdit :: edit -> m (Maybe token)
     };
 
     instance Functor m => Functor (API m edit) where
     {
-        fmap ab (MkAPI r a e) = MkAPI r a $ fmap (fmap ab) e;
+        fmap ab (MkAPI r a e) = MkAPI r a $ fmap (fmap (fmap ab)) e;
     };
 
     type LockAPI edit token = forall r. (token -> API IO edit token -> IO r) -> IO r;
@@ -58,8 +58,12 @@ module Truth.Object.Object where
                             {
                                 na = fromReadFunction (applyEdit edit) oa;
                             };
-                            writeIORef ref na;
-                            return ();
+                            if allowed na then do
+                            {
+                                writeIORef ref na;
+                                return $ Just ();
+                            }
+                            else return Nothing;
                         }
                     };
                 };
@@ -128,22 +132,29 @@ module Truth.Object.Object where
                         apiAllowed = \edit -> apiAllowed apiP edit,
                         apiEdit = \edit -> do
                         {
-                            _nextTokenP <- apiEdit apiP edit;
-                            tokenRef <- newIORef Nothing;
-                            oldstore <- readIORef storeRef;
-                            newstore <- traverseWitnessStore (\keyf (MkStoreEntry u oldtoken) -> do
+                            mnextTokenP <- apiEdit apiP edit;
+                            case mnextTokenP of
                             {
-                                newtoken <- u oldtoken edit;
-                                case testEquality key keyf of
+                                Just _nextTokenP -> do
                                 {
-                                    Just Refl -> writeIORef tokenRef $ Just newtoken;
-                                    Nothing -> return ();
+                                    tokenRef <- newIORef Nothing;
+                                    oldstore <- readIORef storeRef;
+                                    newstore <- traverseWitnessStore (\keyf (MkStoreEntry u oldtoken) -> do
+                                    {
+                                        newtoken <- u oldtoken edit;
+                                        case testEquality key keyf of
+                                        {
+                                            Just Refl -> writeIORef tokenRef $ Just newtoken;
+                                            Nothing -> return ();
+                                        };
+                                        return (MkStoreEntry u newtoken);
+                                    }) oldstore;
+                                    writeIORef storeRef newstore;
+                                    mnextTokenC <- readIORef tokenRef;
+                                    return $ mnextTokenC;
                                 };
-                                return (MkStoreEntry u newtoken);
-                            }) oldstore;
-                            writeIORef storeRef newstore;
-                            mnextTokenC <- readIORef tokenRef;
-                            return $ fromJust mnextTokenC;
+                                Nothing -> return Nothing;
+                            }
                         }
                     };
 

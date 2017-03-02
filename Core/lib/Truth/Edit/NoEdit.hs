@@ -46,10 +46,7 @@ module Truth.Edit.NoEdit where
 
     deriving instance Empty (NoEdit reader);
 
-    instance Floating (NoEdit reader) where
-    {
-        type FloatingEdit (NoEdit reader) = NoEdit reader;
-    };
+    instance Floating (NoEdit reader) (NoEdit reader);
 
     instance (Reader reader) => Edit (NoEdit reader) where
     {

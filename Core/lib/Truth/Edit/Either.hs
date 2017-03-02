@@ -20,10 +20,7 @@ module Truth.Edit.Either where
 
     data EitherEdit ea eb = LeftEdit ea | RightEdit eb;
 
-    instance Floating (EitherEdit ea eb) where
-    {
-        type FloatingEdit (EitherEdit ea eb) = EitherEdit ea eb;
-    };
+    instance Floating (EitherEdit ea eb) (EitherEdit ea eb);
 
     instance (Edit ea,Edit eb,EditReader ea ~ EditReader eb) => Edit (EitherEdit ea eb) where
     {

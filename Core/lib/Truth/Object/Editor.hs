@@ -73,6 +73,6 @@ module Truth.Object.Editor where
     readEditor :: FullReader (EditReader edit) => Editor edit (EditSubject edit);
     readEditor = oneTransactionEditor $ \api -> unReadable fromReader $ apiRead api;
 
-    writeEditor :: FullEdit edit => EditSubject edit -> Editor edit ();
+    writeEditor :: FullEdit edit => EditSubject edit -> Editor edit (Maybe ());
     writeEditor subj = oneTransactionEditor $ \api -> apiEdit api $ replaceEdit subj;
 }

@@ -38,7 +38,7 @@ module Truth.Object.Lens where
                         {
                             readA :: Structure IO (EditReader edita);
                             allowedA :: edita -> IO Bool;
-                            pushEditA :: edita -> IO token;
+                            pushEditA :: edita -> IO (Maybe token);
                             MkAPI readA allowedA pushEditA = apiA;
 
                             readB :: Structure IO (EditReader editb);
@@ -70,13 +70,13 @@ module Truth.Object.Lens where
                                 };
                             };
 
-                            pushEditB :: editb -> IO token;
+                            pushEditB :: editb -> IO (Maybe token);
                             pushEditB editB = do
                             {
                                 meditA <- convertEdit editB;
                                 case meditA of
                                 {
-                                    Nothing -> return token; -- is this correct?
+                                    Nothing -> return $ Just token; -- is this correct?
                                     Just editA -> pushEditA editA;
                                 };
                             };
@@ -130,7 +130,7 @@ module Truth.Object.Lens where
                         {
                             readA :: Structure IO (EditReader edita);
                             allowedA :: edita -> IO Bool;
-                            pushEditA :: edita -> IO token;
+                            pushEditA :: edita -> IO (Maybe token);
                             MkAPI readA allowedA pushEditA = apiA;
 
                             readB :: Structure IO (EditReader editb);
@@ -162,13 +162,13 @@ module Truth.Object.Lens where
                                 };
                             };
 
-                            pushEditB :: editb -> IO token;
+                            pushEditB :: editb -> IO (Maybe token);
                             pushEditB editB = do
                             {
                                 meditA <- convertEdit editB;
                                 case meditA of
                                 {
-                                    Nothing -> return token; -- is this correct?
+                                    Nothing -> return $ Just token; -- is this correct?
                                     Just editA -> pushEditA editA;
                                 };
                             };
@@ -276,7 +276,7 @@ module Truth.Object.Lens where
                         {
                             readA :: Structure IO (WholeReader a);
                             allowedA :: WholeEdit (WholeReader a) -> IO Bool;
-                            pushEditA :: WholeEdit (WholeReader a) -> IO token;
+                            pushEditA :: WholeEdit (WholeReader a) -> IO (Maybe token);
                             MkAPI readA allowedA pushEditA = apiA;
 
                             readB :: Structure IO (WholeReader b);
@@ -316,13 +316,13 @@ module Truth.Object.Lens where
                                 };
                             };
 
-                            pushEditB :: (WholeEdit (WholeReader b)) -> IO token;
+                            pushEditB :: (WholeEdit (WholeReader b)) -> IO (Maybe token);
                             pushEditB editB = do
                             {
                                 meditA <- convertEdit editB;
                                 case meditA of
                                 {
-                                    Nothing -> return token; -- is this correct?
+                                    Nothing -> return $ Just token; -- is this correct?
                                     Just editA -> pushEditA editA;
                                 };
                             };

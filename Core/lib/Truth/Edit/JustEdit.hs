@@ -65,10 +65,7 @@ module Truth.Edit.JustEdit where
 -}
     newtype JustEdit (f :: * -> *) edit = MkJustEdit edit;
 
-    instance Floating (JustEdit f edit) where
-    {
-        type FloatingEdit (JustEdit f edit) = JustEdit f edit;
-    };
+    instance Floating (JustEdit f edit) (JustEdit f edit);
 
     instance (FunctorOne f,Edit edit) => Edit (JustEdit f edit) where
     {

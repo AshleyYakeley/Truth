@@ -15,7 +15,9 @@ module Truth.Edit
     module Truth.Edit.FloatingEditLens,
     module Truth.Edit.Tuple,
     --module Truth.Edit.List,
+    module Truth.Edit.Sequence,
     module Truth.Edit.ByteString,
+    module Truth.Edit.String,
     module Truth.Edit.Text,
     module Truth.Edit.Context,
     module Truth.Edit.MIME,
@@ -36,7 +38,9 @@ module Truth.Edit
     import Truth.Edit.FloatingEditLens;
     import Truth.Edit.Tuple;
     --import Truth.Edit.List;
+    import Truth.Edit.Sequence;
     import Truth.Edit.ByteString;
+    import Truth.Edit.String;
     import Truth.Edit.Text;
     import Truth.Edit.Context;
     import Truth.Edit.MIME;

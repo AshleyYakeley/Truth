@@ -82,10 +82,7 @@ module Truth.Edit.Tuple where
         MkAggregateEdit :: agg edit -> edit -> AggregateEdit agg;
     };
 
-    instance Floating (AggregateEdit agg) where
-    {
-        type FloatingEdit (AggregateEdit agg) = AggregateEdit agg;
-    };
+    instance Floating (AggregateEdit agg) (AggregateEdit agg);
 
     instance (IsAggregate agg) => Edit (AggregateEdit agg) where
     {

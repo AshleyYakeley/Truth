@@ -3,15 +3,13 @@ module Truth.Edit.Edit where
     import Truth.Edit.Import;
     import Truth.Edit.Read;
 
-    class ({- Edit (FloatingEdit t) -}) => Floating (t :: *) where
+    class ({- Edit edit -}) => Floating edit (t :: *) where
     {
-        type FloatingEdit t :: *;
-
-        floatingUpdate :: FloatingEdit t -> t -> t;
+        floatingUpdate :: edit -> t -> t;
         floatingUpdate _ = id;
     };
 
-    class (Reader (EditReader edit),Floating edit,edit ~ FloatingEdit edit) => Edit (edit :: *) where
+    class (Reader (EditReader edit),Floating edit edit) => Edit (edit :: *) where
     {
         type EditReader edit :: * -> *;
         applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit);
