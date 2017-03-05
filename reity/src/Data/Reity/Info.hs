@@ -74,26 +74,19 @@ module Data.Reity.Info where
     askConstraint :: Info (c :: Constraint) -> Maybe (ConstraintWitness c);
     askConstraint info = ask (infoKnowledge info) info;
 
-    splitInfo' :: forall (ka :: *) (f :: ka -> kfa) (a :: ka). Info (f a) -> Maybe (Info f,Info a);
-    splitInfo' (MkInfo kfa (ConsWit infoF infoA)) = Just (infoF,infoA);
-    splitInfo' _ = Nothing;
+    data SplitInfo (fa :: kfa) where
+    {
+        MkSplitInfo :: forall (ka :: *) (f :: ka -> kfa) (a :: ka). Info f -> Info a -> SplitInfo (f a);
+    };
+
+    splitInfo :: forall (kfa :: *) (fa :: kfa). Info fa -> Maybe (SplitInfo fa);
+    splitInfo (MkInfo kfa (ConsWit infoF infoA)) = Just (MkSplitInfo infoF infoA);
+    splitInfo _ = Nothing;
 
     applyInfo :: forall (ka :: *) (kb :: *) (f :: ka -> kb) (a :: ka). Info f -> Info a -> Info (f a);
-    applyInfo tf@(MkInfo ika _) ta = MkInfo (snd $ fromMaybe (error "unexpected kind witness") $ splitInfo' ika) (ConsWit tf ta);
-
-    splitInfo :: forall (r :: *) (kfa :: *) (fa :: kfa). Info fa ->
-     (forall (ka :: *) (f :: ka -> kfa) (a :: ka). (f a ~ fa) => (Info f,Info a) -> r) ->
-     Maybe r;
-    splitInfo (MkInfo kfa (ConsWit infoF infoA)) ff = Just (ff (infoF,infoA));
-    splitInfo _ _ = Nothing;
-
-    splitInfoMaybe :: forall (r :: *) (kfa :: *) (fa :: kfa). Info fa ->
-     (forall (ka :: *) (f :: ka -> kfa) (a :: ka). (f a ~ fa) => (Info f,Info a) -> Maybe r) ->
-     Maybe r;
-    splitInfoMaybe ifa ff = do
+    applyInfo tf@(MkInfo ika _) ta = case splitInfo ika of
     {
-        mr <- splitInfo ifa ff;
-        mr;
+        Just (MkSplitInfo _ ik) -> MkInfo ik (ConsWit tf ta);
+        Nothing -> error "unexpected kind witness";
     };
 }
-
