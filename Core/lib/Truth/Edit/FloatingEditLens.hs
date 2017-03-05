@@ -14,8 +14,7 @@ module Truth.Edit.FloatingEditLens where
     data FloatingEditLens' m state edita editb = MkFloatingEditLens
     {
         floatingEditLensFunction :: FloatingEditFunction state edita editb,
-        -- floatingEditLensPutEdit :: state -> Readable (EditReader edita) (editb -> m (Readable (EditReader edita) edita))
-        floatingEditLensPutEdit :: state -> editb -> Readable (EditReader edita) (m edita)
+        floatingEditLensPutEdit :: state -> editb -> Readable (EditReader edita) (m (state,edita))
     };
 
     floatingEditLensAllowed :: (FunctorOne m) =>
@@ -37,11 +36,11 @@ module Truth.Edit.FloatingEditLens where
         };
     };
 -}
-    fixedFloatingEditLens :: EditLens' m edita editb -> FloatingEditLens' m () edita editb;
+    fixedFloatingEditLens :: Functor m => EditLens' m edita editb -> FloatingEditLens' m () edita editb;
     fixedFloatingEditLens lens = MkFloatingEditLens
     {
         floatingEditLensFunction = fixedFloatingEditFunction (editLensFunction lens),
-        floatingEditLensPutEdit = \_ -> editLensPutEdit lens
+        floatingEditLensPutEdit = \state edit -> fmap (fmap ((,) state)) $ editLensPutEdit lens edit
     };
 
     instance (Applicative m,FunctorOne m) => FloatingMap (FloatingEditLens' m) where
@@ -50,12 +49,16 @@ module Truth.Edit.FloatingEditLens where
         composeFloating fel2 fel1 = MkFloatingEditLens
         {
             floatingEditLensFunction = composeFloating (floatingEditLensFunction fel2) (floatingEditLensFunction fel1),
-            floatingEditLensPutEdit = \(s1,s2) editc -> do
+            floatingEditLensPutEdit = \(olds1,olds2) editc -> do
             {
-                meditb <- mapReadable (floatingEditGet (floatingEditLensFunction fel1) s1) (floatingEditLensPutEdit fel2 s2 editc);
+                meditb <- mapReadable (floatingEditGet (floatingEditLensFunction fel1) olds1) (floatingEditLensPutEdit fel2 olds2 editc);
                 case retrieveOne meditb of
                 {
-                    SuccessResult editb -> floatingEditLensPutEdit fel1 s1 editb;
+                    SuccessResult (news2,editb) -> do
+                    {
+                        mn1ea <- floatingEditLensPutEdit fel1 olds1 editb;
+                        return $ fmap (\(news1,edita) -> ((news1,news2),edita)) mn1ea;
+                    };
                     FailureResult (MkLimit mx) -> return mx;
                 };
             }
@@ -63,7 +66,7 @@ module Truth.Edit.FloatingEditLens where
     };
 
     eitherWholeFloatingEditLens :: (Reader (EditReader edita),FullReader (EditReader editb)) =>
-     (state -> EditSubject editb -> Readable (EditReader edita) (Maybe (EditSubject edita))) ->
+     (state -> EditSubject editb -> Readable (EditReader edita) (Maybe (state,EditSubject edita))) ->
      FloatingEditLens state edita editb ->
      FloatingEditLens state (EitherWholeEdit edita) (EitherWholeEdit editb);
     eitherWholeFloatingEditLens pushback lens = MkFloatingEditLens
@@ -74,12 +77,12 @@ module Truth.Edit.FloatingEditLens where
             LeftEdit (MkWholeEdit b) -> do
             {
                 ma <- pushback state b;
-                return (fmap (LeftEdit . MkWholeEdit) ma);
+                return $ fmap (fmap (LeftEdit . MkWholeEdit)) ma;
             };
             RightEdit editb -> do
             {
-                medita <- floatingEditLensPutEdit lens state editb;
-                return (fmap RightEdit medita);
+                mstateedita <- floatingEditLensPutEdit lens state editb;
+                return $ fmap (fmap RightEdit) mstateedita;
             };
         }
     };
@@ -89,18 +92,18 @@ module Truth.Edit.FloatingEditLens where
     justFloatingEditLens lens = MkFloatingEditLens
     {
         floatingEditLensFunction = justFloatingEdit (floatingEditLensFunction lens),
-        floatingEditLensPutEdit = \state (MkJustEdit pushb) -> do
+        floatingEditLensPutEdit = \oldstate (MkJustEdit pushb) -> do
         {
 
-            -- floatingEditLensPutEdit lens state pushb :: Readable ra (Maybe edita)
+            -- floatingEditLensPutEdit lens state pushb :: Readable ra (Maybe (state,edita))
             -- liftJustReadable (floatingEditLensPutEdit lens state pushb) :: Readable (JustReader f ra) (f edita);
 
-            fpusha <- liftJustReadable (floatingEditLensPutEdit lens state pushb);
-            return (case getMaybeOne fpusha of
+            fpusha <- liftJustReadable (floatingEditLensPutEdit lens oldstate pushb);
+            return $ case getMaybeOne fpusha of
             {
-                Just (Just edita) -> Just (MkJustEdit edita);
+                Just (Just (newstate,edita)) -> Just (newstate,MkJustEdit edita);
                 _ -> Nothing;
-            });
+            };
         }
     };
 
@@ -110,15 +113,32 @@ module Truth.Edit.FloatingEditLens where
      FloatingEditLens state edita editb -> FloatingEditLens state (JustWholeEdit f edita) (JustWholeEdit f editb);
     justWholeFloatingEditLens lens = eitherWholeFloatingEditLens pushback (justFloatingEditLens lens) where
     {
-        pushback :: state -> f (EditSubject editb) -> Readable (JustReader f (EditReader edita)) (Maybe (f (EditSubject edita)));
-        pushback state fb = case retrieveOne fb of
+        ff1 :: forall a. state -> f (state,a) -> (state,f a);
+        ff1 oldstate fsa = case retrieveOne fsa of
         {
-            FailureResult (MkLimit fx) -> return (Just fx);
-            SuccessResult b -> fmap sequenceA (liftJustReadable (do
+            FailureResult (MkLimit fx) -> (oldstate,fx);
+            SuccessResult (newstate,a) -> (newstate,fmap (\_ ->  a) fsa);
+        };
+
+        pushback :: state -> f (EditSubject editb) -> Readable (JustReader f (EditReader edita)) (Maybe (state,f (EditSubject edita)));
+        pushback oldstate fb = case retrieveOne fb of
+        {
+            FailureResult (MkLimit fx) -> return $ Just (oldstate,fx);
+
+            SuccessResult b -> fmap (fmap (ff1 oldstate) . sequenceA) $ liftJustReadable $ do
             {
-                medita <- floatingEditLensPutEdit lens state (replaceEdit b);
-                traverse (\edita -> mapReadable (applyEdit edita) fromReader) medita;
-            }));
+                mstateedita <- floatingEditLensPutEdit lens oldstate (replaceEdit b);
+                case mstateedita of
+                {
+                    Nothing -> return Nothing;
+                    Just (newstate,edita) -> do
+                    {
+                        a <- mapReadable (applyEdit edita) fromReader;
+                        return $ Just (newstate,a);
+                    };
+                };
+                -- traverse (\edita -> mapReadable (applyEdit edita) fromReader) mstateedita;
+            };
         };
     };
 }

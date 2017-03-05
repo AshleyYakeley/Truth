@@ -1,4 +1,8 @@
-module Truth.Object.Object where
+module Truth.Object.Object
+(
+    module Truth.Object.Object,
+    liftIO,
+) where
 {
     import Truth.Edit.Import;
     import Data.IORef;
@@ -17,7 +21,7 @@ module Truth.Object.Object where
         fmap ab (MkAPI r a e) = MkAPI r a $ fmap (fmap (fmap ab)) e;
     };
 
-    type LockAPI edit token = forall r. (token -> API IO edit token -> IO r) -> IO r;
+    type LockAPI edit token = forall r. (forall m. MonadIOInvert m => token -> API m edit token -> m r) -> IO r;
 
     mapLockAPIToken :: (token1 -> token2) -> LockAPI edit token1 -> LockAPI edit token2;
     mapLockAPIToken t1t2 lapi1 ff = lapi1 $ \token api -> ff (t1t2 token) (fmap t1t2 api);
@@ -36,15 +40,15 @@ module Truth.Object.Object where
             lapi :: LockAPI edit ();
             lapi ff = modifyMVar var $ \olda -> do
             {
-                ref <- newIORef olda;
                 let
                 {
+                    api :: API (StateT (EditSubject edit) IO) edit ();
                     api = MkAPI
                     {
-                        apiRead = readFromM $ readIORef ref,
+                        apiRead = readFromM $ get,
                         apiAllowed = \edit -> do
                         {
-                            oa <- readIORef ref;
+                            oa <- get;
                             let
                             {
                                 na = fromReadFunction (applyEdit edit) oa;
@@ -53,22 +57,21 @@ module Truth.Object.Object where
                         },
                         apiEdit = \edit -> do
                         {
-                            oa <- readIORef ref;
+                            oa <- get;
                             let
                             {
                                 na = fromReadFunction (applyEdit edit) oa;
                             };
                             if allowed na then do
                             {
-                                writeIORef ref na;
+                                put na;
                                 return $ Just ();
                             }
                             else return Nothing;
                         }
                     };
                 };
-                r <- ff () api;
-                newa <- readIORef ref;
+                (r,newa) <- runStateT (ff () api) olda;
                 return (newa,r);
             };
         };
@@ -120,37 +123,36 @@ module Truth.Object.Object where
         let
         {
             lapiC :: forall token. IOWitnessKey token -> LockAPI edit token;
-            lapiC key ff = modifyMVar storevar $ \store -> lapiP $ \_tokenP (apiP :: API IO edit ()) -> do
+            lapiC key ff = modifyMVar storevar $ \store -> lapiP $ \_tokenP (apiP :: API m edit ()) -> do
             {
-                storeRef <- newIORef store;
                 let
                 {
-                    apiC :: API IO edit token;
+                    apiC :: API (StateT (IOWitnessStore (StoreEntry edit)) m) edit token;
                     apiC = MkAPI
                     {
-                        apiRead = \rt -> apiRead apiP rt,
-                        apiAllowed = \edit -> apiAllowed apiP edit,
+                        apiRead = \rt -> lift $ apiRead apiP rt,
+                        apiAllowed = \edit -> lift $ apiAllowed apiP edit,
                         apiEdit = \edit -> do
                         {
-                            mnextTokenP <- apiEdit apiP edit;
+                            mnextTokenP <- lift $ apiEdit apiP edit;
                             case mnextTokenP of
                             {
                                 Just _nextTokenP -> do
                                 {
-                                    tokenRef <- newIORef Nothing;
-                                    oldstore <- readIORef storeRef;
+                                    tokenRef <- liftIO $ newIORef Nothing;
+                                    oldstore <- get;
                                     newstore <- traverseWitnessStore (\keyf (MkStoreEntry u oldtoken) -> do
                                     {
-                                        newtoken <- u oldtoken edit;
+                                        newtoken <- liftIO $ u oldtoken edit;
                                         case testEquality key keyf of
                                         {
-                                            Just Refl -> writeIORef tokenRef $ Just newtoken;
+                                            Just Refl -> liftIO $ writeIORef tokenRef $ Just newtoken;
                                             Nothing -> return ();
                                         };
                                         return (MkStoreEntry u newtoken);
                                     }) oldstore;
-                                    writeIORef storeRef newstore;
-                                    mnextTokenC <- readIORef tokenRef;
+                                    put newstore;
+                                    mnextTokenC <- liftIO $ readIORef tokenRef;
                                     return $ mnextTokenC;
                                 };
                                 Nothing -> return Nothing;
@@ -161,8 +163,7 @@ module Truth.Object.Object where
                     tokenC :: token;
                     (MkStoreEntry _ tokenC) = fromJust $ lookupWitnessStore key store;
                 };
-                r <- ff tokenC apiC;
-                newstore <- readIORef storeRef;
+                (r,newstore) <- runStateT (ff tokenC apiC) store;
                 return (newstore,r);
             };
 

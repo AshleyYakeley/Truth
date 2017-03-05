@@ -29,6 +29,7 @@ library
         ExistentialQuantification
         TemplateHaskell
         RecordWildCards
+        ViewPatterns
     ghc-options: -Wall -Werror -fno-warn-deprecated-flags
     build-depends:
         base,

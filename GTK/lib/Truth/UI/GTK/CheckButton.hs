@@ -18,7 +18,7 @@ module Truth.UI.GTK.CheckButton where
         set widget [buttonLabel := name,toggleButtonActive := initial];
         clickConnection <- onClicked widget $ lapi $ \() api -> do
         {
-            s <- get widget toggleButtonActive;
+            s <- liftIO $ get widget toggleButtonActive;
             _ <- apiEdit api (replaceEdit s);
             return ();
         };

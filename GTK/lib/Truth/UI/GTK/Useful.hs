@@ -1,5 +1,6 @@
 module Truth.UI.GTK.Useful where
 {
+    import Control.Monad.IOInvert;
     import Graphics.UI.Gtk;
     import Control.Exception;
     import Control.Concurrent.MVar;
@@ -7,11 +8,11 @@ module Truth.UI.GTK.Useful where
     withSignalBlocked :: (GObjectClass obj) => ConnectId obj -> IO a -> IO a;
     withSignalBlocked conn = bracket_ (signalBlock conn) (signalUnblock conn);
 
-    ifMVar :: MVar () -> IO a -> IO ();
-    ifMVar mv f = do
+    ifMVar :: MonadIOInvert m => MVar () -> m a -> m ();
+    ifMVar mv f = liftIOInvert $ \unlift -> do
     {
         ma <- tryReadMVar mv;
-        case ma of
+        unlift $ case ma of
         {
             Just _ -> f >> return ();
             _ -> return ();

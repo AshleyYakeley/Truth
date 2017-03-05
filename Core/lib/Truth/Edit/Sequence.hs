@@ -29,8 +29,8 @@ module Truth.Edit.Sequence where
     startEndRun :: Integral (Index seq) => SequencePoint seq -> SequencePoint seq -> SequenceRun seq;
     startEndRun start end = MkSequenceRun start (end - start);
 
-    shiftRun :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> SequenceRun seq;
-    shiftRun n (MkSequenceRun start len) = MkSequenceRun (start + n) len;
+    relativeRun :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> SequenceRun seq;
+    relativeRun n (MkSequenceRun start len) = MkSequenceRun (start - n) len;
 
     positiveRun :: Integral (Index seq) => SequenceRun seq -> Bool;
     positiveRun (MkSequenceRun _ len) = len > 0;
@@ -61,4 +61,10 @@ module Truth.Edit.Sequence where
 
     seqSection :: IsSequence seq => SequenceRun seq -> seq -> seq;
     seqSection (MkSequenceRun start len) s = seqTake len $ seqDrop (max start 0) s;
+
+    seqIntersect :: Integral (Index seq) => SequenceRun seq -> SequenceRun seq -> Maybe (SequenceRun seq);
+    seqIntersect a b = let
+    {
+        ab = clipWithin a b;
+    } in if positiveRun ab then Just ab else Nothing;
 }

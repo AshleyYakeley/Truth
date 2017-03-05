@@ -4,8 +4,8 @@ module Truth.Edit.String where
     import Truth.Edit.Read;
     import Truth.Edit.Edit;
     import Truth.Edit.Sequence;
-    --import Truth.Edit.FloatingEditFunction;
-    --import Truth.Edit.FloatingEditLens;
+    import Truth.Edit.FloatingEditFunction;
+    import Truth.Edit.FloatingEditLens;
 
 
     data StringRead seq t where
@@ -89,8 +89,8 @@ module Truth.Edit.String where
                 slen = seqLength s;
 
                 beforeRun = clipRunEnd estart rrun;
-                middleRelRun = clipRunBounds slen $ shiftRun (- estart) rrun;
-                afterRun = shiftRun (elen - slen) $ clipRunStart (estart + slen) rrun;
+                middleRelRun = clipRunBounds slen $ relativeRun estart rrun;
+                afterRun = relativeRun (slen - elen) $ clipRunStart (estart + slen) rrun;
 
                 middle = if positiveRun middleRelRun then seqSection middleRelRun s else mempty;
             };
@@ -111,10 +111,16 @@ module Truth.Edit.String where
         };
     };
 
-{-
-    stringSectionLens :: SequenceRun seq -> FloatingEditLens' Identity (SequenceRun seq) (StringEdit seq) (StringEdit seq);
+    instance IsSequence seq => FullEdit (StringEdit seq) where
+    {
+        replaceEdit = StringReplaceWhole;
+    };
+
+    stringSectionLens :: forall seq. IsSequence seq =>
+        SequenceRun seq -> FloatingEditLens (SequenceRun seq) (StringEdit seq) (StringEdit seq);
     stringSectionLens floatingEditInitial = let
     {
+        floatingEditGet :: SequenceRun seq -> ReadFunction (StringRead seq) (StringRead seq);
         floatingEditGet stateRaw reader = do
         {
             len <- readable StringReadLength;
@@ -125,29 +131,52 @@ module Truth.Edit.String where
             case reader of
             {
                 StringReadLength -> return $ runLength state;
-                StringReadSection run -> readable $ StringReadSection $ shiftRun (runStart state) $ clipWithin state run;
+                StringReadSection run -> readable $ StringReadSection $ relativeRun (runStart state) $ clipWithin state run;
             };
         };
 
-        floatingEditUpdate :: edita -> state -> (state,Maybe editb);
+        floatingEditUpdate :: StringEdit seq -> SequenceRun seq -> (SequenceRun seq,Maybe (StringEdit seq));
+        floatingEditUpdate edita oldstate = let
+        {
+            newstate = floatingUpdate edita oldstate;
+            meditb = case edita of
+            {
+                StringReplaceWhole s -> Just $ StringReplaceWhole $ seqSection newstate s;
+                StringReplaceSection runa sa -> do
+                {
+                    runb' <- seqIntersect oldstate runa;
+                    let
+                    {
+                        runb = relativeRun (runStart oldstate) runb';
+                        sb = seqSection (relativeRun (runStart runa) newstate) sa;
+                    };
+                    return $ StringReplaceSection runb sb;
+                };
+            }
+        } in (newstate,meditb);
 
+        floatingEditLensFunction :: FloatingEditFunction (SequenceRun seq) (StringEdit seq) (StringEdit seq);
         floatingEditLensFunction = MkFloatingEditFunction{..};
 
-        floatingEditLensPutEdit :: state -> editb -> Readable (EditReader edita) (m edita);
+        floatingEditLensPutEdit :: SequenceRun seq -> StringEdit seq -> Readable (StringRead seq) (Maybe (SequenceRun seq,StringEdit seq));
         floatingEditLensPutEdit stateRaw editb = do
         {
             len <- readable StringReadLength;
             let
             {
-                state = clipRunEnd len stateRaw;
+                oldstate = clipRunEnd len stateRaw;
             };
-            case editb of
+            return $ Just $ case editb of
             {
-
+                StringReplaceWhole sb -> (oldstate{runLength=seqLength sb},StringReplaceSection oldstate sb);
+                StringReplaceSection runb sb -> let
+                {
+                    newlength = runLength oldstate + seqLength sb - runLength runb;
+                    newstate = oldstate{runLength=newlength};
+                    runa = relativeRun (negate $ runStart oldstate) runb;
+                } in (newstate,StringReplaceSection runa sb);
             };
         };
 
     } in MkFloatingEditLens{..}
--}
-
 }

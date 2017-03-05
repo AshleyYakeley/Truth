@@ -1,6 +1,7 @@
 module Truth.Edit.Import
 (
     module Data.Reity,
+    module Control.Monad.IOInvert,
     module Control.Monad.Free,
     module Data.KindCategory,
     module Data.Category,
@@ -32,6 +33,7 @@ module Truth.Edit.Import
     module System.IO,
     module Control.Concurrent.MVar,
     module Control.Monad.Fix,
+    module Control.Monad.IO.Class,
     module Control.Monad.Trans.Class,
     module Control.Applicative,
     module Data.Traversable,
@@ -58,6 +60,7 @@ module Truth.Edit.Import
 where
 {
     import Data.Reity;
+    import Control.Monad.IOInvert;
     import Control.Monad.Free;
     import Data.KindCategory;
     import Data.Category;
@@ -90,13 +93,14 @@ where
     import Control.Concurrent.MVar;
     import Control.Monad.Fix;
     import Control.Monad.Trans.Class;
+    import Control.Monad.IO.Class;
     import Control.Applicative;
     import Data.Traversable;
     import Data.Foldable hiding (find);
     import Control.Arrow hiding ((|||),(<<<),(>>>));
     import Control.Monad (Functor(..),Monad(..));
     import Control.Category;
-    import Control.Monad.Trans.State (StateT(..),evalStateT);
+    import Control.Monad.Trans.State (StateT(..),evalStateT,get,put);
     import Data.Functor.Identity;
     import Data.Monoid hiding (Any(..));
     import Data.Tuple;

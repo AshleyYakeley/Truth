@@ -37,24 +37,24 @@ module Truth.UI.GTK.Text (textMatchView) where
 
         _ <- onBufferInsertText buffer $ \iter text -> lapi $ \() api -> ifMVar mv $ do
         {
-            i <- textIterGetOffset iter;
+            i <- liftIO $ textIterGetOffset iter;
             ms <- apiEdit api $ StringReplaceSection (MkSequenceRun (MkSequencePoint i) 0) text;
             case ms of
             {
                 Just _ -> return ();
-                _ -> signalStopEmission buffer "insert-text";
+                _ -> liftIO $ signalStopEmission buffer "insert-text";
             };
         };
 
         _ <- onDeleteRange buffer $ \iter1 iter2 -> lapi $ \() api -> ifMVar mv $ do
         {
-            i1 <- textIterGetOffset iter1;
-            i2 <- textIterGetOffset iter2;
-            ms <- apiEdit api $ StringReplaceSection (startEndRun (MkSequencePoint i1) (MkSequencePoint i2)) "";
+            (MkSequencePoint -> i1) <- liftIO $ textIterGetOffset iter1;
+            (MkSequencePoint -> i2) <- liftIO $ textIterGetOffset iter2;
+            ms <- apiEdit api $ StringReplaceSection (startEndRun i1 i2) "";
             case ms of
             {
                 Just _ -> return ();
-                _ -> signalStopEmission buffer "delete-range";
+                _ -> liftIO $ signalStopEmission buffer "delete-range";
             };
         };
 
@@ -63,13 +63,11 @@ module Truth.UI.GTK.Text (textMatchView) where
         {
             vrWidgetStuff = MkViewWidgetStuff (toWidget widget) $ do
             {
-                {-
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
-                o1 <- textIterGetOffset iter1;
-                o2 <- textIterGetOffset iter2;
+                (MkSequencePoint -> o1) <- textIterGetOffset iter1;
+                (MkSequencePoint -> o2) <- textIterGetOffset iter2;
                 -- get selection...
-                return (Just (MkAspect info info (listSection (MkSequenceRun o1 (o2 - o1)))));
-                -} return Nothing;
+                return (Just (MkAspect info info (stringSectionLens (MkSequenceRun o1 (o2 - o1)))));
             };
 
             vrUpdate () edit = withMVar mv $ \_ -> case edit of
