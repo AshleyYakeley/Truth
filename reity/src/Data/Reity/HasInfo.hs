@@ -2,18 +2,30 @@
 module Data.Reity.HasInfo where
 {
     import GHC.Types;
+    import Data.Word;
+
+    import Data.ByteString;
+
+    import Data.Type.Heterogeneous;
+    import Data.KindCategory;
     import Data.HasNewValue;
+    import Data.FunctorOne;
+    import Data.Result;
+    import Data.Knowledge;
     import Data.Reity.Info;
     import Data.OpenWitness;
 
 
-    class HasInfo (a :: k) where
+    class HasInfo a where
     {
         info :: Info a;
     };
 
     mkSimpleInfo :: forall (k :: *) (t :: k). HasInfo k => IOWitness t -> [ConstraintKnowledge] -> Info t;
     mkSimpleInfo wit facts = MkInfo info $ SimpleWit wit $ mconcat facts;
+
+    knowC :: forall (c :: Constraint). (c,HasInfo c) => ConstraintKnowledge;
+    knowC = knowConstraint $ info @c;
 
 
     -- Type
@@ -78,12 +90,17 @@ module Data.Reity.HasInfo where
         info = mkSimpleInfo $(iowitness[t|HasNewValue|]) [];
     };
 
+    instance HasInfo FunctorOne where
+    {
+        info = mkSimpleInfo $(iowitness[t|FunctorOne|]) [];
+    };
+
     instance HasInfo () where
     {
         info = mkSimpleInfo $(iowitness[t|()|])
         [
-            knowConstraint (info :: Info (HasNewValue ())),
-            knowConstraint (info :: Info (Eq ()))
+            knowC @(HasNewValue ()),
+            knowC @(Eq ())
         ];
     };
 
@@ -91,8 +108,8 @@ module Data.Reity.HasInfo where
     {
         info = mkSimpleInfo $(iowitness[t|Bool|])
         [
-            knowConstraint (info :: Info (HasNewValue Bool)),
-            knowConstraint (info :: Info (Eq Bool))
+            knowC @(HasNewValue Bool),
+            knowC @(Eq Bool)
         ];
     };
 
@@ -100,8 +117,35 @@ module Data.Reity.HasInfo where
     {
         info = mkSimpleInfo $(iowitness[t|Char|])
         [
-            knowConstraint (info :: Info (HasNewValue Char)),
-            knowConstraint (info :: Info (Eq Char))
+            knowC @(HasNewValue Char),
+            knowC @(Eq Char)
+        ];
+    };
+
+    instance HasInfo Word8 where
+    {
+        info = mkSimpleInfo $(iowitness[t|Word8|])
+        [
+            knowC @(HasNewValue Word8),
+            knowC @(Eq Word8)
+        ];
+    };
+
+    instance HasInfo Int where
+    {
+        info = mkSimpleInfo $(iowitness[t|Int|])
+        [
+            knowC @(HasNewValue Int),
+            knowC @(Eq Int)
+        ];
+    };
+
+    instance HasInfo ByteString where
+    {
+        info = mkSimpleInfo $(iowitness[t|ByteString|])
+        [
+            knowC @(HasNewValue ByteString),
+            knowC @(Eq ByteString)
         ];
     };
 
@@ -109,19 +153,51 @@ module Data.Reity.HasInfo where
     {
         info = mkSimpleInfo $(iowitness[t|Maybe|])
         [
-            knowConstraint (info :: Info (Functor Maybe)),
-            knowConstraint (info :: Info (Applicative Maybe)),
-            knowConstraint (info :: Info (Monad Maybe))
-        ];
+            knowC @(Functor Maybe),
+            knowC @(Applicative Maybe),
+            knowC @(Monad Maybe)
+            -- instance HasNewValue (Maybe a)
+            -- instance (Eq a) => Eq (Maybe a)
+            -- instance FunctorOne Maybe
+    ];
     };
 
     instance HasInfo [] where
     {
         info = mkSimpleInfo $(iowitness[t|[]|])
         [
-            knowConstraint (info :: Info (Functor Maybe)),
-            knowConstraint (info :: Info (Applicative Maybe)),
-            knowConstraint (info :: Info (Monad Maybe))
+            knowC @(Functor []),
+            knowC @(Applicative []),
+            knowC @(Monad [])
+            -- instance () => HasNewValue ([] a)
+            -- instance (Eq a) => Eq ([] a)
         ];
     };
+
+    instance HasInfo Result where
+    {
+        info = mkSimpleInfo $(iowitness[t|Result|])
+        [
+            -- instance HasNewValue a => HasNewValue (Result e a)
+            knowDependent $ \(hreaInfo :: Info hrea) -> do
+            {
+                MkSplitInfo hInfo reaInfo <- splitInfo hreaInfo;
+                ReflH <- testHetEquality (info @HasNewValue) hInfo;
+                MkSplitInfo reInfo aInfo <- splitInfo reaInfo;
+                MkSplitInfo rInfo _eInfo <- splitInfo reInfo;
+                ReflH <- testHetEquality (info @Result) rInfo;
+                return $ MkDependency (applyInfo (info @HasNewValue) aInfo) $ \MkConstraintWitness -> MkConstraintWitness;
+            }
+
+            -- instance Functor
+            -- instance FunctorOne
+        ];
+    };
+
+{-
+    instance HasInfo Any where
+    {
+        info = mkSimpleInfo $(iowitness[t|Any|]) [];
+    };
+-}
 }

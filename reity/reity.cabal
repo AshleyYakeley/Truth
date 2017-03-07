@@ -26,6 +26,7 @@ library
     build-depends:
         ghc-prim,
         base >= 4.9 && < 5,
+        bytestring,
         --,template-haskell,
         --constraints,
         witness >= 0.4,
@@ -54,5 +55,6 @@ library
         ScopedTypeVariables
         TypeOperators
         TemplateHaskell
+        TypeApplications
     -- other-extensions:
     ghc-options: -Wall

@@ -22,11 +22,16 @@ module Data.Knowledge where
         return a;
     });
 
-    knowDependent :: forall w f b. (forall a. w a -> Maybe (w b,f b -> f a)) -> Knowledge w f;
-    knowDependent wamwbba = MkKnowledge (\k wa -> do
+    data Dependency w f a where
     {
-        (wb,ba) <- wamwbba wa;
+        MkDependency :: forall w f a b. w b -> (f b -> f a) -> Dependency w f a;
+    };
+
+    knowDependent :: forall w f. (forall a. w a -> Maybe (Dependency w f a)) -> Knowledge w f;
+    knowDependent wamd = MkKnowledge $ \k wa -> do
+    {
+        MkDependency wb ba <- wamd wa;
         b <- ask k wb;
-        return (ba b);
-    });
+        return $ ba b;
+    };
 }
