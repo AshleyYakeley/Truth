@@ -24,6 +24,7 @@ module Truth.Edit.Import
 
     module Data.OpenWitness,
     module Data.Witness,
+    module Data.Type.Heterogeneous,
 
     module Data.Sequences,
     module Data.MonoTraversable,
@@ -83,6 +84,7 @@ where
 
     import Data.OpenWitness;
     import Data.Witness;
+    import Data.Type.Heterogeneous;
 
     import Data.Sequences;
     import Data.MonoTraversable;

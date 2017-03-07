@@ -35,6 +35,7 @@ library
         RecordWildCards
         TypeOperators
         RecursiveDo
+        TypeApplications
     ghc-options: -Wall -Werror -fno-warn-deprecated-flags -pgmPcpphs
     cpp-options: --cpp -ansi
     build-depends:

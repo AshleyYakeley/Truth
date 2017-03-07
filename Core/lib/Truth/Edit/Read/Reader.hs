@@ -17,13 +17,8 @@ module Truth.Edit.Read.Reader where
         readFrom subj reader = runIdentity (readFromM (Identity subj) reader);
     };
 
-    data Reader_Inst :: (* -> *) -> * where
+    instance HasInfo Reader where
     {
-        Reader_Inst :: forall reader. (Reader reader) => Info (ReaderSubject reader) -> Reader_Inst reader;
-    };
-
-    instance HasInfo Reader_Inst where
-    {
-        info = mkSimpleInfo $(iowitness[t|Reader_Inst|]) [];
+        info = mkSimpleInfo $(iowitness[t|Reader|]) [];
     };
 }

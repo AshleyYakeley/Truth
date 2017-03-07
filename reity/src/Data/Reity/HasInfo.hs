@@ -21,6 +21,9 @@ module Data.Reity.HasInfo where
         info :: Info a;
     };
 
+    familyInfo :: forall (a :: *). Info a -> Info (?family :: a);
+    familyInfo i = MkInfo info (FamilyWit i);
+
     mkSimpleInfo :: forall (k :: *) (t :: k). HasInfo k => IOWitness t -> [ConstraintKnowledge] -> Info t;
     mkSimpleInfo wit facts = MkInfo info $ SimpleWit wit $ mconcat facts;
 
@@ -57,9 +60,14 @@ module Data.Reity.HasInfo where
         info = mkSimpleInfo $(iowitness[t|'PtrRepLifted|]) [];
     };
 
-    instance (HasInfo f,HasInfo a) => HasInfo ((f :: kp -> kq) (a :: kp)) where
+    instance (HasInfo f,HasInfo a) => HasInfo (f a) where
     {
         info = applyInfo info info;
+    };
+
+    instance HasInfo a => HasInfo (?family :: a) where
+    {
+        info = MkInfo info (FamilyWit info);
     };
 
 
@@ -174,19 +182,27 @@ module Data.Reity.HasInfo where
         ];
     };
 
+    instance HasInfo Either where
+    {
+        info = mkSimpleInfo $(iowitness[t|Either|])
+        [
+        ];
+    };
+
     instance HasInfo Result where
     {
         info = mkSimpleInfo $(iowitness[t|Result|])
         [
             -- instance HasNewValue a => HasNewValue (Result e a)
-            knowDependent $ \(hreaInfo :: Info hrea) -> do
+            MkKnowledge $ \knowledge hreaInfo -> do
             {
-                MkSplitInfo hInfo reaInfo <- splitInfo hreaInfo;
+                MkSplitInfo hInfo reaInfo <- matchInfo hreaInfo;
                 ReflH <- testHetEquality (info @HasNewValue) hInfo;
-                MkSplitInfo reInfo aInfo <- splitInfo reaInfo;
-                MkSplitInfo rInfo _eInfo <- splitInfo reInfo;
+                MkSplitInfo reInfo aInfo <- matchInfo reaInfo;
+                MkSplitInfo rInfo _eInfo <- matchInfo reInfo;
                 ReflH <- testHetEquality (info @Result) rInfo;
-                return $ MkDependency (applyInfo (info @HasNewValue) aInfo) $ \MkConstraintWitness -> MkConstraintWitness;
+                MkConstraintWitness <- ask knowledge $ applyInfo (info @HasNewValue) aInfo;
+                return MkConstraintWitness;
             }
 
             -- instance Functor

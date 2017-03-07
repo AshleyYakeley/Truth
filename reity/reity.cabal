@@ -38,6 +38,7 @@ library
         ExistentialQuantification
         RankNTypes
         GADTs
+        ImplicitParams
         -- kinds
         TypeInType
         KindSignatures
@@ -56,5 +57,7 @@ library
         TypeOperators
         TemplateHaskell
         TypeApplications
+        ViewPatterns
+        PatternSynonyms
     -- other-extensions:
     ghc-options: -Wall

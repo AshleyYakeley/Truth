@@ -46,23 +46,26 @@ module Truth.Edit.JustEdit where
         -- fromReader :: ReadFunction (JustReader f reader) (f (ReaderSubject reader));
         fromReader = liftJustReadable fromReader;
     };
-{-
-    instance HasInfo (Type_KKTTKKTTKTT JustReader) where
+
+    instance HasInfo JustReader where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_KKTTKKTTKTT JustReader |])
+        info = mkSimpleInfo $(iowitness[t|JustReader|])
         [
             -- instance (FunctorOne f,Reader reader) => Reader (JustReader f reader)
-            mkFacts (MkFactS (\tf -> MkFactS (\treader -> MkFactZ (do
+            MkKnowledge $ \knowledge rjfr -> do
             {
-                Reader_Inst tsubj <- matchProp $(type1[t|Reader_Inst|]) treader;
-                FunctorOne_Inst <- matchProp $(type1[t|FunctorOne_Inst|]) tf;
-                return (Reader_Inst (applyInfo tf tsubj));
-            })))
-            :: FactS (FactS FactZ) Reader_Inst (Type_KKTTKKTTKTT JustReader)
-            )
+                MkSplitInfo reader jfr <- matchInfo rjfr;
+                ReflH <- testHetEquality (info @Reader) reader;
+                MkSplitInfo jf readerVar <- matchInfo jfr;
+                MkSplitInfo j fVar <- matchInfo jf;
+                ReflH <- testHetEquality (info @JustReader) j;
+                MkConstraintWitness <- ask knowledge $ applyInfo (info @FunctorOne) fVar;
+                MkConstraintWitness <- ask knowledge $ applyInfo (info @Reader) readerVar;
+                return MkConstraintWitness;
+            }
         ];
     };
--}
+
     newtype JustEdit (f :: * -> *) edit = MkJustEdit edit;
 
     instance Floating (JustEdit f edit) (JustEdit f edit);
@@ -87,21 +90,23 @@ module Truth.Edit.JustEdit where
             });
         };
     };
-{-
-    instance HasInfo (Type_KKTTKTT JustEdit) where
+
+    instance HasInfo JustEdit where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_KKTTKTT JustEdit |])
+        info = mkSimpleInfo $(iowitness[t|JustEdit|])
         [
             -- instance (FunctorOne f,Edit edit) => Edit (JustEdit f edit)
-            mkFacts (MkFactS (\tf -> MkFactS (\tedit -> MkFactZ (do
+            MkKnowledge $ \knowledge ejfe -> do
             {
-                Edit_Inst treader <- matchProp $(type1[t|Edit_Inst|]) tedit;
-                FunctorOne_Inst <- matchProp $(type1[t|FunctorOne_Inst|]) tf;
-                return (Edit_Inst (applyInfo (applyInfo (info :: Info (Type_KKTTKKTTKTT JustReader)) tf) treader));
-            })))
-            :: FactS (FactS FactZ) Edit_Inst (Type_KKTTKTT JustEdit)
-            )
+                MkSplitInfo edit jfe <- matchInfo ejfe;
+                ReflH <- testHetEquality (info @Edit) edit;
+                MkSplitInfo jf editVar <- matchInfo jfe;
+                MkSplitInfo j fVar <- matchInfo jf;
+                ReflH <- testHetEquality (info @JustEdit) j;
+                MkConstraintWitness <- ask knowledge $ applyInfo (info @FunctorOne) fVar;
+                MkConstraintWitness <- ask knowledge $ applyInfo (info @Edit) editVar;
+                return MkConstraintWitness;
+            }
         ];
     };
--}
 }
