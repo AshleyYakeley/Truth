@@ -21,4 +21,11 @@ module Truth.Edit.Read.Reader where
     {
         info = mkSimpleInfo $(iowitness[t|Reader|]) [];
     };
+
+    data ReaderSubjectInfo reader = MkReaderSubjectInfo (Info (ReaderSubject reader));
+
+    instance HasInfo ReaderSubjectInfo where
+    {
+        info = mkSimpleInfo $(iowitness[t|ReaderSubjectInfo|]) [];
+    };
 }

@@ -1,47 +1,54 @@
-cabal-version:  >=1.10
-name:           Truth-Core
-version:        0.1
-license:        AllRightsReserved
-author:         Ashley Yakeley
-maintainer:     <ashley@semantic.org>
-build-type:     Simple
+cabal-version: >=1.14
+name: Truth-Core
+version: 0.1
+license: AllRightsReserved
+author: Ashley Yakeley
+maintainer: <ashley@semantic.org>
+build-type: Simple
 
 library
     hs-source-dirs: lib
     default-language: Haskell2010
     default-extensions:
-        UndecidableInstances
-        MultiParamTypeClasses
-        FunctionalDependencies
-        RankNTypes
-        ScopedTypeVariables
-        ImplicitParams
-        FlexibleContexts
-        FlexibleInstances
-        EmptyDataDecls
-        TypeSynonymInstances
-        TemplateHaskell
-        NoImplicitPrelude
-        PatternGuards
-        GeneralizedNewtypeDeriving
-        TypeFamilies
-        GADTs
-        ImpredicativeTypes
-        PolyKinds
-        KindSignatures
+        AllowAmbiguousTypes
         ConstraintKinds
         DataKinds
-        StandaloneDeriving
+        EmptyDataDecls
+        ExistentialQuantification
+        FlexibleContexts
+        FlexibleInstances
+        ForeignFunctionInterface
+        FunctionalDependencies
+        GADTs
+        GeneralizedNewtypeDeriving
+        ImplicitParams
+        KindSignatures
+        MultiParamTypeClasses
+        PatternGuards
+        PatternSynonyms
+        PolyKinds
+        RankNTypes
         RecordWildCards
-        TypeOperators
         RecursiveDo
+        ScopedTypeVariables
+        StandaloneDeriving
+        TemplateHaskell
         TypeApplications
+        TypeFamilies
         TypeInType
+        TypeOperators
+        TypeSynonymInstances
+        UndecidableInstances
+        UndecidableSuperClasses
+        ViewPatterns
+        -- particular to this package
+        ImpredicativeTypes
+        NoImplicitPrelude
     ghc-options: -Wall -Werror -fno-warn-deprecated-flags -pgmPcpphs
     cpp-options: --cpp -ansi
     build-depends:
         Cabal >=1.1.6,
-        base >=4.0,
+        base >= 4.9 && < 5,
         bytestring >=0.9.1.5,
         containers >=0.2,
         countable >=0.1,
