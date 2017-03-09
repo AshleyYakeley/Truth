@@ -7,7 +7,7 @@ module Truth.Object.File where
 
 
     fileLockAPI :: FilePath -> LockAPI ByteStringEdit ();
-    fileLockAPI path ff = do
+    fileLockAPI path = MkLockAPI $ \ff -> do
     {
         h <- openBinaryFile path ReadWriteMode;
         let

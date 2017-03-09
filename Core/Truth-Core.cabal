@@ -42,7 +42,6 @@ library
         UndecidableSuperClasses
         ViewPatterns
         -- particular to this package
-        ImpredicativeTypes
         NoImplicitPrelude
     ghc-options: -Wall -Werror -fno-warn-deprecated-flags -pgmPcpphs
     cpp-options: --cpp -ansi

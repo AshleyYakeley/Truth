@@ -29,10 +29,10 @@ module Truth.Object.Lens where
             let
             {
                 initialA :: LockAPI edita token -> IO (editor,token);
-                initialA lapiA = let
+                initialA (MkLockAPI lapiA) = let
                 {
                     lapiB :: LockAPI editb token;
-                    lapiB (callB :: forall m. MonadIOInvert m => token -> API m editb token -> m r) = let
+                    lapiB = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => token -> API m editb token -> m r) -> let
                     {
                         callA :: forall m. MonadIOInvert m => token -> API m edita token -> m r;
                         callA token (apiA :: API m edita token) = let
@@ -138,10 +138,10 @@ module Truth.Object.Lens where
                 MkEditFunction{..} = editLensFunction;
 
                 initialA :: LockAPI edita token -> IO (editor,token);
-                initialA lapiA = let
+                initialA (MkLockAPI lapiA) = let
                 {
                     lapiB :: LockAPI editb token;
-                    lapiB (callB :: forall m. MonadIOInvert m => token -> API m editb token -> m r) = let
+                    lapiB = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => token -> API m editb token -> m r) -> let
                     {
                         callA :: forall m. MonadIOInvert m => token -> API m edita token -> m r;
                         callA token (apiA :: API m edita token) = let
@@ -284,10 +284,10 @@ module Truth.Object.Lens where
             let
             {
                 initialA :: LockAPI (WholeEdit (WholeReader a)) token -> IO (editor,token);
-                initialA lapiA = let
+                initialA (MkLockAPI lapiA) = let
                 {
                     lapiB :: LockAPI (WholeEdit (WholeReader b)) token;
-                    lapiB (callB :: forall m. MonadIOInvert m => token -> API m (WholeEdit (WholeReader b)) token -> m r) = let
+                    lapiB = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => token -> API m (WholeEdit (WholeReader b)) token -> m r) -> let
                     {
                         callA :: forall m. MonadIOInvert m => token -> API m (WholeEdit (WholeReader a)) token -> m r;
                         callA token (apiA :: API m (WholeEdit (WholeReader a)) token) = let

@@ -41,8 +41,6 @@ library
         UndecidableInstances
         UndecidableSuperClasses
         ViewPatterns
-        -- particular to this package
-        ImpredicativeTypes
     ghc-options: -Wall -Werror -fno-warn-deprecated-flags
     build-depends:
         base,

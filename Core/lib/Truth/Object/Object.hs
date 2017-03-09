@@ -21,24 +21,24 @@ module Truth.Object.Object
         fmap ab (MkAPI r a e) = MkAPI r a $ fmap (fmap (fmap ab)) e;
     };
 
-    type LockAPI edit token = forall r. (forall m. MonadIOInvert m => token -> API m edit token -> m r) -> IO r;
+    newtype LockAPI edit token = MkLockAPI (forall r. (forall m. MonadIOInvert m => token -> API m edit token -> m r) -> IO r);
 
-    mapLockAPIToken :: (token1 -> token2) -> LockAPI edit token1 -> LockAPI edit token2;
-    mapLockAPIToken t1t2 lapi1 ff = lapi1 $ \token api -> ff (t1t2 token) (fmap t1t2 api);
+    instance Functor (LockAPI edit) where
+    {
+        fmap t1t2 (MkLockAPI lapi1) = MkLockAPI $ \ff -> lapi1 $ \token api -> ff (t1t2 token) (fmap t1t2 api);
+    };
 
     nonlockingAPI :: token -> API IO edit token -> LockAPI edit token;
-    nonlockingAPI token api ff =  ff token api;
+    nonlockingAPI token api = MkLockAPI $ \ff -> ff token api;
 
-    newtype LockAPIW edit token = MkLockAPIW (LockAPI edit token);
-
-    freeLockAPI :: forall edit. (Edit edit,FullReader (EditReader edit)) => EditSubject edit -> (EditSubject edit -> Bool) -> IO (LockAPIW edit ());
+    freeLockAPI :: forall edit. (Edit edit,FullReader (EditReader edit)) => EditSubject edit -> (EditSubject edit -> Bool) -> IO (LockAPI edit ());
     freeLockAPI firsta allowed = do
     {
         var <- newMVar firsta;
         let
         {
             lapi :: LockAPI edit ();
-            lapi ff = modifyMVar var $ \olda -> do
+            lapi = MkLockAPI $ \ff -> modifyMVar var $ \olda -> do
             {
                 let
                 {
@@ -75,7 +75,7 @@ module Truth.Object.Object
                 return (newa,r);
             };
         };
-        return $ MkLockAPIW lapi;
+        return lapi;
     };
 
 
@@ -94,18 +94,18 @@ module Truth.Object.Object
         storevar <- newMVar (emptyWitnessStore :: IOWitnessStore (StoreEntry edit));
         let
         {
-            initP :: LockAPI edit () -> IO (LockAPIW edit (),());
+            initP :: LockAPI edit () -> IO (LockAPI edit (),());
             initP lapiP = do
             {
                 let
                 {
                     tokenP = ();
                 };
-                return (MkLockAPIW lapiP,tokenP);
+                return (lapiP,tokenP);
             };
 
-            updateP :: LockAPIW edit () -> () -> edit -> IO ();
-            updateP (MkLockAPIW _lapiP) oldtokenP edit = modifyMVar storevar $ \oldstore -> do
+            updateP :: LockAPI edit () -> () -> edit -> IO ();
+            updateP (MkLockAPI _lapiP) oldtokenP edit = modifyMVar storevar $ \oldstore -> do
             {
                 newstore <- traverseWitnessStore (\_ (MkStoreEntry u oldtoken) -> do
                 {
@@ -119,11 +119,11 @@ module Truth.Object.Object
                 return (newstore,newtokenP);
             };
         };
-        (MkLockAPIW lapiP,closerP) <- parent initP updateP;
+        (MkLockAPI lapiP,closerP) <- parent initP updateP;
         let
         {
             lapiC :: forall token. IOWitnessKey token -> LockAPI edit token;
-            lapiC key ff = modifyMVar storevar $ \store -> lapiP $ \_tokenP (apiP :: API m edit ()) -> do
+            lapiC key = MkLockAPI $ \ff -> modifyMVar storevar $ \store -> lapiP $ \_tokenP (apiP :: API m edit ()) -> do
             {
                 let
                 {
@@ -204,7 +204,7 @@ module Truth.Object.Object
     {
         rec
         {
-            (editor,token) <- initr $ mapLockAPIToken (\_ -> token) lapi;
+            (editor,token) <- initr $ fmap (\_ -> token) lapi;
         };
         return (editor,return ());
     }

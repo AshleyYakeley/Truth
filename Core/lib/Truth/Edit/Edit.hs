@@ -21,10 +21,10 @@ module Truth.Edit.Edit where
     {
         info = mkSimpleInfo $(iowitness[t|Edit|]) [];
     };
-
+{-
     applyAndInvertEdit :: (Edit edit) => edit -> (ReadFunction (EditReader edit) (EditReader edit),Readable (EditReader edit) [edit]);
     applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
-
+-}
     applyEdits :: (Edit edit) => [edit] -> ReadFunction (EditReader edit) (EditReader edit);
     applyEdits [] = readable;
     applyEdits (e:es) = composeReadFunction (applyEdits es) (applyEdit e);

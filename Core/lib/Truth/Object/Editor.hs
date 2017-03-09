@@ -31,8 +31,8 @@ module Truth.Object.Editor where
             editorInit :: LockAPI edit (token1,token2) -> IO ((editor1,editor2),(token1,token2));
             editorInit lapi = do
             {
-                (e1,t1) <- ei1 $ mapLockAPIToken fst lapi;
-                (e2,t2) <- ei2 $ mapLockAPIToken snd lapi;
+                (e1,t1) <- ei1 $ fmap fst lapi;
+                (e2,t2) <- ei2 $ fmap snd lapi;
                 return ((e1,e2),(t1,t2));
             };
             editorUpdate (e1,e2) (old1,old2) edit = do
@@ -63,11 +63,11 @@ module Truth.Object.Editor where
     oneTransactionEditor :: forall edit r. (forall m. Monad m => API m edit () -> m r) -> Editor edit r;
     oneTransactionEditor f = let
     {
-        editorInit :: LockAPI edit () -> IO (LockAPIW edit (),());
-        editorInit lapi = return (MkLockAPIW lapi,());
+        editorInit :: LockAPI edit () -> IO (LockAPI edit (),());
+        editorInit lapi = return (lapi,());
 
         editorUpdate _lapiw () _edit = return ();
-        editorDo (MkLockAPIW lapi) = lapi $ \() -> f;
+        editorDo (MkLockAPI lapi) = lapi $ \() -> f;
     } in MkEditor{..};
 
     readEditor :: FullReader (EditReader edit) => Editor edit (EditSubject edit);
