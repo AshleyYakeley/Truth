@@ -1,4 +1,3 @@
-{-# OPTIONS -fno-warn-unused-binds -fno-warn-orphans #-}
 module Data.Reity.HasInfo where
 {
     import GHC.Types;
@@ -11,15 +10,19 @@ module Data.Reity.HasInfo where
     import Data.HasNewValue;
     import Data.FunctorOne;
     import Data.Result;
+    import Data.OpenWitness;
     import Data.Knowledge;
     import Data.Reity.Info;
-    import Data.OpenWitness;
+    import Data.Reity.Match;
 
 
     class HasInfo a where
     {
         info :: Info a;
     };
+
+    isInfo :: forall a b. HasInfo a => Info b -> Maybe (HetEq a b);
+    isInfo = testHetEquality info;
 
     familyInfo :: forall (a :: *). Info a -> Info (?family :: a);
     familyInfo i = MkInfo info (FamilyWit i);
@@ -197,10 +200,10 @@ module Data.Reity.HasInfo where
             MkKnowledge $ \knowledge hreaInfo -> do
             {
                 MkSplitInfo hInfo reaInfo <- matchInfo hreaInfo;
-                ReflH <- testHetEquality (info @HasNewValue) hInfo;
+                ReflH <- sameInfo (info @HasNewValue) hInfo;
                 MkSplitInfo reInfo aInfo <- matchInfo reaInfo;
-                MkSplitInfo rInfo _eInfo <- matchInfo reInfo;
-                ReflH <- testHetEquality (info @Result) rInfo;
+                MkSplitInfo rInfo _ <- matchInfo reInfo;
+                ReflH <- sameInfo (info @Result) rInfo;
                 MkConstraintWitness <- ask knowledge $ applyInfo (info @HasNewValue) aInfo;
                 return MkConstraintWitness;
             }

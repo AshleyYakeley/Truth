@@ -1,14 +1,9 @@
-{-# LANGUAGE TypeOperators, TypeInType, UndecidableSuperClasses #-}
-{-# OPTIONS -fno-warn-unused-binds -w #-}
 module Data.Reity.Info where
 {
-    import Data.Maybe;
-    import Control.Monad;
     import Data.Type.Equality;
     import Data.Type.Heterogeneous;
     import Data.OpenWitness;
     import Data.Kind;
-    import Data.Maybe;
     import Data.KindCategory;
     import Data.Knowledge;
 
@@ -82,50 +77,11 @@ module Data.Reity.Info where
     witKnowledge :: Wit t -> ConstraintKnowledge;
     witKnowledge (SimpleWit _ k) = k;
     witKnowledge (ConsWit i1 i2) = mappend (infoKnowledge i1) (infoKnowledge i2);
+    witKnowledge (FamilyWit i) = infoKnowledge i;
 
     knowConstraint :: forall (c :: Constraint). c => Info c -> ConstraintKnowledge;
     knowConstraint info = know info MkConstraintWitness;
 
     askConstraint :: Info (c :: Constraint) -> Maybe (ConstraintWitness c);
     askConstraint info = ask (infoKnowledge info) info;
-
-
-    class MatchInfo (p :: forall k. k -> *) where
-    {
-        matchInfo :: forall (ka :: *) (a :: ka). Info a -> Maybe (p a);
-    };
-
-    instance MatchInfo Info where
-    {
-        matchInfo = Just;
-    };
-
-    data SplitInfo (fa :: kfa) where
-    {
-        MkSplitInfo :: forall (ka :: *) (f :: ka -> kfa) (a :: ka). Info f -> Info a -> SplitInfo (f a);
-    };
-
-    instance MatchInfo SplitInfo where
-    {
-        matchInfo (MkInfo kfa (ConsWit infoF infoA)) = Just (MkSplitInfo infoF infoA);
-        matchInfo _ = Nothing;
-    };
-
-    data FamilyInfo (a :: ka) where
-    {
-        MkFamilyInfo :: forall (a :: *). Info a -> FamilyInfo (?family :: a);
-    };
-
-    instance MatchInfo FamilyInfo where
-    {
-        matchInfo (MkInfo _ (FamilyWit x)) = Just $ MkFamilyInfo x;
-        matchInfo _ = Nothing;
-    };
-
-    applyInfo :: forall (ka :: *) (kb :: *) (f :: ka -> kb) (a :: ka). Info f -> Info a -> Info (f a);
-    applyInfo tf@(MkInfo ika _) ta = case matchInfo ika of
-    {
-        Just (MkSplitInfo _ ik) -> MkInfo ik (ConsWit tf ta);
-        Nothing -> error "unexpected kind witness";
-    };
 }

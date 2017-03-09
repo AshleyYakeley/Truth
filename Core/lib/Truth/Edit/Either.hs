@@ -38,13 +38,6 @@ module Truth.Edit.Either where
         replaceEdit s = LeftEdit (replaceEdit s);
     };
 
-    data EditReaderInfo a = MkEditReaderInfo (Info (EditReader a));
-
-    instance HasInfo EditReaderInfo where
-    {
-        info = mkSimpleInfo $(iowitness[t|EditReaderInfo|]) [];
-    };
-
     instance HasInfo EitherEdit where
     {
         info = mkSimpleInfo $(iowitness[t|EitherEdit|])

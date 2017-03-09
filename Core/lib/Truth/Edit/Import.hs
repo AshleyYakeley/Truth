@@ -56,6 +56,7 @@ module Truth.Edit.Import
     module Data.List,
     module Data.Bits,
     module Data.Bool,
+    module Data.Kind,
     module Prelude,
 )
 where
@@ -116,5 +117,6 @@ where
     import Data.List ((++),length);
     import Data.Bits;
     import Data.Bool;
+    import Data.Kind;
     import Prelude (($),undefined,Eq(..),Ord(..),Enum(..),Num(..),Integral,fromIntegral,fromInteger,toInteger);
 }

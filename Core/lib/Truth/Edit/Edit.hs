@@ -38,6 +38,14 @@ module Truth.Edit.Edit where
         a21 = applyConstFunction cf21 a;
     } in if a12 == a21 then Just a12 else Nothing;
 -}
+
+    data EditReaderInfo a = MkEditReaderInfo (Info (EditReader a));
+
+    instance HasInfo EditReaderInfo where
+    {
+        info = mkSimpleInfo $(iowitness[t|EditReaderInfo|]) [];
+    };
+
     class (Edit edit,FullReader (EditReader edit)) => FullEdit edit where
     {
         replaceEdit :: EditSubject edit -> edit;

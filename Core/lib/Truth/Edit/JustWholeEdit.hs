@@ -17,43 +17,47 @@ module Truth.Edit.JustWholeEdit where
         SuccessResult a -> Just (replaceEdit a);
         _ -> Nothing;
     };
-{-
-    data MatchJustWholeEdit t where
+
+    data MatchEitherWholeEdit :: (forall k. k -> Type) where
     {
-        MkMatchJustWholeEdit ::
-         forall f edit. Edit_Inst (Type_T edit) -> Info (Type_KTT f) -> Info (Type_T edit) -> MatchJustWholeEdit (Type_T (JustWholeEdit f edit));
+        MkMatchEitherWholeEdit ::
+         forall edit. Info edit -> Info (EditReader edit) -> MatchEitherWholeEdit (EitherWholeEdit edit);
     };
 
-    instance Property MatchJustWholeEdit where
+    instance MatchInfo MatchEitherWholeEdit where
     {
-        matchProperty tt = do
+        matchInfo i = do
         {
-            MkMatchEitherEdit twjrfr tjefe <- matchProp $(type1[t|MatchEitherEdit|]) tt;
-            MkMatch tjef te <- matchProp $(type1[t|Match|]) tjefe;
-            MkMatch tw tjrfr <- matchProp $(type1[t|Match|]) twjrfr;
-            Refl <- matchProp $(type1[t|EqualType (Type_KKTTT WholeEdit)|]) tw;
-            MkMatch tje tf <- matchProp $(type1[t|Match|]) tjef;
-            Kind_KTT <- matchProp $(type1[t|Kind_KTT|]) tf;
-            Refl <- matchProp $(type1[t|EqualType (Type_KKTTKTT JustEdit)|]) tje;
-            MkMatch tjrf tr <- matchProp $(type1[t|Match|]) tjrfr;
-            MkMatch tjr tf' <- matchProp $(type1[t|Match|]) tjrf;
-            Refl <- matchProp $(type1[t|EqualType (Type_KKTTKKTTKTT JustReader)|]) tjr;
-            Refl <- testEquality tf tf';
-            ei@(Edit_Inst tr') <- matchProp $(type1[t|Edit_Inst|]) te;
-            Refl <- testEquality tr tr';
-            return (MkMatchJustWholeEdit ei tf te);
+            MkSplitInfo ea eVar <- matchInfo i;
+            MkSplitInfo e a <- matchInfo ea;
+            ReflH <- testHetEquality e $ info @EitherEdit;
+            MkSplitInfo w r <- matchInfo a;
+            ReflH <- testHetEquality w $ info @WholeEdit;
+            FamilyConstraintWitness (MkEditReaderInfo rVar) <- ask (infoKnowledge i) $ familyInfo $ applyInfo (info @EditReaderInfo) eVar;
+            ReflH <- testHetEquality r rVar;
+            return $ MkMatchEitherWholeEdit eVar r;
         };
     };
 
-    instance Construct MatchJustWholeEdit where
+    data MatchJustWholeEdit :: (forall k. k -> Type) where
     {
-        construct (MkMatchJustWholeEdit (Edit_Inst tr) tf te) =
-            applyInfo
-             (applyInfo (info :: Info (Type_KTKTT EitherEdit))
-              (applyInfo (info :: Info (Type_KKTTT WholeEdit))
-               (applyInfo (applyInfo (info :: Info (Type_KKTTKKTTKTT JustReader)) tf) tr)
-              ))
-             (applyInfo (applyInfo (info :: Info (Type_KKTTKTT JustEdit)) tf) te);
+        MkMatchJustWholeEdit ::
+         forall f edit. Info f -> Info edit -> Info (EditReader edit) -> MatchJustWholeEdit (JustWholeEdit f edit);
     };
--}
+
+    instance MatchInfo MatchJustWholeEdit where
+    {
+        matchInfo i = do
+        {
+            MkMatchEitherWholeEdit jfe rjfe <- matchInfo i;
+            MkSplitInfo jf e <- matchInfo jfe;
+            MkSplitInfo j f <- matchInfo jf;
+            ReflH <- isInfo @JustEdit j;
+            MkSplitInfo rjf r <- matchInfo rjfe;
+            MkSplitInfo rj f' <- matchInfo rjf;
+            ReflH <- isInfo @JustReader rj;
+            ReflH <- sameInfo f f';
+            return $ MkMatchJustWholeEdit f e r;
+        };
+    };
 }

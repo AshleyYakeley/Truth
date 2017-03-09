@@ -31,4 +31,25 @@ module Truth.Object.View where
         (vr,close) <- subscribe view vrUpdate;
         return (vrWidgetStuff vr,close);
     };
+
+    mapJustWholeEditAspect :: forall f edit. (FunctorOne f, Edit edit,FullReader (EditReader edit)) =>
+     Info f -> Aspect edit -> Maybe (Aspect (JustWholeEdit f edit));
+    mapJustWholeEditAspect infoF (MkAspect infoEditB infoSubj (lens :: FloatingEditLens state edit editb)) = do
+    {
+        let
+        {
+            knowledge = mconcat [infoKnowledge infoF,infoKnowledge infoEditB,infoKnowledge infoSubj];
+        };
+        FamilyConstraintWitness (MkEditReaderInfo infoReader) <- ask knowledge $ familyInfo $ applyInfo (info @EditReaderInfo) infoEditB;
+        let
+        {
+            infoJustEdit = applyInfo (applyInfo (info @JustEdit) infoF) infoEditB;
+            infoJustReader = applyInfo (applyInfo (info @JustReader) infoF) infoReader;
+
+            infoEditB' = applyInfo (applyInfo (info @EitherEdit) $ applyInfo (info @WholeEdit) infoJustReader) infoJustEdit;
+            infoSubj' = applyInfo infoF infoSubj;
+            lens' = justWholeFloatingEditLens lens;
+        };
+        return $ MkAspect infoEditB' infoSubj' lens';
+    };
 }

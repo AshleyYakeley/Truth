@@ -36,6 +36,7 @@ library
         TypeOperators
         RecursiveDo
         TypeApplications
+        TypeInType
     ghc-options: -Wall -Werror -fno-warn-deprecated-flags -pgmPcpphs
     cpp-options: --cpp -ansi
     build-depends:
