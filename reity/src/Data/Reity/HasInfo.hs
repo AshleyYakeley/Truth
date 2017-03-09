@@ -6,7 +6,6 @@ module Data.Reity.HasInfo where
     import Data.ByteString;
 
     import Data.Type.Heterogeneous;
-    import Data.KindCategory;
     import Data.HasNewValue;
     import Data.FunctorOne;
     import Data.Result;
@@ -24,13 +23,10 @@ module Data.Reity.HasInfo where
     isInfo :: forall a b. HasInfo a => Info b -> Maybe (HetEq a b);
     isInfo = testHetEquality info;
 
-    familyInfo :: forall (a :: *). Info a -> Info (?family :: a);
-    familyInfo i = MkInfo info (FamilyWit i);
-
-    mkSimpleInfo :: forall (k :: *) (t :: k). HasInfo k => IOWitness t -> [ConstraintKnowledge] -> Info t;
+    mkSimpleInfo :: forall (k :: *) (t :: k). HasInfo k => IOWitness t -> [TypeKnowledge] -> Info t;
     mkSimpleInfo wit facts = MkInfo info $ SimpleWit wit $ mconcat facts;
 
-    knowC :: forall (c :: Constraint). (c,HasInfo c) => ConstraintKnowledge;
+    knowC :: forall (c :: Constraint). (c,HasInfo c) => TypeKnowledge;
     knowC = knowConstraint $ info @c;
 
 
@@ -66,11 +62,6 @@ module Data.Reity.HasInfo where
     instance (HasInfo f,HasInfo a) => HasInfo (f a) where
     {
         info = applyInfo info info;
-    };
-
-    instance HasInfo a => HasInfo (?family :: a) where
-    {
-        info = MkInfo info (FamilyWit info);
     };
 
 
@@ -204,8 +195,8 @@ module Data.Reity.HasInfo where
                 MkSplitInfo reInfo aInfo <- matchInfo reaInfo;
                 MkSplitInfo rInfo _ <- matchInfo reInfo;
                 ReflH <- sameInfo (info @Result) rInfo;
-                MkConstraintWitness <- ask knowledge $ applyInfo (info @HasNewValue) aInfo;
-                return MkConstraintWitness;
+                ConstraintFact <- ask knowledge $ applyInfo (info @HasNewValue) aInfo;
+                return ConstraintFact;
             }
 
             -- instance Functor

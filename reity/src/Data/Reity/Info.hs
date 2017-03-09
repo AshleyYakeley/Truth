@@ -8,7 +8,13 @@ module Data.Reity.Info where
     import Data.Knowledge;
 
 
-    type ConstraintKnowledge = Knowledge Info ConstraintWitness;
+    data TypeFact (a :: k) where
+    {
+        ConstraintFact :: forall a. a => TypeFact a;
+        ValueFact :: forall a. a -> TypeFact a;
+    };
+
+    type TypeKnowledge = Knowledge Info TypeFact;
 
     data Info (t :: k) where
     {
@@ -31,9 +37,8 @@ module Data.Reity.Info where
 
     data Wit (t :: k) where
     {
-        SimpleWit :: forall (k :: *) (t :: k). IOWitness t -> ConstraintKnowledge -> Wit t;
+        SimpleWit :: forall (k :: *) (t :: k). IOWitness t -> TypeKnowledge -> Wit t;
         ConsWit :: forall (ka :: *) (kb :: *) (f :: ka -> kb) (a :: ka). Info f -> Info a -> Wit (f a);
-        FamilyWit :: forall (a :: *). Info a -> Wit (?family :: a);
     };
 
     instance TestHetEquality Wit where
@@ -43,11 +48,6 @@ module Data.Reity.Info where
         {
             ReflH <- testHetEquality ica icb;
             ReflH <- testHetEquality iaa iab;
-            return ReflH;
-        };
-        testHetEquality (FamilyWit ia) (FamilyWit ib) = do
-        {
-            ReflH <- testHetEquality ia ib;
             return ReflH;
         };
         testHetEquality _ _ = Nothing;
@@ -62,26 +62,30 @@ module Data.Reity.Info where
         }
     };
 
-    cwitFamily :: ConstraintWitness (?family :: a) -> a;
-    cwitFamily MkConstraintWitness = ?family;
-
-    pattern FamilyConstraintWitness :: a -> ConstraintWitness (?family :: a);
-    pattern FamilyConstraintWitness x <- (cwitFamily -> x) where
-    {
-        FamilyConstraintWitness x = let {?family = x} in MkConstraintWitness;
-    };
-
-    infoKnowledge :: Info t -> ConstraintKnowledge;
+    infoKnowledge :: Info t -> TypeKnowledge;
     infoKnowledge (MkInfo _ w) = witKnowledge w;
 
-    witKnowledge :: Wit t -> ConstraintKnowledge;
+    witKnowledge :: Wit t -> TypeKnowledge;
     witKnowledge (SimpleWit _ k) = k;
     witKnowledge (ConsWit i1 i2) = mappend (infoKnowledge i1) (infoKnowledge i2);
-    witKnowledge (FamilyWit i) = infoKnowledge i;
 
-    knowConstraint :: forall (c :: Constraint). c => Info c -> ConstraintKnowledge;
-    knowConstraint info = know info MkConstraintWitness;
+    knowValue :: forall (t :: *). t -> Info t -> TypeKnowledge;
+    knowValue t i = know i $ ValueFact t;
 
-    askConstraint :: Info (c :: Constraint) -> Maybe (ConstraintWitness c);
-    askConstraint info = ask (infoKnowledge info) info;
+    knowConstraint :: forall (c :: Constraint). c => Info c -> TypeKnowledge;
+    knowConstraint info = know info ConstraintFact;
+
+    askValue :: forall (a :: *). Info a -> Maybe a;
+    askValue info = do
+    {
+        ValueFact a <- ask (infoKnowledge info) info;
+        return a;
+    };
+
+    askConstraint :: forall (c :: Constraint). Info c -> Maybe (ConstraintWitness c);
+    askConstraint info = do
+    {
+        ConstraintFact <- ask (infoKnowledge info) info;
+        return MkConstraintWitness;
+    };
 }

@@ -33,7 +33,7 @@ module Truth.Edit.JustWholeEdit where
             ReflH <- testHetEquality e $ info @EitherEdit;
             MkSplitInfo w r <- matchInfo a;
             ReflH <- testHetEquality w $ info @WholeEdit;
-            FamilyConstraintWitness (MkEditReaderInfo rVar) <- ask (infoKnowledge i) $ familyInfo $ applyInfo (info @EditReaderInfo) eVar;
+            ValueFact (MkEditReaderInfo rVar) <- ask (infoKnowledge i) $ applyInfo (info @EditReaderInfo) eVar;
             ReflH <- testHetEquality r rVar;
             return $ MkMatchEitherWholeEdit eVar r;
         };

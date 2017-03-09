@@ -50,25 +50,24 @@ module Truth.Edit.Either where
                 MkSplitInfo ea bVar <- matchInfo eab;
                 MkSplitInfo e aVar <- matchInfo ea;
                 ReflH <- testHetEquality (info @EitherEdit) e;
-                MkConstraintWitness <- ask knowledge $ applyInfo (info @Edit) aVar;
-                MkConstraintWitness <- ask knowledge $ applyInfo (info @Edit) bVar;
-                FamilyConstraintWitness (MkEditReaderInfo arVar) <- ask knowledge $ familyInfo $ applyInfo (info @EditReaderInfo) aVar;
-                FamilyConstraintWitness (MkEditReaderInfo brVar) <- ask knowledge $ familyInfo $ applyInfo (info @EditReaderInfo) bVar;
+                ConstraintFact <- ask knowledge $ applyInfo (info @Edit) aVar;
+                ConstraintFact <- ask knowledge $ applyInfo (info @Edit) bVar;
+                ValueFact (MkEditReaderInfo arVar) <- ask knowledge $ applyInfo (info @EditReaderInfo) aVar;
+                ValueFact (MkEditReaderInfo brVar) <- ask knowledge $ applyInfo (info @EditReaderInfo) bVar;
                 ReflH <- testHetEquality arVar brVar;
-                return MkConstraintWitness;
+                return ConstraintFact;
             },
 
             -- type EditReader (EitherEdit a b) = EditReader a;
-            MkKnowledge $ \knowledge ceeab -> do
+            MkKnowledge $ \knowledge eeab -> do
             {
-                MkFamilyInfo eeab <- matchInfo ceeab;
                 MkSplitInfo er eab <- matchInfo eeab;
                 ReflH <- testHetEquality (info @EditReaderInfo) er;
                 MkSplitInfo ea _bVar <- matchInfo eab;
                 MkSplitInfo e aVar <- matchInfo ea;
                 ReflH <- testHetEquality (info @EitherEdit) e;
-                FamilyConstraintWitness (MkEditReaderInfo ra) <- ask knowledge $ familyInfo $ applyInfo (info @EditReaderInfo) aVar;
-                return $ FamilyConstraintWitness (MkEditReaderInfo ra);
+                ValueFact (MkEditReaderInfo ra) <- ask knowledge $ applyInfo (info @EditReaderInfo) aVar;
+                return $ ValueFact (MkEditReaderInfo ra);
             },
 
             -- instance (FullEdit ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit (Either ea eb)
@@ -79,12 +78,12 @@ module Truth.Edit.Either where
                 MkSplitInfo ea bVar <- matchInfo eab;
                 MkSplitInfo e aVar <- matchInfo ea;
                 ReflH <- testHetEquality (info @EitherEdit) e;
-                MkConstraintWitness <- ask knowledge $ applyInfo (info @FullEdit) aVar;
-                MkConstraintWitness <- ask knowledge $ applyInfo (info @Edit) bVar;
-                FamilyConstraintWitness (MkEditReaderInfo arVar) <- ask knowledge $ familyInfo $ applyInfo (info @EditReaderInfo) aVar;
-                FamilyConstraintWitness (MkEditReaderInfo brVar) <- ask knowledge $ familyInfo $ applyInfo (info @EditReaderInfo) bVar;
+                ConstraintFact <- ask knowledge $ applyInfo (info @FullEdit) aVar;
+                ConstraintFact <- ask knowledge $ applyInfo (info @Edit) bVar;
+                ValueFact (MkEditReaderInfo arVar) <- ask knowledge $ applyInfo (info @EditReaderInfo) aVar;
+                ValueFact (MkEditReaderInfo brVar) <- ask knowledge $ applyInfo (info @EditReaderInfo) bVar;
                 ReflH <- testHetEquality arVar brVar;
-                return MkConstraintWitness;
+                return ConstraintFact;
             }
         ];
     };

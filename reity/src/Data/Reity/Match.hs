@@ -1,13 +1,7 @@
 module Data.Reity.Match where
 {
-    import Data.Maybe;
-    import Control.Monad;
-    import Data.Type.Equality;
     import Data.Type.Heterogeneous;
-    import Data.OpenWitness;
     import Data.Kind;
-    import Data.Maybe;
-    import Data.KindCategory;
     import Data.Knowledge;
     import Data.Reity.Info;
 
@@ -15,9 +9,7 @@ module Data.Reity.Match where
     sameInfo :: forall (ka :: *) (kb :: *) (a :: ka) (b :: kb). Info a -> Info b -> Maybe (HetEq a b);
     sameInfo = testHetEquality;
 
-    type HWit = forall k. k -> *;
-
-    class MatchInfo (p :: HWit) where
+    class MatchInfo (p :: HetWit) where
     {
         matchInfo :: forall (ka :: *) (a :: ka). Info a -> Maybe (p a);
     };
@@ -27,7 +19,7 @@ module Data.Reity.Match where
         matchInfo = Just;
     };
 
-    data IgnoreInfo :: HWit where
+    data IgnoreInfo :: HetWit where
     {
         MkIgnoreInfo :: forall (ka :: *) (a :: ka). IgnoreInfo a;
     };
@@ -37,14 +29,14 @@ module Data.Reity.Match where
         matchInfo _ = Just MkIgnoreInfo;
     };
 
-    data SplitInfo' (mf :: HWit) (ma :: HWit) :: HWit where
+    data SplitInfo' (mf :: HetWit) (ma :: HetWit) :: HetWit where
     {
-        MkSplitInfo' :: forall (mf :: HWit) (ma :: HWit) (kfa :: *) (ka :: *) (f :: ka -> kfa) (a :: ka). mf f -> ma a -> SplitInfo' mf ma (f a);
+        MkSplitInfo' :: forall (mf :: HetWit) (ma :: HetWit) (kfa :: *) (ka :: *) (f :: ka -> kfa) (a :: ka). mf f -> ma a -> SplitInfo' mf ma (f a);
     };
 
-    instance forall (mf :: HWit) (ma :: HWit). (MatchInfo mf,MatchInfo ma) => MatchInfo (SplitInfo' mf ma) where
+    instance forall (mf :: HetWit) (ma :: HetWit). (MatchInfo mf,MatchInfo ma) => MatchInfo (SplitInfo' mf ma) where
     {
-        matchInfo (MkInfo kfa (ConsWit infoF infoA)) = do
+        matchInfo (MkInfo _ (ConsWit infoF infoA)) = do
         {
             f <- matchInfo infoF;
             a <- matchInfo infoA;
@@ -60,22 +52,11 @@ module Data.Reity.Match where
 
     instance MatchInfo SplitInfo where
     {
-        matchInfo (MkInfo kfa (ConsWit infoF infoA)) = Just (MkSplitInfo infoF infoA);
+        matchInfo (MkInfo _ (ConsWit infoF infoA)) = Just (MkSplitInfo infoF infoA);
         matchInfo _ = Nothing;
     };
 
-    data FamilyInfo :: HWit where
-    {
-        MkFamilyInfo :: forall (a :: *). Info a -> FamilyInfo (?family :: a);
-    };
-
-    instance MatchInfo FamilyInfo where
-    {
-        matchInfo (MkInfo _ (FamilyWit x)) = Just $ MkFamilyInfo x;
-        matchInfo _ = Nothing;
-    };
-
-    data KindInfo :: HWit where
+    data KindInfo :: HetWit where
     {
         MkKindInfo :: forall (ka :: *) (a :: ka). Info ka -> KindInfo a;
     };

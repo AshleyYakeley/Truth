@@ -40,7 +40,7 @@ module Truth.Object.View where
         {
             knowledge = mconcat [infoKnowledge infoF,infoKnowledge infoEditB,infoKnowledge infoSubj];
         };
-        FamilyConstraintWitness (MkEditReaderInfo infoReader) <- ask knowledge $ familyInfo $ applyInfo (info @EditReaderInfo) infoEditB;
+        ValueFact (MkEditReaderInfo infoReader) <- ask knowledge $ applyInfo (info @EditReaderInfo) infoEditB;
         let
         {
             infoJustEdit = applyInfo (applyInfo (info @JustEdit) infoF) infoEditB;

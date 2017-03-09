@@ -59,9 +59,9 @@ module Truth.Edit.JustEdit where
                 MkSplitInfo jf readerVar <- matchInfo jfr;
                 MkSplitInfo j fVar <- matchInfo jf;
                 ReflH <- testHetEquality (info @JustReader) j;
-                MkConstraintWitness <- ask knowledge $ applyInfo (info @FunctorOne) fVar;
-                MkConstraintWitness <- ask knowledge $ applyInfo (info @Reader) readerVar;
-                return MkConstraintWitness;
+                ConstraintFact <- ask knowledge $ applyInfo (info @FunctorOne) fVar;
+                ConstraintFact <- ask knowledge $ applyInfo (info @Reader) readerVar;
+                return ConstraintFact;
             }
         ];
     };
@@ -103,9 +103,9 @@ module Truth.Edit.JustEdit where
                 MkSplitInfo jf editVar <- matchInfo jfe;
                 MkSplitInfo j fVar <- matchInfo jf;
                 ReflH <- testHetEquality (info @JustEdit) j;
-                MkConstraintWitness <- ask knowledge $ applyInfo (info @FunctorOne) fVar;
-                MkConstraintWitness <- ask knowledge $ applyInfo (info @Edit) editVar;
-                return MkConstraintWitness;
+                ConstraintFact <- ask knowledge $ applyInfo (info @FunctorOne) fVar;
+                ConstraintFact <- ask knowledge $ applyInfo (info @Edit) editVar;
+                return ConstraintFact;
             }
         ];
     };
