@@ -1,20 +1,21 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
 {
-    import Truth.UI.GTK.GView;
-    import Graphics.UI.Gtk;
-    import Truth.Object;
-    import Truth.Edit;
-    import Data.Reity;
-    import Data.HasNewValue;
-    import Data.Witness;
-    import Data.FunctorOne;
-    import Data.Result;
-    import Data.IORef;
     import Control.Applicative;
+    import Data.IORef;
+    import Data.Result;
+    import Data.FunctorOne;
+    import Data.Witness;
+    import Data.HasNewValue;
+    import Data.Type.Heterogeneous;
+    import Data.Reity;
+    import Truth.Edit;
+    import Truth.Object;
+    import Graphics.UI.Gtk;
+    import Truth.UI.GTK.GView;
 
 
-    type Push edit = edit -> IO ();
+    type Push edit = edit -> IO (Maybe ());
 
     pushButton :: Push edit -> edit -> String -> IO Button;
     pushButton push edit name = do
@@ -54,12 +55,9 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
     createButton :: (FullEdit edit) => EditSubject edit -> Push edit -> IO Button;
     createButton val push = pushButton push (replaceEdit val) "Create";
 
-    mapSelection :: forall f edit. (FunctorOne f, Edit edit) =>
-     Info f -> Aspect edit -> Aspect (JustWholeEdit f edit);
-    mapSelection tf (MkAspect teditb tsubj (lens :: FloatingEditLens state edit editb)) = MkAspect
-     (construct (MkMatchJustWholeEdit tf teditb tsubj))
-     (applyInfo tf tsubj)
-     (justWholeFloatingEditLens lens);
+    mapSelection :: forall f edit. (FunctorOne f, Edit edit, FullReader (EditReader edit)) =>
+     Info f -> Aspect edit -> Maybe (Aspect (JustWholeEdit f edit));
+    mapSelection fi aspect = mapJustWholeEditAspect fi aspect;
 
     functorOneIVF :: forall f edit wd.
     (
@@ -69,7 +67,7 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
         FullEdit edit,
         WidgetClass wd
     ) =>
-      Info f -> Maybe (forall b. f b) -> (Push (JustWholeEdit f edit) -> IO wd) -> GView edit -> GView (JustWholeEdit f edit);
+      Info f -> Maybe (Limit f) -> (Push (JustWholeEdit f edit) -> IO wd) -> GView edit -> GView (JustWholeEdit f edit);
     functorOneIVF tf mDeleteValue makeEmptywidget factory initial push = let
     {
         mpush :: Push edit;
@@ -145,7 +143,7 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
 
     maybeView :: (HasNewValue (EditSubject edit),FullEdit edit) =>
       w edit -> GView edit -> GView (JustWholeEdit Maybe edit);
-    maybeView _ = functorOneIVF info (Just Nothing) (createButton (Just newValue));
+    maybeView _ = functorOneIVF @Maybe info (Just $ MkLimit Nothing) (createButton (Just newValue));
 
     placeholderLabel :: IO Label;
     placeholderLabel = do
@@ -158,26 +156,25 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
     resultView _ terr = functorOneIVF (applyInfo (info :: Info Result) terr) Nothing (\_ -> placeholderLabel);
 
     maybeMatchView :: GetView -> MatchView;
-    maybeMatchView getView tedit = do
+    maybeMatchView getView i = do
     {
-        MkMatchJustWholeEdit tf te _ta <- matchProp $(type1[t|MatchJustWholeEdit|]) tedit;
-        Refl <- testEquality tf (info :: Info (Type_KTT Maybe));
-        Edit_Inst tsubj <- matchProp $(type1[t|Edit_Inst|]) te;
-        FullEdit_Inst <- matchProp $(type1[t|FullEdit_Inst|]) te;
-        HasNewValue_Inst <- matchProp $(type1[t|HasNewValue_Inst|]) tsubj;
-        return (maybeView te (getView te));
+        MkMatchJustWholeEdit fInfo eInfo rInfo <- matchInfo i;
+        ReflH <- isInfo @Maybe fInfo;
+        ValueFact (MkReaderSubjectInfo subjInfo) <- ask (infoKnowledge i) $ applyInfo (info @ReaderSubjectInfo) rInfo;
+        ConstraintFact <- ask (infoKnowledge i) $ applyInfo (info @HasNewValue) subjInfo;
+        ConstraintFact <- ask (infoKnowledge i) $ applyInfo (info @FullEdit) eInfo;
+        return (maybeView eInfo (getView eInfo));
     };
 
     resultMatchView :: GetView -> MatchView;
-    resultMatchView getView tedit = do
+    resultMatchView getView i = do
     {
-        MkMatchJustWholeEdit tf te _ta <- matchProp $(type1[t|MatchJustWholeEdit|]) tedit;
-        MkMatch tr terr <- matchProp $(type1[t|Match|]) tf;
-        Kind_T <- matchProp $(type1[t|Kind_T|]) terr;
-        Refl <- testEquality tr (info :: Info (Type_KTKTT Result));
-        Edit_Inst tsubj <- matchProp $(type1[t|Edit_Inst|]) te;
-        FullEdit_Inst <- matchProp $(type1[t|FullEdit_Inst|]) te;
-        HasNewValue_Inst <- matchProp $(type1[t|HasNewValue_Inst|]) tsubj;
-        return (resultView te terr (getView te));
+        MkMatchJustWholeEdit fInfo eInfo rInfo <- matchInfo i;
+        MkSplitInfo resInfo errInfo <- matchInfo fInfo;
+        ReflH <- isInfo @Result resInfo;
+        ValueFact (MkReaderSubjectInfo subjInfo) <- ask (infoKnowledge i) $ applyInfo (info @ReaderSubjectInfo) rInfo;
+        ConstraintFact <- ask (infoKnowledge i) $ applyInfo (info @HasNewValue) subjInfo;
+        ConstraintFact <- ask (infoKnowledge i) $ applyInfo (info @FullEdit) eInfo;
+        return (resultView eInfo errInfo (getView eInfo));
     };
 }
