@@ -14,4 +14,15 @@ module Data.Compose where
         pure a = MkCompose (pure (pure a));
         (MkCompose pqab) <*> (MkCompose pqa) = MkCompose ((fmap (<*>) pqab) <*> pqa);
     };
+
+    instance (Monad p,Monad q,Traversable q) => Monad (Compose p q) where
+    {
+        return = pure;
+        (MkCompose pqa) >>= f = MkCompose $ do
+        {
+            qa <- pqa;
+            qqb <- traverse (getCompose . f) qa;
+            return $ qqb >>= id;
+        };
+    };
 }

@@ -4,20 +4,10 @@ module Data.FunctorOne where
     import Prelude hiding (sequence);
     import Data.ConstFunction;
     import Data.Chain;
-    import Data.Traversable;
     import Data.Result;
-    import Data.Compose;
     import Data.Functor.Identity;
     import Control.Monad hiding (sequence);
 
-    mmap :: (Monad m) => (a -> b) -> m a -> m b;
-    mmap ab ma = ma >>= (return . ab);
-
-    instance (Monad m,Monad n,Traversable n) => Monad (Compose m n) where
-    {
-        return a = MkCompose (return (return a));
-        (MkCompose mna) >>= acb = MkCompose (mna >>= (\na -> mmap join (sequence (mmap (getCompose . acb) na))))
-    };
 
     -- | should be superclass of Applicative
     ;
