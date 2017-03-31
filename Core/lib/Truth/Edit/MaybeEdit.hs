@@ -2,8 +2,8 @@ module Truth.Edit.MaybeEdit where
 {
     import Truth.Edit.Import;
     import Truth.Edit.Read;
+    import Truth.Edit.MaybeReader;
     import Truth.Edit.Edit;
-    import Truth.Edit.JustEdit;
 
 
     data MaybeEdit edit =
@@ -15,7 +15,7 @@ module Truth.Edit.MaybeEdit where
 
     instance (FullEdit edit,HasNewValue (EditSubject edit)) => Edit (MaybeEdit edit) where
     {
-        type EditReader (MaybeEdit edit) = JustReader Maybe (EditReader edit);
+        type EditReader (MaybeEdit edit) = MaybeReader Maybe (EditReader edit);
 
         applyEdit CreateMaybeEdit ReadOther = return $ MkAnyReturn Just;
         applyEdit CreateMaybeEdit ReadIsJust = return Nothing;
@@ -24,7 +24,7 @@ module Truth.Edit.MaybeEdit where
         applyEdit (JustMaybeEdit edita) (ReadWholeJust reader) = liftJustReadable (applyEdit edita reader);
         applyEdit (JustMaybeEdit _edita) reader = readable reader;
 
-        -- invertEdit :: MaybeEdit edit -> Readable (JustReader Maybe reader) [JustEdit Maybe edit];    -- "Nothing" means no change
+        -- invertEdit :: MaybeEdit edit -> Readable (MaybeReader Maybe reader) [JustEdit Maybe edit];    -- "Nothing" means no change
         invertEdit CreateMaybeEdit = do
         {
             me <- readable ReadIsJust;

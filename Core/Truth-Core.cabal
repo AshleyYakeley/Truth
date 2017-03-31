@@ -73,6 +73,7 @@ library
         Truth.Edit.FloatingEditFunction
         Truth.Edit.FloatingEditLens
         Truth.Edit.IndexEdit
+        Truth.Edit.MaybeReader
         Truth.Edit.JustEdit
         Truth.Edit.MaybeEdit
         Truth.Edit.JustWholeEdit

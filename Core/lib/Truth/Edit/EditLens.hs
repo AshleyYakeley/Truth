@@ -2,6 +2,7 @@ module Truth.Edit.EditLens where
 {
     import Truth.Edit.EditFunction;
     import Truth.Edit.JustEdit;
+    import Truth.Edit.MaybeReader;
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Edit;
     import Truth.Edit.Read;

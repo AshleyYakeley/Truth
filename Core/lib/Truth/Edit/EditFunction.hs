@@ -1,6 +1,7 @@
 module Truth.Edit.EditFunction where
 {
     import Truth.Edit.JustEdit;
+    import Truth.Edit.MaybeReader;
     import Truth.Edit.Either();
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Edit;

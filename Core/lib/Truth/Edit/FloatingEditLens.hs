@@ -5,6 +5,7 @@ module Truth.Edit.FloatingEditLens where
     import Truth.Edit.JustWholeEdit;
     import Truth.Edit.JustEdit;
     import Truth.Edit.Either;
+    import Truth.Edit.MaybeReader;
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Edit;
     import Truth.Edit.Read;
@@ -105,7 +106,7 @@ module Truth.Edit.FloatingEditLens where
         {
 
             -- floatingEditLensPutEdit lens state pushb :: Readable ra (Maybe (state,edita))
-            -- liftJustReadable (floatingEditLensPutEdit lens state pushb) :: Readable (JustReader f ra) (f edita);
+            -- liftJustReadable (floatingEditLensPutEdit lens state pushb) :: Readable (MaybeReader f ra) (f edita);
 
             fpusha <- liftJustReadable (floatingEditLensPutEdit lens oldstate pushb);
             return $ case getMaybeOne fpusha of
@@ -131,7 +132,7 @@ module Truth.Edit.FloatingEditLens where
 
     -- floatingEditLensPutEdits :: FloatingEditLens' Maybe state edita editb -> state -> [editb] -> Readable (EditReader edita) (Maybe (state,[edita]));
 
-        pushback :: state -> f (EditSubject editb) -> Readable (JustReader f (EditReader edita)) (Maybe (state,f (EditSubject edita)));
+        pushback :: state -> f (EditSubject editb) -> Readable (MaybeReader f (EditReader edita)) (Maybe (state,f (EditSubject edita)));
         pushback oldstate fb = case retrieveOne fb of
         {
             FailureResult (MkLimit fx) -> return $ return (oldstate,fx);
