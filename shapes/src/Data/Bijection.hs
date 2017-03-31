@@ -1,8 +1,9 @@
 module Data.Bijection where
 {
-    import Data.Chain;
-    import Control.Category;
     import Prelude hiding (id,(.));
+    import Control.Category;
+    import Data.Chain;
+
 
     data Bijection a b = MkBijection
     {

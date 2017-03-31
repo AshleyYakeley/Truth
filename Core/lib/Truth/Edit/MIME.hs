@@ -1,12 +1,13 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.Edit.MIME where
 {
-    import Truth.Edit.Tuple;
-    import Truth.Edit.Anything;
-    import Truth.Edit.Context;
-    import Truth.Edit.WholeEdit;
     import Truth.Edit.Import;
     import qualified Codec.MIME.Type;
+    import Truth.Edit.WholeEdit;
+    import Truth.Edit.Context;
+    import Truth.Edit.Anything;
+    import Truth.Edit.Tuple;
+
 
     type MIMEContentType = Codec.MIME.Type.Type;
 

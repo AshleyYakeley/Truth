@@ -1,10 +1,11 @@
 module ValueType where
 {
-    import Data.Witness;
-    import Data.ByteString hiding (foldr,drop,splitAt);
-    import Distribution.PackageDescription;
-    import Data.Word;
     import Data.List;
+    import Data.Word;
+    import Distribution.PackageDescription;
+    import Data.ByteString hiding (foldr,drop,splitAt);
+    import Data.Witness;
+
 
     data ValueType a where
     {
@@ -19,11 +20,11 @@ module ValueType where
     };
 
     type AnyV = AnyF ValueType;
-    
+
     defaultListValue :: ListType ValueType a -> a;
     defaultListValue NilListType = ();
     defaultListValue (ConsListType vt rt) = (defaultValue vt,defaultListValue rt);
-    
+
     defaultValue :: ValueType a -> a;
     defaultValue (CollectionValueType lt) = defaultListValue lt;
     defaultValue (MaybeValueType _) = Nothing;
@@ -33,7 +34,7 @@ module ValueType where
     defaultValue ByteStringValueType = empty;
     defaultValue (SourceValueType _) = [];
     defaultValue (PackageDescriptionValueType) = emptyPackageDescription;
-    
+
     instance TestEquality ValueType where
     {
         testEquality (CollectionValueType lwa) (CollectionValueType lwb) = testEquality lwa lwb;
@@ -54,7 +55,7 @@ module ValueType where
         testEquality PackageDescriptionValueType PackageDescriptionValueType = Just Refl;
         testEquality _ _ = Nothing;
     };
-    
+
     instance Show (ValueType a) where
     {
         show (CollectionValueType _) = "collection";    -- should show types here
@@ -66,27 +67,27 @@ module ValueType where
         show (SourceValueType s) = "source code "++s;
         show PackageDescriptionValueType = "Cabal package description";
     };
-    
+
 --    makeEquals :: forall a r. (forall a'. (Eq a') => ValueType a' -> r) -> ValueType a -> r;
 --    makeEquals foo OctetValueType = foo OctetValueType;
-    
-    
+
+
     {-
     data IsEq a where
     {
         MkIsEq :: (Eq a) => IsEq a;
     };
-    
+
     toEq :: IsEq a -> IsEq a;
     toEq MkIsEq = MkIsEq;
-    
+
     toMaybeEq :: IsEq a -> IsEq (Maybe a);
     toMaybeEq MkIsEq = MkIsEq;
-    
+
     valueListIsEq :: ListType ValueType a -> IsEq a;
     valueListIsEq NilListType = MkIsEq;
     valueListIsEq (ConsListType _ _) = MkIsEq;
-    
+
     valueIsEq :: ValueType a -> IsEq a;
     valueIsEq (CollectionValueType lt) = valueListIsEq lt;
     valueIsEq (MaybeValueType t) = (\_ -> MkIsEq) (valueIsEq t);

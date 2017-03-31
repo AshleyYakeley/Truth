@@ -1,20 +1,21 @@
 module Main where
 {
-    import Data.Changes;
---    import Partial;
---    import MIME;
-    import Browser;
---    import Object;
---    import File;
---    import Lens;
---    import Interpret;
-    import Data.Witness;
---    import System.Gnome.VFS;
-    import Graphics.UI.Gtk hiding (Object);
-    import qualified Data.ByteString as BS;
-    import Data.Maybe;
-    import Data.Word;
     import Data.IORef;
+    import Data.Word;
+    import Data.Maybe;
+    import qualified Data.ByteString as BS;
+    import Graphics.UI.Gtk hiding (Object);
+--    import System.Gnome.VFS;
+    import Data.Witness;
+--    import Interpret;
+--    import Lens;
+--    import File;
+--    import Object;
+    import Browser;
+--    import MIME;
+--    import Partial;
+    import Data.Changes;
+
 
     createPanedWindow :: IO (Window,HPaned);
     createPanedWindow = do
@@ -36,7 +37,7 @@ module Main where
         putStrLn ("select "++(uriToString (objContext obj) URIHideNone) ++ " (" ++ (show t)++")");
         showObjects objs;
     };
-    
+
     onSelPane2 :: HPaned -> IORef (IO Bool) -> Selection -> IO ();
     onSelPane2 split lastBrowser sel = do
     {
@@ -63,7 +64,7 @@ module Main where
 
     mySubject :: URI;
     mySubject = (fromMaybe undefined (uriFromString "file:///home/ashley/Projects/Ghide/Ghide.cabal"));
-    
+
     myFile :: MIMEFile;
     myFile = MkMIMEFile (MkMIMEType "text" "cabal" []) "Ghide.cabal";
 

@@ -3,6 +3,7 @@ module Truth.Edit.Text where
 {
     import Truth.Edit.Import;
 
+
     packBijection :: Bijection ByteString [Word8];
     packBijection = MkBijection unpack pack;
 

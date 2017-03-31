@@ -1,12 +1,13 @@
 {-# LANGUAGE FlexibleContexts,UndecidableInstances,RankNTypes #-}
 module Main where
 {
-    import Truth.Object.Editor;
-    import Truth.Object;
-    import Truth.Edit;
-    import Data.ConstFunction;
-    import Data.Maybe;
     import Data.IORef;
+    import Data.Maybe;
+    import Data.ConstFunction;
+    import Truth.Edit;
+    import Truth.Object;
+    import Truth.Object.Editor;
+
 
     instance (Show edit,Show (Index c)) => Show (IndexEdit c edit) where
     {
@@ -78,11 +79,11 @@ module Main where
             return result;
         })
     });
-    
+
     main :: IO ();
     main = do
     {
-    
+
         putStrLn ("=======");
         putStrLn "Test Drop";
         withShowSubscription (freeObjSubscribe "pq" :: Subscribe (ListEdit (WholeEdit Char))) "main" (\obj push -> do
@@ -117,7 +118,7 @@ module Main where
                 return (Just ());
             });
         });
-    
+
         putStrLn ("=======");
         putStrLn "Test Take";
         withShowSubscription (freeObjSubscribe "tu" :: Subscribe (ListEdit (WholeEdit Char))) "main" (\obj push -> do
@@ -152,7 +153,7 @@ module Main where
                 return (Just ());
             });
         });
-    
+
         putStrLn ("=======");
         putStrLn "Test Section";
         withShowSubscription (freeObjSubscribe "abcdef" :: Subscribe (ListEdit (WholeEdit Char))) "main" (\obj push -> do
@@ -170,9 +171,9 @@ module Main where
                 pushSect (replaceEdit "12");
                 showObject "sect" sectobj;
                 showObject "main" obj;
-        
+
                 withShowSubscription (lensObject (listElement 4) obj) "elem" (\elemobj pushElem -> do
-                {        
+                {
                     --pushElem (ReplaceEdit (Just 'p'));
                     --showObject "elem" elemobj;
                     --showObject "sect" sectobj;

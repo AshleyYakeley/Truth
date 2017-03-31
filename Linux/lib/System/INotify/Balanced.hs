@@ -6,43 +6,44 @@ module System.INotify.Balanced
     addWatchB,removeWatchB
 ) where
 {
-    import System.INotify;
-    import Control.Concurrent.MVar;
-    import Control.Monad;
-    import Control.Exception;
-    import Data.Map;
-    import Data.List(nub);
-    import Data.Unique;
     import Prelude hiding (lookup,null);
+    import Data.Unique;
+    import Data.List(nub);
+    import Data.Map;
+    import Control.Exception;
+    import Control.Monad;
+    import Control.Concurrent.MVar;
+    import System.INotify;
+
     
     type CallbackMap = Map Unique ([EventVariety],Event -> IO ());
-    
+
     matchEventVariety :: Event -> EventVariety -> Bool;
     matchEventVariety (Closed _ _ _) Close = True;
     matchEventVariety (Modified _ _) Modify = True;
     matchEventVariety (MovedSelf _) MoveSelf = True;
     matchEventVariety (DeletedSelf) DeleteSelf = True;
     matchEventVariety _ _ = False;
-    
+
     matchEventVarieties :: Event -> [EventVariety] -> Bool;
     matchEventVarieties event = any (matchEventVariety event);
-    
+
     addMapWatch :: INotify -> FilePath -> CallbackMap -> IO WatchDescriptor;
     addMapWatch inotify path cbmap = addWatch inotify varieties path dispatch where
     {
         callbacks = elems cbmap;
         varieties = nub (concat (fmap fst callbacks));
-        dispatch event = forM_ callbacks 
+        dispatch event = forM_ callbacks
          (\(vs,callback) ->
           if matchEventVarieties event vs
            then callback event
            else return ());
     };
-    
+
     type WatchMap = Map WatchDescriptor (FilePath,CallbackMap);
-    
+
     data INotifyB = MkINotifyB INotify (MVar WatchMap);
-    
+
     initINotifyB :: IO INotifyB;
     initINotifyB = do
     {
@@ -50,13 +51,13 @@ module System.INotify.Balanced
         mvar <- newMVar empty;
         return (MkINotifyB inotify mvar);
     };
-    
+
     killINotifyB :: INotifyB -> IO ();
     killINotifyB (MkINotifyB inotify _) = killINotify inotify;
 
     withINotifyB :: (INotifyB -> IO a) -> IO a;
     withINotifyB = bracket initINotifyB killINotifyB;
-    
+
     data WatchDescriptorB = MkWatchDescriptorB WatchDescriptor Unique;
 
     instance Show WatchDescriptorB where
@@ -80,7 +81,7 @@ module System.INotify.Balanced
         _ <- addMapWatch inotify path cbmap;
         return (insert wd (path,cbmap) wdmap,MkWatchDescriptorB wd uniq);
     });
-    
+
     removeWatchB :: INotifyB -> WatchDescriptorB -> IO ();
     removeWatchB (MkINotifyB inotify mvar) (MkWatchDescriptorB wd uniq) = modifyMVar_ mvar (\wdmap -> case lookup wd wdmap of
     {

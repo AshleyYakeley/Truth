@@ -1,7 +1,7 @@
 module Data.Reity.Match where
 {
-    import Data.Type.Heterogeneous;
     import Data.Kind;
+    import Data.Type.Heterogeneous;
     import Data.Knowledge;
     import Data.Reity.Info;
 

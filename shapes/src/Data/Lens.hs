@@ -1,18 +1,18 @@
 module Data.Lens where
 {
-    import Data.Codec;
-    import Data.Injection;
-    import Data.Bijection;
-    import Data.Result;
-    import Data.Traversable;
-    import Data.FunctorOne;
-    import Data.Chain;
-    import Data.Witness;
-    import Data.Functor.Identity;
-    import Control.Applicative;
-    import Control.Category;
-    import Data.Maybe;
     import Prelude hiding (id,(.),sequence);
+    import Data.Maybe;
+    import Control.Category;
+    import Control.Applicative;
+    import Data.Functor.Identity;
+    import Data.Witness;
+    import Data.Chain;
+    import Data.FunctorOne;
+    import Data.Traversable;
+    import Data.Result;
+    import Data.Bijection;
+    import Data.Injection;
+    import Data.Codec;
 
 
     data Lens' m a b = MkLens

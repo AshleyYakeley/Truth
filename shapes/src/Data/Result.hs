@@ -2,6 +2,7 @@ module Data.Result where
 {
     import Data.Bijection;
 
+
     data Result e a = SuccessResult a | FailureResult e;
 
     resultToMaybe :: Result e a -> Maybe a;

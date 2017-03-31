@@ -8,6 +8,7 @@ module Data.Changes.Cabal where
     import Data.Changes;
     import Data.Result;
 
+
     interpretPackageDescription :: WholeLens String (Result PError GenericPackageDescription);
     interpretPackageDescription = resultWholeLens (parseResultToResult . parsePackageDescription) show where
     {
@@ -18,7 +19,7 @@ module Data.Changes.Cabal where
 
     instance IsTuple GenericPackageDescription where
     {
-        type TList GenericPackageDescription = 
+        type TList GenericPackageDescription =
             (PackageDescription,
             ([Flag],
             (Maybe (CondTree ConfVar [Dependency] Library),
@@ -34,11 +35,11 @@ module Data.Changes.Cabal where
     };
 {-
 
-GenericPackageDescription    
-packageDescription :: PackageDescription    
-genPackageFlags :: [Flag]    
+GenericPackageDescription
+packageDescription :: PackageDescription
+genPackageFlags :: [Flag]
 condLibrary :: Maybe (CondTree ConfVar [Dependency] Library)
-condExecutables ::     
+condExecutables ::
 
 
     instance (Editable a,Editable b) => Editable (a,b) where

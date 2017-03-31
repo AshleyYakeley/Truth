@@ -7,6 +7,7 @@ module Data.FloatingLens where
     import Data.FunctorOne;
     import Data.Chain;
 
+
     data FloatingLens' initial m a b = forall state. MkFloatingLens
     {
         floatingLensInitial :: initial -> state,

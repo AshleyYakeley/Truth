@@ -3,6 +3,7 @@ module Data.Store (module Data.Store,Key) where
     import Prelude hiding (null,lookup);
     import Data.IntMap;
 
+
     data Store a = MkStore Key (IntMap a);
 
     instance Functor Store where

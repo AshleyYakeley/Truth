@@ -3,28 +3,29 @@ module Truth.Linux.File
     withINotifyB,linuxFileObject
 ) where
 {
-    import Truth.Object;
-    import Truth.Edit;
-    import System.INotify.Balanced;
-    import System.Posix.Files;
-    import Data.ConstFunction;
-    import Data.ByteString;
-    import Control.Concurrent.QSem;
-    import Control.Concurrent.MVar;
-    import Control.Monad.Identity;
-    import Control.Monad.State;
-    import Control.Monad.Error;
-    import Control.Exception hiding (catch);
-    import System.IO.Error hiding (try);
-    import System.IO (Handle,IOMode(..),openFile,hClose,hSeek,SeekMode(AbsoluteSeek),hFileSize,hSetFileSize);
     import Prelude hiding (length,readFile,writeFile,catch);
-    
+    import System.IO (Handle,IOMode(..),openFile,hClose,hSeek,SeekMode(AbsoluteSeek),hFileSize,hSetFileSize);
+    import System.IO.Error hiding (try);
+    import Control.Exception hiding (catch);
+    import Control.Monad.Error;
+    import Control.Monad.State;
+    import Control.Monad.Identity;
+    import Control.Concurrent.MVar;
+    import Control.Concurrent.QSem;
+    import Data.ByteString;
+    import Data.ConstFunction;
+    import System.Posix.Files;
+    import System.INotify.Balanced;
+    import Truth.Edit;
+    import Truth.Object;
+
+
     withWatch :: INotifyB -> [EventVariety] -> FilePath -> (Event -> IO ()) -> IO r -> IO r;
     withWatch inotify evvars path update f = bracket
         (addWatchB inotify evvars path update)
         (removeWatchB inotify)
         (\_ -> f);
-    
+
     loop :: (Monad m) => m (Maybe a) -> m a;
     loop mma = do
     {
@@ -35,7 +36,7 @@ module Truth.Linux.File
             _ -> loop mma;
         };
     };
-    
+
     loopOnCloseWatch :: INotifyB -> FilePath -> IO (Maybe r) -> IO r;
     loopOnCloseWatch inotify path f = do
     {
@@ -46,7 +47,7 @@ module Truth.Linux.File
             _ -> do
             {
                 sem <- newQSem 1;
-                withWatch inotify [Close] path 
+                withWatch inotify [Close] path
                  (\_ -> signalQSem sem)
                  (loop (do
                  {
@@ -56,31 +57,31 @@ module Truth.Linux.File
             };
         };
     };
-    
+
     -- returns Nothing if busy, Just Nothing if non-existent, Just Just handle if successful
     checkOpenFileRead :: FilePath -> IO (Maybe (Maybe Handle));
-    checkOpenFileRead path = catch 
+    checkOpenFileRead path = catch
      (fmap (Just . Just) (openFile path ReadMode))
      (\ioerror -> if isDoesNotExistError ioerror
       then return (Just Nothing)
       else if isAlreadyInUseError ioerror
       then return Nothing
       else ioError ioerror);
-    
+
     waitOpenFileRead :: INotifyB -> FilePath -> IO (Maybe Handle);
     waitOpenFileRead inotify path = loopOnCloseWatch inotify path (checkOpenFileRead path);
-    
+
     -- returns Nothing if busy, Just handle if successful
     checkOpenFileReadWrite :: FilePath -> IO (Maybe Handle);
-    checkOpenFileReadWrite path = catch 
+    checkOpenFileReadWrite path = catch
      (fmap Just (openFile path ReadWriteMode))
      (\ioerror -> if isAlreadyInUseError ioerror
       then return Nothing
       else ioError ioerror);
-    
+
     waitOpenFileReadWrite :: INotifyB -> FilePath -> IO Handle;
     waitOpenFileReadWrite inotify path = loopOnCloseWatch inotify path (checkOpenFileReadWrite path);
-    
+
     data FileState = MkFileState
     {
         fsNotify :: INotifyB,
@@ -88,7 +89,7 @@ module Truth.Linux.File
         fsPushout :: ContextContentEdit (WholeEdit FilePath) (JustWholeEdit Maybe (WholeEdit ByteString)) -> IO (),
         fsWatchVar :: MVar (Maybe WatchDescriptorB)
     };
-    
+
     runMVar :: MVar s -> StateT s IO a -> IO a;
     runMVar mvar f = modifyMVar mvar (\olds -> do
     {
@@ -98,7 +99,7 @@ module Truth.Linux.File
 
     tryError :: (MonadError e m) => m a -> m (Either e a);
     tryError f = catchError (f >>= (return . Right)) (return . Left);
-    
+
     finallyError :: (MonadError e m) => m a -> m () -> m a;
     finallyError f after = do
     {
@@ -110,9 +111,9 @@ module Truth.Linux.File
             Left e -> throwError e;
         };
     };
-    
+
     type FSAction a = (?fs :: FileState) => ErrorT IOError (StateT (FilePath,Maybe Handle) IO) a;
-    
+
     runFSAction :: (?fs :: FileState) => FSAction a -> IO a;
     runFSAction f = do
     {
@@ -137,7 +138,7 @@ module Truth.Linux.File
             fsWatchVar = watchVar
         });
     };
-    
+
     fsClose :: FSAction ();
     fsClose = do
     {
@@ -149,7 +150,7 @@ module Truth.Linux.File
         };
         put (path,Nothing);
     };
-    
+
     fsOpenHandle :: Bool -> FSAction Bool;
     fsOpenHandle write = do
     {
@@ -171,7 +172,7 @@ module Truth.Linux.File
         put (path,mh');
         return opened;
     };
-    
+
     fsAddWatch :: FSAction ();
     fsAddWatch = do
     {
@@ -191,7 +192,7 @@ module Truth.Linux.File
             _ -> return mwd;
         }));
     };
-    
+
     fsRemoveWatch :: FSAction ();
     fsRemoveWatch = liftIO (modifyMVar_ (fsWatchVar ?fs) (\mwd -> case mwd of
     {
@@ -202,7 +203,7 @@ module Truth.Linux.File
         };
         _ -> return Nothing;
     }));
-    
+
     fsWithOpen :: Bool -> FSAction r -> FSAction r;
     fsWithOpen write f = do
     {
@@ -211,7 +212,7 @@ module Truth.Linux.File
          then finallyError f fsClose
          else f;
     };
-    
+
     fsWith :: Bool -> Bool -> FSAction r -> FSAction r;
     fsWith write watch f = fsWithOpen write (do
     {
@@ -226,13 +227,13 @@ module Truth.Linux.File
             finallyError f (fsWithOpen write fsAddWatch);
         };
     });
-    
+
     fsWithRead :: FSAction r -> FSAction r;
     fsWithRead = fsWith False True;
-    
+
     fsWithReadWrite :: Bool -> FSAction r -> FSAction r;
     fsWithReadWrite = fsWith True;
-    
+
     fsGet :: FSAction (WithContext FilePath (Maybe ByteString));
     fsGet = fsWithRead (do
     {
@@ -251,7 +252,7 @@ module Truth.Linux.File
         };
         return (MkWithContext path mbs);
     });
-    
+
     fsPut :: Maybe ByteString -> FSAction ();
     fsPut (Just bs) = fsWithReadWrite False (do
     {
@@ -289,7 +290,7 @@ module Truth.Linux.File
     };
 
     linuxFileObject :: INotifyB -> FilePath ->
-     Subscribe 
+     Subscribe
       (ContextContentEdit (WholeEdit FilePath) (JustWholeEdit Maybe (WholeEdit ByteString)));
     linuxFileObject inotify initialpath = objSubscribe (\pushout -> do
     {

@@ -1,10 +1,11 @@
 module Truth.UI.GTK.SourceView where
 {
---    import Truth.UI.GTK.Useful;
---    import Graphics.UI.Gtk;
---    import Data.Changes;
---    import Data.ConstFunction;
 --    import Data.IORef;
+--    import Data.ConstFunction;
+--    import Data.Changes;
+--    import Graphics.UI.Gtk;
+--    import Truth.UI.GTK.Useful;
+
 
 {-
     sourceViewBrowser :: ViewFactory a;

@@ -3,6 +3,7 @@ module Data.Category  where
     import Data.Kind;
     import Control.Category;
 
+
     class Category cat => TerminalCategory (cat :: k -> k -> *) where
     {
         type Terminal cat :: k;

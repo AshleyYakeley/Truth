@@ -1,11 +1,12 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Truth.Edit.Tuple where
 {
-    import Truth.Edit.CleanEditLens;
-    import Truth.Edit.EditFunction;
-    import Truth.Edit.Edit;
-    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Truth.Edit.Read;
+    import Truth.Edit.Edit;
+    import Truth.Edit.EditFunction;
+    import Truth.Edit.CleanEditLens;
+
 
     data IsFullReaderEdit edit where
     {

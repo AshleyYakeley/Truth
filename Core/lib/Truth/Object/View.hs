@@ -1,8 +1,9 @@
 module Truth.Object.View where
 {
-    import Truth.Object.Object;
-    import Truth.Edit;
     import Truth.Edit.Import;
+    import Truth.Edit;
+    import Truth.Object.Object;
+
 
     data Aspect edit where
     {

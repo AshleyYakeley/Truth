@@ -1,14 +1,15 @@
 module MIME (MIMEType(..)) where
 {
---    import Text.ParserCombinators.ReadPrec;
-    import Text.Read;
     import Control.Monad;
+    import Text.Read;
+--    import Text.ParserCombinators.ReadPrec;
+
 
     data MIMEType = MkMIMEType String String [(String,String)];
-    
+
     doit :: (Monad m) => m a -> m ();
     doit ma = ma >> return ();
-    
+
     getList :: (MonadPlus m) => m a -> m [a];
     getList rc = mplus (do
     {
@@ -16,14 +17,14 @@ module MIME (MIMEType(..)) where
         s <- getList rc;
         return (c:s);
     }) (return []);
-    
+
     doList :: (MonadPlus m) => m a -> m ();
     doList rc = mplus (do
     {
         rc;
         doList rc;
     }) (return ());
-    
+
     readAllowed :: (Char -> Bool) -> ReadPrec Char;
     readAllowed ok = do
     {
@@ -32,7 +33,7 @@ module MIME (MIMEType(..)) where
             then return c
             else mzero;
     };
-    
+
     readChar :: Char -> ReadPrec ();
     readChar ec = do
     {
@@ -41,7 +42,7 @@ module MIME (MIMEType(..)) where
             then return ()
             else mzero;
     };
-    
+
     readToken :: ReadPrec String;
     readToken = getList (readAllowed tokenChar) where
     {
@@ -64,14 +65,14 @@ module MIME (MIMEType(..)) where
         tokenChar '=' = False;
         tokenChar c = (fromEnum c) > 31;
     };
-    
+
     readQPair :: ReadPrec Char;
     readQPair = do
     {
         readChar '\\';
         get;
     };
-    
+
     readWhiteSpace :: ReadPrec ();
     readWhiteSpace = doList (mplus readComment (doit (readAllowed wsChar))) where
     {
@@ -80,7 +81,7 @@ module MIME (MIMEType(..)) where
         wsChar '\t' = True;
         wsChar '\n' = True;
         wsChar _ = False;
-    
+
         readComment :: ReadPrec ();
         readComment = do
         {
@@ -97,12 +98,12 @@ module MIME (MIMEType(..)) where
             cChar _ = True;
         };
     };
-    
+
     readQuotedString :: ReadPrec String;
     readQuotedString = do
     {
         readChar '"';
-        s <- getList (mplus readQPair (readAllowed qChar)); 
+        s <- getList (mplus readQPair (readAllowed qChar));
         readChar '"';
         return s;
     } where
@@ -113,7 +114,7 @@ module MIME (MIMEType(..)) where
         qChar '\n' = False;
         qChar _ = True;
     };
-    
+
     readParam :: ReadPrec (String,String);
     readParam = do
     {
@@ -125,7 +126,7 @@ module MIME (MIMEType(..)) where
         value <- mplus readToken readQuotedString;
         return (attr,value);
     };
-    
+
     instance Read MIMEType where
     {
         readPrec = do

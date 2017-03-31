@@ -1,8 +1,9 @@
 module Data.HasNewValue where
 {
+    import Data.Word;
     import Data.ByteString;
     import Data.Result;
-    import Data.Word;
+
 
     class HasNewValue a where
     {

@@ -1,13 +1,14 @@
 module Data.Injection where
 {
-    import Data.Bijection;
-    import Data.Codec;
-    import Data.Result;
-    import Data.Traversable;
-    import Data.Chain;
-    import Control.Category;
-    import Data.Functor.Identity;
     import Prelude hiding (id,(.),sequence);
+    import Data.Functor.Identity;
+    import Control.Category;
+    import Data.Chain;
+    import Data.Traversable;
+    import Data.Result;
+    import Data.Codec;
+    import Data.Bijection;
+
 
     data Injection' m a b = MkInjection
     {

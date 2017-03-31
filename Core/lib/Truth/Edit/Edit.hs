@@ -3,6 +3,7 @@ module Truth.Edit.Edit where
     import Truth.Edit.Import;
     import Truth.Edit.Read;
 
+
     class ({- Edit edit -}) => Floating edit (t :: *) where
     {
         floatingUpdate :: edit -> t -> t;

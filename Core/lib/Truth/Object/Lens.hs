@@ -1,8 +1,8 @@
 module Truth.Object.Lens where
 {
     import Truth.Edit.Import;
-    import Truth.Object.Object;
     import Truth.Edit;
+    import Truth.Object.Object;
 
 
     class ObjectLens lens where

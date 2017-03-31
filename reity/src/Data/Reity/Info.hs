@@ -1,9 +1,9 @@
 module Data.Reity.Info where
 {
+    import Data.Kind;
     import Data.Type.Equality;
     import Data.Type.Heterogeneous;
     import Data.OpenWitness;
-    import Data.Kind;
     import Data.KindCategory;
     import Data.Knowledge;
 

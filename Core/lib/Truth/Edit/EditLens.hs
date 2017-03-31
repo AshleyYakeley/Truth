@@ -1,12 +1,12 @@
 module Truth.Edit.EditLens where
 {
-    import Truth.Edit.EditFunction;
-    import Truth.Edit.JustEdit;
-    import Truth.Edit.MaybeReader;
-    import Truth.Edit.WholeEdit;
-    import Truth.Edit.Edit;
-    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Truth.Edit.Read;
+    import Truth.Edit.Edit;
+    import Truth.Edit.WholeEdit;
+    import Truth.Edit.MaybeReader;
+    import Truth.Edit.JustEdit;
+    import Truth.Edit.EditFunction;
 
 
     -- | A EditLens is a lens that converts edits

@@ -1,8 +1,9 @@
 module Truth.Object.SavableBuffer where
 {
-    --import Truth.Object.Object;
-    import Truth.Edit;
     import Truth.Edit.Import;
+    import Truth.Edit;
+    --import Truth.Object.Object;
+
 
     data SavableVersion = SavableOriginal | SavableCurrent deriving Eq;
 

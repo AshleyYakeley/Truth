@@ -1,10 +1,11 @@
 module Data.ConstFunction where
 {
-    import Data.Chain;
-    import Control.Arrow;
-    import Control.Category;
-    import Control.Applicative;
     import Prelude hiding (id,(.));
+    import Control.Applicative;
+    import Control.Category;
+    import Control.Arrow;
+    import Data.Chain;
+
 
     data ConstFunction a b =
         ConstConstFunction b

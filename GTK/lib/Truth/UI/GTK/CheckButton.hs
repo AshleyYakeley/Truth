@@ -1,8 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.CheckButton where
 {
-    import Graphics.UI.Gtk;
     import Data.Type.Equality;
+    import Graphics.UI.Gtk;
     import Data.Reity;
     import Truth.Edit;
     import Truth.Object;

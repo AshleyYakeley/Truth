@@ -1,19 +1,20 @@
 {-# LANGUAGE FlexibleContexts,UndecidableInstances,RankNTypes,ScopedTypeVariables #-}
 module Main where
 {
-    import Data.Changes.File.Linux;
-    import Data.Changes.Editor;
-    import Data.Changes;
-    import Data.ConstFunction;
-    import Data.ByteString hiding (putStrLn);
-    import Data.Char;
-    import Data.Chain;
-    import Data.IORef;
-    import Data.Result;
-    import Control.Concurrent;
-    import Control.Category;
     import Prelude hiding (readFile,writeFile,id,(.));
-    
+    import Control.Category;
+    import Control.Concurrent;
+    import Data.Result;
+    import Data.IORef;
+    import Data.Chain;
+    import Data.Char;
+    import Data.ByteString hiding (putStrLn);
+    import Data.ConstFunction;
+    import Data.Changes;
+    import Data.Changes.Editor;
+    import Data.Changes.File.Linux;
+
+
     instance (Show edit,Show i) => Show (IndexEdit a i edit) where
     {
         show (MkIndexEdit i edit) = (show i) ++ " " ++ show edit;
@@ -25,35 +26,35 @@ module Main where
         show (ReplaceSectionEdit i sect) = "section " ++ (show i) ++ " " ++ show sect;
         show (ReplaceListEdit la) = "replace " ++ (show la);
     };
-    
+
     instance (Show (f (EditSubject edit)),Show edit) => Show (JustEdit f edit) where
     {
         show (MkJustEdit edit) = show edit;
     };
-   
+
     instance (Show a) => Show (WholeEdit a) where
     {
         show (MkWholeEdit s) = show s;
     };
-   
+
     showObject :: (Show (EditSubject edit)) => String -> Subscribe edit -> IO ();
     showObject name obj = do
     {
         a <- subscribeRead obj;
         putStrLn (name ++ ": " ++ (show a));
     };
-    
+
     instance Show ListError where
     {
         show (MkListError i) = "error at item " ++ (show i);
     };
-    
+
     instance (Show e,Show a) => Show (Result e a) where
     {
         show (FailureResult e) = "failure: " ++ (show e);
         show (SuccessResult a) = "success: " ++ (show a);
     };
-    
+
     makeShowSubscription :: (Show (EditSubject edit),Show edit,Edit edit) => String -> Subscribe edit -> IO (Push edit,Subscription edit);
     makeShowSubscription name subscribe = do
     {
@@ -63,7 +64,7 @@ module Main where
                 putStrLn (name ++ ": initial " ++ (show a));
                 ref <- newIORef a;
                 return (ref,push);
-            }) 
+            })
             (\(ref,_) edit -> do
             {
                 putStrLn (name ++ ": edit: " ++ (show edit));
@@ -73,7 +74,7 @@ module Main where
             });
         return (push,sub);
     };
-    
+
     showPushEdit :: (Show edit) => Push edit -> edit -> IO ();
     showPushEdit push edit = do
     {
@@ -85,9 +86,9 @@ module Main where
             _ -> putStrLn "impossible";
         };
     };
-    
+
     path = "somefile";
-    
+
     main :: IO ();
     main = do
     {
@@ -103,7 +104,7 @@ module Main where
                 textobj :: Subscribe (WholeEdit (Maybe (Result ListError String)))
                  = lensObject (simpleFixedLens (toSimpleLens (wholeSimpleLens (cfmap (utf8Lens . packBSLens))))) contentobj;
             };
-        
+
             (push,sub) <- makeShowSubscription path textobj;
 
             putStrLn "writing & waiting 100ms";
@@ -117,36 +118,36 @@ module Main where
             showPushEdit push (MkWholeEdit (Just (SuccessResult "pqrstu")));
 
     --        writeFile path (pack [65,66,67,68,10]);
-    {-        
+    {-
             obj <- freeObjSubscribe () "abcdef";
             sub <- makeShowSubscription "main" obj;
             showPushEdit sub (ReplaceEdit "pqrstu");
-        
+
             showObject "current" obj;
-        
+
             let {sectobj = lensObject listSection (\_ -> return (2,2)) obj;};
-            sectsub <- makeShowSubscription "sect" sectobj;        
-        
+            sectsub <- makeShowSubscription "sect" sectobj;
+
             showPushEdit sectsub (ReplaceEdit "12");
             showObject "sect" sectobj;
             showObject "main" obj;
-        
+
             showPushEdit sectsub (ReplaceEdit "x");
             showObject "sect" sectobj;
             showObject "main" obj;
-        
+
             showPushEdit sectsub (ReplaceEdit "ABC");
             showObject "sect" sectobj;
             showObject "main" obj;
-        
+
             showPushEdit sectsub (ReplaceEdit "");
             showObject "sect" sectobj;
             showObject "main" obj;
-        
+
             showPushEdit sectsub (ReplaceEdit "ZUM");
             showObject "sect" sectobj;
             showObject "main" obj;
-        
+
             subClose sectsub;
     -}
 

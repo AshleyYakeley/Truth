@@ -2,6 +2,7 @@ module Data.Compose where
 {
     import Data.Kind;
 
+
     data Compose (p :: k2 -> *) (q :: k1 -> k2) (a :: k1) = MkCompose {getCompose :: p (q a)};
 
     instance (Functor p,Functor q) => Functor (Compose p q) where

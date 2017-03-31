@@ -1,10 +1,10 @@
 module Truth.UI.GTK.Tuple where
 {
 {-
-    import Data.Changes;
-    import Data.Witness;
-    import Data.Traversable;
     import Data.TypeFunc;
+    import Data.Traversable;
+    import Data.Witness;
+    import Data.Changes;
 -}
 {-
     type family ListMap tf l;
@@ -62,7 +62,7 @@ module Truth.UI.GTK.Tuple where
         {
             getVR :: ListElementType (TList a) elem -> ViewResult w elem;
             getVR elemwit = getListElement (mapListElement tfViewResult elemwit) vrs;
-        
+
             pickWidget :: AnyF EditableWit (ListElementType (TList a)) -> w;
             pickWidget (MkAnyF _ elemwit) = vrWidget (getVR elemwit);
         };
@@ -76,7 +76,7 @@ module Truth.UI.GTK.Tuple where
              (\(MkAnyF _ elemwit) -> vrUpdate (getVR elemwit) (replaceEdit (getListElement elemwit tla)))
             ) >> return ();
             TListEdit elemwit edite -> vrUpdate (getVR elemwit) edite;
-        })); 
+        }));
     };
 -}
 }

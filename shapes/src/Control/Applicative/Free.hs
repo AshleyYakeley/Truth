@@ -4,6 +4,7 @@ module Control.Applicative.Free where
     import Data.KindCategory;
     import Data.Free;
 
+
     data FreeApplicative f a = FreePure a | forall t. FreeApply (f t) (FreeApplicative f (t -> a));
 
     instance Functor (FreeApplicative f) where

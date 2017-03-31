@@ -1,7 +1,8 @@
 module Truth.Edit.Merge where
 {
-    import Truth.Edit.Edit;
 --    import Truth.Edit.Import;
+    import Truth.Edit.Edit;
+
 
     data EditStep edit = MkEditStep edit [edit];
 

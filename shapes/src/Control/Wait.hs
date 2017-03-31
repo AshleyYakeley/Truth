@@ -3,6 +3,7 @@ module Control.Wait where
     import Control.Concurrent;
     import Control.Exception;
 
+
     type WaitIO a = (?wait :: MVar ()) => IO a;
 
     newtype Throw = MkThrow (forall e. (Exception e) => e -> IO ());

@@ -2,13 +2,14 @@
 module Truth.Edit.List({- listElement,listTake,listDrop,listSection,ListEdit(..),ListPoint,ListRegion(..) -}) where
 {
 {-
-    import Truth.Edit.IndexEdit;
-    import Truth.Edit.FloatingEditLens;
-    import Truth.Edit.FloatingEditFunction;
-    import Truth.Edit.JustWholeEdit;
-    import Truth.Edit.JustEdit;
-    import Truth.Edit.Edit;
     import Truth.Edit.Import;
+    import Truth.Edit.Edit;
+    import Truth.Edit.JustEdit;
+    import Truth.Edit.JustWholeEdit;
+    import Truth.Edit.FloatingEditFunction;
+    import Truth.Edit.FloatingEditLens;
+    import Truth.Edit.IndexEdit;
+
 
     type ListPoint = Int;
     data ListRegion = MkListRegion Int Int deriving (Eq);

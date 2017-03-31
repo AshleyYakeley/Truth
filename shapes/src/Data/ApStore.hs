@@ -3,6 +3,7 @@ module Data.ApStore where
     import Control.Applicative.Free;
     import Data.Witness;
 
+
     type ApStore w = WitnessFDict w (FreeApplicative w);
 
     findInApStore :: (TestEquality w) => ApStore w -> w a -> Maybe a;

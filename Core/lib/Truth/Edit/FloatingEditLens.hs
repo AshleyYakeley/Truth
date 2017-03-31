@@ -1,15 +1,15 @@
 module Truth.Edit.FloatingEditLens where
 {
-    import Truth.Edit.EditLens;
-    import Truth.Edit.FloatingEditFunction;
-    import Truth.Edit.JustWholeEdit;
-    import Truth.Edit.JustEdit;
-    import Truth.Edit.Either;
-    import Truth.Edit.MaybeReader;
-    import Truth.Edit.WholeEdit;
-    import Truth.Edit.Edit;
-    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Truth.Edit.Read;
+    import Truth.Edit.Edit;
+    import Truth.Edit.WholeEdit;
+    import Truth.Edit.MaybeReader;
+    import Truth.Edit.Either;
+    import Truth.Edit.JustEdit;
+    import Truth.Edit.JustWholeEdit;
+    import Truth.Edit.FloatingEditFunction;
+    import Truth.Edit.EditLens;
 
 
     data FloatingEditLens' m state edita editb = MkFloatingEditLens

@@ -1,12 +1,13 @@
 module Truth.Edit.JustWholeEdit where
 {
-    import Truth.Edit.JustEdit;
-    import Truth.Edit.MaybeReader;
-    import Truth.Edit.WholeEdit;
-    import Truth.Edit.Either;
-    import Truth.Edit.Edit;
-    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Truth.Edit.Read;
+    import Truth.Edit.Edit;
+    import Truth.Edit.Either;
+    import Truth.Edit.WholeEdit;
+    import Truth.Edit.MaybeReader;
+    import Truth.Edit.JustEdit;
+
 
     type EitherWholeEdit edit = EitherEdit (WholeEdit (EditReader edit)) edit;
 

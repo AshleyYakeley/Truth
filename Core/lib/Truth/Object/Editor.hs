@@ -1,8 +1,8 @@
 module Truth.Object.Editor where
 {
-    import Truth.Object.Object;
-    import Truth.Edit;
     import Truth.Edit.Import;
+    import Truth.Edit;
+    import Truth.Object.Object;
 
 
     data Editor (edit :: *) r = forall editor token. MkEditor

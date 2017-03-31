@@ -4,6 +4,7 @@ module Data.Functor.Free where
     import Data.KindCategory;
     import Data.Free;
 
+
     data FreeFunctor f t where
     {
         MkFreeFunctor :: forall p f t. (p -> t) -> f p -> FreeFunctor f t

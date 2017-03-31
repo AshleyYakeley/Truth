@@ -1,15 +1,16 @@
 {-# LANGUAGE ViewPatterns, FlexibleContexts #-}
 module Truth.UI.GTK.Window where
 {
-    import Truth.UI.GTK.Text;
-    import Truth.UI.GTK.CheckButton;
-    import Truth.UI.GTK.Maybe;
-    import Truth.UI.GTK.GView;
-    import Graphics.UI.Gtk;
-    import Truth.Object;
-    import Truth.Edit;
-    import Truth.TypeKT;
     import Data.IORef;
+    import Truth.TypeKT;
+    import Truth.Edit;
+    import Truth.Object;
+    import Graphics.UI.Gtk;
+    import Truth.UI.GTK.GView;
+    import Truth.UI.GTK.Maybe;
+    import Truth.UI.GTK.CheckButton;
+    import Truth.UI.GTK.Text;
+
 
     makeButton :: String -> IO () -> IO Button;
     makeButton name action = do

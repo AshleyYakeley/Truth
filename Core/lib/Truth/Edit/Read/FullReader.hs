@@ -1,8 +1,9 @@
 module Truth.Edit.Read.FullReader where
 {
-    import Truth.Edit.Read.Readable;
-    import Truth.Edit.Read.Reader;
     import Truth.Edit.Import;
+    import Truth.Edit.Read.Reader;
+    import Truth.Edit.Read.Readable;
+
 
     class (Reader reader) => FullReader (reader :: * -> *) where
     {

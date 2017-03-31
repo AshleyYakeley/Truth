@@ -1,16 +1,16 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.Text (textMatchView) where
 {
+    import Data.Foldable;
+    import Control.Concurrent.MVar;
     import Graphics.UI.Gtk;
+    import Data.Witness;
     import Data.Reity;
     import Truth.Edit;
     import Truth.Object;
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Useful;
 
-    import Data.Foldable;
-    import Control.Concurrent.MVar;
-    import Data.Witness;
 
     replaceText :: TextBuffer -> SequenceRun String -> String -> IO ();
     replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)) text = do

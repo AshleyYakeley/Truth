@@ -1,17 +1,18 @@
 module File where
 {
-    import Data.Changes;
-    import System.GIO;
-    import Data.ByteString;
     import Control.Concurrent.STM;
-    
+    import Data.ByteString;
+    import System.GIO;
+    import Data.Changes;
+
+
     refSubscribe :: (Eq a) => ValueType a -> IO a -> (a -> IO ()) -> IO (Subscription a);
     refSubscribe vt getter setter = do
     {
         initial <- getter;
         stateVar <- newTVarIO initial;
         doneVar <- newTVarIO False;
-        
+
         return (MkSubscription
         {
             subInitial = initial,
@@ -44,7 +45,7 @@ module File where
                             return (Left curEdits);
                         };
                     };
-                    
+
                 });
                 case rr of
                 {
@@ -60,7 +61,7 @@ module File where
             subClose = atomically (writeTVar doneVar True)
         });
     };
-    
+
     uriObject :: File -> Object (Maybe ByteString);
     uriObject uri = MkObject
     {
@@ -85,7 +86,7 @@ bs <- return empty;
             })
             (\_ -> return Nothing);
         };
-        
+
         setURI :: Maybe ByteString -> IO ();
         setURI Nothing = fileDelete uri Nothing;
         setURI (Just _) = do

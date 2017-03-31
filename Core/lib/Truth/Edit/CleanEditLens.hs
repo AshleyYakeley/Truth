@@ -1,11 +1,12 @@
 module Truth.Edit.CleanEditLens where
 {
-    import Truth.Edit.EditLens;
-    import Truth.Edit.EditFunction;
-    import Truth.Edit.Either;
-    import Truth.Edit.WholeEdit;
-    import Truth.Edit.Edit;
     import Truth.Edit.Import;
+    import Truth.Edit.Edit;
+    import Truth.Edit.WholeEdit;
+    import Truth.Edit.Either;
+    import Truth.Edit.EditFunction;
+    import Truth.Edit.EditLens;
+
 
     data CleanEditLens' m edita editb = MkCleanEditLens
     {

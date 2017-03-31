@@ -2,6 +2,7 @@ module Truth.Edit.Read.Reader where
 {
     import Truth.Edit.Import;
 
+
     type Structure m reader = forall t. reader t -> m t;
 
     -- | The values of the reader type are API calls that read parts of something of type (ReaderSubject reader).

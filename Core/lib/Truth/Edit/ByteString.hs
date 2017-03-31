@@ -5,6 +5,7 @@ module Truth.Edit.ByteString where
     import Truth.Edit.Read;
     import Truth.Edit.Edit;
 
+
     data ByteStringReader t where
     {
         ReadByteStringLength :: ByteStringReader Int;

@@ -1,18 +1,19 @@
 module Interpret where
 {
-    import MIME;
-    import Object;
-    import Codec;
-    import ValueType;
+    import Prelude hiding (id,(.));
+    import Data.Word;
+    import Data.Char;
+    import Data.Traversable;
+    import Control.Category;
+    import Data.IORef;
+    import Data.ByteString;
     import Distribution.PackageDescription;
     import Data.Witness;
-    import Control.Category;
-    import Prelude hiding (id,(.));
-    import Data.Traversable;
-    import Data.Char;
-    import Data.Word;
-    import Data.ByteString;
-    import Data.IORef;
+    import ValueType;
+    import Codec;
+    import Object;
+    import MIME;
+
 
     data Reference a = MkReference
     {
@@ -22,7 +23,7 @@ module Interpret where
 
     --    pullEdits :: IO (a,IO (Maybe (Edit a))),
     --    pushEdit :: Edit a -> IO (Maybe (Edit a))
-    
+
     data Subscription a = MkSubscription
     {
         subInitial :: a,
@@ -30,7 +31,7 @@ module Interpret where
         subPush :: [Edit a] -> IO (Maybe [Edit a]),
         subClose :: IO ()
     };
-    
+
     codecSubscription :: Codec a b -> Subscription a -> Subscription b;
     codecSubscription codec sub = MkSubscription
     {
@@ -39,8 +40,8 @@ module Interpret where
             Just b -> return b;
             _ -> error "decode error";
         };
-        subPull :: 
-        
+        subPull ::
+
         pullEdits = do
         {
             (a,puller) <- pullEdits ref;
@@ -53,7 +54,7 @@ module Interpret where
         },
         setRef = \b -> setRef ref (encode codec b)
     };
-    
+
     codecObj :: Codec a b -> Object a -> Object b;
     codecObj codec obj = MkObject
     {
@@ -64,7 +65,7 @@ module Interpret where
             return (codecSubscription codec sub);
         }
     };
-    
+
     codecMapRef :: (Traversable f) => Codec a b -> Reference (f a) -> Reference (f b);
     codecMapRef codec ref = MkReference
     {
@@ -79,16 +80,16 @@ module Interpret where
         },
         setRef = \fb -> setRef ref (fmap (encode codec) fb)
     };
-    
+
     codecMapObj :: (Traversable f) => Codec a b -> Object (f a) -> Object (f b);
     codecMapObj codec (MkObject context ref) = MkObject context (codecMapRef codec ref);
-    
+
     byteStringCodec :: Codec ByteString [Word8];
     byteStringCodec = MkCodec (Just . unpack) pack;
-    
+
     latin1 :: Codec [Word8] String;
     latin1 = MkCodec (Just . (fmap (chr . fromIntegral))) (fmap (fromIntegral . ord));
-    
+
     {-
     packageDescriptionCodec :: Codec String PackageDescription;
     packageDescriptionCodec = MkCodec
@@ -100,13 +101,13 @@ module Interpret where
         (\_ -> "");
     -}
     data Interpreter base = forall a. MkInterpreter (ValueType a) (Codec base a);
-    
+
     interpret :: Interpreter base -> Object base -> AnyObject;
     interpret (MkInterpreter ot codec) obj = MkAnyF ot (codecObj codec obj);
-    
+
     interpretMaybe :: Interpreter base -> Object (Maybe base) -> AnyObject;
     interpretMaybe (MkInterpreter ot codec) obj = MkAnyF (MaybeValueType ot) (codecMapObj codec obj);
-    
+
     mimeInterpreter :: MIMEType -> Interpreter [Word8];
 --    mimeInterpreter (MkMIMEType "text" "cabal" _) = MkInterpreter PackageDescriptionValueType (packageDescriptionCodec . latin1);
     mimeInterpreter (MkMIMEType "text" "plain" _) = MkInterpreter (ListValueType CharValueType) latin1;

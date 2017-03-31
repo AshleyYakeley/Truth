@@ -1,7 +1,8 @@
 module Truth.Edit.Read.Readable where
 {
-    import Truth.Edit.Read.Reader;
     import Truth.Edit.Import;
+    import Truth.Edit.Read.Reader;
+
 
     newtype Readable reader a = MkReadable { unReadable :: forall m. (Applicative m,Monad m) => Structure m reader -> m a};
 

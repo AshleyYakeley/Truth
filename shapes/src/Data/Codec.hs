@@ -1,14 +1,15 @@
 module Data.Codec where
 {
-    import Data.FunctorOne;
-    import Data.Result;
-    import Data.Functor.Identity;
-    import Data.Chain;
-    import Data.Bijection;
-    import Control.Category;
-    import Control.Applicative;
-    import Data.Traversable;
     import Prelude hiding (id,(.));
+    import Data.Traversable;
+    import Control.Applicative;
+    import Control.Category;
+    import Data.Bijection;
+    import Data.Chain;
+    import Data.Functor.Identity;
+    import Data.Result;
+    import Data.FunctorOne;
+
 
     class IsBiMap bm where
     {

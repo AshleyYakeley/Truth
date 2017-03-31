@@ -2,9 +2,7 @@ module Data.Reity.HasInfo where
 {
     import GHC.Types;
     import Data.Word;
-
     import Data.ByteString;
-
     import Data.Type.Heterogeneous;
     import Data.HasNewValue;
     import Data.FunctorOne;

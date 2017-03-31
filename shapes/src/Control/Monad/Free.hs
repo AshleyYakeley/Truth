@@ -7,6 +7,7 @@ module Control.Monad.Free where
     import Data.KindCategory;
     import Data.Free;
 
+
     data FreeMonad f a = FreeReturn a | FreeBind (f (FreeMonad f a));
 
     instance (Functor f) => Functor (FreeMonad f) where

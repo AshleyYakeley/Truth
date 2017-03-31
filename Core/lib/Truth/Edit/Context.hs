@@ -1,11 +1,12 @@
 module Truth.Edit.Context where
 {
-    import Truth.Edit.Tuple;
-    import Truth.Edit.CleanEditLens;
-    import Truth.Edit.Edit;
-    import Truth.Edit.Read;
-    import Truth.Edit.Import;
     import Data.ConstFunction;
+    import Truth.Edit.Import;
+    import Truth.Edit.Read;
+    import Truth.Edit.Edit;
+    import Truth.Edit.CleanEditLens;
+    import Truth.Edit.Tuple;
+
 
     data WithContext context content = MkWithContext context content;
 

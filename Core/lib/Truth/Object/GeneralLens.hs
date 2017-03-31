@@ -1,9 +1,10 @@
 module Truth.Object.GeneralLens where
 {
 {-
-    import Truth.Object.Object;
-    import Truth.Edit;
     import Truth.Edit.Import;
+    import Truth.Edit;
+    import Truth.Object.Object;
+
 
     type ArgSubjWit (k :: * -> *) = forall (a' :: *). a' :~: EditSubject (k a');
 

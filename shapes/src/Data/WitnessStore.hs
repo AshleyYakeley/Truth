@@ -8,6 +8,7 @@ module Data.WitnessStore where
     import Data.OpenWitness;
     import Data.Store;
 
+
     data WitnessKey (w :: k -> *) (a :: k) = MkWitnessKey Key (w a);
 
     instance TestEquality w => TestEquality (WitnessKey w) where

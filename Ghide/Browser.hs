@@ -1,33 +1,34 @@
 module Browser where
 {
-    import Data.Changes;
-    import File;
---    import Partial;
---    import Interpret;
---    import Object;
-    import Data.Witness;
-    import System.Glib.StoreValue;
---    import System.Gnome.VFS;
---    import System.Gnome.VFS.Types;
-    import Graphics.UI.Gtk hiding (Object);
-    import Distribution.PackageDescription;
-    import Distribution.Simple.Utils;
---    import Distribution.PreProcess;
-    import Text.Read;
---    import Data.Maybe;
---    import Data.Word;
-    import Data.ByteString hiding (putStrLn);
     import Prelude hiding (read);
-    
+    import Data.ByteString hiding (putStrLn);
+--    import Data.Word;
+--    import Data.Maybe;
+    import Text.Read;
+--    import Distribution.PreProcess;
+    import Distribution.Simple.Utils;
+    import Distribution.PackageDescription;
+    import Graphics.UI.Gtk hiding (Object);
+--    import System.Gnome.VFS.Types;
+--    import System.Gnome.VFS;
+    import System.Glib.StoreValue;
+    import Data.Witness;
+--    import Object;
+--    import Interpret;
+--    import Partial;
+    import File;
+    import Data.Changes;
+
+
     type Selection context = [Any (Object context)];
-    
+
     data Browser = forall w. (WidgetClass w) => MkBrowser
     {
         browserWidget :: w,
         browserSelection :: IO Selection,
         closeBrowser :: IO Bool
     };
-    
+
     instance Show GenericValue where
     {
         show (GVstring (Just s)) = show s;
@@ -52,7 +53,7 @@ module Browser where
             })
             (\_ -> return Nothing);
         };
-        
+
         setURI :: Maybe ByteString -> IO ();
         setURI Nothing = unlinkFromURI uri;
         setURI (Just bs) = do
@@ -64,7 +65,7 @@ module Browser where
     };
 
     type BrowserFactory a = Object a -> (Selection -> IO ()) -> IO Browser;
-    
+
     pickBrowser :: ValueType a -> BrowserFactory a;
     pickBrowser t@(MaybeValueType ot) = maybeBrowser t (pickBrowser ot);
     pickBrowser (ListValueType CharValueType) = textBrowser;
@@ -109,7 +110,7 @@ module Browser where
             sel <- getBufferSelection buffer;
             onSel sel;
         });
-        return 
+        return
         (MkBrowser
             view
 --            (return Nothing)
@@ -145,16 +146,16 @@ module Browser where
             };
         };
     };
-    
+
     lastResortBrowser :: ValueType a -> BrowserFactory a;
     lastResortBrowser t _ _ = do
     {
         w <- labelNew (Just ("No Browser for "++(show t)));
-        return (MkBrowser w 
+        return (MkBrowser w
 --        (return Nothing)
          (return []) (return True));
     };
-    
+
     cabalBrowser :: BrowserFactory PackageDescription;
     cabalBrowser (MkObject context ref) onSel = do
     {
@@ -193,14 +194,14 @@ module Browser where
             };
             makeItem store (Just ti) fname mpath;
         };
-        
+
         addBuildInfo :: TreeStore -> TreeIter -> BuildInfo -> IO ();
         addBuildInfo store ti info = do
         {
             itHidden <- makeItem store (Just ti) "Hidden" Nothing;
             mapM_ (makeModuleItem store itHidden info) (otherModules info);
         };
-        
+
         makeLibraryFolder :: TreeStore -> (Maybe TreeIter) -> Library -> IO ();
         makeLibraryFolder store mti lib = do
         {
@@ -208,7 +209,7 @@ module Browser where
             mapM_ (makeModuleItem store itLib (libBuildInfo lib)) (exposedModules lib);
             addBuildInfo store itLib (libBuildInfo lib);
         };
-        
+
         makeExecutableFolder :: TreeStore -> (Maybe TreeIter) -> Executable -> IO ();
         makeExecutableFolder store mti exe = do
         {
@@ -231,7 +232,7 @@ module Browser where
                     Just uri -> do
                     {
                         mime <- getMIMETypeCommon uri;
-                        let 
+                        let
                         {
                             interpreter = mimeInterpreter (Text.Read.read mime);
                             uriobj = codecMapObj byteStringCodec (uriObject uri);

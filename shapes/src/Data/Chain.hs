@@ -1,9 +1,10 @@
 module Data.Chain where
 {
---    import Data.Witness;
-    import Control.Category;
-    import Prelude hiding (id,(.));
     import Data.Kind;
+    import Prelude hiding (id,(.));
+    import Control.Category;
+--    import Data.Witness;
+
 
     data Chain link (a :: k) (b :: k) where
     {

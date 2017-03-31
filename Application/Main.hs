@@ -1,22 +1,23 @@
 module Main where
 {
-    import Truth.UI.GTK;
-    import Graphics.UI.Gtk;
-    import Truth.Linux.File;
-    import Truth.Object;
-    import Truth.Edit;
-    import Truth.TypeKT;
-    import Data.Lens;
-    import Data.Codec;
-    import Data.Injection;
-    import Data.Chain;
-    import Data.Result;
-    import Data.IORef;
-    import Data.Foldable;
-    import Data.ByteString;
-    import Control.Category;
-    import Control.Concurrent;
     import Prelude hiding (id,(.));
+    import Control.Concurrent;
+    import Control.Category;
+    import Data.ByteString;
+    import Data.Foldable;
+    import Data.IORef;
+    import Data.Result;
+    import Data.Chain;
+    import Data.Injection;
+    import Data.Codec;
+    import Data.Lens;
+    import Truth.TypeKT;
+    import Truth.Edit;
+    import Truth.Object;
+    import Truth.Linux.File;
+    import Graphics.UI.Gtk;
+    import Truth.UI.GTK;
+
 
     initial :: Maybe Bool;
     initial = Just True;

@@ -1,10 +1,11 @@
 module Data.KindCategory where
 {
-    import Data.Kind;
-    import Control.Category;
-    import Data.Category;
-    import GHC.Exts (Constraint);
     import Prelude ();
+    import GHC.Exts (Constraint);
+    import Control.Category;
+    import Data.Kind;
+    import Data.Category;
+
 
     data ConstraintWitness :: Constraint -> * where
     {

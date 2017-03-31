@@ -1,9 +1,10 @@
 module Truth.Edit.Anything where
 {
-    --import Truth.Edit.WholeEdit;
-    --import Truth.Edit.Edit;
-    --import Truth.Edit.Read;
     import Truth.Edit.Import;
+    --import Truth.Edit.Read;
+    --import Truth.Edit.Edit;
+    --import Truth.Edit.WholeEdit;
+
 
     data Anything where
     {

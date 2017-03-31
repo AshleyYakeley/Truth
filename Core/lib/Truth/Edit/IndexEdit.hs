@@ -1,14 +1,15 @@
 module Truth.Edit.IndexEdit where
 {
 {-
-    import Truth.Edit.FloatingEditLens;
-    import Truth.Edit.EditLens;
-    import Truth.Edit.Function;
-    import Truth.Edit.NoEdit;
-    import Truth.Edit.Either;
-    import Truth.Edit.Edit;
-    import Truth.Edit.Read;
     import Truth.Edit.Import;
+    import Truth.Edit.Read;
+    import Truth.Edit.Edit;
+    import Truth.Edit.Either;
+    import Truth.Edit.NoEdit;
+    import Truth.Edit.Function;
+    import Truth.Edit.EditLens;
+    import Truth.Edit.FloatingEditLens;
+
 
     class Container container where
     {
