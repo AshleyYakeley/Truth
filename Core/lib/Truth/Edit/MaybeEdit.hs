@@ -7,7 +7,7 @@ module Truth.Edit.MaybeEdit where
 
 
     data MaybeEdit edit =
-        CreateMaybeEdit| -- replace with newValue, even if it already exists
+        CreateMaybeEdit| -- create as newValue, or do nothing if it already exists
         DeleteMaybeEdit| -- remove
         JustMaybeEdit edit; -- change existing value if it exists, otherwise do nothing
 
@@ -17,7 +17,9 @@ module Truth.Edit.MaybeEdit where
     {
         type EditReader (MaybeEdit edit) = JustReader Maybe (EditReader edit);
 
-        applyEdit CreateMaybeEdit reader = return $ readFrom (Just newValue) reader;
+        applyEdit CreateMaybeEdit ReadOther = return $ MkAnyReturn Just;
+        applyEdit CreateMaybeEdit ReadIsJust = return Nothing;
+        applyEdit CreateMaybeEdit (ReadWholeJust reader) = return $ Just $ readFrom newValue reader;
         applyEdit DeleteMaybeEdit reader = return $ readFrom Nothing reader;
         applyEdit (JustMaybeEdit edita) (ReadWholeJust reader) = liftJustReadable (applyEdit edita reader);
         applyEdit (JustMaybeEdit _edita) reader = readable reader;
@@ -28,15 +30,7 @@ module Truth.Edit.MaybeEdit where
             me <- readable ReadIsJust;
             case me of
             {
-                Nothing -> do
-                {
-                    medits <- mapReadableF (readable . ReadWholeJust) replaceEdit;
-                    case medits of
-                    {
-                        Nothing -> return [DeleteMaybeEdit]; -- shouldn't happen
-                        Just edits -> return $ fmap JustMaybeEdit edits;
-                    }
-                };
+                Nothing -> return [];
                 Just _ -> return [DeleteMaybeEdit]; -- deleted
             };
         };
