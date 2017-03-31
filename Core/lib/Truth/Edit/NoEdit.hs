@@ -20,6 +20,12 @@ module Truth.Edit.NoEdit where
         readFromM _ = never;
         readFrom _ = never;
     };
+
+    instance FullReader (NoReader ()) where
+    {
+        fromReader = return ();
+    };
+
 {-
     instance HasInfo NoReader where
     {
@@ -54,6 +60,13 @@ module Truth.Edit.NoEdit where
         applyEdit = never;
         invertEdit = never;
     };
+
+    instance (FullReader reader,ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where
+    {
+        replaceEdit = return [];
+    };
+
+
 {-
     instance HasInfo NoEdit where
     {
