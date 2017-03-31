@@ -8,6 +8,7 @@ module Truth.UI.GTK.Text (textMatchView) where
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Useful;
 
+    import Data.Foldable;
     import Control.Concurrent.MVar;
     import Data.Witness;
 
@@ -28,7 +29,7 @@ module Truth.UI.GTK.Text (textMatchView) where
     };
 
     textView :: GView (StringEdit String);
-    textView = MkView $ \lapi -> do
+    textView = MkView $ \(MkLockAPI lapi) -> do
     {
         buffer <- textBufferNew Nothing;
         initial <- lapi $ \() api -> unReadable fromReader $ apiRead api;
@@ -38,7 +39,7 @@ module Truth.UI.GTK.Text (textMatchView) where
         _ <- onBufferInsertText buffer $ \iter text -> lapi $ \() api -> ifMVar mv $ do
         {
             i <- liftIO $ textIterGetOffset iter;
-            ms <- apiEdit api $ StringReplaceSection (MkSequenceRun (MkSequencePoint i) 0) text;
+            ms <- apiEdit api $ pure $ StringReplaceSection (MkSequenceRun (MkSequencePoint i) 0) text;
             case ms of
             {
                 Just _ -> return ();
@@ -50,7 +51,7 @@ module Truth.UI.GTK.Text (textMatchView) where
         {
             (MkSequencePoint -> i1) <- liftIO $ textIterGetOffset iter1;
             (MkSequencePoint -> i2) <- liftIO $ textIterGetOffset iter2;
-            ms <- apiEdit api $ StringReplaceSection (startEndRun i1 i2) "";
+            ms <- apiEdit api $ pure $ StringReplaceSection (startEndRun i1 i2) "";
             case ms of
             {
                 Just _ -> return ();
@@ -61,6 +62,7 @@ module Truth.UI.GTK.Text (textMatchView) where
         widget <- textViewNewWithBuffer buffer;
         let
         {
+            vrWidgetStuff :: ViewWidgetStuff Widget (StringEdit String);
             vrWidgetStuff = MkViewWidgetStuff (toWidget widget) $ do
             {
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
@@ -70,11 +72,12 @@ module Truth.UI.GTK.Text (textMatchView) where
                 return (Just (MkAspect info info (stringSectionLens (MkSequenceRun o1 (o2 - o1)))));
             };
 
-            vrUpdate () edit = withMVar mv $ \_ -> case edit of
-            {
-                StringReplaceWhole text -> textBufferSetText buffer text;
-                StringReplaceSection bounds text -> replaceText buffer bounds text;
-            };
+            update :: StringEdit String -> IO ();
+            update (StringReplaceWhole text) = textBufferSetText buffer text;
+            update (StringReplaceSection bounds text) = replaceText buffer bounds text;
+
+            vrUpdate :: () -> [StringEdit String] -> IO ();
+            vrUpdate () edits = withMVar mv $ \_ -> traverse_ update edits;
         };
         return (MkViewResult{..},());
     };

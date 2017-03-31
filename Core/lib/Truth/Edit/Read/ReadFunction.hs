@@ -42,4 +42,9 @@ module Truth.Edit.Read.ReadFunction where
 
     mapCleanReadable :: CleanReadFunction ra rb -> Readable rb t -> Readable ra t;
     mapCleanReadable f = mapReadable (cleanReadFunction f);
+
+    type ReadFunctionF f readera readerb = forall t. readerb t -> Readable readera (f t);
+
+    mapReadableF :: (Monad f,Traversable f) => ReadFunctionF f ra rb -> Readable rb t -> Readable ra (f t);
+    mapReadableF rff (MkReadable smrbmt) = getCompose $ smrbmt $ \rbq -> MkCompose $ rff rbq;
 }

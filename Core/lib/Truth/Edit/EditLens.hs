@@ -16,6 +16,10 @@ module Truth.Edit.EditLens where
         editLensPutEdit :: editb -> Readable (EditReader edita) (m edita)
     };
 
+    editLensPutEdits :: Applicative m => EditLens' m edita editb -> [editb] -> Readable (EditReader edita) (m [edita]);
+    editLensPutEdits _lens [] = return $ pure [];
+    editLensPutEdits lens (e:ee) = getCompose $ (:) <$> (MkCompose $ editLensPutEdit lens e) <*> (MkCompose $ editLensPutEdits lens ee);
+
     editLensAllowed :: (FunctorOne m) =>
      EditLens' m edita editb -> editb -> Readable (EditReader edita) Bool;
     editLensAllowed lens editb = do

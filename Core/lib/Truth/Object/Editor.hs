@@ -8,7 +8,7 @@ module Truth.Object.Editor where
     data Editor (edit :: *) r = forall editor token. MkEditor
     {
         editorInit :: LockAPI edit token -> IO (editor,token),
-        editorUpdate :: editor -> token -> edit -> IO token,
+        editorUpdate :: editor -> token -> [edit] -> IO token,
         editorDo :: editor -> IO r
     };
 
@@ -74,5 +74,5 @@ module Truth.Object.Editor where
     readEditor = oneTransactionEditor $ \api -> unReadable fromReader $ apiRead api;
 
     writeEditor :: FullEdit edit => EditSubject edit -> Editor edit (Maybe ());
-    writeEditor subj = oneTransactionEditor $ \api -> apiEdit api $ replaceEdit subj;
+    writeEditor subj = oneTransactionEditor $ \api -> apiEdit api $ fromReadable replaceEdit subj;
 }

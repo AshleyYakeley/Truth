@@ -48,7 +48,7 @@ module Truth.Edit.Edit where
 
     class (Edit edit,FullReader (EditReader edit)) => FullEdit edit where
     {
-        replaceEdit :: EditSubject edit -> edit;
+        replaceEdit :: Readable (EditReader edit) [edit];
     };
 
     instance HasInfo FullEdit where

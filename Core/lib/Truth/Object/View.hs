@@ -20,7 +20,7 @@ module Truth.Object.View where
     data ViewResult w edit token = MkViewResult
     {
         vrWidgetStuff :: ViewWidgetStuff w edit,
-        vrUpdate :: token -> edit -> IO token
+        vrUpdate :: token -> [edit] -> IO token
     };
 
     data View w edit = forall token. MkView (LockAPI edit token -> IO (ViewResult w edit token,token));

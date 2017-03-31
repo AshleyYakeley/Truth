@@ -13,7 +13,34 @@ module Truth.Object.Object
     {
         apiRead :: Structure m (EditReader edit),
         apiAllowed :: edit -> m Bool,
-        apiEdit :: edit -> m (Maybe token)
+        apiEdit :: [edit] -> m (Maybe token)
+    };
+
+    apiReadEdit :: Monad m => API m edit token -> Readable (EditReader edit) [edit] -> m (Maybe token);
+    apiReadEdit MkAPI{..}  MkReadable{..} = do
+    {
+        edits <- unReadable apiRead;
+        apiEdit edits;
+    };
+
+    apiAlloweds :: Monad m => API m edit token -> [edit] -> m Bool;
+    apiAlloweds _api [] = return True;
+    apiAlloweds api (e:ee) = do
+    {
+        allowed <- apiAllowed api e;
+        if allowed then apiAlloweds api ee else return False;
+    };
+
+    singleApiEdit :: Applicative m => (edit -> m (Maybe ())) -> [edit] -> m (Maybe ());
+    singleApiEdit apiEdit' edits = fmap combine $ traverse apiEdit' edits where
+    {
+        combine :: [Maybe ()] -> Maybe ();
+        combine [] = return ();
+        combine (m:mm) = do
+        {
+            () <- m;
+            combine mm;
+        }
     };
 
     instance Functor m => Functor (API m edit) where
@@ -55,12 +82,12 @@ module Truth.Object.Object
                             };
                             return $ allowed na;
                         },
-                        apiEdit = \edit -> do
+                        apiEdit = \edits -> do
                         {
                             oa <- get;
                             let
                             {
-                                na = fromReadFunction (applyEdit edit) oa;
+                                na = fromReadFunction (applyEdits edits) oa;
                             };
                             if allowed na then do
                             {
@@ -81,12 +108,12 @@ module Truth.Object.Object
 
     type Object edit = forall editor token.
         (LockAPI edit token -> IO (editor,token)) -> -- initialise: provides read API, initial allowed, write API
-        (editor -> token -> edit -> IO token) -> -- receive: get updates (both others and from your apiEdit calls)
+        (editor -> token -> [edit] -> IO token) -> -- receive: get updates (both others and from your apiEdit calls)
         IO (editor, IO ());
 
     newtype ObjectW edit = MkObjectW (Object edit);
 
-    data StoreEntry edit token = MkStoreEntry (token -> edit -> IO token) token;
+    data StoreEntry edit token = MkStoreEntry (token -> [edit] -> IO token) token;
 
     shareObject :: forall edit. Object edit -> IO (ObjectW edit);
     shareObject parent = do
@@ -104,12 +131,12 @@ module Truth.Object.Object
                 return (lapiP,tokenP);
             };
 
-            updateP :: LockAPI edit () -> () -> edit -> IO ();
-            updateP (MkLockAPI _lapiP) oldtokenP edit = modifyMVar storevar $ \oldstore -> do
+            updateP :: LockAPI edit () -> () -> [edit] -> IO ();
+            updateP (MkLockAPI _lapiP) oldtokenP edits = modifyMVar storevar $ \oldstore -> do
             {
                 newstore <- traverseWitnessStore (\_ (MkStoreEntry u oldtoken) -> do
                 {
-                    newtoken <- u oldtoken edit;
+                    newtoken <- u oldtoken edits;
                     return (MkStoreEntry u newtoken);
                 }) oldstore;
                 let
@@ -132,9 +159,9 @@ module Truth.Object.Object
                     {
                         apiRead = \rt -> lift $ apiRead apiP rt,
                         apiAllowed = \edit -> lift $ apiAllowed apiP edit,
-                        apiEdit = \edit -> do
+                        apiEdit = \edits -> do
                         {
-                            mnextTokenP <- lift $ apiEdit apiP edit;
+                            mnextTokenP <- lift $ apiEdit apiP edits;
                             case mnextTokenP of
                             {
                                 Just _nextTokenP -> do
@@ -143,7 +170,7 @@ module Truth.Object.Object
                                     oldstore <- get;
                                     newstore <- traverseWitnessStore (\keyf (MkStoreEntry u oldtoken) -> do
                                     {
-                                        newtoken <- liftIO $ u oldtoken edit;
+                                        newtoken <- liftIO $ u oldtoken edits;
                                         case testEquality key keyf of
                                         {
                                             Just Refl -> liftIO $ writeIORef tokenRef $ Just newtoken;

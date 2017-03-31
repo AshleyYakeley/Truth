@@ -74,6 +74,7 @@ library
         Truth.Edit.FloatingEditLens
         Truth.Edit.IndexEdit
         Truth.Edit.JustEdit
+        Truth.Edit.MaybeEdit
         Truth.Edit.JustWholeEdit
         Truth.Edit.List
         Truth.Edit.MIME

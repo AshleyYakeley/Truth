@@ -20,12 +20,12 @@ module Truth.Object.File where
                 hGet h len;
             };
             apiAllowed _ = return True;
-            apiEdit (ByteStringSetLength len) = do
+            apiEdit' (ByteStringSetLength len) = do
             {
                 hSetFileSize h $ toInteger len;
                 return $ Just ();
             };
-            apiEdit (ByteStringWrite start bs) = do
+            apiEdit' (ByteStringWrite start bs) = do
             {
                 oldlen <- hFileSize h;
                 if toInteger start > oldlen
@@ -35,6 +35,8 @@ module Truth.Object.File where
                 hPut h bs;
                 return $ Just ();
             };
+
+            apiEdit = singleApiEdit apiEdit';
         };
         r <- ff () MkAPI{..};
         hClose h;

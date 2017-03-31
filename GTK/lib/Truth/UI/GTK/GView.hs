@@ -5,8 +5,8 @@ module Truth.UI.GTK.GView where
     import Truth.Object;
     import Truth.Edit;
 
-    type GView edit = View Widget edit;
-    type GViewResult edit = ViewResult Widget edit;
+    type GView = View Widget;
+    type GViewResult = ViewResult Widget;
     type MatchView = forall edit. (Edit edit) => Info edit -> Maybe (GView edit);
     type GetView = forall edit. (Edit edit) => Info edit -> GView edit;
 }

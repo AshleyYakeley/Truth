@@ -14,8 +14,16 @@ module Truth.Edit.FloatingEditFunction  where
     {
         floatingEditInitial :: state,
         floatingEditGet :: state -> ReadFunction (EditReader edita) (EditReader editb),
-        floatingEditUpdate :: edita -> state -> (state,Maybe editb)
+        floatingEditUpdate :: edita -> state -> (state,[editb])
     };
+
+    floatingEditUpdates :: FloatingEditFunction state edita editb -> [edita] -> state -> (state, [editb]);
+    floatingEditUpdates _ [] state = (state,[]);
+    floatingEditUpdates fef (e:ee) oldstate = let
+    {
+        (midstate,eb1) = floatingEditUpdate fef e oldstate;
+        (newstate,eb2) = floatingEditUpdates fef ee midstate;
+    } in (newstate,eb1 ++ eb2);
 
     fixedFloatingEditFunction :: forall edita editb. EditFunction edita editb -> FloatingEditFunction () edita editb;
     fixedFloatingEditFunction MkEditFunction{..} = let
@@ -59,7 +67,7 @@ module Truth.Edit.FloatingEditFunction  where
             LeftEdit (MkWholeEdit a) -> let
             {
                 b = fromReadFunction (floatingEditGet fef oldstate) a
-            } in (oldstate,Just $ LeftEdit $ MkWholeEdit b); -- state unchanged, kind of dubious
+            } in (oldstate,return $ LeftEdit $ MkWholeEdit b); -- state unchanged, kind of dubious
             RightEdit edita -> let
             {
                 (newstate,meditb) = floatingEditUpdate fef edita oldstate;
@@ -107,16 +115,14 @@ module Truth.Edit.FloatingEditFunction  where
             floatingEditGet = \(s1,s2) -> composeReadFunction (floatingEditGet fef2 s2) (floatingEditGet fef1 s1),
             floatingEditUpdate = \ea (s1,s2) -> let
             {
-                (s1',meb) = floatingEditUpdate fef1 ea s1;
-            }
-            in case meb of
-            {
-                Just eb -> let
+                (s1',leb) = floatingEditUpdate fef1 ea s1;
+                addeditb eb (oldstate,ecs) = let
                 {
-                    (s2',mec) = floatingEditUpdate fef2 eb s2;
-                } in ((s1',s2'),mec);
-                Nothing -> ((s1',s2),Nothing);
+                    (newstate,newecs) = floatingEditUpdate fef2 eb oldstate;
+                } in (newstate,ecs ++ newecs);
+                (s2',lec) = foldr addeditb (s2,[]) leb;
             }
+            in ((s1',s2'),lec)
         };
     };
 }

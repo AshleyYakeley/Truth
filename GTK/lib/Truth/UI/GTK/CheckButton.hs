@@ -11,7 +11,7 @@ module Truth.UI.GTK.CheckButton where
 
 
     checkButtonView :: String -> GView (WholeEdit (WholeReader Bool));
-    checkButtonView name = MkView $ \lapi -> do
+    checkButtonView name = MkView $ \(MkLockAPI lapi) -> do
     {
         widget <- checkButtonNew;
         initial <- lapi $ \() api -> unReadable fromReader $ apiRead api;
@@ -19,7 +19,7 @@ module Truth.UI.GTK.CheckButton where
         clickConnection <- onClicked widget $ lapi $ \() api -> do
         {
             s <- liftIO $ get widget toggleButtonActive;
-            _ <- apiEdit api (replaceEdit s);
+            _ <- apiEdit api (fromReadable replaceEdit s);
             return ();
         };
 
@@ -29,7 +29,7 @@ module Truth.UI.GTK.CheckButton where
 
             vrUpdate () edit = do
             {
-                newstate <- fmap (fromReadFunction (applyEdit edit)) $ get widget toggleButtonActive;
+                newstate <- fmap (fromReadFunction (applyEdits edit)) $ get widget toggleButtonActive;
                 withSignalBlocked clickConnection $ set widget [toggleButtonActive := newstate];
                 return ();
             };

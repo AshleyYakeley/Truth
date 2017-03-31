@@ -4,18 +4,19 @@ module Truth.Edit.JustWholeEdit where
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Either;
     import Truth.Edit.Edit;
+    import Truth.Edit.Read;
     import Truth.Edit.Import;
 
     type EitherWholeEdit edit = EitherEdit (WholeEdit (EditReader edit)) edit;
 
     type JustWholeEdit (f :: * -> *) edit = EitherWholeEdit (JustEdit f edit);
 
-    extractJustWholeEdit :: forall f edit. (FunctorOne f,FullEdit edit) => JustWholeEdit f edit -> Maybe edit;
-    extractJustWholeEdit (RightEdit (MkJustEdit edit)) = Just edit;
+    extractJustWholeEdit :: forall f edit. (FunctorOne f,FullEdit edit) => JustWholeEdit f edit -> [edit];
+    extractJustWholeEdit (RightEdit (MkJustEdit edit)) = return edit;
     extractJustWholeEdit (LeftEdit (MkWholeEdit fa)) = case retrieveOne fa of
     {
-        SuccessResult a -> Just (replaceEdit a);
-        _ -> Nothing;
+        SuccessResult a -> fromReadable replaceEdit a;
+        _ -> [];
     };
 
     data MatchEitherWholeEdit :: (forall k. k -> Type) where

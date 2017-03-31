@@ -110,8 +110,8 @@ module Truth.Edit.Tuple where
             cleanEditGet = MkAggregateEditReader aggedit,
             cleanEditUpdate = \(MkAggregateEdit aggedit' edit) -> case testEquality aggedit aggedit' of
             {
-                Just Refl -> Just edit;
-                _ -> Nothing;
+                Just Refl -> [edit];
+                _ -> [];
             }
         },
         cleanEditLensPutEdit = Identity . (MkAggregateEdit aggedit)

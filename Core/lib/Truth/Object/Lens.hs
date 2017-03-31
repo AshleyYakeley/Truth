@@ -14,7 +14,7 @@ module Truth.Object.Lens where
     };
 
 
-    instance (FunctorOne f,Edit edita) => ObjectLens (FloatingEditLens' f state edita editb) where
+    instance (Monad f,FunctorOne f,Edit edita) => ObjectLens (FloatingEditLens' f state edita editb) where
     {
         type LensDomain (FloatingEditLens' f state edita editb) = edita;
         type LensRange (FloatingEditLens' f state edita editb) = editb;
@@ -38,9 +38,9 @@ module Truth.Object.Lens where
                         callA token (apiA :: API m edita token) = let
                         {
                             readA :: Structure m (EditReader edita);
-                            allowedA :: edita -> m Bool;
-                            pushEditA :: edita -> m (Maybe token);
-                            MkAPI readA allowedA pushEditA = apiA;
+                            _allowedA :: edita -> m Bool;
+                            pushEditA :: [edita] -> m (Maybe token);
+                            MkAPI readA _allowedA pushEditA = apiA;
 
                             readB :: Structure (StateT state m) (EditReader editb);
                             readB rt = do
@@ -49,17 +49,17 @@ module Truth.Object.Lens where
                                 lift $ mapStructure (floatingEditGet state) readA rt;
                             };
 
-                            convertEdit :: editb -> (StateT state m) (Maybe edita);
-                            convertEdit editB = do
+                            convertEdit :: [editb] -> (StateT state m) (Maybe [edita]);
+                            convertEdit editBs = do
                             {
                                 oldstate <- get;
-                                fstateeditA :: f (state,editA) <- lift $ unReadable (floatingEditLensPutEdit oldstate editB) readA;
+                                fstateeditA :: f (state,[edita]) <- lift $ unReadable (floatingEditLensPutEdits lens oldstate editBs) readA;
                                 case getMaybeOne fstateeditA of
                                 {
-                                    Just (newstate,edita) -> do
+                                    Just (newstate,editAs) -> do
                                     {
                                         put newstate;
-                                        return $ Just edita;
+                                        return $ Just editAs;
                                     };
                                     Nothing -> return Nothing;
                                 };
@@ -75,24 +75,24 @@ module Truth.Object.Lens where
                                     False -> return False;
                                     True -> do
                                     {
-                                        meditA <- convertEdit editB;
+                                        meditA <- convertEdit [editB];
                                         case meditA of
                                         {
                                             Nothing -> return False; -- is this correct?
-                                            Just editA -> lift $ allowedA editA;
+                                            Just editA -> lift $ apiAlloweds apiA editA;
                                         };
                                     };
                                 };
                             };
 
-                            pushEditB :: editb -> (StateT state m) (Maybe token);
+                            pushEditB :: [editb] -> (StateT state m) (Maybe token);
                             pushEditB editB = do
                             {
                                 meditA <- convertEdit editB;
                                 case meditA of
                                 {
                                     Nothing -> return $ Just token; -- is this correct?
-                                    Just editA -> lift $ pushEditA editA;
+                                    Just editAs -> lift $ pushEditA editAs;
                                 };
                             };
 
@@ -107,18 +107,14 @@ module Truth.Object.Lens where
                     } in lapiA callA;
                 } in initialB lapiB;
 
-                updateA :: editor -> token -> edita -> IO token;
-                updateA editor oldtoken editA = modifyMVar statevar $ \oldstate -> do
+                updateA :: editor -> token -> [edita] -> IO token;
+                updateA editor oldtoken editAs = modifyMVar statevar $ \oldstate -> do
                 {
                     let
                     {
-                        (newstate,meditB) = floatingEditUpdate editA oldstate;
+                        (newstate,editBs) = floatingEditUpdates floatingEditLensFunction editAs oldstate;
                     };
-                    newtoken <- case meditB of
-                    {
-                        Just editB -> updateB editor oldtoken editB;
-                        Nothing -> return oldtoken;
-                    };
+                    newtoken <- updateB editor oldtoken editBs;
                     return (newstate,newtoken);
                 };
             };
@@ -126,7 +122,7 @@ module Truth.Object.Lens where
         };
     };
 
-    instance (FunctorOne f,Edit edita) => ObjectLens (EditLens' f edita editb) where
+    instance (Applicative f,FunctorOne f,Edit edita) => ObjectLens (EditLens' f edita editb) where
     {
         type LensDomain (EditLens' f edita editb) = edita;
         type LensRange (EditLens' f edita editb) = editb;
@@ -147,17 +143,17 @@ module Truth.Object.Lens where
                         callA token (apiA :: API m edita token) = let
                         {
                             readA :: Structure m (EditReader edita);
-                            allowedA :: edita -> m Bool;
-                            pushEditA :: edita -> m (Maybe token);
-                            MkAPI readA allowedA pushEditA = apiA;
+                            _allowedA :: edita -> m Bool;
+                            pushEditA :: [edita] -> m (Maybe token);
+                            MkAPI readA _allowedA pushEditA = apiA;
 
                             readB :: Structure m (EditReader editb);
                             readB = mapStructure editGet readA;
 
-                            convertEdit :: editb -> m (Maybe edita);
-                            convertEdit editB = do
+                            convertEdits :: [editb] -> m (Maybe [edita]);
+                            convertEdits editBs = do
                             {
-                                feditA :: f editA <- unReadable (editLensPutEdit editB) readA;
+                                feditA :: f [edita] <- unReadable (editLensPutEdits lens editBs) readA;
                                 return $ getMaybeOne feditA;
                             };
 
@@ -170,24 +166,24 @@ module Truth.Object.Lens where
                                     False -> return False;
                                     True -> do
                                     {
-                                        meditA <- convertEdit editB;
+                                        meditA <- convertEdits [editB];
                                         case meditA of
                                         {
                                             Nothing -> return False; -- is this correct?
-                                            Just editA -> allowedA editA;
+                                            Just editA -> apiAlloweds apiA editA;
                                         };
                                     };
                                 };
                             };
 
-                            pushEditB :: editb -> m (Maybe token);
-                            pushEditB editB = do
+                            pushEditB :: [editb] -> m (Maybe token);
+                            pushEditB editBs = do
                             {
-                                meditA <- convertEdit editB;
+                                meditA <- convertEdits editBs;
                                 case meditA of
                                 {
                                     Nothing -> return $ Just token; -- is this correct?
-                                    Just editA -> pushEditA editA;
+                                    Just editAs -> pushEditA editAs;
                                 };
                             };
 
@@ -198,18 +194,14 @@ module Truth.Object.Lens where
                     } in lapiA callA;
                 } in initialB lapiB;
 
-                updateA :: editor -> token -> edita -> IO token;
-                updateA editor oldtoken editA = do
+                updateA :: editor -> token -> [edita] -> IO token;
+                updateA editor oldtoken editAs = do
                 {
                     let
                     {
-                        meditB = editUpdate editA;
+                        leditB = editUpdates editLensFunction editAs;
                     };
-                    case meditB of
-                    {
-                        Just editB -> updateB editor oldtoken editB;
-                        Nothing -> return oldtoken;
-                    };
+                    updateB editor oldtoken leditB;
                 };
             };
             sub initialA updateA;
@@ -266,7 +258,7 @@ module Truth.Object.Lens where
         return MkObject{..};
     });
 -}
-    instance (FunctorOne m,Edit edita) => ObjectLens (CleanEditLens' m edita editb) where
+    instance (Applicative m,FunctorOne m,Edit edita) => ObjectLens (CleanEditLens' m edita editb) where
     {
         type LensDomain (CleanEditLens' m edita editb) = edita;
         type LensRange (CleanEditLens' m edita editb) = editb;
@@ -294,25 +286,34 @@ module Truth.Object.Lens where
                         {
                             readA :: Structure m (WholeReader a);
                             allowedA :: WholeEdit (WholeReader a) -> m Bool;
-                            pushEditA :: WholeEdit (WholeReader a) -> m (Maybe token);
+                            pushEditA :: [WholeEdit (WholeReader a)] -> m (Maybe token);
                             MkAPI readA allowedA pushEditA = apiA;
 
                             readB :: Structure m (WholeReader b);
                             readB ReadWhole = fmap lensGet $ readA ReadWhole;
 
-                            convertEdit :: (WholeEdit (WholeReader b)) -> m (Maybe (WholeEdit (WholeReader a)));
-                            convertEdit (MkWholeEdit b) = do
-                            {
-                                oldA <- readA ReadWhole;
-                                let
-                                {
-                                    fnewA :: f a;
-                                    fnewA = lensPutback b oldA;
+                            last' :: forall x. [x] -> Maybe x;
+                            last' [] = Nothing;
+                            last' [x] = Just x;
+                            last' (_:xx) = last' xx;
 
-                                    mnewA :: Maybe a;
-                                    mnewA = getMaybeOne fnewA;
+                            convertEdits :: [WholeEdit (WholeReader b)] -> m (Maybe [WholeEdit (WholeReader a)]);
+                            convertEdits editBs = case last' editBs of
+                            {
+                                Nothing -> return $ pure [];
+                                Just (MkWholeEdit b) -> do
+                                {
+                                    oldA <- readA ReadWhole;
+                                    let
+                                    {
+                                        fnewA :: f a;
+                                        fnewA = lensPutback b oldA;
+
+                                        mnewA :: Maybe a;
+                                        mnewA = getMaybeOne fnewA;
+                                    };
+                                    return $ fmap (\a -> [MkWholeEdit a]) mnewA;
                                 };
-                                return $ fmap MkWholeEdit mnewA;
                             };
 
                             allowedB :: (WholeEdit (WholeReader b)) -> m Bool;
@@ -334,10 +335,10 @@ module Truth.Object.Lens where
                                 };
                             };
 
-                            pushEditB :: (WholeEdit (WholeReader b)) -> m (Maybe token);
+                            pushEditB :: [WholeEdit (WholeReader b)] -> m (Maybe token);
                             pushEditB editB = do
                             {
-                                meditA <- convertEdit editB;
+                                meditA <- convertEdits editB;
                                 case meditA of
                                 {
                                     Nothing -> return $ Just token; -- is this correct?
@@ -352,8 +353,15 @@ module Truth.Object.Lens where
                     } in lapiA callA;
                 } in initialB lapiB;
 
-                updateA :: editor -> token -> WholeEdit (WholeReader a) -> IO token;
-                updateA editor oldtoken (MkWholeEdit a) = updateB editor oldtoken $ MkWholeEdit $ lensGet a;
+                updateA :: editor -> token -> [WholeEdit (WholeReader a)] -> IO token;
+                updateA editor oldtoken editAs = do
+                {
+                    let
+                    {
+                        leditB = fmap (\(MkWholeEdit a) -> MkWholeEdit $ lensGet a) editAs;
+                    };
+                    updateB editor oldtoken leditB;
+                };
             };
             sub initialA updateA;
         };

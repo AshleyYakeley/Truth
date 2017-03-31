@@ -10,7 +10,7 @@ module Truth.Edit.Read.Readable where
 
     instance Functor (Readable reader) where
     {
-        fmap ab (MkReadable sma) = MkReadable (\s -> mmap ab (sma s));
+        fmap ab (MkReadable sma) = MkReadable (\s -> fmap ab (sma s));
     };
 
     instance Applicative (Readable reader) where

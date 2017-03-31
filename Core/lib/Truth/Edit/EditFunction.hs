@@ -13,15 +13,18 @@ module Truth.Edit.EditFunction where
     data EditFunction edita editb = MkEditFunction
     {
         editGet :: ReadFunction (EditReader edita) (EditReader editb),
-        editUpdate :: edita -> Maybe editb
+        editUpdate :: edita -> [editb]
     };
+
+    editUpdates :: EditFunction edita editb -> [edita] -> [editb];
+    editUpdates ef eas = mconcat $ fmap (editUpdate ef) eas;
 
     instance Category EditFunction where
     {
         id = MkEditFunction
         {
             editGet = readable,
-            editUpdate = \edit -> Just edit
+            editUpdate = \edit -> return edit
         };
         bc . ab = MkEditFunction
         {
@@ -50,7 +53,7 @@ module Truth.Edit.EditFunction where
     data CleanEditFunction edita editb = MkCleanEditFunction
     {
         cleanEditGet :: CleanReadFunction (EditReader edita) (EditReader editb),
-        cleanEditUpdate :: edita -> Maybe editb
+        cleanEditUpdate :: edita -> [editb]
     };
 
     --type CleanEditLens = CleanEditLens' Maybe;
@@ -60,7 +63,7 @@ module Truth.Edit.EditFunction where
         id = MkCleanEditFunction
         {
             cleanEditGet = id,
-            cleanEditUpdate = Just
+            cleanEditUpdate = return
         };
         bc . ab = MkCleanEditFunction
         {
@@ -84,7 +87,7 @@ module Truth.Edit.EditFunction where
     editFunction ab = MkEditFunction
     {
         editGet = simpleReadFunction ab,
-        editUpdate = \(MkWholeEdit a) -> Just $ MkWholeEdit $ ab a
+        editUpdate = \(MkWholeEdit a) -> return $ MkWholeEdit $ ab a
     };
 {-
     simpleConvertEditFunction :: forall edita editb.
@@ -110,7 +113,7 @@ module Truth.Edit.EditFunction where
     eitherEditFunction = MkCleanEditFunction
     {
         cleanEditGet = id,
-        cleanEditUpdate = \edit -> Just (RightEdit edit)
+        cleanEditUpdate = \edit -> return (RightEdit edit)
     };
 
     withWholeEditFunction :: (Edit edita,FullEdit editb) =>
@@ -120,7 +123,7 @@ module Truth.Edit.EditFunction where
         cleanEditGet = cleanEditGet cef,
         cleanEditUpdate = \editewa -> case editewa of
         {
-            LeftEdit (MkWholeEdit a) -> Just (replaceEdit (fromCleanReadFunction (cleanEditGet cef) a));
+            LeftEdit (MkWholeEdit a) -> fromReadable replaceEdit $ fromCleanReadFunction (cleanEditGet cef) a;
             RightEdit edita -> cleanEditUpdate cef edita;
         }
     };

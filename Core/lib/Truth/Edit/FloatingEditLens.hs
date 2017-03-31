@@ -17,6 +17,15 @@ module Truth.Edit.FloatingEditLens where
         floatingEditLensPutEdit :: state -> editb -> Readable (EditReader edita) (m (state,edita))
     };
 
+    floatingEditLensPutEdits :: (Monad m,Traversable m) => FloatingEditLens' m state edita editb -> state -> [editb] -> Readable (EditReader edita) (m (state,[edita]));
+    floatingEditLensPutEdits _ oldstate [] = return $ pure $ (oldstate,[]);
+    floatingEditLensPutEdits lens oldstate (e:ee) = getCompose $ do
+    {
+        (midstate,ea) <- MkCompose $ floatingEditLensPutEdit lens oldstate e;
+        (newstate,eea) <- MkCompose $ floatingEditLensPutEdits lens midstate ee;
+        return (newstate,ea:eea);
+    };
+
     floatingEditLensAllowed :: (FunctorOne m) =>
      FloatingEditLens' m state edita editb -> state -> editb -> Readable (EditReader edita) Bool;
     floatingEditLensAllowed lens state editb = do
@@ -120,20 +129,22 @@ module Truth.Edit.FloatingEditLens where
             SuccessResult (newstate,a) -> (newstate,fmap (\_ ->  a) fsa);
         };
 
+    -- floatingEditLensPutEdits :: FloatingEditLens' Maybe state edita editb -> state -> [editb] -> Readable (EditReader edita) (Maybe (state,[edita]));
+
         pushback :: state -> f (EditSubject editb) -> Readable (JustReader f (EditReader edita)) (Maybe (state,f (EditSubject edita)));
         pushback oldstate fb = case retrieveOne fb of
         {
-            FailureResult (MkLimit fx) -> return $ Just (oldstate,fx);
+            FailureResult (MkLimit fx) -> return $ return (oldstate,fx);
 
             SuccessResult b -> fmap (fmap (ff1 oldstate) . sequenceA) $ liftJustReadable $ do
             {
-                mstateedita <- floatingEditLensPutEdit lens oldstate (replaceEdit b);
+                mstateedita <- floatingEditLensPutEdits lens oldstate (fromReadable replaceEdit b);
                 case mstateedita of
                 {
                     Nothing -> return Nothing;
-                    Just (newstate,edita) -> do
+                    Just (newstate,editas) -> do
                     {
-                        a <- mapReadable (applyEdit edita) fromReader;
+                        a <- mapReadable (applyEdits editas) fromReader;
                         return $ Just (newstate,a);
                     };
                 };

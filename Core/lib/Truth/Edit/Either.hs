@@ -35,7 +35,7 @@ module Truth.Edit.Either where
 
     instance (FullEdit ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit (EitherEdit ea eb) where
     {
-        replaceEdit s = LeftEdit (replaceEdit s);
+        replaceEdit = fmap (fmap LeftEdit) replaceEdit;
     };
 
     instance HasInfo EitherEdit where

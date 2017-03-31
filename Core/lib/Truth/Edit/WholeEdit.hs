@@ -54,7 +54,11 @@ module Truth.Edit.WholeEdit where
 
     instance (FullReader reader) => FullEdit (WholeEdit reader) where
     {
-        replaceEdit = MkWholeEdit;
+        replaceEdit = do
+        {
+            a <- fromReader;
+            return [MkWholeEdit a];
+        };
     };
 
     instance HasInfo WholeEdit where

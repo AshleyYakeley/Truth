@@ -31,7 +31,7 @@ module Truth.Edit.JustEdit where
     liftJustReadable :: (Traversable f,FunctorBind f) => Readable reader a -> Readable (JustReader f reader) (f a);
     liftJustReadable rra = do
     {
-        fmfa <- getCompose (unReadable rra (\ra -> MkCompose (mmap toFreeMonad (readable (ReadWholeJust ra)))));
+        fmfa <- getCompose (unReadable rra (\ra -> MkCompose (fmap toFreeMonad (readable (ReadWholeJust ra)))));
         (MkAnyReturn return') <- readable ReadOther;
         return (fromFreeMonad return' bind fmfa);
     };

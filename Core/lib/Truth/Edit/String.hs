@@ -113,7 +113,11 @@ module Truth.Edit.String where
 
     instance IsSequence seq => FullEdit (StringEdit seq) where
     {
-        replaceEdit = StringReplaceWhole;
+        replaceEdit = do
+        {
+            a <- fromReader;
+            return [StringReplaceWhole a];
+        };
     };
 
     stringSectionLens :: forall seq. IsSequence seq =>
@@ -135,14 +139,14 @@ module Truth.Edit.String where
             };
         };
 
-        floatingEditUpdate :: StringEdit seq -> SequenceRun seq -> (SequenceRun seq,Maybe (StringEdit seq));
+        floatingEditUpdate :: StringEdit seq -> SequenceRun seq -> (SequenceRun seq,[StringEdit seq]);
         floatingEditUpdate edita oldstate = let
         {
             newstate = floatingUpdate edita oldstate;
-            meditb = case edita of
+            leditb = case edita of
             {
-                StringReplaceWhole s -> Just $ StringReplaceWhole $ seqSection newstate s;
-                StringReplaceSection runa sa -> do
+                StringReplaceWhole s -> return $ StringReplaceWhole $ seqSection newstate s;
+                StringReplaceSection runa sa -> maybeToList $ do
                 {
                     runb' <- seqIntersect oldstate runa;
                     let
@@ -153,7 +157,7 @@ module Truth.Edit.String where
                     return $ StringReplaceSection runb sb;
                 };
             }
-        } in (newstate,meditb);
+        } in (newstate,leditb);
 
         floatingEditLensFunction :: FloatingEditFunction (SequenceRun seq) (StringEdit seq) (StringEdit seq);
         floatingEditLensFunction = MkFloatingEditFunction{..};
