@@ -1,8 +1,6 @@
 module Data.Codec where
 {
     import Prelude hiding (id,(.));
-    import Data.Traversable;
-    import Control.Applicative;
     import Control.Category;
     import Data.Bijection;
     import Data.Chain;

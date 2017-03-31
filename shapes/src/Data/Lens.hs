@@ -3,12 +3,10 @@ module Data.Lens where
     import Prelude hiding (id,(.),sequence);
     import Data.Maybe;
     import Control.Category;
-    import Control.Applicative;
     import Data.Functor.Identity;
     import Data.Witness;
     import Data.Chain;
     import Data.FunctorOne;
-    import Data.Traversable;
     import Data.Result;
     import Data.Bijection;
     import Data.Injection;

@@ -1,7 +1,6 @@
 module Data.ConstFunction where
 {
     import Prelude hiding (id,(.));
-    import Control.Applicative;
     import Control.Category;
     import Control.Arrow;
     import Data.Chain;

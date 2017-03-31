@@ -4,7 +4,6 @@ module Data.Injection where
     import Data.Functor.Identity;
     import Control.Category;
     import Data.Chain;
-    import Data.Traversable;
     import Data.Result;
     import Data.Codec;
     import Data.Bijection;
