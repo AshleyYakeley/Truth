@@ -26,4 +26,14 @@ module Data.Compose where
             return $ qqb >>= id;
         };
     };
+
+    instance (Foldable p,Foldable q) => Foldable (Compose p q) where
+    {
+        foldMap am (MkCompose pqa) = foldMap (foldMap am) pqa;
+    };
+
+    instance (Traversable p,Traversable q) => Traversable (Compose p q) where
+    {
+        sequenceA (MkCompose pqfa) = fmap MkCompose $ sequenceA $ fmap sequenceA pqfa
+    };
 }
