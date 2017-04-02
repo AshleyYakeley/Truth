@@ -67,7 +67,7 @@ library
         Control.Wait
         Data.Chain
         Data.Result
-        Data.FunctorOne
+        Data.MonadOne
         Data.HasNewValue
         Data.Injection
         Data.Bijection

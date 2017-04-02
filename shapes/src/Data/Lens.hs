@@ -2,11 +2,12 @@ module Data.Lens where
 {
     import Prelude hiding (id,(.),sequence);
     import Data.Maybe;
+    import Control.Applicative;
     import Control.Category;
     import Data.Functor.Identity;
     import Data.Witness;
     import Data.Chain;
-    import Data.FunctorOne;
+    import Data.MonadOne;
     import Data.Result;
     import Data.Bijection;
     import Data.Injection;
@@ -22,14 +23,14 @@ module Data.Lens where
     lensModify :: Lens' m a b -> (b -> b) -> a -> m a;
     lensModify lens bb a = lensPutback lens (bb (lensGet lens a)) a;
 
-    lensMap :: (FunctorOne m) => Lens' m a b -> (b -> b) -> (a -> a);
+    lensMap :: (MonadOne m) => Lens' m a b -> (b -> b) -> (a -> a);
     lensMap lens bb a = case getMaybeOne (lensModify lens bb a) of
     {
         Just a' -> a';
         _ -> a;
     };
 
-    lensAllowed :: (FunctorOne m) =>
+    lensAllowed :: (MonadOne m) =>
      Lens' m a b -> b -> a -> Bool;
     lensAllowed lens b a = isJust $ getMaybeOne $ lensPutback lens b a;
 
@@ -48,7 +49,7 @@ module Data.Lens where
         };
     };
 
-    instance (Applicative m,FunctorOne m) => Category (Lens' m) where
+    instance (Applicative m,MonadOne m) => Category (Lens' m) where
     {
         id = MkLens
         {
@@ -66,7 +67,7 @@ module Data.Lens where
         };
     };
 
-    instance (Applicative m, FunctorOne m) => CategoryOr (Lens' m) where
+    instance (Applicative m, MonadOne m) => CategoryOr (Lens' m) where
     {
         ac ||| bc = MkLens
         {
@@ -83,12 +84,12 @@ module Data.Lens where
         };
     };
 
-    instance (Traversable f,FunctorAp f,Applicative m) => CatFunctor (Lens' m) f where
+    instance (Traversable f,Applicative f,Applicative m) => CatFunctor (Lens' m) f where
     {
         cfmap lens = MkLens
         {
             lensGet = fmap (lensGet lens),
-            lensPutback = \fb fa -> sequenceA (liftF2 (lensPutback lens) fb fa)
+            lensPutback = \fb fa -> sequenceA (liftA2 (lensPutback lens) fb fa)
         };
     };
 

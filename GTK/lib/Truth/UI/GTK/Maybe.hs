@@ -4,7 +4,7 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
     import Control.Applicative;
     import Data.IORef;
     import Data.Result;
-    import Data.FunctorOne;
+    import Data.MonadOne;
     import Data.Witness;
     import Data.HasNewValue;
     import Data.Type.Heterogeneous;
@@ -55,14 +55,14 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
     createButton :: (FullEdit edit) => EditSubject edit -> Push edit -> IO Button;
     createButton val push = pushButton push (replaceEdit val) "Create";
 
-    mapSelection :: forall f edit. (FunctorOne f, Edit edit, FullReader (EditReader edit)) =>
+    mapSelection :: forall f edit. (MonadOne f, Edit edit, FullReader (EditReader edit)) =>
      Info f -> Aspect edit -> Maybe (Aspect (JustWholeEdit f edit));
     mapSelection fi aspect = mapJustWholeEditAspect fi aspect;
 
     functorOneIVF :: forall f edit wd.
     (
         Applicative f,
-        FunctorOne f,
+        MonadOne f,
         HasNewValue (EditSubject edit),
         FullEdit edit,
         WidgetClass wd

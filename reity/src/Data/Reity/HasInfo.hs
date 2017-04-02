@@ -5,7 +5,7 @@ module Data.Reity.HasInfo where
     import Data.ByteString;
     import Data.Type.Heterogeneous;
     import Data.HasNewValue;
-    import Data.FunctorOne;
+    import Data.MonadOne;
     import Data.Result;
     import Data.OpenWitness;
     import Data.Knowledge;
@@ -90,9 +90,9 @@ module Data.Reity.HasInfo where
         info = mkSimpleInfo $(iowitness[t|HasNewValue|]) [];
     };
 
-    instance HasInfo FunctorOne where
+    instance HasInfo MonadOne where
     {
-        info = mkSimpleInfo $(iowitness[t|FunctorOne|]) [];
+        info = mkSimpleInfo $(iowitness[t|MonadOne|]) [];
     };
 
     instance HasInfo () where
@@ -158,7 +158,7 @@ module Data.Reity.HasInfo where
             knowC @(Monad Maybe)
             -- instance HasNewValue (Maybe a)
             -- instance (Eq a) => Eq (Maybe a)
-            -- instance FunctorOne Maybe
+            -- instance MonadOne Maybe
     ];
     };
 
@@ -198,7 +198,7 @@ module Data.Reity.HasInfo where
             }
 
             -- instance Functor
-            -- instance FunctorOne
+            -- instance MonadOne
         ];
     };
 

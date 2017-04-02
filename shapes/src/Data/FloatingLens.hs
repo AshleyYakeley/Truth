@@ -4,7 +4,7 @@ module Data.FloatingLens where
     import Control.Category;
     import Data.Lens;
     import Data.Codec;
-    import Data.FunctorOne;
+    import Data.MonadOne;
     import Data.Chain;
 
 
@@ -52,7 +52,7 @@ module Data.FloatingLens where
         };
     };
 
-    instance (FunctorOne f,Applicative m) => CatFunctor (FloatingLens' initial m) f where
+    instance (MonadOne f,Applicative m) => CatFunctor (FloatingLens' initial m) f where
     {
         cfmap (MkFloatingLens i g p) = MkFloatingLens
         {
@@ -61,11 +61,11 @@ module Data.FloatingLens where
             floatingLensPutback = \state fb -> do
             {
                 ffmsa <- traverse (\b -> cfmap (p state b)) fb;
-                return (fmap (\fsa -> (case getMaybeOne fsa of
+                return $ fmap (\fsa -> (case getMaybeOne fsa of
                 {
                     Just (newstate,_) -> newstate;
                     _ -> state;
-                },fmap snd fsa)) (sequenceA (exec ffmsa)));
+                },fmap snd fsa)) (sequenceA (ffmsa >>= id));
             }
         };
     };

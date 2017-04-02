@@ -14,7 +14,7 @@ module Truth.Object.Lens where
     };
 
 
-    instance (Monad f,FunctorOne f,Edit edita) => ObjectLens (FloatingEditLens' f state edita editb) where
+    instance (Monad f,MonadOne f,Edit edita) => ObjectLens (FloatingEditLens' f state edita editb) where
     {
         type LensDomain (FloatingEditLens' f state edita editb) = edita;
         type LensRange (FloatingEditLens' f state edita editb) = editb;
@@ -122,7 +122,7 @@ module Truth.Object.Lens where
         };
     };
 
-    instance (Applicative f,FunctorOne f,Edit edita) => ObjectLens (EditLens' f edita editb) where
+    instance (Applicative f,MonadOne f,Edit edita) => ObjectLens (EditLens' f edita editb) where
     {
         type LensDomain (EditLens' f edita editb) = edita;
         type LensRange (EditLens' f edita editb) = editb;
@@ -258,7 +258,7 @@ module Truth.Object.Lens where
         return MkObject{..};
     });
 -}
-    instance (Applicative m,FunctorOne m,Edit edita) => ObjectLens (CleanEditLens' m edita editb) where
+    instance (Applicative m,MonadOne m,Edit edita) => ObjectLens (CleanEditLens' m edita editb) where
     {
         type LensDomain (CleanEditLens' m edita editb) = edita;
         type LensRange (CleanEditLens' m edita editb) = editb;
@@ -266,7 +266,7 @@ module Truth.Object.Lens where
         lensObject celens = lensObject (cleanEditLens celens);
     };
 
-    instance (FunctorOne f) => ObjectLens (Lens' f a b) where
+    instance (MonadOne f) => ObjectLens (Lens' f a b) where
     {
         type LensDomain (Lens' f a b) = WholeEdit (WholeReader a);
         type LensRange (Lens' f a b) = WholeEdit (WholeReader b);
@@ -367,7 +367,7 @@ module Truth.Object.Lens where
         };
     };
 
-    instance (FunctorOne m) => ObjectLens (Injection' m a b) where
+    instance (MonadOne m) => ObjectLens (Injection' m a b) where
     {
         type LensDomain (Injection' m a b) = WholeEdit (WholeReader a);
         type LensRange (Injection' m a b) = WholeEdit (WholeReader b);

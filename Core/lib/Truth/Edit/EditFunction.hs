@@ -38,7 +38,7 @@ module Truth.Edit.EditFunction where
         };
     };
 
-    instance (FunctorOne f) => CatFunctor EditFunction (JustEdit f) where
+    instance (MonadOne f) => CatFunctor EditFunction (JustEdit f) where
     {
         cfmap lens = MkEditFunction
         {

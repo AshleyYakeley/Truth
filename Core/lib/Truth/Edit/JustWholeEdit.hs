@@ -13,7 +13,7 @@ module Truth.Edit.JustWholeEdit where
 
     type JustWholeEdit (f :: * -> *) edit = EitherWholeEdit (JustEdit f edit);
 
-    extractJustWholeEdit :: forall f edit. (FunctorOne f,FullEdit edit) => JustWholeEdit f edit -> [edit];
+    extractJustWholeEdit :: forall f edit. (MonadOne f,FullEdit edit) => JustWholeEdit f edit -> [edit];
     extractJustWholeEdit (RightEdit (MkJustEdit edit)) = return edit;
     extractJustWholeEdit (LeftEdit (MkWholeEdit fa)) = case retrieveOne fa of
     {

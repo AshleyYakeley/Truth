@@ -6,7 +6,7 @@ module Data.Codec where
     import Data.Chain;
     import Data.Functor.Identity;
     import Data.Result;
-    import Data.FunctorOne;
+    import Data.MonadOne;
 
 
     class IsBiMap bm where
@@ -14,10 +14,10 @@ module Data.Codec where
         mapBiMapM :: (forall x. m1 x -> m2 x) -> bm m1 a b -> bm m2 a b;
     };
 
-    toBiMapMaybe :: (IsBiMap bm,FunctorOne m) => bm m edita editb -> bm Maybe edita editb;
+    toBiMapMaybe :: (IsBiMap bm,MonadOne m) => bm m edita editb -> bm Maybe edita editb;
     toBiMapMaybe = mapBiMapM getMaybeOne;
 
-    toBiMapResult :: forall e bm m edita editb. (IsBiMap bm,FunctorOne m) => e -> bm m edita editb -> bm (Result e) edita editb;
+    toBiMapResult :: forall e bm m edita editb. (IsBiMap bm,MonadOne m) => e -> bm m edita editb -> bm (Result e) edita editb;
     toBiMapResult e = mapBiMapM (mrf . retrieveOne) where
     {
         mrf :: Result (Limit m) a -> Result e a;

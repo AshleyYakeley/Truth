@@ -27,7 +27,7 @@ module Truth.Edit.FloatingEditLens where
         return (newstate,ea:eea);
     };
 
-    floatingEditLensAllowed :: (FunctorOne m) =>
+    floatingEditLensAllowed :: (MonadOne m) =>
      FloatingEditLens' m state edita editb -> state -> editb -> Readable (EditReader edita) Bool;
     floatingEditLensAllowed lens state editb = do
     {
@@ -53,7 +53,7 @@ module Truth.Edit.FloatingEditLens where
         floatingEditLensPutEdit = \state edit -> fmap (fmap ((,) state)) $ editLensPutEdit lens edit
     };
 
-    instance (Applicative m,FunctorOne m) => FloatingMap (FloatingEditLens' m) where
+    instance (Applicative m,MonadOne m) => FloatingMap (FloatingEditLens' m) where
     {
         identityFloating = fixedFloatingEditLens id;
         composeFloating fel2 fel1 = MkFloatingEditLens
@@ -97,7 +97,7 @@ module Truth.Edit.FloatingEditLens where
         }
     };
 
-    justFloatingEditLens :: forall f state edita editb. (FunctorOne f,Edit edita,Edit editb) =>
+    justFloatingEditLens :: forall f state edita editb. (MonadOne f,Edit edita,Edit editb) =>
      FloatingEditLens state edita editb -> FloatingEditLens state (JustEdit f edita) (JustEdit f editb);
     justFloatingEditLens lens = MkFloatingEditLens
     {
@@ -119,7 +119,7 @@ module Truth.Edit.FloatingEditLens where
 
     -- suitable for Results, trying to put a failure code will be rejected
 
-    justWholeFloatingEditLens :: forall f state edita editb. (FunctorOne f,FullReader (EditReader edita),Edit edita,FullEdit editb) =>
+    justWholeFloatingEditLens :: forall f state edita editb. (MonadOne f,FullReader (EditReader edita),Edit edita,FullEdit editb) =>
      FloatingEditLens state edita editb -> FloatingEditLens state (JustWholeEdit f edita) (JustWholeEdit f editb);
     justWholeFloatingEditLens lens = eitherWholeFloatingEditLens pushback (justFloatingEditLens lens) where
     {

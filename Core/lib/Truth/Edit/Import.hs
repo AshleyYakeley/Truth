@@ -52,7 +52,7 @@ module Truth.Edit.Import
 --    module Data.IsTuple,
     module Data.Result,
     module Data.Compose,
-    module Data.FunctorOne,
+    module Data.MonadOne,
     module Data.Category,
     module Data.KindCategory,
     module Control.Monad.Free,
@@ -113,7 +113,7 @@ where
 --    import Data.IsTuple;
     import Data.Result;
     import Data.Compose;
-    import Data.FunctorOne;
+    import Data.MonadOne;
     import Data.Category;
     import Data.KindCategory;
     import Control.Monad.Free;

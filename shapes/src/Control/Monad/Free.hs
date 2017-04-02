@@ -3,7 +3,7 @@ module Control.Monad.Free where
 {
     import Data.ConstFunction;
     import Data.Result;
-    import Data.FunctorOne;
+    import Data.MonadOne;
     import Data.KindCategory;
     import Data.Free;
 
@@ -28,23 +28,12 @@ module Control.Monad.Free where
         sequenceA (FreeBind fffma) = fmap FreeBind (sequenceA (fmap sequenceA fffma));
     };
 
-    instance (Functor f) => FunctorAp (FreeMonad f) where
-    {
-        fap ffab ffa = ffab >>= (\ab -> fmap ab ffa);
-    };
-
-    instance (Functor f) => FunctorBind (FreeMonad f) where
-    {
-        bind (FreeReturn a) afb = afb a;
-        bind (FreeBind fffa) afb = FreeBind (fmap (\ffa -> bind ffa afb) fffa);
-    };
-
     instance (Functor f) => FunctorGetPure (FreeMonad f) where
     {
         getPure = ConstConstFunction FreeReturn;
     };
 
-    instance (FunctorOne f) => FunctorOne (FreeMonad f) where
+    instance (MonadOne f) => MonadOne (FreeMonad f) where
     {
         retrieveOne (FreeReturn a) = SuccessResult a;
         retrieveOne (FreeBind fffa) = case retrieveOne fffa of
@@ -57,13 +46,14 @@ module Control.Monad.Free where
     instance (Functor f) => Applicative (FreeMonad f) where
     {
         pure = FreeReturn;
-        (<*>) = fap;
+        ffab <*> ffa = ffab >>= (\ab -> fmap ab ffa);
     };
 
     instance (Functor f) => Monad (FreeMonad f) where
     {
         return = pure;
-        (>>=) = bind;
+        FreeReturn a >>= afb = afb a;
+        FreeBind fffa >>= afb = FreeBind $ fmap (\ffa -> ffa >>= afb) fffa;
     };
 
     toFreeMonad :: (Functor f) => f t -> FreeMonad f t;

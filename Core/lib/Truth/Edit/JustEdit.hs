@@ -10,7 +10,7 @@ module Truth.Edit.JustEdit where
 
     instance Floating (JustEdit f edit) (JustEdit f edit);
 
-    instance (FunctorOne f,Edit edit) => Edit (JustEdit f edit) where
+    instance (MonadOne f,Edit edit) => Edit (JustEdit f edit) where
     {
         type EditReader (JustEdit f edit) = MaybeReader f (EditReader edit);
 
@@ -35,7 +35,7 @@ module Truth.Edit.JustEdit where
     {
         info = mkSimpleInfo $(iowitness[t|JustEdit|])
         [
-            -- instance (FunctorOne f,Edit edit) => Edit (JustEdit f edit)
+            -- instance (MonadOne f,Edit edit) => Edit (JustEdit f edit)
             MkKnowledge $ \knowledge ejfe -> do
             {
                 MkSplitInfo edit jfe <- matchInfo ejfe;
@@ -43,7 +43,7 @@ module Truth.Edit.JustEdit where
                 MkSplitInfo jf editVar <- matchInfo jfe;
                 MkSplitInfo j fVar <- matchInfo jf;
                 ReflH <- testHetEquality (info @JustEdit) j;
-                ConstraintFact <- ask knowledge $ applyInfo (info @FunctorOne) fVar;
+                ConstraintFact <- ask knowledge $ applyInfo (info @MonadOne) fVar;
                 ConstraintFact <- ask knowledge $ applyInfo (info @Edit) editVar;
                 return ConstraintFact;
             }

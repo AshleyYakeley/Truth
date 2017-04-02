@@ -21,7 +21,7 @@ module Truth.Edit.EditLens where
     editLensPutEdits _lens [] = return $ pure [];
     editLensPutEdits lens (e:ee) = getCompose $ (:) <$> (MkCompose $ editLensPutEdit lens e) <*> (MkCompose $ editLensPutEdits lens ee);
 
-    editLensAllowed :: (FunctorOne m) =>
+    editLensAllowed :: (MonadOne m) =>
      EditLens' m edita editb -> editb -> Readable (EditReader edita) Bool;
     editLensAllowed lens editb = do
     {
@@ -40,7 +40,7 @@ module Truth.Edit.EditLens where
         };
     };
 
-    instance (Applicative m,FunctorOne m) => Category (EditLens' m) where
+    instance (Applicative m,MonadOne m) => Category (EditLens' m) where
     {
         id = MkEditLens
         {
@@ -62,7 +62,7 @@ module Truth.Edit.EditLens where
         };
     };
 
-    instance (FunctorOne f,Applicative m) => CatFunctor (EditLens' m) (JustEdit f) where
+    instance (MonadOne f,Applicative m) => CatFunctor (EditLens' m) (JustEdit f) where
     {
         cfmap lens = MkEditLens
         {
@@ -114,7 +114,7 @@ module Truth.Edit.EditLens where
         }
     };
 
-    convertEditLens' :: (Applicative m,FunctorOne m,FullEdit edita,FullEdit editb,EditSubject edita ~ EditSubject editb) => EditLens' m edita editb;
+    convertEditLens' :: (Applicative m,MonadOne m,FullEdit edita,FullEdit editb,EditSubject edita ~ EditSubject editb) => EditLens' m edita editb;
     convertEditLens' = MkEditLens
     {
         editLensFunction = convertEditFunction,

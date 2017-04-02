@@ -1,6 +1,5 @@
 module Truth.Edit.Context where
 {
-    import Data.ConstFunction;
     import Truth.Edit.Import;
     import Truth.Edit.Read;
     import Truth.Edit.Edit;
@@ -24,23 +23,6 @@ module Truth.Edit.Context where
     {
         traverse afb (MkWithContext context a) = fmap (MkWithContext context) (afb a);
         sequenceA (MkWithContext context fa) = fmap (MkWithContext context) fa;
-    };
-
-    instance FunctorAp (WithContext context) where
-    {
-        fap (MkWithContext _n ab) (MkWithContext n a) = MkWithContext n (ab a);
-    };
-
-    instance FunctorBind (WithContext context) where
-    {
-        bind (MkWithContext _ content) afb = afb content;
-    };
-
-    instance FunctorGetPure (WithContext context);
-
-    instance FunctorOne (WithContext context) where
-    {
-        retrieveOne (MkWithContext _ a) = SuccessResult a;
     };
 
     instance (HasNewValue context,HasNewValue content) => HasNewValue (WithContext context content) where

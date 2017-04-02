@@ -33,7 +33,7 @@ module Truth.Object.View where
         return (vrWidgetStuff vr,close);
     };
 
-    mapJustWholeEditAspect :: forall f edit. (FunctorOne f, Edit edit,FullReader (EditReader edit)) =>
+    mapJustWholeEditAspect :: forall f edit. (MonadOne f, Edit edit,FullReader (EditReader edit)) =>
      Info f -> Aspect edit -> Maybe (Aspect (JustWholeEdit f edit));
     mapJustWholeEditAspect infoF (MkAspect infoEditB infoSubj (lens :: FloatingEditLens state edit editb)) = do
     {

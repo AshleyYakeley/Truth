@@ -76,7 +76,7 @@ module Truth.Edit.FloatingEditFunction  where
         }
     };
 
-    justFloatingEdit :: forall f state edita editb. (FunctorOne f,Edit edita,Edit editb) =>
+    justFloatingEdit :: forall f state edita editb. (MonadOne f,Edit edita,Edit editb) =>
      FloatingEditFunction state edita editb -> FloatingEditFunction state (JustEdit f edita) (JustEdit f editb);
     justFloatingEdit fef = MkFloatingEditFunction
     {
@@ -88,7 +88,7 @@ module Truth.Edit.FloatingEditFunction  where
         } in (newstate,fmap MkJustEdit meditb)
     };
 
-    justWholeFloatingEdit :: forall f state edita editb. (FunctorOne f,Edit edita,Edit editb,FullReader (EditReader editb)) =>
+    justWholeFloatingEdit :: forall f state edita editb. (MonadOne f,Edit edita,Edit editb,FullReader (EditReader editb)) =>
      FloatingEditFunction state edita editb -> FloatingEditFunction state (JustWholeEdit f edita) (JustWholeEdit f editb);
     justWholeFloatingEdit lens = eitherWholeFloatingEdit (justFloatingEdit lens);
 
