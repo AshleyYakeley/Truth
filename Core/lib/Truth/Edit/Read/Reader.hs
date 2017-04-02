@@ -11,7 +11,7 @@ module Truth.Edit.Read.Reader where
         type ReaderSubject reader :: *;
 
         -- | Make API calls when you've actually got the subject
-        readFromM :: forall m. (Applicative m,Monad m) => m (ReaderSubject reader) -> Structure m reader;
+        readFromM :: forall m. Monad m => m (ReaderSubject reader) -> Structure m reader;
         readFromM msubj reader = fmap (\subj -> readFrom subj reader) msubj;
 
         readFrom :: ReaderSubject reader -> (forall t. reader t -> t);

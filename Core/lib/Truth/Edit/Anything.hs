@@ -32,7 +32,7 @@ module Truth.Edit.Anything where
         type ReaderSubject AnyRead = Anything;
 
         -- | Make API calls when you've actually got the subject
-        -- readFromM :: forall m. (Applicative m,Monad m) => m (ReaderSubject reader) -> Structure m reader;
+        -- readFromM :: forall m. Monad m => m (ReaderSubject reader) -> Structure m reader;
         -- readFromM msubj reader = fmap (\subj -> readFrom subj reader) msubj;
 
         -- readFrom :: Anything -> (forall t. AnyRead t -> t);

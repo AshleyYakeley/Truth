@@ -18,7 +18,7 @@ module Truth.Edit.Tuple where
         type AggregateSubject agg :: *;
         aggregateIsFullReaderEdit :: agg edit -> IsFullReaderEdit edit;
         aggregateReadFrom :: agg edit -> AggregateSubject agg -> EditSubject edit;
-        aggregateConstruct :: (Applicative m,Monad m) => (forall edit. agg edit -> m (EditSubject edit)) -> m (AggregateSubject agg);
+        aggregateConstruct :: Monad m => (forall edit. agg edit -> m (EditSubject edit)) -> m (AggregateSubject agg);
     };
 
         data PairAggregate ea eb et where

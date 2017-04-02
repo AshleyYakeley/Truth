@@ -12,7 +12,7 @@ module Truth.Edit.Read.ReadFunction where
     readable :: ReadFunction reader reader;
     readable rt = MkReadable (\s -> s rt);
 
-    mapStructure :: forall m ra rb. (Applicative m,Monad m) => ReadFunction ra rb -> Structure m ra -> Structure m rb;
+    mapStructure :: forall m ra rb. Monad m => ReadFunction ra rb -> Structure m ra -> Structure m rb;
     mapStructure rfab sma rbt = unReadable (rfab rbt) sma;
 
     composeReadFunction :: ReadFunction rb rc -> ReadFunction ra rb -> ReadFunction ra rc;
