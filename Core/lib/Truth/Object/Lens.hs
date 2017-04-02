@@ -19,7 +19,7 @@ module Truth.Object.Lens where
         type LensDomain (FloatingEditLens' f state edita editb) = edita;
         type LensRange (FloatingEditLens' f state edita editb) = editb;
 
-        lensObject lens@MkFloatingEditLens{..} sub (initialB :: LockAPI editb token -> IO (editor,token)) updateB = do
+        lensObject lens@MkFloatingEditLens{..} sub (initialB :: LockAPI editb userstate -> IO (editor,userstate)) updateB = do
         {
             let
             {
@@ -28,18 +28,18 @@ module Truth.Object.Lens where
             statevar <- newMVar floatingEditInitial;
             let
             {
-                initialA :: LockAPI edita token -> IO (editor,token);
+                initialA :: LockAPI edita userstate -> IO (editor,userstate);
                 initialA (MkLockAPI lapiA) = let
                 {
-                    lapiB :: LockAPI editb token;
-                    lapiB = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => token -> API m editb token -> m r) -> let
+                    lapiB :: LockAPI editb userstate;
+                    lapiB = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => userstate -> API m editb userstate -> m r) -> let
                     {
-                        callA :: forall m. MonadIOInvert m => token -> API m edita token -> m r;
-                        callA token (apiA :: API m edita token) = let
+                        callA :: forall m. MonadIOInvert m => userstate -> API m edita userstate -> m r;
+                        callA userstate (apiA :: API m edita userstate) = let
                         {
                             readA :: Structure m (EditReader edita);
                             _allowedA :: edita -> m Bool;
-                            pushEditA :: [edita] -> m (Maybe token);
+                            pushEditA :: [edita] -> m (Maybe userstate);
                             MkAPI readA _allowedA pushEditA = apiA;
 
                             readB :: Structure (StateT state m) (EditReader editb);
@@ -85,29 +85,29 @@ module Truth.Object.Lens where
                                 };
                             };
 
-                            pushEditB :: [editb] -> (StateT state m) (Maybe token);
+                            pushEditB :: [editb] -> (StateT state m) (Maybe userstate);
                             pushEditB editB = do
                             {
                                 meditA <- convertEdit editB;
                                 case meditA of
                                 {
-                                    Nothing -> return $ Just token; -- is this correct?
+                                    Nothing -> return $ Just userstate; -- is this correct?
                                     Just editAs -> lift $ pushEditA editAs;
                                 };
                             };
 
-                            apiB :: API (StateT state m) editb token;
+                            apiB :: API (StateT state m) editb userstate;
                             apiB = MkAPI readB allowedB pushEditB;
                         }
                         in liftIOInvert $ \unlift -> modifyMVar statevar $ \oldstate -> do
                         {
-                            (o,(r,newstate)) <- unlift $ runStateT (callB token apiB) oldstate;
+                            (o,(r,newstate)) <- unlift $ runStateT (callB userstate apiB) oldstate;
                             return (newstate,(o,r));
                         };
                     } in lapiA callA;
                 } in initialB lapiB;
 
-                updateA :: editor -> token -> [edita] -> IO token;
+                updateA :: editor -> userstate -> [edita] -> IO userstate;
                 updateA editor oldtoken editAs = modifyMVar statevar $ \oldstate -> do
                 {
                     let
@@ -127,24 +127,24 @@ module Truth.Object.Lens where
         type LensDomain (EditLens' f edita editb) = edita;
         type LensRange (EditLens' f edita editb) = editb;
 
-        lensObject lens@MkEditLens{..} sub (initialB :: LockAPI editb token -> IO (editor,token)) updateB = do
+        lensObject lens@MkEditLens{..} sub (initialB :: LockAPI editb userstate -> IO (editor,userstate)) updateB = do
         {
             let
             {
                 MkEditFunction{..} = editLensFunction;
 
-                initialA :: LockAPI edita token -> IO (editor,token);
+                initialA :: LockAPI edita userstate -> IO (editor,userstate);
                 initialA (MkLockAPI lapiA) = let
                 {
-                    lapiB :: LockAPI editb token;
-                    lapiB = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => token -> API m editb token -> m r) -> let
+                    lapiB :: LockAPI editb userstate;
+                    lapiB = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => userstate -> API m editb userstate -> m r) -> let
                     {
-                        callA :: forall m. MonadIOInvert m => token -> API m edita token -> m r;
-                        callA token (apiA :: API m edita token) = let
+                        callA :: forall m. MonadIOInvert m => userstate -> API m edita userstate -> m r;
+                        callA userstate (apiA :: API m edita userstate) = let
                         {
                             readA :: Structure m (EditReader edita);
                             _allowedA :: edita -> m Bool;
-                            pushEditA :: [edita] -> m (Maybe token);
+                            pushEditA :: [edita] -> m (Maybe userstate);
                             MkAPI readA _allowedA pushEditA = apiA;
 
                             readB :: Structure m (EditReader editb);
@@ -176,25 +176,25 @@ module Truth.Object.Lens where
                                 };
                             };
 
-                            pushEditB :: [editb] -> m (Maybe token);
+                            pushEditB :: [editb] -> m (Maybe userstate);
                             pushEditB editBs = do
                             {
                                 meditA <- convertEdits editBs;
                                 case meditA of
                                 {
-                                    Nothing -> return $ Just token; -- is this correct?
+                                    Nothing -> return $ Just userstate; -- is this correct?
                                     Just editAs -> pushEditA editAs;
                                 };
                             };
 
-                            apiB :: API m editb token;
+                            apiB :: API m editb userstate;
                             apiB = MkAPI readB allowedB pushEditB;
                         }
-                        in callB token apiB;
+                        in callB userstate apiB;
                     } in lapiA callA;
                 } in initialB lapiB;
 
-                updateA :: editor -> token -> [edita] -> IO token;
+                updateA :: editor -> userstate -> [edita] -> IO userstate;
                 updateA editor oldtoken editAs = do
                 {
                     let
@@ -271,22 +271,22 @@ module Truth.Object.Lens where
         type LensDomain (Lens' f a b) = WholeEdit (WholeReader a);
         type LensRange (Lens' f a b) = WholeEdit (WholeReader b);
 
-        lensObject MkLens{..} sub (initialB :: LockAPI (WholeEdit (WholeReader b)) token -> IO (editor,token)) updateB = do
+        lensObject MkLens{..} sub (initialB :: LockAPI (WholeEdit (WholeReader b)) userstate -> IO (editor,userstate)) updateB = do
         {
             let
             {
-                initialA :: LockAPI (WholeEdit (WholeReader a)) token -> IO (editor,token);
+                initialA :: LockAPI (WholeEdit (WholeReader a)) userstate -> IO (editor,userstate);
                 initialA (MkLockAPI lapiA) = let
                 {
-                    lapiB :: LockAPI (WholeEdit (WholeReader b)) token;
-                    lapiB = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => token -> API m (WholeEdit (WholeReader b)) token -> m r) -> let
+                    lapiB :: LockAPI (WholeEdit (WholeReader b)) userstate;
+                    lapiB = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => userstate -> API m (WholeEdit (WholeReader b)) userstate -> m r) -> let
                     {
-                        callA :: forall m. MonadIOInvert m => token -> API m (WholeEdit (WholeReader a)) token -> m r;
-                        callA token (apiA :: API m (WholeEdit (WholeReader a)) token) = let
+                        callA :: forall m. MonadIOInvert m => userstate -> API m (WholeEdit (WholeReader a)) userstate -> m r;
+                        callA userstate (apiA :: API m (WholeEdit (WholeReader a)) userstate) = let
                         {
                             readA :: Structure m (WholeReader a);
                             allowedA :: WholeEdit (WholeReader a) -> m Bool;
-                            pushEditA :: [WholeEdit (WholeReader a)] -> m (Maybe token);
+                            pushEditA :: [WholeEdit (WholeReader a)] -> m (Maybe userstate);
                             MkAPI readA allowedA pushEditA = apiA;
 
                             readB :: Structure m (WholeReader b);
@@ -335,25 +335,25 @@ module Truth.Object.Lens where
                                 };
                             };
 
-                            pushEditB :: [WholeEdit (WholeReader b)] -> m (Maybe token);
+                            pushEditB :: [WholeEdit (WholeReader b)] -> m (Maybe userstate);
                             pushEditB editB = do
                             {
                                 meditA <- convertEdits editB;
                                 case meditA of
                                 {
-                                    Nothing -> return $ Just token; -- is this correct?
+                                    Nothing -> return $ Just userstate; -- is this correct?
                                     Just editA -> pushEditA editA;
                                 };
                             };
 
-                            apiB :: API m (WholeEdit (WholeReader b)) token;
+                            apiB :: API m (WholeEdit (WholeReader b)) userstate;
                             apiB = MkAPI readB allowedB pushEditB;
                         }
-                        in callB token apiB;
+                        in callB userstate apiB;
                     } in lapiA callA;
                 } in initialB lapiB;
 
-                updateA :: editor -> token -> [WholeEdit (WholeReader a)] -> IO token;
+                updateA :: editor -> userstate -> [WholeEdit (WholeReader a)] -> IO userstate;
                 updateA editor oldtoken editAs = do
                 {
                     let

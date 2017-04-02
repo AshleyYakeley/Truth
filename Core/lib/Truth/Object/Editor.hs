@@ -5,10 +5,10 @@ module Truth.Object.Editor where
     import Truth.Object.Object;
 
 
-    data Editor (edit :: *) r = forall editor token. MkEditor
+    data Editor (edit :: *) r = forall editor userstate. MkEditor
     {
-        editorInit :: LockAPI edit token -> IO (editor,token),
-        editorUpdate :: editor -> token -> [edit] -> IO token,
+        editorInit :: LockAPI edit userstate -> IO (editor,userstate),
+        editorUpdate :: editor -> userstate -> [edit] -> IO userstate,
         editorDo :: editor -> IO r
     };
 

@@ -9,21 +9,21 @@ module Truth.Object.Object
     import Truth.Edit;
 
 
-    data API m edit token = MkAPI
+    data API m edit userstate = MkAPI
     {
         apiRead :: Structure m (EditReader edit),
         apiAllowed :: edit -> m Bool,
-        apiEdit :: [edit] -> m (Maybe token)
+        apiEdit :: [edit] -> m (Maybe userstate)
     };
 
-    apiReadEdit :: Monad m => API m edit token -> Readable (EditReader edit) [edit] -> m (Maybe token);
+    apiReadEdit :: Monad m => API m edit userstate -> Readable (EditReader edit) [edit] -> m (Maybe userstate);
     apiReadEdit MkAPI{..}  MkReadable{..} = do
     {
         edits <- unReadable apiRead;
         apiEdit edits;
     };
 
-    apiAlloweds :: Monad m => API m edit token -> [edit] -> m Bool;
+    apiAlloweds :: Monad m => API m edit userstate -> [edit] -> m Bool;
     apiAlloweds _api [] = return True;
     apiAlloweds api (e:ee) = do
     {
@@ -48,15 +48,15 @@ module Truth.Object.Object
         fmap ab (MkAPI r a e) = MkAPI r a $ fmap (fmap (fmap ab)) e;
     };
 
-    newtype LockAPI edit token = MkLockAPI (forall r. (forall m. MonadIOInvert m => token -> API m edit token -> m r) -> IO r);
+    newtype LockAPI edit userstate = MkLockAPI (forall r. (forall m. MonadIOInvert m => userstate -> API m edit userstate -> m r) -> IO r);
 
     instance Functor (LockAPI edit) where
     {
-        fmap t1t2 (MkLockAPI lapi1) = MkLockAPI $ \ff -> lapi1 $ \token api -> ff (t1t2 token) (fmap t1t2 api);
+        fmap t1t2 (MkLockAPI lapi1) = MkLockAPI $ \ff -> lapi1 $ \userstate api -> ff (t1t2 userstate) (fmap t1t2 api);
     };
 
-    nonlockingAPI :: token -> API IO edit token -> LockAPI edit token;
-    nonlockingAPI token api = MkLockAPI $ \ff -> ff token api;
+    nonlockingAPI :: userstate -> API IO edit userstate -> LockAPI edit userstate;
+    nonlockingAPI userstate api = MkLockAPI $ \ff -> ff userstate api;
 
     freeLockAPI :: forall edit. (Edit edit,FullReader (EditReader edit)) => EditSubject edit -> (EditSubject edit -> Bool) -> IO (LockAPI edit ());
     freeLockAPI firsta allowed = do
@@ -106,14 +106,14 @@ module Truth.Object.Object
     };
 
 
-    type Object edit = forall editor token.
-        (LockAPI edit token -> IO (editor,token)) -> -- initialise: provides read API, initial allowed, write API
-        (editor -> token -> [edit] -> IO token) -> -- receive: get updates (both others and from your apiEdit calls)
+    type Object edit = forall editor userstate.
+        (LockAPI edit userstate -> IO (editor,userstate)) -> -- initialise: provides read API, initial allowed, write API
+        (editor -> userstate -> [edit] -> IO userstate) -> -- receive: get updates (both others and from your apiEdit calls)
         IO (editor, IO ());
 
     newtype ObjectW edit = MkObjectW (Object edit);
 
-    data StoreEntry edit token = MkStoreEntry (token -> [edit] -> IO token) token;
+    data StoreEntry edit userstate = MkStoreEntry (userstate -> [edit] -> IO userstate) userstate;
 
     shareObject :: forall edit. Object edit -> IO (ObjectW edit);
     shareObject parent = do
@@ -149,12 +149,12 @@ module Truth.Object.Object
         (MkLockAPI lapiP,closerP) <- parent initP updateP;
         let
         {
-            lapiC :: forall token. IOWitnessKey token -> LockAPI edit token;
+            lapiC :: forall userstate. IOWitnessKey userstate -> LockAPI edit userstate;
             lapiC key = MkLockAPI $ \ff -> modifyMVar storevar $ \store -> lapiP $ \_tokenP (apiP :: API m edit ()) -> do
             {
                 let
                 {
-                    apiC :: API (StateT (IOWitnessStore (StoreEntry edit)) m) edit token;
+                    apiC :: API (StateT (IOWitnessStore (StoreEntry edit)) m) edit userstate;
                     apiC = MkAPI
                     {
                         apiRead = \rt -> lift $ apiRead apiP rt,
@@ -187,7 +187,7 @@ module Truth.Object.Object
                         }
                     };
 
-                    tokenC :: token;
+                    tokenC :: userstate;
                     (MkStoreEntry _ tokenC) = fromJust $ lookupWitnessStore key store;
                 };
                 (r,newstore) <- runStateT (ff tokenC apiC) store;
@@ -226,12 +226,12 @@ module Truth.Object.Object
         return $ MkObjectW child;
     };
 
-    shareLockAPI :: LockAPI edit token -> IO (ObjectW edit);
+    shareLockAPI :: LockAPI edit userstate -> IO (ObjectW edit);
     shareLockAPI lapi = shareObject $ \initr _update -> do
     {
         rec
         {
-            (editor,token) <- initr $ fmap (\_ -> token) lapi;
+            (editor,userstate) <- initr $ fmap (\_ -> userstate) lapi;
         };
         return (editor,return ());
     }

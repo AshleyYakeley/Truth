@@ -77,25 +77,25 @@ editor: release
 
 Transactions on state...
 
-(token -> message -> Allowed message -> IO token)
+(userstate -> message -> Allowed message -> IO userstate)
 
 -- | note this has lock semantics but not transaction semantics.
 -- That is, no other caller can change the object while you have the lock,
 -- however, each call to apiEdit is a change, and these are not collected into and atomic transaction,
 -- and cannot be rolled back.
-data API m edit token = MkAPI
+data API m edit userstate = MkAPI
 {
     apiRead :: Structure m (EditReader edit),
     apiAllowed :: m (edit -> Bool),
-    apiEdit :: edit -> m token
+    apiEdit :: edit -> m userstate
 };
 
-type Handle edit token = forall r. (forall m. Monad m => token -> API m edit token -> m r) -> IO r;
+type Handle edit userstate = forall r. (forall m. Monad m => userstate -> API m edit userstate -> m r) -> IO r;
 
-type Subscribe edit = forall token.
-    (Handle edit token -> IO token) -> -- initialise: provides read API, initial allowed, write API
-    (token -> edit -> (edit -> Bool) -> IO token) -> -- receive: get updates (both others and from your apiEdit calls)
-    IO (token, IO ());
+type Subscribe edit = forall userstate.
+    (Handle edit userstate -> IO userstate) -> -- initialise: provides read API, initial allowed, write API
+    (userstate -> edit -> (edit -> Bool) -> IO userstate) -> -- receive: get updates (both others and from your apiEdit calls)
+    IO (userstate, IO ());
 
 freeObjSubscribe :: EditSubject edit -> (EditSubject edit -> edit -> Bool) -> Subscribe edit;
 

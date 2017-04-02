@@ -18,13 +18,13 @@ module Truth.Object.View where
         vwsGetSelection :: IO (Maybe (Aspect edit))
     };
 
-    data ViewResult w edit token = MkViewResult
+    data ViewResult w edit userstate = MkViewResult
     {
         vrWidgetStuff :: ViewWidgetStuff w edit,
-        vrUpdate :: token -> [edit] -> IO token
+        vrUpdate :: userstate -> [edit] -> IO userstate
     };
 
-    data View w edit = forall token. MkView (LockAPI edit token -> IO (ViewResult w edit token,token));
+    data View w edit = forall userstate. MkView (LockAPI edit userstate -> IO (ViewResult w edit userstate,userstate));
 
     subscribeView :: View w edit -> Object edit -> IO (ViewWidgetStuff w edit,IO ());
     subscribeView (MkView view) subscribe = do
