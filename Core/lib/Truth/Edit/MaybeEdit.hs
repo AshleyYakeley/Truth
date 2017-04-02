@@ -17,7 +17,6 @@ module Truth.Edit.MaybeEdit where
     {
         type EditReader (MaybeEdit edit) = MaybeReader Maybe (EditReader edit);
 
-        applyEdit CreateMaybeEdit ReadOther = return $ MkAnyReturn Just;
         applyEdit CreateMaybeEdit ReadIsJust = return Nothing;
         applyEdit CreateMaybeEdit (ReadWholeJust reader) = return $ Just $ readFrom newValue reader;
         applyEdit DeleteMaybeEdit reader = return $ readFrom Nothing reader;

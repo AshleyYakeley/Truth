@@ -15,7 +15,6 @@ module Truth.Edit.JustEdit where
         type EditReader (JustEdit f edit) = MaybeReader f (EditReader edit);
 
         -- applyEdit :: JustEdit f edit -> ReadMap (MaybeReader f (EditReader edit)) (MaybeReader f (EditReader edit));
-        applyEdit (MkJustEdit _edita) ReadOther = readable ReadOther;
         applyEdit (MkJustEdit _edita) ReadIsJust = readable ReadIsJust;
         applyEdit (MkJustEdit edita) (ReadWholeJust reader) = liftMaybeReadable (applyEdit edita reader);
 
