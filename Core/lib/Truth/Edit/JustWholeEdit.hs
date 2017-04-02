@@ -5,7 +5,7 @@ module Truth.Edit.JustWholeEdit where
     import Truth.Edit.Edit;
     import Truth.Edit.Either;
     import Truth.Edit.WholeEdit;
-    import Truth.Edit.MaybeReader;
+    import Truth.Edit.MonadOneReader;
     import Truth.Edit.JustEdit;
 
 
@@ -58,7 +58,7 @@ module Truth.Edit.JustWholeEdit where
             ReflH <- isInfo @JustEdit j;
             MkSplitInfo rjf r <- matchInfo rjfe;
             MkSplitInfo rj f' <- matchInfo rjf;
-            ReflH <- isInfo @MaybeReader rj;
+            ReflH <- isInfo @MonadOneReader rj;
             ReflH <- sameInfo f f';
             return $ MkMatchJustWholeEdit f e r;
         };

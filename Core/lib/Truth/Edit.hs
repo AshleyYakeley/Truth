@@ -5,7 +5,7 @@ module Truth.Edit
     module Truth.Edit.NoEdit,
     module Truth.Edit.Either,
     module Truth.Edit.WholeEdit,
-    module Truth.Edit.MaybeReader,
+    module Truth.Edit.MonadOneReader,
     module Truth.Edit.JustEdit,
     module Truth.Edit.MaybeEdit,
     module Truth.Edit.JustWholeEdit,
@@ -30,7 +30,7 @@ module Truth.Edit
     import Truth.Edit.NoEdit;
     import Truth.Edit.Either;
     import Truth.Edit.WholeEdit;
-    import Truth.Edit.MaybeReader;
+    import Truth.Edit.MonadOneReader;
     import Truth.Edit.JustEdit;
     import Truth.Edit.MaybeEdit;
     import Truth.Edit.JustWholeEdit;

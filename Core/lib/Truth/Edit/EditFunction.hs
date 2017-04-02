@@ -5,7 +5,7 @@ module Truth.Edit.EditFunction where
     import Truth.Edit.Either;
     import Truth.Edit.Edit;
     import Truth.Edit.WholeEdit;
-    import Truth.Edit.MaybeReader;
+    import Truth.Edit.MonadOneReader;
     import Truth.Edit.JustEdit;
 
 

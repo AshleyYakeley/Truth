@@ -2,7 +2,7 @@ module Truth.Edit.MaybeEdit where
 {
     import Truth.Edit.Import;
     import Truth.Edit.Read;
-    import Truth.Edit.MaybeReader;
+    import Truth.Edit.MonadOneReader;
     import Truth.Edit.Edit;
 
 
@@ -15,39 +15,39 @@ module Truth.Edit.MaybeEdit where
 
     instance (FullEdit edit,HasNewValue (EditSubject edit)) => Edit (MaybeEdit edit) where
     {
-        type EditReader (MaybeEdit edit) = MaybeReader Maybe (EditReader edit);
+        type EditReader (MaybeEdit edit) = MonadOneReader Maybe (EditReader edit);
 
-        applyEdit CreateMaybeEdit ReadIsJust = return Nothing;
-        applyEdit CreateMaybeEdit (ReadWholeJust reader) = return $ Just $ readFrom newValue reader;
+        applyEdit CreateMaybeEdit ReadHasOne = return $ Just ();
+        applyEdit CreateMaybeEdit (ReadOne reader) = return $ Just $ readFrom newValue reader;
         applyEdit DeleteMaybeEdit reader = return $ readFrom Nothing reader;
-        applyEdit (JustMaybeEdit edita) (ReadWholeJust reader) = liftMaybeReadable (applyEdit edita reader);
+        applyEdit (JustMaybeEdit edita) (ReadOne reader) = liftMaybeReadable (applyEdit edita reader);
         applyEdit (JustMaybeEdit _edita) reader = readable reader;
 
-        -- invertEdit :: MaybeEdit edit -> Readable (MaybeReader Maybe reader) [JustEdit Maybe edit];    -- "Nothing" means no change
+        -- invertEdit :: MaybeEdit edit -> Readable (MonadOneReader Maybe reader) [JustEdit Maybe edit];    -- "Nothing" means no change
         invertEdit CreateMaybeEdit = do
         {
-            me <- readable ReadIsJust;
+            me <- readable ReadHasOne;
             case me of
             {
-                Nothing -> return [];
-                Just _ -> return [DeleteMaybeEdit]; -- deleted
+                Just () -> return [];
+                Nothing -> return [DeleteMaybeEdit]; -- deleted
             };
         };
         invertEdit DeleteMaybeEdit = do
         {
-            me <- readable ReadIsJust;
+            me <- readable ReadHasOne;
             case me of
             {
-                Nothing -> do
+                Just () -> do
                 {
-                    medits <- mapReadableF (readable . ReadWholeJust) replaceEdit;
+                    medits <- mapReadableF (readable . ReadOne) replaceEdit;
                     case medits of
                     {
                         Nothing -> return []; -- shouldn't happen
                         Just edits -> return $ CreateMaybeEdit : (fmap JustMaybeEdit edits);
                     }
                 };
-                Just _ -> return []; -- already deleted
+                Nothing -> return []; -- already deleted
             };
         };
         invertEdit (JustMaybeEdit edita) = do
@@ -65,19 +65,19 @@ module Truth.Edit.MaybeEdit where
     {
         replaceEdit = do
         {
-            me <- readable ReadIsJust;
+            me <- readable ReadHasOne;
             case me of
             {
-                Nothing -> do
+                Just () -> do
                 {
-                    medits <- mapReadableF (readable . ReadWholeJust) replaceEdit;
+                    medits <- mapReadableF (readable . ReadOne) replaceEdit;
                     case medits of
                     {
                         Nothing -> return [DeleteMaybeEdit]; -- shouldn't happen
                         Just edits -> return $ CreateMaybeEdit : (fmap JustMaybeEdit edits);
                     }
                 };
-                Just _ -> return [DeleteMaybeEdit]; -- deleted
+                Nothing -> return [DeleteMaybeEdit]; -- deleted
             };
         };
     };

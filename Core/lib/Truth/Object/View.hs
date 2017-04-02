@@ -45,7 +45,7 @@ module Truth.Object.View where
         let
         {
             infoJustEdit = applyInfo (applyInfo (info @JustEdit) infoF) infoEditB;
-            infoJustReader = applyInfo (applyInfo (info @MaybeReader) infoF) infoReader;
+            infoJustReader = applyInfo (applyInfo (info @MonadOneReader) infoF) infoReader;
 
             infoEditB' = applyInfo (applyInfo (info @EitherEdit) $ applyInfo (info @WholeEdit) infoJustReader) infoJustEdit;
             infoSubj' = applyInfo infoF infoSubj;

@@ -4,7 +4,7 @@ module Truth.Edit.EditLens where
     import Truth.Edit.Read;
     import Truth.Edit.Edit;
     import Truth.Edit.WholeEdit;
-    import Truth.Edit.MaybeReader;
+    import Truth.Edit.MonadOneReader;
     import Truth.Edit.JustEdit;
     import Truth.Edit.EditFunction;
 
