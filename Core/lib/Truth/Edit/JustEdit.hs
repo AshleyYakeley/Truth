@@ -17,12 +17,12 @@ module Truth.Edit.JustEdit where
         -- applyEdit :: JustEdit f edit -> ReadMap (MaybeReader f (EditReader edit)) (MaybeReader f (EditReader edit));
         applyEdit (MkJustEdit _edita) ReadOther = readable ReadOther;
         applyEdit (MkJustEdit _edita) ReadIsJust = readable ReadIsJust;
-        applyEdit (MkJustEdit edita) (ReadWholeJust reader) = liftJustReadable (applyEdit edita reader);
+        applyEdit (MkJustEdit edita) (ReadWholeJust reader) = liftMaybeReadable (applyEdit edita reader);
 
         -- invertEdit :: JustEdit f edit -> Readable (MaybeReader f reader) (Maybe (JustEdit f edit));    -- "Nothing" means no change
         invertEdit (MkJustEdit edita) = do
         {
-            fme <- liftJustReadable (invertEdit edita);
+            fme <- liftMaybeReadable (invertEdit edita);
             return (case getMaybeOne fme of
             {
                 Just edits -> fmap MkJustEdit edits;

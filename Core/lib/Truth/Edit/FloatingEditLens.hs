@@ -106,9 +106,9 @@ module Truth.Edit.FloatingEditLens where
         {
 
             -- floatingEditLensPutEdit lens state pushb :: Readable ra (Maybe (state,edita))
-            -- liftJustReadable (floatingEditLensPutEdit lens state pushb) :: Readable (MaybeReader f ra) (f edita);
+            -- liftMaybeReadable (floatingEditLensPutEdit lens state pushb) :: Readable (MaybeReader f ra) (f edita);
 
-            fpusha <- liftJustReadable (floatingEditLensPutEdit lens oldstate pushb);
+            fpusha <- liftMaybeReadable (floatingEditLensPutEdit lens oldstate pushb);
             return $ case getMaybeOne fpusha of
             {
                 Just (Just (newstate,edita)) -> Just (newstate,MkJustEdit edita);
@@ -137,7 +137,7 @@ module Truth.Edit.FloatingEditLens where
         {
             FailureResult (MkLimit fx) -> return $ return (oldstate,fx);
 
-            SuccessResult b -> fmap (fmap (ff1 oldstate) . sequenceA) $ liftJustReadable $ do
+            SuccessResult b -> fmap (fmap (ff1 oldstate) . sequenceA) $ liftMaybeReadable $ do
             {
                 mstateedita <- floatingEditLensPutEdits lens oldstate (fromReadable replaceEdit b);
                 case mstateedita of

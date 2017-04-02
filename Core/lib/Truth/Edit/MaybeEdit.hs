@@ -21,7 +21,7 @@ module Truth.Edit.MaybeEdit where
         applyEdit CreateMaybeEdit ReadIsJust = return Nothing;
         applyEdit CreateMaybeEdit (ReadWholeJust reader) = return $ Just $ readFrom newValue reader;
         applyEdit DeleteMaybeEdit reader = return $ readFrom Nothing reader;
-        applyEdit (JustMaybeEdit edita) (ReadWholeJust reader) = liftJustReadable (applyEdit edita reader);
+        applyEdit (JustMaybeEdit edita) (ReadWholeJust reader) = liftMaybeReadable (applyEdit edita reader);
         applyEdit (JustMaybeEdit _edita) reader = readable reader;
 
         -- invertEdit :: MaybeEdit edit -> Readable (MaybeReader Maybe reader) [JustEdit Maybe edit];    -- "Nothing" means no change
@@ -53,7 +53,7 @@ module Truth.Edit.MaybeEdit where
         };
         invertEdit (JustMaybeEdit edita) = do
         {
-            me <- liftJustReadable (invertEdit edita);
+            me <- liftMaybeReadable (invertEdit edita);
             return $ case me of
             {
                 Just edits -> fmap JustMaybeEdit edits;

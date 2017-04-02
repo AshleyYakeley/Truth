@@ -69,7 +69,7 @@ module Truth.Edit.EditLens where
             editLensFunction = cfmap (editLensFunction lens),
             editLensPutEdit = \(MkJustEdit editb) -> do
             {
-                fmedita <- liftJustReadable (editLensPutEdit lens editb);
+                fmedita <- liftMaybeReadable (editLensPutEdit lens editb);
                 return (case retrieveOne fmedita of
                 {
                     SuccessResult medita -> fmap MkJustEdit medita;

@@ -27,23 +27,23 @@ module Truth.Edit.MaybeReader where
         readFrom fsubj (ReadWholeJust reader) = fmap (\subj -> readFrom subj reader) fsubj;
     };
 
-    liftJustReadable :: (Traversable f,FunctorBind f) => Readable reader a -> Readable (MaybeReader f reader) (f a);
-    liftJustReadable rra = do
+    liftMaybeReadable :: (Traversable f,FunctorBind f) => Readable reader a -> Readable (MaybeReader f reader) (f a);
+    liftMaybeReadable rra = do
     {
-        fmfa <- getCompose (unReadable rra (\ra -> MkCompose (fmap toFreeMonad (readable (ReadWholeJust ra)))));
+        fmfa <- getCompose $ unReadable rra $ \ra -> MkCompose $ fmap toFreeMonad $ readable $ ReadWholeJust ra;
         (MkAnyReturn return') <- readable ReadOther;
         return (fromFreeMonad return' bind fmfa);
     };
 
-    liftJustReadFunction :: (Traversable f,FunctorBind f) => ReadFunction ra rb -> ReadFunction (MaybeReader f ra) (MaybeReader f rb);
-    liftJustReadFunction _rfrarb ReadOther = readable ReadOther;
-    liftJustReadFunction _rfrarb ReadIsJust = readable ReadIsJust;
-    liftJustReadFunction rfrarb (ReadWholeJust rt) = liftJustReadable (rfrarb rt);
+    liftMaybeReadFunction :: (Traversable f,FunctorBind f) => ReadFunction ra rb -> ReadFunction (MaybeReader f ra) (MaybeReader f rb);
+    liftMaybeReadFunction _rfrarb ReadOther = readable ReadOther;
+    liftMaybeReadFunction _rfrarb ReadIsJust = readable ReadIsJust;
+    liftMaybeReadFunction rfrarb (ReadWholeJust rt) = liftMaybeReadable (rfrarb rt);
 
     instance (FunctorOne f,FullReader reader) => FullReader (MaybeReader f reader) where
     {
         -- fromReader :: ReadFunction (MaybeReader f reader) (f (ReaderSubject reader));
-        fromReader = liftJustReadable fromReader;
+        fromReader = liftMaybeReadable fromReader;
     };
 
     instance HasInfo MaybeReader where

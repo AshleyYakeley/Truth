@@ -81,7 +81,7 @@ module Truth.Edit.FloatingEditFunction  where
     justFloatingEdit fef = MkFloatingEditFunction
     {
         floatingEditInitial = floatingEditInitial fef,
-        floatingEditGet = \state -> liftJustReadFunction (floatingEditGet fef state),
+        floatingEditGet = \state -> liftMaybeReadFunction (floatingEditGet fef state),
         floatingEditUpdate = \(MkJustEdit edita) oldstate -> let
         {
             (newstate,meditb) = floatingEditUpdate fef edita oldstate;

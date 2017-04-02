@@ -47,7 +47,7 @@ module Truth.Edit.EditFunction where
                 editb <- editUpdate lens edita;
                 return $ MkJustEdit editb;
             },
-            editGet = liftJustReadFunction (editGet lens)
+            editGet = liftMaybeReadFunction (editGet lens)
         };
     };
 
