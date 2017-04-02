@@ -40,7 +40,7 @@ module Truth.Edit.MaybeEdit where
             {
                 Just () -> do
                 {
-                    medits <- mapReadableF (readable . ReadOne) replaceEdit;
+                    medits <- getCompose $ mapReadableF (MkCompose . readable . ReadOne) replaceEdit;
                     case medits of
                     {
                         Nothing -> return []; -- shouldn't happen
@@ -70,7 +70,7 @@ module Truth.Edit.MaybeEdit where
             {
                 Just () -> do
                 {
-                    medits <- mapReadableF (readable . ReadOne) replaceEdit;
+                    medits <- getCompose $ mapReadableF (MkCompose . readable . ReadOne) replaceEdit;
                     case medits of
                     {
                         Nothing -> return [DeleteMaybeEdit]; -- shouldn't happen

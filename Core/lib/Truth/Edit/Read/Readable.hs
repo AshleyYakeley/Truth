@@ -9,8 +9,8 @@ module Truth.Edit.Read.Readable where
     readable :: reader t -> Readable reader t;
     readable rt = MkReadable (\s -> s rt);
 
-    fromReadable :: (Reader reader) => Readable reader t -> (ReaderSubject reader) -> t;
-    fromReadable rrt a = runIdentity (unReadable rrt (Identity . (readFrom a)));
+    fromReadable :: (Reader reader) => Readable reader t -> ReaderSubject reader -> t;
+    fromReadable (MkReadable rrt) a = runIdentity $ rrt $ Identity . (readFrom a);
 
     instance Functor (Readable reader) where
     {
@@ -32,4 +32,12 @@ module Truth.Edit.Read.Readable where
             unReadable (f a) s;
         };
     };
+
+    type ReadableF f reader = Compose (Readable reader) f;
+
+    readableF :: Applicative f => reader t -> ReadableF f reader t;
+    readableF rt = MkCompose $ fmap pure $ readable rt;
+
+    fromReadableF :: (Reader reader) => ReadableF f reader t -> ReaderSubject reader -> f t;
+    fromReadableF (MkCompose rf) = fromReadable rf;
 }
