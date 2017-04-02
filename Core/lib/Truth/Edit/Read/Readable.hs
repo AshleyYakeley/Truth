@@ -16,22 +16,17 @@ module Truth.Edit.Read.Readable where
 
     instance Applicative (Readable reader) where
     {
-        pure a = MkReadable (\_ -> return a);
-        (MkReadable smab) <*> (MkReadable sma) = MkReadable (\s -> do
-        {
-            ab <- smab s;
-            a <- sma s;
-            return (ab a);
-        });
+        pure a = MkReadable $ \_ -> pure a;
+        (MkReadable smab) <*> (MkReadable sma) = MkReadable $ \s -> smab s <*> sma s;
     };
 
     instance Monad (Readable reader) where
     {
-        return a = MkReadable (\_ -> return a);
-        (MkReadable sma) >>= f = MkReadable (\s -> do
+        return = pure;
+        (MkReadable sma) >>= f = MkReadable $ \s -> do
         {
             a <- sma s;
             unReadable (f a) s;
-        });
+        };
     };
 }
