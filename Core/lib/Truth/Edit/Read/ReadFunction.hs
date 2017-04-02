@@ -6,11 +6,7 @@ module Truth.Edit.Read.ReadFunction where
     import Truth.Edit.Read.Readable;
 
 
-    -- type ReadFunction readera readerb = forall t. readerb t -> Readable readera t;
-    type ReadFunction readera readerb = Structure (Readable readera) readerb;
-
-    readable :: ReadFunction reader reader;
-    readable rt = MkReadable (\s -> s rt);
+    type ReadFunction readera readerb = forall t. readerb t -> Readable readera t;
 
     mapStructure :: forall m ra rb. Monad m => ReadFunction ra rb -> Structure m ra -> Structure m rb;
     mapStructure rfab sma rbt = unReadable (rfab rbt) sma;
