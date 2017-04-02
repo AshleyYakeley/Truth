@@ -33,9 +33,9 @@ module Truth.Object.View where
         return (vrWidgetStuff vr,close);
     };
 
-    mapJustWholeEditAspect :: forall f edit. (MonadOne f, Edit edit,FullReader (EditReader edit)) =>
-     Info f -> Aspect edit -> Maybe (Aspect (JustWholeEdit f edit));
-    mapJustWholeEditAspect infoF (MkAspect infoEditB infoSubj (lens :: FloatingEditLens state edit editb)) = do
+    mapOneWholeEditAspect :: forall f edit. (MonadOne f, Edit edit,FullReader (EditReader edit)) =>
+     Info f -> Aspect edit -> Maybe (Aspect (OneWholeEdit f edit));
+    mapOneWholeEditAspect infoF (MkAspect infoEditB infoSubj (lens :: FloatingEditLens state edit editb)) = do
     {
         let
         {
@@ -44,10 +44,10 @@ module Truth.Object.View where
         ValueFact (MkEditReaderInfo infoReader) <- ask knowledge $ applyInfo (info @EditReaderInfo) infoEditB;
         let
         {
-            infoJustEdit = applyInfo (applyInfo (info @JustEdit) infoF) infoEditB;
+            infoOneEdit = applyInfo (applyInfo (info @OneEdit) infoF) infoEditB;
             infoJustReader = applyInfo (applyInfo (info @MonadOneReader) infoF) infoReader;
 
-            infoEditB' = applyInfo (applyInfo (info @EitherEdit) $ applyInfo (info @WholeEdit) infoJustReader) infoJustEdit;
+            infoEditB' = applyInfo (applyInfo (info @EitherEdit) $ applyInfo (info @WholeEdit) infoJustReader) infoOneEdit;
             infoSubj' = applyInfo infoF infoSubj;
             lens' = justWholeFloatingEditLens lens;
         };

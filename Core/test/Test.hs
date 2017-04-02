@@ -21,9 +21,9 @@ module Main where
         show (ReplaceListEdit la) = "replace " ++ (show la);
     };
 
-    instance (Show (f (EditSubject edit)),Show edit) => Show (JustEdit f edit) where
+    instance (Show (f (EditSubject edit)),Show edit) => Show (OneEdit f edit) where
     {
-        show (MkJustEdit edit) = show edit;
+        show (MkOneEdit edit) = show edit;
     };
 
     instance (Show a) => Show (WholeEdit a) where

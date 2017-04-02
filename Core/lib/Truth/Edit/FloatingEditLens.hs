@@ -6,8 +6,8 @@ module Truth.Edit.FloatingEditLens where
     import Truth.Edit.WholeEdit;
     import Truth.Edit.MonadOneReader;
     import Truth.Edit.Either;
-    import Truth.Edit.JustEdit;
-    import Truth.Edit.JustWholeEdit;
+    import Truth.Edit.OneEdit;
+    import Truth.Edit.OneWholeEdit;
     import Truth.Edit.FloatingEditFunction;
     import Truth.Edit.EditLens;
 
@@ -98,11 +98,11 @@ module Truth.Edit.FloatingEditLens where
     };
 
     justFloatingEditLens :: forall f state edita editb. (MonadOne f,Edit edita,Edit editb) =>
-     FloatingEditLens state edita editb -> FloatingEditLens state (JustEdit f edita) (JustEdit f editb);
+     FloatingEditLens state edita editb -> FloatingEditLens state (OneEdit f edita) (OneEdit f editb);
     justFloatingEditLens lens = MkFloatingEditLens
     {
         floatingEditLensFunction = justFloatingEdit (floatingEditLensFunction lens),
-        floatingEditLensPutEdit = \oldstate (MkJustEdit pushb) -> do
+        floatingEditLensPutEdit = \oldstate (MkOneEdit pushb) -> do
         {
 
             -- floatingEditLensPutEdit lens state pushb :: Readable ra (Maybe (state,edita))
@@ -111,7 +111,7 @@ module Truth.Edit.FloatingEditLens where
             fpusha <- liftMaybeReadable (floatingEditLensPutEdit lens oldstate pushb);
             return $ case getMaybeOne fpusha of
             {
-                Just (Just (newstate,edita)) -> Just (newstate,MkJustEdit edita);
+                Just (Just (newstate,edita)) -> Just (newstate,MkOneEdit edita);
                 _ -> Nothing;
             };
         }
@@ -120,7 +120,7 @@ module Truth.Edit.FloatingEditLens where
     -- suitable for Results, trying to put a failure code will be rejected
 
     justWholeFloatingEditLens :: forall f state edita editb. (MonadOne f,FullReader (EditReader edita),Edit edita,FullEdit editb) =>
-     FloatingEditLens state edita editb -> FloatingEditLens state (JustWholeEdit f edita) (JustWholeEdit f editb);
+     FloatingEditLens state edita editb -> FloatingEditLens state (OneWholeEdit f edita) (OneWholeEdit f editb);
     justWholeFloatingEditLens lens = eitherWholeFloatingEditLens pushback (justFloatingEditLens lens) where
     {
         ff1 :: forall a. state -> f (state,a) -> (state,f a);

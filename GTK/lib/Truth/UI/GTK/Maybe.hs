@@ -56,8 +56,8 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
     createButton val push = pushButton push (replaceEdit val) "Create";
 
     mapSelection :: forall f edit. (MonadOne f, Edit edit, FullReader (EditReader edit)) =>
-     Info f -> Aspect edit -> Maybe (Aspect (JustWholeEdit f edit));
-    mapSelection fi aspect = mapJustWholeEditAspect fi aspect;
+     Info f -> Aspect edit -> Maybe (Aspect (OneWholeEdit f edit));
+    mapSelection fi aspect = mapOneWholeEditAspect fi aspect;
 
     functorOneIVF :: forall f edit wd.
     (
@@ -67,11 +67,11 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
         FullEdit edit,
         WidgetClass wd
     ) =>
-      Info f -> Maybe (Limit f) -> (Push (JustWholeEdit f edit) -> IO wd) -> GView edit -> GView (JustWholeEdit f edit);
+      Info f -> Maybe (Limit f) -> (Push (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
     functorOneIVF tf mDeleteValue makeEmptywidget factory initial push = let
     {
         mpush :: Push edit;
-        mpush ea = push (Right (MkJustEdit ea));
+        mpush ea = push (Right (MkOneEdit ea));
     } in do
     {
         box <- vBoxNew False 0;
@@ -113,7 +113,7 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
                 miv :: Maybe (GViewResult edit) <- readIORef stateRef;
                 case miv of
                 {
-                    Just (MkViewResult ws update) -> case extractJustWholeEdit edit of
+                    Just (MkViewResult ws update) -> case extractOneWholeEdit edit of
                     {
                         Just edita -> update edita;
                         Nothing -> do
@@ -142,7 +142,7 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
     };
 
     maybeView :: (HasNewValue (EditSubject edit),FullEdit edit) =>
-      w edit -> GView edit -> GView (JustWholeEdit Maybe edit);
+      w edit -> GView edit -> GView (OneWholeEdit Maybe edit);
     maybeView _ = functorOneIVF @Maybe info (Just $ MkLimit Nothing) (createButton (Just newValue));
 
     placeholderLabel :: IO Label;
@@ -152,13 +152,13 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
         return label;
     };
 
-    resultView :: (HasNewValue (EditSubject edit),FullEdit edit) => w edit -> Info err -> GView edit -> GView (JustWholeEdit (Result err) edit);
+    resultView :: (HasNewValue (EditSubject edit),FullEdit edit) => w edit -> Info err -> GView edit -> GView (OneWholeEdit (Result err) edit);
     resultView _ terr = functorOneIVF (applyInfo (info :: Info Result) terr) Nothing (\_ -> placeholderLabel);
 
     maybeMatchView :: GetView -> MatchView;
     maybeMatchView getView i = do
     {
-        MkMatchJustWholeEdit fInfo eInfo rInfo <- matchInfo i;
+        MkMatchOneWholeEdit fInfo eInfo rInfo <- matchInfo i;
         ReflH <- isInfo @Maybe fInfo;
         ValueFact (MkReaderSubjectInfo subjInfo) <- ask (infoKnowledge i) $ applyInfo (info @ReaderSubjectInfo) rInfo;
         ConstraintFact <- ask (infoKnowledge i) $ applyInfo (info @HasNewValue) subjInfo;
@@ -169,7 +169,7 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
     resultMatchView :: GetView -> MatchView;
     resultMatchView getView i = do
     {
-        MkMatchJustWholeEdit fInfo eInfo rInfo <- matchInfo i;
+        MkMatchOneWholeEdit fInfo eInfo rInfo <- matchInfo i;
         MkSplitInfo resInfo errInfo <- matchInfo fInfo;
         ReflH <- isInfo @Result resInfo;
         ValueFact (MkReaderSubjectInfo subjInfo) <- ask (infoKnowledge i) $ applyInfo (info @ReaderSubjectInfo) rInfo;

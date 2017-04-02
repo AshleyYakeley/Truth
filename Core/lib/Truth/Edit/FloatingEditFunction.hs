@@ -6,8 +6,8 @@ module Truth.Edit.FloatingEditFunction  where
     import Truth.Edit.WholeEdit;
     import Truth.Edit.Either;
     import Truth.Edit.MonadOneReader;
-    import Truth.Edit.JustEdit;
-    import Truth.Edit.JustWholeEdit;
+    import Truth.Edit.OneEdit;
+    import Truth.Edit.OneWholeEdit;
     import Truth.Edit.EditFunction;
 
 
@@ -77,19 +77,19 @@ module Truth.Edit.FloatingEditFunction  where
     };
 
     justFloatingEdit :: forall f state edita editb. (MonadOne f,Edit edita,Edit editb) =>
-     FloatingEditFunction state edita editb -> FloatingEditFunction state (JustEdit f edita) (JustEdit f editb);
+     FloatingEditFunction state edita editb -> FloatingEditFunction state (OneEdit f edita) (OneEdit f editb);
     justFloatingEdit fef = MkFloatingEditFunction
     {
         floatingEditInitial = floatingEditInitial fef,
         floatingEditGet = \state -> liftMaybeReadFunction (floatingEditGet fef state),
-        floatingEditUpdate = \(MkJustEdit edita) oldstate -> let
+        floatingEditUpdate = \(MkOneEdit edita) oldstate -> let
         {
             (newstate,meditb) = floatingEditUpdate fef edita oldstate;
-        } in (newstate,fmap MkJustEdit meditb)
+        } in (newstate,fmap MkOneEdit meditb)
     };
 
     justWholeFloatingEdit :: forall f state edita editb. (MonadOne f,Edit edita,Edit editb,FullReader (EditReader editb)) =>
-     FloatingEditFunction state edita editb -> FloatingEditFunction state (JustWholeEdit f edita) (JustWholeEdit f editb);
+     FloatingEditFunction state edita editb -> FloatingEditFunction state (OneWholeEdit f edita) (OneWholeEdit f editb);
     justWholeFloatingEdit lens = eitherWholeFloatingEdit (justFloatingEdit lens);
 
     class FloatingMap ff where

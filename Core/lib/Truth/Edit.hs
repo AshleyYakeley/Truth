@@ -6,9 +6,9 @@ module Truth.Edit
     module Truth.Edit.Either,
     module Truth.Edit.WholeEdit,
     module Truth.Edit.MonadOneReader,
-    module Truth.Edit.JustEdit,
+    module Truth.Edit.OneEdit,
     module Truth.Edit.MaybeEdit,
-    module Truth.Edit.JustWholeEdit,
+    module Truth.Edit.OneWholeEdit,
     --module Truth.Edit.IndexEdit,
     module Truth.Edit.EditFunction,
     module Truth.Edit.EditLens,
@@ -31,9 +31,9 @@ module Truth.Edit
     import Truth.Edit.Either;
     import Truth.Edit.WholeEdit;
     import Truth.Edit.MonadOneReader;
-    import Truth.Edit.JustEdit;
+    import Truth.Edit.OneEdit;
     import Truth.Edit.MaybeEdit;
-    import Truth.Edit.JustWholeEdit;
+    import Truth.Edit.OneWholeEdit;
     --import Truth.Edit.IndexEdit;
     import Truth.Edit.EditFunction;
     import Truth.Edit.EditLens;

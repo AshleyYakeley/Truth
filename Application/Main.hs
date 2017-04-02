@@ -31,9 +31,9 @@ module Main where
         for_ args (\arg -> let
         {
             file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)
-            content :: Subscribe (JustWholeEdit Maybe (WholeEdit ByteString))
+            content :: Subscribe (OneWholeEdit Maybe (WholeEdit ByteString))
              = lensObject (toBiMapMaybe contentCleanLens) file; -- (Maybe ByteString)
-            mrtext :: Subscribe (JustWholeEdit Maybe (JustWholeEdit (Result ListError) (ListEdit (WholeEdit Char))))
+            mrtext :: Subscribe (OneWholeEdit Maybe (OneWholeEdit (Result ListError) (ListEdit (WholeEdit Char))))
              = lensObject (convertEditLens . (simpleEditLens (cfmap (injectionLens (utf8Injection . (toBiMapMaybe (bijectionInjection packBijection)))))) . convertEditLens) content;
         } in do
         {

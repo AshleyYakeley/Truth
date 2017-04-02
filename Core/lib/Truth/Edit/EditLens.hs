@@ -5,7 +5,7 @@ module Truth.Edit.EditLens where
     import Truth.Edit.Edit;
     import Truth.Edit.WholeEdit;
     import Truth.Edit.MonadOneReader;
-    import Truth.Edit.JustEdit;
+    import Truth.Edit.OneEdit;
     import Truth.Edit.EditFunction;
 
 
@@ -62,18 +62,18 @@ module Truth.Edit.EditLens where
         };
     };
 
-    instance (MonadOne f,Applicative m) => CatFunctor (EditLens' m) (JustEdit f) where
+    instance (MonadOne f,Applicative m) => CatFunctor (EditLens' m) (OneEdit f) where
     {
         cfmap lens = MkEditLens
         {
             editLensFunction = cfmap (editLensFunction lens),
-            editLensPutEdit = \(MkJustEdit editb) -> do
+            editLensPutEdit = \(MkOneEdit editb) -> do
             {
                 fmedita <- liftMaybeReadable (editLensPutEdit lens editb);
                 return (case retrieveOne fmedita of
                 {
-                    SuccessResult medita -> fmap MkJustEdit medita;
-                    FailureResult _fx -> pure (MkJustEdit undefined); -- any JustEdit edit will do
+                    SuccessResult medita -> fmap MkOneEdit medita;
+                    FailureResult _fx -> pure (MkOneEdit undefined); -- any OneEdit edit will do
                 });
             }
         };

@@ -6,7 +6,7 @@ module Truth.Edit.EditFunction where
     import Truth.Edit.Edit;
     import Truth.Edit.WholeEdit;
     import Truth.Edit.MonadOneReader;
-    import Truth.Edit.JustEdit;
+    import Truth.Edit.OneEdit;
 
 
     -- | A EditLens is a lens without state
@@ -38,14 +38,14 @@ module Truth.Edit.EditFunction where
         };
     };
 
-    instance (MonadOne f) => CatFunctor EditFunction (JustEdit f) where
+    instance (MonadOne f) => CatFunctor EditFunction (OneEdit f) where
     {
         cfmap lens = MkEditFunction
         {
-            editUpdate = \(MkJustEdit edita) -> do
+            editUpdate = \(MkOneEdit edita) -> do
             {
                 editb <- editUpdate lens edita;
-                return $ MkJustEdit editb;
+                return $ MkOneEdit editb;
             },
             editGet = liftMaybeReadFunction (editGet lens)
         };

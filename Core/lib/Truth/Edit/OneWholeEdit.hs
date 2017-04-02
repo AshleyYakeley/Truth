@@ -1,4 +1,4 @@
-module Truth.Edit.JustWholeEdit where
+module Truth.Edit.OneWholeEdit where
 {
     import Truth.Edit.Import;
     import Truth.Edit.Read;
@@ -6,16 +6,16 @@ module Truth.Edit.JustWholeEdit where
     import Truth.Edit.Either;
     import Truth.Edit.WholeEdit;
     import Truth.Edit.MonadOneReader;
-    import Truth.Edit.JustEdit;
+    import Truth.Edit.OneEdit;
 
 
     type EitherWholeEdit edit = EitherEdit (WholeEdit (EditReader edit)) edit;
 
-    type JustWholeEdit (f :: * -> *) edit = EitherWholeEdit (JustEdit f edit);
+    type OneWholeEdit (f :: * -> *) edit = EitherWholeEdit (OneEdit f edit);
 
-    extractJustWholeEdit :: forall f edit. (MonadOne f,FullEdit edit) => JustWholeEdit f edit -> [edit];
-    extractJustWholeEdit (RightEdit (MkJustEdit edit)) = return edit;
-    extractJustWholeEdit (LeftEdit (MkWholeEdit fa)) = case retrieveOne fa of
+    extractOneWholeEdit :: forall f edit. (MonadOne f,FullEdit edit) => OneWholeEdit f edit -> [edit];
+    extractOneWholeEdit (RightEdit (MkOneEdit edit)) = return edit;
+    extractOneWholeEdit (LeftEdit (MkWholeEdit fa)) = case retrieveOne fa of
     {
         SuccessResult a -> fromReadable replaceEdit a;
         _ -> [];
@@ -42,25 +42,25 @@ module Truth.Edit.JustWholeEdit where
         };
     };
 
-    data MatchJustWholeEdit :: (forall k. k -> Type) where
+    data MatchOneWholeEdit :: (forall k. k -> Type) where
     {
-        MkMatchJustWholeEdit ::
-         forall f edit. Info f -> Info edit -> Info (EditReader edit) -> MatchJustWholeEdit (JustWholeEdit f edit);
+        MkMatchOneWholeEdit ::
+         forall f edit. Info f -> Info edit -> Info (EditReader edit) -> MatchOneWholeEdit (OneWholeEdit f edit);
     };
 
-    instance MatchInfo MatchJustWholeEdit where
+    instance MatchInfo MatchOneWholeEdit where
     {
         matchInfo i = do
         {
             MkMatchEitherWholeEdit jfe rjfe <- matchInfo i;
             MkSplitInfo jf e <- matchInfo jfe;
             MkSplitInfo j f <- matchInfo jf;
-            ReflH <- isInfo @JustEdit j;
+            ReflH <- isInfo @OneEdit j;
             MkSplitInfo rjf r <- matchInfo rjfe;
             MkSplitInfo rj f' <- matchInfo rjf;
             ReflH <- isInfo @MonadOneReader rj;
             ReflH <- sameInfo f f';
-            return $ MkMatchJustWholeEdit f e r;
+            return $ MkMatchOneWholeEdit f e r;
         };
     };
 }

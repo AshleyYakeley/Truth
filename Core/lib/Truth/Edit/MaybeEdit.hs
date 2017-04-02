@@ -23,7 +23,7 @@ module Truth.Edit.MaybeEdit where
         applyEdit (JustMaybeEdit edita) (ReadOne reader) = liftMaybeReadable (applyEdit edita reader);
         applyEdit (JustMaybeEdit _edita) reader = readable reader;
 
-        -- invertEdit :: MaybeEdit edit -> Readable (MonadOneReader Maybe reader) [JustEdit Maybe edit];    -- "Nothing" means no change
+        -- invertEdit :: MaybeEdit edit -> Readable (MonadOneReader Maybe reader) [OneEdit Maybe edit];    -- "Nothing" means no change
         invertEdit CreateMaybeEdit = do
         {
             me <- readable ReadHasOne;
