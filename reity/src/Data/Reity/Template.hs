@@ -10,6 +10,7 @@ module Data.Reity.Template(declInfo) where
     import qualified Data.Reity.Match as R;
     import Language.Haskell.TH.SimpleType;
 
+
     type M = WriterT [Stmt] Q;
 
     write :: Stmt -> M ();
@@ -25,6 +26,12 @@ module Data.Reity.Template(declInfo) where
     declFail :: String -> Q a;
     declFail s = fail $ "declInfo: " ++ s;
 
+    vfNames :: Name -> (Name,Name);
+    vfNames name = let
+    {
+        typeName = nameBase name ++ "Info";
+        constructorName = "Mk" ++ typeName;
+    } in (mkName typeName,mkName constructorName);
 
     deconstruct :: Name -> SimpleType -> M [(Name,Name)];
     deconstruct subjectN (VarType typeN) = return [(typeN,subjectN)];
@@ -42,7 +49,20 @@ module Data.Reity.Template(declInfo) where
         writeQ $ bindS [p|ReflH|] [e|testHetEquality (info :: R.Info $(return tp)) $(varE subjectN)|];
         return [];
     };
-    deconstruct _ (FamilyType name _) = lift $ declFail $ "type family not allowed in instance: " ++ show name;
+    deconstruct subjectN (FamilyType name []) = do
+    {
+        let
+        {
+            (typeN,_) = vfNames name;
+        };
+        writeQ $ bindS [p|ReflH|] [e|testHetEquality (info :: R.Info $(conT typeN)) $(varE subjectN)|];
+        return [];
+    };
+    deconstruct subjectN (FamilyType name args) = let
+    {
+        mkST t [] = t;
+        mkST t (a:aa) = mkST (AppType t a) aa;
+    } in deconstruct subjectN $ mkST (FamilyType name []) args;
     deconstruct _ (EqualType _ _) = lift $ declFail "equality not allowed in instance";
 
     constructInfoExpr :: Name -> [(Name,Name)] -> SimpleType -> M Exp;
@@ -62,11 +82,7 @@ module Data.Reity.Template(declInfo) where
     {
         let
         {
-            typeName = nameBase name ++ "Info";
-            constructorName = "Mk" ++ typeName;
-
-            typeN = mkName typeName;
-            constructorN = mkName constructorName;
+            (typeN,constructorN) = vfNames name;
 
             typeFamilyInfoExpr :: Exp -> [SimpleType] -> M Exp;
             typeFamilyInfoExpr expr [] = return expr;
@@ -105,8 +121,8 @@ module Data.Reity.Template(declInfo) where
         }
     };
 
-    instanceStmts :: Name -> Name -> [Type] -> Type -> M ();
-    instanceStmts knowledgeN subjectN ctxt tp = do
+    instanceStmts :: [Type] -> Type -> Name -> Name -> M ();
+    instanceStmts ctxt tp knowledgeN subjectN = do
     {
         st <- lift $ typeToSimple tp;
         varMap <- deconstruct subjectN st;
@@ -115,17 +131,40 @@ module Data.Reity.Template(declInfo) where
         write $ NoBindS matchStmtE;
     };
 
-    instanceIE :: [Type] -> Type -> Q Exp;
-    instanceIE ctxt tp = do
+    assocTypeStmts :: Dec -> Name -> Name -> M ();
+    assocTypeStmts (TySynInstD patName (TySynEqn patArgsTs exprT)) knowledgeN subjectN = do
+    {
+        patArgsSTs <- lift $ traverse typeToSimple patArgsTs;
+        varMap <- deconstruct subjectN $ FamilyType patName patArgsSTs;
+        exprST <- lift $ typeToSimple exprT;
+        infoExpr <- constructInfoExpr knowledgeN varMap exprST;
+        let
+        {
+            (_,constructorN) = vfNames patName;
+        };
+        writeQ $ noBindS $ [e|return $ R.ValueFact ($(conE constructorN) $(return infoExpr))|];
+    };
+    assocTypeStmts dec _ _ = lift $ declFail $ "can't get Info for: " ++ show dec;
+
+    stmtsE :: (Name -> Name -> M ()) -> Q Exp;
+    stmtsE getM = do
     {
         knowledgeN <- newName "_knowledge";
         subjectN <- newName "_subject";
-        stmts <- execWriterT $ instanceStmts knowledgeN subjectN ctxt tp;
+        stmts <- execWriterT $ getM knowledgeN subjectN;
         [e|MkKnowledge $ \ $(varP knowledgeN) $(varP subjectN) -> $(return $ DoE stmts)|];
     };
 
-    declIE :: Dec -> Q Exp;
-    declIE (InstanceD _ ctxt tp _) = instanceIE ctxt tp;
+    instanceIE :: [Type] -> Type -> [Dec] -> Q [Exp];
+    instanceIE ctxt tp decls = do
+    {
+        instE <- stmtsE $ instanceStmts ctxt tp;
+        assocTypeEs <- traverse (stmtsE . assocTypeStmts) decls;
+        return $ instE : assocTypeEs;
+    };
+
+    declIE :: Dec -> Q [Exp];
+    declIE (InstanceD _ ctxt tp decls) = instanceIE ctxt tp decls;
     declIE decl = declFail $ "non-instance declaration: " ++ show decl;
 
     declInfo :: Q [Dec] -> Q Exp;
@@ -133,6 +172,6 @@ module Data.Reity.Template(declInfo) where
     {
         ds <- qds;
         exprs <- traverse declIE ds;
-        [e|mconcat $(return $ ListE exprs)|];
+        [e|mconcat $(return $ ListE $ mconcat exprs)|];
     };
 }
