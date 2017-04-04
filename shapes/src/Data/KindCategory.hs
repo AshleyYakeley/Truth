@@ -60,15 +60,4 @@ module Data.KindCategory where
     {
         type KindMorphism (kp -> kq) = (NestedMorphism :: (kp -> kq) -> (kp -> kq) -> *);
     };
-
-    data SingletonMorphism :: k -> k -> * where
-    {
-        MkSingletonMorphism :: SingletonMorphism t t;
-    };
-
-    instance Category SingletonMorphism where
-    {
-        id = MkSingletonMorphism;
-        MkSingletonMorphism . MkSingletonMorphism = MkSingletonMorphism;
-    };
 }
