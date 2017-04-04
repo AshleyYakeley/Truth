@@ -8,9 +8,9 @@ module Data.Reity.HasInfo where
     import Data.MonadOne;
     import Data.Result;
     import Data.OpenWitness;
-    import Data.Knowledge;
     import Data.Reity.Info;
     import Data.Reity.Match;
+    import Data.Reity.Template;
 
 
     class HasInfo a where
@@ -23,9 +23,6 @@ module Data.Reity.HasInfo where
 
     mkSimpleInfo :: forall (k :: *) (t :: k). HasInfo k => IOWitness t -> [TypeKnowledge] -> Info t;
     mkSimpleInfo wit facts = MkInfo info $ SimpleWit wit $ mconcat facts;
-
-    knowC :: forall (c :: Constraint). (c,HasInfo c) => TypeKnowledge;
-    knowC = knowConstraint $ info @c;
 
 
     -- Type
@@ -70,6 +67,21 @@ module Data.Reity.HasInfo where
         info = mkSimpleInfo $(iowitness[t|Eq|]) [];
     };
 
+    instance HasInfo Monoid where
+    {
+        info = mkSimpleInfo $(iowitness[t|Monoid|]) [];
+    };
+
+    instance HasInfo Foldable where
+    {
+        info = mkSimpleInfo $(iowitness[t|Foldable|]) [];
+    };
+
+    instance HasInfo Traversable where
+    {
+        info = mkSimpleInfo $(iowitness[t|Traversable|]) [];
+    };
+
     instance HasInfo Functor where
     {
         info = mkSimpleInfo $(iowitness[t|Functor|]) [];
@@ -97,109 +109,105 @@ module Data.Reity.HasInfo where
 
     instance HasInfo () where
     {
-        info = mkSimpleInfo $(iowitness[t|()|])
-        [
-            knowC @(HasNewValue ()),
-            knowC @(Eq ())
-        ];
+        info = mkSimpleInfo $(iowitness[t|()|]) [$(declInfo [d|
+            instance HasNewValue ();
+            instance Monoid ();
+            instance Eq ();
+        |])];
     };
 
     instance HasInfo Bool where
     {
-        info = mkSimpleInfo $(iowitness[t|Bool|])
-        [
-            knowC @(HasNewValue Bool),
-            knowC @(Eq Bool)
-        ];
+        info = mkSimpleInfo $(iowitness[t|Bool|]) [$(declInfo [d|
+            instance HasNewValue Bool;
+            instance Eq Bool;
+        |])];
     };
 
     instance HasInfo Char where
     {
-        info = mkSimpleInfo $(iowitness[t|Char|])
-        [
-            knowC @(HasNewValue Char),
-            knowC @(Eq Char)
-        ];
+        info = mkSimpleInfo $(iowitness[t|Char|]) [$(declInfo [d|
+            instance HasNewValue Char;
+            instance Eq Char;
+        |])];
     };
 
     instance HasInfo Word8 where
     {
-        info = mkSimpleInfo $(iowitness[t|Word8|])
-        [
-            knowC @(HasNewValue Word8),
-            knowC @(Eq Word8)
-        ];
+        info = mkSimpleInfo $(iowitness[t|Word8|]) [$(declInfo [d|
+            instance HasNewValue Word8;
+            instance Eq Word8;
+        |])];
     };
 
     instance HasInfo Int where
     {
-        info = mkSimpleInfo $(iowitness[t|Int|])
-        [
-            knowC @(HasNewValue Int),
-            knowC @(Eq Int)
-        ];
+        info = mkSimpleInfo $(iowitness[t|Int|]) [$(declInfo [d|
+            instance HasNewValue Int;
+            instance Eq Int;
+        |])];
     };
 
     instance HasInfo ByteString where
     {
-        info = mkSimpleInfo $(iowitness[t|ByteString|])
-        [
-            knowC @(HasNewValue ByteString),
-            knowC @(Eq ByteString)
-        ];
+        info = mkSimpleInfo $(iowitness[t|ByteString|]) [$(declInfo [d|
+            instance HasNewValue ByteString;
+            instance Monoid ByteString;
+            instance Eq ByteString;
+        |])];
     };
 
     instance HasInfo Maybe where
     {
-        info = mkSimpleInfo $(iowitness[t|Maybe|])
-        [
-            knowC @(Functor Maybe),
-            knowC @(Applicative Maybe),
-            knowC @(Monad Maybe)
-            -- instance HasNewValue (Maybe a)
-            -- instance (Eq a) => Eq (Maybe a)
-            -- instance MonadOne Maybe
-    ];
+        info = mkSimpleInfo $(iowitness[t|Maybe|]) [$(declInfo [d|
+            instance Foldable Maybe;
+            instance Traversable Maybe;
+            instance Functor Maybe;
+            instance Applicative Maybe;
+            instance Monad Maybe;
+            instance MonadOne Maybe;
+            instance HasNewValue (Maybe a);
+            instance (Eq a) => Eq (Maybe a);
+            instance MonadOne Maybe;
+        |])];
     };
 
     instance HasInfo [] where
     {
-        info = mkSimpleInfo $(iowitness[t|[]|])
-        [
-            knowC @(Functor []),
-            knowC @(Applicative []),
-            knowC @(Monad [])
-            -- instance () => HasNewValue ([] a)
-            -- instance (Eq a) => Eq ([] a)
-        ];
+        info = mkSimpleInfo $(iowitness[t|[]|]) [$(declInfo [d|
+            instance Foldable [];
+            instance Traversable [];
+            instance Functor [];
+            instance Applicative [];
+            instance Monad [];
+            instance () => HasNewValue ([] a);
+            instance (Eq a) => Eq ([] a);
+        |])];
     };
 
     instance HasInfo Either where
     {
-        info = mkSimpleInfo $(iowitness[t|Either|])
-        [
-        ];
+        info = mkSimpleInfo $(iowitness[t|Either|]) [$(declInfo [d|
+            instance Foldable (Either a);
+            instance Traversable (Either a);
+            instance Functor (Either a);
+            instance Applicative (Either a);
+            instance Monad (Either a);
+            instance MonadOne (Either a);
+        |])];
     };
 
     instance HasInfo Result where
     {
-        info = mkSimpleInfo $(iowitness[t|Result|])
-        [
-            -- instance HasNewValue a => HasNewValue (Result e a)
-            MkKnowledge $ \knowledge hreaInfo -> do
-            {
-                MkSplitInfo hInfo reaInfo <- matchInfo hreaInfo;
-                ReflH <- sameInfo (info @HasNewValue) hInfo;
-                MkSplitInfo reInfo aInfo <- matchInfo reaInfo;
-                MkSplitInfo rInfo _ <- matchInfo reInfo;
-                ReflH <- sameInfo (info @Result) rInfo;
-                ConstraintFact <- ask knowledge $ applyInfo (info @HasNewValue) aInfo;
-                return ConstraintFact;
-            }
-
-            -- instance Functor
-            -- instance MonadOne
-        ];
+        info = mkSimpleInfo $(iowitness[t|Result|]) [$(declInfo [d|
+            instance HasNewValue a => HasNewValue (Result e a);
+            instance Foldable (Result e);
+            instance Traversable (Result e);
+            instance Functor (Result e);
+            instance Applicative (Result e);
+            instance Monad (Result e);
+            instance MonadOne (Result e);
+        |])];
     };
 
 {-
