@@ -1,4 +1,4 @@
-module Data.Reity.Template(declInfo) where
+module Data.Reity.Template(declInfo,instInfo) where
 {
     import Data.Foldable;
     import Language.Haskell.TH as T;
@@ -144,7 +144,7 @@ module Data.Reity.Template(declInfo) where
         };
         writeQ $ noBindS $ [e|return $ R.ValueFact ($(conE constructorN) $(return infoExpr))|];
     };
-    assocTypeStmts dec _ _ = lift $ declFail $ "can't get Info for: " ++ show dec;
+    assocTypeStmts _ _ _ = return ();
 
     stmtsE :: (Name -> Name -> M ()) -> Q Exp;
     stmtsE getM = do
@@ -173,5 +173,26 @@ module Data.Reity.Template(declInfo) where
         ds <- qds;
         exprs <- traverse declIE ds;
         [e|mconcat $(return $ ListE $ mconcat exprs)|];
+    };
+
+    headForm :: Type -> Q (Name,[Type]);
+    headForm (ParensT t) = headForm t;
+    headForm (SigT t _) = headForm t;
+    headForm (ConT n) = return (n,[]);
+    headForm (InfixT t1 n t2) = return (n,[t1,t2]);
+    headForm (UInfixT t1 n t2) = return (n,[t1,t2]);
+    headForm (AppT t1 t2) = do
+    {
+        (h,args) <- headForm t1;
+        return (h,args ++ [t2]);
+    };
+    headForm t = declFail $ "not a class: " ++ show t;
+
+    instInfo :: Q Type -> Q Exp;
+    instInfo qtp = do
+    {
+        tp <- qtp;
+        (name,args) <- headForm tp;
+        declInfo $ reifyInstances name args;
     };
 }
