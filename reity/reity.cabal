@@ -63,3 +63,5 @@ library
         Data.Reity.Template
         Data.Reity.HasInfo
         Data.Reity
+    other-modules:
+        Language.Haskell.TH.SimpleType

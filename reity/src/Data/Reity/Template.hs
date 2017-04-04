@@ -8,6 +8,7 @@ module Data.Reity.Template(declInfo) where
     import Data.Knowledge;
     import qualified Data.Reity.Info as R;
     import qualified Data.Reity.Match as R;
+    import Language.Haskell.TH.SimpleType;
 
     type M = WriterT [Stmt] Q;
 
@@ -21,29 +22,9 @@ module Data.Reity.Template(declInfo) where
         write stmt;
     };
 
-    data SimpleType = VarType Name | AppType SimpleType SimpleType | ConsType Type | FamilyType Name;
-
-    typeToSimple :: Type -> M SimpleType;
-    typeToSimple (ParensT tp) = typeToSimple tp;
-    typeToSimple (SigT tp _) = typeToSimple tp;
-    typeToSimple (VarT name) = return $ VarType name;
-    typeToSimple (AppT t1 t2) = AppType <$> typeToSimple t1 <*> typeToSimple t2;
-    typeToSimple (InfixT t1 name t2) = (\st1 st2 -> AppType (AppType (ConsType $ ConT name) st1) st2) <$> typeToSimple t1 <*> typeToSimple t2;
-    typeToSimple (ForallT _ _ _) = lift $ declFail "forall";
-    typeToSimple WildCardT = lift $ declFail "_ in type";
-    typeToSimple tp@(ConT name) = do
-    {
-        ninfo <- lift $ reify name;
-        case ninfo of
-        {
-            FamilyI _ _ -> return $ FamilyType name;
-            _ -> return $ ConsType tp;
-        };
-    };
-    typeToSimple tp = return $ ConsType tp;
-
     declFail :: String -> Q a;
     declFail s = fail $ "declInfo: " ++ s;
+
 
     deconstruct :: Name -> SimpleType -> M [(Name,Name)];
     deconstruct subjectN (VarType typeN) = return [(typeN,subjectN)];
@@ -58,10 +39,11 @@ module Data.Reity.Template(declInfo) where
     };
     deconstruct subjectN (ConsType tp) = do
     {
-        writeQ $ bindS [p|ReflH|] [e|testHetEquality (info :: R.Info $(return $ tp)) $(varE subjectN)|];
+        writeQ $ bindS [p|ReflH|] [e|testHetEquality (info :: R.Info $(return tp)) $(varE subjectN)|];
         return [];
     };
-    deconstruct _ (FamilyType name) = lift $ declFail $ "type family not allowed in instance: " ++ show name;
+    deconstruct _ (FamilyType name _) = lift $ declFail $ "type family not allowed in instance: " ++ show name;
+    deconstruct _ (EqualType _ _) = lift $ declFail "equality not allowed in instance";
 
     constructInfoExpr :: Name -> [(Name,Name)] -> SimpleType -> M Exp;
     constructInfoExpr knowledgeN varMap (AppType tp1 tp2) = do
@@ -76,20 +58,57 @@ module Data.Reity.Template(declInfo) where
         Nothing -> lift $ declFail $ "type variable not found: " ++ show typeN;
     };
     constructInfoExpr _knowledgeN _varMap (ConsType tp) = lift [e|info :: R.Info $(return $ tp)|];
-    constructInfoExpr _knowledgeN _varMap (FamilyType name) = lift $ declFail $ "NYI: type family not yet allowed in context: " ++ show name;
+    constructInfoExpr knowledgeN varMap (FamilyType name vc) = do
+    {
+        let
+        {
+            typeName = nameBase name ++ "Info";
+            constructorName = "Mk" ++ typeName;
+
+            typeN = mkName typeName;
+            constructorN = mkName constructorName;
+
+            typeFamilyInfoExpr :: Exp -> [SimpleType] -> M Exp;
+            typeFamilyInfoExpr expr [] = return expr;
+            typeFamilyInfoExpr expr (t:tt) = do
+            {
+                texp <- constructInfoExpr knowledgeN varMap t;
+                exptexp <- lift $ [e|R.applyInfo $(return expr) $(return texp)|];
+                typeFamilyInfoExpr exptexp tt;
+            };
+        };
+        tfTypeExpr <- lift [e|info :: R.Info $(return $ ConT typeN)|];
+        infoExpr <- typeFamilyInfoExpr tfTypeExpr vc;
+        resultN <- lift $ newName "_var";
+        writeQ $ bindS [p|R.ValueFact $(conP constructorN [varP resultN])|] [e|ask $(varE knowledgeN) $(return infoExpr)|];
+        return $ VarE resultN;
+    };
+    constructInfoExpr _knowledgeN _varMap (EqualType _ _) = lift $ declFail "equality not allowed in context expression";
 
     matchContext :: Name -> [(Name,Name)] -> Type -> M ();
     matchContext knowledgeN varMap tp = do
     {
-        st <- typeToSimple tp;
-        infoExpr <- constructInfoExpr knowledgeN varMap st;
-        writeQ $ bindS [p|R.ConstraintFact|] [e|ask $(varE knowledgeN) $(return infoExpr)|];
+        st <- lift $ typeToSimple tp;
+        case st of
+        {
+            EqualType st1 st2 -> do
+            {
+                info1 <- constructInfoExpr knowledgeN varMap st1;
+                info2 <- constructInfoExpr knowledgeN varMap st2;
+                writeQ $ bindS [p|ReflH|] [e|testHetEquality $(return info1) $(return info2)|];
+            };
+            _ -> do
+            {
+                infoExpr <- constructInfoExpr knowledgeN varMap st;
+                writeQ $ bindS [p|R.ConstraintFact|] [e|ask $(varE knowledgeN) $(return infoExpr)|];
+            };
+        }
     };
 
     instanceStmts :: Name -> Name -> [Type] -> Type -> M ();
     instanceStmts knowledgeN subjectN ctxt tp = do
     {
-        st <- typeToSimple tp;
+        st <- lift $ typeToSimple tp;
         varMap <- deconstruct subjectN st;
         traverse_ (matchContext knowledgeN varMap) ctxt;
         matchStmtE <- lift [e|return R.ConstraintFact|];
@@ -100,7 +119,7 @@ module Data.Reity.Template(declInfo) where
     instanceIE ctxt tp = do
     {
         knowledgeN <- newName "_knowledge";
-        subjectN <- newName "subject";
+        subjectN <- newName "_subject";
         stmts <- execWriterT $ instanceStmts knowledgeN subjectN ctxt tp;
         [e|MkKnowledge $ \ $(varP knowledgeN) $(varP subjectN) -> $(return $ DoE stmts)|];
     };
