@@ -3,8 +3,7 @@ module Truth.UI.GTK.Window where
 {
     import Data.IORef;
     import Truth.TypeKT;
-    import Truth.Edit;
-    import Truth.Object;
+    import Truth.Core;
     import Graphics.UI.Gtk;
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Maybe;

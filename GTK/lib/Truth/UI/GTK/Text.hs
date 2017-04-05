@@ -6,8 +6,7 @@ module Truth.UI.GTK.Text (textMatchView) where
     import Graphics.UI.Gtk;
     import Data.Witness;
     import Data.Reity;
-    import Truth.Edit;
-    import Truth.Object;
+    import Truth.Core;
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Useful;
 

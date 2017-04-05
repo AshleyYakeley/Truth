@@ -2,8 +2,7 @@ module Truth.UI.GTK.GView where
 {
     import Graphics.UI.Gtk;
     import Data.Reity;
-    import Truth.Object;
-    import Truth.Edit;
+    import Truth.Core;
 
     type GView = View Widget;
     type GViewResult = ViewResult Widget;

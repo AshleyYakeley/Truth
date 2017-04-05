@@ -34,7 +34,7 @@ module Main where
             content :: Subscribe (OneWholeEdit Maybe (WholeEdit ByteString))
              = lensObject (toBiMapMaybe contentCleanLens) file; -- (Maybe ByteString)
             mrtext :: Subscribe (OneWholeEdit Maybe (OneWholeEdit (Result ListError) (ListEdit (WholeEdit Char))))
-             = lensObject (convertEditLens . (simpleEditLens (cfmap (injectionLens (utf8Injection . (toBiMapMaybe (bijectionInjection packBijection)))))) . convertEditLens) content;
+             = lensObject (convertEditLens . (wholeEditLens (cfmap (injectionLens (utf8Injection . (toBiMapMaybe (bijectionInjection packBijection)))))) . convertEditLens) content;
         } in do
         {
             makeWindowCountRef info windowCount mrtext;

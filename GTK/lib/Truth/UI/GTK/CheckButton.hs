@@ -4,8 +4,7 @@ module Truth.UI.GTK.CheckButton where
     import Data.Type.Equality;
     import Graphics.UI.Gtk;
     import Data.Reity;
-    import Truth.Edit;
-    import Truth.Object;
+    import Truth.Core;
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Useful;
 

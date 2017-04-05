@@ -9,8 +9,7 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
     import Data.HasNewValue;
     import Data.Type.Heterogeneous;
     import Data.Reity;
-    import Truth.Edit;
-    import Truth.Object;
+    import Truth.Core;
     import Graphics.UI.Gtk;
     import Truth.UI.GTK.GView;
 
