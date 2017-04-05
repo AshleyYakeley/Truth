@@ -29,6 +29,7 @@ module Truth.Edit.Read.ReadFunction where
     fromReadFunction :: (Reader ra,FullReader rb) => ReadFunction ra rb -> ReaderSubject ra -> ReaderSubject rb;
     fromReadFunction rf = fromReadable (mapReadable rf fromReader);
 
+
     type CleanReadFunction ra rb = Structure ra rb;
 
     cleanReadFunction :: CleanReadFunction ra rb -> ReadFunction ra rb;

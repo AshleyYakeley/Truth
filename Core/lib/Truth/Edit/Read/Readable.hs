@@ -33,6 +33,10 @@ module Truth.Edit.Read.Readable where
         };
     };
 
+
+    exec :: Monad m => m (m a) -> m a;
+    exec mma = mma >>= id;
+
     type ReadableF f reader = Compose (Readable reader) f;
 
     readableF :: Applicative f => reader t -> ReadableF f reader t;
