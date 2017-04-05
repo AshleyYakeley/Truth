@@ -65,20 +65,21 @@ module Data.Reity.Template(declInfo,instInfo) where
     } in deconstruct subjectN $ mkST (FamilyType name []) args;
     deconstruct _ (EqualType _ _) = lift $ declFail "equality not allowed in instance";
 
-    constructInfoExpr :: Name -> [(Name,Name)] -> SimpleType -> M Exp;
-    constructInfoExpr knowledgeN varMap (AppType tp1 tp2) = do
+    constructInfoExpr :: (?knowledgeN :: Name,?varMap :: [(Name,Name)]) =>
+        SimpleType -> M Exp;
+    constructInfoExpr (AppType tp1 tp2) = do
     {
-        exp1 <- constructInfoExpr knowledgeN varMap tp1;
-        exp2 <- constructInfoExpr knowledgeN varMap tp2;
+        exp1 <- constructInfoExpr tp1;
+        exp2 <- constructInfoExpr tp2;
         lift $ [e|R.applyInfo $(return exp1) $(return exp2)|];
     };
-    constructInfoExpr _knowledgeN varMap (VarType typeN) = case lookup typeN varMap of
+    constructInfoExpr (VarType typeN) = case lookup typeN ?varMap of
     {
         Just subjectN -> return $ VarE subjectN;
         Nothing -> lift $ declFail $ "type variable not found: " ++ show typeN;
     };
-    constructInfoExpr _knowledgeN _varMap (ConsType tp) = lift [e|info :: R.Info $(return $ tp)|];
-    constructInfoExpr knowledgeN varMap (FamilyType name vc) = do
+    constructInfoExpr (ConsType tp) = lift [e|info :: R.Info $(return $ tp)|];
+    constructInfoExpr (FamilyType name vc) = do
     {
         let
         {
@@ -88,7 +89,7 @@ module Data.Reity.Template(declInfo,instInfo) where
             typeFamilyInfoExpr expr [] = return expr;
             typeFamilyInfoExpr expr (t:tt) = do
             {
-                texp <- constructInfoExpr knowledgeN varMap t;
+                texp <- constructInfoExpr t;
                 exptexp <- lift $ [e|R.applyInfo $(return expr) $(return texp)|];
                 typeFamilyInfoExpr exptexp tt;
             };
@@ -96,62 +97,65 @@ module Data.Reity.Template(declInfo,instInfo) where
         tfTypeExpr <- lift [e|info :: R.Info $(return $ ConT typeN)|];
         infoExpr <- typeFamilyInfoExpr tfTypeExpr vc;
         resultN <- lift $ newName "_var";
-        writeQ $ bindS [p|R.ValueFact $(conP constructorN [varP resultN])|] [e|ask $(varE knowledgeN) $(return infoExpr)|];
+        writeQ $ bindS [p|R.ValueFact $(conP constructorN [varP resultN])|] [e|ask $(varE ?knowledgeN) $(return infoExpr)|];
         return $ VarE resultN;
     };
-    constructInfoExpr _knowledgeN _varMap (EqualType _ _) = lift $ declFail "equality not allowed in context expression";
+    constructInfoExpr (EqualType _ _) = lift $ declFail "equality not allowed in context expression";
 
-    matchContext :: Name -> [(Name,Name)] -> Type -> M ();
-    matchContext knowledgeN varMap tp = do
+    matchContext :: (?knowledgeN :: Name,?varMap :: [(Name,Name)]) =>
+        Type -> M ();
+    matchContext tp = do
     {
         st <- lift $ typeToSimple tp;
         case st of
         {
             EqualType st1 st2 -> do
             {
-                info1 <- constructInfoExpr knowledgeN varMap st1;
-                info2 <- constructInfoExpr knowledgeN varMap st2;
+                info1 <- constructInfoExpr st1;
+                info2 <- constructInfoExpr st2;
                 writeQ $ bindS [p|ReflH|] [e|testHetEquality $(return info1) $(return info2)|];
             };
             _ -> do
             {
-                infoExpr <- constructInfoExpr knowledgeN varMap st;
-                writeQ $ bindS [p|R.ConstraintFact|] [e|ask $(varE knowledgeN) $(return infoExpr)|];
+                infoExpr <- constructInfoExpr st;
+                writeQ $ bindS [p|R.ConstraintFact|] [e|ask $(varE ?knowledgeN) $(return infoExpr)|];
             };
         }
     };
 
-    instanceStmts :: [Type] -> Type -> Name -> Name -> M ();
-    instanceStmts ctxt tp knowledgeN subjectN = do
+    instanceStmts :: (?knowledgeN :: Name) =>
+        [Type] -> Type -> Name -> M ();
+    instanceStmts ctxt tp subjectN = do
     {
         st <- lift $ typeToSimple tp;
         varMap <- deconstruct subjectN st;
-        traverse_ (matchContext knowledgeN varMap) ctxt;
+        let {?varMap = varMap} in traverse_ matchContext ctxt;
         matchStmtE <- lift [e|return R.ConstraintFact|];
         write $ NoBindS matchStmtE;
     };
 
-    assocTypeStmts :: Dec -> Name -> Name -> M ();
-    assocTypeStmts (TySynInstD patName (TySynEqn patArgsTs exprT)) knowledgeN subjectN = do
+    assocTypeStmts :: (?knowledgeN :: Name) =>
+        Dec -> Name -> M ();
+    assocTypeStmts (TySynInstD patName (TySynEqn patArgsTs exprT)) subjectN = do
     {
         patArgsSTs <- lift $ traverse typeToSimple patArgsTs;
         varMap <- deconstruct subjectN $ FamilyType patName patArgsSTs;
         exprST <- lift $ typeToSimple exprT;
-        infoExpr <- constructInfoExpr knowledgeN varMap exprST;
+        infoExpr <- let {?varMap = varMap} in constructInfoExpr exprST;
         let
         {
             (_,constructorN) = vfNames patName;
         };
         writeQ $ noBindS $ [e|return $ R.ValueFact ($(conE constructorN) $(return infoExpr))|];
     };
-    assocTypeStmts _ _ _ = return ();
+    assocTypeStmts _ _ = return ();
 
-    stmtsE :: (Name -> Name -> M ()) -> Q Exp;
+    stmtsE :: ((?knowledgeN :: Name) => Name -> M ()) -> Q Exp;
     stmtsE getM = do
     {
         knowledgeN <- newName "_knowledge";
         subjectN <- newName "_subject";
-        stmts <- execWriterT $ getM knowledgeN subjectN;
+        stmts <- execWriterT $ let {?knowledgeN = knowledgeN} in getM subjectN;
         [e|MkKnowledge $ \ $(varP knowledgeN) $(varP subjectN) -> $(return $ DoE stmts)|];
     };
 
@@ -159,7 +163,7 @@ module Data.Reity.Template(declInfo,instInfo) where
     instanceIE ctxt tp decls = do
     {
         instE <- stmtsE $ instanceStmts ctxt tp;
-        assocTypeEs <- traverse (stmtsE . assocTypeStmts) decls;
+        assocTypeEs <- traverse (\dec -> stmtsE (assocTypeStmts dec)) decls;
         return $ instE : assocTypeEs;
     };
 
