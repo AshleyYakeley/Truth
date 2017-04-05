@@ -9,6 +9,8 @@ module Truth.Edit
     module Truth.Edit.OneEdit,
     module Truth.Edit.MaybeEdit,
     module Truth.Edit.OneWholeEdit,
+    module Truth.Edit.Comonad,
+    module Truth.Edit.ComonadLift,
     --module Truth.Edit.IndexEdit,
     module Truth.Edit.EditFunction,
     module Truth.Edit.EditLens,
@@ -34,6 +36,8 @@ module Truth.Edit
     import Truth.Edit.OneEdit;
     import Truth.Edit.MaybeEdit;
     import Truth.Edit.OneWholeEdit;
+    import Truth.Edit.Comonad;
+    import Truth.Edit.ComonadLift;
     --import Truth.Edit.IndexEdit;
     import Truth.Edit.EditFunction;
     import Truth.Edit.EditLens;

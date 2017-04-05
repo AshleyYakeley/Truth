@@ -55,6 +55,7 @@ library
         bytestring,
         witness >= 0.4,
         open-witness >= 0.4,
+        comonad,
         shapes
     exposed-modules:
         Data.Knowledge

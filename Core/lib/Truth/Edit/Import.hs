@@ -32,6 +32,7 @@ module Truth.Edit.Import
     module Data.ByteString,
     module Data.MonoTraversable,
     module Data.Sequences,
+    module Control.Comonad,
 
     module Data.Type.Heterogeneous,
     module Data.Witness,
@@ -93,6 +94,7 @@ where
     import Data.ByteString (ByteString);
     import Data.MonoTraversable;
     import Data.Sequences;
+    import Control.Comonad;
 
     import Data.Type.Heterogeneous;
     import Data.Witness;

@@ -3,6 +3,7 @@ module Data.Reity.HasInfo where
     import GHC.Types;
     import Data.Word;
     import Data.ByteString;
+    import Control.Comonad;
     import Data.Type.Heterogeneous;
     import Data.HasNewValue;
     import Data.MonadOne;
@@ -95,6 +96,11 @@ module Data.Reity.HasInfo where
     instance HasInfo Monad where
     {
         info = mkSimpleInfo $(iowitness[t|Monad|]) [];
+    };
+
+    instance HasInfo Comonad where
+    {
+        info = mkSimpleInfo $(iowitness[t|Comonad|]) [];
     };
 
     instance HasInfo HasNewValue where

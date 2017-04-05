@@ -25,6 +25,12 @@ module Truth.Edit.Context where
         sequenceA (MkWithContext context fa) = fmap (MkWithContext context) fa;
     };
 
+    instance Comonad (WithContext context) where
+    {
+        extract (MkWithContext _ content) = content;
+        extend wab wa@(MkWithContext context _) = MkWithContext context $ wab wa;
+    };
+
     instance (HasNewValue context,HasNewValue content) => HasNewValue (WithContext context content) where
     {
         newValue = MkWithContext newValue newValue;
