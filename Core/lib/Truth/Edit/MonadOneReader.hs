@@ -10,7 +10,7 @@ module Truth.Edit.MonadOneReader where
         ReadOne :: forall f reader t. reader t -> MonadOneReader f reader (f t);
     };
 
-    instance (MonadOne f,Reader reader) => Reader (MonadOneReader f reader) where
+    instance (Functor f,Reader reader) => Reader (MonadOneReader f reader) where
     {
         type ReaderSubject (MonadOneReader f reader) = f (ReaderSubject reader);
 
@@ -26,7 +26,7 @@ module Truth.Edit.MonadOneReader where
     liftMaybeReadFunction _rfrarb ReadHasOne = readable ReadHasOne;
     liftMaybeReadFunction rfrarb (ReadOne rt) = liftMaybeReadable (rfrarb rt);
 
-    instance (MonadOne f,FullReader reader) => FullReader (MonadOneReader f reader) where
+    instance (Traversable f,Monad f,FullReader reader) => FullReader (MonadOneReader f reader) where
     {
         -- fromReader :: ReadFunction (MonadOneReader f reader) (f (ReaderSubject reader));
         fromReader = liftMaybeReadable fromReader;
@@ -36,7 +36,8 @@ module Truth.Edit.MonadOneReader where
     instance HasInfo MonadOneReader where
     {
         info = mkSimpleInfo $(iowitness[t|MonadOneReader|]) [$(declInfo [d|
-            instance (MonadOne f,Reader reader) => Reader (MonadOneReader f reader)
+            instance (Functor f,Reader reader) => Reader (MonadOneReader f reader);
+            instance (Traversable f,Monad f,FullReader reader) => FullReader (MonadOneReader f reader);
         |])];
     };
 }
