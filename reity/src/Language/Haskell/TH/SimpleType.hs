@@ -11,9 +11,20 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple) where
     applyPartial (Complete ta) t = Complete $ ta t;
     applyPartial (Incomplete p) t = Incomplete $ applyPartial p t;
 
-    partialFromList :: [sym] -> ([SimpleType] -> a) -> Partial a;
+    partialFromList :: [sym] -> ([(sym,SimpleType)] -> a) -> Partial a;
     partialFromList [] f = Complete $ f [];
-    partialFromList (_:ss) f = Incomplete $ partialFromList ss (\tt t -> f $ tt ++ [t]);
+    partialFromList (s:ss) f = Incomplete $ partialFromList ss (\tt t -> f $ tt ++ [(s,t)]);
+
+    substitute :: (?names :: [(Name,SimpleType)]) => SimpleType -> SimpleType;
+    substitute (VarType name) | Just val <- lookup name ?names = val;
+    substitute (AppType t1 t2) = AppType (substitute t1) (substitute t2);
+    substitute (FamilyType name args) = FamilyType name $ fmap substitute args;
+    substitute (EqualType t1 t2) = EqualType (substitute t1) (substitute t2);
+    substitute t = t;
+
+    getTVName :: TyVarBndr -> Name;
+    getTVName (PlainTV n) = n;
+    getTVName (KindedTV n _) = n;
 
     typeToPartial :: Type -> Q (Partial SimpleType);
     typeToPartial (ParensT tp) = typeToPartial tp;
@@ -45,14 +56,22 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple) where
                     ClosedTypeFamilyD (TypeFamilyHead _ vb _ _) _ -> return vb;
                     _ -> fail $ "type family not really a type family: " ++ show name;
                 };
-                return $ partialFromList vb (FamilyType name);
+                return $ partialFromList vb (\args -> FamilyType name $ fmap snd args);
             };
-            _ -> return $ Complete $ ConsType tp;
+            TyConI (TySynD _ arglist defn) -> do
+            {
+                sdefn <- typeToSimple defn;
+                return $ partialFromList (fmap getTVName arglist) $ \argmap -> let {?names = argmap} in substitute sdefn;
+            };
+            TyConI _ -> return $ Complete $ ConsType tp;
+            ClassI _ _ -> return $ Complete $ ConsType tp;
+            _ -> fail $ show name ++ ": unknown info for type: " ++ show ninfo;
         };
     };
     typeToPartial EqualityT = return $ Incomplete $ Incomplete $ Complete EqualType;
     typeToPartial tp = return $ Complete $ ConsType tp;
 
+    -- | Convert 'Type' to the more wieldy 'SimpleType'. Expands type synonyms, identifies type families and type equalities.
     typeToSimple :: Type -> Q SimpleType;
     typeToSimple tp = do
     {
@@ -60,7 +79,7 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple) where
         case partial of
         {
             Complete st -> return st;
-            Incomplete _ -> fail $ "incomplete type family application";
+            Incomplete _ -> fail $ "incomplete type synonym application";
         }
     }
 }
