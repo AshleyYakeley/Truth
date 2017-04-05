@@ -38,53 +38,15 @@ module Truth.Edit.Either where
         replaceEdit = fmap (fmap LeftEdit) replaceEdit;
     };
 
+    $(return []);
     instance HasInfo EitherEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|EitherEdit|])
-        [
-            -- instance (Edit a,Edit b,EditReader a ~ EditReader b) => Edit (Either a b)
-            MkKnowledge $ \knowledge eeab -> do
+        info = mkSimpleInfo $(iowitness[t|EitherEdit|]) [$(declInfo [d|
+            instance (Edit ea,Edit eb,EditReader ea ~ EditReader eb) => Edit (EitherEdit ea eb) where
             {
-                MkSplitInfo edit eab <- matchInfo eeab;
-                ReflH <- testHetEquality (info @Edit) edit;
-                MkSplitInfo ea bVar <- matchInfo eab;
-                MkSplitInfo e aVar <- matchInfo ea;
-                ReflH <- testHetEquality (info @EitherEdit) e;
-                ConstraintFact <- ask knowledge $ applyInfo (info @Edit) aVar;
-                ConstraintFact <- ask knowledge $ applyInfo (info @Edit) bVar;
-                ValueFact (MkEditReaderInfo arVar) <- ask knowledge $ applyInfo (info @EditReaderInfo) aVar;
-                ValueFact (MkEditReaderInfo brVar) <- ask knowledge $ applyInfo (info @EditReaderInfo) bVar;
-                ReflH <- testHetEquality arVar brVar;
-                return ConstraintFact;
-            },
-
-            -- type EditReader (EitherEdit a b) = EditReader a;
-            MkKnowledge $ \knowledge eeab -> do
-            {
-                MkSplitInfo er eab <- matchInfo eeab;
-                ReflH <- testHetEquality (info @EditReaderInfo) er;
-                MkSplitInfo ea _bVar <- matchInfo eab;
-                MkSplitInfo e aVar <- matchInfo ea;
-                ReflH <- testHetEquality (info @EitherEdit) e;
-                ValueFact (MkEditReaderInfo ra) <- ask knowledge $ applyInfo (info @EditReaderInfo) aVar;
-                return $ ValueFact (MkEditReaderInfo ra);
-            },
-
-            -- instance (FullEdit ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit (Either ea eb)
-            MkKnowledge $ \knowledge eeab -> do
-            {
-                MkSplitInfo edit eab <- matchInfo eeab;
-                ReflH <- testHetEquality (info @FullEdit) edit;
-                MkSplitInfo ea bVar <- matchInfo eab;
-                MkSplitInfo e aVar <- matchInfo ea;
-                ReflH <- testHetEquality (info @EitherEdit) e;
-                ConstraintFact <- ask knowledge $ applyInfo (info @FullEdit) aVar;
-                ConstraintFact <- ask knowledge $ applyInfo (info @Edit) bVar;
-                ValueFact (MkEditReaderInfo arVar) <- ask knowledge $ applyInfo (info @EditReaderInfo) aVar;
-                ValueFact (MkEditReaderInfo brVar) <- ask knowledge $ applyInfo (info @EditReaderInfo) bVar;
-                ReflH <- testHetEquality arVar brVar;
-                return ConstraintFact;
-            }
-        ];
+                type EditReader (EitherEdit ea eb) = EditReader ea;
+            };
+            instance (FullEdit ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit (EitherEdit ea eb);
+        |])];
     };
 }

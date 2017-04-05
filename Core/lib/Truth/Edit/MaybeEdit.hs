@@ -82,23 +82,12 @@ module Truth.Edit.MaybeEdit where
         };
     };
 
+    $(return []);
     instance HasInfo MaybeEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|MaybeEdit|])
-        [
-            -- instance (Edit edit,HasNewValue (EditSubject edit)) => Edit (MaybeEdit edit)
-            MkKnowledge $ \knowledge ejfe -> do
-            {
-                MkSplitInfo edit me <- matchInfo ejfe;
-                ReflH <- testHetEquality (info @Edit) edit;
-                MkSplitInfo m editVar <- matchInfo me;
-                ReflH <- testHetEquality (info @MaybeEdit) m;
-                ConstraintFact <- ask knowledge $ applyInfo (info @FullEdit) editVar;
-                ValueFact (MkEditReaderInfo readerVar) <- ask knowledge $ applyInfo (info @EditReaderInfo) editVar;
-                ValueFact (MkReaderSubjectInfo subjVar) <- ask knowledge $ applyInfo (info @ReaderSubjectInfo) readerVar;
-                ConstraintFact <- ask knowledge $ applyInfo (info @HasNewValue) subjVar;
-                return ConstraintFact;
-            }
-        ];
+        info = mkSimpleInfo $(iowitness[t|MaybeEdit|]) [$(declInfo [d|
+            instance (FullEdit edit,HasNewValue (EditSubject edit)) => Edit (MaybeEdit edit);
+            instance (FullEdit edit,HasNewValue (EditSubject edit)) => FullEdit (MaybeEdit edit);
+        |])];
     };
 }

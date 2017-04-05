@@ -20,21 +20,14 @@ module Truth.Edit.WholeEdit where
     {
         fromReader = readable ReadWhole;
     };
+
+    $(return []);
     instance HasInfo WholeReader where
     {
-        info = mkSimpleInfo $(iowitness[t|WholeReader|])
-        [
-{-
-            -- instance Reader (WholeReader a)
-            mkFacts (MkFactS (\a -> MkFactZ (do
-            {
-                Kind_T <- matchProp $(type1[t|Kind_T|]) a;
-                return (Reader_Inst a);
-            }))
-            :: FactS FactZ Reader_Inst (Type_KTKTT WholeReader)
-            )
--}
-        ];
+        info = mkSimpleInfo $(iowitness[t|WholeReader|]) [$(declInfo [d|
+            instance Reader (WholeReader a);
+            instance FullReader (WholeReader a);
+        |])];
     };
 
     newtype WholeEdit (reader :: * -> *) = MkWholeEdit (ReaderSubject reader);
@@ -61,29 +54,12 @@ module Truth.Edit.WholeEdit where
         };
     };
 
+    $(return []);
     instance HasInfo WholeEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|WholeEdit|])
-        [
-    {-
-            -- instance Edit (WholeEdit reader)
-            mkFacts (MkFactS (\reader -> MkFactZ (do
-            {
-                Kind_KTT <- matchProp $(type1[t|Kind_KTT|]) reader;
-                FullReader_Inst <- matchProp $(type1[t|FullReader_Inst|]) reader;
-                return (Edit_Inst reader);
-            }))
-            :: FactS FactZ Edit_Inst (Type_KKTTT WholeEdit)
-            ),
-            mkFacts (MkFactS (\reader -> MkFactZ (do
-            {
-                Kind_KTT <- matchProp $(type1[t|Kind_KTT|]) reader;
-                FullReader_Inst <- matchProp $(type1[t|FullReader_Inst|]) reader;
-                return FullEdit_Inst;
-            }))
-            :: FactS FactZ FullEdit_Inst (Type_KKTTT WholeEdit)
-            )
-    -}
-        ];
+        info = mkSimpleInfo $(iowitness[t|WholeEdit|]) [$(declInfo [d|
+            instance (FullReader reader) => Edit (WholeEdit reader);
+            instance (FullReader reader) => FullEdit (WholeEdit reader);
+        |])];
     };
 }

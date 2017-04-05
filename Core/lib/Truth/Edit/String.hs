@@ -31,15 +31,17 @@ module Truth.Edit.String where
         };
     };
 
+    $(return []);
+    instance HasInfo StringRead where
+    {
+        info = mkSimpleInfo $(iowitness[t|StringRead|]) [$(declInfo [d|
+            instance IsSequence seq => Reader (StringRead seq);
+            instance IsSequence seq => FullReader (StringRead seq);
+        |])];
+    };
+
 
     data StringEdit seq = StringReplaceWhole seq | StringReplaceSection (SequenceRun seq) seq;
-
-    instance HasInfo StringEdit where
-    {
-        info = mkSimpleInfo $(iowitness[t|StringEdit|])
-        [
-        ];
-    };
 
     instance IsSequence seq => Floating (StringEdit seq) (SequencePoint seq) where
     {
@@ -118,6 +120,15 @@ module Truth.Edit.String where
             a <- fromReader;
             return [StringReplaceWhole a];
         };
+    };
+
+    $(return []);
+    instance HasInfo StringEdit where
+    {
+        info = mkSimpleInfo $(iowitness[t|StringEdit|]) [$(declInfo [d|
+            instance IsSequence seq => Edit (StringEdit seq);
+            instance IsSequence seq => FullEdit (StringEdit seq);
+        |])];
     };
 
     stringSectionLens :: forall seq. IsSequence seq =>

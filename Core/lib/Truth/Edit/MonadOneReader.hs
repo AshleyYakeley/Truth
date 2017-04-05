@@ -32,22 +32,11 @@ module Truth.Edit.MonadOneReader where
         fromReader = liftMaybeReadable fromReader;
     };
 
+    $(return []);
     instance HasInfo MonadOneReader where
     {
-        info = mkSimpleInfo $(iowitness[t|MonadOneReader|])
-        [
-            -- instance (MonadOne f,Reader reader) => Reader (MonadOneReader f reader)
-            MkKnowledge $ \knowledge rjfr -> do
-            {
-                MkSplitInfo reader jfr <- matchInfo rjfr;
-                ReflH <- testHetEquality (info @Reader) reader;
-                MkSplitInfo jf readerVar <- matchInfo jfr;
-                MkSplitInfo j fVar <- matchInfo jf;
-                ReflH <- testHetEquality (info @MonadOneReader) j;
-                ConstraintFact <- ask knowledge $ applyInfo (info @MonadOne) fVar;
-                ConstraintFact <- ask knowledge $ applyInfo (info @Reader) readerVar;
-                return ConstraintFact;
-            }
-        ];
+        info = mkSimpleInfo $(iowitness[t|MonadOneReader|]) [$(declInfo [d|
+            instance (MonadOne f,Reader reader) => Reader (MonadOneReader f reader)
+        |])];
     };
 }

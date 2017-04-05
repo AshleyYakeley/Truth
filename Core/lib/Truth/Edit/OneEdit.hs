@@ -30,22 +30,11 @@ module Truth.Edit.OneEdit where
         };
     };
 
+    $(return []);
     instance HasInfo OneEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|OneEdit|])
-        [
-            -- instance (MonadOne f,Edit edit) => Edit (OneEdit f edit)
-            MkKnowledge $ \knowledge ejfe -> do
-            {
-                MkSplitInfo edit jfe <- matchInfo ejfe;
-                ReflH <- testHetEquality (info @Edit) edit;
-                MkSplitInfo jf editVar <- matchInfo jfe;
-                MkSplitInfo j fVar <- matchInfo jf;
-                ReflH <- testHetEquality (info @OneEdit) j;
-                ConstraintFact <- ask knowledge $ applyInfo (info @MonadOne) fVar;
-                ConstraintFact <- ask knowledge $ applyInfo (info @Edit) editVar;
-                return ConstraintFact;
-            }
-        ];
+        info = mkSimpleInfo $(iowitness[t|OneEdit|]) [$(declInfo [d|
+            instance (MonadOne f,Edit edit) => Edit (OneEdit f edit);
+        |])];
     };
 }

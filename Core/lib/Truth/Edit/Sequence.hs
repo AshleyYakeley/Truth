@@ -1,3 +1,4 @@
+{-# OPTIONS -fno-warn-orphans #-}
 module Truth.Edit.Sequence where
 {
     import Truth.Edit.Import;
@@ -67,4 +68,11 @@ module Truth.Edit.Sequence where
     {
         ab = clipWithin a b;
     } in if positiveRun ab then Just ab else Nothing;
+
+    -- orphan
+    instance HasInfo IsSequence where
+    {
+        info = mkSimpleInfo $(iowitness[t|IsSequence|]) [$(declInfo [d|
+        |])];
+    };
 }
