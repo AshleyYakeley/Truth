@@ -47,45 +47,46 @@ module Truth.Core.Types.Context where
         |])];
     };
 
-    data WithContextTuple editx editn edit where
+    data WithContextSelector editx editn edit where
     {
-        EditContext :: WithContextTuple editx editn editx;
-        EditContent :: WithContextTuple editx editn editn;
+        EditContext :: WithContextSelector editx editn editx;
+        EditContent :: WithContextSelector editx editn editn;
     };
 
-    instance TestEquality (WithContextTuple ea eb) where
+    instance TestEquality (WithContextSelector ea eb) where
     {
         testEquality EditContext EditContext = Just Refl;
         testEquality EditContent EditContent = Just Refl;
         testEquality _ _ = Nothing;
     };
 
-    instance (Edit editx,FullReader (EditReader editx),Edit editn,FullReader (EditReader editn)) =>
-        TupleSelector (WithContextTuple editx editn) where
+    instance (Edit editx,Edit editn) =>
+        TupleSelector (WithContextSelector editx editn) where
     {
-        type TupleSubject (WithContextTuple editx editn) = WithContext (EditSubject editx) (EditSubject editn);
-        tupleIsFullReaderEdit EditContext = MkConstraintWitness;
-        tupleIsFullReaderEdit EditContent = MkConstraintWitness;
+        type TupleSubject (WithContextSelector editx editn) = WithContext (EditSubject editx) (EditSubject editn);
+        tupleIsEdit EditContext = MkConstraintWitness;
+        tupleIsEdit EditContent = MkConstraintWitness;
         tupleReadFrom EditContext (MkWithContext x _n) = x;
         tupleReadFrom EditContent (MkWithContext _x n) = n;
-        tupleConstruct f = do
-        {
-            x <- f EditContext;
-            n <- f EditContent;
-            return (MkWithContext x n);
-        };
     };
 
-    contextCleanLens :: CleanEditLens' Identity (TupleEdit (WithContextTuple editx editn)) editx;
-    contextCleanLens = tupleLens EditContext;
-    contentCleanLens :: CleanEditLens' Identity (TupleEdit (WithContextTuple editx editn)) editn;
-    contentCleanLens = tupleLens EditContent;
-
-    instance (FullEdit ex,FullEdit en) => FiniteTupleSelector (WithContextTuple ex en) where
+    instance (Edit ex,FullReader (EditReader ex),Edit en,FullReader (EditReader en)) =>
+        FiniteTupleSelector (WithContextSelector ex en) where
     {
-        tupleAllSelectors = [MkAnyWitness EditContext,MkAnyWitness EditContent];
+        tupleIsFullReader EditContext = MkConstraintWitness;
+        tupleIsFullReader EditContent = MkConstraintWitness;
+        tupleConstruct f = MkWithContext <$> f EditContext <*> f EditContent;
+    };
+
+    instance (FullEdit ex,FullEdit en) => FullTupleSelector (WithContextSelector ex en) where
+    {
         tupleIsFullEdit EditContext = MkConstraintWitness;
         tupleIsFullEdit EditContent = MkConstraintWitness;
     };
+
+    contextCleanLens :: CleanEditLens' Identity (TupleEdit (WithContextSelector editx editn)) editx;
+    contextCleanLens = tupleLens EditContext;
+    contentCleanLens :: CleanEditLens' Identity (TupleEdit (WithContextSelector editx editn)) editn;
+    contentCleanLens = tupleLens EditContent;
 }
 

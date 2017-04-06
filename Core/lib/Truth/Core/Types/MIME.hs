@@ -26,7 +26,7 @@ module Truth.Core.Types.MIME where
     };
 -}
     type MIMEContent = WithContext MIMEContentType [Word8];
-    type MIMETuple edit = WithContextTuple (WholeEdit (WholeReader MIMEContentType)) edit;
+    type MIMETuple edit = WithContextSelector (WholeEdit (WholeReader MIMEContentType)) edit;
     type MIMEContentEdit edit = TupleEdit (MIMETuple edit);
 
 {-

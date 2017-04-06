@@ -17,18 +17,23 @@ module Truth.Core.Types.Function where
         testEquality _ _ = Nothing;
     };
 
-    instance (Eq a,Finite a,Edit edit,FullReader (EditReader edit)) =>
+    instance (Finite a,Edit edit) =>
         TupleSelector (FunctionSelector a edit) where
     {
         type TupleSubject (FunctionSelector a edit) = a -> EditSubject edit;
-        tupleIsFullReaderEdit (MkFunctionSelector _) = MkConstraintWitness;
+        tupleIsEdit (MkFunctionSelector _) = MkConstraintWitness;
         tupleReadFrom (MkFunctionSelector a) ab = ab a;
+    };
+
+    instance (Finite a,Edit edit,FullReader (EditReader edit)) =>
+        FiniteTupleSelector (FunctionSelector a edit) where
+    {
+        tupleIsFullReader (MkFunctionSelector _) = MkConstraintWitness;
         tupleConstruct f = assemble (\a -> f (MkFunctionSelector a));
     };
 
-    instance (Finite a,FullEdit edit) => FiniteTupleSelector (FunctionSelector a edit) where
+    instance (Finite a,FullEdit edit) => FullTupleSelector (FunctionSelector a edit) where
     {
-        tupleAllSelectors = fmap (MkAnyWitness . MkFunctionSelector) allValues;
         tupleIsFullEdit (MkFunctionSelector _) = MkConstraintWitness;
     };
 }

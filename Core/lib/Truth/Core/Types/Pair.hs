@@ -19,25 +19,27 @@ module Truth.Core.Types.Pair where
         testEquality _ _ = Nothing;
     };
 
-    instance (Edit ea,FullReader (EditReader ea),Edit eb,FullReader (EditReader eb)) =>
+    instance (Edit ea,Edit eb) =>
         TupleSelector (PairSelector ea eb) where
     {
         type TupleSubject (PairSelector ea eb) = (EditSubject ea,EditSubject eb);
-        tupleIsFullReaderEdit EditFirst = MkConstraintWitness;
-        tupleIsFullReaderEdit EditSecond = MkConstraintWitness;
+        tupleIsEdit EditFirst = MkConstraintWitness;
+        tupleIsEdit EditSecond = MkConstraintWitness;
         tupleReadFrom EditFirst (a,_b) = a;
         tupleReadFrom EditSecond (_a,b) = b;
-        tupleConstruct f = do
-        {
-            a <- f EditFirst;
-            b <- f EditSecond;
-            return (a,b);
-        };
     };
 
-    instance (FullEdit ea,FullEdit eb) => FiniteTupleSelector (PairSelector ea eb) where
+    instance (Edit ea,FullReader (EditReader ea),Edit eb,FullReader (EditReader eb)) =>
+        FiniteTupleSelector (PairSelector ea eb) where
     {
-        tupleAllSelectors = [MkAnyWitness EditFirst,MkAnyWitness EditSecond];
+        tupleIsFullReader EditFirst = MkConstraintWitness;
+        tupleIsFullReader EditSecond = MkConstraintWitness;
+        tupleConstruct f = (,) <$> f EditFirst <*> f EditSecond;
+    };
+
+    instance (FullEdit ea,FullEdit eb) =>
+        FullTupleSelector (PairSelector ea eb) where
+    {
         tupleIsFullEdit EditFirst = MkConstraintWitness;
         tupleIsFullEdit EditSecond = MkConstraintWitness;
     };

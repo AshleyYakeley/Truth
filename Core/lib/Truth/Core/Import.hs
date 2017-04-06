@@ -22,6 +22,7 @@ module Truth.Core.Import
     module Data.Foldable,
     module Data.Traversable,
     module Control.Applicative,
+    module Data.Functor.Constant,
     module Control.Monad.Trans.Class,
     module Control.Monad.IO.Class,
     module Control.Monad.Fix,
@@ -84,6 +85,7 @@ where
     import Data.Foldable hiding (find);
     import Data.Traversable;
     import Control.Applicative;
+    import Data.Functor.Constant;
     import Control.Monad.IO.Class;
     import Control.Monad.Trans.Class;
     import Control.Monad.Fix;

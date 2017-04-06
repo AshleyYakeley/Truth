@@ -8,9 +8,8 @@ module Truth.Core.Types.Tuple where
     class TestEquality sel => TupleSelector (sel :: * -> *) where
     {
         type TupleSubject sel :: *;
-        tupleIsFullReaderEdit :: forall edit. sel edit -> ConstraintWitness (FullReader (EditReader edit),Edit edit);
+        tupleIsEdit :: forall edit. sel edit -> ConstraintWitness (Edit edit);
         tupleReadFrom :: forall edit. sel edit -> TupleSubject sel -> EditSubject edit;
-        tupleConstruct :: forall m. Monad m => (forall edit. sel edit -> m (EditSubject edit)) -> m (TupleSubject sel);
     };
 
     data TupleEditReader sel t where
@@ -24,20 +23,28 @@ module Truth.Core.Types.Tuple where
     instance (TupleSelector sel) => Reader (TupleEditReader sel) where
     {
         type ReaderSubject (TupleEditReader sel) = TupleSubject sel;
-        readFrom a (MkTupleEditReader seledit reader) = case tupleIsFullReaderEdit seledit of
+        readFrom a (MkTupleEditReader seledit reader) = case tupleIsEdit seledit of
         {
             MkConstraintWitness -> readFrom (tupleReadFrom seledit a) reader;
         };
     };
 
-    instance (TupleSelector sel) => FullReader (TupleEditReader sel) where
+    class TupleSelector sel => FiniteTupleSelector (sel :: * -> *) where
     {
-        fromReader = tupleConstruct (\(seledit :: sel edit) -> case tupleIsFullReaderEdit seledit of
+        tupleIsFullReader :: forall edit. sel edit -> ConstraintWitness (FullReader (EditReader edit));
+        tupleConstruct :: forall m. Applicative m => (forall edit. sel edit -> m (EditSubject edit)) -> m (TupleSubject sel);
+    };
+
+    tupleAllSelectors :: FiniteTupleSelector sel => [AnyWitness sel];
+    tupleAllSelectors = getConstant $ tupleConstruct $ \sel -> Constant [MkAnyWitness sel];
+
+    instance (FiniteTupleSelector sel) => FullReader (TupleEditReader sel) where
+    {
+        fromReader = tupleConstruct (\(seledit :: sel edit) -> case tupleIsFullReader seledit of
         {
             MkConstraintWitness -> mapCleanReadable (MkTupleEditReader seledit) fromReader;
         });
     };
-
 
     data TupleEdit sel where
     {
@@ -51,26 +58,25 @@ module Truth.Core.Types.Tuple where
         type EditReader (TupleEdit sel) = TupleEditReader sel;
 
         applyEdit (MkTupleEdit aggedite edit) aggreader@(MkTupleEditReader aggeditr reader) =
-            case (tupleIsFullReaderEdit aggedite,testEquality aggedite aggeditr) of
+            case (tupleIsEdit aggedite,testEquality aggedite aggeditr) of
             {
                 (MkConstraintWitness,Just Refl) -> mapCleanReadable (MkTupleEditReader aggedite) (applyEdit edit reader);
                 _ -> readable aggreader;
             };
 
-        invertEdit (MkTupleEdit seledit edit) = case tupleIsFullReaderEdit seledit of
+        invertEdit (MkTupleEdit seledit edit) = case tupleIsEdit seledit of
         {
             MkConstraintWitness -> fmap (fmap (MkTupleEdit seledit))
                 (mapCleanReadable (MkTupleEditReader seledit) (invertEdit edit));
         };
     };
 
-    class TupleSelector sel => FiniteTupleSelector sel where
+    class FiniteTupleSelector sel => FullTupleSelector sel where
     {
-        tupleAllSelectors :: [AnyWitness sel];
         tupleIsFullEdit :: forall edit. sel edit -> ConstraintWitness (FullEdit edit);
     };
 
-    instance FiniteTupleSelector sel => FullEdit (TupleEdit sel) where
+    instance FullTupleSelector sel => FullEdit (TupleEdit sel) where
     {
         replaceEdit = do
         {
