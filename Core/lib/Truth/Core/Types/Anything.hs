@@ -1,59 +1,60 @@
 module Truth.Core.Types.Anything where
 {
     import Truth.Core.Import;
-    --import Truth.Core.Read;
+    import Truth.Core.Read;
     --import Truth.Core.Edit;
-    --import Truth.Core.Types.Whole;
+    --import Truth.Core.Types.EitherWhole;
 
 
     data Anything where
     {
         MkAnything :: forall (a :: *). Info a -> a -> Anything;
     };
-{-
-    instance HasInfo (Type_T Anything) where
-    {
-        info = mkSimpleInfo $(iowitness[t| Type_T Anything |])
-        [
-        ];
-    };
--}
 
-
-{-
-    data AnyRead t where
+    instance HasInfo Anything where
     {
-        MkAnyRead :: forall reader t. (Reader reader) =>
-         Info (Type_KTT reader) -> Info (Type_T (ReaderSubject reader)) -> reader t -> AnyRead (Maybe t);
+        info = mkSimpleInfo $(iowitness[t|Anything|]) [$(declInfo [d|
+        |])];
     };
 
-    instance Reader AnyRead where
+    data AnyReader t where
     {
-        type ReaderSubject AnyRead = Anything;
+        MkAnyReader :: forall reader t. (Reader reader) => Info reader -> Info (ReaderSubject reader) -> reader t -> AnyReader (Maybe t);
+    };
 
-        -- | Make API calls when you've actually got the subject
-        -- readFromM :: forall m. Monad m => m (ReaderSubject reader) -> Structure m reader;
-        -- readFromM msubj reader = fmap (\subj -> readFrom subj reader) msubj;
+    instance Reader AnyReader where
+    {
+        type ReaderSubject AnyReader = Anything;
 
-        -- readFrom :: Anything -> (forall t. AnyRead t -> t);
-        readFrom (MkAnything infoa a) (MkAnyRead infor infoa' reader) = do
+        readFrom (MkAnything infoa a) (MkAnyReader _infor infoa' reader) = do
         {
             Refl <- testEquality infoa infoa';
             return (readFrom a reader);
         };
     };
 
+    $(return []);
+    instance HasInfo AnyReader where
+    {
+        info = mkSimpleInfo $(iowitness[t|AnyReader|]) [$(declInfo [d|
+            instance Reader AnyReader where
+            {
+                type ReaderSubject AnyReader = Anything;
+            };
+        |])];
+    };
 
+{-
     data AnyEdit where
     {
-        MkAnyEdit :: forall edit. (Edit edit) => Info (Type_T edit) -> Info (Type_KTT (EditReader edit)) -> edit -> AnyEdit;
+        MkAnyEdit :: forall edit. (Edit edit) => Info edit -> Info (EditReader edit) -> edit -> AnyEdit;
     };
 
     instance Edit AnyEdit where
     {
-        type EditReader AnyEdit = AnyRead;
+        type EditReader AnyEdit = AnyReader;
 
-        applyEdit (MkAnyEdit _te treader edit) ar@(MkAnyReader treader' ta' reader') = case testEquality treader treader' of
+        applyEdit (MkAnyEdit _te treader edit) ar@(MkAnyReaderer treader' ta' reader') = case testEquality treader treader' of
         {
             Just Refl -> ;
             _ -> readable ar;
@@ -74,19 +75,16 @@ module Truth.Core.Types.Anything where
         };
     };
 
-    instance HasInfo (Type_T AnyEdit) where
+    instance HasInfo AnyEdit where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_T AnyEdit |])
-        [
-            mkFacts (MkFactZ (do
+        info = mkSimpleInfo $(iowitness[t|AnyEdit|]) [$(declInfo [d|
+            instance Edit AnyEdit where
             {
-                return (Edit_Inst info);
-            })
-            :: FactZ Edit_Inst (Type_T AnyEdit)
-            )
-        ];
+                type EditReader AnyEdit = AnyReader;
+            };
+        |])];
     };
 
-    type AnyWholeEdit = Either (WholeEdit Anything) AnyEdit;
+    type AnyWholeEdit = EitherWholeEdit AnyEdit;
 -}
 }
