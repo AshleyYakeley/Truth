@@ -26,8 +26,8 @@ module Truth.Core.Types.MIME where
     };
 -}
     type MIMEContent = WithContext MIMEContentType [Word8];
-    type MIMEAggregate edit = WithContextAggregate (WholeEdit (WholeReader MIMEContentType)) edit;
-    type MIMEContentEdit edit = AggregateEdit (MIMEAggregate edit);
+    type MIMETuple edit = WithContextTuple (WholeEdit (WholeReader MIMEContentType)) edit;
+    type MIMEContentEdit edit = TupleEdit (MIMETuple edit);
 
 {-
     instance HasNewValue MIMEContent where
@@ -44,7 +44,7 @@ module Truth.Core.Types.MIME where
         ];
     };
 
-    instance IsTuple MIMEContent where
+    instance TupleSelector MIMEContent where
     {
         type ListTuple MIMEContent = ([Word8],(MIMEContentType,()));
         fromListTuple (content,(t,())) = MkMIMEContent t content;

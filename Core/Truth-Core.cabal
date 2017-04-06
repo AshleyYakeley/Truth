@@ -91,6 +91,7 @@ library
         Truth.Core.Types.ComonadLift
         Truth.Core.Types.Index
         Truth.Core.Types.Tuple
+        Truth.Core.Types.Pair
         Truth.Core.Types.Function
         Truth.Core.Types.Context
         Truth.Core.Types.List

@@ -5,113 +5,99 @@ module Truth.Core.Types.Tuple where
     import Truth.Core.Edit;
 
 
-    data IsFullReaderEdit edit where
+    class TestEquality sel => TupleSelector (sel :: * -> *) where
     {
-        MkIsFullReaderEdit :: (FullReader (EditReader edit),Edit edit) => IsFullReaderEdit edit;
+        type TupleSubject sel :: *;
+        tupleIsFullReaderEdit :: forall edit. sel edit -> ConstraintWitness (FullReader (EditReader edit),Edit edit);
+        tupleReadFrom :: forall edit. sel edit -> TupleSubject sel -> EditSubject edit;
+        tupleConstruct :: forall m. Monad m => (forall edit. sel edit -> m (EditSubject edit)) -> m (TupleSubject sel);
     };
 
-    class TestEquality agg => IsAggregate (agg :: * -> *) where
+    data TupleEditReader sel t where
     {
-        type AggregateSubject agg :: *;
-        aggregateIsFullReaderEdit :: agg edit -> IsFullReaderEdit edit;
-        aggregateReadFrom :: agg edit -> AggregateSubject agg -> EditSubject edit;
-        aggregateConstruct :: Monad m => (forall edit. agg edit -> m (EditSubject edit)) -> m (AggregateSubject agg);
+        MkTupleEditReader :: sel edit -> EditReader edit t -> TupleEditReader sel t;
     };
 
-        data PairAggregate ea eb et where
-        {
-            EditFirst :: PairAggregate ea eb ea;
-            EditSecond :: PairAggregate ea eb eb;
-        };
+    tupleReadFunction :: sel edit -> ReadFunction (TupleEditReader sel) (EditReader edit);
+    tupleReadFunction sel r = readable $ MkTupleEditReader sel r;
 
-        instance TestEquality (PairAggregate ea eb) where
-        {
-            testEquality EditFirst EditFirst = Just Refl;
-            testEquality EditSecond EditSecond = Just Refl;
-            testEquality _ _ = Nothing;
-        };
-
-        instance (Edit ea,FullReader (EditReader ea),Edit eb,FullReader (EditReader eb)) =>
-            IsAggregate (PairAggregate ea eb) where
-        {
-            type AggregateSubject (PairAggregate ea eb) = (EditSubject ea,EditSubject eb);
-            aggregateIsFullReaderEdit EditFirst = MkIsFullReaderEdit;
-            aggregateIsFullReaderEdit EditSecond = MkIsFullReaderEdit;
-            aggregateReadFrom EditFirst (a,_b) = a;
-            aggregateReadFrom EditSecond (_a,b) = b;
-            aggregateConstruct f = do
-            {
-                a <- f EditFirst;
-                b <- f EditSecond;
-                return (a,b);
-            };
-        };
-{-
-    data AggregateReader aggr t where
+    instance (TupleSelector sel) => Reader (TupleEditReader sel) where
     {
-        MkAggregateReader :: aggr reader -> reader t -> AggregateReader agg t;
-    };
--}
-    data AggregateEditReader agg t where
-    {
-        MkAggregateEditReader :: agg edit -> EditReader edit t -> AggregateEditReader agg t;
-    };
-
-    instance (IsAggregate agg) => Reader (AggregateEditReader agg) where
-    {
-        type ReaderSubject (AggregateEditReader agg) = AggregateSubject agg;
-        readFrom a (MkAggregateEditReader aggedit reader) = case aggregateIsFullReaderEdit aggedit of
+        type ReaderSubject (TupleEditReader sel) = TupleSubject sel;
+        readFrom a (MkTupleEditReader seledit reader) = case tupleIsFullReaderEdit seledit of
         {
-            MkIsFullReaderEdit -> readFrom (aggregateReadFrom aggedit a) reader;
+            MkConstraintWitness -> readFrom (tupleReadFrom seledit a) reader;
         };
     };
 
-    instance (IsAggregate agg) => FullReader (AggregateEditReader agg) where
+    instance (TupleSelector sel) => FullReader (TupleEditReader sel) where
     {
-        fromReader = aggregateConstruct (\(aggedit :: agg edit) -> case aggregateIsFullReaderEdit aggedit of
+        fromReader = tupleConstruct (\(seledit :: sel edit) -> case tupleIsFullReaderEdit seledit of
         {
-            MkIsFullReaderEdit -> mapCleanReadable (MkAggregateEditReader aggedit) fromReader;
+            MkConstraintWitness -> mapCleanReadable (MkTupleEditReader seledit) fromReader;
         });
     };
 
 
-    data AggregateEdit agg where
+    data TupleEdit sel where
     {
-        MkAggregateEdit :: agg edit -> edit -> AggregateEdit agg;
+        MkTupleEdit :: sel edit -> edit -> TupleEdit sel;
     };
 
-    instance Floating (AggregateEdit agg) (AggregateEdit agg);
+    instance Floating (TupleEdit sel) (TupleEdit sel);
 
-    instance (IsAggregate agg) => Edit (AggregateEdit agg) where
+    instance (TupleSelector sel) => Edit (TupleEdit sel) where
     {
-        type EditReader (AggregateEdit agg) = AggregateEditReader agg;
+        type EditReader (TupleEdit sel) = TupleEditReader sel;
 
-        applyEdit (MkAggregateEdit aggedite edit) aggreader@(MkAggregateEditReader aggeditr reader) =
-            case (aggregateIsFullReaderEdit aggedite,testEquality aggedite aggeditr) of
+        applyEdit (MkTupleEdit aggedite edit) aggreader@(MkTupleEditReader aggeditr reader) =
+            case (tupleIsFullReaderEdit aggedite,testEquality aggedite aggeditr) of
             {
-                (MkIsFullReaderEdit,Just Refl) -> mapCleanReadable (MkAggregateEditReader aggedite) (applyEdit edit reader);
+                (MkConstraintWitness,Just Refl) -> mapCleanReadable (MkTupleEditReader aggedite) (applyEdit edit reader);
                 _ -> readable aggreader;
             };
 
-        invertEdit (MkAggregateEdit aggedit edit) = case aggregateIsFullReaderEdit aggedit of
+        invertEdit (MkTupleEdit seledit edit) = case tupleIsFullReaderEdit seledit of
         {
-            MkIsFullReaderEdit -> fmap (fmap (MkAggregateEdit aggedit))
-                (mapCleanReadable (MkAggregateEditReader aggedit) (invertEdit edit));
+            MkConstraintWitness -> fmap (fmap (MkTupleEdit seledit))
+                (mapCleanReadable (MkTupleEditReader seledit) (invertEdit edit));
         };
     };
 
-    aggregateLens :: TestEquality agg => agg edit -> CleanEditLens' Identity (AggregateEdit agg) edit;
-    aggregateLens aggedit = MkCleanEditLens
+    class TupleSelector sel => FiniteTupleSelector sel where
+    {
+        tupleAllSelectors :: [AnyWitness sel];
+        tupleIsFullEdit :: forall edit. sel edit -> ConstraintWitness (FullEdit edit);
+    };
+
+    instance FiniteTupleSelector sel => FullEdit (TupleEdit sel) where
+    {
+        replaceEdit = do
+        {
+            editss <- traverse (\(MkAnyWitness sel) -> case tupleIsFullEdit sel of
+            {
+                MkConstraintWitness -> do
+                {
+                    edits <- mapReadable (tupleReadFunction sel) $ replaceEdit;
+                    return $ fmap (MkTupleEdit sel) edits;
+                };
+            }) tupleAllSelectors;
+            return $ mconcat editss;
+        };
+    };
+
+    tupleLens :: TestEquality sel => sel edit -> CleanEditLens' Identity (TupleEdit sel) edit;
+    tupleLens seledit = MkCleanEditLens
     {
         cleanEditLensFunction = MkCleanEditFunction
         {
-            cleanEditGet = MkAggregateEditReader aggedit,
-            cleanEditUpdate = \(MkAggregateEdit aggedit' edit) -> case testEquality aggedit aggedit' of
+            cleanEditGet = MkTupleEditReader seledit,
+            cleanEditUpdate = \(MkTupleEdit seledit' edit) -> case testEquality seledit seledit' of
             {
                 Just Refl -> [edit];
                 _ -> [];
             }
         },
-        cleanEditLensPutEdit = Identity . (MkAggregateEdit aggedit)
+        cleanEditLensPutEdit = Identity . (MkTupleEdit seledit)
     };
 }

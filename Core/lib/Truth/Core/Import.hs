@@ -50,7 +50,7 @@ module Truth.Core.Import
     module Data.FloatingLens,
     module Data.Lens,
     module Data.Codec,
---    module Data.IsTuple,
+--    module Data.TupleSelector,
     module Data.Result,
     module Data.Compose,
     module Data.MonadOne,
@@ -112,7 +112,7 @@ where
     import Data.FloatingLens;
     import Data.Lens;
     import Data.Codec;
---    import Data.IsTuple;
+--    import Data.TupleSelector;
     import Data.Result;
     import Data.Compose;
     import Data.MonadOne;

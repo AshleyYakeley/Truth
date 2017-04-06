@@ -47,13 +47,13 @@ module Truth.Core.Types.Context where
         |])];
     };
 
-    data WithContextAggregate editx editn edit where
+    data WithContextTuple editx editn edit where
     {
-        EditContext :: WithContextAggregate editx editn editx;
-        EditContent :: WithContextAggregate editx editn editn;
+        EditContext :: WithContextTuple editx editn editx;
+        EditContent :: WithContextTuple editx editn editn;
     };
 
-    instance TestEquality (WithContextAggregate ea eb) where
+    instance TestEquality (WithContextTuple ea eb) where
     {
         testEquality EditContext EditContext = Just Refl;
         testEquality EditContent EditContent = Just Refl;
@@ -61,14 +61,14 @@ module Truth.Core.Types.Context where
     };
 
     instance (Edit editx,FullReader (EditReader editx),Edit editn,FullReader (EditReader editn)) =>
-        IsAggregate (WithContextAggregate editx editn) where
+        TupleSelector (WithContextTuple editx editn) where
     {
-        type AggregateSubject (WithContextAggregate editx editn) = WithContext (EditSubject editx) (EditSubject editn);
-        aggregateIsFullReaderEdit EditContext = MkIsFullReaderEdit;
-        aggregateIsFullReaderEdit EditContent = MkIsFullReaderEdit;
-        aggregateReadFrom EditContext (MkWithContext x _n) = x;
-        aggregateReadFrom EditContent (MkWithContext _x n) = n;
-        aggregateConstruct f = do
+        type TupleSubject (WithContextTuple editx editn) = WithContext (EditSubject editx) (EditSubject editn);
+        tupleIsFullReaderEdit EditContext = MkConstraintWitness;
+        tupleIsFullReaderEdit EditContent = MkConstraintWitness;
+        tupleReadFrom EditContext (MkWithContext x _n) = x;
+        tupleReadFrom EditContent (MkWithContext _x n) = n;
+        tupleConstruct f = do
         {
             x <- f EditContext;
             n <- f EditContent;
@@ -76,9 +76,16 @@ module Truth.Core.Types.Context where
         };
     };
 
-    contextCleanLens :: CleanEditLens' Identity (AggregateEdit (WithContextAggregate editx editn)) editx;
-    contextCleanLens = aggregateLens EditContext;
-    contentCleanLens :: CleanEditLens' Identity (AggregateEdit (WithContextAggregate editx editn)) editn;
-    contentCleanLens = aggregateLens EditContent;
+    contextCleanLens :: CleanEditLens' Identity (TupleEdit (WithContextTuple editx editn)) editx;
+    contextCleanLens = tupleLens EditContext;
+    contentCleanLens :: CleanEditLens' Identity (TupleEdit (WithContextTuple editx editn)) editn;
+    contentCleanLens = tupleLens EditContent;
+
+    instance (FullEdit ex,FullEdit en) => FiniteTupleSelector (WithContextTuple ex en) where
+    {
+        tupleAllSelectors = [MkAnyWitness EditContext,MkAnyWitness EditContent];
+        tupleIsFullEdit EditContext = MkConstraintWitness;
+        tupleIsFullEdit EditContent = MkConstraintWitness;
+    };
 }
 

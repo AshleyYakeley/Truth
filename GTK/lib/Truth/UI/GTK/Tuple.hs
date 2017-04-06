@@ -41,9 +41,9 @@ module Truth.UI.GTK.Tuple where
 -}
 
 {-
-    tupleView :: forall a w. (IsTuple a) =>
+    tupleView :: forall a w. (TupleSelector a) =>
      ListType EditableWit (TList a) -> ([w] -> IO w) -> ListMap (TFView w) (TList a) -> View w a;
-    tupleView editablewit aggregate  views ia pusha = let
+    tupleView editablewit sel  views ia pusha = let
     {
         tfView :: Type (TFView w);
         tfView = Type;
@@ -66,7 +66,7 @@ module Truth.UI.GTK.Tuple where
             pickWidget :: AnyF EditableWit (ListElementType (TList a)) -> w;
             pickWidget (MkAnyF _ elemwit) = vrWidget (getVR elemwit);
         };
-        iow <- aggregate (fmap pickWidget (getListElementTypes editablewit));
+        iow <- sel (fmap pickWidget (getListElementTypes editablewit));
         return (MkViewResult iow (\edita -> case edita of
         {
             ReplaceTListEdit a -> (let

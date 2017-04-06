@@ -6,23 +6,29 @@ module Truth.Core.Types.Function where
     import Truth.Core.Types.Tuple;
 
 
-    data FunctionAggregate a eb et where
+    data FunctionSelector a eb et where
     {
-        MkFunctionAggregate :: a -> FunctionAggregate a edit edit;
+        MkFunctionSelector :: a -> FunctionSelector a edit edit;
     };
 
-    instance (Eq a) => TestEquality (FunctionAggregate a editb) where
+    instance (Eq a) => TestEquality (FunctionSelector a editb) where
     {
-        testEquality (MkFunctionAggregate a1) (MkFunctionAggregate a2) | a1 == a2 = Just Refl;
+        testEquality (MkFunctionSelector a1) (MkFunctionSelector a2) | a1 == a2 = Just Refl;
         testEquality _ _ = Nothing;
     };
 
-    instance (Eq a,Finite a,Edit editb,FullReader (EditReader editb)) =>
-        IsAggregate (FunctionAggregate a editb) where
+    instance (Eq a,Finite a,Edit edit,FullReader (EditReader edit)) =>
+        TupleSelector (FunctionSelector a edit) where
     {
-        type AggregateSubject (FunctionAggregate a editb) = a -> EditSubject editb;
-        aggregateIsFullReaderEdit (MkFunctionAggregate _) = MkIsFullReaderEdit;
-        aggregateReadFrom (MkFunctionAggregate a) ab = ab a;
-        aggregateConstruct f = assemble (\a -> f (MkFunctionAggregate a));
+        type TupleSubject (FunctionSelector a edit) = a -> EditSubject edit;
+        tupleIsFullReaderEdit (MkFunctionSelector _) = MkConstraintWitness;
+        tupleReadFrom (MkFunctionSelector a) ab = ab a;
+        tupleConstruct f = assemble (\a -> f (MkFunctionSelector a));
+    };
+
+    instance (Finite a,FullEdit edit) => FiniteTupleSelector (FunctionSelector a edit) where
+    {
+        tupleAllSelectors = fmap (MkAnyWitness . MkFunctionSelector) allValues;
+        tupleIsFullEdit (MkFunctionSelector _) = MkConstraintWitness;
     };
 }

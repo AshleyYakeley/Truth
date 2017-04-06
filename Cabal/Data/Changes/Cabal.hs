@@ -17,7 +17,7 @@ module Data.Changes.Cabal where
         parseResultToResult (ParseOk _ a) = SuccessResult a;
     };
 
-    instance IsTuple GenericPackageDescription where
+    instance TupleSelector GenericPackageDescription where
     {
         type TList GenericPackageDescription =
             (PackageDescription,
