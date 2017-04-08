@@ -49,8 +49,8 @@ module Truth.Core.Types.Whole where
     {
         replaceEdit = do
         {
-            a <- fromReader;
-            return [MkWholeEdit a];
+            a <- readableToM fromReader;
+            wrWrite $ MkWholeEdit a;
         };
     };
 

@@ -70,6 +70,7 @@ library
         Truth.Core.Read.Readable
         Truth.Core.Read.FullReader
         Truth.Core.Read.ReadFunction
+        Truth.Core.Read.WriterReadable
         Truth.Core.Read
         Truth.Core.Edit.Edit
         Truth.Core.Edit.EditFunction
@@ -89,7 +90,6 @@ library
         Truth.Core.Types.Maybe
         Truth.Core.Types.Comonad
         Truth.Core.Types.ComonadLift
-        Truth.Core.Types.Index
         Truth.Core.Types.Tuple
         Truth.Core.Types.Pair
         Truth.Core.Types.Function

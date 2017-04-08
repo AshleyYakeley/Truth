@@ -40,7 +40,7 @@ module Truth.Core.Types.Maybe where
             {
                 Just () -> do
                 {
-                    medits <- getCompose $ mapReadableF (MkCompose . readable . ReadOne) replaceEdit;
+                    medits <- mapReadableF (readable . ReadOne) $ writerToReadable replaceEdit;
                     case medits of
                     {
                         Nothing -> return []; -- shouldn't happen
@@ -70,14 +70,11 @@ module Truth.Core.Types.Maybe where
             {
                 Just () -> do
                 {
-                    medits <- getCompose $ mapReadableF (MkCompose . readable . ReadOne) replaceEdit;
-                    case medits of
-                    {
-                        Nothing -> return [DeleteMaybeEdit]; -- shouldn't happen
-                        Just edits -> return $ CreateMaybeEdit : (fmap JustMaybeEdit edits);
-                    }
+                    wrWrite CreateMaybeEdit;
+                    _ <- reWriterReadable JustMaybeEdit $ mapReadableF (readable . ReadOne) replaceEdit;
+                    return ();
                 };
-                Nothing -> return [DeleteMaybeEdit]; -- deleted
+                Nothing -> wrWrite DeleteMaybeEdit; -- deleted
             };
         };
     };

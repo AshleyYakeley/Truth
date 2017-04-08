@@ -24,9 +24,11 @@ module Truth.Core.Import
     module Control.Applicative,
     module Data.Functor.Constant,
     module Control.Monad.Trans.Class,
+    module Control.Monad.Trans.Writer,
     module Control.Monad.IO.Class,
     module Control.Monad.Fix,
     module Control.Concurrent.MVar,
+    module Text.Show,
     module System.IO,
     module Control.Exception,
 
@@ -63,7 +65,7 @@ module Truth.Core.Import
 )
 where
 {
-    import Prelude (($),undefined,Eq(..),Ord(..),Enum(..),Num(..),Integral,fromIntegral,fromInteger,toInteger);
+    import Prelude (($),undefined,Eq(..),Ord(..),Enum(..),Num(..),Real(..),Integral(..),fromIntegral,fromInteger,toInteger);
     import Data.Kind;
     import Data.Bool;
     import Data.Bits;
@@ -88,8 +90,10 @@ where
     import Data.Functor.Constant;
     import Control.Monad.IO.Class;
     import Control.Monad.Trans.Class;
+    import Control.Monad.Trans.Writer;
     import Control.Monad.Fix;
     import Control.Concurrent.MVar;
+    import Text.Show(Show(..));
     import System.IO;
     import Control.Exception hiding (catch);
 

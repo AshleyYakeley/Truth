@@ -35,7 +35,7 @@ module Truth.Core.Types.Either where
 
     instance (FullEdit ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit (EitherEdit ea eb) where
     {
-        replaceEdit = fmap (fmap LeftEdit) replaceEdit;
+        replaceEdit = reWriterReadable LeftEdit replaceEdit;
     };
 
     $(return []);

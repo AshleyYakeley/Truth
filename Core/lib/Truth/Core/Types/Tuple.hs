@@ -82,11 +82,7 @@ module Truth.Core.Types.Tuple where
         {
             editss <- traverse (\(MkAnyWitness sel) -> case tupleIsFullEdit sel of
             {
-                MkConstraintWitness -> do
-                {
-                    edits <- mapReadable (tupleReadFunction sel) $ replaceEdit;
-                    return $ fmap (MkTupleEdit sel) edits;
-                };
+                MkConstraintWitness -> reWriterReadable (MkTupleEdit sel) $ mapReadable (tupleReadFunction sel) replaceEdit;
             }) tupleAllSelectors;
             return $ mconcat editss;
         };

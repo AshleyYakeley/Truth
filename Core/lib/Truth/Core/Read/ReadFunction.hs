@@ -14,9 +14,6 @@ module Truth.Core.Read.ReadFunction where
     composeReadFunction :: ReadFunction rb rc -> ReadFunction ra rb -> ReadFunction ra rc;
     composeReadFunction = mapStructure;
 
-    mapReadable :: ReadFunction ra rb -> Readable rb t -> Readable ra t;
-    mapReadable rrarb rrb = unReadable rrb rrarb;
-
     makeReadFunction :: (Reader rb) => Readable ra (ReaderSubject rb) -> ReadFunction ra rb;
     makeReadFunction = readFromM;
 
@@ -38,11 +35,23 @@ module Truth.Core.Read.ReadFunction where
     fromCleanReadFunction :: (Reader ra,FullReader rb) => CleanReadFunction ra rb -> ReaderSubject ra -> ReaderSubject rb;
     fromCleanReadFunction rbtrat a = runIdentity (unReadable fromReader (Identity . (readFrom a) . rbtrat));
 
-    mapCleanReadable :: CleanReadFunction ra rb -> Readable rb t -> Readable ra t;
+    type ReadFunctionF f readera readerb = forall t. readerb t -> Readable readera (f t);
+
+    mapStructureF :: Monad m => ReadFunctionF f ra rb -> Structure m ra -> Structure (Compose m f) rb;
+    mapStructureF rff sa rbt = MkCompose $ unReadable (rff rbt) sa;
+
+    class MapReadable readable where
+    {
+        mapReadable :: ReadFunction ra rb -> readable rb t -> readable ra t;
+        mapReadableF :: (Monad f,Traversable f) => ReadFunctionF f ra rb -> readable rb t -> readable ra (f t);
+    };
+
+    mapCleanReadable :: MapReadable readable => CleanReadFunction ra rb -> readable rb t -> readable ra t;
     mapCleanReadable f = mapReadable (cleanReadFunction f);
 
-    type ReadFunctionF f readera readerb = forall t. readerb t -> ReadableF f readera t;
-
-    mapReadableF :: (Monad f,Traversable f) => ReadFunctionF f ra rb -> Readable rb t -> ReadableF f ra t;
-    mapReadableF rff (MkReadable smrbmt) = smrbmt rff;
+    instance MapReadable Readable where
+    {
+        mapReadable rf (MkReadable srbmt) = srbmt rf;
+        mapReadableF rff (MkReadable srbmt) = getCompose $ srbmt $ MkCompose . rff;
+    };
 }

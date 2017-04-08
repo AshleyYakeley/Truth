@@ -56,7 +56,7 @@ module Truth.Core.Types.None where
 
     instance (FullReader reader,ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where
     {
-        replaceEdit = return [];
+        replaceEdit = return ();
     };
 
     $(return []);

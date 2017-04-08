@@ -115,8 +115,8 @@ module Truth.Core.Types.String where
     {
         replaceEdit = do
         {
-            a <- fromReader;
-            return [StringReplaceWhole a];
+            a <- readableToM $ fromReader;
+            wrWrite $ StringReplaceWhole a;
         };
     };
 

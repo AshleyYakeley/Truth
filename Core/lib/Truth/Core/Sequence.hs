@@ -8,9 +8,19 @@ module Truth.Core.Sequence where
     deriving instance Eq (Index seq) => Eq (SequencePoint seq);
     deriving instance Ord (Index seq) => Ord (SequencePoint seq);
     deriving instance Num (Index seq) => Num (SequencePoint seq);
+    deriving instance Enum (Index seq) => Enum (SequencePoint seq);
+    deriving instance Real (Index seq) => Real (SequencePoint seq);
+    deriving instance Integral (Index seq) => Integral (SequencePoint seq);
+    instance Integral (Index seq) => Show (SequencePoint seq) where
+    {
+        show (MkSequencePoint i) = show $ toInteger i;
+    };
 
     seqLength :: IsSequence seq => seq -> SequencePoint seq;
     seqLength = fromIntegral . olength64;
+
+    seqIndex :: IsSequence seq => seq -> SequencePoint seq -> Maybe (Element seq);
+    seqIndex seq (MkSequencePoint i) = index seq i;
 
     seqTake :: IsSequence seq => SequencePoint seq -> seq -> seq;
     seqTake (MkSequencePoint p) = take p;

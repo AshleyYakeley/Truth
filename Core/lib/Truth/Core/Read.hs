@@ -4,6 +4,7 @@ module Truth.Core.Read
     module Truth.Core.Read.Readable,
     module Truth.Core.Read.FullReader,
     module Truth.Core.Read.ReadFunction,
+    module Truth.Core.Read.WriterReadable,
     module Truth.Core.Read,
 )
  where
@@ -13,6 +14,7 @@ module Truth.Core.Read
     import Truth.Core.Read.Readable;
     import Truth.Core.Read.FullReader;
     import Truth.Core.Read.ReadFunction;
+    import Truth.Core.Read.WriterReadable;
 
 
     -- not terribly useful

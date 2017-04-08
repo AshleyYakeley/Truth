@@ -16,7 +16,7 @@ module Truth.Core.Types.OneWholeEdit where
     extractOneWholeEdit (RightEdit (MkOneEdit edit)) = return edit;
     extractOneWholeEdit (LeftEdit (MkWholeEdit fa)) = case retrieveOne fa of
     {
-        SuccessResult a -> fromReadable replaceEdit a;
+        SuccessResult a -> getReplaceEdits a;
         _ -> [];
     };
 
@@ -45,7 +45,7 @@ module Truth.Core.Types.OneWholeEdit where
 
             SuccessResult b -> fmap (fmap (ff1 oldstate) . sequenceA) $ liftMaybeReadable $ do
             {
-                mstateedita <- floatingEditLensPutEdits lens oldstate (fromReadable replaceEdit b);
+                mstateedita <- floatingEditLensPutEdits lens oldstate $ getReplaceEdits b;
                 case mstateedita of
                 {
                     Nothing -> return Nothing;

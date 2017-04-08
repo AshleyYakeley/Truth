@@ -16,7 +16,7 @@ module Truth.Core.Types.EitherWhole where
         cleanEditGet = cleanEditGet cef,
         cleanEditUpdate = \editewa -> case editewa of
         {
-            LeftEdit (MkWholeEdit a) -> fromReadable replaceEdit $ fromCleanReadFunction (cleanEditGet cef) a;
+            LeftEdit (MkWholeEdit a) -> getReplaceEdits $ fromCleanReadFunction (cleanEditGet cef) a;
             RightEdit edita -> cleanEditUpdate cef edita;
         }
     };

@@ -11,12 +11,11 @@ module Truth.Core.Types
     module Truth.Core.Types.Maybe,
     module Truth.Core.Types.Comonad,
     module Truth.Core.Types.ComonadLift,
-    --module Truth.Core.Types.Index,
     module Truth.Core.Types.Tuple,
     module Truth.Core.Types.Pair,
     module Truth.Core.Types.Function,
     module Truth.Core.Types.Context,
-    --module Truth.Core.Types.List,
+    module Truth.Core.Types.List,
     module Truth.Core.Types.String,
     module Truth.Core.Types.ByteString,
     module Truth.Core.Types.MIME,
@@ -35,12 +34,11 @@ module Truth.Core.Types
     import Truth.Core.Types.Maybe;
     import Truth.Core.Types.Comonad;
     import Truth.Core.Types.ComonadLift;
-    import Truth.Core.Types.Index();
     import Truth.Core.Types.Tuple;
     import Truth.Core.Types.Pair;
     import Truth.Core.Types.Function;
     import Truth.Core.Types.Context;
-    import Truth.Core.Types.List();
+    import Truth.Core.Types.List;
     import Truth.Core.Types.String;
     import Truth.Core.Types.ByteString;
     import Truth.Core.Types.MIME;

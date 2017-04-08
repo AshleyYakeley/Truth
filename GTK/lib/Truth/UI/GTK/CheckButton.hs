@@ -18,7 +18,7 @@ module Truth.UI.GTK.CheckButton where
         clickConnection <- onClicked widget $ lapi $ \() api -> do
         {
             s <- liftIO $ get widget toggleButtonActive;
-            _ <- apiEdit api (fromReadable replaceEdit s);
+            _ <- apiEdit api $ getReplaceEdits s;
             return ();
         };
 
