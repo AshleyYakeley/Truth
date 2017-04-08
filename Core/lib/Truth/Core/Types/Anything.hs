@@ -65,7 +65,6 @@ module Truth.Core.Types.Anything where
         };
     };
 
-
     instance Edit AnyEdit where
     {
         type EditReader AnyEdit = AnyReader;

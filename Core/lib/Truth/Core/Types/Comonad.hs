@@ -39,7 +39,10 @@ module Truth.Core.Types.Comonad where
 
     newtype ComonadEdit (w :: * -> *) (edit :: *) = MkComonadEdit edit;
 
-    instance Floating (ComonadEdit w edit) (ComonadEdit w edit);
+    instance Floating edit edit => Floating (ComonadEdit w edit) (ComonadEdit w edit) where
+    {
+        floatingUpdate (MkComonadEdit e1) (MkComonadEdit e2) = MkComonadEdit $ floatingUpdate e1 e2;
+    };
 
     instance (Comonad w,Edit edit) => Edit (ComonadEdit w edit) where
     {

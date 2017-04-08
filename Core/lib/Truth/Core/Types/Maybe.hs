@@ -11,7 +11,11 @@ module Truth.Core.Types.Maybe where
         DeleteMaybeEdit| -- remove
         JustMaybeEdit edit; -- change existing value if it exists, otherwise do nothing
 
-    instance Floating (MaybeEdit edit) (MaybeEdit edit);
+    instance Floating edit edit => Floating (MaybeEdit edit) (MaybeEdit edit) where
+    {
+        floatingUpdate (JustMaybeEdit e1) (JustMaybeEdit e2) = JustMaybeEdit $ floatingUpdate e1 e2;
+        floatingUpdate _ t = t;
+    };
 
     instance (FullEdit edit,HasNewValue (EditSubject edit)) => Edit (MaybeEdit edit) where
     {

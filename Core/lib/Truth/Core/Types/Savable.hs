@@ -55,7 +55,11 @@ module Truth.Core.Types.Savable where
         SESave | -- sets Original to Current
         SEUnsave (EditSubject edit); -- sets Original to given (invert SESave)
 
-    instance Floating (SavableEdit edit) (SavableEdit edit);
+    instance Floating edit edit => Floating (SavableEdit edit) (SavableEdit edit) where
+    {
+        floatingUpdate (SEEdit e1) (SEEdit e2) = SEEdit $ floatingUpdate e1 e2;
+        floatingUpdate _ t = t;
+    };
 
     instance (Eq (EditSubject edit), FullReader (EditReader edit), Edit edit) => Edit (SavableEdit edit) where
     {

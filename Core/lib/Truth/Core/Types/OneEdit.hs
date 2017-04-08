@@ -8,7 +8,10 @@ module Truth.Core.Types.OneEdit where
 
     newtype OneEdit (f :: * -> *) edit = MkOneEdit edit;
 
-    instance Floating (OneEdit f edit) (OneEdit f edit);
+    instance Floating edit edit => Floating (OneEdit f edit) (OneEdit f edit) where
+    {
+        floatingUpdate (MkOneEdit e1) (MkOneEdit e2) = MkOneEdit $ floatingUpdate e1 e2;
+    };
 
     instance (MonadOne f,Edit edit) => Edit (OneEdit f edit) where
     {

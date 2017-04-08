@@ -51,9 +51,19 @@ module Truth.Core.Types.Tuple where
         MkTupleEdit :: sel edit -> edit -> TupleEdit sel;
     };
 
-    instance Floating (TupleEdit sel) (TupleEdit sel);
+    instance TupleSelector sel => Floating (TupleEdit sel) (TupleEdit sel) where
+    {
+        floatingUpdate (MkTupleEdit s1 e1) edit@(MkTupleEdit s2 e2) = case testEquality s1 s2 of
+        {
+            Just Refl -> case tupleIsEdit s2 of
+            {
+                MkConstraintWitness -> MkTupleEdit s2 $ floatingUpdate e1 e2;
+            };
+            Nothing -> edit;
+        };
+    };
 
-    instance (TupleSelector sel) => Edit (TupleEdit sel) where
+    instance TupleSelector sel => Edit (TupleEdit sel) where
     {
         type EditReader (TupleEdit sel) = TupleEditReader sel;
 
