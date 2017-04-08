@@ -2,13 +2,13 @@ module Truth.Core.Types.Anything where
 {
     import Truth.Core.Import;
     import Truth.Core.Read;
-    --import Truth.Core.Edit;
-    --import Truth.Core.Types.EitherWhole;
+    import Truth.Core.Edit;
+    import Truth.Core.Types.EitherWhole;
 
 
     data Anything where
     {
-        MkAnything :: forall (a :: *). Info a -> a -> Anything;
+        MkAnything :: forall (edit :: *). Info edit -> Info (EditReader edit) -> Info (EditSubject edit) -> EditSubject edit -> Anything;
     };
 
     instance HasInfo Anything where
@@ -17,18 +17,25 @@ module Truth.Core.Types.Anything where
         |])];
     };
 
+    data AnyTypes where
+    {
+        MkAnyTypes :: forall (edit :: *). Info edit -> Info (EditReader edit) -> Info (EditSubject edit) -> AnyTypes;
+    };
+
     data AnyReader t where
     {
-        MkAnyReader :: forall reader t. (Reader reader) => Info reader -> Info (ReaderSubject reader) -> reader t -> AnyReader (Maybe t);
+        ReadAnyTypes :: AnyReader AnyTypes;
+        ReadAnyReader :: forall reader t. Reader reader => Info reader -> reader t -> AnyReader (Maybe t);
     };
 
     instance Reader AnyReader where
     {
         type ReaderSubject AnyReader = Anything;
 
-        readFrom (MkAnything infoa a) (MkAnyReader _infor infoa' reader) = do
+        readFrom (MkAnything ie ir ia _a) ReadAnyTypes = MkAnyTypes ie ir ia;
+        readFrom (MkAnything _ie ir _ia a) (ReadAnyReader infor reader) = do
         {
-            Refl <- testEquality infoa infoa';
+            Refl <- testEquality ir infor;
             return (readFrom a reader);
         };
     };
@@ -44,37 +51,57 @@ module Truth.Core.Types.Anything where
         |])];
     };
 
-{-
     data AnyEdit where
     {
-        MkAnyEdit :: forall edit. (Edit edit) => Info edit -> Info (EditReader edit) -> edit -> AnyEdit;
+        MkAnyEdit :: forall edit. (Edit edit) => Info edit -> edit -> AnyEdit;
     };
+
+    instance Floating AnyEdit AnyEdit where
+    {
+        floatingUpdate (MkAnyEdit info1 edit1) aedit2@(MkAnyEdit info2 edit2) = case testEquality info1 info2 of
+        {
+            Just Refl -> MkAnyEdit info2 $ floatingUpdate edit1 edit2;
+            Nothing -> aedit2;
+        };
+    };
+
 
     instance Edit AnyEdit where
     {
         type EditReader AnyEdit = AnyReader;
 
-        applyEdit (MkAnyEdit _te treader edit) ar@(MkAnyReaderer treader' ta' reader') = case testEquality treader treader' of
+        applyEdit (MkAnyEdit ie edit) areader@(ReadAnyReader ir reader) = do
         {
-            Just Refl -> ;
-            _ -> readable ar;
+            MkAnyTypes oie oir _oia <- readable ReadAnyTypes;
+            case (testEquality oie ie,testEquality oir ir) of
+            {
+                (Just Refl,Just Refl) -> mapReadableF (readable . ReadAnyReader ir) $ applyEdit edit reader;
+                _ -> readable areader;
+            }
         };
+        applyEdit (MkAnyEdit _ _) ReadAnyTypes = readable ReadAnyTypes; -- edit cannot change types
 
-
-        FunctionConstFunction (\anya@(MkAnything ta a) -> case testEquality tsubj ta of
+        -- invertEdit :: AnyEdit -> Readable AnyReader [AnyEdit];
+        invertEdit (MkAnyEdit ie edit) = do
         {
-            Just Refl -> MkAnything ta (applyConstFunction (applyEdit edit) a);
-            _ -> anya;
-        });
-
-        invertEdit (MkAnyEdit te tsubj edit) (MkAnything ta a) = do
-        {
-            Refl <- testEquality tsubj ta;
-            newa <- invertEdit edit a;
-            return (MkAnyEdit te tsubj newa);
+            MkAnyTypes oie oir _oia <- readable ReadAnyTypes;
+            case testEquality oie ie of
+            {
+                Just Refl -> do
+                {
+                    minvedits <- mapReadableF (readable . ReadAnyReader oir) $ invertEdit edit;
+                    case minvedits of
+                    {
+                        Nothing -> return [];
+                        Just invedits -> return $ fmap (MkAnyEdit ie) invedits;
+                    };
+                };
+                Nothing -> return [];
+            };
         };
     };
 
+    $(return []);
     instance HasInfo AnyEdit where
     {
         info = mkSimpleInfo $(iowitness[t|AnyEdit|]) [$(declInfo [d|
@@ -86,5 +113,4 @@ module Truth.Core.Types.Anything where
     };
 
     type AnyWholeEdit = EitherWholeEdit AnyEdit;
--}
 }
