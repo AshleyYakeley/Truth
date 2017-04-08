@@ -9,6 +9,7 @@ module Truth.Core.Types
     module Truth.Core.Types.OneEdit,
     module Truth.Core.Types.OneWholeEdit,
     module Truth.Core.Types.Maybe,
+    module Truth.Core.Types.Either,
     module Truth.Core.Types.Comonad,
     module Truth.Core.Types.ComonadLift,
     module Truth.Core.Types.Tuple,
@@ -32,6 +33,7 @@ module Truth.Core.Types
     import Truth.Core.Types.OneEdit;
     import Truth.Core.Types.OneWholeEdit;
     import Truth.Core.Types.Maybe;
+    import Truth.Core.Types.Either;
     import Truth.Core.Types.Comonad;
     import Truth.Core.Types.ComonadLift;
     import Truth.Core.Types.Tuple;

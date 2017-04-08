@@ -88,6 +88,7 @@ library
         Truth.Core.Types.OneEdit
         Truth.Core.Types.OneWholeEdit
         Truth.Core.Types.Maybe
+        Truth.Core.Types.Either
         Truth.Core.Types.Comonad
         Truth.Core.Types.ComonadLift
         Truth.Core.Types.Tuple
