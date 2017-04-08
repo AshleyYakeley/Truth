@@ -82,8 +82,8 @@ library
         Truth.Core.Types.None
         Truth.Core.Types.Whole
         Truth.Core.Types.Anything
-        Truth.Core.Types.Either
-        Truth.Core.Types.EitherWhole
+        Truth.Core.Types.Sum
+        Truth.Core.Types.SumWhole
         Truth.Core.Types.OneReader
         Truth.Core.Types.OneEdit
         Truth.Core.Types.OneWholeEdit

@@ -3,8 +3,8 @@ module Truth.Core.Types
     module Truth.Core.Types.None,
     module Truth.Core.Types.Whole,
     module Truth.Core.Types.Anything,
-    module Truth.Core.Types.Either,
-    module Truth.Core.Types.EitherWhole,
+    module Truth.Core.Types.Sum,
+    module Truth.Core.Types.SumWhole,
     module Truth.Core.Types.OneReader,
     module Truth.Core.Types.OneEdit,
     module Truth.Core.Types.OneWholeEdit,
@@ -26,8 +26,8 @@ module Truth.Core.Types
     import Truth.Core.Types.None;
     import Truth.Core.Types.Whole;
     import Truth.Core.Types.Anything;
-    import Truth.Core.Types.Either;
-    import Truth.Core.Types.EitherWhole;
+    import Truth.Core.Types.Sum;
+    import Truth.Core.Types.SumWhole;
     import Truth.Core.Types.OneReader;
     import Truth.Core.Types.OneEdit;
     import Truth.Core.Types.OneWholeEdit;

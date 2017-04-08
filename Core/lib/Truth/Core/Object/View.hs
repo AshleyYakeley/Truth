@@ -49,7 +49,7 @@ module Truth.Core.Object.View where
             infoOneEdit = applyInfo (applyInfo (info @OneEdit) infoF) infoEditB;
             infoJustReader = applyInfo (applyInfo (info @OneReader) infoF) infoReader;
 
-            infoEditB' = applyInfo (applyInfo (info @EitherEdit) $ applyInfo (info @WholeEdit) infoJustReader) infoOneEdit;
+            infoEditB' = applyInfo (applyInfo (info @SumEdit) $ applyInfo (info @WholeEdit) infoJustReader) infoOneEdit;
             infoSubj' = applyInfo infoF infoSubj;
             lens' = oneWholeFloatingEditLens lens;
         };

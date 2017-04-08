@@ -4,17 +4,17 @@ module Truth.Core.Types.OneWholeEdit where
     import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Types.Whole;
-    import Truth.Core.Types.Either;
-    import Truth.Core.Types.EitherWhole;
+    import Truth.Core.Types.Sum;
+    import Truth.Core.Types.SumWhole;
     import Truth.Core.Types.OneReader;
     import Truth.Core.Types.OneEdit;
 
 
-    type OneWholeEdit (f :: * -> *) edit = EitherWholeEdit (OneEdit f edit);
+    type OneWholeEdit (f :: * -> *) edit = SumWholeEdit (OneEdit f edit);
 
     extractOneWholeEdit :: forall f edit. (MonadOne f,FullEdit edit) => OneWholeEdit f edit -> [edit];
-    extractOneWholeEdit (RightEdit (MkOneEdit edit)) = return edit;
-    extractOneWholeEdit (LeftEdit (MkWholeEdit fa)) = case retrieveOne fa of
+    extractOneWholeEdit (SumEditRight (MkOneEdit edit)) = return edit;
+    extractOneWholeEdit (SumEditLeft (MkWholeEdit fa)) = case retrieveOne fa of
     {
         SuccessResult a -> getReplaceEdits a;
         _ -> [];
@@ -22,12 +22,12 @@ module Truth.Core.Types.OneWholeEdit where
 
     oneWholeFloatingEditFunction :: forall f state edita editb. (MonadOne f,Edit edita,Edit editb,FullReader (EditReader editb)) =>
      FloatingEditFunction state edita editb -> FloatingEditFunction state (OneWholeEdit f edita) (OneWholeEdit f editb);
-    oneWholeFloatingEditFunction lens = eitherWholeFloatingEditFunction (oneFloatingEditFunction lens);
+    oneWholeFloatingEditFunction lens = sumWholeFloatingEditFunction (oneFloatingEditFunction lens);
     -- suitable for Results, trying to put a failure code will be rejected
 
     oneWholeFloatingEditLens :: forall f state edita editb. (MonadOne f,FullReader (EditReader edita),Edit edita,FullEdit editb) =>
      FloatingEditLens state edita editb -> FloatingEditLens state (OneWholeEdit f edita) (OneWholeEdit f editb);
-    oneWholeFloatingEditLens lens = eitherWholeFloatingEditLens pushback (oneFloatingEditLens lens) where
+    oneWholeFloatingEditLens lens = sumWholeFloatingEditLens pushback (oneFloatingEditLens lens) where
     {
         ff1 :: forall a. state -> f (state,a) -> (state,f a);
         ff1 oldstate fsa = case retrieveOne fsa of

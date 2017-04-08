@@ -3,7 +3,7 @@ module Truth.Core.Types.Anything where
     import Truth.Core.Import;
     import Truth.Core.Read;
     import Truth.Core.Edit;
-    import Truth.Core.Types.EitherWhole;
+    import Truth.Core.Types.SumWhole;
 
 
     data Anything where
@@ -111,5 +111,5 @@ module Truth.Core.Types.Anything where
         |])];
     };
 
-    type AnyWholeEdit = EitherWholeEdit AnyEdit;
+    type AnyWholeEdit = SumWholeEdit AnyEdit;
 }
