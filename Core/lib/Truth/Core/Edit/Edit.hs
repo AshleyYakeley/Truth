@@ -16,6 +16,7 @@ module Truth.Core.Edit.Edit where
         applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit);
         invertEdit :: edit -> Readable (EditReader edit) [edit];
     };
+    $(typeFamilyProxy "EditReader");
     type EditSubject edit = ReaderSubject (EditReader edit);
 
     instance HasInfo Edit where
@@ -39,13 +40,6 @@ module Truth.Core.Edit.Edit where
         a21 = applyConstFunction cf21 a;
     } in if a12 == a21 then Just a12 else Nothing;
 -}
-
-    data EditReaderInfo a = MkEditReaderInfo (Info (EditReader a));
-
-    instance HasInfo EditReaderInfo where
-    {
-        info = mkSimpleInfo $(iowitness[t|EditReaderInfo|]) [];
-    };
 
     class (Edit edit,FullReader (EditReader edit)) => FullEdit edit where
     {

@@ -61,8 +61,9 @@ library
         Data.Knowledge
         Data.Reity.Info
         Data.Reity.Match
-        Data.Reity.Template
         Data.Reity.HasInfo
+        Data.Reity.Template
+        Data.Reity.Instances
         Data.Reity
     other-modules:
         Language.Haskell.TH.SimpleType
