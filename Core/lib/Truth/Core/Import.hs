@@ -1,130 +1,64 @@
-module Truth.Core.Import
-(
-    module Prelude,
-    module Data.Kind,
-    module Data.Bool,
-    module Data.Bits,
-    module Data.List,
-    module Data.Maybe,
-    module Data.Either,
-    module Data.Ord,
-    module Data.Int,
-    module Data.Char,
-    module Data.String,
-    module Data.Word,
-    module Data.Tuple,
-    module Data.Monoid,
-    module Data.Functor.Identity,
-    module Control.Monad.Trans.State,
-    module Control.Category,
-    module Control.Monad,
-    module Control.Arrow,
-    module Data.Foldable,
-    module Data.Traversable,
-    module Control.Applicative,
-    module Data.Functor.Constant,
-    module Control.Monad.Trans.Class,
-    module Control.Monad.Trans.Writer,
-    module Control.Monad.IO.Class,
-    module Control.Monad.Fix,
-    module Control.Concurrent.MVar,
-    module Text.Show,
-    module System.IO,
-    module Control.Exception,
-
-    module Data.ByteString,
-    module Data.MonoTraversable,
-    module Data.Sequences,
-    module Control.Comonad,
-
-    module Data.Type.Heterogeneous,
-    module Data.Witness,
-    module Data.OpenWitness,
-
-    module Data.Searchable,
-    module Data.Countable,
-    module Data.WitnessStore,
-    module Data.Store,
-    module Data.HasNewValue,
-    module Data.Injection,
-    module Data.Bijection,
-    module Data.Empty,
-    module Data.Chain,
-    module Data.FloatingLens,
-    module Data.Lens,
-    module Data.Codec,
---    module Data.TupleSelector,
-    module Data.Result,
-    module Data.Compose,
-    module Data.MonadOne,
-    module Data.Category,
-    module Data.KindCategory,
-    module Control.Monad.Free,
-    module Control.Monad.IOInvert,
-    module Data.Reity,
-)
-where
+module Truth.Core.Import (module I) where
 {
-    import Prelude (($),undefined,Eq(..),Ord(..),Enum(..),Num(..),Real(..),Integral(..),fromIntegral,fromInteger,toInteger);
-    import Data.Kind;
-    import Data.Bool;
-    import Data.Bits;
-    import Data.List ((++),length);
-    import Data.Maybe hiding (catMaybes);
-    import Data.Either;
-    import Data.Ord;
-    import Data.Int;
-    import Data.Char hiding (toLower,toUpper);
-    import Data.String hiding (words,unwords,lines,unlines);
-    import Data.Word;
-    import Data.Tuple;
-    import Data.Monoid hiding (Any(..));
-    import Data.Functor.Identity;
-    import Control.Monad.Trans.State (StateT(..),evalStateT,get,put);
-    import Control.Category;
-    import Control.Monad (Functor(..),Monad(..));
-    import Control.Arrow hiding ((|||),(<<<),(>>>));
-    import Data.Foldable hiding (find);
-    import Data.Traversable;
-    import Control.Applicative;
-    import Data.Functor.Constant;
-    import Control.Monad.IO.Class;
-    import Control.Monad.Trans.Class;
-    import Control.Monad.Trans.Writer;
-    import Control.Monad.Fix;
-    import Control.Concurrent.MVar;
-    import Text.Show(Show(..));
-    import System.IO;
-    import Control.Exception hiding (catch);
+    import Prelude as I (($),undefined,Eq(..),Ord(..),Enum(..),Num(..),Real(..),Integral(..),fromIntegral,fromInteger,toInteger);
+    import Data.Kind as I;
+    import Data.Bool as I;
+    import Data.Bits as I;
+    import Data.List as I ((++),length);
+    import Data.Maybe as I hiding (catMaybes);
+    import Data.Either as I;
+    import Data.Ord as I;
+    import Data.Int as I;
+    import Data.Char as I hiding (toLower,toUpper);
+    import Data.String as I hiding (words,unwords,lines,unlines);
+    import Data.Word as I;
+    import Data.Tuple as I;
+    import Data.Monoid as I hiding (Any(..));
+    import Data.Functor.Identity as I;
+    import Control.Monad.Trans.State as I (StateT(..),evalStateT,get,put);
+    import Control.Category as I;
+    import Control.Monad as I (Functor(..),Monad(..));
+    import Control.Arrow as I hiding ((|||),(<<<),(>>>));
+    import Data.Foldable as I hiding (find);
+    import Data.Traversable as I;
+    import Control.Applicative as I;
+    import Data.Functor.Constant as I;
+    import Control.Monad.IO.Class as I;
+    import Control.Monad.Trans.Class as I;
+    import Control.Monad.Trans.Writer as I;
+    import Control.Monad.Fix as I;
+    import Control.Concurrent.MVar as I;
+    import Text.Show as I (Show(..));
+    import System.IO as I;
+    import Control.Exception as I hiding (catch);
 
-    import Data.ByteString (ByteString);
-    import Data.MonoTraversable;
-    import Data.Sequences;
-    import Control.Comonad;
+    import Data.ByteString as I (ByteString);
+    import Data.MonoTraversable as I;
+    import Data.Sequences as I;
+    import Control.Comonad as I;
 
-    import Data.Type.Heterogeneous;
-    import Data.Witness;
-    import Data.OpenWitness;
+    import Data.Type.Heterogeneous as I;
+    import Data.Witness as I;
+    import Data.OpenWitness as I;
 
-    import Data.Searchable;
-    import Data.Countable;
-    import Data.WitnessStore;
-    import Data.Store;
-    import Data.HasNewValue;
-    import Data.Injection;
-    import Data.Bijection;
-    import Data.Empty;
-    import Data.Chain;
-    import Data.FloatingLens;
-    import Data.Lens;
-    import Data.Codec;
---    import Data.TupleSelector;
-    import Data.Result;
-    import Data.Compose;
-    import Data.MonadOne;
-    import Data.Category;
-    import Data.KindCategory;
-    import Control.Monad.Free;
-    import Control.Monad.IOInvert;
-    import Data.Reity;
+    import Data.Searchable as I;
+    import Data.Countable as I;
+    import Data.WitnessStore as I;
+    import Data.Store as I;
+    import Data.HasNewValue as I;
+    import Data.Injection as I;
+    import Data.Bijection as I;
+    import Data.Empty as I;
+    import Data.Chain as I;
+    import Data.FloatingLens as I;
+    import Data.Lens as I;
+    import Data.Codec as I;
+    import Data.Result as I;
+    import Data.Compose as I;
+    import Data.MonadOne as I;
+    import Data.Category as I;
+    import Data.KindCategory as I;
+    import Control.Monad.Free as I;
+    import Control.Monad.IOInvert as I;
+    import Data.Reity as I;
 }
