@@ -38,7 +38,7 @@ module Truth.Core.Types.OneReader where
         info = mkSimpleInfo $(iowitness[t|OneReader|]) [$(declInfo [d|
             instance (Functor f,Reader reader) => Reader (OneReader f reader) where
             {
-
+                type ReaderSubject (OneReader f reader) = f (ReaderSubject reader);
             };
             instance (Traversable f,Monad f,FullReader reader) => FullReader (OneReader f reader);
         |])];
