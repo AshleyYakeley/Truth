@@ -1,5 +1,7 @@
 module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy) where
 {
+    import Data.List;
+    import Data.Maybe;
     import Data.Foldable;
     import Language.Haskell.TH as T;
     import qualified Data.Type.Heterogeneous as R;
@@ -153,9 +155,8 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy) where
         write $ NoBindS matchStmtE;
     };
 
-    assocTypeStmts :: (?knowledgeN :: Name) =>
-        Dec -> Name -> M ();
-    assocTypeStmts (TySynInstD patName (TySynEqn patArgsTs exprT)) subjectN = do
+    assocTypeKnowledgeE :: Dec -> Q (Maybe (Name,Exp));
+    assocTypeKnowledgeE (TySynInstD patName (TySynEqn patArgsTs exprT)) = fmap (\expr -> Just (patName,expr)) $ stmtsToKnowledgeE $ \subjectN -> do
     {
         patArgsSTs <- lift $ traverse typeToSimple patArgsTs;
         varMap <- deconstruct subjectN $ FamilyType patName patArgsSTs;
@@ -167,10 +168,10 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy) where
         };
         writeQ $ noBindS $ [e|return $ R.ValueFact ($(conE constructorN) $(return infoExpr))|];
     };
-    assocTypeStmts _ _ = return ();
+    assocTypeKnowledgeE _ = return Nothing;
 
-    stmtsE :: ((?knowledgeN :: Name) => Name -> M ()) -> Q Exp;
-    stmtsE getM = do
+    stmtsToKnowledgeE :: ((?knowledgeN :: Name) => Name -> M ()) -> Q Exp;
+    stmtsToKnowledgeE getM = do
     {
         knowledgeN <- newName "_knowledge";
         subjectN <- newName "_subject";
@@ -178,23 +179,50 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy) where
         [e|R.MkKnowledge $ \ $(varP knowledgeN) $(varP subjectN) -> $(return $ DoE stmts)|];
     };
 
-    instanceIE :: [Type] -> Type -> [Dec] -> Q [Exp];
-    instanceIE ctxt tp decls = do
+    getClassAssociatedTypes :: Name -> Q [Name];
+    getClassAssociatedTypes className = do
     {
-        instE <- stmtsE $ instanceStmts ctxt tp;
-        assocTypeEs <- traverse (\dec -> stmtsE (assocTypeStmts dec)) decls;
-        return $ instE : assocTypeEs;
+        classInfo <- reify className;
+        classDecs <- case classInfo of
+        {
+            (ClassI (ClassD _ _ _ _ decs) _) -> return decs;
+            _ -> fail $ show className ++ ": not a class";
+        };
+        let
+        {
+            decATName (OpenTypeFamilyD (TypeFamilyHead name _ _ _)) = Just name;
+            decATName (ClosedTypeFamilyD (TypeFamilyHead name _ _ _) _) = Just name;
+            decATName _ = Nothing;
+        };
+        return $ mapMaybe decATName classDecs;
     };
 
-    declIE :: Dec -> Q [Exp];
-    declIE (InstanceD _ ctxt tp decls) = instanceIE ctxt tp decls;
-    declIE decl = declFail $ "non-instance declaration: " ++ show decl;
+    instanceKnowledgeEs :: [Type] -> Type -> [Dec] -> Q [Exp];
+    instanceKnowledgeEs ctxt tp decls = do
+    {
+        (className,_) <- headForm tp;
+        classAssocTypes <- getClassAssociatedTypes className;
+        instE <- stmtsToKnowledgeE $ instanceStmts ctxt tp;
+        massocTypeEs <- traverse assocTypeKnowledgeE decls;
+        let
+        {
+            assocTypeEs = catMaybes massocTypeEs;
+            assocTypeNs = fmap fst assocTypeEs;
+        };
+        for_ (classAssocTypes \\ assocTypeNs) $ \name -> reportWarning $ show className ++ " is missing definition for " ++ nameBase name;
+        for_ (assocTypeNs \\ classAssocTypes) $ \name -> reportWarning $ show className ++ " has unexpected definition " ++ nameBase name;
+        return $ instE : (fmap snd assocTypeEs);
+    };
+
+    decKnowledgeEs :: Dec -> Q [Exp];
+    decKnowledgeEs (InstanceD _ ctxt tp decls) = instanceKnowledgeEs ctxt tp decls;
+    decKnowledgeEs decl = declFail $ "non-instance declaration: " ++ show decl;
 
     declInfo :: Q [Dec] -> Q Exp;
     declInfo qds = do
     {
         ds <- qds;
-        exprs <- traverse declIE ds;
+        exprs <- traverse decKnowledgeEs ds;
         [e|mconcat $(return $ ListE $ mconcat exprs)|];
     };
 
