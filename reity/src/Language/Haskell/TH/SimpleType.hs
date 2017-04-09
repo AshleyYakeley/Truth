@@ -26,13 +26,17 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple) where
     getTVName (PlainTV n) = n;
     getTVName (KindedTV n _) = n;
 
-    typeToPartial :: Type -> Q (Partial SimpleType);
-    typeToPartial (ParensT tp) = typeToPartial tp;
-    typeToPartial (SigT tp _) = typeToPartial tp;
-    typeToPartial (VarT name) = return $ Complete $ VarType name;
-    typeToPartial (AppT t1 t2) = do
+    consSimpleType :: Maybe Kind -> Type -> SimpleType;
+    consSimpleType Nothing t = ConsType t;
+    consSimpleType (Just k) t = ConsType $ SigT t k;
+
+    typeToPartial :: Maybe Kind -> Type -> Q (Partial SimpleType);
+    typeToPartial mk (ParensT tp) = typeToPartial mk tp;
+    typeToPartial _ (SigT tp k) = typeToPartial (Just k) tp;
+    typeToPartial _ (VarT name) = return $ Complete $ VarType name;
+    typeToPartial _ (AppT t1 t2) = do
     {
-        pt1 <- typeToPartial t1;
+        pt1 <- typeToPartial Nothing t1;
         st2 <- typeToSimple t2;
         case pt1 of
         {
@@ -40,10 +44,10 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple) where
             Incomplete pt -> return $ applyPartial pt st2;
         };
     };
-    typeToPartial (InfixT t1 name t2) = typeToPartial $ AppT (AppT (ConT name) t1) t2;
-    typeToPartial (ForallT _ _ _) = fail "forall in type";
-    typeToPartial WildCardT = fail "_ in type";
-    typeToPartial tp@(ConT name) = do
+    typeToPartial mk (InfixT t1 name t2) = typeToPartial mk $ AppT (AppT (ConT name) t1) t2;
+    typeToPartial _ (ForallT _ _ _) = fail "forall in type";
+    typeToPartial _ WildCardT = fail "_ in type";
+    typeToPartial mk tp@(ConT name) = do
     {
         ninfo <- reify name;
         case ninfo of
@@ -63,19 +67,19 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple) where
                 sdefn <- typeToSimple defn;
                 return $ partialFromList (fmap getTVName arglist) $ \argmap -> let {?names = argmap} in substitute sdefn;
             };
-            TyConI _ -> return $ Complete $ ConsType tp;
-            ClassI _ _ -> return $ Complete $ ConsType tp;
+            TyConI _ -> return $ Complete $ consSimpleType mk tp;
+            ClassI _ _ -> return $ Complete $ consSimpleType mk tp;
             _ -> fail $ show name ++ ": unknown info for type: " ++ show ninfo;
         };
     };
-    typeToPartial EqualityT = return $ Incomplete $ Incomplete $ Complete EqualType;
-    typeToPartial tp = return $ Complete $ ConsType tp;
+    typeToPartial _ EqualityT = return $ Incomplete $ Incomplete $ Complete EqualType;
+    typeToPartial mk tp = return $ Complete $ consSimpleType mk tp;
 
     -- | Convert 'Type' to the more wieldy 'SimpleType'. Expands type synonyms, identifies type families and type equalities.
     typeToSimple :: Type -> Q SimpleType;
     typeToSimple tp = do
     {
-        partial <- typeToPartial tp;
+        partial <- typeToPartial Nothing tp;
         case partial of
         {
             Complete st -> return st;

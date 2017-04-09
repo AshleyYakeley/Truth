@@ -2,6 +2,7 @@
 module Data.Reity.Instances where
 {
     import GHC.Types;
+    import Data.Type.Equality;
     import Data.Word;
     import Data.ByteString;
     import Control.Comonad;
@@ -49,11 +50,16 @@ module Data.Reity.Instances where
     };
 
 
-    -- basic types
+    -- some classes
 
     instance HasInfo Eq where
     {
         info = mkSimpleInfo $(iowitness[t|Eq|]) [];
+    };
+
+    instance HasInfo k => HasInfo (TestEquality :: (k -> *) -> Constraint) where
+    {
+        info = mkSimpleInfo $(iowitness[t|TestEquality|]) [];
     };
 
     instance HasInfo Monoid where
@@ -100,6 +106,9 @@ module Data.Reity.Instances where
     {
         info = mkSimpleInfo $(iowitness[t|MonadOne|]) [];
     };
+
+
+    -- basic types
 
     instance HasInfo () where
     {
