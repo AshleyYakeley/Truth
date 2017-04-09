@@ -6,6 +6,7 @@ module Data.Reity.Instances where
     import Data.Word;
     import Data.ByteString;
     import Control.Comonad;
+    import Data.Searchable;
     import Data.HasNewValue;
     import Data.MonadOne;
     import Data.Result;
@@ -57,6 +58,41 @@ module Data.Reity.Instances where
         info = mkSimpleInfo $(iowitness[t|Eq|]) [];
     };
 
+    instance HasInfo Ord where
+    {
+        info = mkSimpleInfo $(iowitness[t|Ord|]) [];
+    };
+
+    instance HasInfo Enum where
+    {
+        info = mkSimpleInfo $(iowitness[t|Enum|]) [];
+    };
+
+    instance HasInfo Num where
+    {
+        info = mkSimpleInfo $(iowitness[t|Num|]) [];
+    };
+
+    instance HasInfo Integral where
+    {
+        info = mkSimpleInfo $(iowitness[t|Integral|]) [];
+    };
+
+    instance HasInfo Real where
+    {
+        info = mkSimpleInfo $(iowitness[t|Real|]) [];
+    };
+
+    instance HasInfo Show where
+    {
+        info = mkSimpleInfo $(iowitness[t|Show|]) [];
+    };
+
+    instance HasInfo Read where
+    {
+        info = mkSimpleInfo $(iowitness[t|Read|]) [];
+    };
+
     instance HasInfo k => HasInfo (TestEquality :: (k -> *) -> Constraint) where
     {
         info = mkSimpleInfo $(iowitness[t|TestEquality|]) [];
@@ -105,6 +141,11 @@ module Data.Reity.Instances where
     instance HasInfo MonadOne where
     {
         info = mkSimpleInfo $(iowitness[t|MonadOne|]) [];
+    };
+
+    instance HasInfo Finite where
+    {
+        info = mkSimpleInfo $(iowitness[t|Finite|]) [];
     };
 
 

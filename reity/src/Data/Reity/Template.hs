@@ -125,12 +125,29 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy) where
         }
     };
 
+    -- vars used more than once need to be matched
+    matchUpVar :: (Name,Name) -> [(Name, Name)] -> M ();
+    matchUpVar (typeN,subjectN) varMap = case lookup typeN varMap of
+    {
+        Just subjectN' -> writeQ $ bindS [p|R.ReflH|] [e|R.testHetEquality $(return $ VarE subjectN) $(return $ VarE subjectN')|];
+        Nothing -> return ();
+    };
+
+    matchUpVars :: [(Name, Name)] -> M ();
+    matchUpVars [] = return ();
+    matchUpVars (t:tt) = do
+    {
+        matchUpVar t tt;
+        matchUpVars tt;
+    };
+
     instanceStmts :: (?knowledgeN :: Name) =>
         [Type] -> Type -> Name -> M ();
     instanceStmts ctxt tp subjectN = do
     {
         st <- lift $ typeToSimple tp;
         varMap <- deconstruct subjectN st;
+        matchUpVars varMap;
         let {?varMap = varMap} in traverse_ matchContext ctxt;
         matchStmtE <- lift [e|return R.ConstraintFact|];
         write $ NoBindS matchStmtE;
