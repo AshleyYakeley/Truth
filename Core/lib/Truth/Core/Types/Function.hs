@@ -6,7 +6,7 @@ module Truth.Core.Types.Function where
     import Truth.Core.Types.Tuple;
 
 
-    data FunctionSelector a eb et where
+    data FunctionSelector a (eb :: *) (et :: *) where
     {
         MkFunctionSelector :: a -> FunctionSelector a edit edit;
     };
@@ -35,5 +35,21 @@ module Truth.Core.Types.Function where
     instance (Finite a,FullEdit edit) => FullTupleSelector (FunctionSelector a edit) where
     {
         tupleIsFullEdit (MkFunctionSelector _) = MkConstraintWitness;
+    };
+
+    $(return []);
+    instance HasInfo FunctionSelector where
+    {
+        info = mkSimpleInfo $(iowitness[t|FunctionSelector|]) [$(declInfo [d|
+            instance (Eq a) => (TestEquality :: (* -> *) -> Constraint) (FunctionSelector a editb);
+            instance (Finite a,Edit edit) =>
+                TupleSelector (FunctionSelector a edit) where
+            {
+                type TupleSubject (FunctionSelector a edit) = a -> EditSubject edit;
+            };
+            instance (Finite a,Edit edit,FullReader (EditReader edit)) =>
+                FiniteTupleSelector (FunctionSelector a edit) where
+            instance (Finite a,FullEdit edit) => FullTupleSelector (FunctionSelector a edit);
+        |])];
     };
 }

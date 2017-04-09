@@ -44,6 +44,18 @@ module Truth.Core.Types.List where
         };
     };
 
+    $(return []);
+    instance HasInfo ListReader where
+    {
+        info = mkSimpleInfo $(iowitness[t|ListReader|]) [$(declInfo [d|
+            instance (IsSequence seq,Reader reader,ReaderSubject reader ~ Element seq) => Reader (ListReader seq reader) where
+            {
+                type ReaderSubject (ListReader seq reader) = seq;
+            };
+            instance (IsSequence seq,FullReader reader,ReaderSubject reader ~ Element seq) => FullReader (ListReader seq reader);
+        |])];
+    };
+
     data ListEdit seq edit where
     {
         ListEditItem :: SequencePoint seq -> edit -> ListEdit seq edit;
@@ -137,5 +149,19 @@ module Truth.Core.Types.List where
             };
             traverse_ readWriteItem [0..pred len];
         };
+    };
+
+    $(return []);
+    instance HasInfo ListEdit where
+    {
+        info = mkSimpleInfo $(iowitness[t|ListEdit|]) [$(declInfo [d|
+            instance (Enum (Index seq),Ord (Index seq)) => Floating (ListEdit seq edit) (SequencePoint seq);
+            instance (Enum (Index seq),Ord (Index seq)) => Floating (ListEdit seq edit) (ListEdit seq edit);
+            instance (IsSequence seq,FullReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => Edit (ListEdit seq edit) where
+            {
+                type EditReader (ListEdit seq edit) = ListReader seq (EditReader edit);
+            };
+            instance (IsSequence seq,FullReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => FullEdit (ListEdit seq edit);
+        |])];
     };
 }

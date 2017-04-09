@@ -36,7 +36,10 @@ module Truth.Core.Types.OneReader where
     instance HasInfo OneReader where
     {
         info = mkSimpleInfo $(iowitness[t|OneReader|]) [$(declInfo [d|
-            instance (Functor f,Reader reader) => Reader (OneReader f reader);
+            instance (Functor f,Reader reader) => Reader (OneReader f reader) where
+            {
+
+            };
             instance (Traversable f,Monad f,FullReader reader) => FullReader (OneReader f reader);
         |])];
     };

@@ -5,7 +5,7 @@ module Truth.Core.Types.Sum where
     import Truth.Core.Edit;
 
 
-    data SumReader ra rb t = SumReadLeft (ra t) | SumReadRight (rb t);
+    data SumReader ra rb (t :: *) = SumReadLeft (ra t) | SumReadRight (rb t);
 
     instance (Reader ra,Reader rb,ReaderSubject ra ~ ReaderSubject rb) => Reader (SumReader ra rb) where
     {
@@ -16,6 +16,17 @@ module Truth.Core.Types.Sum where
 
         readFrom subj (SumReadLeft reader) = readFrom subj reader;
         readFrom subj (SumReadRight reader) = readFrom subj reader;
+    };
+
+    $(return []);
+    instance HasInfo SumReader where
+    {
+        info = mkSimpleInfo $(iowitness[t|SumReader|]) [$(declInfo [d|
+            instance (Reader ra,Reader rb,ReaderSubject ra ~ ReaderSubject rb) => Reader (SumReader ra rb) where
+            {
+                type ReaderSubject (SumReader ra rb) = ReaderSubject ra;
+            };
+        |])];
     };
 
     data SumEdit ea eb = SumEditLeft ea | SumEditRight eb;

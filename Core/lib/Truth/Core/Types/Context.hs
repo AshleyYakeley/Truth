@@ -47,7 +47,7 @@ module Truth.Core.Types.Context where
         |])];
     };
 
-    data WithContextSelector editx editn edit where
+    data WithContextSelector (editx :: *) (editn :: *) (edit :: *) where
     {
         EditContext :: WithContextSelector editx editn editx;
         EditContent :: WithContextSelector editx editn editn;
@@ -82,6 +82,22 @@ module Truth.Core.Types.Context where
     {
         tupleIsFullEdit EditContext = MkConstraintWitness;
         tupleIsFullEdit EditContent = MkConstraintWitness;
+    };
+
+    $(return []);
+    instance HasInfo WithContextSelector where
+    {
+        info = mkSimpleInfo $(iowitness[t|WithContextSelector|]) [$(declInfo [d|
+            instance (TestEquality :: (* -> *) -> Constraint) (WithContextSelector ea eb);
+            instance (Edit editx,Edit editn) =>
+                TupleSelector (WithContextSelector editx editn) where
+            {
+                type TupleSubject (WithContextSelector editx editn) = WithContext (EditSubject editx) (EditSubject editn);
+            };
+            instance (Edit ex,FullReader (EditReader ex),Edit en,FullReader (EditReader en)) =>
+                FiniteTupleSelector (WithContextSelector ex en);
+            instance (FullEdit ex,FullEdit en) => FullTupleSelector (WithContextSelector ex en);
+        |])];
     };
 
     contextCleanLens :: CleanEditLens' Identity (TupleEdit (WithContextSelector editx editn)) editx;

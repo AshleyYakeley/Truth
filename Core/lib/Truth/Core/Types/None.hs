@@ -30,7 +30,10 @@ module Truth.Core.Types.None where
     instance HasInfo NoReader where
     {
         info = mkSimpleInfo $(iowitness[t|NoReader|]) [$(declInfo [d|
-            instance Reader (NoReader a);
+            instance Reader (NoReader a) where
+            {
+                type ReaderSubject (NoReader a) = a;
+            };
             instance FullReader (NoReader ());
         |])];
     };
@@ -63,7 +66,10 @@ module Truth.Core.Types.None where
     instance HasInfo NoEdit where
     {
         info = mkSimpleInfo $(iowitness[t|NoEdit|]) [$(declInfo [d|
-            instance (Reader reader) => Edit (NoEdit reader);
+            instance (Reader reader) => Edit (NoEdit reader) where
+            {
+                type EditReader (NoEdit reader) = reader;
+            };
             instance (FullReader reader,ReaderSubject reader ~ ()) => FullEdit (NoEdit reader);
         |])];
     };

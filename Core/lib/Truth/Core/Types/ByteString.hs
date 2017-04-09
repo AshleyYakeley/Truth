@@ -38,6 +38,18 @@ module Truth.Core.Types.ByteString where
         };
     };
 
+    $(return []);
+    instance HasInfo ByteStringReader where
+    {
+        info = mkSimpleInfo $(iowitness[t|ByteStringReader|]) [$(declInfo [d|
+            instance Reader ByteStringReader where
+            {
+                type ReaderSubject ByteStringReader = ByteString;
+            };
+            instance FullReader ByteStringReader;
+        |])];
+    };
+
     data ByteStringEdit = ByteStringSetLength Int | ByteStringWrite Int ByteString;
 
     instance Floating ByteStringEdit ByteStringEdit;
@@ -135,5 +147,16 @@ module Truth.Core.Types.ByteString where
             };
             return $ lenEdit ++ writeEdit;
         }
+    };
+
+    $(return []);
+    instance HasInfo ByteStringEdit where
+    {
+        info = mkSimpleInfo $(iowitness[t|ByteStringEdit|]) [$(declInfo [d|
+            instance Edit ByteStringEdit where
+            {
+                type EditReader ByteStringEdit = ByteStringReader;
+            };
+        |])];
     };
 }

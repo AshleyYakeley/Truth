@@ -4,6 +4,9 @@ module Truth.Core.Sequence where
     import Truth.Core.Import;
 
 
+    $(typeFamilyProxy "Element");
+    $(typeFamilyProxy "Index");
+
     newtype SequencePoint seq = MkSequencePoint (Index seq);
     deriving instance Eq (Index seq) => Eq (SequencePoint seq);
     deriving instance Ord (Index seq) => Ord (SequencePoint seq);
@@ -14,6 +17,20 @@ module Truth.Core.Sequence where
     instance Integral (Index seq) => Show (SequencePoint seq) where
     {
         show (MkSequencePoint i) = show $ toInteger i;
+    };
+
+    $(return []);
+    instance HasInfo SequencePoint where
+    {
+        info = mkSimpleInfo $(iowitness[t|SequencePoint|]) [$(declInfo [d|
+            instance Eq (Index seq) => Eq (SequencePoint seq);
+            instance Ord (Index seq) => Ord (SequencePoint seq);
+            instance Num (Index seq) => Num (SequencePoint seq);
+            instance Enum (Index seq) => Enum (SequencePoint seq);
+            instance Real (Index seq) => Real (SequencePoint seq);
+            instance Integral (Index seq) => Integral (SequencePoint seq);
+            instance Integral (Index seq) => Show (SequencePoint seq);
+        |])];
     };
 
     seqLength :: IsSequence seq => seq -> SequencePoint seq;

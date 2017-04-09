@@ -33,7 +33,10 @@ module Truth.Core.Types.String where
     instance HasInfo StringRead where
     {
         info = mkSimpleInfo $(iowitness[t|StringRead|]) [$(declInfo [d|
-            instance IsSequence seq => Reader (StringRead seq);
+            instance IsSequence seq => Reader (StringRead seq) where
+            {
+                type ReaderSubject (StringRead seq) = seq;
+            };
             instance IsSequence seq => FullReader (StringRead seq);
         |])];
     };
@@ -124,7 +127,10 @@ module Truth.Core.Types.String where
     instance HasInfo StringEdit where
     {
         info = mkSimpleInfo $(iowitness[t|StringEdit|]) [$(declInfo [d|
-            instance IsSequence seq => Edit (StringEdit seq);
+            instance IsSequence seq => Edit (StringEdit seq) where
+            {
+                type EditReader (StringEdit seq) = StringRead seq;
+            };
             instance IsSequence seq => FullEdit (StringEdit seq);
         |])];
     };

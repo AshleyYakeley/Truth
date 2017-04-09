@@ -11,6 +11,14 @@ module Truth.Core.Types.Tuple where
         tupleIsEdit :: forall edit. sel edit -> ConstraintWitness (Edit edit);
         tupleReadFrom :: forall edit. sel edit -> TupleSubject sel -> EditSubject edit;
     };
+    $(typeFamilyProxy "TupleSubject");
+
+    $(return []);
+    instance HasInfo TupleSelector where
+    {
+        info = mkSimpleInfo $(iowitness[t|TupleSelector|]) [$(declInfo [d|
+        |])];
+    };
 
     data TupleEditReader sel t where
     {
@@ -34,6 +42,11 @@ module Truth.Core.Types.Tuple where
         tupleIsFullReader :: forall edit. sel edit -> ConstraintWitness (FullReader (EditReader edit));
         tupleConstruct :: forall m. Applicative m => (forall edit. sel edit -> m (EditSubject edit)) -> m (TupleSubject sel);
     };
+    instance HasInfo FiniteTupleSelector where
+    {
+        info = mkSimpleInfo $(iowitness[t|FiniteTupleSelector|]) [$(declInfo [d|
+        |])];
+    };
 
     tupleAllSelectors :: FiniteTupleSelector sel => [AnyWitness sel];
     tupleAllSelectors = getConstant $ tupleConstruct $ \sel -> Constant [MkAnyWitness sel];
@@ -45,6 +58,19 @@ module Truth.Core.Types.Tuple where
             MkConstraintWitness -> mapCleanReadable (MkTupleEditReader seledit) fromReader;
         });
     };
+
+    $(return []);
+    instance HasInfo TupleEditReader where
+    {
+        info = mkSimpleInfo $(iowitness[t|TupleEditReader|]) [$(declInfo [d|
+            instance (TupleSelector sel) => Reader (TupleEditReader sel) where
+            {
+                type ReaderSubject (TupleEditReader sel) = TupleSubject sel;
+            };
+            instance (FiniteTupleSelector sel) => FullReader (TupleEditReader sel);
+        |])];
+    };
+
 
     data TupleEdit sel where
     {
@@ -85,6 +111,11 @@ module Truth.Core.Types.Tuple where
     {
         tupleIsFullEdit :: forall edit. sel edit -> ConstraintWitness (FullEdit edit);
     };
+    instance HasInfo FullTupleSelector where
+    {
+        info = mkSimpleInfo $(iowitness[t|FullTupleSelector|]) [$(declInfo [d|
+        |])];
+    };
 
     instance FullTupleSelector sel => FullEdit (TupleEdit sel) where
     {
@@ -97,6 +128,19 @@ module Truth.Core.Types.Tuple where
             return $ mconcat editss;
         };
     };
+
+    $(return []);
+    instance HasInfo TupleEdit where
+    {
+        info = mkSimpleInfo $(iowitness[t|TupleEdit|]) [$(declInfo [d|
+            instance TupleSelector sel => Edit (TupleEdit sel) where
+            {
+                type EditReader (TupleEdit sel) = TupleEditReader sel;
+            };
+            instance FullTupleSelector sel => FullEdit (TupleEdit sel);
+        |])];
+    };
+
 
     tupleLens :: TestEquality sel => sel edit -> CleanEditLens' Identity (TupleEdit sel) edit;
     tupleLens seledit = MkCleanEditLens

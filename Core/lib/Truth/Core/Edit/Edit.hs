@@ -10,6 +10,11 @@ module Truth.Core.Edit.Edit where
         floatingUpdate _ = id;
     };
 
+    instance HasInfo Floating where
+    {
+        info = mkSimpleInfo $(iowitness[t|Floating|]) [];
+    };
+
     class (Reader (EditReader edit),Floating edit edit) => Edit (edit :: *) where
     {
         type EditReader edit :: * -> *;
