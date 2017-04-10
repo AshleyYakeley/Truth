@@ -78,6 +78,7 @@ library
         Truth.Core.Edit.CleanEditLens
         Truth.Core.Edit.FloatingEditFunction
         Truth.Core.Edit.FloatingEditLens
+        Truth.Core.Edit.GeneralLens
         Truth.Core.Edit
         Truth.Core.Types.None
         Truth.Core.Types.Whole
@@ -107,6 +108,5 @@ library
         Truth.Core.Object.Editor
         Truth.Core.Object.View
         Truth.Core.Object.File
-        Truth.Core.Object.GeneralLens
         Truth.Core.Object
 

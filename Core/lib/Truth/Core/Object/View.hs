@@ -10,8 +10,8 @@ module Truth.Core.Object.View where
     data Aspect edit where
     {
         MkAspect ::
-         forall edita editb state. (Eq state,FullEdit editb) =>
-          Info editb -> Info (EditSubject editb) -> FloatingEditLens state edita editb -> Aspect edita;
+         forall edita editb. (FullEdit editb) =>
+          Info editb -> Info (EditSubject editb) -> GeneralLens edita editb -> Aspect edita;
     };
 
     data ViewWidgetStuff w edit = MkViewWidgetStuff
@@ -37,7 +37,7 @@ module Truth.Core.Object.View where
 
     mapOneWholeEditAspect :: forall f edit. (MonadOne f, Edit edit,FullReader (EditReader edit)) =>
      Info f -> Aspect edit -> Maybe (Aspect (OneWholeEdit f edit));
-    mapOneWholeEditAspect infoF (MkAspect infoEditB infoSubj (lens :: FloatingEditLens state edit editb)) = do
+    mapOneWholeEditAspect infoF (MkAspect infoEditB infoSubj lens) = do
     {
         let
         {
@@ -51,7 +51,7 @@ module Truth.Core.Object.View where
 
             infoEditB' = applyInfo (applyInfo (info @SumEdit) $ applyInfo (info @WholeEdit) infoJustReader) infoOneEdit;
             infoSubj' = applyInfo infoF infoSubj;
-            lens' = oneWholeFloatingEditLens lens;
+            lens' = oneWholeGeneralLens lens;
         };
         return $ MkAspect infoEditB' infoSubj' lens';
     };

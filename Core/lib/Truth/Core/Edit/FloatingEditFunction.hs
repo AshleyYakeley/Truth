@@ -57,7 +57,7 @@ module Truth.Core.Edit.FloatingEditFunction  where
         composeFloating :: ff s2 b c -> ff s1 a b -> ff (s1,s2) a c;
     };
 
-    data CloseFloat ff a b = forall state. MkCloseFloat (ff state a b);
+    data CloseFloat ff a b = forall state. Eq state => MkCloseFloat (ff state a b);
 
     instance FloatingMap ff => Category (CloseFloat ff) where
     {

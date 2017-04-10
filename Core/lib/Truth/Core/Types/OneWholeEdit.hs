@@ -20,14 +20,10 @@ module Truth.Core.Types.OneWholeEdit where
         _ -> [];
     };
 
-    oneWholeFloatingEditFunction :: forall f state edita editb. (MonadOne f,Edit edita,Edit editb,FullReader (EditReader editb)) =>
-     FloatingEditFunction state edita editb -> FloatingEditFunction state (OneWholeEdit f edita) (OneWholeEdit f editb);
-    oneWholeFloatingEditFunction lens = sumWholeFloatingEditFunction (oneFloatingEditFunction lens);
     -- suitable for Results, trying to put a failure code will be rejected
-
-    oneWholeFloatingEditLens :: forall f state edita editb. (MonadOne f,FullReader (EditReader edita),Edit edita,FullEdit editb) =>
-     FloatingEditLens state edita editb -> FloatingEditLens state (OneWholeEdit f edita) (OneWholeEdit f editb);
-    oneWholeFloatingEditLens lens = sumWholeFloatingEditLens pushback (oneFloatingEditLens lens) where
+    oneWholeGeneralLens :: forall f edita editb. (MonadOne f,FullReader (EditReader edita),Edit edita,FullEdit editb) =>
+     GeneralLens edita editb -> GeneralLens (OneWholeEdit f edita) (OneWholeEdit f editb);
+    oneWholeGeneralLens (MkCloseFloat (lens :: FloatingEditLens state edita editb)) = MkCloseFloat $ sumWholeFloatingEditLens pushback (oneFloatingEditLens lens) where
     {
         ff1 :: forall a. state -> f (state,a) -> (state,f a);
         ff1 oldstate fsa = case retrieveOne fsa of
@@ -35,8 +31,6 @@ module Truth.Core.Types.OneWholeEdit where
             FailureResult (MkLimit fx) -> (oldstate,fx);
             SuccessResult (newstate,a) -> (newstate,fmap (\_ ->  a) fsa);
         };
-
-    -- floatingEditLensPutEdits :: FloatingEditLens' Maybe state edita editb -> state -> [editb] -> Readable (EditReader edita) (Maybe (state,[edita]));
 
         pushback :: state -> f (EditSubject editb) -> Readable (OneReader f (EditReader edita)) (Maybe (state,f (EditSubject edita)));
         pushback oldstate fb = case retrieveOne fb of
@@ -55,7 +49,6 @@ module Truth.Core.Types.OneWholeEdit where
                         return $ Just (newstate,a);
                     };
                 };
-                -- traverse (\edita -> mapReadable (applyEdit edita) fromReader) mstateedita;
             };
         };
     };

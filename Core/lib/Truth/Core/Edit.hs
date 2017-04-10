@@ -6,6 +6,7 @@ module Truth.Core.Edit
     module Truth.Core.Edit.CleanEditLens,
     module Truth.Core.Edit.FloatingEditFunction,
     module Truth.Core.Edit.FloatingEditLens,
+    module Truth.Core.Edit.GeneralLens,
 ) where
 {
     import Truth.Core.Edit.Edit;
@@ -14,4 +15,5 @@ module Truth.Core.Edit
     import Truth.Core.Edit.CleanEditLens;
     import Truth.Core.Edit.FloatingEditFunction;
     import Truth.Core.Edit.FloatingEditLens;
+    import Truth.Core.Edit.GeneralLens;
 }
