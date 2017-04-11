@@ -3,6 +3,7 @@ module Truth.Core.Object.Editor where
     import Truth.Core.Import;
     import Truth.Core.Read;
     import Truth.Core.Edit;
+    import Truth.Core.Object.API;
     import Truth.Core.Object.Object;
 
 

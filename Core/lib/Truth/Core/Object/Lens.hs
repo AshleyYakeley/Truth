@@ -4,6 +4,7 @@ module Truth.Core.Object.Lens where
     import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Types;
+    import Truth.Core.Object.API;
     import Truth.Core.Object.Object;
 
 
@@ -15,112 +16,33 @@ module Truth.Core.Object.Lens where
         lensObject :: lens -> Object (LensDomain lens) -> Object (LensRange lens);
     };
 
-    instance (Monad f,MonadOne f,Edit edita) => ObjectLens (FloatingEditLens' f state edita editb) where
+    instance (Monad f,MonadOne f,Edit edita) => ObjectLens (FloatingEditLens' f lensstate edita editb) where
     {
-        type LensDomain (FloatingEditLens' f state edita editb) = edita;
-        type LensRange (FloatingEditLens' f state edita editb) = editb;
+        type LensDomain (FloatingEditLens' f lensstate edita editb) = edita;
+        type LensRange (FloatingEditLens' f lensstate edita editb) = editb;
 
-        lensObject lens@MkFloatingEditLens{..} sub (initialB :: LockAPI editb userstate -> IO (editor,userstate)) updateB = do
+        lensObject lens@MkFloatingEditLens{..} sub (initialB :: LockAPI editb userstate -> IO (editor,userstate)) updateB = let
         {
-            let
+            MkFloatingEditFunction{..} = floatingEditLensFunction;
+
+            initialA :: LockAPI edita (userstate,lensstate) -> IO (editor,(userstate,lensstate));
+            initialA lapiA = do
             {
-                MkFloatingEditFunction{..} = floatingEditLensFunction;
+                (ed,us) <- initialB $ mapLockAPI lens lapiA;
+                return (ed,(us,floatingEditInitial));
             };
-            statevar <- newMVar floatingEditInitial;
-            let
+
+            updateA :: editor -> (userstate,lensstate) -> [edita] -> IO (userstate,lensstate);
+            updateA editor (oldus,oldls) editAs = do
             {
-                initialA :: LockAPI edita userstate -> IO (editor,userstate);
-                initialA (MkLockAPI lapiA) = let
+                let
                 {
-                    lapiB :: LockAPI editb userstate;
-                    lapiB = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => userstate -> API m editb userstate -> m r) -> let
-                    {
-                        callA :: forall m. MonadIOInvert m => userstate -> API m edita userstate -> m r;
-                        callA userstate (apiA :: API m edita userstate) = let
-                        {
-                            readA :: Structure m (EditReader edita);
-                            _allowedA :: edita -> m Bool;
-                            pushEditA :: [edita] -> m (Maybe userstate);
-                            MkAPI readA _allowedA pushEditA = apiA;
-
-                            readB :: Structure (StateT state m) (EditReader editb);
-                            readB rt = do
-                            {
-                                state <- get;
-                                lift $ mapStructure (floatingEditGet state) readA rt;
-                            };
-
-                            convertEdit :: [editb] -> (StateT state m) (Maybe [edita]);
-                            convertEdit editBs = do
-                            {
-                                oldstate <- get;
-                                fstateeditA :: f (state,[edita]) <- lift $ unReadable (floatingEditLensPutEdits lens oldstate editBs) readA;
-                                case getMaybeOne fstateeditA of
-                                {
-                                    Just (newstate,editAs) -> do
-                                    {
-                                        put newstate;
-                                        return $ Just editAs;
-                                    };
-                                    Nothing -> return Nothing;
-                                };
-                            };
-
-                            allowedB :: editb -> (StateT state m) Bool;
-                            allowedB editB = do
-                            {
-                                state <- get;
-                                lensOK <- lift $ unReadable (floatingEditLensAllowed lens state editB) readA;
-                                case lensOK of
-                                {
-                                    False -> return False;
-                                    True -> do
-                                    {
-                                        meditA <- convertEdit [editB];
-                                        case meditA of
-                                        {
-                                            Nothing -> return False; -- is this correct?
-                                            Just editA -> lift $ apiAlloweds apiA editA;
-                                        };
-                                    };
-                                };
-                            };
-
-                            pushEditB :: [editb] -> (StateT state m) (Maybe userstate);
-                            pushEditB editB = do
-                            {
-                                meditA <- convertEdit editB;
-                                case meditA of
-                                {
-                                    Nothing -> return $ Just userstate; -- is this correct?
-                                    Just editAs -> lift $ pushEditA editAs;
-                                };
-                            };
-
-                            apiB :: API (StateT state m) editb userstate;
-                            apiB = MkAPI readB allowedB pushEditB;
-                        }
-                        in liftIOInvert $ \unlift -> modifyMVar statevar $ \oldstate -> do
-                        {
-                            (o,(r,newstate)) <- unlift $ runStateT (callB userstate apiB) oldstate;
-                            return (newstate,(o,r));
-                        };
-                    } in lapiA callA;
-                } in initialB lapiB;
-
-                updateA :: editor -> userstate -> [edita] -> IO userstate;
-                updateA editor oldtoken editAs = modifyMVar statevar $ \oldstate -> do
-                {
-                    let
-                    {
-                        (newstate,editBs) = floatingEditUpdates floatingEditLensFunction editAs oldstate;
-                    };
-                    newtoken <- updateB editor oldtoken editBs;
-                    return (newstate,newtoken);
+                    (newls,editBs) = floatingEditUpdates floatingEditLensFunction editAs oldls;
                 };
+                newus <- updateB editor oldus editBs;
+                return (newus,newls);
             };
-            sub initialA updateA;
-        };
+        } in sub initialA updateA;;
     };
 
     instance (Applicative f,MonadOne f,Edit edita) => ObjectLens (EditLens' f edita editb) where

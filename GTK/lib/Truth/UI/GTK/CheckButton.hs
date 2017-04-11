@@ -2,6 +2,7 @@
 module Truth.UI.GTK.CheckButton where
 {
     import Data.Type.Equality;
+    import Data.Empty;
     import Graphics.UI.Gtk;
     import Data.Reity;
     import Truth.Core;
@@ -10,7 +11,7 @@ module Truth.UI.GTK.CheckButton where
 
 
     checkButtonView :: String -> GView (WholeEdit (WholeReader Bool));
-    checkButtonView name = MkView $ \(MkLockAPI lapi) -> do
+    checkButtonView name = MkView $ \(MkLockAPI lapi) _setSelect -> do
     {
         widget <- checkButtonNew;
         initial <- lapi $ \() api -> unReadable fromReader $ apiRead api;
@@ -24,16 +25,18 @@ module Truth.UI.GTK.CheckButton where
 
         let
         {
-            vrWidgetStuff = MkViewWidgetStuff (toWidget widget) (return Nothing);
-
-            vrUpdate () edit = do
+            vrWidget = toWidget widget;
+            vrFirstUpdateState = ();
+            vrUpdate () edits = do
             {
-                newstate <- fmap (fromReadFunction (applyEdits edit)) $ get widget toggleButtonActive;
+                newstate <- fmap (fromReadFunction (applyEdits edits)) $ get widget toggleButtonActive;
                 withSignalBlocked clickConnection $ set widget [toggleButtonActive := newstate];
                 return ();
             };
+            vrFirstSelState = Nothing;
+            vrGetSelection (ss :: None) = never ss;
         };
-        return (MkViewResult{..},());
+        return MkViewResult{..};
     };
 
     checkButtonMatchView :: MatchView;

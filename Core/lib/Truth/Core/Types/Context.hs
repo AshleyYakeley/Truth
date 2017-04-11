@@ -101,8 +101,8 @@ module Truth.Core.Types.Context where
     };
 
     contextCleanLens :: CleanEditLens' Identity (TupleEdit (WithContextSelector editx editn)) editx;
-    contextCleanLens = tupleLens EditContext;
+    contextCleanLens = tupleCleanEditLens EditContext;
     contentCleanLens :: CleanEditLens' Identity (TupleEdit (WithContextSelector editx editn)) editn;
-    contentCleanLens = tupleLens EditContent;
+    contentCleanLens = tupleCleanEditLens EditContent;
 }
 

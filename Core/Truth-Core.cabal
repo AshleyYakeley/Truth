@@ -103,6 +103,7 @@ library
         Truth.Core.Types.Merge
         Truth.Core.Types.Savable
         Truth.Core.Types
+        Truth.Core.Object.API
         Truth.Core.Object.Object
         Truth.Core.Object.Lens
         Truth.Core.Object.Editor

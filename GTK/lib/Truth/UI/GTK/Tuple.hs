@@ -1,82 +1,30 @@
-module Truth.UI.GTK.Tuple where
+module Truth.UI.GTK.Tuple(tupleMatchView) where
 {
-{-
-    import Data.TypeFunc;
-    import Data.Traversable;
-    import Data.Witness;
-    import Data.Changes;
--}
-{-
-    type family ListMap tf l;
-    type instance ListMap tf () = ();
-    type instance ListMap tf (h,r) = (TF tf h,ListMap tf r);
+    import Data.Foldable;
+    import Data.Type.Equality;
+    import Graphics.UI.Gtk;
+    import Data.Type.Heterogeneous;
+    import Data.Reity;
+    import Truth.Core;
+    import Truth.UI.GTK.GView;
 
-    mapListElement :: Type tf -> ListElementType l elem -> ListElementType (ListMap tf l) (TF tf elem);
-    mapListElement _ HeadListElementType = HeadListElementType;
-    mapListElement tf (TailListElementType et) = TailListElementType (mapListElement tf et);
 
-    makeListMap :: Type tf -> ListType wit l -> (forall elem. wit elem -> ListElementType l elem -> TF tf elem) -> ListMap tf l;
-    makeListMap _tf NilListType _f = ();
-    makeListMap tf (ConsListType wit lt) f = (f wit HeadListElementType,makeListMap tf lt (\wit' elemwit -> f wit' (TailListElementType elemwit)));
-
-    makeListMapM :: (Monad m) =>
-     Type tf -> ListType wit l -> (forall elem. wit elem -> ListElementType l elem -> m (TF tf elem)) -> m (ListMap tf l);
-    makeListMapM _tf NilListType _f = return ();
-    makeListMapM tf (ConsListType wit lt) f = do
+    arrangeWidgets :: [Widget] -> IO Widget;
+    arrangeWidgets widgets = do
     {
-        h <- f wit HeadListElementType;
-        t <- makeListMapM tf lt (\wit' elemwit -> f wit' (TailListElementType elemwit));
-        return (h,t);
+        vbox <- vBoxNew False 0;
+        for_ widgets $ \widget -> boxPackEnd vbox widget PackNatural 0;
+        return $ toWidget vbox;
     };
 
-    data EditableWit a where
+    tupleGView :: FiniteTupleSelector sel => (forall edit. sel edit -> GView edit) -> GView (TupleEdit sel);
+    tupleGView selview = mapIOView arrangeWidgets $ tupleView selview;
+
+    tupleMatchView :: MatchView;
+    tupleMatchView tedit = do
     {
-        MkEditableWit :: (Editable a) => EditableWit a;
+        MkSplitInfo ite _isel <- matchInfo tedit;
+        ReflH <- testHetEquality (info @TupleEdit) ite;
+        return $ tupleGView selview;
     };
-
-    data TFView w;
-    type instance TF (TFView w) a = View w a;
-    data TFViewResult w;
-    type instance TF (TFViewResult w) a = ViewResult w a;
--}
-
-{-
-    tupleView :: forall a w. (TupleSelector a) =>
-     ListType EditableWit (TList a) -> ([w] -> IO w) -> ListMap (TFView w) (TList a) -> View w a;
-    tupleView editablewit sel  views ia pusha = let
-    {
-        tfView :: Type (TFView w);
-        tfView = Type;
-        tfViewResult :: Type (TFViewResult w);
-        tfViewResult = Type;
-    } in do
-    {
-        vrs :: ListMap (TFViewResult w) (TList a)
-         <- makeListMapM tfViewResult editablewit (\MkEditableWit elemwit -> let
-        {
-            view = getListElement (mapListElement tfView elemwit) views;
-            ielem = getListElement elemwit (toListTuple ia);
-            pushelem editelem = pusha (TListEdit elemwit editelem);
-        } in view ielem pushelem);
-        let
-        {
-            getVR :: ListElementType (TList a) elem -> ViewResult w elem;
-            getVR elemwit = getListElement (mapListElement tfViewResult elemwit) vrs;
-
-            pickWidget :: AnyF EditableWit (ListElementType (TList a)) -> w;
-            pickWidget (MkAnyF _ elemwit) = vrWidget (getVR elemwit);
-        };
-        iow <- sel (fmap pickWidget (getListElementTypes editablewit));
-        return (MkViewResult iow (\edita -> case edita of
-        {
-            ReplaceTListEdit a -> (let
-            {
-                tla = toListTuple a;
-            } in forM (getListElementTypes editablewit)
-             (\(MkAnyF _ elemwit) -> vrUpdate (getVR elemwit) (replaceEdit (getListElement elemwit tla)))
-            ) >> return ();
-            TListEdit elemwit edite -> vrUpdate (getVR elemwit) edite;
-        }));
-    };
--}
 }

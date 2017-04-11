@@ -45,6 +45,7 @@ library
     build-depends:
         base,
         bytestring,
+        countable,
         witness,
         open-witness,
         glib,

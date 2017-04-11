@@ -44,7 +44,7 @@ module Truth.UI.GTK.Text (textMatchView) where
     };
 
     textView :: GView (StringEdit String);
-    textView = MkView $ \(MkLockAPI lapi) -> do
+    textView = MkView $ \(MkLockAPI lapi) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
         initial <- lapi $ \() api -> unReadable fromReader $ apiRead api;
@@ -74,16 +74,20 @@ module Truth.UI.GTK.Text (textMatchView) where
         };
 
         widget <- textViewNewWithBuffer buffer;
+
+        _ <- onFocus widget $ \_ -> do
+        {
+            setSelect ();
+            return True;
+        };
+
         let
         {
-            vrWidgetStuff :: ViewWidgetStuff Widget (StringEdit String);
-            vrWidgetStuff = MkViewWidgetStuff (toWidget widget) $ do
-            {
-                (iter1,iter2) <- textBufferGetSelectionBounds buffer;
-                run <- getSequenceRun iter1 iter2;
-                -- get selection...
-                return (Just (MkAspect info info (stringSectionLens run)));
-            };
+            vrWidget :: Widget;
+            vrWidget = toWidget widget;
+
+            vrFirstUpdateState :: ();
+            vrFirstUpdateState = ();
 
             update :: StringEdit String -> IO ();
             update (StringReplaceWhole text) = textBufferSetText buffer text;
@@ -92,8 +96,20 @@ module Truth.UI.GTK.Text (textMatchView) where
             vrUpdate :: () -> [StringEdit String] -> IO ();
             -- this withMVar prevents the signal handlers from re-sending edits
             vrUpdate () edits = withMVar mv $ \_ -> traverse_ update edits;
+
+            vrFirstSelState :: Maybe ();
+            vrFirstSelState = Just ();
+
+            vrGetSelection :: () -> IO (Maybe (Aspect (StringEdit String)));
+            vrGetSelection _ = do
+            {
+                (iter1,iter2) <- textBufferGetSelectionBounds buffer;
+                run <- getSequenceRun iter1 iter2;
+                -- get selection...
+                return $ Just $ MkAspect info info $ MkCloseFloat $ stringSectionLens run;
+            };
         };
-        return (MkViewResult{..},());
+        return MkViewResult{..};
     };
 
     textMatchView :: MatchView;

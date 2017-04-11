@@ -12,4 +12,7 @@ module Truth.Core.Edit.GeneralLens where
 
     fixedGeneralLens :: Functor m => EditLens' m edita editb -> GeneralLens' m edita editb;
     fixedGeneralLens lens = MkCloseFloat $ fixedFloatingEditLens lens;
+
+    generalLens :: MonadOne m => GeneralLens' m edita editb -> GeneralLens edita editb;
+    generalLens (MkCloseFloat (MkFloatingEditLens ff putedit)) = MkCloseFloat $ MkFloatingEditLens ff $ \s e -> fmap getMaybeOne $ putedit s e;
 }

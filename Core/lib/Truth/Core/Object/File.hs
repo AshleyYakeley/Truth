@@ -4,7 +4,7 @@ module Truth.Core.Object.File where
     import Data.ByteString;
     import Truth.Core.Read;
     import Truth.Core.Types;
-    import Truth.Core.Object.Object;
+    import Truth.Core.Object.API;
 
 
     fileLockAPI :: FilePath -> LockAPI ByteStringEdit ();
