@@ -108,6 +108,7 @@ library
         Truth.Core.Object.Lens
         Truth.Core.Object.Editor
         Truth.Core.Object.View
+        Truth.Core.Object.Aspect
         Truth.Core.Object.File
         Truth.Core.Object
 
