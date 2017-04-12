@@ -1,134 +1,119 @@
 module Truth.Core.Object.Lens where
 {
     import Truth.Core.Import;
-    import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Types;
     import Truth.Core.Object.API;
     import Truth.Core.Object.Object;
 
 
-    class ObjectLens lens where
+    lensObject :: forall f edita editb. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Object edita -> Object editb;
+    lensObject (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub (initialB :: LockAPI editb userstate -> IO (editor,userstate)) updateB = let
     {
-        type LensDomain lens;
-        type LensRange lens;
+        MkFloatingEditFunction{..} = floatingEditLensFunction;
 
-        lensObject :: lens -> Object (LensDomain lens) -> Object (LensRange lens);
-    };
-
-    instance (Monad f,MonadOne f,Edit edita) => ObjectLens (FloatingEditLens' f lensstate edita editb) where
-    {
-        type LensDomain (FloatingEditLens' f lensstate edita editb) = edita;
-        type LensRange (FloatingEditLens' f lensstate edita editb) = editb;
-
-        lensObject lens@MkFloatingEditLens{..} sub (initialB :: LockAPI editb userstate -> IO (editor,userstate)) updateB = let
+        initialA :: LockAPI edita (userstate,lensstate) -> IO (editor,(userstate,lensstate));
+        initialA lapiA = do
         {
-            MkFloatingEditFunction{..} = floatingEditLensFunction;
+            (ed,us) <- initialB $ mapLockAPI lens lapiA;
+            return (ed,(us,floatingEditInitial));
+        };
 
-            initialA :: LockAPI edita (userstate,lensstate) -> IO (editor,(userstate,lensstate));
-            initialA lapiA = do
-            {
-                (ed,us) <- initialB $ mapLockAPI lens lapiA;
-                return (ed,(us,floatingEditInitial));
-            };
-
-            updateA :: editor -> (userstate,lensstate) -> [edita] -> IO (userstate,lensstate);
-            updateA editor (oldus,oldls) editAs = do
-            {
-                let
-                {
-                    (newls,editBs) = floatingEditUpdates floatingEditLensFunction editAs oldls;
-                };
-                newus <- updateB editor oldus editBs;
-                return (newus,newls);
-            };
-        } in sub initialA updateA;;
-    };
-
-    instance (Applicative f,MonadOne f,Edit edita) => ObjectLens (EditLens' f edita editb) where
-    {
-        type LensDomain (EditLens' f edita editb) = edita;
-        type LensRange (EditLens' f edita editb) = editb;
-
-        lensObject lens@MkEditLens{..} sub (initialB :: LockAPI editb userstate -> IO (editor,userstate)) updateB = do
+        updateA :: editor -> (userstate,lensstate) -> [edita] -> IO (userstate,lensstate);
+        updateA editor (oldus,oldls) editAs = do
         {
             let
             {
-                MkEditFunction{..} = editLensFunction;
-
-                initialA :: LockAPI edita userstate -> IO (editor,userstate);
-                initialA (MkLockAPI lapiA) = let
-                {
-                    lapiB :: LockAPI editb userstate;
-                    lapiB = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => userstate -> API m editb userstate -> m r) -> let
-                    {
-                        callA :: forall m. MonadIOInvert m => userstate -> API m edita userstate -> m r;
-                        callA userstate (apiA :: API m edita userstate) = let
-                        {
-                            readA :: Structure m (EditReader edita);
-                            _allowedA :: edita -> m Bool;
-                            pushEditA :: [edita] -> m (Maybe userstate);
-                            MkAPI readA _allowedA pushEditA = apiA;
-
-                            readB :: Structure m (EditReader editb);
-                            readB = mapStructure editGet readA;
-
-                            convertEdits :: [editb] -> m (Maybe [edita]);
-                            convertEdits editBs = do
-                            {
-                                feditA :: f [edita] <- unReadable (editLensPutEdits lens editBs) readA;
-                                return $ getMaybeOne feditA;
-                            };
-
-                            allowedB :: editb -> m Bool;
-                            allowedB editB = do
-                            {
-                                lensOK <- unReadable (editLensAllowed lens editB) readA;
-                                case lensOK of
-                                {
-                                    False -> return False;
-                                    True -> do
-                                    {
-                                        meditA <- convertEdits [editB];
-                                        case meditA of
-                                        {
-                                            Nothing -> return False; -- is this correct?
-                                            Just editA -> apiAlloweds apiA editA;
-                                        };
-                                    };
-                                };
-                            };
-
-                            pushEditB :: [editb] -> m (Maybe userstate);
-                            pushEditB editBs = do
-                            {
-                                meditA <- convertEdits editBs;
-                                case meditA of
-                                {
-                                    Nothing -> return $ Just userstate; -- is this correct?
-                                    Just editAs -> pushEditA editAs;
-                                };
-                            };
-
-                            apiB :: API m editb userstate;
-                            apiB = MkAPI readB allowedB pushEditB;
-                        }
-                        in callB userstate apiB;
-                    } in lapiA callA;
-                } in initialB lapiB;
-
-                updateA :: editor -> userstate -> [edita] -> IO userstate;
-                updateA editor oldtoken editAs = do
-                {
-                    let
-                    {
-                        leditB = editUpdates editLensFunction editAs;
-                    };
-                    updateB editor oldtoken leditB;
-                };
+                (newls,editBs) = floatingEditUpdates floatingEditLensFunction editAs oldls;
             };
-            sub initialA updateA;
+            newus <- updateB editor oldus editBs;
+            return (newus,newls);
         };
+    } in sub initialA updateA;
+
+
+    class IsGeneralLens lens where
+    {
+        type LensMonad lens :: * -> *;
+        type LensDomain lens :: *;
+        type LensRange lens :: *;
+
+        toGeneralLens' :: lens -> GeneralLens' (LensMonad lens) (LensDomain lens) (LensRange lens);
+    };
+
+    toGeneralLens :: (IsGeneralLens lens,MonadOne (LensMonad lens)) => lens -> GeneralLens (LensDomain lens) (LensRange lens);
+    toGeneralLens = generalLens . toGeneralLens';
+
+    instance IsGeneralLens (GeneralLens' m edita editb) where
+    {
+        type LensMonad (GeneralLens' m edita editb) = m;
+        type LensDomain (GeneralLens' m edita editb) = edita;
+        type LensRange (GeneralLens' m edita editb) = editb;
+
+        toGeneralLens' = id;
+    };
+
+    instance Eq state => IsGeneralLens (FloatingEditLens' m state edita editb) where
+    {
+        type LensMonad (FloatingEditLens' m state edita editb) = m;
+        type LensDomain (FloatingEditLens' m state edita editb) = edita;
+        type LensRange (FloatingEditLens' m state edita editb) = editb;
+
+        toGeneralLens' = MkCloseFloat;
+    };
+
+    instance Functor m => IsGeneralLens (EditLens' m edita editb) where
+    {
+        type LensMonad (EditLens' m edita editb) = m;
+        type LensDomain (EditLens' m edita editb) = edita;
+        type LensRange (EditLens' m edita editb) = editb;
+
+        toGeneralLens' = toGeneralLens' . fixedFloatingEditLens;
+    };
+
+    instance Functor m => IsGeneralLens (CleanEditLens' m edita editb) where
+    {
+        type LensMonad (CleanEditLens' m edita editb) = m;
+        type LensDomain (CleanEditLens' m edita editb) = edita;
+        type LensRange (CleanEditLens' m edita editb) = editb;
+
+        toGeneralLens' = toGeneralLens' . cleanEditLens;
+    };
+
+    instance (MonadOne f) => IsGeneralLens (Lens' f a b) where
+    {
+        type LensMonad (Lens' f a b) = f;
+        type LensDomain (Lens' f a b) = WholeEdit (WholeReader a);
+        type LensRange (Lens' f a b) = WholeEdit (WholeReader b);
+
+        toGeneralLens' = toGeneralLens' . wholeEditLens;
+    };
+
+    instance (MonadOne m) => IsGeneralLens (Injection' m a b) where
+    {
+        type LensMonad (Injection' m a b) = m;
+        type LensDomain (Injection' m a b) = WholeEdit (WholeReader a);
+        type LensRange (Injection' m a b) = WholeEdit (WholeReader b);
+
+        toGeneralLens' = toGeneralLens' . injectionLens;
+    };
+
+    instance IsGeneralLens (Bijection a b) where
+    {
+        type LensMonad (Bijection a b) = Identity;
+        type LensDomain (Bijection a b) = WholeEdit (WholeReader a);
+        type LensRange (Bijection a b) = WholeEdit (WholeReader b);
+
+        toGeneralLens' = toGeneralLens' . bijectionInjection;
+    };
+
+    instance IsGeneralLens (Codec a b) where
+    {
+        type LensMonad (Codec a b) = Maybe;
+        type LensDomain (Codec a b) = WholeEdit (WholeReader a);
+        type LensRange (Codec a b) = WholeEdit (WholeReader (Maybe b));
+
+        toGeneralLens' = toGeneralLens' . codecInjection;
     };
 
 {-
@@ -181,136 +166,4 @@ module Truth.Core.Object.Lens where
         return MkObject{..};
     });
 -}
-    instance (Applicative m,MonadOne m,Edit edita) => ObjectLens (CleanEditLens' m edita editb) where
-    {
-        type LensDomain (CleanEditLens' m edita editb) = edita;
-        type LensRange (CleanEditLens' m edita editb) = editb;
-
-        lensObject celens = lensObject (cleanEditLens celens);
-    };
-
-    instance (MonadOne f) => ObjectLens (Lens' f a b) where
-    {
-        type LensDomain (Lens' f a b) = WholeEdit (WholeReader a);
-        type LensRange (Lens' f a b) = WholeEdit (WholeReader b);
-
-        lensObject MkLens{..} sub (initialB :: LockAPI (WholeEdit (WholeReader b)) userstate -> IO (editor,userstate)) updateB = do
-        {
-            let
-            {
-                initialA :: LockAPI (WholeEdit (WholeReader a)) userstate -> IO (editor,userstate);
-                initialA (MkLockAPI lapiA) = let
-                {
-                    lapiB :: LockAPI (WholeEdit (WholeReader b)) userstate;
-                    lapiB = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => userstate -> API m (WholeEdit (WholeReader b)) userstate -> m r) -> let
-                    {
-                        callA :: forall m. MonadIOInvert m => userstate -> API m (WholeEdit (WholeReader a)) userstate -> m r;
-                        callA userstate (apiA :: API m (WholeEdit (WholeReader a)) userstate) = let
-                        {
-                            readA :: Structure m (WholeReader a);
-                            allowedA :: WholeEdit (WholeReader a) -> m Bool;
-                            pushEditA :: [WholeEdit (WholeReader a)] -> m (Maybe userstate);
-                            MkAPI readA allowedA pushEditA = apiA;
-
-                            readB :: Structure m (WholeReader b);
-                            readB ReadWhole = fmap lensGet $ readA ReadWhole;
-
-                            last' :: forall x. [x] -> Maybe x;
-                            last' [] = Nothing;
-                            last' [x] = Just x;
-                            last' (_:xx) = last' xx;
-
-                            convertEdits :: [WholeEdit (WholeReader b)] -> m (Maybe [WholeEdit (WholeReader a)]);
-                            convertEdits editBs = case last' editBs of
-                            {
-                                Nothing -> return $ pure [];
-                                Just (MkWholeEdit b) -> do
-                                {
-                                    oldA <- readA ReadWhole;
-                                    let
-                                    {
-                                        fnewA :: f a;
-                                        fnewA = lensPutback b oldA;
-
-                                        mnewA :: Maybe a;
-                                        mnewA = getMaybeOne fnewA;
-                                    };
-                                    return $ fmap (\a -> [MkWholeEdit a]) mnewA;
-                                };
-                            };
-
-                            allowedB :: (WholeEdit (WholeReader b)) -> m Bool;
-                            allowedB (MkWholeEdit b) = do
-                            {
-                                oldA <- readA ReadWhole;
-                                let
-                                {
-                                    fnewA :: f a;
-                                    fnewA = lensPutback b oldA;
-
-                                    mnewA :: Maybe a;
-                                    mnewA = getMaybeOne fnewA;
-                                };
-                                case mnewA of
-                                {
-                                    Nothing -> return False;
-                                    Just newA -> allowedA $ MkWholeEdit newA;
-                                };
-                            };
-
-                            pushEditB :: [WholeEdit (WholeReader b)] -> m (Maybe userstate);
-                            pushEditB editB = do
-                            {
-                                meditA <- convertEdits editB;
-                                case meditA of
-                                {
-                                    Nothing -> return $ Just userstate; -- is this correct?
-                                    Just editA -> pushEditA editA;
-                                };
-                            };
-
-                            apiB :: API m (WholeEdit (WholeReader b)) userstate;
-                            apiB = MkAPI readB allowedB pushEditB;
-                        }
-                        in callB userstate apiB;
-                    } in lapiA callA;
-                } in initialB lapiB;
-
-                updateA :: editor -> userstate -> [WholeEdit (WholeReader a)] -> IO userstate;
-                updateA editor oldtoken editAs = do
-                {
-                    let
-                    {
-                        leditB = fmap (\(MkWholeEdit a) -> MkWholeEdit $ lensGet a) editAs;
-                    };
-                    updateB editor oldtoken leditB;
-                };
-            };
-            sub initialA updateA;
-        };
-    };
-
-    instance (MonadOne m) => ObjectLens (Injection' m a b) where
-    {
-        type LensDomain (Injection' m a b) = WholeEdit (WholeReader a);
-        type LensRange (Injection' m a b) = WholeEdit (WholeReader b);
-
-        lensObject inj = lensObject (injectionLens inj);
-    };
-
-    instance ObjectLens (Bijection a b) where
-    {
-        type LensDomain (Bijection a b) = WholeEdit (WholeReader a);
-        type LensRange (Bijection a b) = WholeEdit (WholeReader b);
-
-        lensObject bi = lensObject (bijectionInjection bi);
-    };
-
-    instance ObjectLens (Codec a b) where
-    {
-        type LensDomain (Codec a b) = WholeEdit (WholeReader a);
-        type LensRange (Codec a b) = WholeEdit (WholeReader (Maybe b));
-
-        lensObject codec = lensObject (codecInjection codec);
-    };
 }

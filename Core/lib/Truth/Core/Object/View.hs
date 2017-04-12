@@ -6,6 +6,7 @@ module Truth.Core.Object.View where
     import Truth.Core.Types;
     import Truth.Core.Object.API;
     import Truth.Core.Object.Object;
+    import Truth.Core.Object.Lens;
     import Truth.Core.Object.Aspect;
 
 
@@ -175,5 +176,5 @@ module Truth.Core.Object.View where
     };
 
     tupleView :: FiniteTupleSelector sel => (forall edit. sel edit -> View edit w) -> View (TupleEdit sel) [w];
-    tupleView pickview = for tupleAllSelectors $ \(MkAnyWitness sel) -> mapView (tupleGeneralLens sel) (pickview sel);
+    tupleView pickview = for tupleAllSelectors $ \(MkAnyWitness sel) -> mapView (toGeneralLens $ tupleCleanEditLens sel) (pickview sel);
 }

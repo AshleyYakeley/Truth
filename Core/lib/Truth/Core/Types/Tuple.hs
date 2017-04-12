@@ -155,7 +155,4 @@ module Truth.Core.Types.Tuple where
         },
         cleanEditLensPutEdit = Identity . (MkTupleEdit seledit)
     };
-
-    tupleGeneralLens :: TestEquality sel => sel edit -> GeneralLens' Identity (TupleEdit sel) edit;
-    tupleGeneralLens seledit = fixedGeneralLens $ cleanEditLens $ tupleCleanEditLens seledit;
 }

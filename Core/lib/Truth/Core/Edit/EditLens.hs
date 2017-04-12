@@ -58,39 +58,4 @@ module Truth.Core.Edit.EditLens where
             }
         };
     };
-{-
-    simpleConvertEditLens :: (Functor m,FullEdit edita,FullEdit editb) =>
-     Lens' m (EditSubject edita) (EditSubject editb) -> EditLens' m edita editb;
-    simpleConvertEditLens lens = MkEditLens
-    {
-        editLensFunction = simpleConvertEditFunction (simpleReadFunction (lensGet lens)),
-        editLensPutEdit = \editb -> do
-        {
-            olda <- fromReader;
-            let
-            {
-                oldb = lensGet lens olda;
-                newb = fromReadFunction (applyEdit editb) oldb;
-                newma = lensPutback lens newb olda;
-                medita = fmap replaceEdit newma;
-            };
-            return medita;
-        }
-    };
-
-    convertEditLens' :: (Applicative m,MonadOne m,FullEdit edita,FullEdit editb,EditSubject edita ~ EditSubject editb) => EditLens' m edita editb;
-    convertEditLens' = MkEditLens
-    {
-        editLensFunction = convertEditFunction,
-
-        editLensPutEdit = \editb -> do
-        {
-            newa <- mapReadable convertReadFunction (mapReadable (applyEdit editb) fromReader);
-            return (pure (replaceEdit newa));
-        }
-    };
-
-    convertEditLens :: (FullEdit edita,FullEdit editb,EditSubject edita ~ EditSubject editb) => EditLens edita editb;
-    convertEditLens = convertEditLens';
--}
 }

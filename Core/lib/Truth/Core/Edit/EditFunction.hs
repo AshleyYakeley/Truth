@@ -66,24 +66,4 @@ module Truth.Core.Edit.EditFunction where
         editGet = cleanReadFunction (cleanEditGet ff),
         editUpdate = cleanEditUpdate ff
     };
-{-
-    simpleConvertEditFunction :: forall edita editb.
-     (Edit edita,FullEdit editb) => ReadFunction (EditReader edita) (EditReader editb) -> EditFunction edita editb;
-    simpleConvertEditFunction rfrarb = let
-    {
-        editGet :: ReadFunction (EditReader edita) (EditReader editb);
-        editGet = rfrarb;
-
-        editUpdate :: edita -> Maybe editb;
-        editUpdate edit = let
-        {
-            olda = undefined;
-            newa = fromReadFunction (applyEdit edit) olda;
-            b = fromReadFunction rfrarb newa;
-        } in (Just $ replaceEdit b)
-    } in MkEditFunction{..};
-
-    convertEditFunction :: (FullReader (EditReader edita),Edit edita,FullEdit editb,EditSubject edita ~ EditSubject editb) => EditFunction edita editb;
-    convertEditFunction = simpleConvertEditFunction convertReadFunction;
--}
 }
