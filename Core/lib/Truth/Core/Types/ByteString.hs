@@ -16,7 +16,7 @@ module Truth.Core.Types.ByteString where
     {
         type ReaderSubject ByteStringReader = ByteString;
 
-        -- | Make API calls when you've actually got the subject
+        -- | Make MutableEdit calls when you've actually got the subject
         readFromM msubj ReadByteStringLength = do
         {
             subj <- msubj;

@@ -7,7 +7,7 @@ module Truth.Core.Read.FullReader where
 
     class (Reader reader) => FullReader (reader :: * -> *) where
     {
-        -- | Construct the subject by making API calls
+        -- | Construct the subject by making MutableEdit calls
         fromReader :: Readable reader (ReaderSubject reader);
     };
 

@@ -11,7 +11,7 @@ module Truth.Core.Read.Readable where
     };
 
 
-    newtype Readable reader a = MkReadable { unReadable :: forall m. Monad m => Structure m reader -> m a};
+    newtype Readable reader a = MkReadable { unReadable :: forall m. Monad m => MutableRead m reader -> m a};
 
     fromReadable :: (Reader reader) => Readable reader t -> ReaderSubject reader -> t;
     fromReadable (MkReadable rrt) a = runIdentity $ rrt $ Identity . (readFrom a);

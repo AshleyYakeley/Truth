@@ -3,7 +3,7 @@ module Truth.Core.Object.Lens where
     import Truth.Core.Import;
     import Truth.Core.Edit;
     import Truth.Core.Types;
-    import Truth.Core.Object.API;
+    import Truth.Core.Object.LockAPI;
     import Truth.Core.Object.Object;
 
 

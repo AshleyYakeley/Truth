@@ -27,7 +27,7 @@
 
 1.2 Incomplete loading of web-page:
 
-    type Partial reader = Structure Maybe reader;
+    type Partial reader = MutableRead Maybe reader;
     subscribeUpdatesAsync :: forall a. (Partial reader -> IO ()) -> IO a -> IO a;
 
 -- Slow transfer from remote to local memory
@@ -57,7 +57,7 @@ Locks may apply to per-whole or per-part
     data Subscription edit = MkSubscription
     {
         subClose :: IO (),
-        subRead :: Structure IO (EditReader edit),
+        subRead :: MutableRead IO (EditReader edit),
         subChange :: edit -> IO ()
     };
     type Object edit = IO (Subscription edit);
@@ -81,20 +81,20 @@ Transactions on state...
 
 -- | note this has lock semantics but not transaction semantics.
 -- That is, no other caller can change the object while you have the lock,
--- however, each call to apiEdit is a change, and these are not collected into and atomic transaction,
+-- however, each call to mutableEdit is a change, and these are not collected into and atomic transaction,
 -- and cannot be rolled back.
-data API m edit userstate = MkAPI
+data MutableEdit m edit userstate = MkMutableEdit
 {
-    apiRead :: Structure m (EditReader edit),
-    apiAllowed :: m (edit -> Bool),
-    apiEdit :: edit -> m userstate
+    mutableRead :: MutableRead m (EditReader edit),
+    mutableAllowed :: m (edit -> Bool),
+    mutableEdit :: edit -> m userstate
 };
 
-type Handle edit userstate = forall r. (forall m. Monad m => userstate -> API m edit userstate -> m r) -> IO r;
+type Handle edit userstate = forall r. (forall m. Monad m => userstate -> MutableEdit m edit userstate -> m r) -> IO r;
 
 type Subscribe edit = forall userstate.
-    (Handle edit userstate -> IO userstate) -> -- initialise: provides read API, initial allowed, write API
-    (userstate -> edit -> (edit -> Bool) -> IO userstate) -> -- receive: get updates (both others and from your apiEdit calls)
+    (Handle edit userstate -> IO userstate) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
+    (userstate -> edit -> (edit -> Bool) -> IO userstate) -> -- receive: get updates (both others and from your mutableEdit calls)
     IO (userstate, IO ());
 
 freeObjSubscribe :: EditSubject edit -> (EditSubject edit -> edit -> Bool) -> Subscribe edit;
@@ -111,7 +111,7 @@ data Object edit = forall subscription lock. MkObject
     objCloseSubscribe :: subscription -> IO (),
     objOpenEditLock :: subscription -> IO lock,
     objCloseEditLock :: lock -> IO (),
-    objAPI :: lock -> API IO edit ()
+    objAPI :: lock -> MutableEdit IO edit ()
 };
 
 
@@ -128,7 +128,7 @@ data Subscription edit = MkSubscription
     type Allowed edit = edit -> Bool;
     type Send edit = edit -> IO (Maybe (Allowed edit));
     type Subscribe t message = forall r.
-        (t -> Allowed message -> Send message -> IO r) -> -- initialise: provides read API, initial allowed, write API
+        (t -> Allowed message -> Send message -> IO r) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
         (r -> message -> Allowed message -> IO ()) -> -- receive: provides updates ()
         IO (r, Subscription t message);
     data Subscription t edit = MkSubscription
@@ -146,7 +146,7 @@ data Subscription edit = MkSubscription
     data Object t message = MkObject
     {
         objGetInitial :: forall r. (Allowed message -> IO r) -> IO r,
-        objRead :: t, -- Structure IO (EditReader edit),
+        objRead :: t, -- MutableRead IO (EditReader edit),
         objSend :: Send message,
         objClose :: IO ()
     };

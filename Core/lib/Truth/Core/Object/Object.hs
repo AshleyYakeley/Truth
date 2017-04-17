@@ -6,12 +6,13 @@ module Truth.Core.Object.Object
 {
     import Truth.Core.Import;
     import Data.IORef;
-    import Truth.Core.Object.API;
+    import Truth.Core.Object.MutableEdit;
+    import Truth.Core.Object.LockAPI;
 
 
     type Object edit = forall editor userstate.
-        (LockAPI edit userstate -> IO (editor,userstate)) -> -- initialise: provides read API, initial allowed, write API
-        (editor -> userstate -> [edit] -> IO userstate) -> -- receive: get updates (both others and from your apiEdit calls)
+        (LockAPI edit userstate -> IO (editor,userstate)) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
+        (editor -> userstate -> [edit] -> IO userstate) -> -- receive: get updates (both others and from your mutableEdit calls)
         IO (editor, IO ());
 
     newtype ObjectW edit = MkObjectW (Object edit);
@@ -53,18 +54,18 @@ module Truth.Core.Object.Object
         let
         {
             lapiC :: forall userstate. IOWitnessKey userstate -> LockAPI edit userstate;
-            lapiC key = MkLockAPI $ \ff -> modifyMVar storevar $ \store -> lapiP $ \_tokenP (apiP :: API m edit ()) -> do
+            lapiC key = MkLockAPI $ \ff -> modifyMVar storevar $ \store -> lapiP $ \_tokenP (apiP :: MutableEdit m edit ()) -> do
             {
                 let
                 {
-                    apiC :: API (StateT (IOWitnessStore (StoreEntry edit)) m) edit userstate;
-                    apiC = MkAPI
+                    apiC :: MutableEdit (StateT (IOWitnessStore (StoreEntry edit)) m) edit userstate;
+                    apiC = MkMutableEdit
                     {
-                        apiRead = \rt -> lift $ apiRead apiP rt,
-                        apiAllowed = \edit -> lift $ apiAllowed apiP edit,
-                        apiEdit = \edits -> do
+                        mutableRead = \rt -> lift $ mutableRead apiP rt,
+                        mutableAllowed = \edit -> lift $ mutableAllowed apiP edit,
+                        mutableEdit = \edits -> do
                         {
-                            mnextTokenP <- lift $ apiEdit apiP edits;
+                            mnextTokenP <- lift $ mutableEdit apiP edits;
                             case mnextTokenP of
                             {
                                 Just _nextTokenP -> do

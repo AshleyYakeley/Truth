@@ -1,57 +1,19 @@
-module Truth.Core.Object.API where
+module Truth.Core.Object.LockAPI where
 {
     import Truth.Core.Import;
     import Truth.Core.Read;
     import Truth.Core.Edit;
+    import Truth.Core.Object.MutableEdit;
 
 
-    data API m edit userstate = MkAPI
-    {
-        apiRead :: Structure m (EditReader edit),
-        apiAllowed :: edit -> m Bool,
-        apiEdit :: [edit] -> m (Maybe userstate)
-    };
-
-    apiReadEdit :: Monad m => API m edit userstate -> Readable (EditReader edit) [edit] -> m (Maybe userstate);
-    apiReadEdit MkAPI{..}  MkReadable{..} = do
-    {
-        edits <- unReadable apiRead;
-        apiEdit edits;
-    };
-
-    apiAlloweds :: Monad m => API m edit userstate -> [edit] -> m Bool;
-    apiAlloweds _api [] = return True;
-    apiAlloweds api (e:ee) = do
-    {
-        allowed <- apiAllowed api e;
-        if allowed then apiAlloweds api ee else return False;
-    };
-
-    singleApiEdit :: Applicative m => (edit -> m (Maybe ())) -> [edit] -> m (Maybe ());
-    singleApiEdit apiEdit' edits = fmap combine $ traverse apiEdit' edits where
-    {
-        combine :: [Maybe ()] -> Maybe ();
-        combine [] = return ();
-        combine (m:mm) = do
-        {
-            () <- m;
-            combine mm;
-        }
-    };
-
-    instance Functor m => Functor (API m edit) where
-    {
-        fmap ab (MkAPI r a e) = MkAPI r a $ fmap (fmap (fmap ab)) e;
-    };
-
-    newtype LockAPI edit userstate = MkLockAPI (forall r. (forall m. MonadIOInvert m => userstate -> API m edit userstate -> m r) -> IO r);
+    newtype LockAPI edit userstate = MkLockAPI (forall r. (forall m. MonadIOInvert m => userstate -> MutableEdit m edit userstate -> m r) -> IO r);
 
     instance Functor (LockAPI edit) where
     {
         fmap t1t2 (MkLockAPI lapi1) = MkLockAPI $ \ff -> lapi1 $ \userstate api -> ff (t1t2 userstate) (fmap t1t2 api);
     };
 
-    nonlockingAPI :: userstate -> API IO edit userstate -> LockAPI edit userstate;
+    nonlockingAPI :: userstate -> MutableEdit IO edit userstate -> LockAPI edit userstate;
     nonlockingAPI userstate api = MkLockAPI $ \ff -> ff userstate api;
 
     freeLockAPI :: forall edit. (Edit edit,FullReader (EditReader edit)) => EditSubject edit -> (EditSubject edit -> Bool) -> IO (LockAPI edit ());
@@ -65,11 +27,11 @@ module Truth.Core.Object.API where
             {
                 let
                 {
-                    api :: API (StateT (EditSubject edit) IO) edit ();
-                    api = MkAPI
+                    api :: MutableEdit (StateT (EditSubject edit) IO) edit ();
+                    api = MkMutableEdit
                     {
-                        apiRead = readFromM $ get,
-                        apiAllowed = \edit -> do
+                        mutableRead = readFromM $ get,
+                        mutableAllowed = \edit -> do
                         {
                             oa <- get;
                             let
@@ -78,7 +40,7 @@ module Truth.Core.Object.API where
                             };
                             return $ allowed na;
                         },
-                        apiEdit = \edits -> do
+                        mutableEdit = \edits -> do
                         {
                             oa <- get;
                             let
@@ -102,19 +64,19 @@ module Truth.Core.Object.API where
     };
 
     mapLockAPI :: forall f lensstate edita editb userstate. MonadOne f => FloatingEditLens' f lensstate edita editb -> LockAPI edita (userstate,lensstate) -> LockAPI editb userstate;
-    mapLockAPI lens@MkFloatingEditLens{..} (MkLockAPI lapiA) = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => userstate -> API m editb userstate -> m r) -> let
+    mapLockAPI lens@MkFloatingEditLens{..} (MkLockAPI lapiA) = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => userstate -> MutableEdit m editb userstate -> m r) -> let
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
 
-        callA :: forall m. MonadIOInvert m => (userstate,lensstate) -> API m edita (userstate,lensstate) -> m r;
-        callA (firstuserstate,firstlensstate) (apiA :: API m edita (userstate,lensstate)) = let
+        callA :: forall m. MonadIOInvert m => (userstate,lensstate) -> MutableEdit m edita (userstate,lensstate) -> m r;
+        callA (firstuserstate,firstlensstate) (apiA :: MutableEdit m edita (userstate,lensstate)) = let
         {
-            readA :: Structure m (EditReader edita);
+            readA :: MutableRead m (EditReader edita);
             _allowedA :: edita -> m Bool;
             pushEditA :: [edita] -> m (Maybe (userstate,lensstate));
-            MkAPI readA _allowedA pushEditA = apiA;
+            MkMutableEdit readA _allowedA pushEditA = apiA;
 
-            readB :: Structure (StateT lensstate m) (EditReader editb);
+            readB :: MutableRead (StateT lensstate m) (EditReader editb);
             readB rt = do
             {
                 state <- get;
@@ -151,7 +113,7 @@ module Truth.Core.Object.API where
                         case meditA of
                         {
                             Nothing -> return False; -- is this correct?
-                            Just editA -> lift $ apiAlloweds apiA editA;
+                            Just editA -> lift $ mutableAlloweds apiA editA;
                         };
                     };
                 };
@@ -172,8 +134,8 @@ module Truth.Core.Object.API where
                 };
             };
 
-            apiB :: API (StateT lensstate m) editb userstate;
-            apiB = MkAPI readB allowedB pushEditB;
+            apiB :: MutableEdit (StateT lensstate m) editb userstate;
+            apiB = MkMutableEdit readB allowedB pushEditB;
         }
         in liftIOInvert $ \unlift -> do
         {

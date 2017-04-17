@@ -8,7 +8,7 @@ module Truth.Core.Read.ReadFunction where
 
     type ReadFunction readera readerb = forall t. readerb t -> Readable readera t;
 
-    mapStructure :: forall m ra rb. Monad m => ReadFunction ra rb -> Structure m ra -> Structure m rb;
+    mapStructure :: forall m ra rb. Monad m => ReadFunction ra rb -> MutableRead m ra -> MutableRead m rb;
     mapStructure rfab sma rbt = unReadable (rfab rbt) sma;
 
     composeReadFunction :: ReadFunction rb rc -> ReadFunction ra rb -> ReadFunction ra rc;
@@ -27,7 +27,7 @@ module Truth.Core.Read.ReadFunction where
     fromReadFunction rf = fromReadable (mapReadable rf fromReader);
 
 
-    type CleanReadFunction ra rb = Structure ra rb;
+    type CleanReadFunction ra rb = MutableRead ra rb;
 
     cleanReadFunction :: CleanReadFunction ra rb -> ReadFunction ra rb;
     cleanReadFunction rbtrat rbt = MkReadable (\ratmt -> ratmt (rbtrat rbt));
@@ -37,7 +37,7 @@ module Truth.Core.Read.ReadFunction where
 
     type ReadFunctionF f readera readerb = forall t. readerb t -> Readable readera (f t);
 
-    mapStructureF :: Monad m => ReadFunctionF f ra rb -> Structure m ra -> Structure (Compose m f) rb;
+    mapStructureF :: Monad m => ReadFunctionF f ra rb -> MutableRead m ra -> MutableRead (Compose m f) rb;
     mapStructureF rff sa rbt = MkCompose $ unReadable (rff rbt) sa;
 
     class MapReadable readable where

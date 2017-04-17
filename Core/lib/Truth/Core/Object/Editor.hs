@@ -3,7 +3,8 @@ module Truth.Core.Object.Editor where
     import Truth.Core.Import;
     import Truth.Core.Read;
     import Truth.Core.Edit;
-    import Truth.Core.Object.API;
+    import Truth.Core.Object.MutableEdit;
+    import Truth.Core.Object.LockAPI;
     import Truth.Core.Object.Object;
 
 
@@ -62,7 +63,7 @@ module Truth.Core.Object.Editor where
         };
     };
 
-    oneTransactionEditor :: forall edit r. (forall m. Monad m => API m edit () -> m r) -> Editor edit r;
+    oneTransactionEditor :: forall edit r. (forall m. Monad m => MutableEdit m edit () -> m r) -> Editor edit r;
     oneTransactionEditor f = let
     {
         editorInit :: LockAPI edit () -> IO (LockAPI edit (),());
@@ -73,8 +74,8 @@ module Truth.Core.Object.Editor where
     } in MkEditor{..};
 
     readEditor :: FullReader (EditReader edit) => Editor edit (EditSubject edit);
-    readEditor = oneTransactionEditor $ \api -> unReadable fromReader $ apiRead api;
+    readEditor = oneTransactionEditor $ \api -> unReadable fromReader $ mutableRead api;
 
     writeEditor :: FullEdit edit => EditSubject edit -> Editor edit (Maybe ());
-    writeEditor subj = oneTransactionEditor $ \api -> apiEdit api $ getReplaceEdits subj;
+    writeEditor subj = oneTransactionEditor $ \api -> mutableEdit api $ getReplaceEdits subj;
 }

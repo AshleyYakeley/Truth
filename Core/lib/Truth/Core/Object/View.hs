@@ -4,7 +4,7 @@ module Truth.Core.Object.View where
     import Data.IORef;
     import Truth.Core.Edit;
     import Truth.Core.Types;
-    import Truth.Core.Object.API;
+    import Truth.Core.Object.LockAPI;
     import Truth.Core.Object.Object;
     import Truth.Core.Object.Lens;
     import Truth.Core.Object.Aspect;

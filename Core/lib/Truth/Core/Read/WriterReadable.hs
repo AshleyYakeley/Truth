@@ -7,7 +7,7 @@ module Truth.Core.Read.WriterReadable where
 
 
     -- | WriterReadable allows copying without reading the whole thing into memory
-    newtype WriterReadable w reader a = MkWriterReadable { unWriterReadable :: forall m. Monad m => Structure m reader -> (w -> m ()) -> m a};
+    newtype WriterReadable w reader a = MkWriterReadable { unWriterReadable :: forall m. Monad m => MutableRead m reader -> (w -> m ()) -> m a};
 
     instance Functor (WriterReadable w reader) where
     {

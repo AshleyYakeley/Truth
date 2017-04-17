@@ -47,14 +47,14 @@ module Truth.UI.GTK.Text (textMatchView) where
     textView = MkView $ \(MkLockAPI lapi) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
-        initial <- lapi $ \() api -> unReadable fromReader $ apiRead api;
+        initial <- lapi $ \() api -> unReadable fromReader $ mutableRead api;
         textBufferSetText buffer initial;
         mv <- newMVar ();
 
         _ <- onBufferInsertText buffer $ \iter text -> lapi $ \() api -> ifMVar mv $ do
         {
             p <- getSequencePoint iter;
-            ms <- apiEdit api $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
+            ms <- mutableEdit api $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
             case ms of
             {
                 Just _ -> return ();
@@ -65,7 +65,7 @@ module Truth.UI.GTK.Text (textMatchView) where
         _ <- onDeleteRange buffer $ \iter1 iter2 -> lapi $ \() api -> ifMVar mv $ do
         {
             run <- getSequenceRun iter1 iter2;
-            ms <- apiEdit api $ pure $ StringReplaceSection run "";
+            ms <- mutableEdit api $ pure $ StringReplaceSection run "";
             case ms of
             {
                 Just _ -> return ();

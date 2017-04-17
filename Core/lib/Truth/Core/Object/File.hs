@@ -4,7 +4,8 @@ module Truth.Core.Object.File where
     import Data.ByteString;
     import Truth.Core.Read;
     import Truth.Core.Types;
-    import Truth.Core.Object.API;
+    import Truth.Core.Object.MutableEdit;
+    import Truth.Core.Object.LockAPI;
 
 
     fileLockAPI :: FilePath -> LockAPI ByteStringEdit ();
@@ -13,20 +14,20 @@ module Truth.Core.Object.File where
         h <- openBinaryFile path ReadWriteMode;
         let
         {
-            apiRead :: Structure IO ByteStringReader;
-            apiRead ReadByteStringLength = fmap fromInteger $ hFileSize h;
-            apiRead (ReadByteStringSection start len) = do
+            mutableRead :: MutableRead IO ByteStringReader;
+            mutableRead ReadByteStringLength = fmap fromInteger $ hFileSize h;
+            mutableRead (ReadByteStringSection start len) = do
             {
                 hSeek h AbsoluteSeek $ toInteger start;
                 hGet h len;
             };
-            apiAllowed _ = return True;
-            apiEdit' (ByteStringSetLength len) = do
+            mutableAllowed _ = return True;
+            mutableEdit' (ByteStringSetLength len) = do
             {
                 hSetFileSize h $ toInteger len;
                 return $ Just ();
             };
-            apiEdit' (ByteStringWrite start bs) = do
+            mutableEdit' (ByteStringWrite start bs) = do
             {
                 oldlen <- hFileSize h;
                 if toInteger start > oldlen
@@ -37,9 +38,9 @@ module Truth.Core.Object.File where
                 return $ Just ();
             };
 
-            apiEdit = singleApiEdit apiEdit';
+            mutableEdit = singleMutableEdit mutableEdit';
         };
-        r <- ff () MkAPI{..};
+        r <- ff () MkMutableEdit{..};
         hClose h;
         return r;
     };
