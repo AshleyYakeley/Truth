@@ -35,6 +35,8 @@ module Truth.Core.Import (module I) where
     import Data.ByteString as I (ByteString);
     import Data.MonoTraversable as I;
     import Data.Sequences as I;
+    import Data.Containers as I;
+    import Data.KeyContainer as I;
     import Control.Comonad as I;
 
     import Data.Type.Heterogeneous as I;

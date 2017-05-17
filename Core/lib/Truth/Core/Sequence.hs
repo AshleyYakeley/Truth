@@ -6,6 +6,7 @@ module Truth.Core.Sequence where
 
     $(typeFamilyProxy "Element");
     $(typeFamilyProxy "Index");
+    $(typeFamilyProxy "ContainerKey");
 
     newtype SequencePoint seq = MkSequencePoint (Index seq);
     deriving instance Eq (Index seq) => Eq (SequencePoint seq);
@@ -100,6 +101,13 @@ module Truth.Core.Sequence where
     instance HasInfo IsSequence where
     {
         info = mkSimpleInfo $(iowitness[t|IsSequence|]) [$(declInfo [d|
+        |])];
+    };
+
+    -- orphan
+    instance HasInfo KeyContainer where
+    {
+        info = mkSimpleInfo $(iowitness[t|KeyContainer|]) [$(declInfo [d|
         |])];
     };
 }

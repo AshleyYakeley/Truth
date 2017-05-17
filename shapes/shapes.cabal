@@ -53,6 +53,7 @@ library
         bytestring,
         containers,
         transformers,
+        mono-traversable,
         witness,
         open-witness
     exposed-modules:
@@ -78,3 +79,4 @@ library
         Data.Codec
         Data.Compose
         Data.WitnessStore
+        Data.KeyContainer
