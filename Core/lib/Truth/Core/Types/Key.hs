@@ -60,7 +60,7 @@ module Truth.Core.Types.Key where
     {
         KeyEditItem :: ContainerKey cont -> edit -> KeyEdit cont edit;
         KeyDeleteItem :: ContainerKey cont -> KeyEdit cont edit;
-        KeyInsertItem :: EditSubject edit -> KeyEdit cont edit;
+        KeyInsertReplaceItem :: EditSubject edit -> KeyEdit cont edit;
         KeyClear :: KeyEdit cont edit;
     };
 
@@ -79,7 +79,7 @@ module Truth.Core.Types.Key where
         };
         applyEdit (KeyDeleteItem key') (KeyReadItem key _reader) | key' == key = return Nothing;
         applyEdit (KeyDeleteItem _) (KeyReadItem key reader) = readable $ KeyReadItem key reader;
-        applyEdit (KeyInsertItem item) KeyReadKeys = do
+        applyEdit (KeyInsertReplaceItem item) KeyReadKeys = do
         {
             allkeys <- readable KeyReadKeys;
             let
@@ -88,8 +88,8 @@ module Truth.Core.Types.Key where
             };
             if elem newkey allkeys then return allkeys else return $ newkey:allkeys;
         };
-        applyEdit (KeyInsertItem item) (KeyReadItem key reader) | elementKey (Proxy @cont) item == key = return $ Just $ readFrom item reader;
-        applyEdit (KeyInsertItem _) (KeyReadItem key reader) = readable $ KeyReadItem key reader;
+        applyEdit (KeyInsertReplaceItem item) (KeyReadItem key reader) | elementKey (Proxy @cont) item == key = return $ Just $ readFrom item reader;
+        applyEdit (KeyInsertReplaceItem _) (KeyReadItem key reader) = readable $ KeyReadItem key reader;
         applyEdit KeyClear reader = readFromM (return mempty) reader;
 
         invertEdit (KeyEditItem p edit) = do
@@ -101,7 +101,7 @@ module Truth.Core.Types.Key where
                 Nothing -> return [];
             }
         };
-        invertEdit (KeyInsertItem item) = do
+        invertEdit (KeyInsertReplaceItem item) = do
         {
             let
             {
@@ -110,7 +110,7 @@ module Truth.Core.Types.Key where
             molditem <- mapReadableF (keyItemReadFunction newkey) fromReader;
             case molditem of
             {
-                Just olditem -> return [KeyInsertItem olditem];
+                Just olditem -> return [KeyInsertReplaceItem olditem];
                 Nothing -> return [KeyDeleteItem newkey];
             }
         };
@@ -119,7 +119,7 @@ module Truth.Core.Types.Key where
             ma <- mapReadableF (keyItemReadFunction key) fromReader;
             case ma of
             {
-                Just a -> return [KeyInsertItem a];
+                Just a -> return [KeyInsertReplaceItem a];
                 Nothing -> return [];
             };
         };
@@ -138,7 +138,7 @@ module Truth.Core.Types.Key where
                 readWriteItem key = do
                 {
                     item <- mapReadable (knownKeyItemReadFunction key) $ readableToM fromReader;
-                    wrWrite $ KeyInsertItem item;
+                    wrWrite $ KeyInsertReplaceItem item;
                 };
             };
             traverse_ readWriteItem allkeys;
