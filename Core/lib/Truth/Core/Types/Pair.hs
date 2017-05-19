@@ -15,6 +15,12 @@ module Truth.Core.Types.Pair where
     type PairEditReader ea eb = TupleEditReader (PairSelector ea eb);
     type PairEdit ea eb = TupleEdit (PairSelector ea eb);
 
+    firstReadFunction :: ReadFunction (PairEditReader ea eb) (EditReader ea);
+    firstReadFunction = tupleReadFunction EditFirst;
+
+    secondReadFunction :: ReadFunction (PairEditReader ea eb) (EditReader eb);
+    secondReadFunction = tupleReadFunction EditSecond;
+
     instance TestEquality (PairSelector ea eb) where
     {
         testEquality EditFirst EditFirst = Just Refl;

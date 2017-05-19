@@ -40,6 +40,10 @@ module Truth.Core.Read.ReadFunction where
     mapStructureF :: Monad m => ReadFunctionF f ra rb -> MutableRead m ra -> MutableRead (Compose m f) rb;
     mapStructureF rff sa rbt = MkCompose $ unReadable (rff rbt) sa;
 
+    composeReadFunctionF :: ReadFunctionF f rb rc -> ReadFunction ra rb -> ReadFunctionF f ra rc;
+    composeReadFunctionF rbc rab rct = mapReadable rab (rbc rct);
+
+
     class MapReadable readable where
     {
         mapReadable :: ReadFunction ra rb -> readable rb t -> readable ra t;
