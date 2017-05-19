@@ -3,6 +3,7 @@ module Truth.Core.Object.LockAPI where
     import Truth.Core.Import;
     import Truth.Core.Read;
     import Truth.Core.Edit;
+    import Truth.Core.Types.Pair;
     import Truth.Core.Object.MutableEdit;
 
 
@@ -31,15 +32,6 @@ module Truth.Core.Object.LockAPI where
                     api = MkMutableEdit
                     {
                         mutableRead = readFromM $ get,
-                        mutableAllowed = \edit -> do
-                        {
-                            oa <- get;
-                            let
-                            {
-                                na = fromReadFunction (applyEdit edit) oa;
-                            };
-                            return $ allowed na;
-                        },
                         mutableEdit = \edits -> do
                         {
                             oa <- get;
@@ -47,12 +39,7 @@ module Truth.Core.Object.LockAPI where
                             {
                                 na = fromReadFunction (applyEdits edits) oa;
                             };
-                            if allowed na then do
-                            {
-                                put na;
-                                return $ Just ();
-                            }
-                            else return Nothing;
+                            return $ if allowed na then Just $ put na else Nothing;
                         }
                     };
                 };
@@ -72,9 +59,8 @@ module Truth.Core.Object.LockAPI where
         callA (firstuserstate,firstlensstate) (apiA :: MutableEdit m edita (userstate,lensstate)) = let
         {
             readA :: MutableRead m (EditReader edita);
-            _allowedA :: edita -> m Bool;
-            pushEditA :: [edita] -> m (Maybe (userstate,lensstate));
-            MkMutableEdit readA _allowedA pushEditA = apiA;
+            pushEditA :: [edita] -> m (Maybe (m (userstate,lensstate)));
+            MkMutableEdit readA pushEditA = apiA;
 
             readB :: MutableRead (StateT lensstate m) (EditReader editb);
             readB rt = do
@@ -99,48 +85,34 @@ module Truth.Core.Object.LockAPI where
                 };
             };
 
-            allowedB :: editb -> (StateT lensstate m) Bool;
-            allowedB editB = do
-            {
-                state <- get;
-                lensOK <- lift $ unReadable (floatingEditLensAllowed lens state editB) readA;
-                case lensOK of
-                {
-                    False -> return False;
-                    True -> do
-                    {
-                        meditA <- convertEdit [editB];
-                        case meditA of
-                        {
-                            Nothing -> return False; -- is this correct?
-                            Just editA -> lift $ mutableAlloweds apiA editA;
-                        };
-                    };
-                };
-            };
-
-            pushEditB :: [editb] -> (StateT lensstate m) (Maybe userstate);
+            pushEditB :: [editb] -> (StateT lensstate m) (Maybe (StateT lensstate m userstate));
             pushEditB editB = do
             {
                 meditA <- convertEdit editB;
                 case meditA of
                 {
-                    Nothing -> return $ Just firstuserstate; -- is this correct?
+                    Nothing -> return $ Just $ return firstuserstate; -- is this correct?
                     Just editAs -> do
                     {
                         mstates <- lift $ pushEditA editAs;
-                        return $ fmap fst mstates;
+                        return $ fmap (lift . fmap fst) mstates;
                     };
                 };
             };
 
             apiB :: MutableEdit (StateT lensstate m) editb userstate;
-            apiB = MkMutableEdit readB allowedB pushEditB;
+            apiB = MkMutableEdit readB pushEditB;
         }
         in liftIOInvert $ \unlift -> do
         {
-            (o,(r,_newstate)) <- unlift $ runStateT (callB firstuserstate apiB) firstlensstate; -- just throw away the new lens state: all these lens changes will be replayed by the update
-            return (o,r);
+            (r,_newstate) <- unlift $ runStateT (callB firstuserstate apiB) firstlensstate; -- just throw away the new lens state: all these lens changes will be replayed by the update
+            return r;
         };
     } in lapiA callA;
+
+    pairLockAPI :: LockAPI ea ua -> LockAPI eb ub -> LockAPI (PairEdit ea eb) (ua,ub);
+    pairLockAPI (MkLockAPI lapiA) (MkLockAPI lapiB) = MkLockAPI $ \ff ->
+        lapiA $ \stateA meA -> liftIOInvert $ \unliftA -> StateT $ \oldsA ->
+        lapiB $ \stateB meB -> liftIOInvert $ \unliftB -> StateT $ \oldsB ->
+        fmap swap3 $ runStateT (ff (stateA,stateB) $ pairMutableEdit (remonadMutableEdit (stateFst . unliftA) meA) (remonadMutableEdit (stateSnd . unliftB) meB)) (oldsA,oldsB);
 }

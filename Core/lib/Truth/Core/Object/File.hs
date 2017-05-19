@@ -21,12 +21,7 @@ module Truth.Core.Object.File where
                 hSeek h AbsoluteSeek $ toInteger start;
                 hGet h len;
             };
-            mutableAllowed _ = return True;
-            mutableEdit' (ByteStringSetLength len) = do
-            {
-                hSetFileSize h $ toInteger len;
-                return $ Just ();
-            };
+            mutableEdit' (ByteStringSetLength len) = hSetFileSize h $ toInteger len;
             mutableEdit' (ByteStringWrite start bs) = do
             {
                 oldlen <- hFileSize h;
@@ -35,7 +30,6 @@ module Truth.Core.Object.File where
                  else return ();
                 hSeek h AbsoluteSeek $ toInteger start;
                 hPut h bs;
-                return $ Just ();
             };
 
             mutableEdit = singleMutableEdit mutableEdit';

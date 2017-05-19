@@ -62,13 +62,12 @@ module Truth.Core.Object.Object
                     apiC = MkMutableEdit
                     {
                         mutableRead = \rt -> lift $ mutableRead apiP rt,
-                        mutableAllowed = \edit -> lift $ mutableAllowed apiP edit,
                         mutableEdit = \edits -> do
                         {
-                            mnextTokenP <- lift $ mutableEdit apiP edits;
-                            case mnextTokenP of
+                            mmnextTokenP <- lift $ mutableEdit apiP edits;
+                            case mmnextTokenP of
                             {
-                                Just _nextTokenP -> do
+                                Just mnextTokenP -> do
                                 {
                                     tokenRef <- liftIO $ newIORef Nothing;
                                     oldstore <- get;
@@ -84,7 +83,15 @@ module Truth.Core.Object.Object
                                     }) oldstore;
                                     put newstore;
                                     mnextTokenC <- liftIO $ readIORef tokenRef;
-                                    return $ mnextTokenC;
+                                    return $ case mnextTokenC of
+                                    {
+                                        Just nextTokenC -> Just $ do
+                                        {
+                                            _nextTokenP <- lift mnextTokenP;
+                                            return nextTokenC;
+                                        };
+                                        Nothing -> Nothing;
+                                    };
                                 };
                                 Nothing -> return Nothing;
                             }

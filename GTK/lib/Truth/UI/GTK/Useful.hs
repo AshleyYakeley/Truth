@@ -3,6 +3,7 @@ module Truth.UI.GTK.Useful where
     import Control.Concurrent.MVar;
     import Control.Exception;
     import Graphics.UI.Gtk;
+    import Control.Monad.Trans.Class;
     import Control.Monad.IOInvert;
 
 
@@ -12,7 +13,7 @@ module Truth.UI.GTK.Useful where
     ifMVar :: MonadIOInvert m => MVar () -> m () -> m ();
     ifMVar mv f = liftIOInvert $ \unlift -> do
     {
-        ma <- tryReadMVar mv;
+        ma <- lift $ tryReadMVar mv;
         unlift $ case ma of
         {
             Just _ -> f;

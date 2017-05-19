@@ -77,5 +77,17 @@ module Truth.Core.Object.Editor where
     readEditor = oneTransactionEditor $ \api -> unReadable fromReader $ mutableRead api;
 
     writeEditor :: FullEdit edit => EditSubject edit -> Editor edit (Maybe ());
-    writeEditor subj = oneTransactionEditor $ \api -> mutableEdit api $ getReplaceEdits subj;
+    writeEditor subj = oneTransactionEditor $ \api -> do
+    {
+        maction <- mutableEdit api $ getReplaceEdits subj;
+        case maction of
+        {
+            Just action -> do
+            {
+                action;
+                return $ Just ();
+            };
+            Nothing -> return Nothing;
+        }
+    };
 }

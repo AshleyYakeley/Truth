@@ -12,6 +12,9 @@ module Truth.Core.Types.Pair where
         EditSecond :: PairSelector ea eb eb;
     };
 
+    type PairEditReader ea eb = TupleEditReader (PairSelector ea eb);
+    type PairEdit ea eb = TupleEdit (PairSelector ea eb);
+
     instance TestEquality (PairSelector ea eb) where
     {
         testEquality EditFirst EditFirst = Just Refl;
@@ -43,4 +46,16 @@ module Truth.Core.Types.Pair where
         tupleIsFullEdit EditFirst = MkConstraintWitness;
         tupleIsFullEdit EditSecond = MkConstraintWitness;
     };
+
+    partitionPairEdits :: forall ea eb. [PairEdit ea eb] -> ([ea], [eb]);
+    partitionPairEdits pes = let
+    {
+        toEither :: PairEdit ea eb -> Either ea eb;
+        toEither (MkTupleEdit EditFirst ea) = Left ea;
+        toEither (MkTupleEdit EditSecond eb) = Right eb;
+    } in partitionEithers $ fmap toEither pes;
+
+    pairMutableRead :: MutableRead m (EditReader ea) -> MutableRead m (EditReader eb) -> MutableRead m (PairEditReader ea eb);
+    pairMutableRead mra _mrb (MkTupleEditReader EditFirst ra) = mra ra;
+    pairMutableRead _mra mrb (MkTupleEditReader EditSecond rb) = mrb rb;
 }
