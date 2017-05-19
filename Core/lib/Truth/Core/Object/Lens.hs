@@ -166,4 +166,30 @@ module Truth.Core.Object.Lens where
         return MkObject{..};
     });
 -}
+
+    -- | Not sure if this should be used.
+    pairObject :: Object ea -> Object eb -> Object (PairEdit ea eb);
+    pairObject objA objB initialise receive = do
+    {
+        let
+        {
+            initialiseA lapiA = do
+            {
+                let
+                {
+                    initialiseB lapiB = do
+                    {
+                        (ed,ustate) <- initialise (fmap snd $ pairLockAPI lapiA lapiB); -- very dubious
+                        return ((ed,ustate),ustate);
+                    };
+                    receiveB (ed,_) oldstate ebs = receive ed oldstate $ fmap (MkTupleEdit EditSecond) ebs;
+                };
+                ((ed,ustate),closeB) <- objB initialiseB receiveB;
+                return ((ed,closeB),ustate);
+            };
+            receiveA (ed,_) oldstate eas = receive ed oldstate $ fmap (MkTupleEdit EditFirst) eas;
+        };
+        ((ed,closeB),closeA) <- objA initialiseA receiveA;
+        return $ (ed,closeB >> closeA);
+    };
 }
