@@ -20,7 +20,7 @@ module Truth.Core.Types.OneReader where
     };
 
     liftMaybeReadable :: (Traversable f,Monad f) => Readable reader a -> Readable (OneReader f reader) (f a);
-    liftMaybeReadable rra = getCompose $ unReadable rra $ \rt -> MkCompose $ readable $ ReadOne rt;
+    liftMaybeReadable = mapReadableF (readable . ReadOne);
 
     liftMaybeReadFunction :: (Traversable f,Monad f) => ReadFunction ra rb -> ReadFunction (OneReader f ra) (OneReader f rb);
     liftMaybeReadFunction _rfrarb ReadHasOne = readable ReadHasOne;

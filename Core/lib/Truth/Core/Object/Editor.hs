@@ -11,7 +11,7 @@ module Truth.Core.Object.Editor where
     data Editor (edit :: *) r = forall editor userstate. MkEditor
     {
         editorInit :: LockAPI edit userstate -> IO (editor,userstate),
-        editorUpdate :: editor -> userstate -> [edit] -> IO userstate,
+        editorUpdate :: forall m. MonadIOInvert m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate,
         editorDo :: editor -> IO r
     };
 
@@ -25,23 +25,24 @@ module Truth.Core.Object.Editor where
         pure a = let
         {
             editorInit _ = return ((),());
-            editorUpdate () () _ = return ();
+            editorUpdate () _ () _ = return ();
             editorDo () = return a;
         } in MkEditor{..};
 
-        (MkEditor (ei1 :: LockAPI edit token1 -> IO (editor1,token1)) eu1 ed1) <*> (MkEditor (ei2 :: LockAPI edit token2 -> IO (editor2,token2)) eu2 ed2) = let
+        (MkEditor (ei1 :: LockAPI edit userstate1 -> IO (editor1,userstate1)) eu1 ed1) <*> (MkEditor (ei2 :: LockAPI edit userstate2 -> IO (editor2,userstate2)) eu2 ed2) = let
         {
-            editorInit :: LockAPI edit (token1,token2) -> IO ((editor1,editor2),(token1,token2));
+            editorInit :: LockAPI edit (userstate1,userstate2) -> IO ((editor1,editor2),(userstate1,userstate2));
             editorInit lapi = do
             {
                 (e1,t1) <- ei1 $ fmap fst lapi;
                 (e2,t2) <- ei2 $ fmap snd lapi;
                 return ((e1,e2),(t1,t2));
             };
-            editorUpdate (e1,e2) (old1,old2) edit = do
+            editorUpdate :: forall m. MonadIOInvert m => (editor1,editor2) -> MutableRead m (EditReader edit) -> (userstate1,userstate2) -> [edit] -> m (userstate1,userstate2);
+            editorUpdate (e1,e2) mr (old1,old2) edit = do
             {
-                new1 <- eu1 e1 old1 edit;
-                new2 <- eu2 e2 old2 edit;
+                new1 <- eu1 e1 mr old1 edit;
+                new2 <- eu2 e2 mr old2 edit;
                 return (new1,new2);
             };
             editorDo (e1,e2) = do
@@ -69,7 +70,7 @@ module Truth.Core.Object.Editor where
         editorInit :: LockAPI edit () -> IO (LockAPI edit (),());
         editorInit lapi = return (lapi,());
 
-        editorUpdate _lapiw () _edit = return ();
+        editorUpdate _lapiw _mr () _edit = return ();
         editorDo (MkLockAPI lapi) = lapi $ \() -> f;
     } in MkEditor{..};
 

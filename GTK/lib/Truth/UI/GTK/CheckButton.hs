@@ -4,6 +4,7 @@ module Truth.UI.GTK.CheckButton where
     import Data.Type.Equality;
     import Data.Empty;
     import Graphics.UI.Gtk;
+    import Control.Monad.IOInvert;
     import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;
@@ -27,7 +28,8 @@ module Truth.UI.GTK.CheckButton where
         {
             vrWidget = toWidget widget;
             vrFirstUpdateState = ();
-            vrUpdate () edits = do
+            vrUpdate :: forall m. MonadIOInvert m => MutableRead m (WholeReader Bool) -> () -> [WholeEdit (WholeReader Bool)] -> m ();
+            vrUpdate _ () edits = liftIO $ do
             {
                 newstate <- fmap (fromReadFunction (applyEdits edits)) $ get widget toggleButtonActive;
                 withSignalBlocked clickConnection $ set widget [toggleButtonActive := newstate];

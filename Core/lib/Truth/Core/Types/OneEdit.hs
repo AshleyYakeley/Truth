@@ -39,8 +39,12 @@ module Truth.Core.Types.OneEdit where
         {
             editUpdate = \(MkOneEdit edita) -> do
             {
-                editb <- editUpdate lens edita;
-                return $ MkOneEdit editb;
+                feditBs <- liftMaybeReadable $ editUpdate lens edita;
+                return $ case retrieveOne feditBs of
+                {
+                    SuccessResult editBs -> fmap MkOneEdit editBs;
+                    FailureResult _fx -> [];
+                };
             },
             editGet = liftMaybeReadFunction (editGet lens)
         };
@@ -53,12 +57,12 @@ module Truth.Core.Types.OneEdit where
             editLensFunction = cfmap (editLensFunction lens),
             editLensPutEdit = \(MkOneEdit editb) -> do
             {
-                fmedita <- liftMaybeReadable (editLensPutEdit lens editb);
-                return (case retrieveOne fmedita of
+                fmedita <- liftMaybeReadable $ editLensPutEdit lens editb;
+                return $ case retrieveOne fmedita of
                 {
                     SuccessResult medita -> fmap MkOneEdit medita;
                     FailureResult _fx -> pure (MkOneEdit undefined); -- any OneEdit edit will do
-                });
+                };
             }
         };
     };
@@ -80,10 +84,15 @@ module Truth.Core.Types.OneEdit where
     {
         floatingEditInitial = floatingEditInitial fef,
         floatingEditGet = \state -> liftMaybeReadFunction (floatingEditGet fef state),
-        floatingEditUpdate = \(MkOneEdit edita) oldstate -> let
+        floatingEditUpdate = \(MkOneEdit edita) oldstate -> do
         {
-            (newstate,meditb) = floatingEditUpdate fef edita oldstate;
-        } in (newstate,fmap MkOneEdit meditb)
+            fstuff <- liftMaybeReadable $ floatingEditUpdate fef edita oldstate;
+            return $ case retrieveOne fstuff of
+            {
+                SuccessResult (newstate,editBs) -> (newstate,fmap MkOneEdit editBs);
+                FailureResult _fx -> (oldstate,[]);
+            }
+        }
     };
 
     oneFloatingEditLens :: forall f state edita editb. (MonadOne f,Edit edita,Edit editb) =>

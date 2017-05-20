@@ -73,7 +73,7 @@ module Truth.Core.Types.Whole where
     wholeEditFunction ab = MkEditFunction
     {
         editGet = simpleReadFunction ab,
-        editUpdate = \(MkWholeEdit a) -> return $ MkWholeEdit $ ab a
+        editUpdate = \(MkWholeEdit a) -> return $ pure $ MkWholeEdit $ ab a
     };
 
     wholeEditLens :: (Functor m) => Lens' m a b -> EditLens' m (WholeEdit (WholeReader a)) (WholeEdit (WholeReader b));

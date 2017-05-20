@@ -3,6 +3,7 @@ module Truth.Core.Object.Lens where
     import Truth.Core.Import;
     import Truth.Core.Edit;
     import Truth.Core.Types;
+    import Truth.Core.Read;
     import Truth.Core.Object.LockAPI;
     import Truth.Core.Object.Object;
 
@@ -12,24 +13,25 @@ module Truth.Core.Object.Lens where
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
 
-        initialA :: LockAPI edita (userstate,lensstate) -> IO (editor,(userstate,lensstate));
+        initialA :: LockAPI edita (userstate,lensstate) -> IO ((LockAPI edita (userstate,lensstate),editor),(userstate,lensstate));
         initialA lapiA = do
         {
             (ed,us) <- initialB $ mapLockAPI lens lapiA;
-            return (ed,(us,floatingEditInitial));
+            return ((lapiA,ed),(us,floatingEditInitial));
         };
 
-        updateA :: editor -> (userstate,lensstate) -> [edita] -> IO (userstate,lensstate);
-        updateA editor (oldus,oldls) editAs = do
+        updateA :: forall m. MonadIOInvert m => (LockAPI edita (userstate,lensstate),editor) -> MutableRead m (EditReader edita) -> (userstate,lensstate) -> [edita] -> m (userstate,lensstate);
+        updateA (_lapiA,editor) mr (oldus,oldls) editAs = do
         {
-            let
-            {
-                (newls,editBs) = floatingEditUpdates floatingEditLensFunction editAs oldls;
-            };
-            newus <- updateB editor oldus editBs;
+            (newls,editBs) <- unReadable (floatingEditUpdates floatingEditLensFunction editAs oldls) mr;
+            newus <- updateB editor (mapStructure (floatingEditGet oldls) mr) oldus editBs;
             return (newus,newls);
         };
-    } in sub initialA updateA;
+    } in do
+    {
+        ((_,editor),closer) <- sub initialA updateA;
+        return (editor,closer);
+    };
 
 
     class IsGeneralLens lens where
@@ -167,9 +169,10 @@ module Truth.Core.Object.Lens where
     });
 -}
 
+{-
     -- | Not sure if this should be used.
-    pairObject :: Object ea -> Object eb -> Object (PairEdit ea eb);
-    pairObject objA objB initialise receive = do
+    pairObject :: forall ea eb. Object ea -> Object eb -> Object (PairEdit ea eb);
+    pairObject objA objB (initialise :: LockAPI (PairEdit ea eb) userstate -> IO (editor,userstate)) receive = do
     {
         let
         {
@@ -179,17 +182,20 @@ module Truth.Core.Object.Lens where
                 {
                     initialiseB lapiB = do
                     {
-                        (ed,ustate) <- initialise (fmap snd $ pairLockAPI lapiA lapiB); -- very dubious
+                        (ed,ustate) <- initialise (fmap snd $ pairLockAPI lapiA lapiB); -- "snd" here is very dubious
                         return ((ed,ustate),ustate);
                     };
-                    receiveB (ed,_) oldstate ebs = receive ed oldstate $ fmap (MkTupleEdit EditSecond) ebs;
+                    receiveB :: forall m. MonadIOInvert m => (editor,userstate) -> MutableRead m (EditReader eb) -> userstate -> [eb] -> m userstate;
+                    receiveB (ed,_) mr oldstate ebs = receive ed (pairMutableRead f1 mr) oldstate $ fmap (MkTupleEdit EditSecond) ebs;
                 };
                 ((ed,ustate),closeB) <- objB initialiseB receiveB;
                 return ((ed,closeB),ustate);
             };
-            receiveA (ed,_) oldstate eas = receive ed oldstate $ fmap (MkTupleEdit EditFirst) eas;
+            receiveA :: forall m. MonadIOInvert m => (editor,IO ()) -> MutableRead m (EditReader ea) -> userstate -> [ea] -> m userstate;
+            receiveA (ed,_) mr oldstate eas = receive ed (pairMutableRead mr f2) oldstate $ fmap (MkTupleEdit EditFirst) eas;
         };
         ((ed,closeB),closeA) <- objA initialiseA receiveA;
         return $ (ed,closeB >> closeA);
     };
+-}
 }

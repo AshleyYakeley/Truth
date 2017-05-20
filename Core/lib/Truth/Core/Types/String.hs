@@ -154,7 +154,7 @@ module Truth.Core.Types.String where
             };
         };
 
-        floatingEditUpdate :: StringEdit seq -> SequenceRun seq -> (SequenceRun seq,[StringEdit seq]);
+        floatingEditUpdate :: StringEdit seq -> SequenceRun seq -> Readable (StringRead seq) (SequenceRun seq,[StringEdit seq]);
         floatingEditUpdate edita oldstate = let
         {
             newstate = floatingUpdate edita oldstate;
@@ -172,7 +172,7 @@ module Truth.Core.Types.String where
                     return $ StringReplaceSection runb sb;
                 };
             }
-        } in (newstate,leditb);
+        } in return (newstate,leditb);
 
         floatingEditLensFunction :: FloatingEditFunction (SequenceRun seq) (StringEdit seq) (StringEdit seq);
         floatingEditLensFunction = MkFloatingEditFunction{..};

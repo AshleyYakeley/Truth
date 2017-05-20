@@ -12,7 +12,8 @@ module Truth.Core.Types.ComonadLift where
         editGet :: ReadFunction (ComonadReader w (EditReader edita)) (ComonadReader w (EditReader editb));
         editGet = comonadLiftReadFunction eg;
 
-        editUpdate (MkComonadEdit edit) = fmap MkComonadEdit $ eu edit;
+        editUpdate :: ComonadEdit w edita -> Readable (ComonadReader w (EditReader edita)) [ComonadEdit w editb];
+        editUpdate (MkComonadEdit edit) = fmap (fmap MkComonadEdit) $ mapReadable comonadReadFunction $ eu edit;
     } in MkEditFunction{..};
 
     comonadLiftEditLens :: Functor m => EditLens' m edita editb -> EditLens' m (ComonadEdit w edita) (ComonadEdit w editb);

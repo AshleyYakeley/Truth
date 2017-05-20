@@ -6,18 +6,20 @@ module Truth.Core.Object.Object
 {
     import Truth.Core.Import;
     import Data.IORef;
+    import Truth.Core.Read;
+    import Truth.Core.Edit;
     import Truth.Core.Object.MutableEdit;
     import Truth.Core.Object.LockAPI;
 
 
     type Object edit = forall editor userstate.
         (LockAPI edit userstate -> IO (editor,userstate)) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
-        (editor -> userstate -> [edit] -> IO userstate) -> -- receive: get updates (both others and from your mutableEdit calls)
+        (forall m. MonadIOInvert m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) -> -- receive: get updates (both others and from your mutableEdit calls)
         IO (editor, IO ());
 
     newtype ObjectW edit = MkObjectW (Object edit);
 
-    data StoreEntry edit userstate = MkStoreEntry (userstate -> [edit] -> IO userstate) userstate;
+    data StoreEntry edit userstate = MkStoreEntry (forall m. MonadIOInvert m => MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) userstate;
 
     shareObject :: forall edit. Object edit -> IO (ObjectW edit);
     shareObject parent = do
@@ -35,12 +37,12 @@ module Truth.Core.Object.Object
                 return (lapiP,tokenP);
             };
 
-            updateP :: LockAPI edit () -> () -> [edit] -> IO ();
-            updateP (MkLockAPI _lapiP) oldtokenP edits = modifyMVar storevar $ \oldstore -> do
+            updateP :: forall m. MonadIOInvert m => LockAPI edit () -> MutableRead m (EditReader edit) -> () -> [edit] -> m ();
+            updateP _ meP oldtokenP edits = mapIOInvert (modifyMVar storevar) $ \oldstore -> do
             {
                 newstore <- traverseWitnessStore (\_ (MkStoreEntry u oldtoken) -> do
                 {
-                    newtoken <- u oldtoken edits;
+                    newtoken <- u meP oldtoken edits;
                     return (MkStoreEntry u newtoken);
                 }) oldstore;
                 let
@@ -73,7 +75,7 @@ module Truth.Core.Object.Object
                                     oldstore <- get;
                                     newstore <- traverseWitnessStore (\keyf (MkStoreEntry u oldtoken) -> do
                                     {
-                                        newtoken <- liftIO $ u oldtoken edits;
+                                        newtoken <- lift $ u (mutableRead apiP) oldtoken edits;
                                         case testEquality key keyf of
                                         {
                                             Just Refl -> liftIO $ writeIORef tokenRef $ Just newtoken;

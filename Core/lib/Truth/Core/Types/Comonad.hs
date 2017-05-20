@@ -71,7 +71,7 @@ module Truth.Core.Types.Comonad where
         editGet :: ReadFunction (ComonadReader w (EditReader edit)) (EditReader edit);
         editGet = comonadReadFunction;
 
-        editUpdate (MkComonadEdit edit) = [edit];
+        editUpdate (MkComonadEdit edit) = return [edit];
     } in MkEditFunction{..};
 
     comonadEditLens :: Applicative m => EditLens' m (ComonadEdit w edit) edit;

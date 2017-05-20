@@ -2,6 +2,7 @@ module Truth.Core.Object.View where
 {
     import Truth.Core.Import;
     import Data.IORef;
+    import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Types;
     import Truth.Core.Object.LockAPI;
@@ -14,7 +15,7 @@ module Truth.Core.Object.View where
     {
         vrWidget :: w,
         vrFirstUpdateState :: updatestate,
-        vrUpdate :: updatestate -> [edit] -> IO updatestate,
+        vrUpdate :: forall m. MonadIOInvert m => MutableRead m (EditReader edit) -> updatestate -> [edit] -> m updatestate,
         vrFirstSelState :: Maybe selstate,
         vrGetSelection :: selstate -> IO (Maybe (Aspect edit))
     };
@@ -61,10 +62,11 @@ module Truth.Core.Object.View where
         let
         {
             fusA = (fusB,floatingEditInitial);
-            updateA (oldusB,oldls) editsA = do
+            updateA :: forall m. MonadIOInvert m => MutableRead m (EditReader edita) -> (updatestateb,lensstate) -> [edita] -> m (updatestateb,lensstate);
+            updateA mrA (oldusB,oldls) editsA = do
             {
-                (newls,editsB) <- return $ floatingEditUpdates floatingEditLensFunction editsA oldls;
-                newusB <- updateB oldusB editsB;
+                (newls,editsB) <- unReadable (floatingEditUpdates floatingEditLensFunction editsA oldls) mrA;
+                newusB <- updateB (mapStructure (floatingEditGet oldls) mrA) oldusB editsB;
                 return (newusB,newls);
             };
             getSelA ss = do
@@ -85,7 +87,7 @@ module Truth.Core.Object.View where
         pure vrWidget = MkView $ \_lapi _setSelect -> return $ let
         {
             vrFirstUpdateState = ();
-            vrUpdate () _ = return ();
+            vrUpdate _ () _ = return ();
             vrFirstSelState = Nothing;
             vrGetSelection (ss :: None) = never ss;
         } in MkViewResult{..};
@@ -99,17 +101,19 @@ module Truth.Core.Object.View where
                 setSelect1 ss = setSelect $ Left ss;
                 setSelect2 ss = setSelect $ Right ss;
             };
-            (MkViewResult w1 fus1 update1 mfss1 getsel1) <- view1 lapi1 setSelect1;
-            (MkViewResult w2 fus2 update2 mfss2 getsel2) <- view2 lapi2 setSelect2;
+            (MkViewResult w1 (fus1 :: updatestate1)  update1 mfss1 getsel1) <- view1 lapi1 setSelect1;
+            (MkViewResult w2 (fus2 :: updatestate2) update2 mfss2 getsel2) <- view2 lapi2 setSelect2;
             let
             {
                 w = w1 w2;
 
                 fus = (fus1,fus2);
-                update (olds1,olds2) edits = do
+
+                update :: forall m. MonadIOInvert m => MutableRead m (EditReader edit) -> (updatestate1,updatestate2) -> [edit] -> m (updatestate1,updatestate2);
+                update mr (olds1,olds2) edits = do
                 {
-                    news1 <- update1 olds1 edits;
-                    news2 <- update2 olds2 edits;
+                    news1 <- update1 mr olds1 edits;
+                    news2 <- update2 mr olds2 edits;
                     return (news1,news2);
                 };
 

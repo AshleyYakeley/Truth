@@ -42,11 +42,12 @@ module Truth.Core.Types.SumWhole where
             SumEditLeft (MkWholeEdit a) -> let
             {
                 b = fromReadFunction (floatingEditGet fef oldstate) a
-            } in (oldstate,return $ SumEditLeft $ MkWholeEdit b); -- state unchanged, kind of dubious
-            SumEditRight edita -> let
+            } in return (oldstate,return $ SumEditLeft $ MkWholeEdit b); -- state unchanged, kind of dubious
+            SumEditRight edita -> do
             {
-                (newstate,meditb) = floatingEditUpdate fef edita oldstate;
-            } in (newstate,fmap SumEditRight meditb);
+                (newstate,meditb) <- floatingEditUpdate fef edita oldstate;
+                return (newstate,fmap SumEditRight meditb);
+            };
         }
     };
 

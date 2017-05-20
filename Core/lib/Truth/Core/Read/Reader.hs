@@ -5,6 +5,9 @@ module Truth.Core.Read.Reader where
 
     type MutableRead m reader = forall t. reader t -> m t;
 
+    remonadMutableRead :: (forall a. m1 a -> m2 a) -> MutableRead m1 reader -> MutableRead m2 reader;
+    remonadMutableRead mf mr rt = mf (mr rt);
+
     -- | The values of the reader type are MutableEdit calls that read parts of something of type (ReaderSubject reader).
     class Reader (reader :: * -> *) where
     {

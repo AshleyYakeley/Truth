@@ -35,4 +35,7 @@ module Control.Monad.IOInvert where
             buildStateT mbsb (StateT stmas) = StateT $ \(oldstate,olds) -> fmap swap3' $ runStateT (mbsb (stmas oldstate)) olds;
         };
     };
+
+    mapIOInvert :: (Functor f,Functor g,MonadIOInvert m) => (forall a. f (IO (g a)) -> IO a) -> f (m (g b)) -> m b;
+    mapIOInvert ff fmgb = liftIOInvert $ \unlift -> StateT $ \oldstate -> ff $ fmap (\mgb -> fmap (\(gb,s) -> fmap (\b -> (b,s)) gb) $ runStateT (unlift mgb) oldstate) fmgb;
 }

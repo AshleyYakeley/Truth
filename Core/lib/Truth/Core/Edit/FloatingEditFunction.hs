@@ -10,16 +10,17 @@ module Truth.Core.Edit.FloatingEditFunction  where
     {
         floatingEditInitial :: state,
         floatingEditGet :: state -> ReadFunction (EditReader edita) (EditReader editb),
-        floatingEditUpdate :: edita -> state -> (state,[editb])
+        floatingEditUpdate :: edita -> state -> Readable (EditReader edita) (state,[editb])
     };
 
-    floatingEditUpdates :: FloatingEditFunction state edita editb -> [edita] -> state -> (state, [editb]);
-    floatingEditUpdates _ [] state = (state,[]);
-    floatingEditUpdates fef (e:ee) oldstate = let
+    floatingEditUpdates :: FloatingEditFunction state edita editb -> [edita] -> state -> Readable (EditReader edita) (state, [editb]);
+    floatingEditUpdates _ [] state = return (state,[]);
+    floatingEditUpdates fef (e:ee) oldstate = do
     {
-        (midstate,eb1) = floatingEditUpdate fef e oldstate;
-        (newstate,eb2) = floatingEditUpdates fef ee midstate;
-    } in (newstate,eb1 ++ eb2);
+        (midstate,eb1) <- floatingEditUpdate fef e oldstate;
+        (newstate,eb2) <- floatingEditUpdates fef ee midstate;
+        return (newstate,eb1 ++ eb2);
+    };
 
     fixedFloatingEditFunction :: forall edita editb. EditFunction edita editb -> FloatingEditFunction () edita editb;
     fixedFloatingEditFunction MkEditFunction{..} = let
@@ -27,7 +28,11 @@ module Truth.Core.Edit.FloatingEditFunction  where
         floatingEditInitial = ();
         floatingEditGet :: () -> ReadFunction (EditReader edita) (EditReader editb);
         floatingEditGet _ = editGet;
-        floatingEditUpdate edit _ = ((),editUpdate edit);
+        floatingEditUpdate edit _ = do
+        {
+            editBs <- editUpdate edit;
+            return ((),editBs);
+        };
     } in MkFloatingEditFunction{..};
 
     mapFloatingEditFunction :: (EditReader editb1 ~ EditReader editb2) =>
@@ -36,10 +41,11 @@ module Truth.Core.Edit.FloatingEditFunction  where
     {
         floatingEditInitial = floatingEditInitial fef,
         floatingEditGet = floatingEditGet fef,
-        floatingEditUpdate = \edita oldstate -> let
+        floatingEditUpdate = \edita oldstate -> do
         {
-            (newstate,meditb1) = floatingEditUpdate fef edita oldstate;
-        } in (newstate,fmap b12 meditb1)
+            (newstate,meditb1) <- floatingEditUpdate fef edita oldstate;
+            return (newstate,fmap b12 meditb1);
+        }
     };
 
     comapFloatingEditFunction :: (EditReader edita1 ~ EditReader edita2) =>
@@ -73,16 +79,12 @@ module Truth.Core.Edit.FloatingEditFunction  where
         {
             floatingEditInitial = (floatingEditInitial fef1,floatingEditInitial fef2),
             floatingEditGet = \(s1,s2) -> composeReadFunction (floatingEditGet fef2 s2) (floatingEditGet fef1 s1),
-            floatingEditUpdate = \ea (s1,s2) -> let
+            floatingEditUpdate = \editA (oldstate1,oldstate2) -> do
             {
-                (s1',leb) = floatingEditUpdate fef1 ea s1;
-                addeditb eb (oldstate,ecs) = let
-                {
-                    (newstate,newecs) = floatingEditUpdate fef2 eb oldstate;
-                } in (newstate,ecs ++ newecs);
-                (s2',lec) = foldr addeditb (s2,[]) leb;
+                (newstate1,editBs) <- floatingEditUpdate fef1 editA oldstate1;
+                (newstate2,editCs) <- mapReadable (floatingEditGet fef1 oldstate1) $ floatingEditUpdates fef2 editBs oldstate2;
+                return ((newstate1,newstate2),editCs);
             }
-            in ((s1',s2'),lec)
         };
     };
 }

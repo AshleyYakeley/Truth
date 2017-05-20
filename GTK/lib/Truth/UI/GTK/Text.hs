@@ -5,6 +5,7 @@ module Truth.UI.GTK.Text (textMatchView) where
     import Control.Concurrent.MVar;
     import Control.Monad.IO.Class;
     import Graphics.UI.Gtk;
+    import Control.Monad.IOInvert;
     import Data.Witness;
     import Data.Reity;
     import Truth.Core;
@@ -93,9 +94,9 @@ module Truth.UI.GTK.Text (textMatchView) where
             update (StringReplaceWhole text) = textBufferSetText buffer text;
             update (StringReplaceSection bounds text) = replaceText buffer bounds text;
 
-            vrUpdate :: () -> [StringEdit String] -> IO ();
+            vrUpdate :: forall m. MonadIOInvert m => MutableRead m (StringRead String) -> () -> [StringEdit String] -> m ();
             -- this withMVar prevents the signal handlers from re-sending edits
-            vrUpdate () edits = withMVar mv $ \_ -> traverse_ update edits;
+            vrUpdate _ () edits = liftIO $ withMVar mv $ \_ -> traverse_ update edits;
 
             vrFirstSelState :: Maybe ();
             vrFirstSelState = Just ();

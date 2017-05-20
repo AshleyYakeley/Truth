@@ -10,26 +10,27 @@ module Truth.Core.Edit.EditFunction where
     data EditFunction edita editb = MkEditFunction
     {
         editGet :: ReadFunction (EditReader edita) (EditReader editb),
-        editUpdate :: edita -> [editb]
+        editUpdate :: edita -> Readable (EditReader edita) [editb]
     };
 
-    editUpdates :: EditFunction edita editb -> [edita] -> [editb];
-    editUpdates ef eas = mconcat $ fmap (editUpdate ef) eas;
+    editUpdates :: EditFunction edita editb -> [edita] -> Readable (EditReader edita) [editb];
+    editUpdates ef eas = fmap mconcat $ for eas (editUpdate ef);
 
     instance Category EditFunction where
     {
         id = MkEditFunction
         {
             editGet = readable,
-            editUpdate = \edit -> return edit
+            editUpdate = \edit -> return [edit]
         };
         bc . ab = MkEditFunction
         {
             editGet = composeReadFunction (editGet bc) (editGet ab),
-            editUpdate = \edita -> do
+            editUpdate = \editA -> do
             {
-                editb <- editUpdate ab edita;
-                editUpdate bc editb;
+                editBs <- editUpdate ab editA;
+                editCss <- for editBs $ \editB -> mapReadable (editGet ab) $ editUpdate bc editB;
+                return $ mconcat editCss;
             }
         };
     };
@@ -64,6 +65,6 @@ module Truth.Core.Edit.EditFunction where
     cleanEditFunction ff = MkEditFunction
     {
         editGet = cleanReadFunction (cleanEditGet ff),
-        editUpdate = cleanEditUpdate ff
+        editUpdate = \ea -> return $ cleanEditUpdate ff ea
     };
 }
