@@ -177,7 +177,7 @@ module Truth.Core.Types.String where
         floatingEditLensFunction :: FloatingEditFunction (SequenceRun seq) (StringEdit seq) (StringEdit seq);
         floatingEditLensFunction = MkFloatingEditFunction{..};
 
-        floatingEditLensPutEdit :: SequenceRun seq -> StringEdit seq -> Readable (StringRead seq) (Maybe (SequenceRun seq,StringEdit seq));
+        floatingEditLensPutEdit :: SequenceRun seq -> StringEdit seq -> Readable (StringRead seq) (Maybe (SequenceRun seq,[StringEdit seq]));
         floatingEditLensPutEdit stateRaw editb = do
         {
             len <- readable StringReadLength;
@@ -187,13 +187,13 @@ module Truth.Core.Types.String where
             };
             return $ Just $ case editb of
             {
-                StringReplaceWhole sb -> (oldstate{runLength=seqLength sb},StringReplaceSection oldstate sb);
+                StringReplaceWhole sb -> (oldstate{runLength=seqLength sb},[StringReplaceSection oldstate sb]);
                 StringReplaceSection runb sb -> let
                 {
                     newlength = runLength oldstate + seqLength sb - runLength runb;
                     newstate = oldstate{runLength=newlength};
                     runa = relativeRun (negate $ runStart oldstate) runb;
-                } in (newstate,StringReplaceSection runa sb);
+                } in (newstate,[StringReplaceSection runa sb]);
             };
         };
 

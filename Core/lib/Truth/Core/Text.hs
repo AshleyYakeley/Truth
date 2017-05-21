@@ -8,14 +8,13 @@ module Truth.Core.Text where
     packBijection = MkBijection unpack pack;
 
     data ListError = MkListError Int;
-{-
-    instance HasInfo (Type_T ListError) where
+
+    instance HasInfo ListError where
     {
-        info = mkSimpleInfo $(iowitness[t| Type_T ListError |])
-        [
-        ];
+        info = mkSimpleInfo $(iowitness[t|ListError|]) [$(declInfo [d|
+        |])];
     };
--}
+
     utf8Injection :: Injection [Word8] (Result ListError String);
     utf8Injection = resultInjection decodeUTF8 encodeUTF8 where
     {

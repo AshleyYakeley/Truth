@@ -86,7 +86,7 @@ module Truth.Core.Types.Whole where
             let
             {
                 newma = lensPutback lens newb olda;
-                medita = fmap MkWholeEdit newma;
+                medita = fmap (pure . MkWholeEdit) newma;
             };
             return medita;
         }

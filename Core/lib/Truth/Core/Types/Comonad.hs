@@ -78,6 +78,6 @@ module Truth.Core.Types.Comonad where
     comonadEditLens = let
     {
         editLensFunction = comonadEditFunction;
-        editLensPutEdit edit = return $ pure $ MkComonadEdit edit;
+        editLensPutEdit edit = return $ pure [MkComonadEdit edit];
     } in MkEditLens{..};
 }

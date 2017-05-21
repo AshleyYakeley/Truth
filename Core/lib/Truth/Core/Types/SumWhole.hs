@@ -27,7 +27,7 @@ module Truth.Core.Types.SumWhole where
     sumWholeCleanEditLens lens = MkCleanEditLens
     {
         cleanEditLensFunction = sumWholeCleanEditFunction (cleanEditLensFunction lens),
-        cleanEditLensPutEdit = \editb -> fmap SumEditRight (cleanEditLensPutEdit lens editb)
+        cleanEditLensPutEdit = \editb -> fmap (fmap SumEditRight) (cleanEditLensPutEdit lens editb)
     };
 
     sumWholeFloatingEditFunction :: (Reader (EditReader edita), FullReader (EditReader editb)) =>
@@ -63,12 +63,12 @@ module Truth.Core.Types.SumWhole where
             SumEditLeft (MkWholeEdit b) -> do
             {
                 ma <- pushback state b;
-                return $ fmap (fmap (SumEditLeft . MkWholeEdit)) ma;
+                return $ fmap (fmap (pure . SumEditLeft . MkWholeEdit)) ma;
             };
             SumEditRight editb -> do
             {
                 mstateedita <- floatingEditLensPutEdit lens state editb;
-                return $ fmap (fmap SumEditRight) mstateedita;
+                return $ fmap (fmap (fmap SumEditRight)) mstateedita;
             };
         }
     };

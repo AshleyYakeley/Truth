@@ -51,7 +51,7 @@ module Truth.Core.Edit.Edit where
         replaceEdit :: WriterReadable edit (EditReader edit) ();
     };
 
-    getReplaceEdits :: FullEdit edit => ReaderSubject (EditReader edit) -> [edit];
+    getReplaceEdits :: FullEdit edit => EditSubject edit -> [edit];
     getReplaceEdits = fromReadable (writerToReadable replaceEdit);
 
     instance HasInfo FullEdit where

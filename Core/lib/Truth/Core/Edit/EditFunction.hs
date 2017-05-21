@@ -67,4 +67,15 @@ module Truth.Core.Edit.EditFunction where
         editGet = cleanReadFunction (cleanEditGet ff),
         editUpdate = \ea -> return $ cleanEditUpdate ff ea
     };
+
+    convertEditFunction :: (EditSubject edita ~ EditSubject editb,Edit edita,FullReader (EditReader edita),FullEdit editb) => EditFunction edita editb;
+    convertEditFunction = let
+    {
+        editGet = convertReadFunction;
+        editUpdate edita = do
+        {
+            newsubject <- mapReadable (applyEdit edita) fromReader;
+            return $ getReplaceEdits newsubject;
+        };
+    } in MkEditFunction{..};
 }

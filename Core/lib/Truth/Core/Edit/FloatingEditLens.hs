@@ -10,7 +10,7 @@ module Truth.Core.Edit.FloatingEditLens where
     data FloatingEditLens' m state edita editb = MkFloatingEditLens
     {
         floatingEditLensFunction :: FloatingEditFunction state edita editb,
-        floatingEditLensPutEdit :: state -> editb -> Readable (EditReader edita) (m (state,edita))
+        floatingEditLensPutEdit :: state -> editb -> Readable (EditReader edita) (m (state,[edita]))
     };
 
     floatingEditLensPutEdits :: (Monad m,Traversable m) => FloatingEditLens' m state edita editb -> state -> [editb] -> Readable (EditReader edita) (m (state,[edita]));
@@ -19,7 +19,7 @@ module Truth.Core.Edit.FloatingEditLens where
     {
         (midstate,ea) <- MkCompose $ floatingEditLensPutEdit lens oldstate e;
         (newstate,eea) <- MkCompose $ floatingEditLensPutEdits lens midstate ee;
-        return (newstate,ea:eea);
+        return (newstate,ea ++ eea);
     };
 
     floatingEditLensAllowed :: (MonadOne m) =>
@@ -59,9 +59,9 @@ module Truth.Core.Edit.FloatingEditLens where
                 meditb <- mapReadable (floatingEditGet (floatingEditLensFunction fel1) olds1) (floatingEditLensPutEdit fel2 olds2 editc);
                 case retrieveOne meditb of
                 {
-                    SuccessResult (news2,editb) -> do
+                    SuccessResult (news2,editbs) -> do
                     {
-                        mn1ea <- floatingEditLensPutEdit fel1 olds1 editb;
+                        mn1ea <- floatingEditLensPutEdits fel1 olds1 editbs;
                         return $ fmap (\(news1,edita) -> ((news1,news2),edita)) mn1ea;
                     };
                     FailureResult (MkLimit mx) -> return mx;

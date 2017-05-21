@@ -57,11 +57,11 @@ module Truth.Core.Types.OneEdit where
             editLensFunction = cfmap (editLensFunction lens),
             editLensPutEdit = \(MkOneEdit editb) -> do
             {
-                fmedita <- liftMaybeReadable $ editLensPutEdit lens editb;
-                return $ case retrieveOne fmedita of
+                fmeditas <- liftMaybeReadable $ editLensPutEdit lens editb;
+                return $ case retrieveOne fmeditas of
                 {
-                    SuccessResult medita -> fmap MkOneEdit medita;
-                    FailureResult _fx -> pure (MkOneEdit undefined); -- any OneEdit edit will do
+                    SuccessResult meditas -> fmap (fmap MkOneEdit) meditas;
+                    FailureResult _fx -> pure [MkOneEdit undefined]; -- any OneEdit edit will do
                 };
             }
         };
@@ -109,7 +109,7 @@ module Truth.Core.Types.OneEdit where
             fpusha <- liftMaybeReadable (floatingEditLensPutEdit lens oldstate pushb);
             return $ case getMaybeOne fpusha of
             {
-                Just (Just (newstate,edita)) -> Just (newstate,MkOneEdit edita);
+                Just (Just (newstate,editas)) -> Just (newstate,fmap MkOneEdit editas);
                 _ -> Nothing;
             };
         }

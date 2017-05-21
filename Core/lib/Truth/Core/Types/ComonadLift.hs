@@ -20,6 +20,6 @@ module Truth.Core.Types.ComonadLift where
     comonadLiftEditLens (MkEditLens ef epe) = let
     {
         editLensFunction = comonadLiftEditFunction ef;
-        editLensPutEdit (MkComonadEdit edit) = fmap (fmap MkComonadEdit) $ mapReadable comonadReadFunction $ epe edit;
+        editLensPutEdit (MkComonadEdit edit) = fmap (fmap (fmap MkComonadEdit)) $ mapReadable comonadReadFunction $ epe edit;
     } in MkEditLens{..};
 }

@@ -11,12 +11,12 @@ module Truth.Core.Edit.EditLens where
     data EditLens' m edita editb = MkEditLens
     {
         editLensFunction :: EditFunction edita editb,
-        editLensPutEdit :: editb -> Readable (EditReader edita) (m edita)
+        editLensPutEdit :: editb -> Readable (EditReader edita) (m [edita])
     };
 
     editLensPutEdits :: Applicative m => EditLens' m edita editb -> [editb] -> Readable (EditReader edita) (m [edita]);
     editLensPutEdits _lens [] = return $ pure [];
-    editLensPutEdits lens (e:ee) = getCompose $ (:) <$> (MkCompose $ editLensPutEdit lens e) <*> (MkCompose $ editLensPutEdits lens ee);
+    editLensPutEdits lens (e:ee) = getCompose $ (++) <$> (MkCompose $ editLensPutEdit lens e) <*> (MkCompose $ editLensPutEdits lens ee);
 
     editLensAllowed :: (MonadOne m) =>
      EditLens' m edita editb -> editb -> Readable (EditReader edita) Bool;
@@ -42,20 +42,35 @@ module Truth.Core.Edit.EditLens where
         id = MkEditLens
         {
             editLensFunction = id,
-            editLensPutEdit = \editb -> pure (pure editb)
+            editLensPutEdit = \editb -> pure $ pure $ pure editb
         };
         bc . ab = MkEditLens
         {
             editLensFunction = (editLensFunction bc) . (editLensFunction ab),
             editLensPutEdit = \editc -> do
             {
-                meditb <- mapReadable (editGet (editLensFunction ab)) (editLensPutEdit bc editc);
-                case retrieveOne meditb of
+                meditbs <- mapReadable (editGet (editLensFunction ab)) (editLensPutEdit bc editc);
+                case retrieveOne meditbs of
                 {
-                    SuccessResult editb -> editLensPutEdit ab editb;
+                    SuccessResult editbs -> editLensPutEdits ab editbs;
                     FailureResult (MkLimit ff) -> return ff;
                 };
             }
         };
     };
+
+    convertEditLens :: (Applicative m,EditSubject edita ~ EditSubject editb,Edit edita,FullEdit edita,FullEdit editb) => EditLens' m edita editb;
+    convertEditLens = let
+    {
+        editLensFunction = convertEditFunction;
+        editLensPutEdit editb = do
+        {
+            oldsubject <- fromReader;
+            let
+            {
+                newsubject = fromReadFunction (applyEdit editb) oldsubject;
+            };
+            return $ pure $ getReplaceEdits newsubject;
+        };
+    } in MkEditLens{..};
 }

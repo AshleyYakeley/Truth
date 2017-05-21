@@ -8,8 +8,12 @@ module Truth.Core.Edit.CleanEditLens where
     data CleanEditLens' m edita editb = MkCleanEditLens
     {
         cleanEditLensFunction :: CleanEditFunction edita editb,
-        cleanEditLensPutEdit :: editb -> (m edita)
+        cleanEditLensPutEdit :: editb -> m [edita]
     };
+
+    cleanEditLensPutEdits :: Applicative m => CleanEditLens' m edita editb -> [editb] -> m [edita];
+    cleanEditLensPutEdits _lens [] = pure [];
+    cleanEditLensPutEdits lens (e:ee) = (++) <$> (cleanEditLensPutEdit lens e) <*> (cleanEditLensPutEdits lens ee);
 
     instance IsBiMap CleanEditLens' where
     {
@@ -22,10 +26,10 @@ module Truth.Core.Edit.CleanEditLens where
 
     instance (Monad m) => Category (CleanEditLens' m) where
     {
-        id = MkCleanEditLens id return;
+        id = MkCleanEditLens id (return . pure);
         bc . ab = MkCleanEditLens
          ((cleanEditLensFunction bc) . (cleanEditLensFunction ab))
-         (\c -> (cleanEditLensPutEdit bc c) >>= (cleanEditLensPutEdit ab));
+         (\c -> (cleanEditLensPutEdit bc c) >>= (cleanEditLensPutEdits ab));
     };
 
     cleanEditLens :: CleanEditLens' m edita editb -> EditLens' m edita editb;

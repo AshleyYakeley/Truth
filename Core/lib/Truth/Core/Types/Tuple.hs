@@ -165,6 +165,6 @@ module Truth.Core.Types.Tuple where
                 _ -> [];
             }
         },
-        cleanEditLensPutEdit = Identity . (MkTupleEdit seledit)
+        cleanEditLensPutEdit = Identity . pure . (MkTupleEdit seledit)
     };
 }
