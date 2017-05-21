@@ -84,6 +84,12 @@ module Truth.Core.Types.Context where
         tupleIsFullEdit EditContent = MkConstraintWitness;
     };
 
+    instance (Edit ex,HasInfo ex,Edit en,HasInfo en) => TupleHasInfo (WithContextSelector ex en) where
+    {
+        tupleHasInfo EditContext = info;
+        tupleHasInfo EditContent = info;
+    };
+
     $(return []);
     instance HasInfo WithContextSelector where
     {

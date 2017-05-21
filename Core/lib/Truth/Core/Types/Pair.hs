@@ -53,6 +53,13 @@ module Truth.Core.Types.Pair where
         tupleIsFullEdit EditSecond = MkConstraintWitness;
     };
 
+    instance (Edit ea,HasInfo ea,Edit eb,HasInfo eb) =>
+        TupleHasInfo (PairSelector ea eb) where
+    {
+        tupleHasInfo EditFirst = info;
+        tupleHasInfo EditSecond = info;
+    };
+
     partitionPairEdits :: forall ea eb. [PairEdit ea eb] -> ([ea], [eb]);
     partitionPairEdits pes = let
     {

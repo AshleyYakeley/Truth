@@ -141,6 +141,18 @@ module Truth.Core.Types.Tuple where
         |])];
     };
 
+    class TupleSelector sel => TupleHasInfo (sel :: * -> *) where
+    {
+        tupleHasInfo :: forall edit. sel edit -> Info edit;
+    };
+
+    $(return []);
+    instance HasInfo TupleHasInfo where
+    {
+        info = mkSimpleInfo $(iowitness[t|TupleHasInfo|]) [$(declInfo [d|
+        |])];
+    };
+
     tupleCleanEditLens :: TestEquality sel => sel edit -> CleanEditLens' Identity (TupleEdit sel) edit;
     tupleCleanEditLens seledit = MkCleanEditLens
     {

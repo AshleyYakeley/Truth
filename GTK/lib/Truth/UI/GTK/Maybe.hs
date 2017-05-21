@@ -1,6 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
-module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
+module Truth.UI.GTK.Maybe ({- maybeMatchView,resultMatchView -}) where
 {
+{-
     import Control.Applicative;
     import Data.IORef;
     import Data.Result;
@@ -58,7 +59,7 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
      Info f -> Aspect edit -> Maybe (Aspect (OneWholeEdit f edit));
     mapSelection fi aspect = mapOneWholeEditAspect fi aspect;
 
-    functorOneIVF :: forall f edit wd.
+    monadOneIVF :: forall f edit wd.
     (
         Applicative f,
         MonadOne f,
@@ -67,7 +68,7 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
         WidgetClass wd
     ) =>
       Info f -> Maybe (Limit f) -> (Push (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
-    functorOneIVF tf mDeleteValue makeEmptywidget factory initial push = let
+    monadOneIVF tf mDeleteValue makeEmptywidget factory initial push = let
     {
         mpush :: Push edit;
         mpush ea = push (Right (MkOneEdit ea));
@@ -142,7 +143,7 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
 
     maybeView :: (HasNewValue (EditSubject edit),FullEdit edit) =>
       w edit -> GView edit -> GView (OneWholeEdit Maybe edit);
-    maybeView _ = functorOneIVF @Maybe info (Just $ MkLimit Nothing) (createButton (Just newValue));
+    maybeView _ = monadOneIVF @Maybe info (Just $ MkLimit Nothing) (createButton (Just newValue));
 
     placeholderLabel :: IO Label;
     placeholderLabel = do
@@ -152,7 +153,7 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
     };
 
     resultView :: (HasNewValue (EditSubject edit),FullEdit edit) => w edit -> Info err -> GView edit -> GView (OneWholeEdit (Result err) edit);
-    resultView _ terr = functorOneIVF (applyInfo (info :: Info Result) terr) Nothing (\_ -> placeholderLabel);
+    resultView _ terr = monadOneIVF (applyInfo (info :: Info Result) terr) Nothing (\_ -> placeholderLabel);
 
     maybeMatchView :: GetView -> MatchView;
     maybeMatchView getView i = do
@@ -176,4 +177,5 @@ module Truth.UI.GTK.Maybe (maybeMatchView,resultMatchView) where
         ConstraintFact <- ask (infoKnowledge i) $ applyInfo (info @FullEdit) eInfo;
         return (resultView eInfo errInfo (getView eInfo));
     };
+-}
 }
