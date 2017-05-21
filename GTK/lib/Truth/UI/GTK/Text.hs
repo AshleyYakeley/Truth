@@ -114,7 +114,7 @@ module Truth.UI.GTK.Text (textMatchView) where
     };
 
     textMatchView :: MatchView;
-    textMatchView tedit = do
+    textMatchView = MkMatchView $ \tedit -> do
     {
         Refl <- testEquality (info :: Info (StringEdit String)) tedit;
         return textView;

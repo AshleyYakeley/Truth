@@ -21,7 +21,7 @@ module Truth.UI.GTK.Tuple(tupleMatchView) where
     tupleGView selview = fmap (mapIOView arrangeWidgets) $ tupleView selview;
 
     tupleMatchView :: MatchView -> MatchView;
-    tupleMatchView allviews tedit = do
+    tupleMatchView (MkMatchView allviews) = MkMatchView $ \tedit -> do
     {
         MkSplitInfo ite isel <- matchInfo tedit;
         ReflH <- testHetEquality (info @TupleEdit) ite;

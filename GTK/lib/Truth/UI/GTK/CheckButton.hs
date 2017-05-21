@@ -42,7 +42,7 @@ module Truth.UI.GTK.CheckButton where
     };
 
     checkButtonMatchView :: MatchView;
-    checkButtonMatchView tedit = do
+    checkButtonMatchView = MkMatchView $ \tedit -> do
     {
         Refl <- testEquality (info :: Info (WholeEdit (WholeReader Bool))) tedit;
         return $ checkButtonView "";

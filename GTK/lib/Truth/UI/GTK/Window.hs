@@ -2,11 +2,11 @@
 module Truth.UI.GTK.Window where
 {
     import Data.IORef;
-    import Truth.TypeKT;
+    import Data.Reity;
     import Truth.Core;
     import Graphics.UI.Gtk;
     import Truth.UI.GTK.GView;
-    import Truth.UI.GTK.Maybe;
+    --import Truth.UI.GTK.Maybe;
     import Truth.UI.GTK.CheckButton;
     import Truth.UI.GTK.Text;
 
@@ -21,62 +21,72 @@ module Truth.UI.GTK.Window where
     };
 
     lastResortView :: GetView;
-    lastResortView _ = \_ _ -> do
+    lastResortView _ = MkView $ \_ _ -> do
     {
         w <- labelNew (Just "Uneditable");
-        return (MkViewResult (MkViewWidgetStuff (toWidget w) (return Nothing)) (\_ -> return ()));
+        let
+        {
+            vrWidget = toWidget w;
+            vrFirstUpdateState = ();
+            vrUpdate _ _ _ = return ();
+            vrFirstSelState = Nothing;
+            vrGetSelection _ = return Nothing;
+        };
+        return MkViewResult{..};
     };
 
     matchViews :: [MatchView];
-    matchViews = [checkButtonMatchView,textMatchView,maybeMatchView getView,resultMatchView getView];
+    matchViews = [checkButtonMatchView,textMatchView {-,maybeMatchView getView,resultMatchView getView-}];
 
     getView :: GetView;
-    getView = theView matchViews where
-    {
-        theView :: [MatchView] -> GetView;
-        theView [] tedit = lastResortView tedit;
-        theView (mview:mviews) tedit = case mview tedit of
-        {
-            Just gview -> gview;
-            _ -> theView mviews tedit;
-        };
-    };
+    getView = finalGetView (mconcat matchViews) lastResortView;
 
-    makeWindow :: (Edit edit) => Info (Type_T edit) -> IORef Int -> IO () -> Subscribe edit -> IO ();
-    makeWindow te ref tellclose sub = do
+    {-
+    viewSubscription :: View edit w -> Subscription edit -> IO (SubscriptionView edit w);
+        data SubscriptionView edit w = MkSubscriptionView
+        {
+            srWidget :: w,
+            srGetSelection :: IO (Maybe (Aspect edit)),
+            srClose :: IO ()
+        };
+    -}
+    makeWindow :: (Edit edit) => Info edit -> IORef Int -> IO () -> Subscription edit -> IO ();
+    makeWindow te _ref tellclose sub = do
     {
-        (sub',w,close) <- viewSubscription (getView te) sub;
+        MkSubscriptionView{..} <- viewSubscription (getView te) sub;
         window <- windowNew;
         box <- vBoxNew False 0;
 
         selectionButton <- makeButton "Selection" (do
         {
-            msel <- vwsGetSelection w;
+            msel <- srGetSelection;
             case msel of
             {
+            {-
                 Just (MkAspect tsel _ta lens) -> do
                 {
                     makeWindowCountRef tsel ref (mapSubscription lens sub');
                 };
+            -}
                 _ -> return ();
             };
         });
 
         boxPackStart box selectionButton PackNatural 0;
-        boxPackStart box (vwsWidget w) PackGrow 0;
+        boxPackStart box srWidget PackGrow 0;
 
         set window [containerChild := box];
-        widgetShow (vwsWidget w);
+        widgetShow srWidget;
         _ <- onDestroy window (do
         {
-            close;
+            srClose;
             tellclose;
         });
         widgetShowAll window;
         return ();
     };
 
-    makeWindowCountRef :: (Edit edit) => Info (Type_T edit) -> IORef Int -> Subscribe edit -> IO ();
+    makeWindowCountRef :: (Edit edit) => Info edit -> IORef Int -> Subscription edit -> IO ();
     makeWindowCountRef te windowCount sub = do
     {
         makeWindow te windowCount (do
