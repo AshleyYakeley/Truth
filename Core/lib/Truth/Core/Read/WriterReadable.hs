@@ -38,7 +38,7 @@ module Truth.Core.Read.WriterReadable where
 
     instance MapReadable (WriterReadable w) where
     {
-        mapReadable rf (MkWriterReadable sbwt) = MkWriterReadable $ \sa wm -> sbwt (mapStructure rf sa) wm;
+        mapReadable rf (MkWriterReadable sbwt) = MkWriterReadable $ \sa wm -> sbwt (mapMutableRead rf sa) wm;
         mapReadableF rff (MkWriterReadable sbwt) = MkWriterReadable $ \sa wm -> getCompose $ sbwt (mapStructureF rff sa) (fmap (MkCompose . fmap pure) wm);
     };
 

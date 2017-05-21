@@ -8,11 +8,11 @@ module Truth.Core.Read.ReadFunction where
 
     type ReadFunction readera readerb = forall t. readerb t -> Readable readera t;
 
-    mapStructure :: forall m ra rb. Monad m => ReadFunction ra rb -> MutableRead m ra -> MutableRead m rb;
-    mapStructure rfab sma rbt = unReadable (rfab rbt) sma;
+    mapMutableRead :: forall m ra rb. Monad m => ReadFunction ra rb -> MutableRead m ra -> MutableRead m rb;
+    mapMutableRead rfab sma rbt = unReadable (rfab rbt) sma;
 
     composeReadFunction :: ReadFunction rb rc -> ReadFunction ra rb -> ReadFunction ra rc;
-    composeReadFunction = mapStructure;
+    composeReadFunction = mapMutableRead;
 
     makeReadFunction :: (Reader rb) => Readable ra (ReaderSubject rb) -> ReadFunction ra rb;
     makeReadFunction = readFromM;

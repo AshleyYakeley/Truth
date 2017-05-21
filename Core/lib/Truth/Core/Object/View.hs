@@ -66,7 +66,7 @@ module Truth.Core.Object.View where
             updateA mrA (oldusB,oldls) editsA = do
             {
                 (newls,editsB) <- unReadable (floatingEditUpdates floatingEditLensFunction editsA oldls) mrA;
-                newusB <- updateB (mapStructure (floatingEditGet oldls) mrA) oldusB editsB;
+                newusB <- updateB (mapMutableRead (floatingEditGet oldls) mrA) oldusB editsB;
                 return (newusB,newls);
             };
             getSelA ss = do

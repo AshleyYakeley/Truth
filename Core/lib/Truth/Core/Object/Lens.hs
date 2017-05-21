@@ -24,7 +24,7 @@ module Truth.Core.Object.Lens where
         updateA (_lapiA,editor) mr (oldus,oldls) editAs = do
         {
             (newls,editBs) <- unReadable (floatingEditUpdates floatingEditLensFunction editAs oldls) mr;
-            newus <- updateB editor (mapStructure (floatingEditGet oldls) mr) oldus editBs;
+            newus <- updateB editor (mapMutableRead (floatingEditGet oldls) mr) oldus editBs;
             return (newus,newls);
         };
     } in do

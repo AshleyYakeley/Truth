@@ -66,7 +66,7 @@ module Truth.Core.Object.LockAPI where
             readB rt = do
             {
                 state <- get;
-                lift $ mapStructure (floatingEditGet state) readA rt;
+                lift $ mapMutableRead (floatingEditGet state) readA rt;
             };
 
             convertEdit :: [editb] -> (StateT lensstate m) (Maybe [edita]);
