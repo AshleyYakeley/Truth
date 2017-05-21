@@ -17,7 +17,7 @@ module Truth.Linux.File
     import System.Posix.Files;
     import System.INotify.Balanced;
     import Truth.Edit;
-    import Truth.Object;
+    import Truth.Subscription;
 
 
     withWatch :: INotifyB -> [EventVariety] -> FilePath -> (Event -> IO ()) -> IO r -> IO r;

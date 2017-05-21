@@ -5,8 +5,8 @@ module Main where
     import Data.Maybe;
     import Data.ConstFunction;
     import Truth.Edit;
-    import Truth.Object;
-    import Truth.Object.Editor;
+    import Truth.Subscription;
+    import Truth.Subscription.Editor;
 
 
     instance (Show edit,Show (Index c)) => Show (IndexEdit c edit) where
@@ -88,7 +88,7 @@ module Main where
         putStrLn "Test Drop";
         withShowSubscription (freeObjSubscribe "pq" :: Subscribe (ListEdit (WholeEdit Char))) "main" (\obj push -> do
         {
-            withShowSubscription (lensObject (listDrop 2) obj) "sect" (\sectobj pushSect -> do
+            withShowSubscription (mapSubscription (listDrop 2) obj) "sect" (\sectobj pushSect -> do
             {
                 putStrLn ("-------");
                 push (ReplaceSectionEdit (MkListRegion 2 0) "ZUM");
@@ -123,7 +123,7 @@ module Main where
         putStrLn "Test Take";
         withShowSubscription (freeObjSubscribe "tu" :: Subscribe (ListEdit (WholeEdit Char))) "main" (\obj push -> do
         {
-            withShowSubscription (lensObject (listTake 0) obj) "sect" (\sectobj pushSect -> do
+            withShowSubscription (mapSubscription (listTake 0) obj) "sect" (\sectobj pushSect -> do
             {
                 putStrLn ("-------");
                 push (ReplaceSectionEdit (MkListRegion 0 0) "ZUM");
@@ -165,14 +165,14 @@ module Main where
 --            push (ReplaceEdit "PQRSTU");
 --            showObject "main" obj;
 
-            withShowSubscription (lensObject (listSection (MkListRegion 2 2)) obj) "sect" (\sectobj pushSect -> do
+            withShowSubscription (mapSubscription (listSection (MkListRegion 2 2)) obj) "sect" (\sectobj pushSect -> do
             {
                 putStrLn ("-------");
                 pushSect (replaceEdit "12");
                 showObject "sect" sectobj;
                 showObject "main" obj;
 
-                withShowSubscription (lensObject (listElement 4) obj) "elem" (\elemobj pushElem -> do
+                withShowSubscription (mapSubscription (listElement 4) obj) "elem" (\elemobj pushElem -> do
                 {
                     --pushElem (ReplaceEdit (Just 'p'));
                     --showObject "elem" elemobj;

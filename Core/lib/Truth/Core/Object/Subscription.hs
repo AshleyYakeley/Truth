@@ -1,6 +1,6 @@
-module Truth.Core.Object.Object
+module Truth.Core.Object.Subscription
 (
-    module Truth.Core.Object.Object,
+    module Truth.Core.Object.Subscription,
     liftIO,
 ) where
 {
@@ -12,17 +12,17 @@ module Truth.Core.Object.Object
     import Truth.Core.Object.LockAPI;
 
 
-    type Object edit = forall editor userstate.
+    type Subscription edit = forall editor userstate.
         (LockAPI edit userstate -> IO (editor,userstate)) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
         (forall m. MonadIOInvert m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) -> -- receive: get updates (both others and from your mutableEdit calls)
         IO (editor, IO ());
 
-    newtype ObjectW edit = MkObjectW (Object edit);
+    newtype SubscriptionW edit = MkSubscriptionW (Subscription edit);
 
     data StoreEntry edit userstate = MkStoreEntry (forall m. MonadIOInvert m => MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) userstate;
 
-    shareObject :: forall edit. Object edit -> IO (ObjectW edit);
-    shareObject parent = do
+    shareSubscription :: forall edit. Subscription edit -> IO (SubscriptionW edit);
+    shareSubscription parent = do
     {
         storevar <- newMVar (emptyWitnessStore :: IOWitnessStore (StoreEntry edit));
         let
@@ -107,7 +107,7 @@ module Truth.Core.Object.Object
                 return (newstore,r);
             };
 
-            child :: Object edit;
+            child :: Subscription edit;
             child initC updateC = do
             {
                 rec
@@ -136,11 +136,11 @@ module Truth.Core.Object.Object
                 return (editorC,closerC);
             };
         };
-        return $ MkObjectW child;
+        return $ MkSubscriptionW child;
     };
 
-    shareLockAPI :: LockAPI edit userstate -> IO (ObjectW edit);
-    shareLockAPI lapi = shareObject $ \initr _update -> do
+    shareLockAPI :: LockAPI edit userstate -> IO (SubscriptionW edit);
+    shareLockAPI lapi = shareSubscription $ \initr _update -> do
     {
         rec
         {

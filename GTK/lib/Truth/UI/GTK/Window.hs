@@ -45,7 +45,7 @@ module Truth.UI.GTK.Window where
     makeWindow :: (Edit edit) => Info (Type_T edit) -> IORef Int -> IO () -> Subscribe edit -> IO ();
     makeWindow te ref tellclose sub = do
     {
-        (sub',w,close) <- subscribeView (getView te) sub;
+        (sub',w,close) <- viewSubscription (getView te) sub;
         window <- windowNew;
         box <- vBoxNew False 0;
 
@@ -56,7 +56,7 @@ module Truth.UI.GTK.Window where
             {
                 Just (MkAspect tsel _ta lens) -> do
                 {
-                    makeWindowCountRef tsel ref (lensObject lens sub');
+                    makeWindowCountRef tsel ref (mapSubscription lens sub');
                 };
                 _ -> return ();
             };

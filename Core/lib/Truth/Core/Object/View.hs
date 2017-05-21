@@ -6,7 +6,7 @@ module Truth.Core.Object.View where
     import Truth.Core.Edit;
     import Truth.Core.Types;
     import Truth.Core.Object.LockAPI;
-    import Truth.Core.Object.Object;
+    import Truth.Core.Object.Subscription;
     import Truth.Core.Object.Lens;
     import Truth.Core.Object.Aspect;
 
@@ -130,20 +130,20 @@ module Truth.Core.Object.View where
         };
     };
 
-    data SubscribeResult edit w = MkSubscribeResult
+    data SubscriptionView edit w = MkSubscriptionView
     {
         srWidget :: w,
         srGetSelection :: IO (Maybe (Aspect edit)),
         srClose :: IO ()
     };
 
-    instance Functor (SubscribeResult edit) where
+    instance Functor (SubscriptionView edit) where
     {
-        fmap f (MkSubscribeResult w gs close) = MkSubscribeResult (f w) gs close;
+        fmap f (MkSubscriptionView w gs close) = MkSubscriptionView (f w) gs close;
     };
 
-    subscribeView :: View edit w -> Object edit -> IO (SubscribeResult edit w);
-    subscribeView (MkView view) object = do
+    viewSubscription :: View edit w -> Subscription edit -> IO (SubscriptionView edit w);
+    viewSubscription (MkView view) object = do
     {
         let
         {
@@ -176,7 +176,7 @@ module Truth.Core.Object.View where
             };
             srWidget = vrWidget;
         };
-        return MkSubscribeResult{..};
+        return MkSubscriptionView{..};
     };
 
     tupleView :: FiniteTupleSelector sel => (forall edit. sel edit -> View edit w) -> View (TupleEdit sel) [w];

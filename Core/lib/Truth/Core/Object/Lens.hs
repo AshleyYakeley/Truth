@@ -5,11 +5,11 @@ module Truth.Core.Object.Lens where
     import Truth.Core.Types;
     import Truth.Core.Read;
     import Truth.Core.Object.LockAPI;
-    import Truth.Core.Object.Object;
+    import Truth.Core.Object.Subscription;
 
 
-    lensObject :: forall f edita editb. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Object edita -> Object editb;
-    lensObject (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub (initialB :: LockAPI editb userstate -> IO (editor,userstate)) updateB = let
+    mapSubscription :: forall f edita editb. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Subscription edita -> Subscription editb;
+    mapSubscription (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub (initialB :: LockAPI editb userstate -> IO (editor,userstate)) updateB = let
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
 
@@ -171,8 +171,8 @@ module Truth.Core.Object.Lens where
 
 {-
     -- | Not sure if this should be used.
-    pairObject :: forall ea eb. Object ea -> Object eb -> Object (PairEdit ea eb);
-    pairObject objA objB (initialise :: LockAPI (PairEdit ea eb) userstate -> IO (editor,userstate)) receive = do
+    pairSubscription :: forall ea eb. Subscription ea -> Subscription eb -> Subscription (PairEdit ea eb);
+    pairSubscription objA objB (initialise :: LockAPI (PairEdit ea eb) userstate -> IO (editor,userstate)) receive = do
     {
         let
         {

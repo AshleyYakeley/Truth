@@ -13,7 +13,7 @@ module Main where
     import Data.Lens;
     import Truth.TypeKT;
     import Truth.Edit;
-    import Truth.Object;
+    import Truth.Subscription;
     import Truth.Linux.File;
     import Graphics.UI.Gtk;
     import Truth.UI.GTK;
@@ -32,9 +32,9 @@ module Main where
         {
             file = linuxFileObject inotify arg; -- WithContext FilePath (Maybe ByteString)
             content :: Subscribe (OneWholeEdit Maybe (WholeEdit ByteString))
-             = lensObject (toBiMapMaybe contentCleanLens) file; -- (Maybe ByteString)
+             = mapSubscription (toBiMapMaybe contentCleanLens) file; -- (Maybe ByteString)
             mrtext :: Subscribe (OneWholeEdit Maybe (OneWholeEdit (Result ListError) (ListEdit (WholeEdit Char))))
-             = lensObject (convertEditLens . (wholeEditLens (cfmap (injectionLens (utf8Injection . (toBiMapMaybe (bijectionInjection packBijection)))))) . convertEditLens) content;
+             = mapSubscription (convertEditLens . (wholeEditLens (cfmap (injectionLens (utf8Injection . (toBiMapMaybe (bijectionInjection packBijection)))))) . convertEditLens) content;
         } in do
         {
             makeWindowCountRef info windowCount mrtext;
