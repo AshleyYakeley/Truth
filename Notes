@@ -156,3 +156,30 @@ data Subscription edit = MkSubscription
      ((message -> Allowed message -> IO ()) -> IO (Object t message)) -> Subscribe t message;
 
     type EditObject edit = Object (StructureW IO (EditReader edit)) edit;
+
+3. Applications
+
+3.1 Rich Text
+
+operations:
+display
+selection -- could enforce tree-ness
+insert/replace text
+
+3.1.1 General
+type RichText = [RichItem]
+data RichItem = RIText Text | RIObject Object | RIStyled Style RichText
+
+normalisation: glue successive RIText items
+addressing?
+conformance to schema, e.g. headings, paragraphs, etc.
+
+3.1.2 Note style (paragraph-based)
+type Note = [Paragraph]
+data Paragraph = NP ParagraphStyle [Item]
+data Item = ItemText TextStyle Text | ItemObject Object
+
+3.2 Tabular
+
+Row has a type; bag or list of rows, by key
+Can combine tables, with editing., e.g. joins, unions
