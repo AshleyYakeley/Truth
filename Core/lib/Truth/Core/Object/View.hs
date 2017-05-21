@@ -5,7 +5,7 @@ module Truth.Core.Object.View where
     import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Types;
-    import Truth.Core.Object.LockAPI;
+    import Truth.Core.Object.Object;
     import Truth.Core.Object.Subscription;
     import Truth.Core.Object.Lens;
     import Truth.Core.Object.Aspect;
@@ -25,7 +25,7 @@ module Truth.Core.Object.View where
         fmap f (MkViewResult w fus update fss getsel) = MkViewResult (f w) fus update fss getsel;
     };
 
-    data View edit w = forall updatestate selstate. MkView (LockAPI edit updatestate -> (selstate -> IO ()) -> IO (ViewResult edit updatestate selstate w));
+    data View edit w = forall updatestate selstate. MkView (Object edit updatestate -> (selstate -> IO ()) -> IO (ViewResult edit updatestate selstate w));
 
     instance Functor (View edit) where
     {
@@ -47,7 +47,7 @@ module Truth.Core.Object.View where
     mapView :: forall f w edita editb. MonadOne f => GeneralLens' f edita editb -> View editb w -> View edita w;
     mapView
         lens@(MkCloseFloat (flens :: FloatingEditLens' f lensstate edita editb))
-        (MkView (viewB :: LockAPI editb updatestateb -> (selstate -> IO ()) -> IO (ViewResult editb updatestateb selstate w)))
+        (MkView (viewB :: Object editb updatestateb -> (selstate -> IO ()) -> IO (ViewResult editb updatestateb selstate w)))
         = MkView $ \lapiA setSelect -> do
     {
         let
@@ -55,8 +55,8 @@ module Truth.Core.Object.View where
             MkFloatingEditLens{..} = flens;
             MkFloatingEditFunction{..} = floatingEditLensFunction;
 
-            lapiB :: LockAPI editb updatestateb;
-            lapiB = mapLockAPI flens lapiA;
+            lapiB :: Object editb updatestateb;
+            lapiB = mapObject flens lapiA;
         };
         MkViewResult w fusB updateB fss getSelB <- viewB lapiB setSelect;
         let

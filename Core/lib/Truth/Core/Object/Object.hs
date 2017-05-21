@@ -1,4 +1,4 @@
-module Truth.Core.Object.LockAPI where
+module Truth.Core.Object.Object where
 {
     import Truth.Core.Import;
     import Truth.Core.Read;
@@ -7,24 +7,24 @@ module Truth.Core.Object.LockAPI where
     import Truth.Core.Object.MutableEdit;
 
 
-    newtype LockAPI edit userstate = MkLockAPI (forall r. (forall m. MonadIOInvert m => userstate -> MutableEdit m edit userstate -> m r) -> IO r);
+    newtype Object edit userstate = MkObject (forall r. (forall m. MonadIOInvert m => userstate -> MutableEdit m edit userstate -> m r) -> IO r);
 
-    instance Functor (LockAPI edit) where
+    instance Functor (Object edit) where
     {
-        fmap t1t2 (MkLockAPI lapi1) = MkLockAPI $ \ff -> lapi1 $ \userstate api -> ff (t1t2 userstate) (fmap t1t2 api);
+        fmap t1t2 (MkObject lapi1) = MkObject $ \ff -> lapi1 $ \userstate api -> ff (t1t2 userstate) (fmap t1t2 api);
     };
 
-    nonlockingAPI :: userstate -> MutableEdit IO edit userstate -> LockAPI edit userstate;
-    nonlockingAPI userstate api = MkLockAPI $ \ff -> ff userstate api;
+    nonlockingObject :: userstate -> MutableEdit IO edit userstate -> Object edit userstate;
+    nonlockingObject userstate api = MkObject $ \ff -> ff userstate api;
 
-    freeLockAPI :: forall edit. (Edit edit,FullReader (EditReader edit)) => EditSubject edit -> (EditSubject edit -> Bool) -> IO (LockAPI edit ());
-    freeLockAPI firsta allowed = do
+    freeObject :: forall edit. (Edit edit,FullReader (EditReader edit)) => EditSubject edit -> (EditSubject edit -> Bool) -> IO (Object edit ());
+    freeObject firsta allowed = do
     {
         var <- newMVar firsta;
         let
         {
-            lapi :: LockAPI edit ();
-            lapi = MkLockAPI $ \ff -> modifyMVar var $ \olda -> do
+            lapi :: Object edit ();
+            lapi = MkObject $ \ff -> modifyMVar var $ \olda -> do
             {
                 let
                 {
@@ -50,8 +50,8 @@ module Truth.Core.Object.LockAPI where
         return lapi;
     };
 
-    mapLockAPI :: forall f lensstate edita editb userstate. MonadOne f => FloatingEditLens' f lensstate edita editb -> LockAPI edita (userstate,lensstate) -> LockAPI editb userstate;
-    mapLockAPI lens@MkFloatingEditLens{..} (MkLockAPI lapiA) = MkLockAPI $ \(callB :: forall m. MonadIOInvert m => userstate -> MutableEdit m editb userstate -> m r) -> let
+    mapObject :: forall f lensstate edita editb userstate. MonadOne f => FloatingEditLens' f lensstate edita editb -> Object edita (userstate,lensstate) -> Object editb userstate;
+    mapObject lens@MkFloatingEditLens{..} (MkObject lapiA) = MkObject $ \(callB :: forall m. MonadIOInvert m => userstate -> MutableEdit m editb userstate -> m r) -> let
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
 
@@ -110,8 +110,8 @@ module Truth.Core.Object.LockAPI where
         };
     } in lapiA callA;
 
-    pairLockAPI :: LockAPI ea ua -> LockAPI eb ub -> LockAPI (PairEdit ea eb) (ua,ub);
-    pairLockAPI (MkLockAPI lapiA) (MkLockAPI lapiB) = MkLockAPI $ \ff ->
+    pairObject :: Object ea ua -> Object eb ub -> Object (PairEdit ea eb) (ua,ub);
+    pairObject (MkObject lapiA) (MkObject lapiB) = MkObject $ \ff ->
         lapiA $ \stateA meA -> liftIOInvert $ \unliftA -> StateT $ \oldsA ->
         lapiB $ \stateB meB -> liftIOInvert $ \unliftB -> StateT $ \oldsB ->
         fmap swap3 $ runStateT (ff (stateA,stateB) $ pairMutableEdit (remonadMutableEdit (stateFst . unliftA) meA) (remonadMutableEdit (stateSnd . unliftB) meB)) (oldsA,oldsB);

@@ -9,11 +9,11 @@ module Truth.Core.Object.Subscription
     import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Object.MutableEdit;
-    import Truth.Core.Object.LockAPI;
+    import Truth.Core.Object.Object;
 
 
     type Subscription edit = forall editor userstate.
-        (LockAPI edit userstate -> IO (editor,userstate)) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
+        (Object edit userstate -> IO (editor,userstate)) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
         (forall m. MonadIOInvert m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) -> -- receive: get updates (both others and from your mutableEdit calls)
         IO (editor, IO ());
 
@@ -27,7 +27,7 @@ module Truth.Core.Object.Subscription
         storevar <- newMVar (emptyWitnessStore :: IOWitnessStore (StoreEntry edit));
         let
         {
-            initP :: LockAPI edit () -> IO (LockAPI edit (),());
+            initP :: Object edit () -> IO (Object edit (),());
             initP lapiP = do
             {
                 let
@@ -37,7 +37,7 @@ module Truth.Core.Object.Subscription
                 return (lapiP,tokenP);
             };
 
-            updateP :: forall m. MonadIOInvert m => LockAPI edit () -> MutableRead m (EditReader edit) -> () -> [edit] -> m ();
+            updateP :: forall m. MonadIOInvert m => Object edit () -> MutableRead m (EditReader edit) -> () -> [edit] -> m ();
             updateP _ meP oldtokenP edits = mapIOInvert (modifyMVar storevar) $ \oldstore -> do
             {
                 newstore <- traverseWitnessStore (\_ (MkStoreEntry u oldtoken) -> do
@@ -52,11 +52,11 @@ module Truth.Core.Object.Subscription
                 return (newstore,newtokenP);
             };
         };
-        (MkLockAPI lapiP,closerP) <- parent initP updateP;
+        (MkObject lapiP,closerP) <- parent initP updateP;
         let
         {
-            lapiC :: forall userstate. IOWitnessKey userstate -> LockAPI edit userstate;
-            lapiC key = MkLockAPI $ \ff -> modifyMVar storevar $ \store -> lapiP $ \_tokenP (apiP :: MutableEdit m edit ()) -> do
+            lapiC :: forall userstate. IOWitnessKey userstate -> Object edit userstate;
+            lapiC key = MkObject $ \ff -> modifyMVar storevar $ \store -> lapiP $ \_tokenP (apiP :: MutableEdit m edit ()) -> do
             {
                 let
                 {
@@ -139,8 +139,8 @@ module Truth.Core.Object.Subscription
         return $ MkSubscriptionW child;
     };
 
-    shareLockAPI :: LockAPI edit userstate -> IO (SubscriptionW edit);
-    shareLockAPI lapi = shareSubscription $ \initr _update -> do
+    subscribeObject :: Object edit userstate -> IO (SubscriptionW edit);
+    subscribeObject lapi = shareSubscription $ \initr _update -> do
     {
         rec
         {

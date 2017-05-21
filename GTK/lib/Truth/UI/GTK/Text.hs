@@ -45,7 +45,7 @@ module Truth.UI.GTK.Text (textMatchView) where
     };
 
     textView :: GView (StringEdit String);
-    textView = MkView $ \(MkLockAPI lapi) setSelect -> do
+    textView = MkView $ \(MkObject lapi) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
         initial <- lapi $ \() api -> unReadable fromReader $ mutableRead api;

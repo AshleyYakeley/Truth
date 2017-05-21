@@ -105,7 +105,7 @@ library
         Truth.Core.Types.Savable
         Truth.Core.Types
         Truth.Core.Object.MutableEdit
-        Truth.Core.Object.LockAPI
+        Truth.Core.Object.Object
         Truth.Core.Object.Subscription
         Truth.Core.Object.Lens
         Truth.Core.Object.Editor

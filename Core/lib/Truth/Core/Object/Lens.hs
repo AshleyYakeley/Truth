@@ -4,23 +4,23 @@ module Truth.Core.Object.Lens where
     import Truth.Core.Edit;
     import Truth.Core.Types;
     import Truth.Core.Read;
-    import Truth.Core.Object.LockAPI;
+    import Truth.Core.Object.Object;
     import Truth.Core.Object.Subscription;
 
 
     mapSubscription :: forall f edita editb. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Subscription edita -> Subscription editb;
-    mapSubscription (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub (initialB :: LockAPI editb userstate -> IO (editor,userstate)) updateB = let
+    mapSubscription (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub (initialB :: Object editb userstate -> IO (editor,userstate)) updateB = let
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
 
-        initialA :: LockAPI edita (userstate,lensstate) -> IO ((LockAPI edita (userstate,lensstate),editor),(userstate,lensstate));
+        initialA :: Object edita (userstate,lensstate) -> IO ((Object edita (userstate,lensstate),editor),(userstate,lensstate));
         initialA lapiA = do
         {
-            (ed,us) <- initialB $ mapLockAPI lens lapiA;
+            (ed,us) <- initialB $ mapObject lens lapiA;
             return ((lapiA,ed),(us,floatingEditInitial));
         };
 
-        updateA :: forall m. MonadIOInvert m => (LockAPI edita (userstate,lensstate),editor) -> MutableRead m (EditReader edita) -> (userstate,lensstate) -> [edita] -> m (userstate,lensstate);
+        updateA :: forall m. MonadIOInvert m => (Object edita (userstate,lensstate),editor) -> MutableRead m (EditReader edita) -> (userstate,lensstate) -> [edita] -> m (userstate,lensstate);
         updateA (_lapiA,editor) mr (oldus,oldls) editAs = do
         {
             (newls,editBs) <- unReadable (floatingEditUpdates floatingEditLensFunction editAs oldls) mr;
@@ -172,7 +172,7 @@ module Truth.Core.Object.Lens where
 {-
     -- | Not sure if this should be used.
     pairSubscription :: forall ea eb. Subscription ea -> Subscription eb -> Subscription (PairEdit ea eb);
-    pairSubscription objA objB (initialise :: LockAPI (PairEdit ea eb) userstate -> IO (editor,userstate)) receive = do
+    pairSubscription objA objB (initialise :: Object (PairEdit ea eb) userstate -> IO (editor,userstate)) receive = do
     {
         let
         {
@@ -182,7 +182,7 @@ module Truth.Core.Object.Lens where
                 {
                     initialiseB lapiB = do
                     {
-                        (ed,ustate) <- initialise (fmap snd $ pairLockAPI lapiA lapiB); -- "snd" here is very dubious
+                        (ed,ustate) <- initialise (fmap snd $ pairObject lapiA lapiB); -- "snd" here is very dubious
                         return ((ed,ustate),ustate);
                     };
                     receiveB :: forall m. MonadIOInvert m => (editor,userstate) -> MutableRead m (EditReader eb) -> userstate -> [eb] -> m userstate;

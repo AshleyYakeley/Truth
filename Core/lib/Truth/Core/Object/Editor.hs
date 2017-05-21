@@ -4,13 +4,13 @@ module Truth.Core.Object.Editor where
     import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Object.MutableEdit;
-    import Truth.Core.Object.LockAPI;
+    import Truth.Core.Object.Object;
     import Truth.Core.Object.Subscription;
 
 
     data Editor (edit :: *) r = forall editor userstate. MkEditor
     {
-        editorInit :: LockAPI edit userstate -> IO (editor,userstate),
+        editorInit :: Object edit userstate -> IO (editor,userstate),
         editorUpdate :: forall m. MonadIOInvert m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate,
         editorDo :: editor -> IO r
     };
@@ -29,9 +29,9 @@ module Truth.Core.Object.Editor where
             editorDo () = return a;
         } in MkEditor{..};
 
-        (MkEditor (ei1 :: LockAPI edit userstate1 -> IO (editor1,userstate1)) eu1 ed1) <*> (MkEditor (ei2 :: LockAPI edit userstate2 -> IO (editor2,userstate2)) eu2 ed2) = let
+        (MkEditor (ei1 :: Object edit userstate1 -> IO (editor1,userstate1)) eu1 ed1) <*> (MkEditor (ei2 :: Object edit userstate2 -> IO (editor2,userstate2)) eu2 ed2) = let
         {
-            editorInit :: LockAPI edit (userstate1,userstate2) -> IO ((editor1,editor2),(userstate1,userstate2));
+            editorInit :: Object edit (userstate1,userstate2) -> IO ((editor1,editor2),(userstate1,userstate2));
             editorInit lapi = do
             {
                 (e1,t1) <- ei1 $ fmap fst lapi;
@@ -67,11 +67,11 @@ module Truth.Core.Object.Editor where
     oneTransactionEditor :: forall edit r. (forall m. Monad m => MutableEdit m edit () -> m r) -> Editor edit r;
     oneTransactionEditor f = let
     {
-        editorInit :: LockAPI edit () -> IO (LockAPI edit (),());
+        editorInit :: Object edit () -> IO (Object edit (),());
         editorInit lapi = return (lapi,());
 
         editorUpdate _lapiw _mr () _edit = return ();
-        editorDo (MkLockAPI lapi) = lapi $ \() -> f;
+        editorDo (MkObject lapi) = lapi $ \() -> f;
     } in MkEditor{..};
 
     readEditor :: FullReader (EditReader edit) => Editor edit (EditSubject edit);

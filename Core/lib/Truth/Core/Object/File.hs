@@ -5,11 +5,11 @@ module Truth.Core.Object.File where
     import Truth.Core.Read;
     import Truth.Core.Types;
     import Truth.Core.Object.MutableEdit;
-    import Truth.Core.Object.LockAPI;
+    import Truth.Core.Object.Object;
 
 
-    fileLockAPI :: FilePath -> LockAPI ByteStringEdit ();
-    fileLockAPI path = MkLockAPI $ \ff -> do
+    fileObject :: FilePath -> Object ByteStringEdit ();
+    fileObject path = MkObject $ \ff -> do
     {
         h <- openBinaryFile path ReadWriteMode;
         let

@@ -12,7 +12,7 @@ module Truth.UI.GTK.CheckButton where
 
 
     checkButtonView :: String -> GView (WholeEdit (WholeReader Bool));
-    checkButtonView name = MkView $ \(MkLockAPI lapi) _setSelect -> do
+    checkButtonView name = MkView $ \(MkObject lapi) _setSelect -> do
     {
         widget <- checkButtonNew;
         initial <- lapi $ \() api -> unReadable fromReader $ mutableRead api;
