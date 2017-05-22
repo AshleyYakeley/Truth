@@ -4,7 +4,7 @@ packages:
 - Core
 #- Linux
 - GTK
-#- Application
+- Application
 
 resolver: lts-8.0
 

@@ -9,6 +9,11 @@ module Truth.Core.Text where
 
     data ListError = MkListError Int;
 
+    instance Show ListError where
+    {
+        show (MkListError i) = "decode error at byte " ++ show i;
+    };
+
     instance HasInfo ListError where
     {
         info = mkSimpleInfo $(iowitness[t|ListError|]) [$(declInfo [d|

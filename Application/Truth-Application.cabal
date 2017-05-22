@@ -48,8 +48,8 @@ executable truth
         bytestring,
         glib,
         gtk,
-        Truth-Shapes,
+        shapes,
+        reity,
         Truth-Core,
-        Truth-Linux,
         Truth-GTK
     main-is: Main.hs

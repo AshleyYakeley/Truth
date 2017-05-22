@@ -53,6 +53,9 @@ module Data.Injection where
         };
     };
 
+    remonadInjection :: (forall t. m1 t -> m2 t) -> Injection' m1 a b -> Injection' m2 a b;
+    remonadInjection ff (MkInjection ab bma) = MkInjection ab $ ff . bma;
+
     resultInjection :: (a -> Result e b) -> (b -> a) -> Injection a (Result e b);
     resultInjection decode' encode' = MkInjection
     {

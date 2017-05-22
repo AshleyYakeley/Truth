@@ -149,6 +149,17 @@ module Truth.Core.Types.ByteString where
         }
     };
 
+    instance FullEdit ByteStringEdit where
+    {
+        replaceEdit = do
+        {
+            len <- readable ReadByteStringLength;
+            bs <- readable $ ReadByteStringSection 0 len;
+            wrWrite $ ByteStringWrite 0 bs;
+            wrWrite $ ByteStringSetLength len;
+        };
+    };
+
     $(return []);
     instance HasInfo ByteStringEdit where
     {
