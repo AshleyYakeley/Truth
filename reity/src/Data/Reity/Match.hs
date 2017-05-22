@@ -67,9 +67,12 @@ module Data.Reity.Match where
     };
 
     applyInfo :: forall (ka :: *) (kb :: *) (f :: ka -> kb) (a :: ka). Info f -> Info a -> Info (f a);
-    applyInfo tf@(MkInfo ika _) ta = case matchInfo ika of
+    applyInfo tf@(MkInfo ika _) ta = let
     {
-        Just (MkSplitInfo _ ik) -> MkInfo ik (ConsWit tf ta);
-        Nothing -> error "unexpected kind witness";
-    };
+        ik = case matchInfo ika of
+        {
+            Just (MkSplitInfo _ ik') -> ik';
+            Nothing -> error "unexpected kind witness";
+        };
+    } in MkInfo ik (ConsWit tf ta);
 }
