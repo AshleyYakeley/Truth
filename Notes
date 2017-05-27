@@ -175,9 +175,22 @@ addressing?
 conformance to schema, e.g. headings, paragraphs, etc.
 
 3.1.2 Note style (paragraph-based)
-type Note = [Paragraph]
-data Paragraph = NP ParagraphStyle [Item]
+data Note = MkNote NoteStyle [Paragraph] -- NonEmpty?
+data Paragraph = NP ParagraphStyle [Item] -- NonEmpty?
 data Item = ItemText TextStyle Text | ItemObject Object
+
+NoteStyleNote (NoteStyle -> NoteStyle)
+NoteReplaceParagraphs ParagraphSelection [Paragraph]
+NoteStyleParagraphs ParagraphSelection (ParagraphStyle -> ParagraphStyle)
+NoteReplaceItems ItemSelection [Item]
+NoteStyleItems ItemSelection (TextStyle -> TextStyle)
+
+
+data Styled style item = MkStyled style (NonEmpty item);
+type Note = Styled NoteStyle Paragraph;
+type Paragraph = Styled ParagraphStyle Run;
+type Run = Styled RunStyle Item
+data Item = TextItem Text | ObjectItem Object
 
 3.2 Tabular
 
