@@ -56,7 +56,7 @@ module Truth.Core.Object.Object where
         MkFloatingEditFunction{..} = floatingEditLensFunction;
 
         callA :: forall m. MonadIOInvert m => (userstate,lensstate) -> MutableEdit m edita (userstate,lensstate) -> m r;
-        callA (firstuserstate,firstlensstate) (apiA :: MutableEdit m edita (userstate,lensstate)) = let
+        callA ~(firstuserstate,firstlensstate) (apiA :: MutableEdit m edita (userstate,lensstate)) = let
         {
             readA :: MutableRead m (EditReader edita);
             pushEditA :: [edita] -> m (Maybe (m (userstate,lensstate)));

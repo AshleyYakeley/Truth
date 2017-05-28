@@ -48,7 +48,7 @@ module Truth.UI.GTK.Text (textMatchView) where
     textView = MkView $ \(MkObject lapi) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
-        initial <- lapi $ \() api -> unReadable fromReader $ mutableRead api;
+        initial <- lapi $ \_ api -> unReadable fromReader $ mutableRead api;
         textBufferSetText buffer initial;
         mv <- newMVar ();
 
