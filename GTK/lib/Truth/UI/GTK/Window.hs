@@ -72,8 +72,12 @@ module Truth.UI.GTK.Window where
             };
         });
 
+        -- this is only correct if srWidget has native scroll support, such as TextView
+        sw <- scrolledWindowNew Nothing Nothing;
+        set sw [containerChild := srWidget];
+
         boxPackStart box selectionButton PackNatural 0;
-        boxPackStart box srWidget PackGrow 0;
+        boxPackStart box sw PackGrow 0;
 
         set window [containerChild := box];
         widgetShow srWidget;
