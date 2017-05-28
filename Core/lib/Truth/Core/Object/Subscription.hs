@@ -139,13 +139,20 @@ module Truth.Core.Object.Subscription
         return $ MkSubscriptionW child;
     };
 
-    subscribeObject :: Object edit userstate -> IO (SubscriptionW edit);
-    subscribeObject lapi = shareSubscription $ \initr _update -> do
+    rawSubscribeObject :: Object edit userstate -> IO (SubscriptionW edit);
+    rawSubscribeObject object = shareSubscription $ \initr _update -> do
     {
         rec
         {
-            (editor,userstate) <- initr $ fmap (\_ -> userstate) lapi;
+            (editor,userstate) <- initr $ fmap (\_ -> userstate) object;
         };
         return (editor,return ());
-    }
+    };
+
+    subscribeObject :: Object edit userstate -> IO (SubscriptionW edit);
+    subscribeObject object = do
+    {
+        MkSubscriptionW sub <- rawSubscribeObject object;
+        shareSubscription sub;
+    };
 }
