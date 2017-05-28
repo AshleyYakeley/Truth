@@ -43,8 +43,7 @@ library
         ViewPatterns
         -- particular to this package
         NoImplicitPrelude
-    ghc-options: -Wall -Werror -fno-warn-deprecated-flags -pgmPcpphs
-    cpp-options: --cpp -ansi
+    ghc-options: -Wall -Werror
     build-depends:
         Cabal >=1.1.6,
         base >= 4.9 && < 5,

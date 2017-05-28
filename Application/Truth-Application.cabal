@@ -41,8 +41,7 @@ executable truth
         UndecidableInstances
         UndecidableSuperClasses
         ViewPatterns
-    ghc-options: -Wall -Werror -fno-warn-deprecated-flags -pgmPcpphs
-    cpp-options: --cpp -ansi
+    ghc-options: -Wall -Werror
     build-depends:
         base >= 4.9 && < 5,
         bytestring,

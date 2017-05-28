@@ -47,7 +47,7 @@ library
         UndecidableInstances
         UndecidableSuperClasses
         ViewPatterns
-    ghc-options: -Wall -fno-warn-deprecated-flags
+    ghc-options: -Wall
     build-depends:
         base >= 4.9 && < 5,
         bytestring,
