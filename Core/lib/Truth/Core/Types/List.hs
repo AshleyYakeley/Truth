@@ -30,8 +30,8 @@ module Truth.Core.Types.List where
     {
         type ReaderSubject (ListReader seq reader) = seq;
 
-        readFrom seq ListReadLength = seqLength seq;
-        readFrom seq (ListReadItem i reader) = fmap (\e -> readFrom e reader) $ seqIndex seq i;
+        readFrom sq ListReadLength = seqLength sq;
+        readFrom sq (ListReadItem i reader) = fmap (\e -> readFrom e reader) $ seqIndex sq i;
     };
 
     instance (IsSequence seq,FullReader reader,ReaderSubject reader ~ Element seq) => FullReader (ListReader seq reader) where

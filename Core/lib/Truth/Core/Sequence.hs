@@ -38,7 +38,7 @@ module Truth.Core.Sequence where
     seqLength = fromIntegral . olength64;
 
     seqIndex :: IsSequence seq => seq -> SequencePoint seq -> Maybe (Element seq);
-    seqIndex seq (MkSequencePoint i) = index seq i;
+    seqIndex sq (MkSequencePoint i) = index sq i;
 
     seqTake :: IsSequence seq => SequencePoint seq -> seq -> seq;
     seqTake (MkSequencePoint p) = take p;
