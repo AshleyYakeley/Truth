@@ -41,17 +41,8 @@ module Truth.UI.GTK.Window where
     getView :: GetView;
     getView = finalGetView (mconcat matchViews) lastResortView;
 
-    {-
-    viewSubscription :: View edit w -> Subscription edit -> IO (SubscriptionView edit w);
-        data SubscriptionView edit w = MkSubscriptionView
-        {
-            srWidget :: w,
-            srGetSelection :: IO (Maybe (Aspect edit)),
-            srClose :: IO ()
-        };
-    -}
     makeWindow :: (Edit edit) => Info edit -> IORef Int -> IO () -> Subscription edit -> IO ();
-    makeWindow te _ref tellclose sub = do
+    makeWindow te ref tellclose sub = do
     {
         MkSubscriptionView{..} <- viewSubscription (getView te) sub;
         window <- windowNew;
@@ -62,12 +53,10 @@ module Truth.UI.GTK.Window where
             msel <- srGetSelection;
             case msel of
             {
-            {-
                 Just (MkAspect tsel _ta lens) -> do
                 {
-                    makeWindowCountRef tsel ref (mapSubscription lens sub');
+                    makeWindowCountRef tsel ref (mapSubscription lens sub);
                 };
-            -}
                 _ -> return ();
             };
         });
