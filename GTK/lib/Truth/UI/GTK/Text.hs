@@ -55,10 +55,10 @@ module Truth.UI.GTK.Text (textMatchView) where
         _ <- onBufferInsertText buffer $ \iter text -> lapi $ \() api -> withMVar' mv $ \_ -> do
         {
             p <- getSequencePoint iter;
-            ms <- mutableEdit api $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
-            case ms of
+            maction <- mutableEdit api $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
+            case maction of
             {
-                Just _ -> return ();
+                Just action -> action;
                 _ -> liftIO $ signalStopEmission buffer "insert-text";
             };
         };
@@ -66,10 +66,10 @@ module Truth.UI.GTK.Text (textMatchView) where
         _ <- onDeleteRange buffer $ \iter1 iter2 -> lapi $ \() api -> withMVar' mv $ \_ -> do
         {
             run <- getSequenceRun iter1 iter2;
-            ms <- mutableEdit api $ pure $ StringReplaceSection run "";
-            case ms of
+            maction <- mutableEdit api $ pure $ StringReplaceSection run "";
+            case maction of
             {
-                Just _ -> return ();
+                Just action -> action;
                 _ -> liftIO $ signalStopEmission buffer "delete-range";
             };
         };
