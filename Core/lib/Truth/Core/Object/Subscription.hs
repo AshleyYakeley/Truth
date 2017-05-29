@@ -1,6 +1,6 @@
 module Truth.Core.Object.Subscription
 (
-    module Truth.Core.Object.Subscription,
+    Subscription,SubscriptionW(..),subscribeObject,
     liftIO,
 ) where
 {
@@ -139,8 +139,8 @@ module Truth.Core.Object.Subscription
         return $ MkSubscriptionW child;
     };
 
-    rawSubscribeObject :: Object edit userstate -> IO (SubscriptionW edit);
-    rawSubscribeObject object = shareSubscription $ \initr _update -> do
+    rawSubscribeObject :: Object edit userstate -> SubscriptionW edit;
+    rawSubscribeObject object = MkSubscriptionW $ \initr _update -> do
     {
         rec
         {
@@ -150,9 +150,8 @@ module Truth.Core.Object.Subscription
     };
 
     subscribeObject :: Object edit userstate -> IO (SubscriptionW edit);
-    subscribeObject object = do
+    subscribeObject object = let
     {
-        MkSubscriptionW sub <- rawSubscribeObject object;
-        shareSubscription sub;
-    };
+        MkSubscriptionW sub = rawSubscribeObject object;
+    } in shareSubscription sub;
 }

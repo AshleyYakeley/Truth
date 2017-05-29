@@ -29,12 +29,9 @@ module Main where
         {
             let
             {
-                obj :: Object ByteStringEdit ();
-                obj = fileObject arg;
-            };
-            MkSubscriptionW bsSub <- subscribeObject obj;
-            let
-            {
+                bsObj :: Object ByteStringEdit ();
+                bsObj = fileObject arg;
+
                 errorInjection :: forall m err a. (Show err,Applicative m) => Injection' m (Result err a) a;
                 errorInjection = let
                 {
@@ -55,9 +52,10 @@ module Main where
                 editLens = convertEditLens . (wholeEditLens $ injectionLens injection) . convertEditLens;
 
                 --textSub :: Subscription (OneWholeEdit Maybe (OneWholeEdit (Result ListError) (StringEdit String)))
-                textSub :: Subscription (StringEdit String);
-                textSub = mapSubscription (toGeneralLens' editLens) bsSub;
+                textObj :: Object (StringEdit String) ();
+                textObj = mapObject (fixedFloatingEditLens editLens) $ fmap (\_ -> ((),())) bsObj;
             };
+            MkSubscriptionW textSub <- subscribeObject textObj;
             makeWindowCountRef info windowCount textSub;
         };
         {-
