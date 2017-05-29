@@ -45,16 +45,15 @@ library
         NoImplicitPrelude
     ghc-options: -Wall -Werror
     build-depends:
-        Cabal >=1.1.6,
         base >= 4.9 && < 5,
-        bytestring >=0.9.1.5,
-        containers >=0.2,
-        countable >=0.1,
-        mime >=0.3.2.1,
-        open-witness >=0.3,
-        template-haskell >=2.4,
-        transformers >=0.2.2,
-        witness >=0.3,
+        bytestring,
+        containers,
+        countable,
+        mime,
+        open-witness,
+        template-haskell,
+        transformers,
+        witness,
         comonad,
         mono-traversable,
         shapes,
@@ -112,4 +111,3 @@ library
         Truth.Core.Object.Aspect
         Truth.Core.Object.File
         Truth.Core.Object
-

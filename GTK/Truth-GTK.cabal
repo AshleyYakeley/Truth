@@ -43,7 +43,7 @@ library
         ViewPatterns
     ghc-options: -Wall -Werror
     build-depends:
-        base,
+        base >= 4.9 && < 5,
         bytestring,
         transformers,
         countable,
