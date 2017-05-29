@@ -88,8 +88,9 @@ module Truth.Core.Types.String where
             let
             {
                 (MkSequenceRun estart elen) = clipRunBounds oldlen erunRaw;
-                rrun = clipRunBounds oldlen rrunRaw;
                 slen = seqLength s;
+                newlen = oldlen + slen - elen;
+                rrun = clipRunBounds newlen rrunRaw;
 
                 beforeRun = clipRunEnd estart rrun;
                 middleRelRun = clipRunBounds slen $ relativeRun estart rrun;
