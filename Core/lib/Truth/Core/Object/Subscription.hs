@@ -28,21 +28,21 @@ module Truth.Core.Object.Subscription
         let
         {
             initP :: Object edit () -> IO (Object edit (),());
-            initP lapiP = do
+            initP objectP = do
             {
                 let
                 {
                     tokenP = ();
                 };
-                return (lapiP,tokenP);
+                return (objectP,tokenP);
             };
 
             updateP :: forall m. MonadIOInvert m => Object edit () -> MutableRead m (EditReader edit) -> () -> [edit] -> m ();
-            updateP _ meP oldtokenP edits = mapIOInvert (modifyMVar storevar) $ \oldstore -> do
+            updateP _ mutrP oldtokenP edits = mapIOInvert (modifyMVar storevar) $ \oldstore -> do
             {
                 newstore <- traverseWitnessStore (\_ (MkStoreEntry u oldtoken) -> do
                 {
-                    newtoken <- u meP oldtoken edits;
+                    newtoken <- u mutrP oldtoken edits;
                     return (MkStoreEntry u newtoken);
                 }) oldstore;
                 let
@@ -52,21 +52,21 @@ module Truth.Core.Object.Subscription
                 return (newstore,newtokenP);
             };
         };
-        (MkObject lapiP,closerP) <- parent initP updateP;
+        (MkObject objectP,closerP) <- parent initP updateP;
         let
         {
-            lapiC :: forall userstate. IOWitnessKey userstate -> Object edit userstate;
-            lapiC key = MkObject $ \ff -> modifyMVar storevar $ \store -> lapiP $ \_tokenP (apiP :: MutableEdit m edit ()) -> do
+            objectC :: forall userstate. IOWitnessKey userstate -> Object edit userstate;
+            objectC key = MkObject $ \ff -> modifyMVar storevar $ \store -> objectP $ \_tokenP (mutedP :: MutableEdit m edit ()) -> do
             {
                 let
                 {
-                    apiC :: MutableEdit (StateT (IOWitnessStore (StoreEntry edit)) m) edit userstate;
-                    apiC = MkMutableEdit
+                    mutedC :: MutableEdit (StateT (IOWitnessStore (StoreEntry edit)) m) edit userstate;
+                    mutedC = MkMutableEdit
                     {
-                        mutableRead = \rt -> lift $ mutableRead apiP rt,
+                        mutableRead = \rt -> lift $ mutableRead mutedP rt,
                         mutableEdit = \edits -> do
                         {
-                            mmnextTokenP <- lift $ mutableEdit apiP edits;
+                            mmnextTokenP <- lift $ mutableEdit mutedP edits;
                             case mmnextTokenP of
                             {
                                 Just mnextTokenP -> do
@@ -75,7 +75,7 @@ module Truth.Core.Object.Subscription
                                     oldstore <- get;
                                     newstore <- traverseWitnessStore (\keyf (MkStoreEntry u oldtoken) -> do
                                     {
-                                        newtoken <- lift $ u (mutableRead apiP) oldtoken edits;
+                                        newtoken <- lift $ u (mutableRead mutedP) oldtoken edits;
                                         case testEquality key keyf of
                                         {
                                             Just Refl -> liftIO $ writeIORef tokenRef $ Just newtoken;
@@ -103,7 +103,7 @@ module Truth.Core.Object.Subscription
                     tokenC :: userstate;
                     (MkStoreEntry _ tokenC) = fromJust $ lookupWitnessStore key store;
                 };
-                (r,newstore) <- runStateT (ff tokenC apiC) store;
+                (r,newstore) <- runStateT (ff tokenC mutedC) store;
                 return (newstore,r);
             };
 
@@ -112,7 +112,7 @@ module Truth.Core.Object.Subscription
             {
                 rec
                 {
-                    (editorC,tokenC) <- initC (lapiC key);
+                    (editorC,tokenC) <- initC (objectC key);
                     key <- modifyMVar storevar $ \oldstore -> do
                     {
                         (k,newstore) <- addIOWitnessStore (MkStoreEntry (updateC editorC) tokenC) oldstore;

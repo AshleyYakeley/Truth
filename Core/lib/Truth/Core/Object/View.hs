@@ -29,17 +29,17 @@ module Truth.Core.Object.View where
 
     instance Functor (View edit) where
     {
-        fmap f (MkView view) = MkView $ \lapi setSelect -> do
+        fmap f (MkView view) = MkView $ \object setSelect -> do
         {
-            vr <- view lapi setSelect;
+            vr <- view object setSelect;
             return $ fmap f vr;
         };
     };
 
     mapIOView :: (a -> IO b) -> View edit a -> View edit b;
-    mapIOView amb (MkView view) = MkView $ \lapi setSelect -> do
+    mapIOView amb (MkView view) = MkView $ \object setSelect -> do
     {
-        vr <- view lapi setSelect;
+        vr <- view object setSelect;
         b <- amb $ vrWidget vr;
         return $ fmap (\_ -> b) vr;
     };
@@ -48,17 +48,17 @@ module Truth.Core.Object.View where
     mapView
         lens@(MkCloseFloat (flens :: FloatingEditLens' f lensstate edita editb))
         (MkView (viewB :: Object editb updatestateb -> (selstate -> IO ()) -> IO (ViewResult editb updatestateb selstate w)))
-        = MkView $ \lapiA setSelect -> do
+        = MkView $ \objectA setSelect -> do
     {
         let
         {
             MkFloatingEditLens{..} = flens;
             MkFloatingEditFunction{..} = floatingEditLensFunction;
 
-            lapiB :: Object editb updatestateb;
-            lapiB = floatingMapObject flens lapiA;
+            objectB :: Object editb updatestateb;
+            objectB = floatingMapObject flens objectA;
         };
-        MkViewResult w fusB updateB fss getSelB <- viewB lapiB setSelect;
+        MkViewResult w fusB updateB fss getSelB <- viewB objectB setSelect;
         let
         {
             fusA = (fusB,floatingEditInitial);
@@ -84,7 +84,7 @@ module Truth.Core.Object.View where
 
     instance Applicative (View edit) where
     {
-        pure vrWidget = MkView $ \_lapi _setSelect -> return $ let
+        pure vrWidget = MkView $ \_object _setSelect -> return $ let
         {
             vrFirstUpdateState = ();
             vrUpdate _ () _ = return ();
@@ -92,12 +92,12 @@ module Truth.Core.Object.View where
             vrGetSelection (ss :: None) = never ss;
         } in MkViewResult{..};
 
-        (MkView view1) <*> (MkView view2) = MkView $ \lapi setSelect -> do
+        (MkView view1) <*> (MkView view2) = MkView $ \object setSelect -> do
         {
             let
             {
-                lapi1 = fmap fst lapi;
-                lapi2 = fmap snd lapi;
+                lapi1 = fmap fst object;
+                lapi2 = fmap snd object;
                 setSelect1 ss = setSelect $ Left ss;
                 setSelect2 ss = setSelect $ Right ss;
             };
@@ -143,11 +143,11 @@ module Truth.Core.Object.View where
     };
 
     viewSubscription :: View edit w -> Subscription edit -> IO (SubscriptionView edit w);
-    viewSubscription (MkView view) object = do
+    viewSubscription (MkView view) sub = do
     {
         let
         {
-            initialise lapi = do
+            initialise object = do
             {
                 rec
                 {
@@ -155,14 +155,14 @@ module Truth.Core.Object.View where
                     {
                         setSelect ss = writeIORef selref $ Just ss;
                     };
-                    vr <- view lapi setSelect;
+                    vr <- view object setSelect;
                     selref <- newIORef $ vrFirstSelState vr;
                 };
                 return ((vr,selref),vrFirstUpdateState vr);
             };
             receive (vr,_) = vrUpdate vr;
         };
-        ((MkViewResult{..},selref),srClose) <- object initialise receive;
+        ((MkViewResult{..},selref),srClose) <- sub initialise receive;
         let
         {
             srGetSelection = do

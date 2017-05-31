@@ -14,10 +14,10 @@ module Truth.Core.Object.Lens where
         MkFloatingEditFunction{..} = floatingEditLensFunction;
 
         initialA :: Object edita (userstate,lensstate) -> IO ((Object edita (userstate,lensstate),editor),(userstate,lensstate));
-        initialA lapiA = do
+        initialA objectA = do
         {
-            (ed,us) <- initialB $ floatingMapObject lens lapiA;
-            return ((lapiA,ed),(us,floatingEditInitial));
+            (ed,us) <- initialB $ floatingMapObject lens objectA;
+            return ((objectA,ed),(us,floatingEditInitial));
         };
 
         updateA :: forall m. MonadIOInvert m => (Object edita (userstate,lensstate),editor) -> MutableRead m (EditReader edita) -> (userstate,lensstate) -> [edita] -> m (userstate,lensstate);
@@ -176,13 +176,13 @@ module Truth.Core.Object.Lens where
     {
         let
         {
-            initialiseA lapiA = do
+            initialiseA objectA = do
             {
                 let
                 {
                     initialiseB lapiB = do
                     {
-                        (ed,ustate) <- initialise (fmap snd $ pairObject lapiA lapiB); -- "snd" here is very dubious
+                        (ed,ustate) <- initialise (fmap snd $ pairObject objectA lapiB); -- "snd" here is very dubious
                         return ((ed,ustate),ustate);
                     };
                     receiveB :: forall m. MonadIOInvert m => (editor,userstate) -> MutableRead m (EditReader eb) -> userstate -> [eb] -> m userstate;

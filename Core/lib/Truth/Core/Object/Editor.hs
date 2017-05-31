@@ -32,10 +32,10 @@ module Truth.Core.Object.Editor where
         (MkEditor (ei1 :: Object edit userstate1 -> IO (editor1,userstate1)) eu1 ed1) <*> (MkEditor (ei2 :: Object edit userstate2 -> IO (editor2,userstate2)) eu2 ed2) = let
         {
             editorInit :: Object edit (userstate1,userstate2) -> IO ((editor1,editor2),(userstate1,userstate2));
-            editorInit lapi = do
+            editorInit object = do
             {
-                (e1,t1) <- ei1 $ fmap fst lapi;
-                (e2,t2) <- ei2 $ fmap snd lapi;
+                (e1,t1) <- ei1 $ fmap fst object;
+                (e2,t2) <- ei2 $ fmap snd object;
                 return ((e1,e2),(t1,t2));
             };
             editorUpdate :: forall m. MonadIOInvert m => (editor1,editor2) -> MutableRead m (EditReader edit) -> (userstate1,userstate2) -> [edit] -> m (userstate1,userstate2);
@@ -68,10 +68,10 @@ module Truth.Core.Object.Editor where
     oneTransactionEditor f = let
     {
         editorInit :: Object edit () -> IO (Object edit (),());
-        editorInit lapi = return (lapi,());
+        editorInit object = return (object,());
 
         editorUpdate _lapiw _mr () _edit = return ();
-        editorDo (MkObject lapi) = lapi $ \() -> f;
+        editorDo (MkObject object) = object $ \() -> f;
     } in MkEditor{..};
 
     readEditor :: FullReader (EditReader edit) => Editor edit (EditSubject edit);

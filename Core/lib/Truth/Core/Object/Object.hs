@@ -22,46 +22,41 @@ module Truth.Core.Object.Object where
     freeObject firsta allowed = do
     {
         var <- newMVar firsta;
-        let
+        return $ MkObject $ \ff -> modifyMVar var $ \olda -> do
         {
-            lapi :: Object edit ();
-            lapi = MkObject $ \ff -> modifyMVar var $ \olda -> do
+            let
             {
-                let
+                api :: MutableEdit (StateT (EditSubject edit) IO) edit ();
+                api = MkMutableEdit
                 {
-                    api :: MutableEdit (StateT (EditSubject edit) IO) edit ();
-                    api = MkMutableEdit
+                    mutableRead = readFromM $ get,
+                    mutableEdit = \edits -> do
                     {
-                        mutableRead = readFromM $ get,
-                        mutableEdit = \edits -> do
+                        oa <- get;
+                        let
                         {
-                            oa <- get;
-                            let
-                            {
-                                na = fromReadFunction (applyEdits edits) oa;
-                            };
-                            return $ if allowed na then Just $ put na else Nothing;
-                        }
-                    };
+                            na = fromReadFunction (applyEdits edits) oa;
+                        };
+                        return $ if allowed na then Just $ put na else Nothing;
+                    }
                 };
-                (r,newa) <- runStateT (ff () api) olda;
-                return (newa,r);
             };
+            (r,newa) <- runStateT (ff () api) olda;
+            return (newa,r);
         };
-        return lapi;
     };
 
     floatingMapObject :: forall f lensstate edita editb userstate. MonadOne f => FloatingEditLens' f lensstate edita editb -> Object edita (userstate,lensstate) -> Object editb userstate;
-    floatingMapObject lens@MkFloatingEditLens{..} (MkObject lapiA) = MkObject $ \(callB :: forall m. MonadIOInvert m => userstate -> MutableEdit m editb userstate -> m r) -> let
+    floatingMapObject lens@MkFloatingEditLens{..} (MkObject objectA) = MkObject $ \(callB :: forall m. MonadIOInvert m => userstate -> MutableEdit m editb userstate -> m r) -> let
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
 
         callA :: forall m. MonadIOInvert m => (userstate,lensstate) -> MutableEdit m edita (userstate,lensstate) -> m r;
-        callA ~(firstuserstate,firstlensstate) (apiA :: MutableEdit m edita (userstate,lensstate)) = let
+        callA ~(firstuserstate,firstlensstate) (mutedA :: MutableEdit m edita (userstate,lensstate)) = let
         {
             readA :: MutableRead m (EditReader edita);
             pushEditA :: [edita] -> m (Maybe (m (userstate,lensstate)));
-            MkMutableEdit readA pushEditA = apiA;
+            MkMutableEdit readA pushEditA = mutedA;
 
             readB :: MutableRead (StateT lensstate m) (EditReader editb);
             readB rt = do
@@ -109,7 +104,7 @@ module Truth.Core.Object.Object where
             (r,_newstate) <- unlift $ runStateT (callB firstuserstate apiB) firstlensstate; -- just throw away the new lens state: all these lens changes will be replayed by the update
             return r;
         };
-    } in lapiA callA;
+    } in objectA callA;
 
     fixedMapObject :: forall f edita editb userstate. MonadOne f => EditLens' f edita editb -> Object edita userstate -> Object editb userstate;
     fixedMapObject lens object = floatingMapObject (fixedFloatingEditLens lens) $ fmap (\s -> (s,())) object;
@@ -143,8 +138,8 @@ module Truth.Core.Object.Object where
     };
 
     pairObject :: Object ea ua -> Object eb ub -> Object (PairEdit ea eb) (ua,ub);
-    pairObject (MkObject lapiA) (MkObject lapiB) = MkObject $ \ff ->
-        lapiA $ \stateA meA -> liftIOInvert $ \unliftA -> StateT $ \oldsA ->
+    pairObject (MkObject objectA) (MkObject lapiB) = MkObject $ \ff ->
+        objectA $ \stateA meA -> liftIOInvert $ \unliftA -> StateT $ \oldsA ->
         lapiB $ \stateB meB -> liftIOInvert $ \unliftB -> StateT $ \oldsB ->
         fmap swap3 $ runStateT (ff (stateA,stateB) $ pairMutableEdit (remonadMutableEdit (stateFst . unliftA) meA) (remonadMutableEdit (stateSnd . unliftB) meB)) (oldsA,oldsB);
 }
