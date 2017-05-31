@@ -117,10 +117,10 @@ module Truth.Core.Object.Object where
     convertObject :: (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Object edita userstate -> Object editb userstate;
     convertObject = fixedMapObject @Identity convertEditLens;
 
-    cacheObject :: Object (WholeEdit (WholeReader t)) () -> Object (WholeEdit (WholeReader t)) ();
+    cacheObject :: Eq t => Object (WholeEdit (WholeReader t)) () -> Object (WholeEdit (WholeReader t)) ();
     cacheObject (MkObject obj) = MkObject $ \ff -> obj $ \s me -> do
     {
-        oldstate <- mutableRead me ReadWhole;
+        oldval <- mutableRead me ReadWhole;
         let
         {
             me' = MkMutableEdit
@@ -129,12 +129,15 @@ module Truth.Core.Object.Object where
                 mutableEdit = singleMutableEdit $ \(MkWholeEdit t) -> put t
             };
         };
-        (r,newstate) <- runStateT (ff s me') oldstate;
-        maction <- mutableEdit me $ [MkWholeEdit newstate];
-        case maction of
+        (r,newval) <- runStateT (ff s me') oldval;
+        if oldval == newval then return () else do
         {
-            Just action -> action;
-            Nothing -> fail "disallowed cached edit";
+            maction <- mutableEdit me $ [MkWholeEdit newval];
+            case maction of
+            {
+                Just action -> action;
+                Nothing -> fail "disallowed cached edit";
+            };
         };
         return r;
     };
