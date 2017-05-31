@@ -16,7 +16,7 @@ module Truth.Core.Object.Lens where
         initialA :: Object edita (userstate,lensstate) -> IO ((Object edita (userstate,lensstate),editor),(userstate,lensstate));
         initialA lapiA = do
         {
-            (ed,us) <- initialB $ mapObject lens lapiA;
+            (ed,us) <- initialB $ floatingMapObject lens lapiA;
             return ((lapiA,ed),(us,floatingEditInitial));
         };
 

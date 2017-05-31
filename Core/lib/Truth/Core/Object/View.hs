@@ -56,7 +56,7 @@ module Truth.Core.Object.View where
             MkFloatingEditFunction{..} = floatingEditLensFunction;
 
             lapiB :: Object editb updatestateb;
-            lapiB = mapObject flens lapiA;
+            lapiB = floatingMapObject flens lapiA;
         };
         MkViewResult w fusB updateB fss getSelB <- viewB lapiB setSelect;
         let

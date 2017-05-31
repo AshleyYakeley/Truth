@@ -3,6 +3,7 @@ module Truth.Core.Object.Object where
     import Truth.Core.Import;
     import Truth.Core.Read;
     import Truth.Core.Edit;
+    import Truth.Core.Types.Whole;
     import Truth.Core.Types.Pair;
     import Truth.Core.Object.MutableEdit;
 
@@ -50,8 +51,8 @@ module Truth.Core.Object.Object where
         return lapi;
     };
 
-    mapObject :: forall f lensstate edita editb userstate. MonadOne f => FloatingEditLens' f lensstate edita editb -> Object edita (userstate,lensstate) -> Object editb userstate;
-    mapObject lens@MkFloatingEditLens{..} (MkObject lapiA) = MkObject $ \(callB :: forall m. MonadIOInvert m => userstate -> MutableEdit m editb userstate -> m r) -> let
+    floatingMapObject :: forall f lensstate edita editb userstate. MonadOne f => FloatingEditLens' f lensstate edita editb -> Object edita (userstate,lensstate) -> Object editb userstate;
+    floatingMapObject lens@MkFloatingEditLens{..} (MkObject lapiA) = MkObject $ \(callB :: forall m. MonadIOInvert m => userstate -> MutableEdit m editb userstate -> m r) -> let
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
 
@@ -109,6 +110,34 @@ module Truth.Core.Object.Object where
             return r;
         };
     } in lapiA callA;
+
+    fixedMapObject :: forall f edita editb userstate. MonadOne f => EditLens' f edita editb -> Object edita userstate -> Object editb userstate;
+    fixedMapObject lens object = floatingMapObject (fixedFloatingEditLens lens) $ fmap (\s -> (s,())) object;
+
+    convertObject :: (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Object edita userstate -> Object editb userstate;
+    convertObject = fixedMapObject @Identity convertEditLens;
+
+    cacheObject :: Object (WholeEdit (WholeReader t)) () -> Object (WholeEdit (WholeReader t)) ();
+    cacheObject (MkObject obj) = MkObject $ \ff -> obj $ \s me -> do
+    {
+        oldstate <- mutableRead me ReadWhole;
+        let
+        {
+            me' = MkMutableEdit
+            {
+                mutableRead = \ReadWhole -> get,
+                mutableEdit = singleMutableEdit $ \(MkWholeEdit t) -> put t
+            };
+        };
+        (r,newstate) <- runStateT (ff s me') oldstate;
+        maction <- mutableEdit me $ [MkWholeEdit newstate];
+        case maction of
+        {
+            Just action -> action;
+            Nothing -> fail "disallowed cached edit";
+        };
+        return r;
+    };
 
     pairObject :: Object ea ua -> Object eb ub -> Object (PairEdit ea eb) (ua,ub);
     pairObject (MkObject lapiA) (MkObject lapiB) = MkObject $ \ff ->

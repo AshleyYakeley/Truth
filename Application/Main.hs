@@ -48,12 +48,9 @@ module Main where
                 injection :: Injection ByteString String;
                 injection = errorInjection . utf8Injection . toBiMapMaybe (bijectionInjection packBijection);
 
-                editLens :: EditLens ByteStringEdit (StringEdit String);
-                editLens = convertEditLens . (wholeEditLens $ injectionLens injection) . convertEditLens;
-
                 --textSub :: Subscription (OneWholeEdit Maybe (OneWholeEdit (Result ListError) (StringEdit String)))
                 textObj :: Object (StringEdit String) ();
-                textObj = mapObject (fixedFloatingEditLens editLens) $ fmap (\_ -> ((),())) bsObj;
+                textObj = convertObject $ cacheObject $ fixedMapObject ((wholeEditLens $ injectionLens injection) . convertEditLens) bsObj;
             };
             MkSubscriptionW textSub <- subscribeObject textObj;
             makeWindowCountRef info windowCount textSub;

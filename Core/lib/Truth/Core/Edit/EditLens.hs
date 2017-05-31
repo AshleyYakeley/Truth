@@ -59,7 +59,7 @@ module Truth.Core.Edit.EditLens where
         };
     };
 
-    convertEditLens :: (Applicative m,EditSubject edita ~ EditSubject editb,Edit edita,FullEdit edita,FullEdit editb) => EditLens' m edita editb;
+    convertEditLens :: (Applicative m,EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => EditLens' m edita editb;
     convertEditLens = let
     {
         editLensFunction = convertEditFunction;
