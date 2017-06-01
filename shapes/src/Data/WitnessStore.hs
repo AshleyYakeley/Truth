@@ -4,6 +4,7 @@ module Data.WitnessStore where
     import Data.Kind;
     import Data.Type.Equality;
     import Data.Foldable;
+    import Data.Functor.Identity;
     import Data.Witness;
     import Data.OpenWitness;
     import Data.Store;
@@ -55,6 +56,13 @@ module Data.WitnessStore where
     {
         kamb key (MkAnyF wa fa) = MkAnyF wa <$> ff (MkWitnessKey key wa) fa;
     } in MkWitnessStore <$> traverseStore kamb store;
+
+    replaceWitnessStore :: TestEquality w => WitnessKey w a -> (f a -> f a) -> WitnessStore w f -> WitnessStore w f;
+    replaceWitnessStore key mp oldstore = runIdentity $ traverseWitnessStore (\k fa -> return $ case testEquality k key of
+    {
+        Just Refl -> mp fa;
+        Nothing -> fa;
+    }) oldstore;
 
     type IOWitnessStore = WitnessStore IOWitness;
     type IOWitnessKey = WitnessKey IOWitness;

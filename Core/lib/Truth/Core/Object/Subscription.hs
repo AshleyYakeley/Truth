@@ -59,8 +59,8 @@ module Truth.Core.Object.Subscription
         (MkObject objectP,closerP) <- parent firstP initP updateP;
         let
         {
-            objectC :: forall userstate. IOWitnessKey userstate -> userstate -> Object edit userstate;
-            objectC key tokenC = MkObject $ \ff -> modifyMVar storevar $ \store -> objectP $ \_tokenP (mutedP :: MutableEdit m edit ()) -> do
+            objectC :: forall userstate. IOWitnessKey userstate -> Object edit userstate;
+            objectC key = MkObject $ \ff -> modifyMVar storevar $ \store -> objectP $ \_tokenP (mutedP :: MutableEdit m edit ()) -> do
             {
                 let
                 {
@@ -103,6 +103,9 @@ module Truth.Core.Object.Subscription
                             }
                         }
                     };
+
+                    tokenC :: userstate;
+                    (MkStoreEntry _ tokenC) = fromJust $ lookupWitnessStore key store;
                 };
                 (r,newstore) <- runStateT (ff tokenC mutedC) store;
                 return (newstore,r);
@@ -115,11 +118,12 @@ module Truth.Core.Object.Subscription
                 {
                     key <- modifyMVar storevar $ \oldstore -> do
                     {
-                        (k,newstore) <- addIOWitnessStore (MkStoreEntry (updateC editorC) tokenC) oldstore;
+                        (k,newstore) <- addIOWitnessStore (MkStoreEntry (updateC editorC) firstC) oldstore;
                         return (newstore,k);
                     };
-                    (editorC,tokenC) <- initC (objectC key firstC);
+                    (editorC,tokenC) <- initC (objectC key);
                 };
+                modifyMVar_ storevar $ \oldstore -> return $ replaceWitnessStore key (\(MkStoreEntry u _) -> MkStoreEntry u tokenC) oldstore;
                 let
                 {
                     closerC = modifyMVar_ storevar $ \oldstore -> do
