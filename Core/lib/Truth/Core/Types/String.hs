@@ -151,7 +151,7 @@ module Truth.Core.Types.String where
             case reader of
             {
                 StringReadLength -> return $ runLength state;
-                StringReadSection run -> readable $ StringReadSection $ relativeRun (runStart state) $ clipWithin state run;
+                StringReadSection run -> readable $ StringReadSection $ clipWithin state $ relativeRun (negate $ runStart state) run;
             };
         };
 

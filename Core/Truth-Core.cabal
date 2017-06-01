@@ -164,7 +164,9 @@ test-suite test
         shapes,
         reity,
         Truth-Core,
+        QuickCheck,
         tasty,
-        tasty-hunit
+        tasty-hunit,
+        tasty-quickcheck
     main-is: Main.hs
     other-modules:

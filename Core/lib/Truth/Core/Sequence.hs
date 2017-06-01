@@ -52,6 +52,11 @@ module Truth.Core.Sequence where
         runLength :: SequencePoint seq
     };
     deriving instance Eq (Index seq) => Eq (SequenceRun seq);
+    instance Integral (Index seq) => Show (SequenceRun seq) where
+    {
+        show (MkSequenceRun start len) = show start ++ "+" ++ show len;
+    };
+
     runEnd :: Integral (Index seq) => SequenceRun seq -> SequencePoint seq;
     runEnd MkSequenceRun{..} = runStart + runLength;
 

@@ -6,11 +6,17 @@ module Main(main) where
     import Truth.Core;
     import Test.Tasty;
     import Test.Tasty.HUnit;
+    import Test.Tasty.QuickCheck;
 
 
-    instance Integral (Index seq) => Show (SequenceRun seq) where
+    instance Arbitrary (Index seq) => Arbitrary (SequencePoint seq) where
     {
-        show (MkSequenceRun start len) = show start ++ "+" ++ show len;
+        arbitrary = MkSequencePoint <$> arbitrary;
+    };
+
+    instance Arbitrary (Index seq) => Arbitrary (SequenceRun seq) where
+    {
+        arbitrary = MkSequenceRun <$> arbitrary <*> arbitrary;
     };
 
     instance Integral (Index seq) => Show (StringRead seq t) where
@@ -19,7 +25,7 @@ module Main(main) where
         show (StringReadSection run) = "StringReadSection " ++ show run;
     };
 
-    instance (Show seq,Integral (Index seq)) =>  Show (StringEdit seq) where
+    instance (Show seq,Integral (Index seq)) => Show (StringEdit seq) where
     {
         show (StringReplaceWhole sq) = "StringReplaceWhole " ++ show sq;
         show (StringReplaceSection run sq) = "StringReplaceSection " ++ show run ++ show sq;
@@ -45,8 +51,8 @@ module Main(main) where
     seqRun :: Int -> Int -> SequenceRun [a];
     seqRun start len = MkSequenceRun (MkSequencePoint start) (MkSequencePoint len);
 
-    tests :: TestTree;
-    tests = testGroup "Truth-Core" [
+    testStringEdit :: TestTree;
+    testStringEdit = testGroup "string edit" [
         testEdit (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" "ABXYCDE",
         testEdit (StringReplaceSection (seqRun 2 1) "XY") "ABCDE" "ABXYDE",
         testEdit (StringReplaceSection (seqRun 2 2) "XY") "ABCDE" "ABXYE",
@@ -59,6 +65,32 @@ module Main(main) where
         testEditRead (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 1 4) "BXYC",
         testEditRead (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 2 4) "XYCD",
         testEditRead (StringReplaceSection (seqRun 2 0) "XY") "ABCDE" (StringReadSection $ seqRun 3 3) "YCD"
+        ];
+
+    testLensGet :: TestTree;
+    testLensGet = testProperty "get" $ \run (base :: String) -> let
+    {
+        MkFloatingEditLens{..} = stringSectionLens run;
+        MkFloatingEditFunction{..} = floatingEditLensFunction;
+
+        rf = floatingEditGet floatingEditInitial;
+
+        found :: String;
+        found = fromReadFunction rf base;
+
+        expected :: String;
+        expected = readFrom base $ StringReadSection run;
+    } in found === expected;
+
+    testStringSectionLens :: TestTree;
+    testStringSectionLens = testGroup "string section lens" [
+        testLensGet
+        ];
+
+    tests :: TestTree;
+    tests = testGroup "Truth-Core" [
+        testStringEdit,
+        testStringSectionLens
         ];
 
     main :: IO ();
