@@ -9,9 +9,12 @@ module Truth.Core.Object.Lens where
 
 
     mapSubscription :: forall f edita editb. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Subscription edita -> Subscription editb;
-    mapSubscription (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub (initialB :: Object editb userstate -> IO (editor,userstate)) updateB = let
+    mapSubscription (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub firstB (initialB :: Object editb userstate -> IO (editor,userstate)) updateB = let
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
+
+        firstA :: (userstate,lensstate);
+        firstA = (firstB,floatingEditInitial);
 
         initialA :: Object edita (userstate,lensstate) -> IO ((Object edita (userstate,lensstate),editor),(userstate,lensstate));
         initialA objectA = do
@@ -29,7 +32,7 @@ module Truth.Core.Object.Lens where
         };
     } in do
     {
-        ((_,editor),closer) <- sub initialA updateA;
+        ((_,editor),closer) <- sub firstA initialA updateA;
         return (editor,closer);
     };
 

@@ -13,6 +13,7 @@ module Truth.Core.Object.Subscription
 
 
     type Subscription edit = forall editor userstate.
+        userstate ->
         (Object edit userstate -> IO (editor,userstate)) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
         (forall m. MonadIOInvert m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) -> -- receive: get updates (both others and from your mutableEdit calls)
         IO (editor, IO ());
@@ -27,6 +28,9 @@ module Truth.Core.Object.Subscription
         storevar <- newMVar (emptyWitnessStore :: IOWitnessStore (StoreEntry edit));
         let
         {
+            firstP :: ();
+            firstP = ();
+
             initP :: Object edit () -> IO (Object edit (),());
             initP objectP = do
             {
@@ -52,7 +56,7 @@ module Truth.Core.Object.Subscription
                 return (newstore,newtokenP);
             };
         };
-        (MkObject objectP,closerP) <- parent initP updateP;
+        (MkObject objectP,closerP) <- parent firstP initP updateP;
         let
         {
             objectC :: forall userstate. IOWitnessKey userstate -> userstate -> Object edit userstate;
@@ -105,7 +109,7 @@ module Truth.Core.Object.Subscription
             };
 
             child :: Subscription edit;
-            child initC updateC = do
+            child firstC initC updateC = do
             {
                 rec
                 {
@@ -114,7 +118,7 @@ module Truth.Core.Object.Subscription
                         (k,newstore) <- addIOWitnessStore (MkStoreEntry (updateC editorC) tokenC) oldstore;
                         return (newstore,k);
                     };
-                    (editorC,tokenC) <- initC (objectC key tokenC);
+                    (editorC,tokenC) <- initC (objectC key firstC);
                 };
                 let
                 {
@@ -137,12 +141,9 @@ module Truth.Core.Object.Subscription
     };
 
     rawSubscribeObject :: Object edit userstate -> SubscriptionW edit;
-    rawSubscribeObject object = MkSubscriptionW $ \initr _update -> do
+    rawSubscribeObject object = MkSubscriptionW $ \firstState initr _update -> do
     {
-        rec
-        {
-            (editor,userstate) <- initr $ fmap (\_ -> userstate) object;
-        };
+        (editor,_userstate) <- initr $ fmap (\_ -> firstState) object;
         return (editor,return ());
     };
 

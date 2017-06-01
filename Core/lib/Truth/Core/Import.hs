@@ -1,6 +1,6 @@
 module Truth.Core.Import (module I) where
 {
-    import Prelude as I (($),seq,undefined,Eq(..),Ord(..),Enum(..),Num(..),Real(..),Integral(..),fromIntegral,fromInteger,toInteger);
+    import Prelude as I (($),seq,error,undefined,Eq(..),Ord(..),Enum(..),Num(..),Real(..),Integral(..),fromIntegral,fromInteger,toInteger);
     import Data.Kind as I;
     import Data.Bool as I;
     import Data.Bits as I;

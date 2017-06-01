@@ -162,7 +162,7 @@ module Truth.Core.Object.View where
             };
             receive (vr,_) = vrUpdate vr;
         };
-        ((MkViewResult{..},selref),srClose) <- sub initialise receive;
+        ((MkViewResult{..},selref),srClose) <- sub (error "uninitialised object (viewSubscription)") initialise receive;
         let
         {
             srGetSelection = do

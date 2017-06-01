@@ -59,7 +59,7 @@ module Truth.Core.Object.Editor where
     {
         (MkEditor initr update f) -> do
         {
-            (e, close) <- subscribe initr update;
+            (e, close) <- subscribe (error "uninitialised object (subscribeEdit)") initr update;
             finally (f e) close;
         };
     };
