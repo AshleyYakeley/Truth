@@ -52,7 +52,7 @@ module Truth.UI.GTK.Text (textMatchView) where
         textBufferSetText buffer initial;
         mv <- newMVar ();
 
-        _ <- onBufferInsertText buffer $ \iter text -> object $ \() muted -> withMVar' mv $ \_ -> do
+        _ <- onBufferInsertText buffer $ \iter text -> ifMVar mv $ object $ \() muted -> do
         {
             p <- getSequencePoint iter;
             maction <- mutableEdit muted $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
@@ -63,7 +63,7 @@ module Truth.UI.GTK.Text (textMatchView) where
             };
         };
 
-        _ <- onDeleteRange buffer $ \iter1 iter2 -> object $ \() muted -> withMVar' mv $ \_ -> do
+        _ <- onDeleteRange buffer $ \iter1 iter2 -> ifMVar mv $ object $ \() muted -> do
         {
             run <- getSequenceRun iter1 iter2;
             maction <- mutableEdit muted $ pure $ StringReplaceSection run "";
@@ -96,7 +96,7 @@ module Truth.UI.GTK.Text (textMatchView) where
 
             vrUpdate :: forall m. MonadIOInvert m => MutableRead m (StringRead String) -> () -> [StringEdit String] -> m ();
             -- this withMVar prevents the signal handlers from re-sending edits
-            vrUpdate _ () edits = liftIO $ ifMVar mv $ traverse_ update edits;
+            vrUpdate _ () edits = liftIO $ withMVar mv $ \_ -> traverse_ update edits;
 
             vrFirstSelState :: Maybe ();
             vrFirstSelState = Just ();
