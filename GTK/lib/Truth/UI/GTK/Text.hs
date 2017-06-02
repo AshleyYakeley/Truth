@@ -45,17 +45,17 @@ module Truth.UI.GTK.Text (textMatchView) where
     };
 
     textView :: GView (StringEdit String);
-    textView = MkView $ \(MkObject lapi) setSelect -> do
+    textView = MkView $ \(MkObject object) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
-        initial <- lapi $ \_ api -> unReadable fromReader $ mutableRead api;
+        initial <- object $ \_ muted -> unReadable fromReader $ mutableRead muted;
         textBufferSetText buffer initial;
         mv <- newMVar ();
 
-        _ <- onBufferInsertText buffer $ \iter text -> lapi $ \() api -> withMVar' mv $ \_ -> do
+        _ <- onBufferInsertText buffer $ \iter text -> object $ \() muted -> withMVar' mv $ \_ -> do
         {
             p <- getSequencePoint iter;
-            maction <- mutableEdit api $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
+            maction <- mutableEdit muted $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
             case maction of
             {
                 Just action -> action;
@@ -63,10 +63,10 @@ module Truth.UI.GTK.Text (textMatchView) where
             };
         };
 
-        _ <- onDeleteRange buffer $ \iter1 iter2 -> lapi $ \() api -> withMVar' mv $ \_ -> do
+        _ <- onDeleteRange buffer $ \iter1 iter2 -> object $ \() muted -> withMVar' mv $ \_ -> do
         {
             run <- getSequenceRun iter1 iter2;
-            maction <- mutableEdit api $ pure $ StringReplaceSection run "";
+            maction <- mutableEdit muted $ pure $ StringReplaceSection run "";
             case maction of
             {
                 Just action -> action;

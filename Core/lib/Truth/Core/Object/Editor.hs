@@ -75,12 +75,12 @@ module Truth.Core.Object.Editor where
     } in MkEditor{..};
 
     readEditor :: FullReader (EditReader edit) => Editor edit (EditSubject edit);
-    readEditor = oneTransactionEditor $ \api -> unReadable fromReader $ mutableRead api;
+    readEditor = oneTransactionEditor $ \muted -> unReadable fromReader $ mutableRead muted;
 
     writeEditor :: FullEdit edit => EditSubject edit -> Editor edit (Maybe ());
-    writeEditor subj = oneTransactionEditor $ \api -> do
+    writeEditor subj = oneTransactionEditor $ \muted -> do
     {
-        maction <- mutableEdit api $ getReplaceEdits subj;
+        maction <- mutableEdit muted $ getReplaceEdits subj;
         case maction of
         {
             Just action -> do

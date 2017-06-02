@@ -12,11 +12,11 @@ module Truth.Core.Object.Object where
 
     instance Functor (Object edit) where
     {
-        fmap t1t2 (MkObject lapi1) = MkObject $ \ff -> lapi1 $ \userstate api -> ff (t1t2 userstate) (fmap t1t2 api);
+        fmap t1t2 (MkObject lapi1) = MkObject $ \ff -> lapi1 $ \userstate muted -> ff (t1t2 userstate) (fmap t1t2 muted);
     };
 
     nonlockingObject :: userstate -> MutableEdit IO edit userstate -> Object edit userstate;
-    nonlockingObject userstate api = MkObject $ \ff -> ff userstate api;
+    nonlockingObject userstate muted = MkObject $ \ff -> ff userstate muted;
 
     freeObject :: forall edit. (Edit edit,FullReader (EditReader edit)) => EditSubject edit -> (EditSubject edit -> Bool) -> IO (Object edit ());
     freeObject firsta allowed = do
@@ -26,8 +26,8 @@ module Truth.Core.Object.Object where
         {
             let
             {
-                api :: MutableEdit (StateT (EditSubject edit) IO) edit ();
-                api = MkMutableEdit
+                muted :: MutableEdit (StateT (EditSubject edit) IO) edit ();
+                muted = MkMutableEdit
                 {
                     mutableRead = readFromM $ get,
                     mutableEdit = \edits -> do
@@ -41,7 +41,7 @@ module Truth.Core.Object.Object where
                     }
                 };
             };
-            (r,newa) <- runStateT (ff () api) olda;
+            (r,newa) <- runStateT (ff () muted) olda;
             return (newa,r);
         };
     };

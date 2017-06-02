@@ -12,15 +12,15 @@ module Truth.UI.GTK.CheckButton where
 
 
     checkButtonView :: String -> GView (WholeEdit (WholeReader Bool));
-    checkButtonView name = MkView $ \(MkObject lapi) _setSelect -> do
+    checkButtonView name = MkView $ \(MkObject object) _setSelect -> do
     {
         widget <- checkButtonNew;
-        initial <- lapi $ \() api -> unReadable fromReader $ mutableRead api;
+        initial <- object $ \() muted -> unReadable fromReader $ mutableRead muted;
         set widget [buttonLabel := name,toggleButtonActive := initial];
-        clickConnection <- onClicked widget $ lapi $ \() api -> do
+        clickConnection <- onClicked widget $ object $ \() muted -> do
         {
             s <- liftIO $ get widget toggleButtonActive;
-            _ <- mutableEdit api $ getReplaceEdits s;
+            _ <- mutableEdit muted $ getReplaceEdits s;
             return ();
         };
 
