@@ -65,11 +65,7 @@ module Truth.Core.Edit.EditLens where
         editLensFunction = convertEditFunction;
         editLensPutEdit editb = do
         {
-            oldsubject <- fromReader;
-            let
-            {
-                newsubject = fromReadFunction (applyEdit editb) oldsubject;
-            };
+            newsubject <- fromReadFunctionM (applyEdit editb) fromReader;
             return $ pure $ getReplaceEdits newsubject;
         };
     } in MkEditLens{..};

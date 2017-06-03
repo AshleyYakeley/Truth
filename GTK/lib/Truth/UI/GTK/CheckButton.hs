@@ -31,7 +31,7 @@ module Truth.UI.GTK.CheckButton where
             vrUpdate :: forall m. MonadIOInvert m => MutableRead m (WholeReader Bool) -> () -> [WholeEdit (WholeReader Bool)] -> m ();
             vrUpdate _ () edits = liftIO $ do
             {
-                newstate <- fmap (fromReadFunction (applyEdits edits)) $ get widget toggleButtonActive;
+                newstate <- fromReadFunctionM (applyEdits edits) $ get widget toggleButtonActive;
                 withSignalBlocked clickConnection $ set widget [toggleButtonActive := newstate];
                 return ();
             };

@@ -26,6 +26,9 @@ module Truth.Core.Read.ReadFunction where
     fromReadFunction :: (Reader ra,FullReader rb) => ReadFunction ra rb -> ReaderSubject ra -> ReaderSubject rb;
     fromReadFunction rf = fromReadable (mapReadable rf fromReader);
 
+    fromReadFunctionM :: (Monad m,Reader ra,FullReader rb) => ReadFunction ra rb -> m (ReaderSubject ra) -> m (ReaderSubject rb);
+    fromReadFunctionM rf mra = unReadable (mapReadable rf fromReader) $ readFromM mra;
+
 
     type CleanReadFunction ra rb = MutableRead ra rb;
 

@@ -32,11 +32,7 @@ module Truth.Core.Object.Object where
                     mutableRead = readFromM $ get,
                     mutableEdit = \edits -> do
                     {
-                        oa <- get;
-                        let
-                        {
-                            na = fromReadFunction (applyEdits edits) oa;
-                        };
+                        na <- fromReadFunctionM (applyEdits edits) get;
                         return $ if allowed na then Just $ put na else Nothing;
                     }
                 };
