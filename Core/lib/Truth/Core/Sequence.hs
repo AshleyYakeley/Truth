@@ -66,6 +66,9 @@ module Truth.Core.Sequence where
     relativeRun :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> SequenceRun seq;
     relativeRun n (MkSequenceRun start len) = MkSequenceRun (start - n) len;
 
+    goodRun :: Integral (Index seq) => SequenceRun seq -> Bool;
+    goodRun (MkSequenceRun _ len) = len >= 0;
+
     positiveRun :: Integral (Index seq) => SequenceRun seq -> Bool;
     positiveRun (MkSequenceRun _ len) = len > 0;
 
@@ -100,7 +103,13 @@ module Truth.Core.Sequence where
     seqIntersect a b = let
     {
         ab = clipWithin a b;
-    } in if positiveRun ab then Just ab else Nothing;
+    } in if goodRun ab then Just ab else Nothing;
+
+    seqIntersectInside :: Integral (Index seq) => SequenceRun seq -> SequenceRun seq -> Maybe (SequenceRun seq);
+    seqIntersectInside a b = let
+    {
+        ab = seqIntersect a b;
+    } in if runStart a < runEnd b && runStart b < runEnd a then ab else Nothing;
 
     -- orphan
     instance HasInfo IsSequence where

@@ -44,13 +44,25 @@ module Truth.Core.Types.String where
 
     data StringEdit seq = StringReplaceWhole seq | StringReplaceSection (SequenceRun seq) seq;
 
+    floatingUpdateLeft :: IsSequence seq => StringEdit seq -> SequencePoint seq -> SequencePoint seq;
+    floatingUpdateLeft (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
+    {
+        uend = ustart + ulen;
+        slen = seqLength u;
+    } in if i > uend then i + slen - ulen else if i > ustart + slen then ustart + slen else i;
+    floatingUpdateLeft _ i = i;
+
+    floatingUpdateRight :: IsSequence seq => StringEdit seq -> SequencePoint seq -> SequencePoint seq;
+    floatingUpdateRight (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
+    {
+        uend = ustart + ulen;
+        slen = seqLength u;
+    } in if i >= uend then i + slen - ulen else if i > ustart + slen then ustart + slen else i;
+    floatingUpdateRight _ i = i;
+
     instance IsSequence seq => Floating (StringEdit seq) (SequencePoint seq) where
     {
-        floatingUpdate (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
-        {
-            uend = ustart + ulen;
-        } in if i >= uend then i + seqLength u - uend else i;
-        floatingUpdate _ i = i;
+        floatingUpdate = floatingUpdateRight;
     };
 
     instance IsSequence seq => Floating (StringEdit seq) (SequenceRun seq) where
@@ -58,7 +70,7 @@ module Truth.Core.Types.String where
         floatingUpdate edit (MkSequenceRun ostart olen) = let
         {
             oend = ostart + olen;
-        } in startEndRun (floatingUpdate edit ostart) (floatingUpdate edit oend);
+        } in startEndRun (floatingUpdateRight edit ostart) (floatingUpdateLeft edit oend);
     };
 
     instance IsSequence seq => Floating (StringEdit seq) (StringEdit seq) where
@@ -72,12 +84,12 @@ module Truth.Core.Types.String where
         type EditReader (StringEdit seq) = StringRead seq;
 
         applyEdit (StringReplaceWhole s) reader = return $ readFrom s reader;
-        applyEdit (StringReplaceSection erun s) StringReadLength = do
+        applyEdit (StringReplaceSection erunRaw s) StringReadLength = do
         {
             oldlen <- readable StringReadLength;
             let
             {
-                (MkSequenceRun _ elen) = clipRunBounds oldlen erun;
+                (MkSequenceRun _estart elen) = clipRunBounds oldlen erunRaw;
                 slen = seqLength s;
             };
             return $ oldlen + slen - elen;
@@ -156,24 +168,37 @@ module Truth.Core.Types.String where
         };
 
         floatingEditUpdate :: StringEdit seq -> SequenceRun seq -> Readable (StringRead seq) (SequenceRun seq,[StringEdit seq]);
-        floatingEditUpdate edita oldstate = let
+        floatingEditUpdate edita rawoldstate = do
         {
-            newstate = floatingUpdate edita oldstate;
-            leditb = case edita of
+            len <- readable StringReadLength;
+            let
             {
-                StringReplaceWhole s -> return $ StringReplaceWhole $ seqSection newstate s;
-                StringReplaceSection runa sa -> maybeToList $ do
+                oldstate = clipRunBounds len rawoldstate;
+                newstate = floatingUpdate edita oldstate;
+            };
+            leditb <- case edita of
+            {
+                StringReplaceWhole s -> return $ return $ StringReplaceWhole $ seqSection newstate s;
+                StringReplaceSection rawruna sa -> do
                 {
-                    runb' <- seqIntersect oldstate runa;
                     let
                     {
-                        runb = relativeRun (runStart oldstate) runb';
-                        sb = seqSection (relativeRun (runStart runa) newstate) sa;
+                        runa = {- clipRunBounds len -} rawruna;
                     };
-                    return $ StringReplaceSection runb sb;
+                    return $ maybeToList $ do
+                    {
+                        runb' <- seqIntersectInside oldstate runa;
+                        let
+                        {
+                            runb = relativeRun (runStart oldstate) runb';
+                            sb = seqSection (clipRunBounds (seqLength sa) $ relativeRun (runStart runa) newstate) sa;
+                        };
+                        return $ StringReplaceSection runb sb;
+                    };
                 };
-            }
-        } in return (newstate,leditb);
+            };
+            return (newstate,leditb);
+        };
 
         floatingEditLensFunction :: FloatingEditFunction (SequenceRun seq) (StringEdit seq) (StringEdit seq);
         floatingEditLensFunction = MkFloatingEditFunction{..};

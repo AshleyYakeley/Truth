@@ -9,12 +9,12 @@ module Main(main) where
     import Test.Tasty.QuickCheck;
 
 
-    instance Arbitrary (Index seq) => Arbitrary (SequencePoint seq) where
+    instance (Arbitrary (Index seq),Integral (Index seq)) => Arbitrary (SequencePoint seq) where
     {
-        arbitrary = MkSequencePoint <$> arbitrary;
+        arbitrary = MkSequencePoint <$> (getNonNegative <$> arbitrary);
     };
 
-    instance Arbitrary (Index seq) => Arbitrary (SequenceRun seq) where
+    instance (Arbitrary (Index seq),Integral (Index seq)) => Arbitrary (SequenceRun seq) where
     {
         arbitrary = MkSequenceRun <$> arbitrary <*> arbitrary;
     };
@@ -28,7 +28,12 @@ module Main(main) where
     instance (Show seq,Integral (Index seq)) => Show (StringEdit seq) where
     {
         show (StringReplaceWhole sq) = "StringReplaceWhole " ++ show sq;
-        show (StringReplaceSection run sq) = "StringReplaceSection " ++ show run ++ show sq;
+        show (StringReplaceSection run sq) = "StringReplaceSection " ++ show run ++ " " ++ show sq;
+    };
+
+    instance (Arbitrary seq,Arbitrary (Index seq),Integral (Index seq)) => Arbitrary (StringEdit seq) where
+    {
+        arbitrary = oneof [StringReplaceWhole <$> arbitrary,StringReplaceSection <$> arbitrary <*> arbitrary];
     };
 
     applyEditSubject :: (Edit edit,FullReader (EditReader edit)) => edit -> EditSubject edit -> EditSubject edit;
@@ -82,9 +87,60 @@ module Main(main) where
         expected = readFrom base $ StringReadSection run;
     } in found === expected;
 
+    showVar :: Show a => String -> a -> String;
+    showVar name val = name ++ " = " ++ show val;
+
+    counterexamples :: [String] -> Property -> Property;
+    counterexamples [] = id;
+    counterexamples (s:ss) = counterexample s . counterexamples ss;
+
+    lensUpdateGetProperty ::
+    (
+        Arbitrary edita,Show edita,Edit edita,
+        FullReader (EditReader edita),
+        Arbitrary (EditSubject edita),Show (EditSubject edita),
+        Show editb,Edit editb,
+        FullReader (EditReader editb),
+        Eq (EditSubject editb),
+        Show (EditSubject editb),
+        Show state
+    ) => FloatingEditLens' m state edita editb -> EditSubject edita -> edita -> Property;
+    lensUpdateGetProperty lens oldA editA = let
+    {
+        newA = fromReadFunction (applyEdit editA) oldA;
+        MkFloatingEditLens{..} = lens;
+        MkFloatingEditFunction{..} = floatingEditLensFunction;
+        oldB = fromReadFunction (floatingEditGet floatingEditInitial) oldA;
+        rdb = floatingEditUpdate editA floatingEditInitial;
+        (newState,editBs) = fromReadable rdb oldA;
+        newB1 = fromReadFunction (applyEdits editBs) oldB;
+        newB2 = fromReadFunction (floatingEditGet newState) newA;
+        vars =
+        [
+            showVar "oldA" oldA,
+            showVar "oldState" floatingEditInitial,
+            showVar "oldB" oldB,
+            showVar "editA" editA,
+            showVar "editBs" editBs,
+            showVar "newA" newA,
+            showVar "newState" newState,
+            showVar "newB (edits)" newB1,
+            showVar "newB (lens )" newB2
+        ];
+    } in counterexamples vars $ newB1 === newB2;
+
+    testLensUpdate :: TestTree;
+    testLensUpdate = testProperty "update" $ \run (base :: String) edit -> lensUpdateGetProperty (stringSectionLens run) base edit;
+
     testStringSectionLens :: TestTree;
     testStringSectionLens = testGroup "string section lens" [
-        testLensGet
+        testLensGet,
+        localOption (QuickCheckTests 10000) testLensUpdate,
+        localOption (QuickCheckTests 1) $ testGroup "update special" $ [
+            testProperty "1 0" $ lensUpdateGetProperty (stringSectionLens $ seqRun 0 1) "A" (StringReplaceSection (seqRun 1 0) "x"),
+            testProperty "4 1" $ lensUpdateGetProperty (stringSectionLens $ seqRun 0 5) "ABCDE" (StringReplaceSection (seqRun 4 1) "pqrstu"),
+            testProperty "4 2" $ lensUpdateGetProperty (stringSectionLens $ seqRun 0 5) "ABCDE" (StringReplaceSection (seqRun 4 2) "pqrstu")
+            ]
         ];
 
     tests :: TestTree;
