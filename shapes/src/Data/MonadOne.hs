@@ -6,6 +6,7 @@ module Data.MonadOne where
     import Data.Chain;
     import Data.Result;
     import Data.Functor.Identity;
+    import Data.Functor.Single;
 
 
     newtype Limit f = MkLimit (forall a. f a);
@@ -92,6 +93,11 @@ module Data.MonadOne where
         retrieveOne (SuccessResult a) = SuccessResult a;
         retrieveOne (FailureResult e) = FailureResult (MkLimit (FailureResult e));
         getMaybeOne = resultToMaybe;
+    };
+
+    instance MonadOne Single where
+    {
+        retrieveOne _ = FailureResult $ MkLimit MkSingle;
     };
 
     constFunctionAp :: (MonadOne f,Applicative (t (f a)),CatFunctor t f) => f (t a b) -> t (f a) (f b);

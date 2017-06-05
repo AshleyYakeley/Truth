@@ -63,6 +63,7 @@ library
         Data.ApStore
         Control.Applicative.Free
         Data.Functor.Free
+        Data.Functor.Single
         Control.Monad.Free
         Control.Monad.IOInvert
         Control.Wait
