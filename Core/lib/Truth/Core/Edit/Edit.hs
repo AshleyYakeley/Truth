@@ -35,6 +35,16 @@ module Truth.Core.Edit.Edit where
     applyEdits :: (Edit edit) => [edit] -> ReadFunction (EditReader edit) (EditReader edit);
     applyEdits [] = readable;
     applyEdits (e:es) = composeReadFunction (applyEdits es) (applyEdit e);
+
+    -- edits always applied in the given order, so list returned will be reversed relative to list given.
+    invertEdits :: (Edit edit) => [edit] -> Readable (EditReader edit) [edit];
+    invertEdits [] = return [];
+    invertEdits (e:ee) = do
+    {
+        uu <- mapReadable (applyEdit e) $ invertEdits ee;
+        u <- invertEdit e;
+        return $ u ++ uu;
+    };
 {-
     commutableEdits :: (Edit edit, Eq (EditSubject edit)) => edit -> edit -> EditSubject edit -> Maybe (EditSubject edit);
     commutableEdits e1 e2 a = let

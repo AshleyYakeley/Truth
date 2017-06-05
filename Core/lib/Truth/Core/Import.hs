@@ -5,6 +5,7 @@ module Truth.Core.Import (module I) where
     import Data.Bool as I;
     import Data.Bits as I;
     import Data.List as I ((++),length);
+    import Data.List.NonEmpty as I (NonEmpty(..));
     import Data.Maybe as I hiding (catMaybes);
     import Data.Either as I;
     import Data.Ord as I;
