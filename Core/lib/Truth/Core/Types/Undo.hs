@@ -1,29 +1,8 @@
 module Truth.Core.Types.Undo where
 {
     import Truth.Core.Import;
-    import Truth.Core.Read;
     import Truth.Core.Edit;
-    import Truth.Core.Types.Context;
-
-
-    -- data WithContext context content = MkWithContext context content;
-
-    data StateReader context reader t where
-    {
-        SRContext :: StateReader context reader context;
-        SRRead :: reader t -> StateReader context reader t;
-    };
-
-    instance Reader reader => Reader (StateReader context reader) where
-    {
-        type ReaderSubject (StateReader context reader) = WithContext context (ReaderSubject reader);
-
-        readFrom (MkWithContext context _content) SRContext = context;
-        readFrom (MkWithContext _context content) (SRRead reader) = readFrom content reader;
-    };
-
-    stateContentRF :: ReadFunction (StateReader context reader) reader;
-    stateContentRF = readable . SRRead;
+    import Truth.Core.Types.State;
 
 
     data UndoQueue edit = MkUndoQueue
@@ -32,96 +11,56 @@ module Truth.Core.Types.Undo where
         uqRedoEdits :: [NonEmpty edit]
     };
 
-    undoQueueAddUndo :: [edit] -> UndoQueue edit -> UndoQueue edit;
-    undoQueueAddUndo [] uq = uq;
-    undoQueueAddUndo (e:ee) (MkUndoQueue ue _) = MkUndoQueue ((e:|ee):ue) [];
-
-    type UndoReader edit = StateReader (UndoQueue edit) (EditReader edit);
-
-    type UndoBuffer edit = WithContext (UndoQueue edit) (EditSubject edit);
-
-    data UndoEdit edit = UEUndo | UERedo | UEEdit edit;
-
-    instance Floating edit edit => Floating (UndoEdit edit) (UndoEdit edit) where
+    data UQOperation = UQUndo | UQRedo;
+    instance StateOperation UQOperation where
     {
-        floatingUpdate (UEEdit edit1) (UEEdit edit2) = UEEdit $ floatingUpdate edit1 edit2;
-        floatingUpdate _ edit = edit;
-    };
+        type StateOperationState UQOperation = UndoQueue;
 
-    instance Edit edit => Edit (UndoEdit edit) where
-    {
-        type EditReader (UndoEdit edit) = UndoReader edit;
-
-        applyEdit (UEEdit edit) (SRRead reader) = mapReadable stateContentRF $ applyEdit edit reader;
-        applyEdit (UEEdit edit) SRContext = do
+        emptyState _ = MkUndoQueue [] [];
+        editState _ edits uq@(MkUndoQueue uu _) = do
         {
-            uq <- readable SRContext;
-            unedits <- mapReadable stateContentRF $ invertEdit edit;
-            return $ undoQueueAddUndo unedits uq;
-        };
-        applyEdit UEUndo (SRRead reader) = do
-        {
-            MkUndoQueue ee _ <- readable SRContext;
-            mapReadable stateContentRF $ case ee of
+            unedits <- invertEdits edits;
+            return $ case unedits of
             {
-                es:_ -> applyEdits (toList es) reader;
-                [] -> readable reader;
-            };
+                us:usr -> MkUndoQueue ((us:|usr):uu) [];
+                [] -> uq;
+            }
         };
-        applyEdit UEUndo SRContext = do
+        stateOperation UQUndo uq@(MkUndoQueue uu rr) = case uu of
         {
-            uq@(MkUndoQueue uu rr) <- readable SRContext;
-            case uu of
+            [] -> return (uq,[]);
+            us:usr -> do
             {
-                us:usr -> do
+                reedits <- invertEdits $ toList us;
+                let
                 {
-                    reedits <- mapReadable stateContentRF $ invertEdits $ toList us;
-                    let
+                    uqUndoEdits = usr;
+                    uqRedoEdits = case reedits of
                     {
-                        uqUndoEdits = usr;
-                        uqRedoEdits = case reedits of
-                        {
-                            rs:rsr -> (rs:|rsr):rr;
-                            [] -> rr;
-                        };
+                        rs:rsr -> (rs:|rsr):rr;
+                        [] -> rr;
                     };
-                    return MkUndoQueue{..};
                 };
-                [] -> return uq;
+                return (MkUndoQueue{..},toList us);
             };
         };
-        applyEdit UERedo (SRRead reader) = do
+        stateOperation UQRedo uq@(MkUndoQueue uu rr) = case rr of
         {
-            MkUndoQueue _ ee <- readable SRContext;
-            mapReadable stateContentRF $ case ee of
+            [] -> return (uq,[]);
+            rs:rsr -> do
             {
-                es:_ -> applyEdits (toList es) reader;
-                [] -> readable reader;
-            };
-        };
-        applyEdit UERedo SRContext = do
-        {
-            uq@(MkUndoQueue uu rr) <- readable SRContext;
-            case rr of
-            {
-                rs:rsr -> do
+                unedits <- invertEdits $ toList rs;
+                let
                 {
-                    unedits <- mapReadable stateContentRF $ invertEdits $ toList rs;
-                    let
+                    uqUndoEdits = case unedits of
                     {
-                        uqUndoEdits = case unedits of
-                        {
-                            us:usr -> (us:|usr):uu;
-                            [] -> uu;
-                        };
-                        uqRedoEdits = rsr;
+                        us:usr -> (us:|usr):uu;
+                        [] -> uu;
                     };
-                    return MkUndoQueue{..};
+                    uqRedoEdits = rsr;
                 };
-                [] -> return uq;
+                return (MkUndoQueue{..},toList rs);
             };
         };
-
-        invertEdit _ = return $ error "invert UndoEdit NYI";
     };
 }

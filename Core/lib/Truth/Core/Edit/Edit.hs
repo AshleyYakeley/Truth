@@ -10,6 +10,12 @@ module Truth.Core.Edit.Edit where
         floatingUpdate _ = id;
     };
 
+    instance Floating edit t => Floating [edit] t where
+    {
+        floatingUpdate [] = id;
+        floatingUpdate (e:ee) = floatingUpdate ee . floatingUpdate e;
+    };
+
     instance HasInfo Floating where
     {
         info = mkSimpleInfo $(iowitness[t|Floating|]) [];
