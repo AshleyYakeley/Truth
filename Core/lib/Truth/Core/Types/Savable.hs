@@ -3,92 +3,42 @@ module Truth.Core.Types.Savable where
     import Truth.Core.Import;
     import Truth.Core.Read;
     import Truth.Core.Edit;
+    import Truth.Core.Types.Whole;
 
 
-    data SavableVersion = SavableOriginal | SavableCurrent deriving Eq;
-
-    instance Countable SavableVersion where
+    data SaveBuffer a = MkSaveBuffer
     {
-        countPrevious = finiteCountPrevious;
-        countMaybeNext = finiteCountMaybeNext;
+        saveBuffer :: a,
+        saveBufferChanged :: Bool
     };
 
-    instance Searchable SavableVersion where
+    data SaveAction a = SASave | SARevert | SAChange a;
+
+    saveBufferLens :: forall a. (EditReader (SaveAction a) ~ WholeReader a) =>
+        FloatingEditLens (SaveBuffer a) (WholeEdit (WholeReader a)) (SaveAction a);
+    saveBufferLens = let
     {
-        search = finiteSearch;
-    };
+        floatingEditInitial :: SaveBuffer a;
+        floatingEditInitial = MkSaveBuffer undefined False;
 
-    instance Finite SavableVersion where
-    {
-        allValues = [SavableOriginal,SavableCurrent];
-    };
+        floatingEditGet :: SaveBuffer a -> ReadFunction (WholeReader a) (WholeReader a);
+        floatingEditGet (MkSaveBuffer buffer _) ReadWhole = return buffer;
 
-    type Savable a = SavableVersion -> a;
+        floatingEditUpdate :: WholeEdit (WholeReader a) -> SaveBuffer a -> Readable (WholeReader a) (SaveBuffer a,[SaveAction a]);
+        floatingEditUpdate (MkWholeEdit buffer) _ = return (MkSaveBuffer buffer False,[SAChange buffer]);
 
-    mkSavable :: a -> a -> Savable a;
-    mkSavable a _ SavableOriginal = a;
-    mkSavable _ a SavableCurrent = a;
+        floatingEditLensFunction :: FloatingEditFunction (SaveBuffer a) (WholeEdit (WholeReader a)) (SaveAction a);
+        floatingEditLensFunction = MkFloatingEditFunction{..};
 
-    savableVersionLens :: SavableVersion -> Lens' Identity (Savable a) a;
-    savableVersionLens = pickLens;
-
-    data SavableReader reader t = MkSavableReader SavableVersion (reader t);
-
-    instance (Reader reader) => Reader (SavableReader reader) where
-    {
-        type ReaderSubject (SavableReader reader) = Savable (ReaderSubject reader);
-        readFrom subj (MkSavableReader sv reader) = readFrom (subj sv) reader;
-    };
-
-    instance (FullReader reader) => FullReader (SavableReader reader) where
-    {
-        fromReader = do
+        floatingEditLensPutEdit :: SaveBuffer a -> SaveAction a -> Readable (WholeReader a) (Maybe (SaveBuffer a,[WholeEdit (WholeReader a)]));
+        floatingEditLensPutEdit (MkSaveBuffer _ False) SASave = return Nothing;
+        floatingEditLensPutEdit (MkSaveBuffer buffer True) SASave = return $ Just (MkSaveBuffer buffer False,[MkWholeEdit buffer]);
+        floatingEditLensPutEdit (MkSaveBuffer _ False) SARevert = return Nothing;
+        floatingEditLensPutEdit (MkSaveBuffer _ True) SARevert = do
         {
-            so <- mapCleanReadable (MkSavableReader SavableOriginal) fromReader;
-            sc <- mapCleanReadable (MkSavableReader SavableCurrent) fromReader;
-            return (mkSavable so sc);
+            buffer <- readable ReadWhole;
+            return $ Just (MkSaveBuffer buffer False,[]);
         };
-    };
-
-    data SavableEdit edit =
-        SEEdit edit |   -- changes Current
-        SESave | -- sets Original to Current
-        SEUnsave (EditSubject edit); -- sets Original to given (invert SESave)
-
-    instance Floating edit edit => Floating (SavableEdit edit) (SavableEdit edit) where
-    {
-        floatingUpdate (SEEdit e1) (SEEdit e2) = SEEdit $ floatingUpdate e1 e2;
-        floatingUpdate _ t = t;
-    };
-
-    instance (Eq (EditSubject edit), FullReader (EditReader edit), Edit edit) => Edit (SavableEdit edit) where
-    {
-        type EditReader (SavableEdit edit) = SavableReader (EditReader edit);
-        applyEdit (SEEdit edit) (MkSavableReader SavableCurrent reader) =
-            mapCleanReadable (MkSavableReader SavableCurrent) (applyEdit edit reader);
-        applyEdit SESave (MkSavableReader SavableOriginal reader) =
-            mapCleanReadable (MkSavableReader SavableCurrent) (readable reader);
-        applyEdit (SEUnsave a) (MkSavableReader SavableOriginal reader) = return (readFrom a reader);
-        applyEdit _ sreader = readable sreader;
-
-        invertEdit (SEEdit edit) = fmap (fmap SEEdit)
-            (mapCleanReadable (MkSavableReader SavableCurrent) (invertEdit edit));
-        invertEdit SESave = do
-        {
-            so <- mapCleanReadable (MkSavableReader SavableOriginal) fromReader;
-            return [SEUnsave so];
-        };
-        invertEdit (SEUnsave _) = do
-        {
-            sav <- fromReader;
-            return [let
-            {
-                so = sav SavableOriginal;
-                sc = sav SavableCurrent;
-            } in if so == sc then SESave else SEUnsave so];
-        };
-    };
-
-    savableLens :: (Applicative m) => Lens' m a b -> Lens' m (Savable a) (Savable b);
-    savableLens = cfmap;
+        floatingEditLensPutEdit (MkSaveBuffer _ _) (SAChange buffer) = return $ Just (MkSaveBuffer buffer True,[]);
+    } in MkFloatingEditLens{..};
 }

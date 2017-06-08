@@ -100,7 +100,6 @@ library
         Truth.Core.Types.Key
         Truth.Core.Types.MIME
         Truth.Core.Types.Merge
-        Truth.Core.Types.State
         Truth.Core.Types.Savable
         Truth.Core.Types.Undo
         Truth.Core.Types
