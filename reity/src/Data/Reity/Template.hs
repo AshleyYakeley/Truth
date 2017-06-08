@@ -216,7 +216,15 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy) where
 
     decKnowledgeEs :: Dec -> Q [Exp];
     decKnowledgeEs (InstanceD _ ctxt tp decls) = instanceKnowledgeEs ctxt tp decls;
-    decKnowledgeEs decl = declFail $ "non-instance declaration: " ++ show decl;
+    decKnowledgeEs decl = do
+    {
+        mne <- assocTypeKnowledgeE decl;
+        case mne of
+        {
+            Just (_name,expr) -> return [expr];
+            Nothing -> declFail $ "non-instance declaration: " ++ show decl;
+        };
+    };
 
     declInfo :: Q [Dec] -> Q Exp;
     declInfo qds = do
