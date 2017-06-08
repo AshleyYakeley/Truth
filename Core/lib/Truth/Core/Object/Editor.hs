@@ -54,7 +54,7 @@ module Truth.Core.Object.Editor where
         } in MkEditor{..};
     };
 
-    subscribeEdit :: Subscription edit -> Editor edit r -> IO r;
+    subscribeEdit :: Subscription edit (IO ()) -> Editor edit r -> IO r;
     subscribeEdit subscribe editor = case editor of
     {
         (MkEditor initr update f) -> do

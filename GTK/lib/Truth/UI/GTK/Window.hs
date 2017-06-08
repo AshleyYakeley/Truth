@@ -41,7 +41,7 @@ module Truth.UI.GTK.Window where
     getView :: GetView;
     getView = finalGetView (mconcat matchViews) lastResortView;
 
-    makeWindow :: (Edit edit) => Info edit -> IORef Int -> IO () -> Subscription edit -> IO ();
+    makeWindow :: (Edit edit) => Info edit -> IORef Int -> IO () -> Subscription edit (IO ()) -> IO ();
     makeWindow te ref tellclose sub = do
     {
         MkSubscriptionView{..} <- viewSubscription (getView te) sub;
@@ -72,14 +72,14 @@ module Truth.UI.GTK.Window where
         widgetShow srWidget;
         _ <- onDestroy window (do
         {
-            srClose;
+            srAction;
             tellclose;
         });
         widgetShowAll window;
         return ();
     };
 
-    makeWindowCountRef :: (Edit edit) => Info edit -> IORef Int -> Subscription edit -> IO ();
+    makeWindowCountRef :: (Edit edit) => Info edit -> IORef Int -> Subscription edit (IO ()) -> IO ();
     makeWindowCountRef te windowCount sub = do
     {
         makeWindow te windowCount (do
