@@ -69,4 +69,15 @@ module Truth.Core.Edit.EditLens where
             return $ pure $ getReplaceEdits newsubject;
         };
     } in MkEditLens{..};
+
+    invertEditLens :: ReadFunction (EditReader editb) (EditReader edita) -> EditLens' Identity edita editb -> EditLens' Identity editb edita;
+    invertEditLens rfba lensab = MkEditLens
+    {
+        editLensFunction = MkEditFunction
+        {
+            editGet = rfba,
+            editUpdate = \eb -> fmap runIdentity $ mapReadable rfba $ editLensPutEdit lensab eb
+        },
+        editLensPutEdit = \ea -> fmap pure $ mapReadable rfba $ editUpdate (editLensFunction lensab) ea
+    };
 }

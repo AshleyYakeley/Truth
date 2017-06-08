@@ -69,4 +69,16 @@ module Truth.Core.Edit.FloatingEditLens where
             }
         };
     };
+
+    invertFloatingEditLens :: (state -> ReadFunction (EditReader editb) (EditReader edita)) -> FloatingEditLens' Identity state edita editb -> FloatingEditLens' Identity state editb edita;
+    invertFloatingEditLens srfba lensab = MkFloatingEditLens
+    {
+        floatingEditLensFunction = MkFloatingEditFunction
+        {
+            floatingEditInitial = floatingEditInitial $ floatingEditLensFunction lensab,
+            floatingEditGet = srfba,
+            floatingEditUpdate = \eb state -> fmap runIdentity $ mapReadable (srfba state) $ floatingEditLensPutEdit lensab state eb
+        },
+        floatingEditLensPutEdit = \state ea -> fmap pure $ mapReadable (srfba state) $ floatingEditUpdate (floatingEditLensFunction lensab) ea state
+    };
 }
