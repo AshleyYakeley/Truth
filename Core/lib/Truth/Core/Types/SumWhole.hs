@@ -7,7 +7,7 @@ module Truth.Core.Types.SumWhole where
     import Truth.Core.Types.Sum;
 
 
-    type SumWholeEdit edit = SumEdit (WholeEdit (EditReader edit)) edit;
+    type SumWholeEdit edit = SumEdit (WholeReaderEdit (EditReader edit)) edit;
 
     sumWholeCleanEditFunction :: (Edit edita,FullEdit editb) =>
      CleanEditFunction edita editb -> CleanEditFunction (SumWholeEdit edita) editb;

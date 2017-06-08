@@ -30,7 +30,7 @@ module Truth.Core.Object.Aspect where
             infoOneEdit = applyInfo (applyInfo (info @OneEdit) infoF) infoEditB;
             infoJustReader = applyInfo (applyInfo (info @OneReader) infoF) infoReader;
 
-            infoEditB' = applyInfo (applyInfo (info @SumEdit) $ applyInfo (info @WholeEdit) infoJustReader) infoOneEdit;
+            infoEditB' = applyInfo (applyInfo (info @SumEdit) $ applyInfo (info @WholeReaderEdit) infoJustReader) infoOneEdit;
             infoSubj' = applyInfo infoF infoSubj;
             lens' = oneWholeGeneralLens lens;
         };

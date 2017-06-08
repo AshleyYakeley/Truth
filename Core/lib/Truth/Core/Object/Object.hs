@@ -108,7 +108,7 @@ module Truth.Core.Object.Object where
     convertObject :: (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Object edita userstate -> Object editb userstate;
     convertObject = fixedMapObject @Identity convertEditLens;
 
-    cacheObject :: Eq t => Object (WholeEdit (WholeReader t)) () -> Object (WholeEdit (WholeReader t)) ();
+    cacheObject :: Eq t => Object (WholeEdit t) () -> Object (WholeEdit t) ();
     cacheObject (MkObject obj) = MkObject $ \ff -> obj $ \s me -> do
     {
         oldval <- mutableRead me ReadWhole;

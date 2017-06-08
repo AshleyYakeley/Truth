@@ -88,8 +88,8 @@ module Truth.Core.Object.Lens where
     instance (MonadOne f) => IsGeneralLens (Lens' f a b) where
     {
         type LensMonad (Lens' f a b) = f;
-        type LensDomain (Lens' f a b) = WholeEdit (WholeReader a);
-        type LensRange (Lens' f a b) = WholeEdit (WholeReader b);
+        type LensDomain (Lens' f a b) = WholeEdit a;
+        type LensRange (Lens' f a b) = WholeEdit b;
 
         toGeneralLens' = toGeneralLens' . wholeEditLens;
     };
@@ -97,8 +97,8 @@ module Truth.Core.Object.Lens where
     instance (MonadOne m) => IsGeneralLens (Injection' m a b) where
     {
         type LensMonad (Injection' m a b) = m;
-        type LensDomain (Injection' m a b) = WholeEdit (WholeReader a);
-        type LensRange (Injection' m a b) = WholeEdit (WholeReader b);
+        type LensDomain (Injection' m a b) = WholeEdit a;
+        type LensRange (Injection' m a b) = WholeEdit b;
 
         toGeneralLens' = toGeneralLens' . injectionLens;
     };
@@ -106,8 +106,8 @@ module Truth.Core.Object.Lens where
     instance IsGeneralLens (Bijection a b) where
     {
         type LensMonad (Bijection a b) = Identity;
-        type LensDomain (Bijection a b) = WholeEdit (WholeReader a);
-        type LensRange (Bijection a b) = WholeEdit (WholeReader b);
+        type LensDomain (Bijection a b) = WholeEdit a;
+        type LensRange (Bijection a b) = WholeEdit b;
 
         toGeneralLens' = toGeneralLens' . bijectionInjection;
     };
@@ -115,8 +115,8 @@ module Truth.Core.Object.Lens where
     instance IsGeneralLens (Codec a b) where
     {
         type LensMonad (Codec a b) = Maybe;
-        type LensDomain (Codec a b) = WholeEdit (WholeReader a);
-        type LensRange (Codec a b) = WholeEdit (WholeReader (Maybe b));
+        type LensDomain (Codec a b) = WholeEdit a;
+        type LensRange (Codec a b) = WholeEdit (Maybe b);
 
         toGeneralLens' = toGeneralLens' . codecInjection;
     };

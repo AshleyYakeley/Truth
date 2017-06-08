@@ -33,13 +33,13 @@ module Truth.Core.Types.Whole where
         |])];
     };
 
-    newtype WholeEdit (reader :: * -> *) = MkWholeEdit (ReaderSubject reader);
+    newtype WholeReaderEdit (reader :: * -> *) = MkWholeEdit (ReaderSubject reader);
 
-    instance Floating (WholeEdit reader) (WholeEdit reader);
+    instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader);
 
-    instance (FullReader reader) => Edit (WholeEdit reader) where
+    instance (FullReader reader) => Edit (WholeReaderEdit reader) where
     {
-        type EditReader (WholeEdit reader) = reader;
+        type EditReader (WholeReaderEdit reader) = reader;
         applyEdit (MkWholeEdit a) = readFromM (return a);
         invertEdit _ = do
         {
@@ -48,7 +48,7 @@ module Truth.Core.Types.Whole where
         };
     };
 
-    instance (FullReader reader) => FullEdit (WholeEdit reader) where
+    instance (FullReader reader) => FullEdit (WholeReaderEdit reader) where
     {
         replaceEdit = do
         {
@@ -58,25 +58,27 @@ module Truth.Core.Types.Whole where
     };
 
     $(return []);
-    instance HasInfo WholeEdit where
+    instance HasInfo WholeReaderEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|WholeEdit|]) [$(declInfo [d|
-            instance (FullReader reader) => Edit (WholeEdit reader) where
+        info = mkSimpleInfo $(iowitness[t|WholeReaderEdit|]) [$(declInfo [d|
+            instance (FullReader reader) => Edit (WholeReaderEdit reader) where
             {
-                type EditReader (WholeEdit reader) = reader;
+                type EditReader (WholeReaderEdit reader) = reader;
             };
-            instance (FullReader reader) => FullEdit (WholeEdit reader);
+            instance (FullReader reader) => FullEdit (WholeReaderEdit reader);
         |])];
     };
 
-    wholeEditFunction :: (a -> b) -> EditFunction (WholeEdit (WholeReader a)) (WholeEdit (WholeReader b));
+    type WholeEdit a = WholeReaderEdit (WholeReader a);
+
+    wholeEditFunction :: (a -> b) -> EditFunction (WholeEdit a) (WholeEdit b);
     wholeEditFunction ab = MkEditFunction
     {
         editGet = simpleReadFunction ab,
         editUpdate = \(MkWholeEdit a) -> return $ pure $ MkWholeEdit $ ab a
     };
 
-    wholeEditLens :: (Functor m) => Lens' m a b -> EditLens' m (WholeEdit (WholeReader a)) (WholeEdit (WholeReader b));
+    wholeEditLens :: (Functor m) => Lens' m a b -> EditLens' m (WholeEdit a) (WholeEdit b);
     wholeEditLens lens = MkEditLens
     {
         editLensFunction = wholeEditFunction (lensGet lens),

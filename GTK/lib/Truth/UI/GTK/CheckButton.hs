@@ -11,7 +11,7 @@ module Truth.UI.GTK.CheckButton where
     import Truth.UI.GTK.Useful;
 
 
-    checkButtonView :: String -> GView (WholeEdit (WholeReader Bool));
+    checkButtonView :: String -> GView (WholeEdit Bool);
     checkButtonView name = MkView $ \(MkObject object) _setSelect -> do
     {
         widget <- checkButtonNew;
@@ -28,7 +28,7 @@ module Truth.UI.GTK.CheckButton where
         {
             vrWidget = toWidget widget;
             vrFirstUpdateState = ();
-            vrUpdate :: forall m. MonadIOInvert m => MutableRead m (WholeReader Bool) -> () -> [WholeEdit (WholeReader Bool)] -> m ();
+            vrUpdate :: forall m. MonadIOInvert m => MutableRead m (WholeReader Bool) -> () -> [WholeEdit Bool] -> m ();
             vrUpdate _ () edits = liftIO $ do
             {
                 newstate <- fromReadFunctionM (applyEdits edits) $ get widget toggleButtonActive;
@@ -44,7 +44,7 @@ module Truth.UI.GTK.CheckButton where
     checkButtonMatchView :: MatchView;
     checkButtonMatchView = MkMatchView $ \tedit -> do
     {
-        Refl <- testEquality (info :: Info (WholeEdit (WholeReader Bool))) tedit;
+        Refl <- testEquality (info :: Info (WholeEdit Bool)) tedit;
         return $ checkButtonView "";
     };
 }
