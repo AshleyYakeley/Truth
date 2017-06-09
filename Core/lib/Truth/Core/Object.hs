@@ -7,6 +7,8 @@ module Truth.Core.Object
     module Truth.Core.Object.Editor,
     module Truth.Core.Object.Aspect,
     module Truth.Core.Object.View,
+    module Truth.Core.Object.Savable,
+    module Truth.Core.Object.Undo,
     module Truth.Core.Object.File,
 ) where
 {
@@ -17,5 +19,7 @@ module Truth.Core.Object
     import Truth.Core.Object.Editor;
     import Truth.Core.Object.Aspect;
     import Truth.Core.Object.View;
+    import Truth.Core.Object.Savable;
+    import Truth.Core.Object.Undo;
     import Truth.Core.Object.File;
 }

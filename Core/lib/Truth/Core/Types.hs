@@ -22,8 +22,6 @@ module Truth.Core.Types
     module Truth.Core.Types.Key,
     module Truth.Core.Types.MIME,
     module Truth.Core.Types.Merge,
-    module Truth.Core.Types.Savable,
-    module Truth.Core.Types.Undo,
 ) where
 {
     import Truth.Core.Types.None;
@@ -48,6 +46,4 @@ module Truth.Core.Types
     import Truth.Core.Types.Key;
     import Truth.Core.Types.MIME;
     import Truth.Core.Types.Merge;
-    import Truth.Core.Types.Savable;
-    import Truth.Core.Types.Undo;
 }

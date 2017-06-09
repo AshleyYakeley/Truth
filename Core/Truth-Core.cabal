@@ -100,8 +100,6 @@ library
         Truth.Core.Types.Key
         Truth.Core.Types.MIME
         Truth.Core.Types.Merge
-        Truth.Core.Types.Savable
-        Truth.Core.Types.Undo
         Truth.Core.Types
         Truth.Core.Object.MutableEdit
         Truth.Core.Object.Object
@@ -110,6 +108,8 @@ library
         Truth.Core.Object.Editor
         Truth.Core.Object.View
         Truth.Core.Object.Aspect
+        Truth.Core.Object.Savable
+        Truth.Core.Object.Undo
         Truth.Core.Object.File
         Truth.Core.Object
 

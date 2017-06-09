@@ -1,4 +1,4 @@
-module Truth.Core.Types.Undo where
+module Truth.Core.Object.Undo where
 {
     import Truth.Core.Import;
     import Truth.Core.Read;
