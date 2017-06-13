@@ -8,7 +8,7 @@ module Truth.Core.Object.Object where
     import Truth.Core.Object.MutableEdit;
 
 
-    newtype Object edit userstate = MkObject (forall r. (forall m. MonadIOInvert m => userstate -> MutableEdit m edit userstate -> m r) -> IO r);
+    newtype Object edit userstate = MkObject (forall r. (forall m. IsStateIO m => userstate -> MutableEdit m edit userstate -> m r) -> IO r);
 
     instance Functor (Object edit) where
     {
@@ -18,8 +18,8 @@ module Truth.Core.Object.Object where
     nonlockingObject :: userstate -> MutableEdit IO edit userstate -> Object edit userstate;
     nonlockingObject userstate muted = MkObject $ \ff -> ff userstate muted;
 
-    freeObject :: forall edit. (Edit edit,FullReader (EditReader edit)) => EditSubject edit -> (EditSubject edit -> Bool) -> IO (Object edit ());
-    freeObject firsta allowed = do
+    freeIOObject :: forall edit. (Edit edit,FullReader (EditReader edit)) => EditSubject edit -> (EditSubject edit -> Bool) -> IO (Object edit ());
+    freeIOObject firsta allowed = do
     {
         var <- newMVar firsta;
         return $ MkObject $ \ff -> modifyMVar var $ \olda -> do
@@ -43,11 +43,11 @@ module Truth.Core.Object.Object where
     };
 
     floatingMapObject :: forall f lensstate edita editb userstate. MonadOne f => FloatingEditLens' f lensstate edita editb -> Object edita (userstate,lensstate) -> Object editb userstate;
-    floatingMapObject lens@MkFloatingEditLens{..} (MkObject objectA) = MkObject $ \(callB :: forall m. MonadIOInvert m => userstate -> MutableEdit m editb userstate -> m r) -> let
+    floatingMapObject lens@MkFloatingEditLens{..} (MkObject objectA) = MkObject $ \(callB :: forall m. IsStateIO m => userstate -> MutableEdit m editb userstate -> m r) -> let
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
 
-        callA :: forall m. MonadIOInvert m => (userstate,lensstate) -> MutableEdit m edita (userstate,lensstate) -> m r;
+        callA :: forall m. IsStateIO m => (userstate,lensstate) -> MutableEdit m edita (userstate,lensstate) -> m r;
         callA (firstuserstate,firstlensstate) (mutedA :: MutableEdit m edita (userstate,lensstate)) = let
         {
             readA :: MutableRead m (EditReader edita);
@@ -95,9 +95,9 @@ module Truth.Core.Object.Object where
             apiB :: MutableEdit (StateT lensstate m) editb userstate;
             apiB = MkMutableEdit readB pushEditB;
         }
-        in liftIOInvert $ \unlift -> do
+        in do
         {
-            (r,_newstate) <- unlift $ runStateT (callB firstuserstate apiB) firstlensstate; -- just throw away the new lens state: all these lens changes will be replayed by the update
+            (r,_newstate) <- runStateT (callB firstuserstate apiB) firstlensstate; -- just throw away the new lens state: all these lens changes will be replayed by the update
             return r;
         };
     } in objectA callA;
@@ -135,7 +135,7 @@ module Truth.Core.Object.Object where
 
     pairObject :: Object ea ua -> Object eb ub -> Object (PairEdit ea eb) (ua,ub);
     pairObject (MkObject objectA) (MkObject lapiB) = MkObject $ \ff ->
-        objectA $ \stateA meA -> liftIOInvert $ \unliftA -> StateT $ \oldsA ->
-        lapiB $ \stateB meB -> liftIOInvert $ \unliftB -> StateT $ \oldsB ->
-        fmap swap3 $ runStateT (ff (stateA,stateB) $ pairMutableEdit (remonadMutableEdit (stateFst . unliftA) meA) (remonadMutableEdit (stateSnd . unliftB) meB)) (oldsA,oldsB);
+        objectA $ \stateA meA -> mkStateIO $ \oldsA ->
+        lapiB $ \stateB meB -> mkStateIO $ \oldsB ->
+        fmap swap3 $ runStateT (ff (stateA,stateB) $ pairMutableEdit (remonadMutableEdit (stateFst . fromStateIO) meA) (remonadMutableEdit (stateSnd . fromStateIO) meB)) (oldsA,oldsB);
 }

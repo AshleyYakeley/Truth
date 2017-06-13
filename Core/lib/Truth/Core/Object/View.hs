@@ -15,7 +15,7 @@ module Truth.Core.Object.View where
     {
         vrWidget :: w,
         vrFirstUpdateState :: updatestate,
-        vrUpdate :: forall m. MonadIOInvert m => MutableRead m (EditReader edit) -> updatestate -> [edit] -> m updatestate,
+        vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> updatestate -> [edit] -> m updatestate,
         vrFirstSelState :: Maybe selstate,
         vrGetSelection :: selstate -> IO (Maybe (Aspect edit))
     };
@@ -62,7 +62,7 @@ module Truth.Core.Object.View where
         let
         {
             fusA = (fusB,floatingEditInitial);
-            updateA :: forall m. MonadIOInvert m => MutableRead m (EditReader edita) -> (updatestateb,lensstate) -> [edita] -> m (updatestateb,lensstate);
+            updateA :: forall m. IsStateIO m => MutableRead m (EditReader edita) -> (updatestateb,lensstate) -> [edita] -> m (updatestateb,lensstate);
             updateA mrA (oldusB,oldls) editsA = do
             {
                 (newls,editsB) <- unReadable (floatingEditUpdates floatingEditLensFunction editsA oldls) mrA;
@@ -109,7 +109,7 @@ module Truth.Core.Object.View where
 
                 fus = (fus1,fus2);
 
-                update :: forall m. MonadIOInvert m => MutableRead m (EditReader edit) -> (updatestate1,updatestate2) -> [edit] -> m (updatestate1,updatestate2);
+                update :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> (updatestate1,updatestate2) -> [edit] -> m (updatestate1,updatestate2);
                 update mr (olds1,olds2) edits = do
                 {
                     news1 <- update1 mr olds1 edits;

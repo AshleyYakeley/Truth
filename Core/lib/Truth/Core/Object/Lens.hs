@@ -23,7 +23,7 @@ module Truth.Core.Object.Lens where
             return ((objectA,ed),(us,floatingEditInitial));
         };
 
-        updateA :: forall m. MonadIOInvert m => (Object edita (userstate,lensstate),editor) -> MutableRead m (EditReader edita) -> (userstate,lensstate) -> [edita] -> m (userstate,lensstate);
+        updateA :: forall m. IsStateIO m => (Object edita (userstate,lensstate),editor) -> MutableRead m (EditReader edita) -> (userstate,lensstate) -> [edita] -> m (userstate,lensstate);
         updateA (_lapiA,editor) mr (oldus,oldls) editAs = do
         {
             (newls,editBs) <- unReadable (floatingEditUpdates floatingEditLensFunction editAs oldls) mr;
@@ -188,13 +188,13 @@ module Truth.Core.Object.Lens where
                         (ed,ustate) <- initialise (fmap snd $ pairObject objectA lapiB); -- "snd" here is very dubious
                         return ((ed,ustate),ustate);
                     };
-                    receiveB :: forall m. MonadIOInvert m => (editor,userstate) -> MutableRead m (EditReader eb) -> userstate -> [eb] -> m userstate;
+                    receiveB :: forall m. IsStateIO m => (editor,userstate) -> MutableRead m (EditReader eb) -> userstate -> [eb] -> m userstate;
                     receiveB (ed,_) mr oldstate ebs = receive ed (pairMutableRead f1 mr) oldstate $ fmap (MkTupleEdit EditSecond) ebs;
                 };
                 ((ed,ustate),closeB) <- objB initialiseB receiveB;
                 return ((ed,closeB),ustate);
             };
-            receiveA :: forall m. MonadIOInvert m => (editor,IO ()) -> MutableRead m (EditReader ea) -> userstate -> [ea] -> m userstate;
+            receiveA :: forall m. IsStateIO m => (editor,IO ()) -> MutableRead m (EditReader ea) -> userstate -> [ea] -> m userstate;
             receiveA (ed,_) mr oldstate eas = receive ed (pairMutableRead mr f2) oldstate $ fmap (MkTupleEdit EditFirst) eas;
         };
         ((ed,closeB),closeA) <- objA initialiseA receiveA;
