@@ -11,7 +11,7 @@ module Truth.Core.Object.Editor where
     data Editor (edit :: *) r = forall editor userstate. MkEditor
     {
         editorInit :: Object edit userstate -> IO (editor,userstate),
-        editorUpdate :: forall m. MonadIOInvert m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate,
+        editorUpdate :: forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate,
         editorDo :: editor -> IO r
     };
 
@@ -38,7 +38,7 @@ module Truth.Core.Object.Editor where
                 (e2,t2) <- ei2 $ fmap snd object;
                 return ((e1,e2),(t1,t2));
             };
-            editorUpdate :: forall m. MonadIOInvert m => (editor1,editor2) -> MutableRead m (EditReader edit) -> (userstate1,userstate2) -> [edit] -> m (userstate1,userstate2);
+            editorUpdate :: forall m. IsStateIO m => (editor1,editor2) -> MutableRead m (EditReader edit) -> (userstate1,userstate2) -> [edit] -> m (userstate1,userstate2);
             editorUpdate (e1,e2) mr (old1,old2) edit = do
             {
                 new1 <- eu1 e1 mr old1 edit;

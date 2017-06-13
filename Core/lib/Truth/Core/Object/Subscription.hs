@@ -15,7 +15,7 @@ module Truth.Core.Object.Subscription
     type Subscription edit a = forall editor userstate.
         userstate ->
         (Object edit userstate -> IO (editor,userstate)) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
-        (forall m. MonadIOInvert m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) -> -- receive: get updates (both others and from your mutableEdit calls)
+        (forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) -> -- receive: get updates (both others and from your mutableEdit calls)
         IO (editor, a);
 
     newtype SubscriptionW edit a = MkSubscriptionW (Subscription edit a);
@@ -29,7 +29,7 @@ module Truth.Core.Object.Subscription
         };
     };
 
-    data StoreEntry edit userstate = MkStoreEntry (forall m. MonadIOInvert m => MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) userstate;
+    data StoreEntry edit userstate = MkStoreEntry (forall m. IsStateIO m => MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) userstate;
 
     shareSubscription :: forall edit. Subscription edit (IO ()) -> IO (SubscriptionW edit (IO ()));
     shareSubscription parent = do
@@ -50,7 +50,7 @@ module Truth.Core.Object.Subscription
                 return (objectP,tokenP);
             };
 
-            updateP :: forall m. MonadIOInvert m => Object edit () -> MutableRead m (EditReader edit) -> () -> [edit] -> m ();
+            updateP :: forall m. IsStateIO m => Object edit () -> MutableRead m (EditReader edit) -> () -> [edit] -> m ();
             updateP _ mutrP oldtokenP edits = mapIOInvert (modifyMVar storevar) $ \oldstore -> do
             {
                 newstore <- traverseWitnessStore (\_ (MkStoreEntry u oldtoken) -> do

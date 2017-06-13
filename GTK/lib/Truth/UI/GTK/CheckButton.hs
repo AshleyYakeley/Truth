@@ -28,7 +28,7 @@ module Truth.UI.GTK.CheckButton where
         {
             vrWidget = toWidget widget;
             vrFirstUpdateState = ();
-            vrUpdate :: forall m. MonadIOInvert m => MutableRead m (WholeReader Bool) -> () -> [WholeEdit Bool] -> m ();
+            vrUpdate :: forall m. IsStateIO m => MutableRead m (WholeReader Bool) -> () -> [WholeEdit Bool] -> m ();
             vrUpdate _ () edits = liftIO $ do
             {
                 newstate <- fromReadFunctionM (applyEdits edits) $ get widget toggleButtonActive;

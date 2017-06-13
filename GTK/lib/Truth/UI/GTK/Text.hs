@@ -94,7 +94,7 @@ module Truth.UI.GTK.Text (textMatchView) where
             update (StringReplaceWhole text) = textBufferSetText buffer text;
             update (StringReplaceSection bounds text) = replaceText buffer bounds text;
 
-            vrUpdate :: forall m. MonadIOInvert m => MutableRead m (StringRead String) -> () -> [StringEdit String] -> m ();
+            vrUpdate :: forall m. IsStateIO m => MutableRead m (StringRead String) -> () -> [StringEdit String] -> m ();
             -- this withMVar prevents the signal handlers from re-sending edits
             vrUpdate _ () edits = liftIO $ ifMVar mv $ traverse_ update edits;
 

@@ -1,7 +1,8 @@
 module Control.Monad.IOInvert where
 {
+    import Data.Kind;
+    import Control.Monad.Fix;
     import Control.Monad.IO.Class;
-    import Control.Monad.Trans.Class;
     import Control.Monad.Trans.State;
 
 
@@ -17,25 +18,33 @@ module Control.Monad.IOInvert where
     stateSnd :: Functor m => StateT s m a -> StateT (s',s) m a;
     stateSnd (StateT sma) = StateT $ \(s',olds) -> fmap (\(a,news) -> (a,(s',news))) $ sma olds;
 
-    class MonadIO m => MonadIOInvert m where
+    class (MonadFix m,MonadIO m) => IsStateIO m where
     {
-        liftIOInvert :: forall r. (forall s. (forall a. m a -> StateT s IO a) -> StateT s IO r) -> m r;
+        type IOState m :: Type;
+        runStateIO :: forall a. m a -> IOState m -> IO (a,IOState m);
+        mkStateIO :: forall a. (IOState m -> IO (a,IOState m)) -> m a;
     };
 
-    instance MonadIOInvert IO where
+    instance IsStateIO IO where
     {
-        liftIOInvert iauaur = evalStateT (iauaur lift) ();
+        type IOState IO = ();
+        runStateIO ioa _ = fmap (\a -> (a,())) ioa;
+        mkStateIO s = fmap fst $ s ();
     };
 
-    instance MonadIOInvert m => MonadIOInvert (StateT state m) where
+    instance IsStateIO m => IsStateIO (StateT s m) where
     {
-        liftIOInvert iasasr = StateT $ \oldstate -> liftIOInvert $ \masa -> StateT $ \olds -> fmap swap3 $ runStateT (iasasr $ buildStateT masa) (oldstate,olds) where
-        {
-            buildStateT :: (forall b. m b -> StateT s IO b) -> StateT state m a -> StateT (state, s) IO a;
-            buildStateT mbsb (StateT stmas) = StateT $ \(oldstate,olds) -> fmap swap3' $ runStateT (mbsb (stmas oldstate)) olds;
-        };
+        type IOState (StateT s m) = (s,IOState m);
+        runStateIO (StateT smas) (s,ss) = fmap swap3' $ runStateIO (smas s) ss;
+        mkStateIO ssioass = StateT $ \s -> mkStateIO $ \ss -> fmap swap3 $ ssioass (s,ss);
     };
 
-    mapIOInvert :: (Functor f,Functor g,MonadIOInvert m) => (forall a. f (IO (g a)) -> IO a) -> f (m (g b)) -> m b;
-    mapIOInvert ff fmgb = liftIOInvert $ \unlift -> StateT $ \oldstate -> ff $ fmap (\mgb -> fmap (\(gb,s) -> fmap (\b -> (b,s)) gb) $ runStateT (unlift mgb) oldstate) fmgb;
+    toStateIO :: IsStateIO m => StateT (IOState m) IO a -> m a;
+    toStateIO (StateT smas) = mkStateIO smas;
+
+    fromStateIO :: IsStateIO m => m a -> StateT (IOState m) IO a;
+    fromStateIO ma = StateT $ runStateIO ma;
+
+    mapIOInvert :: (Functor f,Functor g,IsStateIO m) => (forall a. f (IO (g a)) -> IO a) -> f (m (g b)) -> m b;
+    mapIOInvert ff fmgb = mkStateIO $ \oldstate -> ff $ fmap (\mgb -> fmap (\(gb,s) -> fmap (\b -> (b,s)) gb) $ runStateIO mgb oldstate) fmgb;
 }
