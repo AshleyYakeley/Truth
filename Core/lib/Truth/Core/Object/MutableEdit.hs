@@ -36,6 +36,9 @@ module Truth.Core.Object.MutableEdit where
     remonadMutableEdit :: Functor m1 => (forall a. m1 a -> m2 a) -> MutableEdit m1 edit userstate -> MutableEdit m2 edit userstate;
     remonadMutableEdit mf (MkMutableEdit r e) = MkMutableEdit (fmap mf r) (fmap (mf . (fmap (fmap mf))) e);
 
+    liftMutableEdit :: (MonadTrans t,Monad m) => MutableEdit m edit userstate -> MutableEdit (t m) edit userstate;
+    liftMutableEdit = remonadMutableEdit lift;
+
     pairMutableEdit :: Applicative m => MutableEdit m ea ua -> MutableEdit m eb ub -> MutableEdit m (PairEdit ea eb) (ua,ub);
     pairMutableEdit mea meb = MkMutableEdit
     {

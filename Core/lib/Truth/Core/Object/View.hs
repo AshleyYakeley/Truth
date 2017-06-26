@@ -15,7 +15,7 @@ module Truth.Core.Object.View where
     {
         vrWidget :: w,
         vrFirstUpdateState :: updatestate,
-        vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> updatestate -> [edit] -> m updatestate,
+        vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> StateT updatestate m (),
         vrFirstSelState :: Maybe selstate,
         vrGetSelection :: selstate -> IO (Maybe (Aspect edit))
     };
@@ -62,12 +62,12 @@ module Truth.Core.Object.View where
         let
         {
             fusA = (fusB,floatingEditInitial);
-            updateA :: forall m. IsStateIO m => MutableRead m (EditReader edita) -> (updatestateb,lensstate) -> [edita] -> m (updatestateb,lensstate);
-            updateA mrA (oldusB,oldls) editsA = do
+            updateA :: forall m. IsStateIO m => MutableRead m (EditReader edita) -> [edita] -> StateT (updatestateb,lensstate) m ();
+            updateA mrA editsA = joinStateT $ swapStateT $ StateT $ \oldls -> do
             {
-                (newls,editsB) <- unReadable (floatingEditUpdates floatingEditLensFunction editsA oldls) mrA;
-                newusB <- updateB (mapMutableRead (floatingEditGet oldls) mrA) oldusB editsB;
-                return (newusB,newls);
+                (newls,editsB) <- lift $ unReadable (floatingEditUpdates floatingEditLensFunction editsA oldls) mrA;
+                updateB (mapMutableRead (floatingEditGet oldls) mrA) editsB;
+                return ((),newls);
             };
             getSelA ss = do
             {
@@ -87,7 +87,7 @@ module Truth.Core.Object.View where
         pure vrWidget = MkView $ \_object _setSelect -> return $ let
         {
             vrFirstUpdateState = ();
-            vrUpdate _ () _ = return ();
+            vrUpdate _ _ = return ();
             vrFirstSelState = Nothing;
             vrGetSelection (ss :: None) = never ss;
         } in MkViewResult{..};
@@ -96,25 +96,24 @@ module Truth.Core.Object.View where
         {
             let
             {
-                lapi1 = fmap fst object;
-                lapi2 = fmap snd object;
+                object1 = lensObject fstLens object;
+                object2 = lensObject sndLens object;
                 setSelect1 ss = setSelect $ Left ss;
                 setSelect2 ss = setSelect $ Right ss;
             };
-            (MkViewResult w1 (fus1 :: updatestate1)  update1 mfss1 getsel1) <- view1 lapi1 setSelect1;
-            (MkViewResult w2 (fus2 :: updatestate2) update2 mfss2 getsel2) <- view2 lapi2 setSelect2;
+            (MkViewResult w1 (fus1 :: updatestate1)  update1 mfss1 getsel1) <- view1 object1 setSelect1;
+            (MkViewResult w2 (fus2 :: updatestate2) update2 mfss2 getsel2) <- view2 object2 setSelect2;
             let
             {
                 w = w1 w2;
 
                 fus = (fus1,fus2);
 
-                update :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> (updatestate1,updatestate2) -> [edit] -> m (updatestate1,updatestate2);
-                update mr (olds1,olds2) edits = do
+                update :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> StateT (updatestate1,updatestate2) m ();
+                update mr  edits = do
                 {
-                    news1 <- update1 mr olds1 edits;
-                    news2 <- update2 mr olds2 edits;
-                    return (news1,news2);
+                    stateFst $ update1 mr edits;
+                    stateSnd $ update2 mr edits;
                 };
 
                 mfss = case mfss1 of

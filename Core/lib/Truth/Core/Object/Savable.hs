@@ -14,15 +14,7 @@ module Truth.Core.Object.Savable where
         saveBuffer :: a,
         saveBufferChanged :: Bool
     };
-{-
-    type Subscription edit action = forall editor userstate.
-        userstate ->
-        (Object edit userstate -> IO (editor,userstate)) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
-        (forall m. MonadIOInvert m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) -> -- receive: get updates (both others and from your mutableEdit calls)
-        IO (editor, action);
 
-    newtype Object edit userstate = MkObject (forall r. (forall m. MonadIOInvert m => userstate -> MutableEdit m edit userstate -> m r) -> IO r);
--}
     type SaveActions = IO (Maybe (IO Bool,IO Bool));
 
     saveBufferSubscription :: forall a action. Subscription (WholeEdit a) action -> Subscription (WholeEdit a) (action,SaveActions);
@@ -37,7 +29,7 @@ module Truth.Core.Object.Savable where
             let
             {
                 objB :: Object (WholeEdit a) stateB;
-                objB = MkObject $ \ff -> objA $ \(sB,MkSaveBuffer buffer _) _ -> let
+                objB = MkObject $ \ff -> objA $ \_mutedA -> let
                 {
                     mutableRead :: MutableRead m (WholeReader a);
                     mutableRead = undefined;
@@ -47,40 +39,46 @@ module Truth.Core.Object.Savable where
 
                     mutedB :: MutableEdit m (WholeEdit a) stateB;
                     mutedB = MkMutableEdit{..};
-                } in ff sB mutedB;
+                } in stateFst $ ff mutedB;
             };
             (edB,usB) <- initB objB;
             let
             {
                 saveAction :: IO Bool;
-                saveAction = objA $ \(_oldstateB,MkSaveBuffer buffer _) muted -> do
+                saveAction = objA $ \muted -> do
                 {
-                    maction <- mutableEdit muted [MkWholeEdit buffer];
+                    (_oldstateB,MkSaveBuffer buffer _) <- get;
+                    maction <- lift $ mutableEdit muted [MkWholeEdit buffer];
                     case maction of
                     {
                         Nothing -> return False;
                         Just action -> do
                         {
-                            action;
+                            _ <- lift action;
                             return True;
                         }
                     }
                 };
 
                 revertAction :: IO Bool;
-                revertAction = objA $ \(oldstateB,MkSaveBuffer _ _) muted -> do
+                revertAction = objA $ \muted -> do
                 {
-                    buffer <- mutableRead muted ReadWhole;
-                    newstateB <- receiveB edB (\ReadWhole -> return buffer) oldstateB [MkWholeEdit buffer];
+
+                    buffer <- lift $ mutableRead muted ReadWhole;
+                    stateFst $ receiveB edB (\ReadWhole -> return buffer) [MkWholeEdit buffer];
                     return False; -- MkSaveBuffer buffer False
                 };
 
                 saveActions :: SaveActions;
-                saveActions = objA $ \(_,MkSaveBuffer _ changed) _ -> return $ if changed then Just (saveAction,revertAction) else Nothing;
+                saveActions = objA $ \_ -> do
+                {
+                    (_,MkSaveBuffer _ changed) <- get;
+                    return $ if changed then Just (saveAction,revertAction) else Nothing;
+                };
 
                 edA = (edB,saveActions);
             };
-            buffer <- objA $ \_ muted -> mutableRead muted ReadWhole;
+            buffer <- objA $ \muted -> lift $ mutableRead muted ReadWhole;
             let
             {
                 usA :: (stateB,SaveBuffer a);
@@ -89,16 +87,19 @@ module Truth.Core.Object.Savable where
             return (edA,usA);
         };
 
-        receiveA :: forall m. MonadIOInvert m => (editorB,SaveActions) -> MutableRead m (WholeReader a) -> (stateB,SaveBuffer a) -> [WholeEdit a] -> m (stateB,SaveBuffer a);
-        receiveA _ _ state@(_,MkSaveBuffer _ True) _ = return state;
-        receiveA (edB,_) _ (oldstateB,MkSaveBuffer oldbuffer False) edits = do
+        receiveA :: forall m. IsStateIO m => (editorB,SaveActions) -> MutableRead m (WholeReader a) -> [WholeEdit a] -> StateT (stateB,SaveBuffer a) m ();
+        receiveA (edB,_) _ edits = do
         {
-            let
+            MkSaveBuffer oldbuffer changed <- stateSnd get;
+            if changed then return () else do
             {
-                newbuffer = fromReadFunction (applyEdits edits) oldbuffer;
+                let
+                {
+                    newbuffer = fromReadFunction (applyEdits edits) oldbuffer;
+                };
+                stateFst $ receiveB edB (readFromM $ return newbuffer) edits;
+                stateSnd $ put $ MkSaveBuffer newbuffer False;
             };
-            newstateB <- receiveB edB (readFromM $ return newbuffer) oldstateB edits;
-            return (newstateB,MkSaveBuffer newbuffer False);
         };
 
         resultB :: IO (editorB,(action,SaveActions));

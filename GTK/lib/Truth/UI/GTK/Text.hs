@@ -3,6 +3,8 @@ module Truth.UI.GTK.Text (textMatchView) where
 {
     import Data.Foldable;
     import Control.Concurrent.MVar;
+    import Control.Monad.Trans.Class;
+    import Control.Monad.Trans.State;
     import Control.Monad.IO.Class;
     import Graphics.UI.Gtk;
     import Control.Monad.IOInvert;
@@ -48,28 +50,28 @@ module Truth.UI.GTK.Text (textMatchView) where
     textView = MkView $ \(MkObject object) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
-        initial <- object $ \_ muted -> unReadable fromReader $ mutableRead muted;
+        initial <- object $ \muted -> lift $ unReadable fromReader $ mutableRead muted;
         textBufferSetText buffer initial;
         mv <- newMVar ();
 
-        _ <- onBufferInsertText buffer $ \iter text -> ifMVar mv $ object $ \() muted -> do
+        _ <- onBufferInsertText buffer $ \iter text -> ifMVar mv $ object $ \muted -> do
         {
             p <- getSequencePoint iter;
-            maction <- mutableEdit muted $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
+            maction <- lift $ mutableEdit muted $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
             case maction of
             {
-                Just action -> action;
+                Just action -> lift action;
                 _ -> liftIO $ signalStopEmission buffer "insert-text";
             };
         };
 
-        _ <- onDeleteRange buffer $ \iter1 iter2 -> ifMVar mv $ object $ \() muted -> do
+        _ <- onDeleteRange buffer $ \iter1 iter2 -> ifMVar mv $ object $ \muted -> do
         {
             run <- getSequenceRun iter1 iter2;
-            maction <- mutableEdit muted $ pure $ StringReplaceSection run "";
+            maction <- lift $ mutableEdit muted $ pure $ StringReplaceSection run "";
             case maction of
             {
-                Just action -> action;
+                Just action -> lift action;
                 _ -> liftIO $ signalStopEmission buffer "delete-range";
             };
         };
@@ -94,9 +96,9 @@ module Truth.UI.GTK.Text (textMatchView) where
             update (StringReplaceWhole text) = textBufferSetText buffer text;
             update (StringReplaceSection bounds text) = replaceText buffer bounds text;
 
-            vrUpdate :: forall m. IsStateIO m => MutableRead m (StringRead String) -> () -> [StringEdit String] -> m ();
+            vrUpdate :: forall m. IsStateIO m => MutableRead m (StringRead String) -> [StringEdit String] -> StateT () m ();
             -- this withMVar prevents the signal handlers from re-sending edits
-            vrUpdate _ () edits = liftIO $ ifMVar mv $ traverse_ update edits;
+            vrUpdate _ edits = liftIO $ ifMVar mv $ traverse_ update edits;
 
             vrFirstSelState :: Maybe ();
             vrFirstSelState = Just ();

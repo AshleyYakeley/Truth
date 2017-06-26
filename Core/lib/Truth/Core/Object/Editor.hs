@@ -11,7 +11,7 @@ module Truth.Core.Object.Editor where
     data Editor (edit :: *) r = forall editor userstate. MkEditor
     {
         editorInit :: Object edit userstate -> IO (editor,userstate),
-        editorUpdate :: forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate,
+        editorUpdate :: forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> [edit] -> StateT userstate m (),
         editorDo :: editor -> IO r
     };
 
@@ -25,7 +25,7 @@ module Truth.Core.Object.Editor where
         pure a = let
         {
             editorInit _ = return ((),());
-            editorUpdate () _ () _ = return ();
+            editorUpdate () _ _ = return ();
             editorDo () = return a;
         } in MkEditor{..};
 
@@ -34,16 +34,15 @@ module Truth.Core.Object.Editor where
             editorInit :: Object edit (userstate1,userstate2) -> IO ((editor1,editor2),(userstate1,userstate2));
             editorInit object = do
             {
-                (e1,t1) <- ei1 $ fmap fst object;
-                (e2,t2) <- ei2 $ fmap snd object;
+                (e1,t1) <- ei1 $ lensObject fstLens object;
+                (e2,t2) <- ei2 $ lensObject sndLens object;
                 return ((e1,e2),(t1,t2));
             };
-            editorUpdate :: forall m. IsStateIO m => (editor1,editor2) -> MutableRead m (EditReader edit) -> (userstate1,userstate2) -> [edit] -> m (userstate1,userstate2);
-            editorUpdate (e1,e2) mr (old1,old2) edit = do
+            editorUpdate :: forall m. IsStateIO m => (editor1,editor2) -> MutableRead m (EditReader edit) -> [edit] -> StateT (userstate1,userstate2) m ();
+            editorUpdate (e1,e2) mr edits = do
             {
-                new1 <- eu1 e1 mr old1 edit;
-                new2 <- eu2 e2 mr old2 edit;
-                return (new1,new2);
+                stateFst $ eu1 e1 mr edits;
+                stateSnd $ eu2 e2 mr edits;
             };
             editorDo (e1,e2) = do
             {
@@ -70,8 +69,8 @@ module Truth.Core.Object.Editor where
         editorInit :: Object edit () -> IO (Object edit (),());
         editorInit object = return (object,());
 
-        editorUpdate _lapiw _mr () _edit = return ();
-        editorDo (MkObject object) = object $ \() -> f;
+        editorUpdate _lapiw _mr _edits = return ();
+        editorDo (MkObject object) = object $ \muted -> lift $ f muted;
     } in MkEditor{..};
 
     readEditor :: FullReader (EditReader edit) => Editor edit (EditSubject edit);

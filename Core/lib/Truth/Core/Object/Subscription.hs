@@ -5,7 +5,6 @@ module Truth.Core.Object.Subscription
 ) where
 {
     import Truth.Core.Import;
-    import Data.IORef;
     import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Object.MutableEdit;
@@ -15,7 +14,7 @@ module Truth.Core.Object.Subscription
     type Subscription edit a = forall editor userstate.
         userstate ->
         (Object edit userstate -> IO (editor,userstate)) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
-        (forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) -> -- receive: get updates (both others and from your mutableEdit calls)
+        (forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> [edit] -> StateT userstate m ()) -> -- receive: get updates (both others and from your mutableEdit calls)
         IO (editor, a);
 
     newtype SubscriptionW edit a = MkSubscriptionW (Subscription edit a);
@@ -29,12 +28,26 @@ module Truth.Core.Object.Subscription
         };
     };
 
-    data StoreEntry edit userstate = MkStoreEntry (forall m. IsStateIO m => MutableRead m (EditReader edit) -> userstate -> [edit] -> m userstate) userstate;
+    data UpdateStoreEntry edit userstate = MkStoreEntry (forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> StateT userstate m ()) userstate;
+    type UpdateStore edit = IOWitnessStore (UpdateStoreEntry edit);
+
+    runUpdateStoreEntry :: IsStateIO m => ((MutableRead m (EditReader edit) -> [edit] -> StateT userstate m ()) -> StateT userstate m ()) -> UpdateStoreEntry edit userstate -> m (UpdateStoreEntry edit userstate);
+    runUpdateStoreEntry call (MkStoreEntry update oldstate) = do
+    {
+        ((),newstate) <- runStateT (call update) oldstate;
+        return $ MkStoreEntry update newstate;
+    };
+
+    runUpdateStore :: IsStateIO m => (forall userstate. IOWitnessKey userstate -> (MutableRead m (EditReader edit) -> [edit] -> StateT userstate m ()) -> StateT userstate m ()) -> UpdateStore edit -> m (UpdateStore edit);
+    runUpdateStore call = traverseWitnessStore $ \key -> runUpdateStoreEntry $ call key;
+
+    updateStore :: IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> UpdateStore edit -> m (UpdateStore edit);
+    updateStore mutr edits = runUpdateStore $ \_ ff -> ff mutr edits;
 
     shareSubscription :: forall edit. Subscription edit (IO ()) -> IO (SubscriptionW edit (IO ()));
     shareSubscription parent = do
     {
-        storevar <- newMVar (emptyWitnessStore :: IOWitnessStore (StoreEntry edit));
+        storevar <- newMVar (emptyWitnessStore :: UpdateStore edit);
         let
         {
             firstP :: ();
@@ -50,30 +63,22 @@ module Truth.Core.Object.Subscription
                 return (objectP,tokenP);
             };
 
-            updateP :: forall m. IsStateIO m => Object edit () -> MutableRead m (EditReader edit) -> () -> [edit] -> m ();
-            updateP _ mutrP oldtokenP edits = mapIOInvert (modifyMVar storevar) $ \oldstore -> do
+            updateP :: forall m. IsStateIO m => Object edit () -> MutableRead m (EditReader edit) -> [edit] -> StateT () m ();
+            updateP _ mutrP edits = mapIOInvert (modifyMVar storevar) $ \oldstore -> do
             {
-                newstore <- traverseWitnessStore (\_ (MkStoreEntry u oldtoken) -> do
-                {
-                    newtoken <- u mutrP oldtoken edits;
-                    return (MkStoreEntry u newtoken);
-                }) oldstore;
-                let
-                {
-                    newtokenP = oldtokenP;
-                };
-                return (newstore,newtokenP);
+                newstore <- lift $ updateStore mutrP edits oldstore;
+                return (newstore,());
             };
         };
         (MkObject objectP,closerP) <- parent firstP initP updateP;
         let
         {
             objectC :: forall userstate. IOWitnessKey userstate -> Object edit userstate;
-            objectC key = MkObject $ \ff -> modifyMVar storevar $ \store -> objectP $ \_tokenP (mutedP :: MutableEdit m edit ()) -> do
+            objectC key = MkObject $ \call -> modifyMVar storevar $ \oldstore -> objectP $ \(mutedP :: MutableEdit m edit ()) -> do
             {
                 let
                 {
-                    mutedC :: MutableEdit (StateT (IOWitnessStore (StoreEntry edit)) m) edit userstate;
+                    mutedC :: MutableEdit (StateT (UpdateStore edit) m) edit userstate;
                     mutedC = MkMutableEdit
                     {
                         mutableRead = \rt -> lift $ mutableRead mutedP rt,
@@ -84,28 +89,25 @@ module Truth.Core.Object.Subscription
                             {
                                 Just mnextTokenP -> do
                                 {
-                                    tokenRef <- liftIO $ newIORef Nothing;
-                                    oldstore <- get;
-                                    newstore <- traverseWitnessStore (\keyf (MkStoreEntry u oldtoken) -> do
+                                    lnextTokenC <- traverseWitnessStoreStateT (\keyf -> do
                                     {
-                                        newtoken <- lift $ u (mutableRead mutedP) oldtoken edits;
+                                        MkStoreEntry u oldtoken <- get;
+                                        ((),newtoken) <- lift $ runStateT (u (mutableRead mutedP) edits) oldtoken;
+                                        put $ MkStoreEntry u newtoken;
                                         case testEquality key keyf of
                                         {
-                                            Just Refl -> liftIO $ writeIORef tokenRef $ Just newtoken;
-                                            Nothing -> return ();
+                                            Just Refl -> return [newtoken];
+                                            Nothing -> return [];
                                         };
-                                        return (MkStoreEntry u newtoken);
-                                    }) oldstore;
-                                    put newstore;
-                                    mnextTokenC <- liftIO $ readIORef tokenRef;
-                                    return $ case mnextTokenC of
+                                    });
+                                    return $ case lnextTokenC of
                                     {
-                                        Just nextTokenC -> Just $ do
+                                        [nextTokenC] -> Just $ do
                                         {
                                             _nextTokenP <- lift mnextTokenP;
                                             return nextTokenC;
                                         };
-                                        Nothing -> Nothing;
+                                        _ -> Nothing;
                                     };
                                 };
                                 Nothing -> return Nothing;
@@ -114,9 +116,9 @@ module Truth.Core.Object.Subscription
                     };
 
                     tokenC :: userstate;
-                    (MkStoreEntry _ tokenC) = fromJust $ lookupWitnessStore key store;
+                    (MkStoreEntry _ tokenC) = fromJust $ lookupWitnessStore key oldstore;
                 };
-                (r,newstore) <- runStateT (ff tokenC mutedC) store;
+                ((r,_newTokenC),newstore) <- unitStateT $ runStateT (runStateT (call mutedC) tokenC) oldstore;
                 return (newstore,r);
             };
 
@@ -156,7 +158,13 @@ module Truth.Core.Object.Subscription
     rawSubscribeObject :: Object edit () -> SubscriptionW edit ();
     rawSubscribeObject object = MkSubscriptionW $ \firstState initr _update -> do
     {
-        (editor,_userstate) <- initr $ fmap (\_ -> firstState) object;
+        let
+        {
+            lensGet _ = firstState;
+            lensPutback _ _ = Identity ();
+            dubiousLens = MkLens{..};
+        };
+        (editor,_userstate) <- initr $ lensObject dubiousLens object;
         return (editor,());
     };
 

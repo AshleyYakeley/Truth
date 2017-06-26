@@ -28,7 +28,7 @@ module Truth.UI.GTK.Window where
         {
             vrWidget = toWidget w;
             vrFirstUpdateState = ();
-            vrUpdate _ _ _ = return ();
+            vrUpdate _ _ = return ();
             vrFirstSelState = Nothing;
             vrGetSelection _ = return Nothing;
         };

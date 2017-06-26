@@ -3,6 +3,8 @@ module Truth.UI.GTK.CheckButton where
 {
     import Data.Type.Equality;
     import Data.Empty;
+    import Control.Monad.Trans.Class;
+    import Control.Monad.Trans.State hiding (get);
     import Graphics.UI.Gtk;
     import Control.Monad.IOInvert;
     import Data.Reity;
@@ -15,12 +17,12 @@ module Truth.UI.GTK.CheckButton where
     checkButtonView name = MkView $ \(MkObject object) _setSelect -> do
     {
         widget <- checkButtonNew;
-        initial <- object $ \() muted -> unReadable fromReader $ mutableRead muted;
+        initial <- object $ \muted -> lift $ unReadable fromReader $ mutableRead muted;
         set widget [buttonLabel := name,toggleButtonActive := initial];
-        clickConnection <- onClicked widget $ object $ \() muted -> do
+        clickConnection <- onClicked widget $ object $ \muted -> do
         {
             s <- liftIO $ get widget toggleButtonActive;
-            _ <- mutableEdit muted $ getReplaceEdits s;
+            _ <- lift $ mutableEdit muted $ getReplaceEdits s;
             return ();
         };
 
@@ -28,8 +30,8 @@ module Truth.UI.GTK.CheckButton where
         {
             vrWidget = toWidget widget;
             vrFirstUpdateState = ();
-            vrUpdate :: forall m. IsStateIO m => MutableRead m (WholeReader Bool) -> () -> [WholeEdit Bool] -> m ();
-            vrUpdate _ () edits = liftIO $ do
+            vrUpdate :: forall m. IsStateIO m => MutableRead m (WholeReader Bool) -> [WholeEdit Bool] -> StateT () m ();
+            vrUpdate _ edits = liftIO $ do
             {
                 newstate <- fromReadFunctionM (applyEdits edits) $ get widget toggleButtonActive;
                 withSignalBlocked clickConnection $ set widget [toggleButtonActive := newstate];

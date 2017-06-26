@@ -93,6 +93,20 @@ module Data.Lens where
         };
     };
 
+    fstLens :: Lens' Identity (a,b) a;
+    fstLens = let
+    {
+        lensGet = fst;
+        lensPutback a (_,b) = Identity (a,b);
+    } in MkLens{..};
+
+    sndLens :: Lens' Identity (a,b) b;
+    sndLens = let
+    {
+        lensGet = snd;
+        lensPutback b (a,_) = Identity (a,b);
+    } in MkLens{..};
+
     pickLens :: (Eq p) => p -> Lens' Identity (p -> a) a;
     pickLens p = MkLens
     {

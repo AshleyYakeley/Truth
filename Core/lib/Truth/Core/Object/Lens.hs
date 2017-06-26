@@ -23,12 +23,12 @@ module Truth.Core.Object.Lens where
             return ((objectA,ed),(us,floatingEditInitial));
         };
 
-        updateA :: forall m. IsStateIO m => (Object edita (userstate,lensstate),editor) -> MutableRead m (EditReader edita) -> (userstate,lensstate) -> [edita] -> m (userstate,lensstate);
-        updateA (_lapiA,editor) mr (oldus,oldls) editAs = do
+        updateA :: forall m. IsStateIO m => (Object edita (userstate,lensstate),editor) -> MutableRead m (EditReader edita) -> [edita] -> StateT (userstate,lensstate) m ();
+        updateA (_objectA,editor) mr editAs = joinStateT $ swapStateT $ StateT $ \oldls -> do
         {
-            (newls,editBs) <- unReadable (floatingEditUpdates floatingEditLensFunction editAs oldls) mr;
-            newus <- updateB editor (mapMutableRead (floatingEditGet oldls) mr) oldus editBs;
-            return (newus,newls);
+            (newls,editBs) <- lift $ unReadable (floatingEditUpdates floatingEditLensFunction editAs oldls) mr;
+            updateB editor (mapMutableRead (floatingEditGet oldls) mr) editBs;
+            return ((),newls);
         };
     } in do
     {

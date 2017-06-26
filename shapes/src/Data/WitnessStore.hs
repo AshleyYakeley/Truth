@@ -2,9 +2,12 @@ module Data.WitnessStore where
 {
     import Prelude hiding (null);
     import Data.Kind;
+    import Data.Tuple;
     import Data.Type.Equality;
     import Data.Foldable;
     import Data.Functor.Identity;
+    import Control.Monad.Trans.State;
+    import Control.Monad.Trans.Writer;
     import Data.Witness;
     import Data.OpenWitness;
     import Data.Store;
@@ -73,4 +76,7 @@ module Data.WitnessStore where
         iow <- newIOWitness;
         return $ addWitnessStore iow fa store;
     };
+
+    traverseWitnessStoreStateT :: (Monoid r,Applicative m) => (forall a. WitnessKey w a -> StateT (f a) m r) -> StateT (WitnessStore w f) m r;
+    traverseWitnessStoreStateT ff = StateT $ \oldstore -> fmap swap $ runWriterT $ traverseWitnessStore (\key fa -> WriterT $ fmap swap $ runStateT (ff key) fa) oldstore;
 }

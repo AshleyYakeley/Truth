@@ -34,7 +34,7 @@ module Truth.Core.Object.File where
 
             mutableEdit = singleMutableEdit mutableEdit';
         };
-        r <- ff () MkMutableEdit{..};
+        r <- runUnitStateT $ ff MkMutableEdit{..};
         hClose h;
         return r;
     };
