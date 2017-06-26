@@ -121,6 +121,9 @@ module Truth.Core.Object.Lens where
         toGeneralLens' = toGeneralLens' . codecInjection;
     };
 
+    convertSubscription :: forall edita editb actions. (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Subscription edita actions -> Subscription editb actions;
+    convertSubscription = mapSubscription $ toGeneralLens' (convertEditLens :: EditLens' Identity edita editb);
+
 {-
 
     cacheReferent :: forall edit. (Edit edit,FullReader (EditReader edit)) =>

@@ -43,17 +43,22 @@ module Main where
                     injBackwards = pure . SuccessResult;
                 } in MkInjection{..};
 
-                --injection :: Injection ByteString (Result ListError String);
-                --injection = utf8Injection . toBiMapMaybe (bijectionInjection packBijection);
                 injection :: Injection ByteString String;
                 injection = errorInjection . utf8Injection . toBiMapMaybe (bijectionInjection packBijection);
 
-                --textSub :: Subscription (OneWholeEdit Maybe (OneWholeEdit (Result ListError) (StringEdit String)))
-                textObj :: Object (StringEdit String) ();
-                textObj = convertObject $ cacheObject $ fixedMapObject ((wholeEditLens $ injectionLens injection) . convertEditLens) bsObj;
+                wholeTextObj :: Object (WholeEdit String) ();
+                wholeTextObj = cacheObject $ fixedMapObject ((wholeEditLens $ injectionLens injection) . convertEditLens) bsObj;
             };
-            MkSubscriptionW textSub <- subscribeObject textObj;
-            makeWindowCountRef info windowCount textSub;
+            MkSubscriptionW fileSub <- subscribeObject wholeTextObj;
+            let
+            {
+                bufferSub :: Subscription (WholeEdit String) (IO (),SaveActions);
+                bufferSub = saveBufferSubscription fileSub;
+
+                editSub :: Subscription (StringEdit String) (IO (),SaveActions);
+                editSub = convertSubscription bufferSub;
+            };
+            makeWindowCountRef info windowCount addButtonsCloseSave editSub;
         };
         {-
         sub <- makeWindowCountRef windowCount (maybeIVF False (gNamedView "AAAAAAAAAAAAAAAAAAAAAAAAAA")) (freeObjSubscribe initial);

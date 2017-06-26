@@ -41,25 +41,60 @@ module Truth.UI.GTK.Window where
     getView :: GetView;
     getView = finalGetView (mconcat matchViews) lastResortView;
 
-    makeWindow :: (Edit edit) => Info edit -> IORef Int -> IO () -> Subscription edit (IO ()) -> IO ();
-    makeWindow te ref tellclose sub = do
+    addButtonsClose :: VBox -> IO () -> IO (IO ());
+    addButtonsClose _ closeSub = return closeSub;
+
+    addButtonsCloseSave :: VBox -> (IO (),SaveActions) -> IO (IO ());
+    addButtonsCloseSave vbox (closeSub,saveactions) = do
+    {
+        hbox <- hBoxNew False 0;
+        saveButton <- makeButton "Save" $ do
+        {
+            mactions <- saveactions;
+            _ <- case mactions of
+            {
+                Just (action,_) -> action;
+                _ -> return False;
+            };
+            return ();
+        };
+        revertButton <- makeButton "Revert" $ do
+        {
+            mactions <- saveactions;
+            _ <- case mactions of
+            {
+                Just (_,action) -> action;
+                _ -> return False;
+            };
+            return ();
+        };
+        boxPackStart hbox saveButton PackNatural 0;
+        boxPackStart hbox revertButton PackNatural 0;
+        boxPackStart vbox hbox PackNatural 0;
+        return closeSub;
+    };
+
+    makeWindow :: (Edit edit) => Info edit -> IORef Int -> IO () -> (VBox -> actions -> IO (IO ())) -> Subscription edit actions -> IO ();
+    makeWindow te ref tellclose addButtons sub = do
     {
         MkSubscriptionView{..} <- viewSubscription (getView te) sub;
         window <- windowNew;
         box <- vBoxNew False 0;
 
-        selectionButton <- makeButton "Selection" (do
+        closeSub <- addButtons box srAction;
+
+        selectionButton <- makeButton "Selection" $ do
         {
             msel <- srGetSelection;
             case msel of
             {
                 Just (MkAspect tsel _ta lens) -> do
                 {
-                    makeWindowCountRef tsel ref (mapSubscription lens sub);
+                    makeWindowCountRef tsel ref addButtons (mapSubscription lens sub);
                 };
                 _ -> return ();
             };
-        });
+        };
 
         -- this is only correct if srWidget has native scroll support, such as TextView
         sw <- scrolledWindowNew Nothing Nothing;
@@ -72,15 +107,15 @@ module Truth.UI.GTK.Window where
         widgetShow srWidget;
         _ <- onDestroy window (do
         {
-            srAction;
+            closeSub;
             tellclose;
         });
         widgetShowAll window;
         return ();
     };
 
-    makeWindowCountRef :: (Edit edit) => Info edit -> IORef Int -> Subscription edit (IO ()) -> IO ();
-    makeWindowCountRef te windowCount sub = do
+    makeWindowCountRef :: (Edit edit) => Info edit -> IORef Int -> (VBox -> actions -> IO (IO ())) -> Subscription edit actions -> IO ();
+    makeWindowCountRef te windowCount addButtons sub = do
     {
         makeWindow te windowCount (do
         {
@@ -89,7 +124,7 @@ module Truth.UI.GTK.Window where
             if i == 1
              then mainQuit
              else return ();
-        }) sub;
+        }) addButtons sub;
         i <- readIORef windowCount;
         writeIORef windowCount (i + 1);
         return ();
