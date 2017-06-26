@@ -1,4 +1,4 @@
-module Truth.Core.Object.Savable where
+module Truth.Core.Object.Savable (SaveActions,saveBufferSubscription) where
 {
     import Truth.Core.Import;
     import Truth.Core.Read;
@@ -12,8 +12,18 @@ module Truth.Core.Object.Savable where
     data SaveBuffer a = MkSaveBuffer
     {
         saveBuffer :: a,
-        saveBufferChanged :: Bool
+        _saveBufferChanged :: Bool
     };
+
+    saveBufferMutableEdit :: forall m a. Monad m => MutableEdit (StateT (SaveBuffer a) m) (WholeEdit a) ();
+    saveBufferMutableEdit = let
+    {
+        mutableRead :: MutableRead (StateT (SaveBuffer a) m) (WholeReader a);
+        mutableRead ReadWhole = fmap saveBuffer get;
+
+        mutableEdit :: [WholeEdit a] -> (StateT (SaveBuffer a) m) (Maybe (StateT (SaveBuffer a) m ()));
+        mutableEdit = singleMutableEdit $ \(MkWholeEdit a) -> put $ MkSaveBuffer a True;
+    } in MkMutableEdit{..};
 
     type SaveActions = IO (Maybe (IO Bool,IO Bool));
 
@@ -29,17 +39,11 @@ module Truth.Core.Object.Savable where
             let
             {
                 objB :: Object (WholeEdit a) stateB;
-                objB = MkObject $ \ff -> objA $ \_mutedA -> let
+                objB = MkObject $ \call -> objA $ \_mutedA -> do
                 {
-                    mutableRead :: MutableRead m (WholeReader a);
-                    mutableRead = undefined;
-
-                    mutableEdit :: [WholeEdit a] -> m (Maybe (m stateB));
-                    mutableEdit = undefined;
-
-                    mutedB :: MutableEdit m (WholeEdit a) stateB;
-                    mutedB = MkMutableEdit{..};
-                } in stateFst $ ff mutedB;
+                    state <- get;
+                    joinStateT $ call $ fmap (\() -> fst state) saveBufferMutableEdit;
+                };
             };
             (edB,usB) <- initB objB;
             let
