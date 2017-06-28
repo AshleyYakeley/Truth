@@ -171,3 +171,4 @@ test-suite test
         tasty-quickcheck
     main-is: Main.hs
     other-modules:
+        Subscribe

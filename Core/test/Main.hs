@@ -7,6 +7,7 @@ module Main(main) where
     import Test.Tasty;
     import Test.Tasty.HUnit;
     import Test.Tasty.QuickCheck;
+    import Subscribe;
 
 
     instance (Arbitrary (Index seq),Integral (Index seq)) => Arbitrary (SequencePoint seq) where
@@ -146,7 +147,8 @@ module Main(main) where
     tests :: TestTree;
     tests = testGroup "Truth-Core" [
         testStringEdit,
-        testStringSectionLens
+        testStringSectionLens,
+        testSubscribe
         ];
 
     main :: IO ();
