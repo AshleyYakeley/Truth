@@ -19,28 +19,33 @@ module Truth.Core.Object.Object where
     isoObjectState :: (s1 -> s2,s2 -> s1) -> Object edit s1 -> Object edit s2;
     isoObjectState (s1s2,s2s1) (MkObject object) = MkObject $ \call -> object $ \muted -> isoStateT (s2s1,s1s2) $ call $ fmap s1s2 muted;
 
-    freeIOObject :: forall edit. (Edit edit,FullReader (EditReader edit)) => EditSubject edit -> (EditSubject edit -> Bool) -> IO (Object edit ());
+    mvarObject :: forall a. MVar a -> (a -> Bool) -> Object (WholeEdit a) ();
+    mvarObject var allowed = MkObject $ \call -> modifyMVar var $ \olda -> do
+    {
+        let
+        {
+            muted :: MutableEdit (StateT a IO) (WholeEdit a) ();
+            muted = let
+            {
+                mutableRead :: MutableRead (StateT a IO) (WholeReader a);
+                mutableRead ReadWhole = get;
+
+                mutableEdit edits = do
+                {
+                    na <- fromReadFunctionM (applyEdits edits) get;
+                    return $ if allowed na then Just $ put na else Nothing;
+                };
+            } in MkMutableEdit{..};
+        };
+        (r,newa) <- runStateT (runUnitStateT (call muted)) olda;
+        return (newa,r);
+    };
+
+    freeIOObject :: forall a. a -> (a -> Bool) -> IO (Object (WholeEdit a) ());
     freeIOObject firsta allowed = do
     {
         var <- newMVar firsta;
-        return $ MkObject $ \ff -> modifyMVar var $ \olda -> do
-        {
-            let
-            {
-                muted :: MutableEdit (StateT (EditSubject edit) IO) edit ();
-                muted = MkMutableEdit
-                {
-                    mutableRead = readFromM $ get,
-                    mutableEdit = \edits -> do
-                    {
-                        na <- fromReadFunctionM (applyEdits edits) get;
-                        return $ if allowed na then Just $ put na else Nothing;
-                    }
-                };
-            };
-            (r,newa) <- runStateT (runUnitStateT (ff muted)) olda;
-            return (newa,r);
-        };
+        return $ mvarObject var allowed;
     };
 
     floatingMapObject :: forall f lensstate edita editb userstate. MonadOne f => FloatingEditLens' f lensstate edita editb -> Object edita (userstate,lensstate) -> Object editb userstate;
