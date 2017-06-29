@@ -14,7 +14,7 @@ module Truth.Core.Edit.FloatingEditFunction  where
     };
 
     floatingEditUpdates :: FloatingEditFunction state edita editb -> [edita] -> state -> Readable (EditReader edita) (state, [editb]);
-    floatingEditUpdates _ [] state = return (state,[]);
+    floatingEditUpdates _ [] st = return (st,[]);
     floatingEditUpdates fef (e:ee) oldstate = do
     {
         (midstate,eb1) <- floatingEditUpdate fef e oldstate;

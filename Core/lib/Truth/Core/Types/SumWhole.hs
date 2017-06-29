@@ -58,16 +58,16 @@ module Truth.Core.Types.SumWhole where
     sumWholeFloatingEditLens pushback lens = MkFloatingEditLens
     {
         floatingEditLensFunction = sumWholeFloatingEditFunction (floatingEditLensFunction lens),
-        floatingEditLensPutEdit = \state peditb -> case peditb of
+        floatingEditLensPutEdit = \st peditb -> case peditb of
         {
             SumEditLeft (MkWholeEdit b) -> do
             {
-                ma <- pushback state b;
+                ma <- pushback st b;
                 return $ fmap (fmap (pure . SumEditLeft . MkWholeEdit)) ma;
             };
             SumEditRight editb -> do
             {
-                mstateedita <- floatingEditLensPutEdit lens state editb;
+                mstateedita <- floatingEditLensPutEdit lens st editb;
                 return $ fmap (fmap (fmap SumEditRight)) mstateedita;
             };
         }

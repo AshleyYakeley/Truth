@@ -24,9 +24,9 @@ module Truth.Core.Edit.FloatingEditLens where
 
     floatingEditLensAllowed :: (MonadOne m) =>
      FloatingEditLens' m state edita editb -> state -> editb -> Readable (EditReader edita) Bool;
-    floatingEditLensAllowed lens state editb = do
+    floatingEditLensAllowed lens st editb = do
     {
-        medita <- floatingEditLensPutEdit lens state editb;
+        medita <- floatingEditLensPutEdit lens st editb;
         return (isJust (getMaybeOne medita));
     };
 
@@ -45,7 +45,7 @@ module Truth.Core.Edit.FloatingEditLens where
     fixedFloatingEditLens lens = MkFloatingEditLens
     {
         floatingEditLensFunction = fixedFloatingEditFunction (editLensFunction lens),
-        floatingEditLensPutEdit = \state edit -> fmap (fmap ((,) state)) $ editLensPutEdit lens edit
+        floatingEditLensPutEdit = \st edit -> fmap (fmap ((,) st)) $ editLensPutEdit lens edit
     };
 
     instance (Applicative m,MonadOne m) => FloatingMap (FloatingEditLens' m) where
@@ -77,8 +77,8 @@ module Truth.Core.Edit.FloatingEditLens where
         {
             floatingEditInitial = floatingEditInitial $ floatingEditLensFunction lensab,
             floatingEditGet = srfba,
-            floatingEditUpdate = \eb state -> fmap runIdentity $ mapReadable (srfba state) $ floatingEditLensPutEdit lensab state eb
+            floatingEditUpdate = \eb st -> fmap runIdentity $ mapReadable (srfba st) $ floatingEditLensPutEdit lensab st eb
         },
-        floatingEditLensPutEdit = \state ea -> fmap pure $ mapReadable (srfba state) $ floatingEditUpdate (floatingEditLensFunction lensab) ea state
+        floatingEditLensPutEdit = \st ea -> fmap pure $ mapReadable (srfba st) $ floatingEditUpdate (floatingEditLensFunction lensab) ea st
     };
 }

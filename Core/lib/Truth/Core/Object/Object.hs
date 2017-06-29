@@ -63,8 +63,8 @@ module Truth.Core.Object.Object where
             readB :: MutableRead (StateT lensstate m) (EditReader editb);
             readB rt = do
             {
-                state <- get;
-                lift $ mapMutableRead (floatingEditGet state) readA rt;
+                st <- get;
+                lift $ mapMutableRead (floatingEditGet st) readA rt;
             };
 
             convertEdit :: [editb] -> (StateT lensstate m) (Maybe [edita]);
@@ -101,7 +101,7 @@ module Truth.Core.Object.Object where
             apiB :: MutableEdit (StateT lensstate m) editb userstate;
             apiB = MkMutableEdit readB pushEditB;
         }
-        in joinStateT $ withMStateT revertStateT $ callB apiB; -- revert the new lens state: all these lens changes will be replayed by the update
+        in joinStateT $ remonad revertStateT $ callB apiB; -- revert the new lens state: all these lens changes will be replayed by the update
     } in objectA callA;
 
     fixedMapObject :: forall f edita editb userstate. MonadOne f => EditLens' f edita editb -> Object edita userstate -> Object editb userstate;

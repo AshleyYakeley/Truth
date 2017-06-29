@@ -29,19 +29,31 @@ module Truth.Core.Object.Subscription
     };
 
     data UpdateStoreEntry edit userstate = MkStoreEntry (forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> StateT userstate m ()) userstate;
+
+    useStateLens :: Lens' Identity (UpdateStoreEntry edit userstate) userstate;
+    useStateLens = let
+    {
+        lensGet (MkStoreEntry _ s) = s;
+        lensPutback s (MkStoreEntry u _) = Identity $ MkStoreEntry u s;
+    } in MkLens{..};
+
     type UpdateStore edit = IOWitnessStore (UpdateStoreEntry edit);
 
-    runUpdateStoreEntry :: IsStateIO m => ((MutableRead m (EditReader edit) -> [edit] -> StateT userstate m ()) -> StateT userstate m ()) -> UpdateStoreEntry edit userstate -> m (UpdateStoreEntry edit userstate);
-    runUpdateStoreEntry call (MkStoreEntry update oldstate) = do
+    runUpdateStoreEntry :: IsStateIO m => ((MutableRead m (EditReader edit) -> [edit] -> StateT userstate m ()) -> StateT userstate m ()) -> StateT (UpdateStoreEntry edit userstate) m userstate;
+    runUpdateStoreEntry call = do
     {
-        ((),newstate) <- runStateT (call update) oldstate;
-        return $ MkStoreEntry update newstate;
+        MkStoreEntry update _ <- get;
+        lensStateT useStateLens $ do
+        {
+            call update;
+            get;
+        };
     };
 
-    runUpdateStore :: IsStateIO m => (forall userstate. IOWitnessKey userstate -> (MutableRead m (EditReader edit) -> [edit] -> StateT userstate m ()) -> StateT userstate m ()) -> UpdateStore edit -> m (UpdateStore edit);
-    runUpdateStore call = traverseWitnessStore $ \key -> runUpdateStoreEntry $ call key;
+    runUpdateStore :: IsStateIO m => (forall userstate. IOWitnessKey userstate -> (MutableRead m (EditReader edit) -> [edit] -> StateT userstate m ()) -> StateT userstate m ()) -> StateT (UpdateStore edit) m ();
+    runUpdateStore call = traverseWitnessStoreStateT $ \key -> (runUpdateStoreEntry $ call key) >> return ();
 
-    updateStore :: IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> UpdateStore edit -> m (UpdateStore edit);
+    updateStore :: IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> StateT (UpdateStore edit) m ();
     updateStore mutr edits = runUpdateStore $ \_ ff -> ff mutr edits;
 
     shareSubscription :: forall edit. Subscription edit (IO ()) -> IO (SubscriptionW edit (IO ()));
@@ -66,7 +78,7 @@ module Truth.Core.Object.Subscription
             updateP :: forall m. IsStateIO m => Object edit () -> MutableRead m (EditReader edit) -> [edit] -> StateT () m ();
             updateP _ mutrP edits = mapIOInvert (modifyMVar storevar) $ \oldstore -> do
             {
-                newstore <- lift $ updateStore mutrP edits oldstore;
+                ((),newstore) <- lift $ runStateT (updateStore mutrP edits) oldstore;
                 return (newstore,());
             };
         };
@@ -91,9 +103,7 @@ module Truth.Core.Object.Subscription
                                 {
                                     lnextTokenC <- traverseWitnessStoreStateT (\keyf -> do
                                     {
-                                        MkStoreEntry u oldtoken <- get;
-                                        ((),newtoken) <- lift $ runStateT (u (mutableRead mutedP) edits) oldtoken;
-                                        put $ MkStoreEntry u newtoken;
+                                        newtoken <- runUpdateStoreEntry $ \u -> u (mutableRead mutedP) edits;
                                         case testEquality key keyf of
                                         {
                                             Just Refl -> return [newtoken];

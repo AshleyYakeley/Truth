@@ -158,12 +158,12 @@ module Truth.Core.Types.String where
             len <- readable StringReadLength;
             let
             {
-                state = clipRunEnd len stateRaw;
+                st = clipRunEnd len stateRaw;
             };
             case reader of
             {
-                StringReadLength -> return $ runLength state;
-                StringReadSection run -> readable $ StringReadSection $ clipWithin state $ relativeRun (negate $ runStart state) run;
+                StringReadLength -> return $ runLength st;
+                StringReadSection run -> readable $ StringReadSection $ clipWithin st $ relativeRun (negate $ runStart st) run;
             };
         };
 

@@ -83,7 +83,7 @@ module Truth.Core.Types.OneEdit where
     oneFloatingEditFunction fef = MkFloatingEditFunction
     {
         floatingEditInitial = floatingEditInitial fef,
-        floatingEditGet = \state -> liftMaybeReadFunction (floatingEditGet fef state),
+        floatingEditGet = \st -> liftMaybeReadFunction (floatingEditGet fef st),
         floatingEditUpdate = \(MkOneEdit edita) oldstate -> do
         {
             fstuff <- liftMaybeReadable $ floatingEditUpdate fef edita oldstate;

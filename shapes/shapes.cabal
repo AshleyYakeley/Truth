@@ -65,6 +65,8 @@ library
         Data.Functor.Free
         Data.Functor.Single
         Control.Monad.Free
+        Control.Monad.Tunnel
+        Control.Monad.Trans.State.Extra
         Control.Monad.IOInvert
         Control.Wait
         Data.Chain

@@ -41,8 +41,8 @@ module Truth.Core.Object.Savable (SaveActions,saveBufferSubscription) where
                 objB :: Object (WholeEdit a) stateB;
                 objB = MkObject $ \call -> objA $ \_mutedA -> do
                 {
-                    state <- get;
-                    joinStateT $ call $ fmap (\() -> fst state) saveBufferMutableEdit;
+                    st <- get;
+                    joinStateT $ call $ fmap (\() -> fst st) saveBufferMutableEdit;
                 };
             };
             (edB,usB) <- initB objB;
