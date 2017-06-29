@@ -6,7 +6,7 @@ module Truth.UI.GTK.CheckButton where
     import Control.Monad.Trans.Class;
     import Control.Monad.Trans.State hiding (get);
     import Graphics.UI.Gtk;
-    import Control.Monad.IOInvert;
+    import Control.Monad.IsStateIO;
     import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;

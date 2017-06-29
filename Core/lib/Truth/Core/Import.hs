@@ -64,6 +64,6 @@ module Truth.Core.Import (module I) where
     import Control.Monad.Free as I;
     import Control.Monad.Tunnel as I;
     import Control.Monad.Trans.State.Extra as I hiding (liftCallCC,liftCatch);
-    import Control.Monad.IOInvert as I;
+    import Control.Monad.IsStateIO as I;
     import Data.Reity as I;
 }

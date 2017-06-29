@@ -67,7 +67,7 @@ library
         Control.Monad.Free
         Control.Monad.Tunnel
         Control.Monad.Trans.State.Extra
-        Control.Monad.IOInvert
+        Control.Monad.IsStateIO
         Control.Wait
         Data.Chain
         Data.Result

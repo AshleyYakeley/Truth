@@ -1,4 +1,4 @@
-module Control.Monad.IOInvert where
+module Control.Monad.IsStateIO where
 {
     import Data.Kind;
     import Control.Concurrent.MVar;

@@ -7,7 +7,7 @@ module Truth.UI.GTK.Text (textMatchView) where
     import Control.Monad.Trans.State;
     import Control.Monad.IO.Class;
     import Graphics.UI.Gtk;
-    import Control.Monad.IOInvert;
+    import Control.Monad.IsStateIO;
     import Data.Witness;
     import Data.Reity;
     import Truth.Core;
