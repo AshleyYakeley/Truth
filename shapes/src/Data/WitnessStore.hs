@@ -79,4 +79,14 @@ module Data.WitnessStore where
 
     traverseWitnessStoreStateT :: (Monoid r,Applicative m) => (forall a. WitnessKey w a -> StateT (f a) m r) -> StateT (WitnessStore w f) m r;
     traverseWitnessStoreStateT ff = StateT $ \oldstore -> fmap swap $ runWriterT $ traverseWitnessStore (\key fa -> WriterT $ fmap swap $ runStateT (ff key) fa) oldstore;
+
+    replaceWitnessStoreStateT :: (TestEquality w,Monoid r,Monad m) => WitnessKey w a -> StateT (f a) m r -> StateT (WitnessStore w f) m r;
+    replaceWitnessStoreStateT key call = traverseWitnessStoreStateT $ \k -> case testEquality k key of
+    {
+        Just Refl -> call;
+        Nothing -> pure mempty;
+    };
+
+    addIOWitnessStoreStateT :: f a -> StateT (IOWitnessStore f) IO (IOWitnessKey a);
+    addIOWitnessStoreStateT fa = StateT $ addIOWitnessStore fa;
 }

@@ -76,18 +76,15 @@ module Truth.Core.Object.Subscription
             };
 
             updateP :: forall m. IsStateIO m => Object edit () -> MutableRead m (EditReader edit) -> [edit] -> StateT () m ();
-            updateP _ mutrP edits = mapIOInvert (modifyMVar storevar) $ \oldstore -> do
-            {
-                ((),newstore) <- lift $ runStateT (updateStore mutrP edits) oldstore;
-                return (newstore,());
-            };
+            updateP _ mutrP edits = unitStateT $ modifyMVarStateIO storevar $ updateStore mutrP edits;
         };
         (MkObject objectP,closerP) <- parent firstP initP updateP;
         let
         {
             objectC :: forall userstate. IOWitnessKey userstate -> Object edit userstate;
-            objectC key = MkObject $ \call -> modifyMVar storevar $ \oldstore -> objectP $ \(mutedP :: MutableEdit m edit ()) -> do
+            objectC key = MkObject $ \call -> objectP $ \(mutedP :: MutableEdit m edit ()) -> unitStateT $ modifyMVarStateIO storevar $ do
             {
+                oldstore <- get;
                 let
                 {
                     mutedC :: MutableEdit (StateT (UpdateStore edit) m) edit userstate;
@@ -128,8 +125,8 @@ module Truth.Core.Object.Subscription
                     tokenC :: userstate;
                     (MkStoreEntry _ tokenC) = fromJust $ lookupWitnessStore key oldstore;
                 };
-                ((r,_newTokenC),newstore) <- unitStateT $ runStateT (runStateT (call mutedC) tokenC) oldstore;
-                return (newstore,r);
+                (r,_newTokenC) <- runStateT (call mutedC) tokenC;
+                return r;
             };
 
             child :: Subscription edit (IO ());
@@ -137,14 +134,10 @@ module Truth.Core.Object.Subscription
             {
                 rec
                 {
-                    key <- modifyMVar storevar $ \oldstore -> do
-                    {
-                        (k,newstore) <- addIOWitnessStore (MkStoreEntry (updateC editorC) firstC) oldstore;
-                        return (newstore,k);
-                    };
+                    key <- modifyMVarStateIO storevar $ addIOWitnessStoreStateT (MkStoreEntry (updateC editorC) firstC);
                     (editorC,tokenC) <- initC (objectC key);
                 };
-                modifyMVar_ storevar $ \oldstore -> return $ replaceWitnessStore key (\(MkStoreEntry u _) -> MkStoreEntry u tokenC) oldstore;
+                modifyMVarStateIO storevar $ replaceWitnessStoreStateT key $ lensStateT useStateLens $ put tokenC;
                 let
                 {
                     closerC = modifyMVar_ storevar $ \oldstore -> do
