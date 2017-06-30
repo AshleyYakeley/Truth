@@ -25,6 +25,28 @@ module Main(main) where
         arbitrary = oneof [StringReplaceWhole <$> arbitrary,StringReplaceSection <$> arbitrary <*> arbitrary];
     };
 
+    testApplyEditsPar :: TestTree;
+    testApplyEditsPar = testCase "apply edits parallel" $ let
+    {
+        start = (False,False);
+        edits :: [PairEdit (WholeEdit Bool) (WholeEdit Bool)];
+        edits = [MkTupleEdit EditFirst $ MkWholeEdit True,MkTupleEdit EditSecond $ MkWholeEdit True];
+        expected = (True,True);
+        rf = applyEdits edits;
+        found = fromReadFunction rf start;
+    } in assertEqual "" expected found;
+
+    testApplyEditsSeq :: TestTree;
+    testApplyEditsSeq = testCase "apply edits sequence" $ let
+    {
+        start = 0;
+        edits :: [WholeEdit Int];
+        edits = [MkWholeEdit 1,MkWholeEdit 2];
+        expected = 2;
+        rf = applyEdits edits;
+        found = fromReadFunction rf start;
+    } in assertEqual "" expected found;
+
     applyEditSubject :: (Edit edit,FullReader (EditReader edit)) => edit -> EditSubject edit -> EditSubject edit;
     applyEditSubject edit = fromReadFunction $ applyEdit edit;
 
@@ -134,6 +156,8 @@ module Main(main) where
 
     tests :: TestTree;
     tests = testGroup "Truth-Core" [
+        testApplyEditsPar,
+        testApplyEditsSeq,
         testStringEdit,
         testStringSectionLens,
         testSubscribe
