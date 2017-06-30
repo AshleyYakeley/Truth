@@ -4,6 +4,7 @@ main: runObject
 main: push [StringReplaceSection 3+2 "PQR",StringReplaceSection 2+1 ""]
 main: push ignored
 var: "ABCDE"
+expected: "Ax1DE"
 main: runObject
 main: push [StringReplaceSection 1+1 "xy",StringReplaceSection 2+2 "1"]
 main: receive 0: [StringReplaceSection 1+1 "xy",StringReplaceSection 2+2 "1"]

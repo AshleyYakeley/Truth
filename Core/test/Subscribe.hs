@@ -190,6 +190,9 @@ module Subscribe(testSubscribe) where
             showVar :: IO ();
             showVar = withMVar var $ \s -> hPutStrLn h $ "var: " ++ show s;
 
+            showExpected :: [StringEdit String] -> IO ();
+            showExpected edits = withMVar var $ \s -> hPutStrLn h $ "expected: " ++ show (fromReadFunction (applyEdits edits) s);
+
             varObj :: Object (WholeEdit String) ();
             varObj = mvarObject var $ \_ -> True;
 
@@ -202,6 +205,7 @@ module Subscribe(testSubscribe) where
             showVar;
             dontEdits [[StringReplaceSection (startEndRun 3 5) "PQR",StringReplaceSection (startEndRun 2 3) ""]];
             showVar;
+            showExpected [StringReplaceSection (startEndRun 1 2) "xy",StringReplaceSection (startEndRun 2 4) "1"];
             doEdits [[StringReplaceSection (startEndRun 1 2) "xy",StringReplaceSection (startEndRun 2 4) "1"]];
             showVar;
         };
