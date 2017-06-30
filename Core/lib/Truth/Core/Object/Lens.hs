@@ -9,18 +9,18 @@ module Truth.Core.Object.Lens where
 
 
     mapSubscription :: forall f edita editb action. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Subscription edita action -> Subscription editb action;
-    mapSubscription (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub firstB (initialB :: Object editb userstate -> IO (editor,userstate)) updateB = let
+    mapSubscription (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub firstB (initialB :: Object editb userstate -> IO editor) updateB = let
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
 
         firstA :: (userstate,lensstate);
         firstA = (firstB,floatingEditInitial);
 
-        initialA :: Object edita (userstate,lensstate) -> IO ((Object edita (userstate,lensstate),editor),(userstate,lensstate));
+        initialA :: Object edita (userstate,lensstate) -> IO (Object edita (userstate,lensstate),editor);
         initialA objectA = do
         {
-            (ed,us) <- initialB $ floatingMapObject lens objectA;
-            return ((objectA,ed),(us,floatingEditInitial));
+            ed <- initialB $ floatingMapObject lens objectA;
+            return (objectA,ed);
         };
 
         updateA :: forall m. IsStateIO m => (Object edita (userstate,lensstate),editor) -> MutableRead m (EditReader edita) -> [edita] -> StateT (userstate,lensstate) m ();

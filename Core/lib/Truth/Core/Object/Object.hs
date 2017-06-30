@@ -8,7 +8,7 @@ module Truth.Core.Object.Object where
     import Truth.Core.Object.MutableEdit;
 
 
-    newtype Object edit userstate = MkObject (forall r. (forall m. IsStateIO m => MutableEdit m edit userstate -> StateT userstate m r) -> IO r);
+    newtype Object edit userstate = MkObject {runObject :: forall r. (forall m. IsStateIO m => MutableEdit m edit userstate -> StateT userstate m r) -> IO r};
 
     lensObject :: Lens' Identity whole part -> Object edit whole -> Object edit part;
     lensObject lens (MkObject object) = MkObject $ \call -> object $ \muted -> lensStateT lens $ call $ fmap (lensGet lens) muted;

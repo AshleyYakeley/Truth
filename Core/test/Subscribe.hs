@@ -10,11 +10,7 @@ module Subscribe where
     testEditor :: Editor (WholeEdit a) a;
     testEditor = let
     {
-        editorInit (MkObject object) = do
-        {
-            initial <- object $ \muted -> lift $ mutableRead muted ReadWhole;
-            return (initial,());
-        };
+        editorInit (MkObject object) = object $ \muted -> lift $ mutableRead muted ReadWhole;
         editorUpdate _ _ _ = return ();
         editorDo = return;
     } in MkEditor{..};

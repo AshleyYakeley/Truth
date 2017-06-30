@@ -141,11 +141,12 @@ module Truth.Core.Object.View where
         fmap f (MkSubscriptionView w gs aa) = MkSubscriptionView (f w) gs aa;
     };
 
-    viewSubscription :: View edit w -> Subscription edit action -> IO (SubscriptionView edit action w);
-    viewSubscription (MkView view) sub = do
+    viewSubscription :: forall edit w action. View edit w -> Subscription edit action -> IO (SubscriptionView edit action w);
+    viewSubscription (MkView (view :: Object edit updatestate -> (selstate -> IO ()) -> IO (ViewResult edit updatestate selstate w))) sub = do
     {
         let
         {
+            initialise :: Object edit updatestate -> IO (ViewResult edit updatestate selstate w, IORef (Maybe selstate));
             initialise object = do
             {
                 rec
@@ -157,7 +158,8 @@ module Truth.Core.Object.View where
                     vr <- view object setSelect;
                     selref <- newIORef $ vrFirstSelState vr;
                 };
-                return ((vr,selref),vrFirstUpdateState vr);
+                runObject object $ \_ -> put $ vrFirstUpdateState vr;
+                return (vr,selref);
             };
             receive (vr,_) = vrUpdate vr;
         };

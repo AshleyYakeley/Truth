@@ -13,7 +13,7 @@ module Truth.Core.Object.Subscription
 
     type Subscription edit a = forall editor userstate.
         userstate ->
-        (Object edit userstate -> IO (editor,userstate)) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
+        (Object edit userstate -> IO editor) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
         (forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> [edit] -> StateT userstate m ()) -> -- receive: get updates (both others and from your mutableEdit calls)
         IO (editor, a);
 
@@ -56,6 +56,41 @@ module Truth.Core.Object.Subscription
     updateStore :: IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> StateT (UpdateStore edit) m ();
     updateStore mutr edits = runUpdateStore $ \_ ff -> ff mutr edits;
 
+    childMuted :: IsStateIO m => IOWitnessKey userstate -> MutableEdit m edit () -> MutableEdit (StateT (UpdateStore edit) m) edit userstate;
+    childMuted key mutedP = MkMutableEdit
+    {
+        mutableRead = \rt -> lift $ mutableRead mutedP rt,
+        mutableEdit = \edits -> do
+        {
+            mmnextTokenP <- lift $ mutableEdit mutedP edits;
+            case mmnextTokenP of
+            {
+                Just mnextTokenP -> do
+                {
+                    lnextTokenC <- traverseWitnessStoreStateT $ \keyf -> do
+                    {
+                        newtoken <- runUpdateStoreEntry $ \u -> u (mutableRead mutedP) edits;
+                        case testEquality key keyf of
+                        {
+                            Just Refl -> return [newtoken];
+                            Nothing -> return [];
+                        };
+                    };
+                    return $ case lnextTokenC of
+                    {
+                        [nextTokenC] -> Just $ do
+                        {
+                            _nextTokenP <- lift mnextTokenP;
+                            return nextTokenC;
+                        };
+                        _ -> Nothing;
+                    };
+                };
+                Nothing -> return Nothing;
+            }
+        }
+    };
+
     shareSubscription :: forall edit. Subscription edit (IO ()) -> IO (SubscriptionW edit (IO ()));
     shareSubscription parent = do
     {
@@ -65,15 +100,8 @@ module Truth.Core.Object.Subscription
             firstP :: ();
             firstP = ();
 
-            initP :: Object edit () -> IO (Object edit (),());
-            initP objectP = do
-            {
-                let
-                {
-                    tokenP = ();
-                };
-                return (objectP,tokenP);
-            };
+            initP :: Object edit () -> IO (Object edit ());
+            initP objectP = return objectP;
 
             updateP :: forall m. IsStateIO m => Object edit () -> MutableRead m (EditReader edit) -> [edit] -> StateT () m ();
             updateP _ mutrP edits = unitStateT $ modifyMVarStateIO storevar $ updateStore mutrP edits;
@@ -88,44 +116,13 @@ module Truth.Core.Object.Subscription
                 let
                 {
                     mutedC :: MutableEdit (StateT (UpdateStore edit) m) edit userstate;
-                    mutedC = MkMutableEdit
-                    {
-                        mutableRead = \rt -> lift $ mutableRead mutedP rt,
-                        mutableEdit = \edits -> do
-                        {
-                            mmnextTokenP <- lift $ mutableEdit mutedP edits;
-                            case mmnextTokenP of
-                            {
-                                Just mnextTokenP -> do
-                                {
-                                    lnextTokenC <- traverseWitnessStoreStateT (\keyf -> do
-                                    {
-                                        newtoken <- runUpdateStoreEntry $ \u -> u (mutableRead mutedP) edits;
-                                        case testEquality key keyf of
-                                        {
-                                            Just Refl -> return [newtoken];
-                                            Nothing -> return [];
-                                        };
-                                    });
-                                    return $ case lnextTokenC of
-                                    {
-                                        [nextTokenC] -> Just $ do
-                                        {
-                                            _nextTokenP <- lift mnextTokenP;
-                                            return nextTokenC;
-                                        };
-                                        _ -> Nothing;
-                                    };
-                                };
-                                Nothing -> return Nothing;
-                            }
-                        }
-                    };
+                    mutedC = childMuted key mutedP;
 
-                    tokenC :: userstate;
-                    (MkStoreEntry _ tokenC) = fromJust $ lookupWitnessStore key oldstore;
+                    oldStateC :: userstate;
+                    (MkStoreEntry _ oldStateC) = fromJust $ lookupWitnessStore key oldstore;
                 };
-                (r,_newTokenC) <- runStateT (call mutedC) tokenC;
+                (r,newStateC) <- runStateT (call mutedC) oldStateC;
+                replaceWitnessStoreStateT key $ lensStateT useStateLens $ put newStateC;
                 return r;
             };
 
@@ -135,9 +132,8 @@ module Truth.Core.Object.Subscription
                 rec
                 {
                     key <- modifyMVarStateIO storevar $ addIOWitnessStoreStateT (MkStoreEntry (updateC editorC) firstC);
-                    (editorC,tokenC) <- initC (objectC key);
+                    editorC <- initC (objectC key);
                 };
-                modifyMVarStateIO storevar $ replaceWitnessStoreStateT key $ lensStateT useStateLens $ put tokenC;
                 let
                 {
                     closerC = modifyMVar_ storevar $ \oldstore -> do
@@ -167,7 +163,7 @@ module Truth.Core.Object.Subscription
             lensPutback _ _ = Identity ();
             dubiousLens = MkLens{..};
         };
-        (editor,_userstate) <- initr $ lensObject dubiousLens object;
+        editor <- initr $ lensObject dubiousLens object;
         return (editor,());
     };
 

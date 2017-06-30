@@ -10,7 +10,7 @@ module Truth.Core.Object.Editor where
 
     data Editor (edit :: *) r = forall editor userstate. MkEditor
     {
-        editorInit :: Object edit userstate -> IO (editor,userstate),
+        editorInit :: Object edit userstate -> IO editor,
         editorUpdate :: forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> [edit] -> StateT userstate m (),
         editorDo :: editor -> IO r
     };
@@ -24,19 +24,19 @@ module Truth.Core.Object.Editor where
     {
         pure a = let
         {
-            editorInit _ = return ((),());
+            editorInit _ = return ();
             editorUpdate () _ _ = return ();
             editorDo () = return a;
         } in MkEditor{..};
 
-        (MkEditor (ei1 :: Object edit userstate1 -> IO (editor1,userstate1)) eu1 ed1) <*> (MkEditor (ei2 :: Object edit userstate2 -> IO (editor2,userstate2)) eu2 ed2) = let
+        (MkEditor (ei1 :: Object edit userstate1 -> IO editor1) eu1 ed1) <*> (MkEditor (ei2 :: Object edit userstate2 -> IO editor2) eu2 ed2) = let
         {
-            editorInit :: Object edit (userstate1,userstate2) -> IO ((editor1,editor2),(userstate1,userstate2));
+            editorInit :: Object edit (userstate1,userstate2) -> IO (editor1,editor2);
             editorInit object = do
             {
-                (e1,t1) <- ei1 $ lensObject fstLens object;
-                (e2,t2) <- ei2 $ lensObject sndLens object;
-                return ((e1,e2),(t1,t2));
+                e1 <- ei1 $ lensObject fstLens object;
+                e2 <- ei2 $ lensObject sndLens object;
+                return (e1,e2);
             };
             editorUpdate :: forall m. IsStateIO m => (editor1,editor2) -> MutableRead m (EditReader edit) -> [edit] -> StateT (userstate1,userstate2) m ();
             editorUpdate (e1,e2) mr edits = do
@@ -66,8 +66,8 @@ module Truth.Core.Object.Editor where
     oneTransactionEditor :: forall edit r. (forall m. Monad m => MutableEdit m edit () -> m r) -> Editor edit r;
     oneTransactionEditor f = let
     {
-        editorInit :: Object edit () -> IO (Object edit (),());
-        editorInit object = return (object,());
+        editorInit :: Object edit () -> IO (Object edit ());
+        editorInit object = return object;
 
         editorUpdate _lapiw _mr _edits = return ();
         editorDo (MkObject object) = object $ \muted -> lift $ f muted;

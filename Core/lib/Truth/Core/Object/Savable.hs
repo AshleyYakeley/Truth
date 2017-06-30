@@ -28,14 +28,19 @@ module Truth.Core.Object.Savable (SaveActions,saveBufferSubscription) where
     type SaveActions = IO (Maybe (IO Bool,IO Bool));
 
     saveBufferSubscription :: forall a action. Subscription (WholeEdit a) action -> Subscription (WholeEdit a) (action,SaveActions);
-    saveBufferSubscription subA (fsB :: stateB) (initB :: Object (WholeEdit a) stateB -> IO (editorB,stateB)) receiveB = let
+    saveBufferSubscription subA (fsB :: stateB) (initB :: Object (WholeEdit a) stateB -> IO editorB) receiveB = let
     {
         fsA :: (stateB,SaveBuffer a);
         fsA = (fsB,error "uninitialised save buffer");
 
-        initA :: Object (WholeEdit a) (stateB,SaveBuffer a) -> IO ((editorB,SaveActions),(stateB,SaveBuffer a));
+        initA :: Object (WholeEdit a) (stateB,SaveBuffer a) -> IO (editorB,SaveActions);
         initA (MkObject objA) = do
         {
+            objA $ \muted -> do
+            {
+                buf <- lift $ mutableRead muted ReadWhole;
+                stateSnd $ put $ MkSaveBuffer buf False;
+            };
             let
             {
                 objB :: Object (WholeEdit a) stateB;
@@ -45,14 +50,14 @@ module Truth.Core.Object.Savable (SaveActions,saveBufferSubscription) where
                     joinStateT $ call $ fmap (\() -> fst st) saveBufferMutableEdit;
                 };
             };
-            (edB,usB) <- initB objB;
+            edB <- initB objB;
             let
             {
                 saveAction :: IO Bool;
                 saveAction = objA $ \muted -> do
                 {
-                    (_oldstateB,MkSaveBuffer buffer _) <- get;
-                    maction <- lift $ mutableEdit muted [MkWholeEdit buffer];
+                    (_oldstateB,MkSaveBuffer buf _) <- get;
+                    maction <- lift $ mutableEdit muted [MkWholeEdit buf];
                     case maction of
                     {
                         Nothing -> return False;
@@ -68,8 +73,8 @@ module Truth.Core.Object.Savable (SaveActions,saveBufferSubscription) where
                 revertAction = objA $ \muted -> do
                 {
 
-                    buffer <- lift $ mutableRead muted ReadWhole;
-                    stateFst $ receiveB edB (\ReadWhole -> return buffer) [MkWholeEdit buffer];
+                    buf <- lift $ mutableRead muted ReadWhole;
+                    stateFst $ receiveB edB (\ReadWhole -> return buf) [MkWholeEdit buf];
                     return False; -- MkSaveBuffer buffer False
                 };
 
@@ -82,13 +87,7 @@ module Truth.Core.Object.Savable (SaveActions,saveBufferSubscription) where
 
                 edA = (edB,saveActions);
             };
-            buffer <- objA $ \muted -> lift $ mutableRead muted ReadWhole;
-            let
-            {
-                usA :: (stateB,SaveBuffer a);
-                usA = (usB,MkSaveBuffer buffer False);
-            };
-            return (edA,usA);
+            return edA;
         };
 
         receiveA :: forall m. IsStateIO m => (editorB,SaveActions) -> MutableRead m (WholeReader a) -> [WholeEdit a] -> StateT (stateB,SaveBuffer a) m ();
