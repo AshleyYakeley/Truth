@@ -19,7 +19,7 @@ module Subscribe(testSubscribe) where
     goldenTest name refPath outPath call = goldenVsFile name refPath outPath $ withBinaryFile outPath WriteMode call;
 
     goldenTest' :: TestName -> (Handle -> IO ()) -> TestTree;
-    goldenTest' name call = goldenTest name ("test/" ++ name ++ ".ref") ("test/" ++ name ++ ".out") call;
+    goldenTest' name call = goldenTest name ("test/golden/" ++ name ++ ".ref") ("test/golden/" ++ name ++ ".out") call;
 
     testEditor :: Editor (WholeEdit a) () a;
     testEditor = let
