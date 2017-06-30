@@ -8,25 +8,25 @@ module Truth.Core.Object.Editor where
     import Truth.Core.Object.Subscription;
 
 
-    data Editor (edit :: *) r = forall editor userstate. MkEditor
+    data Editor (edit :: *) actions r = forall editor userstate. MkEditor
     {
         editorInit :: Object edit userstate -> IO editor,
         editorUpdate :: forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> [edit] -> StateT userstate m (),
-        editorDo :: editor -> IO r
+        editorDo :: editor -> actions -> IO r
     };
 
-    instance Functor (Editor edit) where
+    instance Functor (Editor edit actions) where
     {
-        fmap ab (MkEditor ei eu ed) = MkEditor ei eu $ \e -> fmap ab $ ed e;
+        fmap ab (MkEditor ei eu ed) = MkEditor ei eu $ \e a -> fmap ab $ ed e a;
     };
 
-    instance Applicative (Editor edit) where
+    instance Applicative (Editor edit actions) where
     {
         pure a = let
         {
             editorInit _ = return ();
             editorUpdate () _ _ = return ();
-            editorDo () = return a;
+            editorDo () _ = return a;
         } in MkEditor{..};
 
         (MkEditor (ei1 :: Object edit userstate1 -> IO editor1) eu1 ed1) <*> (MkEditor (ei2 :: Object edit userstate2 -> IO editor2) eu2 ed2) = let
@@ -44,39 +44,39 @@ module Truth.Core.Object.Editor where
                 stateFst $ eu1 e1 mr edits;
                 stateSnd $ eu2 e2 mr edits;
             };
-            editorDo (e1,e2) = do
+            editorDo (e1,e2) actions = do
             {
-                ab <- ed1 e1;
-                a <- ed2 e2;
+                ab <- ed1 e1 actions;
+                a <- ed2 e2 actions;
                 return $ ab a;
             };
         } in MkEditor{..};
     };
 
-    subscribeEdit :: Subscription edit actions -> Editor edit r -> IO r;
+    subscribeEdit :: Subscription edit actions -> Editor edit actions r -> IO r;
     subscribeEdit subscribe editor = case editor of
     {
         (MkEditor initr update f) -> do
         {
-            (e, close, _actions) <- subscribe (error "uninitialised object (subscribeEdit)") initr update;
-            finally (f e) close;
+            (e, close, actions) <- subscribe (error "uninitialised object (subscribeEdit)") initr update;
+            finally (f e actions) close;
         };
     };
 
-    oneTransactionEditor :: forall edit r. (forall m. Monad m => MutableEdit m edit () -> m r) -> Editor edit r;
+    oneTransactionEditor :: forall actions edit r. (forall m. Monad m => MutableEdit m edit () -> m r) -> Editor edit actions r;
     oneTransactionEditor f = let
     {
         editorInit :: Object edit () -> IO (Object edit ());
         editorInit object = return object;
 
         editorUpdate _lapiw _mr _edits = return ();
-        editorDo (MkObject object) = object $ \muted -> lift $ f muted;
+        editorDo (MkObject object) _ = object $ \muted -> lift $ f muted;
     } in MkEditor{..};
 
-    readEditor :: FullReader (EditReader edit) => Editor edit (EditSubject edit);
+    readEditor :: FullReader (EditReader edit) => Editor edit actions (EditSubject edit);
     readEditor = oneTransactionEditor $ \muted -> unReadable fromReader $ mutableRead muted;
 
-    writeEditor :: FullEdit edit => EditSubject edit -> Editor edit (Maybe ());
+    writeEditor :: FullEdit edit => EditSubject edit -> Editor edit actions (Maybe ());
     writeEditor subj = oneTransactionEditor $ \muted -> do
     {
         maction <- mutableEdit muted $ getReplaceEdits subj;
