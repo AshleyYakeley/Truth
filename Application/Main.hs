@@ -19,6 +19,9 @@ module Main where
     initial :: Maybe Bool;
     initial = Just True;
 
+    testSave :: Bool;
+    testSave = False;
+
     main :: IO ();
     main = do
     {
@@ -49,23 +52,29 @@ module Main where
                 wholeTextObj :: Object (WholeEdit String) ();
                 wholeTextObj = cacheObject $ fixedMapObject ((wholeEditLens $ injectionLens injection) . convertEditLens) bsObj;
             };
-            MkSubscriptionW fileSub <- subscribeObject wholeTextObj;
-            let
+            if testSave then do
             {
-                editSub :: Subscription (StringEdit String) (IO ());
-                editSub = convertSubscription fileSub;
+                MkSubscriptionW fileSub <- subscribeObject wholeTextObj;
+                let
+                {
+                    bufferSub :: Subscription (WholeEdit String) (IO (),SaveActions);
+                    bufferSub = saveBufferSubscription fileSub;
 
-                bufferSub :: Subscription (WholeEdit String) (IO (),SaveActions);
-                bufferSub = saveBufferSubscription fileSub;
-
-                editBufferSub :: Subscription (StringEdit String) (IO (),SaveActions);
-                editBufferSub = convertSubscription bufferSub;
-
-                testSave = False;
+                    editBufferSub :: Subscription (StringEdit String) (IO (),SaveActions);
+                    editBufferSub = convertSubscription bufferSub;
+                };
+                makeWindowCountRef info windowCount addButtonsCloseSave editBufferSub
+            }
+            else do
+            {
+                let
+                {
+                    textObj :: Object (StringEdit String) ();
+                    textObj = convertObject wholeTextObj;
+                };
+                MkSubscriptionW textSub <- subscribeObject textObj;
+                makeWindowCountRef info windowCount addButtonsClose textSub;
             };
-            if testSave
-             then makeWindowCountRef info windowCount addButtonsCloseSave editBufferSub
-             else makeWindowCountRef info windowCount addButtonsClose editSub;
         };
         {-
         sub <- makeWindowCountRef windowCount (maybeIVF False (gNamedView "AAAAAAAAAAAAAAAAAAAAAAAAAA")) (freeObjSubscribe initial);
