@@ -17,6 +17,9 @@ module Subscribe(testSubscribe) where
     goldenTest :: TestName -> FilePath -> FilePath -> (Handle -> IO ()) -> TestTree;
     goldenTest name refPath outPath call = goldenVsFile name refPath outPath $ withBinaryFile outPath WriteMode call;
 
+    goldenTest' :: TestName -> (Handle -> IO ()) -> TestTree;
+    goldenTest' name call = goldenTest name ("test/" ++ name ++ ".ref") ("test/" ++ name ++ ".out") call;
+
     testEditor :: Editor (WholeEdit a) () a;
     testEditor = let
     {
@@ -52,8 +55,8 @@ module Subscribe(testSubscribe) where
         show (StringReplaceSection run sq) = "StringReplaceSection " ++ show run ++ " " ++ show sq;
     };
 
-    testOutputEditor :: forall edit actions. (Show edit, Show (EditSubject edit), FullReader (EditReader edit)) => String -> Handle -> MVar (EditSubject edit) -> (actions -> ([edit] -> IO ()) -> ([edit] -> IO ()) -> IO ()) -> Editor edit actions ();
-    testOutputEditor name h var call = let
+    testOutputEditor :: forall edit actions. (Show edit, Show (EditSubject edit), FullReader (EditReader edit)) => String -> Handle -> (actions -> ([edit] -> IO ()) -> ([edit] -> IO ()) -> IO ()) -> Editor edit actions ();
+    testOutputEditor name h call = let
     {
         outputLn :: MonadIO m => String -> m ();
         outputLn s = liftIO $ hPutStrLn h $ name ++ ": " ++ s;
@@ -64,7 +67,8 @@ module Subscribe(testSubscribe) where
         editorInit :: Object edit Int -> IO (Object edit Int);
         editorInit object = do
         {
-            outputLn "Init";
+            val <- runObject object $ \muted -> lift $ unReadable fromReader $ mutableRead muted;
+            outputLn $ "init: " ++ show val;
             return object;
         };
 
@@ -94,7 +98,6 @@ module Subscribe(testSubscribe) where
                         Just _action -> outputLn "push ignored";
                     }
                 };
-                withMVar var $ \s -> outputLn $ "var: " ++ show s;
             };
 
             doEdits :: [edit] -> IO ();
@@ -115,45 +118,75 @@ module Subscribe(testSubscribe) where
                         };
                     }
                 };
-                withMVar var $ \s -> outputLn $ "var: " ++ show s;
             };
-        } in do
-        {
-            withMVar var $ \s -> outputLn $ "var: " ++ show s;
-            outputLn "Start";
-            call actions doEdits dontEdits;
-            outputLn "End";
-        };
+        } in call actions doEdits dontEdits;
     } in MkEditor{..};
 
     testString :: TestTree;
-    testString = goldenTest "String" "test/String.ref" "test/String.out" $ \h -> do
+    testString = goldenTest' "String" $ \h -> do
     {
         var <- newMVar "ABCDE";
         let
         {
+            showVar :: IO ();
+            showVar = withMVar var $ \s -> hPutStrLn h $ "var: " ++ show s;
+
+            varObj :: Object (WholeEdit String) ();
+            varObj = mvarObject var $ \_ -> True;
+
+            textObj :: Object (StringEdit String) ();
+            textObj = convertObject varObj;
+        };
+        MkSubscriptionW textSub <- makeObjectSubscriber textObj;
+        subscribeEditor textSub $ testOutputEditor "main" h $ \_actions doEdits dontEdits -> do
+        {
+            showVar;
+            dontEdits [StringReplaceSection (startEndRun 3 5) "PQR"];
+            showVar;
+            doEdits [StringReplaceSection (startEndRun 1 2) "xy"];
+            showVar;
+            doEdits [StringReplaceSection (startEndRun 2 4) "1"];
+            showVar;
+        };
+    };
+
+    testSharedString :: TestTree;
+    testSharedString = goldenTest' "SharedString" $ \h -> do
+    {
+        var <- newMVar "ABCDE";
+        let
+        {
+            showVar :: IO ();
+            showVar = withMVar var $ \s -> hPutStrLn h $ "var: " ++ show s;
+
             varObj :: Object (WholeEdit String) ();
             varObj = mvarObject var $ \_ -> True;
 
             textObj :: Object (StringEdit String) ();
             textObj = convertObject varObj;
 
-            editor :: Editor (StringEdit String) () ();
-            editor = testOutputEditor "main" h var $ \_actions doEdits dontEdits -> do
-            {
-                dontEdits [StringReplaceSection (startEndRun 3 5) "PQR"];
-                doEdits [StringReplaceSection (startEndRun 1 2) "xy"];
-                doEdits [StringReplaceSection (startEndRun 2 4) "1"];
-            };
+            testLens :: GeneralLens' Maybe (StringEdit String) (StringEdit String);
+            testLens = toGeneralLens' $ stringSectionLens (startEndRun 1 4);
         };
         MkSubscriptionW textSub <- makeObjectSubscriber textObj;
-        subscribeEditor textSub editor;
+        subscribeEditor textSub $ testOutputEditor "main" h $ \_ mainDoEdits mainDontEdits ->
+        subscribeEditor (mapSubscription testLens textSub) $ testOutputEditor "lens" h $ \_ _lensDoEdits _lensDontEdits -> do
+        {
+            showVar;
+            mainDontEdits [StringReplaceSection (startEndRun 3 5) "PQR"];
+            showVar;
+            mainDoEdits [StringReplaceSection (startEndRun 1 2) "xy"];
+            showVar;
+            mainDoEdits [StringReplaceSection (startEndRun 2 4) "1"];
+            showVar;
+        };
     };
 
     testSubscribe :: TestTree;
     testSubscribe = testGroup "subscribe"
     [
         testSavable,
-        testString
+        testString,
+        testSharedString
     ];
 }
