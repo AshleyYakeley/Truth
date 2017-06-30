@@ -30,13 +30,13 @@ module Subscribe(testSubscribe) where
     testSavable = testCase "Savable" $ do
     {
         object <- freeIOObject False (\_ -> True);
-        MkSubscriptionW sub <- subscribeObject object;
+        MkSubscriptionW sub <- makeObjectSubscriber object;
         let
         {
             saveSub = MkSubscriptionW $ saveBufferSubscription sub;
             MkSubscriptionW cleanSaveSub = fmap fst saveSub;
         };
-        found <- subscribeEdit cleanSaveSub testEditor;
+        found <- subscribeEditor cleanSaveSub testEditor;
         assertEqual "value" False found;
     };
 
@@ -128,8 +128,8 @@ module Subscribe(testSubscribe) where
                 doEdits [StringReplaceSection (startEndRun 2 4) "1"];
             };
         };
-        MkSubscriptionW textSub <- subscribeObject textObj;
-        subscribeEdit textSub editor;
+        MkSubscriptionW textSub <- makeObjectSubscriber textObj;
+        subscribeEditor textSub editor;
     };
 
     testSubscribe :: TestTree;

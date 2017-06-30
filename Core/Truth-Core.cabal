@@ -103,7 +103,7 @@ library
         Truth.Core.Types
         Truth.Core.Object.MutableEdit
         Truth.Core.Object.Object
-        Truth.Core.Object.Subscription
+        Truth.Core.Object.Subscriber
         Truth.Core.Object.Lens
         Truth.Core.Object.Editor
         Truth.Core.Object.View

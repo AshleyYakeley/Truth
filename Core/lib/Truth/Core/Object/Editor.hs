@@ -5,7 +5,7 @@ module Truth.Core.Object.Editor where
     import Truth.Core.Edit;
     import Truth.Core.Object.MutableEdit;
     import Truth.Core.Object.Object;
-    import Truth.Core.Object.Subscription;
+    import Truth.Core.Object.Subscriber;
 
 
     data Editor (edit :: *) actions r = forall editor userstate. MkEditor
@@ -58,8 +58,8 @@ module Truth.Core.Object.Editor where
         } in MkEditor{..};
     };
 
-    subscribeEdit :: Subscription edit actions -> Editor edit actions r -> IO r;
-    subscribeEdit subscribe editor = case editor of
+    subscribeEditor :: Subscriber edit actions -> Editor edit actions r -> IO r;
+    subscribeEditor subscribe editor = case editor of
     {
         (MkEditor firstSt initr update f) -> do
         {

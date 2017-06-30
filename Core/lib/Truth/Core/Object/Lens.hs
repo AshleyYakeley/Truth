@@ -5,10 +5,10 @@ module Truth.Core.Object.Lens where
     import Truth.Core.Types;
     import Truth.Core.Read;
     import Truth.Core.Object.Object;
-    import Truth.Core.Object.Subscription;
+    import Truth.Core.Object.Subscriber;
 
 
-    mapSubscription :: forall f edita editb action. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Subscription edita action -> Subscription editb action;
+    mapSubscription :: forall f edita editb action. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Subscriber edita action -> Subscriber editb action;
     mapSubscription (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub firstB (initialB :: Object editb userstate -> IO editor) updateB = let
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
@@ -121,7 +121,7 @@ module Truth.Core.Object.Lens where
         toGeneralLens' = toGeneralLens' . codecInjection;
     };
 
-    convertSubscription :: forall edita editb actions. (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Subscription edita actions -> Subscription editb actions;
+    convertSubscription :: forall edita editb actions. (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Subscriber edita actions -> Subscriber editb actions;
     convertSubscription = mapSubscription $ toGeneralLens' (convertEditLens :: EditLens' Identity edita editb);
 
 {-
@@ -177,7 +177,7 @@ module Truth.Core.Object.Lens where
 
 {-
     -- | Not sure if this should be used.
-    pairSubscription :: forall ea eb. Subscription ea -> Subscription eb -> Subscription (PairEdit ea eb);
+    pairSubscription :: forall ea eb. Subscriber ea -> Subscriber eb -> Subscriber (PairEdit ea eb);
     pairSubscription objA objB (initialise :: Object (PairEdit ea eb) userstate -> IO (editor,userstate)) receive = do
     {
         let

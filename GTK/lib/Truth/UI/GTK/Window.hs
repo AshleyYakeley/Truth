@@ -91,10 +91,10 @@ module Truth.UI.GTK.Window where
         }
     };
 
-    makeWindow :: (Edit edit,WindowButtons actions) => Info edit -> IORef Int -> IO () -> Subscription edit actions -> IO ();
+    makeWindow :: (Edit edit,WindowButtons actions) => Info edit -> IORef Int -> IO () -> Subscriber edit actions -> IO ();
     makeWindow te ref tellclose sub = do
     {
-        MkSubscriptionView{..} <- viewSubscription (getView te) sub;
+        MkViewSubscription{..} <- subscribeView (getView te) sub;
         window <- windowNew;
         box <- vBoxNew False 0;
 
@@ -131,7 +131,7 @@ module Truth.UI.GTK.Window where
         return ();
     };
 
-    makeWindowCountRef :: (Edit edit,WindowButtons actions) => Info edit -> IORef Int -> Subscription edit actions -> IO ();
+    makeWindowCountRef :: (Edit edit,WindowButtons actions) => Info edit -> IORef Int -> Subscriber edit actions -> IO ();
     makeWindowCountRef te windowCount sub = do
     {
         makeWindow te windowCount (do

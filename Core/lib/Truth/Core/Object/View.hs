@@ -6,7 +6,7 @@ module Truth.Core.Object.View where
     import Truth.Core.Edit;
     import Truth.Core.Types;
     import Truth.Core.Object.Object;
-    import Truth.Core.Object.Subscription;
+    import Truth.Core.Object.Subscriber;
     import Truth.Core.Object.Lens;
     import Truth.Core.Object.Aspect;
 
@@ -129,7 +129,7 @@ module Truth.Core.Object.View where
         };
     };
 
-    data SubscriptionView edit action w = MkSubscriptionView
+    data ViewSubscription edit action w = MkViewSubscription
     {
         srWidget :: w,
         srGetSelection :: IO (Maybe (Aspect edit)),
@@ -137,13 +137,13 @@ module Truth.Core.Object.View where
         srAction :: action
     };
 
-    instance Functor (SubscriptionView edit action) where
+    instance Functor (ViewSubscription edit action) where
     {
-        fmap f (MkSubscriptionView w gs cl aa) = MkSubscriptionView (f w) gs cl aa;
+        fmap f (MkViewSubscription w gs cl aa) = MkViewSubscription (f w) gs cl aa;
     };
 
-    viewSubscription :: forall edit w action. View edit w -> Subscription edit action -> IO (SubscriptionView edit action w);
-    viewSubscription (MkView (view :: Object edit updatestate -> (selstate -> IO ()) -> IO (ViewResult edit updatestate selstate w))) sub = do
+    subscribeView :: forall edit w action. View edit w -> Subscriber edit action -> IO (ViewSubscription edit action w);
+    subscribeView (MkView (view :: Object edit updatestate -> (selstate -> IO ()) -> IO (ViewResult edit updatestate selstate w))) sub = do
     {
         let
         {
@@ -164,7 +164,7 @@ module Truth.Core.Object.View where
             };
             receive (vr,_) = vrUpdate vr;
         };
-        ((MkViewResult{..},selref),srCloser,srAction) <- sub (error "uninitialised object (viewSubscription)") initialise receive;
+        ((MkViewResult{..},selref),srCloser,srAction) <- sub (error "uninitialised object (subscribeView)") initialise receive;
         let
         {
             srGetSelection = do
@@ -178,7 +178,7 @@ module Truth.Core.Object.View where
             };
             srWidget = vrWidget;
         };
-        return MkSubscriptionView{..};
+        return MkViewSubscription{..};
     };
 
     tupleView :: (Applicative m,FiniteTupleSelector sel) => (forall edit. sel edit -> m (View edit w)) -> m (View (TupleEdit sel) [w]);

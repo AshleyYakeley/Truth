@@ -6,7 +6,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscription) where
     import Truth.Core.Types.Whole;
     import Truth.Core.Object.MutableEdit;
     import Truth.Core.Object.Object;
-    import Truth.Core.Object.Subscription;
+    import Truth.Core.Object.Subscriber;
 
 
     data SaveBuffer a = MkSaveBuffer
@@ -27,7 +27,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscription) where
 
     newtype SaveActions = MkSaveActions (IO (Maybe (IO Bool,IO Bool)));
 
-    saveBufferSubscription :: forall a action. Subscription (WholeEdit a) action -> Subscription (WholeEdit a) (action,SaveActions);
+    saveBufferSubscription :: forall a action. Subscriber (WholeEdit a) action -> Subscriber (WholeEdit a) (action,SaveActions);
     saveBufferSubscription subA (fsB :: stateB) (initB :: Object (WholeEdit a) stateB -> IO editorB) receiveB = let
     {
         fsA :: (stateB,SaveBuffer a);

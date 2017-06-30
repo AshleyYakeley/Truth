@@ -54,13 +54,13 @@ Locks may apply to per-whole or per-part
 
 2.1 Simple
 
-    data Subscription edit = MkSubscription
+    data Subscriber edit = MkSubscription
     {
         subClose :: IO (),
         subRead :: MutableRead IO (EditReader edit),
         subChange :: edit -> IO ()
     };
-    type Object edit = IO (Subscription edit);
+    type Object edit = IO (Subscriber edit);
 
 -- assumes all edits are allowed
 -- assumes nothing else will change the object
@@ -115,7 +115,7 @@ data Object edit = forall subscription lock. MkObject
 };
 
 
-data Subscription edit = MkSubscription
+data Subscriber edit = MkSubscription
     {
         subCopy :: Subscribe edit,
 
@@ -130,8 +130,8 @@ data Subscription edit = MkSubscription
     type Subscribe t message = forall r.
         (t -> Allowed message -> Send message -> IO r) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
         (r -> message -> Allowed message -> IO ()) -> -- receive: provides updates ()
-        IO (r, Subscription t message);
-    data Subscription t edit = MkSubscription
+        IO (r, Subscriber t message);
+    data Subscriber t edit = MkSubscription
     {
         subCopy :: Subscribe t edit,
 
