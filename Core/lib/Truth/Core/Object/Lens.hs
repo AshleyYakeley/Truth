@@ -32,8 +32,8 @@ module Truth.Core.Object.Lens where
         };
     } in do
     {
-        ((_,editor),action) <- sub firstA initialA updateA;
-        return (editor,action);
+        ((_,editor),closer,action) <- sub firstA initialA updateA;
+        return (editor,closer,action);
     };
 
 

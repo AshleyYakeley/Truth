@@ -11,11 +11,11 @@ module Truth.Core.Object.Subscription
     import Truth.Core.Object.Object;
 
 
-    type Subscription edit a = forall editor userstate.
+    type Subscription edit actions = forall editor userstate.
         userstate ->
         (Object edit userstate -> IO editor) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
         (forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> [edit] -> StateT userstate m ()) -> -- receive: get updates (both others and from your mutableEdit calls)
-        IO (editor, a);
+        IO (editor,IO (),actions);
 
     newtype SubscriptionW edit a = MkSubscriptionW (Subscription edit a);
 
@@ -23,8 +23,8 @@ module Truth.Core.Object.Subscription
     {
         fmap ab (MkSubscriptionW sub) = MkSubscriptionW $ \fs initialise receive -> do
         {
-            (editor,a) <- sub fs initialise receive;
-            return (editor,ab a);
+            (editor,cl,a) <- sub fs initialise receive;
+            return (editor,cl,ab a);
         };
     };
 
@@ -91,7 +91,7 @@ module Truth.Core.Object.Subscription
         }
     };
 
-    shareSubscription :: forall edit. Subscription edit (IO ()) -> IO (SubscriptionW edit (IO ()));
+    shareSubscription :: forall edit actions. Subscription edit actions -> IO (SubscriptionW edit actions);
     shareSubscription parent = do
     {
         storevar <- newMVar (emptyWitnessStore :: UpdateStore edit);
@@ -106,7 +106,7 @@ module Truth.Core.Object.Subscription
             updateP :: forall m. IsStateIO m => Object edit () -> MutableRead m (EditReader edit) -> [edit] -> StateT () m ();
             updateP _ mutrP edits = unitStateT $ modifyMVarStateIO storevar $ updateStore mutrP edits;
         };
-        (MkObject objectP,closerP) <- parent firstP initP updateP;
+        (MkObject objectP,closerP,actions) <- parent firstP initP updateP;
         let
         {
             objectC :: forall userstate. IOWitnessKey userstate -> Object edit userstate;
@@ -126,7 +126,7 @@ module Truth.Core.Object.Subscription
                 return r;
             };
 
-            child :: Subscription edit (IO ());
+            child :: Subscription edit actions;
             child firstC initC updateC = do
             {
                 rec
@@ -148,7 +148,7 @@ module Truth.Core.Object.Subscription
                         return newstore;
                     };
                 };
-                return (editorC,closerC);
+                return (editorC,closerC,actions);
             };
         };
         return $ MkSubscriptionW child;
@@ -164,12 +164,12 @@ module Truth.Core.Object.Subscription
             dubiousLens = MkLens{..};
         };
         editor <- initr $ lensObject dubiousLens object;
-        return (editor,());
+        return (editor,return (),());
     };
 
-    subscribeObject :: Object edit () -> IO (SubscriptionW edit (IO ()));
+    subscribeObject :: Object edit () -> IO (SubscriptionW edit ());
     subscribeObject object = let
     {
-        MkSubscriptionW sub = fmap return $ rawSubscribeObject object;
+        MkSubscriptionW sub = rawSubscribeObject object;
     } in shareSubscription sub;
 }

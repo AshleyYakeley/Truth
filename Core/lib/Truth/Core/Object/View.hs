@@ -133,12 +133,13 @@ module Truth.Core.Object.View where
     {
         srWidget :: w,
         srGetSelection :: IO (Maybe (Aspect edit)),
+        srCloser :: IO (),
         srAction :: action
     };
 
     instance Functor (SubscriptionView edit action) where
     {
-        fmap f (MkSubscriptionView w gs aa) = MkSubscriptionView (f w) gs aa;
+        fmap f (MkSubscriptionView w gs cl aa) = MkSubscriptionView (f w) gs cl aa;
     };
 
     viewSubscription :: forall edit w action. View edit w -> Subscription edit action -> IO (SubscriptionView edit action w);
@@ -163,7 +164,7 @@ module Truth.Core.Object.View where
             };
             receive (vr,_) = vrUpdate vr;
         };
-        ((MkViewResult{..},selref),srAction) <- sub (error "uninitialised object (viewSubscription)") initialise receive;
+        ((MkViewResult{..},selref),srCloser,srAction) <- sub (error "uninitialised object (viewSubscription)") initialise receive;
         let
         {
             srGetSelection = do

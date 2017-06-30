@@ -53,12 +53,12 @@ module Truth.Core.Object.Editor where
         } in MkEditor{..};
     };
 
-    subscribeEdit :: Subscription edit (IO ()) -> Editor edit r -> IO r;
+    subscribeEdit :: Subscription edit actions -> Editor edit r -> IO r;
     subscribeEdit subscribe editor = case editor of
     {
         (MkEditor initr update f) -> do
         {
-            (e, close) <- subscribe (error "uninitialised object (subscribeEdit)") initr update;
+            (e, close, _actions) <- subscribe (error "uninitialised object (subscribeEdit)") initr update;
             finally (f e) close;
         };
     };

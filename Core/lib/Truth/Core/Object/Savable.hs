@@ -1,4 +1,4 @@
-module Truth.Core.Object.Savable (SaveActions,saveBufferSubscription) where
+module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscription) where
 {
     import Truth.Core.Import;
     import Truth.Core.Read;
@@ -25,7 +25,7 @@ module Truth.Core.Object.Savable (SaveActions,saveBufferSubscription) where
         mutableEdit = singleMutableEdit $ \(MkWholeEdit a) -> put $ MkSaveBuffer a True;
     } in MkMutableEdit{..};
 
-    type SaveActions = IO (Maybe (IO Bool,IO Bool));
+    newtype SaveActions = MkSaveActions (IO (Maybe (IO Bool,IO Bool)));
 
     saveBufferSubscription :: forall a action. Subscription (WholeEdit a) action -> Subscription (WholeEdit a) (action,SaveActions);
     saveBufferSubscription subA (fsB :: stateB) (initB :: Object (WholeEdit a) stateB -> IO editorB) receiveB = let
@@ -79,7 +79,7 @@ module Truth.Core.Object.Savable (SaveActions,saveBufferSubscription) where
                 };
 
                 saveActions :: SaveActions;
-                saveActions = objA $ \_ -> do
+                saveActions = MkSaveActions $ objA $ \_ -> do
                 {
                     (_,MkSaveBuffer _ changed) <- get;
                     return $ if changed then Just (saveAction,revertAction) else Nothing;
@@ -105,16 +105,17 @@ module Truth.Core.Object.Savable (SaveActions,saveBufferSubscription) where
             };
         };
 
-        resultB :: IO (editorB,(action,SaveActions));
+        resultB :: IO (editorB,IO (),(action,SaveActions));
         resultB = do
         {
-            (edA,actionA) <- subA fsA initA receiveA;
+            (edA,closerA,actionA) <- subA fsA initA receiveA;
             let
             {
                 (edB,saveActions) = edA;
                 actionB = (actionA,saveActions);
+                closerB = closerA; -- add UI query here
             };
-            return (edB,actionB);
+            return (edB,closerB,actionB);
         };
     } in resultB;
 }

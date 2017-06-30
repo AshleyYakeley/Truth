@@ -41,47 +41,64 @@ module Truth.UI.GTK.Window where
     getView :: GetView;
     getView = finalGetView (mconcat matchViews) lastResortView;
 
-    addButtonsClose :: VBox -> IO () -> IO (IO ());
-    addButtonsClose _ closeSub = return closeSub;
-
-    addButtonsCloseSave :: VBox -> (IO (),SaveActions) -> IO (IO ());
-    addButtonsCloseSave vbox (closeSub,saveactions) = do
+    class WindowButtons actions where
     {
-        hbox <- hBoxNew False 0;
-        saveButton <- makeButton "Save" $ do
-        {
-            mactions <- saveactions;
-            _ <- case mactions of
-            {
-                Just (action,_) -> action;
-                _ -> return False;
-            };
-            return ();
-        };
-        revertButton <- makeButton "Revert" $ do
-        {
-            mactions <- saveactions;
-            _ <- case mactions of
-            {
-                Just (_,action) -> action;
-                _ -> return False;
-            };
-            return ();
-        };
-        boxPackStart hbox saveButton PackNatural 0;
-        boxPackStart hbox revertButton PackNatural 0;
-        boxPackStart vbox hbox PackNatural 0;
-        return closeSub;
+        addButtons :: VBox -> actions -> IO ();
     };
 
-    makeWindow :: (Edit edit) => Info edit -> IORef Int -> IO () -> (VBox -> actions -> IO (IO ())) -> Subscription edit actions -> IO ();
-    makeWindow te ref tellclose addButtons sub = do
+    instance WindowButtons () where
+    {
+        addButtons _ () = return ();
+    };
+
+    instance (WindowButtons a,WindowButtons b) => WindowButtons (a,b) where
+    {
+        addButtons vbox (a,b) = do
+        {
+            addButtons vbox a;
+            addButtons vbox b;
+        }
+    };
+
+    instance WindowButtons SaveActions where
+    {
+        addButtons vbox (MkSaveActions saveactions) = do
+        {
+            hbox <- hBoxNew False 0;
+            saveButton <- makeButton "Save" $ do
+            {
+                mactions <- saveactions;
+                _ <- case mactions of
+                {
+                    Just (action,_) -> action;
+                    _ -> return False;
+                };
+                return ();
+            };
+            revertButton <- makeButton "Revert" $ do
+            {
+                mactions <- saveactions;
+                _ <- case mactions of
+                {
+                    Just (_,action) -> action;
+                    _ -> return False;
+                };
+                return ();
+            };
+            boxPackStart hbox saveButton PackNatural 0;
+            boxPackStart hbox revertButton PackNatural 0;
+            boxPackStart vbox hbox PackNatural 0;
+        }
+    };
+
+    makeWindow :: (Edit edit,WindowButtons actions) => Info edit -> IORef Int -> IO () -> Subscription edit actions -> IO ();
+    makeWindow te ref tellclose sub = do
     {
         MkSubscriptionView{..} <- viewSubscription (getView te) sub;
         window <- windowNew;
         box <- vBoxNew False 0;
 
-        closeSub <- addButtons box srAction;
+        addButtons box srAction;
 
         selectionButton <- makeButton "Selection" $ do
         {
@@ -90,7 +107,7 @@ module Truth.UI.GTK.Window where
             {
                 Just (MkAspect tsel _ta lens) -> do
                 {
-                    makeWindowCountRef tsel ref addButtons (mapSubscription lens sub);
+                    makeWindowCountRef tsel ref (mapSubscription lens sub);
                 };
                 _ -> return ();
             };
@@ -107,15 +124,15 @@ module Truth.UI.GTK.Window where
         widgetShow srWidget;
         _ <- onDestroy window (do
         {
-            closeSub;
+            srCloser;
             tellclose;
         });
         widgetShowAll window;
         return ();
     };
 
-    makeWindowCountRef :: (Edit edit) => Info edit -> IORef Int -> (VBox -> actions -> IO (IO ())) -> Subscription edit actions -> IO ();
-    makeWindowCountRef te windowCount addButtons sub = do
+    makeWindowCountRef :: (Edit edit,WindowButtons actions) => Info edit -> IORef Int -> Subscription edit actions -> IO ();
+    makeWindowCountRef te windowCount sub = do
     {
         makeWindow te windowCount (do
         {
@@ -124,7 +141,7 @@ module Truth.UI.GTK.Window where
             if i == 1
              then mainQuit
              else return ();
-        }) addButtons sub;
+        }) sub;
         i <- readIORef windowCount;
         writeIORef windowCount (i + 1);
         return ();

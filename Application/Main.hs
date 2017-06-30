@@ -57,13 +57,13 @@ module Main where
                 MkSubscriptionW fileSub <- subscribeObject wholeTextObj;
                 let
                 {
-                    bufferSub :: Subscription (WholeEdit String) (IO (),SaveActions);
+                    bufferSub :: Subscription (WholeEdit String) ((),SaveActions);
                     bufferSub = saveBufferSubscription fileSub;
 
-                    editBufferSub :: Subscription (StringEdit String) (IO (),SaveActions);
+                    editBufferSub :: Subscription (StringEdit String) ((),SaveActions);
                     editBufferSub = convertSubscription bufferSub;
                 };
-                makeWindowCountRef info windowCount addButtonsCloseSave editBufferSub
+                makeWindowCountRef info windowCount editBufferSub
             }
             else do
             {
@@ -73,7 +73,7 @@ module Main where
                     textObj = convertObject wholeTextObj;
                 };
                 MkSubscriptionW textSub <- subscribeObject textObj;
-                makeWindowCountRef info windowCount addButtonsClose textSub;
+                makeWindowCountRef info windowCount textSub;
             };
         };
         {-
