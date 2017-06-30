@@ -52,13 +52,20 @@ module Main where
             MkSubscriptionW fileSub <- subscribeObject wholeTextObj;
             let
             {
+                editSub :: Subscription (StringEdit String) (IO ());
+                editSub = convertSubscription fileSub;
+
                 bufferSub :: Subscription (WholeEdit String) (IO (),SaveActions);
                 bufferSub = saveBufferSubscription fileSub;
 
-                editSub :: Subscription (StringEdit String) (IO (),SaveActions);
-                editSub = convertSubscription bufferSub;
+                editBufferSub :: Subscription (StringEdit String) (IO (),SaveActions);
+                editBufferSub = convertSubscription bufferSub;
+
+                testSave = False;
             };
-            makeWindowCountRef info windowCount addButtonsCloseSave editSub;
+            if testSave
+             then makeWindowCountRef info windowCount addButtonsCloseSave editBufferSub
+             else makeWindowCountRef info windowCount addButtonsClose editSub;
         };
         {-
         sub <- makeWindowCountRef windowCount (maybeIVF False (gNamedView "AAAAAAAAAAAAAAAAAAAAAAAAAA")) (freeObjSubscribe initial);
