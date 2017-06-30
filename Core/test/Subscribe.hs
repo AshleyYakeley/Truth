@@ -52,7 +52,7 @@ module Subscribe(testSubscribe) where
         show (StringReplaceSection run sq) = "StringReplaceSection " ++ show run ++ " " ++ show sq;
     };
 
-    testOutputEditor :: forall edit actions. (Show edit, Show (EditSubject edit), FullReader (EditReader edit)) => String -> Handle -> MVar (EditSubject edit) -> (actions -> ([edit] -> IO ()) -> IO ()) -> Editor edit actions ();
+    testOutputEditor :: forall edit actions. (Show edit, Show (EditSubject edit), FullReader (EditReader edit)) => String -> Handle -> MVar (EditSubject edit) -> (actions -> ([edit] -> IO ()) -> ([edit] -> IO ()) -> IO ()) -> Editor edit actions ();
     testOutputEditor name h var call = let
     {
         outputLn :: MonadIO m => String -> m ();
@@ -81,6 +81,22 @@ module Subscribe(testSubscribe) where
         editorDo :: Object edit Int -> actions -> IO ();
         editorDo obj actions = let
         {
+            dontEdits :: [edit] -> IO ();
+            dontEdits edits = do
+            {
+                runObject obj $ \muted -> do
+                {
+                    outputLn $ "push " ++ show edits;
+                    maction <- lift $ mutableEdit muted edits;
+                    case maction of
+                    {
+                        Nothing -> outputLn "push disallowed";
+                        Just _action -> outputLn "push ignored";
+                    }
+                };
+                withMVar var $ \s -> outputLn $ "var: " ++ show s;
+            };
+
             doEdits :: [edit] -> IO ();
             doEdits edits = do
             {
@@ -90,11 +106,12 @@ module Subscribe(testSubscribe) where
                     maction <- lift $ mutableEdit muted edits;
                     case maction of
                     {
-                        Nothing -> outputLn "push failed";
+                        Nothing -> outputLn "push disallowed";
                         Just action -> do
                         {
                             n <- lift action;
                             outputLn $ "push succeeded -> " ++ show n;
+                            put n;
                         };
                     }
                 };
@@ -104,7 +121,7 @@ module Subscribe(testSubscribe) where
         {
             withMVar var $ \s -> outputLn $ "var: " ++ show s;
             outputLn "Start";
-            call actions doEdits;
+            call actions doEdits dontEdits;
             outputLn "End";
         };
     } in MkEditor{..};
@@ -122,8 +139,9 @@ module Subscribe(testSubscribe) where
             textObj = convertObject varObj;
 
             editor :: Editor (StringEdit String) () ();
-            editor = testOutputEditor "main" h var $ \_actions doEdits -> do
+            editor = testOutputEditor "main" h var $ \_actions doEdits dontEdits -> do
             {
+                dontEdits [StringReplaceSection (startEndRun 3 5) "PQR"];
                 doEdits [StringReplaceSection (startEndRun 1 2) "xy"];
                 doEdits [StringReplaceSection (startEndRun 2 4) "1"];
             };

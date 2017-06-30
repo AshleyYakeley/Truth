@@ -2,6 +2,7 @@ module Truth.Core.Object.Subscriber
 (
     Subscriber,SubscriptionW(..),makeObjectSubscriber,
     liftIO,
+    -- objectSubscriber,makeSharedSubscriber,
 ) where
 {
     import Truth.Core.Import;
@@ -62,11 +63,13 @@ module Truth.Core.Object.Subscriber
         mutableRead = \rt -> lift $ mutableRead mutedP rt,
         mutableEdit = \edits -> do
         {
-            mmnextTokenP <- lift $ mutableEdit mutedP edits;
-            case mmnextTokenP of
+            mactionP <- lift $ mutableEdit mutedP edits;
+            return $ case mactionP of
             {
-                Just mnextTokenP -> do
+                Just actionP -> Just $ do
                 {
+                    nextTokenP <- lift actionP;
+                    put nextTokenP;
                     lnextTokenC <- traverseWitnessStoreStateT $ \keyf -> do
                     {
                         newtoken <- runUpdateStoreEntry $ \u -> u (mutableRead mutedP) edits;
@@ -76,17 +79,13 @@ module Truth.Core.Object.Subscriber
                             Nothing -> return [];
                         };
                     };
-                    return $ case lnextTokenC of
+                    case lnextTokenC of
                     {
-                        [nextTokenC] -> Just $ do
-                        {
-                            _nextTokenP <- lift mnextTokenP;
-                            return nextTokenC;
-                        };
-                        _ -> Nothing;
+                        [nextTokenC] -> return nextTokenC;
+                        _ -> fail "missing updatestore entry";
                     };
                 };
-                Nothing -> return Nothing;
+                Nothing -> Nothing;
             }
         }
     };
@@ -154,10 +153,34 @@ module Truth.Core.Object.Subscriber
     objectSubscriber (MkObject object) = MkSubscriptionW $ \firstState initr _update -> do
     {
         var <- newMVar firstState;
-        editor <- initr $ MkObject $ \call -> object $ \muted -> unitStateT $ modifyMVarStateIO var $ do
+        rec
         {
-            st <- get;
-            call $ fmap (\_ -> st) muted;
+            editor <- initr $ MkObject $ \call -> object $ \muted -> unitStateT $ modifyMVarStateIO var $ do
+            {
+                oldst <- get;
+                let
+                {
+                    muted' = MkMutableEdit
+                    {
+                        mutableRead = mutableRead muted,
+                        mutableEdit = \edits -> do
+                        {
+                            maction <- mutableEdit muted edits;
+                            case maction of
+                            {
+                                Nothing -> return Nothing;
+                                Just action -> return $ Just $ do
+                                {
+                                    action;
+                                    ((),nst) <- runStateT ({- update editor (mutableRead muted) edits-} return ()) oldst;
+                                    return nst;
+                                }
+                            }
+                        }
+                    };
+                };
+                call muted';
+            };
         };
         return (editor,return (),());
     };

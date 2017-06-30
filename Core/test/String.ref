@@ -1,6 +1,9 @@
 main: Init
 main: var: "ABCDE"
 main: Start
+main: push [StringReplaceSection 3+2 "PQR"]
+main: push ignored
+main: var: "ABCDE"
 main: push [StringReplaceSection 1+1 "xy"]
 main: receive 0: [StringReplaceSection 1+1 "xy"]
 main: receive 0: "AxyCDE"
