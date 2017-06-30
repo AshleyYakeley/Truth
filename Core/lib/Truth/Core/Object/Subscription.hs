@@ -136,16 +136,13 @@ module Truth.Core.Object.Subscription
                 };
                 let
                 {
-                    closerC = modifyMVar_ storevar $ \oldstore -> do
+                    closerC = modifyMVarStateIO storevar $ do
                     {
-                        let
-                        {
-                            newstore = deleteWitnessStore key oldstore;
-                        };
+                        deleteWitnessStoreStateT key;
+                        newstore <- get;
                         if isEmptyWitnessStore newstore
-                         then closerP;
+                         then lift closerP;
                          else return ();
-                        return newstore;
                     };
                 };
                 return (editorC,closerC,actions);

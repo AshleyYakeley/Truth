@@ -77,6 +77,9 @@ module Data.WitnessStore where
         return $ addWitnessStore iow fa store;
     };
 
+    deleteWitnessStoreStateT :: Applicative m => WitnessKey w a -> StateT (WitnessStore w f) m ();
+    deleteWitnessStoreStateT key = StateT $ \oldstore -> pure ((),deleteWitnessStore key oldstore);
+
     traverseWitnessStoreStateT :: (Monoid r,Applicative m) => (forall a. WitnessKey w a -> StateT (f a) m r) -> StateT (WitnessStore w f) m r;
     traverseWitnessStoreStateT ff = StateT $ \oldstore -> fmap swap $ runWriterT $ traverseWitnessStore (\key fa -> WriterT $ fmap swap $ runStateT (ff key) fa) oldstore;
 
