@@ -168,7 +168,8 @@ test-suite test
         QuickCheck,
         tasty,
         tasty-hunit,
-        tasty-quickcheck
+        tasty-quickcheck,
+        tasty-golden
     main-is: Main.hs
     other-modules:
         Subscribe

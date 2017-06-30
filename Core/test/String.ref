@@ -1,0 +1,14 @@
+main: Init
+main: var: "ABCDE"
+main: Start
+main: push [StringReplaceSection 1+1 "xy"]
+main: receive 0: [StringReplaceSection 1+1 "xy"]
+main: receive 0: "AxyCDE"
+main: push succeeded -> 1
+main: var: "AxyCDE"
+main: push [StringReplaceSection 2+2 "1"]
+main: receive 1: [StringReplaceSection 2+2 "1"]
+main: receive 1: "Ax1DE"
+main: push succeeded -> 2
+main: var: "Ax1DE"
+main: End

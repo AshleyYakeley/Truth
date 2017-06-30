@@ -10,6 +10,7 @@ module Truth.Core.Object.Editor where
 
     data Editor (edit :: *) actions r = forall editor userstate. MkEditor
     {
+        editorFirst :: userstate,
         editorInit :: Object edit userstate -> IO editor,
         editorUpdate :: forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> [edit] -> StateT userstate m (),
         editorDo :: editor -> actions -> IO r
@@ -17,20 +18,24 @@ module Truth.Core.Object.Editor where
 
     instance Functor (Editor edit actions) where
     {
-        fmap ab (MkEditor ei eu ed) = MkEditor ei eu $ \e a -> fmap ab $ ed e a;
+        fmap ab (MkEditor ef ei eu ed) = MkEditor ef ei eu $ \e a -> fmap ab $ ed e a;
     };
 
     instance Applicative (Editor edit actions) where
     {
         pure a = let
         {
+            editorFirst = ();
             editorInit _ = return ();
             editorUpdate () _ _ = return ();
             editorDo () _ = return a;
         } in MkEditor{..};
 
-        (MkEditor (ei1 :: Object edit userstate1 -> IO editor1) eu1 ed1) <*> (MkEditor (ei2 :: Object edit userstate2 -> IO editor2) eu2 ed2) = let
+        (MkEditor ef1 (ei1 :: Object edit userstate1 -> IO editor1) eu1 ed1) <*> (MkEditor ef2 (ei2 :: Object edit userstate2 -> IO editor2) eu2 ed2) = let
         {
+            editorFirst :: (userstate1,userstate2);
+            editorFirst = (ef1,ef2);
+
             editorInit :: Object edit (userstate1,userstate2) -> IO (editor1,editor2);
             editorInit object = do
             {
@@ -56,9 +61,9 @@ module Truth.Core.Object.Editor where
     subscribeEdit :: Subscription edit actions -> Editor edit actions r -> IO r;
     subscribeEdit subscribe editor = case editor of
     {
-        (MkEditor initr update f) -> do
+        (MkEditor firstSt initr update f) -> do
         {
-            (e, close, actions) <- subscribe (error "uninitialised object (subscribeEdit)") initr update;
+            (e, close, actions) <- subscribe firstSt initr update;
             finally (f e actions) close;
         };
     };
@@ -66,6 +71,8 @@ module Truth.Core.Object.Editor where
     oneTransactionEditor :: forall actions edit r. (forall m. Monad m => MutableEdit m edit () -> m r) -> Editor edit actions r;
     oneTransactionEditor f = let
     {
+        editorFirst = ();
+
         editorInit :: Object edit () -> IO (Object edit ());
         editorInit object = return object;
 

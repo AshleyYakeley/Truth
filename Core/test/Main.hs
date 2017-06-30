@@ -20,18 +20,6 @@ module Main(main) where
         arbitrary = MkSequenceRun <$> arbitrary <*> arbitrary;
     };
 
-    instance Integral (Index seq) => Show (StringRead seq t) where
-    {
-        show StringReadLength = "StringReadLength";
-        show (StringReadSection run) = "StringReadSection " ++ show run;
-    };
-
-    instance (Show seq,Integral (Index seq)) => Show (StringEdit seq) where
-    {
-        show (StringReplaceWhole sq) = "StringReplaceWhole " ++ show sq;
-        show (StringReplaceSection run sq) = "StringReplaceSection " ++ show run ++ " " ++ show sq;
-    };
-
     instance (Arbitrary seq,Arbitrary (Index seq),Integral (Index seq)) => Arbitrary (StringEdit seq) where
     {
         arbitrary = oneof [StringReplaceWhole <$> arbitrary,StringReplaceSection <$> arbitrary <*> arbitrary];
