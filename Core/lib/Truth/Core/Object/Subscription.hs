@@ -56,7 +56,7 @@ module Truth.Core.Object.Subscription
     updateStore :: IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> StateT (UpdateStore edit) m ();
     updateStore mutr edits = runUpdateStore $ \_ ff -> ff mutr edits;
 
-    childMuted :: IsStateIO m => IOWitnessKey userstate -> MutableEdit m edit () -> MutableEdit (StateT (UpdateStore edit) m) edit userstate;
+    childMuted :: IsStateIO m => IOWitnessKey userstate -> MutableEdit m edit (UpdateStore edit) -> MutableEdit (StateT (UpdateStore edit) m) edit userstate;
     childMuted key mutedP = MkMutableEdit
     {
         mutableRead = \rt -> lift $ mutableRead mutedP rt,
@@ -94,23 +94,22 @@ module Truth.Core.Object.Subscription
     shareSubscription :: forall edit actions. Subscription edit actions -> IO (SubscriptionW edit actions);
     shareSubscription parent = do
     {
-        storevar <- newMVar (emptyWitnessStore :: UpdateStore edit);
         let
         {
-            firstP :: ();
-            firstP = ();
+            firstP :: UpdateStore edit;
+            firstP = emptyWitnessStore;
 
-            initP :: Object edit () -> IO (Object edit ());
+            initP :: Object edit (UpdateStore edit) -> IO (Object edit (UpdateStore edit));
             initP objectP = return objectP;
 
-            updateP :: forall m. IsStateIO m => Object edit () -> MutableRead m (EditReader edit) -> [edit] -> StateT () m ();
-            updateP _ mutrP edits = unitStateT $ modifyMVarStateIO storevar $ updateStore mutrP edits;
+            updateP :: forall m. IsStateIO m => Object edit (UpdateStore edit) -> MutableRead m (EditReader edit) -> [edit] -> StateT (UpdateStore edit) m ();
+            updateP _ mutrP edits = updateStore mutrP edits;
         };
         (MkObject objectP,closerP,actions) <- parent firstP initP updateP;
         let
         {
             objectC :: forall userstate. IOWitnessKey userstate -> Object edit userstate;
-            objectC key = MkObject $ \call -> objectP $ \(mutedP :: MutableEdit m edit ()) -> unitStateT $ modifyMVarStateIO storevar $ do
+            objectC key = MkObject $ \call -> objectP $ \(mutedP :: MutableEdit m edit (UpdateStore edit)) -> do
             {
                 oldstore <- get;
                 let
@@ -131,17 +130,17 @@ module Truth.Core.Object.Subscription
             {
                 rec
                 {
-                    key <- modifyMVarStateIO storevar $ addIOWitnessStoreStateT (MkStoreEntry (updateC editorC) firstC);
+                    key <- objectP $ \_ -> remonad liftIO $ addIOWitnessStoreStateT (MkStoreEntry (updateC editorC) firstC);
                     editorC <- initC (objectC key);
                 };
                 let
                 {
-                    closerC = modifyMVarStateIO storevar $ do
+                    closerC = objectP $ \_ -> do
                     {
                         deleteWitnessStoreStateT key;
                         newstore <- get;
                         if isEmptyWitnessStore newstore
-                         then lift closerP;
+                         then liftIO closerP;
                          else return ();
                     };
                 };
@@ -152,15 +151,14 @@ module Truth.Core.Object.Subscription
     };
 
     rawSubscribeObject :: Object edit () -> SubscriptionW edit ();
-    rawSubscribeObject object = MkSubscriptionW $ \firstState initr _update -> do
+    rawSubscribeObject (MkObject object) = MkSubscriptionW $ \firstState initr _update -> do
     {
-        let
+        var <- newMVar firstState;
+        editor <- initr $ MkObject $ \call -> object $ \muted -> unitStateT $ modifyMVarStateIO var $ do
         {
-            lensGet _ = firstState;
-            lensPutback _ _ = Identity ();
-            dubiousLens = MkLens{..};
+            st <- get;
+            call $ fmap (\_ -> st) muted;
         };
-        editor <- initr $ lensObject dubiousLens object;
         return (editor,return (),());
     };
 
