@@ -1,13 +1,20 @@
 main: init: "ABCDE"
 var: "ABCDE"
+main: runObject
 main: push [StringReplaceSection 3+2 "PQR"]
 main: push ignored
 var: "ABCDE"
+main: runObject
+main: push [StringReplaceSection 2+1 ""]
+main: push ignored
+var: "ABCDE"
+main: runObject
 main: push [StringReplaceSection 1+1 "xy"]
 main: receive 0: [StringReplaceSection 1+1 "xy"]
 main: receive 0: "AxyCDE"
 main: push succeeded -> 1
 var: "AxyCDE"
+main: runObject
 main: push [StringReplaceSection 2+2 "1"]
 main: receive 1: [StringReplaceSection 2+2 "1"]
 main: receive 1: "Ax1DE"

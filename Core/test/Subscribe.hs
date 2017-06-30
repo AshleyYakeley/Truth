@@ -2,6 +2,7 @@
 module Subscribe(testSubscribe) where
 {
     import Prelude;
+    import Data.Foldable;
     import System.IO;
     import Control.Concurrent.MVar;
     import Control.Monad.IO.Class;
@@ -55,7 +56,7 @@ module Subscribe(testSubscribe) where
         show (StringReplaceSection run sq) = "StringReplaceSection " ++ show run ++ " " ++ show sq;
     };
 
-    testOutputEditor :: forall edit actions. (Show edit, Show (EditSubject edit), FullReader (EditReader edit)) => String -> Handle -> (actions -> ([edit] -> IO ()) -> ([edit] -> IO ()) -> IO ()) -> Editor edit actions ();
+    testOutputEditor :: forall edit actions. (Show edit, Show (EditSubject edit), FullReader (EditReader edit)) => String -> Handle -> (actions -> ([[edit]] -> IO ()) -> ([[edit]] -> IO ()) -> IO ()) -> Editor edit actions ();
     testOutputEditor name h call = let
     {
         outputLn :: MonadIO m => String -> m ();
@@ -85,10 +86,11 @@ module Subscribe(testSubscribe) where
         editorDo :: Object edit Int -> actions -> IO ();
         editorDo obj actions = let
         {
-            dontEdits :: [edit] -> IO ();
-            dontEdits edits = do
+            dontEdits :: [[edit]] -> IO ();
+            dontEdits editss = do
             {
-                runObject obj $ \muted -> do
+                outputLn "runObject";
+                runObject obj $ \muted -> for_ editss $ \edits -> do
                 {
                     outputLn $ "push " ++ show edits;
                     maction <- lift $ mutableEdit muted edits;
@@ -100,10 +102,11 @@ module Subscribe(testSubscribe) where
                 };
             };
 
-            doEdits :: [edit] -> IO ();
-            doEdits edits = do
+            doEdits :: [[edit]] -> IO ();
+            doEdits editss = do
             {
-                runObject obj $ \muted -> do
+                outputLn "runObject";
+                runObject obj $ \muted -> for_ editss $ \edits -> do
                 {
                     outputLn $ "push " ++ show edits;
                     maction <- lift $ mutableEdit muted edits;
@@ -141,11 +144,65 @@ module Subscribe(testSubscribe) where
         subscribeEditor textSub $ testOutputEditor "main" h $ \_actions doEdits dontEdits -> do
         {
             showVar;
-            dontEdits [StringReplaceSection (startEndRun 3 5) "PQR"];
+            dontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]];
             showVar;
-            doEdits [StringReplaceSection (startEndRun 1 2) "xy"];
+            dontEdits [[StringReplaceSection (startEndRun 2 3) ""]];
             showVar;
-            doEdits [StringReplaceSection (startEndRun 2 4) "1"];
+            doEdits [[StringReplaceSection (startEndRun 1 2) "xy"]];
+            showVar;
+            doEdits [[StringReplaceSection (startEndRun 2 4) "1"]];
+            showVar;
+        };
+    };
+
+    testString1 :: TestTree;
+    testString1 = goldenTest' "String1" $ \h -> do
+    {
+        var <- newMVar "ABCDE";
+        let
+        {
+            showVar :: IO ();
+            showVar = withMVar var $ \s -> hPutStrLn h $ "var: " ++ show s;
+
+            varObj :: Object (WholeEdit String) ();
+            varObj = mvarObject var $ \_ -> True;
+
+            textObj :: Object (StringEdit String) ();
+            textObj = convertObject varObj;
+        };
+        MkSubscriptionW textSub <- makeObjectSubscriber textObj;
+        subscribeEditor textSub $ testOutputEditor "main" h $ \_actions doEdits dontEdits -> do
+        {
+            showVar;
+            dontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"],[StringReplaceSection (startEndRun 2 3) ""]];
+            showVar;
+            doEdits [[StringReplaceSection (startEndRun 1 2) "xy"],[StringReplaceSection (startEndRun 2 4) "1"]];
+            showVar;
+        };
+    };
+
+    testString2 :: TestTree;
+    testString2 = goldenTest' "String2" $ \h -> do
+    {
+        var <- newMVar "ABCDE";
+        let
+        {
+            showVar :: IO ();
+            showVar = withMVar var $ \s -> hPutStrLn h $ "var: " ++ show s;
+
+            varObj :: Object (WholeEdit String) ();
+            varObj = mvarObject var $ \_ -> True;
+
+            textObj :: Object (StringEdit String) ();
+            textObj = convertObject varObj;
+        };
+        MkSubscriptionW textSub <- makeObjectSubscriber textObj;
+        subscribeEditor textSub $ testOutputEditor "main" h $ \_actions doEdits dontEdits -> do
+        {
+            showVar;
+            dontEdits [[StringReplaceSection (startEndRun 3 5) "PQR",StringReplaceSection (startEndRun 2 3) ""]];
+            showVar;
+            doEdits [[StringReplaceSection (startEndRun 1 2) "xy",StringReplaceSection (startEndRun 2 4) "1"]];
             showVar;
         };
     };
@@ -173,11 +230,11 @@ module Subscribe(testSubscribe) where
         subscribeEditor (mapSubscription testLens textSub) $ testOutputEditor "lens" h $ \_ _lensDoEdits _lensDontEdits -> do
         {
             showVar;
-            mainDontEdits [StringReplaceSection (startEndRun 3 5) "PQR"];
+            mainDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]];
             showVar;
-            mainDoEdits [StringReplaceSection (startEndRun 1 2) "xy"];
+            mainDoEdits [[StringReplaceSection (startEndRun 1 2) "xy"]];
             showVar;
-            mainDoEdits [StringReplaceSection (startEndRun 2 4) "1"];
+            mainDoEdits [[StringReplaceSection (startEndRun 2 4) "1"]];
             showVar;
         };
     };
@@ -187,6 +244,8 @@ module Subscribe(testSubscribe) where
     [
         testSavable,
         testString,
+        testString1,
+        testString2,
         testSharedString
     ];
 }
