@@ -6,46 +6,41 @@ module Truth.Core.Object.MutableEdit where
     import Truth.Core.Types.Pair;
 
 
-    data MutableEdit m edit userstate = MkMutableEdit
+    data MutableEdit m edit = MkMutableEdit
     {
         mutableRead :: MutableRead m (EditReader edit),
-        mutableEdit :: [edit] -> m (Maybe (m userstate))
+        mutableEdit :: [edit] -> m (Maybe (m ()))
     };
 
-    mutableReadEdit :: Monad m => MutableEdit m edit userstate -> Readable (EditReader edit) [edit] -> m (Maybe (m userstate));
+    mutableReadEdit :: Monad m => MutableEdit m edit -> Readable (EditReader edit) [edit] -> m (Maybe (m ()));
     mutableReadEdit MkMutableEdit{..}  MkReadable{..} = do
     {
         edits <- unReadable mutableRead;
         mutableEdit edits;
     };
 
-    mutableAllowed :: Functor m => MutableEdit m edit userstate -> edit -> m Bool;
+    mutableAllowed :: Functor m => MutableEdit m edit -> edit -> m Bool;
     mutableAllowed me edit = mutableAlloweds me [edit];
 
-    mutableAlloweds :: Functor m => MutableEdit m edit userstate -> [edit] -> m Bool;
+    mutableAlloweds :: Functor m => MutableEdit m edit -> [edit] -> m Bool;
     mutableAlloweds me edits = fmap isJust $ mutableEdit me edits;
 
     singleMutableEdit :: Applicative m => (edit -> m ()) -> [edit] -> m (Maybe (m ()));
     singleMutableEdit mutableEdit' edits = pure $ Just $ for_ edits mutableEdit';
 
-    instance Functor m => Functor (MutableEdit m edit) where
-    {
-        fmap ab (MkMutableEdit r e) = MkMutableEdit r $ fmap (fmap (fmap (fmap ab))) e;
-    };
-
-    remonadMutableEdit :: Functor m1 => (forall a. m1 a -> m2 a) -> MutableEdit m1 edit userstate -> MutableEdit m2 edit userstate;
+    remonadMutableEdit :: Functor m1 => (forall a. m1 a -> m2 a) -> MutableEdit m1 edit -> MutableEdit m2 edit;
     remonadMutableEdit mf (MkMutableEdit r e) = MkMutableEdit (fmap mf r) (fmap (mf . (fmap (fmap mf))) e);
 
-    liftMutableEdit :: (MonadTrans t,Monad m) => MutableEdit m edit userstate -> MutableEdit (t m) edit userstate;
+    liftMutableEdit :: (MonadTrans t,Monad m) => MutableEdit m edit -> MutableEdit (t m) edit;
     liftMutableEdit = remonadMutableEdit lift;
 
-    pairMutableEdit :: Applicative m => MutableEdit m ea ua -> MutableEdit m eb ub -> MutableEdit m (PairEdit ea eb) (ua,ub);
+    pairMutableEdit :: Applicative m => MutableEdit m ea -> MutableEdit m eb -> MutableEdit m (PairEdit ea eb);
     pairMutableEdit mea meb = MkMutableEdit
     {
         mutableRead = pairMutableRead (mutableRead mea) (mutableRead meb),
         mutableEdit = \edits -> let
         {
             (eas,ebs) = partitionPairEdits edits;
-        } in liftA2 (liftA2 (liftA2 (,))) (mutableEdit mea eas) (mutableEdit meb ebs)
+        } in liftA2 (liftA2 (liftA2 mappend)) (mutableEdit mea eas) (mutableEdit meb ebs)
     };
 }

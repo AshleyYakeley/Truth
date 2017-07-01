@@ -25,7 +25,7 @@ module Subscribe(testSubscribe) where
     testEditor = let
     {
         editorFirst = ();
-        editorInit (MkObject object) = object $ \muted -> lift $ mutableRead muted ReadWhole;
+        editorInit (MkObject object) = object $ \muted _acc -> mutableRead muted ReadWhole;
         editorUpdate _ _ _ = return ();
         editorDo editor _ = return editor;
     } in MkEditor{..};
@@ -68,7 +68,7 @@ module Subscribe(testSubscribe) where
         editorInit :: Object edit Int -> IO (Object edit Int);
         editorInit object = do
         {
-            val <- runObject object $ \muted -> lift $ unReadable fromReader $ mutableRead muted;
+            val <- runObject object $ \muted _acc -> unReadable fromReader $ mutableRead muted;
             outputLn $ "init: " ++ show val;
             return object;
         };
@@ -90,10 +90,10 @@ module Subscribe(testSubscribe) where
             dontEdits editss = do
             {
                 outputLn "runObject";
-                runObject obj $ \muted -> for_ editss $ \edits -> do
+                runObject obj $ \muted _acc -> for_ editss $ \edits -> do
                 {
                     outputLn $ "push " ++ show edits;
-                    maction <- lift $ mutableEdit muted edits;
+                    maction <- mutableEdit muted edits;
                     case maction of
                     {
                         Nothing -> outputLn "push disallowed";
@@ -106,18 +106,18 @@ module Subscribe(testSubscribe) where
             doEdits editss = do
             {
                 outputLn "runObject";
-                runObject obj $ \muted -> for_ editss $ \edits -> do
+                runObject obj $ \muted acc -> for_ editss $ \edits -> do
                 {
                     outputLn $ "push " ++ show edits;
-                    maction <- lift $ mutableEdit muted edits;
+                    maction <- mutableEdit muted edits;
                     case maction of
                     {
                         Nothing -> outputLn "push disallowed";
                         Just action -> do
                         {
-                            n <- lift action;
+                            action;
+                            n <- acc get;
                             outputLn $ "push succeeded -> " ++ show n;
-                            put n;
                         };
                     }
                 };

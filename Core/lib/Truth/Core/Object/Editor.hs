@@ -68,7 +68,7 @@ module Truth.Core.Object.Editor where
         };
     };
 
-    oneTransactionEditor :: forall actions edit r. (forall m. Monad m => MutableEdit m edit () -> m r) -> Editor edit actions r;
+    oneTransactionEditor :: forall actions edit r. (forall m. Monad m => MutableEdit m edit -> m r) -> Editor edit actions r;
     oneTransactionEditor f = let
     {
         editorFirst = ();
@@ -77,7 +77,7 @@ module Truth.Core.Object.Editor where
         editorInit object = return object;
 
         editorUpdate _lapiw _mr _edits = return ();
-        editorDo (MkObject object) _ = object $ \muted -> lift $ f muted;
+        editorDo (MkObject object) _ = object $ \muted _acc -> f muted;
     } in MkEditor{..};
 
     readEditor :: FullReader (EditReader edit) => Editor edit actions (EditSubject edit);

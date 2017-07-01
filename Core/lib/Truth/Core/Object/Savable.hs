@@ -15,7 +15,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscription) where
         _saveBufferChanged :: Bool
     };
 
-    saveBufferMutableEdit :: forall m a. Monad m => MutableEdit (StateT (SaveBuffer a) m) (WholeEdit a) ();
+    saveBufferMutableEdit :: forall m a. Monad m => MutableEdit (StateT (SaveBuffer a) m) (WholeEdit a);
     saveBufferMutableEdit = let
     {
         mutableRead :: MutableRead (StateT (SaveBuffer a) m) (WholeReader a);
@@ -36,52 +36,48 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscription) where
         initA :: Object (WholeEdit a) (stateB,SaveBuffer a) -> IO (editorB,SaveActions);
         initA (MkObject objA) = do
         {
-            objA $ \muted -> do
+            objA $ \muted acc -> do
             {
-                buf <- lift $ mutableRead muted ReadWhole;
-                stateSnd $ put $ MkSaveBuffer buf False;
+                buf <- mutableRead muted ReadWhole;
+                acc $ stateSnd $ put $ MkSaveBuffer buf False;
             };
             let
             {
                 objB :: Object (WholeEdit a) stateB;
-                objB = MkObject $ \call -> objA $ \_mutedA -> do
-                {
-                    st <- get;
-                    joinStateT $ call $ fmap (\() -> fst st) saveBufferMutableEdit;
-                };
+                objB = MkObject $ \call -> objA $ \_mutedA accA -> lensStateTAccess sndLens accA $ call saveBufferMutableEdit $ liftStateTAccess $ lensStateTAccess fstLens accA;
             };
             edB <- initB objB;
             let
             {
                 saveAction :: IO Bool;
-                saveAction = objA $ \muted -> do
+                saveAction = objA $ \muted acc -> do
                 {
-                    (_oldstateB,MkSaveBuffer buf _) <- get;
-                    maction <- lift $ mutableEdit muted [MkWholeEdit buf];
+                    (_oldstateB,MkSaveBuffer buf _) <- acc get;
+                    maction <- mutableEdit muted [MkWholeEdit buf];
                     case maction of
                     {
                         Nothing -> return False;
                         Just action -> do
                         {
-                            _ <- lift action;
+                            action;
                             return True;
                         }
                     }
                 };
 
                 revertAction :: IO Bool;
-                revertAction = objA $ \muted -> do
+                revertAction = objA $ \muted acc -> do
                 {
 
-                    buf <- lift $ mutableRead muted ReadWhole;
-                    stateFst $ receiveB edB (\ReadWhole -> return buf) [MkWholeEdit buf];
+                    buf <- mutableRead muted ReadWhole;
+                    acc $ stateFst $ receiveB edB (\ReadWhole -> return buf) [MkWholeEdit buf];
                     return False; -- MkSaveBuffer buffer False
                 };
 
                 saveActions :: SaveActions;
-                saveActions = MkSaveActions $ objA $ \_ -> do
+                saveActions = MkSaveActions $ objA $ \_ acc -> do
                 {
-                    (_,MkSaveBuffer _ changed) <- get;
+                    (_,MkSaveBuffer _ changed) <- acc get;
                     return $ if changed then Just (saveAction,revertAction) else Nothing;
                 };
 

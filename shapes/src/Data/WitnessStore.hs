@@ -90,6 +90,17 @@ module Data.WitnessStore where
         Nothing -> pure mempty;
     };
 
+    replaceOneWitnessStoreStateT :: (TestEquality w,Monad m) => WitnessKey w a -> StateT (f a) m r -> StateT (WitnessStore w f) m r;
+    replaceOneWitnessStoreStateT key call = do
+    {
+        rr <- replaceWitnessStoreStateT key $ fmap pure call;
+        case rr of
+        {
+            [r] -> return r;
+            _ -> fail "missing or duplicate entry in WitnessStore";
+        };
+    };
+
     addIOWitnessStoreStateT :: f a -> StateT (IOWitnessStore f) IO (IOWitnessKey a);
     addIOWitnessStoreStateT fa = StateT $ addIOWitnessStore fa;
 }

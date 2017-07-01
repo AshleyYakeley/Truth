@@ -5,7 +5,9 @@ module Control.Monad.Trans.State.Extra
 ) where
 {
     import Data.Functor.Identity;
+    import Control.Monad.Trans.Class;
     import Control.Monad.Trans.State;
+    import Control.Monad.Tunnel;
     import Data.Lens;
 
 
@@ -53,4 +55,22 @@ module Control.Monad.Trans.State.Extra
 
     traverseStateT :: (Traversable f,Applicative m) => StateT s m a -> StateT (f s) m (f a);
     traverseStateT (StateT smas) = StateT $ \oldfs -> fmap (\fas -> (fmap fst fas,fmap snd fas)) $ traverse smas oldfs;
+
+
+    type StateTAccess m s = forall r. StateT s m r -> m r;
+
+    unitStateTAccess :: Functor m => StateTAccess m ();
+    unitStateTAccess = runUnitStateT;
+
+    liftStateTAccess :: Functor m => StateTAccess m s -> StateTAccess (StateT s1 m) s;
+    liftStateTAccess acc str = tunnel $ \unlift -> acc $ unlift $ swapStateT str;
+
+    lensStateTAccess :: Functor m => Lens' Identity whole part -> StateTAccess m whole -> StateTAccess m part;
+    lensStateTAccess lens sta st = sta $ lensStateT lens st;
+
+    pairStateTAccess :: Functor m => StateTAccess m sa -> StateTAccess m sb -> StateTAccess m (sa,sb);
+    pairStateTAccess rsam rsbm sabr = rsam $ StateT $ \oldsa -> rsbm $ StateT $ \oldsb -> fmap swap3 $ runStateT sabr (oldsa,oldsb);
+
+    splitStateTAccess :: Monad m => StateTAccess m (s1,s2) -> StateTAccess (StateT s2 m) s1;
+    splitStateTAccess acc str = lift $ acc $ joinStateT str;
 }

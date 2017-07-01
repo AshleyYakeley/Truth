@@ -9,7 +9,7 @@ module Truth.Core.Object.File where
 
 
     fileObject :: FilePath -> Object ByteStringEdit ();
-    fileObject path = MkObject $ \ff -> do
+    fileObject path = MkObject $ \call -> do
     {
         h <- openBinaryFile path ReadWriteMode;
         let
@@ -34,7 +34,7 @@ module Truth.Core.Object.File where
 
             mutableEdit = singleMutableEdit mutableEdit';
         };
-        r <- runUnitStateT $ ff MkMutableEdit{..};
+        r <- call MkMutableEdit{..} unitStateTAccess;
         hClose h;
         return r;
     };

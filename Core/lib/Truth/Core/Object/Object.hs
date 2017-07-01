@@ -8,38 +8,33 @@ module Truth.Core.Object.Object where
     import Truth.Core.Object.MutableEdit;
 
 
-    newtype Object edit userstate = MkObject {runObject :: forall r. (forall m. IsStateIO m => MutableEdit m edit userstate -> StateT userstate m r) -> IO r};
+    newtype Object edit userstate = MkObject {runObject :: forall r. (forall m. IsStateIO m => MutableEdit m edit -> StateTAccess m userstate -> m r) -> IO r};
 
     lensObject :: Lens' Identity whole part -> Object edit whole -> Object edit part;
-    lensObject lens (MkObject object) = MkObject $ \call -> object $ \muted -> lensStateT lens $ call $ fmap (lensGet lens) muted;
+    lensObject lens (MkObject object) = MkObject $ \call -> object $ \muted sacc -> call muted $ lensStateTAccess lens sacc;
 
-    nonlockingObject :: userstate -> MutableEdit IO edit userstate -> Object edit userstate;
-    nonlockingObject userstate muted = MkObject $ \ff -> evalStateT (ff muted) userstate;
+    nonlockingObject :: MutableEdit IO edit -> Object edit ();
+    nonlockingObject muted = MkObject $ \call -> call muted unitStateTAccess;
 
     isoObjectState :: (s1 -> s2,s2 -> s1) -> Object edit s1 -> Object edit s2;
-    isoObjectState (s1s2,s2s1) (MkObject object) = MkObject $ \call -> object $ \muted -> isoStateT (s2s1,s1s2) $ call $ fmap s1s2 muted;
+    isoObjectState (s1s2,s2s1) = lensObject $ MkLens s1s2 $ \s2 _ -> Identity $ s2s1 s2;
 
     mvarObject :: forall a. MVar a -> (a -> Bool) -> Object (WholeEdit a) ();
-    mvarObject var allowed = MkObject $ \call -> modifyMVar var $ \olda -> do
+    mvarObject var allowed = MkObject $ \call -> modifyMVarStateIO var $ let
     {
-        let
+        muted :: MutableEdit (StateT a IO) (WholeEdit a);
+        muted = let
         {
-            muted :: MutableEdit (StateT a IO) (WholeEdit a) ();
-            muted = let
-            {
-                mutableRead :: MutableRead (StateT a IO) (WholeReader a);
-                mutableRead ReadWhole = get;
+            mutableRead :: MutableRead (StateT a IO) (WholeReader a);
+            mutableRead ReadWhole = get;
 
-                mutableEdit edits = do
-                {
-                    na <- fromReadFunctionM (applyEdits edits) get;
-                    return $ if allowed na then Just $ put na else Nothing;
-                };
-            } in MkMutableEdit{..};
-        };
-        (r,newa) <- runStateT (runUnitStateT (call muted)) olda;
-        return (newa,r);
-    };
+            mutableEdit edits = do
+            {
+                na <- fromReadFunctionM (applyEdits edits) get;
+                return $ if allowed na then Just $ put na else Nothing;
+            };
+        } in MkMutableEdit{..};
+    } in call muted unitStateTAccess;
 
     freeIOObject :: forall a. a -> (a -> Bool) -> IO (Object (WholeEdit a) ());
     freeIOObject firsta allowed = do
@@ -49,15 +44,15 @@ module Truth.Core.Object.Object where
     };
 
     floatingMapObject :: forall f lensstate edita editb userstate. MonadOne f => FloatingEditLens' f lensstate edita editb -> Object edita (userstate,lensstate) -> Object editb userstate;
-    floatingMapObject lens@MkFloatingEditLens{..} (MkObject objectA) = MkObject $ \(callB :: forall m. IsStateIO m => MutableEdit m editb userstate -> StateT userstate m r) -> let
+    floatingMapObject lens@MkFloatingEditLens{..} (MkObject objectA) = MkObject $ \(callB :: forall m. IsStateIO m => MutableEdit m editb -> StateTAccess m userstate -> m r) -> let
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
 
-        callA :: forall m. IsStateIO m => MutableEdit m edita (userstate,lensstate) -> StateT (userstate,lensstate) m r;
-        callA (mutedA :: MutableEdit m edita (userstate,lensstate)) = let
+        callA :: forall m. IsStateIO m => MutableEdit m edita -> StateTAccess m (userstate,lensstate) -> m r;
+        callA (mutedA :: MutableEdit m edita) accA = let
         {
             readA :: MutableRead m (EditReader edita);
-            pushEditA :: [edita] -> m (Maybe (m (userstate,lensstate)));
+            pushEditA :: [edita] -> m (Maybe (m ()));
             MkMutableEdit readA pushEditA = mutedA;
 
             readB :: MutableRead (StateT lensstate m) (EditReader editb);
@@ -83,7 +78,7 @@ module Truth.Core.Object.Object where
                 };
             };
 
-            pushEditB :: [editb] -> (StateT lensstate m) (Maybe (StateT lensstate m userstate));
+            pushEditB :: [editb] -> (StateT lensstate m) (Maybe (StateT lensstate m ()));
             pushEditB editB = do
             {
                 meditA <- convertEdit editB;
@@ -93,15 +88,23 @@ module Truth.Core.Object.Object where
                     Just editAs -> do
                     {
                         mstates <- lift $ pushEditA editAs;
-                        return $ fmap (lift . fmap fst) mstates;
+                        return $ fmap lift mstates;
                     };
                 };
             };
 
-            apiB :: MutableEdit (StateT lensstate m) editb userstate;
+            apiB :: MutableEdit (StateT lensstate m) editb;
             apiB = MkMutableEdit readB pushEditB;
+
+            accB :: StateTAccess (StateT lensstate m) userstate;
+            accB = splitStateTAccess accA;
         }
-        in joinStateT $ remonad revertStateT $ callB apiB; -- revert the new lens state: all these lens changes will be replayed by the update
+        in do
+        {
+            (_,oldstate) <- accA get;
+            (r,_newstate) <- runStateT (callB apiB accB) oldstate; -- ignore the new lens state: all these lens changes will be replayed by the update
+            return r;
+        };
     } in objectA callA;
 
     fixedMapObject :: forall f edita editb userstate. MonadOne f => EditLens' f edita editb -> Object edita userstate -> Object editb userstate;
@@ -111,9 +114,9 @@ module Truth.Core.Object.Object where
     convertObject = fixedMapObject @Identity convertEditLens;
 
     cacheObject :: Eq t => Object (WholeEdit t) () -> Object (WholeEdit t) ();
-    cacheObject (MkObject obj) = MkObject $ \call -> obj $ \muted -> do
+    cacheObject (MkObject obj) = MkObject $ \call -> obj $ \muted acc -> do
     {
-        oldval <- lift $ mutableRead muted ReadWhole;
+        oldval <- mutableRead muted ReadWhole;
         let
         {
             muted' = MkMutableEdit
@@ -122,27 +125,35 @@ module Truth.Core.Object.Object where
                 mutableEdit = singleMutableEdit $ \(MkWholeEdit t) -> put t
             };
         };
-        (r,newval) <- runStateT (swapStateT $ call $ muted') oldval;
+        (r,newval) <- runStateT (call muted' $ liftStateTAccess acc) oldval;
         if oldval == newval then return () else do
         {
-            maction <- lift $ mutableEdit muted $ [MkWholeEdit newval];
+            maction <- mutableEdit muted $ [MkWholeEdit newval];
             case maction of
             {
-                Just action -> lift action;
+                Just action -> action;
                 Nothing -> fail "disallowed cached edit";
             };
         };
         return r;
     };
 
-    map4 :: ((a,p),(b,q)) -> ((a,b),(p,q));
-    map4 ((a,p),(b,q)) = ((a,b),(p,q));
-
     pairObject :: Object ea ua -> Object eb ub -> Object (PairEdit ea eb) (ua,ub);
     pairObject (MkObject objectA) (MkObject objectB) = MkObject $ \call ->
-        objectA $ \mutedA -> mkStateIO $ \oldsA ->
-        objectB $ \mutedB -> mkStateIO $ \oldsB ->
+        objectA $ \mutedA accA -> mkStateIO $ \oldsA ->
+        objectB $ \mutedB accB -> mkStateIO $ \oldsB ->
         fmap swap3 $ runStateT
-        (isoStateT (map4,map4) $ joinStateT $ call $ pairMutableEdit (remonadMutableEdit (stateFst . fromStateIO) mutedA) (remonadMutableEdit (stateSnd . fromStateIO) mutedB))
+        (let
+        {
+            mutedA' = remonadMutableEdit (stateFst . fromStateIO) mutedA;
+            mutedB' = remonadMutableEdit (stateSnd . fromStateIO) mutedB;
+            mutedAB = pairMutableEdit mutedA' mutedB';
+
+            remonadA :: forall m ss s. IsStateIO m => StateTAccess m s -> StateTAccess (StateT (IOState m,ss) IO) s;
+            remonadA sta st = joinStateT $ swapStateT $ remonad (fromStateIO . sta . remonad toStateIO) $ swapStateT $ remonad (swapStateT . splitStateT) st;
+
+            remonadB :: forall m ss s. IsStateIO m => StateTAccess m s -> StateTAccess (StateT (ss,IOState m) IO) s;
+            remonadB sta st = joinStateT $ remonad (fromStateIO . sta . remonad toStateIO) $ swapStateT $ remonad splitStateT st;
+        } in call mutedAB $ pairStateTAccess (remonadA accA) (remonadB accB))
         (oldsA,oldsB);
 }

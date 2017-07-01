@@ -3,7 +3,6 @@ module Truth.UI.GTK.Text (textMatchView) where
 {
     import Data.Foldable;
     import Control.Concurrent.MVar;
-    import Control.Monad.Trans.Class;
     import Control.Monad.Trans.State;
     import Control.Monad.IO.Class;
     import Graphics.UI.Gtk;
@@ -50,28 +49,28 @@ module Truth.UI.GTK.Text (textMatchView) where
     textView = MkView $ \(MkObject object) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
-        initial <- object $ \muted -> lift $ unReadable fromReader $ mutableRead muted;
+        initial <- object $ \muted _acc -> unReadable fromReader $ mutableRead muted;
         textBufferSetText buffer initial;
         mv <- newMVar ();
 
-        _ <- onBufferInsertText buffer $ \iter text -> ifMVar mv $ object $ \muted -> do
+        _ <- onBufferInsertText buffer $ \iter text -> ifMVar mv $ object $ \muted _acc -> do
         {
             p <- getSequencePoint iter;
-            maction <- lift $ mutableEdit muted $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
+            maction <- mutableEdit muted $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
             case maction of
             {
-                Just action -> lift action;
+                Just action -> action;
                 _ -> liftIO $ signalStopEmission buffer "insert-text";
             };
         };
 
-        _ <- onDeleteRange buffer $ \iter1 iter2 -> ifMVar mv $ object $ \muted -> do
+        _ <- onDeleteRange buffer $ \iter1 iter2 -> ifMVar mv $ object $ \muted _acc -> do
         {
             run <- getSequenceRun iter1 iter2;
-            maction <- lift $ mutableEdit muted $ pure $ StringReplaceSection run "";
+            maction <- mutableEdit muted $ pure $ StringReplaceSection run "";
             case maction of
             {
-                Just action -> lift action;
+                Just action -> action;
                 _ -> liftIO $ signalStopEmission buffer "delete-range";
             };
         };

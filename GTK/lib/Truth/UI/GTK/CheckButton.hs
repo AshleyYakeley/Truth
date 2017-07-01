@@ -3,7 +3,6 @@ module Truth.UI.GTK.CheckButton where
 {
     import Data.Type.Equality;
     import Data.Empty;
-    import Control.Monad.Trans.Class;
     import Control.Monad.Trans.State hiding (get);
     import Graphics.UI.Gtk;
     import Control.Monad.IsStateIO;
@@ -17,12 +16,12 @@ module Truth.UI.GTK.CheckButton where
     checkButtonView name = MkView $ \(MkObject object) _setSelect -> do
     {
         widget <- checkButtonNew;
-        initial <- object $ \muted -> lift $ unReadable fromReader $ mutableRead muted;
+        initial <- object $ \muted _acc -> unReadable fromReader $ mutableRead muted;
         set widget [buttonLabel := name,toggleButtonActive := initial];
-        clickConnection <- onClicked widget $ object $ \muted -> do
+        clickConnection <- onClicked widget $ object $ \muted _acc -> do
         {
             s <- liftIO $ get widget toggleButtonActive;
-            _ <- lift $ mutableEdit muted $ getReplaceEdits s;
+            _ <- mutableEdit muted $ getReplaceEdits s;
             return ();
         };
 

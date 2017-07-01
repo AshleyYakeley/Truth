@@ -128,7 +128,6 @@ module Truth.UI.GTK.Window where
             tellclose;
         });
         widgetShowAll window;
-        return ();
     };
 
     makeWindowCountRef :: (Edit edit,WindowButtons actions) => Info edit -> IORef Int -> Subscriber edit actions -> IO ();
@@ -144,6 +143,5 @@ module Truth.UI.GTK.Window where
         }) sub;
         i <- readIORef windowCount;
         writeIORef windowCount (i + 1);
-        return ();
     };
 }

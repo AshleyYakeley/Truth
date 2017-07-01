@@ -101,7 +101,7 @@ module Truth.Core.Object.View where
                 setSelect1 ss = setSelect $ Left ss;
                 setSelect2 ss = setSelect $ Right ss;
             };
-            (MkViewResult w1 (fus1 :: updatestate1)  update1 mfss1 getsel1) <- view1 object1 setSelect1;
+            (MkViewResult w1 (fus1 :: updatestate1) update1 mfss1 getsel1) <- view1 object1 setSelect1;
             (MkViewResult w2 (fus2 :: updatestate2) update2 mfss2 getsel2) <- view2 object2 setSelect2;
             let
             {
@@ -159,7 +159,7 @@ module Truth.Core.Object.View where
                     vr <- view object setSelect;
                     selref <- newIORef $ vrFirstSelState vr;
                 };
-                runObject object $ \_ -> put $ vrFirstUpdateState vr;
+                runObject object $ \_ acc -> acc $ put $ vrFirstUpdateState vr;
                 return (vr,selref);
             };
             receive (vr,_) = vrUpdate vr;
