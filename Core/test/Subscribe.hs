@@ -34,11 +34,11 @@ module Subscribe(testSubscribe) where
     testSavable = testCase "Savable" $ do
     {
         object <- freeIOObject False (\_ -> True);
-        MkSubscriptionW sub <- makeObjectSubscriber object;
+        MkSubscriberW sub <- makeObjectSubscriber object;
         let
         {
-            saveSub = MkSubscriptionW $ saveBufferSubscription sub;
-            MkSubscriptionW cleanSaveSub = fmap fst saveSub;
+            saveSub = MkSubscriberW $ saveBufferSubscriber sub;
+            MkSubscriberW cleanSaveSub = fmap fst saveSub;
         };
         found <- subscribeEditor cleanSaveSub testEditor;
         assertEqual "value" False found;
@@ -140,7 +140,7 @@ module Subscribe(testSubscribe) where
             textObj :: Object (StringEdit String) ();
             textObj = convertObject varObj;
         };
-        MkSubscriptionW textSub <- makeObjectSubscriber textObj;
+        MkSubscriberW textSub <- makeObjectSubscriber textObj;
         subscribeEditor textSub $ testOutputEditor "main" h $ \_actions doEdits dontEdits -> do
         {
             showVar;
@@ -170,7 +170,7 @@ module Subscribe(testSubscribe) where
             textObj :: Object (StringEdit String) ();
             textObj = convertObject varObj;
         };
-        MkSubscriptionW textSub <- makeObjectSubscriber textObj;
+        MkSubscriberW textSub <- makeObjectSubscriber textObj;
         subscribeEditor textSub $ testOutputEditor "main" h $ \_actions doEdits dontEdits -> do
         {
             showVar;
@@ -199,7 +199,7 @@ module Subscribe(testSubscribe) where
             textObj :: Object (StringEdit String) ();
             textObj = convertObject varObj;
         };
-        MkSubscriptionW textSub <- makeObjectSubscriber textObj;
+        MkSubscriberW textSub <- makeObjectSubscriber textObj;
         subscribeEditor textSub $ testOutputEditor "main" h $ \_actions doEdits dontEdits -> do
         {
             showVar;
@@ -229,9 +229,9 @@ module Subscribe(testSubscribe) where
             testLens :: GeneralLens' Maybe (StringEdit String) (StringEdit String);
             testLens = toGeneralLens' $ stringSectionLens (startEndRun 1 4);
         };
-        MkSubscriptionW textSub <- makeObjectSubscriber textObj;
+        MkSubscriberW textSub <- makeObjectSubscriber textObj;
         subscribeEditor textSub $ testOutputEditor "main" h $ \_ mainDoEdits mainDontEdits ->
-        subscribeEditor (mapSubscription testLens textSub) $ testOutputEditor "lens" h $ \_ _lensDoEdits _lensDontEdits -> do
+        subscribeEditor (mapSubscriber testLens textSub) $ testOutputEditor "lens" h $ \_ _lensDoEdits _lensDontEdits -> do
         {
             showVar;
             mainDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]];

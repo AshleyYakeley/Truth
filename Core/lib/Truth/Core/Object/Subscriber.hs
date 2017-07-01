@@ -1,6 +1,6 @@
 module Truth.Core.Object.Subscriber
 (
-    Subscriber,SubscriptionW(..),makeObjectSubscriber,
+    Subscriber,SubscriberW(..),makeObjectSubscriber,
     liftIO,
     objectSubscriber,makeSharedSubscriber,
 ) where
@@ -18,11 +18,11 @@ module Truth.Core.Object.Subscriber
         (forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> [edit] -> StateT userstate m ()) -> -- receive: get updates (both others and from your mutableEdit calls)
         IO (editor,IO (),actions);
 
-    newtype SubscriptionW edit a = MkSubscriptionW (Subscriber edit a);
+    newtype SubscriberW edit a = MkSubscriberW (Subscriber edit a);
 
-    instance Functor (SubscriptionW edit) where
+    instance Functor (SubscriberW edit) where
     {
-        fmap ab (MkSubscriptionW sub) = MkSubscriptionW $ \fs initialise receive -> do
+        fmap ab (MkSubscriberW sub) = MkSubscriberW $ \fs initialise receive -> do
         {
             (editor,cl,a) <- sub fs initialise receive;
             return (editor,cl,ab a);
@@ -57,7 +57,7 @@ module Truth.Core.Object.Subscriber
     updateStore :: IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> StateT (UpdateStore edit) m ();
     updateStore mutr edits = runUpdateStore $ \_ ff -> ff mutr edits;
 
-    makeSharedSubscriber :: forall edit actions. Subscriber edit actions -> IO (SubscriptionW edit actions);
+    makeSharedSubscriber :: forall edit actions. Subscriber edit actions -> IO (SubscriberW edit actions);
     makeSharedSubscriber parent = do
     {
         let
@@ -103,11 +103,11 @@ module Truth.Core.Object.Subscriber
                 return (editorC,closerC,actions);
             };
         };
-        return $ MkSubscriptionW child;
+        return $ MkSubscriberW child;
     };
 
-    objectSubscriber :: Object edit () -> SubscriptionW edit ();
-    objectSubscriber (MkObject object) = MkSubscriptionW $ \firstState initr update -> do
+    objectSubscriber :: Object edit () -> SubscriberW edit ();
+    objectSubscriber (MkObject object) = MkSubscriberW $ \firstState initr update -> do
     {
         var <- newMVar firstState;
         rec
@@ -136,9 +136,9 @@ module Truth.Core.Object.Subscriber
         return (editor,return (),());
     };
 
-    makeObjectSubscriber :: Object edit () -> IO (SubscriptionW edit ());
+    makeObjectSubscriber :: Object edit () -> IO (SubscriberW edit ());
     makeObjectSubscriber object = let
     {
-        MkSubscriptionW sub = objectSubscriber object;
+        MkSubscriberW sub = objectSubscriber object;
     } in makeSharedSubscriber sub;
 }

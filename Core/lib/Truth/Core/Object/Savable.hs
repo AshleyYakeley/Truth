@@ -1,4 +1,4 @@
-module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscription) where
+module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
 {
     import Truth.Core.Import;
     import Truth.Core.Read;
@@ -27,8 +27,8 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscription) where
 
     newtype SaveActions = MkSaveActions (IO (Maybe (IO Bool,IO Bool)));
 
-    saveBufferSubscription :: forall a action. Subscriber (WholeEdit a) action -> Subscriber (WholeEdit a) (action,SaveActions);
-    saveBufferSubscription subA (fsB :: stateB) (initB :: Object (WholeEdit a) stateB -> IO editorB) receiveB = let
+    saveBufferSubscriber :: forall a action. Subscriber (WholeEdit a) action -> Subscriber (WholeEdit a) (action,SaveActions);
+    saveBufferSubscriber subA (fsB :: stateB) (initB :: Object (WholeEdit a) stateB -> IO editorB) receiveB = let
     {
         fsA :: (stateB,SaveBuffer a);
         fsA = (fsB,error "uninitialised save buffer");
