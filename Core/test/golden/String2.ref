@@ -7,7 +7,7 @@ var: "ABCDE"
 expected: "Ax1DE"
 main: runObject
 main: push [StringReplaceSection 1+1 "xy",StringReplaceSection 2+2 "1"]
-main: receive 0: [StringReplaceSection 1+1 "xy",StringReplaceSection 2+2 "1"]
-main: receive 0: "Ax1DE"
-main: push succeeded -> 1
+main: receive [StringReplaceSection 1+1 "xy",StringReplaceSection 2+2 "1"]
+main: receive "Ax1DE"
+main: push succeeded
 var: "Ax1DE"

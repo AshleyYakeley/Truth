@@ -3,7 +3,7 @@ var: (False,False)
 expected: (True,True)
 main: runObject
 main: push [fst whole True,snd whole True]
-main: receive 0: [fst whole True,snd whole True]
-main: receive 0: (True,True)
-main: push succeeded -> 1
+main: receive [fst whole True,snd whole True]
+main: receive (True,True)
+main: push succeeded
 var: (True,True)

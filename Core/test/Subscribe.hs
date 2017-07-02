@@ -6,8 +6,6 @@ module Subscribe(testSubscribe) where
     import System.IO;
     import Control.Concurrent.MVar;
     import Control.Monad.IO.Class;
-    import Control.Monad.Trans.Class;
-    import Control.Monad.Trans.State.Extra;
     import Control.Monad.IsStateIO;
     import Data.Sequences;
     import Truth.Core;
@@ -24,8 +22,7 @@ module Subscribe(testSubscribe) where
     testEditor :: Editor (WholeEdit a) () a;
     testEditor = let
     {
-        editorFirst = ();
-        editorInit (MkObject object) = object $ \muted _acc -> mutableRead muted ReadWhole;
+        editorInit (MkObject object) = object $ \muted -> mutableRead muted ReadWhole;
         editorUpdate _ _ _ = return ();
         editorDo editor _ = return editor;
     } in MkEditor{..};
@@ -80,35 +77,30 @@ module Subscribe(testSubscribe) where
         outputLn :: MonadIO m => String -> m ();
         outputLn s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s;
 
-        editorFirst :: Int;
-        editorFirst = 0;
-
-        editorInit :: Object edit Int -> IO (Object edit Int);
+        editorInit :: Object edit -> IO (Object edit);
         editorInit object = do
         {
-            val <- runObject object $ \muted _acc -> unReadable fromReader $ mutableRead muted;
+            val <- runObject object $ \muted -> unReadable fromReader $ mutableRead muted;
             outputLn $ "init: " ++ show val;
             return object;
         };
 
-        editorUpdate :: forall m. IsStateIO m => Object edit Int -> MutableRead m (EditReader edit) -> [edit] -> StateT Int m ();
+        editorUpdate :: forall m. IsStateIO m => Object edit -> MutableRead m (EditReader edit) -> [edit] -> m ();
         editorUpdate _ mr edits = do
         {
-            i <- get;
-            outputLn $ "receive " ++ show i ++ ": " ++ show edits;
-            val <- lift $ unReadable fromReader mr;
-            outputLn $ "receive " ++ show i ++ ": " ++ show val;
-            put $ i + 1;
+            outputLn $ "receive " ++ show edits;
+            val <- unReadable fromReader mr;
+            outputLn $ "receive " ++ show val;
         };
 
-        editorDo :: Object edit Int -> actions -> IO ();
+        editorDo :: Object edit -> actions -> IO ();
         editorDo obj subActions = let
         {
             subDontEdits :: [[edit]] -> IO ();
             subDontEdits editss = do
             {
                 outputLn "runObject";
-                runObject obj $ \muted _acc -> for_ editss $ \edits -> do
+                runObject obj $ \muted -> for_ editss $ \edits -> do
                 {
                     outputLn $ "push " ++ show edits;
                     maction <- mutableEdit muted edits;
@@ -124,7 +116,7 @@ module Subscribe(testSubscribe) where
             subDoEdits editss = do
             {
                 outputLn "runObject";
-                runObject obj $ \muted acc -> for_ editss $ \edits -> do
+                runObject obj $ \muted -> for_ editss $ \edits -> do
                 {
                     outputLn $ "push " ++ show edits;
                     maction <- mutableEdit muted edits;
@@ -134,8 +126,7 @@ module Subscribe(testSubscribe) where
                         Just action -> do
                         {
                             action;
-                            n <- acc get;
-                            outputLn $ "push succeeded -> " ++ show n;
+                            outputLn $ "push succeeded";
                         };
                     }
                 };
@@ -150,10 +141,10 @@ module Subscribe(testSubscribe) where
         var <- newMVar initial;
         let
         {
-            varObj :: Object (WholeEdit (EditSubject edit)) ();
+            varObj :: Object (WholeEdit (EditSubject edit));
             varObj = mvarObject var $ \_ -> True;
 
-            editObj :: Object edit ();
+            editObj :: Object edit;
             editObj = convertObject varObj;
         };
         MkSubscriberW sub <- makeObjectSubscriber editObj;

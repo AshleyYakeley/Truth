@@ -1,4 +1,4 @@
-module Main where
+module Main(main) where
 {
     import Prelude hiding (id,(.));
     import Control.Concurrent;
@@ -16,9 +16,6 @@ module Main where
     import Truth.UI.GTK;
 
 
-    initial :: Maybe Bool;
-    initial = Just True;
-
     testSave :: Bool;
     testSave = True;
 
@@ -32,7 +29,7 @@ module Main where
         {
             let
             {
-                bsObj :: Object ByteStringEdit ();
+                bsObj :: Object ByteStringEdit;
                 bsObj = fileObject arg;
 
                 errorInjection :: forall m err a. (Show err,Applicative m) => Injection' m (Result err a) a;
@@ -49,7 +46,7 @@ module Main where
                 injection :: Injection ByteString String;
                 injection = errorInjection . utf8Injection . toBiMapMaybe (bijectionInjection packBijection);
 
-                wholeTextObj :: Object (WholeEdit String) ();
+                wholeTextObj :: Object (WholeEdit String);
                 wholeTextObj = cacheObject $ fixedMapObject ((wholeEditLens $ injectionLens injection) . convertEditLens) bsObj;
             };
             if testSave then do
@@ -59,22 +56,17 @@ module Main where
                     baseSub :: Subscriber (WholeEdit String) ();
                     MkSubscriberW baseSub = objectSubscriber wholeTextObj;
 
-                    bufferSub :: Subscriber (WholeEdit String) ((),SaveActions);
+                    bufferSub :: Subscriber (StringEdit String) ((),SaveActions);
                     bufferSub = saveBufferSubscriber baseSub;
                 };
-                MkSubscriberW sharedSub <- makeSharedSubscriber bufferSub;
-                let
-                {
-                    editBufferSub :: Subscriber (StringEdit String) ((),SaveActions);
-                    editBufferSub = convertSubscriber sharedSub;
-                };
-                makeWindowCountRef info windowCount editBufferSub
+                MkSubscriberW textSub <- makeSharedSubscriber bufferSub;
+                makeWindowCountRef info windowCount textSub;
             }
             else do
             {
                 let
                 {
-                    textObj :: Object (StringEdit String) ();
+                    textObj :: Object (StringEdit String);
                     textObj = convertObject wholeTextObj;
                 };
                 MkSubscriberW textSub <- makeObjectSubscriber textObj;

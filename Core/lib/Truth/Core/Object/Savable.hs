@@ -15,45 +15,48 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
         _saveBufferChanged :: Bool
     };
 
-    saveBufferMutableEdit :: forall m a. Monad m => MutableEdit (StateT (SaveBuffer a) m) (WholeEdit a);
-    saveBufferMutableEdit = let
+    saveBufferMutableEdit :: forall m edit. (FullEdit edit,Monad m) => ([edit] -> StateT (SaveBuffer (EditSubject edit)) m ()) -> MutableEdit (StateT (SaveBuffer (EditSubject edit)) m) edit;
+    saveBufferMutableEdit update = let
     {
-        mutableRead :: MutableRead (StateT (SaveBuffer a) m) (WholeReader a);
-        mutableRead ReadWhole = fmap saveBuffer get;
+        mutableRead :: MutableRead (StateT (SaveBuffer (EditSubject edit)) m) (EditReader edit);
+        mutableRead = readFromM $ fmap saveBuffer get;
 
-        mutableEdit :: [WholeEdit a] -> (StateT (SaveBuffer a) m) (Maybe (StateT (SaveBuffer a) m ()));
-        mutableEdit = singleMutableEdit $ \(MkWholeEdit a) -> put $ MkSaveBuffer a True;
+        mutableEdit :: [edit] -> StateT (SaveBuffer (EditSubject edit)) m (Maybe (StateT (SaveBuffer (EditSubject edit)) m ()));
+        mutableEdit edits = return $ Just $ do
+        {
+            MkSaveBuffer oldbuf _ <- get;
+            put $ MkSaveBuffer (fromReadFunction (applyEdits edits) oldbuf) True;
+            update edits;
+        };
     } in MkMutableEdit{..};
 
     newtype SaveActions = MkSaveActions (IO (Maybe (IO Bool,IO Bool)));
 
-    saveBufferSubscriber :: forall a action. Subscriber (WholeEdit a) action -> Subscriber (WholeEdit a) (action,SaveActions);
-    saveBufferSubscriber subA (fsB :: stateB) (initB :: Object (WholeEdit a) stateB -> IO editorB) receiveB = do
+    saveBufferSubscriber :: forall edit action. FullEdit edit => Subscriber (WholeEdit (EditSubject edit)) action -> Subscriber edit (action,SaveActions);
+    saveBufferSubscriber subA (initB :: Object edit -> IO editorB) updateB = do
     {
         sbVar <- newMVar $ error "uninitialised save buffer";
         let
         {
-            fsA :: stateB;
-            fsA = fsB;
-
-            initA :: Object (WholeEdit a) stateB -> IO (editorB,SaveActions);
+            initA :: Object (WholeEdit (EditSubject edit)) -> IO (editorB,SaveActions);
             initA (MkObject objA) = do
             {
-                objA $ \muted _acc -> do
+                firstBuf <- objA $ \muted -> mutableRead muted ReadWhole;
+                mvarStateAccess sbVar $ put $ MkSaveBuffer firstBuf False;
+
+                rec
                 {
-                    buf <- mutableRead muted ReadWhole;
-                    mvarStateAccess sbVar $ put $ MkSaveBuffer buf False;
+                    let
+                    {
+                        objB :: Object edit;
+                        objB = MkObject $ \call -> mvarStateAccess sbVar $ call $ saveBufferMutableEdit $ \edits -> updateB edB (readFromM $ fmap saveBuffer get) edits;
+                    };
+                    edB <- initB objB;
                 };
-                let
-                {
-                    objB :: Object (WholeEdit a) stateB;
-                    objB = MkObject $ \call -> objA $ \_mutedA accA -> mvarStateAccess sbVar $ call saveBufferMutableEdit $ liftStateAccess accA;
-                };
-                edB <- initB objB;
                 let
                 {
                     saveAction :: IO Bool;
-                    saveAction = objA $ \muted _acc -> do
+                    saveAction = objA $ \muted -> do
                     {
                         MkSaveBuffer buf _ <- mvarStateAccess sbVar get;
                         maction <- mutableEdit muted [MkWholeEdit buf];
@@ -70,16 +73,16 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                     };
 
                     revertAction :: IO Bool;
-                    revertAction = objA $ \muted acc -> do
+                    revertAction = objA $ \muted -> do
                     {
                         buf <- mutableRead muted ReadWhole;
                         mvarStateAccess sbVar $ put $ MkSaveBuffer buf False;
-                        acc $ receiveB edB (\ReadWhole -> return buf) [MkWholeEdit buf];
+                        updateB edB (readFromM $ return buf) $ getReplaceEdits buf;
                         return False;
                     };
 
                     saveActions :: SaveActions;
-                    saveActions = MkSaveActions $ objA $ \_ _acc -> do
+                    saveActions = MkSaveActions $ objA $ \_ -> do
                     {
                         MkSaveBuffer _ changed <- mvarStateAccess sbVar get;
                         return $ if changed then Just (saveAction,revertAction) else Nothing;
@@ -90,8 +93,8 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                 return edA;
             };
 
-            receiveA :: forall m. IsStateIO m => (editorB,SaveActions) -> MutableRead m (WholeReader a) -> [WholeEdit a] -> StateT stateB m ();
-            receiveA (edB,_) _ edits = do
+            updateA :: forall m. IsStateIO m => (editorB,SaveActions) -> MutableRead m (WholeReader (EditSubject edit)) -> [WholeEdit (EditSubject edit)] -> m ();
+            updateA (edB,_) _ edits = do
             {
                 MkSaveBuffer oldbuffer changed <- mvarStateAccess sbVar get;
                 if changed then return () else do
@@ -100,12 +103,12 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                     {
                         newbuffer = fromReadFunction (applyEdits edits) oldbuffer;
                     };
-                    receiveB edB (readFromM $ return newbuffer) edits;
+                    updateB edB (readFromM $ return newbuffer) $ getReplaceEdits newbuffer;
                     mvarStateAccess sbVar $ put $ MkSaveBuffer newbuffer False;
                 };
             };
         };
-        (edA,closerA,actionA) <- subA fsA initA receiveA;
+        (edA,closerA,actionA) <- subA initA updateA;
         let
         {
             (edB,saveActions) = edA;

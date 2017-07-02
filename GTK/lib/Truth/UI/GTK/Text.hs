@@ -3,7 +3,6 @@ module Truth.UI.GTK.Text (textMatchView) where
 {
     import Data.Foldable;
     import Control.Concurrent.MVar;
-    import Control.Monad.Trans.State;
     import Control.Monad.IO.Class;
     import Graphics.UI.Gtk;
     import Control.Monad.IsStateIO;
@@ -49,11 +48,11 @@ module Truth.UI.GTK.Text (textMatchView) where
     textView = MkView $ \(MkObject object) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
-        initial <- object $ \muted _acc -> unReadable fromReader $ mutableRead muted;
+        initial <- object $ \muted -> unReadable fromReader $ mutableRead muted;
         textBufferSetText buffer initial;
         mv <- newMVar ();
 
-        _ <- onBufferInsertText buffer $ \iter text -> ifMVar mv $ object $ \muted _acc -> do
+        _ <- onBufferInsertText buffer $ \iter text -> ifMVar mv $ object $ \muted -> do
         {
             p <- getSequencePoint iter;
             maction <- mutableEdit muted $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
@@ -64,7 +63,7 @@ module Truth.UI.GTK.Text (textMatchView) where
             };
         };
 
-        _ <- onDeleteRange buffer $ \iter1 iter2 -> ifMVar mv $ object $ \muted _acc -> do
+        _ <- onDeleteRange buffer $ \iter1 iter2 -> ifMVar mv $ object $ \muted -> do
         {
             run <- getSequenceRun iter1 iter2;
             maction <- mutableEdit muted $ pure $ StringReplaceSection run "";
@@ -88,14 +87,11 @@ module Truth.UI.GTK.Text (textMatchView) where
             vrWidget :: Widget;
             vrWidget = toWidget widget;
 
-            vrFirstUpdateState :: ();
-            vrFirstUpdateState = ();
-
             update :: StringEdit String -> IO ();
             update (StringReplaceWhole text) = textBufferSetText buffer text;
             update (StringReplaceSection bounds text) = replaceText buffer bounds text;
 
-            vrUpdate :: forall m. IsStateIO m => MutableRead m (StringRead String) -> [StringEdit String] -> StateT () m ();
+            vrUpdate :: forall m. IsStateIO m => MutableRead m (StringRead String) -> [StringEdit String] -> m ();
             -- this withMVar prevents the signal handlers from re-sending edits
             vrUpdate _ edits = liftIO $ ifMVar mv $ traverse_ update edits;
 

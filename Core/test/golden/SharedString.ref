@@ -7,17 +7,17 @@ main: push ignored
 var: "ABCDE"
 main: runObject
 main: push [StringReplaceSection 1+1 "xy"]
-main: receive 0: [StringReplaceSection 1+1 "xy"]
-main: receive 0: "AxyCDE"
-lens: receive 0: [StringReplaceSection 0+1 "xy"]
-lens: receive 0: "xyCD"
-main: push succeeded -> 1
+main: receive [StringReplaceSection 1+1 "xy"]
+main: receive "AxyCDE"
+lens: receive [StringReplaceSection 0+1 "xy"]
+lens: receive "xyCD"
+main: push succeeded
 var: "AxyCDE"
 main: runObject
 main: push [StringReplaceSection 2+2 "1"]
-main: receive 1: [StringReplaceSection 2+2 "1"]
-main: receive 1: "Ax1DE"
-lens: receive 1: [StringReplaceSection 1+2 "1"]
-lens: receive 1: "x1D"
-main: push succeeded -> 2
+main: receive [StringReplaceSection 2+2 "1"]
+main: receive "Ax1DE"
+lens: receive [StringReplaceSection 1+2 "1"]
+lens: receive "x1D"
+main: push succeeded
 var: "Ax1DE"

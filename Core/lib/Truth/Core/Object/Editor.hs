@@ -8,46 +8,41 @@ module Truth.Core.Object.Editor where
     import Truth.Core.Object.Subscriber;
 
 
-    data Editor (edit :: *) actions r = forall editor userstate. MkEditor
+    data Editor (edit :: *) actions r = forall editor. MkEditor
     {
-        editorFirst :: userstate,
-        editorInit :: Object edit userstate -> IO editor,
-        editorUpdate :: forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> [edit] -> StateT userstate m (),
+        editorInit :: Object edit -> IO editor,
+        editorUpdate :: forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> [edit] -> m (),
         editorDo :: editor -> actions -> IO r
     };
 
     instance Functor (Editor edit actions) where
     {
-        fmap ab (MkEditor ef ei eu ed) = MkEditor ef ei eu $ \e a -> fmap ab $ ed e a;
+        fmap ab (MkEditor ei eu ed) = MkEditor ei eu $ \e a -> fmap ab $ ed e a;
     };
 
     instance Applicative (Editor edit actions) where
     {
         pure a = let
         {
-            editorFirst = ();
             editorInit _ = return ();
             editorUpdate () _ _ = return ();
             editorDo () _ = return a;
         } in MkEditor{..};
 
-        (MkEditor ef1 (ei1 :: Object edit userstate1 -> IO editor1) eu1 ed1) <*> (MkEditor ef2 (ei2 :: Object edit userstate2 -> IO editor2) eu2 ed2) = let
+        (MkEditor (ei1 :: Object edit -> IO editor1) eu1 ed1) <*> (MkEditor (ei2 :: Object edit -> IO editor2) eu2 ed2) = let
         {
-            editorFirst :: (userstate1,userstate2);
-            editorFirst = (ef1,ef2);
-
-            editorInit :: Object edit (userstate1,userstate2) -> IO (editor1,editor2);
+            editorInit :: Object edit -> IO (editor1,editor2);
             editorInit object = do
             {
-                e1 <- ei1 $ lensObject fstLens object;
-                e2 <- ei2 $ lensObject sndLens object;
+                e1 <- ei1 object;
+                e2 <- ei2 object;
                 return (e1,e2);
             };
-            editorUpdate :: forall m. IsStateIO m => (editor1,editor2) -> MutableRead m (EditReader edit) -> [edit] -> StateT (userstate1,userstate2) m ();
+            editorUpdate :: forall m. IsStateIO m => (editor1,editor2) -> MutableRead m (EditReader edit) -> [edit] -> m ();
             editorUpdate (e1,e2) mr edits = do
             {
-                stateFst $ eu1 e1 mr edits;
-                stateSnd $ eu2 e2 mr edits;
+                eu1 e1 mr edits;
+                eu2 e2 mr edits;
             };
             editorDo (e1,e2) actions = do
             {
@@ -61,9 +56,9 @@ module Truth.Core.Object.Editor where
     subscribeEditor :: Subscriber edit actions -> Editor edit actions r -> IO r;
     subscribeEditor subscribe editor = case editor of
     {
-        (MkEditor firstSt initr update f) -> do
+        (MkEditor initr update f) -> do
         {
-            (e, close, actions) <- subscribe firstSt initr update;
+            (e, close, actions) <- subscribe initr update;
             finally (f e actions) close;
         };
     };
@@ -71,13 +66,11 @@ module Truth.Core.Object.Editor where
     oneTransactionEditor :: forall actions edit r. (forall m. Monad m => MutableEdit m edit -> m r) -> Editor edit actions r;
     oneTransactionEditor f = let
     {
-        editorFirst = ();
-
-        editorInit :: Object edit () -> IO (Object edit ());
+        editorInit :: Object edit -> IO (Object edit);
         editorInit object = return object;
 
         editorUpdate _lapiw _mr _edits = return ();
-        editorDo (MkObject object) _ = object $ \muted _acc -> f muted;
+        editorDo (MkObject object) _ = object f;
     } in MkEditor{..};
 
     readEditor :: FullReader (EditReader edit) => Editor edit actions (EditSubject edit);

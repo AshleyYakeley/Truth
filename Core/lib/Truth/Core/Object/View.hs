@@ -11,21 +11,20 @@ module Truth.Core.Object.View where
     import Truth.Core.Object.Aspect;
 
 
-    data ViewResult edit updatestate selstate w = MkViewResult
+    data ViewResult edit selstate w = MkViewResult
     {
         vrWidget :: w,
-        vrFirstUpdateState :: updatestate,
-        vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> StateT updatestate m (),
+        vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> m (),
         vrFirstSelState :: Maybe selstate,
         vrGetSelection :: selstate -> IO (Maybe (Aspect edit))
     };
 
-    instance Functor (ViewResult edit updatestate selstate) where
+    instance Functor (ViewResult edit selstate) where
     {
-        fmap f (MkViewResult w fus update fss getsel) = MkViewResult (f w) fus update fss getsel;
+        fmap f (MkViewResult w update fss getsel) = MkViewResult (f w) update fss getsel;
     };
 
-    data View edit w = forall updatestate selstate. MkView (Object edit updatestate -> (selstate -> IO ()) -> IO (ViewResult edit updatestate selstate w));
+    data View edit w = forall selstate. MkView (Object edit -> (selstate -> IO ()) -> IO (ViewResult edit selstate w));
 
     instance Functor (View edit) where
     {
@@ -47,25 +46,27 @@ module Truth.Core.Object.View where
     mapView :: forall f w edita editb. (MonadOne f,Edit edita,Edit editb) => GeneralLens' f edita editb -> View editb w -> View edita w;
     mapView
         lens@(MkCloseFloat (flens :: FloatingEditLens' f lensstate edita editb))
-        (MkView (viewB :: Object editb updatestateb -> (selstate -> IO ()) -> IO (ViewResult editb updatestateb selstate w)))
+        (MkView (viewB :: Object editb -> (selstate -> IO ()) -> IO (ViewResult editb selstate w)))
         = MkView $ \objectA setSelect -> do
     {
         let
         {
             MkFloatingEditLens{..} = flens;
             MkFloatingEditFunction{..} = floatingEditLensFunction;
-
-            objectB :: Object editb updatestateb;
-            objectB = floatingMapObject flens objectA;
         };
-        MkViewResult w fusB updateB fss getSelB <- viewB objectB setSelect;
+        lensvar <- newMVar floatingEditInitial;
         let
         {
-            fusA = (fusB,floatingEditInitial);
-            updateA :: forall m. IsStateIO m => MutableRead m (EditReader edita) -> [edita] -> StateT (updatestateb,lensstate) m ();
-            updateA mrA editsA = joinStateT $ swapStateT $ StateT $ \oldls -> do
+            objectB :: Object editb;
+            objectB = floatingMapObject (mvarStateAccess lensvar) flens objectA;
+        };
+        MkViewResult w updateB fss getSelB <- viewB objectB setSelect;
+        let
+        {
+            updateA :: forall m. IsStateIO m => MutableRead m (EditReader edita) -> [edita] -> m ();
+            updateA mrA editsA = mvarStateAccess lensvar $ StateT $ \oldls -> do
             {
-                (newls,editsB) <- lift $ unReadable (floatingEditUpdates floatingEditLensFunction editsA oldls) mrA;
+                (newls,editsB) <- unReadable (floatingEditUpdates floatingEditLensFunction editsA oldls) mrA;
                 updateB (mapMutableRead (floatingEditGet oldls) mrA) editsB;
                 return ((),newls);
             };
@@ -79,14 +80,13 @@ module Truth.Core.Object.View where
                 };
             };
         };
-        return $ MkViewResult w fusA updateA fss getSelA;
+        return $ MkViewResult w updateA fss getSelA;
     };
 
     instance Applicative (View edit) where
     {
         pure vrWidget = MkView $ \_object _setSelect -> return $ let
         {
-            vrFirstUpdateState = ();
             vrUpdate _ _ = return ();
             vrFirstSelState = Nothing;
             vrGetSelection (ss :: None) = never ss;
@@ -96,24 +96,20 @@ module Truth.Core.Object.View where
         {
             let
             {
-                object1 = lensObject fstLens object;
-                object2 = lensObject sndLens object;
                 setSelect1 ss = setSelect $ Left ss;
                 setSelect2 ss = setSelect $ Right ss;
             };
-            (MkViewResult w1 (fus1 :: updatestate1) update1 mfss1 getsel1) <- view1 object1 setSelect1;
-            (MkViewResult w2 (fus2 :: updatestate2) update2 mfss2 getsel2) <- view2 object2 setSelect2;
+            (MkViewResult w1 update1 mfss1 getsel1) <- view1 object setSelect1;
+            (MkViewResult w2 update2 mfss2 getsel2) <- view2 object setSelect2;
             let
             {
                 w = w1 w2;
 
-                fus = (fus1,fus2);
-
-                update :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> StateT (updatestate1,updatestate2) m ();
+                update :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> m ();
                 update mr  edits = do
                 {
-                    stateFst $ update1 mr edits;
-                    stateSnd $ update2 mr edits;
+                    update1 mr edits;
+                    update2 mr edits;
                 };
 
                 mfss = case mfss1 of
@@ -125,7 +121,7 @@ module Truth.Core.Object.View where
                 getsel (Left ss) = getsel1 ss;
                 getsel (Right ss) = getsel2 ss;
             };
-            return $ MkViewResult w fus update mfss getsel;
+            return $ MkViewResult w update mfss getsel;
         };
     };
 
@@ -143,11 +139,11 @@ module Truth.Core.Object.View where
     };
 
     subscribeView :: forall edit w action. View edit w -> Subscriber edit action -> IO (ViewSubscription edit action w);
-    subscribeView (MkView (view :: Object edit updatestate -> (selstate -> IO ()) -> IO (ViewResult edit updatestate selstate w))) sub = do
+    subscribeView (MkView (view :: Object edit -> (selstate -> IO ()) -> IO (ViewResult edit selstate w))) sub = do
     {
         let
         {
-            initialise :: Object edit updatestate -> IO (ViewResult edit updatestate selstate w, IORef (Maybe selstate));
+            initialise :: Object edit -> IO (ViewResult edit selstate w, IORef (Maybe selstate));
             initialise object = do
             {
                 rec
@@ -159,12 +155,11 @@ module Truth.Core.Object.View where
                     vr <- view object setSelect;
                     selref <- newIORef $ vrFirstSelState vr;
                 };
-                runObject object $ \_ acc -> acc $ put $ vrFirstUpdateState vr;
                 return (vr,selref);
             };
             receive (vr,_) = vrUpdate vr;
         };
-        ((MkViewResult{..},selref),srCloser,srAction) <- sub (error "uninitialised object (subscribeView)") initialise receive;
+        ((MkViewResult{..},selref),srCloser,srAction) <- sub initialise receive;
         let
         {
             srGetSelection = do

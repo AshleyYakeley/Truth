@@ -9,30 +9,31 @@ module Truth.Core.Object.Lens where
 
 
     mapSubscriber :: forall f edita editb action. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Subscriber edita action -> Subscriber editb action;
-    mapSubscriber (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub firstB (initialB :: Object editb userstate -> IO editor) updateB = let
+    mapSubscriber (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub (initialB :: Object editb -> IO editor) updateB = do
     {
-        MkFloatingEditFunction{..} = floatingEditLensFunction;
-
-        firstA :: (userstate,lensstate);
-        firstA = (firstB,floatingEditInitial);
-
-        initialA :: Object edita (userstate,lensstate) -> IO (Object edita (userstate,lensstate),editor);
-        initialA objectA = do
+        let
         {
-            ed <- initialB $ floatingMapObject lens objectA;
-            return (objectA,ed);
+            MkFloatingEditFunction{..} = floatingEditLensFunction;
         };
-
-        updateA :: forall m. IsStateIO m => (Object edita (userstate,lensstate),editor) -> MutableRead m (EditReader edita) -> [edita] -> StateT (userstate,lensstate) m ();
-        updateA (_objectA,editor) mr editAs = joinStateT $ swapStateT $ StateT $ \oldls -> do
+        lensvar <- newMVar floatingEditInitial;
+        let
         {
-            (newls,editBs) <- lift $ unReadable (floatingEditUpdates floatingEditLensFunction editAs oldls) mr;
-            updateB editor (mapMutableRead (floatingEditGet newls) mr) editBs;
-            return ((),newls);
+            initialA :: Object edita -> IO (Object edita,editor);
+            initialA objectA = do
+            {
+                ed <- initialB $ floatingMapObject (mvarStateAccess lensvar) lens objectA;
+                return (objectA,ed);
+            };
+
+            updateA :: forall m. IsStateIO m => (Object edita,editor) -> MutableRead m (EditReader edita) -> [edita] -> m ();
+            updateA (_objectA,editor) mr editAs = mvarStateAccess lensvar $ StateT $ \oldls -> do
+            {
+                (newls,editBs) <- unReadable (floatingEditUpdates floatingEditLensFunction editAs oldls) mr;
+                updateB editor (mapMutableRead (floatingEditGet newls) mr) editBs;
+                return ((),newls);
+            };
         };
-    } in do
-    {
-        ((_,editor),closer,action) <- sub firstA initialA updateA;
+        ((_,editor),closer,action) <- sub initialA updateA;
         return (editor,closer,action);
     };
 
