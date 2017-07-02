@@ -42,12 +42,12 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                 objA $ \muted _acc -> do
                 {
                     buf <- mutableRead muted ReadWhole;
-                    modifyMVarStateIO sbVar $ put $ MkSaveBuffer buf False;
+                    mvarStateAccess sbVar $ put $ MkSaveBuffer buf False;
                 };
                 let
                 {
                     objB :: Object (WholeEdit a) stateB;
-                    objB = MkObject $ \call -> objA $ \_mutedA accA -> modifyMVarStateIO sbVar $ call saveBufferMutableEdit $ liftStateTAccess accA;
+                    objB = MkObject $ \call -> objA $ \_mutedA accA -> mvarStateAccess sbVar $ call saveBufferMutableEdit $ liftStateAccess accA;
                 };
                 edB <- initB objB;
                 let
@@ -55,7 +55,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                     saveAction :: IO Bool;
                     saveAction = objA $ \muted _acc -> do
                     {
-                        MkSaveBuffer buf _ <- modifyMVarStateIO sbVar get;
+                        MkSaveBuffer buf _ <- mvarStateAccess sbVar get;
                         maction <- mutableEdit muted [MkWholeEdit buf];
                         case maction of
                         {
@@ -63,7 +63,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                             Just action -> do
                             {
                                 action;
-                                modifyMVarStateIO sbVar $ put $ MkSaveBuffer buf False;
+                                mvarStateAccess sbVar $ put $ MkSaveBuffer buf False;
                                 return True;
                             }
                         }
@@ -73,7 +73,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                     revertAction = objA $ \muted acc -> do
                     {
                         buf <- mutableRead muted ReadWhole;
-                        modifyMVarStateIO sbVar $ put $ MkSaveBuffer buf False;
+                        mvarStateAccess sbVar $ put $ MkSaveBuffer buf False;
                         acc $ receiveB edB (\ReadWhole -> return buf) [MkWholeEdit buf];
                         return False;
                     };
@@ -81,7 +81,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                     saveActions :: SaveActions;
                     saveActions = MkSaveActions $ objA $ \_ _acc -> do
                     {
-                        MkSaveBuffer _ changed <- modifyMVarStateIO sbVar get;
+                        MkSaveBuffer _ changed <- mvarStateAccess sbVar get;
                         return $ if changed then Just (saveAction,revertAction) else Nothing;
                     };
 
@@ -93,7 +93,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
             receiveA :: forall m. IsStateIO m => (editorB,SaveActions) -> MutableRead m (WholeReader a) -> [WholeEdit a] -> StateT stateB m ();
             receiveA (edB,_) _ edits = do
             {
-                MkSaveBuffer oldbuffer changed <- modifyMVarStateIO sbVar get;
+                MkSaveBuffer oldbuffer changed <- mvarStateAccess sbVar get;
                 if changed then return () else do
                 {
                     let
@@ -101,7 +101,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                         newbuffer = fromReadFunction (applyEdits edits) oldbuffer;
                     };
                     receiveB edB (readFromM $ return newbuffer) edits;
-                    modifyMVarStateIO sbVar $ put $ MkSaveBuffer newbuffer False;
+                    mvarStateAccess sbVar $ put $ MkSaveBuffer newbuffer False;
                 };
             };
         };

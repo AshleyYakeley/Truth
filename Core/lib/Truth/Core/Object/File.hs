@@ -34,7 +34,7 @@ module Truth.Core.Object.File where
 
             mutableEdit = singleMutableEdit mutableEdit';
         };
-        r <- call MkMutableEdit{..} unitStateTAccess;
+        r <- call MkMutableEdit{..} unitStateAccess;
         hClose h;
         return r;
     };

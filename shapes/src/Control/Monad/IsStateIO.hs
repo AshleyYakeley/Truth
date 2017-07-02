@@ -41,8 +41,8 @@ module Control.Monad.IsStateIO where
     tunnelStateIO :: IsStateIO m => (forall a. (m r -> IO a) -> IO a) -> m r;
     tunnelStateIO call = toStateIO $ tunnel $ \unlift -> call $ \mr -> unlift $ fromStateIO mr;
 
-    modifyMVarStateIO :: IsStateIO m => MVar s -> StateT s m a -> m a;
-    modifyMVarStateIO mvar sma = mkStateIO $ \oldios -> modifyMVar mvar $ \olds -> do
+    mvarStateAccess :: IsStateIO m => MVar s -> StateAccess m s;
+    mvarStateAccess mvar sma = mkStateIO $ \oldios -> modifyMVar mvar $ \olds -> do
     {
         (a,(news,newios)) <- runStateIO sma (olds,oldios);
         return (news,(a,newios));

@@ -75,9 +75,9 @@ module Truth.Core.Object.Subscriber
         let
         {
             objectC :: forall userstate. IOWitnessKey userstate -> Object edit userstate;
-            objectC key = MkObject $ \call -> objectP $ \(mutedP :: MutableEdit m edit) (accP :: StateTAccess m (UpdateStore edit)) -> let
+            objectC key = MkObject $ \call -> objectP $ \(mutedP :: MutableEdit m edit) (accP :: StateAccess m (UpdateStore edit)) -> let
             {
-                accC :: StateTAccess m userstate;
+                accC :: StateAccess m userstate;
                 accC stu = accP $ replaceOneWitnessStoreStateT key $ lensStateT useStateLens stu;
             } in call mutedP accC;
 
@@ -126,12 +126,12 @@ module Truth.Core.Object.Subscriber
                             Just action -> return $ Just $ do
                             {
                                 action;
-                                modifyMVarStateIO var $ update editor (mutableRead muted) edits;
+                                mvarStateAccess var $ update editor (mutableRead muted) edits;
                             }
                         }
                     }
                 };
-            } in call muted' $ modifyMVarStateIO var;
+            } in call muted' $ mvarStateAccess var;
         };
         return (editor,return (),());
     };
