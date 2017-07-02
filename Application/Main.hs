@@ -20,7 +20,7 @@ module Main where
     initial = Just True;
 
     testSave :: Bool;
-    testSave = False;
+    testSave = True;
 
     main :: IO ();
     main = do
@@ -54,14 +54,19 @@ module Main where
             };
             if testSave then do
             {
-                MkSubscriberW fileSub <- makeObjectSubscriber wholeTextObj;
                 let
                 {
-                    bufferSub :: Subscriber (WholeEdit String) ((),SaveActions);
-                    bufferSub = saveBufferSubscriber fileSub;
+                    baseSub :: Subscriber (WholeEdit String) ();
+                    MkSubscriberW baseSub = objectSubscriber wholeTextObj;
 
+                    bufferSub :: Subscriber (WholeEdit String) ((),SaveActions);
+                    bufferSub = saveBufferSubscriber baseSub;
+                };
+                MkSubscriberW sharedSub <- makeSharedSubscriber bufferSub;
+                let
+                {
                     editBufferSub :: Subscriber (StringEdit String) ((),SaveActions);
-                    editBufferSub = convertSubscriber bufferSub;
+                    editBufferSub = convertSubscriber sharedSub;
                 };
                 makeWindowCountRef info windowCount editBufferSub
             }

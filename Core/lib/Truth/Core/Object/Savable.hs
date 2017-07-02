@@ -28,90 +28,90 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
     newtype SaveActions = MkSaveActions (IO (Maybe (IO Bool,IO Bool)));
 
     saveBufferSubscriber :: forall a action. Subscriber (WholeEdit a) action -> Subscriber (WholeEdit a) (action,SaveActions);
-    saveBufferSubscriber subA (fsB :: stateB) (initB :: Object (WholeEdit a) stateB -> IO editorB) receiveB = let
+    saveBufferSubscriber subA (fsB :: stateB) (initB :: Object (WholeEdit a) stateB -> IO editorB) receiveB = do
     {
-        fsA :: (stateB,SaveBuffer a);
-        fsA = (fsB,error "uninitialised save buffer");
-
-        initA :: Object (WholeEdit a) (stateB,SaveBuffer a) -> IO (editorB,SaveActions);
-        initA (MkObject objA) = do
+        sbVar <- newMVar $ error "uninitialised save buffer";
+        let
         {
-            objA $ \muted acc -> do
-            {
-                buf <- mutableRead muted ReadWhole;
-                acc $ stateSnd $ put $ MkSaveBuffer buf False;
-            };
-            let
-            {
-                objB :: Object (WholeEdit a) stateB;
-                objB = MkObject $ \call -> objA $ \_mutedA accA -> lensStateTAccess sndLens accA $ call saveBufferMutableEdit $ liftStateTAccess $ lensStateTAccess fstLens accA;
-            };
-            edB <- initB objB;
-            let
-            {
-                saveAction :: IO Bool;
-                saveAction = objA $ \muted acc -> do
-                {
-                    (_oldstateB,MkSaveBuffer buf _) <- acc get;
-                    maction <- mutableEdit muted [MkWholeEdit buf];
-                    case maction of
-                    {
-                        Nothing -> return False;
-                        Just action -> do
-                        {
-                            action;
-                            return True;
-                        }
-                    }
-                };
+            fsA :: stateB;
+            fsA = fsB;
 
-                revertAction :: IO Bool;
-                revertAction = objA $ \muted acc -> do
+            initA :: Object (WholeEdit a) stateB -> IO (editorB,SaveActions);
+            initA (MkObject objA) = do
+            {
+                objA $ \muted _acc -> do
                 {
-
                     buf <- mutableRead muted ReadWhole;
-                    acc $ stateFst $ receiveB edB (\ReadWhole -> return buf) [MkWholeEdit buf];
-                    return False; -- MkSaveBuffer buffer False
+                    modifyMVarStateIO sbVar $ put $ MkSaveBuffer buf False;
                 };
-
-                saveActions :: SaveActions;
-                saveActions = MkSaveActions $ objA $ \_ acc -> do
-                {
-                    (_,MkSaveBuffer _ changed) <- acc get;
-                    return $ if changed then Just (saveAction,revertAction) else Nothing;
-                };
-
-                edA = (edB,saveActions);
-            };
-            return edA;
-        };
-
-        receiveA :: forall m. IsStateIO m => (editorB,SaveActions) -> MutableRead m (WholeReader a) -> [WholeEdit a] -> StateT (stateB,SaveBuffer a) m ();
-        receiveA (edB,_) _ edits = do
-        {
-            MkSaveBuffer oldbuffer changed <- stateSnd get;
-            if changed then return () else do
-            {
                 let
                 {
-                    newbuffer = fromReadFunction (applyEdits edits) oldbuffer;
+                    objB :: Object (WholeEdit a) stateB;
+                    objB = MkObject $ \call -> objA $ \_mutedA accA -> modifyMVarStateIO sbVar $ call saveBufferMutableEdit $ liftStateTAccess accA;
                 };
-                stateFst $ receiveB edB (readFromM $ return newbuffer) edits;
-                stateSnd $ put $ MkSaveBuffer newbuffer False;
-            };
-        };
+                edB <- initB objB;
+                let
+                {
+                    saveAction :: IO Bool;
+                    saveAction = objA $ \muted _acc -> do
+                    {
+                        MkSaveBuffer buf _ <- modifyMVarStateIO sbVar get;
+                        maction <- mutableEdit muted [MkWholeEdit buf];
+                        case maction of
+                        {
+                            Nothing -> return False;
+                            Just action -> do
+                            {
+                                action;
+                                modifyMVarStateIO sbVar $ put $ MkSaveBuffer buf False;
+                                return True;
+                            }
+                        }
+                    };
 
-        resultB :: IO (editorB,IO (),(action,SaveActions));
-        resultB = do
-        {
-            (edA,closerA,actionA) <- subA fsA initA receiveA;
-            let
-            {
-                (edB,saveActions) = edA;
-                actionB = (actionA,saveActions);
-                closerB = closerA; -- add UI query here
+                    revertAction :: IO Bool;
+                    revertAction = objA $ \muted acc -> do
+                    {
+                        buf <- mutableRead muted ReadWhole;
+                        modifyMVarStateIO sbVar $ put $ MkSaveBuffer buf False;
+                        acc $ receiveB edB (\ReadWhole -> return buf) [MkWholeEdit buf];
+                        return False;
+                    };
+
+                    saveActions :: SaveActions;
+                    saveActions = MkSaveActions $ objA $ \_ _acc -> do
+                    {
+                        MkSaveBuffer _ changed <- modifyMVarStateIO sbVar get;
+                        return $ if changed then Just (saveAction,revertAction) else Nothing;
+                    };
+
+                    edA = (edB,saveActions);
+                };
+                return edA;
             };
-            return (edB,closerB,actionB);
+
+            receiveA :: forall m. IsStateIO m => (editorB,SaveActions) -> MutableRead m (WholeReader a) -> [WholeEdit a] -> StateT stateB m ();
+            receiveA (edB,_) _ edits = do
+            {
+                MkSaveBuffer oldbuffer changed <- modifyMVarStateIO sbVar get;
+                if changed then return () else do
+                {
+                    let
+                    {
+                        newbuffer = fromReadFunction (applyEdits edits) oldbuffer;
+                    };
+                    receiveB edB (readFromM $ return newbuffer) edits;
+                    modifyMVarStateIO sbVar $ put $ MkSaveBuffer newbuffer False;
+                };
+            };
         };
-    } in resultB;
+        (edA,closerA,actionA) <- subA fsA initA receiveA;
+        let
+        {
+            (edB,saveActions) = edA;
+            actionB = (actionA,saveActions);
+            closerB = closerA; -- add UI query here
+        };
+        return (edB,closerB,actionB);
+    };
 }
