@@ -15,10 +15,10 @@ module Subscribe(testSubscribe) where
     import Test.Tasty.HUnit;
     import Test.Tasty.Golden;
 
-    goldenTest :: TestName -> FilePath -> FilePath -> (Handle -> IO ()) -> TestTree;
-    goldenTest name refPath outPath call = goldenVsFile name refPath outPath $ withBinaryFile outPath WriteMode call;
+    goldenTest :: TestName -> FilePath -> FilePath -> ((?handle :: Handle) => IO ()) -> TestTree;
+    goldenTest name refPath outPath call = goldenVsFile name refPath outPath $ withBinaryFile outPath WriteMode $ \h -> let {?handle = h} in call;
 
-    goldenTest' :: TestName -> (Handle -> IO ()) -> TestTree;
+    goldenTest' :: TestName -> ((?handle :: Handle) => IO ()) -> TestTree;
     goldenTest' name call = goldenTest name ("test/golden/" ++ name ++ ".ref") ("test/golden/" ++ name ++ ".out") call;
 
     testEditor :: Editor (WholeEdit a) () a;
@@ -56,11 +56,18 @@ module Subscribe(testSubscribe) where
         show (StringReplaceSection run sq) = "StringReplaceSection " ++ show run ++ " " ++ show sq;
     };
 
-    testOutputEditor :: forall edit actions. (Show edit, Show (EditSubject edit), FullReader (EditReader edit)) => String -> Handle -> (actions -> ([[edit]] -> IO ()) -> ([[edit]] -> IO ()) -> IO ()) -> Editor edit actions ();
-    testOutputEditor name h call = let
+    data SubscribeContext edit actions = MkSubscribeContext
+    {
+        subDoEdits :: [[edit]] -> IO (),
+        subDontEdits :: [[edit]] -> IO (),
+        subActions :: actions
+    };
+
+    testOutputEditor :: forall edit actions. (Show edit, Show (EditSubject edit), FullReader (EditReader edit),?handle::Handle) => String -> (SubscribeContext edit actions -> IO ()) -> Editor edit actions ();
+    testOutputEditor name call = let
     {
         outputLn :: MonadIO m => String -> m ();
-        outputLn s = liftIO $ hPutStrLn h $ name ++ ": " ++ s;
+        outputLn s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s;
 
         editorFirst :: Int;
         editorFirst = 0;
@@ -84,10 +91,10 @@ module Subscribe(testSubscribe) where
         };
 
         editorDo :: Object edit Int -> actions -> IO ();
-        editorDo obj actions = let
+        editorDo obj subActions = let
         {
-            dontEdits :: [[edit]] -> IO ();
-            dontEdits editss = do
+            subDontEdits :: [[edit]] -> IO ();
+            subDontEdits editss = do
             {
                 outputLn "runObject";
                 runObject obj $ \muted _acc -> for_ editss $ \edits -> do
@@ -102,8 +109,8 @@ module Subscribe(testSubscribe) where
                 };
             };
 
-            doEdits :: [[edit]] -> IO ();
-            doEdits editss = do
+            subDoEdits :: [[edit]] -> IO ();
+            subDoEdits editss = do
             {
                 outputLn "runObject";
                 runObject obj $ \muted acc -> for_ editss $ \edits -> do
@@ -122,126 +129,86 @@ module Subscribe(testSubscribe) where
                     }
                 };
             };
-        } in call actions doEdits dontEdits;
+        } in call MkSubscribeContext{..};
     } in MkEditor{..};
 
-    testString :: TestTree;
-    testString = goldenTest' "String" $ \h -> do
+    testSubscription :: forall edit. (FullEdit edit,Show (EditSubject edit)) =>
+        TestName -> EditSubject edit -> ((?handle :: Handle,?showVar :: IO (),?showExpected :: [edit] -> IO ()) => Subscriber edit () -> IO ()) -> TestTree;
+    testSubscription name initial call = goldenTest' name $ do
     {
-        var <- newMVar "ABCDE";
+        var <- newMVar initial;
         let
         {
-            showVar :: IO ();
-            showVar = withMVar var $ \s -> hPutStrLn h $ "var: " ++ show s;
-
-            varObj :: Object (WholeEdit String) ();
+            varObj :: Object (WholeEdit (EditSubject edit)) ();
             varObj = mvarObject var $ \_ -> True;
 
-            textObj :: Object (StringEdit String) ();
-            textObj = convertObject varObj;
+            editObj :: Object edit ();
+            editObj = convertObject varObj;
         };
-        MkSubscriberW textSub <- makeObjectSubscriber textObj;
-        subscribeEditor textSub $ testOutputEditor "main" h $ \_actions doEdits dontEdits -> do
+        MkSubscriberW sub <- makeObjectSubscriber editObj;
+        let
         {
-            showVar;
-            dontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]];
-            showVar;
-            dontEdits [[StringReplaceSection (startEndRun 2 3) ""]];
-            showVar;
-            doEdits [[StringReplaceSection (startEndRun 1 2) "xy"]];
-            showVar;
-            doEdits [[StringReplaceSection (startEndRun 2 4) "1"]];
-            showVar;
-        };
+            ?showVar = withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s;
+            ?showExpected = \edits -> withMVar var $ \s -> hPutStrLn ?handle $ "expected: " ++ show (fromReadFunction (applyEdits edits) s);
+        }
+        in call sub;
     };
+
+    testString :: TestTree;
+    testString = testSubscription "String" "ABCDE" $ \sub ->
+        subscribeEditor sub $ testOutputEditor "main" $ \MkSubscribeContext{..} -> do
+        {
+            ?showVar;
+            subDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]];
+            ?showVar;
+            subDontEdits [[StringReplaceSection (startEndRun 2 3) ""]];
+            ?showVar;
+            subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy"]];
+            ?showVar;
+            subDoEdits [[StringReplaceSection (startEndRun 2 4) "1"]];
+            ?showVar;
+        };
 
     testString1 :: TestTree;
-    testString1 = goldenTest' "String1" $ \h -> do
-    {
-        var <- newMVar "ABCDE";
-        let
+    testString1 = testSubscription "String1" "ABCDE" $ \sub ->
+        subscribeEditor sub $ testOutputEditor "main" $ \MkSubscribeContext{..} -> do
         {
-            showVar :: IO ();
-            showVar = withMVar var $ \s -> hPutStrLn h $ "var: " ++ show s;
-
-            varObj :: Object (WholeEdit String) ();
-            varObj = mvarObject var $ \_ -> True;
-
-            textObj :: Object (StringEdit String) ();
-            textObj = convertObject varObj;
+            ?showVar;
+            subDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"],[StringReplaceSection (startEndRun 2 3) ""]];
+            ?showVar;
+            subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy"],[StringReplaceSection (startEndRun 2 4) "1"]];
+            ?showVar;
         };
-        MkSubscriberW textSub <- makeObjectSubscriber textObj;
-        subscribeEditor textSub $ testOutputEditor "main" h $ \_actions doEdits dontEdits -> do
-        {
-            showVar;
-            dontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"],[StringReplaceSection (startEndRun 2 3) ""]];
-            showVar;
-            doEdits [[StringReplaceSection (startEndRun 1 2) "xy"],[StringReplaceSection (startEndRun 2 4) "1"]];
-            showVar;
-        };
-    };
 
     testString2 :: TestTree;
-    testString2 = goldenTest' "String2" $ \h -> do
-    {
-        var <- newMVar "ABCDE";
-        let
+    testString2 = testSubscription "String2" "ABCDE" $ \sub ->
+        subscribeEditor sub $ testOutputEditor "main" $ \MkSubscribeContext{..} -> do
         {
-            showVar :: IO ();
-            showVar = withMVar var $ \s -> hPutStrLn h $ "var: " ++ show s;
-
-            showExpected :: [StringEdit String] -> IO ();
-            showExpected edits = withMVar var $ \s -> hPutStrLn h $ "expected: " ++ show (fromReadFunction (applyEdits edits) s);
-
-            varObj :: Object (WholeEdit String) ();
-            varObj = mvarObject var $ \_ -> True;
-
-            textObj :: Object (StringEdit String) ();
-            textObj = convertObject varObj;
+            ?showVar;
+            subDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR",StringReplaceSection (startEndRun 2 3) ""]];
+            ?showVar;
+            ?showExpected [StringReplaceSection (startEndRun 1 2) "xy",StringReplaceSection (startEndRun 2 4) "1"];
+            subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy",StringReplaceSection (startEndRun 2 4) "1"]];
+            ?showVar;
         };
-        MkSubscriberW textSub <- makeObjectSubscriber textObj;
-        subscribeEditor textSub $ testOutputEditor "main" h $ \_actions doEdits dontEdits -> do
-        {
-            showVar;
-            dontEdits [[StringReplaceSection (startEndRun 3 5) "PQR",StringReplaceSection (startEndRun 2 3) ""]];
-            showVar;
-            showExpected [StringReplaceSection (startEndRun 1 2) "xy",StringReplaceSection (startEndRun 2 4) "1"];
-            doEdits [[StringReplaceSection (startEndRun 1 2) "xy",StringReplaceSection (startEndRun 2 4) "1"]];
-            showVar;
-        };
-    };
 
     testSharedString :: TestTree;
-    testSharedString = goldenTest' "SharedString" $ \h -> do
-    {
-        var <- newMVar "ABCDE";
-        let
+    testSharedString = testSubscription "SharedString" "ABCDE" $ \sub -> let
         {
-            showVar :: IO ();
-            showVar = withMVar var $ \s -> hPutStrLn h $ "var: " ++ show s;
-
-            varObj :: Object (WholeEdit String) ();
-            varObj = mvarObject var $ \_ -> True;
-
-            textObj :: Object (StringEdit String) ();
-            textObj = convertObject varObj;
-
             testLens :: GeneralLens' Maybe (StringEdit String) (StringEdit String);
             testLens = toGeneralLens' $ stringSectionLens (startEndRun 1 4);
-        };
-        MkSubscriberW textSub <- makeObjectSubscriber textObj;
-        subscribeEditor textSub $ testOutputEditor "main" h $ \_ mainDoEdits mainDontEdits ->
-        subscribeEditor (mapSubscriber testLens textSub) $ testOutputEditor "lens" h $ \_ _lensDoEdits _lensDontEdits -> do
+        } in
+        subscribeEditor sub $ testOutputEditor "main" $ \MkSubscribeContext{..} ->
+        subscribeEditor (mapSubscriber testLens sub) $ testOutputEditor "lens" $ \_ -> do
         {
-            showVar;
-            mainDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]];
-            showVar;
-            mainDoEdits [[StringReplaceSection (startEndRun 1 2) "xy"]];
-            showVar;
-            mainDoEdits [[StringReplaceSection (startEndRun 2 4) "1"]];
-            showVar;
+            ?showVar;
+            subDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]];
+            ?showVar;
+            subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy"]];
+            ?showVar;
+            subDoEdits [[StringReplaceSection (startEndRun 2 4) "1"]];
+            ?showVar;
         };
-    };
 
     testSubscribe :: TestTree;
     testSubscribe = testGroup "subscribe"
