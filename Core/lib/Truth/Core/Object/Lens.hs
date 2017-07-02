@@ -27,7 +27,7 @@ module Truth.Core.Object.Lens where
         updateA (_objectA,editor) mr editAs = joinStateT $ swapStateT $ StateT $ \oldls -> do
         {
             (newls,editBs) <- lift $ unReadable (floatingEditUpdates floatingEditLensFunction editAs oldls) mr;
-            updateB editor (mapMutableRead (floatingEditGet oldls) mr) editBs;
+            updateB editor (mapMutableRead (floatingEditGet newls) mr) editBs;
             return ((),newls);
         };
     } in do

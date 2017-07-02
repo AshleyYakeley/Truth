@@ -96,8 +96,8 @@ module Subscribe(testSubscribe) where
         {
             i <- get;
             outputLn $ "receive " ++ show i ++ ": " ++ show edits;
-            str <- lift $ unReadable fromReader mr;
-            outputLn $ "receive " ++ show i ++ ": " ++ show str;
+            val <- lift $ unReadable fromReader mr;
+            outputLn $ "receive " ++ show i ++ ": " ++ show val;
             put $ i + 1;
         };
 
