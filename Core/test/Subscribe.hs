@@ -50,6 +50,17 @@ module Subscribe(testSubscribe) where
         show (StringReadSection run) = "StringReadSection " ++ show run;
     };
 
+    instance (Show (ReaderSubject reader)) => Show (WholeReaderEdit reader) where
+    {
+        show (MkWholeEdit a) = "whole " ++ show a;
+    };
+
+    instance (Show e1,Show e2) => Show (TupleEdit (PairSelector e1 e2)) where
+    {
+        show (MkTupleEdit EditFirst e) = "fst " ++ show e;
+        show (MkTupleEdit EditSecond e) = "snd " ++ show e;
+    };
+
     instance (Show seq,Integral (Index seq)) => Show (StringEdit seq) where
     {
         show (StringReplaceWhole sq) = "StringReplaceWhole " ++ show sq;
@@ -154,6 +165,16 @@ module Subscribe(testSubscribe) where
         in call sub;
     };
 
+    testPair :: TestTree;
+    testPair = testSubscription @(PairEdit (WholeEdit Bool) (WholeEdit Bool)) "Pair" (False,False) $ \sub ->
+        subscribeEditor sub $ testOutputEditor "main" $ \MkSubscribeContext{..} -> do
+        {
+            ?showVar;
+            ?showExpected [MkTupleEdit EditFirst $ MkWholeEdit True,MkTupleEdit EditSecond $ MkWholeEdit True];
+            subDoEdits [[MkTupleEdit EditFirst $ MkWholeEdit True,MkTupleEdit EditSecond $ MkWholeEdit True]];
+            ?showVar;
+        };
+
     testString :: TestTree;
     testString = testSubscription "String" "ABCDE" $ \sub ->
         subscribeEditor sub $ testOutputEditor "main" $ \MkSubscribeContext{..} -> do
@@ -214,6 +235,7 @@ module Subscribe(testSubscribe) where
     testSubscribe = testGroup "subscribe"
     [
         testSavable,
+        testPair,
         testString,
         testString1,
         testString2,
