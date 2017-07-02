@@ -1,6 +1,7 @@
 module Control.Monad.IsStateIO where
 {
     import Data.Kind;
+    import Control.Exception;
     import Control.Concurrent.MVar;
     import Control.Monad.Fix;
     import Control.Monad.IO.Class;
@@ -47,4 +48,57 @@ module Control.Monad.IsStateIO where
         (a,(news,newios)) <- runStateIO sma (olds,oldios);
         return (news,(a,newios));
     };
+
+    tryModifyMVar :: MVar a -> (a -> IO (a,b)) -> IO (Maybe b);
+    tryModifyMVar var call = mask $ \restore -> do
+    {
+        molda <- tryTakeMVar var;
+        case molda of
+        {
+            Just olda -> do
+            {
+                (newa,b) <- restore (call olda >>= evaluate) `onException` putMVar var olda;
+                putMVar var newa;
+                return $ Just b;
+            };
+            Nothing -> return Nothing;
+        };
+    };
+
+    mvarTryStateT :: IsStateIO m => MVar s -> StateT s m r -> m (Maybe r);
+    mvarTryStateT var call = mkStateIO $ \oldios -> do
+    {
+        mrs <- tryModifyMVar var $ \olds -> do
+        {
+            (a,(news,newios)) <- runStateIO call (olds,oldios);
+            return (news,(a,newios));
+        };
+        return $ case mrs of
+        {
+            Nothing -> (Nothing,oldios);
+            Just (r,newios) -> (Just r,newios);
+        }
+    };
+
+{-
+    tryWithMVar :: MVar a -> (Maybe a -> IO b) -> IO b;
+    tryWithMVar mv f = do
+    {
+        ma <- tryTakeMVar mv;
+        finally (f ma) $ case ma of
+        {
+            Just a -> putMVar mv a;
+            Nothing -> return ();
+        };
+    };
+
+    ifMVar :: MVar () -> IO () -> IO ();
+    ifMVar mv f = tryWithMVar mv $ \ma -> case ma of
+    {
+        Just _ -> f;
+        _ -> return ();
+    };
+-}
+
+
 }

@@ -58,8 +58,11 @@ module Main(main) where
 
                     bufferSub :: Subscriber (StringEdit String) ((),SaveActions);
                     bufferSub = saveBufferSubscriber baseSub;
+
+                    undoBufferSub :: Subscriber (StringEdit String) (((),SaveActions),UndoActions);
+                    undoBufferSub = undoQueueSubscriber bufferSub;
                 };
-                MkSubscriberW textSub <- makeSharedSubscriber bufferSub;
+                MkSubscriberW textSub <- makeSharedSubscriber undoBufferSub;
                 makeWindowCountRef info windowCount textSub;
             }
             else do

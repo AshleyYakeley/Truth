@@ -1,87 +1,128 @@
-module Truth.Core.Object.Undo where
+module Truth.Core.Object.Undo(UndoActions(..),undoQueueSubscriber) where
 {
     import Truth.Core.Import;
     import Truth.Core.Read;
     import Truth.Core.Edit;
+    import Truth.Core.Object.MutableEdit;
+    import Truth.Core.Object.Object;
+    import Truth.Core.Object.Subscriber;
 
+
+    type UndoEntry edit = ([edit],[edit]);
+
+    makeUndoEntry :: (Monad m,Edit edit) => MutableRead m (EditReader edit) -> [edit] -> m (Maybe (UndoEntry edit));
+    makeUndoEntry _ [] = return Nothing;
+    makeUndoEntry mr edits = do
+    {
+        unedits <- unReadable (invertEdits edits) mr;
+        return $ Just (edits,unedits);
+    };
 
     data UndoQueue edit = MkUndoQueue
     {
-        uqUndoEdits :: [NonEmpty edit],
-        uqRedoEdits :: [NonEmpty edit]
+        _uqUndoEdits :: [UndoEntry edit],
+        _uqRedoEdits :: [UndoEntry edit]
     };
 
-    data UQAction edit = UQUndo | UQRedo | UQEdit [edit];
-
-    undoQueueLens :: forall edit. (EditReader (UQAction edit) ~ EditReader edit,Edit edit) =>
-        FloatingEditLens (UndoQueue edit) edit (UQAction edit);
-    undoQueueLens = let
+    updateUndoQueue :: (Monad m,Edit edit) => MutableRead m (EditReader edit) -> [edit] -> StateT (UndoQueue edit) m ();
+    updateUndoQueue mr edits = do
     {
-        undoQueueUpdate :: [edit] -> UndoQueue edit -> Readable (EditReader edit) (UndoQueue edit,[edit]);
-        undoQueueUpdate edits uq@(MkUndoQueue uu _) = do
+        mue <- lift $ makeUndoEntry mr edits;
+        case mue of
         {
-            unedits <- invertEdits edits;
-            return (case unedits of
+            Nothing -> return ();
+            Just ue -> do
             {
-                us:usr -> MkUndoQueue ((us:|usr):uu) [];
-                [] -> uq;
-            },edits);
+                MkUndoQueue uq _ <- get;
+                put $ MkUndoQueue (ue:uq) [];
+            }
         };
+    };
 
-        undoQueueAction :: UQAction edit -> UndoQueue edit -> Readable (EditReader edit) (Maybe (UndoQueue edit,[edit]));
-        undoQueueAction (UQEdit edits) uq = do
+    data UndoActions = MkUndoActions
+    {
+        uaUndo :: IO (),
+        uaRedo :: IO ()
+    };
+
+    undoQueueSubscriber :: forall edit actions. Edit edit => Subscriber edit actions -> Subscriber edit (actions,UndoActions);
+    undoQueueSubscriber sub (init :: Object edit -> IO editor) update = do
+    {
+        queueVar <- newMVar $ MkUndoQueue [] [];
+        let
         {
-            result <- undoQueueUpdate edits uq;
-            return $ Just result;
-        };
-        undoQueueAction UQUndo (MkUndoQueue [] _) = return Nothing;
-        undoQueueAction UQUndo (MkUndoQueue (us:usr) rr) = do
-        {
-            reedits <- invertEdits $ toList us;
-            let
+            init' :: Object edit -> IO (editor,UndoActions);
+            init' object = do
             {
-                uqUndoEdits = usr;
-                uqRedoEdits = case reedits of
+                editor <- init object;
+                let
                 {
-                    rs:rsr -> (rs:|rsr):rr;
-                    [] -> rr;
+                    uaUndo :: IO ();
+                    uaUndo = mvarStateAccess queueVar $ do
+                    {
+                        MkUndoQueue ues res <- get;
+                        case ues of
+                        {
+                            [] -> return (); -- nothing to undo
+                            (entry:ee) -> do
+                            {
+                                did <- lift $ runObject object $ \muted -> do
+                                {
+                                    maction <- mutableEdit muted (snd entry);
+                                    case maction of
+                                    {
+                                        Just action -> do
+                                        {
+                                            action;
+                                            return True;
+                                        };
+                                        Nothing -> return False;
+                                    };
+                                };
+                                if did then put $ MkUndoQueue ee (entry:res) else return ();
+                            };
+                        };
+                    };
+
+                    uaRedo :: IO ();
+                    uaRedo = mvarStateAccess queueVar $ do
+                    {
+                        MkUndoQueue ues res <- get;
+                        case res of
+                        {
+                            [] -> return (); -- nothing to redo
+                            (entry:ee) -> do
+                            {
+                                did <- lift $ runObject object $ \muted -> do
+                                {
+                                    maction <- mutableEdit muted (fst entry);
+                                    case maction of
+                                    {
+                                        Just action -> do
+                                        {
+                                            action;
+                                            return True;
+                                        };
+                                        Nothing -> return False;
+                                    };
+                                };
+                                if did then put $ MkUndoQueue (entry:ues) ee else return ();
+                            };
+                        };
+                    };
                 };
+                return (editor,MkUndoActions{..});
             };
-            return $ Just (MkUndoQueue{..},toList us);
-        };
-        undoQueueAction UQRedo (MkUndoQueue _ []) = return Nothing;
-        undoQueueAction UQRedo (MkUndoQueue uu (rs:rsr)) = do
-        {
-            unedits <- invertEdits $ toList rs;
-            let
+
+            update' :: forall m. IsStateIO m => (editor,UndoActions) -> MutableRead m (EditReader edit) -> [edit] -> m ();
+            update' (editor,_) mr edits = do
             {
-                uqUndoEdits = case unedits of
-                {
-                    us:usr -> (us:|usr):uu;
-                    [] -> uu;
-                };
-                uqRedoEdits = rsr;
+                update editor mr edits;
+                _ <- mvarTryStateT queueVar $ updateUndoQueue mr edits; -- mvarTryStateT, so as to not change the queue on undo and redo edits
+                return ();
             };
-            return $ Just (MkUndoQueue{..},toList rs);
         };
-
-        floatingEditInitial :: UndoQueue edit;
-        floatingEditInitial = MkUndoQueue [] [];
-
-        floatingEditGet :: UndoQueue edit -> ReadFunction (EditReader edit) (EditReader edit);
-        floatingEditGet _ reader = readable reader;
-
-        floatingEditUpdate :: edit -> UndoQueue edit -> Readable (EditReader edit) (UndoQueue edit,[UQAction edit]);
-        floatingEditUpdate edit olduq = do
-        {
-            (newuq,edits) <- undoQueueUpdate [edit] olduq;
-            return (newuq,[UQEdit edits]);
-        };
-
-        floatingEditLensFunction :: FloatingEditFunction (UndoQueue edit) edit (UQAction edit);
-        floatingEditLensFunction = MkFloatingEditFunction{..};
-
-        floatingEditLensPutEdit :: UndoQueue edit -> UQAction edit -> Readable (EditReader edit) (Maybe (UndoQueue edit,[edit]));
-        floatingEditLensPutEdit uq action = undoQueueAction action uq;
-    } in MkFloatingEditLens{..};
+        ((editor,undoActions),closer,actions) <- sub init' update';
+        return (editor,closer,(actions,undoActions));
+    };
 }

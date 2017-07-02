@@ -90,6 +90,19 @@ module Truth.UI.GTK.Window where
         }
     };
 
+    instance WindowButtons UndoActions where
+    {
+        addButtons vbox MkUndoActions{..} = do
+        {
+            hbox <- hBoxNew False 0;
+            undoButton <- makeButton "Undo" uaUndo;
+            redoButton <- makeButton "Redo" uaRedo;
+            boxPackStart hbox undoButton PackNatural 0;
+            boxPackStart hbox redoButton PackNatural 0;
+            boxPackStart vbox hbox PackNatural 0;
+        }
+    };
+
     makeWindow :: (Edit edit,WindowButtons actions) => Info edit -> IORef Int -> IO () -> Subscriber edit actions -> IO ();
     makeWindow te ref tellclose sub = do
     {
