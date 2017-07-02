@@ -177,32 +177,36 @@ module Truth.Core.Object.Lens where
 -}
 
 {-
-    -- | Not sure if this should be used.
-    pairSubscriber :: forall ea eb. Subscriber ea -> Subscriber eb -> Subscriber (PairEdit ea eb);
-    pairSubscriber objA objB (initialise :: Object (PairEdit ea eb) userstate -> IO (editor,userstate)) receive = do
+    wantedA :: ReadFunction (EditReader ea) (PairEditReader ea eb);
+    wantedA = undefined;
+
+    wantedB :: ReadFunction (EditReader eb) (PairEditReader ea eb);
+    wantedB = undefined;
+
+    pairSubscriber :: forall ea eb acta actb. Subscriber ea acta -> Subscriber eb actb -> Subscriber (PairEdit ea eb) (acta,actb);
+    pairSubscriber subA subB (initAB :: Object (PairEdit ea eb) -> IO editor) updateAB = do
     {
         let
         {
-            initialiseA objectA = do
+            initA :: Object ea -> IO (editor,IO (),actb);
+            initA objectA = do
             {
                 let
                 {
-                    initialiseB lapiB = do
-                    {
-                        (ed,ustate) <- initialise (fmap snd $ pairObject objectA lapiB); -- "snd" here is very dubious
-                        return ((ed,ustate),ustate);
-                    };
-                    receiveB :: forall m. IsStateIO m => (editor,userstate) -> MutableRead m (EditReader eb) -> userstate -> [eb] -> m userstate;
-                    receiveB (ed,_) mr oldstate ebs = receive ed (pairMutableRead f1 mr) oldstate $ fmap (MkTupleEdit EditSecond) ebs;
+                    initB :: Object eb -> IO editor;
+                    initB objectB = initAB $ pairObject objectA objectB;
+
+                    updateB :: forall m. IsStateIO m => editor -> MutableRead m (EditReader eb) -> [eb] -> m ();
+                    updateB editor mr edits = updateAB editor (mapMutableRead wantedB mr) (fmap (MkTupleEdit EditSecond) edits);
                 };
-                ((ed,ustate),closeB) <- objB initialiseB receiveB;
-                return ((ed,closeB),ustate);
+                subB initB updateB;
             };
-            receiveA :: forall m. IsStateIO m => (editor,IO ()) -> MutableRead m (EditReader ea) -> userstate -> [ea] -> m userstate;
-            receiveA (ed,_) mr oldstate eas = receive ed (pairMutableRead mr f2) oldstate $ fmap (MkTupleEdit EditFirst) eas;
+
+            updateA :: forall m. IsStateIO m => (editor,IO (),actb) -> MutableRead m (EditReader ea) -> [ea] -> m ();
+            updateA (editor,_,_) mr edits = updateAB editor (mapMutableRead wantedA mr) (fmap (MkTupleEdit EditFirst) edits);
         };
-        ((ed,closeB),closeA) <- objA initialiseA receiveA;
-        return $ (ed,closeB >> closeA);
+        ((ed,closeB,actionsB),closeA,actionsA) <- subA initA updateA;
+        return (ed,closeB >> closeA,(actionsA,actionsB));
     };
 -}
 }
