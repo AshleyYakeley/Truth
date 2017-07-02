@@ -6,7 +6,7 @@ packages:
 - GTK
 - Application
 
-resolver: lts-8.0
+resolver: lts-8.21
 
 extra-deps:
 - mime-0.4.0.2
