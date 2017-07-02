@@ -59,17 +59,17 @@ module Truth.Core.Edit.FloatingEditFunction  where
 
     class FloatingMap ff where
     {
-        identityFloating :: ff () a a;
-        composeFloating :: ff s2 b c -> ff s1 a b -> ff (s1,s2) a c;
+        identityFloating :: forall a. Edit a => ff () a a;
+        composeFloating :: forall a b c s1 s2. (Edit a,Edit b,Edit c) => ff s2 b c -> ff s1 a b -> ff (s1,s2) a c;
     };
 
     data CloseFloat ff a b = forall state. Eq state => MkCloseFloat (ff state a b);
 
-    instance FloatingMap ff => Category (CloseFloat ff) where
-    {
-        id = MkCloseFloat identityFloating;
-        (MkCloseFloat bc) . (MkCloseFloat ab) = MkCloseFloat $ composeFloating bc ab;
-    };
+    editId :: (FloatingMap ff,Edit a) => CloseFloat ff a a;
+    editId = MkCloseFloat identityFloating;
+
+    editCompose :: (FloatingMap ff,Edit a,Edit b,Edit c) => CloseFloat ff b c -> CloseFloat ff a b -> CloseFloat ff a c;
+    editCompose (MkCloseFloat bc) (MkCloseFloat ab) = MkCloseFloat $ composeFloating bc ab;
 
     instance FloatingMap FloatingEditFunction where
     {

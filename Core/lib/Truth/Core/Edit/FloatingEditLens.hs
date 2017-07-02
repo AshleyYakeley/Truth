@@ -13,13 +13,16 @@ module Truth.Core.Edit.FloatingEditLens where
         floatingEditLensPutEdit :: state -> editb -> Readable (EditReader edita) (m (state,[edita]))
     };
 
-    floatingEditLensPutEdits :: (Monad m,Traversable m) => FloatingEditLens' m state edita editb -> state -> [editb] -> Readable (EditReader edita) (m (state,[edita]));
+    floatingEditLensPutEdits :: (Monad m,Traversable m,Edit edita) => FloatingEditLens' m state edita editb -> state -> [editb] -> Readable (EditReader edita) (m (state,[edita]));
     floatingEditLensPutEdits _ oldstate [] = return $ pure $ (oldstate,[]);
     floatingEditLensPutEdits lens oldstate (e:ee) = getCompose $ do
     {
         (midstate,ea) <- MkCompose $ floatingEditLensPutEdit lens oldstate e;
-        (newstate,eea) <- MkCompose $ floatingEditLensPutEdits lens midstate ee;
-        return (newstate,ea ++ eea);
+        MkCompose $ mapReadable (applyEdits ea) $ getCompose $ do
+        {
+            (newstate,eea) <- MkCompose $ floatingEditLensPutEdits lens midstate ee;
+            return (newstate,ea ++ eea);
+        };
     };
 
     floatingEditLensAllowed :: (MonadOne m) =>

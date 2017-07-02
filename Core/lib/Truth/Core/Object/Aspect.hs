@@ -13,8 +13,8 @@ module Truth.Core.Object.Aspect where
           Info editb -> Info (EditSubject editb) -> GeneralLens edita editb -> Aspect edita;
     };
 
-    mapAspect :: GeneralLens edita editb -> Aspect editb -> Aspect edita;
-    mapAspect lens (MkAspect ie is lens') = MkAspect ie is $ lens' . lens;
+    mapAspect :: (Edit edita,Edit editb) => GeneralLens edita editb -> Aspect editb -> Aspect edita;
+    mapAspect lens (MkAspect ie is lens') = MkAspect ie is $ lens' `editCompose` lens;
 
     mapOneWholeEditAspect :: forall f edit. (MonadOne f, Edit edit,FullReader (EditReader edit)) =>
      Info f -> Aspect edit -> Maybe (Aspect (OneWholeEdit f edit));

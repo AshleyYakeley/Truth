@@ -17,7 +17,7 @@ module Truth.UI.GTK.Tuple(tupleMatchView) where
         return $ toWidget vbox;
     };
 
-    tupleGView :: FiniteTupleSelector sel => (forall edit. sel edit -> Maybe (GView edit)) -> Maybe (GView (TupleEdit sel));
+    tupleGView :: FullTupleSelector sel => (forall edit. sel edit -> Maybe (GView edit)) -> Maybe (GView (TupleEdit sel));
     tupleGView selview = fmap (mapIOView arrangeWidgets) $ tupleView selview;
 
     tupleMatchView :: MatchView -> MatchView;
@@ -25,7 +25,7 @@ module Truth.UI.GTK.Tuple(tupleMatchView) where
     {
         MkSplitInfo ite isel <- matchInfo tedit;
         ReflH <- testHetEquality (info @TupleEdit) ite;
-        ConstraintFact <- ask (infoKnowledge isel) $ applyInfo (info @FiniteTupleSelector) isel;
+        ConstraintFact <- ask (infoKnowledge isel) $ applyInfo (info @FullTupleSelector) isel;
         ConstraintFact <- ask (infoKnowledge isel) $ applyInfo (info @TupleHasInfo) isel;
         tupleGView $ \sel -> case tupleIsEdit sel of
         {
