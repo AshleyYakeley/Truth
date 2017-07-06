@@ -32,7 +32,7 @@ module Truth.Core.Object.File where
                 hPut h bs;
             };
 
-            mutableEdit = singleMutableEdit mutableEdit';
+            mutableEdit = singleAlwaysMutableEdit mutableEdit';
         };
         r <- call MkMutableEdit{..};
         hClose h;

@@ -33,6 +33,9 @@ module Truth.Core.Types.Whole where
         |])];
     };
 
+    wholeMutableRead :: m a -> MutableRead m (WholeReader a);
+    wholeMutableRead ma ReadWhole = ma;
+
     newtype WholeReaderEdit (reader :: * -> *) = MkWholeEdit (ReaderSubject reader);
 
     instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader);

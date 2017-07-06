@@ -73,4 +73,18 @@ module Truth.Core.Types.None where
             instance (FullReader reader,ReaderSubject reader ~ ()) => FullEdit (NoEdit reader);
         |])];
     };
+
+    noEditFunction :: EditFunction (NoEdit (EditReader edit)) edit;
+    noEditFunction = let
+    {
+        editGet = readable;
+        editUpdate = never;
+    } in MkEditFunction{..};
+
+    noEditLens :: EditLens' Maybe (NoEdit (EditReader edit)) edit;
+    noEditLens = let
+    {
+        editLensFunction = noEditFunction;
+        editLensPutEdit _ = return Nothing;
+    } in MkEditLens{..};
 }

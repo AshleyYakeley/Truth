@@ -4,6 +4,7 @@ module Truth.Core.Object.Object where
     import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Types.Whole;
+    import Truth.Core.Types.None;
     import Truth.Core.Types.Pair;
     import Truth.Core.Object.MutableEdit;
 
@@ -12,6 +13,9 @@ module Truth.Core.Object.Object where
 
     nonlockingObject :: MutableEdit IO edit -> Object edit;
     nonlockingObject muted = MkObject $ \call -> call muted;
+
+    noneObject :: Object (NoEdit (NoReader t));
+    noneObject = nonlockingObject noneMutableEdit;
 
     mvarObject :: forall a. MVar a -> (a -> Bool) -> Object (WholeEdit a);
     mvarObject var allowed = MkObject $ \call -> mvarStateAccess var $ let
@@ -114,7 +118,7 @@ module Truth.Core.Object.Object where
             muted' = MkMutableEdit
             {
                 mutableRead = \ReadWhole -> get,
-                mutableEdit = singleMutableEdit $ \(MkWholeEdit t) -> put t
+                mutableEdit = singleAlwaysMutableEdit $ \(MkWholeEdit t) -> put t
             };
         };
         (r,newval) <- runStateT (call muted') oldval;
