@@ -37,3 +37,86 @@ data Item = TextItem Text | ObjectItem Object
 
 Row has a type; bag or list of rows, by key
 Can combine tables, with editing., e.g. joins, unions
+
+1.3 XML-like structures
+
+data ListType (nil :: k) (cons :: k -> k -> k) (w :: k -> *) (t :: k) where
+{
+    NilListType :: ListType nil cons w nil;
+    ConsListType :: w a -> ListType nil cons w t -> ListType nil cons w (cons a t);
+};
+type ProductListType = ListType () (,)
+type SumListType = Never Either
+
+
+data RepeatType (f :: * -> *) where
+{
+    RepeatOne :: RepeatType Identity; -- bijection
+    RepeatZeroOrOne :: RepeatType Maybe; -- injection
+    RepeatZeroOrMore :: RepeatType List; -- projection
+    RepeatOneOrMore :: RepeatType NonEmpty; -- surjection
+};
+
+data NodeRepeatType (t :: *) where
+{
+    MkNNodeRepeatType :: RepeatType f -> SumList NamedNodeType t -> NodeRepeatType (f t);
+};
+
+data NodeType t where
+{
+    NTText :: NodeType Text
+    NTStruct :: ProductListType NodeRepeatType t -> NodeType t
+};
+
+data NamedNodeType t = MkNamedNodeType String (NodeType t);
+
+-- lens
+NamedNodeType t -> t -> Node
+NamedNodeType t -> Node -> Maybe t
+
+toXmlDTD :: NamedNodeType t -> Text;
+
+nodeTypeInfo :: NamedNodeType t -> Info t
+nodeTypeType :: NamedNodeType (Any NamedNodeType)
+
+class (EditSubject (DocumentTypeEdit t) ~ t, Edit (DocumentTypeEdit t), HasInfo t) => DocumentType t where
+{
+    type DocumentTypeEdit t :: *;
+};
+
+nodeDocumentType :: NamedNodeType t -> ConstraintWitness (DocumentType t)
+
+! * + ?
+
+(a|b|c)
+(a,b)
+
+ambiguous?
+(x?,x?) = (((),Maybe x),Maybe x)
+
+1.4 Graphs
+
+from tabular data
+
+[row]
+
+each row is mark on graph
+
+axis types, bijection with Double type, linear but otherwise arbitrary, i.e. torsor on 1D vector space
+or categories, instances of Finite
+
+1.5 A Type System
+
+XML type system
+JSON type system
+
+
+1.6 Soup
+
+A set of items identified by guid, all of the same type (typically a "container" type that can contain things of different types).
+
+1.6.1 Storage
+
+A directory with files named <guid>.xml (for XML files)
+Index files, containing rows of (guid,val)
+
