@@ -34,6 +34,16 @@ module Truth.Core.Types.List where
         readFrom sq (ListReadItem i reader) = fmap (\e -> readFrom e reader) $ seqIndex sq i;
     };
 
+    instance (IsSequence seq,IOFullReader reader,ReaderSubject reader ~ Element seq) => IOFullReader (ListReader seq reader) where
+    {
+        ioFromReader = do
+        {
+            len <- readable ListReadLength;
+            list <- traverse (\i -> mapReadable (knownItemReadFunction i) ioFromReader) [0..pred len];
+            return $ fromList list;
+        };
+    };
+
     instance (IsSequence seq,FullReader reader,ReaderSubject reader ~ Element seq) => FullReader (ListReader seq reader) where
     {
         fromReader = do
@@ -79,7 +89,7 @@ module Truth.Core.Types.List where
         floatingUpdate _edit ListClear = ListClear;
     };
 
-    instance (IsSequence seq,FullReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => Edit (ListEdit seq edit) where
+    instance (IsSequence seq,IOFullReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => Edit (ListEdit seq edit) where
     {
         type EditReader (ListEdit seq edit) = ListReader seq (EditReader edit);
 
@@ -122,14 +132,33 @@ module Truth.Core.Types.List where
         };
         invertEdit (ListDeleteItem p) = do
         {
-            ma <- mapReadableF (itemReadFunction p) fromReader;
+            ma <- mapReadableF (itemReadFunction p) ioFromReader;
             case ma of
             {
                 Just a -> return [ListInsertItem p a];
                 Nothing -> return [];
             };
         };
-        invertEdit ListClear = writerToReadable replaceEdit;
+        invertEdit ListClear = ioWriterToReadable ioReplaceEdit;
+    };
+
+    instance (IsSequence seq,IOFullReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => IOFullEdit (ListEdit seq edit) where
+    {
+        ioReplaceEdit = do
+        {
+            wrWrite ListClear;
+            len <- readable ListReadLength;
+            let
+            {
+                readWriteItem :: SequencePoint seq -> IOWriterReadable (ListEdit seq edit) (ListReader seq (EditReader edit)) ();
+                readWriteItem i = do
+                {
+                    item <- mapReadable (knownItemReadFunction i) $ readableToM ioFromReader;
+                    wrWrite $ ListInsertItem i item;
+                };
+            };
+            traverse_ readWriteItem [0..pred len];
+        };
     };
 
     instance (IsSequence seq,FullReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => FullEdit (ListEdit seq edit) where

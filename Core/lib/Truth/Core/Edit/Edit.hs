@@ -25,7 +25,7 @@ module Truth.Core.Edit.Edit where
     {
         type EditReader edit :: * -> *;
         applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit);
-        invertEdit :: edit -> Readable (EditReader edit) [edit];
+        invertEdit :: edit -> IOReadable (EditReader edit) [edit];
     };
     $(typeFamilyProxy "EditReader");
     type EditSubject edit = ReaderSubject (EditReader edit);
@@ -43,7 +43,7 @@ module Truth.Core.Edit.Edit where
     applyEdits (e:es) = composeReadFunction (applyEdits es) (applyEdit e);
 
     -- edits always applied in the given order, so list returned will be reversed relative to list given.
-    invertEdits :: (Edit edit) => [edit] -> Readable (EditReader edit) [edit];
+    invertEdits :: (Edit edit) => [edit] -> IOReadable (EditReader edit) [edit];
     invertEdits [] = return [];
     invertEdits (e:ee) = do
     {
@@ -62,13 +62,21 @@ module Truth.Core.Edit.Edit where
     } in if a12 == a21 then Just a12 else Nothing;
 -}
 
-    class (Edit edit,FullReader (EditReader edit)) => FullEdit edit where
+    class (Edit edit,IOFullReader (EditReader edit)) => IOFullEdit edit where
+    {
+        ioReplaceEdit :: IOWriterReadable edit (EditReader edit) ();
+
+        default ioReplaceEdit :: FullEdit edit => IOWriterReadable edit (EditReader edit) ();
+        ioReplaceEdit = writerReadableToGen replaceEdit;
+    };
+
+    class (IOFullEdit edit,FullReader (EditReader edit)) => FullEdit edit where
     {
         replaceEdit :: WriterReadable edit (EditReader edit) ();
     };
 
-    getReplaceEdits :: FullEdit edit => EditSubject edit -> [edit];
-    getReplaceEdits = fromReadable (writerToReadable replaceEdit);
+    getReplaceEdits :: forall edit. FullEdit edit => EditSubject edit -> [edit];
+    getReplaceEdits = fromReadable (writerToReadable replaceEdit :: Readable (EditReader edit) [edit]);
 
     instance HasInfo FullEdit where
     {

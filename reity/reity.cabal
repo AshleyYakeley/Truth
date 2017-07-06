@@ -18,6 +18,7 @@ library
         AllowAmbiguousTypes
         ConstraintKinds
         DataKinds
+        DefaultSignatures
         EmptyDataDecls
         ExistentialQuantification
         FlexibleContexts
@@ -53,6 +54,7 @@ library
         template-haskell,
         transformers,
         bytestring,
+        uuid,
         witness >= 0.4,
         open-witness >= 0.4,
         countable,
@@ -77,6 +79,7 @@ test-suite test
         AllowAmbiguousTypes
         ConstraintKinds
         DataKinds
+        DefaultSignatures
         EmptyDataDecls
         ExistentialQuantification
         FlexibleContexts

@@ -21,6 +21,7 @@ module Truth.Core.Types.None where
         readFrom _ = never;
     };
 
+    instance IOFullReader (NoReader ());
     instance FullReader (NoReader ()) where
     {
         fromReader = return ();
@@ -55,6 +56,11 @@ module Truth.Core.Types.None where
         type EditReader (NoEdit reader) = reader;
         applyEdit = never;
         invertEdit = never;
+    };
+
+    instance (IOFullReader reader,ReaderSubject reader ~ ()) => IOFullEdit (NoEdit reader) where
+    {
+        ioReplaceEdit = return ();
     };
 
     instance (FullReader reader,ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where

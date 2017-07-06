@@ -11,6 +11,9 @@ module Truth.Core.Read.ReadFunction where
     mapMutableRead :: forall m ra rb. Monad m => ReadFunction ra rb -> MutableRead m ra -> MutableRead m rb;
     mapMutableRead rfab sma rbt = unReadable (rfab rbt) sma;
 
+    mapMutableReadW :: Monad m => ReadFunction ra rb -> MutableReadW m ra -> MutableReadW m rb;
+    mapMutableReadW rf (MkMutableReadW mr) = MkMutableReadW $ mapMutableRead rf mr;
+
     composeReadFunction :: ReadFunction rb rc -> ReadFunction ra rb -> ReadFunction ra rc;
     composeReadFunction = mapMutableRead;
 
@@ -62,5 +65,11 @@ module Truth.Core.Read.ReadFunction where
     {
         mapReadable rf (MkReadable srbmt) = srbmt rf;
         mapReadableF rff (MkReadable srbmt) = getCompose $ srbmt $ MkCompose . rff;
+    };
+
+    instance MapReadable IOReadable where
+    {
+        mapReadable rf (MkReadable srbmt) = srbmt $ \rt -> readableToGen $ rf rt;
+        mapReadableF rff (MkReadable srbmt) = getCompose $ srbmt $ \rt -> MkCompose $ readableToGen $ rff rt;
     };
 }

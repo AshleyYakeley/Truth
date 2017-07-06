@@ -13,6 +13,7 @@ library
         AllowAmbiguousTypes
         ConstraintKinds
         DataKinds
+        DefaultSignatures
         EmptyDataDecls
         ExistentialQuantification
         FlexibleContexts
@@ -46,6 +47,7 @@ library
         base >= 4.9 && < 5,
         bytestring,
         transformers,
+        mono-traversable,
         countable,
         witness,
         open-witness,

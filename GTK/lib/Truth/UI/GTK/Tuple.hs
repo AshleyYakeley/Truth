@@ -1,5 +1,6 @@
 module Truth.UI.GTK.Tuple(tupleMatchView) where
 {
+    import Data.Proxy;
     import Data.Foldable;
     import Graphics.UI.Gtk;
     import Data.Type.Heterogeneous;
@@ -17,7 +18,7 @@ module Truth.UI.GTK.Tuple(tupleMatchView) where
         return $ toWidget vbox;
     };
 
-    tupleGView :: FullTupleSelector sel => (forall edit. sel edit -> Maybe (GView edit)) -> Maybe (GView (TupleEdit sel));
+    tupleGView :: FiniteTupleSelector sel => (forall edit. sel edit -> Maybe (GView edit)) -> Maybe (GView (TupleEdit sel));
     tupleGView selview = fmap (mapIOView arrangeWidgets) $ tupleView selview;
 
     tupleMatchView :: MatchView -> MatchView;
@@ -25,9 +26,9 @@ module Truth.UI.GTK.Tuple(tupleMatchView) where
     {
         MkSplitInfo ite isel <- matchInfo tedit;
         ReflH <- testHetEquality (info @TupleEdit) ite;
-        ConstraintFact <- ask (infoKnowledge isel) $ applyInfo (info @FullTupleSelector) isel;
+        ConstraintFact <- ask (infoKnowledge isel) $ applyInfo (info @FiniteTupleSelector) isel;
         ConstraintFact <- ask (infoKnowledge isel) $ applyInfo (info @TupleHasInfo) isel;
-        tupleGView $ \sel -> case tupleIsEdit sel of
+        tupleGView $ \sel -> case tupleWitness (Proxy :: Proxy Edit) sel of
         {
             MkConstraintWitness -> allviews $ tupleHasInfo sel;
         };

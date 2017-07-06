@@ -19,12 +19,17 @@ module Truth.Core.Types.OneReader where
         readFrom fsubj (ReadOne reader) = fmap (\subj -> readFrom subj reader) fsubj;
     };
 
-    liftMaybeReadable :: (Traversable f,Monad f) => Readable reader a -> Readable (OneReader f reader) (f a);
+    liftMaybeReadable :: (Traversable f,Monad f) => MapReadable readable => readable reader a -> readable (OneReader f reader) (f a);
     liftMaybeReadable = mapReadableF (readable . ReadOne);
 
     liftMaybeReadFunction :: (Traversable f,Monad f) => ReadFunction ra rb -> ReadFunction (OneReader f ra) (OneReader f rb);
     liftMaybeReadFunction _rfrarb ReadHasOne = readable ReadHasOne;
     liftMaybeReadFunction rfrarb (ReadOne rt) = liftMaybeReadable (rfrarb rt);
+
+    instance (Traversable f,Monad f,IOFullReader reader) => IOFullReader (OneReader f reader) where
+    {
+        ioFromReader = liftMaybeReadable ioFromReader;
+    };
 
     instance (Traversable f,Monad f,FullReader reader) => FullReader (OneReader f reader) where
     {
@@ -40,6 +45,7 @@ module Truth.Core.Types.OneReader where
             {
                 type ReaderSubject (OneReader f reader) = f (ReaderSubject reader);
             };
+            instance (Traversable f,Monad f,IOFullReader reader) => IOFullReader (OneReader f reader);
             instance (Traversable f,Monad f,FullReader reader) => FullReader (OneReader f reader);
         |])];
     };

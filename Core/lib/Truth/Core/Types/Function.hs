@@ -17,24 +17,25 @@ module Truth.Core.Types.Function where
         testEquality _ _ = Nothing;
     };
 
-    instance (Finite a,Edit edit) =>
-        TupleSelector (FunctionSelector a edit) where
+    instance (Finite a,Edit edit) => TupleSelector (FunctionSelector a edit) where
     {
         type TupleSubject (FunctionSelector a edit) = a -> EditSubject edit;
-        tupleIsEdit (MkFunctionSelector _) = MkConstraintWitness;
         tupleReadFrom (MkFunctionSelector a) ab = ab a;
     };
 
-    instance (Finite a,Edit edit,FullReader (EditReader edit)) =>
-        FiniteTupleSelector (FunctionSelector a edit) where
+    instance (Finite a,Edit edit) => FiniteTupleSelector (FunctionSelector a edit) where
     {
-        tupleIsFullReader (MkFunctionSelector _) = MkConstraintWitness;
         tupleConstruct f = assemble (\a -> f (MkFunctionSelector a));
     };
 
-    instance (Finite a,FullEdit edit) => FullTupleSelector (FunctionSelector a edit) where
+    instance (c (EditReader edit)) => TupleReaderWitness c (FunctionSelector a edit) where
     {
-        tupleIsFullEdit (MkFunctionSelector _) = MkConstraintWitness;
+        tupleReaderWitness _ (MkFunctionSelector _) = MkConstraintWitness;
+    };
+
+    instance (c edit) => TupleWitness c (FunctionSelector a edit) where
+    {
+        tupleWitness _ (MkFunctionSelector _) = MkConstraintWitness;
     };
 
     $(return []);
@@ -49,7 +50,8 @@ module Truth.Core.Types.Function where
             };
             instance (Finite a,Edit edit,FullReader (EditReader edit)) =>
                 FiniteTupleSelector (FunctionSelector a edit) where
-            instance (Finite a,FullEdit edit) => FullTupleSelector (FunctionSelector a edit);
+            instance (c (EditReader edit)) => TupleReaderWitness c (FunctionSelector a edit);
+            instance (c edit) => TupleWitness c (FunctionSelector a edit);
         |])];
     };
 }

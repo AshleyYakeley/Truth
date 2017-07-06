@@ -1,6 +1,7 @@
 module Data.Compose where
 {
     import Data.Kind;
+    import Control.Monad.IO.Class;
 
 
     data Compose (p :: k2 -> *) (q :: k1 -> k2) (a :: k1) = MkCompose {getCompose :: p (q a)};
@@ -35,5 +36,10 @@ module Data.Compose where
     instance (Traversable p,Traversable q) => Traversable (Compose p q) where
     {
         sequenceA (MkCompose pqfa) = fmap MkCompose $ sequenceA $ fmap sequenceA pqfa
+    };
+
+    instance (MonadIO p,Monad q,Traversable q) => MonadIO (Compose p q) where
+    {
+        liftIO ioa = MkCompose $ liftIO $ fmap pure ioa;
     };
 }

@@ -12,10 +12,10 @@ module Truth.Core.Types.Either where
         EitherReadRight :: rb t -> EitherReader ra rb (Maybe t);
     };
 
-    mapEitherReadLeft :: Readable ra t -> Readable (EitherReader ra rb) (Maybe t);
+    mapEitherReadLeft :: MapReadable readable => readable ra t -> readable (EitherReader ra rb) (Maybe t);
     mapEitherReadLeft = mapReadableF (readable . EitherReadLeft);
 
-    mapEitherReadRight :: Readable rb t -> Readable (EitherReader ra rb) (Maybe t);
+    mapEitherReadRight :: MapReadable readable => readable rb t -> readable (EitherReader ra rb) (Maybe t);
     mapEitherReadRight = mapReadableF (readable . EitherReadRight);
 
     instance (Reader ra,Reader rb) => Reader (EitherReader ra rb) where
@@ -29,6 +29,21 @@ module Truth.Core.Types.Either where
         readFrom (Right _) (EitherReadLeft _) = Nothing;
         readFrom (Left _) (EitherReadRight _) = Nothing;
         readFrom (Right a) (EitherReadRight reader) = Just $ readFrom a reader;
+    };
+
+    instance (IOFullReader ra,IOFullReader rb) => IOFullReader (EitherReader ra rb) where
+    {
+        ioFromReader = do
+        {
+            mleft <- mapEitherReadLeft ioFromReader;
+            mright <- mapEitherReadRight ioFromReader;
+            case (mleft,mright) of
+            {
+                (Just a,Nothing) -> return $ Left a;
+                (Nothing,Just a) -> return $ Right a;
+                _ -> fail $ "fromReader: inconsistent EitherReader";
+            };
+        };
     };
 
     instance (FullReader ra,FullReader rb) => FullReader (EitherReader ra rb) where
@@ -54,6 +69,7 @@ module Truth.Core.Types.Either where
             {
                 type ReaderSubject (EitherReader ra rb) = Either (ReaderSubject ra) (ReaderSubject rb);
             };
+            instance (IOFullReader ra,IOFullReader rb) => IOFullReader (EitherReader ra rb);
             instance (FullReader ra,FullReader rb) => FullReader (EitherReader ra rb);
         |])];
     };

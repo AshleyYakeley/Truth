@@ -27,4 +27,13 @@ module Truth.Core.Read.Reader where
     };
 
     $(typeFamilyProxy "ReaderSubject");
+
+    newtype MutableReadW m reader = MkMutableReadW {unMutableReadW :: MutableRead m reader};
+
+    stateMutableRead :: Monad m => MutableRead (StateT (MutableReadW m reader) m) reader;
+    stateMutableRead rt = do
+    {
+        MkMutableReadW mr <- get;
+        lift $ mr rt;
+    };
 }

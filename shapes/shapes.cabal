@@ -19,6 +19,7 @@ library
         AllowAmbiguousTypes
         ConstraintKinds
         DataKinds
+        DefaultSignatures
         EmptyDataDecls
         ExistentialQuantification
         FlexibleContexts

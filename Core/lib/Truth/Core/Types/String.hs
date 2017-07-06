@@ -20,6 +20,7 @@ module Truth.Core.Types.String where
         readFrom s (StringReadSection run) = seqSection run s;
     };
 
+    instance IsSequence seq => IOFullReader (StringRead seq);
     instance IsSequence seq => FullReader (StringRead seq) where
     {
         fromReader = do
@@ -117,7 +118,7 @@ module Truth.Core.Types.String where
 
         invertEdit (StringReplaceWhole _) = do
         {
-            olds <- fromReader;
+            olds <- ioFromReader;
             return [StringReplaceWhole olds];
         };
         invertEdit (StringReplaceSection run@(MkSequenceRun start _) s) = do
@@ -127,6 +128,7 @@ module Truth.Core.Types.String where
         };
     };
 
+    instance IsSequence seq => IOFullEdit (StringEdit seq);
     instance IsSequence seq => FullEdit (StringEdit seq) where
     {
         replaceEdit = do

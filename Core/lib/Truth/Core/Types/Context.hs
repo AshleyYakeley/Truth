@@ -60,28 +60,28 @@ module Truth.Core.Types.Context where
         testEquality _ _ = Nothing;
     };
 
-    instance (Edit editx,Edit editn) =>
-        TupleSelector (WithContextSelector editx editn) where
+    instance (Edit editx,Edit editn) => TupleSelector (WithContextSelector editx editn) where
     {
         type TupleSubject (WithContextSelector editx editn) = WithContext (EditSubject editx) (EditSubject editn);
-        tupleIsEdit EditContext = MkConstraintWitness;
-        tupleIsEdit EditContent = MkConstraintWitness;
         tupleReadFrom EditContext (MkWithContext x _n) = x;
         tupleReadFrom EditContent (MkWithContext _x n) = n;
     };
 
-    instance (Edit ex,FullReader (EditReader ex),Edit en,FullReader (EditReader en)) =>
-        FiniteTupleSelector (WithContextSelector ex en) where
+    instance (Edit ex,Edit en) => FiniteTupleSelector (WithContextSelector ex en) where
     {
-        tupleIsFullReader EditContext = MkConstraintWitness;
-        tupleIsFullReader EditContent = MkConstraintWitness;
         tupleConstruct f = MkWithContext <$> f EditContext <*> f EditContent;
     };
 
-    instance (FullEdit ex,FullEdit en) => FullTupleSelector (WithContextSelector ex en) where
+    instance (c (EditReader ex),c (EditReader en)) => TupleReaderWitness c (WithContextSelector ex en) where
     {
-        tupleIsFullEdit EditContext = MkConstraintWitness;
-        tupleIsFullEdit EditContent = MkConstraintWitness;
+        tupleReaderWitness _ EditContext = MkConstraintWitness;
+        tupleReaderWitness _ EditContent = MkConstraintWitness;
+    };
+
+    instance (c ex,c en) => TupleWitness c (WithContextSelector ex en) where
+    {
+        tupleWitness _ EditContext = MkConstraintWitness;
+        tupleWitness _ EditContent = MkConstraintWitness;
     };
 
     instance (Edit ex,HasInfo ex,Edit en,HasInfo en) => TupleHasInfo (WithContextSelector ex en) where
@@ -102,7 +102,8 @@ module Truth.Core.Types.Context where
             };
             instance (Edit ex,FullReader (EditReader ex),Edit en,FullReader (EditReader en)) =>
                 FiniteTupleSelector (WithContextSelector ex en);
-            instance (FullEdit ex,FullEdit en) => FullTupleSelector (WithContextSelector ex en);
+            instance (c (EditReader ex),c (EditReader en)) => TupleReaderWitness c (WithContextSelector ex en);
+            instance (c ex,c en) => TupleWitness c (WithContextSelector ex en);
         |])];
     };
 

@@ -29,6 +29,7 @@ module Truth.Core.Types.ByteString where
         };
     };
 
+    instance IOFullReader ByteStringReader;
     instance FullReader ByteStringReader where
     {
         fromReader = do
@@ -46,6 +47,7 @@ module Truth.Core.Types.ByteString where
             {
                 type ReaderSubject ByteStringReader = ByteString;
             };
+            instance IOFullReader ByteStringReader;
             instance FullReader ByteStringReader;
         |])];
     };
@@ -149,6 +151,7 @@ module Truth.Core.Types.ByteString where
         }
     };
 
+    instance IOFullEdit ByteStringEdit;
     instance FullEdit ByteStringEdit where
     {
         replaceEdit = do

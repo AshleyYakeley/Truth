@@ -16,6 +16,7 @@ module Truth.Core.Types.Whole where
         readFrom msubj ReadWhole = msubj;
     };
 
+    instance IOFullReader (WholeReader a);
     instance FullReader (WholeReader a) where
     {
         fromReader = readable ReadWhole;
@@ -40,14 +41,23 @@ module Truth.Core.Types.Whole where
 
     instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader);
 
-    instance (FullReader reader) => Edit (WholeReaderEdit reader) where
+    instance (IOFullReader reader) => Edit (WholeReaderEdit reader) where
     {
         type EditReader (WholeReaderEdit reader) = reader;
         applyEdit (MkWholeEdit a) = readFromM (return a);
         invertEdit _ = do
         {
-            a <- fromReader;
+            a <- ioFromReader;
             return [MkWholeEdit a];
+        };
+    };
+
+    instance (IOFullReader reader) => IOFullEdit (WholeReaderEdit reader) where
+    {
+        ioReplaceEdit = do
+        {
+            a <- readableToM ioFromReader;
+            wrWrite $ MkWholeEdit a;
         };
     };
 
@@ -64,7 +74,7 @@ module Truth.Core.Types.Whole where
     instance HasInfo WholeReaderEdit where
     {
         info = mkSimpleInfo $(iowitness[t|WholeReaderEdit|]) [$(declInfo [d|
-            instance (FullReader reader) => Edit (WholeReaderEdit reader) where
+            instance (IOFullReader reader) => Edit (WholeReaderEdit reader) where
             {
                 type EditReader (WholeReaderEdit reader) = reader;
             };

@@ -13,6 +13,12 @@ module Truth.Core.Object.MutableEdit where
         mutableEdit :: [edit] -> m (Maybe (m ()))
     };
 
+    instance Floating edit edit =>
+        Floating edit (MutableEdit m edit) where
+    {
+        floatingUpdate edit (MkMutableEdit mr me) = MkMutableEdit mr $ \edits -> me $ fmap (floatingUpdate edit) edits;
+    };
+
     mutableReadEdit :: Monad m => MutableEdit m edit -> Readable (EditReader edit) [edit] -> m (Maybe (m ()));
     mutableReadEdit MkMutableEdit{..}  MkReadable{..} = do
     {
@@ -44,11 +50,26 @@ module Truth.Core.Object.MutableEdit where
     liftMutableEdit :: (MonadTrans t,Monad m) => MutableEdit m edit -> MutableEdit (t m) edit;
     liftMutableEdit = remonadMutableEdit lift;
 
+    constantMutableEdit :: forall m edit. (Reader (EditReader edit),Monad m) => EditSubject edit -> MutableEdit m edit;
+    constantMutableEdit subj = let
+    {
+        mutableRead :: MutableRead m (EditReader edit);
+        mutableRead = readFromM $ pure subj;
+        mutableEdit _ = pure Nothing;
+    } in MkMutableEdit{..};
+
     readOnlyMutableEdit :: Applicative m => MutableRead m reader -> MutableEdit m (NoEdit reader);
     readOnlyMutableEdit mutableRead = let
     {
         mutableEdit [] = pure $ Just $ pure ();
         mutableEdit (e:_) = never e;
+    } in MkMutableEdit{..};
+
+    stateMutableEdit :: (Monad m,Edit edit) => MutableEdit (StateT (MutableReadW m (EditReader edit)) m) edit;
+    stateMutableEdit = let
+    {
+        mutableRead = stateMutableRead;
+        mutableEdit edits = return $ Just $ modify $ mapMutableReadW $ applyEdits edits;
     } in MkMutableEdit{..};
 
     noneMutableEdit :: Applicative m => MutableEdit m (NoEdit (NoReader t));

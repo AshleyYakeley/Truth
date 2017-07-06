@@ -11,23 +11,29 @@ module Truth.Core.Read.Readable where
     };
 
 
-    newtype Readable reader a = MkReadable { unReadable :: forall m. Monad m => MutableRead m reader -> m a};
+    newtype GenReadable c reader a = MkReadable { unReadable :: forall m. (Monad m,c m) => MutableRead m reader -> m a};
 
-    fromReadable :: (Reader reader) => Readable reader t -> ReaderSubject reader -> t;
+    type Readable = GenReadable Monad;
+    type IOReadable = GenReadable MonadIO;
+
+    readableToGen :: Readable reader a -> GenReadable c reader a;
+    readableToGen (MkReadable f) = MkReadable f;
+
+    fromReadable :: (Reader reader,c Identity) => GenReadable c reader t -> ReaderSubject reader -> t;
     fromReadable (MkReadable rrt) a = runIdentity $ rrt $ Identity . (readFrom a);
 
-    instance Functor (Readable reader) where
+    instance Functor (GenReadable c reader) where
     {
         fmap ab (MkReadable sma) = MkReadable (\s -> fmap ab (sma s));
     };
 
-    instance Applicative (Readable reader) where
+    instance Applicative (GenReadable c reader) where
     {
         pure a = MkReadable $ \_ -> pure a;
         (MkReadable smab) <*> (MkReadable sma) = MkReadable $ \s -> smab s <*> sma s;
     };
 
-    instance Monad (Readable reader) where
+    instance Monad (GenReadable c reader) where
     {
         return = pure;
         (MkReadable sma) >>= f = MkReadable $ \s -> do
@@ -37,13 +43,18 @@ module Truth.Core.Read.Readable where
         };
     };
 
-    instance IsReadableMonad (Readable reader) where
+    instance MonadIO (GenReadable MonadIO reader) where
     {
-        type RMReader (Readable reader) = reader;
+        liftIO ioa = MkReadable $ \_ -> liftIO ioa;
+    };
+
+    instance IsReadableMonad (GenReadable c reader) where
+    {
+        type RMReader (GenReadable c reader) = reader;
         readable rt = MkReadable (\s -> s rt);
     };
 
-    readableToM :: IsReadableMonad m => Readable (RMReader m) t -> m t;
+    readableToM :: (IsReadableMonad m,c m) => GenReadable c (RMReader m) t -> m t;
     readableToM (MkReadable sma) = sma readable;
 
 
@@ -60,4 +71,16 @@ module Truth.Core.Read.Readable where
         type RMReader (Compose m f) = RMReader m;
         readable rt = MkCompose $ fmap pure $ readable rt;
     };
+
+
+    instance Reader reader => Reader (Readable reader) where
+    {
+        type ReaderSubject (Readable reader) = ReaderSubject reader;
+
+        readFrom subj rbl = fromReadable rbl subj;
+        readFromM msubj rbl = unReadable rbl $ readFromM msubj;
+    };
+
+    nestReadable :: Readable reader t -> Readable (Readable reader) t;
+    nestReadable rbl = MkReadable $ \mr -> mr rbl;
 }

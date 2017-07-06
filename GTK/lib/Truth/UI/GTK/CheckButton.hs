@@ -1,4 +1,3 @@
-{-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.CheckButton where
 {
     import Data.Type.Equality;

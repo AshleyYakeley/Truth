@@ -176,8 +176,8 @@ module Truth.Core.Object.View where
         return MkViewSubscription{..};
     };
 
-    tupleView :: (Applicative m,FullTupleSelector sel) => (forall edit. sel edit -> m (View edit w)) -> m (View (TupleEdit sel) [w]);
-    tupleView pickview = getCompose $ for tupleAllSelectors $ \(MkAnyWitness sel) -> case tupleIsFullEdit sel of
+    tupleView :: (Applicative m,FiniteTupleSelector sel) => (forall edit. sel edit -> m (View edit w)) -> m (View (TupleEdit sel) [w]);
+    tupleView pickview = getCompose $ for tupleAllSelectors $ \(MkAnyWitness sel) -> case tupleWitness (Proxy :: Proxy Edit) sel of
     {
         MkConstraintWitness -> MkCompose $ fmap (mapView (toGeneralLens $ tupleCleanEditLens sel)) (pickview sel);
     };

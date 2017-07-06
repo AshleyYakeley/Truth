@@ -10,7 +10,7 @@ module Truth.Core.Object.Undo(UndoActions(..),undoQueueSubscriber) where
 
     type UndoEntry edit = ([edit],[edit]);
 
-    makeUndoEntry :: (Monad m,Edit edit) => MutableRead m (EditReader edit) -> [edit] -> m (Maybe (UndoEntry edit));
+    makeUndoEntry :: (MonadIO m,Edit edit) => MutableRead m (EditReader edit) -> [edit] -> m (Maybe (UndoEntry edit));
     makeUndoEntry _ [] = return Nothing;
     makeUndoEntry mr edits = do
     {
@@ -24,7 +24,7 @@ module Truth.Core.Object.Undo(UndoActions(..),undoQueueSubscriber) where
         _uqRedoEdits :: [UndoEntry edit]
     };
 
-    updateUndoQueue :: (Monad m,Edit edit) => MutableRead m (EditReader edit) -> [edit] -> StateT (UndoQueue edit) m ();
+    updateUndoQueue :: (MonadIO m,Edit edit) => MutableRead m (EditReader edit) -> [edit] -> StateT (UndoQueue edit) m ();
     updateUndoQueue mr edits = do
     {
         mue <- lift $ makeUndoEntry mr edits;

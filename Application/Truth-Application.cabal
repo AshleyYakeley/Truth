@@ -13,6 +13,7 @@ executable truth
         AllowAmbiguousTypes
         ConstraintKinds
         DataKinds
+        DefaultSignatures
         EmptyDataDecls
         ExistentialQuantification
         FlexibleContexts

@@ -6,6 +6,7 @@ module Data.Reity.Instances where
     import Data.Word;
     import Data.ByteString;
     import Control.Comonad;
+    import Data.UUID;
     import Data.Searchable;
     import Data.HasNewValue;
     import Data.MonadOne;
@@ -173,6 +174,7 @@ module Data.Reity.Instances where
         info = mkSimpleInfo $(iowitness[t|Char|]) [$(declInfo [d|
             instance HasNewValue Char;
             instance Eq Char;
+            instance Ord Char;
         |])];
     };
 
@@ -181,6 +183,7 @@ module Data.Reity.Instances where
         info = mkSimpleInfo $(iowitness[t|Word8|]) [$(declInfo [d|
             instance HasNewValue Word8;
             instance Eq Word8;
+            instance Ord Word8;
         |])];
     };
 
@@ -189,6 +192,7 @@ module Data.Reity.Instances where
         info = mkSimpleInfo $(iowitness[t|Int|]) [$(declInfo [d|
             instance HasNewValue Int;
             instance Eq Int;
+            instance Ord Int;
         |])];
     };
 
@@ -229,6 +233,12 @@ module Data.Reity.Instances where
         |])];
     };
 
+    instance HasInfo (,) where
+    {
+        info = mkSimpleInfo $(iowitness[t|(,)|]) [$(declInfo [d|
+        |])];
+    };
+
     instance HasInfo Either where
     {
         info = mkSimpleInfo $(iowitness[t|Either|]) [$(declInfo [d|
@@ -251,6 +261,14 @@ module Data.Reity.Instances where
             instance Applicative (Result e);
             instance Monad (Result e);
             instance MonadOne (Result e);
+        |])];
+    };
+
+    instance HasInfo UUID where
+    {
+        info = mkSimpleInfo $(iowitness[t|UUID|]) [$(declInfo [d|
+            instance Eq UUID;
+            instance Ord UUID;
         |])];
     };
 

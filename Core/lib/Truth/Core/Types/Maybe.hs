@@ -17,7 +17,7 @@ module Truth.Core.Types.Maybe where
         floatingUpdate _ t = t;
     };
 
-    instance (FullEdit edit,HasNewValue (EditSubject edit)) => Edit (MaybeEdit edit) where
+    instance (IOFullEdit edit,HasNewValue (EditSubject edit)) => Edit (MaybeEdit edit) where
     {
         type EditReader (MaybeEdit edit) = OneReader Maybe (EditReader edit);
 
@@ -44,7 +44,7 @@ module Truth.Core.Types.Maybe where
             {
                 Just () -> do
                 {
-                    medits <- mapReadableF (readable . ReadOne) $ writerToReadable replaceEdit;
+                    medits <- mapReadableF (readable . ReadOne) $ ioWriterToReadable ioReplaceEdit;
                     case medits of
                     {
                         Nothing -> return []; -- shouldn't happen
@@ -61,6 +61,24 @@ module Truth.Core.Types.Maybe where
             {
                 Just edits -> fmap JustMaybeEdit edits;
                 Nothing -> [];
+            };
+        };
+    };
+
+    instance (IOFullEdit edit,HasNewValue (EditSubject edit)) => IOFullEdit (MaybeEdit edit) where
+    {
+        ioReplaceEdit = do
+        {
+            me <- readable ReadHasOne;
+            case me of
+            {
+                Just () -> do
+                {
+                    wrWrite CreateMaybeEdit;
+                    _ <- reWriterReadable JustMaybeEdit $ mapReadableF (readable . ReadOne) ioReplaceEdit;
+                    return ();
+                };
+                Nothing -> wrWrite DeleteMaybeEdit; -- deleted
             };
         };
     };
