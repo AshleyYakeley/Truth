@@ -13,15 +13,6 @@ module Truth.UI.GTK.Window where
     import Truth.UI.GTK.KeyContainer;
 
 
-    makeButton :: String -> IO () -> IO Button;
-    makeButton name action = do
-    {
-        button <- buttonNew;
-        set button [buttonLabel := name];
-        _ <- onClicked button action;
-        return button;
-    };
-
     lastResortView :: Bool -> [String] -> GetView;
     lastResortView showmsgs msgs _ = MkView $ \_ _ -> do
     {

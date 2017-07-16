@@ -1,8 +1,10 @@
 module Data.KeyContainer where
 {
     import Data.List;
+    import System.Random;
     import Data.MonoTraversable;
     import Data.Containers;
+    import Data.HasNewValue;
 
 
     class (MonoTraversable t, SetContainer t) => KeyContainer t where
@@ -27,5 +29,19 @@ module Data.KeyContainer where
         deleteElement k ((k',_):aa) | k == k' = aa;
         deleteElement k (a:aa) = a : (deleteElement k aa);
         fromElementList = id;
-    }
+    };
+
+    class KeyContainer t => IONewItemKeyContainer t where
+    {
+        newKeyContainerItem :: proxy t -> IO (Element t);
+    };
+
+    instance (Eq key,Random key,HasNewValue value) => IONewItemKeyContainer [(key, value)] where
+    {
+        newKeyContainerItem _ = do
+        {
+            key <- randomIO;
+            return (key,newValue);
+        }
+    };
 }

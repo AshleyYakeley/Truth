@@ -1,6 +1,7 @@
 module Truth.Core.Types.Key where
 {
     import Truth.Core.Import;
+    import Data.UUID;
     import Truth.Core.Sequence;
     import Truth.Core.Read;
     import Truth.Core.Edit;
@@ -217,12 +218,15 @@ module Truth.Core.Types.Key where
     {
         info = mkSimpleInfo $(ionamedwitness[t|KeyEdit|]) [$(declInfo [d|
             instance Eq key => KeyContainer [(key, value)];
+            type instance ContainerKey ([(key, value)]) = key;
+            instance Show UUID;
             instance Floating (KeyEdit cont edit) (KeyEdit cont edit);
             instance (KeyContainer cont,FullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => Edit (KeyEdit cont edit) where
             {
                 type EditReader (KeyEdit cont edit) = KeyReader cont (EditReader edit);
             };
             instance (KeyContainer cont,FullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => FullEdit (KeyEdit cont edit);
+            instance (HasNewValue value) => IONewItemKeyContainer [(UUID, value)];
         |])];
     };
 }

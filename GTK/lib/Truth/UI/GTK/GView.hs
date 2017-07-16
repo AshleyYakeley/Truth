@@ -8,6 +8,15 @@ module Truth.UI.GTK.GView where
     import Data.Reity;
     import Truth.Core;
 
+    makeButton :: String -> IO () -> IO Button;
+    makeButton name action = do
+    {
+        button <- buttonNew;
+        set button [buttonLabel := name];
+        _ <- onClicked button action;
+        return button;
+    };
+
     type GView edit = View edit Widget;
     type GViewResult edit updatestate selstate = ViewResult edit selstate Widget;
     newtype MatchView = MkMatchView (forall edit. (Edit edit) => Info edit -> Result [String] (GView edit));

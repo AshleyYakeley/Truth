@@ -124,4 +124,11 @@ module Truth.Core.Sequence where
         info = mkSimpleInfo $(ionamedwitness[t|KeyContainer|]) [$(declInfo [d|
         |])];
     };
+
+    -- orphan
+    instance HasInfo IONewItemKeyContainer where
+    {
+        info = mkSimpleInfo $(ionamedwitness[t|IONewItemKeyContainer|]) [$(declInfo [d|
+        |])];
+    };
 }

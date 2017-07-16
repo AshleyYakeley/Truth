@@ -13,16 +13,36 @@ module Truth.UI.GTK.KeyContainer where
     import Truth.UI.GTK.GView;
 
 
-    keyContainerView :: forall cont edit. (KeyContainer cont) => GView (KeyEdit cont edit);
+    keyContainerView :: forall cont edit. (Show (ContainerKey cont),IONewItemKeyContainer cont) => GView (KeyEdit cont edit);
     keyContainerView = MkView $ \(MkObject object) _setSelect -> do
     {
         initialKeys <- object $ \muted -> mutableRead muted KeyReadKeys;
         store <- listStoreNew initialKeys;
-        widget <- treeViewNewWithModel store;
+        tview <- treeViewNewWithModel store;
+        keyColRenderer <- cellRendererTextNew;
+        namecolumn <- treeViewColumnNew;
+        treeViewColumnSetTitle namecolumn "Key";
+        cellLayoutPackStart namecolumn keyColRenderer False;
+        cellLayoutSetAttributes namecolumn keyColRenderer store $ \key -> [cellText := show key];
+        _ <- treeViewAppendColumn tview namecolumn;
+
+        box <- vBoxNew False 0;
+        newButton <- makeButton "New" $ object $ \muted -> do
+        {
+            item <- liftIO $ newKeyContainerItem (Proxy::Proxy cont);
+            maction <- mutableEdit muted [KeyInsertReplaceItem item];
+            case maction of
+            {
+                Just action -> action;
+                Nothing -> return ();
+            }
+        };
+        boxPackStart box newButton PackNatural 0;
+        boxPackStart box tview PackGrow 0;
 
         let
         {
-            vrWidget = toWidget widget;
+            vrWidget = toWidget box;
 
             findInStore :: ContainerKey cont -> IO (Maybe Int);
             findInStore key = do
@@ -74,7 +94,9 @@ module Truth.UI.GTK.KeyContainer where
         MkSplitInfo ikc _ie <- matchInfoNamed iedit;
         MkSplitInfo ik ic <- matchInfoNamed ikc;
         ReflH <- testHetEqualityNamed (info :: Info KeyEdit) ik;
-        ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (info @KeyContainer) ic;
+        ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (info @IONewItemKeyContainer) ic;
+        ValueFact (MkContainerKeyInfo ikey) <- askNamed (infoKnowledge iedit) $ applyInfo (info @ContainerKeyInfo) ic;
+        ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (info @Show) ikey;
         return keyContainerView;
     };
 }
