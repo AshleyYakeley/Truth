@@ -25,7 +25,7 @@ module Truth.Core.Types.Whole where
     $(return []);
     instance HasInfo WholeReader where
     {
-        info = mkSimpleInfo $(iowitness[t|WholeReader|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|WholeReader|]) [$(declInfo [d|
             instance Reader (WholeReader a) where
             {
                 type ReaderSubject (WholeReader a) = a;
@@ -73,7 +73,7 @@ module Truth.Core.Types.Whole where
     $(return []);
     instance HasInfo WholeReaderEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|WholeReaderEdit|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|WholeReaderEdit|]) [$(declInfo [d|
             instance (IOFullReader reader) => Edit (WholeReaderEdit reader) where
             {
                 type EditReader (WholeReaderEdit reader) = reader;

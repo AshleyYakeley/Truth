@@ -16,7 +16,7 @@ module Truth.Core.Text where
 
     instance HasInfo ListError where
     {
-        info = mkSimpleInfo $(iowitness[t|ListError|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|ListError|]) [$(declInfo [d|
         |])];
     };
 

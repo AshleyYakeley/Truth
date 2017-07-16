@@ -13,7 +13,7 @@ module Truth.Core.Types.Anything where
 
     instance HasInfo Anything where
     {
-        info = mkSimpleInfo $(iowitness[t|Anything|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|Anything|]) [$(declInfo [d|
         |])];
     };
 
@@ -43,7 +43,7 @@ module Truth.Core.Types.Anything where
     $(return []);
     instance HasInfo AnyReader where
     {
-        info = mkSimpleInfo $(iowitness[t|AnyReader|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|AnyReader|]) [$(declInfo [d|
             instance Reader AnyReader where
             {
                 type ReaderSubject AnyReader = Anything;
@@ -103,7 +103,7 @@ module Truth.Core.Types.Anything where
     $(return []);
     instance HasInfo AnyEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|AnyEdit|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|AnyEdit|]) [$(declInfo [d|
             instance Edit AnyEdit where
             {
                 type EditReader AnyEdit = AnyReader;

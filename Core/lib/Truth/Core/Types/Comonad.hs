@@ -25,7 +25,7 @@ module Truth.Core.Types.Comonad where
     $(return []);
     instance HasInfo ComonadReader where
     {
-        info = mkSimpleInfo $(iowitness[t|ComonadReader|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|ComonadReader|]) [$(declInfo [d|
             instance (Comonad w,Reader reader) => Reader (ComonadReader w reader) where
             {
                 type ReaderSubject (ComonadReader w reader) = w (ReaderSubject reader);
@@ -57,7 +57,7 @@ module Truth.Core.Types.Comonad where
     $(return []);
     instance HasInfo ComonadEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|ComonadEdit|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|ComonadEdit|]) [$(declInfo [d|
             instance (Comonad w,Edit edit) => Edit (ComonadEdit w edit) where
             {
                 type EditReader (ComonadEdit w edit) = ComonadReader w (EditReader edit);

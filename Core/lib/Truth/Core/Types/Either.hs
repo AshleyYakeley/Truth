@@ -64,7 +64,7 @@ module Truth.Core.Types.Either where
     $(return []);
     instance HasInfo EitherReader where
     {
-        info = mkSimpleInfo $(iowitness[t|EitherReader|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|EitherReader|]) [$(declInfo [d|
             instance (Reader ra,Reader rb) => Reader (EitherReader ra rb) where
             {
                 type ReaderSubject (EitherReader ra rb) = Either (ReaderSubject ra) (ReaderSubject rb);
@@ -115,7 +115,7 @@ module Truth.Core.Types.Either where
     $(return []);
     instance HasInfo EitherEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|EitherEdit|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|EitherEdit|]) [$(declInfo [d|
             instance (Edit ea,Edit eb) => Edit (EitherEdit ea eb) where
             {
                 type EditReader (EitherEdit ea eb) = EitherReader (EditReader ea) (EditReader eb);

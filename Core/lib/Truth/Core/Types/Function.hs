@@ -41,7 +41,7 @@ module Truth.Core.Types.Function where
     $(return []);
     instance HasInfo FunctionSelector where
     {
-        info = mkSimpleInfo $(iowitness[t|FunctionSelector|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|FunctionSelector|]) [$(declInfo [d|
             instance (Eq a) => (TestEquality :: (* -> *) -> Constraint) (FunctionSelector a editb);
             instance (Finite a,Edit edit) =>
                 TupleSelector (FunctionSelector a edit) where

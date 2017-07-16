@@ -35,15 +35,20 @@ module Data.Reity.Info where
         }
     };
 
+    instance Show (Info a) where
+    {
+        show (MkInfo _ w) = show w;
+    };
+
     data Wit (t :: k) where
     {
-        SimpleWit :: forall (k :: *) (t :: k). IOWitness t -> TypeKnowledge -> Wit t;
+        SimpleWit :: forall (k :: *) (t :: k). IOWitness t -> String -> TypeKnowledge -> Wit t;
         ConsWit :: forall (ka :: *) (kb :: *) (f :: ka -> kb) (a :: ka). Info f -> Info a -> Wit (f a);
     };
 
     instance TestHetEquality Wit where
     {
-        testHetEquality (SimpleWit iowa _) (SimpleWit iowb _) = testHetEquality iowa iowb;
+        testHetEquality (SimpleWit iowa _ _) (SimpleWit iowb _ _) = testHetEquality iowa iowb;
         testHetEquality (ConsWit ica iaa) (ConsWit icb iab) = do
         {
             ReflH <- testHetEquality ica icb;
@@ -62,11 +67,18 @@ module Data.Reity.Info where
         }
     };
 
+    instance Show (Wit a) where
+    {
+        show (SimpleWit _ name _) = name;
+        show (ConsWit fi (MkInfo _ (SimpleWit _ name _))) = show fi ++ " " ++ name;
+        show (ConsWit fi fa) = show fi ++ " (" ++ show fa ++ ")";
+    };
+
     infoKnowledge :: Info t -> TypeKnowledge;
     infoKnowledge (MkInfo _ w) = witKnowledge w;
 
     witKnowledge :: Wit t -> TypeKnowledge;
-    witKnowledge (SimpleWit _ k) = k;
+    witKnowledge (SimpleWit _ _ k) = k;
     witKnowledge (ConsWit i1 i2) = mappend (infoKnowledge i1) (infoKnowledge i2);
 
     knowValue :: forall (t :: *). t -> Info t -> TypeKnowledge;

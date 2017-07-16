@@ -21,7 +21,7 @@ module Truth.Core.Types.Sum where
     $(return []);
     instance HasInfo SumReader where
     {
-        info = mkSimpleInfo $(iowitness[t|SumReader|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|SumReader|]) [$(declInfo [d|
             instance (Reader ra,Reader rb,ReaderSubject ra ~ ReaderSubject rb) => Reader (SumReader ra rb) where
             {
                 type ReaderSubject (SumReader ra rb) = ReaderSubject ra;
@@ -62,7 +62,7 @@ module Truth.Core.Types.Sum where
     $(return []);
     instance HasInfo SumEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|SumEdit|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|SumEdit|]) [$(declInfo [d|
             instance (Edit ea,Edit eb,EditReader ea ~ EditReader eb) => Edit (SumEdit ea eb) where
             {
                 type EditReader (SumEdit ea eb) = EditReader ea;

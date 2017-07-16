@@ -40,9 +40,9 @@ module Truth.UI.GTK.CheckButton where
     };
 
     checkButtonMatchView :: MatchView;
-    checkButtonMatchView = MkMatchView $ \tedit -> do
+    checkButtonMatchView = namedMatchView "check button" $ \tedit -> do
     {
-        Refl <- testEquality (info :: Info (WholeEdit Bool)) tedit;
+        Refl <- testEqualityNamed (info :: Info (WholeEdit Bool)) tedit;
         return $ checkButtonView "";
     };
 }

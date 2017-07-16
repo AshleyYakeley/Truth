@@ -23,7 +23,7 @@ module Truth.Core.Sequence where
     $(return []);
     instance HasInfo SequencePoint where
     {
-        info = mkSimpleInfo $(iowitness[t|SequencePoint|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|SequencePoint|]) [$(declInfo [d|
             instance Eq (Index seq) => Eq (SequencePoint seq);
             instance Ord (Index seq) => Ord (SequencePoint seq);
             instance Num (Index seq) => Num (SequencePoint seq);
@@ -114,14 +114,14 @@ module Truth.Core.Sequence where
     -- orphan
     instance HasInfo IsSequence where
     {
-        info = mkSimpleInfo $(iowitness[t|IsSequence|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|IsSequence|]) [$(declInfo [d|
         |])];
     };
 
     -- orphan
     instance HasInfo KeyContainer where
     {
-        info = mkSimpleInfo $(iowitness[t|KeyContainer|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|KeyContainer|]) [$(declInfo [d|
         |])];
     };
 }

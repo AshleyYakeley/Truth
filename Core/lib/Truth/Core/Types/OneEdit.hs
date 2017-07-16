@@ -70,7 +70,7 @@ module Truth.Core.Types.OneEdit where
     $(return []);
     instance HasInfo OneEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|OneEdit|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|OneEdit|]) [$(declInfo [d|
             instance (MonadOne f,Edit edit) => Edit (OneEdit f edit) where
             {
                 type EditReader (OneEdit f edit) = OneReader f (EditReader edit);

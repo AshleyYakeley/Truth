@@ -20,7 +20,7 @@ module Truth.Core.Types.MIME where
     $(return []);
     instance HasInfo MIMEContentType where
     {
-        info = mkSimpleInfo $(iowitness[t|MIMEContentType|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|MIMEContentType|]) [$(declInfo [d|
             instance Eq MIMEContentType;
             instance HasNewValue MIMEContentType;
         |])];

@@ -57,7 +57,7 @@ module Truth.Core.Types.List where
     $(return []);
     instance HasInfo ListReader where
     {
-        info = mkSimpleInfo $(iowitness[t|ListReader|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|ListReader|]) [$(declInfo [d|
             instance (IsSequence seq,Reader reader,ReaderSubject reader ~ Element seq) => Reader (ListReader seq reader) where
             {
                 type ReaderSubject (ListReader seq reader) = seq;
@@ -183,7 +183,7 @@ module Truth.Core.Types.List where
     $(return []);
     instance HasInfo ListEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|ListEdit|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|ListEdit|]) [$(declInfo [d|
             instance (Enum (Index seq),Ord (Index seq)) => Floating (ListEdit seq edit) (SequencePoint seq);
             instance (Enum (Index seq),Ord (Index seq)) => Floating (ListEdit seq edit) (ListEdit seq edit);
             instance (IsSequence seq,FullReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => Edit (ListEdit seq edit) where

@@ -13,7 +13,7 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleWitness where
     {
-        info = mkSimpleInfo $(iowitness[t|TupleWitness|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|TupleWitness|]) [$(declInfo [d|
         |])];
     };
 
@@ -27,7 +27,7 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleSelector where
     {
-        info = mkSimpleInfo $(iowitness[t|TupleSelector|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|TupleSelector|]) [$(declInfo [d|
         |])];
     };
 
@@ -56,7 +56,7 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleReaderWitness where
     {
-        info = mkSimpleInfo $(iowitness[t|TupleReaderWitness|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|TupleReaderWitness|]) [$(declInfo [d|
         |])];
     };
 
@@ -66,7 +66,7 @@ module Truth.Core.Types.Tuple where
     };
     instance HasInfo FiniteTupleSelector where
     {
-        info = mkSimpleInfo $(iowitness[t|FiniteTupleSelector|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|FiniteTupleSelector|]) [$(declInfo [d|
         |])];
     };
 
@@ -92,7 +92,7 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleEditReader where
     {
-        info = mkSimpleInfo $(iowitness[t|TupleEditReader|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|TupleEditReader|]) [$(declInfo [d|
             instance (TupleSelector sel) => Reader (TupleEditReader sel) where
             {
                 type ReaderSubject (TupleEditReader sel) = TupleSubject sel;
@@ -165,7 +165,7 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleEdit where
     {
-        info = mkSimpleInfo $(iowitness[t|TupleEdit|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|TupleEdit|]) [$(declInfo [d|
             instance TupleSelector sel => Edit (TupleEdit sel) where
             {
                 type EditReader (TupleEdit sel) = TupleEditReader sel;
@@ -182,7 +182,7 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleHasInfo where
     {
-        info = mkSimpleInfo $(iowitness[t|TupleHasInfo|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|TupleHasInfo|]) [$(declInfo [d|
         |])];
     };
 

@@ -7,7 +7,6 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy) where
     import qualified Data.Type.Heterogeneous as R;
     import Control.Monad.Trans.Class;
     import Control.Monad.Trans.Writer;
-    import qualified Data.OpenWitness as R;
     import qualified Data.Knowledge as R;
     import qualified Data.Reity.Info as R;
     import qualified Data.Reity.Match as R;
@@ -300,7 +299,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy) where
         instDecs <- [d|
             instance R.HasInfo $(typeTypeQ) where
             {
-                info = mkSimpleInfo $(R.iowitness typeTypeQ) [];
+                info = mkSimpleInfo $(R.ionamedwitness typeTypeQ) [];
             };
         |];
         return $ typeDec : instDecs;

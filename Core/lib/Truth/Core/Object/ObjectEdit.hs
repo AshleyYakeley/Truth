@@ -31,7 +31,7 @@ module Truth.Core.Object.ObjectEdit where
     $(return []);
     instance HasInfo ObjectReader where
     {
-        info = mkSimpleInfo $(iowitness[t|ObjectReader|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|ObjectReader|]) [$(declInfo [d|
             instance Reader (EditReader edit) => Reader (ObjectReader edit) where
             {
                 type ReaderSubject (ObjectReader edit) = EditSubject edit;

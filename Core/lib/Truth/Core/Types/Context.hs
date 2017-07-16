@@ -38,7 +38,7 @@ module Truth.Core.Types.Context where
     $(return []);
     instance HasInfo WithContext where
     {
-        info = mkSimpleInfo $(iowitness[t|WithContext|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|WithContext|]) [$(declInfo [d|
             instance Functor (WithContext context);
             instance Foldable (WithContext context);
             instance Traversable (WithContext context);
@@ -93,7 +93,7 @@ module Truth.Core.Types.Context where
     $(return []);
     instance HasInfo WithContextSelector where
     {
-        info = mkSimpleInfo $(iowitness[t|WithContextSelector|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|WithContextSelector|]) [$(declInfo [d|
             instance (TestEquality :: (* -> *) -> Constraint) (WithContextSelector ea eb);
             instance (Edit editx,Edit editn) =>
                 TupleSelector (WithContextSelector editx editn) where

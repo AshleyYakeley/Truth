@@ -62,7 +62,7 @@ module Truth.Core.Types.Pair where
     $(return []);
     instance HasInfo PairSelector where
     {
-        info = mkSimpleInfo $(iowitness[t|PairSelector|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|PairSelector|]) [$(declInfo [d|
             --instance TestEquality (PairSelector ea eb);
             instance (Edit ea,Edit eb) =>
                 TupleSelector (PairSelector ea eb) where

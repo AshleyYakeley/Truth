@@ -1,6 +1,7 @@
 {-# LANGUAGE ViewPatterns, FlexibleContexts #-}
 module Truth.UI.GTK.Window where
 {
+    import Data.List;
     import Data.IORef;
     import Data.Reity;
     import Truth.Core;
@@ -20,10 +21,10 @@ module Truth.UI.GTK.Window where
         return button;
     };
 
-    lastResortView :: GetView;
-    lastResortView _ = MkView $ \_ _ -> do
+    lastResortView :: Bool -> [String] -> GetView;
+    lastResortView showmsgs msgs _ = MkView $ \_ _ -> do
     {
-        w <- labelNew (Just "Uneditable");
+        w <- labelNew $ Just $ if showmsgs then intercalate "\n" $ "Uneditable:":msgs else "Uneditable";
         let
         {
             vrWidget = toWidget w;
@@ -38,7 +39,7 @@ module Truth.UI.GTK.Window where
     matchViews = [checkButtonMatchView,textMatchView {-,maybeMatchView getView,resultMatchView getView-}];
 
     getView :: GetView;
-    getView = finalGetView (mconcat matchViews) lastResortView;
+    getView = finalGetView (mconcat matchViews) $ lastResortView True;
 
     class WindowButtons actions where
     {

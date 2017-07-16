@@ -11,7 +11,6 @@ module Data.Reity.Instances where
     import Data.HasNewValue;
     import Data.MonadOne;
     import Data.Result;
-    import Data.OpenWitness;
     import Data.Reity.Match;
     import Data.Reity.HasInfo;
     import Data.Reity.Template;
@@ -21,29 +20,29 @@ module Data.Reity.Instances where
 
     instance HasInfo TYPE where
     {
-        info = mkSimpleInfo $(iowitness[t|TYPE|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|TYPE|]) [];
     };
 
     type ARR = (->);
 
     instance HasInfo (->) where
     {
-        info = mkSimpleInfo $(iowitness[t|ARR|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|ARR|]) [];
     };
 
     instance HasInfo Constraint where
     {
-        info = mkSimpleInfo $(iowitness[t|Constraint|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Constraint|]) [];
     };
 
     instance HasInfo RuntimeRep where
     {
-        info = mkSimpleInfo $(iowitness[t|RuntimeRep|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|RuntimeRep|]) [];
     };
 
     instance HasInfo 'PtrRepLifted where
     {
-        info = mkSimpleInfo $(iowitness[t|'PtrRepLifted|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|'PtrRepLifted|]) [];
     };
 
     instance (HasInfo f,HasInfo a) => HasInfo (f a) where
@@ -56,97 +55,97 @@ module Data.Reity.Instances where
 
     instance HasInfo Eq where
     {
-        info = mkSimpleInfo $(iowitness[t|Eq|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Eq|]) [];
     };
 
     instance HasInfo Ord where
     {
-        info = mkSimpleInfo $(iowitness[t|Ord|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Ord|]) [];
     };
 
     instance HasInfo Enum where
     {
-        info = mkSimpleInfo $(iowitness[t|Enum|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Enum|]) [];
     };
 
     instance HasInfo Num where
     {
-        info = mkSimpleInfo $(iowitness[t|Num|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Num|]) [];
     };
 
     instance HasInfo Integral where
     {
-        info = mkSimpleInfo $(iowitness[t|Integral|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Integral|]) [];
     };
 
     instance HasInfo Real where
     {
-        info = mkSimpleInfo $(iowitness[t|Real|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Real|]) [];
     };
 
     instance HasInfo Show where
     {
-        info = mkSimpleInfo $(iowitness[t|Show|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Show|]) [];
     };
 
     instance HasInfo Read where
     {
-        info = mkSimpleInfo $(iowitness[t|Read|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Read|]) [];
     };
 
     instance HasInfo k => HasInfo (TestEquality :: (k -> *) -> Constraint) where
     {
-        info = mkSimpleInfo $(iowitness[t|TestEquality|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|TestEquality|]) [];
     };
 
     instance HasInfo Monoid where
     {
-        info = mkSimpleInfo $(iowitness[t|Monoid|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Monoid|]) [];
     };
 
     instance HasInfo Foldable where
     {
-        info = mkSimpleInfo $(iowitness[t|Foldable|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Foldable|]) [];
     };
 
     instance HasInfo Traversable where
     {
-        info = mkSimpleInfo $(iowitness[t|Traversable|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Traversable|]) [];
     };
 
     instance HasInfo Functor where
     {
-        info = mkSimpleInfo $(iowitness[t|Functor|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Functor|]) [];
     };
 
     instance HasInfo Applicative where
     {
-        info = mkSimpleInfo $(iowitness[t|Applicative|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Applicative|]) [];
     };
 
     instance HasInfo Monad where
     {
-        info = mkSimpleInfo $(iowitness[t|Monad|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Monad|]) [];
     };
 
     instance HasInfo Comonad where
     {
-        info = mkSimpleInfo $(iowitness[t|Comonad|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Comonad|]) [];
     };
 
     instance HasInfo HasNewValue where
     {
-        info = mkSimpleInfo $(iowitness[t|HasNewValue|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|HasNewValue|]) [];
     };
 
     instance HasInfo MonadOne where
     {
-        info = mkSimpleInfo $(iowitness[t|MonadOne|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|MonadOne|]) [];
     };
 
     instance HasInfo Finite where
     {
-        info = mkSimpleInfo $(iowitness[t|Finite|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Finite|]) [];
     };
 
 
@@ -154,7 +153,7 @@ module Data.Reity.Instances where
 
     instance HasInfo () where
     {
-        info = mkSimpleInfo $(iowitness[t|()|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|()|]) [$(declInfo [d|
             instance HasNewValue ();
             instance Monoid ();
             instance Eq ();
@@ -163,7 +162,7 @@ module Data.Reity.Instances where
 
     instance HasInfo Bool where
     {
-        info = mkSimpleInfo $(iowitness[t|Bool|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|Bool|]) [$(declInfo [d|
             instance HasNewValue Bool;
             instance Eq Bool;
         |])];
@@ -171,7 +170,7 @@ module Data.Reity.Instances where
 
     instance HasInfo Char where
     {
-        info = mkSimpleInfo $(iowitness[t|Char|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|Char|]) [$(declInfo [d|
             instance HasNewValue Char;
             instance Eq Char;
             instance Ord Char;
@@ -180,7 +179,7 @@ module Data.Reity.Instances where
 
     instance HasInfo Word8 where
     {
-        info = mkSimpleInfo $(iowitness[t|Word8|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|Word8|]) [$(declInfo [d|
             instance HasNewValue Word8;
             instance Eq Word8;
             instance Ord Word8;
@@ -189,7 +188,7 @@ module Data.Reity.Instances where
 
     instance HasInfo Int where
     {
-        info = mkSimpleInfo $(iowitness[t|Int|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|Int|]) [$(declInfo [d|
             instance HasNewValue Int;
             instance Eq Int;
             instance Ord Int;
@@ -198,7 +197,7 @@ module Data.Reity.Instances where
 
     instance HasInfo ByteString where
     {
-        info = mkSimpleInfo $(iowitness[t|ByteString|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|ByteString|]) [$(declInfo [d|
             instance HasNewValue ByteString;
             instance Monoid ByteString;
             instance Eq ByteString;
@@ -207,7 +206,7 @@ module Data.Reity.Instances where
 
     instance HasInfo Maybe where
     {
-        info = mkSimpleInfo $(iowitness[t|Maybe|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|Maybe|]) [$(declInfo [d|
             instance Foldable Maybe;
             instance Traversable Maybe;
             instance Functor Maybe;
@@ -222,7 +221,7 @@ module Data.Reity.Instances where
 
     instance HasInfo [] where
     {
-        info = mkSimpleInfo $(iowitness[t|[]|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|[]|]) [$(declInfo [d|
             instance Foldable [];
             instance Traversable [];
             instance Functor [];
@@ -235,13 +234,13 @@ module Data.Reity.Instances where
 
     instance HasInfo (,) where
     {
-        info = mkSimpleInfo $(iowitness[t|(,)|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|(,)|]) [$(declInfo [d|
         |])];
     };
 
     instance HasInfo Either where
     {
-        info = mkSimpleInfo $(iowitness[t|Either|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|Either|]) [$(declInfo [d|
             instance Foldable (Either a);
             instance Traversable (Either a);
             instance Functor (Either a);
@@ -253,7 +252,7 @@ module Data.Reity.Instances where
 
     instance HasInfo Result where
     {
-        info = mkSimpleInfo $(iowitness[t|Result|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|Result|]) [$(declInfo [d|
             instance HasNewValue a => HasNewValue (Result e a);
             instance Foldable (Result e);
             instance Traversable (Result e);
@@ -266,7 +265,7 @@ module Data.Reity.Instances where
 
     instance HasInfo UUID where
     {
-        info = mkSimpleInfo $(iowitness[t|UUID|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|UUID|]) [$(declInfo [d|
             instance Eq UUID;
             instance Ord UUID;
         |])];
@@ -275,7 +274,7 @@ module Data.Reity.Instances where
 {-
     instance HasInfo Any where
     {
-        info = mkSimpleInfo $(iowitness[t|Any|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Any|]) [];
     };
 -}
 }

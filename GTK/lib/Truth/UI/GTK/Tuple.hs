@@ -18,19 +18,19 @@ module Truth.UI.GTK.Tuple(tupleMatchView) where
         return $ toWidget vbox;
     };
 
-    tupleGView :: FiniteTupleSelector sel => (forall edit. sel edit -> Maybe (GView edit)) -> Maybe (GView (TupleEdit sel));
+    tupleGView :: (FiniteTupleSelector sel,Applicative m) => (forall edit. sel edit -> m (GView edit)) -> m (GView (TupleEdit sel));
     tupleGView selview = fmap (mapIOView arrangeWidgets) $ tupleView selview;
 
     tupleMatchView :: MatchView -> MatchView;
-    tupleMatchView (MkMatchView allviews) = MkMatchView $ \tedit -> do
+    tupleMatchView (MkMatchView allviews) = namedMatchView "tuple" $ \tedit -> do
     {
-        MkSplitInfo ite isel <- matchInfo tedit;
-        ReflH <- testHetEquality (info @TupleEdit) ite;
-        ConstraintFact <- ask (infoKnowledge isel) $ applyInfo (info @FiniteTupleSelector) isel;
-        ConstraintFact <- ask (infoKnowledge isel) $ applyInfo (info @TupleHasInfo) isel;
+        MkSplitInfo ite isel <- namedResult ("can't split " ++ show tedit) $ matchInfo tedit;
+        ReflH <- testHetEqualityNamed (info @TupleEdit) ite;
+        ConstraintFact <- askNamed (infoKnowledge isel) $ applyInfo (info @FiniteTupleSelector) isel;
+        ConstraintFact <- askNamed (infoKnowledge isel) $ applyInfo (info @TupleHasInfo) isel;
         tupleGView $ \sel -> case tupleWitness (Proxy :: Proxy Edit) sel of
         {
-            MkConstraintWitness -> allviews $ tupleHasInfo sel;
+            MkConstraintWitness -> namedResult "selector" $ allviews $ tupleHasInfo sel;
         };
     };
 }

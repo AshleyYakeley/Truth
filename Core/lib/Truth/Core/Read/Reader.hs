@@ -23,7 +23,7 @@ module Truth.Core.Read.Reader where
 
     instance HasInfo Reader where
     {
-        info = mkSimpleInfo $(iowitness[t|Reader|]) [];
+        info = mkSimpleInfo $(ionamedwitness[t|Reader|]) [];
     };
 
     $(typeFamilyProxy "ReaderSubject");
