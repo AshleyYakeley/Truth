@@ -24,7 +24,7 @@ module Truth.UI.GTK.Tuple(tupleMatchView) where
     tupleMatchView :: MatchView -> MatchView;
     tupleMatchView (MkMatchView allviews) = namedMatchView "tuple" $ \tedit -> do
     {
-        MkSplitInfo ite isel <- namedResult ("can't split " ++ show tedit) $ matchInfo tedit;
+        MkSplitInfo ite isel <- matchInfoNamed tedit;
         ReflH <- testHetEqualityNamed (info @TupleEdit) ite;
         ConstraintFact <- askNamed (infoKnowledge isel) $ applyInfo (info @FiniteTupleSelector) isel;
         ConstraintFact <- askNamed (infoKnowledge isel) $ applyInfo (info @TupleHasInfo) isel;

@@ -66,4 +66,5 @@ library
         Truth.UI.GTK.CheckButton
         Truth.UI.GTK.Text
         Truth.UI.GTK.Tuple
+        Truth.UI.GTK.KeyContainer
         Truth.UI.GTK.SourceView

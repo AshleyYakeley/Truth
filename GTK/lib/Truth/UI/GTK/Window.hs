@@ -10,6 +10,7 @@ module Truth.UI.GTK.Window where
     --import Truth.UI.GTK.Maybe;
     import Truth.UI.GTK.CheckButton;
     import Truth.UI.GTK.Text;
+    import Truth.UI.GTK.KeyContainer;
 
 
     makeButton :: String -> IO () -> IO Button;
@@ -36,7 +37,7 @@ module Truth.UI.GTK.Window where
     };
 
     matchViews :: [MatchView];
-    matchViews = [checkButtonMatchView,textMatchView {-,maybeMatchView getView,resultMatchView getView-}];
+    matchViews = [checkButtonMatchView,textMatchView,keyContainerMatchView {-,maybeMatchView getView,resultMatchView getView-}];
 
     getView :: GetView;
     getView = finalGetView (mconcat matchViews) $ lastResortView True;

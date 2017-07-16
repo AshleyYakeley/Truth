@@ -56,4 +56,7 @@ module Truth.UI.GTK.GView where
 
     askNamed :: forall (a :: k). TypeKnowledge -> Info a -> Result String (TypeFact a);
     askNamed k i = namedResult ("couldn't find " ++ show i) $ ask k i;
+
+    matchInfoNamed :: forall (p :: HetWit) (a :: ka). MatchInfo p => Info a -> Result String (p a);
+    matchInfoNamed i = namedResult ("couldn't match " ++ show i) $ matchInfo i;
 }

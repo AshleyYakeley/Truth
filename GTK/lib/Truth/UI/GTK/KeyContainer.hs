@@ -1,7 +1,7 @@
 module Truth.UI.GTK.KeyContainer where
 {
     import Data.Proxy;
-    import Data.Type.Equality;
+    import Data.Type.Heterogeneous;
     import Data.Foldable;
     import Data.Containers (ContainerKey);
     import Data.Empty;
@@ -11,11 +11,10 @@ module Truth.UI.GTK.KeyContainer where
     import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;
-    import Truth.UI.GTK.Useful;
 
 
     keyContainerView :: forall cont edit. (KeyContainer cont) => GView (KeyEdit cont edit);
-    keyContainerView = MkView $ \(MkObject object) setSelect -> do
+    keyContainerView = MkView $ \(MkObject object) _setSelect -> do
     {
         initialKeys <- object $ \muted -> mutableRead muted KeyReadKeys;
         store <- listStoreNew initialKeys;
@@ -67,5 +66,15 @@ module Truth.UI.GTK.KeyContainer where
             vrGetSelection (ss :: None) = never ss;
         };
         return MkViewResult{..};
+    };
+
+    keyContainerMatchView :: MatchView;
+    keyContainerMatchView = namedMatchView "key container" $ \iedit -> do
+    {
+        MkSplitInfo ikc _ie <- matchInfoNamed iedit;
+        MkSplitInfo ik ic <- matchInfoNamed ikc;
+        ReflH <- testHetEqualityNamed (info :: Info KeyEdit) ik;
+        ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (info @KeyContainer) ic;
+        return keyContainerView;
     };
 }
