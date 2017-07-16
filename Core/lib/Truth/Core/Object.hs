@@ -10,8 +10,6 @@ module Truth.Core.Object
     module Truth.Core.Object.View,
     module Truth.Core.Object.Savable,
     module Truth.Core.Object.Undo,
-    module Truth.Core.Object.File,
-    module Truth.Core.Object.FileSystem,
 ) where
 {
     import Truth.Core.Object.MutableEdit;
@@ -24,6 +22,4 @@ module Truth.Core.Object
     import Truth.Core.Object.View;
     import Truth.Core.Object.Savable;
     import Truth.Core.Object.Undo;
-    import Truth.Core.Object.File;
-    import Truth.Core.Object.FileSystem;
 }

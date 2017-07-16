@@ -1,14 +1,10 @@
-module Truth.Core.Object.FileSystem where
+module Truth.World.FileSystem where
 {
     import Truth.Core.Import;
     import System.Directory;
     import System.FilePath;
-    import Truth.Core.Read;
-    import Truth.Core.Edit;
-    import Truth.Core.Types;
-    import Truth.Core.Object.MutableEdit;
-    import Truth.Core.Object.Object;
-    import Truth.Core.Object.File;
+    import Truth.Core;
+    import Truth.World.File;
 
     -- an entire file system in memory
     type FileSystem = FileSystemDirectory;

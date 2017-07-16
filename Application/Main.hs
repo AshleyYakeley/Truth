@@ -12,6 +12,8 @@ module Main(main) where
     import Data.Lens;
     import Data.Reity;
     import Truth.Core;
+    import Truth.World.File;
+    import Truth.World.FileSystem;
     import Truth.World.Soup;
     import Graphics.UI.Gtk hiding (Object);
     import Truth.UI.GTK;

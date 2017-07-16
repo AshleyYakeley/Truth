@@ -65,6 +65,8 @@ library
         uuid
     exposed-modules:
         Truth.Core
+        Truth.World.File
+        Truth.World.FileSystem
         Truth.World.Soup
     other-modules:
         Truth.Core.Import
@@ -117,8 +119,6 @@ library
         Truth.Core.Object.Aspect
         Truth.Core.Object.Savable
         Truth.Core.Object.Undo
-        Truth.Core.Object.File
-        Truth.Core.Object.FileSystem
         Truth.Core.Object
 
 test-suite test

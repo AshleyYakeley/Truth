@@ -1,11 +1,8 @@
-module Truth.Core.Object.File where
+module Truth.World.File where
 {
     import Truth.Core.Import;
     import Data.ByteString;
-    import Truth.Core.Read;
-    import Truth.Core.Types;
-    import Truth.Core.Object.MutableEdit;
-    import Truth.Core.Object.Object;
+    import Truth.Core;
 
 
     fileObject :: FilePath -> Object ByteStringEdit;
