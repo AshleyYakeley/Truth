@@ -26,8 +26,8 @@ module Truth.UI.GTK.Tuple(tupleMatchView) where
     {
         MkSplitInfo ite isel <- matchInfo tedit;
         ReflH <- sameInfo (info @TupleEdit) ite;
-        ConstraintFact <- ask (infoKnowledge isel) $ applyInfo (info @FiniteTupleSelector) isel;
-        ConstraintFact <- ask (infoKnowledge isel) $ applyInfo (info @TupleHasInfo) isel;
+        ConstraintFact <- askInfo (infoKnowledge isel) $ applyInfo (info @FiniteTupleSelector) isel;
+        ConstraintFact <- askInfo (infoKnowledge isel) $ applyInfo (info @TupleHasInfo) isel;
         tupleGView $ \sel -> case tupleWitness (Proxy :: Proxy Edit) sel of
         {
             MkConstraintWitness -> namedResult "selector" $ allviews $ tupleHasInfo sel;

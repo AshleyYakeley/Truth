@@ -5,8 +5,8 @@ module Data.Reity.Info where
     import Data.Type.Heterogeneous;
     import Data.OpenWitness;
     import Data.KindCategory;
-    import Data.Result;
     import Data.Knowledge;
+    import Data.Reity.KnowM;
 
 
     data TypeFact (a :: k) where
@@ -15,26 +15,10 @@ module Data.Reity.Info where
         ValueFact :: forall a. a -> TypeFact a;
     };
 
-    data FailureReason = NFNotFound | MkFailureReason String;
-
-    instance Show FailureReason where
-    {
-        show NFNotFound = "not found";
-        show (MkFailureReason s) = s;
-    };
-
-    instance Monoid FailureReason where
-    {
-        mempty = NFNotFound;
-        mappend NFNotFound fr = fr;
-        mappend fr _ = fr;
-    };
-
-    type KnowM = Result FailureReason;
-    kmError :: String -> KnowM a;
-    kmError s = FailureResult $ MkFailureReason s;
-
     type TypeKnowledge = Knowledge KnowM Info TypeFact;
+
+    askInfo :: TypeKnowledge-> Info a -> KnowM (TypeFact a);
+    askInfo k i = kmContext (show i) $ ask k i;
 
     data Info (t :: k) where
     {
@@ -110,14 +94,14 @@ module Data.Reity.Info where
     askValue :: forall (a :: *). Info a -> KnowM a;
     askValue info = do
     {
-        ValueFact a <- ask (infoKnowledge info) info;
+        ValueFact a <- askInfo (infoKnowledge info) info;
         return a;
     };
 
     askConstraint :: forall (c :: Constraint). Info c -> KnowM (ConstraintWitness c);
     askConstraint info = do
     {
-        ConstraintFact <- ask (infoKnowledge info) info;
+        ConstraintFact <- askInfo (infoKnowledge info) info;
         return MkConstraintWitness;
     };
 }

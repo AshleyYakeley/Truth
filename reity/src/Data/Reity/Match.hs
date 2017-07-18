@@ -4,6 +4,7 @@ module Data.Reity.Match where
     import Data.Type.Heterogeneous;
     import Data.Result;
     import Data.Knowledge;
+    import Data.Reity.KnowM;
     import Data.Reity.Info;
 
 
@@ -11,7 +12,7 @@ module Data.Reity.Match where
     sameInfo ia ib = case testHetEquality ia ib of
     {
         Just ReflH -> return ReflH;
-        Nothing -> kmError $ "couldn't match " ++ show ia ++ " with " ++ show ib;
+        Nothing -> kmError $ "couldn't match " ++ show ib ++ " with " ++ show ia;
     };
 
     class MatchInfo (p :: HetWit) where
@@ -41,7 +42,7 @@ module Data.Reity.Match where
 
     instance forall (mf :: HetWit) (ma :: HetWit). (MatchInfo mf,MatchInfo ma) => MatchInfo (SplitInfo' mf ma) where
     {
-        matchInfo (MkInfo _ (ConsWit infoF infoA)) = do
+        matchInfo i@(MkInfo _ (ConsWit infoF infoA)) = kmContext ("splitting " ++ show i) $ do
         {
             f <- matchInfo infoF;
             a <- matchInfo infoA;

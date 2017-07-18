@@ -114,14 +114,23 @@ module Truth.UI.GTK.KeyContainer where
         MkSplitInfo ikc ie <- matchInfo iedit;
         MkSplitInfo ik ic <- matchInfo ikc;
         ReflH <- sameInfo (info :: Info KeyEdit) ik;
-        ConstraintFact <- ask (infoKnowledge iedit) $ applyInfo (info @IONewItemKeyContainer) ic;
-        ValueFact (MkContainerKeyInfo ikey) <- ask (infoKnowledge iedit) $ applyInfo (info @ContainerKeyInfo) ic;
-        ConstraintFact <- ask (infoKnowledge iedit) $ applyInfo (info @Show) ikey;
-        ValueFact (MkEditReaderInfo ir) <- ask (infoKnowledge iedit) $ applyInfo (info @EditReaderInfo) ie;
-        ConstraintFact <- ask (infoKnowledge iedit) $ applyInfo (applyInfo (info @HasKeyReader) ic) ir;
-        ValueFact (MkElementInfo ielem) <- ask (infoKnowledge iedit) $ applyInfo (info @ElementInfo) ic;
-        ConstraintFact <- ask (infoKnowledge iedit) $ applyInfo (info @IOFullReader) ir;
-        ConstraintFact <- ask (infoKnowledge iedit) $ applyInfo (info @Edit) ie;
+        ConstraintFact <- askInfo (infoKnowledge iedit) $ applyInfo (info @IONewItemKeyContainer) ic;
+        ValueFact (MkContainerKeyInfo ikey) <- askInfo (infoKnowledge iedit) $ applyInfo (info @ContainerKeyInfo) ic;
+        ConstraintFact <- askInfo (infoKnowledge ikey) $ applyInfo (info @Show) ikey;
+        ValueFact (MkEditReaderInfo ir) <- askInfo (infoKnowledge ie) $ applyInfo (info @EditReaderInfo) ie;
+        let
+        {
+            kw1 = mconcat [infoKnowledge iedit,infoKnowledge ikey,infoKnowledge ir];
+        };
+        ValueFact (MkReaderSubjectInfo isubj) <- askInfo (infoKnowledge ir) $ applyInfo (info @ReaderSubjectInfo) ir;
+        let
+        {
+            kw = mappend kw1 $ infoKnowledge isubj;
+        };
+        ConstraintFact <- askInfo kw $ applyInfo (applyInfo (info @HasKeyReader) ic) ir;
+        ValueFact (MkElementInfo ielem) <- askInfo (infoKnowledge ic) $ applyInfo (info @ElementInfo) ic;
+        ConstraintFact <- askInfo kw $ applyInfo (info @IOFullReader) ir;
+        ConstraintFact <- askInfo kw $ applyInfo (info @Edit) ie;
         return $ keyContainerView ir ie ielem;
     };
 }

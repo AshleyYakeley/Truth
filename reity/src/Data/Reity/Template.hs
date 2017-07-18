@@ -100,7 +100,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
         tfTypeExpr <- lift [e|R.info :: R.Info $(return $ ConT typeN)|];
         infoExpr <- typeFamilyInfoExpr tfTypeExpr vc;
         resultN <- lift $ newName "_var";
-        writeQ $ bindS [p|R.ValueFact $(conP constructorN [varP resultN])|] [e|R.ask $(varE ?knowledgeN) $(return infoExpr)|];
+        writeQ $ bindS [p|R.ValueFact $(conP constructorN [varP resultN])|] [e|R.askInfo $(varE ?knowledgeN) $(return infoExpr)|];
         return $ VarE resultN;
     };
     constructInfoExpr (EqualType _ _) = lift $ declFail "equality not allowed in context expression";
@@ -121,7 +121,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
             _ -> do
             {
                 infoExpr <- constructInfoExpr st;
-                writeQ $ bindS [p|R.ConstraintFact|] [e|R.ask $(varE ?knowledgeN) $(return infoExpr)|];
+                writeQ $ bindS [p|R.ConstraintFact|] [e|R.askInfo $(varE ?knowledgeN) $(return infoExpr)|];
             };
         }
     };

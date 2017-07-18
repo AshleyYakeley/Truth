@@ -1,5 +1,6 @@
 module Truth.UI.GTK.GView where
 {
+    import Control.Monad;
     import Graphics.UI.Gtk;
     import Data.Result;
     import Data.MonadOne;
@@ -17,35 +18,23 @@ module Truth.UI.GTK.GView where
 
     type GView edit = View edit Widget;
     type GViewResult edit updatestate selstate = ViewResult edit selstate Widget;
-    newtype MatchView = MkMatchView (forall edit. (Edit edit) => Info edit -> Result [String] (GView edit));
+    newtype MatchView = MkMatchView (forall edit. (Edit edit) => Info edit -> KnowM (GView edit));
     type GetView = forall edit. (Edit edit) => Info edit -> GView edit;
 
     instance Monoid MatchView where
     {
-        mempty = MkMatchView $ \_ -> FailureResult [];
-        mappend (MkMatchView v1) (MkMatchView v2) = MkMatchView $ \i -> case v1 i of
-        {
-            SuccessResult view -> SuccessResult view;
-            FailureResult msgs1 -> case v2 i of
-            {
-                SuccessResult view -> SuccessResult view;
-                FailureResult msgs2 -> FailureResult $ msgs1 ++ msgs2;
-            };
-        };
+        mempty = MkMatchView $ \_ -> mzero;
+        mappend (MkMatchView v1) (MkMatchView v2) = MkMatchView $ \i -> mplus (v1 i) (v2 i);
     };
 
     namedMatchView :: String -> (forall edit. (Edit edit) => Info edit -> KnowM (GView edit)) -> MatchView;
-    namedMatchView name ff = MkMatchView $ \i -> case ff i of
-    {
-        SuccessResult view -> SuccessResult view;
-        FailureResult msg -> FailureResult [name ++ ": " ++ show msg];
-    };
+    namedMatchView name ff = MkMatchView $ \i -> kmContext name $ ff i;
 
-    finalGetView :: MatchView -> ([String] -> GetView) -> GetView;
+    finalGetView :: MatchView -> (FailureReason -> GetView) -> GetView;
     finalGetView (MkMatchView mv) gv i = case mv i of
     {
         SuccessResult view -> view;
-        FailureResult msgs -> gv msgs i;
+        FailureResult frs -> gv (MkFailureReason "No Editor" frs) i;
     };
 
     namedResult :: MonadOne m => String -> m a -> KnowM a;

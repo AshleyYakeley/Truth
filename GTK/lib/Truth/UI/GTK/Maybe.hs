@@ -160,9 +160,9 @@ module Truth.UI.GTK.Maybe ({- maybeMatchView,resultMatchView -}) where
     {
         MkMatchOneWholeEdit fInfo eInfo rInfo <- matchInfo i;
         ReflH <- isInfo @Maybe fInfo;
-        ValueFact (MkReaderSubjectInfo subjInfo) <- ask (infoKnowledge i) $ applyInfo (info @ReaderSubjectInfo) rInfo;
-        ConstraintFact <- ask (infoKnowledge i) $ applyInfo (info @HasNewValue) subjInfo;
-        ConstraintFact <- ask (infoKnowledge i) $ applyInfo (info @FullEdit) eInfo;
+        ValueFact (MkReaderSubjectInfo subjInfo) <- askInfo (infoKnowledge i) $ applyInfo (info @ReaderSubjectInfo) rInfo;
+        ConstraintFact <- askInfo (infoKnowledge i) $ applyInfo (info @HasNewValue) subjInfo;
+        ConstraintFact <- askInfo (infoKnowledge i) $ applyInfo (info @FullEdit) eInfo;
         return (maybeView eInfo (getView eInfo));
     };
 
@@ -172,9 +172,9 @@ module Truth.UI.GTK.Maybe ({- maybeMatchView,resultMatchView -}) where
         MkMatchOneWholeEdit fInfo eInfo rInfo <- matchInfo i;
         MkSplitInfo resInfo errInfo <- matchInfo fInfo;
         ReflH <- isInfo @Result resInfo;
-        ValueFact (MkReaderSubjectInfo subjInfo) <- ask (infoKnowledge i) $ applyInfo (info @ReaderSubjectInfo) rInfo;
-        ConstraintFact <- ask (infoKnowledge i) $ applyInfo (info @HasNewValue) subjInfo;
-        ConstraintFact <- ask (infoKnowledge i) $ applyInfo (info @FullEdit) eInfo;
+        ValueFact (MkReaderSubjectInfo subjInfo) <- askInfo (infoKnowledge i) $ applyInfo (info @ReaderSubjectInfo) rInfo;
+        ConstraintFact <- askInfo (infoKnowledge i) $ applyInfo (info @HasNewValue) subjInfo;
+        ConstraintFact <- askInfo (infoKnowledge i) $ applyInfo (info @FullEdit) eInfo;
         return (resultView eInfo errInfo (getView eInfo));
     };
 -}

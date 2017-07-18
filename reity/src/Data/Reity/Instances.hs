@@ -268,6 +268,7 @@ module Data.Reity.Instances where
         info = mkSimpleInfo $(ionamedwitness[t|UUID|]) [$(declInfo [d|
             instance Eq UUID;
             instance Ord UUID;
+            instance Show UUID;
         |])];
     };
 

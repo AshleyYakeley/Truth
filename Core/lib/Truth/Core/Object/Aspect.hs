@@ -24,8 +24,8 @@ module Truth.Core.Object.Aspect where
         {
             knowledge = mconcat [infoKnowledge infoF,infoKnowledge infoEditB,infoKnowledge infoSubj];
         };
-        ValueFact (MkEditReaderInfo infoReader) <- ask knowledge $ applyInfo (info @EditReaderInfo) infoEditB;
-        ConstraintFact <- ask knowledge $ applyInfo (info @FullEdit) infoEditB;
+        ValueFact (MkEditReaderInfo infoReader) <- askInfo knowledge $ applyInfo (info @EditReaderInfo) infoEditB;
+        ConstraintFact <- askInfo knowledge $ applyInfo (info @FullEdit) infoEditB;
         let
         {
             infoOneEdit = applyInfo (applyInfo (info @OneEdit) infoF) infoEditB;

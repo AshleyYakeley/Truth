@@ -63,6 +63,7 @@ library
     exposed-modules:
         Language.Haskell.TH.SimpleType
         Data.Knowledge
+        Data.Reity.KnowM
         Data.Reity.Info
         Data.Reity.Match
         Data.Reity.HasInfo
@@ -125,4 +126,3 @@ test-suite test
     main-is: Main.hs
     other-modules:
         SimpleType
-    

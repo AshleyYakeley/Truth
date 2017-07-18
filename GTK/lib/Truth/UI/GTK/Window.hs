@@ -1,7 +1,6 @@
 {-# LANGUAGE ViewPatterns, FlexibleContexts #-}
 module Truth.UI.GTK.Window where
 {
-    import Data.List;
     import Data.IORef;
     import Data.Reity;
     import Truth.Core;
@@ -13,10 +12,10 @@ module Truth.UI.GTK.Window where
     import Truth.UI.GTK.KeyContainer;
 
 
-    lastResortView :: Bool -> [String] -> GetView;
-    lastResortView showmsgs msgs _ = MkView $ \_ _ -> do
+    lastResortView :: Bool -> FailureReason -> GetView;
+    lastResortView showmsgs fr _ = MkView $ \_ _ -> do
     {
-        w <- labelNew $ Just $ if showmsgs then intercalate "\n" $ "Uneditable:":msgs else "Uneditable";
+        w <- labelNew $ Just $ if showmsgs then show fr else "Uneditable";
         let
         {
             vrWidget = toWidget w;
