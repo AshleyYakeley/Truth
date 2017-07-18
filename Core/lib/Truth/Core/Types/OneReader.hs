@@ -19,8 +19,11 @@ module Truth.Core.Types.OneReader where
         readFrom fsubj (ReadOne reader) = fmap (\subj -> readFrom subj reader) fsubj;
     };
 
+    oneReadFunctionF :: ReadFunctionF f (OneReader f reader) reader;
+    oneReadFunctionF = readable . ReadOne;
+
     liftMaybeReadable :: (Traversable f,Monad f) => MapReadable readable => readable reader a -> readable (OneReader f reader) (f a);
-    liftMaybeReadable = mapReadableF (readable . ReadOne);
+    liftMaybeReadable = mapReadableF oneReadFunctionF;
 
     liftMaybeReadFunction :: (Traversable f,Monad f) => ReadFunction ra rb -> ReadFunction (OneReader f ra) (OneReader f rb);
     liftMaybeReadFunction _rfrarb ReadHasOne = readable ReadHasOne;

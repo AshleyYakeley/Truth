@@ -4,7 +4,7 @@ module Truth.UI.GTK.KeyContainer where
     import Data.Type.Heterogeneous;
     import Data.Foldable;
     import Data.Containers (ContainerKey);
-    import Data.Empty;
+    import Data.MonoTraversable(Element);
     import Graphics.UI.Gtk;
     import Control.Monad.IsStateIO;
     import Data.KeyContainer;
@@ -13,8 +13,9 @@ module Truth.UI.GTK.KeyContainer where
     import Truth.UI.GTK.GView;
 
 
-    keyContainerView :: forall cont edit. (Show (ContainerKey cont),IONewItemKeyContainer cont) => GView (KeyEdit cont edit);
-    keyContainerView = MkView $ \(MkObject object) _setSelect -> do
+    keyContainerView :: forall cont edit. (Show (ContainerKey cont),IONewItemKeyContainer cont,HasKeyReader cont (EditReader edit),IOFullReader (EditReader edit),Edit edit) =>
+        Info (EditReader edit) -> Info edit -> Info (Element cont) -> GView (KeyEdit cont edit);
+    keyContainerView infoR infoE infoElement = MkView $ \(MkObject object) setSelect -> do
     {
         initialKeys <- object $ \muted -> mutableRead muted KeyReadKeys;
         store <- listStoreNew initialKeys;
@@ -39,6 +40,12 @@ module Truth.UI.GTK.KeyContainer where
         };
         boxPackStart box newButton PackNatural 0;
         boxPackStart box tview PackGrow 0;
+
+        _ <- onFocus box $ \_ -> do
+        {
+            setSelect ();
+            return True;
+        };
 
         let
         {
@@ -82,8 +89,21 @@ module Truth.UI.GTK.KeyContainer where
                 KeyClear -> listStoreClear store;
                 _ -> return ();
             };
-            vrFirstSelState = Nothing;
-            vrGetSelection (ss :: None) = never ss;
+            vrFirstSelState = Just ();
+            vrGetSelection () = do
+            {
+                tsel <- treeViewGetSelection tview;
+                ltpath <- treeSelectionGetSelectedRows tsel;
+                case ltpath of
+                {
+                    [[i]] -> do
+                    {
+                        key <- listStoreGetValue store i;
+                        return $ Just $ MkAspect (applyInfo (applyInfo (info @SumEdit) (applyInfo (info @WholeReaderEdit) (applyInfo (applyInfo (info @OneReader) (info @Maybe)) infoR))) (applyInfo (applyInfo (info @OneEdit) (info @Maybe)) infoE)) (applyInfo (info @Maybe) infoElement) $ toGeneralLens $ keyLens key;
+                    };
+                    _ -> return Nothing;
+                };
+            };
         };
         return MkViewResult{..};
     };
@@ -91,12 +111,17 @@ module Truth.UI.GTK.KeyContainer where
     keyContainerMatchView :: MatchView;
     keyContainerMatchView = namedMatchView "key container" $ \iedit -> do
     {
-        MkSplitInfo ikc _ie <- matchInfoNamed iedit;
+        MkSplitInfo ikc ie <- matchInfoNamed iedit;
         MkSplitInfo ik ic <- matchInfoNamed ikc;
         ReflH <- testHetEqualityNamed (info :: Info KeyEdit) ik;
         ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (info @IONewItemKeyContainer) ic;
         ValueFact (MkContainerKeyInfo ikey) <- askNamed (infoKnowledge iedit) $ applyInfo (info @ContainerKeyInfo) ic;
         ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (info @Show) ikey;
-        return keyContainerView;
+        ValueFact (MkEditReaderInfo ir) <- askNamed (infoKnowledge iedit) $ applyInfo (info @EditReaderInfo) ie;
+        ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (applyInfo (info @HasKeyReader) ic) ir;
+        ValueFact (MkElementInfo ielem) <- askNamed (infoKnowledge iedit) $ applyInfo (info @ElementInfo) ic;
+        ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (info @IOFullReader) ir;
+        ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (info @Edit) ie;
+        return $ keyContainerView ir ie ielem;
     };
 }

@@ -9,7 +9,7 @@ module Truth.Core.Object.Aspect where
     data Aspect edit where
     {
         MkAspect ::
-         forall edita editb. (FullEdit editb) =>
+         forall edita editb. (Edit editb) =>
           Info editb -> Info (EditSubject editb) -> GeneralLens edita editb -> Aspect edita;
     };
 
@@ -25,6 +25,7 @@ module Truth.Core.Object.Aspect where
             knowledge = mconcat [infoKnowledge infoF,infoKnowledge infoEditB,infoKnowledge infoSubj];
         };
         ValueFact (MkEditReaderInfo infoReader) <- ask knowledge $ applyInfo (info @EditReaderInfo) infoEditB;
+        ConstraintFact <- ask knowledge $ applyInfo (info @FullEdit) infoEditB;
         let
         {
             infoOneEdit = applyInfo (applyInfo (info @OneEdit) infoF) infoEditB;

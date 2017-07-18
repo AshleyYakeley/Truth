@@ -5,6 +5,11 @@ module Truth.Core.Types.Key where
     import Truth.Core.Sequence;
     import Truth.Core.Read;
     import Truth.Core.Edit;
+    import Truth.Core.Types.OneReader;
+    import Truth.Core.Types.OneEdit;
+    import Truth.Core.Types.Sum;
+    import Truth.Core.Types.Whole;
+    import Truth.Core.Types.OneWholeEdit;
     import Truth.Core.Types.Pair;
 
 
@@ -86,7 +91,8 @@ module Truth.Core.Types.Key where
         info = mkSimpleInfo $(ionamedwitness[t|HasKeyReader|]) [];
     };
 
-    instance (EditSubject keyedit ~ key,EditSubject valedit ~ val,Edit keyedit,FullReader (EditReader keyedit),Edit valedit) => HasKeyReader [(key,val)] (PairEditReader keyedit valedit) where
+    instance (EditSubject keyedit ~ key,EditSubject valedit ~ val,Edit keyedit,FullReader (EditReader keyedit),Edit valedit) =>
+        HasKeyReader [(key,val)] (PairEditReader keyedit valedit) where
     {
         readKey _ = mapReadable firstReadFunction fromReader;
     };
@@ -227,6 +233,50 @@ module Truth.Core.Types.Key where
             };
             instance (KeyContainer cont,FullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => FullEdit (KeyEdit cont edit);
             instance (HasNewValue value) => IONewItemKeyContainer [(UUID, value)];
+            instance (EditSubject keyedit ~ key,EditSubject valedit ~ val,Edit keyedit,FullReader (EditReader keyedit),Edit valedit) =>
+                HasKeyReader [(key,val)] (PairEditReader keyedit valedit);
         |])];
     };
+
+    keyLens :: forall cont edit. (KeyContainer cont,Eq (ContainerKey cont),HasKeyReader cont (EditReader edit),Edit edit) =>
+        ContainerKey cont -> FloatingEditLens' Identity (ContainerKey cont) (KeyEdit cont edit) (OneWholeEdit Maybe edit);
+    keyLens floatingEditInitial = let
+    {
+        floatingEditGet :: ContainerKey cont -> ReadFunction (KeyReader cont (EditReader edit)) (OneReader Maybe (EditReader edit));
+        floatingEditGet key ReadHasOne = do
+        {
+            kk <- readable $ KeyReadKeys;
+            return $ if elem key kk then Just () else Nothing;
+        };
+        floatingEditGet key (ReadOne rt) = readable $ KeyReadItem key rt;
+
+        floatingEditUpdate :: KeyEdit cont edit -> ContainerKey cont -> Readable (KeyReader cont (EditReader edit)) (ContainerKey cont,[OneWholeEdit Maybe edit]);
+        floatingEditUpdate KeyClear key = return (key,[SumEditLeft (MkWholeEdit Nothing)]);
+        floatingEditUpdate (KeyDeleteItem k) key | k == key = return (key,[SumEditLeft (MkWholeEdit Nothing)]);
+        floatingEditUpdate (KeyEditItem k edit) oldkey | k == oldkey = do
+        {
+            mnewkey <- mapReadableF (keyItemReadFunction oldkey) $ mapReadable (applyEdit edit) $ readKey (Proxy::Proxy cont);
+            return $ case mnewkey of
+            {
+                Just newkey -> (newkey,[SumEditRight (MkOneEdit edit)]);
+                Nothing -> (oldkey,[]);
+            }
+        };
+        floatingEditUpdate (KeyInsertReplaceItem item) key | elementKey (Proxy::Proxy cont) item == key = return (key,[SumEditLeft (MkWholeEdit (Just item))]);
+        floatingEditUpdate _ key = return (key,[]);
+
+        floatingEditLensFunction = MkFloatingEditFunction{..};
+
+        floatingEditLensPutEdit key (SumEditLeft (MkWholeEdit (Just subj))) = return $ pure (key,[KeyInsertReplaceItem subj]);
+        floatingEditLensPutEdit key (SumEditLeft (MkWholeEdit Nothing)) = return $ pure (key,[KeyDeleteItem key]);
+        floatingEditLensPutEdit oldkey (SumEditRight (MkOneEdit edit)) = do
+        {
+            mnewkey <- mapReadableF (keyItemReadFunction oldkey) $ mapReadable (applyEdit edit) $ readKey (Proxy::Proxy cont);
+            return $ pure $ case mnewkey of
+            {
+                Just newkey -> (newkey,[KeyEditItem oldkey edit]);
+                Nothing -> (oldkey,[]);
+            }
+        };
+    } in MkFloatingEditLens{..};
 }
