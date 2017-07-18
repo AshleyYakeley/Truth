@@ -1,19 +1,41 @@
-module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple) where
+module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple,showSimpleType) where
 {
+    import Data.List(intercalate);
     import Language.Haskell.TH as T;
 
 
-    data SimpleType = VarType Name | AppType SimpleType SimpleType | ConsType Type | FamilyType Name [SimpleType] | EqualType SimpleType SimpleType;
+    data SimpleType = VarType Name | AppType SimpleType SimpleType | ConsType Type | FamilyType Name [SimpleType] | EqualType SimpleType SimpleType deriving (Eq);
+
+    showSingle :: SimpleType -> String;
+    showSingle t@(AppType _ _) = "(" ++ show t ++ ")";
+    showSingle t@(FamilyType _ _) = "(" ++ show t ++ ")";
+    showSingle t@(EqualType _ _) = "(" ++ show t ++ ")";
+    showSingle t = show t;
+
+    instance Show SimpleType where
+    {
+        show (VarType name) = nameBase name;
+        show (AppType t1 t2) = show t1 ++ " " ++ showSingle t2;
+        show (ConsType (ConT name)) = nameBase name;
+        show (ConsType t) = show t;
+        show (FamilyType name ts) = show name ++ " " ++ intercalate " " (fmap showSingle ts);
+        show (EqualType t1 t2) = show t1 ++ " ~ " ++ show t2;
+    };
 
     data Partial a = Complete a | Incomplete (Partial (SimpleType -> a));
 
-    applyPartial :: Partial (SimpleType -> a) -> SimpleType -> Partial a;
-    applyPartial (Complete ta) t = Complete $ ta t;
-    applyPartial (Incomplete p) t = Incomplete $ applyPartial p t;
+    instance Functor Partial where
+    {
+        fmap ab (Complete a) = Complete $ ab a;
+        fmap ab (Incomplete psa) = Incomplete $ fmap (\sa -> ab . sa) psa;
+    };
+
+    applyPartial :: Partial (t -> a) -> t -> Partial a;
+    applyPartial pta t = fmap (\ta -> ta t) pta;
 
     partialFromList :: [sym] -> ([(sym,SimpleType)] -> a) -> Partial a;
     partialFromList [] f = Complete $ f [];
-    partialFromList (s:ss) f = Incomplete $ partialFromList ss (\tt t -> f $ tt ++ [(s,t)]);
+    partialFromList (s:ss) f = Incomplete $ partialFromList ss (\tt t -> f $ [(s,t)] ++ tt);
 
     substitute :: (?names :: [(Name,SimpleType)]) => SimpleType -> SimpleType;
     substitute (VarType name) | Just val <- lookup name ?names = val;
@@ -84,6 +106,14 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple) where
         {
             Complete st -> return st;
             Incomplete _ -> fail $ "incomplete type synonym application";
-        }
-    }
+        };
+    };
+
+    showSimpleType :: Q Type -> Q [Dec];
+    showSimpleType qt = do
+    {
+        t <- qt;
+        st <- typeToSimple t;
+        fail $ show st;
+    };
 }

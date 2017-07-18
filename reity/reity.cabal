@@ -61,6 +61,7 @@ library
         comonad,
         shapes
     exposed-modules:
+        Language.Haskell.TH.SimpleType
         Data.Knowledge
         Data.Reity.Info
         Data.Reity.Match
@@ -68,8 +69,6 @@ library
         Data.Reity.Template
         Data.Reity.Instances
         Data.Reity
-    other-modules:
-        Language.Haskell.TH.SimpleType
 
 test-suite test
     type: exitcode-stdio-1.0
@@ -125,3 +124,5 @@ test-suite test
         tasty-hunit
     main-is: Main.hs
     other-modules:
+        SimpleType
+    

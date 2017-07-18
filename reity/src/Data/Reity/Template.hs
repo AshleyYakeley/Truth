@@ -1,4 +1,4 @@
-module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy) where
+module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) where
 {
     import Data.List;
     import Data.Maybe;
