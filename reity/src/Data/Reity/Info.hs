@@ -17,7 +17,7 @@ module Data.Reity.Info where
 
     type TypeKnowledge = Knowledge KnowM Info TypeFact;
 
-    askInfo :: TypeKnowledge-> Info a -> KnowM (TypeFact a);
+    askInfo :: TypeKnowledge -> Info a -> KnowM (TypeFact a);
     askInfo k i = kmContext (show i) $ ask k i;
 
     data Info (t :: k) where

@@ -16,9 +16,13 @@ module Truth.UI.GTK.Window where
     lastResortView showmsgs fr _ = MkView $ \_ _ -> do
     {
         w <- labelNew $ Just $ if showmsgs then show fr else "Uneditable";
+        hadj <- adjustmentNew 0 0 0 0 0 0;
+        vadj <- adjustmentNew 0 0 0 0 0 0;
+        vp <- viewportNew hadj vadj;
+        containerAdd vp w;
         let
         {
-            vrWidget = toWidget w;
+            vrWidget = toWidget vp;
             vrUpdate _ _ = return ();
             vrFirstSelState = Nothing;
             vrGetSelection _ = return Nothing;
