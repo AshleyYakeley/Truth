@@ -171,6 +171,6 @@ module Truth.Core.Types.ByteString where
             {
                 type EditReader ByteStringEdit = ByteStringReader;
             };
-        |])];
+        |]),infoKnowledge (info @ByteStringReader)];
     };
 }

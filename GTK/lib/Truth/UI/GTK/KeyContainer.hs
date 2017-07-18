@@ -128,7 +128,7 @@ module Truth.UI.GTK.KeyContainer where
             kw = mappend kw1 $ infoKnowledge isubj;
         };
         ConstraintFact <- askInfo kw $ applyInfo (applyInfo (info @HasKeyReader) ic) ir;
-        ValueFact (MkElementInfo ielem) <- askInfo (infoKnowledge ic) $ applyInfo (info @ElementInfo) ic;
+        ValueFact (MkElementInfo ielem) <- askInfo kw $ applyInfo (info @ElementInfo) ic;
         ConstraintFact <- askInfo kw $ applyInfo (info @IOFullReader) ir;
         ConstraintFact <- askInfo kw $ applyInfo (info @Edit) ie;
         return $ keyContainerView ir ie ielem;

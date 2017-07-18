@@ -69,7 +69,7 @@ module Truth.Core.Types.Pair where
             {
                 type TupleSubject (PairSelector ea eb) = (EditSubject ea,EditSubject eb);
             };
-            instance (Edit ea,FullReader (EditReader ea),Edit eb,FullReader (EditReader eb)) =>
+            instance (Edit ea,Edit eb) =>
                 FiniteTupleSelector (PairSelector ea eb);
             instance (c (EditReader ea),c (EditReader eb)) => TupleReaderWitness c (PairSelector ea eb);
             instance (c ea,c eb) => TupleWitness c (PairSelector ea eb);

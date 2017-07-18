@@ -30,6 +30,7 @@ module Truth.Core.Types.Whole where
             {
                 type ReaderSubject (WholeReader a) = a;
             };
+            instance IOFullReader (WholeReader a);
             instance FullReader (WholeReader a);
         |])];
     };

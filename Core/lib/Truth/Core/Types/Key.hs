@@ -224,7 +224,8 @@ module Truth.Core.Types.Key where
     {
         info = mkSimpleInfo $(ionamedwitness[t|KeyEdit|]) [$(declInfo [d|
             instance Eq key => KeyContainer [(key, value)];
-            type instance ContainerKey ([(key, value)]) = key;
+            type instance Element [a] = a;
+            type instance ContainerKey [(key, value)] = key;
             instance Show UUID;
             instance Floating (KeyEdit cont edit) (KeyEdit cont edit);
             instance (KeyContainer cont,FullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => Edit (KeyEdit cont edit) where
