@@ -49,7 +49,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
     };
     deconstruct subjectN (ConsType tp) = do
     {
-        writeQ $ bindS [p|R.ReflH|] [e|R.testHetEquality (R.info :: R.Info $(return tp)) $(varE subjectN)|];
+        writeQ $ bindS [p|R.ReflH|] [e|R.sameInfo (R.info :: R.Info $(return tp)) $(varE subjectN)|];
         return [];
     };
     deconstruct subjectN (FamilyType name []) = do
@@ -58,7 +58,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
         {
             (typeN,_) = vfNames name;
         };
-        writeQ $ bindS [p|R.ReflH|] [e|R.testHetEquality (R.info :: R.Info $(conT typeN)) $(varE subjectN)|];
+        writeQ $ bindS [p|R.ReflH|] [e|R.sameInfo (R.info :: R.Info $(conT typeN)) $(varE subjectN)|];
         return [];
     };
     deconstruct subjectN (FamilyType name args) = let
@@ -116,7 +116,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
             {
                 info1 <- constructInfoExpr st1;
                 info2 <- constructInfoExpr st2;
-                writeQ $ bindS [p|R.ReflH|] [e|R.testHetEquality $(return info1) $(return info2)|];
+                writeQ $ bindS [p|R.ReflH|] [e|R.sameInfo $(return info1) $(return info2)|];
             };
             _ -> do
             {
@@ -130,7 +130,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
     matchUpVar :: (Name,Name) -> [(Name, Name)] -> M ();
     matchUpVar (typeN,subjectN) varMap = case lookup typeN varMap of
     {
-        Just subjectN' -> writeQ $ bindS [p|R.ReflH|] [e|R.testHetEquality $(return $ VarE subjectN) $(return $ VarE subjectN')|];
+        Just subjectN' -> writeQ $ bindS [p|R.ReflH|] [e|R.sameInfo $(return $ VarE subjectN) $(return $ VarE subjectN')|];
         Nothing -> return ();
     };
 

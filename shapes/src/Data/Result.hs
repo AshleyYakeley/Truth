@@ -1,5 +1,7 @@
 module Data.Result where
 {
+    import Control.Applicative;
+    import Control.Monad;
     import Data.Bijection;
 
 
@@ -43,6 +45,16 @@ module Data.Result where
         (FailureResult e) >>= _ = FailureResult e;
         (SuccessResult a) >>= amq = amq a;
     };
+
+    instance Monoid e => Alternative (Result e) where
+    {
+        empty = FailureResult mempty;
+        (SuccessResult a) <|> _ = SuccessResult a;
+        (FailureResult _) <|> (SuccessResult a) = SuccessResult a;
+        (FailureResult e1) <|> (FailureResult e2) = FailureResult $ mappend e1 e2;
+    };
+
+    instance Monoid e => MonadPlus (Result e);
 
     mapResult :: Bijection (Result e2 (Result e1 a)) (Result (Either e2 e1) a);
     mapResult = MkBijection forwards backwards where

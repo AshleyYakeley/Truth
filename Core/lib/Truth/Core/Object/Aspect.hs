@@ -17,7 +17,7 @@ module Truth.Core.Object.Aspect where
     mapAspect lens (MkAspect ie is lens') = MkAspect ie is $ lens' `editCompose` lens;
 
     mapOneWholeEditAspect :: forall f edit. (MonadOne f, Edit edit,FullReader (EditReader edit)) =>
-     Info f -> Aspect edit -> Maybe (Aspect (OneWholeEdit f edit));
+     Info f -> Aspect edit -> KnowM (Aspect (OneWholeEdit f edit));
     mapOneWholeEditAspect infoF (MkAspect infoEditB infoSubj lens) = do
     {
         let

@@ -1,12 +1,12 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.Text (textMatchView) where
 {
+    import Data.Type.Heterogeneous;
     import Data.Foldable;
     import Control.Concurrent.MVar;
     import Control.Monad.IO.Class;
     import Graphics.UI.Gtk;
     import Control.Monad.IsStateIO;
-    import Data.Witness;
     import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;
@@ -113,7 +113,7 @@ module Truth.UI.GTK.Text (textMatchView) where
     textMatchView :: MatchView;
     textMatchView = namedMatchView "text view" $ \tedit -> do
     {
-        Refl <- testEqualityNamed (info :: Info (StringEdit String)) tedit;
+        ReflH <- sameInfo (info :: Info (StringEdit String)) tedit;
         return textView;
     };
 }

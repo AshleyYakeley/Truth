@@ -1,7 +1,5 @@
 module Truth.UI.GTK.GView where
 {
-    import Data.Type.Equality;
-    import Data.Type.Heterogeneous;
     import Graphics.UI.Gtk;
     import Data.Result;
     import Data.MonadOne;
@@ -36,11 +34,11 @@ module Truth.UI.GTK.GView where
         };
     };
 
-    namedMatchView :: String -> (forall edit. (Edit edit) => Info edit -> Result String (GView edit)) -> MatchView;
+    namedMatchView :: String -> (forall edit. (Edit edit) => Info edit -> KnowM (GView edit)) -> MatchView;
     namedMatchView name ff = MkMatchView $ \i -> case ff i of
     {
         SuccessResult view -> SuccessResult view;
-        FailureResult msg -> FailureResult [name ++ ": " ++ msg];
+        FailureResult msg -> FailureResult [name ++ ": " ++ show msg];
     };
 
     finalGetView :: MatchView -> ([String] -> GetView) -> GetView;
@@ -50,22 +48,10 @@ module Truth.UI.GTK.GView where
         FailureResult msgs -> gv msgs i;
     };
 
-    namedResult :: MonadOne m => String -> m a -> Result String a;
+    namedResult :: MonadOne m => String -> m a -> KnowM a;
     namedResult s ma = case getMaybeOne ma of
     {
-        Just a -> SuccessResult a;
-        Nothing -> FailureResult s;
+        Just a -> pure a;
+        Nothing -> kmError s;
     };
-
-    testEqualityNamed :: Info a -> Info b -> Result String (a :~: b);
-    testEqualityNamed ia ib = namedResult (show ia ++ " does not match " ++ show ib) $ testEquality ia ib;
-
-    testHetEqualityNamed :: Info a -> Info b -> Result String (HetEq a b);
-    testHetEqualityNamed ia ib = namedResult (show ia ++ " does not match " ++ show ib) $ testHetEquality ia ib;
-
-    askNamed :: forall (a :: k). TypeKnowledge -> Info a -> Result String (TypeFact a);
-    askNamed k i = namedResult ("couldn't find " ++ show i) $ ask k i;
-
-    matchInfoNamed :: forall (p :: HetWit) (a :: ka). MatchInfo p => Info a -> Result String (p a);
-    matchInfoNamed i = namedResult ("couldn't match " ++ show i) $ matchInfo i;
 }

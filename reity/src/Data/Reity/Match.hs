@@ -2,21 +2,26 @@ module Data.Reity.Match where
 {
     import Data.Kind;
     import Data.Type.Heterogeneous;
+    import Data.Result;
     import Data.Knowledge;
     import Data.Reity.Info;
 
 
-    sameInfo :: forall (ka :: *) (kb :: *) (a :: ka) (b :: kb). Info a -> Info b -> Maybe (HetEq a b);
-    sameInfo = testHetEquality;
+    sameInfo :: forall (ka :: *) (kb :: *) (a :: ka) (b :: kb). Info a -> Info b -> KnowM (HetEq a b);
+    sameInfo ia ib = case testHetEquality ia ib of
+    {
+        Just ReflH -> return ReflH;
+        Nothing -> kmError $ "couldn't match " ++ show ia ++ " with " ++ show ib;
+    };
 
     class MatchInfo (p :: HetWit) where
     {
-        matchInfo :: forall (ka :: *) (a :: ka). Info a -> Maybe (p a);
+        matchInfo :: forall (ka :: *) (a :: ka). Info a -> KnowM (p a);
     };
 
     instance MatchInfo Info where
     {
-        matchInfo = Just;
+        matchInfo = pure;
     };
 
     data IgnoreInfo :: HetWit where
@@ -26,7 +31,7 @@ module Data.Reity.Match where
 
     instance MatchInfo IgnoreInfo where
     {
-        matchInfo _ = Just MkIgnoreInfo;
+        matchInfo _ = pure MkIgnoreInfo;
     };
 
     data SplitInfo' (mf :: HetWit) (ma :: HetWit) :: HetWit where
@@ -42,7 +47,7 @@ module Data.Reity.Match where
             a <- matchInfo infoA;
             return (MkSplitInfo' f a);
         };
-        matchInfo _ = Nothing;
+        matchInfo info = kmError $ "couldn't split " ++ show info;
     };
 
     data SplitInfo (fa :: kfa) where
@@ -52,8 +57,8 @@ module Data.Reity.Match where
 
     instance MatchInfo SplitInfo where
     {
-        matchInfo (MkInfo _ (ConsWit infoF infoA)) = Just (MkSplitInfo infoF infoA);
-        matchInfo _ = Nothing;
+        matchInfo (MkInfo _ (ConsWit infoF infoA)) = pure (MkSplitInfo infoF infoA);
+        matchInfo info = kmError $ "couldn't split " ++ show info;
     };
 
     data KindInfo :: HetWit where
@@ -63,7 +68,7 @@ module Data.Reity.Match where
 
     instance MatchInfo KindInfo where
     {
-        matchInfo (MkInfo ki _) = Just $ MkKindInfo ki;
+        matchInfo (MkInfo ki _) = pure $ MkKindInfo ki;
     };
 
     applyInfo :: forall (ka :: *) (kb :: *) (f :: ka -> kb) (a :: ka). Info f -> Info a -> Info (f a);
@@ -71,8 +76,8 @@ module Data.Reity.Match where
     {
         ik = case matchInfo ika of
         {
-            Just (MkSplitInfo _ ik') -> ik';
-            Nothing -> error "unexpected kind witness";
+            SuccessResult (MkSplitInfo _ ik') -> ik';
+            FailureResult _ -> error "unexpected kind witness";
         };
     } in MkInfo ik (ConsWit tf ta);
 }

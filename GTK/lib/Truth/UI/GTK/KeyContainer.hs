@@ -111,17 +111,17 @@ module Truth.UI.GTK.KeyContainer where
     keyContainerMatchView :: MatchView;
     keyContainerMatchView = namedMatchView "key container" $ \iedit -> do
     {
-        MkSplitInfo ikc ie <- matchInfoNamed iedit;
-        MkSplitInfo ik ic <- matchInfoNamed ikc;
-        ReflH <- testHetEqualityNamed (info :: Info KeyEdit) ik;
-        ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (info @IONewItemKeyContainer) ic;
-        ValueFact (MkContainerKeyInfo ikey) <- askNamed (infoKnowledge iedit) $ applyInfo (info @ContainerKeyInfo) ic;
-        ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (info @Show) ikey;
-        ValueFact (MkEditReaderInfo ir) <- askNamed (infoKnowledge iedit) $ applyInfo (info @EditReaderInfo) ie;
-        ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (applyInfo (info @HasKeyReader) ic) ir;
-        ValueFact (MkElementInfo ielem) <- askNamed (infoKnowledge iedit) $ applyInfo (info @ElementInfo) ic;
-        ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (info @IOFullReader) ir;
-        ConstraintFact <- askNamed (infoKnowledge iedit) $ applyInfo (info @Edit) ie;
+        MkSplitInfo ikc ie <- matchInfo iedit;
+        MkSplitInfo ik ic <- matchInfo ikc;
+        ReflH <- sameInfo (info :: Info KeyEdit) ik;
+        ConstraintFact <- ask (infoKnowledge iedit) $ applyInfo (info @IONewItemKeyContainer) ic;
+        ValueFact (MkContainerKeyInfo ikey) <- ask (infoKnowledge iedit) $ applyInfo (info @ContainerKeyInfo) ic;
+        ConstraintFact <- ask (infoKnowledge iedit) $ applyInfo (info @Show) ikey;
+        ValueFact (MkEditReaderInfo ir) <- ask (infoKnowledge iedit) $ applyInfo (info @EditReaderInfo) ie;
+        ConstraintFact <- ask (infoKnowledge iedit) $ applyInfo (applyInfo (info @HasKeyReader) ic) ir;
+        ValueFact (MkElementInfo ielem) <- ask (infoKnowledge iedit) $ applyInfo (info @ElementInfo) ic;
+        ConstraintFact <- ask (infoKnowledge iedit) $ applyInfo (info @IOFullReader) ir;
+        ConstraintFact <- ask (infoKnowledge iedit) $ applyInfo (info @Edit) ie;
         return $ keyContainerView ir ie ielem;
     };
 }

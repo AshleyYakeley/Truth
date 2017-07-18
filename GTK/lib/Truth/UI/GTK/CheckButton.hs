@@ -1,6 +1,6 @@
 module Truth.UI.GTK.CheckButton where
 {
-    import Data.Type.Equality;
+    import Data.Type.Heterogeneous;
     import Data.Empty;
     import Graphics.UI.Gtk;
     import Control.Monad.IsStateIO;
@@ -42,7 +42,7 @@ module Truth.UI.GTK.CheckButton where
     checkButtonMatchView :: MatchView;
     checkButtonMatchView = namedMatchView "check button" $ \tedit -> do
     {
-        Refl <- testEqualityNamed (info :: Info (WholeEdit Bool)) tedit;
+        ReflH <- sameInfo (info :: Info (WholeEdit Bool)) tedit;
         return $ checkButtonView "";
     };
 }
