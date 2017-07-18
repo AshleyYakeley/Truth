@@ -17,16 +17,13 @@ module Main(main) where
     import Truth.World.Soup;
     import Graphics.UI.Gtk hiding (Object);
     import Truth.UI.GTK;
+    import qualified Options.Applicative as O;
 
 
-    testSave :: Bool;
-    testSave = True;
+    type WindowMaker = IORef Int -> IO ();
 
-    soupOption :: Maybe FilePath;
-    soupOption = Just ".";
-
-    fileTextWindow :: IORef Int -> FilePath -> IO ();
-    fileTextWindow windowCount path = do
+    fileTextWindow :: Bool -> FilePath -> WindowMaker;
+    fileTextWindow saveOpt path windowCount = do
     {
         let
         {
@@ -50,7 +47,7 @@ module Main(main) where
             wholeTextObj :: Object (WholeEdit String);
             wholeTextObj = cacheObject $ fixedMapObject ((wholeEditLens $ injectionLens injection) . convertEditLens) bsObj;
         };
-        if testSave then do
+        if saveOpt then do
         {
             let
             {
@@ -78,8 +75,8 @@ module Main(main) where
         };
     };
 
-    soupWindow :: IORef Int -> FilePath -> IO ();
-    soupWindow windowCount dirpath = do
+    soupWindow :: FilePath -> WindowMaker;
+    soupWindow dirpath windowCount = do
     {
         let
         {
@@ -90,17 +87,20 @@ module Main(main) where
         makeWindowCountRef info windowCount soupSub;
     };
 
+    testSave :: Bool;
+    testSave = True;
+
+    optParser :: O.Parser [WindowMaker];
+    optParser = O.many $ (soupWindow <$> O.strOption (O.long "soup")) O.<|> (fileTextWindow testSave <$> O.strArgument mempty);
+
     main :: IO ();
     main = do
     {
-        windowCount <- newIORef 0;
         args <- initGUI;
+        wms <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args;
         _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50;
-        case soupOption of
-        {
-            Nothing -> for_ args $ fileTextWindow windowCount;
-            Just dirpath -> soupWindow windowCount dirpath;
-        };
+        windowCount <- newIORef 0;
+        for_ wms $ \wm -> wm windowCount;
         mainGUI;
     };
 }

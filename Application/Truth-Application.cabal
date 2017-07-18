@@ -51,5 +51,6 @@ executable truth
         shapes,
         reity,
         Truth-Core,
-        Truth-GTK
+        Truth-GTK,
+        optparse-applicative
     main-is: Main.hs
