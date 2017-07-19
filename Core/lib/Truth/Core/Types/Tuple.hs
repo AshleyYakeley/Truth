@@ -165,7 +165,9 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|TupleEdit|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|TupleEdit|]) [
+            infoKnowledge (info @TupleEditReader),
+            $(declInfo [d|
             instance TupleSelector sel => Edit (TupleEdit sel) where
             {
                 type EditReader (TupleEdit sel) = TupleEditReader sel;

@@ -109,24 +109,18 @@ module Truth.UI.GTK.KeyContainer where
     };
 
     keyContainerMatchView :: MatchView;
-    keyContainerMatchView = namedMatchView "key container" $ \iedit -> do
+    keyContainerMatchView = namedMatchView "key container" $ \iedit -> let
+    {
+        kw = infoKnowledge iedit;
+    } in do
     {
         MkSplitInfo ikc ie <- matchInfo iedit;
         MkSplitInfo ik ic <- matchInfo ikc;
         ReflH <- sameInfo (info :: Info KeyEdit) ik;
-        ConstraintFact <- askInfo (infoKnowledge iedit) $ applyInfo (info @IONewItemKeyContainer) ic;
-        ValueFact (MkContainerKeyInfo ikey) <- askInfo (infoKnowledge iedit) $ applyInfo (info @ContainerKeyInfo) ic;
-        ConstraintFact <- askInfo (infoKnowledge ikey) $ applyInfo (info @Show) ikey;
-        ValueFact (MkEditReaderInfo ir) <- askInfo (infoKnowledge ie) $ applyInfo (info @EditReaderInfo) ie;
-        let
-        {
-            kw1 = mconcat [infoKnowledge iedit,infoKnowledge ikey,infoKnowledge ir];
-        };
-        ValueFact (MkReaderSubjectInfo isubj) <- askInfo (infoKnowledge ir) $ applyInfo (info @ReaderSubjectInfo) ir;
-        let
-        {
-            kw = mappend kw1 $ infoKnowledge isubj;
-        };
+        ConstraintFact <- askInfo kw $ applyInfo (info @IONewItemKeyContainer) ic;
+        ValueFact (MkContainerKeyInfo ikey) <- askInfo kw $ applyInfo (info @ContainerKeyInfo) ic;
+        ConstraintFact <- askInfo kw $ applyInfo (info @Show) ikey;
+        ValueFact (MkEditReaderInfo ir) <- askInfo kw $ applyInfo (info @EditReaderInfo) ie;
         ConstraintFact <- askInfo kw $ applyInfo (applyInfo (info @HasKeyReader) ic) ir;
         ValueFact (MkElementInfo ielem) <- askInfo kw $ applyInfo (info @ElementInfo) ic;
         ConstraintFact <- askInfo kw $ applyInfo (info @IOFullReader) ir;

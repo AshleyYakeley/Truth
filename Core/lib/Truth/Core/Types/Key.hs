@@ -222,7 +222,9 @@ module Truth.Core.Types.Key where
     $(return []);
     instance HasInfo KeyEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|KeyEdit|]) [$(declInfo [d|
+        info = mkSimpleInfo $(ionamedwitness[t|KeyEdit|]) [
+            infoKnowledge (info @KeyReader),
+            $(declInfo [d|
             instance Eq key => KeyContainer [(key, value)];
             type instance Element [a] = a;
             type instance ContainerKey [(key, value)] = key;
