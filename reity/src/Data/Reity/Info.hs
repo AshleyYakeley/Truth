@@ -4,10 +4,12 @@ module Data.Reity.Info where
     import Data.Type.Equality;
     import Data.Type.Heterogeneous;
     import Data.OpenWitness;
-    import Data.KindCategory;
     import Data.Knowledge;
     import Data.Reity.KnowM;
 
+
+    namedKnowledge :: forall (w :: HetWit) (f :: HetWit). String -> Knowledge KnowM w f -> Knowledge KnowM w f;
+    namedKnowledge name (MkKnowledge ff) = MkKnowledge $ \k i -> kmContext name $ ff k i;
 
     data TypeFact (a :: k) where
     {
@@ -16,9 +18,6 @@ module Data.Reity.Info where
     };
 
     type TypeKnowledge = Knowledge KnowM Info TypeFact;
-
-    askInfo :: TypeKnowledge -> Info a -> KnowM (TypeFact a);
-    askInfo k i = kmContext (show i) $ ask k i;
 
     data Info (t :: k) where
     {
@@ -90,18 +89,4 @@ module Data.Reity.Info where
 
     knowConstraint :: forall (c :: Constraint). c => Info c -> TypeKnowledge;
     knowConstraint info = know info ConstraintFact;
-
-    askValue :: forall (a :: *). Info a -> KnowM a;
-    askValue info = do
-    {
-        ValueFact a <- askInfo (infoKnowledge info) info;
-        return a;
-    };
-
-    askConstraint :: forall (c :: Constraint). Info c -> KnowM (ConstraintWitness c);
-    askConstraint info = do
-    {
-        ConstraintFact <- askInfo (infoKnowledge info) info;
-        return MkConstraintWitness;
-    };
 }

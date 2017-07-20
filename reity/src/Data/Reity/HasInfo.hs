@@ -4,6 +4,8 @@ module Data.Reity.HasInfo where
     import Data.Type.Heterogeneous;
     import Language.Haskell.TH hiding (Info);
     import Data.OpenWitness;
+    import Data.Knowledge;
+    import Data.Reity.KnowM;
     import Data.Reity.Info;
 
 
@@ -34,4 +36,7 @@ module Data.Reity.HasInfo where
         };
         [|($(iowitness (return tp)),tpname)|]
     };
+
+    askInfo :: forall (k :: *) (a :: k). TypeKnowledge -> Info a -> KnowM (TypeFact a);
+    askInfo k i = kmContext (show i) $ ask k i;
 }

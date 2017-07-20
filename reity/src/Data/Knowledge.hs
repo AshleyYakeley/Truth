@@ -24,4 +24,11 @@ module Data.Knowledge where
         Just ReflH -> return a;
         Nothing -> mzero;
     };
+
+    knowDependent :: forall (m :: * -> *) (w :: HetWit) (f :: HetWit). Monad m => (Knowledge m w f -> m (Knowledge m w f)) -> Knowledge m w f;
+    knowDependent ff = MkKnowledge $ \k wa -> do
+    {
+        MkKnowledge kwm <- ff k;
+        kwm k wa;
+    };
 }
