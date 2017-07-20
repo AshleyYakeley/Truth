@@ -43,6 +43,9 @@ module Data.Reity.Info where
         show (MkInfo _ w) = show w;
     };
 
+    infoKind :: forall (k :: *) (a :: k). Info a -> Info k;
+    infoKind (MkInfo ki _) = ki;
+
     data Wit (t :: k) where
     {
         SimpleWit :: forall (k :: *) (t :: k). IOWitness t -> String -> TypeKnowledge -> Wit t;

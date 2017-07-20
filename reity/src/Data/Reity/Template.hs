@@ -49,8 +49,20 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
     };
     deconstruct subjectN (ConsType tp) = do
     {
+        vars <- case tp of
+        {
+            SigT _ ktp -> do
+            {
+                kstp <- lift $ typeToSimple ktp;
+                kindN <- lift $ newName "_k";
+                expr <- lift [e|R.infoKind $(varE subjectN)|];
+                writeQ $ return $ LetS [ValD (VarP kindN) (NormalB expr) []];
+                deconstruct kindN kstp;
+            };
+            _ -> return [];
+        };
         writeQ $ bindS [p|R.ReflH|] [e|R.sameInfo (R.info :: R.Info $(return tp)) $(varE subjectN)|];
-        return [];
+        return vars;
     };
     deconstruct subjectN (FamilyType name []) = do
     {
