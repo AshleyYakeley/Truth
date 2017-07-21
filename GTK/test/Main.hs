@@ -6,13 +6,14 @@ module Main(main) where
     import Data.Reity;
     import Truth.Core;
     import Truth.World.Soup;
+    import Graphics.UI.Gtk;
     import Truth.UI.GTK;
     import Test.Tasty;
     import Test.Tasty.HUnit;
 
 
     testGView :: forall (edit :: Type). Info edit -> TestTree;
-    testGView iedit = testCase (show iedit) $ case getGView matchViews iedit of
+    testGView iedit = testCase (show iedit) $ case (findView @Widget) matchViews iedit of
     {
         SuccessResult _ -> return ();
         FailureResult fr -> assertFailure $ show fr;

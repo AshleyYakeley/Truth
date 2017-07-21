@@ -169,16 +169,16 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
     -- orphan
     instance (
         EditReader edit ~ reader,
-        DependentHasGView edit,
+        DependentHasView Widget edit,
         HasNewValue (ReaderSubject reader),
         FullEdit edit
-        ) => DependentHasGView (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit)) where
+        ) => DependentHasView Widget (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit)) where
     {
-        dependsGView k iedit = do
+        dependsView k iedit = do
         {
             MkSplitInfo _ iome <- matchInfo iedit;
             MkSplitInfo _ ie <- matchInfo iome;
-            view <- dependsGView k ie;
+            view <- dependsView k ie;
             return $ maybeView view;
         };
     };
@@ -186,13 +186,13 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
     -- orphan
     instance (
         EditReader edit ~ reader,
-        DependentHasGView edit,
+        DependentHasView Widget edit,
         HasNewValue (ReaderSubject reader),
         FullEdit edit,
-        HasGView edit
-        ) => HasGView (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit)) where
+        HasView Widget edit
+        ) => HasView Widget (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit)) where
     {
-        gview = maybeView gview;
+        theView = maybeView theView;
     };
 
     placeholderLabel :: IO Label;
@@ -209,18 +209,18 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
     instance
     (
         EditReader edit ~ reader,
-        DependentHasGView edit,
+        DependentHasView Widget edit,
         HasNewValue (ReaderSubject reader),
         FullEdit edit
-    ) => DependentHasGView (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
+    ) => DependentHasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
     {
-        dependsGView k iedit = do
+        dependsView k iedit = do
         {
             MkSplitInfo _ iore <- matchInfo iedit;
             MkSplitInfo ior ie <- matchInfo iore;
             MkSplitInfo _ ir <- matchInfo ior;
             MkSplitInfo _ ierr <- matchInfo ir;
-            view <- dependsGView k ie;
+            view <- dependsView k ie;
             return $ resultView ierr view;
         };
     };
@@ -228,14 +228,14 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
     -- orphan
     instance (
         EditReader edit ~ reader,
-        DependentHasGView edit,
+        DependentHasView Widget edit,
         HasNewValue (ReaderSubject reader),
         FullEdit edit,
-        HasGView edit,
+        HasView Widget edit,
         HasInfo err
-        ) => HasGView (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
+        ) => HasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
     {
-        gview = resultView info gview;
+        theView = resultView info theView;
     };
 
     maybeTypeKnowledge :: TypeKnowledge;
@@ -245,27 +245,27 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
             instance
                 (
                     EditReader edit ~ reader,
-                    DependentHasGView edit,
+                    DependentHasView Widget edit,
                     HasNewValue (ReaderSubject reader),
                     FullEdit edit
                 ) =>
-                DependentHasGView (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit));
+                DependentHasView Widget (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit));
             |]),
         namedKnowledge "result" $(declInfo [d|
             instance
                 (
                     EditReader edit ~ reader,
-                    DependentHasGView edit,
+                    DependentHasView Widget edit,
                     HasNewValue (ReaderSubject reader),
                     FullEdit edit
                 ) =>
-                DependentHasGView (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit));
+                DependentHasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit));
             |])
     ];
 
 {-
     resultTypeKnowledge :: GetView -> TypeKnowledge;
-    resultTypeKnowledge getView i = do
+    resultTypeKnowledge findView i = do
     {
         MkMatchOneWholeEdit fInfo eInfo rInfo <- matchInfo i;
         MkSplitInfo resInfo errInfo <- matchInfo fInfo;
@@ -273,7 +273,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         ValueFact (MkReaderSubjectInfo subjInfo) <- askInfo (infoKnowledge i) $ applyInfo (info @ReaderSubjectInfo) rInfo;
         ConstraintFact <- askInfo (infoKnowledge i) $ applyInfo (info @HasNewValue) subjInfo;
         ConstraintFact <- askInfo (infoKnowledge i) $ applyInfo (info @FullEdit) eInfo;
-        return (resultView eInfo errInfo (getView eInfo));
+        return (resultView eInfo errInfo (findView eInfo));
     };
 -}
 

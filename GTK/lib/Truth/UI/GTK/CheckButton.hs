@@ -40,15 +40,15 @@ module Truth.UI.GTK.CheckButton(checkButtonTypeKnowledge) where
     };
 
     -- orphan
-    instance DependentHasGView (WholeEdit Bool);
+    instance DependentHasView Widget (WholeEdit Bool);
     -- orphan
-    instance HasGView (WholeEdit Bool) where
+    instance HasView Widget (WholeEdit Bool) where
     {
-        gview = checkButtonView "";
+        theView = checkButtonView "";
     };
 
     checkButtonTypeKnowledge :: TypeKnowledge;
     checkButtonTypeKnowledge = namedKnowledge "check button" $(declInfo [d|
-        instance DependentHasGView (WholeEdit Bool);
+        instance DependentHasView Widget (WholeEdit Bool);
     |]);
 }

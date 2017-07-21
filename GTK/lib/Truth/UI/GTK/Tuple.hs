@@ -22,24 +22,24 @@ module Truth.UI.GTK.Tuple(tupleTypeKnowledge) where
     tupleGView :: (FiniteTupleSelector sel,Applicative m) => (forall edit. sel edit -> m (GView edit)) -> m (GView (TupleEdit sel));
     tupleGView selview = fmap (mapIOView arrangeWidgets) $ tupleView selview;
 
-    instance (FiniteTupleSelector sel,TupleHasInfo sel) => DependentHasGView (TupleEdit sel) where
+    instance (FiniteTupleSelector sel,TupleHasInfo sel) => DependentHasView Widget (TupleEdit sel) where
     {
-        dependsGView k _i = tupleGView $ \sel -> case tupleWitness (Proxy :: Proxy Edit) sel of
+        dependsView k _i = tupleGView $ \sel -> case tupleWitness (Proxy :: Proxy Edit) sel of
         {
-            MkConstraintWitness -> namedResult "selector" $ getGView k $ tupleHasInfo sel;
+            MkConstraintWitness -> namedResult "selector" $ findView k $ tupleHasInfo sel;
         };
     };
 
-    instance (FiniteTupleSelector sel,TupleHasInfo sel,TupleWitness HasGView sel) => HasGView (TupleEdit sel) where
+    instance (FiniteTupleSelector sel,TupleHasInfo sel,TupleWitness (HasView Widget) sel) => HasView Widget (TupleEdit sel) where
     {
-        gview = runIdentity $ tupleGView $ \sel -> case tupleWitness (Proxy :: Proxy HasGView) sel of
+        theView = runIdentity $ tupleGView $ \sel -> case tupleWitness (Proxy :: Proxy (HasView Widget)) sel of
         {
-            MkConstraintWitness -> Identity gview;
+            MkConstraintWitness -> Identity theView;
         };
     };
 
     tupleTypeKnowledge :: TypeKnowledge;
     tupleTypeKnowledge = namedKnowledge "tuple" $(declInfo [d|
-        instance (FiniteTupleSelector sel,TupleHasInfo sel) => DependentHasGView (TupleEdit sel);
+        instance (FiniteTupleSelector sel,TupleHasInfo sel) => DependentHasView Widget (TupleEdit sel);
     |]);
 }

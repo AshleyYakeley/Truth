@@ -110,15 +110,15 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
     };
 
     -- orphan
-    instance DependentHasGView (StringEdit String);
+    instance DependentHasView Widget (StringEdit String);
     -- orphan
-    instance HasGView (StringEdit String) where
+    instance HasView Widget (StringEdit String) where
     {
-        gview = textView;
+        theView = textView;
     };
 
     textTypeKnowledge :: TypeKnowledge;
     textTypeKnowledge = namedKnowledge "text" $(declInfo [d|
-        instance DependentHasGView (StringEdit String);
+        instance DependentHasView Widget (StringEdit String);
     |]);
 }

@@ -12,7 +12,7 @@ module Truth.UI.GTK.Window where
     import Truth.UI.GTK.KeyContainer;
 
 
-    lastResortView :: Bool -> FailureReason -> GetView;
+    lastResortView :: Bool -> FailureReason -> GetView Widget;
     lastResortView showmsgs fr _ = MkView $ \_ _ -> do
     {
         w <- labelNew $ Just $ if showmsgs then show fr else "Uneditable";
@@ -33,7 +33,7 @@ module Truth.UI.GTK.Window where
     matchViews :: TypeKnowledge;
     matchViews = mconcat [checkButtonTypeKnowledge,textTypeKnowledge,keyContainerTypeKnowledge,maybeTypeKnowledge];
 
-    getView :: GetView;
+    getView :: GetView Widget;
     getView = finalGetView matchViews $ lastResortView True;
 
     class WindowButtons actions where

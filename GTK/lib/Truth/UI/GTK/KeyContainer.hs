@@ -118,9 +118,9 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
         IOFullReader (EditReader edit),
         Edit edit
     ) =>
-     DependentHasGView (KeyEdit cont edit) where
+     DependentHasView Widget (KeyEdit cont edit) where
     {
-        dependsGView kw ikce = do
+        dependsView kw ikce = do
         {
             MkSplitInfo ikc ie <- matchInfo ikce;
             MkSplitInfo ik ic <- matchInfo ikc;
@@ -142,9 +142,9 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
         HasInfo (EditReader edit),
         HasInfo (Element cont)
     ) =>
-     HasGView (KeyEdit cont edit) where
+     HasView Widget (KeyEdit cont edit) where
     {
-        gview = keyContainerView info info info;
+        theView = keyContainerView info info info;
     };
 
     keyContainerTypeKnowledge :: TypeKnowledge;
@@ -157,6 +157,6 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
                 IOFullReader (EditReader edit),
                 Edit edit
             ) =>
-            DependentHasGView (KeyEdit cont edit);
+            DependentHasView Widget (KeyEdit cont edit);
     |]);
 }
