@@ -1,4 +1,5 @@
-module Truth.UI.GTK.KeyContainer where
+{-# OPTIONS -fno-warn-orphans #-}
+module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
 {
     import Data.Proxy;
     import Data.Type.Heterogeneous;
@@ -108,23 +109,54 @@ module Truth.UI.GTK.KeyContainer where
         return MkViewResult{..};
     };
 
-    keyContainerMatchView :: MatchView;
-    keyContainerMatchView = namedMatchView "key container" $ \iedit -> let
+    -- orphan
+    instance
+    (
+        Show (ContainerKey cont),
+        IONewItemKeyContainer cont,
+        HasKeyReader cont (EditReader edit),
+        IOFullReader (EditReader edit),
+        Edit edit
+    ) =>
+     DependentHasGView (KeyEdit cont edit) where
     {
-        kw = infoKnowledge iedit;
-    } in do
-    {
-        MkSplitInfo ikc ie <- matchInfo iedit;
-        MkSplitInfo ik ic <- matchInfo ikc;
-        ReflH <- sameInfo (info :: Info KeyEdit) ik;
-        ConstraintFact <- askInfo kw $ applyInfo (info @IONewItemKeyContainer) ic;
-        ValueFact (MkContainerKeyInfo ikey) <- askInfo kw $ applyInfo (info @ContainerKeyInfo) ic;
-        ConstraintFact <- askInfo kw $ applyInfo (info @Show) ikey;
-        ValueFact (MkEditReaderInfo ir) <- askInfo kw $ applyInfo (info @EditReaderInfo) ie;
-        ConstraintFact <- askInfo kw $ applyInfo (applyInfo (info @HasKeyReader) ic) ir;
-        ValueFact (MkElementInfo ielem) <- askInfo kw $ applyInfo (info @ElementInfo) ic;
-        ConstraintFact <- askInfo kw $ applyInfo (info @IOFullReader) ir;
-        ConstraintFact <- askInfo kw $ applyInfo (info @Edit) ie;
-        return $ keyContainerView ir ie ielem;
+        dependsGView kw ikce = do
+        {
+            MkSplitInfo ikc ie <- matchInfo ikce;
+            MkSplitInfo ik ic <- matchInfo ikc;
+            ReflH <- sameInfo (info :: Info KeyEdit) ik;
+            ValueFact (MkEditReaderInfo ir) <- askInfo kw $ applyInfo (info @EditReaderInfo) ie;
+            ValueFact (MkElementInfo ielem) <- askInfo kw $ applyInfo (info @ElementInfo) ic;
+            return $ keyContainerView ir ie ielem;
+        };
     };
+    -- orphan
+    instance
+    (
+        Show (ContainerKey cont),
+        IONewItemKeyContainer cont,
+        HasKeyReader cont (EditReader edit),
+        IOFullReader (EditReader edit),
+        Edit edit,
+        HasInfo edit,
+        HasInfo (EditReader edit),
+        HasInfo (Element cont)
+    ) =>
+     HasGView (KeyEdit cont edit) where
+    {
+        gview = keyContainerView info info info;
+    };
+
+    keyContainerTypeKnowledge :: TypeKnowledge;
+    keyContainerTypeKnowledge = namedKnowledge "key container" $(declInfo [d|
+        instance
+            (
+                Show (ContainerKey cont),
+                IONewItemKeyContainer cont,
+                HasKeyReader cont (EditReader edit),
+                IOFullReader (EditReader edit),
+                Edit edit
+            ) =>
+            DependentHasGView (KeyEdit cont edit);
+    |]);
 }

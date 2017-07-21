@@ -1,6 +1,5 @@
 module Truth.UI.GTK.GView where
 {
-    import Control.Monad;
     import Graphics.UI.Gtk;
     import Data.Result;
     import Data.MonadOne;
@@ -18,20 +17,40 @@ module Truth.UI.GTK.GView where
 
     type GView edit = View edit Widget;
     type GViewResult edit updatestate selstate = ViewResult edit selstate Widget;
-    newtype MatchView = MkMatchView (forall edit. (Edit edit) => Info edit -> KnowM (GView edit));
-    type GetView = forall edit. (Edit edit) => Info edit -> GView edit;
 
-    instance Monoid MatchView where
+    class DependentHasGView edit where
     {
-        mempty = MkMatchView $ \_ -> mzero;
-        mappend (MkMatchView v1) (MkMatchView v2) = MkMatchView $ \i -> mplus (v1 i) (v2 i);
+        dependsGView :: TypeKnowledge -> Info edit -> KnowM (GView edit);
+
+        default dependsGView :: HasGView edit => TypeKnowledge -> Info edit -> KnowM (GView edit);
+        dependsGView _ _ = return gview;
     };
 
-    namedMatchView :: String -> (forall edit. (Edit edit) => Info edit -> KnowM (GView edit)) -> MatchView;
-    namedMatchView name ff = MkMatchView $ \i -> kmContext name $ ff i;
+    class DependentHasGView edit => HasGView edit where
+    {
+        gview :: GView edit;
+    };
 
-    finalGetView :: MatchView -> (FailureReason -> GetView) -> GetView;
-    finalGetView (MkMatchView mv) gv i = case mv i of
+    $(return []);
+    instance HasInfo DependentHasGView where
+    {
+        info = mkSimpleInfo $(ionamedwitness[t|DependentHasGView|]) [];
+    };
+
+    getGView :: TypeKnowledge -> Info edit -> KnowM (GView edit);
+    getGView k i = let
+    {
+        k' = mappend k (infoKnowledge i);
+    } in do
+    {
+        ConstraintFact <- askInfo k' $ applyInfo (info @DependentHasGView) i;
+        dependsGView k' i;
+    };
+
+    type GetView = forall edit. (Edit edit) => Info edit -> GView edit;
+
+    finalGetView :: TypeKnowledge -> (FailureReason -> GetView) -> GetView;
+    finalGetView k gv i = case getGView k i of
     {
         SuccessResult view -> view;
         FailureResult frs -> gv (MkFailureReason "No Editor" frs) i;

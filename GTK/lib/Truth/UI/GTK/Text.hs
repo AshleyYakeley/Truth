@@ -1,7 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
-module Truth.UI.GTK.Text (textMatchView) where
+module Truth.UI.GTK.Text (textTypeKnowledge) where
 {
-    import Data.Type.Heterogeneous;
     import Data.Foldable;
     import Control.Concurrent.MVar;
     import Control.Monad.IO.Class;
@@ -110,10 +109,16 @@ module Truth.UI.GTK.Text (textMatchView) where
         return MkViewResult{..};
     };
 
-    textMatchView :: MatchView;
-    textMatchView = namedMatchView "text view" $ \tedit -> do
+    -- orphan
+    instance DependentHasGView (StringEdit String);
+    -- orphan
+    instance HasGView (StringEdit String) where
     {
-        ReflH <- sameInfo (info :: Info (StringEdit String)) tedit;
-        return textView;
+        gview = textView;
     };
+
+    textTypeKnowledge :: TypeKnowledge;
+    textTypeKnowledge = namedKnowledge "text" $(declInfo [d|
+        instance DependentHasGView (StringEdit String);
+    |]);
 }

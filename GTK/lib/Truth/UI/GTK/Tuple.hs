@@ -1,9 +1,10 @@
-module Truth.UI.GTK.Tuple(tupleMatchView) where
+{-# OPTIONS -fno-warn-orphans #-}
+module Truth.UI.GTK.Tuple(tupleTypeKnowledge) where
 {
     import Data.Proxy;
     import Data.Foldable;
+    import Data.Functor.Identity;
     import Graphics.UI.Gtk;
-    import Data.Type.Heterogeneous;
     import Data.KindCategory;
     import Data.Reity;
     import Truth.Core;
@@ -21,16 +22,24 @@ module Truth.UI.GTK.Tuple(tupleMatchView) where
     tupleGView :: (FiniteTupleSelector sel,Applicative m) => (forall edit. sel edit -> m (GView edit)) -> m (GView (TupleEdit sel));
     tupleGView selview = fmap (mapIOView arrangeWidgets) $ tupleView selview;
 
-    tupleMatchView :: MatchView -> MatchView;
-    tupleMatchView (MkMatchView allviews) = namedMatchView "tuple" $ \tedit -> do
+    instance (FiniteTupleSelector sel,TupleHasInfo sel) => DependentHasGView (TupleEdit sel) where
     {
-        MkSplitInfo ite isel <- matchInfo tedit;
-        ReflH <- sameInfo (info @TupleEdit) ite;
-        ConstraintFact <- askInfo (infoKnowledge isel) $ applyInfo (info @FiniteTupleSelector) isel;
-        ConstraintFact <- askInfo (infoKnowledge isel) $ applyInfo (info @TupleHasInfo) isel;
-        tupleGView $ \sel -> case tupleWitness (Proxy :: Proxy Edit) sel of
+        dependsGView k _i = tupleGView $ \sel -> case tupleWitness (Proxy :: Proxy Edit) sel of
         {
-            MkConstraintWitness -> namedResult "selector" $ allviews $ tupleHasInfo sel;
+            MkConstraintWitness -> namedResult "selector" $ getGView k $ tupleHasInfo sel;
         };
     };
+
+    instance (FiniteTupleSelector sel,TupleHasInfo sel,TupleWitness HasGView sel) => HasGView (TupleEdit sel) where
+    {
+        gview = runIdentity $ tupleGView $ \sel -> case tupleWitness (Proxy :: Proxy HasGView) sel of
+        {
+            MkConstraintWitness -> Identity gview;
+        };
+    };
+
+    tupleTypeKnowledge :: TypeKnowledge;
+    tupleTypeKnowledge = namedKnowledge "tuple" $(declInfo [d|
+        instance (FiniteTupleSelector sel,TupleHasInfo sel) => DependentHasGView (TupleEdit sel);
+    |]);
 }

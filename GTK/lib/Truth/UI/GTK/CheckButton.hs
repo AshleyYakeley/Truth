@@ -1,6 +1,6 @@
-module Truth.UI.GTK.CheckButton where
+{-# OPTIONS -fno-warn-orphans #-}
+module Truth.UI.GTK.CheckButton(checkButtonTypeKnowledge) where
 {
-    import Data.Type.Heterogeneous;
     import Data.Empty;
     import Graphics.UI.Gtk;
     import Control.Monad.IsStateIO;
@@ -39,10 +39,16 @@ module Truth.UI.GTK.CheckButton where
         return MkViewResult{..};
     };
 
-    checkButtonMatchView :: MatchView;
-    checkButtonMatchView = namedMatchView "check button" $ \tedit -> do
+    -- orphan
+    instance DependentHasGView (WholeEdit Bool);
+    -- orphan
+    instance HasGView (WholeEdit Bool) where
     {
-        ReflH <- sameInfo (info :: Info (WholeEdit Bool)) tedit;
-        return $ checkButtonView "";
+        gview = checkButtonView "";
     };
+
+    checkButtonTypeKnowledge :: TypeKnowledge;
+    checkButtonTypeKnowledge = namedKnowledge "check button" $(declInfo [d|
+        instance DependentHasGView (WholeEdit Bool);
+    |]);
 }

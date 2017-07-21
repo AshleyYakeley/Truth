@@ -30,11 +30,11 @@ module Truth.UI.GTK.Window where
         return MkViewResult{..};
     };
 
-    matchViews :: [MatchView];
-    matchViews = [checkButtonMatchView,textMatchView,keyContainerMatchView {-,maybeMatchView getView,resultMatchView getView-}];
+    matchViews :: TypeKnowledge;
+    matchViews = mconcat [checkButtonTypeKnowledge,textTypeKnowledge,keyContainerTypeKnowledge {-,maybeTypeKnowledge getView,resultTypeKnowledge getView-}];
 
     getView :: GetView;
-    getView = finalGetView (mconcat matchViews) $ lastResortView True;
+    getView = finalGetView matchViews $ lastResortView True;
 
     class WindowButtons actions where
     {
