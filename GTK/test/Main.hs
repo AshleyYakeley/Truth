@@ -22,7 +22,9 @@ module Main(main) where
     testGViews = testGroup "GView" [
             testGView $ info @(WholeEdit Bool),
             testGView $ info @(StringEdit String),
-            testGView $ info @(SoupEdit (ObjectEdit ByteStringEdit))
+            testGView $ info @(SoupEdit (ObjectEdit ByteStringEdit)),
+            testGView $ info @(SumWholeEdit (OneEdit (Result String) (WholeEdit Bool))),
+            testGView $ info @(SumWholeEdit (OneEdit (Result String) (StringEdit String)))
         ];
 
     tests :: TestTree;

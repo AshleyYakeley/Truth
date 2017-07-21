@@ -6,7 +6,7 @@ module Truth.UI.GTK.Window where
     import Truth.Core;
     import Graphics.UI.Gtk;
     import Truth.UI.GTK.GView;
-    --import Truth.UI.GTK.Maybe;
+    import Truth.UI.GTK.Maybe;
     import Truth.UI.GTK.CheckButton;
     import Truth.UI.GTK.Text;
     import Truth.UI.GTK.KeyContainer;
@@ -31,7 +31,7 @@ module Truth.UI.GTK.Window where
     };
 
     matchViews :: TypeKnowledge;
-    matchViews = mconcat [checkButtonTypeKnowledge,textTypeKnowledge,keyContainerTypeKnowledge {-,maybeTypeKnowledge getView,resultTypeKnowledge getView-}];
+    matchViews = mconcat [checkButtonTypeKnowledge,textTypeKnowledge,keyContainerTypeKnowledge,maybeTypeKnowledge];
 
     getView :: GetView;
     getView = finalGetView matchViews $ lastResortView True;

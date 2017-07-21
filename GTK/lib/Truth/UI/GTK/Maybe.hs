@@ -1,34 +1,33 @@
 {-# OPTIONS -fno-warn-orphans #-}
-module Truth.UI.GTK.Maybe ({- maybeMatchView,resultMatchView -}) where
+module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
 {
-{-
-    import Control.Applicative;
-    import Data.IORef;
+    --import Control.Applicative;
+    --import Data.IORef;
     import Data.Result;
     import Data.MonadOne;
-    import Data.Witness;
+    --import Data.Witness;
     import Data.HasNewValue;
-    import Data.Type.Heterogeneous;
+    --import Data.Type.Heterogeneous;
     import Data.Reity;
     import Truth.Core;
     import Graphics.UI.Gtk;
     import Truth.UI.GTK.GView;
 
 
-    type Push edit = edit -> IO (Maybe ());
-
-    pushButton :: Push edit -> edit -> String -> IO Button;
+    type Push edit = [edit] -> IO (Maybe (IO ()));
+{-
+    pushButton :: Push edit -> [edit] -> String -> IO Button;
     pushButton push edit name = do
     {
         button <- buttonNew;
         set button [buttonLabel := name];
         _ <- onClicked button (do
         {
-            result <- push edit;
-            case result of
+            maction <- push edit;
+            case maction of
             {
-                Just _ -> return ();    -- succeeded
-                _ -> return ();    -- failed. Could possibly do something here.
+                Just action -> action;
+                Nothing -> return ();
             };
         });
         return button;
@@ -47,18 +46,37 @@ module Truth.UI.GTK.Maybe ({- maybeMatchView,resultMatchView -}) where
         containerRemove w1 w2;
         widgetDestroy w2;
     };
+-}
 
+
+{-
     doIf :: Maybe a -> (a -> IO b) -> IO (Maybe b);
     doIf (Just a) f = fmap Just (f a);
     doIf Nothing _ = return Nothing;
+-}
 
-    createButton :: (FullEdit edit) => EditSubject edit -> Push edit -> IO Button;
-    createButton val push = pushButton push (replaceEdit val) "Create";
+    createButton :: (IOFullEdit edit) => EditSubject edit -> Push edit -> IO Button;
+    createButton _ _ = undefined;
+{-
+    createButton object = runObject object $ do
+    {
+        edits <- unReadable (ioWriterToReadable ioReplaceEdit) (mutableRead muted) :: MutableRead m (EditReader edit) -> m [edit];
+        maction <- mutableEdit muted edits;
+        case maction of
+        {
+            Just action -> action;
+            Nothing -> return ();
+        };
+    };
+-}
+
+{-
+    newtype Object edit = MkObject {runObject :: forall r. (forall m. IsStateIO m => MutableEdit m edit -> m r) -> IO r};
 
     mapSelection :: forall f edit. (MonadOne f, Edit edit, FullReader (EditReader edit)) =>
      Info f -> Aspect edit -> Maybe (Aspect (OneWholeEdit f edit));
     mapSelection fi aspect = mapOneWholeEditAspect fi aspect;
-
+-}
     monadOneIVF :: forall f edit wd.
     (
         Applicative f,
@@ -68,7 +86,10 @@ module Truth.UI.GTK.Maybe ({- maybeMatchView,resultMatchView -}) where
         WidgetClass wd
     ) =>
       Info f -> Maybe (Limit f) -> (Push (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
-    monadOneIVF tf mDeleteValue makeEmptywidget factory initial push = let
+    monadOneIVF _tf _mDeleteValue _makeEmptywidget _factory = MkView $ \_object _setSelect ->
+    undefined;
+{-
+     let
     {
         mpush :: Push edit;
         mpush ea = push (Right (MkOneEdit ea));
@@ -140,10 +161,39 @@ module Truth.UI.GTK.Maybe ({- maybeMatchView,resultMatchView -}) where
             }
         });
     };
-
+-}
     maybeView :: (HasNewValue (EditSubject edit),FullEdit edit) =>
-      w edit -> GView edit -> GView (OneWholeEdit Maybe edit);
-    maybeView _ = monadOneIVF @Maybe info (Just $ MkLimit Nothing) (createButton (Just newValue));
+      GView edit -> GView (OneWholeEdit Maybe edit);
+    maybeView = monadOneIVF @Maybe info (Just $ MkLimit Nothing) (createButton (Just newValue));
+
+    -- orphan
+    instance (
+        EditReader edit ~ reader,
+        DependentHasGView edit,
+        HasNewValue (ReaderSubject reader),
+        FullEdit edit
+        ) => DependentHasGView (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit)) where
+    {
+        dependsGView k iedit = do
+        {
+            MkSplitInfo _ iome <- matchInfo iedit;
+            MkSplitInfo _ ie <- matchInfo iome;
+            view <- dependsGView k ie;
+            return $ maybeView view;
+        };
+    };
+
+    -- orphan
+    instance (
+        EditReader edit ~ reader,
+        DependentHasGView edit,
+        HasNewValue (ReaderSubject reader),
+        FullEdit edit,
+        HasGView edit
+        ) => HasGView (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit)) where
+    {
+        gview = maybeView gview;
+    };
 
     placeholderLabel :: IO Label;
     placeholderLabel = do
@@ -152,22 +202,70 @@ module Truth.UI.GTK.Maybe ({- maybeMatchView,resultMatchView -}) where
         return label;
     };
 
-    resultView :: (HasNewValue (EditSubject edit),FullEdit edit) => w edit -> Info err -> GView edit -> GView (OneWholeEdit (Result err) edit);
-    resultView _ terr = monadOneIVF (applyInfo (info :: Info Result) terr) Nothing (\_ -> placeholderLabel);
+    resultView :: (HasNewValue (EditSubject edit),FullEdit edit) => Info err -> GView edit -> GView (OneWholeEdit (Result err) edit);
+    resultView terr = monadOneIVF (applyInfo (info :: Info Result) terr) Nothing (\_ -> placeholderLabel);
 
-    maybeMatchView :: GetView -> MatchView;
-    maybeMatchView getView i = do
+    -- orphan
+    instance
+    (
+        EditReader edit ~ reader,
+        DependentHasGView edit,
+        HasNewValue (ReaderSubject reader),
+        FullEdit edit
+    ) => DependentHasGView (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
     {
-        MkMatchOneWholeEdit fInfo eInfo rInfo <- matchInfo i;
-        ReflH <- isInfo @Maybe fInfo;
-        ValueFact (MkReaderSubjectInfo subjInfo) <- askInfo (infoKnowledge i) $ applyInfo (info @ReaderSubjectInfo) rInfo;
-        ConstraintFact <- askInfo (infoKnowledge i) $ applyInfo (info @HasNewValue) subjInfo;
-        ConstraintFact <- askInfo (infoKnowledge i) $ applyInfo (info @FullEdit) eInfo;
-        return (maybeView eInfo (getView eInfo));
+        dependsGView k iedit = do
+        {
+            MkSplitInfo _ iore <- matchInfo iedit;
+            MkSplitInfo ior ie <- matchInfo iore;
+            MkSplitInfo _ ir <- matchInfo ior;
+            MkSplitInfo _ ierr <- matchInfo ir;
+            view <- dependsGView k ie;
+            return $ resultView ierr view;
+        };
     };
 
-    resultMatchView :: GetView -> MatchView;
-    resultMatchView getView i = do
+    -- orphan
+    instance (
+        EditReader edit ~ reader,
+        DependentHasGView edit,
+        HasNewValue (ReaderSubject reader),
+        FullEdit edit,
+        HasGView edit,
+        HasInfo err
+        ) => HasGView (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
+    {
+        gview = resultView info gview;
+    };
+
+    maybeTypeKnowledge :: TypeKnowledge;
+    maybeTypeKnowledge = mconcat
+    [
+        namedKnowledge "maybe" $(declInfo [d|
+            instance
+                (
+                    EditReader edit ~ reader,
+                    DependentHasGView edit,
+                    HasNewValue (ReaderSubject reader),
+                    FullEdit edit
+                ) =>
+                DependentHasGView (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit));
+            |]),
+        namedKnowledge "result" $(declInfo [d|
+            instance
+                (
+                    EditReader edit ~ reader,
+                    DependentHasGView edit,
+                    HasNewValue (ReaderSubject reader),
+                    FullEdit edit
+                ) =>
+                DependentHasGView (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit));
+            |])
+    ];
+
+{-
+    resultTypeKnowledge :: GetView -> TypeKnowledge;
+    resultTypeKnowledge getView i = do
     {
         MkMatchOneWholeEdit fInfo eInfo rInfo <- matchInfo i;
         MkSplitInfo resInfo errInfo <- matchInfo fInfo;
@@ -178,4 +276,5 @@ module Truth.UI.GTK.Maybe ({- maybeMatchView,resultMatchView -}) where
         return (resultView eInfo errInfo (getView eInfo));
     };
 -}
+
 }

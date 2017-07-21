@@ -142,6 +142,7 @@ module Truth.Core.Types.String where
     instance HasInfo StringEdit where
     {
         info = mkSimpleInfo $(ionamedwitness[t|StringEdit|]) [$(declInfo [d|
+            instance IsSequence [a];
             instance IsSequence seq => Edit (StringEdit seq) where
             {
                 type EditReader (StringEdit seq) = StringRead seq;
