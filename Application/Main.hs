@@ -10,7 +10,6 @@ module Main(main) where
     import Data.Injection;
     import Data.Codec;
     import Data.Lens;
-    import Data.Reity;
     import Truth.Core;
     import Truth.World.File;
     import Truth.World.FileSystem;
@@ -61,7 +60,7 @@ module Main(main) where
                 undoBufferSub = undoQueueSubscriber bufferSub;
             };
             MkSubscriberW textSub <- makeSharedSubscriber undoBufferSub;
-            makeWindowCountRef info windowCount textSub;
+            makeKnownWindowCountRef windowCount textSub;
         }
         else do
         {
@@ -71,7 +70,7 @@ module Main(main) where
                 textObj = convertObject wholeTextObj;
             };
             MkSubscriberW textSub <- makeObjectSubscriber textObj;
-            makeWindowCountRef info windowCount textSub;
+            makeKnownWindowCountRef windowCount textSub;
         };
     };
 
@@ -84,7 +83,7 @@ module Main(main) where
             soupObject = nonlockingObject $ directorySoup fileSystemMutableEdit dirpath;
         };
         MkSubscriberW soupSub <- makeObjectSubscriber soupObject;
-        makeWindowCountRef info windowCount soupSub;
+        makeKnownWindowCountRef windowCount soupSub;
     };
 
     testSave :: Bool;

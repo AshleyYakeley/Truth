@@ -99,10 +99,10 @@ module Truth.UI.GTK.Window where
         }
     };
 
-    makeWindow :: (Edit edit,WindowButtons actions) => Info edit -> IORef Int -> IO () -> Subscriber edit actions -> IO ();
-    makeWindow te ref tellclose sub = do
+    makeViewWindow :: (Edit edit,WindowButtons actions) => GView edit -> IORef Int -> IO () -> Subscriber edit actions -> IO ();
+    makeViewWindow view ref tellclose sub = do
     {
-        MkViewSubscription{..} <- subscribeView (getView te) sub;
+        MkViewSubscription{..} <- subscribeView view sub;
         window <- windowNew;
         box <- vBoxNew False 0;
 
@@ -115,7 +115,7 @@ module Truth.UI.GTK.Window where
             {
                 Just (MkAspect tsel _ta lens) -> do
                 {
-                    makeWindowCountRef tsel ref (mapSubscriber lens sub);
+                    makeLookupWindowCountRef tsel ref (mapSubscriber lens sub);
                 };
                 _ -> return ();
             };
@@ -138,10 +138,10 @@ module Truth.UI.GTK.Window where
         widgetShowAll window;
     };
 
-    makeWindowCountRef :: (Edit edit,WindowButtons actions) => Info edit -> IORef Int -> Subscriber edit actions -> IO ();
-    makeWindowCountRef te windowCount sub = do
+    makeViewWindowCountRef :: (Edit edit,WindowButtons actions) => GView edit -> IORef Int -> Subscriber edit actions -> IO ();
+    makeViewWindowCountRef view windowCount sub = do
     {
-        makeWindow te windowCount (do
+        makeViewWindow view windowCount (do
         {
             i <- readIORef windowCount;
             writeIORef windowCount (i - 1);
@@ -152,4 +152,10 @@ module Truth.UI.GTK.Window where
         i <- readIORef windowCount;
         writeIORef windowCount (i + 1);
     };
+
+    makeKnownWindowCountRef :: (Edit edit,HasView Widget edit,WindowButtons actions) => IORef Int -> Subscriber edit actions -> IO ();
+    makeKnownWindowCountRef = makeViewWindowCountRef theView;
+
+    makeLookupWindowCountRef :: (Edit edit,WindowButtons actions) => Info edit -> IORef Int -> Subscriber edit actions -> IO ();
+    makeLookupWindowCountRef te = makeViewWindowCountRef (getView te);
 }
