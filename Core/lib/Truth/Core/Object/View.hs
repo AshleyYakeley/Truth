@@ -11,20 +11,19 @@ module Truth.Core.Object.View where
     import Truth.Core.Object.Aspect;
 
 
-    data ViewResult edit selstate w = MkViewResult
+    data ViewResult edit w = MkViewResult
     {
         vrWidget :: w,
         vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> m (),
-        vrFirstSelState :: Maybe selstate,
-        vrGetSelection :: selstate -> IO (Maybe (Aspect edit))
+        vrFirstAspectGetter :: IO (Maybe (Aspect edit))
     };
 
-    instance Functor (ViewResult edit selstate) where
+    instance Functor (ViewResult edit) where
     {
-        fmap f (MkViewResult w update fss getsel) = MkViewResult (f w) update fss getsel;
+        fmap f (MkViewResult w update fss) = MkViewResult (f w) update fss;
     };
 
-    data View edit w = forall selstate. MkView (Object edit -> (selstate -> IO ()) -> IO (ViewResult edit selstate w));
+    data View edit w = forall. MkView (Object edit -> (IO (Maybe (Aspect edit)) -> IO ()) -> IO (ViewResult edit w));
 
     instance Functor (View edit) where
     {
@@ -46,8 +45,8 @@ module Truth.Core.Object.View where
     mapView :: forall f w edita editb. (MonadOne f,Edit edita,Edit editb) => GeneralLens' f edita editb -> View editb w -> View edita w;
     mapView
         lens@(MkCloseFloat (flens :: FloatingEditLens' f lensstate edita editb))
-        (MkView (viewB :: Object editb -> (selstate -> IO ()) -> IO (ViewResult editb selstate w)))
-        = MkView $ \objectA setSelect -> do
+        (MkView (viewB :: Object editb -> (IO (Maybe (Aspect editb)) -> IO ()) -> IO (ViewResult editb w)))
+        = MkView $ \objectA setSelectA -> do
     {
         let
         {
@@ -59,8 +58,18 @@ module Truth.Core.Object.View where
         {
             objectB :: Object editb;
             objectB = floatingMapObject (mvarStateAccess lensvar) flens objectA;
+
+            setSelectB selB = setSelectA $ do
+            {
+                mAspectB <- selB;
+                case mAspectB of
+                {
+                    Nothing -> return Nothing;
+                    Just aspectB -> return $ Just $ mapAspect (generalLens lens) aspectB;
+                };
+            }
         };
-        MkViewResult w updateB fss getSelB <- viewB objectB setSelect;
+        MkViewResult w updateB fssB <- viewB objectB setSelectB;
         let
         {
             updateA :: forall m. IsStateIO m => MutableRead m (EditReader edita) -> [edita] -> m ();
@@ -70,17 +79,18 @@ module Truth.Core.Object.View where
                 updateB (mapMutableRead (floatingEditGet oldls) mrA) editsB;
                 return ((),newls);
             };
-            getSelA ss = do
+
+            fssA = do
             {
-                mAspectA <- getSelB ss;
-                case mAspectA of
+                mAspectB <- fssB;
+                case mAspectB of
                 {
                     Nothing -> return Nothing;
-                    Just aspectA -> return $ Just $ mapAspect (generalLens lens) aspectA;
+                    Just aspectB -> return $ Just $ mapAspect (generalLens lens) aspectB;
                 };
-            };
+            }
         };
-        return $ MkViewResult w updateA fss getSelA;
+        return $ MkViewResult w updateA fssA;
     };
 
     instance Applicative (View edit) where
@@ -88,19 +98,13 @@ module Truth.Core.Object.View where
         pure vrWidget = MkView $ \_object _setSelect -> return $ let
         {
             vrUpdate _ _ = return ();
-            vrFirstSelState = Nothing;
-            vrGetSelection (ss :: None) = never ss;
+            vrFirstAspectGetter = return Nothing;
         } in MkViewResult{..};
 
         (MkView view1) <*> (MkView view2) = MkView $ \object setSelect -> do
         {
-            let
-            {
-                setSelect1 ss = setSelect $ Left ss;
-                setSelect2 ss = setSelect $ Right ss;
-            };
-            (MkViewResult w1 update1 mfss1 getsel1) <- view1 object setSelect1;
-            (MkViewResult w2 update2 mfss2 getsel2) <- view2 object setSelect2;
+            (MkViewResult w1 update1 fss1) <- view1 object setSelect;
+            (MkViewResult w2 update2 fss2) <- view2 object setSelect;
             let
             {
                 w = w1 w2;
@@ -112,16 +116,17 @@ module Truth.Core.Object.View where
                     update2 mr edits;
                 };
 
-                mfss = case mfss1 of
+                fss = do
                 {
-                    Just fss1 -> Just $ Left fss1;
-                    Nothing -> fmap Right mfss2;
+                    ma1 <- fss1;
+                    case ma1 of
+                    {
+                        Just a -> return $ Just a;
+                        Nothing -> fss2;
+                    };
                 };
-
-                getsel (Left ss) = getsel1 ss;
-                getsel (Right ss) = getsel2 ss;
             };
-            return $ MkViewResult w update mfss getsel;
+            return $ MkViewResult w update fss;
         };
     };
 
@@ -139,21 +144,21 @@ module Truth.Core.Object.View where
     };
 
     subscribeView :: forall edit w action. View edit w -> Subscriber edit action -> IO (ViewSubscription edit action w);
-    subscribeView (MkView (view :: Object edit -> (selstate -> IO ()) -> IO (ViewResult edit selstate w))) sub = do
+    subscribeView (MkView (view :: Object edit -> (IO (Maybe (Aspect edit)) -> IO ()) -> IO (ViewResult edit w))) sub = do
     {
         let
         {
-            initialise :: Object edit -> IO (ViewResult edit selstate w, IORef (Maybe selstate));
+            initialise :: Object edit -> IO (ViewResult edit w, IORef (IO (Maybe (Aspect edit))));
             initialise object = do
             {
                 rec
                 {
                     let
                     {
-                        setSelect ss = writeIORef selref $ Just ss;
+                        setSelect ss = writeIORef selref ss;
                     };
                     vr <- view object setSelect;
-                    selref <- newIORef $ vrFirstSelState vr;
+                    selref <- newIORef $ vrFirstAspectGetter vr;
                 };
                 return (vr,selref);
             };
@@ -164,12 +169,8 @@ module Truth.Core.Object.View where
         {
             srGetSelection = do
             {
-                mss <- readIORef selref;
-                case mss of
-                {
-                    Just ss -> vrGetSelection ss;
-                    Nothing -> return Nothing;
-                }
+                ss <- readIORef selref;
+                ss;
             };
             srWidget = vrWidget;
         };

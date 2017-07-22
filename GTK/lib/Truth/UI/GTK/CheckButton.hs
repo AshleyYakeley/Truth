@@ -1,7 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.CheckButton(checkButtonTypeKnowledge) where
 {
-    import Data.Empty;
     import Graphics.UI.Gtk;
     import Control.Monad.IsStateIO;
     import Data.Reity;
@@ -33,8 +32,7 @@ module Truth.UI.GTK.CheckButton(checkButtonTypeKnowledge) where
                 withSignalBlocked clickConnection $ set widget [toggleButtonActive := newstate];
                 return ();
             };
-            vrFirstSelState = Nothing;
-            vrGetSelection (ss :: None) = never ss;
+            vrFirstAspectGetter = return Nothing;
         };
         return MkViewResult{..};
     };

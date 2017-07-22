@@ -75,12 +75,6 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
 
         widget <- textViewNewWithBuffer buffer;
 
-        _ <- onFocus widget $ \_ -> do
-        {
-            setSelect ();
-            return True;
-        };
-
         let
         {
             vrWidget :: Widget;
@@ -94,17 +88,20 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
             -- this withMVar prevents the signal handlers from re-sending edits
             vrUpdate _ edits = liftIO $ ifMVar mv $ traverse_ update edits;
 
-            vrFirstSelState :: Maybe ();
-            vrFirstSelState = Just ();
-
-            vrGetSelection :: () -> IO (Maybe (Aspect (StringEdit String)));
-            vrGetSelection _ = do
+            vrFirstAspectGetter :: IO (Maybe (Aspect (StringEdit String)));
+            vrFirstAspectGetter = do
             {
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
                 run <- getSequenceRun iter1 iter2;
                 -- get selection...
                 return $ Just $ MkAspect info info $ MkCloseFloat $ stringSectionLens run;
             };
+        };
+
+        _ <- onFocus widget $ \_ -> do
+        {
+            setSelect vrFirstAspectGetter;
+            return True;
         };
         return MkViewResult{..};
     };

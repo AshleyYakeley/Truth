@@ -42,12 +42,6 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
         boxPackStart box newButton PackNatural 0;
         boxPackStart box tview PackGrow 0;
 
-        _ <- onFocus box $ \_ -> do
-        {
-            setSelect ();
-            return True;
-        };
-
         let
         {
             vrWidget = toWidget box;
@@ -90,8 +84,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
                 KeyClear -> listStoreClear store;
                 _ -> return ();
             };
-            vrFirstSelState = Just ();
-            vrGetSelection () = do
+            vrFirstAspectGetter = do
             {
                 tsel <- treeViewGetSelection tview;
                 ltpath <- treeSelectionGetSelectedRows tsel;
@@ -105,6 +98,12 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
                     _ -> return Nothing;
                 };
             };
+        };
+
+        _ <- onFocus box $ \_ -> do
+        {
+            setSelect vrFirstAspectGetter;
+            return True;
         };
         return MkViewResult{..};
     };

@@ -24,8 +24,7 @@ module Truth.UI.GTK.Window where
         {
             vrWidget = toWidget vp;
             vrUpdate _ _ = return ();
-            vrFirstSelState = Nothing;
-            vrGetSelection _ = return Nothing;
+            vrFirstAspectGetter = return Nothing;
         };
         return MkViewResult{..};
     };

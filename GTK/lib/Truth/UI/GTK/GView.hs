@@ -15,7 +15,7 @@ module Truth.UI.GTK.GView where
     };
 
     type GView edit = View edit Widget;
-    type GViewResult edit updatestate selstate = ViewResult edit selstate Widget;
+    type GViewResult edit updatestate = ViewResult edit Widget;
 
     instance HasInfo Widget where
     {
