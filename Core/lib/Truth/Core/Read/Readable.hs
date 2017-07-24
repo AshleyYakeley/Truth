@@ -19,6 +19,9 @@ module Truth.Core.Read.Readable where
     readableToGen :: Readable reader a -> GenReadable c reader a;
     readableToGen (MkReadable f) = MkReadable f;
 
+    fromGenReadable :: (Reader reader,c m,Monad m) => GenReadable c reader t -> ReaderSubject reader -> m t;
+    fromGenReadable (MkReadable rrt) a = rrt $ readFromM $ return a;
+
     fromReadable :: (Reader reader,c Identity) => GenReadable c reader t -> ReaderSubject reader -> t;
     fromReadable (MkReadable rrt) a = runIdentity $ rrt $ Identity . (readFrom a);
 

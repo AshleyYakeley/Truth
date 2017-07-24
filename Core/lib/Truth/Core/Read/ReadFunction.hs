@@ -6,12 +6,13 @@ module Truth.Core.Read.ReadFunction where
     import Truth.Core.Read.Readable;
 
 
-    type ReadFunction readera readerb = forall t. readerb t -> Readable readera t;
+    type GenReadFunction c readera readerb = forall t. readerb t -> GenReadable c readera t;
+    type ReadFunction readera readerb = GenReadFunction Monad readera readerb;
 
-    mapMutableRead :: forall m ra rb. Monad m => ReadFunction ra rb -> MutableRead m ra -> MutableRead m rb;
+    mapMutableRead :: (Monad m,c m) => GenReadFunction c ra rb -> MutableRead m ra -> MutableRead m rb;
     mapMutableRead rfab sma rbt = unReadable (rfab rbt) sma;
 
-    mapMutableReadW :: Monad m => ReadFunction ra rb -> MutableReadW m ra -> MutableReadW m rb;
+    mapMutableReadW :: (Monad m,c m) => GenReadFunction c ra rb -> MutableReadW m ra -> MutableReadW m rb;
     mapMutableReadW rf (MkMutableReadW mr) = MkMutableReadW $ mapMutableRead rf mr;
 
     composeReadFunction :: ReadFunction rb rc -> ReadFunction ra rb -> ReadFunction ra rc;

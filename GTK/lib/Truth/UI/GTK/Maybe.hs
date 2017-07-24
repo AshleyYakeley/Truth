@@ -1,37 +1,21 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
 {
-    --import Control.Applicative;
-    --import Data.IORef;
+    import Data.Foldable;
+    import Data.Traversable;
+    import Control.Concurrent.MVar;
+    import Control.Monad.IO.Class;
+    import Control.Monad.Trans.Class;
+    import Control.Monad.Trans.State;
     import Data.Result;
     import Data.MonadOne;
-    --import Data.Witness;
     import Data.HasNewValue;
-    --import Data.Type.Heterogeneous;
+    import Control.Monad.IsStateIO;
     import Data.Reity;
     import Truth.Core;
-    import Graphics.UI.Gtk;
+    import Graphics.UI.Gtk hiding (get,Object);
     import Truth.UI.GTK.GView;
 
-
-    type Push edit = [edit] -> IO (Maybe (IO ()));
-{-
-    pushButton :: Push edit -> [edit] -> String -> IO Button;
-    pushButton push edit name = do
-    {
-        button <- buttonNew;
-        set button [buttonLabel := name];
-        _ <- onClicked button (do
-        {
-            maction <- push edit;
-            case maction of
-            {
-                Just action -> action;
-                Nothing -> return ();
-            };
-        });
-        return button;
-    };
 
     boxAddShow :: (BoxClass w1, WidgetClass w2) => Packing -> w1 -> w2 -> IO ();
     boxAddShow packing w1 w2 = do
@@ -46,21 +30,11 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         containerRemove w1 w2;
         widgetDestroy w2;
     };
--}
 
-
-{-
-    doIf :: Maybe a -> (a -> IO b) -> IO (Maybe b);
-    doIf (Just a) f = fmap Just (f a);
-    doIf Nothing _ = return Nothing;
--}
-
-    createButton :: (IOFullEdit edit) => EditSubject edit -> Push edit -> IO Button;
-    createButton _ _ = undefined;
-{-
-    createButton object = runObject object $ do
+    createButton :: (IOFullEdit edit) => EditSubject edit -> Object edit -> IO Button;
+    createButton subj object = makeButton "Create" $ runObject object $ \muted -> do
     {
-        edits <- unReadable (ioWriterToReadable ioReplaceEdit) (mutableRead muted) :: MutableRead m (EditReader edit) -> m [edit];
+        edits <- fromGenReadable (ioWriterToReadable ioReplaceEdit) subj;
         maction <- mutableEdit muted edits;
         case maction of
         {
@@ -68,15 +42,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
             Nothing -> return ();
         };
     };
--}
 
-{-
-    newtype Object edit = MkObject {runObject :: forall r. (forall m. IsStateIO m => MutableEdit m edit -> m r) -> IO r};
-
-    mapSelection :: forall f edit. (MonadOne f, Edit edit, FullReader (EditReader edit)) =>
-     Info f -> Aspect edit -> Maybe (Aspect (OneWholeEdit f edit));
-    mapSelection fi aspect = mapOneWholeEditAspect fi aspect;
--}
     monadOneIVF :: forall f edit wd.
     (
         Applicative f,
@@ -85,9 +51,119 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         FullEdit edit,
         WidgetClass wd
     ) =>
-      Info f -> Maybe (Limit f) -> (Push (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
-    monadOneIVF _tf _mDeleteValue _makeEmptywidget _factory = MkView $ \_object _setSelect ->
-    undefined;
+      Info f -> Maybe (Limit f) -> (Object (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
+    monadOneIVF tf mDeleteValue makeEmptywidget (MkView baseView) = MkView $ \object setSelect -> do
+    {
+        box <- vBoxNew False 0;
+        emptyWidget <- makeEmptywidget object;
+        mDeleteButton <- for mDeleteValue $ \(MkLimit deleteValue) -> makeButton "Delete" $ runObject object $ \muted -> do
+        {
+            maction <- mutableEdit muted [SumEditLeft $ MkWholeEdit deleteValue];
+            case maction of
+            {
+                Just action -> action;
+                Nothing -> return ();
+            };
+        };
+
+        let
+        {
+            baseReadFunction :: GenReadFunction MonadIO (OneReader f (EditReader edit)) (EditReader edit);
+            baseReadFunction rt = do
+            {
+                ft <- readable $ ReadOne rt;
+                case retrieveOne ft of
+                {
+                    SuccessResult t -> return t;
+                    FailureResult _ -> liftIO $ fail "read of nonexistant object";
+                };
+            };
+
+            baseMuted :: MonadIO m => MutableEdit m (OneWholeEdit f edit) -> MutableEdit m edit;
+            baseMuted (MkMutableEdit mr me) = MkMutableEdit (mapMutableRead baseReadFunction mr) $ \edits -> me $ fmap (SumEditRight . MkOneEdit) edits;
+
+            getVR :: forall m. IsStateIO m => MutableRead m (OneReader f (EditReader edit)) -> m (f (GViewResult edit));
+            getVR mr = do
+            {
+                fu <- mr ReadHasOne;
+                for fu $ \() -> do
+                {
+                    let
+                    {
+                        baseObj = MkObject $ \call -> runObject object $ \muted -> call $ baseMuted muted;
+                        baseSetSelect ioma = setSelect $ fmap (\maspect -> maspect >>= \aspect -> getMaybeOne $ mapOneWholeEditAspect tf aspect) ioma;
+                    };
+                    liftIO $ baseView baseObj baseSetSelect;
+                };
+            };
+        };
+
+        fwma <- runObject object $ \muted -> getVR $ mutableRead muted;
+        stateVar :: MVar (f (GViewResult edit)) <- newMVar fwma;
+
+        let
+        {
+            vrWidget = toWidget box;
+            vrUpdate :: forall m. IsStateIO m => MutableRead m (OneReader f (EditReader edit)) -> [OneWholeEdit f edit] -> m ();
+            vrUpdate mr edits = mvarStateAccess stateVar $ do
+            {
+                oldfvr <- get;
+                newfu <- lift $ mr ReadHasOne;
+                newfvr <- case (retrieveOne oldfvr,retrieveOne newfu) of
+                {
+                    (SuccessResult (MkViewResult _ update _),SuccessResult ()) -> do
+                    {
+                        lift $ update (mapMutableRead baseReadFunction mr) $ edits >>= extractOneWholeEdit;
+                        return oldfvr;
+                    };
+                    (SuccessResult (MkViewResult w _ _),FailureResult (MkLimit newlf)) -> liftIO $ do
+                    {
+                        boxAddShow PackGrow box emptyWidget;
+                        containerRemoveDestroy box w;
+                        _ <- for mDeleteButton (containerRemove box);
+                        return newlf;
+                    };
+                    (FailureResult _,FailureResult (MkLimit newlf)) -> return newlf;
+                    (FailureResult _,SuccessResult ()) -> do
+                    {
+                        fvr <- lift $ getVR mr;
+                        for_ fvr $ \(MkViewResult w _ _) -> do
+                        {
+                            liftIO $ for_ mDeleteButton (boxAddShow PackNatural box);
+                            liftIO $ boxAddShow PackGrow box w;
+                            liftIO $ containerRemove box emptyWidget;
+                        };
+                        return fvr;
+                    };
+                };
+                put newfvr;
+            };
+            vrFirstAspectGetter = mvarStateAccess stateVar $ do
+            {
+                fvr <- get;
+                case getMaybeOne fvr of
+                {
+                    Just (MkViewResult _ _ ioma) -> do
+                    {
+                        ma <- liftIO ioma;
+                        case ma of
+                        {
+                            Just aspect -> return $ case mapOneWholeEditAspect tf aspect of
+                            {
+                                SuccessResult aspect' -> Just aspect';
+                                FailureResult _ -> Nothing;
+                            };
+                            Nothing -> return Nothing;
+                        }
+                    };
+                    Nothing -> return Nothing;
+                }
+            };
+        };
+        runObject object $ \muted -> vrUpdate (mutableRead muted) [];
+        return MkViewResult{..};
+    };
+
 {-
      let
     {
@@ -262,19 +338,4 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
                 DependentHasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit));
             |])
     ];
-
-{-
-    resultTypeKnowledge :: GetView -> TypeKnowledge;
-    resultTypeKnowledge findView i = do
-    {
-        MkMatchOneWholeEdit fInfo eInfo rInfo <- matchInfo i;
-        MkSplitInfo resInfo errInfo <- matchInfo fInfo;
-        ReflH <- isInfo @Result resInfo;
-        ValueFact (MkReaderSubjectInfo subjInfo) <- askInfo (infoKnowledge i) $ applyInfo (info @ReaderSubjectInfo) rInfo;
-        ConstraintFact <- askInfo (infoKnowledge i) $ applyInfo (info @HasNewValue) subjInfo;
-        ConstraintFact <- askInfo (infoKnowledge i) $ applyInfo (info @FullEdit) eInfo;
-        return (resultView eInfo errInfo (findView eInfo));
-    };
--}
-
 }
