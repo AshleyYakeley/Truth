@@ -28,7 +28,7 @@ module Truth.Core.Object.HasView where
     findView :: forall widget edit. HasTypeInfo widget => TypeKnowledge -> TypeInfo edit -> KnowM (View edit widget);
     findView k i = let
     {
-        k' = mappend k (typeInfoKnowledge i);
+        k' = mconcat [baseTypeKnowledge,k,typeInfoKnowledge i];
     } in do
     {
         ConstraintFact <- askTypeInfo k' $ applyTypeInfo (applyTypeInfo (typeInfo @DependentHasView) (typeInfo @widget)) i;

@@ -3,6 +3,7 @@ module Data.Reity.Instances where
 {
     import GHC.Types;
     import Data.Type.Equality;
+    import Data.Type.Heterogeneous;
     import Data.Word;
     import Data.ByteString;
     import Control.Comonad;
@@ -11,6 +12,7 @@ module Data.Reity.Instances where
     import Data.HasNewValue;
     import Data.MonadOne;
     import Data.Result;
+    import Data.Knowledge;
     import Data.Reity.Match;
     import Data.Reity.Wit;
     import Data.Reity.TypeInfo;
@@ -53,6 +55,24 @@ module Data.Reity.Instances where
 
 
     -- some classes
+
+    instance HasTypeInfo k => HasTypeInfo (HasTypeInfo :: k -> Constraint) where
+    {
+        typeWitness = $(generateWitness [t|HasTypeInfo|]);
+        typeName _ = "HasTypeInfo";
+        typeKnowledge _ = baseTypeKnowledge;
+    };
+
+    baseTypeKnowledge :: TypeKnowledge;
+    baseTypeKnowledge = MkKnowledge $ \_ ihtia -> do
+    {
+        -- tie the HasTypeInfo knot
+        MkSplitTypeInfo ihti ia <- matchTypeInfo ihtia;
+        (MkTypeInfo :: TypeInfo k) <- return $ typeInfoKind ia;
+        ReflH <- sameTypeInfo ihti (typeInfo @(HasTypeInfo :: k -> Constraint));
+        MkTypeInfo <- return ia;
+        return ConstraintFact;
+    };
 
     instance HasTypeInfo Eq where
     {
