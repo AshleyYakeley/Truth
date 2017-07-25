@@ -36,7 +36,7 @@ module Truth.Core.Types.Context where
     };
 
     $(return []);
-    instance HasInfo WithContext where
+    instance HasTypeInfo WithContext where
     {
         typeWitness = $(generateWitness [t|WithContext|]);
         typeName _ = "WithContext";
@@ -86,14 +86,14 @@ module Truth.Core.Types.Context where
         tupleWitness _ EditContent = MkConstraintWitness;
     };
 
-    instance (Edit ex,HasInfo ex,Edit en,HasInfo en) => TupleHasInfo (WithContextSelector ex en) where
+    instance (Edit ex,HasTypeInfo ex,Edit en,HasTypeInfo en) => TupleHasInfo (WithContextSelector ex en) where
     {
-        tupleHasInfo EditContext = info;
-        tupleHasInfo EditContent = info;
+        tupleHasInfo EditContext = typeInfo;
+        tupleHasInfo EditContent = typeInfo;
     };
 
     $(return []);
-    instance HasInfo WithContextSelector where
+    instance HasTypeInfo WithContextSelector where
     {
         typeWitness = $(generateWitness [t|WithContextSelector|]);
         typeName _ = "WithContextSelector";

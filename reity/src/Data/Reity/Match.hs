@@ -4,81 +4,71 @@ module Data.Reity.Match where
     import Data.Type.Heterogeneous;
     import Data.Knowledge;
     import Data.Reity.KnowM;
-    import Data.Reity.Info;
+    import Data.Reity.TypeInfo;
 
 
-    sameInfo :: forall (ka :: *) (kb :: *) (a :: ka) (b :: kb). Info a -> Info b -> KnowM (HetEq a b);
-    sameInfo ia ib = case testHetEquality ia ib of
+    sameTypeInfo :: forall (ka :: *) (kb :: *) (a :: ka) (b :: kb). TypeInfo a -> TypeInfo b -> KnowM (HetEq a b);
+    sameTypeInfo ia ib = case testHetEquality ia ib of
     {
         Just ReflH -> return ReflH;
         Nothing -> kmError $ "couldn't match " ++ show ib ++ " with " ++ show ia;
     };
 
-    class MatchInfo (p :: HetWit) where
+    class MatchTypeInfo (p :: HetWit) where
     {
-        matchInfo :: forall (ka :: *) (a :: ka). Info a -> KnowM (p a);
+        matchTypeInfo :: forall (ka :: *) (a :: ka). TypeInfo a -> KnowM (p a);
     };
 
-    instance MatchInfo Info where
+    instance MatchTypeInfo TypeInfo where
     {
-        matchInfo = pure;
+        matchTypeInfo = pure;
     };
 
-    data IgnoreInfo :: HetWit where
+    data IgnoreTypeInfo :: HetWit where
     {
-        MkIgnoreInfo :: forall (ka :: *) (a :: ka). IgnoreInfo a;
+        MkIgnoreTypeInfo :: forall (ka :: *) (a :: ka). IgnoreTypeInfo a;
     };
 
-    instance MatchInfo IgnoreInfo where
+    instance MatchTypeInfo IgnoreTypeInfo where
     {
-        matchInfo _ = pure MkIgnoreInfo;
+        matchTypeInfo _ = pure MkIgnoreTypeInfo;
     };
 
-    instance MatchInfo SplitInfo where
+    instance MatchTypeInfo SplitTypeInfo where
     {
-        matchInfo i = case typeInfoSplit i of
+        matchTypeInfo i = case typeInfoSplit i of
         {
             Just split -> pure split;
             Nothing -> kmError $ "couldn't split " ++ show i;
         }
     };
 
-    data SplitInfo' (mf :: HetWit) (ma :: HetWit) :: HetWit where
+    data SplitTypeInfo' (mf :: HetWit) (ma :: HetWit) :: HetWit where
     {
-        MkSplitInfo' :: forall (mf :: HetWit) (ma :: HetWit) (kfa :: *) (ka :: *) (f :: ka -> kfa) (a :: ka). mf f -> ma a -> SplitInfo' mf ma (f a);
+        MkSplitTypeInfo' :: forall (mf :: HetWit) (ma :: HetWit) (kfa :: *) (ka :: *) (f :: ka -> kfa) (a :: ka). mf f -> ma a -> SplitTypeInfo' mf ma (f a);
     };
 
-    instance forall (mf :: HetWit) (ma :: HetWit). (MatchInfo mf,MatchInfo ma) => MatchInfo (SplitInfo' mf ma) where
+    instance forall (mf :: HetWit) (ma :: HetWit). (MatchTypeInfo mf,MatchTypeInfo ma) => MatchTypeInfo (SplitTypeInfo' mf ma) where
     {
-        matchInfo i = kmContext ("splitting " ++ show i) $ do
+        matchTypeInfo i = kmContext ("splitting " ++ show i) $ do
         {
-            MkSplitInfo infoF infoA <- matchInfo i;
-            f <- matchInfo infoF;
-            a <- matchInfo infoA;
-            return (MkSplitInfo' f a);
+            MkSplitTypeInfo infoF infoA <- matchTypeInfo i;
+            f <- matchTypeInfo infoF;
+            a <- matchTypeInfo infoA;
+            return (MkSplitTypeInfo' f a);
         };
     };
 
-    data KindInfo :: HetWit where
+    data KindTypeInfo :: HetWit where
     {
-        MkKindInfo :: forall (ka :: *) (a :: ka). Info ka -> KindInfo a;
+        MkKindTypeInfo :: forall (ka :: *) (a :: ka). TypeInfo ka -> KindTypeInfo a;
     };
 
-    instance MatchInfo KindInfo where
+    instance MatchTypeInfo KindTypeInfo where
     {
-        matchInfo i = pure $ MkKindInfo $ infoKind i;
+        matchTypeInfo i = pure $ MkKindTypeInfo $ typeInfoKind i;
     };
 
-    applyInfo :: forall (ka :: *) (kb :: *) (f :: ka -> kb) (a :: ka). Info f -> Info a -> Info (f a);
-    applyInfo MkTypeInfo MkTypeInfo = MkTypeInfo;
-    {-
-    applyInfo tf@(MkInfo ika _) ta = let
-    {
-        ik = case matchInfo ika of
-        {
-            SuccessResult (MkSplitInfo _ ik') -> ik';
-            FailureResult _ -> error "unexpected kind witness";
-        };
-    } in MkInfo ik (ConsWit tf ta);
-    -}
+    applyTypeInfo :: forall (ka :: *) (kb :: *) (f :: ka -> kb) (a :: ka). TypeInfo f -> TypeInfo a -> TypeInfo (f a);
+    applyTypeInfo MkTypeInfo MkTypeInfo = MkTypeInfo;
 }

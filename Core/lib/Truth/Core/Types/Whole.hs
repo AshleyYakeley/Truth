@@ -23,7 +23,7 @@ module Truth.Core.Types.Whole where
     };
 
     $(return []);
-    instance HasInfo WholeReader where
+    instance HasTypeInfo WholeReader where
     {
         typeWitness = $(generateWitness [t|WholeReader|]);
         typeName _ = "WholeReader";
@@ -74,7 +74,7 @@ module Truth.Core.Types.Whole where
     };
 
     $(return []);
-    instance HasInfo WholeReaderEdit where
+    instance HasTypeInfo WholeReaderEdit where
     {
         typeWitness = $(generateWitness [t|WholeReaderEdit|]);
         typeName _ = "WholeReaderEdit";

@@ -11,7 +11,7 @@ module Truth.Core.Types.Tuple where
     };
 
     $(return []);
-    instance HasInfo TupleWitness where
+    instance HasTypeInfo TupleWitness where
     {
         typeWitness = $(generateWitness [t|TupleWitness|]);
         typeName _ = "TupleWitness";
@@ -25,7 +25,7 @@ module Truth.Core.Types.Tuple where
     $(typeFamilyProxy "TupleSubject");
 
     $(return []);
-    instance HasInfo TupleSelector where
+    instance HasTypeInfo TupleSelector where
     {
         typeWitness = $(generateWitness [t|TupleSelector|]);
         typeName _ = "TupleSelector";
@@ -54,7 +54,7 @@ module Truth.Core.Types.Tuple where
     };
 
     $(return []);
-    instance HasInfo TupleReaderWitness where
+    instance HasTypeInfo TupleReaderWitness where
     {
         typeWitness = $(generateWitness [t|TupleReaderWitness|]);
         typeName _ = "TupleReaderWitness";
@@ -64,7 +64,7 @@ module Truth.Core.Types.Tuple where
     {
         tupleConstruct :: forall m. Applicative m => (forall edit. sel edit -> m (EditSubject edit)) -> m (TupleSubject sel);
     };
-    instance HasInfo FiniteTupleSelector where
+    instance HasTypeInfo FiniteTupleSelector where
     {
         typeWitness = $(generateWitness [t|FiniteTupleSelector|]);
         typeName _ = "FiniteTupleSelector";
@@ -90,7 +90,7 @@ module Truth.Core.Types.Tuple where
     };
 
     $(return []);
-    instance HasInfo TupleEditReader where
+    instance HasTypeInfo TupleEditReader where
     {
         typeWitness = $(generateWitness [t|TupleEditReader|]);
         typeName _ = "TupleEditReader";
@@ -165,12 +165,12 @@ module Truth.Core.Types.Tuple where
     };
 
     $(return []);
-    instance HasInfo TupleEdit where
+    instance HasTypeInfo TupleEdit where
     {
         typeWitness = $(generateWitness [t|TupleEdit|]);
         typeName _ = "TupleEdit";
         typeKnowledge _ = mconcat [
-            infoKnowledge (info @TupleEditReader),
+            typeInfoKnowledge (typeInfo @TupleEditReader),
             $(declInfo [d|
             instance TupleSelector sel => Edit (TupleEdit sel) where
             {
@@ -182,11 +182,11 @@ module Truth.Core.Types.Tuple where
 
     class TupleSelector sel => TupleHasInfo (sel :: * -> *) where
     {
-        tupleHasInfo :: forall edit. sel edit -> Info edit;
+        tupleHasInfo :: forall edit. sel edit -> TypeInfo edit;
     };
 
     $(return []);
-    instance HasInfo TupleHasInfo where
+    instance HasTypeInfo TupleHasInfo where
     {
         typeWitness = $(generateWitness [t|TupleHasInfo|]);
         typeName _ = "TupleHasInfo";

@@ -10,29 +10,29 @@ module Truth.Core.Object.Aspect where
     {
         MkAspect ::
          forall edita editb. (Edit editb) =>
-          Info editb -> Info (EditSubject editb) -> GeneralLens edita editb -> Aspect edita;
+          TypeInfo editb -> TypeInfo (EditSubject editb) -> GeneralLens edita editb -> Aspect edita;
     };
 
     mapAspect :: (Edit edita,Edit editb) => GeneralLens edita editb -> Aspect editb -> Aspect edita;
     mapAspect lens (MkAspect ie is lens') = MkAspect ie is $ lens' `editCompose` lens;
 
     mapOneWholeEditAspect :: forall f edit. (MonadOne f, Edit edit,FullReader (EditReader edit)) =>
-     Info f -> Aspect edit -> KnowM (Aspect (OneWholeEdit f edit));
+     TypeInfo f -> Aspect edit -> KnowM (Aspect (OneWholeEdit f edit));
     mapOneWholeEditAspect infoF (MkAspect infoEditB infoSubj lens) = do
     {
         let
         {
-            knowledge = mconcat [infoKnowledge infoF,infoKnowledge infoEditB,infoKnowledge infoSubj];
+            knowledge = mconcat [typeInfoKnowledge infoF,typeInfoKnowledge infoEditB,typeInfoKnowledge infoSubj];
         };
-        ValueFact (MkEditReaderInfo infoReader) <- askInfo knowledge $ applyInfo (info @EditReaderInfo) infoEditB;
-        ConstraintFact <- askInfo knowledge $ applyInfo (info @FullEdit) infoEditB;
+        ValueFact (MkEditReaderTypeInfo infoReader) <- askTypeInfo knowledge $ applyTypeInfo (typeInfo @EditReaderTypeInfo) infoEditB;
+        ConstraintFact <- askTypeInfo knowledge $ applyTypeInfo (typeInfo @FullEdit) infoEditB;
         let
         {
-            infoOneEdit = applyInfo (applyInfo (info @OneEdit) infoF) infoEditB;
-            infoJustReader = applyInfo (applyInfo (info @OneReader) infoF) infoReader;
+            infoOneEdit = applyTypeInfo (applyTypeInfo (typeInfo @OneEdit) infoF) infoEditB;
+            infoJustReader = applyTypeInfo (applyTypeInfo (typeInfo @OneReader) infoF) infoReader;
 
-            infoEditB' = applyInfo (applyInfo (info @SumEdit) $ applyInfo (info @WholeReaderEdit) infoJustReader) infoOneEdit;
-            infoSubj' = applyInfo infoF infoSubj;
+            infoEditB' = applyTypeInfo (applyTypeInfo (typeInfo @SumEdit) $ applyTypeInfo (typeInfo @WholeReaderEdit) infoJustReader) infoOneEdit;
+            infoSubj' = applyTypeInfo infoF infoSubj;
             lens' = oneWholeGeneralLens lens;
         };
         return $ MkAspect infoEditB' infoSubj' lens';

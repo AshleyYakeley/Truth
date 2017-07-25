@@ -16,7 +16,7 @@ module Truth.Core.Edit.Edit where
         floatingUpdate (e:ee) = floatingUpdate ee . floatingUpdate e;
     };
 
-    instance HasInfo Floating where
+    instance HasTypeInfo Floating where
     {
         typeWitness = $(generateWitness [t|Floating|]);
         typeName _ = "Floating";
@@ -31,7 +31,7 @@ module Truth.Core.Edit.Edit where
     $(typeFamilyProxy "EditReader");
     type EditSubject edit = ReaderSubject (EditReader edit);
 
-    instance HasInfo Edit where
+    instance HasTypeInfo Edit where
     {
         typeWitness = $(generateWitness [t|Edit|]);
         typeName _ = "Edit";
@@ -80,7 +80,7 @@ module Truth.Core.Edit.Edit where
     getReplaceEdits :: forall edit. FullEdit edit => EditSubject edit -> [edit];
     getReplaceEdits = fromReadable (writerToReadable replaceEdit :: Readable (EditReader edit) [edit]);
 
-    instance HasInfo FullEdit where
+    instance HasTypeInfo FullEdit where
     {
         typeWitness = $(generateWitness [t|FullEdit|]);
         typeName _ = "FullEdit";

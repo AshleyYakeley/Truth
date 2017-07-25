@@ -51,7 +51,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         FullEdit edit,
         WidgetClass wd
     ) =>
-      Info f -> Maybe (Limit f) -> (Object (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
+      TypeInfo f -> Maybe (Limit f) -> (Object (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
     monadOneIVF tf mDeleteValue makeEmptywidget (MkView baseView) = MkView $ \object setSelect -> do
     {
         box <- vBoxNew False 0;
@@ -240,7 +240,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
 -}
     maybeView :: (HasNewValue (EditSubject edit),FullEdit edit) =>
       GView edit -> GView (OneWholeEdit Maybe edit);
-    maybeView = monadOneIVF @Maybe info (Just $ MkLimit Nothing) (createButton (Just newValue));
+    maybeView = monadOneIVF @Maybe typeInfo (Just $ MkLimit Nothing) (createButton (Just newValue));
 
     -- orphan
     instance (
@@ -252,8 +252,8 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
     {
         dependsView k iedit = do
         {
-            MkSplitInfo _ iome <- matchInfo iedit;
-            MkSplitInfo _ ie <- matchInfo iome;
+            MkSplitTypeInfo _ iome <- matchTypeInfo iedit;
+            MkSplitTypeInfo _ ie <- matchTypeInfo iome;
             view <- dependsView k ie;
             return $ maybeView view;
         };
@@ -278,8 +278,8 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         return label;
     };
 
-    resultView :: (HasNewValue (EditSubject edit),FullEdit edit) => Info err -> GView edit -> GView (OneWholeEdit (Result err) edit);
-    resultView terr = monadOneIVF (applyInfo (info :: Info Result) terr) Nothing (\_ -> placeholderLabel);
+    resultView :: (HasNewValue (EditSubject edit),FullEdit edit) => TypeInfo err -> GView edit -> GView (OneWholeEdit (Result err) edit);
+    resultView terr = monadOneIVF (applyTypeInfo (typeInfo :: TypeInfo Result) terr) Nothing (\_ -> placeholderLabel);
 
     -- orphan
     instance
@@ -292,10 +292,10 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
     {
         dependsView k iedit = do
         {
-            MkSplitInfo _ iore <- matchInfo iedit;
-            MkSplitInfo ior ie <- matchInfo iore;
-            MkSplitInfo _ ir <- matchInfo ior;
-            MkSplitInfo _ ierr <- matchInfo ir;
+            MkSplitTypeInfo _ iore <- matchTypeInfo iedit;
+            MkSplitTypeInfo ior ie <- matchTypeInfo iore;
+            MkSplitTypeInfo _ ir <- matchTypeInfo ior;
+            MkSplitTypeInfo _ ierr <- matchTypeInfo ir;
             view <- dependsView k ie;
             return $ resultView ierr view;
         };
@@ -308,10 +308,10 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         HasNewValue (ReaderSubject reader),
         FullEdit edit,
         HasView Widget edit,
-        HasInfo err
+        HasTypeInfo err
         ) => HasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
     {
-        theView = resultView info theView;
+        theView = resultView typeInfo theView;
     };
 
     maybeTypeKnowledge :: TypeKnowledge;

@@ -1,4 +1,4 @@
-module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) where
+module Data.Reity.Template(generateTypeName,declInfo,instInfo,typeFamilyProxy,showSimpleType) where
 {
     import Data.List;
     import Data.Maybe;
@@ -9,11 +9,27 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
     import Control.Monad.Trans.Writer;
     import qualified Data.Knowledge as R;
     import qualified Data.Reity.Wit as R;
-    import qualified Data.Reity.Info as R;
+    import qualified Data.Reity.TypeInfo as R;
     import qualified Data.Reity.Match as R;
-    import qualified Data.Reity.HasInfo as R;
     import Language.Haskell.TH.SimpleType;
 
+
+    generateTypeName :: TypeQ -> Q Exp;
+    generateTypeName qtp = do
+    {
+        tp <- qtp;
+        let
+        {
+            tpname = case tp of
+            {
+                ConT n -> nameBase n;
+                VarT n -> nameBase n;
+                PromotedT n -> nameBase n;
+                _ -> show tp;
+            };
+        };
+        [|tpname|];
+    };
 
     type M = WriterT [Stmt] Q;
 
@@ -33,7 +49,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
     vfNames :: Name -> (Name,Name);
     vfNames name = let
     {
-        typeName = nameBase name ++ "Info";
+        typeName = nameBase name ++ "TypeInfo";
         constructorName = "Mk" ++ typeName;
     } in (mkName typeName,mkName constructorName);
 
@@ -43,7 +59,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
     {
         sN1 <- lift $ newName "_f";
         sN2 <- lift $ newName "_a";
-        writeQ $ bindS [p|R.MkSplitInfo $(varP sN1) $(varP sN2)|] [e|matchInfo $(varE subjectN)|];
+        writeQ $ bindS [p|R.MkSplitTypeInfo $(varP sN1) $(varP sN2)|] [e|matchTypeInfo $(varE subjectN)|];
         vars1 <- deconstruct sN1 tp1;
         vars2 <- deconstruct sN2 tp2;
         return $ vars1 ++ vars2;
@@ -56,13 +72,13 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
             {
                 kstp <- lift $ typeToSimple ktp;
                 kindN <- lift $ newName "_k";
-                expr <- lift [e|R.infoKind $(varE subjectN)|];
+                expr <- lift [e|R.typeInfoKind $(varE subjectN)|];
                 writeQ $ return $ LetS [ValD (VarP kindN) (NormalB expr) []];
                 deconstruct kindN kstp;
             };
             _ -> return [];
         };
-        writeQ $ bindS [p|R.ReflH|] [e|R.sameInfo (R.info :: R.Info $(return tp)) $(varE subjectN)|];
+        writeQ $ bindS [p|R.ReflH|] [e|R.sameTypeInfo (R.typeInfo :: R.TypeInfo $(return tp)) $(varE subjectN)|];
         return vars;
     };
     deconstruct subjectN (FamilyType name []) = do
@@ -71,7 +87,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
         {
             (typeN,_) = vfNames name;
         };
-        writeQ $ bindS [p|R.ReflH|] [e|R.sameInfo (R.info :: R.Info $(conT typeN)) $(varE subjectN)|];
+        writeQ $ bindS [p|R.ReflH|] [e|R.sameTypeInfo (R.typeInfo :: R.TypeInfo $(conT typeN)) $(varE subjectN)|];
         return [];
     };
     deconstruct subjectN (FamilyType name args) = let
@@ -87,14 +103,14 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
     {
         exp1 <- constructInfoExpr tp1;
         exp2 <- constructInfoExpr tp2;
-        lift $ [e|R.applyInfo $(return exp1) $(return exp2)|];
+        lift $ [e|R.applyTypeInfo $(return exp1) $(return exp2)|];
     };
     constructInfoExpr (VarType typeN) = case lookup typeN ?varMap of
     {
         Just subjectN -> return $ VarE subjectN;
         Nothing -> lift $ declFail $ "type variable not found: " ++ show typeN;
     };
-    constructInfoExpr (ConsType tp) = lift [e|R.info :: R.Info $(return $ tp)|];
+    constructInfoExpr (ConsType tp) = lift [e|R.typeInfo :: R.TypeInfo $(return $ tp)|];
     constructInfoExpr (FamilyType name vc) = do
     {
         let
@@ -106,14 +122,14 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
             typeFamilyInfoExpr expr (t:tt) = do
             {
                 texp <- constructInfoExpr t;
-                exptexp <- lift $ [e|R.applyInfo $(return expr) $(return texp)|];
+                exptexp <- lift $ [e|R.applyTypeInfo $(return expr) $(return texp)|];
                 typeFamilyInfoExpr exptexp tt;
             };
         };
-        tfTypeExpr <- lift [e|R.info :: R.Info $(return $ ConT typeN)|];
+        tfTypeExpr <- lift [e|R.typeInfo :: R.TypeInfo $(return $ ConT typeN)|];
         infoExpr <- typeFamilyInfoExpr tfTypeExpr vc;
         resultN <- lift $ newName "_var";
-        writeQ $ bindS [p|R.ValueFact $(conP constructorN [varP resultN])|] [e|R.askInfo $(varE ?knowledgeN) $(return infoExpr)|];
+        writeQ $ bindS [p|R.ValueFact $(conP constructorN [varP resultN])|] [e|R.askTypeInfo $(varE ?knowledgeN) $(return infoExpr)|];
         return $ VarE resultN;
     };
     constructInfoExpr (EqualType _ _) = lift $ declFail "equality not allowed in context expression";
@@ -129,12 +145,12 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
             {
                 info1 <- constructInfoExpr st1;
                 info2 <- constructInfoExpr st2;
-                writeQ $ bindS [p|R.ReflH|] [e|R.sameInfo $(return info1) $(return info2)|];
+                writeQ $ bindS [p|R.ReflH|] [e|R.sameTypeInfo $(return info1) $(return info2)|];
             };
             _ -> do
             {
                 infoExpr <- constructInfoExpr st;
-                writeQ $ bindS [p|R.ConstraintFact|] [e|R.askInfo $(varE ?knowledgeN) $(return infoExpr)|];
+                writeQ $ bindS [p|R.ConstraintFact|] [e|R.askTypeInfo $(varE ?knowledgeN) $(return infoExpr)|];
             };
         }
     };
@@ -143,7 +159,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
     matchUpVar :: (Name,Name) -> [(Name, Name)] -> M ();
     matchUpVar (typeN,subjectN) varMap = case lookup typeN varMap of
     {
-        Just subjectN' -> writeQ $ bindS [p|R.ReflH|] [e|R.sameInfo $(return $ VarE subjectN) $(return $ VarE subjectN')|];
+        Just subjectN' -> writeQ $ bindS [p|R.ReflH|] [e|R.sameTypeInfo $(return $ VarE subjectN) $(return $ VarE subjectN')|];
         Nothing -> return ();
     };
 
@@ -282,7 +298,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
             _ -> fail $ show famName ++ " is not a type family";
         };
         argNames <- traverse (\_ -> newName "a") argBndrs;
-        infoType <- [t|R.Info|];
+        infoType <- [t|R.TypeInfo|];
         let
         {
             famType :: Type;
@@ -310,10 +326,10 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
             typeTypeQ = return $ ConT typeName;
         };
         instDecs <- [d|
-            instance R.HasInfo $(typeTypeQ) where
+            instance R.HasTypeInfo $(typeTypeQ) where
             {
                 typeWitness = $(R.generateWitness typeTypeQ);
-                typeName _ = $(R.generateTypeName typeTypeQ);
+                typeName _ = $(generateTypeName typeTypeQ);
             };
         |];
         return $ typeDec : instDecs;

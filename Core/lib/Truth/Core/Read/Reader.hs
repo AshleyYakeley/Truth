@@ -21,7 +21,7 @@ module Truth.Core.Read.Reader where
         readFrom subj reader = runIdentity (readFromM (Identity subj) reader);
     };
 
-    instance HasInfo Reader where
+    instance HasTypeInfo Reader where
     {
         typeWitness = $(generateWitness [t|Reader|]);
         typeName _ = "Reader";

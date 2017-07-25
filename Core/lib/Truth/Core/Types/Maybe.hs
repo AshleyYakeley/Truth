@@ -102,7 +102,7 @@ module Truth.Core.Types.Maybe where
     };
 
     $(return []);
-    instance HasInfo MaybeEdit where
+    instance HasTypeInfo MaybeEdit where
     {
         typeWitness = $(generateWitness [t|MaybeEdit|]);
         typeName _ = "MaybeEdit";

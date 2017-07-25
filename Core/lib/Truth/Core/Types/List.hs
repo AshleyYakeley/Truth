@@ -55,7 +55,7 @@ module Truth.Core.Types.List where
     };
 
     $(return []);
-    instance HasInfo ListReader where
+    instance HasTypeInfo ListReader where
     {
         typeWitness = $(generateWitness [t|ListReader|]);
         typeName _ = "ListReader";
@@ -183,7 +183,7 @@ module Truth.Core.Types.List where
     };
 
     $(return []);
-    instance HasInfo ListEdit where
+    instance HasTypeInfo ListEdit where
     {
         typeWitness = $(generateWitness [t|ListEdit|]);
         typeName _ = "ListEdit";

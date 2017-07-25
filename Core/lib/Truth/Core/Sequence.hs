@@ -21,7 +21,7 @@ module Truth.Core.Sequence where
     };
 
     $(return []);
-    instance HasInfo SequencePoint where
+    instance HasTypeInfo SequencePoint where
     {
         typeWitness = $(generateWitness [t|SequencePoint|]);
         typeName _ = "SequencePoint";
@@ -114,21 +114,21 @@ module Truth.Core.Sequence where
     } in if runStart a < runEnd b && runStart b < runEnd a then ab else Nothing;
 
     -- orphan
-    instance HasInfo IsSequence where
+    instance HasTypeInfo IsSequence where
     {
         typeWitness = $(generateWitness [t|IsSequence|]);
         typeName _ = "IsSequence";
     };
 
     -- orphan
-    instance HasInfo KeyContainer where
+    instance HasTypeInfo KeyContainer where
     {
         typeWitness = $(generateWitness [t|KeyContainer|]);
         typeName _ = "KeyContainer";
     };
 
     -- orphan
-    instance HasInfo IONewItemKeyContainer where
+    instance HasTypeInfo IONewItemKeyContainer where
     {
         typeWitness = $(generateWitness [t|IONewItemKeyContainer|]);
         typeName _ = "IONewItemKeyContainer";

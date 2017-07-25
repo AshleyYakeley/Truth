@@ -23,7 +23,7 @@ module Truth.Core.Types.Comonad where
     };
 -}
     $(return []);
-    instance HasInfo ComonadReader where
+    instance HasTypeInfo ComonadReader where
     {
         typeWitness = $(generateWitness [t|ComonadReader|]);
         typeName _ = "ComonadReader";
@@ -57,7 +57,7 @@ module Truth.Core.Types.Comonad where
     };
 
     $(return []);
-    instance HasInfo ComonadEdit where
+    instance HasTypeInfo ComonadEdit where
     {
         typeWitness = $(generateWitness [t|ComonadEdit|]);
         typeName _ = "ComonadEdit";

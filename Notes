@@ -76,10 +76,10 @@ NamedNodeType t -> Node -> Maybe t
 
 toXmlDTD :: NamedNodeType t -> Text;
 
-nodeTypeInfo :: NamedNodeType t -> Info t
+nodeTypeInfo :: NamedNodeType t -> TypeInfo t
 nodeTypeType :: NamedNodeType (Any NamedNodeType)
 
-class (EditSubject (DocumentTypeEdit t) ~ t, Edit (DocumentTypeEdit t), HasInfo t) => DocumentType t where
+class (EditSubject (DocumentTypeEdit t) ~ t, Edit (DocumentTypeEdit t), HasTypeInfo t) => DocumentType t where
 {
     type DocumentTypeEdit t :: *;
 };

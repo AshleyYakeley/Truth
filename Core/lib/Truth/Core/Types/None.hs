@@ -28,7 +28,7 @@ module Truth.Core.Types.None where
     };
 
     $(return []);
-    instance HasInfo NoReader where
+    instance HasTypeInfo NoReader where
     {
         typeWitness = $(generateWitness [t|NoReader|]);
         typeName _ = "NoReader";
@@ -71,7 +71,7 @@ module Truth.Core.Types.None where
     };
 
     $(return []);
-    instance HasInfo NoEdit where
+    instance HasTypeInfo NoEdit where
     {
         typeWitness = $(generateWitness [t|NoEdit|]);
         typeName _ = "NoEdit";

@@ -1,4 +1,4 @@
-module Data.Reity.Info where
+module Data.Reity.TypeInfo where
 {
     import Data.Kind;
     import Data.Proxy;
@@ -18,19 +18,19 @@ module Data.Reity.Info where
         ValueFact :: forall a. a -> TypeFact a;
     };
 
-    type TypeKnowledge = Knowledge KnowM Info TypeFact;
+    type TypeKnowledge = Knowledge KnowM TypeInfo TypeFact;
 
 
-    data SplitInfo (fa :: kfa) where
+    data SplitTypeInfo (fa :: kfa) where
     {
-        MkSplitInfo :: forall (ka :: *) (f :: ka -> kfa) (a :: ka). Info f -> Info a -> SplitInfo (f a);
+        MkSplitTypeInfo :: forall (ka :: *) (f :: ka -> kfa) (a :: ka). TypeInfo f -> TypeInfo a -> SplitTypeInfo (f a);
     };
 
-    class HasInfo (a :: k) where
+    class HasTypeInfo (a :: k) where
     {
-        typeKind :: proxy a -> Info k;
+        typeKind :: proxy a -> TypeInfo k;
 
-        default typeKind :: HasInfo k => proxy a -> Info k;
+        default typeKind :: HasTypeInfo k => proxy a -> TypeInfo k;
         typeKind _ = MkTypeInfo;
 
         typeWitness :: Wit a;
@@ -46,65 +46,50 @@ module Data.Reity.Info where
         typeKnowledge :: proxy a -> TypeKnowledge;
         typeKnowledge _ = mempty;
 
-        typeSplit :: Maybe (SplitInfo a);
+        typeSplit :: Maybe (SplitTypeInfo a);
         typeSplit = Nothing;
     };
 
-    instance (HasInfo f,HasInfo a) => HasInfo (f a) where
+    instance (HasTypeInfo f,HasTypeInfo a) => HasTypeInfo (f a) where
     {
         typeKind _ = case typeInfoSplit $ typeKind (Proxy @f) of
         {
-            Just (MkSplitInfo _ ik) -> ik;
+            Just (MkSplitTypeInfo _ ik) -> ik;
             Nothing -> error "unexpected kind witness";
         };
         typeWitness = ConsWit typeWitness typeWitness;
         typeName _ = typeNameApply (Proxy @f) $ typeNameSingle (Proxy @a);
         typeNameSingle pa = "(" ++ typeName pa ++ ")";
         typeKnowledge _ = mappend (typeKnowledge (Proxy @f)) (typeKnowledge (Proxy @a));
-        typeSplit = Just $ MkSplitInfo MkTypeInfo MkTypeInfo;
+        typeSplit = Just $ MkSplitTypeInfo MkTypeInfo MkTypeInfo;
     };
 
-
-    --type Info (a :: k) = ConstraintWitness (HasInfo a);
-    data Info (a :: k) where
+    data TypeInfo (a :: k) where
     {
-        MkTypeInfo :: forall (k :: Type) (a :: k). HasInfo a => Info a;
+        MkTypeInfo :: forall (k :: Type) (a :: k). HasTypeInfo a => TypeInfo a;
     };
 
-    info :: HasInfo a => Info a;
-    info = MkTypeInfo;
+    typeInfo :: HasTypeInfo a => TypeInfo a;
+    typeInfo = MkTypeInfo;
 
-    infoKind :: forall (k :: *) (a :: k). Info a -> Info k;
-    infoKind i@MkTypeInfo = typeKind i;
+    typeInfoKind :: forall (k :: *) (a :: k). TypeInfo a -> TypeInfo k;
+    typeInfoKind i@MkTypeInfo = typeKind i;
 
-    typeInfoWitness :: Info a -> Wit a;
+    typeInfoWitness :: TypeInfo a -> Wit a;
     typeInfoWitness MkTypeInfo = typeWitness;
 
-    typeInfoSplit :: Info a -> Maybe (SplitInfo a);
+    typeInfoKnowledge :: TypeInfo t -> TypeKnowledge;
+    typeInfoKnowledge i@MkTypeInfo = typeKnowledge i;
+
+    typeInfoSplit :: TypeInfo a -> Maybe (SplitTypeInfo a);
     typeInfoSplit MkTypeInfo = typeSplit;
 
-    --infoKind :: forall (k :: Type) (a :: k). Info a -> Info k;
-    --infoKind MkConstraintWitness = typeKind;
-
-    --pattern MkInfo :: forall (a :: k). Info k -> Wit a -> Info a;
-    --pattern MkInfo ik wit <- ((\(i@MkInfo') -> (typeKind i,typeWitness)) -> (ik,wit));
-
-
-
-
-
-{-
-    data Info (t :: k) where
-    {
-        MkInfo :: forall (k :: *) (t :: k). Info k -> Wit t -> Info t;
-    };
--}
-    instance TestHetEquality Info where
+    instance TestHetEquality TypeInfo where
     {
         testHetEquality ia ib = testHetEquality (typeInfoWitness ia) (typeInfoWitness ib);
     };
 
-    instance TestEquality Info where
+    instance TestEquality TypeInfo where
     {
         testEquality wa wb = do
         {
@@ -113,17 +98,17 @@ module Data.Reity.Info where
         }
     };
 
-    instance Show (Info a) where
+    instance Show (TypeInfo a) where
     {
         show i@MkTypeInfo = typeName i;
     };
 
-    infoKnowledge :: Info t -> TypeKnowledge;
-    infoKnowledge i@MkTypeInfo = typeKnowledge i;
+    askTypeInfo :: forall (k :: *) (a :: k). TypeKnowledge -> TypeInfo a -> KnowM (TypeFact a);
+    askTypeInfo k i = kmContext (show i) $ ask k i;
 
-    knowValue :: forall (t :: *). t -> Info t -> TypeKnowledge;
+    knowValue :: forall (t :: *). t -> TypeInfo t -> TypeKnowledge;
     knowValue t i = know i $ ValueFact t;
 
-    knowConstraint :: forall (c :: Constraint). c => Info c -> TypeKnowledge;
+    knowConstraint :: forall (c :: Constraint). c => TypeInfo c -> TypeKnowledge;
     knowConstraint i = know i ConstraintFact;
 }

@@ -19,7 +19,7 @@ module Truth.Core.Types.Sum where
     };
 
     $(return []);
-    instance HasInfo SumReader where
+    instance HasTypeInfo SumReader where
     {
         typeWitness = $(generateWitness [t|SumReader|]);
         typeName _ = "SumReader";
@@ -62,7 +62,7 @@ module Truth.Core.Types.Sum where
     };
 
     $(return []);
-    instance HasInfo SumEdit where
+    instance HasTypeInfo SumEdit where
     {
         typeWitness = $(generateWitness [t|SumEdit|]);
         typeName _ = "SumEdit";

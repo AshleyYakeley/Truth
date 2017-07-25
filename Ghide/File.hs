@@ -76,9 +76,9 @@ module File where
             {
 bs <- return empty;
 {-
-                info <- fileQueryInfo file "" [FileQueryInfoNofollowSymlinks] Nothing;
+                typeInfo <- fileQueryInfo file "" [FileQueryInfoNofollowSymlinks] Nothing;
                 h <- fileRead uri Nothing;
-                Just fs <- return (fileInfoSize info);
+                Just fs <- return (fileInfoSize typeInfo);
                 bs <- System.Gnome.VFS.read h fs;
                 close h;
 -}

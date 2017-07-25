@@ -65,9 +65,8 @@ library
         Data.Knowledge
         Data.Reity.KnowM
         Data.Reity.Wit
-        Data.Reity.Info
+        Data.Reity.TypeInfo
         Data.Reity.Match
-        Data.Reity.HasInfo
         Data.Reity.Template
         Data.Reity.Instances
         Data.Reity

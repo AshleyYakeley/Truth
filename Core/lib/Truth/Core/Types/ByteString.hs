@@ -40,7 +40,7 @@ module Truth.Core.Types.ByteString where
     };
 
     $(return []);
-    instance HasInfo ByteStringReader where
+    instance HasTypeInfo ByteStringReader where
     {
         typeWitness = $(generateWitness [t|ByteStringReader|]);
         typeName _ = "ByteStringReader";
@@ -166,7 +166,7 @@ module Truth.Core.Types.ByteString where
     };
 
     $(return []);
-    instance HasInfo ByteStringEdit where
+    instance HasTypeInfo ByteStringEdit where
     {
         typeWitness = $(generateWitness [t|ByteStringEdit|]);
         typeName _ = "ByteStringEdit";
@@ -175,6 +175,6 @@ module Truth.Core.Types.ByteString where
             {
                 type EditReader ByteStringEdit = ByteStringReader;
             };
-        |]),infoKnowledge (info @ByteStringReader)];
+        |]),typeInfoKnowledge (typeInfo @ByteStringReader)];
     };
 }

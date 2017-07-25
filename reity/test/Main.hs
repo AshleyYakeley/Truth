@@ -2,7 +2,7 @@ module Main(main) where
 {
     import Control.Exception(evaluate);
     import Data.Type.Heterogeneous;
-    import Language.Haskell.TH hiding (Info);
+    import Language.Haskell.TH;
     import Language.Haskell.TH.SimpleType;
     import Data.Reity;
     import Test.Tasty;
@@ -48,7 +48,7 @@ module Main(main) where
         })
     ];
 
-    testInfoSame :: String -> Info a -> Info b -> TestTree;
+    testInfoSame :: String -> TypeInfo a -> TypeInfo b -> TestTree;
     testInfoSame name ia ib = testCase name $ do
     {
         mrefl <- evaluate $ testHetEquality ia ib;
@@ -61,23 +61,23 @@ module Main(main) where
 
     testReity :: TestTree;
     testReity = testGroup "Reity" [
-        testInfoSame "()" (info @()) (info @()),
-        testInfoSame "Bool" (info @Bool) (info @Bool),
-        testInfoSame "Maybe" (info @Maybe) (info @Maybe),
-        testInfoSame "[]" (info @[]) (info @[]),
+        testInfoSame "()" (typeInfo @()) (typeInfo @()),
+        testInfoSame "Bool" (typeInfo @Bool) (typeInfo @Bool),
+        testInfoSame "Maybe" (typeInfo @Maybe) (typeInfo @Maybe),
+        testInfoSame "[]" (typeInfo @[]) (typeInfo @[]),
         let
         {
-            im :: Info Maybe;
-            im = info;
+            im :: TypeInfo Maybe;
+            im = typeInfo;
 
-            ib :: Info Bool;
-            ib = info;
+            ib :: TypeInfo Bool;
+            ib = typeInfo;
 
-            imb :: Info (Maybe Bool);
-            imb = applyInfo im ib;
+            imb :: TypeInfo (Maybe Bool);
+            imb = applyTypeInfo im ib;
         } in testInfoSame "constructed Maybe Bool" imb imb,
-        testInfoSame "Maybe Bool" (info @(Maybe Bool)) (info @(Maybe Bool)),
-        testInfoSame "[Bool]" (info @[Bool]) (info @[Bool])
+        testInfoSame "Maybe Bool" (typeInfo @(Maybe Bool)) (typeInfo @(Maybe Bool)),
+        testInfoSame "[Bool]" (typeInfo @[Bool]) (typeInfo @[Bool])
         ];
 
     tests :: TestTree;

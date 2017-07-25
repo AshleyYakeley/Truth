@@ -62,7 +62,7 @@ module Truth.Core.Types.Either where
     };
 
     $(return []);
-    instance HasInfo EitherReader where
+    instance HasTypeInfo EitherReader where
     {
         typeWitness = $(generateWitness [t|EitherReader|]);
         typeName _ = "EitherReader";
@@ -115,7 +115,7 @@ module Truth.Core.Types.Either where
     };
 
     $(return []);
-    instance HasInfo EitherEdit where
+    instance HasTypeInfo EitherEdit where
     {
         typeWitness = $(generateWitness [t|EitherEdit|]);
         typeName _ = "EitherEdit";

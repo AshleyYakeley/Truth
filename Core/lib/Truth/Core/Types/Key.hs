@@ -62,7 +62,7 @@ module Truth.Core.Types.Key where
     };
 
     $(return []);
-    instance HasInfo KeyReader where
+    instance HasTypeInfo KeyReader where
     {
         typeWitness = $(generateWitness [t|KeyReader|]);
         typeName _ = "KeyReader";
@@ -88,7 +88,7 @@ module Truth.Core.Types.Key where
         readKey :: proxy cont -> Readable reader (ContainerKey cont);
     };
 
-    instance HasInfo HasKeyReader where
+    instance HasTypeInfo HasKeyReader where
     {
         typeWitness = $(generateWitness [t|HasKeyReader|]);
         typeName _ = "HasKeyReader";
@@ -223,11 +223,11 @@ module Truth.Core.Types.Key where
     };
 
     $(return []);
-    instance HasInfo KeyEdit where
+    instance HasTypeInfo KeyEdit where
     {
         typeWitness = $(generateWitness [t|KeyEdit|]);
         typeName _ = "KeyEdit";
-        typeKnowledge _ = mconcat [infoKnowledge (info @KeyReader),
+        typeKnowledge _ = mconcat [typeInfoKnowledge (typeInfo @KeyReader),
             $(declInfo [d|
             instance Eq key => KeyContainer [(key, value)];
             type instance Element [a] = a;

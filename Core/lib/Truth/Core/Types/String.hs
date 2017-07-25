@@ -31,7 +31,7 @@ module Truth.Core.Types.String where
     };
 
     $(return []);
-    instance HasInfo StringRead where
+    instance HasTypeInfo StringRead where
     {
         typeWitness = $(generateWitness [t|StringRead|]);
         typeName _ = "StringRead";
@@ -141,7 +141,7 @@ module Truth.Core.Types.String where
     };
 
     $(return []);
-    instance HasInfo StringEdit where
+    instance HasTypeInfo StringEdit where
     {
         typeWitness = $(generateWitness [t|StringEdit|]);
         typeName _ = "StringEdit";

@@ -15,7 +15,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
 
 
     keyContainerView :: forall cont edit. (Show (ContainerKey cont),IONewItemKeyContainer cont,HasKeyReader cont (EditReader edit),IOFullReader (EditReader edit),Edit edit) =>
-        Info (EditReader edit) -> Info edit -> Info (Element cont) -> GView (KeyEdit cont edit);
+        TypeInfo (EditReader edit) -> TypeInfo edit -> TypeInfo (Element cont) -> GView (KeyEdit cont edit);
     keyContainerView infoR infoE infoElement = MkView $ \(MkObject object) setSelect -> do
     {
         initialKeys <- object $ \muted -> mutableRead muted KeyReadKeys;
@@ -93,7 +93,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
                     [[i]] -> do
                     {
                         key <- listStoreGetValue store i;
-                        return $ Just $ MkAspect (applyInfo (applyInfo (info @SumEdit) (applyInfo (info @WholeReaderEdit) (applyInfo (applyInfo (info @OneReader) (info @Maybe)) infoR))) (applyInfo (applyInfo (info @OneEdit) (info @Maybe)) infoE)) (applyInfo (info @Maybe) infoElement) $ toGeneralLens $ keyLens key;
+                        return $ Just $ MkAspect (applyTypeInfo (applyTypeInfo (typeInfo @SumEdit) (applyTypeInfo (typeInfo @WholeReaderEdit) (applyTypeInfo (applyTypeInfo (typeInfo @OneReader) (typeInfo @Maybe)) infoR))) (applyTypeInfo (applyTypeInfo (typeInfo @OneEdit) (typeInfo @Maybe)) infoE)) (applyTypeInfo (typeInfo @Maybe) infoElement) $ toGeneralLens $ keyLens key;
                     };
                     _ -> return Nothing;
                 };
@@ -121,11 +121,11 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
     {
         dependsView kw ikce = do
         {
-            MkSplitInfo ikc ie <- matchInfo ikce;
-            MkSplitInfo ik ic <- matchInfo ikc;
-            ReflH <- sameInfo (info :: Info KeyEdit) ik;
-            ValueFact (MkEditReaderInfo ir) <- askInfo kw $ applyInfo (info @EditReaderInfo) ie;
-            ValueFact (MkElementInfo ielem) <- askInfo kw $ applyInfo (info @ElementInfo) ic;
+            MkSplitTypeInfo ikc ie <- matchTypeInfo ikce;
+            MkSplitTypeInfo ik ic <- matchTypeInfo ikc;
+            ReflH <- sameTypeInfo (typeInfo :: TypeInfo KeyEdit) ik;
+            ValueFact (MkEditReaderTypeInfo ir) <- askTypeInfo kw $ applyTypeInfo (typeInfo @EditReaderTypeInfo) ie;
+            ValueFact (MkElementTypeInfo ielem) <- askTypeInfo kw $ applyTypeInfo (typeInfo @ElementTypeInfo) ic;
             return $ keyContainerView ir ie ielem;
         };
     };
@@ -137,13 +137,13 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
         HasKeyReader cont (EditReader edit),
         IOFullReader (EditReader edit),
         Edit edit,
-        HasInfo edit,
-        HasInfo (EditReader edit),
-        HasInfo (Element cont)
+        HasTypeInfo edit,
+        HasTypeInfo (EditReader edit),
+        HasTypeInfo (Element cont)
     ) =>
      HasView Widget (KeyEdit cont edit) where
     {
-        theView = keyContainerView info info info;
+        theView = keyContainerView typeInfo typeInfo typeInfo;
     };
 
     keyContainerTypeKnowledge :: TypeKnowledge;

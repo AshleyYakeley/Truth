@@ -13,13 +13,13 @@ module Data.Reity.Instances where
     import Data.Result;
     import Data.Reity.Match;
     import Data.Reity.Wit;
-    import Data.Reity.Info;
+    import Data.Reity.TypeInfo;
     import Data.Reity.Template;
 
 
     -- Type
 
-    instance HasInfo TYPE where
+    instance HasTypeInfo TYPE where
     {
         typeWitness = $(generateWitness [t|TYPE|]);
         typeName _ = "TYPE";
@@ -27,25 +27,25 @@ module Data.Reity.Instances where
 
     type ARR = (->);
 
-    instance HasInfo (->) where
+    instance HasTypeInfo (->) where
     {
         typeWitness = $(generateWitness [t|ARR|]);
         typeName _ = "(->)";
     };
 
-    instance HasInfo Constraint where
+    instance HasTypeInfo Constraint where
     {
         typeWitness = $(generateWitness [t|Constraint|]);
         typeName _ = "Constraint";
     };
 
-    instance HasInfo RuntimeRep where
+    instance HasTypeInfo RuntimeRep where
     {
         typeWitness = $(generateWitness [t|RuntimeRep|]);
         typeName _ = "RuntimeRep";
     };
 
-    instance HasInfo 'PtrRepLifted where
+    instance HasTypeInfo 'PtrRepLifted where
     {
         typeWitness = $(generateWitness [t|'PtrRepLifted|]);
         typeName _ = "'PtrRepLifted";
@@ -54,115 +54,115 @@ module Data.Reity.Instances where
 
     -- some classes
 
-    instance HasInfo Eq where
+    instance HasTypeInfo Eq where
     {
         typeWitness = $(generateWitness [t|Eq|]);
         typeName _ = "Eq";
     };
 
-    instance HasInfo Ord where
+    instance HasTypeInfo Ord where
     {
         typeWitness = $(generateWitness [t|Ord|]);
         typeName _ = "Ord";
     };
 
-    instance HasInfo Enum where
+    instance HasTypeInfo Enum where
     {
         typeWitness = $(generateWitness [t|Enum|]);
         typeName _ = "Enum";
     };
 
-    instance HasInfo Num where
+    instance HasTypeInfo Num where
     {
         typeWitness = $(generateWitness [t|Num|]);
         typeName _ = "Num";
     };
 
-    instance HasInfo Integral where
+    instance HasTypeInfo Integral where
     {
         typeWitness = $(generateWitness [t|Integral|]);
         typeName _ = "Integral";
     };
 
-    instance HasInfo Real where
+    instance HasTypeInfo Real where
     {
         typeWitness = $(generateWitness [t|Real|]);
         typeName _ = "Real";
     };
 
-    instance HasInfo Show where
+    instance HasTypeInfo Show where
     {
         typeWitness = $(generateWitness [t|Show|]);
         typeName _ = "Show";
     };
 
-    instance HasInfo Read where
+    instance HasTypeInfo Read where
     {
         typeWitness = $(generateWitness [t|Read|]);
         typeName _ = "Read";
     };
 
-    instance HasInfo k => HasInfo (TestEquality :: (k -> *) -> Constraint) where
+    instance HasTypeInfo k => HasTypeInfo (TestEquality :: (k -> *) -> Constraint) where
     {
         typeWitness = $(generateWitness [t|TestEquality|]);
         typeName _ = "TestEquality";
     };
 
-    instance HasInfo Monoid where
+    instance HasTypeInfo Monoid where
     {
         typeWitness = $(generateWitness [t|Monoid|]);
         typeName _ = "Monoid";
     };
 
-    instance HasInfo Foldable where
+    instance HasTypeInfo Foldable where
     {
         typeWitness = $(generateWitness [t|Foldable|]);
         typeName _ = "Foldable";
     };
 
-    instance HasInfo Traversable where
+    instance HasTypeInfo Traversable where
     {
         typeWitness = $(generateWitness [t|Traversable|]);
         typeName _ = "Traversable";
     };
 
-    instance HasInfo Functor where
+    instance HasTypeInfo Functor where
     {
         typeWitness = $(generateWitness [t|Functor|]);
         typeName _ = "Functor";
     };
 
-    instance HasInfo Applicative where
+    instance HasTypeInfo Applicative where
     {
         typeWitness = $(generateWitness [t|Applicative|]);
         typeName _ = "Applicative";
     };
 
-    instance HasInfo Monad where
+    instance HasTypeInfo Monad where
     {
         typeWitness = $(generateWitness [t|Monad|]);
         typeName _ = "Monad";
     };
 
-    instance HasInfo Comonad where
+    instance HasTypeInfo Comonad where
     {
         typeWitness = $(generateWitness [t|Comonad|]);
         typeName _ = "Comonad";
     };
 
-    instance HasInfo HasNewValue where
+    instance HasTypeInfo HasNewValue where
     {
         typeWitness = $(generateWitness [t|HasNewValue|]);
         typeName _ = "HasNewValue";
     };
 
-    instance HasInfo MonadOne where
+    instance HasTypeInfo MonadOne where
     {
         typeWitness = $(generateWitness [t|MonadOne|]);
         typeName _ = "MonadOne";
     };
 
-    instance HasInfo Finite where
+    instance HasTypeInfo Finite where
     {
         typeWitness = $(generateWitness [t|Finite|]);
         typeName _ = "Finite";
@@ -171,7 +171,7 @@ module Data.Reity.Instances where
 
     -- basic types
 
-    instance HasInfo () where
+    instance HasTypeInfo () where
     {
         typeWitness = $(generateWitness [t|()|]);
         typeName _ = "()";
@@ -182,7 +182,7 @@ module Data.Reity.Instances where
         |]);
     };
 
-    instance HasInfo Bool where
+    instance HasTypeInfo Bool where
     {
         typeWitness = $(generateWitness [t|Bool|]);
         typeName _ = "Bool";
@@ -192,7 +192,7 @@ module Data.Reity.Instances where
         |]);
     };
 
-    instance HasInfo Char where
+    instance HasTypeInfo Char where
     {
         typeWitness = $(generateWitness [t|Char|]);
         typeName _ = "Char";
@@ -203,7 +203,7 @@ module Data.Reity.Instances where
         |]);
     };
 
-    instance HasInfo Word8 where
+    instance HasTypeInfo Word8 where
     {
         typeWitness = $(generateWitness [t|Word8|]);
         typeName _ = "Word8";
@@ -214,7 +214,7 @@ module Data.Reity.Instances where
         |]);
     };
 
-    instance HasInfo Int where
+    instance HasTypeInfo Int where
     {
         typeWitness = $(generateWitness [t|Int|]);
         typeName _ = "Int";
@@ -225,7 +225,7 @@ module Data.Reity.Instances where
         |]);
     };
 
-    instance HasInfo ByteString where
+    instance HasTypeInfo ByteString where
     {
         typeWitness = $(generateWitness [t|ByteString|]);
         typeName _ = "ByteString";
@@ -236,7 +236,7 @@ module Data.Reity.Instances where
         |]);
     };
 
-    instance HasInfo Maybe where
+    instance HasTypeInfo Maybe where
     {
         typeWitness = $(generateWitness [t|Maybe|]);
         typeName _ = "Maybe";
@@ -253,7 +253,7 @@ module Data.Reity.Instances where
         |]);
     };
 
-    instance HasInfo [] where
+    instance HasTypeInfo [] where
     {
         typeWitness = $(generateWitness [t|[]|]);
         typeName _ = "[]";
@@ -268,7 +268,7 @@ module Data.Reity.Instances where
         |]);
     };
 
-    instance HasInfo (,) where
+    instance HasTypeInfo (,) where
     {
         typeWitness = $(generateWitness [t|(,)|]);
         typeName _ = "(,)";
@@ -276,7 +276,7 @@ module Data.Reity.Instances where
         |]);
     };
 
-    instance HasInfo Either where
+    instance HasTypeInfo Either where
     {
         typeWitness = $(generateWitness [t|Either|]);
         typeName _ = "Either";
@@ -290,7 +290,7 @@ module Data.Reity.Instances where
         |]);
     };
 
-    instance HasInfo Result where
+    instance HasTypeInfo Result where
     {
         typeWitness = $(generateWitness [t|Result|]);
         typeName _ = "Result";
@@ -305,7 +305,7 @@ module Data.Reity.Instances where
         |]);
     };
 
-    instance HasInfo UUID where
+    instance HasTypeInfo UUID where
     {
         typeWitness = $(generateWitness [t|UUID|]);
         typeName _ = "UUID";

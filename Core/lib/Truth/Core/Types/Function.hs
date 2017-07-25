@@ -39,7 +39,7 @@ module Truth.Core.Types.Function where
     };
 
     $(return []);
-    instance HasInfo FunctionSelector where
+    instance HasTypeInfo FunctionSelector where
     {
         typeWitness = $(generateWitness [t|FunctionSelector|]);
         typeName _ = "FunctionSelector";

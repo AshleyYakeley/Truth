@@ -45,8 +45,8 @@ module Browser where
             catch (do
             {
                 h <- openURI uri OpenRead;
-                info <- getFileInfoFromHandle h [FileInfoDefault];
-                Just fs <- return (fileInfoSize info);
+                typeInfo <- getFileInfoFromHandle h [FileInfoDefault];
+                Just fs <- return (fileInfoSize typeInfo);
                 bs <- System.Gnome.VFS.read h fs;
                 close h;
                 return (Just bs);
@@ -184,9 +184,9 @@ module Browser where
         suffixes = (fmap fst knownSuffixHandlers) ++ ["hs","lhs"];
 
         makeModuleItem :: TreeStore -> TreeIter -> BuildInfo -> String -> IO TreeIter;
-        makeModuleItem store ti info fname = do
+        makeModuleItem store ti typeInfo fname = do
         {
-            pathl <- moduleToFilePath (hsSourceDirs info) fname suffixes;
+            pathl <- moduleToFilePath (hsSourceDirs typeInfo) fname suffixes;
             mpath <- case pathl of
             {
                 path:_ -> return (Just path);
@@ -196,10 +196,10 @@ module Browser where
         };
 
         addBuildInfo :: TreeStore -> TreeIter -> BuildInfo -> IO ();
-        addBuildInfo store ti info = do
+        addBuildInfo store ti typeInfo = do
         {
             itHidden <- makeItem store (Just ti) "Hidden" Nothing;
-            mapM_ (makeModuleItem store itHidden info) (otherModules info);
+            mapM_ (makeModuleItem store itHidden typeInfo) (otherModules typeInfo);
         };
 
         makeLibraryFolder :: TreeStore -> (Maybe TreeIter) -> Library -> IO ();

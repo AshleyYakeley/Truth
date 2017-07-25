@@ -7,9 +7,9 @@ module Truth.Core.Object.HasView where
 
     class DependentHasView widget edit where
     {
-        dependsView :: TypeKnowledge -> Info edit -> KnowM (View edit widget);
+        dependsView :: TypeKnowledge -> TypeInfo edit -> KnowM (View edit widget);
 
-        default dependsView :: HasView widget edit => TypeKnowledge -> Info edit -> KnowM (View edit widget);
+        default dependsView :: HasView widget edit => TypeKnowledge -> TypeInfo edit -> KnowM (View edit widget);
         dependsView _ _ = return theView;
     };
 
@@ -19,25 +19,25 @@ module Truth.Core.Object.HasView where
     };
 
     $(return []);
-    instance HasInfo DependentHasView where
+    instance HasTypeInfo DependentHasView where
     {
         typeWitness = $(generateWitness [t|DependentHasView|]);
         typeName _ = "DependentHasView";
     };
 
-    findView :: forall widget edit. HasInfo widget => TypeKnowledge -> Info edit -> KnowM (View edit widget);
+    findView :: forall widget edit. HasTypeInfo widget => TypeKnowledge -> TypeInfo edit -> KnowM (View edit widget);
     findView k i = let
     {
-        k' = mappend k (infoKnowledge i);
+        k' = mappend k (typeInfoKnowledge i);
     } in do
     {
-        ConstraintFact <- askInfo k' $ applyInfo (applyInfo (info @DependentHasView) (info @widget)) i;
+        ConstraintFact <- askTypeInfo k' $ applyTypeInfo (applyTypeInfo (typeInfo @DependentHasView) (typeInfo @widget)) i;
         dependsView k' i;
     };
 
-    type GetView widget = forall edit. (Edit edit) => Info edit -> View edit widget;
+    type GetView widget = forall edit. (Edit edit) => TypeInfo edit -> View edit widget;
 
-    finalGetView :: HasInfo widget => TypeKnowledge -> (FailureReason -> GetView widget) -> GetView widget;
+    finalGetView :: HasTypeInfo widget => TypeKnowledge -> (FailureReason -> GetView widget) -> GetView widget;
     finalGetView k gv i = case findView k i of
     {
         SuccessResult view -> view;

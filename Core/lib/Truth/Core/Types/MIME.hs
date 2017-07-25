@@ -18,7 +18,7 @@ module Truth.Core.Types.MIME where
     };
 
     $(return []);
-    instance HasInfo MIMEContentType where
+    instance HasTypeInfo MIMEContentType where
     {
         typeWitness = $(generateWitness [t|MIMEContentType|]);
         typeName _ = "MIMEContentType";
@@ -34,13 +34,13 @@ module Truth.Core.Types.MIME where
 
     data AnyCodec where
     {
-        MkAnyCodec :: forall (edit :: *). Info edit -> Info (EditReader edit) -> Info (EditSubject edit) -> Codec [Word8] (EditSubject edit) -> AnyCodec;
+        MkAnyCodec :: forall (edit :: *). TypeInfo edit -> TypeInfo (EditReader edit) -> TypeInfo (EditSubject edit) -> Codec [Word8] (EditSubject edit) -> AnyCodec;
     };
 
     data MIMEKnowledge = MkMIMEKnowledge
     {
         findMIMECodecByMIME :: MIMEContentType -> Maybe AnyCodec,
-        findMIMECodecByInfoT :: forall (edit :: *). Info edit -> Maybe (MIMEContentType,Codec [Word8] (EditSubject edit))
+        findMIMECodecByInfoT :: forall (edit :: *). TypeInfo edit -> Maybe (MIMEContentType,Codec [Word8] (EditSubject edit))
     };
 
     interpretInjection :: (?mimeKnowledge :: MIMEKnowledge) => Injection MIMEContent (Maybe Anything);

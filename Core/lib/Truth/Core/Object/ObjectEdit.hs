@@ -29,7 +29,7 @@ module Truth.Core.Object.ObjectEdit where
     };
 
     $(return []);
-    instance HasInfo ObjectReader where
+    instance HasTypeInfo ObjectReader where
     {
         typeWitness = $(generateWitness [t|ObjectReader|]);
         typeName _ = "ObjectReader";

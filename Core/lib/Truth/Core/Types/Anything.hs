@@ -8,10 +8,10 @@ module Truth.Core.Types.Anything where
 
     data Anything where
     {
-        MkAnything :: forall (edit :: *). Info edit -> Info (EditReader edit) -> Info (EditSubject edit) -> EditSubject edit -> Anything;
+        MkAnything :: forall (edit :: *). TypeInfo edit -> TypeInfo (EditReader edit) -> TypeInfo (EditSubject edit) -> EditSubject edit -> Anything;
     };
 
-    instance HasInfo Anything where
+    instance HasTypeInfo Anything where
     {
         typeWitness = $(generateWitness [t|Anything|]);
         typeName _ = "Anything";
@@ -19,13 +19,13 @@ module Truth.Core.Types.Anything where
 
     data AnyTypes where
     {
-        MkAnyTypes :: forall (edit :: *). Info edit -> Info (EditReader edit) -> Info (EditSubject edit) -> AnyTypes;
+        MkAnyTypes :: forall (edit :: *). TypeInfo edit -> TypeInfo (EditReader edit) -> TypeInfo (EditSubject edit) -> AnyTypes;
     };
 
     data AnyReader t where
     {
         ReadAnyTypes :: AnyReader AnyTypes;
-        ReadAnyReader :: forall reader t. Reader reader => Info reader -> reader t -> AnyReader (Maybe t);
+        ReadAnyReader :: forall reader t. Reader reader => TypeInfo reader -> reader t -> AnyReader (Maybe t);
     };
 
     instance Reader AnyReader where
@@ -41,7 +41,7 @@ module Truth.Core.Types.Anything where
     };
 
     $(return []);
-    instance HasInfo AnyReader where
+    instance HasTypeInfo AnyReader where
     {
         typeWitness = $(generateWitness [t|AnyReader|]);
         typeName _ = "AnyReader";
@@ -55,7 +55,7 @@ module Truth.Core.Types.Anything where
 
     data AnyEdit where
     {
-        MkAnyEdit :: forall edit. (Edit edit) => Info edit -> edit -> AnyEdit;
+        MkAnyEdit :: forall edit. (Edit edit) => TypeInfo edit -> edit -> AnyEdit;
     };
 
     instance Floating AnyEdit AnyEdit where
@@ -103,7 +103,7 @@ module Truth.Core.Types.Anything where
     };
 
     $(return []);
-    instance HasInfo AnyEdit where
+    instance HasTypeInfo AnyEdit where
     {
         typeWitness = $(generateWitness [t|AnyEdit|]);
         typeName _ = "AnyEdit";

@@ -156,6 +156,6 @@ module Truth.UI.GTK.Window where
     makeKnownWindowCountRef :: (Edit edit,HasView Widget edit,WindowButtons actions) => IORef Int -> Subscriber edit actions -> IO ();
     makeKnownWindowCountRef = makeViewWindowCountRef theView;
 
-    makeLookupWindowCountRef :: (Edit edit,WindowButtons actions) => Info edit -> IORef Int -> Subscriber edit actions -> IO ();
+    makeLookupWindowCountRef :: (Edit edit,WindowButtons actions) => TypeInfo edit -> IORef Int -> Subscriber edit actions -> IO ();
     makeLookupWindowCountRef te = makeViewWindowCountRef (getView te);
 }

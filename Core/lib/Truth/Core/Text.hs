@@ -14,7 +14,7 @@ module Truth.Core.Text where
         show (MkListError i) = "decode error at byte " ++ show i;
     };
 
-    instance HasInfo ListError where
+    instance HasTypeInfo ListError where
     {
         typeWitness = $(generateWitness [t|ListError|]);
         typeName _ = "ListError";

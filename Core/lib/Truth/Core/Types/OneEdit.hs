@@ -68,7 +68,7 @@ module Truth.Core.Types.OneEdit where
     };
 
     $(return []);
-    instance HasInfo OneEdit where
+    instance HasTypeInfo OneEdit where
     {
         typeWitness = $(generateWitness [t|OneEdit|]);
         typeName _ = "OneEdit";

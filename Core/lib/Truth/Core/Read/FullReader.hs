@@ -20,13 +20,13 @@ module Truth.Core.Read.FullReader where
         fromReader :: Readable reader (ReaderSubject reader);
     };
 
-    instance HasInfo IOFullReader where
+    instance HasTypeInfo IOFullReader where
     {
         typeWitness = $(generateWitness [t|IOFullReader|]);
         typeName _ = "IOFullReader";
     };
 
-    instance HasInfo FullReader where
+    instance HasTypeInfo FullReader where
     {
         typeWitness = $(generateWitness [t|FullReader|]);
         typeName _ = "FullReader";

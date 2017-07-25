@@ -52,15 +52,15 @@ module Truth.Core.Types.Pair where
         tupleWitness _ EditSecond = MkConstraintWitness;
     };
 
-    instance (Edit ea,HasInfo ea,Edit eb,HasInfo eb) =>
+    instance (Edit ea,HasTypeInfo ea,Edit eb,HasTypeInfo eb) =>
         TupleHasInfo (PairSelector ea eb) where
     {
-        tupleHasInfo EditFirst = info;
-        tupleHasInfo EditSecond = info;
+        tupleHasInfo EditFirst = typeInfo;
+        tupleHasInfo EditSecond = typeInfo;
     };
 
     $(return []);
-    instance HasInfo PairSelector where
+    instance HasTypeInfo PairSelector where
     {
         typeWitness = $(generateWitness [t|PairSelector|]);
         typeName _ = "PairSelector";
@@ -75,7 +75,7 @@ module Truth.Core.Types.Pair where
                 FiniteTupleSelector (PairSelector ea eb);
             instance (c (EditReader ea),c (EditReader eb)) => TupleReaderWitness c (PairSelector ea eb);
             instance (c ea,c eb) => TupleWitness c (PairSelector ea eb);
-            --instance (Edit ea,HasInfo ea,Edit eb,HasInfo eb) =>
+            --instance (Edit ea,HasTypeInfo ea,Edit eb,HasTypeInfo eb) =>
             --    TupleHasInfo (PairSelector ea eb);
         |]);
     };

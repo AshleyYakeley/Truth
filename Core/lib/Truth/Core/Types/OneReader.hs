@@ -41,7 +41,7 @@ module Truth.Core.Types.OneReader where
     };
 
     $(return []);
-    instance HasInfo OneReader where
+    instance HasTypeInfo OneReader where
     {
         typeWitness = $(generateWitness [t|OneReader|]);
         typeName _ = "OneReader";

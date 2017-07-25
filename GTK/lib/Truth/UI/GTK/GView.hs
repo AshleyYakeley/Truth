@@ -17,7 +17,7 @@ module Truth.UI.GTK.GView where
     type GView edit = View edit Widget;
     type GViewResult edit = ViewResult edit Widget;
 
-    instance HasInfo Widget where
+    instance HasTypeInfo Widget where
     {
         typeWitness = $(generateWitness [t|Widget|]);
         typeName _ = "Widget";

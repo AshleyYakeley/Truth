@@ -12,7 +12,7 @@ module Main(main) where
     import Test.Tasty.HUnit;
 
 
-    testGView :: forall (edit :: Type). Info edit -> TestTree;
+    testGView :: forall (edit :: Type). TypeInfo edit -> TestTree;
     testGView iedit = testCase (show iedit) $ case (findView @Widget) matchViews iedit of
     {
         SuccessResult _ -> return ();
@@ -21,11 +21,11 @@ module Main(main) where
 
     testGViews :: TestTree;
     testGViews = testGroup "GView" [
-            testGView $ info @(WholeEdit Bool),
-            testGView $ info @(StringEdit String),
-            testGView $ info @(SoupEdit (ObjectEdit ByteStringEdit)),
-            testGView $ info @(SumWholeEdit (OneEdit (Result String) (WholeEdit Bool))),
-            testGView $ info @(SumWholeEdit (OneEdit (Result String) (StringEdit String)))
+            testGView $ typeInfo @(WholeEdit Bool),
+            testGView $ typeInfo @(StringEdit String),
+            testGView $ typeInfo @(SoupEdit (ObjectEdit ByteStringEdit)),
+            testGView $ typeInfo @(SumWholeEdit (OneEdit (Result String) (WholeEdit Bool))),
+            testGView $ typeInfo @(SumWholeEdit (OneEdit (Result String) (StringEdit String)))
         ];
 
     tests :: TestTree;

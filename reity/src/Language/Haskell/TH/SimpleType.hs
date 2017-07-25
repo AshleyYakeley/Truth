@@ -91,7 +91,7 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple,showSimpleType
             };
             TyConI _ -> return $ Complete $ consSimpleType mk tp;
             ClassI _ _ -> return $ Complete $ consSimpleType mk tp;
-            _ -> fail $ show name ++ ": unknown info for type: " ++ show ninfo;
+            _ -> fail $ show name ++ ": unknown typeInfo for type: " ++ show ninfo;
         };
     };
     typeToPartial _ EqualityT = return $ Incomplete $ Incomplete $ Complete EqualType;
