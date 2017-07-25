@@ -22,12 +22,14 @@ module Truth.Core.Read.FullReader where
 
     instance HasInfo IOFullReader where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|IOFullReader|]) [];
+        typeWitness = $(generateWitness [t|IOFullReader|]);
+        typeName _ = "IOFullReader";
     };
 
     instance HasInfo FullReader where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|FullReader|]) [];
+        typeWitness = $(generateWitness [t|FullReader|]);
+        typeName _ = "FullReader";
     };
 
     instance IOFullReader reader => IOFullReader (Readable reader) where

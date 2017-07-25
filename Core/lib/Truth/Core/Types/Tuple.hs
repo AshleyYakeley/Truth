@@ -13,8 +13,8 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleWitness where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|TupleWitness|]) [$(declInfo [d|
-        |])];
+        typeWitness = $(generateWitness [t|TupleWitness|]);
+        typeName _ = "TupleWitness";
     };
 
     class (TestEquality sel,TupleWitness Edit sel) => TupleSelector (sel :: * -> *) where
@@ -27,8 +27,8 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleSelector where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|TupleSelector|]) [$(declInfo [d|
-        |])];
+        typeWitness = $(generateWitness [t|TupleSelector|]);
+        typeName _ = "TupleSelector";
     };
 
     data TupleEditReader sel t where
@@ -56,8 +56,8 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleReaderWitness where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|TupleReaderWitness|]) [$(declInfo [d|
-        |])];
+        typeWitness = $(generateWitness [t|TupleReaderWitness|]);
+        typeName _ = "TupleReaderWitness";
     };
 
     class TupleSelector sel => FiniteTupleSelector (sel :: * -> *) where
@@ -66,8 +66,8 @@ module Truth.Core.Types.Tuple where
     };
     instance HasInfo FiniteTupleSelector where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|FiniteTupleSelector|]) [$(declInfo [d|
-        |])];
+        typeWitness = $(generateWitness [t|FiniteTupleSelector|]);
+        typeName _ = "FiniteTupleSelector";
     };
 
     tupleAllSelectors :: FiniteTupleSelector sel => [AnyWitness sel];
@@ -92,14 +92,16 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleEditReader where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|TupleEditReader|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|TupleEditReader|]);
+        typeName _ = "TupleEditReader";
+        typeKnowledge _ = $(declInfo [d|
             instance (TupleSelector sel) => Reader (TupleEditReader sel) where
             {
                 type ReaderSubject (TupleEditReader sel) = TupleSubject sel;
             };
             instance (FiniteTupleSelector sel,TupleReaderWitness IOFullReader sel) => IOFullReader (TupleEditReader sel);
             instance (FiniteTupleSelector sel,TupleReaderWitness IOFullReader sel,TupleReaderWitness FullReader sel) => FullReader (TupleEditReader sel);
-        |])];
+        |]);
     };
 
 
@@ -165,7 +167,9 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|TupleEdit|]) [
+        typeWitness = $(generateWitness [t|TupleEdit|]);
+        typeName _ = "TupleEdit";
+        typeKnowledge _ = mconcat [
             infoKnowledge (info @TupleEditReader),
             $(declInfo [d|
             instance TupleSelector sel => Edit (TupleEdit sel) where
@@ -184,8 +188,8 @@ module Truth.Core.Types.Tuple where
     $(return []);
     instance HasInfo TupleHasInfo where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|TupleHasInfo|]) [$(declInfo [d|
-        |])];
+        typeWitness = $(generateWitness [t|TupleHasInfo|]);
+        typeName _ = "TupleHasInfo";
     };
 
     tupleCleanEditLens :: TestEquality sel => sel edit -> CleanEditLens' Identity (TupleEdit sel) edit;

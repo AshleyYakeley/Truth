@@ -38,13 +38,15 @@ module Truth.Core.Types.Context where
     $(return []);
     instance HasInfo WithContext where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|WithContext|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|WithContext|]);
+        typeName _ = "WithContext";
+        typeKnowledge _ = $(declInfo [d|
             instance Functor (WithContext context);
             instance Foldable (WithContext context);
             instance Traversable (WithContext context);
             instance Comonad (WithContext context);
             instance (HasNewValue context,HasNewValue content) => HasNewValue (WithContext context content);
-        |])];
+        |]);
     };
 
     data WithContextSelector (editx :: *) (editn :: *) (edit :: *) where
@@ -93,7 +95,9 @@ module Truth.Core.Types.Context where
     $(return []);
     instance HasInfo WithContextSelector where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|WithContextSelector|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|WithContextSelector|]);
+        typeName _ = "WithContextSelector";
+        typeKnowledge _ = $(declInfo [d|
             instance (TestEquality :: (* -> *) -> Constraint) (WithContextSelector ea eb);
             instance (Edit editx,Edit editn) =>
                 TupleSelector (WithContextSelector editx editn) where
@@ -104,7 +108,7 @@ module Truth.Core.Types.Context where
                 FiniteTupleSelector (WithContextSelector ex en);
             instance (c (EditReader ex),c (EditReader en)) => TupleReaderWitness c (WithContextSelector ex en);
             instance (c ex,c en) => TupleWitness c (WithContextSelector ex en);
-        |])];
+        |]);
     };
 
     contextCleanLens :: CleanEditLens' Identity (TupleEdit (WithContextSelector editx editn)) editx;

@@ -64,13 +64,15 @@ module Truth.Core.Types.Key where
     $(return []);
     instance HasInfo KeyReader where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|KeyReader|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|KeyReader|]);
+        typeName _ = "KeyReader";
+        typeKnowledge _ = $(declInfo [d|
             instance (KeyContainer cont,Reader reader,ReaderSubject reader ~ Element cont) => Reader (KeyReader cont reader) where
             {
                 type ReaderSubject (KeyReader cont reader) = cont;
             };
             instance (KeyContainer cont,FullReader reader,ReaderSubject reader ~ Element cont) => FullReader (KeyReader cont reader);
-        |])];
+        |]);
     };
 
     data KeyEdit cont edit where
@@ -88,7 +90,8 @@ module Truth.Core.Types.Key where
 
     instance HasInfo HasKeyReader where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|HasKeyReader|]) [];
+        typeWitness = $(generateWitness [t|HasKeyReader|]);
+        typeName _ = "HasKeyReader";
     };
 
     instance (EditSubject keyedit ~ key,EditSubject valedit ~ val,Edit keyedit,FullReader (EditReader keyedit),Edit valedit) =>
@@ -222,8 +225,9 @@ module Truth.Core.Types.Key where
     $(return []);
     instance HasInfo KeyEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|KeyEdit|]) [
-            infoKnowledge (info @KeyReader),
+        typeWitness = $(generateWitness [t|KeyEdit|]);
+        typeName _ = "KeyEdit";
+        typeKnowledge _ = mconcat [infoKnowledge (info @KeyReader),
             $(declInfo [d|
             instance Eq key => KeyContainer [(key, value)];
             type instance Element [a] = a;

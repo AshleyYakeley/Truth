@@ -12,7 +12,8 @@ module Data.Reity.Instances where
     import Data.MonadOne;
     import Data.Result;
     import Data.Reity.Match;
-    import Data.Reity.HasInfo;
+    import Data.Reity.Wit;
+    import Data.Reity.Info;
     import Data.Reity.Template;
 
 
@@ -20,34 +21,34 @@ module Data.Reity.Instances where
 
     instance HasInfo TYPE where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|TYPE|]) [];
+        typeWitness = $(generateWitness [t|TYPE|]);
+        typeName _ = "TYPE";
     };
 
     type ARR = (->);
 
     instance HasInfo (->) where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|ARR|]) [];
+        typeWitness = $(generateWitness [t|ARR|]);
+        typeName _ = "(->)";
     };
 
     instance HasInfo Constraint where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Constraint|]) [];
+        typeWitness = $(generateWitness [t|Constraint|]);
+        typeName _ = "Constraint";
     };
 
     instance HasInfo RuntimeRep where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|RuntimeRep|]) [];
+        typeWitness = $(generateWitness [t|RuntimeRep|]);
+        typeName _ = "RuntimeRep";
     };
 
     instance HasInfo 'PtrRepLifted where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|'PtrRepLifted|]) [];
-    };
-
-    instance (HasInfo f,HasInfo a) => HasInfo (f a) where
-    {
-        info = applyInfo info info;
+        typeWitness = $(generateWitness [t|'PtrRepLifted|]);
+        typeName _ = "'PtrRepLifted";
     };
 
 
@@ -55,97 +56,116 @@ module Data.Reity.Instances where
 
     instance HasInfo Eq where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Eq|]) [];
+        typeWitness = $(generateWitness [t|Eq|]);
+        typeName _ = "Eq";
     };
 
     instance HasInfo Ord where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Ord|]) [];
+        typeWitness = $(generateWitness [t|Ord|]);
+        typeName _ = "Ord";
     };
 
     instance HasInfo Enum where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Enum|]) [];
+        typeWitness = $(generateWitness [t|Enum|]);
+        typeName _ = "Enum";
     };
 
     instance HasInfo Num where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Num|]) [];
+        typeWitness = $(generateWitness [t|Num|]);
+        typeName _ = "Num";
     };
 
     instance HasInfo Integral where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Integral|]) [];
+        typeWitness = $(generateWitness [t|Integral|]);
+        typeName _ = "Integral";
     };
 
     instance HasInfo Real where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Real|]) [];
+        typeWitness = $(generateWitness [t|Real|]);
+        typeName _ = "Real";
     };
 
     instance HasInfo Show where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Show|]) [];
+        typeWitness = $(generateWitness [t|Show|]);
+        typeName _ = "Show";
     };
 
     instance HasInfo Read where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Read|]) [];
+        typeWitness = $(generateWitness [t|Read|]);
+        typeName _ = "Read";
     };
 
     instance HasInfo k => HasInfo (TestEquality :: (k -> *) -> Constraint) where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|TestEquality|]) [];
+        typeWitness = $(generateWitness [t|TestEquality|]);
+        typeName _ = "TestEquality";
     };
 
     instance HasInfo Monoid where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Monoid|]) [];
+        typeWitness = $(generateWitness [t|Monoid|]);
+        typeName _ = "Monoid";
     };
 
     instance HasInfo Foldable where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Foldable|]) [];
+        typeWitness = $(generateWitness [t|Foldable|]);
+        typeName _ = "Foldable";
     };
 
     instance HasInfo Traversable where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Traversable|]) [];
+        typeWitness = $(generateWitness [t|Traversable|]);
+        typeName _ = "Traversable";
     };
 
     instance HasInfo Functor where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Functor|]) [];
+        typeWitness = $(generateWitness [t|Functor|]);
+        typeName _ = "Functor";
     };
 
     instance HasInfo Applicative where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Applicative|]) [];
+        typeWitness = $(generateWitness [t|Applicative|]);
+        typeName _ = "Applicative";
     };
 
     instance HasInfo Monad where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Monad|]) [];
+        typeWitness = $(generateWitness [t|Monad|]);
+        typeName _ = "Monad";
     };
 
     instance HasInfo Comonad where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Comonad|]) [];
+        typeWitness = $(generateWitness [t|Comonad|]);
+        typeName _ = "Comonad";
     };
 
     instance HasInfo HasNewValue where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|HasNewValue|]) [];
+        typeWitness = $(generateWitness [t|HasNewValue|]);
+        typeName _ = "HasNewValue";
     };
 
     instance HasInfo MonadOne where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|MonadOne|]) [];
+        typeWitness = $(generateWitness [t|MonadOne|]);
+        typeName _ = "MonadOne";
     };
 
     instance HasInfo Finite where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Finite|]) [];
+        typeWitness = $(generateWitness [t|Finite|]);
+        typeName _ = "Finite";
     };
 
 
@@ -153,60 +173,74 @@ module Data.Reity.Instances where
 
     instance HasInfo () where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|()|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|()|]);
+        typeName _ = "()";
+        typeKnowledge _ = $(declInfo [d|
             instance HasNewValue ();
             instance Monoid ();
             instance Eq ();
-        |])];
+        |]);
     };
 
     instance HasInfo Bool where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Bool|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|Bool|]);
+        typeName _ = "Bool";
+        typeKnowledge _ = $(declInfo [d|
             instance HasNewValue Bool;
             instance Eq Bool;
-        |])];
+        |]);
     };
 
     instance HasInfo Char where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Char|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|Char|]);
+        typeName _ = "Char";
+        typeKnowledge _ = $(declInfo [d|
             instance HasNewValue Char;
             instance Eq Char;
             instance Ord Char;
-        |])];
+        |]);
     };
 
     instance HasInfo Word8 where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Word8|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|Word8|]);
+        typeName _ = "Word8";
+        typeKnowledge _ = $(declInfo [d|
             instance HasNewValue Word8;
             instance Eq Word8;
             instance Ord Word8;
-        |])];
+        |]);
     };
 
     instance HasInfo Int where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Int|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|Int|]);
+        typeName _ = "Int";
+        typeKnowledge _ = $(declInfo [d|
             instance HasNewValue Int;
             instance Eq Int;
             instance Ord Int;
-        |])];
+        |]);
     };
 
     instance HasInfo ByteString where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|ByteString|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|ByteString|]);
+        typeName _ = "ByteString";
+        typeKnowledge _ = $(declInfo [d|
             instance HasNewValue ByteString;
             instance Monoid ByteString;
             instance Eq ByteString;
-        |])];
+        |]);
     };
 
     instance HasInfo Maybe where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Maybe|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|Maybe|]);
+        typeName _ = "Maybe";
+        typeKnowledge _ = $(declInfo [d|
             instance Foldable Maybe;
             instance Traversable Maybe;
             instance Functor Maybe;
@@ -216,12 +250,14 @@ module Data.Reity.Instances where
             instance HasNewValue (Maybe a);
             instance (Eq a) => Eq (Maybe a);
             instance MonadOne Maybe;
-        |])];
+        |]);
     };
 
     instance HasInfo [] where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|[]|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|[]|]);
+        typeName _ = "[]";
+        typeKnowledge _ = $(declInfo [d|
             instance Foldable [];
             instance Traversable [];
             instance Functor [];
@@ -229,30 +265,36 @@ module Data.Reity.Instances where
             instance Monad [];
             instance () => HasNewValue ([] a);
             instance (Eq a) => Eq ([] a);
-        |])];
+        |]);
     };
 
     instance HasInfo (,) where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|(,)|]) [$(declInfo [d|
-        |])];
+        typeWitness = $(generateWitness [t|(,)|]);
+        typeName _ = "(,)";
+        typeKnowledge _ = $(declInfo [d|
+        |]);
     };
 
     instance HasInfo Either where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Either|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|Either|]);
+        typeName _ = "Either";
+        typeKnowledge _ = $(declInfo [d|
             instance Foldable (Either a);
             instance Traversable (Either a);
             instance Functor (Either a);
             instance Applicative (Either a);
             instance Monad (Either a);
             instance MonadOne (Either a);
-        |])];
+        |]);
     };
 
     instance HasInfo Result where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Result|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|Result|]);
+        typeName _ = "Result";
+        typeKnowledge _ = $(declInfo [d|
             instance HasNewValue a => HasNewValue (Result e a);
             instance Foldable (Result e);
             instance Traversable (Result e);
@@ -260,22 +302,17 @@ module Data.Reity.Instances where
             instance Applicative (Result e);
             instance Monad (Result e);
             instance MonadOne (Result e);
-        |])];
+        |]);
     };
 
     instance HasInfo UUID where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|UUID|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|UUID|]);
+        typeName _ = "UUID";
+        typeKnowledge _ = $(declInfo [d|
             instance Eq UUID;
             instance Ord UUID;
             instance Show UUID;
-        |])];
+        |]);
     };
-
-{-
-    instance HasInfo Any where
-    {
-        info = mkSimpleInfo $(ionamedwitness[t|Any|]) [];
-    };
--}
 }

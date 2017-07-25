@@ -18,7 +18,8 @@ module Truth.Core.Edit.Edit where
 
     instance HasInfo Floating where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Floating|]) [];
+        typeWitness = $(generateWitness [t|Floating|]);
+        typeName _ = "Floating";
     };
 
     class (Reader (EditReader edit),Floating edit edit) => Edit (edit :: *) where
@@ -32,7 +33,8 @@ module Truth.Core.Edit.Edit where
 
     instance HasInfo Edit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Edit|]) [];
+        typeWitness = $(generateWitness [t|Edit|]);
+        typeName _ = "Edit";
     };
 {-
     applyAndInvertEdit :: (Edit edit) => edit -> (ReadFunction (EditReader edit) (EditReader edit),Readable (EditReader edit) [edit]);
@@ -80,6 +82,7 @@ module Truth.Core.Edit.Edit where
 
     instance HasInfo FullEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|FullEdit|]) [];
+        typeWitness = $(generateWitness [t|FullEdit|]);
+        typeName _ = "FullEdit";
     };
 }

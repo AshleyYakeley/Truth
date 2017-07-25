@@ -64,14 +64,16 @@ module Truth.Core.Types.Either where
     $(return []);
     instance HasInfo EitherReader where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|EitherReader|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|EitherReader|]);
+        typeName _ = "EitherReader";
+        typeKnowledge _ = $(declInfo [d|
             instance (Reader ra,Reader rb) => Reader (EitherReader ra rb) where
             {
                 type ReaderSubject (EitherReader ra rb) = Either (ReaderSubject ra) (ReaderSubject rb);
             };
             instance (IOFullReader ra,IOFullReader rb) => IOFullReader (EitherReader ra rb);
             instance (FullReader ra,FullReader rb) => FullReader (EitherReader ra rb);
-        |])];
+        |]);
     };
 
     -- note this edit cannot switch the subject between the left and right branches
@@ -115,11 +117,13 @@ module Truth.Core.Types.Either where
     $(return []);
     instance HasInfo EitherEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|EitherEdit|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|EitherEdit|]);
+        typeName _ = "EitherEdit";
+        typeKnowledge _ = $(declInfo [d|
             instance (Edit ea,Edit eb) => Edit (EitherEdit ea eb) where
             {
                 type EditReader (EitherEdit ea eb) = EitherReader (EditReader ea) (EditReader eb);
             };
-        |])];
+        |]);
     };
 }

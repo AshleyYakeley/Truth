@@ -70,12 +70,14 @@ module Truth.Core.Types.OneEdit where
     $(return []);
     instance HasInfo OneEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|OneEdit|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|OneEdit|]);
+        typeName _ = "OneEdit";
+        typeKnowledge _ = $(declInfo [d|
             instance (MonadOne f,Edit edit) => Edit (OneEdit f edit) where
             {
                 type EditReader (OneEdit f edit) = OneReader f (EditReader edit);
             };
-        |])];
+        |]);
     };
 
     oneFloatingEditFunction :: forall f state edita editb. (MonadOne f,Edit edita,Edit editb) =>

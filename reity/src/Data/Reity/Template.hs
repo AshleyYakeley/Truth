@@ -8,6 +8,7 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
     import Control.Monad.Trans.Class;
     import Control.Monad.Trans.Writer;
     import qualified Data.Knowledge as R;
+    import qualified Data.Reity.Wit as R;
     import qualified Data.Reity.Info as R;
     import qualified Data.Reity.Match as R;
     import qualified Data.Reity.HasInfo as R;
@@ -311,7 +312,8 @@ module Data.Reity.Template(declInfo,instInfo,typeFamilyProxy,showSimpleType) whe
         instDecs <- [d|
             instance R.HasInfo $(typeTypeQ) where
             {
-                info = mkSimpleInfo $(R.ionamedwitness typeTypeQ) [];
+                typeWitness = $(R.generateWitness typeTypeQ);
+                typeName _ = $(R.generateTypeName typeTypeQ);
             };
         |];
         return $ typeDec : instDecs;

@@ -21,12 +21,14 @@ module Truth.Core.Types.Sum where
     $(return []);
     instance HasInfo SumReader where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|SumReader|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|SumReader|]);
+        typeName _ = "SumReader";
+        typeKnowledge _ = $(declInfo [d|
             instance (Reader ra,Reader rb,ReaderSubject ra ~ ReaderSubject rb) => Reader (SumReader ra rb) where
             {
                 type ReaderSubject (SumReader ra rb) = ReaderSubject ra;
             };
-        |])];
+        |]);
     };
 
     data SumEdit ea eb = SumEditLeft ea | SumEditRight eb;
@@ -62,13 +64,15 @@ module Truth.Core.Types.Sum where
     $(return []);
     instance HasInfo SumEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|SumEdit|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|SumEdit|]);
+        typeName _ = "SumEdit";
+        typeKnowledge _ = $(declInfo [d|
             instance (Edit ea,Edit eb,EditReader ea ~ EditReader eb) => Edit (SumEdit ea eb) where
             {
                 type EditReader (SumEdit ea eb) = EditReader ea;
             };
             instance (FullEdit ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit (SumEdit ea eb);
-        |])];
+        |]);
     };
 
     sumEditFunction :: (EditReader edit ~ EditReader edit') => CleanEditFunction edit (SumEdit edit' edit);

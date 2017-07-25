@@ -13,8 +13,8 @@ module Truth.Core.Types.Anything where
 
     instance HasInfo Anything where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Anything|]) [$(declInfo [d|
-        |])];
+        typeWitness = $(generateWitness [t|Anything|]);
+        typeName _ = "Anything";
     };
 
     data AnyTypes where
@@ -43,12 +43,14 @@ module Truth.Core.Types.Anything where
     $(return []);
     instance HasInfo AnyReader where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|AnyReader|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|AnyReader|]);
+        typeName _ = "AnyReader";
+        typeKnowledge _ = $(declInfo [d|
             instance Reader AnyReader where
             {
                 type ReaderSubject AnyReader = Anything;
             };
-        |])];
+        |]);
     };
 
     data AnyEdit where
@@ -103,12 +105,14 @@ module Truth.Core.Types.Anything where
     $(return []);
     instance HasInfo AnyEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|AnyEdit|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|AnyEdit|]);
+        typeName _ = "AnyEdit";
+        typeKnowledge _ = $(declInfo [d|
             instance Edit AnyEdit where
             {
                 type EditReader AnyEdit = AnyReader;
             };
-        |])];
+        |]);
     };
 
     type AnyWholeEdit = SumWholeEdit AnyEdit;

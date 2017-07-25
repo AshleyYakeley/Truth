@@ -64,6 +64,7 @@ library
         Language.Haskell.TH.SimpleType
         Data.Knowledge
         Data.Reity.KnowM
+        Data.Reity.Wit
         Data.Reity.Info
         Data.Reity.Match
         Data.Reity.HasInfo

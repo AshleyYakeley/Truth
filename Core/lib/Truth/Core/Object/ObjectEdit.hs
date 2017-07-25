@@ -31,13 +31,15 @@ module Truth.Core.Object.ObjectEdit where
     $(return []);
     instance HasInfo ObjectReader where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|ObjectReader|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|ObjectReader|]);
+        typeName _ = "ObjectReader";
+        typeKnowledge _ = $(declInfo [d|
             instance Reader (EditReader edit) => Reader (ObjectReader edit) where
             {
                 type ReaderSubject (ObjectReader edit) = EditSubject edit;
             };
             instance IOFullReader (EditReader edit) => IOFullReader (ObjectReader edit);
-        |])];
+        |]);
     };
 
     type ObjectEdit edit = NoEdit (ObjectReader edit);

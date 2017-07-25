@@ -42,14 +42,16 @@ module Truth.Core.Types.ByteString where
     $(return []);
     instance HasInfo ByteStringReader where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|ByteStringReader|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|ByteStringReader|]);
+        typeName _ = "ByteStringReader";
+        typeKnowledge _ = $(declInfo [d|
             instance Reader ByteStringReader where
             {
                 type ReaderSubject ByteStringReader = ByteString;
             };
             instance IOFullReader ByteStringReader;
             instance FullReader ByteStringReader;
-        |])];
+        |]);
     };
 
     data ByteStringEdit = ByteStringSetLength Int | ByteStringWrite Int ByteString;
@@ -166,7 +168,9 @@ module Truth.Core.Types.ByteString where
     $(return []);
     instance HasInfo ByteStringEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|ByteStringEdit|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|ByteStringEdit|]);
+        typeName _ = "ByteStringEdit";
+        typeKnowledge _ = mconcat [$(declInfo [d|
             instance Edit ByteStringEdit where
             {
                 type EditReader ByteStringEdit = ByteStringReader;

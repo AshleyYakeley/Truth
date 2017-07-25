@@ -23,7 +23,9 @@ module Truth.Core.Sequence where
     $(return []);
     instance HasInfo SequencePoint where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|SequencePoint|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|SequencePoint|]);
+        typeName _ = "SequencePoint";
+        typeKnowledge _ = $(declInfo [d|
             instance Eq (Index seq) => Eq (SequencePoint seq);
             instance Ord (Index seq) => Ord (SequencePoint seq);
             instance Num (Index seq) => Num (SequencePoint seq);
@@ -31,7 +33,7 @@ module Truth.Core.Sequence where
             instance Real (Index seq) => Real (SequencePoint seq);
             instance Integral (Index seq) => Integral (SequencePoint seq);
             instance Integral (Index seq) => Show (SequencePoint seq);
-        |])];
+        |]);
     };
 
     seqLength :: IsSequence seq => seq -> SequencePoint seq;
@@ -114,21 +116,21 @@ module Truth.Core.Sequence where
     -- orphan
     instance HasInfo IsSequence where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|IsSequence|]) [$(declInfo [d|
-        |])];
+        typeWitness = $(generateWitness [t|IsSequence|]);
+        typeName _ = "IsSequence";
     };
 
     -- orphan
     instance HasInfo KeyContainer where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|KeyContainer|]) [$(declInfo [d|
-        |])];
+        typeWitness = $(generateWitness [t|KeyContainer|]);
+        typeName _ = "KeyContainer";
     };
 
     -- orphan
     instance HasInfo IONewItemKeyContainer where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|IONewItemKeyContainer|]) [$(declInfo [d|
-        |])];
+        typeWitness = $(generateWitness [t|IONewItemKeyContainer|]);
+        typeName _ = "IONewItemKeyContainer";
     };
 }

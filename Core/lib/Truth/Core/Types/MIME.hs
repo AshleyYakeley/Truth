@@ -20,10 +20,12 @@ module Truth.Core.Types.MIME where
     $(return []);
     instance HasInfo MIMEContentType where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|MIMEContentType|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|MIMEContentType|]);
+        typeName _ = "MIMEContentType";
+        typeKnowledge _ = $(declInfo [d|
             instance Eq MIMEContentType;
             instance HasNewValue MIMEContentType;
-        |])];
+        |]);
     };
 
     type MIMEContent = WithContext MIMEContentType [Word8];

@@ -3,25 +3,19 @@ module Data.Reity.HasInfo where
     import GHC.Types;
     import Data.Type.Heterogeneous;
     import Language.Haskell.TH hiding (Info);
-    import Data.OpenWitness;
     import Data.Knowledge;
     import Data.Reity.KnowM;
     import Data.Reity.Info;
 
 
-    class HasInfo a where
-    {
-        info :: Info a;
-    };
-
     isInfo :: forall a b. HasInfo a => Info b -> Maybe (HetEq a b);
     isInfo = testHetEquality info;
 
-    mkSimpleInfo :: forall (k :: *) (t :: k). HasInfo k => (IOWitness t,String) -> [TypeKnowledge] -> Info t;
-    mkSimpleInfo (wit,name) facts = MkInfo info $ SimpleWit wit name $ mconcat facts;
+    -- mkSimpleInfo :: forall (k :: *) (t :: k). HasInfo k => (IOWitness t,String) -> [TypeKnowledge] -> Info t;
+    -- mkSimpleInfo (wit,name) facts = MkInfo info $ SimpleWit wit name $ mconcat facts;
 
-    ionamedwitness :: TypeQ -> Q Exp;
-    ionamedwitness qtp = do
+    generateTypeName :: TypeQ -> Q Exp;
+    generateTypeName qtp = do
     {
         tp <- qtp;
         let
@@ -34,7 +28,7 @@ module Data.Reity.HasInfo where
                 _ -> show tp;
             };
         };
-        [|($(iowitness (return tp)),tpname)|]
+        [|tpname|];
     };
 
     askInfo :: forall (k :: *) (a :: k). TypeKnowledge -> Info a -> KnowM (TypeFact a);

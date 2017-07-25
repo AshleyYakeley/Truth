@@ -19,6 +19,7 @@ module Truth.UI.GTK.GView where
 
     instance HasInfo Widget where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|Widget|]) [];
+        typeWitness = $(generateWitness [t|Widget|]);
+        typeName _ = "Widget";
     };
 }

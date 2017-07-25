@@ -62,7 +62,9 @@ module Truth.Core.Types.Pair where
     $(return []);
     instance HasInfo PairSelector where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|PairSelector|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|PairSelector|]);
+        typeName _ = "PairSelector";
+        typeKnowledge _ = $(declInfo [d|
             --instance TestEquality (PairSelector ea eb);
             instance (Edit ea,Edit eb) =>
                 TupleSelector (PairSelector ea eb) where
@@ -75,7 +77,7 @@ module Truth.Core.Types.Pair where
             instance (c ea,c eb) => TupleWitness c (PairSelector ea eb);
             --instance (Edit ea,HasInfo ea,Edit eb,HasInfo eb) =>
             --    TupleHasInfo (PairSelector ea eb);
-        |])];
+        |]);
     };
 
     partitionPairEdits :: forall ea eb. [PairEdit ea eb] -> ([ea], [eb]);

@@ -21,7 +21,8 @@ module Truth.Core.Object.HasView where
     $(return []);
     instance HasInfo DependentHasView where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|DependentHasView|]) [];
+        typeWitness = $(generateWitness [t|DependentHasView|]);
+        typeName _ = "DependentHasView";
     };
 
     findView :: forall widget edit. HasInfo widget => TypeKnowledge -> Info edit -> KnowM (View edit widget);

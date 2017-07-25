@@ -104,12 +104,14 @@ module Truth.Core.Types.Maybe where
     $(return []);
     instance HasInfo MaybeEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|MaybeEdit|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|MaybeEdit|]);
+        typeName _ = "MaybeEdit";
+        typeKnowledge _ = $(declInfo [d|
             instance (FullEdit edit,HasNewValue (EditSubject edit)) => Edit (MaybeEdit edit) where
             {
                 type EditReader (MaybeEdit edit) = OneReader Maybe (EditReader edit);
             };
             instance (FullEdit edit,HasNewValue (EditSubject edit)) => FullEdit (MaybeEdit edit);
-        |])];
+        |]);
     };
 }

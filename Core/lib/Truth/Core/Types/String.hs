@@ -33,13 +33,15 @@ module Truth.Core.Types.String where
     $(return []);
     instance HasInfo StringRead where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|StringRead|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|StringRead|]);
+        typeName _ = "StringRead";
+        typeKnowledge _ = $(declInfo [d|
             instance IsSequence seq => Reader (StringRead seq) where
             {
                 type ReaderSubject (StringRead seq) = seq;
             };
             instance IsSequence seq => FullReader (StringRead seq);
-        |])];
+        |]);
     };
 
 
@@ -141,14 +143,16 @@ module Truth.Core.Types.String where
     $(return []);
     instance HasInfo StringEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|StringEdit|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|StringEdit|]);
+        typeName _ = "StringEdit";
+        typeKnowledge _ = $(declInfo [d|
             instance IsSequence [a];
             instance IsSequence seq => Edit (StringEdit seq) where
             {
                 type EditReader (StringEdit seq) = StringRead seq;
             };
             instance IsSequence seq => FullEdit (StringEdit seq);
-        |])];
+        |]);
     };
 
     stringSectionLens :: forall seq. IsSequence seq =>

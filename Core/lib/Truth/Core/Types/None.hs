@@ -30,13 +30,15 @@ module Truth.Core.Types.None where
     $(return []);
     instance HasInfo NoReader where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|NoReader|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|NoReader|]);
+        typeName _ = "NoReader";
+        typeKnowledge _ = $(declInfo [d|
             instance Reader (NoReader a) where
             {
                 type ReaderSubject (NoReader a) = a;
             };
             instance FullReader (NoReader ());
-        |])];
+        |]);
     };
 
     -- | Can't touch this.
@@ -71,13 +73,15 @@ module Truth.Core.Types.None where
     $(return []);
     instance HasInfo NoEdit where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|NoEdit|]) [$(declInfo [d|
+        typeWitness = $(generateWitness [t|NoEdit|]);
+        typeName _ = "NoEdit";
+        typeKnowledge _ = $(declInfo [d|
             instance (Reader reader) => Edit (NoEdit reader) where
             {
                 type EditReader (NoEdit reader) = reader;
             };
             instance (FullReader reader,ReaderSubject reader ~ ()) => FullEdit (NoEdit reader);
-        |])];
+        |]);
     };
 
     noEditFunction :: EditFunction (NoEdit (EditReader edit)) edit;

@@ -16,8 +16,8 @@ module Truth.Core.Text where
 
     instance HasInfo ListError where
     {
-        info = mkSimpleInfo $(ionamedwitness[t|ListError|]) [$(declInfo [d|
-        |])];
+        typeWitness = $(generateWitness [t|ListError|]);
+        typeName _ = "ListError";
     };
 
     utf8Injection :: Injection [Word8] (Result ListError String);
