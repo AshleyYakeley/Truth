@@ -39,7 +39,7 @@ module Truth.UI.GTK.Tuple(tupleTypeKnowledge) where
     };
 
     tupleTypeKnowledge :: TypeKnowledge;
-    tupleTypeKnowledge = namedKnowledge "tuple" $(declInfo [d|
+    tupleTypeKnowledge = namedKnowledge "tuple" $(generateTypeKnowledge [d|
         instance (FiniteTupleSelector sel,TupleHasInfo sel) => DependentHasView Widget (TupleEdit sel);
     |]);
 }

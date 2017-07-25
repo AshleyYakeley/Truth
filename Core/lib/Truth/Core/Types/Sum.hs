@@ -23,7 +23,7 @@ module Truth.Core.Types.Sum where
     {
         typeWitness = $(generateWitness [t|SumReader|]);
         typeName _ = "SumReader";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (Reader ra,Reader rb,ReaderSubject ra ~ ReaderSubject rb) => Reader (SumReader ra rb) where
             {
                 type ReaderSubject (SumReader ra rb) = ReaderSubject ra;
@@ -66,7 +66,7 @@ module Truth.Core.Types.Sum where
     {
         typeWitness = $(generateWitness [t|SumEdit|]);
         typeName _ = "SumEdit";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (Edit ea,Edit eb,EditReader ea ~ EditReader eb) => Edit (SumEdit ea eb) where
             {
                 type EditReader (SumEdit ea eb) = EditReader ea;

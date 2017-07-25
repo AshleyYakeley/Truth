@@ -106,7 +106,7 @@ module Truth.Core.Types.Maybe where
     {
         typeWitness = $(generateWitness [t|MaybeEdit|]);
         typeName _ = "MaybeEdit";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (FullEdit edit,HasNewValue (EditSubject edit)) => Edit (MaybeEdit edit) where
             {
                 type EditReader (MaybeEdit edit) = OneReader Maybe (EditReader edit);

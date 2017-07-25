@@ -27,7 +27,7 @@ module Truth.Core.Read.Reader where
         typeName _ = "Reader";
     };
 
-    $(typeFamilyProxy "ReaderSubject");
+    $(generateFamilyProxy "ReaderSubject");
 
     newtype MutableReadW m reader = MkMutableReadW {unMutableReadW :: MutableRead m reader};
 

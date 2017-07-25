@@ -27,7 +27,7 @@ module Truth.Core.Types.Comonad where
     {
         typeWitness = $(generateWitness [t|ComonadReader|]);
         typeName _ = "ComonadReader";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (Comonad w,Reader reader) => Reader (ComonadReader w reader) where
             {
                 type ReaderSubject (ComonadReader w reader) = w (ReaderSubject reader);
@@ -61,7 +61,7 @@ module Truth.Core.Types.Comonad where
     {
         typeWitness = $(generateWitness [t|ComonadEdit|]);
         typeName _ = "ComonadEdit";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (Comonad w,Edit edit) => Edit (ComonadEdit w edit) where
             {
                 type EditReader (ComonadEdit w edit) = ComonadReader w (EditReader edit);

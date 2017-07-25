@@ -115,7 +115,7 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
     };
 
     textTypeKnowledge :: TypeKnowledge;
-    textTypeKnowledge = namedKnowledge "text" $(declInfo [d|
+    textTypeKnowledge = namedKnowledge "text" $(generateTypeKnowledge [d|
         instance DependentHasView Widget (StringEdit String);
     |]);
 }

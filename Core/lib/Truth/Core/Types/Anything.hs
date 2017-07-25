@@ -45,7 +45,7 @@ module Truth.Core.Types.Anything where
     {
         typeWitness = $(generateWitness [t|AnyReader|]);
         typeName _ = "AnyReader";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Reader AnyReader where
             {
                 type ReaderSubject AnyReader = Anything;
@@ -107,7 +107,7 @@ module Truth.Core.Types.Anything where
     {
         typeWitness = $(generateWitness [t|AnyEdit|]);
         typeName _ = "AnyEdit";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Edit AnyEdit where
             {
                 type EditReader AnyEdit = AnyReader;

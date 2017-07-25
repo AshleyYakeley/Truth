@@ -195,7 +195,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|()|]);
         typeName _ = "()";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance HasNewValue ();
             instance Monoid ();
             instance Eq ();
@@ -206,7 +206,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|Bool|]);
         typeName _ = "Bool";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance HasNewValue Bool;
             instance Eq Bool;
         |]);
@@ -216,7 +216,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|Char|]);
         typeName _ = "Char";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance HasNewValue Char;
             instance Eq Char;
             instance Ord Char;
@@ -227,7 +227,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|Word8|]);
         typeName _ = "Word8";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance HasNewValue Word8;
             instance Eq Word8;
             instance Ord Word8;
@@ -238,7 +238,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|Int|]);
         typeName _ = "Int";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance HasNewValue Int;
             instance Eq Int;
             instance Ord Int;
@@ -249,7 +249,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|ByteString|]);
         typeName _ = "ByteString";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance HasNewValue ByteString;
             instance Monoid ByteString;
             instance Eq ByteString;
@@ -260,7 +260,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|Maybe|]);
         typeName _ = "Maybe";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Foldable Maybe;
             instance Traversable Maybe;
             instance Functor Maybe;
@@ -277,7 +277,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|[]|]);
         typeName _ = "[]";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Foldable [];
             instance Traversable [];
             instance Functor [];
@@ -292,7 +292,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|(,)|]);
         typeName _ = "(,)";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
         |]);
     };
 
@@ -300,7 +300,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|Either|]);
         typeName _ = "Either";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Foldable (Either a);
             instance Traversable (Either a);
             instance Functor (Either a);
@@ -314,7 +314,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|Result|]);
         typeName _ = "Result";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance HasNewValue a => HasNewValue (Result e a);
             instance Foldable (Result e);
             instance Traversable (Result e);
@@ -329,7 +329,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|UUID|]);
         typeName _ = "UUID";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Eq UUID;
             instance Ord UUID;
             instance Show UUID;

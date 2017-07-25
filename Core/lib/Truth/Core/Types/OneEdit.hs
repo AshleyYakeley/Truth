@@ -72,7 +72,7 @@ module Truth.Core.Types.OneEdit where
     {
         typeWitness = $(generateWitness [t|OneEdit|]);
         typeName _ = "OneEdit";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (MonadOne f,Edit edit) => Edit (OneEdit f edit) where
             {
                 type EditReader (OneEdit f edit) = OneReader f (EditReader edit);

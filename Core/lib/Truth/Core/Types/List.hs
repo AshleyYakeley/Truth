@@ -59,7 +59,7 @@ module Truth.Core.Types.List where
     {
         typeWitness = $(generateWitness [t|ListReader|]);
         typeName _ = "ListReader";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (IsSequence seq,Reader reader,ReaderSubject reader ~ Element seq) => Reader (ListReader seq reader) where
             {
                 type ReaderSubject (ListReader seq reader) = seq;
@@ -187,7 +187,7 @@ module Truth.Core.Types.List where
     {
         typeWitness = $(generateWitness [t|ListEdit|]);
         typeName _ = "ListEdit";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (Enum (Index seq),Ord (Index seq)) => Floating (ListEdit seq edit) (SequencePoint seq);
             instance (Enum (Index seq),Ord (Index seq)) => Floating (ListEdit seq edit) (ListEdit seq edit);
             instance (IsSequence seq,FullReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => Edit (ListEdit seq edit) where

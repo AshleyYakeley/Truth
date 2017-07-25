@@ -64,7 +64,7 @@ module Truth.Core.Types.Pair where
     {
         typeWitness = $(generateWitness [t|PairSelector|]);
         typeName _ = "PairSelector";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             --instance TestEquality (PairSelector ea eb);
             instance (Edit ea,Edit eb) =>
                 TupleSelector (PairSelector ea eb) where

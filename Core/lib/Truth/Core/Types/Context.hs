@@ -40,7 +40,7 @@ module Truth.Core.Types.Context where
     {
         typeWitness = $(generateWitness [t|WithContext|]);
         typeName _ = "WithContext";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Functor (WithContext context);
             instance Foldable (WithContext context);
             instance Traversable (WithContext context);
@@ -97,7 +97,7 @@ module Truth.Core.Types.Context where
     {
         typeWitness = $(generateWitness [t|WithContextSelector|]);
         typeName _ = "WithContextSelector";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (TestEquality :: (* -> *) -> Constraint) (WithContextSelector ea eb);
             instance (Edit editx,Edit editn) =>
                 TupleSelector (WithContextSelector editx editn) where

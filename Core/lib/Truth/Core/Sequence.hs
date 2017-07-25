@@ -4,9 +4,9 @@ module Truth.Core.Sequence where
     import Truth.Core.Import;
 
 
-    $(typeFamilyProxy "Element");
-    $(typeFamilyProxy "Index");
-    $(typeFamilyProxy "ContainerKey");
+    $(generateFamilyProxy "Element");
+    $(generateFamilyProxy "Index");
+    $(generateFamilyProxy "ContainerKey");
 
     newtype SequencePoint seq = MkSequencePoint (Index seq);
     deriving instance Eq (Index seq) => Eq (SequencePoint seq);
@@ -25,7 +25,7 @@ module Truth.Core.Sequence where
     {
         typeWitness = $(generateWitness [t|SequencePoint|]);
         typeName _ = "SequencePoint";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Eq (Index seq) => Eq (SequencePoint seq);
             instance Ord (Index seq) => Ord (SequencePoint seq);
             instance Num (Index seq) => Num (SequencePoint seq);

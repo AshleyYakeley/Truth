@@ -32,7 +32,7 @@ module Truth.Core.Types.None where
     {
         typeWitness = $(generateWitness [t|NoReader|]);
         typeName _ = "NoReader";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Reader (NoReader a) where
             {
                 type ReaderSubject (NoReader a) = a;
@@ -75,7 +75,7 @@ module Truth.Core.Types.None where
     {
         typeWitness = $(generateWitness [t|NoEdit|]);
         typeName _ = "NoEdit";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (Reader reader) => Edit (NoEdit reader) where
             {
                 type EditReader (NoEdit reader) = reader;

@@ -22,7 +22,7 @@ module Truth.Core.Types.Tuple where
         type TupleSubject sel :: *;
         tupleReadFrom :: forall edit. sel edit -> TupleSubject sel -> EditSubject edit;
     };
-    $(typeFamilyProxy "TupleSubject");
+    $(generateFamilyProxy "TupleSubject");
 
     $(return []);
     instance HasTypeInfo TupleSelector where
@@ -94,7 +94,7 @@ module Truth.Core.Types.Tuple where
     {
         typeWitness = $(generateWitness [t|TupleEditReader|]);
         typeName _ = "TupleEditReader";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (TupleSelector sel) => Reader (TupleEditReader sel) where
             {
                 type ReaderSubject (TupleEditReader sel) = TupleSubject sel;
@@ -171,7 +171,7 @@ module Truth.Core.Types.Tuple where
         typeName _ = "TupleEdit";
         typeKnowledge _ = mconcat [
             typeInfoKnowledge (typeInfo @TupleEditReader),
-            $(declInfo [d|
+            $(generateTypeKnowledge [d|
             instance TupleSelector sel => Edit (TupleEdit sel) where
             {
                 type EditReader (TupleEdit sel) = TupleEditReader sel;

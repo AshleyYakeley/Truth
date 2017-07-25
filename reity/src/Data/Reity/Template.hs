@@ -1,4 +1,4 @@
-module Data.Reity.Template(generateTypeName,declInfo,instInfo,typeFamilyProxy,showSimpleType) where
+module Data.Reity.Template(generateTypeName,generateTypeKnowledge,generateTypeKnowledgeFromType,generateFamilyProxy,generateShowSimpleTypeFail) where
 {
     import Data.List;
     import Data.Maybe;
@@ -44,7 +44,7 @@ module Data.Reity.Template(generateTypeName,declInfo,instInfo,typeFamilyProxy,sh
     };
 
     declFail :: String -> Q a;
-    declFail s = fail $ "declInfo: " ++ s;
+    declFail s = fail $ "generateTypeKnowledge: " ++ s;
 
     vfNames :: Name -> (Name,Name);
     vfNames name = let
@@ -254,8 +254,8 @@ module Data.Reity.Template(generateTypeName,declInfo,instInfo,typeFamilyProxy,sh
         };
     };
 
-    declInfo :: Q [Dec] -> Q Exp;
-    declInfo qds = do
+    generateTypeKnowledge :: Q [Dec] -> Q Exp;
+    generateTypeKnowledge qds = do
     {
         ds <- qds;
         exprs <- traverse decKnowledgeEs ds;
@@ -275,12 +275,12 @@ module Data.Reity.Template(generateTypeName,declInfo,instInfo,typeFamilyProxy,sh
     };
     headForm t = declFail $ "not a class: " ++ show t;
 
-    instInfo :: Q Type -> Q Exp;
-    instInfo qtp = do
+    generateTypeKnowledgeFromType :: Q Type -> Q Exp;
+    generateTypeKnowledgeFromType qtp = do
     {
         tp <- qtp;
         (name,args) <- headForm tp;
-        declInfo $ reifyInstances name args;
+        generateTypeKnowledge $ reifyInstances name args;
     };
 
     typeFamilyProxyDec :: Name -> Q [Dec];
@@ -335,6 +335,6 @@ module Data.Reity.Template(generateTypeName,declInfo,instInfo,typeFamilyProxy,sh
         return $ typeDec : instDecs;
     };
 
-    typeFamilyProxy :: String -> Q [Dec];
-    typeFamilyProxy famNameStr = typeFamilyProxyDec $ mkName famNameStr;
+    generateFamilyProxy :: String -> Q [Dec];
+    generateFamilyProxy famNameStr = typeFamilyProxyDec $ mkName famNameStr;
 }

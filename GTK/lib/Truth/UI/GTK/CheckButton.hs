@@ -46,7 +46,7 @@ module Truth.UI.GTK.CheckButton(checkButtonTypeKnowledge) where
     };
 
     checkButtonTypeKnowledge :: TypeKnowledge;
-    checkButtonTypeKnowledge = namedKnowledge "check button" $(declInfo [d|
+    checkButtonTypeKnowledge = namedKnowledge "check button" $(generateTypeKnowledge [d|
         instance DependentHasView Widget (WholeEdit Bool);
     |]);
 }

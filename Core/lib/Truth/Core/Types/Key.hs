@@ -66,7 +66,7 @@ module Truth.Core.Types.Key where
     {
         typeWitness = $(generateWitness [t|KeyReader|]);
         typeName _ = "KeyReader";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (KeyContainer cont,Reader reader,ReaderSubject reader ~ Element cont) => Reader (KeyReader cont reader) where
             {
                 type ReaderSubject (KeyReader cont reader) = cont;
@@ -228,7 +228,7 @@ module Truth.Core.Types.Key where
         typeWitness = $(generateWitness [t|KeyEdit|]);
         typeName _ = "KeyEdit";
         typeKnowledge _ = mconcat [typeInfoKnowledge (typeInfo @KeyReader),
-            $(declInfo [d|
+            $(generateTypeKnowledge [d|
             instance Eq key => KeyContainer [(key, value)];
             type instance Element [a] = a;
             type instance ContainerKey [(key, value)] = key;

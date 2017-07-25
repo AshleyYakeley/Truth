@@ -43,7 +43,7 @@ module Truth.Core.Types.Function where
     {
         typeWitness = $(generateWitness [t|FunctionSelector|]);
         typeName _ = "FunctionSelector";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (Eq a) => (TestEquality :: (* -> *) -> Constraint) (FunctionSelector a editb);
             instance (Finite a,Edit edit) =>
                 TupleSelector (FunctionSelector a edit) where

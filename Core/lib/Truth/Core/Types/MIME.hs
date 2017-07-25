@@ -22,7 +22,7 @@ module Truth.Core.Types.MIME where
     {
         typeWitness = $(generateWitness [t|MIMEContentType|]);
         typeName _ = "MIMEContentType";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Eq MIMEContentType;
             instance HasNewValue MIMEContentType;
         |]);

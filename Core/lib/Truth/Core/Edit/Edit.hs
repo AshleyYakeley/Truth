@@ -28,7 +28,7 @@ module Truth.Core.Edit.Edit where
         applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit);
         invertEdit :: edit -> IOReadable (EditReader edit) [edit];
     };
-    $(typeFamilyProxy "EditReader");
+    $(generateFamilyProxy "EditReader");
     type EditSubject edit = ReaderSubject (EditReader edit);
 
     instance HasTypeInfo Edit where

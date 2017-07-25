@@ -147,7 +147,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
     };
 
     keyContainerTypeKnowledge :: TypeKnowledge;
-    keyContainerTypeKnowledge = namedKnowledge "key container" $(declInfo [d|
+    keyContainerTypeKnowledge = namedKnowledge "key container" $(generateTypeKnowledge [d|
         instance
             (
                 Show (ContainerKey cont),

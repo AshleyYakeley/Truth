@@ -66,7 +66,7 @@ module Truth.Core.Types.Either where
     {
         typeWitness = $(generateWitness [t|EitherReader|]);
         typeName _ = "EitherReader";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (Reader ra,Reader rb) => Reader (EitherReader ra rb) where
             {
                 type ReaderSubject (EitherReader ra rb) = Either (ReaderSubject ra) (ReaderSubject rb);
@@ -119,7 +119,7 @@ module Truth.Core.Types.Either where
     {
         typeWitness = $(generateWitness [t|EitherEdit|]);
         typeName _ = "EitherEdit";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (Edit ea,Edit eb) => Edit (EitherEdit ea eb) where
             {
                 type EditReader (EitherEdit ea eb) = EitherReader (EditReader ea) (EditReader eb);

@@ -33,7 +33,7 @@ module Truth.Core.Object.ObjectEdit where
     {
         typeWitness = $(generateWitness [t|ObjectReader|]);
         typeName _ = "ObjectReader";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Reader (EditReader edit) => Reader (ObjectReader edit) where
             {
                 type ReaderSubject (ObjectReader edit) = EditSubject edit;

@@ -44,7 +44,7 @@ module Truth.Core.Types.ByteString where
     {
         typeWitness = $(generateWitness [t|ByteStringReader|]);
         typeName _ = "ByteStringReader";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Reader ByteStringReader where
             {
                 type ReaderSubject ByteStringReader = ByteString;
@@ -170,7 +170,7 @@ module Truth.Core.Types.ByteString where
     {
         typeWitness = $(generateWitness [t|ByteStringEdit|]);
         typeName _ = "ByteStringEdit";
-        typeKnowledge _ = mconcat [$(declInfo [d|
+        typeKnowledge _ = mconcat [$(generateTypeKnowledge [d|
             instance Edit ByteStringEdit where
             {
                 type EditReader ByteStringEdit = ByteStringReader;

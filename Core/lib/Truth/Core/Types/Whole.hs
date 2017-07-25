@@ -27,7 +27,7 @@ module Truth.Core.Types.Whole where
     {
         typeWitness = $(generateWitness [t|WholeReader|]);
         typeName _ = "WholeReader";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Reader (WholeReader a) where
             {
                 type ReaderSubject (WholeReader a) = a;
@@ -78,7 +78,7 @@ module Truth.Core.Types.Whole where
     {
         typeWitness = $(generateWitness [t|WholeReaderEdit|]);
         typeName _ = "WholeReaderEdit";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (IOFullReader reader) => Edit (WholeReaderEdit reader) where
             {
                 type EditReader (WholeReaderEdit reader) = reader;

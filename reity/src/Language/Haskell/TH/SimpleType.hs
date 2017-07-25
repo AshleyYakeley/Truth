@@ -1,4 +1,4 @@
-module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple,showSimpleType) where
+module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple,generateShowSimpleTypeFail) where
 {
     import Data.List(intercalate);
     import Language.Haskell.TH as T;
@@ -109,8 +109,8 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple,showSimpleType
         };
     };
 
-    showSimpleType :: Q Type -> Q [Dec];
-    showSimpleType qt = do
+    generateShowSimpleTypeFail :: Q Type -> Q [Dec];
+    generateShowSimpleTypeFail qt = do
     {
         t <- qt;
         st <- typeToSimple t;

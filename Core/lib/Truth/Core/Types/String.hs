@@ -35,7 +35,7 @@ module Truth.Core.Types.String where
     {
         typeWitness = $(generateWitness [t|StringRead|]);
         typeName _ = "StringRead";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance IsSequence seq => Reader (StringRead seq) where
             {
                 type ReaderSubject (StringRead seq) = seq;
@@ -145,7 +145,7 @@ module Truth.Core.Types.String where
     {
         typeWitness = $(generateWitness [t|StringEdit|]);
         typeName _ = "StringEdit";
-        typeKnowledge _ = $(declInfo [d|
+        typeKnowledge _ = $(generateTypeKnowledge [d|
             instance IsSequence [a];
             instance IsSequence seq => Edit (StringEdit seq) where
             {

@@ -317,7 +317,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
     maybeTypeKnowledge :: TypeKnowledge;
     maybeTypeKnowledge = mconcat
     [
-        namedKnowledge "maybe" $(declInfo [d|
+        namedKnowledge "maybe" $(generateTypeKnowledge [d|
             instance
                 (
                     EditReader edit ~ reader,
@@ -327,7 +327,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
                 ) =>
                 DependentHasView Widget (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit));
             |]),
-        namedKnowledge "result" $(declInfo [d|
+        namedKnowledge "result" $(generateTypeKnowledge [d|
             instance
                 (
                     EditReader edit ~ reader,
