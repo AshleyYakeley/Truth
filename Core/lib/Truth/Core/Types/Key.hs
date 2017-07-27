@@ -10,6 +10,7 @@ module Truth.Core.Types.Key where
     import Truth.Core.Types.Sum;
     import Truth.Core.Types.Whole;
     import Truth.Core.Types.OneWholeEdit;
+    import Truth.Core.Types.Tuple;
     import Truth.Core.Types.Pair;
 
 
@@ -245,9 +246,9 @@ module Truth.Core.Types.Key where
         |])];
     };
 
-    keyLens :: forall cont edit. (KeyContainer cont,Eq (ContainerKey cont),HasKeyReader cont (EditReader edit),Edit edit) =>
+    keyElementLens :: forall cont edit. (KeyContainer cont,Eq (ContainerKey cont),HasKeyReader cont (EditReader edit),Edit edit) =>
         ContainerKey cont -> FloatingEditLens' Identity (ContainerKey cont) (KeyEdit cont edit) (OneWholeEdit Maybe edit);
-    keyLens floatingEditInitial = let
+    keyElementLens floatingEditInitial = let
     {
         floatingEditGet :: ContainerKey cont -> ReadFunction (KeyReader cont (EditReader edit)) (OneReader Maybe (EditReader edit));
         floatingEditGet key ReadHasOne = do
@@ -286,4 +287,15 @@ module Truth.Core.Types.Key where
             }
         };
     } in MkFloatingEditLens{..};
+
+    keyValueLens :: forall cont keyedit valueedit.
+        (
+            KeyContainer cont,
+            Eq (ContainerKey cont),
+            HasKeyReader cont (PairEditReader keyedit valueedit),
+            Edit keyedit,
+            FullReader (EditReader keyedit),
+            FullEdit valueedit
+        ) => ContainerKey cont -> GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (OneWholeEdit Maybe valueedit);
+    keyValueLens key = editCompose (toGeneralLens $ oneWholeGeneralLens id $ toGeneralLens $ tupleCleanEditLens EditSecond) $ toGeneralLens $ keyElementLens key;
 }

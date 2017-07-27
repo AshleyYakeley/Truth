@@ -64,7 +64,7 @@ module Data.Reity.Instances where
     };
 
     baseTypeKnowledge :: TypeKnowledge;
-    baseTypeKnowledge = MkKnowledge $ \_ ihtia -> do
+    baseTypeKnowledge = MkKnowledge $ \ihtia -> do
     {
         -- tie the HasTypeInfo knot
         MkSplitTypeInfo ihti ia <- matchTypeInfo ihtia;
@@ -277,6 +277,7 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|[]|]);
         typeName _ = "[]";
+        typeNameApply _ s = "[" ++ s ++ "]";
         typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Foldable [];
             instance Traversable [];

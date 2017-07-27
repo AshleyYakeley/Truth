@@ -97,22 +97,20 @@ module Truth.Core.Types.OneEdit where
         }
     };
 
-    oneFloatingEditLens :: forall f state edita editb. (MonadOne f,Edit edita,Edit editb) =>
-     FloatingEditLens state edita editb -> FloatingEditLens state (OneEdit f edita) (OneEdit f editb);
-    oneFloatingEditLens lens = MkFloatingEditLens
+    oneFloatingEditLens :: forall ff f state edita editb. (Monad ff,MonadOne f,Edit edita,Edit editb) =>
+     (forall a. f a -> ff a) ->
+     FloatingEditLens' ff state edita editb -> FloatingEditLens' ff state (OneEdit f edita) (OneEdit f editb);
+    oneFloatingEditLens faffa lens = MkFloatingEditLens
     {
         floatingEditLensFunction = oneFloatingEditFunction (floatingEditLensFunction lens),
         floatingEditLensPutEdit = \oldstate (MkOneEdit pushb) -> do
         {
-
-            -- floatingEditLensPutEdit lens state pushb :: Readable ra (Maybe (state,edita))
-            -- liftMaybeReadable (floatingEditLensPutEdit lens state pushb) :: Readable (OneReader f ra) (f edita);
-
-            fpusha <- liftMaybeReadable (floatingEditLensPutEdit lens oldstate pushb);
-            return $ case getMaybeOne fpusha of
+            ffpusha <- liftMaybeReadable (floatingEditLensPutEdit lens oldstate pushb);
+            return $ do
             {
-                Just (Just (newstate,editas)) -> Just (newstate,fmap MkOneEdit editas);
-                _ -> Nothing;
+                fpusha <- faffa ffpusha;
+                (newstate,editas) <- fpusha;
+                return (newstate,fmap MkOneEdit editas);
             };
         }
     };

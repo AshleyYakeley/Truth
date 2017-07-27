@@ -13,7 +13,7 @@ module Main(main) where
 
 
     testGView :: forall (edit :: Type). TypeInfo edit -> TestTree;
-    testGView iedit = testCase (show iedit) $ case (findView @Widget) matchViews iedit of
+    testGView iedit = testCase (show iedit) $ case runKnowledge (mappend allKnowledge $ typeInfoKnowledge iedit) $ findView @Widget iedit of
     {
         SuccessResult _ -> return ();
         FailureResult fr -> assertFailure $ show fr;

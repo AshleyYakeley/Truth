@@ -59,8 +59,8 @@ module Main(main) where
                 undoBufferSub :: Subscriber (StringEdit String) (((),SaveActions),UndoActions);
                 undoBufferSub = undoQueueSubscriber bufferSub;
             };
-            MkSubscriberW textSub <- makeSharedSubscriber undoBufferSub;
-            makeKnownWindowCountRef windowCount textSub;
+            textSub <- makeSharedSubscriber undoBufferSub;
+            makeWindowCountRef windowCount textSub;
         }
         else do
         {
@@ -69,8 +69,8 @@ module Main(main) where
                 textObj :: Object (StringEdit String);
                 textObj = convertObject wholeTextObj;
             };
-            MkSubscriberW textSub <- makeObjectSubscriber textObj;
-            makeKnownWindowCountRef windowCount textSub;
+            textSub <- makeObjectSubscriber textObj;
+            makeWindowCountRef windowCount textSub;
         };
     };
 
@@ -82,8 +82,8 @@ module Main(main) where
             soupObject :: Object (SoupEdit (ObjectEdit ByteStringEdit));
             soupObject = nonlockingObject $ directorySoup fileSystemMutableEdit dirpath;
         };
-        MkSubscriberW soupSub <- makeObjectSubscriber soupObject;
-        makeKnownWindowCountRef windowCount soupSub;
+        soupSub <- makeObjectSubscriber soupObject;
+        makeWindowCountRef windowCount soupSub;
     };
 
     testSave :: Bool;

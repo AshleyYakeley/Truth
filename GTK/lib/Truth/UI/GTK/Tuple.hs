@@ -24,9 +24,9 @@ module Truth.UI.GTK.Tuple(tupleTypeKnowledge) where
 
     instance (FiniteTupleSelector sel,TupleHasInfo sel) => DependentHasView Widget (TupleEdit sel) where
     {
-        dependsView k _i = tupleGView $ \sel -> case tupleWitness (Proxy :: Proxy Edit) sel of
+        dependsView _i = tupleGView $ \sel -> case tupleWitness (Proxy :: Proxy Edit) sel of
         {
-            MkConstraintWitness -> namedResult "selector" $ findView k $ tupleHasInfo sel;
+            MkConstraintWitness -> kmContext "selector" $ findView $ tupleHasInfo sel;
         };
     };
 

@@ -2,6 +2,7 @@
 module Truth.UI.GTK.Window where
 {
     import Data.IORef;
+    import Data.Result;
     import Data.Reity;
     import Truth.Core;
     import Graphics.UI.Gtk;
@@ -13,10 +14,10 @@ module Truth.UI.GTK.Window where
     import Truth.UI.GTK.KeyContainer;
 
 
-    lastResortView :: Bool -> FailureReason -> GetView Widget;
-    lastResortView showmsgs fr _ = MkView $ \_ _ -> do
+    lastResortView :: Bool -> [FailureReason] -> KnowM (GView edit);
+    lastResortView showmsgs frs = return $ MkView $ \_ _ -> do
     {
-        w <- labelNew $ Just $ if showmsgs then show fr else "Uneditable";
+        w <- labelNew $ Just $ if showmsgs then show $ MkFailureReason "No editor" frs else "Uneditable";
         hadj <- adjustmentNew 0 0 0 0 0 0;
         vadj <- adjustmentNew 0 0 0 0 0 0;
         vp <- viewportNew hadj vadj;
@@ -30,11 +31,8 @@ module Truth.UI.GTK.Window where
         return MkViewResult{..};
     };
 
-    matchViews :: TypeKnowledge;
-    matchViews = mconcat [checkButtonTypeKnowledge,textTypeKnowledge,keyContainerTypeKnowledge,maybeTypeKnowledge,tupleTypeKnowledge];
-
-    getView :: GetView Widget;
-    getView = finalGetView matchViews $ lastResortView True;
+    allKnowledge :: TypeKnowledge;
+    allKnowledge = mconcat [baseTypeKnowledge,checkButtonTypeKnowledge,textTypeKnowledge,keyContainerTypeKnowledge,maybeTypeKnowledge,tupleTypeKnowledge];
 
     class WindowButtons actions where
     {
@@ -99,8 +97,15 @@ module Truth.UI.GTK.Window where
         }
     };
 
-    makeViewWindow :: (Edit edit,WindowButtons actions) => GView edit -> IORef Int -> IO () -> Subscriber edit actions -> IO ();
-    makeViewWindow view ref tellclose sub = do
+    runKnowMAction :: TypeKnowledge -> KnowM (IO ()) -> IO ();
+    runKnowMAction kw kio = case runKnowledge kw $ kio of
+    {
+        SuccessResult make -> make;
+        FailureResult _ -> return ();
+    };
+
+    makeViewWindow :: (Edit edit,WindowButtons actions) => TypeKnowledge -> GView edit -> IORef Int -> IO () -> SubscriberW edit actions -> IO ();
+    makeViewWindow kw view ref tellclose (MkSubscriberW sub) = do
     {
         MkViewSubscription{..} <- subscribeView view sub;
         window <- windowNew;
@@ -113,11 +118,21 @@ module Truth.UI.GTK.Window where
             msel <- srGetSelection;
             case msel of
             {
-                Just (MkAspect tsel _ta lens) -> do
+                Just kaspect -> runKnowMAction kw $ kmCatch (do
                 {
-                    makeLookupWindowCountRef tsel ref (mapSubscriber lens sub);
+                    (MkAspect tsel lens) <- kaspect;
+                    addKnowledge (typeInfoKnowledge tsel) $ do
+                    {
+                        gview <- kmCatch (findView tsel) $ lastResortView True;
+                        kw' <- getKnowledge;
+                        return $ makeViewWindowCountRef kw' gview ref $ MkSubscriberW $ mapSubscriber lens sub;
+                    };
+                }) $ \frs -> do
+                {
+                    gview <- lastResortView True frs;
+                    return $ makeViewWindowCountRef kw gview ref $ objectSubscriber noneObject;
                 };
-                _ -> return ();
+                Nothing -> return ();
             };
         };
 
@@ -138,10 +153,10 @@ module Truth.UI.GTK.Window where
         widgetShowAll window;
     };
 
-    makeViewWindowCountRef :: (Edit edit,WindowButtons actions) => GView edit -> IORef Int -> Subscriber edit actions -> IO ();
-    makeViewWindowCountRef view windowCount sub = do
+    makeViewWindowCountRef :: (Edit edit,WindowButtons actions) => TypeKnowledge -> GView edit -> IORef Int -> SubscriberW edit actions -> IO ();
+    makeViewWindowCountRef kw view windowCount sub = do
     {
-        makeViewWindow view windowCount (do
+        makeViewWindow kw view windowCount (do
         {
             i <- readIORef windowCount;
             writeIORef windowCount (i - 1);
@@ -153,9 +168,15 @@ module Truth.UI.GTK.Window where
         writeIORef windowCount (i + 1);
     };
 
-    makeKnownWindowCountRef :: (Edit edit,HasView Widget edit,WindowButtons actions) => IORef Int -> Subscriber edit actions -> IO ();
-    makeKnownWindowCountRef = makeViewWindowCountRef theView;
-
-    makeLookupWindowCountRef :: (Edit edit,WindowButtons actions) => TypeInfo edit -> IORef Int -> Subscriber edit actions -> IO ();
-    makeLookupWindowCountRef te = makeViewWindowCountRef (getView te);
+    makeWindowCountRef :: forall edit actions. (HasTypeInfo edit,Edit edit,WindowButtons actions) => IORef Int -> SubscriberW edit actions -> IO ();
+    makeWindowCountRef windowCount sub = let
+    {
+        te :: TypeInfo edit;
+        te = typeInfo;
+    } in runKnowMAction allKnowledge $ addKnowledge (typeInfoKnowledge te) $ do
+    {
+        view <- kmCatch (findView te) $ lastResortView True;
+        kw' <- getKnowledge;
+        return $ makeViewWindowCountRef kw' view windowCount sub;
+    };
 }

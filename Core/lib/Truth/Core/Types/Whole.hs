@@ -1,3 +1,4 @@
+{-# OPTIONS -fno-warn-orphans #-}
 module Truth.Core.Types.Whole where
 {
     import Truth.Core.Import;
@@ -110,5 +111,41 @@ module Truth.Core.Types.Whole where
             };
             return medita;
         }
+    };
+
+    instance (MonadOne f) => IsGeneralLens (Lens' f a b) where
+    {
+        type LensMonad (Lens' f a b) = f;
+        type LensDomain (Lens' f a b) = WholeEdit a;
+        type LensRange (Lens' f a b) = WholeEdit b;
+
+        toGeneralLens' = toGeneralLens' . wholeEditLens;
+    };
+
+    instance (MonadOne m) => IsGeneralLens (Injection' m a b) where
+    {
+        type LensMonad (Injection' m a b) = m;
+        type LensDomain (Injection' m a b) = WholeEdit a;
+        type LensRange (Injection' m a b) = WholeEdit b;
+
+        toGeneralLens' = toGeneralLens' . injectionLens;
+    };
+
+    instance IsGeneralLens (Bijection a b) where
+    {
+        type LensMonad (Bijection a b) = Identity;
+        type LensDomain (Bijection a b) = WholeEdit a;
+        type LensRange (Bijection a b) = WholeEdit b;
+
+        toGeneralLens' = toGeneralLens' . bijectionInjection;
+    };
+
+    instance IsGeneralLens (Codec a b) where
+    {
+        type LensMonad (Codec a b) = Maybe;
+        type LensDomain (Codec a b) = WholeEdit a;
+        type LensRange (Codec a b) = WholeEdit (Maybe b);
+
+        toGeneralLens' = toGeneralLens' . codecInjection;
     };
 }

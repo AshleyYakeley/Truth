@@ -1,8 +1,18 @@
-module Data.Reity.Template(generateTypeName,generateTypeKnowledge,generateTypeKnowledgeFromType,generateFamilyProxy,generateShowSimpleTypeFail) where
+module Data.Reity.Template
+(
+    generateTypeName,
+    generateTypeKnowledge,
+    generateTypeKnowledgeFromType,
+    generateTypeInfoExpr,
+    generateTypeMatchExpr,
+    generateFamilyProxy,
+    generateShowSimpleTypeFail
+) where
 {
     import Data.List;
     import Data.Maybe;
     import Data.Foldable;
+    import Data.Traversable;
     import Language.Haskell.TH as T;
     import qualified Data.Type.Heterogeneous as R;
     import Control.Monad.Trans.Class;
@@ -53,18 +63,18 @@ module Data.Reity.Template(generateTypeName,generateTypeKnowledge,generateTypeKn
         constructorName = "Mk" ++ typeName;
     } in (mkName typeName,mkName constructorName);
 
-    deconstruct :: Name -> SimpleType -> M [(Name,Name)];
-    deconstruct subjectN (VarType typeN) = return [(typeN,subjectN)];
-    deconstruct subjectN (AppType tp1 tp2) = do
+    deconstructBound :: Name -> SimpleType -> M ([Name],[(Name,Name)]);
+    deconstructBound subjectN (VarType typeN) = return ([],[(typeN,subjectN)]);
+    deconstructBound subjectN (AppType tp1 tp2) = do
     {
         sN1 <- lift $ newName "_f";
         sN2 <- lift $ newName "_a";
         writeQ $ bindS [p|R.MkSplitTypeInfo $(varP sN1) $(varP sN2)|] [e|matchTypeInfo $(varE subjectN)|];
         vars1 <- deconstruct sN1 tp1;
         vars2 <- deconstruct sN2 tp2;
-        return $ vars1 ++ vars2;
+        return $ ([],vars1 ++ vars2);
     };
-    deconstruct subjectN (ConsType tp) = do
+    deconstructBound subjectN (ConsType tp) = do
     {
         vars <- case tp of
         {
@@ -79,39 +89,71 @@ module Data.Reity.Template(generateTypeName,generateTypeKnowledge,generateTypeKn
             _ -> return [];
         };
         writeQ $ bindS [p|R.ReflH|] [e|R.sameTypeInfo (R.typeInfo :: R.TypeInfo $(return tp)) $(varE subjectN)|];
-        return vars;
+        return ([],vars);
     };
-    deconstruct subjectN (FamilyType name []) = do
+    deconstructBound subjectN (FamilyType name []) = do
     {
         let
         {
             (typeN,_) = vfNames name;
         };
         writeQ $ bindS [p|R.ReflH|] [e|R.sameTypeInfo (R.typeInfo :: R.TypeInfo $(conT typeN)) $(varE subjectN)|];
-        return [];
+        return ([],[]);
     };
-    deconstruct subjectN (FamilyType name args) = let
+    deconstructBound subjectN (FamilyType name args) = let
     {
         mkST t [] = t;
         mkST t (a:aa) = mkST (AppType t a) aa;
-    } in deconstruct subjectN $ mkST (FamilyType name []) args;
-    deconstruct _ (EqualType _ _) = lift $ declFail "equality not allowed in instance";
+    } in do
+    {
+        free <- deconstruct subjectN $ mkST (FamilyType name []) args;
+        return ([],free);
+    };
+    deconstructBound _ (EqualType _ _) = lift $ declFail "equality not allowed in instance";
+    deconstructBound subjectN (ForAllType vars ctxt body) = do
+    {
+        (oldbound,oldfree) <- deconstructBound subjectN body;
+        matchUpVars oldfree;
+        matchContext oldfree ctxt;
+        let
+        {
+            newbound = catMaybes $ fmap (\v -> lookup v oldfree) vars;
+            newfree = [ ts | ts@(t,_) <- oldfree, not $ elem t vars];
+        };
+        return (newbound ++ oldbound,newfree);
+    };
 
-    constructInfoExpr :: (?knowledgeN :: Name,?varMap :: [(Name,Name)]) =>
-        SimpleType -> M Exp;
-    constructInfoExpr (AppType tp1 tp2) = do
+    deconstruct :: Name -> SimpleType -> M [(Name,Name)];
+    deconstruct subjectN st = do
+    {
+        (bound,free) <- deconstructBound subjectN st;
+        case bound of
+        {
+            [] -> return free;
+            _ -> lift $ declFail "forall not allowed in expression";
+        };
+    };
+
+    constructInfoBoundExpr :: (?varMap :: [(Name,Name)]) =>
+        SimpleType -> M ([Name],Exp);
+    constructInfoBoundExpr (AppType tp1 tp2) = do
     {
         exp1 <- constructInfoExpr tp1;
         exp2 <- constructInfoExpr tp2;
-        lift $ [e|R.applyTypeInfo $(return exp1) $(return exp2)|];
+        expr <- lift $ [e|R.applyTypeInfo $(return exp1) $(return exp2)|];
+        return ([],expr);
     };
-    constructInfoExpr (VarType typeN) = case lookup typeN ?varMap of
+    constructInfoBoundExpr (VarType typeN) = case lookup typeN ?varMap of
     {
-        Just subjectN -> return $ VarE subjectN;
+        Just subjectN -> return $ ([],VarE subjectN);
         Nothing -> lift $ declFail $ "type variable not found: " ++ show typeN;
     };
-    constructInfoExpr (ConsType tp) = lift [e|R.typeInfo :: R.TypeInfo $(return $ tp)|];
-    constructInfoExpr (FamilyType name vc) = do
+    constructInfoBoundExpr (ConsType tp) = do
+    {
+        expr <- lift [e|R.typeInfo :: R.TypeInfo $(return $ tp)|];
+        return ([],expr);
+    };
+    constructInfoBoundExpr (FamilyType name vc) = do
     {
         let
         {
@@ -129,31 +171,50 @@ module Data.Reity.Template(generateTypeName,generateTypeKnowledge,generateTypeKn
         tfTypeExpr <- lift [e|R.typeInfo :: R.TypeInfo $(return $ ConT typeN)|];
         infoExpr <- typeFamilyInfoExpr tfTypeExpr vc;
         resultN <- lift $ newName "_var";
-        writeQ $ bindS [p|R.ValueFact $(conP constructorN [varP resultN])|] [e|R.askTypeInfo $(varE ?knowledgeN) $(return infoExpr)|];
-        return $ VarE resultN;
+        writeQ $ bindS [p|R.ValueFact $(conP constructorN [varP resultN])|] [e|R.askTypeInfo $(return infoExpr)|];
+        return $ ([],VarE resultN);
     };
-    constructInfoExpr (EqualType _ _) = lift $ declFail "equality not allowed in context expression";
-
-    matchContext :: (?knowledgeN :: Name,?varMap :: [(Name,Name)]) =>
-        Type -> M ();
-    matchContext tp = do
+    constructInfoBoundExpr (EqualType _ _) = lift $ declFail "equality not allowed in context expression";
+    constructInfoBoundExpr (ForAllType vars [] body) = do
     {
-        st <- lift $ typeToSimple tp;
-        case st of
+        pairs <- for vars $ \varN -> do
         {
-            EqualType st1 st2 -> do
-            {
-                info1 <- constructInfoExpr st1;
-                info2 <- constructInfoExpr st2;
-                writeQ $ bindS [p|R.ReflH|] [e|R.sameTypeInfo $(return info1) $(return info2)|];
-            };
-            _ -> do
-            {
-                infoExpr <- constructInfoExpr st;
-                writeQ $ bindS [p|R.ConstraintFact|] [e|R.askTypeInfo $(varE ?knowledgeN) $(return infoExpr)|];
-            };
+            argN <- lift $ newName "_arg";
+            return (varN,argN);
+        };
+        nbody <- let ?varMap = ?varMap ++ pairs in constructInfoExpr body;
+        return $ (fmap snd pairs,nbody);
+    };
+    constructInfoBoundExpr (ForAllType _ _ _) = lift $ declFail "context in forall not supported";
+
+    constructInfoExpr :: (?varMap :: [(Name,Name)]) =>
+        SimpleType -> M Exp;
+    constructInfoExpr st = do
+    {
+        (names,expr) <- constructInfoBoundExpr st;
+        case names of
+        {
+            [] -> return expr;
+            _ -> lift $ declFail "forall not allowed in expression";
         }
     };
+
+    matchContextType :: (?varMap :: [(Name,Name)]) =>
+        SimpleType -> M ();
+    matchContextType (EqualType st1 st2) = do
+    {
+        info1 <- constructInfoExpr st1;
+        info2 <- constructInfoExpr st2;
+        writeQ $ bindS [p|R.ReflH|] [e|R.sameTypeInfo $(return info1) $(return info2)|];
+    };
+    matchContextType st = do
+    {
+        infoExpr <- constructInfoExpr st;
+        writeQ $ bindS [p|R.ConstraintFact|] [e|R.askTypeInfo $(return infoExpr)|];
+    };
+
+    matchContext :: [(Name,Name)] -> [SimpleType] -> M ();
+    matchContext varMap ctxt = let {?varMap = varMap} in traverse_ matchContextType ctxt;
 
     -- vars used more than once need to be matched
     matchUpVar :: (Name,Name) -> [(Name, Name)] -> M ();
@@ -171,14 +232,14 @@ module Data.Reity.Template(generateTypeName,generateTypeKnowledge,generateTypeKn
         matchUpVars tt;
     };
 
-    instanceStmts :: (?knowledgeN :: Name) =>
-        [Type] -> Type -> Name -> M ();
+    instanceStmts :: [Type] -> Type -> Name -> M ();
     instanceStmts ctxt tp subjectN = do
     {
+        sc <- for ctxt $ \t -> lift $ typeToSimple t;
         st <- lift $ typeToSimple tp;
         varMap <- deconstruct subjectN st;
         matchUpVars varMap;
-        let {?varMap = varMap} in traverse_ matchContext ctxt;
+        matchContext varMap sc;
         matchStmtE <- lift [e|return R.ConstraintFact|];
         write $ NoBindS matchStmtE;
     };
@@ -198,13 +259,12 @@ module Data.Reity.Template(generateTypeName,generateTypeKnowledge,generateTypeKn
     };
     assocTypeKnowledgeE _ = return Nothing;
 
-    stmtsToKnowledgeE :: ((?knowledgeN :: Name) => Name -> M ()) -> Q Exp;
+    stmtsToKnowledgeE :: (Name -> M ()) -> Q Exp;
     stmtsToKnowledgeE getM = do
     {
-        knowledgeN <- newName "_knowledge";
         subjectN <- newName "_subject";
-        stmts <- execWriterT $ let {?knowledgeN = knowledgeN} in getM subjectN;
-        [e|R.MkKnowledge $ \ $(varP knowledgeN) $(varP subjectN) -> $(return $ DoE stmts)|];
+        stmts <- execWriterT $ getM subjectN;
+        [e|R.MkKnowledge $ \ $(varP subjectN) -> $(return $ DoE stmts)|];
     };
 
     getClassAssociatedTypes :: Name -> Q [Name];
@@ -281,6 +341,50 @@ module Data.Reity.Template(generateTypeName,generateTypeKnowledge,generateTypeKn
         tp <- qtp;
         (name,args) <- headForm tp;
         generateTypeKnowledge $ reifyInstances name args;
+    };
+
+
+    lambdaBind :: [Name] -> Exp -> Exp;
+    lambdaBind [] expr = expr;
+    lambdaBind vv expr = LamE (fmap VarP vv) expr;
+
+    -- forall a b. Context a b => T a b
+    -- forall a b. TypeInfo a -> TypeInfo b -> ReasonM (TypeInfo (T a b))
+    generateTypeInfoExpr :: Q Type -> Q Exp;
+    generateTypeInfoExpr qtp = do
+    {
+        tp <- qtp;
+        st <- typeToSimple tp;
+        (names,stmts) <- runWriterT $ do
+        {
+            (names,expr) <- let ?varMap = [] in constructInfoBoundExpr st;
+            writeQ $ noBindS [e|return $(return expr)|];
+            return names;
+        };
+        return $ lambdaBind names $ DoE stmts;
+    };
+
+    applyExprs :: Exp -> [Exp] -> Exp;
+    applyExprs e [] = e;
+    applyExprs e (a:aa) = applyExprs (AppE e a) aa;
+
+    generateTypeMatchExpr :: Q Type -> Q Exp -> Q Exp;
+    generateTypeMatchExpr qtp qexpr = do
+    {
+        tp <- qtp;
+        expr <- qexpr;
+        st <- typeToSimple tp;
+        subjectN <- newName "_subj";
+        ((),stmts) <- runWriterT $ do
+        {
+            (bound,free) <- deconstructBound subjectN st;
+            case free of
+            {
+                [] -> writeQ $ noBindS $ return $ applyExprs expr $ fmap VarE bound;
+                _ -> lift $ declFail $ "free variables: " ++ (intercalate " "  $ nub $ fmap (nameBase . fst) free);
+            };
+        };
+        return $ lambdaBind [subjectN] $ DoE stmts;
     };
 
     typeFamilyProxyDec :: Name -> Q [Dec];

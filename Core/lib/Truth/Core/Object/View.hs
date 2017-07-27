@@ -7,15 +7,19 @@ module Truth.Core.Object.View where
     import Truth.Core.Types;
     import Truth.Core.Object.Object;
     import Truth.Core.Object.Subscriber;
-    import Truth.Core.Object.Lens;
     import Truth.Core.Object.Aspect;
 
+
+    type AspectGetter edit = IO (Maybe (KnowM (Aspect edit)));
+
+    mapAspectGetter :: (Edit edita,Edit editb) => GeneralLens edita editb -> AspectGetter editb -> AspectGetter edita;
+    mapAspectGetter lens = fmap $ fmap $ fmap $ mapAspect lens;
 
     data ViewResult edit w = MkViewResult
     {
         vrWidget :: w,
         vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> m (),
-        vrFirstAspectGetter :: IO (Maybe (Aspect edit))
+        vrFirstAspectGetter :: AspectGetter edit
     };
 
     instance Functor (ViewResult edit) where
@@ -23,7 +27,7 @@ module Truth.Core.Object.View where
         fmap f (MkViewResult w update fss) = MkViewResult (f w) update fss;
     };
 
-    data View edit w = forall. MkView (Object edit -> (IO (Maybe (Aspect edit)) -> IO ()) -> IO (ViewResult edit w));
+    data View edit w = forall. MkView (Object edit -> (AspectGetter edit -> IO ()) -> IO (ViewResult edit w));
 
     instance Functor (View edit) where
     {
@@ -45,7 +49,7 @@ module Truth.Core.Object.View where
     mapView :: forall f w edita editb. (MonadOne f,Edit edita,Edit editb) => GeneralLens' f edita editb -> View editb w -> View edita w;
     mapView
         lens@(MkCloseFloat (flens :: FloatingEditLens' f lensstate edita editb))
-        (MkView (viewB :: Object editb -> (IO (Maybe (Aspect editb)) -> IO ()) -> IO (ViewResult editb w)))
+        (MkView (viewB :: Object editb -> (AspectGetter editb -> IO ()) -> IO (ViewResult editb w)))
         = MkView $ \objectA setSelectA -> do
     {
         let
@@ -59,15 +63,7 @@ module Truth.Core.Object.View where
             objectB :: Object editb;
             objectB = floatingMapObject (mvarStateAccess lensvar) flens objectA;
 
-            setSelectB selB = setSelectA $ do
-            {
-                mAspectB <- selB;
-                case mAspectB of
-                {
-                    Nothing -> return Nothing;
-                    Just aspectB -> return $ Just $ mapAspect (generalLens lens) aspectB;
-                };
-            }
+            setSelectB selB = setSelectA $ mapAspectGetter (generalLens lens) selB;
         };
         MkViewResult w updateB fssB <- viewB objectB setSelectB;
         let
@@ -80,15 +76,7 @@ module Truth.Core.Object.View where
                 return ((),newls);
             };
 
-            fssA = do
-            {
-                mAspectB <- fssB;
-                case mAspectB of
-                {
-                    Nothing -> return Nothing;
-                    Just aspectB -> return $ Just $ mapAspect (generalLens lens) aspectB;
-                };
-            }
+            fssA = mapAspectGetter (generalLens lens) fssB;
         };
         return $ MkViewResult w updateA fssA;
     };
@@ -133,7 +121,7 @@ module Truth.Core.Object.View where
     data ViewSubscription edit action w = MkViewSubscription
     {
         srWidget :: w,
-        srGetSelection :: IO (Maybe (Aspect edit)),
+        srGetSelection :: AspectGetter edit,
         srCloser :: IO (),
         srAction :: action
     };
@@ -144,11 +132,11 @@ module Truth.Core.Object.View where
     };
 
     subscribeView :: forall edit w action. View edit w -> Subscriber edit action -> IO (ViewSubscription edit action w);
-    subscribeView (MkView (view :: Object edit -> (IO (Maybe (Aspect edit)) -> IO ()) -> IO (ViewResult edit w))) sub = do
+    subscribeView (MkView (view :: Object edit -> (AspectGetter edit -> IO ()) -> IO (ViewResult edit w))) sub = do
     {
         let
         {
-            initialise :: Object edit -> IO (ViewResult edit w, IORef (IO (Maybe (Aspect edit))));
+            initialise :: Object edit -> IO (ViewResult edit w, IORef (AspectGetter edit));
             initialise object = do
             {
                 rec

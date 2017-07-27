@@ -63,7 +63,7 @@ library
     exposed-modules:
         Language.Haskell.TH.SimpleType
         Data.Knowledge
-        Data.Reity.KnowM
+        Data.Reity.ReasonM
         Data.Reity.Wit
         Data.Reity.TypeInfo
         Data.Reity.Match

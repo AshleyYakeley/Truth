@@ -21,9 +21,10 @@ module Truth.Core.Types.OneWholeEdit where
     };
 
     -- suitable for Results, trying to put a failure code will be rejected
-    oneWholeGeneralLens :: forall f edita editb. (MonadOne f,FullReader (EditReader edita),Edit edita,FullEdit editb) =>
-     GeneralLens edita editb -> GeneralLens (OneWholeEdit f edita) (OneWholeEdit f editb);
-    oneWholeGeneralLens (MkCloseFloat (lens :: FloatingEditLens state edita editb)) = MkCloseFloat $ sumWholeFloatingEditLens pushback (oneFloatingEditLens lens) where
+    oneWholeGeneralLens :: forall ff f edita editb. (Monad ff,Traversable ff,MonadOne f,FullReader (EditReader edita),Edit edita,FullEdit editb) =>
+     (forall a. f a -> ff a) ->
+     GeneralLens' ff edita editb -> GeneralLens' ff (OneWholeEdit f edita) (OneWholeEdit f editb);
+    oneWholeGeneralLens faffa (MkCloseFloat (lens :: FloatingEditLens' ff state edita editb)) = MkCloseFloat $ sumWholeFloatingEditLens pushback (oneFloatingEditLens faffa lens) where
     {
         ff1 :: forall a. state -> f (state,a) -> (state,f a);
         ff1 oldstate fsa = case retrieveOne fsa of
@@ -32,22 +33,18 @@ module Truth.Core.Types.OneWholeEdit where
             SuccessResult (newstate,a) -> (newstate,fmap (\_ ->  a) fsa);
         };
 
-        pushback :: state -> f (EditSubject editb) -> Readable (OneReader f (EditReader edita)) (Maybe (state,f (EditSubject edita)));
+        pushback :: state -> f (EditSubject editb) -> Readable (OneReader f (EditReader edita)) (ff (state,f (EditSubject edita)));
         pushback oldstate fb = case retrieveOne fb of
         {
             FailureResult (MkLimit fx) -> return $ return (oldstate,fx);
 
             SuccessResult b -> fmap (fmap (ff1 oldstate) . sequenceA) $ liftMaybeReadable $ do
             {
-                mstateedita <- floatingEditLensPutEdits lens oldstate $ getReplaceEdits b;
-                case mstateedita of
+                fstateedita <- floatingEditLensPutEdits lens oldstate $ getReplaceEdits b;
+                for fstateedita $ \(newstate,editas) -> do
                 {
-                    Nothing -> return Nothing;
-                    Just (newstate,editas) -> do
-                    {
-                        a <- mapReadable (applyEdits editas) fromReader;
-                        return $ Just (newstate,a);
-                    };
+                    a <- mapReadable (applyEdits editas) fromReader;
+                    return (newstate,a);
                 };
             };
         };

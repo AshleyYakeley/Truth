@@ -1,10 +1,11 @@
 module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple,generateShowSimpleTypeFail) where
 {
     import Data.List(intercalate);
+    import Data.Traversable(for);
     import Language.Haskell.TH as T;
 
 
-    data SimpleType = VarType Name | AppType SimpleType SimpleType | ConsType Type | FamilyType Name [SimpleType] | EqualType SimpleType SimpleType deriving (Eq);
+    data SimpleType = ForAllType [Name] [SimpleType] SimpleType | VarType Name | AppType SimpleType SimpleType | ConsType Type | FamilyType Name [SimpleType] | EqualType SimpleType SimpleType deriving (Eq);
 
     showSingle :: SimpleType -> String;
     showSingle t@(AppType _ _) = "(" ++ show t ++ ")";
@@ -14,6 +15,7 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple,generateShowSi
 
     instance Show SimpleType where
     {
+        show (ForAllType names ctxt t) = "forall " ++ intercalate " " (fmap nameBase names) ++ ". (" ++ intercalate "," (fmap show ctxt) ++ ") => " ++ show t;
         show (VarType name) = nameBase name;
         show (AppType t1 t2) = show t1 ++ " " ++ showSingle t2;
         show (ConsType (ConT name)) = nameBase name;
@@ -52,6 +54,10 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple,generateShowSi
     consSimpleType Nothing t = ConsType t;
     consSimpleType (Just k) t = ConsType $ SigT t k;
 
+    tvbToName :: TyVarBndr -> Q Name;
+    tvbToName (PlainTV n) = return n;
+    tvbToName (KindedTV n _) = return n;
+
     typeToPartial :: Maybe Kind -> Type -> Q (Partial SimpleType);
     typeToPartial mk (ParensT tp) = typeToPartial mk tp;
     typeToPartial _ (SigT tp k) = typeToPartial (Just k) tp;
@@ -67,7 +73,13 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple,generateShowSi
         };
     };
     typeToPartial mk (InfixT t1 name t2) = typeToPartial mk $ AppT (AppT (ConT name) t1) t2;
-    typeToPartial _ (ForallT _ _ _) = fail "forall in type";
+    typeToPartial _ (ForallT tvb ctxt body) = do
+    {
+        snames <- for tvb tvbToName;
+        sctxt <- for ctxt typeToSimple;
+        sbody <- typeToSimple body;
+        return $ Complete $ ForAllType snames sctxt sbody;
+    };
     typeToPartial _ WildCardT = fail "_ in type";
     typeToPartial mk tp@(ConT name) = do
     {

@@ -91,7 +91,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
                     let
                     {
                         baseObj = MkObject $ \call -> runObject object $ \muted -> call $ baseMuted muted;
-                        baseSetSelect ioma = setSelect $ fmap (\maspect -> maspect >>= \aspect -> getMaybeOne $ mapOneWholeEditAspect tf aspect) ioma;
+                        baseSetSelect ag = setSelect $ fmap (fmap (\maspect -> maspect >>= mapOneWholeEditAspect tf)) ag;
                     };
                     liftIO $ baseView baseObj baseSetSelect;
                 };
@@ -143,19 +143,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
                 fvr <- get;
                 case getMaybeOne fvr of
                 {
-                    Just (MkViewResult _ _ ioma) -> do
-                    {
-                        ma <- liftIO ioma;
-                        case ma of
-                        {
-                            Just aspect -> return $ case mapOneWholeEditAspect tf aspect of
-                            {
-                                SuccessResult aspect' -> Just aspect';
-                                FailureResult _ -> Nothing;
-                            };
-                            Nothing -> return Nothing;
-                        }
-                    };
+                    Just (MkViewResult _ _ ag) -> liftIO $ fmap (fmap (\maspect -> maspect >>= mapOneWholeEditAspect tf)) ag;
                     Nothing -> return Nothing;
                 }
             };
@@ -250,13 +238,11 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         FullEdit edit
         ) => DependentHasView Widget (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit)) where
     {
-        dependsView k iedit = do
+        dependsView = $(generateTypeMatchExpr [t|forall e r. SumWholeReaderEdit (OneReader Maybe r) (OneEdit Maybe e)|] [e|\ie _ -> do
         {
-            MkSplitTypeInfo _ iome <- matchTypeInfo iedit;
-            MkSplitTypeInfo _ ie <- matchTypeInfo iome;
-            view <- dependsView k ie;
+            view <- dependsView ie;
             return $ maybeView view;
-        };
+        }|]);
     };
 
     -- orphan
@@ -290,15 +276,11 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         FullEdit edit
     ) => DependentHasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
     {
-        dependsView k iedit = do
+        dependsView = $(generateTypeMatchExpr [t|forall edit' reader' err'. SumWholeReaderEdit (OneReader (Result err') reader') (OneEdit (Result err') edit')|] [e|\ie _ ierr -> do
         {
-            MkSplitTypeInfo _ iore <- matchTypeInfo iedit;
-            MkSplitTypeInfo ior ie <- matchTypeInfo iore;
-            MkSplitTypeInfo _ ir <- matchTypeInfo ior;
-            MkSplitTypeInfo _ ierr <- matchTypeInfo ir;
-            view <- dependsView k ie;
+            view <- dependsView ie;
             return $ resultView ierr view;
-        };
+        }|]);
     };
 
     -- orphan

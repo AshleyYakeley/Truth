@@ -88,13 +88,13 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
             -- this withMVar prevents the signal handlers from re-sending edits
             vrUpdate _ edits = liftIO $ ifMVar mv $ traverse_ update edits;
 
-            vrFirstAspectGetter :: IO (Maybe (Aspect (StringEdit String)));
+            vrFirstAspectGetter :: AspectGetter (StringEdit String);
             vrFirstAspectGetter = do
             {
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
                 run <- getSequenceRun iter1 iter2;
                 -- get selection...
-                return $ Just $ MkAspect typeInfo typeInfo $ MkCloseFloat $ stringSectionLens run;
+                return $ Just $ return $ MkAspect typeInfo $ MkCloseFloat $ stringSectionLens run;
             };
         };
 

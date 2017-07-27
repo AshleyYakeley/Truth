@@ -4,13 +4,14 @@ module Data.Reity.TypeInfo where
     import Data.Proxy;
     import Data.Type.Equality;
     import Data.Type.Heterogeneous;
+    import Control.Monad.Trans.Reader (ReaderT);
     import Data.Knowledge;
-    import Data.Reity.KnowM;
+    import Data.Reity.ReasonM;
     import Data.Reity.Wit;
 
 
-    namedKnowledge :: forall (w :: HetWit) (f :: HetWit). String -> Knowledge KnowM w f -> Knowledge KnowM w f;
-    namedKnowledge name (MkKnowledge ff) = MkKnowledge $ \k i -> kmContext name $ ff k i;
+    namedKnowledge :: forall (w :: HetWit) (f :: HetWit). String -> Knowledge ReasonM w f -> Knowledge ReasonM w f;
+    namedKnowledge name (MkKnowledge ff) = MkKnowledge $ \i -> kmContext name $ ff i;
 
     data TypeFact (a :: k) where
     {
@@ -18,8 +19,8 @@ module Data.Reity.TypeInfo where
         ValueFact :: forall a. a -> TypeFact a;
     };
 
-    type TypeKnowledge = Knowledge KnowM TypeInfo TypeFact;
-
+    type TypeKnowledge = Knowledge ReasonM TypeInfo TypeFact;
+    type KnowM = ReaderT TypeKnowledge ReasonM;
 
     data SplitTypeInfo (fa :: kfa) where
     {
@@ -103,8 +104,8 @@ module Data.Reity.TypeInfo where
         show i@MkTypeInfo = typeName i;
     };
 
-    askTypeInfo :: forall (k :: *) (a :: k). TypeKnowledge -> TypeInfo a -> KnowM (TypeFact a);
-    askTypeInfo k i = kmContext (show i) $ ask k i;
+    askTypeInfo :: forall (k :: *) (a :: k). TypeInfo a -> KnowM (TypeFact a);
+    askTypeInfo i = kmContext (show i) $ ask i;
 
     knowValue :: forall (t :: *). t -> TypeInfo t -> TypeKnowledge;
     knowValue t i = know i $ ValueFact t;

@@ -1,16 +1,15 @@
 module Truth.Core.Object.HasView where
 {
     import Truth.Core.Import;
-    import Truth.Core.Edit;
     import Truth.Core.Object.View;
 
 
     class DependentHasView widget edit where
     {
-        dependsView :: TypeKnowledge -> TypeInfo edit -> KnowM (View edit widget);
+        dependsView :: TypeInfo edit -> KnowM (View edit widget);
 
-        default dependsView :: HasView widget edit => TypeKnowledge -> TypeInfo edit -> KnowM (View edit widget);
-        dependsView _ _ = return theView;
+        default dependsView :: HasView widget edit => TypeInfo edit -> KnowM (View edit widget);
+        dependsView _ = return theView;
     };
 
     class DependentHasView widget edit => HasView widget edit where
@@ -25,23 +24,11 @@ module Truth.Core.Object.HasView where
         typeName _ = "DependentHasView";
     };
 
-    findView :: forall widget edit. HasTypeInfo widget => TypeKnowledge -> TypeInfo edit -> KnowM (View edit widget);
-    findView k i = let
+    findView :: forall widget edit. HasTypeInfo widget => TypeInfo edit -> KnowM (View edit widget);
+    findView i = do
     {
-        k' = mconcat [baseTypeKnowledge,k,typeInfoKnowledge i];
-    } in do
-    {
-        ConstraintFact <- askTypeInfo k' $ applyTypeInfo (applyTypeInfo (typeInfo @DependentHasView) (typeInfo @widget)) i;
-        dependsView k' i;
-    };
-
-    type GetView widget = forall edit. (Edit edit) => TypeInfo edit -> View edit widget;
-
-    finalGetView :: HasTypeInfo widget => TypeKnowledge -> (FailureReason -> GetView widget) -> GetView widget;
-    finalGetView k gv i = case findView k i of
-    {
-        SuccessResult view -> view;
-        FailureResult frs -> gv (MkFailureReason "No Editor" frs) i;
+        ConstraintFact <- askTypeInfo $ applyTypeInfo (applyTypeInfo (typeInfo @DependentHasView) (typeInfo @widget)) i;
+        dependsView i;
     };
 
     namedResult :: MonadOne m => String -> m a -> KnowM a;

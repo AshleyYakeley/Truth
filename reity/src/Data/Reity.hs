@@ -1,7 +1,7 @@
 module Data.Reity
 (
     module Data.Knowledge,
-    module Data.Reity.KnowM,
+    module Data.Reity.ReasonM,
     module Data.Reity.Wit,
     module Data.Reity.TypeInfo,
     module Data.Reity.Match,
@@ -10,7 +10,7 @@ module Data.Reity
 ) where
 {
     import Data.Knowledge;
-    import Data.Reity.KnowM;
+    import Data.Reity.ReasonM;
     import Data.Reity.Wit;
     import Data.Reity.TypeInfo;
     import Data.Reity.Match;

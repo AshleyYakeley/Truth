@@ -3,7 +3,7 @@ module Data.Reity.Match where
     import Data.Kind;
     import Data.Type.Heterogeneous;
     import Data.Knowledge;
-    import Data.Reity.KnowM;
+    import Data.Reity.ReasonM;
     import Data.Reity.TypeInfo;
 
 

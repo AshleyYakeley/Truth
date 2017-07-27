@@ -2,10 +2,8 @@
 module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
 {
     import Data.Proxy;
-    import Data.Type.Heterogeneous;
     import Data.Foldable;
     import Data.Containers (ContainerKey);
-    import Data.MonoTraversable(Element);
     import Graphics.UI.Gtk;
     import Control.Monad.IsStateIO;
     import Data.KeyContainer;
@@ -15,8 +13,8 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
 
 
     keyContainerView :: forall cont edit. (Show (ContainerKey cont),IONewItemKeyContainer cont,HasKeyReader cont (EditReader edit),IOFullReader (EditReader edit),Edit edit) =>
-        TypeInfo (EditReader edit) -> TypeInfo edit -> TypeInfo (Element cont) -> GView (KeyEdit cont edit);
-    keyContainerView infoR infoE infoElement = MkView $ \(MkObject object) setSelect -> do
+        TypeInfo edit -> GView (KeyEdit cont edit);
+    keyContainerView ti = MkView $ \(MkObject object) setSelect -> do
     {
         initialKeys <- object $ \muted -> mutableRead muted KeyReadKeys;
         store <- listStoreNew initialKeys;
@@ -84,6 +82,8 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
                 KeyClear -> listStoreClear store;
                 _ -> return ();
             };
+
+            vrFirstAspectGetter :: AspectGetter (KeyEdit cont edit);
             vrFirstAspectGetter = do
             {
                 tsel <- treeViewGetSelection tview;
@@ -93,7 +93,13 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
                     [[i]] -> do
                     {
                         key <- listStoreGetValue store i;
-                        return $ Just $ MkAspect (applyTypeInfo (applyTypeInfo (typeInfo @SumEdit) (applyTypeInfo (typeInfo @WholeReaderEdit) (applyTypeInfo (applyTypeInfo (typeInfo @OneReader) (typeInfo @Maybe)) infoR))) (applyTypeInfo (applyTypeInfo (typeInfo @OneEdit) (typeInfo @Maybe)) infoE)) (applyTypeInfo (typeInfo @Maybe) infoElement) $ toGeneralLens $ keyLens key;
+                        return $ Just $ $(generateTypeMatchExpr [t|forall keyedit valueedit. (Edit keyedit, FullReader (EditReader keyedit), FullEdit valueedit) => PairEdit keyedit valueedit|] [e|\tiKE tiVE -> do
+                        {
+                            ConstraintFact <- askTypeInfo $ applyTypeInfo (typeInfo :: TypeInfo Edit) tiKE;
+                            ConstraintFact <- askTypeInfo $ applyTypeInfo (typeInfo :: TypeInfo FullEdit) tiVE;
+                            iedit <- $(generateTypeInfoExpr [t|forall valueedit. OneWholeEdit Maybe valueedit|]) tiVE;
+                            return $ MkAspect iedit $ keyValueLens key;
+                        }|]) ti;
                     };
                     _ -> return Nothing;
                 };
@@ -119,15 +125,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
     ) =>
      DependentHasView Widget (KeyEdit cont edit) where
     {
-        dependsView kw ikce = do
-        {
-            MkSplitTypeInfo ikc ie <- matchTypeInfo ikce;
-            MkSplitTypeInfo ik ic <- matchTypeInfo ikc;
-            ReflH <- sameTypeInfo (typeInfo :: TypeInfo KeyEdit) ik;
-            ValueFact (MkEditReaderTypeInfo ir) <- askTypeInfo kw $ applyTypeInfo (typeInfo @EditReaderTypeInfo) ie;
-            ValueFact (MkElementTypeInfo ielem) <- askTypeInfo kw $ applyTypeInfo (typeInfo @ElementTypeInfo) ic;
-            return $ keyContainerView ir ie ielem;
-        };
+        dependsView = $(generateTypeMatchExpr [t|forall cont' edit'. KeyEdit cont' edit'|] [e|\_ tiEdit -> return $ keyContainerView tiEdit|]);
     };
     -- orphan
     instance
@@ -137,13 +135,11 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
         HasKeyReader cont (EditReader edit),
         IOFullReader (EditReader edit),
         Edit edit,
-        HasTypeInfo edit,
-        HasTypeInfo (EditReader edit),
-        HasTypeInfo (Element cont)
+        HasTypeInfo edit
     ) =>
      HasView Widget (KeyEdit cont edit) where
     {
-        theView = keyContainerView typeInfo typeInfo typeInfo;
+        theView = keyContainerView typeInfo;
     };
 
     keyContainerTypeKnowledge :: TypeKnowledge;
