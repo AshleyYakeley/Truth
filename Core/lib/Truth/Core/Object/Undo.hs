@@ -46,7 +46,7 @@ module Truth.Core.Object.Undo(UndoActions(..),undoQueueSubscriber) where
     };
 
     undoQueueSubscriber :: forall edit actions. Edit edit => Subscriber edit actions -> Subscriber edit (actions,UndoActions);
-    undoQueueSubscriber sub (init :: Object edit -> IO editor) update = do
+    undoQueueSubscriber sub = MkSubscriber $ \(init :: Object edit -> IO editor) update -> do
     {
         queueVar <- newMVar $ MkUndoQueue [] [];
         let
@@ -122,7 +122,7 @@ module Truth.Core.Object.Undo(UndoActions(..),undoQueueSubscriber) where
                 return ();
             };
         };
-        ((editor,undoActions),closer,actions) <- sub init' update';
+        ((editor,undoActions),closer,actions) <- subscribe sub init' update';
         return (editor,closer,(actions,undoActions));
     };
 }

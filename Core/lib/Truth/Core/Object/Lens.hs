@@ -8,7 +8,8 @@ module Truth.Core.Object.Lens where
 
 
     mapSubscriber :: forall f edita editb action. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Subscriber edita action -> Subscriber editb action;
-    mapSubscriber (MkCloseFloat (lens@MkFloatingEditLens{..} :: IOFloatingEditLens' f lensstate edita editb)) sub (initialB :: Object editb -> IO editor) updateB = do
+    mapSubscriber (MkCloseFloat (lens@MkFloatingEditLens{..} :: IOFloatingEditLens' f lensstate edita editb)) sub =
+    MkSubscriber $ \(initialB :: Object editb -> IO editor) updateB -> do
     {
         let
         {
@@ -32,7 +33,7 @@ module Truth.Core.Object.Lens where
                 return ((),newls);
             };
         };
-        ((_,editor),closer,action) <- sub initialA updateA;
+        ((_,editor),closer,action) <- subscribe sub initialA updateA;
         return (editor,closer,action);
     };
 

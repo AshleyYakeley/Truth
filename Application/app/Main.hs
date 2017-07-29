@@ -51,7 +51,7 @@ module Main(main) where
             let
             {
                 baseSub :: Subscriber (WholeEdit String) ();
-                MkSubscriberW baseSub = objectSubscriber wholeTextObj;
+                baseSub = objectSubscriber wholeTextObj;
 
                 bufferSub :: Subscriber (StringEdit String) ((),SaveActions);
                 bufferSub = saveBufferSubscriber baseSub;

@@ -1,6 +1,6 @@
 module Truth.Core.Object.Subscriber
 (
-    Subscriber,SubscriberW(..),makeObjectSubscriber,
+    Subscriber(..),makeObjectSubscriber,
     liftIO,
     objectSubscriber,makeSharedSubscriber,
 ) where
@@ -12,16 +12,14 @@ module Truth.Core.Object.Subscriber
     import Truth.Core.Object.Object;
 
 
-    type Subscriber edit actions = forall editor.
+    newtype Subscriber edit actions = MkSubscriber {subscribe :: forall editor.
         (Object edit -> IO editor) -> -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
         (forall m. IsStateIO m => editor -> MutableRead m (EditReader edit) -> [edit] -> m ()) -> -- receive: get updates (both others and from your mutableEdit calls)
-        IO (editor,IO (),actions);
+        IO (editor,IO (),actions)};
 
-    newtype SubscriberW edit a = MkSubscriberW (Subscriber edit a);
-
-    instance Functor (SubscriberW edit) where
+    instance Functor (Subscriber edit) where
     {
-        fmap ab (MkSubscriberW sub) = MkSubscriberW $ \initialise receive -> do
+        fmap ab (MkSubscriber sub) = MkSubscriber $ \initialise receive -> do
         {
             (editor,cl,a) <- sub initialise receive;
             return (editor,cl,ab a);
@@ -45,7 +43,7 @@ module Truth.Core.Object.Subscriber
     updateStore :: IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> StateT (UpdateStore edit) m ();
     updateStore mutr edits = runUpdateStore $ \_ ff -> ff mutr edits;
 
-    makeSharedSubscriber :: forall edit actions. Subscriber edit actions -> IO (SubscriberW edit actions);
+    makeSharedSubscriber :: forall edit actions. Subscriber edit actions -> IO (Subscriber edit actions);
     makeSharedSubscriber parent = do
     {
         var <- newMVar emptyStore;
@@ -57,14 +55,14 @@ module Truth.Core.Object.Subscriber
             updateP :: forall m. IsStateIO m => Object edit -> MutableRead m (EditReader edit) -> [edit] -> m ();
             updateP _ mutrP edits = mvarStateAccess var $ updateStore mutrP edits;
         };
-        (MkObject objectP,closerP,actions) <- parent initP updateP;
+        (MkObject objectP,closerP,actions) <- subscribe parent initP updateP;
         let
         {
             objectC :: Object edit;
             objectC = MkObject objectP;
 
             child :: Subscriber edit actions;
-            child initC updateC = do
+            child = MkSubscriber $ \initC updateC -> do
             {
                 editorC <- initC objectC;
                 key <- objectP $ \_ -> mvarStateAccess var $ remonad liftIO $ addStoreStateT $ MkStoreEntry $ updateC editorC;
@@ -82,11 +80,11 @@ module Truth.Core.Object.Subscriber
                 return (editorC,closerC,actions);
             };
         };
-        return $ MkSubscriberW child;
+        return child;
     };
 
-    objectSubscriber :: Object edit -> SubscriberW edit ();
-    objectSubscriber (MkObject object) = MkSubscriberW $ \initr update -> do
+    objectSubscriber :: Object edit -> Subscriber edit ();
+    objectSubscriber (MkObject object) = MkSubscriber $ \initr update -> do
     {
         rec
         {
@@ -114,9 +112,6 @@ module Truth.Core.Object.Subscriber
         return (editor,return (),());
     };
 
-    makeObjectSubscriber :: Object edit -> IO (SubscriberW edit ());
-    makeObjectSubscriber object = let
-    {
-        MkSubscriberW sub = objectSubscriber object;
-    } in makeSharedSubscriber sub;
+    makeObjectSubscriber :: Object edit -> IO (Subscriber edit ());
+    makeObjectSubscriber object = makeSharedSubscriber $ objectSubscriber object;
 }

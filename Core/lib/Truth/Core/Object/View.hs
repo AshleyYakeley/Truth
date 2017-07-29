@@ -152,7 +152,7 @@ module Truth.Core.Object.View where
             };
             receive (vr,_) = vrUpdate vr;
         };
-        ((MkViewResult{..},selref),srCloser,srAction) <- sub initialise receive;
+        ((MkViewResult{..},selref),srCloser,srAction) <- subscribe sub initialise receive;
         let
         {
             srGetSelection = do

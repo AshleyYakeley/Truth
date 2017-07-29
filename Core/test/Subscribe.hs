@@ -31,11 +31,11 @@ module Subscribe(testSubscribe) where
     testSavable = testCase "Savable" $ do
     {
         object <- freeIOObject False (\_ -> True);
-        MkSubscriberW sub <- makeObjectSubscriber object;
+        sub <- makeObjectSubscriber object;
         let
         {
-            saveSub = MkSubscriberW $ saveBufferSubscriber sub;
-            MkSubscriberW cleanSaveSub = fmap fst saveSub;
+            saveSub = saveBufferSubscriber sub;
+            cleanSaveSub = fmap fst saveSub;
         };
         found <- subscribeEditor cleanSaveSub testEditor;
         assertEqual "value" False found;
@@ -147,7 +147,7 @@ module Subscribe(testSubscribe) where
             editObj :: Object edit;
             editObj = convertObject varObj;
         };
-        MkSubscriberW sub <- makeObjectSubscriber editObj;
+        sub <- makeObjectSubscriber editObj;
         let
         {
             ?showVar = withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s;

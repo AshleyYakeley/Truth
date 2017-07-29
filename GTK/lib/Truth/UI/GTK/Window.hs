@@ -104,8 +104,8 @@ module Truth.UI.GTK.Window where
         FailureResult _ -> return ();
     };
 
-    makeViewWindow :: (Edit edit,WindowButtons actions) => TypeKnowledge -> GView edit -> IORef Int -> IO () -> SubscriberW edit actions -> IO ();
-    makeViewWindow kw view ref tellclose (MkSubscriberW sub) = do
+    makeViewWindow :: (Edit edit,WindowButtons actions) => TypeKnowledge -> GView edit -> IORef Int -> IO () -> Subscriber edit actions -> IO ();
+    makeViewWindow kw view ref tellclose sub = do
     {
         MkViewSubscription{..} <- subscribeView view sub;
         window <- windowNew;
@@ -125,7 +125,7 @@ module Truth.UI.GTK.Window where
                     {
                         gview <- kmCatch (findView tsel) $ lastResortView True;
                         kw' <- getKnowledge;
-                        return $ makeViewWindowCountRef kw' gview ref $ MkSubscriberW $ mapSubscriber lens sub;
+                        return $ makeViewWindowCountRef kw' gview ref $ mapSubscriber lens sub;
                     };
                 }) $ \frs -> do
                 {
@@ -153,7 +153,7 @@ module Truth.UI.GTK.Window where
         widgetShowAll window;
     };
 
-    makeViewWindowCountRef :: (Edit edit,WindowButtons actions) => TypeKnowledge -> GView edit -> IORef Int -> SubscriberW edit actions -> IO ();
+    makeViewWindowCountRef :: (Edit edit,WindowButtons actions) => TypeKnowledge -> GView edit -> IORef Int -> Subscriber edit actions -> IO ();
     makeViewWindowCountRef kw view windowCount sub = do
     {
         makeViewWindow kw view windowCount (do
@@ -168,7 +168,7 @@ module Truth.UI.GTK.Window where
         writeIORef windowCount (i + 1);
     };
 
-    makeWindowCountRef :: forall edit actions. (HasTypeInfo edit,Edit edit,WindowButtons actions) => IORef Int -> SubscriberW edit actions -> IO ();
+    makeWindowCountRef :: forall edit actions. (HasTypeInfo edit,Edit edit,WindowButtons actions) => IORef Int -> Subscriber edit actions -> IO ();
     makeWindowCountRef windowCount sub = let
     {
         te :: TypeInfo edit;

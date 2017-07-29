@@ -33,7 +33,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
     newtype SaveActions = MkSaveActions (IO (Maybe (IO Bool,IO Bool)));
 
     saveBufferSubscriber :: forall edit action. FullEdit edit => Subscriber (WholeEdit (EditSubject edit)) action -> Subscriber edit (action,SaveActions);
-    saveBufferSubscriber subA (initB :: Object edit -> IO editorB) updateB = do
+    saveBufferSubscriber subA = MkSubscriber $ \(initB :: Object edit -> IO editorB) updateB -> do
     {
         sbVar <- newMVar $ error "uninitialised save buffer";
         let
@@ -108,7 +108,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                 };
             };
         };
-        (edA,closerA,actionA) <- subA initA updateA;
+        (edA,closerA,actionA) <- subscribe subA initA updateA;
         let
         {
             (edB,saveActions) = edA;

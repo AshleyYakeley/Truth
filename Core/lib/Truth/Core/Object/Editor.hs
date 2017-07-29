@@ -54,11 +54,11 @@ module Truth.Core.Object.Editor where
     };
 
     subscribeEditor :: Subscriber edit actions -> Editor edit actions r -> IO r;
-    subscribeEditor subscribe editor = case editor of
+    subscribeEditor subscriber editor = case editor of
     {
         (MkEditor initr update f) -> do
         {
-            (e, close, actions) <- subscribe initr update;
+            (e, close, actions) <- subscribe subscriber initr update;
             finally (f e actions) close;
         };
     };
