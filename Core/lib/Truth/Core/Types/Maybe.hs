@@ -44,7 +44,7 @@ module Truth.Core.Types.Maybe where
             {
                 Just () -> do
                 {
-                    medits <- mapReadableF (readable . ReadOne) $ ioWriterToReadable ioReplaceEdit;
+                    medits <- mapReadableF (readable . ReadOne) $ writerToReadable ioReplaceEdit;
                     case medits of
                     {
                         Nothing -> return []; -- shouldn't happen
@@ -65,9 +65,9 @@ module Truth.Core.Types.Maybe where
         };
     };
 
-    instance (IOFullEdit edit,HasNewValue (EditSubject edit)) => IOFullEdit (MaybeEdit edit) where
+    instance (IOFullEdit edit,ReadableConstraint c,GenFullEdit c edit,HasNewValue (EditSubject edit)) => GenFullEdit c (MaybeEdit edit) where
     {
-        ioReplaceEdit = do
+        genReplaceEdit = do
         {
             me <- readable ReadHasOne;
             case me of
@@ -75,25 +75,7 @@ module Truth.Core.Types.Maybe where
                 Just () -> do
                 {
                     wrWrite CreateMaybeEdit;
-                    _ <- reWriterReadable JustMaybeEdit $ mapReadableF (readable . ReadOne) ioReplaceEdit;
-                    return ();
-                };
-                Nothing -> wrWrite DeleteMaybeEdit; -- deleted
-            };
-        };
-    };
-
-    instance (FullEdit edit,HasNewValue (EditSubject edit)) => FullEdit (MaybeEdit edit) where
-    {
-        replaceEdit = do
-        {
-            me <- readable ReadHasOne;
-            case me of
-            {
-                Just () -> do
-                {
-                    wrWrite CreateMaybeEdit;
-                    _ <- reWriterReadable JustMaybeEdit $ mapReadableF (readable . ReadOne) replaceEdit;
+                    _ <- reWriterReadable JustMaybeEdit $ mapReadableF (readable . ReadOne) genReplaceEdit;
                     return ();
                 };
                 Nothing -> wrWrite DeleteMaybeEdit; -- deleted
@@ -107,11 +89,11 @@ module Truth.Core.Types.Maybe where
         typeWitness = $(generateWitness [t|MaybeEdit|]);
         typeName _ = "MaybeEdit";
         typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (FullEdit edit,HasNewValue (EditSubject edit)) => Edit (MaybeEdit edit) where
+            instance (IOFullEdit edit,HasNewValue (EditSubject edit)) => Edit (MaybeEdit edit) where
             {
                 type EditReader (MaybeEdit edit) = OneReader Maybe (EditReader edit);
             };
-            instance (FullEdit edit,HasNewValue (EditSubject edit)) => FullEdit (MaybeEdit edit);
+            instance (IOFullEdit edit,ReadableConstraint c,GenFullEdit c edit,HasNewValue (EditSubject edit)) => GenFullEdit c (MaybeEdit edit);
         |]);
     };
 }

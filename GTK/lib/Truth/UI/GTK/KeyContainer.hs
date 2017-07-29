@@ -93,10 +93,8 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
                     [[i]] -> do
                     {
                         key <- listStoreGetValue store i;
-                        return $ Just $ $(generateTypeMatchExpr [t|forall keyedit valueedit. (Edit keyedit, FullReader (EditReader keyedit), FullEdit valueedit) => PairEdit keyedit valueedit|] [e|\tiKE tiVE -> do
+                        return $ Just $ $(generateTypeMatchExpr [t|forall keyedit valueedit. (Edit keyedit, IOFullReader (EditReader keyedit), IOFullEdit valueedit) => PairEdit keyedit valueedit|] [e|\_tiKE tiVE -> do
                         {
-                            ConstraintFact <- askTypeInfo $ applyTypeInfo (typeInfo :: TypeInfo Edit) tiKE;
-                            ConstraintFact <- askTypeInfo $ applyTypeInfo (typeInfo :: TypeInfo FullEdit) tiVE;
                             iedit <- $(generateTypeInfoExpr [t|forall valueedit. OneWholeEdit Maybe valueedit|]) tiVE;
                             return $ MkAspect iedit $ keyValueLens key;
                         }|]) ti;

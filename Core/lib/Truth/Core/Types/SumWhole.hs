@@ -31,19 +31,23 @@ module Truth.Core.Types.SumWhole where
         cleanEditLensPutEdit = \editb -> fmap (fmap SumEditRight) (cleanEditLensPutEdit lens editb)
     };
 
-    sumWholeFloatingEditFunction :: (Reader (EditReader edita), FullReader (EditReader editb)) =>
-     FloatingEditFunction state edita editb ->
-     FloatingEditFunction state (SumWholeEdit edita) (SumWholeEdit editb);
+    sumWholeFloatingEditFunction :: forall c state edita editb. (ReadableConstraint c,Reader (EditReader edita), GenFullReader c (EditReader editb)) =>
+     GenFloatingEditFunction c state edita editb ->
+     GenFloatingEditFunction c state (SumWholeEdit edita) (SumWholeEdit editb);
     sumWholeFloatingEditFunction fef = MkFloatingEditFunction
     {
         floatingEditInitial = floatingEditInitial fef,
         floatingEditGet = floatingEditGet fef,
         floatingEditUpdate = \pedita oldstate -> case pedita of
         {
-            SumEditLeft (MkWholeEdit a) -> let
+            SumEditLeft (MkWholeEdit a) -> do
             {
-                b = fromReadFunction (floatingEditGet fef oldstate) a
-            } in return (oldstate,return $ SumEditLeft $ MkWholeEdit b); -- state unchanged, kind of dubious
+                b <- case selfReadable @c @(EditReader edita) of
+                {
+                    MkConstraintWitness -> fromReadFunctionM (floatingEditGet fef oldstate) $ return a;
+                };
+                return (oldstate,return $ SumEditLeft $ MkWholeEdit b); -- state unchanged, kind of dubious
+            };
             SumEditRight edita -> do
             {
                 (newstate,meditb) <- floatingEditUpdate fef edita oldstate;
@@ -52,10 +56,10 @@ module Truth.Core.Types.SumWhole where
         }
     };
 
-    sumWholeFloatingEditLens :: (Functor f,Reader (EditReader edita),FullReader (EditReader editb)) =>
-     (state -> EditSubject editb -> Readable (EditReader edita) (f (state,EditSubject edita))) ->
-     FloatingEditLens' f state edita editb ->
-     FloatingEditLens' f state (SumWholeEdit edita) (SumWholeEdit editb);
+    sumWholeFloatingEditLens :: (ReadableConstraint c,Functor f,Reader (EditReader edita),GenFullReader c (EditReader editb)) =>
+     (state -> EditSubject editb -> GenReadable c (EditReader edita) (f (state,EditSubject edita))) ->
+     GenFloatingEditLens' c f state edita editb ->
+     GenFloatingEditLens' c f state (SumWholeEdit edita) (SumWholeEdit editb);
     sumWholeFloatingEditLens pushback lens = MkFloatingEditLens
     {
         floatingEditLensFunction = sumWholeFloatingEditFunction (floatingEditLensFunction lens),

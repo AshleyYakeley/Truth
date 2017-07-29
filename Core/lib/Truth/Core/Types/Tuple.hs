@@ -73,19 +73,11 @@ module Truth.Core.Types.Tuple where
     tupleAllSelectors :: FiniteTupleSelector sel => [AnyWitness sel];
     tupleAllSelectors = getConstant $ tupleConstruct $ \sel -> Constant [MkAnyWitness sel];
 
-    instance (FiniteTupleSelector sel,TupleReaderWitness IOFullReader sel) => IOFullReader (TupleEditReader sel) where
+    instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (GenFullReader c) sel) => GenFullReader c (TupleEditReader sel) where
     {
-        ioFromReader = tupleConstruct (\(seledit :: sel edit) -> case tupleReaderWitness (Proxy::Proxy IOFullReader) seledit of
+        genFromReader = tupleConstruct (\(seledit :: sel edit) -> case tupleReaderWitness (Proxy::Proxy (GenFullReader c)) seledit of
         {
-            MkConstraintWitness -> mapCleanReadable (MkTupleEditReader seledit) ioFromReader;
-        });
-    };
-
-    instance (FiniteTupleSelector sel,TupleReaderWitness IOFullReader sel,TupleReaderWitness FullReader sel) => FullReader (TupleEditReader sel) where
-    {
-        fromReader = tupleConstruct (\(seledit :: sel edit) -> case tupleReaderWitness (Proxy::Proxy FullReader) seledit of
-        {
-            MkConstraintWitness -> mapCleanReadable (MkTupleEditReader seledit) fromReader;
+            MkConstraintWitness -> mapCleanReadable (MkTupleEditReader seledit) genFromReader;
         });
     };
 
@@ -99,8 +91,7 @@ module Truth.Core.Types.Tuple where
             {
                 type ReaderSubject (TupleEditReader sel) = TupleSubject sel;
             };
-            instance (FiniteTupleSelector sel,TupleReaderWitness IOFullReader sel) => IOFullReader (TupleEditReader sel);
-            instance (FiniteTupleSelector sel,TupleReaderWitness IOFullReader sel,TupleReaderWitness FullReader sel) => FullReader (TupleEditReader sel);
+            instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (GenFullReader c) sel) => GenFullReader c (TupleEditReader sel);
         |]);
     };
 
@@ -140,25 +131,13 @@ module Truth.Core.Types.Tuple where
         };
     };
 
-    instance (FiniteTupleSelector sel,TupleReaderWitness IOFullReader sel,TupleWitness IOFullEdit sel) => IOFullEdit (TupleEdit sel) where
+    instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (GenFullReader c) sel,TupleWitness (GenFullEdit c) sel) => GenFullEdit c (TupleEdit sel) where
     {
-        ioReplaceEdit = do
+        genReplaceEdit = do
         {
-            editss <- traverse (\(MkAnyWitness sel) -> case tupleWitness (Proxy::Proxy IOFullEdit) sel of
+            editss <- traverse (\(MkAnyWitness sel) -> case tupleWitness (Proxy::Proxy (GenFullEdit c)) sel of
             {
-                MkConstraintWitness -> reWriterReadable (MkTupleEdit sel) $ mapReadable (tupleReadFunction sel) ioReplaceEdit;
-            }) tupleAllSelectors;
-            return $ mconcat editss;
-        };
-    };
-
-    instance (FiniteTupleSelector sel,TupleReaderWitness IOFullReader sel,TupleReaderWitness FullReader sel,TupleWitness IOFullEdit sel,TupleWitness FullEdit sel) => FullEdit (TupleEdit sel) where
-    {
-        replaceEdit = do
-        {
-            editss <- traverse (\(MkAnyWitness sel) -> case tupleWitness (Proxy::Proxy FullEdit) sel of
-            {
-                MkConstraintWitness -> reWriterReadable (MkTupleEdit sel) $ mapReadable (tupleReadFunction sel) replaceEdit;
+                MkConstraintWitness -> reWriterReadable (MkTupleEdit sel) $ mapReadable (tupleReadFunction sel) genReplaceEdit;
             }) tupleAllSelectors;
             return $ mconcat editss;
         };
@@ -176,7 +155,7 @@ module Truth.Core.Types.Tuple where
             {
                 type EditReader (TupleEdit sel) = TupleEditReader sel;
             };
-            --instance FullTupleSelector sel => FullEdit (TupleEdit sel);
+            instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (GenFullReader c) sel,TupleWitness (GenFullEdit c) sel) => GenFullEdit c (TupleEdit sel);
         |])];
     };
 

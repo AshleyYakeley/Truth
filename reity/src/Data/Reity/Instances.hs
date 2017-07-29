@@ -6,6 +6,7 @@ module Data.Reity.Instances where
     import Data.Type.Heterogeneous;
     import Data.Word;
     import Data.ByteString;
+    import Control.Monad.IO.Class;
     import Control.Comonad;
     import Data.UUID;
     import Data.Searchable;
@@ -162,6 +163,12 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|Monad|]);
         typeName _ = "Monad";
+    };
+
+    instance HasTypeInfo MonadIO where
+    {
+        typeWitness = $(generateWitness [t|MonadIO|]);
+        typeName _ = "MonadIO";
     };
 
     instance HasTypeInfo Comonad where

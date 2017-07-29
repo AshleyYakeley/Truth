@@ -94,7 +94,7 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
                 run <- getSequenceRun iter1 iter2;
                 -- get selection...
-                return $ Just $ return $ MkAspect typeInfo $ MkCloseFloat $ stringSectionLens run;
+                return $ Just $ return $ MkAspect typeInfo $ MkCloseFloat $ floatingEditLensToGen $ stringSectionLens run;
             };
         };
 

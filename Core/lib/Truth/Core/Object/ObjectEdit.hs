@@ -19,9 +19,9 @@ module Truth.Core.Object.ObjectEdit where
         readFrom subj ReadObject = nonlockingObject $ constantMutableEdit subj;
     };
 
-    instance IOFullReader (EditReader edit) => IOFullReader (ObjectReader edit) where
+    instance IOFullReader (EditReader edit) => GenFullReader MonadIO (ObjectReader edit) where
     {
-        ioFromReader = do
+        genFromReader = do
         {
             MkObject object <- readable ReadObject;
             liftIO $ object $ \muted -> unReadable ioFromReader $ mutableRead muted;
@@ -38,7 +38,7 @@ module Truth.Core.Object.ObjectEdit where
             {
                 type ReaderSubject (ObjectReader edit) = EditSubject edit;
             };
-            instance IOFullReader (EditReader edit) => IOFullReader (ObjectReader edit);
+            instance IOFullReader (EditReader edit) => GenFullReader MonadIO (ObjectReader edit);
         |]);
     };
 

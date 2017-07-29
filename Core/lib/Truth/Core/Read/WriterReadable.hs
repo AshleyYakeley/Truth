@@ -3,7 +3,6 @@ module Truth.Core.Read.WriterReadable where
     import Truth.Core.Import;
     import Truth.Core.Read.Reader;
     import Truth.Core.Read.Readable;
-    import Truth.Core.Read.ReadFunction;
 
 
     -- | WriterReadable allows copying without reading the whole thing into memory
@@ -46,26 +45,8 @@ module Truth.Core.Read.WriterReadable where
         readable rt = MkWriterReadable (\s _ -> s rt);
     };
 
-    instance MapReadable (WriterReadable w) where
-    {
-        mapReadable rf (MkWriterReadable sbwt) = MkWriterReadable $ \sa wm -> sbwt (mapMutableRead rf sa) wm;
-        mapReadableF rff (MkWriterReadable sbwt) = MkWriterReadable $ \sa wm -> getCompose $ sbwt (mapStructureF rff sa) (fmap (MkCompose . fmap pure) wm);
-    };
-
-    instance MapReadable (IOWriterReadable w) where
-    {
-        mapReadable rf (MkWriterReadable sbwt) = MkWriterReadable $ \sa wm -> sbwt (mapMutableRead rf sa) wm;
-        mapReadableF rff (MkWriterReadable sbwt) = MkWriterReadable $ \sa wm -> getCompose $ sbwt (mapStructureF rff sa) (fmap (MkCompose . fmap pure) wm);
-    };
-
     wrWrite :: w -> GenWriterReadable c w reader ();
     wrWrite w = MkWriterReadable $ \_ wm -> wm w;
-
-    writerToReadable :: WriterReadable w reader () -> GenReadable c reader [w];
-    writerToReadable (MkWriterReadable swma) = MkReadable $ \s -> execWriterT $ swma (fmap lift s) (tell . pure);
-
-    ioWriterToReadable :: IOWriterReadable w reader () -> IOReadable reader [w];
-    ioWriterToReadable (MkWriterReadable swma) = MkReadable $ \s -> execWriterT $ swma (fmap lift s) (tell . pure);
 
     reWriterReadable :: (wa -> wb) -> GenWriterReadable c wa reader a -> GenWriterReadable c wb reader a;
     reWriterReadable f (MkWriterReadable swma) = MkWriterReadable $ \s wm -> swma s (wm . f);

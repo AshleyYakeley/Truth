@@ -7,13 +7,19 @@ module Truth.Core.Edit.FloatingEditLens where
     import Truth.Core.Edit.FloatingEditFunction;
 
 
-    data FloatingEditLens' m state edita editb = MkFloatingEditLens
+    data GenFloatingEditLens' c m state edita editb = MkFloatingEditLens
     {
-        floatingEditLensFunction :: FloatingEditFunction state edita editb,
-        floatingEditLensPutEdit :: state -> editb -> Readable (EditReader edita) (m (state,[edita]))
+        floatingEditLensFunction :: GenFloatingEditFunction c state edita editb,
+        floatingEditLensPutEdit :: state -> editb -> GenReadable c (EditReader edita) (m (state,[edita]))
     };
 
-    floatingEditLensPutEdits :: (Monad m,Traversable m,Edit edita) => FloatingEditLens' m state edita editb -> state -> [editb] -> Readable (EditReader edita) (m (state,[edita]));
+    type FloatingEditLens' = GenFloatingEditLens' Monad;
+    type IOFloatingEditLens' = GenFloatingEditLens' MonadIO;
+
+    floatingEditLensToGen :: FloatingEditLens' m state edita editb -> GenFloatingEditLens' c m state edita editb;
+    floatingEditLensToGen (MkFloatingEditLens f pe) = MkFloatingEditLens (floatingEditFunctionToGen f) (\s eb -> readableToGen $ pe s eb);
+
+    floatingEditLensPutEdits :: (Monad m,Traversable m,Edit edita,ReadableConstraint c) => GenFloatingEditLens' c m state edita editb -> state -> [editb] -> GenReadable c (EditReader edita) (m (state,[edita]));
     floatingEditLensPutEdits _ oldstate [] = return $ pure $ (oldstate,[]);
     floatingEditLensPutEdits lens oldstate (e:ee) = getCompose $ do
     {
@@ -44,14 +50,14 @@ module Truth.Core.Edit.FloatingEditLens where
         };
     };
 -}
-    fixedFloatingEditLens :: Functor m => EditLens' m edita editb -> FloatingEditLens' m () edita editb;
+    fixedFloatingEditLens :: Functor m => GenEditLens' c m edita editb -> GenFloatingEditLens' c m () edita editb;
     fixedFloatingEditLens lens = MkFloatingEditLens
     {
         floatingEditLensFunction = fixedFloatingEditFunction (editLensFunction lens),
         floatingEditLensPutEdit = \st edit -> fmap (fmap ((,) st)) $ editLensPutEdit lens edit
     };
 
-    instance (Applicative m,MonadOne m) => FloatingMap (FloatingEditLens' m) where
+    instance (ReadableConstraint c,Applicative m,MonadOne m) => FloatingMap (GenFloatingEditLens' c m) where
     {
         identityFloating = fixedFloatingEditLens id;
         composeFloating fel2 fel1 = MkFloatingEditLens
@@ -59,7 +65,7 @@ module Truth.Core.Edit.FloatingEditLens where
             floatingEditLensFunction = composeFloating (floatingEditLensFunction fel2) (floatingEditLensFunction fel1),
             floatingEditLensPutEdit = \(olds1,olds2) editc -> do
             {
-                meditb <- mapReadable (floatingEditGet (floatingEditLensFunction fel1) olds1) (floatingEditLensPutEdit fel2 olds2 editc);
+                meditb <- mapGenReadable (floatingEditGet (floatingEditLensFunction fel1) olds1) (floatingEditLensPutEdit fel2 olds2 editc);
                 case retrieveOne meditb of
                 {
                     SuccessResult (news2,editbs) -> do

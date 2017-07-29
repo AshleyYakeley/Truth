@@ -104,8 +104,7 @@ module Truth.Core.Types.Context where
             {
                 type TupleSubject (WithContextSelector editx editn) = WithContext (EditSubject editx) (EditSubject editn);
             };
-            instance (Edit ex,FullReader (EditReader ex),Edit en,FullReader (EditReader en)) =>
-                FiniteTupleSelector (WithContextSelector ex en);
+            instance (Edit ex,Edit en) => FiniteTupleSelector (WithContextSelector ex en);
             instance (c (EditReader ex),c (EditReader en)) => TupleReaderWitness c (WithContextSelector ex en);
             instance (c ex,c en) => TupleWitness c (WithContextSelector ex en);
         |]);

@@ -7,16 +7,22 @@ module Truth.Core.Edit.EditFunction where
 
     -- | A EditLens is a lens without state
     ;
-    data EditFunction edita editb = MkEditFunction
+    data GenEditFunction c edita editb = MkEditFunction
     {
-        editGet :: ReadFunction (EditReader edita) (EditReader editb),
-        editUpdate :: edita -> Readable (EditReader edita) [editb]
+        editGet :: GenReadFunction c (EditReader edita) (EditReader editb),
+        editUpdate :: edita -> GenReadable c (EditReader edita) [editb]
     };
+
+    type EditFunction = GenEditFunction Monad;
+    type IOEditFunction = GenEditFunction MonadIO;
+
+    editFunctionToGen :: EditFunction edita editb -> GenEditFunction c edita editb;
+    editFunctionToGen (MkEditFunction g u) = MkEditFunction (readFunctionToGen g) (\ea -> readableToGen $ u ea);
 
     editUpdates :: EditFunction edita editb -> [edita] -> Readable (EditReader edita) [editb];
     editUpdates ef eas = fmap mconcat $ for eas (editUpdate ef);
 
-    instance Category EditFunction where
+    instance ReadableConstraint c => Category (GenEditFunction c) where
     {
         id = MkEditFunction
         {
@@ -29,7 +35,7 @@ module Truth.Core.Edit.EditFunction where
             editUpdate = \editA -> do
             {
                 editBs <- editUpdate ab editA;
-                editCss <- for editBs $ \editB -> mapReadable (editGet ab) $ editUpdate bc editB;
+                editCss <- for editBs $ \editB -> mapGenReadable (editGet ab) $ editUpdate bc editB;
                 return $ mconcat editCss;
             }
         };

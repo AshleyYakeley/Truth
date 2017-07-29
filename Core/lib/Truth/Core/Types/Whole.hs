@@ -17,10 +17,9 @@ module Truth.Core.Types.Whole where
         readFrom msubj ReadWhole = msubj;
     };
 
-    instance IOFullReader (WholeReader a);
-    instance FullReader (WholeReader a) where
+    instance GenFullReader c (WholeReader a) where
     {
-        fromReader = readable ReadWhole;
+        genFromReader = readable ReadWhole;
     };
 
     $(return []);
@@ -33,8 +32,7 @@ module Truth.Core.Types.Whole where
             {
                 type ReaderSubject (WholeReader a) = a;
             };
-            instance IOFullReader (WholeReader a);
-            instance FullReader (WholeReader a);
+            instance GenFullReader c (WholeReader a);
         |]);
     };
 
@@ -56,21 +54,15 @@ module Truth.Core.Types.Whole where
         };
     };
 
-    instance (IOFullReader reader) => IOFullEdit (WholeReaderEdit reader) where
+    instance (ReadableConstraint c,IOFullReader reader,GenFullReader c reader) => GenFullEdit c (WholeReaderEdit reader) where
     {
-        ioReplaceEdit = do
+        genReplaceEdit = case selfWriterReadable @c @(WholeReaderEdit reader) @reader of
         {
-            a <- readableToM ioFromReader;
-            wrWrite $ MkWholeEdit a;
-        };
-    };
-
-    instance (FullReader reader) => FullEdit (WholeReaderEdit reader) where
-    {
-        replaceEdit = do
-        {
-            a <- readableToM fromReader;
-            wrWrite $ MkWholeEdit a;
+            MkConstraintWitness -> do
+            {
+                a <- readableToM @c genFromReader;
+                wrWrite $ MkWholeEdit a;
+            };
         };
     };
 
@@ -84,7 +76,7 @@ module Truth.Core.Types.Whole where
             {
                 type EditReader (WholeReaderEdit reader) = reader;
             };
-            instance (FullReader reader) => FullEdit (WholeReaderEdit reader);
+            instance (ReadableConstraint c,IOFullReader reader,GenFullReader c reader) => GenFullEdit c (WholeReaderEdit reader);
         |]);
     };
 

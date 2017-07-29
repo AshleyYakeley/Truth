@@ -41,7 +41,7 @@ module Truth.Core.Object.Object where
         return $ mvarObject var allowed;
     };
 
-    floatingMapObject :: forall f lensstate edita editb. (MonadOne f,Edit edita) => (forall m. IsStateIO m => StateAccess m lensstate) -> FloatingEditLens' f lensstate edita editb -> Object edita -> Object editb;
+    floatingMapObject :: forall f lensstate edita editb. (MonadOne f,Edit edita) => (forall m. IsStateIO m => StateAccess m lensstate) -> IOFloatingEditLens' f lensstate edita editb -> Object edita -> Object editb;
     floatingMapObject acc lens@MkFloatingEditLens{..} (MkObject objectA) = MkObject $ \(callB :: forall m. IsStateIO m => MutableEdit m editb -> m r) -> let
     {
         MkFloatingEditFunction{..} = floatingEditLensFunction;
@@ -102,8 +102,11 @@ module Truth.Core.Object.Object where
         };
     } in objectA callA;
 
+    ioFixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => IOEditLens' f edita editb -> Object edita -> Object editb;
+    ioFixedMapObject lens object = floatingMapObject unitStateAccess (fixedFloatingEditLens lens) object;
+
     fixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => EditLens' f edita editb -> Object edita -> Object editb;
-    fixedMapObject lens object = floatingMapObject unitStateAccess (fixedFloatingEditLens lens) object;
+    fixedMapObject lens = ioFixedMapObject $ editLensToGen lens;
 
     convertObject :: (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Object edita -> Object editb;
     convertObject = fixedMapObject @Identity convertEditLens;

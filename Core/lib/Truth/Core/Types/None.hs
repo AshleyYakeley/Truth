@@ -21,10 +21,9 @@ module Truth.Core.Types.None where
         readFrom _ = never;
     };
 
-    instance IOFullReader (NoReader ());
-    instance FullReader (NoReader ()) where
+    instance GenFullReader c (NoReader ()) where
     {
-        fromReader = return ();
+        genFromReader = return ();
     };
 
     $(return []);
@@ -37,7 +36,7 @@ module Truth.Core.Types.None where
             {
                 type ReaderSubject (NoReader a) = a;
             };
-            instance FullReader (NoReader ());
+            instance GenFullReader c (NoReader ());
         |]);
     };
 
@@ -60,14 +59,9 @@ module Truth.Core.Types.None where
         invertEdit = never;
     };
 
-    instance (IOFullReader reader,ReaderSubject reader ~ ()) => IOFullEdit (NoEdit reader) where
+    instance (GenFullReader c reader,ReaderSubject reader ~ ()) => GenFullEdit c (NoEdit reader) where
     {
-        ioReplaceEdit = return ();
-    };
-
-    instance (FullReader reader,ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where
-    {
-        replaceEdit = return ();
+        genReplaceEdit = return ();
     };
 
     $(return []);
@@ -80,7 +74,7 @@ module Truth.Core.Types.None where
             {
                 type EditReader (NoEdit reader) = reader;
             };
-            instance (FullReader reader,ReaderSubject reader ~ ()) => FullEdit (NoEdit reader);
+            instance (GenFullReader c reader,ReaderSubject reader ~ ()) => GenFullEdit c (NoEdit reader);
         |]);
     };
 

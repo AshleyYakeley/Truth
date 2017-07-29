@@ -7,7 +7,7 @@ module Truth.Core.Edit.GeneralLens where
     import Truth.Core.Edit.FloatingEditLens;
 
 
-    type GeneralLens' m = CloseFloat (FloatingEditLens' m);
+    type GeneralLens' m = CloseFloat (IOFloatingEditLens' m);
 
     type GeneralLens = GeneralLens' Maybe;
 
@@ -36,13 +36,22 @@ module Truth.Core.Edit.GeneralLens where
         toGeneralLens' = id;
     };
 
+    instance Eq state => IsGeneralLens (IOFloatingEditLens' m state edita editb) where
+    {
+        type LensMonad (IOFloatingEditLens' m state edita editb) = m;
+        type LensDomain (IOFloatingEditLens' m state edita editb) = edita;
+        type LensRange (IOFloatingEditLens' m state edita editb) = editb;
+
+        toGeneralLens' = MkCloseFloat;
+    };
+
     instance Eq state => IsGeneralLens (FloatingEditLens' m state edita editb) where
     {
         type LensMonad (FloatingEditLens' m state edita editb) = m;
         type LensDomain (FloatingEditLens' m state edita editb) = edita;
         type LensRange (FloatingEditLens' m state edita editb) = editb;
 
-        toGeneralLens' = MkCloseFloat;
+        toGeneralLens' lens = toGeneralLens' $ (floatingEditLensToGen lens :: GenFloatingEditLens' MonadIO m state edita editb);
     };
 
     instance Functor m => IsGeneralLens (EditLens' m edita editb) where

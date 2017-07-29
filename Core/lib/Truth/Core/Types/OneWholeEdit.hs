@@ -12,19 +12,19 @@ module Truth.Core.Types.OneWholeEdit where
 
     type OneWholeEdit (f :: * -> *) edit = SumWholeEdit (OneEdit f edit);
 
-    extractOneWholeEdit :: forall f edit. (MonadOne f,FullEdit edit) => OneWholeEdit f edit -> [edit];
-    extractOneWholeEdit (SumEditRight (MkOneEdit edit)) = return edit;
+    extractOneWholeEdit :: forall c m f edit. (MonadOne f,ReadableConstraint c,GenFullEdit c edit,Monad m,c m) => OneWholeEdit f edit -> m [edit];
+    extractOneWholeEdit (SumEditRight (MkOneEdit edit)) = return [edit];
     extractOneWholeEdit (SumEditLeft (MkWholeEdit fa)) = case retrieveOne fa of
     {
-        SuccessResult a -> getReplaceEdits a;
-        _ -> [];
+        SuccessResult a -> getReplaceEditsM @c a;
+        _ -> return [];
     };
 
     -- suitable for Results, trying to put a failure code will be rejected
-    oneWholeGeneralLens :: forall ff f edita editb. (Monad ff,Traversable ff,MonadOne f,FullReader (EditReader edita),Edit edita,FullEdit editb) =>
+    oneWholeGeneralLens :: forall ff f edita editb. (Monad ff,Traversable ff,MonadOne f,IOFullReader (EditReader edita),Edit edita,IOFullEdit editb) =>
      (forall a. f a -> ff a) ->
      GeneralLens' ff edita editb -> GeneralLens' ff (OneWholeEdit f edita) (OneWholeEdit f editb);
-    oneWholeGeneralLens faffa (MkCloseFloat (lens :: FloatingEditLens' ff state edita editb)) = MkCloseFloat $ sumWholeFloatingEditLens pushback (oneFloatingEditLens faffa lens) where
+    oneWholeGeneralLens faffa (MkCloseFloat (lens :: IOFloatingEditLens' ff state edita editb)) = MkCloseFloat $ sumWholeFloatingEditLens pushback (oneFloatingEditLens faffa lens) where
     {
         ff1 :: forall a. state -> f (state,a) -> (state,f a);
         ff1 oldstate fsa = case retrieveOne fsa of
@@ -33,17 +33,18 @@ module Truth.Core.Types.OneWholeEdit where
             SuccessResult (newstate,a) -> (newstate,fmap (\_ ->  a) fsa);
         };
 
-        pushback :: state -> f (EditSubject editb) -> Readable (OneReader f (EditReader edita)) (ff (state,f (EditSubject edita)));
+        pushback :: state -> f (EditSubject editb) -> IOReadable (OneReader f (EditReader edita)) (ff (state,f (EditSubject edita)));
         pushback oldstate fb = case retrieveOne fb of
         {
             FailureResult (MkLimit fx) -> return $ return (oldstate,fx);
 
             SuccessResult b -> fmap (fmap (ff1 oldstate) . sequenceA) $ liftMaybeReadable $ do
             {
-                fstateedita <- floatingEditLensPutEdits lens oldstate $ getReplaceEdits b;
+                editbs <- getReplaceEditsM @MonadIO b;
+                fstateedita <- floatingEditLensPutEdits lens oldstate editbs;
                 for fstateedita $ \(newstate,editas) -> do
                 {
-                    a <- mapReadable (applyEdits editas) fromReader;
+                    a <- mapReadable (applyEdits editas) genFromReader;
                     return (newstate,a);
                 };
             };

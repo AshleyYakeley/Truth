@@ -8,7 +8,7 @@ module Truth.Core.Object.Lens where
 
 
     mapSubscriber :: forall f edita editb action. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Subscriber edita action -> Subscriber editb action;
-    mapSubscriber (MkCloseFloat (lens@MkFloatingEditLens{..} :: FloatingEditLens' f lensstate edita editb)) sub (initialB :: Object editb -> IO editor) updateB = do
+    mapSubscriber (MkCloseFloat (lens@MkFloatingEditLens{..} :: IOFloatingEditLens' f lensstate edita editb)) sub (initialB :: Object editb -> IO editor) updateB = do
     {
         let
         {

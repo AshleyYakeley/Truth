@@ -13,6 +13,12 @@ module Truth.Core.Read.Readable where
 
     newtype GenReadable c reader a = MkReadable { unReadable :: forall m. (Monad m,c m) => MutableRead m reader -> m a};
 
+    instance HasTypeInfo GenReadable where
+    {
+        typeWitness = $(generateWitness [t|GenReadable|]);
+        typeName _ = "GenReadable";
+    };
+
     type Readable = GenReadable Monad;
     type IOReadable = GenReadable MonadIO;
 
@@ -57,7 +63,7 @@ module Truth.Core.Read.Readable where
         readable rt = MkReadable (\s -> s rt);
     };
 
-    readableToM :: (IsReadableMonad m,c m) => GenReadable c (RMReader m) t -> m t;
+    readableToM :: forall c m t. (IsReadableMonad m,c m) => GenReadable c (RMReader m) t -> m t;
     readableToM (MkReadable sma) = sma readable;
 
 
@@ -84,6 +90,6 @@ module Truth.Core.Read.Readable where
         readFromM msubj rbl = unReadable rbl $ readFromM msubj;
     };
 
-    nestReadable :: Readable reader t -> Readable (Readable reader) t;
+    nestReadable :: GenReadable c reader t -> GenReadable c (GenReadable c reader) t;
     nestReadable rbl = MkReadable $ \mr -> mr rbl;
 }

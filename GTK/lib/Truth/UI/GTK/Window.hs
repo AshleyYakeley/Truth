@@ -32,7 +32,7 @@ module Truth.UI.GTK.Window where
     };
 
     allKnowledge :: TypeKnowledge;
-    allKnowledge = mconcat [baseTypeKnowledge,checkButtonTypeKnowledge,textTypeKnowledge,keyContainerTypeKnowledge,maybeTypeKnowledge,tupleTypeKnowledge];
+    allKnowledge = mconcat [generalTypeKnowledge,checkButtonTypeKnowledge,textTypeKnowledge,keyContainerTypeKnowledge,maybeTypeKnowledge,tupleTypeKnowledge];
 
     class WindowButtons actions where
     {

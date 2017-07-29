@@ -50,8 +50,7 @@ module Truth.Core.Types.Function where
             {
                 type TupleSubject (FunctionSelector a edit) = a -> EditSubject edit;
             };
-            instance (Finite a,Edit edit,FullReader (EditReader edit)) =>
-                FiniteTupleSelector (FunctionSelector a edit) where
+            instance (Finite a,Edit edit) => FiniteTupleSelector (FunctionSelector a edit) where
             instance (c (EditReader edit)) => TupleReaderWitness c (FunctionSelector a edit);
             instance (c edit) => TupleWitness c (FunctionSelector a edit);
         |]);

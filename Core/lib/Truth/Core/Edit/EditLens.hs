@@ -8,13 +8,19 @@ module Truth.Core.Edit.EditLens where
 
     -- | A EditLens is a lens that converts edits
     ;
-    data EditLens' m edita editb = MkEditLens
+    data GenEditLens' c m edita editb = MkEditLens
     {
-        editLensFunction :: EditFunction edita editb,
-        editLensPutEdit :: editb -> Readable (EditReader edita) (m [edita])
+        editLensFunction :: GenEditFunction c edita editb,
+        editLensPutEdit :: editb -> GenReadable c (EditReader edita) (m [edita])
     };
 
-    editLensPutEdits :: Applicative m => EditLens' m edita editb -> [editb] -> Readable (EditReader edita) (m [edita]);
+    type EditLens' = GenEditLens' Monad;
+    type IOEditLens' = GenEditLens' MonadIO;
+
+    editLensToGen :: EditLens' m edita editb -> GenEditLens' c m edita editb;
+    editLensToGen (MkEditLens f pe) = MkEditLens (editFunctionToGen f) (\eb -> readableToGen $ pe eb);
+
+    editLensPutEdits :: Applicative m => GenEditLens' c m edita editb -> [editb] -> GenReadable c (EditReader edita) (m [edita]);
     editLensPutEdits _lens [] = return $ pure [];
     editLensPutEdits lens (e:ee) = getCompose $ (++) <$> (MkCompose $ editLensPutEdit lens e) <*> (MkCompose $ editLensPutEdits lens ee);
 
@@ -37,7 +43,7 @@ module Truth.Core.Edit.EditLens where
         };
     };
 
-    instance (Applicative m,MonadOne m) => Category (EditLens' m) where
+    instance (ReadableConstraint c,Applicative m,MonadOne m) => Category (GenEditLens' c m) where
     {
         id = MkEditLens
         {
@@ -49,7 +55,7 @@ module Truth.Core.Edit.EditLens where
             editLensFunction = (editLensFunction bc) . (editLensFunction ab),
             editLensPutEdit = \editc -> do
             {
-                meditbs <- mapReadable (editGet (editLensFunction ab)) (editLensPutEdit bc editc);
+                meditbs <- mapGenReadable (editGet (editLensFunction ab)) (editLensPutEdit bc editc);
                 case retrieveOne meditbs of
                 {
                     SuccessResult editbs -> editLensPutEdits ab editbs;

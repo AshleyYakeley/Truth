@@ -42,22 +42,12 @@ module Truth.Core.Types.Key where
         readFrom cont (KeyReadItem key reader) = fmap (\e -> readFrom e reader) $ lookupElement key cont;
     };
 
-    instance (KeyContainer cont,IOFullReader reader,ReaderSubject reader ~ Element cont) => IOFullReader (KeyReader cont reader) where
+    instance (KeyContainer cont,ReadableConstraint c,GenFullReader c reader,ReaderSubject reader ~ Element cont) => GenFullReader c (KeyReader cont reader) where
     {
-        ioFromReader = do
+        genFromReader = do
         {
             allkeys <- readable KeyReadKeys;
-            list <- traverse (\key -> mapReadable (knownKeyItemReadFunction key) ioFromReader) allkeys;
-            return $ fromElementList list;
-        };
-    };
-
-    instance (KeyContainer cont,FullReader reader,ReaderSubject reader ~ Element cont) => FullReader (KeyReader cont reader) where
-    {
-        fromReader = do
-        {
-            allkeys <- readable KeyReadKeys;
-            list <- traverse (\key -> mapReadable (knownKeyItemReadFunction key) fromReader) allkeys;
+            list <- traverse (\key -> mapReadable (knownKeyItemReadFunction key) genFromReader) allkeys;
             return $ fromElementList list;
         };
     };
@@ -72,7 +62,7 @@ module Truth.Core.Types.Key where
             {
                 type ReaderSubject (KeyReader cont reader) = cont;
             };
-            instance (KeyContainer cont,FullReader reader,ReaderSubject reader ~ Element cont) => FullReader (KeyReader cont reader);
+            instance (KeyContainer cont,ReadableConstraint c,GenFullReader c reader,ReaderSubject reader ~ Element cont) => GenFullReader c (KeyReader cont reader);
         |]);
     };
 
@@ -182,40 +172,24 @@ module Truth.Core.Types.Key where
                 Nothing -> return [];
             };
         };
-        invertEdit KeyClear = ioWriterToReadable ioReplaceEdit;
+        invertEdit KeyClear = writerToReadable ioReplaceEdit;
     };
 
-    instance (KeyContainer cont,IOFullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => IOFullEdit (KeyEdit cont edit) where
+    instance (KeyContainer cont,ReadableConstraint c,IOFullReader (EditReader edit),GenFullReader c (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => GenFullEdit c (KeyEdit cont edit) where
     {
-        ioReplaceEdit = do
+        genReplaceEdit = do
         {
             wrWrite KeyClear;
             allkeys <- readable KeyReadKeys;
             let
             {
-                readWriteItem :: ContainerKey cont -> IOWriterReadable (KeyEdit cont edit) (KeyReader cont (EditReader edit)) ();
+                readWriteItem :: ContainerKey cont -> GenWriterReadable c (KeyEdit cont edit) (KeyReader cont (EditReader edit)) ();
                 readWriteItem key = do
                 {
-                    item <- mapReadable (knownKeyItemReadFunction key) $ readableToM ioFromReader;
-                    wrWrite $ KeyInsertReplaceItem item;
-                };
-            };
-            traverse_ readWriteItem allkeys;
-        };
-    };
-
-    instance (KeyContainer cont,FullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => FullEdit (KeyEdit cont edit) where
-    {
-        replaceEdit = do
-        {
-            wrWrite KeyClear;
-            allkeys <- readable KeyReadKeys;
-            let
-            {
-                readWriteItem :: ContainerKey cont -> WriterReadable (KeyEdit cont edit) (KeyReader cont (EditReader edit)) ();
-                readWriteItem key = do
-                {
-                    item <- mapReadable (knownKeyItemReadFunction key) $ readableToM fromReader;
+                    item <- case selfWriterReadable @c @(KeyEdit cont edit) @(EditReader edit) of
+                    {
+                        MkConstraintWitness -> mapReadable (knownKeyItemReadFunction key) $ readableToM @c genFromReader;
+                    };
                     wrWrite $ KeyInsertReplaceItem item;
                 };
             };
@@ -235,13 +209,14 @@ module Truth.Core.Types.Key where
             type instance ContainerKey [(key, value)] = key;
             instance Show UUID;
             instance Floating (KeyEdit cont edit) (KeyEdit cont edit);
-            instance (KeyContainer cont,FullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => Edit (KeyEdit cont edit) where
+            instance (KeyContainer cont,IOFullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => Edit (KeyEdit cont edit) where
             {
                 type EditReader (KeyEdit cont edit) = KeyReader cont (EditReader edit);
             };
-            instance (KeyContainer cont,FullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => FullEdit (KeyEdit cont edit);
+            instance (KeyContainer cont,ReadableConstraint c,GenFullReader MonadIO (EditReader edit),GenFullReader c (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) =>
+                GenFullEdit c (KeyEdit cont edit);
             instance (HasNewValue value) => IONewItemKeyContainer [(UUID, value)];
-            instance (EditSubject keyedit ~ key,EditSubject valedit ~ val,Edit keyedit,FullReader (EditReader keyedit),Edit valedit) =>
+            instance (EditSubject keyedit ~ key,EditSubject valedit ~ val,Edit keyedit,GenFullReader MonadIO (EditReader keyedit),GenFullReader Monad (EditReader keyedit),Edit valedit) =>
                 HasKeyReader [(key,val)] (PairEditReader keyedit valedit);
         |])];
     };
@@ -294,8 +269,15 @@ module Truth.Core.Types.Key where
             Eq (ContainerKey cont),
             HasKeyReader cont (PairEditReader keyedit valueedit),
             Edit keyedit,
-            FullReader (EditReader keyedit),
-            FullEdit valueedit
+            IOFullReader (EditReader keyedit),
+            IOFullEdit valueedit
         ) => ContainerKey cont -> GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (OneWholeEdit Maybe valueedit);
-    keyValueLens key = editCompose (toGeneralLens $ oneWholeGeneralLens id $ toGeneralLens $ tupleCleanEditLens EditSecond) $ toGeneralLens $ keyElementLens key;
+    keyValueLens key = let
+    {
+        oneSndLens :: GeneralLens (OneWholeEdit Maybe (PairEdit keyedit valueedit)) (OneWholeEdit Maybe valueedit);
+        oneSndLens = toGeneralLens $ oneWholeGeneralLens id $ toGeneralLens $ tupleCleanEditLens EditSecond;
+
+        elementLens :: GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (OneWholeEdit Maybe (PairEdit keyedit valueedit));
+        elementLens = toGeneralLens $ keyElementLens key;
+    } in editCompose oneSndLens elementLens;
 }

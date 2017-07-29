@@ -11,7 +11,7 @@ module Data.Reity.Match where
     sameTypeInfo ia ib = case testHetEquality ia ib of
     {
         Just ReflH -> return ReflH;
-        Nothing -> kmError $ "couldn't match " ++ show ib ++ " with " ++ show ia;
+        Nothing -> kmNullError;
     };
 
     class MatchTypeInfo (p :: HetWit) where
@@ -39,7 +39,7 @@ module Data.Reity.Match where
         matchTypeInfo i = case typeInfoSplit i of
         {
             Just split -> pure split;
-            Nothing -> kmError $ "couldn't split " ++ show i;
+            Nothing -> kmNullError;
         }
     };
 

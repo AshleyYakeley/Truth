@@ -64,25 +64,32 @@ module Truth.Core.Edit.Edit where
     } in if a12 == a21 then Just a12 else Nothing;
 -}
 
-    class (Edit edit,IOFullReader (EditReader edit)) => IOFullEdit edit where
+    class (Edit edit,GenFullReader c (EditReader edit)) => GenFullEdit c edit where
     {
-        ioReplaceEdit :: IOWriterReadable edit (EditReader edit) ();
+        genReplaceEdit :: GenWriterReadable c edit (EditReader edit) ();
 
-        default ioReplaceEdit :: FullEdit edit => IOWriterReadable edit (EditReader edit) ();
-        ioReplaceEdit = writerReadableToGen replaceEdit;
+        default genReplaceEdit :: FullEdit edit => IOWriterReadable edit (EditReader edit) ();
+        genReplaceEdit = writerReadableToGen genReplaceEdit;
     };
 
-    class (IOFullEdit edit,FullReader (EditReader edit)) => FullEdit edit where
-    {
-        replaceEdit :: WriterReadable edit (EditReader edit) ();
-    };
+    type IOFullEdit = GenFullEdit MonadIO;
+    type FullEdit = GenFullEdit Monad;
+
+    ioReplaceEdit :: IOFullEdit edit => IOWriterReadable edit (EditReader edit) ();
+    ioReplaceEdit = genReplaceEdit;
+
+    replaceEdit :: FullEdit edit => WriterReadable edit (EditReader edit) ();
+    replaceEdit = genReplaceEdit;
+
+    getReplaceEditsM :: forall c m edit. (ReadableConstraint c,GenFullEdit c edit,Monad m,c m) => EditSubject edit -> m [edit];
+    getReplaceEditsM = fromGenReadable (writerToReadable genReplaceEdit :: GenReadable c (EditReader edit) [edit]);
 
     getReplaceEdits :: forall edit. FullEdit edit => EditSubject edit -> [edit];
     getReplaceEdits = fromReadable (writerToReadable replaceEdit :: Readable (EditReader edit) [edit]);
 
-    instance HasTypeInfo FullEdit where
+    instance HasTypeInfo GenFullEdit where
     {
-        typeWitness = $(generateWitness [t|FullEdit|]);
-        typeName _ = "FullEdit";
+        typeWitness = $(generateWitness [t|GenFullEdit|]);
+        typeName _ = "GenFullEdit";
     };
 }

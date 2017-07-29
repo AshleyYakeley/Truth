@@ -6,14 +6,20 @@ module Truth.Core.Edit.FloatingEditFunction  where
     import Truth.Core.Edit.EditFunction;
 
 
-    data FloatingEditFunction state edita editb = MkFloatingEditFunction
+    data GenFloatingEditFunction c state edita editb = MkFloatingEditFunction
     {
         floatingEditInitial :: state,
-        floatingEditGet :: state -> ReadFunction (EditReader edita) (EditReader editb),
-        floatingEditUpdate :: edita -> state -> Readable (EditReader edita) (state,[editb])
+        floatingEditGet :: state -> GenReadFunction c (EditReader edita) (EditReader editb),
+        floatingEditUpdate :: edita -> state -> GenReadable c (EditReader edita) (state,[editb])
     };
 
-    floatingEditUpdates :: FloatingEditFunction state edita editb -> [edita] -> state -> Readable (EditReader edita) (state, [editb]);
+    type FloatingEditFunction = GenFloatingEditFunction Monad;
+    type IOFloatingEditFunction = GenFloatingEditFunction MonadIO;
+
+    floatingEditFunctionToGen :: FloatingEditFunction state edita editb -> GenFloatingEditFunction c state edita editb;
+    floatingEditFunctionToGen (MkFloatingEditFunction i g u) = MkFloatingEditFunction i (\s -> readFunctionToGen $ g s) (\ea s -> readableToGen $ u ea s);
+
+    floatingEditUpdates :: GenFloatingEditFunction c state edita editb -> [edita] -> state -> GenReadable c (EditReader edita) (state, [editb]);
     floatingEditUpdates _ [] st = return (st,[]);
     floatingEditUpdates fef (e:ee) oldstate = do
     {
@@ -22,11 +28,11 @@ module Truth.Core.Edit.FloatingEditFunction  where
         return (newstate,eb1 ++ eb2);
     };
 
-    fixedFloatingEditFunction :: forall edita editb. EditFunction edita editb -> FloatingEditFunction () edita editb;
+    fixedFloatingEditFunction :: forall c edita editb. GenEditFunction c edita editb -> GenFloatingEditFunction c () edita editb;
     fixedFloatingEditFunction MkEditFunction{..} = let
     {
         floatingEditInitial = ();
-        floatingEditGet :: () -> ReadFunction (EditReader edita) (EditReader editb);
+        floatingEditGet :: () -> GenReadFunction c (EditReader edita) (EditReader editb);
         floatingEditGet _ = editGet;
         floatingEditUpdate edit _ = do
         {
@@ -71,7 +77,7 @@ module Truth.Core.Edit.FloatingEditFunction  where
     editCompose :: (FloatingMap ff,Edit a,Edit b,Edit c) => CloseFloat ff b c -> CloseFloat ff a b -> CloseFloat ff a c;
     editCompose (MkCloseFloat bc) (MkCloseFloat ab) = MkCloseFloat $ composeFloating bc ab;
 
-    instance FloatingMap FloatingEditFunction where
+    instance ReadableConstraint c => FloatingMap (GenFloatingEditFunction c) where
     {
         identityFloating = fixedFloatingEditFunction id;
 
@@ -82,7 +88,7 @@ module Truth.Core.Edit.FloatingEditFunction  where
             floatingEditUpdate = \editA (oldstate1,oldstate2) -> do
             {
                 (newstate1,editBs) <- floatingEditUpdate fef1 editA oldstate1;
-                (newstate2,editCs) <- mapReadable (floatingEditGet fef1 oldstate1) $ floatingEditUpdates fef2 editBs oldstate2;
+                (newstate2,editCs) <- mapGenReadable (floatingEditGet fef1 oldstate1) $ floatingEditUpdates fef2 editBs oldstate2;
                 return ((newstate1,newstate2),editCs);
             }
         };

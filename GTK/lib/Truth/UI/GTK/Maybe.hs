@@ -34,7 +34,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
     createButton :: (IOFullEdit edit) => EditSubject edit -> Object edit -> IO Button;
     createButton subj object = makeButton "Create" $ runObject object $ \muted -> do
     {
-        edits <- fromGenReadable (ioWriterToReadable ioReplaceEdit) subj;
+        edits <- fromGenReadable (writerToReadable ioReplaceEdit) subj;
         maction <- mutableEdit muted edits;
         case maction of
         {
@@ -48,7 +48,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         Applicative f,
         MonadOne f,
         HasNewValue (EditSubject edit),
-        FullEdit edit,
+        IOFullEdit edit,
         WidgetClass wd
     ) =>
       TypeInfo f -> Maybe (Limit f) -> (Object (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
@@ -105,7 +105,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         {
             vrWidget = toWidget box;
             vrUpdate :: forall m. IsStateIO m => MutableRead m (OneReader f (EditReader edit)) -> [OneWholeEdit f edit] -> m ();
-            vrUpdate mr edits = mvarStateAccess stateVar $ do
+            vrUpdate mr wedits = mvarStateAccess stateVar $ do
             {
                 oldfvr <- get;
                 newfu <- lift $ mr ReadHasOne;
@@ -113,7 +113,11 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
                 {
                     (SuccessResult (MkViewResult _ update _),SuccessResult ()) -> do
                     {
-                        lift $ update (mapMutableRead baseReadFunction mr) $ edits >>= extractOneWholeEdit;
+                        lift $ do
+                        {
+                            editss <- for wedits $ extractOneWholeEdit @MonadIO;
+                            update (mapMutableRead baseReadFunction mr) $ mconcat editss;
+                        };
                         return oldfvr;
                     };
                     (SuccessResult (MkViewResult w _ _),FailureResult (MkLimit newlf)) -> liftIO $ do
@@ -226,7 +230,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         });
     };
 -}
-    maybeView :: (HasNewValue (EditSubject edit),FullEdit edit) =>
+    maybeView :: (HasNewValue (EditSubject edit),IOFullEdit edit) =>
       GView edit -> GView (OneWholeEdit Maybe edit);
     maybeView = monadOneIVF @Maybe typeInfo (Just $ MkLimit Nothing) (createButton (Just newValue));
 
@@ -235,7 +239,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         EditReader edit ~ reader,
         DependentHasView Widget edit,
         HasNewValue (ReaderSubject reader),
-        FullEdit edit
+        IOFullEdit edit
         ) => DependentHasView Widget (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit)) where
     {
         dependsView = $(generateTypeMatchExpr [t|forall e r. SumWholeReaderEdit (OneReader Maybe r) (OneEdit Maybe e)|] [e|\ie _ -> do
@@ -250,7 +254,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         EditReader edit ~ reader,
         DependentHasView Widget edit,
         HasNewValue (ReaderSubject reader),
-        FullEdit edit,
+        IOFullEdit edit,
         HasView Widget edit
         ) => HasView Widget (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit)) where
     {
@@ -264,7 +268,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         return label;
     };
 
-    resultView :: (HasNewValue (EditSubject edit),FullEdit edit) => TypeInfo err -> GView edit -> GView (OneWholeEdit (Result err) edit);
+    resultView :: (HasNewValue (EditSubject edit),IOFullEdit edit) => TypeInfo err -> GView edit -> GView (OneWholeEdit (Result err) edit);
     resultView terr = monadOneIVF (applyTypeInfo (typeInfo :: TypeInfo Result) terr) Nothing (\_ -> placeholderLabel);
 
     -- orphan
@@ -273,7 +277,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         EditReader edit ~ reader,
         DependentHasView Widget edit,
         HasNewValue (ReaderSubject reader),
-        FullEdit edit
+        IOFullEdit edit
     ) => DependentHasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
     {
         dependsView = $(generateTypeMatchExpr [t|forall edit' reader' err'. SumWholeReaderEdit (OneReader (Result err') reader') (OneEdit (Result err') edit')|] [e|\ie _ ierr -> do
@@ -288,7 +292,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         EditReader edit ~ reader,
         DependentHasView Widget edit,
         HasNewValue (ReaderSubject reader),
-        FullEdit edit,
+        IOFullEdit edit,
         HasView Widget edit,
         HasTypeInfo err
         ) => HasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
@@ -305,7 +309,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
                     EditReader edit ~ reader,
                     DependentHasView Widget edit,
                     HasNewValue (ReaderSubject reader),
-                    FullEdit edit
+                    IOFullEdit edit
                 ) =>
                 DependentHasView Widget (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit));
             |]),
@@ -315,7 +319,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
                     EditReader edit ~ reader,
                     DependentHasView Widget edit,
                     HasNewValue (ReaderSubject reader),
-                    FullEdit edit
+                    IOFullEdit edit
                 ) =>
                 DependentHasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit));
             |])

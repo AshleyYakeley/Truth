@@ -51,14 +51,9 @@ module Truth.Core.Types.Sum where
         invertEdit (SumEditRight edit) = fmap (fmap SumEditRight) (invertEdit edit);
     };
 
-    instance (IOFullEdit ea,Edit eb,EditReader ea ~ EditReader eb) => IOFullEdit (SumEdit ea eb) where
+    instance (GenFullEdit c ea,Edit eb,EditReader ea ~ EditReader eb) => GenFullEdit c (SumEdit ea eb) where
     {
-        ioReplaceEdit = reWriterReadable SumEditLeft ioReplaceEdit;
-    };
-
-    instance (FullEdit ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit (SumEdit ea eb) where
-    {
-        replaceEdit = reWriterReadable SumEditLeft replaceEdit;
+        genReplaceEdit = reWriterReadable SumEditLeft genReplaceEdit;
     };
 
     $(return []);
@@ -71,7 +66,7 @@ module Truth.Core.Types.Sum where
             {
                 type EditReader (SumEdit ea eb) = EditReader ea;
             };
-            instance (FullEdit ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit (SumEdit ea eb);
+            instance (GenFullEdit c ea,Edit eb,EditReader ea ~ EditReader eb) => GenFullEdit c (SumEdit ea eb);
         |]);
     };
 

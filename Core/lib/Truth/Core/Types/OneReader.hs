@@ -25,19 +25,13 @@ module Truth.Core.Types.OneReader where
     liftMaybeReadable :: (Traversable f,Monad f) => MapReadable readable => readable reader a -> readable (OneReader f reader) (f a);
     liftMaybeReadable = mapReadableF oneReadFunctionF;
 
-    liftMaybeReadFunction :: (Traversable f,Monad f) => ReadFunction ra rb -> ReadFunction (OneReader f ra) (OneReader f rb);
+    liftMaybeReadFunction :: (ReadableConstraint c,Traversable f,Monad f) => GenReadFunction c ra rb -> GenReadFunction c (OneReader f ra) (OneReader f rb);
     liftMaybeReadFunction _rfrarb ReadHasOne = readable ReadHasOne;
     liftMaybeReadFunction rfrarb (ReadOne rt) = liftMaybeReadable (rfrarb rt);
 
-    instance (Traversable f,Monad f,IOFullReader reader) => IOFullReader (OneReader f reader) where
+    instance (Traversable f,Monad f,ReadableConstraint c,GenFullReader c reader) => GenFullReader c (OneReader f reader) where
     {
-        ioFromReader = liftMaybeReadable ioFromReader;
-    };
-
-    instance (Traversable f,Monad f,FullReader reader) => FullReader (OneReader f reader) where
-    {
-        -- fromReader :: ReadFunction (OneReader f reader) (f (ReaderSubject reader));
-        fromReader = liftMaybeReadable fromReader;
+        genFromReader = liftMaybeReadable genFromReader;
     };
 
     $(return []);
@@ -50,8 +44,7 @@ module Truth.Core.Types.OneReader where
             {
                 type ReaderSubject (OneReader f reader) = f (ReaderSubject reader);
             };
-            instance (Traversable f,Monad f,IOFullReader reader) => IOFullReader (OneReader f reader);
-            instance (Traversable f,Monad f,FullReader reader) => FullReader (OneReader f reader);
+            instance (Traversable f,Monad f,ReadableConstraint c,GenFullReader c reader) => GenFullReader c (OneReader f reader);
         |]);
     };
 }

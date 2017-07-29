@@ -5,40 +5,32 @@ module Truth.Core.Read.FullReader where
     import Truth.Core.Read.Readable;
 
 
-    class (Reader reader) => IOFullReader (reader :: * -> *) where
+    class (Reader reader) => GenFullReader c (reader :: * -> *) where
     {
         -- | Construct the subject by making MutableEdit calls
-        ioFromReader :: IOReadable reader (ReaderSubject reader);
+        genFromReader :: GenReadable c reader (ReaderSubject reader);
 
-        default ioFromReader :: FullReader reader => IOReadable reader (ReaderSubject reader);
-        ioFromReader = MkReadable $ unReadable fromReader;
+        default genFromReader :: (IOFullReader reader,FullReader reader) => IOReadable reader (ReaderSubject reader);
+        genFromReader = MkReadable $ unReadable ioFromReader;
     };
 
-    class (IOFullReader reader) => FullReader (reader :: * -> *) where
+    type IOFullReader = GenFullReader MonadIO;
+    type FullReader = GenFullReader Monad;
+
+    ioFromReader :: IOFullReader reader => IOReadable reader (ReaderSubject reader);
+    ioFromReader = genFromReader;
+
+    fromReader :: FullReader reader => Readable reader (ReaderSubject reader);
+    fromReader = genFromReader;
+
+    instance HasTypeInfo GenFullReader where
     {
-        -- | Construct the subject by making MutableEdit calls
-        fromReader :: Readable reader (ReaderSubject reader);
+        typeWitness = $(generateWitness [t|GenFullReader|]);
+        typeName _ = "GenFullReader";
     };
 
-    instance HasTypeInfo IOFullReader where
+    instance GenFullReader c reader => GenFullReader c (Readable reader) where
     {
-        typeWitness = $(generateWitness [t|IOFullReader|]);
-        typeName _ = "IOFullReader";
-    };
-
-    instance HasTypeInfo FullReader where
-    {
-        typeWitness = $(generateWitness [t|FullReader|]);
-        typeName _ = "FullReader";
-    };
-
-    instance IOFullReader reader => IOFullReader (Readable reader) where
-    {
-        ioFromReader = MkReadable $ \mr -> unReadable ioFromReader $ \rt -> mr $ readable rt;
-    };
-
-    instance FullReader reader => FullReader (Readable reader) where
-    {
-        fromReader = nestReadable fromReader;
+        genFromReader = MkReadable $ \mr -> unReadable (genFromReader @c @reader) $ \rt -> mr $ readable rt;
     };
 }

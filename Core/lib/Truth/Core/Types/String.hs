@@ -20,10 +20,9 @@ module Truth.Core.Types.String where
         readFrom s (StringReadSection run) = seqSection run s;
     };
 
-    instance IsSequence seq => IOFullReader (StringRead seq);
-    instance IsSequence seq => FullReader (StringRead seq) where
+    instance IsSequence seq => GenFullReader c (StringRead seq) where
     {
-        fromReader = do
+        genFromReader = do
         {
             len <- readable StringReadLength;
             readable $ StringReadSection $ MkSequenceRun 0 len;
@@ -40,7 +39,7 @@ module Truth.Core.Types.String where
             {
                 type ReaderSubject (StringRead seq) = seq;
             };
-            instance IsSequence seq => FullReader (StringRead seq);
+            instance IsSequence seq => GenFullReader c (StringRead seq);
         |]);
     };
 
@@ -130,10 +129,9 @@ module Truth.Core.Types.String where
         };
     };
 
-    instance IsSequence seq => IOFullEdit (StringEdit seq);
-    instance IsSequence seq => FullEdit (StringEdit seq) where
+    instance IsSequence seq => GenFullEdit c (StringEdit seq) where
     {
-        replaceEdit = do
+        genReplaceEdit = do
         {
             a <- readableToM $ fromReader;
             wrWrite $ StringReplaceWhole a;
@@ -151,7 +149,7 @@ module Truth.Core.Types.String where
             {
                 type EditReader (StringEdit seq) = StringRead seq;
             };
-            instance IsSequence seq => FullEdit (StringEdit seq);
+            instance IsSequence seq => GenFullEdit c (StringEdit seq);
         |]);
     };
 

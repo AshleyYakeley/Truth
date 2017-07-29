@@ -21,8 +21,11 @@ module Data.Reity.ReasonM where
 
     type ReasonM = Result [FailureReason];
 
+    kmNullError :: ReaderT k ReasonM a;
+    kmNullError = lift $ FailureResult [];
+
     kmError :: String -> ReaderT k ReasonM a;
-    kmError s = lift $ FailureResult $ [MkFailureReason s []];
+    kmError s = lift $ FailureResult [MkFailureReason s []];
 
     rmContext :: String -> ReasonM a -> ReasonM a;
     rmContext _ (SuccessResult a) = SuccessResult a;
