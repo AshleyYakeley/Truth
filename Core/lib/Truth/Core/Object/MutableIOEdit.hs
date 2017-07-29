@@ -43,6 +43,38 @@ module Truth.Core.Object.MutableIOEdit where
         |]);
     };
 
+    mutableIOEditLens :: forall edit. IOEditLens' Identity (MutableIOEdit edit) edit;
+    mutableIOEditLens = let
+    {
+        editGet :: IOReadFunction (MutableIOReader edit) (EditReader edit);
+        editGet reader = do
+        {
+            muted <- readable ReadMutableIO;
+            liftIO $ mutableRead muted reader;
+        };
+
+        editUpdate :: MutableIOEdit edit -> IOReadable (MutableIOReader edit) [edit];
+        editUpdate edit = never edit;
+
+        editLensFunction = MkEditFunction{..};
+
+        editLensPutEdit :: edit -> IOReadable (MutableIOReader edit) (Identity [MutableIOEdit edit]);
+        editLensPutEdit edit = do
+        {
+            muted <- readable ReadMutableIO;
+            liftIO $ do
+            {
+                maction <- mutableEdit muted [edit];
+                case maction of
+                {
+                    Just action -> action;
+                    Nothing -> fail "mutableIOEditLens: failed";
+                };
+            };
+            return $ Identity [];
+        };
+    } in MkEditLens{..};
+
     liftMutableIOEditLens :: forall f f' edita editb. (MonadOne f,Edit edita) => EditLens' f edita editb -> EditLens' f' (MutableIOEdit edita) (MutableIOEdit editb);
     liftMutableIOEditLens lens = let
     {
