@@ -156,25 +156,6 @@ module Truth.Core.Types.List where
         };
     };
 {-
-    instance (IsSequence seq,FullReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => FullEdit (ListEdit seq edit) where
-    {
-        replaceEdit = do
-        {
-            wrWrite ListClear;
-            len <- readable ListReadLength;
-            let
-            {
-                readWriteItem :: SequencePoint seq -> WriterReadable (ListEdit seq edit) (ListReader seq (EditReader edit)) ();
-                readWriteItem i = do
-                {
-                    item <- mapReadable (knownItemReadFunction i) $ readableToM fromReader;
-                    wrWrite $ ListInsertItem i item;
-                };
-            };
-            traverse_ readWriteItem [0..pred len];
-        };
-    };
-
     $(return []);
     instance HasTypeInfo ListEdit where
     {

@@ -21,10 +21,10 @@ module Truth.Core.Types.OneWholeEdit where
     };
 
     -- suitable for Results, trying to put a failure code will be rejected
-    oneWholeGeneralLens :: forall ff f edita editb. (Monad ff,Traversable ff,MonadOne f,IOFullReader (EditReader edita),Edit edita,IOFullEdit editb) =>
+    liftOneWholeGeneralLens :: forall ff f edita editb. (Monad ff,Traversable ff,MonadOne f,IOFullReader (EditReader edita),Edit edita,IOFullEdit editb) =>
      (forall a. f a -> ff a) ->
      GeneralLens' ff edita editb -> GeneralLens' ff (OneWholeEdit f edita) (OneWholeEdit f editb);
-    oneWholeGeneralLens faffa (MkCloseFloat (lens :: IOFloatingEditLens' ff state edita editb)) = MkCloseFloat $ sumWholeFloatingEditLens pushback (oneFloatingEditLens faffa lens) where
+    liftOneWholeGeneralLens faffa (MkCloseFloat (lens :: IOFloatingEditLens' ff state edita editb)) = MkCloseFloat $ sumWholeLiftFloatingEditLens pushback (oneLiftFloatingEditLens faffa lens) where
     {
         ff1 :: forall a. state -> f (state,a) -> (state,f a);
         ff1 oldstate fsa = case retrieveOne fsa of

@@ -22,6 +22,6 @@ module Truth.Core.Object.Aspect where
     {
         ConstraintFact <- askTypeInfo $ applyTypeInfo (typeInfo @IOFullEdit) infoEditB;
         infoEditB' <- $(generateTypeInfoExpr [t|forall f' editb. OneWholeEdit f' editb|]) infoF infoEditB;
-        return $ MkAspect infoEditB' $ toGeneralLens $ oneWholeGeneralLens getMaybeOne lens;
+        return $ MkAspect infoEditB' $ toGeneralLens $ liftOneWholeGeneralLens getMaybeOne lens;
     };
 }

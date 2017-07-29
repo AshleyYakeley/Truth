@@ -80,9 +80,9 @@ module Truth.Core.Types.OneEdit where
         |]);
     };
 
-    oneFloatingEditFunction :: forall c f state edita editb. (ReadableConstraint c,MonadOne f,Edit edita,Edit editb) =>
+    oneLiftFloatingEditFunction :: forall c f state edita editb. (ReadableConstraint c,MonadOne f,Edit edita,Edit editb) =>
      GenFloatingEditFunction c state edita editb -> GenFloatingEditFunction c state (OneEdit f edita) (OneEdit f editb);
-    oneFloatingEditFunction fef = MkFloatingEditFunction
+    oneLiftFloatingEditFunction fef = MkFloatingEditFunction
     {
         floatingEditInitial = floatingEditInitial fef,
         floatingEditGet = \st -> liftMaybeReadFunction (floatingEditGet fef st),
@@ -97,12 +97,12 @@ module Truth.Core.Types.OneEdit where
         }
     };
 
-    oneFloatingEditLens :: forall c ff f state edita editb. (ReadableConstraint c,Monad ff,MonadOne f,Edit edita,Edit editb) =>
+    oneLiftFloatingEditLens :: forall c ff f state edita editb. (ReadableConstraint c,Monad ff,MonadOne f,Edit edita,Edit editb) =>
      (forall a. f a -> ff a) ->
      GenFloatingEditLens' c ff state edita editb -> GenFloatingEditLens' c ff state (OneEdit f edita) (OneEdit f editb);
-    oneFloatingEditLens faffa lens = MkFloatingEditLens
+    oneLiftFloatingEditLens faffa lens = MkFloatingEditLens
     {
-        floatingEditLensFunction = oneFloatingEditFunction (floatingEditLensFunction lens),
+        floatingEditLensFunction = oneLiftFloatingEditFunction (floatingEditLensFunction lens),
         floatingEditLensPutEdit = \oldstate (MkOneEdit pushb) -> do
         {
             ffpusha <- liftMaybeReadable (floatingEditLensPutEdit lens oldstate pushb);

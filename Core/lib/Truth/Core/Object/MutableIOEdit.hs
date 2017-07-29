@@ -75,8 +75,8 @@ module Truth.Core.Object.MutableIOEdit where
         };
     } in MkEditLens{..};
 
-    liftMutableIOEditLens :: forall f f' edita editb. (MonadOne f,Edit edita) => EditLens' f edita editb -> EditLens' f' (MutableIOEdit edita) (MutableIOEdit editb);
-    liftMutableIOEditLens lens = let
+    mutableIOLiftEditLens :: forall f f' edita editb. (MonadOne f,Edit edita) => EditLens' f edita editb -> EditLens' f' (MutableIOEdit edita) (MutableIOEdit editb);
+    mutableIOLiftEditLens lens = let
     {
         editGet :: ReadFunction (MutableIOReader edita) (MutableIOReader editb);
         editGet ReadMutableIO = do
