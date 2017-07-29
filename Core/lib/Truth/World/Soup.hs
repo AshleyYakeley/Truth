@@ -15,14 +15,14 @@ module Truth.World.Soup where
     uuidToName :: UUID -> String;
     uuidToName = Data.UUID.toString;
 
-    directorySoup :: MutableEdit IO FSEdit -> FilePath -> MutableEdit IO (SoupEdit (ObjectEdit ByteStringEdit));
-    directorySoup fs dirpath = MkMutableEdit
+    directorySoupMutableEdit :: MutableEdit IO FSEdit -> FilePath -> MutableEdit (AutoClose FilePath ByteStringEdit) (SoupEdit (MutableIOEdit ByteStringEdit));
+    directorySoupMutableEdit fs dirpath = MkMutableEdit
     {
         mutableRead = \r -> case r of
         {
             KeyReadKeys -> do
             {
-                mnames <- mutableRead fs $ FSReadDirectory dirpath;
+                mnames <- liftIO $ mutableRead fs $ FSReadDirectory dirpath;
                 return $ case mnames of
                 {
                     Just names -> mapMaybe nameToUUID names;
@@ -31,24 +31,32 @@ module Truth.World.Soup where
             };
             KeyReadItem uuid (MkTupleEditReader EditFirst ReadWhole) -> do
             {
-                mitem <- mutableRead fs $ FSReadItem $ dirpath </> uuidToName uuid;
+                mitem <- liftIO $ mutableRead fs $ FSReadItem $ dirpath </> uuidToName uuid;
                 case mitem of
                 {
                     Just (FSFileItem _) -> return $ Just uuid;
                     _ -> return Nothing;
                 };
             };
-            KeyReadItem uuid (MkTupleEditReader EditSecond ReadObject) -> do
+            KeyReadItem uuid (MkTupleEditReader EditSecond ReadMutableIO) -> do
             {
-                mitem <- mutableRead fs $ FSReadItem $ dirpath </> uuidToName uuid;
+                let
+                {
+                    path = dirpath </> uuidToName uuid;
+                };
+                mitem <- liftIO $ mutableRead fs $ FSReadItem path;
                 case mitem of
                 {
-                    Just (FSFileItem object) -> return $ Just object;
+                    Just (FSFileItem object) -> do
+                    {
+                        muted <- acOpenObject path object;
+                        return $ Just muted;
+                    };
                     _ -> return Nothing;
                 };
             };
         },
-        mutableEdit = singleMutableEdit $ \edit -> case edit of
+        mutableEdit = singleMutableEdit $ \edit -> fmap (fmap liftIO) $ liftIO $ case edit of
         {
             KeyEditItem _uuid (MkTupleEdit EditFirst iedit) -> never iedit;
             KeyEditItem _uuid (MkTupleEdit EditSecond iedit) -> never iedit;
@@ -65,4 +73,7 @@ module Truth.World.Soup where
             }
         }
     };
+
+    directorySoup :: MutableEdit IO FSEdit -> FilePath -> Object (SoupEdit (MutableIOEdit ByteStringEdit));
+    directorySoup muted dirpath = MkObject $ \call -> runAutoClose $ call $ directorySoupMutableEdit muted dirpath;
 }

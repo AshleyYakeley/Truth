@@ -23,7 +23,7 @@ module Main(main) where
     testGViews = testGroup "GView" [
             testGView $ typeInfo @(WholeEdit Bool),
             testGView $ typeInfo @(StringEdit String),
-            testGView $ typeInfo @(SoupEdit (ObjectEdit ByteStringEdit)),
+            testGView $ typeInfo @(SoupEdit (MutableIOEdit ByteStringEdit)),
             testGView $ typeInfo @(SumWholeEdit (OneEdit (Result String) (WholeEdit Bool))),
             testGView $ typeInfo @(SumWholeEdit (OneEdit (Result String) (StringEdit String)))
         ];

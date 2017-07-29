@@ -79,8 +79,8 @@ module Main(main) where
     {
         let
         {
-            soupObject :: Object (SoupEdit (ObjectEdit ByteStringEdit));
-            soupObject = nonlockingObject $ directorySoup fileSystemMutableEdit dirpath;
+            soupObject :: Object (SoupEdit (MutableIOEdit ByteStringEdit));
+            soupObject = directorySoup fileSystemMutableEdit dirpath;
         };
         soupSub <- makeObjectSubscriber soupObject;
         makeWindowCountRef windowCount soupSub;

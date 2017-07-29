@@ -49,6 +49,23 @@ module Control.Monad.IsStateIO where
         return (news,(a,newios));
     };
 
+    liftWithMVar :: IsStateIO m => (MVar (IOState m) -> IO r) -> m r;
+    liftWithMVar call = do
+    {
+        olds <- toStateIO get;
+        var <- liftIO $ newMVar olds;
+        r <- liftIO $ call var;
+        news <- liftIO $ takeMVar var;
+        toStateIO $ put news;
+        return r;
+    };
+
+    ioStateAccess :: IsStateIO m => StateAccess IO (IOState m) -> m r -> IO r;
+    ioStateAccess acc mr = acc $ fromStateIO mr;
+
+    liftWithUnlift :: IsStateIO m => ((forall a. m a -> IO a) -> IO r) -> m r;
+    liftWithUnlift call = liftWithMVar $ \mvar -> call $ ioStateAccess $ mvarStateAccess mvar;
+
     tryModifyMVar :: MVar a -> (a -> IO (a,b)) -> IO (Maybe b);
     tryModifyMVar var call = mask $ \restore -> do
     {

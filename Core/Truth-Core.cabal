@@ -111,7 +111,8 @@ library
         Truth.Core.Types
         Truth.Core.Object.MutableEdit
         Truth.Core.Object.Object
-        Truth.Core.Object.ObjectEdit
+        Truth.Core.Object.AutoClose
+        Truth.Core.Object.MutableIOEdit
         Truth.Core.Object.Subscriber
         Truth.Core.Object.Lens
         Truth.Core.Object.Editor
