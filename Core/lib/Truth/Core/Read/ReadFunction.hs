@@ -14,10 +14,10 @@ module Truth.Core.Read.ReadFunction where
     readFunctionToGen :: ReadFunction readera readerb -> GenReadFunction c readera readerb;
     readFunctionToGen rf rb = readableToGen $ rf rb;
 
-    mapMutableRead :: (Monad m,c m) => GenReadFunction c ra rb -> MutableRead m ra -> MutableRead m rb;
+    mapMutableRead :: forall c m ra rb. (Monad m,c m) => GenReadFunction c ra rb -> MutableRead m ra -> MutableRead m rb;
     mapMutableRead rfab sma rbt = unReadable (rfab rbt) sma;
 
-    mapMutableReadW :: (Monad m,c m) => GenReadFunction c ra rb -> MutableReadW m ra -> MutableReadW m rb;
+    mapMutableReadW :: forall c m ra rb. (Monad m,c m) => GenReadFunction c ra rb -> MutableReadW m ra -> MutableReadW m rb;
     mapMutableReadW rf (MkMutableReadW mr) = MkMutableReadW $ mapMutableRead rf mr;
 
     composeReadFunction :: forall c ra rb rc. ReadableConstraint c => GenReadFunction c rb rc -> GenReadFunction c ra rb -> GenReadFunction c ra rc;
@@ -26,13 +26,13 @@ module Truth.Core.Read.ReadFunction where
         MkConstraintWitness -> mapMutableRead;
     };
 
-    makeReadFunction :: (Reader rb) => Readable ra (ReaderSubject rb) -> ReadFunction ra rb;
+    makeReadFunction :: (Reader rb) => GenReadable c ra (ReaderSubject rb) -> GenReadFunction c ra rb;
     makeReadFunction = readFromM;
 
-    simpleReadFunction :: (FullReader ra,Reader rb) => (ReaderSubject ra -> ReaderSubject rb) -> ReadFunction ra rb;
-    simpleReadFunction ab = makeReadFunction (fmap ab fromReader);
+    simpleReadFunction :: (GenFullReader c ra,Reader rb) => (ReaderSubject ra -> ReaderSubject rb) -> GenReadFunction c ra rb;
+    simpleReadFunction ab = makeReadFunction (fmap ab genFromReader);
 
-    convertReadFunction :: (FullReader ra,Reader rb,ReaderSubject ra ~ ReaderSubject rb) => ReadFunction ra rb;
+    convertReadFunction :: (GenFullReader c ra,Reader rb,ReaderSubject ra ~ ReaderSubject rb) => GenReadFunction c ra rb;
     convertReadFunction = simpleReadFunction id;
 
     fromReadFunction :: (Reader ra,FullReader rb) => ReadFunction ra rb -> ReaderSubject ra -> ReaderSubject rb;
@@ -44,7 +44,7 @@ module Truth.Core.Read.ReadFunction where
         MkConstraintWitness -> srbmt $ \rt -> rf rt;
     };
 
-    fromReadFunctionM :: (Monad m,ReadableConstraint c,c m,Reader ra,GenFullReader c rb) => GenReadFunction c ra rb -> m (ReaderSubject ra) -> m (ReaderSubject rb);
+    fromReadFunctionM :: forall c m ra rb. (Monad m,ReadableConstraint c,c m,Reader ra,GenFullReader c rb) => GenReadFunction c ra rb -> m (ReaderSubject ra) -> m (ReaderSubject rb);
     fromReadFunctionM rf mra = unReadable (mapGenReadable rf genFromReader) $ readFromM mra;
 
     readFunctionStateT :: (Monad m,FullReader r) => ReadFunction r r -> StateT (ReaderSubject r) m ();

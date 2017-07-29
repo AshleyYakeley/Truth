@@ -274,7 +274,7 @@ module Data.Reity.Template
         classDecs <- case classInfo of
         {
             (ClassI (ClassD _ _ _ _ decs) _) -> return decs;
-            _ -> fail $ show className ++ ": not a class";
+            _ -> fail $ "not a class: " ++ show className;
         };
         let
         {

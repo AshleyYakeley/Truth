@@ -5,29 +5,39 @@ module Truth.Core.Object.ObjectEdit where
     import Truth.Core.Edit;
     import Truth.Core.Types.None;
     import Truth.Core.Object.MutableEdit;
-    import Truth.Core.Object.Object;
 
 
     data ObjectReader edit t where
     {
-        ReadObject :: ObjectReader edit (Object edit);
+        ReadObject :: ObjectReader edit (MutableEdit IO edit);
     };
 
     instance Reader (EditReader edit) => Reader (ObjectReader edit) where
     {
         type ReaderSubject (ObjectReader edit) = EditSubject edit;
-        readFrom subj ReadObject = nonlockingObject $ constantMutableEdit subj;
+        readFrom subj ReadObject = constantMutableEdit subj;
     };
 
     instance IOFullReader (EditReader edit) => GenFullReader MonadIO (ObjectReader edit) where
     {
         genFromReader = do
         {
-            MkObject object <- readable ReadObject;
-            liftIO $ object $ \muted -> unReadable ioFromReader $ mutableRead muted;
+            muted <- readable ReadObject;
+            liftIO $ unReadable ioFromReader $ mutableRead muted;
         };
     };
 
+    type ObjectEdit edit = NoEdit (ObjectReader edit);
+
+    instance Reader (EditReader edit) => GenEdit MonadIO (ObjectEdit edit) where
+    {
+        applyEdit :: ObjectEdit edit -> EditReader (ObjectEdit edit) t -> GenReadable MonadIO (EditReader (ObjectEdit edit)) t;
+        applyEdit = never;
+    };
+
+    -- instance GenFullEdit MonadIO (ObjectEdit edit);
+
+{-
     $(return []);
     instance HasTypeInfo ObjectReader where
     {
@@ -41,17 +51,15 @@ module Truth.Core.Object.ObjectEdit where
             instance IOFullReader (EditReader edit) => GenFullReader MonadIO (ObjectReader edit);
         |]);
     };
-
-    type ObjectEdit edit = NoEdit (ObjectReader edit);
-
+-}
     objectEditLens :: forall f f' edita editb. (MonadOne f,Edit edita) => EditLens' f edita editb -> EditLens' f' (ObjectEdit edita) (ObjectEdit editb);
     objectEditLens lens = let
     {
         editGet :: ReadFunction (ObjectReader edita) (ObjectReader editb);
         editGet ReadObject = do
         {
-            obja <- readable ReadObject;
-            return $ fixedMapObject lens obja;
+            muted <- readable ReadObject;
+            return $ fixedMapMutableEdit lens muted;
         };
         editUpdate edita = never edita;
         editLensFunction = MkEditFunction{..};

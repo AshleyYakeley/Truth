@@ -28,7 +28,7 @@ module Truth.Core.Object.Object where
 
             mutableEdit edits = do
             {
-                na <- fromReadFunctionM (applyEdits edits) get;
+                na <- fromReadFunctionM @Monad (applyEdits edits) get;
                 return $ if allowed na then Just $ put na else Nothing;
             };
         } in MkMutableEdit{..};
@@ -41,66 +41,14 @@ module Truth.Core.Object.Object where
         return $ mvarObject var allowed;
     };
 
-    floatingMapObject :: forall f lensstate edita editb. (MonadOne f,Edit edita) => (forall m. IsStateIO m => StateAccess m lensstate) -> IOFloatingEditLens' f lensstate edita editb -> Object edita -> Object editb;
-    floatingMapObject acc lens@MkFloatingEditLens{..} (MkObject objectA) = MkObject $ \(callB :: forall m. IsStateIO m => MutableEdit m editb -> m r) -> let
+    floatingMapObject :: forall f lensstate edita editb. (MonadOne f,Edit edita) =>
+        (forall m. IsStateIO m => StateAccess m lensstate) -> IOFloatingEditLens' f lensstate edita editb -> Object edita -> Object editb;
+    floatingMapObject acc lens objectA = MkObject $ \callB -> runObject objectA $ \mutedA -> do
     {
-        MkFloatingEditFunction{..} = floatingEditLensFunction;
-
-        callA :: forall m. IsStateIO m => MutableEdit m edita -> m r;
-        callA (mutedA :: MutableEdit m edita) = let
-        {
-            readA :: MutableRead m (EditReader edita);
-            pushEditA :: [edita] -> m (Maybe (m ()));
-            MkMutableEdit readA pushEditA = mutedA;
-
-            readB :: MutableRead (StateT lensstate m) (EditReader editb);
-            readB rt = do
-            {
-                st <- get;
-                lift $ mapMutableRead (floatingEditGet st) readA rt;
-            };
-
-            convertEdit :: [editb] -> (StateT lensstate m) (Maybe [edita]);
-            convertEdit editBs = do
-            {
-                oldstate <- get;
-                fstateeditA :: f (state,[edita]) <- lift $ unReadable (floatingEditLensPutEdits lens oldstate editBs) readA;
-                case getMaybeOne fstateeditA of
-                {
-                    Just (newstate,editAs) -> do
-                    {
-                        put newstate;
-                        return $ Just editAs;
-                    };
-                    Nothing -> return Nothing;
-                };
-            };
-
-            pushEditB :: [editb] -> (StateT lensstate m) (Maybe (StateT lensstate m ()));
-            pushEditB editB = do
-            {
-                meditA <- convertEdit editB;
-                case meditA of
-                {
-                    Nothing -> return Nothing;
-                    Just editAs -> do
-                    {
-                        mstates <- lift $ pushEditA editAs;
-                        return $ fmap lift mstates;
-                    };
-                };
-            };
-
-            apiB :: MutableEdit (StateT lensstate m) editb;
-            apiB = MkMutableEdit readB pushEditB;
-        }
-        in do
-        {
-            oldstate <- acc get;
-            (r,_newstate) <- runStateT (callB apiB) oldstate; -- ignore the new lens state: all these lens changes will be replayed by the update
-            return r;
-        };
-    } in objectA callA;
+        oldstate <- acc get;
+        (r,_newstate) <- runStateT (callB $ floatingMapMutableEdit lens mutedA) oldstate; -- ignore the new lens state: all these lens changes will be replayed by the update
+        return r;
+    };
 
     ioFixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => IOEditLens' f edita editb -> Object edita -> Object editb;
     ioFixedMapObject lens object = floatingMapObject unitStateAccess (fixedFloatingEditLens lens) object;
