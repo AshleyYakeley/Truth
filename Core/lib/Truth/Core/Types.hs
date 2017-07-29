@@ -8,7 +8,6 @@ module Truth.Core.Types
     module Truth.Core.Types.OneReader,
     module Truth.Core.Types.OneEdit,
     module Truth.Core.Types.OneWholeEdit,
-    module Truth.Core.Types.Maybe,
     module Truth.Core.Types.Either,
     module Truth.Core.Types.Comonad,
     module Truth.Core.Types.ComonadLift,
@@ -20,7 +19,6 @@ module Truth.Core.Types
     module Truth.Core.Types.String,
     module Truth.Core.Types.ByteString,
     module Truth.Core.Types.Key,
-    module Truth.Core.Types.MIME,
     module Truth.Core.Types.Merge,
 ) where
 {
@@ -32,7 +30,6 @@ module Truth.Core.Types
     import Truth.Core.Types.OneReader;
     import Truth.Core.Types.OneEdit;
     import Truth.Core.Types.OneWholeEdit;
-    import Truth.Core.Types.Maybe;
     import Truth.Core.Types.Either;
     import Truth.Core.Types.Comonad;
     import Truth.Core.Types.ComonadLift;
@@ -44,6 +41,5 @@ module Truth.Core.Types
     import Truth.Core.Types.String;
     import Truth.Core.Types.ByteString;
     import Truth.Core.Types.Key;
-    import Truth.Core.Types.MIME;
     import Truth.Core.Types.Merge;
 }

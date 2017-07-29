@@ -1,13 +1,9 @@
 {-# OPTIONS -fno-warn-orphans #-}
-module Truth.Core.Types.MIME where
+module Truth.World.MIME where
 {
     import Truth.Core.Import;
     import qualified Codec.MIME.Type;
-    import Truth.Core.Edit;
-    import Truth.Core.Types.Whole;
-    import Truth.Core.Types.Anything;
-    import Truth.Core.Types.Tuple;
-    import Truth.Core.Types.Context;
+    import Truth.Core;
 
 
     type MIMEContentType = Codec.MIME.Type.Type;

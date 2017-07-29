@@ -67,6 +67,7 @@ library
         Truth.Core
         Truth.World.File
         Truth.World.FileSystem
+        Truth.World.MIME
         Truth.World.Soup
     other-modules:
         Truth.Core.Import
@@ -94,7 +95,6 @@ library
         Truth.Core.Types.OneReader
         Truth.Core.Types.OneEdit
         Truth.Core.Types.OneWholeEdit
-        Truth.Core.Types.Maybe
         Truth.Core.Types.Either
         Truth.Core.Types.Comonad
         Truth.Core.Types.ComonadLift
@@ -106,7 +106,6 @@ library
         Truth.Core.Types.String
         Truth.Core.Types.ByteString
         Truth.Core.Types.Key
-        Truth.Core.Types.MIME
         Truth.Core.Types.Merge
         Truth.Core.Types
         Truth.Core.Object.MutableEdit
