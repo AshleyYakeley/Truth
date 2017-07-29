@@ -38,8 +38,6 @@ module Data.ConstFunction where
 
     instance Monad (ConstFunction t) where
     {
-        return = ConstConstFunction;
-
         (ConstConstFunction a) >>= amb = amb a;
         (FunctionConstFunction ta) >>= amb = FunctionConstFunction (\t -> applyConstFunction (amb (ta t)) t);
     };

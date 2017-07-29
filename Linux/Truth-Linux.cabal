@@ -42,7 +42,15 @@ library
         UndecidableInstances
         UndecidableSuperClasses
         ViewPatterns
-    ghc-options: -Wall -Werror
+    ghc-options:
+        -Werror
+        -Wall
+        -Wincomplete-uni-patterns
+        -Wincomplete-record-updates
+        -Wredundant-constraints
+        -Wcompat
+        -Wnoncanonical-monad-instances
+        -Wnoncanonical-monadfail-instances
     build-depends:
         shapes,
         Truth-Core==0.1,

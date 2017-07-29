@@ -12,7 +12,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
     import Truth.UI.GTK.GView;
 
 
-    keyContainerView :: forall cont edit. (Show (ContainerKey cont),IONewItemKeyContainer cont,HasKeyReader cont (EditReader edit),IOFullReader (EditReader edit),Edit edit) =>
+    keyContainerView :: forall cont edit. (Show (ContainerKey cont),IONewItemKeyContainer cont,HasKeyReader cont (EditReader edit)) =>
         TypeInfo edit -> GView (KeyEdit cont edit);
     keyContainerView ti = MkView $ \(MkObject object) setSelect -> do
     {
@@ -117,9 +117,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
     (
         Show (ContainerKey cont),
         IONewItemKeyContainer cont,
-        HasKeyReader cont (EditReader edit),
-        IOFullReader (EditReader edit),
-        Edit edit
+        HasKeyReader cont (EditReader edit)
     ) =>
      DependentHasView Widget (KeyEdit cont edit) where
     {
@@ -131,8 +129,6 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
         Show (ContainerKey cont),
         IONewItemKeyContainer cont,
         HasKeyReader cont (EditReader edit),
-        IOFullReader (EditReader edit),
-        Edit edit,
         HasTypeInfo edit
     ) =>
      HasView Widget (KeyEdit cont edit) where

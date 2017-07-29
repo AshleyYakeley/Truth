@@ -1,6 +1,7 @@
 module Data.Knowledge where
 {
     import Data.Kind;
+    import Data.Semigroup;
     import Data.Type.Heterogeneous;
     import Control.Monad;
     import Control.Monad.Trans.Reader as R;
@@ -10,10 +11,15 @@ module Data.Knowledge where
 
     newtype Knowledge (m :: * -> *) (w :: HetWit) (f :: HetWit) = MkKnowledge (forall (k :: *) (a :: k). w a -> ReaderT (Knowledge m w f) m (f a));
 
+    instance forall (m :: * -> *) (w :: HetWit) (f :: HetWit). MonadPlus m => Semigroup (Knowledge m w f) where
+    {
+        (MkKnowledge kfa) <> (MkKnowledge kfb) = MkKnowledge $ \w -> mplus (kfa w) (kfb w);
+    };
+
     instance forall (m :: * -> *) (w :: HetWit) (f :: HetWit). MonadPlus m => Monoid (Knowledge m w f) where
     {
         mempty = MkKnowledge $ \_ -> mzero;
-        mappend (MkKnowledge kfa) (MkKnowledge kfb) = MkKnowledge $ \w -> mplus (kfa w) (kfb w);
+        mappend = (<>);
     };
 
     addKnowledge :: forall (m :: * -> *) (w :: HetWit) (f :: HetWit) (a :: *).
@@ -29,7 +35,7 @@ module Data.Knowledge where
     getKnowledge = R.ask;
 
     ask :: forall (m :: * -> *) (w :: HetWit) (f :: HetWit) (k :: *) (a :: k).
-        MonadPlus m => w a -> ReaderT (Knowledge m w f) m (f a);
+        w a -> ReaderT (Knowledge m w f) m (f a);
     ask w = ReaderT $ \k@(MkKnowledge f) -> runReaderT (f w) k;
 
     know :: forall (m :: * -> *) (w :: HetWit) (f :: HetWit) (k :: *) (a :: k).

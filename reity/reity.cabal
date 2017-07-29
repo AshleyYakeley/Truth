@@ -47,7 +47,15 @@ library
         UndecidableInstances
         UndecidableSuperClasses
         ViewPatterns
-    ghc-options: -Wall
+    ghc-options:
+        -Werror
+        -Wall
+        -Wincomplete-uni-patterns
+        -Wincomplete-record-updates
+        -Wredundant-constraints
+        -Wcompat
+        -Wnoncanonical-monad-instances
+        -Wnoncanonical-monadfail-instances
     build-depends:
         ghc-prim,
         base >= 4.9 && < 5,
@@ -108,7 +116,15 @@ test-suite test
         UndecidableInstances
         UndecidableSuperClasses
         ViewPatterns
-    ghc-options: -Wall
+    ghc-options:
+        -Werror
+        -Wall
+        -Wincomplete-uni-patterns
+        -Wincomplete-record-updates
+        -Wredundant-constraints
+        -Wcompat
+        -Wnoncanonical-monad-instances
+        -Wnoncanonical-monadfail-instances
     build-depends:
         ghc-prim,
         base >= 4.9 && < 5,

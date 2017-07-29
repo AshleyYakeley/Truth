@@ -57,7 +57,7 @@ module Main(main) where
         found = applyEditSubject edit original;
     } in testCase name $ assertEqual "" expected found;
 
-    testEditRead :: (Edit edit,FullReader (EditReader edit),Eq t,Show t,Show edit,Show (EditSubject edit),Show (EditReader edit t)) => edit -> EditSubject edit -> EditReader edit t -> t -> TestTree;
+    testEditRead :: (Edit edit,Eq t,Show t,Show edit,Show (EditSubject edit),Show (EditReader edit t)) => edit -> EditSubject edit -> EditReader edit t -> t -> TestTree;
     testEditRead edit original rt expected = let
     {
         name = show edit ++ " " ++ show original ++ " " ++ show rt;
@@ -107,9 +107,9 @@ module Main(main) where
 
     lensUpdateGetProperty ::
     (
-        Arbitrary edita,Show edita,Edit edita,
+        Show edita,Edit edita,
         FullReader (EditReader edita),
-        Arbitrary (EditSubject edita),Show (EditSubject edita),
+        Show (EditSubject edita),
         Show editb,Edit editb,
         FullReader (EditReader editb),
         Eq (EditSubject editb),

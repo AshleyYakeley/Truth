@@ -45,9 +45,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
 
     monadOneIVF :: forall f edit wd.
     (
-        Applicative f,
         MonadOne f,
-        HasNewValue (EditSubject edit),
         IOFullEdit edit,
         WidgetClass wd
     ) =>
@@ -268,7 +266,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         return label;
     };
 
-    resultView :: (HasNewValue (EditSubject edit),IOFullEdit edit) => TypeInfo err -> GView edit -> GView (OneWholeEdit (Result err) edit);
+    resultView :: IOFullEdit edit => TypeInfo err -> GView edit -> GView (OneWholeEdit (Result err) edit);
     resultView terr = monadOneIVF (applyTypeInfo (typeInfo :: TypeInfo Result) terr) Nothing (\_ -> placeholderLabel);
 
     -- orphan
@@ -276,7 +274,6 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
     (
         EditReader edit ~ reader,
         DependentHasView Widget edit,
-        HasNewValue (ReaderSubject reader),
         IOFullEdit edit
     ) => DependentHasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
     {
@@ -291,7 +288,6 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
     instance (
         EditReader edit ~ reader,
         DependentHasView Widget edit,
-        HasNewValue (ReaderSubject reader),
         IOFullEdit edit,
         HasView Widget edit,
         HasTypeInfo err

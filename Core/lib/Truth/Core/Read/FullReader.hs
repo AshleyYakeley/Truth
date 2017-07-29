@@ -10,7 +10,7 @@ module Truth.Core.Read.FullReader where
         -- | Construct the subject by making MutableEdit calls
         genFromReader :: GenReadable c reader (ReaderSubject reader);
 
-        default genFromReader :: (IOFullReader reader,FullReader reader) => IOReadable reader (ReaderSubject reader);
+        default genFromReader :: (IOFullReader reader) => IOReadable reader (ReaderSubject reader);
         genFromReader = MkReadable $ unReadable ioFromReader;
     };
 

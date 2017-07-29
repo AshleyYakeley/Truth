@@ -15,7 +15,6 @@ module Data.Functor.Single where
 
     instance Monad Single where
     {
-        return _ = MkSingle;
         _ >>= _ = MkSingle;
     };
 

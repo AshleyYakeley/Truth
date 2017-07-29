@@ -80,7 +80,7 @@ module Truth.Core.Types.OneEdit where
         |]);
     };
 
-    oneLiftFloatingEditFunction :: forall c f state edita editb. (ReadableConstraint c,MonadOne f,Edit edita,Edit editb) =>
+    oneLiftFloatingEditFunction :: forall c f state edita editb. (ReadableConstraint c,MonadOne f) =>
      GenFloatingEditFunction c state edita editb -> GenFloatingEditFunction c state (OneEdit f edita) (OneEdit f editb);
     oneLiftFloatingEditFunction fef = MkFloatingEditFunction
     {
@@ -97,7 +97,7 @@ module Truth.Core.Types.OneEdit where
         }
     };
 
-    oneLiftFloatingEditLens :: forall c ff f state edita editb. (ReadableConstraint c,Monad ff,MonadOne f,Edit edita,Edit editb) =>
+    oneLiftFloatingEditLens :: forall c ff f state edita editb. (ReadableConstraint c,Monad ff,MonadOne f) =>
      (forall a. f a -> ff a) ->
      GenFloatingEditLens' c ff state edita editb -> GenFloatingEditLens' c ff state (OneEdit f edita) (OneEdit f editb);
     oneLiftFloatingEditLens faffa lens = MkFloatingEditLens

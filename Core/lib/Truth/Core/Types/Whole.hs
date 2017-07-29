@@ -54,7 +54,7 @@ module Truth.Core.Types.Whole where
         };
     };
 
-    instance (ReadableConstraint c,GenFullReader MonadIO reader,GenFullReader c reader,GenFullReader c reader) => GenFullEdit c (WholeReaderEdit reader) where
+    instance (ReadableConstraint c,GenFullReader MonadIO reader,GenFullReader c reader) => GenFullEdit c (WholeReaderEdit reader) where
     {
         genReplaceEdit = case selfWriterReadable @c @(WholeReaderEdit reader) @reader of
         {

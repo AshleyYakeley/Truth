@@ -14,7 +14,7 @@ module Truth.UI.GTK.Window where
     import Truth.UI.GTK.KeyContainer;
 
 
-    lastResortView :: Bool -> [FailureReason] -> KnowM (GView edit);
+    lastResortView :: Bool -> FailureReasons -> KnowM (GView edit);
     lastResortView showmsgs frs = return $ MkView $ \_ _ -> do
     {
         w <- labelNew $ Just $ if showmsgs then show $ MkFailureReason "No editor" frs else "Uneditable";

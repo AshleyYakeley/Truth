@@ -35,6 +35,6 @@ module Truth.Core.Object.HasView where
     namedResult s ma = case getMaybeOne ma of
     {
         Just a -> pure a;
-        Nothing -> kmError s;
+        Nothing -> fail s;
     };
 }

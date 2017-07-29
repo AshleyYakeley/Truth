@@ -2,6 +2,8 @@ module Data.Result where
 {
     import Control.Applicative;
     import Control.Monad;
+    import Control.Monad.Fail;
+    import Data.String;
     import Data.Bijection;
 
 
@@ -41,9 +43,13 @@ module Data.Result where
 
     instance Monad (Result e) where
     {
-        return = SuccessResult;
         (FailureResult e) >>= _ = FailureResult e;
         (SuccessResult a) >>= amq = amq a;
+    };
+
+    instance IsString e => MonadFail (Result e) where
+    {
+        fail s = FailureResult $ fromString s;
     };
 
     instance Monoid e => Alternative (Result e) where

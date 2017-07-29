@@ -221,7 +221,7 @@ module Truth.Core.Types.Key where
         |])];
     };
 
-    keyElementLens :: forall cont edit. (KeyContainer cont,Eq (ContainerKey cont),HasKeyReader cont (EditReader edit),Edit edit) =>
+    keyElementLens :: forall cont edit. (KeyContainer cont,HasKeyReader cont (EditReader edit),Edit edit) =>
         ContainerKey cont -> FloatingEditLens' Identity (ContainerKey cont) (KeyEdit cont edit) (OneWholeEdit Maybe edit);
     keyElementLens floatingEditInitial = let
     {
@@ -266,7 +266,6 @@ module Truth.Core.Types.Key where
     keyValueLens :: forall cont keyedit valueedit.
         (
             KeyContainer cont,
-            Eq (ContainerKey cont),
             HasKeyReader cont (PairEditReader keyedit valueedit),
             Edit keyedit,
             IOFullReader (EditReader keyedit),
