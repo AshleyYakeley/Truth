@@ -27,6 +27,37 @@ module Truth.Core.Object.View where
         fmap f (MkViewResult w update fss) = MkViewResult (f w) update fss;
     };
 
+    instance Applicative (ViewResult edit) where
+    {
+        pure vrWidget = let
+        {
+            vrUpdate _ _ = return ();
+            vrFirstAspectGetter = return Nothing;
+        } in MkViewResult{..};
+
+        (MkViewResult w1 update1 fss1) <*> (MkViewResult w2 update2 fss2) = let
+        {
+            vrWidget = w1 w2;
+
+            vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> m ();
+            vrUpdate mr  edits = do
+            {
+                update1 mr edits;
+                update2 mr edits;
+            };
+
+            vrFirstAspectGetter = do
+            {
+                ma1 <- fss1;
+                case ma1 of
+                {
+                    Just a -> return $ Just a;
+                    Nothing -> fss2;
+                };
+            };
+        } in MkViewResult{..};
+    };
+
     data View edit w = forall. MkView (Object edit -> (AspectGetter edit -> IO ()) -> IO (ViewResult edit w));
 
     instance Functor (View edit) where
@@ -35,6 +66,18 @@ module Truth.Core.Object.View where
         {
             vr <- view object setSelect;
             return $ fmap f vr;
+        };
+    };
+
+    instance Applicative (View edit) where
+    {
+        pure w = MkView $ \_object _setSelect -> return $ pure w;
+
+        (MkView view1) <*> (MkView view2) = MkView $ \object setSelect -> do
+        {
+            vr1 <- view1 object setSelect;
+            vr2 <- view2 object setSelect;
+            return $ vr1 <*> vr2;
         };
     };
 
@@ -79,43 +122,6 @@ module Truth.Core.Object.View where
             fssA = mapAspectGetter (generalLens lens) fssB;
         };
         return $ MkViewResult w updateA fssA;
-    };
-
-    instance Applicative (View edit) where
-    {
-        pure vrWidget = MkView $ \_object _setSelect -> return $ let
-        {
-            vrUpdate _ _ = return ();
-            vrFirstAspectGetter = return Nothing;
-        } in MkViewResult{..};
-
-        (MkView view1) <*> (MkView view2) = MkView $ \object setSelect -> do
-        {
-            (MkViewResult w1 update1 fss1) <- view1 object setSelect;
-            (MkViewResult w2 update2 fss2) <- view2 object setSelect;
-            let
-            {
-                w = w1 w2;
-
-                update :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> m ();
-                update mr  edits = do
-                {
-                    update1 mr edits;
-                    update2 mr edits;
-                };
-
-                fss = do
-                {
-                    ma1 <- fss1;
-                    case ma1 of
-                    {
-                        Just a -> return $ Just a;
-                        Nothing -> fss2;
-                    };
-                };
-            };
-            return $ MkViewResult w update fss;
-        };
     };
 
     data ViewSubscription edit action w = MkViewSubscription
