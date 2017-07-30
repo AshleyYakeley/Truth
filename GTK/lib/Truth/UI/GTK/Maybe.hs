@@ -94,9 +94,24 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
                     liftIO $ baseView baseObj baseSetSelect;
                 };
             };
+
+            newWidgets :: f (GViewResult edit) -> IO ();
+            newWidgets fg = case retrieveOne fg of
+            {
+                FailureResult (MkLimit _) -> do
+                {
+                    boxAddShow PackGrow box emptyWidget;
+                };
+                SuccessResult (MkViewResult w _ _) -> do
+                {
+                    for_ mDeleteButton (boxAddShow PackNatural box);
+                    boxAddShow PackGrow box w;
+                };
+            };
         };
 
         fwma <- runObject object $ \muted -> getVR $ mutableRead muted;
+        newWidgets fwma;
         stateVar :: MVar (f (GViewResult edit)) <- newMVar fwma;
 
         let
@@ -120,21 +135,19 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
                     };
                     (SuccessResult (MkViewResult w _ _),FailureResult (MkLimit newlf)) -> liftIO $ do
                     {
-                        boxAddShow PackGrow box emptyWidget;
                         containerRemoveDestroy box w;
-                        _ <- for mDeleteButton (containerRemove box);
+                        newWidgets newlf;
                         return newlf;
                     };
                     (FailureResult _,FailureResult (MkLimit newlf)) -> return newlf;
                     (FailureResult _,SuccessResult ()) -> do
                     {
                         fvr <- lift $ getVR mr;
-                        for_ fvr $ \(MkViewResult w _ _) -> do
+                        for_ fvr $ \_ -> do
                         {
-                            liftIO $ for_ mDeleteButton (boxAddShow PackNatural box);
-                            liftIO $ boxAddShow PackGrow box w;
                             liftIO $ containerRemove box emptyWidget;
                         };
+                        liftIO $ newWidgets fvr;
                         return fvr;
                     };
                 };

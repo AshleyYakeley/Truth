@@ -54,7 +54,6 @@ module Main(main) where
             bsObj :: Object ByteStringEdit;
             bsObj = fileObject path;
 
-
             wholeTextObj :: Object (WholeEdit String);
             wholeTextObj = cacheObject $ fixedMapObject textLens bsObj;
         };
