@@ -41,39 +41,6 @@ module Truth.Core.Edit.EditFunction where
         };
     };
 
-    data CleanEditFunction edita editb = MkCleanEditFunction
-    {
-        cleanEditGet :: CleanReadFunction (EditReader edita) (EditReader editb),
-        cleanEditUpdate :: edita -> [editb]
-    };
-
-    --type CleanEditLens = CleanEditLens' Maybe;
-
-    instance Category CleanEditFunction where
-    {
-        id = MkCleanEditFunction
-        {
-            cleanEditGet = id,
-            cleanEditUpdate = return
-        };
-        bc . ab = MkCleanEditFunction
-        {
-            cleanEditGet = (cleanEditGet ab) . (cleanEditGet bc),
-            cleanEditUpdate = \edita -> do
-            {
-                editb <- cleanEditUpdate ab edita;
-                cleanEditUpdate bc editb;
-            }
-        };
-    };
-
-    cleanEditFunction :: CleanEditFunction edita editb -> EditFunction edita editb;
-    cleanEditFunction ff = MkEditFunction
-    {
-        editGet = cleanReadFunction (cleanEditGet ff),
-        editUpdate = \ea -> return $ cleanEditUpdate ff ea
-    };
-
     convertEditFunction :: (EditSubject edita ~ EditSubject editb,Edit edita,FullReader (EditReader edita),FullEdit editb) => EditFunction edita editb;
     convertEditFunction = let
     {

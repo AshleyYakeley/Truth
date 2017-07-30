@@ -77,7 +77,7 @@ module Truth.Core.Types.Tuple where
     {
         genFromReader = tupleConstruct (\(seledit :: sel edit) -> case tupleReaderWitness (Proxy::Proxy (GenFullReader c)) seledit of
         {
-            MkConstraintWitness -> mapCleanReadable (MkTupleEditReader seledit) genFromReader;
+            MkConstraintWitness -> mapReadable (readable . MkTupleEditReader seledit) genFromReader;
         });
     };
 
@@ -120,14 +120,14 @@ module Truth.Core.Types.Tuple where
         applyEdit (MkTupleEdit aggedite edit) aggreader@(MkTupleEditReader aggeditr reader) =
             case (tupleWitness (Proxy::Proxy Edit) aggedite,testEquality aggedite aggeditr) of
             {
-                (MkConstraintWitness,Just Refl) -> mapCleanReadable (MkTupleEditReader aggedite) (applyEdit edit reader);
+                (MkConstraintWitness,Just Refl) -> mapReadable (readable . MkTupleEditReader aggedite) (applyEdit edit reader);
                 _ -> readable aggreader;
             };
 
         invertEdit (MkTupleEdit seledit edit) = case tupleWitness (Proxy::Proxy Edit) seledit of
         {
             MkConstraintWitness -> fmap (fmap (MkTupleEdit seledit))
-                (mapCleanReadable (MkTupleEditReader seledit) (invertEdit edit));
+                (mapReadable (readable . MkTupleEditReader seledit) (invertEdit edit));
         };
     };
 
@@ -171,18 +171,18 @@ module Truth.Core.Types.Tuple where
         typeName _ = "TupleHasInfo";
     };
 
-    tupleCleanEditLens :: TestEquality sel => sel edit -> CleanEditLens' Identity (TupleEdit sel) edit;
-    tupleCleanEditLens seledit = MkCleanEditLens
+    tupleEditLens :: TestEquality sel => sel edit -> EditLens' Identity (TupleEdit sel) edit;
+    tupleEditLens seledit = MkEditLens
     {
-        cleanEditLensFunction = MkCleanEditFunction
+        editLensFunction = MkEditFunction
         {
-            cleanEditGet = MkTupleEditReader seledit,
-            cleanEditUpdate = \(MkTupleEdit seledit' edit) -> case testEquality seledit seledit' of
+            editGet = readable . MkTupleEditReader seledit,
+            editUpdate = \(MkTupleEdit seledit' edit) -> return $ case testEquality seledit seledit' of
             {
                 Just Refl -> [edit];
                 _ -> [];
             }
         },
-        cleanEditLensPutEdit = Identity . pure . (MkTupleEdit seledit)
+        editLensPutEdit = return . Identity . pure . (MkTupleEdit seledit)
     };
 }

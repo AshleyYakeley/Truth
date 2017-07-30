@@ -2,7 +2,6 @@ module Truth.Core.Edit.GeneralLens where
 {
     import Truth.Core.Import;
     import Truth.Core.Edit.EditLens;
-    import Truth.Core.Edit.CleanEditLens;
     import Truth.Core.Edit.FloatingEditFunction;
     import Truth.Core.Edit.FloatingEditLens;
 
@@ -61,14 +60,5 @@ module Truth.Core.Edit.GeneralLens where
         type LensRange (EditLens' m edita editb) = editb;
 
         toGeneralLens' = toGeneralLens' . fixedFloatingEditLens;
-    };
-
-    instance Functor m => IsGeneralLens (CleanEditLens' m edita editb) where
-    {
-        type LensMonad (CleanEditLens' m edita editb) = m;
-        type LensDomain (CleanEditLens' m edita editb) = edita;
-        type LensRange (CleanEditLens' m edita editb) = editb;
-
-        toGeneralLens' = toGeneralLens' . cleanEditLens;
     };
 }

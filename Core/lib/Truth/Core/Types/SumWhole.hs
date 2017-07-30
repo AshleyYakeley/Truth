@@ -10,27 +10,6 @@ module Truth.Core.Types.SumWhole where
     type SumWholeReaderEdit reader edit = SumEdit (WholeReaderEdit reader) edit;
     type SumWholeEdit edit = SumWholeReaderEdit (EditReader edit) edit;
 
-    sumWholeLiftCleanEditFunction :: (Edit edita,FullEdit editb) =>
-     CleanEditFunction edita editb -> CleanEditFunction (SumWholeEdit edita) editb;
-    sumWholeLiftCleanEditFunction cef = MkCleanEditFunction
-    {
-        cleanEditGet = cleanEditGet cef,
-        cleanEditUpdate = \editewa -> case editewa of
-        {
-            SumEditLeft (MkWholeEdit a) -> getReplaceEdits $ fromCleanReadFunction (cleanEditGet cef) a;
-            SumEditRight edita -> cleanEditUpdate cef edita;
-        }
-    };
-
-    sumWholeLiftCleanEditLens :: (Functor m,Edit edita,FullEdit editb) =>
-     CleanEditLens' m edita editb ->
-     CleanEditLens' m (SumWholeEdit edita) editb;
-    sumWholeLiftCleanEditLens lens = MkCleanEditLens
-    {
-        cleanEditLensFunction = sumWholeLiftCleanEditFunction (cleanEditLensFunction lens),
-        cleanEditLensPutEdit = \editb -> fmap (fmap SumEditRight) (cleanEditLensPutEdit lens editb)
-    };
-
     sumWholeLiftFloatingEditFunction :: forall c state edita editb. (ReadableConstraint c,Reader (EditReader edita), GenFullReader c (EditReader editb)) =>
      GenFloatingEditFunction c state edita editb ->
      GenFloatingEditFunction c state (SumWholeEdit edita) (SumWholeEdit editb);

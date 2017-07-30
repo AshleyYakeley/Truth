@@ -90,7 +90,6 @@ library
         Truth.Core.Edit.Edit
         Truth.Core.Edit.EditFunction
         Truth.Core.Edit.EditLens
-        Truth.Core.Edit.CleanEditLens
         Truth.Core.Edit.FloatingEditFunction
         Truth.Core.Edit.FloatingEditLens
         Truth.Core.Edit.GeneralLens

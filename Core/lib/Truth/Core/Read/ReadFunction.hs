@@ -50,14 +50,6 @@ module Truth.Core.Read.ReadFunction where
     readFunctionStateT :: (Monad m,FullReader r) => ReadFunction r r -> StateT (ReaderSubject r) m ();
     readFunctionStateT rf = StateT $ \oldval -> return ((),fromReadFunction rf oldval);
 
-    type CleanReadFunction ra rb = MutableRead ra rb;
-
-    cleanReadFunction :: CleanReadFunction ra rb -> ReadFunction ra rb;
-    cleanReadFunction rbtrat rbt = MkReadable (\ratmt -> ratmt (rbtrat rbt));
-
-    fromCleanReadFunction :: (Reader ra,FullReader rb) => CleanReadFunction ra rb -> ReaderSubject ra -> ReaderSubject rb;
-    fromCleanReadFunction rbtrat a = runIdentity (unReadable fromReader (Identity . (readFrom a) . rbtrat));
-
     type ReadFunctionF f readera readerb = forall t. readerb t -> Readable readera (f t);
 
     mapStructureF :: Monad m => ReadFunctionF f ra rb -> MutableRead m ra -> MutableRead (Compose m f) rb;
@@ -78,9 +70,6 @@ module Truth.Core.Read.ReadFunction where
         typeWitness = $(generateWitness [t|MapReadable|]);
         typeName _ = "MapReadable";
     };
-
-    mapCleanReadable :: MapReadable readable => CleanReadFunction ra rb -> readable rb t -> readable ra t;
-    mapCleanReadable f = mapReadable (cleanReadFunction f);
 
     instance ReadableConstraint c => MapReadable (GenReadable c) where
     {
