@@ -20,10 +20,10 @@ module Truth.Core.Types.Key where
         KeyReadItem :: ContainerKey cont -> reader t -> KeyReader cont reader (Maybe t);
     };
 
-    keyItemReadFunction :: ContainerKey cont -> ReadFunctionF Maybe (KeyReader cont reader) reader;
+    keyItemReadFunction :: forall cont reader. ContainerKey cont -> ReadFunctionF Maybe (KeyReader cont reader) reader;
     keyItemReadFunction key reader = readable $ KeyReadItem key reader;
 
-    knownKeyItemReadFunction :: ContainerKey cont -> ReadFunction (KeyReader cont reader) reader;
+    knownKeyItemReadFunction :: forall cont reader. ContainerKey cont -> ReadFunction (KeyReader cont reader) reader;
     knownKeyItemReadFunction key reader = do
     {
         mt <- keyItemReadFunction key reader;
@@ -279,4 +279,62 @@ module Truth.Core.Types.Key where
         elementLens :: GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (OneWholeEdit Maybe (PairEdit keyedit valueedit));
         elementLens = toGeneralLens $ keyElementLens key;
     } in editCompose oneSndLens elementLens;
+
+    liftKeyElementLens :: forall c f state conta contb edita editb.
+        (
+            ReadableConstraint c,
+            Applicative f,
+            ContainerKey conta ~ ContainerKey contb,
+            EditSubject edita ~ Element conta,
+            EditSubject editb ~ Element contb,
+            Reader (EditReader edita),
+            GenFullReader c (EditReader editb)
+        ) =>
+        (forall m. (Monad m,c m) => EditSubject editb -> m (f (EditSubject edita))) ->
+        GenFloatingEditLens' c f state edita editb -> GenFloatingEditLens' c f state (KeyEdit conta edita) (KeyEdit contb editb);
+    liftKeyElementLens bma (MkFloatingEditLens (MkFloatingEditFunction floatingEditInitial g u) pe) = let
+    {
+        floatingEditGet :: state -> GenReadFunction c (KeyReader conta (EditReader edita)) (KeyReader contb (EditReader editb));
+        floatingEditGet _ KeyReadKeys = readable KeyReadKeys;
+        floatingEditGet curstate (KeyReadItem key rt) = mapReadableF (keyItemReadFunction key) $ g curstate rt;
+
+        floatingEditUpdate :: KeyEdit conta edita -> state -> GenReadable c (KeyReader conta (EditReader edita)) (state,[KeyEdit contb editb]);
+        floatingEditUpdate KeyClear oldstate = return (oldstate,[KeyClear]);
+        floatingEditUpdate (KeyInsertReplaceItem itema) oldstate = do
+        {
+            itemb <- liftReadable $ fromReadFunctionM (g oldstate) (return itema);
+            return (oldstate,[KeyInsertReplaceItem itemb]);
+        };
+
+        floatingEditUpdate (KeyDeleteItem key) oldstate = return (oldstate,[KeyDeleteItem key]);
+        floatingEditUpdate (KeyEditItem key ea) oldstate = do
+        {
+            mresult <- mapReadableF (keyItemReadFunction @conta key) $ u ea oldstate;
+            case mresult of
+            {
+                Just (newstate,ebs) -> return (newstate,fmap (KeyEditItem key) ebs);
+                Nothing -> return (oldstate,[]);
+            };
+        };
+
+        floatingEditLensPutEdit :: state -> KeyEdit contb editb -> GenReadable c (KeyReader conta (EditReader edita)) (f (state,[KeyEdit conta edita]));
+        floatingEditLensPutEdit oldstate KeyClear = return $ pure (oldstate,[KeyClear]);
+        floatingEditLensPutEdit oldstate (KeyInsertReplaceItem itemb) = do
+        {
+            fitema <- liftReadable $ bma itemb;
+            return $ fmap (\itema -> (oldstate,[KeyInsertReplaceItem $ itema])) fitema;
+        };
+        floatingEditLensPutEdit oldstate (KeyDeleteItem key) = return $ pure (oldstate,[KeyDeleteItem key]);
+        floatingEditLensPutEdit oldstate (KeyEditItem key eb) = do
+        {
+            mfresult <- mapReadableF (keyItemReadFunction @conta key) $ pe oldstate eb;
+            case mfresult of
+            {
+                Just fsea -> return $ fmap (fmap (fmap $ KeyEditItem key)) fsea;
+                Nothing -> return $ pure (oldstate,[]);
+            };
+        };
+
+        floatingEditLensFunction = MkFloatingEditFunction{..};
+    } in MkFloatingEditLens{..};
 }

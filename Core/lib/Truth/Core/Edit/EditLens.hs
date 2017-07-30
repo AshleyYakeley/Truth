@@ -20,6 +20,9 @@ module Truth.Core.Edit.EditLens where
     editLensToGen :: EditLens' m edita editb -> GenEditLens' c m edita editb;
     editLensToGen (MkEditLens f pe) = MkEditLens (editFunctionToGen f) (\eb -> readableToGen $ pe eb);
 
+    remonadEditLens :: (forall a. m1 a -> m2 a) -> GenEditLens' c m1 edita editb -> GenEditLens' c m2 edita editb;
+    remonadEditLens conv (MkEditLens f pe) = MkEditLens f $ fmap (fmap conv) pe;
+
     editLensPutEdits :: Applicative m => GenEditLens' c m edita editb -> [editb] -> GenReadable c (EditReader edita) (m [edita]);
     editLensPutEdits _lens [] = return $ pure [];
     editLensPutEdits lens (e:ee) = getCompose $ (++) <$> (MkCompose $ editLensPutEdit lens e) <*> (MkCompose $ editLensPutEdits lens ee);

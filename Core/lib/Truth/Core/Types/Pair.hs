@@ -91,4 +91,58 @@ module Truth.Core.Types.Pair where
     pairMutableRead :: MutableRead m (EditReader ea) -> MutableRead m (EditReader eb) -> MutableRead m (PairEditReader ea eb);
     pairMutableRead mra _mrb (MkTupleEditReader EditFirst ra) = mra ra;
     pairMutableRead _mra mrb (MkTupleEditReader EditSecond rb) = mrb rb;
+
+    liftFstPairFloatingEditLens :: forall c f state editx edita editb. (ReadableConstraint c,Applicative f) =>
+        GenFloatingEditLens' c f state edita editb -> GenFloatingEditLens' c f state (PairEdit edita editx) (PairEdit editb editx);
+    liftFstPairFloatingEditLens (MkFloatingEditLens (MkFloatingEditFunction floatingEditInitial g u) pe) = let
+    {
+        floatingEditGet :: state -> GenReadFunction c (PairEditReader edita editx) (PairEditReader editb editx);
+        floatingEditGet _ (MkTupleEditReader EditSecond rt) = readable (MkTupleEditReader EditSecond rt);
+        floatingEditGet curstate (MkTupleEditReader EditFirst rt) = mapReadable firstReadFunction $ g curstate rt;
+
+        floatingEditUpdate :: PairEdit edita editx -> state -> GenReadable c (PairEditReader edita editx) (state,[PairEdit editb editx]);
+        floatingEditUpdate (MkTupleEdit EditSecond ex) oldstate = return (oldstate,[MkTupleEdit EditSecond ex]);
+        floatingEditUpdate (MkTupleEdit EditFirst ea) oldstate = mapReadable firstReadFunction $ do
+        {
+            (newstate,ebs) <- u ea oldstate;
+            return (newstate,fmap (MkTupleEdit EditFirst) ebs);
+        };
+
+        floatingEditLensPutEdit :: state -> PairEdit editb editx -> GenReadable c (PairEditReader edita editx) (f (state,[PairEdit edita editx]));
+        floatingEditLensPutEdit oldstate (MkTupleEdit EditSecond ex) = return $ pure $ (oldstate,[MkTupleEdit EditSecond ex]);
+        floatingEditLensPutEdit oldstate (MkTupleEdit EditFirst eb) = mapReadable firstReadFunction $ do
+        {
+            msa <- pe oldstate eb;
+            return $ fmap (\(newstate,eas) -> (newstate,fmap (MkTupleEdit EditFirst) eas)) msa;
+        };
+
+        floatingEditLensFunction = MkFloatingEditFunction{..};
+    } in MkFloatingEditLens{..};
+
+    liftSndPairFloatingEditLens :: forall c f state editx edita editb. (ReadableConstraint c,Applicative f) =>
+        GenFloatingEditLens' c f state edita editb -> GenFloatingEditLens' c f state (PairEdit editx edita) (PairEdit editx editb);
+    liftSndPairFloatingEditLens (MkFloatingEditLens (MkFloatingEditFunction floatingEditInitial g u) pe) = let
+    {
+        floatingEditGet :: state -> GenReadFunction c (PairEditReader editx edita) (PairEditReader editx editb);
+        floatingEditGet _ (MkTupleEditReader EditFirst rt) = readable (MkTupleEditReader EditFirst rt);
+        floatingEditGet curstate (MkTupleEditReader EditSecond rt) = mapReadable secondReadFunction $ g curstate rt;
+
+        floatingEditUpdate :: PairEdit editx edita -> state -> GenReadable c (PairEditReader editx edita) (state,[PairEdit editx editb]);
+        floatingEditUpdate (MkTupleEdit EditFirst ex) oldstate = return (oldstate,[MkTupleEdit EditFirst ex]);
+        floatingEditUpdate (MkTupleEdit EditSecond ea) oldstate = mapReadable secondReadFunction $ do
+        {
+            (newstate,ebs) <- u ea oldstate;
+            return (newstate,fmap (MkTupleEdit EditSecond) ebs);
+        };
+
+        floatingEditLensPutEdit :: state -> PairEdit editx editb -> GenReadable c (PairEditReader editx edita) (f (state,[PairEdit editx edita]));
+        floatingEditLensPutEdit oldstate (MkTupleEdit EditFirst ex) = return $ pure $ (oldstate,[MkTupleEdit EditFirst ex]);
+        floatingEditLensPutEdit oldstate (MkTupleEdit EditSecond eb) = mapReadable secondReadFunction $ do
+        {
+            msa <- pe oldstate eb;
+            return $ fmap (\(newstate,eas) -> (newstate,fmap (MkTupleEdit EditSecond) eas)) msa;
+        };
+
+        floatingEditLensFunction = MkFloatingEditFunction{..};
+    } in MkFloatingEditLens{..};
 }

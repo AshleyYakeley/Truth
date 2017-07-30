@@ -4,7 +4,6 @@ module Data.Codec where
     import Control.Category;
     import Data.Bijection;
     import Data.Chain;
-    import Data.Functor.Identity;
     import Data.Result;
     import Data.MonadOne;
 
@@ -50,8 +49,8 @@ module Data.Codec where
         (MkCodec bmc cb) . (MkCodec amb ba) = MkCodec (\a -> (amb a) >>= bmc) (ba . cb);
     };
 
-    bijectionCodec :: Bijection a b -> Codec' Identity a b;
-    bijectionCodec (MkBijection p q) = MkCodec (Identity . p) q;
+    bijectionCodec :: Applicative m => Bijection a b -> Codec' m a b;
+    bijectionCodec (MkBijection p q) = MkCodec (pure . p) q;
 
     instance (Traversable f,Applicative m) => CatFunctor (Codec' m) f where
     {

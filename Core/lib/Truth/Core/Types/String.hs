@@ -143,14 +143,18 @@ module Truth.Core.Types.String where
     {
         typeWitness = $(generateWitness [t|StringEdit|]);
         typeName _ = "StringEdit";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance IsSequence [a];
-            instance IsSequence seq => Edit (StringEdit seq) where
-            {
-                type EditReader (StringEdit seq) = StringRead seq;
-            };
-            instance IsSequence seq => GenFullEdit c (StringEdit seq);
-        |]);
+        typeKnowledge _ = mconcat
+        [
+            typeInfoKnowledge $ typeInfo @StringRead,
+            $(generateTypeKnowledge [d|
+                instance IsSequence [a];
+                instance IsSequence seq => Edit (StringEdit seq) where
+                {
+                    type EditReader (StringEdit seq) = StringRead seq;
+                };
+                instance IsSequence seq => GenFullEdit c (StringEdit seq);
+            |])
+        ];
     };
 
     stringSectionLens :: forall seq. IsSequence seq =>

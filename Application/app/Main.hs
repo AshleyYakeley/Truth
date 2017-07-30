@@ -6,6 +6,9 @@ module Main(main) where
     import Data.ByteString;
     import Data.Foldable;
     import Data.IORef;
+    import Data.Functor.Identity;
+    import Control.Monad.IO.Class;
+    import Control.Monad.Trans.State.Extra;
     import Data.Result;
     import Data.Injection;
     import Data.Codec;
@@ -22,6 +25,27 @@ module Main(main) where
 
     type WindowMaker = IORef Int -> IO ();
 
+    textCodec :: Codec' (Result OctetDecodeError) ByteString String;
+    textCodec = utf8Codec . bijectionCodec packBijection;
+
+    textLens :: EditLens ByteStringEdit (WholeEdit String);
+    textLens = let
+    {
+        errorInjection :: forall m err a. (Show err,Applicative m) => Injection' m (Result err a) a;
+        errorInjection = let
+        {
+            injForwards :: Result err a -> a;
+            injForwards (SuccessResult a) = a;
+            injForwards (FailureResult err) = error $ show err;
+
+            injBackwards :: a -> m (Result err a);
+            injBackwards = pure . SuccessResult;
+        } in MkInjection{..};
+
+        injection :: Injection ByteString String;
+        injection = errorInjection . (toInjection $ codecInjection textCodec);
+    } in (wholeEditLens $ injectionLens injection) . convertEditLens;
+
     fileTextWindow :: Bool -> FilePath -> WindowMaker;
     fileTextWindow saveOpt path windowCount = do
     {
@@ -30,22 +54,9 @@ module Main(main) where
             bsObj :: Object ByteStringEdit;
             bsObj = fileObject path;
 
-            errorInjection :: forall m err a. (Show err,Applicative m) => Injection' m (Result err a) a;
-            errorInjection = let
-            {
-                injForwards :: Result err a -> a;
-                injForwards (SuccessResult a) = a;
-                injForwards (FailureResult err) = error $ show err;
-
-                injBackwards :: a -> m (Result err a);
-                injBackwards = pure . SuccessResult;
-            } in MkInjection{..};
-
-            injection :: Injection ByteString String;
-            injection = errorInjection . (toInjection $ codecInjection utf8Codec) . (toBiMapMaybe $ bijectionInjection packBijection);
 
             wholeTextObj :: Object (WholeEdit String);
-            wholeTextObj = cacheObject $ fixedMapObject ((wholeEditLens $ injectionLens injection) . convertEditLens) bsObj;
+            wholeTextObj = cacheObject $ fixedMapObject textLens bsObj;
         };
         if saveOpt then do
         {
@@ -80,8 +91,17 @@ module Main(main) where
     {
         let
         {
-            soupObject :: Object (SoupEdit (MutableIOEdit ByteStringEdit));
-            soupObject = directorySoup fileSystemMutableEdit dirpath;
+            rawSoupObject :: Object (SoupEdit (MutableIOEdit ByteStringEdit));
+            rawSoupObject = directorySoup fileSystemMutableEdit dirpath;
+
+            paste :: forall m. MonadIO m => String -> m (Maybe ByteString);
+            paste s = return $ pure $ encode textCodec s;
+
+            lens :: IOFloatingEditLens' Maybe () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit (StringEdit String));
+            lens = liftSoupLens paste $ fixedFloatingEditLens $ (editLensToGen $ convertEditLens . textLens) . remonadEditLens (pure . runIdentity) mutableIOEditLens;
+
+            soupObject :: Object (SoupEdit (StringEdit String));
+            soupObject = floatingMapObject unitStateAccess lens rawSoupObject;
         };
         soupSub <- makeObjectSubscriber soupObject;
         makeWindowCountRef windowCount soupSub;

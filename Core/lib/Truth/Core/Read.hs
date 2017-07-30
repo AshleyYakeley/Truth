@@ -29,11 +29,4 @@ module Truth.Core.Read
         type ReaderSubject (ConstReader a) = a;
         readFromM _ (MkConstReader a) = return a;
     };
-
-    generalTypeKnowledge :: TypeKnowledge;
-    generalTypeKnowledge = mconcat
-    [
-        baseTypeKnowledge,
-        typeInfoKnowledge $ typeInfo @ReadableConstraint
-    ];
 }

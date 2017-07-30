@@ -22,6 +22,9 @@ module Truth.Core.Read.Readable where
     type Readable = GenReadable Monad;
     type IOReadable = GenReadable MonadIO;
 
+    liftReadable :: (forall m. (Monad m,c m) => m a) -> GenReadable c reader a;
+    liftReadable ma = MkReadable $ \_ -> ma;
+
     readableToGen :: Readable reader a -> GenReadable c reader a;
     readableToGen (MkReadable f) = MkReadable f;
 
