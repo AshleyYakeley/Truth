@@ -60,6 +60,4 @@ module Truth.World.MIME where
             _ -> Nothing;
         }
     };
-
-    type CharsetKnowledge = String -> Maybe (Codec [Word8] String);
 }

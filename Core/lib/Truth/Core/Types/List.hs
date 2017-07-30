@@ -6,6 +6,9 @@ module Truth.Core.Types.List where
     import Truth.Core.Edit;
 
 
+    packBijection :: Bijection ByteString [Word8];
+    packBijection = MkBijection unpack pack;
+
     data ListReader seq reader t where
     {
         ListReadLength :: ListReader seq reader (SequencePoint seq);

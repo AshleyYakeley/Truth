@@ -13,6 +13,7 @@ module Main(main) where
     import Truth.Core;
     import Truth.World.File;
     import Truth.World.FileSystem;
+    import Truth.World.Charset;
     import Truth.World.Soup;
     import Graphics.UI.Gtk hiding (Object);
     import Truth.UI.GTK;
@@ -41,7 +42,7 @@ module Main(main) where
             } in MkInjection{..};
 
             injection :: Injection ByteString String;
-            injection = errorInjection . utf8Injection . toBiMapMaybe (bijectionInjection packBijection);
+            injection = errorInjection . (toInjection $ codecInjection utf8Codec) . (toBiMapMaybe $ bijectionInjection packBijection);
 
             wholeTextObj :: Object (WholeEdit String);
             wholeTextObj = cacheObject $ fixedMapObject ((wholeEditLens $ injectionLens injection) . convertEditLens) bsObj;

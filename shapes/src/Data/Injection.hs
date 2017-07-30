@@ -4,7 +4,7 @@ module Data.Injection where
     import Data.Functor.Identity;
     import Control.Category;
     import Data.Chain;
-    import Data.Result;
+    import Data.MonadOne;
     import Data.Codec;
     import Data.Bijection;
 
@@ -56,16 +56,8 @@ module Data.Injection where
     remonadInjection :: (forall t. m1 t -> m2 t) -> Injection' m1 a b -> Injection' m2 a b;
     remonadInjection ff (MkInjection ab bma) = MkInjection ab $ ff . bma;
 
-    resultInjection :: (a -> Result e b) -> (b -> a) -> Injection a (Result e b);
-    resultInjection decode' encode' = MkInjection
-    {
-        injForwards = decode',
-        injBackwards = \r -> case r of
-        {
-            SuccessResult b -> Just (encode' b);
-            _ -> Nothing;
-        }
-    };
+    toInjection :: MonadOne m => Injection' m a b -> Injection a b;
+    toInjection = remonadInjection getMaybeOne;
 
     codecInjection :: (Functor m) => Codec' m a b -> Injection' m a (m b);
     codecInjection codec = MkInjection

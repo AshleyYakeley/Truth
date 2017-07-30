@@ -1,29 +1,25 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-module Truth.Core.Text where
+module Truth.World.Charset where
 {
     import Truth.Core.Import;
 
 
-    packBijection :: Bijection ByteString [Word8];
-    packBijection = MkBijection unpack pack;
+    data OctetDecodeError = MkOctetDecodeError Int;
 
-    data ListError = MkListError Int;
-
-    instance Show ListError where
+    instance Show OctetDecodeError where
     {
-        show (MkListError i) = "decode error at byte " ++ show i;
+        show (MkOctetDecodeError i) = "decode error at byte " ++ show i;
     };
 
-    instance HasTypeInfo ListError where
+    instance HasTypeInfo OctetDecodeError where
     {
-        typeWitness = $(generateWitness [t|ListError|]);
-        typeName _ = "ListError";
+        typeWitness = $(generateWitness [t|OctetDecodeError|]);
+        typeName _ = "OctetDecodeError";
     };
 
-    utf8Injection :: Injection [Word8] (Result ListError String);
-    utf8Injection = resultInjection decodeUTF8 encodeUTF8 where
+    utf8Codec :: Codec' (Result OctetDecodeError) [Word8] ( String);
+    utf8Codec = MkCodec decodeUTF8 encodeUTF8 where
     {
-        decodeUTF8 :: [Word8] -> Result ListError String;
+        decodeUTF8 :: [Word8] -> Result OctetDecodeError String;
         decodeUTF8 os = evalStateT parse (os,0) where
         {
             getWord8 :: (Monad m) => StateT ([Word8],Int) m (Maybe Word8);
@@ -33,10 +29,10 @@ module Truth.Core.Text where
                 [] -> (Nothing,s);
             }));
 
-            listError :: StateT (s,Int) (Result ListError) a;
-            listError = StateT (\(_,i) -> FailureResult (MkListError i));
+            decodeError :: StateT (s,Int) (Result OctetDecodeError) a;
+            decodeError = StateT (\(_,i) -> FailureResult (MkOctetDecodeError i));
 
-            parse :: StateT ([Word8],Int) (Result ListError) String;
+            parse :: StateT ([Word8],Int) (Result OctetDecodeError) String;
             parse = do
             {
                 mc <- parseChar;
@@ -51,7 +47,7 @@ module Truth.Core.Text where
                 };
             };
 
-            parseChar :: StateT ([Word8],Int) (Result ListError) (Maybe Char);
+            parseChar :: StateT ([Word8],Int) (Result OctetDecodeError) (Maybe Char);
             parseChar = do
             {
                 mb0 <- getWord8;
@@ -65,7 +61,7 @@ module Truth.Core.Text where
                           then if (testBit b0 5)
                            then if (testBit b0 4)
                             then if (testBit b0 3)
-                             then listError
+                             then decodeError
                              else do
                         {
                             let {w0 = fromIntegral (0x7 .&. b0);};
@@ -98,7 +94,7 @@ module Truth.Core.Text where
                                 (shift w0 6) .|. w1
                                 );
                         }
-                          else listError
+                          else decodeError
                          else convertOut (
                              fromIntegral b0
                              );
@@ -106,11 +102,11 @@ module Truth.Core.Text where
                 };
             } where
             {
-                extract10Bits :: (Maybe Word8) -> StateT ([Word8],Int) (Result ListError) Word8;
+                extract10Bits :: (Maybe Word8) -> StateT ([Word8],Int) (Result OctetDecodeError) Word8;
                 extract10Bits (Just w) | 0xC0 .&. w == 0x80 = return (0x3F .&. w);
-                extract10Bits _ = listError;
+                extract10Bits _ = decodeError;
 
-                get10Bits :: StateT ([Word8],Int) (Result ListError) Word32;
+                get10Bits :: StateT ([Word8],Int) (Result OctetDecodeError) Word32;
                 get10Bits = do
                 {
                     mb <- getWord8;
@@ -118,9 +114,9 @@ module Truth.Core.Text where
                     return (fromIntegral b);
                 };
 
-                convertOut :: Word32 -> StateT ([Word8],Int) (Result ListError) (Maybe Char);
+                convertOut :: Word32 -> StateT ([Word8],Int) (Result OctetDecodeError) (Maybe Char);
                 convertOut i|i < 0x110000 = return (Just (toEnum (fromIntegral i)));
-                convertOut _ = listError;
+                convertOut _ = decodeError;
             };
         };
 
@@ -201,4 +197,5 @@ module Truth.Core.Text where
         };
     };
 
+    type CharsetKnowledge = String -> Maybe (Codec [Word8] String);
 }

@@ -75,12 +75,12 @@ library
         Truth.Core
         Truth.World.File
         Truth.World.FileSystem
+        Truth.World.Charset
         Truth.World.MIME
         Truth.World.Soup
     other-modules:
         Truth.Core.Import
         Truth.Core.Sequence
-        Truth.Core.Text
         Truth.Core.Read.Reader
         Truth.Core.Read.Readable
         Truth.Core.Read.FullReader
