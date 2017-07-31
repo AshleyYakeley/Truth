@@ -1,15 +1,15 @@
 module Truth.Core.Types.ByteString where
 {
     import Truth.Core.Import;
-    import Data.ByteString as BS;
+    import Data.ByteString.Lazy as BS;
     import Truth.Core.Read;
     import Truth.Core.Edit;
 
 
     data ByteStringReader t where
     {
-        ReadByteStringLength :: ByteStringReader Int;
-        ReadByteStringSection :: Int -> Int -> ByteStringReader ByteString;
+        ReadByteStringLength :: ByteStringReader Int64;
+        ReadByteStringSection :: Int64 -> Int64 -> ByteStringReader ByteString;
     };
 
     instance Reader ByteStringReader where
@@ -54,7 +54,7 @@ module Truth.Core.Types.ByteString where
         |]);
     };
 
-    data ByteStringEdit = ByteStringSetLength Int | ByteStringWrite Int ByteString;
+    data ByteStringEdit = ByteStringSetLength Int64 | ByteStringWrite Int64 ByteString;
 
     instance Floating ByteStringEdit ByteStringEdit;
 

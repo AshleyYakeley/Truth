@@ -1,7 +1,7 @@
 module Truth.World.File where
 {
     import Truth.Core.Import;
-    import Data.ByteString;
+    import Data.ByteString.Lazy;
     import Truth.Core;
 
 
@@ -16,7 +16,7 @@ module Truth.World.File where
             mutableRead (ReadByteStringSection start len) = do
             {
                 hSeek h AbsoluteSeek $ toInteger start;
-                hGet h len;
+                hGet h $ fromIntegral len;
             };
             mutableEdit' (ByteStringSetLength len) = hSetFileSize h $ toInteger len;
             mutableEdit' (ByteStringWrite start bs) = do

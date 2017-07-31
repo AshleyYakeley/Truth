@@ -3,7 +3,7 @@ module Main(main) where
     import Prelude hiding (id,(.));
     import Control.Concurrent;
     import Control.Category;
-    import Data.ByteString;
+    import Data.ByteString.Lazy;
     import Data.Foldable;
     import Data.IORef;
     import Data.Functor.Identity;

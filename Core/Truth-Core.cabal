@@ -70,13 +70,15 @@ library
         shapes,
         reity,
         random,
-        uuid
+        uuid,
+        aeson
     exposed-modules:
         Truth.Core
         Truth.World.File
         Truth.World.FileSystem
         Truth.World.Charset
         Truth.World.MIME
+        Truth.World.JSON
         Truth.World.Soup
     other-modules:
         Truth.Core.Import

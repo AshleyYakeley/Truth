@@ -5,7 +5,7 @@ module Data.Reity.Instances where
     import Data.Type.Equality;
     import Data.Type.Heterogeneous;
     import Data.Word;
-    import Data.ByteString;
+    import Data.ByteString.Lazy;
     import Control.Monad.IO.Class;
     import Control.Comonad;
     import Data.UUID;
