@@ -82,7 +82,7 @@ module Truth.Core.Types.Anything where
         };
         applyEdit (MkAnyEdit _ _) ReadAnyTypes = readable ReadAnyTypes; -- edit cannot change types
 
-        -- invertEdit :: AnyEdit -> Readable AnyReader [AnyEdit];
+        -- invertEdit :: AnyEdit -> PureReadable AnyReader [AnyEdit];
         invertEdit (MkAnyEdit ie edit) = do
         {
             MkAnyTypes oie oir _oia <- readable ReadAnyTypes;

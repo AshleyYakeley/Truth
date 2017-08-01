@@ -15,10 +15,10 @@ module Truth.Core.Types.List where
         ListReadItem :: SequencePoint seq -> reader t -> ListReader seq reader (Maybe t);
     };
 
-    itemReadFunction :: SequencePoint seq -> ReadFunctionF Maybe (ListReader seq reader) reader;
+    itemReadFunction :: SequencePoint seq -> PureReadFunctionF Maybe (ListReader seq reader) reader;
     itemReadFunction i reader = readable $ ListReadItem i reader;
 
-    knownItemReadFunction :: Integral (Index seq) => SequencePoint seq -> ReadFunction (ListReader seq reader) reader;
+    knownItemReadFunction :: Integral (Index seq) => SequencePoint seq -> PureReadFunction (ListReader seq reader) reader;
     knownItemReadFunction i reader = do
     {
         mt <- itemReadFunction i reader;
@@ -37,12 +37,12 @@ module Truth.Core.Types.List where
         readFrom sq (ListReadItem i reader) = fmap (\e -> readFrom e reader) $ seqIndex sq i;
     };
 
-    instance (ReadableConstraint c,IsSequence seq,GenFullReader c reader,ReaderSubject reader ~ Element seq) => GenFullReader c (ListReader seq reader) where
+    instance (ReadableConstraint c,IsSequence seq,FullReader c reader,ReaderSubject reader ~ Element seq) => FullReader c (ListReader seq reader) where
     {
-        genFromReader = do
+        fromReader = do
         {
             len <- readable ListReadLength;
-            list <- traverse (\i -> mapReadable (knownItemReadFunction i) genFromReader) [0..pred len];
+            list <- traverse (\i -> mapReadable (knownItemReadFunction i) fromReader) [0..pred len];
             return $ fromList list;
         };
     };
@@ -57,7 +57,7 @@ module Truth.Core.Types.List where
             {
                 type ReaderSubject (ListReader seq reader) = seq;
             };
-            instance (ReadableConstraint c,IsSequence seq,GenFullReader c reader,ReaderSubject reader ~ Element seq) => GenFullReader c (ListReader seq reader);
+            instance (ReadableConstraint c,IsSequence seq,FullReader c reader,ReaderSubject reader ~ Element seq) => FullReader c (ListReader seq reader);
         |]);
     };
 
@@ -137,9 +137,9 @@ module Truth.Core.Types.List where
         invertEdit ListClear = writerToReadable ioReplaceEdit;
     };
 
-    instance (IsSequence seq,ReadableConstraint c,IOFullReader (EditReader edit),GenFullReader c (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => GenFullEdit c (ListEdit seq edit) where
+    instance (IsSequence seq,ReadableConstraint c,IOFullReader (EditReader edit),FullReader c (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => FullEdit c (ListEdit seq edit) where
     {
-        genReplaceEdit = case selfWriterReadable @c @(ListEdit seq edit) @(EditReader edit) of
+        replaceEdit = case selfWriterReadable @c @(ListEdit seq edit) @(EditReader edit) of
         {
             MkConstraintWitness -> do
             {
@@ -147,10 +147,10 @@ module Truth.Core.Types.List where
                 len <- readable ListReadLength;
                 let
                 {
-                    readWriteItem :: SequencePoint seq -> GenWriterReadable c (ListEdit seq edit) (ListReader seq (EditReader edit)) ();
+                    readWriteItem :: SequencePoint seq -> WriterReadable c (ListEdit seq edit) (ListReader seq (EditReader edit)) ();
                     readWriteItem i = do
                     {
-                        item <- mapReadable (knownItemReadFunction i) $ readableToM @c genFromReader;
+                        item <- mapReadable (knownItemReadFunction i) $ readableToM @c fromReader;
                         wrWrite $ ListInsertItem i item;
                     };
                 };
@@ -167,11 +167,11 @@ module Truth.Core.Types.List where
         typeKnowledge _ = $(generateTypeKnowledge [d|
             instance (Enum (Index seq),Ord (Index seq)) => Floating (ListEdit seq edit) (SequencePoint seq);
             instance (Enum (Index seq),Ord (Index seq)) => Floating (ListEdit seq edit) (ListEdit seq edit);
-            instance (IsSequence seq,GenFullReader MonadIO (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => Edit (ListEdit seq edit) where
+            instance (IsSequence seq,FullReader MonadIO (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => Edit (ListEdit seq edit) where
             {
                 type EditReader (ListEdit seq edit) = ListReader seq (EditReader edit);
             };
-            instance (IsSequence seq,GenFullReader MonadIO (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => FullEdit (ListEdit seq edit);
+            instance (IsSequence seq,FullReader MonadIO (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => PureFullEdit (ListEdit seq edit);
         |]);
     };
 -}

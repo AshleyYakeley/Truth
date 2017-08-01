@@ -20,9 +20,9 @@ module Truth.Core.Types.String where
         readFrom s (StringReadSection run) = seqSection run s;
     };
 
-    instance IsSequence seq => GenFullReader c (StringRead seq) where
+    instance IsSequence seq => FullReader c (StringRead seq) where
     {
-        genFromReader = do
+        fromReader = do
         {
             len <- readable StringReadLength;
             readable $ StringReadSection $ MkSequenceRun 0 len;
@@ -39,7 +39,7 @@ module Truth.Core.Types.String where
             {
                 type ReaderSubject (StringRead seq) = seq;
             };
-            instance IsSequence seq => GenFullReader c (StringRead seq);
+            instance IsSequence seq => FullReader c (StringRead seq);
         |]);
     };
 
@@ -129,11 +129,11 @@ module Truth.Core.Types.String where
         };
     };
 
-    instance IsSequence seq => GenFullEdit c (StringEdit seq) where
+    instance IsSequence seq => FullEdit c (StringEdit seq) where
     {
-        genReplaceEdit = do
+        replaceEdit = do
         {
-            a <- readableToM $ fromReader;
+            a <- readableToM $ pureFromReader;
             wrWrite $ StringReplaceWhole a;
         };
     };
@@ -152,17 +152,17 @@ module Truth.Core.Types.String where
                 {
                     type EditReader (StringEdit seq) = StringRead seq;
                 };
-                instance IsSequence seq => GenFullEdit c (StringEdit seq);
+                instance IsSequence seq => FullEdit c (StringEdit seq);
             |])
         ];
     };
 
     stringSectionLens :: forall seq. IsSequence seq =>
-        SequenceRun seq -> FloatingEditLens (SequenceRun seq) (StringEdit seq) (StringEdit seq);
-    stringSectionLens floatingEditInitial = let
+        SequenceRun seq -> PureEditLens (SequenceRun seq) (StringEdit seq) (StringEdit seq);
+    stringSectionLens editInitial = let
     {
-        floatingEditGet :: SequenceRun seq -> ReadFunction (StringRead seq) (StringRead seq);
-        floatingEditGet stateRaw reader = do
+        editGet :: SequenceRun seq -> PureReadFunction (StringRead seq) (StringRead seq);
+        editGet stateRaw reader = do
         {
             len <- readable StringReadLength;
             let
@@ -176,8 +176,8 @@ module Truth.Core.Types.String where
             };
         };
 
-        floatingEditUpdate :: StringEdit seq -> SequenceRun seq -> Readable (StringRead seq) (SequenceRun seq,[StringEdit seq]);
-        floatingEditUpdate edita rawoldstate = do
+        editUpdate :: StringEdit seq -> SequenceRun seq -> PureReadable (StringRead seq) (SequenceRun seq,[StringEdit seq]);
+        editUpdate edita rawoldstate = do
         {
             len <- readable StringReadLength;
             let
@@ -209,11 +209,11 @@ module Truth.Core.Types.String where
             return (newstate,leditb);
         };
 
-        floatingEditLensFunction :: FloatingEditFunction (SequenceRun seq) (StringEdit seq) (StringEdit seq);
-        floatingEditLensFunction = MkFloatingEditFunction{..};
+        editLensFunction :: PureEditFunction (SequenceRun seq) (StringEdit seq) (StringEdit seq);
+        editLensFunction = MkEditFunction{..};
 
-        floatingEditLensPutEdit :: SequenceRun seq -> StringEdit seq -> Readable (StringRead seq) (Maybe (SequenceRun seq,[StringEdit seq]));
-        floatingEditLensPutEdit stateRaw editb = do
+        editLensPutEdit :: SequenceRun seq -> StringEdit seq -> PureReadable (StringRead seq) (Maybe (SequenceRun seq,[StringEdit seq]));
+        editLensPutEdit stateRaw editb = do
         {
             len <- readable StringReadLength;
             let
@@ -232,5 +232,5 @@ module Truth.Core.Types.String where
             };
         };
 
-    } in MkFloatingEditLens{..}
+    } in MkEditLens{..}
 }

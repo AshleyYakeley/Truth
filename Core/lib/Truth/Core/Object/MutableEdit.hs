@@ -19,7 +19,7 @@ module Truth.Core.Object.MutableEdit where
         floatingUpdate edit (MkMutableEdit mr me) = MkMutableEdit mr $ \edits -> me $ fmap (floatingUpdate edit) edits;
     };
 
-    mutableReadEdit :: Monad m => MutableEdit m edit -> Readable (EditReader edit) [edit] -> m (Maybe (m ()));
+    mutableReadEdit :: Monad m => MutableEdit m edit -> PureReadable (EditReader edit) [edit] -> m (Maybe (m ()));
     mutableReadEdit MkMutableEdit{..}  MkReadable{..} = do
     {
         edits <- unReadable mutableRead;
@@ -72,11 +72,11 @@ module Truth.Core.Object.MutableEdit where
         mutableEdit edits = return $ Just $ modify $ mapMutableReadW @Monad $ applyEdits edits;
     } in MkMutableEdit{..};
 
-    floatingMapMutableEdit :: forall c f m lensstate edita editb. (Monad m,ReadableConstraint c,c m,MonadOne f,Edit edita) =>
-        GenFloatingEditLens' c f lensstate edita editb -> MutableEdit m edita -> MutableEdit (StateT lensstate m) editb;
-    floatingMapMutableEdit lens@MkFloatingEditLens{..} mutedA = let
+    mapMutableEdit :: forall c f m lensstate edita editb. (Monad m,ReadableConstraint c,c m,MonadOne f,Edit edita) =>
+        EditLens' c f lensstate edita editb -> MutableEdit m edita -> MutableEdit (StateT lensstate m) editb;
+    mapMutableEdit lens@MkEditLens{..} mutedA = let
     {
-        MkFloatingEditFunction{..} = floatingEditLensFunction;
+        MkEditFunction{..} = editLensFunction;
 
         readA :: MutableRead m (EditReader edita);
         pushEditA :: [edita] -> m (Maybe (m ()));
@@ -86,14 +86,14 @@ module Truth.Core.Object.MutableEdit where
         readB rt = do
         {
             st <- get;
-            lift $ mapMutableRead (floatingEditGet st) readA rt;
+            lift $ mapMutableRead (editGet st) readA rt;
         };
 
         convertEdit :: [editb] -> (StateT lensstate m) (Maybe [edita]);
         convertEdit editBs = do
         {
             oldstate <- get;
-            fstateeditA :: f (state,[edita]) <- lift $ unReadable (floatingEditLensPutEdits lens oldstate editBs) readA;
+            fstateeditA :: f (state,[edita]) <- lift $ unReadable (editLensPutEdits lens oldstate editBs) readA;
             case getMaybeOne fstateeditA of
             {
                 Just (newstate,editAs) -> do
@@ -122,8 +122,8 @@ module Truth.Core.Object.MutableEdit where
     } in MkMutableEdit readB pushEditB;
 
     fixedMapMutableEdit :: forall c f m edita editb. (Monad m,ReadableConstraint c,c m,MonadOne f,Edit edita) =>
-        GenFloatingEditLens' c f () edita editb -> MutableEdit m edita -> MutableEdit m editb;
-    fixedMapMutableEdit lens muted = remonadMutableEdit runUnitStateT $ floatingMapMutableEdit lens muted;
+        EditLens' c f () edita editb -> MutableEdit m edita -> MutableEdit m editb;
+    fixedMapMutableEdit lens muted = remonadMutableEdit runUnitStateT $ mapMutableEdit lens muted;
 
     noneMutableEdit :: Applicative m => MutableEdit m (NoEdit (NoReader t));
     noneMutableEdit = readOnlyMutableEdit never;

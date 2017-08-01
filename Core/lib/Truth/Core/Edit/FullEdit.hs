@@ -5,32 +5,32 @@ module Truth.Core.Edit.FullEdit where
     import Truth.Core.Edit.Edit;
 
 
-    class (Edit edit,GenFullReader c (EditReader edit)) => GenFullEdit c edit where
+    class (Edit edit,FullReader c (EditReader edit)) => FullEdit c edit where
     {
-        genReplaceEdit :: GenWriterReadable c edit (EditReader edit) ();
+        replaceEdit :: WriterReadable c edit (EditReader edit) ();
 
-        default genReplaceEdit :: FullEdit edit => IOWriterReadable edit (EditReader edit) ();
-        genReplaceEdit = writerReadableToGen genReplaceEdit;
+        default replaceEdit :: PureFullEdit edit => IOWriterReadable edit (EditReader edit) ();
+        replaceEdit = writerReadableToGen replaceEdit;
     };
 
-    type IOFullEdit = GenFullEdit MonadIO;
-    type FullEdit = GenFullEdit Monad;
+    type IOFullEdit = FullEdit MonadIO;
+    type PureFullEdit = FullEdit Monad;
 
     ioReplaceEdit :: IOFullEdit edit => IOWriterReadable edit (EditReader edit) ();
-    ioReplaceEdit = genReplaceEdit;
+    ioReplaceEdit = replaceEdit;
 
-    replaceEdit :: FullEdit edit => WriterReadable edit (EditReader edit) ();
-    replaceEdit = genReplaceEdit;
+    pureReplaceEdit :: PureFullEdit edit => PureWriterReadable edit (EditReader edit) ();
+    pureReplaceEdit = replaceEdit;
 
-    getReplaceEditsM :: forall c m edit. (ReadableConstraint c,GenFullEdit c edit,Monad m,c m) => EditSubject edit -> m [edit];
-    getReplaceEditsM = fromGenReadable (writerToReadable genReplaceEdit :: GenReadable c (EditReader edit) [edit]);
+    getReplaceEditsM :: forall c m edit. (ReadableConstraint c,FullEdit c edit,Monad m,c m) => EditSubject edit -> m [edit];
+    getReplaceEditsM = fromReadable (writerToReadable replaceEdit :: Readable c (EditReader edit) [edit]);
 
-    getReplaceEdits :: forall edit. FullEdit edit => EditSubject edit -> [edit];
-    getReplaceEdits = fromReadable (writerToReadable replaceEdit :: Readable (EditReader edit) [edit]);
+    getReplaceEdits :: forall edit. PureFullEdit edit => EditSubject edit -> [edit];
+    getReplaceEdits = fromPureReadable (writerToReadable pureReplaceEdit :: PureReadable (EditReader edit) [edit]);
 
-    instance HasTypeInfo GenFullEdit where
+    instance HasTypeInfo FullEdit where
     {
-        typeWitness = $(generateWitness [t|GenFullEdit|]);
-        typeName _ = "GenFullEdit";
+        typeWitness = $(generateWitness [t|FullEdit|]);
+        typeName _ = "FullEdit";
     };
 }

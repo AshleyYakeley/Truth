@@ -28,7 +28,7 @@ module Main(main) where
     textCodec :: Codec' (Result OctetDecodeError) ByteString String;
     textCodec = utf8Codec . bijectionCodec packBijection;
 
-    textLens :: FloatingEditLens () ByteStringEdit (WholeEdit String);
+    textLens :: PureEditLens () ByteStringEdit (WholeEdit String);
     textLens = let
     {
         errorInjection :: forall m err a. (Show err,Applicative m) => Injection' m (Result err a) a;
@@ -55,7 +55,7 @@ module Main(main) where
             bsObj = fileObject path;
 
             wholeTextObj :: Object (WholeEdit String);
-            wholeTextObj = cacheObject $ fixedMapObject textLens bsObj;
+            wholeTextObj = cacheObject $ pureFixedMapObject textLens bsObj;
         };
         if saveOpt then do
         {
@@ -96,18 +96,18 @@ module Main(main) where
             paste :: forall m. MonadIO m => String -> m (Maybe ByteString);
             paste s = return $ pure $ encode textCodec s;
 
-            lens :: IOFloatingEditLens' Maybe () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit (StringEdit String));
-            --convertEditLens :: forall c m edita editb. (ReadableConstraint c,Applicative m,EditSubject edita ~ EditSubject editb,GenFullEdit c edita,GenFullEdit c editb) =>
-            --    GenFloatingEditLens' c m () edita editb;
-            --mutableIOEditLens :: forall m edit. Applicative m => IOFloatingEditLens' m () (MutableIOEdit edit) edit;
-            --textLens :: FloatingEditLens () ByteStringEdit (WholeEdit String);
-            --liftSoupLens :: forall c f state edita editb. (ReadableConstraint c,Applicative f,Edit edita,Edit editb,GenFullReader c (EditReader editb)) =>
+            lens :: IOEditLens' Maybe () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit (StringEdit String));
+            --convertEditLens :: forall c m edita editb. (ReadableConstraint c,Applicative m,EditSubject edita ~ EditSubject editb,FullEdit c edita,FullEdit c editb) =>
+            --    EditLens' c m () edita editb;
+            --mutableIOEditLens :: forall m edit. Applicative m => IOEditLens' m () (MutableIOEdit edit) edit;
+            --textLens :: PureEditLens () ByteStringEdit (WholeEdit String);
+            --liftSoupLens :: forall c f state edita editb. (ReadableConstraint c,Applicative f,Edit edita,Edit editb,FullReader c (EditReader editb)) =>
             --    (forall m. (Monad m,c m) => EditSubject editb -> m (f (EditSubject edita))) ->
-            --    GenFloatingEditLens' c f state edita editb -> GenFloatingEditLens' c f state (SoupEdit edita) (SoupEdit editb);
-            lens = liftSoupLens paste $ convertEditLens <.> floatingEditLensToGen textLens <.> mutableIOEditLens;
+            --    EditLens' c f state edita editb -> EditLens' c f state (SoupEdit edita) (SoupEdit editb);
+            lens = liftSoupLens paste $ convertEditLens <.> pureToEditLens textLens <.> mutableIOEditLens;
 
             soupObject :: Object (SoupEdit (StringEdit String));
-            soupObject = floatingMapObject unitStateAccess lens rawSoupObject;
+            soupObject = mapObject unitStateAccess lens rawSoupObject;
         };
         soupSub <- makeObjectSubscriber soupObject;
         makeWindowCountRef windowCount soupSub;

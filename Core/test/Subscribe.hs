@@ -71,7 +71,7 @@ module Subscribe(testSubscribe) where
         subActions :: actions
     };
 
-    testOutputEditor :: forall edit actions. (Show edit, Show (EditSubject edit), FullReader (EditReader edit),?handle::Handle) => String -> (SubscribeContext edit actions -> IO ()) -> Editor edit actions ();
+    testOutputEditor :: forall edit actions. (Show edit, Show (EditSubject edit), PureFullReader (EditReader edit),?handle::Handle) => String -> (SubscribeContext edit actions -> IO ()) -> Editor edit actions ();
     testOutputEditor name call = let
     {
         outputLn :: MonadIO m => String -> m ();
@@ -80,7 +80,7 @@ module Subscribe(testSubscribe) where
         editorInit :: Object edit -> IO (Object edit);
         editorInit object = do
         {
-            val <- runObject object $ \muted -> unReadable fromReader $ mutableRead muted;
+            val <- runObject object $ \muted -> unReadable pureFromReader $ mutableRead muted;
             outputLn $ "init: " ++ show val;
             return object;
         };
@@ -89,7 +89,7 @@ module Subscribe(testSubscribe) where
         editorUpdate _ mr edits = do
         {
             outputLn $ "receive " ++ show edits;
-            val <- unReadable fromReader mr;
+            val <- unReadable pureFromReader mr;
             outputLn $ "receive " ++ show val;
         };
 
@@ -134,7 +134,7 @@ module Subscribe(testSubscribe) where
         } in call MkSubscribeContext{..};
     } in MkEditor{..};
 
-    testSubscription :: forall edit. (FullEdit edit,Show (EditSubject edit)) =>
+    testSubscription :: forall edit. (PureFullEdit edit,Show (EditSubject edit)) =>
         TestName -> EditSubject edit -> ((?handle :: Handle,?showVar :: IO (),?showExpected :: [edit] -> IO ()) => Subscriber edit () -> IO ()) -> TestTree;
     testSubscription name initial call = goldenTest' name $ do
     {

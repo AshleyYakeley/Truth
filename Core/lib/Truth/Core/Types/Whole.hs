@@ -17,9 +17,9 @@ module Truth.Core.Types.Whole where
         readFrom msubj ReadWhole = msubj;
     };
 
-    instance GenFullReader c (WholeReader a) where
+    instance FullReader c (WholeReader a) where
     {
-        genFromReader = readable ReadWhole;
+        fromReader = readable ReadWhole;
     };
 
     $(return []);
@@ -32,7 +32,7 @@ module Truth.Core.Types.Whole where
             {
                 type ReaderSubject (WholeReader a) = a;
             };
-            instance GenFullReader c (WholeReader a);
+            instance FullReader c (WholeReader a);
         |]);
     };
 
@@ -54,13 +54,13 @@ module Truth.Core.Types.Whole where
         };
     };
 
-    instance (ReadableConstraint c,GenFullReader MonadIO reader,GenFullReader c reader) => GenFullEdit c (WholeReaderEdit reader) where
+    instance (ReadableConstraint c,FullReader MonadIO reader,FullReader c reader) => FullEdit c (WholeReaderEdit reader) where
     {
-        genReplaceEdit = case selfWriterReadable @c @(WholeReaderEdit reader) @reader of
+        replaceEdit = case selfWriterReadable @c @(WholeReaderEdit reader) @reader of
         {
             MkConstraintWitness -> do
             {
-                a <- readableToM @c genFromReader;
+                a <- readableToM @c fromReader;
                 wrWrite $ MkWholeEdit a;
             };
         };
@@ -76,27 +76,27 @@ module Truth.Core.Types.Whole where
             {
                 type EditReader (WholeReaderEdit reader) = reader;
             };
-            instance (ReadableConstraint c,IOFullReader reader,GenFullReader c reader) => GenFullEdit c (WholeReaderEdit reader);
+            instance (ReadableConstraint c,IOFullReader reader,FullReader c reader) => FullEdit c (WholeReaderEdit reader);
         |]);
     };
 
     type WholeEdit a = WholeReaderEdit (WholeReader a);
 
-    wholeEditFunction :: forall c a b. (a -> b) -> GenFloatingEditFunction c () (WholeEdit a) (WholeEdit b);
-    wholeEditFunction ab = MkFloatingEditFunction
+    wholeEditFunction :: forall c a b. (a -> b) -> EditFunction c () (WholeEdit a) (WholeEdit b);
+    wholeEditFunction ab = MkEditFunction
     {
-        floatingEditInitial = (),
-        floatingEditGet = \() -> simpleReadFunction ab,
-        floatingEditUpdate = \(MkWholeEdit a) curstate -> return (curstate,[MkWholeEdit $ ab a])
+        editInitial = (),
+        editGet = \() -> simpleReadFunction ab,
+        editUpdate = \(MkWholeEdit a) curstate -> return (curstate,[MkWholeEdit $ ab a])
     };
 
-    wholeEditLens :: forall c m a b. (Functor m) => Lens' m a b -> GenFloatingEditLens' c m () (WholeEdit a) (WholeEdit b);
-    wholeEditLens lens = MkFloatingEditLens
+    wholeEditLens :: forall c m a b. (Functor m) => Lens' m a b -> EditLens' c m () (WholeEdit a) (WholeEdit b);
+    wholeEditLens lens = MkEditLens
     {
-        floatingEditLensFunction = wholeEditFunction (lensGet lens),
-        floatingEditLensPutEdit = \() (MkWholeEdit newb) -> do
+        editLensFunction = wholeEditFunction (lensGet lens),
+        editLensPutEdit = \() (MkWholeEdit newb) -> do
         {
-            olda <- genFromReader;
+            olda <- fromReader;
             let
             {
                 newma = lensPutback lens newb olda;

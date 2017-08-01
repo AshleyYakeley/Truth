@@ -5,26 +5,26 @@ module Truth.Core.Read.WriterReadable where
     import Truth.Core.Read.Readable;
 
 
-    -- | WriterReadable allows copying without reading the whole thing into memory
-    newtype GenWriterReadable c w reader a = MkWriterReadable { unWriterReadable :: forall m. (Monad m,c m) => MutableRead m reader -> (w -> m ()) -> m a};
-    type WriterReadable = GenWriterReadable Monad;
-    type IOWriterReadable = GenWriterReadable MonadIO;
+    -- | PureWriterReadable allows copying without reading the whole thing into memory
+    newtype WriterReadable c w reader a = MkWriterReadable { unWriterReadable :: forall m. (Monad m,c m) => MutableRead m reader -> (w -> m ()) -> m a};
+    type PureWriterReadable = WriterReadable Monad;
+    type IOWriterReadable = WriterReadable MonadIO;
 
-    writerReadableToGen :: WriterReadable w reader a -> GenWriterReadable c w reader a;
+    writerReadableToGen :: PureWriterReadable w reader a -> WriterReadable c w reader a;
     writerReadableToGen (MkWriterReadable f) = MkWriterReadable f;
 
-    instance Functor (GenWriterReadable c w reader) where
+    instance Functor (WriterReadable c w reader) where
     {
         fmap ab (MkWriterReadable sma) = MkWriterReadable (\s wm -> fmap ab (sma s wm));
     };
 
-    instance Applicative (GenWriterReadable c w reader) where
+    instance Applicative (WriterReadable c w reader) where
     {
         pure a = MkWriterReadable $ \_ _ -> pure a;
         (MkWriterReadable smab) <*> (MkWriterReadable sma) = MkWriterReadable $ \s wm -> smab s wm <*> sma s wm;
     };
 
-    instance Monad (GenWriterReadable c w reader) where
+    instance Monad (WriterReadable c w reader) where
     {
         return = pure;
         (MkWriterReadable sma) >>= f = MkWriterReadable $ \s wm -> do
@@ -39,15 +39,15 @@ module Truth.Core.Read.WriterReadable where
         liftIO ioa = MkWriterReadable $ \_ _ -> liftIO ioa;
     };
 
-    instance IsReadableMonad (GenWriterReadable c w reader) where
+    instance IsReadableMonad (WriterReadable c w reader) where
     {
-        type RMReader (GenWriterReadable c w reader) = reader;
+        type RMReader (WriterReadable c w reader) = reader;
         readable rt = MkWriterReadable (\s _ -> s rt);
     };
 
-    wrWrite :: w -> GenWriterReadable c w reader ();
+    wrWrite :: w -> WriterReadable c w reader ();
     wrWrite w = MkWriterReadable $ \_ wm -> wm w;
 
-    reWriterReadable :: (wa -> wb) -> GenWriterReadable c wa reader a -> GenWriterReadable c wb reader a;
+    reWriterReadable :: (wa -> wb) -> WriterReadable c wa reader a -> WriterReadable c wb reader a;
     reWriterReadable f (MkWriterReadable swma) = MkWriterReadable $ \s wm -> swma s (wm . f);
 }

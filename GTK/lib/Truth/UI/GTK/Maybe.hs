@@ -34,7 +34,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
     createButton :: (IOFullEdit edit) => EditSubject edit -> Object edit -> IO Button;
     createButton subj object = makeButton "Create" $ runObject object $ \muted -> do
     {
-        edits <- fromGenReadable (writerToReadable ioReplaceEdit) subj;
+        edits <- fromReadable (writerToReadable ioReplaceEdit) subj;
         maction <- mutableEdit muted edits;
         case maction of
         {
@@ -66,7 +66,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
 
         let
         {
-            baseReadFunction :: GenReadFunction MonadIO (OneReader f (EditReader edit)) (EditReader edit);
+            baseReadFunction :: ReadFunction MonadIO (OneReader f (EditReader edit)) (EditReader edit);
             baseReadFunction rt = do
             {
                 ft <- readable $ ReadOne rt;
@@ -176,7 +176,7 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
     {
         box <- vBoxNew False 0;
         emptyWidget <- makeEmptywidget push;
-        mDeleteButton <- doIf mDeleteValue (\deleteValue -> pushButton push (replaceEdit (deleteValue :: f a)) "Delete");
+        mDeleteButton <- doIf mDeleteValue (\deleteValue -> pushButton push (pureReplaceEdit (deleteValue :: f a)) "Delete");
         initialmiv :: Maybe (GViewResult edit) <- case retrieveOne initial of
         {
             SuccessResult a -> do

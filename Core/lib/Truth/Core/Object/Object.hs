@@ -41,23 +41,23 @@ module Truth.Core.Object.Object where
         return $ mvarObject var allowed;
     };
 
-    floatingMapObject :: forall f lensstate edita editb. (MonadOne f,Edit edita) =>
-        (forall m. IsStateIO m => StateAccess m lensstate) -> IOFloatingEditLens' f lensstate edita editb -> Object edita -> Object editb;
-    floatingMapObject acc lens objectA = MkObject $ \callB -> runObject objectA $ \mutedA -> do
+    mapObject :: forall f lensstate edita editb. (MonadOne f,Edit edita) =>
+        (forall m. IsStateIO m => StateAccess m lensstate) -> IOEditLens' f lensstate edita editb -> Object edita -> Object editb;
+    mapObject acc lens objectA = MkObject $ \callB -> runObject objectA $ \mutedA -> do
     {
         oldstate <- acc get;
-        (r,_newstate) <- runStateT (callB $ floatingMapMutableEdit lens mutedA) oldstate; -- ignore the new lens state: all these lens changes will be replayed by the update
+        (r,_newstate) <- runStateT (callB $ mapMutableEdit lens mutedA) oldstate; -- ignore the new lens state: all these lens changes will be replayed by the update
         return r;
     };
 
-    ioFixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => IOFloatingEditLens' f () edita editb -> Object edita -> Object editb;
-    ioFixedMapObject lens object = floatingMapObject unitStateAccess lens object;
+    fixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => IOEditLens' f () edita editb -> Object edita -> Object editb;
+    fixedMapObject lens object = mapObject unitStateAccess lens object;
 
-    fixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => FloatingEditLens' f () edita editb -> Object edita -> Object editb;
-    fixedMapObject lens = ioFixedMapObject $ floatingEditLensToGen lens;
+    pureFixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => PureEditLens' f () edita editb -> Object edita -> Object editb;
+    pureFixedMapObject lens = fixedMapObject $ pureToEditLens lens;
 
-    convertObject :: (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Object edita -> Object editb;
-    convertObject = fixedMapObject @Identity convertEditLens;
+    convertObject :: (EditSubject edita ~ EditSubject editb,PureFullEdit edita,PureFullEdit editb) => Object edita -> Object editb;
+    convertObject = pureFixedMapObject @Identity convertEditLens;
 
     -- | Combines all the edits made in each call to the object.
     cacheObject :: Eq t => Object (WholeEdit t) -> Object (WholeEdit t);

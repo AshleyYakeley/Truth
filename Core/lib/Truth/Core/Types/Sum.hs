@@ -51,9 +51,9 @@ module Truth.Core.Types.Sum where
         invertEdit (SumEditRight edit) = fmap (fmap SumEditRight) (invertEdit edit);
     };
 
-    instance (GenFullEdit c ea,Edit eb,EditReader ea ~ EditReader eb) => GenFullEdit c (SumEdit ea eb) where
+    instance (FullEdit c ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit c (SumEdit ea eb) where
     {
-        genReplaceEdit = reWriterReadable SumEditLeft genReplaceEdit;
+        replaceEdit = reWriterReadable SumEditLeft replaceEdit;
     };
 
     $(return []);
@@ -66,15 +66,15 @@ module Truth.Core.Types.Sum where
             {
                 type EditReader (SumEdit ea eb) = EditReader ea;
             };
-            instance (GenFullEdit c ea,Edit eb,EditReader ea ~ EditReader eb) => GenFullEdit c (SumEdit ea eb);
+            instance (FullEdit c ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit c (SumEdit ea eb);
         |]);
     };
 
-    sumEditFunction :: (EditReader edit ~ EditReader edit') => FloatingEditFunction () edit (SumEdit edit' edit);
+    sumEditFunction :: (EditReader edit ~ EditReader edit') => PureEditFunction () edit (SumEdit edit' edit);
     sumEditFunction = let
     {
-        floatingEditInitial = ();
-        floatingEditGet () rt = readable rt;
-        floatingEditUpdate edit () = return ((),[SumEditRight edit]);
-    } in MkFloatingEditFunction{..};
+        editInitial = ();
+        editGet () rt = readable rt;
+        editUpdate edit () = return ((),[SumEditRight edit]);
+    } in MkEditFunction{..};
 }

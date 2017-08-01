@@ -5,32 +5,32 @@ module Truth.Core.Read.FullReader where
     import Truth.Core.Read.Readable;
 
 
-    class (Reader reader) => GenFullReader c (reader :: * -> *) where
+    class (Reader reader) => FullReader c (reader :: * -> *) where
     {
         -- | Construct the subject by making MutableEdit calls
-        genFromReader :: GenReadable c reader (ReaderSubject reader);
+        fromReader :: Readable c reader (ReaderSubject reader);
 
-        default genFromReader :: (IOFullReader reader) => IOReadable reader (ReaderSubject reader);
-        genFromReader = MkReadable $ unReadable ioFromReader;
+        default fromReader :: (IOFullReader reader) => IOReadable reader (ReaderSubject reader);
+        fromReader = MkReadable $ unReadable ioFromReader;
     };
 
-    type IOFullReader = GenFullReader MonadIO;
-    type FullReader = GenFullReader Monad;
+    type IOFullReader = FullReader MonadIO;
+    type PureFullReader = FullReader Monad;
 
     ioFromReader :: IOFullReader reader => IOReadable reader (ReaderSubject reader);
-    ioFromReader = genFromReader;
+    ioFromReader = fromReader;
 
-    fromReader :: FullReader reader => Readable reader (ReaderSubject reader);
-    fromReader = genFromReader;
+    pureFromReader :: PureFullReader reader => PureReadable reader (ReaderSubject reader);
+    pureFromReader = fromReader;
 
-    instance HasTypeInfo GenFullReader where
+    instance HasTypeInfo FullReader where
     {
-        typeWitness = $(generateWitness [t|GenFullReader|]);
-        typeName _ = "GenFullReader";
+        typeWitness = $(generateWitness [t|FullReader|]);
+        typeName _ = "FullReader";
     };
 
-    instance GenFullReader c reader => GenFullReader c (Readable reader) where
+    instance FullReader c reader => FullReader c (PureReadable reader) where
     {
-        genFromReader = MkReadable $ \mr -> unReadable (genFromReader @c @reader) $ \rt -> mr $ readable rt;
+        fromReader = MkReadable $ \mr -> unReadable (fromReader @c @reader) $ \rt -> mr $ readable rt;
     };
 }

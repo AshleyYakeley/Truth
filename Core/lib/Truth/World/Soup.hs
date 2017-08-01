@@ -9,14 +9,14 @@ module Truth.World.Soup where
 
     type SoupEdit edit = KeyEdit [(UUID,EditSubject edit)] (PairEdit (NoEdit (WholeReader UUID)) edit);
 
-    liftSoupLens :: forall c f state edita editb. (ReadableConstraint c,Applicative f,Edit edita,Edit editb,GenFullReader c (EditReader editb)) =>
+    liftSoupLens :: forall c f state edita editb. (ReadableConstraint c,Applicative f,Edit edita,Edit editb,FullReader c (EditReader editb)) =>
         (forall m. (Monad m,c m) => EditSubject editb -> m (f (EditSubject edita))) ->
-        GenFloatingEditLens' c f state edita editb -> GenFloatingEditLens' c f state (SoupEdit edita) (SoupEdit editb);
+        EditLens' c f state edita editb -> EditLens' c f state (SoupEdit edita) (SoupEdit editb);
     liftSoupLens bmfa = let
     {
         conv :: forall m. (Monad m,c m) => (UUID,EditSubject editb) -> m (f (UUID,EditSubject edita));
         conv (uuid,b) = fmap (fmap $ \a -> (uuid,a)) $ bmfa b;
-    } in liftKeyElementLens conv . liftSndPairFloatingEditLens;
+    } in liftKeyElementLens conv . sndLiftEditLens;
 
     nameToUUID :: String -> Maybe UUID;
     nameToUUID = Data.UUID.fromString;

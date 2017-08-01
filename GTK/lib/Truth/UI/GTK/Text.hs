@@ -47,7 +47,7 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
     textView = MkView $ \(MkObject object) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
-        initial <- object $ \muted -> unReadable fromReader $ mutableRead muted;
+        initial <- object $ \muted -> unReadable pureFromReader $ mutableRead muted;
         textBufferSetText buffer initial;
         mv <- newMVar ();
 
@@ -94,7 +94,7 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
                 run <- getSequenceRun iter1 iter2;
                 -- get selection...
-                return $ Just $ return $ MkAspect typeInfo $ MkCloseFloat $ floatingEditLensToGen $ stringSectionLens run;
+                return $ Just $ return $ MkAspect typeInfo $ MkCloseState $ pureToEditLens $ stringSectionLens run;
             };
         };
 

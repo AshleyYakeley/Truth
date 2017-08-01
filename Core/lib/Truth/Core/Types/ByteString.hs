@@ -30,9 +30,9 @@ module Truth.Core.Types.ByteString where
     };
 
     instance IOFullReader ByteStringReader;
-    instance GenFullReader Monad ByteStringReader where
+    instance FullReader Monad ByteStringReader where
     {
-        genFromReader = do
+        fromReader = do
         {
             len <- readable ReadByteStringLength;
             readable $ ReadByteStringSection 0 len;
@@ -49,8 +49,8 @@ module Truth.Core.Types.ByteString where
             {
                 type ReaderSubject ByteStringReader = ByteString;
             };
-            instance GenFullReader MonadIO ByteStringReader;
-            instance GenFullReader Monad ByteStringReader;
+            instance FullReader MonadIO ByteStringReader;
+            instance FullReader Monad ByteStringReader;
         |]);
     };
 
@@ -154,9 +154,9 @@ module Truth.Core.Types.ByteString where
     };
 
     instance IOFullEdit ByteStringEdit;
-    instance GenFullEdit Monad ByteStringEdit where
+    instance FullEdit Monad ByteStringEdit where
     {
-        genReplaceEdit = do
+        replaceEdit = do
         {
             len <- readable ReadByteStringLength;
             bs <- readable $ ReadByteStringSection 0 len;

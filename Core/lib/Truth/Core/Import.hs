@@ -53,7 +53,6 @@ module Truth.Core.Import (module I) where
     import Data.Bijection as I;
     import Data.Empty as I;
     import Data.Chain as I;
-    import Data.FloatingLens as I;
     import Data.Lens as I;
     import Data.Codec as I;
     import Data.Result as I;

@@ -36,7 +36,7 @@ module Truth.Core.Types.Tuple where
         MkTupleEditReader :: sel edit -> EditReader edit t -> TupleEditReader sel t;
     };
 
-    tupleReadFunction :: sel edit -> ReadFunction (TupleEditReader sel) (EditReader edit);
+    tupleReadFunction :: sel edit -> PureReadFunction (TupleEditReader sel) (EditReader edit);
     tupleReadFunction sel r = readable $ MkTupleEditReader sel r;
 
     instance (TupleSelector sel) => Reader (TupleEditReader sel) where
@@ -73,11 +73,11 @@ module Truth.Core.Types.Tuple where
     tupleAllSelectors :: FiniteTupleSelector sel => [AnyWitness sel];
     tupleAllSelectors = getConstant $ tupleConstruct $ \sel -> Constant [MkAnyWitness sel];
 
-    instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (GenFullReader c) sel) => GenFullReader c (TupleEditReader sel) where
+    instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (FullReader c) sel) => FullReader c (TupleEditReader sel) where
     {
-        genFromReader = tupleConstruct (\(seledit :: sel edit) -> case tupleReaderWitness (Proxy::Proxy (GenFullReader c)) seledit of
+        fromReader = tupleConstruct (\(seledit :: sel edit) -> case tupleReaderWitness (Proxy::Proxy (FullReader c)) seledit of
         {
-            MkConstraintWitness -> mapReadable (readable . MkTupleEditReader seledit) genFromReader;
+            MkConstraintWitness -> mapReadable (readable . MkTupleEditReader seledit) fromReader;
         });
     };
 
@@ -91,7 +91,7 @@ module Truth.Core.Types.Tuple where
             {
                 type ReaderSubject (TupleEditReader sel) = TupleSubject sel;
             };
-            instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (GenFullReader c) sel) => GenFullReader c (TupleEditReader sel);
+            instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (FullReader c) sel) => FullReader c (TupleEditReader sel);
         |]);
     };
 
@@ -131,13 +131,13 @@ module Truth.Core.Types.Tuple where
         };
     };
 
-    instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (GenFullReader c) sel,TupleWitness (GenFullEdit c) sel) => GenFullEdit c (TupleEdit sel) where
+    instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (FullReader c) sel,TupleWitness (FullEdit c) sel) => FullEdit c (TupleEdit sel) where
     {
-        genReplaceEdit = do
+        replaceEdit = do
         {
-            editss <- traverse (\(MkAnyWitness sel) -> case tupleWitness (Proxy::Proxy (GenFullEdit c)) sel of
+            editss <- traverse (\(MkAnyWitness sel) -> case tupleWitness (Proxy::Proxy (FullEdit c)) sel of
             {
-                MkConstraintWitness -> reWriterReadable (MkTupleEdit sel) $ mapReadable (tupleReadFunction sel) genReplaceEdit;
+                MkConstraintWitness -> reWriterReadable (MkTupleEdit sel) $ mapReadable (tupleReadFunction sel) replaceEdit;
             }) tupleAllSelectors;
             return $ mconcat editss;
         };
@@ -155,7 +155,7 @@ module Truth.Core.Types.Tuple where
             {
                 type EditReader (TupleEdit sel) = TupleEditReader sel;
             };
-            instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (GenFullReader c) sel,TupleWitness (GenFullEdit c) sel) => GenFullEdit c (TupleEdit sel);
+            instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (FullReader c) sel,TupleWitness (FullEdit c) sel) => FullEdit c (TupleEdit sel);
         |])];
     };
 
@@ -172,19 +172,19 @@ module Truth.Core.Types.Tuple where
     };
 
     tupleEditLens :: forall c m sel edit. (TestEquality sel,Applicative m) =>
-        sel edit -> GenFloatingEditLens' c m () (TupleEdit sel) edit;
+        sel edit -> EditLens' c m () (TupleEdit sel) edit;
     tupleEditLens seledit = let
     {
-        floatingEditInitial = ();
-        floatingEditGet :: () -> GenReadFunction c (TupleEditReader sel) (EditReader edit);
-        floatingEditGet () rt = readable $ MkTupleEditReader seledit rt;
-        floatingEditUpdate (MkTupleEdit seledit' edit) () = case testEquality seledit seledit' of
+        editInitial = ();
+        editGet :: () -> ReadFunction c (TupleEditReader sel) (EditReader edit);
+        editGet () rt = readable $ MkTupleEditReader seledit rt;
+        editUpdate (MkTupleEdit seledit' edit) () = case testEquality seledit seledit' of
         {
             Just Refl -> return ((),[edit]);
             _ -> return ((),[]);
         };
-        floatingEditLensFunction = MkFloatingEditFunction{..};
-        floatingEditLensPutEdit :: () -> edit -> GenReadable c (TupleEditReader sel) (m ((),[TupleEdit sel]));
-        floatingEditLensPutEdit () edit = return $ pure ((),[MkTupleEdit seledit edit]);
-    } in MkFloatingEditLens{..};
+        editLensFunction = MkEditFunction{..};
+        editLensPutEdit :: () -> edit -> Readable c (TupleEditReader sel) (m ((),[TupleEdit sel]));
+        editLensPutEdit () edit = return $ pure ((),[MkTupleEdit seledit edit]);
+    } in MkEditLens{..};
 }

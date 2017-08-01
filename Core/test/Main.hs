@@ -47,10 +47,10 @@ module Main(main) where
         found = fromReadFunction rf start;
     } in assertEqual "" expected found;
 
-    applyEditSubject :: (Edit edit,FullReader (EditReader edit)) => edit -> EditSubject edit -> EditSubject edit;
+    applyEditSubject :: (Edit edit,PureFullReader (EditReader edit)) => edit -> EditSubject edit -> EditSubject edit;
     applyEditSubject edit = fromReadFunction $ applyEdit edit;
 
-    testEdit :: (Edit edit,FullReader (EditReader edit),Eq (EditSubject edit),Show edit,Show (EditSubject edit)) => edit -> EditSubject edit -> EditSubject edit -> TestTree;
+    testEdit :: (Edit edit,PureFullReader (EditReader edit),Eq (EditSubject edit),Show edit,Show (EditSubject edit)) => edit -> EditSubject edit -> EditSubject edit -> TestTree;
     testEdit edit original expected = let
     {
         name = show edit ++ " " ++ show original;
@@ -61,7 +61,7 @@ module Main(main) where
     testEditRead edit original rt expected = let
     {
         name = show edit ++ " " ++ show original ++ " " ++ show rt;
-        found = fromReadable (applyEdit edit rt) original;
+        found = fromPureReadable (applyEdit edit rt) original;
     } in testCase name $ assertEqual "" expected found;
 
     seqRun :: Int -> Int -> SequenceRun [a];
@@ -86,10 +86,10 @@ module Main(main) where
     testLensGet :: TestTree;
     testLensGet = testProperty "get" $ \run (base :: String) -> let
     {
-        MkFloatingEditLens{..} = stringSectionLens run;
-        MkFloatingEditFunction{..} = floatingEditLensFunction;
+        MkEditLens{..} = stringSectionLens run;
+        MkEditFunction{..} = editLensFunction;
 
-        rf = floatingEditGet floatingEditInitial;
+        rf = editGet editInitial;
 
         found :: String;
         found = fromReadFunction rf base;
@@ -108,28 +108,28 @@ module Main(main) where
     lensUpdateGetProperty ::
     (
         Show edita,Edit edita,
-        FullReader (EditReader edita),
+        PureFullReader (EditReader edita),
         Show (EditSubject edita),
         Show editb,Edit editb,
-        FullReader (EditReader editb),
+        PureFullReader (EditReader editb),
         Eq (EditSubject editb),
         Show (EditSubject editb),
         Show state
-    ) => FloatingEditLens' m state edita editb -> EditSubject edita -> edita -> Property;
+    ) => PureEditLens' m state edita editb -> EditSubject edita -> edita -> Property;
     lensUpdateGetProperty lens oldA editA = let
     {
         newA = fromReadFunction (applyEdit editA) oldA;
-        MkFloatingEditLens{..} = lens;
-        MkFloatingEditFunction{..} = floatingEditLensFunction;
-        oldB = fromReadFunction (floatingEditGet floatingEditInitial) oldA;
-        rdb = floatingEditUpdate editA floatingEditInitial;
-        (newState,editBs) = fromReadable rdb oldA;
+        MkEditLens{..} = lens;
+        MkEditFunction{..} = editLensFunction;
+        oldB = fromReadFunction (editGet editInitial) oldA;
+        rdb = editUpdate editA editInitial;
+        (newState,editBs) = fromPureReadable rdb oldA;
         newB1 = fromReadFunction (applyEdits editBs) oldB;
-        newB2 = fromReadFunction (floatingEditGet newState) newA;
+        newB2 = fromReadFunction (editGet newState) newA;
         vars =
         [
             showVar "oldA" oldA,
-            showVar "oldState" floatingEditInitial,
+            showVar "oldState" editInitial,
             showVar "oldB" oldB,
             showVar "editA" editA,
             showVar "editBs" editBs,

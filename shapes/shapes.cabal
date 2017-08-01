@@ -89,7 +89,6 @@ library
         Data.Injection
         Data.Bijection
         Data.Lens
-        Data.FloatingLens
         Data.Store
         Data.ConstFunction
         Data.Codec

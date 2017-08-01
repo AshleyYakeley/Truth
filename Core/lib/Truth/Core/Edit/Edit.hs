@@ -25,7 +25,7 @@ module Truth.Core.Edit.Edit where
     class (Reader (EditReader edit),Floating edit edit) => Edit (edit :: *) where
     {
         type EditReader edit :: * -> *;
-        applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit);
+        applyEdit :: edit -> PureReadFunction (EditReader edit) (EditReader edit);
         invertEdit :: edit -> IOReadable (EditReader edit) [edit];
     };
     $(generateFamilyProxy "EditReader");
@@ -37,10 +37,10 @@ module Truth.Core.Edit.Edit where
         typeName _ = "Edit";
     };
 {-
-    applyAndInvertEdit :: (Edit edit) => edit -> (ReadFunction (EditReader edit) (EditReader edit),Readable (EditReader edit) [edit]);
+    applyAndInvertEdit :: (Edit edit) => edit -> (PureReadFunction (EditReader edit) (EditReader edit),PureReadable (EditReader edit) [edit]);
     applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
 -}
-    applyEdits :: (Edit edit) => [edit] -> ReadFunction (EditReader edit) (EditReader edit);
+    applyEdits :: (Edit edit) => [edit] -> PureReadFunction (EditReader edit) (EditReader edit);
     applyEdits [] = readable;
     applyEdits (e:es) = composeReadFunction (applyEdits es) (applyEdit e);
 

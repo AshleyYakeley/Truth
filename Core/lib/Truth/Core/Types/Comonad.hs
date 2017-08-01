@@ -16,10 +16,10 @@ module Truth.Core.Types.Comonad where
         readFrom wsubj (ReadExtract reader) = readFrom (extract wsubj) reader;
     };
 {-
-    instance (Traversable f,Monad f,FullReader reader) => FullReader (OneReader f reader) where
+    instance (Traversable f,Monad f,PureFullReader reader) => PureFullReader (OneReader f reader) where
     {
-        -- fromReader :: ReadFunction (OneReader f reader) (f (ReaderSubject reader));
-        fromReader = liftMaybeReadable fromReader;
+        -- pureFromReader :: PureReadFunction (OneReader f reader) (f (ReaderSubject reader));
+        pureFromReader = liftMaybeReadable pureFromReader;
     };
 -}
     $(return []);
@@ -35,10 +35,10 @@ module Truth.Core.Types.Comonad where
         |]);
     };
 
-    comonadReadFunction :: GenReadFunction c (ComonadReader w reader) reader;
+    comonadReadFunction :: ReadFunction c (ComonadReader w reader) reader;
     comonadReadFunction rt = readable $ ReadExtract rt;
 
-    comonadLiftReadFunction :: ReadableConstraint c => GenReadFunction c ra rb -> GenReadFunction c (ComonadReader w ra) (ComonadReader w rb);
+    comonadLiftReadFunction :: ReadableConstraint c => ReadFunction c ra rb -> ReadFunction c (ComonadReader w ra) (ComonadReader w rb);
     comonadLiftReadFunction rf (ReadExtract reader) = mapReadable comonadReadFunction (rf reader);
 
 
@@ -69,21 +69,21 @@ module Truth.Core.Types.Comonad where
         |]);
     };
 
-    comonadEditFunction :: forall w edit. FloatingEditFunction () (ComonadEdit w edit) edit;
+    comonadEditFunction :: forall w edit. PureEditFunction () (ComonadEdit w edit) edit;
     comonadEditFunction = let
     {
-        floatingEditInitial = ();
+        editInitial = ();
 
-        floatingEditGet :: () -> ReadFunction (ComonadReader w (EditReader edit)) (EditReader edit);
-        floatingEditGet () = comonadReadFunction;
+        editGet :: () -> PureReadFunction (ComonadReader w (EditReader edit)) (EditReader edit);
+        editGet () = comonadReadFunction;
 
-        floatingEditUpdate (MkComonadEdit edit) () = return ((),[edit]);
-    } in MkFloatingEditFunction{..};
+        editUpdate (MkComonadEdit edit) () = return ((),[edit]);
+    } in MkEditFunction{..};
 
-    comonadEditLens :: Applicative m => FloatingEditLens' m () (ComonadEdit w edit) edit;
+    comonadEditLens :: Applicative m => PureEditLens' m () (ComonadEdit w edit) edit;
     comonadEditLens = let
     {
-        floatingEditLensFunction = comonadEditFunction;
-        floatingEditLensPutEdit () edit = return $ pure ((),[MkComonadEdit edit]);
-    } in MkFloatingEditLens{..};
+        editLensFunction = comonadEditFunction;
+        editLensPutEdit () edit = return $ pure ((),[MkComonadEdit edit]);
+    } in MkEditLens{..};
 }

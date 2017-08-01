@@ -12,7 +12,7 @@ module Truth.Core.Types.OneWholeEdit where
 
     type OneWholeEdit (f :: * -> *) edit = SumWholeEdit (OneEdit f edit);
 
-    extractOneWholeEdit :: forall c m f edit. (MonadOne f,ReadableConstraint c,GenFullEdit c edit,Monad m,c m) => OneWholeEdit f edit -> m [edit];
+    extractOneWholeEdit :: forall c m f edit. (MonadOne f,ReadableConstraint c,FullEdit c edit,Monad m,c m) => OneWholeEdit f edit -> m [edit];
     extractOneWholeEdit (SumEditRight (MkOneEdit edit)) = return [edit];
     extractOneWholeEdit (SumEditLeft (MkWholeEdit fa)) = case retrieveOne fa of
     {
@@ -21,10 +21,10 @@ module Truth.Core.Types.OneWholeEdit where
     };
 
     -- suitable for Results, trying to put a failure code will be rejected
-    liftOneWholeGeneralLens :: forall ff f edita editb. (Monad ff,Traversable ff,MonadOne f,IOFullReader (EditReader edita),Edit edita,IOFullEdit editb) =>
+    oneWholeLiftGeneralLens :: forall ff f edita editb. (Monad ff,Traversable ff,MonadOne f,IOFullReader (EditReader edita),Edit edita,IOFullEdit editb) =>
      (forall a. f a -> ff a) ->
      GeneralLens' ff edita editb -> GeneralLens' ff (OneWholeEdit f edita) (OneWholeEdit f editb);
-    liftOneWholeGeneralLens faffa (MkCloseFloat (lens :: IOFloatingEditLens' ff state edita editb)) = MkCloseFloat $ sumWholeLiftFloatingEditLens pushback (oneLiftFloatingEditLens faffa lens) where
+    oneWholeLiftGeneralLens faffa (MkCloseState (lens :: IOEditLens' ff state edita editb)) = MkCloseState $ sumWholeLiftEditLens pushback (oneLiftEditLens faffa lens) where
     {
         ff1 :: forall a. state -> f (state,a) -> (state,f a);
         ff1 oldstate fsa = case retrieveOne fsa of
@@ -41,10 +41,10 @@ module Truth.Core.Types.OneWholeEdit where
             SuccessResult b -> fmap (fmap (ff1 oldstate) . sequenceA) $ liftMaybeReadable $ do
             {
                 editbs <- getReplaceEditsM @MonadIO b;
-                fstateedita <- floatingEditLensPutEdits lens oldstate editbs;
+                fstateedita <- editLensPutEdits lens oldstate editbs;
                 for fstateedita $ \(newstate,editas) -> do
                 {
-                    a <- mapReadable (applyEdits editas) genFromReader;
+                    a <- mapReadable (applyEdits editas) fromReader;
                     return (newstate,a);
                 };
             };

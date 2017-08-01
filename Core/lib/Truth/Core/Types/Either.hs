@@ -31,17 +31,17 @@ module Truth.Core.Types.Either where
         readFrom (Right a) (EitherReadRight reader) = Just $ readFrom a reader;
     };
 
-    instance (ReadableConstraint c,GenFullReader c ra,GenFullReader c rb) => GenFullReader c (EitherReader ra rb) where
+    instance (ReadableConstraint c,FullReader c ra,FullReader c rb) => FullReader c (EitherReader ra rb) where
     {
-        genFromReader = do
+        fromReader = do
         {
-            mleft <- mapEitherReadLeft genFromReader;
-            mright <- mapEitherReadRight genFromReader;
+            mleft <- mapEitherReadLeft fromReader;
+            mright <- mapEitherReadRight fromReader;
             case (mleft,mright) of
             {
                 (Just a,Nothing) -> return $ Left a;
                 (Nothing,Just a) -> return $ Right a;
-                _ -> fail $ "fromReader: inconsistent EitherReader";
+                _ -> fail $ "pureFromReader: inconsistent EitherReader";
             };
         };
     };
@@ -56,7 +56,7 @@ module Truth.Core.Types.Either where
             {
                 type ReaderSubject (EitherReader ra rb) = Either (ReaderSubject ra) (ReaderSubject rb);
             };
-            instance (ReadableConstraint c,GenFullReader c ra,GenFullReader c rb) => GenFullReader c (EitherReader ra rb);
+            instance (ReadableConstraint c,FullReader c ra,FullReader c rb) => FullReader c (EitherReader ra rb);
         |]);
     };
 

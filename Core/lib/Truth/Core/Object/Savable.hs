@@ -15,7 +15,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
         _saveBufferChanged :: Bool
     };
 
-    saveBufferMutableEdit :: forall m edit. (FullEdit edit,Monad m) => ([edit] -> StateT (SaveBuffer (EditSubject edit)) m ()) -> MutableEdit (StateT (SaveBuffer (EditSubject edit)) m) edit;
+    saveBufferMutableEdit :: forall m edit. (PureFullEdit edit,Monad m) => ([edit] -> StateT (SaveBuffer (EditSubject edit)) m ()) -> MutableEdit (StateT (SaveBuffer (EditSubject edit)) m) edit;
     saveBufferMutableEdit update = let
     {
         mutableRead :: MutableRead (StateT (SaveBuffer (EditSubject edit)) m) (EditReader edit);
@@ -32,7 +32,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
 
     newtype SaveActions = MkSaveActions (IO (Maybe (IO Bool,IO Bool)));
 
-    saveBufferSubscriber :: forall edit action. FullEdit edit => Subscriber (WholeEdit (EditSubject edit)) action -> Subscriber edit (action,SaveActions);
+    saveBufferSubscriber :: forall edit action. PureFullEdit edit => Subscriber (WholeEdit (EditSubject edit)) action -> Subscriber edit (action,SaveActions);
     saveBufferSubscriber subA = MkSubscriber $ \(initB :: Object edit -> IO editorB) updateB -> do
     {
         sbVar <- newMVar $ error "uninitialised save buffer";

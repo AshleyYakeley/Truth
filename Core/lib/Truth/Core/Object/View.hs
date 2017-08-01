@@ -91,20 +91,20 @@ module Truth.Core.Object.View where
 
     mapView :: forall f w edita editb. (MonadOne f,Edit edita,Edit editb) => GeneralLens' f edita editb -> View editb w -> View edita w;
     mapView
-        lens@(MkCloseFloat (flens :: IOFloatingEditLens' f lensstate edita editb))
+        lens@(MkCloseState (flens :: IOEditLens' f lensstate edita editb))
         (MkView (viewB :: Object editb -> (AspectGetter editb -> IO ()) -> IO (ViewResult editb w)))
         = MkView $ \objectA setSelectA -> do
     {
         let
         {
-            MkFloatingEditLens{..} = flens;
-            MkFloatingEditFunction{..} = floatingEditLensFunction;
+            MkEditLens{..} = flens;
+            MkEditFunction{..} = editLensFunction;
         };
-        lensvar <- newMVar floatingEditInitial;
+        lensvar <- newMVar editInitial;
         let
         {
             objectB :: Object editb;
-            objectB = floatingMapObject (mvarStateAccess lensvar) flens objectA;
+            objectB = mapObject (mvarStateAccess lensvar) flens objectA;
 
             setSelectB selB = setSelectA $ mapAspectGetter (generalLens lens) selB;
         };
@@ -114,8 +114,8 @@ module Truth.Core.Object.View where
             updateA :: forall m. IsStateIO m => MutableRead m (EditReader edita) -> [edita] -> m ();
             updateA mrA editsA = mvarStateAccess lensvar $ StateT $ \oldls -> do
             {
-                (newls,editsB) <- unReadable (floatingEditUpdates floatingEditLensFunction editsA oldls) mrA;
-                updateB (mapMutableRead (floatingEditGet oldls) mrA) editsB;
+                (newls,editsB) <- unReadable (editUpdates editLensFunction editsA oldls) mrA;
+                updateB (mapMutableRead (editGet oldls) mrA) editsB;
                 return ((),newls);
             };
 

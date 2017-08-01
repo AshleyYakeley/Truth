@@ -8,28 +8,28 @@ module Truth.Core.Object.Lens where
 
 
     mapSubscriber :: forall f edita editb action. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Subscriber edita action -> Subscriber editb action;
-    mapSubscriber (MkCloseFloat (lens@MkFloatingEditLens{..} :: IOFloatingEditLens' f lensstate edita editb)) sub =
+    mapSubscriber (MkCloseState (lens@MkEditLens{..} :: IOEditLens' f lensstate edita editb)) sub =
     MkSubscriber $ \(initialB :: Object editb -> IO editor) updateB -> do
     {
         let
         {
-            MkFloatingEditFunction{..} = floatingEditLensFunction;
+            MkEditFunction{..} = editLensFunction;
         };
-        lensvar <- newMVar floatingEditInitial;
+        lensvar <- newMVar editInitial;
         let
         {
             initialA :: Object edita -> IO (Object edita,editor);
             initialA objectA = do
             {
-                ed <- initialB $ floatingMapObject (mvarStateAccess lensvar) lens objectA;
+                ed <- initialB $ mapObject (mvarStateAccess lensvar) lens objectA;
                 return (objectA,ed);
             };
 
             updateA :: forall m. IsStateIO m => (Object edita,editor) -> MutableRead m (EditReader edita) -> [edita] -> m ();
             updateA (_objectA,editor) mr editAs = mvarStateAccess lensvar $ StateT $ \oldls -> do
             {
-                (newls,editBs) <- unReadable (floatingEditUpdates floatingEditLensFunction editAs oldls) mr;
-                updateB editor (mapMutableRead (floatingEditGet newls) mr) editBs;
+                (newls,editBs) <- unReadable (editUpdates editLensFunction editAs oldls) mr;
+                updateB editor (mapMutableRead (editGet newls) mr) editBs;
                 return ((),newls);
             };
         };
@@ -42,7 +42,7 @@ module Truth.Core.Object.Lens where
 
 {-
 
-    cacheReferent :: forall edit. (Edit edit,FullReader (EditReader edit)) =>
+    cacheReferent :: forall edit. (Edit edit,PureFullReader (EditReader edit)) =>
         Reference edit -> Reference edit;
     cacheReferent ref = objSubscribe (\sendDown -> do
     {
@@ -50,7 +50,7 @@ module Truth.Core.Object.Lens where
         {
             initref read firstallowed sendUp = do
             {
-                firsta <- readStructureW read fromReader;   -- read the whole thing in
+                firsta <- readStructureW read pureFromReader;   -- read the whole thing in
                 statevar :: MVar (EditSubject edit,Allowed edit) <- newMVar (firsta,firstallowed);
                 return (statevar,sendUp);
             };
@@ -92,10 +92,10 @@ module Truth.Core.Object.Lens where
 -}
 
 {-
-    wantedA :: ReadFunction (EditReader ea) (PairEditReader ea eb);
+    wantedA :: PureReadFunction (EditReader ea) (PairEditReader ea eb);
     wantedA = undefined;
 
-    wantedB :: ReadFunction (EditReader eb) (PairEditReader ea eb);
+    wantedB :: PureReadFunction (EditReader eb) (PairEditReader ea eb);
     wantedB = undefined;
 
     pairSubscriber :: forall ea eb acta actb. Subscriber ea acta -> Subscriber eb actb -> Subscriber (PairEdit ea eb) (acta,actb);

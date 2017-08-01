@@ -21,9 +21,9 @@ module Truth.Core.Types.None where
         readFrom _ = never;
     };
 
-    instance GenFullReader c (NoReader ()) where
+    instance FullReader c (NoReader ()) where
     {
-        genFromReader = return ();
+        fromReader = return ();
     };
 
     $(return []);
@@ -36,7 +36,7 @@ module Truth.Core.Types.None where
             {
                 type ReaderSubject (NoReader a) = a;
             };
-            instance GenFullReader c (NoReader ());
+            instance FullReader c (NoReader ());
         |]);
     };
 
@@ -59,9 +59,9 @@ module Truth.Core.Types.None where
         invertEdit = never;
     };
 
-    instance (GenFullReader c reader,ReaderSubject reader ~ ()) => GenFullEdit c (NoEdit reader) where
+    instance (FullReader c reader,ReaderSubject reader ~ ()) => FullEdit c (NoEdit reader) where
     {
-        genReplaceEdit = return ();
+        replaceEdit = return ();
     };
 
     $(return []);
@@ -74,22 +74,22 @@ module Truth.Core.Types.None where
             {
                 type EditReader (NoEdit reader) = reader;
             };
-            instance (GenFullReader c reader,ReaderSubject reader ~ ()) => GenFullEdit c (NoEdit reader);
+            instance (FullReader c reader,ReaderSubject reader ~ ()) => FullEdit c (NoEdit reader);
         |]);
     };
 
-    noEditFunction :: FloatingEditFunction () (NoEdit (EditReader edit)) edit;
+    noEditFunction :: PureEditFunction () (NoEdit (EditReader edit)) edit;
     noEditFunction = let
     {
-        floatingEditInitial = ();
-        floatingEditGet _ = readable;
-        floatingEditUpdate = never;
-    } in MkFloatingEditFunction{..};
+        editInitial = ();
+        editGet _ = readable;
+        editUpdate = never;
+    } in MkEditFunction{..};
 
-    noEditLens :: FloatingEditLens' Maybe () (NoEdit (EditReader edit)) edit;
+    noEditLens :: PureEditLens' Maybe () (NoEdit (EditReader edit)) edit;
     noEditLens = let
     {
-        floatingEditLensFunction = noEditFunction;
-        floatingEditLensPutEdit () _ = return Nothing;
-    } in MkFloatingEditLens{..};
+        editLensFunction = noEditFunction;
+        editLensPutEdit () _ = return Nothing;
+    } in MkEditLens{..};
 }

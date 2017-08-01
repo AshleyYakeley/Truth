@@ -1,16 +1,16 @@
 module Truth.Core.Edit.GeneralLens where
 {
     import Truth.Core.Import;
-    import Truth.Core.Edit.FloatingEditFunction;
-    import Truth.Core.Edit.FloatingEditLens;
+    import Truth.Core.Edit.EditFunction;
+    import Truth.Core.Edit.EditLens;
 
 
-    type GeneralLens' m = CloseFloat (IOFloatingEditLens' m);
+    type GeneralLens' m = CloseState (IOEditLens' m);
 
     type GeneralLens = GeneralLens' Maybe;
 
     generalLens :: MonadOne m => GeneralLens' m edita editb -> GeneralLens edita editb;
-    generalLens (MkCloseFloat (MkFloatingEditLens ff putedit)) = MkCloseFloat $ MkFloatingEditLens ff $ \s e -> fmap getMaybeOne $ putedit s e;
+    generalLens (MkCloseState (MkEditLens ff putedit)) = MkCloseState $ MkEditLens ff $ \s e -> fmap getMaybeOne $ putedit s e;
 
 
     class IsGeneralLens lens where
@@ -34,21 +34,21 @@ module Truth.Core.Edit.GeneralLens where
         toGeneralLens' = id;
     };
 
-    instance Eq state => IsGeneralLens (IOFloatingEditLens' m state edita editb) where
+    instance Eq state => IsGeneralLens (IOEditLens' m state edita editb) where
     {
-        type LensMonad (IOFloatingEditLens' m state edita editb) = m;
-        type LensDomain (IOFloatingEditLens' m state edita editb) = edita;
-        type LensRange (IOFloatingEditLens' m state edita editb) = editb;
+        type LensMonad (IOEditLens' m state edita editb) = m;
+        type LensDomain (IOEditLens' m state edita editb) = edita;
+        type LensRange (IOEditLens' m state edita editb) = editb;
 
-        toGeneralLens' = MkCloseFloat;
+        toGeneralLens' = MkCloseState;
     };
 
-    instance Eq state => IsGeneralLens (FloatingEditLens' m state edita editb) where
+    instance Eq state => IsGeneralLens (PureEditLens' m state edita editb) where
     {
-        type LensMonad (FloatingEditLens' m state edita editb) = m;
-        type LensDomain (FloatingEditLens' m state edita editb) = edita;
-        type LensRange (FloatingEditLens' m state edita editb) = editb;
+        type LensMonad (PureEditLens' m state edita editb) = m;
+        type LensDomain (PureEditLens' m state edita editb) = edita;
+        type LensRange (PureEditLens' m state edita editb) = editb;
 
-        toGeneralLens' lens = toGeneralLens' $ (floatingEditLensToGen lens :: GenFloatingEditLens' MonadIO m state edita editb);
+        toGeneralLens' lens = toGeneralLens' $ (pureToEditLens lens :: EditLens' MonadIO m state edita editb);
     };
 }
