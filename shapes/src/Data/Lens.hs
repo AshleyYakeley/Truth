@@ -1,10 +1,12 @@
 module Data.Lens where
 {
-    import Prelude hiding (id,(.),sequence);
+    import Prelude hiding (id,(.),sequence,lookup);
     import Data.Maybe;
     import Control.Applicative;
     import Control.Category;
     import Data.Functor.Identity;
+    import Data.Hashable(Hashable);
+    import Data.HashMap.Lazy;
     import Data.Witness;
     import Data.Chain;
     import Data.MonadOne;
@@ -131,4 +133,12 @@ module Data.Lens where
         lensGet = getListElement n,
         lensPutback = \e -> return . (putListElement n e)
     };
+
+    hashMapLens :: (Eq key,Hashable key) => key -> Lens' Identity (HashMap key value) (Maybe value);
+    hashMapLens key = let
+    {
+        lensGet = lookup key;
+        lensPutback Nothing hm = Identity $ delete key hm;
+        lensPutback (Just value) hm = Identity $ insert key value hm;
+    } in MkLens{..};
 }

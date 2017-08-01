@@ -71,6 +71,7 @@ library
         reity,
         random,
         uuid,
+        text,
         aeson
     exposed-modules:
         Truth.Core

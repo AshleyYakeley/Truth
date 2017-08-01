@@ -64,6 +64,8 @@ library
         containers,
         transformers,
         mono-traversable,
+        hashable,
+        unordered-containers,
         witness,
         open-witness
     exposed-modules:
