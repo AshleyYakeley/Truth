@@ -171,18 +171,20 @@ module Truth.Core.Types.Tuple where
         typeName _ = "TupleHasInfo";
     };
 
-    tupleEditLens :: TestEquality sel => sel edit -> EditLens' Identity (TupleEdit sel) edit;
-    tupleEditLens seledit = MkEditLens
+    tupleEditLens :: forall c m sel edit. (TestEquality sel,Applicative m) =>
+        sel edit -> GenFloatingEditLens' c m () (TupleEdit sel) edit;
+    tupleEditLens seledit = let
     {
-        editLensFunction = MkEditFunction
+        floatingEditInitial = ();
+        floatingEditGet :: () -> GenReadFunction c (TupleEditReader sel) (EditReader edit);
+        floatingEditGet () rt = readable $ MkTupleEditReader seledit rt;
+        floatingEditUpdate (MkTupleEdit seledit' edit) () = case testEquality seledit seledit' of
         {
-            editGet = readable . MkTupleEditReader seledit,
-            editUpdate = \(MkTupleEdit seledit' edit) -> return $ case testEquality seledit seledit' of
-            {
-                Just Refl -> [edit];
-                _ -> [];
-            }
-        },
-        editLensPutEdit = return . Identity . pure . (MkTupleEdit seledit)
-    };
+            Just Refl -> return ((),[edit]);
+            _ -> return ((),[]);
+        };
+        floatingEditLensFunction = MkFloatingEditFunction{..};
+        floatingEditLensPutEdit :: () -> edit -> GenReadable c (TupleEditReader sel) (m ((),[TupleEdit sel]));
+        floatingEditLensPutEdit () edit = return $ pure ((),[MkTupleEdit seledit edit]);
+    } in MkFloatingEditLens{..};
 }

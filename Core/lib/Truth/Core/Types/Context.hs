@@ -110,9 +110,9 @@ module Truth.Core.Types.Context where
         |]);
     };
 
-    contextLens :: EditLens' Identity (TupleEdit (WithContextSelector editx editn)) editx;
+    contextLens :: Applicative m => GenFloatingEditLens' c m () (TupleEdit (WithContextSelector editx editn)) editx;
     contextLens = tupleEditLens EditContext;
-    contentLens :: EditLens' Identity (TupleEdit (WithContextSelector editx editn)) editn;
+    contentLens :: Applicative m => GenFloatingEditLens' c m () (TupleEdit (WithContextSelector editx editn)) editn;
     contentLens = tupleEditLens EditContent;
 }
 

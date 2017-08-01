@@ -14,7 +14,7 @@ module Truth.Core.Object.Aspect where
     };
 
     mapAspect :: (Edit edita,Edit editb) => GeneralLens edita editb -> Aspect editb -> Aspect edita;
-    mapAspect lens (MkAspect ti lens') = MkAspect ti $ lens' `editCompose` lens;
+    mapAspect lens (MkAspect ti lens') = MkAspect ti $ lens' <.> lens;
 
     mapOneWholeEditAspect :: forall f edit. (MonadOne f, Edit edit,IOFullReader (EditReader edit)) =>
      TypeInfo f -> Aspect edit -> KnowM (Aspect (OneWholeEdit f edit));

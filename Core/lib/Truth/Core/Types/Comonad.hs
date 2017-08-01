@@ -35,10 +35,10 @@ module Truth.Core.Types.Comonad where
         |]);
     };
 
-    comonadReadFunction :: ReadFunction (ComonadReader w reader) reader;
+    comonadReadFunction :: GenReadFunction c (ComonadReader w reader) reader;
     comonadReadFunction rt = readable $ ReadExtract rt;
 
-    comonadLiftReadFunction :: ReadFunction ra rb -> ReadFunction (ComonadReader w ra) (ComonadReader w rb);
+    comonadLiftReadFunction :: ReadableConstraint c => GenReadFunction c ra rb -> GenReadFunction c (ComonadReader w ra) (ComonadReader w rb);
     comonadLiftReadFunction rf (ReadExtract reader) = mapReadable comonadReadFunction (rf reader);
 
 
@@ -69,19 +69,21 @@ module Truth.Core.Types.Comonad where
         |]);
     };
 
-    comonadEditFunction :: forall w edit. EditFunction (ComonadEdit w edit) edit;
+    comonadEditFunction :: forall w edit. FloatingEditFunction () (ComonadEdit w edit) edit;
     comonadEditFunction = let
     {
-        editGet :: ReadFunction (ComonadReader w (EditReader edit)) (EditReader edit);
-        editGet = comonadReadFunction;
+        floatingEditInitial = ();
 
-        editUpdate (MkComonadEdit edit) = return [edit];
-    } in MkEditFunction{..};
+        floatingEditGet :: () -> ReadFunction (ComonadReader w (EditReader edit)) (EditReader edit);
+        floatingEditGet () = comonadReadFunction;
 
-    comonadEditLens :: Applicative m => EditLens' m (ComonadEdit w edit) edit;
+        floatingEditUpdate (MkComonadEdit edit) () = return ((),[edit]);
+    } in MkFloatingEditFunction{..};
+
+    comonadEditLens :: Applicative m => FloatingEditLens' m () (ComonadEdit w edit) edit;
     comonadEditLens = let
     {
-        editLensFunction = comonadEditFunction;
-        editLensPutEdit edit = return $ pure [MkComonadEdit edit];
-    } in MkEditLens{..};
+        floatingEditLensFunction = comonadEditFunction;
+        floatingEditLensPutEdit () edit = return $ pure ((),[MkComonadEdit edit]);
+    } in MkFloatingEditLens{..};
 }

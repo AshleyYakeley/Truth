@@ -33,38 +33,38 @@ module Truth.Core.Types.OneEdit where
         };
     };
 
-    instance (MonadOne f) => CatFunctor EditFunction (OneEdit f) where
+    liftOneEditFloatingEditFunction :: forall c f state edita editb. (ReadableConstraint c,MonadOne f) =>
+        GenFloatingEditFunction c state edita editb -> GenFloatingEditFunction c state (OneEdit f edita) (OneEdit f editb);
+    liftOneEditFloatingEditFunction ff = MkFloatingEditFunction
     {
-        cfmap lens = MkEditFunction
+        floatingEditInitial = floatingEditInitial ff,
+        floatingEditGet = \curstate -> liftMaybeReadFunction (floatingEditGet ff curstate),
+        floatingEditUpdate = \(MkOneEdit edita) oldstate -> do
         {
-            editUpdate = \(MkOneEdit edita) -> do
+            fr <- liftMaybeReadable $ floatingEditUpdate ff edita oldstate;
+            return $ case retrieveOne fr of
             {
-                feditBs <- liftMaybeReadable $ editUpdate lens edita;
-                return $ case retrieveOne feditBs of
-                {
-                    SuccessResult editBs -> fmap MkOneEdit editBs;
-                    FailureResult _fx -> [];
-                };
-            },
-            editGet = liftMaybeReadFunction (editGet lens)
-        };
+                SuccessResult (newstate,editBs) -> (newstate,fmap MkOneEdit editBs);
+                FailureResult _fx -> (oldstate,[]);
+            };
+        }
     };
 
-    instance (MonadOne f,Applicative m) => CatFunctor (EditLens' m) (OneEdit f) where
+    liftOneEditFloatingEditLens :: forall c m f state edita editb. (ReadableConstraint c,MonadOne f,Applicative m) =>
+        GenFloatingEditLens' c m state edita editb -> GenFloatingEditLens' c m state (OneEdit f edita) (OneEdit f editb);
+    liftOneEditFloatingEditLens lens = MkFloatingEditLens
     {
-        cfmap lens = MkEditLens
+        floatingEditLensFunction = liftOneEditFloatingEditFunction (floatingEditLensFunction lens),
+        floatingEditLensPutEdit = \oldstate (MkOneEdit editb) -> do
         {
-            editLensFunction = cfmap (editLensFunction lens),
-            editLensPutEdit = \(MkOneEdit editb) -> do
+            -- floatingEditLensPutEdit :: state -> editb -> GenReadable c (EditReader edita) (m (state,[edita]))
+            fmeditas <- liftMaybeReadable $ floatingEditLensPutEdit lens oldstate editb;
+            return $ case retrieveOne fmeditas of
             {
-                fmeditas <- liftMaybeReadable $ editLensPutEdit lens editb;
-                return $ case retrieveOne fmeditas of
-                {
-                    SuccessResult meditas -> fmap (fmap MkOneEdit) meditas;
-                    FailureResult _fx -> pure [MkOneEdit undefined]; -- any OneEdit edit will do
-                };
-            }
-        };
+                SuccessResult meditas -> fmap (\(newstate,editas) -> (newstate,fmap MkOneEdit editas)) meditas;
+                FailureResult _fx -> pure (oldstate,[MkOneEdit undefined]); -- any OneEdit edit will do
+            };
+        }
     };
 
     $(return []);

@@ -70,10 +70,11 @@ module Truth.Core.Types.Sum where
         |]);
     };
 
-    sumEditFunction :: (EditReader edit ~ EditReader edit') => EditFunction edit (SumEdit edit' edit);
-    sumEditFunction = MkEditFunction
+    sumEditFunction :: (EditReader edit ~ EditReader edit') => FloatingEditFunction () edit (SumEdit edit' edit);
+    sumEditFunction = let
     {
-        editGet = \rt -> readable rt,
-        editUpdate = \edit -> return [SumEditRight edit]
-    };
+        floatingEditInitial = ();
+        floatingEditGet () rt = readable rt;
+        floatingEditUpdate edit () = return ((),[SumEditRight edit]);
+    } in MkFloatingEditFunction{..};
 }

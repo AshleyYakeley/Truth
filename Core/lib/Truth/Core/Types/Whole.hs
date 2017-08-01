@@ -82,24 +82,25 @@ module Truth.Core.Types.Whole where
 
     type WholeEdit a = WholeReaderEdit (WholeReader a);
 
-    wholeEditFunction :: (a -> b) -> EditFunction (WholeEdit a) (WholeEdit b);
-    wholeEditFunction ab = MkEditFunction
+    wholeEditFunction :: forall c a b. (a -> b) -> GenFloatingEditFunction c () (WholeEdit a) (WholeEdit b);
+    wholeEditFunction ab = MkFloatingEditFunction
     {
-        editGet = simpleReadFunction ab,
-        editUpdate = \(MkWholeEdit a) -> return $ pure $ MkWholeEdit $ ab a
+        floatingEditInitial = (),
+        floatingEditGet = \() -> simpleReadFunction ab,
+        floatingEditUpdate = \(MkWholeEdit a) curstate -> return (curstate,[MkWholeEdit $ ab a])
     };
 
-    wholeEditLens :: (Functor m) => Lens' m a b -> EditLens' m (WholeEdit a) (WholeEdit b);
-    wholeEditLens lens = MkEditLens
+    wholeEditLens :: forall c m a b. (Functor m) => Lens' m a b -> GenFloatingEditLens' c m () (WholeEdit a) (WholeEdit b);
+    wholeEditLens lens = MkFloatingEditLens
     {
-        editLensFunction = wholeEditFunction (lensGet lens),
-        editLensPutEdit = \(MkWholeEdit newb) -> do
+        floatingEditLensFunction = wholeEditFunction (lensGet lens),
+        floatingEditLensPutEdit = \() (MkWholeEdit newb) -> do
         {
-            olda <- fromReader;
+            olda <- genFromReader;
             let
             {
                 newma = lensPutback lens newb olda;
-                medita = fmap (pure . MkWholeEdit) newma;
+                medita = fmap (\a -> ((),[MkWholeEdit a])) newma;
             };
             return medita;
         }
@@ -111,7 +112,7 @@ module Truth.Core.Types.Whole where
         type LensDomain (Lens' f a b) = WholeEdit a;
         type LensRange (Lens' f a b) = WholeEdit b;
 
-        toGeneralLens' = toGeneralLens' . wholeEditLens;
+        toGeneralLens' = toGeneralLens' . wholeEditLens @MonadIO;
     };
 
     instance (MonadOne m) => IsGeneralLens (Injection' m a b) where

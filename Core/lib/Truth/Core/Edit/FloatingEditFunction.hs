@@ -3,7 +3,7 @@ module Truth.Core.Edit.FloatingEditFunction  where
     import Truth.Core.Import;
     import Truth.Core.Read;
     import Truth.Core.Edit.Edit;
-    import Truth.Core.Edit.EditFunction;
+    import Truth.Core.Edit.FullEdit;
 
 
     data GenFloatingEditFunction c state edita editb = MkFloatingEditFunction
@@ -27,20 +27,20 @@ module Truth.Core.Edit.FloatingEditFunction  where
         (newstate,eb2) <- floatingEditUpdates fef ee midstate;
         return (newstate,eb1 ++ eb2);
     };
-
+{-
     fixedFloatingEditFunction :: forall c edita editb. GenEditFunction c edita editb -> GenFloatingEditFunction c () edita editb;
-    fixedFloatingEditFunction MkEditFunction{..} = let
+    fixedFloatingEditFunction MkFloatingEditFunction{..} = let
     {
         floatingEditInitial = ();
         floatingEditGet :: () -> GenReadFunction c (EditReader edita) (EditReader editb);
-        floatingEditGet _ = editGet;
+        floatingEditGet _ = floatingEditGet _;
         floatingEditUpdate edit _ = do
         {
-            editBs <- editUpdate edit;
+            editBs <- floatingEditUpdate edit;
             return ((),editBs);
         };
     } in MkFloatingEditFunction{..};
-
+-}
     mapFloatingEditFunction :: (EditReader editb1 ~ EditReader editb2) =>
      (editb1 -> editb2) -> FloatingEditFunction state edita editb1 -> FloatingEditFunction state edita editb2;
     mapFloatingEditFunction b12 fef = MkFloatingEditFunction
@@ -71,15 +71,38 @@ module Truth.Core.Edit.FloatingEditFunction  where
 
     data CloseFloat ff a b = forall state. Eq state => MkCloseFloat (ff state a b);
 
-    editId :: (FloatingMap ff,Edit a) => CloseFloat ff a a;
-    editId = MkCloseFloat identityFloating;
+    instance FloatingMap ff => ConstrainedCategory (CloseFloat ff) where
+    {
+        type CategoryConstraint (CloseFloat ff) t = Edit t;
+        cid = MkCloseFloat identityFloating;
+        (MkCloseFloat bc) <.> (MkCloseFloat ab) = MkCloseFloat $ composeFloating bc ab;
+    };
 
-    editCompose :: (FloatingMap ff,Edit a,Edit b,Edit c) => CloseFloat ff b c -> CloseFloat ff a b -> CloseFloat ff a c;
-    editCompose (MkCloseFloat bc) (MkCloseFloat ab) = MkCloseFloat $ composeFloating bc ab;
+    instance ReadableConstraint c => ConstrainedCategory (GenFloatingEditFunction c ()) where
+    {
+        type CategoryConstraint (GenFloatingEditFunction c ()) t = Edit t;
+        cid = let
+        {
+            floatingEditInitial = ();
+            floatingEditGet _ = readable;
+            floatingEditUpdate edit _ = return ((),[edit]);
+        } in MkFloatingEditFunction{..};
+        fef2 <.> fef1 = MkFloatingEditFunction
+        {
+            floatingEditInitial = (),
+            floatingEditGet = \() -> composeReadFunction (floatingEditGet fef2 ()) (floatingEditGet fef1 ()),
+            floatingEditUpdate = \editA () -> do
+            {
+                ((),editBs) <- floatingEditUpdate fef1 editA ();
+                ((),editCs) <- mapGenReadable (floatingEditGet fef1 ()) $ floatingEditUpdates fef2 editBs ();
+                return ((),editCs);
+            }
+        };
+    };
 
     instance ReadableConstraint c => FloatingMap (GenFloatingEditFunction c) where
     {
-        identityFloating = fixedFloatingEditFunction id;
+        identityFloating = cid;
 
         composeFloating fef2 fef1 = MkFloatingEditFunction
         {
@@ -93,4 +116,26 @@ module Truth.Core.Edit.FloatingEditFunction  where
             }
         };
     };
+
+    convertEditFunction :: forall c edita editb. (ReadableConstraint c,EditSubject edita ~ EditSubject editb,Edit edita,GenFullReader c (EditReader edita),GenFullEdit c editb) =>
+        GenFloatingEditFunction c () edita editb;
+    convertEditFunction = let
+    {
+        floatingEditInitial :: ();
+        floatingEditInitial = ();
+
+        floatingEditGet :: () -> GenReadFunction c (EditReader edita) (EditReader editb);
+        floatingEditGet () = convertReadFunction;
+
+        floatingEditUpdate :: edita -> () -> GenReadable c (EditReader edita) ((),[editb]);
+        floatingEditUpdate edita () = do
+        {
+            newsubject <- mapReadable (applyEdit edita) genFromReader;
+            editbs <- case selfReadable @c @(EditReader edita) of
+            {
+                MkConstraintWitness -> getReplaceEditsM @c newsubject;
+            };
+            return $ ((),editbs);
+        };
+    } in MkFloatingEditFunction{..};
 }

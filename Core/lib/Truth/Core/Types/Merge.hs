@@ -18,12 +18,12 @@ module Truth.Core.Types.Merge where
         applyEdit (AddOverEdit edit)
     };
 
-    mergeSubjectLens :: EditLens' Identity (MergeEdit edit) edit;
-    mergeSubjectLens = MkEditLens
+    mergeSubjectLens :: FloatingEditLens' Identity (MergeEdit edit) edit;
+    mergeSubjectLens = MkFloatingEditLens
     {
         editLensSimple :: Lens' m (ReaderSubject edita) (ReaderSubject editb),
         editLensUpdate :: edita -> ConstFunction (ReaderSubject edita) (Maybe editb),
-        editLensPutEdit :: editb -> ConstFunction (ReaderSubject edita) (m edita)
+        floatingEditLensPutEdit :: editb -> ConstFunction (ReaderSubject edita) (m edita)
     };
 -}
 }

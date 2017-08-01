@@ -274,11 +274,11 @@ module Truth.Core.Types.Key where
     keyValueLens key = let
     {
         oneSndLens :: GeneralLens (OneWholeEdit Maybe (PairEdit keyedit valueedit)) (OneWholeEdit Maybe valueedit);
-        oneSndLens = toGeneralLens $ liftOneWholeGeneralLens id $ toGeneralLens $ tupleEditLens EditSecond;
+        oneSndLens = toGeneralLens $ liftOneWholeGeneralLens id $ toGeneralLens $ tupleEditLens @MonadIO @Maybe EditSecond;
 
         elementLens :: GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (OneWholeEdit Maybe (PairEdit keyedit valueedit));
         elementLens = toGeneralLens $ keyElementLens key;
-    } in editCompose oneSndLens elementLens;
+    } in (<.>) oneSndLens elementLens;
 
     liftKeyElementLens :: forall c f state conta contb edita editb.
         (

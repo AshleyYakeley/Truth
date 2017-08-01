@@ -3,7 +3,7 @@ module Truth.Core.Edit.FloatingEditLens where
     import Truth.Core.Import;
     import Truth.Core.Read;
     import Truth.Core.Edit.Edit;
-    import Truth.Core.Edit.EditLens;
+    import Truth.Core.Edit.FullEdit;
     import Truth.Core.Edit.FloatingEditFunction;
 
 
@@ -50,16 +50,47 @@ module Truth.Core.Edit.FloatingEditLens where
         };
     };
 -}
-    fixedFloatingEditLens :: Functor m => GenEditLens' c m edita editb -> GenFloatingEditLens' c m () edita editb;
+
+
+{-
+    fixedFloatingEditLens :: Functor m => GenFloatingEditLens' c m edita editb -> GenFloatingEditLens' c m () edita editb;
     fixedFloatingEditLens lens = MkFloatingEditLens
     {
-        floatingEditLensFunction = fixedFloatingEditFunction (editLensFunction lens),
-        floatingEditLensPutEdit = \st edit -> fmap (fmap ((,) st)) $ editLensPutEdit lens edit
+        floatingEditLensFunction = fixedFloatingEditFunction (floatingEditLensFunction lens),
+        floatingEditLensPutEdit = \st edit -> fmap (fmap ((,) st)) $ floatingEditLensPutEdit lens edit
+    };
+-}
+
+    instance (ReadableConstraint c,MonadOne m) => ConstrainedCategory (GenFloatingEditLens' c m ()) where
+    {
+        type CategoryConstraint (GenFloatingEditLens' c m ()) t = Edit t;
+        cid = let
+        {
+            floatingEditLensFunction = cid;
+            floatingEditLensPutEdit () edit = pure $ pure ((),[edit]);
+        } in MkFloatingEditLens{..};
+        fel2 <.> fel1 = MkFloatingEditLens
+        {
+            floatingEditLensFunction = floatingEditLensFunction fel2 <.> floatingEditLensFunction fel1,
+            floatingEditLensPutEdit = \() editc -> do
+            {
+                meditb <- mapGenReadable (floatingEditGet (floatingEditLensFunction fel1) ()) (floatingEditLensPutEdit fel2 () editc);
+                case retrieveOne meditb of
+                {
+                    SuccessResult ((),editbs) -> floatingEditLensPutEdits fel1 () editbs;
+                    FailureResult (MkLimit mx) -> return mx;
+                };
+            }
+        };
     };
 
-    instance (ReadableConstraint c,Applicative m,MonadOne m) => FloatingMap (GenFloatingEditLens' c m) where
+    instance (ReadableConstraint c,MonadOne m) => FloatingMap (GenFloatingEditLens' c m) where
     {
-        identityFloating = fixedFloatingEditLens id;
+        identityFloating = let
+        {
+            floatingEditLensFunction = identityFloating;
+            floatingEditLensPutEdit st edit = pure $ pure (st,[edit]);
+        } in MkFloatingEditLens{..};
         composeFloating fel2 fel1 = MkFloatingEditLens
         {
             floatingEditLensFunction = composeFloating (floatingEditLensFunction fel2) (floatingEditLensFunction fel1),
@@ -78,6 +109,24 @@ module Truth.Core.Edit.FloatingEditLens where
             }
         };
     };
+
+    convertEditLens :: forall c m edita editb. (ReadableConstraint c,Applicative m,EditSubject edita ~ EditSubject editb,GenFullEdit c edita,GenFullEdit c editb) =>
+        GenFloatingEditLens' c m () edita editb;
+    convertEditLens = let
+    {
+        floatingEditLensFunction :: GenFloatingEditFunction c () edita editb;
+        floatingEditLensFunction = convertEditFunction;
+        floatingEditLensPutEdit :: () -> editb -> GenReadable c (EditReader edita) (m ((),[edita]));
+        floatingEditLensPutEdit () editb = case selfReadable @c @(EditReader edita) of
+        {
+            MkConstraintWitness -> do
+            {
+                newsubject <- fromReadFunctionM @c (readFunctionToGen $ applyEdit editb) (genFromReader @c);
+                editbs <- getReplaceEditsM @c newsubject;
+                return $ pure $ ((),editbs);
+            };
+        };
+    } in MkFloatingEditLens{..};
 
     invertFloatingEditLens :: (state -> ReadFunction (EditReader editb) (EditReader edita)) -> FloatingEditLens' Identity state edita editb -> FloatingEditLens' Identity state editb edita;
     invertFloatingEditLens srfba lensab = MkFloatingEditLens

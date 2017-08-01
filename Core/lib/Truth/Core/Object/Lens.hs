@@ -37,8 +37,8 @@ module Truth.Core.Object.Lens where
         return (editor,closer,action);
     };
 
-    convertSubscriber :: forall edita editb actions. (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Subscriber edita actions -> Subscriber editb actions;
-    convertSubscriber = mapSubscriber $ toGeneralLens' (convertEditLens :: EditLens' Identity edita editb);
+    convertSubscriber :: forall edita editb actions. (EditSubject edita ~ EditSubject editb,IOFullEdit edita,IOFullEdit editb) => Subscriber edita actions -> Subscriber editb actions;
+    convertSubscriber = mapSubscriber $ toGeneralLens' $ convertEditLens @MonadIO @Identity;
 
 {-
 

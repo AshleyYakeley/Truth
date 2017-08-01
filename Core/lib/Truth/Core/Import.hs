@@ -61,6 +61,7 @@ module Truth.Core.Import (module I) where
     import Data.MonadOne as I;
     import Data.Category as I;
     import Data.KindCategory as I;
+    import Control.Constrained.Category as I;
     import Control.Monad.Free as I;
     import Control.Monad.Tunnel as I;
     import Control.Monad.Trans.State.Extra as I hiding (liftCallCC,liftCatch);

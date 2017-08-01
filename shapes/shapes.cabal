@@ -72,6 +72,7 @@ library
         Data.KindCategory
         Data.Free
         Data.Category
+        Control.Constrained.Category
         Data.ApStore
         Control.Applicative.Free
         Data.Functor.Free

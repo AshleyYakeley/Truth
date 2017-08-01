@@ -6,9 +6,9 @@ module Main(main) where
     import Data.ByteString.Lazy;
     import Data.Foldable;
     import Data.IORef;
-    import Data.Functor.Identity;
     import Control.Monad.IO.Class;
     import Control.Monad.Trans.State.Extra;
+    import Control.Constrained.Category;
     import Data.Result;
     import Data.Injection;
     import Data.Codec;
@@ -28,7 +28,7 @@ module Main(main) where
     textCodec :: Codec' (Result OctetDecodeError) ByteString String;
     textCodec = utf8Codec . bijectionCodec packBijection;
 
-    textLens :: EditLens ByteStringEdit (WholeEdit String);
+    textLens :: FloatingEditLens () ByteStringEdit (WholeEdit String);
     textLens = let
     {
         errorInjection :: forall m err a. (Show err,Applicative m) => Injection' m (Result err a) a;
@@ -44,7 +44,7 @@ module Main(main) where
 
         injection :: Injection ByteString String;
         injection = errorInjection . (toInjection $ codecInjection textCodec);
-    } in (wholeEditLens $ injectionLens injection) . convertEditLens;
+    } in (wholeEditLens $ injectionLens injection) <.> convertEditLens;
 
     fileTextWindow :: Bool -> FilePath -> WindowMaker;
     fileTextWindow saveOpt path windowCount = do
@@ -97,7 +97,14 @@ module Main(main) where
             paste s = return $ pure $ encode textCodec s;
 
             lens :: IOFloatingEditLens' Maybe () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit (StringEdit String));
-            lens = liftSoupLens paste $ fixedFloatingEditLens $ (editLensToGen $ convertEditLens . textLens) . remonadEditLens (pure . runIdentity) mutableIOEditLens;
+            --convertEditLens :: forall c m edita editb. (ReadableConstraint c,Applicative m,EditSubject edita ~ EditSubject editb,GenFullEdit c edita,GenFullEdit c editb) =>
+            --    GenFloatingEditLens' c m () edita editb;
+            --mutableIOEditLens :: forall m edit. Applicative m => IOFloatingEditLens' m () (MutableIOEdit edit) edit;
+            --textLens :: FloatingEditLens () ByteStringEdit (WholeEdit String);
+            --liftSoupLens :: forall c f state edita editb. (ReadableConstraint c,Applicative f,Edit edita,Edit editb,GenFullReader c (EditReader editb)) =>
+            --    (forall m. (Monad m,c m) => EditSubject editb -> m (f (EditSubject edita))) ->
+            --    GenFloatingEditLens' c f state edita editb -> GenFloatingEditLens' c f state (SoupEdit edita) (SoupEdit editb);
+            lens = liftSoupLens paste $ convertEditLens <.> floatingEditLensToGen textLens <.> mutableIOEditLens;
 
             soupObject :: Object (SoupEdit (StringEdit String));
             soupObject = floatingMapObject unitStateAccess lens rawSoupObject;

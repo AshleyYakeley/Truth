@@ -43,23 +43,25 @@ module Truth.Core.Object.MutableIOEdit where
         |]);
     };
 
-    mutableIOEditLens :: forall edit. IOEditLens' Identity (MutableIOEdit edit) edit;
+    mutableIOEditLens :: forall m edit. Applicative m => IOFloatingEditLens' m () (MutableIOEdit edit) edit;
     mutableIOEditLens = let
     {
-        editGet :: IOReadFunction (MutableIOReader edit) (EditReader edit);
-        editGet reader = do
+        floatingEditInitial = ();
+
+        floatingEditGet :: () -> IOReadFunction (MutableIOReader edit) (EditReader edit);
+        floatingEditGet () reader = do
         {
             muted <- readable ReadMutableIO;
             liftIO $ mutableRead muted reader;
         };
 
-        editUpdate :: MutableIOEdit edit -> IOReadable (MutableIOReader edit) [edit];
-        editUpdate edit = never edit;
+        floatingEditUpdate :: MutableIOEdit edit -> () -> IOReadable (MutableIOReader edit) ((),[edit]);
+        floatingEditUpdate edit = never edit;
 
-        editLensFunction = MkEditFunction{..};
+        floatingEditLensFunction = MkFloatingEditFunction{..};
 
-        editLensPutEdit :: edit -> IOReadable (MutableIOReader edit) (Identity [MutableIOEdit edit]);
-        editLensPutEdit edit = do
+        floatingEditLensPutEdit :: () -> edit -> IOReadable (MutableIOReader edit) (m ((),[MutableIOEdit edit]));
+        floatingEditLensPutEdit () edit = do
         {
             muted <- readable ReadMutableIO;
             liftIO $ do
@@ -71,21 +73,22 @@ module Truth.Core.Object.MutableIOEdit where
                     Nothing -> fail "mutableIOEditLens: failed";
                 };
             };
-            return $ Identity [];
+            return $ pure ((),[]);
         };
-    } in MkEditLens{..};
+    } in MkFloatingEditLens{..};
 
-    mutableIOLiftEditLens :: forall f f' edita editb. (MonadOne f,Edit edita) => EditLens' f edita editb -> EditLens' f' (MutableIOEdit edita) (MutableIOEdit editb);
+    mutableIOLiftEditLens :: forall c c' f f' edita editb. (ReadableConstraint c,MonadOne f,Edit edita,c IO) => GenFloatingEditLens' c f () edita editb -> GenFloatingEditLens' c' f' () (MutableIOEdit edita) (MutableIOEdit editb);
     mutableIOLiftEditLens lens = let
     {
-        editGet :: ReadFunction (MutableIOReader edita) (MutableIOReader editb);
-        editGet ReadMutableIO = do
+        floatingEditInitial = ();
+        floatingEditGet :: () -> GenReadFunction c' (MutableIOReader edita) (MutableIOReader editb);
+        floatingEditGet () ReadMutableIO = do
         {
             muted <- readable ReadMutableIO;
             return $ fixedMapMutableEdit lens muted;
         };
-        editUpdate edita = never edita;
-        editLensFunction = MkEditFunction{..};
-        editLensPutEdit editb = never editb;
-    } in MkEditLens{..};
+        floatingEditUpdate edita = never edita;
+        floatingEditLensFunction = MkFloatingEditFunction{..};
+        floatingEditLensPutEdit () editb = never editb;
+    } in MkFloatingEditLens{..};
 }

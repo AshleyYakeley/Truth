@@ -122,8 +122,8 @@ module Truth.Core.Object.MutableEdit where
     } in MkMutableEdit readB pushEditB;
 
     fixedMapMutableEdit :: forall c f m edita editb. (Monad m,ReadableConstraint c,c m,MonadOne f,Edit edita) =>
-        GenEditLens' c f edita editb -> MutableEdit m edita -> MutableEdit m editb;
-    fixedMapMutableEdit lens muted = remonadMutableEdit runUnitStateT $ floatingMapMutableEdit (fixedFloatingEditLens lens) muted;
+        GenFloatingEditLens' c f () edita editb -> MutableEdit m edita -> MutableEdit m editb;
+    fixedMapMutableEdit lens muted = remonadMutableEdit runUnitStateT $ floatingMapMutableEdit lens muted;
 
     noneMutableEdit :: Applicative m => MutableEdit m (NoEdit (NoReader t));
     noneMutableEdit = readOnlyMutableEdit never;

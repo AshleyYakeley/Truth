@@ -50,11 +50,11 @@ module Truth.Core.Object.Object where
         return r;
     };
 
-    ioFixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => IOEditLens' f edita editb -> Object edita -> Object editb;
-    ioFixedMapObject lens object = floatingMapObject unitStateAccess (fixedFloatingEditLens lens) object;
+    ioFixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => IOFloatingEditLens' f () edita editb -> Object edita -> Object editb;
+    ioFixedMapObject lens object = floatingMapObject unitStateAccess lens object;
 
-    fixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => EditLens' f edita editb -> Object edita -> Object editb;
-    fixedMapObject lens = ioFixedMapObject $ editLensToGen lens;
+    fixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => FloatingEditLens' f () edita editb -> Object edita -> Object editb;
+    fixedMapObject lens = ioFixedMapObject $ floatingEditLensToGen lens;
 
     convertObject :: (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Object edita -> Object editb;
     convertObject = fixedMapObject @Identity convertEditLens;

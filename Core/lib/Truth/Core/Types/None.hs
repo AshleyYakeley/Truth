@@ -78,17 +78,18 @@ module Truth.Core.Types.None where
         |]);
     };
 
-    noEditFunction :: EditFunction (NoEdit (EditReader edit)) edit;
+    noEditFunction :: FloatingEditFunction () (NoEdit (EditReader edit)) edit;
     noEditFunction = let
     {
-        editGet = readable;
-        editUpdate = never;
-    } in MkEditFunction{..};
+        floatingEditInitial = ();
+        floatingEditGet _ = readable;
+        floatingEditUpdate = never;
+    } in MkFloatingEditFunction{..};
 
-    noEditLens :: EditLens' Maybe (NoEdit (EditReader edit)) edit;
+    noEditLens :: FloatingEditLens' Maybe () (NoEdit (EditReader edit)) edit;
     noEditLens = let
     {
-        editLensFunction = noEditFunction;
-        editLensPutEdit _ = return Nothing;
-    } in MkEditLens{..};
+        floatingEditLensFunction = noEditFunction;
+        floatingEditLensPutEdit () _ = return Nothing;
+    } in MkFloatingEditLens{..};
 }
