@@ -91,6 +91,7 @@ library
         Truth.Core.Read.WriterReadable
         Truth.Core.Read
         Truth.Core.Edit.Edit
+        Truth.Core.Edit.FullEdit
         Truth.Core.Edit.EditFunction
         Truth.Core.Edit.EditLens
         Truth.Core.Edit.FloatingEditFunction
