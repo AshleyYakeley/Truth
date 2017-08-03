@@ -7,7 +7,6 @@ module Main(main) where
     import Data.Foldable;
     import Data.IORef;
     import Control.Monad.IO.Class;
-    import Control.Monad.Trans.State.Extra;
     import Control.Constrained.Category;
     import Data.Result;
     import Data.Injection;
@@ -85,6 +84,8 @@ module Main(main) where
         };
     };
 
+    type SoupContents = StringEdit String;
+
     soupWindow :: FilePath -> WindowMaker;
     soupWindow dirpath windowCount = do
     {
@@ -93,21 +94,17 @@ module Main(main) where
             rawSoupObject :: Object (SoupEdit (MutableIOEdit ByteStringEdit));
             rawSoupObject = directorySoup fileSystemMutableEdit dirpath;
 
-            paste :: forall m. MonadIO m => String -> m (Maybe ByteString);
+            paste :: forall m. MonadIO m => EditSubject SoupContents -> m (Maybe ByteString);
             paste s = return $ pure $ encode textCodec s;
 
-            lens :: IOEditLens' Maybe () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit (StringEdit String));
-            --convertEditLens :: forall c m edita editb. (ReadableConstraint c,Applicative m,EditSubject edita ~ EditSubject editb,FullEdit c edita,FullEdit c editb) =>
-            --    EditLens' c m () edita editb;
-            --mutableIOEditLens :: forall m edit. Applicative m => IOEditLens' m () (MutableIOEdit edit) edit;
-            --textLens :: PureEditLens () ByteStringEdit (WholeEdit String);
-            --liftSoupLens :: forall c f state edita editb. (ReadableConstraint c,Applicative f,Edit edita,Edit editb,FullReader c (EditReader editb)) =>
-            --    (forall m. (Monad m,c m) => EditSubject editb -> m (f (EditSubject edita))) ->
-            --    EditLens' c f state edita editb -> EditLens' c f state (SoupEdit edita) (SoupEdit editb);
-            lens = liftSoupLens paste $ convertEditLens <.> pureToEditLens textLens <.> mutableIOEditLens;
+            soupItemLens :: IOEditLens' Maybe () ByteStringEdit SoupContents;
+            soupItemLens = convertEditLens <.> pureToEditLens textLens;
 
-            soupObject :: Object (SoupEdit (StringEdit String));
-            soupObject = mapObject unitStateAccess lens rawSoupObject;
+            lens :: IOEditLens' Maybe () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupContents);
+            lens = liftSoupLens paste $ soupItemLens <.> mutableIOEditLens;
+
+            soupObject :: Object (SoupEdit SoupContents);
+            soupObject = fixedMapObject lens rawSoupObject;
         };
         soupSub <- makeObjectSubscriber soupObject;
         makeWindowCountRef windowCount soupSub;

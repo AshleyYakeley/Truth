@@ -81,6 +81,7 @@ library
         Truth.World.MIME
         Truth.World.JSON
         Truth.World.Soup
+        Truth.World.Note
     other-modules:
         Truth.Core.Import
         Truth.Core.Sequence

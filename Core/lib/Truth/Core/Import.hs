@@ -39,6 +39,7 @@ module Truth.Core.Import (module I) where
     import Data.Containers as I;
     import Data.KeyContainer as I;
     import Control.Comonad as I;
+    import Data.Text as I (Text);
 
     import Data.Type.Heterogeneous as I;
     import Data.Witness as I;

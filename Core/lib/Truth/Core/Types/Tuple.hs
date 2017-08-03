@@ -17,10 +17,16 @@ module Truth.Core.Types.Tuple where
         typeName _ = "TupleWitness";
     };
 
+    newtype Tuple sel = MkTuple (forall edit. sel edit -> EditSubject edit);
+
     class (TestEquality sel,TupleWitness Edit sel) => TupleSelector (sel :: * -> *) where
     {
         type TupleSubject sel :: *;
+        type TupleSubject sel = Tuple sel;
+
         tupleReadFrom :: forall edit. sel edit -> TupleSubject sel -> EditSubject edit;
+        default tupleReadFrom :: forall edit. (TupleSubject sel ~ Tuple sel) => sel edit -> TupleSubject sel -> EditSubject edit;
+        tupleReadFrom sel (MkTuple tuple) = tuple sel;
     };
     $(generateFamilyProxy "TupleSubject");
 
