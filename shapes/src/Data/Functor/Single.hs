@@ -1,5 +1,7 @@
 module Data.Functor.Single where
 {
+    import Prelude;
+
     data Single a = MkSingle;
 
     instance Functor Single where

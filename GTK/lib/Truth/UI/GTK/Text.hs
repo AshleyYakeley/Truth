@@ -1,6 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.Text (textTypeKnowledge) where
 {
+    import Prelude;
     import Data.Foldable;
     import Control.Concurrent.MVar;
     import Control.Monad.IO.Class;

@@ -1,5 +1,6 @@
 module Data.Reity.TypeInfo where
 {
+    import Prelude;
     import Data.Kind;
     import Data.Proxy;
     import Data.Type.Equality;

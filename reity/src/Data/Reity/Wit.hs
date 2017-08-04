@@ -1,5 +1,6 @@
 module Data.Reity.Wit where
 {
+    import Prelude;
     import Data.Kind;
     import Data.Type.Equality;
     import Data.Type.Heterogeneous;

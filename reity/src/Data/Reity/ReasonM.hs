@@ -1,5 +1,6 @@
 module Data.Reity.ReasonM where
 {
+    import Prelude;
     import Data.String;
     import Data.Semigroup;
     import Control.Monad.Trans.Class;

@@ -1,5 +1,6 @@
 module Data.Result where
 {
+    import Prelude;
     import Control.Applicative;
     import Control.Monad;
     import Control.Monad.Fail;

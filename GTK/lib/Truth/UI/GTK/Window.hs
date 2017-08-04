@@ -1,6 +1,7 @@
 {-# LANGUAGE ViewPatterns, FlexibleContexts #-}
 module Truth.UI.GTK.Window where
 {
+    import Prelude;
     import Data.IORef;
     import Data.Result;
     import Data.Reity;

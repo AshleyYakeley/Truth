@@ -1,5 +1,6 @@
 module Data.Reity.Match where
 {
+    import Prelude;
     import Data.Kind;
     import Data.Type.Heterogeneous;
     import Data.Knowledge;

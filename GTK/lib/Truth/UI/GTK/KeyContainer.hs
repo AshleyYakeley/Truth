@@ -1,6 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
 {
+    import Prelude;
     import Data.Proxy;
     import Data.Foldable;
     import Data.Containers (ContainerKey);

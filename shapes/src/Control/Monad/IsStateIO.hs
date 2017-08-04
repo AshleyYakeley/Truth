@@ -1,5 +1,6 @@
 module Control.Monad.IsStateIO where
 {
+    import Prelude;
     import Data.Kind;
     import Control.Exception;
     import Control.Concurrent.MVar;

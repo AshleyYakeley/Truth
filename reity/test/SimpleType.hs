@@ -1,5 +1,6 @@
 module SimpleType where
 {
+    import Prelude;
     import Language.Haskell.TH;
     import Language.Haskell.TH.Syntax;
     import Language.Haskell.TH.SimpleType;

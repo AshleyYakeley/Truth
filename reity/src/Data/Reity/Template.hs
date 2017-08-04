@@ -9,6 +9,7 @@ module Data.Reity.Template
     generateShowSimpleTypeFail
 ) where
 {
+    import Prelude;
     import Data.List;
     import Data.Maybe;
     import Data.Foldable;

@@ -1,0 +1,4 @@
+#!/bin/sh -e
+stack build
+mkdir -p testsoup
+stack ghci

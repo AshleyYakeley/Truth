@@ -1,6 +1,7 @@
 {-# OPTIONS -Wno-orphans #-}
 module Data.Functor.Free where
 {
+    import Prelude;
     import Data.KindCategory;
     import Data.Free;
 

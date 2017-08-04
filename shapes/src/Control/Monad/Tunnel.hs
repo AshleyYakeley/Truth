@@ -1,5 +1,6 @@
 module Control.Monad.Tunnel where
 {
+    import Prelude;
     import Control.Monad.Trans.Class;
     import Control.Monad.Trans.State;
     import Control.Monad.Trans.Reader;

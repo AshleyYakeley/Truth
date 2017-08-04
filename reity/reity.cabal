@@ -30,6 +30,7 @@ library
         ImplicitParams
         KindSignatures
         MultiParamTypeClasses
+        NoImplicitPrelude
         PatternGuards
         PatternSynonyms
         PolyKinds
@@ -99,6 +100,7 @@ test-suite test
         ImplicitParams
         KindSignatures
         MultiParamTypeClasses
+        NoImplicitPrelude
         PatternGuards
         PatternSynonyms
         PolyKinds

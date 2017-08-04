@@ -1,5 +1,6 @@
 module Data.Knowledge where
 {
+    import Prelude;
     import Data.Kind;
     import Data.Semigroup;
     import Data.Type.Heterogeneous;

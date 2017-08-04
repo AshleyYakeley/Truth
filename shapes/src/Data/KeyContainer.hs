@@ -1,5 +1,6 @@
 module Data.KeyContainer where
 {
+    import Prelude;
     import Data.List;
     import System.Random;
     import Data.MonoTraversable;

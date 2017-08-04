@@ -1,5 +1,6 @@
 module Main(main) where
 {
+    import Prelude;
     import Control.Exception(evaluate);
     import Data.Type.Heterogeneous;
     import Language.Haskell.TH;

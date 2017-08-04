@@ -1,5 +1,6 @@
 module Data.Compose where
 {
+    import Prelude;
     import Data.Kind;
     import Control.Monad.IO.Class;
 

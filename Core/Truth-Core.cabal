@@ -25,6 +25,7 @@ library
         ImplicitParams
         KindSignatures
         MultiParamTypeClasses
+        NoImplicitPrelude
         PatternGuards
         PatternSynonyms
         PolyKinds
@@ -42,8 +43,6 @@ library
         UndecidableInstances
         UndecidableSuperClasses
         ViewPatterns
-        -- particular to this package
-        NoImplicitPrelude
     ghc-options:
         -Werror
         -Wall
@@ -152,6 +151,7 @@ test-suite test
         ImplicitParams
         KindSignatures
         MultiParamTypeClasses
+        NoImplicitPrelude
         PatternGuards
         PatternSynonyms
         PolyKinds

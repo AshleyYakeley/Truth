@@ -1,5 +1,6 @@
 module Data.ApStore where
 {
+    import Prelude;
     import Control.Applicative.Free;
     import Data.Witness;
 

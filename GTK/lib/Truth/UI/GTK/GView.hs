@@ -1,6 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.GView where
 {
+    import Prelude;
     import Graphics.UI.Gtk;
     import Data.Reity;
     import Truth.Core;

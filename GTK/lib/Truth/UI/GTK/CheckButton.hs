@@ -1,6 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.CheckButton(checkButtonTypeKnowledge) where
 {
+    import Prelude;
     import Graphics.UI.Gtk;
     import Control.Monad.IsStateIO;
     import Data.Reity;

@@ -4,6 +4,7 @@ module Control.Monad.Trans.State.Extra
     module Control.Monad.Trans.State.Extra
 ) where
 {
+    import Prelude;
     import Data.Functor.Identity;
     import Control.Monad.Trans.Class;
     import Control.Monad.Trans.State;

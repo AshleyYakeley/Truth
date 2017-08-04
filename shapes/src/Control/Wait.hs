@@ -1,5 +1,6 @@
 module Control.Wait where
 {
+    import Prelude;
     import Control.Concurrent;
     import Control.Exception;
 

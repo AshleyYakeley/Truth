@@ -1,6 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Main(main) where
 {
+    import Prelude;
     import Data.Kind;
     import Data.Result;
     import Data.Reity;

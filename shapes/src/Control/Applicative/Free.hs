@@ -1,6 +1,7 @@
 {-# OPTIONS -Wno-orphans #-}
 module Control.Applicative.Free where
 {
+    import Prelude;
     import Data.KindCategory;
     import Data.Free;
 

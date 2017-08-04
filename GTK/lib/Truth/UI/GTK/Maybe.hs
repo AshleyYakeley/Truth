@@ -1,6 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
 {
+    import Prelude;
     import Data.Foldable;
     import Data.Traversable;
     import Control.Concurrent.MVar;

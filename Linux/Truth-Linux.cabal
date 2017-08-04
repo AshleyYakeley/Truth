@@ -25,6 +25,7 @@ library
         ImplicitParams
         KindSignatures
         MultiParamTypeClasses
+        NoImplicitPrelude
         PatternGuards
         PatternSynonyms
         PolyKinds

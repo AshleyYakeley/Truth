@@ -1,6 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Data.Reity.Instances where
 {
+    import Prelude;
     import GHC.Types;
     import Data.Type.Equality;
     import Data.Type.Heterogeneous;

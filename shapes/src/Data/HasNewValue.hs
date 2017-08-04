@@ -1,5 +1,6 @@
 module Data.HasNewValue where
 {
+    import Prelude;
     import Data.Word;
     import Data.ByteString.Lazy;
     import Data.Result;
