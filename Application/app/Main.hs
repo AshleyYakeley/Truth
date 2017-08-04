@@ -24,7 +24,7 @@ module Main(main) where
 
     type WindowMaker = IORef Int -> IO ();
 
-    textCodec :: Codec' (Result OctetDecodeError) ByteString String;
+    textCodec :: ReasonCodec ByteString String;
     textCodec = utf8Codec . bijectionCodec packBijection;
 
     textLens :: PureEditLens () ByteStringEdit (WholeEdit String);
