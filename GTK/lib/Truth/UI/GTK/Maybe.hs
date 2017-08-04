@@ -81,20 +81,12 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
             baseMuted :: MonadIO m => MutableEdit m (OneWholeEdit f edit) -> MutableEdit m edit;
             baseMuted (MkMutableEdit mr me) = MkMutableEdit (mapMutableRead baseReadFunction mr) $ \edits -> me $ fmap (SumEditRight . MkOneEdit) edits;
 
-            getVR :: forall m. IsStateIO m => MutableRead m (OneReader f (EditReader edit)) -> m (f (GViewResult edit));
-            getVR mr = do
-            {
-                fu <- mr ReadHasOne;
-                for fu $ \() -> do
-                {
-                    let
-                    {
-                        baseObj = MkObject $ \call -> runObject object $ \muted -> call $ baseMuted muted;
-                        baseSetSelect ag = setSelect $ fmap (fmap (\maspect -> maspect >>= mapOneWholeEditAspect tf)) ag;
-                    };
-                    liftIO $ baseView baseObj baseSetSelect;
-                };
-            };
+            baseObj = MkObject $ \call -> runObject object $ \muted -> call $ baseMuted muted;
+
+            baseSetSelect ag = setSelect $ fmap (fmap (\maspect -> maspect >>= mapOneWholeEditAspect tf)) ag;
+
+            getVR :: forall m. IsStateIO m => f () -> m (f (GViewResult edit));
+            getVR fu = for fu $ \() -> liftIO $ baseView baseObj baseSetSelect;
 
             newWidgets :: f (GViewResult edit) -> IO ();
             newWidgets fg = case retrieveOne fg of
@@ -111,9 +103,10 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
             };
         };
 
-        fwma <- runObject object $ \muted -> getVR $ mutableRead muted;
-        newWidgets fwma;
-        stateVar :: MVar (f (GViewResult edit)) <- newMVar fwma;
+        firstfu <- runObject object $ \muted -> mutableRead muted ReadHasOne;
+        firstfvr <- getVR firstfu;
+        newWidgets firstfvr;
+        stateVar :: MVar (f (GViewResult edit)) <- newMVar firstfvr;
 
         let
         {
@@ -143,13 +136,10 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
                     (FailureResult _,FailureResult (MkLimit newlf)) -> return newlf;
                     (FailureResult _,SuccessResult ()) -> do
                     {
-                        fvr <- lift $ getVR mr;
-                        for_ fvr $ \_ -> do
-                        {
-                            liftIO $ containerRemove box emptyWidget;
-                        };
-                        liftIO $ newWidgets fvr;
-                        return fvr;
+                        newfvr <- getVR newfu;
+                        for_ newfvr $ \_ -> liftIO $ containerRemove box emptyWidget;
+                        liftIO $ newWidgets newfvr;
+                        return newfvr;
                     };
                 };
                 put newfvr;

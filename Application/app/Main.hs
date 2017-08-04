@@ -8,10 +8,10 @@ module Main(main) where
     import Data.IORef;
     import Control.Monad.IO.Class;
     import Control.Constrained.Category;
-    import Data.Result;
     import Data.Injection;
     import Data.Codec;
     import Data.Lens;
+    import Data.Reity;
     import Truth.Core;
     import Truth.World.File;
     import Truth.World.FileSystem;
@@ -27,23 +27,8 @@ module Main(main) where
     textCodec :: ReasonCodec ByteString String;
     textCodec = utf8Codec . bijectionCodec packBijection;
 
-    textLens :: PureEditLens () ByteStringEdit (WholeEdit String);
-    textLens = let
-    {
-        errorInjection :: forall m err a. (Show err,Applicative m) => Injection' m (Result err a) a;
-        errorInjection = let
-        {
-            injForwards :: Result err a -> a;
-            injForwards (SuccessResult a) = a;
-            injForwards (FailureResult err) = error $ show err;
-
-            injBackwards :: a -> m (Result err a);
-            injBackwards = pure . SuccessResult;
-        } in MkInjection{..};
-
-        injection :: Injection ByteString String;
-        injection = errorInjection . (toInjection $ codecInjection textCodec);
-    } in (wholeEditLens $ injectionLens injection) <.> convertEditLens;
+    textLens :: PureEditLens () ByteStringEdit (WholeEdit (ReasonM String));
+    textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) <.> convertEditLens;
 
     fileTextWindow :: Bool -> FilePath -> WindowMaker;
     fileTextWindow saveOpt path windowCount = do
@@ -53,20 +38,20 @@ module Main(main) where
             bsObj :: Object ByteStringEdit;
             bsObj = fileObject path;
 
-            wholeTextObj :: Object (WholeEdit String);
+            wholeTextObj :: Object (WholeEdit (ReasonM String));
             wholeTextObj = cacheObject $ pureFixedMapObject textLens bsObj;
         };
         if saveOpt then do
         {
             let
             {
-                baseSub :: Subscriber (WholeEdit String) ();
+                baseSub :: Subscriber (WholeEdit (ReasonM String)) ();
                 baseSub = objectSubscriber wholeTextObj;
 
-                bufferSub :: Subscriber (StringEdit String) ((),SaveActions);
+                bufferSub :: Subscriber (OneWholeEdit ReasonM (StringEdit String)) ((),SaveActions);
                 bufferSub = saveBufferSubscriber baseSub;
 
-                undoBufferSub :: Subscriber (StringEdit String) (((),SaveActions),UndoActions);
+                undoBufferSub :: Subscriber (OneWholeEdit ReasonM (StringEdit String)) (((),SaveActions),UndoActions);
                 undoBufferSub = undoQueueSubscriber bufferSub;
             };
             textSub <- makeSharedSubscriber undoBufferSub;
@@ -76,7 +61,7 @@ module Main(main) where
         {
             let
             {
-                textObj :: Object (StringEdit String);
+                textObj :: Object (OneWholeEdit ReasonM (StringEdit String));
                 textObj = convertObject wholeTextObj;
             };
             textSub <- makeObjectSubscriber textObj;
@@ -84,7 +69,8 @@ module Main(main) where
         };
     };
 
-    type SoupContents = StringEdit String;
+    type SoupContentsEdit = StringEdit String;
+    type SoupItemEdit = OneWholeEdit ReasonM SoupContentsEdit;
 
     soupWindow :: FilePath -> WindowMaker;
     soupWindow dirpath windowCount = do
@@ -94,16 +80,22 @@ module Main(main) where
             rawSoupObject :: Object (SoupEdit (MutableIOEdit ByteStringEdit));
             rawSoupObject = directorySoup fileSystemMutableEdit dirpath;
 
-            paste :: forall m. MonadIO m => EditSubject SoupContents -> m (Maybe ByteString);
-            paste s = return $ pure $ encode textCodec s;
+            soupContentsCodec :: ReasonCodec ByteString (EditSubject SoupContentsEdit);
+            soupContentsCodec = textCodec;
 
-            soupItemLens :: IOEditLens' Maybe () ByteStringEdit SoupContents;
-            soupItemLens = convertEditLens <.> pureToEditLens textLens;
+            soupItemInjection :: Injection' ReasonM ByteString (EditSubject SoupItemEdit);
+            soupItemInjection = codecInjection soupContentsCodec;
 
-            lens :: IOEditLens' Maybe () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupContents);
+            paste :: forall m. MonadIO m => EditSubject SoupItemEdit -> m (ReasonM ByteString);
+            paste s = return $ injBackwards soupItemInjection s;
+
+            soupItemLens :: IOEditLens' ReasonM () ByteStringEdit SoupItemEdit;
+            soupItemLens = convertEditLens <.> (wholeEditLens $ injectionLens soupItemInjection) <.> convertEditLens;
+
+            lens :: IOEditLens' ReasonM () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupItemEdit);
             lens = liftSoupLens paste $ soupItemLens <.> mutableIOEditLens;
 
-            soupObject :: Object (SoupEdit SoupContents);
+            soupObject :: Object (SoupEdit SoupItemEdit);
             soupObject = fixedMapObject lens rawSoupObject;
         };
         soupSub <- makeObjectSubscriber soupObject;
