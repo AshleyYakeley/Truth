@@ -14,6 +14,7 @@ module Data.Reity.Instances where
     import Data.MonadOne;
     import Data.Result;
     import Data.Knowledge;
+    import Data.Reity.ReasonM;
     import Data.Reity.Match;
     import Data.Reity.Wit;
     import Data.Reity.TypeInfo;
@@ -330,6 +331,16 @@ module Data.Reity.Instances where
             instance Applicative (Result e);
             instance Monad (Result e);
             instance MonadOne (Result e);
+        |]);
+    };
+
+    instance HasTypeInfo FailureReasons where
+    {
+        typeWitness = $(generateWitness [t|FailureReasons|]);
+        typeName _ = "FailureReasons";
+        typeKnowledge _ = $(generateTypeKnowledge [d|
+            instance Eq FailureReasons;
+            instance Monoid FailureReasons;
         |]);
     };
 

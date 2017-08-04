@@ -13,6 +13,8 @@ module Data.Result where
     resultToMaybe (SuccessResult a) = Just a;
     resultToMaybe _ = Nothing;
 
+    deriving instance (Eq e,Eq a) => Eq (Result e a);
+
     instance Functor (Result e) where
     {
         fmap ab (SuccessResult a) = SuccessResult (ab a);

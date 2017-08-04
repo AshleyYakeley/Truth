@@ -7,9 +7,9 @@ module Data.Reity.ReasonM where
     import Data.Result;
 
 
-    data FailureReason = MkFailureReason String FailureReasons;
+    data FailureReason = MkFailureReason String FailureReasons deriving (Eq);
 
-    newtype FailureReasons = MkFailureReasons [FailureReason] deriving (Semigroup,Monoid); -- need this wrapper for IsString instance
+    newtype FailureReasons = MkFailureReasons [FailureReason] deriving (Eq,Semigroup,Monoid); -- need this wrapper for IsString instance
 
     instance IsString FailureReason where
     {
