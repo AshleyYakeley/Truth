@@ -9,9 +9,6 @@ module Truth.Core.Read.FullReader where
     {
         -- | Construct the subject by making MutableEdit calls
         fromReader :: Readable c reader (ReaderSubject reader);
-
-        default fromReader :: (IOFullReader reader) => IOReadable reader (ReaderSubject reader);
-        fromReader = MkReadable $ unReadable ioFromReader;
     };
 
     type IOFullReader = FullReader MonadIO;

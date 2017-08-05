@@ -29,8 +29,7 @@ module Truth.Core.Types.ByteString where
         };
     };
 
-    instance IOFullReader ByteStringReader;
-    instance FullReader Monad ByteStringReader where
+    instance FullReader c ByteStringReader where
     {
         fromReader = do
         {
@@ -49,8 +48,7 @@ module Truth.Core.Types.ByteString where
             {
                 type ReaderSubject ByteStringReader = ByteString;
             };
-            instance FullReader MonadIO ByteStringReader;
-            instance FullReader Monad ByteStringReader;
+            instance FullReader c ByteStringReader;
         |]);
     };
 
