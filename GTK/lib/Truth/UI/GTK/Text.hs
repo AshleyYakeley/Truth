@@ -3,8 +3,12 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
 {
     import Prelude;
     import Data.Foldable;
+    import Data.Text;
+    import Data.Sequences;
+    import Data.MonoTraversable;
     import Control.Concurrent.MVar;
     import Control.Monad.IO.Class;
+    import System.Glib;
     import Graphics.UI.Gtk;
     import Control.Monad.IsStateIO;
     import Data.Reity;
@@ -13,7 +17,7 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
     import Truth.UI.GTK.Useful;
 
 
-    replaceText :: TextBuffer -> SequenceRun String -> String -> IO ();
+    replaceText :: Index s ~ Int => TextBuffer -> SequenceRun s -> String -> IO ();
     replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)) text = do
     {
         startIter <- textBufferGetIterAtOffset buffer start;
@@ -29,14 +33,14 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
         };
     };
 
-    getSequencePoint :: MonadIO m => TextIter -> m (SequencePoint String);
+    getSequencePoint :: (Index s ~ Int,MonadIO m) => TextIter -> m (SequencePoint s);
     getSequencePoint iter = do
     {
         p <- liftIO $ textIterGetOffset iter;
         return $ MkSequencePoint p;
     };
 
-    getSequenceRun :: MonadIO m => TextIter -> TextIter -> m (SequenceRun String);
+    getSequenceRun :: (Index s ~ Int,MonadIO m) => TextIter -> TextIter -> m (SequenceRun s);
     getSequenceRun iter1 iter2 = do
     {
         p1 <- getSequencePoint iter1;
@@ -44,7 +48,7 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
         return $ startEndRun p1 p2;
     };
 
-    textView :: GView (StringEdit String);
+    textView :: forall s. (IsSequence s,Index s ~ Int,Element s ~ Char,GlibString s,HasTypeInfo s) => GView (StringEdit s);
     textView = MkView $ \(MkObject object) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
@@ -66,7 +70,7 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
         _ <- onDeleteRange buffer $ \iter1 iter2 -> ifMVar mv $ object $ \muted -> do
         {
             run <- getSequenceRun iter1 iter2;
-            maction <- mutableEdit muted $ pure $ StringReplaceSection run "";
+            maction <- mutableEdit muted $ pure $ StringReplaceSection run mempty;
             case maction of
             {
                 Just action -> action;
@@ -81,15 +85,15 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
             vrWidget :: Widget;
             vrWidget = toWidget widget;
 
-            update :: StringEdit String -> IO ();
+            update :: StringEdit s -> IO ();
             update (StringReplaceWhole text) = textBufferSetText buffer text;
-            update (StringReplaceSection bounds text) = replaceText buffer bounds text;
+            update (StringReplaceSection bounds text) = replaceText buffer bounds $ otoList text;
 
-            vrUpdate :: forall m. IsStateIO m => MutableRead m (StringRead String) -> [StringEdit String] -> m ();
+            vrUpdate :: forall m. IsStateIO m => MutableRead m (StringRead s) -> [StringEdit s] -> m ();
             -- this withMVar prevents the signal handlers from re-sending edits
             vrUpdate _ edits = liftIO $ ifMVar mv $ traverse_ update edits;
 
-            vrFirstAspectGetter :: AspectGetter (StringEdit String);
+            vrFirstAspectGetter :: AspectGetter (StringEdit s);
             vrFirstAspectGetter = do
             {
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
@@ -114,9 +118,17 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
     {
         theView = textView;
     };
+    -- orphan
+    instance DependentHasView Widget (StringEdit Text);
+    -- orphan
+    instance HasView Widget (StringEdit Text) where
+    {
+        theView = textView;
+    };
 
     textTypeKnowledge :: TypeKnowledge;
     textTypeKnowledge = namedKnowledge "text" $(generateTypeKnowledge [d|
         instance DependentHasView Widget (StringEdit String);
+        instance DependentHasView Widget (StringEdit Text);
     |]);
 }

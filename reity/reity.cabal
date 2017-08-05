@@ -63,6 +63,7 @@ library
         template-haskell,
         transformers,
         bytestring,
+        text,
         uuid,
         witness >= 0.4,
         open-witness >= 0.4,

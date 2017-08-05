@@ -16,6 +16,8 @@ module Main(main) where
     import Truth.World.File;
     import Truth.World.FileSystem;
     import Truth.World.Charset;
+    import Truth.World.JSON;
+    import Truth.World.Note;
     import Truth.World.Soup;
     import Graphics.UI.Gtk hiding (Object);
     import Truth.UI.GTK;
@@ -69,7 +71,7 @@ module Main(main) where
         };
     };
 
-    type SoupContentsEdit = StringEdit String;
+    type SoupContentsEdit = TupleEdit NoteSel;
     type SoupItemEdit = OneWholeEdit ReasonM SoupContentsEdit;
 
     soupWindow :: FilePath -> WindowMaker;
@@ -81,7 +83,7 @@ module Main(main) where
             rawSoupObject = directorySoup fileSystemMutableEdit dirpath;
 
             soupContentsCodec :: ReasonCodec ByteString (EditSubject SoupContentsEdit);
-            soupContentsCodec = textCodec;
+            soupContentsCodec = jsonValueCodec . jsonCodec;
 
             soupItemInjection :: Injection' ReasonM ByteString (EditSubject SoupItemEdit);
             soupItemInjection = codecInjection soupContentsCodec;

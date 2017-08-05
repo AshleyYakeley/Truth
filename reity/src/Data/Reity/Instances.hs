@@ -7,6 +7,7 @@ module Data.Reity.Instances where
     import Data.Type.Heterogeneous;
     import Data.Word;
     import Data.ByteString.Lazy;
+    import Data.Text;
     import Control.Monad.IO.Class;
     import Control.Comonad;
     import Data.UUID;
@@ -262,6 +263,16 @@ module Data.Reity.Instances where
             instance HasNewValue ByteString;
             instance Monoid ByteString;
             instance Eq ByteString;
+        |]);
+    };
+
+    instance HasTypeInfo Text where
+    {
+        typeWitness = $(generateWitness [t|Text|]);
+        typeName _ = "Text";
+        typeKnowledge _ = $(generateTypeKnowledge [d|
+            instance Monoid Text;
+            instance Eq Text;
         |]);
     };
 

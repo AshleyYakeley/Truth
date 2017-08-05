@@ -44,6 +44,10 @@ module Data.Reity.ReasonM where
     kmNullError :: ReaderT k ReasonM a;
     kmNullError = lift $ FailureResult mempty;
 
+    rmFromMaybe :: String -> Maybe a -> ReasonM a;
+    rmFromMaybe _ (Just a) = return a;
+    rmFromMaybe s Nothing = fail s;
+
     rmContext :: String -> ReasonM a -> ReasonM a;
     rmContext _ (SuccessResult a) = SuccessResult a;
     rmContext s (FailureResult ee) = FailureResult $ MkFailureReasons [MkFailureReason s  ee];

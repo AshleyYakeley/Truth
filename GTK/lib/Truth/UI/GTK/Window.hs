@@ -10,6 +10,7 @@ module Truth.UI.GTK.Window where
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Maybe;
     import Truth.UI.GTK.CheckButton;
+    import Truth.UI.GTK.Entry;
     import Truth.UI.GTK.Text;
     import Truth.UI.GTK.Tuple;
     import Truth.UI.GTK.KeyContainer;
@@ -33,7 +34,7 @@ module Truth.UI.GTK.Window where
     };
 
     allKnowledge :: TypeKnowledge;
-    allKnowledge = mconcat [generalTypeKnowledge,checkButtonTypeKnowledge,textTypeKnowledge,keyContainerTypeKnowledge,maybeTypeKnowledge,tupleTypeKnowledge];
+    allKnowledge = mconcat [generalTypeKnowledge,checkButtonTypeKnowledge,entryTypeKnowledge,textTypeKnowledge,keyContainerTypeKnowledge,maybeTypeKnowledge,tupleTypeKnowledge];
 
     class WindowButtons actions where
     {

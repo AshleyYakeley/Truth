@@ -28,7 +28,67 @@ module Truth.World.Note where
         tupleWitness _ NoteText = MkConstraintWitness;
     };
 
+    instance ReadableConstraint c => TupleWitness (FullEdit c) NoteSel where
+    {
+        tupleWitness _ NoteTitle = MkConstraintWitness;
+        tupleWitness _ NotePast = MkConstraintWitness;
+        tupleWitness _ NoteText = MkConstraintWitness;
+    };
+
+    instance TupleReaderWitness (FullReader c) NoteSel where
+    {
+        tupleReaderWitness _ NoteTitle = MkConstraintWitness;
+        tupleReaderWitness _ NotePast = MkConstraintWitness;
+        tupleReaderWitness _ NoteText = MkConstraintWitness;
+    };
+
+    instance TupleHasInfo NoteSel where
+    {
+        tupleHasInfo NoteTitle = typeInfo;
+        tupleHasInfo NotePast = typeInfo;
+        tupleHasInfo NoteText = typeInfo;
+    };
+
     instance TupleSelector NoteSel;
+
+    instance FiniteTupleSelector NoteSel where
+    {
+        tupleConstruct getVal = (\title past text -> MkTuple $ \case
+        {
+            NoteTitle -> title;
+            NotePast -> past;
+            NoteText -> text;
+        }) <$> (getVal NoteTitle) <*> (getVal NotePast) <*> (getVal NoteText);
+    };
+
+    instance HasNewValue (Tuple NoteSel) where
+    {
+        newValue = MkTuple $ \case
+        {
+            NoteTitle -> "untitled";
+            NotePast -> False;
+            NoteText -> mempty;
+        };
+    };
+
+    $(return []);
+    instance HasTypeInfo NoteSel where
+    {
+        typeWitness = $(generateWitness [t|NoteSel|]);
+        typeName _ = "NoteSel";
+        typeKnowledge _ = $(generateTypeKnowledge [d|
+            instance TupleWitness Edit NoteSel;
+            instance ReadableConstraint c => TupleWitness (FullEdit c) NoteSel;
+            instance TupleReaderWitness (FullReader c) NoteSel;
+            instance TupleSelector NoteSel where
+            {
+                type TupleSubject NoteSel = Tuple NoteSel;
+            };
+            instance FiniteTupleSelector NoteSel;
+            instance HasNewValue (Tuple NoteSel);
+            instance TupleHasInfo NoteSel;
+        |]);
+    };
 
     type Note = Tuple NoteSel;
 

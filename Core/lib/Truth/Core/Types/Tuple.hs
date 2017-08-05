@@ -19,6 +19,13 @@ module Truth.Core.Types.Tuple where
 
     newtype Tuple sel = MkTuple (forall edit. sel edit -> EditSubject edit);
 
+    $(return []);
+    instance HasTypeInfo Tuple where
+    {
+        typeWitness = $(generateWitness [t|Tuple|]);
+        typeName _ = "Tuple";
+    };
+
     class (TestEquality sel,TupleWitness Edit sel) => TupleSelector (sel :: * -> *) where
     {
         type TupleSubject sel :: *;

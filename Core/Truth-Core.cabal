@@ -24,6 +24,7 @@ library
         GeneralizedNewtypeDeriving
         ImplicitParams
         KindSignatures
+        LambdaCase
         MultiParamTypeClasses
         NoImplicitPrelude
         PatternGuards
@@ -150,6 +151,7 @@ test-suite test
         GeneralizedNewtypeDeriving
         ImplicitParams
         KindSignatures
+        LambdaCase
         MultiParamTypeClasses
         NoImplicitPrelude
         PatternGuards

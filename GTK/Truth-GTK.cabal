@@ -55,6 +55,7 @@ library
     build-depends:
         base >= 4.9 && < 5,
         bytestring,
+        text,
         transformers,
         mono-traversable,
         countable,
@@ -73,6 +74,7 @@ library
         Truth.UI.GTK.Window
         Truth.UI.GTK.Maybe
         Truth.UI.GTK.CheckButton
+        Truth.UI.GTK.Entry
         Truth.UI.GTK.Text
         Truth.UI.GTK.Tuple
         Truth.UI.GTK.KeyContainer
