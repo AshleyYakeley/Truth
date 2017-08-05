@@ -1,0 +1,4 @@
+:set prompt "> "
+:load Main
+:break main
+:main --soup testsoup

@@ -124,6 +124,7 @@ module Main(main) where
         _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50;
         windowCount <- newIORef 0;
         for_ wms $ \wm -> wm windowCount;
-        mainGUI;
+        c <- readIORef windowCount;
+        if c == 0 then return () else mainGUI;
     };
 }
