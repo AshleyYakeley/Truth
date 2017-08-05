@@ -41,7 +41,7 @@ module Truth.Core.Types.Either where
             {
                 (Just a,Nothing) -> return $ Left a;
                 (Nothing,Just a) -> return $ Right a;
-                _ -> fail $ "pureFromReader: inconsistent EitherReader";
+                _ -> error $ "pureFromReader: inconsistent EitherReader";
             };
         };
     };

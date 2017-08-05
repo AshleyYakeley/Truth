@@ -1,6 +1,7 @@
 module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple,generateShowSimpleTypeFail) where
 {
-    import Prelude;
+    import Prelude hiding (fail);
+    import Control.Monad.Fail;
     import Data.List(intercalate);
     import Data.Traversable(for);
     import Language.Haskell.TH as T;

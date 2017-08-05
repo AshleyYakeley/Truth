@@ -25,7 +25,7 @@ module Truth.Core.Types.List where
         case mt of
         {
             Just t -> return t;
-            Nothing -> fail $ "missing item "++ show i ++" in list";
+            Nothing -> error $ "missing item "++ show i ++" in list";
         };
     };
 

@@ -18,7 +18,8 @@ module Truth.Core.Import (module I) where
     import Data.Functor.Identity as I;
     import Control.Monad.Trans.State as I (StateT(..),evalStateT,get,put);
     import Control.Category as I;
-    import Control.Monad as I (Functor(..),Monad(..));
+    import Control.Monad as I (Functor(..),Monad(return,(>>=),(>>)));
+    import Control.Monad.Fail as I;
     import Control.Arrow as I hiding ((|||),(<<<),(>>>));
     import Data.Foldable as I hiding (find);
     import Data.Traversable as I;

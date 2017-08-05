@@ -1,6 +1,6 @@
 module Data.Result where
 {
-    import Prelude;
+    import Prelude hiding (fail);
     import Control.Applicative;
     import Control.Monad;
     import Control.Monad.Fail;

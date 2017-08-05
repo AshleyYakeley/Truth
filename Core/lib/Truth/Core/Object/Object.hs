@@ -79,7 +79,7 @@ module Truth.Core.Object.Object where
             case maction of
             {
                 Just action -> action;
-                Nothing -> fail "disallowed cached edit";
+                Nothing -> liftIO $ fail "disallowed cached edit";
             };
         };
         return r;

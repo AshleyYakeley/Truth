@@ -1,11 +1,12 @@
 module Data.WitnessStore where
 {
-    import Prelude hiding (null);
+    import Prelude hiding (fail,null);
     import Data.Kind;
     import Data.Tuple;
     import Data.Type.Equality;
     import Data.Foldable;
     import Data.Functor.Identity;
+    import Control.Monad.Fail;
     import Control.Monad.Trans.State;
     import Control.Monad.Trans.Writer;
     import Data.Witness;
@@ -90,7 +91,7 @@ module Data.WitnessStore where
         Nothing -> pure mempty;
     };
 
-    replaceOneWitnessStoreStateT :: (TestEquality w,Monad m) => WitnessKey w a -> StateT (f a) m r -> StateT (WitnessStore w f) m r;
+    replaceOneWitnessStoreStateT :: (TestEquality w,MonadFail m) => WitnessKey w a -> StateT (f a) m r -> StateT (WitnessStore w f) m r;
     replaceOneWitnessStoreStateT key call = do
     {
         rr <- replaceWitnessStoreStateT key $ fmap pure call;

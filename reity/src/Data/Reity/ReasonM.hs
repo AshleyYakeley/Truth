@@ -1,6 +1,7 @@
 module Data.Reity.ReasonM where
 {
-    import Prelude;
+    import Prelude hiding (fail);
+    import Control.Monad.Fail;
     import Data.String;
     import Data.Semigroup;
     import Control.Monad.Trans.Class;

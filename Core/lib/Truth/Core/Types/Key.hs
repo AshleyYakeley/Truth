@@ -30,7 +30,7 @@ module Truth.Core.Types.Key where
         case mt of
         {
             Just t -> return t;
-            Nothing -> fail $ "missing item in list";
+            Nothing -> error $ "missing item in list";
         };
     };
 
