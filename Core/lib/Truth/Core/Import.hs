@@ -34,7 +34,7 @@ module Truth.Core.Import (module I) where
     import System.IO as I;
     import Control.Exception as I hiding (catch);
 
-    import Data.ByteString.Lazy as I (ByteString,hPut);
+    import Data.ByteString.Lazy as I (ByteString,hGet,hPut);
     import Data.MonoTraversable as I;
     import Data.Sequences as I;
     import Data.Containers as I;

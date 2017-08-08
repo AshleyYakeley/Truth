@@ -138,9 +138,11 @@ Overarching JSON format
 
 2. User Interface
 
-2.1 named UI items?
+2.1 Window Titles
 
-2.2 Menu bar
+2.2 named UI items?
+
+2.3 Menu bar
 
 "File":
 Save/Revert

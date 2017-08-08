@@ -1,7 +1,6 @@
 module Truth.World.File where
 {
     import Truth.Core.Import;
-    import Data.ByteString.Lazy;
     import Truth.Core;
 
 

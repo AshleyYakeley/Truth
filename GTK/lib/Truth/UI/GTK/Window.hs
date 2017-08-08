@@ -20,13 +20,9 @@ module Truth.UI.GTK.Window where
     lastResortView showmsgs frs = return $ MkView $ \_ _ -> do
     {
         w <- labelNew $ Just $ if showmsgs then show $ MkFailureReason "No editor" frs else "Uneditable";
-        hadj <- adjustmentNew 0 0 0 0 0 0;
-        vadj <- adjustmentNew 0 0 0 0 0 0;
-        vp <- viewportNew hadj vadj;
-        containerAdd vp w;
         let
         {
-            vrWidget = toWidget vp;
+            vrWidget = toWidget w;
             vrUpdate _ _ = return ();
             vrFirstAspectGetter = return Nothing;
         };
@@ -106,12 +102,62 @@ module Truth.UI.GTK.Window where
         FailureResult _ -> return ();
     };
 
+    attachMenuItem :: MenuShellClass menushell => menushell -> String -> IO MenuItem;
+    attachMenuItem menu name = do
+    {
+        item <- menuItemNewWithLabel name;
+        menuShellAppend menu item;
+        return item;
+    };
+
+    attachSubmenu :: MenuItem -> IO Menu;
+    attachSubmenu item = do
+    {
+        menu <- menuNew;
+        menuItemSetSubmenu item menu;
+        return menu;
+    };
+
+    menuItemAction :: MenuItem -> IO () -> IO ();
+    menuItemAction item action = do
+    {
+        _ <- on item menuItemActivated action;
+        return ();
+    };
+
     makeViewWindow :: (Edit edit,WindowButtons actions) => TypeKnowledge -> GView edit -> IORef Int -> IO () -> Subscriber edit actions -> IO ();
     makeViewWindow kw view ref tellclose sub = do
     {
         MkViewSubscription{..} <- subscribeView view sub;
         window <- windowNew;
+        windowSetPosition window WinPosCenter;
+        windowSetDefaultSize window 300 400;
+
+        let
+        {
+            closeRequest :: IO Bool;
+            closeRequest = do
+            {
+                srCloser;
+                tellclose;
+                return False; -- run existing handler that closes the window
+            };
+        };
+
+        _ <- on window deleteEvent $ liftIO closeRequest;
+
+        menubar <- menuBarNew;
+        fileMI <- attachMenuItem menubar "File";
+        fileMenu <- attachSubmenu fileMI;
+        closeMI <- attachMenuItem fileMenu "Close";
+        menuItemAction closeMI $ do
+        {
+            ok <- closeRequest;
+            if ok then return () else widgetDestroy window;
+        };
+
         box <- vBoxNew False 0;
+        boxPackStart box menubar PackNatural 0;
 
         addButtons box srAction;
 
@@ -140,18 +186,20 @@ module Truth.UI.GTK.Window where
 
         -- this is only correct if srWidget has native scroll support, such as TextView
         sw <- scrolledWindowNew Nothing Nothing;
-        set sw [containerChild := srWidget];
+        if any (isA srWidget) [gTypeViewport,gTypeTextView] then set sw [containerChild := srWidget] else do
+        {
+            hadj <- adjustmentNew 0 0 0 0 0 0;
+            vadj <- adjustmentNew 0 0 0 0 0 0;
+            viewport <- viewportNew hadj vadj;
+            containerAdd viewport srWidget;
+            set sw [containerChild := viewport];
+        };
 
         boxPackStart box selectionButton PackNatural 0;
         boxPackStart box sw PackGrow 0;
 
         set window [containerChild := box];
         widgetShow srWidget;
-        _ <- onDestroy window (do
-        {
-            srCloser;
-            tellclose;
-        });
         widgetShowAll window;
     };
 
