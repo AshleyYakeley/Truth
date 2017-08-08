@@ -110,7 +110,6 @@ or categories, instances of Finite
 XML type system
 JSON type system
 
-
 1.6 Soup
 
 A set of items identified by guid, all of the same type (typically a "container" type that can contain things of different types).
@@ -120,3 +119,43 @@ A set of items identified by guid, all of the same type (typically a "container"
 A directory with files named <guid>.xml (for XML files)
 Index files, containing rows of (guid,val)
 
+1.7 Life Items
+
+Notes
+Emails (difficult)
+Photos
+General files
+Links
+Calendrical
+To-Do
+
+1.7.1 Categorisation & Searching
+
+Keys with values
+Overarching JSON format
+
+{"type":"<guid>","<guid>":<whatever>,"<guid>":<whatever>,"":<whatever>}
+
+2. User Interface
+
+2.1 named UI items?
+
+2.2 Menu bar
+
+"File":
+Save/Revert
+Close
+Close All / Quit
+
+"Edit":
+Undo
+Redo
+-
+Cut
+Copy
+Paste
+Select All
+
+Other:
+Find etc.
+New window from selection
