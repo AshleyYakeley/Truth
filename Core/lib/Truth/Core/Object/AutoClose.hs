@@ -15,13 +15,27 @@ module Truth.Core.Object.AutoClose where
     {
         mutedVar <- newEmptyMVar;
         closerVar <- newEmptyMVar;
-        _ <- forkIO $ runObjectIO object $ \muted -> do
+        doneVar <- newEmptyMVar;
+        _ <- forkIO $ do
         {
-            putMVar mutedVar muted;
-            takeMVar closerVar;
+            runObjectIO object $ \muted -> do
+            {
+                putMVar mutedVar muted;
+                takeMVar closerVar;
+            };
+            putMVar doneVar ();
         };
         muted <- takeMVar mutedVar;
-        return (muted,putMVar closerVar ());
+        let
+        {
+            close :: IO ();
+            close = do
+            {
+                putMVar closerVar ();
+                takeMVar doneVar;
+            };
+        };
+        return (muted,close);
     };
 
     type AutoClose key edit = StateT (Map key (MutableEdit IO edit,IO ())) IO;
