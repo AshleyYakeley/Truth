@@ -16,7 +16,7 @@ module Truth.UI.GTK.Tuple(tupleTypeKnowledge) where
     arrangeWidgets widgets = do
     {
         vbox <- vBoxNew False 0;
-        for_ widgets $ \widget -> boxPackStart vbox widget PackNatural 0;
+        for_ widgets $ \widget -> boxPackStart vbox widget (if any (isA widget) [gTypeViewport,gTypeTextView] then PackGrow else PackNatural) 0;
         return $ toWidget vbox;
     };
 
