@@ -6,6 +6,7 @@ module Main(main) where
     import Data.ByteString.Lazy;
     import Data.Foldable;
     import Data.IORef;
+    import System.FilePath hiding ((<.>));
     import Control.Monad.IO.Class;
     import Control.Constrained.Category;
     import Data.Injection;
@@ -57,7 +58,7 @@ module Main(main) where
                 undoBufferSub = undoQueueSubscriber bufferSub;
             };
             textSub <- makeSharedSubscriber undoBufferSub;
-            makeWindowCountRef windowCount textSub;
+            makeWindowCountRef windowCount (takeFileName path) textSub;
         }
         else do
         {
@@ -67,7 +68,7 @@ module Main(main) where
                 textObj = convertObject wholeTextObj;
             };
             textSub <- makeObjectSubscriber textObj;
-            makeWindowCountRef windowCount textSub;
+            makeWindowCountRef windowCount (takeFileName path) textSub;
         };
     };
 
@@ -101,7 +102,7 @@ module Main(main) where
             soupObject = fixedMapObject lens rawSoupObject;
         };
         soupSub <- makeObjectSubscriber soupObject;
-        makeWindowCountRef windowCount soupSub;
+        makeWindowCountRef windowCount (takeFileName $ dropTrailingPathSeparator dirpath) soupSub;
     };
 
     testSave :: Bool;

@@ -54,6 +54,7 @@ executable truth
         -Wnoncanonical-monadfail-instances
     build-depends:
         base >= 4.9 && < 5,
+        filepath,
         bytestring,
         glib,
         gtk,

@@ -97,7 +97,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
                         return $ Just $ $(generateTypeMatchExpr [t|forall keyedit valueedit. (Edit keyedit, IOFullReader (EditReader keyedit), IOFullEdit valueedit) => PairEdit keyedit valueedit|] [e|\_tiKE tiVE -> do
                         {
                             iedit <- $(generateTypeInfoExpr [t|forall valueedit. OneWholeEdit Maybe valueedit|]) tiVE;
-                            return $ MkAspect iedit $ keyValueLens key;
+                            return $ MkAspect (show key) iedit $ keyValueLens key;
                         }|]) ti;
                     };
                     _ -> return Nothing;

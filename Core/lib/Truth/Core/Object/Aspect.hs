@@ -10,18 +10,18 @@ module Truth.Core.Object.Aspect where
     {
         MkAspect ::
          forall edita editb. (Edit editb) =>
-          TypeInfo editb -> GeneralLens edita editb -> Aspect edita;
+          String -> TypeInfo editb -> GeneralLens edita editb -> Aspect edita;
     };
 
     mapAspect :: (Edit edita,Edit editb) => GeneralLens edita editb -> Aspect editb -> Aspect edita;
-    mapAspect lens (MkAspect ti lens') = MkAspect ti $ lens' <.> lens;
+    mapAspect lens (MkAspect name ti lens') = MkAspect name ti $ lens' <.> lens;
 
     mapOneWholeEditAspect :: forall f edit. (MonadOne f, Edit edit,IOFullReader (EditReader edit)) =>
      TypeInfo f -> Aspect edit -> KnowM (Aspect (OneWholeEdit f edit));
-    mapOneWholeEditAspect infoF (MkAspect infoEditB lens) = do
+    mapOneWholeEditAspect infoF (MkAspect name infoEditB lens) = do
     {
         ConstraintFact <- askTypeInfo $ applyTypeInfo (typeInfo @IOFullEdit) infoEditB;
         infoEditB' <- $(generateTypeInfoExpr [t|forall f' editb. OneWholeEdit f' editb|]) infoF infoEditB;
-        return $ MkAspect infoEditB' $ toGeneralLens $ oneWholeLiftGeneralLens getMaybeOne lens;
+        return $ MkAspect name infoEditB' $ toGeneralLens $ oneWholeLiftGeneralLens getMaybeOne lens;
     };
 }
