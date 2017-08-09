@@ -63,6 +63,7 @@ library
         bytestring,
         random,
         containers,
+        text,
         transformers,
         mono-traversable,
         hashable,

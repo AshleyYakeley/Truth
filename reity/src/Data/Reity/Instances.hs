@@ -273,6 +273,7 @@ module Data.Reity.Instances where
         typeKnowledge _ = $(generateTypeKnowledge [d|
             instance Monoid Text;
             instance Eq Text;
+            instance HasNewValue Text;
         |]);
     };
 
@@ -304,7 +305,7 @@ module Data.Reity.Instances where
             instance Functor [];
             instance Applicative [];
             instance Monad [];
-            instance () => HasNewValue ([] a);
+            instance HasNewValue ([] a);
             instance (Eq a) => Eq ([] a);
         |]);
     };

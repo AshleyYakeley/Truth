@@ -3,6 +3,7 @@ module Data.HasNewValue where
     import Prelude;
     import Data.Word;
     import Data.ByteString.Lazy;
+    import Data.Text;
     import Data.Result;
 
 
@@ -28,7 +29,7 @@ module Data.HasNewValue where
 
     instance HasNewValue ByteString where
     {
-        newValue = empty;
+        newValue = mempty;
     };
 
     instance HasNewValue Word8 where
@@ -54,6 +55,11 @@ module Data.HasNewValue where
     instance (HasNewValue a) => HasNewValue (Result err a) where
     {
         newValue = SuccessResult newValue;
+    };
+
+    instance HasNewValue Text where
+    {
+        newValue = mempty;
     };
 
     class HasNewValue1 p where

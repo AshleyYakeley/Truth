@@ -148,6 +148,7 @@ module Truth.Core.Types.String where
             typeInfoKnowledge $ typeInfo @StringRead,
             $(generateTypeKnowledge [d|
                 instance IsSequence [a];
+                instance IsSequence Text;
                 instance IsSequence seq => Edit (StringEdit seq) where
                 {
                     type EditReader (StringEdit seq) = StringRead seq;
