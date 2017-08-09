@@ -16,7 +16,7 @@ module Truth.UI.GTK.Entry(entryTypeKnowledge) where
         widget <- entryNew;
         initial <- object $ \muted -> unReadable pureFromReader $ mutableRead muted;
         set widget [entryText := initial];
-        clickConnection <- on widget entryPreeditChanged $ \(_::String) -> object $ \muted -> do
+        clickConnection <- on widget editableChanged $ object $ \muted -> do
         {
             s <- liftIO $ get widget entryText;
             _ <- mutableEdit muted $ getReplaceEdits s;
