@@ -114,5 +114,33 @@ module Truth.Core.Types.Context where
     contextLens = tupleEditLens EditContext;
     contentLens :: Applicative m => EditLens' c m () (TupleEdit (WithContextSelector editx editn)) editn;
     contentLens = tupleEditLens EditContent;
-}
 
+    type ContextEditReader x n = TupleEditReader (WithContextSelector x n);
+    type ContextEdit x n = TupleEdit (WithContextSelector x n);
+
+    contextualiseReadFunction :: forall c edita editb. ReadFunction c (EditReader edita) (EditReader editb) -> ReadFunction c (EditReader edita) (ContextEditReader edita editb);
+    contextualiseReadFunction _rf (MkTupleEditReader EditContext rt) = readable rt;
+    contextualiseReadFunction rf (MkTupleEditReader EditContent rt) = rf rt;
+
+    contextualiseEditFunction :: forall c state edita editb. EditFunction c state edita editb -> EditFunction c state edita (ContextEdit edita editb);
+    contextualiseEditFunction (MkEditFunction i g u) = let
+    {
+        g' :: state -> ReadFunction c (EditReader edita) (ContextEditReader edita editb);
+        g' curstate = contextualiseReadFunction @c @edita @editb $ g curstate;
+
+        u' :: edita -> state -> Readable c (EditReader edita) (state,[ContextEdit edita editb]);
+        u' ea oldstate = do
+        {
+            (newstate,ebs) <- u ea oldstate;
+            return (newstate,(MkTupleEdit EditContext ea):(fmap (MkTupleEdit EditContent) ebs));
+        };
+    } in MkEditFunction i g' u';
+
+    contextualiseEditLens :: Applicative m => EditLens' c m state edita editb -> EditLens' c m state edita (ContextEdit edita editb);
+    contextualiseEditLens (MkEditLens f pe) = let
+    {
+        f' = contextualiseEditFunction f;
+        pe' oldstate (MkTupleEdit EditContext ea) = return $ pure (oldstate,[ea]);
+        pe' oldstate (MkTupleEdit EditContent eb) = pe oldstate eb;
+    } in MkEditLens f' pe';
+}
