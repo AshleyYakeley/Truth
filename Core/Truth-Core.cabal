@@ -117,6 +117,7 @@ library
         Truth.Core.Types.String
         Truth.Core.Types.ByteString
         Truth.Core.Types.Key
+        Truth.Core.Types.Database
         Truth.Core.Types.Merge
         Truth.Core.Types
         Truth.Core.Object.MutableEdit

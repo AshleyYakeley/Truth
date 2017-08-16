@@ -20,6 +20,7 @@ module Truth.Core.Types
     module Truth.Core.Types.String,
     module Truth.Core.Types.ByteString,
     module Truth.Core.Types.Key,
+    module Truth.Core.Types.Database,
     module Truth.Core.Types.Merge,
 ) where
 {
@@ -43,5 +44,6 @@ module Truth.Core.Types
     import Truth.Core.Types.String;
     import Truth.Core.Types.ByteString;
     import Truth.Core.Types.Key;
+    import Truth.Core.Types.Database;
     import Truth.Core.Types.Merge;
 }
