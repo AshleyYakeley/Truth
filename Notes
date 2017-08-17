@@ -1,5 +1,7 @@
 1. Applications
 
+"Intelligent Notes"
+
 1.1 Rich Text
 
 operations:
@@ -105,10 +107,68 @@ each row is mark on graph
 axis types, bijection with Double type, linear but otherwise arbitrary, i.e. torsor on 1D vector space
 or categories, instances of Finite
 
-1.5 A Type System
+1.5 Type System
 
-XML type system
-JSON type system
+tabular type: column names & types, additional functions (Argo?)
+ex. {"date": Date, "": Text, "age" = Date - someDate}
+
+properties vs type?
+templates, as given collections of properties
+
+type: primitive type, entity type, blob type
+Instances of entity types are UUIDs (only).
+function: map from type to type
+property: map from entity type to type
+view(?): window, view
+
+types:
+    correspond to some Edit type
+
+primitive type
+    predefined-ish (expandable?) set
+        Maybe (zero/one level only)
+        Bool
+        Text -- not WholeEdit
+        RichText -- TBD
+        Number -- which? Integer, Rational, Double (all?)
+        Date, Time, etc.
+    can appear in UI as table element
+    has default value
+    has storage lens to Text/JSON
+blob type
+    has storage lens to ByteStringEdit
+
+schema:
+entity types (name :: String)
+property -> EditLens
+    name :: String
+    from :: EntitySchemaType
+    to :: SchemaType
+
+function -> EditLens (NoEdit (?))
+    predefined-ish (i.e., defined in Haskell)
+    definable in Argo?
+
+view
+    entity
+        property display options -- how to display in UI
+            property name
+            display option
+                for entities, link vs include
+                    link to view(entity)
+                is name
+                show in destination
+    search
+
+Storage
+    schema.json
+    entity/
+    blob/
+
+
+Tips:
+    for lists, use reverse properties/functions (i.e. preimages)
+
 
 1.6 Soup
 
