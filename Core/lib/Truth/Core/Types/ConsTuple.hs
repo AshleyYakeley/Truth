@@ -40,6 +40,10 @@ module Truth.Core.Types.ConsTuple where
         tupleHasInfo = never;
     };
 
+    emptyTuple :: Tuple EmptySel;
+    emptyTuple = MkTuple never;
+
+
     data ConsSel a r t where
     {
         FirstSel :: ConsSel t r t;
@@ -86,4 +90,10 @@ module Truth.Core.Types.ConsTuple where
         tupleHasInfo (RestSel r) = tupleHasInfo r;
     };
 
+    consTuple :: EditSubject a -> Tuple r -> Tuple (ConsSel a r);
+    consTuple a (MkTuple tup) = MkTuple $ \esel -> case esel of
+    {
+        FirstSel -> a;
+        RestSel sel -> tup sel;
+    };
 }

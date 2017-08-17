@@ -5,13 +5,15 @@ module Truth.Core.Types.Database where
     import Truth.Core.Edit;
 
 
+    newtype All (w :: k -> *) (f :: k -> *) = MkAll (forall (t :: k). w t -> f t);
+
     class TestEquality tablesel => Database (tablesel :: * -> *) where
     {
-        tableAssemble :: Applicative m => (forall row. tablesel row -> m (f row)) -> m (DatabaseSubject f tablesel);
+        tableAssemble :: Applicative m => (forall row. tablesel row -> m (f row)) -> m (All tablesel f);
 
         type WhereClause tablesel :: * -> *;
         whereClause :: WhereClause tablesel row -> row -> Bool;
-        whereMonoid :: ConstraintWitness (Monoid (WhereClause tablesel row));
+        whereAlways :: tablesel row -> WhereClause tablesel row;
 
         type InsertClause tablesel :: * -> *;
         insertClause :: InsertClause tablesel row -> [row];
@@ -22,7 +24,7 @@ module Truth.Core.Types.Database where
 
         type OrderClause tablesel :: * -> *;
         orderClause :: OrderClause tablesel row -> row -> row -> Ordering;
-        orderMonoid :: ConstraintWitness (Monoid (OrderClause tablesel row));
+        orderMonoid :: tablesel row -> ConstraintWitness (Monoid (OrderClause tablesel row));
 
         type SelectClause tablesel :: * -> * -> *;
         selectClause :: SelectClause tablesel rowA rowB -> rowA -> rowB;
@@ -31,8 +33,6 @@ module Truth.Core.Types.Database where
         type JoinClause tablesel :: * -> * -> * -> *;
         joinClause :: JoinClause tablesel rowA rowB rowC -> rowA -> rowB -> rowC; -- outer joins only?
     };
-
-    newtype DatabaseSubject f tablesel = MkDatabaseSubject (forall row. tablesel row -> f row);
 
     data Join tablesel row where
     {
@@ -47,8 +47,8 @@ module Truth.Core.Types.Database where
 
     instance Database tablesel => Reader (DatabaseRead tablesel) where
     {
-        type ReaderSubject (DatabaseRead tablesel) = DatabaseSubject [] tablesel;
-        readFrom (MkDatabaseSubject tables) (DatabaseSelect j wc oc sc) = let
+        type ReaderSubject (DatabaseRead tablesel) = All tablesel [];
+        readFrom (MkAll tables) (DatabaseSelect j wc oc sc) = let
         {
             doJoin :: Join tablesel row -> [row];
             doJoin (SingleTable tsel) = tables tsel;
@@ -65,9 +65,8 @@ module Truth.Core.Types.Database where
     {
         fromReader = tableAssemble $ \(tsel :: tablesel row) -> do
         {
-            MkConstraintWitness <- return $ whereMonoid @tablesel @row;
-            MkConstraintWitness <- return $ orderMonoid @tablesel @row;
-            readable $ DatabaseSelect (SingleTable tsel) mempty mempty (selectRow tsel);
+            MkConstraintWitness <- return $ orderMonoid tsel;
+            readable $ DatabaseSelect (SingleTable tsel) (whereAlways tsel) mempty (selectRow tsel);
         };
     };
 

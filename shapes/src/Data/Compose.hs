@@ -2,10 +2,14 @@ module Data.Compose where
 {
     import Prelude;
     import Data.Kind;
+    import Data.Semigroup;
     import Control.Monad.IO.Class;
 
 
-    data Compose (p :: k2 -> *) (q :: k1 -> k2) (a :: k1) = MkCompose {getCompose :: p (q a)};
+    newtype Compose (p :: k2 -> *) (q :: k1 -> k2) (a :: k1) = MkCompose {getCompose :: p (q a)};
+
+    deriving instance Semigroup (p (q a)) => Semigroup (Compose p q a);
+    deriving instance Monoid (p (q a)) => Monoid (Compose p q a);
 
     instance (Functor p,Functor q) => Functor (Compose p q) where
     {

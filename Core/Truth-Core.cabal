@@ -110,6 +110,7 @@ library
         Truth.Core.Types.ComonadLift
         Truth.Core.Types.Tuple
         Truth.Core.Types.ConsTuple
+        Truth.Core.Types.EitherTuple
         Truth.Core.Types.Pair
         Truth.Core.Types.Function
         Truth.Core.Types.Context
@@ -118,6 +119,7 @@ library
         Truth.Core.Types.ByteString
         Truth.Core.Types.Key
         Truth.Core.Types.Database
+        Truth.Core.Types.TupleDatabase
         Truth.Core.Types.Merge
         Truth.Core.Types
         Truth.Core.Object.MutableEdit

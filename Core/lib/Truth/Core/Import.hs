@@ -1,6 +1,6 @@
 module Truth.Core.Import (module I) where
 {
-    import Prelude as I (($),seq,error,undefined,Eq(..),Ord(..),Enum(..),Num(..),Real(..),Integral(..),fromIntegral,fromInteger,toInteger);
+    import Prelude as I (($),seq,error,undefined,Eq(..),Ord(..),Enum(..),Num(..),Real(..),Integral(..),fromIntegral,fromInteger,toInteger,Double);
     import Data.Kind as I;
     import Data.Bool as I;
     import Data.Bits as I;
@@ -14,7 +14,8 @@ module Truth.Core.Import (module I) where
     import Data.String as I hiding (words,unwords,lines,unlines);
     import Data.Word as I;
     import Data.Tuple as I;
-    import Data.Monoid as I hiding (Any(..));
+    import Data.Semigroup as I hiding (Any(..),All(..));
+    import Data.Monoid as I (Monoid(..));
     import Data.Functor.Identity as I;
     import Control.Monad.Trans.State as I (StateT(..),evalStateT,get,put);
     import Control.Category as I;
