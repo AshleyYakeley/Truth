@@ -80,6 +80,7 @@ library
         Truth.World.Charset
         Truth.World.MIME
         Truth.World.JSON
+        Truth.World.SQLite
         Truth.World.Soup
         Truth.World.Note
     other-modules:

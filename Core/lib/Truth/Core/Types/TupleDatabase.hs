@@ -14,14 +14,17 @@ module Truth.Core.Types.TupleDatabase where
 
     newtype AllTuple tablesel f = MkAllTuple (forall colsel. tablesel colsel -> f (Tuple colsel));
 
-    class TestEquality tablesel => TupleDatabase (tablesel :: (* -> *) -> *) where
+    class TestEquality tablesel => FiniteTupleSel (tablesel :: (* -> *) -> *) where
     {
         tupleTableAssemble :: Applicative m => (forall colsel. tablesel colsel -> m (f (Tuple colsel))) -> m (AllTuple tablesel f);
+    };
 
-        type TupleExpr tablesel :: (* -> *) -> * -> *;
-        evalTupleExpr :: TupleExpr tablesel colsel t -> Tuple colsel -> t;
-        constBoolExpr :: tablesel colsel -> Bool -> TupleExpr tablesel colsel Bool;
-        columnExpr :: tablesel colsel -> colsel edit -> TupleExpr tablesel colsel (EditSubject edit);
+    class TupleDatabase (database :: *) where
+    {
+        type TupleExpr database :: (* -> *) -> * -> *;
+        evalTupleExpr :: TupleExpr database colsel t -> Tuple colsel -> t;
+        constBoolExpr :: Bool -> TupleExpr database colsel Bool;
+        columnExpr :: colsel edit -> TupleExpr database colsel (EditSubject edit);
     };
 
     data TupleWhereClause expr row where
@@ -73,26 +76,26 @@ module Truth.Core.Types.TupleDatabase where
         mappend = (<>);
     };
 
-    instance TupleDatabase tablesel => Database (TupleTableSel tablesel) where
+    instance (TupleDatabase database, FiniteTupleSel tablesel) => Database database (TupleTableSel tablesel) where
     {
         tableAssemble getrow = fmap (\(MkAllTuple f) -> MkAll $ \(MkTupleTableSel tsel) -> f tsel) $ tupleTableAssemble $ \tsel -> getrow $ MkTupleTableSel tsel;
 
-        type WhereClause (TupleTableSel tablesel) = TupleWhereClause (TupleExpr tablesel);
-        whereClause (MkTupleWhereClause expr) = evalTupleExpr @tablesel expr;
-        whereAlways (MkTupleTableSel tsel) = MkTupleWhereClause $ constBoolExpr tsel True;
+        type WhereClause database (TupleTableSel tablesel) = TupleWhereClause (TupleExpr database);
+        whereClause (MkTupleWhereClause expr) = evalTupleExpr @database expr;
+        whereAlways (MkTupleTableSel _) = MkTupleWhereClause $ constBoolExpr @database True;
 
-        type InsertClause (TupleTableSel tablesel) = [];
+        type InsertClause database (TupleTableSel tablesel) = [];
         insertClause = id;
         insertIntoTable _ = id;
 
-        type UpdateClause (TupleTableSel tablesel) = TupleUpdateClause (TupleExpr tablesel);
+        type UpdateClause database (TupleTableSel tablesel) = TupleUpdateClause (TupleExpr database);
         updateClause (MkTupleUpdateClause tsel expr) tuple@(MkTuple tf) = MkTuple $ \col -> case testEquality col tsel of
         {
-            Just Refl -> evalTupleExpr @tablesel expr tuple;
+            Just Refl -> evalTupleExpr @database expr tuple;
             Nothing -> tf col;
         };
 
-        type OrderClause (TupleTableSel tablesel) = MkTupleOrderClause;
+        type OrderClause database (TupleTableSel tablesel) = MkTupleOrderClause;
         orderClause (MkMkTupleOrderClause clauses) (MkTuple tup1) (MkTuple tup2) = let
         {
             oc (MkTupleOrderItem colsel False) = compare (tup1 colsel) (tup2 colsel);
@@ -100,11 +103,11 @@ module Truth.Core.Types.TupleDatabase where
         } in mconcat $ fmap oc clauses;
         orderMonoid (MkTupleTableSel _) = MkConstraintWitness;
 
-        type SelectClause (TupleTableSel tablesel) = TupleSelectClause (TupleExpr tablesel);
-        selectClause (MkTupleSelectClause selexpr) tuple = MkTuple $ \col -> evalTupleExpr @tablesel (selexpr col) tuple;
-        selectRow (MkTupleTableSel tsel) = MkTupleSelectClause $ columnExpr tsel;
+        type SelectClause database (TupleTableSel tablesel) = TupleSelectClause (TupleExpr database);
+        selectClause (MkTupleSelectClause selexpr) tuple = MkTuple $ \col -> evalTupleExpr @database (selexpr col) tuple;
+        selectRow (MkTupleTableSel _) = MkTupleSelectClause $ columnExpr @database;
 
-        type JoinClause (TupleTableSel tablesel) = TupleJoinClause;
+        type JoinClause database (TupleTableSel tablesel) = TupleJoinClause;
         joinClause OuterTupleJoinClause = eitherTuple;
     };
 }
