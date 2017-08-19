@@ -1,45 +1,56 @@
 module Truth.Core.Types.TupleDatabase where
 {
     import Truth.Core.Import;
-    import Truth.Core.Edit;
-    import Truth.Core.Types.Tuple;
     import Truth.Core.Types.EitherTuple;
     import Truth.Core.Types.Database;
 
 
     data TupleTableSel tablesel row where
     {
-        MkTupleTableSel :: tablesel colsel -> TupleTableSel tablesel (Tuple colsel);
+        MkTupleTableSel :: tablesel colsel -> TupleTableSel tablesel (All colsel);
     };
 
-    newtype AllTuple tablesel f = MkAllTuple (forall colsel. tablesel colsel -> f (Tuple colsel));
+    newtype AllTuple tablesel f = MkAllTuple (forall colsel. tablesel colsel -> f (All colsel));
 
-    class TestEquality tablesel => FiniteTupleSel (tablesel :: (* -> *) -> *) where
+    class TestEquality tablesel => FiniteTupleDatabaseSel (tablesel :: (* -> *) -> *) where
     {
-        tupleTableAssemble :: Applicative m => (forall colsel. tablesel colsel -> m (f (Tuple colsel))) -> m (AllTuple tablesel f);
+        tupleAssembleTables :: Applicative m => (forall colsel. tablesel colsel -> m (f (All colsel))) -> m (AllTuple tablesel f);
+        tupleTableAssembleColumns :: Applicative m => tablesel colsel -> (forall t. colsel t -> m t) -> m (All colsel);
+    };
+
+    tupleTables :: FiniteTupleDatabaseSel tablesel => [AnyWitness tablesel];
+    tupleTables = execWriter $ tupleAssembleTables $ \table -> do
+    {
+        tell [MkAnyWitness table];
+        return $ Const ();
     };
 
     class TupleDatabase (database :: *) where
     {
-        type TupleExpr database :: (* -> *) -> * -> *;
-        evalTupleExpr :: TupleExpr database colsel t -> Tuple colsel -> t;
+        type TupleDatabaseRowWitness database :: (* -> *) -> Constraint;
+
+        type TupleExpr database (colsel :: * -> *) :: * -> *;
+        evalTupleExpr :: TupleExpr database colsel t -> All colsel -> t;
         constBoolExpr :: Bool -> TupleExpr database colsel Bool;
-        columnExpr :: colsel edit -> TupleExpr database colsel (EditSubject edit);
+        columnExpr :: colsel t -> TupleExpr database colsel t;
     };
 
-    data TupleWhereClause expr row where
+    type TupleDatabaseRead database tablesel = DatabaseRead database (TupleTableSel tablesel);
+    type TupleDatabaseEdit database tablesel = DatabaseEdit database (TupleTableSel tablesel);
+
+    data TupleWhereClause database row where
     {
-        MkTupleWhereClause :: expr colsel Bool -> TupleWhereClause expr (Tuple colsel);
+        MkTupleWhereClause :: TupleExpr database colsel Bool -> TupleWhereClause database (All colsel);
     };
 
-    data TupleUpdateClause expr row where
+    data TupleUpdateClause database row where
     {
-        MkTupleUpdateClause :: TestEquality colsel => colsel edit -> expr colsel (EditSubject edit) -> TupleUpdateClause expr (Tuple colsel);
+        MkTupleUpdateClause :: TestEquality colsel => colsel t -> TupleExpr database colsel t -> TupleUpdateClause database (All colsel);
     };
 
     data TupleJoinClause rowa rowb rowc where
     {
-        OuterTupleJoinClause :: TupleJoinClause (Tuple colsel1) (Tuple colsel2) (Tuple (EitherSel colsel1 colsel2));
+        OuterTupleJoinClause :: TupleJoinClause (All colsel1) (All colsel2) (All (EitherSel colsel1 colsel2));
     };
 
     instance TestEquality tablesel => TestEquality (TupleTableSel tablesel) where
@@ -51,63 +62,73 @@ module Truth.Core.Types.TupleDatabase where
         };
     };
 
-    data TupleSelectClause expr row t where
+    data TupleSelectClause database row t where
     {
-        MkTupleSelectClause :: (forall edit. colsel' edit -> expr colsel (EditSubject edit)) -> TupleSelectClause expr (Tuple colsel) (Tuple colsel');
+        MkTupleSelectClause :: TupleDatabaseRowWitness database colsel' => (forall t. colsel' t -> TupleExpr database colsel t) -> TupleSelectClause database (All colsel) (All colsel');
+    };
+
+    data SortDir = SortAsc | SortDesc deriving (Eq);
+    instance Show SortDir where
+    {
+        show SortAsc = "ASC";
+        show SortDesc = "DESC";
     };
 
     data TupleOrderItem colsel where
     {
-        MkTupleOrderItem :: Ord (EditSubject edit) => colsel edit -> Bool -> TupleOrderItem colsel;
+        MkTupleOrderItem :: Ord t => colsel t -> SortDir -> TupleOrderItem colsel;
     };
 
-    data MkTupleOrderClause row where
+    data TupleOrderClause row where
     {
-        MkMkTupleOrderClause :: [TupleOrderItem colsel] -> MkTupleOrderClause (Tuple colsel);
+        MkTupleOrderClause :: [TupleOrderItem colsel] -> TupleOrderClause (All colsel);
     };
 
-    instance Semigroup (MkTupleOrderClause (Tuple colsel)) where
+    instance Semigroup (TupleOrderClause (All colsel)) where
     {
-        (MkMkTupleOrderClause item1) <> (MkMkTupleOrderClause item2) = MkMkTupleOrderClause $ item1 <> item2;
+        (MkTupleOrderClause item1) <> (MkTupleOrderClause item2) = MkTupleOrderClause $ item1 <> item2;
     };
-    instance Monoid (MkTupleOrderClause (Tuple colsel)) where
+    instance Monoid (TupleOrderClause (All colsel)) where
     {
-        mempty = MkMkTupleOrderClause mempty;
+        mempty = MkTupleOrderClause mempty;
         mappend = (<>);
     };
 
-    instance (TupleDatabase database, FiniteTupleSel tablesel) => Database database (TupleTableSel tablesel) where
+    instance (WitnessConstraint (TupleDatabaseRowWitness database) tablesel,TupleDatabase database, FiniteTupleDatabaseSel tablesel) => Database database (TupleTableSel tablesel) where
     {
-        tableAssemble getrow = fmap (\(MkAllTuple f) -> MkAll $ \(MkTupleTableSel tsel) -> f tsel) $ tupleTableAssemble $ \tsel -> getrow $ MkTupleTableSel tsel;
+        tableAssemble getrow = fmap (\(MkAllTuple f) -> MkAllF $ \(MkTupleTableSel tsel) -> f tsel) $ tupleAssembleTables $ \tsel -> getrow $ MkTupleTableSel tsel;
 
-        type WhereClause database (TupleTableSel tablesel) = TupleWhereClause (TupleExpr database);
+        type WhereClause database (TupleTableSel tablesel) row = TupleWhereClause database row;
         whereClause (MkTupleWhereClause expr) = evalTupleExpr @database expr;
-        whereAlways (MkTupleTableSel _) = MkTupleWhereClause $ constBoolExpr @database True;
+        whereAlways (MkTupleTableSel (_ :: tablesel colsel)) = MkTupleWhereClause $ constBoolExpr @database @colsel True;
 
-        type InsertClause database (TupleTableSel tablesel) = [];
+        type InsertClause database (TupleTableSel tablesel) row = [row];
         insertClause = id;
         insertIntoTable _ = id;
 
-        type UpdateClause database (TupleTableSel tablesel) = TupleUpdateClause (TupleExpr database);
-        updateClause (MkTupleUpdateClause tsel expr) tuple@(MkTuple tf) = MkTuple $ \col -> case testEquality col tsel of
+        type UpdateClause database (TupleTableSel tablesel) row = TupleUpdateClause database row;
+        updateClause (MkTupleUpdateClause tsel expr) tuple@(MkAll tf) = MkAll $ \col -> case testEquality col tsel of
         {
             Just Refl -> evalTupleExpr @database expr tuple;
             Nothing -> tf col;
         };
 
-        type OrderClause database (TupleTableSel tablesel) = MkTupleOrderClause;
-        orderClause (MkMkTupleOrderClause clauses) (MkTuple tup1) (MkTuple tup2) = let
+        type OrderClause database (TupleTableSel tablesel) row = TupleOrderClause row;
+        orderClause (MkTupleOrderClause clauses) (MkAll tup1) (MkAll tup2) = let
         {
-            oc (MkTupleOrderItem colsel False) = compare (tup1 colsel) (tup2 colsel);
-            oc (MkTupleOrderItem colsel True) = compare (Down $ tup1 colsel) (Down $ tup2 colsel);
+            oc (MkTupleOrderItem colsel SortAsc) = compare (tup1 colsel) (tup2 colsel);
+            oc (MkTupleOrderItem colsel SortDesc) = compare (Down $ tup1 colsel) (Down $ tup2 colsel);
         } in mconcat $ fmap oc clauses;
         orderMonoid (MkTupleTableSel _) = MkConstraintWitness;
 
-        type SelectClause database (TupleTableSel tablesel) = TupleSelectClause (TupleExpr database);
-        selectClause (MkTupleSelectClause selexpr) tuple = MkTuple $ \col -> evalTupleExpr @database (selexpr col) tuple;
-        selectRow (MkTupleTableSel _) = MkTupleSelectClause $ columnExpr @database;
+        type SelectClause database (TupleTableSel tablesel) = TupleSelectClause database;
+        selectClause (MkTupleSelectClause selexpr) tuple = MkAll $ \col -> evalTupleExpr @database (selexpr col) tuple;
+        selectRow (MkTupleTableSel tsel) = case witnessConstraint @_ @(TupleDatabaseRowWitness database) tsel of
+        {
+            MkConstraintWitness -> MkTupleSelectClause $ columnExpr @database;
+        };
 
         type JoinClause database (TupleTableSel tablesel) = TupleJoinClause;
-        joinClause OuterTupleJoinClause = eitherTuple;
+        joinClause OuterTupleJoinClause = eitherAll;
     };
 }

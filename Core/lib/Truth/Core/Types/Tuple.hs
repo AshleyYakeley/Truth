@@ -73,6 +73,18 @@ module Truth.Core.Types.Tuple where
         typeName _ = "TupleReaderWitness";
     };
 
+    class TupleSubjectWitness (c :: * -> Constraint) (sel :: * -> *) where
+    {
+        tupleSubjectWitness :: forall proxy edit. proxy c -> sel edit -> ConstraintWitness (c (EditSubject edit));
+    };
+
+    $(return []);
+    instance HasTypeInfo TupleSubjectWitness where
+    {
+        typeWitness = $(generateWitness [t|TupleSubjectWitness|]);
+        typeName _ = "TupleSubjectWitness";
+    };
+
     class TupleSelector sel => FiniteTupleSelector (sel :: * -> *) where
     {
         tupleConstruct :: forall m. Applicative m => (forall edit. sel edit -> m (EditSubject edit)) -> m (TupleSubject sel);

@@ -72,6 +72,7 @@ library
         open-witness
     exposed-modules:
         Data.KindCategory
+        Data.Witness.All
         Data.Free
         Data.Category
         Control.Constrained.Category

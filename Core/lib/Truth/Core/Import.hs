@@ -4,7 +4,7 @@ module Truth.Core.Import (module I) where
     import Data.Kind as I;
     import Data.Bool as I;
     import Data.Bits as I;
-    import Data.List as I ((++),length);
+    import Data.List as I ((++),length,intercalate);
     import Data.List.NonEmpty as I (NonEmpty(..));
     import Data.Maybe as I hiding (catMaybes);
     import Data.Either as I;
@@ -49,6 +49,7 @@ module Truth.Core.Import (module I) where
 
     import Data.Searchable as I;
     import Data.Countable as I;
+    import Data.Witness.All as I;
     import Data.WitnessStore as I;
     import Data.Store as I;
     import Data.HasNewValue as I;

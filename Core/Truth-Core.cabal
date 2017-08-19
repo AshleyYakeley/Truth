@@ -72,7 +72,10 @@ library
         random,
         uuid,
         text,
-        aeson
+
+        time,
+        aeson,
+        sqlite-simple
     exposed-modules:
         Truth.Core
         Truth.World.File
@@ -136,6 +139,7 @@ library
         Truth.Core.Object.Savable
         Truth.Core.Object.Undo
         Truth.Core.Object
+        Truth.World.SQLite.Schema
 
 test-suite test
     type: exitcode-stdio-1.0

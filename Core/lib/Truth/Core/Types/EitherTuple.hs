@@ -5,7 +5,21 @@ module Truth.Core.Types.EitherTuple where
     import Truth.Core.Types.Tuple;
 
 
-    data EitherSel colsel1 colsel2 edit = LeftSel (colsel1 edit) | RightSel (colsel2 edit);
+    data EitherSel (colsel1 :: k -> *) (colsel2 :: k -> *) (t :: k) = LeftSel (colsel1 t) | RightSel (colsel2 t);
+
+    eitherAll :: All sel1 -> All sel2 -> All (EitherSel sel1 sel2);
+    eitherAll (MkAll tup1) (MkAll tup2) = MkAll $ \esel -> case esel of
+    {
+        LeftSel sel -> tup1 sel;
+        RightSel sel -> tup2 sel;
+    };
+
+    eitherAllF :: AllF sel1 f -> AllF sel2 f -> AllF (EitherSel sel1 sel2) f;
+    eitherAllF (MkAllF tup1) (MkAllF tup2) = MkAllF $ \esel -> case esel of
+    {
+        LeftSel sel -> tup1 sel;
+        RightSel sel -> tup2 sel;
+    };
 
     instance (TestEquality colsel1,TestEquality colsel2) => TestEquality (EitherSel colsel1 colsel2) where
     {

@@ -5,24 +5,22 @@ module Truth.Core.Types.Database where
     import Truth.Core.Edit;
 
 
-    newtype All (w :: k -> *) (f :: k -> *) = MkAll (forall (t :: k). w t -> f t);
-
     class TestEquality tablesel => Database (database :: *) (tablesel :: * -> *) where
     {
-        tableAssemble :: Applicative m => (forall row. tablesel row -> m (f row)) -> m (All tablesel f);
+        tableAssemble :: Applicative m => (forall row. tablesel row -> m (f row)) -> m (AllF tablesel f);
 
-        type WhereClause database tablesel :: * -> *;
+        type WhereClause database tablesel row :: *;
         whereClause :: WhereClause database tablesel row -> row -> Bool;
         whereAlways :: tablesel row -> WhereClause database tablesel row;
 
-        type InsertClause database tablesel :: * -> *;
+        type InsertClause database tablesel row :: *;
         insertClause :: InsertClause database tablesel row -> [row];
         insertIntoTable :: tablesel row -> [row] -> InsertClause database tablesel row;
 
-        type UpdateClause database tablesel :: * -> *;
+        type UpdateClause database tablesel row :: *;
         updateClause :: UpdateClause database tablesel row -> row -> row;
 
-        type OrderClause database tablesel :: * -> *;
+        type OrderClause database tablesel row :: *;
         orderClause :: OrderClause database tablesel row -> row -> row -> Ordering;
         orderMonoid :: tablesel row -> ConstraintWitness (Monoid (OrderClause database tablesel row));
 
@@ -47,8 +45,8 @@ module Truth.Core.Types.Database where
 
     instance Database database tablesel => Reader (DatabaseRead database tablesel) where
     {
-        type ReaderSubject (DatabaseRead database tablesel) = All tablesel [];
-        readFrom (MkAll tables) (DatabaseSelect j wc oc sc) = let
+        type ReaderSubject (DatabaseRead database tablesel) = AllF tablesel [];
+        readFrom (MkAllF tables) (DatabaseSelect j wc oc sc) = let
         {
             doJoin :: Join database tablesel row -> [row];
             doJoin (SingleTable tsel) = tables tsel;
