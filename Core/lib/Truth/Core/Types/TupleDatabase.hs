@@ -1,7 +1,6 @@
 module Truth.Core.Types.TupleDatabase where
 {
     import Truth.Core.Import;
-    import Truth.Core.Types.EitherTuple;
     import Truth.Core.Types.Database;
 
 
@@ -55,7 +54,7 @@ module Truth.Core.Types.TupleDatabase where
 
     data TupleJoinClause rowa rowb rowc where
     {
-        OuterTupleJoinClause :: TupleJoinClause (All colsel1) (All colsel2) (All (EitherSel colsel1 colsel2));
+        OuterTupleJoinClause :: TupleJoinClause (All colsel1) (All colsel2) (All (EitherWitness colsel1 colsel2));
     };
 
     instance TestEquality tablesel => TestEquality (TupleTableSel tablesel) where

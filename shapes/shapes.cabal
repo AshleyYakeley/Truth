@@ -68,6 +68,7 @@ library
         mono-traversable,
         hashable,
         unordered-containers,
+        countable,
         witness,
         open-witness
     exposed-modules:

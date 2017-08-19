@@ -4,7 +4,6 @@ module Truth.World.SQLite.Schema where
     import Truth.Core.Import;
     import Data.Time;
     import Database.SQLite.Simple hiding (columnName);
-    import Truth.Core.Types.EitherTuple;
 
 
     data BasicTypeSchema t where
@@ -62,8 +61,8 @@ module Truth.World.SQLite.Schema where
     mapSelSchema :: (forall t. i1 t -> i2 t) -> SelSchema i1 sel -> SelSchema i2 sel;
     mapSelSchema ff (MkSelSchema ai (MkAllF i)) = MkSelSchema ai $ MkAllF $ \s -> ff $ i s;
 
-    eitherSelSchema :: SelSchema itemSchema sel1 -> SelSchema itemSchema sel2 -> SelSchema itemSchema (EitherSel sel1 sel2);
-    eitherSelSchema (MkSelSchema a1 i1) (MkSelSchema a2 i2) = MkSelSchema ((fmap (mapAnyWitness LeftSel) a1) ++ (fmap (mapAnyWitness RightSel) a2)) (eitherAllF i1 i2);
+    eitherSelSchema :: SelSchema itemSchema sel1 -> SelSchema itemSchema sel2 -> SelSchema itemSchema (EitherWitness sel1 sel2);
+    eitherSelSchema (MkSelSchema a1 i1) (MkSelSchema a2 i2) = MkSelSchema ((fmap (mapAnyWitness LeftWitness) a1) ++ (fmap (mapAnyWitness RightWitness) a2)) (eitherAllF i1 i2);
 
     instance Show (SelSchema ColumnSchema colsel) where
     {

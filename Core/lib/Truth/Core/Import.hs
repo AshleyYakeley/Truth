@@ -44,7 +44,7 @@ module Truth.Core.Import (module I) where
     import Data.Text as I (Text);
 
     import Data.Type.Heterogeneous as I;
-    import Data.Witness as I;
+    import Data.Witness as I hiding (EitherWitness(..));
     import Data.OpenWitness as I;
 
     import Data.Searchable as I;
