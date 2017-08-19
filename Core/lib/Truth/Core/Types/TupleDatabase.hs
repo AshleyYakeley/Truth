@@ -43,9 +43,14 @@ module Truth.Core.Types.TupleDatabase where
         MkTupleWhereClause :: TupleExpr database colsel Bool -> TupleWhereClause database (All colsel);
     };
 
+    data TupleUpdateItem database colsel where
+    {
+        MkTupleUpdateItem :: colsel t -> TupleExpr database colsel t -> TupleUpdateItem database colsel;
+    };
+
     data TupleUpdateClause database row where
     {
-        MkTupleUpdateClause :: TestEquality colsel => colsel t -> TupleExpr database colsel t -> TupleUpdateClause database (All colsel);
+        MkTupleUpdateClause :: TestEquality colsel => [TupleUpdateItem database colsel] -> TupleUpdateClause database (All colsel);
     };
 
     data TupleJoinClause rowa rowb rowc where
@@ -94,6 +99,11 @@ module Truth.Core.Types.TupleDatabase where
         mappend = (<>);
     };
 
+    data TupleInsertClause row where
+    {
+        MkTupleInsertClause :: [All colsel] -> TupleInsertClause (All colsel);
+    };
+
     instance (WitnessConstraint (TupleDatabaseRowWitness database) tablesel,TupleDatabase database, FiniteTupleDatabaseSel tablesel) => Database database (TupleTableSel tablesel) where
     {
         tableAssemble getrow = fmap (\(MkAllTuple f) -> MkAllF $ \(MkTupleTableSel tsel) -> f tsel) $ tupleAssembleTables $ \tsel -> getrow $ MkTupleTableSel tsel;
@@ -102,16 +112,23 @@ module Truth.Core.Types.TupleDatabase where
         whereClause (MkTupleWhereClause expr) = evalTupleExpr @database expr;
         whereAlways (MkTupleTableSel (_ :: tablesel colsel)) = MkTupleWhereClause $ constBoolExpr @database @colsel True;
 
-        type InsertClause database (TupleTableSel tablesel) row = [row];
-        insertClause = id;
-        insertIntoTable _ = id;
+        type InsertClause database (TupleTableSel tablesel) row = TupleInsertClause row;
+        insertClause (MkTupleInsertClause rows) = rows;
+        insertIntoTable (MkTupleTableSel _) = MkTupleInsertClause;
 
         type UpdateClause database (TupleTableSel tablesel) row = TupleUpdateClause database row;
-        updateClause (MkTupleUpdateClause tsel expr) tuple@(MkAll tf) = MkAll $ \col -> case testEquality col tsel of
+        updateClause (MkTupleUpdateClause items) = let
         {
-            Just Refl -> evalTupleExpr @database expr tuple;
-            Nothing -> tf col;
-        };
+            updateItem :: forall colsel. TestEquality colsel => TupleUpdateItem database colsel -> All colsel -> All colsel;
+            updateItem (MkTupleUpdateItem tsel expr) tuple@(MkAll tf) = MkAll $ \col -> case testEquality col tsel of
+            {
+                Just Refl -> evalTupleExpr @database expr tuple;
+                Nothing -> tf col;
+            };
+
+            updateItems [] = id;
+            updateItems (i:ii) = updateItems ii . updateItem i;
+        } in updateItems items;
 
         type OrderClause database (TupleTableSel tablesel) row = TupleOrderClause row;
         orderClause (MkTupleOrderClause clauses) (MkAll tup1) (MkAll tup2) = let
