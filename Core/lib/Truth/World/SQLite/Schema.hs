@@ -52,40 +52,55 @@ module Truth.World.SQLite.Schema where
         show MkColumnSchema{..} = columnName ++ " " ++ show columnType ++ if columnPrimaryKey then " PRIMARY KEY" else "";
     };
 
-    data SelSchema (itemSchema :: k -> *) (sel :: k -> *) = MkSelSchema
+    data SelSchema (sel :: k -> *) (itemSchema :: k -> *) = MkSelSchema
     {
         selAllItems :: [AnyWitness sel],
         selItem :: AllF sel itemSchema
     };
+    selItemLookup :: SelSchema sel itemSchema -> sel t -> itemSchema t;
+    selItemLookup schema st = getAllF (selItem schema) st;
 
-    mapSelSchema :: (forall t. i1 t -> i2 t) -> SelSchema i1 sel -> SelSchema i2 sel;
+    selAllSchema :: SelSchema sel itemSchema -> [AnyWitness itemSchema];
+    selAllSchema schema = fmap (\(MkAnyWitness st) -> MkAnyWitness $ selItemLookup schema st) $ selAllItems schema;
+
+    mapSelSchema :: (forall t. i1 t -> i2 t) -> SelSchema sel i1 -> SelSchema sel i2;
     mapSelSchema ff (MkSelSchema ai (MkAllF i)) = MkSelSchema ai $ MkAllF $ \s -> ff $ i s;
 
-    eitherSelSchema :: SelSchema itemSchema sel1 -> SelSchema itemSchema sel2 -> SelSchema itemSchema (EitherWitness sel1 sel2);
+    eitherSelSchema :: SelSchema sel1 itemSchema -> SelSchema sel2 itemSchema -> SelSchema (EitherWitness sel1 sel2) itemSchema;
     eitherSelSchema (MkSelSchema a1 i1) (MkSelSchema a2 i2) = MkSelSchema ((fmap (mapAnyWitness LeftWitness) a1) ++ (fmap (mapAnyWitness RightWitness) a2)) (eitherAllF i1 i2);
 
-    instance Show (SelSchema ColumnSchema colsel) where
+    instance Show (SelSchema colsel ColumnSchema) where
     {
-        show MkSelSchema{..} = "(" ++ intercalate "," (fmap (\(MkAnyWitness colsel) -> show $ getAllF selItem colsel) $ selAllItems) ++ ")";
+        show schema = "(" ++ intercalate "," (fmap (\(MkAnyWitness isch) -> show isch) $ selAllSchema schema) ++ ")";
+    };
+
+    data IndexSchema colsel = MkIndexSchema
+    {
+        indexName :: String,
+        indexColumns :: [AnyWitness colsel]
     };
 
     data TableSchema colsel = MkTableSchema
     {
         tableName :: String,
-        tableColumns :: SelSchema ColumnSchema colsel
+        tableColumns :: SelSchema colsel ColumnSchema,
+        tableIndexes :: [IndexSchema colsel]
     };
 
     instance Show (TableSchema colsel) where
     {
-        show MkTableSchema{..} = "CREATE TABLE IF NOT EXISTS " ++ tableName ++ " " ++ show tableColumns ++ ";";
+        show MkTableSchema{..} = let
+        {
+            showIndex MkIndexSchema{..} = "CREATE INDEX IF NOT EXISTS " ++ indexName ++ " (" ++ intercalate "," (fmap (\(MkAnyWitness col) -> show $ selItemLookup tableColumns col) indexColumns) ++ ");\n"
+        } in "CREATE TABLE IF NOT EXISTS " ++ tableName ++ " " ++ show tableColumns ++ ";\n" ++ (mconcat $ fmap showIndex tableIndexes);
     };
 
     data DatabaseSchema tablesel = MkDatabaseSchema
     {
-        databaseTables :: SelSchema TableSchema tablesel
+        databaseTables :: SelSchema tablesel TableSchema
     };
 
-    instance Show (SelSchema TableSchema tablesel) where
+    instance Show (SelSchema tablesel TableSchema) where
     {
         show MkSelSchema{..} = mconcat $ fmap (\(MkAnyWitness table) -> show $ getAllF selItem table) $ selAllItems;
     };
