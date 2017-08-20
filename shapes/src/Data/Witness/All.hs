@@ -151,4 +151,7 @@ module Data.Witness.All where
 
     eitherSubmapWitness :: SubmapWitness sel1 itemSchema -> SubmapWitness sel2 itemSchema -> SubmapWitness (EitherWitness sel1 sel2) itemSchema;
     eitherSubmapWitness (MkSubmapWitness a1 i1) (MkSubmapWitness a2 i2) = MkSubmapWitness ((fmap (mapAnyWitness LeftWitness) a1) ++ (fmap (mapAnyWitness RightWitness) a2)) (getAllF $ eitherAllF (MkAllF i1) (MkAllF i2));
+
+    finiteSubmapWitness :: FiniteWitness w => (forall t. w t -> f t) -> SubmapWitness w f;
+    finiteSubmapWitness wf = MkSubmapWitness allWitnesses wf;
 }

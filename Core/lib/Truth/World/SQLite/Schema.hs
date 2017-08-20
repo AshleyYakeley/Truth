@@ -6,38 +6,33 @@ module Truth.World.SQLite.Schema where
     import Database.SQLite.Simple hiding (columnName);
 
 
-    data BasicTypeSchema t where
+    class FieldType t where
     {
-        TypeINT :: BasicTypeSchema Int64;
-        TypeTEXT :: BasicTypeSchema Text;
-        TypeBLOB :: BasicTypeSchema ByteString;
-        TypeDOUBLE :: BasicTypeSchema Double;
-        TypeBOOLEAN :: BasicTypeSchema Bool;
-        TypeDATE :: BasicTypeSchema Day;
-        TypeDATETIME :: BasicTypeSchema UTCTime;
+        fieldTypeName :: String;
     };
 
-    instance Show (BasicTypeSchema t) where
-    {
-        show TypeINT = "INT";
-        show TypeTEXT = "TEXT";
-        show TypeBLOB = "BLOB";
-        show TypeDOUBLE = "DOUBLE";
-        show TypeBOOLEAN = "BOOLEAN";
-        show TypeDATE = "DATE";
-        show TypeDATETIME = "DATETIME";
-    };
+    instance FieldType Int64 where {fieldTypeName="INT"};
+    instance FieldType Text where {fieldTypeName="TEXT"};
+    instance FieldType ByteString where {fieldTypeName="BLOB"};
+    instance FieldType Double where {fieldTypeName="DOUBLE"};
+    instance FieldType Bool where {fieldTypeName="BOOLEAN"};
+    instance FieldType Day where {fieldTypeName="DATE"};
+    instance FieldType UTCTime where {fieldTypeName="DATETIME"};
 
     data ColumnTypeSchema t where
     {
-        ColumnTypeNotNull :: BasicTypeSchema t -> ColumnTypeSchema t;
-        ColumnTypeMaybeNull :: BasicTypeSchema t -> ColumnTypeSchema (Maybe t);
+        ColumnTypeNotNull :: FieldType t => ColumnTypeSchema t;
+        ColumnTypeMaybeNull :: FieldType t => ColumnTypeSchema (Maybe t);
     };
 
     instance Show (ColumnTypeSchema t) where
     {
-        show (ColumnTypeNotNull bts) = show bts ++ " NOT NULL";
-        show (ColumnTypeMaybeNull bts) = show bts;
+        show ColumnTypeNotNull = fieldTypeName @t ++ " NOT NULL";
+        show ColumnTypeMaybeNull = let
+        {
+            n :: forall a. (Maybe a ~ t) => String;
+            n = fieldTypeName @a;
+        } in n;
     };
 
     data ColumnSchema t = MkColumnSchema

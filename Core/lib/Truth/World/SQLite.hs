@@ -2,6 +2,7 @@
 module Truth.World.SQLite where
 {
     import Truth.Core.Import;
+    import System.Directory;
     import Database.SQLite.Simple hiding (columnName);
     import Database.SQLite.Simple.FromField;
     import Database.SQLite.Simple.ToField;
@@ -120,7 +121,7 @@ module Truth.World.SQLite where
     };
 
     sqliteObject :: forall tablesel. WitnessConstraint IsSQLiteTable tablesel => FilePath -> SQLite.DatabaseSchema tablesel -> Object (SQLiteEdit tablesel);
-    sqliteObject path SQLite.MkDatabaseSchema{..} = let
+    sqliteObject path schema@SQLite.MkDatabaseSchema{..} = let
     {
         muted :: Connection -> MutableEdit IO (DatabaseEdit SQLiteDatabase (TupleTableSel tablesel));
         muted conn = let
@@ -164,7 +165,7 @@ module Truth.World.SQLite where
             }) subWitnessDomain) ++ ")";
 
             assignmentPart :: SubmapWitness colsel ColumnRefSchema -> TupleUpdateItem SQLiteDatabase colsel -> String;
-            assignmentPart schema (MkTupleUpdateItem col expr) = (columnRefName $ subWitnessMap schema col) ++ "=" ++ schemaString schema expr;
+            assignmentPart scsh (MkTupleUpdateItem col expr) = (columnRefName $ subWitnessMap scsh col) ++ "=" ++ schemaString scsh expr;
 
             sqliteEditQuery :: SQLiteEdit tablesel -> Query;
             sqliteEditQuery (DatabaseInsert (tableSchema -> (SQLite.MkTableSchema{..},MkConstraintWitness)) (MkTupleInsertClause ic)) = let
@@ -186,5 +187,13 @@ module Truth.World.SQLite where
             mutableEdit :: [SQLiteEdit tablesel] -> IO (Maybe (IO ()));
             mutableEdit = singleAlwaysMutableEdit $ \edit -> execute_ conn $ sqliteEditQuery edit;
         } in MkMutableEdit{..};
-    } in MkObject $ \call -> withConnection path $ \conn -> call $ muted conn;
+    } in MkObject $ \call -> do
+    {
+        exists <- doesFileExist path;
+        withConnection path $ \conn -> do
+        {
+            if exists then return () else execute_ conn $ SQLite.createIfNotExists schema; -- create the database if we're creating the file
+            call $ muted conn;
+        };
+    };
 }
