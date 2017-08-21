@@ -55,6 +55,11 @@ module Data.Witness.All where
         assembleWitnessF _ = pure emptyAllF;
     };
 
+    instance WitnessConstraint c EmptyWitness where
+    {
+        witnessConstraint = never;
+    };
+
     emptyAll :: All EmptyWitness;
     emptyAll = MkAll never;
 
@@ -86,6 +91,15 @@ module Data.Witness.All where
             FirstWitness -> f;
             RestWitness rt -> r rt;
         }) <$> getsel FirstWitness <*> assembleWitnessF (getsel . RestWitness);
+    };
+
+    instance (c a,WitnessConstraint c r) => WitnessConstraint c (ConsWitness a r) where
+    {
+        witnessConstraint FirstWitness = MkConstraintWitness;
+        witnessConstraint (RestWitness rt) = case witnessConstraint @_ @c rt of
+        {
+            MkConstraintWitness -> MkConstraintWitness;
+        };
     };
 
     consAll :: a -> All r -> All (ConsWitness a r);
@@ -122,6 +136,18 @@ module Data.Witness.All where
         }) <$> assembleWitnessF (getsel . LeftWitness) <*> assembleWitnessF (getsel . RightWitness);
     };
 
+    instance (WitnessConstraint c p,WitnessConstraint c q) => WitnessConstraint c (EitherWitness p q) where
+    {
+        witnessConstraint (LeftWitness rt) = case witnessConstraint @_ @c rt of
+        {
+            MkConstraintWitness -> MkConstraintWitness;
+        };
+        witnessConstraint (RightWitness rt) = case witnessConstraint @_ @c rt of
+        {
+            MkConstraintWitness -> MkConstraintWitness;
+        };
+    };
+
     eitherAll :: All sel1 -> All sel2 -> All (EitherWitness sel1 sel2);
     eitherAll (MkAll tup1) (MkAll tup2) = MkAll $ \esel -> case esel of
     {
@@ -154,4 +180,23 @@ module Data.Witness.All where
 
     finiteSubmapWitness :: FiniteWitness w => (forall t. w t -> f t) -> SubmapWitness w f;
     finiteSubmapWitness wf = MkSubmapWitness allWitnesses wf;
+
+
+    type SingleWitness = (:~:);
+
+    instance FiniteWitness (SingleWitness t) where
+    {
+        assembleWitnessF getsel = fmap (\ft -> MkAllF $ \Refl -> ft) $ getsel Refl;
+    };
+
+    instance c t => WitnessConstraint c (SingleWitness t) where
+    {
+        witnessConstraint Refl = MkConstraintWitness;
+    };
+
+    singleAll :: t -> All (SingleWitness t);
+    singleAll t = MkAll $ \Refl -> t;
+
+    getSingleAll :: All (SingleWitness t) -> t;
+    getSingleAll (MkAll f) = f Refl;
 }

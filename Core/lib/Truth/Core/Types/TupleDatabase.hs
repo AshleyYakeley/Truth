@@ -9,21 +9,6 @@ module Truth.Core.Types.TupleDatabase where
         MkTupleTableSel :: tablesel colsel -> TupleTableSel tablesel (All colsel);
     };
 
-    newtype AllTuple tablesel f = MkAllTuple (forall colsel. tablesel colsel -> f (All colsel));
-
-    class TestEquality tablesel => FiniteTupleDatabaseSel (tablesel :: (* -> *) -> *) where
-    {
-        tupleAssembleTables :: Applicative m => (forall colsel. tablesel colsel -> m (f (All colsel))) -> m (AllTuple tablesel f);
-        tupleTableAssembleColumns :: Applicative m => tablesel colsel -> (forall t. colsel t -> m t) -> m (All colsel);
-    };
-
-    tupleTables :: FiniteTupleDatabaseSel tablesel => [AnyWitness tablesel];
-    tupleTables = execWriter $ tupleAssembleTables $ \table -> do
-    {
-        tell [MkAnyWitness table];
-        return $ Const ();
-    };
-
     class TupleDatabase (database :: *) where
     {
         type TupleDatabaseRowWitness database :: (* -> *) -> Constraint;
@@ -103,9 +88,14 @@ module Truth.Core.Types.TupleDatabase where
         MkTupleInsertClause :: [All colsel] -> TupleInsertClause (All colsel);
     };
 
-    instance (WitnessConstraint (TupleDatabaseRowWitness database) tablesel,TupleDatabase database, FiniteTupleDatabaseSel tablesel) => Database database (TupleTableSel tablesel) where
+    instance (WitnessConstraint (TupleDatabaseRowWitness database) tablesel,TupleDatabase database, TestEquality tablesel, FiniteWitness tablesel) => Database database (TupleTableSel tablesel) where
     {
-        tableAssemble getrow = fmap (\(MkAllTuple f) -> MkAllF $ \(MkTupleTableSel tsel) -> f tsel) $ tupleAssembleTables $ \tsel -> getrow $ MkTupleTableSel tsel;
+        tableAssemble getrow = let
+        {
+            conv :: AllF tablesel (Compose f All) -> AllF (TupleTableSel tablesel) f;
+            conv (MkAllF tcfa) = MkAllF $ \(MkTupleTableSel tc) -> getCompose $ tcfa tc;
+        } in fmap conv $ assembleWitnessF $ \col -> fmap MkCompose $ getrow $ MkTupleTableSel col;
+
 
         type WhereClause database (TupleTableSel tablesel) row = TupleWhereClause database row;
         whereClause (MkTupleWhereClause expr) = evalTupleExpr @database expr;

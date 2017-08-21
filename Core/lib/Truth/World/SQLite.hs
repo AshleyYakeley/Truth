@@ -1,14 +1,38 @@
 {-# OPTIONS -fno-warn-orphans #-}
-module Truth.World.SQLite where
+module Truth.World.SQLite
+(
+    module Truth.World.SQLite,
+    SQLData,
+    FromField(..),
+    ToField(..)
+) where
 {
     import Truth.Core.Import;
     import System.Directory;
     import Database.SQLite.Simple hiding (columnName);
     import Database.SQLite.Simple.FromField;
     import Database.SQLite.Simple.ToField;
+    import Database.SQLite.Simple.Internal;
+    import Database.SQLite.Simple.Ok;
     import Truth.Core;
     import qualified Truth.World.SQLite.Schema as SQLite;
 
+
+    fromSQLData :: FromField a => SQLData -> Maybe a;
+    fromSQLData d = case fromField $ Field d 0 of
+    {
+        Ok a -> Just a;
+        Errors _ -> Nothing;
+    };
+
+    maybeToOk :: Maybe a -> Ok a;
+    maybeToOk (Just a) = Ok a;
+    maybeToOk Nothing = Errors [];
+
+    instance FromField SQLData where
+    {
+        fromField f = pure $ fieldData f;
+    };
 
     data SQLiteDatabase;
     type SQLiteRead tablesel = TupleDatabaseRead SQLiteDatabase tablesel;
@@ -28,12 +52,34 @@ module Truth.World.SQLite where
         ConstExpr :: ToField t => t -> Expr colsel t;
         ColumnExpr :: colsel t -> Expr colsel t;
         EqualsExpr :: Eq t => Expr colsel t -> Expr colsel t -> Expr colsel Bool;
+        AndExpr :: Expr colsel Bool -> Expr colsel Bool -> Expr colsel Bool;
+    };
+
+    instance MeetSemiLattice (Expr colsel Bool) where
+    {
+        (/\) = AndExpr;
+    };
+
+    instance BoundedMeetSemiLattice (Expr colsel Bool) where
+    {
+        top = ConstExpr True;
+    };
+
+    class ExprEquals expr where
+    {
+        (===) :: Eq t => expr t -> expr t -> expr Bool;
+    };
+
+    instance ExprEquals (Expr colsel) where
+    {
+        (===) = EqualsExpr;
     };
 
     evalExpr :: Expr colsel t -> (forall a. colsel a -> a) -> t;
     evalExpr (ConstExpr v) _ = v;
     evalExpr (ColumnExpr sel) tuple = tuple sel;
     evalExpr (EqualsExpr e1 e2) tuple = (evalExpr e1 tuple) == (evalExpr e2 tuple);
+    evalExpr (AndExpr e1 e2) tuple = (evalExpr e1 tuple) && (evalExpr e2 tuple);
 
     data ColumnRefSchema t = MkColumnRefSchema
     {
@@ -46,7 +92,8 @@ module Truth.World.SQLite where
         type Schema (Expr colsel t) = SubmapWitness colsel ColumnRefSchema;
         schemaString _ (ConstExpr t) = show $ toField t;
         schemaString csch (ColumnExpr col) = columnRefName $ subWitnessMap csch col;
-        schemaString csch (EqualsExpr e1 e2) = schemaString csch e1 ++ "=" ++ schemaString csch e2;
+        schemaString csch (EqualsExpr e1 e2) = "(" ++ schemaString csch e1 ++ "=" ++ schemaString csch e2 ++ ")";
+        schemaString csch (AndExpr e1 e2) = "(" ++ schemaString csch e1 ++ " AND " ++ schemaString csch e2 ++ ")";
     };
 
     class (FiniteWitness colsel,WitnessConstraint FromField colsel,WitnessConstraint ToField colsel) => IsSQLiteTable colsel;
@@ -99,7 +146,7 @@ module Truth.World.SQLite where
         columnRefType = columnType;
     } in MkColumnRefSchema{..};
 
-    joinTableSchema :: forall tablesel row. SubmapWitness tablesel SQLite.TableSchema -> Join SQLiteDatabase (TupleTableSel tablesel) row -> State Int ([String],SubmapWitness (RowColSel row) ColumnRefSchema);
+    joinTableSchema :: forall tablesel row. SubmapWitness tablesel SQLite.TableSchema -> TableJoin SQLiteDatabase (TupleTableSel tablesel) row -> State Int ([String],SubmapWitness (RowColSel row) ColumnRefSchema);
     joinTableSchema schema (SingleTable (MkTupleTableSel tsel)) = do
     {
         i <- get;

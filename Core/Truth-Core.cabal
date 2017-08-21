@@ -58,6 +58,7 @@ library
         bytestring,
         containers,
         countable,
+        lattices,
         mime,
         open-witness,
         template-haskell,
@@ -86,6 +87,7 @@ library
         Truth.World.SQLite
         Truth.World.Soup
         Truth.World.Note
+        Truth.World.Soup.Schema
     other-modules:
         Truth.Core.Import
         Truth.Core.Sequence
@@ -140,6 +142,7 @@ library
         Truth.Core.Object.Undo
         Truth.Core.Object
         Truth.World.SQLite.Schema
+        Truth.World.Soup.SQLite
 
 test-suite test
     type: exitcode-stdio-1.0

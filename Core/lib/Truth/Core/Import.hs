@@ -42,6 +42,7 @@ module Truth.Core.Import (module I) where
     import Data.KeyContainer as I;
     import Control.Comonad as I;
     import Data.Text as I (Text);
+    import Algebra.Lattice as I;
 
     import Data.Type.Heterogeneous as I;
     import Data.Witness as I hiding (EitherWitness(..));

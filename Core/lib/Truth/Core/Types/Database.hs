@@ -32,15 +32,15 @@ module Truth.Core.Types.Database where
         joinClause :: JoinClause database tablesel rowA rowB rowC -> rowA -> rowB -> rowC; -- outer joins only?
     };
 
-    data Join database tablesel row where
+    data TableJoin database tablesel row where
     {
-        SingleTable :: tablesel row -> Join database tablesel row;
-        JoinTables :: JoinClause database tablesel rowA rowB rowC -> Join database tablesel rowA -> Join database tablesel rowB -> Join database tablesel rowC;
+        SingleTable :: tablesel row -> TableJoin database tablesel row;
+        JoinTables :: JoinClause database tablesel rowA rowB rowC -> TableJoin database tablesel rowA -> TableJoin database tablesel rowB -> TableJoin database tablesel rowC;
     };
 
     data DatabaseRead database tablesel t where
     {
-        DatabaseSelect :: Join database tablesel row -> WhereClause database tablesel row -> OrderClause database tablesel row -> SelectClause database tablesel row row' -> DatabaseRead database tablesel [row'];
+        DatabaseSelect :: TableJoin database tablesel row -> WhereClause database tablesel row -> OrderClause database tablesel row -> SelectClause database tablesel row row' -> DatabaseRead database tablesel [row'];
     };
 
     instance Database database tablesel => Reader (DatabaseRead database tablesel) where
@@ -48,7 +48,7 @@ module Truth.Core.Types.Database where
         type ReaderSubject (DatabaseRead database tablesel) = AllF tablesel [];
         readFrom (MkAllF tables) (DatabaseSelect j wc oc sc) = let
         {
-            doJoin :: Join database tablesel row -> [row];
+            doJoin :: TableJoin database tablesel row -> [row];
             doJoin (SingleTable tsel) = tables tsel;
             doJoin (JoinTables jc j1 j2) = do
             {

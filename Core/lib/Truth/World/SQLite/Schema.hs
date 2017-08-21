@@ -11,6 +11,7 @@ module Truth.World.SQLite.Schema where
         fieldTypeName :: String;
     };
 
+    instance FieldType SQLData where {fieldTypeName=""};
     instance FieldType Int64 where {fieldTypeName="INT"};
     instance FieldType Text where {fieldTypeName="TEXT"};
     instance FieldType ByteString where {fieldTypeName="BLOB"};
