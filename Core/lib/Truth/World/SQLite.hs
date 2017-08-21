@@ -25,6 +25,9 @@ module Truth.World.SQLite
         Errors _ -> Nothing;
     };
 
+    convertField :: (ToField p,FromField q) => p -> Maybe q;
+    convertField = fromSQLData . toField;
+
     maybeToOk :: Maybe a -> Ok a;
     maybeToOk (Just a) = Ok a;
     maybeToOk Nothing = Errors [];
