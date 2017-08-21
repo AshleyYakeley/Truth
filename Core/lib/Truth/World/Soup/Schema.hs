@@ -54,11 +54,30 @@ module Truth.World.Soup.Schema where
 
         editUpdate :: SoupEdit -> () -> PureReadable SoupRead ((),[WholeEdit (Maybe t)]);
         editUpdate (SoupSetLiteral k mt) () | k == valkey = pure $ pure $ pure $ MkWholeEdit $ mt >>= convertField;
-        editUpdate _ () = return ((),[]);
+        editUpdate _ () = pure $ pure [];
 
         editLensFunction = MkEditFunction{..};
 
         editLensPutEdit :: () -> WholeEdit (Maybe t) -> PureReadable SoupRead (Identity ((),[SoupEdit]));
         editLensPutEdit () (MkWholeEdit mt) = pure $ pure $ pure $ pure $ SoupSetLiteral valkey mt;
+    } in MkEditLens{..};
+
+    soupTripleLens :: UUID -> UUID -> PureEditLens () SoupEdit (WholeEdit (Maybe UUID));
+    soupTripleLens prd subj = let
+    {
+        editInitial = ();
+
+        editGet :: () -> WholeReader (Maybe UUID) a -> PureReadable SoupRead a;
+        editGet () ReadWhole = readable $ SoupReadGetValue prd subj;
+
+        editUpdate :: SoupEdit -> () -> PureReadable SoupRead ((),[WholeEdit (Maybe UUID)]);
+        editUpdate (SoupSetTriple p s v) () | p == prd && s == subj = pure $ pure $ pure $ MkWholeEdit $ Just v;
+        editUpdate _ () = pure $ pure [];
+
+        editLensFunction = MkEditFunction{..};
+
+        editLensPutEdit :: () -> WholeEdit (Maybe UUID) -> PureReadable SoupRead (Maybe ((),[SoupEdit]));
+        editLensPutEdit () (MkWholeEdit Nothing) = pure $ Nothing;
+        editLensPutEdit () (MkWholeEdit (Just v)) = pure $ pure $ pure $ pure $ SoupSetTriple prd subj v;
     } in MkEditLens{..};
 }
