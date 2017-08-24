@@ -100,6 +100,13 @@ module Truth.Core.Edit.EditLens where
         };
     };
 
+    constEditLens :: forall c edita editb. Reader (EditReader editb) => EditSubject editb -> EditLens' c Maybe () edita editb;
+    constEditLens b = let
+    {
+        editLensFunction = constEditFunction b;
+        editLensPutEdit () _ = pure Nothing;
+    } in MkEditLens{..};
+
     convertEditLens :: forall c m edita editb. (ReadableConstraint c,Applicative m,EditSubject edita ~ EditSubject editb,FullEdit c edita,FullEdit c editb) =>
         EditLens' c m () edita editb;
     convertEditLens = let

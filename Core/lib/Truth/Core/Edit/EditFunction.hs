@@ -50,6 +50,15 @@ module Truth.Core.Edit.EditFunction  where
         editUpdate = \edita2 -> editUpdate fef (a21 edita2)
     };
 
+    constEditFunction :: forall c edita editb. Reader (EditReader editb) => EditSubject editb -> EditFunction c () edita editb;
+    constEditFunction b = let
+    {
+        editInitial = ();
+        editGet :: () -> ReadFunction c (EditReader edita) (EditReader editb);
+        editGet () = readFromM $ pure b;
+        editUpdate _ () = pure $ pure [];
+    } in MkEditFunction{..};
+
     class StateCategory ff where
     {
         identityState :: forall a. Edit a => ff () a a;

@@ -199,4 +199,13 @@ module Data.Witness.All where
 
     getSingleAll :: All (SingleWitness t) -> t;
     getSingleAll (MkAll f) = f Refl;
+
+
+    splitWitnessList :: TestEquality w => [Any w] -> AllF w [];
+    splitWitnessList [] = MkAllF $ \_ -> [];
+    splitWitnessList ((MkAny wt t):rr) = MkAllF $ \wt' -> case testEquality wt wt' of
+    {
+        Just Refl -> t:(getAllF (splitWitnessList rr) wt');
+        Nothing -> getAllF (splitWitnessList rr) wt';
+    }
 }

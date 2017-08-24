@@ -184,6 +184,14 @@ module Truth.Core.Types.Tuple where
         |])];
     };
 
+    splitTupleEditList :: TestEquality w => [TupleEdit w] -> AllF w [];
+    splitTupleEditList [] = MkAllF $ \_ -> [];
+    splitTupleEditList ((MkTupleEdit wt t):rr) = MkAllF $ \wt' -> case testEquality wt wt' of
+    {
+        Just Refl -> t:(getAllF (splitTupleEditList rr) wt');
+        Nothing -> getAllF (splitTupleEditList rr) wt';
+    };
+
     class TupleSelector sel => TupleHasInfo (sel :: * -> *) where
     {
         tupleHasInfo :: forall edit. sel edit -> TypeInfo edit;

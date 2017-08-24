@@ -182,12 +182,13 @@ module Truth.World.Soup.SQLite(sqliteSoupObject) where
         editUpdate _ _ = return undefined;
 
         editLensPutEdit :: () -> SoupEdit -> PureReadable (SQLiteRead SoupSchema) (Identity ((), [SQLiteEdit SoupSchema]));
-        editLensPutEdit () (SoupSetTriple p s v) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel SoupTriple) $ MkTupleInsertClause $ pure $ MkAll $ \case
+        editLensPutEdit () (SoupSetTriple p s (Just v)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel SoupTriple) $ MkTupleInsertClause $ pure $ MkAll $ \case
         {
             TriplePredicate -> p;
             TripleSubject -> s;
             TripleValue -> v;
         };
+        editLensPutEdit () (SoupSetTriple p s Nothing) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel SoupTriple) $ MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s;
         editLensPutEdit () (SoupSetLiteral v (Just l)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel SoupLiteral) $ MkTupleInsertClause $ pure $ MkAll $ \case
         {
             LiteralKey -> v;
