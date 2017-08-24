@@ -8,9 +8,6 @@ module Truth.Core.Edit.FullEdit where
     class (Edit edit,FullReader c (EditReader edit)) => FullEdit c edit where
     {
         replaceEdit :: WriterReadable c edit (EditReader edit) ();
-
-        default replaceEdit :: PureFullEdit edit => IOWriterReadable edit (EditReader edit) ();
-        replaceEdit = writerReadableToGen replaceEdit;
     };
 
     type IOFullEdit = FullEdit MonadIO;

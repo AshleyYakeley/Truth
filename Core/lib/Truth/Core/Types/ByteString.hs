@@ -151,8 +151,7 @@ module Truth.Core.Types.ByteString where
         }
     };
 
-    instance IOFullEdit ByteStringEdit;
-    instance FullEdit Monad ByteStringEdit where
+    instance FullEdit c ByteStringEdit where
     {
         replaceEdit = do
         {

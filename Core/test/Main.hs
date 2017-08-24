@@ -89,6 +89,7 @@ module Main(main) where
         MkEditLens{..} = stringSectionLens run;
         MkEditFunction{..} = editLensFunction;
 
+        rf :: PureReadFunction (StringRead String) (StringRead String);
         rf = editGet editInitial;
 
         found :: String;
