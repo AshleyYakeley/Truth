@@ -99,3 +99,4 @@ library
         Data.Compose
         Data.WitnessStore
         Data.KeyContainer
+        Data.FiniteSet

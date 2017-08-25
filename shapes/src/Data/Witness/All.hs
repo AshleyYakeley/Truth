@@ -17,6 +17,9 @@ module Data.Witness.All where
     allFToAll :: AllF w Identity -> All w;
     allFToAll (MkAllF wtit) = MkAll $ \wt -> runIdentity $ wtit wt;
 
+    allToAllF :: All w -> AllF w Identity;
+    allToAllF (MkAll wtt) = MkAllF $ \wt -> Identity $ wtt wt;
+
     class WitnessConstraint (c :: k -> Constraint) (w :: k -> *) where
     {
         witnessConstraint :: forall (t :: k). w t -> ConstraintWitness (c t);

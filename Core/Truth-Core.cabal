@@ -125,6 +125,7 @@ library
         Truth.Core.Types.String
         Truth.Core.Types.ByteString
         Truth.Core.Types.Key
+        Truth.Core.Types.FiniteSet
         Truth.Core.Types.Database
         Truth.Core.Types.TupleDatabase
         Truth.Core.Types.Merge

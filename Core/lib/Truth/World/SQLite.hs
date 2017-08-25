@@ -78,11 +78,11 @@ module Truth.World.SQLite
         (===) = EqualsExpr;
     };
 
-    evalExpr :: Expr colsel t -> (forall a. colsel a -> a) -> t;
-    evalExpr (ConstExpr v) _ = v;
+    evalExpr :: Applicative m => Expr colsel t -> (forall a. colsel a -> m a) -> m t;
+    evalExpr (ConstExpr v) _ = pure v;
     evalExpr (ColumnExpr sel) tuple = tuple sel;
-    evalExpr (EqualsExpr e1 e2) tuple = (evalExpr e1 tuple) == (evalExpr e2 tuple);
-    evalExpr (AndExpr e1 e2) tuple = (evalExpr e1 tuple) && (evalExpr e2 tuple);
+    evalExpr (EqualsExpr e1 e2) tuple = (==) <$> evalExpr e1 tuple <*> evalExpr e2 tuple;
+    evalExpr (AndExpr e1 e2) tuple = (&&) <$> evalExpr e1 tuple <*> evalExpr e2 tuple;
 
     data ColumnRefSchema t = MkColumnRefSchema
     {
@@ -107,7 +107,7 @@ module Truth.World.SQLite
         type TupleDatabaseRowWitness SQLiteDatabase = IsSQLiteTable;
 
         type TupleExpr SQLiteDatabase colsel = Expr colsel;
-        evalTupleExpr expr (MkAll tuple) = evalExpr expr tuple;
+        evalTupleExpr expr (MkAllF tuple) = evalExpr expr tuple;
         constBoolExpr = ConstExpr;
         columnExpr = ColumnExpr;
     };

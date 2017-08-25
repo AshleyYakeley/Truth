@@ -14,10 +14,13 @@ module Truth.Core.Types.TupleDatabase where
         type TupleDatabaseRowWitness database :: (* -> *) -> Constraint;
 
         type TupleExpr database (colsel :: * -> *) :: * -> *;
-        evalTupleExpr :: TupleExpr database colsel t -> All colsel -> t;
+        evalTupleExpr :: Applicative m => TupleExpr database colsel t -> AllF colsel m -> m t;
         constBoolExpr :: Bool -> TupleExpr database colsel Bool;
         columnExpr :: colsel t -> TupleExpr database colsel t;
     };
+
+    evalTupleExprIdentity :: forall database colsel t. TupleDatabase database => TupleExpr database colsel t -> All colsel -> t;
+    evalTupleExprIdentity expr tuple = runIdentity $ evalTupleExpr @database expr $ allToAllF tuple;
 
     type TupleDatabaseRead database tablesel = DatabaseRead database (TupleTableSel tablesel);
     type TupleDatabaseEdit database tablesel = DatabaseEdit database (TupleTableSel tablesel);
@@ -98,7 +101,7 @@ module Truth.Core.Types.TupleDatabase where
 
 
         type WhereClause database (TupleTableSel tablesel) row = TupleWhereClause database row;
-        whereClause (MkTupleWhereClause expr) = evalTupleExpr @database expr;
+        whereClause (MkTupleWhereClause expr) = evalTupleExprIdentity @database expr;
         whereAlways (MkTupleTableSel (_ :: tablesel colsel)) = MkTupleWhereClause $ constBoolExpr @database @colsel True;
 
         type InsertClause database (TupleTableSel tablesel) row = TupleInsertClause row;
@@ -111,7 +114,7 @@ module Truth.Core.Types.TupleDatabase where
             updateItem :: forall colsel. TestEquality colsel => TupleUpdateItem database colsel -> All colsel -> All colsel;
             updateItem (MkTupleUpdateItem tsel expr) tuple@(MkAll tf) = MkAll $ \col -> case testEquality col tsel of
             {
-                Just Refl -> evalTupleExpr @database expr tuple;
+                Just Refl -> evalTupleExprIdentity @database expr tuple;
                 Nothing -> tf col;
             };
 
@@ -128,7 +131,7 @@ module Truth.Core.Types.TupleDatabase where
         orderMonoid (MkTupleTableSel _) = MkConstraintWitness;
 
         type SelectClause database (TupleTableSel tablesel) = TupleSelectClause database;
-        selectClause (MkTupleSelectClause selexpr) tuple = MkAll $ \col -> evalTupleExpr @database (selexpr col) tuple;
+        selectClause (MkTupleSelectClause selexpr) tuple = MkAll $ \col -> evalTupleExprIdentity @database (selexpr col) tuple;
         selectRow (MkTupleTableSel tsel) = case witnessConstraint @_ @(TupleDatabaseRowWitness database) tsel of
         {
             MkConstraintWitness -> MkTupleSelectClause $ columnExpr @database;
