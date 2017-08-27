@@ -1,6 +1,7 @@
 module Data.Codec where
 {
     import Shapes.Import;
+    import qualified Data.Serialize as Serialize;
     import Data.Bijection;
     import Data.Chain;
     import Data.Result;
@@ -31,6 +32,9 @@ module Data.Codec where
     };
     -- must have decode . encode = Just
 
+    decodeMaybe :: MonadOne m => Codec' m a b -> a -> Maybe b;
+    decodeMaybe codec = getMaybeOne . decode codec;
+
     instance IsBiMap Codec' where
     {
         mapBiMapM ff codec = MkCodec
@@ -59,4 +63,11 @@ module Data.Codec where
             encode = fmap (encode codec)
         };
     };
+
+    serializeCodec :: Serialize t => Codec' (Result String) ByteString t;
+    serializeCodec = let
+    {
+        encode = Serialize.encodeLazy;
+        decode = eitherToResult . Serialize.decodeLazy;
+    } in MkCodec{..};
 }

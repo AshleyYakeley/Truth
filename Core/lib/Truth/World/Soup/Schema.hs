@@ -4,17 +4,14 @@ module Truth.World.Soup.Schema where
     import Truth.Core;
     import Data.UUID;
     import Data.UUID.V4 as UUID;
-    import Truth.World.SQLite(SQLData,FromField(..),ToField(..),fromSQLData,convertField);
 
-
-    type SoupType t = (FromField t,ToField t);
 
     data SoupRead t where
     {
         SoupReadGetValue :: UUID -> UUID -> SoupRead (Maybe UUID);
         SoupReadLookupValue :: UUID -> UUID -> SoupRead (FiniteSet UUID);
-        SoupReadGetPrimitive :: SoupType t => UUID -> SoupRead (Maybe t);
-        SoupReadLookupPrimitive :: SoupType t => UUID -> t -> SoupRead (FiniteSet UUID);
+        SoupReadGetPrimitive :: Serialize t => UUID -> SoupRead (Maybe t);
+        SoupReadLookupPrimitive :: Serialize t => UUID -> t -> SoupRead (FiniteSet UUID);
     };
 
     data SoupEdit where
@@ -22,21 +19,21 @@ module Truth.World.Soup.Schema where
         SoupEditSetValue :: UUID -> UUID -> Maybe UUID -> SoupEdit; -- pred subj mval
         SoupEditDeleteTriple :: UUID -> UUID -> UUID -> SoupEdit; -- pred subj val -- delete this triple if it exists
         SoupEditDeleteLookupValue :: UUID -> UUID -> SoupEdit; -- pred val -- delete all triples matching pred val
-        SoupEditSetPrimitive :: SoupType t => UUID -> Maybe t -> SoupEdit;
+        SoupEditSetPrimitive :: Serialize t => UUID -> Maybe t -> SoupEdit;
     };
 
     instance Reader SoupRead where
     {
-        type ReaderSubject SoupRead = ([(UUID,UUID,UUID)],[(UUID,SQLData)]);
+        type ReaderSubject SoupRead = ([(UUID,UUID,UUID)],[(UUID,ByteString)]);
 
         readFrom (triples,_) (SoupReadGetValue rp rs) = listToMaybe $ [v | (p,s,v) <- triples,p == rp && s == rs];
         readFrom (triples,_) (SoupReadLookupValue rp rv) = MkFiniteSet [s | (p,s,v) <- triples, p == rp, v == rv];
         readFrom (_,literals) (SoupReadGetPrimitive rv) = do
         {
             d <- listToMaybe [l | (v,l) <- literals, v == rv];
-            fromSQLData d;
+            decodeMaybe serializeCodec d;
         };
-        readFrom (triples,literals) (SoupReadLookupPrimitive rp rl) = MkFiniteSet [s | (p,s,v) <- triples, rp == p, (v',l) <- literals, v == v', l == toField rl];
+        readFrom (triples,literals) (SoupReadLookupPrimitive rp rl) = MkFiniteSet [s | (p,s,v) <- triples, rp == p, (v',l) <- literals, v == v', l == encode serializeCodec rl];
     };
 
     instance Floating SoupEdit SoupEdit;
@@ -47,7 +44,7 @@ module Truth.World.Soup.Schema where
         invertEdit _ = return undefined;
     };
 
-    soupPrimitiveLens :: forall t. SoupType t => UUID -> PureEditLens' Identity () SoupEdit (WholeEdit (Maybe t));
+    soupPrimitiveLens :: forall t. Serialize t => UUID -> PureEditLens' Identity () SoupEdit (WholeEdit (Maybe t));
     soupPrimitiveLens valkey = let
     {
         editInitial = ();
@@ -56,7 +53,7 @@ module Truth.World.Soup.Schema where
         editGet () ReadWhole = readable $ SoupReadGetPrimitive valkey;
 
         editUpdate :: SoupEdit -> () -> PureReadable SoupRead ((),[WholeEdit (Maybe t)]);
-        editUpdate (SoupEditSetPrimitive k mt) () | k == valkey = pure $ pure $ pure $ MkWholeEdit $ mt >>= convertField;
+        editUpdate (SoupEditSetPrimitive k mt) () | k == valkey = pure $ pure $ pure $ MkWholeEdit $ mt >>= decodeMaybe serializeCodec . encode serializeCodec;
         editUpdate _ () = pure $ pure [];
 
         editLensFunction = MkEditFunction{..};

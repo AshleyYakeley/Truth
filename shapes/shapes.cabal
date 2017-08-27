@@ -68,6 +68,7 @@ library
         containers,
         unordered-containers,
         bytestring,
+        cereal,
         text,
         random,
         countable,

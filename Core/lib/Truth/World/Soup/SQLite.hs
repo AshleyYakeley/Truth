@@ -53,7 +53,7 @@ module Truth.World.Soup.SQLite(sqliteSoupObject) where
     data LiteralTable t where
     {
         LiteralKey :: LiteralTable UUID;
-        LiteralValue :: LiteralTable SQLData;
+        LiteralValue :: LiteralTable ByteString;
     };
 
     instance FiniteWitness LiteralTable where
@@ -158,7 +158,7 @@ module Truth.World.Soup.SQLite(sqliteSoupObject) where
         };
         editGet () (SoupReadGetPrimitive v) = do
         {
-            (row :: [All ((:~:) SQLData)]) <- readable $ DatabaseSelect
+            (row :: [All ((:~:) ByteString)]) <- readable $ DatabaseSelect
                 (SingleTable $ MkTupleTableSel SoupLiteral)
                 (MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v)
                 mempty
@@ -166,14 +166,14 @@ module Truth.World.Soup.SQLite(sqliteSoupObject) where
             return $ do
             {
                 sa <- listToMaybe row;
-                fromSQLData $ getSingleAll sa;
+                decodeMaybe serializeCodec $ getSingleAll sa;
             };
         };
         editGet () (SoupReadLookupPrimitive p l) = do
         {
             row <- readable $ DatabaseSelect
                 (JoinTables OuterTupleJoinClause (SingleTable $ MkTupleTableSel SoupTriple) (SingleTable $ MkTupleTableSel SoupLiteral))
-                (MkTupleWhereClause $ (ColumnExpr (LeftWitness TriplePredicate) === ConstExpr p) /\ (ColumnExpr (LeftWitness TripleValue) === ColumnExpr (RightWitness LiteralKey)) /\ (ColumnExpr (RightWitness LiteralValue) === ConstExpr (toField l)))
+                (MkTupleWhereClause $ (ColumnExpr (LeftWitness TriplePredicate) === ConstExpr p) /\ (ColumnExpr (LeftWitness TripleValue) === ColumnExpr (RightWitness LiteralKey)) /\ (ColumnExpr (RightWitness LiteralValue) === ConstExpr (encode serializeCodec l)))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr (LeftWitness TripleSubject));
             return $ MkFiniteSet $ fmap getSingleAll row;
@@ -194,7 +194,7 @@ module Truth.World.Soup.SQLite(sqliteSoupObject) where
         editLensPutEdit () (SoupEditSetPrimitive v (Just l)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel SoupLiteral) $ MkTupleInsertClause $ pure $ MkAll $ \case
         {
             LiteralKey -> v;
-            LiteralValue -> toField l;
+            LiteralValue -> encode serializeCodec l;
         };
         editLensPutEdit () (SoupEditSetPrimitive v Nothing) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel SoupLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v;
 

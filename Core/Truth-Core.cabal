@@ -59,6 +59,7 @@ library
         containers,
         filepath,
         directory,
+        cereal,
         uuid,
         aeson,
         sqlite-simple,

@@ -63,6 +63,9 @@ module Shapes.Import (module I) where
     -- bytestring
     import Data.ByteString.Lazy as I (ByteString,hGet,hPut);
 
+    -- cereal
+    import Data.Serialize as I (Serialize);
+
     -- text
     import Data.Text as I (Text);
 
