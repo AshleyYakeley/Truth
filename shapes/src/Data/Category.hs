@@ -1,7 +1,6 @@
 module Data.Category  where
 {
-    import Data.Kind;
-    import Control.Category;
+    import Shapes.Import;
 
 
     class Category cat => TerminalCategory (cat :: k -> k -> *) where

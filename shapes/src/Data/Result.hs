@@ -1,10 +1,6 @@
 module Data.Result where
 {
-    import Prelude hiding (fail);
-    import Control.Applicative;
-    import Control.Monad;
-    import Control.Monad.Fail;
-    import Data.String;
+    import Shapes.Import;
     import Data.Bijection;
 
 

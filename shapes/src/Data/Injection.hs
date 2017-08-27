@@ -1,8 +1,6 @@
 module Data.Injection where
 {
-    import Prelude hiding (id,(.),sequence);
-    import Data.Functor.Identity;
-    import Control.Category;
+    import Shapes.Import;
     import Data.Chain;
     import Data.MonadOne;
     import Data.Codec;

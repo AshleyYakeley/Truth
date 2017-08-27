@@ -1,7 +1,7 @@
 {-# OPTIONS -Wno-orphans #-}
 module Control.Monad.Free where
 {
-    import Prelude;
+    import Shapes.Import;
     import Data.ConstFunction;
     import Data.Result;
     import Data.MonadOne;

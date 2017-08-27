@@ -1,6 +1,7 @@
 module Data.Functor.Single where
 {
-    import Prelude;
+    import Shapes.Import;
+
 
     data Single a = MkSingle;
 

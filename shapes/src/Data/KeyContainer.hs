@@ -1,10 +1,7 @@
 module Data.KeyContainer where
 {
-    import Prelude;
-    import Data.List;
-    import System.Random;
-    import Data.MonoTraversable;
-    import Data.Containers;
+    import Shapes.Import;
+    import qualified Data.List;
     import Data.HasNewValue;
 
 

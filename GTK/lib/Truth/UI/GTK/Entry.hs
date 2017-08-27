@@ -1,9 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.Entry(entryTypeKnowledge) where
 {
-    import Prelude;
-    import Graphics.UI.Gtk;
-    import Control.Monad.IsStateIO;
+    import Shapes;
+    import Graphics.UI.Gtk as Gtk;
     import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;
@@ -18,7 +17,7 @@ module Truth.UI.GTK.Entry(entryTypeKnowledge) where
         set widget [entryText := initial];
         clickConnection <- on widget editableChanged $ object $ \muted -> do
         {
-            s <- liftIO $ get widget entryText;
+            s <- liftIO $ Gtk.get widget entryText;
             _ <- mutableEdit muted $ getReplaceEdits s;
             return ();
         };
@@ -29,7 +28,7 @@ module Truth.UI.GTK.Entry(entryTypeKnowledge) where
             vrUpdate :: forall m. IsStateIO m => MutableRead m (WholeReader String) -> [WholeEdit String] -> m ();
             vrUpdate _ edits = liftIO $ do
             {
-                newstate <- fromReadFunctionM (applyEdits edits) $ get widget entryText;
+                newstate <- fromReadFunctionM (applyEdits edits) $ Gtk.get widget entryText;
                 withSignalBlocked clickConnection $ set widget [entryText := newstate];
                 return ();
             };

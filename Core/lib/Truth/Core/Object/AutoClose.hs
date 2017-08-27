@@ -2,7 +2,6 @@ module Truth.Core.Object.AutoClose where
 {
     import Truth.Core.Import;
     import Data.Map.Strict hiding (lookup);
-    import Control.Concurrent;
     import Truth.Core.Object.MutableEdit;
     import Truth.Core.Object.Object;
 

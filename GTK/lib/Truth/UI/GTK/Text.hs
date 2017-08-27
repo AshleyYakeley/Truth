@@ -1,16 +1,9 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.Text (textTypeKnowledge) where
 {
-    import Prelude;
-    import Data.Foldable;
-    import Data.Text;
-    import Data.Sequences;
-    import Data.MonoTraversable;
-    import Control.Concurrent.MVar;
-    import Control.Monad.IO.Class;
+    import Shapes;
     import System.Glib;
     import Graphics.UI.Gtk;
-    import Control.Monad.IsStateIO;
     import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;

@@ -1,12 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.Tuple(tupleTypeKnowledge) where
 {
-    import Prelude;
-    import Data.Proxy;
-    import Data.Foldable;
-    import Data.Functor.Identity;
+    import Shapes;
     import Graphics.UI.Gtk;
-    import Data.KindCategory;
     import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;

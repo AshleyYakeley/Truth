@@ -1,11 +1,6 @@
 module Control.Monad.IsStateIO where
 {
-    import Prelude;
-    import Data.Kind;
-    import Control.Exception;
-    import Control.Concurrent.MVar;
-    import Control.Monad.Fix;
-    import Control.Monad.IO.Class;
+    import Shapes.Import;
     import Control.Monad.Trans.State.Extra;
     import Control.Monad.Tunnel;
 

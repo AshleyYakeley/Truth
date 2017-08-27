@@ -1,6 +1,6 @@
 module Control.Constrained.Category where
 {
-    import Data.Kind;
+    import Shapes.Import;
 
     class ConstrainedCategory (cat :: k -> k -> *) where
     {

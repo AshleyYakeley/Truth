@@ -1,8 +1,6 @@
 module Control.Wait where
 {
-    import Prelude;
-    import Control.Concurrent;
-    import Control.Exception;
+    import Shapes.Import;
 
 
     type WaitIO a = (?wait :: MVar ()) => IO a;

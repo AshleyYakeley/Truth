@@ -1,13 +1,6 @@
 module Data.Lens where
 {
-    import Prelude hiding (id,(.),sequence,lookup);
-    import Data.Maybe;
-    import Control.Applicative;
-    import Control.Category;
-    import Data.Functor.Identity;
-    import Data.Hashable(Hashable);
-    import Data.HashMap.Lazy;
-    import Data.Witness;
+    import Shapes.Import;
     import Data.Chain;
     import Data.MonadOne;
     import Data.Result;
@@ -138,7 +131,7 @@ module Data.Lens where
     hashMapLens key = let
     {
         lensGet = lookup key;
-        lensPutback Nothing hm = Identity $ delete key hm;
-        lensPutback (Just value) hm = Identity $ insert key value hm;
+        lensPutback Nothing hm = Identity $ deleteMap key hm;
+        lensPutback (Just value) hm = Identity $ insertMap key value hm;
     } in MkLens{..};
 }

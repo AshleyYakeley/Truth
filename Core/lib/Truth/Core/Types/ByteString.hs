@@ -1,7 +1,6 @@
 module Truth.Core.Types.ByteString where
 {
     import Truth.Core.Import;
-    import Data.ByteString.Lazy as BS;
     import Truth.Core.Read;
     import Truth.Core.Edit;
 
@@ -21,12 +20,12 @@ module Truth.Core.Types.ByteString where
         readFromM msubj ReadByteStringLength = do
         {
             subj <- msubj;
-            return $ BS.length subj;
+            return $ fromIntegral $ olength subj;
         };
         readFromM msubj (ReadByteStringSection start len) = do
         {
             subj <- msubj;
-            return $ BS.take len $ BS.drop start subj;
+            return $ take len $ drop start subj;
         };
     };
 
@@ -62,7 +61,7 @@ module Truth.Core.Types.ByteString where
         type EditReader ByteStringEdit = ByteStringReader;
         applyEdit (ByteStringSetLength n) ReadByteStringLength = return n;
         applyEdit (ByteStringSetLength newlen) (ReadByteStringSection start len) = if start > newlen
-        then return BS.empty
+        then return mempty
         else do
         {
             let
@@ -76,20 +75,20 @@ module Truth.Core.Types.ByteString where
                 zerolen = blocklen - readlen;
             };
             if readlen < 0
-            then return $ BS.replicate blocklen 0;
+            then return $ replicate blocklen 0;
             else if zerolen < 0
             then readable $ ReadByteStringSection start blocklen
             else do
             {
                 bs1 <- readable $ ReadByteStringSection start readlen;
-                return $ mappend bs1 $ BS.replicate zerolen 0;
+                return $ mappend bs1 $ replicate zerolen 0;
             };
         };
         applyEdit (ByteStringWrite w bs) ReadByteStringLength = do
         {
             let
             {
-                end = w + BS.length bs;
+                end = w + fromIntegral (olength bs);
             };
             oldlen <- readable ReadByteStringLength;
             return $ max oldlen end;
@@ -98,7 +97,7 @@ module Truth.Core.Types.ByteString where
         {
             let
             {
-                writeLen = BS.length bs;
+                writeLen = fromIntegral $ olength bs;
                 writeEnd = writeStart + writeLen;
                 readEnd = readStart + readLen;
 
@@ -108,14 +107,14 @@ module Truth.Core.Types.ByteString where
                 middleStart = max readStart writeStart;
                 middleEnd = min readEnd writeEnd;
                 middleLen = middleEnd - middleStart;
-                middleBS = if middleLen > 0 then BS.take middleLen $ BS.drop (middleStart - readStart) bs else BS.empty;
+                middleBS = if middleLen > 0 then take middleLen $ drop (middleStart - readStart) bs else mempty;
 
                 afterStart = max readStart writeEnd;
                 afterEnd = max readEnd writeEnd;
                 afterLen = afterEnd - afterStart;
             };
-            beforeBS <- if beforeLen > 0 then readable $ ReadByteStringSection beforeStart beforeLen else return BS.empty;
-            afterBS <- if afterLen > 0 then readable $ ReadByteStringSection afterStart afterLen else return BS.empty;
+            beforeBS <- if beforeLen > 0 then readable $ ReadByteStringSection beforeStart beforeLen else return mempty;
+            afterBS <- if afterLen > 0 then readable $ ReadByteStringSection afterStart afterLen else return mempty;
             return $ mappend beforeBS $ mappend middleBS afterBS;
         };
 
@@ -138,7 +137,7 @@ module Truth.Core.Types.ByteString where
             oldLen <- readable ReadByteStringLength;
             let
             {
-                writeLen = BS.length bs;
+                writeLen = fromIntegral $ olength bs;
                 writeEnd = writeStart + writeLen;
 
                 lenEdit = if writeEnd > oldLen then [ByteStringSetLength oldLen] else [];

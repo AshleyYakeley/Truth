@@ -1,17 +1,8 @@
 module Main(main) where
 {
-    import Prelude hiding (id,(.));
-    import Control.Concurrent;
-    import Control.Category;
-    import Data.ByteString.Lazy;
-    import Data.Foldable;
+    import Shapes;
     import Data.IORef;
     import System.FilePath hiding ((<.>));
-    import Control.Monad.IO.Class;
-    import Control.Constrained.Category;
-    import Data.Injection;
-    import Data.Codec;
-    import Data.Lens;
     import Data.Reity;
     import Truth.Core;
     import Truth.World.File;

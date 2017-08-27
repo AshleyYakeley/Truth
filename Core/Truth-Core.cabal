@@ -55,28 +55,16 @@ library
         -Wnoncanonical-monadfail-instances
     build-depends:
         base >= 4.9 && < 5,
-        bytestring,
+        time,
         containers,
-        countable,
-        lattices,
-        mime,
-        open-witness,
-        template-haskell,
-        transformers,
-        witness,
-        comonad,
-        mono-traversable,
         filepath,
         directory,
-        shapes,
-        reity,
-        random,
         uuid,
-        text,
-
-        time,
         aeson,
-        sqlite-simple
+        sqlite-simple,
+        mime,
+        shapes,
+        reity
     exposed-modules:
         Truth.Core
         Truth.World.File

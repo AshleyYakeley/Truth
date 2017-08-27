@@ -1,8 +1,6 @@
 module Data.Store (module Data.Store,Key) where
 {
-    import Prelude hiding (null,lookup);
-    import Data.IntMap;
-    import Control.Monad.Trans.State;
+    import Shapes.Import;
 
 
     data Store a = MkStore Key (IntMap a);
@@ -14,7 +12,7 @@ module Data.Store (module Data.Store,Key) where
 
     instance Foldable Store where
     {
-        foldMap am (MkStore _ mp) = mconcat $ fmap am $ elems mp;
+        foldMap am (MkStore _ mp) = mconcat $ fmap am $ toList mp;
     };
 
     instance Traversable Store where
@@ -23,22 +21,22 @@ module Data.Store (module Data.Store,Key) where
     };
 
     emptyStore :: Store a;
-    emptyStore = MkStore 0 empty;
+    emptyStore = MkStore 0 mempty;
 
     isEmptyStore :: Store a -> Bool;
     isEmptyStore (MkStore _ mp) = null mp;
 
     addStore :: a -> Store a -> (Key,Store a);
-    addStore a (MkStore i mp) = (i,MkStore (i+1) (insert i a mp));
+    addStore a (MkStore i mp) = (i,MkStore (i+1) (insertMap i a mp));
 
     lookupStore :: Key -> Store a -> Maybe a;
     lookupStore key (MkStore _ mp) = lookup key mp;
 
     deleteStore :: Key -> Store a -> Store a;
-    deleteStore i (MkStore n mp) = MkStore n (delete i mp);
+    deleteStore i (MkStore n mp) = MkStore n (deleteMap i mp);
 
     allStoreExcept :: Store a -> Key -> [a];
-    allStoreExcept (MkStore _ mp) i = elems (delete i mp);
+    allStoreExcept (MkStore _ mp) i = toList (deleteMap i mp);
 
     traverseStore :: Applicative m => (Key -> a -> m b) -> Store a -> m (Store b);
     traverseStore kamb (MkStore i mp) = MkStore i <$> traverseWithKey kamb mp;

@@ -60,14 +60,16 @@ library
         -Wnoncanonical-monadfail-instances
     build-depends:
         base >= 4.9 && < 5,
-        bytestring,
-        random,
-        containers,
-        text,
-        transformers,
         mono-traversable,
+        comonad,
+        lattices,
+        transformers,
         hashable,
+        containers,
         unordered-containers,
+        bytestring,
+        text,
+        random,
         countable,
         witness,
         open-witness
@@ -101,3 +103,6 @@ library
         Data.WitnessStore
         Data.KeyContainer
         Data.FiniteSet
+        Shapes
+    other-modules:
+        Shapes.Import

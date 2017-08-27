@@ -1,6 +1,6 @@
 module Data.Reducible where
 {
-    import Prelude;
+    import Shapes.Import;
     import qualified Data.List as List;
     import qualified Data.Maybe as List;
 

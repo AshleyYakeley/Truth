@@ -1,10 +1,7 @@
 module Data.FiniteSet where
 {
-    import Prelude;
-    import Data.Semigroup;
+    import Shapes.Import;
     import qualified Data.List as List;
-    import Data.MonoTraversable;
-    import Data.Containers;
     import Data.KeyContainer;
     import Data.Reducible;
 

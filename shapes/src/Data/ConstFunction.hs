@@ -1,8 +1,6 @@
 module Data.ConstFunction where
 {
-    import Prelude hiding (id,(.));
-    import Control.Category;
-    import Control.Arrow;
+    import Shapes.Import;
     import Data.Chain;
 
 

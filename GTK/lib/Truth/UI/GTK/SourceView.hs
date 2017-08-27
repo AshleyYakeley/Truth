@@ -1,9 +1,6 @@
 module Truth.UI.GTK.SourceView where
 {
---    import Data.IORef;
---    import Data.ConstFunction;
---    import Data.Changes;
---    import Graphics.UI.Gtk;
+--    import Shapes;
 --    import Truth.UI.GTK.Useful;
 
 

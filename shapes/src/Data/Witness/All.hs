@@ -1,15 +1,8 @@
 module Data.Witness.All where
 {
-    import Prelude;
-    import Data.Kind;
-    import Data.Type.Equality;
-    import Data.Empty;
-    import Data.Countable;
-    import Data.Searchable;
-    import Data.Witness.Any;
+    import Shapes.Import;
     import Data.KindCategory;
-    import Data.Functor.Const;
-    import Data.Functor.Identity;
+
 
     newtype All (w :: * -> *) = MkAll {getAll :: forall t. w t -> t};
     newtype AllF (w :: k -> *) (f :: k -> *) = MkAllF {getAllF :: forall (t :: k). w t -> f t};

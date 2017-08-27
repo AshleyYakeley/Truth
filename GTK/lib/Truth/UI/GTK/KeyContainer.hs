@@ -1,14 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
 {
-    import Prelude;
-    import Data.Proxy;
-    import Data.Foldable;
-    import Data.Containers (ContainerKey);
-    import Data.FiniteSet;
+    import Shapes;
     import Graphics.UI.Gtk;
-    import Control.Monad.IsStateIO;
-    import Data.KeyContainer;
     import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;
@@ -49,8 +43,8 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
             findInStore :: ContainerKey cont -> IO (Maybe Int);
             findInStore key = do
             {
-                keys <- listStoreToList store;
-                return $ Prelude.lookup key $ zip keys [0..];
+                kk <- listStoreToList store;
+                return $ lookup @[(ContainerKey cont,Int)] key $ zip kk [0..];
             };
 
             vrUpdate :: forall m. IsStateIO m => MutableRead m (KeyReader cont (EditReader edit)) -> [KeyEdit cont edit] -> m ();
@@ -61,7 +55,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
                     mindex <- findInStore key;
                     case mindex of
                     {
-                        Just index -> listStoreRemove store index;
+                        Just i -> listStoreRemove store i;
                         Nothing -> return ();
                     };
                 };

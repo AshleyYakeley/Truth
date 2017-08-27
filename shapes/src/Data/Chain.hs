@@ -1,9 +1,6 @@
 module Data.Chain where
 {
-    import Data.Kind;
-    import Prelude hiding (id,(.));
-    import Control.Category;
---    import Data.Witness;
+    import Shapes.Import;
 
 
     data Chain link (a :: k) (b :: k) where
@@ -21,18 +18,7 @@ module Data.Chain where
         EmptyChain . chain = chain;
         (LinkChain link ab) . chain = LinkChain link (ab . chain);
     };
-{-
-    instance (SimpleWitness1 link) => SimpleWitness1 (Chain link) where
-    {
-        matchWitness1 EmptyChain EmptyChain = Just Refl;
-        matchWitness1 (LinkChain link1 chain1) (LinkChain link2 chain2) = do
-        {
-            Refl <- testEquality chain1 chain2;
-            matchWitness1 link1 link2;
-        };
-        matchWitness1 _ _ = Nothing;
-    };
--}
+
     class CatFunctor t f where
     {
         cfmap :: t a b -> t (f a) (f b);

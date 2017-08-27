@@ -1,9 +1,8 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.CheckButton(checkButtonTypeKnowledge) where
 {
-    import Prelude;
-    import Graphics.UI.Gtk;
-    import Control.Monad.IsStateIO;
+    import Shapes;
+    import Graphics.UI.Gtk as Gtk;
     import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;
@@ -18,7 +17,7 @@ module Truth.UI.GTK.CheckButton(checkButtonTypeKnowledge) where
         set widget [buttonLabel := name,toggleButtonActive := initial];
         clickConnection <- onClicked widget $ object $ \muted -> do
         {
-            s <- liftIO $ get widget toggleButtonActive;
+            s <- liftIO $ Gtk.get widget toggleButtonActive;
             _ <- mutableEdit muted $ getReplaceEdits s;
             return ();
         };
@@ -29,7 +28,7 @@ module Truth.UI.GTK.CheckButton(checkButtonTypeKnowledge) where
             vrUpdate :: forall m. IsStateIO m => MutableRead m (WholeReader Bool) -> [WholeEdit Bool] -> m ();
             vrUpdate _ edits = liftIO $ do
             {
-                newstate <- fromReadFunctionM (applyEdits edits) $ get widget toggleButtonActive;
+                newstate <- fromReadFunctionM (applyEdits edits) $ Gtk.get widget toggleButtonActive;
                 withSignalBlocked clickConnection $ set widget [toggleButtonActive := newstate];
                 return ();
             };

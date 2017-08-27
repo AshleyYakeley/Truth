@@ -1,7 +1,7 @@
 {-# OPTIONS -Wno-orphans #-}
 module Data.Functor.Free where
 {
-    import Prelude;
+    import Shapes.Import;
     import Data.KindCategory;
     import Data.Free;
 
@@ -22,6 +22,7 @@ module Data.Functor.Free where
     fromFreeFunctor :: (forall a b. (a -> b) -> f a -> f b) -> FreeFunctor f t -> f t;
     fromFreeFunctor fmap' (MkFreeFunctor pt fp) = fmap' pt fp;
 
+    -- orphan
     instance HasFree Functor f where
     {
         type Free Functor f = FreeFunctor f;

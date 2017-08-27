@@ -1,16 +1,6 @@
 module Data.WitnessStore where
 {
-    import Prelude hiding (fail,null);
-    import Data.Kind;
-    import Data.Tuple;
-    import Data.Type.Equality;
-    import Data.Foldable;
-    import Data.Functor.Identity;
-    import Control.Monad.Fail;
-    import Control.Monad.Trans.State;
-    import Control.Monad.Trans.Writer;
-    import Data.Witness;
-    import Data.OpenWitness;
+    import Shapes.Import;
     import Data.Store;
 
 

@@ -1,8 +1,6 @@
 module Truth.UI.GTK.Useful where
 {
-    import Prelude;
-    import Control.Concurrent.MVar;
-    import Control.Exception;
+    import Shapes;
     import Graphics.UI.Gtk;
 
 

@@ -1,18 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
 {
-    import Prelude hiding (fail);
-    import Control.Monad.Fail;
-    import Data.Foldable;
-    import Data.Traversable;
-    import Control.Concurrent.MVar;
-    import Control.Monad.IO.Class;
-    import Control.Monad.Trans.Class;
-    import Control.Monad.Trans.State;
-    import Data.Result;
-    import Data.MonadOne;
-    import Data.HasNewValue;
-    import Control.Monad.IsStateIO;
+    import Shapes;
     import Data.Reity;
     import Truth.Core;
     import Graphics.UI.Gtk hiding (get,Object);

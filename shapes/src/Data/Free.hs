@@ -1,6 +1,6 @@
 module Data.Free where
 {
-    import GHC.Exts (Constraint);
+    import Shapes.Import;
     import Data.KindCategory;
 
 

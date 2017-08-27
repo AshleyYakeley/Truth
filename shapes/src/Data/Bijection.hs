@@ -1,7 +1,6 @@
 module Data.Bijection where
 {
-    import Prelude hiding (id,(.));
-    import Control.Category;
+    import Shapes.Import;
     import Data.Chain;
 
 
@@ -30,9 +29,5 @@ module Data.Bijection where
     };
 
     biSwap :: Bijection (a,b) (b,a);
-    biSwap = MkBijection swap swap where
-    {
-        swap :: forall a b. (a,b) -> (b,a);
-        swap (a,b) = (b,a);
-    };
+    biSwap = MkBijection swap swap;
 }

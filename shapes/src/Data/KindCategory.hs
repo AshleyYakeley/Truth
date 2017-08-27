@@ -1,9 +1,6 @@
 module Data.KindCategory where
 {
-    import Prelude ();
-    import GHC.Exts (Constraint);
-    import Control.Category;
-    import Data.Kind;
+    import Shapes.Import;
     import Data.Category;
 
 

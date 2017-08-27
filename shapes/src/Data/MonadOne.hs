@@ -1,11 +1,10 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Data.MonadOne where
 {
-    import Prelude hiding (sequence);
+    import Shapes.Import;
     import Data.ConstFunction;
     import Data.Chain;
     import Data.Result;
-    import Data.Functor.Identity;
     import Data.Functor.Single;
 
 

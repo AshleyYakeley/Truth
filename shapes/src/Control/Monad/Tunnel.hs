@@ -1,10 +1,6 @@
 module Control.Monad.Tunnel where
 {
-    import Prelude;
-    import Control.Monad.Trans.Class;
-    import Control.Monad.Trans.State;
-    import Control.Monad.Trans.Reader;
-    import Control.Monad.Trans.Writer;
+    import Shapes.Import;
 
 
     class MonadTrans t => MonadTunnel t where

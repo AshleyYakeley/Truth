@@ -1,9 +1,6 @@
 module Data.Compose where
 {
-    import Prelude;
-    import Data.Kind;
-    import Data.Semigroup;
-    import Control.Monad.IO.Class;
+    import Shapes.Import;
 
 
     newtype Compose (p :: k2 -> *) (q :: k1 -> k2) (a :: k1) = MkCompose {getCompose :: p (q a)};

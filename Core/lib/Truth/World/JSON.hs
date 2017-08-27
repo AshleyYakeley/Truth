@@ -2,7 +2,6 @@ module Truth.World.JSON where
 {
     import Truth.Core.Import;
     import qualified Data.Aeson as JSON;
-    import Data.Text(Text);
     import Truth.Core;
 
     jsonCodec :: ReasonCodec ByteString JSON.Value;

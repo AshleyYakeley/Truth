@@ -1,7 +1,6 @@
 module Data.Codec where
 {
-    import Prelude hiding (id,(.));
-    import Control.Category;
+    import Shapes.Import;
     import Data.Bijection;
     import Data.Chain;
     import Data.Result;

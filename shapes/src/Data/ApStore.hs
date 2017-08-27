@@ -1,8 +1,7 @@
 module Data.ApStore where
 {
-    import Prelude;
+    import Shapes.Import;
     import Control.Applicative.Free;
-    import Data.Witness;
 
 
     type ApStore w = WitnessFDict w (FreeApplicative w);
