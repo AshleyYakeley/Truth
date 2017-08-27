@@ -39,7 +39,7 @@ module Truth.World.Soup.Ontology where
     -- example ontology
 
     personType :: ViewSoupType;
-    personType = EntityViewSoupType [personName,personMother,personFather];
+    personType = EntityViewSoupType [personName,personMother,personFather,personChildren];
 
     personName :: ViewSoupProperty;
     personName = let
@@ -70,6 +70,15 @@ module Truth.World.Soup.Ontology where
         spropMorphism = predicateSoupMorphism fatherUUID;
         spropType = personType;
     } in SimpleViewSoupProperty MkViewSoupSimpleProperty{..};
+
+    personChildren :: ViewSoupProperty;
+    personChildren = let
+    {
+        lpropName = "Children";
+        lpropMorphism = readOnlyPointedEditLens $ (pointedEditLensFunction $ predicateInverseSoupMorphism motherUUID) \/ (pointedEditLensFunction $ predicateInverseSoupMorphism fatherUUID);
+        lpropType = personType;
+        lpropColumns = [personName];
+    } in ListViewSoupProperty MkViewSoupListProperty{..};
 
     peopleCollection :: ViewSoupProperty;
     peopleCollection = let

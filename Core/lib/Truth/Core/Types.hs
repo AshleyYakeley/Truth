@@ -15,6 +15,7 @@ module Truth.Core.Types
     module Truth.Core.Types.ConsTuple,
     module Truth.Core.Types.EitherTuple,
     module Truth.Core.Types.Pair,
+    module Truth.Core.Types.Lattice,
     module Truth.Core.Types.PointedEditLens,
     module Truth.Core.Types.Function,
     module Truth.Core.Types.Context,
@@ -43,6 +44,7 @@ module Truth.Core.Types
     import Truth.Core.Types.ConsTuple;
     import Truth.Core.Types.EitherTuple;
     import Truth.Core.Types.Pair;
+    import Truth.Core.Types.Lattice;
     import Truth.Core.Types.PointedEditLens;
     import Truth.Core.Types.Function;
     import Truth.Core.Types.Context;

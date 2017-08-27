@@ -6,7 +6,14 @@ module Data.FiniteSet where
     import Data.Reducible;
 
 
-    newtype FiniteSet a = MkFiniteSet {unFiniteSet :: [a]} deriving (Functor, {- Applicative,Monad,Alternative,MonadPlus, -} Semigroup,Monoid,MonoFunctor,MonoFoldable,GrowingAppend,Foldable,Reducible);
+    newtype FiniteSet a = MkFiniteSet {unFiniteSet :: [a]} deriving
+    (
+        Foldable,
+        Functor, -- Applicative,Monad,Alternative,MonadPlus,
+        Semigroup,Monoid,
+        MonoFunctor,MonoFoldable,GrowingAppend,
+        Reducible
+    );
     type instance Element (FiniteSet a) = a;
 
     instance Traversable FiniteSet where
@@ -40,6 +47,23 @@ module Data.FiniteSet where
     {
         opoint = MkFiniteSet . pure;
     };
+
+    instance Eq a => JoinSemiLattice (FiniteSet a) where
+    {
+        (\/) = union;
+    };
+
+    instance Eq a => BoundedJoinSemiLattice (FiniteSet a) where
+    {
+        bottom = mempty;
+    };
+
+    instance Eq a => MeetSemiLattice (FiniteSet a) where
+    {
+        (/\) = intersection;
+    };
+
+    instance Eq a => Lattice (FiniteSet a);
 
     instance Eq a => KeyContainer (FiniteSet a) where
     {

@@ -145,4 +145,42 @@ module Truth.Core.Types.Pair where
 
         editLensFunction = MkEditFunction{..};
     } in MkEditLens{..};
+
+    pairJoinEditFunctions :: forall c s1 s2 edita editb1 editb2.
+        EditFunction c s1 edita editb1 -> EditFunction c s2 edita editb2 -> EditFunction c (s1,s2) edita (PairEdit editb1 editb2);
+    pairJoinEditFunctions ef1 ef2 = MkEditFunction
+    {
+        editInitial = (editInitial ef1,editInitial ef2),
+        editGet = \(cur1,cur2) -> \case
+        {
+            MkTupleEditReader EditFirst rt -> editGet ef1 cur1 rt;
+            MkTupleEditReader EditSecond rt -> editGet ef2 cur2 rt;
+        },
+        editUpdate = \ea (old1,old2) -> do
+        {
+            (new1,eb1s) <- editUpdate ef1 ea old1;
+            (new2,eb2s) <- editUpdate ef2 ea old2;
+            return ((new1,new2),fmap (MkTupleEdit EditFirst) eb1s ++ fmap (MkTupleEdit EditSecond) eb2s);
+        }
+    };
+
+    pairJoinEditLenses :: forall c f s1 s2 edita editb1 editb2. Functor f =>
+        EditLens' c f s1 edita editb1 -> EditLens' c f s2 edita editb2 -> EditLens' c f (s1,s2) edita (PairEdit editb1 editb2);
+    pairJoinEditLenses lens1 lens2 = MkEditLens
+    {
+        editLensFunction = pairJoinEditFunctions (editLensFunction lens1) (editLensFunction lens2),
+        editLensPutEdit = \(old1,old2) -> \case
+        {
+            MkTupleEdit EditFirst editb -> do
+            {
+                fseas <- editLensPutEdit lens1 old1 editb;
+                return $ fmap (\(new1,eas) -> ((new1,old2),eas)) fseas;
+            };
+            MkTupleEdit EditSecond editb -> do
+            {
+                fseas <- editLensPutEdit lens2 old2 editb;
+                return $ fmap (\(new2,eas) -> ((old1,new2),eas)) fseas;
+            };
+        }
+    };
 }

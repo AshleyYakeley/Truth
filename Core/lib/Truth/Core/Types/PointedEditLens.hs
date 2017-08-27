@@ -5,7 +5,10 @@ module Truth.Core.Types.PointedEditLens where
     import Truth.Core.Edit;
     import Truth.Core.Types.Tuple;
     import Truth.Core.Types.Pair;
+    import Truth.Core.Types.Lattice;
 
+
+    data PointedEditFunction c editp edita editb = forall state. MkPointedEditFunction (EditFunction c state (PairEdit editp edita) editb);
 
     data PointedEditLens c f editp edita editb = forall state. MkPointedEditLens (EditLens' c f state (PairEdit editp edita) editb);
 
@@ -74,10 +77,28 @@ module Truth.Core.Types.PointedEditLens where
         };
     };
 
+    pointedEditLensFunction :: PointedEditLens c f editp edita editb -> PointedEditFunction c editp edita editb;
+    pointedEditLensFunction (MkPointedEditLens lens) = MkPointedEditFunction $ editLensFunction lens;
+
+    readOnlyPointedEditLens :: PointedEditFunction c editp edita editb -> PointedEditLens c Maybe editp edita editb;
+    readOnlyPointedEditLens (MkPointedEditFunction f) = MkPointedEditLens $ readOnlyEditLens f;
+
     editLensToPointed :: (ReadableConstraint c, MonadOne f, Edit editp, Edit edita, Edit editb) =>
         EditLens' c f state edita editb -> PointedEditLens c f editp edita editb;
     editLensToPointed lens = case cid of
     {
         MkPointedEditLens idlens -> MkPointedEditLens $ composeState lens idlens;
+    };
+
+    instance (ReadableConstraint c,JoinSemiLatticeEdit editb,Edit editp,Edit edita,Edit editb) =>
+        JoinSemiLattice (PointedEditFunction c editp edita editb) where
+    {
+        (MkPointedEditFunction f1) \/ (MkPointedEditFunction f2) = MkPointedEditFunction $  composeState joinEditFunction $ pairJoinEditFunctions f1 f2;
+    };
+
+    instance (ReadableConstraint c,MeetSemiLatticeEdit editb,Edit editp,Edit edita,Edit editb) =>
+        MeetSemiLattice (PointedEditFunction c editp edita editb) where
+    {
+        (MkPointedEditFunction f1) /\ (MkPointedEditFunction f2) = MkPointedEditFunction $  composeState meetEditFunction $ pairJoinEditFunctions f1 f2;
     };
 }

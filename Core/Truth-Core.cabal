@@ -108,6 +108,7 @@ library
         Truth.Core.Types.ConsTuple
         Truth.Core.Types.EitherTuple
         Truth.Core.Types.Pair
+        Truth.Core.Types.Lattice
         Truth.Core.Types.PointedEditLens
         Truth.Core.Types.Function
         Truth.Core.Types.Context
