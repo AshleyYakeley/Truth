@@ -20,7 +20,8 @@ module Truth.World.Soup.Ontology where
     {
         lpropName :: String,
         lpropMorphism :: SoupMorphism (WholeEdit (Maybe UUID)) (FiniteSetEdit UUID),
-        lpropType :: ViewSoupType
+        lpropType :: ViewSoupType,
+        lpropColumns :: [ViewSoupProperty]
     };
 
     data ViewSoupProperty = SimpleViewSoupProperty ViewSoupSimpleProperty | ListViewSoupProperty ViewSoupListProperty;
@@ -43,33 +44,40 @@ module Truth.World.Soup.Ontology where
     personName :: ViewSoupProperty;
     personName = let
     {
-        spropName = "name";
+        spropName = "Name";
         spropMorphism = predicateSoupMorphism $ uuid "498260df-6a8a-44f0-b285-68a63565a33b";
         spropType = PrimitiveViewSoupType $ MkViewSoupPrimitive $ typeInfo @(StringEdit Text);
     } in SimpleViewSoupProperty MkViewSoupSimpleProperty{..};
 
+    motherUUID :: UUID;
+    motherUUID = uuid "3afce58f-b7eb-4b11-8a75-2d66afd4d085";
+
+    fatherUUID :: UUID;
+    fatherUUID = uuid "c005705f-9259-4d24-9713-db28a6e4f7d5";
+
     personMother :: ViewSoupProperty;
     personMother = let
     {
-        spropName = "mother";
-        spropMorphism = predicateSoupMorphism $ uuid "3afce58f-b7eb-4b11-8a75-2d66afd4d085";
+        spropName = "Mother";
+        spropMorphism = predicateSoupMorphism motherUUID;
         spropType = personType;
     } in SimpleViewSoupProperty MkViewSoupSimpleProperty{..};
 
     personFather :: ViewSoupProperty;
     personFather = let
     {
-        spropName = "father";
-        spropMorphism = predicateSoupMorphism $ uuid "c005705f-9259-4d24-9713-db28a6e4f7d5";
+        spropName = "Father";
+        spropMorphism = predicateSoupMorphism fatherUUID;
         spropType = personType;
     } in SimpleViewSoupProperty MkViewSoupSimpleProperty{..};
 
     peopleCollection :: ViewSoupProperty;
     peopleCollection = let
     {
-        lpropName = "people";
+        lpropName = "People";
         lpropMorphism = predicateInverseSoupMorphism $ uuid "f06efa5e-190f-4e5d-8633-495c5683c124";
         lpropType = personType;
+        lpropColumns = [personName];
     } in ListViewSoupProperty MkViewSoupListProperty{..};
 
     rootType :: ViewSoupType;
