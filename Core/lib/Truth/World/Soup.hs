@@ -34,8 +34,8 @@ module Truth.World.Soup where
                 mnames <- liftIO $ mutableRead fs $ FSReadDirectory dirpath;
                 return $ case mnames of
                 {
-                    Just names -> mapMaybe nameToUUID names;
-                    Nothing -> [];
+                    Just names -> mapMaybe nameToUUID $ MkFiniteSet names;
+                    Nothing -> mempty;
                 }
             };
             KeyReadItem uuid (MkTupleEditReader EditFirst ReadWhole) -> do

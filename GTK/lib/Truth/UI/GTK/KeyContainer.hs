@@ -5,6 +5,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
     import Data.Proxy;
     import Data.Foldable;
     import Data.Containers (ContainerKey);
+    import Data.FiniteSet;
     import Graphics.UI.Gtk;
     import Control.Monad.IsStateIO;
     import Data.KeyContainer;
@@ -17,7 +18,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
         TypeInfo edit -> GView (KeyEdit cont edit);
     keyContainerView ti = MkView $ \(MkObject object) setSelect -> do
     {
-        initialKeys <- object $ \muted -> mutableRead muted KeyReadKeys;
+        MkFiniteSet initialKeys <- object $ \muted -> mutableRead muted KeyReadKeys;
         store <- listStoreNew initialKeys;
         tview <- treeViewNewWithModel store;
         keyColRenderer <- cellRendererTextNew;

@@ -6,7 +6,7 @@ module Truth.Core.Import (module I) where
     import Data.Bits as I;
     import Data.List as I ((++),length,intercalate);
     import Data.List.NonEmpty as I (NonEmpty(..));
-    import Data.Maybe as I hiding (catMaybes);
+    import Data.Maybe as I hiding (catMaybes,mapMaybe);
     import Data.Either as I;
     import Data.Ord as I;
     import Data.Int as I;
@@ -37,7 +37,7 @@ module Truth.Core.Import (module I) where
 
     import Data.ByteString.Lazy as I (ByteString,hGet,hPut);
     import Data.MonoTraversable as I;
-    import Data.Sequences as I;
+    import Data.Sequences as I hiding(catMaybes,filter);
     import Data.Containers as I;
     import Data.KeyContainer as I;
     import Control.Comonad as I;
@@ -53,6 +53,7 @@ module Truth.Core.Import (module I) where
     import Data.Witness.All as I;
     import Data.WitnessStore as I;
     import Data.Store as I;
+    import Data.Reducible as I;
     import Data.HasNewValue as I;
     import Data.Injection as I;
     import Data.Bijection as I;

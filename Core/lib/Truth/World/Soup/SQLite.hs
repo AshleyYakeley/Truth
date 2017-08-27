@@ -154,9 +154,9 @@ module Truth.World.Soup.SQLite(sqliteSoupObject) where
                 (MkTupleWhereClause $ (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleValue === ConstExpr v))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject);
-            return $ fmap getSingleAll row;
+            return $ MkFiniteSet $ fmap getSingleAll row;
         };
-        editGet () (SoupReadLiteral v) = do
+        editGet () (SoupReadGetPrimitive v) = do
         {
             (row :: [All ((:~:) SQLData)]) <- readable $ DatabaseSelect
                 (SingleTable $ MkTupleTableSel SoupLiteral)
@@ -169,32 +169,34 @@ module Truth.World.Soup.SQLite(sqliteSoupObject) where
                 fromSQLData $ getSingleAll sa;
             };
         };
-        editGet () (SoupReadLookupLiteral p l) = do
+        editGet () (SoupReadLookupPrimitive p l) = do
         {
             row <- readable $ DatabaseSelect
                 (JoinTables OuterTupleJoinClause (SingleTable $ MkTupleTableSel SoupTriple) (SingleTable $ MkTupleTableSel SoupLiteral))
                 (MkTupleWhereClause $ (ColumnExpr (LeftWitness TriplePredicate) === ConstExpr p) /\ (ColumnExpr (LeftWitness TripleValue) === ColumnExpr (RightWitness LiteralKey)) /\ (ColumnExpr (RightWitness LiteralValue) === ConstExpr (toField l)))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr (LeftWitness TripleSubject));
-            return $ fmap getSingleAll row;
+            return $ MkFiniteSet $ fmap getSingleAll row;
         };
 
         editUpdate _ _ = return undefined;
 
         editLensPutEdit :: () -> SoupEdit -> PureReadable (SQLiteRead SoupSchema) (Identity ((), [SQLiteEdit SoupSchema]));
-        editLensPutEdit () (SoupSetTriple p s (Just v)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel SoupTriple) $ MkTupleInsertClause $ pure $ MkAll $ \case
+        editLensPutEdit () (SoupEditSetValue p s (Just v)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel SoupTriple) $ MkTupleInsertClause $ pure $ MkAll $ \case
         {
             TriplePredicate -> p;
             TripleSubject -> s;
             TripleValue -> v;
         };
-        editLensPutEdit () (SoupSetTriple p s Nothing) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel SoupTriple) $ MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s;
-        editLensPutEdit () (SoupSetLiteral v (Just l)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel SoupLiteral) $ MkTupleInsertClause $ pure $ MkAll $ \case
+        editLensPutEdit () (SoupEditSetValue p s Nothing) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel SoupTriple) $ MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s;
+        editLensPutEdit () (SoupEditDeleteTriple p s v) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel SoupTriple) $ MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s /\ ColumnExpr TripleValue === ConstExpr v;
+        editLensPutEdit () (SoupEditDeleteLookupValue p v) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel SoupTriple) $ MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleValue === ConstExpr v;
+        editLensPutEdit () (SoupEditSetPrimitive v (Just l)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel SoupLiteral) $ MkTupleInsertClause $ pure $ MkAll $ \case
         {
             LiteralKey -> v;
             LiteralValue -> toField l;
         };
-        editLensPutEdit () (SoupSetLiteral v Nothing) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel SoupLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v;
+        editLensPutEdit () (SoupEditSetPrimitive v Nothing) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel SoupLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v;
 
         editLensFunction = MkEditFunction{..};
     } in MkEditLens{..};

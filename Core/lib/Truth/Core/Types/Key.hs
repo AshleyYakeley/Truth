@@ -16,7 +16,7 @@ module Truth.Core.Types.Key where
 
     data KeyReader cont reader t where
     {
-        KeyReadKeys :: KeyReader cont reader [ContainerKey cont];
+        KeyReadKeys :: KeyReader cont reader (FiniteSet (ContainerKey cont));
         KeyReadItem :: ContainerKey cont -> reader t -> KeyReader cont reader (Maybe t);
     };
 
@@ -38,7 +38,7 @@ module Truth.Core.Types.Key where
     {
         type ReaderSubject (KeyReader cont reader) = cont;
 
-        readFrom cont KeyReadKeys = keys cont;
+        readFrom cont KeyReadKeys = MkFiniteSet $ keys cont;
         readFrom cont (KeyReadItem key reader) = fmap (\e -> readFrom e reader) $ lookupElement key cont;
     };
 
@@ -46,7 +46,7 @@ module Truth.Core.Types.Key where
     {
         fromReader = do
         {
-            allkeys <- readable KeyReadKeys;
+            MkFiniteSet allkeys <- readable KeyReadKeys;
             list <- traverse (\key -> mapReadable (knownKeyItemReadFunction key) fromReader) allkeys;
             return $ fromElementList list;
         };
@@ -91,12 +91,17 @@ module Truth.Core.Types.Key where
         readKey _ = mapReadable firstReadFunction pureFromReader;
     };
 
+    instance HasKeyReader (FiniteSet t) (WholeReader t) where
+    {
+        readKey _ = readable ReadWhole;
+    };
+
     instance Floating (KeyEdit cont edit) (KeyEdit cont edit);
 
-    replace :: Eq a => a -> a -> [a] -> [a];
-    replace _ _ [] = [];
-    replace old new (a:aa) | old == a = new:aa;
-    replace old new (a:aa) = a : (replace old new aa);
+    replace :: Eq a => a -> a -> FiniteSet a -> FiniteSet a;
+    replace _ _ (MkFiniteSet []) = mempty;
+    replace old new (MkFiniteSet (a:aa)) | old == a = MkFiniteSet $ new:aa;
+    replace old new (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ replace old new $ MkFiniteSet aa);
 
     instance (KeyContainer cont,IOFullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => Edit (KeyEdit cont edit) where
     {
@@ -124,7 +129,7 @@ module Truth.Core.Types.Key where
         applyEdit (KeyDeleteItem key) KeyReadKeys = do
         {
             allkeys <- readable KeyReadKeys;
-            return $ delete key allkeys;
+            return $ deleteSet key allkeys;
         };
         applyEdit (KeyDeleteItem key') (KeyReadItem key _reader) | key' == key = return Nothing;
         applyEdit (KeyDeleteItem _) (KeyReadItem key reader) = readable $ KeyReadItem key reader;
@@ -135,7 +140,7 @@ module Truth.Core.Types.Key where
             {
                 newkey = elementKey (Proxy :: Proxy cont) item;
             };
-            if elem newkey allkeys then return allkeys else return $ newkey:allkeys;
+            if elem newkey allkeys then return allkeys else return $ insertSet newkey allkeys;
         };
         applyEdit (KeyInsertReplaceItem item) (KeyReadItem key reader) | elementKey (Proxy @cont) item == key = return $ Just $ readFrom item reader;
         applyEdit (KeyInsertReplaceItem _) (KeyReadItem key reader) = readable $ KeyReadItem key reader;

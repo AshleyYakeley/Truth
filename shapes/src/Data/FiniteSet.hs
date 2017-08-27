@@ -6,8 +6,10 @@ module Data.FiniteSet where
     import Data.MonoTraversable;
     import Data.Containers;
     import Data.KeyContainer;
+    import Data.Reducible;
 
-    newtype FiniteSet a = MkFiniteSet {unFiniteSet :: [a]} deriving (Functor, {- Applicative,Monad,Alternative,MonadPlus, -} Semigroup,Monoid,MonoFunctor,MonoFoldable,GrowingAppend,Foldable);
+
+    newtype FiniteSet a = MkFiniteSet {unFiniteSet :: [a]} deriving (Functor, {- Applicative,Monad,Alternative,MonadPlus, -} Semigroup,Monoid,MonoFunctor,MonoFoldable,GrowingAppend,Foldable,Reducible);
     type instance Element (FiniteSet a) = a;
 
     instance Traversable FiniteSet where
@@ -26,6 +28,20 @@ module Data.FiniteSet where
         difference (MkFiniteSet a) (MkFiniteSet b) = MkFiniteSet $ a List.\\ b;
         intersection (MkFiniteSet a) (MkFiniteSet b) = MkFiniteSet $ List.intersect a b;
         keys (MkFiniteSet a) = a;
+    };
+
+    instance Eq a => IsSet (FiniteSet a) where
+    {
+        insertSet = insertElement;
+        deleteSet = deleteElement;
+        singletonSet = MkFiniteSet . pure;
+        setFromList = MkFiniteSet;
+        setToList = unFiniteSet;
+    };
+
+    instance MonoPointed (FiniteSet a) where
+    {
+        opoint = MkFiniteSet . pure;
     };
 
     instance Eq a => KeyContainer (FiniteSet a) where
