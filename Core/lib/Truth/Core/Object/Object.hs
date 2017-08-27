@@ -60,6 +60,7 @@ module Truth.Core.Object.Object where
     convertObject = pureFixedMapObject @Identity convertEditLens;
 
     -- | Combines all the edits made in each call to the object.
+    ;
     cacheObject :: Eq t => Object (WholeEdit t) -> Object (WholeEdit t);
     cacheObject (MkObject obj) = MkObject $ \call -> obj $ \muted -> do
     {

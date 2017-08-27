@@ -9,11 +9,13 @@ module Truth.Core.Read.Reader where
     remonadMutableRead mf mr rt = mf (mr rt);
 
     -- | The values of the reader type are MutableEdit calls that read parts of something of type (ReaderSubject reader).
+    ;
     class Reader (reader :: * -> *) where
     {
         type ReaderSubject reader :: *;
 
         -- | Make MutableEdit calls when you've actually got the subject
+        ;
         readFromM :: forall m. Monad m => m (ReaderSubject reader) -> MutableRead m reader;
         readFromM msubj reader = fmap (\subj -> readFrom subj reader) msubj;
 

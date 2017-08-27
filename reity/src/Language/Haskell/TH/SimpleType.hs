@@ -112,6 +112,7 @@ module Language.Haskell.TH.SimpleType(SimpleType(..),typeToSimple,generateShowSi
     typeToPartial mk tp = return $ Complete $ consSimpleType mk tp;
 
     -- | Convert 'Type' to the more wieldy 'SimpleType'. Expands type synonyms, identifies type families and type equalities.
+    ;
     typeToSimple :: Type -> Q SimpleType;
     typeToSimple tp = do
     {

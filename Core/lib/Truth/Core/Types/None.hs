@@ -41,6 +41,7 @@ module Truth.Core.Types.None where
     };
 
     -- | Can't touch this.
+    ;
     newtype NoEdit (reader :: * -> *) = MkNoEdit None deriving (Eq,Countable,Searchable);
 
     instance Finite (NoEdit reader) where
