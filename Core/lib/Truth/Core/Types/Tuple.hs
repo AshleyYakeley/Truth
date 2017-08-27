@@ -96,7 +96,7 @@ module Truth.Core.Types.Tuple where
     };
 
     tupleAllSelectors :: FiniteTupleSelector sel => [AnyWitness sel];
-    tupleAllSelectors = getConstant $ tupleConstruct $ \sel -> Constant [MkAnyWitness sel];
+    tupleAllSelectors = getConst $ tupleConstruct $ \sel -> Const [MkAnyWitness sel];
 
     instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (FullReader c) sel) => FullReader c (TupleEditReader sel) where
     {

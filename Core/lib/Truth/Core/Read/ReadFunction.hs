@@ -53,7 +53,7 @@ module Truth.Core.Read.ReadFunction where
     type PureReadFunctionF f readera readerb = forall t. readerb t -> PureReadable readera (f t);
 
     mapStructureF :: Monad m => PureReadFunctionF f ra rb -> MutableRead m ra -> MutableRead (Compose m f) rb;
-    mapStructureF rff sa rbt = MkCompose $ unReadable (rff rbt) sa;
+    mapStructureF rff sa rbt = Compose $ unReadable (rff rbt) sa;
 
     composeReadFunctionF :: PureReadFunctionF f rb rc -> PureReadFunction ra rb -> PureReadFunctionF f ra rc;
     composeReadFunctionF rbc rab rct = mapReadable rab (rbc rct);
@@ -79,7 +79,7 @@ module Truth.Core.Read.ReadFunction where
         };
         mapReadableF (rff :: PureReadFunctionF f ra rb) (MkReadable srbmt) = case selfComposeReadable @c @f @ra of
         {
-            MkConstraintWitness -> getCompose $ srbmt $ \rt -> MkCompose $ pureToReadable $ rff rt;
+            MkConstraintWitness -> getCompose $ srbmt $ \rt -> Compose $ pureToReadable $ rff rt;
         };
     };
 
@@ -133,7 +133,7 @@ module Truth.Core.Read.ReadFunction where
         mapReadable rf (MkWriterReadable sbwt) = MkWriterReadable $ \sa wm -> sbwt (mapMutableRead rf sa) wm;
         mapReadableF (rff :: PureReadFunctionF f ra rb) (MkWriterReadable sbwt) = MkWriterReadable $ \(sa :: MutableRead m ra) wm -> getCompose $ case selfCompose @c @f @m of
         {
-            MkConstraintWitness -> sbwt (mapStructureF rff sa) (fmap (MkCompose . fmap pure) wm);
+            MkConstraintWitness -> sbwt (mapStructureF rff sa) (fmap (Compose . fmap pure) wm);
         };
     };
 

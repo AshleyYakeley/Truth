@@ -21,6 +21,7 @@ module Shapes.Import (module I) where
     import Data.Monoid as I (Monoid(..));
     import Control.Applicative as I;
     import Data.Functor.Identity as I;
+    import Data.Functor.Compose as I;
     import Control.Monad as I (Functor(..), Monad(return,(>>=),(>>)), MonadPlus(..));
     import Control.Monad.Fail as I;
     import Control.Monad.Fix as I;
@@ -45,7 +46,6 @@ module Shapes.Import (module I) where
     import Algebra.Lattice as I;
 
     -- transformers
-    import Data.Functor.Constant as I;
     import Control.Monad.Trans.Class as I;
     import Control.Monad.Trans.Reader as I (ReaderT(..));
     import Control.Monad.Trans.Writer as I (WriterT(..),execWriterT,tell);

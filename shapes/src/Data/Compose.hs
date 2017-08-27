@@ -1,28 +1,16 @@
+{-# OPTIONS -fno-warn-orphans #-}
 module Data.Compose where
 {
     import Shapes.Import;
 
 
-    newtype Compose (p :: k2 -> *) (q :: k1 -> k2) (a :: k1) = MkCompose {getCompose :: p (q a)};
-
     deriving instance Semigroup (p (q a)) => Semigroup (Compose p q a);
     deriving instance Monoid (p (q a)) => Monoid (Compose p q a);
-
-    instance (Functor p,Functor q) => Functor (Compose p q) where
-    {
-        fmap ab (MkCompose pqa) = MkCompose (fmap (fmap ab) pqa);
-    };
-
-    instance (Applicative p,Applicative q) => Applicative (Compose p q) where
-    {
-        pure a = MkCompose (pure (pure a));
-        (MkCompose pqab) <*> (MkCompose pqa) = MkCompose ((fmap (<*>) pqab) <*> pqa);
-    };
 
     instance (Monad p,Monad q,Traversable q) => Monad (Compose p q) where
     {
         return = pure;
-        (MkCompose pqa) >>= f = MkCompose $ do
+        (Compose pqa) >>= f = Compose $ do
         {
             qa <- pqa;
             qqb <- traverse (getCompose . f) qa;
@@ -30,18 +18,8 @@ module Data.Compose where
         };
     };
 
-    instance (Foldable p,Foldable q) => Foldable (Compose p q) where
-    {
-        foldMap am (MkCompose pqa) = foldMap (foldMap am) pqa;
-    };
-
-    instance (Traversable p,Traversable q) => Traversable (Compose p q) where
-    {
-        sequenceA (MkCompose pqfa) = fmap MkCompose $ sequenceA $ fmap sequenceA pqfa
-    };
-
     instance (MonadIO p,Monad q,Traversable q) => MonadIO (Compose p q) where
     {
-        liftIO ioa = MkCompose $ liftIO $ fmap pure ioa;
+        liftIO ioa = Compose $ liftIO $ fmap pure ioa;
     };
 }

@@ -97,7 +97,7 @@ module Truth.Core.Types.TupleDatabase where
         {
             conv :: AllF tablesel (Compose f All) -> AllF (TupleTableSel tablesel) f;
             conv (MkAllF tcfa) = MkAllF $ \(MkTupleTableSel tc) -> getCompose $ tcfa tc;
-        } in fmap conv $ assembleWitnessF $ \col -> fmap MkCompose $ getrow $ MkTupleTableSel col;
+        } in fmap conv $ assembleWitnessF $ \col -> fmap Compose $ getrow $ MkTupleTableSel col;
 
 
         type WhereClause database (TupleTableSel tablesel) row = TupleWhereClause database row;

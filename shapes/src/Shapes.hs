@@ -1,6 +1,5 @@
 module Shapes (module I) where
 {
-
     import Shapes.Import as I;
 
     -- shapes
@@ -15,7 +14,7 @@ module Shapes (module I) where
     import Data.Lens as I;
     import Data.Codec as I;
     import Data.Result as I;
-    import Data.Compose as I;
+    import Data.Compose as I ();
     import Data.MonadOne as I;
     import Data.Category as I;
     import Data.KindCategory as I;

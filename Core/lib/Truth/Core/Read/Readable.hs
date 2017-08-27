@@ -76,12 +76,12 @@ module Truth.Core.Read.Readable where
     type PureReadableF f reader = Compose (PureReadable reader) f;
 
     fromPureReadableF :: (Reader reader) => PureReadableF f reader t -> ReaderSubject reader -> f t;
-    fromPureReadableF (MkCompose rf) = fromPureReadable rf;
+    fromPureReadableF (Compose rf) = fromPureReadable rf;
 
     instance (IsReadableMonad m,Monad f,Traversable f) => IsReadableMonad (Compose m f) where
     {
         type RMReader (Compose m f) = RMReader m;
-        readable rt = MkCompose $ fmap pure $ readable rt;
+        readable rt = Compose $ fmap pure $ readable rt;
     };
 
 

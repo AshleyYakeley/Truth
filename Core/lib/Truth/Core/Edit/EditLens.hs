@@ -23,10 +23,10 @@ module Truth.Core.Edit.EditLens where
     editLensPutEdits _ oldstate [] = return $ pure $ (oldstate,[]);
     editLensPutEdits lens oldstate (e:ee) = getCompose $ do
     {
-        (midstate,ea) <- MkCompose $ editLensPutEdit lens oldstate e;
-        MkCompose $ mapReadable (applyEdits ea) $ getCompose $ do
+        (midstate,ea) <- Compose $ editLensPutEdit lens oldstate e;
+        Compose $ mapReadable (applyEdits ea) $ getCompose $ do
         {
-            (newstate,eea) <- MkCompose $ editLensPutEdits lens midstate ee;
+            (newstate,eea) <- Compose $ editLensPutEdits lens midstate ee;
             return (newstate,ea ++ eea);
         };
     };
