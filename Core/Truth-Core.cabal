@@ -25,6 +25,7 @@ library
         ImplicitParams
         KindSignatures
         LambdaCase
+        MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude
         PatternGuards
@@ -157,6 +158,7 @@ test-suite test
         ImplicitParams
         KindSignatures
         LambdaCase
+        MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude
         PatternGuards

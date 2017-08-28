@@ -24,6 +24,7 @@ library
         GeneralizedNewtypeDeriving
         ImplicitParams
         KindSignatures
+        MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude
         PatternGuards
