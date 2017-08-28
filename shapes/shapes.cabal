@@ -70,6 +70,7 @@ library
         bytestring,
         cereal,
         text,
+        cereal-text,
         random,
         countable,
         witness,

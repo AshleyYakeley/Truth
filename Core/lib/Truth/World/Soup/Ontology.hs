@@ -26,7 +26,7 @@ module Truth.World.Soup.Ontology where
 
     data ViewSoupProperty = SimpleViewSoupProperty ViewSoupSimpleProperty | ListViewSoupProperty ViewSoupListProperty;
 
-    data ViewSoupPrimitive = forall edit. MkViewSoupPrimitive
+    data ViewSoupPrimitive = forall edit. Serialize (EditSubject edit) => MkViewSoupPrimitive
     {
         primType :: TypeInfo edit
     };

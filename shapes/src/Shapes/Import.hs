@@ -69,6 +69,9 @@ module Shapes.Import (module I) where
     -- text
     import Data.Text as I (Text);
 
+    -- cereal-text
+    import Data.Serialize.Text as I ();
+
     -- random
     import System.Random as I;
 
