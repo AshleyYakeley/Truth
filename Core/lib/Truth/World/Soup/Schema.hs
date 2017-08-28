@@ -87,70 +87,70 @@ module Truth.World.Soup.Schema where
     {
         editInitial = ();
 
-        editGet :: forall t. () -> WholeReader (Maybe UUID) t -> IOReadable (PairEditReader SoupEdit (WholeEdit (Maybe UUID))) t;
+        editGet :: forall t. () -> WholeReader (Maybe UUID) t -> IOReadable (ContextEditReader SoupEdit (WholeEdit (Maybe UUID))) t;
         editGet () ReadWhole = do
         {
-            msubj <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
             case msubj of
             {
-                Just subj -> readable $ MkTupleEditReader EditFirst $ SoupReadGetValue prd subj;
+                Just subj -> readable $ MkTupleEditReader EditContext $ SoupReadGetValue prd subj;
                 Nothing -> return Nothing;
             };
         };
 
-        editUpdate :: (PairEdit SoupEdit (WholeEdit (Maybe UUID))) -> () -> IOReadable (PairEditReader SoupEdit (WholeEdit (Maybe UUID))) ((),[WholeEdit (Maybe UUID)]);
-        editUpdate (MkTupleEdit EditFirst (SoupEditSetValue p s mv)) () | p == prd = do
+        editUpdate :: (ContextEdit SoupEdit (WholeEdit (Maybe UUID))) -> () -> IOReadable (ContextEditReader SoupEdit (WholeEdit (Maybe UUID))) ((),[WholeEdit (Maybe UUID)]);
+        editUpdate (MkTupleEdit EditContext (SoupEditSetValue p s mv)) () | p == prd = do
         {
-            msubj <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
             return $ pure $ if Just s == msubj then [MkWholeEdit mv] else [];
         };
-        editUpdate (MkTupleEdit EditFirst (SoupEditDeleteLookupValue p v)) () | p == prd = do
+        editUpdate (MkTupleEdit EditContext (SoupEditDeleteLookupValue p v)) () | p == prd = do
         {
-            msubj <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
             case msubj of
             {
                 Just subj -> do
                 {
-                    mval <- readable $ MkTupleEditReader EditFirst $ SoupReadGetValue p subj;
+                    mval <- readable $ MkTupleEditReader EditContext $ SoupReadGetValue p subj;
                     return $ pure $ if mval == Just v then [MkWholeEdit Nothing] else [];
                 };
                 Nothing -> return $ pure [];
             };
         };
-        editUpdate (MkTupleEdit EditFirst (SoupEditDeleteTriple p s v)) () | p == prd = do
+        editUpdate (MkTupleEdit EditContext (SoupEditDeleteTriple p s v)) () | p == prd = do
         {
-            msubj <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
             case msubj of
             {
                 Just subj | subj == s -> do
                 {
-                    mval <- readable $ MkTupleEditReader EditFirst $ SoupReadGetValue p subj;
+                    mval <- readable $ MkTupleEditReader EditContext $ SoupReadGetValue p subj;
                     return $ pure $ if mval == Just v then [MkWholeEdit Nothing] else [];
                 };
                 _ -> return $ pure [];
             };
         };
-        editUpdate (MkTupleEdit EditFirst _) () = return $ pure [];
-        editUpdate (MkTupleEdit EditSecond (MkWholeEdit Nothing)) () = return $ pure [MkWholeEdit Nothing];
-        editUpdate (MkTupleEdit EditSecond (MkWholeEdit (Just subj))) () = do
+        editUpdate (MkTupleEdit EditContext _) () = return $ pure [];
+        editUpdate (MkTupleEdit EditContent (MkWholeEdit Nothing)) () = return $ pure [MkWholeEdit Nothing];
+        editUpdate (MkTupleEdit EditContent (MkWholeEdit (Just subj))) () = do
         {
-            mval <- readable $ MkTupleEditReader EditFirst $ SoupReadGetValue prd subj;
+            mval <- readable $ MkTupleEditReader EditContext $ SoupReadGetValue prd subj;
             return $ pure $ [MkWholeEdit mval];
         };
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> WholeEdit (Maybe UUID) -> IOReadable (PairEditReader SoupEdit (WholeEdit (Maybe UUID))) (Maybe ((),[PairEdit SoupEdit (WholeEdit (Maybe UUID))]));
+        editLensPutEdit :: () -> WholeEdit (Maybe UUID) -> IOReadable (ContextEditReader SoupEdit (WholeEdit (Maybe UUID))) (Maybe ((),[ContextEdit SoupEdit (WholeEdit (Maybe UUID))]));
         editLensPutEdit () (MkWholeEdit mv) = do
         {
-            msubj <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
             case msubj of
             {
-                Just subj -> return $ pure $ pure [MkTupleEdit EditFirst $ SoupEditSetValue prd subj mv];
+                Just subj -> return $ pure $ pure [MkTupleEdit EditContext $ SoupEditSetValue prd subj mv];
                 Nothing -> do
                 {
                     subj <- liftIO UUID.nextRandom;
-                    return $ pure $ pure [MkTupleEdit EditSecond $ MkWholeEdit $ Just subj, MkTupleEdit EditFirst $ SoupEditSetValue prd subj mv];
+                    return $ pure $ pure [MkTupleEdit EditContent $ MkWholeEdit $ Just subj, MkTupleEdit EditContext $ SoupEditSetValue prd subj mv];
                 };
             };
         };
@@ -161,39 +161,39 @@ module Truth.World.Soup.Schema where
     {
         editInitial = ();
 
-        editGet :: forall t. () -> FiniteSetReader UUID t -> IOReadable (PairEditReader SoupEdit (WholeEdit (Maybe UUID))) t;
+        editGet :: forall t. () -> FiniteSetReader UUID t -> IOReadable (ContextEditReader SoupEdit (WholeEdit (Maybe UUID))) t;
         editGet () KeyReadKeys = do
         {
-            mval <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
             case mval of
             {
-                Just val -> readable $ MkTupleEditReader EditFirst $ SoupReadLookupValue prd val;
+                Just val -> readable $ MkTupleEditReader EditContext $ SoupReadLookupValue prd val;
                 Nothing -> return mempty;
             };
         };
         editGet () (KeyReadItem subj ReadWhole) = do
         {
-            mval <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
             case mval of
             {
                 Just _ -> do
                 {
-                    val' <- readable $ MkTupleEditReader EditFirst $ SoupReadGetValue prd subj;
+                    val' <- readable $ MkTupleEditReader EditContext $ SoupReadGetValue prd subj;
                     return $ if mval == val' then Just subj else Nothing;
                 };
                 Nothing -> return Nothing;
             };
         };
 
-        editUpdate :: PairEdit SoupEdit (WholeEdit (Maybe UUID)) -> () -> IOReadable (PairEditReader SoupEdit (WholeEdit (Maybe UUID))) ((), [FiniteSetEdit UUID]);
-        editUpdate (MkTupleEdit EditFirst (SoupEditSetValue p s mnewv)) () | p == prd = do
+        editUpdate :: ContextEdit SoupEdit (WholeEdit (Maybe UUID)) -> () -> IOReadable (ContextEditReader SoupEdit (WholeEdit (Maybe UUID))) ((), [FiniteSetEdit UUID]);
+        editUpdate (MkTupleEdit EditContext (SoupEditSetValue p s mnewv)) () | p == prd = do
         {
-            mval <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
             case mval of
             {
                 Just val -> do
                 {
-                    moldv <- readable $ MkTupleEditReader EditFirst $ SoupReadGetValue p s;
+                    moldv <- readable $ MkTupleEditReader EditContext $ SoupReadGetValue p s;
                     return $ pure $ case (Just val == moldv,Just val == mnewv) of
                     {
                         (True,False) -> [KeyDeleteItem s];
@@ -204,58 +204,58 @@ module Truth.World.Soup.Schema where
                 Nothing -> return $ pure [];
             };
         };
-        editUpdate (MkTupleEdit EditFirst (SoupEditDeleteLookupValue p v)) () | p == prd = do
+        editUpdate (MkTupleEdit EditContext (SoupEditDeleteLookupValue p v)) () | p == prd = do
         {
-            mval <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
             return $ pure $ if mval == Just v then [KeyClear] else [];
         };
-        editUpdate (MkTupleEdit EditFirst (SoupEditDeleteTriple p s v)) () | p == prd = do
+        editUpdate (MkTupleEdit EditContext (SoupEditDeleteTriple p s v)) () | p == prd = do
         {
-            mval <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
             return $ pure $ if mval == Just v then [KeyDeleteItem s] else [];
         };
-        editUpdate (MkTupleEdit EditFirst _) () = return $ pure [];
-        editUpdate (MkTupleEdit EditSecond (MkWholeEdit Nothing)) () = return $ pure [KeyClear];
-        editUpdate (MkTupleEdit EditSecond (MkWholeEdit (Just val))) () = do
+        editUpdate (MkTupleEdit EditContext _) () = return $ pure [];
+        editUpdate (MkTupleEdit EditContent (MkWholeEdit Nothing)) () = return $ pure [KeyClear];
+        editUpdate (MkTupleEdit EditContent (MkWholeEdit (Just val))) () = do
         {
-            subjs <- readable $ MkTupleEditReader EditFirst $ SoupReadLookupValue prd val;
+            subjs <- readable $ MkTupleEditReader EditContext $ SoupReadLookupValue prd val;
             edits <- getReplaceEditsM @MonadIO subjs;
             return $ pure edits;
         };
 
-        editLensFunction :: IOEditFunction () (PairEdit SoupEdit (WholeEdit (Maybe UUID))) (FiniteSetEdit UUID);
+        editLensFunction :: IOEditFunction () (ContextEdit SoupEdit (WholeEdit (Maybe UUID))) (FiniteSetEdit UUID);
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> FiniteSetEdit UUID -> IOReadable (PairEditReader SoupEdit (WholeEdit (Maybe UUID))) (Maybe ((), [PairEdit SoupEdit (WholeEdit (Maybe UUID))]));
+        editLensPutEdit :: () -> FiniteSetEdit UUID -> IOReadable (ContextEditReader SoupEdit (WholeEdit (Maybe UUID))) (Maybe ((), [ContextEdit SoupEdit (WholeEdit (Maybe UUID))]));
         editLensPutEdit () (KeyEditItem _ edit) = never edit;
         editLensPutEdit () (KeyDeleteItem subj) = do
         {
-            mval <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
             case mval of
             {
-                Just val -> return $ Just $ pure $ [MkTupleEdit EditFirst $ SoupEditDeleteTriple prd subj val];
+                Just val -> return $ Just $ pure $ [MkTupleEdit EditContext $ SoupEditDeleteTriple prd subj val];
                 Nothing -> return $ Just $ pure [];
             };
         };
         editLensPutEdit () (KeyInsertReplaceItem subj) = do
         {
-            mval <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
             case mval of
             {
-                Just val -> return $ Just $ pure [MkTupleEdit EditFirst $ SoupEditSetValue prd subj $ Just val];
+                Just val -> return $ Just $ pure [MkTupleEdit EditContext $ SoupEditSetValue prd subj $ Just val];
                 Nothing -> do
                 {
                     val <- liftIO UUID.nextRandom;
-                    return $ Just $ pure [MkTupleEdit EditSecond $ MkWholeEdit $ Just val, MkTupleEdit EditFirst $ SoupEditSetValue prd subj $ Just val];
+                    return $ Just $ pure [MkTupleEdit EditContent $ MkWholeEdit $ Just val, MkTupleEdit EditContext $ SoupEditSetValue prd subj $ Just val];
                 };
             };
         };
         editLensPutEdit () KeyClear = do
         {
-            mval <- readable $ MkTupleEditReader EditSecond ReadWhole;
+            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
             case mval of
             {
-                Just val -> return $ Just $ pure [MkTupleEdit EditFirst $ SoupEditDeleteLookupValue prd val];
+                Just val -> return $ Just $ pure [MkTupleEdit EditContext $ SoupEditDeleteLookupValue prd val];
                 Nothing -> return $ Just $ pure [];
             };
         };

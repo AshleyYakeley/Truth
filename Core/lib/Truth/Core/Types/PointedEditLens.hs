@@ -5,12 +5,13 @@ module Truth.Core.Types.PointedEditLens where
     import Truth.Core.Edit;
     import Truth.Core.Types.Tuple;
     import Truth.Core.Types.Pair;
+    import Truth.Core.Types.Context;
     import Truth.Core.Types.Lattice;
 
 
-    data PointedEditFunction c editp edita editb = forall state. MkPointedEditFunction (EditFunction c state (PairEdit editp edita) editb);
+    data PointedEditFunction c editp edita editb = forall state. MkPointedEditFunction (EditFunction c state (ContextEdit editp edita) editb);
 
-    data PointedEditLens c f editp edita editb = forall state. MkPointedEditLens (EditLens' c f state (PairEdit editp edita) editb);
+    data PointedEditLens c f editp edita editb = forall state. MkPointedEditLens (EditLens' c f state (ContextEdit editp edita) editb);
 
     instance (ReadableConstraint c,Monad f,Traversable f,Edit editp) => ConstrainedCategory (PointedEditLens c f editp) where
     {
@@ -19,27 +20,27 @@ module Truth.Core.Types.PointedEditLens where
         {
             editInitial = ();
 
-            editGet :: () -> ReadFunction c (PairEditReader editp edit) (EditReader edit);
-            editGet () rt = readable $ MkTupleEditReader EditSecond rt;
+            editGet :: () -> ReadFunction c (ContextEditReader editp edit) (EditReader edit);
+            editGet () rt = readable $ MkTupleEditReader EditContent rt;
 
-            editUpdate :: PairEdit editp edit -> () -> Readable c (PairEditReader editp edit) ((),[edit]);
-            editUpdate (MkTupleEdit EditFirst _) () = pure $ pure [];
-            editUpdate (MkTupleEdit EditSecond edit) () = pure $ pure $ pure edit;
+            editUpdate :: ContextEdit editp edit -> () -> Readable c (ContextEditReader editp edit) ((),[edit]);
+            editUpdate (MkTupleEdit EditContext _) () = pure $ pure [];
+            editUpdate (MkTupleEdit EditContent edit) () = pure $ pure $ pure edit;
 
             editLensFunction = MkEditFunction{..};
 
-            editLensPutEdit :: () -> edit -> Readable c (PairEditReader editp edit) (f ((),[PairEdit editp edit]));
-            editLensPutEdit () edit = pure $ pure $ pure $ pure $ MkTupleEdit EditSecond edit;
+            editLensPutEdit :: () -> edit -> Readable c (ContextEditReader editp edit) (f ((),[ContextEdit editp edit]));
+            editLensPutEdit () edit = pure $ pure $ pure $ pure $ MkTupleEdit EditContent edit;
         } in MkPointedEditLens $ MkEditLens{..};
 
 
-        (MkPointedEditLens (lensBC :: EditLens' c f stateBC (PairEdit editp editb) editc)) <.> (MkPointedEditLens (lensAB :: EditLens' c f stateAB (PairEdit editp edita) editb)) = let
+        (MkPointedEditLens (lensBC :: EditLens' c f stateBC (ContextEdit editp editb) editc)) <.> (MkPointedEditLens (lensAB :: EditLens' c f stateAB (ContextEdit editp edita) editb)) = let
         {
             funcAB = editLensFunction lensAB;
             funcBC = editLensFunction lensBC;
-            convAB :: stateAB -> ReadFunction c (PairEditReader editp edita) (PairEditReader editp editb);
-            convAB _ (MkTupleEditReader EditFirst rt) = readable $ MkTupleEditReader EditFirst rt;
-            convAB curAB (MkTupleEditReader EditSecond rt) = editGet funcAB curAB rt;
+            convAB :: stateAB -> ReadFunction c (ContextEditReader editp edita) (ContextEditReader editp editb);
+            convAB _ (MkTupleEditReader EditContext rt) = readable $ MkTupleEditReader EditContext rt;
+            convAB curAB (MkTupleEditReader EditContent rt) = editGet funcAB curAB rt;
         } in MkPointedEditLens $ MkEditLens
         {
             editLensFunction = MkEditFunction
@@ -51,10 +52,10 @@ module Truth.Core.Types.PointedEditLens where
                     (newAB,editBs) <- editUpdate funcAB editpa oldAB;
                     (midBC,peditCs) <- case editpa of
                     {
-                        MkTupleEdit EditFirst editP -> mapGenReadable (convAB oldAB) $ editUpdate funcBC (MkTupleEdit EditFirst editP) oldBC;
-                        MkTupleEdit EditSecond _ -> return (oldBC,[]);
+                        MkTupleEdit EditContext editP -> mapGenReadable (convAB oldAB) $ editUpdate funcBC (MkTupleEdit EditContext editP) oldBC;
+                        MkTupleEdit EditContent _ -> return (oldBC,[]);
                     };
-                    (newBC,editCs) <- mapGenReadable (convAB oldAB) $ editUpdates funcBC (fmap (MkTupleEdit EditSecond) editBs) midBC;
+                    (newBC,editCs) <- mapGenReadable (convAB oldAB) $ editUpdates funcBC (fmap (MkTupleEdit EditContent) editBs) midBC;
                     return ((newBC,newAB),peditCs ++ editCs);
                 }
             },
@@ -63,14 +64,14 @@ module Truth.Core.Types.PointedEditLens where
                 fslb <- mapGenReadable (convAB oldAB) $ editLensPutEdit lensBC oldBC editC;
                 ff <- for fslb $ \(newBC,editPBs) -> let
                 {
-                    editPsBs :: forall t. PairSelector editp editb t -> [t];
+                    editPsBs :: forall t. WithContextSelector editp editb t -> [t];
                     editPsBs = getAllF $ splitTupleEditList editPBs;
-                    editPs = editPsBs EditFirst;
-                    editBs = editPsBs EditSecond;
+                    editPs = editPsBs EditContext;
+                    editBs = editPsBs EditContent;
                 } in do
                 {
                     fsla <- editLensPutEdits lensAB oldAB $ editBs;
-                    return $ fmap (\(newAB,editPAs) -> ((newBC,newAB),(fmap (MkTupleEdit EditFirst) editPs) ++ editPAs)) fsla;
+                    return $ fmap (\(newAB,editPAs) -> ((newBC,newAB),(fmap (MkTupleEdit EditContext) editPs) ++ editPAs)) fsla;
                 };
                 return $ ff >>= id;
             }
