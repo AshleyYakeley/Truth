@@ -77,8 +77,7 @@ library
         Truth.World.SQLite
         Truth.World.Soup
         Truth.World.Note
-        Truth.World.Soup.Schema
-        Truth.World.Soup.Ontology
+        Truth.World.Pinafore
     other-modules:
         Truth.Core.Import
         Truth.Core.Sequence
@@ -136,7 +135,9 @@ library
         Truth.Core.Object.Undo
         Truth.Core.Object
         Truth.World.SQLite.Schema
-        Truth.World.Soup.SQLite
+        Truth.World.Pinafore.Edit
+        Truth.World.Pinafore.Ontology
+        Truth.World.Pinafore.SQLite
 
 test-suite test
     type: exitcode-stdio-1.0

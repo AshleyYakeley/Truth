@@ -1,4 +1,4 @@
-module Truth.World.Soup where
+module Truth.World.Soup(SoupEdit,directorySoup,liftSoupLens) where
 {
     import Truth.Core.Import;
     import Truth.Core;

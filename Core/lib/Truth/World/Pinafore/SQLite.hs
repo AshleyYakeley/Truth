@@ -1,13 +1,13 @@
 {-# OPTIONS -fno-warn-orphans #-}
 {-# LANGUAGE EmptyCase #-}
-module Truth.World.Soup.SQLite(sqliteSoupObject) where
+module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
 {
     import Truth.Core.Import;
     import Truth.Core;
     import Data.UUID;
     import Truth.World.SQLite;
     import Truth.World.SQLite.Schema;
-    import Truth.World.Soup.Schema;
+    import Truth.World.Pinafore.Edit;
 
 
     instance FieldType UUID where {fieldTypeName="BLOB"};
@@ -73,38 +73,38 @@ module Truth.World.Soup.SQLite(sqliteSoupObject) where
         witnessConstraint LiteralValue = MkConstraintWitness;
     };
 
-    data SoupSchema colsel where
+    data PinaforeSchema colsel where
     {
-        SoupTriple :: SoupSchema TripleTable;
-        SoupLiteral :: SoupSchema LiteralTable;
+        PinaforeTriple :: PinaforeSchema TripleTable;
+        PinaforeLiteral :: PinaforeSchema LiteralTable;
     };
 
-    instance TestEquality SoupSchema where
+    instance TestEquality PinaforeSchema where
     {
-        testEquality SoupTriple SoupTriple = Just Refl;
-        testEquality SoupLiteral SoupLiteral = Just Refl;
+        testEquality PinaforeTriple PinaforeTriple = Just Refl;
+        testEquality PinaforeLiteral PinaforeLiteral = Just Refl;
         testEquality _ _ = Nothing;
     };
 
-    instance FiniteWitness SoupSchema where
+    instance FiniteWitness PinaforeSchema where
     {
-        assembleWitnessF getTable = (\ft fl -> MkAllF $ \case {SoupTriple -> ft; SoupLiteral -> fl;}) <$> getTable SoupTriple <*> getTable SoupLiteral;
+        assembleWitnessF getTable = (\ft fl -> MkAllF $ \case {PinaforeTriple -> ft; PinaforeLiteral -> fl;}) <$> getTable PinaforeTriple <*> getTable PinaforeLiteral;
     };
 
-    instance WitnessConstraint IsSQLiteTable SoupSchema where
+    instance WitnessConstraint IsSQLiteTable PinaforeSchema where
     {
-        witnessConstraint SoupTriple = MkConstraintWitness;
-        witnessConstraint SoupLiteral = MkConstraintWitness;
+        witnessConstraint PinaforeTriple = MkConstraintWitness;
+        witnessConstraint PinaforeLiteral = MkConstraintWitness;
     };
 
-    soupSchema :: DatabaseSchema SoupSchema;
+    soupSchema :: DatabaseSchema PinaforeSchema;
     soupSchema = let
     {
         databaseTables = let
         {
-            subWitnessDomain = [MkAnyWitness SoupTriple,MkAnyWitness SoupLiteral];
-            subWitnessMap :: SoupSchema t -> TableSchema t;
-            subWitnessMap SoupTriple = let
+            subWitnessDomain = [MkAnyWitness PinaforeTriple,MkAnyWitness PinaforeLiteral];
+            subWitnessMap :: PinaforeSchema t -> TableSchema t;
+            subWitnessMap PinaforeTriple = let
             {
                 tableName = "triple";
                 tableColumns = let
@@ -117,7 +117,7 @@ module Truth.World.Soup.SQLite(sqliteSoupObject) where
                 } in MkSubmapWitness domain witmap;
                 tableIndexes = [MkIndexSchema "predval" [MkAnyWitness TriplePredicate,MkAnyWitness TripleValue]];
             } in MkTableSchema{..};
-            subWitnessMap SoupLiteral = let
+            subWitnessMap PinaforeLiteral = let
             {
                 tableName = "literal-int";
                 tableColumns = let
@@ -132,34 +132,34 @@ module Truth.World.Soup.SQLite(sqliteSoupObject) where
         } in MkSubmapWitness{..};
     } in MkDatabaseSchema{..};
 
-    soupDatabaseLens :: PureEditLens' Identity () (SQLiteEdit SoupSchema) SoupEdit;
+    soupDatabaseLens :: PureEditLens' Identity () (SQLiteEdit PinaforeSchema) PinaforeEdit;
     soupDatabaseLens = let
     {
         editInitial = ();
 
-        editGet :: () -> PureReadFunction (SQLiteRead SoupSchema) SoupRead;
-        editGet () (SoupReadGetValue p s) = do
+        editGet :: () -> PureReadFunction (SQLiteRead PinaforeSchema) PinaforeRead;
+        editGet () (PinaforeReadGetValue p s) = do
         {
             row <- readable $ DatabaseSelect
-                (SingleTable $ MkTupleTableSel SoupTriple)
+                (SingleTable $ MkTupleTableSel PinaforeTriple)
                 (MkTupleWhereClause $ (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue);
             return $ fmap getSingleAll $ listToMaybe row;
         };
-        editGet () (SoupReadLookupValue p v) = do
+        editGet () (PinaforeReadLookupValue p v) = do
         {
             row <- readable $ DatabaseSelect
-                (SingleTable $ MkTupleTableSel SoupTriple)
+                (SingleTable $ MkTupleTableSel PinaforeTriple)
                 (MkTupleWhereClause $ (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleValue === ConstExpr v))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject);
             return $ MkFiniteSet $ fmap getSingleAll row;
         };
-        editGet () (SoupReadGetPrimitive v) = do
+        editGet () (PinaforeReadGetPrimitive v) = do
         {
             (row :: [All ((:~:) ByteString)]) <- readable $ DatabaseSelect
-                (SingleTable $ MkTupleTableSel SoupLiteral)
+                (SingleTable $ MkTupleTableSel PinaforeLiteral)
                 (MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v)
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralValue);
@@ -169,10 +169,10 @@ module Truth.World.Soup.SQLite(sqliteSoupObject) where
                 decodeMaybe serializeCodec $ getSingleAll sa;
             };
         };
-        editGet () (SoupReadLookupPrimitive p l) = do
+        editGet () (PinaforeReadLookupPrimitive p l) = do
         {
             row <- readable $ DatabaseSelect
-                (JoinTables OuterTupleJoinClause (SingleTable $ MkTupleTableSel SoupTriple) (SingleTable $ MkTupleTableSel SoupLiteral))
+                (JoinTables OuterTupleJoinClause (SingleTable $ MkTupleTableSel PinaforeTriple) (SingleTable $ MkTupleTableSel PinaforeLiteral))
                 (MkTupleWhereClause $ (ColumnExpr (LeftWitness TriplePredicate) === ConstExpr p) /\ (ColumnExpr (LeftWitness TripleValue) === ColumnExpr (RightWitness LiteralKey)) /\ (ColumnExpr (RightWitness LiteralValue) === ConstExpr (encode serializeCodec l)))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr (LeftWitness TripleSubject));
@@ -181,26 +181,26 @@ module Truth.World.Soup.SQLite(sqliteSoupObject) where
 
         editUpdate _ _ = return undefined;
 
-        editLensPutEdit :: () -> SoupEdit -> PureReadable (SQLiteRead SoupSchema) (Identity ((), [SQLiteEdit SoupSchema]));
-        editLensPutEdit () (SoupEditSetValue p s (Just v)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel SoupTriple) $ MkTupleInsertClause $ pure $ MkAll $ \case
+        editLensPutEdit :: () -> PinaforeEdit -> PureReadable (SQLiteRead PinaforeSchema) (Identity ((), [SQLiteEdit PinaforeSchema]));
+        editLensPutEdit () (PinaforeEditSetValue p s (Just v)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel PinaforeTriple) $ MkTupleInsertClause $ pure $ MkAll $ \case
         {
             TriplePredicate -> p;
             TripleSubject -> s;
             TripleValue -> v;
         };
-        editLensPutEdit () (SoupEditSetValue p s Nothing) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel SoupTriple) $ MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s;
-        editLensPutEdit () (SoupEditDeleteTriple p s v) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel SoupTriple) $ MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s /\ ColumnExpr TripleValue === ConstExpr v;
-        editLensPutEdit () (SoupEditDeleteLookupValue p v) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel SoupTriple) $ MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleValue === ConstExpr v;
-        editLensPutEdit () (SoupEditSetPrimitive v (Just l)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel SoupLiteral) $ MkTupleInsertClause $ pure $ MkAll $ \case
+        editLensPutEdit () (PinaforeEditSetValue p s Nothing) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel PinaforeTriple) $ MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s;
+        editLensPutEdit () (PinaforeEditDeleteTriple p s v) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel PinaforeTriple) $ MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s /\ ColumnExpr TripleValue === ConstExpr v;
+        editLensPutEdit () (PinaforeEditDeleteLookupValue p v) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel PinaforeTriple) $ MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleValue === ConstExpr v;
+        editLensPutEdit () (PinaforeEditSetPrimitive v (Just l)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel PinaforeLiteral) $ MkTupleInsertClause $ pure $ MkAll $ \case
         {
             LiteralKey -> v;
             LiteralValue -> encode serializeCodec l;
         };
-        editLensPutEdit () (SoupEditSetPrimitive v Nothing) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel SoupLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v;
+        editLensPutEdit () (PinaforeEditSetPrimitive v Nothing) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel PinaforeLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v;
 
         editLensFunction = MkEditFunction{..};
     } in MkEditLens{..};
 
-    sqliteSoupObject :: FilePath -> Object SoupEdit;
-    sqliteSoupObject path = pureFixedMapObject soupDatabaseLens $ sqliteObject path soupSchema;
+    sqlitePinaforeObject :: FilePath -> Object PinaforeEdit;
+    sqlitePinaforeObject path = pureFixedMapObject soupDatabaseLens $ sqliteObject path soupSchema;
 }
