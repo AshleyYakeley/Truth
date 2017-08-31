@@ -45,12 +45,15 @@ module Truth.World.SQLite.Schema where
 
     instance Show (ColumnSchema t) where
     {
-        show MkColumnSchema{..} = columnName ++ " " ++ show columnType ++ if columnPrimaryKey then " PRIMARY KEY" else "";
+        show MkColumnSchema{..} = columnName ++ " " ++ show columnType;
     };
 
     instance Show (SubmapWitness colsel ColumnSchema) where
     {
-        show schema = "(" ++ intercalate "," (fmap (\(MkAnyWitness isch) -> show isch) $ subWitnessCodomain schema) ++ ")";
+        show schema = let
+        {
+            columns = subWitnessCodomain schema;
+        } in "(" ++ intercalate "," (fmap (\(MkAnyWitness isch) -> show isch) $ columns) ++ ",PRIMARY KEY (" ++ intercalate "," (mapMaybe (\(MkAnyWitness MkColumnSchema{..}) -> if columnPrimaryKey then Just columnName else Nothing) columns) ++ "))";
     };
 
     data IndexSchema colsel = MkIndexSchema

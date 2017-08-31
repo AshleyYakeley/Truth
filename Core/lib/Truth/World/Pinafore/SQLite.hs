@@ -119,7 +119,7 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
             } in MkTableSchema{..};
             subWitnessMap PinaforeLiteral = let
             {
-                tableName = "literal-int";
+                tableName = "literal";
                 tableColumns = let
                 {
                     domain = [MkAnyWitness LiteralKey,MkAnyWitness LiteralValue];

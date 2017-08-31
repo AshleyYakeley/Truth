@@ -77,4 +77,9 @@ module Data.FiniteSet where
         deleteElement k (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ deleteElement k $ MkFiniteSet aa);
         fromElementList = MkFiniteSet;
     };
+
+    instance (Eq key,Random key) => IONewItemKeyContainer (FiniteSet key) where
+    {
+        newKeyContainerItem _ = randomIO;
+    };
 }

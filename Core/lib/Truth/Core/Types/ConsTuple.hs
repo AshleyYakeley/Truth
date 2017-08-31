@@ -128,4 +128,25 @@ module Truth.Core.Types.ConsTuple where
             };
         }
     };
+
+    consTupleTypeKnowledge :: TypeKnowledge;
+    consTupleTypeKnowledge = $(generateTypeKnowledge [d|
+        instance TupleWitness c (EmptyWitness :: * -> *);
+        instance TupleSelector (EmptyWitness :: * -> *) where
+        {
+            type TupleSubject (EmptyWitness :: * -> *) = Tuple (EmptyWitness :: * -> *);
+        };
+        instance TupleReaderWitness c (EmptyWitness :: * -> *);
+        instance FiniteTupleSelector (EmptyWitness :: * -> *);
+        instance TupleHasInfo (EmptyWitness :: * -> *);
+
+        instance (c a,TupleWitness c r) => TupleWitness c ((ConsWitness :: * -> (* -> *) -> * -> *) a r);
+        instance (Edit a,(TestEquality :: (* -> *) -> Constraint) r,TupleWitness Edit r) => TupleSelector ((ConsWitness :: * -> (* -> *) -> * -> *) a r) where
+        {
+            type TupleSubject ((ConsWitness :: * -> (* -> *) -> * -> *) a r) = Tuple ((ConsWitness :: * -> (* -> *) -> * -> *) a r);
+        };
+        instance (c (EditReader a),TupleReaderWitness c r) => TupleReaderWitness c ((ConsWitness :: * -> (* -> *) -> * -> *) a r);
+        instance (Edit a,FiniteTupleSelector r,TupleSubject r ~ Tuple r) => FiniteTupleSelector ((ConsWitness :: * -> (* -> *) -> * -> *) a r);
+        instance (Edit a,(HasTypeInfo :: * -> Constraint) a,TupleHasInfo r) => TupleHasInfo ((ConsWitness :: * -> (* -> *) -> * -> *) a r);
+    |]);
 }

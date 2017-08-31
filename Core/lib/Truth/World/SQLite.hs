@@ -1,4 +1,5 @@
 {-# OPTIONS -fno-warn-orphans #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Truth.World.SQLite
 (
     module Truth.World.SQLite,
@@ -17,6 +18,27 @@ module Truth.World.SQLite
     import Truth.Core;
     import qualified Truth.World.SQLite.Schema as SQLite;
 
+
+    data QueryString = MkQueryString Query [SQLData];
+
+    instance Semigroup QueryString where
+    {
+        (MkQueryString qa va) <> (MkQueryString qb vb) = MkQueryString (mappend qa qb) (va <> vb);
+    };
+
+    instance Monoid QueryString where
+    {
+        mempty = MkQueryString mempty mempty;
+        mappend = (<>);
+    };
+
+    instance IsString QueryString where
+    {
+        fromString s = MkQueryString (fromString s) [];
+    };
+
+    valQueryString :: ToField t => t -> QueryString;
+    valQueryString t = MkQueryString (fromString "?") [toField t];
 
     fromSQLData :: FromField a => SQLData -> Maybe a;
     fromSQLData d = case fromField $ Field d 0 of
@@ -47,7 +69,7 @@ module Truth.World.SQLite
     class HasSchema (t :: *) where
     {
         type Schema t :: *;
-        schemaString :: Schema t -> t -> String;
+        schemaString :: Schema t -> t -> QueryString;
     };
 
     data Expr colsel t where
@@ -93,10 +115,10 @@ module Truth.World.SQLite
     instance HasSchema (Expr colsel t) where
     {
         type Schema (Expr colsel t) = SubmapWitness colsel ColumnRefSchema;
-        schemaString _ (ConstExpr t) = show $ toField t;
-        schemaString csch (ColumnExpr col) = columnRefName $ subWitnessMap csch col;
-        schemaString csch (EqualsExpr e1 e2) = "(" ++ schemaString csch e1 ++ "=" ++ schemaString csch e2 ++ ")";
-        schemaString csch (AndExpr e1 e2) = "(" ++ schemaString csch e1 ++ " AND " ++ schemaString csch e2 ++ ")";
+        schemaString _ (ConstExpr t) = valQueryString t;
+        schemaString csch (ColumnExpr col) = fromString $ columnRefName $ subWitnessMap csch col;
+        schemaString csch (EqualsExpr e1 e2) = "(" <> schemaString csch e1 <> "=" <> schemaString csch e2 <> ")";
+        schemaString csch (AndExpr e1 e2) = "(" <> schemaString csch e1 <> " AND " <> schemaString csch e2 <> ")";
     };
 
     class (FiniteWitness colsel,WitnessConstraint FromField colsel,WitnessConstraint ToField colsel) => IsSQLiteTable colsel;
@@ -126,16 +148,21 @@ module Truth.World.SQLite
         schemaString csch (MkTupleWhereClause expr) = schemaString csch expr;
     };
 
+    intercalate' :: Monoid a => a -> [a] -> a;
+    intercalate' _ [] = mempty;
+    intercalate' _ [a] = a;
+    intercalate' i (a:aa) = mconcat [a,i,intercalate' i aa];
+
     instance HasSchema (TupleSelectClause SQLiteDatabase row row') where
     {
         type Schema (TupleSelectClause SQLiteDatabase row row') = SubmapWitness (RowColSel row) ColumnRefSchema;
-        schemaString csch (MkTupleSelectClause mapSel) = intercalate "," $ fmap (\(MkAnyWitness cs') -> schemaString csch $ mapSel cs') $ allWitnesses @(RowColSel row');
+        schemaString csch (MkTupleSelectClause mapSel) = intercalate' "," $ fmap (\(MkAnyWitness cs') -> schemaString csch $ mapSel cs') $ allWitnesses @(RowColSel row');
     };
 
     instance HasSchema (TupleOrderItem colsel) where
     {
         type Schema (TupleOrderItem colsel) = SubmapWitness colsel ColumnRefSchema;
-        schemaString csch (MkTupleOrderItem col dir) = (columnRefName $ subWitnessMap csch col) ++ " " ++ show dir;
+        schemaString csch (MkTupleOrderItem col dir) = fromString $ (columnRefName $ subWitnessMap csch col) ++ " " ++ show dir;
     };
 
     columnRef :: String -> SQLite.ColumnSchema t -> ColumnRefSchema t;
@@ -149,7 +176,7 @@ module Truth.World.SQLite
         columnRefType = columnType;
     } in MkColumnRefSchema{..};
 
-    joinTableSchema :: forall tablesel row. SubmapWitness tablesel SQLite.TableSchema -> TableJoin SQLiteDatabase (TupleTableSel tablesel) row -> State Int ([String],SubmapWitness (RowColSel row) ColumnRefSchema);
+    joinTableSchema :: forall tablesel row. SubmapWitness tablesel SQLite.TableSchema -> TableJoin SQLiteDatabase (TupleTableSel tablesel) row -> State Int ([QueryString],SubmapWitness (RowColSel row) ColumnRefSchema);
     joinTableSchema schema (SingleTable (MkTupleTableSel tsel)) = do
     {
         i <- get;
@@ -158,7 +185,7 @@ module Truth.World.SQLite
         {
             tableRefName = "t" ++ show i;
             SQLite.MkTableSchema{..} = subWitnessMap schema tsel;
-            tabRefText = tableName ++ " AS " ++ tableRefName;
+            tabRefText = fromString $ tableName ++ " AS " ++ tableRefName;
             colRefSchema = mapSubmapWitness (columnRef tableRefName) tableColumns;
         };
         return ([tabRefText],colRefSchema);
@@ -176,30 +203,32 @@ module Truth.World.SQLite
         muted :: Connection -> MutableEdit IO (DatabaseEdit SQLiteDatabase (TupleTableSel tablesel));
         muted conn = let
         {
-            wherePart :: Schema (TupleWhereClause SQLiteDatabase row) -> TupleWhereClause SQLiteDatabase row -> String;
+            wherePart :: Schema (TupleWhereClause SQLiteDatabase row) -> TupleWhereClause SQLiteDatabase row -> QueryString;
             wherePart rowSchema wc = case wc of
             {
                 MkTupleWhereClause (ConstExpr True) -> "";
-                _ -> " WHERE " ++ schemaString rowSchema wc;
+                _ -> " WHERE " <> schemaString rowSchema wc;
             };
 
-            sqliteReadQuery :: SQLiteRead tablesel [All colsel] -> Query;
+            sqliteReadQuery :: SQLiteRead tablesel [All colsel] -> QueryString;
             sqliteReadQuery (DatabaseSelect jc wc oc sc) = case evalState (joinTableSchema databaseTables jc) 1 of
             {
                 (tabRefs,rowSchema) -> let
                 {
+                    fromPart :: QueryString;
                     fromPart = case tabRefs of
                     {
                         [] -> "";
-                        _ -> " FROM " ++ intercalate "," tabRefs;
+                        _ -> " FROM " <> intercalate' "," tabRefs;
                     };
 
+                    orderPart :: QueryString;
                     orderPart = case oc of
                     {
                         MkTupleOrderClause [] -> "";
-                        MkTupleOrderClause ocs -> " ORDER BY " ++ (intercalate "," $ fmap (schemaString rowSchema) ocs);
+                        MkTupleOrderClause ocs -> " ORDER BY " <> (intercalate' "," $ fmap (schemaString rowSchema) ocs);
                     };
-                } in fromString $ "SELECT " ++ schemaString rowSchema sc ++ fromPart ++ wherePart rowSchema wc ++ orderPart;
+                } in "SELECT " <> schemaString rowSchema sc <> fromPart <> wherePart rowSchema wc <> orderPart;
             };
 
             tableSchema :: TupleTableSel tablesel row -> (SQLite.TableSchema (RowColSel row),ConstraintWitness (IsSQLiteTable (RowColSel row)));
@@ -208,34 +237,40 @@ module Truth.World.SQLite
                 MkConstraintWitness -> (subWitnessMap databaseTables tsel,MkConstraintWitness);
             };
 
-            rowSchemaString :: WitnessConstraint ToField colsel => SubmapWitness colsel ColumnRefSchema -> All colsel -> String;
-            rowSchemaString MkSubmapWitness{..} (MkAll row) = "(" ++ intercalate "," (fmap (\(MkAnyWitness col) -> case witnessConstraint @_ @ToField col of
+            rowSchemaString :: WitnessConstraint ToField colsel => SubmapWitness colsel ColumnRefSchema -> All colsel -> QueryString;
+            rowSchemaString MkSubmapWitness{..} (MkAll row) = "(" <> intercalate' "," (fmap (\(MkAnyWitness col) -> case witnessConstraint @_ @ToField col of
             {
-                MkConstraintWitness -> show $ toField $ row col
-            }) subWitnessDomain) ++ ")";
+                MkConstraintWitness -> valQueryString $ row col
+            }) subWitnessDomain) <> ")";
 
-            assignmentPart :: SubmapWitness colsel ColumnRefSchema -> TupleUpdateItem SQLiteDatabase colsel -> String;
-            assignmentPart scsh (MkTupleUpdateItem col expr) = (columnRefName $ subWitnessMap scsh col) ++ "=" ++ schemaString scsh expr;
+            assignmentPart :: SubmapWitness colsel ColumnRefSchema -> TupleUpdateItem SQLiteDatabase colsel -> QueryString;
+            assignmentPart scsh (MkTupleUpdateItem col expr) = (fromString $ columnRefName $ subWitnessMap scsh col) <> "=" <> schemaString scsh expr;
 
-            sqliteEditQuery :: SQLiteEdit tablesel -> Query;
+            sqliteEditQuery :: SQLiteEdit tablesel -> QueryString;
             sqliteEditQuery (DatabaseInsert (tableSchema -> (SQLite.MkTableSchema{..},MkConstraintWitness)) (MkTupleInsertClause ic)) = let
             {
                 tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns;
-            } in fromString $ "INSERT OR REPLACE INTO " ++ tableName ++ " VALUES " ++ intercalate "," (fmap (rowSchemaString tableColumnRefs) ic);
+            } in "INSERT OR REPLACE INTO " <> fromString tableName <> " VALUES " <> intercalate' "," (fmap (rowSchemaString tableColumnRefs) ic);
             sqliteEditQuery (DatabaseDelete (tableSchema -> (SQLite.MkTableSchema{..},_)) wc) = let
             {
                 tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns;
-            } in fromString $ "DELETE FROM " ++ tableName ++ wherePart tableColumnRefs wc;
+            } in "DELETE FROM " <> fromString tableName <> wherePart tableColumnRefs wc;
             sqliteEditQuery (DatabaseUpdate (tableSchema -> (SQLite.MkTableSchema{..},_)) wc (MkTupleUpdateClause uis)) = let
             {
                 tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns;
-            } in fromString $ "UPDATE " ++ tableName ++ " SET " ++ intercalate "," (fmap (assignmentPart tableColumnRefs) uis) ++ wherePart tableColumnRefs wc;
+            } in "UPDATE " <> fromString tableName <> " SET " <> intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <> wherePart tableColumnRefs wc;
 
             mutableRead :: MutableRead IO (SQLiteRead tablesel);
-            mutableRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) = query_ conn $ sqliteReadQuery r;
+            mutableRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) = case sqliteReadQuery r of
+            {
+                MkQueryString s v -> query conn s v;
+            };
 
             mutableEdit :: [SQLiteEdit tablesel] -> IO (Maybe (IO ()));
-            mutableEdit = singleAlwaysMutableEdit $ \edit -> execute_ conn $ sqliteEditQuery edit;
+            mutableEdit = singleAlwaysMutableEdit $ \edit -> case sqliteEditQuery edit of
+            {
+                MkQueryString s v -> execute conn s v;
+            };
         } in MkMutableEdit{..};
     } in MkObject $ \call -> do
     {

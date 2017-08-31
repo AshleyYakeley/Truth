@@ -1,4 +1,3 @@
 #!/bin/sh -e
 stack build
-mkdir -p testsoup
-stack exec -- truth --soup testsoup
+stack exec -- truth --pinafore testpinafore.sqlite3

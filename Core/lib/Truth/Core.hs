@@ -21,7 +21,8 @@ module Truth.Core
         baseTypeKnowledge,
         typeInfoKnowledge $ typeInfo @ReadableConstraint,
         typeInfoKnowledge $ typeInfo @OneEdit,
-        typeInfoKnowledge $ typeInfo @StringEdit
+        typeInfoKnowledge $ typeInfo @StringEdit,
+        consTupleTypeKnowledge
     ];
 
     type ReasonCodec = Codec' ReasonM;

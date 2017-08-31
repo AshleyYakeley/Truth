@@ -212,6 +212,9 @@ module Truth.Core.Types.Key where
             instance Eq key => KeyContainer [(key, value)];
             type instance Element [a] = a;
             type instance ContainerKey [(key, value)] = key;
+            instance Eq a => KeyContainer (FiniteSet a);
+            type instance Element (FiniteSet a) = a;
+            type instance ContainerKey (FiniteSet a) = a;
             instance Show UUID;
             instance Floating (KeyEdit cont edit) (KeyEdit cont edit);
             instance (KeyContainer cont,IOFullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => Edit (KeyEdit cont edit) where
@@ -221,8 +224,10 @@ module Truth.Core.Types.Key where
             instance (KeyContainer cont,ReadableConstraint c,FullReader MonadIO (EditReader edit),FullReader c (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) =>
                 FullEdit c (KeyEdit cont edit);
             instance (HasNewValue value) => IONewItemKeyContainer [(UUID, value)];
+            instance IONewItemKeyContainer (FiniteSet UUID);
             instance (EditSubject keyedit ~ key,EditSubject valedit ~ val,Edit keyedit,FullReader MonadIO (EditReader keyedit),FullReader Monad (EditReader keyedit),Edit valedit) =>
                 HasKeyReader [(key,val)] (PairEditReader keyedit valedit);
+            instance HasKeyReader (FiniteSet t) (WholeReader t);
         |])];
     };
 
