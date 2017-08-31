@@ -249,19 +249,11 @@ module Truth.World.Pinafore.Edit where
         editUpdate (MkTupleEdit EditContext (PinaforeEditSetValue p s mnewv)) () | p == prd = do
         {
             mval <- readable $ MkTupleEditReader EditContent ReadWhole;
-            case mval of
+            return $ pure $ case mval of
             {
-                Just val -> do
-                {
-                    moldv <- readable $ MkTupleEditReader EditContext $ PinaforeReadGetValue p s;
-                    return $ pure $ case (Just val == moldv,Just val == mnewv) of
-                    {
-                        (True,False) -> [KeyDeleteItem s];
-                        (False,True) -> [KeyInsertReplaceItem s];
-                        _ -> [];
-                    };
-                };
-                Nothing -> return $ pure [];
+                Just val | Just val == mnewv -> [KeyInsertReplaceItem s];
+                Just _  -> [KeyDeleteItem s];
+                Nothing -> [];
             };
         };
         editUpdate (MkTupleEdit EditContext (PinaforeEditDeleteLookupValue p v)) () | p == prd = do

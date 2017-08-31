@@ -10,7 +10,7 @@ module Truth.Core.Edit.EditFunction  where
     {
         editInitial :: state,
         editGet :: state -> ReadFunction c (EditReader edita) (EditReader editb),
-        editUpdate :: edita -> state -> Readable c (EditReader edita) (state,[editb])
+        editUpdate :: edita -> state -> Readable c (EditReader edita) (state,[editb]) -- updates happen after the change, and reads will reflect the new state
     };
 
     type PureEditFunction = EditFunction Monad;
