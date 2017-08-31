@@ -65,7 +65,7 @@ module Truth.Core.Edit.EditFunction  where
         composeState :: forall a b c s1 s2. (Edit a,Edit b,Edit c) => ff s2 b c -> ff s1 a b -> ff (s1,s2) a c;
     };
 
-    data CloseState ff a b = forall state. Eq state => MkCloseState (ff state a b);
+    data CloseState ff a b = forall state. MkCloseState (ff state a b);
 
     instance StateCategory ff => ConstrainedCategory (CloseState ff) where
     {

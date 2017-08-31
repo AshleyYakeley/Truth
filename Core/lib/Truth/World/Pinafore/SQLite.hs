@@ -166,14 +166,14 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
             return $ do
             {
                 sa <- listToMaybe row;
-                decodeMaybe serializeCodec $ getSingleAll sa;
+                return $ getSingleAll sa;
             };
         };
         editGet () (PinaforeReadLookupPrimitive p l) = do
         {
             row <- readable $ DatabaseSelect
                 (JoinTables OuterTupleJoinClause (SingleTable $ MkTupleTableSel PinaforeTriple) (SingleTable $ MkTupleTableSel PinaforeLiteral))
-                (MkTupleWhereClause $ (ColumnExpr (LeftWitness TriplePredicate) === ConstExpr p) /\ (ColumnExpr (LeftWitness TripleValue) === ColumnExpr (RightWitness LiteralKey)) /\ (ColumnExpr (RightWitness LiteralValue) === ConstExpr (encode serializeCodec l)))
+                (MkTupleWhereClause $ (ColumnExpr (LeftWitness TriplePredicate) === ConstExpr p) /\ (ColumnExpr (LeftWitness TripleValue) === ColumnExpr (RightWitness LiteralKey)) /\ (ColumnExpr (RightWitness LiteralValue) === ConstExpr l))
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr (LeftWitness TripleSubject));
             return $ MkFiniteSet $ fmap getSingleAll row;
@@ -194,7 +194,7 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
         editLensPutEdit () (PinaforeEditSetPrimitive v (Just l)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel PinaforeLiteral) $ MkTupleInsertClause $ pure $ MkAll $ \case
         {
             LiteralKey -> v;
-            LiteralValue -> encode serializeCodec l;
+            LiteralValue -> l;
         };
         editLensPutEdit () (PinaforeEditSetPrimitive v Nothing) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel PinaforeLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v;
 

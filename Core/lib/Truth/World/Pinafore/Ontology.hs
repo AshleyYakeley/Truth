@@ -26,7 +26,9 @@ module Truth.World.Pinafore.Ontology where
 
     data ViewPinaforeProperty = SimpleViewPinaforeProperty ViewPinaforeSimpleProperty | ListViewPinaforeProperty ViewPinaforeListProperty;
 
-    data ViewPinaforePrimitive = forall edit. Serialize (EditSubject edit) => MkViewPinaforePrimitive
+    type PinaforeEditConstraint edit = (HasTypeInfo edit,HasTypeInfo (EditReader edit),IOFullReader (EditReader edit),Edit edit);
+
+    data ViewPinaforePrimitive = forall edit. (PinaforeEditConstraint edit,Serialize (EditSubject edit)) => MkViewPinaforePrimitive
     {
         primType :: TypeInfo edit
     };
@@ -34,6 +36,26 @@ module Truth.World.Pinafore.Ontology where
     data ViewPinaforeType = EntityViewPinaforeType [ViewPinaforeProperty] | PrimitiveViewPinaforeType ViewPinaforePrimitive;
 
     data ViewPinaforeValue = MkViewPinaforeValue UUID ViewPinaforeType;
+
+
+    pinaforePropertyLens :: ViewPinaforeProperty -> (forall edit. PinaforeEditConstraint edit => PinaforeMorphism (WholeEdit (Maybe UUID)) edit -> r) -> r;
+    pinaforePropertyLens (SimpleViewPinaforeProperty prop) f = f $ spropMorphism prop;
+    pinaforePropertyLens (ListViewPinaforeProperty prop) f = f $ lpropMorphism prop;
+
+    pinaforePropertiesLens :: [ViewPinaforeProperty] -> (forall sel. (HasTypeInfo sel,FiniteTupleSelector sel,TupleReaderWitness IOFullReader sel,TupleSubject sel ~ Tuple sel) => PinaforeMorphism (WholeEdit (Maybe UUID)) (TupleEdit sel) -> r) -> r;
+    pinaforePropertiesLens [] f = f @EmptyWitness $ MkPointedEditLens emptyTupleLens;
+    pinaforePropertiesLens (p:pp) f = pinaforePropertiesLens pp $ \(MkPointedEditLens ppm) -> pinaforePropertyLens p $ \(MkPointedEditLens pm) -> f $ MkPointedEditLens $ consTupleLens pm ppm;
+
+    pinaforeTypeLens :: ViewPinaforeType -> (forall edit. PinaforeEditConstraint edit => PinaforeMorphism (WholeEdit (Maybe UUID)) edit -> r) -> r;
+    pinaforeTypeLens (EntityViewPinaforeType props) f = pinaforePropertiesLens props f;
+    pinaforeTypeLens (PrimitiveViewPinaforeType (MkViewPinaforePrimitive (MkTypeInfo :: TypeInfo edit))) f = f @(OneWholeEdit Maybe edit) $ primitiveEditPinaforeMorphism @edit;
+
+    pinaforeValueLens :: ViewPinaforeValue -> (forall edit. PinaforeEditConstraint edit => GeneralLens PinaforeEdit edit -> r) -> r;
+    pinaforeValueLens (MkViewPinaforeValue value tp) f = let
+    {
+        conv :: EditLens' MonadIO Maybe ((),()) PinaforeEdit (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID)));
+        conv = contextJoinEditLenses identityState (constEditLens (Just value));
+    } in pinaforeTypeLens tp $ \(MkPointedEditLens lens) -> f $ toGeneralLens $ composeState lens conv;
 
 
     -- example ontology

@@ -1,20 +1,10 @@
 {-# OPTIONS -fno-warn-orphans #-}
 module Data.Reity.Instances where
 {
-    import Prelude;
+    import Shapes;
     import GHC.Types;
-    import Data.Type.Equality;
-    import Data.Type.Heterogeneous;
-    import Data.Word;
-    import Data.ByteString.Lazy;
-    import Data.Text;
-    import Control.Monad.IO.Class;
-    import Control.Comonad;
+    import Prelude(Read);
     import Data.UUID;
-    import Data.Searchable;
-    import Data.HasNewValue;
-    import Data.MonadOne;
-    import Data.Result;
     import Data.Knowledge;
     import Data.Reity.ReasonM;
     import Data.Reity.Match;
@@ -130,6 +120,12 @@ module Data.Reity.Instances where
     {
         typeWitness = $(generateWitness [t|TestEquality|]);
         typeName _ = "TestEquality";
+    };
+
+    instance HasTypeInfo Semigroup where
+    {
+        typeWitness = $(generateWitness [t|Semigroup|]);
+        typeName _ = "Semigroup";
     };
 
     instance HasTypeInfo Monoid where
@@ -365,6 +361,53 @@ module Data.Reity.Instances where
             instance Eq UUID;
             instance Ord UUID;
             instance Show UUID;
+        |]);
+    };
+
+    instance HasTypeInfo FiniteSet where
+    {
+        typeWitness = $(generateWitness [t|FiniteSet|]);
+        typeName _ = "FiniteSet";
+        typeKnowledge _ = $(generateTypeKnowledge [d|
+            instance Foldable FiniteSet;
+            instance Functor FiniteSet;
+            instance Semigroup (FiniteSet a);
+            instance Monoid (FiniteSet a);
+            instance Traversable FiniteSet;
+            {-
+            instance MonoFunctor FiniteSet;
+            instance MonoFoldable FiniteSet;
+            instance GrowingAppend FiniteSet;
+            instance Reducible FiniteSet;
+            type instance Element (FiniteSet a) = a;
+            instance MonoTraversable (FiniteSet a);
+            instance Eq a => SetContainer (FiniteSet a);
+            instance Eq a => IsSet (FiniteSet a);
+            instance MonoPointed (FiniteSet a);
+            instance Eq a => JoinSemiLattice (FiniteSet a);
+            instance Eq a => BoundedJoinSemiLattice (FiniteSet a);
+            instance Eq a => MeetSemiLattice (FiniteSet a);
+            instance Eq a => Lattice (FiniteSet a);
+            instance Eq a => KeyContainer (FiniteSet a);
+            -}
+        |]);
+    };
+
+    instance HasTypeInfo k => HasTypeInfo (EmptyWitness :: k -> *) where
+    {
+        typeWitness = $(generateWitness [t|EmptyWitness|]);
+        typeName _ = "EmptyWitness";
+        typeKnowledge _ = $(generateTypeKnowledge [d|
+            -- instance HasTypeInfo k => Finite (EmptyWitness (t :: k));
+            -- instance HasTypeInfo k => TestEquality (EmptyWitness :: k -> *);
+        |]);
+    };
+
+    instance HasTypeInfo k => HasTypeInfo (ConsWitness :: k -> (k -> *) -> k -> *) where
+    {
+        typeWitness = $(generateWitness [t|ConsWitness|]);
+        typeName _ = "ConsWitness";
+        typeKnowledge _ = $(generateTypeKnowledge [d|
         |]);
     };
 }

@@ -91,6 +91,10 @@ module Truth.Core.Types.PointedEditLens where
         MkPointedEditLens idlens -> MkPointedEditLens $ composeState lens idlens;
     };
 
+    composeEditLensPointed :: (ReadableConstraint c,MonadOne f,Edit editp,Edit edita,Edit editb,Edit editc) =>
+        EditLens' c f state editb editc -> PointedEditLens c f editp edita editb -> PointedEditLens c f editp edita editc;
+    composeEditLensPointed lensBC (MkPointedEditLens lensAB) = MkPointedEditLens $ composeState lensBC lensAB;
+
     instance (ReadableConstraint c,JoinSemiLatticeEdit editb,Edit editp,Edit edita,Edit editb) =>
         JoinSemiLattice (PointedEditFunction c editp edita editb) where
     {

@@ -10,8 +10,8 @@ module Truth.World.Pinafore.Edit where
     {
         PinaforeReadGetValue :: UUID -> UUID -> PinaforeRead (Maybe UUID);
         PinaforeReadLookupValue :: UUID -> UUID -> PinaforeRead (FiniteSet UUID);
-        PinaforeReadGetPrimitive :: Serialize t => UUID -> PinaforeRead (Maybe t);
-        PinaforeReadLookupPrimitive :: Serialize t => UUID -> t -> PinaforeRead (FiniteSet UUID);
+        PinaforeReadGetPrimitive :: UUID -> PinaforeRead (Maybe ByteString);
+        PinaforeReadLookupPrimitive :: UUID -> ByteString -> PinaforeRead (FiniteSet UUID);
     };
 
     data PinaforeEdit where
@@ -19,7 +19,7 @@ module Truth.World.Pinafore.Edit where
         PinaforeEditSetValue :: UUID -> UUID -> Maybe UUID -> PinaforeEdit; -- pred subj mval
         PinaforeEditDeleteTriple :: UUID -> UUID -> UUID -> PinaforeEdit; -- pred subj val -- delete this triple if it exists
         PinaforeEditDeleteLookupValue :: UUID -> UUID -> PinaforeEdit; -- pred val -- delete all triples matching pred val
-        PinaforeEditSetPrimitive :: Serialize t => UUID -> Maybe t -> PinaforeEdit;
+        PinaforeEditSetPrimitive :: UUID -> Maybe ByteString -> PinaforeEdit;
     };
 
     instance Reader PinaforeRead where
@@ -50,16 +50,20 @@ module Truth.World.Pinafore.Edit where
         editInitial = ();
 
         editGet :: () -> WholeReader (Maybe t) a -> PureReadable PinaforeRead a;
-        editGet () ReadWhole = readable $ PinaforeReadGetPrimitive valkey;
+        editGet () ReadWhole = do
+        {
+            mbs <- readable $ PinaforeReadGetPrimitive valkey;
+            return $ mbs >>= decodeMaybe serializeCodec;
+        };
 
         editUpdate :: PinaforeEdit -> () -> PureReadable PinaforeRead ((),[WholeEdit (Maybe t)]);
-        editUpdate (PinaforeEditSetPrimitive k mt) () | k == valkey = pure $ pure $ pure $ MkWholeEdit $ mt >>= decodeMaybe serializeCodec . encode serializeCodec;
+        editUpdate (PinaforeEditSetPrimitive k mt) () | k == valkey = pure $ pure $ pure $ MkWholeEdit $ mt >>= decodeMaybe serializeCodec;
         editUpdate _ () = pure $ pure [];
 
         editLensFunction = MkEditFunction{..};
 
         editLensPutEdit :: () -> WholeEdit (Maybe t) -> PureReadable PinaforeRead (Identity ((),[PinaforeEdit]));
-        editLensPutEdit () (MkWholeEdit mt) = pure $ pure $ pure $ pure $ PinaforeEditSetPrimitive valkey mt;
+        editLensPutEdit () (MkWholeEdit mt) = pure $ pure $ pure $ pure $ PinaforeEditSetPrimitive valkey $ fmap (encode serializeCodec) mt;
     } in MkEditLens{..};
 
     soupTripleLens :: UUID -> UUID -> PureEditLens () PinaforeEdit (WholeEdit (Maybe UUID));
@@ -81,6 +85,62 @@ module Truth.World.Pinafore.Edit where
     } in MkEditLens{..};
 
     type PinaforeMorphism = PointedEditLens MonadIO Maybe PinaforeEdit;
+
+    primitivePinaforeMorphism :: forall val. Serialize val => PinaforeMorphism (WholeEdit (Maybe UUID)) (WholeEdit (Maybe val));
+    primitivePinaforeMorphism = MkPointedEditLens $ let
+    {
+        editInitial = ();
+
+        editGet :: forall t. () -> WholeReader (Maybe val) t -> IOReadable (ContextEditReader PinaforeEdit (WholeEdit (Maybe UUID))) t;
+        editGet () ReadWhole = do
+        {
+            msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
+            case msubj of
+            {
+                Just subj -> do
+                {
+                    mbs <- readable $ MkTupleEditReader EditContext $ PinaforeReadGetPrimitive subj;
+                    return $ mbs >>= decodeMaybe serializeCodec;
+                };
+                Nothing -> return Nothing;
+            };
+        };
+
+        editUpdate :: (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID))) -> () -> IOReadable (ContextEditReader PinaforeEdit (WholeEdit (Maybe UUID))) ((),[WholeEdit (Maybe val)]);
+        editUpdate (MkTupleEdit EditContext (PinaforeEditSetPrimitive s mbs)) () = do
+        {
+            msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
+            return $ pure $ if Just s == msubj then [MkWholeEdit $ mbs >>= decodeMaybe serializeCodec] else [];
+        };
+        editUpdate (MkTupleEdit EditContext _) () = return $ pure [];
+        editUpdate (MkTupleEdit EditContent (MkWholeEdit Nothing)) () = return $ pure [MkWholeEdit Nothing];
+        editUpdate (MkTupleEdit EditContent (MkWholeEdit (Just subj))) () = do
+        {
+            mbs <- readable $ MkTupleEditReader EditContext $ PinaforeReadGetPrimitive subj;
+            return $ pure $ [MkWholeEdit $ mbs >>= decodeMaybe serializeCodec];
+        };
+
+        editLensFunction = MkEditFunction{..};
+
+        editLensPutEdit :: () -> WholeEdit (Maybe val) -> IOReadable (ContextEditReader PinaforeEdit (WholeEdit (Maybe UUID))) (Maybe ((),[ContextEdit PinaforeEdit (WholeEdit (Maybe UUID))]));
+        editLensPutEdit () (MkWholeEdit (fmap (encode serializeCodec) -> mbs)) = do
+        {
+            msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
+            case msubj of
+            {
+                Just subj -> return $ pure $ pure [MkTupleEdit EditContext $ PinaforeEditSetPrimitive subj mbs];
+                Nothing -> do
+                {
+                    subj <- liftIO UUID.nextRandom;
+                    return $ pure $ pure [MkTupleEdit EditContent $ MkWholeEdit $ Just subj, MkTupleEdit EditContext $ PinaforeEditSetPrimitive subj mbs];
+                };
+            };
+        };
+
+    } in MkEditLens{..};
+
+    primitiveEditPinaforeMorphism :: forall edit. (IOFullReader (EditReader edit),Edit edit,Serialize (EditSubject edit)) => PinaforeMorphism (WholeEdit (Maybe UUID)) (OneWholeEdit Maybe edit);
+    primitiveEditPinaforeMorphism = composeEditLensPointed convertEditLens primitivePinaforeMorphism;
 
     predicatePinaforeMorphism :: UUID -> PinaforeMorphism (WholeEdit (Maybe UUID)) (WholeEdit (Maybe UUID));
     predicatePinaforeMorphism prd = MkPointedEditLens $ let

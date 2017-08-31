@@ -11,6 +11,7 @@ module Main(main) where
     import Truth.World.JSON;
     import Truth.World.Note;
     import Truth.World.Soup;
+    import Truth.World.Pinafore;
     import Graphics.UI.Gtk hiding (Object);
     import Truth.UI.GTK;
     import qualified Options.Applicative as O;
@@ -96,11 +97,18 @@ module Main(main) where
         makeWindowCountRef windowCount (takeFileName $ dropTrailingPathSeparator dirpath) soupSub;
     };
 
+    pinaforeWindow :: FilePath -> WindowMaker;
+    pinaforeWindow sqlitepath windowCount = do
+    {
+        sub <- makeObjectSubscriber $ sqlitePinaforeObject sqlitepath;
+        pinaforeValueLens rootValue $ \lens -> makeWindowCountRef windowCount "Root" $ mapSubscriber lens sub;
+    };
+
     testSave :: Bool;
     testSave = True;
 
     optParser :: O.Parser [WindowMaker];
-    optParser = O.many $ (soupWindow <$> O.strOption (O.long "soup")) O.<|> (fileTextWindow testSave <$> O.strArgument mempty);
+    optParser = O.many $ (pinaforeWindow <$> O.strOption (O.long "pinafore")) O.<|> (soupWindow <$> O.strOption (O.long "soup")) O.<|> (fileTextWindow testSave <$> O.strArgument mempty);
 
     main :: IO ();
     main = do

@@ -34,7 +34,7 @@ module Truth.Core.Edit.GeneralLens where
         toGeneralLens' = id;
     };
 
-    instance Eq state => IsGeneralLens (IOEditLens' m state edita editb) where
+    instance IsGeneralLens (IOEditLens' m state edita editb) where
     {
         type LensMonad (IOEditLens' m state edita editb) = m;
         type LensDomain (IOEditLens' m state edita editb) = edita;
@@ -43,7 +43,7 @@ module Truth.Core.Edit.GeneralLens where
         toGeneralLens' = MkCloseState;
     };
 
-    instance Eq state => IsGeneralLens (PureEditLens' m state edita editb) where
+    instance IsGeneralLens (PureEditLens' m state edita editb) where
     {
         type LensMonad (PureEditLens' m state edita editb) = m;
         type LensDomain (PureEditLens' m state edita editb) = edita;
