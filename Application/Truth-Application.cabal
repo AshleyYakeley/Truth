@@ -24,6 +24,7 @@ executable truth
         GeneralizedNewtypeDeriving
         ImplicitParams
         KindSignatures
+        LambdaCase
         MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude

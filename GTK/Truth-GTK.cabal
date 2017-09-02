@@ -24,6 +24,7 @@ library
         GeneralizedNewtypeDeriving
         ImplicitParams
         KindSignatures
+        LambdaCase
         MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude
@@ -100,6 +101,7 @@ test-suite test
         GeneralizedNewtypeDeriving
         ImplicitParams
         KindSignatures
+        LambdaCase
         MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude

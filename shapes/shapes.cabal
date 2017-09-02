@@ -30,8 +30,9 @@ library
         GeneralizedNewtypeDeriving
         ImplicitParams
         KindSignatures
-        MultiParamTypeClasses
+        LambdaCase
         MonadFailDesugaring
+        MultiParamTypeClasses
         NoImplicitPrelude
         PatternGuards
         PatternSynonyms
