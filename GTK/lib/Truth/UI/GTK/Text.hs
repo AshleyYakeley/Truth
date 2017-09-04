@@ -1,10 +1,8 @@
-{-# OPTIONS -fno-warn-orphans #-}
-module Truth.UI.GTK.Text (textTypeKnowledge) where
+module Truth.UI.GTK.Text (textUIView) where
 {
     import Shapes;
     import System.Glib;
     import Graphics.UI.Gtk;
-    import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Useful;
@@ -41,8 +39,8 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
         return $ startEndRun p1 p2;
     };
 
-    textView :: forall s. (IsSequence s,Index s ~ Int,Element s ~ Char,GlibString s,HasTypeInfo s) => GView (StringEdit s);
-    textView = MkView $ \(MkObject object) setSelect -> do
+    textView :: forall s. (IsSequence s,Index s ~ Int,Element s ~ Char,GlibString s) => UIText (StringEdit s) -> GView (StringEdit s);
+    textView uitext = MkView $ \(MkObject object) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
         initial <- object $ \muted -> unReadable pureFromReader $ mutableRead muted;
@@ -92,7 +90,7 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
                 run <- getSequenceRun iter1 iter2;
                 -- get selection...
-                return $ Just $ return $ MkAspect "section" typeInfo $ MkCloseState $ pureToEditLens $ stringSectionLens run;
+                return $ Just $ MkAspect "section" (MkUISpec uitext) $ MkCloseState $ pureToEditLens $ stringSectionLens run;
             };
         };
 
@@ -104,24 +102,10 @@ module Truth.UI.GTK.Text (textTypeKnowledge) where
         return MkViewResult{..};
     };
 
-    -- orphan
-    instance DependentHasView Widget (StringEdit String);
-    -- orphan
-    instance HasView Widget (StringEdit String) where
+    textUIView :: GetUIView;
+    textUIView = MkGetUIView $ \_ uispec -> fmap (\case
     {
-        theView = textView;
-    };
-    -- orphan
-    instance DependentHasView Widget (StringEdit Text);
-    -- orphan
-    instance HasView Widget (StringEdit Text) where
-    {
-        theView = textView;
-    };
-
-    textTypeKnowledge :: TypeKnowledge;
-    textTypeKnowledge = namedKnowledge "text" $(generateTypeKnowledge [d|
-        instance DependentHasView Widget (StringEdit String);
-        instance DependentHasView Widget (StringEdit Text);
-    |]);
+        MkStringUIText -> textView MkStringUIText;
+        MkTextUIText -> textView MkTextUIText;
+    }) $ isUISpec uispec;
 }

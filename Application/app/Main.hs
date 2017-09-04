@@ -50,7 +50,7 @@ module Main(main) where
                 undoBufferSub = undoQueueSubscriber bufferSub;
             };
             textSub <- makeSharedSubscriber undoBufferSub;
-            makeWindowCountRef windowCount (takeFileName path) textSub;
+            makeWindowCountRef windowCount (MkUISpec $ MkUIOne $ MkUISpec MkStringUIText) (takeFileName path) textSub;
         }
         else do
         {
@@ -60,12 +60,14 @@ module Main(main) where
                 textObj = convertObject wholeTextObj;
             };
             textSub <- makeObjectSubscriber textObj;
-            makeWindowCountRef windowCount (takeFileName path) textSub;
+            makeWindowCountRef windowCount (MkUISpec $ MkUIOne $ MkUISpec MkStringUIText) (takeFileName path) textSub;
         };
     };
 
-    type SoupContentsEdit = TupleEdit NoteSel;
-    type SoupItemEdit = OneWholeEdit ReasonM SoupContentsEdit;
+
+    type SoupItemEdit = OneWholeEdit ReasonM NoteEdit;
+    soupEditSpec :: UISpec (SoupEdit SoupItemEdit);
+    soupEditSpec = MkUISpec $ MkUIKeyContainer $ MkUISpec $ MkUIOne noteEditSpec;
 
     soupWindow :: FilePath -> WindowMaker;
     soupWindow dirpath windowCount = do
@@ -75,7 +77,7 @@ module Main(main) where
             rawSoupObject :: Object (SoupEdit (MutableIOEdit ByteStringEdit));
             rawSoupObject = directorySoup fileSystemMutableEdit dirpath;
 
-            soupContentsCodec :: ReasonCodec ByteString (EditSubject SoupContentsEdit);
+            soupContentsCodec :: ReasonCodec ByteString (EditSubject NoteEdit);
             soupContentsCodec = jsonValueCodec . jsonCodec;
 
             soupItemInjection :: Injection' ReasonM ByteString (EditSubject SoupItemEdit);
@@ -94,14 +96,14 @@ module Main(main) where
             soupObject = fixedMapObject lens rawSoupObject;
         };
         soupSub <- makeObjectSubscriber soupObject;
-        makeWindowCountRef windowCount (takeFileName $ dropTrailingPathSeparator dirpath) soupSub;
+        makeWindowCountRef windowCount soupEditSpec (takeFileName $ dropTrailingPathSeparator dirpath) soupSub;
     };
 
     pinaforeWindow :: FilePath -> WindowMaker;
     pinaforeWindow sqlitepath windowCount = do
     {
         sub <- makeObjectSubscriber $ sqlitePinaforeObject sqlitepath;
-        pinaforeValueLens rootValue $ \lens -> makeWindowCountRef windowCount "Root" $ mapSubscriber lens sub;
+        makeWindowCountRef windowCount (pinaforeValueSpec rootValue) "Root" sub;
     };
 
     testSave :: Bool;

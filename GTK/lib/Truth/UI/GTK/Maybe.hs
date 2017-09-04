@@ -1,8 +1,6 @@
-{-# OPTIONS -fno-warn-orphans #-}
-module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
+module Truth.UI.GTK.Maybe (oneUIView) where
 {
     import Shapes;
-    import Data.Reity;
     import Truth.Core;
     import Graphics.UI.Gtk hiding (get,Object);
     import Truth.UI.GTK.GView;
@@ -40,8 +38,8 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         IOFullEdit edit,
         WidgetClass wd
     ) =>
-      TypeInfo f -> Maybe (Limit f) -> (Object (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
-    monadOneIVF tf mDeleteValue makeEmptywidget (MkView baseView) = MkView $ \object setSelect -> do
+      (forall editb. (IOFullEdit editb) => UISpec editb -> UISpec (OneWholeEdit f editb)) -> Maybe (Limit f) -> (Object (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
+    monadOneIVF uispec mDeleteValue makeEmptywidget (MkView baseView) = MkView $ \object setSelect -> do
     {
         box <- vBoxNew False 0;
         emptyWidget <- makeEmptywidget object;
@@ -73,7 +71,8 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
 
             baseObj = MkObject $ \call -> runObject object $ \muted -> call $ baseMuted muted;
 
-            baseSetSelect ag = setSelect $ fmap (fmap (\maspect -> maspect >>= mapOneWholeEditAspect tf)) ag;
+            baseSetSelect :: AspectGetter edit -> IO ();
+            baseSetSelect ag = setSelect $ fmap (fmap (mapOneWholeEditAspect uispec)) ag;
 
             getVR :: forall m. IsStateIO m => f () -> m (f (GViewResult edit));
             getVR fu = for fu $ \() -> liftIO $ baseView baseObj baseSetSelect;
@@ -139,44 +138,13 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
                 fvr <- get;
                 case getMaybeOne fvr of
                 {
-                    Just (MkViewResult _ _ ag) -> liftIO $ fmap (fmap (\maspect -> maspect >>= mapOneWholeEditAspect tf)) ag;
+                    Just (MkViewResult _ _ ag) -> liftIO $ fmap (fmap (mapOneWholeEditAspect uispec)) ag;
                     Nothing -> return Nothing;
                 }
             };
         };
         runObject object $ \muted -> vrUpdate (mutableRead muted) [];
         return MkViewResult{..};
-    };
-
-    maybeView :: (HasNewValue (EditSubject edit),IOFullEdit edit) =>
-      GView edit -> GView (OneWholeEdit Maybe edit);
-    maybeView = monadOneIVF @Maybe typeInfo (Just $ MkLimit Nothing) (createButton (Just newValue));
-
-    -- orphan
-    instance (
-        EditReader edit ~ reader,
-        DependentHasView Widget edit,
-        HasNewValue (ReaderSubject reader),
-        IOFullEdit edit
-        ) => DependentHasView Widget (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit)) where
-    {
-        dependsView = $(generateTypeMatchExpr [t|forall e r. SumWholeReaderEdit (OneReader Maybe r) (OneEdit Maybe e)|] [e|\ie _ -> do
-        {
-            view <- dependsView ie;
-            return $ maybeView view;
-        }|]);
-    };
-
-    -- orphan
-    instance (
-        EditReader edit ~ reader,
-        DependentHasView Widget edit,
-        HasNewValue (ReaderSubject reader),
-        IOFullEdit edit,
-        HasView Widget edit
-        ) => HasView Widget (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit)) where
-    {
-        theView = maybeView theView;
     };
 
     placeholderLabel :: IO Label;
@@ -186,58 +154,14 @@ module Truth.UI.GTK.Maybe (maybeTypeKnowledge) where
         return label;
     };
 
-    resultView :: IOFullEdit edit => TypeInfo err -> GView edit -> GView (OneWholeEdit (Result err) edit);
-    resultView terr = monadOneIVF (applyTypeInfo (typeInfo :: TypeInfo Result) terr) Nothing (\_ -> placeholderLabel);
-
-    -- orphan
-    instance
-    (
-        EditReader edit ~ reader,
-        DependentHasView Widget edit,
-        IOFullEdit edit
-    ) => DependentHasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
+    oneUIView :: GetUIView;
+    oneUIView = MkGetUIView $ \getview uispec -> do
     {
-        dependsView = $(generateTypeMatchExpr [t|forall edit' reader' err'. SumWholeReaderEdit (OneReader (Result err') reader') (OneEdit (Result err') edit')|] [e|\ie _ ierr -> do
+        uit <- isUISpec uispec;
+        return $ case uit of
         {
-            view <- dependsView ie;
-            return $ resultView ierr view;
-        }|]);
+            MkUIMaybe mnewval itemspec -> monadOneIVF (MkUISpec . MkUIMaybe Nothing) (Just $ MkLimit Nothing) (createButton mnewval) $ getview itemspec;
+            MkUIOne itemspec -> monadOneIVF (MkUISpec . MkUIOne) Nothing (\_ -> placeholderLabel) $ getview itemspec;
+        };
     };
-
-    -- orphan
-    instance (
-        EditReader edit ~ reader,
-        DependentHasView Widget edit,
-        IOFullEdit edit,
-        HasView Widget edit,
-        HasTypeInfo err
-        ) => HasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit)) where
-    {
-        theView = resultView typeInfo theView;
-    };
-
-    maybeTypeKnowledge :: TypeKnowledge;
-    maybeTypeKnowledge = mconcat
-    [
-        namedKnowledge "maybe" $(generateTypeKnowledge [d|
-            instance
-                (
-                    EditReader edit ~ reader,
-                    DependentHasView Widget edit,
-                    HasNewValue (ReaderSubject reader),
-                    IOFullEdit edit
-                ) =>
-                DependentHasView Widget (SumWholeReaderEdit (OneReader Maybe reader) (OneEdit Maybe edit));
-            |]),
-        namedKnowledge "result" $(generateTypeKnowledge [d|
-            instance
-                (
-                    EditReader edit ~ reader,
-                    DependentHasView Widget edit,
-                    HasNewValue (ReaderSubject reader),
-                    IOFullEdit edit
-                ) =>
-                DependentHasView Widget (SumWholeReaderEdit (OneReader (Result err) reader) (OneEdit (Result err) edit));
-            |])
-    ];
 }

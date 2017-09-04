@@ -129,7 +129,6 @@ library
         Truth.Core.Object.Lens
         Truth.Core.Object.Editor
         Truth.Core.Object.View
-        Truth.Core.Object.HasView
         Truth.Core.Object.Aspect
         Truth.Core.Object.Savable
         Truth.Core.Object.Undo

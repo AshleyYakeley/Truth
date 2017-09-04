@@ -10,10 +10,10 @@ module Truth.Core.Object.View where
     import Truth.Core.Object.Aspect;
 
 
-    type AspectGetter edit = IO (Maybe (KnowM (Aspect edit)));
+    type AspectGetter edit = IO (Maybe (Aspect edit));
 
     mapAspectGetter :: (Edit edita,Edit editb) => GeneralLens edita editb -> AspectGetter editb -> AspectGetter edita;
-    mapAspectGetter lens = fmap $ fmap $ fmap $ mapAspect lens;
+    mapAspectGetter lens = fmap $ fmap $ mapAspect lens;
 
     data ViewResult edit w = MkViewResult
     {

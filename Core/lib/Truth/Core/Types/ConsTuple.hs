@@ -84,6 +84,44 @@ module Truth.Core.Types.ConsTuple where
         tupleHasInfo (RestWitness r) = tupleHasInfo r;
     };
 
+    firstEditLens :: forall c m sel edit1. (Applicative m) =>
+        EditLens' c m () (TupleEdit (ConsWitness edit1 sel)) edit1;
+    firstEditLens = let
+    {
+        editInitial = ();
+
+        editGet :: () -> ReadFunction c (TupleEditReader (ConsWitness edit1 sel)) (EditReader edit1);
+        editGet () rt = readable $ MkTupleEditReader FirstWitness rt;
+
+        editUpdate :: TupleEdit (ConsWitness edit1 sel) -> () -> Readable c (TupleEditReader (ConsWitness edit1 sel)) ((), [edit1]);
+        editUpdate (MkTupleEdit FirstWitness edit) () = return ((),[edit]);
+        editUpdate (MkTupleEdit (RestWitness _) _) () = return ((),[]);
+
+        editLensFunction = MkEditFunction{..};
+
+        editLensPutEdit :: () -> edit1 -> Readable c (TupleEditReader (ConsWitness edit1 sel)) (m ((),[TupleEdit (ConsWitness edit1 sel)]));
+        editLensPutEdit () edit = return $ pure ((),[MkTupleEdit FirstWitness edit]);
+    } in MkEditLens{..};
+
+    restEditLens ::  forall c m sel edit1. (Applicative m) =>
+        EditLens' c m () (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel);
+    restEditLens = let
+    {
+        editInitial = ();
+
+        editGet :: () -> ReadFunction c (TupleEditReader (ConsWitness edit1 sel)) (TupleEditReader sel);
+        editGet () (MkTupleEditReader sel rt) = readable $ MkTupleEditReader (RestWitness sel) rt;
+
+        editUpdate :: TupleEdit (ConsWitness edit1 sel) -> () -> Readable c (TupleEditReader (ConsWitness edit1 sel)) ((), [TupleEdit sel]);
+        editUpdate (MkTupleEdit FirstWitness _) () = return ((),[]);
+        editUpdate (MkTupleEdit (RestWitness sel) edit) () = return ((),[MkTupleEdit sel edit]);
+
+        editLensFunction = MkEditFunction{..};
+
+        editLensPutEdit :: () -> TupleEdit sel -> Readable c (TupleEditReader (ConsWitness edit1 sel)) (m ((),[TupleEdit (ConsWitness edit1 sel)]));
+        editLensPutEdit () (MkTupleEdit sel edit) = return $ pure ((),[MkTupleEdit (RestWitness sel) edit]);
+    } in MkEditLens{..};
+
     consTuple :: EditSubject a -> Tuple r -> Tuple (ConsWitness a r);
     consTuple a (MkTuple tup) = MkTuple $ \esel -> case esel of
     {

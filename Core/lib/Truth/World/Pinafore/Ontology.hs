@@ -9,66 +9,98 @@ module Truth.World.Pinafore.Ontology where
     uuid :: String -> UUID;
     uuid s = fromMaybe (error $ "couldn't parse UUID " ++ show s) $ Data.UUID.fromString s;
 
-    data ViewPinaforeSimpleProperty = MkViewPinaforeSimpleProperty
+    data ViewPinaforeSimpleProperty = forall edit. PinaforeEditConstraint edit => MkViewPinaforeSimpleProperty
     {
         spropName :: String,
-        spropMorphism :: PinaforeMorphism (WholeEdit (Maybe UUID)) (WholeEdit (Maybe UUID)),
-        spropType :: ViewPinaforeType
+        spropMorphism :: PinaforeMorphism (WholeEdit (Maybe UUID)) edit,
+        spropType :: ViewPinaforeType edit
     };
 
     data ViewPinaforeListProperty = MkViewPinaforeListProperty
     {
         lpropName :: String,
         lpropMorphism :: PinaforeMorphism (WholeEdit (Maybe UUID)) (FiniteSetEdit UUID),
-        lpropType :: ViewPinaforeType,
+        lpropType :: ViewPinaforeType (WholeEdit (Maybe UUID)),
         lpropColumns :: [ViewPinaforeProperty]
     };
 
     data ViewPinaforeProperty = SimpleViewPinaforeProperty ViewPinaforeSimpleProperty | ListViewPinaforeProperty ViewPinaforeListProperty;
 
-    type PinaforeEditConstraint edit = (HasTypeInfo edit,HasTypeInfo (EditReader edit),IOFullReader (EditReader edit),Edit edit);
+    type PinaforeEditConstraint edit = IOFullEdit edit;
 
-    data ViewPinaforePrimitive = forall edit. (PinaforeEditConstraint edit,Serialize (EditSubject edit)) => MkViewPinaforePrimitive
+    data ViewPinaforePrimitive edit where
     {
-        primType :: TypeInfo edit
+        MkViewPinaforePrimitive :: forall edit. (PinaforeEditConstraint edit,Serialize (EditSubject edit)) => UISpec (ContextEdit PinaforeEdit edit) -> ViewPinaforePrimitive edit;
     };
 
-    data ViewPinaforeType = EntityViewPinaforeType [ViewPinaforeProperty] | PrimitiveViewPinaforeType ViewPinaforePrimitive;
+    data ViewPinaforeType edit where
+    {
+        EntityViewPinaforeType :: [ViewPinaforeProperty] -> ViewPinaforeType (WholeEdit (Maybe UUID));
+        PrimitiveViewPinaforeType :: ViewPinaforePrimitive edit -> ViewPinaforeType edit;
+    };
 
-    data ViewPinaforeValue = MkViewPinaforeValue UUID ViewPinaforeType;
+    data ViewPinaforeValue = MkViewPinaforeValue UUID (ViewPinaforeType (WholeEdit (Maybe UUID)));
 
 
-    pinaforePropertyLens :: ViewPinaforeProperty -> (forall edit. PinaforeEditConstraint edit => PinaforeMorphism (WholeEdit (Maybe UUID)) edit -> r) -> r;
-    pinaforePropertyLens (SimpleViewPinaforeProperty prop) f = f $ spropMorphism prop;
-    pinaforePropertyLens (ListViewPinaforeProperty prop) f = f $ lpropMorphism prop;
+    data UIEntityPicker edit where
+    {
+        MkUIEntityPicker :: UISpec (ContextEdit PinaforeEdit edit) -> UIEntityPicker edit;
+    };
 
-    pinaforePropertiesLens :: [ViewPinaforeProperty] -> (forall sel. (HasTypeInfo sel,FiniteTupleSelector sel,TupleReaderWitness IOFullReader sel,TupleSubject sel ~ Tuple sel) => PinaforeMorphism (WholeEdit (Maybe UUID)) (TupleEdit sel) -> r) -> r;
-    pinaforePropertiesLens [] f = f @EmptyWitness $ MkPointedEditLens emptyTupleLens;
-    pinaforePropertiesLens (p:pp) f = pinaforePropertiesLens pp $ \(MkPointedEditLens ppm) -> pinaforePropertyLens p $ \(MkPointedEditLens pm) -> f $ MkPointedEditLens $ consTupleLens pm ppm;
+    instance Show (UIEntityPicker edit) where
+    {
+        show (MkUIEntityPicker uispec) = "picker " ++ show uispec;
+    };
 
-    pinaforeTypeLens :: ViewPinaforeType -> (forall edit. PinaforeEditConstraint edit => PinaforeMorphism (WholeEdit (Maybe UUID)) edit -> r) -> r;
-    pinaforeTypeLens (EntityViewPinaforeType props) f = pinaforePropertiesLens props f;
-    pinaforeTypeLens (PrimitiveViewPinaforeType (MkViewPinaforePrimitive (MkTypeInfo :: TypeInfo edit))) f = f @(OneWholeEdit Maybe edit) $ primitiveEditPinaforeMorphism @edit;
+    instance UIType UIEntityPicker where
+    {
+        uiWitness = $(iowitness [t|UIEntityPicker|]);
+    };
 
-    pinaforeValueLens :: ViewPinaforeValue -> (forall edit. PinaforeEditConstraint edit => GeneralLens PinaforeEdit edit -> r) -> r;
-    pinaforeValueLens (MkViewPinaforeValue value tp) f = let
+    data UIEntityList edit where
+    {
+        MkUIEntityList :: UISpec (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID)))-> [ViewPinaforeProperty] -> UIEntityList (FiniteSetEdit UUID);
+    };
+
+    instance Show (UIEntityList edit) where
+    {
+        show (MkUIEntityList uispec _) = "speclist " ++ show uispec;
+    };
+
+    instance UIType UIEntityList where
+    {
+        uiWitness = $(iowitness [t|UIEntityList|]);
+    };
+
+    pinaforePropertyAspect :: ViewPinaforeProperty -> Aspect (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID)));
+    pinaforePropertyAspect (SimpleViewPinaforeProperty (MkViewPinaforeSimpleProperty name (MkPointedEditLens lens) ptype)) = MkAspect name (MkUISpec $ MkUIEntityPicker $ pinaforeTypeSpec ptype) $ MkCloseState lens;
+    pinaforePropertyAspect (ListViewPinaforeProperty (MkViewPinaforeListProperty name (MkPointedEditLens lens) ptype cols)) = MkAspect name (MkUISpec $ MkUIEntityList (pinaforeTypeSpec ptype) cols) $ MkCloseState lens;
+
+    pinaforeTypeSpec :: ViewPinaforeType edit -> UISpec (ContextEdit PinaforeEdit edit);
+    pinaforeTypeSpec (EntityViewPinaforeType props) = MkUISpec $ MkUIVertical $ fmap pinaforePropertyAspect props;
+    pinaforeTypeSpec (PrimitiveViewPinaforeType (MkViewPinaforePrimitive uispec)) = uispec;
+
+    pinaforeValueSpec :: ViewPinaforeValue -> UISpec PinaforeEdit;
+    pinaforeValueSpec (MkViewPinaforeValue value tp) = let
     {
         conv :: EditLens' MonadIO Maybe ((),()) PinaforeEdit (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID)));
         conv = contextJoinEditLenses identityState (constEditLens (Just value));
-    } in pinaforeTypeLens tp $ \(MkPointedEditLens lens) -> f $ toGeneralLens $ composeState lens conv;
+    } in MkUISpec $ MkUILens (pinaforeTypeSpec tp) $ toGeneralLens conv;
 
 
     -- example ontology
 
-    personType :: ViewPinaforeType;
+    personType :: ViewPinaforeType (WholeEdit (Maybe UUID));
     personType = EntityViewPinaforeType [personName,personMother,personFather,personChildren];
 
     personName :: ViewPinaforeProperty;
     personName = let
     {
         spropName = "Name";
-        spropMorphism = predicatePinaforeMorphism $ uuid "498260df-6a8a-44f0-b285-68a63565a33b";
-        spropType = PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ typeInfo @(StringEdit Text);
+        spropMorphism :: PinaforeMorphism (WholeEdit (Maybe UUID)) (OneWholeEdit Maybe (WholeEdit String));
+        spropMorphism = primitiveEditPinaforeMorphism <.> (predicatePinaforeMorphism $ uuid "498260df-6a8a-44f0-b285-68a63565a33b");
+        spropType :: ViewPinaforeType (OneWholeEdit Maybe (WholeEdit String));
+        spropType = PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ MkUISpec $ MkUILens (MkUISpec $ MkUIMaybe Nothing $ MkUISpec MkUITextEntry) $ MkCloseState contentLens;
     } in SimpleViewPinaforeProperty MkViewPinaforeSimpleProperty{..};
 
     motherUUID :: UUID;
@@ -81,6 +113,7 @@ module Truth.World.Pinafore.Ontology where
     personMother = let
     {
         spropName = "Mother";
+        spropMorphism :: PinaforeMorphism (WholeEdit (Maybe UUID)) (WholeEdit (Maybe UUID));
         spropMorphism = predicatePinaforeMorphism motherUUID;
         spropType = personType;
     } in SimpleViewPinaforeProperty MkViewPinaforeSimpleProperty{..};
@@ -89,6 +122,7 @@ module Truth.World.Pinafore.Ontology where
     personFather = let
     {
         spropName = "Father";
+        spropMorphism :: PinaforeMorphism (WholeEdit (Maybe UUID)) (WholeEdit (Maybe UUID));
         spropMorphism = predicatePinaforeMorphism fatherUUID;
         spropType = personType;
     } in SimpleViewPinaforeProperty MkViewPinaforeSimpleProperty{..};
@@ -111,7 +145,7 @@ module Truth.World.Pinafore.Ontology where
         lpropColumns = [personName];
     } in ListViewPinaforeProperty MkViewPinaforeListProperty{..};
 
-    rootType :: ViewPinaforeType;
+    rootType :: ViewPinaforeType (WholeEdit (Maybe UUID));
     rootType = EntityViewPinaforeType [peopleCollection];
 
     rootValue :: ViewPinaforeValue;

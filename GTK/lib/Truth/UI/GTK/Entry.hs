@@ -1,16 +1,14 @@
-{-# OPTIONS -fno-warn-orphans #-}
-module Truth.UI.GTK.Entry(entryTypeKnowledge) where
+module Truth.UI.GTK.Entry(textEntryUIView) where
 {
     import Shapes;
     import Graphics.UI.Gtk as Gtk;
-    import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Useful;
 
 
-    textEntryView :: GView (WholeEdit String);
-    textEntryView = MkView $ \(MkObject object) _setSelect -> do
+    textEntryUIView :: GetUIView;
+    textEntryUIView = MkGetUIView $ \_ uispec -> fmap (\MkUITextEntry -> MkView $ \(MkObject object) _setSelect -> do
     {
         widget <- entryNew;
         initial <- object $ \muted -> unReadable pureFromReader $ mutableRead muted;
@@ -35,18 +33,5 @@ module Truth.UI.GTK.Entry(entryTypeKnowledge) where
             vrFirstAspectGetter = return Nothing;
         };
         return MkViewResult{..};
-    };
-
-    -- orphan
-    instance DependentHasView Widget (WholeEdit String);
-    -- orphan
-    instance HasView Widget (WholeEdit String) where
-    {
-        theView = textEntryView;
-    };
-
-    entryTypeKnowledge :: TypeKnowledge;
-    entryTypeKnowledge = namedKnowledge "text entry" $(generateTypeKnowledge [d|
-        instance DependentHasView Widget (WholeEdit String);
-    |]);
+    }) $ isUISpec uispec;
 }

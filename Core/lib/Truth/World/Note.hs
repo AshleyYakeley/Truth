@@ -90,6 +90,16 @@ module Truth.World.Note where
         |]);
     };
 
+    type NoteEdit = TupleEdit NoteSel;
+
+    noteEditSpec :: UISpec NoteEdit;
+    noteEditSpec = MkUISpec $ MkUIVertical $ tupleEditAspects $ \case
+    {
+        NoteTitle -> ("title",MkUISpec MkUITextEntry);
+        NotePast -> ("past",MkUISpec $ MkUICheckbox "past");
+        NoteText -> ("text",MkUISpec MkTextUIText);
+    };
+
     type Note = Tuple NoteSel;
 
     instance JSON.ToJSON Note where

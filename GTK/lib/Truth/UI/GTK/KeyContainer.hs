@@ -1,16 +1,18 @@
-{-# OPTIONS -fno-warn-orphans #-}
-module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
+module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
 {
     import Shapes;
     import Graphics.UI.Gtk;
-    import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;
 
 
-    keyContainerView :: forall cont edit. (Show (ContainerKey cont),IONewItemKeyContainer cont,HasKeyReader cont (EditReader edit)) =>
-        TypeInfo edit -> GView (KeyEdit cont edit);
-    keyContainerView ti = MkView $ \(MkObject object) setSelect -> do
+    pairAspect :: (KeyContainer cont,Show (ContainerKey cont),IOFullEdit valueedit,Edit keyedit,IOFullReader (EditReader keyedit),HasKeyReader cont (PairEditReader keyedit valueedit)) =>
+        UISpec valueedit -> ContainerKey cont -> Maybe (Aspect (KeyEdit cont (PairEdit keyedit valueedit)));
+    pairAspect uispec key = Just $ MkAspect (show key) (MkUISpec $ MkUIMaybe Nothing uispec) $ toGeneralLens $ keyValueLens key;
+
+    keyContainerView :: forall cont edit. (Show (ContainerKey cont),IONewItemKeyContainer cont) =>
+        (ContainerKey cont -> Maybe (Aspect (KeyEdit cont edit))) -> GView (KeyEdit cont edit);
+    keyContainerView getAspect = MkView $ \(MkObject object) setSelect -> do
     {
         MkFiniteSet initialKeys <- object $ \muted -> mutableRead muted KeyReadKeys;
         store <- listStoreNew initialKeys;
@@ -89,11 +91,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
                     [[i]] -> do
                     {
                         key <- listStoreGetValue store i;
-                        return $ Just $ $(generateTypeMatchExpr [t|forall keyedit valueedit. (Edit keyedit, IOFullReader (EditReader keyedit), IOFullEdit valueedit) => PairEdit keyedit valueedit|] [e|\_tiKE tiVE -> do
-                        {
-                            iedit <- $(generateTypeInfoExpr [t|forall valueedit. OneWholeEdit Maybe valueedit|]) tiVE;
-                            return $ MkAspect (show key) iedit $ keyValueLens key;
-                        }|]) ti;
+                        return $ getAspect key;
                     };
                     _ -> return Nothing;
                 };
@@ -108,40 +106,9 @@ module Truth.UI.GTK.KeyContainer(keyContainerTypeKnowledge) where
         return MkViewResult{..};
     };
 
-    -- orphan
-    instance
-    (
-        Show (ContainerKey cont),
-        IONewItemKeyContainer cont,
-        HasKeyReader cont (EditReader edit)
-    ) =>
-     DependentHasView Widget (KeyEdit cont edit) where
+    keyContainerUIView :: GetUIView;
+    keyContainerUIView = MkGetUIView $ \_ uispec -> fmap (\case
     {
-        dependsView = $(generateTypeMatchExpr [t|forall cont' edit'. KeyEdit cont' edit'|] [e|\_ tiEdit -> return $ keyContainerView tiEdit|]);
-    };
-    -- orphan
-    instance
-    (
-        Show (ContainerKey cont),
-        IONewItemKeyContainer cont,
-        HasKeyReader cont (EditReader edit),
-        HasTypeInfo edit
-    ) =>
-     HasView Widget (KeyEdit cont edit) where
-    {
-        theView = keyContainerView typeInfo;
-    };
-
-    keyContainerTypeKnowledge :: TypeKnowledge;
-    keyContainerTypeKnowledge = namedKnowledge "key container" $(generateTypeKnowledge [d|
-        instance
-            (
-                Show (ContainerKey cont),
-                IONewItemKeyContainer cont,
-                HasKeyReader cont (EditReader edit),
-                IOFullReader (EditReader edit),
-                Edit edit
-            ) =>
-            DependentHasView Widget (KeyEdit cont edit);
-    |]);
+        MkUIKeyContainer itemspec -> keyContainerView $ pairAspect itemspec;
+    }) $ isUISpec uispec;
 }

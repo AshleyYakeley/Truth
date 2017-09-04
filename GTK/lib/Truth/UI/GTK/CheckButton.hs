@@ -1,16 +1,14 @@
-{-# OPTIONS -fno-warn-orphans #-}
-module Truth.UI.GTK.CheckButton(checkButtonTypeKnowledge) where
+module Truth.UI.GTK.CheckButton(checkButtonUIView) where
 {
     import Shapes;
     import Graphics.UI.Gtk as Gtk;
-    import Data.Reity;
     import Truth.Core;
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Useful;
 
 
-    checkButtonView :: String -> GView (WholeEdit Bool);
-    checkButtonView name = MkView $ \(MkObject object) _setSelect -> do
+    checkButtonUIView :: GetUIView;
+    checkButtonUIView = MkGetUIView $ \_ uispec -> fmap (\(MkUICheckbox name) -> MkView $ \(MkObject object) _setSelect -> do
     {
         widget <- checkButtonNew;
         initial <- object $ \muted -> unReadable pureFromReader $ mutableRead muted;
@@ -35,18 +33,5 @@ module Truth.UI.GTK.CheckButton(checkButtonTypeKnowledge) where
             vrFirstAspectGetter = return Nothing;
         };
         return MkViewResult{..};
-    };
-
-    -- orphan
-    instance DependentHasView Widget (WholeEdit Bool);
-    -- orphan
-    instance HasView Widget (WholeEdit Bool) where
-    {
-        theView = checkButtonView "";
-    };
-
-    checkButtonTypeKnowledge :: TypeKnowledge;
-    checkButtonTypeKnowledge = namedKnowledge "check button" $(generateTypeKnowledge [d|
-        instance DependentHasView Widget (WholeEdit Bool);
-    |]);
+    }) $ isUISpec uispec;
 }

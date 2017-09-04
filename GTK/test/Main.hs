@@ -1,30 +1,40 @@
-{-# OPTIONS -fno-warn-orphans #-}
 module Main(main) where
 {
     import Shapes;
-    import Data.Reity;
     import Truth.Core;
-    import Truth.World.Soup;
-    import Graphics.UI.Gtk;
     import Truth.UI.GTK;
+    import Truth.World.Pinafore;
     import Test.Tasty;
     import Test.Tasty.HUnit;
 
 
-    testGView :: forall (edit :: Type). TypeInfo edit -> TestTree;
-    testGView iedit = testCase (show iedit) $ case runKnowledge (mappend allKnowledge $ typeInfoKnowledge iedit) $ findView @Widget iedit of
+    testGView :: forall edit. Edit edit => UISpec edit -> TestTree;
+    testGView uispec = testCase (show uispec) $ case getUIView allUIView getTheUIView uispec of
     {
-        SuccessResult _ -> return ();
-        FailureResult fr -> assertFailure $ show fr;
+        Just _ -> return ();
+        Nothing -> assertFailure "not matched";
+    };
+
+    data UIUnknown edit where
+    {
+        MkUIUnknown :: UIUnknown edit;
+    };
+
+    instance Show (UIUnknown edit) where
+    {
+        show MkUIUnknown = "unknown";
+    };
+
+    instance UIType UIUnknown where
+    {
+        uiWitness = $(iowitness [t|UIUnknown|]);
     };
 
     testGViews :: TestTree;
     testGViews = testGroup "GView" [
-            testGView $ typeInfo @(WholeEdit Bool),
-            testGView $ typeInfo @(StringEdit String),
-            testGView $ typeInfo @(SoupEdit (MutableIOEdit ByteStringEdit)),
-            testGView $ typeInfo @(SumWholeEdit (OneEdit (Result String) (WholeEdit Bool))),
-            testGView $ typeInfo @(SumWholeEdit (OneEdit (Result String) (StringEdit String)))
+            testGView $ MkUISpec $ (MkUIVertical [] :: UIVertical (WholeEdit String)),
+            testGView $ MkUISpec $ MkUIVertical [MkAspect "aspect" (MkUISpec MkUIUnknown :: UISpec (WholeEdit String)) cid],
+            testGView $ pinaforeValueSpec rootValue
         ];
 
     tests :: TestTree;
