@@ -3,7 +3,6 @@ module Truth.UI.GTK.Window where
 {
     import Shapes;
     import Data.IORef;
-    import Data.Reity;
     import Truth.Core;
     import Graphics.UI.Gtk;
     import Truth.UI.GTK.GView;
@@ -99,13 +98,6 @@ module Truth.UI.GTK.Window where
             boxPackStart hbox redoButton PackNatural 0;
             boxPackStart vbox hbox PackNatural 0;
         }
-    };
-
-    runKnowMAction :: TypeKnowledge -> KnowM (IO ()) -> IO ();
-    runKnowMAction kw kio = case runKnowledge kw $ kio of
-    {
-        SuccessResult make -> make;
-        FailureResult _ -> return ();
     };
 
     attachMenuItem :: MenuShellClass menushell => menushell -> String -> IO MenuItem;

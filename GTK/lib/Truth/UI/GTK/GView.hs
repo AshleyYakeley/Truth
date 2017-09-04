@@ -1,9 +1,7 @@
-{-# OPTIONS -fno-warn-orphans #-}
 module Truth.UI.GTK.GView where
 {
     import Shapes;
     import Graphics.UI.Gtk;
-    import Data.Reity;
     import Truth.Core;
 
 
@@ -41,11 +39,5 @@ module Truth.UI.GTK.GView where
     {
         MkUILens specb lens <- isUISpec speca;
         return $ mapView lens $ getview specb;
-    };
-
-    instance HasTypeInfo Widget where
-    {
-        typeWitness = $(generateWitness [t|Widget|]);
-        typeName _ = "Widget";
     };
 }
