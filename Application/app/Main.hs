@@ -3,7 +3,6 @@ module Main(main) where
     import Shapes;
     import Data.IORef;
     import System.FilePath hiding ((<.>));
-    import Data.Reity;
     import Truth.Core;
     import Truth.World.File;
     import Truth.World.FileSystem;
@@ -22,7 +21,7 @@ module Main(main) where
     textCodec :: ReasonCodec ByteString String;
     textCodec = utf8Codec . bijectionCodec packBijection;
 
-    textLens :: PureEditLens () ByteStringEdit (WholeEdit (ReasonM String));
+    textLens :: PureEditLens () ByteStringEdit (WholeEdit ((Result String) String));
     textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) <.> convertEditLens;
 
     fileTextWindow :: Bool -> FilePath -> WindowMaker;
@@ -33,20 +32,20 @@ module Main(main) where
             bsObj :: Object ByteStringEdit;
             bsObj = fileObject path;
 
-            wholeTextObj :: Object (WholeEdit (ReasonM String));
+            wholeTextObj :: Object (WholeEdit ((Result String) String));
             wholeTextObj = cacheObject $ pureFixedMapObject textLens bsObj;
         };
         if saveOpt then do
         {
             let
             {
-                baseSub :: Subscriber (WholeEdit (ReasonM String)) ();
+                baseSub :: Subscriber (WholeEdit ((Result String) String)) ();
                 baseSub = objectSubscriber wholeTextObj;
 
-                bufferSub :: Subscriber (OneWholeEdit ReasonM (StringEdit String)) ((),SaveActions);
+                bufferSub :: Subscriber (OneWholeEdit (Result String) (StringEdit String)) ((),SaveActions);
                 bufferSub = saveBufferSubscriber baseSub;
 
-                undoBufferSub :: Subscriber (OneWholeEdit ReasonM (StringEdit String)) (((),SaveActions),UndoActions);
+                undoBufferSub :: Subscriber (OneWholeEdit (Result String) (StringEdit String)) (((),SaveActions),UndoActions);
                 undoBufferSub = undoQueueSubscriber bufferSub;
             };
             textSub <- makeSharedSubscriber undoBufferSub;
@@ -56,7 +55,7 @@ module Main(main) where
         {
             let
             {
-                textObj :: Object (OneWholeEdit ReasonM (StringEdit String));
+                textObj :: Object (OneWholeEdit (Result String) (StringEdit String));
                 textObj = convertObject wholeTextObj;
             };
             textSub <- makeObjectSubscriber textObj;
@@ -65,7 +64,7 @@ module Main(main) where
     };
 
 
-    type SoupItemEdit = OneWholeEdit ReasonM NoteEdit;
+    type SoupItemEdit = OneWholeEdit (Result String) NoteEdit;
     soupEditSpec :: UISpec (SoupEdit SoupItemEdit);
     soupEditSpec = MkUISpec $ MkUIKeyContainer $ MkUISpec $ MkUIOne noteEditSpec;
 
@@ -80,16 +79,16 @@ module Main(main) where
             soupContentsCodec :: ReasonCodec ByteString (EditSubject NoteEdit);
             soupContentsCodec = jsonValueCodec . jsonCodec;
 
-            soupItemInjection :: Injection' ReasonM ByteString (EditSubject SoupItemEdit);
+            soupItemInjection :: Injection' (Result String) ByteString (EditSubject SoupItemEdit);
             soupItemInjection = codecInjection soupContentsCodec;
 
-            paste :: forall m. MonadIO m => EditSubject SoupItemEdit -> m (ReasonM ByteString);
+            paste :: forall m. MonadIO m => EditSubject SoupItemEdit -> m ((Result String) ByteString);
             paste s = return $ injBackwards soupItemInjection s;
 
-            soupItemLens :: IOEditLens' ReasonM () ByteStringEdit SoupItemEdit;
+            soupItemLens :: IOEditLens' (Result String) () ByteStringEdit SoupItemEdit;
             soupItemLens = convertEditLens <.> (wholeEditLens $ injectionLens soupItemInjection) <.> convertEditLens;
 
-            lens :: IOEditLens' ReasonM () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupItemEdit);
+            lens :: IOEditLens' (Result String) () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupItemEdit);
             lens = liftSoupLens paste $ soupItemLens <.> mutableIOEditLens;
 
             soupObject :: Object (SoupEdit SoupItemEdit);

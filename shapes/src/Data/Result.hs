@@ -14,6 +14,10 @@ module Data.Result where
     eitherToResult (Left e) = FailureResult e;
     eitherToResult (Right a) = SuccessResult a;
 
+    resultFromMaybe :: e -> Maybe a -> Result e a;
+    resultFromMaybe _ (Just a) = SuccessResult a;
+    resultFromMaybe e Nothing = FailureResult e;
+
     deriving instance (Eq e,Eq a) => Eq (Result e a);
 
     instance Functor (Result e) where

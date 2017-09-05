@@ -25,5 +25,5 @@ module Truth.Core
         consTupleTypeKnowledge
     ];
 
-    type ReasonCodec = Codec' ReasonM;
+    type ReasonCodec = Codec' (Result String);
 }

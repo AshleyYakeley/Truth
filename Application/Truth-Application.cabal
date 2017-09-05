@@ -61,7 +61,6 @@ executable truth
         glib,
         gtk,
         shapes,
-        reity,
         Truth-Core,
         Truth-GTK,
         optparse-applicative

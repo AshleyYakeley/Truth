@@ -7,7 +7,7 @@ module Truth.World.Charset where
     utf8Codec :: ReasonCodec [Word8] ( String);
     utf8Codec = MkCodec decodeUTF8 encodeUTF8 where
     {
-        decodeUTF8 :: [Word8] -> ReasonM String;
+        decodeUTF8 :: [Word8] -> Result String String;
         decodeUTF8 os = evalStateT parse (os,0) where
         {
             getWord8 :: (Monad m) => StateT ([Word8],Int) m (Maybe Word8);
@@ -17,10 +17,10 @@ module Truth.World.Charset where
                 [] -> (Nothing,s);
             }));
 
-            decodeError :: StateT (s,Int) ReasonM a;
+            decodeError :: StateT (s,Int) (Result String) a;
             decodeError = StateT (\(_,i) -> fail $ "decode error at byte " ++ show i);
 
-            parse :: StateT ([Word8],Int) ReasonM String;
+            parse :: StateT ([Word8],Int) (Result String) String;
             parse = do
             {
                 mc <- parseChar;
@@ -35,7 +35,7 @@ module Truth.World.Charset where
                 };
             };
 
-            parseChar :: StateT ([Word8],Int) ReasonM (Maybe Char);
+            parseChar :: StateT ([Word8],Int) (Result String) (Maybe Char);
             parseChar = do
             {
                 mb0 <- getWord8;
@@ -90,11 +90,11 @@ module Truth.World.Charset where
                 };
             } where
             {
-                extract10Bits :: (Maybe Word8) -> StateT ([Word8],Int) ReasonM Word8;
+                extract10Bits :: (Maybe Word8) -> StateT ([Word8],Int) (Result String) Word8;
                 extract10Bits (Just w) | 0xC0 .&. w == 0x80 = return (0x3F .&. w);
                 extract10Bits _ = decodeError;
 
-                get10Bits :: StateT ([Word8],Int) ReasonM Word32;
+                get10Bits :: StateT ([Word8],Int) (Result String) Word32;
                 get10Bits = do
                 {
                     mb <- getWord8;
@@ -102,7 +102,7 @@ module Truth.World.Charset where
                     return (fromIntegral b);
                 };
 
-                convertOut :: Word32 -> StateT ([Word8],Int) ReasonM (Maybe Char);
+                convertOut :: Word32 -> StateT ([Word8],Int) (Result String) (Maybe Char);
                 convertOut i|i < 0x110000 = return (Just (toEnum (fromIntegral i)));
                 convertOut _ = decodeError;
             };
