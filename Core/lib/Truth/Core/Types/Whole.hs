@@ -22,20 +22,6 @@ module Truth.Core.Types.Whole where
         fromReader = readable ReadWhole;
     };
 
-    $(return []);
-    instance HasTypeInfo WholeReader where
-    {
-        typeWitness = $(generateWitness [t|WholeReader|]);
-        typeName _ = "WholeReader";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance Reader (WholeReader a) where
-            {
-                type ReaderSubject (WholeReader a) = a;
-            };
-            instance FullReader c (WholeReader a);
-        |]);
-    };
-
     wholeMutableRead :: m a -> MutableRead m (WholeReader a);
     wholeMutableRead ma ReadWhole = ma;
 
@@ -64,20 +50,6 @@ module Truth.Core.Types.Whole where
                 wrWrite $ MkWholeEdit a;
             };
         };
-    };
-
-    $(return []);
-    instance HasTypeInfo WholeReaderEdit where
-    {
-        typeWitness = $(generateWitness [t|WholeReaderEdit|]);
-        typeName _ = "WholeReaderEdit";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (IOFullReader reader) => Edit (WholeReaderEdit reader) where
-            {
-                type EditReader (WholeReaderEdit reader) = reader;
-            };
-            instance (ReadableConstraint c,IOFullReader reader,FullReader c reader) => FullEdit c (WholeReaderEdit reader);
-        |]);
     };
 
     type WholeEdit a = WholeReaderEdit (WholeReader a);

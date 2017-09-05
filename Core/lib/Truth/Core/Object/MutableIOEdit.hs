@@ -29,20 +29,6 @@ module Truth.Core.Object.MutableIOEdit where
 
     type MutableIOEdit edit = NoEdit (MutableIOReader edit);
 
-    $(return []);
-    instance HasTypeInfo MutableIOReader where
-    {
-        typeWitness = $(generateWitness [t|MutableIOReader|]);
-        typeName _ = "MutableIOReader";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance Reader (EditReader edit) => Reader (MutableIOReader edit) where
-            {
-                type ReaderSubject (MutableIOReader edit) = EditSubject edit;
-            };
-            instance IOFullReader (EditReader edit) => FullReader MonadIO (MutableIOReader edit);
-        |]);
-    };
-
     mutableIOEditLens :: forall m edit. Applicative m => IOEditLens' m () (MutableIOEdit edit) edit;
     mutableIOEditLens = let
     {

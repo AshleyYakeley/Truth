@@ -38,20 +38,6 @@ module Truth.Core.Types.ByteString where
         };
     };
 
-    $(return []);
-    instance HasTypeInfo ByteStringReader where
-    {
-        typeWitness = $(generateWitness [t|ByteStringReader|]);
-        typeName _ = "ByteStringReader";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance Reader ByteStringReader where
-            {
-                type ReaderSubject ByteStringReader = ByteString;
-            };
-            instance FullReader c ByteStringReader;
-        |]);
-    };
-
     data ByteStringEdit = ByteStringSetLength Int64 | ByteStringWrite Int64 ByteString;
 
     instance Floating ByteStringEdit ByteStringEdit;
@@ -160,18 +146,5 @@ module Truth.Core.Types.ByteString where
             wrWrite $ ByteStringWrite 0 bs;
             wrWrite $ ByteStringSetLength len;
         };
-    };
-
-    $(return []);
-    instance HasTypeInfo ByteStringEdit where
-    {
-        typeWitness = $(generateWitness [t|ByteStringEdit|]);
-        typeName _ = "ByteStringEdit";
-        typeKnowledge _ = mconcat [$(generateTypeKnowledge [d|
-            instance Edit ByteStringEdit where
-            {
-                type EditReader ByteStringEdit = ByteStringReader;
-            };
-        |]),typeInfoKnowledge (typeInfo @ByteStringReader)];
     };
 }

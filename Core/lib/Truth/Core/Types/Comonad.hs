@@ -22,18 +22,6 @@ module Truth.Core.Types.Comonad where
         pureFromReader = liftMaybeReadable pureFromReader;
     };
 -}
-    $(return []);
-    instance HasTypeInfo ComonadReader where
-    {
-        typeWitness = $(generateWitness [t|ComonadReader|]);
-        typeName _ = "ComonadReader";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (Comonad w,Reader reader) => Reader (ComonadReader w reader) where
-            {
-                type ReaderSubject (ComonadReader w reader) = w (ReaderSubject reader);
-            };
-        |]);
-    };
 
     comonadReadFunction :: ReadFunction c (ComonadReader w reader) reader;
     comonadReadFunction rt = readable $ ReadExtract rt;
@@ -54,19 +42,6 @@ module Truth.Core.Types.Comonad where
         type EditReader (ComonadEdit w edit) = ComonadReader w (EditReader edit);
         applyEdit (MkComonadEdit edit) = comonadLiftReadFunction $ applyEdit edit;
         invertEdit (MkComonadEdit edit) = fmap (fmap MkComonadEdit) $ mapReadable comonadReadFunction $ invertEdit edit;
-    };
-
-    $(return []);
-    instance HasTypeInfo ComonadEdit where
-    {
-        typeWitness = $(generateWitness [t|ComonadEdit|]);
-        typeName _ = "ComonadEdit";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (Comonad w,Edit edit) => Edit (ComonadEdit w edit) where
-            {
-                type EditReader (ComonadEdit w edit) = ComonadReader w (EditReader edit);
-            };
-        |]);
     };
 
     comonadEditFunction :: forall w edit. PureEditFunction () (ComonadEdit w edit) edit;

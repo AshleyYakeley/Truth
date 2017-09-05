@@ -29,20 +29,6 @@ module Truth.Core.Types.String where
         };
     };
 
-    $(return []);
-    instance HasTypeInfo StringRead where
-    {
-        typeWitness = $(generateWitness [t|StringRead|]);
-        typeName _ = "StringRead";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance IsSequence seq => Reader (StringRead seq) where
-            {
-                type ReaderSubject (StringRead seq) = seq;
-            };
-            instance IsSequence seq => FullReader c (StringRead seq);
-        |]);
-    };
-
 
     data StringEdit seq = StringReplaceWhole seq | StringReplaceSection (SequenceRun seq) seq;
 
@@ -136,26 +122,6 @@ module Truth.Core.Types.String where
             a <- readableToM $ pureFromReader;
             wrWrite $ StringReplaceWhole a;
         };
-    };
-
-    $(return []);
-    instance HasTypeInfo StringEdit where
-    {
-        typeWitness = $(generateWitness [t|StringEdit|]);
-        typeName _ = "StringEdit";
-        typeKnowledge _ = mconcat
-        [
-            typeInfoKnowledge $ typeInfo @StringRead,
-            $(generateTypeKnowledge [d|
-                instance IsSequence [a];
-                instance IsSequence Text;
-                instance IsSequence seq => Edit (StringEdit seq) where
-                {
-                    type EditReader (StringEdit seq) = StringRead seq;
-                };
-                instance IsSequence seq => FullEdit c (StringEdit seq);
-            |])
-        ];
     };
 
     stringSectionLens :: forall seq. IsSequence seq =>

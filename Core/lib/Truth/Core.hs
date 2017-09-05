@@ -15,15 +15,5 @@ module Truth.Core
     import Truth.Core.Types;
     import Truth.Core.Object;
 
-    generalTypeKnowledge :: TypeKnowledge;
-    generalTypeKnowledge = mconcat
-    [
-        baseTypeKnowledge,
-        typeInfoKnowledge $ typeInfo @ReadableConstraint,
-        typeInfoKnowledge $ typeInfo @OneEdit,
-        typeInfoKnowledge $ typeInfo @StringEdit,
-        consTupleTypeKnowledge
-    ];
-
     type ReasonCodec = Codec' (Result String);
 }

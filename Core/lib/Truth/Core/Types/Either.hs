@@ -46,20 +46,6 @@ module Truth.Core.Types.Either where
         };
     };
 
-    $(return []);
-    instance HasTypeInfo EitherReader where
-    {
-        typeWitness = $(generateWitness [t|EitherReader|]);
-        typeName _ = "EitherReader";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (Reader ra,Reader rb) => Reader (EitherReader ra rb) where
-            {
-                type ReaderSubject (EitherReader ra rb) = Either (ReaderSubject ra) (ReaderSubject rb);
-            };
-            instance (ReadableConstraint c,FullReader c ra,FullReader c rb) => FullReader c (EitherReader ra rb);
-        |]);
-    };
-
     -- note this edit cannot switch the subject between the left and right branches
     data EitherEdit ea eb = EitherEditLeft ea | EitherEditRight eb;
 
@@ -96,18 +82,5 @@ module Truth.Core.Types.Either where
                 Nothing -> return [];
             };
         };
-    };
-
-    $(return []);
-    instance HasTypeInfo EitherEdit where
-    {
-        typeWitness = $(generateWitness [t|EitherEdit|]);
-        typeName _ = "EitherEdit";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (Edit ea,Edit eb) => Edit (EitherEdit ea eb) where
-            {
-                type EditReader (EitherEdit ea eb) = EitherReader (EditReader ea) (EditReader eb);
-            };
-        |]);
     };
 }

@@ -16,26 +16,15 @@ module Truth.Core.Edit.Edit where
         floatingUpdate (e:ee) = floatingUpdate ee . floatingUpdate e;
     };
 
-    instance HasTypeInfo Floating where
-    {
-        typeWitness = $(generateWitness [t|Floating|]);
-        typeName _ = "Floating";
-    };
-
     class (Reader (EditReader edit),Floating edit edit) => Edit (edit :: *) where
     {
         type EditReader edit :: * -> *;
         applyEdit :: edit -> PureReadFunction (EditReader edit) (EditReader edit);
         invertEdit :: edit -> IOReadable (EditReader edit) [edit];
     };
-    $(generateFamilyProxy "EditReader");
+
     type EditSubject edit = ReaderSubject (EditReader edit);
 
-    instance HasTypeInfo Edit where
-    {
-        typeWitness = $(generateWitness [t|Edit|]);
-        typeName _ = "Edit";
-    };
 {-
     applyAndInvertEdit :: (Edit edit) => edit -> (PureReadFunction (EditReader edit) (EditReader edit),PureReadable (EditReader edit) [edit]);
     applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);

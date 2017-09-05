@@ -4,6 +4,7 @@ module Truth.World.MIME where
     import Truth.Core.Import;
     import qualified Codec.MIME.Type;
     import Truth.Core;
+    import Truth.World.Anything;
 
 
     type MIMEContentType = Codec.MIME.Type.Type;
@@ -13,30 +14,19 @@ module Truth.World.MIME where
         newValue = Codec.MIME.Type.Type (Codec.MIME.Type.Application $ fromString "octet-stream") [];
     };
 
-    $(return []);
-    instance HasTypeInfo MIMEContentType where
-    {
-        typeWitness = $(generateWitness [t|MIMEContentType|]);
-        typeName _ = "MIMEContentType";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance Eq MIMEContentType;
-            instance HasNewValue MIMEContentType;
-        |]);
-    };
-
     type MIMEContent = WithContext MIMEContentType [Word8];
     type MIMETuple edit = WithContextSelector (WholeEdit MIMEContentType) edit;
     type MIMEContentEdit edit = TupleEdit (MIMETuple edit);
 
     data AnyCodec where
     {
-        MkAnyCodec :: forall (edit :: *). TypeInfo edit -> TypeInfo (EditReader edit) -> TypeInfo (EditSubject edit) -> Codec [Word8] (EditSubject edit) -> AnyCodec;
+        MkAnyCodec :: forall (edit :: *). IOWitness edit -> Codec [Word8] (EditSubject edit) -> AnyCodec;
     };
 
     data MIMEKnowledge = MkMIMEKnowledge
     {
         findMIMECodecByMIME :: MIMEContentType -> Maybe AnyCodec,
-        findMIMECodecByInfoT :: forall (edit :: *). TypeInfo edit -> Maybe (MIMEContentType,Codec [Word8] (EditSubject edit))
+        findMIMECodecByInfoT :: forall (edit :: *). IOWitness edit -> Maybe (MIMEContentType,Codec [Word8] (EditSubject edit))
     };
 
     interpretInjection :: (?mimeKnowledge :: MIMEKnowledge) => Injection MIMEContent (Maybe Anything);
@@ -45,14 +35,14 @@ module Truth.World.MIME where
         -- injForwards :: MIMEContent -> Maybe Anything
         injForwards = \(MkWithContext t content) -> do
         {
-            (MkAnyCodec ie ir isubj codec) <- findMIMECodecByMIME ?mimeKnowledge t;
+            MkAnyCodec ie codec <- findMIMECodecByMIME ?mimeKnowledge t;
             b <- decode codec content;
-            return (MkAnything ie ir isubj b);
+            return $ MkAnything ie b;
         },
         -- injBackwards :: Maybe Anything -> Maybe MIMEContent
         injBackwards = \ma -> case ma of
         {
-            (Just (MkAnything ie _ _ a)) -> do
+            (Just (MkAnything ie a)) -> do
             {
                 (t,codec) <- findMIMECodecByInfoT ?mimeKnowledge ie;
                 return (MkWithContext t (encode codec a));

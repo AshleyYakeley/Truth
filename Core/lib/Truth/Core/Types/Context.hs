@@ -35,20 +35,6 @@ module Truth.Core.Types.Context where
         newValue = MkWithContext newValue newValue;
     };
 
-    $(return []);
-    instance HasTypeInfo WithContext where
-    {
-        typeWitness = $(generateWitness [t|WithContext|]);
-        typeName _ = "WithContext";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance Functor (WithContext context);
-            instance Foldable (WithContext context);
-            instance Traversable (WithContext context);
-            instance Comonad (WithContext context);
-            instance (HasNewValue context,HasNewValue content) => HasNewValue (WithContext context content);
-        |]);
-    };
-
     data WithContextSelector (editx :: *) (editn :: *) (edit :: *) where
     {
         EditContext :: WithContextSelector editx editn editx;
@@ -84,30 +70,6 @@ module Truth.Core.Types.Context where
     {
         tupleWitness _ EditContext = MkConstraintWitness;
         tupleWitness _ EditContent = MkConstraintWitness;
-    };
-
-    instance (Edit ex,HasTypeInfo ex,Edit en,HasTypeInfo en) => TupleHasInfo (WithContextSelector ex en) where
-    {
-        tupleHasInfo EditContext = typeInfo;
-        tupleHasInfo EditContent = typeInfo;
-    };
-
-    $(return []);
-    instance HasTypeInfo WithContextSelector where
-    {
-        typeWitness = $(generateWitness [t|WithContextSelector|]);
-        typeName _ = "WithContextSelector";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (TestEquality :: (* -> *) -> Constraint) (WithContextSelector ea eb);
-            instance (Edit editx,Edit editn) =>
-                TupleSelector (WithContextSelector editx editn) where
-            {
-                type TupleSubject (WithContextSelector editx editn) = WithContext (EditSubject editx) (EditSubject editn);
-            };
-            instance (Edit ex,Edit en) => FiniteTupleSelector (WithContextSelector ex en);
-            instance (c (EditReader ex),c (EditReader en)) => TupleReaderWitness c (WithContextSelector ex en);
-            instance (c ex,c en) => TupleWitness c (WithContextSelector ex en);
-        |]);
     };
 
     contextLens :: Applicative m => EditLens' c m () (TupleEdit (WithContextSelector editx editn)) editx;

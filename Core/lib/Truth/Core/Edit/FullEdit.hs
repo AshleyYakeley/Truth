@@ -24,10 +24,4 @@ module Truth.Core.Edit.FullEdit where
 
     getReplaceEdits :: forall edit. PureFullEdit edit => EditSubject edit -> [edit];
     getReplaceEdits = fromPureReadable (writerToReadable pureReplaceEdit :: PureReadable (EditReader edit) [edit]);
-
-    instance HasTypeInfo FullEdit where
-    {
-        typeWitness = $(generateWitness [t|FullEdit|]);
-        typeName _ = "FullEdit";
-    };
 }

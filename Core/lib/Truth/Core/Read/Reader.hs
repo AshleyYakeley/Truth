@@ -23,14 +23,6 @@ module Truth.Core.Read.Reader where
         readFrom subj reader = runIdentity (readFromM (Identity subj) reader);
     };
 
-    instance HasTypeInfo Reader where
-    {
-        typeWitness = $(generateWitness [t|Reader|]);
-        typeName _ = "Reader";
-    };
-
-    $(generateFamilyProxy "ReaderSubject");
-
     newtype MutableReadW m reader = MkMutableReadW {unMutableReadW :: MutableRead m reader};
 
     stateMutableRead :: Monad m => MutableRead (StateT (MutableReadW m reader) m) reader;

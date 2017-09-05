@@ -47,20 +47,6 @@ module Truth.Core.Types.List where
         };
     };
 
-    $(return []);
-    instance HasTypeInfo ListReader where
-    {
-        typeWitness = $(generateWitness [t|ListReader|]);
-        typeName _ = "ListReader";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (IsSequence seq,Reader reader,ReaderSubject reader ~ Element seq) => Reader (ListReader seq reader) where
-            {
-                type ReaderSubject (ListReader seq reader) = seq;
-            };
-            instance (ReadableConstraint c,IsSequence seq,FullReader c reader,ReaderSubject reader ~ Element seq) => FullReader c (ListReader seq reader);
-        |]);
-    };
-
     data ListEdit seq edit where
     {
         ListEditItem :: SequencePoint seq -> edit -> ListEdit seq edit;
@@ -158,21 +144,4 @@ module Truth.Core.Types.List where
             };
         };
     };
-{-
-    $(return []);
-    instance HasTypeInfo ListEdit where
-    {
-        typeWitness = $(generateWitness [t|ListEdit|]);
-        typeName _ = "ListEdit";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (Enum (Index seq),Ord (Index seq)) => Floating (ListEdit seq edit) (SequencePoint seq);
-            instance (Enum (Index seq),Ord (Index seq)) => Floating (ListEdit seq edit) (ListEdit seq edit);
-            instance (IsSequence seq,FullReader MonadIO (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => Edit (ListEdit seq edit) where
-            {
-                type EditReader (ListEdit seq edit) = ListReader seq (EditReader edit);
-            };
-            instance (IsSequence seq,FullReader MonadIO (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => PureFullEdit (ListEdit seq edit);
-        |]);
-    };
--}
 }

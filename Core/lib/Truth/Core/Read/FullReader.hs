@@ -21,12 +21,6 @@ module Truth.Core.Read.FullReader where
     pureFromReader :: PureFullReader reader => PureReadable reader (ReaderSubject reader);
     pureFromReader = fromReader;
 
-    instance HasTypeInfo FullReader where
-    {
-        typeWitness = $(generateWitness [t|FullReader|]);
-        typeName _ = "FullReader";
-    };
-
     instance FullReader c reader => FullReader c (PureReadable reader) where
     {
         fromReader = MkReadable $ \mr -> unReadable (fromReader @c @reader) $ \rt -> mr $ readable rt;

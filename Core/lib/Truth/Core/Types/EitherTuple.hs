@@ -29,12 +29,6 @@ module Truth.Core.Types.EitherTuple where
         }) <$> tupleConstruct (getsel . LeftWitness) <*> tupleConstruct (getsel . RightWitness);
     };
 
-    instance (TupleHasInfo p,TupleHasInfo q) => TupleHasInfo (EitherWitness p q) where
-    {
-        tupleHasInfo (LeftWitness sel) = tupleHasInfo sel;
-        tupleHasInfo (RightWitness sel) = tupleHasInfo sel;
-    };
-
     eitherTuple :: Tuple sel1 -> Tuple sel2 -> Tuple (EitherWitness sel1 sel2);
     eitherTuple (MkTuple tup1) (MkTuple tup2) = MkTuple $ \esel -> case esel of
     {

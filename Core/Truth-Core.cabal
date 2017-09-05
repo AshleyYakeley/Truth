@@ -65,10 +65,10 @@ library
         aeson,
         sqlite-simple,
         mime,
-        shapes,
-        reity
+        shapes
     exposed-modules:
         Truth.Core
+        Truth.World.Anything
         Truth.World.File
         Truth.World.FileSystem
         Truth.World.Charset
@@ -95,7 +95,6 @@ library
         Truth.Core.Edit
         Truth.Core.Types.None
         Truth.Core.Types.Whole
-        Truth.Core.Types.Anything
         Truth.Core.Types.Sum
         Truth.Core.Types.SumWhole
         Truth.Core.Types.OneReader
@@ -200,7 +199,6 @@ test-suite test
         comonad,
         mono-traversable,
         shapes,
-        reity,
         Truth-Core,
         QuickCheck,
         tasty,

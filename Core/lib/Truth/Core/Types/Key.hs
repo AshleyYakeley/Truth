@@ -1,8 +1,6 @@
 module Truth.Core.Types.Key where
 {
     import Truth.Core.Import;
-    import Data.UUID;
-    import Truth.Core.Sequence;
     import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Types.OneReader;
@@ -52,20 +50,6 @@ module Truth.Core.Types.Key where
         };
     };
 
-    $(return []);
-    instance HasTypeInfo KeyReader where
-    {
-        typeWitness = $(generateWitness [t|KeyReader|]);
-        typeName _ = "KeyReader";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (KeyContainer cont,Reader reader,ReaderSubject reader ~ Element cont) => Reader (KeyReader cont reader) where
-            {
-                type ReaderSubject (KeyReader cont reader) = cont;
-            };
-            instance (KeyContainer cont,ReadableConstraint c,FullReader c reader,ReaderSubject reader ~ Element cont) => FullReader c (KeyReader cont reader);
-        |]);
-    };
-
     data KeyEdit cont edit where
     {
         KeyEditItem :: ContainerKey cont -> edit -> KeyEdit cont edit;
@@ -77,12 +61,6 @@ module Truth.Core.Types.Key where
     class (Reader reader,ReaderSubject reader ~ Element cont) => HasKeyReader cont reader where
     {
         readKey :: proxy cont -> PureReadable reader (ContainerKey cont);
-    };
-
-    instance HasTypeInfo HasKeyReader where
-    {
-        typeWitness = $(generateWitness [t|HasKeyReader|]);
-        typeName _ = "HasKeyReader";
     };
 
     instance (EditSubject keyedit ~ key,EditSubject valedit ~ val,Edit keyedit,PureFullReader (EditReader keyedit),Edit valedit) =>
@@ -200,35 +178,6 @@ module Truth.Core.Types.Key where
             };
             traverse_ readWriteItem allkeys;
         };
-    };
-
-    $(return []);
-    instance HasTypeInfo KeyEdit where
-    {
-        typeWitness = $(generateWitness [t|KeyEdit|]);
-        typeName _ = "KeyEdit";
-        typeKnowledge _ = mconcat [typeInfoKnowledge (typeInfo @KeyReader),
-            $(generateTypeKnowledge [d|
-            instance Eq key => KeyContainer [(key, value)];
-            type instance Element [a] = a;
-            type instance ContainerKey [(key, value)] = key;
-            instance Eq a => KeyContainer (FiniteSet a);
-            type instance Element (FiniteSet a) = a;
-            type instance ContainerKey (FiniteSet a) = a;
-            instance Show UUID;
-            instance Floating (KeyEdit cont edit) (KeyEdit cont edit);
-            instance (KeyContainer cont,IOFullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => Edit (KeyEdit cont edit) where
-            {
-                type EditReader (KeyEdit cont edit) = KeyReader cont (EditReader edit);
-            };
-            instance (KeyContainer cont,ReadableConstraint c,FullReader MonadIO (EditReader edit),FullReader c (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) =>
-                FullEdit c (KeyEdit cont edit);
-            instance (HasNewValue value) => IONewItemKeyContainer [(UUID, value)];
-            instance IONewItemKeyContainer (FiniteSet UUID);
-            instance (EditSubject keyedit ~ key,EditSubject valedit ~ val,Edit keyedit,FullReader MonadIO (EditReader keyedit),FullReader Monad (EditReader keyedit),Edit valedit) =>
-                HasKeyReader [(key,val)] (PairEditReader keyedit valedit);
-            instance HasKeyReader (FiniteSet t) (WholeReader t);
-        |])];
     };
 
     keyElementLens :: forall cont edit. (KeyContainer cont,HasKeyReader cont (EditReader edit),Edit edit) =>

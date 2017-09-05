@@ -52,34 +52,6 @@ module Truth.Core.Types.Pair where
         tupleWitness _ EditSecond = MkConstraintWitness;
     };
 
-    instance (Edit ea,HasTypeInfo ea,Edit eb,HasTypeInfo eb) =>
-        TupleHasInfo (PairSelector ea eb) where
-    {
-        tupleHasInfo EditFirst = typeInfo;
-        tupleHasInfo EditSecond = typeInfo;
-    };
-
-    $(return []);
-    instance HasTypeInfo PairSelector where
-    {
-        typeWitness = $(generateWitness [t|PairSelector|]);
-        typeName _ = "PairSelector";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            --instance TestEquality (PairSelector ea eb);
-            instance (Edit ea,Edit eb) =>
-                TupleSelector (PairSelector ea eb) where
-            {
-                type TupleSubject (PairSelector ea eb) = (EditSubject ea,EditSubject eb);
-            };
-            instance (Edit ea,Edit eb) =>
-                FiniteTupleSelector (PairSelector ea eb);
-            instance (c (EditReader ea),c (EditReader eb)) => TupleReaderWitness c (PairSelector ea eb);
-            instance (c ea,c eb) => TupleWitness c (PairSelector ea eb);
-            instance (Edit ea,(HasTypeInfo :: * -> Constraint) ea,Edit eb,(HasTypeInfo :: * -> Constraint) eb) =>
-                TupleHasInfo (PairSelector ea eb);
-        |]);
-    };
-
     partitionPairEdits :: forall ea eb. [PairEdit ea eb] -> ([ea], [eb]);
     partitionPairEdits pes = let
     {

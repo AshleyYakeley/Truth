@@ -42,13 +42,6 @@ module Truth.World.Note where
         tupleReaderWitness _ NoteText = MkConstraintWitness;
     };
 
-    instance TupleHasInfo NoteSel where
-    {
-        tupleHasInfo NoteTitle = typeInfo;
-        tupleHasInfo NotePast = typeInfo;
-        tupleHasInfo NoteText = typeInfo;
-    };
-
     instance TupleSelector NoteSel;
 
     instance FiniteTupleSelector NoteSel where
@@ -69,25 +62,6 @@ module Truth.World.Note where
             NotePast -> False;
             NoteText -> mempty;
         };
-    };
-
-    $(return []);
-    instance HasTypeInfo NoteSel where
-    {
-        typeWitness = $(generateWitness [t|NoteSel|]);
-        typeName _ = "NoteSel";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance TupleWitness Edit NoteSel;
-            instance ReadableConstraint c => TupleWitness (FullEdit c) NoteSel;
-            instance TupleReaderWitness (FullReader c) NoteSel;
-            instance TupleSelector NoteSel where
-            {
-                type TupleSubject NoteSel = Tuple NoteSel;
-            };
-            instance FiniteTupleSelector NoteSel;
-            instance HasNewValue (Tuple NoteSel);
-            instance TupleHasInfo NoteSel;
-        |]);
     };
 
     type NoteEdit = TupleEdit NoteSel;

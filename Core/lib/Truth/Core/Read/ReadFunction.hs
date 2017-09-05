@@ -65,12 +65,6 @@ module Truth.Core.Read.ReadFunction where
         mapReadableF :: (Monad f,Traversable f) => PureReadFunctionF f ra rb -> readable rb t -> readable ra (f t);
     };
 
-    instance HasTypeInfo MapReadable where
-    {
-        typeWitness = $(generateWitness [t|MapReadable|]);
-        typeName _ = "MapReadable";
-    };
-
     instance ReadableConstraint c => MapReadable (Readable c) where
     {
         mapReadable (rf :: PureReadFunction ra rb) (MkReadable srbmt) = case selfReadable @c @ra of
@@ -115,17 +109,6 @@ module Truth.Core.Read.ReadFunction where
         selfWriterT = MkConstraintWitness;
         selfReadable = MkConstraintWitness;
         selfWriterReadable = MkConstraintWitness;
-    };
-
-    $(return []);
-    instance HasTypeInfo ReadableConstraint where
-    {
-        typeWitness = $(generateWitness [t|ReadableConstraint|]);
-        typeName _ = "ReadableConstraint";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance ReadableConstraint Monad;
-            instance ReadableConstraint MonadIO;
-        |]);
     };
 
     instance ReadableConstraint c => MapReadable (WriterReadable c w) where

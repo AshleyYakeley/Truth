@@ -26,20 +26,6 @@ module Truth.Core.Types.None where
         fromReader = return ();
     };
 
-    $(return []);
-    instance HasTypeInfo NoReader where
-    {
-        typeWitness = $(generateWitness [t|NoReader|]);
-        typeName _ = "NoReader";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance Reader (NoReader a) where
-            {
-                type ReaderSubject (NoReader a) = a;
-            };
-            instance FullReader c (NoReader ());
-        |]);
-    };
-
     -- | Can't touch this.
     ;
     newtype NoEdit (reader :: * -> *) = MkNoEdit None deriving (Eq,Countable,Searchable);
@@ -63,20 +49,6 @@ module Truth.Core.Types.None where
     instance (FullReader c reader,ReaderSubject reader ~ ()) => FullEdit c (NoEdit reader) where
     {
         replaceEdit = return ();
-    };
-
-    $(return []);
-    instance HasTypeInfo NoEdit where
-    {
-        typeWitness = $(generateWitness [t|NoEdit|]);
-        typeName _ = "NoEdit";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (Reader reader) => Edit (NoEdit reader) where
-            {
-                type EditReader (NoEdit reader) = reader;
-            };
-            instance (FullReader c reader,ReaderSubject reader ~ ()) => FullEdit c (NoEdit reader);
-        |]);
     };
 
     noEditFunction :: PureEditFunction () (NoEdit (EditReader edit)) edit;

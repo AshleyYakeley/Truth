@@ -33,19 +33,6 @@ module Truth.Core.Types.OneEdit where
         };
     };
 
-    $(return []);
-    instance HasTypeInfo OneEdit where
-    {
-        typeWitness = $(generateWitness [t|OneEdit|]);
-        typeName _ = "OneEdit";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (MonadOne f,Edit edit) => Edit (OneEdit f edit) where
-            {
-                type EditReader (OneEdit f edit) = OneReader f (EditReader edit);
-            };
-        |]);
-    };
-
     oneLiftEditFunction :: forall c f state edita editb. (ReadableConstraint c,MonadOne f) =>
         EditFunction c state edita editb -> EditFunction c state (OneEdit f edita) (OneEdit f editb);
     oneLiftEditFunction ff = MkEditFunction

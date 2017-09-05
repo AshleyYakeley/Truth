@@ -10,21 +10,7 @@ module Truth.Core.Types.Tuple where
         tupleWitness :: forall proxy edit. proxy c -> sel edit -> ConstraintWitness (c edit);
     };
 
-    $(return []);
-    instance HasTypeInfo TupleWitness where
-    {
-        typeWitness = $(generateWitness [t|TupleWitness|]);
-        typeName _ = "TupleWitness";
-    };
-
     newtype Tuple sel = MkTuple (forall edit. sel edit -> EditSubject edit);
-
-    $(return []);
-    instance HasTypeInfo Tuple where
-    {
-        typeWitness = $(generateWitness [t|Tuple|]);
-        typeName _ = "Tuple";
-    };
 
     class (TestEquality sel,TupleWitness Edit sel) => TupleSelector (sel :: * -> *) where
     {
@@ -34,14 +20,6 @@ module Truth.Core.Types.Tuple where
         tupleReadFrom :: forall edit. sel edit -> TupleSubject sel -> EditSubject edit;
         default tupleReadFrom :: forall edit. (TupleSubject sel ~ Tuple sel) => sel edit -> TupleSubject sel -> EditSubject edit;
         tupleReadFrom sel (MkTuple tuple) = tuple sel;
-    };
-    $(generateFamilyProxy "TupleSubject");
-
-    $(return []);
-    instance HasTypeInfo TupleSelector where
-    {
-        typeWitness = $(generateWitness [t|TupleSelector|]);
-        typeName _ = "TupleSelector";
     };
 
     data TupleEditReader sel t where
@@ -66,33 +44,14 @@ module Truth.Core.Types.Tuple where
         tupleReaderWitness :: forall proxy edit. proxy c -> sel edit -> ConstraintWitness (c (EditReader edit));
     };
 
-    $(return []);
-    instance HasTypeInfo TupleReaderWitness where
-    {
-        typeWitness = $(generateWitness [t|TupleReaderWitness|]);
-        typeName _ = "TupleReaderWitness";
-    };
-
     class TupleSubjectWitness (c :: * -> Constraint) (sel :: * -> *) where
     {
         tupleSubjectWitness :: forall proxy edit. proxy c -> sel edit -> ConstraintWitness (c (EditSubject edit));
     };
 
-    $(return []);
-    instance HasTypeInfo TupleSubjectWitness where
-    {
-        typeWitness = $(generateWitness [t|TupleSubjectWitness|]);
-        typeName _ = "TupleSubjectWitness";
-    };
-
     class TupleSelector sel => FiniteTupleSelector (sel :: * -> *) where
     {
         tupleConstruct :: forall m. Applicative m => (forall edit. sel edit -> m (EditSubject edit)) -> m (TupleSubject sel);
-    };
-    instance HasTypeInfo FiniteTupleSelector where
-    {
-        typeWitness = $(generateWitness [t|FiniteTupleSelector|]);
-        typeName _ = "FiniteTupleSelector";
     };
 
     tupleAllSelectors :: FiniteTupleSelector sel => [AnyWitness sel];
@@ -104,20 +63,6 @@ module Truth.Core.Types.Tuple where
         {
             MkConstraintWitness -> mapReadable (readable . MkTupleEditReader seledit) fromReader;
         });
-    };
-
-    $(return []);
-    instance HasTypeInfo TupleEditReader where
-    {
-        typeWitness = $(generateWitness [t|TupleEditReader|]);
-        typeName _ = "TupleEditReader";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (TupleSelector sel) => Reader (TupleEditReader sel) where
-            {
-                type ReaderSubject (TupleEditReader sel) = TupleSubject sel;
-            };
-            instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (FullReader c) sel) => FullReader c (TupleEditReader sel);
-        |]);
     };
 
 
@@ -168,40 +113,12 @@ module Truth.Core.Types.Tuple where
         };
     };
 
-    $(return []);
-    instance HasTypeInfo TupleEdit where
-    {
-        typeWitness = $(generateWitness [t|TupleEdit|]);
-        typeName _ = "TupleEdit";
-        typeKnowledge _ = mconcat [
-            typeInfoKnowledge (typeInfo @TupleEditReader),
-            $(generateTypeKnowledge [d|
-            instance TupleSelector sel => Edit (TupleEdit sel) where
-            {
-                type EditReader (TupleEdit sel) = TupleEditReader sel;
-            };
-            instance (FiniteTupleSelector sel,ReadableConstraint c,TupleReaderWitness (FullReader c) sel,TupleWitness (FullEdit c) sel) => FullEdit c (TupleEdit sel);
-        |])];
-    };
-
     splitTupleEditList :: TestEquality w => [TupleEdit w] -> AllF w [];
     splitTupleEditList [] = MkAllF $ \_ -> [];
     splitTupleEditList ((MkTupleEdit wt t):rr) = MkAllF $ \wt' -> case testEquality wt wt' of
     {
         Just Refl -> t:(getAllF (splitTupleEditList rr) wt');
         Nothing -> getAllF (splitTupleEditList rr) wt';
-    };
-
-    class TupleSelector sel => TupleHasInfo (sel :: * -> *) where
-    {
-        tupleHasInfo :: forall edit. sel edit -> TypeInfo edit;
-    };
-
-    $(return []);
-    instance HasTypeInfo TupleHasInfo where
-    {
-        typeWitness = $(generateWitness [t|TupleHasInfo|]);
-        typeName _ = "TupleHasInfo";
     };
 
     tupleEditLens :: forall c m sel edit. (TestEquality sel,Applicative m) =>

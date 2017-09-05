@@ -1,7 +1,6 @@
 module Truth.Core.Types.Function where
 {
     import Truth.Core.Import;
-    import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Types.Tuple;
 
@@ -36,23 +35,5 @@ module Truth.Core.Types.Function where
     instance (c edit) => TupleWitness c (FunctionSelector a edit) where
     {
         tupleWitness _ (MkFunctionSelector _) = MkConstraintWitness;
-    };
-
-    $(return []);
-    instance HasTypeInfo FunctionSelector where
-    {
-        typeWitness = $(generateWitness [t|FunctionSelector|]);
-        typeName _ = "FunctionSelector";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (Eq a) => (TestEquality :: (* -> *) -> Constraint) (FunctionSelector a editb);
-            instance (Finite a,Edit edit) =>
-                TupleSelector (FunctionSelector a edit) where
-            {
-                type TupleSubject (FunctionSelector a edit) = a -> EditSubject edit;
-            };
-            instance (Finite a,Edit edit) => FiniteTupleSelector (FunctionSelector a edit) where
-            instance (c (EditReader edit)) => TupleReaderWitness c (FunctionSelector a edit);
-            instance (c edit) => TupleWitness c (FunctionSelector a edit);
-        |]);
     };
 }

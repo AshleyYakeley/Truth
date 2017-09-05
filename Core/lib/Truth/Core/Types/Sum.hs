@@ -18,19 +18,6 @@ module Truth.Core.Types.Sum where
         readFrom subj (SumReadRight reader) = readFrom subj reader;
     };
 
-    $(return []);
-    instance HasTypeInfo SumReader where
-    {
-        typeWitness = $(generateWitness [t|SumReader|]);
-        typeName _ = "SumReader";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (Reader ra,Reader rb,ReaderSubject ra ~ ReaderSubject rb) => Reader (SumReader ra rb) where
-            {
-                type ReaderSubject (SumReader ra rb) = ReaderSubject ra;
-            };
-        |]);
-    };
-
     data SumEdit ea eb = SumEditLeft ea | SumEditRight eb;
 
     instance (Floating ea ea,Floating eb eb) => Floating (SumEdit ea eb) (SumEdit ea eb) where
@@ -54,20 +41,6 @@ module Truth.Core.Types.Sum where
     instance (FullEdit c ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit c (SumEdit ea eb) where
     {
         replaceEdit = reWriterReadable SumEditLeft replaceEdit;
-    };
-
-    $(return []);
-    instance HasTypeInfo SumEdit where
-    {
-        typeWitness = $(generateWitness [t|SumEdit|]);
-        typeName _ = "SumEdit";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (Edit ea,Edit eb,EditReader ea ~ EditReader eb) => Edit (SumEdit ea eb) where
-            {
-                type EditReader (SumEdit ea eb) = EditReader ea;
-            };
-            instance (FullEdit c ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit c (SumEdit ea eb);
-        |]);
     };
 
     sumEditFunction :: (EditReader edit ~ EditReader edit') => PureEditFunction () edit (SumEdit edit' edit);

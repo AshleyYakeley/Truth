@@ -13,12 +13,6 @@ module Truth.Core.Read.Readable where
 
     newtype Readable c reader a = MkReadable { unReadable :: forall m. (Monad m,c m) => MutableRead m reader -> m a};
 
-    instance HasTypeInfo Readable where
-    {
-        typeWitness = $(generateWitness [t|Readable|]);
-        typeName _ = "Readable";
-    };
-
     type PureReadable = Readable Monad;
     type IOReadable = Readable MonadIO;
 

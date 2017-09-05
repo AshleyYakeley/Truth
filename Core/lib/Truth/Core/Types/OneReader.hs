@@ -33,18 +33,4 @@ module Truth.Core.Types.OneReader where
     {
         fromReader = liftMaybeReadable fromReader;
     };
-
-    $(return []);
-    instance HasTypeInfo OneReader where
-    {
-        typeWitness = $(generateWitness [t|OneReader|]);
-        typeName _ = "OneReader";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance (Functor f,Reader reader) => Reader (OneReader f reader) where
-            {
-                type ReaderSubject (OneReader f reader) = f (ReaderSubject reader);
-            };
-            instance (Traversable f,Monad f,ReadableConstraint c,FullReader c reader) => FullReader c (OneReader f reader);
-        |]);
-    };
 }

@@ -1,12 +1,7 @@
-{-# OPTIONS -fno-warn-orphans #-}
 module Truth.Core.Sequence where
 {
     import Truth.Core.Import;
 
-
-    $(generateFamilyProxy "Element");
-    $(generateFamilyProxy "Index");
-    $(generateFamilyProxy "ContainerKey");
 
     newtype SequencePoint seq = MkSequencePoint (Index seq);
     deriving instance Eq (Index seq) => Eq (SequencePoint seq);
@@ -18,22 +13,6 @@ module Truth.Core.Sequence where
     instance Integral (Index seq) => Show (SequencePoint seq) where
     {
         show (MkSequencePoint i) = show $ toInteger i;
-    };
-
-    $(return []);
-    instance HasTypeInfo SequencePoint where
-    {
-        typeWitness = $(generateWitness [t|SequencePoint|]);
-        typeName _ = "SequencePoint";
-        typeKnowledge _ = $(generateTypeKnowledge [d|
-            instance Eq (Index seq) => Eq (SequencePoint seq);
-            instance Ord (Index seq) => Ord (SequencePoint seq);
-            instance Num (Index seq) => Num (SequencePoint seq);
-            instance Enum (Index seq) => Enum (SequencePoint seq);
-            instance Real (Index seq) => Real (SequencePoint seq);
-            instance Integral (Index seq) => Integral (SequencePoint seq);
-            instance Integral (Index seq) => Show (SequencePoint seq);
-        |]);
     };
 
     seqLength :: IsSequence seq => seq -> SequencePoint seq;
@@ -112,25 +91,4 @@ module Truth.Core.Sequence where
     {
         ab = seqIntersect a b;
     } in if runStart a < runEnd b && runStart b < runEnd a then ab else Nothing;
-
-    -- orphan
-    instance HasTypeInfo IsSequence where
-    {
-        typeWitness = $(generateWitness [t|IsSequence|]);
-        typeName _ = "IsSequence";
-    };
-
-    -- orphan
-    instance HasTypeInfo KeyContainer where
-    {
-        typeWitness = $(generateWitness [t|KeyContainer|]);
-        typeName _ = "KeyContainer";
-    };
-
-    -- orphan
-    instance HasTypeInfo IONewItemKeyContainer where
-    {
-        typeWitness = $(generateWitness [t|IONewItemKeyContainer|]);
-        typeName _ = "IONewItemKeyContainer";
-    };
 }
