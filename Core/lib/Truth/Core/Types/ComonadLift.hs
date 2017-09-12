@@ -21,12 +21,12 @@ module Truth.Core.Types.ComonadLift where
         };
     } in MkEditFunction{..};
 
-    comonadLiftEditLens :: forall m state w edita editb. (Functor m) =>
-        EditLens' m state edita editb -> EditLens' m state (ComonadEdit w edita) (ComonadEdit w editb);
+    comonadLiftEditLens :: forall state w edita editb.
+        EditLens state edita editb -> EditLens state (ComonadEdit w edita) (ComonadEdit w editb);
     comonadLiftEditLens (MkEditLens ef epe) = let
     {
         editLensFunction = comonadLiftEditFunction ef;
-        editLensPutEdit :: state -> ComonadEdit w editb -> Readable (ComonadReader w (EditReader edita)) (m (state,[ComonadEdit w edita]));
+        editLensPutEdit :: state -> ComonadEdit w editb -> Readable (ComonadReader w (EditReader edita)) (Maybe (state,[ComonadEdit w edita]));
         editLensPutEdit oldstate (MkComonadEdit editb) = mapReadable comonadReadFunction $ do
         {
             fr <- epe oldstate editb;

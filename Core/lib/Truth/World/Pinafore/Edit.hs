@@ -44,7 +44,7 @@ module Truth.World.Pinafore.Edit where
         invertEdit _ = return undefined;
     };
 
-    soupPrimitiveLens :: forall t. Serialize t => UUID -> EditLens' Identity () PinaforeEdit (WholeEdit (Maybe t));
+    soupPrimitiveLens :: forall t. Serialize t => UUID -> EditLens () PinaforeEdit (WholeEdit (Maybe t));
     soupPrimitiveLens valkey = let
     {
         editInitial = ();
@@ -62,7 +62,7 @@ module Truth.World.Pinafore.Edit where
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> WholeEdit (Maybe t) -> Readable PinaforeRead (Identity ((),[PinaforeEdit]));
+        editLensPutEdit :: () -> WholeEdit (Maybe t) -> Readable PinaforeRead (Maybe ((),[PinaforeEdit]));
         editLensPutEdit () (MkWholeEdit mt) = pure $ pure $ pure $ pure $ PinaforeEditSetPrimitive valkey $ fmap (encode serializeCodec) mt;
     } in MkEditLens{..};
 
@@ -84,7 +84,7 @@ module Truth.World.Pinafore.Edit where
         editLensPutEdit () (MkWholeEdit mv) = pure $ pure $ pure $ pure $ PinaforeEditSetValue prd subj mv;
     } in MkEditLens{..};
 
-    type PinaforeMorphism = PointedEditLens Maybe PinaforeEdit;
+    type PinaforeMorphism = PointedEditLens PinaforeEdit;
 
     primitivePinaforeMorphism :: forall val. Serialize val => PinaforeMorphism (WholeEdit (Maybe UUID)) (WholeEdit (Maybe val));
     primitivePinaforeMorphism = MkPointedEditLens $ let

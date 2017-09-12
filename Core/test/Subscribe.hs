@@ -211,8 +211,8 @@ module Subscribe(testSubscribe) where
     testSharedString :: TestTree;
     testSharedString = testSubscription "SharedString" "ABCDE" $ \sub -> let
         {
-            testLens :: GeneralLens' Maybe (StringEdit String) (StringEdit String);
-            testLens = toGeneralLens' $ stringSectionLens (startEndRun 1 4);
+            testLens :: GeneralLens (StringEdit String) (StringEdit String);
+            testLens = toGeneralLens $ stringSectionLens (startEndRun 1 4);
         } in
         subscribeEditor sub $ testOutputEditor "main" $ \MkSubscribeContext{..} ->
         subscribeEditor (mapSubscriber testLens sub) $ testOutputEditor "lens" $ \_ -> do

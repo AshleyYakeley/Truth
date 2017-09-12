@@ -51,7 +51,7 @@ module Truth.Core.Types.OneEdit where
     };
 {-
     oneLiftEditLens :: forall c m f state edita editb. (ReadableConstraint c,Applicative m,MonadOne f) =>
-        EditLens' c m state edita editb -> EditLens' c m state (OneEdit f edita) (OneEdit f editb);
+        EditLens c m state edita editb -> EditLens c m state (OneEdit f edita) (OneEdit f editb);
     oneLiftEditLens lens = MkEditLens
     {
         editLensFunction = oneLiftEditFunction (editLensFunction lens),
@@ -66,10 +66,9 @@ module Truth.Core.Types.OneEdit where
         }
     };
 -}
-    oneLiftEditLens :: forall m f state edita editb. (Monad m,MonadOne f) =>
-        (forall a. f a -> m a) ->
-        EditLens' m state edita editb -> EditLens' m state (OneEdit f edita) (OneEdit f editb);
-    oneLiftEditLens faffa lens = MkEditLens
+    oneLiftEditLens :: forall f state edita editb. MonadOne f =>
+        EditLens state edita editb -> EditLens state (OneEdit f edita) (OneEdit f editb);
+    oneLiftEditLens lens = MkEditLens
     {
         editLensFunction = oneLiftEditFunction (editLensFunction lens),
         editLensPutEdit = \oldstate (MkOneEdit editb) -> do
@@ -77,7 +76,7 @@ module Truth.Core.Types.OneEdit where
             fmeditas <- liftMaybeReadable $ editLensPutEdit lens oldstate editb;
             return $ do
             {
-                meditas <- faffa fmeditas;
+                meditas <- getMaybeOne fmeditas;
                 (newstate,editas) <- meditas;
                 return (newstate,fmap MkOneEdit editas);
             };
@@ -85,5 +84,5 @@ module Truth.Core.Types.OneEdit where
     };
 
     oneLiftGeneralLens :: MonadOne f => GeneralLens edita editb -> GeneralLens (OneEdit f edita) (OneEdit f editb);
-    oneLiftGeneralLens (MkCloseState lens) = MkCloseState $ oneLiftEditLens getMaybeOne lens;
+    oneLiftGeneralLens (MkCloseState lens) = MkCloseState $ oneLiftEditLens lens;
 }

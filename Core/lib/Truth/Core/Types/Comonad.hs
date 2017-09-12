@@ -55,7 +55,7 @@ module Truth.Core.Types.Comonad where
         editUpdate (MkComonadEdit edit) () = return ((),[edit]);
     } in MkEditFunction{..};
 
-    comonadEditLens :: Applicative m => EditLens' m () (ComonadEdit w edit) edit;
+    comonadEditLens :: EditLens () (ComonadEdit w edit) edit;
     comonadEditLens = let
     {
         editLensFunction = comonadEditFunction;

@@ -64,8 +64,8 @@ module Truth.Core.Types.Pair where
     pairMutableRead mra _mrb (MkTupleEditReader EditFirst ra) = mra ra;
     pairMutableRead _mra mrb (MkTupleEditReader EditSecond rb) = mrb rb;
 
-    fstLiftEditLens :: forall f state editx edita editb. Applicative f =>
-        EditLens' f state edita editb -> EditLens' f state (PairEdit edita editx) (PairEdit editb editx);
+    fstLiftEditLens :: forall state editx edita editb.
+        EditLens state edita editb -> EditLens state (PairEdit edita editx) (PairEdit editb editx);
     fstLiftEditLens (MkEditLens (MkEditFunction editInitial g u) pe) = let
     {
         editGet :: state -> ReadFunction (PairEditReader edita editx) (PairEditReader editb editx);
@@ -80,7 +80,7 @@ module Truth.Core.Types.Pair where
             return (newstate,fmap (MkTupleEdit EditFirst) ebs);
         };
 
-        editLensPutEdit :: state -> PairEdit editb editx -> Readable (PairEditReader edita editx) (f (state,[PairEdit edita editx]));
+        editLensPutEdit :: state -> PairEdit editb editx -> Readable (PairEditReader edita editx) (Maybe (state,[PairEdit edita editx]));
         editLensPutEdit oldstate (MkTupleEdit EditSecond ex) = return $ pure $ (oldstate,[MkTupleEdit EditSecond ex]);
         editLensPutEdit oldstate (MkTupleEdit EditFirst eb) = mapReadable firstReadFunction $ do
         {
@@ -91,8 +91,8 @@ module Truth.Core.Types.Pair where
         editLensFunction = MkEditFunction{..};
     } in MkEditLens{..};
 
-    sndLiftEditLens :: forall f state editx edita editb. (Applicative f) =>
-        EditLens' f state edita editb -> EditLens' f state (PairEdit editx edita) (PairEdit editx editb);
+    sndLiftEditLens :: forall state editx edita editb.
+        EditLens state edita editb -> EditLens state (PairEdit editx edita) (PairEdit editx editb);
     sndLiftEditLens (MkEditLens (MkEditFunction editInitial g u) pe) = let
     {
         editGet :: state -> ReadFunction (PairEditReader editx edita) (PairEditReader editx editb);
@@ -107,7 +107,7 @@ module Truth.Core.Types.Pair where
             return (newstate,fmap (MkTupleEdit EditSecond) ebs);
         };
 
-        editLensPutEdit :: state -> PairEdit editx editb -> Readable (PairEditReader editx edita) (f (state,[PairEdit editx edita]));
+        editLensPutEdit :: state -> PairEdit editx editb -> Readable (PairEditReader editx edita) (Maybe (state,[PairEdit editx edita]));
         editLensPutEdit oldstate (MkTupleEdit EditFirst ex) = return $ pure $ (oldstate,[MkTupleEdit EditFirst ex]);
         editLensPutEdit oldstate (MkTupleEdit EditSecond eb) = mapReadable secondReadFunction $ do
         {
@@ -136,8 +136,8 @@ module Truth.Core.Types.Pair where
         }
     };
 
-    pairJoinEditLenses :: forall f s1 s2 edita editb1 editb2. Functor f =>
-        EditLens' f s1 edita editb1 -> EditLens' f s2 edita editb2 -> EditLens' f (s1,s2) edita (PairEdit editb1 editb2);
+    pairJoinEditLenses :: forall s1 s2 edita editb1 editb2.
+        EditLens s1 edita editb1 -> EditLens s2 edita editb2 -> EditLens (s1,s2) edita (PairEdit editb1 editb2);
     pairJoinEditLenses lens1 lens2 = MkEditLens
     {
         editLensFunction = pairJoinEditFunctions (editLensFunction lens1) (editLensFunction lens2),

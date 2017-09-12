@@ -59,7 +59,7 @@ module Truth.Core.Types.Whole where
         editUpdate = \(MkWholeEdit a) curstate -> return (curstate,[MkWholeEdit $ ab a])
     };
 
-    wholeEditLens :: forall m a b. (Functor m) => Lens' m a b -> EditLens' m () (WholeEdit a) (WholeEdit b);
+    wholeEditLens :: forall m a b. (MonadOne m) => Lens' m a b -> EditLens () (WholeEdit a) (WholeEdit b);
     wholeEditLens lens = MkEditLens
     {
         editLensFunction = wholeEditFunction (lensGet lens),
@@ -71,44 +71,40 @@ module Truth.Core.Types.Whole where
                 newma = lensPutback lens newb olda;
                 medita = fmap (\a -> ((),[MkWholeEdit a])) newma;
             };
-            return medita;
+            return $ getMaybeOne medita;
         }
     };
 
-    instance (MonadOne f) => IsGeneralLens (Lens' f a b) where
+    instance MonadOne m => IsGeneralLens (Lens' m a b) where
     {
-        type LensMonad (Lens' f a b) = f;
-        type LensDomain (Lens' f a b) = WholeEdit a;
-        type LensRange (Lens' f a b) = WholeEdit b;
+        type LensDomain (Lens' m a b) = WholeEdit a;
+        type LensRange (Lens' m a b) = WholeEdit b;
 
-        toGeneralLens' = toGeneralLens' . wholeEditLens;
+        toGeneralLens = toGeneralLens . wholeEditLens;
     };
 
-    instance (MonadOne m) => IsGeneralLens (Injection' m a b) where
+    instance MonadOne m => IsGeneralLens (Injection' m a b) where
     {
-        type LensMonad (Injection' m a b) = m;
         type LensDomain (Injection' m a b) = WholeEdit a;
         type LensRange (Injection' m a b) = WholeEdit b;
 
-        toGeneralLens' = toGeneralLens' . injectionLens;
+        toGeneralLens = toGeneralLens . injectionLens;
     };
 
     instance IsGeneralLens (Bijection a b) where
     {
-        type LensMonad (Bijection a b) = Identity;
         type LensDomain (Bijection a b) = WholeEdit a;
         type LensRange (Bijection a b) = WholeEdit b;
 
-        toGeneralLens' = toGeneralLens' . bijectionInjection;
+        toGeneralLens = toGeneralLens . bijectionInjection;
     };
 
     instance IsGeneralLens (Codec a b) where
     {
-        type LensMonad (Codec a b) = Maybe;
         type LensDomain (Codec a b) = WholeEdit a;
         type LensRange (Codec a b) = WholeEdit (Maybe b);
 
-        toGeneralLens' = toGeneralLens' . codecInjection;
+        toGeneralLens = toGeneralLens . codecInjection;
     };
 
     unitWholeObjectFunction :: ObjectFunction edit (WholeEdit ());

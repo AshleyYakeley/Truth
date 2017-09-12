@@ -39,13 +39,13 @@ module Truth.Core.Types.ConsTuple where
         editUpdate _ _ = return $ pure [];
     } in MkEditFunction{..};
 
-    emptyTupleLens :: forall f edita. EditLens' f () edita (TupleEdit EmptyWitness);
+    emptyTupleLens :: forall edita. EditLens () edita (TupleEdit EmptyWitness);
     emptyTupleLens = let
     {
         editLensFunction :: EditFunction () edita (TupleEdit EmptyWitness);
         editLensFunction = emptyTupleFunction;
 
-        editLensPutEdit :: () -> TupleEdit EmptyWitness -> Readable (EditReader edita) (f ((), [edita]));
+        editLensPutEdit :: () -> TupleEdit EmptyWitness -> Readable (EditReader edita) (Maybe ((), [edita]));
         editLensPutEdit () (MkTupleEdit sel _) = never sel;
     } in MkEditLens{..};
 
@@ -73,8 +73,8 @@ module Truth.Core.Types.ConsTuple where
         }) <$> getsel FirstWitness <*> tupleConstruct (getsel . RestWitness);
     };
 
-    firstEditLens :: forall m sel edit1. (Applicative m) =>
-        EditLens' m () (TupleEdit (ConsWitness edit1 sel)) edit1;
+    firstEditLens :: forall sel edit1.
+        EditLens () (TupleEdit (ConsWitness edit1 sel)) edit1;
     firstEditLens = let
     {
         editInitial = ();
@@ -88,12 +88,12 @@ module Truth.Core.Types.ConsTuple where
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> edit1 -> Readable (TupleEditReader (ConsWitness edit1 sel)) (m ((),[TupleEdit (ConsWitness edit1 sel)]));
+        editLensPutEdit :: () -> edit1 -> Readable (TupleEditReader (ConsWitness edit1 sel)) (Maybe ((),[TupleEdit (ConsWitness edit1 sel)]));
         editLensPutEdit () edit = return $ pure ((),[MkTupleEdit FirstWitness edit]);
     } in MkEditLens{..};
 
-    restEditLens ::  forall m sel edit1. (Applicative m) =>
-        EditLens' m () (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel);
+    restEditLens ::  forall sel edit1.
+        EditLens () (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel);
     restEditLens = let
     {
         editInitial = ();
@@ -107,7 +107,7 @@ module Truth.Core.Types.ConsTuple where
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> TupleEdit sel -> Readable (TupleEditReader (ConsWitness edit1 sel)) (m ((),[TupleEdit (ConsWitness edit1 sel)]));
+        editLensPutEdit :: () -> TupleEdit sel -> Readable (TupleEditReader (ConsWitness edit1 sel)) (Maybe ((),[TupleEdit (ConsWitness edit1 sel)]));
         editLensPutEdit () (MkTupleEdit sel edit) = return $ pure ((),[MkTupleEdit (RestWitness sel) edit]);
     } in MkEditLens{..};
 
@@ -136,8 +136,8 @@ module Truth.Core.Types.ConsTuple where
         }
     };
 
-    consTupleLens :: forall f s1 s2 edita editb sel. Functor f =>
-        EditLens' f s1 edita editb -> EditLens' f s2 edita (TupleEdit sel) -> EditLens' f (s1,s2) edita (TupleEdit (ConsWitness editb sel));
+    consTupleLens :: forall s1 s2 edita editb sel.
+        EditLens s1 edita editb -> EditLens s2 edita (TupleEdit sel) -> EditLens (s1,s2) edita (TupleEdit (ConsWitness editb sel));
     consTupleLens lens1 lensr = MkEditLens
     {
         editLensFunction = consTupleFunction (editLensFunction lens1) (editLensFunction lensr),

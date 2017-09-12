@@ -29,7 +29,7 @@ module Truth.Core.Object.MutableIOEdit where
 
     type MutableIOEdit edit = NoEdit (MutableIOReader edit);
 
-    mutableIOEditLens :: forall m edit. Applicative m => EditLens' m () (MutableIOEdit edit) edit;
+    mutableIOEditLens :: forall edit. EditLens () (MutableIOEdit edit) edit;
     mutableIOEditLens = let
     {
         editInitial = ();
@@ -46,7 +46,7 @@ module Truth.Core.Object.MutableIOEdit where
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> edit -> Readable (MutableIOReader edit) (m ((),[MutableIOEdit edit]));
+        editLensPutEdit :: () -> edit -> Readable (MutableIOReader edit) (Maybe ((),[MutableIOEdit edit]));
         editLensPutEdit () edit = do
         {
             muted <- readable ReadMutableIO;
@@ -63,7 +63,7 @@ module Truth.Core.Object.MutableIOEdit where
         };
     } in MkEditLens{..};
 
-    mutableIOLiftEditLens :: forall f f' edita editb. (MonadOne f,Edit edita) => EditLens' f () edita editb -> EditLens' f' () (MutableIOEdit edita) (MutableIOEdit editb);
+    mutableIOLiftEditLens :: forall edita editb. Edit edita => EditLens () edita editb -> EditLens () (MutableIOEdit edita) (MutableIOEdit editb);
     mutableIOLiftEditLens lens = let
     {
         editInitial = ();

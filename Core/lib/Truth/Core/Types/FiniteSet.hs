@@ -15,7 +15,7 @@ module Truth.Core.Types.FiniteSet where
     type FiniteSetReader subj = KeyReader (FiniteSet subj) (WholeReader subj);
     type FiniteSetEdit subj = KeyEdit (FiniteSet subj) (NoEdit (WholeReader subj));
 
-    finiteSetLens :: forall subj. Eq subj => subj -> EditLens' Identity () (FiniteSetEdit subj) (WholeEdit Bool);
+    finiteSetLens :: forall subj. Eq subj => subj -> EditLens () (FiniteSetEdit subj) (WholeEdit Bool);
     finiteSetLens subj = let
     {
         editInitial = ();
@@ -33,7 +33,7 @@ module Truth.Core.Types.FiniteSet where
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> WholeEdit Bool -> Readable (FiniteSetReader subj) (Identity ((), [FiniteSetEdit subj]));
+        editLensPutEdit :: () -> WholeEdit Bool -> Readable (FiniteSetReader subj) (Maybe ((), [FiniteSetEdit subj]));
         editLensPutEdit () (MkWholeEdit False) = return $ pure $ pure $ [KeyDeleteItem subj];
         editLensPutEdit () (MkWholeEdit True) = return $ pure $ pure $ [KeyInsertReplaceItem subj];
     }

@@ -91,13 +91,13 @@ module Main(main) where
             soupItemInjection :: Injection' (Result String) ByteString (EditSubject SoupItemEdit);
             soupItemInjection = codecInjection soupContentsCodec;
 
-            paste :: forall m. MonadIO m => EditSubject SoupItemEdit -> m ((Result String) ByteString);
-            paste s = return $ injBackwards soupItemInjection s;
+            paste :: forall m. MonadIO m => EditSubject SoupItemEdit -> m (Maybe ByteString);
+            paste s = return $ getMaybeOne $ injBackwards soupItemInjection s;
 
-            soupItemLens :: EditLens' (Result String) () ByteStringEdit SoupItemEdit;
+            soupItemLens :: EditLens () ByteStringEdit SoupItemEdit;
             soupItemLens = convertEditLens <.> (wholeEditLens $ injectionLens soupItemInjection) <.> convertEditLens;
 
-            lens :: EditLens' (Result String) () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupItemEdit);
+            lens :: EditLens () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupItemEdit);
             lens = liftSoupLens paste $ soupItemLens <.> mutableIOEditLens;
 
             soupObject :: Object (SoupEdit SoupItemEdit);

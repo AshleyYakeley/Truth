@@ -99,7 +99,7 @@ module Truth.World.Pinafore.Ontology where
     pinaforeValueSpec :: ViewPinaforeValue -> UISpec PinaforeEdit;
     pinaforeValueSpec (MkViewPinaforeValue value tp) = let
     {
-        conv :: EditLens' Maybe ((),()) PinaforeEdit (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID)));
+        conv :: EditLens ((),()) PinaforeEdit (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID)));
         conv = contextJoinEditLenses identityState (constEditLens (Just value));
     } in MkUISpec $ MkUILens (pinaforeTypeSpec tp) $ toGeneralLens conv;
 

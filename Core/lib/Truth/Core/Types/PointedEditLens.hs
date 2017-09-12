@@ -11,11 +11,11 @@ module Truth.Core.Types.PointedEditLens where
 
     data PointedEditFunction editp edita editb = MkPointedEditFunction (EditFunction () (ContextEdit editp edita) editb);
 
-    data PointedEditLens f editp edita editb = MkPointedEditLens (EditLens' f () (ContextEdit editp edita) editb);
+    data PointedEditLens editp edita editb = MkPointedEditLens (EditLens () (ContextEdit editp edita) editb);
 
-    instance (Monad f,Traversable f,Edit editp) => ConstrainedCategory (PointedEditLens f editp) where
+    instance Edit editp => ConstrainedCategory (PointedEditLens editp) where
     {
-        type CategoryConstraint (PointedEditLens f editp) edit = Edit edit;
+        type CategoryConstraint (PointedEditLens editp) edit = Edit edit;
         cid = let
         {
             editInitial = ();
@@ -29,12 +29,12 @@ module Truth.Core.Types.PointedEditLens where
 
             editLensFunction = MkEditFunction{..};
 
-            editLensPutEdit :: () -> edit -> Readable (ContextEditReader editp edit) (f ((),[ContextEdit editp edit]));
+            editLensPutEdit :: () -> edit -> Readable (ContextEditReader editp edit) (Maybe ((),[ContextEdit editp edit]));
             editLensPutEdit () edit = pure $ pure $ pure $ pure $ MkTupleEdit EditContent edit;
         } in MkPointedEditLens $ MkEditLens{..};
 
 
-        (MkPointedEditLens (lensBC :: EditLens' f () (ContextEdit editp editb) editc)) <.> (MkPointedEditLens (lensAB :: EditLens' f () (ContextEdit editp edita) editb)) = let
+        (MkPointedEditLens (lensBC :: EditLens () (ContextEdit editp editb) editc)) <.> (MkPointedEditLens (lensAB :: EditLens () (ContextEdit editp edita) editb)) = let
         {
             funcAB = editLensFunction lensAB;
             funcBC = editLensFunction lensBC;
@@ -78,21 +78,21 @@ module Truth.Core.Types.PointedEditLens where
         };
     };
 
-    pointedEditLensFunction :: PointedEditLens f editp edita editb -> PointedEditFunction editp edita editb;
+    pointedEditLensFunction :: PointedEditLens editp edita editb -> PointedEditFunction editp edita editb;
     pointedEditLensFunction (MkPointedEditLens lens) = MkPointedEditFunction $ editLensFunction lens;
 
-    readOnlyPointedEditLens :: PointedEditFunction editp edita editb -> PointedEditLens Maybe editp edita editb;
+    readOnlyPointedEditLens :: PointedEditFunction editp edita editb -> PointedEditLens editp edita editb;
     readOnlyPointedEditLens (MkPointedEditFunction f) = MkPointedEditLens $ readOnlyEditLens f;
 
-    editLensToPointed :: (MonadOne f, Edit editp, Edit edita, Edit editb) =>
-        EditLens' f () edita editb -> PointedEditLens f editp edita editb;
+    editLensToPointed :: (Edit editp, Edit edita, Edit editb) =>
+        EditLens () edita editb -> PointedEditLens editp edita editb;
     editLensToPointed lens = case cid of
     {
         MkPointedEditLens idlens -> MkPointedEditLens $ lens <.> idlens;
     };
 
-    composeEditLensPointed :: (MonadOne f,Edit editp,Edit edita,Edit editb,Edit editc) =>
-        EditLens' f () editb editc -> PointedEditLens f editp edita editb -> PointedEditLens f editp edita editc;
+    composeEditLensPointed :: (Edit editp,Edit edita,Edit editb,Edit editc) =>
+        EditLens () editb editc -> PointedEditLens editp edita editb -> PointedEditLens editp edita editc;
     composeEditLensPointed lensBC (MkPointedEditLens lensAB) = MkPointedEditLens $ lensBC <.> lensAB;
 
     instance (JoinSemiLatticeEdit editb,Edit editp,Edit edita,Edit editb) =>
@@ -108,6 +108,6 @@ module Truth.Core.Types.PointedEditLens where
     };
 
     carryPointedEditLens :: (Edit editx,Edit edita,Edit editb) =>
-        PointedEditLens Maybe editx edita editb -> GeneralLens (ContextEdit editx edita) (ContextEdit editx editb);
+        PointedEditLens editx edita editb -> GeneralLens (ContextEdit editx edita) (ContextEdit editx editb);
     carryPointedEditLens (MkPointedEditLens lens) = liftContentGeneralLens (tupleEditLens EditContext) <.> MkCloseState (contextualiseEditLens lens);
 }

@@ -89,9 +89,9 @@ module Truth.Core.Object.View where
         return $ fmap (\_ -> b) vr;
     };
 
-    mapView :: forall f w edita editb. (MonadOne f,Edit edita,Edit editb) => GeneralLens' f edita editb -> View editb w -> View edita w;
+    mapView :: forall w edita editb. (Edit edita,Edit editb) => GeneralLens edita editb -> View editb w -> View edita w;
     mapView
-        lens@(MkCloseState (flens :: EditLens' f lensstate edita editb))
+        lens@(MkCloseState (flens :: EditLens lensstate edita editb))
         (MkView (viewB :: Object editb -> (AspectGetter editb -> IO ()) -> IO (ViewResult editb w)))
         = MkView $ \objectA setSelectA -> do
     {
@@ -106,7 +106,7 @@ module Truth.Core.Object.View where
             objectB :: Object editb;
             objectB = mapObject (mvarStateAccess lensvar) flens objectA;
 
-            setSelectB selB = setSelectA $ mapAspectGetter (generalLens lens) selB;
+            setSelectB selB = setSelectA $ mapAspectGetter lens selB;
         };
         MkViewResult w updateB fssB <- viewB objectB setSelectB;
         let
@@ -119,7 +119,7 @@ module Truth.Core.Object.View where
                 return ((),newls);
             };
 
-            fssA = mapAspectGetter (generalLens lens) fssB;
+            fssA = mapAspectGetter lens fssB;
         };
         return $ MkViewResult w updateA fssA;
     };

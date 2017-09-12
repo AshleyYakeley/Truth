@@ -59,7 +59,7 @@ module Truth.Core.Types.None where
         editUpdate = never;
     } in MkEditFunction{..};
 
-    noEditLens :: EditLens' Maybe () (NoEdit (EditReader edit)) edit;
+    noEditLens :: EditLens () (NoEdit (EditReader edit)) edit;
     noEditLens = let
     {
         editLensFunction = noEditFunction;

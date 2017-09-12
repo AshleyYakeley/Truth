@@ -129,7 +129,7 @@ module Main(main) where
         Eq (EditSubject editb),
         Show (EditSubject editb),
         Show state
-    ) => EditLens' m state edita editb -> EditSubject edita -> edita -> Property;
+    ) => EditLens state edita editb -> EditSubject edita -> edita -> Property;
     lensUpdateGetProperty lens oldA editA = ioProperty $ do
     {
         let

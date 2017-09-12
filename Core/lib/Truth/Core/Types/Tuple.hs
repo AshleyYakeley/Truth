@@ -142,7 +142,7 @@ module Truth.Core.Types.Tuple where
         editLensPutEdit :: () -> edit -> Readable (TupleEditReader sel) (Maybe ((),[TupleEdit sel]));
         editLensPutEdit () edit = return $ pure ((),[MkTupleEdit seledit edit]);
 
-        lens :: EditLens' Maybe () (TupleEdit sel) edit;
+        lens :: EditLens () (TupleEdit sel) edit;
         lens = MkEditLens{..};
     } in MkCloseState lens;
 }

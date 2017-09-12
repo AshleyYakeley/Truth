@@ -219,7 +219,7 @@ module Truth.Core.Types.Key where
             }
         };
 
-        lens :: EditLens' Identity (ContainerKey cont) (KeyEdit cont edit) (OneWholeEdit Maybe edit);
+        lens :: EditLens (ContainerKey cont) (KeyEdit cont edit) (OneWholeEdit Maybe edit);
         lens = MkEditLens{..};
     } in toGeneralLens lens;
 
@@ -233,17 +233,16 @@ module Truth.Core.Types.Key where
         ) => ContainerKey cont -> GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (OneWholeEdit Maybe valueedit);
     keyValueLens key = (oneWholeLiftGeneralLens $ tupleEditLens EditSecond) <.> keyElementLens key;
 
-    liftKeyElementLens :: forall f state conta contb edita editb.
+    liftKeyElementLens :: forall state conta contb edita editb.
         (
-            Applicative f,
             ContainerKey conta ~ ContainerKey contb,
             EditSubject edita ~ Element conta,
             EditSubject editb ~ Element contb,
             Reader (EditReader edita),
             FullReader (EditReader editb)
         ) =>
-        (forall m. MonadIO m => EditSubject editb -> m (f (EditSubject edita))) ->
-        EditLens' f state edita editb -> EditLens' f state (KeyEdit conta edita) (KeyEdit contb editb);
+        (forall m. MonadIO m => EditSubject editb -> m (Maybe (EditSubject edita))) ->
+        EditLens state edita editb -> EditLens state (KeyEdit conta edita) (KeyEdit contb editb);
     liftKeyElementLens bma (MkEditLens (MkEditFunction editInitial g u) pe) = let
     {
         editGet :: state -> ReadFunction (KeyReader conta (EditReader edita)) (KeyReader contb (EditReader editb));
@@ -269,7 +268,7 @@ module Truth.Core.Types.Key where
             };
         };
 
-        editLensPutEdit :: state -> KeyEdit contb editb -> Readable (KeyReader conta (EditReader edita)) (f (state,[KeyEdit conta edita]));
+        editLensPutEdit :: state -> KeyEdit contb editb -> Readable (KeyReader conta (EditReader edita)) (Maybe (state,[KeyEdit conta edita]));
         editLensPutEdit oldstate KeyClear = return $ pure (oldstate,[KeyClear]);
         editLensPutEdit oldstate (KeyInsertReplaceItem itemb) = do
         {
@@ -291,7 +290,7 @@ module Truth.Core.Types.Key where
     } in MkEditLens{..};
 
     contextKeyLens' :: forall editx cont edit.
-        EditLens' Maybe () (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit));
+        EditLens () (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit));
     contextKeyLens' = let
     {
         editInitial = ();

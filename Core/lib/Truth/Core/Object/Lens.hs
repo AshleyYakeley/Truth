@@ -7,8 +7,8 @@ module Truth.Core.Object.Lens where
     import Truth.Core.Object.Subscriber;
 
 
-    mapSubscriber :: forall f edita editb action. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Subscriber edita action -> Subscriber editb action;
-    mapSubscriber (MkCloseState (lens@MkEditLens{..} :: EditLens' f lensstate edita editb)) sub =
+    mapSubscriber :: forall edita editb action. (Edit edita) => GeneralLens edita editb -> Subscriber edita action -> Subscriber editb action;
+    mapSubscriber (MkCloseState (lens@MkEditLens{..} :: EditLens lensstate edita editb)) sub =
     MkSubscriber $ \(initialB :: Object editb -> IO editor) updateB -> do
     {
         let
@@ -38,7 +38,7 @@ module Truth.Core.Object.Lens where
     };
 
     convertSubscriber :: forall edita editb actions. (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Subscriber edita actions -> Subscriber editb actions;
-    convertSubscriber = mapSubscriber $ toGeneralLens' $ convertEditLens @Identity;
+    convertSubscriber = mapSubscriber $ toGeneralLens convertEditLens;
 
 {-
 

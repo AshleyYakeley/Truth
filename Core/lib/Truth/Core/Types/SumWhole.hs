@@ -32,10 +32,10 @@ module Truth.Core.Types.SumWhole where
         }
     };
 
-    sumWholeLiftEditLens :: (Functor f,Reader (EditReader edita),FullReader (EditReader editb)) =>
-     (state -> EditSubject editb -> Readable (EditReader edita) (f (state,EditSubject edita))) ->
-     EditLens' f state edita editb ->
-     EditLens' f state (SumWholeEdit edita) (SumWholeEdit editb);
+    sumWholeLiftEditLens :: (Reader (EditReader edita),FullReader (EditReader editb)) =>
+     (state -> EditSubject editb -> Readable (EditReader edita) (Maybe (state,EditSubject edita))) ->
+     EditLens state edita editb ->
+     EditLens state (SumWholeEdit edita) (SumWholeEdit editb);
     sumWholeLiftEditLens pushback lens = MkEditLens
     {
         editLensFunction = sumWholeLiftEditFunction (editLensFunction lens),

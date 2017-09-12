@@ -99,7 +99,7 @@ module Truth.Core.Types.Context where
         };
     } in MkEditFunction i g' u';
 
-    contextualiseEditLens :: Applicative m => EditLens' m state edita editb -> EditLens' m state edita (ContextEdit edita editb);
+    contextualiseEditLens :: EditLens state edita editb -> EditLens state edita (ContextEdit edita editb);
     contextualiseEditLens (MkEditLens f pe) = let
     {
         f' = contextualiseEditFunction f;
@@ -125,8 +125,8 @@ module Truth.Core.Types.Context where
         }
     };
 
-    contextJoinEditLenses :: forall f s1 s2 edita editb1 editb2. Functor f =>
-        EditLens' f s1 edita editb1 -> EditLens' f s2 edita editb2 -> EditLens' f (s1,s2) edita (ContextEdit editb1 editb2);
+    contextJoinEditLenses :: forall s1 s2 edita editb1 editb2.
+        EditLens s1 edita editb1 -> EditLens s2 edita editb2 -> EditLens (s1,s2) edita (ContextEdit editb1 editb2);
     contextJoinEditLenses lens1 lens2 = MkEditLens
     {
         editLensFunction = contextJoinEditFunctions (editLensFunction lens1) (editLensFunction lens2),
