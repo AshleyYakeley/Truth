@@ -113,4 +113,48 @@ module Truth.Core.Types.Whole where
 
         toGeneralLens' = toGeneralLens' . codecInjection;
     };
+
+    unitWholeObjectFunction :: ObjectFunction edit (WholeEdit ());
+    unitWholeObjectFunction = constEditFunction ();
+
+    pairWholeObjectFunction :: forall edit a b. ObjectFunction edit (WholeEdit a) -> ObjectFunction edit (WholeEdit b) -> ObjectFunction edit (WholeEdit (a,b));
+    pairWholeObjectFunction (MkEditFunction () ga ua) (MkEditFunction () gb ub) = let
+    {
+        gab :: () -> IOReadFunction (EditReader edit) (WholeReader (a,b));
+        gab () ReadWhole = do
+        {
+            a <- ga () ReadWhole;
+            b <- gb () ReadWhole;
+            return (a,b);
+        };
+
+        lastm :: forall x. [x] -> Maybe x;
+        lastm [] = Nothing;
+        lastm [x] = Just x;
+        lastm (_:xx) = lastm xx;
+
+        uab edit () = do
+        {
+            ((),editas) <- ua edit ();
+            ((),editbs) <- ub edit ();
+            case (lastm editas,lastm editbs) of
+            {
+                (Nothing,Nothing) -> return ((),[]);
+                (ma,mb) -> do
+                {
+                    a <- case ma of
+                    {
+                        Just (MkWholeEdit a) -> return a;
+                        Nothing -> ga () ReadWhole;
+                    };
+                    b <- case mb of
+                    {
+                        Just (MkWholeEdit b) -> return b;
+                        Nothing -> gb () ReadWhole;
+                    };
+                    return ((),[MkWholeEdit (a,b)]);
+                };
+            };
+        };
+    } in MkEditFunction () gab uab;
 }

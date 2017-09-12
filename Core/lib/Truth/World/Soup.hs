@@ -1,4 +1,4 @@
-module Truth.World.Soup(SoupEdit,directorySoup,liftSoupLens) where
+module Truth.World.Soup(UUIDElementEdit,SoupEdit,directorySoup,liftSoupLens) where
 {
     import Truth.Core.Import;
     import Truth.Core;
@@ -7,7 +7,8 @@ module Truth.World.Soup(SoupEdit,directorySoup,liftSoupLens) where
     import Data.UUID;
 
 
-    type SoupEdit edit = KeyEdit [(UUID,EditSubject edit)] (PairEdit (NoEdit (WholeReader UUID)) edit);
+    type UUIDElementEdit edit = PairEdit (NoEdit (WholeReader UUID)) edit;
+    type SoupEdit edit = KeyEdit [(UUID,EditSubject edit)] (UUIDElementEdit edit);
 
     liftSoupLens :: forall c f state edita editb. (ReadableConstraint c,Applicative f,Edit edita,Edit editb,FullReader c (EditReader editb)) =>
         (forall m. (Monad m,c m) => EditSubject editb -> m (f (EditSubject edita))) ->

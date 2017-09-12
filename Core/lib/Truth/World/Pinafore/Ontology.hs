@@ -9,7 +9,7 @@ module Truth.World.Pinafore.Ontology where
     uuid :: String -> UUID;
     uuid s = fromMaybe (error $ "couldn't parse UUID " ++ show s) $ Data.UUID.fromString s;
 
-    data ViewPinaforeSimpleProperty = forall edit. PinaforeEditConstraint edit => MkViewPinaforeSimpleProperty
+    data ViewPinaforeSimpleProperty edit = MkViewPinaforeSimpleProperty
     {
         spropName :: String,
         spropMorphism :: PinaforeMorphism (WholeEdit (Maybe UUID)) edit,
@@ -21,10 +21,10 @@ module Truth.World.Pinafore.Ontology where
         lpropName :: String,
         lpropMorphism :: PinaforeMorphism (WholeEdit (Maybe UUID)) (FiniteSetEdit UUID),
         lpropType :: ViewPinaforeType (WholeEdit (Maybe UUID)),
-        lpropColumns :: [ViewPinaforeProperty]
+        lpropColumns :: [ViewPinaforeSimpleProperty (OneWholeEdit Maybe (WholeEdit String))]
     };
 
-    data ViewPinaforeProperty = SimpleViewPinaforeProperty ViewPinaforeSimpleProperty | ListViewPinaforeProperty ViewPinaforeListProperty;
+    data ViewPinaforeProperty = forall edit. PinaforeEditConstraint edit => SimpleViewPinaforeProperty (ViewPinaforeSimpleProperty edit) | ListViewPinaforeProperty ViewPinaforeListProperty;
 
     type PinaforeEditConstraint edit = IOFullEdit edit;
 
@@ -57,24 +57,40 @@ module Truth.World.Pinafore.Ontology where
         uiWitness = $(iowitness [t|UIEntityPicker|]);
     };
 
-    data UIEntityList edit where
-    {
-        MkUIEntityList :: UISpec (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID)))-> [ViewPinaforeProperty] -> UIEntityList (FiniteSetEdit UUID);
-    };
+    pinaforePropertyKeyColumn :: ViewPinaforeSimpleProperty (OneWholeEdit Maybe (WholeEdit String)) -> KeyColumn (ContextEdit PinaforeEdit (NoEdit (WholeReader UUID)));
+    pinaforePropertyKeyColumn (MkViewPinaforeSimpleProperty name (MkPointedEditLens lens) _ptype) =
+        MkKeyColumn name $ funcEditFunction (fromMaybe "<empty>") <.> editLensFunction lens <.> liftContextEditFunction (funcEditFunction Just);
 
-    instance Show (UIEntityList edit) where
+    maybeWholeFunction :: forall a. ObjectFunction (NoEdit (WholeReader a)) (WholeEdit (Maybe a));
+    maybeWholeFunction = let
     {
-        show (MkUIEntityList uispec _) = "speclist " ++ show uispec;
-    };
+        editInitial = ();
+        editGet :: () -> WholeReader (Maybe a) t -> IOReadable (WholeReader a) t;
+        editGet () ReadWhole = fmap Just $ readable ReadWhole;
+        editUpdate = never;
+    } in MkEditFunction{..};
 
-    instance UIType UIEntityList where
+    maybeWholeLens :: forall a. GeneralLens (NoEdit (WholeReader a)) (WholeEdit (Maybe a));
+    maybeWholeLens = let
     {
-        uiWitness = $(iowitness [t|UIEntityList|]);
-    };
+        editLensFunction = maybeWholeFunction;
+        editLensPutEdit () (MkWholeEdit _) = return Nothing;
+    } in MkCloseState MkEditLens{..};
 
     pinaforePropertyAspect :: ViewPinaforeProperty -> Aspect (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID)));
     pinaforePropertyAspect (SimpleViewPinaforeProperty (MkViewPinaforeSimpleProperty name (MkPointedEditLens lens) ptype)) = MkAspect name (MkUISpec $ MkUIEntityPicker $ pinaforeTypeSpec ptype) $ MkCloseState lens;
-    pinaforePropertyAspect (ListViewPinaforeProperty (MkViewPinaforeListProperty name (MkPointedEditLens lens) ptype cols)) = MkAspect name (MkUISpec $ MkUIEntityList (pinaforeTypeSpec ptype) cols) $ MkCloseState lens;
+    pinaforePropertyAspect (ListViewPinaforeProperty (MkViewPinaforeListProperty name lens ptype cols)) = let
+        {
+            aspect :: Aspect (ContextEdit PinaforeEdit (OneWholeEdit Maybe (NoEdit (WholeReader UUID))));
+            aspect = MkAspect "item" (pinaforeTypeSpec ptype) $ liftContextGeneralLens $ MkCloseState convertEditLens;
+
+            spec :: UISpec (ContextEdit PinaforeEdit (KeyEdit (FiniteSet UUID) (NoEdit (WholeReader UUID))));
+            spec = MkUISpec $ MkUIContextTable (fmap pinaforePropertyKeyColumn cols) aspect;
+
+            propertyLens :: GeneralLens (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID))) (ContextEdit PinaforeEdit (KeyEdit (FiniteSet UUID) (NoEdit (WholeReader UUID))));
+            propertyLens = carryPointedEditLens lens;
+        }
+        in MkAspect name spec propertyLens;
 
     pinaforeTypeSpec :: ViewPinaforeType edit -> UISpec (ContextEdit PinaforeEdit edit);
     pinaforeTypeSpec (EntityViewPinaforeType props) = MkUISpec $ MkUIVertical $ fmap pinaforePropertyAspect props;
@@ -91,17 +107,17 @@ module Truth.World.Pinafore.Ontology where
     -- example ontology
 
     personType :: ViewPinaforeType (WholeEdit (Maybe UUID));
-    personType = EntityViewPinaforeType [personName,personMother,personFather,personChildren];
+    personType = EntityViewPinaforeType [SimpleViewPinaforeProperty personName,personMother,personFather,personChildren];
 
-    personName :: ViewPinaforeProperty;
+    personName :: ViewPinaforeSimpleProperty (OneWholeEdit Maybe (WholeEdit String));
     personName = let
     {
         spropName = "Name";
         spropMorphism :: PinaforeMorphism (WholeEdit (Maybe UUID)) (OneWholeEdit Maybe (WholeEdit String));
         spropMorphism = primitiveEditPinaforeMorphism <.> (predicatePinaforeMorphism $ uuid "498260df-6a8a-44f0-b285-68a63565a33b");
         spropType :: ViewPinaforeType (OneWholeEdit Maybe (WholeEdit String));
-        spropType = PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ MkUISpec $ MkUILens (MkUISpec $ MkUIMaybe Nothing $ MkUISpec MkUITextEntry) $ MkCloseState contentLens;
-    } in SimpleViewPinaforeProperty MkViewPinaforeSimpleProperty{..};
+        spropType = PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ MkUISpec $ MkUILens (MkUISpec $ MkUIMaybe Nothing $ MkUISpec MkUITextEntry) contentLens;
+    } in MkViewPinaforeSimpleProperty{..};
 
     motherUUID :: UUID;
     motherUUID = uuid "3afce58f-b7eb-4b11-8a75-2d66afd4d085";

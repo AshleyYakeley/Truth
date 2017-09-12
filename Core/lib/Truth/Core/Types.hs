@@ -2,6 +2,7 @@ module Truth.Core.Types
 (
     module Truth.Core.Types.None,
     module Truth.Core.Types.Whole,
+    module Truth.Core.Types.Unit,
     module Truth.Core.Types.Sum,
     module Truth.Core.Types.SumWhole,
     module Truth.Core.Types.OneReader,
@@ -30,6 +31,7 @@ module Truth.Core.Types
 {
     import Truth.Core.Types.None;
     import Truth.Core.Types.Whole;
+    import Truth.Core.Types.Unit;
     import Truth.Core.Types.Sum;
     import Truth.Core.Types.SumWhole;
     import Truth.Core.Types.OneReader;

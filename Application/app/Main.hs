@@ -49,7 +49,7 @@ module Main(main) where
                 undoBufferSub = undoQueueSubscriber bufferSub;
             };
             textSub <- makeSharedSubscriber undoBufferSub;
-            makeWindowCountRef windowCount (MkUISpec $ MkUIOne $ MkUISpec MkStringUIText) (takeFileName path) textSub;
+            makeWindowCountRef windowCount (MkUISpec $ MkUIOneWhole $ MkUISpec MkStringUIText) (takeFileName path) textSub;
         }
         else do
         {
@@ -59,14 +59,23 @@ module Main(main) where
                 textObj = convertObject wholeTextObj;
             };
             textSub <- makeObjectSubscriber textObj;
-            makeWindowCountRef windowCount (MkUISpec $ MkUIOne $ MkUISpec MkStringUIText) (takeFileName path) textSub;
+            makeWindowCountRef windowCount (MkUISpec $ MkUIOneWhole $ MkUISpec MkStringUIText) (takeFileName path) textSub;
         };
     };
 
 
+    fromResult :: Result String String -> String;
+    fromResult (SuccessResult s) = s;
+    fromResult (FailureResult s) = "<" ++ s ++ ">";
+
     type SoupItemEdit = OneWholeEdit (Result String) NoteEdit;
     soupEditSpec :: UISpec (SoupEdit SoupItemEdit);
-    soupEditSpec = MkUISpec $ MkUIKeyContainer $ MkUISpec $ MkUIOne noteEditSpec;
+    soupEditSpec = let
+    {
+        nameColumn = MkKeyColumn "Name" $ funcEditFunction fromResult <.> oneWholeLiftEditFunction (tupleObjectFunction NoteTitle) <.> tupleObjectFunction EditSecond;
+        aspect :: Aspect (OneWholeEdit Maybe (UUIDElementEdit SoupItemEdit));
+        aspect = MkAspect "item" (MkUISpec $ MkUIOneWhole $ MkUISpec $ MkUIOneWhole noteEditSpec) $ oneWholeLiftGeneralLens $ tupleEditLens EditSecond;
+    } in uiTableToContext [nameColumn] aspect;
 
     soupWindow :: FilePath -> WindowMaker;
     soupWindow dirpath windowCount = do

@@ -8,8 +8,11 @@ module Truth.Core.Object.Aspect where
 
     data Aspect edit where
     {
-        MkAspect :: forall edita editb. (IOFullEdit editb) => String -> UISpec editb -> GeneralLens edita editb -> Aspect edita;
+        MkAspect :: forall edita editb. Edit editb => String -> UISpec editb -> GeneralLens edita editb -> Aspect edita;
     };
+
+    lensFullEdit :: IOFullEdit edita => GeneralLens edita editb -> ConstraintWitness (IOFullEdit editb);
+    lensFullEdit _ = error "lensFullEdit";
 
     instance Show (Aspect edit) where
     {
@@ -82,7 +85,7 @@ module Truth.Core.Object.Aspect where
     {
         MkConstraintWitness -> case getSpec seledit of
         {
-            (name,spec) -> MkAspect name spec $ MkCloseState $ tupleEditLens seledit;
+            (name,spec) -> MkAspect name spec $ tupleEditLens seledit;
         };
     }) tupleAllSelectors;
 
@@ -139,14 +142,18 @@ module Truth.Core.Object.Aspect where
 
     data UIOne edit where
     {
+        -- view can create object
+        ;
         MkUIMaybe :: forall edit. (IOFullEdit edit) => Maybe (EditSubject edit) -> UISpec edit -> UIOne (OneWholeEdit Maybe edit);
-        MkUIOne :: forall f edit. (MonadOne f,IOFullEdit edit) => UISpec edit -> UIOne (OneWholeEdit f edit);
+        MkUIOneWhole :: forall f edit. (MonadOne f,IOFullEdit edit) => UISpec edit -> UIOne (OneWholeEdit f edit);
+        --MkUIOne :: forall f edit. (MonadOne f,Edit edit) => UISpec edit -> UIOne (OneEdit f edit);
     };
 
     instance Show (UIOne edit) where
     {
         show (MkUIMaybe _ uispec) = "maybe " ++ show uispec;
-        show (MkUIOne uispec) = "one " ++ show uispec;
+        show (MkUIOneWhole uispec) = "one+whole " ++ show uispec;
+        --show (MkUIOne uispec) = "one " ++ show uispec;
     };
 
     instance UIType UIOne where
@@ -154,33 +161,49 @@ module Truth.Core.Object.Aspect where
         uiWitness = $(iowitness [t|UIOne|]);
     };
 
-    data UIKeyContainer edit where
+    data KeyColumn edit = MkKeyColumn
     {
-        MkUIKeyContainer :: forall cont keyedit valueedit.
-            (
-                Show (ContainerKey cont),
-                IONewItemKeyContainer cont,
-                Edit keyedit,
-                IOFullReader (EditReader keyedit),
-                IOFullEdit valueedit,
-                HasKeyReader cont (PairEditReader keyedit valueedit)
-            ) =>
-            UISpec valueedit -> UIKeyContainer (KeyEdit cont (PairEdit keyedit valueedit));
+        kcName :: String,
+        kcFunction :: ObjectFunction edit (WholeEdit String)
     };
 
-    instance Show (UIKeyContainer edit) where
+    mapKeyColumn :: (Edit edita,Edit editb) => ObjectFunction edita editb -> KeyColumn editb -> KeyColumn edita;
+    mapKeyColumn ff (MkKeyColumn n f) = MkKeyColumn n $ f <.> ff;
+
+    data UIContextTable edit where
     {
-        show (MkUIKeyContainer uispec) = "key " ++ show uispec;
+        MkUIContextTable :: forall cont cedit iedit. (IONewItemKeyContainer cont,IOFullReader (EditReader iedit),Edit cedit,Edit iedit,HasKeyReader cont (EditReader iedit)) =>
+            [KeyColumn (ContextEdit cedit iedit)] -> Aspect (ContextEdit cedit (OneWholeEdit Maybe iedit)) -> UIContextTable (ContextEdit cedit (KeyEdit cont iedit));
     };
 
-    instance UIType UIKeyContainer where
+    uiTableToContext :: forall cont iedit. (IONewItemKeyContainer cont,IOFullReader (EditReader iedit),HasKeyReader cont (EditReader iedit),Edit iedit) =>
+        [KeyColumn iedit] -> Aspect (OneWholeEdit Maybe iedit) -> UISpec (KeyEdit cont iedit);
+    uiTableToContext cols aspect = let
     {
-        uiWitness = $(iowitness [t|UIKeyContainer|]);
+        cols' = fmap (mapKeyColumn $ tupleObjectFunction EditContent) cols;
+        aspect' = mapAspect contentLens aspect;
+    } in MkUISpec $ MkUILens (MkUISpec $ MkUIContextTable cols' aspect') nullContextGeneralLens;
+
+    instance Show (UIContextTable edit) where
+    {
+        show (MkUIContextTable cols aspect) = "context-table (" ++ intercalate ", " (fmap kcName cols) ++ ") " ++ show aspect;
     };
 
+    instance UIType UIContextTable where
+    {
+        uiWitness = $(iowitness [t|UIContextTable|]);
+    };
+{-
+    mapOneEditAspect :: forall f edit. MonadOne f =>
+        (forall editb. Edit editb => UISpec editb -> UISpec (OneEdit f editb)) -> Aspect edit -> Aspect (OneEdit f edit);
+    mapOneEditAspect ff (MkAspect name uispec lens) = MkAspect name (ff uispec) $ oneLiftGeneralLens lens;
+-}
     mapOneWholeEditAspect :: forall f edit. (MonadOne f, IOFullEdit edit) =>
         (forall editb. IOFullEdit editb => UISpec editb -> UISpec (OneWholeEdit f editb)) -> Aspect edit -> Aspect (OneWholeEdit f edit);
-    mapOneWholeEditAspect ff (MkAspect name uispec lens) = MkAspect name (ff uispec) $ toGeneralLens $ oneWholeLiftGeneralLens getMaybeOne lens;
+    mapOneWholeEditAspect ff (MkAspect name uispec lens) = case lensFullEdit lens of
+    {
+        MkConstraintWitness -> MkAspect name (ff uispec) $ oneWholeLiftGeneralLens lens;
+    };
 
     data UIWindowButton edit where
     {

@@ -10,6 +10,7 @@ module Truth.Core.Types.Key where
     import Truth.Core.Types.OneWholeEdit;
     import Truth.Core.Types.Tuple;
     import Truth.Core.Types.Pair;
+    import Truth.Core.Types.Context;
 
 
     data KeyReader cont reader t where
@@ -18,10 +19,10 @@ module Truth.Core.Types.Key where
         KeyReadItem :: ContainerKey cont -> reader t -> KeyReader cont reader (Maybe t);
     };
 
-    keyItemReadFunction :: forall cont reader. ContainerKey cont -> PureReadFunctionF Maybe (KeyReader cont reader) reader;
+    keyItemReadFunction :: forall c cont reader. ContainerKey cont -> ReadFunctionF c Maybe (KeyReader cont reader) reader;
     keyItemReadFunction key reader = readable $ KeyReadItem key reader;
 
-    knownKeyItemReadFunction :: forall cont reader. ContainerKey cont -> PureReadFunction (KeyReader cont reader) reader;
+    knownKeyItemReadFunction :: forall c cont reader. ContainerKey cont -> ReadFunction c (KeyReader cont reader) reader;
     knownKeyItemReadFunction key reader = do
     {
         mt <- keyItemReadFunction key reader;
@@ -181,7 +182,7 @@ module Truth.Core.Types.Key where
     };
 
     keyElementLens :: forall cont edit. (KeyContainer cont,HasKeyReader cont (EditReader edit),Edit edit) =>
-        ContainerKey cont -> PureEditLens' Identity (ContainerKey cont) (KeyEdit cont edit) (OneWholeEdit Maybe edit);
+        ContainerKey cont -> GeneralLens (KeyEdit cont edit) (OneWholeEdit Maybe edit);
     keyElementLens editInitial = let
     {
         editGet :: ContainerKey cont -> PureReadFunction (KeyReader cont (EditReader edit)) (OneReader Maybe (EditReader edit));
@@ -220,7 +221,10 @@ module Truth.Core.Types.Key where
                 Nothing -> (oldkey,[]);
             }
         };
-    } in MkEditLens{..};
+
+        lens :: PureEditLens' Identity (ContainerKey cont) (KeyEdit cont edit) (OneWholeEdit Maybe edit);
+        lens = MkEditLens{..};
+    } in toGeneralLens lens;
 
     keyValueLens :: forall cont keyedit valueedit.
         (
@@ -230,14 +234,7 @@ module Truth.Core.Types.Key where
             IOFullReader (EditReader keyedit),
             IOFullEdit valueedit
         ) => ContainerKey cont -> GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (OneWholeEdit Maybe valueedit);
-    keyValueLens key = let
-    {
-        oneSndLens :: GeneralLens (OneWholeEdit Maybe (PairEdit keyedit valueedit)) (OneWholeEdit Maybe valueedit);
-        oneSndLens = toGeneralLens $ oneWholeLiftGeneralLens id $ toGeneralLens $ tupleEditLens @MonadIO @Maybe EditSecond;
-
-        elementLens :: GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (OneWholeEdit Maybe (PairEdit keyedit valueedit));
-        elementLens = toGeneralLens $ keyElementLens key;
-    } in (<.>) oneSndLens elementLens;
+    keyValueLens key = (oneWholeLiftGeneralLens $ tupleEditLens EditSecond) <.> keyElementLens key;
 
     liftKeyElementLens :: forall c f state conta contb edita editb.
         (
@@ -268,7 +265,7 @@ module Truth.Core.Types.Key where
         editUpdate (KeyDeleteItem key) oldstate = return (oldstate,[KeyDeleteItem key]);
         editUpdate (KeyEditItem key ea) oldstate = do
         {
-            mresult <- mapReadableF (keyItemReadFunction @conta key) $ u ea oldstate;
+            mresult <- mapReadableF (keyItemReadFunction @Monad @conta key) $ u ea oldstate;
             case mresult of
             {
                 Just (newstate,ebs) -> return (newstate,fmap (KeyEditItem key) ebs);
@@ -286,7 +283,7 @@ module Truth.Core.Types.Key where
         editLensPutEdit oldstate (KeyDeleteItem key) = return $ pure (oldstate,[KeyDeleteItem key]);
         editLensPutEdit oldstate (KeyEditItem key eb) = do
         {
-            mfresult <- mapReadableF (keyItemReadFunction @conta key) $ pe oldstate eb;
+            mfresult <- mapReadableF (keyItemReadFunction @Monad @conta key) $ pe oldstate eb;
             case mfresult of
             {
                 Just fsea -> return $ fmap (fmap (fmap $ KeyEditItem key)) fsea;
@@ -296,4 +293,39 @@ module Truth.Core.Types.Key where
 
         editLensFunction = MkEditFunction{..};
     } in MkEditLens{..};
+
+    contextKeyLens' :: forall c editx cont edit.
+        EditLens' c Maybe () (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit));
+    contextKeyLens' = let
+    {
+        editInitial = ();
+
+        editGet :: () -> KeyReader cont (ContextEditReader editx edit) t -> Readable c (ContextEditReader editx (KeyEdit cont edit)) t;
+        editGet () KeyReadKeys = readable $ MkTupleEditReader EditContent KeyReadKeys;
+        editGet () (KeyReadItem _ (MkTupleEditReader EditContext reader)) = fmap Just $ readable $ MkTupleEditReader EditContext reader;
+        editGet () (KeyReadItem key (MkTupleEditReader EditContent reader)) = readable $ MkTupleEditReader EditContent $ KeyReadItem key reader;
+
+        editUpdate :: ContextEdit editx (KeyEdit cont edit) -> () -> Readable c (ContextEditReader editx (KeyEdit cont edit)) ((), [KeyEdit cont (ContextEdit editx edit)]);
+        editUpdate (MkTupleEdit EditContext edit) () = do
+        {
+            MkFiniteSet kk <- readable $ MkTupleEditReader EditContent KeyReadKeys;
+            return $ pure $ fmap (\key -> KeyEditItem key $ MkTupleEdit EditContext edit) kk;
+        };
+        editUpdate (MkTupleEdit EditContent (KeyEditItem key edit)) () = return $ pure [KeyEditItem key (MkTupleEdit EditContent edit)];
+        editUpdate (MkTupleEdit EditContent (KeyDeleteItem key)) () = return $ pure [KeyDeleteItem key];
+        editUpdate (MkTupleEdit EditContent (KeyInsertReplaceItem el)) () = return $ pure [KeyInsertReplaceItem el];
+        editUpdate (MkTupleEdit EditContent KeyClear) () = return $ pure [KeyClear];
+
+        editLensFunction = MkEditFunction{..};
+
+        editLensPutEdit :: () -> KeyEdit cont (ContextEdit editx edit) -> Readable c (ContextEditReader editx (KeyEdit cont edit)) (Maybe ((), [ContextEdit editx (KeyEdit cont edit)]));
+        editLensPutEdit () (KeyEditItem _ (MkTupleEdit EditContext edit)) = return $ pure $ pure [MkTupleEdit EditContext edit];
+        editLensPutEdit () (KeyEditItem key (MkTupleEdit EditContent edit)) = return $ pure $ pure [MkTupleEdit EditContent $ KeyEditItem key edit];
+        editLensPutEdit () (KeyDeleteItem key) = return $ pure $ pure [MkTupleEdit EditContent $ KeyDeleteItem key];
+        editLensPutEdit () (KeyInsertReplaceItem el) = return $ pure $ pure [MkTupleEdit EditContent $ KeyInsertReplaceItem el];
+        editLensPutEdit () KeyClear = return $ pure $ pure [MkTupleEdit EditContent KeyClear];
+    } in MkEditLens {..};
+
+    contextKeyLens :: GeneralLens (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit));
+    contextKeyLens = MkCloseState contextKeyLens';
 }

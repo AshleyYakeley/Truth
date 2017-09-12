@@ -83,4 +83,7 @@ module Truth.Core.Types.OneEdit where
             };
         }
     };
+
+    oneLiftGeneralLens :: MonadOne f => GeneralLens edita editb -> GeneralLens (OneEdit f edita) (OneEdit f editb);
+    oneLiftGeneralLens (MkCloseState lens) = MkCloseState $ oneLiftEditLens getMaybeOne lens;
 }

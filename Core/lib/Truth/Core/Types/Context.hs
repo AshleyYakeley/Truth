@@ -4,6 +4,7 @@ module Truth.Core.Types.Context where
     import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Types.Tuple;
+    import Truth.Core.Types.Unit;
 
 
     data WithContext context content = MkWithContext context content;
@@ -72,9 +73,9 @@ module Truth.Core.Types.Context where
         tupleWitness _ EditContent = MkConstraintWitness;
     };
 
-    contextLens :: Applicative m => EditLens' c m () (TupleEdit (WithContextSelector editx editn)) editx;
+    contextLens :: GeneralLens (TupleEdit (WithContextSelector editx editn)) editx;
     contextLens = tupleEditLens EditContext;
-    contentLens :: Applicative m => EditLens' c m () (TupleEdit (WithContextSelector editx editn)) editn;
+    contentLens :: GeneralLens (TupleEdit (WithContextSelector editx editn)) editn;
     contentLens = tupleEditLens EditContent;
 
     type ContextEditReader x n = TupleEditReader (WithContextSelector x n);
@@ -143,4 +144,79 @@ module Truth.Core.Types.Context where
             };
         }
     };
+
+    nullContextGeneralLens :: Edit edit => GeneralLens edit (ContextEdit UnitEdit edit);
+    nullContextGeneralLens = MkCloseState $ contextJoinEditLenses unitLens identityState;
+
+    liftContextReadFunction :: forall edita editb editx. IOReadFunction (EditReader edita) (EditReader editb) -> IOReadFunction (ContextEditReader editx edita) (ContextEditReader editx editb);
+    liftContextReadFunction _ (MkTupleEditReader EditContext reader) = mapReadable (tupleReadFunction EditContext) $ readable reader;
+    liftContextReadFunction rf (MkTupleEditReader EditContent reader) = mapReadable (tupleReadFunction EditContent) $ rf reader;
+
+    liftContextEditFunction :: forall state edita editb editx. IOEditFunction state edita editb -> IOEditFunction state (ContextEdit editx edita) (ContextEdit editx editb);
+    liftContextEditFunction (MkEditFunction i g u) = let
+    {
+        g' :: state -> ContextEditReader editx editb t -> IOReadable (ContextEditReader editx edita) t;
+        g' cur = liftContextReadFunction $ g cur;
+
+        u' :: ContextEdit editx edita -> state -> IOReadable (ContextEditReader editx edita) (state, [ContextEdit editx editb]);
+        u' (MkTupleEdit EditContext edit) old = return (old,[MkTupleEdit EditContext edit]);
+        u' (MkTupleEdit EditContent edit) old = do
+        {
+            (new,edits) <- mapReadable (tupleReadFunction EditContent) $ u edit old;
+            return (new,fmap (MkTupleEdit EditContent) edits);
+        };
+    } in MkEditFunction i g' u';
+
+    liftContextEditLens :: forall state edita editb editx. IOEditLens state edita editb -> IOEditLens state (ContextEdit editx edita) (ContextEdit editx editb);
+    liftContextEditLens (MkEditLens (ef :: IOEditFunction state edita editb) pe) = let
+    {
+        ef' = liftContextEditFunction ef;
+
+        pe' :: state -> ContextEdit editx editb -> IOReadable (ContextEditReader editx edita) (Maybe (state, [ContextEdit editx edita]));
+        pe' old (MkTupleEdit EditContext edit) = return $ pure (old,[MkTupleEdit EditContext edit]);
+        pe' old (MkTupleEdit EditContent edit) = do
+        {
+            mnewedits <- mapReadable (tupleReadFunction EditContent) $ pe old edit;
+            for mnewedits $ \(new,edits) -> return (new,fmap (MkTupleEdit EditContent) edits);
+        };
+    } in MkEditLens ef' pe';
+
+    liftContextGeneralLens :: forall edita editb editx. GeneralLens edita editb -> GeneralLens (ContextEdit editx edita) (ContextEdit editx editb);
+    liftContextGeneralLens (MkCloseState lens) = MkCloseState $ liftContextEditLens lens;
+
+    liftContentReadFunction :: forall edita editb editn. IOReadFunction (EditReader edita) (EditReader editb) -> IOReadFunction (ContextEditReader edita editn) (ContextEditReader editb editn);
+    liftContentReadFunction _ (MkTupleEditReader EditContent reader) = mapReadable (tupleReadFunction EditContent) $ readable reader;
+    liftContentReadFunction rf (MkTupleEditReader EditContext reader) = mapReadable (tupleReadFunction EditContext) $ rf reader;
+
+    liftContentEditFunction :: forall state edita editb editn. IOEditFunction state edita editb -> IOEditFunction state (ContextEdit edita editn) (ContextEdit editb editn);
+    liftContentEditFunction (MkEditFunction i g u) = let
+    {
+        g' :: state -> ContextEditReader editb editn t -> IOReadable (ContextEditReader edita editn) t;
+        g' cur = liftContentReadFunction $ g cur;
+
+        u' :: ContextEdit edita editn -> state -> IOReadable (ContextEditReader edita editn) (state, [ContextEdit editb editn]);
+        u' (MkTupleEdit EditContent edit) old = return (old,[MkTupleEdit EditContent edit]);
+        u' (MkTupleEdit EditContext edit) old = do
+        {
+            (new,edits) <- mapReadable (tupleReadFunction EditContext) $ u edit old;
+            return (new,fmap (MkTupleEdit EditContext) edits);
+        };
+    } in MkEditFunction i g' u';
+
+    liftContentEditLens :: forall state edita editb editn. IOEditLens state edita editb -> IOEditLens state (ContextEdit edita editn) (ContextEdit editb editn);
+    liftContentEditLens (MkEditLens (ef :: IOEditFunction state edita editb) pe) = let
+    {
+        ef' = liftContentEditFunction ef;
+
+        pe' :: state -> ContextEdit editb editn -> IOReadable (ContextEditReader edita editn) (Maybe (state, [ContextEdit edita editn]));
+        pe' old (MkTupleEdit EditContent edit) = return $ pure (old,[MkTupleEdit EditContent edit]);
+        pe' old (MkTupleEdit EditContext edit) = do
+        {
+            mnewedits <- mapReadable (tupleReadFunction EditContext) $ pe old edit;
+            for mnewedits $ \(new,edits) -> return (new,fmap (MkTupleEdit EditContext) edits);
+        };
+    } in MkEditLens ef' pe';
+
+    liftContentGeneralLens :: forall edita editb editn. GeneralLens edita editb -> GeneralLens (ContextEdit edita editn) (ContextEdit editb editn);
+    liftContentGeneralLens (MkCloseState lens) = MkCloseState $ liftContentEditLens lens;
 }

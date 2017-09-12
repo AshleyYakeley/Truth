@@ -16,6 +16,20 @@ module Truth.Core.Edit.EditFunction  where
     type PureEditFunction = EditFunction Monad;
     type IOEditFunction = EditFunction MonadIO;
 
+    type ObjectFunction = IOEditFunction ();
+
+    editToObjectFunction :: forall c edita editb. EditFunction c ((),()) edita editb -> EditFunction c () edita editb;
+    editToObjectFunction (MkEditFunction _ g u) = let
+    {
+        g' :: () -> ReadFunction c (EditReader edita) (EditReader editb);
+        g' () = g ((),());
+        u' ea () = do
+        {
+            (((),()),ebs) <- u ea ((),());
+            return ((),ebs);
+        };
+    } in MkEditFunction () g' u';
+
     pureToEditFunction :: PureEditFunction state edita editb -> EditFunction c state edita editb;
     pureToEditFunction (MkEditFunction i g u) = MkEditFunction i (\s -> pureToReadFunction $ g s) (\ea s -> pureToReadable $ u ea s);
 
@@ -113,25 +127,29 @@ module Truth.Core.Edit.EditFunction  where
         };
     };
 
-    convertEditFunction :: forall c edita editb. (ReadableConstraint c,EditSubject edita ~ EditSubject editb,Edit edita,FullReader c (EditReader edita),FullEdit c editb) =>
-        EditFunction c () edita editb;
-    convertEditFunction = let
+    funcEditFunction :: forall c edita editb. (ReadableConstraint c,Edit edita,FullReader c (EditReader edita),FullEdit c editb) =>
+        (EditSubject edita -> EditSubject editb) -> EditFunction c () edita editb;
+    funcEditFunction ab = let
     {
         editInitial :: ();
         editInitial = ();
 
         editGet :: () -> ReadFunction c (EditReader edita) (EditReader editb);
-        editGet () = convertReadFunction;
+        editGet () = simpleReadFunction ab;
 
         editUpdate :: edita -> () -> Readable c (EditReader edita) ((),[editb]);
         editUpdate edita () = do
         {
-            newsubject <- mapReadable (applyEdit edita) fromReader;
+            newa <- mapReadable (applyEdit edita) fromReader;
             editbs <- case selfReadable @c @(EditReader edita) of
             {
-                MkConstraintWitness -> getReplaceEditsM @c newsubject;
+                MkConstraintWitness -> getReplaceEditsM @c $ ab newa;
             };
             return $ ((),editbs);
         };
     } in MkEditFunction{..};
+
+    convertEditFunction :: forall c edita editb. (ReadableConstraint c,EditSubject edita ~ EditSubject editb,Edit edita,FullReader c (EditReader edita),FullEdit c editb) =>
+        EditFunction c () edita editb;
+    convertEditFunction = funcEditFunction id;
 }

@@ -50,6 +50,7 @@ module Truth.Core.Read.ReadFunction where
     readFunctionStateT :: (Monad m,PureFullReader r) => PureReadFunction r r -> StateT (ReaderSubject r) m ();
     readFunctionStateT rf = StateT $ \oldval -> return ((),fromReadFunction rf oldval);
 
+    type ReadFunctionF c f readera readerb = forall t. readerb t -> Readable c readera (f t);
     type PureReadFunctionF f readera readerb = forall t. readerb t -> PureReadable readera (f t);
 
     mapStructureF :: Monad m => PureReadFunctionF f ra rb -> MutableRead m ra -> MutableRead (Compose m f) rb;

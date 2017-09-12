@@ -40,6 +40,9 @@ module Truth.Core.Edit.EditLens where
     };
 
     type PureEditLens = PureEditLens' Maybe;
+    type IOEditLens = IOEditLens' Maybe;
+
+    type ObjectLens = IOEditLens ();
 {-
     instance IsBiMap (PureEditLens' state) where
     {

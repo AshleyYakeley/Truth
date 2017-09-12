@@ -124,6 +124,13 @@ module Truth.Core.Object.View where
         return $ MkViewResult w updateA fssA;
     };
 
+    mapViewAspect :: (Aspect edit -> Aspect edit) -> View edit w -> View edit w;
+    mapViewAspect f (MkView view) = MkView $ \object setSelect -> do
+    {
+        MkViewResult w v ag <- view object setSelect;
+        return $ MkViewResult w v $ fmap (fmap f) ag;
+    };
+
     data ViewSubscription edit action w = MkViewSubscription
     {
         srWidget :: w,
@@ -174,6 +181,6 @@ module Truth.Core.Object.View where
     tupleView :: (Applicative m,FiniteTupleSelector sel) => (forall edit. sel edit -> m (View edit w)) -> m (View (TupleEdit sel) [w]);
     tupleView pickview = getCompose $ for tupleAllSelectors $ \(MkAnyWitness sel) -> case tupleWitness (Proxy :: Proxy Edit) sel of
     {
-        MkConstraintWitness -> Compose $ fmap (mapView (toGeneralLens $ tupleEditLens @MonadIO @Maybe sel)) (pickview sel);
+        MkConstraintWitness -> Compose $ fmap (mapView (tupleEditLens sel)) (pickview sel);
     };
 }

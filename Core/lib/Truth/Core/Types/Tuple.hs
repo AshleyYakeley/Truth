@@ -27,7 +27,7 @@ module Truth.Core.Types.Tuple where
         MkTupleEditReader :: sel edit -> EditReader edit t -> TupleEditReader sel t;
     };
 
-    tupleReadFunction :: sel edit -> PureReadFunction (TupleEditReader sel) (EditReader edit);
+    tupleReadFunction :: sel edit -> ReadFunction c (TupleEditReader sel) (EditReader edit);
     tupleReadFunction sel r = readable $ MkTupleEditReader sel r;
 
     instance (TupleSelector sel) => Reader (TupleEditReader sel) where
@@ -121,20 +121,28 @@ module Truth.Core.Types.Tuple where
         Nothing -> getAllF (splitTupleEditList rr) wt';
     };
 
-    tupleEditLens :: forall c m sel edit. (TestEquality sel,Applicative m) =>
-        sel edit -> EditLens' c m () (TupleEdit sel) edit;
-    tupleEditLens seledit = let
+    tupleObjectFunction ::  forall sel edit. TestEquality sel => sel edit -> ObjectFunction (TupleEdit sel) edit;
+    tupleObjectFunction seledit = let
     {
         editInitial = ();
-        editGet :: () -> ReadFunction c (TupleEditReader sel) (EditReader edit);
-        editGet () rt = readable $ MkTupleEditReader seledit rt;
+        editGet :: () -> IOReadFunction (TupleEditReader sel) (EditReader edit);
+        editGet () = tupleReadFunction seledit;
         editUpdate (MkTupleEdit seledit' edit) () = case testEquality seledit seledit' of
         {
             Just Refl -> return ((),[edit]);
             _ -> return ((),[]);
         };
-        editLensFunction = MkEditFunction{..};
-        editLensPutEdit :: () -> edit -> Readable c (TupleEditReader sel) (m ((),[TupleEdit sel]));
+    } in MkEditFunction{..};
+
+    tupleEditLens :: forall sel edit. (TestEquality sel) =>
+        sel edit -> GeneralLens (TupleEdit sel) edit;
+    tupleEditLens seledit = let
+    {
+        editLensFunction = tupleObjectFunction seledit;
+        editLensPutEdit :: () -> edit -> IOReadable (TupleEditReader sel) (Maybe ((),[TupleEdit sel]));
         editLensPutEdit () edit = return $ pure ((),[MkTupleEdit seledit edit]);
-    } in MkEditLens{..};
+
+        lens :: EditLens' MonadIO Maybe () (TupleEdit sel) edit;
+        lens = MkEditLens{..};
+    } in MkCloseState lens;
 }

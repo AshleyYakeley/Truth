@@ -32,14 +32,14 @@ module Truth.UI.GTK.Maybe (oneUIView) where
         };
     };
 
-    monadOneIVF :: forall f edit wd.
+    oneWholeView :: forall f edit wd.
     (
         MonadOne f,
         IOFullEdit edit,
         WidgetClass wd
     ) =>
       (forall editb. (IOFullEdit editb) => UISpec editb -> UISpec (OneWholeEdit f editb)) -> Maybe (Limit f) -> (Object (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
-    monadOneIVF uispec mDeleteValue makeEmptywidget (MkView baseView) = MkView $ \object setSelect -> do
+    oneWholeView uispec mDeleteValue makeEmptywidget (MkView baseView) = MkView $ \object setSelect -> do
     {
         box <- vBoxNew False 0;
         emptyWidget <- makeEmptywidget object;
@@ -160,8 +160,8 @@ module Truth.UI.GTK.Maybe (oneUIView) where
         uit <- isUISpec uispec;
         return $ case uit of
         {
-            MkUIMaybe mnewval itemspec -> monadOneIVF (MkUISpec . MkUIMaybe Nothing) (Just $ MkLimit Nothing) (createButton mnewval) $ getview itemspec;
-            MkUIOne itemspec -> monadOneIVF (MkUISpec . MkUIOne) Nothing (\_ -> placeholderLabel) $ getview itemspec;
+            MkUIMaybe mnewval itemspec -> oneWholeView (MkUISpec . MkUIMaybe Nothing) (Just $ MkLimit Nothing) (createButton mnewval) $ getview itemspec;
+            MkUIOneWhole itemspec -> oneWholeView (MkUISpec . MkUIOneWhole) Nothing (\_ -> placeholderLabel) $ getview itemspec;
         };
     };
 }

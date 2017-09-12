@@ -20,11 +20,15 @@ module Truth.Core.Types.OneWholeEdit where
         _ -> return [];
     };
 
+    oneWholeLiftEditFunction :: forall c f state edita editb. (ReadableConstraint c,MonadOne f,Reader (EditReader edita),FullReader c (EditReader editb)) =>
+        EditFunction c state edita editb -> EditFunction c state (OneWholeEdit f edita) (OneWholeEdit f editb);
+    oneWholeLiftEditFunction = sumWholeLiftEditFunction . oneLiftEditFunction;
+
     -- suitable for Results, trying to put a failure code will be rejected
-    oneWholeLiftGeneralLens :: forall ff f edita editb. (Monad ff,Traversable ff,MonadOne f,IOFullReader (EditReader edita),Edit edita,IOFullEdit editb) =>
+    oneWholeLiftGeneralLens' :: forall ff f edita editb. (Monad ff,Traversable ff,MonadOne f,IOFullReader (EditReader edita),Edit edita,IOFullEdit editb) =>
      (forall a. f a -> ff a) ->
      GeneralLens' ff edita editb -> GeneralLens' ff (OneWholeEdit f edita) (OneWholeEdit f editb);
-    oneWholeLiftGeneralLens faffa (MkCloseState (lens :: IOEditLens' ff state edita editb)) = MkCloseState $ sumWholeLiftEditLens pushback (oneLiftEditLens faffa lens) where
+    oneWholeLiftGeneralLens' faffa (MkCloseState (lens :: IOEditLens' ff state edita editb)) = MkCloseState $ sumWholeLiftEditLens pushback (oneLiftEditLens faffa lens) where
     {
         ff1 :: forall a. state -> f (state,a) -> (state,f a);
         ff1 oldstate fsa = case retrieveOne fsa of
@@ -50,4 +54,8 @@ module Truth.Core.Types.OneWholeEdit where
             };
         };
     };
+
+    oneWholeLiftGeneralLens :: forall f edita editb. (MonadOne f,IOFullReader (EditReader edita),Edit edita,IOFullEdit editb) =>
+     GeneralLens edita editb -> GeneralLens (OneWholeEdit f edita) (OneWholeEdit f editb);
+    oneWholeLiftGeneralLens = oneWholeLiftGeneralLens' getMaybeOne;
 }
