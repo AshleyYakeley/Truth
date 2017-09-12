@@ -74,7 +74,7 @@ module Main(main) where
     {
         nameColumn = MkKeyColumn "Name" $ funcEditFunction fromResult <.> oneWholeLiftEditFunction (tupleObjectFunction NoteTitle) <.> tupleObjectFunction EditSecond;
         aspect :: Aspect (OneWholeEdit Maybe (UUIDElementEdit SoupItemEdit));
-        aspect = MkAspect "item" (MkUISpec $ MkUIOneWhole $ MkUISpec $ MkUIOneWhole noteEditSpec) $ oneWholeLiftGeneralLens $ tupleEditLens EditSecond;
+        aspect = MkAspect "item" $ MkUISpec $ MkUILens (oneWholeLiftGeneralLens $ tupleEditLens EditSecond) $ MkUISpec $ MkUIOneWhole $ MkUISpec $ MkUIOneWhole noteEditSpec;
     } in uiTableToContext [nameColumn] aspect;
 
     soupWindow :: FilePath -> WindowMaker;

@@ -8,11 +8,12 @@ module Truth.Core.UI.View where
     import Truth.Core.Object.Object;
     import Truth.Core.Object.Subscriber;
     import Truth.Core.UI.Specifier;
+    import Truth.Core.UI.Lens;
 
 
     type AspectGetter edit = IO (Maybe (Aspect edit));
 
-    mapAspectGetter :: (Edit edita,Edit editb) => GeneralLens edita editb -> AspectGetter editb -> AspectGetter edita;
+    mapAspectGetter :: Edit editb => GeneralLens edita editb -> AspectGetter editb -> AspectGetter edita;
     mapAspectGetter lens = fmap $ fmap $ mapAspect lens;
 
     data ViewResult edit w = MkViewResult

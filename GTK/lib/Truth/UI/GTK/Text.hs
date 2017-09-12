@@ -90,7 +90,7 @@ module Truth.UI.GTK.Text (textUIView) where
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
                 run <- getSequenceRun iter1 iter2;
                 -- get selection...
-                return $ Just $ MkAspect "section" (MkUISpec uitext) $ MkCloseState $ stringSectionLens run;
+                return $ Just $ MkAspect "section" $ MkUISpec $ MkUILens (MkCloseState $ stringSectionLens run) $ MkUISpec uitext;
             };
         };
 

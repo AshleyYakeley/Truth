@@ -37,7 +37,7 @@ module Truth.UI.GTK.GView where
     lensUIView :: GetUIView;
     lensUIView = MkGetUIView $ \getview speca -> do
     {
-        MkUILens specb lens <- isUISpec speca;
+        MkUILens lens specb <- isUISpec speca;
         return $ mapView lens $ getview specb;
     };
 }

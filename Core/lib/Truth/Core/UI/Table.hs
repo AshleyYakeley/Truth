@@ -29,7 +29,7 @@ module Truth.Core.UI.Table where
     {
         cols' = fmap (mapKeyColumn $ tupleObjectFunction EditContent) cols;
         aspect' = mapAspect contentLens aspect;
-    } in MkUISpec $ MkUILens (MkUISpec $ MkUIContextTable cols' aspect') nullContextGeneralLens;
+    } in MkUISpec $ MkUILens nullContextGeneralLens $ MkUISpec $ MkUIContextTable cols' aspect';
 
     instance Show (UIContextTable edit) where
     {

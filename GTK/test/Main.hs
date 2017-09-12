@@ -33,7 +33,7 @@ module Main(main) where
     testGViews :: TestTree;
     testGViews = testGroup "GView" [
             testGView $ MkUISpec $ (MkUIVertical [] :: UIVertical (WholeEdit String)),
-            testGView $ MkUISpec $ MkUIVertical [MkAspect "aspect" (MkUISpec MkUIUnknown :: UISpec (WholeEdit String)) cid],
+            testGView $ MkUISpec $ MkUIVertical [MkUISpec MkUIUnknown :: UISpec (WholeEdit String)],
             testGView $ pinaforeValueSpec rootValue
         ];
 

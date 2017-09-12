@@ -26,18 +26,4 @@ module Truth.Core.UI.One where
     {
         uiWitness = $(iowitness [t|UIOne|]);
     };
-
-    lensFullEdit :: FullEdit edita => GeneralLens edita editb -> ConstraintWitness (FullEdit editb);
-    lensFullEdit _ = error "lensFullEdit";
-{-
-    mapOneEditAspect :: forall f edit. MonadOne f =>
-        (forall editb. Edit editb => UISpec editb -> UISpec (OneEdit f editb)) -> Aspect edit -> Aspect (OneEdit f edit);
-    mapOneEditAspect ff (MkAspect name uispec lens) = MkAspect name (ff uispec) $ oneLiftGeneralLens lens;
--}
-    mapOneWholeEditAspect :: forall f edit. (MonadOne f, FullEdit edit) =>
-        (forall editb. FullEdit editb => UISpec editb -> UISpec (OneWholeEdit f editb)) -> Aspect edit -> Aspect (OneWholeEdit f edit);
-    mapOneWholeEditAspect ff (MkAspect name uispec lens) = case lensFullEdit lens of
-    {
-        MkConstraintWitness -> MkAspect name (ff uispec) $ oneWholeLiftGeneralLens lens;
-    };
 }

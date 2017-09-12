@@ -165,7 +165,7 @@ module Truth.UI.GTK.Window where
             msel <- srGetSelection;
             case msel of
             {
-                Just (MkAspect aspname aspspec lens) -> makeViewWindowCountRef guiview (getTheUIView aspspec) ref (aspname ++ " of " ++ title) $ mapSubscriber lens sub;
+                Just (MkAspect aspname aspspec) -> makeViewWindowCountRef guiview (getTheUIView aspspec) ref (aspname ++ " of " ++ title) sub;
                 Nothing -> return ();
             };
         };

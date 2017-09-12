@@ -67,11 +67,11 @@ module Truth.World.Note where
     type NoteEdit = TupleEdit NoteSel;
 
     noteEditSpec :: UISpec NoteEdit;
-    noteEditSpec = MkUISpec $ MkUIVertical $ tupleEditAspects $ \case
+    noteEditSpec = MkUISpec $ MkUIVertical $ tupleEditUISpecs $ \case
     {
-        NoteTitle -> ("title",MkUISpec MkUITextEntry);
-        NotePast -> ("past",MkUISpec $ MkUICheckbox "past");
-        NoteText -> ("text",MkUISpec MkTextUIText);
+        NoteTitle -> MkUISpec MkUITextEntry;
+        NotePast -> MkUISpec $ MkUICheckbox "past";
+        NoteText -> MkUISpec MkTextUIText;
     };
 
     type Note = Tuple NoteSel;

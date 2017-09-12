@@ -6,12 +6,12 @@ module Truth.Core.UI.Layout where
 
     data UIVertical edit where
     {
-        MkUIVertical :: [Aspect edit] -> UIVertical edit;
+        MkUIVertical :: [UISpec edit] -> UIVertical edit;
     };
 
     instance Show (UIVertical edit) where
     {
-        show (MkUIVertical aspects) = "vertical (" ++ intercalate ", " (fmap show aspects) ++ ")";
+        show (MkUIVertical specs) = "vertical (" ++ intercalate ", " (fmap show specs) ++ ")";
     };
 
     instance UIType UIVertical where
@@ -19,6 +19,6 @@ module Truth.Core.UI.Layout where
         uiWitness = $(iowitness [t|UIVertical|]);
     };
 
-    uiVertical :: [Aspect edit] -> UISpec edit;
-    uiVertical aspects = MkUISpec $ MkUIVertical aspects;
+    uiVertical :: [UISpec edit] -> UISpec edit;
+    uiVertical specs = MkUISpec $ MkUIVertical specs;
 }

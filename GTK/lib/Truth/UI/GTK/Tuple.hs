@@ -10,7 +10,7 @@ module Truth.UI.GTK.Tuple(verticalUIView) where
     verticalUIView = MkGetUIView $ \getview uispec -> do
     {
         MkUIVertical aspects <- isUISpec uispec;
-        return $ mapIOView arrangeWidgets $ for aspects $ \(MkAspect _name itemspec lens) -> mapView lens $ getview itemspec;
+        return $ mapIOView arrangeWidgets $ for aspects getview;
     };
 
     arrangeWidgets :: [Widget] -> IO Widget;
