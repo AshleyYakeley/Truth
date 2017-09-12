@@ -5,6 +5,7 @@ module Truth.Core
     module Truth.Core.Edit,
     module Truth.Core.Types,
     module Truth.Core.Object,
+    module Truth.Core.UI,
     module Truth.Core,
 ) where
 {
@@ -14,6 +15,7 @@ module Truth.Core
     import Truth.Core.Edit;
     import Truth.Core.Types;
     import Truth.Core.Object;
+    import Truth.Core.UI;
 
     type ReasonCodec = Codec' (Result String);
 }

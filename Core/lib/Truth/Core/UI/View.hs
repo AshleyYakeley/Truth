@@ -1,4 +1,4 @@
-module Truth.Core.Object.View where
+module Truth.Core.UI.View where
 {
     import Truth.Core.Import;
     import Data.IORef;
@@ -7,7 +7,7 @@ module Truth.Core.Object.View where
     import Truth.Core.Types;
     import Truth.Core.Object.Object;
     import Truth.Core.Object.Subscriber;
-    import Truth.Core.Object.Aspect;
+    import Truth.Core.UI.Specifier;
 
 
     type AspectGetter edit = IO (Maybe (Aspect edit));

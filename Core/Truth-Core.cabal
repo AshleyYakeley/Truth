@@ -128,11 +128,20 @@ library
         Truth.Core.Object.Subscriber
         Truth.Core.Object.Lens
         Truth.Core.Object.Editor
-        Truth.Core.Object.View
-        Truth.Core.Object.Aspect
         Truth.Core.Object.Savable
         Truth.Core.Object.Undo
         Truth.Core.Object
+        Truth.Core.UI.Specifier
+        Truth.Core.UI.Lens
+        Truth.Core.UI.One
+        Truth.Core.UI.Layout
+        Truth.Core.UI.Checkbox
+        Truth.Core.UI.TextEntry
+        Truth.Core.UI.TextEditor
+        Truth.Core.UI.Table
+        Truth.Core.UI.WindowButton
+        Truth.Core.UI.View
+        Truth.Core.UI
         Truth.World.SQLite.Schema
         Truth.World.Pinafore.Edit
         Truth.World.Pinafore.Ontology
