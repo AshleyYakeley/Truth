@@ -16,7 +16,7 @@ module Main(main) where
     import qualified Options.Applicative as O;
 
 
-    type WindowMaker = IORef Int -> IO ();
+    newtype WindowMaker = MkWindowMaker ((forall edit actions. (Edit edit,WindowButtons actions) => UISpec edit -> String -> Subscriber edit actions -> IO ()) -> IO ());
 
     textCodec :: ReasonCodec ByteString String;
     textCodec = utf8Codec . bijectionCodec packBijection;
@@ -25,7 +25,7 @@ module Main(main) where
     textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) <.> convertEditLens;
 
     fileTextWindow :: Bool -> FilePath -> WindowMaker;
-    fileTextWindow saveOpt path windowCount = do
+    fileTextWindow saveOpt path = MkWindowMaker $ \makeWindow -> do
     {
         let
         {
@@ -49,7 +49,7 @@ module Main(main) where
                 undoBufferSub = undoQueueSubscriber bufferSub;
             };
             textSub <- makeSharedSubscriber undoBufferSub;
-            makeWindowCountRef windowCount (MkUISpec $ MkUIOneWhole $ MkUISpec MkStringUIText) (takeFileName path) textSub;
+            makeWindow (MkUISpec $ MkUIOneWhole $ MkUISpec MkStringUIText) (takeFileName path) textSub;
         }
         else do
         {
@@ -59,7 +59,7 @@ module Main(main) where
                 textObj = convertObject wholeTextObj;
             };
             textSub <- makeObjectSubscriber textObj;
-            makeWindowCountRef windowCount (MkUISpec $ MkUIOneWhole $ MkUISpec MkStringUIText) (takeFileName path) textSub;
+            makeWindow (MkUISpec $ MkUIOneWhole $ MkUISpec MkStringUIText) (takeFileName path) textSub;
         };
     };
 
@@ -78,7 +78,7 @@ module Main(main) where
     } in uiTableToContext [nameColumn] aspect;
 
     soupWindow :: FilePath -> WindowMaker;
-    soupWindow dirpath windowCount = do
+    soupWindow dirpath = MkWindowMaker $ \makeWindow -> do
     {
         let
         {
@@ -104,30 +104,37 @@ module Main(main) where
             soupObject = fixedMapObject lens rawSoupObject;
         };
         soupSub <- makeObjectSubscriber soupObject;
-        makeWindowCountRef windowCount soupEditSpec (takeFileName $ dropTrailingPathSeparator dirpath) soupSub;
+        makeWindow soupEditSpec (takeFileName $ dropTrailingPathSeparator dirpath) soupSub;
     };
 
     pinaforeWindow :: FilePath -> WindowMaker;
-    pinaforeWindow sqlitepath windowCount = do
+    pinaforeWindow sqlitepath = MkWindowMaker $ \makeWindow -> do
     {
         sub <- makeObjectSubscriber $ sqlitePinaforeObject sqlitepath;
-        makeWindowCountRef windowCount (pinaforeValueSpec rootValue) "Root" sub;
+        makeWindow (pinaforeValueSpec rootValue) "Root" sub;
     };
 
     testSave :: Bool;
     testSave = True;
 
-    optParser :: O.Parser [WindowMaker];
-    optParser = O.many $ (pinaforeWindow <$> O.strOption (O.long "pinafore")) O.<|> (soupWindow <$> O.strOption (O.long "soup")) O.<|> (fileTextWindow testSave <$> O.strArgument mempty);
+    optWMParser :: O.Parser [WindowMaker];
+    optWMParser = O.many $ (pinaforeWindow <$> O.strOption (O.long "pinafore")) O.<|> (soupWindow <$> O.strOption (O.long "soup")) O.<|> (fileTextWindow testSave <$> O.strArgument mempty);
+
+    optParser :: O.Parser ([WindowMaker],Bool);
+    optParser = (,) <$> optWMParser <*> O.switch (O.short '2');
 
     main :: IO ();
     main = do
     {
         args <- initGUI;
-        wms <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args;
+        (wms,double) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args;
         _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50;
         windowCount <- newIORef 0;
-        for_ wms $ \wm -> wm windowCount;
+        for_ wms $ \(MkWindowMaker wm) -> wm $ \spec name sub -> do
+        {
+            makeWindowCountRef windowCount spec name sub;
+            if double then makeWindowCountRef windowCount spec name sub else return ();
+        };
         c <- readIORef windowCount;
         if c == 0 then return () else mainGUI;
     };
