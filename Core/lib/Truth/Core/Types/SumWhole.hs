@@ -10,9 +10,9 @@ module Truth.Core.Types.SumWhole where
     type SumWholeReaderEdit reader edit = SumEdit (WholeReaderEdit reader) edit;
     type SumWholeEdit edit = SumWholeReaderEdit (EditReader edit) edit;
 
-    sumWholeLiftEditFunction :: forall c state edita editb. (ReadableConstraint c,Reader (EditReader edita), FullReader c (EditReader editb)) =>
-     EditFunction c state edita editb ->
-     EditFunction c state (SumWholeEdit edita) (SumWholeEdit editb);
+    sumWholeLiftEditFunction :: forall state edita editb. (Reader (EditReader edita), FullReader (EditReader editb)) =>
+     EditFunction state edita editb ->
+     EditFunction state (SumWholeEdit edita) (SumWholeEdit editb);
     sumWholeLiftEditFunction fef = MkEditFunction
     {
         editInitial = editInitial fef,
@@ -21,10 +21,7 @@ module Truth.Core.Types.SumWhole where
         {
             SumEditLeft (MkWholeEdit a) -> do
             {
-                b <- case selfReadable @c @(EditReader edita) of
-                {
-                    MkConstraintWitness -> fromReadFunctionM (editGet fef oldstate) $ return a;
-                };
+                b <- fromReadFunctionM (editGet fef oldstate) $ return a;
                 return (oldstate,return $ SumEditLeft $ MkWholeEdit b); -- state unchanged, kind of dubious
             };
             SumEditRight edita -> do
@@ -35,10 +32,10 @@ module Truth.Core.Types.SumWhole where
         }
     };
 
-    sumWholeLiftEditLens :: (ReadableConstraint c,Functor f,Reader (EditReader edita),FullReader c (EditReader editb)) =>
-     (state -> EditSubject editb -> Readable c (EditReader edita) (f (state,EditSubject edita))) ->
-     EditLens' c f state edita editb ->
-     EditLens' c f state (SumWholeEdit edita) (SumWholeEdit editb);
+    sumWholeLiftEditLens :: (Functor f,Reader (EditReader edita),FullReader (EditReader editb)) =>
+     (state -> EditSubject editb -> Readable (EditReader edita) (f (state,EditSubject edita))) ->
+     EditLens' f state edita editb ->
+     EditLens' f state (SumWholeEdit edita) (SumWholeEdit editb);
     sumWholeLiftEditLens pushback lens = MkEditLens
     {
         editLensFunction = sumWholeLiftEditFunction (editLensFunction lens),

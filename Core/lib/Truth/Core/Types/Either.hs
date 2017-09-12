@@ -31,7 +31,7 @@ module Truth.Core.Types.Either where
         readFrom (Right a) (EitherReadRight reader) = Just $ readFrom a reader;
     };
 
-    instance (ReadableConstraint c,FullReader c ra,FullReader c rb) => FullReader c (EitherReader ra rb) where
+    instance (FullReader ra,FullReader rb) => FullReader (EitherReader ra rb) where
     {
         fromReader = do
         {

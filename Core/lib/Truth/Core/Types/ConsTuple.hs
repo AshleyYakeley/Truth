@@ -27,25 +27,25 @@ module Truth.Core.Types.ConsTuple where
     emptyTuple :: Tuple EmptyWitness;
     emptyTuple = MkTuple never;
 
-    emptyTupleFunction :: forall c edita. EditFunction c () edita (TupleEdit EmptyWitness);
+    emptyTupleFunction :: forall edita. EditFunction () edita (TupleEdit EmptyWitness);
     emptyTupleFunction = let
     {
         editInitial = ();
 
-        editGet :: () -> TupleEditReader EmptyWitness t -> Readable c (EditReader edita) t;
+        editGet :: () -> TupleEditReader EmptyWitness t -> Readable (EditReader edita) t;
         editGet () (MkTupleEditReader sel _) = never sel;
 
-        editUpdate :: edita -> () -> Readable c (EditReader edita) ((), [TupleEdit EmptyWitness]);
+        editUpdate :: edita -> () -> Readable (EditReader edita) ((), [TupleEdit EmptyWitness]);
         editUpdate _ _ = return $ pure [];
     } in MkEditFunction{..};
 
-    emptyTupleLens :: forall c f edita. EditLens' c f () edita (TupleEdit EmptyWitness);
+    emptyTupleLens :: forall f edita. EditLens' f () edita (TupleEdit EmptyWitness);
     emptyTupleLens = let
     {
-        editLensFunction :: EditFunction c () edita (TupleEdit EmptyWitness);
+        editLensFunction :: EditFunction () edita (TupleEdit EmptyWitness);
         editLensFunction = emptyTupleFunction;
 
-        editLensPutEdit :: () -> TupleEdit EmptyWitness -> Readable c (EditReader edita) (f ((), [edita]));
+        editLensPutEdit :: () -> TupleEdit EmptyWitness -> Readable (EditReader edita) (f ((), [edita]));
         editLensPutEdit () (MkTupleEdit sel _) = never sel;
     } in MkEditLens{..};
 
@@ -73,41 +73,41 @@ module Truth.Core.Types.ConsTuple where
         }) <$> getsel FirstWitness <*> tupleConstruct (getsel . RestWitness);
     };
 
-    firstEditLens :: forall c m sel edit1. (Applicative m) =>
-        EditLens' c m () (TupleEdit (ConsWitness edit1 sel)) edit1;
+    firstEditLens :: forall m sel edit1. (Applicative m) =>
+        EditLens' m () (TupleEdit (ConsWitness edit1 sel)) edit1;
     firstEditLens = let
     {
         editInitial = ();
 
-        editGet :: () -> ReadFunction c (TupleEditReader (ConsWitness edit1 sel)) (EditReader edit1);
+        editGet :: () -> ReadFunction (TupleEditReader (ConsWitness edit1 sel)) (EditReader edit1);
         editGet () rt = readable $ MkTupleEditReader FirstWitness rt;
 
-        editUpdate :: TupleEdit (ConsWitness edit1 sel) -> () -> Readable c (TupleEditReader (ConsWitness edit1 sel)) ((), [edit1]);
+        editUpdate :: TupleEdit (ConsWitness edit1 sel) -> () -> Readable (TupleEditReader (ConsWitness edit1 sel)) ((), [edit1]);
         editUpdate (MkTupleEdit FirstWitness edit) () = return ((),[edit]);
         editUpdate (MkTupleEdit (RestWitness _) _) () = return ((),[]);
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> edit1 -> Readable c (TupleEditReader (ConsWitness edit1 sel)) (m ((),[TupleEdit (ConsWitness edit1 sel)]));
+        editLensPutEdit :: () -> edit1 -> Readable (TupleEditReader (ConsWitness edit1 sel)) (m ((),[TupleEdit (ConsWitness edit1 sel)]));
         editLensPutEdit () edit = return $ pure ((),[MkTupleEdit FirstWitness edit]);
     } in MkEditLens{..};
 
-    restEditLens ::  forall c m sel edit1. (Applicative m) =>
-        EditLens' c m () (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel);
+    restEditLens ::  forall m sel edit1. (Applicative m) =>
+        EditLens' m () (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel);
     restEditLens = let
     {
         editInitial = ();
 
-        editGet :: () -> ReadFunction c (TupleEditReader (ConsWitness edit1 sel)) (TupleEditReader sel);
+        editGet :: () -> ReadFunction (TupleEditReader (ConsWitness edit1 sel)) (TupleEditReader sel);
         editGet () (MkTupleEditReader sel rt) = readable $ MkTupleEditReader (RestWitness sel) rt;
 
-        editUpdate :: TupleEdit (ConsWitness edit1 sel) -> () -> Readable c (TupleEditReader (ConsWitness edit1 sel)) ((), [TupleEdit sel]);
+        editUpdate :: TupleEdit (ConsWitness edit1 sel) -> () -> Readable (TupleEditReader (ConsWitness edit1 sel)) ((), [TupleEdit sel]);
         editUpdate (MkTupleEdit FirstWitness _) () = return ((),[]);
         editUpdate (MkTupleEdit (RestWitness sel) edit) () = return ((),[MkTupleEdit sel edit]);
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> TupleEdit sel -> Readable c (TupleEditReader (ConsWitness edit1 sel)) (m ((),[TupleEdit (ConsWitness edit1 sel)]));
+        editLensPutEdit :: () -> TupleEdit sel -> Readable (TupleEditReader (ConsWitness edit1 sel)) (m ((),[TupleEdit (ConsWitness edit1 sel)]));
         editLensPutEdit () (MkTupleEdit sel edit) = return $ pure ((),[MkTupleEdit (RestWitness sel) edit]);
     } in MkEditLens{..};
 
@@ -118,8 +118,8 @@ module Truth.Core.Types.ConsTuple where
         RestWitness sel -> tup sel;
     };
 
-    consTupleFunction :: forall c s1 s2 edita editb sel.
-        EditFunction c s1 edita editb -> EditFunction c s2 edita (TupleEdit sel) -> EditFunction c (s1,s2) edita (TupleEdit (ConsWitness editb sel));
+    consTupleFunction :: forall s1 s2 edita editb sel.
+        EditFunction s1 edita editb -> EditFunction s2 edita (TupleEdit sel) -> EditFunction (s1,s2) edita (TupleEdit (ConsWitness editb sel));
     consTupleFunction f1 fr = MkEditFunction
     {
         editInitial = (editInitial f1,editInitial fr),
@@ -136,8 +136,8 @@ module Truth.Core.Types.ConsTuple where
         }
     };
 
-    consTupleLens :: forall c f s1 s2 edita editb sel. Functor f =>
-        EditLens' c f s1 edita editb -> EditLens' c f s2 edita (TupleEdit sel) -> EditLens' c f (s1,s2) edita (TupleEdit (ConsWitness editb sel));
+    consTupleLens :: forall f s1 s2 edita editb sel. Functor f =>
+        EditLens' f s1 edita editb -> EditLens' f s2 edita (TupleEdit sel) -> EditLens' f (s1,s2) edita (TupleEdit (ConsWitness editb sel));
     consTupleLens lens1 lensr = MkEditLens
     {
         editLensFunction = consTupleFunction (editLensFunction lens1) (editLensFunction lensr),

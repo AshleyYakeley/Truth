@@ -11,7 +11,7 @@ module Truth.Core.Object.Aspect where
         MkAspect :: forall edita editb. Edit editb => String -> UISpec editb -> GeneralLens edita editb -> Aspect edita;
     };
 
-    lensFullEdit :: IOFullEdit edita => GeneralLens edita editb -> ConstraintWitness (IOFullEdit editb);
+    lensFullEdit :: FullEdit edita => GeneralLens edita editb -> ConstraintWitness (FullEdit editb);
     lensFullEdit _ = error "lensFullEdit";
 
     instance Show (Aspect edit) where
@@ -79,9 +79,9 @@ module Truth.Core.Object.Aspect where
     uiVertical :: [Aspect edit] -> UISpec edit;
     uiVertical aspects = MkUISpec $ MkUIVertical aspects;
 
-    tupleEditAspects :: (TupleWitness IOFullEdit sel,FiniteTupleSelector sel) =>
-        (forall edit. IOFullEdit edit => sel edit -> (String,UISpec edit)) -> [Aspect (TupleEdit sel)];
-    tupleEditAspects getSpec = fmap (\(MkAnyWitness seledit) -> case tupleWitness (Proxy::Proxy IOFullEdit) seledit of
+    tupleEditAspects :: (TupleWitness FullEdit sel,FiniteTupleSelector sel) =>
+        (forall edit. FullEdit edit => sel edit -> (String,UISpec edit)) -> [Aspect (TupleEdit sel)];
+    tupleEditAspects getSpec = fmap (\(MkAnyWitness seledit) -> case tupleWitness (Proxy::Proxy FullEdit) seledit of
     {
         MkConstraintWitness -> case getSpec seledit of
         {
@@ -144,8 +144,8 @@ module Truth.Core.Object.Aspect where
     {
         -- view can create object
         ;
-        MkUIMaybe :: forall edit. (IOFullEdit edit) => Maybe (EditSubject edit) -> UISpec edit -> UIOne (OneWholeEdit Maybe edit);
-        MkUIOneWhole :: forall f edit. (MonadOne f,IOFullEdit edit) => UISpec edit -> UIOne (OneWholeEdit f edit);
+        MkUIMaybe :: forall edit. (FullEdit edit) => Maybe (EditSubject edit) -> UISpec edit -> UIOne (OneWholeEdit Maybe edit);
+        MkUIOneWhole :: forall f edit. (MonadOne f,FullEdit edit) => UISpec edit -> UIOne (OneWholeEdit f edit);
         --MkUIOne :: forall f edit. (MonadOne f,Edit edit) => UISpec edit -> UIOne (OneEdit f edit);
     };
 
@@ -172,11 +172,11 @@ module Truth.Core.Object.Aspect where
 
     data UIContextTable edit where
     {
-        MkUIContextTable :: forall cont cedit iedit. (IONewItemKeyContainer cont,IOFullReader (EditReader iedit),Edit cedit,Edit iedit,HasKeyReader cont (EditReader iedit)) =>
+        MkUIContextTable :: forall cont cedit iedit. (IONewItemKeyContainer cont,FullReader (EditReader iedit),Edit cedit,Edit iedit,HasKeyReader cont (EditReader iedit)) =>
             [KeyColumn (ContextEdit cedit iedit)] -> Aspect (ContextEdit cedit (OneWholeEdit Maybe iedit)) -> UIContextTable (ContextEdit cedit (KeyEdit cont iedit));
     };
 
-    uiTableToContext :: forall cont iedit. (IONewItemKeyContainer cont,IOFullReader (EditReader iedit),HasKeyReader cont (EditReader iedit),Edit iedit) =>
+    uiTableToContext :: forall cont iedit. (IONewItemKeyContainer cont,FullReader (EditReader iedit),HasKeyReader cont (EditReader iedit),Edit iedit) =>
         [KeyColumn iedit] -> Aspect (OneWholeEdit Maybe iedit) -> UISpec (KeyEdit cont iedit);
     uiTableToContext cols aspect = let
     {
@@ -198,8 +198,8 @@ module Truth.Core.Object.Aspect where
         (forall editb. Edit editb => UISpec editb -> UISpec (OneEdit f editb)) -> Aspect edit -> Aspect (OneEdit f edit);
     mapOneEditAspect ff (MkAspect name uispec lens) = MkAspect name (ff uispec) $ oneLiftGeneralLens lens;
 -}
-    mapOneWholeEditAspect :: forall f edit. (MonadOne f, IOFullEdit edit) =>
-        (forall editb. IOFullEdit editb => UISpec editb -> UISpec (OneWholeEdit f editb)) -> Aspect edit -> Aspect (OneWholeEdit f edit);
+    mapOneWholeEditAspect :: forall f edit. (MonadOne f, FullEdit edit) =>
+        (forall editb. FullEdit editb => UISpec editb -> UISpec (OneWholeEdit f editb)) -> Aspect edit -> Aspect (OneWholeEdit f edit);
     mapOneWholeEditAspect ff (MkAspect name uispec lens) = case lensFullEdit lens of
     {
         MkConstraintWitness -> MkAspect name (ff uispec) $ oneWholeLiftGeneralLens lens;

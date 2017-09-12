@@ -8,9 +8,9 @@ module Truth.Core.Types.Unit where
 
     type UnitEdit = NoEdit (WholeReader ());
 
-    unitEditFunction :: EditFunction c () edit UnitEdit;
+    unitEditFunction :: EditFunction () edit UnitEdit;
     unitEditFunction = constEditFunction ();
 
-    unitLens :: EditLens' c Maybe () edit UnitEdit;
+    unitLens :: EditLens' Maybe () edit UnitEdit;
     unitLens = readOnlyEditLens unitEditFunction;
 }

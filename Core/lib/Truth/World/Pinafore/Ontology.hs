@@ -26,7 +26,7 @@ module Truth.World.Pinafore.Ontology where
 
     data ViewPinaforeProperty = forall edit. PinaforeEditConstraint edit => SimpleViewPinaforeProperty (ViewPinaforeSimpleProperty edit) | ListViewPinaforeProperty ViewPinaforeListProperty;
 
-    type PinaforeEditConstraint edit = IOFullEdit edit;
+    type PinaforeEditConstraint edit = FullEdit edit;
 
     data ViewPinaforePrimitive edit where
     {
@@ -65,7 +65,7 @@ module Truth.World.Pinafore.Ontology where
     maybeWholeFunction = let
     {
         editInitial = ();
-        editGet :: () -> WholeReader (Maybe a) t -> IOReadable (WholeReader a) t;
+        editGet :: () -> WholeReader (Maybe a) t -> Readable (WholeReader a) t;
         editGet () ReadWhole = fmap Just $ readable ReadWhole;
         editUpdate = never;
     } in MkEditFunction{..};
@@ -99,7 +99,7 @@ module Truth.World.Pinafore.Ontology where
     pinaforeValueSpec :: ViewPinaforeValue -> UISpec PinaforeEdit;
     pinaforeValueSpec (MkViewPinaforeValue value tp) = let
     {
-        conv :: EditLens' MonadIO Maybe ((),()) PinaforeEdit (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID)));
+        conv :: EditLens' Maybe ((),()) PinaforeEdit (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID)));
         conv = contextJoinEditLenses identityState (constEditLens (Just value));
     } in MkUISpec $ MkUILens (pinaforeTypeSpec tp) $ toGeneralLens conv;
 

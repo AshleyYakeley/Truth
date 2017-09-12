@@ -15,15 +15,15 @@ module Truth.Core.Types.FiniteSet where
     type FiniteSetReader subj = KeyReader (FiniteSet subj) (WholeReader subj);
     type FiniteSetEdit subj = KeyEdit (FiniteSet subj) (NoEdit (WholeReader subj));
 
-    finiteSetLens :: forall subj. Eq subj => subj -> PureEditLens' Identity () (FiniteSetEdit subj) (WholeEdit Bool);
+    finiteSetLens :: forall subj. Eq subj => subj -> EditLens' Identity () (FiniteSetEdit subj) (WholeEdit Bool);
     finiteSetLens subj = let
     {
         editInitial = ();
 
-        editGet :: () -> PureReadFunction (FiniteSetReader subj) (WholeReader Bool);
+        editGet :: () -> ReadFunction (FiniteSetReader subj) (WholeReader Bool);
         editGet () ReadWhole = fmap isJust $ readable $ KeyReadItem subj ReadWhole;
 
-        editUpdate :: FiniteSetEdit subj -> () -> PureReadable (FiniteSetReader subj) ((), [WholeEdit Bool]);
+        editUpdate :: FiniteSetEdit subj -> () -> Readable (FiniteSetReader subj) ((), [WholeEdit Bool]);
         editUpdate (KeyEditItem _ edit) () = never edit;
         editUpdate (KeyDeleteItem key) () | key == subj = return $ pure [MkWholeEdit False];
         editUpdate (KeyDeleteItem _) () = return $ pure [];
@@ -33,7 +33,7 @@ module Truth.Core.Types.FiniteSet where
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> WholeEdit Bool -> PureReadable (FiniteSetReader subj) (Identity ((), [FiniteSetEdit subj]));
+        editLensPutEdit :: () -> WholeEdit Bool -> Readable (FiniteSetReader subj) (Identity ((), [FiniteSetEdit subj]));
         editLensPutEdit () (MkWholeEdit False) = return $ pure $ pure $ [KeyDeleteItem subj];
         editLensPutEdit () (MkWholeEdit True) = return $ pure $ pure $ [KeyInsertReplaceItem subj];
     }
@@ -45,7 +45,7 @@ module Truth.Core.Types.FiniteSet where
         {
             editInitial = ();
 
-            editGet :: () -> ReadFunction c (PairEditReader (FiniteSetEdit subj) (FiniteSetEdit subj)) (FiniteSetReader subj);
+            editGet :: () -> ReadFunction (PairEditReader (FiniteSetEdit subj) (FiniteSetEdit subj)) (FiniteSetReader subj);
             editGet () KeyReadKeys = do
             {
                 keys1 <- readable $ MkTupleEditReader EditFirst KeyReadKeys;
@@ -59,7 +59,7 @@ module Truth.Core.Types.FiniteSet where
                 return $ if r1 \/ r2 then Just item else Nothing;
             };
 
-            editUpdate :: PairEdit (FiniteSetEdit subj) (FiniteSetEdit subj) -> () -> Readable c (PairEditReader (FiniteSetEdit subj) (FiniteSetEdit subj)) ((), [FiniteSetEdit subj]);
+            editUpdate :: PairEdit (FiniteSetEdit subj) (FiniteSetEdit subj) -> () -> Readable (PairEditReader (FiniteSetEdit subj) (FiniteSetEdit subj)) ((), [FiniteSetEdit subj]);
             editUpdate (MkTupleEdit EditFirst (KeyEditItem _ edit)) () = never edit;
             editUpdate (MkTupleEdit EditFirst (KeyDeleteItem item)) () = do
             {
@@ -113,7 +113,7 @@ module Truth.Core.Types.FiniteSet where
         {
             editInitial = ();
 
-            editGet :: () -> ReadFunction c (PairEditReader (FiniteSetEdit subj) (FiniteSetEdit subj)) (FiniteSetReader subj);
+            editGet :: () -> ReadFunction (PairEditReader (FiniteSetEdit subj) (FiniteSetEdit subj)) (FiniteSetReader subj);
             editGet () KeyReadKeys = do
             {
                 keys1 <- readable $ MkTupleEditReader EditFirst KeyReadKeys;
@@ -127,7 +127,7 @@ module Truth.Core.Types.FiniteSet where
                 return $ if r1 /\ r2 then Just item else Nothing;
             };
 
-            editUpdate :: PairEdit (FiniteSetEdit subj) (FiniteSetEdit subj) -> () -> Readable c (PairEditReader (FiniteSetEdit subj) (FiniteSetEdit subj)) ((), [FiniteSetEdit subj]);
+            editUpdate :: PairEdit (FiniteSetEdit subj) (FiniteSetEdit subj) -> () -> Readable (PairEditReader (FiniteSetEdit subj) (FiniteSetEdit subj)) ((), [FiniteSetEdit subj]);
             editUpdate (MkTupleEdit EditFirst (KeyEditItem _ edit)) () = never edit;
             editUpdate (MkTupleEdit EditFirst (KeyDeleteItem item)) () = do
             {
@@ -164,5 +164,4 @@ module Truth.Core.Types.FiniteSet where
             };
         } in MkEditFunction{..};
     };
-
 }

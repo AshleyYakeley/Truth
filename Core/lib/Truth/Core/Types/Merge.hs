@@ -18,7 +18,7 @@ module Truth.Core.Types.Merge where
         applyEdit (AddOverEdit edit)
     };
 
-    mergeSubjectLens :: PureEditLens' Identity (MergeEdit edit) edit;
+    mergeSubjectLens :: EditLens' Identity (MergeEdit edit) edit;
     mergeSubjectLens = MkEditLens
     {
         editLensSimple :: Lens' m (ReaderSubject edita) (ReaderSubject editb),

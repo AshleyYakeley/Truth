@@ -12,23 +12,23 @@ module Truth.Core.Types.OneWholeEdit where
 
     type OneWholeEdit (f :: * -> *) edit = SumWholeEdit (OneEdit f edit);
 
-    extractOneWholeEdit :: forall c m f edit. (MonadOne f,ReadableConstraint c,FullEdit c edit,Monad m,c m) => OneWholeEdit f edit -> m [edit];
+    extractOneWholeEdit :: forall m f edit. (MonadOne f,FullEdit edit,MonadIO m) => OneWholeEdit f edit -> m [edit];
     extractOneWholeEdit (SumEditRight (MkOneEdit edit)) = return [edit];
     extractOneWholeEdit (SumEditLeft (MkWholeEdit fa)) = case retrieveOne fa of
     {
-        SuccessResult a -> getReplaceEditsM @c a;
+        SuccessResult a -> getReplaceEditsM a;
         _ -> return [];
     };
 
-    oneWholeLiftEditFunction :: forall c f state edita editb. (ReadableConstraint c,MonadOne f,Reader (EditReader edita),FullReader c (EditReader editb)) =>
-        EditFunction c state edita editb -> EditFunction c state (OneWholeEdit f edita) (OneWholeEdit f editb);
+    oneWholeLiftEditFunction :: forall f state edita editb. (MonadOne f,Reader (EditReader edita),FullReader (EditReader editb)) =>
+        EditFunction state edita editb -> EditFunction state (OneWholeEdit f edita) (OneWholeEdit f editb);
     oneWholeLiftEditFunction = sumWholeLiftEditFunction . oneLiftEditFunction;
 
     -- suitable for Results, trying to put a failure code will be rejected
-    oneWholeLiftGeneralLens' :: forall ff f edita editb. (Monad ff,Traversable ff,MonadOne f,IOFullReader (EditReader edita),Edit edita,IOFullEdit editb) =>
+    oneWholeLiftGeneralLens' :: forall ff f edita editb. (Monad ff,Traversable ff,MonadOne f,FullReader (EditReader edita),Edit edita,FullEdit editb) =>
      (forall a. f a -> ff a) ->
      GeneralLens' ff edita editb -> GeneralLens' ff (OneWholeEdit f edita) (OneWholeEdit f editb);
-    oneWholeLiftGeneralLens' faffa (MkCloseState (lens :: IOEditLens' ff state edita editb)) = MkCloseState $ sumWholeLiftEditLens pushback (oneLiftEditLens faffa lens) where
+    oneWholeLiftGeneralLens' faffa (MkCloseState (lens :: EditLens' ff state edita editb)) = MkCloseState $ sumWholeLiftEditLens pushback (oneLiftEditLens faffa lens) where
     {
         ff1 :: forall a. state -> f (state,a) -> (state,f a);
         ff1 oldstate fsa = case retrieveOne fsa of
@@ -37,14 +37,14 @@ module Truth.Core.Types.OneWholeEdit where
             SuccessResult (newstate,a) -> (newstate,fmap (\_ ->  a) fsa);
         };
 
-        pushback :: state -> f (EditSubject editb) -> IOReadable (OneReader f (EditReader edita)) (ff (state,f (EditSubject edita)));
+        pushback :: state -> f (EditSubject editb) -> Readable (OneReader f (EditReader edita)) (ff (state,f (EditSubject edita)));
         pushback oldstate fb = case retrieveOne fb of
         {
             FailureResult (MkLimit fx) -> return $ return (oldstate,fx);
 
             SuccessResult b -> fmap (fmap (ff1 oldstate) . sequenceA) $ liftMaybeReadable $ do
             {
-                editbs <- getReplaceEditsM @MonadIO b;
+                editbs <- getReplaceEditsM b;
                 fstateedita <- editLensPutEdits lens oldstate editbs;
                 for fstateedita $ \(newstate,editas) -> do
                 {
@@ -55,7 +55,7 @@ module Truth.Core.Types.OneWholeEdit where
         };
     };
 
-    oneWholeLiftGeneralLens :: forall f edita editb. (MonadOne f,IOFullReader (EditReader edita),Edit edita,IOFullEdit editb) =>
+    oneWholeLiftGeneralLens :: forall f edita editb. (MonadOne f,FullReader (EditReader edita),Edit edita,FullEdit editb) =>
      GeneralLens edita editb -> GeneralLens (OneWholeEdit f edita) (OneWholeEdit f editb);
     oneWholeLiftGeneralLens = oneWholeLiftGeneralLens' getMaybeOne;
 }

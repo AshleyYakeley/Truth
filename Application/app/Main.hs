@@ -21,7 +21,7 @@ module Main(main) where
     textCodec :: ReasonCodec ByteString String;
     textCodec = utf8Codec . bijectionCodec packBijection;
 
-    textLens :: PureEditLens () ByteStringEdit (WholeEdit ((Result String) String));
+    textLens :: EditLens () ByteStringEdit (WholeEdit ((Result String) String));
     textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) <.> convertEditLens;
 
     fileTextWindow :: Bool -> FilePath -> WindowMaker;
@@ -94,10 +94,10 @@ module Main(main) where
             paste :: forall m. MonadIO m => EditSubject SoupItemEdit -> m ((Result String) ByteString);
             paste s = return $ injBackwards soupItemInjection s;
 
-            soupItemLens :: IOEditLens' (Result String) () ByteStringEdit SoupItemEdit;
+            soupItemLens :: EditLens' (Result String) () ByteStringEdit SoupItemEdit;
             soupItemLens = convertEditLens <.> (wholeEditLens $ injectionLens soupItemInjection) <.> convertEditLens;
 
-            lens :: IOEditLens' (Result String) () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupItemEdit);
+            lens :: EditLens' (Result String) () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupItemEdit);
             lens = liftSoupLens paste $ soupItemLens <.> mutableIOEditLens;
 
             soupObject :: Object (SoupEdit SoupItemEdit);

@@ -7,19 +7,13 @@ module Truth.Core.Edit.EditLens where
     import Truth.Core.Edit.EditFunction;
 
 
-    data EditLens' c m state edita editb = MkEditLens
+    data EditLens' m state edita editb = MkEditLens
     {
-        editLensFunction :: EditFunction c state edita editb,
-        editLensPutEdit :: state -> editb -> Readable c (EditReader edita) (m (state,[edita]))
+        editLensFunction :: EditFunction state edita editb,
+        editLensPutEdit :: state -> editb -> Readable (EditReader edita) (m (state,[edita]))
     };
 
-    type PureEditLens' = EditLens' Monad;
-    type IOEditLens' = EditLens' MonadIO;
-
-    pureToEditLens :: PureEditLens' m state edita editb -> EditLens' c m state edita editb;
-    pureToEditLens (MkEditLens f pe) = MkEditLens (pureToEditFunction f) (\s eb -> pureToReadable $ pe s eb);
-
-    editLensPutEdits :: (Monad m,Traversable m,Edit edita,ReadableConstraint c) => EditLens' c m state edita editb -> state -> [editb] -> Readable c (EditReader edita) (m (state,[edita]));
+    editLensPutEdits :: (Monad m,Traversable m,Edit edita) => EditLens' m state edita editb -> state -> [editb] -> Readable (EditReader edita) (m (state,[edita]));
     editLensPutEdits _ oldstate [] = return $ pure $ (oldstate,[]);
     editLensPutEdits lens oldstate (e:ee) = getCompose $ do
     {
@@ -32,19 +26,18 @@ module Truth.Core.Edit.EditLens where
     };
 
     editLensAllowed :: (MonadOne m) =>
-     PureEditLens' m state edita editb -> state -> editb -> PureReadable (EditReader edita) Bool;
+     EditLens' m state edita editb -> state -> editb -> Readable (EditReader edita) Bool;
     editLensAllowed lens st editb = do
     {
         medita <- editLensPutEdit lens st editb;
         return (isJust (getMaybeOne medita));
     };
 
-    type PureEditLens = PureEditLens' Maybe;
-    type IOEditLens = IOEditLens' Maybe;
+    type EditLens = EditLens' Maybe;
 
-    type ObjectLens = IOEditLens ();
+    type ObjectLens = EditLens ();
 {-
-    instance IsBiMap (PureEditLens' state) where
+    instance IsBiMap (EditLens' state) where
     {
         mapBiMapM ff felens = MkEditLens
         {
@@ -54,9 +47,9 @@ module Truth.Core.Edit.EditLens where
     };
 -}
 
-    instance (ReadableConstraint c,MonadOne m) => ConstrainedCategory (EditLens' c m ()) where
+    instance (MonadOne m) => ConstrainedCategory (EditLens' m ()) where
     {
-        type CategoryConstraint (EditLens' c m ()) t = Edit t;
+        type CategoryConstraint (EditLens' m ()) t = Edit t;
         cid = let
         {
             editLensFunction = cid;
@@ -77,7 +70,7 @@ module Truth.Core.Edit.EditLens where
         };
     };
 
-    instance (ReadableConstraint c,MonadOne m) => StateCategory (EditLens' c m) where
+    instance (MonadOne m) => StateCategory (EditLens' m) where
     {
         identityState = let
         {
@@ -103,34 +96,31 @@ module Truth.Core.Edit.EditLens where
         };
     };
 
-    readOnlyEditLens :: forall c state edita editb. EditFunction c state edita editb -> EditLens' c Maybe state edita editb;
+    readOnlyEditLens :: forall state edita editb. EditFunction state edita editb -> EditLens' Maybe state edita editb;
     readOnlyEditLens editLensFunction = let
     {
         editLensPutEdit _ _ = pure Nothing;
     } in MkEditLens{..};
 
-    constEditLens :: forall c edita editb. Reader (EditReader editb) => EditSubject editb -> EditLens' c Maybe () edita editb;
+    constEditLens :: forall edita editb. Reader (EditReader editb) => EditSubject editb -> EditLens' Maybe () edita editb;
     constEditLens b = readOnlyEditLens $ constEditFunction b;
 
-    convertEditLens :: forall c m edita editb. (ReadableConstraint c,Applicative m,EditSubject edita ~ EditSubject editb,FullEdit c edita,FullEdit c editb) =>
-        EditLens' c m () edita editb;
+    convertEditLens :: forall m edita editb. (Applicative m,EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) =>
+        EditLens' m () edita editb;
     convertEditLens = let
     {
-        editLensFunction :: EditFunction c () edita editb;
+        editLensFunction :: EditFunction () edita editb;
         editLensFunction = convertEditFunction;
-        editLensPutEdit :: () -> editb -> Readable c (EditReader edita) (m ((),[edita]));
-        editLensPutEdit () editb = case selfReadable @c @(EditReader edita) of
+        editLensPutEdit :: () -> editb -> Readable (EditReader edita) (m ((),[edita]));
+        editLensPutEdit () editb = do
         {
-            MkConstraintWitness -> do
-            {
-                newsubject <- fromReadFunctionM @c (pureToReadFunction $ applyEdit editb) (fromReader @c);
-                editbs <- getReplaceEditsM @c newsubject;
-                return $ pure $ ((),editbs);
-            };
+            newsubject <- fromReadFunctionM (applyEdit editb) fromReader;
+            editbs <- getReplaceEditsM newsubject;
+            return $ pure $ ((),editbs);
         };
     } in MkEditLens{..};
 
-    invertEditLens :: (state -> PureReadFunction (EditReader editb) (EditReader edita)) -> PureEditLens' Identity state edita editb -> PureEditLens' Identity state editb edita;
+    invertEditLens :: (state -> ReadFunction (EditReader editb) (EditReader edita)) -> EditLens' Identity state edita editb -> EditLens' Identity state editb edita;
     invertEditLens srfba lensab = MkEditLens
     {
         editLensFunction = MkEditFunction

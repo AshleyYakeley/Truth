@@ -15,7 +15,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
         _saveBufferChanged :: Bool
     };
 
-    saveBufferMutableEdit :: forall m edit. (PureFullEdit edit,Monad m) => ([edit] -> StateT (SaveBuffer (EditSubject edit)) m ()) -> MutableEdit (StateT (SaveBuffer (EditSubject edit)) m) edit;
+    saveBufferMutableEdit :: forall m edit. (FullEdit edit,MonadIO m) => ([edit] -> StateT (SaveBuffer (EditSubject edit)) m ()) -> MutableEdit (StateT (SaveBuffer (EditSubject edit)) m) edit;
     saveBufferMutableEdit update = let
     {
         mutableRead :: MutableRead (StateT (SaveBuffer (EditSubject edit)) m) (EditReader edit);
@@ -24,15 +24,19 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
         mutableEdit :: [edit] -> StateT (SaveBuffer (EditSubject edit)) m (Maybe (StateT (SaveBuffer (EditSubject edit)) m ()));
         mutableEdit edits = return $ Just $ do
         {
-            MkSaveBuffer oldbuf _ <- get;
-            put $ MkSaveBuffer (fromReadFunction (applyEdits edits) oldbuf) True;
+            newbuf <- fromReadFunctionM (applyEdits edits) $ do
+            {
+                MkSaveBuffer oldbuf _ <- get;
+                return oldbuf;
+            };
+            put $ MkSaveBuffer newbuf True;
             update edits;
         };
     } in MkMutableEdit{..};
 
     newtype SaveActions = MkSaveActions (IO (Maybe (IO Bool,IO Bool)));
 
-    saveBufferSubscriber :: forall edit action. PureFullEdit edit => Subscriber (WholeEdit (EditSubject edit)) action -> Subscriber edit (action,SaveActions);
+    saveBufferSubscriber :: forall edit action. FullEdit edit => Subscriber (WholeEdit (EditSubject edit)) action -> Subscriber edit (action,SaveActions);
     saveBufferSubscriber subA = MkSubscriber $ \(initB :: Object edit -> IO editorB) updateB -> do
     {
         sbVar <- newMVar $ error "uninitialised save buffer";
@@ -77,7 +81,8 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                     {
                         buf <- mutableRead muted ReadWhole;
                         mvarStateAccess sbVar $ put $ MkSaveBuffer buf False;
-                        updateB edB (readFromM $ return buf) $ getReplaceEdits buf;
+                        edits <- getReplaceEditsM buf;
+                        updateB edB (readFromM $ return buf) edits;
                         return False;
                     };
 
@@ -99,11 +104,9 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                 MkSaveBuffer oldbuffer changed <- mvarStateAccess sbVar get;
                 if changed then return () else do
                 {
-                    let
-                    {
-                        newbuffer = fromReadFunction (applyEdits edits) oldbuffer;
-                    };
-                    updateB edB (readFromM $ return newbuffer) $ getReplaceEdits newbuffer;
+                    newbuffer <- fromReadFunctionM (applyEdits edits) $ return oldbuffer;
+                    newedits <- getReplaceEditsM newbuffer;
+                    updateB edB (readFromM $ return newbuffer) newedits;
                     mvarStateAccess sbVar $ put $ MkSaveBuffer newbuffer False;
                 };
             };

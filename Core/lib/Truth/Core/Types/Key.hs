@@ -19,10 +19,10 @@ module Truth.Core.Types.Key where
         KeyReadItem :: ContainerKey cont -> reader t -> KeyReader cont reader (Maybe t);
     };
 
-    keyItemReadFunction :: forall c cont reader. ContainerKey cont -> ReadFunctionF c Maybe (KeyReader cont reader) reader;
+    keyItemReadFunction :: forall cont reader. ContainerKey cont -> ReadFunctionF Maybe (KeyReader cont reader) reader;
     keyItemReadFunction key reader = readable $ KeyReadItem key reader;
 
-    knownKeyItemReadFunction :: forall c cont reader. ContainerKey cont -> ReadFunction c (KeyReader cont reader) reader;
+    knownKeyItemReadFunction :: forall cont reader. ContainerKey cont -> ReadFunction (KeyReader cont reader) reader;
     knownKeyItemReadFunction key reader = do
     {
         mt <- keyItemReadFunction key reader;
@@ -41,7 +41,7 @@ module Truth.Core.Types.Key where
         readFrom cont (KeyReadItem key reader) = fmap (\e -> readFrom e reader) $ lookupElement key cont;
     };
 
-    instance (KeyContainer cont,ReadableConstraint c,FullReader c reader,ReaderSubject reader ~ Element cont) => FullReader c (KeyReader cont reader) where
+    instance (KeyContainer cont,FullReader reader,ReaderSubject reader ~ Element cont) => FullReader (KeyReader cont reader) where
     {
         fromReader = do
         {
@@ -61,13 +61,13 @@ module Truth.Core.Types.Key where
 
     class (Reader reader,ReaderSubject reader ~ Element cont) => HasKeyReader cont reader where
     {
-        readKey :: proxy cont -> PureReadable reader (ContainerKey cont);
+        readKey :: proxy cont -> Readable reader (ContainerKey cont);
     };
 
-    instance (EditSubject keyedit ~ key,EditSubject valedit ~ val,Edit keyedit,PureFullReader (EditReader keyedit),Edit valedit) =>
+    instance (EditSubject keyedit ~ key,EditSubject valedit ~ val,Edit keyedit,FullReader (EditReader keyedit),Edit valedit) =>
         HasKeyReader [(key,val)] (PairEditReader keyedit valedit) where
     {
-        readKey _ = mapReadable firstReadFunction pureFromReader;
+        readKey _ = mapReadable firstReadFunction fromReader;
     };
 
     instance HasKeyReader (FiniteSet t) (WholeReader t) where
@@ -82,7 +82,7 @@ module Truth.Core.Types.Key where
     replace old new (MkFiniteSet (a:aa)) | old == a = MkFiniteSet $ new:aa;
     replace old new (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ replace old new $ MkFiniteSet aa);
 
-    instance (KeyContainer cont,IOFullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => Edit (KeyEdit cont edit) where
+    instance (KeyContainer cont,FullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => Edit (KeyEdit cont edit) where
     {
         type EditReader (KeyEdit cont edit) = KeyReader cont (EditReader edit);
 
@@ -140,7 +140,7 @@ module Truth.Core.Types.Key where
             {
                 newkey = elementKey (Proxy :: Proxy cont) item;
             };
-            molditem <- mapReadableF (keyItemReadFunction newkey) ioFromReader;
+            molditem <- mapReadableF (keyItemReadFunction newkey) fromReader;
             case molditem of
             {
                 Just olditem -> return [KeyInsertReplaceItem olditem];
@@ -149,17 +149,17 @@ module Truth.Core.Types.Key where
         };
         invertEdit (KeyDeleteItem key) = do
         {
-            ma <- mapReadableF (keyItemReadFunction key) ioFromReader;
+            ma <- mapReadableF (keyItemReadFunction key) fromReader;
             case ma of
             {
                 Just a -> return [KeyInsertReplaceItem a];
                 Nothing -> return [];
             };
         };
-        invertEdit KeyClear = writerToReadable ioReplaceEdit;
+        invertEdit KeyClear = writerToReadable replaceEdit;
     };
 
-    instance (KeyContainer cont,ReadableConstraint c,IOFullReader (EditReader edit),FullReader c (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => FullEdit c (KeyEdit cont edit) where
+    instance (KeyContainer cont,FullReader (EditReader edit),Edit edit,HasKeyReader cont (EditReader edit)) => FullEdit (KeyEdit cont edit) where
     {
         replaceEdit = do
         {
@@ -167,13 +167,10 @@ module Truth.Core.Types.Key where
             allkeys <- readable KeyReadKeys;
             let
             {
-                readWriteItem :: ContainerKey cont -> WriterReadable c (KeyEdit cont edit) (KeyReader cont (EditReader edit)) ();
+                readWriteItem :: ContainerKey cont -> WriterReadable (KeyEdit cont edit) (KeyReader cont (EditReader edit)) ();
                 readWriteItem key = do
                 {
-                    item <- case selfWriterReadable @c @(KeyEdit cont edit) @(EditReader edit) of
-                    {
-                        MkConstraintWitness -> mapReadable (knownKeyItemReadFunction key) $ readableToM @c fromReader;
-                    };
+                    item <- mapReadable (knownKeyItemReadFunction key) $ readableToM fromReader;
                     wrWrite $ KeyInsertReplaceItem item;
                 };
             };
@@ -185,7 +182,7 @@ module Truth.Core.Types.Key where
         ContainerKey cont -> GeneralLens (KeyEdit cont edit) (OneWholeEdit Maybe edit);
     keyElementLens editInitial = let
     {
-        editGet :: ContainerKey cont -> PureReadFunction (KeyReader cont (EditReader edit)) (OneReader Maybe (EditReader edit));
+        editGet :: ContainerKey cont -> ReadFunction (KeyReader cont (EditReader edit)) (OneReader Maybe (EditReader edit));
         editGet key ReadHasOne = do
         {
             kk <- readable $ KeyReadKeys;
@@ -193,7 +190,7 @@ module Truth.Core.Types.Key where
         };
         editGet key (ReadOne rt) = readable $ KeyReadItem key rt;
 
-        editUpdate :: KeyEdit cont edit -> ContainerKey cont -> PureReadable (KeyReader cont (EditReader edit)) (ContainerKey cont,[OneWholeEdit Maybe edit]);
+        editUpdate :: KeyEdit cont edit -> ContainerKey cont -> Readable (KeyReader cont (EditReader edit)) (ContainerKey cont,[OneWholeEdit Maybe edit]);
         editUpdate KeyClear key = return (key,[SumEditLeft (MkWholeEdit Nothing)]);
         editUpdate (KeyDeleteItem k) key | k == key = return (key,[SumEditLeft (MkWholeEdit Nothing)]);
         editUpdate (KeyEditItem k edit) oldkey | k == oldkey = do
@@ -222,7 +219,7 @@ module Truth.Core.Types.Key where
             }
         };
 
-        lens :: PureEditLens' Identity (ContainerKey cont) (KeyEdit cont edit) (OneWholeEdit Maybe edit);
+        lens :: EditLens' Identity (ContainerKey cont) (KeyEdit cont edit) (OneWholeEdit Maybe edit);
         lens = MkEditLens{..};
     } in toGeneralLens lens;
 
@@ -231,30 +228,29 @@ module Truth.Core.Types.Key where
             KeyContainer cont,
             HasKeyReader cont (PairEditReader keyedit valueedit),
             Edit keyedit,
-            IOFullReader (EditReader keyedit),
-            IOFullEdit valueedit
+            FullReader (EditReader keyedit),
+            FullEdit valueedit
         ) => ContainerKey cont -> GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (OneWholeEdit Maybe valueedit);
     keyValueLens key = (oneWholeLiftGeneralLens $ tupleEditLens EditSecond) <.> keyElementLens key;
 
-    liftKeyElementLens :: forall c f state conta contb edita editb.
+    liftKeyElementLens :: forall f state conta contb edita editb.
         (
-            ReadableConstraint c,
             Applicative f,
             ContainerKey conta ~ ContainerKey contb,
             EditSubject edita ~ Element conta,
             EditSubject editb ~ Element contb,
             Reader (EditReader edita),
-            FullReader c (EditReader editb)
+            FullReader (EditReader editb)
         ) =>
-        (forall m. (Monad m,c m) => EditSubject editb -> m (f (EditSubject edita))) ->
-        EditLens' c f state edita editb -> EditLens' c f state (KeyEdit conta edita) (KeyEdit contb editb);
+        (forall m. MonadIO m => EditSubject editb -> m (f (EditSubject edita))) ->
+        EditLens' f state edita editb -> EditLens' f state (KeyEdit conta edita) (KeyEdit contb editb);
     liftKeyElementLens bma (MkEditLens (MkEditFunction editInitial g u) pe) = let
     {
-        editGet :: state -> ReadFunction c (KeyReader conta (EditReader edita)) (KeyReader contb (EditReader editb));
+        editGet :: state -> ReadFunction (KeyReader conta (EditReader edita)) (KeyReader contb (EditReader editb));
         editGet _ KeyReadKeys = readable KeyReadKeys;
         editGet curstate (KeyReadItem key rt) = mapReadableF (keyItemReadFunction key) $ g curstate rt;
 
-        editUpdate :: KeyEdit conta edita -> state -> Readable c (KeyReader conta (EditReader edita)) (state,[KeyEdit contb editb]);
+        editUpdate :: KeyEdit conta edita -> state -> Readable (KeyReader conta (EditReader edita)) (state,[KeyEdit contb editb]);
         editUpdate KeyClear oldstate = return (oldstate,[KeyClear]);
         editUpdate (KeyInsertReplaceItem itema) oldstate = do
         {
@@ -265,7 +261,7 @@ module Truth.Core.Types.Key where
         editUpdate (KeyDeleteItem key) oldstate = return (oldstate,[KeyDeleteItem key]);
         editUpdate (KeyEditItem key ea) oldstate = do
         {
-            mresult <- mapReadableF (keyItemReadFunction @Monad @conta key) $ u ea oldstate;
+            mresult <- mapReadableF (keyItemReadFunction @conta key) $ u ea oldstate;
             case mresult of
             {
                 Just (newstate,ebs) -> return (newstate,fmap (KeyEditItem key) ebs);
@@ -273,7 +269,7 @@ module Truth.Core.Types.Key where
             };
         };
 
-        editLensPutEdit :: state -> KeyEdit contb editb -> Readable c (KeyReader conta (EditReader edita)) (f (state,[KeyEdit conta edita]));
+        editLensPutEdit :: state -> KeyEdit contb editb -> Readable (KeyReader conta (EditReader edita)) (f (state,[KeyEdit conta edita]));
         editLensPutEdit oldstate KeyClear = return $ pure (oldstate,[KeyClear]);
         editLensPutEdit oldstate (KeyInsertReplaceItem itemb) = do
         {
@@ -283,7 +279,7 @@ module Truth.Core.Types.Key where
         editLensPutEdit oldstate (KeyDeleteItem key) = return $ pure (oldstate,[KeyDeleteItem key]);
         editLensPutEdit oldstate (KeyEditItem key eb) = do
         {
-            mfresult <- mapReadableF (keyItemReadFunction @Monad @conta key) $ pe oldstate eb;
+            mfresult <- mapReadableF (keyItemReadFunction @conta key) $ pe oldstate eb;
             case mfresult of
             {
                 Just fsea -> return $ fmap (fmap (fmap $ KeyEditItem key)) fsea;
@@ -294,18 +290,18 @@ module Truth.Core.Types.Key where
         editLensFunction = MkEditFunction{..};
     } in MkEditLens{..};
 
-    contextKeyLens' :: forall c editx cont edit.
-        EditLens' c Maybe () (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit));
+    contextKeyLens' :: forall editx cont edit.
+        EditLens' Maybe () (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit));
     contextKeyLens' = let
     {
         editInitial = ();
 
-        editGet :: () -> KeyReader cont (ContextEditReader editx edit) t -> Readable c (ContextEditReader editx (KeyEdit cont edit)) t;
+        editGet :: () -> KeyReader cont (ContextEditReader editx edit) t -> Readable (ContextEditReader editx (KeyEdit cont edit)) t;
         editGet () KeyReadKeys = readable $ MkTupleEditReader EditContent KeyReadKeys;
         editGet () (KeyReadItem _ (MkTupleEditReader EditContext reader)) = fmap Just $ readable $ MkTupleEditReader EditContext reader;
         editGet () (KeyReadItem key (MkTupleEditReader EditContent reader)) = readable $ MkTupleEditReader EditContent $ KeyReadItem key reader;
 
-        editUpdate :: ContextEdit editx (KeyEdit cont edit) -> () -> Readable c (ContextEditReader editx (KeyEdit cont edit)) ((), [KeyEdit cont (ContextEdit editx edit)]);
+        editUpdate :: ContextEdit editx (KeyEdit cont edit) -> () -> Readable (ContextEditReader editx (KeyEdit cont edit)) ((), [KeyEdit cont (ContextEdit editx edit)]);
         editUpdate (MkTupleEdit EditContext edit) () = do
         {
             MkFiniteSet kk <- readable $ MkTupleEditReader EditContent KeyReadKeys;
@@ -318,7 +314,7 @@ module Truth.Core.Types.Key where
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> KeyEdit cont (ContextEdit editx edit) -> Readable c (ContextEditReader editx (KeyEdit cont edit)) (Maybe ((), [ContextEdit editx (KeyEdit cont edit)]));
+        editLensPutEdit :: () -> KeyEdit cont (ContextEdit editx edit) -> Readable (ContextEditReader editx (KeyEdit cont edit)) (Maybe ((), [ContextEdit editx (KeyEdit cont edit)]));
         editLensPutEdit () (KeyEditItem _ (MkTupleEdit EditContext edit)) = return $ pure $ pure [MkTupleEdit EditContext edit];
         editLensPutEdit () (KeyEditItem key (MkTupleEdit EditContent edit)) = return $ pure $ pure [MkTupleEdit EditContent $ KeyEditItem key edit];
         editLensPutEdit () (KeyDeleteItem key) = return $ pure $ pure [MkTupleEdit EditContent $ KeyDeleteItem key];

@@ -132,12 +132,12 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
         } in MkSubmapWitness{..};
     } in MkDatabaseSchema{..};
 
-    soupDatabaseLens :: PureEditLens' Identity () (SQLiteEdit PinaforeSchema) PinaforeEdit;
+    soupDatabaseLens :: EditLens' Identity () (SQLiteEdit PinaforeSchema) PinaforeEdit;
     soupDatabaseLens = let
     {
         editInitial = ();
 
-        editGet :: () -> PureReadFunction (SQLiteRead PinaforeSchema) PinaforeRead;
+        editGet :: () -> ReadFunction (SQLiteRead PinaforeSchema) PinaforeRead;
         editGet () (PinaforeReadGetValue p s) = do
         {
             row <- readable $ DatabaseSelect
@@ -181,7 +181,7 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
 
         editUpdate _ _ = return undefined;
 
-        editLensPutEdit :: () -> PinaforeEdit -> PureReadable (SQLiteRead PinaforeSchema) (Identity ((), [SQLiteEdit PinaforeSchema]));
+        editLensPutEdit :: () -> PinaforeEdit -> Readable (SQLiteRead PinaforeSchema) (Identity ((), [SQLiteEdit PinaforeSchema]));
         editLensPutEdit () (PinaforeEditSetValue p s (Just v)) = pure $ pure $ pure $ pure $ DatabaseInsert (MkTupleTableSel PinaforeTriple) $ MkTupleInsertClause $ pure $ MkAll $ \case
         {
             TriplePredicate -> p;

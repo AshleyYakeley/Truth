@@ -21,7 +21,7 @@ module Truth.Core.Types.OneEdit where
         applyEdit (MkOneEdit _edita) ReadHasOne = readable ReadHasOne;
         applyEdit (MkOneEdit edita) (ReadOne reader) = liftMaybeReadable (applyEdit edita reader);
 
-        -- invertEdit :: OneEdit f edit -> PureReadable (OneReader f reader) (Maybe (OneEdit f edit));    -- "Nothing" means no change
+        -- invertEdit :: OneEdit f edit -> Readable (OneReader f reader) (Maybe (OneEdit f edit));    -- "Nothing" means no change
         invertEdit (MkOneEdit edita) = do
         {
             fme <- liftMaybeReadable (invertEdit edita);
@@ -33,8 +33,8 @@ module Truth.Core.Types.OneEdit where
         };
     };
 
-    oneLiftEditFunction :: forall c f state edita editb. (ReadableConstraint c,MonadOne f) =>
-        EditFunction c state edita editb -> EditFunction c state (OneEdit f edita) (OneEdit f editb);
+    oneLiftEditFunction :: forall f state edita editb. (MonadOne f) =>
+        EditFunction state edita editb -> EditFunction state (OneEdit f edita) (OneEdit f editb);
     oneLiftEditFunction ff = MkEditFunction
     {
         editInitial = editInitial ff,
@@ -66,9 +66,9 @@ module Truth.Core.Types.OneEdit where
         }
     };
 -}
-    oneLiftEditLens :: forall c m f state edita editb. (ReadableConstraint c,Monad m,MonadOne f) =>
+    oneLiftEditLens :: forall m f state edita editb. (Monad m,MonadOne f) =>
         (forall a. f a -> m a) ->
-        EditLens' c m state edita editb -> EditLens' c m state (OneEdit f edita) (OneEdit f editb);
+        EditLens' m state edita editb -> EditLens' m state (OneEdit f edita) (OneEdit f editb);
     oneLiftEditLens faffa lens = MkEditLens
     {
         editLensFunction = oneLiftEditFunction (editLensFunction lens),

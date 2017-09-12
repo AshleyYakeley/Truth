@@ -19,7 +19,7 @@ module Truth.Core.Object.MutableEdit where
         floatingUpdate edit (MkMutableEdit mr me) = MkMutableEdit mr $ \edits -> me $ fmap (floatingUpdate edit) edits;
     };
 
-    mutableReadEdit :: Monad m => MutableEdit m edit -> PureReadable (EditReader edit) [edit] -> m (Maybe (m ()));
+    mutableReadEdit :: MonadIO m => MutableEdit m edit -> Readable (EditReader edit) [edit] -> m (Maybe (m ()));
     mutableReadEdit MkMutableEdit{..}  MkReadable{..} = do
     {
         edits <- unReadable mutableRead;
@@ -65,15 +65,15 @@ module Truth.Core.Object.MutableEdit where
         mutableEdit (e:_) = never e;
     } in MkMutableEdit{..};
 
-    stateMutableEdit :: (Monad m,Edit edit) => MutableEdit (StateT (MutableReadW m (EditReader edit)) m) edit;
+    stateMutableEdit :: (MonadIO m,Edit edit) => MutableEdit (StateT (MutableReadW m (EditReader edit)) m) edit;
     stateMutableEdit = let
     {
         mutableRead = stateMutableRead;
-        mutableEdit edits = return $ Just $ modify $ mapMutableReadW @Monad $ applyEdits edits;
+        mutableEdit edits = return $ Just $ modify $ mapMutableReadW $ applyEdits edits;
     } in MkMutableEdit{..};
 
-    mapMutableEdit :: forall c f m lensstate edita editb. (Monad m,ReadableConstraint c,c m,MonadOne f,Edit edita) =>
-        EditLens' c f lensstate edita editb -> MutableEdit m edita -> MutableEdit (StateT lensstate m) editb;
+    mapMutableEdit :: forall f m lensstate edita editb. (MonadIO m,MonadOne f,Edit edita) =>
+        EditLens' f lensstate edita editb -> MutableEdit m edita -> MutableEdit (StateT lensstate m) editb;
     mapMutableEdit lens@MkEditLens{..} mutedA = let
     {
         MkEditFunction{..} = editLensFunction;
@@ -121,8 +121,8 @@ module Truth.Core.Object.MutableEdit where
         };
     } in MkMutableEdit readB pushEditB;
 
-    fixedMapMutableEdit :: forall c f m edita editb. (Monad m,ReadableConstraint c,c m,MonadOne f,Edit edita) =>
-        EditLens' c f () edita editb -> MutableEdit m edita -> MutableEdit m editb;
+    fixedMapMutableEdit :: forall f m edita editb. (MonadIO m,MonadOne f,Edit edita) =>
+        EditLens' f () edita editb -> MutableEdit m edita -> MutableEdit m editb;
     fixedMapMutableEdit lens muted = remonadMutableEdit runUnitStateT $ mapMutableEdit lens muted;
 
     noneMutableEdit :: Applicative m => MutableEdit m (NoEdit (NoReader t));

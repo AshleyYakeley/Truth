@@ -29,7 +29,7 @@ module Truth.Core.Types.ByteString where
         };
     };
 
-    instance FullReader c ByteStringReader where
+    instance FullReader ByteStringReader where
     {
         fromReader = do
         {
@@ -137,7 +137,7 @@ module Truth.Core.Types.ByteString where
         }
     };
 
-    instance FullEdit c ByteStringEdit where
+    instance FullEdit ByteStringEdit where
     {
         replaceEdit = do
         {

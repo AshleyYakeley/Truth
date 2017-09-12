@@ -38,12 +38,12 @@ module Truth.Core.Types.Sum where
         invertEdit (SumEditRight edit) = fmap (fmap SumEditRight) (invertEdit edit);
     };
 
-    instance (FullEdit c ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit c (SumEdit ea eb) where
+    instance (FullEdit ea,Edit eb,EditReader ea ~ EditReader eb) => FullEdit (SumEdit ea eb) where
     {
         replaceEdit = reWriterReadable SumEditLeft replaceEdit;
     };
 
-    sumEditFunction :: (EditReader edit ~ EditReader edit') => PureEditFunction () edit (SumEdit edit' edit);
+    sumEditFunction :: (EditReader edit ~ EditReader edit') => EditFunction () edit (SumEdit edit' edit);
     sumEditFunction = let
     {
         editInitial = ();

@@ -91,7 +91,7 @@ module Truth.Core.Object.View where
 
     mapView :: forall f w edita editb. (MonadOne f,Edit edita,Edit editb) => GeneralLens' f edita editb -> View editb w -> View edita w;
     mapView
-        lens@(MkCloseState (flens :: IOEditLens' f lensstate edita editb))
+        lens@(MkCloseState (flens :: EditLens' f lensstate edita editb))
         (MkView (viewB :: Object editb -> (AspectGetter editb -> IO ()) -> IO (ViewResult editb w)))
         = MkView $ \objectA setSelectA -> do
     {

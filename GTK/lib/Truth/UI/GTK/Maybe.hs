@@ -20,10 +20,10 @@ module Truth.UI.GTK.Maybe (oneUIView) where
         widgetDestroy w2;
     };
 
-    createButton :: (IOFullEdit edit) => EditSubject edit -> Object edit -> IO Button;
+    createButton :: (FullEdit edit) => EditSubject edit -> Object edit -> IO Button;
     createButton subj object = makeButton "Create" $ runObject object $ \muted -> do
     {
-        edits <- fromReadable (writerToReadable ioReplaceEdit) subj;
+        edits <- fromReadable (writerToReadable replaceEdit) subj;
         maction <- mutableEdit muted edits;
         case maction of
         {
@@ -35,10 +35,10 @@ module Truth.UI.GTK.Maybe (oneUIView) where
     oneWholeView :: forall f edit wd.
     (
         MonadOne f,
-        IOFullEdit edit,
+        FullEdit edit,
         WidgetClass wd
     ) =>
-      (forall editb. (IOFullEdit editb) => UISpec editb -> UISpec (OneWholeEdit f editb)) -> Maybe (Limit f) -> (Object (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
+      (forall editb. (FullEdit editb) => UISpec editb -> UISpec (OneWholeEdit f editb)) -> Maybe (Limit f) -> (Object (OneWholeEdit f edit) -> IO wd) -> GView edit -> GView (OneWholeEdit f edit);
     oneWholeView uispec mDeleteValue makeEmptywidget (MkView baseView) = MkView $ \object setSelect -> do
     {
         box <- vBoxNew False 0;
@@ -55,7 +55,7 @@ module Truth.UI.GTK.Maybe (oneUIView) where
 
         let
         {
-            baseReadFunction :: ReadFunction MonadIO (OneReader f (EditReader edit)) (EditReader edit);
+            baseReadFunction :: ReadFunction (OneReader f (EditReader edit)) (EditReader edit);
             baseReadFunction rt = do
             {
                 ft <- readable $ ReadOne rt;
@@ -111,7 +111,7 @@ module Truth.UI.GTK.Maybe (oneUIView) where
                     {
                         lift $ do
                         {
-                            editss <- for wedits $ extractOneWholeEdit @MonadIO;
+                            editss <- for wedits $ extractOneWholeEdit;
                             update (mapMutableRead baseReadFunction mr) $ mconcat editss;
                         };
                         return oldfvr;

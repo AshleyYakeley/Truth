@@ -43,7 +43,7 @@ module Truth.UI.GTK.Text (textUIView) where
     textView uitext = MkView $ \(MkObject object) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
-        initial <- object $ \muted -> unReadable pureFromReader $ mutableRead muted;
+        initial <- object $ \muted -> unReadable fromReader $ mutableRead muted;
         textBufferSetText buffer initial;
         mv <- newMVar ();
 
@@ -90,7 +90,7 @@ module Truth.UI.GTK.Text (textUIView) where
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
                 run <- getSequenceRun iter1 iter2;
                 -- get selection...
-                return $ Just $ MkAspect "section" (MkUISpec uitext) $ MkCloseState $ pureToEditLens $ stringSectionLens run;
+                return $ Just $ MkAspect "section" (MkUISpec uitext) $ MkCloseState $ stringSectionLens run;
             };
         };
 

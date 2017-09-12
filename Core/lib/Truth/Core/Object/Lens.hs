@@ -8,7 +8,7 @@ module Truth.Core.Object.Lens where
 
 
     mapSubscriber :: forall f edita editb action. (MonadOne f,Edit edita) => GeneralLens' f edita editb -> Subscriber edita action -> Subscriber editb action;
-    mapSubscriber (MkCloseState (lens@MkEditLens{..} :: IOEditLens' f lensstate edita editb)) sub =
+    mapSubscriber (MkCloseState (lens@MkEditLens{..} :: EditLens' f lensstate edita editb)) sub =
     MkSubscriber $ \(initialB :: Object editb -> IO editor) updateB -> do
     {
         let
@@ -37,12 +37,12 @@ module Truth.Core.Object.Lens where
         return (editor,closer,action);
     };
 
-    convertSubscriber :: forall edita editb actions. (EditSubject edita ~ EditSubject editb,IOFullEdit edita,IOFullEdit editb) => Subscriber edita actions -> Subscriber editb actions;
-    convertSubscriber = mapSubscriber $ toGeneralLens' $ convertEditLens @MonadIO @Identity;
+    convertSubscriber :: forall edita editb actions. (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Subscriber edita actions -> Subscriber editb actions;
+    convertSubscriber = mapSubscriber $ toGeneralLens' $ convertEditLens @Identity;
 
 {-
 
-    cacheReferent :: forall edit. (Edit edit,PureFullReader (EditReader edit)) =>
+    cacheReferent :: forall edit. (Edit edit,FullReader (EditReader edit)) =>
         Reference edit -> Reference edit;
     cacheReferent ref = objSubscribe (\sendDown -> do
     {
@@ -92,10 +92,10 @@ module Truth.Core.Object.Lens where
 -}
 
 {-
-    wantedA :: PureReadFunction (EditReader ea) (PairEditReader ea eb);
+    wantedA :: ReadFunction (EditReader ea) (PairEditReader ea eb);
     wantedA = undefined;
 
-    wantedB :: PureReadFunction (EditReader eb) (PairEditReader ea eb);
+    wantedB :: ReadFunction (EditReader eb) (PairEditReader ea eb);
     wantedB = undefined;
 
     pairSubscriber :: forall ea eb acta actb. Subscriber ea acta -> Subscriber eb actb -> Subscriber (PairEdit ea eb) (acta,actb);

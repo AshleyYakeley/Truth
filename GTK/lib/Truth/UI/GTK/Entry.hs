@@ -11,12 +11,13 @@ module Truth.UI.GTK.Entry(textEntryUIView) where
     textEntryUIView = MkGetUIView $ \_ uispec -> fmap (\MkUITextEntry -> MkView $ \(MkObject object) _setSelect -> do
     {
         widget <- entryNew;
-        initial <- object $ \muted -> unReadable pureFromReader $ mutableRead muted;
+        initial <- object $ \muted -> unReadable fromReader $ mutableRead muted;
         set widget [entryText := initial];
         clickConnection <- on widget editableChanged $ object $ \muted -> do
         {
             s <- liftIO $ Gtk.get widget entryText;
-            _ <- mutableEdit muted $ getReplaceEdits s;
+            edits <- getReplaceEditsM s;
+            _ <- mutableEdit muted edits;
             return ();
         };
 

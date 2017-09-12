@@ -17,7 +17,7 @@ module Truth.Core.Types.Whole where
         readFrom msubj ReadWhole = msubj;
     };
 
-    instance FullReader c (WholeReader a) where
+    instance FullReader (WholeReader a) where
     {
         fromReader = readable ReadWhole;
     };
@@ -29,32 +29,29 @@ module Truth.Core.Types.Whole where
 
     instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader);
 
-    instance (IOFullReader reader) => Edit (WholeReaderEdit reader) where
+    instance (FullReader reader) => Edit (WholeReaderEdit reader) where
     {
         type EditReader (WholeReaderEdit reader) = reader;
         applyEdit (MkWholeEdit a) = readFromM (return a);
         invertEdit _ = do
         {
-            a <- ioFromReader;
+            a <- fromReader;
             return [MkWholeEdit a];
         };
     };
 
-    instance (ReadableConstraint c,FullReader MonadIO reader,FullReader c reader) => FullEdit c (WholeReaderEdit reader) where
+    instance (FullReader reader) => FullEdit (WholeReaderEdit reader) where
     {
-        replaceEdit = case selfWriterReadable @c @(WholeReaderEdit reader) @reader of
+        replaceEdit = do
         {
-            MkConstraintWitness -> do
-            {
-                a <- readableToM @c fromReader;
-                wrWrite $ MkWholeEdit a;
-            };
+            a <- readableToM fromReader;
+            wrWrite $ MkWholeEdit a;
         };
     };
 
     type WholeEdit a = WholeReaderEdit (WholeReader a);
 
-    wholeEditFunction :: forall c a b. (a -> b) -> EditFunction c () (WholeEdit a) (WholeEdit b);
+    wholeEditFunction :: forall a b. (a -> b) -> EditFunction () (WholeEdit a) (WholeEdit b);
     wholeEditFunction ab = MkEditFunction
     {
         editInitial = (),
@@ -62,7 +59,7 @@ module Truth.Core.Types.Whole where
         editUpdate = \(MkWholeEdit a) curstate -> return (curstate,[MkWholeEdit $ ab a])
     };
 
-    wholeEditLens :: forall c m a b. (Functor m) => Lens' m a b -> EditLens' c m () (WholeEdit a) (WholeEdit b);
+    wholeEditLens :: forall m a b. (Functor m) => Lens' m a b -> EditLens' m () (WholeEdit a) (WholeEdit b);
     wholeEditLens lens = MkEditLens
     {
         editLensFunction = wholeEditFunction (lensGet lens),
@@ -84,7 +81,7 @@ module Truth.Core.Types.Whole where
         type LensDomain (Lens' f a b) = WholeEdit a;
         type LensRange (Lens' f a b) = WholeEdit b;
 
-        toGeneralLens' = toGeneralLens' . wholeEditLens @MonadIO;
+        toGeneralLens' = toGeneralLens' . wholeEditLens;
     };
 
     instance (MonadOne m) => IsGeneralLens (Injection' m a b) where
@@ -120,7 +117,7 @@ module Truth.Core.Types.Whole where
     pairWholeObjectFunction :: forall edit a b. ObjectFunction edit (WholeEdit a) -> ObjectFunction edit (WholeEdit b) -> ObjectFunction edit (WholeEdit (a,b));
     pairWholeObjectFunction (MkEditFunction () ga ua) (MkEditFunction () gb ub) = let
     {
-        gab :: () -> IOReadFunction (EditReader edit) (WholeReader (a,b));
+        gab :: () -> ReadFunction (EditReader edit) (WholeReader (a,b));
         gab () ReadWhole = do
         {
             a <- ga () ReadWhole;

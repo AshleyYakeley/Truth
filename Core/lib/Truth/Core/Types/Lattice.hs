@@ -6,11 +6,11 @@ module Truth.Core.Types.Lattice where
 
     class JoinSemiLatticeEdit edit where
     {
-        joinEditFunction :: EditFunction c () (PairEdit edit edit) edit;
+        joinEditFunction :: EditFunction () (PairEdit edit edit) edit;
     };
 
     class MeetSemiLatticeEdit edit where
     {
-        meetEditFunction :: EditFunction c () (PairEdit edit edit) edit;
+        meetEditFunction :: EditFunction () (PairEdit edit edit) edit;
     };
 }

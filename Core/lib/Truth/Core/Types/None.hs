@@ -21,7 +21,7 @@ module Truth.Core.Types.None where
         readFrom _ = never;
     };
 
-    instance FullReader c (NoReader ()) where
+    instance FullReader (NoReader ()) where
     {
         fromReader = return ();
     };
@@ -46,12 +46,12 @@ module Truth.Core.Types.None where
         invertEdit = never;
     };
 
-    instance (FullReader c reader,ReaderSubject reader ~ ()) => FullEdit c (NoEdit reader) where
+    instance (FullReader reader,ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where
     {
         replaceEdit = return ();
     };
 
-    noEditFunction :: PureEditFunction () (NoEdit (EditReader edit)) edit;
+    noEditFunction :: EditFunction () (NoEdit (EditReader edit)) edit;
     noEditFunction = let
     {
         editInitial = ();
@@ -59,7 +59,7 @@ module Truth.Core.Types.None where
         editUpdate = never;
     } in MkEditFunction{..};
 
-    noEditLens :: PureEditLens' Maybe () (NoEdit (EditReader edit)) edit;
+    noEditLens :: EditLens' Maybe () (NoEdit (EditReader edit)) edit;
     noEditLens = let
     {
         editLensFunction = noEditFunction;

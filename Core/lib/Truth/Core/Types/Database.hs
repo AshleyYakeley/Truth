@@ -59,7 +59,7 @@ module Truth.Core.Types.Database where
         } in fmap (selectClause @database @tablesel sc) $ sortBy (orderClause @database @tablesel oc) $ filter (whereClause @database @tablesel wc) $ doJoin j;
     };
 
-    instance Database database tablesel => FullReader c (DatabaseRead database tablesel) where
+    instance Database database tablesel => FullReader (DatabaseRead database tablesel) where
     {
         fromReader = tableAssemble @database $ \(tsel :: tablesel row) -> do
         {

@@ -33,8 +33,11 @@ module Main(main) where
         edits = [MkTupleEdit EditFirst $ MkWholeEdit True,MkTupleEdit EditSecond $ MkWholeEdit True];
         expected = (True,True);
         rf = applyEdits edits;
-        found = fromReadFunction rf start;
-    } in assertEqual "" expected found;
+    } in do
+    {
+        found <- fromReadFunctionM rf $ return start;
+        assertEqual "" expected found;
+    };
 
     testApplyEditsSeq :: TestTree;
     testApplyEditsSeq = testCase "apply edits sequence" $ let
@@ -44,25 +47,34 @@ module Main(main) where
         edits = [MkWholeEdit 1,MkWholeEdit 2];
         expected = 2;
         rf = applyEdits edits;
-        found = fromReadFunction rf start;
-    } in assertEqual "" expected found;
+    } in do
+    {
+        found <- fromReadFunctionM rf $ return start;
+        assertEqual "" expected found;
+    };
 
-    applyEditSubject :: (Edit edit,PureFullReader (EditReader edit)) => edit -> EditSubject edit -> EditSubject edit;
-    applyEditSubject edit = fromReadFunction $ applyEdit edit;
+    applyEditSubject :: (Edit edit,FullReader (EditReader edit)) => edit -> EditSubject edit -> IO (EditSubject edit);
+    applyEditSubject edit subj = fromReadFunctionM (applyEdit edit) $ return subj;
 
-    testEdit :: (Edit edit,PureFullReader (EditReader edit),Eq (EditSubject edit),Show edit,Show (EditSubject edit)) => edit -> EditSubject edit -> EditSubject edit -> TestTree;
+    testEdit :: (Edit edit,FullReader (EditReader edit),Eq (EditSubject edit),Show edit,Show (EditSubject edit)) => edit -> EditSubject edit -> EditSubject edit -> TestTree;
     testEdit edit original expected = let
     {
         name = show edit ++ " " ++ show original;
-        found = applyEditSubject edit original;
-    } in testCase name $ assertEqual "" expected found;
+    } in testCase name $ do
+    {
+        found <- applyEditSubject edit original;
+        assertEqual "" expected found;
+    };
 
     testEditRead :: (Edit edit,Eq t,Show t,Show edit,Show (EditSubject edit),Show (EditReader edit t)) => edit -> EditSubject edit -> EditReader edit t -> t -> TestTree;
     testEditRead edit original rt expected = let
     {
         name = show edit ++ " " ++ show original ++ " " ++ show rt;
-        found = fromPureReadable (applyEdit edit rt) original;
-    } in testCase name $ assertEqual "" expected found;
+    } in testCase name $ do
+    {
+        found <- fromReadable (applyEdit edit rt) original;
+        assertEqual "" expected found;
+    };
 
     seqRun :: Int -> Int -> SequenceRun [a];
     seqRun start len = MkSequenceRun (MkSequencePoint start) (MkSequencePoint len);
@@ -89,15 +101,16 @@ module Main(main) where
         MkEditLens{..} = stringSectionLens run;
         MkEditFunction{..} = editLensFunction;
 
-        rf :: PureReadFunction (StringRead String) (StringRead String);
+        rf :: ReadFunction (StringRead String) (StringRead String);
         rf = editGet editInitial;
-
-        found :: String;
-        found = fromReadFunction rf base;
 
         expected :: String;
         expected = readFrom base $ StringReadSection run;
-    } in found === expected;
+    } in ioProperty $ do
+    {
+        found <- fromReadFunctionM rf $ return base;
+        return $ found === expected;
+    };
 
     showVar :: Show a => String -> a -> String;
     showVar name val = name ++ " = " ++ show val;
@@ -109,37 +122,44 @@ module Main(main) where
     lensUpdateGetProperty ::
     (
         Show edita,Edit edita,
-        PureFullReader (EditReader edita),
+        FullReader (EditReader edita),
         Show (EditSubject edita),
         Show editb,Edit editb,
-        PureFullReader (EditReader editb),
+        FullReader (EditReader editb),
         Eq (EditSubject editb),
         Show (EditSubject editb),
         Show state
-    ) => PureEditLens' m state edita editb -> EditSubject edita -> edita -> Property;
-    lensUpdateGetProperty lens oldA editA = let
+    ) => EditLens' m state edita editb -> EditSubject edita -> edita -> Property;
+    lensUpdateGetProperty lens oldA editA = ioProperty $ do
     {
-        newA = fromReadFunction (applyEdit editA) oldA;
-        MkEditLens{..} = lens;
-        MkEditFunction{..} = editLensFunction;
-        oldB = fromReadFunction (editGet editInitial) oldA;
-        rdb = editUpdate editA editInitial;
-        (newState,editBs) = fromPureReadable rdb oldA;
-        newB1 = fromReadFunction (applyEdits editBs) oldB;
-        newB2 = fromReadFunction (editGet newState) newA;
-        vars =
-        [
-            showVar "oldA" oldA,
-            showVar "oldState" editInitial,
-            showVar "oldB" oldB,
-            showVar "editA" editA,
-            showVar "editBs" editBs,
-            showVar "newA" newA,
-            showVar "newState" newState,
-            showVar "newB (edits)" newB1,
-            showVar "newB (lens )" newB2
-        ];
-    } in counterexamples vars $ newB1 === newB2;
+        let
+        {
+            MkEditLens{..} = lens;
+            MkEditFunction{..} = editLensFunction;
+            rdb = editUpdate editA editInitial;
+        };
+        newA <- fromReadFunctionM (applyEdit editA) $ return oldA;
+        oldB <- fromReadFunctionM (editGet editInitial) $ return oldA;
+        (newState,editBs) <- fromReadable rdb oldA;
+        newB1 <- fromReadFunctionM (applyEdits editBs) $ return oldB;
+        newB2 <- fromReadFunctionM (editGet newState) $ return newA;
+        let
+        {
+            vars =
+            [
+                showVar "oldA" oldA,
+                showVar "oldState" editInitial,
+                showVar "oldB" oldB,
+                showVar "editA" editA,
+                showVar "editBs" editBs,
+                showVar "newA" newA,
+                showVar "newState" newState,
+                showVar "newB (edits)" newB1,
+                showVar "newB (lens )" newB2
+            ];
+        };
+        return $ counterexamples vars $ newB1 === newB2;
+    };
 
     testLensUpdate :: TestTree;
     testLensUpdate = testProperty "update" $ \run (base :: String) edit -> lensUpdateGetProperty (stringSectionLens run) base edit;

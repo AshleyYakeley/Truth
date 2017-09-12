@@ -28,7 +28,7 @@ module Truth.Core.Object.Object where
 
             mutableEdit edits = do
             {
-                na <- fromReadFunctionM @Monad (applyEdits edits) get;
+                na <- fromReadFunctionM (applyEdits edits) get;
                 return $ if allowed na then Just $ put na else Nothing;
             };
         } in MkMutableEdit{..};
@@ -42,7 +42,7 @@ module Truth.Core.Object.Object where
     };
 
     mapObject :: forall f lensstate edita editb. (MonadOne f,Edit edita) =>
-        (forall m. IsStateIO m => StateAccess m lensstate) -> IOEditLens' f lensstate edita editb -> Object edita -> Object editb;
+        (forall m. IsStateIO m => StateAccess m lensstate) -> EditLens' f lensstate edita editb -> Object edita -> Object editb;
     mapObject acc lens objectA = MkObject $ \callB -> runObject objectA $ \mutedA -> do
     {
         oldstate <- acc get;
@@ -50,13 +50,13 @@ module Truth.Core.Object.Object where
         return r;
     };
 
-    fixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => IOEditLens' f () edita editb -> Object edita -> Object editb;
+    fixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => EditLens' f () edita editb -> Object edita -> Object editb;
     fixedMapObject lens object = mapObject unitStateAccess lens object;
 
-    pureFixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => PureEditLens' f () edita editb -> Object edita -> Object editb;
-    pureFixedMapObject lens = fixedMapObject $ pureToEditLens lens;
+    pureFixedMapObject :: forall f edita editb. (MonadOne f,Edit edita) => EditLens' f () edita editb -> Object edita -> Object editb;
+    pureFixedMapObject = fixedMapObject;
 
-    convertObject :: (EditSubject edita ~ EditSubject editb,PureFullEdit edita,PureFullEdit editb) => Object edita -> Object editb;
+    convertObject :: (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Object edita -> Object editb;
     convertObject = pureFixedMapObject @Identity convertEditLens;
 
     -- | Combines all the edits made in each call to the object.

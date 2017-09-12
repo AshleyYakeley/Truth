@@ -16,17 +16,17 @@ module Truth.Core.Types.Comonad where
         readFrom wsubj (ReadExtract reader) = readFrom (extract wsubj) reader;
     };
 {-
-    instance (Traversable f,Monad f,PureFullReader reader) => PureFullReader (OneReader f reader) where
+    instance (Traversable f,Monad f,FullReader reader) => FullReader (OneReader f reader) where
     {
-        -- pureFromReader :: PureReadFunction (OneReader f reader) (f (ReaderSubject reader));
+        -- pureFromReader :: ReadFunction (OneReader f reader) (f (ReaderSubject reader));
         pureFromReader = liftMaybeReadable pureFromReader;
     };
 -}
 
-    comonadReadFunction :: ReadFunction c (ComonadReader w reader) reader;
+    comonadReadFunction :: ReadFunction (ComonadReader w reader) reader;
     comonadReadFunction rt = readable $ ReadExtract rt;
 
-    comonadLiftReadFunction :: ReadableConstraint c => ReadFunction c ra rb -> ReadFunction c (ComonadReader w ra) (ComonadReader w rb);
+    comonadLiftReadFunction :: ReadFunction ra rb -> ReadFunction (ComonadReader w ra) (ComonadReader w rb);
     comonadLiftReadFunction rf (ReadExtract reader) = mapReadable comonadReadFunction (rf reader);
 
 
@@ -44,18 +44,18 @@ module Truth.Core.Types.Comonad where
         invertEdit (MkComonadEdit edit) = fmap (fmap MkComonadEdit) $ mapReadable comonadReadFunction $ invertEdit edit;
     };
 
-    comonadEditFunction :: forall w edit. PureEditFunction () (ComonadEdit w edit) edit;
+    comonadEditFunction :: forall w edit. EditFunction () (ComonadEdit w edit) edit;
     comonadEditFunction = let
     {
         editInitial = ();
 
-        editGet :: () -> PureReadFunction (ComonadReader w (EditReader edit)) (EditReader edit);
+        editGet :: () -> ReadFunction (ComonadReader w (EditReader edit)) (EditReader edit);
         editGet () = comonadReadFunction;
 
         editUpdate (MkComonadEdit edit) () = return ((),[edit]);
     } in MkEditFunction{..};
 
-    comonadEditLens :: Applicative m => PureEditLens' m () (ComonadEdit w edit) edit;
+    comonadEditLens :: Applicative m => EditLens' m () (ComonadEdit w edit) edit;
     comonadEditLens = let
     {
         editLensFunction = comonadEditFunction;

@@ -20,7 +20,7 @@ module Truth.Core.Types.String where
         readFrom s (StringReadSection run) = seqSection run s;
     };
 
-    instance IsSequence seq => FullReader c (StringRead seq) where
+    instance IsSequence seq => FullReader (StringRead seq) where
     {
         fromReader = do
         {
@@ -105,7 +105,7 @@ module Truth.Core.Types.String where
 
         invertEdit (StringReplaceWhole _) = do
         {
-            olds <- ioFromReader;
+            olds <- fromReader;
             return [StringReplaceWhole olds];
         };
         invertEdit (StringReplaceSection run@(MkSequenceRun start _) s) = do
@@ -115,20 +115,20 @@ module Truth.Core.Types.String where
         };
     };
 
-    instance IsSequence seq => FullEdit c (StringEdit seq) where
+    instance IsSequence seq => FullEdit (StringEdit seq) where
     {
         replaceEdit = do
         {
-            a <- readableToM $ pureFromReader;
+            a <- readableToM $ fromReader;
             wrWrite $ StringReplaceWhole a;
         };
     };
 
     stringSectionLens :: forall seq. IsSequence seq =>
-        SequenceRun seq -> PureEditLens (SequenceRun seq) (StringEdit seq) (StringEdit seq);
+        SequenceRun seq -> EditLens (SequenceRun seq) (StringEdit seq) (StringEdit seq);
     stringSectionLens editInitial = let
     {
-        editGet :: SequenceRun seq -> PureReadFunction (StringRead seq) (StringRead seq);
+        editGet :: SequenceRun seq -> ReadFunction (StringRead seq) (StringRead seq);
         editGet stateRaw reader = do
         {
             len <- readable StringReadLength;
@@ -143,7 +143,7 @@ module Truth.Core.Types.String where
             };
         };
 
-        editUpdate :: StringEdit seq -> SequenceRun seq -> PureReadable (StringRead seq) (SequenceRun seq,[StringEdit seq]);
+        editUpdate :: StringEdit seq -> SequenceRun seq -> Readable (StringRead seq) (SequenceRun seq,[StringEdit seq]);
         editUpdate edita rawoldstate = do
         {
             len <- readable StringReadLength;
@@ -176,10 +176,10 @@ module Truth.Core.Types.String where
             return (newstate,leditb);
         };
 
-        editLensFunction :: PureEditFunction (SequenceRun seq) (StringEdit seq) (StringEdit seq);
+        editLensFunction :: EditFunction (SequenceRun seq) (StringEdit seq) (StringEdit seq);
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: SequenceRun seq -> StringEdit seq -> PureReadable (StringRead seq) (Maybe (SequenceRun seq,[StringEdit seq]));
+        editLensPutEdit :: SequenceRun seq -> StringEdit seq -> Readable (StringRead seq) (Maybe (SequenceRun seq,[StringEdit seq]));
         editLensPutEdit stateRaw editb = do
         {
             len <- readable StringReadLength;
