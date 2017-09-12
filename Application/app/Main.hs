@@ -68,14 +68,20 @@ module Main(main) where
     fromResult (SuccessResult s) = s;
     fromResult (FailureResult s) = "<" ++ s ++ ">";
 
+    pastResult :: Result String Bool -> String;
+    pastResult (SuccessResult False) = "current";
+    pastResult (SuccessResult True) = "past";
+    pastResult (FailureResult s) = "<" ++ s ++ ">";
+
     type SoupItemEdit = OneWholeEdit (Result String) NoteEdit;
     soupEditSpec :: UISpec (SoupEdit SoupItemEdit);
     soupEditSpec = let
     {
         nameColumn = MkKeyColumn "Name" $ funcEditFunction fromResult <.> oneWholeLiftEditFunction (tupleObjectFunction NoteTitle) <.> tupleObjectFunction EditSecond;
+        pastColumn = MkKeyColumn "Past" $ funcEditFunction pastResult <.> oneWholeLiftEditFunction (tupleObjectFunction NotePast) <.> tupleObjectFunction EditSecond;
         aspect :: Aspect (OneWholeEdit Maybe (UUIDElementEdit SoupItemEdit));
         aspect = MkAspect "item" $ MkUISpec $ MkUILens (oneWholeLiftGeneralLens $ tupleEditLens EditSecond) $ MkUISpec $ MkUIOneWhole $ MkUISpec $ MkUIOneWhole noteEditSpec;
-    } in uiTableToContext [nameColumn] aspect;
+    } in uiTableToContext [nameColumn,pastColumn] aspect;
 
     soupWindow :: FilePath -> WindowMaker;
     soupWindow dirpath = MkWindowMaker $ \makeWindow -> do
