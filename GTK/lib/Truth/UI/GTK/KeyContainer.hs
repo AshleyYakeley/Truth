@@ -111,7 +111,19 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
                     };
                 };
                 MkTupleEdit EditContent KeyClear -> liftIO $ listStoreClear store;
-                MkTupleEdit EditContent _ -> return ();
+                MkTupleEdit EditContent (KeyEditItem key _) -> do
+                {
+                    mindex <- findInStore key;
+                    case mindex of
+                    {
+                        Just i -> do
+                        {
+                            tt <- getTT key mr;
+                            liftIO $ listStoreSetValue store i (key,tt);
+                        };
+                        Nothing -> return ();
+                    };
+                };
                 MkTupleEdit EditContext _ -> return ();
             } :: m ());
 
@@ -126,7 +138,6 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
                     {
                         (key,_) <- listStoreGetValue store i;
                         return $ Just $ mapAspect (liftContextGeneralLens $ keyElementLens key) aspect;
-                        --return $ getAspect $ keyElementLens key;
                     };
                     _ -> return Nothing;
                 };
