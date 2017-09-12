@@ -1,0 +1,3 @@
+#!/bin/sh -e
+stack build
+stack exec -- truth --soup souptest
