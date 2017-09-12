@@ -202,5 +202,5 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
     } in MkEditLens{..};
 
     sqlitePinaforeObject :: FilePath -> Object PinaforeEdit;
-    sqlitePinaforeObject path = pureFixedMapObject soupDatabaseLens $ sqliteObject path soupSchema;
+    sqlitePinaforeObject path = fixedMapObject soupDatabaseLens $ sqliteObject path soupSchema;
 }

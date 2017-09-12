@@ -53,11 +53,8 @@ module Truth.Core.Object.Object where
     fixedMapObject :: forall edita editb. Edit edita => EditLens () edita editb -> Object edita -> Object editb;
     fixedMapObject lens object = mapObject unitStateAccess lens object;
 
-    pureFixedMapObject :: forall edita editb. Edit edita => EditLens () edita editb -> Object edita -> Object editb;
-    pureFixedMapObject = fixedMapObject;
-
     convertObject :: (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Object edita -> Object editb;
-    convertObject = pureFixedMapObject convertEditLens;
+    convertObject = fixedMapObject convertEditLens;
 
     -- | Combines all the edits made in each call to the object.
     ;

@@ -33,7 +33,7 @@ module Main(main) where
             bsObj = fileObject path;
 
             wholeTextObj :: Object (WholeEdit ((Result String) String));
-            wholeTextObj = cacheObject $ pureFixedMapObject textLens bsObj;
+            wholeTextObj = cacheObject $ fixedMapObject textLens bsObj;
         };
         if saveOpt then do
         {
