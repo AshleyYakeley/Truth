@@ -17,8 +17,12 @@ module Truth.UI.GTK.Entry(textEntryUIView) where
         {
             s <- liftIO $ Gtk.get widget entryText;
             edits <- getReplaceEditsM s;
-            _ <- mutableEdit muted edits;
-            return ();
+            maction <- mutableEdit muted edits;
+            case maction of
+            {
+                Just action -> action;
+                Nothing -> return ();
+            };
         };
 
         let
