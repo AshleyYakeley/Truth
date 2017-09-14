@@ -64,7 +64,7 @@ library
         witness,
         open-witness,
         glib,
-        gtk,
+        gtk3,
         shapes,
         Truth-Core
     exposed-modules:
@@ -139,7 +139,7 @@ test-suite test
         witness,
         open-witness,
         glib,
-        gtk,
+        gtk3,
         shapes,
         Truth-Core,
         Truth-GTK,

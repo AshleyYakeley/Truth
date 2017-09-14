@@ -13,7 +13,7 @@ module Truth.UI.GTK.CheckButton(checkButtonUIView) where
         widget <- checkButtonNew;
         initial <- object $ \muted -> unReadable subjectFromReader $ mutableRead muted;
         set widget [buttonLabel := name,toggleButtonActive := initial];
-        clickConnection <- onClicked widget $ object $ \muted -> do
+        clickConnection <- on widget buttonActivated $ object $ \muted -> do
         {
             s <- liftIO $ Gtk.get widget toggleButtonActive;
             edits <- getReplaceEditsM s;

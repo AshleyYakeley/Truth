@@ -59,7 +59,7 @@ executable truth
         filepath,
         bytestring,
         glib,
-        gtk,
+        gtk3,
         shapes,
         Truth-Core,
         Truth-GTK,

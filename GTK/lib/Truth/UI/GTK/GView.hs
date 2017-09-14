@@ -10,7 +10,7 @@ module Truth.UI.GTK.GView where
     {
         button <- buttonNew;
         set button [buttonLabel := name];
-        _ <- onClicked button action;
+        _ <- on button buttonActivated action;
         return button;
     };
 

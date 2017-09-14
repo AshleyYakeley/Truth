@@ -47,7 +47,7 @@ module Truth.UI.GTK.Text (textUIView) where
         textBufferSetText buffer initial;
         mv <- newMVar ();
 
-        _ <- onBufferInsertText buffer $ \iter text -> ifMVar mv $ object $ \muted -> do
+        _ <- on buffer bufferInsertText $ \iter text -> ifMVar mv $ object $ \muted -> do
         {
             p <- getSequencePoint iter;
             maction <- mutableEdit muted $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
@@ -58,7 +58,7 @@ module Truth.UI.GTK.Text (textUIView) where
             };
         };
 
-        _ <- onDeleteRange buffer $ \iter1 iter2 -> ifMVar mv $ object $ \muted -> do
+        _ <- on buffer deleteRange $ \iter1 iter2 -> ifMVar mv $ object $ \muted -> do
         {
             run <- getSequenceRun iter1 iter2;
             maction <- mutableEdit muted $ pure $ StringReplaceSection run mempty;
@@ -94,7 +94,7 @@ module Truth.UI.GTK.Text (textUIView) where
             };
         };
 
-        _ <- onFocus widget $ \_ -> do
+        _ <- on widget focus $ \_ -> do
         {
             setSelect vrFirstAspectGetter;
             return True;

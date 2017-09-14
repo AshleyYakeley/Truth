@@ -2,7 +2,7 @@ module Truth.UI.GTK.Maybe (oneUIView) where
 {
     import Shapes;
     import Truth.Core;
-    import Graphics.UI.Gtk hiding (get,Object);
+    import Graphics.UI.Gtk hiding (get);
     import Truth.UI.GTK.GView;
 
 

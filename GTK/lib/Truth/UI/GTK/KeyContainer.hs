@@ -1,7 +1,7 @@
 module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
 {
     import Shapes;
-    import Graphics.UI.Gtk hiding (Object);
+    import Graphics.UI.Gtk;
     import Truth.Core;
     import Truth.UI.GTK.GView;
 
@@ -144,7 +144,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
             };
         };
 
-        _ <- onFocus box $ \_ -> do
+        _ <- on box focus $ \_ -> do
         {
             setSelect vrFirstAspectGetter;
             return True;

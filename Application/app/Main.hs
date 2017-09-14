@@ -11,7 +11,7 @@ module Main(main) where
     import Truth.World.Note;
     import Truth.World.Soup;
     import Truth.World.Pinafore;
-    import Graphics.UI.Gtk hiding (Object);
+    import Graphics.UI.Gtk;
     import Truth.UI.GTK;
     import qualified Options.Applicative as O;
 
