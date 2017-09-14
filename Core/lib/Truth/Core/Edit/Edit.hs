@@ -20,21 +20,25 @@ module Truth.Core.Edit.Edit where
     {
         type EditReader edit :: * -> *;
         applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit);
-        invertEdit :: edit -> Readable (EditReader edit) [edit];
     };
 
     type EditSubject edit = ReaderSubject (EditReader edit);
 
-{-
-    applyAndInvertEdit :: (Edit edit) => edit -> (ReadFunction (EditReader edit) (EditReader edit),Readable (EditReader edit) [edit]);
-    applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
--}
     applyEdits :: (Edit edit) => [edit] -> ReadFunction (EditReader edit) (EditReader edit);
     applyEdits [] = readable;
     applyEdits (e:es) = composeReadFunction (applyEdits es) (applyEdit e);
 
+    class Edit edit => InvertableEdit (edit :: *) where
+    {
+        invertEdit :: edit -> Readable (EditReader edit) [edit];
+    };
+{-
+    applyAndInvertEdit :: (InvertableEdit edit) => edit -> (ReadFunction (EditReader edit) (EditReader edit),Readable (EditReader edit) [edit]);
+    applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
+-}
+
     -- edits always applied in the given order, so list returned will be reversed relative to list given.
-    invertEdits :: (Edit edit) => [edit] -> Readable (EditReader edit) [edit];
+    invertEdits :: InvertableEdit edit => [edit] -> Readable (EditReader edit) [edit];
     invertEdits [] = return [];
     invertEdits (e:ee) = do
     {

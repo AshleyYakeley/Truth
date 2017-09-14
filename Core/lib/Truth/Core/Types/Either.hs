@@ -63,7 +63,10 @@ module Truth.Core.Types.Either where
         applyEdit (EitherEditLeft edit) (EitherReadLeft reader) = mapEitherReadLeft $ applyEdit edit reader;
         applyEdit (EitherEditRight edit) (EitherReadRight reader) = mapEitherReadRight $ applyEdit edit reader;
         applyEdit _ reader = readable reader;
+    };
 
+    instance (InvertableEdit ea,InvertableEdit eb) => InvertableEdit (EitherEdit ea eb) where
+    {
         invertEdit (EitherEditLeft edit) = do
         {
             medits <- mapEitherReadLeft $ invertEdit edit;

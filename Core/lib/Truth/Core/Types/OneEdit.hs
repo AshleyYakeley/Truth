@@ -20,7 +20,10 @@ module Truth.Core.Types.OneEdit where
         -- applyEdit :: OneEdit f edit -> ReadMap (OneReader f (EditReader edit)) (OneReader f (EditReader edit));
         applyEdit (MkOneEdit _edita) ReadHasOne = readable ReadHasOne;
         applyEdit (MkOneEdit edita) (ReadOne reader) = liftMaybeReadable (applyEdit edita reader);
+    };
 
+    instance (MonadOne f,InvertableEdit edit) => InvertableEdit (OneEdit f edit) where
+    {
         -- invertEdit :: OneEdit f edit -> Readable (OneReader f reader) (Maybe (OneEdit f edit));    -- "Nothing" means no change
         invertEdit (MkOneEdit edita) = do
         {

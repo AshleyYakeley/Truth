@@ -34,7 +34,7 @@ module Truth.World.Anything where
 
     data AnyEdit where
     {
-        MkAnyEdit :: forall edit. (Edit edit,SubjectReader (EditReader edit)) => IOWitness edit -> edit -> AnyEdit;
+        MkAnyEdit :: forall edit. (InvertableEdit edit,SubjectReader (EditReader edit)) => IOWitness edit -> edit -> AnyEdit;
     };
 
     instance Floating AnyEdit AnyEdit where
@@ -60,7 +60,10 @@ module Truth.World.Anything where
             }
         };
         applyEdit (MkAnyEdit _ _) ReadAnyTypes = readable ReadAnyTypes; -- edit cannot change types
+    };
 
+    instance InvertableEdit AnyEdit where
+    {
         -- invertEdit :: AnyEdit -> Readable AnyReader [AnyEdit];
         invertEdit (MkAnyEdit ie edit) = do
         {

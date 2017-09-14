@@ -37,10 +37,14 @@ module Truth.Core.Types.Comonad where
         floatingUpdate (MkComonadEdit e1) (MkComonadEdit e2) = MkComonadEdit $ floatingUpdate e1 e2;
     };
 
-    instance (Edit edit) => Edit (ComonadEdit w edit) where
+    instance Edit edit => Edit (ComonadEdit w edit) where
     {
         type EditReader (ComonadEdit w edit) = ComonadReader w (EditReader edit);
         applyEdit (MkComonadEdit edit) = comonadLiftReadFunction $ applyEdit edit;
+    };
+
+    instance InvertableEdit edit => InvertableEdit (ComonadEdit w edit) where
+    {
         invertEdit (MkComonadEdit edit) = fmap (fmap MkComonadEdit) $ mapReadable comonadReadFunction $ invertEdit edit;
     };
 

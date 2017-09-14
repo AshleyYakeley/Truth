@@ -72,7 +72,6 @@ module Truth.World.FileSystem where
     {
         type EditReader FSEdit = FSReader;
         applyEdit _ _ = undefined; -- TODO
-        invertEdit _ = return undefined; -- TODO
     };
 
     createFile :: FilePath -> ByteString -> IO ();

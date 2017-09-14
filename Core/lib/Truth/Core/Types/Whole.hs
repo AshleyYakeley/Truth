@@ -33,6 +33,10 @@ module Truth.Core.Types.Whole where
     {
         type EditReader (WholeReaderEdit reader) = reader;
         applyEdit (MkWholeEdit a) = readFromSubjectM (return a);
+    };
+
+    instance (FullSubjectReader reader) => InvertableEdit (WholeReaderEdit reader) where
+    {
         invertEdit _ = do
         {
             a <- subjectFromReader;

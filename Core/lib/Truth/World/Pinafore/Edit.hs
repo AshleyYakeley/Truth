@@ -41,7 +41,6 @@ module Truth.World.Pinafore.Edit where
     {
         type EditReader PinaforeEdit = PinaforeRead;
         applyEdit _ _ = return undefined;
-        invertEdit _ = return undefined;
     };
 
     soupPrimitiveLens :: forall t. Serialize t => UUID -> EditLens () PinaforeEdit (WholeEdit (Maybe t));

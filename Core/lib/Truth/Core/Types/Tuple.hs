@@ -93,8 +93,11 @@ module Truth.Core.Types.Tuple where
                 (MkConstraintWitness,Just Refl) -> mapReadable (readable . MkTupleEditReader aggedite) (applyEdit edit reader);
                 _ -> readable aggreader;
             };
+    };
 
-        invertEdit (MkTupleEdit seledit edit) = case tupleWitness (Proxy::Proxy Edit) seledit of
+    instance (TestEquality sel,TupleWitness Edit sel,TupleWitness InvertableEdit sel) => InvertableEdit (TupleEdit sel) where
+    {
+        invertEdit (MkTupleEdit seledit edit) = case tupleWitness (Proxy::Proxy InvertableEdit) seledit of
         {
             MkConstraintWitness -> fmap (fmap (MkTupleEdit seledit))
                 (mapReadable (readable . MkTupleEditReader seledit) (invertEdit edit));

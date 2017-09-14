@@ -103,7 +103,10 @@ module Truth.Core.Types.ByteString where
             afterBS <- if afterLen > 0 then readable $ ReadByteStringSection afterStart afterLen else return mempty;
             return $ mappend beforeBS $ mappend middleBS afterBS;
         };
+    };
 
+    instance InvertableEdit ByteStringEdit where
+    {
         invertEdit (ByteStringSetLength newlen) = do
         {
             oldlen <- readable ReadByteStringLength;

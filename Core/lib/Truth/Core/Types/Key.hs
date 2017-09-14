@@ -124,7 +124,10 @@ module Truth.Core.Types.Key where
         applyEdit (KeyInsertReplaceItem item) (KeyReadItem key reader) | elementKey (Proxy @cont) item == key = return $ Just $ readFromSubject item reader;
         applyEdit (KeyInsertReplaceItem _) (KeyReadItem key reader) = readable $ KeyReadItem key reader;
         applyEdit KeyClear reader = readFromSubjectM (return mempty) reader;
+    };
 
+    instance (KeyContainer cont,FullSubjectReader (EditReader edit),InvertableEdit edit,HasKeyReader cont (EditReader edit)) => InvertableEdit (KeyEdit cont edit) where
+    {
         invertEdit (KeyEditItem p edit) = do
         {
             minvedits <- mapReadableF (keyItemReadFunction p) $ invertEdit edit;

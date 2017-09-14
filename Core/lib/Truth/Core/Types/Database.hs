@@ -81,14 +81,5 @@ module Truth.Core.Types.Database where
     {
         type EditReader (DatabaseEdit database tablesel) = DatabaseRead database tablesel;
         applyEdit _ _ = return $ error "NYI: DatabaseEdit.applyEdit";
-        invertEdit _ = return $ error "NYI: DatabaseEdit.invertEdit";
-        {-
-        invertEdit (DatabaseDelete (tsel :: tablesel row) wc) = do
-        {
-            MkConstraintWitness <- return $ orderMonoid @tablesel @row;
-            rows <- readable $ DatabaseSelect (SingleTable tsel) wc mempty (selectRow tsel);
-            return [DatabaseInsert tsel $ insertIntoTable tsel rows];
-        };
-        -}
     };
 }

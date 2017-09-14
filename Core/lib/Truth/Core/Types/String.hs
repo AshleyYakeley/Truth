@@ -102,7 +102,10 @@ module Truth.Core.Types.String where
             after <- if positiveRun afterRun then readable $ StringReadSection afterRun else return mempty;
             return $ mappend before $ mappend middle after;
         };
+    };
 
+    instance IsSequence seq => InvertableEdit (StringEdit seq) where
+    {
         invertEdit (StringReplaceWhole _) = do
         {
             olds <- subjectFromReader;

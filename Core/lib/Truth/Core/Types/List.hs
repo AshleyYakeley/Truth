@@ -96,7 +96,10 @@ module Truth.Core.Types.List where
         applyEdit (ListInsertItem p _) (ListReadItem i reader) | p >= 0 && p < i = readable $ ListReadItem (i - 1) reader;
         applyEdit (ListInsertItem _ _) (ListReadItem i reader) = readable $ ListReadItem i reader;
         applyEdit ListClear reader = readFromSubjectM (return mempty) reader;
+    };
 
+    instance (IsSequence seq,FullSubjectReader (EditReader edit),InvertableEdit edit,EditSubject edit ~ Element seq) => InvertableEdit (ListEdit seq edit) where
+    {
         invertEdit (ListEditItem p edit) = do
         {
             minvedits <- mapReadableF (itemReadFunction p) $ invertEdit edit;

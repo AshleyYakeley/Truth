@@ -33,7 +33,10 @@ module Truth.Core.Types.Sum where
 
         applyEdit (SumEditLeft edit) = applyEdit edit;
         applyEdit (SumEditRight edit) = applyEdit edit;
+    };
 
+    instance (InvertableEdit ea,InvertableEdit eb,EditReader ea ~ EditReader eb) => InvertableEdit (SumEdit ea eb) where
+    {
         invertEdit (SumEditLeft edit) = fmap (fmap SumEditLeft) (invertEdit edit);
         invertEdit (SumEditRight edit) = fmap (fmap SumEditRight) (invertEdit edit);
     };

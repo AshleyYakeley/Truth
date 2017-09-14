@@ -43,6 +43,10 @@ module Truth.Core.Types.None where
     {
         type EditReader (NoEdit reader) = reader;
         applyEdit = never;
+    };
+
+    instance InvertableEdit (NoEdit reader) where
+    {
         invertEdit = never;
     };
 
