@@ -33,16 +33,6 @@ module Truth.Core.Edit.EditLens where
     };
 
     type ObjectLens = EditLens ();
-{-
-    instance IsBiMap (EditLens state) where
-    {
-        mapBiMapM ff felens = MkEditLens
-        {
-            editLensFunction = editLensFunction felens,
-            editLensPutEdit = \state edit -> fmap ff (editLensPutEdit felens state edit)
-        };
-    };
--}
 
     instance ConstrainedCategory (EditLens ()) where
     {

@@ -82,16 +82,15 @@ module Truth.Core.Edit.EditFunction  where
         (MkCloseState bc) <.> (MkCloseState ab) = MkCloseState $ composeState bc ab;
     };
 
-    instance ConstrainedCategory (EditFunction ()) where
+    instance Category (EditFunction ()) where
     {
-        type CategoryConstraint (EditFunction ()) t = Edit t;
-        cid = let
+        id = let
         {
             editInitial = ();
             editGet _ = readable;
             editUpdate edit _ = return ((),[edit]);
         } in MkEditFunction{..};
-        fef2 <.> fef1 = MkEditFunction
+        fef2 . fef1 = MkEditFunction
         {
             editInitial = (),
             editGet = \() -> composeReadFunction (editGet fef2 ()) (editGet fef1 ()),
@@ -102,6 +101,13 @@ module Truth.Core.Edit.EditFunction  where
                 return ((),editCs);
             }
         };
+    };
+
+    instance ConstrainedCategory (EditFunction ()) where
+    {
+        type CategoryConstraint (EditFunction ()) t = ();
+        cid = id;
+        (<.>) = (.);
     };
 
     instance StateCategory EditFunction where

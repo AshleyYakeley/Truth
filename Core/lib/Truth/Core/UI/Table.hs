@@ -14,7 +14,7 @@ module Truth.Core.UI.Table where
         kcFunction :: ObjectFunction edit (WholeEdit String)
     };
 
-    mapKeyColumn :: (Edit edita,Edit editb) => ObjectFunction edita editb -> KeyColumn editb -> KeyColumn edita;
+    mapKeyColumn :: ObjectFunction edita editb -> KeyColumn editb -> KeyColumn edita;
     mapKeyColumn ff (MkKeyColumn n f) = MkKeyColumn n $ f <.> ff;
 
     data UIContextTable edit where
