@@ -123,8 +123,8 @@ module Truth.UI.GTK.Window where
         return ();
     };
 
-    makeViewWindow :: (Edit edit,WindowButtons actions) => GetGView -> GView edit -> IORef Int -> IO () -> String -> Subscriber edit actions -> IO ();
-    makeViewWindow guiview view ref tellclose title sub = do
+    makeViewWindow :: (Edit edit,WindowButtons actions) => GView edit -> IORef Int -> IO () -> String -> Subscriber edit actions -> IO ();
+    makeViewWindow view windowCount tellclose title sub = do
     {
         MkViewSubscription{..} <- subscribeView view sub;
         window <- windowNew;
@@ -165,7 +165,7 @@ module Truth.UI.GTK.Window where
             msel <- srGetSelection;
             case msel of
             {
-                Just (MkAspect aspname aspspec) -> makeViewWindowCountRef guiview (getTheUIView aspspec) ref (aspname ++ " of " ++ title) sub;
+                Just (MkAspect aspname aspspec) -> makeWindowCountRef windowCount aspspec (aspname ++ " of " ++ title) sub;
                 Nothing -> return ();
             };
         };
@@ -189,10 +189,10 @@ module Truth.UI.GTK.Window where
         widgetShowAll window;
     };
 
-    makeViewWindowCountRef :: (Edit edit,WindowButtons actions) => GetGView -> GView edit -> IORef Int -> String -> Subscriber edit actions -> IO ();
-    makeViewWindowCountRef guiview view windowCount title sub = do
+    makeViewWindowCountRef :: (Edit edit,WindowButtons actions) => GView edit -> IORef Int -> String -> Subscriber edit actions -> IO ();
+    makeViewWindowCountRef view windowCount title sub = do
     {
-        makeViewWindow guiview view windowCount (do
+        makeViewWindow view windowCount (do
         {
             i <- readIORef windowCount;
             writeIORef windowCount (i - 1);
@@ -205,5 +205,8 @@ module Truth.UI.GTK.Window where
     };
 
     makeWindowCountRef :: forall edit actions. (Edit edit,WindowButtons actions) => IORef Int -> UISpec edit -> String -> Subscriber edit actions -> IO ();
-    makeWindowCountRef windowCount uispec title sub = makeViewWindowCountRef allUIView (getTheUIView uispec) windowCount title sub;
+    makeWindowCountRef windowCount uispec title sub = do
+    {
+        makeViewWindowCountRef (getTheUIView uispec) windowCount title sub;
+    };
 }

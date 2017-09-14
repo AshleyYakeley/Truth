@@ -49,7 +49,7 @@ module Truth.World.Pinafore.Ontology where
 
     instance Show (UIEntityPicker edit) where
     {
-        show (MkUIEntityPicker uispec) = "picker " ++ show uispec;
+        show (MkUIEntityPicker _uispec) = "picker";
     };
 
     instance UIType UIEntityPicker where
@@ -80,17 +80,17 @@ module Truth.World.Pinafore.Ontology where
     pinaforePropertySpec :: ViewPinaforeProperty -> UISpec (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID)));
     pinaforePropertySpec (SimpleViewPinaforeProperty (MkViewPinaforeSimpleProperty _name (MkPointedEditLens lens) ptype)) = MkUISpec $ MkUILens (MkCloseState lens) $ MkUISpec $ MkUIEntityPicker $ pinaforeTypeSpec ptype;
     pinaforePropertySpec (ListViewPinaforeProperty (MkViewPinaforeListProperty _name lens ptype cols)) = let
-        {
-            aspect :: Aspect (ContextEdit PinaforeEdit (OneWholeEdit Maybe (NoEdit (WholeReader UUID))));
-            aspect = MkAspect "item" $ MkUISpec $ MkUILens (liftContextGeneralLens $ MkCloseState convertEditLens) $ pinaforeTypeSpec ptype;
+    {
+        aspect :: Aspect (ContextEdit PinaforeEdit (OneWholeEdit Maybe (NoEdit (WholeReader UUID))));
+        aspect = MkAspect "item" $ MkUISpec $ MkUILens (liftContextGeneralLens $ MkCloseState convertEditLens) $ pinaforeTypeSpec ptype;
 
-            spec :: UISpec (ContextEdit PinaforeEdit (KeyEdit (FiniteSet UUID) (NoEdit (WholeReader UUID))));
-            spec = MkUISpec $ MkUIContextTable (fmap pinaforePropertyKeyColumn cols) aspect;
+        spec :: UISpec (ContextEdit PinaforeEdit (KeyEdit (FiniteSet UUID) (NoEdit (WholeReader UUID))));
+        spec = MkUISpec $ MkUIContextTable (fmap pinaforePropertyKeyColumn cols) aspect;
 
-            propertyLens :: GeneralLens (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID))) (ContextEdit PinaforeEdit (KeyEdit (FiniteSet UUID) (NoEdit (WholeReader UUID))));
-            propertyLens = carryPointedEditLens lens;
-        }
-        in MkUISpec $ MkUILens propertyLens spec;
+        propertyLens :: GeneralLens (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID))) (ContextEdit PinaforeEdit (KeyEdit (FiniteSet UUID) (NoEdit (WholeReader UUID))));
+        propertyLens = carryPointedEditLens lens;
+    }
+    in MkUISpec $ MkUILens propertyLens spec;
 
     pinaforeTypeSpec :: ViewPinaforeType edit -> UISpec (ContextEdit PinaforeEdit edit);
     pinaforeTypeSpec (EntityViewPinaforeType props) = MkUISpec $ MkUIVertical $ fmap pinaforePropertySpec props;
