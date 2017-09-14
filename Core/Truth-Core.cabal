@@ -141,6 +141,7 @@ library
         Truth.Core.UI.Table
         Truth.Core.UI.WindowButton
         Truth.Core.UI.View
+        Truth.Core.UI.GetView
         Truth.Core.UI
         Truth.World.SQLite.Schema
         Truth.World.Pinafore.Edit

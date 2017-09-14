@@ -152,8 +152,8 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
         return MkViewResult{..};
     };
 
-    keyContainerUIView :: GetUIView;
-    keyContainerUIView = MkGetUIView $ \_getview uispec -> do
+    keyContainerUIView :: GetGView;
+    keyContainerUIView = MkGetView $ \_getview uispec -> do
     {
         MkUIContextTable cols aspect <- isUISpec uispec;
         return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) aspect;

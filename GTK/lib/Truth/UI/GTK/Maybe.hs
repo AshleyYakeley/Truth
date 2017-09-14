@@ -154,8 +154,8 @@ module Truth.UI.GTK.Maybe (oneUIView) where
         return label;
     };
 
-    oneUIView :: GetUIView;
-    oneUIView = MkGetUIView $ \getview uispec -> do
+    oneUIView :: GetGView;
+    oneUIView = MkGetView $ \getview uispec -> do
     {
         uit <- isUISpec uispec;
         return $ case uit of

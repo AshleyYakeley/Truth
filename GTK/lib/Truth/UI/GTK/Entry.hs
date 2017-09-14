@@ -7,8 +7,8 @@ module Truth.UI.GTK.Entry(textEntryUIView) where
     import Truth.UI.GTK.Useful;
 
 
-    textEntryUIView :: GetUIView;
-    textEntryUIView = MkGetUIView $ \_ uispec -> fmap (\MkUITextEntry -> MkView $ \(MkObject object) _setSelect -> do
+    textEntryUIView :: GetGView;
+    textEntryUIView = MkGetView $ \_ uispec -> fmap (\MkUITextEntry -> MkView $ \(MkObject object) _setSelect -> do
     {
         widget <- entryNew;
         initial <- object $ \muted -> unReadable subjectFromReader $ mutableRead muted;

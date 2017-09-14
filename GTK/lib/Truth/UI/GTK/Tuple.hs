@@ -6,8 +6,8 @@ module Truth.UI.GTK.Tuple(verticalUIView) where
     import Truth.UI.GTK.GView;
 
 
-    verticalUIView :: GetUIView;
-    verticalUIView = MkGetUIView $ \getview uispec -> do
+    verticalUIView :: GetGView;
+    verticalUIView = MkGetView $ \getview uispec -> do
     {
         MkUIVertical aspects <- isUISpec uispec;
         return $ mapIOView arrangeWidgets $ for aspects getview;

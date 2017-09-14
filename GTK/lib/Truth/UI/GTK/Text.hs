@@ -102,8 +102,8 @@ module Truth.UI.GTK.Text (textUIView) where
         return MkViewResult{..};
     };
 
-    textUIView :: GetUIView;
-    textUIView = MkGetUIView $ \_ uispec -> fmap (\case
+    textUIView :: GetGView;
+    textUIView = MkGetView $ \_ uispec -> fmap (\case
     {
         MkStringUIText -> textView MkStringUIText;
         MkTextUIText -> textView MkTextUIText;

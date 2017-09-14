@@ -10,6 +10,7 @@ module Truth.Core.UI
     module Truth.Core.UI.Table,
     module Truth.Core.UI.WindowButton,
     module Truth.Core.UI.View,
+    module Truth.Core.UI.GetView,
 ) where
 {
     import Truth.Core.UI.Specifier;
@@ -22,4 +23,5 @@ module Truth.Core.UI
     import Truth.Core.UI.Table;
     import Truth.Core.UI.WindowButton;
     import Truth.Core.UI.View;
+    import Truth.Core.UI.GetView;
 }

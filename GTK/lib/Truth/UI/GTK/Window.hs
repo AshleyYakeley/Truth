@@ -27,7 +27,7 @@ module Truth.UI.GTK.Window where
         return MkViewResult{..};
     };
 
-    allUIView :: GetUIView;
+    allUIView :: GetGView;
     allUIView = mconcat [lensUIView,checkButtonUIView,textEntryUIView,textUIView,keyContainerUIView,oneUIView,verticalUIView];
 
     getTheUIView :: Edit edit => UISpec edit -> GView edit;
@@ -123,7 +123,7 @@ module Truth.UI.GTK.Window where
         return ();
     };
 
-    makeViewWindow :: (Edit edit,WindowButtons actions) => GetUIView -> GView edit -> IORef Int -> IO () -> String -> Subscriber edit actions -> IO ();
+    makeViewWindow :: (Edit edit,WindowButtons actions) => GetGView -> GView edit -> IORef Int -> IO () -> String -> Subscriber edit actions -> IO ();
     makeViewWindow guiview view ref tellclose title sub = do
     {
         MkViewSubscription{..} <- subscribeView view sub;
@@ -189,7 +189,7 @@ module Truth.UI.GTK.Window where
         widgetShowAll window;
     };
 
-    makeViewWindowCountRef :: (Edit edit,WindowButtons actions) => GetUIView -> GView edit -> IORef Int -> String -> Subscriber edit actions -> IO ();
+    makeViewWindowCountRef :: (Edit edit,WindowButtons actions) => GetGView -> GView edit -> IORef Int -> String -> Subscriber edit actions -> IO ();
     makeViewWindowCountRef guiview view windowCount title sub = do
     {
         makeViewWindow guiview view windowCount (do
