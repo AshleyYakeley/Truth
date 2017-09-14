@@ -19,11 +19,11 @@ module Truth.Core.UI.Table where
 
     data UIContextTable edit where
     {
-        MkUIContextTable :: forall cont cedit iedit. (IONewItemKeyContainer cont,FullReader (EditReader iedit),Edit cedit,Edit iedit,HasKeyReader cont (EditReader iedit)) =>
+        MkUIContextTable :: forall cont cedit iedit. (IONewItemKeyContainer cont,FullSubjectReader (EditReader iedit),Edit cedit,Edit iedit,HasKeyReader cont (EditReader iedit)) =>
             [KeyColumn (ContextEdit cedit iedit)] -> Aspect (ContextEdit cedit (OneWholeEdit Maybe iedit)) -> UIContextTable (ContextEdit cedit (KeyEdit cont iedit));
     };
 
-    uiTableToContext :: forall cont iedit. (IONewItemKeyContainer cont,FullReader (EditReader iedit),HasKeyReader cont (EditReader iedit),Edit iedit) =>
+    uiTableToContext :: forall cont iedit. (IONewItemKeyContainer cont,FullSubjectReader (EditReader iedit),HasKeyReader cont (EditReader iedit),Edit iedit) =>
         [KeyColumn iedit] -> Aspect (OneWholeEdit Maybe iedit) -> UISpec (KeyEdit cont iedit);
     uiTableToContext cols aspect = let
     {

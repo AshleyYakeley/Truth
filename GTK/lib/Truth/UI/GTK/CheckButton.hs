@@ -11,7 +11,7 @@ module Truth.UI.GTK.CheckButton(checkButtonUIView) where
     checkButtonUIView = MkGetUIView $ \_ uispec -> fmap (\(MkUICheckbox name) -> MkView $ \(MkObject object) _setSelect -> do
     {
         widget <- checkButtonNew;
-        initial <- object $ \muted -> unReadable fromReader $ mutableRead muted;
+        initial <- object $ \muted -> unReadable subjectFromReader $ mutableRead muted;
         set widget [buttonLabel := name,toggleButtonActive := initial];
         clickConnection <- onClicked widget $ object $ \muted -> do
         {

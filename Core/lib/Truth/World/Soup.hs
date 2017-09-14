@@ -10,7 +10,7 @@ module Truth.World.Soup(UUIDElementEdit,SoupEdit,directorySoup,liftSoupLens) whe
     type UUIDElementEdit edit = PairEdit (NoEdit (WholeReader UUID)) edit;
     type SoupEdit edit = KeyEdit [(UUID,EditSubject edit)] (UUIDElementEdit edit);
 
-    liftSoupLens :: forall state edita editb. (Edit edita,Edit editb,FullReader (EditReader editb)) =>
+    liftSoupLens :: forall state edita editb. (SubjectReader (EditReader edita),FullSubjectReader (EditReader editb)) =>
         (forall m. MonadIO m => EditSubject editb -> m (Maybe (EditSubject edita))) ->
         EditLens state edita editb -> EditLens state (SoupEdit edita) (SoupEdit editb);
     liftSoupLens bmfa = let

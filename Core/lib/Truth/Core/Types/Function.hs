@@ -1,6 +1,7 @@
 module Truth.Core.Types.Function where
 {
     import Truth.Core.Import;
+    import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Types.Tuple;
 
@@ -16,13 +17,13 @@ module Truth.Core.Types.Function where
         testEquality _ _ = Nothing;
     };
 
-    instance (Finite a,Edit edit) => TupleSelector (FunctionSelector a edit) where
+    instance (Finite a,SubjectReader (EditReader edit)) => SubjectTupleSelector (FunctionSelector a edit) where
     {
         type TupleSubject (FunctionSelector a edit) = a -> EditSubject edit;
-        tupleReadFrom (MkFunctionSelector a) ab = ab a;
+        tupleReadFromSubject (MkFunctionSelector a) ab = ab a;
     };
 
-    instance (Finite a,Edit edit) => FiniteTupleSelector (FunctionSelector a edit) where
+    instance Finite a => FiniteTupleSelector (FunctionSelector a edit) where
     {
         tupleConstruct f = assemble (\a -> f (MkFunctionSelector a));
     };

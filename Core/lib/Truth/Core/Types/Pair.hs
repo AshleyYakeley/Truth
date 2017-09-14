@@ -28,14 +28,14 @@ module Truth.Core.Types.Pair where
         testEquality _ _ = Nothing;
     };
 
-    instance (Edit ea,Edit eb) => TupleSelector (PairSelector ea eb) where
+    instance (SubjectReader (EditReader ea),SubjectReader (EditReader eb)) => SubjectTupleSelector (PairSelector ea eb) where
     {
         type TupleSubject (PairSelector ea eb) = (EditSubject ea,EditSubject eb);
-        tupleReadFrom EditFirst (a,_b) = a;
-        tupleReadFrom EditSecond (_a,b) = b;
+        tupleReadFromSubject EditFirst (a,_b) = a;
+        tupleReadFromSubject EditSecond (_a,b) = b;
     };
 
-    instance (Edit ea,Edit eb) => FiniteTupleSelector (PairSelector ea eb) where
+    instance FiniteTupleSelector (PairSelector ea eb) where
     {
         tupleConstruct f = (,) <$> f EditFirst <*> f EditSecond;
     };

@@ -17,24 +17,24 @@ module Truth.World.Anything where
     data AnyReader t where
     {
         ReadAnyTypes :: AnyReader AnyTypes;
-        ReadAnyReader :: forall edit t. Reader (EditReader edit) => IOWitness edit -> EditReader edit t -> AnyReader (Maybe t);
+        ReadAnyReader :: forall edit t. SubjectReader (EditReader edit) => IOWitness edit -> EditReader edit t -> AnyReader (Maybe t);
     };
 
-    instance Reader AnyReader where
+    instance SubjectReader AnyReader where
     {
         type ReaderSubject AnyReader = Anything;
 
-        readFrom (MkAnything wit _a) ReadAnyTypes = MkAnyTypes wit;
-        readFrom (MkAnything wit a) (ReadAnyReader witr reader) = do
+        readFromSubject (MkAnything wit _a) ReadAnyTypes = MkAnyTypes wit;
+        readFromSubject (MkAnything wit a) (ReadAnyReader witr reader) = do
         {
             Refl <- testEquality wit witr;
-            return (readFrom a reader);
+            return (readFromSubject a reader);
         };
     };
 
     data AnyEdit where
     {
-        MkAnyEdit :: forall edit. (Edit edit) => IOWitness edit -> edit -> AnyEdit;
+        MkAnyEdit :: forall edit. (Edit edit,SubjectReader (EditReader edit)) => IOWitness edit -> edit -> AnyEdit;
     };
 
     instance Floating AnyEdit AnyEdit where

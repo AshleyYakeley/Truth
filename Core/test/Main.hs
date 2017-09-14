@@ -53,10 +53,10 @@ module Main(main) where
         assertEqual "" expected found;
     };
 
-    applyEditSubject :: (Edit edit,FullReader (EditReader edit)) => edit -> EditSubject edit -> IO (EditSubject edit);
+    applyEditSubject :: (Edit edit,FullSubjectReader (EditReader edit)) => edit -> EditSubject edit -> IO (EditSubject edit);
     applyEditSubject edit subj = fromReadFunctionM (applyEdit edit) $ return subj;
 
-    testEdit :: (Edit edit,FullReader (EditReader edit),Eq (EditSubject edit),Show edit,Show (EditSubject edit)) => edit -> EditSubject edit -> EditSubject edit -> TestTree;
+    testEdit :: (Edit edit,FullSubjectReader (EditReader edit),Eq (EditSubject edit),Show edit,Show (EditSubject edit)) => edit -> EditSubject edit -> EditSubject edit -> TestTree;
     testEdit edit original expected = let
     {
         name = show edit ++ " " ++ show original;
@@ -66,13 +66,13 @@ module Main(main) where
         assertEqual "" expected found;
     };
 
-    testEditRead :: (Edit edit,Eq t,Show t,Show edit,Show (EditSubject edit),Show (EditReader edit t)) => edit -> EditSubject edit -> EditReader edit t -> t -> TestTree;
+    testEditRead :: (SubjectReader (EditReader edit),Edit edit,Eq t,Show t,Show edit,Show (EditSubject edit),Show (EditReader edit t)) => edit -> EditSubject edit -> EditReader edit t -> t -> TestTree;
     testEditRead edit original rt expected = let
     {
         name = show edit ++ " " ++ show original ++ " " ++ show rt;
     } in testCase name $ do
     {
-        found <- fromReadable (applyEdit edit rt) original;
+        found <- fromReadableSubject (applyEdit edit rt) original;
         assertEqual "" expected found;
     };
 
@@ -105,7 +105,7 @@ module Main(main) where
         rf = editGet editInitial;
 
         expected :: String;
-        expected = readFrom base $ StringReadSection run;
+        expected = readFromSubject base $ StringReadSection run;
     } in ioProperty $ do
     {
         found <- fromReadFunctionM rf $ return base;
@@ -122,10 +122,10 @@ module Main(main) where
     lensUpdateGetProperty ::
     (
         Show edita,Edit edita,
-        FullReader (EditReader edita),
+        FullSubjectReader (EditReader edita),
         Show (EditSubject edita),
         Show editb,Edit editb,
-        FullReader (EditReader editb),
+        FullSubjectReader (EditReader editb),
         Eq (EditSubject editb),
         Show (EditSubject editb),
         Show state
@@ -140,7 +140,7 @@ module Main(main) where
         };
         newA <- fromReadFunctionM (applyEdit editA) $ return oldA;
         oldB <- fromReadFunctionM (editGet editInitial) $ return oldA;
-        (newState,editBs) <- fromReadable rdb oldA;
+        (newState,editBs) <- fromReadableSubject rdb oldA;
         newB1 <- fromReadFunctionM (applyEdits editBs) $ return oldB;
         newB2 <- fromReadFunctionM (editGet newState) $ return newA;
         let

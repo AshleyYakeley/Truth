@@ -1,7 +1,7 @@
 module Truth.Core.Read.WriterReadable where
 {
     import Truth.Core.Import;
-    import Truth.Core.Read.Reader;
+    import Truth.Core.Read.SubjectReader;
     import Truth.Core.Read.Readable;
 
 

@@ -11,15 +11,15 @@ module Truth.Core.Types.Whole where
         ReadWhole :: forall t. WholeReader t t;
     };
 
-    instance Reader (WholeReader a) where
+    instance SubjectReader (WholeReader a) where
     {
         type ReaderSubject (WholeReader a) = a;
-        readFrom msubj ReadWhole = msubj;
+        readFromSubject msubj ReadWhole = msubj;
     };
 
-    instance FullReader (WholeReader a) where
+    instance FullSubjectReader (WholeReader a) where
     {
-        fromReader = readable ReadWhole;
+        subjectFromReader = readable ReadWhole;
     };
 
     wholeMutableRead :: m a -> MutableRead m (WholeReader a);
@@ -29,22 +29,22 @@ module Truth.Core.Types.Whole where
 
     instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader);
 
-    instance (FullReader reader) => Edit (WholeReaderEdit reader) where
+    instance (FullSubjectReader reader) => Edit (WholeReaderEdit reader) where
     {
         type EditReader (WholeReaderEdit reader) = reader;
-        applyEdit (MkWholeEdit a) = readFromM (return a);
+        applyEdit (MkWholeEdit a) = readFromSubjectM (return a);
         invertEdit _ = do
         {
-            a <- fromReader;
+            a <- subjectFromReader;
             return [MkWholeEdit a];
         };
     };
 
-    instance (FullReader reader) => FullEdit (WholeReaderEdit reader) where
+    instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
     {
         replaceEdit = do
         {
-            a <- readableToM fromReader;
+            a <- readableToM subjectFromReader;
             wrWrite $ MkWholeEdit a;
         };
     };
@@ -65,7 +65,7 @@ module Truth.Core.Types.Whole where
         editLensFunction = wholeEditFunction (lensGet lens),
         editLensPutEdit = \() (MkWholeEdit newb) -> do
         {
-            olda <- fromReader;
+            olda <- subjectFromReader;
             let
             {
                 newma = lensPutback lens newb olda;

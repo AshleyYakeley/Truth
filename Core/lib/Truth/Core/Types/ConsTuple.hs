@@ -12,7 +12,7 @@ module Truth.Core.Types.ConsTuple where
         tupleWitness _ = never;
     };
 
-    instance TupleSelector EmptyWitness;
+    instance SubjectTupleSelector EmptyWitness;
 
     instance TupleReaderWitness c EmptyWitness where
     {
@@ -56,7 +56,7 @@ module Truth.Core.Types.ConsTuple where
         tupleWitness pc (RestWitness r) = tupleWitness pc r;
     };
 
-    instance (Edit a,TestEquality r,TupleWitness Edit r) => TupleSelector (ConsWitness a r);
+    instance (SubjectReader (EditReader a),TestEquality r,TupleReaderWitness SubjectReader r) => SubjectTupleSelector (ConsWitness a r);
 
     instance (c (EditReader a),TupleReaderWitness c r) => TupleReaderWitness c (ConsWitness a r) where
     {
@@ -64,7 +64,7 @@ module Truth.Core.Types.ConsTuple where
         tupleReaderWitness pc (RestWitness r) = tupleReaderWitness pc r;
     };
 
-    instance (Edit a,FiniteTupleSelector r,TupleSubject r ~ Tuple r) => FiniteTupleSelector (ConsWitness a r) where
+    instance (FiniteTupleSelector r,TupleSubject r ~ Tuple r) => FiniteTupleSelector (ConsWitness a r) where
     {
         tupleConstruct getsel = (\f (MkTuple r) -> MkTuple $ \sel -> case sel of
         {

@@ -1,8 +1,8 @@
 module Truth.Core.Read
 (
-    module Truth.Core.Read.Reader,
+    module Truth.Core.Read.SubjectReader,
     module Truth.Core.Read.Readable,
-    module Truth.Core.Read.FullReader,
+    module Truth.Core.Read.FullSubjectReader,
     module Truth.Core.Read.ReadFunction,
     module Truth.Core.Read.WriterReadable,
     module Truth.Core.Read,
@@ -10,9 +10,9 @@ module Truth.Core.Read
  where
 {
     import Truth.Core.Import;
-    import Truth.Core.Read.Reader;
+    import Truth.Core.Read.SubjectReader;
     import Truth.Core.Read.Readable;
-    import Truth.Core.Read.FullReader;
+    import Truth.Core.Read.FullSubjectReader;
     import Truth.Core.Read.ReadFunction;
     import Truth.Core.Read.WriterReadable;
 
@@ -23,10 +23,10 @@ module Truth.Core.Read
         MkConstReader :: a -> ConstReader a a;
     };
 
-    -- only reason to specify readFromM instead of readFrom?
-    instance Reader (ConstReader a) where
+    -- only reason to specify readFromSubjectM instead of readFromSubject?
+    instance SubjectReader (ConstReader a) where
     {
         type ReaderSubject (ConstReader a) = a;
-        readFromM _ (MkConstReader a) = return a;
+        readFromSubjectM _ (MkConstReader a) = return a;
     };
 }

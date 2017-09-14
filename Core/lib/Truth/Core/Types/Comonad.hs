@@ -10,13 +10,13 @@ module Truth.Core.Types.Comonad where
         ReadExtract :: forall w reader t. reader t -> ComonadReader w reader t;
     };
 
-    instance (Comonad w,Reader reader) => Reader (ComonadReader w reader) where
+    instance (Comonad w,SubjectReader reader) => SubjectReader (ComonadReader w reader) where
     {
         type ReaderSubject (ComonadReader w reader) = w (ReaderSubject reader);
-        readFrom wsubj (ReadExtract reader) = readFrom (extract wsubj) reader;
+        readFromSubject wsubj (ReadExtract reader) = readFromSubject (extract wsubj) reader;
     };
 {-
-    instance (Traversable f,Monad f,FullReader reader) => FullReader (OneReader f reader) where
+    instance (Traversable f,Monad f,FullSubjectReader reader) => FullSubjectReader (OneReader f reader) where
     {
         -- pureFromReader :: ReadFunction (OneReader f reader) (f (ReaderSubject reader));
         pureFromReader = liftMaybeReadable pureFromReader;
@@ -37,7 +37,7 @@ module Truth.Core.Types.Comonad where
         floatingUpdate (MkComonadEdit e1) (MkComonadEdit e2) = MkComonadEdit $ floatingUpdate e1 e2;
     };
 
-    instance (Comonad w,Edit edit) => Edit (ComonadEdit w edit) where
+    instance (Edit edit) => Edit (ComonadEdit w edit) where
     {
         type EditReader (ComonadEdit w edit) = ComonadReader w (EditReader edit);
         applyEdit (MkComonadEdit edit) = comonadLiftReadFunction $ applyEdit edit;

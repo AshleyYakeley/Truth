@@ -49,14 +49,14 @@ module Truth.Core.Types.Context where
         testEquality _ _ = Nothing;
     };
 
-    instance (Edit editx,Edit editn) => TupleSelector (WithContextSelector editx editn) where
+    instance (SubjectReader (EditReader editx),SubjectReader (EditReader editn)) => SubjectTupleSelector (WithContextSelector editx editn) where
     {
         type TupleSubject (WithContextSelector editx editn) = WithContext (EditSubject editx) (EditSubject editn);
-        tupleReadFrom EditContext (MkWithContext x _n) = x;
-        tupleReadFrom EditContent (MkWithContext _x n) = n;
+        tupleReadFromSubject EditContext (MkWithContext x _n) = x;
+        tupleReadFromSubject EditContent (MkWithContext _x n) = n;
     };
 
-    instance (Edit ex,Edit en) => FiniteTupleSelector (WithContextSelector ex en) where
+    instance FiniteTupleSelector (WithContextSelector ex en) where
     {
         tupleConstruct f = MkWithContext <$> f EditContext <*> f EditContent;
     };

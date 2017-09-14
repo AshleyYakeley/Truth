@@ -42,7 +42,7 @@ module Truth.Core.Object.Lens where
 
 {-
 
-    cacheReferent :: forall edit. (Edit edit,FullReader (EditReader edit)) =>
+    cacheReferent :: forall edit. (Edit edit,FullSubjectReader (EditReader edit)) =>
         Reference edit -> Reference edit;
     cacheReferent ref = objSubscribe (\sendDown -> do
     {
@@ -71,7 +71,7 @@ module Truth.Core.Object.Lens where
             objGetInitial initialise = withMVar statevar $ \(_a,allowed) -> initialise allowed;
 
             objRead :: StructureW IO (EditReader edit);
-            objRead = MkStructureW $ readFromM $ withMVar statevar $ \(a,_allowed) -> return a;
+            objRead = MkStructureW $ readFromSubjectM $ withMVar statevar $ \(a,_allowed) -> return a;
 
             objSend :: edit -> IO (Maybe (Allowed edit));
             objSend edit = modifyMVar statevar $ \olds@(olda,_oldallowed) -> do

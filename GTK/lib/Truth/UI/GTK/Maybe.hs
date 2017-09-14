@@ -23,7 +23,7 @@ module Truth.UI.GTK.Maybe (oneUIView) where
     createButton :: (FullEdit edit) => EditSubject edit -> Object edit -> IO Button;
     createButton subj object = makeButton "Create" $ runObject object $ \muted -> do
     {
-        edits <- fromReadable (writerToReadable replaceEdit) subj;
+        edits <- fromReadableSubject (writerToReadable replaceEdit) subj;
         maction <- mutableEdit muted edits;
         case maction of
         {

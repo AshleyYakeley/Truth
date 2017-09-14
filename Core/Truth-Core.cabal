@@ -81,9 +81,9 @@ library
     other-modules:
         Truth.Core.Import
         Truth.Core.Sequence
-        Truth.Core.Read.Reader
+        Truth.Core.Read.SubjectReader
         Truth.Core.Read.Readable
-        Truth.Core.Read.FullReader
+        Truth.Core.Read.FullSubjectReader
         Truth.Core.Read.ReadFunction
         Truth.Core.Read.WriterReadable
         Truth.Core.Read

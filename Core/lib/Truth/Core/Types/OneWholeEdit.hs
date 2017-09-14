@@ -20,12 +20,12 @@ module Truth.Core.Types.OneWholeEdit where
         _ -> return [];
     };
 
-    oneWholeLiftEditFunction :: forall f state edita editb. (MonadOne f,Reader (EditReader edita),FullReader (EditReader editb)) =>
+    oneWholeLiftEditFunction :: forall f state edita editb. (MonadOne f,SubjectReader (EditReader edita),FullSubjectReader (EditReader editb)) =>
         EditFunction state edita editb -> EditFunction state (OneWholeEdit f edita) (OneWholeEdit f editb);
     oneWholeLiftEditFunction = sumWholeLiftEditFunction . oneLiftEditFunction;
 
     -- suitable for Results, trying to put a failure code will be rejected
-    oneWholeLiftGeneralLens :: forall f edita editb. (MonadOne f,FullReader (EditReader edita),Edit edita,FullEdit editb) =>
+    oneWholeLiftGeneralLens :: forall f edita editb. (MonadOne f,FullSubjectReader (EditReader edita),Edit edita,FullEdit editb) =>
      GeneralLens edita editb -> GeneralLens (OneWholeEdit f edita) (OneWholeEdit f editb);
     oneWholeLiftGeneralLens (MkCloseState (lens :: EditLens state edita editb)) = MkCloseState $ sumWholeLiftEditLens pushback (oneLiftEditLens lens) where
     {
@@ -47,7 +47,7 @@ module Truth.Core.Types.OneWholeEdit where
                 fstateedita <- editLensPutEdits lens oldstate editbs;
                 for fstateedita $ \(newstate,editas) -> do
                 {
-                    a <- mapReadable (applyEdits editas) fromReader;
+                    a <- mapReadable (applyEdits editas) subjectFromReader;
                     return (newstate,a);
                 };
             };

@@ -99,7 +99,7 @@ module Truth.Core.Edit.EditLens where
         editLensPutEdit _ _ = pure Nothing;
     } in MkEditLens{..};
 
-    constEditLens :: forall edita editb. Reader (EditReader editb) => EditSubject editb -> EditLens () edita editb;
+    constEditLens :: forall edita editb. SubjectReader (EditReader editb) => EditSubject editb -> EditLens () edita editb;
     constEditLens b = readOnlyEditLens $ constEditFunction b;
 
     convertEditLens :: forall edita editb. (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) =>
@@ -111,7 +111,7 @@ module Truth.Core.Edit.EditLens where
         editLensPutEdit :: () -> editb -> Readable (EditReader edita) (Maybe ((),[edita]));
         editLensPutEdit () editb = do
         {
-            newsubject <- fromReadFunctionM (applyEdit editb) fromReader;
+            newsubject <- fromReadFunctionM (applyEdit editb) subjectFromReader;
             editbs <- getReplaceEditsM newsubject;
             return $ pure $ ((),editbs);
         };

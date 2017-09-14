@@ -50,11 +50,11 @@ module Truth.Core.Object.MutableEdit where
     liftMutableEdit :: (MonadTrans t,Monad m) => MutableEdit m edit -> MutableEdit (t m) edit;
     liftMutableEdit = remonadMutableEdit lift;
 
-    constantMutableEdit :: forall m edit. (Reader (EditReader edit),Monad m) => EditSubject edit -> MutableEdit m edit;
+    constantMutableEdit :: forall m edit. (SubjectReader (EditReader edit),Monad m) => EditSubject edit -> MutableEdit m edit;
     constantMutableEdit subj = let
     {
         mutableRead :: MutableRead m (EditReader edit);
-        mutableRead = readFromM $ pure subj;
+        mutableRead = readFromSubjectM $ pure subj;
         mutableEdit _ = pure Nothing;
     } in MkMutableEdit{..};
 

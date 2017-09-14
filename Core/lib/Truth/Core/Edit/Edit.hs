@@ -16,7 +16,7 @@ module Truth.Core.Edit.Edit where
         floatingUpdate (e:ee) = floatingUpdate ee . floatingUpdate e;
     };
 
-    class (Reader (EditReader edit),Floating edit edit) => Edit (edit :: *) where
+    class (Floating edit edit) => Edit (edit :: *) where
     {
         type EditReader edit :: * -> *;
         applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit);

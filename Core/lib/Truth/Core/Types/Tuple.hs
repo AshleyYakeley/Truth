@@ -12,14 +12,14 @@ module Truth.Core.Types.Tuple where
 
     newtype Tuple sel = MkTuple (forall edit. sel edit -> EditSubject edit);
 
-    class (TestEquality sel,TupleWitness Edit sel) => TupleSelector (sel :: * -> *) where
+    class (TestEquality sel,TupleReaderWitness SubjectReader sel) => SubjectTupleSelector (sel :: * -> *) where
     {
         type TupleSubject sel :: *;
         type TupleSubject sel = Tuple sel;
 
-        tupleReadFrom :: forall edit. sel edit -> TupleSubject sel -> EditSubject edit;
-        default tupleReadFrom :: forall edit. (TupleSubject sel ~ Tuple sel) => sel edit -> TupleSubject sel -> EditSubject edit;
-        tupleReadFrom sel (MkTuple tuple) = tuple sel;
+        tupleReadFromSubject :: forall edit. sel edit -> TupleSubject sel -> EditSubject edit;
+        default tupleReadFromSubject :: forall edit. (TupleSubject sel ~ Tuple sel) => sel edit -> TupleSubject sel -> EditSubject edit;
+        tupleReadFromSubject sel (MkTuple tuple) = tuple sel;
     };
 
     data TupleEditReader sel t where
@@ -30,12 +30,12 @@ module Truth.Core.Types.Tuple where
     tupleReadFunction :: sel edit -> ReadFunction (TupleEditReader sel) (EditReader edit);
     tupleReadFunction sel r = readable $ MkTupleEditReader sel r;
 
-    instance (TupleSelector sel) => Reader (TupleEditReader sel) where
+    instance (SubjectTupleSelector sel) => SubjectReader (TupleEditReader sel) where
     {
         type ReaderSubject (TupleEditReader sel) = TupleSubject sel;
-        readFrom a (MkTupleEditReader seledit reader) = case tupleWitness (Proxy::Proxy Edit) seledit of
+        readFromSubject a (MkTupleEditReader seledit reader) = case tupleReaderWitness (Proxy::Proxy SubjectReader) seledit of
         {
-            MkConstraintWitness -> readFrom (tupleReadFrom seledit a) reader;
+            MkConstraintWitness -> readFromSubject (tupleReadFromSubject seledit a) reader;
         };
     };
 
@@ -49,7 +49,7 @@ module Truth.Core.Types.Tuple where
         tupleSubjectWitness :: forall proxy edit. proxy c -> sel edit -> ConstraintWitness (c (EditSubject edit));
     };
 
-    class TupleSelector sel => FiniteTupleSelector (sel :: * -> *) where
+    class TestEquality sel => FiniteTupleSelector (sel :: * -> *) where
     {
         tupleConstruct :: forall m. Applicative m => (forall edit. sel edit -> m (EditSubject edit)) -> m (TupleSubject sel);
     };
@@ -57,11 +57,11 @@ module Truth.Core.Types.Tuple where
     tupleAllSelectors :: FiniteTupleSelector sel => [AnyWitness sel];
     tupleAllSelectors = getConst $ tupleConstruct $ \sel -> Const [MkAnyWitness sel];
 
-    instance (FiniteTupleSelector sel,TupleReaderWitness FullReader sel) => FullReader (TupleEditReader sel) where
+    instance (SubjectTupleSelector sel,FiniteTupleSelector sel,TupleReaderWitness FullSubjectReader sel) => FullSubjectReader (TupleEditReader sel) where
     {
-        fromReader = tupleConstruct (\(seledit :: sel edit) -> case tupleReaderWitness (Proxy::Proxy FullReader) seledit of
+        subjectFromReader = tupleConstruct (\(seledit :: sel edit) -> case tupleReaderWitness (Proxy::Proxy FullSubjectReader) seledit of
         {
-            MkConstraintWitness -> mapReadable (readable . MkTupleEditReader seledit) fromReader;
+            MkConstraintWitness -> mapReadable (readable . MkTupleEditReader seledit) subjectFromReader;
         });
     };
 
@@ -71,7 +71,7 @@ module Truth.Core.Types.Tuple where
         MkTupleEdit :: sel edit -> edit -> TupleEdit sel;
     };
 
-    instance TupleSelector sel => Floating (TupleEdit sel) (TupleEdit sel) where
+    instance (TestEquality sel,TupleWitness Edit sel) => Floating (TupleEdit sel) (TupleEdit sel) where
     {
         floatingUpdate (MkTupleEdit s1 e1) edit@(MkTupleEdit s2 e2) = case testEquality s1 s2 of
         {
@@ -83,7 +83,7 @@ module Truth.Core.Types.Tuple where
         };
     };
 
-    instance TupleSelector sel => Edit (TupleEdit sel) where
+    instance (TestEquality sel,TupleWitness Edit sel) => Edit (TupleEdit sel) where
     {
         type EditReader (TupleEdit sel) = TupleEditReader sel;
 
@@ -101,7 +101,7 @@ module Truth.Core.Types.Tuple where
         };
     };
 
-    instance (FiniteTupleSelector sel,TupleReaderWitness FullReader sel,TupleWitness FullEdit sel) => FullEdit (TupleEdit sel) where
+    instance (SubjectTupleSelector sel,FiniteTupleSelector sel,TupleReaderWitness FullSubjectReader sel,TupleWitness Edit sel,TupleWitness FullEdit sel) => FullEdit (TupleEdit sel) where
     {
         replaceEdit = do
         {

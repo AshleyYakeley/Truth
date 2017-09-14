@@ -14,16 +14,16 @@ module Truth.Core.Types.None where
 
     deriving instance Empty (NoReader a t);
 
-    instance Reader (NoReader a) where
+    instance SubjectReader (NoReader a) where
     {
         type ReaderSubject (NoReader a) = a;
-        readFromM _ = never;
-        readFrom _ = never;
+        readFromSubjectM _ = never;
+        readFromSubject _ = never;
     };
 
-    instance FullReader (NoReader ()) where
+    instance FullSubjectReader (NoReader ()) where
     {
-        fromReader = return ();
+        subjectFromReader = return ();
     };
 
     -- | Can't touch this.
@@ -39,14 +39,14 @@ module Truth.Core.Types.None where
 
     instance Floating (NoEdit reader) (NoEdit reader);
 
-    instance (Reader reader) => Edit (NoEdit reader) where
+    instance Edit (NoEdit reader) where
     {
         type EditReader (NoEdit reader) = reader;
         applyEdit = never;
         invertEdit = never;
     };
 
-    instance (FullReader reader,ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where
+    instance (FullSubjectReader reader,ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where
     {
         replaceEdit = return ();
     };

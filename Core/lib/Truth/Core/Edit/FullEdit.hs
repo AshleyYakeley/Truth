@@ -5,11 +5,11 @@ module Truth.Core.Edit.FullEdit where
     import Truth.Core.Edit.Edit;
 
 
-    class (Edit edit,FullReader (EditReader edit)) => FullEdit edit where
+    class (Edit edit,FullSubjectReader (EditReader edit)) => FullEdit edit where
     {
         replaceEdit :: WriterReadable edit (EditReader edit) ();
     };
 
     getReplaceEditsM :: forall m edit. (FullEdit edit,MonadIO m) => EditSubject edit -> m [edit];
-    getReplaceEditsM = fromReadable (writerToReadable replaceEdit :: Readable (EditReader edit) [edit]);
+    getReplaceEditsM = fromReadableSubject (writerToReadable replaceEdit :: Readable (EditReader edit) [edit]);
 }

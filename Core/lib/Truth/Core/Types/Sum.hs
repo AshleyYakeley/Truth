@@ -7,15 +7,15 @@ module Truth.Core.Types.Sum where
 
     data SumReader ra rb (t :: *) = SumReadLeft (ra t) | SumReadRight (rb t);
 
-    instance (Reader ra,Reader rb,ReaderSubject ra ~ ReaderSubject rb) => Reader (SumReader ra rb) where
+    instance (SubjectReader ra,SubjectReader rb,ReaderSubject ra ~ ReaderSubject rb) => SubjectReader (SumReader ra rb) where
     {
         type ReaderSubject (SumReader ra rb) = ReaderSubject ra;
 
-        readFromM msubj (SumReadLeft reader) = readFromM msubj reader;
-        readFromM msubj (SumReadRight reader) = readFromM msubj reader;
+        readFromSubjectM msubj (SumReadLeft reader) = readFromSubjectM msubj reader;
+        readFromSubjectM msubj (SumReadRight reader) = readFromSubjectM msubj reader;
 
-        readFrom subj (SumReadLeft reader) = readFrom subj reader;
-        readFrom subj (SumReadRight reader) = readFrom subj reader;
+        readFromSubject subj (SumReadLeft reader) = readFromSubject subj reader;
+        readFromSubject subj (SumReadRight reader) = readFromSubject subj reader;
     };
 
     data SumEdit ea eb = SumEditLeft ea | SumEditRight eb;

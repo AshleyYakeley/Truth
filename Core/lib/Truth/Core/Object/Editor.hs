@@ -73,8 +73,8 @@ module Truth.Core.Object.Editor where
         editorDo (MkObject object) _ = object f;
     } in MkEditor{..};
 {-
-    readEditor :: FullReader (EditReader edit) => Editor edit actions (EditSubject edit);
-    readEditor = oneTransactionEditor $ \muted -> unReadable fromReader $ mutableRead muted;
+    readEditor :: FullSubjectReader (EditReader edit) => Editor edit actions (EditSubject edit);
+    readEditor = oneTransactionEditor $ \muted -> unReadable subjectFromReader $ mutableRead muted;
 
     writeEditor :: FullEdit edit => EditSubject edit -> Editor edit actions (Maybe ());
     writeEditor subj = oneTransactionEditor $ \muted -> do

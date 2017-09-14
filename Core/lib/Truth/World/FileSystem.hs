@@ -35,24 +35,24 @@ module Truth.World.FileSystem where
         FSReadSymbolicLink :: FilePath -> FSReader (Maybe String);
     };
 
-    instance Reader FSReader where
+    instance SubjectReader FSReader where
     {
         type ReaderSubject FSReader = FileSystem;
 
-        readFrom fs (FSReadDirectory path) = case findInFileSystem fs path of
+        readFromSubject fs (FSReadDirectory path) = case findInFileSystem fs path of
         {
             Just (DirectoryItem items) -> Just $ fmap fst items;
             _ -> Nothing;
         };
-        readFrom fs (FSReadItem path) = case findInFileSystem fs path of
+        readFromSubject fs (FSReadItem path) = case findInFileSystem fs path of
         {
             Just (DirectoryItem _) -> Just FSDirectoryItem;
             Just (FileItem bs) -> Just $ FSFileItem $ nonlockingObject $ constantMutableEdit $ bs;
-            Just (SymbolicLinkItem sympath) -> readFrom fs (FSReadItem sympath);
+            Just (SymbolicLinkItem sympath) -> readFromSubject fs (FSReadItem sympath);
             Just OtherItem -> Just $ FSOtherItem;
             Nothing -> Nothing;
         };
-        readFrom fs (FSReadSymbolicLink path) = case findInFileSystem fs path of
+        readFromSubject fs (FSReadSymbolicLink path) = case findInFileSystem fs path of
         {
             Just (SymbolicLinkItem sympath) -> Just sympath;
             _ -> Nothing;

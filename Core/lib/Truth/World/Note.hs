@@ -35,14 +35,21 @@ module Truth.World.Note where
         tupleWitness _ NoteText = MkConstraintWitness;
     };
 
-    instance TupleReaderWitness FullReader NoteSel where
+    instance TupleReaderWitness SubjectReader NoteSel where
     {
         tupleReaderWitness _ NoteTitle = MkConstraintWitness;
         tupleReaderWitness _ NotePast = MkConstraintWitness;
         tupleReaderWitness _ NoteText = MkConstraintWitness;
     };
 
-    instance TupleSelector NoteSel;
+    instance TupleReaderWitness FullSubjectReader NoteSel where
+    {
+        tupleReaderWitness _ NoteTitle = MkConstraintWitness;
+        tupleReaderWitness _ NotePast = MkConstraintWitness;
+        tupleReaderWitness _ NoteText = MkConstraintWitness;
+    };
+
+    instance SubjectTupleSelector NoteSel;
 
     instance FiniteTupleSelector NoteSel where
     {

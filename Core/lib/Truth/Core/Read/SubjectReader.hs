@@ -1,4 +1,4 @@
-module Truth.Core.Read.Reader where
+module Truth.Core.Read.SubjectReader where
 {
     import Truth.Core.Import;
 
@@ -10,17 +10,17 @@ module Truth.Core.Read.Reader where
 
     -- | The values of the reader type are MutableEdit calls that read parts of something of type (ReaderSubject reader).
     ;
-    class Reader (reader :: * -> *) where
+    class SubjectReader (reader :: * -> *) where
     {
         type ReaderSubject reader :: *;
 
         -- | Make MutableEdit calls when you've actually got the subject
         ;
-        readFromM :: forall m. Monad m => m (ReaderSubject reader) -> MutableRead m reader;
-        readFromM msubj reader = fmap (\subj -> readFrom subj reader) msubj;
+        readFromSubjectM :: forall m. Monad m => m (ReaderSubject reader) -> MutableRead m reader;
+        readFromSubjectM msubj reader = fmap (\subj -> readFromSubject subj reader) msubj;
 
-        readFrom :: ReaderSubject reader -> (forall t. reader t -> t);
-        readFrom subj reader = runIdentity (readFromM (Identity subj) reader);
+        readFromSubject :: ReaderSubject reader -> (forall t. reader t -> t);
+        readFromSubject subj reader = runIdentity (readFromSubjectM (Identity subj) reader);
     };
 
     newtype MutableReadW m reader = MkMutableReadW {unMutableReadW :: MutableRead m reader};

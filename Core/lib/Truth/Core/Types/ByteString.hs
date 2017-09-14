@@ -11,27 +11,27 @@ module Truth.Core.Types.ByteString where
         ReadByteStringSection :: Int64 -> Int64 -> ByteStringReader ByteString;
     };
 
-    instance Reader ByteStringReader where
+    instance SubjectReader ByteStringReader where
     {
         type ReaderSubject ByteStringReader = ByteString;
 
         -- | Make MutableEdit calls when you've actually got the subject
         ;
-        readFromM msubj ReadByteStringLength = do
+        readFromSubjectM msubj ReadByteStringLength = do
         {
             subj <- msubj;
             return $ fromIntegral $ olength subj;
         };
-        readFromM msubj (ReadByteStringSection start len) = do
+        readFromSubjectM msubj (ReadByteStringSection start len) = do
         {
             subj <- msubj;
             return $ take len $ drop start subj;
         };
     };
 
-    instance FullReader ByteStringReader where
+    instance FullSubjectReader ByteStringReader where
     {
-        fromReader = do
+        subjectFromReader = do
         {
             len <- readable ReadByteStringLength;
             readable $ ReadByteStringSection 0 len;

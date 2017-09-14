@@ -19,7 +19,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
     saveBufferMutableEdit update = let
     {
         mutableRead :: MutableRead (StateT (SaveBuffer (EditSubject edit)) m) (EditReader edit);
-        mutableRead = readFromM $ fmap saveBuffer get;
+        mutableRead = readFromSubjectM $ fmap saveBuffer get;
 
         mutableEdit :: [edit] -> StateT (SaveBuffer (EditSubject edit)) m (Maybe (StateT (SaveBuffer (EditSubject edit)) m ()));
         mutableEdit edits = return $ Just $ do
@@ -53,7 +53,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                     let
                     {
                         objB :: Object edit;
-                        objB = MkObject $ \call -> mvarStateAccess sbVar $ call $ saveBufferMutableEdit $ \edits -> updateB edB (readFromM $ fmap saveBuffer get) edits;
+                        objB = MkObject $ \call -> mvarStateAccess sbVar $ call $ saveBufferMutableEdit $ \edits -> updateB edB (readFromSubjectM $ fmap saveBuffer get) edits;
                     };
                     edB <- initB objB;
                 };
@@ -82,7 +82,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                         buf <- mutableRead muted ReadWhole;
                         mvarStateAccess sbVar $ put $ MkSaveBuffer buf False;
                         edits <- getReplaceEditsM buf;
-                        updateB edB (readFromM $ return buf) edits;
+                        updateB edB (readFromSubjectM $ return buf) edits;
                         return False;
                     };
 
@@ -106,7 +106,7 @@ module Truth.Core.Object.Savable (SaveActions(..),saveBufferSubscriber) where
                 {
                     newbuffer <- fromReadFunctionM (applyEdits edits) $ return oldbuffer;
                     newedits <- getReplaceEditsM newbuffer;
-                    updateB edB (readFromM $ return newbuffer) newedits;
+                    updateB edB (readFromSubjectM $ return newbuffer) newedits;
                     mvarStateAccess sbVar $ put $ MkSaveBuffer newbuffer False;
                 };
             };

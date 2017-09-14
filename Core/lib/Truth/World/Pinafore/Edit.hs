@@ -22,18 +22,18 @@ module Truth.World.Pinafore.Edit where
         PinaforeEditSetPrimitive :: UUID -> Maybe ByteString -> PinaforeEdit;
     };
 
-    instance Reader PinaforeRead where
+    instance SubjectReader PinaforeRead where
     {
         type ReaderSubject PinaforeRead = ([(UUID,UUID,UUID)],[(UUID,ByteString)]);
 
-        readFrom (triples,_) (PinaforeReadGetValue rp rs) = listToMaybe $ [v | (p,s,v) <- triples,p == rp && s == rs];
-        readFrom (triples,_) (PinaforeReadLookupValue rp rv) = MkFiniteSet [s | (p,s,v) <- triples, p == rp, v == rv];
-        readFrom (_,literals) (PinaforeReadGetPrimitive rv) = do
+        readFromSubject (triples,_) (PinaforeReadGetValue rp rs) = listToMaybe $ [v | (p,s,v) <- triples,p == rp && s == rs];
+        readFromSubject (triples,_) (PinaforeReadLookupValue rp rv) = MkFiniteSet [s | (p,s,v) <- triples, p == rp, v == rv];
+        readFromSubject (_,literals) (PinaforeReadGetPrimitive rv) = do
         {
             d <- listToMaybe [l | (v,l) <- literals, v == rv];
             decodeMaybe serializeCodec d;
         };
-        readFrom (triples,literals) (PinaforeReadLookupPrimitive rp rl) = MkFiniteSet [s | (p,s,v) <- triples, rp == p, (v',l) <- literals, v == v', l == encode serializeCodec rl];
+        readFromSubject (triples,literals) (PinaforeReadLookupPrimitive rp rl) = MkFiniteSet [s | (p,s,v) <- triples, rp == p, (v',l) <- literals, v == v', l == encode serializeCodec rl];
     };
 
     instance Floating PinaforeEdit PinaforeEdit;
@@ -139,7 +139,7 @@ module Truth.World.Pinafore.Edit where
 
     } in MkEditLens{..};
 
-    primitiveEditPinaforeMorphism :: forall edit. (FullReader (EditReader edit),Edit edit,Serialize (EditSubject edit)) => PinaforeMorphism (WholeEdit (Maybe UUID)) (OneWholeEdit Maybe edit);
+    primitiveEditPinaforeMorphism :: forall edit. (FullSubjectReader (EditReader edit),Edit edit,Serialize (EditSubject edit)) => PinaforeMorphism (WholeEdit (Maybe UUID)) (OneWholeEdit Maybe edit);
     primitiveEditPinaforeMorphism = composeEditLensPointed convertEditLens primitivePinaforeMorphism;
 
     predicatePinaforeMorphism :: UUID -> PinaforeMorphism (WholeEdit (Maybe UUID)) (WholeEdit (Maybe UUID));

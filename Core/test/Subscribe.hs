@@ -71,7 +71,7 @@ module Subscribe(testSubscribe) where
         subActions :: actions
     };
 
-    testOutputEditor :: forall edit actions. (Show edit, Show (EditSubject edit), FullReader (EditReader edit),?handle::Handle) => String -> (SubscribeContext edit actions -> IO ()) -> Editor edit actions ();
+    testOutputEditor :: forall edit actions. (Show edit, Show (EditSubject edit), FullSubjectReader (EditReader edit),?handle::Handle) => String -> (SubscribeContext edit actions -> IO ()) -> Editor edit actions ();
     testOutputEditor name call = let
     {
         outputLn :: MonadIO m => String -> m ();
@@ -80,7 +80,7 @@ module Subscribe(testSubscribe) where
         editorInit :: Object edit -> IO (Object edit);
         editorInit object = do
         {
-            val <- runObject object $ \muted -> unReadable fromReader $ mutableRead muted;
+            val <- runObject object $ \muted -> unReadable subjectFromReader $ mutableRead muted;
             outputLn $ "init: " ++ show val;
             return object;
         };
@@ -89,7 +89,7 @@ module Subscribe(testSubscribe) where
         editorUpdate _ mr edits = do
         {
             outputLn $ "receive " ++ show edits;
-            val <- unReadable fromReader mr;
+            val <- unReadable subjectFromReader mr;
             outputLn $ "receive " ++ show val;
         };
 

@@ -43,10 +43,10 @@ module Truth.Core.Types.Database where
         DatabaseSelect :: TableJoin database tablesel row -> WhereClause database tablesel row -> OrderClause database tablesel row -> SelectClause database tablesel row row' -> DatabaseRead database tablesel [row'];
     };
 
-    instance Database database tablesel => Reader (DatabaseRead database tablesel) where
+    instance Database database tablesel => SubjectReader (DatabaseRead database tablesel) where
     {
         type ReaderSubject (DatabaseRead database tablesel) = AllF tablesel [];
-        readFrom (MkAllF tables) (DatabaseSelect j wc oc sc) = let
+        readFromSubject (MkAllF tables) (DatabaseSelect j wc oc sc) = let
         {
             doJoin :: TableJoin database tablesel row -> [row];
             doJoin (SingleTable tsel) = tables tsel;
@@ -59,9 +59,9 @@ module Truth.Core.Types.Database where
         } in fmap (selectClause @database @tablesel sc) $ sortBy (orderClause @database @tablesel oc) $ filter (whereClause @database @tablesel wc) $ doJoin j;
     };
 
-    instance Database database tablesel => FullReader (DatabaseRead database tablesel) where
+    instance Database database tablesel => FullSubjectReader (DatabaseRead database tablesel) where
     {
-        fromReader = tableAssemble @database $ \(tsel :: tablesel row) -> do
+        subjectFromReader = tableAssemble @database $ \(tsel :: tablesel row) -> do
         {
             MkConstraintWitness <- return $ orderMonoid @database tsel;
             readable $ DatabaseSelect (SingleTable tsel) (whereAlways @database tsel) mempty (selectRow @database tsel);

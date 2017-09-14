@@ -1,8 +1,8 @@
 module Truth.Core.Read.ReadFunction where
 {
     import Truth.Core.Import;
-    import Truth.Core.Read.Reader;
-    import Truth.Core.Read.FullReader;
+    import Truth.Core.Read.SubjectReader;
+    import Truth.Core.Read.FullSubjectReader;
     import Truth.Core.Read.Readable;
     import Truth.Core.Read.WriterReadable;
 
@@ -18,20 +18,20 @@ module Truth.Core.Read.ReadFunction where
     composeReadFunction :: forall ra rb rc. ReadFunction rb rc -> ReadFunction ra rb -> ReadFunction ra rc;
     composeReadFunction = mapMutableRead;
 
-    makeReadFunction :: (Reader rb) => Readable ra (ReaderSubject rb) -> ReadFunction ra rb;
-    makeReadFunction = readFromM;
+    makeReadFunction :: (SubjectReader rb) => Readable ra (ReaderSubject rb) -> ReadFunction ra rb;
+    makeReadFunction = readFromSubjectM;
 
-    simpleReadFunction :: (FullReader ra,Reader rb) => (ReaderSubject ra -> ReaderSubject rb) -> ReadFunction ra rb;
-    simpleReadFunction ab = makeReadFunction (fmap ab fromReader);
+    simpleReadFunction :: (FullSubjectReader ra,SubjectReader rb) => (ReaderSubject ra -> ReaderSubject rb) -> ReadFunction ra rb;
+    simpleReadFunction ab = makeReadFunction (fmap ab subjectFromReader);
 
-    convertReadFunction :: (FullReader ra,Reader rb,ReaderSubject ra ~ ReaderSubject rb) => ReadFunction ra rb;
+    convertReadFunction :: (FullSubjectReader ra,SubjectReader rb,ReaderSubject ra ~ ReaderSubject rb) => ReadFunction ra rb;
     convertReadFunction = simpleReadFunction id;
 
     mapGenReadable :: forall ra rb t. ReadFunction ra rb -> Readable rb t -> Readable ra t;
     mapGenReadable rf (MkReadable srbmt) = srbmt $ \rt -> rf rt;
 
-    fromReadFunctionM :: forall m ra rb. (MonadIO m,Reader ra,FullReader rb) => ReadFunction ra rb -> m (ReaderSubject ra) -> m (ReaderSubject rb);
-    fromReadFunctionM rf mra = unReadable (mapGenReadable rf fromReader) $ readFromM mra;
+    fromReadFunctionM :: forall m ra rb. (MonadIO m,SubjectReader ra,FullSubjectReader rb) => ReadFunction ra rb -> m (ReaderSubject ra) -> m (ReaderSubject rb);
+    fromReadFunctionM rf mra = unReadable (mapGenReadable rf subjectFromReader) $ readFromSubjectM mra;
 
     mapStructureF :: MonadIO m => ReadFunctionF f ra rb -> MutableRead m ra -> MutableRead (Compose m f) rb;
     mapStructureF rff sa rbt = Compose $ unReadable (rff rbt) sa;

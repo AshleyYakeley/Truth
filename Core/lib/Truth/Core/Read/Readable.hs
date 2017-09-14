@@ -1,7 +1,7 @@
 module Truth.Core.Read.Readable where
 {
     import Truth.Core.Import;
-    import Truth.Core.Read.Reader;
+    import Truth.Core.Read.SubjectReader;
 
 
     class MonadIO m => IsReadableMonad m where
@@ -15,8 +15,8 @@ module Truth.Core.Read.Readable where
     liftReadable :: (forall m. (MonadIO m) => m a) -> Readable reader a;
     liftReadable ma = MkReadable $ \_ -> ma;
 
-    fromReadable :: (Reader reader,MonadIO m) => Readable reader t -> ReaderSubject reader -> m t;
-    fromReadable (MkReadable rrt) a = rrt $ readFromM $ return a;
+    fromReadableSubject :: (SubjectReader reader,MonadIO m) => Readable reader t -> ReaderSubject reader -> m t;
+    fromReadableSubject (MkReadable rrt) a = rrt $ readFromSubjectM $ return a;
 
     instance Functor (Readable reader) where
     {

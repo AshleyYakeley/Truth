@@ -18,25 +18,25 @@ module Truth.Core.Types.Either where
     mapEitherReadRight :: MapReadable readable => readable rb t -> readable (EitherReader ra rb) (Maybe t);
     mapEitherReadRight = mapReadableF (readable . EitherReadRight);
 
-    instance (Reader ra,Reader rb) => Reader (EitherReader ra rb) where
+    instance (SubjectReader ra,SubjectReader rb) => SubjectReader (EitherReader ra rb) where
     {
         type ReaderSubject (EitherReader ra rb) = Either (ReaderSubject ra) (ReaderSubject rb);
 
-        -- readFrom :: ReaderSubject (OneReader f reader) -> (forall t. OneReader f reader t -> t);
-        readFrom (Left _) EitherReadIsRight = False;
-        readFrom (Right _) EitherReadIsRight = True;
-        readFrom (Left a) (EitherReadLeft reader) = Just $ readFrom a reader;
-        readFrom (Right _) (EitherReadLeft _) = Nothing;
-        readFrom (Left _) (EitherReadRight _) = Nothing;
-        readFrom (Right a) (EitherReadRight reader) = Just $ readFrom a reader;
+        -- readFromSubject :: ReaderSubject (OneReader f reader) -> (forall t. OneReader f reader t -> t);
+        readFromSubject (Left _) EitherReadIsRight = False;
+        readFromSubject (Right _) EitherReadIsRight = True;
+        readFromSubject (Left a) (EitherReadLeft reader) = Just $ readFromSubject a reader;
+        readFromSubject (Right _) (EitherReadLeft _) = Nothing;
+        readFromSubject (Left _) (EitherReadRight _) = Nothing;
+        readFromSubject (Right a) (EitherReadRight reader) = Just $ readFromSubject a reader;
     };
 
-    instance (FullReader ra,FullReader rb) => FullReader (EitherReader ra rb) where
+    instance (FullSubjectReader ra,FullSubjectReader rb) => FullSubjectReader (EitherReader ra rb) where
     {
-        fromReader = do
+        subjectFromReader = do
         {
-            mleft <- mapEitherReadLeft fromReader;
-            mright <- mapEitherReadRight fromReader;
+            mleft <- mapEitherReadLeft subjectFromReader;
+            mright <- mapEitherReadRight subjectFromReader;
             case (mleft,mright) of
             {
                 (Just a,Nothing) -> return $ Left a;

@@ -12,18 +12,18 @@ module Truth.Core.Object.MutableIOEdit where
         ReadMutableIO :: MutableIOReader edit (MutableEdit IO edit);
     };
 
-    instance Reader (EditReader edit) => Reader (MutableIOReader edit) where
+    instance SubjectReader (EditReader edit) => SubjectReader (MutableIOReader edit) where
     {
         type ReaderSubject (MutableIOReader edit) = EditSubject edit;
-        readFrom subj ReadMutableIO = constantMutableEdit subj;
+        readFromSubject subj ReadMutableIO = constantMutableEdit subj;
     };
 
-    instance FullReader (EditReader edit) => FullReader (MutableIOReader edit) where
+    instance FullSubjectReader (EditReader edit) => FullSubjectReader (MutableIOReader edit) where
     {
-        fromReader = do
+        subjectFromReader = do
         {
             muted <- readable ReadMutableIO;
-            liftIO $ unReadable fromReader $ mutableRead muted;
+            liftIO $ unReadable subjectFromReader $ mutableRead muted;
         };
     };
 

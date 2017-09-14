@@ -29,20 +29,20 @@ module Truth.Core.Types.List where
         };
     };
 
-    instance (IsSequence seq,Reader reader,ReaderSubject reader ~ Element seq) => Reader (ListReader seq reader) where
+    instance (IsSequence seq,SubjectReader reader,ReaderSubject reader ~ Element seq) => SubjectReader (ListReader seq reader) where
     {
         type ReaderSubject (ListReader seq reader) = seq;
 
-        readFrom sq ListReadLength = seqLength sq;
-        readFrom sq (ListReadItem i reader) = fmap (\e -> readFrom e reader) $ seqIndex sq i;
+        readFromSubject sq ListReadLength = seqLength sq;
+        readFromSubject sq (ListReadItem i reader) = fmap (\e -> readFromSubject e reader) $ seqIndex sq i;
     };
 
-    instance (IsSequence seq,FullReader reader,ReaderSubject reader ~ Element seq) => FullReader (ListReader seq reader) where
+    instance (IsSequence seq,FullSubjectReader reader,ReaderSubject reader ~ Element seq) => FullSubjectReader (ListReader seq reader) where
     {
-        fromReader = do
+        subjectFromReader = do
         {
             len <- readable ListReadLength;
-            list <- traverse (\i -> mapReadable (knownItemReadFunction i) fromReader) [0..pred len];
+            list <- traverse (\i -> mapReadable (knownItemReadFunction i) subjectFromReader) [0..pred len];
             return $ fromList list;
         };
     };
@@ -70,7 +70,7 @@ module Truth.Core.Types.List where
         floatingUpdate _edit ListClear = ListClear;
     };
 
-    instance (IsSequence seq,FullReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => Edit (ListEdit seq edit) where
+    instance (IsSequence seq,FullSubjectReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => Edit (ListEdit seq edit) where
     {
         type EditReader (ListEdit seq edit) = ListReader seq (EditReader edit);
 
@@ -91,11 +91,11 @@ module Truth.Core.Types.List where
         applyEdit (ListInsertItem p a) (ListReadItem i reader) | p == i = do
         {
             len <- readable ListReadLength;
-            return $ if p >= 0 && p <= len then Just $ readFrom a reader else Nothing;
+            return $ if p >= 0 && p <= len then Just $ readFromSubject a reader else Nothing;
         };
         applyEdit (ListInsertItem p _) (ListReadItem i reader) | p >= 0 && p < i = readable $ ListReadItem (i - 1) reader;
         applyEdit (ListInsertItem _ _) (ListReadItem i reader) = readable $ ListReadItem i reader;
-        applyEdit ListClear reader = readFromM (return mempty) reader;
+        applyEdit ListClear reader = readFromSubjectM (return mempty) reader;
 
         invertEdit (ListEditItem p edit) = do
         {
@@ -113,7 +113,7 @@ module Truth.Core.Types.List where
         };
         invertEdit (ListDeleteItem p) = do
         {
-            ma <- mapReadableF (itemReadFunction p) fromReader;
+            ma <- mapReadableF (itemReadFunction p) subjectFromReader;
             case ma of
             {
                 Just a -> return [ListInsertItem p a];
@@ -123,7 +123,7 @@ module Truth.Core.Types.List where
         invertEdit ListClear = writerToReadable replaceEdit;
     };
 
-    instance (IsSequence seq,FullReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => FullEdit (ListEdit seq edit) where
+    instance (IsSequence seq,FullSubjectReader (EditReader edit),Edit edit,EditSubject edit ~ Element seq) => FullEdit (ListEdit seq edit) where
     {
         replaceEdit = do
         {
@@ -134,7 +134,7 @@ module Truth.Core.Types.List where
                 readWriteItem :: SequencePoint seq -> WriterReadable (ListEdit seq edit) (ListReader seq (EditReader edit)) ();
                 readWriteItem i = do
                 {
-                    item <- mapReadable (knownItemReadFunction i) $ readableToM fromReader;
+                    item <- mapReadable (knownItemReadFunction i) $ readableToM subjectFromReader;
                     wrWrite $ ListInsertItem i item;
                 };
             };

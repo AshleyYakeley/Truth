@@ -10,7 +10,7 @@ module Truth.Core.Types.SumWhole where
     type SumWholeReaderEdit reader edit = SumEdit (WholeReaderEdit reader) edit;
     type SumWholeEdit edit = SumWholeReaderEdit (EditReader edit) edit;
 
-    sumWholeLiftEditFunction :: forall state edita editb. (Reader (EditReader edita), FullReader (EditReader editb)) =>
+    sumWholeLiftEditFunction :: forall state edita editb. (SubjectReader (EditReader edita), FullSubjectReader (EditReader editb)) =>
      EditFunction state edita editb ->
      EditFunction state (SumWholeEdit edita) (SumWholeEdit editb);
     sumWholeLiftEditFunction fef = MkEditFunction
@@ -32,7 +32,7 @@ module Truth.Core.Types.SumWhole where
         }
     };
 
-    sumWholeLiftEditLens :: (Reader (EditReader edita),FullReader (EditReader editb)) =>
+    sumWholeLiftEditLens :: (SubjectReader (EditReader edita),FullSubjectReader (EditReader editb)) =>
      (state -> EditSubject editb -> Readable (EditReader edita) (Maybe (state,EditSubject edita))) ->
      EditLens state edita editb ->
      EditLens state (SumWholeEdit edita) (SumWholeEdit editb);

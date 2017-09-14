@@ -58,12 +58,12 @@ module Truth.Core.Edit.EditFunction  where
         editUpdate = \edita2 -> editUpdate fef (a21 edita2)
     };
 
-    constEditFunction :: forall edita editb. Reader (EditReader editb) => EditSubject editb -> EditFunction () edita editb;
+    constEditFunction :: forall edita editb. SubjectReader (EditReader editb) => EditSubject editb -> EditFunction () edita editb;
     constEditFunction b = let
     {
         editInitial = ();
         editGet :: () -> ReadFunction (EditReader edita) (EditReader editb);
-        editGet () = readFromM $ pure b;
+        editGet () = readFromSubjectM $ pure b;
         editUpdate _ () = pure $ pure [];
     } in MkEditFunction{..};
 
@@ -121,7 +121,7 @@ module Truth.Core.Edit.EditFunction  where
         };
     };
 
-    funcEditFunction :: forall edita editb. (Edit edita,FullReader (EditReader edita),FullEdit editb) =>
+    funcEditFunction :: forall edita editb. (Edit edita,FullSubjectReader (EditReader edita),FullEdit editb) =>
         (EditSubject edita -> EditSubject editb) -> EditFunction () edita editb;
     funcEditFunction ab = let
     {
@@ -134,13 +134,13 @@ module Truth.Core.Edit.EditFunction  where
         editUpdate :: edita -> () -> Readable (EditReader edita) ((),[editb]);
         editUpdate edita () = do
         {
-            newa <- mapReadable (applyEdit edita) fromReader;
+            newa <- mapReadable (applyEdit edita) subjectFromReader;
             editbs <- getReplaceEditsM $ ab newa;
             return $ ((),editbs);
         };
     } in MkEditFunction{..};
 
-    convertEditFunction :: forall edita editb. (EditSubject edita ~ EditSubject editb,Edit edita,FullReader (EditReader edita),FullEdit editb) =>
+    convertEditFunction :: forall edita editb. (EditSubject edita ~ EditSubject editb,Edit edita,FullSubjectReader (EditReader edita),FullEdit editb) =>
         EditFunction () edita editb;
     convertEditFunction = funcEditFunction id;
 }

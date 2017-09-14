@@ -43,7 +43,7 @@ module Truth.UI.GTK.Text (textUIView) where
     textView uitext = MkView $ \(MkObject object) setSelect -> do
     {
         buffer <- textBufferNew Nothing;
-        initial <- object $ \muted -> unReadable fromReader $ mutableRead muted;
+        initial <- object $ \muted -> unReadable subjectFromReader $ mutableRead muted;
         textBufferSetText buffer initial;
         mv <- newMVar ();
 

@@ -2,7 +2,7 @@
 module Truth.Core.Types.EitherTuple where
 {
     import Truth.Core.Import;
-    import Truth.Core.Edit;
+    import Truth.Core.Read;
     import Truth.Core.Types.Tuple;
 
 
@@ -12,7 +12,7 @@ module Truth.Core.Types.EitherTuple where
         tupleWitness pc (RightWitness sel) = tupleWitness pc sel;
     };
 
-    instance (TestEquality p,TupleWitness Edit p,TestEquality q,TupleWitness Edit q) => TupleSelector (EitherWitness p q);
+    instance (TestEquality p,TupleReaderWitness SubjectReader p,TestEquality q,TupleReaderWitness SubjectReader q) => SubjectTupleSelector (EitherWitness p q);
 
     instance (TupleReaderWitness c p,TupleReaderWitness c q) => TupleReaderWitness c (EitherWitness p q) where
     {

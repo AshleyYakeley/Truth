@@ -12,17 +12,17 @@ module Truth.Core.Types.String where
         StringReadSection :: SequenceRun seq -> StringRead seq seq;
     };
 
-    instance IsSequence seq => Reader (StringRead seq) where
+    instance IsSequence seq => SubjectReader (StringRead seq) where
     {
         type ReaderSubject (StringRead seq) = seq;
 
-        readFrom s StringReadLength = seqLength s;
-        readFrom s (StringReadSection run) = seqSection run s;
+        readFromSubject s StringReadLength = seqLength s;
+        readFromSubject s (StringReadSection run) = seqSection run s;
     };
 
-    instance IsSequence seq => FullReader (StringRead seq) where
+    instance IsSequence seq => FullSubjectReader (StringRead seq) where
     {
-        fromReader = do
+        subjectFromReader = do
         {
             len <- readable StringReadLength;
             readable $ StringReadSection $ MkSequenceRun 0 len;
@@ -71,7 +71,7 @@ module Truth.Core.Types.String where
     {
         type EditReader (StringEdit seq) = StringRead seq;
 
-        applyEdit (StringReplaceWhole s) reader = return $ readFrom s reader;
+        applyEdit (StringReplaceWhole s) reader = return $ readFromSubject s reader;
         applyEdit (StringReplaceSection erunRaw s) StringReadLength = do
         {
             oldlen <- readable StringReadLength;
@@ -105,7 +105,7 @@ module Truth.Core.Types.String where
 
         invertEdit (StringReplaceWhole _) = do
         {
-            olds <- fromReader;
+            olds <- subjectFromReader;
             return [StringReplaceWhole olds];
         };
         invertEdit (StringReplaceSection run@(MkSequenceRun start _) s) = do
@@ -119,7 +119,7 @@ module Truth.Core.Types.String where
     {
         replaceEdit = do
         {
-            a <- readableToM $ fromReader;
+            a <- readableToM $ subjectFromReader;
             wrWrite $ StringReplaceWhole a;
         };
     };
