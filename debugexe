@@ -1,4 +1,4 @@
 #!/bin/sh -e
 stack build
-mkdir -p testsoup
+mkdir -p souptest
 stack ghci --no-load --ghci-options "-ghci-script debug.ghci"

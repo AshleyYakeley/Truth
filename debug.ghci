@@ -1,4 +1,4 @@
 :set prompt "> "
 :load Main
 :break main
-:main --soup testsoup
+:main --soup souptest
