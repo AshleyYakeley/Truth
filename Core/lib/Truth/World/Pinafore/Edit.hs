@@ -3,28 +3,30 @@ module Truth.World.Pinafore.Edit where
     import Truth.Core.Import;
     import Truth.Core;
     import Data.UUID;
-    import Data.UUID.V4 as UUID;
 
+
+    newtype Predicate = MkPredicate UUID deriving (Eq);
+    newtype Point = MkPoint UUID deriving (Eq,Random);
 
     data PinaforeRead t where
     {
-        PinaforeReadGetValue :: UUID -> UUID -> PinaforeRead (Maybe UUID);
-        PinaforeReadLookupValue :: UUID -> UUID -> PinaforeRead (FiniteSet UUID);
-        PinaforeReadGetPrimitive :: UUID -> PinaforeRead (Maybe ByteString);
-        PinaforeReadLookupPrimitive :: UUID -> ByteString -> PinaforeRead (FiniteSet UUID);
+        PinaforeReadGetValue :: Predicate -> Point -> PinaforeRead (Maybe Point);
+        PinaforeReadLookupValue :: Predicate -> Point -> PinaforeRead (FiniteSet Point);
+        PinaforeReadGetPrimitive :: Point -> PinaforeRead (Maybe ByteString);
+        PinaforeReadLookupPrimitive :: Predicate -> ByteString -> PinaforeRead (FiniteSet Point);
     };
 
     data PinaforeEdit where
     {
-        PinaforeEditSetValue :: UUID -> UUID -> Maybe UUID -> PinaforeEdit; -- pred subj mval
-        PinaforeEditDeleteTriple :: UUID -> UUID -> UUID -> PinaforeEdit; -- pred subj val -- delete this triple if it exists
-        PinaforeEditDeleteLookupValue :: UUID -> UUID -> PinaforeEdit; -- pred val -- delete all triples matching pred val
-        PinaforeEditSetPrimitive :: UUID -> Maybe ByteString -> PinaforeEdit;
+        PinaforeEditSetValue :: Predicate -> Point -> Maybe Point -> PinaforeEdit; -- pred subj mval
+        PinaforeEditDeleteTriple :: Predicate -> Point -> Point -> PinaforeEdit; -- pred subj val -- delete this triple if it exists
+        PinaforeEditDeleteLookupValue :: Predicate -> Point -> PinaforeEdit; -- pred val -- delete all triples matching pred val
+        PinaforeEditSetPrimitive :: Point -> Maybe ByteString -> PinaforeEdit;
     };
 
     instance SubjectReader PinaforeRead where
     {
-        type ReaderSubject PinaforeRead = ([(UUID,UUID,UUID)],[(UUID,ByteString)]);
+        type ReaderSubject PinaforeRead = ([(Predicate,Point,Point)],[(Point,ByteString)]);
 
         readFromSubject (triples,_) (PinaforeReadGetValue rp rs) = listToMaybe $ [v | (p,s,v) <- triples,p == rp && s == rs];
         readFromSubject (triples,_) (PinaforeReadLookupValue rp rv) = MkFiniteSet [s | (p,s,v) <- triples, p == rp, v == rv];
@@ -43,7 +45,7 @@ module Truth.World.Pinafore.Edit where
         applyEdit _ _ = return undefined;
     };
 
-    soupPrimitiveLens :: forall t. Serialize t => UUID -> EditLens () PinaforeEdit (WholeEdit (Maybe t));
+    soupPrimitiveLens :: forall t. Serialize t => Point -> EditLens () PinaforeEdit (WholeEdit (Maybe t));
     soupPrimitiveLens valkey = let
     {
         editInitial = ();
@@ -65,32 +67,32 @@ module Truth.World.Pinafore.Edit where
         editLensPutEdit () (MkWholeEdit mt) = pure $ pure $ pure $ pure $ PinaforeEditSetPrimitive valkey $ fmap (encode serializeCodec) mt;
     } in MkEditLens{..};
 
-    soupTripleLens :: UUID -> UUID -> EditLens () PinaforeEdit (WholeEdit (Maybe UUID));
+    soupTripleLens :: Predicate -> Point -> EditLens () PinaforeEdit (WholeEdit (Maybe Point));
     soupTripleLens prd subj = let
     {
         editInitial = ();
 
-        editGet :: () -> WholeReader (Maybe UUID) a -> Readable PinaforeRead a;
+        editGet :: () -> WholeReader (Maybe Point) a -> Readable PinaforeRead a;
         editGet () ReadWhole = readable $ PinaforeReadGetValue prd subj;
 
-        editUpdate :: PinaforeEdit -> () -> Readable PinaforeRead ((),[WholeEdit (Maybe UUID)]);
+        editUpdate :: PinaforeEdit -> () -> Readable PinaforeRead ((),[WholeEdit (Maybe Point)]);
         editUpdate (PinaforeEditSetValue p s mv) () | p == prd && s == subj = pure $ pure $ pure $ MkWholeEdit mv;
         editUpdate _ () = pure $ pure [];
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> WholeEdit (Maybe UUID) -> Readable PinaforeRead (Maybe ((),[PinaforeEdit]));
+        editLensPutEdit :: () -> WholeEdit (Maybe Point) -> Readable PinaforeRead (Maybe ((),[PinaforeEdit]));
         editLensPutEdit () (MkWholeEdit mv) = pure $ pure $ pure $ pure $ PinaforeEditSetValue prd subj mv;
     } in MkEditLens{..};
 
     type PinaforeMorphism = PointedEditLens PinaforeEdit;
 
-    primitivePinaforeMorphism :: forall val. Serialize val => PinaforeMorphism (WholeEdit (Maybe UUID)) (WholeEdit (Maybe val));
+    primitivePinaforeMorphism :: forall val. Serialize val => PinaforeMorphism (WholeEdit (Maybe Point)) (WholeEdit (Maybe val));
     primitivePinaforeMorphism = MkPointedEditLens $ let
     {
         editInitial = ();
 
-        editGet :: forall t. () -> WholeReader (Maybe val) t -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe UUID))) t;
+        editGet :: forall t. () -> WholeReader (Maybe val) t -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) t;
         editGet () ReadWhole = do
         {
             msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
@@ -105,7 +107,7 @@ module Truth.World.Pinafore.Edit where
             };
         };
 
-        editUpdate :: (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID))) -> () -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe UUID))) ((),[WholeEdit (Maybe val)]);
+        editUpdate :: (ContextEdit PinaforeEdit (WholeEdit (Maybe Point))) -> () -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) ((),[WholeEdit (Maybe val)]);
         editUpdate (MkTupleEdit EditContext (PinaforeEditSetPrimitive s mbs)) () = do
         {
             msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
@@ -121,7 +123,7 @@ module Truth.World.Pinafore.Edit where
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> WholeEdit (Maybe val) -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe UUID))) (Maybe ((),[ContextEdit PinaforeEdit (WholeEdit (Maybe UUID))]));
+        editLensPutEdit :: () -> WholeEdit (Maybe val) -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) (Maybe ((),[ContextEdit PinaforeEdit (WholeEdit (Maybe Point))]));
         editLensPutEdit () (MkWholeEdit (fmap (encode serializeCodec) -> mbs)) = do
         {
             msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
@@ -130,7 +132,7 @@ module Truth.World.Pinafore.Edit where
                 Just subj -> return $ pure $ pure [MkTupleEdit EditContext $ PinaforeEditSetPrimitive subj mbs];
                 Nothing -> do
                 {
-                    subj <- liftIO UUID.nextRandom;
+                    subj <- liftIO randomIO;
                     return $ pure $ pure [MkTupleEdit EditContent $ MkWholeEdit $ Just subj, MkTupleEdit EditContext $ PinaforeEditSetPrimitive subj mbs];
                 };
             };
@@ -138,15 +140,15 @@ module Truth.World.Pinafore.Edit where
 
     } in MkEditLens{..};
 
-    primitiveEditPinaforeMorphism :: forall edit. (FullSubjectReader (EditReader edit),Edit edit,Serialize (EditSubject edit)) => PinaforeMorphism (WholeEdit (Maybe UUID)) (OneWholeEdit Maybe edit);
+    primitiveEditPinaforeMorphism :: forall edit. (FullSubjectReader (EditReader edit),Edit edit,Serialize (EditSubject edit)) => PinaforeMorphism (WholeEdit (Maybe Point)) (OneWholeEdit Maybe edit);
     primitiveEditPinaforeMorphism = composeEditLensPointed convertEditLens primitivePinaforeMorphism;
 
-    predicatePinaforeMorphism :: UUID -> PinaforeMorphism (WholeEdit (Maybe UUID)) (WholeEdit (Maybe UUID));
+    predicatePinaforeMorphism :: Predicate -> PinaforeMorphism (WholeEdit (Maybe Point)) (WholeEdit (Maybe Point));
     predicatePinaforeMorphism prd = MkPointedEditLens $ let
     {
         editInitial = ();
 
-        editGet :: forall t. () -> WholeReader (Maybe UUID) t -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe UUID))) t;
+        editGet :: forall t. () -> WholeReader (Maybe Point) t -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) t;
         editGet () ReadWhole = do
         {
             msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
@@ -157,7 +159,7 @@ module Truth.World.Pinafore.Edit where
             };
         };
 
-        editUpdate :: (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID))) -> () -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe UUID))) ((),[WholeEdit (Maybe UUID)]);
+        editUpdate :: (ContextEdit PinaforeEdit (WholeEdit (Maybe Point))) -> () -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) ((),[WholeEdit (Maybe Point)]);
         editUpdate (MkTupleEdit EditContext (PinaforeEditSetValue p s mv)) () | p == prd = do
         {
             msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
@@ -199,7 +201,7 @@ module Truth.World.Pinafore.Edit where
 
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> WholeEdit (Maybe UUID) -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe UUID))) (Maybe ((),[ContextEdit PinaforeEdit (WholeEdit (Maybe UUID))]));
+        editLensPutEdit :: () -> WholeEdit (Maybe Point) -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) (Maybe ((),[ContextEdit PinaforeEdit (WholeEdit (Maybe Point))]));
         editLensPutEdit () (MkWholeEdit mv) = do
         {
             msubj <- readable $ MkTupleEditReader EditContent ReadWhole;
@@ -208,19 +210,19 @@ module Truth.World.Pinafore.Edit where
                 Just subj -> return $ pure $ pure [MkTupleEdit EditContext $ PinaforeEditSetValue prd subj mv];
                 Nothing -> do
                 {
-                    subj <- liftIO UUID.nextRandom;
+                    subj <- liftIO randomIO;
                     return $ pure $ pure [MkTupleEdit EditContent $ MkWholeEdit $ Just subj, MkTupleEdit EditContext $ PinaforeEditSetValue prd subj mv];
                 };
             };
         };
     } in MkEditLens{..};
 
-    predicateInversePinaforeMorphism :: UUID -> PinaforeMorphism (WholeEdit (Maybe UUID)) (FiniteSetEdit UUID);
+    predicateInversePinaforeMorphism :: Predicate -> PinaforeMorphism (WholeEdit (Maybe Point)) (FiniteSetEdit Point);
     predicateInversePinaforeMorphism prd = MkPointedEditLens $ let
     {
         editInitial = ();
 
-        editGet :: forall t. () -> FiniteSetReader UUID t -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe UUID))) t;
+        editGet :: forall t. () -> FiniteSetReader Point t -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) t;
         editGet () KeyReadKeys = do
         {
             mval <- readable $ MkTupleEditReader EditContent ReadWhole;
@@ -244,7 +246,7 @@ module Truth.World.Pinafore.Edit where
             };
         };
 
-        editUpdate :: ContextEdit PinaforeEdit (WholeEdit (Maybe UUID)) -> () -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe UUID))) ((), [FiniteSetEdit UUID]);
+        editUpdate :: ContextEdit PinaforeEdit (WholeEdit (Maybe Point)) -> () -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) ((), [FiniteSetEdit Point]);
         editUpdate (MkTupleEdit EditContext (PinaforeEditSetValue p s mnewv)) () | p == prd = do
         {
             mval <- readable $ MkTupleEditReader EditContent ReadWhole;
@@ -274,10 +276,10 @@ module Truth.World.Pinafore.Edit where
             return $ pure edits;
         };
 
-        editLensFunction :: EditFunction () (ContextEdit PinaforeEdit (WholeEdit (Maybe UUID))) (FiniteSetEdit UUID);
+        editLensFunction :: EditFunction () (ContextEdit PinaforeEdit (WholeEdit (Maybe Point))) (FiniteSetEdit Point);
         editLensFunction = MkEditFunction{..};
 
-        editLensPutEdit :: () -> FiniteSetEdit UUID -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe UUID))) (Maybe ((), [ContextEdit PinaforeEdit (WholeEdit (Maybe UUID))]));
+        editLensPutEdit :: () -> FiniteSetEdit Point -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) (Maybe ((), [ContextEdit PinaforeEdit (WholeEdit (Maybe Point))]));
         editLensPutEdit () (KeyEditItem _ edit) = never edit;
         editLensPutEdit () (KeyDeleteItem subj) = do
         {
@@ -296,7 +298,7 @@ module Truth.World.Pinafore.Edit where
                 Just val -> return $ Just $ pure [MkTupleEdit EditContext $ PinaforeEditSetValue prd subj $ Just val];
                 Nothing -> do
                 {
-                    val <- liftIO UUID.nextRandom;
+                    val <- liftIO randomIO;
                     return $ Just $ pure [MkTupleEdit EditContent $ MkWholeEdit $ Just val, MkTupleEdit EditContext $ PinaforeEditSetValue prd subj $ Just val];
                 };
             };

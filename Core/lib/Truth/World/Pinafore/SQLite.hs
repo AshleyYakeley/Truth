@@ -24,11 +24,31 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
         toField = toField . toByteString;
     };
 
+    instance FieldType Point where {fieldTypeName="BLOB"};
+    instance FromField Point where
+    {
+        fromField f = fmap MkPoint $ fromField f;
+    };
+    instance ToField Point where
+    {
+        toField (MkPoint uuid) = toField uuid;
+    };
+
+    instance FieldType Predicate where {fieldTypeName="BLOB"};
+    instance FromField Predicate where
+    {
+        fromField f = fmap MkPredicate $ fromField f;
+    };
+    instance ToField Predicate where
+    {
+        toField (MkPredicate uuid) = toField uuid;
+    };
+
     data TripleTable t where
     {
-        TriplePredicate :: TripleTable UUID;
-        TripleSubject :: TripleTable UUID;
-        TripleValue :: TripleTable UUID;
+        TriplePredicate :: TripleTable Predicate;
+        TripleSubject :: TripleTable Point;
+        TripleValue :: TripleTable Point;
     };
 
     instance FiniteWitness TripleTable where
@@ -52,7 +72,7 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
 
     data LiteralTable t where
     {
-        LiteralKey :: LiteralTable UUID;
+        LiteralKey :: LiteralTable Point;
         LiteralValue :: LiteralTable ByteString;
     };
 
