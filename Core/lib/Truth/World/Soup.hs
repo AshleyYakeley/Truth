@@ -7,7 +7,7 @@ module Truth.World.Soup(UUIDElementEdit,SoupEdit,directorySoup,liftSoupLens) whe
     import Data.UUID;
 
 
-    type UUIDElementEdit edit = PairEdit (NoEdit (WholeReader UUID)) edit;
+    type UUIDElementEdit edit = PairEdit (ConstEdit UUID) edit;
     type SoupEdit edit = KeyEdit [(UUID,EditSubject edit)] (UUIDElementEdit edit);
 
     liftSoupLens :: forall state edita editb. (SubjectReader (EditReader edita),FullSubjectReader (EditReader editb)) =>

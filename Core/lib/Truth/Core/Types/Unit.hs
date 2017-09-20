@@ -5,7 +5,9 @@ module Truth.Core.Types.Unit where
     import Truth.Core.Types.Whole;
 
 
-    type UnitEdit = NoEdit (WholeReader ());
+    type ConstEdit a = NoEdit (WholeReader a);
+
+    type UnitEdit = ConstEdit ();
 
     unitEditFunction :: EditFunction () edit UnitEdit;
     unitEditFunction = constEditFunction ();

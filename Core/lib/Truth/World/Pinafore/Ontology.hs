@@ -63,11 +63,11 @@ module Truth.World.Pinafore.Ontology where
         uiWitness = $(iowitness [t|UIEntityPicker|]);
     };
 
-    pinaforePropertyKeyColumn :: ViewPinaforeSimpleProperty (OneWholeEdit Maybe (WholeEdit String)) -> KeyColumn (ContextEdit PinaforeEdit (NoEdit (WholeReader Point)));
+    pinaforePropertyKeyColumn :: ViewPinaforeSimpleProperty (OneWholeEdit Maybe (WholeEdit String)) -> KeyColumn (ContextEdit PinaforeEdit (ConstEdit ( Point)));
     pinaforePropertyKeyColumn (MkViewPinaforeSimpleProperty name (MkPointedEditLens lens) _ptype) =
         MkKeyColumn name $ funcEditFunction (fromMaybe "<empty>") <.> editLensFunction lens <.> liftContextEditFunction (funcEditFunction Just);
 
-    maybeWholeFunction :: forall a. ObjectFunction (NoEdit (WholeReader a)) (WholeEdit (Maybe a));
+    maybeWholeFunction :: forall a. ObjectFunction (ConstEdit a) (WholeEdit (Maybe a));
     maybeWholeFunction = let
     {
         editInitial = ();
@@ -76,7 +76,7 @@ module Truth.World.Pinafore.Ontology where
         editUpdate = never;
     } in MkEditFunction{..};
 
-    maybeWholeLens :: forall a. GeneralLens (NoEdit (WholeReader a)) (WholeEdit (Maybe a));
+    maybeWholeLens :: forall a. GeneralLens (ConstEdit a) (WholeEdit (Maybe a));
     maybeWholeLens = let
     {
         editLensFunction = maybeWholeFunction;
@@ -87,13 +87,13 @@ module Truth.World.Pinafore.Ontology where
     pinaforePropertySpec (SimpleViewPinaforeProperty (MkViewPinaforeSimpleProperty _name (MkPointedEditLens lens) ptype)) = MkUISpec $ MkUILens (MkCloseState lens) $ MkUISpec $ MkUIEntityPicker $ pinaforeTypeSpec ptype;
     pinaforePropertySpec (ListViewPinaforeProperty (MkViewPinaforeListProperty _name lens ptype cols)) = let
     {
-        aspect :: Aspect (ContextEdit PinaforeEdit (OneWholeEdit Maybe (NoEdit (WholeReader Point))));
+        aspect :: Aspect (ContextEdit PinaforeEdit (OneWholeEdit Maybe (ConstEdit Point)));
         aspect = MkAspect "item" $ MkUISpec $ MkUILens (liftContextGeneralLens $ MkCloseState convertEditLens) $ pinaforeTypeSpec ptype;
 
-        spec :: UISpec (ContextEdit PinaforeEdit (KeyEdit (FiniteSet Point) (NoEdit (WholeReader Point))));
+        spec :: UISpec (ContextEdit PinaforeEdit (KeyEdit (FiniteSet Point) (ConstEdit Point)));
         spec = MkUISpec $ MkUIContextTable (fmap pinaforePropertyKeyColumn cols) aspect;
 
-        propertyLens :: GeneralLens (ContextEdit PinaforeEdit (WholeEdit (Maybe Point))) (ContextEdit PinaforeEdit (KeyEdit (FiniteSet Point) (NoEdit (WholeReader Point))));
+        propertyLens :: GeneralLens (ContextEdit PinaforeEdit (WholeEdit (Maybe Point))) (ContextEdit PinaforeEdit (KeyEdit (FiniteSet Point) (ConstEdit ( Point))));
         propertyLens = carryPointedEditLens lens;
     }
     in MkUISpec $ MkUILens propertyLens spec;

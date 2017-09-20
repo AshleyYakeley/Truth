@@ -5,7 +5,7 @@ module Truth.Core.Types.FiniteSet where
     import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Types.Whole;
-    import Truth.Core.Types.None;
+    import Truth.Core.Types.Unit;
     import Truth.Core.Types.Tuple;
     import Truth.Core.Types.Pair;
     import Truth.Core.Types.Lattice;
@@ -13,7 +13,7 @@ module Truth.Core.Types.FiniteSet where
 
 
     type FiniteSetReader subj = KeyReader (FiniteSet subj) (WholeReader subj);
-    type FiniteSetEdit subj = KeyEdit (FiniteSet subj) (NoEdit (WholeReader subj));
+    type FiniteSetEdit subj = KeyEdit (FiniteSet subj) (ConstEdit subj);
 
     finiteSetLens :: forall subj. Eq subj => subj -> EditLens () (FiniteSetEdit subj) (WholeEdit Bool);
     finiteSetLens subj = let
