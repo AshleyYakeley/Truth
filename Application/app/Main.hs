@@ -79,7 +79,7 @@ module Main(main) where
     {
         nameColumn = MkKeyColumn "Name" $ funcEditFunction fromResult <.> oneWholeLiftEditFunction (tupleObjectFunction NoteTitle) <.> tupleObjectFunction EditSecond;
         pastColumn = MkKeyColumn "Past" $ funcEditFunction pastResult <.> oneWholeLiftEditFunction (tupleObjectFunction NotePast) <.> tupleObjectFunction EditSecond;
-        aspect :: Aspect (OneWholeEdit Maybe (UUIDElementEdit SoupItemEdit));
+        aspect :: Aspect (MaybeEdit (UUIDElementEdit SoupItemEdit));
         aspect = MkAspect "item" $ MkUISpec $ MkUILens (oneWholeLiftGeneralLens $ tupleEditLens EditSecond) $ MkUISpec $ MkUIOneWhole $ MkUISpec $ MkUIOneWhole noteEditSpec;
     } in uiTableToContext [nameColumn,pastColumn] aspect;
 

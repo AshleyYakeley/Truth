@@ -12,6 +12,8 @@ module Truth.Core.Types.OneWholeEdit where
 
     type OneWholeEdit (f :: * -> *) edit = SumWholeEdit (OneEdit f edit);
 
+    type MaybeEdit edit = OneWholeEdit Maybe edit;
+
     extractOneWholeEdit :: forall m f edit. (MonadOne f,FullEdit edit,MonadIO m) => OneWholeEdit f edit -> m [edit];
     extractOneWholeEdit (SumEditRight (MkOneEdit edit)) = return [edit];
     extractOneWholeEdit (SumEditLeft (MkWholeEdit fa)) = case retrieveOne fa of

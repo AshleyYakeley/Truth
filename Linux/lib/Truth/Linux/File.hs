@@ -86,7 +86,7 @@ module Truth.Linux.File
     {
         fsNotify :: INotifyB,
         fsHandleVar :: MVar (FilePath,Maybe Handle),
-        fsPushout :: ContextContentEdit (WholeEdit FilePath) (OneWholeEdit Maybe (WholeEdit ByteString)) -> IO (),
+        fsPushout :: ContextContentEdit (WholeEdit FilePath) (MaybeEdit (WholeEdit ByteString)) -> IO (),
         fsWatchVar :: MVar (Maybe WatchDescriptorB)
     };
 
@@ -125,7 +125,7 @@ module Truth.Linux.File
         };
     };
 
-    newFileState :: INotifyB -> FilePath -> (ContextContentEdit (WholeEdit FilePath) (OneWholeEdit Maybe (WholeEdit ByteString)) -> IO ()) -> IO FileState;
+    newFileState :: INotifyB -> FilePath -> (ContextContentEdit (WholeEdit FilePath) (MaybeEdit (WholeEdit ByteString)) -> IO ()) -> IO FileState;
     newFileState notify path pushout = do
     {
         var <- newMVar (path,Nothing);
@@ -291,7 +291,7 @@ module Truth.Linux.File
 
     linuxFileObject :: INotifyB -> FilePath ->
      Subscribe
-      (ContextContentEdit (WholeEdit FilePath) (OneWholeEdit Maybe (WholeEdit ByteString)));
+      (ContextContentEdit (WholeEdit FilePath) (MaybeEdit (WholeEdit ByteString)));
     linuxFileObject inotify initialpath = objSubscribe (\pushout -> do
     {
         fs <- newFileState inotify initialpath pushout;

@@ -87,7 +87,7 @@ module Truth.World.Pinafore.Ontology where
     pinaforePropertySpec (SimpleViewPinaforeProperty (MkViewPinaforeSimpleProperty _name (MkPointedEditLens lens) ptype)) = MkUISpec $ MkUILens (MkCloseState lens) $ MkUISpec $ MkUIEntityPicker $ pinaforeTypeSpec ptype;
     pinaforePropertySpec (ListViewPinaforeProperty (MkViewPinaforeListProperty _name lens ptype cols)) = let
     {
-        aspect :: Aspect (ContextEdit PinaforeEdit (OneWholeEdit Maybe (ConstEdit Point)));
+        aspect :: Aspect (ContextEdit PinaforeEdit (MaybeEdit (ConstEdit Point)));
         aspect = MkAspect "item" $ MkUISpec $ MkUILens (liftContextGeneralLens $ MkCloseState convertEditLens) $ pinaforeTypeSpec ptype;
 
         spec :: UISpec (ContextEdit PinaforeEdit (KeyEdit (FiniteSet Point) (ConstEdit Point)));

@@ -35,7 +35,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
     };
 
     keyContainerView :: forall cont cedit iedit. (IONewItemKeyContainer cont,FullSubjectReader (EditReader iedit),Edit cedit,Edit iedit,HasKeyReader cont (EditReader iedit)) =>
-        KeyColumns (ContextEdit cedit iedit) -> Aspect (ContextEdit cedit (OneWholeEdit Maybe iedit)) -> GView (ContextEdit cedit (KeyEdit cont iedit));
+        KeyColumns (ContextEdit cedit iedit) -> Aspect (ContextEdit cedit (MaybeEdit iedit)) -> GView (ContextEdit cedit (KeyEdit cont iedit));
     keyContainerView (MkKeyColumns (colfunc :: ObjectFunction (ContextEdit cedit iedit) (WholeEdit tt)) cols) aspect = MkView $ \(MkObject object :: Object (ContextEdit cedit (KeyEdit cont iedit))) setSelect -> do
     {
         let

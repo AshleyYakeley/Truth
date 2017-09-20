@@ -182,7 +182,7 @@ module Truth.Core.Types.Key where
     };
 
     keyElementLens :: forall cont edit. (KeyContainer cont,HasKeyReader cont (EditReader edit),Edit edit) =>
-        ContainerKey cont -> GeneralLens (KeyEdit cont edit) (OneWholeEdit Maybe edit);
+        ContainerKey cont -> GeneralLens (KeyEdit cont edit) (MaybeEdit edit);
     keyElementLens editInitial = let
     {
         editGet :: ContainerKey cont -> ReadFunction (KeyReader cont (EditReader edit)) (OneReader Maybe (EditReader edit));
@@ -193,7 +193,7 @@ module Truth.Core.Types.Key where
         };
         editGet key (ReadOne rt) = readable $ KeyReadItem key rt;
 
-        editUpdate :: KeyEdit cont edit -> ContainerKey cont -> Readable (KeyReader cont (EditReader edit)) (ContainerKey cont,[OneWholeEdit Maybe edit]);
+        editUpdate :: KeyEdit cont edit -> ContainerKey cont -> Readable (KeyReader cont (EditReader edit)) (ContainerKey cont,[MaybeEdit edit]);
         editUpdate KeyClear key = return (key,[SumEditLeft (MkWholeEdit Nothing)]);
         editUpdate (KeyDeleteItem k) key | k == key = return (key,[SumEditLeft (MkWholeEdit Nothing)]);
         editUpdate (KeyEditItem k edit) oldkey | k == oldkey = do
@@ -222,7 +222,7 @@ module Truth.Core.Types.Key where
             }
         };
 
-        lens :: EditLens (ContainerKey cont) (KeyEdit cont edit) (OneWholeEdit Maybe edit);
+        lens :: EditLens (ContainerKey cont) (KeyEdit cont edit) (MaybeEdit edit);
         lens = MkEditLens{..};
     } in toGeneralLens lens;
 
@@ -233,7 +233,7 @@ module Truth.Core.Types.Key where
             Edit keyedit,
             FullSubjectReader (EditReader keyedit),
             FullEdit valueedit
-        ) => ContainerKey cont -> GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (OneWholeEdit Maybe valueedit);
+        ) => ContainerKey cont -> GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (MaybeEdit valueedit);
     keyValueLens key = (oneWholeLiftGeneralLens $ tupleEditLens EditSecond) <.> keyElementLens key;
 
     liftKeyElementLens :: forall state conta contb edita editb.

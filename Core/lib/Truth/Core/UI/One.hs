@@ -10,7 +10,7 @@ module Truth.Core.UI.One where
     {
         -- view can create object
         ;
-        MkUIMaybe :: forall edit. (FullEdit edit) => Maybe (EditSubject edit) -> UISpec edit -> UIOne (OneWholeEdit Maybe edit);
+        MkUIMaybe :: forall edit. (FullEdit edit) => Maybe (EditSubject edit) -> UISpec edit -> UIOne (MaybeEdit edit);
         MkUIOneWhole :: forall f edit. (MonadOne f,FullEdit edit) => UISpec edit -> UIOne (OneWholeEdit f edit);
         --MkUIOne :: forall f edit. (MonadOne f,Edit edit) => UISpec edit -> UIOne (OneEdit f edit);
     };
