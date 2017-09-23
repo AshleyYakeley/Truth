@@ -1,0 +1,118 @@
+-- primitive types defined in Haskell
+-- entity types defined by UISpecs
+-- define predicates by UUID (without reference to types)
+-- define morphisms by composition / limits / colimits
+
+-- JSON?
+
+{
+    predicates:
+    {
+        people: "f06efa5e-190f-4e5d-8633-495c5683c124"
+        mother: "3afce58f-b7eb-4b11-8a75-2d66afd4d085"
+        father: "c005705f-9259-4d24-9713-db28a6e4f7d5"
+        name: "498260df-6a8a-44f0-b285-68a63565a33b"
+    }
+    types:
+    {
+        Start:
+        {
+            uitype: vertical
+            elements:
+            [
+                {
+                    uitype: map
+                    morphism: "inverse people"
+                    element:
+                    {
+                        uitype: table
+                        item: Person
+                        columns:
+                        [
+                            {
+                                name: "Name"
+                                morphism: name
+                                type: String
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+        Person:
+        {
+            uitype: vertical
+            elements:
+            [
+                {
+                    uitype: map
+                    morphism: name
+                    element:
+                    {
+                        uitype: labelled
+                        label: "Name:"
+                        element:
+                        {
+                            uitype: text-entry
+                        }
+                    }
+                },
+                {
+                    uitype: map
+                    morphism: father
+                    element:
+                    {
+                        uitype: labelled
+                        label: "Father:"
+                        element:
+                        {
+                            uitype: picker
+                            type: Person
+                        }
+                    }
+                },
+                {
+                    uitype: map
+                    morphism: mother
+                    element:
+                    {
+                        uitype: labelled
+                        label: "Mother:"
+                        element:
+                        {
+                            uitype: picker
+                            type: Person
+                        }
+                    }
+                },
+                {
+                    uitype: map
+                    morphism: "inverse father \/ inverse mother"
+                    element:
+                    {
+                        uitype: labelled
+                        label: "Children:"
+                        element:
+                        {
+                            uitype: table
+                            item: Person
+                            columns:
+                            [
+                                {
+                                    name: "Name"
+                                    morphism: name
+                                    type: String
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    }
+    start:
+    {
+        point: 78baed51-cb05-46b5-bcb4-49031532b890
+        type: Start
+    }
+}
