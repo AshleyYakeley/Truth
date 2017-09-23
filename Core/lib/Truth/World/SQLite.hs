@@ -277,7 +277,7 @@ module Truth.World.SQLite
         exists <- doesFileExist path;
         withConnection path $ \conn -> do
         {
-            if exists then return () else execute_ conn $ SQLite.createIfNotExists schema; -- create the database if we're creating the file
+            if exists then return () else for_ (SQLite.toSchema schema) $ execute_ conn; -- create the database if we're creating the file
             call $ muted conn;
         };
     };

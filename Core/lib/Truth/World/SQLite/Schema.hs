@@ -56,6 +56,11 @@ module Truth.World.SQLite.Schema where
         } in "(" ++ intercalate "," (fmap (\(MkAnyWitness isch) -> show isch) $ columns) ++ ",PRIMARY KEY (" ++ intercalate "," (mapMaybe (\(MkAnyWitness MkColumnSchema{..}) -> if columnPrimaryKey then Just columnName else Nothing) columns) ++ "))";
     };
 
+    class ToSchema t where
+    {
+        toSchema :: t -> [Query];
+    };
+
     data IndexSchema colsel = MkIndexSchema
     {
         indexName :: String,
@@ -69,12 +74,13 @@ module Truth.World.SQLite.Schema where
         tableIndexes :: [IndexSchema colsel]
     };
 
-    instance Show (TableSchema colsel) where
+    instance ToSchema (TableSchema colsel) where
     {
-        show MkTableSchema{..} = let
+        toSchema MkTableSchema{..} = let
         {
-            showIndex MkIndexSchema{..} = "CREATE INDEX IF NOT EXISTS " ++ indexName ++ " (" ++ intercalate "," (fmap (\(MkAnyWitness col) -> show $ subWitnessMap tableColumns col) indexColumns) ++ ");\n"
-        } in "CREATE TABLE IF NOT EXISTS " ++ tableName ++ " " ++ show tableColumns ++ ";\n" ++ (mconcat $ fmap showIndex tableIndexes);
+            createTable = fromString $ "CREATE TABLE IF NOT EXISTS " ++ tableName ++ " " ++ show tableColumns;
+            showIndex MkIndexSchema{..} = fromString $ "CREATE INDEX IF NOT EXISTS " ++ indexName ++ " ON " ++ tableName ++ " (" ++ intercalate "," (fmap (\(MkAnyWitness col) -> columnName $ subWitnessMap tableColumns col) indexColumns) ++ ")"
+        } in createTable : (fmap showIndex tableIndexes);
     };
 
     data DatabaseSchema tablesel = MkDatabaseSchema
@@ -82,16 +88,13 @@ module Truth.World.SQLite.Schema where
         databaseTables :: SubmapWitness tablesel TableSchema
     };
 
-    instance Show (SubmapWitness tablesel TableSchema) where
+    instance ToSchema (SubmapWitness tablesel TableSchema) where
     {
-        show MkSubmapWitness{..} = mconcat $ fmap (\(MkAnyWitness table) -> show $ subWitnessMap table) $ subWitnessDomain;
+        toSchema MkSubmapWitness{..} = mconcat $ fmap (\(MkAnyWitness table) -> toSchema $ subWitnessMap table) $ subWitnessDomain;
     };
 
-    instance Show (DatabaseSchema databaseTablesel) where
+    instance ToSchema (DatabaseSchema databaseTablesel) where
     {
-        show MkDatabaseSchema{..} = show databaseTables;
+        toSchema MkDatabaseSchema{..} = toSchema databaseTables;
     };
-
-    createIfNotExists :: DatabaseSchema databaseTablesel -> Query;
-    createIfNotExists schema = fromString $ show schema;
 }
