@@ -155,4 +155,8 @@ module Truth.Core.Types.Pair where
             };
         }
     };
+
+    pairJoinGeneralLenses :: forall edita editb1 editb2.
+        GeneralLens edita editb1 -> GeneralLens edita editb2 -> GeneralLens edita (PairEdit editb1 editb2);
+    pairJoinGeneralLenses (MkCloseState lens1) (MkCloseState lens2) = MkCloseState $ pairJoinEditLenses lens1 lens2;
 }

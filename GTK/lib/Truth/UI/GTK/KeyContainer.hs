@@ -6,61 +6,88 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
     import Truth.UI.GTK.GView;
 
 
-    addColumn :: TreeView -> ListStore (key,t) -> String -> (t -> String) -> IO ();
-    addColumn tview store name showCell = do
+    data SALens edita editb = forall state. MkSALens (forall m. IsStateIO m => StateAccess m state) (EditLens state edita editb);
+
+    makeSALens :: GeneralLens edita editb -> IO (SALens edita editb);
+    makeSALens (MkCloseState lens) = do
+    {
+        var <- newMVar $ editInitial $ editLensFunction lens;
+        return $ MkSALens (mvarStateAccess var) lens;
+    };
+
+    saMapObject :: Edit edita => SALens edita editb -> Object edita -> Object editb;
+    saMapObject (MkSALens sa lens) = mapObject sa lens;
+
+    type Update m edit = MutableRead m (EditReader edit) -> [edit] -> m ();
+    saMapUpdate :: forall m edita editb. IsStateIO m => SALens edita editb -> Update m editb -> Update m edita;
+    saMapUpdate (MkSALens sa lens) updateB mrA editsA = sa $ StateT $ \oldstate -> do
+    {
+        (newstate,editsB) <- unReadable (editUpdates (editLensFunction lens) editsA oldstate) mrA;
+        let
+        {
+            mrB :: MutableRead m (EditReader editb);
+            mrB = mapMutableRead (editGet (editLensFunction lens) newstate) mrA;
+        };
+        updateB mrB editsB;
+        return ((),newstate);
+    };
+
+    addColumn :: Edit tedit => TreeView -> Object tedit -> ListStore (key,SALens tedit (WholeEdit row)) -> String -> (row -> String) -> IO ();
+    addColumn tview object store name showCell = do
     {
         renderer <- cellRendererTextNew;
         column <- treeViewColumnNew;
         treeViewColumnSetTitle column name;
         cellLayoutPackStart column renderer False;
-        cellLayoutSetAttributes column renderer store $ \(_,t) -> [cellText := showCell t];
+        cellLayoutSetAttributes column renderer store $ \(_,lens) -> [cellText :=> do
+        {
+            row <- runObject (saMapObject lens object) $ \muted -> mutableRead muted ReadWhole;
+            return $ showCell row;
+        }];
         _ <- treeViewAppendColumn tview column;
         return ();
     };
 
-    data KeyColumns edit = forall tt. MkKeyColumns (ObjectFunction edit (WholeEdit tt)) [(String,tt -> String)];
+    data KeyColumns tedit key = forall row. MkKeyColumns (key -> GeneralLens tedit (WholeEdit row)) [(String,row -> String)];
 
-    oneKeyColumn :: KeyColumn edit -> KeyColumns edit;
+    oneKeyColumn :: KeyColumn tedit key -> KeyColumns tedit key;
     oneKeyColumn (MkKeyColumn n f) = MkKeyColumns f [(n,id)];
 
-    instance Semigroup (KeyColumns edita) where
+    instance Edit tedit => Semigroup (KeyColumns tedit key) where
     {
-        MkKeyColumns f1 c1 <> MkKeyColumns f2 c2 = MkKeyColumns (pairWholeObjectFunction f1 f2) $ fmap (\(n,g) -> (n,g . fst)) c1 <> fmap (\(n,g) -> (n,g . snd)) c2;
+        MkKeyColumns f1 c1 <> MkKeyColumns f2 c2 = MkKeyColumns (\k -> convertGeneralLens <.> pairJoinGeneralLenses (f1 k) (f2 k)) $ fmap (\(n,l) -> (n,l . fst)) c1 <> fmap (\(n,l) -> (n,l . snd)) c2;
     };
 
-    instance Monoid (KeyColumns edita) where
+    instance Edit tedit => Monoid (KeyColumns tedit key) where
     {
-        mempty = MkKeyColumns unitWholeObjectFunction [];
+        mempty = MkKeyColumns (\_ -> constGeneralLens ()) [];
         mappend = (<>);
     };
 
-    keyContainerView :: forall cont cedit iedit. (IONewItemKeyContainer cont,FullSubjectReader (EditReader iedit),Edit cedit,Edit iedit,HasKeyReader cont (EditReader iedit)) =>
-        KeyColumns (ContextEdit cedit iedit) -> Aspect (ContextEdit cedit (MaybeEdit iedit)) -> GView (ContextEdit cedit (KeyEdit cont iedit));
-    keyContainerView (MkKeyColumns (colfunc :: ObjectFunction (ContextEdit cedit iedit) (WholeEdit tt)) cols) aspect = MkView $ \(MkObject object :: Object (ContextEdit cedit (KeyEdit cont iedit))) setSelect -> do
+    keyContainerView :: forall cont tedit iedit. (IONewItemKeyContainer cont,Edit tedit) =>
+        KeyColumns tedit (ContainerKey cont) -> (ContainerKey cont -> Aspect tedit) -> GeneralLens tedit (KeyEdit cont iedit) -> GView tedit;
+    keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> GeneralLens tedit (WholeEdit row)) cols) getaspect tableLens = MkView $ \(object :: Object tedit) setSelect -> do
     {
+        tableSALens <- makeSALens tableLens;
         let
         {
-            getTT :: forall m. MonadIO m => ContainerKey cont -> MutableRead m (ContextEditReader cedit (KeyEdit cont iedit)) -> m tt;
-            getTT key mr = unReadable (editGet colfunc () ReadWhole) $ mapMutableRead (liftContextReadFunction $ knownKeyItemReadFunction @cont key) mr;
+            MkObject tableObject = saMapObject tableSALens object;
         };
-        initialTT <- object $ \muted -> do
+        MkFiniteSet initialKeys <- tableObject $ \muted -> mutableRead muted KeyReadKeys;
+        initialRows <- for initialKeys $ \key -> do
         {
-            MkFiniteSet initialKeys <- mutableRead muted $ MkTupleEditReader EditContent KeyReadKeys;
-            for initialKeys $ \key -> do
-            {
-                tt <- getTT key $ mutableRead muted;
-                return (key,tt);
-            };
+            rowSALens <- liftIO $ makeSALens $ colfunc key;
+            return (key,rowSALens);
         };
-        store <- listStoreNew initialTT;
+        store <- listStoreNew initialRows;
         tview <- treeViewNewWithModel store;
-        for_ cols $ \(name,showCell) -> addColumn tview store name showCell;
+        for_ cols $ \(name,showCell) -> addColumn tview object store name showCell;
 
         box <- vBoxNew False 0;
-        newButton <- makeButton "New" $ object $ \muted -> do
+        newButton <- makeButton "New" $ tableObject $ \muted -> do
         {
             item <- liftIO $ newKeyContainerItem (Proxy::Proxy cont);
-            maction <- mutableEdit muted [MkTupleEdit EditContent $ KeyInsertReplaceItem item];
+            maction <- mutableEdit muted [KeyInsertReplaceItem item];
             case maction of
             {
                 Just action -> action;
@@ -81,10 +108,10 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
                 return $ lookup @[(ContainerKey cont,Int)] key $ zip (fmap fst kk) [0..];
             };
 
-            vrUpdate :: forall m. IsStateIO m => MutableRead m (ContextEditReader cedit (KeyEdit cont iedit)) -> [ContextEdit cedit (KeyEdit cont iedit)] -> m ();
-            vrUpdate mr edits = for_ edits $ \edit -> (case edit of
+            vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader tedit) -> [tedit] -> m ();
+            vrUpdate = saMapUpdate tableSALens $ \_mr edits -> for_ edits $ \edit -> (case edit of
             {
-                MkTupleEdit EditContent (KeyDeleteItem key) -> do
+                KeyDeleteItem key -> do
                 {
                     mindex <- findInStore key;
                     case mindex of
@@ -93,7 +120,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
                         Nothing -> return ();
                     };
                 };
-                MkTupleEdit EditContent (KeyInsertReplaceItem item) -> let
+                KeyInsertReplaceItem item -> let
                 {
                     key = elementKey (Proxy :: Proxy cont) item;
                 } in do
@@ -104,30 +131,30 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
                         Just _index -> return ();
                         Nothing -> do
                         {
-                            tt <- getTT key mr;
-                            _ <- liftIO $ listStoreAppend store (key,tt);
+                            rowSALens <- liftIO $ makeSALens $ colfunc key;
+                            _ <- liftIO $ listStoreAppend store (key,rowSALens);
                             return ();
                         };
                     };
                 };
-                MkTupleEdit EditContent KeyClear -> liftIO $ listStoreClear store;
-                MkTupleEdit EditContent (KeyEditItem key _) -> do
+                KeyClear -> liftIO $ listStoreClear store;
+                KeyEditItem key _ -> do
                 {
                     mindex <- findInStore key;
                     case mindex of
                     {
                         Just i -> do
                         {
-                            tt <- getTT key mr;
-                            liftIO $ listStoreSetValue store i (key,tt);
+                            (_,lens) <- liftIO $ listStoreGetValue store i;
+                            liftIO $ listStoreSetValue store i (key,lens);
+                            return ();
                         };
                         Nothing -> return ();
                     };
                 };
-                MkTupleEdit EditContext _ -> return ();
             } :: m ());
 
-            vrFirstAspectGetter :: AspectGetter (ContextEdit cedit (KeyEdit cont iedit));
+            vrFirstAspectGetter :: AspectGetter tedit;
             vrFirstAspectGetter = do
             {
                 tsel <- treeViewGetSelection tview;
@@ -137,7 +164,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
                     [[i]] -> do
                     {
                         (key,_) <- listStoreGetValue store i;
-                        return $ Just $ mapAspect (liftContextGeneralLens $ keyElementLens key) aspect;
+                        return $ Just $ getaspect key;
                     };
                     _ -> return Nothing;
                 };
@@ -155,7 +182,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
     keyContainerUIView :: GetGView;
     keyContainerUIView = MkGetView $ \_getview uispec -> do
     {
-        MkUIContextTable cols aspect <- isUISpec uispec;
-        return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) aspect;
+        MkUITable cols getaspect lens <- isUISpec uispec;
+        return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) getaspect lens;
     };
 }

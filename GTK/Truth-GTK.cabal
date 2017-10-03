@@ -73,6 +73,7 @@ library
         Truth.UI.GTK.Useful
         Truth.UI.GTK.GView
         Truth.UI.GTK.Window
+        Truth.UI.GTK.Labelled
         Truth.UI.GTK.Maybe
         Truth.UI.GTK.CheckButton
         Truth.UI.GTK.Entry

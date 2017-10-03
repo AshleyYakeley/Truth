@@ -3,10 +3,26 @@ module Truth.World.Pinafore.Edit where
     import Truth.Core.Import;
     import Truth.Core;
     import Data.UUID;
+    import Data.Serialize as Serialize(Serialize(..));
+    import Data.Aeson (FromJSON);
 
 
-    newtype Predicate = MkPredicate UUID deriving (Eq);
-    newtype Point = MkPoint UUID deriving (Eq,Random);
+    newtype Predicate = MkPredicate UUID deriving (Eq,FromJSON);
+    newtype Point = MkPoint UUID deriving (Eq,Random,FromJSON);
+
+    instance Serialize Point where
+    {
+        put (MkPoint uuid) = Serialize.put (toByteString uuid);
+        get = do
+        {
+            bs <- Serialize.get;
+            case fromByteString bs of
+            {
+                Just uuid -> return $ MkPoint uuid;
+                Nothing -> fail "deserialize bad UUID";
+            };
+        };
+    };
 
     data PinaforeRead t where
     {
@@ -45,12 +61,13 @@ module Truth.World.Pinafore.Edit where
         applyEdit _ _ = return undefined;
     };
 
-    type PinaforeLens = PointedEditLens PinaforeEdit;
-    type PinaforeMorphism a b = PinaforeLens (WholeEdit (Maybe a)) (WholeEdit (Maybe b));
-    type PinaforeInverseMorphism a b = PinaforeLens (WholeEdit (Maybe a)) (FiniteSetEdit b);
+    type PinaforeValue = GeneralLens PinaforeEdit;
+    type PinaforeEditLens edita editb = PinaforeValue edita -> PinaforeValue editb;
+    type PinaforeLens a b = PinaforeEditLens (WholeEdit (Maybe a)) (WholeEdit (Maybe b));
+    type PinaforeInverseLens a b = PinaforeEditLens (WholeEdit (Maybe a)) (FiniteSetEdit b);
 
-    primitivePinaforeMorphism :: forall val. Serialize val => PinaforeMorphism Point val;
-    primitivePinaforeMorphism = MkPointedEditLens $ let
+    primitivePinaforeLens :: forall val. Serialize val => PinaforeLens Point val;
+    primitivePinaforeLens = pointedMapGeneralLens $ MkPointedEditLens $ let
     {
         editInitial = ();
 
@@ -102,8 +119,8 @@ module Truth.World.Pinafore.Edit where
 
     } in MkEditLens{..};
 
-    predicatePinaforeMorphism :: Predicate -> PinaforeMorphism Point Point;
-    predicatePinaforeMorphism prd = MkPointedEditLens $ let
+    predicatePinaforeLens :: Predicate -> PinaforeLens Point Point;
+    predicatePinaforeLens prd = pointedMapGeneralLens $ MkPointedEditLens $ let
     {
         editInitial = ();
 
@@ -176,8 +193,8 @@ module Truth.World.Pinafore.Edit where
         };
     } in MkEditLens{..};
 
-    predicateInversePinaforeMorphism :: Predicate -> PinaforeInverseMorphism Point Point;
-    predicateInversePinaforeMorphism prd = MkPointedEditLens $ let
+    predicateInversePinaforeLens :: Predicate -> PinaforeInverseLens Point Point;
+    predicateInversePinaforeLens prd = pointedMapGeneralLens $ MkPointedEditLens $ let
     {
         editInitial = ();
 

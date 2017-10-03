@@ -77,11 +77,15 @@ module Main(main) where
     soupEditSpec :: UISpec (SoupEdit SoupItemEdit);
     soupEditSpec = let
     {
-        nameColumn = MkKeyColumn "Name" $ funcEditFunction fromResult <.> oneWholeLiftEditFunction (tupleObjectFunction NoteTitle) <.> tupleObjectFunction EditSecond;
-        pastColumn = MkKeyColumn "Past" $ funcEditFunction pastResult <.> oneWholeLiftEditFunction (tupleObjectFunction NotePast) <.> tupleObjectFunction EditSecond;
-        aspect :: Aspect (MaybeEdit (UUIDElementEdit SoupItemEdit));
-        aspect = MkAspect "item" $ MkUISpec $ MkUILens (oneWholeLiftGeneralLens $ tupleEditLens EditSecond) $ MkUISpec $ MkUIOneWhole $ MkUISpec $ MkUIOneWhole noteEditSpec;
-    } in uiTableToContext [nameColumn,pastColumn] aspect;
+        nameColumn :: KeyColumn (SoupEdit SoupItemEdit) UUID;
+        nameColumn = MkKeyColumn "Name" $ \key -> readOnlyGeneralLens (funcEditFunction fromResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NoteTitle) <.> mustExistMaybeGeneralLens "name" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> keyElementLens key;
+
+        pastColumn :: KeyColumn (SoupEdit SoupItemEdit) UUID;
+        pastColumn = MkKeyColumn "Past" $ \key -> readOnlyGeneralLens (funcEditFunction pastResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NotePast) <.> mustExistMaybeGeneralLens "past" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> keyElementLens key;
+
+        getaspect :: Aspect (MaybeEdit (UUIDElementEdit SoupItemEdit));
+        getaspect = MkAspect "item" $ MkUISpec $ MkUILens (oneWholeLiftGeneralLens $ tupleGeneralLens EditSecond) $ MkUISpec $ MkUIOneWhole $ MkUISpec $ MkUIOneWhole noteEditSpec;
+    } in uiSimpleTable [nameColumn,pastColumn] getaspect;
 
     soupWindow :: FilePath -> WindowMaker;
     soupWindow dirpath = MkWindowMaker $ \makeWindow -> do

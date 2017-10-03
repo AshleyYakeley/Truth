@@ -7,6 +7,7 @@ module Truth.UI.GTK.Window where
     import Graphics.UI.Gtk;
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Maybe;
+    import Truth.UI.GTK.Labelled;
     import Truth.UI.GTK.CheckButton;
     import Truth.UI.GTK.Entry;
     import Truth.UI.GTK.Text;
@@ -28,7 +29,7 @@ module Truth.UI.GTK.Window where
     };
 
     allUIView :: GetGView;
-    allUIView = mconcat [lensUIView,checkButtonUIView,textEntryUIView,textUIView,keyContainerUIView,oneUIView,verticalUIView];
+    allUIView = mconcat [lensUIView,labelledUIView,checkButtonUIView,textEntryUIView,textUIView,keyContainerUIView,oneUIView,verticalUIView];
 
     getTheUIView :: Edit edit => UISpec edit -> GView edit;
     getTheUIView spec = case getUIView allUIView getTheUIView spec of

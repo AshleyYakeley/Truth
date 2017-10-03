@@ -17,131 +17,74 @@ module Truth.World.Pinafore.Ontology where
 
     data ViewPinaforeSimpleProperty t = MkViewPinaforeSimpleProperty
     {
-        spropName :: String,
-        spropMorphism :: PinaforeMorphism Point t,
+        spropMorphism :: PinaforeLens Point t,
         spropType :: ViewPinaforeType t
     };
 
     data ViewPinaforeListProperty = MkViewPinaforeListProperty
     {
-        lpropName :: String,
-        lpropMorphism :: PinaforeInverseMorphism Point Point,
+        lpropMorphism :: PinaforeInverseLens Point Point,
         lpropType :: ViewPinaforeType Point,
-        lpropColumns :: [ViewPinaforeSimpleProperty String]
+        lpropColumns :: [(String,ViewPinaforeSimpleProperty String)]
     };
 
     data ViewPinaforeProperty = forall t. () => SimpleViewPinaforeProperty (ViewPinaforeSimpleProperty t) | ListViewPinaforeProperty ViewPinaforeListProperty;
 
-    type PinaforeEditConstraint edit = FullEdit edit;
-
     data ViewPinaforePrimitive t where
     {
-        MkViewPinaforePrimitive :: forall t. (Serialize t) => UISpec (ContextEdit PinaforeEdit (WholeEdit (Maybe t))) -> ViewPinaforePrimitive t;
+        MkViewPinaforePrimitive :: forall t. (Serialize t) => UISpec (WholeEdit (Maybe t)) -> ViewPinaforePrimitive t;
     };
 
     data ViewPinaforeType t where
     {
-        EntityViewPinaforeType :: String -> [ViewPinaforeProperty] -> ViewPinaforeType Point;
+        EntityViewPinaforeType :: String -> [(String,ViewPinaforeProperty)] -> ViewPinaforeType Point;
         PrimitiveViewPinaforeType :: ViewPinaforePrimitive t -> ViewPinaforeType t;
     };
 
-    data ViewPinaforeValue = MkViewPinaforeValue Point (ViewPinaforeType Point);
+    data ViewPinaforeValue = forall t. MkViewPinaforeValue (Maybe t) (ViewPinaforeType t);
 
 
-    data UIEntityPicker edit where
+    type PinaforeSpec edit = PinaforeValue edit -> UISpec PinaforeEdit;
+    simplePinaforeSpec :: Edit edit => UISpec edit -> PinaforeSpec edit;
+    simplePinaforeSpec spec subjv =  mkUILens subjv spec;
+
+    pinaforePropertyKeyColumn :: (String,ViewPinaforeSimpleProperty String) -> KeyColumn PinaforeEdit Point;
+    pinaforePropertyKeyColumn (name,MkViewPinaforeSimpleProperty lens _ptype) =
+        MkKeyColumn name $ \key -> (funcROGeneralLens $ fromMaybe "<empty>") <.> lens (constGeneralLens $ Just key);
+
+    pinaforePropertySpec :: ViewPinaforeProperty -> PinaforeSpec (WholeEdit (Maybe Point));
+    pinaforePropertySpec (SimpleViewPinaforeProperty (MkViewPinaforeSimpleProperty lens ptype)) subjv = pinaforeRefTypeSpec ptype (lens subjv);
+    pinaforePropertySpec (ListViewPinaforeProperty (MkViewPinaforeListProperty lens ptype cols)) subjv = let
     {
-        MkUIEntityPicker :: String -> UIEntityPicker (ContextEdit PinaforeEdit (WholeEdit (Maybe Point)));
-    };
-
-    instance Show (UIEntityPicker edit) where
-    {
-        show (MkUIEntityPicker typename) = "picker " ++ typename;
-    };
-
-    instance UIType UIEntityPicker where
-    {
-        uiWitness = $(iowitness [t|UIEntityPicker|]);
-    };
-
-    data UIDraggable edit where
-    {
-        MkUIDraggable :: String -> UIDraggable (WholeEdit (Maybe Point));
-    };
-
-    instance Show (UIDraggable edit) where
-    {
-        show (MkUIDraggable typename) = "draggable " ++ typename;
-    };
-
-    instance UIType UIDraggable where
-    {
-        uiWitness = $(iowitness [t|UIDraggable|]);
-    };
-
-    pinaforePropertyKeyColumn :: ViewPinaforeSimpleProperty String -> KeyColumn (ContextEdit PinaforeEdit (ConstEdit Point));
-    pinaforePropertyKeyColumn (MkViewPinaforeSimpleProperty name (MkPointedEditLens lens) _ptype) =
-        MkKeyColumn name $ funcEditFunction (fromMaybe "<empty>") <.> editLensFunction lens <.> liftContextEditFunction (funcEditFunction Just);
-
-    maybeWholeFunction :: forall a. ObjectFunction (ConstEdit a) (WholeEdit (Maybe a));
-    maybeWholeFunction = let
-    {
-        editInitial = ();
-        editGet :: () -> WholeReader (Maybe a) t -> Readable (WholeReader a) t;
-        editGet () ReadWhole = fmap Just $ readable ReadWhole;
-        editUpdate = never;
-    } in MkEditFunction{..};
-
-    maybeWholeLens :: forall a. GeneralLens (ConstEdit a) (WholeEdit (Maybe a));
-    maybeWholeLens = let
-    {
-        editLensFunction = maybeWholeFunction;
-        editLensPutEdit () (MkWholeEdit _) = return Nothing;
-    } in MkCloseState MkEditLens{..};
-
-    pinaforePropertySpec :: ViewPinaforeProperty -> UISpec (ContextEdit PinaforeEdit (WholeEdit (Maybe Point)));
-    pinaforePropertySpec (SimpleViewPinaforeProperty (MkViewPinaforeSimpleProperty _name lens ptype)) = MkUISpec $ MkUILens (carryPointedEditLens lens) $ pinaforeRefTypeSpec ptype;
-    pinaforePropertySpec (ListViewPinaforeProperty (MkViewPinaforeListProperty _name lens ptype cols)) = let
-    {
-        aspect :: Aspect (ContextEdit PinaforeEdit (MaybeEdit (ConstEdit Point)));
-        aspect = MkAspect "item" $ MkUISpec $ MkUILens (liftContextGeneralLens $ MkCloseState convertEditLens) $ pinaforeValueTypeSpec ptype;
-
-        spec :: UISpec (ContextEdit PinaforeEdit (KeyEdit (FiniteSet Point) (ConstEdit Point)));
-        spec = MkUISpec $ MkUIContextTable (fmap pinaforePropertyKeyColumn cols) aspect;
-
-        propertyLens :: GeneralLens (ContextEdit PinaforeEdit (WholeEdit (Maybe Point))) (ContextEdit PinaforeEdit (KeyEdit (FiniteSet Point) (ConstEdit ( Point))));
-        propertyLens = carryPointedEditLens lens;
+        getaspect :: Point -> Aspect PinaforeEdit;
+        getaspect pt = MkAspect "item" $ pinaforeValueTypeSpec ptype $ constGeneralLens $ Just pt;
     }
-    in MkUISpec $ MkUILens propertyLens spec;
+    in MkUISpec $ MkUITable (fmap pinaforePropertyKeyColumn cols) getaspect $ lens subjv;
 
-    pinaforeRefTypeSpec :: ViewPinaforeType t -> UISpec (ContextEdit PinaforeEdit (WholeEdit (Maybe t)));
-    pinaforeRefTypeSpec (EntityViewPinaforeType typename _) = MkUISpec $ MkUIEntityPicker typename;
-    pinaforeRefTypeSpec (PrimitiveViewPinaforeType (MkViewPinaforePrimitive uispec)) = uispec;
+    pinaforeRefTypeSpec :: ViewPinaforeType t -> PinaforeSpec (WholeEdit (Maybe t));
+    pinaforeRefTypeSpec (EntityViewPinaforeType typename _) = simplePinaforeSpec $ MkUISpec $ MkUIDragDestination typename;
+    pinaforeRefTypeSpec (PrimitiveViewPinaforeType (MkViewPinaforePrimitive uispec)) = simplePinaforeSpec uispec;
 
-    pinaforeValueTypeSpec :: ViewPinaforeType t -> UISpec (ContextEdit PinaforeEdit (WholeEdit (Maybe t)));
-    pinaforeValueTypeSpec (EntityViewPinaforeType typename props) = MkUISpec $ MkUIVertical $ (MkUISpec $ MkUILens contentLens $ MkUISpec $ MkUIDraggable typename) : fmap pinaforePropertySpec props;
-    pinaforeValueTypeSpec (PrimitiveViewPinaforeType (MkViewPinaforePrimitive uispec)) = uispec;
+    pinaforeValueTypeSpec :: ViewPinaforeType t -> PinaforeSpec (WholeEdit (Maybe t));
+    pinaforeValueTypeSpec (EntityViewPinaforeType typename props) = \subjv -> MkUISpec $ MkUIVertical $ (mkUILens subjv $ MkUISpec $ MkUIDragSource typename) : fmap (\(name,prop) -> mkUILabelled name $ pinaforePropertySpec prop subjv) props;
+    pinaforeValueTypeSpec (PrimitiveViewPinaforeType (MkViewPinaforePrimitive uispec)) = simplePinaforeSpec uispec;
 
     pinaforeValueSpec :: ViewPinaforeValue -> UISpec PinaforeEdit;
-    pinaforeValueSpec (MkViewPinaforeValue value tp) = let
-    {
-        conv :: EditLens ((),()) PinaforeEdit (ContextEdit PinaforeEdit (WholeEdit (Maybe Point)));
-        conv = contextJoinEditLenses identityState (constEditLens (Just value));
-    } in MkUISpec $ MkUILens (toGeneralLens conv) $ pinaforeValueTypeSpec tp;
+    pinaforeValueSpec (MkViewPinaforeValue value tp) = pinaforeValueTypeSpec tp $ constGeneralLens value;
 
 
     -- example ontology
 
     personType :: ViewPinaforeType Point;
-    personType = EntityViewPinaforeType "Person" [SimpleViewPinaforeProperty personName,personMother,personFather,personChildren];
+    personType = EntityViewPinaforeType "Person" [("Name",SimpleViewPinaforeProperty personName),("Mother",personMother),("Father",personFather),("Children",personChildren)];
 
     personName :: ViewPinaforeSimpleProperty String;
     personName = let
     {
-        spropName = "Name";
-        spropMorphism :: PinaforeMorphism Point String;
-        spropMorphism = primitivePinaforeMorphism <.> (predicatePinaforeMorphism $ predicate "498260df-6a8a-44f0-b285-68a63565a33b");
+        spropMorphism :: PinaforeLens Point String;
+        spropMorphism subj = primitivePinaforeLens $ predicatePinaforeLens (predicate "498260df-6a8a-44f0-b285-68a63565a33b") subj;
         spropType :: ViewPinaforeType String;
-        spropType = PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ MkUISpec $ MkUILens (MkCloseState convertEditLens <.> contentLens) $ MkUISpec $ MkUIMaybe Nothing $ MkUISpec MkUITextEntry;
+        spropType = PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ mkUILens convertGeneralLens $ mkUIMaybe Nothing $ MkUISpec MkUITextEntry;
     } in MkViewPinaforeSimpleProperty{..};
 
     motherPredicate :: Predicate;
@@ -153,42 +96,42 @@ module Truth.World.Pinafore.Ontology where
     personMother :: ViewPinaforeProperty;
     personMother = let
     {
-        spropName = "Mother";
-        spropMorphism :: PinaforeLens (WholeEdit (Maybe Point)) (WholeEdit (Maybe Point));
-        spropMorphism = predicatePinaforeMorphism motherPredicate;
+        spropMorphism :: PinaforeEditLens (WholeEdit (Maybe Point)) (WholeEdit (Maybe Point));
+        spropMorphism = predicatePinaforeLens motherPredicate;
         spropType = personType;
     } in SimpleViewPinaforeProperty MkViewPinaforeSimpleProperty{..};
 
     personFather :: ViewPinaforeProperty;
     personFather = let
     {
-        spropName = "Father";
-        spropMorphism :: PinaforeLens (WholeEdit (Maybe Point)) (WholeEdit (Maybe Point));
-        spropMorphism = predicatePinaforeMorphism fatherPredicate;
+        spropMorphism :: PinaforeEditLens (WholeEdit (Maybe Point)) (WholeEdit (Maybe Point));
+        spropMorphism = predicatePinaforeLens fatherPredicate;
         spropType = personType;
     } in SimpleViewPinaforeProperty MkViewPinaforeSimpleProperty{..};
 
     personChildren :: ViewPinaforeProperty;
     personChildren = let
     {
-        lpropName = "Children";
-        lpropMorphism = readOnlyPointedEditLens $ (pointedEditLensFunction $ predicateInversePinaforeMorphism motherPredicate) \/ (pointedEditLensFunction $ predicateInversePinaforeMorphism fatherPredicate);
+        lpropMorphism :: PinaforeInverseLens Point Point;
+        lpropType :: ViewPinaforeType Point;
+        lpropColumns :: [(String,ViewPinaforeSimpleProperty String)];
+        lpropMorphism subj = readOnlyGeneralLens joinEditFunction <.> pairJoinGeneralLenses (predicateInversePinaforeLens motherPredicate subj) (predicateInversePinaforeLens fatherPredicate subj);
         lpropType = personType;
-        lpropColumns = [personName];
+        lpropColumns = [("Name",personName)];
     } in ListViewPinaforeProperty MkViewPinaforeListProperty{..};
 
     peopleCollection :: ViewPinaforeProperty;
     peopleCollection = let
     {
-        lpropName = "People";
-        lpropMorphism = predicateInversePinaforeMorphism $ predicate "f06efa5e-190f-4e5d-8633-495c5683c124";
+        --lpropName = "People";
+        lpropMorphism = predicateInversePinaforeLens $ predicate "f06efa5e-190f-4e5d-8633-495c5683c124";
         lpropType = personType;
-        lpropColumns = [personName];
+        lpropColumns = [("Name",personName)];
     } in ListViewPinaforeProperty MkViewPinaforeListProperty{..};
 
     rootType :: ViewPinaforeType Point;
-    rootType = EntityViewPinaforeType "People" [peopleCollection];
+    rootType = EntityViewPinaforeType "Root" [("People",peopleCollection)];
 
     rootValue :: ViewPinaforeValue;
-    rootValue = MkViewPinaforeValue (point "78baed51-cb05-46b5-bcb4-49031532b890") rootType;
+    rootValue = MkViewPinaforeValue (Just $ point "78baed51-cb05-46b5-bcb4-49031532b890") rootType;
 }

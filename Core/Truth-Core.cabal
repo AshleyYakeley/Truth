@@ -135,11 +135,13 @@ library
         Truth.Core.UI.Lens
         Truth.Core.UI.One
         Truth.Core.UI.Layout
+        Truth.Core.UI.Labelled
         Truth.Core.UI.Checkbox
         Truth.Core.UI.TextEntry
         Truth.Core.UI.TextEditor
         Truth.Core.UI.Table
         Truth.Core.UI.WindowButton
+        Truth.Core.UI.Drag
         Truth.Core.UI.View
         Truth.Core.UI.GetView
         Truth.Core.UI

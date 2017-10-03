@@ -137,15 +137,16 @@ module Truth.Core.Types.Tuple where
         };
     } in MkEditFunction{..};
 
-    tupleEditLens :: forall sel edit. (TestEquality sel) =>
-        sel edit -> GeneralLens (TupleEdit sel) edit;
-    tupleEditLens seledit = let
+    tupleObjectLens :: forall sel edit. (TestEquality sel) =>
+        sel edit -> ObjectLens (TupleEdit sel) edit;
+    tupleObjectLens seledit = let
     {
         editLensFunction = tupleObjectFunction seledit;
         editLensPutEdit :: () -> edit -> Readable (TupleEditReader sel) (Maybe ((),[TupleEdit sel]));
         editLensPutEdit () edit = return $ pure ((),[MkTupleEdit seledit edit]);
+    } in MkEditLens{..};
 
-        lens :: EditLens () (TupleEdit sel) edit;
-        lens = MkEditLens{..};
-    } in MkCloseState lens;
+    tupleGeneralLens :: forall sel edit. (TestEquality sel) =>
+        sel edit -> GeneralLens (TupleEdit sel) edit;
+    tupleGeneralLens seledit = MkCloseState $ tupleObjectLens seledit;
 }

@@ -8,36 +8,33 @@ module Truth.Core.UI.Table where
     import Truth.Core.UI.Lens;
 
 
-    data KeyColumn edit = MkKeyColumn
+    data KeyColumn tedit key = MkKeyColumn
     {
         kcName :: String,
-        kcFunction :: ObjectFunction edit (WholeEdit String)
+        kcFunction :: key -> GeneralLens tedit (WholeEdit String)
     };
 
-    mapKeyColumn :: ObjectFunction edita editb -> KeyColumn editb -> KeyColumn edita;
-    mapKeyColumn ff (MkKeyColumn n f) = MkKeyColumn n $ f <.> ff;
-
-    data UIContextTable edit where
+    data UITable tedit where
     {
-        MkUIContextTable :: forall cont cedit iedit. (IONewItemKeyContainer cont,FullSubjectReader (EditReader iedit),Edit cedit,Edit iedit,HasKeyReader cont (EditReader iedit)) =>
-            [KeyColumn (ContextEdit cedit iedit)] -> Aspect (ContextEdit cedit (MaybeEdit iedit)) -> UIContextTable (ContextEdit cedit (KeyEdit cont iedit));
+        MkUITable :: forall cont tedit iedit. (IONewItemKeyContainer cont,FullSubjectReader (EditReader iedit),Edit tedit,Edit iedit,HasKeyReader cont (EditReader iedit)) =>
+            [KeyColumn tedit (ContainerKey cont)] -> (ContainerKey cont -> Aspect tedit) -> GeneralLens tedit (KeyEdit cont iedit) -> UITable tedit;
     };
 
-    uiTableToContext :: forall cont iedit. (IONewItemKeyContainer cont,FullSubjectReader (EditReader iedit),HasKeyReader cont (EditReader iedit),Edit iedit) =>
-        [KeyColumn iedit] -> Aspect (MaybeEdit iedit) -> UISpec (KeyEdit cont iedit);
-    uiTableToContext cols aspect = let
-    {
-        cols' = fmap (mapKeyColumn $ tupleObjectFunction EditContent) cols;
-        aspect' = mapAspect contentLens aspect;
-    } in MkUISpec $ MkUILens nullContextGeneralLens $ MkUISpec $ MkUIContextTable cols' aspect';
+    uiTable :: forall cont tedit iedit. (IONewItemKeyContainer cont,FullSubjectReader (EditReader iedit),Edit tedit,Edit iedit,HasKeyReader cont (EditReader iedit)) =>
+        [KeyColumn tedit (ContainerKey cont)] -> (ContainerKey cont -> Aspect tedit) -> GeneralLens tedit (KeyEdit cont iedit) -> UISpec tedit;
+    uiTable cols getaspect lens = MkUISpec $ MkUITable cols getaspect lens;
 
-    instance Show (UIContextTable edit) where
+    uiSimpleTable :: forall cont iedit. (IONewItemKeyContainer cont,FullSubjectReader (EditReader iedit),Edit iedit,HasKeyReader cont (EditReader iedit)) =>
+        [KeyColumn (KeyEdit cont iedit) (ContainerKey cont)] -> Aspect (MaybeEdit iedit) -> UISpec (KeyEdit cont iedit);
+    uiSimpleTable cols aspect = uiTable cols (\key -> mapAspect (keyElementLens key) aspect) cid;
+
+    instance Show (UITable edit) where
     {
-        show (MkUIContextTable cols aspect) = "context-table (" ++ intercalate ", " (fmap kcName cols) ++ ") " ++ show aspect;
+        show (MkUITable cols _ _) = "table (" ++ intercalate ", " (fmap kcName cols) ++ ")";
     };
 
-    instance UIType UIContextTable where
+    instance UIType UITable where
     {
-        uiWitness = $(iowitness [t|UIContextTable|]);
+        uiWitness = $(iowitness [t|UITable|]);
     };
 }

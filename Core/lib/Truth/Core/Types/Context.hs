@@ -73,10 +73,15 @@ module Truth.Core.Types.Context where
         tupleWitness _ EditContent = MkConstraintWitness;
     };
 
+    contextObjectLens :: ObjectLens (TupleEdit (WithContextSelector editx editn)) editx;
+    contextObjectLens = tupleObjectLens EditContext;
+    contentObjectLens :: ObjectLens (TupleEdit (WithContextSelector editx editn)) editn;
+    contentObjectLens = tupleObjectLens EditContent;
+
     contextLens :: GeneralLens (TupleEdit (WithContextSelector editx editn)) editx;
-    contextLens = tupleEditLens EditContext;
+    contextLens = tupleGeneralLens EditContext;
     contentLens :: GeneralLens (TupleEdit (WithContextSelector editx editn)) editn;
-    contentLens = tupleEditLens EditContent;
+    contentLens = tupleGeneralLens EditContent;
 
     type ContextEditReader x n = TupleEditReader (WithContextSelector x n);
     type ContextEdit x n = TupleEdit (WithContextSelector x n);
@@ -106,6 +111,9 @@ module Truth.Core.Types.Context where
         pe' oldstate (MkTupleEdit EditContext ea) = return $ pure (oldstate,[ea]);
         pe' oldstate (MkTupleEdit EditContent eb) = pe oldstate eb;
     } in MkEditLens f' pe';
+
+    contextualiseGeneralLens :: GeneralLens edita editb -> GeneralLens edita (ContextEdit edita editb);
+    contextualiseGeneralLens (MkCloseState lens) = MkCloseState $ contextualiseEditLens lens;
 
     contextJoinEditFunctions :: forall s1 s2 edita editb1 editb2.
         EditFunction s1 edita editb1 -> EditFunction s2 edita editb2 -> EditFunction (s1,s2) edita (ContextEdit editb1 editb2);
@@ -219,4 +227,8 @@ module Truth.Core.Types.Context where
 
     liftContentGeneralLens :: forall edita editb editn. GeneralLens edita editb -> GeneralLens (ContextEdit edita editn) (ContextEdit editb editn);
     liftContentGeneralLens (MkCloseState lens) = MkCloseState $ liftContentEditLens lens;
+
+    carryContextGeneralLens :: (Edit editx,Edit edita,Edit editb) =>
+        GeneralLens (ContextEdit editx edita) editb -> GeneralLens (ContextEdit editx edita) (ContextEdit editx editb);
+    carryContextGeneralLens lens = liftContentGeneralLens (tupleGeneralLens EditContext) <.> contextualiseGeneralLens lens;
 }

@@ -234,7 +234,7 @@ module Truth.Core.Types.Key where
             FullSubjectReader (EditReader keyedit),
             FullEdit valueedit
         ) => ContainerKey cont -> GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (MaybeEdit valueedit);
-    keyValueLens key = (oneWholeLiftGeneralLens $ tupleEditLens EditSecond) <.> keyElementLens key;
+    keyValueLens key = (oneWholeLiftGeneralLens $ tupleGeneralLens EditSecond) <.> keyElementLens key;
 
     liftKeyElementLens :: forall state conta contb edita editb.
         (

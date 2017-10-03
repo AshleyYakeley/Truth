@@ -55,4 +55,39 @@ module Truth.Core.Types.OneWholeEdit where
             };
         };
     };
+
+    mustExistMaybeObjectFunction :: forall edit. FullEdit edit => String -> ObjectFunction (MaybeEdit edit) edit;
+    mustExistMaybeObjectFunction err = let
+    {
+        editInitial = ();
+        editGet :: () -> EditReader edit t -> Readable (OneReader Maybe (EditReader edit)) t;
+        editGet () reader = do
+        {
+            mt <- readable $ ReadOne reader;
+            case mt of
+            {
+                Just t -> return t;
+                Nothing -> error $ err ++ ": not found";
+            };
+        };
+        editUpdate :: MaybeEdit edit -> () -> Readable (OneReader Maybe (EditReader edit)) ((), [edit]);
+        editUpdate (SumEditLeft (MkWholeEdit Nothing)) () = error $ err ++ ": deleted";
+        editUpdate (SumEditLeft (MkWholeEdit (Just t))) () = do
+        {
+            edits <- getReplaceEditsM t;
+            return $ pure edits;
+        };
+        editUpdate (SumEditRight (MkOneEdit edit)) () = return $ pure [edit];
+    } in MkEditFunction{..};
+
+    mustExistMaybeObjectLens :: forall edit. FullEdit edit => String -> ObjectLens (MaybeEdit edit) edit;
+    mustExistMaybeObjectLens err = let
+    {
+        editLensFunction = mustExistMaybeObjectFunction err;
+        editLensPutEdit :: () -> edit -> Readable (OneReader Maybe (EditReader edit)) (Maybe ((), [MaybeEdit edit]));
+        editLensPutEdit () edit = return $ Just $ pure [SumEditRight $ MkOneEdit edit];
+    } in MkEditLens{..};
+
+    mustExistMaybeGeneralLens :: forall edit. FullEdit edit => String -> GeneralLens (MaybeEdit edit) edit;
+    mustExistMaybeGeneralLens err = MkCloseState $ mustExistMaybeObjectLens err;
 }
