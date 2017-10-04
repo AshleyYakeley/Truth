@@ -21,18 +21,14 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
         return ((),newstate);
     };
 
-    addColumn :: Edit tedit => TreeView -> Object tedit -> ListStore (key,GeneralLens tedit (WholeEdit row)) -> String -> (row -> String) -> IO ();
-    addColumn tview object store name showCell = do
+    addColumn :: TreeView -> ListStore (key,GeneralLens tedit (WholeEdit row),row) -> String -> (row -> String) -> IO ();
+    addColumn tview store name showCell = do
     {
         renderer <- cellRendererTextNew;
         column <- treeViewColumnNew;
         treeViewColumnSetTitle column name;
         cellLayoutPackStart column renderer False;
-        cellLayoutSetAttributes column renderer store $ \(_,lens) -> [cellText :=> do
-        {
-            row <- runObject (mapObject lens object) $ \muted -> mutableRead muted ReadWhole;
-            return $ showCell row;
-        }];
+        cellLayoutSetAttributes column renderer store $ \(_,_,row) -> [cellText := showCell row];
         _ <- treeViewAppendColumn tview column;
         return ();
     };
@@ -65,16 +61,23 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
         let
         {
             MkObject tableObject = mapObject tableLens object;
+
+            getStoreItem :: IsStateIO m => MutableRead m (EditReader tedit) -> ContainerKey cont -> m (ContainerKey cont,GeneralLens tedit (WholeEdit row),row);
+            getStoreItem mr key = do
+            {
+                lens <- liftIO $ colfunc key;
+                row <- withMapMutableRead lens mr $ \mr' -> mr' ReadWhole;
+                return (key,lens,row);
+            };
         };
-        MkFiniteSet initialKeys <- tableObject $ \muted -> mutableRead muted KeyReadKeys;
-        initalRows <- for initialKeys $ \key -> do
+        initalRows <- runObject object $ \muted -> do
         {
-            lens <- colfunc key;
-            return (key,lens);
+            MkFiniteSet initialKeys <- withMapMutableRead tableLens (mutableRead muted) $ \mr' -> mr' KeyReadKeys;
+            for initialKeys $ getStoreItem $ mutableRead muted;
         };
         store <- listStoreNew initalRows;
         tview <- treeViewNewWithModel store;
-        for_ cols $ \(name,showCell) -> addColumn tview object store name showCell;
+        for_ cols $ \(name,showCell) -> addColumn tview store name showCell;
 
         box <- vBoxNew False 0;
         newButton <- makeButton "New" $ tableObject $ \muted -> do
@@ -98,11 +101,11 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
             findInStore key = do
             {
                 kk <- liftIO $ listStoreToList store;
-                return $ lookup @[(ContainerKey cont,Int)] key $ zip (fmap fst kk) [0..];
+                return $ lookup @[(ContainerKey cont,Int)] key $ zip (fmap (\(k,_,_) -> k) kk) [0..];
             };
 
             vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader tedit) -> [tedit] -> m ();
-            vrUpdate = mapUpdate tableLens $ \_mr edits -> for_ edits $ \edit -> (case edit of
+            vrUpdate mr = mapUpdate tableLens (\_ edits -> for_ edits $ \edit -> (case edit of
             {
                 KeyDeleteItem key -> do
                 {
@@ -124,8 +127,8 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
                         Just _index -> return ();
                         Nothing -> do
                         {
-                            lens <- liftIO $ colfunc key;
-                            _ <- liftIO $ listStoreAppend store (key,lens);
+                            storeItem <- getStoreItem mr key;
+                            _ <- liftIO $ listStoreAppend store storeItem;
                             return ();
                         };
                     };
@@ -138,14 +141,15 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
                     {
                         Just i -> do
                         {
-                            (_,lens) <- liftIO $ listStoreGetValue store i;
-                            liftIO $ listStoreSetValue store i (key,lens);
+                            (_,lens,_) <- liftIO $ listStoreGetValue store i;
+                            row <- withMapMutableRead lens mr $ \mr' -> mr' ReadWhole;
+                            liftIO $ listStoreSetValue store i (key,lens,row);
                             return ();
                         };
                         Nothing -> return ();
                     };
                 };
-            } :: m ());
+            } :: m ())) mr;
 
             vrFirstAspectGetter :: Aspect tedit;
             vrFirstAspectGetter = do
@@ -156,7 +160,7 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
                 {
                     [[i]] -> do
                     {
-                        (key,_) <- listStoreGetValue store i;
+                        (key,_,_) <- listStoreGetValue store i;
                         getaspect key;
                     };
                     _ -> return Nothing;
