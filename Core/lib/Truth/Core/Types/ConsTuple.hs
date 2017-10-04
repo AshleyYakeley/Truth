@@ -30,7 +30,8 @@ module Truth.Core.Types.ConsTuple where
     emptyTupleFunction :: forall edita. EditFunction () edita (TupleEdit EmptyWitness);
     emptyTupleFunction = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
 
         editGet :: () -> TupleEditReader EmptyWitness t -> Readable (EditReader edita) t;
         editGet () (MkTupleEditReader sel _) = never sel;
@@ -77,7 +78,8 @@ module Truth.Core.Types.ConsTuple where
         EditLens () (TupleEdit (ConsWitness edit1 sel)) edit1;
     firstEditLens = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
 
         editGet :: () -> ReadFunction (TupleEditReader (ConsWitness edit1 sel)) (EditReader edit1);
         editGet () rt = readable $ MkTupleEditReader FirstWitness rt;
@@ -96,7 +98,8 @@ module Truth.Core.Types.ConsTuple where
         EditLens () (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel);
     restEditLens = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
 
         editGet :: () -> ReadFunction (TupleEditReader (ConsWitness edit1 sel)) (TupleEditReader sel);
         editGet () (MkTupleEditReader sel rt) = readable $ MkTupleEditReader (RestWitness sel) rt;
@@ -122,7 +125,7 @@ module Truth.Core.Types.ConsTuple where
         EditFunction s1 edita editb -> EditFunction s2 edita (TupleEdit sel) -> EditFunction (s1,s2) edita (TupleEdit (ConsWitness editb sel));
     consTupleFunction f1 fr = MkEditFunction
     {
-        editInitial = (editInitial f1,editInitial fr),
+        editAccess = pairStateAccess (editAccess f1) (editAccess fr),
         editGet = \(cur1,curr) -> \case
         {
             MkTupleEditReader FirstWitness rt -> editGet f1 cur1 rt;

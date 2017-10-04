@@ -8,31 +8,27 @@ module Truth.Core.Object.Lens where
 
 
     mapSubscriber :: forall edita editb action. (Edit edita) => GeneralLens edita editb -> Subscriber edita action -> Subscriber editb action;
-    mapSubscriber (MkCloseState (lens@MkEditLens{..} :: EditLens lensstate edita editb)) sub =
-    MkSubscriber $ \(initialB :: Object editb -> IO editor) updateB -> do
+    mapSubscriber lens@(MkCloseState (MkEditLens{..} :: EditLens lensstate edita editb)) sub =
+    MkSubscriber $ \(initialB :: Object editb -> IO editor) updateB -> let
     {
-        let
-        {
-            MkEditFunction{..} = editLensFunction;
-        };
-        lensvar <- newMVar editInitial;
-        let
-        {
-            initialA :: Object edita -> IO (Object edita,editor);
-            initialA objectA = do
-            {
-                ed <- initialB $ mapObject (mvarStateAccess lensvar) lens objectA;
-                return (objectA,ed);
-            };
+        MkEditFunction{..} = editLensFunction;
 
-            updateA :: forall m. IsStateIO m => (Object edita,editor) -> MutableRead m (EditReader edita) -> [edita] -> m ();
-            updateA (_objectA,editor) mr editAs = mvarStateAccess lensvar $ StateT $ \oldls -> do
-            {
-                (newls,editBs) <- unReadable (editUpdates editLensFunction editAs oldls) mr;
-                updateB editor (mapMutableRead (editGet newls) mr) editBs;
-                return ((),newls);
-            };
+        initialA :: Object edita -> IO (Object edita,editor);
+        initialA objectA = do
+        {
+            ed <- initialB $ mapObject lens objectA;
+            return (objectA,ed);
         };
+
+        updateA :: forall m. IsStateIO m => (Object edita,editor) -> MutableRead m (EditReader edita) -> [edita] -> m ();
+        updateA (_objectA,editor) mr editAs = editAccess $ StateT $ \oldls -> do
+        {
+            (newls,editBs) <- unReadable (editUpdates editLensFunction editAs oldls) mr;
+            updateB editor (mapMutableRead (editGet newls) mr) editBs;
+            return ((),newls);
+        };
+    } in do
+    {
         ((_,editor),closer,action) <- subscribe sub initialA updateA;
         return (editor,closer,action);
     };

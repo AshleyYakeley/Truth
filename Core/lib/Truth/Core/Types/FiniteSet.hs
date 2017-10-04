@@ -18,7 +18,8 @@ module Truth.Core.Types.FiniteSet where
     finiteSetLens :: forall subj. Eq subj => subj -> EditLens () (FiniteSetEdit subj) (WholeEdit Bool);
     finiteSetLens subj = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
 
         editGet :: () -> ReadFunction (FiniteSetReader subj) (WholeReader Bool);
         editGet () ReadWhole = fmap isJust $ readable $ KeyReadItem subj ReadWhole;
@@ -43,7 +44,8 @@ module Truth.Core.Types.FiniteSet where
     {
         joinEditFunction = let
         {
-            editInitial = ();
+            editAccess :: IOStateAccess ();
+            editAccess = unitStateAccess;
 
             editGet :: () -> ReadFunction (PairEditReader (FiniteSetEdit subj) (FiniteSetEdit subj)) (FiniteSetReader subj);
             editGet () KeyReadKeys = do
@@ -111,7 +113,8 @@ module Truth.Core.Types.FiniteSet where
     {
         meetEditFunction = let
         {
-            editInitial = ();
+            editAccess :: IOStateAccess ();
+            editAccess = unitStateAccess;
 
             editGet :: () -> ReadFunction (PairEditReader (FiniteSetEdit subj) (FiniteSetEdit subj)) (FiniteSetReader subj);
             editGet () KeyReadKeys = do

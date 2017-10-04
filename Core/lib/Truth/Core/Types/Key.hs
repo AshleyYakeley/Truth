@@ -182,9 +182,12 @@ module Truth.Core.Types.Key where
     };
 
     keyElementLens :: forall cont edit. (KeyContainer cont,HasKeyReader cont (EditReader edit),Edit edit) =>
-        ContainerKey cont -> GeneralLens (KeyEdit cont edit) (MaybeEdit edit);
-    keyElementLens editInitial = let
+        ContainerKey cont -> IO (GeneralLens (KeyEdit cont edit) (MaybeEdit edit));
+    keyElementLens initial = newMVar initial >>= \var -> return $ let
     {
+        editAccess :: IOStateAccess (ContainerKey cont);
+        editAccess = mvarStateAccess var;
+
         editGet :: ContainerKey cont -> ReadFunction (KeyReader cont (EditReader edit)) (OneReader Maybe (EditReader edit));
         editGet key ReadHasOne = do
         {
@@ -233,8 +236,12 @@ module Truth.Core.Types.Key where
             Edit keyedit,
             FullSubjectReader (EditReader keyedit),
             FullEdit valueedit
-        ) => ContainerKey cont -> GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (MaybeEdit valueedit);
-    keyValueLens key = (oneWholeLiftGeneralLens $ tupleGeneralLens EditSecond) <.> keyElementLens key;
+        ) => ContainerKey cont -> IO (GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (MaybeEdit valueedit));
+    keyValueLens key = do
+    {
+        lens <- keyElementLens key;
+        return $ (oneWholeLiftGeneralLens $ tupleGeneralLens EditSecond) <.> lens;
+    };
 
     liftKeyElementLens :: forall state conta contb edita editb.
         (
@@ -246,7 +253,7 @@ module Truth.Core.Types.Key where
         ) =>
         (forall m. MonadIO m => EditSubject editb -> m (Maybe (EditSubject edita))) ->
         EditLens state edita editb -> EditLens state (KeyEdit conta edita) (KeyEdit contb editb);
-    liftKeyElementLens bma (MkEditLens (MkEditFunction editInitial g u) pe) = let
+    liftKeyElementLens bma (MkEditLens (MkEditFunction editAccess g u) pe) = let
     {
         editGet :: state -> ReadFunction (KeyReader conta (EditReader edita)) (KeyReader contb (EditReader editb));
         editGet _ KeyReadKeys = readable KeyReadKeys;
@@ -296,7 +303,8 @@ module Truth.Core.Types.Key where
         EditLens () (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit));
     contextKeyLens' = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
 
         editGet :: () -> KeyReader cont (ContextEditReader editx edit) t -> Readable (ContextEditReader editx (KeyEdit cont edit)) t;
         editGet () KeyReadKeys = readable $ MkTupleEditReader EditContent KeyReadKeys;

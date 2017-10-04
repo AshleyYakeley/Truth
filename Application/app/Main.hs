@@ -33,7 +33,7 @@ module Main(main) where
             bsObj = fileObject path;
 
             wholeTextObj :: Object (WholeEdit ((Result String) String));
-            wholeTextObj = cacheObject $ fixedMapObject textLens bsObj;
+            wholeTextObj = cacheObject $ mapObject (MkCloseState textLens) bsObj;
         };
         if saveOpt then do
         {
@@ -78,13 +78,21 @@ module Main(main) where
     soupEditSpec = let
     {
         nameColumn :: KeyColumn (SoupEdit SoupItemEdit) UUID;
-        nameColumn = MkKeyColumn "Name" $ \key -> readOnlyGeneralLens (funcEditFunction fromResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NoteTitle) <.> mustExistMaybeGeneralLens "name" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> keyElementLens key;
+        nameColumn = MkKeyColumn "Name" $ \key -> do
+        {
+            lens <- keyElementLens key;
+            return $ readOnlyGeneralLens (funcEditFunction fromResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NoteTitle) <.> mustExistMaybeGeneralLens "name" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
+        };
 
         pastColumn :: KeyColumn (SoupEdit SoupItemEdit) UUID;
-        pastColumn = MkKeyColumn "Past" $ \key -> readOnlyGeneralLens (funcEditFunction pastResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NotePast) <.> mustExistMaybeGeneralLens "past" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> keyElementLens key;
+        pastColumn = MkKeyColumn "Past" $ \key -> do
+        {
+            lens <- keyElementLens key;
+            return $ readOnlyGeneralLens (funcEditFunction pastResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NotePast) <.> mustExistMaybeGeneralLens "past" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
+        };
 
         getaspect :: Aspect (MaybeEdit (UUIDElementEdit SoupItemEdit));
-        getaspect = MkAspect "item" $ MkUISpec $ MkUILens (oneWholeLiftGeneralLens $ tupleGeneralLens EditSecond) $ MkUISpec $ MkUIOneWhole $ MkUISpec $ MkUIOneWhole noteEditSpec;
+        getaspect = return $ Just $ ("item", MkUISpec $ MkUILens (oneWholeLiftGeneralLens $ tupleGeneralLens EditSecond) $ MkUISpec $ MkUIOneWhole $ MkUISpec $ MkUIOneWhole noteEditSpec);
     } in uiSimpleTable [nameColumn,pastColumn] getaspect;
 
     soupWindow :: FilePath -> WindowMaker;
@@ -107,11 +115,11 @@ module Main(main) where
             soupItemLens :: EditLens () ByteStringEdit SoupItemEdit;
             soupItemLens = convertEditLens <.> (wholeEditLens $ injectionLens soupItemInjection) <.> convertEditLens;
 
-            lens :: EditLens () (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupItemEdit);
-            lens = liftSoupLens paste $ soupItemLens <.> mutableIOEditLens;
+            lens :: GeneralLens (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupItemEdit);
+            lens = MkCloseState $ liftSoupLens paste $ soupItemLens <.> mutableIOEditLens;
 
             soupObject :: Object (SoupEdit SoupItemEdit);
-            soupObject = fixedMapObject lens rawSoupObject;
+            soupObject = mapObject lens rawSoupObject;
         };
         soupSub <- makeObjectSubscriber soupObject;
         makeWindow soupEditSpec (takeFileName $ dropTrailingPathSeparator dirpath) soupSub;

@@ -51,7 +51,8 @@ module Truth.Core.Types.Comonad where
     comonadEditFunction :: forall w edit. EditFunction () (ComonadEdit w edit) edit;
     comonadEditFunction = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
 
         editGet :: () -> ReadFunction (ComonadReader w (EditReader edit)) (EditReader edit);
         editGet () = comonadReadFunction;

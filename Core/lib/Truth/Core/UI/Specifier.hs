@@ -3,15 +3,7 @@ module Truth.Core.UI.Specifier where
     import Truth.Core.Import;
 
 
-    data Aspect edit where
-    {
-        MkAspect :: forall edit. String -> UISpec edit -> Aspect edit;
-    };
-
-    instance Show (Aspect edit) where
-    {
-        show (MkAspect name _) = name;
-    };
+    type Aspect edit = IO (Maybe (String,UISpec edit));
 
     data UISpec (edit :: *) where
     {

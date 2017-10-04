@@ -112,6 +112,5 @@ module Control.Monad.IsStateIO where
         _ -> return ();
     };
 -}
-
-
+    type IOStateAccess s = forall m. IsStateIO m => StateAccess m s;
 }

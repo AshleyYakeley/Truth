@@ -152,10 +152,11 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
         } in MkSubmapWitness{..};
     } in MkDatabaseSchema{..};
 
-    soupDatabaseLens :: EditLens () (SQLiteEdit PinaforeSchema) PinaforeEdit;
+    soupDatabaseLens :: GeneralLens (SQLiteEdit PinaforeSchema) PinaforeEdit;
     soupDatabaseLens = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
 
         editGet :: () -> ReadFunction (SQLiteRead PinaforeSchema) PinaforeRead;
         editGet () (PinaforeReadGetValue p s) = do
@@ -219,8 +220,8 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
         editLensPutEdit () (PinaforeEditSetPrimitive v Nothing) = pure $ pure $ pure $ pure $ DatabaseDelete (MkTupleTableSel PinaforeLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v;
 
         editLensFunction = MkEditFunction{..};
-    } in MkEditLens{..};
+    } in MkCloseState $ MkEditLens{..};
 
     sqlitePinaforeObject :: FilePath -> Object PinaforeEdit;
-    sqlitePinaforeObject path = fixedMapObject soupDatabaseLens $ sqliteObject path soupSchema;
+    sqlitePinaforeObject path = mapObject soupDatabaseLens $ sqliteObject path soupSchema;
 }

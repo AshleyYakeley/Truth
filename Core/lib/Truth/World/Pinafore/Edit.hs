@@ -69,7 +69,8 @@ module Truth.World.Pinafore.Edit where
     primitivePinaforeLens :: forall val. Serialize val => PinaforeLens Point val;
     primitivePinaforeLens = pointedMapGeneralLens $ MkPointedEditLens $ let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
 
         editGet :: forall t. () -> WholeReader (Maybe val) t -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) t;
         editGet () ReadWhole = do
@@ -122,7 +123,8 @@ module Truth.World.Pinafore.Edit where
     predicatePinaforeLens :: Predicate -> PinaforeLens Point Point;
     predicatePinaforeLens prd = pointedMapGeneralLens $ MkPointedEditLens $ let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
 
         editGet :: forall t. () -> WholeReader (Maybe Point) t -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) t;
         editGet () ReadWhole = do
@@ -196,7 +198,8 @@ module Truth.World.Pinafore.Edit where
     predicateInversePinaforeLens :: Predicate -> PinaforeInverseLens Point Point;
     predicateInversePinaforeLens prd = pointedMapGeneralLens $ MkPointedEditLens $ let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
 
         editGet :: forall t. () -> FiniteSetReader Point t -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) t;
         editGet () KeyReadKeys = do

@@ -32,7 +32,8 @@ module Truth.Core.Object.MutableIOEdit where
     mutableIOEditLens :: forall edit. EditLens () (MutableIOEdit edit) edit;
     mutableIOEditLens = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
 
         editGet :: () -> ReadFunction (MutableIOReader edit) (EditReader edit);
         editGet () reader = do
@@ -66,7 +67,8 @@ module Truth.Core.Object.MutableIOEdit where
     mutableIOLiftEditLens :: forall edita editb. Edit edita => EditLens () edita editb -> EditLens () (MutableIOEdit edita) (MutableIOEdit editb);
     mutableIOLiftEditLens lens = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
         editGet :: () -> ReadFunction (MutableIOReader edita) (MutableIOReader editb);
         editGet () ReadMutableIO = do
         {

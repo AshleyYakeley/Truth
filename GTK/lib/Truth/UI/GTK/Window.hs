@@ -166,7 +166,7 @@ module Truth.UI.GTK.Window where
             msel <- srGetSelection;
             case msel of
             {
-                Just (MkAspect aspname aspspec) -> makeWindowCountRef windowCount aspspec (aspname ++ " of " ++ title) sub;
+                Just (aspname,aspspec) -> makeWindowCountRef windowCount aspspec (aspname ++ " of " ++ title) sub;
                 Nothing -> return ();
             };
         };

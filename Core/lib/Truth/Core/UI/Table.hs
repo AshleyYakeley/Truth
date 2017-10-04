@@ -11,7 +11,7 @@ module Truth.Core.UI.Table where
     data KeyColumn tedit key = MkKeyColumn
     {
         kcName :: String,
-        kcFunction :: key -> GeneralLens tedit (WholeEdit String)
+        kcFunction :: key -> IO (GeneralLens tedit (WholeEdit String))
     };
 
     data UITable tedit where
@@ -26,7 +26,7 @@ module Truth.Core.UI.Table where
 
     uiSimpleTable :: forall cont iedit. (IONewItemKeyContainer cont,FullSubjectReader (EditReader iedit),Edit iedit,HasKeyReader cont (EditReader iedit)) =>
         [KeyColumn (KeyEdit cont iedit) (ContainerKey cont)] -> Aspect (MaybeEdit iedit) -> UISpec (KeyEdit cont iedit);
-    uiSimpleTable cols aspect = uiTable cols (\key -> mapAspect (keyElementLens key) aspect) cid;
+    uiSimpleTable cols aspect = uiTable cols (\key -> ioMapAspect (keyElementLens key) aspect) cid;
 
     instance Show (UITable edit) where
     {

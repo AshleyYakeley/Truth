@@ -49,7 +49,8 @@ module Truth.Core.Types.Sum where
     sumEditFunction :: (EditReader edit ~ EditReader edit') => EditFunction () edit (SumEdit edit' edit);
     sumEditFunction = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
         editGet () rt = readable rt;
         editUpdate edit () = return ((),[SumEditRight edit]);
     } in MkEditFunction{..};

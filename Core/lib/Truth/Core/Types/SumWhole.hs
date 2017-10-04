@@ -15,7 +15,7 @@ module Truth.Core.Types.SumWhole where
      EditFunction state (SumWholeEdit edita) (SumWholeEdit editb);
     sumWholeLiftEditFunction fef = MkEditFunction
     {
-        editInitial = editInitial fef,
+        editAccess = editAccess fef,
         editGet = editGet fef,
         editUpdate = \pedita oldstate -> case pedita of
         {

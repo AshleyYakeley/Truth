@@ -8,7 +8,7 @@ module Truth.Core.Types.ComonadLift where
 
     comonadLiftEditFunction :: forall state w edita editb.
         EditFunction state edita editb -> EditFunction state (ComonadEdit w edita) (ComonadEdit w editb);
-    comonadLiftEditFunction (MkEditFunction editInitial eg eu) = let
+    comonadLiftEditFunction (MkEditFunction editAccess eg eu) = let
     {
         editGet :: state -> ReadFunction (ComonadReader w (EditReader edita)) (ComonadReader w (EditReader editb));
         editGet curstate = comonadLiftReadFunction $ eg curstate;

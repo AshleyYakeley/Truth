@@ -128,9 +128,12 @@ module Truth.Core.Types.String where
     };
 
     stringSectionLens :: forall seq. IsSequence seq =>
-        SequenceRun seq -> EditLens (SequenceRun seq) (StringEdit seq) (StringEdit seq);
-    stringSectionLens editInitial = let
+        SequenceRun seq -> IO (EditLens (SequenceRun seq) (StringEdit seq) (StringEdit seq));
+    stringSectionLens initial = newMVar initial >>= \var -> return $ let
     {
+        editAccess :: IOStateAccess (SequenceRun seq);
+        editAccess = mvarStateAccess var;
+
         editGet :: SequenceRun seq -> ReadFunction (StringRead seq) (StringRead seq);
         editGet stateRaw reader = do
         {

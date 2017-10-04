@@ -119,7 +119,7 @@ module Truth.Core.Types.Context where
         EditFunction s1 edita editb1 -> EditFunction s2 edita editb2 -> EditFunction (s1,s2) edita (ContextEdit editb1 editb2);
     contextJoinEditFunctions ef1 ef2 = MkEditFunction
     {
-        editInitial = (editInitial ef1,editInitial ef2),
+        editAccess = pairStateAccess (editAccess ef1) (editAccess ef2),
         editGet = \(cur1,cur2) -> \case
         {
             MkTupleEditReader EditContext rt -> editGet ef1 cur1 rt;

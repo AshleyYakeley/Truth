@@ -41,20 +41,17 @@ module Truth.Core.Object.Object where
         return $ mvarObject var allowed;
     };
 
-    mapObject :: forall lensstate edita editb. (Edit edita) =>
-        (forall m. IsStateIO m => StateAccess m lensstate) -> EditLens lensstate edita editb -> Object edita -> Object editb;
-    mapObject acc lens objectA = MkObject $ \callB -> runObject objectA $ \mutedA -> do
+    mapObject :: forall edita editb. (Edit edita) =>
+        GeneralLens edita editb -> Object edita -> Object editb;
+    mapObject (MkCloseState lens) objectA = MkObject $ \callB -> runObject objectA $ \mutedA -> do
     {
-        oldstate <- acc get;
+        oldstate <- editAccess (editLensFunction lens) get;
         (r,_newstate) <- runStateT (callB $ mapMutableEdit lens mutedA) oldstate; -- ignore the new lens state: all these lens changes will be replayed by the update
         return r;
     };
 
-    fixedMapObject :: forall edita editb. Edit edita => EditLens () edita editb -> Object edita -> Object editb;
-    fixedMapObject lens object = mapObject unitStateAccess lens object;
-
     convertObject :: (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => Object edita -> Object editb;
-    convertObject = fixedMapObject convertEditLens;
+    convertObject = mapObject convertGeneralLens;
 
     -- | Combines all the edits made in each call to the object.
     ;

@@ -58,7 +58,7 @@ module Truth.Core.Types.Whole where
     wholeEditFunction :: forall a b. (a -> b) -> EditFunction () (WholeEdit a) (WholeEdit b);
     wholeEditFunction ab = MkEditFunction
     {
-        editInitial = (),
+        editAccess = unitStateAccess,
         editGet = \() -> simpleReadFunction ab,
         editUpdate = \(MkWholeEdit a) curstate -> return (curstate,[MkWholeEdit $ ab a])
     };
@@ -115,7 +115,7 @@ module Truth.Core.Types.Whole where
     unitWholeObjectFunction = constEditFunction ();
 
     pairWholeObjectFunction :: forall edit a b. ObjectFunction edit (WholeEdit a) -> ObjectFunction edit (WholeEdit b) -> ObjectFunction edit (WholeEdit (a,b));
-    pairWholeObjectFunction (MkEditFunction () ga ua) (MkEditFunction () gb ub) = let
+    pairWholeObjectFunction (MkEditFunction _ ga ua) (MkEditFunction _ gb ub) = let
     {
         gab :: () -> ReadFunction (EditReader edit) (WholeReader (a,b));
         gab () ReadWhole = do
@@ -153,5 +153,5 @@ module Truth.Core.Types.Whole where
                 };
             };
         };
-    } in MkEditFunction () gab uab;
+    } in MkEditFunction unitStateAccess gab uab;
 }

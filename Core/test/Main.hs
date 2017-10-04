@@ -3,6 +3,7 @@ module Main(main) where
 {
     import Prelude;
     import Data.Sequences;
+    import Control.Monad.Trans.State.Extra;
     import Truth.Core;
     import Test.Tasty;
     import Test.Tasty.HUnit;
@@ -96,18 +97,22 @@ module Main(main) where
         ];
 
     testLensGet :: TestTree;
-    testLensGet = testProperty "get" $ \run (base :: String) -> let
+    testLensGet = testProperty "get" $ \run (base :: String) -> ioProperty $ do
     {
-        MkEditLens{..} = stringSectionLens run;
-        MkEditFunction{..} = editLensFunction;
+        MkEditLens{..} <- stringSectionLens run;
+        let
+        {
+            MkEditFunction{..} = editLensFunction;
+        };
+        editFirst <- editAccess get;
+        let
+        {
+            rf :: ReadFunction (StringRead String) (StringRead String);
+            rf = editGet editFirst;
 
-        rf :: ReadFunction (StringRead String) (StringRead String);
-        rf = editGet editInitial;
-
-        expected :: String;
-        expected = readFromSubject base $ StringReadSection run;
-    } in ioProperty $ do
-    {
+            expected :: String;
+            expected = readFromSubject base $ StringReadSection run;
+        };
         found <- fromReadFunctionM rf $ return base;
         return $ found === expected;
     };
@@ -129,17 +134,21 @@ module Main(main) where
         Eq (EditSubject editb),
         Show (EditSubject editb),
         Show state
-    ) => EditLens state edita editb -> EditSubject edita -> edita -> Property;
-    lensUpdateGetProperty lens oldA editA = ioProperty $ do
+    ) => IO (EditLens state edita editb) -> EditSubject edita -> edita -> Property;
+    lensUpdateGetProperty getlens oldA editA = ioProperty $ do
     {
+        MkEditLens{..} <- getlens;
         let
         {
-            MkEditLens{..} = lens;
             MkEditFunction{..} = editLensFunction;
-            rdb = editUpdate editA editInitial;
+        };
+        editFirst <- editAccess get;
+        let
+        {
+            rdb = editUpdate editA editFirst;
         };
         newA <- fromReadFunctionM (applyEdit editA) $ return oldA;
-        oldB <- fromReadFunctionM (editGet editInitial) $ return oldA;
+        oldB <- fromReadFunctionM (editGet editFirst) $ return oldA;
         (newState,editBs) <- fromReadableSubject rdb oldA;
         newB1 <- fromReadFunctionM (applyEdits editBs) $ return oldB;
         newB2 <- fromReadFunctionM (editGet newState) $ return newA;
@@ -148,7 +157,7 @@ module Main(main) where
             vars =
             [
                 showVar "oldA" oldA,
-                showVar "oldState" editInitial,
+                showVar "oldState" editFirst,
                 showVar "oldB" oldB,
                 showVar "editA" editA,
                 showVar "editBs" editBs,

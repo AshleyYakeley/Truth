@@ -50,14 +50,14 @@ module Truth.World.Pinafore.Ontology where
 
     pinaforePropertyKeyColumn :: (String,ViewPinaforeSimpleProperty String) -> KeyColumn PinaforeEdit Point;
     pinaforePropertyKeyColumn (name,MkViewPinaforeSimpleProperty lens _ptype) =
-        MkKeyColumn name $ \key -> (funcROGeneralLens $ fromMaybe "<empty>") <.> lens (constGeneralLens $ Just key);
+        MkKeyColumn name $ \key -> return $ (funcROGeneralLens $ fromMaybe "<empty>") <.> lens (constGeneralLens $ Just key);
 
     pinaforePropertySpec :: ViewPinaforeProperty -> PinaforeSpec (WholeEdit (Maybe Point));
     pinaforePropertySpec (SimpleViewPinaforeProperty (MkViewPinaforeSimpleProperty lens ptype)) subjv = pinaforeRefTypeSpec ptype (lens subjv);
     pinaforePropertySpec (ListViewPinaforeProperty (MkViewPinaforeListProperty lens ptype cols)) subjv = let
     {
         getaspect :: Point -> Aspect PinaforeEdit;
-        getaspect pt = MkAspect "item" $ pinaforeValueTypeSpec ptype $ constGeneralLens $ Just pt;
+        getaspect pt = return $ Just $ ("item",pinaforeValueTypeSpec ptype $ constGeneralLens $ Just pt);
     }
     in MkUISpec $ MkUITable (fmap pinaforePropertyKeyColumn cols) getaspect $ lens subjv;
 

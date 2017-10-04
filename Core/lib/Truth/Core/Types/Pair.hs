@@ -66,7 +66,7 @@ module Truth.Core.Types.Pair where
 
     fstLiftEditLens :: forall state editx edita editb.
         EditLens state edita editb -> EditLens state (PairEdit edita editx) (PairEdit editb editx);
-    fstLiftEditLens (MkEditLens (MkEditFunction editInitial g u) pe) = let
+    fstLiftEditLens (MkEditLens (MkEditFunction editAccess g u) pe) = let
     {
         editGet :: state -> ReadFunction (PairEditReader edita editx) (PairEditReader editb editx);
         editGet _ (MkTupleEditReader EditSecond rt) = readable (MkTupleEditReader EditSecond rt);
@@ -93,7 +93,7 @@ module Truth.Core.Types.Pair where
 
     sndLiftEditLens :: forall state editx edita editb.
         EditLens state edita editb -> EditLens state (PairEdit editx edita) (PairEdit editx editb);
-    sndLiftEditLens (MkEditLens (MkEditFunction editInitial g u) pe) = let
+    sndLiftEditLens (MkEditLens (MkEditFunction editAccess g u) pe) = let
     {
         editGet :: state -> ReadFunction (PairEditReader editx edita) (PairEditReader editx editb);
         editGet _ (MkTupleEditReader EditFirst rt) = readable (MkTupleEditReader EditFirst rt);
@@ -122,7 +122,7 @@ module Truth.Core.Types.Pair where
         EditFunction s1 edita editb1 -> EditFunction s2 edita editb2 -> EditFunction (s1,s2) edita (PairEdit editb1 editb2);
     pairJoinEditFunctions ef1 ef2 = MkEditFunction
     {
-        editInitial = (editInitial ef1,editInitial ef2),
+        editAccess = pairStateAccess (editAccess ef1) (editAccess ef2),
         editGet = \(cur1,cur2) -> \case
         {
             MkTupleEditReader EditFirst rt -> editGet ef1 cur1 rt;

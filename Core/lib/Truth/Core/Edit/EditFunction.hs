@@ -8,7 +8,7 @@ module Truth.Core.Edit.EditFunction  where
 
     data EditFunction state edita editb = MkEditFunction
     {
-        editInitial :: state,
+        editAccess :: IOStateAccess state,
         editGet :: state -> ReadFunction (EditReader edita) (EditReader editb),
         editUpdate :: edita -> state -> Readable (EditReader edita) (state,[editb]) -- updates happen after the change, and reads will reflect the new state
     };
@@ -25,7 +25,7 @@ module Truth.Core.Edit.EditFunction  where
             (((),()),ebs) <- u ea ((),());
             return ((),ebs);
         };
-    } in MkEditFunction () g' u';
+    } in MkEditFunction unitStateAccess g' u';
 
     editUpdates :: EditFunction state edita editb -> [edita] -> state -> Readable (EditReader edita) (state, [editb]);
     editUpdates _ [] st = return (st,[]);
@@ -40,7 +40,7 @@ module Truth.Core.Edit.EditFunction  where
      (editb1 -> editb2) -> EditFunction state edita editb1 -> EditFunction state edita editb2;
     mapEditFunction b12 fef = MkEditFunction
     {
-        editInitial = editInitial fef,
+        editAccess = editAccess fef,
         editGet = editGet fef,
         editUpdate = \edita oldstate -> do
         {
@@ -53,7 +53,7 @@ module Truth.Core.Edit.EditFunction  where
      (edita2 -> edita1) -> EditFunction state edita1 editb -> EditFunction state edita2 editb;
     comapEditFunction a21 fef = MkEditFunction
     {
-        editInitial = editInitial fef,
+        editAccess = editAccess fef,
         editGet = editGet fef,
         editUpdate = \edita2 -> editUpdate fef (a21 edita2)
     };
@@ -61,7 +61,8 @@ module Truth.Core.Edit.EditFunction  where
     constEditFunction :: forall edita editb. SubjectReader (EditReader editb) => EditSubject editb -> EditFunction () edita editb;
     constEditFunction b = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
         editGet :: () -> ReadFunction (EditReader edita) (EditReader editb);
         editGet () = readFromSubjectM $ pure b;
         editUpdate _ () = pure $ pure [];
@@ -86,13 +87,14 @@ module Truth.Core.Edit.EditFunction  where
     {
         id = let
         {
-            editInitial = ();
+            editAccess :: IOStateAccess ();
+            editAccess = unitStateAccess;
             editGet _ = readable;
             editUpdate edit _ = return ((),[edit]);
         } in MkEditFunction{..};
         fef2 . fef1 = MkEditFunction
         {
-            editInitial = (),
+            editAccess = unitStateAccess,
             editGet = \() -> composeReadFunction (editGet fef2 ()) (editGet fef1 ()),
             editUpdate = \editA () -> do
             {
@@ -116,7 +118,7 @@ module Truth.Core.Edit.EditFunction  where
 
         composeState fef2 fef1 = MkEditFunction
         {
-            editInitial = (editInitial fef1,editInitial fef2),
+            editAccess = pairStateAccess (editAccess fef1) (editAccess fef2),
             editGet = \(s1,s2) -> composeReadFunction (editGet fef2 s2) (editGet fef1 s1),
             editUpdate = \editA (oldstate1,oldstate2) -> do
             {
@@ -131,8 +133,8 @@ module Truth.Core.Edit.EditFunction  where
         (EditSubject edita -> EditSubject editb) -> EditFunction () edita editb;
     funcEditFunction ab = let
     {
-        editInitial :: ();
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
 
         editGet :: () -> ReadFunction (EditReader edita) (EditReader editb);
         editGet () = simpleReadFunction ab;

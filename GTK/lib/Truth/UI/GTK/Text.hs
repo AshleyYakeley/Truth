@@ -84,13 +84,14 @@ module Truth.UI.GTK.Text (textUIView) where
             -- this withMVar prevents the signal handlers from re-sending edits
             vrUpdate _ edits = liftIO $ ifMVar mv $ traverse_ update edits;
 
-            vrFirstAspectGetter :: AspectGetter (StringEdit s);
+            vrFirstAspectGetter :: Aspect (StringEdit s);
             vrFirstAspectGetter = do
             {
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
                 run <- getSequenceRun iter1 iter2;
                 -- get selection...
-                return $ Just $ MkAspect "section" $ MkUISpec $ MkUILens (MkCloseState $ stringSectionLens run) $ MkUISpec uitext;
+                lens <- stringSectionLens run;
+                return $ Just ("section",MkUISpec $ MkUILens (MkCloseState lens) $ MkUISpec uitext);
             };
         };
 

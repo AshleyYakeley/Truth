@@ -71,8 +71,8 @@ module Truth.UI.GTK.Maybe (oneUIView) where
 
             baseObj = MkObject $ \call -> runObject object $ \muted -> call $ baseMuted muted;
 
-            baseSetSelect :: AspectGetter edit -> IO ();
-            baseSetSelect ag = setSelect $ fmap (fmap (mapAspectSpec uispec)) ag;
+            baseSetSelect :: Aspect edit -> IO ();
+            baseSetSelect ag = setSelect $ mapAspectSpec uispec ag;
 
             getVR :: forall m. IsStateIO m => f () -> m (f (GViewResult edit));
             getVR fu = for fu $ \() -> liftIO $ baseView baseObj baseSetSelect;
@@ -138,7 +138,7 @@ module Truth.UI.GTK.Maybe (oneUIView) where
                 fvr <- get;
                 case getMaybeOne fvr of
                 {
-                    Just (MkViewResult _ _ ag) -> liftIO $ fmap (fmap (mapAspectSpec uispec)) ag;
+                    Just (MkViewResult _ _ ag) -> liftIO $ mapAspectSpec uispec ag;
                     Nothing -> return Nothing;
                 }
             };

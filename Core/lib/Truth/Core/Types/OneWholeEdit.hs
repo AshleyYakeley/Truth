@@ -59,7 +59,8 @@ module Truth.Core.Types.OneWholeEdit where
     mustExistMaybeObjectFunction :: forall edit. FullEdit edit => String -> ObjectFunction (MaybeEdit edit) edit;
     mustExistMaybeObjectFunction err = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
         editGet :: () -> EditReader edit t -> Readable (OneReader Maybe (EditReader edit)) t;
         editGet () reader = do
         {

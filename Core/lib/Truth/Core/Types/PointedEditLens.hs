@@ -16,7 +16,8 @@ module Truth.Core.Types.PointedEditLens where
         type CategoryConstraint (PointedEditFunction editp) edit = ();
         cid = let
         {
-            editInitial = ();
+            editAccess :: IOStateAccess ();
+            editAccess = unitStateAccess;
 
             editGet :: () -> ReadFunction (ContextEditReader editp edit) (EditReader edit);
             editGet () rt = readable $ MkTupleEditReader EditContent rt;
@@ -33,7 +34,7 @@ module Truth.Core.Types.PointedEditLens where
             convAB () (MkTupleEditReader EditContent rt) = editGet funcAB () rt;
         } in MkPointedEditFunction $ MkEditFunction
         {
-            editInitial = (),
+            editAccess = unitStateAccess,
             editGet = \() readC -> mapGenReadable (convAB ()) $ editGet funcBC () readC,
             editUpdate = \editpa () -> do
             {

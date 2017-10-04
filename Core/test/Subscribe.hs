@@ -209,11 +209,9 @@ module Subscribe(testSubscribe) where
         };
 
     testSharedString :: TestTree;
-    testSharedString = testSubscription "SharedString" "ABCDE" $ \sub -> let
-        {
-            testLens :: GeneralLens (StringEdit String) (StringEdit String);
-            testLens = toGeneralLens $ stringSectionLens (startEndRun 1 4);
-        } in
+    testSharedString = testSubscription "SharedString" "ABCDE" $ \sub -> do
+    {
+        testLens <- fmap MkCloseState $ stringSectionLens (startEndRun 1 4);
         subscribeEditor sub $ testOutputEditor "main" $ \MkSubscribeContext{..} ->
         subscribeEditor (mapSubscriber testLens sub) $ testOutputEditor "lens" $ \_ -> do
         {
@@ -225,6 +223,7 @@ module Subscribe(testSubscribe) where
             subDoEdits [[StringReplaceSection (startEndRun 2 4) "1"]];
             ?showVar;
         };
+    };
 
     testSubscribe :: TestTree;
     testSubscribe = testGroup "subscribe"

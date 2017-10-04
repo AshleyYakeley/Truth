@@ -127,7 +127,8 @@ module Truth.Core.Types.Tuple where
     tupleObjectFunction ::  forall sel edit. TestEquality sel => sel edit -> ObjectFunction (TupleEdit sel) edit;
     tupleObjectFunction seledit = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
         editGet :: () -> ReadFunction (TupleEditReader sel) (EditReader edit);
         editGet () = tupleReadFunction seledit;
         editUpdate (MkTupleEdit seledit' edit) () = case testEquality seledit seledit' of

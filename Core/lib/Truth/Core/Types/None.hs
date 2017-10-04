@@ -58,7 +58,8 @@ module Truth.Core.Types.None where
     noEditFunction :: EditFunction () (NoEdit (EditReader edit)) edit;
     noEditFunction = let
     {
-        editInitial = ();
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
         editGet _ = readable;
         editUpdate = never;
     } in MkEditFunction{..};

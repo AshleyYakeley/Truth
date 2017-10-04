@@ -40,7 +40,7 @@ module Truth.Core.Types.OneEdit where
         EditFunction state edita editb -> EditFunction state (OneEdit f edita) (OneEdit f editb);
     oneLiftEditFunction ff = MkEditFunction
     {
-        editInitial = editInitial ff,
+        editAccess = editAccess ff,
         editGet = \curstate -> liftMaybeReadFunction (editGet ff curstate),
         editUpdate = \(MkOneEdit edita) oldstate -> do
         {
