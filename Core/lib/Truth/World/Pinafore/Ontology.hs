@@ -46,7 +46,7 @@ module Truth.World.Pinafore.Ontology where
 
     type PinaforeSpec edit = PinaforeValue edit -> UISpec PinaforeEdit;
     simplePinaforeSpec :: Edit edit => UISpec edit -> PinaforeSpec edit;
-    simplePinaforeSpec spec subjv =  mkUILens subjv spec;
+    simplePinaforeSpec spec subjv =  uiLens subjv spec;
 
     pinaforePropertyKeyColumn :: (String,ViewPinaforeSimpleProperty String) -> KeyColumn PinaforeEdit Point;
     pinaforePropertyKeyColumn (name,MkViewPinaforeSimpleProperty lens _ptype) =
@@ -66,7 +66,7 @@ module Truth.World.Pinafore.Ontology where
     pinaforeRefTypeSpec (PrimitiveViewPinaforeType (MkViewPinaforePrimitive uispec)) = simplePinaforeSpec uispec;
 
     pinaforeValueTypeSpec :: ViewPinaforeType t -> PinaforeSpec (WholeEdit (Maybe t));
-    pinaforeValueTypeSpec (EntityViewPinaforeType typename props) = \subjv -> MkUISpec $ MkUIVertical $ (mkUILens subjv $ MkUISpec $ MkUIDragSource typename) : fmap (\(name,prop) -> mkUILabelled name $ pinaforePropertySpec prop subjv) props;
+    pinaforeValueTypeSpec (EntityViewPinaforeType typename props) = \subjv -> MkUISpec $ MkUIVertical $ (uiLens subjv $ MkUISpec $ MkUIDragSource typename) : fmap (\(name,prop) -> uiLabelled name $ pinaforePropertySpec prop subjv) props;
     pinaforeValueTypeSpec (PrimitiveViewPinaforeType (MkViewPinaforePrimitive uispec)) = simplePinaforeSpec uispec;
 
     pinaforeValueSpec :: ViewPinaforeValue -> UISpec PinaforeEdit;
@@ -84,7 +84,7 @@ module Truth.World.Pinafore.Ontology where
         spropMorphism :: PinaforeLens Point String;
         spropMorphism subj = primitivePinaforeLens $ predicatePinaforeLens (predicate "498260df-6a8a-44f0-b285-68a63565a33b") subj;
         spropType :: ViewPinaforeType String;
-        spropType = PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ mkUILens convertGeneralLens $ mkUIMaybe Nothing $ MkUISpec MkUITextEntry;
+        spropType = PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ uiLens convertGeneralLens $ uiMaybe Nothing $ MkUISpec MkUITextEntry;
     } in MkViewPinaforeSimpleProperty{..};
 
     motherPredicate :: Predicate;

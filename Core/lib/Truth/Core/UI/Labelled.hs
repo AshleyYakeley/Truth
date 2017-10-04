@@ -19,6 +19,6 @@ module Truth.Core.UI.Labelled where
         uiWitness = $(iowitness [t|UILabelled|]);
     };
 
-    mkUILabelled :: String -> UISpec edit -> UISpec edit;
-    mkUILabelled l s = MkUISpec $ MkUILabelled l s;
+    uiLabelled :: String -> UISpec edit -> UISpec edit;
+    uiLabelled l s = MkUISpec $ MkUILabelled l s;
 }

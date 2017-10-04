@@ -24,8 +24,8 @@ module Truth.Core.UI.GetView where
         mappend = (<>);
     };
 
-    lensUIView :: GetView w;
-    lensUIView = MkGetView $ \getview speca -> do
+    lensGetView :: GetView w;
+    lensGetView = MkGetView $ \getview speca -> do
     {
         MkUILens lens specb <- isUISpec speca;
         return $ mapView lens $ getview specb;

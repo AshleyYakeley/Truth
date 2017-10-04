@@ -1,4 +1,4 @@
-module Truth.UI.GTK.Tuple(verticalUIView) where
+module Truth.UI.GTK.Tuple(verticalLayoutGetView) where
 {
     import Shapes;
     import Graphics.UI.Gtk;
@@ -6,8 +6,8 @@ module Truth.UI.GTK.Tuple(verticalUIView) where
     import Truth.UI.GTK.GView;
 
 
-    verticalUIView :: GetGView;
-    verticalUIView = MkGetView $ \getview uispec -> do
+    verticalLayoutGetView :: GetGView;
+    verticalLayoutGetView = MkGetView $ \getview uispec -> do
     {
         MkUIVertical aspects <- isUISpec uispec;
         return $ mapIOView arrangeWidgets $ for aspects getview;

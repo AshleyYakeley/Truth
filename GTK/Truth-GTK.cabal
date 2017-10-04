@@ -79,8 +79,7 @@ library
         Truth.UI.GTK.Entry
         Truth.UI.GTK.Text
         Truth.UI.GTK.Tuple
-        Truth.UI.GTK.KeyContainer
-        Truth.UI.GTK.SourceView
+        Truth.UI.GTK.Table
 
 test-suite test
     type: exitcode-stdio-1.0

@@ -1,4 +1,4 @@
-module Truth.UI.GTK.Maybe (oneUIView) where
+module Truth.UI.GTK.Maybe (oneGetView) where
 {
     import Shapes;
     import Truth.Core;
@@ -154,8 +154,8 @@ module Truth.UI.GTK.Maybe (oneUIView) where
         return label;
     };
 
-    oneUIView :: GetGView;
-    oneUIView = MkGetView $ \getview uispec -> do
+    oneGetView :: GetGView;
+    oneGetView = MkGetView $ \getview uispec -> do
     {
         uit <- isUISpec uispec;
         return $ case uit of

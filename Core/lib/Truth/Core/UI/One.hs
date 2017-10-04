@@ -27,6 +27,6 @@ module Truth.Core.UI.One where
         uiWitness = $(iowitness [t|UIOne|]);
     };
 
-    mkUIMaybe :: forall edit. (FullEdit edit) => Maybe (EditSubject edit) -> UISpec edit -> UISpec (MaybeEdit edit);
-    mkUIMaybe msubj spec = MkUISpec $ MkUIMaybe msubj spec;
+    uiMaybe :: forall edit. (FullEdit edit) => Maybe (EditSubject edit) -> UISpec edit -> UISpec (MaybeEdit edit);
+    uiMaybe msubj spec = MkUISpec $ MkUIMaybe msubj spec;
 }

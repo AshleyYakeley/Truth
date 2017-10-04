@@ -1,4 +1,4 @@
-module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
+module Truth.UI.GTK.Table(tableGetView) where
 {
     import Shapes;
     import Graphics.UI.Gtk;
@@ -176,8 +176,8 @@ module Truth.UI.GTK.KeyContainer(keyContainerUIView) where
         return MkViewResult{..};
     };
 
-    keyContainerUIView :: GetGView;
-    keyContainerUIView = MkGetView $ \_getview uispec -> do
+    tableGetView :: GetGView;
+    tableGetView = MkGetView $ \_getview uispec -> do
     {
         MkUITable cols getaspect lens <- isUISpec uispec;
         return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) getaspect lens;

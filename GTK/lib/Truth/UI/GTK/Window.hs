@@ -12,7 +12,7 @@ module Truth.UI.GTK.Window where
     import Truth.UI.GTK.Entry;
     import Truth.UI.GTK.Text;
     import Truth.UI.GTK.Tuple;
-    import Truth.UI.GTK.KeyContainer;
+    import Truth.UI.GTK.Table;
 
 
     lastResortView :: UISpec edit -> GView edit;
@@ -28,11 +28,11 @@ module Truth.UI.GTK.Window where
         return MkViewResult{..};
     };
 
-    allUIView :: GetGView;
-    allUIView = mconcat [lensUIView,labelledUIView,checkButtonUIView,textEntryUIView,textUIView,keyContainerUIView,oneUIView,verticalUIView];
+    allGetView :: GetGView;
+    allGetView = mconcat [lensGetView,labelledGetView,checkButtonGetView,textEntryGetView,textAreaGetView,tableGetView,oneGetView,verticalLayoutGetView];
 
-    getTheUIView :: Edit edit => UISpec edit -> GView edit;
-    getTheUIView spec = case getUIView allUIView getTheUIView spec of
+    getTheView :: Edit edit => UISpec edit -> GView edit;
+    getTheView spec = case getUIView allGetView getTheView spec of
     {
         Just view -> view;
         Nothing -> lastResortView spec;
@@ -208,6 +208,6 @@ module Truth.UI.GTK.Window where
     makeWindowCountRef :: forall edit actions. (Edit edit,WindowButtons actions) => IORef Int -> UISpec edit -> String -> Subscriber edit actions -> IO ();
     makeWindowCountRef windowCount uispec title sub = do
     {
-        makeViewWindowCountRef (getTheUIView uispec) windowCount title sub;
+        makeViewWindowCountRef (getTheView uispec) windowCount title sub;
     };
 }

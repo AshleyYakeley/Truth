@@ -1,4 +1,4 @@
-module Truth.UI.GTK.CheckButton(checkButtonUIView) where
+module Truth.UI.GTK.CheckButton(checkButtonGetView) where
 {
     import Shapes;
     import Graphics.UI.Gtk as Gtk;
@@ -7,8 +7,8 @@ module Truth.UI.GTK.CheckButton(checkButtonUIView) where
     import Truth.UI.GTK.Useful;
 
 
-    checkButtonUIView :: GetGView;
-    checkButtonUIView = MkGetView $ \_ uispec -> fmap (\(MkUICheckbox name) -> MkView $ \(MkObject object) _setSelect -> do
+    checkButtonGetView :: GetGView;
+    checkButtonGetView = MkGetView $ \_ uispec -> fmap (\(MkUICheckbox name) -> MkView $ \(MkObject object) _setSelect -> do
     {
         widget <- checkButtonNew;
         initial <- object $ \muted -> unReadable subjectFromReader $ mutableRead muted;

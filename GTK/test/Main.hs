@@ -9,7 +9,7 @@ module Main(main) where
 
 
     testGView :: forall edit. Edit edit => UISpec edit -> TestTree;
-    testGView uispec = testCase (show uispec) $ case getUIView allUIView getTheUIView uispec of
+    testGView uispec = testCase (show uispec) $ case getUIView allGetView getTheView uispec of
     {
         Just _ -> return ();
         Nothing -> assertFailure "not matched";

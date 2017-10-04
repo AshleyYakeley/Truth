@@ -1,4 +1,4 @@
-module Truth.UI.GTK.Labelled(labelledUIView) where
+module Truth.UI.GTK.Labelled(labelledGetView) where
 {
     import Shapes;
     import Graphics.UI.Gtk;
@@ -6,8 +6,8 @@ module Truth.UI.GTK.Labelled(labelledUIView) where
     import Truth.UI.GTK.GView;
 
 
-    labelledUIView :: GetGView;
-    labelledUIView = MkGetView $ \getview uispec -> do
+    labelledGetView :: GetGView;
+    labelledGetView = MkGetView $ \getview uispec -> do
     {
         MkUILabelled text spec <- isUISpec uispec;
         return $ mapIOView (labelWidget text) $ getview spec;

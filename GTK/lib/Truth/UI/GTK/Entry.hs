@@ -1,4 +1,4 @@
-module Truth.UI.GTK.Entry(textEntryUIView) where
+module Truth.UI.GTK.Entry(textEntryGetView) where
 {
     import Shapes;
     import Graphics.UI.Gtk as Gtk;
@@ -7,8 +7,8 @@ module Truth.UI.GTK.Entry(textEntryUIView) where
     import Truth.UI.GTK.Useful;
 
 
-    textEntryUIView :: GetGView;
-    textEntryUIView = MkGetView $ \_ uispec -> fmap (\MkUITextEntry -> MkView $ \(MkObject object) _setSelect -> do
+    textEntryGetView :: GetGView;
+    textEntryGetView = MkGetView $ \_ uispec -> fmap (\MkUITextEntry -> MkView $ \(MkObject object) _setSelect -> do
     {
         widget <- entryNew;
         initial <- object $ \muted -> unReadable subjectFromReader $ mutableRead muted;

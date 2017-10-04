@@ -39,20 +39,20 @@ module Truth.Core.UI.Lens where
     mapAspectSpec :: (UISpec edita -> UISpec editb) -> Aspect edita -> Aspect editb;
     mapAspectSpec ff = ioMapAspectSpec (return . ff);
 
-    mkUILens :: forall edita editb. Edit editb => GeneralLens edita editb -> UISpec editb -> UISpec edita;
-    mkUILens lens spec = MkUISpec $ MkUILens lens spec;
+    uiLens :: forall edita editb. Edit editb => GeneralLens edita editb -> UISpec editb -> UISpec edita;
+    uiLens lens spec = MkUISpec $ MkUILens lens spec;
 
     mkUIConvert :: forall edita editb. (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => UISpec editb -> UISpec edita;
-    mkUIConvert = mkUILens $ MkCloseState convertEditLens;
+    mkUIConvert = uiLens $ MkCloseState convertEditLens;
 
     mapAspect :: Edit editb => GeneralLens edita editb -> Aspect editb -> Aspect edita;
-    mapAspect lens = mapAspectSpec $ mkUILens lens;
+    mapAspect lens = mapAspectSpec $ uiLens lens;
 
     ioMapAspect :: Edit editb => IO (GeneralLens edita editb) -> Aspect editb -> Aspect edita;
     ioMapAspect mlens = ioMapAspectSpec $ \uispec -> do
     {
         lens <- mlens;
-        return $ mkUILens lens uispec;
+        return $ uiLens lens uispec;
     };
 
     tupleEditUISpecs :: (TupleWitness FullEdit sel,FiniteTupleSelector sel) =>

@@ -1,4 +1,4 @@
-module Truth.UI.GTK.Text (textUIView) where
+module Truth.UI.GTK.Text (textAreaGetView) where
 {
     import Shapes;
     import System.Glib;
@@ -103,8 +103,8 @@ module Truth.UI.GTK.Text (textUIView) where
         return MkViewResult{..};
     };
 
-    textUIView :: GetGView;
-    textUIView = MkGetView $ \_ uispec -> fmap (\case
+    textAreaGetView :: GetGView;
+    textAreaGetView = MkGetView $ \_ uispec -> fmap (\case
     {
         MkStringUIText -> textView MkStringUIText;
         MkTextUIText -> textView MkTextUIText;
