@@ -9,9 +9,9 @@ module Truth.Core.Types.Unit where
 
     type UnitEdit = ConstEdit ();
 
-    unitEditFunction :: EditFunction () edit UnitEdit;
+    unitEditFunction :: PureEditFunction edit UnitEdit;
     unitEditFunction = constEditFunction ();
 
-    unitLens :: EditLens () edit UnitEdit;
+    unitLens :: PureEditLens edit UnitEdit;
     unitLens = readOnlyEditLens unitEditFunction;
 }

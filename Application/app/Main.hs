@@ -21,7 +21,7 @@ module Main(main) where
     textCodec :: ReasonCodec ByteString String;
     textCodec = utf8Codec . bijectionCodec packBijection;
 
-    textLens :: EditLens () ByteStringEdit (WholeEdit ((Result String) String));
+    textLens :: PureEditLens ByteStringEdit (WholeEdit ((Result String) String));
     textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) <.> convertEditLens;
 
     fileTextWindow :: Bool -> FilePath -> WindowMaker;
@@ -80,14 +80,14 @@ module Main(main) where
         nameColumn :: KeyColumn (SoupEdit SoupItemEdit) UUID;
         nameColumn = MkKeyColumn "Name" $ \key -> do
         {
-            lens <- keyElementLens key;
+            lens <- getKeyElementGeneralLens key;
             return $ readOnlyGeneralLens (funcEditFunction fromResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NoteTitle) <.> mustExistMaybeGeneralLens "name" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
         };
 
         pastColumn :: KeyColumn (SoupEdit SoupItemEdit) UUID;
         pastColumn = MkKeyColumn "Past" $ \key -> do
         {
-            lens <- keyElementLens key;
+            lens <- getKeyElementGeneralLens key;
             return $ readOnlyGeneralLens (funcEditFunction pastResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NotePast) <.> mustExistMaybeGeneralLens "past" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
         };
 
@@ -112,7 +112,7 @@ module Main(main) where
             paste :: forall m. MonadIO m => EditSubject SoupItemEdit -> m (Maybe ByteString);
             paste s = return $ getMaybeOne $ injBackwards soupItemInjection s;
 
-            soupItemLens :: EditLens () ByteStringEdit SoupItemEdit;
+            soupItemLens :: PureEditLens ByteStringEdit SoupItemEdit;
             soupItemLens = convertEditLens <.> (wholeEditLens $ injectionLens soupItemInjection) <.> convertEditLens;
 
             lens :: GeneralLens (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupItemEdit);

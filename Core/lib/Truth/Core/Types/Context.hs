@@ -73,15 +73,15 @@ module Truth.Core.Types.Context where
         tupleWitness _ EditContent = MkConstraintWitness;
     };
 
-    contextObjectLens :: ObjectLens (TupleEdit (WithContextSelector editx editn)) editx;
-    contextObjectLens = tupleObjectLens EditContext;
-    contentObjectLens :: ObjectLens (TupleEdit (WithContextSelector editx editn)) editn;
-    contentObjectLens = tupleObjectLens EditContent;
+    contextEditLens :: PureEditLens (TupleEdit (WithContextSelector editx editn)) editx;
+    contextEditLens = tupleEditLens EditContext;
+    contentEditLens :: PureEditLens (TupleEdit (WithContextSelector editx editn)) editn;
+    contentEditLens = tupleEditLens EditContent;
 
-    contextLens :: GeneralLens (TupleEdit (WithContextSelector editx editn)) editx;
-    contextLens = tupleGeneralLens EditContext;
-    contentLens :: GeneralLens (TupleEdit (WithContextSelector editx editn)) editn;
-    contentLens = tupleGeneralLens EditContent;
+    contextGeneralLens :: GeneralLens (TupleEdit (WithContextSelector editx editn)) editx;
+    contextGeneralLens = tupleGeneralLens EditContext;
+    contentGeneralLens :: GeneralLens (TupleEdit (WithContextSelector editx editn)) editn;
+    contentGeneralLens = tupleGeneralLens EditContent;
 
     type ContextEditReader x n = TupleEditReader (WithContextSelector x n);
     type ContextEdit x n = TupleEdit (WithContextSelector x n);

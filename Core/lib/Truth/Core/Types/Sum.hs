@@ -46,7 +46,7 @@ module Truth.Core.Types.Sum where
         replaceEdit = reWriterReadable SumEditLeft replaceEdit;
     };
 
-    sumEditFunction :: (EditReader edit ~ EditReader edit') => EditFunction () edit (SumEdit edit' edit);
+    sumEditFunction :: (EditReader edit ~ EditReader edit') => PureEditFunction edit (SumEdit edit' edit);
     sumEditFunction = let
     {
         editAccess :: IOStateAccess ();

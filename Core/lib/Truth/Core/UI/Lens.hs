@@ -42,8 +42,8 @@ module Truth.Core.UI.Lens where
     uiLens :: forall edita editb. Edit editb => GeneralLens edita editb -> UISpec editb -> UISpec edita;
     uiLens lens spec = MkUISpec $ MkUILens lens spec;
 
-    mkUIConvert :: forall edita editb. (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => UISpec editb -> UISpec edita;
-    mkUIConvert = uiLens $ MkCloseState convertEditLens;
+    uiConvert :: forall edita editb. (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) => UISpec editb -> UISpec edita;
+    uiConvert = uiLens $ MkCloseState convertEditLens;
 
     mapAspect :: Edit editb => GeneralLens edita editb -> Aspect editb -> Aspect edita;
     mapAspect lens = mapAspectSpec $ uiLens lens;

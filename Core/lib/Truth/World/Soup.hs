@@ -17,7 +17,7 @@ module Truth.World.Soup(UUID,UUIDElementEdit,SoupEdit,directorySoup,liftSoupLens
     {
         conv :: forall m. MonadIO m => (UUID,EditSubject editb) -> m (Maybe (UUID,EditSubject edita));
         conv (uuid,b) = fmap (fmap $ \a -> (uuid,a)) $ bmfa b;
-    } in liftKeyElementLens conv . sndLiftEditLens;
+    } in liftKeyElementEditLens conv . sndLiftEditLens;
 
     nameToUUID :: String -> Maybe UUID;
     nameToUUID = Data.UUID.fromString;

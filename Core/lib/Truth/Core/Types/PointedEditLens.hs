@@ -9,7 +9,7 @@ module Truth.Core.Types.PointedEditLens where
     import Truth.Core.Types.Lattice;
 
 
-    data PointedEditFunction editp edita editb = MkPointedEditFunction (ObjectFunction (ContextEdit editp edita) editb);
+    data PointedEditFunction editp edita editb = MkPointedEditFunction (PureEditFunction (ContextEdit editp edita) editb);
 
     instance ConstrainedCategory (PointedEditFunction editp) where
     {
@@ -27,7 +27,7 @@ module Truth.Core.Types.PointedEditLens where
             editUpdate (MkTupleEdit EditContent edit) () = pure $ pure $ pure edit;
         } in MkPointedEditFunction $ MkEditFunction{..};
 
-        (MkPointedEditFunction (funcBC :: ObjectFunction (ContextEdit editp editb) editc)) <.> (MkPointedEditFunction (funcAB :: ObjectFunction (ContextEdit editp edita) editb)) = let
+        (MkPointedEditFunction (funcBC :: PureEditFunction (ContextEdit editp editb) editc)) <.> (MkPointedEditFunction (funcAB :: PureEditFunction (ContextEdit editp edita) editb)) = let
         {
             convAB :: () -> ReadFunction (ContextEditReader editp edita) (ContextEditReader editp editb);
             convAB () (MkTupleEditReader EditContext rt) = readable $ MkTupleEditReader EditContext rt;
@@ -50,7 +50,7 @@ module Truth.Core.Types.PointedEditLens where
         };
     };
 
-    data PointedEditLens editp edita editb = MkPointedEditLens (EditLens () (ContextEdit editp edita) editb);
+    data PointedEditLens editp edita editb = MkPointedEditLens (PureEditLens (ContextEdit editp edita) editb);
 
     instance Edit editp => ConstrainedCategory (PointedEditLens editp) where
     {
@@ -63,7 +63,7 @@ module Truth.Core.Types.PointedEditLens where
             editLensPutEdit () edit = pure $ pure $ pure $ pure $ MkTupleEdit EditContent edit;
         } in MkPointedEditLens $ MkEditLens{..};
 
-        (MkPointedEditLens (lensBC :: EditLens () (ContextEdit editp editb) editc)) <.> (MkPointedEditLens (lensAB :: EditLens () (ContextEdit editp edita) editb)) = let
+        (MkPointedEditLens (lensBC :: PureEditLens (ContextEdit editp editb) editc)) <.> (MkPointedEditLens (lensAB :: PureEditLens (ContextEdit editp edita) editb)) = let
         {
             funcAB = editLensFunction lensAB;
             funcBC = editLensFunction lensBC;
@@ -100,33 +100,33 @@ module Truth.Core.Types.PointedEditLens where
     readOnlyPointedEditLens :: PointedEditFunction editp edita editb -> PointedEditLens editp edita editb;
     readOnlyPointedEditLens (MkPointedEditFunction f) = MkPointedEditLens $ readOnlyEditLens f;
 
-    objectFunctionToPointed :: ObjectFunction edita editb -> PointedEditFunction editp edita editb;
-    objectFunctionToPointed f = case cid of
+    editFunctionToPointed :: PureEditFunction edita editb -> PointedEditFunction editp edita editb;
+    editFunctionToPointed f = case cid of
     {
         MkPointedEditFunction idf -> MkPointedEditFunction $ f <.> idf;
     };
 
     editLensToPointed :: (Edit editp, Edit edita, Edit editb) =>
-        EditLens () edita editb -> PointedEditLens editp edita editb;
+        PureEditLens edita editb -> PointedEditLens editp edita editb;
     editLensToPointed lens = case cid of
     {
         MkPointedEditLens idlens -> MkPointedEditLens $ lens <.> idlens;
     };
 
     composeEditLensPointed :: (Edit editp,Edit edita,Edit editb,Edit editc) =>
-        EditLens () editb editc -> PointedEditLens editp edita editb -> PointedEditLens editp edita editc;
+        PureEditLens editb editc -> PointedEditLens editp edita editb -> PointedEditLens editp edita editc;
     composeEditLensPointed lensBC (MkPointedEditLens lensAB) = MkPointedEditLens $ lensBC <.> lensAB;
 
     instance (JoinSemiLatticeEdit editb,Edit editp,Edit edita,Edit editb) =>
         JoinSemiLattice (PointedEditFunction editp edita editb) where
     {
-        (MkPointedEditFunction f1) \/ (MkPointedEditFunction f2) = MkPointedEditFunction $ joinEditFunction <.> editToObjectFunction (pairJoinEditFunctions f1 f2);
+        (MkPointedEditFunction f1) \/ (MkPointedEditFunction f2) = MkPointedEditFunction $ joinEditFunction <.> editToPureEditFunction (pairJoinEditFunctions f1 f2);
     };
 
     instance (MeetSemiLatticeEdit editb,Edit editp,Edit edita,Edit editb) =>
         MeetSemiLattice (PointedEditFunction editp edita editb) where
     {
-        (MkPointedEditFunction f1) /\ (MkPointedEditFunction f2) = MkPointedEditFunction $ meetEditFunction <.> editToObjectFunction (pairJoinEditFunctions f1 f2);
+        (MkPointedEditFunction f1) /\ (MkPointedEditFunction f2) = MkPointedEditFunction $ meetEditFunction <.> editToPureEditFunction (pairJoinEditFunctions f1 f2);
     };
 
     carryPointedEditLens :: (Edit editx,Edit edita,Edit editb) =>

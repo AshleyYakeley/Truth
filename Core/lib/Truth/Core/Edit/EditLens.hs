@@ -32,11 +32,11 @@ module Truth.Core.Edit.EditLens where
         return (isJust (getMaybeOne medita));
     };
 
-    type ObjectLens = EditLens ();
+    type PureEditLens = EditLens ();
 
-    instance ConstrainedCategory (EditLens ()) where
+    instance ConstrainedCategory PureEditLens where
     {
-        type CategoryConstraint (EditLens ()) t = Edit t;
+        type CategoryConstraint PureEditLens t = Edit t;
         cid = let
         {
             editLensFunction = cid;
@@ -89,14 +89,14 @@ module Truth.Core.Edit.EditLens where
         editLensPutEdit _ _ = pure Nothing;
     } in MkEditLens{..};
 
-    constEditLens :: forall edita editb. SubjectReader (EditReader editb) => EditSubject editb -> EditLens () edita editb;
+    constEditLens :: forall edita editb. SubjectReader (EditReader editb) => EditSubject editb -> PureEditLens edita editb;
     constEditLens b = readOnlyEditLens $ constEditFunction b;
 
     convertEditLens :: forall edita editb. (EditSubject edita ~ EditSubject editb,FullEdit edita,FullEdit editb) =>
-        EditLens () edita editb;
+        PureEditLens edita editb;
     convertEditLens = let
     {
-        editLensFunction :: EditFunction () edita editb;
+        editLensFunction :: PureEditFunction edita editb;
         editLensFunction = convertEditFunction;
         editLensPutEdit :: () -> editb -> Readable (EditReader edita) (Maybe ((),[edita]));
         editLensPutEdit () editb = do

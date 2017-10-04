@@ -13,10 +13,10 @@ module Truth.Core.Edit.EditFunction  where
         editUpdate :: edita -> state -> Readable (EditReader edita) (state,[editb]) -- updates happen after the change, and reads will reflect the new state
     };
 
-    type ObjectFunction = EditFunction ();
+    type PureEditFunction = EditFunction ();
 
-    editToObjectFunction :: forall edita editb. EditFunction ((),()) edita editb -> EditFunction () edita editb;
-    editToObjectFunction (MkEditFunction _ g u) = let
+    editToPureEditFunction :: forall edita editb. EditFunction ((),()) edita editb -> PureEditFunction edita editb;
+    editToPureEditFunction (MkEditFunction _ g u) = let
     {
         g' :: () -> ReadFunction (EditReader edita) (EditReader editb);
         g' () = g ((),());
@@ -58,7 +58,7 @@ module Truth.Core.Edit.EditFunction  where
         editUpdate = \edita2 -> editUpdate fef (a21 edita2)
     };
 
-    constEditFunction :: forall edita editb. SubjectReader (EditReader editb) => EditSubject editb -> EditFunction () edita editb;
+    constEditFunction :: forall edita editb. SubjectReader (EditReader editb) => EditSubject editb -> PureEditFunction edita editb;
     constEditFunction b = let
     {
         editAccess :: IOStateAccess ();
@@ -83,7 +83,7 @@ module Truth.Core.Edit.EditFunction  where
         (MkCloseState bc) <.> (MkCloseState ab) = MkCloseState $ composeState bc ab;
     };
 
-    instance Category (EditFunction ()) where
+    instance Category (PureEditFunction) where
     {
         id = let
         {
@@ -105,9 +105,9 @@ module Truth.Core.Edit.EditFunction  where
         };
     };
 
-    instance ConstrainedCategory (EditFunction ()) where
+    instance ConstrainedCategory (PureEditFunction) where
     {
-        type CategoryConstraint (EditFunction ()) t = ();
+        type CategoryConstraint (PureEditFunction) t = ();
         cid = id;
         (<.>) = (.);
     };
@@ -130,7 +130,7 @@ module Truth.Core.Edit.EditFunction  where
     };
 
     funcEditFunction :: forall edita editb. (Edit edita,FullSubjectReader (EditReader edita),FullEdit editb) =>
-        (EditSubject edita -> EditSubject editb) -> EditFunction () edita editb;
+        (EditSubject edita -> EditSubject editb) -> PureEditFunction edita editb;
     funcEditFunction ab = let
     {
         editAccess :: IOStateAccess ();
@@ -149,6 +149,6 @@ module Truth.Core.Edit.EditFunction  where
     } in MkEditFunction{..};
 
     convertEditFunction :: forall edita editb. (EditSubject edita ~ EditSubject editb,Edit edita,FullSubjectReader (EditReader edita),FullEdit editb) =>
-        EditFunction () edita editb;
+        PureEditFunction edita editb;
     convertEditFunction = funcEditFunction id;
 }

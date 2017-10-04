@@ -15,8 +15,8 @@ module Truth.Core.Types.FiniteSet where
     type FiniteSetReader subj = KeyReader (FiniteSet subj) (WholeReader subj);
     type FiniteSetEdit subj = KeyEdit (FiniteSet subj) (ConstEdit subj);
 
-    finiteSetLens :: forall subj. Eq subj => subj -> EditLens () (FiniteSetEdit subj) (WholeEdit Bool);
-    finiteSetLens subj = let
+    finiteSetEditLens :: forall subj. Eq subj => subj -> PureEditLens (FiniteSetEdit subj) (WholeEdit Bool);
+    finiteSetEditLens subj = let
     {
         editAccess :: IOStateAccess ();
         editAccess = unitStateAccess;

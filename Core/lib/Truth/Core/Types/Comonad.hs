@@ -48,7 +48,7 @@ module Truth.Core.Types.Comonad where
         invertEdit (MkComonadEdit edit) = fmap (fmap MkComonadEdit) $ mapReadable comonadReadFunction $ invertEdit edit;
     };
 
-    comonadEditFunction :: forall w edit. EditFunction () (ComonadEdit w edit) edit;
+    comonadEditFunction :: forall w edit. PureEditFunction (ComonadEdit w edit) edit;
     comonadEditFunction = let
     {
         editAccess :: IOStateAccess ();
@@ -60,7 +60,7 @@ module Truth.Core.Types.Comonad where
         editUpdate (MkComonadEdit edit) () = return ((),[edit]);
     } in MkEditFunction{..};
 
-    comonadEditLens :: EditLens () (ComonadEdit w edit) edit;
+    comonadEditLens :: PureEditLens (ComonadEdit w edit) edit;
     comonadEditLens = let
     {
         editLensFunction = comonadEditFunction;

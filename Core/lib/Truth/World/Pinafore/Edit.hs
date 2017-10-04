@@ -255,7 +255,7 @@ module Truth.World.Pinafore.Edit where
             return $ pure edits;
         };
 
-        editLensFunction :: EditFunction () (ContextEdit PinaforeEdit (WholeEdit (Maybe Point))) (FiniteSetEdit Point);
+        editLensFunction :: PureEditFunction (ContextEdit PinaforeEdit (WholeEdit (Maybe Point))) (FiniteSetEdit Point);
         editLensFunction = MkEditFunction{..};
 
         editLensPutEdit :: () -> FiniteSetEdit Point -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) (Maybe ((), [ContextEdit PinaforeEdit (WholeEdit (Maybe Point))]));

@@ -55,7 +55,7 @@ module Truth.Core.Types.None where
         replaceEdit = return ();
     };
 
-    noEditFunction :: EditFunction () (NoEdit (EditReader edit)) edit;
+    noEditFunction :: PureEditFunction (NoEdit (EditReader edit)) edit;
     noEditFunction = let
     {
         editAccess :: IOStateAccess ();
@@ -64,7 +64,7 @@ module Truth.Core.Types.None where
         editUpdate = never;
     } in MkEditFunction{..};
 
-    noEditLens :: EditLens () (NoEdit (EditReader edit)) edit;
+    noEditLens :: PureEditLens (NoEdit (EditReader edit)) edit;
     noEditLens = let
     {
         editLensFunction = noEditFunction;

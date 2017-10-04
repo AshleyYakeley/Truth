@@ -56,8 +56,8 @@ module Truth.Core.Types.OneWholeEdit where
         };
     };
 
-    mustExistMaybeObjectFunction :: forall edit. FullEdit edit => String -> ObjectFunction (MaybeEdit edit) edit;
-    mustExistMaybeObjectFunction err = let
+    mustExistMaybeEditFunction :: forall edit. FullEdit edit => String -> PureEditFunction (MaybeEdit edit) edit;
+    mustExistMaybeEditFunction err = let
     {
         editAccess :: IOStateAccess ();
         editAccess = unitStateAccess;
@@ -81,14 +81,14 @@ module Truth.Core.Types.OneWholeEdit where
         editUpdate (SumEditRight (MkOneEdit edit)) () = return $ pure [edit];
     } in MkEditFunction{..};
 
-    mustExistMaybeObjectLens :: forall edit. FullEdit edit => String -> ObjectLens (MaybeEdit edit) edit;
-    mustExistMaybeObjectLens err = let
+    mustExistMaybeEditLens :: forall edit. FullEdit edit => String -> PureEditLens (MaybeEdit edit) edit;
+    mustExistMaybeEditLens err = let
     {
-        editLensFunction = mustExistMaybeObjectFunction err;
+        editLensFunction = mustExistMaybeEditFunction err;
         editLensPutEdit :: () -> edit -> Readable (OneReader Maybe (EditReader edit)) (Maybe ((), [MaybeEdit edit]));
         editLensPutEdit () edit = return $ Just $ pure [SumEditRight $ MkOneEdit edit];
     } in MkEditLens{..};
 
     mustExistMaybeGeneralLens :: forall edit. FullEdit edit => String -> GeneralLens (MaybeEdit edit) edit;
-    mustExistMaybeGeneralLens err = MkCloseState $ mustExistMaybeObjectLens err;
+    mustExistMaybeGeneralLens err = MkCloseState $ mustExistMaybeEditLens err;
 }

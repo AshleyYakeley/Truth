@@ -181,9 +181,9 @@ module Truth.Core.Types.Key where
         };
     };
 
-    keyElementLens :: forall cont edit. (KeyContainer cont,HasKeyReader cont (EditReader edit),Edit edit) =>
+    getKeyElementGeneralLens :: forall cont edit. (KeyContainer cont,HasKeyReader cont (EditReader edit),Edit edit) =>
         ContainerKey cont -> IO (GeneralLens (KeyEdit cont edit) (MaybeEdit edit));
-    keyElementLens initial = newMVar initial >>= \var -> return $ let
+    getKeyElementGeneralLens initial = newMVar initial >>= \var -> return $ let
     {
         editAccess :: IOStateAccess (ContainerKey cont);
         editAccess = mvarStateAccess var;
@@ -229,7 +229,7 @@ module Truth.Core.Types.Key where
         lens = MkEditLens{..};
     } in toGeneralLens lens;
 
-    keyValueLens :: forall cont keyedit valueedit.
+    getKeyValueGeneralLens :: forall cont keyedit valueedit.
         (
             KeyContainer cont,
             HasKeyReader cont (PairEditReader keyedit valueedit),
@@ -237,13 +237,13 @@ module Truth.Core.Types.Key where
             FullSubjectReader (EditReader keyedit),
             FullEdit valueedit
         ) => ContainerKey cont -> IO (GeneralLens (KeyEdit cont (PairEdit keyedit valueedit)) (MaybeEdit valueedit));
-    keyValueLens key = do
+    getKeyValueGeneralLens key = do
     {
-        lens <- keyElementLens key;
+        lens <- getKeyElementGeneralLens key;
         return $ (oneWholeLiftGeneralLens $ tupleGeneralLens EditSecond) <.> lens;
     };
 
-    liftKeyElementLens :: forall state conta contb edita editb.
+    liftKeyElementEditLens :: forall state conta contb edita editb.
         (
             ContainerKey conta ~ ContainerKey contb,
             EditSubject edita ~ Element conta,
@@ -253,7 +253,7 @@ module Truth.Core.Types.Key where
         ) =>
         (forall m. MonadIO m => EditSubject editb -> m (Maybe (EditSubject edita))) ->
         EditLens state edita editb -> EditLens state (KeyEdit conta edita) (KeyEdit contb editb);
-    liftKeyElementLens bma (MkEditLens (MkEditFunction editAccess g u) pe) = let
+    liftKeyElementEditLens bma (MkEditLens (MkEditFunction editAccess g u) pe) = let
     {
         editGet :: state -> ReadFunction (KeyReader conta (EditReader edita)) (KeyReader contb (EditReader editb));
         editGet _ KeyReadKeys = readable KeyReadKeys;
@@ -299,9 +299,9 @@ module Truth.Core.Types.Key where
         editLensFunction = MkEditFunction{..};
     } in MkEditLens{..};
 
-    contextKeyLens' :: forall editx cont edit.
-        EditLens () (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit));
-    contextKeyLens' = let
+    contextKeyEditLens :: forall editx cont edit.
+        PureEditLens (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit));
+    contextKeyEditLens = let
     {
         editAccess :: IOStateAccess ();
         editAccess = unitStateAccess;
@@ -332,6 +332,6 @@ module Truth.Core.Types.Key where
         editLensPutEdit () KeyClear = return $ pure $ pure [MkTupleEdit EditContent KeyClear];
     } in MkEditLens {..};
 
-    contextKeyLens :: GeneralLens (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit));
-    contextKeyLens = MkCloseState contextKeyLens';
+    contextKeyGeneralLens :: GeneralLens (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit));
+    contextKeyGeneralLens = MkCloseState contextKeyEditLens;
 }

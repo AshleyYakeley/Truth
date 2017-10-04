@@ -55,7 +55,7 @@ module Truth.Core.Types.Whole where
 
     type WholeEdit a = WholeReaderEdit (WholeReader a);
 
-    wholeEditFunction :: forall a b. (a -> b) -> EditFunction () (WholeEdit a) (WholeEdit b);
+    wholeEditFunction :: forall a b. (a -> b) -> PureEditFunction (WholeEdit a) (WholeEdit b);
     wholeEditFunction ab = MkEditFunction
     {
         editAccess = unitStateAccess,
@@ -63,7 +63,7 @@ module Truth.Core.Types.Whole where
         editUpdate = \(MkWholeEdit a) curstate -> return (curstate,[MkWholeEdit $ ab a])
     };
 
-    wholeEditLens :: forall m a b. (MonadOne m) => Lens' m a b -> EditLens () (WholeEdit a) (WholeEdit b);
+    wholeEditLens :: forall m a b. (MonadOne m) => Lens' m a b -> PureEditLens (WholeEdit a) (WholeEdit b);
     wholeEditLens lens = MkEditLens
     {
         editLensFunction = wholeEditFunction (lensGet lens),
@@ -111,11 +111,11 @@ module Truth.Core.Types.Whole where
         toGeneralLens = toGeneralLens . codecInjection;
     };
 
-    unitWholeObjectFunction :: ObjectFunction edit (WholeEdit ());
-    unitWholeObjectFunction = constEditFunction ();
+    unitWholeEditFunction :: PureEditFunction edit (WholeEdit ());
+    unitWholeEditFunction = constEditFunction ();
 
-    pairWholeObjectFunction :: forall edit a b. ObjectFunction edit (WholeEdit a) -> ObjectFunction edit (WholeEdit b) -> ObjectFunction edit (WholeEdit (a,b));
-    pairWholeObjectFunction (MkEditFunction _ ga ua) (MkEditFunction _ gb ub) = let
+    pairWholeEditFunction :: forall edit a b. PureEditFunction edit (WholeEdit a) -> PureEditFunction edit (WholeEdit b) -> PureEditFunction edit (WholeEdit (a,b));
+    pairWholeEditFunction (MkEditFunction _ ga ua) (MkEditFunction _ gb ub) = let
     {
         gab :: () -> ReadFunction (EditReader edit) (WholeReader (a,b));
         gab () ReadWhole = do

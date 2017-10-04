@@ -132,7 +132,7 @@ module Truth.Core.Object.MutableEdit where
     withMapMutableEdit (MkCloseState lens) mutedA call = editAccess (editLensFunction lens) $ call $ mapMutableEdit lens mutedA;
 
     fixedMapMutableEdit :: forall m edita editb. (MonadIO m,Edit edita) =>
-        EditLens () edita editb -> MutableEdit m edita -> MutableEdit m editb;
+        PureEditLens edita editb -> MutableEdit m edita -> MutableEdit m editb;
     fixedMapMutableEdit lens muted = remonadMutableEdit runUnitStateT $ mapMutableEdit lens muted;
 
     noneMutableEdit :: Applicative m => MutableEdit m (NoEdit (NoReader t));
