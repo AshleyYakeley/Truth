@@ -3,13 +3,12 @@ module Truth.UI.GTK.Table(tableGetView) where
     import Shapes;
     import Graphics.UI.Gtk;
     import Truth.Core;
+    import Truth.UI.GTK.Useful;
     import Truth.UI.GTK.GView;
 
 
-    type Update m edit = MutableRead m (EditReader edit) -> [edit] -> m ();
-
-    mapUpdate :: forall m edita editb. IsStateIO m => GeneralLens edita editb -> Update m editb -> Update m edita;
-    mapUpdate (MkCloseState lens) updateB mrA editsA = editAccess (editLensFunction lens) $ StateT $ \oldstate -> do
+    mapUpdate :: forall r m edita editb. IsStateIO m => GeneralLens edita editb -> MutableRead m (EditReader edita) -> [edita] -> (MutableRead m (EditReader editb) -> [editb] -> m r) -> m r;
+    mapUpdate (MkCloseState lens) mrA editsA call = editAccess (editLensFunction lens) $ StateT $ \oldstate -> do
     {
         (newstate,editsB) <- unReadable (editUpdates (editLensFunction lens) editsA oldstate) mrA;
         let
@@ -17,8 +16,8 @@ module Truth.UI.GTK.Table(tableGetView) where
             mrB :: MutableRead m (EditReader editb);
             mrB = mapMutableRead (editGet (editLensFunction lens) newstate) mrA;
         };
-        updateB mrB editsB;
-        return ((),newstate);
+        r <- call mrB editsB;
+        return (r,newstate);
     };
 
     addColumn :: TreeView -> ListStore (key,GeneralLens tedit (WholeEdit row),row) -> String -> (row -> String) -> IO ();
@@ -105,51 +104,55 @@ module Truth.UI.GTK.Table(tableGetView) where
             };
 
             vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader tedit) -> [tedit] -> m ();
-            vrUpdate mr = mapUpdate tableLens (\_ edits -> for_ edits $ \edit -> (case edit of
+            vrUpdate mr tedits = do
             {
-                KeyDeleteItem key -> do
+                -- do updates that affect the structure of the table
+                mapUpdate tableLens mr tedits $ \_ edits -> do
                 {
-                    mindex <- findInStore key;
-                    case mindex of
+                    for_ edits $ \edit -> (case edit of
                     {
-                        Just i -> liftIO $ listStoreRemove store i;
-                        Nothing -> return ();
-                    };
-                };
-                KeyInsertReplaceItem item -> let
-                {
-                    key = elementKey (Proxy :: Proxy cont) item;
-                } in do
-                {
-                    mindex <- findInStore key;
-                    case mindex of
-                    {
-                        Just _index -> return ();
-                        Nothing -> do
+                        KeyDeleteItem key -> do
                         {
-                            storeItem <- getStoreItem mr key;
-                            _ <- liftIO $ listStoreAppend store storeItem;
-                            return ();
+                            mindex <- findInStore key;
+                            case mindex of
+                            {
+                                Just i -> liftIO $ listStoreRemove store i;
+                                Nothing -> return ();
+                            };
                         };
-                    };
-                };
-                KeyClear -> liftIO $ listStoreClear store;
-                KeyEditItem key _ -> do
-                {
-                    mindex <- findInStore key;
-                    case mindex of
-                    {
-                        Just i -> do
+                        KeyInsertReplaceItem item -> let
                         {
-                            (_,lens,_) <- liftIO $ listStoreGetValue store i;
-                            row <- withMapMutableRead lens mr $ \mr' -> mr' ReadWhole;
-                            liftIO $ listStoreSetValue store i (key,lens,row);
-                            return ();
+                            key = elementKey (Proxy :: Proxy cont) item;
+                        } in do
+                        {
+                            mindex <- findInStore key;
+                            case mindex of
+                            {
+                                Just _index -> return ();
+                                Nothing -> do
+                                {
+                                    storeItem <- getStoreItem mr key;
+                                    _ <- liftIO $ listStoreAppend store storeItem;
+                                    return ();
+                                };
+                            };
                         };
-                        Nothing -> return ();
+                        KeyClear -> liftIO $ listStoreClear store;
+                        KeyEditItem _ _ -> return (); -- no change to the table structure
+                    } :: m ())
+                };
+
+                -- do updates to the cells
+                listStoreTraverse_ store $ \(key,lens,oldrow) -> mapUpdate lens mr tedits $ \_ edits' -> case edits' of
+                {
+                    [] -> return Nothing;
+                    _ -> do
+                    {
+                        newrow <- fromReadFunctionM (applyEdits edits') (return oldrow);
+                        return $ Just (key,lens,newrow);
                     };
                 };
-            } :: m ())) mr;
+            };
 
             vrFirstAspectGetter :: Aspect tedit;
             vrFirstAspectGetter = do

@@ -24,4 +24,20 @@ module Truth.UI.GTK.Useful where
         Just _ -> f;
         _ -> return ();
     };
+
+    listStoreTraverse_ :: MonadIO m => ListStore a -> (a -> m (Maybe a)) -> m ();
+    listStoreTraverse_ store f = do
+    {
+        n <- liftIO $ listStoreGetSize store;
+        for_ [0..(n-1)] $ \i -> do
+        {
+            oldval <- liftIO $ listStoreGetValue store i;
+            mnewval <- f oldval;
+            case mnewval of
+            {
+                Just newval -> liftIO $ listStoreSetValue store i newval;
+                Nothing -> return ();
+            };
+        };
+    };
 }
