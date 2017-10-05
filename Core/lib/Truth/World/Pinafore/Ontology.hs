@@ -84,7 +84,7 @@ module Truth.World.Pinafore.Ontology where
         spropMorphism :: PinaforeLens Point String;
         spropMorphism subj = primitivePinaforeLens $ predicatePinaforeLens (predicate "498260df-6a8a-44f0-b285-68a63565a33b") subj;
         spropType :: ViewPinaforeType String;
-        spropType = PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ uiLens convertGeneralLens $ uiMaybe Nothing $ MkUISpec MkUITextEntry;
+        spropType = PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ uiLens convertGeneralLens $ uiNothingValue "" $ MkUISpec MkUITextEntry;
     } in MkViewPinaforeSimpleProperty{..};
 
     motherPredicate :: Predicate;

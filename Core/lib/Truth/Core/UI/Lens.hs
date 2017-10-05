@@ -64,4 +64,18 @@ module Truth.Core.UI.Lens where
             spec -> MkUISpec $ MkUILens (tupleGeneralLens seledit) spec;
         };
     }) tupleAllSelectors;
+
+    -- not really a bijection
+    maybeNothingValueBijection :: Eq a => a -> Bijection (Maybe a) a;
+    maybeNothingValueBijection def = let
+    {
+        biForwards (Just a) = a;
+        biForwards Nothing = def;
+
+        biBackwards a | a == def = Nothing;
+        biBackwards a = Just a;
+    } in MkBijection{..};
+
+    uiNothingValue :: Eq a => a -> UISpec (WholeEdit a) -> UISpec (WholeEdit (Maybe a));
+    uiNothingValue def = uiLens $ toGeneralLens $ maybeNothingValueBijection def;
 }
