@@ -24,7 +24,7 @@ module Truth.World.Pinafore.Ontology where
 
     data ViewPinaforeProperty where
     {
-        MkViewPinaforeProperty :: forall edit. (Edit edit) => (PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeLensValue edit) -> ViewPinaforeItem edit -> ViewPinaforeProperty;
+        MkViewPinaforeProperty :: forall edit. (Edit edit) => String -> (PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeLensValue edit) -> ViewPinaforeItem edit -> ViewPinaforeProperty;
     };
 
     data ViewPinaforePrimitive t where
@@ -34,7 +34,7 @@ module Truth.World.Pinafore.Ontology where
 
     data ViewPinaforeEntity where
     {
-        MkViewPinaforeEntity :: String -> [(String,ViewPinaforeProperty)] -> ViewPinaforeEntity;
+        MkViewPinaforeEntity :: String -> [ViewPinaforeProperty] -> ViewPinaforeEntity;
     };
 
     data ViewPinaforeType t where
@@ -43,9 +43,15 @@ module Truth.World.Pinafore.Ontology where
         PrimitiveViewPinaforeType :: ViewPinaforePrimitive t -> ViewPinaforeType t;
     };
 
-    data ViewPinaforeReference = MkViewPinaforeReference (PinaforeLensValue (FiniteSetEdit Point)) (PinaforeFunctionMorphism Point String) ViewPinaforeEntity;
+    data ViewPinaforeReference where
+    {
+        MkViewPinaforeReference :: PinaforeLensValue (FiniteSetEdit Point) -> PinaforeFunctionMorphism Point String -> ViewPinaforeEntity -> ViewPinaforeReference;
+    };
 
-    data ViewPinaforeValue = forall t. MkViewPinaforeValue (Maybe t) (ViewPinaforeType t);
+    data ViewPinaforeValue where
+    {
+        MkViewPinaforeValue :: forall edit. PinaforeLensValue edit -> ViewPinaforeItem edit -> ViewPinaforeValue;
+    };
 
     type PinaforeSpec edit = PinaforeLensValue edit -> UISpec PinaforeEdit;
     simplePinaforeSpec :: Edit edit => UISpec edit -> PinaforeSpec edit;
@@ -66,7 +72,7 @@ module Truth.World.Pinafore.Ontology where
     in MkUISpec $ MkUITable (fmap pinaforePropertyKeyColumn cols) getaspect subjv;
 
     pinaforePropertySpec :: ViewPinaforeProperty -> PinaforeSpec (WholeEdit (Maybe Point));
-    pinaforePropertySpec (MkViewPinaforeProperty lens ptype) subjv = pinaforeItemSpec ptype (lens subjv);
+    pinaforePropertySpec (MkViewPinaforeProperty name lens ptype) subjv = uiLabelled name $ pinaforeItemSpec ptype (lens subjv);
 
     pinaforeRefTypeSpec :: ViewPinaforeReference -> PinaforeSpec (WholeEdit (Maybe Point));
     pinaforeRefTypeSpec (MkViewPinaforeReference vals name (MkViewPinaforeEntity typename _)) subjv = let
@@ -90,9 +96,9 @@ module Truth.World.Pinafore.Ontology where
     } in uiDragDestination typename subjv $ uiOption (orderByName $ lensFunctionValue vals) subjv;
 
     pinaforeValueTypeSpec :: ViewPinaforeType t -> PinaforeSpec (WholeEdit (Maybe t));
-    pinaforeValueTypeSpec (EntityViewPinaforeType (MkViewPinaforeEntity typename props)) = \subjv -> uiVertical $ (uiLens subjv $ uiDragSource typename) : fmap (\(name,prop) -> uiLabelled name $ pinaforePropertySpec prop subjv) props;
+    pinaforeValueTypeSpec (EntityViewPinaforeType (MkViewPinaforeEntity typename props)) = \subjv -> uiVertical $ (uiLens subjv $ uiDragSource typename) : fmap (\prop -> pinaforePropertySpec prop subjv) props;
     pinaforeValueTypeSpec (PrimitiveViewPinaforeType (MkViewPinaforePrimitive uispec)) = simplePinaforeSpec uispec;
 
     pinaforeValueSpec :: ViewPinaforeValue -> UISpec PinaforeEdit;
-    pinaforeValueSpec (MkViewPinaforeValue value tp) = pinaforeValueTypeSpec tp $ constGeneralLens value;
+    pinaforeValueSpec (MkViewPinaforeValue subjv ptype) = pinaforeItemSpec ptype subjv;
 }

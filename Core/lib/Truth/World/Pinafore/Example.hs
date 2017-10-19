@@ -1,4 +1,4 @@
-module Truth.World.Pinafore.Example where
+module Truth.World.Pinafore.Example(rootValue) where
 {
     import Truth.Core.Import;
     import Truth.Core;
@@ -17,72 +17,44 @@ module Truth.World.Pinafore.Example where
     personFather :: PinaforeLensMorphism Point Point;
     personFather = predicatePinaforeLensMorphism $ predicate "c005705f-9259-4d24-9713-db28a6e4f7d5";
 
-    startPoint :: Maybe Point;
-    startPoint = Just $ point "78baed51-cb05-46b5-bcb4-49031532b890";
-
     typePeople :: PinaforeLensMorphism Point Point;
     typePeople = predicatePinaforeLensMorphism $ predicate "f06efa5e-190f-4e5d-8633-495c5683c124";
 
     personType :: PinaforeLensValue (FiniteSetEdit Point);
-    personType = applyInversePinaforeLens typePeople (constGeneralLens startPoint);
+    personType = applyInversePinaforeLens typePeople rootPoint;
+
+    rootPoint :: PinaforeLensValue (WholeEdit (Maybe Point));
+    rootPoint = constGeneralLens $ Just $ point "78baed51-cb05-46b5-bcb4-49031532b890";
 
 
-    personTypeView :: ViewPinaforeType Point;
-    personTypeView = EntityViewPinaforeType personEntity;
+    textEntryItem :: ViewPinaforeItem (WholeEdit (Maybe String));
+    textEntryItem = SimpleViewPinaforeItem $ PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ uiNothingValue "" $ MkUISpec MkUITextEntry;
 
-    textEntryTypeView :: ViewPinaforeType String;
-    textEntryTypeView = PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ uiNothingValue "" $ MkUISpec MkUITextEntry;
+    peopleItem :: ViewPinaforeItem (FiniteSetEdit Point);
+    peopleItem = InverseReferenceViewPinaforeItem (EntityViewPinaforeType personEntity) [("Name",personName)];
+
+    personReferenceItem :: ViewPinaforeItem (WholeEdit (Maybe Point));
+    personReferenceItem = ReferenceViewPinaforeItem $ MkViewPinaforeReference personType (fmap (fromMaybe "") $ lensFunctionMorphism personName) personEntity;
 
     personEntity :: ViewPinaforeEntity;
     personEntity = let
     {
-        personNameProperty :: ViewPinaforeProperty;
-        personNameProperty = MkViewPinaforeProperty (applyPinaforeLens personName) $ SimpleViewPinaforeItem textEntryTypeView;
+        childrenLens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeLensValue (FiniteSetEdit Point);
+        childrenLens subj = readOnlyGeneralLens joinGeneralFunction <.> pairJoinGeneralLenses (applyInversePinaforeLens personMother subj) (applyInversePinaforeLens personFather subj);
+    } in MkViewPinaforeEntity "Person"
+    [
+        MkViewPinaforeProperty "Name" (applyPinaforeLens personName) textEntryItem,
+        MkViewPinaforeProperty "Mother" (applyPinaforeLens personMother) personReferenceItem,
+        MkViewPinaforeProperty "Father" (applyPinaforeLens personFather) personReferenceItem,
+        MkViewPinaforeProperty "Children" childrenLens peopleItem
+    ];
 
-        personMotherProperty :: ViewPinaforeProperty;
-        personMotherProperty = let
-        {
-            getlens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeLensValue (WholeEdit (Maybe Point));
-            getlens = applyPinaforeLens personMother;
-
-            item :: ViewPinaforeItem (WholeEdit (Maybe Point));
-            item = ReferenceViewPinaforeItem $ MkViewPinaforeReference personType (fmap (fromMaybe "") $ lensFunctionMorphism personName) personEntity;
-        } in MkViewPinaforeProperty getlens item;
-
-        personFatherProperty :: ViewPinaforeProperty;
-        personFatherProperty = let
-        {
-            getlens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeLensValue (WholeEdit (Maybe Point));
-            getlens = applyPinaforeLens personFather;
-
-            item :: ViewPinaforeItem (WholeEdit (Maybe Point));
-            item = ReferenceViewPinaforeItem $ MkViewPinaforeReference personType (fmap (fromMaybe "") $ lensFunctionMorphism personName) personEntity;
-        } in MkViewPinaforeProperty getlens item;
-
-        personChildrenProperty :: ViewPinaforeProperty;
-        personChildrenProperty = let
-        {
-            getlens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeLensValue (FiniteSetEdit Point);
-            getlens subj = readOnlyGeneralLens joinGeneralFunction <.> pairJoinGeneralLenses (applyInversePinaforeLens personMother subj) (applyInversePinaforeLens personFather subj);
-
-            item :: ViewPinaforeItem (FiniteSetEdit Point);
-            item = InverseReferenceViewPinaforeItem personTypeView [("Name",personName)];
-        } in MkViewPinaforeProperty getlens item;
-    } in MkViewPinaforeEntity "Person" [("Name",personNameProperty),("Mother",personMotherProperty),("Father",personFatherProperty),("Children",personChildrenProperty)];
-
-    peopleCollection :: ViewPinaforeProperty;
-    peopleCollection = let
-    {
-        getlens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeLensValue (FiniteSetEdit Point);
-        getlens = applyInversePinaforeLens typePeople;
-
-        item :: ViewPinaforeItem (FiniteSetEdit Point);
-        item = InverseReferenceViewPinaforeItem personTypeView [("Name",personName)];
-    } in MkViewPinaforeProperty getlens item;
-
-    rootType :: ViewPinaforeType Point;
-    rootType = EntityViewPinaforeType $ MkViewPinaforeEntity "Root" [("People",peopleCollection)];
+    rootItem :: ViewPinaforeItem (WholeEdit (Maybe Point));
+    rootItem = SimpleViewPinaforeItem $ EntityViewPinaforeType $ MkViewPinaforeEntity "Root"
+    [
+        MkViewPinaforeProperty "People" (applyInversePinaforeLens typePeople) peopleItem
+    ];
 
     rootValue :: ViewPinaforeValue;
-    rootValue = MkViewPinaforeValue startPoint rootType;
+    rootValue = MkViewPinaforeValue rootPoint rootItem;
 }
