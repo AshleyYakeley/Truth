@@ -54,7 +54,7 @@ module Truth.Core.UI.View where
         } in MkViewResult{..};
     };
 
-    data View edit w = forall. MkView (Object edit -> (Aspect edit -> IO ()) -> IO (ViewResult edit w));
+    newtype View edit w = MkView (Object edit -> (Aspect edit -> IO ()) -> IO (ViewResult edit w));
 
     instance Functor (View edit) where
     {

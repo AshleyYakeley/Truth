@@ -64,6 +64,12 @@ module Truth.Core.Types.Pair where
     pairMutableRead mra _mrb (MkTupleEditReader EditFirst ra) = mra ra;
     pairMutableRead _mra mrb (MkTupleEditReader EditSecond rb) = mrb rb;
 
+    fstMutableRead :: MutableRead m (PairEditReader ea eb) -> MutableRead m (EditReader ea);
+    fstMutableRead mr ra = mr $ MkTupleEditReader EditFirst ra;
+
+    sndMutableRead :: MutableRead m (PairEditReader ea eb) -> MutableRead m (EditReader eb);
+    sndMutableRead mr rb = mr $ MkTupleEditReader EditSecond rb;
+
     fstLiftEditLens :: forall state editx edita editb.
         EditLens state edita editb -> EditLens state (PairEdit edita editx) (PairEdit editb editx);
     fstLiftEditLens (MkEditLens (MkEditFunction editAccess g u) pe) = let

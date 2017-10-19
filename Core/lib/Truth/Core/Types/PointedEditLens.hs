@@ -3,13 +3,14 @@ module Truth.Core.Types.PointedEditLens where
     import Truth.Core.Import;
     import Truth.Core.Read;
     import Truth.Core.Edit;
+    import Truth.Core.Types.Whole;
     import Truth.Core.Types.Tuple;
     import Truth.Core.Types.Pair;
     import Truth.Core.Types.Context;
     import Truth.Core.Types.Lattice;
 
 
-    data PointedEditFunction editp edita editb = MkPointedEditFunction (PureEditFunction (ContextEdit editp edita) editb);
+    newtype PointedEditFunction editp edita editb = MkPointedEditFunction (PureEditFunction (ContextEdit editp edita) editb);
 
     instance ConstrainedCategory (PointedEditFunction editp) where
     {
@@ -50,7 +51,7 @@ module Truth.Core.Types.PointedEditLens where
         };
     };
 
-    data PointedEditLens editp edita editb = MkPointedEditLens (PureEditLens (ContextEdit editp edita) editb);
+    newtype PointedEditLens editp edita editb = MkPointedEditLens (PureEditLens (ContextEdit editp edita) editb);
 
     instance Edit editp => ConstrainedCategory (PointedEditLens editp) where
     {
@@ -94,6 +95,17 @@ module Truth.Core.Types.PointedEditLens where
         } in MkPointedEditLens $ MkEditLens{..};
     };
 
+    pointedWholeFunctionRead :: PointedEditFunction editp (WholeEdit a) (WholeEdit b) -> a -> Readable (EditReader editp) b;
+    pointedWholeFunctionRead (MkPointedEditFunction MkEditFunction{..}) a = mapReadable (\case
+    {
+        MkTupleEditReader EditContext rt -> readable rt;
+        MkTupleEditReader EditContent ReadWhole -> return a;
+    }) $ editGet () ReadWhole;
+
+    funcPointedEditFunction :: forall editp edita editb. (Edit edita,FullSubjectReader (EditReader edita),FullEdit editb) =>
+        (EditSubject edita -> EditSubject editb) -> PointedEditFunction editp edita editb;
+    funcPointedEditFunction ab = editFunctionToPointed $ funcEditFunction ab;
+
     pointedEditLensFunction :: PointedEditLens editp edita editb -> PointedEditFunction editp edita editb;
     pointedEditLensFunction (MkPointedEditLens lens) = MkPointedEditFunction $ editLensFunction lens;
 
@@ -132,6 +144,9 @@ module Truth.Core.Types.PointedEditLens where
     carryPointedEditLens :: (Edit editx,Edit edita,Edit editb) =>
         PointedEditLens editx edita editb -> GeneralLens (ContextEdit editx edita) (ContextEdit editx editb);
     carryPointedEditLens (MkPointedEditLens lens) = carryContextGeneralLens $ MkCloseState lens;
+
+    pointedMapGeneralFunction :: (Edit editx,Edit edita,Edit editb) => PointedEditFunction editx edita editb -> GeneralFunction editx edita -> GeneralFunction editx editb;
+    pointedMapGeneralFunction (MkPointedEditFunction ef) efxa = (MkCloseState ef) <.> contextualiseGeneralFunction efxa;
 
     pointedMapGeneralLens :: (Edit editx,Edit edita,Edit editb) => PointedEditLens editx edita editb -> GeneralLens editx edita -> GeneralLens editx editb;
     pointedMapGeneralLens (MkPointedEditLens lens) lensxa = (MkCloseState lens) <.> contextualiseGeneralLens lensxa;

@@ -12,6 +12,9 @@ module Truth.Core.Read.ReadFunction where
     mapMutableRead :: forall m ra rb. (MonadIO m) => ReadFunction ra rb -> MutableRead m ra -> MutableRead m rb;
     mapMutableRead rfab sma rbt = unReadable (rfab rbt) sma;
 
+    unmapMutableRead :: forall ra rb. (forall m. MonadIO m => MutableRead m ra -> MutableRead m rb) -> ReadFunction ra rb;
+    unmapMutableRead mrmr rbt = MkReadable $ \mra -> mrmr mra rbt;
+
     mapMutableReadW :: forall m ra rb. (MonadIO m) => ReadFunction ra rb -> MutableReadW m ra -> MutableReadW m rb;
     mapMutableReadW rf (MkMutableReadW mr) = MkMutableReadW $ mapMutableRead rf mr;
 

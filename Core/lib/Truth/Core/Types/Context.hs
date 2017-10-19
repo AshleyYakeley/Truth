@@ -73,18 +73,22 @@ module Truth.Core.Types.Context where
         tupleWitness _ EditContent = MkConstraintWitness;
     };
 
-    contextEditLens :: PureEditLens (TupleEdit (WithContextSelector editx editn)) editx;
-    contextEditLens = tupleEditLens EditContext;
-    contentEditLens :: PureEditLens (TupleEdit (WithContextSelector editx editn)) editn;
-    contentEditLens = tupleEditLens EditContent;
-
-    contextGeneralLens :: GeneralLens (TupleEdit (WithContextSelector editx editn)) editx;
-    contextGeneralLens = tupleGeneralLens EditContext;
-    contentGeneralLens :: GeneralLens (TupleEdit (WithContextSelector editx editn)) editn;
-    contentGeneralLens = tupleGeneralLens EditContent;
-
     type ContextEditReader x n = TupleEditReader (WithContextSelector x n);
     type ContextEdit x n = TupleEdit (WithContextSelector x n);
+
+    contextEditLens :: PureEditLens (ContextEdit editx editn) editx;
+    contextEditLens = tupleEditLens EditContext;
+    contentEditLens :: PureEditLens (ContextEdit editx editn) editn;
+    contentEditLens = tupleEditLens EditContent;
+
+    contextGeneralLens :: GeneralLens (ContextEdit editx editn) editx;
+    contextGeneralLens = tupleGeneralLens EditContext;
+    contentGeneralLens :: GeneralLens (ContextEdit editx editn) editn;
+    contentGeneralLens = tupleGeneralLens EditContent;
+
+    mapContextEdit :: (edita -> editb) -> ContextEdit editx edita -> ContextEdit editx editb;
+    mapContextEdit _ (MkTupleEdit EditContext edit) = MkTupleEdit EditContext edit;
+    mapContextEdit f (MkTupleEdit EditContent edit) = MkTupleEdit EditContent $ f edit;
 
     contextualiseReadFunction :: forall edita editb. ReadFunction (EditReader edita) (EditReader editb) -> ReadFunction (EditReader edita) (ContextEditReader edita editb);
     contextualiseReadFunction _rf (MkTupleEditReader EditContext rt) = readable rt;
@@ -103,6 +107,9 @@ module Truth.Core.Types.Context where
             return (newstate,(MkTupleEdit EditContext ea):(fmap (MkTupleEdit EditContent) ebs));
         };
     } in MkEditFunction i g' u';
+
+    contextualiseGeneralFunction :: GeneralFunction edita editb -> GeneralFunction edita (ContextEdit edita editb);
+    contextualiseGeneralFunction (MkCloseState ef) = MkCloseState $ contextualiseEditFunction ef;
 
     contextualiseEditLens :: EditLens state edita editb -> EditLens state edita (ContextEdit edita editb);
     contextualiseEditLens (MkEditLens f pe) = let

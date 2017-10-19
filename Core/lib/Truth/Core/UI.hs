@@ -6,6 +6,7 @@ module Truth.Core.UI
     module Truth.Core.UI.Layout,
     module Truth.Core.UI.Labelled,
     module Truth.Core.UI.Checkbox,
+    module Truth.Core.UI.Option,
     module Truth.Core.UI.TextEntry,
     module Truth.Core.UI.TextEditor,
     module Truth.Core.UI.Table,
@@ -21,6 +22,7 @@ module Truth.Core.UI
     import Truth.Core.UI.Layout;
     import Truth.Core.UI.Labelled;
     import Truth.Core.UI.Checkbox;
+    import Truth.Core.UI.Option;
     import Truth.Core.UI.TextEntry;
     import Truth.Core.UI.TextEditor;
     import Truth.Core.UI.Table;

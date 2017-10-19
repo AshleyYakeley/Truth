@@ -10,9 +10,9 @@ module Truth.Core.Read.Readable where
         readable :: forall t. RMReader m t -> m t;
     };
 
-    newtype Readable reader a = MkReadable { unReadable :: forall m. (MonadIO m) => MutableRead m reader -> m a};
+    newtype Readable reader a = MkReadable { unReadable :: forall m. MonadIO m => MutableRead m reader -> m a};
 
-    liftReadable :: (forall m. (MonadIO m) => m a) -> Readable reader a;
+    liftReadable :: (forall m. MonadIO m => m a) -> Readable reader a;
     liftReadable ma = MkReadable $ \_ -> ma;
 
     fromReadableSubject :: (SubjectReader reader,MonadIO m) => Readable reader t -> ReaderSubject reader -> m t;
@@ -50,7 +50,7 @@ module Truth.Core.Read.Readable where
         readable rt = MkReadable (\s -> s rt);
     };
 
-    readableToM :: forall m t. (IsReadableMonad m) => Readable (RMReader m) t -> m t;
+    readableToM :: forall m t. IsReadableMonad m => Readable (RMReader m) t -> m t;
     readableToM (MkReadable sma) = sma readable;
 
     instance (IsReadableMonad m,Monad f,Traversable f) => IsReadableMonad (Compose m f) where

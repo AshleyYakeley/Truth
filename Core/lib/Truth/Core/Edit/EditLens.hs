@@ -57,32 +57,6 @@ module Truth.Core.Edit.EditLens where
         };
     };
 
-    instance StateCategory EditLens where
-    {
-        identityState = let
-        {
-            editLensFunction = identityState;
-            editLensPutEdit st edit = pure $ pure (st,[edit]);
-        } in MkEditLens{..};
-        composeState fel2 fel1 = MkEditLens
-        {
-            editLensFunction = composeState (editLensFunction fel2) (editLensFunction fel1),
-            editLensPutEdit = \(olds1,olds2) editc -> do
-            {
-                meditb <- mapGenReadable (editGet (editLensFunction fel1) olds1) (editLensPutEdit fel2 olds2 editc);
-                case retrieveOne meditb of
-                {
-                    SuccessResult (news2,editbs) -> do
-                    {
-                        mn1ea <- editLensPutEdits fel1 olds1 editbs;
-                        return $ fmap (\(news1,edita) -> ((news1,news2),edita)) mn1ea;
-                    };
-                    FailureResult (MkLimit mx) -> return mx;
-                };
-            }
-        };
-    };
-
     readOnlyEditLens :: forall state edita editb. EditFunction state edita editb -> EditLens state edita editb;
     readOnlyEditLens editLensFunction = let
     {

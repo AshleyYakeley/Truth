@@ -190,13 +190,13 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
                 return $ getSingleAll sa;
             };
         };
-        editGet () (PinaforeReadLookupPrimitive p l) = do
+        editGet () (PinaforeReadLookupPrimitive l) = do
         {
             row <- readable $ DatabaseSelect
-                (JoinTables OuterTupleJoinClause (SingleTable $ MkTupleTableSel PinaforeTriple) (SingleTable $ MkTupleTableSel PinaforeLiteral))
-                (MkTupleWhereClause $ (ColumnExpr (LeftWitness TriplePredicate) === ConstExpr p) /\ (ColumnExpr (LeftWitness TripleValue) === ColumnExpr (RightWitness LiteralKey)) /\ (ColumnExpr (RightWitness LiteralValue) === ConstExpr l))
+                (SingleTable $ MkTupleTableSel PinaforeLiteral)
+                (MkTupleWhereClause $ ColumnExpr LiteralValue === ConstExpr l)
                 mempty
-                (MkTupleSelectClause $ \Refl -> ColumnExpr (LeftWitness TripleSubject));
+                (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralKey);
             return $ MkFiniteSet $ fmap getSingleAll row;
         };
 

@@ -1,4 +1,23 @@
-module Truth.World.Pinafore.Edit where
+module Truth.World.Pinafore.Edit
+(
+    Predicate(..),Point(..),
+    PinaforeRead(..),PinaforeEdit(..),
+
+    PinaforeFunctionValue,
+    PinaforeFunctionMorphism,
+    applyPinaforeFunction,
+
+    PinaforeLensValue,
+    lensFunctionValue,
+    PinaforeLensMorphism,
+    funcPinaforeLensMorphism,
+    applyPinaforeLens,
+    applyInversePinaforeLens,
+    lensFunctionMorphism,
+    lensInverseFunctionMorphism,
+    primitivePinaforeLensMorphism,
+    predicatePinaforeLensMorphism
+) where
 {
     import Truth.Core.Import;
     import Truth.Core;
@@ -29,7 +48,7 @@ module Truth.World.Pinafore.Edit where
         PinaforeReadGetValue :: Predicate -> Point -> PinaforeRead (Maybe Point);
         PinaforeReadLookupValue :: Predicate -> Point -> PinaforeRead (FiniteSet Point);
         PinaforeReadGetPrimitive :: Point -> PinaforeRead (Maybe ByteString);
-        PinaforeReadLookupPrimitive :: Predicate -> ByteString -> PinaforeRead (FiniteSet Point);
+        PinaforeReadLookupPrimitive :: ByteString -> PinaforeRead (FiniteSet Point);
     };
 
     data PinaforeEdit where
@@ -51,7 +70,7 @@ module Truth.World.Pinafore.Edit where
             d <- listToMaybe [l | (v,l) <- literals, v == rv];
             decodeMaybe serializeCodec d;
         };
-        readFromSubject (triples,literals) (PinaforeReadLookupPrimitive rp rl) = MkFiniteSet [s | (p,s,v) <- triples, rp == p, (v',l) <- literals, v == v', l == encode serializeCodec rl];
+        readFromSubject (_,literals) (PinaforeReadLookupPrimitive rl) = MkFiniteSet [v | (v,l) <- literals, l == encode serializeCodec rl];
     };
 
     instance Floating PinaforeEdit PinaforeEdit;
@@ -61,13 +80,259 @@ module Truth.World.Pinafore.Edit where
         applyEdit _ _ = return undefined;
     };
 
-    type PinaforeValue = GeneralLens PinaforeEdit;
-    type PinaforeEditLens edita editb = PinaforeValue edita -> PinaforeValue editb;
-    type PinaforeLens a b = PinaforeEditLens (WholeEdit (Maybe a)) (WholeEdit (Maybe b));
-    type PinaforeInverseLens a b = PinaforeEditLens (WholeEdit (Maybe a)) (FiniteSetEdit b);
+    type PinaforeLensValue = GeneralLens PinaforeEdit;
 
-    primitivePinaforeLens :: forall val. Serialize val => PinaforeLens Point val;
-    primitivePinaforeLens = pointedMapGeneralLens $ MkPointedEditLens $ let
+    data PinaforeFunctionMorphism a b = MkPinaforeFunctionMorphism
+    {
+        pfFuncRead :: a -> Readable PinaforeRead b,
+        pfUpdate :: PinaforeEdit -> Bool
+    };
+
+    instance Functor (PinaforeFunctionMorphism a) where
+    {
+        fmap f (MkPinaforeFunctionMorphism fr u) = MkPinaforeFunctionMorphism (\a -> fmap f (fr a)) u;
+    };
+
+    instance Applicative (PinaforeFunctionMorphism a) where
+    {
+        pure b = MkPinaforeFunctionMorphism (\_ -> pure b) (\_ -> False);
+        MkPinaforeFunctionMorphism fr1 u1 <*> MkPinaforeFunctionMorphism fr2 u2 = MkPinaforeFunctionMorphism (\a -> (fr1 a) <*> (fr2 a)) (\edit -> u1 edit || u2 edit);
+    };
+
+    instance Category PinaforeFunctionMorphism where
+    {
+        id = let
+        {
+            pfFuncRead = return;
+            pfUpdate _ = False;
+        } in MkPinaforeFunctionMorphism{..};
+        (MkPinaforeFunctionMorphism lbc ubc) . (MkPinaforeFunctionMorphism lab uab) = let
+        {
+            lac a = do
+            {
+                b <- lab a;
+                lbc b;
+            };
+            uac edit = uab edit || ubc edit;
+        } in MkPinaforeFunctionMorphism lac uac;
+    };
+
+    instance Arrow PinaforeFunctionMorphism where
+    {
+        arr ab = let
+        {
+            pfFuncRead a = return $ ab a;
+            pfUpdate _ = False;
+        } in MkPinaforeFunctionMorphism{..};
+        first (MkPinaforeFunctionMorphism bc u) = MkPinaforeFunctionMorphism (\(b,d) -> do
+        {
+            c <- bc b;
+            return (c,d);
+        }) u;
+        second = cfmap;
+    };
+
+    instance Traversable f => CatFunctor PinaforeFunctionMorphism f where
+    {
+        cfmap (MkPinaforeFunctionMorphism f u) = MkPinaforeFunctionMorphism (\fa -> for fa f) u;
+    };
+
+    pfPointedEditFunction :: forall a b. PinaforeFunctionMorphism a b -> PointedEditFunction PinaforeEdit (WholeEdit a) (WholeEdit b);
+    pfPointedEditFunction (MkPinaforeFunctionMorphism f u) = let
+    {
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
+
+        getBFromA :: a -> Readable (ContextEditReader PinaforeEdit (WholeEdit a)) b;
+        getBFromA a = mapReadable (\rt -> readable $ MkTupleEditReader EditContext rt) $ f a;
+
+        getB :: Readable (ContextEditReader PinaforeEdit (WholeEdit a)) b;
+        getB = do
+        {
+            a <- readable $ MkTupleEditReader EditContent ReadWhole;
+            getBFromA a;
+        };
+
+        editGet :: forall t. () -> WholeReader b t -> Readable (ContextEditReader PinaforeEdit (WholeEdit a)) t;
+        editGet () ReadWhole = getB;
+
+        editUpdate :: ContextEdit PinaforeEdit (WholeEdit a) -> () -> Readable (ContextEditReader PinaforeEdit (WholeEdit a)) ((), [WholeEdit b]);
+        editUpdate (MkTupleEdit EditContext pinedit) () | u pinedit = do
+        {
+            b <- getB;
+            return $ pure [MkWholeEdit b];
+        };
+        editUpdate (MkTupleEdit EditContext _) () = return $ pure [];
+        editUpdate (MkTupleEdit EditContent (MkWholeEdit a)) () = do
+        {
+            b <- getBFromA a;
+            return $ pure [MkWholeEdit b];
+        };
+    } in MkPointedEditFunction $ MkEditFunction{..};
+
+
+    type PinaforeFunctionValue t = GeneralFunction PinaforeEdit (WholeEdit t);
+
+    applyPinaforeFunction :: PinaforeFunctionMorphism a b -> PinaforeFunctionValue a -> PinaforeFunctionValue b;
+    applyPinaforeFunction pf = pointedMapGeneralFunction (pfPointedEditFunction pf);
+
+    lensFunctionValue :: (FullSubjectReader (EditReader edit),Edit edit) => PinaforeLensValue edit -> PinaforeFunctionValue (EditSubject edit);
+    lensFunctionValue lens = convertGeneralFunction <.> generalLensFunction lens;
+
+    data PinaforeLensMorphism a b = MkPinaforeLensMorphism
+    {
+        pmForward :: PointedEditLens PinaforeEdit (WholeEdit (Maybe a)) (WholeEdit (Maybe b)),
+        pmInverse :: PinaforeFunctionMorphism b (FiniteSet a)
+    };
+
+    instance Category PinaforeLensMorphism where
+    {
+        id = MkPinaforeLensMorphism cid $ arr opoint;
+        (MkPinaforeLensMorphism fbc icb) . (MkPinaforeLensMorphism fab iba) = MkPinaforeLensMorphism (fbc <.> fab) $ proc c -> do
+        {
+            bb <- icb -< c;
+            aaa <- cfmap iba -< bb;
+            returnA -< mconcat $ toList aaa;
+        };
+    };
+
+    funcPinaforeLensMorphism :: (a -> Maybe b) -> (b -> FiniteSet a) -> PinaforeLensMorphism a b;
+    funcPinaforeLensMorphism amb bsa = MkPinaforeLensMorphism (readOnlyPointedEditLens $ funcPointedEditFunction $ \ma -> ma >>= amb) (arr bsa);
+
+    applyPinaforeLens :: PinaforeLensMorphism a b -> PinaforeLensValue (WholeEdit (Maybe a)) -> PinaforeLensValue (WholeEdit (Maybe b));
+    applyPinaforeLens pm = pointedMapGeneralLens $ pmForward pm;
+
+    lensFunctionMorphism :: forall a b. PinaforeLensMorphism a b -> PinaforeFunctionMorphism a (Maybe b);
+    lensFunctionMorphism MkPinaforeLensMorphism{..} = let
+    {
+        MkPinaforeFunctionMorphism _ pfUpdate = pmInverse;
+
+        pfFuncRead :: a -> Readable PinaforeRead (Maybe b);
+        pfFuncRead a = pointedWholeFunctionRead (pointedEditLensFunction pmForward) $ Just a;
+    } in MkPinaforeFunctionMorphism{..};
+
+    lensInverseFunctionMorphism :: PinaforeLensMorphism a b -> PinaforeFunctionMorphism b (FiniteSet a);
+    lensInverseFunctionMorphism = pmInverse;
+
+    pmInverseEditFunction :: forall a b. (Eq a,Eq b) => PinaforeLensMorphism a b -> PointedEditFunction PinaforeEdit (WholeEdit (Maybe b)) (FiniteSetEdit a);
+    pmInverseEditFunction pm = let
+    {
+        editAccess :: IOStateAccess ();
+        editAccess = unitStateAccess;
+
+        getFiniteSet :: Maybe b -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe b))) (FiniteSet a);
+        getFiniteSet Nothing = return mempty;
+        getFiniteSet (Just b) = mapReadable (tupleReadFunction EditContext) $ pfFuncRead (pmInverse pm) b;
+
+        editGet :: forall t. () -> FiniteSetReader a t -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe b))) t;
+        editGet () KeyReadKeys = do
+        {
+            mb <- readable $ MkTupleEditReader EditContent ReadWhole;
+            getFiniteSet mb;
+        };
+        editGet () (KeyReadItem a ReadWhole) = case pmForward pm of
+        {
+            MkPointedEditLens (MkEditLens (MkEditFunction _ g _) _) -> do
+            {
+                mb <- mapReadable (\rt -> case rt of
+                {
+                    MkTupleEditReader EditContext pr -> readable $ MkTupleEditReader EditContext pr;
+                    MkTupleEditReader EditContent ReadWhole -> return $ Just a;
+                }) $ g () ReadWhole;
+                mb' <- readable $ MkTupleEditReader EditContent ReadWhole;
+                return $ case (mb,mb') of
+                {
+                    (Just b,Just b') | b == b' -> Just a;
+                    _ -> Nothing;
+                };
+            };
+        };
+
+        editUpdate :: ContextEdit PinaforeEdit (WholeEdit (Maybe b)) -> () -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe b))) ((), [FiniteSetEdit a]);
+        editUpdate (MkTupleEdit EditContext pinedit) () | pfUpdate (pmInverse pm) pinedit = do
+        {
+            mb <- readable $ MkTupleEditReader EditContent ReadWhole;
+            aset <- getFiniteSet mb;
+            aedits <- getReplaceEditsM aset;
+            return $ pure aedits;
+        };
+        editUpdate (MkTupleEdit EditContext _) () = return $ pure [];
+        editUpdate (MkTupleEdit EditContent (MkWholeEdit mb)) () = do
+        {
+            aset <- getFiniteSet mb;
+            aedits <- getReplaceEditsM aset;
+            return $ pure aedits;
+        };
+    } in MkPointedEditFunction $ MkEditFunction{..};
+
+    pmInverseEditLens :: forall a b. (Eq a,Eq b) => PinaforeLensMorphism a b -> PointedEditLens PinaforeEdit (WholeEdit (Maybe b)) (FiniteSetEdit a);
+    pmInverseEditLens pm@MkPinaforeLensMorphism{..} = let
+    {
+        editLensFunction :: PureEditFunction (ContextEdit PinaforeEdit (WholeEdit (Maybe b))) (FiniteSetEdit a);
+        MkPointedEditFunction editLensFunction = pmInverseEditFunction pm;
+
+        putEditBA :: () -> WholeEdit (Maybe b) -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe a))) (Maybe ((), [ContextEdit PinaforeEdit (WholeEdit (Maybe a))]));
+        MkPointedEditLens (MkEditLens _ putEditBA) = pmForward;
+
+        putEditAB :: a -> Maybe b -> Readable PinaforeRead (Maybe [PinaforeEdit]);
+        putEditAB a mb = do
+        {
+            medits <- mapReadable (\case
+            {
+                MkTupleEditReader EditContext rt -> readable rt;
+                MkTupleEditReader EditContent ReadWhole -> return $ Just a;
+            }) $ putEditBA () (MkWholeEdit mb);
+            return $ fmap (\((),edits) -> mapMaybe (\case
+            {
+                MkTupleEdit EditContext edit -> Just edit;
+                MkTupleEdit EditContent _ -> Nothing;
+            }) edits) medits;
+        };
+
+        mapContextReadable :: forall t. Readable PinaforeRead t -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe b))) t;
+        mapContextReadable = mapReadable (readable . MkTupleEditReader EditContext);
+
+        editLensPutEdit :: () -> FiniteSetEdit a -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe b))) (Maybe ((), [ContextEdit PinaforeEdit (WholeEdit (Maybe b))]));
+        editLensPutEdit () (KeyEditItem _ edit) = never edit;
+        editLensPutEdit () (KeyDeleteItem a) = do
+        {
+            mpedits <- mapContextReadable $ putEditAB a Nothing;
+            return $ fmap (\pedits -> pure $ fmap (MkTupleEdit EditContext) pedits) mpedits;
+        };
+        editLensPutEdit () (KeyInsertReplaceItem a) = do
+        {
+            mb <- readable $ MkTupleEditReader EditContent ReadWhole;
+            case mb of
+            {
+                Just _ -> do
+                {
+                    mpedits <- mapContextReadable $ putEditAB a mb;
+                    return $ fmap (\pedits -> pure $ fmap (MkTupleEdit EditContext) pedits) mpedits;
+                };
+                Nothing -> return Nothing;
+            };
+        };
+        editLensPutEdit () KeyClear = do
+        {
+            mb <- readable $ MkTupleEditReader EditContent ReadWhole;
+            case mb of
+            {
+                Just b -> do
+                {
+                    aa <- mapContextReadable $ pfFuncRead pmInverse b;
+                    lmpedits <- for (toList aa) $ \a -> mapContextReadable $ putEditAB a Nothing;
+                    return $ fmap (\lpedits -> pure $ fmap (MkTupleEdit EditContext) $ mconcat lpedits) $ sequenceA lmpedits;
+                };
+                Nothing -> return Nothing;
+            };
+        };
+    } in MkPointedEditLens $ MkEditLens{..};
+
+    applyInversePinaforeLens :: (Eq a,Eq b) => PinaforeLensMorphism a b -> PinaforeLensValue (WholeEdit (Maybe b)) -> PinaforeLensValue (FiniteSetEdit a);
+    applyInversePinaforeLens pm val = pointedMapGeneralLens (pmInverseEditLens pm) val;
+
+    primitivePinaforeMap :: forall val. Serialize val => PointedEditLens PinaforeEdit (WholeEdit (Maybe Point)) (WholeEdit (Maybe val));
+    primitivePinaforeMap = MkPointedEditLens $ let
     {
         editAccess :: IOStateAccess ();
         editAccess = unitStateAccess;
@@ -117,11 +382,24 @@ module Truth.World.Pinafore.Edit where
                 };
             };
         };
-
     } in MkEditLens{..};
 
-    predicatePinaforeLens :: Predicate -> PinaforeLens Point Point;
-    predicatePinaforeLens prd = pointedMapGeneralLens $ MkPointedEditLens $ let
+    primitiveInverseFunction :: forall val. Serialize val => PinaforeFunctionMorphism val (FiniteSet Point);
+    primitiveInverseFunction = let
+    {
+        pfFuncRead :: val -> Readable PinaforeRead (FiniteSet Point);
+        pfFuncRead val = readable $ PinaforeReadLookupPrimitive $ encode serializeCodec val;
+
+        pfUpdate :: PinaforeEdit -> Bool;
+        pfUpdate (PinaforeEditSetPrimitive _ _) = True;
+        pfUpdate _ = False;
+    } in MkPinaforeFunctionMorphism{..};
+
+    primitivePinaforeLensMorphism :: forall val. Serialize val => PinaforeLensMorphism Point val;
+    primitivePinaforeLensMorphism = MkPinaforeLensMorphism primitivePinaforeMap primitiveInverseFunction;
+
+    predicatePinaforeMap :: Predicate -> PointedEditLens PinaforeEdit (WholeEdit (Maybe Point)) (WholeEdit (Maybe Point));
+    predicatePinaforeMap prd = MkPointedEditLens $ let
     {
         editAccess :: IOStateAccess ();
         editAccess = unitStateAccess;
@@ -195,101 +473,19 @@ module Truth.World.Pinafore.Edit where
         };
     } in MkEditLens{..};
 
-    predicateInversePinaforeLens :: Predicate -> PinaforeInverseLens Point Point;
-    predicateInversePinaforeLens prd = pointedMapGeneralLens $ MkPointedEditLens $ let
+    predicateInverseFunction :: Predicate -> PinaforeFunctionMorphism Point (FiniteSet Point);
+    predicateInverseFunction prd = let
     {
-        editAccess :: IOStateAccess ();
-        editAccess = unitStateAccess;
+        pfFuncRead :: Point -> Readable PinaforeRead (FiniteSet Point);
+        pfFuncRead val = readable $ PinaforeReadLookupValue prd val;
 
-        editGet :: forall t. () -> FiniteSetReader Point t -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) t;
-        editGet () KeyReadKeys = do
-        {
-            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
-            case mval of
-            {
-                Just val -> readable $ MkTupleEditReader EditContext $ PinaforeReadLookupValue prd val;
-                Nothing -> return mempty;
-            };
-        };
-        editGet () (KeyReadItem subj ReadWhole) = do
-        {
-            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
-            case mval of
-            {
-                Just _ -> do
-                {
-                    val' <- readable $ MkTupleEditReader EditContext $ PinaforeReadGetValue prd subj;
-                    return $ if mval == val' then Just subj else Nothing;
-                };
-                Nothing -> return Nothing;
-            };
-        };
+        pfUpdate :: PinaforeEdit -> Bool;
+        pfUpdate (PinaforeEditSetValue p _ _) | p == prd = True;
+        pfUpdate (PinaforeEditDeleteTriple p _ _) | p == prd = True;
+        pfUpdate (PinaforeEditDeleteLookupValue p _) | p == prd = True;
+        pfUpdate _ = False;
+    } in MkPinaforeFunctionMorphism{..};
 
-        editUpdate :: ContextEdit PinaforeEdit (WholeEdit (Maybe Point)) -> () -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) ((), [FiniteSetEdit Point]);
-        editUpdate (MkTupleEdit EditContext (PinaforeEditSetValue p s mnewv)) () | p == prd = do
-        {
-            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
-            return $ pure $ case mval of
-            {
-                Just val | Just val == mnewv -> [KeyInsertReplaceItem s];
-                Just _  -> [KeyDeleteItem s];
-                Nothing -> [];
-            };
-        };
-        editUpdate (MkTupleEdit EditContext (PinaforeEditDeleteLookupValue p v)) () | p == prd = do
-        {
-            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
-            return $ pure $ if mval == Just v then [KeyClear] else [];
-        };
-        editUpdate (MkTupleEdit EditContext (PinaforeEditDeleteTriple p s v)) () | p == prd = do
-        {
-            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
-            return $ pure $ if mval == Just v then [KeyDeleteItem s] else [];
-        };
-        editUpdate (MkTupleEdit EditContext _) () = return $ pure [];
-        editUpdate (MkTupleEdit EditContent (MkWholeEdit Nothing)) () = return $ pure [KeyClear];
-        editUpdate (MkTupleEdit EditContent (MkWholeEdit (Just val))) () = do
-        {
-            subjs <- readable $ MkTupleEditReader EditContext $ PinaforeReadLookupValue prd val;
-            edits <- getReplaceEditsM subjs;
-            return $ pure edits;
-        };
-
-        editLensFunction :: PureEditFunction (ContextEdit PinaforeEdit (WholeEdit (Maybe Point))) (FiniteSetEdit Point);
-        editLensFunction = MkEditFunction{..};
-
-        editLensPutEdit :: () -> FiniteSetEdit Point -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) (Maybe ((), [ContextEdit PinaforeEdit (WholeEdit (Maybe Point))]));
-        editLensPutEdit () (KeyEditItem _ edit) = never edit;
-        editLensPutEdit () (KeyDeleteItem subj) = do
-        {
-            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
-            case mval of
-            {
-                Just val -> return $ Just $ pure $ [MkTupleEdit EditContext $ PinaforeEditDeleteTriple prd subj val];
-                Nothing -> return $ Just $ pure [];
-            };
-        };
-        editLensPutEdit () (KeyInsertReplaceItem subj) = do
-        {
-            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
-            case mval of
-            {
-                Just val -> return $ Just $ pure [MkTupleEdit EditContext $ PinaforeEditSetValue prd subj $ Just val];
-                Nothing -> do
-                {
-                    val <- liftIO randomIO;
-                    return $ Just $ pure [MkTupleEdit EditContent $ MkWholeEdit $ Just val, MkTupleEdit EditContext $ PinaforeEditSetValue prd subj $ Just val];
-                };
-            };
-        };
-        editLensPutEdit () KeyClear = do
-        {
-            mval <- readable $ MkTupleEditReader EditContent ReadWhole;
-            case mval of
-            {
-                Just val -> return $ Just $ pure [MkTupleEdit EditContext $ PinaforeEditDeleteLookupValue prd val];
-                Nothing -> return $ Just $ pure [];
-            };
-        };
-    } in MkEditLens{..};
+    predicatePinaforeLensMorphism :: Predicate -> PinaforeLensMorphism Point Point;
+    predicatePinaforeLensMorphism prd = MkPinaforeLensMorphism (predicatePinaforeMap prd) (predicateInverseFunction prd);
 }

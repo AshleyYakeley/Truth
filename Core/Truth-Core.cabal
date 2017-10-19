@@ -11,6 +11,7 @@ library
     default-language: Haskell2010
     default-extensions:
         AllowAmbiguousTypes
+        Arrows
         ConstraintKinds
         DataKinds
         DefaultSignatures
@@ -91,7 +92,7 @@ library
         Truth.Core.Edit.FullEdit
         Truth.Core.Edit.EditFunction
         Truth.Core.Edit.EditLens
-        Truth.Core.Edit.GeneralLens
+        Truth.Core.Edit.General
         Truth.Core.Edit
         Truth.Core.Types.None
         Truth.Core.Types.Whole
@@ -137,6 +138,7 @@ library
         Truth.Core.UI.Layout
         Truth.Core.UI.Labelled
         Truth.Core.UI.Checkbox
+        Truth.Core.UI.Option
         Truth.Core.UI.TextEntry
         Truth.Core.UI.TextEditor
         Truth.Core.UI.Table
@@ -149,6 +151,7 @@ library
         Truth.World.Pinafore.Edit
         Truth.World.Pinafore.Ontology
         Truth.World.Pinafore.SQLite
+        Truth.World.Pinafore.Example
 
 test-suite test
     type: exitcode-stdio-1.0
@@ -156,6 +159,7 @@ test-suite test
     default-language: Haskell2010
     default-extensions:
         AllowAmbiguousTypes
+        Arrows
         ConstraintKinds
         DataKinds
         DefaultSignatures

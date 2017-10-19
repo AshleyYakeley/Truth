@@ -68,21 +68,6 @@ module Truth.Core.Edit.EditFunction  where
         editUpdate _ () = pure $ pure [];
     } in MkEditFunction{..};
 
-    class StateCategory ff where
-    {
-        identityState :: forall a. Edit a => ff () a a;
-        composeState :: forall a b c s1 s2. (Edit a,Edit b,Edit c) => ff s2 b c -> ff s1 a b -> ff (s1,s2) a c;
-    };
-
-    data CloseState ff a b = forall state. MkCloseState (ff state a b);
-
-    instance StateCategory ff => ConstrainedCategory (CloseState ff) where
-    {
-        type CategoryConstraint (CloseState ff) t = Edit t;
-        cid = MkCloseState identityState;
-        (MkCloseState bc) <.> (MkCloseState ab) = MkCloseState $ composeState bc ab;
-    };
-
     instance Category (PureEditFunction) where
     {
         id = let
@@ -110,23 +95,6 @@ module Truth.Core.Edit.EditFunction  where
         type CategoryConstraint (PureEditFunction) t = ();
         cid = id;
         (<.>) = (.);
-    };
-
-    instance StateCategory EditFunction where
-    {
-        identityState = cid;
-
-        composeState fef2 fef1 = MkEditFunction
-        {
-            editAccess = pairStateAccess (editAccess fef1) (editAccess fef2),
-            editGet = \(s1,s2) -> composeReadFunction (editGet fef2 s2) (editGet fef1 s1),
-            editUpdate = \editA (oldstate1,oldstate2) -> do
-            {
-                (newstate1,editBs) <- editUpdate fef1 editA oldstate1;
-                (newstate2,editCs) <- mapGenReadable (editGet fef1 oldstate1) $ editUpdates fef2 editBs oldstate2;
-                return ((newstate1,newstate2),editCs);
-            }
-        };
     };
 
     funcEditFunction :: forall edita editb. (Edit edita,FullSubjectReader (EditReader edita),FullEdit editb) =>

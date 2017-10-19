@@ -11,6 +11,7 @@ executable truth
     default-language: Haskell2010
     default-extensions:
         AllowAmbiguousTypes
+        Arrows
         ConstraintKinds
         DataKinds
         DefaultSignatures

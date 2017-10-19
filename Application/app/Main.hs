@@ -81,14 +81,14 @@ module Main(main) where
         nameColumn = MkKeyColumn "Name" $ \key -> do
         {
             lens <- getKeyElementGeneralLens key;
-            return $ readOnlyGeneralLens (funcEditFunction fromResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NoteTitle) <.> mustExistMaybeGeneralLens "name" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
+            return $ readOnlyGeneralLens (funcGeneralFunction fromResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NoteTitle) <.> mustExistMaybeGeneralLens "name" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
         };
 
         pastColumn :: KeyColumn (SoupEdit SoupItemEdit) UUID;
         pastColumn = MkKeyColumn "Past" $ \key -> do
         {
             lens <- getKeyElementGeneralLens key;
-            return $ readOnlyGeneralLens (funcEditFunction pastResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NotePast) <.> mustExistMaybeGeneralLens "past" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
+            return $ readOnlyGeneralLens (funcGeneralFunction pastResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NotePast) <.> mustExistMaybeGeneralLens "past" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
         };
 
         getaspect :: Aspect (MaybeEdit (UUIDElementEdit SoupItemEdit));

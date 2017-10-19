@@ -1,6 +1,7 @@
 module Truth.Core.UI.Drag where
 {
     import Truth.Core.Import;
+    import Truth.Core.Edit;
     import Truth.Core.Types;
     import Truth.Core.UI.Specifier;
 
@@ -25,12 +26,12 @@ module Truth.Core.UI.Drag where
 
     data UIDragDestination edit where
     {
-        MkUIDragDestination :: Serialize t => String -> UIDragDestination (WholeEdit t);
+        MkUIDragDestination :: Serialize t => String -> GeneralLens edit (WholeEdit t) -> UISpec edit -> UIDragDestination edit;
     };
 
     instance Show (UIDragDestination edit) where
     {
-        show (MkUIDragDestination typename) = "drag-destination " ++ typename;
+        show (MkUIDragDestination typename _ spec) = "drag-destination " ++ typename ++ " " ++ show spec;
     };
 
     instance UIType UIDragDestination where
@@ -38,6 +39,6 @@ module Truth.Core.UI.Drag where
         uiWitness = $(iowitness [t|UIDragDestination|]);
     };
 
-    uiDragDestination :: Serialize t => String -> UISpec (WholeEdit t);
-    uiDragDestination datatype = MkUISpec $ MkUIDragDestination datatype;
+    uiDragDestination :: Serialize t => String -> GeneralLens edit (WholeEdit t) -> UISpec edit -> UISpec edit;
+    uiDragDestination datatype lens spec = MkUISpec $ MkUIDragDestination datatype lens spec;
 }
