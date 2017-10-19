@@ -26,6 +26,7 @@ library
         GADTs
         GeneralizedNewtypeDeriving
         ImplicitParams
+        InstanceSigs
         KindSignatures
         LambdaCase
         MonadFailDesugaring

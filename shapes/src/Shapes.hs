@@ -7,8 +7,12 @@ import Shapes.Import as I
 -- shapes
 import Control.Constrained.Category as I
 import Control.Monad.IsStateIO as I
+import Control.Monad.Trans.Combine as I
+import Control.Monad.Trans.Compose as I
+import Control.Monad.Trans.Constraint as I
 import Control.Monad.Trans.State.Extra as I hiding (liftCallCC, liftCatch)
-import Control.Monad.Tunnel as I
+import Control.Monad.Trans.Tunnel as I
+import Control.Monad.Trans.Unlift as I
 import Data.Bijection as I
 import Data.CatFunctor as I
 import Data.Codec as I

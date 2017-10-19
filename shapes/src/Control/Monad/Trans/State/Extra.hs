@@ -4,7 +4,7 @@ module Control.Monad.Trans.State.Extra
     ) where
 
 import Control.Monad.Trans.State
-import Control.Monad.Tunnel
+import Control.Monad.Trans.Tunnel
 import Data.Lens
 import Shapes.Import
 

@@ -68,12 +68,16 @@ import Algebra.Lattice as I
 
 -- transformers
 import Control.Monad.Trans.Class as I
+import Control.Monad.Trans.Cont as I (ContT(..))
+import Control.Monad.Trans.Except as I (ExceptT(..), runExceptT)
+import Control.Monad.Trans.Identity as I (IdentityT(..))
+import Control.Monad.Trans.List as I (ListT(..))
+import Control.Monad.Trans.Maybe as I (MaybeT(..))
 import Control.Monad.Trans.Reader as I (ReaderT(..))
 import Control.Monad.Trans.State as I (StateT(..), evalStateT, get, put)
-
--- hashable
 import Control.Monad.Trans.Writer as I (WriterT(..), execWriterT, tell)
 
+-- hashable
 import Data.Hashable as I (Hashable)
 
 -- containers

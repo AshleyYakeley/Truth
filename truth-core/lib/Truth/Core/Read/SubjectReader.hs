@@ -7,6 +7,9 @@ type MutableRead m reader = forall t. reader t -> m t
 remonadMutableRead :: (forall a. m1 a -> m2 a) -> MutableRead m1 reader -> MutableRead m2 reader
 remonadMutableRead mf mr rt = mf (mr rt)
 
+liftMutableRead :: (MonadTrans t, Monad m) => MutableRead m reader -> MutableRead (t m) reader
+liftMutableRead = remonadMutableRead lift
+
 -- | The values of the reader type are MutableEdit calls that read parts of something of type (ReaderSubject reader).
 class SubjectReader (reader :: * -> *) where
     type ReaderSubject reader :: *

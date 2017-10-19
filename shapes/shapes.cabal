@@ -30,6 +30,7 @@ library
         GADTs
         GeneralizedNewtypeDeriving
         ImplicitParams
+        InstanceSigs
         KindSignatures
         LambdaCase
         MonadFailDesugaring
@@ -83,7 +84,11 @@ library
         Data.Filterable
         Data.Witness.All
         Control.Constrained.Category
-        Control.Monad.Tunnel
+        Control.Monad.Trans.Constraint
+        Control.Monad.Trans.Tunnel
+        Control.Monad.Trans.Unlift
+        Control.Monad.Trans.Combine
+        Control.Monad.Trans.Compose
         Control.Monad.Trans.State.Extra
         Control.Monad.IsStateIO
         Data.CatFunctor

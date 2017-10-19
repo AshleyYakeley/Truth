@@ -7,7 +7,7 @@ import Truth.Core.Object.Object
 
 runObjectIO :: Object edit -> (MutableEdit IO edit -> IO r) -> IO r
 runObjectIO object call =
-    runObject object $ \muted -> liftWithUnlift $ \unlift -> call $ remonadMutableEdit unlift muted
+    runObject object $ \muted -> liftIOWithUnlift $ \unlift -> call $ remonadMutableEdit unlift muted
 
 openObject :: Object edit -> IO (MutableEdit IO edit, IO ())
 openObject object = do

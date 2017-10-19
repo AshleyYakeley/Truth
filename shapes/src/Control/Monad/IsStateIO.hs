@@ -1,10 +1,12 @@
 module Control.Monad.IsStateIO where
 
+import Control.Monad.Trans.Combine
 import Control.Monad.Trans.State.Extra
-import Control.Monad.Tunnel
+import Control.Monad.Trans.Tunnel
+import Control.Monad.Trans.Unlift
 import Shapes.Import
 
-class (MonadFix m, MonadIO m) =>
+class (MonadFix m, MonadUnliftIO m) =>
       IsStateIO m where
     type IOState m :: Type
     runStateIO :: forall a. m a -> IOState m -> IO (a, IOState m)
@@ -50,11 +52,8 @@ liftWithMVar call = do
     toStateIO $ put news
     return r
 
-ioStateAccess :: IsStateIO m => StateAccess IO (IOState m) -> m r -> IO r
+ioStateAccess :: IsStateIO m => StateAccess IO (IOState m) -> UnliftIO m
 ioStateAccess acc mr = acc $ fromStateIO mr
-
-liftWithUnlift :: IsStateIO m => ((forall a. m a -> IO a) -> IO r) -> m r
-liftWithUnlift call = liftWithMVar $ \mvar -> call $ ioStateAccess $ mvarStateAccess mvar
 
 tryModifyMVar :: MVar a -> (a -> IO (a, b)) -> IO (Maybe b)
 tryModifyMVar var call =
@@ -82,3 +81,14 @@ mvarTryStateT var call =
 type IOStateAccess s
      = forall m. IsStateIO m =>
                      StateAccess m s
+
+type CombineState m1 m2 = StateT (IOState m1) m2
+
+combineStateRunners :: IsStateIO m1 => UnliftIO m1 -> UnliftIO m2 -> UnliftIO (CombineState m1 m2)
+combineStateRunners r1 r2 cs = r1 $ toStateIO $ remonad r2 cs
+
+lift1 :: (IsStateIO m1, MonadIO m2) => m1 a -> CombineState m1 m2 a
+lift1 m1a = remonad liftIO $ fromStateIO m1a
+
+lift2 :: Monad m2 => m2 a -> CombineState m1 m2 a
+lift2 = lift
