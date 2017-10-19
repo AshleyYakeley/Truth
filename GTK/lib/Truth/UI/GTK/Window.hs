@@ -7,12 +7,14 @@ module Truth.UI.GTK.Window where
     import Graphics.UI.Gtk;
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.Maybe;
+    import Truth.UI.GTK.Icon;
     import Truth.UI.GTK.Labelled;
     import Truth.UI.GTK.CheckButton;
     import Truth.UI.GTK.Entry;
     import Truth.UI.GTK.Text;
     import Truth.UI.GTK.Tuple;
     import Truth.UI.GTK.Table;
+    import Truth.UI.GTK.Drag;
 
 
     lastResortView :: UISpec edit -> GView edit;
@@ -29,7 +31,19 @@ module Truth.UI.GTK.Window where
     };
 
     allGetView :: GetGView;
-    allGetView = mconcat [lensGetView,labelledGetView,checkButtonGetView,textEntryGetView,textAreaGetView,tableGetView,oneGetView,verticalLayoutGetView];
+    allGetView = mconcat
+    [
+        lensGetView,
+        iconGetView,
+        labelledGetView,
+        checkButtonGetView,
+        textEntryGetView,
+        textAreaGetView,
+        tableGetView,
+        oneGetView,
+        verticalLayoutGetView,
+        dragGetView
+    ];
 
     getTheView :: Edit edit => UISpec edit -> GView edit;
     getTheView spec = case getUIView allGetView getTheView spec of

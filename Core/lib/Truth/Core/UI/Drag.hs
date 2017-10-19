@@ -8,12 +8,12 @@ module Truth.Core.UI.Drag where
 
     data UIDragSource edit where
     {
-        MkUIDragSource :: Serialize t => String -> UIDragSource (WholeEdit t);
+        MkUIDragSource :: Serialize t => String -> GeneralLens edit (WholeEdit t) -> UISpec edit -> UIDragSource edit;
     };
 
     instance Show (UIDragSource edit) where
     {
-        show (MkUIDragSource typename) = "drag-source " ++ typename;
+        show (MkUIDragSource typename _ spec) = "drag-source " ++ typename ++ " " ++ show spec;
     };
 
     instance UIType UIDragSource where
@@ -21,8 +21,8 @@ module Truth.Core.UI.Drag where
         uiWitness = $(iowitness [t|UIDragSource|]);
     };
 
-    uiDragSource :: Serialize t => String -> UISpec (WholeEdit t);
-    uiDragSource datatype = MkUISpec $ MkUIDragSource datatype;
+    uiDragSource :: Serialize t => String -> GeneralLens edit (WholeEdit t) -> UISpec edit -> UISpec edit;
+    uiDragSource datatype lens spec = MkUISpec $ MkUIDragSource datatype lens spec;
 
     data UIDragDestination edit where
     {

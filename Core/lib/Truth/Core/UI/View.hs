@@ -77,6 +77,13 @@ module Truth.Core.UI.View where
         };
     };
 
+    ioPureView :: IO w -> View edit w;
+    ioPureView iow = MkView $ \_object _setSelect -> do
+    {
+        w <- iow;
+        return $ pure w;
+    };
+
     mapIOView :: (a -> IO b) -> View edit a -> View edit b;
     mapIOView amb (MkView view) = MkView $ \object setSelect -> do
     {

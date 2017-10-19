@@ -96,7 +96,7 @@ module Truth.World.Pinafore.Ontology where
     } in uiDragDestination typename subjv $ uiOption (orderByName $ lensFunctionValue vals) subjv;
 
     pinaforeValueTypeSpec :: ViewPinaforeType t -> PinaforeSpec (WholeEdit (Maybe t));
-    pinaforeValueTypeSpec (EntityViewPinaforeType (MkViewPinaforeEntity typename props)) = \subjv -> uiVertical $ (uiLens subjv $ uiDragSource typename) : fmap (\prop -> pinaforePropertySpec prop subjv) props;
+    pinaforeValueTypeSpec (EntityViewPinaforeType (MkViewPinaforeEntity typename props)) = \subjv -> uiVertical $ (uiDragSource typename subjv $ uiIcon SiDnD SizeDnD) : fmap (\prop -> pinaforePropertySpec prop subjv) props;
     pinaforeValueTypeSpec (PrimitiveViewPinaforeType (MkViewPinaforePrimitive uispec)) = simplePinaforeSpec uispec;
 
     pinaforeValueSpec :: ViewPinaforeValue -> UISpec PinaforeEdit;

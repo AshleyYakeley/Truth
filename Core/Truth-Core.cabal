@@ -136,6 +136,7 @@ library
         Truth.Core.UI.Lens
         Truth.Core.UI.One
         Truth.Core.UI.Layout
+        Truth.Core.UI.Icon
         Truth.Core.UI.Labelled
         Truth.Core.UI.Checkbox
         Truth.Core.UI.Option

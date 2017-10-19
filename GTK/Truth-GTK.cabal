@@ -74,6 +74,7 @@ library
         Truth.UI.GTK.Useful
         Truth.UI.GTK.GView
         Truth.UI.GTK.Window
+        Truth.UI.GTK.Icon
         Truth.UI.GTK.Labelled
         Truth.UI.GTK.Maybe
         Truth.UI.GTK.CheckButton
@@ -81,6 +82,7 @@ library
         Truth.UI.GTK.Text
         Truth.UI.GTK.Tuple
         Truth.UI.GTK.Table
+        Truth.UI.GTK.Drag
 
 test-suite test
     type: exitcode-stdio-1.0
