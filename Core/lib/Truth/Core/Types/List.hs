@@ -4,6 +4,11 @@ module Truth.Core.Types.List where
     import Truth.Core.Sequence;
     import Truth.Core.Read;
     import Truth.Core.Edit;
+    import Truth.Core.Types.Whole;
+    import Truth.Core.Types.Sum;
+    import Truth.Core.Types.OneReader;
+    import Truth.Core.Types.OneEdit;
+    import Truth.Core.Types.OneWholeEdit;
 
 
     packBijection :: Bijection ByteString [Word8];
@@ -144,4 +149,32 @@ module Truth.Core.Types.List where
             traverse_ readWriteItem [0..pred len];
         };
     };
+
+    listItemLens :: forall seq edit. (Num (Index seq),Ord (Index seq)) => IOStateAccess (SequencePoint seq) -> GeneralLens (ListEdit seq edit) (MaybeEdit edit);
+    listItemLens editAccess = let
+    {
+        editGet :: SequencePoint seq -> OneReader Maybe (EditReader edit) t -> Readable (ListReader seq (EditReader edit)) t;
+        editGet i (ReadOne rt) = readable $ ListReadItem i rt;
+        editGet i ReadHasOne | i < 0 = return Nothing;
+        editGet i ReadHasOne = do
+        {
+            len <- readable ListReadLength;
+            return $ if i >= len then Nothing else return ();
+        };
+
+        editUpdate :: ListEdit seq edit -> SequencePoint seq -> Readable (ListReader seq (EditReader edit)) (SequencePoint seq, [MaybeEdit edit]);
+        editUpdate (ListEditItem ie edit) i | ie == i = return (i,[SumEditRight $ MkOneEdit edit]);
+        editUpdate (ListDeleteItem ie) i | ie <= i = return (i-1,[]);
+        editUpdate (ListDeleteItem ie) i | ie == i = return (i,[SumEditLeft $ MkWholeEdit Nothing]);
+        editUpdate (ListInsertItem ie _) i | ie <= i = return (i+1,[]);
+        editUpdate ListClear _ = return (0,[SumEditLeft $ MkWholeEdit Nothing]);
+        editUpdate _ i = return (i,[]);
+
+        editLensFunction = MkEditFunction{..};
+
+        editLensPutEdit :: SequencePoint seq -> MaybeEdit edit -> Readable (EditReader (ListEdit seq edit)) (Maybe (SequencePoint seq, [ListEdit seq edit]));
+        editLensPutEdit i (SumEditRight (MkOneEdit edit)) = return $ Just (i,[ListEditItem i edit]);
+        editLensPutEdit i (SumEditLeft (MkWholeEdit Nothing)) = return $ Just (i,[ListDeleteItem i]);
+        editLensPutEdit i (SumEditLeft (MkWholeEdit (Just subj))) = return $ Just (i,[ListInsertItem i subj]);
+    } in MkCloseState MkEditLens{..};
 }
