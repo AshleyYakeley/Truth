@@ -17,7 +17,7 @@ module Truth.UI.GTK.Icon(iconGetView) where
     iconGetView = MkGetView $ \_ uispec -> do
     {
         MkUIIcon icon size <- isUISpec uispec;
-        return $ ioPureView $ do
+        return $ liftIO $ do
         {
             image <- imageNewFromStock (whichIcon icon) (whichSize size);
             return $ toWidget image;

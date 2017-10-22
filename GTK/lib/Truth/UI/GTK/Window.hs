@@ -10,6 +10,7 @@ module Truth.UI.GTK.Window where
     import Truth.UI.GTK.Icon;
     import Truth.UI.GTK.Labelled;
     import Truth.UI.GTK.CheckButton;
+    import Truth.UI.GTK.Option;
     import Truth.UI.GTK.Entry;
     import Truth.UI.GTK.Text;
     import Truth.UI.GTK.Tuple;
@@ -37,6 +38,7 @@ module Truth.UI.GTK.Window where
         iconGetView,
         labelledGetView,
         checkButtonGetView,
+        optionGetView,
         textEntryGetView,
         textAreaGetView,
         tableGetView,

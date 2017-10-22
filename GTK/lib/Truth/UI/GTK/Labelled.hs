@@ -10,7 +10,11 @@ module Truth.UI.GTK.Labelled(labelledGetView) where
     labelledGetView = MkGetView $ \getview uispec -> do
     {
         MkUILabelled text spec <- isUISpec uispec;
-        return $ mapIOView (labelWidget text) $ getview spec;
+        return $ do
+        {
+            view <- getview spec;
+            liftIO $ labelWidget text view;
+        };
     };
 
     labelWidget :: String -> Widget -> IO Widget;

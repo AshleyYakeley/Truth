@@ -2,10 +2,14 @@ module Truth.UI.GTK.Useful where
 {
     import Shapes;
     import Graphics.UI.Gtk;
+    import Truth.Core;
 
 
     withSignalBlocked :: (GObjectClass obj) => ConnectId obj -> IO a -> IO a;
     withSignalBlocked conn = bracket_ (signalBlock conn) (signalUnblock conn);
+
+    viewOn :: w -> Signal w (IO a) -> View edit a -> View edit (ConnectId w);
+    viewOn widget signal v = liftIOView $ \unlift -> on widget signal $ unlift $ v;
 
     tryWithMVar :: MVar a -> (Maybe a -> IO b) -> IO b;
     tryWithMVar mv f = do

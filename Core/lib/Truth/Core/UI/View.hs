@@ -5,6 +5,7 @@ module Truth.Core.UI.View where
     import Truth.Core.Read;
     import Truth.Core.Edit;
     import Truth.Core.Types;
+    import Truth.Core.Object.MutableEdit;
     import Truth.Core.Object.Object;
     import Truth.Core.Object.Subscriber;
     import Truth.Core.UI.Specifier;
@@ -36,7 +37,7 @@ module Truth.Core.UI.View where
             vrWidget = w1 w2;
 
             vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> m ();
-            vrUpdate mr  edits = do
+            vrUpdate mr edits = do
             {
                 update1 mr edits;
                 update2 mr edits;
@@ -52,6 +53,22 @@ module Truth.Core.UI.View where
                 };
             };
         } in MkViewResult{..};
+    };
+
+    instance Monad (ViewResult edit) where
+    {
+        return = pure;
+        vr >>= f = vr *> (f $ vrWidget vr);
+    };
+
+    instance Foldable (ViewResult edit) where
+    {
+        foldMap am vr = am $ vrWidget vr;
+    };
+
+    instance Traversable (ViewResult edit) where
+    {
+        sequenceA vrfa = fmap (\w -> MkViewResult w (vrUpdate vrfa) (vrFirstAspectGetter vrfa)) $ vrWidget vrfa;
     };
 
     newtype View edit w = MkView (Object edit -> (Aspect edit -> IO ()) -> IO (ViewResult edit w));
@@ -77,20 +94,47 @@ module Truth.Core.UI.View where
         };
     };
 
-    ioPureView :: IO w -> View edit w;
-    ioPureView iow = MkView $ \_object _setSelect -> do
+    instance Monad (View edit) where
     {
-        w <- iow;
-        return $ pure w;
+        return = pure;
+        (MkView view1) >>= f = MkView $ \object setSelect -> getCompose $ do
+        {
+            w <- Compose $ view1 object setSelect;
+            let {MkView view2 = f w;};
+            Compose $ view2 object setSelect;
+        };
     };
 
-    mapIOView :: (a -> IO b) -> View edit a -> View edit b;
-    mapIOView amb (MkView view) = MkView $ \object setSelect -> do
+    instance MonadIO (View edit) where
     {
-        vr <- view object setSelect;
-        b <- amb $ vrWidget vr;
-        return $ fmap (\_ -> b) vr;
+        liftIO iow = MkView $ \_object _setSelect -> do
+        {
+            w <- iow;
+            return $ pure w;
+        };
     };
+
+    liftIOView :: forall edit a. ((forall r. View edit r -> IO r) -> IO a) -> View edit a;
+    liftIOView call = MkView $ \object setSelect -> do
+    {
+        a <- call $ \(MkView view) -> fmap vrWidget $ view object setSelect;
+        return $ pure a;
+    };
+
+    viewMutableEdit :: (forall m. IsStateIO m => MutableEdit m edit -> m r) -> View edit r;
+    viewMutableEdit call = MkView $ \object _setSelect -> getCompose $ liftIO $ runObject object call;
+
+    viewMutableRead :: (forall m. IsStateIO m => MutableRead m (EditReader edit) -> m r) -> View edit r;
+    viewMutableRead call = viewMutableEdit $ \muted -> call $ mutableRead muted;
+
+    viewReceiveUpdates :: (forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> m ()) -> View edit ();
+    viewReceiveUpdates recv = MkView $ \_ _ -> return $ (pure ()) {vrUpdate = recv};
+
+    viewReceiveUpdate :: (forall m. IsStateIO m => MutableRead m (EditReader edit) -> edit -> m ()) -> View edit ();
+    viewReceiveUpdate recv = viewReceiveUpdates $ \mr edits -> for_ edits (recv mr);
+
+    viewAddAspect :: Aspect edit -> View edit ();
+    viewAddAspect aspect = MkView $ \_ _ -> return $ (pure ()) {vrFirstAspectGetter = aspect};
 
     mapView :: forall w edita editb. (Edit edita,Edit editb) => GeneralLens edita editb -> View editb w -> View edita w;
     mapView

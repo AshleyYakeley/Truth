@@ -8,16 +8,16 @@ module Truth.UI.GTK.CheckButton(checkButtonGetView) where
 
 
     checkButtonGetView :: GetGView;
-    checkButtonGetView = MkGetView $ \_ uispec -> fmap (\(MkUICheckbox name) -> MkView $ \(MkObject object) _setSelect -> do
+    checkButtonGetView = MkGetView $ \_ uispec -> fmap (\(MkUICheckbox name) -> do
     {
-        widget <- checkButtonNew;
-        initial <- object $ \muted -> unReadable subjectFromReader $ mutableRead muted;
-        set widget [buttonLabel := name,toggleButtonActive := initial];
-        clickConnection <- on widget buttonActivated $ object $ \muted -> do
+        widget <- liftIO checkButtonNew;
+        initial <- viewMutableRead $ unReadable subjectFromReader;
+        liftIO $ set widget [buttonLabel := name,toggleButtonActive := initial];
+
+        changedSignal <- viewOn widget buttonActivated $ viewMutableEdit $ \muted -> do
         {
-            s <- liftIO $ Gtk.get widget toggleButtonActive;
-            edits <- getReplaceEditsM s;
-            maction <- mutableEdit muted edits;
+            st <- liftIO $ Gtk.get widget toggleButtonActive;
+            maction <- mutableEdit muted [MkWholeEdit st];
             case maction of
             {
                 Just action -> action;
@@ -25,18 +25,8 @@ module Truth.UI.GTK.CheckButton(checkButtonGetView) where
             };
         };
 
-        let
-        {
-            vrWidget = toWidget widget;
-            vrUpdate :: forall m. IsStateIO m => MutableRead m (WholeReader Bool) -> [WholeEdit Bool] -> m ();
-            vrUpdate _ edits = liftIO $ do
-            {
-                newstate <- fromReadFunctionM (applyEdits edits) $ Gtk.get widget toggleButtonActive;
-                withSignalBlocked clickConnection $ set widget [toggleButtonActive := newstate];
-                return ();
-            };
-            vrFirstAspectGetter = return Nothing;
-        };
-        return MkViewResult{..};
+        viewReceiveUpdate $ \_ (MkWholeEdit st) -> liftIO $ withSignalBlocked changedSignal $ set widget [toggleButtonActive := st];
+
+        return $ toWidget widget;
     }) $ isUISpec uispec;
 }
