@@ -7,7 +7,7 @@ module Truth.Core.UI.GetView where
     import Truth.Core.UI.Lens;
 
 
-    newtype GetView w = MkGetView {getUIView :: forall edit. Edit edit => (forall edit'. Edit edit' => UISpec edit' -> View edit' w) -> UISpec edit -> Maybe (View edit w)};
+    newtype GetView w = MkGetView {getUIView :: forall edit. Edit edit => (forall edit'. Edit edit' => UISpec edit' -> CreateView edit' w) -> UISpec edit -> Maybe (CreateView edit w)};
 
     instance Semigroup (GetView w) where
     {
@@ -28,6 +28,6 @@ module Truth.Core.UI.GetView where
     lensGetView = MkGetView $ \getview speca -> do
     {
         MkUILens lens specb <- isUISpec speca;
-        return $ mapView lens $ getview specb;
+        return $ mapCreateViewEdit lens $ getview specb;
     };
 }

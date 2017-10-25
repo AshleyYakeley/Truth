@@ -8,35 +8,20 @@ module Truth.UI.GTK.Entry(textEntryGetView) where
 
 
     textEntryGetView :: GetGView;
-    textEntryGetView = MkGetView $ \_ uispec -> fmap (\MkUITextEntry -> MkView $ \(MkObject object) _setSelect -> do
+    textEntryGetView = MkGetView $ \_ uispec -> fmap (\MkUITextEntry -> do
     {
-        widget <- entryNew;
-        initial <- object $ \muted -> unReadable subjectFromReader $ mutableRead muted;
-        set widget [entryText := initial];
-        clickConnection <- on widget editableChanged $ object $ \muted -> do
+        widget <- liftIO entryNew;
+        initial <- liftOuter $ viewMutableRead $ unReadable subjectFromReader;
+        liftIO $ set widget [entryText := initial];
+
+        changedSignal <- liftOuter $ viewOn widget editableChanged $ viewMutableEdit $ \muted -> do
         {
-            s <- liftIO $ Gtk.get widget entryText;
-            edits <- getReplaceEditsM s;
-            maction <- mutableEdit muted edits;
-            case maction of
-            {
-                Just action -> action;
-                Nothing -> return ();
-            };
+            st <- liftIO $ Gtk.get widget entryText;
+            pushMutableEdit muted [MkWholeEdit st];
         };
 
-        let
-        {
-            vrWidget = toWidget widget;
-            vrUpdate :: forall m. IsStateIO m => MutableRead m (WholeReader String) -> [WholeEdit String] -> m ();
-            vrUpdate _ edits = liftIO $ do
-            {
-                newstate <- fromReadFunctionM (applyEdits edits) $ Gtk.get widget entryText;
-                withSignalBlocked clickConnection $ set widget [entryText := newstate];
-                return ();
-            };
-            vrFirstAspectGetter = return Nothing;
-        };
-        return MkViewResult{..};
+        createViewReceiveUpdate $ \_ (MkWholeEdit st) -> liftIO $ withSignalBlocked changedSignal $ set widget [entryText := st];
+
+        return $ toWidget widget;
     }) $ isUISpec uispec;
 }

@@ -19,6 +19,17 @@ module Truth.Core.Object.MutableEdit where
         floatingUpdate edit (MkMutableEdit mr me) = MkMutableEdit mr $ \edits -> me $ fmap (floatingUpdate edit) edits;
     };
 
+    pushMutableEdit :: Monad m => MutableEdit m edit -> [edit] -> m ();
+    pushMutableEdit me edits = do
+    {
+        mmu <- mutableEdit me edits;
+        case mmu of
+        {
+            Just mu -> mu;
+            Nothing -> return ();
+        };
+    };
+
     mutableReadEdit :: MonadIO m => MutableEdit m edit -> Readable (EditReader edit) [edit] -> m (Maybe (m ()));
     mutableReadEdit MkMutableEdit{..}  MkReadable{..} = do
     {

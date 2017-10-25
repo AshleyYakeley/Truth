@@ -14,14 +14,6 @@ module Truth.Core.Types.OneWholeEdit where
 
     type MaybeEdit edit = OneWholeEdit Maybe edit;
 
-    extractOneWholeEdit :: forall m f edit. (MonadOne f,FullEdit edit,MonadIO m) => OneWholeEdit f edit -> m [edit];
-    extractOneWholeEdit (SumEditRight (MkOneEdit edit)) = return [edit];
-    extractOneWholeEdit (SumEditLeft (MkWholeEdit fa)) = case retrieveOne fa of
-    {
-        SuccessResult a -> getReplaceEditsM a;
-        _ -> return [];
-    };
-
     oneWholeLiftEditFunction :: forall f state edita editb. (MonadOne f,SubjectReader (EditReader edita),FullSubjectReader (EditReader editb)) =>
         EditFunction state edita editb -> EditFunction state (OneWholeEdit f edita) (OneWholeEdit f editb);
     oneWholeLiftEditFunction = sumWholeLiftEditFunction . oneLiftEditFunction;
@@ -56,39 +48,44 @@ module Truth.Core.Types.OneWholeEdit where
         };
     };
 
-    mustExistMaybeEditFunction :: forall edit. FullEdit edit => String -> PureEditFunction (MaybeEdit edit) edit;
-    mustExistMaybeEditFunction err = let
+    mustExistOneEditFunction :: forall f edit. (MonadOne f,FullEdit edit) => String -> PureEditFunction (OneWholeEdit f edit) edit;
+    mustExistOneEditFunction err = let
     {
         editAccess :: IOStateAccess ();
         editAccess = unitStateAccess;
-        editGet :: () -> EditReader edit t -> Readable (OneReader Maybe (EditReader edit)) t;
+
+        editGet :: () -> EditReader edit t -> Readable (OneReader f (EditReader edit)) t;
         editGet () reader = do
         {
-            mt <- readable $ ReadOne reader;
-            case mt of
+            ft <- readable $ ReadOne reader;
+            case retrieveOne ft of
             {
-                Just t -> return t;
-                Nothing -> error $ err ++ ": not found";
+                SuccessResult t -> return t;
+                FailureResult _ -> liftIO $ fail $ err ++ ": not found";
             };
         };
-        editUpdate :: MaybeEdit edit -> () -> Readable (OneReader Maybe (EditReader edit)) ((), [edit]);
-        editUpdate (SumEditLeft (MkWholeEdit Nothing)) () = error $ err ++ ": deleted";
-        editUpdate (SumEditLeft (MkWholeEdit (Just t))) () = do
+
+        editUpdate :: OneWholeEdit f edit -> () -> Readable (OneReader f (EditReader edit)) ((), [edit]);
+        editUpdate (SumEditLeft (MkWholeEdit ft)) () = case retrieveOne ft of
         {
-            edits <- getReplaceEditsM t;
-            return $ pure edits;
+            SuccessResult t -> do
+            {
+                edits <- getReplaceEditsM t;
+                return $ pure edits;
+            };
+            FailureResult _ -> liftIO $ fail $ err ++ ": deleted";
         };
         editUpdate (SumEditRight (MkOneEdit edit)) () = return $ pure [edit];
     } in MkEditFunction{..};
 
-    mustExistMaybeEditLens :: forall edit. FullEdit edit => String -> PureEditLens (MaybeEdit edit) edit;
-    mustExistMaybeEditLens err = let
+    mustExistOneEditLens :: forall f edit. (MonadOne f,FullEdit edit) => String -> PureEditLens (OneWholeEdit f edit) edit;
+    mustExistOneEditLens err = let
     {
-        editLensFunction = mustExistMaybeEditFunction err;
-        editLensPutEdit :: () -> edit -> Readable (OneReader Maybe (EditReader edit)) (Maybe ((), [MaybeEdit edit]));
+        editLensFunction = mustExistOneEditFunction err;
+        editLensPutEdit :: () -> edit -> Readable (OneReader f (EditReader edit)) (Maybe ((), [OneWholeEdit f edit]));
         editLensPutEdit () edit = return $ Just $ pure [SumEditRight $ MkOneEdit edit];
     } in MkEditLens{..};
 
-    mustExistMaybeGeneralLens :: forall edit. FullEdit edit => String -> GeneralLens (MaybeEdit edit) edit;
-    mustExistMaybeGeneralLens err = MkCloseState $ mustExistMaybeEditLens err;
+    mustExistOneGeneralLens :: forall f edit. (MonadOne f,FullEdit edit) => String -> GeneralLens (OneWholeEdit f edit) edit;
+    mustExistOneGeneralLens err = MkCloseState $ mustExistOneEditLens err;
 }

@@ -18,17 +18,11 @@ module Truth.UI.GTK.Window where
     import Truth.UI.GTK.Drag;
 
 
-    lastResortView :: UISpec edit -> GView edit;
-    lastResortView spec = MkView $ \_ _ -> do
+    lastResortView :: UISpec edit -> GCreateView edit;
+    lastResortView spec = do
     {
-        w <- labelNew $ Just $ "missing viewer for " ++ show spec;
-        let
-        {
-            vrWidget = toWidget w;
-            vrUpdate _ _ = return ();
-            vrFirstAspectGetter = return Nothing;
-        };
-        return MkViewResult{..};
+        w <- liftIO $ labelNew $ Just $ "missing viewer for " ++ show spec;
+        return $ toWidget w;
     };
 
     allGetView :: GetGView;
@@ -47,7 +41,7 @@ module Truth.UI.GTK.Window where
         dragGetView
     ];
 
-    getTheView :: Edit edit => UISpec edit -> GView edit;
+    getTheView :: Edit edit => UISpec edit -> GCreateView edit;
     getTheView spec = case getUIView allGetView getTheView spec of
     {
         Just view -> view;
@@ -140,7 +134,7 @@ module Truth.UI.GTK.Window where
         return ();
     };
 
-    makeViewWindow :: (Edit edit,WindowButtons actions) => GView edit -> IORef Int -> IO () -> String -> Subscriber edit actions -> IO ();
+    makeViewWindow :: (Edit edit,WindowButtons actions) => GCreateView edit -> IORef Int -> IO () -> String -> Subscriber edit actions -> IO ();
     makeViewWindow view windowCount tellclose title sub = do
     {
         MkViewSubscription{..} <- subscribeView view sub;
@@ -206,7 +200,7 @@ module Truth.UI.GTK.Window where
         widgetShowAll window;
     };
 
-    makeViewWindowCountRef :: (Edit edit,WindowButtons actions) => GView edit -> IORef Int -> String -> Subscriber edit actions -> IO ();
+    makeViewWindowCountRef :: (Edit edit,WindowButtons actions) => GCreateView edit -> IORef Int -> String -> Subscriber edit actions -> IO ();
     makeViewWindowCountRef view windowCount title sub = do
     {
         makeViewWindow view windowCount (do

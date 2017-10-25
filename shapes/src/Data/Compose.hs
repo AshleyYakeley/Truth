@@ -18,8 +18,14 @@ module Data.Compose where
         };
     };
 
+    liftOuter :: (Functor m,Applicative n) => m a -> Compose m n a;
+    liftOuter ma = Compose $ fmap pure ma;
+
+    liftInner :: (Applicative m) => n a -> Compose m n a;
+    liftInner na = Compose $ pure na;
+
     instance (MonadIO p,Monad q,Traversable q) => MonadIO (Compose p q) where
     {
-        liftIO ioa = Compose $ liftIO $ fmap pure ioa;
+        liftIO ioa = liftOuter $ liftIO ioa;
     };
 }

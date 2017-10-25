@@ -14,7 +14,7 @@ module Truth.UI.GTK.GView where
         return button;
     };
 
-    type GView edit = View edit Widget;
+    type GCreateView edit = CreateView edit Widget;
     type GViewResult edit = ViewResult edit Widget;
     type GetGView = GetView Widget;
 }

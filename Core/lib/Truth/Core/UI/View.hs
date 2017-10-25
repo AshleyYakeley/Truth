@@ -1,4 +1,31 @@
-module Truth.Core.UI.View where
+module Truth.Core.UI.View
+(
+    View,
+    liftIOView,
+    viewObject,
+    viewMutableEdit,
+    viewMutableRead,
+    viewSetSelectedAspect,
+    mapViewEdit,
+
+    ViewResult,
+    vrWidget,
+    vrUpdate,
+    vrFirstAspect,
+    mapViewResultEdit,
+
+    CreateView,
+    createViewReceiveUpdates,
+    createViewReceiveUpdate,
+    createViewAddAspect,
+    mapCreateViewEdit,
+    mapCreateViewAspect,
+
+    ViewSubscription(..),
+    subscribeView,
+    tupleCreateView
+)
+where
 {
     import Truth.Core.Import;
     import Data.IORef;
@@ -16,7 +43,7 @@ module Truth.Core.UI.View where
     {
         vrWidget :: w,
         vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> m (),
-        vrFirstAspectGetter :: Aspect edit
+        vrFirstAspect :: Aspect edit
     };
 
     instance Functor (ViewResult edit) where
@@ -29,7 +56,7 @@ module Truth.Core.UI.View where
         pure vrWidget = let
         {
             vrUpdate _ _ = return ();
-            vrFirstAspectGetter = return Nothing;
+            vrFirstAspect = return Nothing;
         } in MkViewResult{..};
 
         (MkViewResult w1 update1 fss1) <*> (MkViewResult w2 update2 fss2) = let
@@ -43,7 +70,7 @@ module Truth.Core.UI.View where
                 update2 mr edits;
             };
 
-            vrFirstAspectGetter = do
+            vrFirstAspect = do
             {
                 ma1 <- fss1;
                 case ma1 of
@@ -68,79 +95,85 @@ module Truth.Core.UI.View where
 
     instance Traversable (ViewResult edit) where
     {
-        sequenceA vrfa = fmap (\w -> MkViewResult w (vrUpdate vrfa) (vrFirstAspectGetter vrfa)) $ vrWidget vrfa;
+        sequenceA vrfa = fmap (\w -> MkViewResult w (vrUpdate vrfa) (vrFirstAspect vrfa)) $ vrWidget vrfa;
     };
 
-    newtype View edit w = MkView (Object edit -> (Aspect edit -> IO ()) -> IO (ViewResult edit w));
+    mapViewResultEdit :: forall edita editb w. Edit editb => GeneralLens edita editb -> ViewResult editb w -> ViewResult edita w;
+    mapViewResultEdit lens@(MkCloseState flens) (MkViewResult w updateB a) = let
+    {
+        MkEditLens{..} = flens;
+        MkEditFunction{..} = editLensFunction;
+
+        updateA :: forall m. IsStateIO m => MutableRead m (EditReader edita) -> [edita] -> m ();
+        updateA mrA editsA = editAccess $ StateT $ \oldls -> do
+        {
+            (newls,editsB) <- unReadable (editUpdates editLensFunction editsA oldls) mrA;
+            updateB (mapMutableRead (editGet oldls) mrA) editsB;
+            return ((),newls);
+        };
+        a' = mapAspect lens a;
+    } in MkViewResult w updateA a';
+
+    newtype View edit a = MkView (Object edit -> (Aspect edit -> IO ()) -> IO a);
 
     instance Functor (View edit) where
     {
-        fmap f (MkView view) = MkView $ \object setSelect -> do
+        fmap f (MkView ma) = MkView $ \object setSelect -> do
         {
-            vr <- view object setSelect;
-            return $ fmap f vr;
+            a <- ma object setSelect;
+            return $ f a;
         };
     };
 
     instance Applicative (View edit) where
     {
-        pure w = MkView $ \_object _setSelect -> return $ pure w;
+        pure a = MkView $ \_object _setSelect -> pure a;
 
-        (MkView view1) <*> (MkView view2) = MkView $ \object setSelect -> do
+        (MkView mab) <*> (MkView ma) = MkView $ \object setSelect -> do
         {
-            vr1 <- view1 object setSelect;
-            vr2 <- view2 object setSelect;
-            return $ vr1 <*> vr2;
+            ab <- mab object setSelect;
+            a <- ma object setSelect;
+            return $ ab a;
         };
     };
 
     instance Monad (View edit) where
     {
         return = pure;
-        (MkView view1) >>= f = MkView $ \object setSelect -> getCompose $ do
+        (MkView ma) >>= f = MkView $ \object setSelect -> do
         {
-            w <- Compose $ view1 object setSelect;
-            let {MkView view2 = f w;};
-            Compose $ view2 object setSelect;
+            a <- ma object setSelect;
+            let {MkView mb = f a;};
+            mb object setSelect;
         };
     };
 
     instance MonadIO (View edit) where
     {
-        liftIO iow = MkView $ \_object _setSelect -> do
-        {
-            w <- iow;
-            return $ pure w;
-        };
+        liftIO ioa = MkView $ \_object _setSelect -> ioa;
     };
 
     liftIOView :: forall edit a. ((forall r. View edit r -> IO r) -> IO a) -> View edit a;
-    liftIOView call = MkView $ \object setSelect -> do
-    {
-        a <- call $ \(MkView view) -> fmap vrWidget $ view object setSelect;
-        return $ pure a;
-    };
+    liftIOView call = MkView $ \object setSelect -> call $ \(MkView view) -> view object setSelect;
+
+    viewObject :: View edit (Object edit);
+    viewObject = MkView $ \object _ -> return object;
 
     viewMutableEdit :: (forall m. IsStateIO m => MutableEdit m edit -> m r) -> View edit r;
-    viewMutableEdit call = MkView $ \object _setSelect -> getCompose $ liftIO $ runObject object call;
+    viewMutableEdit call = do
+    {
+        object <- viewObject;
+        liftIO $ runObject object call;
+    };
 
     viewMutableRead :: (forall m. IsStateIO m => MutableRead m (EditReader edit) -> m r) -> View edit r;
     viewMutableRead call = viewMutableEdit $ \muted -> call $ mutableRead muted;
 
-    viewReceiveUpdates :: (forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> m ()) -> View edit ();
-    viewReceiveUpdates recv = MkView $ \_ _ -> return $ (pure ()) {vrUpdate = recv};
+    viewSetSelectedAspect :: Aspect edit -> View edit ();
+    viewSetSelectedAspect aspect = MkView $ \_ setSelect -> setSelect aspect;
 
-    viewReceiveUpdate :: (forall m. IsStateIO m => MutableRead m (EditReader edit) -> edit -> m ()) -> View edit ();
-    viewReceiveUpdate recv = viewReceiveUpdates $ \mr edits -> for_ edits (recv mr);
-
-    viewAddAspect :: Aspect edit -> View edit ();
-    viewAddAspect aspect = MkView $ \_ _ -> return $ (pure ()) {vrFirstAspectGetter = aspect};
-
-    mapView :: forall w edita editb. (Edit edita,Edit editb) => GeneralLens edita editb -> View editb w -> View edita w;
-    mapView
-        lens@(MkCloseState (flens :: EditLens lensstate edita editb))
-        (MkView (viewB :: Object editb -> (Aspect editb -> IO ()) -> IO (ViewResult editb w)))
-        = MkView $ \objectA setSelectA -> do
+    mapViewEdit :: forall edita editb a. (Edit edita,Edit editb) => GeneralLens edita editb -> View editb a -> View edita a;
+    mapViewEdit lens@(MkCloseState (flens :: EditLens lensstate edita editb)) (MkView viewB) = MkView $ \objectA setSelectA -> do
     {
         let
         {
@@ -152,26 +185,28 @@ module Truth.Core.UI.View where
 
             setSelectB selB = setSelectA $ mapAspect lens selB;
         };
-        MkViewResult w updateB fssB <- viewB objectB setSelectB;
-        let
-        {
-            updateA :: forall m. IsStateIO m => MutableRead m (EditReader edita) -> [edita] -> m ();
-            updateA mrA editsA = editAccess $ StateT $ \oldls -> do
-            {
-                (newls,editsB) <- unReadable (editUpdates editLensFunction editsA oldls) mrA;
-                updateB (mapMutableRead (editGet oldls) mrA) editsB;
-                return ((),newls);
-            };
-
-            fssA = mapAspect lens fssB;
-        };
-        return $ MkViewResult w updateA fssA;
+        t <- viewB objectB setSelectB;
+        return t;
     };
 
-    mapViewAspect :: (Aspect edit -> Aspect edit) -> View edit w -> View edit w;
-    mapViewAspect f (MkView view) = MkView $ \object setSelect -> do
+    type CreateView edit = Compose (View edit) (ViewResult edit);
+
+    createViewReceiveUpdates :: (forall m. IsStateIO m => MutableRead m (EditReader edit) -> [edit] -> m ()) -> CreateView edit ();
+    createViewReceiveUpdates recv = liftInner $ (pure ()) {vrUpdate = recv};
+
+    createViewReceiveUpdate :: (forall m. IsStateIO m => MutableRead m (EditReader edit) -> edit -> m ()) -> CreateView edit ();
+    createViewReceiveUpdate recv = createViewReceiveUpdates $ \mr edits -> for_ edits (recv mr);
+
+    createViewAddAspect :: Aspect edit -> CreateView edit ();
+    createViewAddAspect aspect = liftInner $ (pure ()) {vrFirstAspect = aspect};
+
+    mapCreateViewEdit :: forall edita editb a. (Edit edita,Edit editb) => GeneralLens edita editb -> CreateView editb a -> CreateView edita a;
+    mapCreateViewEdit lens (Compose wv) = Compose $ mapViewEdit lens $ fmap (mapViewResultEdit lens) wv;
+
+    mapCreateViewAspect :: (Aspect edit -> Aspect edit) -> CreateView edit w -> CreateView edit w;
+    mapCreateViewAspect f (Compose vw) = Compose $ do
     {
-        MkViewResult w v ag <- view object setSelect;
+        MkViewResult w v ag <- vw;
         return $ MkViewResult w v $ f ag;
     };
 
@@ -188,8 +223,8 @@ module Truth.Core.UI.View where
         fmap f (MkViewSubscription w gs cl aa) = MkViewSubscription (f w) gs cl aa;
     };
 
-    subscribeView :: forall edit w action. View edit w -> Subscriber edit action -> IO (ViewSubscription edit action w);
-    subscribeView (MkView (view :: Object edit -> (Aspect edit -> IO ()) -> IO (ViewResult edit w))) sub = do
+    subscribeView :: forall edit w action. CreateView edit w -> Subscriber edit action -> IO (ViewSubscription edit action w);
+    subscribeView (Compose (MkView (view :: Object edit -> (Aspect edit -> IO ()) -> IO (ViewResult edit w)))) sub = do
     {
         let
         {
@@ -203,7 +238,7 @@ module Truth.Core.UI.View where
                         setSelect ss = writeIORef selref ss;
                     };
                     vr <- view object setSelect;
-                    selref <- newIORef $ vrFirstAspectGetter vr;
+                    selref <- newIORef $ vrFirstAspect vr;
                 };
                 return (vr,selref);
             };
@@ -222,9 +257,9 @@ module Truth.Core.UI.View where
         return MkViewSubscription{..};
     };
 
-    tupleView :: (Applicative m,FiniteTupleSelector sel,TupleWitness Edit sel) => (forall edit. sel edit -> m (View edit w)) -> m (View (TupleEdit sel) [w]);
-    tupleView pickview = getCompose $ for tupleAllSelectors $ \(MkAnyWitness sel) -> case tupleWitness (Proxy :: Proxy Edit) sel of
+    tupleCreateView :: (Applicative m,FiniteTupleSelector sel,TupleWitness Edit sel) => (forall edit. sel edit -> m (CreateView edit w)) -> m (CreateView (TupleEdit sel) [w]);
+    tupleCreateView pickview = getCompose $ for tupleAllSelectors $ \(MkAnyWitness sel) -> case tupleWitness (Proxy :: Proxy Edit) sel of
     {
-        MkConstraintWitness -> Compose $ fmap (mapView (tupleGeneralLens sel)) (pickview sel);
+        MkConstraintWitness -> Compose $ fmap (mapCreateViewEdit (tupleGeneralLens sel)) (pickview sel);
     };
 }

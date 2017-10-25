@@ -11,21 +11,16 @@ module Truth.UI.GTK.CheckButton(checkButtonGetView) where
     checkButtonGetView = MkGetView $ \_ uispec -> fmap (\(MkUICheckbox name) -> do
     {
         widget <- liftIO checkButtonNew;
-        initial <- viewMutableRead $ unReadable subjectFromReader;
+        initial <- liftOuter $ viewMutableRead $ unReadable subjectFromReader;
         liftIO $ set widget [buttonLabel := name,toggleButtonActive := initial];
 
-        changedSignal <- viewOn widget buttonActivated $ viewMutableEdit $ \muted -> do
+        changedSignal <- liftOuter $ viewOn widget buttonActivated $ viewMutableEdit $ \muted -> do
         {
             st <- liftIO $ Gtk.get widget toggleButtonActive;
-            maction <- mutableEdit muted [MkWholeEdit st];
-            case maction of
-            {
-                Just action -> action;
-                Nothing -> return ();
-            };
+            pushMutableEdit muted [MkWholeEdit st];
         };
 
-        viewReceiveUpdate $ \_ (MkWholeEdit st) -> liftIO $ withSignalBlocked changedSignal $ set widget [toggleButtonActive := st];
+        createViewReceiveUpdate $ \_ (MkWholeEdit st) -> liftIO $ withSignalBlocked changedSignal $ set widget [toggleButtonActive := st];
 
         return $ toWidget widget;
     }) $ isUISpec uispec;

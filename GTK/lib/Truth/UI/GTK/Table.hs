@@ -53,14 +53,12 @@ module Truth.UI.GTK.Table(tableGetView) where
         mappend = (<>);
     };
 
-    keyContainerView :: forall cont tedit iedit. (IONewItemKeyContainer cont,Edit tedit) =>
-        KeyColumns tedit (ContainerKey cont) -> (ContainerKey cont -> Aspect tedit) -> GeneralLens tedit (KeyEdit cont iedit) -> GView tedit;
-    keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO (GeneralLens tedit (WholeEdit row))) cols) getaspect tableLens = MkView $ \(object :: Object tedit) setSelect -> do
+    keyContainerView :: forall cont tedit iedit. (IONewItemKeyContainer cont,Edit tedit,FullSubjectReader (EditReader iedit),Edit iedit,HasKeyReader cont (EditReader iedit)) =>
+        KeyColumns tedit (ContainerKey cont) -> (ContainerKey cont -> Aspect tedit) -> GeneralLens tedit (KeyEdit cont iedit) -> GCreateView tedit;
+    keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO (GeneralLens tedit (WholeEdit row))) cols) getaspect tableLens = do
     {
         let
         {
-            MkObject tableObject = mapObject tableLens object;
-
             getStoreItem :: IsStateIO m => MutableRead m (EditReader tedit) -> ContainerKey cont -> m (ContainerKey cont,GeneralLens tedit (WholeEdit row),row);
             getStoreItem mr key = do
             {
@@ -69,93 +67,84 @@ module Truth.UI.GTK.Table(tableGetView) where
                 return (key,lens,row);
             };
         };
-        initalRows <- runObject object $ \muted -> do
+        initalRows <- liftOuter $ viewMutableRead $ \mr -> do
         {
-            MkFiniteSet initialKeys <- withMapMutableRead tableLens (mutableRead muted) $ \mr' -> mr' KeyReadKeys;
-            for initialKeys $ getStoreItem $ mutableRead muted;
+            MkFiniteSet initialKeys <- withMapMutableRead tableLens mr $ \mr' -> mr' KeyReadKeys;
+            for initialKeys $ getStoreItem mr;
         };
-        store <- listStoreNew initalRows;
-        tview <- treeViewNewWithModel store;
-        for_ cols $ \(name,showCell) -> addColumn tview store name showCell;
+        store <- liftIO $ listStoreNew initalRows;
+        tview <- liftIO $ treeViewNewWithModel store;
+        liftIO $ for_ cols $ \(name,showCell) -> addColumn tview store name showCell;
 
-        box <- vBoxNew False 0;
-        newButton <- makeButton "New" $ tableObject $ \muted -> do
+        box <- liftIO $ vBoxNew False 0;
+        newButton <- liftOuter $ liftIOView $ \unlift -> makeButton "New" $ unlift $ mapViewEdit tableLens $ viewMutableEdit $ \muted -> do
         {
             item <- liftIO $ newKeyContainerItem (Proxy::Proxy cont);
-            maction <- mutableEdit muted [KeyInsertReplaceItem item];
-            case maction of
-            {
-                Just action -> action;
-                Nothing -> return ();
-            }
+            pushMutableEdit muted [KeyInsertReplaceItem item];
         };
-        boxPackStart box newButton PackNatural 0;
-        boxPackStart box tview PackGrow 0;
+        liftIO $ boxPackStart box newButton PackNatural 0;
+        liftIO $ boxPackStart box tview PackGrow 0;
 
         let
         {
-            vrWidget = toWidget box;
-
             findInStore :: forall m. IsStateIO m => ContainerKey cont -> m (Maybe Int);
             findInStore key = do
             {
                 kk <- liftIO $ listStoreToList store;
                 return $ lookup @[(ContainerKey cont,Int)] key $ zip (fmap (\(k,_,_) -> k) kk) [0..];
             };
+        };
 
-            vrUpdate :: forall m. IsStateIO m => MutableRead m (EditReader tedit) -> [tedit] -> m ();
-            vrUpdate mr tedits = do
+        createViewReceiveUpdates $ \mr edits -> mapUpdate tableLens mr edits $ \_ edits' -> for_ edits' $ \case
+        {
+            KeyDeleteItem key -> do
             {
-                -- do updates that affect the structure of the table
-                mapUpdate tableLens mr tedits $ \_ edits -> do
+                mindex <- findInStore key;
+                case mindex of
                 {
-                    for_ edits $ \edit -> (case edit of
-                    {
-                        KeyDeleteItem key -> do
-                        {
-                            mindex <- findInStore key;
-                            case mindex of
-                            {
-                                Just i -> liftIO $ listStoreRemove store i;
-                                Nothing -> return ();
-                            };
-                        };
-                        KeyInsertReplaceItem item -> let
-                        {
-                            key = elementKey (Proxy :: Proxy cont) item;
-                        } in do
-                        {
-                            mindex <- findInStore key;
-                            case mindex of
-                            {
-                                Just _index -> return ();
-                                Nothing -> do
-                                {
-                                    storeItem <- getStoreItem mr key;
-                                    _ <- liftIO $ listStoreAppend store storeItem;
-                                    return ();
-                                };
-                            };
-                        };
-                        KeyClear -> liftIO $ listStoreClear store;
-                        KeyEditItem _ _ -> return (); -- no change to the table structure
-                    } :: m ())
+                    Just i -> liftIO $ listStoreRemove store i;
+                    Nothing -> return ();
                 };
-
-                -- do updates to the cells
-                listStoreTraverse_ store $ \(key,lens,oldrow) -> mapUpdate lens mr tedits $ \_ edits' -> case edits' of
+            };
+            KeyInsertReplaceItem item -> let
+            {
+                key = elementKey (Proxy :: Proxy cont) item;
+            } in do
+            {
+                mindex <- findInStore key;
+                case mindex of
                 {
-                    [] -> return Nothing;
-                    _ -> do
+                    Just _index -> return ();
+                    Nothing -> do
                     {
-                        newrow <- fromReadFunctionM (applyEdits edits') (return oldrow);
-                        return $ Just (key,lens,newrow);
+                        storeItem <- getStoreItem mr key;
+                        _ <- liftIO $ listStoreAppend store storeItem;
+                        return ();
                     };
                 };
             };
+            KeyClear -> liftIO $ listStoreClear store;
+            KeyEditItem _ _ -> return (); -- no change to the table structure
+        };
 
-            vrFirstAspectGetter :: Aspect tedit;
-            vrFirstAspectGetter = do
+        createViewReceiveUpdates $ \mr tedits -> do
+        {
+            -- do updates to the cells
+            listStoreTraverse_ store $ \(key,lens,oldrow) -> mapUpdate lens mr tedits $ \_ edits' -> case edits' of
+            {
+                [] -> return Nothing;
+                _ -> do
+                {
+                    newrow <- fromReadFunctionM (applyEdits edits') (return oldrow);
+                    return $ Just (key,lens,newrow);
+                };
+            };
+        };
+
+        let
+        {
+            aspect :: Aspect tedit;
+            aspect = do
             {
                 tsel <- treeViewGetSelection tview;
                 ltpath <- treeSelectionGetSelectedRows tsel;
@@ -171,12 +160,14 @@ module Truth.UI.GTK.Table(tableGetView) where
             };
         };
 
-        _ <- on box focus $ \_ -> do
+        createViewAddAspect aspect;
+
+        _ <- liftOuter $ liftIOView $ \unlift -> on box focus $ \_ -> unlift $ do
         {
-            setSelect vrFirstAspectGetter;
+            viewSetSelectedAspect aspect;
             return True;
         };
-        return MkViewResult{..};
+        return $ toWidget box;
     };
 
     tableGetView :: GetGView;

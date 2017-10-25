@@ -39,53 +39,38 @@ module Truth.UI.GTK.Text (textAreaGetView) where
         return $ startEndRun p1 p2;
     };
 
-    textView :: forall s. (IsSequence s,Index s ~ Int,Element s ~ Char,GlibString s) => UIText (StringEdit s) -> GView (StringEdit s);
-    textView uitext = MkView $ \(MkObject object) setSelect -> do
+    textView :: forall s. (IsSequence s,Index s ~ Int,Element s ~ Char,GlibString s) => UIText (StringEdit s) -> GCreateView (StringEdit s);
+    textView uitext = do
     {
-        buffer <- textBufferNew Nothing;
-        initial <- object $ \muted -> unReadable subjectFromReader $ mutableRead muted;
-        textBufferSetText buffer initial;
-        mv <- newMVar ();
+        buffer <- liftIO $ textBufferNew Nothing;
+        initial <- liftOuter $ viewMutableRead $ unReadable subjectFromReader;
+        liftIO $ textBufferSetText buffer initial;
+        mv <- liftIO $ newMVar ();
 
-        _ <- on buffer bufferInsertText $ \iter text -> ifMVar mv $ object $ \muted -> do
+        _ <- liftOuter $ liftIOView $ \unlift -> on buffer bufferInsertText $ \iter text -> ifMVar mv $ unlift $ viewMutableEdit $ \muted -> do
         {
             p <- getSequencePoint iter;
-            maction <- mutableEdit muted $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
-            case maction of
-            {
-                Just action -> action;
-                _ -> liftIO $ signalStopEmission buffer "insert-text";
-            };
+            pushMutableEdit muted $ pure $ StringReplaceSection (MkSequenceRun p 0) text;
         };
 
-        _ <- on buffer deleteRange $ \iter1 iter2 -> ifMVar mv $ object $ \muted -> do
+        _ <- liftOuter $ liftIOView $ \unlift -> on buffer deleteRange $ \iter1 iter2 -> ifMVar mv $ unlift $ viewMutableEdit $ \muted -> do
         {
             run <- getSequenceRun iter1 iter2;
-            maction <- mutableEdit muted $ pure $ StringReplaceSection run mempty;
-            case maction of
-            {
-                Just action -> action;
-                _ -> liftIO $ signalStopEmission buffer "delete-range";
-            };
+            pushMutableEdit muted $ pure $ StringReplaceSection run mempty;
         };
 
-        widget <- textViewNewWithBuffer buffer;
+        widget <- liftIO $ textViewNewWithBuffer buffer;
+
+        createViewReceiveUpdate $ \_ -> \case
+        {
+            StringReplaceWhole text -> liftIO $ textBufferSetText buffer text;
+            StringReplaceSection bounds text -> liftIO $ replaceText buffer bounds $ otoList text;
+        };
 
         let
         {
-            vrWidget :: Widget;
-            vrWidget = toWidget widget;
-
-            update :: StringEdit s -> IO ();
-            update (StringReplaceWhole text) = textBufferSetText buffer text;
-            update (StringReplaceSection bounds text) = replaceText buffer bounds $ otoList text;
-
-            vrUpdate :: forall m. IsStateIO m => MutableRead m (StringRead s) -> [StringEdit s] -> m ();
-            -- this withMVar prevents the signal handlers from re-sending edits
-            vrUpdate _ edits = liftIO $ ifMVar mv $ traverse_ update edits;
-
-            vrFirstAspectGetter :: Aspect (StringEdit s);
-            vrFirstAspectGetter = do
+            aspect :: Aspect (StringEdit s);
+            aspect = do
             {
                 (iter1,iter2) <- textBufferGetSelectionBounds buffer;
                 run <- getSequenceRun iter1 iter2;
@@ -94,13 +79,13 @@ module Truth.UI.GTK.Text (textAreaGetView) where
                 return $ Just ("section",MkUISpec $ MkUILens (MkCloseState lens) $ MkUISpec uitext);
             };
         };
-
-        _ <- on widget focus $ \_ -> do
+        createViewAddAspect aspect;
+        _ <- liftOuter $ liftIOView $ \unlift -> on widget focus $ \_ -> unlift $ do
         {
-            setSelect vrFirstAspectGetter;
+            viewSetSelectedAspect aspect;
             return True;
         };
-        return MkViewResult{..};
+        return $ toWidget widget;
     };
 
     textAreaGetView :: GetGView;

@@ -24,7 +24,6 @@ module Truth.UI.GTK.Labelled(labelledGetView) where
         label <- labelNew $ Just $ text ++ ": ";
         boxPackStart box label PackNatural 0;
         boxPackStart box widget PackGrow 0;
-        --for_ widgets $ \widget -> boxPackStart vbox widget (if any (isA widget) [gTypeViewport,gTypeTextView] then PackGrow else PackNatural) 0;
         return $ toWidget box;
     };
 }

@@ -15,12 +15,12 @@ module Truth.UI.GTK.Option(optionGetView) where
     };
 
     listStoreView :: (FullSubjectReader (EditReader edit),Edit edit) =>
-        View (ListEdit [EditSubject edit] edit) (ListStore (EditSubject edit));
+        CreateView (ListEdit [EditSubject edit] edit) (ListStore (EditSubject edit));
     listStoreView = do
     {
-        initialList <- viewMutableRead $ unReadable subjectFromReader;
+        initialList <- liftOuter $ viewMutableRead $ unReadable subjectFromReader;
         store <- liftIO $ listStoreNew initialList;
-        viewReceiveUpdate $ \_mr -> \case
+        createViewReceiveUpdate $ \_mr -> \case
         {
             ListEditItem (MkSequencePoint i) edit -> liftIO $ do
             {
@@ -34,7 +34,7 @@ module Truth.UI.GTK.Option(optionGetView) where
         return store;
     };
 
-    optionFromStore :: Eq t => ListStore (t,String) -> GView (WholeEdit t);
+    optionFromStore :: Eq t => ListStore (t,String) -> GCreateView (WholeEdit t);
     optionFromStore store = do
     {
         widget <- liftIO $ do
@@ -46,26 +46,21 @@ module Truth.UI.GTK.Option(optionGetView) where
             return widget;
         };
 
-        changedSignal <- viewOn widget changed $ viewMutableEdit $ \muted -> do
+        changedSignal <- liftOuter $ viewOn widget changed $ viewMutableEdit $ \muted -> do
         {
             mi <- liftIO $ comboBoxGetActiveIter widget;
-            maction <- case mi of
+            case mi of
             {
                 Just i -> do
                 {
                     (t,_) <- liftIO $ listStoreGetValue store $ listStoreIterToIndex i;
-                    mutableEdit muted [MkWholeEdit t];
+                    pushMutableEdit muted [MkWholeEdit t];
                 };
-                Nothing -> return Nothing;
-            };
-            case maction of
-            {
-                Just action -> action;
                 Nothing -> return ();
             };
         };
 
-        viewReceiveUpdate $ \_mr (MkWholeEdit t) -> liftIO $ do
+        createViewReceiveUpdate $ \_mr (MkWholeEdit t) -> liftIO $ do
         {
             items <- listStoreToList store;
             case find (\(_,(t',_)) -> t == t') $ zip [(0 :: Int)..] items of
@@ -86,10 +81,10 @@ module Truth.UI.GTK.Option(optionGetView) where
     };
 
     optionView :: forall t tedit. (Eq t,Edit tedit) =>
-        GeneralFunction tedit (ListEdit [(t,String)] (WholeEdit (t,String))) -> GeneralLens tedit (WholeEdit t) -> GView tedit;
+        GeneralFunction tedit (ListEdit [(t,String)] (WholeEdit (t,String))) -> GeneralLens tedit (WholeEdit t) -> GCreateView tedit;
     optionView itemsFunction whichLens = do
     {
-        store <- mapView (readOnlyGeneralLens itemsFunction) listStoreView;
-        mapView whichLens $ optionFromStore store;
+        store <- mapCreateViewEdit (readOnlyGeneralLens itemsFunction) listStoreView;
+        mapCreateViewEdit whichLens $ optionFromStore store;
     };
 }
