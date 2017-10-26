@@ -126,8 +126,8 @@ module Truth.UI.GTK.Maybe (oneGetView) where
         uit <- isUISpec uispec;
         return $ case uit of
         {
-            MkUIMaybe mnewval itemspec -> oneWholeView (MkUISpec . MkUIMaybe Nothing) (Just $ MkLimit Nothing) (createButton mnewval) $ getview itemspec;
-            MkUIOneWhole itemspec -> oneWholeView (MkUISpec . MkUIOneWhole) Nothing (\_ -> placeholderLabel) $ getview itemspec;
+            MkUIMaybe mnewval itemspec -> oneWholeView (uiMaybe Nothing) (Just $ MkLimit Nothing) (createButton mnewval) $ getview itemspec;
+            MkUIOneWhole itemspec -> oneWholeView uiOneWhole Nothing (\_ -> placeholderLabel) $ getview itemspec;
         };
     };
 }

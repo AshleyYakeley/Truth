@@ -69,7 +69,7 @@ module Truth.World.Pinafore.Ontology where
         getaspect :: Point -> Aspect PinaforeEdit;
         getaspect pt = return $ Just $ ("item",pinaforeValueTypeSpec ptype $ constGeneralLens $ Just pt);
     }
-    in MkUISpec $ MkUITable (fmap pinaforePropertyKeyColumn cols) getaspect subjv;
+    in uiTable (fmap pinaforePropertyKeyColumn cols) getaspect subjv;
 
     pinaforePropertySpec :: ViewPinaforeProperty -> PinaforeSpec (WholeEdit (Maybe Point));
     pinaforePropertySpec (MkViewPinaforeProperty name lens ptype) subjv = uiLabelled name $ pinaforeItemSpec ptype (lens subjv);

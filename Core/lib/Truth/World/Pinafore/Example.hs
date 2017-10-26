@@ -28,7 +28,7 @@ module Truth.World.Pinafore.Example(rootValue) where
 
 
     textEntryItem :: ViewPinaforeItem (WholeEdit (Maybe String));
-    textEntryItem = SimpleViewPinaforeItem $ PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ uiNothingValue "" $ MkUISpec MkUITextEntry;
+    textEntryItem = SimpleViewPinaforeItem $ PrimitiveViewPinaforeType $ MkViewPinaforePrimitive $ uiNothingValue "" uiTextEntry;
 
     peopleItem :: ViewPinaforeItem (FiniteSetEdit Point);
     peopleItem = InverseReferenceViewPinaforeItem (EntityViewPinaforeType personEntity) [("Name",personName)];

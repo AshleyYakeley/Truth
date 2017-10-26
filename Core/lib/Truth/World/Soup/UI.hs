@@ -35,7 +35,7 @@ module Truth.World.Soup.UI(PossibleNoteEdit,soupEditSpec,soupObject) where
         };
 
         getaspect :: Aspect (MaybeEdit (UUIDElementEdit PossibleNoteEdit));
-        getaspect = return $ Just $ ("item", MkUISpec $ MkUILens (oneWholeLiftGeneralLens $ tupleGeneralLens EditSecond) $ MkUISpec $ MkUIOneWhole $ MkUISpec $ MkUIOneWhole noteEditSpec);
+        getaspect = return $ Just $ ("item", uiLens (oneWholeLiftGeneralLens $ tupleGeneralLens EditSecond) $ uiOneWhole $ uiOneWhole noteEditSpec);
     } in uiSimpleTable [nameColumn,pastColumn] getaspect;
 
     soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit);

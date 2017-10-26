@@ -75,11 +75,11 @@ module Truth.World.Soup.Note where
     type NoteEdit = TupleEdit NoteSel;
 
     noteEditSpec :: UISpec NoteEdit;
-    noteEditSpec = MkUISpec $ MkUIVertical $ tupleEditUISpecs $ \case
+    noteEditSpec = uiVertical $ tupleEditUISpecs $ \case
     {
-        NoteTitle -> MkUISpec MkUITextEntry;
-        NotePast -> MkUISpec $ MkUICheckbox "past";
-        NoteText -> MkUISpec MkTextUIText;
+        NoteTitle -> uiTextEntry;
+        NotePast -> uiCheckbox "past";
+        NoteText -> uiTextText;
     };
 
     type Note = Tuple NoteSel;

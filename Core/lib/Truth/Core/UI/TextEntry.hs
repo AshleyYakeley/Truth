@@ -19,4 +19,7 @@ module Truth.Core.UI.TextEntry where
     {
         uiWitness = $(iowitness [t|UITextEntry|]);
     };
+
+    uiTextEntry :: UISpec (WholeEdit String);
+    uiTextEntry = MkUISpec MkUITextEntry;
 }

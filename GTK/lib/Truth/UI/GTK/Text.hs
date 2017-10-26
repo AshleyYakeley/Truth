@@ -76,7 +76,7 @@ module Truth.UI.GTK.Text (textAreaGetView) where
                 run <- getSequenceRun iter1 iter2;
                 -- get selection...
                 lens <- stringSectionLens run;
-                return $ Just ("section",MkUISpec $ MkUILens (MkCloseState lens) $ MkUISpec uitext);
+                return $ Just ("section",uiLens (MkCloseState lens) $ MkUISpec uitext);
             };
         };
         createViewAddAspect aspect;

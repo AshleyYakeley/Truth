@@ -29,4 +29,7 @@ module Truth.Core.UI.One where
 
     uiMaybe :: forall edit. (FullEdit edit) => Maybe (EditSubject edit) -> UISpec edit -> UISpec (MaybeEdit edit);
     uiMaybe msubj spec = MkUISpec $ MkUIMaybe msubj spec;
+
+    uiOneWhole :: forall f edit. (MonadOne f,FullEdit edit) => UISpec edit -> UISpec (OneWholeEdit f edit);
+    uiOneWhole spec = MkUISpec $ MkUIOneWhole spec;
 }

@@ -21,4 +21,10 @@ module Truth.Core.UI.TextEditor where
     {
         uiWitness = $(iowitness [t|UIText|]);
     };
+
+    uiStringText :: UISpec (StringEdit String);
+    uiStringText = MkUISpec MkStringUIText;
+
+    uiTextText :: UISpec (StringEdit Text);
+    uiTextText = MkUISpec MkTextUIText;
 }

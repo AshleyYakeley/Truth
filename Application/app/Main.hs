@@ -46,7 +46,7 @@ module Main(main) where
                 undoBufferSub = undoQueueSubscriber bufferSub;
             };
             textSub <- makeSharedSubscriber undoBufferSub;
-            makeWindow (MkUISpec $ MkUIOneWhole $ MkUISpec MkStringUIText) (takeFileName path) textSub;
+            makeWindow (uiOneWhole uiStringText) (takeFileName path) textSub;
         }
         else do
         {
@@ -56,7 +56,7 @@ module Main(main) where
                 textObj = convertObject wholeTextObj;
             };
             textSub <- makeObjectSubscriber textObj;
-            makeWindow (MkUISpec $ MkUIOneWhole $ MkUISpec MkStringUIText) (takeFileName path) textSub;
+            makeWindow (uiOneWhole uiStringText) (takeFileName path) textSub;
         };
     };
 
