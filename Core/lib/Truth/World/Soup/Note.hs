@@ -1,9 +1,10 @@
-module Truth.World.Note where
+module Truth.World.Soup.Note where
 {
     import Truth.Core.Import;
     import qualified Data.Aeson as JSON;
     import qualified Data.Aeson.Types as JSON;
     import Truth.Core;
+    import Truth.World.JSON;
 
 
     data NoteSel t where
@@ -120,4 +121,7 @@ module Truth.World.Note where
             };
         }
     };
+
+    noteCodec :: ReasonCodec ByteString (EditSubject NoteEdit);
+    noteCodec = jsonValueCodec . jsonCodec;
 }

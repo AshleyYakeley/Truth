@@ -5,10 +5,7 @@ module Main(main) where
     import System.FilePath hiding ((<.>));
     import Truth.Core;
     import Truth.World.File;
-    import Truth.World.FileSystem;
     import Truth.World.Charset;
-    import Truth.World.JSON;
-    import Truth.World.Note;
     import Truth.World.Soup;
     import Truth.World.Pinafore;
     import Graphics.UI.Gtk;
@@ -63,66 +60,11 @@ module Main(main) where
         };
     };
 
-
-    fromResult :: Result String String -> String;
-    fromResult (SuccessResult s) = s;
-    fromResult (FailureResult s) = "<" ++ s ++ ">";
-
-    pastResult :: Result String Bool -> String;
-    pastResult (SuccessResult False) = "current";
-    pastResult (SuccessResult True) = "past";
-    pastResult (FailureResult s) = "<" ++ s ++ ">";
-
-    type SoupItemEdit = OneWholeEdit (Result String) NoteEdit;
-    soupEditSpec :: UISpec (SoupEdit SoupItemEdit);
-    soupEditSpec = let
-    {
-        nameColumn :: KeyColumn (SoupEdit SoupItemEdit) UUID;
-        nameColumn = MkKeyColumn "Name" $ \key -> do
-        {
-            lens <- getKeyElementGeneralLens key;
-            return $ readOnlyGeneralLens (funcGeneralFunction fromResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NoteTitle) <.> mustExistOneGeneralLens "name" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
-        };
-
-        pastColumn :: KeyColumn (SoupEdit SoupItemEdit) UUID;
-        pastColumn = MkKeyColumn "Past" $ \key -> do
-        {
-            lens <- getKeyElementGeneralLens key;
-            return $ readOnlyGeneralLens (funcGeneralFunction pastResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NotePast) <.> mustExistOneGeneralLens "past" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
-        };
-
-        getaspect :: Aspect (MaybeEdit (UUIDElementEdit SoupItemEdit));
-        getaspect = return $ Just $ ("item", MkUISpec $ MkUILens (oneWholeLiftGeneralLens $ tupleGeneralLens EditSecond) $ MkUISpec $ MkUIOneWhole $ MkUISpec $ MkUIOneWhole noteEditSpec);
-    } in uiSimpleTable [nameColumn,pastColumn] getaspect;
-
     soupWindow :: FilePath -> WindowMaker;
     soupWindow dirpath = MkWindowMaker $ \makeWindow -> do
     {
-        let
-        {
-            rawSoupObject :: Object (SoupEdit (MutableIOEdit ByteStringEdit));
-            rawSoupObject = directorySoup fileSystemMutableEdit dirpath;
-
-            soupContentsCodec :: ReasonCodec ByteString (EditSubject NoteEdit);
-            soupContentsCodec = jsonValueCodec . jsonCodec;
-
-            soupItemInjection :: Injection' (Result String) ByteString (EditSubject SoupItemEdit);
-            soupItemInjection = codecInjection soupContentsCodec;
-
-            paste :: forall m. MonadIO m => EditSubject SoupItemEdit -> m (Maybe ByteString);
-            paste s = return $ getMaybeOne $ injBackwards soupItemInjection s;
-
-            soupItemLens :: PureEditLens ByteStringEdit SoupItemEdit;
-            soupItemLens = convertEditLens <.> (wholeEditLens $ injectionLens soupItemInjection) <.> convertEditLens;
-
-            lens :: GeneralLens (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit SoupItemEdit);
-            lens = MkCloseState $ liftSoupLens paste $ soupItemLens <.> mutableIOEditLens;
-
-            soupObject :: Object (SoupEdit SoupItemEdit);
-            soupObject = mapObject lens rawSoupObject;
-        };
-        soupSub <- makeObjectSubscriber soupObject;
-        makeWindow soupEditSpec (takeFileName $ dropTrailingPathSeparator dirpath) soupSub;
+        sub <- makeObjectSubscriber $ soupObject dirpath;
+        makeWindow soupEditSpec (takeFileName $ dropTrailingPathSeparator dirpath) sub;
     };
 
     pinaforeWindow :: FilePath -> WindowMaker;

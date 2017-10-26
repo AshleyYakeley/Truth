@@ -77,7 +77,6 @@ library
         Truth.World.JSON
         Truth.World.SQLite
         Truth.World.Soup
-        Truth.World.Note
         Truth.World.Pinafore
     other-modules:
         Truth.Core.Import
@@ -154,6 +153,9 @@ library
         Truth.World.Pinafore.Ontology
         Truth.World.Pinafore.SQLite
         Truth.World.Pinafore.Example
+        Truth.World.Soup.Note
+        Truth.World.Soup.Edit
+        Truth.World.Soup.UI
 
 test-suite test
     type: exitcode-stdio-1.0
