@@ -139,7 +139,24 @@ module Truth.UI.GTK.Window where
     makeViewWindow :: (Edit edit,WindowButtons actions) => GCreateView edit -> IORef Int -> IO () -> String -> Subscriber edit actions -> IO ();
     makeViewWindow view windowCount tellclose title sub = do
     {
-        MkViewSubscription{..} <- subscribeView view sub;
+        rec
+        {
+            MkViewSubscription{..} <- subscribeView view sub openSelection;
+            let
+            {
+                openSelection :: IO ();
+                openSelection =  do
+                {
+                    msel <- srGetSelection;
+                    case msel of
+                    {
+                        Just (aspname,aspspec) -> makeWindowCountRef windowCount aspspec (aspname ++ " of " ++ title) sub;
+                        Nothing -> return ();
+                    };
+                };
+            };
+        };
+
         window <- windowNew;
         set window [windowTitle := title];
         windowSetPosition window WinPosCenter;
@@ -173,15 +190,8 @@ module Truth.UI.GTK.Window where
 
         addButtons box srAction;
 
-        selectionButton <- makeButton "Selection" $ do
-        {
-            msel <- srGetSelection;
-            case msel of
-            {
-                Just (aspname,aspspec) -> makeWindowCountRef windowCount aspspec (aspname ++ " of " ++ title) sub;
-                Nothing -> return ();
-            };
-        };
+
+        selectionButton <- makeButton "Selection" openSelection;
 
         -- this is only correct if srWidget has native scroll support, such as TextView
         sw <- scrolledWindowNew Nothing Nothing;

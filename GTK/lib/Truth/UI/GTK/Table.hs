@@ -141,6 +141,20 @@ module Truth.UI.GTK.Table(tableGetView) where
             };
         };
 
+        _ <- liftOuter $ liftIOView $ \unlift -> on tview buttonPressEvent $ do
+        {
+            click <- eventClick;
+            case click of
+            {
+                DoubleClick -> do
+                {
+                    liftIO $ unlift viewOpenSelection;
+                    return True;
+                };
+                _ -> return False;
+            };
+        };
+
         let
         {
             aspect :: Aspect tedit;

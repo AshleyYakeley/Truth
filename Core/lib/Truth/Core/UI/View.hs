@@ -6,6 +6,7 @@ module Truth.Core.UI.View
     viewMutableEdit,
     viewMutableRead,
     viewSetSelectedAspect,
+    viewOpenSelection,
     mapViewEdit,
 
     ViewResult,
@@ -114,25 +115,41 @@ where
         a' = mapAspect lens a;
     } in MkViewResult w updateA a';
 
-    newtype View edit a = MkView (Object edit -> (Aspect edit -> IO ()) -> IO a);
+    data ViewContext edit = MkViewContext
+    {
+        vcObject :: Object edit,
+        vcSetSelect :: Aspect edit -> IO (),
+        vcOpenSelection :: IO ()
+    };
+
+    mapViewContextEdit :: forall edita editb. (Edit edita,Edit editb) => GeneralLens edita editb -> ViewContext edita -> ViewContext editb;
+    mapViewContextEdit lens (MkViewContext objectA setSelectA os) = let
+    {
+        objectB :: Object editb;
+        objectB = mapObject lens objectA;
+
+        setSelectB selB = setSelectA $ mapAspect lens selB;
+    } in MkViewContext objectB setSelectB os;
+
+    newtype View edit a = MkView (ViewContext edit -> IO a);
 
     instance Functor (View edit) where
     {
-        fmap f (MkView ma) = MkView $ \object setSelect -> do
+        fmap f (MkView ma) = MkView $ \context -> do
         {
-            a <- ma object setSelect;
+            a <- ma context;
             return $ f a;
         };
     };
 
     instance Applicative (View edit) where
     {
-        pure a = MkView $ \_object _setSelect -> pure a;
+        pure a = MkView $ \_context -> pure a;
 
-        (MkView mab) <*> (MkView ma) = MkView $ \object setSelect -> do
+        (MkView mab) <*> (MkView ma) = MkView $ \context -> do
         {
-            ab <- mab object setSelect;
-            a <- ma object setSelect;
+            ab <- mab context;
+            a <- ma context;
             return $ ab a;
         };
     };
@@ -140,24 +157,24 @@ where
     instance Monad (View edit) where
     {
         return = pure;
-        (MkView ma) >>= f = MkView $ \object setSelect -> do
+        (MkView ma) >>= f = MkView $ \context -> do
         {
-            a <- ma object setSelect;
+            a <- ma context;
             let {MkView mb = f a;};
-            mb object setSelect;
+            mb context;
         };
     };
 
     instance MonadIO (View edit) where
     {
-        liftIO ioa = MkView $ \_object _setSelect -> ioa;
+        liftIO ioa = MkView $ \_context -> ioa;
     };
 
     liftIOView :: forall edit a. ((forall r. View edit r -> IO r) -> IO a) -> View edit a;
-    liftIOView call = MkView $ \object setSelect -> call $ \(MkView view) -> view object setSelect;
+    liftIOView call = MkView $ \context-> call $ \(MkView view) -> view context;
 
     viewObject :: View edit (Object edit);
-    viewObject = MkView $ \object _ -> return object;
+    viewObject = MkView $ \MkViewContext{..} -> return vcObject;
 
     viewMutableEdit :: (forall m. IsStateIO m => MutableEdit m edit -> m r) -> View edit r;
     viewMutableEdit call = do
@@ -170,24 +187,13 @@ where
     viewMutableRead call = viewMutableEdit $ \muted -> call $ mutableRead muted;
 
     viewSetSelectedAspect :: Aspect edit -> View edit ();
-    viewSetSelectedAspect aspect = MkView $ \_ setSelect -> setSelect aspect;
+    viewSetSelectedAspect aspect = MkView $ \MkViewContext{..} -> vcSetSelect aspect;
+
+    viewOpenSelection :: View edit ();
+    viewOpenSelection = MkView $ \MkViewContext{..} -> vcOpenSelection;
 
     mapViewEdit :: forall edita editb a. (Edit edita,Edit editb) => GeneralLens edita editb -> View editb a -> View edita a;
-    mapViewEdit lens@(MkCloseState (flens :: EditLens lensstate edita editb)) (MkView viewB) = MkView $ \objectA setSelectA -> do
-    {
-        let
-        {
-            MkEditLens{..} = flens;
-            MkEditFunction{..} = editLensFunction;
-
-            objectB :: Object editb;
-            objectB = mapObject lens objectA;
-
-            setSelectB selB = setSelectA $ mapAspect lens selB;
-        };
-        t <- viewB objectB setSelectB;
-        return t;
-    };
+    mapViewEdit lens (MkView viewB) = MkView $ \contextA -> viewB $ mapViewContextEdit lens contextA;
 
     type CreateView edit = Compose (View edit) (ViewResult edit);
 
@@ -223,21 +229,21 @@ where
         fmap f (MkViewSubscription w gs cl aa) = MkViewSubscription (f w) gs cl aa;
     };
 
-    subscribeView :: forall edit w action. CreateView edit w -> Subscriber edit action -> IO (ViewSubscription edit action w);
-    subscribeView (Compose (MkView (view :: Object edit -> (Aspect edit -> IO ()) -> IO (ViewResult edit w)))) sub = do
+    subscribeView :: forall edit w action. CreateView edit w -> Subscriber edit action -> IO () -> IO (ViewSubscription edit action w);
+    subscribeView (Compose (MkView (view :: ViewContext edit -> IO (ViewResult edit w)))) sub vcOpenSelection = do
     {
         let
         {
             initialise :: Object edit -> IO (ViewResult edit w, IORef (Aspect edit));
-            initialise object = do
+            initialise vcObject = do
             {
                 rec
                 {
                     let
                     {
-                        setSelect ss = writeIORef selref ss;
+                        vcSetSelect ss = writeIORef selref ss;
                     };
-                    vr <- view object setSelect;
+                    vr <- view MkViewContext{..};
                     selref <- newIORef $ vrFirstAspect vr;
                 };
                 return (vr,selref);
