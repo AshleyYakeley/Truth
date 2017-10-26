@@ -134,6 +134,7 @@ library
         Truth.Core.Object
         Truth.Core.UI.Specifier
         Truth.Core.UI.Lens
+        Truth.Core.UI.CSS
         Truth.Core.UI.One
         Truth.Core.UI.Layout
         Truth.Core.UI.Icon

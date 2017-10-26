@@ -1,9 +1,31 @@
 module Truth.UI.GTK.Useful where
 {
     import Shapes;
+    import Data.IORef;
     import Graphics.UI.Gtk;
     import Truth.Core;
 
+
+    containerGetAllChildren :: Container -> IO [Widget];
+    containerGetAllChildren cont = do
+    {
+        ref <- newIORef [];
+        containerForall cont $ \child -> do
+        {
+            children <- readIORef ref;
+            writeIORef ref $ children ++ [child];
+        };
+        readIORef ref;
+    };
+
+    widgetGetTree :: Bool -> Widget -> IO [Widget];
+    widgetGetTree full w | isA w gTypeContainer = do
+    {
+        children <- (if full then containerGetAllChildren else containerGetChildren) $ castToContainer w;
+        ww <- for children $ widgetGetTree full;
+        return $ w : mconcat ww;
+    };
+    widgetGetTree _ w = return [w];
 
     withSignalBlocked :: (GObjectClass obj) => ConnectId obj -> IO a -> IO a;
     withSignalBlocked conn = bracket_ (signalBlock conn) (signalUnblock conn);

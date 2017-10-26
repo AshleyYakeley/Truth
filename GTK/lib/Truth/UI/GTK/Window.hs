@@ -6,6 +6,7 @@ module Truth.UI.GTK.Window where
     import Truth.Core;
     import Graphics.UI.Gtk;
     import Truth.UI.GTK.GView;
+    import Truth.UI.GTK.CSS;
     import Truth.UI.GTK.Maybe;
     import Truth.UI.GTK.Icon;
     import Truth.UI.GTK.Labelled;
@@ -29,6 +30,7 @@ module Truth.UI.GTK.Window where
     allGetView = mconcat
     [
         lensGetView,
+        cssGetView,
         iconGetView,
         labelledGetView,
         checkButtonGetView,
