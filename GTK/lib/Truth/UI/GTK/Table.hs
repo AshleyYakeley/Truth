@@ -7,19 +7,6 @@ module Truth.UI.GTK.Table(tableGetView) where
     import Truth.UI.GTK.GView;
 
 
-    mapUpdate :: forall r m edita editb. IsStateIO m => GeneralLens edita editb -> MutableRead m (EditReader edita) -> [edita] -> (MutableRead m (EditReader editb) -> [editb] -> m r) -> m r;
-    mapUpdate (MkCloseState lens) mrA editsA call = editAccess (editLensFunction lens) $ StateT $ \oldstate -> do
-    {
-        (newstate,editsB) <- unReadable (editUpdates (editLensFunction lens) editsA oldstate) mrA;
-        let
-        {
-            mrB :: MutableRead m (EditReader editb);
-            mrB = mapMutableRead (editGet (editLensFunction lens) newstate) mrA;
-        };
-        r <- call mrB editsB;
-        return (r,newstate);
-    };
-
     addColumn :: TreeView -> ListStore (key,GeneralLens tedit (WholeEdit row),row) -> String -> (row -> String) -> IO ();
     addColumn tview store name showCell = do
     {
@@ -95,7 +82,7 @@ module Truth.UI.GTK.Table(tableGetView) where
             };
         };
 
-        createViewReceiveUpdates $ \mr edits -> mapUpdate tableLens mr edits $ \_ edits' -> for_ edits' $ \case
+        createViewReceiveUpdates $ \mr edits -> mapUpdates (generalLensFunction tableLens) mr edits $ \_ edits' -> for_ edits' $ \case
         {
             KeyDeleteItem key -> do
             {
@@ -130,7 +117,7 @@ module Truth.UI.GTK.Table(tableGetView) where
         createViewReceiveUpdates $ \mr tedits -> do
         {
             -- do updates to the cells
-            listStoreTraverse_ store $ \(key,lens,oldrow) -> mapUpdate lens mr tedits $ \_ edits' -> case edits' of
+            listStoreTraverse_ store $ \(key,lens,oldrow) -> mapUpdates (generalLensFunction lens) mr tedits $ \_ edits' -> case edits' of
             {
                 [] -> return Nothing;
                 _ -> do

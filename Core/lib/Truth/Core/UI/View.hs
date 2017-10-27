@@ -18,6 +18,7 @@ module Truth.Core.UI.View
     CreateView,
     createViewReceiveUpdates,
     createViewReceiveUpdate,
+    mapUpdates,
     createViewAddAspect,
     mapCreateViewEdit,
     mapCreateViewAspect,
@@ -202,6 +203,19 @@ where
 
     createViewReceiveUpdate :: (forall m. IsStateIO m => MutableRead m (EditReader edit) -> edit -> m ()) -> CreateView edit ();
     createViewReceiveUpdate recv = createViewReceiveUpdates $ \mr edits -> for_ edits (recv mr);
+
+    mapUpdates :: forall r m edita editb. IsStateIO m => GeneralFunction edita editb -> MutableRead m (EditReader edita) -> [edita] -> (MutableRead m (EditReader editb) -> [editb] -> m r) -> m r;
+    mapUpdates (MkCloseState ef@MkEditFunction{..}) mrA editsA call = editAccess $ StateT $ \oldstate -> do
+    {
+        (newstate,editsB) <- unReadable (editUpdates ef editsA oldstate) mrA;
+        let
+        {
+            mrB :: MutableRead m (EditReader editb);
+            mrB = mapMutableRead (editGet newstate) mrA;
+        };
+        r <- call mrB editsB;
+        return (r,newstate);
+    };
 
     createViewAddAspect :: Aspect edit -> CreateView edit ();
     createViewAddAspect aspect = liftInner $ (pure ()) {vrFirstAspect = aspect};

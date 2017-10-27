@@ -8,6 +8,7 @@ module Truth.UI.GTK.Window where
     import Truth.UI.GTK.GView;
     import Truth.UI.GTK.CSS;
     import Truth.UI.GTK.Maybe;
+    import Truth.UI.GTK.Switch;
     import Truth.UI.GTK.Icon;
     import Truth.UI.GTK.Labelled;
     import Truth.UI.GTK.CheckButton;
@@ -39,6 +40,7 @@ module Truth.UI.GTK.Window where
         textAreaGetView,
         tableGetView,
         oneGetView,
+        switchGetView,
         verticalLayoutGetView,
         dragGetView
     ];

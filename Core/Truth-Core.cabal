@@ -135,6 +135,7 @@ library
         Truth.Core.UI.Lens
         Truth.Core.UI.CSS
         Truth.Core.UI.One
+        Truth.Core.UI.Switch
         Truth.Core.UI.Layout
         Truth.Core.UI.Icon
         Truth.Core.UI.Labelled

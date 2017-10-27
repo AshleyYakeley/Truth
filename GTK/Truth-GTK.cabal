@@ -78,6 +78,7 @@ library
         Truth.UI.GTK.Icon
         Truth.UI.GTK.Labelled
         Truth.UI.GTK.Maybe
+        Truth.UI.GTK.Switch
         Truth.UI.GTK.CheckButton
         Truth.UI.GTK.Option
         Truth.UI.GTK.Entry

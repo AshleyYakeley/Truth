@@ -4,6 +4,7 @@ module Truth.Core.UI
     module Truth.Core.UI.Lens,
     module Truth.Core.UI.CSS,
     module Truth.Core.UI.One,
+    module Truth.Core.UI.Switch,
     module Truth.Core.UI.Layout,
     module Truth.Core.UI.Icon,
     module Truth.Core.UI.Labelled,
@@ -22,6 +23,7 @@ module Truth.Core.UI
     import Truth.Core.UI.Lens;
     import Truth.Core.UI.CSS;
     import Truth.Core.UI.One;
+    import Truth.Core.UI.Switch;
     import Truth.Core.UI.Layout;
     import Truth.Core.UI.Icon;
     import Truth.Core.UI.Labelled;
