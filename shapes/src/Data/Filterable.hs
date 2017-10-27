@@ -1,11 +1,11 @@
-module Data.Reducible where
+module Data.Filterable where
 {
     import Shapes.Import;
     import qualified Data.List as List;
     import qualified Data.Maybe as List;
 
 
-    class Functor f => Reducible f where
+    class Functor f => Filterable f where
     {
         mapMaybe :: (a -> Maybe b) -> f a -> f b;
 
@@ -16,14 +16,14 @@ module Data.Reducible where
         filter test = mapMaybe $ \a -> if test a then Just a else Nothing;
     };
 
-    instance Reducible [] where
+    instance Filterable [] where
     {
         mapMaybe = List.mapMaybe;
         catMaybes = List.catMaybes;
         filter = List.filter;
     };
 
-    instance Reducible Maybe where
+    instance Filterable Maybe where
     {
         mapMaybe amb ma = ma >>= amb;
     };

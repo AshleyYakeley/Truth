@@ -79,7 +79,7 @@ library
         witness,
         open-witness
     exposed-modules:
-        Data.Reducible
+        Data.Filterable
         Data.KindCategory
         Data.Witness.All
         Data.Free

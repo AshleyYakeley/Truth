@@ -3,7 +3,7 @@ module Data.FiniteSet where
     import Shapes.Import;
     import qualified Data.List as List;
     import Data.KeyContainer;
-    import Data.Reducible;
+    import Data.Filterable;
 
 
     newtype FiniteSet a = MkFiniteSet {unFiniteSet :: [a]} deriving
@@ -12,7 +12,7 @@ module Data.FiniteSet where
         Functor, -- Applicative,Monad,Alternative,MonadPlus,
         Semigroup,Monoid,
         MonoFunctor,MonoFoldable,GrowingAppend,
-        Reducible
+        Filterable
     );
     type instance Element (FiniteSet a) = a;
 

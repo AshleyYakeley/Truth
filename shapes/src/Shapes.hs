@@ -6,7 +6,7 @@ module Shapes (module I) where
     import Data.Witness.All as I;
     import Data.WitnessStore as I;
     import Data.Store as I;
-    import Data.Reducible as I;
+    import Data.Filterable as I;
     import Data.HasNewValue as I;
     import Data.Injection as I;
     import Data.Bijection as I;
