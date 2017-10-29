@@ -9,6 +9,7 @@ module Main(main) where
     import Test.Tasty.HUnit;
     import Test.Tasty.QuickCheck;
     import Subscribe;
+    import Pinafore;
 
 
     instance (Arbitrary (Index seq),Integral (Index seq)) => Arbitrary (SequencePoint seq) where
@@ -190,7 +191,8 @@ module Main(main) where
         testApplyEditsSeq,
         testStringEdit,
         testStringSectionLens,
-        testSubscribe
+        testSubscribe,
+        testPinafore
         ];
 
     main :: IO ();

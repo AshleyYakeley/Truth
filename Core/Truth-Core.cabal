@@ -152,6 +152,7 @@ library
         Truth.World.SQLite.Schema
         Truth.World.Pinafore.AsText
         Truth.World.Pinafore.Edit
+        Truth.World.Pinafore.Query
         Truth.World.Pinafore.Ontology
         Truth.World.Pinafore.SQLite
         Truth.World.Pinafore.Example
@@ -231,3 +232,4 @@ test-suite test
     main-is: Main.hs
     other-modules:
         Subscribe
+        Pinafore
