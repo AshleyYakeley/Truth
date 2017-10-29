@@ -1,12 +1,10 @@
 module Main(main) where
 {
     import Shapes;
-    import Data.IORef;
     import System.FilePath hiding ((<.>));
     import Truth.Core;
     import Truth.World.File;
     import Truth.World.Charset;
-    import Graphics.UI.Gtk;
     import Truth.UI.GTK;
     import qualified Options.Applicative as O;
 
@@ -60,19 +58,14 @@ module Main(main) where
     optParser = (,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') <*> O.switch (O.long "save");
 
     main :: IO ();
-    main = do
+    main = truthMain $ \args -> do
     {
-        args <- initGUI;
         (paths,double,save) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args;
-        _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50;
-        windowCount <- newIORef 0;
-        for_ paths $ \path -> do
+        wmss <- for paths $ \path -> do
         {
-            MkSomeUIWindow uiw <- fileTextWindow save path;
-            makeWindowCountRef windowCount uiw;
-            if double then makeWindowCountRef windowCount uiw else return ();
+            wm <- fileTextWindow save path;
+            return $ if double then [wm,wm] else [wm];
         };
-        c <- readIORef windowCount;
-        if c == 0 then return () else mainGUI;
+        return $ mconcat wmss;
     };
 }

@@ -237,4 +237,16 @@ module Truth.UI.GTK.Window where
 
     makeWindowCountRef :: forall actions. WindowButtons actions => IORef Int -> UIWindow actions -> IO ();
     makeWindowCountRef windowCount MkUIWindow{..} = makeViewWindowCountRef (getTheView uiwSpec) windowCount uiwTitle uiwSubscriber;
+
+    truthMain :: ([String] -> IO [SomeUIWindow]) -> IO ();
+    truthMain getWindows = do
+    {
+        args <- initGUI;
+        wms <- getWindows args;
+        _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50;
+        windowCount <- newIORef 0;
+        for_ wms $ \(MkSomeUIWindow uiw) -> makeWindowCountRef windowCount uiw;
+        c <- readIORef windowCount;
+        if c == 0 then return () else mainGUI;
+    };
 }
