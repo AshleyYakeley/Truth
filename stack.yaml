@@ -1,7 +1,6 @@
 packages:
 - shapes
 - Core
-#- Linux
 - GTK
 - pinafore
 
