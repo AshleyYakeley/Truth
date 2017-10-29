@@ -152,6 +152,8 @@ library
         Truth.World.SQLite.Schema
         Truth.World.Pinafore.AsText
         Truth.World.Pinafore.Edit
+        Truth.World.Pinafore.Query.Value
+        Truth.World.Pinafore.Query.Expression
         Truth.World.Pinafore.Query
         Truth.World.Pinafore.Ontology
         Truth.World.Pinafore.SQLite
