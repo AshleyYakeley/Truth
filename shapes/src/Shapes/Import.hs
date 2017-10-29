@@ -35,6 +35,9 @@ module Shapes.Import (module I) where
     import System.IO as I;
     import Control.Concurrent as I;
 
+    -- constraints
+    import Data.Constraint as I (Dict(..),(:-)(..));
+
     -- mono-traversable
     import Data.MonoTraversable as I;
     import Data.Containers as I;

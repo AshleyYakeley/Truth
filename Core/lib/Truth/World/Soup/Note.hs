@@ -24,30 +24,30 @@ module Truth.World.Soup.Note where
 
     instance TupleWitness Edit NoteSel where
     {
-        tupleWitness _ NoteTitle = MkConstraintWitness;
-        tupleWitness _ NotePast = MkConstraintWitness;
-        tupleWitness _ NoteText = MkConstraintWitness;
+        tupleWitness _ NoteTitle = Dict;
+        tupleWitness _ NotePast = Dict;
+        tupleWitness _ NoteText = Dict;
     };
 
     instance TupleWitness FullEdit NoteSel where
     {
-        tupleWitness _ NoteTitle = MkConstraintWitness;
-        tupleWitness _ NotePast = MkConstraintWitness;
-        tupleWitness _ NoteText = MkConstraintWitness;
+        tupleWitness _ NoteTitle = Dict;
+        tupleWitness _ NotePast = Dict;
+        tupleWitness _ NoteText = Dict;
     };
 
     instance TupleReaderWitness SubjectReader NoteSel where
     {
-        tupleReaderWitness _ NoteTitle = MkConstraintWitness;
-        tupleReaderWitness _ NotePast = MkConstraintWitness;
-        tupleReaderWitness _ NoteText = MkConstraintWitness;
+        tupleReaderWitness _ NoteTitle = Dict;
+        tupleReaderWitness _ NotePast = Dict;
+        tupleReaderWitness _ NoteText = Dict;
     };
 
     instance TupleReaderWitness FullSubjectReader NoteSel where
     {
-        tupleReaderWitness _ NoteTitle = MkConstraintWitness;
-        tupleReaderWitness _ NotePast = MkConstraintWitness;
-        tupleReaderWitness _ NoteText = MkConstraintWitness;
+        tupleReaderWitness _ NoteTitle = Dict;
+        tupleReaderWitness _ NotePast = Dict;
+        tupleReaderWitness _ NoteText = Dict;
     };
 
     instance SubjectTupleSelector NoteSel;

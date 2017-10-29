@@ -53,7 +53,7 @@ module Truth.Core.Types.ConsTuple where
 
     instance (c a,TupleWitness c r) => TupleWitness c (ConsWitness a r) where
     {
-        tupleWitness _ FirstWitness = MkConstraintWitness;
+        tupleWitness _ FirstWitness = Dict;
         tupleWitness pc (RestWitness r) = tupleWitness pc r;
     };
 
@@ -61,7 +61,7 @@ module Truth.Core.Types.ConsTuple where
 
     instance (c (EditReader a),TupleReaderWitness c r) => TupleReaderWitness c (ConsWitness a r) where
     {
-        tupleReaderWitness _ FirstWitness = MkConstraintWitness;
+        tupleReaderWitness _ FirstWitness = Dict;
         tupleReaderWitness pc (RestWitness r) = tupleReaderWitness pc r;
     };
 

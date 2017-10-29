@@ -1,7 +1,6 @@
 module Data.Witness.All where
 {
     import Shapes.Import;
-    import Data.KindCategory;
 
 
     newtype All (w :: * -> *) = MkAll {getAll :: forall t. w t -> t};
@@ -15,7 +14,7 @@ module Data.Witness.All where
 
     class WitnessConstraint (c :: k -> Constraint) (w :: k -> *) where
     {
-        witnessConstraint :: forall (t :: k). w t -> ConstraintWitness (c t);
+        witnessConstraint :: forall (t :: k). w t -> Dict (c t);
     };
 
     class FiniteWitness (w :: k -> *) where
@@ -91,10 +90,10 @@ module Data.Witness.All where
 
     instance (c a,WitnessConstraint c r) => WitnessConstraint c (ConsWitness a r) where
     {
-        witnessConstraint FirstWitness = MkConstraintWitness;
+        witnessConstraint FirstWitness = Dict;
         witnessConstraint (RestWitness rt) = case witnessConstraint @_ @c rt of
         {
-            MkConstraintWitness -> MkConstraintWitness;
+            Dict -> Dict;
         };
     };
 
@@ -136,11 +135,11 @@ module Data.Witness.All where
     {
         witnessConstraint (LeftWitness rt) = case witnessConstraint @_ @c rt of
         {
-            MkConstraintWitness -> MkConstraintWitness;
+            Dict -> Dict;
         };
         witnessConstraint (RightWitness rt) = case witnessConstraint @_ @c rt of
         {
-            MkConstraintWitness -> MkConstraintWitness;
+            Dict -> Dict;
         };
     };
 
@@ -187,7 +186,7 @@ module Data.Witness.All where
 
     instance c t => WitnessConstraint c (SingleWitness t) where
     {
-        witnessConstraint Refl = MkConstraintWitness;
+        witnessConstraint Refl = Dict;
     };
 
     singleAll :: t -> All (SingleWitness t);

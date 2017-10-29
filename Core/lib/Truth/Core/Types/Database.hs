@@ -22,7 +22,7 @@ module Truth.Core.Types.Database where
 
         type OrderClause database tablesel row :: *;
         orderClause :: OrderClause database tablesel row -> row -> row -> Ordering;
-        orderMonoid :: tablesel row -> ConstraintWitness (Monoid (OrderClause database tablesel row));
+        orderMonoid :: tablesel row -> Dict (Monoid (OrderClause database tablesel row));
 
         type SelectClause database tablesel :: * -> * -> *;
         selectClause :: SelectClause database tablesel rowA rowB -> rowA -> rowB;
@@ -63,7 +63,7 @@ module Truth.Core.Types.Database where
     {
         subjectFromReader = tableAssemble @database $ \(tsel :: tablesel row) -> do
         {
-            MkConstraintWitness <- return $ orderMonoid @database tsel;
+            Dict <- return $ orderMonoid @database tsel;
             readable $ DatabaseSelect (SingleTable tsel) (whereAlways @database tsel) mempty (selectRow @database tsel);
         };
     };

@@ -1,13 +1,7 @@
 module Data.KindCategory where
 {
     import Shapes.Import;
-    import Data.Category;
 
-
-    data ConstraintWitness :: Constraint -> * where
-    {
-        MkConstraintWitness :: forall (c :: Constraint). c => ConstraintWitness c;
-    };
 
     class Category (KindMorphism k) => KindCategory k where
     {
@@ -19,29 +13,9 @@ module Data.KindCategory where
         type KindMorphism Type = (->);
     };
 
-    newtype ConstraintMorphism (a :: Constraint) (b :: Constraint) = MkConstraintMorphism (a => ConstraintWitness b);
-
-    instance Category ConstraintMorphism where
-    {
-        id = MkConstraintMorphism MkConstraintWitness;
-        (MkConstraintMorphism bc) . (MkConstraintMorphism ab) = MkConstraintMorphism (case ab of
-        {
-            MkConstraintWitness -> case bc of
-            {
-                MkConstraintWitness -> MkConstraintWitness;
-            };
-        });
-    };
-
-    instance TerminalCategory ConstraintMorphism where
-    {
-        type Terminal ConstraintMorphism = (() :: Constraint);
-        terminal = MkConstraintMorphism MkConstraintWitness;
-    };
-
     instance KindCategory Constraint where
     {
-        type KindMorphism Constraint = ConstraintMorphism;
+        type KindMorphism Constraint = (:-);
     };
 
     newtype NestedMorphism (a :: p -> q) (b :: p -> q) = MkNestedMorphism
@@ -75,7 +49,7 @@ module Data.KindCategory where
     instance KindProductCategory Constraint where
     {
         type KindMorphismProduct Constraint a b = (a,b);
-        kfst = MkConstraintMorphism MkConstraintWitness;
-        ksnd = MkConstraintMorphism MkConstraintWitness;
+        kfst = Sub Dict;
+        ksnd = Sub Dict;
     };
 }

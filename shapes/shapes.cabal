@@ -63,6 +63,7 @@ library
         -Wnoncanonical-monadfail-instances
     build-depends:
         base >= 4.9 && < 5,
+        constraints,
         mono-traversable,
         comonad,
         lattices,

@@ -30,11 +30,11 @@ module Truth.Core.Types.Function where
 
     instance (c (EditReader edit)) => TupleReaderWitness c (FunctionSelector a edit) where
     {
-        tupleReaderWitness _ (MkFunctionSelector _) = MkConstraintWitness;
+        tupleReaderWitness _ (MkFunctionSelector _) = Dict;
     };
 
     instance (c edit) => TupleWitness c (FunctionSelector a edit) where
     {
-        tupleWitness _ (MkFunctionSelector _) = MkConstraintWitness;
+        tupleWitness _ (MkFunctionSelector _) = Dict;
     };
 }

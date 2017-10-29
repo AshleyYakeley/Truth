@@ -7,7 +7,7 @@ module Truth.Core.Types.Tuple where
 
     class TupleWitness (c :: * -> Constraint) (sel :: * -> *) where
     {
-        tupleWitness :: forall proxy edit. proxy c -> sel edit -> ConstraintWitness (c edit);
+        tupleWitness :: forall proxy edit. proxy c -> sel edit -> Dict (c edit);
     };
 
     newtype Tuple sel = MkTuple (forall edit. sel edit -> EditSubject edit);
@@ -35,18 +35,18 @@ module Truth.Core.Types.Tuple where
         type ReaderSubject (TupleEditReader sel) = TupleSubject sel;
         readFromSubject a (MkTupleEditReader seledit reader) = case tupleReaderWitness (Proxy::Proxy SubjectReader) seledit of
         {
-            MkConstraintWitness -> readFromSubject (tupleReadFromSubject seledit a) reader;
+            Dict -> readFromSubject (tupleReadFromSubject seledit a) reader;
         };
     };
 
     class TupleReaderWitness (c :: (* -> *) -> Constraint) (sel :: * -> *) where
     {
-        tupleReaderWitness :: forall proxy edit. proxy c -> sel edit -> ConstraintWitness (c (EditReader edit));
+        tupleReaderWitness :: forall proxy edit. proxy c -> sel edit -> Dict (c (EditReader edit));
     };
 
     class TupleSubjectWitness (c :: * -> Constraint) (sel :: * -> *) where
     {
-        tupleSubjectWitness :: forall proxy edit. proxy c -> sel edit -> ConstraintWitness (c (EditSubject edit));
+        tupleSubjectWitness :: forall proxy edit. proxy c -> sel edit -> Dict (c (EditSubject edit));
     };
 
     class TestEquality sel => FiniteTupleSelector (sel :: * -> *) where
@@ -61,7 +61,7 @@ module Truth.Core.Types.Tuple where
     {
         subjectFromReader = tupleConstruct (\(seledit :: sel edit) -> case tupleReaderWitness (Proxy::Proxy FullSubjectReader) seledit of
         {
-            MkConstraintWitness -> mapReadable (readable . MkTupleEditReader seledit) subjectFromReader;
+            Dict -> mapReadable (readable . MkTupleEditReader seledit) subjectFromReader;
         });
     };
 
@@ -77,7 +77,7 @@ module Truth.Core.Types.Tuple where
         {
             Just Refl -> case tupleWitness (Proxy::Proxy Edit) s2 of
             {
-                MkConstraintWitness -> MkTupleEdit s2 $ floatingUpdate e1 e2;
+                Dict -> MkTupleEdit s2 $ floatingUpdate e1 e2;
             };
             Nothing -> edit;
         };
@@ -90,7 +90,7 @@ module Truth.Core.Types.Tuple where
         applyEdit (MkTupleEdit aggedite edit) aggreader@(MkTupleEditReader aggeditr reader) =
             case (tupleWitness (Proxy::Proxy Edit) aggedite,testEquality aggedite aggeditr) of
             {
-                (MkConstraintWitness,Just Refl) -> mapReadable (readable . MkTupleEditReader aggedite) (applyEdit edit reader);
+                (Dict,Just Refl) -> mapReadable (readable . MkTupleEditReader aggedite) (applyEdit edit reader);
                 _ -> readable aggreader;
             };
     };
@@ -99,7 +99,7 @@ module Truth.Core.Types.Tuple where
     {
         invertEdit (MkTupleEdit seledit edit) = case tupleWitness (Proxy::Proxy InvertableEdit) seledit of
         {
-            MkConstraintWitness -> fmap (fmap (MkTupleEdit seledit))
+            Dict -> fmap (fmap (MkTupleEdit seledit))
                 (mapReadable (readable . MkTupleEditReader seledit) (invertEdit edit));
         };
     };
@@ -110,7 +110,7 @@ module Truth.Core.Types.Tuple where
         {
             editss <- traverse (\(MkAnyWitness sel) -> case tupleWitness (Proxy::Proxy FullEdit) sel of
             {
-                MkConstraintWitness -> reWriterReadable (MkTupleEdit sel) $ mapReadable (tupleReadFunction sel) replaceEdit;
+                Dict -> reWriterReadable (MkTupleEdit sel) $ mapReadable (tupleReadFunction sel) replaceEdit;
             }) tupleAllSelectors;
             return $ mconcat editss;
         };

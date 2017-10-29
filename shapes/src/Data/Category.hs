@@ -15,4 +15,10 @@ module Data.Category  where
         type Terminal (->) = ();
         terminal _ = ();
     };
+
+    instance TerminalCategory (:-) where
+    {
+        type Terminal (:-) = (() :: Constraint);
+        terminal = Sub Dict;
+    };
 }

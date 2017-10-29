@@ -63,14 +63,14 @@ module Truth.Core.Types.Context where
 
     instance (c (EditReader ex),c (EditReader en)) => TupleReaderWitness c (WithContextSelector ex en) where
     {
-        tupleReaderWitness _ EditContext = MkConstraintWitness;
-        tupleReaderWitness _ EditContent = MkConstraintWitness;
+        tupleReaderWitness _ EditContext = Dict;
+        tupleReaderWitness _ EditContent = Dict;
     };
 
     instance (c ex,c en) => TupleWitness c (WithContextSelector ex en) where
     {
-        tupleWitness _ EditContext = MkConstraintWitness;
-        tupleWitness _ EditContent = MkConstraintWitness;
+        tupleWitness _ EditContext = Dict;
+        tupleWitness _ EditContent = Dict;
     };
 
     type ContextEditReader x n = TupleEditReader (WithContextSelector x n);

@@ -128,13 +128,13 @@ module Truth.Core.Types.TupleDatabase where
             oc (MkTupleOrderItem colsel SortAsc) = compare (tup1 colsel) (tup2 colsel);
             oc (MkTupleOrderItem colsel SortDesc) = compare (Down $ tup1 colsel) (Down $ tup2 colsel);
         } in mconcat $ fmap oc clauses;
-        orderMonoid (MkTupleTableSel _) = MkConstraintWitness;
+        orderMonoid (MkTupleTableSel _) = Dict;
 
         type SelectClause database (TupleTableSel tablesel) = TupleSelectClause database;
         selectClause (MkTupleSelectClause selexpr) tuple = MkAll $ \col -> evalTupleExprIdentity @database (selexpr col) tuple;
         selectRow (MkTupleTableSel tsel) = case witnessConstraint @_ @(TupleDatabaseRowWitness database) tsel of
         {
-            MkConstraintWitness -> MkTupleSelectClause $ columnExpr @database;
+            Dict -> MkTupleSelectClause $ columnExpr @database;
         };
 
         type JoinClause database (TupleTableSel tablesel) = TupleJoinClause;

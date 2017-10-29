@@ -59,7 +59,7 @@ module Truth.Core.UI.Lens where
         (forall edit. FullEdit edit => sel edit -> UISpec edit) -> [UISpec (TupleEdit sel)];
     tupleEditUISpecs getSpec = fmap (\(MkAnyWitness seledit) -> case tupleWitness (Proxy::Proxy FullEdit) seledit of
     {
-        MkConstraintWitness -> case getSpec seledit of
+        Dict -> case getSpec seledit of
         {
             spec -> MkUISpec $ MkUILens (tupleGeneralLens seledit) spec;
         };

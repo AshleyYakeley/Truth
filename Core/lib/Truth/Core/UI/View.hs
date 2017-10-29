@@ -280,6 +280,6 @@ where
     tupleCreateView :: (Applicative m,FiniteTupleSelector sel,TupleWitness Edit sel) => (forall edit. sel edit -> m (CreateView edit w)) -> m (CreateView (TupleEdit sel) [w]);
     tupleCreateView pickview = getCompose $ for tupleAllSelectors $ \(MkAnyWitness sel) -> case tupleWitness (Proxy :: Proxy Edit) sel of
     {
-        MkConstraintWitness -> Compose $ fmap (mapCreateViewEdit (tupleGeneralLens sel)) (pickview sel);
+        Dict -> Compose $ fmap (mapCreateViewEdit (tupleGeneralLens sel)) (pickview sel);
     };
 }

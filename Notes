@@ -86,7 +86,7 @@ class (EditSubject (DocumentTypeEdit t) ~ t, Edit (DocumentTypeEdit t), HasTypeI
     type DocumentTypeEdit t :: *;
 };
 
-nodeDocumentType :: NamedNodeType t -> ConstraintWitness (DocumentType t)
+nodeDocumentType :: NamedNodeType t -> Dict (DocumentType t)
 
 ! * + ?
 

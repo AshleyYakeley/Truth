@@ -42,14 +42,14 @@ module Truth.Core.Types.Pair where
 
     instance (c (EditReader ea),c (EditReader eb)) => TupleReaderWitness c (PairSelector ea eb) where
     {
-        tupleReaderWitness _ EditFirst = MkConstraintWitness;
-        tupleReaderWitness _ EditSecond = MkConstraintWitness;
+        tupleReaderWitness _ EditFirst = Dict;
+        tupleReaderWitness _ EditSecond = Dict;
     };
 
     instance (c ea,c eb) => TupleWitness c (PairSelector ea eb) where
     {
-        tupleWitness _ EditFirst = MkConstraintWitness;
-        tupleWitness _ EditSecond = MkConstraintWitness;
+        tupleWitness _ EditFirst = Dict;
+        tupleWitness _ EditSecond = Dict;
     };
 
     partitionPairEdits :: forall ea eb. [PairEdit ea eb] -> ([ea], [eb]);

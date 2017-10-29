@@ -138,7 +138,7 @@ module Truth.World.SQLite
     {
         fromRow = assembleWitness $ \wt -> case witnessConstraint @Type @FromField wt of
         {
-            MkConstraintWitness -> fmap fromOnly fromRow;
+            Dict -> fmap fromOnly fromRow;
         };
     };
 
@@ -231,23 +231,23 @@ module Truth.World.SQLite
                 } in "SELECT " <> schemaString rowSchema sc <> fromPart <> wherePart rowSchema wc <> orderPart;
             };
 
-            tableSchema :: TupleTableSel tablesel row -> (SQLite.TableSchema (RowColSel row),ConstraintWitness (IsSQLiteTable (RowColSel row)));
+            tableSchema :: TupleTableSel tablesel row -> (SQLite.TableSchema (RowColSel row),Dict (IsSQLiteTable (RowColSel row)));
             tableSchema (MkTupleTableSel tsel) = case witnessConstraint @_ @IsSQLiteTable tsel of
             {
-                MkConstraintWitness -> (subWitnessMap databaseTables tsel,MkConstraintWitness);
+                Dict -> (subWitnessMap databaseTables tsel,Dict);
             };
 
             rowSchemaString :: WitnessConstraint ToField colsel => SubmapWitness colsel ColumnRefSchema -> All colsel -> QueryString;
             rowSchemaString MkSubmapWitness{..} (MkAll row) = "(" <> intercalate' "," (fmap (\(MkAnyWitness col) -> case witnessConstraint @_ @ToField col of
             {
-                MkConstraintWitness -> valQueryString $ row col
+                Dict -> valQueryString $ row col
             }) subWitnessDomain) <> ")";
 
             assignmentPart :: SubmapWitness colsel ColumnRefSchema -> TupleUpdateItem SQLiteDatabase colsel -> QueryString;
             assignmentPart scsh (MkTupleUpdateItem col expr) = (fromString $ columnRefName $ subWitnessMap scsh col) <> "=" <> schemaString scsh expr;
 
             sqliteEditQuery :: SQLiteEdit tablesel -> QueryString;
-            sqliteEditQuery (DatabaseInsert (tableSchema -> (SQLite.MkTableSchema{..},MkConstraintWitness)) (MkTupleInsertClause ic)) = let
+            sqliteEditQuery (DatabaseInsert (tableSchema -> (SQLite.MkTableSchema{..},Dict)) (MkTupleInsertClause ic)) = let
             {
                 tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns;
             } in "INSERT OR REPLACE INTO " <> fromString tableName <> " VALUES " <> intercalate' "," (fmap (rowSchemaString tableColumnRefs) ic);

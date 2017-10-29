@@ -58,16 +58,16 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
 
     instance WitnessConstraint FromField TripleTable where
     {
-        witnessConstraint TriplePredicate = MkConstraintWitness;
-        witnessConstraint TripleSubject = MkConstraintWitness;
-        witnessConstraint TripleValue = MkConstraintWitness;
+        witnessConstraint TriplePredicate = Dict;
+        witnessConstraint TripleSubject = Dict;
+        witnessConstraint TripleValue = Dict;
     };
 
     instance WitnessConstraint ToField TripleTable where
     {
-        witnessConstraint TriplePredicate = MkConstraintWitness;
-        witnessConstraint TripleSubject = MkConstraintWitness;
-        witnessConstraint TripleValue = MkConstraintWitness;
+        witnessConstraint TriplePredicate = Dict;
+        witnessConstraint TripleSubject = Dict;
+        witnessConstraint TripleValue = Dict;
     };
 
     data LiteralTable t where
@@ -83,14 +83,14 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
 
     instance WitnessConstraint FromField LiteralTable where
     {
-        witnessConstraint LiteralKey = MkConstraintWitness;
-        witnessConstraint LiteralValue = MkConstraintWitness;
+        witnessConstraint LiteralKey = Dict;
+        witnessConstraint LiteralValue = Dict;
     };
 
     instance WitnessConstraint ToField LiteralTable where
     {
-        witnessConstraint LiteralKey = MkConstraintWitness;
-        witnessConstraint LiteralValue = MkConstraintWitness;
+        witnessConstraint LiteralKey = Dict;
+        witnessConstraint LiteralValue = Dict;
     };
 
     data PinaforeSchema colsel where
@@ -113,8 +113,8 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
 
     instance WitnessConstraint IsSQLiteTable PinaforeSchema where
     {
-        witnessConstraint PinaforeTriple = MkConstraintWitness;
-        witnessConstraint PinaforeLiteral = MkConstraintWitness;
+        witnessConstraint PinaforeTriple = Dict;
+        witnessConstraint PinaforeLiteral = Dict;
     };
 
     soupSchema :: DatabaseSchema PinaforeSchema;
