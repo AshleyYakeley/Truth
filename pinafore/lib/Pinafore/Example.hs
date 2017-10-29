@@ -1,4 +1,4 @@
-module Pinafore.Example(rootValue) where
+module Pinafore.Example(rootSpec) where
 {
     import Shapes;
     import Truth.Core;
@@ -57,4 +57,7 @@ module Pinafore.Example(rootValue) where
 
     rootValue :: ViewPinaforeValue;
     rootValue = MkViewPinaforeValue rootPoint rootItem;
+
+    rootSpec :: UISpec PinaforeEdit;
+    rootSpec = pinaforeValueSpec rootValue;
 }

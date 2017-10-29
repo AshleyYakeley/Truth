@@ -6,6 +6,7 @@ module Pinafore
     module Pinafore.Ontology,
     module Pinafore.SQLite,
     module Pinafore.Example,
+    module Pinafore.Window,
 ) where
 {
     import Pinafore.AsText;
@@ -14,4 +15,5 @@ module Pinafore
     import Pinafore.Ontology;
     import Pinafore.SQLite;
     import Pinafore.Example;
+    import Pinafore.Window;
 }

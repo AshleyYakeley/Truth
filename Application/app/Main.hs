@@ -7,13 +7,11 @@ module Main(main) where
     import Truth.World.File;
     import Truth.World.Charset;
     import Truth.World.Soup;
-    import Pinafore;
+    import Pinafore.Window;
     import Graphics.UI.Gtk;
     import Truth.UI.GTK;
     import qualified Options.Applicative as O;
 
-
-    newtype WindowMaker = MkWindowMaker ((forall edit actions. (Edit edit,WindowButtons actions) => UISpec edit -> String -> Subscriber edit actions -> IO ()) -> IO ());
 
     textCodec :: ReasonCodec ByteString String;
     textCodec = utf8Codec . bijectionCodec packBijection;
@@ -21,8 +19,8 @@ module Main(main) where
     textLens :: PureEditLens ByteStringEdit (WholeEdit ((Result String) String));
     textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) <.> convertEditLens;
 
-    fileTextWindow :: Bool -> FilePath -> WindowMaker;
-    fileTextWindow saveOpt path = MkWindowMaker $ \makeWindow -> do
+    fileTextWindow :: Bool -> FilePath -> IO SomeUIWindow;
+    fileTextWindow saveOpt path = do
     {
         let
         {
@@ -46,7 +44,7 @@ module Main(main) where
                 undoBufferSub = undoQueueSubscriber bufferSub;
             };
             textSub <- makeSharedSubscriber undoBufferSub;
-            makeWindow (uiOneWhole uiStringText) (takeFileName path) textSub;
+            return $ MkSomeUIWindow $ MkUIWindow (takeFileName path) (uiOneWhole uiStringText) textSub;
         }
         else do
         {
@@ -56,31 +54,23 @@ module Main(main) where
                 textObj = convertObject wholeTextObj;
             };
             textSub <- makeObjectSubscriber textObj;
-            makeWindow (uiOneWhole uiStringText) (takeFileName path) textSub;
+            return $ MkSomeUIWindow $ MkUIWindow (takeFileName path) (uiOneWhole uiStringText) textSub;
         };
     };
 
-    soupWindow :: FilePath -> WindowMaker;
-    soupWindow dirpath = MkWindowMaker $ \makeWindow -> do
-    {
-        sub <- makeObjectSubscriber $ soupObject dirpath;
-        makeWindow soupEditSpec (takeFileName $ dropTrailingPathSeparator dirpath) sub;
-    };
+    soupWindowMaker :: FilePath -> IO SomeUIWindow;
+    soupWindowMaker dirpath = fmap MkSomeUIWindow $ soupWindow dirpath;
 
-    pinaforeWindow :: FilePath -> WindowMaker;
-    pinaforeWindow sqlitepath = MkWindowMaker $ \makeWindow -> do
-    {
-        sub <- makeObjectSubscriber $ sqlitePinaforeObject sqlitepath;
-        makeWindow (pinaforeValueSpec rootValue) "Root" sub;
-    };
+    pinaforeWindow :: FilePath -> IO SomeUIWindow;
+    pinaforeWindow sqlitepath = fmap MkSomeUIWindow $ sqlitePinaforeWindow sqlitepath;
 
     testSave :: Bool;
     testSave = True;
 
-    optWMParser :: O.Parser [WindowMaker];
-    optWMParser = O.many $ (pinaforeWindow <$> O.strOption (O.long "pinafore")) O.<|> (soupWindow <$> O.strOption (O.long "soup")) O.<|> (fileTextWindow testSave <$> O.strArgument mempty);
+    optWMParser :: O.Parser [IO SomeUIWindow];
+    optWMParser = O.many $ (pinaforeWindow <$> O.strOption (O.long "pinafore")) O.<|> (soupWindowMaker <$> O.strOption (O.long "soup")) O.<|> (fileTextWindow testSave <$> O.strArgument mempty);
 
-    optParser :: O.Parser ([WindowMaker],Bool);
+    optParser :: O.Parser ([IO SomeUIWindow],Bool);
     optParser = (,) <$> optWMParser <*> O.switch (O.short '2');
 
     main :: IO ();
@@ -90,10 +80,11 @@ module Main(main) where
         (wms,double) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args;
         _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50;
         windowCount <- newIORef 0;
-        for_ wms $ \(MkWindowMaker wm) -> wm $ \spec name sub -> do
+        for_ wms $ \wm -> do
         {
-            makeWindowCountRef windowCount spec name sub;
-            if double then makeWindowCountRef windowCount spec name sub else return ();
+            MkSomeUIWindow uiw <- wm;
+            makeWindowCountRef windowCount uiw;
+            if double then makeWindowCountRef windowCount uiw else return ();
         };
         c <- readIORef windowCount;
         if c == 0 then return () else mainGUI;

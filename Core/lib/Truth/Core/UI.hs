@@ -17,6 +17,7 @@ module Truth.Core.UI
     module Truth.Core.UI.Drag,
     module Truth.Core.UI.View,
     module Truth.Core.UI.GetView,
+    module Truth.Core.UI.Window,
 ) where
 {
     import Truth.Core.UI.Specifier;
@@ -36,4 +37,5 @@ module Truth.Core.UI
     import Truth.Core.UI.Drag;
     import Truth.Core.UI.View;
     import Truth.Core.UI.GetView;
+    import Truth.Core.UI.Window;
 }

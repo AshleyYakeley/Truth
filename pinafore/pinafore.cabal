@@ -70,6 +70,7 @@ library
         Truth-Core
     exposed-modules:
         Pinafore
+        Pinafore.Window
     other-modules:
         Pinafore.AsText
         Pinafore.Edit

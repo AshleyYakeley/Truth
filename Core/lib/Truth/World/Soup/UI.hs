@@ -1,6 +1,7 @@
-module Truth.World.Soup.UI(PossibleNoteEdit,soupEditSpec,soupObject) where
+module Truth.World.Soup.UI(PossibleNoteEdit,soupWindow) where
 {
     import Truth.Core.Import;
+    import System.FilePath hiding ((<.>));
     import Truth.Core;
     import Truth.World.FileSystem;
     import Truth.World.Soup.Note;
@@ -56,4 +57,16 @@ module Truth.World.Soup.UI(PossibleNoteEdit,soupEditSpec,soupObject) where
         lens :: GeneralLens (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit PossibleNoteEdit);
         lens = MkCloseState $ liftSoupLens paste $ soupItemLens <.> mutableIOEditLens;
     } in mapObject lens rawSoupObject;
+
+    soupWindow :: FilePath -> IO (UIWindow ());
+    soupWindow dirpath = do
+    {
+        let
+        {
+            uiwTitle = takeFileName $ dropTrailingPathSeparator dirpath;
+            uiwSpec = soupEditSpec;
+        };
+        uiwSubscriber <- makeObjectSubscriber $ soupObject dirpath;
+        return $ MkUIWindow{..};
+    };
 }

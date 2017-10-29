@@ -115,6 +115,8 @@ module Truth.UI.GTK.Window where
         }
     };
 
+    data SomeUIWindow = forall actions. WindowButtons actions => MkSomeUIWindow (UIWindow actions);
+
     attachMenuItem :: MenuShellClass menushell => menushell -> String -> IO MenuItem;
     attachMenuItem menu name = do
     {
@@ -152,7 +154,11 @@ module Truth.UI.GTK.Window where
                     msel <- srGetSelection;
                     case msel of
                     {
-                        Just (aspname,aspspec) -> makeWindowCountRef windowCount aspspec (aspname ++ " of " ++ title) sub;
+                        Just (aspname,uiwSpec) -> let
+                        {
+                            uiwTitle = aspname ++ " of " ++ title;
+                            uiwSubscriber = sub;
+                        } in makeWindowCountRef windowCount MkUIWindow{..};
                         Nothing -> return ();
                     };
                 };
@@ -229,9 +235,6 @@ module Truth.UI.GTK.Window where
         writeIORef windowCount (i + 1);
     };
 
-    makeWindowCountRef :: forall edit actions. (Edit edit,WindowButtons actions) => IORef Int -> UISpec edit -> String -> Subscriber edit actions -> IO ();
-    makeWindowCountRef windowCount uispec title sub = do
-    {
-        makeViewWindowCountRef (getTheView uispec) windowCount title sub;
-    };
+    makeWindowCountRef :: forall actions. WindowButtons actions => IORef Int -> UIWindow actions -> IO ();
+    makeWindowCountRef windowCount MkUIWindow{..} = makeViewWindowCountRef (getTheView uiwSpec) windowCount uiwTitle uiwSubscriber;
 }
