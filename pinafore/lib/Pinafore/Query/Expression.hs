@@ -3,6 +3,7 @@ module Pinafore.Query.Expression where
     import Shapes;
     --import Truth.Core;
     --import Pinafore.Edit;
+    import Pinafore.AsText;
     import Pinafore.Query.Value;
 
 
@@ -22,7 +23,7 @@ module Pinafore.Query.Expression where
     };
 
     qint :: Int -> QValue;
-    qint = MkAny $ QPrimitive $ QLiteral QInt;
+    qint i = MkAny (QPrimitive QLiteral) $ toText i;
 
     qvar :: String -> QExpr QValue;
     qvar name = OpenQExpr name $ ClosedQExpr id;

@@ -2,85 +2,25 @@ module Pinafore.Query.Value where
 {
     import Shapes;
     import Truth.Core;
-    import Pinafore.AsText;
     import Pinafore.Edit;
-
-
-    data QLiteralType t where
-    {
-        QBool :: QLiteralType Bool;
-        QText :: QLiteralType Text;
-        QInt :: QLiteralType Int;
-    };
-
-    instance TestEquality QLiteralType where
-    {
-        testEquality QBool QBool = Just Refl;
-        testEquality QText QText = Just Refl;
-        testEquality QInt QInt = Just Refl;
-        testEquality _ _ = Nothing;
-    };
-
-    instance Eq1 QLiteralType where
-    {
-        equals1 a b = isJust $ testEquality a b;
-    };
-
-    instance Representative QLiteralType where
-    {
-        getRepWitness QBool = Dict;
-        getRepWitness QText = Dict;
-        getRepWitness QInt = Dict;
-    };
-
-    instance Is QLiteralType Bool where
-    {
-        representative = QBool;
-    };
-
-    instance Is QLiteralType Text where
-    {
-        representative = QText;
-    };
-
-    instance Is QLiteralType Int where
-    {
-        representative = QInt;
-    };
-
-    instance Show (QLiteralType t) where
-    {
-        show QBool = "boolean";
-        show QText = "text";
-        show QInt = "integer";
-    };
-
-    qprimAsText :: QLiteralType t -> Dict (AsText t);
-    qprimAsText QBool = Dict;
-    qprimAsText QText = Dict;
-    qprimAsText QInt = Dict;
 
 
     data QPrimitiveType t where
     {
         QPoint :: QPrimitiveType Point;
-        QLiteral :: QLiteralType t -> QPrimitiveType t;
+        QLiteral :: QPrimitiveType Text;
     };
 
     instance Show (QPrimitiveType t) where
     {
         show QPoint = "point";
-        show (QLiteral t) = show t;
+        show QLiteral = "literal";
     };
 
     instance TestEquality QPrimitiveType where
     {
         testEquality QPoint QPoint = Just Refl;
-        testEquality (QLiteral t1) (QLiteral t2) = do
-        {
-            Refl <- testEquality t1 t2;
-            return Refl;
-        };
+        testEquality QLiteral QLiteral = Just Refl;
         testEquality _ _ = Nothing;
     };
 
@@ -120,23 +60,29 @@ module Pinafore.Query.Value where
         testEquality _ _ = Nothing;
     };
 
+
     type QValue = Any QType;
 
     instance Show QValue where
     {
-        show (MkAny (QPrimitive QPoint) (MkPoint val)) = show val;
-        show (MkAny (QPrimitive (QLiteral t)) val) = case qprimAsText t of
-        {
-            Dict -> unpack $ toText val;
-        };
+        show (MkAny (QPrimitive QPoint) (MkPoint val)) = "!" ++ show val;
+        show (MkAny (QPrimitive QLiteral) val) = unpack val;
         show (MkAny t _) = "<" ++ show t ++ ">";
     };
 
     qapply :: QValue -> QValue -> Result String QValue;
     qapply (MkAny QFunction f) a = f a;
-    qapply (MkAny QMorphism f) (MkAny QLensValue a) = return $ MkAny QLensValue $ applyPinaforeLens f a;
     qapply (MkAny QMorphism f) (MkAny (QPrimitive QPoint) a) = return $ MkAny QLensValue $ applyPinaforeLens f $ constGeneralLens $ Just a;
-    qapply (MkAny QInverseMorphism f) (MkAny QLensValue a) = return $ MkAny QLensSet $ applyInversePinaforeLens f a;
+    qapply (MkAny QMorphism f) (MkAny QLensValue a) = return $ MkAny QLensValue $ applyPinaforeLens f a;
+    qapply (MkAny QMorphism f) (MkAny QLensSet a) = return $ MkAny QLensSet $ readOnlyGeneralLens $ convertGeneralFunction <.> applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a);
     qapply (MkAny QInverseMorphism f) (MkAny (QPrimitive QPoint) a) = return $ MkAny QLensSet $ applyInversePinaforeLens f $ constGeneralLens $ Just a;
+    qapply (MkAny QInverseMorphism f) (MkAny (QPrimitive QLiteral) a) = return $ MkAny QLensSet $ applyInversePinaforeLens (primitivePinaforeLensMorphism . f) $ constGeneralLens $ Just a;
+    qapply (MkAny QInverseMorphism f) (MkAny QLensValue a) = return $ MkAny QLensSet $ applyInversePinaforeLens f a;
+    qapply (MkAny QInverseMorphism f) (MkAny QLensSet a) = return $ MkAny QLensSet $ readOnlyGeneralLens $ convertGeneralFunction <.> applyPinaforeFunction (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f)) (lensFunctionValue a);
     qapply (MkAny tf _) (MkAny ta _) = fail $ "cannot apply " ++ show tf ++ " to " ++ show ta;
+
+    qinvert :: QValue -> Result String QValue;
+    qinvert (MkAny QMorphism m) = return $ MkAny QInverseMorphism m;
+    qinvert (MkAny QInverseMorphism m) = return $ MkAny QMorphism m;
+    qinvert (MkAny t _) = fail $ "cannot invert " ++ show t;
 }

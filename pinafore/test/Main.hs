@@ -9,7 +9,7 @@ module Main(main) where
     -- for test only
     instance Eq QValue where
     {
-        (MkAny (QPrimitive (QLiteral QInt)) a1) == (MkAny (QPrimitive (QLiteral QInt)) a2) = a1 == a2;
+        (MkAny (QPrimitive QLiteral) a1) == (MkAny (QPrimitive QLiteral) a2) = a1 == a2;
         _ == _ = error "not Int";
     };
 
