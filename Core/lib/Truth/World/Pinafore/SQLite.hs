@@ -73,7 +73,7 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
     data LiteralTable t where
     {
         LiteralKey :: LiteralTable Point;
-        LiteralValue :: LiteralTable ByteString;
+        LiteralValue :: LiteralTable Text;
     };
 
     instance FiniteWitness LiteralTable where
@@ -179,7 +179,7 @@ module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
         };
         editGet () (PinaforeReadGetPrimitive v) = do
         {
-            (row :: [All ((:~:) ByteString)]) <- readable $ DatabaseSelect
+            (row :: [All ((:~:) Text)]) <- readable $ DatabaseSelect
                 (SingleTable $ MkTupleTableSel PinaforeLiteral)
                 (MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v)
                 mempty

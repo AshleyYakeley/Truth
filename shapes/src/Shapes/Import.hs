@@ -30,6 +30,7 @@ module Shapes.Import (module I) where
     import Control.Arrow as I hiding ((|||),(<<<),(>>>));
     import Control.Concurrent.MVar as I;
     import Text.Show as I (Show(..));
+    import Text.Read as I (Read(..),readMaybe);
     import Control.Exception as I hiding (catch);
     import System.IO as I;
     import Control.Concurrent as I;
