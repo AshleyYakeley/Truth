@@ -10,3 +10,7 @@ resolver: lts-9.10
 extra-deps:
 - directory-1.3.1.1
 - mime-0.4.0.2
+
+flags:
+    Truth-GTK:
+        build-examples: true
