@@ -7,7 +7,6 @@ module Main(main) where
     import Truth.World.File;
     import Truth.World.Charset;
     import Truth.World.Soup;
-    import Pinafore.Window;
     import Graphics.UI.Gtk;
     import Truth.UI.GTK;
     import qualified Options.Applicative as O;
@@ -61,14 +60,11 @@ module Main(main) where
     soupWindowMaker :: FilePath -> IO SomeUIWindow;
     soupWindowMaker dirpath = fmap MkSomeUIWindow $ soupWindow dirpath;
 
-    pinaforeWindow :: FilePath -> IO SomeUIWindow;
-    pinaforeWindow sqlitepath = fmap MkSomeUIWindow $ sqlitePinaforeWindow sqlitepath;
-
     testSave :: Bool;
     testSave = True;
 
     optWMParser :: O.Parser [IO SomeUIWindow];
-    optWMParser = O.many $ (pinaforeWindow <$> O.strOption (O.long "pinafore")) O.<|> (soupWindowMaker <$> O.strOption (O.long "soup")) O.<|> (fileTextWindow testSave <$> O.strArgument mempty);
+    optWMParser = O.many $ (soupWindowMaker <$> O.strOption (O.long "soup")) O.<|> (fileTextWindow testSave <$> O.strArgument mempty);
 
     optParser :: O.Parser ([IO SomeUIWindow],Bool);
     optParser = (,) <$> optWMParser <*> O.switch (O.short '2');

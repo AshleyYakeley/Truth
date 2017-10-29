@@ -64,6 +64,5 @@ executable truth
         shapes,
         Truth-Core,
         Truth-GTK,
-        pinafore,
         optparse-applicative
     main-is: Main.hs
