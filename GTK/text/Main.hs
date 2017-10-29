@@ -6,7 +6,6 @@ module Main(main) where
     import Truth.Core;
     import Truth.World.File;
     import Truth.World.Charset;
-    import Truth.World.Soup;
     import Graphics.UI.Gtk;
     import Truth.UI.GTK;
     import qualified Options.Applicative as O;
@@ -57,28 +56,19 @@ module Main(main) where
         };
     };
 
-    soupWindowMaker :: FilePath -> IO SomeUIWindow;
-    soupWindowMaker dirpath = fmap MkSomeUIWindow $ soupWindow dirpath;
-
-    testSave :: Bool;
-    testSave = True;
-
-    optWMParser :: O.Parser [IO SomeUIWindow];
-    optWMParser = O.many $ (soupWindowMaker <$> O.strOption (O.long "soup")) O.<|> (fileTextWindow testSave <$> O.strArgument mempty);
-
-    optParser :: O.Parser ([IO SomeUIWindow],Bool);
-    optParser = (,) <$> optWMParser <*> O.switch (O.short '2');
+    optParser :: O.Parser ([FilePath],Bool,Bool);
+    optParser = (,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') <*> O.switch (O.long "save");
 
     main :: IO ();
     main = do
     {
         args <- initGUI;
-        (wms,double) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args;
+        (paths,double,save) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args;
         _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50;
         windowCount <- newIORef 0;
-        for_ wms $ \wm -> do
+        for_ paths $ \path -> do
         {
-            MkSomeUIWindow uiw <- wm;
+            MkSomeUIWindow uiw <- fileTextWindow save path;
             makeWindowCountRef windowCount uiw;
             if double then makeWindowCountRef windowCount uiw else return ();
         };

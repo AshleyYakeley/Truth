@@ -1,11 +1,11 @@
-module Truth.World.Soup.UI(PossibleNoteEdit,soupWindow) where
+module Soup.UI(PossibleNoteEdit,soupWindow) where
 {
-    import Truth.Core.Import;
+    import Shapes;
     import System.FilePath hiding ((<.>));
     import Truth.Core;
     import Truth.World.FileSystem;
-    import Truth.World.Soup.Note;
-    import Truth.World.Soup.Edit;
+    import Soup.Note;
+    import Soup.Edit;
 
 
     fromResult :: Result String String -> String;

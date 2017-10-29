@@ -4,7 +4,6 @@ packages:
 #- Linux
 - GTK
 - pinafore
-- Application
 
 resolver: lts-9.10
 

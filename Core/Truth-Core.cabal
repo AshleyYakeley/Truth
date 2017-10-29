@@ -77,7 +77,6 @@ library
         Truth.World.JSON
         Truth.World.SQLite
         Truth.World.SQLite.Schema
-        Truth.World.Soup
     other-modules:
         Truth.Core.Import
         Truth.Core.Sequence
@@ -150,9 +149,6 @@ library
         Truth.Core.UI.GetView
         Truth.Core.UI.Window
         Truth.Core.UI
-        Truth.World.Soup.Note
-        Truth.World.Soup.Edit
-        Truth.World.Soup.UI
 
 test-suite test
     type: exitcode-stdio-1.0

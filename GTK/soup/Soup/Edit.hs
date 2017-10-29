@@ -1,6 +1,6 @@
-module Truth.World.Soup.Edit(UUID,UUIDElementEdit,SoupEdit,directorySoup,liftSoupLens) where
+module Soup.Edit(UUID,UUIDElementEdit,SoupEdit,directorySoup,liftSoupLens) where
 {
-    import Truth.Core.Import;
+    import Shapes;
     import Truth.Core;
     import Truth.World.FileSystem;
     import System.FilePath hiding ((<.>));

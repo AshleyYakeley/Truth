@@ -1,6 +1,6 @@
-module Truth.World.Soup.Note where
+module Soup.Note where
 {
-    import Truth.Core.Import;
+    import Shapes;
     import qualified Data.Aeson as JSON;
     import qualified Data.Aeson.Types as JSON;
     import Truth.Core;
