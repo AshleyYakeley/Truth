@@ -1,7 +1,7 @@
 packages:
 - shapes
-- Core
-- GTK
+- truth-core
+- truth-gtk
 - pinafore
 
 resolver: lts-9.10
@@ -11,5 +11,5 @@ extra-deps:
 - mime-0.4.0.2
 
 flags:
-    Truth-GTK:
+    truth-gtk:
         build-examples: true

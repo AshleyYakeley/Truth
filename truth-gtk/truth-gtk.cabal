@@ -1,5 +1,5 @@
 cabal-version: >=1.14
-name: Truth-GTK
+name: truth-gtk
 version: 0.1
 license: AllRightsReserved
 author: Ashley Yakeley
@@ -72,7 +72,7 @@ library
         glib,
         gtk3,
         shapes,
-        Truth-Core
+        truth-core
     exposed-modules:
         Truth.UI.GTK
     other-modules:
@@ -153,8 +153,8 @@ test-suite test
         glib,
         gtk3,
         shapes,
-        Truth-Core,
-        Truth-GTK,
+        truth-core,
+        truth-gtk,
         QuickCheck,
         tasty,
         tasty-hunit
@@ -221,8 +221,8 @@ executable truth-text
         glib,
         gtk3,
         shapes,
-        Truth-Core,
-        Truth-GTK,
+        truth-core,
+        truth-gtk,
         optparse-applicative
     main-is: Main.hs
     other-modules:
@@ -287,8 +287,8 @@ executable truth-soup
         glib,
         gtk3,
         shapes,
-        Truth-Core,
-        Truth-GTK,
+        truth-core,
+        truth-gtk,
         optparse-applicative
     main-is: Main.hs
     other-modules:

@@ -1,5 +1,5 @@
 cabal-version: >=1.14
-name: Truth-Core
+name: truth-core
 version: 0.1
 license: AllRightsReserved
 author: Ashley Yakeley
@@ -213,7 +213,7 @@ test-suite test
         comonad,
         mono-traversable,
         shapes,
-        Truth-Core,
+        truth-core,
         QuickCheck,
         tasty,
         tasty-hunit,

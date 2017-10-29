@@ -185,7 +185,7 @@ module Main(main) where
         ];
 
     tests :: TestTree;
-    tests = testGroup "Truth-Core" [
+    tests = testGroup "truth-core" [
         testApplyEditsPar,
         testApplyEditsSeq,
         testStringEdit,

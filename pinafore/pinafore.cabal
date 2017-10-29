@@ -67,7 +67,7 @@ library
         sqlite-simple,
         mime,
         shapes,
-        Truth-Core
+        truth-core
     exposed-modules:
         Pinafore
         Pinafore.Window
@@ -144,7 +144,7 @@ test-suite test
         comonad,
         mono-traversable,
         shapes,
-        Truth-Core,
+        truth-core,
         pinafore,
         QuickCheck,
         tasty,
@@ -210,8 +210,8 @@ executable pinafore
         glib,
         gtk3,
         shapes,
-        Truth-Core,
-        Truth-GTK,
+        truth-core,
+        truth-gtk,
         pinafore,
         optparse-applicative
     main-is: Main.hs

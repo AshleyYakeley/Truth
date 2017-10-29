@@ -36,7 +36,7 @@ module Main(main) where
         ];
 
     tests :: TestTree;
-    tests = testGroup "Truth-GTK" [
+    tests = testGroup "truth-gtk" [
         testGViews
         ];
 
