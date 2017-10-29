@@ -7,7 +7,7 @@ module Main(main) where
     import Truth.World.File;
     import Truth.World.Charset;
     import Truth.World.Soup;
-    import Truth.World.Pinafore;
+    import Pinafore;
     import Graphics.UI.Gtk;
     import Truth.UI.GTK;
     import qualified Options.Applicative as O;

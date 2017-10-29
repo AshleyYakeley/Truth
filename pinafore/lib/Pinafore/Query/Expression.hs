@@ -1,9 +1,9 @@
-module Truth.World.Pinafore.Query.Expression where
+module Pinafore.Query.Expression where
 {
-    import Truth.Core.Import;
+    import Shapes;
     --import Truth.Core;
-    --import Truth.World.Pinafore.Edit;
-    import Truth.World.Pinafore.Query.Value;
+    --import Pinafore.Edit;
+    import Pinafore.Query.Value;
 
 
     data QExpr a = ClosedQExpr a | OpenQExpr String (QExpr (QValue -> a));
@@ -22,7 +22,7 @@ module Truth.World.Pinafore.Query.Expression where
     };
 
     qint :: Int -> QValue;
-    qint = MkAny $ QPrimitive QInt;
+    qint = MkAny $ QPrimitive $ QLiteral QInt;
 
     qvar :: String -> QExpr QValue;
     qvar name = OpenQExpr name $ ClosedQExpr id;

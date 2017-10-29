@@ -1,9 +1,9 @@
-module Truth.World.Pinafore.Ontology where
+module Pinafore.Ontology where
 {
-    import Truth.Core.Import;
+    import Shapes;
     import Truth.Core;
     import Data.UUID;
-    import Truth.World.Pinafore.Edit;
+    import Pinafore.Edit;
 
 
     uuid :: String -> UUID;

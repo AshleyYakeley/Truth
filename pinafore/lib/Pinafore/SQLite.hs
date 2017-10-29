@@ -1,13 +1,13 @@
 {-# OPTIONS -fno-warn-orphans #-}
 {-# LANGUAGE EmptyCase #-}
-module Truth.World.Pinafore.SQLite(sqlitePinaforeObject) where
+module Pinafore.SQLite(sqlitePinaforeObject) where
 {
-    import Truth.Core.Import;
+    import Shapes;
     import Truth.Core;
     import Data.UUID;
     import Truth.World.SQLite;
     import Truth.World.SQLite.Schema;
-    import Truth.World.Pinafore.Edit;
+    import Pinafore.Edit;
 
 
     instance FieldType UUID where {fieldTypeName="BLOB"};

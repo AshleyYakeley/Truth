@@ -1,9 +1,9 @@
-module Truth.World.Pinafore.Example(rootValue) where
+module Pinafore.Example(rootValue) where
 {
-    import Truth.Core.Import;
+    import Shapes;
     import Truth.Core;
-    import Truth.World.Pinafore.Edit;
-    import Truth.World.Pinafore.Ontology;
+    import Pinafore.Edit;
+    import Pinafore.Ontology;
 
 
     -- example ontology

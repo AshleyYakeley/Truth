@@ -1,4 +1,4 @@
-module Truth.World.Pinafore.Edit
+module Pinafore.Edit
 (
     Predicate(..),Point(..),
     PinaforeRead(..),PinaforeEdit(..),
@@ -19,9 +19,9 @@ module Truth.World.Pinafore.Edit
     predicatePinaforeLensMorphism
 ) where
 {
-    import Truth.Core.Import;
+    import Shapes;
     import Truth.Core;
-    import Truth.World.Pinafore.AsText;
+    import Pinafore.AsText;
     import Data.UUID hiding (fromText,toText,fromString);
     import Data.Serialize as Serialize(Serialize(..));
     import Data.Aeson (FromJSON);

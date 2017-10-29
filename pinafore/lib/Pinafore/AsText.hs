@@ -1,6 +1,6 @@
-module Truth.World.Pinafore.AsText where
+module Pinafore.AsText where
 {
-    import Truth.Core.Import;
+    import Shapes;
     import Data.Time;
 
 

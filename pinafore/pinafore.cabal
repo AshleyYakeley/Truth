@@ -1,5 +1,5 @@
 cabal-version: >=1.14
-name: Truth-Core
+name: pinafore
 version: 0.1
 license: AllRightsReserved
 author: Ashley Yakeley
@@ -66,92 +66,19 @@ library
         aeson,
         sqlite-simple,
         mime,
-        shapes
+        shapes,
+        Truth-Core
     exposed-modules:
-        Truth.Core
-        Truth.World.Anything
-        Truth.World.File
-        Truth.World.FileSystem
-        Truth.World.Charset
-        Truth.World.MIME
-        Truth.World.JSON
-        Truth.World.SQLite
-        Truth.World.SQLite.Schema
-        Truth.World.Soup
+        Pinafore
     other-modules:
-        Truth.Core.Import
-        Truth.Core.Sequence
-        Truth.Core.Read.SubjectReader
-        Truth.Core.Read.Readable
-        Truth.Core.Read.FullSubjectReader
-        Truth.Core.Read.ReadFunction
-        Truth.Core.Read.WriterReadable
-        Truth.Core.Read
-        Truth.Core.Edit.Edit
-        Truth.Core.Edit.FullEdit
-        Truth.Core.Edit.EditFunction
-        Truth.Core.Edit.EditLens
-        Truth.Core.Edit.General
-        Truth.Core.Edit
-        Truth.Core.Types.None
-        Truth.Core.Types.Whole
-        Truth.Core.Types.Unit
-        Truth.Core.Types.Sum
-        Truth.Core.Types.SumWhole
-        Truth.Core.Types.OneReader
-        Truth.Core.Types.OneEdit
-        Truth.Core.Types.OneWholeEdit
-        Truth.Core.Types.Either
-        Truth.Core.Types.Comonad
-        Truth.Core.Types.ComonadLift
-        Truth.Core.Types.Tuple
-        Truth.Core.Types.ConsTuple
-        Truth.Core.Types.EitherTuple
-        Truth.Core.Types.Pair
-        Truth.Core.Types.Lattice
-        Truth.Core.Types.PointedEditLens
-        Truth.Core.Types.Function
-        Truth.Core.Types.Context
-        Truth.Core.Types.List
-        Truth.Core.Types.String
-        Truth.Core.Types.ByteString
-        Truth.Core.Types.Key
-        Truth.Core.Types.FiniteSet
-        Truth.Core.Types.Database
-        Truth.Core.Types.TupleDatabase
-        Truth.Core.Types.Merge
-        Truth.Core.Types
-        Truth.Core.Object.MutableEdit
-        Truth.Core.Object.Object
-        Truth.Core.Object.AutoClose
-        Truth.Core.Object.MutableIOEdit
-        Truth.Core.Object.Subscriber
-        Truth.Core.Object.Lens
-        Truth.Core.Object.Editor
-        Truth.Core.Object.Savable
-        Truth.Core.Object.Undo
-        Truth.Core.Object
-        Truth.Core.UI.Specifier
-        Truth.Core.UI.Lens
-        Truth.Core.UI.CSS
-        Truth.Core.UI.One
-        Truth.Core.UI.Switch
-        Truth.Core.UI.Layout
-        Truth.Core.UI.Icon
-        Truth.Core.UI.Labelled
-        Truth.Core.UI.Checkbox
-        Truth.Core.UI.Option
-        Truth.Core.UI.TextEntry
-        Truth.Core.UI.TextEditor
-        Truth.Core.UI.Table
-        Truth.Core.UI.WindowButton
-        Truth.Core.UI.Drag
-        Truth.Core.UI.View
-        Truth.Core.UI.GetView
-        Truth.Core.UI
-        Truth.World.Soup.Note
-        Truth.World.Soup.Edit
-        Truth.World.Soup.UI
+        Pinafore.AsText
+        Pinafore.Edit
+        Pinafore.Query.Value
+        Pinafore.Query.Expression
+        Pinafore.Query
+        Pinafore.Ontology
+        Pinafore.SQLite
+        Pinafore.Example
 
 test-suite test
     type: exitcode-stdio-1.0
@@ -217,6 +144,7 @@ test-suite test
         mono-traversable,
         shapes,
         Truth-Core,
+        pinafore,
         QuickCheck,
         tasty,
         tasty-hunit,
@@ -224,4 +152,3 @@ test-suite test
         tasty-golden
     main-is: Main.hs
     other-modules:
-        Subscribe

@@ -1,9 +1,9 @@
-module Truth.World.Pinafore.Query.Value where
+module Pinafore.Query.Value where
 {
-    import Truth.Core.Import;
+    import Shapes;
     import Truth.Core;
-    import Truth.World.Pinafore.AsText;
-    import Truth.World.Pinafore.Edit;
+    import Pinafore.AsText;
+    import Pinafore.Edit;
 
 
     data QLiteralType t where

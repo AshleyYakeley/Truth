@@ -3,7 +3,6 @@ module Main(main) where
     import Shapes;
     import Truth.Core;
     import Truth.UI.GTK;
-    import Truth.World.Pinafore;
     import Test.Tasty;
     import Test.Tasty.HUnit;
 
@@ -33,8 +32,7 @@ module Main(main) where
     testGViews :: TestTree;
     testGViews = testGroup "GView" [
             testGView $ (uiVertical [] :: UISpec (WholeEdit String)),
-            testGView $ uiVertical [MkUISpec MkUIUnknown :: UISpec (WholeEdit String)],
-            testGView $ pinaforeValueSpec rootValue
+            testGView $ uiVertical [MkUISpec MkUIUnknown :: UISpec (WholeEdit String)]
         ];
 
     tests :: TestTree;
