@@ -217,3 +217,62 @@ executable pinafore
         pinafore,
         optparse-applicative
     main-is: Main.hs
+
+executable pinafore-query
+    hs-source-dirs: query
+    default-language: Haskell2010
+    default-extensions:
+        AllowAmbiguousTypes
+        Arrows
+        ConstraintKinds
+        DataKinds
+        DefaultSignatures
+        EmptyDataDecls
+        ExistentialQuantification
+        FlexibleContexts
+        FlexibleInstances
+        ForeignFunctionInterface
+        FunctionalDependencies
+        GADTs
+        GeneralizedNewtypeDeriving
+        ImplicitParams
+        KindSignatures
+        LambdaCase
+        MonadFailDesugaring
+        MultiParamTypeClasses
+        NoImplicitPrelude
+        PatternGuards
+        PatternSynonyms
+        PolyKinds
+        RankNTypes
+        RecordWildCards
+        RecursiveDo
+        ScopedTypeVariables
+        StandaloneDeriving
+        TemplateHaskell
+        TypeApplications
+        TypeFamilies
+        TypeInType
+        TypeOperators
+        TypeSynonymInstances
+        UndecidableInstances
+        UndecidableSuperClasses
+        ViewPatterns
+    ghc-options:
+        -Werror
+        -Wall
+        -Wincomplete-uni-patterns
+        -Wincomplete-record-updates
+        -Wredundant-constraints
+        -Wcompat
+        -Wnoncanonical-monad-instances
+        -Wnoncanonical-monadfail-instances
+    build-depends:
+        base >= 4.9 && < 5,
+        filepath,
+        bytestring,
+        shapes,
+        truth-core,
+        pinafore,
+        optparse-applicative
+    main-is: Main.hs

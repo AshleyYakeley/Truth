@@ -85,7 +85,7 @@ module Pinafore.Query.Read(parseExpression) where
     identifierChar c = isAlphaNum c;
 
     readIdentifier :: Parser String;
-    readIdentifier = do
+    readIdentifier = Text.Parsec.try $ do
     {
         firstC <- satisfy isAlpha;
         rest <- many $ satisfy identifierChar;
