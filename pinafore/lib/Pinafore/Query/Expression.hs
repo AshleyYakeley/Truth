@@ -23,7 +23,7 @@ module Pinafore.Query.Expression where
     };
 
     qint :: Int -> QValue;
-    qint i = MkAny (QPrimitive QLiteral) $ toText i;
+    qint i = MkAny QLiteral $ toText i;
 
     qvar :: String -> QExpr QValue;
     qvar name = OpenQExpr name $ ClosedQExpr id;

@@ -9,8 +9,9 @@ module Main(main) where
     -- for test only
     instance Eq QValue where
     {
-        (MkAny (QPrimitive QLiteral) a1) == (MkAny (QPrimitive QLiteral) a2) = a1 == a2;
-        _ == _ = error "not Int";
+        (MkAny QLiteral a1) == (MkAny QLiteral a2) = a1 == a2;
+        (MkAny QPoint a1) == (MkAny QPoint a2) = a1 == a2;
+        _ == _ = error "QValue: not comparable";
     };
 
     testQuery :: (Eq a,Show a) => String -> QExpr a -> Maybe a -> TestTree;
