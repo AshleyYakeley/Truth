@@ -46,7 +46,7 @@ module Pinafore.Query.Read(parseExpression) where
     readStringAndWS :: String -> Parser ();
     readStringAndWS s = do
     {
-        _ <- string s;
+        _ <- Text.Parsec.try $ string s;
         readWS;
     };
 

@@ -1,0 +1,8 @@
+let
+name = %498260df-6a8a-44f0-b285-68a63565a33b;
+mother = %3afce58f-b7eb-4b11-8a75-2d66afd4d085;
+father = %c005705f-9259-4d24-9713-db28a6e4f7d5;
+people = %f06efa5e-190f-4e5d-8633-495c5683c124;
+root = !78baed51-cb05-46b5-bcb4-49031532b890;
+in
+name $ @people root
