@@ -1,7 +1,7 @@
 module Shapes.Import (module I) where
 {
     -- base
-    import Prelude as I (($),const,seq,error,undefined,Eq(..),Ord(..),Enum(..),Num(..),Real(..),Integral(..),fromIntegral,fromInteger,toInteger,Double);
+    import Prelude as I (($),const,seq,error,undefined,Eq(..),Ord(..),Enum(..),Num(..),Real(..),Integer,Integral(..),fromIntegral,fromInteger,toInteger,Double);
     import Data.Kind as I;
     import Data.Bool as I;
     import Data.Bits as I;

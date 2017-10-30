@@ -35,6 +35,12 @@ module Pinafore.AsText where
         fromText = readMaybe . unpack;
     };
 
+    instance AsText Integer where
+    {
+        toText = pack . show;
+        fromText = readMaybe . unpack;
+    };
+
     instance AsText Double where
     {
         toText = pack . show;
