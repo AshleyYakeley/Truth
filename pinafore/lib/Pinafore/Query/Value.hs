@@ -8,10 +8,9 @@ module Pinafore.Query.Value where
 
     data QType t where
     {
-        QPoint :: QType Point;
         QLiteral :: QType Text;
-        QLensValue :: QType (PinaforeLensValue (WholeEdit (Maybe Point)));
-        QLensSet :: QType (PinaforeLensValue (FiniteSetEdit Point));
+        QPoint :: QType (PinaforeLensValue (WholeEdit (Maybe Point)));
+        QSet :: QType (PinaforeLensValue (FiniteSetEdit Point));
         QMorphism :: QType (PinaforeLensMorphism Point Point);
         QInverseMorphism :: QType (PinaforeLensMorphism Point Point);
         QFunction :: QType (QValue -> Result String QValue);
@@ -19,10 +18,9 @@ module Pinafore.Query.Value where
 
     instance Show (QType t) where
     {
-        show QPoint = "point";
         show QLiteral = "literal";
-        show QLensValue = "value";
-        show QLensSet = "set";
+        show QPoint = "point";
+        show QSet = "set";
         show QMorphism = "morphism";
         show QInverseMorphism = "inverse morphism";
         show QFunction = "function";
@@ -30,10 +28,9 @@ module Pinafore.Query.Value where
 
     instance TestEquality QType where
     {
-        testEquality QPoint QPoint = Just Refl;
         testEquality QLiteral QLiteral = Just Refl;
-        testEquality QLensValue QLensValue = Just Refl;
-        testEquality QLensSet QLensSet = Just Refl;
+        testEquality QPoint QPoint = Just Refl;
+        testEquality QSet QSet = Just Refl;
         testEquality QMorphism QMorphism = Just Refl;
         testEquality QInverseMorphism QInverseMorphism = Just Refl;
         testEquality QFunction QFunction = Just Refl;
@@ -45,7 +42,6 @@ module Pinafore.Query.Value where
 
     instance Show QValue where
     {
-        show (MkAny QPoint (MkPoint val)) = "!" ++ show val;
         show (MkAny QLiteral val) = unpack val;
         show (MkAny t _) = "<" ++ show t ++ ">";
     };
@@ -58,13 +54,11 @@ module Pinafore.Query.Value where
 
     qapply :: QValue -> QValue -> Result String QValue;
     qapply (MkAny QFunction f) a = f a;
-    qapply (MkAny QMorphism f) (MkAny QPoint a) = return $ MkAny QLensValue $ applyPinaforeLens f $ constGeneralLens $ Just a;
-    qapply (MkAny QMorphism f) (MkAny QLensValue a) = return $ MkAny QLensValue $ applyPinaforeLens f a;
-    qapply (MkAny QMorphism f) (MkAny QLensSet a) = return $ MkAny QLensSet $ readOnlyGeneralLens $ convertGeneralFunction <.> applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a);
-    qapply (MkAny QInverseMorphism f) (MkAny QPoint a) = return $ MkAny QLensSet $ applyInversePinaforeLens f $ constGeneralLens $ Just a;
-    qapply (MkAny QInverseMorphism f) (MkAny QLiteral a) = return $ MkAny QLensSet $ applyInversePinaforeLens (primitivePinaforeLensMorphism . f) $ constGeneralLens $ Just a;
-    qapply (MkAny QInverseMorphism f) (MkAny QLensValue a) = return $ MkAny QLensSet $ applyInversePinaforeLens f a;
-    qapply (MkAny QInverseMorphism f) (MkAny QLensSet a) = return $ MkAny QLensSet $ readOnlyGeneralLens $ convertGeneralFunction <.> applyPinaforeFunction (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f)) (lensFunctionValue a);
+    qapply (MkAny QMorphism f) (MkAny QPoint a) = return $ MkAny QPoint $ applyPinaforeLens f a;
+    qapply (MkAny QMorphism f) (MkAny QSet a) = return $ MkAny QSet $ readOnlyGeneralLens $ convertGeneralFunction <.> applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a);
+    qapply (MkAny QInverseMorphism f) (MkAny QLiteral a) = return $ MkAny QSet $ applyInversePinaforeLens (primitivePinaforeLensMorphism . f) $ constGeneralLens $ Just a;
+    qapply (MkAny QInverseMorphism f) (MkAny QPoint a) = return $ MkAny QSet $ applyInversePinaforeLens f a;
+    qapply (MkAny QInverseMorphism f) (MkAny QSet a) = return $ MkAny QSet $ readOnlyGeneralLens $ convertGeneralFunction <.> applyPinaforeFunction (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f)) (lensFunctionValue a);
     qapply (MkAny tf _) (MkAny ta _) = fail $ "cannot apply " ++ show tf ++ " to " ++ show ta;
 
     qinvert :: QValue -> Result String QValue;
@@ -85,30 +79,24 @@ module Pinafore.Query.Value where
     qpredicate p = MkAny QMorphism $ predicatePinaforeLensMorphism p;
 
     qpoint :: Point -> QValue;
-    qpoint = MkAny QPoint;
-
+    qpoint p = MkAny QPoint $ constGeneralLens $ Just p;
 
     qmeet :: QValue -> QValue -> Result String QValue;
-    qmeet (MkAny QLensSet a) (MkAny QLensSet b) = return $ MkAny QLensSet $ readOnlyGeneralLens meetGeneralFunction <.> pairJoinGeneralLenses a b;
+    qmeet (MkAny QSet a) (MkAny QSet b) = return $ MkAny QSet $ readOnlyGeneralLens meetGeneralFunction <.> pairJoinGeneralLenses a b;
     qmeet (MkAny ta _) (MkAny tb _) = fail $ "cannot meet " ++ show ta ++ " and " ++ show tb;
 
     qjoin :: QValue -> QValue -> Result String QValue;
-    qjoin (MkAny QLensSet a) (MkAny QLensSet b) = return $ MkAny QLensSet $ readOnlyGeneralLens joinGeneralFunction <.> pairJoinGeneralLenses a b;
+    qjoin (MkAny QSet a) (MkAny QSet b) = return $ MkAny QSet $ readOnlyGeneralLens joinGeneralFunction <.> pairJoinGeneralLenses a b;
     qjoin (MkAny ta _) (MkAny tb _) = fail $ "cannot meet " ++ show ta ++ " and " ++ show tb;
 
     qdisplay :: QValue -> PinaforeFunctionValue (FiniteSet Text);
     qdisplay (MkAny QLiteral a) = constGeneralFunction $ opoint a;
     qdisplay (MkAny QPoint a) = let
     {
-        ms (Just t) = opoint t;
-        ms _ = mempty;
-    } in applyPinaforeFunction (arr ms . lensFunctionMorphism primitivePinaforeLensMorphism) $ constGeneralFunction a;
-    qdisplay (MkAny QLensValue a) = let
-    {
         mms (Just (Just t)) = opoint t;
         mms _ = mempty;
     } in applyPinaforeFunction (arr mms . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
-    qdisplay (MkAny QLensSet a) = applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
+    qdisplay (MkAny QSet a) = applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
     qdisplay v = constGeneralFunction $ opoint $ pack $ show v;
 
     class ToQValue t where

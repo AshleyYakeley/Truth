@@ -12,7 +12,6 @@ module Main(main) where
     instance Eq QValue where
     {
         (MkAny QLiteral a1) == (MkAny QLiteral a2) = a1 == a2;
-        (MkAny QPoint a1) == (MkAny QPoint a2) = a1 == a2;
         _ == _ = error "QValue: not comparable";
     };
 
