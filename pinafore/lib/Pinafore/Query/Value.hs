@@ -81,23 +81,56 @@ module Pinafore.Query.Value where
     qpoint :: Point -> QValue;
     qpoint p = MkAny QPoint $ constGeneralLens $ Just p;
 
-    qmeet :: QValue -> QValue -> Result String QValue;
-    qmeet (MkAny QSet a) (MkAny QSet b) = return $ MkAny QSet $ readOnlyGeneralLens meetGeneralFunction <.> pairJoinGeneralLenses a b;
-    qmeet (MkAny ta _) (MkAny tb _) = fail $ "cannot meet " ++ show ta ++ " and " ++ show tb;
+    qmeet :: PinaforeLensValue (FiniteSetEdit Point) -> PinaforeLensValue (FiniteSetEdit Point) -> PinaforeLensValue (FiniteSetEdit Point);
+    qmeet a b = readOnlyGeneralLens meetGeneralFunction <.> pairJoinGeneralLenses a b;
 
-    qjoin :: QValue -> QValue -> Result String QValue;
-    qjoin (MkAny QSet a) (MkAny QSet b) = return $ MkAny QSet $ readOnlyGeneralLens joinGeneralFunction <.> pairJoinGeneralLenses a b;
-    qjoin (MkAny ta _) (MkAny tb _) = fail $ "cannot meet " ++ show ta ++ " and " ++ show tb;
+    qjoin :: PinaforeLensValue (FiniteSetEdit Point) -> PinaforeLensValue (FiniteSetEdit Point) -> PinaforeLensValue (FiniteSetEdit Point);
+    qjoin a b = readOnlyGeneralLens joinGeneralFunction <.> pairJoinGeneralLenses a b;
+
+    maybeToFiniteSet :: Maybe a -> FiniteSet a;
+    maybeToFiniteSet (Just a) = opoint a;
+    maybeToFiniteSet Nothing = mempty;
 
     qdisplay :: QValue -> PinaforeFunctionValue (FiniteSet Text);
-    qdisplay (MkAny QLiteral a) = constGeneralFunction $ opoint a;
-    qdisplay (MkAny QPoint a) = let
+    qdisplay val = case fromQValue val of
     {
-        mms (Just (Just t)) = opoint t;
-        mms _ = mempty;
-    } in applyPinaforeFunction (arr mms . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
-    qdisplay (MkAny QSet a) = applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
-    qdisplay v = constGeneralFunction $ opoint $ pack $ show v;
+        Just a -> a;
+        Nothing -> constGeneralFunction $ opoint $ pack $ show val;
+    };
+
+    class FromQValue t where
+    {
+        fromQValue :: QValue -> Maybe t;
+    };
+
+    instance FromQValue QValue where
+    {
+        fromQValue = Just;
+    };
+
+    instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
+    {
+        fromQValue (MkAny QPoint v) = Just v;
+        fromQValue _ = Nothing;
+    };
+
+    instance FromQValue (PinaforeLensValue (FiniteSetEdit Point)) where
+    {
+        fromQValue (MkAny QPoint v) = Just $ funcROGeneralLens maybeToFiniteSet <.> v;
+        fromQValue (MkAny QSet v) = Just v;
+        fromQValue _ = Nothing;
+    };
+
+    instance FromQValue (PinaforeFunctionValue (FiniteSet Text)) where
+    {
+        fromQValue (MkAny QLiteral a) = Just $ constGeneralFunction $ opoint a;
+        fromQValue (MkAny QPoint a) = Just $ let
+        {
+            mms mmt = maybeToFiniteSet $ mmt >>= id;
+        } in applyPinaforeFunction (arr mms . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
+        fromQValue (MkAny QSet a) = Just $ applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
+        fromQValue _ = Nothing;
+    };
 
     class ToQValue t where
     {
@@ -118,9 +151,13 @@ module Pinafore.Query.Value where
         };
     };
 
-    instance ToQValue a => ToQValue (QValue -> a) where
+    instance (FromQValue a,ToQValue b) => ToQValue (a -> b) where
     {
-        toQValue va = return $ qfunction $ \v -> toQValue $ va v;
+        toQValue ab = return $ qfunction $ \v@(MkAny t _) -> case fromQValue v of
+        {
+            Just a -> toQValue $ ab a;
+            Nothing -> fail $ "unexpected " ++ show t;
+        };
     };
 
     instance ToQValue Predicate where
@@ -156,5 +193,15 @@ module Pinafore.Query.Value where
     instance ToQValue Integer where
     {
         toQValue t = toQValue $ toText t;
+    };
+
+    instance ToQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
+    {
+        toQValue t = return $ MkAny QPoint t;
+    };
+
+    instance ToQValue (PinaforeLensValue (FiniteSetEdit Point)) where
+    {
+        toQValue t = return $ MkAny QSet t;
     };
 }
