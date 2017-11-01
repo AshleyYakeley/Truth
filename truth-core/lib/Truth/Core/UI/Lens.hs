@@ -76,6 +76,9 @@ module Truth.Core.UI.Lens where
         biBackwards a = Just a;
     } in MkBijection{..};
 
+    maybeNothingGeneralLens :: Eq a => a -> GeneralLens (WholeEdit (Maybe a)) (WholeEdit a);
+    maybeNothingGeneralLens def = toGeneralLens $ maybeNothingValueBijection def;
+
     uiNothingValue :: Eq a => a -> UISpec (WholeEdit a) -> UISpec (WholeEdit (Maybe a));
-    uiNothingValue def = uiLens $ toGeneralLens $ maybeNothingValueBijection def;
+    uiNothingValue def = uiLens $ maybeNothingGeneralLens def;
 }

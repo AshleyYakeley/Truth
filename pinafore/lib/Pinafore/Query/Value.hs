@@ -161,6 +161,17 @@ module Pinafore.Query.Value where
         fromQValue v = badFromQValue v;
     };
 
+    instance (FromQValue a,FromQValue b) => FromQValue (a,b) where
+    {
+        fromQValue (MkAny QList [va,vb]) = do
+        {
+            a <- fromQValue va;
+            b <- fromQValue vb;
+            return (a,b);
+        };
+        fromQValue v = badFromQValue v;
+    };
+
     instance FromQValue t => FromQValue (Result String t) where
     {
         fromQValue v = fmap return $ fromQValue v;
@@ -168,13 +179,12 @@ module Pinafore.Query.Value where
 
     instance (ToQValue a,FromQValue b) => FromQValue (a -> Result String b) where
     {
-        fromQValue (MkAny QFunction f) = return $ \a -> do
+        fromQValue vf = return $ \a -> do
         {
             va <- toQValue a;
-            vb <- f va;
+            vb <- qapply vf va;
             fromQValue vb;
         };
-        fromQValue v = badFromQValue v;
     };
 
     class ToQValue t where
@@ -238,6 +248,16 @@ module Pinafore.Query.Value where
     instance ToQValue t => ToQValue [t] where
     {
         toQValue t = fmap (MkAny QList) $ for t toQValue;
+    };
+
+    instance (ToQValue a,ToQValue b) => ToQValue (a,b) where
+    {
+        toQValue (a,b) = do
+        {
+            va <- toQValue a;
+            vb <- toQValue b;
+            toQValue [va,vb];
+        };
     };
 
     instance ToQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
