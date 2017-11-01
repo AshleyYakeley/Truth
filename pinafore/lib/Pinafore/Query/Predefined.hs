@@ -24,7 +24,7 @@ module Pinafore.Query.Predefined(predefinedBindings) where
         -- icon
         -- option
         -- switch
-        qbind "uitable" $ \cols (asp :: Point -> Result String (Text,UISpec PinaforeEdit)) (val :: PinaforeLensValue (FiniteSetEdit Point)) -> let
+        qbind "uiTable" $ \cols (asp :: Point -> Result String (Text,UISpec PinaforeEdit)) (val :: PinaforeLensValue (FiniteSetEdit Point)) -> let
         {
             mapLens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeLensValue (WholeEdit String);
             mapLens lens = maybeNothingGeneralLens mempty <.> applyPinaforeLens primitivePinaforeLensMorphism lens;
