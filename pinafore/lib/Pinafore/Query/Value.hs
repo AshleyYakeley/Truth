@@ -68,7 +68,7 @@ module Pinafore.Query.Value where
 
     qcombine :: QValue -> QValue -> QValue;
     qcombine (MkAny QMorphism g) (MkAny QMorphism f) = MkAny QMorphism $ g . f;
-    qcombine (MkAny QInverseMorphism g) (MkAny QInverseMorphism f) = MkAny QMorphism $ g . f;
+    qcombine (MkAny QInverseMorphism g) (MkAny QInverseMorphism f) = MkAny QInverseMorphism $ g . f;
     qcombine g f = MkAny QFunction $ \a -> do
     {
         b <- qapply f a;
