@@ -114,20 +114,21 @@ module Pinafore.Query.Read(parseExpression) where
         return (name,exprAbstracts args val);
     };
 
-    readBindings :: Parser [(String,QValueExpr)];
+    readBindings :: Parser QBindings;
     readBindings = do
     {
         b <- readBinding;
         mbb <- optional $ do
         {
             readCharAndWS ';';
-            readBindings;
+            MkQBindings bb <- readBindings;
+            return bb;
         };
-        return $ b:(fromMaybe [] mbb);
+        return $ MkQBindings $ b:(fromMaybe [] mbb);
     } <|> do
     {
         readWS;
-        return [];
+        return $ MkQBindings [];
     };
 
     readInfix :: Parser QValueExpr;
@@ -222,6 +223,7 @@ module Pinafore.Query.Read(parseExpression) where
         readDigits = do
         {
             digits <- some readDigit;
+            readWS;
             return $ assembleDigits digits 0;
         };
     } in do

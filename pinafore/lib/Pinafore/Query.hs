@@ -1,4 +1,4 @@
-module Pinafore.Query(QType(..),QValue,qdisplay,parseValue) where
+module Pinafore.Query(QType(..),QValue,QBindings,qdisplay,parseValue) where
 {
     import Shapes;
     import Pinafore.Query.Value;

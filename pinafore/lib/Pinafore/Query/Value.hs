@@ -94,42 +94,61 @@ module Pinafore.Query.Value where
     qdisplay :: QValue -> PinaforeFunctionValue (FiniteSet Text);
     qdisplay val = case fromQValue val of
     {
-        Just a -> a;
-        Nothing -> constGeneralFunction $ opoint $ pack $ show val;
+        SuccessResult a -> a;
+        FailureResult _ -> constGeneralFunction $ opoint $ pack $ show val;
     };
+
+    badFromQValue :: QValue -> Result String t;
+    badFromQValue (MkAny t _) = fail $ "unexpected " ++ show t;
 
     class FromQValue t where
     {
-        fromQValue :: QValue -> Maybe t;
+        fromQValue :: QValue -> Result String t;
     };
 
     instance FromQValue QValue where
     {
-        fromQValue = Just;
+        fromQValue = return;
     };
 
     instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
     {
-        fromQValue (MkAny QPoint v) = Just v;
-        fromQValue _ = Nothing;
+        fromQValue (MkAny QPoint v) = return v;
+        fromQValue v = badFromQValue v;
     };
 
     instance FromQValue (PinaforeLensValue (FiniteSetEdit Point)) where
     {
-        fromQValue (MkAny QPoint v) = Just $ funcROGeneralLens maybeToFiniteSet <.> v;
-        fromQValue (MkAny QSet v) = Just v;
-        fromQValue _ = Nothing;
+        fromQValue (MkAny QPoint v) = return $ funcROGeneralLens maybeToFiniteSet <.> v;
+        fromQValue (MkAny QSet v) = return v;
+        fromQValue v = badFromQValue v;
     };
 
     instance FromQValue (PinaforeFunctionValue (FiniteSet Text)) where
     {
-        fromQValue (MkAny QLiteral a) = Just $ constGeneralFunction $ opoint a;
-        fromQValue (MkAny QPoint a) = Just $ let
+        fromQValue (MkAny QLiteral a) = return $ constGeneralFunction $ opoint a;
+        fromQValue (MkAny QPoint a) = return $ let
         {
             mms mmt = maybeToFiniteSet $ mmt >>= id;
         } in applyPinaforeFunction (arr mms . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
-        fromQValue (MkAny QSet a) = Just $ applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
-        fromQValue _ = Nothing;
+        fromQValue (MkAny QSet a) = return $ applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
+        fromQValue v = badFromQValue v;
+    };
+
+    instance FromQValue t => FromQValue (Result String t) where
+    {
+        fromQValue v = fmap return $ fromQValue v;
+    };
+
+    instance (ToQValue a,FromQValue b) => FromQValue (a -> Result String b) where
+    {
+        fromQValue (MkAny QFunction f) = return $ \a -> do
+        {
+            va <- toQValue a;
+            vb <- f va;
+            fromQValue vb;
+        };
+        fromQValue v = badFromQValue v;
     };
 
     class ToQValue t where
@@ -153,10 +172,10 @@ module Pinafore.Query.Value where
 
     instance (FromQValue a,ToQValue b) => ToQValue (a -> b) where
     {
-        toQValue ab = return $ qfunction $ \v@(MkAny t _) -> case fromQValue v of
+        toQValue ab = return $ qfunction $ \v -> do
         {
-            Just a -> toQValue $ ab a;
-            Nothing -> fail $ "unexpected " ++ show t;
+            a <- fromQValue v;
+            toQValue $ ab a;
         };
     };
 

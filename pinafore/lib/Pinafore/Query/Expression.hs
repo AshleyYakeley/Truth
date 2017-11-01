@@ -43,9 +43,14 @@ module Pinafore.Query.Expression where
     qlet :: String -> QValueExpr -> QExpr (Result String a) -> QExpr (Result String a);
     qlet name val body = (>>=) <$> val <*> qabstract name body;
 
-    qlets :: [(String,QValueExpr)] -> QExpr (Result String a) -> QExpr (Result String a);
-    qlets [] = id;
-    qlets ((n,v):bb) = qlet n v . qlets bb;
+    newtype QBindings = MkQBindings [(String,QValueExpr)] deriving (Semigroup,Monoid);
+
+    qlets :: QBindings -> QExpr (Result String a) -> QExpr (Result String a);
+    qlets = let
+    {
+        qlets' [] = id;
+        qlets' ((n,v):bb) = qlet n v . qlets' bb;
+    } in \(MkQBindings bb) -> qlets' bb;
 
     exprApply :: QValueExpr-> QValueExpr -> QValueExpr;
     exprApply = liftA2 $ \mf ma -> do
