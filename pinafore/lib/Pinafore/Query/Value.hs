@@ -13,6 +13,7 @@ module Pinafore.Query.Value where
         QSet :: QType (PinaforeLensValue (FiniteSetEdit Point));
         QMorphism :: QType (PinaforeLensMorphism Point Point);
         QInverseMorphism :: QType (PinaforeLensMorphism Point Point);
+        QList :: QType [QValue];
         QFunction :: QType (QValue -> Result String QValue);
         QUISpec :: QType (UISpec PinaforeEdit);
     };
@@ -24,6 +25,7 @@ module Pinafore.Query.Value where
         show QSet = "set";
         show QMorphism = "morphism";
         show QInverseMorphism = "inverse morphism";
+        show QList = "list";
         show QFunction = "function";
         show QUISpec = "user interface";
     };
@@ -35,7 +37,9 @@ module Pinafore.Query.Value where
         testEquality QSet QSet = Just Refl;
         testEquality QMorphism QMorphism = Just Refl;
         testEquality QInverseMorphism QInverseMorphism = Just Refl;
+        testEquality QList QList = Just Refl;
         testEquality QFunction QFunction = Just Refl;
+        testEquality QUISpec QUISpec = Just Refl;
         testEquality _ _ = Nothing;
     };
 
@@ -46,6 +50,7 @@ module Pinafore.Query.Value where
     {
         show (MkAny QLiteral val) = unpack val;
         show (MkAny QUISpec val) = show val;
+        show (MkAny QList val) = "[" ++ intercalate "," (fmap show val) ++ "]";
         show (MkAny t _) = "<" ++ show t ++ ">";
     };
 
@@ -120,19 +125,6 @@ module Pinafore.Query.Value where
         fromQValue v = badFromQValue v;
     };
 
-    instance FromQValue String where
-    {
-        fromQValue v = do
-        {
-            text <- fromQValue v;
-            case fromText text of
-            {
-                Just a -> return a;
-                Nothing -> fail "couldn't interpret text";
-            };
-        };
-    };
-
     instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
     {
         fromQValue (MkAny QPoint v) = return v;
@@ -160,6 +152,12 @@ module Pinafore.Query.Value where
     instance FromQValue (UISpec PinaforeEdit) where
     {
         fromQValue (MkAny QUISpec v) = return v;
+        fromQValue v = badFromQValue v;
+    };
+
+    instance FromQValue t => FromQValue [t] where
+    {
+        fromQValue (MkAny QList v) = for v fromQValue;
         fromQValue v = badFromQValue v;
     };
 
@@ -222,11 +220,6 @@ module Pinafore.Query.Value where
         toQValue p = return $ qliteral p;
     };
 
-    instance ToQValue String where
-    {
-        toQValue t = toQValue $ toText t;
-    };
-
     instance ToQValue Bool where
     {
         toQValue t = toQValue $ toText t;
@@ -240,6 +233,11 @@ module Pinafore.Query.Value where
     instance ToQValue Integer where
     {
         toQValue t = toQValue $ toText t;
+    };
+
+    instance ToQValue t => ToQValue [t] where
+    {
+        toQValue t = fmap (MkAny QList) $ for t toQValue;
     };
 
     instance ToQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where

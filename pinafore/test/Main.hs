@@ -45,8 +45,7 @@ module Main(main) where
         (Nothing,FailureResult _) -> return ();
         (Nothing,SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ show v;
         (Just _,FailureResult e) -> assertFailure $ "expected success, found failure: " ++ e;
-        (Just s,SuccessResult (MkAny QLiteral t)) -> assertEqual "result" s (unpack t);
-        (Just _,SuccessResult v) -> assertFailure $ "unexpected non-literal: " ++ show v;
+        (Just s,SuccessResult v) -> assertEqual "result" s (show v);
     };
 
     testQueries :: TestTree;
@@ -54,12 +53,21 @@ module Main(main) where
     [
         testQuery "" $ Nothing,
         testQuery "x" $ Nothing,
+
+        -- constants
         testQuery "\"\"" $ Just "",
         testQuery "\"Hello \"" $ Just "Hello ",
         testQuery "true" $ Just "true",
         testQuery "false" $ Just "false",
         testQuery "\"1\"" $ Just "1",
         testQuery "3" $ Just "3",
+
+        -- list construction
+        testQuery "[]" $ Just "[]",
+        testQuery "[1]" $ Just "[1]",
+        testQuery "[1,2,3]" $ Just "[1,2,3]",
+
+        -- let-binding
         testQuery "let a=\"5\" in a" $ Just "5",
         testQuery "let a=5 in a" $ Just "5",
         testQuery "let a=1;b=2 in a" $ Just "1",

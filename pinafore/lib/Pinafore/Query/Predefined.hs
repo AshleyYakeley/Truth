@@ -16,6 +16,13 @@ module Pinafore.Query.Predefined(predefinedBindings) where
         --qbind "uiCheckbox" $ \name lens -> (uiLens lens $ uiCheckbox name :: UISpec PinaforeEdit),
         qbind "uiTextEntry" $ valSpec $ uiNothingValue mempty uiTextEntry,
         qbind "uiTextArea" $ valSpec $ uiNothingValue mempty $ uiConvert uiTextText,
-        qbind "uiLabelled" uiLabelled
+        qbind "uiLabelled" $ \text -> uiLabelled $ unpack (text :: Text),
+        qbind "uiVertical" uiVertical
+        -- CSS
+        -- drag
+        -- icon
+        -- option
+        -- switch
+        -- table
     ];
 }

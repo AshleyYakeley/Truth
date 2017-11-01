@@ -253,13 +253,28 @@ module Pinafore.Query.Read(parseExpression) where
     } <|> do
     {
         str <- readQuotedString;
-        return $ pure $ toQValue str;
+        return $ pure $ toQValue $ (pack str :: Text);
     } <|> do
     {
         readCharAndWS '(';
         expr <- readExpression;
         readCharAndWS ')';
         return $ expr;
+    } <|> do
+    {
+        readCharAndWS '[';
+        exprs <- do
+        {
+            expr1 <- readExpression;
+            exprs <- many $ do
+            {
+                readCharAndWS ',';
+                readExpression;
+            };
+            return $ expr1:exprs;
+        } <|> return [];
+        readCharAndWS ']';
+        return $ fmap (fmap (MkAny QList) . sequenceA) $ sequenceA exprs;
     } <|> do
     {
         readCharAndWS '@';
