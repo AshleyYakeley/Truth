@@ -45,6 +45,9 @@ module Pinafore.Query.Expression where
 
     newtype QBindings = MkQBindings [(String,QValueExpr)] deriving (Semigroup,Monoid);
 
+    qbind :: ToQValue t => String -> t -> QBindings;
+    qbind name val = MkQBindings [(name,pure $ toQValue val)];
+
     qlets :: QBindings -> QExpr (Result String a) -> QExpr (Result String a);
     qlets = let
     {

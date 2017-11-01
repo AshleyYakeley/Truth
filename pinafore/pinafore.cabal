@@ -79,6 +79,7 @@ library
         Pinafore.AsText
         Pinafore.Edit
         Pinafore.Query.Read
+        Pinafore.Query.Predefined
         Pinafore.Ontology
         Pinafore.SQLite
         Pinafore.Example

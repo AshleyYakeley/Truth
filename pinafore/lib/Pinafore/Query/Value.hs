@@ -14,6 +14,7 @@ module Pinafore.Query.Value where
         QMorphism :: QType (PinaforeLensMorphism Point Point);
         QInverseMorphism :: QType (PinaforeLensMorphism Point Point);
         QFunction :: QType (QValue -> Result String QValue);
+        QUISpec :: QType (UISpec PinaforeEdit);
     };
 
     instance Show (QType t) where
@@ -24,6 +25,7 @@ module Pinafore.Query.Value where
         show QMorphism = "morphism";
         show QInverseMorphism = "inverse morphism";
         show QFunction = "function";
+        show QUISpec = "user interface";
     };
 
     instance TestEquality QType where
@@ -43,6 +45,7 @@ module Pinafore.Query.Value where
     instance Show QValue where
     {
         show (MkAny QLiteral val) = unpack val;
+        show (MkAny QUISpec val) = show val;
         show (MkAny t _) = "<" ++ show t ++ ">";
     };
 
@@ -111,6 +114,25 @@ module Pinafore.Query.Value where
         fromQValue = return;
     };
 
+    instance FromQValue Text where
+    {
+        fromQValue (MkAny QLiteral v) = return v;
+        fromQValue v = badFromQValue v;
+    };
+
+    instance FromQValue String where
+    {
+        fromQValue v = do
+        {
+            text <- fromQValue v;
+            case fromText text of
+            {
+                Just a -> return a;
+                Nothing -> fail "couldn't interpret text";
+            };
+        };
+    };
+
     instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
     {
         fromQValue (MkAny QPoint v) = return v;
@@ -132,6 +154,12 @@ module Pinafore.Query.Value where
             mms mmt = maybeToFiniteSet $ mmt >>= id;
         } in applyPinaforeFunction (arr mms . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
         fromQValue (MkAny QSet a) = return $ applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
+        fromQValue v = badFromQValue v;
+    };
+
+    instance FromQValue (UISpec PinaforeEdit) where
+    {
+        fromQValue (MkAny QUISpec v) = return v;
         fromQValue v = badFromQValue v;
     };
 
@@ -222,5 +250,10 @@ module Pinafore.Query.Value where
     instance ToQValue (PinaforeLensValue (FiniteSetEdit Point)) where
     {
         toQValue t = return $ MkAny QSet t;
+    };
+
+    instance edit ~ PinaforeEdit => ToQValue (UISpec edit) where
+    {
+        toQValue t = return $ MkAny QUISpec t;
     };
 }
