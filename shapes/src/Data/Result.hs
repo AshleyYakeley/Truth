@@ -10,6 +10,10 @@ module Data.Result where
     resultToMaybe (SuccessResult a) = Just a;
     resultToMaybe _ = Nothing;
 
+    resultToM :: MonadFail m => Result String a -> m a;
+    resultToM (SuccessResult a) = return a;
+    resultToM (FailureResult e) = fail e;
+
     eitherToResult :: Either e a -> Result e a;
     eitherToResult (Left e) = FailureResult e;
     eitherToResult (Right a) = SuccessResult a;

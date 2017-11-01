@@ -10,10 +10,6 @@ module Pinafore.Query.Predefined(predefinedBindings) where
     valSpec :: AsText val => UISpec (WholeEdit (Maybe val)) -> PinaforeLensValue (WholeEdit (Maybe Point)) -> UISpec PinaforeEdit;
     valSpec spec val = uiLens (applyPinaforeLens primitivePinaforeLensMorphism val) spec;
 
-    resultToM :: MonadFail m => Result String a -> m a;
-    resultToM (SuccessResult a) = return a;
-    resultToM (FailureResult e) = fail e;
-
     predefinedBindings :: QBindings;
     predefinedBindings = mconcat
     [
@@ -37,7 +33,7 @@ module Pinafore.Query.Predefined(predefinedBindings) where
             getColumn (name,f) = MkKeyColumn (unpack name) $ \p -> resultToM $ fmap mapLens $ f p;
 
             aspect :: Point -> IO (Maybe (String,UISpec PinaforeEdit));
-            aspect point = return $ resultToM $ fmap (first unpack) $ asp point;
+            aspect point = resultToM $ fmap (return . first unpack) $ asp point;
         } in uiTable (fmap getColumn cols) aspect val
     ];
 }

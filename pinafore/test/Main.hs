@@ -45,7 +45,7 @@ module Main(main) where
         (Nothing,FailureResult _) -> return ();
         (Nothing,SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ show v;
         (Just _,FailureResult e) -> assertFailure $ "expected success, found failure: " ++ e;
-        (Just s,SuccessResult v) -> assertEqual "result" s (show v);
+        (Just s,SuccessResult (v :: QValue)) -> assertEqual "result" s (show v);
     };
 
     testQueries :: TestTree;

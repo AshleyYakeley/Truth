@@ -1,4 +1,4 @@
-module Pinafore.Query(QType(..),QValue,QBindings,qdisplay,parseValue) where
+module Pinafore.Query(QType(..),QValue,FromQValue(..),QBindings,qdisplay,parseValue) where
 {
     import Shapes;
     import Pinafore.Query.Value;
@@ -7,11 +7,12 @@ module Pinafore.Query(QType(..),QValue,QBindings,qdisplay,parseValue) where
     import Pinafore.Query.Predefined;
 
 
-    parseValue :: String -> String -> Result String QValue;
+    parseValue :: FromQValue t => String -> String -> Result String t;
     parseValue name text = do
     {
         expr <- parseExpression name text;
         mval <- qeval $ qlets predefinedBindings expr;
-        mval;
+        val <- mval;
+        fromQValue val;
     };
 }
