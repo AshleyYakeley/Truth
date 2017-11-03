@@ -73,6 +73,17 @@ module Data.Result where
 
     instance Monoid e => MonadPlus (Result e);
 
+    instance MonadFix (Result e) where
+    {
+        mfix ama = let
+        {
+            getSuccess (SuccessResult a) = a;
+            getSuccess (FailureResult _) = error "mfix FailureResult";
+
+            ma = ama $ getSuccess ma;
+        } in ma;
+    };
+
     mapResult :: Bijection (Result e2 (Result e1 a)) (Result (Either e2 e1) a);
     mapResult = MkBijection forwards backwards where
     {

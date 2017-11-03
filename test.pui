@@ -7,10 +7,18 @@ root = !78baed51-cb05-46b5-bcb4-49031532b890;
 
 window name spec = [name,spec];
 
-uiPerson p = uiVertical [uiLabelled "Name" $ uiTextEntry (name p)];
-wPerson p = window "Item" $ uiPerson p;
+parents p = mother p | father p;
+children p = @mother p | @father p;
 
-uiPeople = uiTable [["Name",name]] wPerson (@people root);
-wPeople = window "People" uiPeople;
+wPerson p = window "Item" $ uiPerson p;
+uiPeople pp = uiTable [["Name",name]] wPerson pp;
+
+uiPerson p = uiVertical
+[
+    uiLabelled "Name" $ uiTextEntry $ name p,
+    uiPeople $ children p
+];
+
+wPeople = window "People" $ uiPeople (@people root);
 
 in [wPeople,wPeople] # put two windows up for update testing

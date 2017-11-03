@@ -8,18 +8,20 @@ module Pinafore.Query.Value where
 
     data QType t where
     {
+        QException :: QType String;
         QLiteral :: QType Text;
         QPoint :: QType (PinaforeLensValue (WholeEdit (Maybe Point)));
         QSet :: QType (PinaforeLensValue (FiniteSetEdit Point));
         QMorphism :: QType (PinaforeLensMorphism Point Point);
         QInverseMorphism :: QType (PinaforeLensMorphism Point Point);
         QList :: QType [QValue];
-        QFunction :: QType (QValue -> Result String QValue);
+        QFunction :: QType (QValue -> QValue);
         QUISpec :: QType (UISpec PinaforeEdit);
     };
 
     instance Show (QType t) where
     {
+        show QException = "exception";
         show QLiteral = "literal";
         show QPoint = "point";
         show QSet = "set";
@@ -32,6 +34,7 @@ module Pinafore.Query.Value where
 
     instance TestEquality QType where
     {
+        testEquality QException QException = Just Refl;
         testEquality QLiteral QLiteral = Just Refl;
         testEquality QPoint QPoint = Just Refl;
         testEquality QSet QSet = Just Refl;
@@ -48,6 +51,7 @@ module Pinafore.Query.Value where
 
     instance Show QValue where
     {
+        show (MkAny QException val) = "exception: " ++ val;
         show (MkAny QLiteral val) = unpack val;
         show (MkAny QUISpec val) = show val;
         show (MkAny QList val) = "[" ++ intercalate "," (fmap show val) ++ "]";
@@ -57,31 +61,32 @@ module Pinafore.Query.Value where
     qliteral :: Text -> QValue;
     qliteral = MkAny QLiteral;
 
-    qfunction :: (QValue -> Result String QValue) -> QValue;
+    qfunction :: (QValue -> QValue) -> QValue;
     qfunction = MkAny QFunction;
 
-    qapply :: QValue -> QValue -> Result String QValue;
-    qapply (MkAny QFunction f) a = f a;
-    qapply (MkAny QMorphism f) (MkAny QPoint a) = return $ MkAny QPoint $ applyPinaforeLens f a;
-    qapply (MkAny QMorphism f) (MkAny QSet a) = return $ MkAny QSet $ readOnlyGeneralLens $ convertGeneralFunction <.> applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a);
-    qapply (MkAny QInverseMorphism f) (MkAny QLiteral a) = return $ MkAny QSet $ applyInversePinaforeLens (primitivePinaforeLensMorphism . f) $ constGeneralLens $ Just a;
-    qapply (MkAny QInverseMorphism f) (MkAny QPoint a) = return $ MkAny QSet $ applyInversePinaforeLens f a;
-    qapply (MkAny QInverseMorphism f) (MkAny QSet a) = return $ MkAny QSet $ readOnlyGeneralLens $ convertGeneralFunction <.> applyPinaforeFunction (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f)) (lensFunctionValue a);
-    qapply (MkAny tf _) (MkAny ta _) = fail $ "cannot apply " ++ show tf ++ " to " ++ show ta;
+    qexception :: String -> QValue;
+    qexception = MkAny QException;
 
-    qinvert :: QValue -> Result String QValue;
-    qinvert (MkAny QMorphism m) = return $ MkAny QInverseMorphism m;
-    qinvert (MkAny QInverseMorphism m) = return $ MkAny QMorphism m;
-    qinvert (MkAny t _) = fail $ "cannot invert " ++ show t;
+    qapply :: QValue -> QValue -> QValue;
+    qapply (MkAny QException ex) _ = MkAny QException ex;
+    qapply (MkAny QFunction f) a = f a;
+    qapply (MkAny QMorphism f) (MkAny QPoint a) = MkAny QPoint $ applyPinaforeLens f a;
+    qapply (MkAny QMorphism f) (MkAny QSet a) = MkAny QSet $ readOnlyGeneralLens $ convertGeneralFunction <.> applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a);
+    qapply (MkAny QInverseMorphism f) (MkAny QLiteral a) = MkAny QSet $ applyInversePinaforeLens (primitivePinaforeLensMorphism . f) $ constGeneralLens $ Just a;
+    qapply (MkAny QInverseMorphism f) (MkAny QPoint a) = MkAny QSet $ applyInversePinaforeLens f a;
+    qapply (MkAny QInverseMorphism f) (MkAny QSet a) = MkAny QSet $ readOnlyGeneralLens $ convertGeneralFunction <.> applyPinaforeFunction (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f)) (lensFunctionValue a);
+    qapply (MkAny tf _) (MkAny ta _) = qexception $ "cannot apply " ++ show tf ++ " to " ++ show ta;
+
+    qinvert :: QValue -> QValue;
+    qinvert (MkAny QException ex) = MkAny QException ex;
+    qinvert (MkAny QMorphism m) = MkAny QInverseMorphism m;
+    qinvert (MkAny QInverseMorphism m) = MkAny QMorphism m;
+    qinvert (MkAny t _) = qexception $ "cannot invert " ++ show t;
 
     qcombine :: QValue -> QValue -> QValue;
     qcombine (MkAny QMorphism g) (MkAny QMorphism f) = MkAny QMorphism $ g . f;
     qcombine (MkAny QInverseMorphism g) (MkAny QInverseMorphism f) = MkAny QInverseMorphism $ g . f;
-    qcombine g f = MkAny QFunction $ \a -> do
-    {
-        b <- qapply f a;
-        qapply g b;
-    };
+    qcombine g f = MkAny QFunction $ qapply g . qapply f;
 
     qpredicate :: Predicate -> QValue;
     qpredicate p = MkAny QMorphism $ predicatePinaforeLensMorphism p;
@@ -107,6 +112,7 @@ module Pinafore.Query.Value where
     };
 
     badFromQValue :: QValue -> Result String t;
+    badFromQValue (MkAny QException s) = fail s;
     badFromQValue (MkAny t _) = fail $ "unexpected " ++ show t;
 
     class FromQValue t where
@@ -179,55 +185,43 @@ module Pinafore.Query.Value where
 
     instance (ToQValue a,FromQValue b) => FromQValue (a -> Result String b) where
     {
-        fromQValue vf = return $ \a -> do
-        {
-            va <- toQValue a;
-            vb <- qapply vf va;
-            fromQValue vb;
-        };
+        fromQValue vf = return $ fromQValue . qapply vf . toQValue;
     };
 
     class ToQValue t where
     {
-        toQValue :: t -> Result String QValue;
+        toQValue :: t -> QValue;
     };
 
     instance ToQValue QValue where
     {
-        toQValue = return
+        toQValue = id
     };
 
-    instance ToQValue a => ToQValue (Result String a) where
+    instance ToQValue t => ToQValue (Result String t) where
     {
-        toQValue ma = do
-        {
-            a <- ma;
-            toQValue a;
-        };
+        toQValue (SuccessResult a) = toQValue a;
+        toQValue (FailureResult e) = qexception e;
     };
 
     instance (FromQValue a,ToQValue b) => ToQValue (a -> b) where
     {
-        toQValue ab = return $ qfunction $ \v -> do
-        {
-            a <- fromQValue v;
-            toQValue $ ab a;
-        };
+        toQValue ab = qfunction $ toQValue . fmap ab . fromQValue;
     };
 
     instance ToQValue Predicate where
     {
-        toQValue p = return $ qpredicate p;
+        toQValue p = qpredicate p;
     };
 
     instance ToQValue Point where
     {
-        toQValue p = return $ qpoint p;
+        toQValue p = qpoint p;
     };
 
     instance ToQValue Text where
     {
-        toQValue p = return $ qliteral p;
+        toQValue p = qliteral p;
     };
 
     instance ToQValue Bool where
@@ -247,31 +241,26 @@ module Pinafore.Query.Value where
 
     instance ToQValue t => ToQValue [t] where
     {
-        toQValue t = fmap (MkAny QList) $ for t toQValue;
+        toQValue t = MkAny QList $ fmap toQValue t;
     };
 
     instance (ToQValue a,ToQValue b) => ToQValue (a,b) where
     {
-        toQValue (a,b) = do
-        {
-            va <- toQValue a;
-            vb <- toQValue b;
-            toQValue [va,vb];
-        };
+        toQValue (a,b) = toQValue [toQValue a,toQValue b];
     };
 
     instance ToQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
     {
-        toQValue t = return $ MkAny QPoint t;
+        toQValue t = MkAny QPoint t;
     };
 
     instance ToQValue (PinaforeLensValue (FiniteSetEdit Point)) where
     {
-        toQValue t = return $ MkAny QSet t;
+        toQValue t = MkAny QSet t;
     };
 
     instance edit ~ PinaforeEdit => ToQValue (UISpec edit) where
     {
-        toQValue t = return $ MkAny QUISpec t;
+        toQValue t = MkAny QUISpec t;
     };
 }

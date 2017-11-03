@@ -11,8 +11,7 @@ module Pinafore.Query(QType(..),QValue,FromQValue(..),QBindings,qdisplay,parseVa
     parseValue name text = do
     {
         expr <- parseExpression name text;
-        mval <- qeval $ qlets predefinedBindings expr;
-        val <- mval;
+        val <- qeval $ qlets predefinedBindings expr;
         fromQValue val;
     };
 }

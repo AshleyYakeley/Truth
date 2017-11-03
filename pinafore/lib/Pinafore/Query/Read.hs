@@ -84,22 +84,38 @@ module Pinafore.Query.Read(parseExpression) where
     identifierChar '_' = True;
     identifierChar c = isAlphaNum c;
 
-    readIdentifier :: Parser String;
-    readIdentifier = Text.Parsec.try $ do
+    data Keyword t where
+    {
+        KWLet :: Keyword ();
+        KWIn :: Keyword ();
+        KWBool :: Keyword Bool;
+        KWIdentifier :: Keyword String;
+    };
+
+    readKeyword :: Keyword t -> Parser t;
+    readKeyword kw = Text.Parsec.try $ do
     {
         firstC <- satisfy isAlpha;
         rest <- many $ satisfy identifierChar;
         readWS;
-        case firstC:rest of
+        case (kw,firstC:rest) of
         {
             -- keywords
-            "let" -> empty;
-            "in" -> empty;
-            "true" -> empty;
-            "false" -> empty;
-            name -> return name;
+            (KWLet,"let") -> return ();
+            (_,"let") -> empty;
+            (KWIn,"in") -> return ();
+            (_,"in") -> empty;
+            (KWBool,"true") -> return True;
+            (_,"true") -> empty;
+            (KWBool,"false") -> return False;
+            (_,"false") -> empty;
+            (KWIdentifier,name) -> return name;
+            (_,_) -> empty;
         };
     };
+
+    readIdentifier :: Parser String;
+    readIdentifier = readKeyword KWIdentifier;
 
     readPattern :: Parser String;
     readPattern = readIdentifier;
@@ -160,9 +176,9 @@ module Pinafore.Query.Read(parseExpression) where
         return $ exprAbstracts args val;
     } <|> do
     {
-        readStringAndWS "let";
+        readKeyword KWLet;
         bindings <- readBindings;
-        readStringAndWS "in";
+        readKeyword KWIn;
         body <- readExpression;
         return $ qlets bindings body;
     } <|> do
@@ -236,12 +252,8 @@ module Pinafore.Query.Read(parseExpression) where
     readSingleExpression :: Parser QValueExpr;
     readSingleExpression = do
     {
-        readStringAndWS "true";
-        return $ pure $ toQValue True;
-    } <|> do
-    {
-        readStringAndWS "false";
-        return $ pure $ toQValue False;
+        b <- readKeyword KWBool;
+        return $ pure $ toQValue b;
     } <|> do
     {
         name <- readIdentifier;
@@ -274,7 +286,7 @@ module Pinafore.Query.Read(parseExpression) where
             return $ expr1:exprs;
         } <|> return [];
         readCharAndWS ']';
-        return $ fmap (fmap (MkAny QList) . sequenceA) $ sequenceA exprs;
+        return $ fmap (MkAny QList) $ sequenceA exprs;
     } <|> do
     {
         readCharAndWS '@';

@@ -1,6 +1,7 @@
 module Pinafore.Query.Expression where
 {
     import Shapes;
+    import Data.List(head,tail);
     import Pinafore.Query.Value;
 
 
@@ -28,40 +29,44 @@ module Pinafore.Query.Expression where
     qeval (ClosedQExpr a) = return a;
     qeval (OpenQExpr name _) = fail $ "undefined: " ++ name;
 
-    type QValueExpr = QExpr (Result String QValue);
+    type QValueExpr = QExpr QValue;
 
     exprAbstract :: String -> QValueExpr -> QValueExpr;
-    exprAbstract name expr = fmap (return . qfunction) $ qabstract name expr;
+    exprAbstract name expr = fmap qfunction $ qabstract name expr;
 
     exprAbstracts :: [String] -> QValueExpr -> QValueExpr;
     exprAbstracts [] = id;
     exprAbstracts (n:nn) = exprAbstract n . exprAbstracts nn;
 
     qvar :: String -> QValueExpr;
-    qvar name = OpenQExpr name $ ClosedQExpr return;
+    qvar name = OpenQExpr name $ ClosedQExpr id;
 
-    qlet :: String -> QValueExpr -> QExpr (Result String a) -> QExpr (Result String a);
-    qlet name val body = (>>=) <$> val <*> qabstract name body;
+    qlet :: String -> QValueExpr -> QExpr a -> QExpr a;
+    qlet name val body = qabstract name body <*> val;
 
     newtype QBindings = MkQBindings [(String,QValueExpr)] deriving (Semigroup,Monoid);
 
     qbind :: ToQValue t => String -> t -> QBindings;
     qbind name val = MkQBindings [(name,pure $ toQValue val)];
 
-    qlets :: QBindings -> QExpr (Result String a) -> QExpr (Result String a);
-    qlets = let
+    qlets :: QBindings -> QExpr a -> QExpr a;
+    qlets (MkQBindings bb) body = let
     {
-        qlets' [] = id;
-        qlets' ((n,v):bb) = qlet n v . qlets' bb;
-    } in \(MkQBindings bb) -> qlets' bb;
+        appCons vva vv = vva (head vv) (tail vv);
+
+        abstractList :: [String] -> QExpr a -> QExpr ([QValue] -> a);
+        abstractList [] expr = fmap (\a _ -> a) expr;
+        abstractList (n:nn) expr = fmap appCons $ qabstract n $ abstractList nn expr;
+
+        abstractNames :: QExpr a -> QExpr ([QValue] -> a);
+        abstractNames = abstractList (fmap fst bb);
+
+        exprs :: QExpr [QValue];
+        exprs = fmap fix $ abstractNames $ for bb $ \(_,b) -> b;
+    } in abstractNames body <*> exprs;
 
     exprApply :: QValueExpr-> QValueExpr -> QValueExpr;
-    exprApply = liftA2 $ \mf ma -> do
-    {
-        f <- mf;
-        a <- ma;
-        qapply f a;
-    };
+    exprApply = liftA2 qapply;
 
     exprApplyAll :: QValueExpr -> [QValueExpr] -> QValueExpr;
     exprApplyAll e [] = e;
