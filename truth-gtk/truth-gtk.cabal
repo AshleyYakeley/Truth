@@ -1,7 +1,9 @@
 cabal-version: >=1.14
 name: truth-gtk
 version: 0.1
-license: AllRightsReserved
+copyright: (c) 2017 Ashley Yakeley
+license: GPL-2
+license-file: LICENSE
 author: Ashley Yakeley
 maintainer: <ashley@semantic.org>
 build-type: Simple

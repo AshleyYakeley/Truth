@@ -3,11 +3,11 @@ name: shapes
 version: 0.1.0.0
 -- synopsis:
 -- description:
-license:  BSD2
+copyright: (c) 2017 Ashley Yakeley
+license: GPL-2
 license-file: LICENSE
 author: Ashley Yakeley
 maintainer: ashley@semantic.org
--- copyright:
 category: Data
 build-type: Simple
 -- extra-source-files:
