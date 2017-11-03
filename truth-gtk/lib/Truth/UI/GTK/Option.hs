@@ -34,7 +34,7 @@ module Truth.UI.GTK.Option(optionGetView) where
         return store;
     };
 
-    optionFromStore :: Eq t => ListStore (t,String) -> GCreateView (WholeEdit t);
+    optionFromStore :: forall t. Eq t => ListStore (t,String) -> GCreateView (WholeEdit t);
     optionFromStore store = do
     {
         widget <- liftIO $ do
@@ -60,23 +60,35 @@ module Truth.UI.GTK.Option(optionGetView) where
             };
         };
 
-        createViewReceiveUpdate $ \_mr (MkWholeEdit t) -> liftIO $ do
+        let
         {
-            items <- listStoreToList store;
-            case find (\(_,(t',_)) -> t == t') $ zip [(0 :: Int)..] items of
+            update :: MonadIO m => t -> m ();
+            update t = liftIO $ do
             {
-                Just (i,_) -> do
+                items <- listStoreToList store;
+                case find (\(_,(t',_)) -> t == t') $ zip [(0 :: Int)..] items of
                 {
-                    mti <- treeModelGetIter store [i];
-                    case mti of
+                    Just (i,_) -> do
                     {
-                        Just ti -> withSignalBlocked changedSignal $ comboBoxSetActiveIter widget ti;
-                        Nothing -> return ();
+                        mti <- treeModelGetIter store [i];
+                        case mti of
+                        {
+                            Just ti -> withSignalBlocked changedSignal $ comboBoxSetActiveIter widget ti;
+                            Nothing -> return ();
+                        };
                     };
+                    Nothing -> return ();
                 };
-                Nothing -> return ();
             };
         };
+
+        liftOuter $ viewMutableRead $ \mr -> do
+        {
+            t <- mr ReadWhole;
+            update t;
+        };
+
+        createViewReceiveUpdate $ \_mr (MkWholeEdit t) -> update t;
         return $ toWidget widget;
     };
 

@@ -137,10 +137,36 @@ module Pinafore.Query.Value where
         fromQValue v = badFromQValue v;
     };
 
+    instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Text))) where
+    {
+        fromQValue (MkAny QLiteral v) = return $ constGeneralLens $ Just v;
+        fromQValue (MkAny QPoint v) = return $ applyPinaforeLens primitivePinaforeLensMorphism v;
+        fromQValue v = badFromQValue v;
+    };
+
+    instance FromQValue (PinaforeLensValue (WholeEdit (Maybe t))) => FromQValue (PinaforeFunctionValue (Maybe t)) where
+    {
+        fromQValue v = do
+        {
+            a :: PinaforeLensValue (WholeEdit (Maybe t)) <- fromQValue v;
+            return $ lensFunctionValue a;
+        };
+    };
+
     instance FromQValue (PinaforeLensValue (FiniteSetEdit Point)) where
     {
         fromQValue (MkAny QPoint v) = return $ funcROGeneralLens maybeToFiniteSet <.> v;
         fromQValue (MkAny QSet v) = return v;
+        fromQValue v = badFromQValue v;
+    };
+
+    instance FromQValue (PinaforeFunctionValue (FiniteSet Point)) where
+    {
+        fromQValue (MkAny QPoint a) = return $ let
+        {
+            mms mmt = maybeToFiniteSet $ mmt >>= id;
+        } in applyPinaforeFunction (arr mms . cfmap (lensFunctionMorphism id)) (lensFunctionValue a);
+        fromQValue (MkAny QSet a) = return $ applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism id)) (lensFunctionValue a);
         fromQValue v = badFromQValue v;
     };
 
@@ -153,6 +179,30 @@ module Pinafore.Query.Value where
         } in applyPinaforeFunction (arr mms . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
         fromQValue (MkAny QSet a) = return $ applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism)) (lensFunctionValue a);
         fromQValue v = badFromQValue v;
+    };
+
+    instance FromQValue (PinaforeLensMorphism Point Point) where
+    {
+        fromQValue (MkAny QMorphism v) = return v;
+        fromQValue v = badFromQValue v;
+    };
+
+    instance FromQValue (PinaforeLensMorphism Point Text) where
+    {
+        fromQValue v = do
+        {
+            m <- fromQValue v;
+            return $ primitivePinaforeLensMorphism . m;
+        };
+    };
+
+    instance FromQValue (PinaforeLensMorphism a b) => FromQValue (PinaforeFunctionMorphism a (Maybe b)) where
+    {
+        fromQValue v = do
+        {
+            m <- fromQValue v;
+            return $ lensFunctionMorphism m;
+        };
     };
 
     instance FromQValue (UISpec PinaforeEdit) where
@@ -179,6 +229,11 @@ module Pinafore.Query.Value where
     };
 
     instance FromQValue t => FromQValue (Result String t) where
+    {
+        fromQValue v = fmap return $ fromQValue v;
+    };
+
+    instance FromQValue t => FromQValue (IO t) where
     {
         fromQValue v = fmap return $ fromQValue v;
     };

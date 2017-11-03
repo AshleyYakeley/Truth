@@ -18,6 +18,8 @@ uiPeople pp = uiTable [column "Name" name] wPerson pp;
 uiPerson p = uiVertical
 [
     uiLabelled "Name" $ uiTextEntry $ name p,
+    uiLabelled "Mother" $ uiPick name People $ mother p,
+    uiLabelled "Father" $ uiPick name People $ father p,
     uiPeople $ children p
 ];
 wPerson p = window "Item" $ uiPerson p;
@@ -25,4 +27,4 @@ wPerson p = window "Item" $ uiPerson p;
 wPeople = window "People" $ uiPeople People;
 
 in
-[wPeople,wPeople] # put two windows up for update testing
+[wPeople]

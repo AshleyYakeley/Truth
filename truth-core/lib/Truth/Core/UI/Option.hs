@@ -21,7 +21,7 @@ module Truth.Core.UI.Option where
         uiWitness = $(iowitness [t|UIOption|]);
     };
 
-    uiOption :: Eq t => GeneralFunction tedit (ListEdit [(t,String)] (WholeEdit (t,String))) -> GeneralLens tedit (WholeEdit t) -> UISpec tedit;
+    uiOption :: forall tedit t. Eq t => GeneralFunction tedit (ListEdit [(t,String)] (WholeEdit (t,String))) -> GeneralLens tedit (WholeEdit t) -> UISpec tedit;
     uiOption optlens sellens = MkUISpec $ MkUIOption optlens sellens;
 
     uiSimpleOption :: Eq t => [(t,String)] -> UISpec (WholeEdit t);

@@ -22,7 +22,25 @@ module Pinafore.Query.Predefined(predefinedBindings) where
         -- CSS
         -- drag
         -- icon
-        -- option
+        qbind "uiPick" $ \(nameMorphism :: PinaforeFunctionMorphism Point (Maybe Text)) (fset :: PinaforeFunctionValue (FiniteSet Point)) -> let
+        {
+            getName :: PinaforeFunctionMorphism Point (Maybe Point, String);
+            getName = proc p -> do
+            {
+                n <- nameMorphism -< p;
+                returnA -< (Just p,unpack $ fromMaybe mempty n);
+            };
+
+            getNames :: PinaforeFunctionMorphism (FiniteSet Point) (FiniteSet (Maybe Point, String));
+            getNames = proc fsp -> do
+            {
+                pairs <- cfmap getName -< fsp;
+                returnA -< insertSet (Nothing,"") pairs;
+            };
+
+            opts :: GeneralFunction PinaforeEdit (ListEdit [(Maybe Point, String)] (WholeEdit (Maybe Point, String)));
+            opts = (MkCloseState $ orderedKeyList @(FiniteSet (Maybe Point, String)) $ \(_,a) (_,b) -> compare a b) <.> convertGeneralFunction <.> applyPinaforeFunction getNames fset;
+        } in uiOption @PinaforeEdit @(Maybe Point) opts,
         -- switch
         qbind "uiTable" $ \cols (asp :: Point -> Result String (Text,UISpec PinaforeEdit)) (val :: PinaforeLensValue (FiniteSetEdit Point)) -> let
         {
