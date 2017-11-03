@@ -114,15 +114,15 @@ module Main(main) where
         testQuery "let a x = 1; b = a c; c=b in b" $ Just "1",
 
         -- duplicate bindings
-        --testQuery "let a=1;a=1 in a" $ Nothing,
-        --testQuery "let a=1;a=2 in a" $ Nothing,
-        --testQuery "let a=1;b=0;a=2 in a" $ Nothing,
+        testQuery "let a=1;a=1 in a" $ Nothing,
+        testQuery "let a=1;a=2 in a" $ Nothing,
+        testQuery "let a=1;b=0;a=2 in a" $ Nothing,
 
         -- lexical scoping
         testQuery "let a=1 in let b=a in let a=3 in a" $ Just "3",
-        --testQuery "let a=1;b=a;a=3 in a" $ Nothing,
-        testQuery "let a=1 in let b=a in let a=3 in b" $ Just "1"
-        --testQuery "let a=1;b=a;a=3 in b" $ Nothing
+        testQuery "let a=1;b=a;a=3 in a" $ Nothing,
+        testQuery "let a=1 in let b=a in let a=3 in b" $ Just "1",
+        testQuery "let a=1;b=a;a=3 in b" $ Nothing
     ];
 
     tests :: TestTree;

@@ -19,7 +19,7 @@ module Pinafore.Query.Read(parseExpression) where
             readWS;
         });
         return ();
-    } where
+    } <?> "white space" where
     {
         isLineBreak :: Char -> Bool;
         isLineBreak '\n' =  True;
@@ -72,12 +72,11 @@ module Pinafore.Query.Read(parseExpression) where
         s <- many readQuotedChar;
         readCharAndWS '"';
         return s;
-    } where
+    } <?> "string" where
     {
         readQuotedChar :: Parser Char;
         readQuotedChar = readEscapedChar <|> (satisfy ('"' /=));
     };
-
 
     identifierChar :: Char -> Bool;
     identifierChar '-' = True;
@@ -92,8 +91,16 @@ module Pinafore.Query.Read(parseExpression) where
         KWIdentifier :: Keyword String;
     };
 
+    instance Show (Keyword t) where
+    {
+        show KWLet = show "let";
+        show KWIn = show "in";
+        show KWBool = "boolean constant";
+        show KWIdentifier = "identifier"
+    };
+
     readKeyword :: Keyword t -> Parser t;
-    readKeyword kw = Text.Parsec.try $ do
+    readKeyword kw = Text.Parsec.try $ (do
     {
         firstC <- satisfy isAlpha;
         rest <- many $ satisfy identifierChar;
@@ -112,7 +119,7 @@ module Pinafore.Query.Read(parseExpression) where
             (KWIdentifier,name) -> return name;
             (_,_) -> empty;
         };
-    };
+    } <?> show kw);
 
     readIdentifier :: Parser String;
     readIdentifier = readKeyword KWIdentifier;
@@ -164,7 +171,7 @@ module Pinafore.Query.Read(parseExpression) where
     {
         readCharAndWS '|';
         return $ pure $ toQValue qjoin;
-    };
+    } <?> "infix operator";
 
     readExpression :: Parser QValueExpr;
     readExpression = do
@@ -180,6 +187,11 @@ module Pinafore.Query.Read(parseExpression) where
         bindings <- readBindings;
         readKeyword KWIn;
         body <- readExpression;
+        case getDuplicates bindings of
+        {
+            [] -> return ();
+            l -> parserFail $ "duplicate bindings: " ++ intercalate ", " l;
+        };
         return $ qlets bindings body;
     } <|> do
     {
@@ -247,7 +259,7 @@ module Pinafore.Query.Read(parseExpression) where
         _ <- char '-';
         n <- readDigits;
         return $ negate n;
-    } <|> readDigits;
+    } <|> readDigits <?> "number";
 
     readSingleExpression :: Parser QValueExpr;
     readSingleExpression = do
@@ -301,7 +313,7 @@ module Pinafore.Query.Read(parseExpression) where
         readCharAndWS '!';
         uuid <- readUUID;
         return $ pure $ toQValue $ MkPoint uuid;
-    };
+    } <?> "expression";
 
     readExpressionText :: Parser QValueExpr;
     readExpressionText = do

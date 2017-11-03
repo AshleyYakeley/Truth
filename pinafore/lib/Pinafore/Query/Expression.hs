@@ -1,7 +1,7 @@
 module Pinafore.Query.Expression where
 {
     import Shapes;
-    import Data.List(head,tail);
+    import Data.List(head,tail,nub);
     import Pinafore.Query.Value;
 
 
@@ -45,6 +45,14 @@ module Pinafore.Query.Expression where
     qlet name val body = qabstract name body <*> val;
 
     newtype QBindings = MkQBindings [(String,QValueExpr)] deriving (Semigroup,Monoid);
+
+    duplicates :: Eq a => [a] -> [a];
+    duplicates [] = [];
+    duplicates (a:aa) | elem a aa = a : duplicates aa;
+    duplicates (_:aa) = duplicates aa;
+
+    getDuplicates :: QBindings -> [String];
+    getDuplicates (MkQBindings bb) = nub $ duplicates $ fmap fst bb;
 
     qbind :: ToQValue t => String -> t -> QBindings;
     qbind name val = MkQBindings [(name,pure $ toQValue val)];
