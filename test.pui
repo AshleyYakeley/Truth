@@ -1,24 +1,28 @@
 let
+# Useful
+window n s = [n,s];
+column n p = [n,p];
+
+# Ontology
+type = %f06efa5e-190f-4e5d-8633-495c5683c124;
 name = %498260df-6a8a-44f0-b285-68a63565a33b;
 mother = %3afce58f-b7eb-4b11-8a75-2d66afd4d085;
 father = %c005705f-9259-4d24-9713-db28a6e4f7d5;
-people = %f06efa5e-190f-4e5d-8633-495c5683c124;
-root = !78baed51-cb05-46b5-bcb4-49031532b890;
-
-window name spec = [name,spec];
+People = @type !78baed51-cb05-46b5-bcb4-49031532b890;
 
 parents p = mother p | father p;
 children p = @mother p | @father p;
 
-wPerson p = window "Item" $ uiPerson p;
-uiPeople pp = uiTable [["Name",name]] wPerson pp;
-
+# UI
+uiPeople pp = uiTable [column "Name" name] wPerson pp;
 uiPerson p = uiVertical
 [
     uiLabelled "Name" $ uiTextEntry $ name p,
     uiPeople $ children p
 ];
+wPerson p = window "Item" $ uiPerson p;
 
-wPeople = window "People" $ uiPeople (@people root);
+wPeople = window "People" $ uiPeople People;
 
-in [wPeople,wPeople] # put two windows up for update testing
+in
+[wPeople,wPeople] # put two windows up for update testing

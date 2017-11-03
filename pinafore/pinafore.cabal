@@ -80,9 +80,7 @@ library
         Pinafore.Edit
         Pinafore.Query.Read
         Pinafore.Query.Predefined
-        Pinafore.Ontology
         Pinafore.SQLite
-        Pinafore.Example
 
 test-suite test
     type: exitcode-stdio-1.0
