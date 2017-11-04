@@ -142,6 +142,10 @@ module Truth.Core.Types.Pair where
         }
     };
 
+    pairJoinGeneralFunctions :: forall edita editb1 editb2.
+        GeneralFunction edita editb1 -> GeneralFunction edita editb2 -> GeneralFunction edita (PairEdit editb1 editb2);
+    pairJoinGeneralFunctions (MkCloseState f1) (MkCloseState f2) = MkCloseState $ pairJoinEditFunctions f1 f2;
+
     pairJoinEditLenses :: forall s1 s2 edita editb1 editb2.
         EditLens s1 edita editb1 -> EditLens s2 edita editb2 -> EditLens (s1,s2) edita (PairEdit editb1 editb2);
     pairJoinEditLenses lens1 lens2 = MkEditLens

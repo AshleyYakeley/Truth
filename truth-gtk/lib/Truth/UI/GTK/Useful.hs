@@ -51,6 +51,25 @@ module Truth.UI.GTK.Useful where
         _ -> return ();
     };
 
+    joinTraverse :: Monad m => (a -> m (Maybe a)) -> (a -> m (Maybe a)) -> a -> m (Maybe a);
+    joinTraverse t1 t2 a0 = do
+    {
+        ma1 <- t1 a0;
+        case ma1 of
+        {
+            Just a1 -> do
+            {
+                ma2 <- t2 a1;
+                return $ Just $ case ma2 of
+                {
+                    Just a2 -> a2;
+                    Nothing -> a1;
+                };
+            };
+            Nothing -> t2 a0;
+        };
+    };
+
     listStoreTraverse_ :: MonadIO m => ListStore a -> (a -> m (Maybe a)) -> m ();
     listStoreTraverse_ store f = do
     {

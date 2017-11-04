@@ -136,8 +136,8 @@ module Truth.Core.Object.MutableEdit where
         };
     } in MkMutableEdit readB pushEditB;
 
-    withMapMutableRead :: (IsStateIO m) => GeneralLens edita editb -> MutableRead m (EditReader edita) -> (forall m'. IsStateIO m' => MutableRead m' (EditReader editb) -> m' r) -> m r;
-    withMapMutableRead (MkCloseState lens) mr call = editAccess (editLensFunction lens) $ call $ efMapMutableRead (editLensFunction lens) mr;
+    withMapMutableRead :: (IsStateIO m) => GeneralFunction edita editb -> MutableRead m (EditReader edita) -> (forall m'. IsStateIO m' => MutableRead m' (EditReader editb) -> m' r) -> m r;
+    withMapMutableRead (MkCloseState func) mr call = editAccess func $ call $ efMapMutableRead func mr;
 
     withMapMutableEdit :: (IsStateIO m,Edit edita) => GeneralLens edita editb -> MutableEdit m edita -> (forall m'. IsStateIO m' => MutableEdit m' editb -> m' r) -> m r;
     withMapMutableEdit (MkCloseState lens) mutedA call = editAccess (editLensFunction lens) $ call $ mapMutableEdit lens mutedA;

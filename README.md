@@ -20,4 +20,3 @@ stack install gtk2hs-buildtools
 stack build pinafore
 ./testpinafore
 ```
-(Note: the New button currently creates blank entries: you can still double-click on them.)

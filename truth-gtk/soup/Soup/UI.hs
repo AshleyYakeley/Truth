@@ -8,31 +8,40 @@ module Soup.UI(PossibleNoteEdit,soupWindow) where
     import Soup.Edit;
 
 
-    fromResult :: Result String String -> String;
-    fromResult (SuccessResult s) = s;
-    fromResult (FailureResult s) = "<" ++ s ++ ">";
+    fromResult :: Result String String -> (String,TableCellProps);
+    fromResult (SuccessResult "") = ("unnamed",tableCellPlain{tcItalic=True});
+    fromResult (SuccessResult s) = (s,tableCellPlain);
+    fromResult (FailureResult s) = ("<" ++ s ++ ">",tableCellPlain{tcItalic=True});
 
-    pastResult :: Result String Bool -> String;
-    pastResult (SuccessResult False) = "current";
-    pastResult (SuccessResult True) = "past";
-    pastResult (FailureResult s) = "<" ++ s ++ ">";
+    pastResult :: Result String Bool -> (String,TableCellProps);
+    pastResult (SuccessResult False) = ("current",tableCellPlain);
+    pastResult (SuccessResult True) = ("past",tableCellPlain);
+    pastResult (FailureResult s) = ("<" ++ s ++ ">",tableCellPlain{tcItalic=True});
 
     type PossibleNoteEdit = OneWholeEdit (Result String) NoteEdit;
     soupEditSpec :: UISpec (SoupEdit PossibleNoteEdit);
     soupEditSpec = let
     {
         nameColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID;
-        nameColumn = MkKeyColumn "Name" $ \key -> do
+        nameColumn = readOnlyKeyColumn "Name" $ \key -> do
         {
             lens <- getKeyElementGeneralLens key;
-            return $ readOnlyGeneralLens (funcGeneralFunction fromResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NoteTitle) <.> mustExistOneGeneralLens "name" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
+            let
+            {
+                valLens = oneWholeLiftGeneralLens (tupleGeneralLens NoteTitle) <.> mustExistOneGeneralLens "name" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
+            };
+            return $ funcGeneralFunction fromResult <.> generalLensFunction valLens;
         };
 
         pastColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID;
-        pastColumn = MkKeyColumn "Past" $ \key -> do
+        pastColumn = readOnlyKeyColumn "Past" $ \key -> do
         {
             lens <- getKeyElementGeneralLens key;
-            return $ readOnlyGeneralLens (funcGeneralFunction pastResult) <.> oneWholeLiftGeneralLens (tupleGeneralLens NotePast) <.> mustExistOneGeneralLens "past" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
+            let
+            {
+                valLens = oneWholeLiftGeneralLens (tupleGeneralLens NotePast) <.> mustExistOneGeneralLens "past" <.> oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.> lens;
+            };
+            return $ funcGeneralFunction pastResult <.> generalLensFunction valLens;
         };
 
         getaspect :: Aspect (MaybeEdit (UUIDElementEdit PossibleNoteEdit));

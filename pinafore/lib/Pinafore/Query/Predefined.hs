@@ -44,11 +44,19 @@ module Pinafore.Query.Predefined(predefinedBindings) where
         -- switch
         qbind "uiTable" $ \cols (asp :: Point -> Result String (Text,UISpec PinaforeEdit)) (val :: PinaforeLensValue (FiniteSetEdit Point)) -> let
         {
-            mapLens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeLensValue (WholeEdit String);
-            mapLens lens = maybeNothingGeneralLens mempty <.> applyPinaforeLens primitivePinaforeLensMorphism lens;
+            showCell :: Maybe String -> (String,TableCellProps);
+            showCell (Just s) = (s,tableCellPlain);
+            showCell Nothing = ("empty",tableCellPlain{tcItalic=True});
+
+            mapLens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeFunctionValue (String,TableCellProps);
+            mapLens lens = funcGeneralFunction showCell <.> generalLensFunction (applyPinaforeLens primitivePinaforeLensMorphism lens);
 
             getColumn :: (Text,Point -> Result String (PinaforeLensValue (WholeEdit (Maybe Point)))) -> KeyColumn PinaforeEdit Point;
-            getColumn (name,f) = MkKeyColumn (unpack name) $ \p -> resultToM $ fmap mapLens $ f p;
+            getColumn (name,f) = readOnlyKeyColumn (unpack name) $ \p -> resultToM $ do
+            {
+                lens <- f p;
+                return $ mapLens lens;
+            };
 
             aspect :: Point -> IO (Maybe (String,UISpec PinaforeEdit));
             aspect point = resultToM $ fmap (return . first unpack) $ asp point;

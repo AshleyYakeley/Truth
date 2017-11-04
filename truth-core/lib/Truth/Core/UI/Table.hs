@@ -8,11 +8,32 @@ module Truth.Core.UI.Table where
     import Truth.Core.UI.Lens;
 
 
+    data TableCellProps = MkTableCellProps
+    {
+        tcItalic :: Bool
+    };
+
+    tableCellPlain :: TableCellProps;
+    tableCellPlain = let
+    {
+        tcItalic = False;
+    } in MkTableCellProps{..};
+
     data KeyColumn tedit key = MkKeyColumn
     {
         kcName :: String,
-        kcFunction :: key -> IO (GeneralLens tedit (WholeEdit String))
+        kcContents :: key -> IO (GeneralLens tedit (WholeEdit String),GeneralFunction tedit (WholeEdit TableCellProps))
     };
+
+    readOnlyKeyColumn :: Edit tedit => String -> (key -> IO (GeneralFunction tedit (WholeEdit (String,TableCellProps)))) -> KeyColumn tedit key;
+    readOnlyKeyColumn kcName getter = let
+    {
+        kcContents key = do
+        {
+            func <- getter key;
+            return (readOnlyGeneralLens $ funcGeneralFunction fst <.> func,funcGeneralFunction snd <.> func);
+        };
+    } in MkKeyColumn{..};
 
     data UITable tedit where
     {
