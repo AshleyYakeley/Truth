@@ -1,7 +1,7 @@
 module Data.Lens where
 {
     import Shapes.Import;
-    import Data.Chain;
+    import Data.CatFunctor;
     import Data.MonadOne;
     import Data.Result;
     import Data.Bijection;
@@ -58,23 +58,6 @@ module Data.Lens where
             {
                 SuccessResult b -> lensPutback ab b a;
                 FailureResult (MkLimit ff) -> ff;
-            }
-        };
-    };
-
-    instance (Applicative m, MonadOne m) => CategoryOr (Lens' m) where
-    {
-        ac ||| bc = MkLens
-        {
-            lensGet = \eab -> case eab of
-            {
-                Left a -> lensGet ac a;
-                Right b -> lensGet bc b;
-            },
-            lensPutback = \c eab -> case eab of
-            {
-                Left a -> fmap Left (lensPutback ac c a);
-                Right b -> fmap Right (lensPutback bc c b);
             }
         };
     };

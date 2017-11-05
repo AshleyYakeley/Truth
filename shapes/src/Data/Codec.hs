@@ -3,7 +3,7 @@ module Data.Codec where
     import Shapes.Import;
     import qualified Data.Serialize as Serialize;
     import Data.Bijection;
-    import Data.Chain;
+    import Data.CatFunctor;
     import Data.Result;
     import Data.MonadOne;
 

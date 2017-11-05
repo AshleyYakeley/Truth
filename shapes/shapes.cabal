@@ -81,21 +81,12 @@ library
         open-witness
     exposed-modules:
         Data.Filterable
-        Data.KindCategory
         Data.Witness.All
-        Data.Free
-        Data.Category
         Control.Constrained.Category
-        Data.ApStore
-        Control.Applicative.Free
-        Data.Functor.Free
-        Data.Functor.Single
-        Control.Monad.Free
         Control.Monad.Tunnel
         Control.Monad.Trans.State.Extra
         Control.Monad.IsStateIO
-        Control.Wait
-        Data.Chain
+        Data.CatFunctor
         Data.Result
         Data.MonadOne
         Data.HasNewValue
@@ -106,7 +97,6 @@ library
         Data.ConstFunction
         Data.Codec
         Data.Compose
-        Data.WitnessStore
         Data.KeyContainer
         Data.FiniteSet
         Shapes

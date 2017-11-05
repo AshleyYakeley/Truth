@@ -1,7 +1,7 @@
 module Data.Bijection where
 {
     import Shapes.Import;
-    import Data.Chain;
+    import Data.CatFunctor;
 
 
     data Bijection a b = MkBijection

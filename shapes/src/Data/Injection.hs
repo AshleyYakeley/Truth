@@ -1,7 +1,7 @@
 module Data.Injection where
 {
     import Shapes.Import;
-    import Data.Chain;
+    import Data.CatFunctor;
     import Data.MonadOne;
     import Data.Codec;
     import Data.Bijection;
