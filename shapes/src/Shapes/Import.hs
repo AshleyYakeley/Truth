@@ -1,7 +1,7 @@
 module Shapes.Import (module I) where
 {
     -- base
-    import Prelude as I (($),const,seq,error,undefined,Eq(..),Ord(..),Enum(..),Num(..),Real(..),Integer,Integral(..),fromIntegral,fromInteger,toInteger,Double);
+    import Prelude as I (($),const,seq,error,undefined,Enum(..),Num(..),Real(..),Integer,Integral(..),fromIntegral,fromInteger,toInteger,Double);
     import Data.Kind as I;
     import Data.Bool as I;
     import Data.Bits as I;
@@ -9,6 +9,7 @@ module Shapes.Import (module I) where
     import Data.List.NonEmpty as I (NonEmpty(..));
     import Data.Maybe as I hiding (catMaybes,mapMaybe);
     import Data.Either as I;
+    import Data.Eq as I;
     import Data.Ord as I;
     import Data.Int as I;
     import Data.Char as I hiding (toLower,toUpper);
@@ -28,7 +29,6 @@ module Shapes.Import (module I) where
     import Control.Monad.IO.Class as I;
     import Control.Category as I;
     import Control.Arrow as I hiding ((|||),(<<<),(>>>));
-    import Control.Concurrent.MVar as I;
     import Text.Show as I (Show(..));
     import Text.Read as I (Read(..),readMaybe);
     import Control.Exception as I hiding (catch);
