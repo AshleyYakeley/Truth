@@ -32,10 +32,6 @@ module Truth.Core.Edit.Edit where
     {
         invertEdit :: edit -> Readable (EditReader edit) [edit];
     };
-{-
-    applyAndInvertEdit :: (InvertableEdit edit) => edit -> (ReadFunction (EditReader edit) (EditReader edit),Readable (EditReader edit) [edit]);
-    applyAndInvertEdit edit = (applyEdit edit,invertEdit edit);
--}
 
     -- edits always applied in the given order, so list returned will be reversed relative to list given.
     invertEdits :: InvertableEdit edit => [edit] -> Readable (EditReader edit) [edit];
@@ -46,14 +42,4 @@ module Truth.Core.Edit.Edit where
         u <- invertEdit e;
         return $ u ++ uu;
     };
-{-
-    commutableEdits :: (Edit edit, Eq (EditSubject edit)) => edit -> edit -> EditSubject edit -> Maybe (EditSubject edit);
-    commutableEdits e1 e2 a = let
-    {
-        cf12 = (applyEdit (updateEdit e2 e1)) . (applyEdit e2);
-        cf21 = (applyEdit (updateEdit e1 e2)) . (applyEdit e1);
-        a12 = applyConstFunction cf12 a;
-        a21 = applyConstFunction cf21 a;
-    } in if a12 == a21 then Just a12 else Nothing;
--}
 }

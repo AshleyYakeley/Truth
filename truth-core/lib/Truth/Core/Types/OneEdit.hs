@@ -52,23 +52,7 @@ module Truth.Core.Types.OneEdit where
             };
         }
     };
-{-
-    oneLiftEditLens :: forall c m f state edita editb. (ReadableConstraint c,Applicative m,MonadOne f) =>
-        EditLens c m state edita editb -> EditLens c m state (OneEdit f edita) (OneEdit f editb);
-    oneLiftEditLens lens = MkEditLens
-    {
-        editLensFunction = oneLiftEditFunction (editLensFunction lens),
-        editLensPutEdit = \oldstate (MkOneEdit editb) -> do
-        {
-            fmeditas <- liftMaybeReadable $ editLensPutEdit lens oldstate editb;
-            return $ case retrieveOne fmeditas of
-            {
-                SuccessResult meditas -> fmap (\(newstate,editas) -> (newstate,fmap MkOneEdit editas)) meditas;
-                FailureResult _fx -> pure (oldstate,[MkOneEdit undefined]); -- any OneEdit edit will do
-            };
-        }
-    };
--}
+
     oneLiftEditLens :: forall f state edita editb. MonadOne f =>
         EditLens state edita editb -> EditLens state (OneEdit f edita) (OneEdit f editb);
     oneLiftEditLens lens = MkEditLens

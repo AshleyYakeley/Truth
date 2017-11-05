@@ -120,7 +120,6 @@ library
         Truth.Core.Types.FiniteSet
         Truth.Core.Types.Database
         Truth.Core.Types.TupleDatabase
-        Truth.Core.Types.Merge
         Truth.Core.Types
         Truth.Core.Object.MutableEdit
         Truth.Core.Object.Object

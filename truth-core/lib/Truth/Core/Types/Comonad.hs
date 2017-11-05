@@ -15,13 +15,6 @@ module Truth.Core.Types.Comonad where
         type ReaderSubject (ComonadReader w reader) = w (ReaderSubject reader);
         readFromSubject wsubj (ReadExtract reader) = readFromSubject (extract wsubj) reader;
     };
-{-
-    instance (Traversable f,Monad f,FullSubjectReader reader) => FullSubjectReader (OneReader f reader) where
-    {
-        -- pureFromReader :: ReadFunction (OneReader f reader) (f (ReaderSubject reader));
-        pureFromReader = liftMaybeReadable pureFromReader;
-    };
--}
 
     comonadReadFunction :: ReadFunction (ComonadReader w reader) reader;
     comonadReadFunction rt = readable $ ReadExtract rt;

@@ -26,7 +26,6 @@ module Truth.Core.Types
     module Truth.Core.Types.FiniteSet,
     module Truth.Core.Types.Database,
     module Truth.Core.Types.TupleDatabase,
-    module Truth.Core.Types.Merge,
 ) where
 {
     import Truth.Core.Types.None;
@@ -55,5 +54,4 @@ module Truth.Core.Types
     import Truth.Core.Types.FiniteSet;
     import Truth.Core.Types.Database;
     import Truth.Core.Types.TupleDatabase;
-    import Truth.Core.Types.Merge;
 }

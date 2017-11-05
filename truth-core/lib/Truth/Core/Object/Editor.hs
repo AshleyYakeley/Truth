@@ -72,23 +72,4 @@ module Truth.Core.Object.Editor where
         editorUpdate _lapiw _mr _edits = return ();
         editorDo (MkObject object) _ = object f;
     } in MkEditor{..};
-{-
-    readEditor :: FullSubjectReader (EditReader edit) => Editor edit actions (EditSubject edit);
-    readEditor = oneTransactionEditor $ \muted -> unReadable subjectFromReader $ mutableRead muted;
-
-    writeEditor :: FullEdit edit => EditSubject edit -> Editor edit actions (Maybe ());
-    writeEditor subj = oneTransactionEditor $ \muted -> do
-    {
-        maction <- mutableEdit muted $ getReplaceEdits subj;
-        case maction of
-        {
-            Just action -> do
-            {
-                action;
-                return $ Just ();
-            };
-            Nothing -> return Nothing;
-        }
-    };
--}
 }

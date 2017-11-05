@@ -93,24 +93,5 @@ module Control.Monad.IsStateIO where
         }
     };
 
-{-
-    tryWithMVar :: MVar a -> (Maybe a -> IO b) -> IO b;
-    tryWithMVar mv f = do
-    {
-        ma <- tryTakeMVar mv;
-        finally (f ma) $ case ma of
-        {
-            Just a -> putMVar mv a;
-            Nothing -> return ();
-        };
-    };
-
-    ifMVar :: MVar () -> IO () -> IO ();
-    ifMVar mv f = tryWithMVar mv $ \ma -> case ma of
-    {
-        Just _ -> f;
-        _ -> return ();
-    };
--}
     type IOStateAccess s = forall m. IsStateIO m => StateAccess m s;
 }

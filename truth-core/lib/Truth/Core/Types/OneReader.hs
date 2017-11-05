@@ -14,7 +14,6 @@ module Truth.Core.Types.OneReader where
     {
         type ReaderSubject (OneReader f reader) = f (ReaderSubject reader);
 
-        -- readFromSubject :: ReaderSubject (OneReader f reader) -> (forall t. OneReader f reader t -> t);
         readFromSubject fsubj ReadHasOne = fmap (\_ -> ()) fsubj;
         readFromSubject fsubj (ReadOne reader) = fmap (\subj -> readFromSubject subj reader) fsubj;
     };
