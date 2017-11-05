@@ -1,0 +1,5 @@
+#!/bin/bash
+stack install hindent
+for f in `find -name '*.hs' -not -path '*.stack-work/*'`
+do hindent $f
+done
