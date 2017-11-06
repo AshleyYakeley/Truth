@@ -1,28 +1,19 @@
 module Control.Monad.Tunnel where
-{
-    import Shapes.Import;
 
+import Shapes.Import
 
-    class MonadTrans t => MonadTunnel t where
-    {
-        tunnel :: (forall a. (forall m1. t m1 r -> m1 a) -> m2 a) -> t m2 r;
-    };
+class MonadTrans t =>
+      MonadTunnel t where
+    tunnel :: (forall a. (forall m1. t m1 r -> m1 a) -> m2 a) -> t m2 r
 
-    remonad :: MonadTunnel t => (forall a. m1 a -> m2 a) -> t m1 r -> t m2 r;
-    remonad mma sm1 = tunnel $ \tun -> mma $ tun sm1;
+remonad :: MonadTunnel t => (forall a. m1 a -> m2 a) -> t m1 r -> t m2 r
+remonad mma sm1 = tunnel $ \tun -> mma $ tun sm1
 
-    instance MonadTunnel (StateT s) where
-    {
-        tunnel call = StateT $ \olds -> call $ \(StateT smrs) -> smrs olds;
-    };
+instance MonadTunnel (StateT s) where
+    tunnel call = StateT $ \olds -> call $ \(StateT smrs) -> smrs olds
 
-    instance MonadTunnel (ReaderT s) where
-    {
-        tunnel call = ReaderT $ \s -> call $ \(ReaderT smr) -> smr s;
-    };
+instance MonadTunnel (ReaderT s) where
+    tunnel call = ReaderT $ \s -> call $ \(ReaderT smr) -> smr s
 
-    instance Monoid s => MonadTunnel (WriterT s) where
-    {
-        tunnel call = WriterT $ call $ \(WriterT mrs) -> mrs;
-    };
-}
+instance Monoid s => MonadTunnel (WriterT s) where
+    tunnel call = WriterT $ call $ \(WriterT mrs) -> mrs

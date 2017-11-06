@@ -1,45 +1,42 @@
-module Main(main) where
-{
-    import Shapes;
-    import Truth.Core;
-    import Truth.UI.GTK;
-    import Test.Tasty;
-    import Test.Tasty.HUnit;
+module Main
+    ( main
+    ) where
 
+import Shapes
+import Test.Tasty
+import Test.Tasty.HUnit
+import Truth.Core
+import Truth.UI.GTK
 
-    testGView :: forall edit. Edit edit => UISpec edit -> TestTree;
-    testGView uispec = testCase (show uispec) $ case getUIView allGetView getTheView uispec of
-    {
-        Just _ -> return ();
-        Nothing -> assertFailure "not matched";
-    };
+testGView ::
+       forall edit. Edit edit
+    => UISpec edit
+    -> TestTree
+testGView uispec =
+    testCase (show uispec) $
+    case getUIView allGetView getTheView uispec of
+        Just _ -> return ()
+        Nothing -> assertFailure "not matched"
 
-    data UIUnknown edit where
-    {
-        MkUIUnknown :: UIUnknown edit;
-    };
+data UIUnknown edit where
+    MkUIUnknown :: UIUnknown edit
 
-    instance Show (UIUnknown edit) where
-    {
-        show MkUIUnknown = "unknown";
-    };
+instance Show (UIUnknown edit) where
+    show MkUIUnknown = "unknown"
 
-    instance UIType UIUnknown where
-    {
-        uiWitness = $(iowitness [t|UIUnknown|]);
-    };
+instance UIType UIUnknown where
+    uiWitness = $(iowitness [t|UIUnknown|])
 
-    testGViews :: TestTree;
-    testGViews = testGroup "GView" [
-            testGView $ (uiVertical [] :: UISpec (WholeEdit String)),
-            testGView $ uiVertical [MkUISpec MkUIUnknown :: UISpec (WholeEdit String)]
-        ];
+testGViews :: TestTree
+testGViews =
+    testGroup
+        "GView"
+        [ testGView $ (uiVertical [] :: UISpec (WholeEdit String))
+        , testGView $ uiVertical [MkUISpec MkUIUnknown :: UISpec (WholeEdit String)]
+        ]
 
-    tests :: TestTree;
-    tests = testGroup "truth-gtk" [
-        testGViews
-        ];
+tests :: TestTree
+tests = testGroup "truth-gtk" [testGViews]
 
-    main :: IO ();
-    main = defaultMain tests;
-}
+main :: IO ()
+main = defaultMain tests

@@ -1,157 +1,119 @@
 {-# OPTIONS -fno-warn-orphans #-}
+
 module Truth.Core.Types.Whole where
-{
-    import Truth.Core.Import;
-    import Truth.Core.Read;
-    import Truth.Core.Edit;
 
+import Truth.Core.Edit
+import Truth.Core.Import
+import Truth.Core.Read
 
-    data WholeReader (a :: *) (t :: *) where
-    {
-        ReadWhole :: forall t. WholeReader t t;
-    };
+data WholeReader (a :: *) (t :: *) where
+    ReadWhole :: forall t. WholeReader t t
 
-    instance SubjectReader (WholeReader a) where
-    {
-        type ReaderSubject (WholeReader a) = a;
-        readFromSubject msubj ReadWhole = msubj;
-    };
+instance SubjectReader (WholeReader a) where
+    type ReaderSubject (WholeReader a) = a
+    readFromSubject msubj ReadWhole = msubj
 
-    instance FullSubjectReader (WholeReader a) where
-    {
-        subjectFromReader = readable ReadWhole;
-    };
+instance FullSubjectReader (WholeReader a) where
+    subjectFromReader = readable ReadWhole
 
-    wholeMutableRead :: m a -> MutableRead m (WholeReader a);
-    wholeMutableRead ma ReadWhole = ma;
+wholeMutableRead :: m a -> MutableRead m (WholeReader a)
+wholeMutableRead ma ReadWhole = ma
 
-    newtype WholeReaderEdit (reader :: * -> *) = MkWholeEdit (ReaderSubject reader);
+newtype WholeReaderEdit (reader :: * -> *) =
+    MkWholeEdit (ReaderSubject reader)
 
-    instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader);
+instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader)
 
-    instance (FullSubjectReader reader) => Edit (WholeReaderEdit reader) where
-    {
-        type EditReader (WholeReaderEdit reader) = reader;
-        applyEdit (MkWholeEdit a) = readFromSubjectM (return a);
-    };
+instance (FullSubjectReader reader) => Edit (WholeReaderEdit reader) where
+    type EditReader (WholeReaderEdit reader) = reader
+    applyEdit (MkWholeEdit a) = readFromSubjectM (return a)
 
-    instance (FullSubjectReader reader) => InvertableEdit (WholeReaderEdit reader) where
-    {
-        invertEdit _ = do
-        {
-            a <- subjectFromReader;
-            return [MkWholeEdit a];
-        };
-    };
+instance (FullSubjectReader reader) => InvertableEdit (WholeReaderEdit reader) where
+    invertEdit _ = do
+        a <- subjectFromReader
+        return [MkWholeEdit a]
 
-    instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
-    {
-        replaceEdit = do
-        {
-            a <- readableToM subjectFromReader;
-            wrWrite $ MkWholeEdit a;
-        };
-    };
+instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
+    replaceEdit = do
+        a <- readableToM subjectFromReader
+        wrWrite $ MkWholeEdit a
 
-    type WholeEdit a = WholeReaderEdit (WholeReader a);
+type WholeEdit a = WholeReaderEdit (WholeReader a)
 
-    wholeEditFunction :: forall a b. (a -> b) -> PureEditFunction (WholeEdit a) (WholeEdit b);
-    wholeEditFunction ab = MkEditFunction
-    {
-        editAccess = unitStateAccess,
-        editGet = \() -> simpleReadFunction ab,
-        editUpdate = \(MkWholeEdit a) curstate -> return (curstate,[MkWholeEdit $ ab a])
-    };
+wholeEditFunction :: forall a b. (a -> b) -> PureEditFunction (WholeEdit a) (WholeEdit b)
+wholeEditFunction ab =
+    MkEditFunction
+    { editAccess = unitStateAccess
+    , editGet = \() -> simpleReadFunction ab
+    , editUpdate = \(MkWholeEdit a) curstate -> return (curstate, [MkWholeEdit $ ab a])
+    }
 
-    wholeEditLens :: forall m a b. (MonadOne m) => Lens' m a b -> PureEditLens (WholeEdit a) (WholeEdit b);
-    wholeEditLens lens = MkEditLens
-    {
-        editLensFunction = wholeEditFunction (lensGet lens),
-        editLensPutEdit = \() (MkWholeEdit newb) -> do
-        {
-            olda <- subjectFromReader;
-            let
-            {
-                newma = lensPutback lens newb olda;
-                medita = fmap (\a -> ((),[MkWholeEdit a])) newma;
-            };
-            return $ getMaybeOne medita;
-        }
-    };
+wholeEditLens ::
+       forall m a b. (MonadOne m)
+    => Lens' m a b
+    -> PureEditLens (WholeEdit a) (WholeEdit b)
+wholeEditLens lens =
+    MkEditLens
+    { editLensFunction = wholeEditFunction (lensGet lens)
+    , editLensPutEdit =
+          \() (MkWholeEdit newb) -> do
+              olda <- subjectFromReader
+              let newma = lensPutback lens newb olda
+                  medita = fmap (\a -> ((), [MkWholeEdit a])) newma
+              return $ getMaybeOne medita
+    }
 
-    instance MonadOne m => IsGeneralLens (Lens' m a b) where
-    {
-        type LensDomain (Lens' m a b) = WholeEdit a;
-        type LensRange (Lens' m a b) = WholeEdit b;
+instance MonadOne m => IsGeneralLens (Lens' m a b) where
+    type LensDomain (Lens' m a b) = WholeEdit a
+    type LensRange (Lens' m a b) = WholeEdit b
+    toGeneralLens = toGeneralLens . wholeEditLens
 
-        toGeneralLens = toGeneralLens . wholeEditLens;
-    };
+instance MonadOne m => IsGeneralLens (Injection' m a b) where
+    type LensDomain (Injection' m a b) = WholeEdit a
+    type LensRange (Injection' m a b) = WholeEdit b
+    toGeneralLens = toGeneralLens . injectionLens
 
-    instance MonadOne m => IsGeneralLens (Injection' m a b) where
-    {
-        type LensDomain (Injection' m a b) = WholeEdit a;
-        type LensRange (Injection' m a b) = WholeEdit b;
+instance IsGeneralLens (Bijection a b) where
+    type LensDomain (Bijection a b) = WholeEdit a
+    type LensRange (Bijection a b) = WholeEdit b
+    toGeneralLens = toGeneralLens . bijectionInjection
 
-        toGeneralLens = toGeneralLens . injectionLens;
-    };
+instance IsGeneralLens (Codec a b) where
+    type LensDomain (Codec a b) = WholeEdit a
+    type LensRange (Codec a b) = WholeEdit (Maybe b)
+    toGeneralLens = toGeneralLens . codecInjection
 
-    instance IsGeneralLens (Bijection a b) where
-    {
-        type LensDomain (Bijection a b) = WholeEdit a;
-        type LensRange (Bijection a b) = WholeEdit b;
+unitWholeEditFunction :: PureEditFunction edit (WholeEdit ())
+unitWholeEditFunction = constEditFunction ()
 
-        toGeneralLens = toGeneralLens . bijectionInjection;
-    };
-
-    instance IsGeneralLens (Codec a b) where
-    {
-        type LensDomain (Codec a b) = WholeEdit a;
-        type LensRange (Codec a b) = WholeEdit (Maybe b);
-
-        toGeneralLens = toGeneralLens . codecInjection;
-    };
-
-    unitWholeEditFunction :: PureEditFunction edit (WholeEdit ());
-    unitWholeEditFunction = constEditFunction ();
-
-    pairWholeEditFunction :: forall edit a b. PureEditFunction edit (WholeEdit a) -> PureEditFunction edit (WholeEdit b) -> PureEditFunction edit (WholeEdit (a,b));
-    pairWholeEditFunction (MkEditFunction _ ga ua) (MkEditFunction _ gb ub) = let
-    {
-        gab :: () -> ReadFunction (EditReader edit) (WholeReader (a,b));
+pairWholeEditFunction ::
+       forall edit a b.
+       PureEditFunction edit (WholeEdit a)
+    -> PureEditFunction edit (WholeEdit b)
+    -> PureEditFunction edit (WholeEdit (a, b))
+pairWholeEditFunction (MkEditFunction _ ga ua) (MkEditFunction _ gb ub) =
+    let gab :: () -> ReadFunction (EditReader edit) (WholeReader (a, b))
         gab () ReadWhole = do
-        {
-            a <- ga () ReadWhole;
-            b <- gb () ReadWhole;
-            return (a,b);
-        };
-
-        lastm :: forall x. [x] -> Maybe x;
-        lastm [] = Nothing;
-        lastm [x] = Just x;
-        lastm (_:xx) = lastm xx;
-
+            a <- ga () ReadWhole
+            b <- gb () ReadWhole
+            return (a, b)
+        lastm :: forall x. [x] -> Maybe x
+        lastm [] = Nothing
+        lastm [x] = Just x
+        lastm (_:xx) = lastm xx
         uab edit () = do
-        {
-            ((),editas) <- ua edit ();
-            ((),editbs) <- ub edit ();
-            case (lastm editas,lastm editbs) of
-            {
-                (Nothing,Nothing) -> return ((),[]);
-                (ma,mb) -> do
-                {
-                    a <- case ma of
-                    {
-                        Just (MkWholeEdit a) -> return a;
-                        Nothing -> ga () ReadWhole;
-                    };
-                    b <- case mb of
-                    {
-                        Just (MkWholeEdit b) -> return b;
-                        Nothing -> gb () ReadWhole;
-                    };
-                    return ((),[MkWholeEdit (a,b)]);
-                };
-            };
-        };
-    } in MkEditFunction unitStateAccess gab uab;
-}
+            ((), editas) <- ua edit ()
+            ((), editbs) <- ub edit ()
+            case (lastm editas, lastm editbs) of
+                (Nothing, Nothing) -> return ((), [])
+                (ma, mb) -> do
+                    a <-
+                        case ma of
+                            Just (MkWholeEdit a) -> return a
+                            Nothing -> ga () ReadWhole
+                    b <-
+                        case mb of
+                            Just (MkWholeEdit b) -> return b
+                            Nothing -> gb () ReadWhole
+                    return ((), [MkWholeEdit (a, b)])
+    in MkEditFunction unitStateAccess gab uab

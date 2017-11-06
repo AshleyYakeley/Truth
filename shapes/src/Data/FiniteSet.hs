@@ -1,85 +1,71 @@
 module Data.FiniteSet where
-{
-    import Shapes.Import;
-    import qualified Data.List as List;
-    import Data.KeyContainer;
-    import Data.Filterable;
 
+import Data.Filterable
+import Data.KeyContainer
+import qualified Data.List as List
+import Shapes.Import
 
-    newtype FiniteSet a = MkFiniteSet {unFiniteSet :: [a]} deriving
-    (
-        Foldable,
-        Functor, -- Applicative,Monad,Alternative,MonadPlus,
-        Semigroup,Monoid,
-        MonoFunctor,MonoFoldable,GrowingAppend,
-        Filterable
-    );
-    type instance Element (FiniteSet a) = a;
+newtype FiniteSet a = MkFiniteSet
+    { unFiniteSet :: [a]
+    } deriving ( Foldable
+               , Functor -- Applicative,Monad,Alternative,MonadPlus,
+               , Semigroup
+               , Monoid
+               , MonoFunctor
+               , MonoFoldable
+               , GrowingAppend
+               , Filterable
+               )
 
-    instance Traversable FiniteSet where
-    {
-        traverse afb (MkFiniteSet aa) = fmap MkFiniteSet $ traverse afb aa;
-    };
+type instance Element (FiniteSet a) = a
 
-    instance MonoTraversable (FiniteSet a);
+instance Traversable FiniteSet where
+    traverse afb (MkFiniteSet aa) = fmap MkFiniteSet $ traverse afb aa
 
-    instance Eq a => SetContainer (FiniteSet a) where
-    {
-        type ContainerKey (FiniteSet a) = a;
-        member key (MkFiniteSet aa) = elem key aa;
-        notMember key set = not $ member key set;
-        union (MkFiniteSet a) (MkFiniteSet b) = MkFiniteSet $ List.union a b;
-        difference (MkFiniteSet a) (MkFiniteSet b) = MkFiniteSet $ a List.\\ b;
-        intersection (MkFiniteSet a) (MkFiniteSet b) = MkFiniteSet $ List.intersect a b;
-        keys (MkFiniteSet a) = a;
-    };
+instance MonoTraversable (FiniteSet a)
 
-    instance Eq a => IsSet (FiniteSet a) where
-    {
-        insertSet = insertElement;
-        deleteSet = deleteElement;
-        singletonSet = MkFiniteSet . pure;
-        setFromList = MkFiniteSet;
-        setToList = unFiniteSet;
-    };
+instance Eq a => SetContainer (FiniteSet a) where
+    type ContainerKey (FiniteSet a) = a
+    member key (MkFiniteSet aa) = elem key aa
+    notMember key set = not $ member key set
+    union (MkFiniteSet a) (MkFiniteSet b) = MkFiniteSet $ List.union a b
+    difference (MkFiniteSet a) (MkFiniteSet b) = MkFiniteSet $ a List.\\ b
+    intersection (MkFiniteSet a) (MkFiniteSet b) = MkFiniteSet $ List.intersect a b
+    keys (MkFiniteSet a) = a
 
-    instance MonoPointed (FiniteSet a) where
-    {
-        opoint = MkFiniteSet . pure;
-    };
+instance Eq a => IsSet (FiniteSet a) where
+    insertSet = insertElement
+    deleteSet = deleteElement
+    singletonSet = MkFiniteSet . pure
+    setFromList = MkFiniteSet
+    setToList = unFiniteSet
 
-    instance Eq a => JoinSemiLattice (FiniteSet a) where
-    {
-        (\/) = union;
-    };
+instance MonoPointed (FiniteSet a) where
+    opoint = MkFiniteSet . pure
 
-    instance Eq a => BoundedJoinSemiLattice (FiniteSet a) where
-    {
-        bottom = mempty;
-    };
+instance Eq a => JoinSemiLattice (FiniteSet a) where
+    (\/) = union
 
-    instance Eq a => MeetSemiLattice (FiniteSet a) where
-    {
-        (/\) = intersection;
-    };
+instance Eq a => BoundedJoinSemiLattice (FiniteSet a) where
+    bottom = mempty
 
-    instance Eq a => Lattice (FiniteSet a);
+instance Eq a => MeetSemiLattice (FiniteSet a) where
+    (/\) = intersection
 
-    instance Eq a => KeyContainer (FiniteSet a) where
-    {
-        elementKey _ a = a;
-        lookupElement key = List.find (\k -> k == key);
-        insertElement e (MkFiniteSet []) = MkFiniteSet [e];
-        insertElement e (MkFiniteSet (a:aa)) | e == a = MkFiniteSet $ e:aa;
-        insertElement e (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ insertElement e $ MkFiniteSet aa);
-        deleteElement _ (MkFiniteSet []) = MkFiniteSet [];
-        deleteElement k (MkFiniteSet (k':aa)) | k == k' = MkFiniteSet $ aa;
-        deleteElement k (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ deleteElement k $ MkFiniteSet aa);
-        fromElementList = MkFiniteSet;
-    };
+instance Eq a => Lattice (FiniteSet a)
 
-    instance (Eq key,Random key) => IONewItemKeyContainer (FiniteSet key) where
-    {
-        newKeyContainerItem _ = randomIO;
-    };
-}
+instance Eq a => KeyContainer (FiniteSet a) where
+    elementKey _ a = a
+    lookupElement key = List.find (\k -> k == key)
+    insertElement e (MkFiniteSet []) = MkFiniteSet [e]
+    insertElement e (MkFiniteSet (a:aa))
+        | e == a = MkFiniteSet $ e : aa
+    insertElement e (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ insertElement e $ MkFiniteSet aa)
+    deleteElement _ (MkFiniteSet []) = MkFiniteSet []
+    deleteElement k (MkFiniteSet (k':aa))
+        | k == k' = MkFiniteSet $ aa
+    deleteElement k (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ deleteElement k $ MkFiniteSet aa)
+    fromElementList = MkFiniteSet
+
+instance (Eq key, Random key) => IONewItemKeyContainer (FiniteSet key) where
+    newKeyContainerItem _ = randomIO
