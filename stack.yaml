@@ -5,7 +5,7 @@ packages:
 - pinafore
 - location:
     git: git@github.com:AshleyYakeley/hindent.git
-    commit: faf7dbc3100c46af8c49fdeb7f7d3e82c95442a2
+    commit: 858d05a8e92b092e5dd1d2b88c25272dfb092333
   extra-dep: true
 
 resolver: lts-9.10
