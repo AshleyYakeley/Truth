@@ -49,7 +49,7 @@ instance (Traversable f, Applicative m) => CatFunctor (Codec' m) f where
     cfmap codec = MkCodec {decode = traverse (decode codec), encode = fmap (encode codec)}
 
 serializeCodec :: Serialize t => Codec' (Result String) ByteString t
-serializeCodec =
-    let encode = Serialize.encodeLazy
-        decode = eitherToResult . Serialize.decodeLazy
+serializeCodec = let
+    encode = Serialize.encodeLazy
+    decode = eitherToResult . Serialize.decodeLazy
     in MkCodec {..}

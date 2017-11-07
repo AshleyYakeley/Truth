@@ -20,20 +20,20 @@ saveBufferMutableEdit ::
        forall m edit. (FullEdit edit, MonadIO m)
     => ([edit] -> StateT (SaveBuffer (EditSubject edit)) m ())
     -> MutableEdit (StateT (SaveBuffer (EditSubject edit)) m) edit
-saveBufferMutableEdit update =
-    let mutableRead :: MutableRead (StateT (SaveBuffer (EditSubject edit)) m) (EditReader edit)
-        mutableRead = readFromSubjectM $ fmap saveBuffer get
-        mutableEdit ::
-               [edit] -> StateT (SaveBuffer (EditSubject edit)) m (Maybe (StateT (SaveBuffer (EditSubject edit)) m ()))
-        mutableEdit edits =
-            return $
-            Just $ do
-                newbuf <-
-                    fromReadFunctionM (applyEdits edits) $ do
-                        MkSaveBuffer oldbuf _ <- get
-                        return oldbuf
-                put $ MkSaveBuffer newbuf True
-                update edits
+saveBufferMutableEdit update = let
+    mutableRead :: MutableRead (StateT (SaveBuffer (EditSubject edit)) m) (EditReader edit)
+    mutableRead = readFromSubjectM $ fmap saveBuffer get
+    mutableEdit ::
+           [edit] -> StateT (SaveBuffer (EditSubject edit)) m (Maybe (StateT (SaveBuffer (EditSubject edit)) m ()))
+    mutableEdit edits =
+        return $
+        Just $ do
+            newbuf <-
+                fromReadFunctionM (applyEdits edits) $ do
+                    MkSaveBuffer oldbuf _ <- get
+                    return oldbuf
+            put $ MkSaveBuffer newbuf True
+            update edits
     in MkMutableEdit {..}
 
 newtype SaveActions =
@@ -46,11 +46,14 @@ saveBufferSubscriber ::
 saveBufferSubscriber subA =
     MkSubscriber $ \(initB :: Object edit -> IO editorB) updateB -> do
         sbVar <- newMVar $ error "uninitialised save buffer"
-        let initA :: Object (WholeEdit (EditSubject edit)) -> IO (editorB, SaveActions)
+        let
+            initA :: Object (WholeEdit (EditSubject edit)) -> IO (editorB, SaveActions)
             initA (MkObject objA) = do
                 firstBuf <- objA $ \muted -> mutableRead muted ReadWhole
                 mvarStateAccess sbVar $ put $ MkSaveBuffer firstBuf False
-                rec let objB :: Object edit
+                rec
+                    let
+                        objB :: Object edit
                         objB =
                             MkObject $ \call ->
                                 mvarStateAccess sbVar $
@@ -58,7 +61,8 @@ saveBufferSubscriber subA =
                                 saveBufferMutableEdit $ \edits ->
                                     updateB edB (readFromSubjectM $ fmap saveBuffer get) edits
                     edB <- initB objB
-                let saveAction :: IO Bool
+                let
+                    saveAction :: IO Bool
                     saveAction =
                         objA $ \muted -> do
                             MkSaveBuffer buf _ <- mvarStateAccess sbVar get
@@ -104,7 +108,8 @@ saveBufferSubscriber subA =
                         updateB edB (readFromSubjectM $ return newbuffer) newedits
                         mvarStateAccess sbVar $ put $ MkSaveBuffer newbuffer False
         (edA, closerA, actionA) <- subscribe subA initA updateA
-        let (edB, saveActions) = edA
+        let
+            (edB, saveActions) = edA
             actionB = (actionA, saveActions)
             closerB = closerA -- add UI query here
         return (edB, closerB, actionB)

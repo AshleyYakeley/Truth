@@ -39,9 +39,9 @@ instance StateCategory EditFunction where
         }
 
 instance StateCategory EditLens where
-    identityState =
-        let editLensFunction = identityState
-            editLensPutEdit st edit = pure $ pure (st, [edit])
+    identityState = let
+        editLensFunction = identityState
+        editLensPutEdit st edit = pure $ pure (st, [edit])
         in MkEditLens {..}
     composeState fel2 fel1 =
         MkEditLens

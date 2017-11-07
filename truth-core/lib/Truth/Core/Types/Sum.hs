@@ -38,9 +38,9 @@ instance (FullEdit ea, Edit eb, EditReader ea ~ EditReader eb) => FullEdit (SumE
     replaceEdit = reWriterReadable SumEditLeft replaceEdit
 
 sumEditFunction :: (EditReader edit ~ EditReader edit') => PureEditFunction edit (SumEdit edit' edit)
-sumEditFunction =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet () rt = readable rt
-        editUpdate edit () = return ((), [SumEditRight edit])
+sumEditFunction = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet () rt = readable rt
+    editUpdate edit () = return ((), [SumEditRight edit])
     in MkEditFunction {..}

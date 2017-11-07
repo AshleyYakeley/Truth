@@ -138,7 +138,8 @@ instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, Has
     replaceEdit = do
         wrWrite KeyClear
         allkeys <- readable KeyReadKeys
-        let readWriteItem ::
+        let
+            readWriteItem ::
                    ContainerKey cont -> WriterReadable (KeyEdit cont edit) (KeyReader cont (EditReader edit)) ()
             readWriteItem key = do
                 item <- mapReadable (knownKeyItemReadFunction key) $ readableToM subjectFromReader
@@ -151,8 +152,8 @@ getKeyElementGeneralLens ::
     -> IO (GeneralLens (KeyEdit cont edit) (MaybeEdit edit))
 getKeyElementGeneralLens initial =
     newMVar initial >>= \var ->
-        return $
-        let editAccess :: IOStateAccess (ContainerKey cont)
+        return $ let
+            editAccess :: IOStateAccess (ContainerKey cont)
             editAccess = mvarStateAccess var
             editGet ::
                    ContainerKey cont
@@ -198,7 +199,7 @@ getKeyElementGeneralLens initial =
                         Nothing -> (oldkey, [])
             lens :: EditLens (ContainerKey cont) (KeyEdit cont edit) (MaybeEdit edit)
             lens = MkEditLens {..}
-        in toGeneralLens lens
+            in toGeneralLens lens
 
 getKeyValueGeneralLens ::
        forall cont keyedit valueedit.
@@ -224,24 +225,22 @@ liftKeyElementEditFunction ::
        )
     => EditFunction state edita editb
     -> EditFunction state (KeyEdit conta edita) (KeyEdit contb editb)
-liftKeyElementEditFunction (MkEditFunction editAccess g u) =
-    let editGet :: state -> ReadFunction (KeyReader conta (EditReader edita)) (KeyReader contb (EditReader editb))
-        editGet _ KeyReadKeys = readable KeyReadKeys
-        editGet curstate (KeyReadItem key rt) = mapReadableF (keyItemReadFunction key) $ g curstate rt
-        editUpdate ::
-               KeyEdit conta edita
-            -> state
-            -> Readable (KeyReader conta (EditReader edita)) (state, [KeyEdit contb editb])
-        editUpdate KeyClear oldstate = return (oldstate, [KeyClear])
-        editUpdate (KeyInsertReplaceItem itema) oldstate = do
-            itemb <- liftReadable $ fromReadFunctionM (g oldstate) (return itema)
-            return (oldstate, [KeyInsertReplaceItem itemb])
-        editUpdate (KeyDeleteItem key) oldstate = return (oldstate, [KeyDeleteItem key])
-        editUpdate (KeyEditItem key ea) oldstate = do
-            mresult <- mapReadableF (keyItemReadFunction @conta key) $ u ea oldstate
-            case mresult of
-                Just (newstate, ebs) -> return (newstate, fmap (KeyEditItem key) ebs)
-                Nothing -> return (oldstate, [])
+liftKeyElementEditFunction (MkEditFunction editAccess g u) = let
+    editGet :: state -> ReadFunction (KeyReader conta (EditReader edita)) (KeyReader contb (EditReader editb))
+    editGet _ KeyReadKeys = readable KeyReadKeys
+    editGet curstate (KeyReadItem key rt) = mapReadableF (keyItemReadFunction key) $ g curstate rt
+    editUpdate ::
+           KeyEdit conta edita -> state -> Readable (KeyReader conta (EditReader edita)) (state, [KeyEdit contb editb])
+    editUpdate KeyClear oldstate = return (oldstate, [KeyClear])
+    editUpdate (KeyInsertReplaceItem itema) oldstate = do
+        itemb <- liftReadable $ fromReadFunctionM (g oldstate) (return itema)
+        return (oldstate, [KeyInsertReplaceItem itemb])
+    editUpdate (KeyDeleteItem key) oldstate = return (oldstate, [KeyDeleteItem key])
+    editUpdate (KeyEditItem key ea) oldstate = do
+        mresult <- mapReadableF (keyItemReadFunction @conta key) $ u ea oldstate
+        case mresult of
+            Just (newstate, ebs) -> return (newstate, fmap (KeyEditItem key) ebs)
+            Nothing -> return (oldstate, [])
     in MkEditFunction {..}
 
 liftKeyElementGeneralFunction ::
@@ -268,127 +267,126 @@ liftKeyElementEditLens ::
                       EditSubject editb -> m (Maybe (EditSubject edita)))
     -> EditLens state edita editb
     -> EditLens state (KeyEdit conta edita) (KeyEdit contb editb)
-liftKeyElementEditLens bma (MkEditLens ef pe) =
-    let editLensFunction = liftKeyElementEditFunction ef
-        editLensPutEdit ::
-               state
-            -> KeyEdit contb editb
-            -> Readable (KeyReader conta (EditReader edita)) (Maybe (state, [KeyEdit conta edita]))
-        editLensPutEdit oldstate KeyClear = return $ pure (oldstate, [KeyClear])
-        editLensPutEdit oldstate (KeyInsertReplaceItem itemb) = do
-            fitema <- liftReadable $ bma itemb
-            return $ fmap (\itema -> (oldstate, [KeyInsertReplaceItem $ itema])) fitema
-        editLensPutEdit oldstate (KeyDeleteItem key) = return $ pure (oldstate, [KeyDeleteItem key])
-        editLensPutEdit oldstate (KeyEditItem key eb) = do
-            mfresult <- mapReadableF (keyItemReadFunction @conta key) $ pe oldstate eb
-            case mfresult of
-                Just fsea -> return $ fmap (fmap (fmap $ KeyEditItem key)) fsea
-                Nothing -> return $ pure (oldstate, [])
+liftKeyElementEditLens bma (MkEditLens ef pe) = let
+    editLensFunction = liftKeyElementEditFunction ef
+    editLensPutEdit ::
+           state
+        -> KeyEdit contb editb
+        -> Readable (KeyReader conta (EditReader edita)) (Maybe (state, [KeyEdit conta edita]))
+    editLensPutEdit oldstate KeyClear = return $ pure (oldstate, [KeyClear])
+    editLensPutEdit oldstate (KeyInsertReplaceItem itemb) = do
+        fitema <- liftReadable $ bma itemb
+        return $ fmap (\itema -> (oldstate, [KeyInsertReplaceItem $ itema])) fitema
+    editLensPutEdit oldstate (KeyDeleteItem key) = return $ pure (oldstate, [KeyDeleteItem key])
+    editLensPutEdit oldstate (KeyEditItem key eb) = do
+        mfresult <- mapReadableF (keyItemReadFunction @conta key) $ pe oldstate eb
+        case mfresult of
+            Just fsea -> return $ fmap (fmap (fmap $ KeyEditItem key)) fsea
+            Nothing -> return $ pure (oldstate, [])
     in MkEditLens {..}
 
 contextKeyEditLens ::
        forall editx cont edit.
        PureEditLens (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit))
-contextKeyEditLens =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet ::
-               ()
-            -> KeyReader cont (ContextEditReader editx edit) t
-            -> Readable (ContextEditReader editx (KeyEdit cont edit)) t
-        editGet () KeyReadKeys = readable $ MkTupleEditReader EditContent KeyReadKeys
-        editGet () (KeyReadItem _ (MkTupleEditReader EditContext reader)) =
-            fmap Just $ readable $ MkTupleEditReader EditContext reader
-        editGet () (KeyReadItem key (MkTupleEditReader EditContent reader)) =
-            readable $ MkTupleEditReader EditContent $ KeyReadItem key reader
-        editUpdate ::
-               ContextEdit editx (KeyEdit cont edit)
-            -> ()
-            -> Readable (ContextEditReader editx (KeyEdit cont edit)) ((), [KeyEdit cont (ContextEdit editx edit)])
-        editUpdate (MkTupleEdit EditContext edit) () = do
-            MkFiniteSet kk <- readable $ MkTupleEditReader EditContent KeyReadKeys
-            return $ pure $ fmap (\key -> KeyEditItem key $ MkTupleEdit EditContext edit) kk
-        editUpdate (MkTupleEdit EditContent (KeyEditItem key edit)) () =
-            return $ pure [KeyEditItem key (MkTupleEdit EditContent edit)]
-        editUpdate (MkTupleEdit EditContent (KeyDeleteItem key)) () = return $ pure [KeyDeleteItem key]
-        editUpdate (MkTupleEdit EditContent (KeyInsertReplaceItem el)) () = return $ pure [KeyInsertReplaceItem el]
-        editUpdate (MkTupleEdit EditContent KeyClear) () = return $ pure [KeyClear]
-        editLensFunction = MkEditFunction {..}
-        editLensPutEdit ::
-               ()
-            -> KeyEdit cont (ContextEdit editx edit)
-            -> Readable (ContextEditReader editx (KeyEdit cont edit)) (Maybe ( ()
-                                                                             , [ContextEdit editx (KeyEdit cont edit)]))
-        editLensPutEdit () (KeyEditItem _ (MkTupleEdit EditContext edit)) =
-            return $ pure $ pure [MkTupleEdit EditContext edit]
-        editLensPutEdit () (KeyEditItem key (MkTupleEdit EditContent edit)) =
-            return $ pure $ pure [MkTupleEdit EditContent $ KeyEditItem key edit]
-        editLensPutEdit () (KeyDeleteItem key) = return $ pure $ pure [MkTupleEdit EditContent $ KeyDeleteItem key]
-        editLensPutEdit () (KeyInsertReplaceItem el) =
-            return $ pure $ pure [MkTupleEdit EditContent $ KeyInsertReplaceItem el]
-        editLensPutEdit () KeyClear = return $ pure $ pure [MkTupleEdit EditContent KeyClear]
+contextKeyEditLens = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet ::
+           ()
+        -> KeyReader cont (ContextEditReader editx edit) t
+        -> Readable (ContextEditReader editx (KeyEdit cont edit)) t
+    editGet () KeyReadKeys = readable $ MkTupleEditReader EditContent KeyReadKeys
+    editGet () (KeyReadItem _ (MkTupleEditReader EditContext reader)) =
+        fmap Just $ readable $ MkTupleEditReader EditContext reader
+    editGet () (KeyReadItem key (MkTupleEditReader EditContent reader)) =
+        readable $ MkTupleEditReader EditContent $ KeyReadItem key reader
+    editUpdate ::
+           ContextEdit editx (KeyEdit cont edit)
+        -> ()
+        -> Readable (ContextEditReader editx (KeyEdit cont edit)) ((), [KeyEdit cont (ContextEdit editx edit)])
+    editUpdate (MkTupleEdit EditContext edit) () = do
+        MkFiniteSet kk <- readable $ MkTupleEditReader EditContent KeyReadKeys
+        return $ pure $ fmap (\key -> KeyEditItem key $ MkTupleEdit EditContext edit) kk
+    editUpdate (MkTupleEdit EditContent (KeyEditItem key edit)) () =
+        return $ pure [KeyEditItem key (MkTupleEdit EditContent edit)]
+    editUpdate (MkTupleEdit EditContent (KeyDeleteItem key)) () = return $ pure [KeyDeleteItem key]
+    editUpdate (MkTupleEdit EditContent (KeyInsertReplaceItem el)) () = return $ pure [KeyInsertReplaceItem el]
+    editUpdate (MkTupleEdit EditContent KeyClear) () = return $ pure [KeyClear]
+    editLensFunction = MkEditFunction {..}
+    editLensPutEdit ::
+           ()
+        -> KeyEdit cont (ContextEdit editx edit)
+        -> Readable (ContextEditReader editx (KeyEdit cont edit)) (Maybe ((), [ContextEdit editx (KeyEdit cont edit)]))
+    editLensPutEdit () (KeyEditItem _ (MkTupleEdit EditContext edit)) =
+        return $ pure $ pure [MkTupleEdit EditContext edit]
+    editLensPutEdit () (KeyEditItem key (MkTupleEdit EditContent edit)) =
+        return $ pure $ pure [MkTupleEdit EditContent $ KeyEditItem key edit]
+    editLensPutEdit () (KeyDeleteItem key) = return $ pure $ pure [MkTupleEdit EditContent $ KeyDeleteItem key]
+    editLensPutEdit () (KeyInsertReplaceItem el) =
+        return $ pure $ pure [MkTupleEdit EditContent $ KeyInsertReplaceItem el]
+    editLensPutEdit () KeyClear = return $ pure $ pure [MkTupleEdit EditContent KeyClear]
     in MkEditLens {..}
 
 contextKeyGeneralLens :: GeneralLens (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit))
 contextKeyGeneralLens = MkCloseState contextKeyEditLens
 
 findBy :: (a -> a -> Ordering) -> [a] -> a -> (Int, Bool)
-findBy cmp items x =
-    let ords = fmap (cmp x) items
+findBy cmp items x = let
+    ords = fmap (cmp x) items
     in (length $ filter ((==) GT) ords, any ((==) EQ) ords)
 
 orderedKeyList ::
        forall cont seq edit. (Index seq ~ Int, Element cont ~ EditSubject edit, KeyContainer cont, FullEdit edit)
     => (EditSubject edit -> EditSubject edit -> Ordering)
     -> PureEditFunction (KeyEdit cont edit) (ListEdit seq edit)
-orderedKeyList cmp =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        getUnsortedPairs :: Readable (KeyReader cont (EditReader edit)) [(ContainerKey cont, EditSubject edit)]
-        getUnsortedPairs = do
-            keyset <- readable KeyReadKeys
-            for (toList keyset) $ \key -> do
-                t <- mapReadable (knownKeyItemReadFunction key) subjectFromReader
-                return (key, t)
-        getSortedKeys :: Readable (KeyReader cont (EditReader edit)) [ContainerKey cont]
-        getSortedKeys = do
-            pairs <- getUnsortedPairs
-            return $ fmap fst $ sortBy (\p q -> cmp (snd p) (snd q)) pairs
-        findKey :: ContainerKey cont -> Readable (KeyReader cont (EditReader edit)) (SequencePoint seq, Bool)
-        findKey key = do
-            pairs <- getUnsortedPairs
-            skey <- mapReadable (knownKeyItemReadFunction key) subjectFromReader
-            return $ (\(i, found) -> (MkSequencePoint i, found)) $ findBy cmp (fmap snd pairs) skey
-        editGet :: forall t. () -> ListReader seq (EditReader edit) t -> Readable (KeyReader cont (EditReader edit)) t
-        editGet () ListReadLength = do
-            keyset <- readable KeyReadKeys
-            return $ MkSequencePoint $ length keyset
-        editGet () (ListReadItem (MkSequencePoint i) reader) = do
-            keylist <- getSortedKeys
-            case index keylist i of
-                Just key -> readable $ KeyReadItem key reader
-                Nothing -> return Nothing
-        editUpdate :: KeyEdit cont edit -> () -> Readable (KeyReader cont (EditReader edit)) ((), [ListEdit seq edit])
-        editUpdate (KeyEditItem key edit) () = do
-            (i, found) <- findKey key
-            return $
-                pure $
-                if found
-                    then [ListEditItem i edit]
-                    else []
-        editUpdate (KeyDeleteItem key) () = do
-            (i, found) <- findKey key
-            return $
-                pure $
-                if found
-                    then [ListDeleteItem i]
-                    else []
-        editUpdate (KeyInsertReplaceItem item) () = do
-            (i, found) <- findKey $ elementKey (Proxy :: Proxy cont) item
+orderedKeyList cmp = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    getUnsortedPairs :: Readable (KeyReader cont (EditReader edit)) [(ContainerKey cont, EditSubject edit)]
+    getUnsortedPairs = do
+        keyset <- readable KeyReadKeys
+        for (toList keyset) $ \key -> do
+            t <- mapReadable (knownKeyItemReadFunction key) subjectFromReader
+            return (key, t)
+    getSortedKeys :: Readable (KeyReader cont (EditReader edit)) [ContainerKey cont]
+    getSortedKeys = do
+        pairs <- getUnsortedPairs
+        return $ fmap fst $ sortBy (\p q -> cmp (snd p) (snd q)) pairs
+    findKey :: ContainerKey cont -> Readable (KeyReader cont (EditReader edit)) (SequencePoint seq, Bool)
+    findKey key = do
+        pairs <- getUnsortedPairs
+        skey <- mapReadable (knownKeyItemReadFunction key) subjectFromReader
+        return $ (\(i, found) -> (MkSequencePoint i, found)) $ findBy cmp (fmap snd pairs) skey
+    editGet :: forall t. () -> ListReader seq (EditReader edit) t -> Readable (KeyReader cont (EditReader edit)) t
+    editGet () ListReadLength = do
+        keyset <- readable KeyReadKeys
+        return $ MkSequencePoint $ length keyset
+    editGet () (ListReadItem (MkSequencePoint i) reader) = do
+        keylist <- getSortedKeys
+        case index keylist i of
+            Just key -> readable $ KeyReadItem key reader
+            Nothing -> return Nothing
+    editUpdate :: KeyEdit cont edit -> () -> Readable (KeyReader cont (EditReader edit)) ((), [ListEdit seq edit])
+    editUpdate (KeyEditItem key edit) () = do
+        (i, found) <- findKey key
+        return $
+            pure $
             if found
-                then return $ pure [ListInsertItem i item]
-                else do
-                    edits <- getReplaceEditsM item
-                    return $ pure $ fmap (ListEditItem i) edits
-        editUpdate KeyClear () = return $ pure [ListClear]
+                then [ListEditItem i edit]
+                else []
+    editUpdate (KeyDeleteItem key) () = do
+        (i, found) <- findKey key
+        return $
+            pure $
+            if found
+                then [ListDeleteItem i]
+                else []
+    editUpdate (KeyInsertReplaceItem item) () = do
+        (i, found) <- findKey $ elementKey (Proxy :: Proxy cont) item
+        if found
+            then return $ pure [ListInsertItem i item]
+            else do
+                edits <- getReplaceEditsM item
+                return $ pure $ fmap (ListEditItem i) edits
+    editUpdate KeyClear () = return $ pure [ListClear]
     in MkEditFunction {..}

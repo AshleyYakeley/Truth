@@ -18,12 +18,12 @@ data FileSystemItem
     | OtherItem
 
 findInFileSystem :: FileSystem -> FilePath -> Maybe FileSystemItem
-findInFileSystem fs path =
-    let finditem item [] = Just item
-        finditem (DirectoryItem dir) (n:names) = do
-            item <- lookup n dir
-            finditem item names
-        finditem _ _ = Nothing
+findInFileSystem fs path = let
+    finditem item [] = Just item
+    finditem (DirectoryItem dir) (n:names) = do
+        item <- lookup n dir
+        finditem item names
+    finditem _ _ = Nothing
     in finditem (DirectoryItem fs) $ splitDirectories path
 
 data FSItem
@@ -78,47 +78,47 @@ createFile path bs = do
     hClose h
 
 fileSystemMutableEdit :: MutableEdit IO FSEdit
-fileSystemMutableEdit =
-    let mutableRead :: MutableRead IO FSReader
-        mutableRead (FSReadDirectory path) = do
-            isDir <- doesDirectoryExist path
-            if isDir
-                then do
-                    names <- listDirectory path
-                    return $ Just names
-                else return Nothing
-        mutableRead (FSReadItem path) = do
-            isFile <- doesFileExist path
-            if isFile
-                then return $ Just $ FSFileItem $ fileObject path
-                else do
-                    isDir <- doesDirectoryExist path
-                    if isDir
-                        then return $ Just FSDirectoryItem
-                        else do
-                            exists <- doesPathExist path
-                            if not exists
-                                then return Nothing
-                                else return $ Just FSOtherItem
-        mutableRead (FSReadSymbolicLink path) = do
-            isSymLink <- pathIsSymbolicLink path
-            if isSymLink
-                then fmap Just $ getSymbolicLinkTarget path
-                else return Nothing
-        ifMissing :: FilePath -> IO () -> IO (Maybe (IO ()))
-        ifMissing path action = testEditAction (fmap not $ doesPathExist path) action
-        mutableEdit :: [FSEdit] -> IO (Maybe (IO ()))
-        mutableEdit =
-            singleMutableEdit $ \edit ->
-                case edit of
-                    FSEditCreateDirectory path -> ifMissing path $ createDirectory path
-                    FSEditCreateFile path bs -> ifMissing path $ createFile path bs
-                    FSEditCreateSymbolicLink path target -> ifMissing path $ createFileLink target path
-                    FSEditDeleteNonDirectory path ->
-                        testEditAction ((&&) <$> doesPathExist path <*> fmap not (doesDirectoryExist path)) $
-                        removeFile path
-                    FSEditDeleteEmptyDirectory path -> testEditAction (doesDirectoryExist path) $ removeDirectory path
-                    FSEditRenameItem fromPath toPath ->
-                        testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $
-                        renamePath fromPath toPath
+fileSystemMutableEdit = let
+    mutableRead :: MutableRead IO FSReader
+    mutableRead (FSReadDirectory path) = do
+        isDir <- doesDirectoryExist path
+        if isDir
+            then do
+                names <- listDirectory path
+                return $ Just names
+            else return Nothing
+    mutableRead (FSReadItem path) = do
+        isFile <- doesFileExist path
+        if isFile
+            then return $ Just $ FSFileItem $ fileObject path
+            else do
+                isDir <- doesDirectoryExist path
+                if isDir
+                    then return $ Just FSDirectoryItem
+                    else do
+                        exists <- doesPathExist path
+                        if not exists
+                            then return Nothing
+                            else return $ Just FSOtherItem
+    mutableRead (FSReadSymbolicLink path) = do
+        isSymLink <- pathIsSymbolicLink path
+        if isSymLink
+            then fmap Just $ getSymbolicLinkTarget path
+            else return Nothing
+    ifMissing :: FilePath -> IO () -> IO (Maybe (IO ()))
+    ifMissing path action = testEditAction (fmap not $ doesPathExist path) action
+    mutableEdit :: [FSEdit] -> IO (Maybe (IO ()))
+    mutableEdit =
+        singleMutableEdit $ \edit ->
+            case edit of
+                FSEditCreateDirectory path -> ifMissing path $ createDirectory path
+                FSEditCreateFile path bs -> ifMissing path $ createFile path bs
+                FSEditCreateSymbolicLink path target -> ifMissing path $ createFileLink target path
+                FSEditDeleteNonDirectory path ->
+                    testEditAction ((&&) <$> doesPathExist path <*> fmap not (doesDirectoryExist path)) $
+                    removeFile path
+                FSEditDeleteEmptyDirectory path -> testEditAction (doesDirectoryExist path) $ removeDirectory path
+                FSEditRenameItem fromPath toPath ->
+                    testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $
+                    renamePath fromPath toPath
     in MkMutableEdit {..}

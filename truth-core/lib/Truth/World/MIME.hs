@@ -28,19 +28,19 @@ data MIMEKnowledge = MkMIMEKnowledge
     }
 
 interpretInjection :: (?mimeKnowledge :: MIMEKnowledge) => Injection MIMEContent (Maybe Anything)
-interpretInjection =
-    let injForwards :: MIMEContent -> Maybe Anything
-        injForwards =
-            \(MkWithContext t content) -> do
-                MkAnyCodec ie codec <- findMIMECodecByMIME ?mimeKnowledge t
-                b <- decode codec content
-                return $ MkAnything ie b
-        injBackwards :: Maybe Anything -> Maybe MIMEContent
-        injBackwards =
-            \ma ->
-                case ma of
-                    (Just (MkAnything ie a)) -> do
-                        (t, codec) <- findMIMECodecByInfoT ?mimeKnowledge ie
-                        return (MkWithContext t (encode codec a))
-                    _ -> Nothing
+interpretInjection = let
+    injForwards :: MIMEContent -> Maybe Anything
+    injForwards =
+        \(MkWithContext t content) -> do
+            MkAnyCodec ie codec <- findMIMECodecByMIME ?mimeKnowledge t
+            b <- decode codec content
+            return $ MkAnything ie b
+    injBackwards :: Maybe Anything -> Maybe MIMEContent
+    injBackwards =
+        \ma ->
+            case ma of
+                (Just (MkAnything ie a)) -> do
+                    (t, codec) <- findMIMECodecByInfoT ?mimeKnowledge ie
+                    return (MkWithContext t (encode codec a))
+                _ -> Nothing
     in MkInjection {..}

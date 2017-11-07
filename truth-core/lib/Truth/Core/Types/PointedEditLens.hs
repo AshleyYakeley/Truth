@@ -14,19 +14,19 @@ newtype PointedEditFunction editp edita editb =
 
 instance ConstrainedCategory (PointedEditFunction editp) where
     type CategoryConstraint (PointedEditFunction editp) edit = ()
-    cid =
-        let editAccess :: IOStateAccess ()
-            editAccess = unitStateAccess
-            editGet :: () -> ReadFunction (ContextEditReader editp edit) (EditReader edit)
-            editGet () rt = readable $ MkTupleEditReader EditContent rt
-            editUpdate :: ContextEdit editp edit -> () -> Readable (ContextEditReader editp edit) ((), [edit])
-            editUpdate (MkTupleEdit EditContext _) () = pure $ pure []
-            editUpdate (MkTupleEdit EditContent edit) () = pure $ pure $ pure edit
+    cid = let
+        editAccess :: IOStateAccess ()
+        editAccess = unitStateAccess
+        editGet :: () -> ReadFunction (ContextEditReader editp edit) (EditReader edit)
+        editGet () rt = readable $ MkTupleEditReader EditContent rt
+        editUpdate :: ContextEdit editp edit -> () -> Readable (ContextEditReader editp edit) ((), [edit])
+        editUpdate (MkTupleEdit EditContext _) () = pure $ pure []
+        editUpdate (MkTupleEdit EditContent edit) () = pure $ pure $ pure edit
         in MkPointedEditFunction $ MkEditFunction {..}
-    (MkPointedEditFunction (funcBC :: PureEditFunction (ContextEdit editp editb) editc)) <.> (MkPointedEditFunction (funcAB :: PureEditFunction (ContextEdit editp edita) editb)) =
-        let convAB :: () -> ReadFunction (ContextEditReader editp edita) (ContextEditReader editp editb)
-            convAB () (MkTupleEditReader EditContext rt) = readable $ MkTupleEditReader EditContext rt
-            convAB () (MkTupleEditReader EditContent rt) = editGet funcAB () rt
+    (MkPointedEditFunction (funcBC :: PureEditFunction (ContextEdit editp editb) editc)) <.> (MkPointedEditFunction (funcAB :: PureEditFunction (ContextEdit editp edita) editb)) = let
+        convAB :: () -> ReadFunction (ContextEditReader editp edita) (ContextEditReader editp editb)
+        convAB () (MkTupleEditReader EditContext rt) = readable $ MkTupleEditReader EditContext rt
+        convAB () (MkTupleEditReader EditContent rt) = editGet funcAB () rt
         in MkPointedEditFunction $
            MkEditFunction
            { editAccess = unitStateAccess
@@ -49,36 +49,37 @@ newtype PointedEditLens editp edita editb =
 
 instance Edit editp => ConstrainedCategory (PointedEditLens editp) where
     type CategoryConstraint (PointedEditLens editp) edit = Edit edit
-    cid =
-        let MkPointedEditFunction editLensFunction = cid
-            editLensPutEdit ::
-                   () -> edit -> Readable (ContextEditReader editp edit) (Maybe ((), [ContextEdit editp edit]))
-            editLensPutEdit () edit = pure $ pure $ pure $ pure $ MkTupleEdit EditContent edit
+    cid = let
+        MkPointedEditFunction editLensFunction = cid
+        editLensPutEdit :: () -> edit -> Readable (ContextEditReader editp edit) (Maybe ((), [ContextEdit editp edit]))
+        editLensPutEdit () edit = pure $ pure $ pure $ pure $ MkTupleEdit EditContent edit
         in MkPointedEditLens $ MkEditLens {..}
-    (MkPointedEditLens (lensBC :: PureEditLens (ContextEdit editp editb) editc)) <.> (MkPointedEditLens (lensAB :: PureEditLens (ContextEdit editp edita) editb)) =
-        let funcAB = editLensFunction lensAB
-            funcBC = editLensFunction lensBC
-            pesAB = editLensPutEdits lensAB
-            peBC = editLensPutEdit lensBC
-            convAB :: () -> ReadFunction (ContextEditReader editp edita) (ContextEditReader editp editb)
-            convAB () (MkTupleEditReader EditContext rt) = readable $ MkTupleEditReader EditContext rt
-            convAB () (MkTupleEditReader EditContent rt) = editGet funcAB () rt
-        in let MkPointedEditFunction editLensFunction = MkPointedEditFunction funcBC <.> MkPointedEditFunction funcAB
+    (MkPointedEditLens (lensBC :: PureEditLens (ContextEdit editp editb) editc)) <.> (MkPointedEditLens (lensAB :: PureEditLens (ContextEdit editp edita) editb)) = let
+        funcAB = editLensFunction lensAB
+        funcBC = editLensFunction lensBC
+        pesAB = editLensPutEdits lensAB
+        peBC = editLensPutEdit lensBC
+        convAB :: () -> ReadFunction (ContextEditReader editp edita) (ContextEditReader editp editb)
+        convAB () (MkTupleEditReader EditContext rt) = readable $ MkTupleEditReader EditContext rt
+        convAB () (MkTupleEditReader EditContent rt) = editGet funcAB () rt
+        in let
+               MkPointedEditFunction editLensFunction = MkPointedEditFunction funcBC <.> MkPointedEditFunction funcAB
                editLensPutEdit () editC = do
                    fslb <- mapGenReadable (convAB ()) $ peBC () editC
                    ff <-
-                       for fslb $ \((), editPBs) ->
-                           let editPsBs :: forall t. WithContextSelector editp editb t -> [t]
-                               editPsBs = getAllF $ splitTupleEditList editPBs
-                               editPs = editPsBs EditContext
-                               editBs = editPsBs EditContent
-                           in do fsla <- pesAB () $ editBs
-                                 return $
-                                     fmap
-                                         (\((), editPAs) -> ((), (fmap (MkTupleEdit EditContext) editPs) ++ editPAs))
-                                         fsla
+                       for fslb $ \((), editPBs) -> let
+                           editPsBs :: forall t. WithContextSelector editp editb t -> [t]
+                           editPsBs = getAllF $ splitTupleEditList editPBs
+                           editPs = editPsBs EditContext
+                           editBs = editPsBs EditContent
+                           in do
+                                  fsla <- pesAB () $ editBs
+                                  return $
+                                      fmap
+                                          (\((), editPAs) -> ((), (fmap (MkTupleEdit EditContext) editPs) ++ editPAs))
+                                          fsla
                    return $ ff >>= id
-           in MkPointedEditLens $ MkEditLens {..}
+               in MkPointedEditLens $ MkEditLens {..}
 
 pointedWholeFunctionRead :: PointedEditFunction editp (WholeEdit a) (WholeEdit b) -> a -> Readable (EditReader editp) b
 pointedWholeFunctionRead (MkPointedEditFunction MkEditFunction {..}) a =

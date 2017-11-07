@@ -54,15 +54,15 @@ instance (Traversable f, Applicative f, Applicative m) => CatFunctor (Lens' m) f
         MkLens {lensGet = fmap (lensGet lens), lensPutback = \fb fa -> sequenceA (liftA2 (lensPutback lens) fb fa)}
 
 fstLens :: Lens' Identity (a, b) a
-fstLens =
-    let lensGet = fst
-        lensPutback a (_, b) = Identity (a, b)
+fstLens = let
+    lensGet = fst
+    lensPutback a (_, b) = Identity (a, b)
     in MkLens {..}
 
 sndLens :: Lens' Identity (a, b) b
-sndLens =
-    let lensGet = snd
-        lensPutback b (a, _) = Identity (a, b)
+sndLens = let
+    lensGet = snd
+    lensPutback b (a, _) = Identity (a, b)
     in MkLens {..}
 
 pickLens :: (Eq p) => p -> Lens' Identity (p -> a) a
@@ -88,8 +88,8 @@ listElementLens :: (HasListElement n l) => NatType n -> Lens' Identity l (ListEl
 listElementLens n = MkLens {lensGet = getListElement n, lensPutback = \e -> return . (putListElement n e)}
 
 hashMapLens :: (Eq key, Hashable key) => key -> Lens' Identity (HashMap key value) (Maybe value)
-hashMapLens key =
-    let lensGet = lookup key
-        lensPutback Nothing hm = Identity $ deleteMap key hm
-        lensPutback (Just value) hm = Identity $ insertMap key value hm
+hashMapLens key = let
+    lensGet = lookup key
+    lensPutback Nothing hm = Identity $ deleteMap key hm
+    lensPutback (Just value) hm = Identity $ insertMap key value hm
     in MkLens {..}

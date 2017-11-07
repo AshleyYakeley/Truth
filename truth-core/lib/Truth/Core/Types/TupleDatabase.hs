@@ -79,9 +79,9 @@ instance ( WitnessConstraint (TupleDatabaseRowWitness database) tablesel
          , FiniteWitness tablesel
          ) =>
          Database database (TupleTableSel tablesel) where
-    tableAssemble getrow =
-        let conv :: AllF tablesel (Compose f All) -> AllF (TupleTableSel tablesel) f
-            conv (MkAllF tcfa) = MkAllF $ \(MkTupleTableSel tc) -> getCompose $ tcfa tc
+    tableAssemble getrow = let
+        conv :: AllF tablesel (Compose f All) -> AllF (TupleTableSel tablesel) f
+        conv (MkAllF tcfa) = MkAllF $ \(MkTupleTableSel tc) -> getCompose $ tcfa tc
         in fmap conv $ assembleWitnessF $ \col -> fmap Compose $ getrow $ MkTupleTableSel col
     type WhereClause database (TupleTableSel tablesel) row = TupleWhereClause database row
     whereClause (MkTupleWhereClause expr) = evalTupleExprIdentity @database expr
@@ -90,24 +90,24 @@ instance ( WitnessConstraint (TupleDatabaseRowWitness database) tablesel
     insertClause (MkTupleInsertClause rows) = rows
     insertIntoTable (MkTupleTableSel _) = MkTupleInsertClause
     type UpdateClause database (TupleTableSel tablesel) row = TupleUpdateClause database row
-    updateClause (MkTupleUpdateClause items) =
-        let updateItem ::
-                   forall colsel. TestEquality colsel
-                => TupleUpdateItem database colsel
-                -> All colsel
-                -> All colsel
-            updateItem (MkTupleUpdateItem tsel expr) tuple@(MkAll tf) =
-                MkAll $ \col ->
-                    case testEquality col tsel of
-                        Just Refl -> evalTupleExprIdentity @database expr tuple
-                        Nothing -> tf col
-            updateItems [] = id
-            updateItems (i:ii) = updateItems ii . updateItem i
+    updateClause (MkTupleUpdateClause items) = let
+        updateItem ::
+               forall colsel. TestEquality colsel
+            => TupleUpdateItem database colsel
+            -> All colsel
+            -> All colsel
+        updateItem (MkTupleUpdateItem tsel expr) tuple@(MkAll tf) =
+            MkAll $ \col ->
+                case testEquality col tsel of
+                    Just Refl -> evalTupleExprIdentity @database expr tuple
+                    Nothing -> tf col
+        updateItems [] = id
+        updateItems (i:ii) = updateItems ii . updateItem i
         in updateItems items
     type OrderClause database (TupleTableSel tablesel) row = TupleOrderClause row
-    orderClause (MkTupleOrderClause clauses) (MkAll tup1) (MkAll tup2) =
-        let oc (MkTupleOrderItem colsel SortAsc) = compare (tup1 colsel) (tup2 colsel)
-            oc (MkTupleOrderItem colsel SortDesc) = compare (Down $ tup1 colsel) (Down $ tup2 colsel)
+    orderClause (MkTupleOrderClause clauses) (MkAll tup1) (MkAll tup2) = let
+        oc (MkTupleOrderItem colsel SortAsc) = compare (tup1 colsel) (tup2 colsel)
+        oc (MkTupleOrderItem colsel SortDesc) = compare (Down $ tup1 colsel) (Down $ tup2 colsel)
         in mconcat $ fmap oc clauses
     orderMonoid (MkTupleTableSel _) = Dict
     type SelectClause database (TupleTableSel tablesel) = TupleSelectClause database

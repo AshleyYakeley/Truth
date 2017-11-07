@@ -36,9 +36,9 @@ type PureEditLens = EditLens ()
 
 instance ConstrainedCategory PureEditLens where
     type CategoryConstraint PureEditLens t = Edit t
-    cid =
-        let editLensFunction = cid
-            editLensPutEdit () edit = pure $ pure ((), [edit])
+    cid = let
+        editLensFunction = cid
+        editLensPutEdit () edit = pure $ pure ((), [edit])
         in MkEditLens {..}
     fel2 <.> fel1 =
         MkEditLens
@@ -52,8 +52,8 @@ instance ConstrainedCategory PureEditLens where
         }
 
 readOnlyEditLens :: forall state edita editb. EditFunction state edita editb -> EditLens state edita editb
-readOnlyEditLens editLensFunction =
-    let editLensPutEdit _ _ = pure Nothing
+readOnlyEditLens editLensFunction = let
+    editLensPutEdit _ _ = pure Nothing
     in MkEditLens {..}
 
 constEditLens ::
@@ -65,12 +65,12 @@ constEditLens b = readOnlyEditLens $ constEditFunction b
 convertEditLens ::
        forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb)
     => PureEditLens edita editb
-convertEditLens =
-    let editLensFunction :: PureEditFunction edita editb
-        editLensFunction = convertEditFunction
-        editLensPutEdit :: () -> editb -> Readable (EditReader edita) (Maybe ((), [edita]))
-        editLensPutEdit () editb = do
-            newsubject <- fromReadFunctionM (applyEdit editb) subjectFromReader
-            editbs <- getReplaceEditsM newsubject
-            return $ pure $ ((), editbs)
+convertEditLens = let
+    editLensFunction :: PureEditFunction edita editb
+    editLensFunction = convertEditFunction
+    editLensPutEdit :: () -> editb -> Readable (EditReader edita) (Maybe ((), [edita]))
+    editLensPutEdit () editb = do
+        newsubject <- fromReadFunctionM (applyEdit editb) subjectFromReader
+        editbs <- getReplaceEditsM newsubject
+        return $ pure $ ((), editbs)
     in MkEditLens {..}

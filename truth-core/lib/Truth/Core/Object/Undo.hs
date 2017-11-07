@@ -46,10 +46,12 @@ undoQueueSubscriber ::
 undoQueueSubscriber sub =
     MkSubscriber $ \(init :: Object edit -> IO editor) update -> do
         queueVar <- newMVar $ MkUndoQueue [] []
-        let init' :: Object edit -> IO (editor, UndoActions)
+        let
+            init' :: Object edit -> IO (editor, UndoActions)
             init' object = do
                 editor <- init object
-                let uaUndo :: IO ()
+                let
+                    uaUndo :: IO ()
                     uaUndo =
                         mvarStateAccess queueVar $ do
                             MkUndoQueue ues res <- get

@@ -51,7 +51,8 @@ updateStore mutr edits = runUpdateStore $ \_ ff -> ff mutr edits
 makeSharedSubscriber :: forall edit actions. Subscriber edit actions -> IO (Subscriber edit actions)
 makeSharedSubscriber parent = do
     var <- newMVar emptyStore
-    let initP :: Object edit -> IO (Object edit)
+    let
+        initP :: Object edit -> IO (Object edit)
         initP objectP = return objectP
         updateP ::
                forall m. IsStateIO m
@@ -61,7 +62,8 @@ makeSharedSubscriber parent = do
             -> m ()
         updateP _ mutrP edits = mvarStateAccess var $ updateStore mutrP edits
     (MkObject objectP, closerP, actions) <- subscribe parent initP updateP
-    let objectC :: Object edit
+    let
+        objectC :: Object edit
         objectC = MkObject objectP
         child :: Subscriber edit actions
         child =
@@ -70,7 +72,8 @@ makeSharedSubscriber parent = do
                 key <-
                     objectP $ \_ ->
                         mvarStateAccess var $ remonad liftIO $ addStoreStateT $ MkStoreEntry $ updateC editorC
-                let closerC =
+                let
+                    closerC =
                         objectP $ \_ ->
                             mvarStateAccess var $ do
                                 deleteStoreStateT key
@@ -84,24 +87,25 @@ makeSharedSubscriber parent = do
 objectSubscriber :: Object edit -> Subscriber edit ()
 objectSubscriber (MkObject object) =
     MkSubscriber $ \initr update -> do
-        rec editor <-
+        rec
+            editor <-
                 initr $
                 MkObject $ \call ->
-                    object $ \muted ->
-                        let muted' =
-                                MkMutableEdit
-                                { mutableRead = mutableRead muted
-                                , mutableEdit =
-                                      \edits -> do
-                                          maction <- mutableEdit muted edits
-                                          case maction of
-                                              Nothing -> return Nothing
-                                              Just action ->
-                                                  return $
-                                                  Just $ do
-                                                      action
-                                                      update editor (mutableRead muted) edits
-                                }
+                    object $ \muted -> let
+                        muted' =
+                            MkMutableEdit
+                            { mutableRead = mutableRead muted
+                            , mutableEdit =
+                                  \edits -> do
+                                      maction <- mutableEdit muted edits
+                                      case maction of
+                                          Nothing -> return Nothing
+                                          Just action ->
+                                              return $
+                                              Just $ do
+                                                  action
+                                                  update editor (mutableRead muted) edits
+                            }
                         in call muted'
         return (editor, return (), ())
 

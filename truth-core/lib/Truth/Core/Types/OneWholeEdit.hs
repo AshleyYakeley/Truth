@@ -52,33 +52,33 @@ mustExistOneEditFunction ::
        forall f edit. (MonadOne f, FullEdit edit)
     => String
     -> PureEditFunction (OneWholeEdit f edit) edit
-mustExistOneEditFunction err =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet :: () -> EditReader edit t -> Readable (OneReader f (EditReader edit)) t
-        editGet () reader = do
-            ft <- readable $ ReadOne reader
-            case retrieveOne ft of
-                SuccessResult t -> return t
-                FailureResult _ -> liftIO $ fail $ err ++ ": not found"
-        editUpdate :: OneWholeEdit f edit -> () -> Readable (OneReader f (EditReader edit)) ((), [edit])
-        editUpdate (SumEditLeft (MkWholeEdit ft)) () =
-            case retrieveOne ft of
-                SuccessResult t -> do
-                    edits <- getReplaceEditsM t
-                    return $ pure edits
-                FailureResult _ -> liftIO $ fail $ err ++ ": deleted"
-        editUpdate (SumEditRight (MkOneEdit edit)) () = return $ pure [edit]
+mustExistOneEditFunction err = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet :: () -> EditReader edit t -> Readable (OneReader f (EditReader edit)) t
+    editGet () reader = do
+        ft <- readable $ ReadOne reader
+        case retrieveOne ft of
+            SuccessResult t -> return t
+            FailureResult _ -> liftIO $ fail $ err ++ ": not found"
+    editUpdate :: OneWholeEdit f edit -> () -> Readable (OneReader f (EditReader edit)) ((), [edit])
+    editUpdate (SumEditLeft (MkWholeEdit ft)) () =
+        case retrieveOne ft of
+            SuccessResult t -> do
+                edits <- getReplaceEditsM t
+                return $ pure edits
+            FailureResult _ -> liftIO $ fail $ err ++ ": deleted"
+    editUpdate (SumEditRight (MkOneEdit edit)) () = return $ pure [edit]
     in MkEditFunction {..}
 
 mustExistOneEditLens ::
        forall f edit. (MonadOne f, FullEdit edit)
     => String
     -> PureEditLens (OneWholeEdit f edit) edit
-mustExistOneEditLens err =
-    let editLensFunction = mustExistOneEditFunction err
-        editLensPutEdit :: () -> edit -> Readable (OneReader f (EditReader edit)) (Maybe ((), [OneWholeEdit f edit]))
-        editLensPutEdit () edit = return $ Just $ pure [SumEditRight $ MkOneEdit edit]
+mustExistOneEditLens err = let
+    editLensFunction = mustExistOneEditFunction err
+    editLensPutEdit :: () -> edit -> Readable (OneReader f (EditReader edit)) (Maybe ((), [OneWholeEdit f edit]))
+    editLensPutEdit () edit = return $ Just $ pure [SumEditRight $ MkOneEdit edit]
     in MkEditLens {..}
 
 mustExistOneGeneralLens ::

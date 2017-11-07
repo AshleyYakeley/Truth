@@ -8,8 +8,7 @@ import Control.Arrow as I hiding ((<<<), (>>>), (|||))
 import Control.Category as I
 import Control.Concurrent as I
 import Control.Exception as I hiding (catch)
-import Control.Monad as I
-       (Functor(..), Monad((>>), (>>=), return), MonadPlus(..))
+import Control.Monad as I (Functor(..), Monad((>>), (>>=), return), MonadPlus(..))
 import Control.Monad.Fail as I
 import Control.Monad.Fix as I
 import Control.Monad.IO.Class as I
@@ -34,8 +33,21 @@ import Data.Traversable as I
 import Data.Tuple as I
 import Data.Word as I
 import Prelude as I
-       (Double, Enum(..), Integer, Integral(..), Num(..), Real(..), ($),
-        const, error, fromInteger, fromIntegral, seq, toInteger, undefined)
+    ( Double
+    , Enum(..)
+    , Integer
+    , Integral(..)
+    , Num(..)
+    , Real(..)
+    , ($)
+    , const
+    , error
+    , fromInteger
+    , fromIntegral
+    , seq
+    , toInteger
+    , undefined
+    )
 import System.IO as I
 import Text.Read as I (Read(..), readMaybe)
 import Text.Show as I (Show(..))
@@ -57,12 +69,10 @@ import Algebra.Lattice as I
 -- transformers
 import Control.Monad.Trans.Class as I
 import Control.Monad.Trans.Reader as I (ReaderT(..))
-import Control.Monad.Trans.State as I
-       (StateT(..), evalStateT, get, put)
+import Control.Monad.Trans.State as I (StateT(..), evalStateT, get, put)
 
 -- hashable
-import Control.Monad.Trans.Writer as I
-       (WriterT(..), execWriterT, tell)
+import Control.Monad.Trans.Writer as I (WriterT(..), execWriterT, tell)
 
 import Data.Hashable as I (Hashable)
 

@@ -25,9 +25,9 @@ data StringEdit seq
                            seq
 
 floatingUpdateLeft :: IsSequence seq => StringEdit seq -> SequencePoint seq -> SequencePoint seq
-floatingUpdateLeft (StringReplaceSection (MkSequenceRun ustart ulen) u) i =
-    let uend = ustart + ulen
-        slen = seqLength u
+floatingUpdateLeft (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
+    uend = ustart + ulen
+    slen = seqLength u
     in if i > uend
            then i + slen - ulen
            else if i > ustart + slen
@@ -36,9 +36,9 @@ floatingUpdateLeft (StringReplaceSection (MkSequenceRun ustart ulen) u) i =
 floatingUpdateLeft _ i = i
 
 floatingUpdateRight :: IsSequence seq => StringEdit seq -> SequencePoint seq -> SequencePoint seq
-floatingUpdateRight (StringReplaceSection (MkSequenceRun ustart ulen) u) i =
-    let uend = ustart + ulen
-        slen = seqLength u
+floatingUpdateRight (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let
+    uend = ustart + ulen
+    slen = seqLength u
     in if i >= uend
            then i + slen - ulen
            else if i > ustart + slen
@@ -50,8 +50,8 @@ instance IsSequence seq => Floating (StringEdit seq) (SequencePoint seq) where
     floatingUpdate = floatingUpdateRight
 
 instance IsSequence seq => Floating (StringEdit seq) (SequenceRun seq) where
-    floatingUpdate edit (MkSequenceRun ostart olen) =
-        let oend = ostart + olen
+    floatingUpdate edit (MkSequenceRun ostart olen) = let
+        oend = ostart + olen
         in startEndRun (floatingUpdateRight edit ostart) (floatingUpdateLeft edit oend)
 
 instance IsSequence seq => Floating (StringEdit seq) (StringEdit seq) where
@@ -63,12 +63,14 @@ instance IsSequence seq => Edit (StringEdit seq) where
     applyEdit (StringReplaceWhole s) reader = return $ readFromSubject s reader
     applyEdit (StringReplaceSection erunRaw s) StringReadLength = do
         oldlen <- readable StringReadLength
-        let (MkSequenceRun _estart elen) = clipRunBounds oldlen erunRaw
+        let
+            (MkSequenceRun _estart elen) = clipRunBounds oldlen erunRaw
             slen = seqLength s
         return $ oldlen + slen - elen
     applyEdit (StringReplaceSection erunRaw s) (StringReadSection rrunRaw) = do
         oldlen <- readable StringReadLength
-        let (MkSequenceRun estart elen) = clipRunBounds oldlen erunRaw
+        let
+            (MkSequenceRun estart elen) = clipRunBounds oldlen erunRaw
             slen = seqLength s
             newlen = oldlen + slen - elen
             rrun = clipRunBounds newlen rrunRaw
@@ -108,8 +110,8 @@ stringSectionLens ::
     -> IO (EditLens (SequenceRun seq) (StringEdit seq) (StringEdit seq))
 stringSectionLens initial =
     newMVar initial >>= \var ->
-        return $
-        let editAccess :: IOStateAccess (SequenceRun seq)
+        return $ let
+            editAccess :: IOStateAccess (SequenceRun seq)
             editAccess = mvarStateAccess var
             editGet :: SequenceRun seq -> ReadFunction (StringRead seq) (StringRead seq)
             editGet stateRaw reader = do
@@ -123,7 +125,8 @@ stringSectionLens initial =
                    StringEdit seq -> SequenceRun seq -> Readable (StringRead seq) (SequenceRun seq, [StringEdit seq])
             editUpdate edita rawoldstate = do
                 len <- readable StringReadLength
-                let oldstate = clipRunBounds len rawoldstate
+                let
+                    oldstate = clipRunBounds len rawoldstate
                     newstate = floatingUpdate edita oldstate
                 leditb <-
                     case edita of
@@ -133,7 +136,8 @@ stringSectionLens initial =
                             return $
                                 maybeToList $ do
                                     runb' <- seqIntersectInside oldstate runa
-                                    let runb = relativeRun (runStart oldstate) runb'
+                                    let
+                                        runb = relativeRun (runStart oldstate) runb'
                                         sb =
                                             seqSection
                                                 (clipRunBounds (seqLength sa) $ relativeRun (runStart runa) newstate)
@@ -154,9 +158,9 @@ stringSectionLens initial =
                     case editb of
                         StringReplaceWhole sb ->
                             (oldstate {runLength = seqLength sb}, [StringReplaceSection oldstate sb])
-                        StringReplaceSection runb sb ->
-                            let newlength = runLength oldstate + seqLength sb - runLength runb
-                                newstate = oldstate {runLength = newlength}
-                                runa = relativeRun (negate $ runStart oldstate) runb
+                        StringReplaceSection runb sb -> let
+                            newlength = runLength oldstate + seqLength sb - runLength runb
+                            newstate = oldstate {runLength = newlength}
+                            runa = relativeRun (negate $ runStart oldstate) runb
                             in (newstate, [StringReplaceSection runa sb])
-        in MkEditLens {..}
+            in MkEditLens {..}

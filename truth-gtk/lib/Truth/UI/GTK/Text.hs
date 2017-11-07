@@ -64,7 +64,8 @@ textView uitext = do
         \case
             StringReplaceWhole text -> liftIO $ textBufferSetText buffer text
             StringReplaceSection bounds text -> liftIO $ replaceText buffer bounds $ otoList text
-    let aspect :: Aspect (StringEdit s)
+    let
+        aspect :: Aspect (StringEdit s)
         aspect = do
             (iter1, iter2) <- textBufferGetSelectionBounds buffer
             run <- getSequenceRun iter1 iter2

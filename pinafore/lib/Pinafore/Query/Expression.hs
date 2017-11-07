@@ -60,15 +60,15 @@ qbind :: ToQValue t => String -> t -> QBindings
 qbind name val = MkQBindings [(name, pure $ toQValue val)]
 
 qlets :: QBindings -> QExpr a -> QExpr a
-qlets (MkQBindings bb) body =
-    let appCons vva vv = vva (head vv) (tail vv)
-        abstractList :: [String] -> QExpr a -> QExpr ([QValue] -> a)
-        abstractList [] expr = fmap (\a _ -> a) expr
-        abstractList (n:nn) expr = fmap appCons $ qabstract n $ abstractList nn expr
-        abstractNames :: QExpr a -> QExpr ([QValue] -> a)
-        abstractNames = abstractList (fmap fst bb)
-        exprs :: QExpr [QValue]
-        exprs = fmap fix $ abstractNames $ for bb $ \(_, b) -> b
+qlets (MkQBindings bb) body = let
+    appCons vva vv = vva (head vv) (tail vv)
+    abstractList :: [String] -> QExpr a -> QExpr ([QValue] -> a)
+    abstractList [] expr = fmap (\a _ -> a) expr
+    abstractList (n:nn) expr = fmap appCons $ qabstract n $ abstractList nn expr
+    abstractNames :: QExpr a -> QExpr ([QValue] -> a)
+    abstractNames = abstractList (fmap fst bb)
+    exprs :: QExpr [QValue]
+    exprs = fmap fix $ abstractNames $ for bb $ \(_, b) -> b
     in abstractNames body <*> exprs
 
 exprApply :: QValueExpr -> QValueExpr -> QValueExpr

@@ -122,21 +122,24 @@ makeViewWindow ::
     -> Subscriber edit actions
     -> IO ()
 makeViewWindow view windowCount tellclose title sub = do
-    rec MkViewSubscription {..} <- subscribeView view sub openSelection
-        let openSelection :: IO ()
+    rec
+        MkViewSubscription {..} <- subscribeView view sub openSelection
+        let
+            openSelection :: IO ()
             openSelection = do
                 msel <- srGetSelection
                 case msel of
-                    Just (aspname, uiwSpec) ->
-                        let uiwTitle = aspname ++ " of " ++ title
-                            uiwSubscriber = sub
+                    Just (aspname, uiwSpec) -> let
+                        uiwTitle = aspname ++ " of " ++ title
+                        uiwSubscriber = sub
                         in makeWindowCountRef windowCount MkUIWindow {..}
                     Nothing -> return ()
     window <- windowNew
     set window [windowTitle := title]
     windowSetPosition window WinPosCenter
     windowSetDefaultSize window 300 400
-    let closeRequest :: IO Bool
+    let
+        closeRequest :: IO Bool
         closeRequest = do
             srCloser
             tellclose
@@ -177,11 +180,12 @@ makeViewWindowCountRef view windowCount title sub = do
     makeViewWindow
         view
         windowCount
-        (do i <- readIORef windowCount
-            writeIORef windowCount (i - 1)
-            if i == 1
-                then mainQuit
-                else return ())
+        (do
+             i <- readIORef windowCount
+             writeIORef windowCount (i - 1)
+             if i == 1
+                 then mainQuit
+                 else return ())
         title
         sub
     i <- readIORef windowCount

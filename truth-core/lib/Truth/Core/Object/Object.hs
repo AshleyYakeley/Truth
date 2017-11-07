@@ -22,19 +22,19 @@ noneObject = nonlockingObject noneMutableEdit
 mvarObject :: forall a. MVar a -> (a -> Bool) -> Object (WholeEdit a)
 mvarObject var allowed =
     MkObject $ \call ->
-        mvarStateAccess var $
-        let muted :: MutableEdit (StateT a IO) (WholeEdit a)
-            muted =
-                let mutableRead :: MutableRead (StateT a IO) (WholeReader a)
-                    mutableRead ReadWhole = get
-                    mutableEdit edits = do
-                        na <- fromReadFunctionM (applyEdits edits) get
-                        return $
-                            if allowed na
-                                then Just $ put na
-                                else Nothing
+        mvarStateAccess var $ let
+            muted :: MutableEdit (StateT a IO) (WholeEdit a)
+            muted = let
+                mutableRead :: MutableRead (StateT a IO) (WholeReader a)
+                mutableRead ReadWhole = get
+                mutableEdit edits = do
+                    na <- fromReadFunctionM (applyEdits edits) get
+                    return $
+                        if allowed na
+                            then Just $ put na
+                            else Nothing
                 in MkMutableEdit {..}
-        in call muted
+            in call muted
 
 freeIOObject :: forall a. a -> (a -> Bool) -> IO (Object (WholeEdit a))
 freeIOObject firsta allowed = do
@@ -62,7 +62,8 @@ cacheObject (MkObject obj) =
     MkObject $ \call ->
         obj $ \muted -> do
             oldval <- mutableRead muted ReadWhole
-            let muted' =
+            let
+                muted' =
                     MkMutableEdit
                     {mutableRead = \ReadWhole -> get, mutableEdit = singleAlwaysMutableEdit $ \(MkWholeEdit t) -> put t}
             (r, newval) <- runStateT (call muted') oldval
@@ -84,8 +85,9 @@ pairObject (MkObject objectA) (MkObject objectB) =
                     mkStateIO $ \oldsB ->
                         fmap swap3 $
                         runStateT
-                            (let mutedA' = remonadMutableEdit (stateFst . fromStateIO) mutedA
+                            (let
+                                 mutedA' = remonadMutableEdit (stateFst . fromStateIO) mutedA
                                  mutedB' = remonadMutableEdit (stateSnd . fromStateIO) mutedB
                                  mutedAB = pairMutableEdit mutedA' mutedB'
-                             in call mutedAB)
+                                 in call mutedAB)
                             (oldsA, oldsB)

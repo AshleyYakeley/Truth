@@ -24,7 +24,8 @@ switchView ::
     -> GCreateView edit
 switchView getview specfunc = do
     box <- liftIO $ vBoxNew False 0
-    let getVR :: UISpec edit -> View edit (GViewResult edit)
+    let
+        getVR :: UISpec edit -> View edit (GViewResult edit)
         getVR spec = getCompose $ getview spec
         newWidgets :: GViewResult edit -> IO ()
         newWidgets vr = boxAddShow PackGrow box $ vrWidget vr

@@ -42,13 +42,13 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
             for mDeleteValue $ \(MkLimit deleteValue) ->
                 makeButton "Delete" $
                 unlift $ viewMutableEdit $ \muted -> pushMutableEdit muted [SumEditLeft $ MkWholeEdit deleteValue]
-    let getVR :: f () -> View (OneWholeEdit f edit) (f (GViewResult edit))
+    let
+        getVR :: f () -> View (OneWholeEdit f edit) (f (GViewResult edit))
         getVR fu = for fu $ \() -> mapViewEdit (mustExistOneGeneralLens "object") $ getCompose $ baseView
         newWidgets :: f (GViewResult edit) -> IO ()
         newWidgets fg =
             case retrieveOne fg of
-                FailureResult (MkLimit _) -> do
-                    boxAddShow PackGrow box emptyWidget
+                FailureResult (MkLimit _) -> do boxAddShow PackGrow box emptyWidget
                 SuccessResult vr -> do
                     for_ mDeleteButton (boxAddShow PackNatural box)
                     boxAddShow PackGrow box $ vrWidget vr
@@ -59,7 +59,8 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
     liftIO $ newWidgets firstfvr
     stateVar :: MVar (f (GViewResult edit)) <- liftIO $ newMVar firstfvr
     unlift <- liftOuter $ liftIOView return
-    let update ::
+    let
+        update ::
                forall m. IsStateIO m
             => MutableRead m (OneReader f (EditReader edit))
             -> [OneWholeEdit f edit]

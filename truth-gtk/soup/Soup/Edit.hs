@@ -22,12 +22,12 @@ liftSoupLens ::
                       EditSubject editb -> m (Maybe (EditSubject edita)))
     -> EditLens state edita editb
     -> EditLens state (SoupEdit edita) (SoupEdit editb)
-liftSoupLens bmfa =
-    let conv ::
-               forall m. MonadIO m
-            => (UUID, EditSubject editb)
-            -> m (Maybe (UUID, EditSubject edita))
-        conv (uuid, b) = fmap (fmap $ \a -> (uuid, a)) $ bmfa b
+liftSoupLens bmfa = let
+    conv ::
+           forall m. MonadIO m
+        => (UUID, EditSubject editb)
+        -> m (Maybe (UUID, EditSubject edita))
+    conv (uuid, b) = fmap (fmap $ \a -> (uuid, a)) $ bmfa b
     in liftKeyElementEditLens conv . sndLiftEditLens
 
 nameToUUID :: String -> Maybe UUID

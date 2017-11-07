@@ -21,7 +21,8 @@ openObject object = do
                 takeMVar closerVar
             putMVar doneVar ()
     muted <- takeMVar mutedVar
-    let close :: IO ()
+    let
+        close :: IO ()
         close = do
             putMVar closerVar ()
             takeMVar doneVar

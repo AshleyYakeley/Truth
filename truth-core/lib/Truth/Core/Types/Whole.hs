@@ -58,7 +58,8 @@ wholeEditLens lens =
     , editLensPutEdit =
           \() (MkWholeEdit newb) -> do
               olda <- subjectFromReader
-              let newma = lensPutback lens newb olda
+              let
+                  newma = lensPutback lens newb olda
                   medita = fmap (\a -> ((), [MkWholeEdit a])) newma
               return $ getMaybeOne medita
     }
@@ -91,29 +92,29 @@ pairWholeEditFunction ::
        PureEditFunction edit (WholeEdit a)
     -> PureEditFunction edit (WholeEdit b)
     -> PureEditFunction edit (WholeEdit (a, b))
-pairWholeEditFunction (MkEditFunction _ ga ua) (MkEditFunction _ gb ub) =
-    let gab :: () -> ReadFunction (EditReader edit) (WholeReader (a, b))
-        gab () ReadWhole = do
-            a <- ga () ReadWhole
-            b <- gb () ReadWhole
-            return (a, b)
-        lastm :: forall x. [x] -> Maybe x
-        lastm [] = Nothing
-        lastm [x] = Just x
-        lastm (_:xx) = lastm xx
-        uab edit () = do
-            ((), editas) <- ua edit ()
-            ((), editbs) <- ub edit ()
-            case (lastm editas, lastm editbs) of
-                (Nothing, Nothing) -> return ((), [])
-                (ma, mb) -> do
-                    a <-
-                        case ma of
-                            Just (MkWholeEdit a) -> return a
-                            Nothing -> ga () ReadWhole
-                    b <-
-                        case mb of
-                            Just (MkWholeEdit b) -> return b
-                            Nothing -> gb () ReadWhole
-                    return ((), [MkWholeEdit (a, b)])
+pairWholeEditFunction (MkEditFunction _ ga ua) (MkEditFunction _ gb ub) = let
+    gab :: () -> ReadFunction (EditReader edit) (WholeReader (a, b))
+    gab () ReadWhole = do
+        a <- ga () ReadWhole
+        b <- gb () ReadWhole
+        return (a, b)
+    lastm :: forall x. [x] -> Maybe x
+    lastm [] = Nothing
+    lastm [x] = Just x
+    lastm (_:xx) = lastm xx
+    uab edit () = do
+        ((), editas) <- ua edit ()
+        ((), editbs) <- ub edit ()
+        case (lastm editas, lastm editbs) of
+            (Nothing, Nothing) -> return ((), [])
+            (ma, mb) -> do
+                a <-
+                    case ma of
+                        Just (MkWholeEdit a) -> return a
+                        Nothing -> ga () ReadWhole
+                b <-
+                    case mb of
+                        Just (MkWholeEdit b) -> return b
+                        Nothing -> gb () ReadWhole
+                return ((), [MkWholeEdit (a, b)])
     in MkEditFunction unitStateAccess gab uab

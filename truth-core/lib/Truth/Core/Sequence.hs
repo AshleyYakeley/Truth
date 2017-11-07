@@ -67,18 +67,18 @@ clipPoint len p =
                  else p
 
 clipRunBounds :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> SequenceRun seq
-clipRunBounds len (MkSequenceRun rstart rlen) =
-    let rend = rstart + rlen
+clipRunBounds len (MkSequenceRun rstart rlen) = let
+    rend = rstart + rlen
     in startEndRun (clipPoint len rstart) (clipPoint len rend)
 
 clipRunStart :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> SequenceRun seq
-clipRunStart nstart (MkSequenceRun start len) =
-    let end = start + len
+clipRunStart nstart (MkSequenceRun start len) = let
+    end = start + len
     in startEndRun (max start nstart) end
 
 clipRunEnd :: Integral (Index seq) => SequencePoint seq -> SequenceRun seq -> SequenceRun seq
-clipRunEnd nend (MkSequenceRun start len) =
-    let end = start + len
+clipRunEnd nend (MkSequenceRun start len) = let
+    end = start + len
     in startEndRun start (min end nend)
 
 clipWithin :: Integral (Index seq) => SequenceRun seq -> SequenceRun seq -> SequenceRun seq
@@ -88,15 +88,15 @@ seqSection :: IsSequence seq => SequenceRun seq -> seq -> seq
 seqSection (MkSequenceRun start len) s = seqTake len $ seqDrop (max start 0) s
 
 seqIntersect :: Integral (Index seq) => SequenceRun seq -> SequenceRun seq -> Maybe (SequenceRun seq)
-seqIntersect a b =
-    let ab = clipWithin a b
+seqIntersect a b = let
+    ab = clipWithin a b
     in if goodRun ab
            then Just ab
            else Nothing
 
 seqIntersectInside :: Integral (Index seq) => SequenceRun seq -> SequenceRun seq -> Maybe (SequenceRun seq)
-seqIntersectInside a b =
-    let ab = seqIntersect a b
+seqIntersectInside a b = let
+    ab = seqIntersect a b
     in if runStart a < runEnd b && runStart b < runEnd a
            then ab
            else Nothing

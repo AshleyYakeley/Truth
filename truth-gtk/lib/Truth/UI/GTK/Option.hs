@@ -53,7 +53,8 @@ optionFromStore store = do
                     (t, _) <- liftIO $ listStoreGetValue store $ listStoreIterToIndex i
                     pushMutableEdit muted [MkWholeEdit t]
                 Nothing -> return ()
-    let update :: MonadIO m => t -> m ()
+    let
+        update :: MonadIO m => t -> m ()
         update t =
             liftIO $ do
                 items <- listStoreToList store

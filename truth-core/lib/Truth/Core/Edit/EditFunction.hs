@@ -14,12 +14,12 @@ data EditFunction state edita editb = MkEditFunction
 type PureEditFunction = EditFunction ()
 
 editToPureEditFunction :: forall edita editb. EditFunction ((), ()) edita editb -> PureEditFunction edita editb
-editToPureEditFunction (MkEditFunction _ g u) =
-    let g' :: () -> ReadFunction (EditReader edita) (EditReader editb)
-        g' () = g ((), ())
-        u' ea () = do
-            (((), ()), ebs) <- u ea ((), ())
-            return ((), ebs)
+editToPureEditFunction (MkEditFunction _ g u) = let
+    g' :: () -> ReadFunction (EditReader edita) (EditReader editb)
+    g' () = g ((), ())
+    u' ea () = do
+        (((), ()), ebs) <- u ea ((), ())
+        return ((), ebs)
     in MkEditFunction unitStateAccess g' u'
 
 editUpdates :: EditFunction state edita editb -> [edita] -> state -> Readable (EditReader edita) (state, [editb])
@@ -57,20 +57,20 @@ constEditFunction ::
        forall edita editb. SubjectReader (EditReader editb)
     => EditSubject editb
     -> PureEditFunction edita editb
-constEditFunction b =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet :: () -> ReadFunction (EditReader edita) (EditReader editb)
-        editGet () = readFromSubjectM $ pure b
-        editUpdate _ () = pure $ pure []
+constEditFunction b = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet :: () -> ReadFunction (EditReader edita) (EditReader editb)
+    editGet () = readFromSubjectM $ pure b
+    editUpdate _ () = pure $ pure []
     in MkEditFunction {..}
 
 instance Category (PureEditFunction) where
-    id =
-        let editAccess :: IOStateAccess ()
-            editAccess = unitStateAccess
-            editGet _ = readable
-            editUpdate edit _ = return ((), [edit])
+    id = let
+        editAccess :: IOStateAccess ()
+        editAccess = unitStateAccess
+        editGet _ = readable
+        editUpdate edit _ = return ((), [edit])
         in MkEditFunction {..}
     fef2 . fef1 =
         MkEditFunction
@@ -92,16 +92,16 @@ funcEditFunction ::
        forall edita editb. (Edit edita, FullSubjectReader (EditReader edita), FullEdit editb)
     => (EditSubject edita -> EditSubject editb)
     -> PureEditFunction edita editb
-funcEditFunction ab =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet :: () -> ReadFunction (EditReader edita) (EditReader editb)
-        editGet () = simpleReadFunction ab
-        editUpdate :: edita -> () -> Readable (EditReader edita) ((), [editb])
-        editUpdate edita () = do
-            newa <- mapReadable (applyEdit edita) subjectFromReader
-            editbs <- getReplaceEditsM $ ab newa
-            return $ ((), editbs)
+funcEditFunction ab = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet :: () -> ReadFunction (EditReader edita) (EditReader editb)
+    editGet () = simpleReadFunction ab
+    editUpdate :: edita -> () -> Readable (EditReader edita) ((), [editb])
+    editUpdate edita () = do
+        newa <- mapReadable (applyEdit edita) subjectFromReader
+        editbs <- getReplaceEditsM $ ab newa
+        return $ ((), editbs)
     in MkEditFunction {..}
 
 convertEditFunction ::

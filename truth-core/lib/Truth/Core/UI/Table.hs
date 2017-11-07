@@ -12,8 +12,8 @@ data TableCellProps = MkTableCellProps
     }
 
 tableCellPlain :: TableCellProps
-tableCellPlain =
-    let tcItalic = False
+tableCellPlain = let
+    tcItalic = False
     in MkTableCellProps {..}
 
 data KeyColumn tedit key = MkKeyColumn
@@ -26,10 +26,10 @@ readOnlyKeyColumn ::
     => String
     -> (key -> IO (GeneralFunction tedit (WholeEdit (String, TableCellProps))))
     -> KeyColumn tedit key
-readOnlyKeyColumn kcName getter =
-    let kcContents key = do
-            func <- getter key
-            return (readOnlyGeneralLens $ funcGeneralFunction fst <.> func, funcGeneralFunction snd <.> func)
+readOnlyKeyColumn kcName getter = let
+    kcContents key = do
+        func <- getter key
+        return (readOnlyGeneralLens $ funcGeneralFunction fst <.> func, funcGeneralFunction snd <.> func)
     in MkKeyColumn {..}
 
 data UITable tedit where

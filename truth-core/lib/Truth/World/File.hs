@@ -7,7 +7,8 @@ fileObject :: FilePath -> Object ByteStringEdit
 fileObject path =
     MkObject $ \call -> do
         h <- openBinaryFile path ReadWriteMode
-        let mutableRead :: MutableRead IO ByteStringReader
+        let
+            mutableRead :: MutableRead IO ByteStringReader
             mutableRead ReadByteStringLength = fmap fromInteger $ hFileSize h
             mutableRead (ReadByteStringSection start len) = do
                 hSeek h AbsoluteSeek $ toInteger start

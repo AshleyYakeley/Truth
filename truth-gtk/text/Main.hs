@@ -18,13 +18,15 @@ textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCod
 
 fileTextWindow :: Bool -> FilePath -> IO SomeUIWindow
 fileTextWindow saveOpt path = do
-    let bsObj :: Object ByteStringEdit
+    let
+        bsObj :: Object ByteStringEdit
         bsObj = fileObject path
         wholeTextObj :: Object (WholeEdit ((Result String) String))
         wholeTextObj = cacheObject $ mapObject (MkCloseState textLens) bsObj
     if saveOpt
         then do
-            let baseSub :: Subscriber (WholeEdit ((Result String) String)) ()
+            let
+                baseSub :: Subscriber (WholeEdit ((Result String) String)) ()
                 baseSub = objectSubscriber wholeTextObj
                 bufferSub :: Subscriber (OneWholeEdit (Result String) (StringEdit String)) ((), SaveActions)
                 bufferSub = saveBufferSubscriber baseSub
@@ -34,7 +36,8 @@ fileTextWindow saveOpt path = do
             textSub <- makeSharedSubscriber undoBufferSub
             return $ MkSomeUIWindow $ MkUIWindow (takeFileName path) (uiOneWhole uiStringText) textSub
         else do
-            let textObj :: Object (OneWholeEdit (Result String) (StringEdit String))
+            let
+                textObj :: Object (OneWholeEdit (Result String) (StringEdit String))
                 textObj = convertObject wholeTextObj
             textSub <- makeObjectSubscriber textObj
             return $ MkSomeUIWindow $ MkUIWindow (takeFileName path) (uiOneWhole uiStringText) textSub

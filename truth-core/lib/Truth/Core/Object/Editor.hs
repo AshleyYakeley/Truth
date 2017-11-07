@@ -18,30 +18,30 @@ instance Functor (Editor edit actions) where
     fmap ab (MkEditor ei eu ed) = MkEditor ei eu $ \e a -> fmap ab $ ed e a
 
 instance Applicative (Editor edit actions) where
-    pure a =
-        let editorInit _ = return ()
-            editorUpdate () _ _ = return ()
-            editorDo () _ = return a
+    pure a = let
+        editorInit _ = return ()
+        editorUpdate () _ _ = return ()
+        editorDo () _ = return a
         in MkEditor {..}
-    (MkEditor (ei1 :: Object edit -> IO editor1) eu1 ed1) <*> (MkEditor (ei2 :: Object edit -> IO editor2) eu2 ed2) =
-        let editorInit :: Object edit -> IO (editor1, editor2)
-            editorInit object = do
-                e1 <- ei1 object
-                e2 <- ei2 object
-                return (e1, e2)
-            editorUpdate ::
-                   forall m. IsStateIO m
-                => (editor1, editor2)
-                -> MutableRead m (EditReader edit)
-                -> [edit]
-                -> m ()
-            editorUpdate (e1, e2) mr edits = do
-                eu1 e1 mr edits
-                eu2 e2 mr edits
-            editorDo (e1, e2) actions = do
-                ab <- ed1 e1 actions
-                a <- ed2 e2 actions
-                return $ ab a
+    (MkEditor (ei1 :: Object edit -> IO editor1) eu1 ed1) <*> (MkEditor (ei2 :: Object edit -> IO editor2) eu2 ed2) = let
+        editorInit :: Object edit -> IO (editor1, editor2)
+        editorInit object = do
+            e1 <- ei1 object
+            e2 <- ei2 object
+            return (e1, e2)
+        editorUpdate ::
+               forall m. IsStateIO m
+            => (editor1, editor2)
+            -> MutableRead m (EditReader edit)
+            -> [edit]
+            -> m ()
+        editorUpdate (e1, e2) mr edits = do
+            eu1 e1 mr edits
+            eu2 e2 mr edits
+        editorDo (e1, e2) actions = do
+            ab <- ed1 e1 actions
+            a <- ed2 e2 actions
+            return $ ab a
         in MkEditor {..}
 
 subscribeEditor :: Subscriber edit actions -> Editor edit actions r -> IO r
@@ -56,9 +56,9 @@ oneTransactionEditor ::
        (forall m. Monad m =>
                       MutableEdit m edit -> m r)
     -> Editor edit actions r
-oneTransactionEditor f =
-    let editorInit :: Object edit -> IO (Object edit)
-        editorInit object = return object
-        editorUpdate _lapiw _mr _edits = return ()
-        editorDo (MkObject object) _ = object f
+oneTransactionEditor f = let
+    editorInit :: Object edit -> IO (Object edit)
+    editorInit object = return object
+    editorUpdate _lapiw _mr _edits = return ()
+    editorDo (MkObject object) _ = object f
     in MkEditor {..}

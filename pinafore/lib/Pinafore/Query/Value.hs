@@ -150,9 +150,9 @@ instance FromQValue (PinaforeLensValue (FiniteSetEdit Point)) where
 
 instance FromQValue (PinaforeFunctionValue (FiniteSet Point)) where
     fromQValue (MkAny QPoint a) =
-        return $
-        let mms mmt = maybeToFiniteSet $ mmt >>= id
-        in applyPinaforeFunction (arr mms . cfmap (lensFunctionMorphism id)) (lensFunctionValue a)
+        return $ let
+            mms mmt = maybeToFiniteSet $ mmt >>= id
+            in applyPinaforeFunction (arr mms . cfmap (lensFunctionMorphism id)) (lensFunctionValue a)
     fromQValue (MkAny QSet a) =
         return $ applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism id)) (lensFunctionValue a)
     fromQValue v = badFromQValue v
@@ -160,11 +160,11 @@ instance FromQValue (PinaforeFunctionValue (FiniteSet Point)) where
 instance FromQValue (PinaforeFunctionValue (FiniteSet Text)) where
     fromQValue (MkAny QLiteral a) = return $ constGeneralFunction $ opoint a
     fromQValue (MkAny QPoint a) =
-        return $
-        let mms mmt = maybeToFiniteSet $ mmt >>= id
-        in applyPinaforeFunction
-               (arr mms . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism))
-               (lensFunctionValue a)
+        return $ let
+            mms mmt = maybeToFiniteSet $ mmt >>= id
+            in applyPinaforeFunction
+                   (arr mms . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism))
+                   (lensFunctionValue a)
     fromQValue (MkAny QSet a) =
         return $
         applyPinaforeFunction

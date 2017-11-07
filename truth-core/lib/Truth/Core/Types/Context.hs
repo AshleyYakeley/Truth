@@ -82,23 +82,23 @@ contextualiseReadFunction rf (MkTupleEditReader EditContent rt) = rf rt
 
 contextualiseEditFunction ::
        forall state edita editb. EditFunction state edita editb -> EditFunction state edita (ContextEdit edita editb)
-contextualiseEditFunction (MkEditFunction i g u) =
-    let g' :: state -> ReadFunction (EditReader edita) (ContextEditReader edita editb)
-        g' curstate = contextualiseReadFunction @edita @editb $ g curstate
-        u' :: edita -> state -> Readable (EditReader edita) (state, [ContextEdit edita editb])
-        u' ea oldstate = do
-            (newstate, ebs) <- u ea oldstate
-            return (newstate, (MkTupleEdit EditContext ea) : (fmap (MkTupleEdit EditContent) ebs))
+contextualiseEditFunction (MkEditFunction i g u) = let
+    g' :: state -> ReadFunction (EditReader edita) (ContextEditReader edita editb)
+    g' curstate = contextualiseReadFunction @edita @editb $ g curstate
+    u' :: edita -> state -> Readable (EditReader edita) (state, [ContextEdit edita editb])
+    u' ea oldstate = do
+        (newstate, ebs) <- u ea oldstate
+        return (newstate, (MkTupleEdit EditContext ea) : (fmap (MkTupleEdit EditContent) ebs))
     in MkEditFunction i g' u'
 
 contextualiseGeneralFunction :: GeneralFunction edita editb -> GeneralFunction edita (ContextEdit edita editb)
 contextualiseGeneralFunction (MkCloseState ef) = MkCloseState $ contextualiseEditFunction ef
 
 contextualiseEditLens :: EditLens state edita editb -> EditLens state edita (ContextEdit edita editb)
-contextualiseEditLens (MkEditLens f pe) =
-    let f' = contextualiseEditFunction f
-        pe' oldstate (MkTupleEdit EditContext ea) = return $ pure (oldstate, [ea])
-        pe' oldstate (MkTupleEdit EditContent eb) = pe oldstate eb
+contextualiseEditLens (MkEditLens f pe) = let
+    f' = contextualiseEditFunction f
+    pe' oldstate (MkTupleEdit EditContext ea) = return $ pure (oldstate, [ea])
+    pe' oldstate (MkTupleEdit EditContent eb) = pe oldstate eb
     in MkEditLens f' pe'
 
 contextualiseGeneralLens :: GeneralLens edita editb -> GeneralLens edita (ContextEdit edita editb)
@@ -159,31 +159,31 @@ liftContextEditFunction ::
        forall state edita editb editx.
        EditFunction state edita editb
     -> EditFunction state (ContextEdit editx edita) (ContextEdit editx editb)
-liftContextEditFunction (MkEditFunction i g u) =
-    let g' :: state -> ContextEditReader editx editb t -> Readable (ContextEditReader editx edita) t
-        g' cur = liftContextReadFunction $ g cur
-        u' :: ContextEdit editx edita
-           -> state
-           -> Readable (ContextEditReader editx edita) (state, [ContextEdit editx editb])
-        u' (MkTupleEdit EditContext edit) old = return (old, [MkTupleEdit EditContext edit])
-        u' (MkTupleEdit EditContent edit) old = do
-            (new, edits) <- mapReadable (tupleReadFunction EditContent) $ u edit old
-            return (new, fmap (MkTupleEdit EditContent) edits)
+liftContextEditFunction (MkEditFunction i g u) = let
+    g' :: state -> ContextEditReader editx editb t -> Readable (ContextEditReader editx edita) t
+    g' cur = liftContextReadFunction $ g cur
+    u' :: ContextEdit editx edita
+       -> state
+       -> Readable (ContextEditReader editx edita) (state, [ContextEdit editx editb])
+    u' (MkTupleEdit EditContext edit) old = return (old, [MkTupleEdit EditContext edit])
+    u' (MkTupleEdit EditContent edit) old = do
+        (new, edits) <- mapReadable (tupleReadFunction EditContent) $ u edit old
+        return (new, fmap (MkTupleEdit EditContent) edits)
     in MkEditFunction i g' u'
 
 liftContextEditLens ::
        forall state edita editb editx.
        EditLens state edita editb
     -> EditLens state (ContextEdit editx edita) (ContextEdit editx editb)
-liftContextEditLens (MkEditLens (ef :: EditFunction state edita editb) pe) =
-    let ef' = liftContextEditFunction ef
-        pe' :: state
-            -> ContextEdit editx editb
-            -> Readable (ContextEditReader editx edita) (Maybe (state, [ContextEdit editx edita]))
-        pe' old (MkTupleEdit EditContext edit) = return $ pure (old, [MkTupleEdit EditContext edit])
-        pe' old (MkTupleEdit EditContent edit) = do
-            mnewedits <- mapReadable (tupleReadFunction EditContent) $ pe old edit
-            for mnewedits $ \(new, edits) -> return (new, fmap (MkTupleEdit EditContent) edits)
+liftContextEditLens (MkEditLens (ef :: EditFunction state edita editb) pe) = let
+    ef' = liftContextEditFunction ef
+    pe' :: state
+        -> ContextEdit editx editb
+        -> Readable (ContextEditReader editx edita) (Maybe (state, [ContextEdit editx edita]))
+    pe' old (MkTupleEdit EditContext edit) = return $ pure (old, [MkTupleEdit EditContext edit])
+    pe' old (MkTupleEdit EditContent edit) = do
+        mnewedits <- mapReadable (tupleReadFunction EditContent) $ pe old edit
+        for mnewedits $ \(new, edits) -> return (new, fmap (MkTupleEdit EditContent) edits)
     in MkEditLens ef' pe'
 
 liftContextGeneralLens ::
@@ -205,31 +205,31 @@ liftContentEditFunction ::
        forall state edita editb editn.
        EditFunction state edita editb
     -> EditFunction state (ContextEdit edita editn) (ContextEdit editb editn)
-liftContentEditFunction (MkEditFunction i g u) =
-    let g' :: state -> ContextEditReader editb editn t -> Readable (ContextEditReader edita editn) t
-        g' cur = liftContentReadFunction $ g cur
-        u' :: ContextEdit edita editn
-           -> state
-           -> Readable (ContextEditReader edita editn) (state, [ContextEdit editb editn])
-        u' (MkTupleEdit EditContent edit) old = return (old, [MkTupleEdit EditContent edit])
-        u' (MkTupleEdit EditContext edit) old = do
-            (new, edits) <- mapReadable (tupleReadFunction EditContext) $ u edit old
-            return (new, fmap (MkTupleEdit EditContext) edits)
+liftContentEditFunction (MkEditFunction i g u) = let
+    g' :: state -> ContextEditReader editb editn t -> Readable (ContextEditReader edita editn) t
+    g' cur = liftContentReadFunction $ g cur
+    u' :: ContextEdit edita editn
+       -> state
+       -> Readable (ContextEditReader edita editn) (state, [ContextEdit editb editn])
+    u' (MkTupleEdit EditContent edit) old = return (old, [MkTupleEdit EditContent edit])
+    u' (MkTupleEdit EditContext edit) old = do
+        (new, edits) <- mapReadable (tupleReadFunction EditContext) $ u edit old
+        return (new, fmap (MkTupleEdit EditContext) edits)
     in MkEditFunction i g' u'
 
 liftContentEditLens ::
        forall state edita editb editn.
        EditLens state edita editb
     -> EditLens state (ContextEdit edita editn) (ContextEdit editb editn)
-liftContentEditLens (MkEditLens (ef :: EditFunction state edita editb) pe) =
-    let ef' = liftContentEditFunction ef
-        pe' :: state
-            -> ContextEdit editb editn
-            -> Readable (ContextEditReader edita editn) (Maybe (state, [ContextEdit edita editn]))
-        pe' old (MkTupleEdit EditContent edit) = return $ pure (old, [MkTupleEdit EditContent edit])
-        pe' old (MkTupleEdit EditContext edit) = do
-            mnewedits <- mapReadable (tupleReadFunction EditContext) $ pe old edit
-            for mnewedits $ \(new, edits) -> return (new, fmap (MkTupleEdit EditContext) edits)
+liftContentEditLens (MkEditLens (ef :: EditFunction state edita editb) pe) = let
+    ef' = liftContentEditFunction ef
+    pe' :: state
+        -> ContextEdit editb editn
+        -> Readable (ContextEditReader edita editn) (Maybe (state, [ContextEdit edita editn]))
+    pe' old (MkTupleEdit EditContent edit) = return $ pure (old, [MkTupleEdit EditContent edit])
+    pe' old (MkTupleEdit EditContext edit) = do
+        mnewedits <- mapReadable (tupleReadFunction EditContext) $ pe old edit
+        for mnewedits $ \(new, edits) -> return (new, fmap (MkTupleEdit EditContext) edits)
     in MkEditLens ef' pe'
 
 liftContentGeneralLens ::

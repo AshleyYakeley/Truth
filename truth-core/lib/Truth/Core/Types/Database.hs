@@ -48,13 +48,13 @@ data DatabaseRead database tablesel t where
 
 instance Database database tablesel => SubjectReader (DatabaseRead database tablesel) where
     type ReaderSubject (DatabaseRead database tablesel) = AllF tablesel []
-    readFromSubject (MkAllF tables) (DatabaseSelect j wc oc sc) =
-        let doJoin :: TableJoin database tablesel row -> [row]
-            doJoin (SingleTable tsel) = tables tsel
-            doJoin (JoinTables jc j1 j2) = do
-                row1 <- doJoin j1
-                row2 <- doJoin j2
-                return $ joinClause @database @tablesel jc row1 row2
+    readFromSubject (MkAllF tables) (DatabaseSelect j wc oc sc) = let
+        doJoin :: TableJoin database tablesel row -> [row]
+        doJoin (SingleTable tsel) = tables tsel
+        doJoin (JoinTables jc j1 j2) = do
+            row1 <- doJoin j1
+            row2 <- doJoin j2
+            return $ joinClause @database @tablesel jc row1 row2
         in fmap (selectClause @database @tablesel sc) $
            sortBy (orderClause @database @tablesel oc) $ filter (whereClause @database @tablesel wc) $ doJoin j
 

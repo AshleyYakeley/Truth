@@ -39,7 +39,8 @@ instance Edit ByteStringEdit where
             else do
                 let blocklen = min len (newlen - start)
                 oldlen <- readable ReadByteStringLength
-                let readlen = oldlen - start
+                let
+                    readlen = oldlen - start
                     zerolen = blocklen - readlen
                 if readlen < 0
                     then return $ replicate blocklen 0
@@ -53,7 +54,8 @@ instance Edit ByteStringEdit where
         oldlen <- readable ReadByteStringLength
         return $ max oldlen end
     applyEdit (ByteStringWrite writeStart bs) (ReadByteStringSection readStart readLen) = do
-        let writeLen = fromIntegral $ olength bs
+        let
+            writeLen = fromIntegral $ olength bs
             writeEnd = writeStart + writeLen
             readEnd = readStart + readLen
             beforeStart = readStart
@@ -89,14 +91,16 @@ instance InvertableEdit ByteStringEdit where
             GT -> return $ [ByteStringSetLength oldlen]
     invertEdit (ByteStringWrite writeStart bs) = do
         oldLen <- readable ReadByteStringLength
-        let writeLen = fromIntegral $ olength bs
+        let
+            writeLen = fromIntegral $ olength bs
             writeEnd = writeStart + writeLen
             lenEdit =
                 if writeEnd > oldLen
                     then [ByteStringSetLength oldLen]
                     else []
         oldbs <- readable $ ReadByteStringSection writeStart writeLen
-        let writeEdit =
+        let
+            writeEdit =
                 if bs == oldbs
                     then []
                     else [ByteStringWrite writeStart oldbs]

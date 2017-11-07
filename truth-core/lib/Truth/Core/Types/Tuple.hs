@@ -108,25 +108,25 @@ tupleEditFunction ::
        forall sel edit. TestEquality sel
     => sel edit
     -> PureEditFunction (TupleEdit sel) edit
-tupleEditFunction seledit =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet :: () -> ReadFunction (TupleEditReader sel) (EditReader edit)
-        editGet () = tupleReadFunction seledit
-        editUpdate (MkTupleEdit seledit' edit) () =
-            case testEquality seledit seledit' of
-                Just Refl -> return ((), [edit])
-                _ -> return ((), [])
+tupleEditFunction seledit = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet :: () -> ReadFunction (TupleEditReader sel) (EditReader edit)
+    editGet () = tupleReadFunction seledit
+    editUpdate (MkTupleEdit seledit' edit) () =
+        case testEquality seledit seledit' of
+            Just Refl -> return ((), [edit])
+            _ -> return ((), [])
     in MkEditFunction {..}
 
 tupleEditLens ::
        forall sel edit. (TestEquality sel)
     => sel edit
     -> PureEditLens (TupleEdit sel) edit
-tupleEditLens seledit =
-    let editLensFunction = tupleEditFunction seledit
-        editLensPutEdit :: () -> edit -> Readable (TupleEditReader sel) (Maybe ((), [TupleEdit sel]))
-        editLensPutEdit () edit = return $ pure ((), [MkTupleEdit seledit edit])
+tupleEditLens seledit = let
+    editLensFunction = tupleEditFunction seledit
+    editLensPutEdit :: () -> edit -> Readable (TupleEditReader sel) (Maybe ((), [TupleEdit sel]))
+    editLensPutEdit () edit = return $ pure ((), [MkTupleEdit seledit edit])
     in MkEditLens {..}
 
 tupleGeneralLens ::

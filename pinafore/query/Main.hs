@@ -15,9 +15,9 @@ doFile :: FilePath -> FilePath -> String -> IO ()
 doFile dbpath fpath str =
     case parseValue fpath str of
         FailureResult e -> fail e
-        SuccessResult qval ->
-            let object :: Object (WholeEdit (FiniteSet Text))
-                object = mapObject (readOnlyGeneralLens (qdisplay qval)) (sqlitePinaforeObject dbpath)
+        SuccessResult qval -> let
+            object :: Object (WholeEdit (FiniteSet Text))
+            object = mapObject (readOnlyGeneralLens (qdisplay qval)) (sqlitePinaforeObject dbpath)
             in runObject object $ \muted -> do
                    items <- mutableRead muted ReadWhole
                    for_ items $ \item -> liftIO $ putStrLn $ unpack item

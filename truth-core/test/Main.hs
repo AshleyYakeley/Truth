@@ -24,25 +24,27 @@ instance (Arbitrary seq, Arbitrary (Index seq), Integral (Index seq)) => Arbitra
 
 testApplyEditsPar :: TestTree
 testApplyEditsPar =
-    testCase "apply edits parallel" $
-    let start = (False, False)
+    testCase "apply edits parallel" $ let
+        start = (False, False)
         edits :: [PairEdit (WholeEdit Bool) (WholeEdit Bool)]
         edits = [MkTupleEdit EditFirst $ MkWholeEdit True, MkTupleEdit EditSecond $ MkWholeEdit True]
         expected = (True, True)
         rf = applyEdits edits
-    in do found <- fromReadFunctionM rf $ return start
-          assertEqual "" expected found
+        in do
+               found <- fromReadFunctionM rf $ return start
+               assertEqual "" expected found
 
 testApplyEditsSeq :: TestTree
 testApplyEditsSeq =
-    testCase "apply edits sequence" $
-    let start = 0
+    testCase "apply edits sequence" $ let
+        start = 0
         edits :: [WholeEdit Int]
         edits = [MkWholeEdit 1, MkWholeEdit 2]
         expected = 2
         rf = applyEdits edits
-    in do found <- fromReadFunctionM rf $ return start
-          assertEqual "" expected found
+        in do
+               found <- fromReadFunctionM rf $ return start
+               assertEqual "" expected found
 
 applyEditSubject ::
        (Edit edit, FullSubjectReader (EditReader edit)) => edit -> EditSubject edit -> IO (EditSubject edit)
@@ -54,8 +56,8 @@ testEdit ::
     -> EditSubject edit
     -> EditSubject edit
     -> TestTree
-testEdit edit original expected =
-    let name = show edit ++ " " ++ show original
+testEdit edit original expected = let
+    name = show edit ++ " " ++ show original
     in testCase name $ do
            found <- applyEditSubject edit original
            assertEqual "" expected found
@@ -74,8 +76,8 @@ testEditRead ::
     -> EditReader edit t
     -> t
     -> TestTree
-testEditRead edit original rt expected =
-    let name = show edit ++ " " ++ show original ++ " " ++ show rt
+testEditRead edit original rt expected = let
+    name = show edit ++ " " ++ show original ++ " " ++ show rt
     in testCase name $ do
            found <- fromReadableSubject (applyEdit edit rt) original
            assertEqual "" expected found
@@ -108,7 +110,8 @@ testLensGet =
             MkEditLens {..} <- stringSectionLens run
             let MkEditFunction {..} = editLensFunction
             editFirst <- editAccess get
-            let rf :: ReadFunction (StringRead String) (StringRead String)
+            let
+                rf :: ReadFunction (StringRead String) (StringRead String)
                 rf = editGet editFirst
                 expected :: String
                 expected = readFromSubject base $ StringReadSection run
@@ -149,7 +152,8 @@ lensUpdateGetProperty getlens oldA editA =
         (newState, editBs) <- fromReadableSubject rdb oldA
         newB1 <- fromReadFunctionM (applyEdits editBs) $ return oldB
         newB2 <- fromReadFunctionM (editGet newState) $ return newA
-        let vars =
+        let
+            vars =
                 [ showVar "oldA" oldA
                 , showVar "oldState" editFirst
                 , showVar "oldB" oldB

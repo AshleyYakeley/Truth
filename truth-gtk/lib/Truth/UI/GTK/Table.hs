@@ -26,9 +26,9 @@ data StoreEntry tedit rowtext rowprops = MkStoreEntry
 
 cellAttributes ::
        CellRendererTextClass cell => Column (rowtext, rowprops) -> StoreEntry tedit rowtext rowprops -> [AttrOp cell]
-cellAttributes MkColumn {..} MkStoreEntry {..} =
-    let entryRow = (entryRowText, entryRowProps)
-        MkTableCellProps {..} = colProps entryRow
+cellAttributes MkColumn {..} MkStoreEntry {..} = let
+    entryRow = (entryRowText, entryRowProps)
+    MkTableCellProps {..} = colProps entryRow
     in [ cellText := colText entryRow
        , cellTextStyle :=
          if tcItalic
@@ -83,7 +83,8 @@ keyContainerView ::
     -> GCreateView tedit
 keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( GeneralLens tedit (WholeEdit rowtext)
                                                                    , GeneralFunction tedit (WholeEdit rowprops))) cols) getaspect tableLens = do
-    let getStoreItem ::
+    let
+        getStoreItem ::
                IsStateIO m
             => MutableRead m (EditReader tedit)
             -> ContainerKey cont
@@ -113,7 +114,8 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( GeneralLens
                 pushMutableEdit muted [KeyInsertReplaceItem item]
     liftIO $ boxPackStart box newButton PackNatural 0
     liftIO $ boxPackStart box tview PackGrow 0
-    let findInStore ::
+    let
+        findInStore ::
                forall m. IsStateIO m
             => ContainerKey cont
             -> m (Maybe Int)
@@ -128,15 +130,16 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( GeneralLens
                     case mindex of
                         Just i -> liftIO $ listStoreRemove store i
                         Nothing -> return ()
-                KeyInsertReplaceItem item ->
-                    let key = elementKey (Proxy :: Proxy cont) item
-                    in do mindex <- findInStore key
-                          case mindex of
-                              Just _index -> return ()
-                              Nothing -> do
-                                  storeItem <- getStoreItem mr key
-                                  _ <- liftIO $ listStoreAppend store storeItem
-                                  return ()
+                KeyInsertReplaceItem item -> let
+                    key = elementKey (Proxy :: Proxy cont) item
+                    in do
+                           mindex <- findInStore key
+                           case mindex of
+                               Just _index -> return ()
+                               Nothing -> do
+                                   storeItem <- getStoreItem mr key
+                                   _ <- liftIO $ listStoreAppend store storeItem
+                                   return ()
                 KeyClear -> liftIO $ listStoreClear store
                 KeyEditItem _ _ -> return () -- no change to the table structure
     -- do updates to the cells
@@ -167,7 +170,8 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( GeneralLens
                         liftIO $ unlift viewOpenSelection
                         return True
                     _ -> return False
-    let aspect :: Aspect tedit
+    let
+        aspect :: Aspect tedit
         aspect = do
             tsel <- treeViewGetSelection tview
             ltpath <- treeSelectionGetSelectedRows tsel

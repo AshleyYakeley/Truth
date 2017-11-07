@@ -44,15 +44,15 @@ instance (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (NoEd
     replaceEdit = return ()
 
 noEditFunction :: PureEditFunction (NoEdit (EditReader edit)) edit
-noEditFunction =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet _ = readable
-        editUpdate = never
+noEditFunction = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet _ = readable
+    editUpdate = never
     in MkEditFunction {..}
 
 noEditLens :: PureEditLens (NoEdit (EditReader edit)) edit
-noEditLens =
-    let editLensFunction = noEditFunction
-        editLensPutEdit () _ = return Nothing
+noEditLens = let
+    editLensFunction = noEditFunction
+    editLensPutEdit () _ = return Nothing
     in MkEditLens {..}

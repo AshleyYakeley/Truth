@@ -39,10 +39,10 @@ data ColumnTypeSchema t where
 
 instance Show (ColumnTypeSchema t) where
     show ColumnTypeNotNull = fieldTypeName @t ++ " NOT NULL"
-    show ColumnTypeMaybeNull =
-        let n :: forall a. (Maybe a ~ t)
-              => String
-            n = fieldTypeName @a
+    show ColumnTypeMaybeNull = let
+        n :: forall a. (Maybe a ~ t)
+          => String
+        n = fieldTypeName @a
         in n
 
 data ColumnSchema t = MkColumnSchema
@@ -55,8 +55,8 @@ instance Show (ColumnSchema t) where
     show MkColumnSchema {..} = columnName ++ " " ++ show columnType
 
 instance Show (SubmapWitness colsel ColumnSchema) where
-    show schema =
-        let columns = subWitnessCodomain schema
+    show schema = let
+        columns = subWitnessCodomain schema
         in "(" ++
            intercalate "," (fmap (\(MkAnyWitness isch) -> show isch) $ columns) ++
            ",PRIMARY KEY (" ++
@@ -85,17 +85,17 @@ data TableSchema colsel = MkTableSchema
     }
 
 instance ToSchema (TableSchema colsel) where
-    toSchema MkTableSchema {..} =
-        let createTable = fromString $ "CREATE TABLE IF NOT EXISTS " ++ tableName ++ " " ++ show tableColumns
-            showIndex MkIndexSchema {..} =
-                fromString $
-                "CREATE INDEX IF NOT EXISTS " ++
-                indexName ++
-                " ON " ++
-                tableName ++
-                " (" ++
-                intercalate "," (fmap (\(MkAnyWitness col) -> columnName $ subWitnessMap tableColumns col) indexColumns) ++
-                ")"
+    toSchema MkTableSchema {..} = let
+        createTable = fromString $ "CREATE TABLE IF NOT EXISTS " ++ tableName ++ " " ++ show tableColumns
+        showIndex MkIndexSchema {..} =
+            fromString $
+            "CREATE INDEX IF NOT EXISTS " ++
+            indexName ++
+            " ON " ++
+            tableName ++
+            " (" ++
+            intercalate "," (fmap (\(MkAnyWitness col) -> columnName $ subWitnessMap tableColumns col) indexColumns) ++
+            ")"
         in createTable : (fmap showIndex tableIndexes)
 
 data DatabaseSchema tablesel = MkDatabaseSchema

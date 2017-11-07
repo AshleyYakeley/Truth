@@ -21,39 +21,39 @@ instance FullSubjectReader (EditReader edit) => FullSubjectReader (MutableIORead
 type MutableIOEdit edit = NoEdit (MutableIOReader edit)
 
 mutableIOEditLens :: forall edit. PureEditLens (MutableIOEdit edit) edit
-mutableIOEditLens =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet :: () -> ReadFunction (MutableIOReader edit) (EditReader edit)
-        editGet () reader = do
-            muted <- readable ReadMutableIO
-            liftIO $ mutableRead muted reader
-        editUpdate :: MutableIOEdit edit -> () -> Readable (MutableIOReader edit) ((), [edit])
-        editUpdate edit = never edit
-        editLensFunction = MkEditFunction {..}
-        editLensPutEdit :: () -> edit -> Readable (MutableIOReader edit) (Maybe ((), [MutableIOEdit edit]))
-        editLensPutEdit () edit = do
-            muted <- readable ReadMutableIO
-            liftIO $ do
-                maction <- mutableEdit muted [edit]
-                case maction of
-                    Just action -> action
-                    Nothing -> fail "mutableIOEditLens: failed"
-            return $ pure ((), [])
+mutableIOEditLens = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet :: () -> ReadFunction (MutableIOReader edit) (EditReader edit)
+    editGet () reader = do
+        muted <- readable ReadMutableIO
+        liftIO $ mutableRead muted reader
+    editUpdate :: MutableIOEdit edit -> () -> Readable (MutableIOReader edit) ((), [edit])
+    editUpdate edit = never edit
+    editLensFunction = MkEditFunction {..}
+    editLensPutEdit :: () -> edit -> Readable (MutableIOReader edit) (Maybe ((), [MutableIOEdit edit]))
+    editLensPutEdit () edit = do
+        muted <- readable ReadMutableIO
+        liftIO $ do
+            maction <- mutableEdit muted [edit]
+            case maction of
+                Just action -> action
+                Nothing -> fail "mutableIOEditLens: failed"
+        return $ pure ((), [])
     in MkEditLens {..}
 
 mutableIOLiftEditLens ::
        forall edita editb. Edit edita
     => PureEditLens edita editb
     -> PureEditLens (MutableIOEdit edita) (MutableIOEdit editb)
-mutableIOLiftEditLens lens =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet :: () -> ReadFunction (MutableIOReader edita) (MutableIOReader editb)
-        editGet () ReadMutableIO = do
-            muted <- readable ReadMutableIO
-            return $ fixedMapMutableEdit lens muted
-        editUpdate edita = never edita
-        editLensFunction = MkEditFunction {..}
-        editLensPutEdit () editb = never editb
+mutableIOLiftEditLens lens = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet :: () -> ReadFunction (MutableIOReader edita) (MutableIOReader editb)
+    editGet () ReadMutableIO = do
+        muted <- readable ReadMutableIO
+        return $ fixedMapMutableEdit lens muted
+    editUpdate edita = never edita
+    editLensFunction = MkEditFunction {..}
+    editLensPutEdit () editb = never editb
     in MkEditLens {..}

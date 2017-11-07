@@ -22,21 +22,21 @@ emptyTuple :: Tuple EmptyWitness
 emptyTuple = MkTuple never
 
 emptyTupleFunction :: forall edita. PureEditFunction edita (TupleEdit EmptyWitness)
-emptyTupleFunction =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet :: () -> TupleEditReader EmptyWitness t -> Readable (EditReader edita) t
-        editGet () (MkTupleEditReader sel _) = never sel
-        editUpdate :: edita -> () -> Readable (EditReader edita) ((), [TupleEdit EmptyWitness])
-        editUpdate _ _ = return $ pure []
+emptyTupleFunction = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet :: () -> TupleEditReader EmptyWitness t -> Readable (EditReader edita) t
+    editGet () (MkTupleEditReader sel _) = never sel
+    editUpdate :: edita -> () -> Readable (EditReader edita) ((), [TupleEdit EmptyWitness])
+    editUpdate _ _ = return $ pure []
     in MkEditFunction {..}
 
 emptyTupleLens :: forall edita. PureEditLens edita (TupleEdit EmptyWitness)
-emptyTupleLens =
-    let editLensFunction :: PureEditFunction edita (TupleEdit EmptyWitness)
-        editLensFunction = emptyTupleFunction
-        editLensPutEdit :: () -> TupleEdit EmptyWitness -> Readable (EditReader edita) (Maybe ((), [edita]))
-        editLensPutEdit () (MkTupleEdit sel _) = never sel
+emptyTupleLens = let
+    editLensFunction :: PureEditFunction edita (TupleEdit EmptyWitness)
+    editLensFunction = emptyTupleFunction
+    editLensPutEdit :: () -> TupleEdit EmptyWitness -> Readable (EditReader edita) (Maybe ((), [edita]))
+    editLensPutEdit () (MkTupleEdit sel _) = never sel
     in MkEditLens {..}
 
 instance (c a, TupleWitness c r) => TupleWitness c (ConsWitness a r) where
@@ -61,43 +61,41 @@ instance (FiniteTupleSelector r, TupleSubject r ~ Tuple r) => FiniteTupleSelecto
         tupleConstruct (getsel . RestWitness)
 
 firstEditLens :: forall sel edit1. PureEditLens (TupleEdit (ConsWitness edit1 sel)) edit1
-firstEditLens =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet :: () -> ReadFunction (TupleEditReader (ConsWitness edit1 sel)) (EditReader edit1)
-        editGet () rt = readable $ MkTupleEditReader FirstWitness rt
-        editUpdate ::
-               TupleEdit (ConsWitness edit1 sel)
-            -> ()
-            -> Readable (TupleEditReader (ConsWitness edit1 sel)) ((), [edit1])
-        editUpdate (MkTupleEdit FirstWitness edit) () = return ((), [edit])
-        editUpdate (MkTupleEdit (RestWitness _) _) () = return ((), [])
-        editLensFunction = MkEditFunction {..}
-        editLensPutEdit ::
-               ()
-            -> edit1
-            -> Readable (TupleEditReader (ConsWitness edit1 sel)) (Maybe ((), [TupleEdit (ConsWitness edit1 sel)]))
-        editLensPutEdit () edit = return $ pure ((), [MkTupleEdit FirstWitness edit])
+firstEditLens = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet :: () -> ReadFunction (TupleEditReader (ConsWitness edit1 sel)) (EditReader edit1)
+    editGet () rt = readable $ MkTupleEditReader FirstWitness rt
+    editUpdate ::
+           TupleEdit (ConsWitness edit1 sel) -> () -> Readable (TupleEditReader (ConsWitness edit1 sel)) ((), [edit1])
+    editUpdate (MkTupleEdit FirstWitness edit) () = return ((), [edit])
+    editUpdate (MkTupleEdit (RestWitness _) _) () = return ((), [])
+    editLensFunction = MkEditFunction {..}
+    editLensPutEdit ::
+           ()
+        -> edit1
+        -> Readable (TupleEditReader (ConsWitness edit1 sel)) (Maybe ((), [TupleEdit (ConsWitness edit1 sel)]))
+    editLensPutEdit () edit = return $ pure ((), [MkTupleEdit FirstWitness edit])
     in MkEditLens {..}
 
 restEditLens :: forall sel edit1. PureEditLens (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel)
-restEditLens =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet :: () -> ReadFunction (TupleEditReader (ConsWitness edit1 sel)) (TupleEditReader sel)
-        editGet () (MkTupleEditReader sel rt) = readable $ MkTupleEditReader (RestWitness sel) rt
-        editUpdate ::
-               TupleEdit (ConsWitness edit1 sel)
-            -> ()
-            -> Readable (TupleEditReader (ConsWitness edit1 sel)) ((), [TupleEdit sel])
-        editUpdate (MkTupleEdit FirstWitness _) () = return ((), [])
-        editUpdate (MkTupleEdit (RestWitness sel) edit) () = return ((), [MkTupleEdit sel edit])
-        editLensFunction = MkEditFunction {..}
-        editLensPutEdit ::
-               ()
-            -> TupleEdit sel
-            -> Readable (TupleEditReader (ConsWitness edit1 sel)) (Maybe ((), [TupleEdit (ConsWitness edit1 sel)]))
-        editLensPutEdit () (MkTupleEdit sel edit) = return $ pure ((), [MkTupleEdit (RestWitness sel) edit])
+restEditLens = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet :: () -> ReadFunction (TupleEditReader (ConsWitness edit1 sel)) (TupleEditReader sel)
+    editGet () (MkTupleEditReader sel rt) = readable $ MkTupleEditReader (RestWitness sel) rt
+    editUpdate ::
+           TupleEdit (ConsWitness edit1 sel)
+        -> ()
+        -> Readable (TupleEditReader (ConsWitness edit1 sel)) ((), [TupleEdit sel])
+    editUpdate (MkTupleEdit FirstWitness _) () = return ((), [])
+    editUpdate (MkTupleEdit (RestWitness sel) edit) () = return ((), [MkTupleEdit sel edit])
+    editLensFunction = MkEditFunction {..}
+    editLensPutEdit ::
+           ()
+        -> TupleEdit sel
+        -> Readable (TupleEditReader (ConsWitness edit1 sel)) (Maybe ((), [TupleEdit (ConsWitness edit1 sel)]))
+    editLensPutEdit () (MkTupleEdit sel edit) = return $ pure ((), [MkTupleEdit (RestWitness sel) edit])
     in MkEditLens {..}
 
 consTuple :: EditSubject a -> Tuple r -> Tuple (ConsWitness a r)

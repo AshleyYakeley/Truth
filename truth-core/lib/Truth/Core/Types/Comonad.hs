@@ -31,16 +31,16 @@ instance InvertableEdit edit => InvertableEdit (ComonadEdit w edit) where
     invertEdit (MkComonadEdit edit) = fmap (fmap MkComonadEdit) $ mapReadable comonadReadFunction $ invertEdit edit
 
 comonadEditFunction :: forall w edit. PureEditFunction (ComonadEdit w edit) edit
-comonadEditFunction =
-    let editAccess :: IOStateAccess ()
-        editAccess = unitStateAccess
-        editGet :: () -> ReadFunction (ComonadReader w (EditReader edit)) (EditReader edit)
-        editGet () = comonadReadFunction
-        editUpdate (MkComonadEdit edit) () = return ((), [edit])
+comonadEditFunction = let
+    editAccess :: IOStateAccess ()
+    editAccess = unitStateAccess
+    editGet :: () -> ReadFunction (ComonadReader w (EditReader edit)) (EditReader edit)
+    editGet () = comonadReadFunction
+    editUpdate (MkComonadEdit edit) () = return ((), [edit])
     in MkEditFunction {..}
 
 comonadEditLens :: PureEditLens (ComonadEdit w edit) edit
-comonadEditLens =
-    let editLensFunction = comonadEditFunction
-        editLensPutEdit () edit = return $ pure ((), [MkComonadEdit edit])
+comonadEditLens = let
+    editLensFunction = comonadEditFunction
+    editLensPutEdit () edit = return $ pure ((), [MkComonadEdit edit])
     in MkEditLens {..}

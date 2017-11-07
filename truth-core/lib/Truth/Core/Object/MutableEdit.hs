@@ -60,22 +60,22 @@ constantMutableEdit ::
        forall m edit. (SubjectReader (EditReader edit), Monad m)
     => EditSubject edit
     -> MutableEdit m edit
-constantMutableEdit subj =
-    let mutableRead :: MutableRead m (EditReader edit)
-        mutableRead = readFromSubjectM $ pure subj
-        mutableEdit _ = pure Nothing
+constantMutableEdit subj = let
+    mutableRead :: MutableRead m (EditReader edit)
+    mutableRead = readFromSubjectM $ pure subj
+    mutableEdit _ = pure Nothing
     in MkMutableEdit {..}
 
 readOnlyMutableEdit :: Applicative m => MutableRead m reader -> MutableEdit m (NoEdit reader)
-readOnlyMutableEdit mutableRead =
-    let mutableEdit [] = pure $ Just $ pure ()
-        mutableEdit (e:_) = never e
+readOnlyMutableEdit mutableRead = let
+    mutableEdit [] = pure $ Just $ pure ()
+    mutableEdit (e:_) = never e
     in MkMutableEdit {..}
 
 stateMutableEdit :: (MonadIO m, Edit edit) => MutableEdit (StateT (MutableReadW m (EditReader edit)) m) edit
-stateMutableEdit =
-    let mutableRead = stateMutableRead
-        mutableEdit edits = return $ Just $ modify $ mapMutableReadW $ applyEdits edits
+stateMutableEdit = let
+    mutableRead = stateMutableRead
+    mutableEdit edits = return $ Just $ modify $ mapMutableReadW $ applyEdits edits
     in MkMutableEdit {..}
 
 efMapMutableRead ::
@@ -92,30 +92,30 @@ mapMutableEdit ::
     => EditLens lensstate edita editb
     -> MutableEdit m edita
     -> MutableEdit (StateT lensstate m) editb
-mapMutableEdit lens@MkEditLens {..} mutedA =
-    let MkEditFunction {..} = editLensFunction
-        readA :: MutableRead m (EditReader edita)
-        pushEditA :: [edita] -> m (Maybe (m ()))
-        MkMutableEdit readA pushEditA = mutedA
-        readB :: MutableRead (StateT lensstate m) (EditReader editb)
-        readB = efMapMutableRead editLensFunction readA
-        convertEdit :: [editb] -> (StateT lensstate m) (Maybe [edita])
-        convertEdit editBs = do
-            oldstate <- get
-            fstateeditA :: Maybe (state, [edita]) <- lift $ unReadable (editLensPutEdits lens oldstate editBs) readA
-            case fstateeditA of
-                Just (newstate, editAs) -> do
-                    put newstate
-                    return $ Just editAs
-                Nothing -> return Nothing
-        pushEditB :: [editb] -> (StateT lensstate m) (Maybe (StateT lensstate m ()))
-        pushEditB editB = do
-            meditA <- convertEdit editB
-            case meditA of
-                Nothing -> return Nothing
-                Just editAs -> do
-                    mstates <- lift $ pushEditA editAs
-                    return $ fmap lift mstates
+mapMutableEdit lens@MkEditLens {..} mutedA = let
+    MkEditFunction {..} = editLensFunction
+    readA :: MutableRead m (EditReader edita)
+    pushEditA :: [edita] -> m (Maybe (m ()))
+    MkMutableEdit readA pushEditA = mutedA
+    readB :: MutableRead (StateT lensstate m) (EditReader editb)
+    readB = efMapMutableRead editLensFunction readA
+    convertEdit :: [editb] -> (StateT lensstate m) (Maybe [edita])
+    convertEdit editBs = do
+        oldstate <- get
+        fstateeditA :: Maybe (state, [edita]) <- lift $ unReadable (editLensPutEdits lens oldstate editBs) readA
+        case fstateeditA of
+            Just (newstate, editAs) -> do
+                put newstate
+                return $ Just editAs
+            Nothing -> return Nothing
+    pushEditB :: [editb] -> (StateT lensstate m) (Maybe (StateT lensstate m ()))
+    pushEditB editB = do
+        meditA <- convertEdit editB
+        case meditA of
+            Nothing -> return Nothing
+            Just editAs -> do
+                mstates <- lift $ pushEditA editAs
+                return $ fmap lift mstates
     in MkMutableEdit readB pushEditB
 
 withMapMutableRead ::
@@ -152,7 +152,7 @@ pairMutableEdit mea meb =
     MkMutableEdit
     { mutableRead = pairMutableRead (mutableRead mea) (mutableRead meb)
     , mutableEdit =
-          \edits ->
-              let (eas, ebs) = partitionPairEdits edits
+          \edits -> let
+              (eas, ebs) = partitionPairEdits edits
               in liftA2 (liftA2 (liftA2 mappend)) (mutableEdit mea eas) (mutableEdit meb ebs)
     }
