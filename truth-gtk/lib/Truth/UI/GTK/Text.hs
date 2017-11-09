@@ -60,10 +60,12 @@ textView uitext = do
                     run <- getSequenceRun iter1 iter2
                     pushMutableEdit muted $ pure $ StringReplaceSection run mempty
     widget <- liftIO $ textViewNewWithBuffer buffer
-    createViewReceiveUpdate $ \_ ->
-        \case
-            StringReplaceWhole text -> liftIO $ textBufferSetText buffer text
-            StringReplaceSection bounds text -> liftIO $ replaceText buffer bounds $ otoList text
+    createViewReceiveUpdate $ \_ edit ->
+        liftIO $
+        ifMVar mv $
+        case edit of
+            StringReplaceWhole text -> textBufferSetText buffer text
+            StringReplaceSection bounds text -> replaceText buffer bounds $ otoList text
     let
         aspect :: Aspect (StringEdit s)
         aspect = do
