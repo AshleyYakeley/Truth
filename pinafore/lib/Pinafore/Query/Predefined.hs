@@ -24,6 +24,7 @@ predefinedBindings =
         , qbind "uiTextArea" $ valSpec $ uiNothingValue mempty $ uiConvert uiTextText
         , qbind "uiLabelled" $ \text -> uiLabelled $ unpack (text :: Text)
         , qbind "uiVertical" uiVertical
+        , qbind "uiPages" uiPages
         -- CSS
         -- drag
         -- icon

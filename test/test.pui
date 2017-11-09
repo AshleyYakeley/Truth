@@ -2,6 +2,7 @@ let
 # Useful
 window n s = [n,s];
 column n p = [n,p];
+uiPage n ui = [n,ui];
 
 # Ontology
 type = %f06efa5e-190f-4e5d-8633-495c5683c124;
@@ -18,9 +19,15 @@ uiPeople pp = uiTable [column "Name" name] wPerson pp;
 uiPerson p = uiVertical
 [
     uiLabelled "Name" $ uiTextEntry $ name p,
-    uiLabelled "Mother" $ uiPick name People $ mother p,
-    uiLabelled "Father" $ uiPick name People $ father p,
-    uiPeople $ children p
+    uiPages
+    [
+        uiPage "Personal" $ uiVertical
+        [
+            uiLabelled "Mother" $ uiPick name People $ mother p,
+            uiLabelled "Father" $ uiPick name People $ father p,
+            uiPeople $ children p
+        ]
+    ]
 ];
 wPerson p = window "Item" $ uiPerson p;
 

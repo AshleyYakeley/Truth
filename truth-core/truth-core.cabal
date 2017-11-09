@@ -137,6 +137,7 @@ library
         Truth.Core.UI.One
         Truth.Core.UI.Switch
         Truth.Core.UI.Layout
+        Truth.Core.UI.Pages
         Truth.Core.UI.Icon
         Truth.Core.UI.Labelled
         Truth.Core.UI.Checkbox

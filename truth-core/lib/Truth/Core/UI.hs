@@ -5,6 +5,7 @@ module Truth.Core.UI
     , module Truth.Core.UI.One
     , module Truth.Core.UI.Switch
     , module Truth.Core.UI.Layout
+    , module Truth.Core.UI.Pages
     , module Truth.Core.UI.Icon
     , module Truth.Core.UI.Labelled
     , module Truth.Core.UI.Checkbox
@@ -29,6 +30,7 @@ import Truth.Core.UI.Layout
 import Truth.Core.UI.Lens
 import Truth.Core.UI.One
 import Truth.Core.UI.Option
+import Truth.Core.UI.Pages
 import Truth.Core.UI.Specifier
 import Truth.Core.UI.Switch
 import Truth.Core.UI.Table
