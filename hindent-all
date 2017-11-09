@@ -1,5 +1,5 @@
-#!/bin/bash
+#!/bin/bash -e
 stack install hindent
 for f in `find -name '*.hs' -not -path '*.stack-work/*'`
-do hindent -XArrows -XRecursiveDo -XTypeApplications $f
+do hindent $f
 done
