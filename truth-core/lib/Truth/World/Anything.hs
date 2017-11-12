@@ -26,7 +26,7 @@ instance SubjectReader AnyReader where
 
 data AnyEdit where
     MkAnyEdit
-        :: forall edit. (InvertableEdit edit, SubjectReader (EditReader edit))
+        :: forall edit. (InvertibleEdit edit, SubjectReader (EditReader edit))
         => IOWitness edit
         -> edit
         -> AnyEdit
@@ -46,7 +46,7 @@ instance Edit AnyEdit where
             _ -> readable areader
     applyEdit (MkAnyEdit _ _) ReadAnyTypes = readable ReadAnyTypes -- edit cannot change types
 
-instance InvertableEdit AnyEdit
+instance InvertibleEdit AnyEdit
         -- invertEdit :: AnyEdit -> Readable AnyReader [AnyEdit];
                                                                   where
     invertEdit (MkAnyEdit ie edit) = do

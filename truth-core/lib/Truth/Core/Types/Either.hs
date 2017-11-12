@@ -49,7 +49,7 @@ instance (Edit ea, Edit eb) => Edit (EitherEdit ea eb) where
     applyEdit (EitherEditRight edit) (EitherReadRight reader) = mapEitherReadRight $ applyEdit edit reader
     applyEdit _ reader = readable reader
 
-instance (InvertableEdit ea, InvertableEdit eb) => InvertableEdit (EitherEdit ea eb) where
+instance (InvertibleEdit ea, InvertibleEdit eb) => InvertibleEdit (EitherEdit ea eb) where
     invertEdit (EitherEditLeft edit) = do
         medits <- mapEitherReadLeft $ invertEdit edit
         case medits of

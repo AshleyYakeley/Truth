@@ -80,7 +80,7 @@ instance Edit ByteStringEdit where
                 else return mempty
         return $ mappend beforeBS $ mappend middleBS afterBS
 
-instance InvertableEdit ByteStringEdit where
+instance InvertibleEdit ByteStringEdit where
     invertEdit (ByteStringSetLength newlen) = do
         oldlen <- readable ReadByteStringLength
         case compare newlen oldlen of

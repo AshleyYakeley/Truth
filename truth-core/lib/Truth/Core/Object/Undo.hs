@@ -13,7 +13,7 @@ import Truth.Core.Read
 type UndoEntry edit = ([edit], [edit])
 
 makeUndoEntry ::
-       (MonadIO m, InvertableEdit edit) => MutableRead m (EditReader edit) -> [edit] -> m (Maybe (UndoEntry edit))
+       (MonadIO m, InvertibleEdit edit) => MutableRead m (EditReader edit) -> [edit] -> m (Maybe (UndoEntry edit))
 makeUndoEntry _ [] = return Nothing
 makeUndoEntry mr edits = do
     unedits <- unReadable (invertEdits edits) mr
@@ -25,7 +25,7 @@ data UndoQueue edit = MkUndoQueue
     }
 
 updateUndoQueue ::
-       (MonadIO m, InvertableEdit edit) => MutableRead m (EditReader edit) -> [edit] -> StateT (UndoQueue edit) m ()
+       (MonadIO m, InvertibleEdit edit) => MutableRead m (EditReader edit) -> [edit] -> StateT (UndoQueue edit) m ()
 updateUndoQueue mr edits = do
     mue <- lift $ makeUndoEntry mr edits
     case mue of
@@ -40,7 +40,7 @@ data UndoActions = MkUndoActions
     }
 
 undoQueueSubscriber ::
-       forall edit actions. InvertableEdit edit
+       forall edit actions. InvertibleEdit edit
     => Subscriber edit actions
     -> Subscriber edit (actions, UndoActions)
 undoQueueSubscriber sub =

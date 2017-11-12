@@ -111,10 +111,10 @@ instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, Has
 
 instance ( KeyContainer cont
          , FullSubjectReader (EditReader edit)
-         , InvertableEdit edit
+         , InvertibleEdit edit
          , HasKeyReader cont (EditReader edit)
          ) =>
-         InvertableEdit (KeyEdit cont edit) where
+         InvertibleEdit (KeyEdit cont edit) where
     invertEdit (KeyEditItem p edit) = do
         minvedits <- mapReadableF (keyItemReadFunction p) $ invertEdit edit
         case minvedits of

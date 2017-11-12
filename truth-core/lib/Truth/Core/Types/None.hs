@@ -37,7 +37,7 @@ instance Edit (NoEdit reader) where
     type EditReader (NoEdit reader) = reader
     applyEdit = never
 
-instance InvertableEdit (NoEdit reader) where
+instance InvertibleEdit (NoEdit reader) where
     invertEdit = never
 
 instance (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where

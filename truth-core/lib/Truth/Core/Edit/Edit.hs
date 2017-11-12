@@ -23,11 +23,11 @@ applyEdits [] = readable
 applyEdits (e:es) = composeReadFunction (applyEdits es) (applyEdit e)
 
 class Edit edit =>
-      InvertableEdit (edit :: *) where
+      InvertibleEdit (edit :: *) where
     invertEdit :: edit -> Readable (EditReader edit) [edit]
     -- edits always applied in the given order, so list returned will be reversed relative to list given.
 
-invertEdits :: InvertableEdit edit => [edit] -> Readable (EditReader edit) [edit]
+invertEdits :: InvertibleEdit edit => [edit] -> Readable (EditReader edit) [edit]
 invertEdits [] = return []
 invertEdits (e:ee) = do
     uu <- mapReadable (applyEdit e) $ invertEdits ee

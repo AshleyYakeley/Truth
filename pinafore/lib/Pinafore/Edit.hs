@@ -85,7 +85,7 @@ instance Edit PinaforeEdit where
                 _ -> deleteSet v fv
     applyEdit _ rt = readable rt
 
-instance InvertableEdit PinaforeEdit where
+instance InvertibleEdit PinaforeEdit where
     invertEdit (PinaforeEditSetValue p s _) = do
         mv <- readable $ PinaforeReadGetValue p s
         return [PinaforeEditSetValue p s mv]

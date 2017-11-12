@@ -16,7 +16,7 @@ instance (MonadOne f, Edit edit) => Edit (OneEdit f edit) where
     applyEdit (MkOneEdit _edita) ReadHasOne = readable ReadHasOne
     applyEdit (MkOneEdit edita) (ReadOne reader) = liftMaybeReadable (applyEdit edita reader)
 
-instance (MonadOne f, InvertableEdit edit) => InvertableEdit (OneEdit f edit) where
+instance (MonadOne f, InvertibleEdit edit) => InvertibleEdit (OneEdit f edit) where
     invertEdit (MkOneEdit edita) = do
         fme <- liftMaybeReadable (invertEdit edita)
         return

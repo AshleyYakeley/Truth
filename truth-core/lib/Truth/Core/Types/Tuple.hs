@@ -73,10 +73,10 @@ instance (TestEquality sel, TupleWitness Edit sel) => Edit (TupleEdit sel) where
             (Dict, Just Refl) -> mapReadable (readable . MkTupleEditReader aggedite) (applyEdit edit reader)
             _ -> readable aggreader
 
-instance (TestEquality sel, TupleWitness Edit sel, TupleWitness InvertableEdit sel) =>
-         InvertableEdit (TupleEdit sel) where
+instance (TestEquality sel, TupleWitness Edit sel, TupleWitness InvertibleEdit sel) =>
+         InvertibleEdit (TupleEdit sel) where
     invertEdit (MkTupleEdit seledit edit) =
-        case tupleWitness (Proxy :: Proxy InvertableEdit) seledit of
+        case tupleWitness (Proxy :: Proxy InvertibleEdit) seledit of
             Dict ->
                 fmap (fmap (MkTupleEdit seledit)) (mapReadable (readable . MkTupleEditReader seledit) (invertEdit edit))
 

@@ -91,7 +91,7 @@ instance IsSequence seq => Edit (StringEdit seq) where
                 else return mempty
         return $ mappend before $ mappend middle after
 
-instance IsSequence seq => InvertableEdit (StringEdit seq) where
+instance IsSequence seq => InvertibleEdit (StringEdit seq) where
     invertEdit (StringReplaceWhole _) = do
         olds <- subjectFromReader
         return [StringReplaceWhole olds]

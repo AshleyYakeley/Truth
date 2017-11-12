@@ -28,7 +28,7 @@ instance (FullSubjectReader reader) => Edit (WholeReaderEdit reader) where
     type EditReader (WholeReaderEdit reader) = reader
     applyEdit (MkWholeEdit a) = readFromSubjectM (return a)
 
-instance (FullSubjectReader reader) => InvertableEdit (WholeReaderEdit reader) where
+instance (FullSubjectReader reader) => InvertibleEdit (WholeReaderEdit reader) where
     invertEdit _ = do
         a <- subjectFromReader
         return [MkWholeEdit a]

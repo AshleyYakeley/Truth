@@ -27,7 +27,7 @@ instance Edit edit => Edit (ComonadEdit w edit) where
     type EditReader (ComonadEdit w edit) = ComonadReader w (EditReader edit)
     applyEdit (MkComonadEdit edit) = comonadLiftReadFunction $ applyEdit edit
 
-instance InvertableEdit edit => InvertableEdit (ComonadEdit w edit) where
+instance InvertibleEdit edit => InvertibleEdit (ComonadEdit w edit) where
     invertEdit (MkComonadEdit edit) = fmap (fmap MkComonadEdit) $ mapReadable comonadReadFunction $ invertEdit edit
 
 comonadEditFunction :: forall w edit. PureEditFunction (ComonadEdit w edit) edit
