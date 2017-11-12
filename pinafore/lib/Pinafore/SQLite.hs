@@ -184,7 +184,7 @@ soupDatabaseLens = let
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralKey)
         return $ MkFiniteSet $ fmap getSingleAll row
-    editUpdate _ _ = return undefined
+    editUpdate _ _ = return $ error "soupDatabaseLens.editUpdate"
     editLensPutEdit ::
            () -> PinaforeEdit -> Readable (SQLiteRead PinaforeSchema) (Maybe ((), [SQLiteEdit PinaforeSchema]))
     editLensPutEdit () (PinaforeEditSetValue p s (Just v)) =
@@ -206,22 +206,6 @@ soupDatabaseLens = let
         pure $
         DatabaseDelete (MkTupleTableSel PinaforeTriple) $
         MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s
-    editLensPutEdit () (PinaforeEditDeleteTriple p s v) =
-        pure $
-        pure $
-        pure $
-        pure $
-        DatabaseDelete (MkTupleTableSel PinaforeTriple) $
-        MkTupleWhereClause $
-        ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s /\ ColumnExpr TripleValue ===
-        ConstExpr v
-    editLensPutEdit () (PinaforeEditDeleteLookupValue p v) =
-        pure $
-        pure $
-        pure $
-        pure $
-        DatabaseDelete (MkTupleTableSel PinaforeTriple) $
-        MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleValue === ConstExpr v
     editLensPutEdit () (PinaforeEditSetPrimitive v (Just l)) =
         pure $
         pure $

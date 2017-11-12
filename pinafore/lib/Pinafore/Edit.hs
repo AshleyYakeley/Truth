@@ -49,8 +49,6 @@ data PinaforeRead t where
 
 data PinaforeEdit where
     PinaforeEditSetValue :: Predicate -> Point -> Maybe Point -> PinaforeEdit -- pred subj mval
-    PinaforeEditDeleteTriple :: Predicate -> Point -> Point -> PinaforeEdit -- pred subj val -- delete this triple if it exists
-    PinaforeEditDeleteLookupValue :: Predicate -> Point -> PinaforeEdit -- pred val -- delete all triples matching pred val
     PinaforeEditSetPrimitive :: Point -> Maybe Text -> PinaforeEdit
 
 instance SubjectReader PinaforeRead where
@@ -66,7 +64,34 @@ instance Floating PinaforeEdit PinaforeEdit
 
 instance Edit PinaforeEdit where
     type EditReader PinaforeEdit = PinaforeRead
-    applyEdit _ _ = return undefined
+    applyEdit (PinaforeEditSetValue p s mv) (PinaforeReadGetValue p' s')
+        | p == p' && s == s' = return mv
+    applyEdit (PinaforeEditSetValue p s mv) (PinaforeReadLookupValue p' v')
+        | p == p' = do
+            fs <- readable $ PinaforeReadLookupValue p' v'
+            return $
+                case mv of
+                    Just v
+                        | v == v' -> insertSet s fs
+                    _ -> deleteSet s fs
+    applyEdit (PinaforeEditSetPrimitive v ml) (PinaforeReadGetPrimitive v')
+        | v == v' = return ml
+    applyEdit (PinaforeEditSetPrimitive v ml) (PinaforeReadLookupPrimitive l') = do
+        fv <- readable $ PinaforeReadLookupPrimitive l'
+        return $
+            case ml of
+                Just l
+                    | l == l' -> insertSet v fv
+                _ -> deleteSet v fv
+    applyEdit _ rt = readable rt
+
+instance InvertableEdit PinaforeEdit where
+    invertEdit (PinaforeEditSetValue p s _) = do
+        mv <- readable $ PinaforeReadGetValue p s
+        return [PinaforeEditSetValue p s mv]
+    invertEdit (PinaforeEditSetPrimitive v _) = do
+        ml <- readable $ PinaforeReadGetPrimitive v
+        return [PinaforeEditSetPrimitive v ml]
 
 type PinaforeLensValue = GeneralLens PinaforeEdit
 
@@ -392,31 +417,6 @@ predicatePinaforeMap prd =
                     if Just s == msubj
                         then [MkWholeEdit mv]
                         else []
-        editUpdate (MkTupleEdit EditContext (PinaforeEditDeleteLookupValue p v)) ()
-            | p == prd = do
-                msubj <- readable $ MkTupleEditReader EditContent ReadWhole
-                case msubj of
-                    Just subj -> do
-                        mval <- readable $ MkTupleEditReader EditContext $ PinaforeReadGetValue p subj
-                        return $
-                            pure $
-                            if mval == Just v
-                                then [MkWholeEdit Nothing]
-                                else []
-                    Nothing -> return $ pure []
-        editUpdate (MkTupleEdit EditContext (PinaforeEditDeleteTriple p s v)) ()
-            | p == prd = do
-                msubj <- readable $ MkTupleEditReader EditContent ReadWhole
-                case msubj of
-                    Just subj
-                        | subj == s -> do
-                            mval <- readable $ MkTupleEditReader EditContext $ PinaforeReadGetValue p subj
-                            return $
-                                pure $
-                                if mval == Just v
-                                    then [MkWholeEdit Nothing]
-                                    else []
-                    _ -> return $ pure []
         editUpdate (MkTupleEdit EditContext _) () = return $ pure []
         editUpdate (MkTupleEdit EditContent (MkWholeEdit Nothing)) () = return $ pure [MkWholeEdit Nothing]
         editUpdate (MkTupleEdit EditContent (MkWholeEdit (Just subj))) () = do
@@ -448,10 +448,6 @@ predicateInverseFunction prd = let
     pfFuncRead val = readable $ PinaforeReadLookupValue prd val
     pfUpdate :: PinaforeEdit -> Bool
     pfUpdate (PinaforeEditSetValue p _ _)
-        | p == prd = True
-    pfUpdate (PinaforeEditDeleteTriple p _ _)
-        | p == prd = True
-    pfUpdate (PinaforeEditDeleteLookupValue p _)
         | p == prd = True
     pfUpdate _ = False
     in MkPinaforeFunctionMorphism {..}
