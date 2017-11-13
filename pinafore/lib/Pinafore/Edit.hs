@@ -29,9 +29,15 @@ newtype Predicate =
     MkPredicate UUID
     deriving (Eq, FromJSON)
 
+instance Show Predicate where
+    show (MkPredicate uuid) = '%' : show uuid
+
 newtype Point =
     MkPoint UUID
     deriving (Eq, Random, FromJSON)
+
+instance Show Point where
+    show (MkPoint uuid) = '!' : show uuid
 
 instance Serialize Point where
     put (MkPoint uuid) = Serialize.put (toByteString uuid)
@@ -47,9 +53,19 @@ data PinaforeRead t where
     PinaforeReadGetPrimitive :: Point -> PinaforeRead (Maybe Text)
     PinaforeReadLookupPrimitive :: Text -> PinaforeRead (FiniteSet Point)
 
+instance Show (PinaforeRead t) where
+     show (PinaforeReadGetValue p s) = "get " ++ show p ++ " of " ++ show s
+     show (PinaforeReadLookupValue p v) = "lookup " ++ show p ++ " for " ++ show v
+     show (PinaforeReadGetPrimitive v) = "get literal of " ++ show v
+     show (PinaforeReadLookupPrimitive l) = "lookup literal for " ++ show l
+
 data PinaforeEdit where
     PinaforeEditSetValue :: Predicate -> Point -> Maybe Point -> PinaforeEdit -- pred subj mval
     PinaforeEditSetPrimitive :: Point -> Maybe Text -> PinaforeEdit
+
+instance Show PinaforeEdit where
+    show (PinaforeEditSetValue p s mv) = "set " ++ show p ++ " of " ++ show s ++ " to " ++ show mv
+    show (PinaforeEditSetPrimitive v ml) = "set literal of " ++ show v ++ " to " ++ show ml
 
 instance SubjectReader PinaforeRead where
     type ReaderSubject PinaforeRead = ([(Predicate, Point, Point)], [(Point, Text)])

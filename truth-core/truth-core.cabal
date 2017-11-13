@@ -71,6 +71,7 @@ library
         shapes
     exposed-modules:
         Truth.Core
+        Truth.Debug
         Truth.World.Anything
         Truth.World.File
         Truth.World.FileSystem
