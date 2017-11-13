@@ -24,6 +24,7 @@ import Data.UUID hiding (fromString, fromText, toText)
 import Pinafore.AsText
 import Shapes
 import Truth.Core
+import Truth.Debug
 
 newtype Predicate =
     MkPredicate UUID
@@ -416,7 +417,7 @@ predicatePinaforeMap prd =
                ()
             -> WholeReader (Maybe Point) t
             -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) t
-        editGet () ReadWhole = do
+        editGet () ReadWhole = traceBracket ("editGet " ++ show prd) $ do
             msubj <- readable $ MkTupleEditReader EditContent ReadWhole
             case msubj of
                 Just subj -> readable $ MkTupleEditReader EditContext $ PinaforeReadGetValue prd subj

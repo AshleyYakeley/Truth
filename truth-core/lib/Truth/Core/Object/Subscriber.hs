@@ -11,6 +11,7 @@ import Truth.Core.Import
 import Truth.Core.Object.MutableEdit
 import Truth.Core.Object.Object
 import Truth.Core.Read
+import Truth.Debug
 
 newtype Subscriber edit actions = MkSubscriber
     { subscribe :: forall editor. (Object edit -> IO editor) -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
@@ -103,8 +104,8 @@ objectSubscriber (MkObject object) =
                                           Just action ->
                                               return $
                                               Just $ do
-                                                  action
-                                                  update editor (mutableRead muted) edits
+                                                  traceBracket "objectSubscriber: action" $ action
+                                                  traceBracket "objectSubscriber: update" $ update editor (mutableRead muted) edits
                             }
                         in call muted'
         return (editor, return (), ())
