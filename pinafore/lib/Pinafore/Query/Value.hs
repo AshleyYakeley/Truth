@@ -67,7 +67,7 @@ qapply (MkAny QMorphism f) (MkAny QSet a) =
     convertGeneralFunction <.>
     applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a)
 qapply (MkAny QInverseMorphism f) (MkAny QLiteral a) =
-    MkAny QSet $ applyInversePinaforeLens (primitivePinaforeLensMorphism . f) $ constGeneralLens $ Just a
+    MkAny QSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) $ constGeneralLens $ Just a
 qapply (MkAny QInverseMorphism f) (MkAny QPoint a) = MkAny QSet $ applyInversePinaforeLens f a
 qapply (MkAny QInverseMorphism f) (MkAny QSet a) =
     MkAny QSet $
@@ -135,7 +135,7 @@ instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
 
 instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Text))) where
     fromQValue (MkAny QLiteral v) = return $ constGeneralLens $ Just v
-    fromQValue (MkAny QPoint v) = return $ applyPinaforeLens primitivePinaforeLensMorphism v
+    fromQValue (MkAny QPoint v) = return $ applyPinaforeLens literalPinaforeLensMorphism v
     fromQValue v = badFromQValue v
 
 instance FromQValue (PinaforeLensValue (WholeEdit (Maybe t))) => FromQValue (PinaforeFunctionValue (Maybe t)) where
@@ -163,12 +163,12 @@ instance FromQValue (PinaforeFunctionValue (FiniteSet Text)) where
         return $ let
             mms mmt = maybeToFiniteSet $ mmt >>= id
             in applyPinaforeFunction
-                   (arr mms . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism))
+                   (arr mms . cfmap (lensFunctionMorphism literalPinaforeLensMorphism))
                    (lensFunctionValue a)
     fromQValue (MkAny QSet a) =
         return $
         applyPinaforeFunction
-            (arr catMaybes . cfmap (lensFunctionMorphism primitivePinaforeLensMorphism))
+            (arr catMaybes . cfmap (lensFunctionMorphism literalPinaforeLensMorphism))
             (lensFunctionValue a)
     fromQValue v = badFromQValue v
 
@@ -179,7 +179,7 @@ instance FromQValue (PinaforeLensMorphism Point Point) where
 instance FromQValue (PinaforeLensMorphism Point Text) where
     fromQValue v = do
         m <- fromQValue v
-        return $ primitivePinaforeLensMorphism . m
+        return $ literalPinaforeLensMorphism . m
 
 instance FromQValue (PinaforeLensMorphism a b) => FromQValue (PinaforeFunctionMorphism a (Maybe b)) where
     fromQValue v = do

@@ -14,7 +14,7 @@ module Pinafore.Edit
     , applyInversePinaforeLens
     , lensFunctionMorphism
     , lensInverseFunctionMorphism
-    , primitivePinaforeLensMorphism
+    , literalPinaforeLensMorphism
     , predicatePinaforeLensMorphism
     ) where
 
@@ -50,22 +50,22 @@ instance Serialize Point where
 data PinaforeRead t where
     PinaforeReadGetValue :: Predicate -> Point -> PinaforeRead (Maybe Point)
     PinaforeReadLookupValue :: Predicate -> Point -> PinaforeRead (FiniteSet Point)
-    PinaforeReadGetPrimitive :: Point -> PinaforeRead (Maybe Text)
-    PinaforeReadLookupPrimitive :: Text -> PinaforeRead (FiniteSet Point)
+    PinaforeReadGetLiteral :: Point -> PinaforeRead (Maybe Text)
+    PinaforeReadLookupLiteral :: Text -> PinaforeRead (FiniteSet Point)
 
 instance Show (PinaforeRead t) where
-     show (PinaforeReadGetValue p s) = "get " ++ show p ++ " of " ++ show s
-     show (PinaforeReadLookupValue p v) = "lookup " ++ show p ++ " for " ++ show v
-     show (PinaforeReadGetPrimitive v) = "get literal of " ++ show v
-     show (PinaforeReadLookupPrimitive l) = "lookup literal for " ++ show l
+    show (PinaforeReadGetValue p s) = "get " ++ show p ++ " of " ++ show s
+    show (PinaforeReadLookupValue p v) = "lookup " ++ show p ++ " for " ++ show v
+    show (PinaforeReadGetLiteral v) = "get literal of " ++ show v
+    show (PinaforeReadLookupLiteral l) = "lookup literal for " ++ show l
 
 data PinaforeEdit where
     PinaforeEditSetValue :: Predicate -> Point -> Maybe Point -> PinaforeEdit -- pred subj mval
-    PinaforeEditSetPrimitive :: Point -> Maybe Text -> PinaforeEdit
+    PinaforeEditSetLiteral :: Point -> Maybe Text -> PinaforeEdit
 
 instance Show PinaforeEdit where
     show (PinaforeEditSetValue p s mv) = "set " ++ show p ++ " of " ++ show s ++ " to " ++ show mv
-    show (PinaforeEditSetPrimitive v ml) = "set literal of " ++ show v ++ " to " ++ show ml
+    show (PinaforeEditSetLiteral v ml) = "set literal of " ++ show v ++ " to " ++ show ml
 
 instance SubjectReader PinaforeRead where
     type ReaderSubject PinaforeRead = ([(Predicate, Point, Point)], [(Point, Text)])
@@ -73,8 +73,8 @@ instance SubjectReader PinaforeRead where
         listToMaybe $ [v | (p, s, v) <- triples, p == rp && s == rs]
     readFromSubject (triples, _) (PinaforeReadLookupValue rp rv) =
         MkFiniteSet [s | (p, s, v) <- triples, p == rp, v == rv]
-    readFromSubject (_, literals) (PinaforeReadGetPrimitive rv) = listToMaybe [l | (v, l) <- literals, v == rv]
-    readFromSubject (_, literals) (PinaforeReadLookupPrimitive rl) = MkFiniteSet [v | (v, l) <- literals, l == rl]
+    readFromSubject (_, literals) (PinaforeReadGetLiteral rv) = listToMaybe [l | (v, l) <- literals, v == rv]
+    readFromSubject (_, literals) (PinaforeReadLookupLiteral rl) = MkFiniteSet [v | (v, l) <- literals, l == rl]
 
 instance Floating PinaforeEdit PinaforeEdit
 
@@ -90,10 +90,10 @@ instance Edit PinaforeEdit where
                     Just v
                         | v == v' -> insertSet s fs
                     _ -> deleteSet s fs
-    applyEdit (PinaforeEditSetPrimitive v ml) (PinaforeReadGetPrimitive v')
+    applyEdit (PinaforeEditSetLiteral v ml) (PinaforeReadGetLiteral v')
         | v == v' = return ml
-    applyEdit (PinaforeEditSetPrimitive v ml) (PinaforeReadLookupPrimitive l') = do
-        fv <- readable $ PinaforeReadLookupPrimitive l'
+    applyEdit (PinaforeEditSetLiteral v ml) (PinaforeReadLookupLiteral l') = do
+        fv <- readable $ PinaforeReadLookupLiteral l'
         return $
             case ml of
                 Just l
@@ -105,9 +105,9 @@ instance InvertibleEdit PinaforeEdit where
     invertEdit (PinaforeEditSetValue p s _) = do
         mv <- readable $ PinaforeReadGetValue p s
         return [PinaforeEditSetValue p s mv]
-    invertEdit (PinaforeEditSetPrimitive v _) = do
-        ml <- readable $ PinaforeReadGetPrimitive v
-        return [PinaforeEditSetPrimitive v ml]
+    invertEdit (PinaforeEditSetLiteral v _) = do
+        ml <- readable $ PinaforeReadGetLiteral v
+        return [PinaforeEditSetLiteral v ml]
 
 type PinaforeLensValue = GeneralLens PinaforeEdit
 
@@ -335,10 +335,10 @@ applyInversePinaforeLens ::
     -> PinaforeLensValue (FiniteSetEdit a)
 applyInversePinaforeLens pm val = pointedMapGeneralLens (pmInverseEditLens pm) val
 
-primitivePinaforeMap ::
+literalPinaforeMap ::
        forall val. AsText val
     => PointedEditLens PinaforeEdit (WholeEdit (Maybe Point)) (WholeEdit (Maybe val))
-primitivePinaforeMap =
+literalPinaforeMap =
     MkPointedEditLens $ let
         editAccess :: IOStateAccess ()
         editAccess = unitStateAccess
@@ -351,14 +351,14 @@ primitivePinaforeMap =
             msubj <- readable $ MkTupleEditReader EditContent ReadWhole
             case msubj of
                 Just subj -> do
-                    mbs <- readable $ MkTupleEditReader EditContext $ PinaforeReadGetPrimitive subj
+                    mbs <- readable $ MkTupleEditReader EditContext $ PinaforeReadGetLiteral subj
                     return $ mbs >>= fromText
                 Nothing -> return Nothing
         editUpdate ::
                (ContextEdit PinaforeEdit (WholeEdit (Maybe Point)))
             -> ()
             -> Readable (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) ((), [WholeEdit (Maybe val)])
-        editUpdate (MkTupleEdit EditContext (PinaforeEditSetPrimitive s mbs)) () = do
+        editUpdate (MkTupleEdit EditContext (PinaforeEditSetLiteral s mbs)) () = do
             msubj <- readable $ MkTupleEditReader EditContent ReadWhole
             return $
                 pure $
@@ -368,7 +368,7 @@ primitivePinaforeMap =
         editUpdate (MkTupleEdit EditContext _) () = return $ pure []
         editUpdate (MkTupleEdit EditContent (MkWholeEdit Nothing)) () = return $ pure [MkWholeEdit Nothing]
         editUpdate (MkTupleEdit EditContent (MkWholeEdit (Just subj))) () = do
-            mbs <- readable $ MkTupleEditReader EditContext $ PinaforeReadGetPrimitive subj
+            mbs <- readable $ MkTupleEditReader EditContext $ PinaforeReadGetLiteral subj
             return $ pure $ [MkWholeEdit $ mbs >>= fromText]
         editLensFunction = MkEditFunction {..}
         editLensPutEdit ::
@@ -379,32 +379,32 @@ primitivePinaforeMap =
         editLensPutEdit () (MkWholeEdit (fmap toText -> mbs)) = do
             msubj <- readable $ MkTupleEditReader EditContent ReadWhole
             case msubj of
-                Just subj -> return $ pure $ pure [MkTupleEdit EditContext $ PinaforeEditSetPrimitive subj mbs]
+                Just subj -> return $ pure $ pure [MkTupleEdit EditContext $ PinaforeEditSetLiteral subj mbs]
                 Nothing -> do
                     subj <- liftIO randomIO
                     return $
                         pure $
                         pure
                             [ MkTupleEdit EditContent $ MkWholeEdit $ Just subj
-                            , MkTupleEdit EditContext $ PinaforeEditSetPrimitive subj mbs
+                            , MkTupleEdit EditContext $ PinaforeEditSetLiteral subj mbs
                             ]
         in MkEditLens {..}
 
-primitiveInverseFunction ::
+literalInverseFunction ::
        forall val. AsText val
     => PinaforeFunctionMorphism val (FiniteSet Point)
-primitiveInverseFunction = let
+literalInverseFunction = let
     pfFuncRead :: val -> Readable PinaforeRead (FiniteSet Point)
-    pfFuncRead val = readable $ PinaforeReadLookupPrimitive $ toText val
+    pfFuncRead val = readable $ PinaforeReadLookupLiteral $ toText val
     pfUpdate :: PinaforeEdit -> Bool
-    pfUpdate (PinaforeEditSetPrimitive _ _) = True
+    pfUpdate (PinaforeEditSetLiteral _ _) = True
     pfUpdate _ = False
     in MkPinaforeFunctionMorphism {..}
 
-primitivePinaforeLensMorphism ::
+literalPinaforeLensMorphism ::
        forall val. AsText val
     => PinaforeLensMorphism Point val
-primitivePinaforeLensMorphism = MkPinaforeLensMorphism primitivePinaforeMap primitiveInverseFunction
+literalPinaforeLensMorphism = MkPinaforeLensMorphism literalPinaforeMap literalInverseFunction
 
 predicatePinaforeMap :: Predicate -> PointedEditLens PinaforeEdit (WholeEdit (Maybe Point)) (WholeEdit (Maybe Point))
 predicatePinaforeMap prd =

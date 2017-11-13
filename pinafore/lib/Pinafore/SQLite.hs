@@ -164,7 +164,7 @@ soupDatabaseLens = let
                 mempty
                 (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
         return $ MkFiniteSet $ fmap getSingleAll row
-    editGet () (PinaforeReadGetPrimitive v) = do
+    editGet () (PinaforeReadGetLiteral v) = do
         (row :: [All ((:~:) Text)]) <-
             readable $
             DatabaseSelect
@@ -175,7 +175,7 @@ soupDatabaseLens = let
         return $ do
             sa <- listToMaybe row
             return $ getSingleAll sa
-    editGet () (PinaforeReadLookupPrimitive l) = do
+    editGet () (PinaforeReadLookupLiteral l) = do
         row <-
             readable $
             DatabaseSelect
@@ -206,7 +206,7 @@ soupDatabaseLens = let
         pure $
         DatabaseDelete (MkTupleTableSel PinaforeTriple) $
         MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s
-    editLensPutEdit () (PinaforeEditSetPrimitive v (Just l)) =
+    editLensPutEdit () (PinaforeEditSetLiteral v (Just l)) =
         pure $
         pure $
         pure $
@@ -217,7 +217,7 @@ soupDatabaseLens = let
         MkAll $ \case
             LiteralKey -> v
             LiteralValue -> l
-    editLensPutEdit () (PinaforeEditSetPrimitive v Nothing) =
+    editLensPutEdit () (PinaforeEditSetLiteral v Nothing) =
         pure $
         pure $
         pure $

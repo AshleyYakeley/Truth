@@ -13,7 +13,7 @@ valSpec ::
     => UISpec (WholeEdit (Maybe val))
     -> PinaforeLensValue (WholeEdit (Maybe Point))
     -> UISpec PinaforeEdit
-valSpec spec val = uiLens (applyPinaforeLens primitivePinaforeLensMorphism val) spec
+valSpec spec val = uiLens (applyPinaforeLens literalPinaforeLensMorphism val) spec
 
 predefinedBindings :: QBindings
 predefinedBindings =
@@ -53,7 +53,7 @@ predefinedBindings =
               mapLens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeFunctionValue (String, TableCellProps)
               mapLens lens =
                   funcGeneralFunction showCell <.>
-                  generalLensFunction (applyPinaforeLens primitivePinaforeLensMorphism lens)
+                  generalLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
               getColumn ::
                      (Text, Point -> Result String (PinaforeLensValue (WholeEdit (Maybe Point))))
                   -> KeyColumn PinaforeEdit Point
