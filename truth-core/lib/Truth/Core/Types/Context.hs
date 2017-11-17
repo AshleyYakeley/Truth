@@ -171,6 +171,19 @@ liftContextEditFunction (MkEditFunction i g u) = let
         return (new, fmap (MkTupleEdit EditContent) edits)
     in MkEditFunction i g' u'
 
+liftContentGeneralFunction ::
+       forall edita editb editn.
+       GeneralFunction edita editb
+    -> GeneralFunction (ContextEdit edita editn) (ContextEdit editb editn)
+liftContentGeneralFunction (MkCloseState func) = MkCloseState $ liftContentEditFunction func
+
+carryContextGeneralFunction ::
+       (Edit editx, Edit edita, Edit editb)
+    => GeneralFunction (ContextEdit editx edita) editb
+    -> GeneralFunction (ContextEdit editx edita) (ContextEdit editx editb)
+carryContextGeneralFunction func =
+    liftContentGeneralFunction (tupleGeneralFunction EditContext) <.> contextualiseGeneralFunction func
+
 liftContextEditLens ::
        forall state edita editb editx.
        EditLens state edita editb

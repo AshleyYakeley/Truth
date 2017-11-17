@@ -78,6 +78,16 @@ instance IsGeneralLens (EditLens state edita editb) where
 generalLensFunction :: forall edita editb. GeneralLens edita editb -> GeneralFunction edita editb
 generalLensFunction (MkCloseState (MkEditLens ef _)) = MkCloseState ef
 
+generalFunctionToLens ::
+       GeneralFunction edita editb
+    -> IOStateAccess state
+    -> (state -> editb -> Readable (EditReader edita) (Maybe (state, [edita])))
+    -> GeneralLens edita editb
+generalFunctionToLens (MkCloseState func1) access2 putEdit2 = let
+    editLensFunction = restateEditFunction access2 func1
+    editLensPutEdit (olds1, olds2) = (fmap $ fmap $ fmap $ first $ \news2 -> (olds1, news2)) $ putEdit2 olds2
+    in MkCloseState MkEditLens {..}
+
 readOnlyGeneralLens :: forall edita editb. GeneralFunction edita editb -> GeneralLens edita editb
 readOnlyGeneralLens (MkCloseState ef) = MkCloseState $ readOnlyEditLens ef
 

@@ -119,6 +119,12 @@ tupleEditFunction seledit = let
             _ -> return ((), [])
     in MkEditFunction {..}
 
+tupleGeneralFunction ::
+       forall sel edit. (TestEquality sel)
+    => sel edit
+    -> GeneralFunction (TupleEdit sel) edit
+tupleGeneralFunction seledit = MkCloseState $ tupleEditFunction seledit
+
 tupleEditLens ::
        forall sel edit. (TestEquality sel)
     => sel edit

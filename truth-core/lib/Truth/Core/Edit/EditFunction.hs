@@ -109,3 +109,13 @@ convertEditFunction ::
        (EditSubject edita ~ EditSubject editb, Edit edita, FullSubjectReader (EditReader edita), FullEdit editb)
     => PureEditFunction edita editb
 convertEditFunction = funcEditFunction id
+
+restateEditFunction ::
+       forall s1 s2 edita editb. IOStateAccess s2 -> EditFunction s1 edita editb -> EditFunction (s1, s2) edita editb
+restateEditFunction acc2 (MkEditFunction acc1 g1 u1) = let
+    acc12 :: IOStateAccess (s1, s2)
+    acc12 = pairStateAccess acc1 acc2
+    g12 :: (s1, s2) -> ReadFunction (EditReader edita) (EditReader editb)
+    g12 (s1, _) = g1 s1
+    u12 ea (olds1, olds2) = fmap (first $ \news1 -> (news1, olds2)) $ u1 ea olds1
+    in MkEditFunction acc12 g12 u12
