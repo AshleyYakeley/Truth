@@ -92,6 +92,9 @@ library
         Truth.Core.Read
         Truth.Core.Edit.Edit
         Truth.Core.Edit.FullEdit
+        Truth.Core.Edit.Unlift
+        Truth.Core.Edit.Function
+        Truth.Core.Edit.Lens
         Truth.Core.Edit.EditFunction
         Truth.Core.Edit.EditLens
         Truth.Core.Edit.General
