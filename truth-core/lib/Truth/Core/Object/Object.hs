@@ -9,7 +9,7 @@ import Truth.Core.Types.Pair
 import Truth.Core.Types.Tuple
 import Truth.Core.Types.Whole
 
-data Object' edit = forall m. MonadCombineIO m =>
+data Object' edit = forall m. MonadStackIO m =>
                               MkObject'
     { objRun :: UnliftIO m
     , objRead :: MutableRead m (EditReader edit)

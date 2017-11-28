@@ -1,6 +1,5 @@
 module Control.Monad.IsStateIO where
 
-import Control.Monad.Trans.Combine
 import Control.Monad.Trans.State.Extra
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift

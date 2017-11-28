@@ -87,8 +87,8 @@ library
         Control.Monad.Trans.Constraint
         Control.Monad.Trans.Tunnel
         Control.Monad.Trans.Unlift
-        Control.Monad.Trans.Combine
         Control.Monad.Trans.Compose
+        Control.Monad.Trans.StackIO
         Control.Monad.Trans.State.Extra
         Control.Monad.IsStateIO
         Data.CatFunctor

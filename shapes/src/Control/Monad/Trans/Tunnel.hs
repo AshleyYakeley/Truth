@@ -30,3 +30,8 @@ instance MonadTransTunnel (ExceptT e) where
 
 instance MonadTransTunnel ListT where
     tunnel call = ListT $ call $ runListT
+
+type UnliftIO m = forall r. m r -> IO r
+
+remonadUnliftIO :: MonadTransTunnel t => (forall a. m1 a -> m2 a) -> UnliftIO (t m2) -> UnliftIO (t m1)
+remonadUnliftIO ff r2 m1a = r2 $ remonad ff m1a
