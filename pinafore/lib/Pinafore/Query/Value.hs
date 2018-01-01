@@ -63,16 +63,16 @@ qapply (MkAny QFunction f) a = f a
 qapply (MkAny QMorphism f) (MkAny QPoint a) = MkAny QPoint $ applyPinaforeLens f a
 qapply (MkAny QMorphism f) (MkAny QSet a) =
     MkAny QSet $
-    readOnlyGeneralLens $
-    convertGeneralFunction <.>
+    readOnlyEditLens $
+    convertEditFunction <.>
     applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a)
 qapply (MkAny QInverseMorphism f) (MkAny QLiteral a) =
-    MkAny QSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) $ constGeneralLens $ Just a
+    MkAny QSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) $ constEditLens $ Just a
 qapply (MkAny QInverseMorphism f) (MkAny QPoint a) = MkAny QSet $ applyInversePinaforeLens f a
 qapply (MkAny QInverseMorphism f) (MkAny QSet a) =
     MkAny QSet $
-    readOnlyGeneralLens $
-    convertGeneralFunction <.>
+    readOnlyEditLens $
+    convertEditFunction <.>
     applyPinaforeFunction (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f)) (lensFunctionValue a)
 qapply (MkAny tf _) (MkAny ta _) = qexception $ "cannot apply " ++ show tf ++ " to " ++ show ta
 
@@ -91,19 +91,19 @@ qpredicate :: Predicate -> QValue
 qpredicate p = MkAny QMorphism $ predicatePinaforeLensMorphism p
 
 qpoint :: Point -> QValue
-qpoint p = MkAny QPoint $ constGeneralLens $ Just p
+qpoint p = MkAny QPoint $ constEditLens $ Just p
 
 qmeet ::
        PinaforeLensValue (FiniteSetEdit Point)
     -> PinaforeLensValue (FiniteSetEdit Point)
     -> PinaforeLensValue (FiniteSetEdit Point)
-qmeet a b = readOnlyGeneralLens meetGeneralFunction <.> pairJoinGeneralLenses a b
+qmeet a b = readOnlyEditLens meetEditFunction <.> pairJoinEditLenses a b
 
 qjoin ::
        PinaforeLensValue (FiniteSetEdit Point)
     -> PinaforeLensValue (FiniteSetEdit Point)
     -> PinaforeLensValue (FiniteSetEdit Point)
-qjoin a b = readOnlyGeneralLens joinGeneralFunction <.> pairJoinGeneralLenses a b
+qjoin a b = readOnlyEditLens joinEditFunction <.> pairJoinEditLenses a b
 
 maybeToFiniteSet :: Maybe a -> FiniteSet a
 maybeToFiniteSet (Just a) = opoint a
@@ -113,7 +113,7 @@ qdisplay :: QValue -> PinaforeFunctionValue (FiniteSet Text)
 qdisplay val =
     case fromQValue val of
         SuccessResult a -> a
-        FailureResult _ -> constGeneralFunction $ opoint $ pack $ show val
+        FailureResult _ -> constEditFunction $ opoint $ pack $ show val
 
 badFromQValue :: QValue -> Result String t
 badFromQValue (MkAny QException s) = fail s
@@ -134,7 +134,7 @@ instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
     fromQValue v = badFromQValue v
 
 instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Text))) where
-    fromQValue (MkAny QLiteral v) = return $ constGeneralLens $ Just v
+    fromQValue (MkAny QLiteral v) = return $ constEditLens $ Just v
     fromQValue (MkAny QPoint v) = return $ applyPinaforeLens literalPinaforeLensMorphism v
     fromQValue v = badFromQValue v
 
@@ -144,7 +144,7 @@ instance FromQValue (PinaforeLensValue (WholeEdit (Maybe t))) => FromQValue (Pin
         return $ lensFunctionValue a
 
 instance FromQValue (PinaforeLensValue (FiniteSetEdit Point)) where
-    fromQValue (MkAny QPoint v) = return $ funcROGeneralLens maybeToFiniteSet <.> v
+    fromQValue (MkAny QPoint v) = return $ (readOnlyEditLens $ funcEditFunction maybeToFiniteSet) <.> v
     fromQValue (MkAny QSet v) = return v
     fromQValue v = badFromQValue v
 
@@ -158,7 +158,7 @@ instance FromQValue (PinaforeFunctionValue (FiniteSet Point)) where
     fromQValue v = badFromQValue v
 
 instance FromQValue (PinaforeFunctionValue (FiniteSet Text)) where
-    fromQValue (MkAny QLiteral a) = return $ constGeneralFunction $ opoint a
+    fromQValue (MkAny QLiteral a) = return $ constEditFunction $ opoint a
     fromQValue (MkAny QPoint a) =
         return $ let
             mms mmt = maybeToFiniteSet $ mmt >>= id

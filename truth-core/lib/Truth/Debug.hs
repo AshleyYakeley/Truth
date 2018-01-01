@@ -3,8 +3,8 @@ module Truth.Debug where
 import Debug.Trace
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.MutableEdit
 import Truth.Core.Object.Object
+import Truth.Core.Read
 
 context :: String -> String -> String
 context "" b = b
@@ -29,22 +29,12 @@ data EditShower edit = MkEditShower
 blankEditShower :: EditShower edit
 blankEditShower = MkEditShower {showRead = \_ -> "", showReadResult = \_ _ -> "", showEdits = \_ -> ""}
 
-traceMutableEdit ::
-       forall m edit. MonadIO m
-    => String
-    -> EditShower edit
-    -> MutableEdit m edit
-    -> MutableEdit m edit
-traceMutableEdit prefix MkEditShower {..} muted =
-    MkMutableEdit
-    { mutableRead =
-          \rt -> traceBracketArgs (context prefix "read") (showRead rt) (showReadResult rt) $ mutableRead muted rt
-    , mutableEdit =
-          \edits ->
-              (fmap $ fmap $ traceBracketArgs (context prefix "edit") (showEdits edits) (\_ -> "")) $
-              mutableEdit muted edits
-    }
-
-traceObject :: String -> EditShower edit -> Object edit -> Object edit
-traceObject prefix es (MkObject obj) =
-    MkObject $ \call -> obj $ \me -> traceBracket (context prefix "object") $ call $ traceMutableEdit prefix es me
+traceObject :: forall edit. String -> EditShower edit -> Object edit -> Object edit
+traceObject prefix MkEditShower {..} (MkObject (run :: UnliftIO m) r e) = let
+    run' :: UnliftIO m
+    run' m = traceBracket (context prefix "object") $ run m
+    r' :: MutableRead m (EditReader edit)
+    r' rt = traceBracketArgs (context prefix "read") (showRead rt) (showReadResult rt) $ r rt
+    e' :: [edit] -> m (Maybe (m ()))
+    e' edits = (fmap $ fmap $ traceBracketArgs (context prefix "edit") (showEdits edits) (\_ -> "")) $ e edits
+    in MkObject run' r' e'

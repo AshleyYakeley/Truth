@@ -4,24 +4,34 @@ import Truth.Core
 import Truth.Core.Import
 
 fileObject :: FilePath -> Object ByteStringEdit
-fileObject path =
-    MkObject $ \call -> do
+fileObject path = let
+    objRun :: UnliftIO (ReaderT Handle IO)
+    objRun rt = do
         h <- openBinaryFile path ReadWriteMode
-        let
-            mutableRead :: MutableRead IO ByteStringReader
-            mutableRead ReadByteStringLength = fmap fromInteger $ hFileSize h
-            mutableRead (ReadByteStringSection start len) = do
-                hSeek h AbsoluteSeek $ toInteger start
-                hGet h $ fromIntegral len
-            mutableEdit' (ByteStringSetLength len) = hSetFileSize h $ toInteger len
-            mutableEdit' (ByteStringWrite start bs) = do
-                oldlen <- hFileSize h
-                if toInteger start > oldlen
-                    then hSetFileSize h $ toInteger start
-                    else return ()
-                hSeek h AbsoluteSeek $ toInteger start
-                hPut h bs
-            mutableEdit = singleAlwaysMutableEdit mutableEdit'
-        r <- call MkMutableEdit {..}
+        r <- runReaderT rt h
         hClose h
         return r
+    objRead :: MutableRead (ReaderT Handle IO) ByteStringReader
+    objRead ReadByteStringLength = do
+        h <- ask
+        n <- lift $ hFileSize h
+        return $ fromInteger n
+    objRead (ReadByteStringSection start len) = do
+        h <- ask
+        lift $ hSeek h AbsoluteSeek $ toInteger start
+        lift $ hGet h $ fromIntegral len
+    objOneEdit :: ByteStringEdit -> ReaderT Handle IO ()
+    objOneEdit (ByteStringSetLength len) = do
+        h <- ask
+        lift $ hSetFileSize h $ toInteger len
+    objOneEdit (ByteStringWrite start bs) = do
+        h <- ask
+        oldlen <- lift $ hFileSize h
+        if toInteger start > oldlen
+            then lift $ hSetFileSize h $ toInteger start
+            else return ()
+        lift $ hSeek h AbsoluteSeek $ toInteger start
+        lift $ hPut h bs
+    objEdit :: [ByteStringEdit] -> ReaderT Handle IO (Maybe (ReaderT Handle IO ()))
+    objEdit = singleAlwaysEdit objOneEdit
+    in MkObject {..}

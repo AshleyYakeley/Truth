@@ -19,10 +19,10 @@ data AnyReader t where
 
 instance SubjectReader AnyReader where
     type ReaderSubject AnyReader = Anything
-    readFromSubject (MkAnything wit _a) ReadAnyTypes = MkAnyTypes wit
-    readFromSubject (MkAnything wit a) (ReadAnyReader witr reader) = do
+    subjectToRead (MkAnything wit _a) ReadAnyTypes = MkAnyTypes wit
+    subjectToRead (MkAnything wit a) (ReadAnyReader witr reader) = do
         Refl <- testEquality wit witr
-        return (readFromSubject a reader)
+        return (subjectToRead a reader)
 
 data AnyEdit where
     MkAnyEdit
@@ -39,21 +39,21 @@ instance Floating AnyEdit AnyEdit where
 
 instance Edit AnyEdit where
     type EditReader AnyEdit = AnyReader
-    applyEdit (MkAnyEdit ie edit) areader@(ReadAnyReader ir reader) = do
-        MkAnyTypes oie <- readable ReadAnyTypes
+    applyEdit (MkAnyEdit ie edit) mr areader@(ReadAnyReader ir rt) = do
+        MkAnyTypes oie <- mr ReadAnyTypes
         case (testEquality oie ie, testEquality oie ir) of
-            (Just Refl, Just Refl) -> mapReadableF (readable . ReadAnyReader ir) $ applyEdit edit reader
-            _ -> readable areader
-    applyEdit (MkAnyEdit _ _) ReadAnyTypes = readable ReadAnyTypes -- edit cannot change types
+            (Just Refl, Just Refl) -> getCompose $ applyEdit edit (Compose . mr . ReadAnyReader ir) rt
+            _ -> mr areader
+    applyEdit (MkAnyEdit _ _) mr ReadAnyTypes = mr ReadAnyTypes -- edit cannot change types
 
 instance InvertibleEdit AnyEdit
         -- invertEdit :: AnyEdit -> Readable AnyReader [AnyEdit];
                                                                   where
-    invertEdit (MkAnyEdit ie edit) = do
-        MkAnyTypes oie <- readable ReadAnyTypes
+    invertEdit (MkAnyEdit ie edit) mr = do
+        MkAnyTypes oie <- mr ReadAnyTypes
         case testEquality oie ie of
             Just Refl -> do
-                minvedits <- mapReadableF (readable . ReadAnyReader oie) $ invertEdit edit
+                minvedits <- getCompose $ invertEdit edit (Compose . mr . ReadAnyReader oie)
                 case minvedits of
                     Nothing -> return []
                     Just invedits -> return $ fmap (MkAnyEdit ie) invedits

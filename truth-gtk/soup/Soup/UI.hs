@@ -27,34 +27,34 @@ soupEditSpec = let
     nameColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
     nameColumn =
         readOnlyKeyColumn "Name" $ \key -> do
-            lens <- getKeyElementGeneralLens key
+            lens <- getKeyElementEditLens key
             let
                 valLens =
-                    oneWholeLiftGeneralLens (tupleGeneralLens NoteTitle) <.> mustExistOneGeneralLens "name" <.>
-                    oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.>
+                    oneWholeLiftEditLens (tupleEditLens NoteTitle) <.> mustExistOneEditLens "name" <.>
+                    oneWholeLiftEditLens (tupleEditLens EditSecond) <.>
                     lens
-            return $ funcGeneralFunction fromResult <.> generalLensFunction valLens
+            return $ funcEditFunction fromResult <.> editLensFunction valLens
     pastColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
     pastColumn =
         readOnlyKeyColumn "Past" $ \key -> do
-            lens <- getKeyElementGeneralLens key
+            lens <- getKeyElementEditLens key
             let
                 valLens =
-                    oneWholeLiftGeneralLens (tupleGeneralLens NotePast) <.> mustExistOneGeneralLens "past" <.>
-                    oneWholeLiftGeneralLens (tupleGeneralLens EditSecond) <.>
+                    oneWholeLiftEditLens (tupleEditLens NotePast) <.> mustExistOneEditLens "past" <.>
+                    oneWholeLiftEditLens (tupleEditLens EditSecond) <.>
                     lens
-            return $ funcGeneralFunction pastResult <.> generalLensFunction valLens
+            return $ funcEditFunction pastResult <.> editLensFunction valLens
     getaspect :: Aspect (MaybeEdit (UUIDElementEdit PossibleNoteEdit))
     getaspect =
         return $
         Just $
-        ("item", uiLens (oneWholeLiftGeneralLens $ tupleGeneralLens EditSecond) $ uiOneWhole $ uiOneWhole noteEditSpec)
+        ("item", uiLens (oneWholeLiftEditLens $ tupleEditLens EditSecond) $ uiOneWhole $ uiOneWhole noteEditSpec)
     in uiSimpleTable [nameColumn, pastColumn] getaspect
 
 soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)
 soupObject dirpath = let
     rawSoupObject :: Object (SoupEdit (MutableIOEdit ByteStringEdit))
-    rawSoupObject = directorySoup fileSystemMutableEdit dirpath
+    rawSoupObject = directorySoup fileSystemObject dirpath
     soupItemInjection :: Injection' (Result String) ByteString (EditSubject PossibleNoteEdit)
     soupItemInjection = codecInjection noteCodec
     paste ::
@@ -62,10 +62,10 @@ soupObject dirpath = let
         => EditSubject PossibleNoteEdit
         -> m (Maybe ByteString)
     paste s = return $ getMaybeOne $ injBackwards soupItemInjection s
-    soupItemLens :: PureEditLens ByteStringEdit PossibleNoteEdit
+    soupItemLens :: EditLens' ByteStringEdit PossibleNoteEdit
     soupItemLens = convertEditLens <.> (wholeEditLens $ injectionLens soupItemInjection) <.> convertEditLens
-    lens :: GeneralLens (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit PossibleNoteEdit)
-    lens = MkCloseState $ liftSoupLens paste $ soupItemLens <.> mutableIOEditLens
+    lens :: EditLens' (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit PossibleNoteEdit)
+    lens = liftSoupLens paste $ soupItemLens <.> mutableIOEditLens
     in mapObject lens rawSoupObject
 
 soupWindow :: FilePath -> IO (UIWindow ())

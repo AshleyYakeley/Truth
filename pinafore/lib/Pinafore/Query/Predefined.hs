@@ -39,10 +39,10 @@ predefinedBindings =
                   proc fsp -> do
                       pairs <- cfmap getName -< fsp
                       returnA -< insertSet (Nothing, "") pairs
-              opts :: GeneralFunction PinaforeEdit (ListEdit [(Maybe Point, String)] (WholeEdit (Maybe Point, String)))
+              opts :: EditFunction' PinaforeEdit (ListEdit [(Maybe Point, String)] (WholeEdit (Maybe Point, String)))
               opts =
-                  (MkCloseState $ orderedKeyList @(FiniteSet (Maybe Point, String)) $ \(_, a) (_, b) -> compare a b) <.>
-                  convertGeneralFunction <.>
+                  (orderedKeyList @(FiniteSet (Maybe Point, String)) $ \(_, a) (_, b) -> compare a b) <.>
+                  convertEditFunction <.>
                   applyPinaforeFunction getNames fset
               in uiOption @PinaforeEdit @(Maybe Point) opts
         -- switch
@@ -52,8 +52,8 @@ predefinedBindings =
               showCell Nothing = ("empty", tableCellPlain {tcItalic = True})
               mapLens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeFunctionValue (String, TableCellProps)
               mapLens lens =
-                  funcGeneralFunction showCell <.>
-                  generalLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
+                  funcEditFunction showCell <.>
+                  editLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
               getColumn ::
                      (Text, Point -> Result String (PinaforeLensValue (WholeEdit (Maybe Point))))
                   -> KeyColumn PinaforeEdit Point

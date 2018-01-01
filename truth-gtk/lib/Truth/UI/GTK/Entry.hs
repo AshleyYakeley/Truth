@@ -14,14 +14,14 @@ textEntryGetView =
         fmap
             (\MkUITextEntry -> do
                  widget <- liftIO entryNew
-                 initial <- liftOuter $ viewMutableRead $ unReadable subjectFromReader
+                 initial <- liftOuter $ viewObjectRead mutableReadToSubject
                  liftIO $ set widget [entryText := initial]
                  changedSignal <-
                      liftOuter $
                      viewOn widget editableChanged $
-                     viewMutableEdit $ \muted -> do
+                     viewObjectPushEdit $ \push -> do
                          st <- liftIO $ Gtk.get widget entryText
-                         pushMutableEdit muted [MkWholeEdit st]
+                         push [MkWholeEdit st]
                  createViewReceiveUpdate $ \_ (MkWholeEdit st) ->
                      liftIO $ withSignalBlocked changedSignal $ set widget [entryText := st]
                  return $ toWidget widget) $

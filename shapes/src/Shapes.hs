@@ -6,11 +6,9 @@ import Shapes.Import as I
 
 -- shapes
 import Control.Constrained.Category as I
-import Control.Monad.IsStateIO as I
 import Control.Monad.Trans.Compose as I
 import Control.Monad.Trans.Constraint as I
 import Control.Monad.Trans.StackIO as I
-import Control.Monad.Trans.State.Extra as I hiding (liftCallCC, liftCatch)
 import Control.Monad.Trans.Tunnel as I
 import Control.Monad.Trans.Unlift as I
 import Data.Bijection as I

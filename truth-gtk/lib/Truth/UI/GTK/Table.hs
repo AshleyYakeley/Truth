@@ -18,8 +18,8 @@ mapColumn :: (r2 -> r1) -> Column r1 -> Column r2
 mapColumn f (MkColumn n t p) = MkColumn n (t . f) (p . f)
 
 data StoreEntry tedit rowtext rowprops = MkStoreEntry
-    { entryTextLens :: GeneralLens tedit (WholeEdit rowtext)
-    , entryPropFunc :: GeneralFunction tedit (WholeEdit rowprops)
+    { entryTextLens :: EditLens' tedit (WholeEdit rowtext)
+    , entryPropFunc :: EditFunction' tedit (WholeEdit rowprops)
     , entryRowText :: rowtext
     , entryRowProps :: rowprops
     }
@@ -47,8 +47,8 @@ addColumn tview store col = do
     return ()
 
 data KeyColumns tedit key =
-    forall rowprops rowtext. MkKeyColumns (key -> IO ( GeneralLens tedit (WholeEdit rowtext)
-                                                     , GeneralFunction tedit (WholeEdit rowprops)))
+    forall rowprops rowtext. MkKeyColumns (key -> IO ( EditLens' tedit (WholeEdit rowtext)
+                                                     , EditFunction' tedit (WholeEdit rowprops)))
                                           [Column (rowtext, rowprops)]
 
 oneKeyColumn :: KeyColumn tedit key -> KeyColumns tedit key
@@ -61,12 +61,12 @@ instance Edit tedit => Semigroup (KeyColumns tedit key) where
                  (lens1, func1) <- f1 k
                  (lens2, func2) <- f2 k
                  return $
-                     ( convertGeneralLens <.> pairJoinGeneralLenses lens1 lens2
-                     , convertGeneralFunction <.> pairJoinGeneralFunctions func1 func2)) $
+                     ( convertEditLens <.> pairJoinEditLenses lens1 lens2
+                     , convertEditFunction <.> pairJoinEditFunctions func1 func2)) $
         fmap (mapColumn $ \(x, y) -> (fst x, fst y)) c1 <> fmap (mapColumn $ \(x, y) -> (snd x, snd y)) c2
 
 instance Edit tedit => Monoid (KeyColumns tedit key) where
-    mempty = MkKeyColumns (\_ -> return (constGeneralLens (), constGeneralFunction ())) []
+    mempty = MkKeyColumns (\_ -> return (constEditLens (), constEditFunction ())) []
     mappend = (<>)
 
 keyContainerView ::
@@ -79,25 +79,25 @@ keyContainerView ::
        )
     => KeyColumns tedit (ContainerKey cont)
     -> (ContainerKey cont -> Aspect tedit)
-    -> GeneralLens tedit (KeyEdit cont iedit)
+    -> EditLens' tedit (KeyEdit cont iedit)
     -> GCreateView tedit
-keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( GeneralLens tedit (WholeEdit rowtext)
-                                                                   , GeneralFunction tedit (WholeEdit rowprops))) cols) getaspect tableLens = do
+keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens' tedit (WholeEdit rowtext)
+                                                                   , EditFunction' tedit (WholeEdit rowprops))) cols) getaspect tableLens = do
     let
         getStoreItem ::
-               IsStateIO m
+               MonadUnliftIO m
             => MutableRead m (EditReader tedit)
             -> ContainerKey cont
             -> m (ContainerKey cont, StoreEntry tedit rowtext rowprops)
         getStoreItem mr key = do
             (entryTextLens, entryPropFunc) <- liftIO $ colfunc key
-            entryRowText <- withMapMutableRead (generalLensFunction entryTextLens) mr $ \mr' -> mr' ReadWhole
-            entryRowProps <- withMapMutableRead entryPropFunc mr $ \mr' -> mr' ReadWhole
+            entryRowText <- editFunctionRead (editLensFunction entryTextLens) mr ReadWhole
+            entryRowProps <- editFunctionRead entryPropFunc mr ReadWhole
             return (key, MkStoreEntry {..})
     initalRows <-
         liftOuter $
-        viewMutableRead $ \mr -> do
-            MkFiniteSet initialKeys <- withMapMutableRead (generalLensFunction tableLens) mr $ \mr' -> mr' KeyReadKeys
+        viewObjectRead $ \mr -> do
+            MkFiniteSet initialKeys <- editFunctionRead (editLensFunction tableLens) mr KeyReadKeys
             for initialKeys $ getStoreItem mr
     store <- liftIO $ listStoreNew initalRows
     tview <- liftIO $ treeViewNewWithModel store
@@ -109,21 +109,22 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( GeneralLens
             makeButton "New" $
             unlift $
             mapViewEdit tableLens $
-            viewMutableEdit $ \muted -> do
+            viewObjectPushEdit $ \push -> do
                 item <- liftIO $ newKeyContainerItem (Proxy :: Proxy cont)
-                pushMutableEdit muted [KeyInsertReplaceItem item]
+                push [KeyInsertReplaceItem item]
     liftIO $ boxPackStart box newButton PackNatural 0
     liftIO $ boxPackStart box tview PackGrow 0
     let
         findInStore ::
-               forall m. IsStateIO m
+               forall m. MonadIO m
             => ContainerKey cont
             -> m (Maybe Int)
         findInStore key = do
             kk <- liftIO $ listStoreToList store
             return $ lookup @[(ContainerKey cont, Int)] key $ zip (fmap fst kk) [0 ..]
     createViewReceiveUpdates $ \mr edits ->
-        mapUpdates (generalLensFunction tableLens) mr edits $ \_ edits' ->
+        mapUpdates (editLensFunction tableLens) mr edits $ \_ edits' ->
+            withTransConstraintTM @MonadIO $
             for_ edits' $ \case
                 KeyDeleteItem key -> do
                     mindex <- findInStore key
@@ -137,7 +138,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( GeneralLens
                            case mindex of
                                Just _index -> return ()
                                Nothing -> do
-                                   storeItem <- getStoreItem mr key
+                                   storeItem <- lift $ getStoreItem mr key
                                    _ <- liftIO $ listStoreAppend store storeItem
                                    return ()
                 KeyClear -> liftIO $ listStoreClear store
@@ -147,18 +148,22 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( GeneralLens
         listStoreTraverse_ store $
         joinTraverse
             (\(key, oldcol) ->
-                 mapUpdates (generalLensFunction $ entryTextLens oldcol) mr tedits $ \_ edits' ->
+                 mapUpdates (editLensFunction $ entryTextLens oldcol) mr tedits $ \_ edits' ->
+                     withTransConstraintTM @MonadIO $
                      case edits' of
                          [] -> return Nothing
                          _ -> do
-                             newrow <- fromReadFunctionM (applyEdits edits') $ return $ entryRowText oldcol
+                             newrow <-
+                                 mutableReadToSubject $ applyEdits edits' $ subjectToMutableRead $ entryRowText oldcol
                              return $ Just (key, oldcol {entryRowText = newrow}))
             (\(key, oldcol) ->
                  mapUpdates (entryPropFunc oldcol) mr tedits $ \_ edits' ->
+                     withTransConstraintTM @MonadIO $
                      case edits' of
                          [] -> return Nothing
                          _ -> do
-                             newprops <- fromReadFunctionM (applyEdits edits') $ return $ entryRowProps oldcol
+                             newprops <-
+                                 mutableReadToSubject $ applyEdits edits' $ subjectToMutableRead $ entryRowProps oldcol
                              return $ Just (key, oldcol {entryRowProps = newprops}))
     _ <-
         liftOuter $

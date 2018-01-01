@@ -2,8 +2,9 @@ module Truth.Core.UI.View
     ( View
     , liftIOView
     , viewObject
-    , viewMutableEdit
-    , viewMutableRead
+    , viewObjectRead
+    , viewObjectMaybeEdit
+    , viewObjectPushEdit
     , viewSetSelectedAspect
     , viewOpenSelection
     , mapViewEdit
@@ -27,7 +28,6 @@ module Truth.Core.UI.View
 import Data.IORef
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.MutableEdit
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Read
@@ -37,7 +37,7 @@ import Truth.Core.UI.Specifier
 
 data ViewResult edit w = MkViewResult
     { vrWidget :: w
-    , vrUpdate :: forall m. IsStateIO m =>
+    , vrUpdate :: forall m. MonadUnliftIO m =>
                                 MutableRead m (EditReader edit) -> [edit] -> m ()
     , vrFirstAspect :: Aspect edit
     }
@@ -53,7 +53,7 @@ instance Applicative (ViewResult edit) where
     (MkViewResult w1 update1 fss1) <*> (MkViewResult w2 update2 fss2) = let
         vrWidget = w1 w2
         vrUpdate ::
-               forall m. IsStateIO m
+               forall m. MonadUnliftIO m
             => MutableRead m (EditReader edit)
             -> [edit]
             -> m ()
@@ -79,23 +79,22 @@ instance Traversable (ViewResult edit) where
 
 mapViewResultEdit ::
        forall edita editb w. Edit editb
-    => GeneralLens edita editb
+    => EditLens' edita editb
     -> ViewResult editb w
     -> ViewResult edita w
-mapViewResultEdit lens@(MkCloseState flens) (MkViewResult w updateB a) = let
-    MkEditLens {..} = flens
-    MkEditFunction {..} = editLensFunction
+mapViewResultEdit lens@(MkCloseUnlift unlift flens) (MkViewResult w updateB a) = let
+    MkAnEditLens {..} = flens
+    MkAnEditFunction {..} = elFunction
     updateA ::
-           forall m. IsStateIO m
+           forall m. MonadUnliftIO m
         => MutableRead m (EditReader edita)
         -> [edita]
         -> m ()
     updateA mrA editsA =
-        editAccess $
-        StateT $ \oldls -> do
-            (newls, editsB) <- unReadable (editUpdates editLensFunction editsA oldls) mrA
-            updateB (mapMutableRead (editGet oldls) mrA) editsB
-            return ((), newls)
+        unlift $
+        withTransConstraintTM @MonadIO $ do
+            editsB <- efUpdates elFunction editsA mrA
+            updateB (efGet mrA) editsB
     a' = mapAspect lens a
     in MkViewResult w updateA a'
 
@@ -107,7 +106,7 @@ data ViewContext edit = MkViewContext
 
 mapViewContextEdit ::
        forall edita editb. (Edit edita, Edit editb)
-    => GeneralLens edita editb
+    => EditLens' edita editb
     -> ViewContext edita
     -> ViewContext editb
 mapViewContextEdit lens (MkViewContext objectA setSelectA os) = let
@@ -150,19 +149,27 @@ liftIOView call = MkView $ \context -> call $ \(MkView view) -> view context
 viewObject :: View edit (Object edit)
 viewObject = MkView $ \MkViewContext {..} -> return vcObject
 
-viewMutableEdit ::
-       (forall m. IsStateIO m =>
-                      MutableEdit m edit -> m r)
-    -> View edit r
-viewMutableEdit call = do
-    object <- viewObject
-    liftIO $ runObject object call
-
-viewMutableRead ::
-       (forall m. IsStateIO m =>
+viewObjectRead ::
+       (forall m. MonadUnliftIO m =>
                       MutableRead m (EditReader edit) -> m r)
     -> View edit r
-viewMutableRead call = viewMutableEdit $ \muted -> call $ mutableRead muted
+viewObjectRead call = do
+    MkObject {..} <- viewObject
+    liftIO $ objRun $ call $ objRead
+
+viewObjectMaybeEdit ::
+       (forall m. MonadUnliftIO m =>
+                      ([edit] -> m (Maybe (m ()))) -> m r)
+    -> View edit r
+viewObjectMaybeEdit call = do
+    MkObject {..} <- viewObject
+    liftIO $ objRun $ call $ objEdit
+
+viewObjectPushEdit ::
+       (forall m. MonadUnliftIO m =>
+                      ([edit] -> m ()) -> m r)
+    -> View edit r
+viewObjectPushEdit call = viewObjectMaybeEdit $ \push -> call $ \edits -> pushEdit $ push edits
 
 viewSetSelectedAspect :: Aspect edit -> View edit ()
 viewSetSelectedAspect aspect = MkView $ \MkViewContext {..} -> vcSetSelect aspect
@@ -172,7 +179,7 @@ viewOpenSelection = MkView $ \MkViewContext {..} -> vcOpenSelection
 
 mapViewEdit ::
        forall edita editb a. (Edit edita, Edit editb)
-    => GeneralLens edita editb
+    => EditLens' edita editb
     -> View editb a
     -> View edita a
 mapViewEdit lens (MkView viewB) = MkView $ \contextA -> viewB $ mapViewContextEdit lens contextA
@@ -180,40 +187,40 @@ mapViewEdit lens (MkView viewB) = MkView $ \contextA -> viewB $ mapViewContextEd
 type CreateView edit = Compose (View edit) (ViewResult edit)
 
 createViewReceiveUpdates ::
-       (forall m. IsStateIO m =>
+       (forall m. MonadUnliftIO m =>
                       MutableRead m (EditReader edit) -> [edit] -> m ())
     -> CreateView edit ()
 createViewReceiveUpdates recv = liftInner $ (pure ()) {vrUpdate = recv}
 
 createViewReceiveUpdate ::
-       (forall m. IsStateIO m =>
+       (forall m. MonadUnliftIO m =>
                       MutableRead m (EditReader edit) -> edit -> m ())
     -> CreateView edit ()
 createViewReceiveUpdate recv = createViewReceiveUpdates $ \mr edits -> for_ edits (recv mr)
 
 mapUpdates ::
-       forall r m edita editb. IsStateIO m
-    => GeneralFunction edita editb
+       forall r m edita editb. MonadUnliftIO m
+    => EditFunction' edita editb
     -> MutableRead m (EditReader edita)
     -> [edita]
-    -> (MutableRead m (EditReader editb) -> [editb] -> m r)
+    -> (forall t. MonadTransUnlift t =>
+                      MutableRead (t m) (EditReader editb) -> [editb] -> t m r)
     -> m r
-mapUpdates (MkCloseState ef@MkEditFunction {..}) mrA editsA call =
-    editAccess $
-    StateT $ \oldstate -> do
-        (newstate, editsB) <- unReadable (editUpdates ef editsA oldstate) mrA
+mapUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnEditFunction {..}) mrA editsA call =
+    unlift $
+    withTransConstraintTM @MonadIO $ do
+        editsB <- efUpdates ef editsA mrA
         let
-            mrB :: MutableRead m (EditReader editb)
-            mrB = mapMutableRead (editGet newstate) mrA
-        r <- call mrB editsB
-        return (r, newstate)
+            mrB :: MutableRead (t m) (EditReader editb)
+            mrB = efGet mrA
+        call mrB editsB
 
 createViewAddAspect :: Aspect edit -> CreateView edit ()
 createViewAddAspect aspect = liftInner $ (pure ()) {vrFirstAspect = aspect}
 
 mapCreateViewEdit ::
        forall edita editb a. (Edit edita, Edit editb)
-    => GeneralLens edita editb
+    => EditLens' edita editb
     -> CreateView editb a
     -> CreateView edita a
 mapCreateViewEdit lens (Compose wv) = Compose $ mapViewEdit lens $ fmap (mapViewResultEdit lens) wv
@@ -262,4 +269,4 @@ tupleCreateView pickview =
     getCompose $
     for tupleAllSelectors $ \(MkAnyWitness sel) ->
         case tupleWitness (Proxy :: Proxy Edit) sel of
-            Dict -> Compose $ fmap (mapCreateViewEdit (tupleGeneralLens sel)) (pickview sel)
+            Dict -> Compose $ fmap (mapCreateViewEdit (tupleEditLens sel)) (pickview sel)

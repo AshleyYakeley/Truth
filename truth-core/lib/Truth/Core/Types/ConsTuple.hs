@@ -1,4 +1,5 @@
 {-# OPTIONS -fno-warn-orphans #-}
+{-# OPTIONS -fno-warn-redundant-constraints #-}
 
 module Truth.Core.Types.ConsTuple where
 
@@ -21,23 +22,24 @@ instance FiniteTupleSelector EmptyWitness where
 emptyTuple :: Tuple EmptyWitness
 emptyTuple = MkTuple never
 
-emptyTupleFunction :: forall edita. PureEditFunction edita (TupleEdit EmptyWitness)
-emptyTupleFunction = let
-    editAccess :: IOStateAccess ()
-    editAccess = unitStateAccess
-    editGet :: () -> TupleEditReader EmptyWitness t -> Readable (EditReader edita) t
-    editGet () (MkTupleEditReader sel _) = never sel
-    editUpdate :: edita -> () -> Readable (EditReader edita) ((), [TupleEdit EmptyWitness])
-    editUpdate _ _ = return $ pure []
-    in MkEditFunction {..}
-
-emptyTupleLens :: forall edita. PureEditLens edita (TupleEdit EmptyWitness)
+emptyTupleLens :: forall edita. EditLens' edita (TupleEdit EmptyWitness)
 emptyTupleLens = let
-    editLensFunction :: PureEditFunction edita (TupleEdit EmptyWitness)
-    editLensFunction = emptyTupleFunction
-    editLensPutEdit :: () -> TupleEdit EmptyWitness -> Readable (EditReader edita) (Maybe ((), [edita]))
-    editLensPutEdit () (MkTupleEdit sel _) = never sel
-    in MkEditLens {..}
+    efGet :: ReadFunctionT IdentityT (EditReader edita) (TupleEditReader EmptyWitness)
+    efGet _ (MkTupleEditReader sel _) = never sel
+    efUpdate ::
+           forall m. MonadIO m
+        => edita
+        -> MutableRead m (EditReader edita)
+        -> IdentityT m [TupleEdit EmptyWitness]
+    efUpdate _ _ = return []
+    elFunction = MkAnEditFunction {..}
+    elPutEdit ::
+           forall m. MonadIO m
+        => TupleEdit EmptyWitness
+        -> MutableRead m (EditReader edita)
+        -> IdentityT m (Maybe [edita])
+    elPutEdit (MkTupleEdit sel _) _ = never sel
+    in MkCloseUnlift identityUnlift MkAnEditLens {..}
 
 instance (c a, TupleWitness c r) => TupleWitness c (ConsWitness a r) where
     tupleWitness _ FirstWitness = Dict
@@ -60,43 +62,47 @@ instance (FiniteTupleSelector r, TupleSubject r ~ Tuple r) => FiniteTupleSelecto
         getsel FirstWitness <*>
         tupleConstruct (getsel . RestWitness)
 
-firstEditLens :: forall sel edit1. PureEditLens (TupleEdit (ConsWitness edit1 sel)) edit1
+firstEditLens :: forall sel edit1. EditLens' (TupleEdit (ConsWitness edit1 sel)) edit1
 firstEditLens = let
-    editAccess :: IOStateAccess ()
-    editAccess = unitStateAccess
-    editGet :: () -> ReadFunction (TupleEditReader (ConsWitness edit1 sel)) (EditReader edit1)
-    editGet () rt = readable $ MkTupleEditReader FirstWitness rt
-    editUpdate ::
-           TupleEdit (ConsWitness edit1 sel) -> () -> Readable (TupleEditReader (ConsWitness edit1 sel)) ((), [edit1])
-    editUpdate (MkTupleEdit FirstWitness edit) () = return ((), [edit])
-    editUpdate (MkTupleEdit (RestWitness _) _) () = return ((), [])
-    editLensFunction = MkEditFunction {..}
-    editLensPutEdit ::
-           ()
-        -> edit1
-        -> Readable (TupleEditReader (ConsWitness edit1 sel)) (Maybe ((), [TupleEdit (ConsWitness edit1 sel)]))
-    editLensPutEdit () edit = return $ pure ((), [MkTupleEdit FirstWitness edit])
-    in MkEditLens {..}
+    efGet :: ReadFunctionT IdentityT (TupleEditReader (ConsWitness edit1 sel)) (EditReader edit1)
+    efGet mr rt = lift $ mr $ MkTupleEditReader FirstWitness rt
+    efUpdate ::
+           forall m. MonadIO m
+        => TupleEdit (ConsWitness edit1 sel)
+        -> MutableRead m (TupleEditReader (ConsWitness edit1 sel))
+        -> IdentityT m [edit1]
+    efUpdate (MkTupleEdit FirstWitness edit) _ = return [edit]
+    efUpdate (MkTupleEdit (RestWitness _) _) _ = return []
+    elFunction :: AnEditFunction IdentityT (TupleEdit (ConsWitness edit1 sel)) edit1
+    elFunction = MkAnEditFunction {..}
+    elPutEdit ::
+           forall m. MonadIO m
+        => edit1
+        -> MutableRead m (EditReader (TupleEdit (ConsWitness edit1 sel)))
+        -> IdentityT m (Maybe [TupleEdit (ConsWitness edit1 sel)])
+    elPutEdit edit _ = return $ Just [MkTupleEdit FirstWitness edit]
+    in MkCloseUnlift identityUnlift MkAnEditLens {..}
 
-restEditLens :: forall sel edit1. PureEditLens (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel)
+restEditLens :: forall sel edit1. EditLens' (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel)
 restEditLens = let
-    editAccess :: IOStateAccess ()
-    editAccess = unitStateAccess
-    editGet :: () -> ReadFunction (TupleEditReader (ConsWitness edit1 sel)) (TupleEditReader sel)
-    editGet () (MkTupleEditReader sel rt) = readable $ MkTupleEditReader (RestWitness sel) rt
-    editUpdate ::
-           TupleEdit (ConsWitness edit1 sel)
-        -> ()
-        -> Readable (TupleEditReader (ConsWitness edit1 sel)) ((), [TupleEdit sel])
-    editUpdate (MkTupleEdit FirstWitness _) () = return ((), [])
-    editUpdate (MkTupleEdit (RestWitness sel) edit) () = return ((), [MkTupleEdit sel edit])
-    editLensFunction = MkEditFunction {..}
-    editLensPutEdit ::
-           ()
-        -> TupleEdit sel
-        -> Readable (TupleEditReader (ConsWitness edit1 sel)) (Maybe ((), [TupleEdit (ConsWitness edit1 sel)]))
-    editLensPutEdit () (MkTupleEdit sel edit) = return $ pure ((), [MkTupleEdit (RestWitness sel) edit])
-    in MkEditLens {..}
+    efGet :: ReadFunctionT IdentityT (TupleEditReader (ConsWitness edit1 sel)) (TupleEditReader sel)
+    efGet mr (MkTupleEditReader sel rt) = lift $ mr $ MkTupleEditReader (RestWitness sel) rt
+    efUpdate ::
+           forall m. MonadIO m
+        => TupleEdit (ConsWitness edit1 sel)
+        -> MutableRead m (EditReader (TupleEdit (ConsWitness edit1 sel)))
+        -> IdentityT m [TupleEdit sel]
+    efUpdate (MkTupleEdit FirstWitness _) _ = return []
+    efUpdate (MkTupleEdit (RestWitness sel) edit) _ = return [MkTupleEdit sel edit]
+    elFunction :: AnEditFunction IdentityT (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel)
+    elFunction = MkAnEditFunction {..}
+    elPutEdit ::
+           forall m. MonadIO m
+        => TupleEdit sel
+        -> MutableRead m (EditReader (TupleEdit (ConsWitness edit1 sel)))
+        -> IdentityT m (Maybe [TupleEdit (ConsWitness edit1 sel)])
+    elPutEdit (MkTupleEdit sel edit) _ = return $ Just [MkTupleEdit (RestWitness sel) edit]
+    in MkCloseUnlift identityUnlift MkAnEditLens {..}
 
 consTuple :: EditSubject a -> Tuple r -> Tuple (ConsWitness a r)
 consTuple a (MkTuple tup) =
@@ -104,7 +110,7 @@ consTuple a (MkTuple tup) =
         case esel of
             FirstWitness -> a
             RestWitness sel -> tup sel
-
+{-
 consTupleEditFunction ::
        forall s1 s2 edita editb sel.
        EditFunction s1 edita editb
@@ -146,3 +152,4 @@ consTupleEditLens lens1 lensr =
                       fnedits <- editLensPutEdit lensr oldr $ MkTupleEdit sr edit
                       return $ fmap (\(newr, editas) -> ((old1, newr), editas)) fnedits
     }
+-}

@@ -8,6 +8,24 @@ class MonadTrans t =>
            forall (m :: * -> *). c m
         => Dict (c (t m))
 
+withTransConstraintTM ::
+       forall c t m a. (MonadTransConstraint c t, c m)
+    => (c (t m) =>
+            t m a)
+    -> t m a
+withTransConstraintTM tma =
+    case hasTransConstraint @c @t @m of
+        Dict -> tma
+
+withTransConstraintTM' ::
+       forall c t' t m a. (MonadTransConstraint c t, c m)
+    => (c (t m) =>
+            t' (t m) a)
+    -> t' (t m) a
+withTransConstraintTM' tma =
+    case hasTransConstraint @c @t @m of
+        Dict -> tma
+
 instance MonadTransConstraint Monad IdentityT where
     hasTransConstraint = Dict
 

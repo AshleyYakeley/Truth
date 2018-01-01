@@ -10,22 +10,33 @@ class (MonadTransConstraint MonadIO t, MonadTransTunnel t) =>
            forall m r. MonadUnliftIO m
         => ((forall a. t m a -> m a) -> m r)
         -> t m r
+    -- | perform action without transformer effects (such as state change or output)
+    impotent ::
+           forall m a. Monad m
+        => t m a
+        -> t m a
 
 class MonadIO m =>
       MonadUnliftIO m where
     liftIOWithUnlift :: forall r. ((forall a. m a -> IO a) -> IO r) -> m r
+    -- | perform action without any transformer effects (such as state change or output)
+    impotentIO :: forall a. m a -> m a
 
 instance MonadUnliftIO IO where
     liftIOWithUnlift call = call id
+    impotentIO = id
 
 instance (MonadTransUnlift t, MonadUnliftIO m, MonadIO (t m)) => MonadUnliftIO (t m) where
     liftIOWithUnlift call = liftWithUnlift $ \tmama -> liftIOWithUnlift $ \maioa -> call $ maioa . tmama
+    impotentIO tma = impotent $ remonad impotentIO tma
 
 instance MonadTransUnlift IdentityT where
     liftWithUnlift call = IdentityT $ call $ runIdentityT
+    impotent = id
 
 instance MonadTransUnlift (ReaderT s) where
     liftWithUnlift call = ReaderT $ \s -> call $ \(ReaderT smr) -> smr s
+    impotent = id
 
 instance Monoid s => MonadTransUnlift (WriterT s) where
     liftWithUnlift call = do
@@ -39,6 +50,10 @@ instance Monoid s => MonadTransUnlift (WriterT s) where
         totaloutput <- liftIO $ takeMVar var
         tell totaloutput
         return r
+    impotent (WriterT mao) =
+        WriterT $ do
+            (a, _) <- mao
+            return (a, mempty)
 
 instance MonadTransUnlift (StateT s) where
     liftWithUnlift call = do
@@ -51,3 +66,7 @@ instance MonadTransUnlift (StateT s) where
         finalstate <- liftIO $ takeMVar var
         put finalstate
         return r
+    impotent (StateT smas) =
+        StateT $ \olds -> do
+            (a, _) <- smas olds
+            return (a, olds)

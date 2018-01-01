@@ -1,15 +1,14 @@
 module Truth.Core.Object.Undo
     ( UndoActions(..)
-    , undoQueueSubscriber
+    --, undoQueueSubscriber
     ) where
 
-import Truth.Core.Edit
+--import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.MutableEdit
-import Truth.Core.Object.Object
-import Truth.Core.Object.Subscriber
-import Truth.Core.Read
-
+--import Truth.Core.Object.Object
+--import Truth.Core.Object.Subscriber
+--import Truth.Core.Read
+{-
 type UndoEntry edit = ([edit], [edit])
 
 makeUndoEntry ::
@@ -33,12 +32,12 @@ updateUndoQueue mr edits = do
         Just ue -> do
             MkUndoQueue uq _ <- get
             put $ MkUndoQueue (ue : uq) []
-
+-}
 data UndoActions = MkUndoActions
     { uaUndo :: IO ()
     , uaRedo :: IO ()
     }
-
+{-
 undoQueueSubscriber ::
        forall edit actions. InvertibleEdit edit
     => Subscriber edit actions
@@ -53,7 +52,7 @@ undoQueueSubscriber sub =
                 let
                     uaUndo :: IO ()
                     uaUndo =
-                        mvarStateAccess queueVar $ do
+                        mvarUnlift queueVar $ do
                             MkUndoQueue ues res <- get
                             case ues of
                                 [] -> return () -- nothing to undo
@@ -72,7 +71,7 @@ undoQueueSubscriber sub =
                                         else return ()
                     uaRedo :: IO ()
                     uaRedo =
-                        mvarStateAccess queueVar $ do
+                        mvarUnlift queueVar $ do
                             MkUndoQueue ues res <- get
                             case res of
                                 [] -> return () -- nothing to redo
@@ -102,3 +101,4 @@ undoQueueSubscriber sub =
                 return ()
         ((editor, undoActions), closer, actions) <- subscribe sub init' update'
         return (editor, closer, (actions, undoActions))
+-}

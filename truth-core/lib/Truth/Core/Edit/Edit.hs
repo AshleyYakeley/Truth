@@ -19,17 +19,21 @@ class (Floating edit edit) =>
 type EditSubject edit = ReaderSubject (EditReader edit)
 
 applyEdits :: (Edit edit) => [edit] -> ReadFunction (EditReader edit) (EditReader edit)
-applyEdits [] = readable
-applyEdits (e:es) = composeReadFunction (applyEdits es) (applyEdit e)
+applyEdits [] mr = mr
+applyEdits (e:es) mr = applyEdits es $ applyEdit e mr
 
 class Edit edit =>
       InvertibleEdit (edit :: *) where
-    invertEdit :: edit -> Readable (EditReader edit) [edit]
+    invertEdit ::
+           forall m. MonadIO m
+        => edit
+        -> MutableRead m (EditReader edit)
+        -> m [edit]
     -- edits always applied in the given order, so list returned will be reversed relative to list given.
 
-invertEdits :: InvertibleEdit edit => [edit] -> Readable (EditReader edit) [edit]
-invertEdits [] = return []
-invertEdits (e:ee) = do
-    uu <- mapReadable (applyEdit e) $ invertEdits ee
-    u <- invertEdit e
+invertEdits :: (MonadIO m, InvertibleEdit edit) => [edit] -> MutableRead m (EditReader edit) -> m [edit]
+invertEdits [] _mr = return []
+invertEdits (e:ee) mr = do
+    u <- invertEdit e mr
+    uu <- invertEdits ee (applyEdit e mr)
     return $ u ++ uu

@@ -38,7 +38,7 @@ textView ::
     -> GCreateView (StringEdit s)
 textView uitext = do
     buffer <- liftIO $ textBufferNew Nothing
-    initial <- liftOuter $ viewMutableRead $ unReadable subjectFromReader
+    initial <- liftOuter $ viewObjectRead $ mutableReadToSubject
     liftIO $ textBufferSetText buffer initial
     mv <- liftIO $ newMVar ()
     _ <-
@@ -47,18 +47,18 @@ textView uitext = do
             on buffer bufferInsertText $ \iter text ->
                 ifMVar mv $
                 unlift $
-                viewMutableEdit $ \muted -> do
+                viewObjectPushEdit $ \push -> do
                     p <- getSequencePoint iter
-                    pushMutableEdit muted $ pure $ StringReplaceSection (MkSequenceRun p 0) text
+                    push $ pure $ StringReplaceSection (MkSequenceRun p 0) text
     _ <-
         liftOuter $
         liftIOView $ \unlift ->
             on buffer deleteRange $ \iter1 iter2 ->
                 ifMVar mv $
                 unlift $
-                viewMutableEdit $ \muted -> do
+                viewObjectPushEdit $ \push -> do
                     run <- getSequenceRun iter1 iter2
-                    pushMutableEdit muted $ pure $ StringReplaceSection run mempty
+                    push $ pure $ StringReplaceSection run mempty
     widget <- liftIO $ textViewNewWithBuffer buffer
     createViewReceiveUpdate $ \_ edit ->
         liftIO $
@@ -73,7 +73,7 @@ textView uitext = do
             run <- getSequenceRun iter1 iter2
             -- get selection...
             lens <- stringSectionLens run
-            return $ Just ("section", uiLens (MkCloseState lens) $ MkUISpec uitext)
+            return $ Just ("section", uiLens lens $ MkUISpec uitext)
     createViewAddAspect aspect
     _ <-
         liftOuter $

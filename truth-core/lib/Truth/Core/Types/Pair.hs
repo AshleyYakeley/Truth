@@ -60,106 +60,105 @@ sndMutableRead :: MutableRead m (PairEditReader ea eb) -> MutableRead m (EditRea
 sndMutableRead mr rb = mr $ MkTupleEditReader EditSecond rb
 
 fstLiftEditLens ::
-       forall state editx edita editb.
-       EditLens state edita editb
-    -> EditLens state (PairEdit edita editx) (PairEdit editb editx)
-fstLiftEditLens (MkEditLens (MkEditFunction editAccess g u) pe) = let
-    editGet :: state -> ReadFunction (PairEditReader edita editx) (PairEditReader editb editx)
-    editGet _ (MkTupleEditReader EditSecond rt) = readable (MkTupleEditReader EditSecond rt)
-    editGet curstate (MkTupleEditReader EditFirst rt) = mapReadable firstReadFunction $ g curstate rt
-    editUpdate :: PairEdit edita editx -> state -> Readable (PairEditReader edita editx) (state, [PairEdit editb editx])
-    editUpdate (MkTupleEdit EditSecond ex) oldstate = return (oldstate, [MkTupleEdit EditSecond ex])
-    editUpdate (MkTupleEdit EditFirst ea) oldstate =
-        mapReadable firstReadFunction $ do
-            (newstate, ebs) <- u ea oldstate
-            return (newstate, fmap (MkTupleEdit EditFirst) ebs)
-    editLensPutEdit ::
-           state
-        -> PairEdit editb editx
-        -> Readable (PairEditReader edita editx) (Maybe (state, [PairEdit edita editx]))
-    editLensPutEdit oldstate (MkTupleEdit EditSecond ex) = return $ pure $ (oldstate, [MkTupleEdit EditSecond ex])
-    editLensPutEdit oldstate (MkTupleEdit EditFirst eb) =
-        mapReadable firstReadFunction $ do
-            msa <- pe oldstate eb
-            return $ fmap (\(newstate, eas) -> (newstate, fmap (MkTupleEdit EditFirst) eas)) msa
-    editLensFunction = MkEditFunction {..}
-    in MkEditLens {..}
+       forall editx edita editb. EditLens' edita editb -> EditLens' (PairEdit edita editx) (PairEdit editb editx)
+fstLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditFunction g u) pe)) = let
+    efGet :: ReadFunctionT t (PairEditReader edita editx) (PairEditReader editb editx)
+    efGet mr (MkTupleEditReader EditFirst rt) = g (firstReadFunction mr) rt
+    efGet mr (MkTupleEditReader EditSecond rt) = lift $ mr (MkTupleEditReader EditSecond rt)
+    efUpdate ::
+           forall m. MonadIO m
+        => PairEdit edita editx
+        -> MutableRead m (EditReader (PairEdit edita editx))
+        -> t m [PairEdit editb editx]
+    efUpdate (MkTupleEdit EditFirst ea) mr =
+        withTransConstraintTM @MonadIO $ do
+            ebs <- u ea $ firstReadFunction mr
+            return $ fmap (MkTupleEdit EditFirst) ebs
+    efUpdate (MkTupleEdit EditSecond ex) _ = withTransConstraintTM @MonadIO $ return [MkTupleEdit EditSecond ex]
+    elFunction :: AnEditFunction t (PairEdit edita editx) (PairEdit editb editx)
+    elFunction = MkAnEditFunction {..}
+    elPutEdit ::
+           forall m. MonadIO m
+        => PairEdit editb editx
+        -> MutableRead m (EditReader (PairEdit edita editx))
+        -> t m (Maybe [PairEdit edita editx])
+    elPutEdit (MkTupleEdit EditFirst eb) mr =
+        withTransConstraintTM @MonadIO $ do
+            msa <- pe eb $ firstReadFunction mr
+            return $ fmap (fmap (MkTupleEdit EditFirst)) msa
+    elPutEdit (MkTupleEdit EditSecond ex) _ = withTransConstraintTM @MonadIO $ return $ Just [MkTupleEdit EditSecond ex]
+    in MkCloseUnlift unlift $ MkAnEditLens {..}
 
 sndLiftEditLens ::
-       forall state editx edita editb.
-       EditLens state edita editb
-    -> EditLens state (PairEdit editx edita) (PairEdit editx editb)
-sndLiftEditLens (MkEditLens (MkEditFunction editAccess g u) pe) = let
-    editGet :: state -> ReadFunction (PairEditReader editx edita) (PairEditReader editx editb)
-    editGet _ (MkTupleEditReader EditFirst rt) = readable (MkTupleEditReader EditFirst rt)
-    editGet curstate (MkTupleEditReader EditSecond rt) = mapReadable secondReadFunction $ g curstate rt
-    editUpdate :: PairEdit editx edita -> state -> Readable (PairEditReader editx edita) (state, [PairEdit editx editb])
-    editUpdate (MkTupleEdit EditFirst ex) oldstate = return (oldstate, [MkTupleEdit EditFirst ex])
-    editUpdate (MkTupleEdit EditSecond ea) oldstate =
-        mapReadable secondReadFunction $ do
-            (newstate, ebs) <- u ea oldstate
-            return (newstate, fmap (MkTupleEdit EditSecond) ebs)
-    editLensPutEdit ::
-           state
-        -> PairEdit editx editb
-        -> Readable (PairEditReader editx edita) (Maybe (state, [PairEdit editx edita]))
-    editLensPutEdit oldstate (MkTupleEdit EditFirst ex) = return $ pure $ (oldstate, [MkTupleEdit EditFirst ex])
-    editLensPutEdit oldstate (MkTupleEdit EditSecond eb) =
-        mapReadable secondReadFunction $ do
-            msa <- pe oldstate eb
-            return $ fmap (\(newstate, eas) -> (newstate, fmap (MkTupleEdit EditSecond) eas)) msa
-    editLensFunction = MkEditFunction {..}
-    in MkEditLens {..}
+       forall editx edita editb. EditLens' edita editb -> EditLens' (PairEdit editx edita) (PairEdit editx editb)
+sndLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditFunction g u) pe)) = let
+    efGet :: ReadFunctionT t (PairEditReader editx edita) (PairEditReader editx editb)
+    efGet mr (MkTupleEditReader EditFirst rt) = lift $ mr (MkTupleEditReader EditFirst rt)
+    efGet mr (MkTupleEditReader EditSecond rt) = g (secondReadFunction mr) rt
+    efUpdate ::
+           forall m. MonadIO m
+        => PairEdit editx edita
+        -> MutableRead m (EditReader (PairEdit editx edita))
+        -> t m [PairEdit editx editb]
+    efUpdate (MkTupleEdit EditFirst ex) _ = withTransConstraintTM @MonadIO $ return [MkTupleEdit EditFirst ex]
+    efUpdate (MkTupleEdit EditSecond ea) mr =
+        withTransConstraintTM @MonadIO $ do
+            ebs <- u ea $ secondReadFunction mr
+            return $ fmap (MkTupleEdit EditSecond) ebs
+    elFunction :: AnEditFunction t (PairEdit editx edita) (PairEdit editx editb)
+    elFunction = MkAnEditFunction {..}
+    elPutEdit ::
+           forall m. MonadIO m
+        => PairEdit editx editb
+        -> MutableRead m (EditReader (PairEdit editx edita))
+        -> t m (Maybe [PairEdit editx edita])
+    elPutEdit (MkTupleEdit EditFirst ex) _ = withTransConstraintTM @MonadIO $ return $ Just [MkTupleEdit EditFirst ex]
+    elPutEdit (MkTupleEdit EditSecond eb) mr =
+        withTransConstraintTM @MonadIO $ do
+            msa <- pe eb $ secondReadFunction mr
+            return $ fmap (fmap (MkTupleEdit EditSecond)) msa
+    in MkCloseUnlift unlift $ MkAnEditLens {..}
+
+pairJoinAnEditFunctions ::
+       forall t edita editb1 editb2. MonadTransUnlift t
+    => AnEditFunction t edita editb1
+    -> AnEditFunction t edita editb2
+    -> AnEditFunction t edita (PairEdit editb1 editb2)
+pairJoinAnEditFunctions (MkAnEditFunction g1 u1) (MkAnEditFunction g2 u2) = let
+    g12 :: ReadFunctionT t (EditReader edita) (PairEditReader editb1 editb2)
+    g12 mr (MkTupleEditReader EditFirst rt) = g1 mr rt
+    g12 mr (MkTupleEditReader EditSecond rt) = g2 mr rt
+    u12 :: forall m. MonadIO m
+        => edita
+        -> MutableRead m (EditReader edita)
+        -> t m [PairEdit editb1 editb2]
+    u12 ea mr =
+        withTransConstraintTM @MonadIO $ do
+            eb1s <- u1 ea mr
+            eb2s <- u2 ea mr
+            return $ fmap (MkTupleEdit EditFirst) eb1s ++ fmap (MkTupleEdit EditSecond) eb2s
+    in MkAnEditFunction g12 u12
 
 pairJoinEditFunctions ::
-       forall s1 s2 edita editb1 editb2.
-       EditFunction s1 edita editb1
-    -> EditFunction s2 edita editb2
-    -> EditFunction (s1, s2) edita (PairEdit editb1 editb2)
-pairJoinEditFunctions ef1 ef2 =
-    MkEditFunction
-    { editAccess = pairStateAccess (editAccess ef1) (editAccess ef2)
-    , editGet =
-          \(cur1, cur2) ->
-              \case
-                  MkTupleEditReader EditFirst rt -> editGet ef1 cur1 rt
-                  MkTupleEditReader EditSecond rt -> editGet ef2 cur2 rt
-    , editUpdate =
-          \ea (old1, old2) -> do
-              (new1, eb1s) <- editUpdate ef1 ea old1
-              (new2, eb2s) <- editUpdate ef2 ea old2
-              return ((new1, new2), fmap (MkTupleEdit EditFirst) eb1s ++ fmap (MkTupleEdit EditSecond) eb2s)
-    }
-
-pairJoinGeneralFunctions ::
        forall edita editb1 editb2.
-       GeneralFunction edita editb1
-    -> GeneralFunction edita editb2
-    -> GeneralFunction edita (PairEdit editb1 editb2)
-pairJoinGeneralFunctions (MkCloseState f1) (MkCloseState f2) = MkCloseState $ pairJoinEditFunctions f1 f2
+       EditFunction' edita editb1
+    -> EditFunction' edita editb2
+    -> EditFunction' edita (PairEdit editb1 editb2)
+pairJoinEditFunctions = joinUnlifts $ \unlift af1 af2 -> MkCloseUnlift unlift $ pairJoinAnEditFunctions af1 af2
 
 pairJoinEditLenses ::
-       forall s1 s2 edita editb1 editb2.
-       EditLens s1 edita editb1
-    -> EditLens s2 edita editb2
-    -> EditLens (s1, s2) edita (PairEdit editb1 editb2)
-pairJoinEditLenses lens1 lens2 =
-    MkEditLens
-    { editLensFunction = pairJoinEditFunctions (editLensFunction lens1) (editLensFunction lens2)
-    , editLensPutEdit =
-          \(old1, old2) ->
-              \case
-                  MkTupleEdit EditFirst editb -> do
-                      fseas <- editLensPutEdit lens1 old1 editb
-                      return $ fmap (\(new1, eas) -> ((new1, old2), eas)) fseas
-                  MkTupleEdit EditSecond editb -> do
-                      fseas <- editLensPutEdit lens2 old2 editb
-                      return $ fmap (\(new2, eas) -> ((old1, new2), eas)) fseas
-    }
-
-pairJoinGeneralLenses ::
        forall edita editb1 editb2.
-       GeneralLens edita editb1
-    -> GeneralLens edita editb2
-    -> GeneralLens edita (PairEdit editb1 editb2)
-pairJoinGeneralLenses (MkCloseState lens1) (MkCloseState lens2) = MkCloseState $ pairJoinEditLenses lens1 lens2
+       EditLens' edita editb1
+    -> EditLens' edita editb2
+    -> EditLens' edita (PairEdit editb1 editb2)
+pairJoinEditLenses =
+    joinUnlifts $ \(unlift :: Unlift t) (MkAnEditLens af1 pe1) (MkAnEditLens af2 pe2) -> let
+        af12 = pairJoinAnEditFunctions af1 af2
+        pe12 ::
+               forall m. MonadIO m
+            => PairEdit editb1 editb2
+            -> MutableRead m (EditReader edita)
+            -> t m (Maybe [edita])
+        pe12 (MkTupleEdit EditFirst eb) mr = pe1 eb mr
+        pe12 (MkTupleEdit EditSecond eb) mr = pe2 eb mr
+        in MkCloseUnlift unlift $ MkAnEditLens af12 pe12

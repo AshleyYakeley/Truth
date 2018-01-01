@@ -8,7 +8,7 @@ import Truth.Core.UI.Specifier
 data UILens edit where
     MkUILens
         :: forall edita editb. Edit editb
-        => GeneralLens edita editb
+        => EditLens' edita editb
         -> UISpec editb
         -> UILens edita
 
@@ -32,7 +32,7 @@ mapAspectSpec ff = ioMapAspectSpec (return . ff)
 
 uiLens ::
        forall edita editb. Edit editb
-    => GeneralLens edita editb
+    => EditLens' edita editb
     -> UISpec editb
     -> UISpec edita
 uiLens lens spec = MkUISpec $ MkUILens lens spec
@@ -41,12 +41,12 @@ uiConvert ::
        forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb)
     => UISpec editb
     -> UISpec edita
-uiConvert = uiLens $ MkCloseState convertEditLens
+uiConvert = uiLens convertEditLens
 
-mapAspect :: Edit editb => GeneralLens edita editb -> Aspect editb -> Aspect edita
+mapAspect :: Edit editb => EditLens' edita editb -> Aspect editb -> Aspect edita
 mapAspect lens = mapAspectSpec $ uiLens lens
 
-ioMapAspect :: Edit editb => IO (GeneralLens edita editb) -> Aspect editb -> Aspect edita
+ioMapAspect :: Edit editb => IO (EditLens' edita editb) -> Aspect editb -> Aspect edita
 ioMapAspect mlens =
     ioMapAspectSpec $ \uispec -> do
         lens <- mlens
@@ -63,7 +63,7 @@ tupleEditUISpecs getSpec =
              case tupleWitness (Proxy :: Proxy FullEdit) seledit of
                  Dict ->
                      case getSpec seledit of
-                         spec -> MkUISpec $ MkUILens (tupleGeneralLens seledit) spec)
+                         spec -> MkUISpec $ MkUILens (tupleEditLens seledit) spec)
         tupleAllSelectors
     -- not really a bijection
 
@@ -76,8 +76,8 @@ maybeNothingValueBijection def = let
     biBackwards a = Just a
     in MkBijection {..}
 
-maybeNothingGeneralLens :: Eq a => a -> GeneralLens (WholeEdit (Maybe a)) (WholeEdit a)
-maybeNothingGeneralLens def = toGeneralLens $ maybeNothingValueBijection def
+maybeNothingGeneralLens :: Eq a => a -> EditLens' (WholeEdit (Maybe a)) (WholeEdit a)
+maybeNothingGeneralLens def = toEditLens $ maybeNothingValueBijection def
 
 uiNothingValue :: Eq a => a -> UISpec (WholeEdit a) -> UISpec (WholeEdit (Maybe a))
 uiNothingValue def = uiLens $ maybeNothingGeneralLens def

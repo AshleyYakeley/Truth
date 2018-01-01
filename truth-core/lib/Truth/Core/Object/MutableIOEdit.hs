@@ -1,59 +1,117 @@
-module Truth.Core.Object.MutableIOEdit where
+{-# OPTIONS -fno-warn-redundant-constraints #-}
+
+module Truth.Core.Object.MutableIOEdit
+    ( MutableIOReader(..)
+    , MutableIOEdit
+    , mutableIOEditLens
+    , mutableIOLiftEditLens
+    ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.MutableEdit
+import Truth.Core.Object.AutoClose
+import Truth.Core.Object.Object
 import Truth.Core.Read
 import Truth.Core.Types.None
 
+newtype UnliftIOW m =
+    MkUnliftIOW (UnliftIO m)
+
+-- | Opens a session on the object. Returns an object that can be used without opening a new session, and a function that closes the session.
+openCloseObject :: Object edit -> IO (Object edit, IO ())
+openCloseObject (MkObject run r e) = do
+    (MkUnliftIOW run', close) <- withToOpen $ \call -> run $ liftIOWithUnlift $ \unlift -> call $ MkUnliftIOW unlift
+    return (MkObject run' r e, close)
+
 data MutableIOReader edit t where
-    ReadMutableIO :: MutableIOReader edit (MutableEdit IO edit)
+    ReadMutableIO :: MutableIOReader edit (Object edit)
 
 instance SubjectReader (EditReader edit) => SubjectReader (MutableIOReader edit) where
     type ReaderSubject (MutableIOReader edit) = EditSubject edit
-    readFromSubject subj ReadMutableIO = constantMutableEdit subj
+    subjectToRead subj ReadMutableIO = constantObject subj
 
 instance FullSubjectReader (EditReader edit) => FullSubjectReader (MutableIOReader edit) where
-    subjectFromReader = do
-        muted <- readable ReadMutableIO
-        liftIO $ unReadable subjectFromReader $ mutableRead muted
+    mutableReadToSubject mr = do
+        MkObject unlift mro _ <- mr ReadMutableIO
+        liftIO $ unlift $ mutableReadToSubject mro
 
 type MutableIOEdit edit = NoEdit (MutableIOReader edit)
 
-mutableIOEditLens :: forall edit. PureEditLens (MutableIOEdit edit) edit
+type ObjectEditT edit = StateT (Maybe (Object edit, IO ()))
+
+unliftObjectEditT :: Unlift (ObjectEditT edit)
+unliftObjectEditT smr = do
+    (r, ms) <- runStateT smr Nothing
+    case ms of
+        Nothing -> return ()
+        Just (_, close) -> liftIO close
+    return r
+
+openObject ::
+       forall edit m. MonadIO m
+    => MutableRead m (MutableIOReader edit)
+    -> ObjectEditT edit m (Object edit)
+openObject mr = do
+    ms <- get
+    case ms of
+        Just (obj, _) -> return obj
+        Nothing -> do
+            mainObj <- lift $ mr ReadMutableIO
+            objcl <- liftIO $ openCloseObject mainObj
+            put $ Just objcl
+            return $ fst objcl
+
+mutableIOEditLens :: forall edit. EditLens' (MutableIOEdit edit) edit
 mutableIOEditLens = let
-    editAccess :: IOStateAccess ()
-    editAccess = unitStateAccess
-    editGet :: () -> ReadFunction (MutableIOReader edit) (EditReader edit)
-    editGet () reader = do
-        muted <- readable ReadMutableIO
-        liftIO $ mutableRead muted reader
-    editUpdate :: MutableIOEdit edit -> () -> Readable (MutableIOReader edit) ((), [edit])
-    editUpdate edit = never edit
-    editLensFunction = MkEditFunction {..}
-    editLensPutEdit :: () -> edit -> Readable (MutableIOReader edit) (Maybe ((), [MutableIOEdit edit]))
-    editLensPutEdit () edit = do
-        muted <- readable ReadMutableIO
-        liftIO $ do
-            maction <- mutableEdit muted [edit]
-            case maction of
-                Just action -> action
-                Nothing -> fail "mutableIOEditLens: failed"
-        return $ pure ((), [])
-    in MkEditLens {..}
+    efGet :: ReadFunctionT (ObjectEditT edit) (MutableIOReader edit) (EditReader edit)
+    efGet mr rt = do
+        (MkObject run r _) <- openObject mr
+        liftIO $ run $ r rt
+    efUpdate ::
+           forall m. MonadIO m
+        => MutableIOEdit edit
+        -> MutableRead m (MutableIOReader edit)
+        -> ObjectEditT edit m [edit]
+    efUpdate edit _ = never edit
+    elFunction :: AnEditFunction (ObjectEditT edit) (MutableIOEdit edit) edit
+    elFunction = MkAnEditFunction {..}
+    elPutEdit ::
+           forall m. MonadIO m
+        => edit
+        -> MutableRead m (EditReader (MutableIOEdit edit))
+        -> ObjectEditT edit m (Maybe [MutableIOEdit edit])
+    elPutEdit edit mr = do
+        (MkObject run _ e) <- openObject mr
+        liftIO $
+            run $ do
+                maction <- e [edit]
+                case maction of
+                    Just action -> action
+                    Nothing -> liftIO $ fail "mutableIOEditLens: failed"
+        return $ Just []
+    in MkCloseUnlift unliftObjectEditT $ MkAnEditLens {..}
 
 mutableIOLiftEditLens ::
        forall edita editb. Edit edita
-    => PureEditLens edita editb
-    -> PureEditLens (MutableIOEdit edita) (MutableIOEdit editb)
+    => EditLens' edita editb
+    -> EditLens' (MutableIOEdit edita) (MutableIOEdit editb)
 mutableIOLiftEditLens lens = let
-    editAccess :: IOStateAccess ()
-    editAccess = unitStateAccess
-    editGet :: () -> ReadFunction (MutableIOReader edita) (MutableIOReader editb)
-    editGet () ReadMutableIO = do
-        muted <- readable ReadMutableIO
-        return $ fixedMapMutableEdit lens muted
-    editUpdate edita = never edita
-    editLensFunction = MkEditFunction {..}
-    editLensPutEdit () editb = never editb
-    in MkEditLens {..}
+    efGet :: ReadFunctionT IdentityT (MutableIOReader edita) (MutableIOReader editb)
+    efGet mr ReadMutableIO = do
+        object <- lift $ mr ReadMutableIO
+        return $ mapObject lens object
+    efUpdate ::
+           forall m. MonadIO m
+        => MutableIOEdit edita
+        -> MutableRead m (MutableIOReader edita)
+        -> IdentityT m [MutableIOEdit editb]
+    efUpdate edit _ = never edit
+    elFunction :: AnEditFunction IdentityT (MutableIOEdit edita) (MutableIOEdit editb)
+    elFunction = MkAnEditFunction {..}
+    elPutEdit ::
+           forall m. MonadIO m
+        => MutableIOEdit editb
+        -> MutableRead m (MutableIOReader edita)
+        -> IdentityT m (Maybe [MutableIOEdit edita])
+    elPutEdit edit _ = never edit
+    in MkCloseUnlift identityUnlift $ MkAnEditLens {..}

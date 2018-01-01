@@ -2,6 +2,8 @@
 
 module Data.MonadOne where
 
+import Control.Monad.Trans.Constraint
+import Control.Monad.Trans.Tunnel
 import Data.CatFunctor
 import Data.ConstFunction
 import Data.Result
@@ -17,6 +19,10 @@ class (Traversable f, Monad f) =>
     getMaybeOne fa = resultToMaybe (retrieveOne fa)
     -- retrieveOne (fmap f w) = fmap f (retrieveOne w)
     -- case (retrieveOne w) of {Left w' -> w';Right a -> fmap (\_ -> a) w;} = w
+
+restoreOne :: MonadOne f => Result (Limit f) a -> f a
+restoreOne (SuccessResult a) = pure a
+restoreOne (FailureResult (MkLimit fa)) = fa
 
 traverseOne :: (MonadOne f, Applicative m) => (a -> m b) -> f a -> m (f b)
 traverseOne amb fa =
@@ -76,3 +82,9 @@ constFunctionAp fcab =
     case retrieveOne fcab of
         FailureResult (MkLimit fx) -> pure fx
         SuccessResult cab -> cfmap cab
+
+transComposeOne :: (MonadTransTunnel t, Monad m, MonadOne f) => t (Compose m f) a -> t m (f a)
+transComposeOne tca =
+    withTransConstraintTM @Monad $
+    fmap (restoreOne . eitherToResult) $
+    transExcept $ remonad (ExceptT . fmap (resultToEither . retrieveOne) . getCompose) tca

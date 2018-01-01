@@ -15,6 +15,10 @@ resultToM :: MonadFail m => Result String a -> m a
 resultToM (SuccessResult a) = return a
 resultToM (FailureResult e) = fail e
 
+resultToEither :: Result e a -> Either e a
+resultToEither (FailureResult e) = Left e
+resultToEither (SuccessResult a) = Right a
+
 eitherToResult :: Either e a -> Result e a
 eitherToResult (Left e) = FailureResult e
 eitherToResult (Right a) = SuccessResult a

@@ -4,7 +4,8 @@ module Main
     ( main
     ) where
 
-import Control.Monad.Trans.State.Extra
+import Control.Monad.Trans.Constraint
+import Control.Monad.Trans.State
 import Data.Sequences
 import Prelude
 import Subscribe
@@ -12,6 +13,9 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck
 import Truth.Core
+import Data.Type.Equality
+import Unsafe.Coerce
+import Control.Monad.IO.Class
 
 instance (Arbitrary (Index seq), Integral (Index seq)) => Arbitrary (SequencePoint seq) where
     arbitrary = MkSequencePoint <$> (getNonNegative <$> arbitrary)
@@ -31,7 +35,7 @@ testApplyEditsPar =
         expected = (True, True)
         rf = applyEdits edits
         in do
-               found <- fromReadFunctionM rf $ return start
+               found <- mutableReadToSubject $ rf $ subjectToMutableRead start
                assertEqual "" expected found
 
 testApplyEditsSeq :: TestTree
@@ -43,12 +47,12 @@ testApplyEditsSeq =
         expected = 2
         rf = applyEdits edits
         in do
-               found <- fromReadFunctionM rf $ return start
+               found <- mutableReadToSubject $ rf $ subjectToMutableRead start
                assertEqual "" expected found
 
 applyEditSubject ::
        (Edit edit, FullSubjectReader (EditReader edit)) => edit -> EditSubject edit -> IO (EditSubject edit)
-applyEditSubject edit subj = fromReadFunctionM (applyEdit edit) $ return subj
+applyEditSubject edit subj = mutableReadToSubject $ applyEdit edit $ subjectToMutableRead subj
 
 testEdit ::
        (Edit edit, FullSubjectReader (EditReader edit), Eq (EditSubject edit), Show edit, Show (EditSubject edit))
@@ -79,7 +83,7 @@ testEditRead ::
 testEditRead edit original rt expected = let
     name = show edit ++ " " ++ show original ++ " " ++ show rt
     in testCase name $ do
-           found <- fromReadableSubject (applyEdit edit rt) original
+           found <- applyEdit edit (subjectToMutableRead original) rt
            assertEqual "" expected found
 
 seqRun :: Int -> Int -> SequenceRun [a]
@@ -107,16 +111,14 @@ testLensGet :: TestTree
 testLensGet =
     testProperty "get" $ \run (base :: String) ->
         ioProperty $ do
-            MkEditLens {..} <- stringSectionLens run
-            let MkEditFunction {..} = editLensFunction
-            editFirst <- editAccess get
-            let
-                rf :: ReadFunction (StringRead String) (StringRead String)
-                rf = editGet editFirst
-                expected :: String
-                expected = readFromSubject base $ StringReadSection run
-            found <- fromReadFunctionM rf $ return base
-            return $ found === expected
+            MkCloseUnlift unlift MkAnEditLens {..} <- stringSectionLens run
+            let MkAnEditFunction {..} = elFunction
+            unlift $ withTransConstraintTM @MonadIO $ do
+                let
+                    expected :: String
+                    expected = subjectToRead base $ StringReadSection run
+                found <- mutableReadToSubject $ efGet $ subjectToMutableRead base
+                return $ found === expected
 
 showVar :: Show a => String -> a -> String
 showVar name val = name ++ " = " ++ show val
@@ -125,7 +127,10 @@ counterexamples :: [String] -> Property -> Property
 counterexamples [] = id
 counterexamples (s:ss) = counterexample s . counterexamples ss
 
-lensUpdateGetProperty ::
+unsafeRefl :: forall a b. a :~: b
+unsafeRefl  = unsafeCoerce Refl
+
+lensUpdateGetProperty :: forall state edita editb.
        ( Show edita
        , Edit edita
        , FullSubjectReader (EditReader edita)
@@ -137,38 +142,40 @@ lensUpdateGetProperty ::
        , Show (EditSubject editb)
        , Show state
        )
-    => IO (EditLens state edita editb)
+    => IO (EditLens' edita editb)
     -> EditSubject edita
     -> edita
     -> Property
 lensUpdateGetProperty getlens oldA editA =
-    ioProperty $ do
-        MkEditLens {..} <- getlens
-        let MkEditFunction {..} = editLensFunction
-        editFirst <- editAccess get
-        let rdb = editUpdate editA editFirst
-        newA <- fromReadFunctionM (applyEdit editA) $ return oldA
-        oldB <- fromReadFunctionM (editGet editFirst) $ return oldA
-        (newState, editBs) <- fromReadableSubject rdb oldA
-        newB1 <- fromReadFunctionM (applyEdits editBs) $ return oldB
-        newB2 <- fromReadFunctionM (editGet newState) $ return newA
-        let
-            vars =
-                [ showVar "oldA" oldA
-                , showVar "oldState" editFirst
-                , showVar "oldB" oldB
-                , showVar "editA" editA
-                , showVar "editBs" editBs
-                , showVar "newA" newA
-                , showVar "newState" newState
-                , showVar "newB (edits)" newB1
-                , showVar "newB (lens )" newB2
-                ]
-        return $ counterexamples vars $ newB1 === newB2
+    ioProperty @Property $ do
+        MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens {..}) <- getlens
+        case unsafeRefl @t @(StateT state) of
+            Refl -> unlift $ do
+                let MkAnEditFunction {..} = elFunction
+                editFirst <- get
+                newA <- mutableReadToSubject $ applyEdit editA $ subjectToMutableRead oldA
+                oldB <- mutableReadToSubject $ efGet $ subjectToMutableRead oldA
+                editBs <- efUpdate editA $ subjectToMutableRead oldA
+                newState <- get
+                newB1 <- mutableReadToSubject $ applyEdits editBs $ subjectToMutableRead oldB
+                newB2 <- mutableReadToSubject $ efGet $ subjectToMutableRead newA
+                let
+                    vars =
+                        [ showVar "oldA" oldA
+                        , showVar "oldState" editFirst
+                        , showVar "oldB" oldB
+                        , showVar "editA" editA
+                        , showVar "editBs" editBs
+                        , showVar "newA" newA
+                        , showVar "newState" newState
+                        , showVar "newB (edits)" newB1
+                        , showVar "newB (lens )" newB2
+                        ]
+                return $ counterexamples vars $ newB1 === newB2
 
 testLensUpdate :: TestTree
 testLensUpdate =
-    testProperty "update" $ \run (base :: String) edit -> lensUpdateGetProperty (stringSectionLens run) base edit
+    testProperty "update" $ \run (base :: String) edit -> lensUpdateGetProperty @(SequenceRun String) (stringSectionLens run) base edit
 
 testStringSectionLens :: TestTree
 testStringSectionLens =
@@ -179,11 +186,11 @@ testStringSectionLens =
         , localOption (QuickCheckTests 1) $
           testGroup "update special" $
           [ testProperty "1 0" $
-            lensUpdateGetProperty (stringSectionLens $ seqRun 0 1) "A" (StringReplaceSection (seqRun 1 0) "x")
+            lensUpdateGetProperty @(SequenceRun String) (stringSectionLens $ seqRun 0 1) "A" (StringReplaceSection (seqRun 1 0) "x")
           , testProperty "4 1" $
-            lensUpdateGetProperty (stringSectionLens $ seqRun 0 5) "ABCDE" (StringReplaceSection (seqRun 4 1) "pqrstu")
+            lensUpdateGetProperty @(SequenceRun String) (stringSectionLens $ seqRun 0 5) "ABCDE" (StringReplaceSection (seqRun 4 1) "pqrstu")
           , testProperty "4 2" $
-            lensUpdateGetProperty (stringSectionLens $ seqRun 0 5) "ABCDE" (StringReplaceSection (seqRun 4 2) "pqrstu")
+            lensUpdateGetProperty @(SequenceRun String) (stringSectionLens $ seqRun 0 5) "ABCDE" (StringReplaceSection (seqRun 4 2) "pqrstu")
           ]
         ]
 

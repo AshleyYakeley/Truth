@@ -18,18 +18,17 @@ tableCellPlain = let
 
 data KeyColumn tedit key = MkKeyColumn
     { kcName :: String
-    , kcContents :: key -> IO (GeneralLens tedit (WholeEdit String), GeneralFunction tedit (WholeEdit TableCellProps))
+    , kcContents :: key -> IO (EditLens' tedit (WholeEdit String), EditFunction' tedit (WholeEdit TableCellProps))
     }
 
 readOnlyKeyColumn ::
-       Edit tedit
-    => String
-    -> (key -> IO (GeneralFunction tedit (WholeEdit (String, TableCellProps))))
+       String
+    -> (key -> IO (EditFunction' tedit (WholeEdit (String, TableCellProps))))
     -> KeyColumn tedit key
 readOnlyKeyColumn kcName getter = let
     kcContents key = do
         func <- getter key
-        return (readOnlyGeneralLens $ funcGeneralFunction fst <.> func, funcGeneralFunction snd <.> func)
+        return (readOnlyEditLens $ funcEditFunction fst <.> func, funcEditFunction snd <.> func)
     in MkKeyColumn {..}
 
 data UITable tedit where
@@ -43,7 +42,7 @@ data UITable tedit where
            )
         => [KeyColumn tedit (ContainerKey cont)]
         -> (ContainerKey cont -> Aspect tedit)
-        -> GeneralLens tedit (KeyEdit cont iedit)
+        -> EditLens' tedit (KeyEdit cont iedit)
         -> UITable tedit
 
 uiTable ::
@@ -56,7 +55,7 @@ uiTable ::
        )
     => [KeyColumn tedit (ContainerKey cont)]
     -> (ContainerKey cont -> Aspect tedit)
-    -> GeneralLens tedit (KeyEdit cont iedit)
+    -> EditLens' tedit (KeyEdit cont iedit)
     -> UISpec tedit
 uiTable cols getaspect lens = MkUISpec $ MkUITable cols getaspect lens
 
@@ -70,7 +69,7 @@ uiSimpleTable ::
     => [KeyColumn (KeyEdit cont iedit) (ContainerKey cont)]
     -> Aspect (MaybeEdit iedit)
     -> UISpec (KeyEdit cont iedit)
-uiSimpleTable cols aspect = uiTable cols (\key -> ioMapAspect (getKeyElementGeneralLens key) aspect) cid
+uiSimpleTable cols aspect = uiTable cols (\key -> ioMapAspect (getKeyElementEditLens key) aspect) cid
 
 instance Show (UITable edit) where
     show (MkUITable cols _ _) = "table (" ++ intercalate ", " (fmap kcName cols) ++ ")"

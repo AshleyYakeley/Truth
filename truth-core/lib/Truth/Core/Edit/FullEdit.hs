@@ -6,10 +6,20 @@ import Truth.Core.Read
 
 class (Edit edit, FullSubjectReader (EditReader edit)) =>
       FullEdit edit where
-    replaceEdit :: WriterReadable edit (EditReader edit) ()
+    replaceEdit ::
+           forall m. (MonadIO m)
+        => MutableRead m (EditReader edit)
+        -> (edit -> m ())
+        -> m ()
 
-getReplaceEditsM ::
+getReplaceEdits ::
+       forall m edit. (FullEdit edit, MonadIO m)
+    => MutableRead m (EditReader edit)
+    -> m [edit]
+getReplaceEdits mr = execWriterT $ replaceEdit (remonadMutableRead lift mr) $ tell . pure
+
+getReplaceEditsFromSubject ::
        forall m edit. (FullEdit edit, MonadIO m)
     => EditSubject edit
     -> m [edit]
-getReplaceEditsM = fromReadableSubject (writerToReadable replaceEdit :: Readable (EditReader edit) [edit])
+getReplaceEditsFromSubject subj = getReplaceEdits $ subjectToMutableRead subj
