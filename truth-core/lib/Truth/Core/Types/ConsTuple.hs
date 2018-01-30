@@ -22,7 +22,7 @@ instance FiniteTupleSelector EmptyWitness where
 emptyTuple :: Tuple EmptyWitness
 emptyTuple = MkTuple never
 
-emptyTupleLens :: forall edita. EditLens' edita (TupleEdit EmptyWitness)
+emptyTupleLens :: forall edita. EditLens edita (TupleEdit EmptyWitness)
 emptyTupleLens = let
     efGet :: ReadFunctionT IdentityT (EditReader edita) (TupleEditReader EmptyWitness)
     efGet _ (MkTupleEditReader sel _) = never sel
@@ -62,7 +62,7 @@ instance (FiniteTupleSelector r, TupleSubject r ~ Tuple r) => FiniteTupleSelecto
         getsel FirstWitness <*>
         tupleConstruct (getsel . RestWitness)
 
-firstEditLens :: forall sel edit1. EditLens' (TupleEdit (ConsWitness edit1 sel)) edit1
+firstEditLens :: forall sel edit1. EditLens (TupleEdit (ConsWitness edit1 sel)) edit1
 firstEditLens = let
     efGet :: ReadFunctionT IdentityT (TupleEditReader (ConsWitness edit1 sel)) (EditReader edit1)
     efGet mr rt = lift $ mr $ MkTupleEditReader FirstWitness rt
@@ -83,7 +83,7 @@ firstEditLens = let
     elPutEdit edit _ = return $ Just [MkTupleEdit FirstWitness edit]
     in MkCloseUnlift identityUnlift MkAnEditLens {..}
 
-restEditLens :: forall sel edit1. EditLens' (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel)
+restEditLens :: forall sel edit1. EditLens (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel)
 restEditLens = let
     efGet :: ReadFunctionT IdentityT (TupleEditReader (ConsWitness edit1 sel)) (TupleEditReader sel)
     efGet mr (MkTupleEditReader sel rt) = lift $ mr $ MkTupleEditReader (RestWitness sel) rt

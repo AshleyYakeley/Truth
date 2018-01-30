@@ -62,9 +62,9 @@ soupObject dirpath = let
         => EditSubject PossibleNoteEdit
         -> m (Maybe ByteString)
     paste s = return $ getMaybeOne $ injBackwards soupItemInjection s
-    soupItemLens :: EditLens' ByteStringEdit PossibleNoteEdit
+    soupItemLens :: EditLens ByteStringEdit PossibleNoteEdit
     soupItemLens = convertEditLens <.> (wholeEditLens $ injectionLens soupItemInjection) <.> convertEditLens
-    lens :: EditLens' (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit PossibleNoteEdit)
+    lens :: EditLens (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit PossibleNoteEdit)
     lens = liftSoupLens paste $ soupItemLens <.> mutableIOEditLens
     in mapObject lens rawSoupObject
 

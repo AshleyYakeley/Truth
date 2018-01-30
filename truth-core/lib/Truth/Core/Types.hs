@@ -14,7 +14,6 @@ module Truth.Core.Types
     , module Truth.Core.Types.EitherTuple
     , module Truth.Core.Types.Pair
     , module Truth.Core.Types.Lattice
---    , module Truth.Core.Types.PointedEditLens
     , module Truth.Core.Types.Function
     , module Truth.Core.Types.Context
     , module Truth.Core.Types.List
@@ -43,7 +42,6 @@ import Truth.Core.Types.OneEdit
 import Truth.Core.Types.OneReader
 import Truth.Core.Types.OneWholeEdit
 import Truth.Core.Types.Pair
---import Truth.Core.Types.PointedEditLens
 import Truth.Core.Types.String
 import Truth.Core.Types.Sum
 import Truth.Core.Types.SumWhole

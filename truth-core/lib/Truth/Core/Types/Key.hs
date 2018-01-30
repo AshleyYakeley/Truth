@@ -150,7 +150,7 @@ instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, Has
 getKeyElementEditLens ::
        forall cont edit. (KeyContainer cont, HasKeyReader cont (EditReader edit), Edit edit)
     => ContainerKey cont
-    -> IO (EditLens' (KeyEdit cont edit) (MaybeEdit edit))
+    -> IO (EditLens (KeyEdit cont edit) (MaybeEdit edit))
 getKeyElementEditLens initial =
     newMVar initial >>= \var -> let
         unlift :: Unlift (StateT (ContainerKey cont))
@@ -226,7 +226,7 @@ getKeyValueEditLens ::
        , FullEdit valueedit
        )
     => ContainerKey cont
-    -> IO (EditLens' (KeyEdit cont (PairEdit keyedit valueedit)) (MaybeEdit valueedit))
+    -> IO (EditLens (KeyEdit cont (PairEdit keyedit valueedit)) (MaybeEdit valueedit))
 getKeyValueEditLens key = do
     lens <- getKeyElementEditLens key
     return $ (oneWholeLiftEditLens $ tupleEditLens EditSecond) <.> lens
@@ -273,8 +273,8 @@ liftKeyElementEditFunction ::
        , SubjectReader (EditReader edita)
        , FullSubjectReader (EditReader editb)
        )
-    => EditFunction' edita editb
-    -> EditFunction' (KeyEdit conta edita) (KeyEdit contb editb)
+    => EditFunction edita editb
+    -> EditFunction (KeyEdit conta edita) (KeyEdit contb editb)
 liftKeyElementEditFunction (MkCloseUnlift unlift ef) = MkCloseUnlift unlift $ liftKeyElementAnEditFunction ef
 
 liftKeyElementEditLens ::
@@ -287,8 +287,8 @@ liftKeyElementEditLens ::
        )
     => (forall m. MonadIO m =>
                       EditSubject editb -> m (Maybe (EditSubject edita)))
-    -> EditLens' edita editb
-    -> EditLens' (KeyEdit conta edita) (KeyEdit contb editb)
+    -> EditLens edita editb
+    -> EditLens (KeyEdit conta edita) (KeyEdit contb editb)
 liftKeyElementEditLens bma (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens ef pe)) = let
     elFunction = liftKeyElementAnEditFunction ef
     elPutEdit ::
@@ -353,7 +353,7 @@ contextKeyEditLens = let
     editLensPutEdit () KeyClear = return $ pure $ pure [MkTupleEdit EditContent KeyClear]
     in MkEditLens {..}
 
-contextKeyGeneralLens :: EditLens' (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit))
+contextKeyGeneralLens :: EditLens (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit))
 contextKeyGeneralLens = MkCloseState contextKeyEditLens
 -}
 findBy :: (a -> a -> Ordering) -> [a] -> a -> (Int, Bool)
@@ -364,7 +364,7 @@ findBy cmp items x = let
 orderedKeyList ::
        forall cont seq edit. (Index seq ~ Int, Element cont ~ EditSubject edit, KeyContainer cont, FullEdit edit)
     => (EditSubject edit -> EditSubject edit -> Ordering)
-    -> EditFunction' (KeyEdit cont edit) (ListEdit seq edit)
+    -> EditFunction (KeyEdit cont edit) (ListEdit seq edit)
 orderedKeyList cmp = let
     getUnsortedPairs ::
            forall m. MonadIO m

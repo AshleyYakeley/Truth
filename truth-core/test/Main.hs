@@ -142,7 +142,7 @@ lensUpdateGetProperty :: forall state edita editb.
        , Show (EditSubject editb)
        , Show state
        )
-    => IO (EditLens' edita editb)
+    => IO (EditLens edita editb)
     -> EditSubject edita
     -> edita
     -> Property

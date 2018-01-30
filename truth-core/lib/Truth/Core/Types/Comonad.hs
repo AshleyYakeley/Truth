@@ -29,7 +29,7 @@ instance Edit edit => Edit (ComonadEdit w edit) where
 instance InvertibleEdit edit => InvertibleEdit (ComonadEdit w edit) where
     invertEdit (MkComonadEdit edit) mr = fmap (fmap MkComonadEdit) $ invertEdit edit $ comonadReadFunction mr
 
-comonadEditLens :: forall w edit. EditLens' (ComonadEdit w edit) edit
+comonadEditLens :: forall w edit. EditLens (ComonadEdit w edit) edit
 comonadEditLens =
     MkCloseUnlift identityUnlift $ let
         efGet ::
@@ -56,7 +56,7 @@ comonadLiftReadFunction :: ReadFunction ra rb -> ReadFunction (ComonadReader w r
 comonadLiftReadFunction rf mr (ReadExtract rbt) = rf (comonadReadFunction mr) rbt
 
 comonadLiftEditLens ::
-       forall w edita editb. EditLens' edita editb -> EditLens' (ComonadEdit w edita) (ComonadEdit w editb)
+       forall w edita editb. EditLens edita editb -> EditLens (ComonadEdit w edita) (ComonadEdit w editb)
 comonadLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditFunction g u) pe)) = let
     g' :: ReadFunctionT t (ComonadReader w (EditReader edita)) (ComonadReader w (EditReader editb))
     g' mr (ReadExtract rt) = g (comonadReadFunction mr) rt

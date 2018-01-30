@@ -20,8 +20,8 @@ liftSoupLens ::
        forall edita editb. (SubjectReader (EditReader edita), FullSubjectReader (EditReader editb))
     => (forall m. MonadIO m =>
                       EditSubject editb -> m (Maybe (EditSubject edita)))
-    -> EditLens' edita editb
-    -> EditLens' (SoupEdit edita) (SoupEdit editb)
+    -> EditLens edita editb
+    -> EditLens (SoupEdit edita) (SoupEdit editb)
 liftSoupLens bmfa = let
     conv ::
            forall m. MonadIO m

@@ -60,7 +60,7 @@ sndMutableRead :: MutableRead m (PairEditReader ea eb) -> MutableRead m (EditRea
 sndMutableRead mr rb = mr $ MkTupleEditReader EditSecond rb
 
 fstLiftEditLens ::
-       forall editx edita editb. EditLens' edita editb -> EditLens' (PairEdit edita editx) (PairEdit editb editx)
+       forall editx edita editb. EditLens edita editb -> EditLens (PairEdit edita editx) (PairEdit editb editx)
 fstLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditFunction g u) pe)) = let
     efGet :: ReadFunctionT t (PairEditReader edita editx) (PairEditReader editb editx)
     efGet mr (MkTupleEditReader EditFirst rt) = g (firstReadFunction mr) rt
@@ -90,7 +90,7 @@ fstLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditFunct
     in MkCloseUnlift unlift $ MkAnEditLens {..}
 
 sndLiftEditLens ::
-       forall editx edita editb. EditLens' edita editb -> EditLens' (PairEdit editx edita) (PairEdit editx editb)
+       forall editx edita editb. EditLens edita editb -> EditLens (PairEdit editx edita) (PairEdit editx editb)
 sndLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditFunction g u) pe)) = let
     efGet :: ReadFunctionT t (PairEditReader editx edita) (PairEditReader editx editb)
     efGet mr (MkTupleEditReader EditFirst rt) = lift $ mr (MkTupleEditReader EditFirst rt)
@@ -141,16 +141,16 @@ pairJoinAnEditFunctions (MkAnEditFunction g1 u1) (MkAnEditFunction g2 u2) = let
 
 pairJoinEditFunctions ::
        forall edita editb1 editb2.
-       EditFunction' edita editb1
-    -> EditFunction' edita editb2
-    -> EditFunction' edita (PairEdit editb1 editb2)
+       EditFunction edita editb1
+    -> EditFunction edita editb2
+    -> EditFunction edita (PairEdit editb1 editb2)
 pairJoinEditFunctions = joinUnlifts $ \unlift af1 af2 -> MkCloseUnlift unlift $ pairJoinAnEditFunctions af1 af2
 
 pairJoinEditLenses ::
        forall edita editb1 editb2.
-       EditLens' edita editb1
-    -> EditLens' edita editb2
-    -> EditLens' edita (PairEdit editb1 editb2)
+       EditLens edita editb1
+    -> EditLens edita editb2
+    -> EditLens edita (PairEdit editb1 editb2)
 pairJoinEditLenses =
     joinUnlifts $ \(unlift :: Unlift t) (MkAnEditLens af1 pe1) (MkAnEditLens af2 pe2) -> let
         af12 = pairJoinAnEditFunctions af1 af2

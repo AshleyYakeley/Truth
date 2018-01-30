@@ -57,10 +57,10 @@ type ContextEditReader x n = TupleEditReader (WithContextSelector x n)
 
 type ContextEdit x n = TupleEdit (WithContextSelector x n)
 
-contextEditLens :: EditLens' (ContextEdit editx editn) editx
+contextEditLens :: EditLens (ContextEdit editx editn) editx
 contextEditLens = tupleEditLens EditContext
 
-contentEditLens :: EditLens' (ContextEdit editx editn) editn
+contentEditLens :: EditLens (ContextEdit editx editn) editn
 contentEditLens = tupleEditLens EditContent
 
 mapContextEdit :: (edita -> editb) -> ContextEdit editx edita -> ContextEdit editx editb
@@ -85,7 +85,7 @@ contextualiseAnEditFunction (MkAnEditFunction g u) = let
             return $ (MkTupleEdit EditContext ea) : (fmap (MkTupleEdit EditContent) ebs)
     in MkAnEditFunction g' u'
 
-contextualiseEditFunction :: EditFunction' edita editb -> EditFunction' edita (ContextEdit edita editb)
+contextualiseEditFunction :: EditFunction edita editb -> EditFunction edita (ContextEdit edita editb)
 contextualiseEditFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ contextualiseAnEditFunction f
 
 contextualiseAnEditLens ::
@@ -102,7 +102,7 @@ contextualiseAnEditLens (MkAnEditLens f pe) = let
     pe' (MkTupleEdit EditContent eb) mr = pe eb mr
     in MkAnEditLens f' pe'
 
-contextualiseEditLens :: EditLens' edita editb -> EditLens' edita (ContextEdit edita editb)
+contextualiseEditLens :: EditLens edita editb -> EditLens edita (ContextEdit edita editb)
 contextualiseEditLens (MkCloseUnlift unlift lens) = MkCloseUnlift unlift $ contextualiseAnEditLens lens
 
 {-
@@ -145,7 +145,7 @@ contextJoinEditLenses lens1 lens2 =
                       return $ fmap (\(new2, eas) -> ((old1, new2), eas)) fseas
     }
 
-nullContextGeneralLens :: Edit edit => EditLens' edit (ContextEdit UnitEdit edit)
+nullContextGeneralLens :: Edit edit => EditLens edit (ContextEdit UnitEdit edit)
 nullContextGeneralLens = MkCloseState $ contextJoinEditLenses unitLens identityState
 -}
 {-
@@ -195,13 +195,13 @@ liftContentAnEditFunction (MkAnEditFunction g u) = let
 
 liftContentEditFunction ::
        forall edita editb editn.
-       EditFunction' edita editb
-    -> EditFunction' (ContextEdit edita editn) (ContextEdit editb editn)
+       EditFunction edita editb
+    -> EditFunction (ContextEdit edita editn) (ContextEdit editb editn)
 liftContentEditFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ liftContentAnEditFunction f
 
 carryContextEditFunction ::
-       EditFunction' (ContextEdit editx edita) editb
-    -> EditFunction' (ContextEdit editx edita) (ContextEdit editx editb)
+       EditFunction (ContextEdit editx edita) editb
+    -> EditFunction (ContextEdit editx edita) (ContextEdit editx editb)
 carryContextEditFunction func =
     liftContentEditFunction (editLensFunction $ tupleEditLens EditContext) <.> contextualiseEditFunction func
 
@@ -223,13 +223,13 @@ liftContextEditLens (MkEditLens (ef :: EditFunction state edita editb) pe) = let
 
 liftContextGeneralLens ::
        forall edita editb editx.
-       EditLens' edita editb
-    -> EditLens' (ContextEdit editx edita) (ContextEdit editx editb)
+       EditLens edita editb
+    -> EditLens (ContextEdit editx edita) (ContextEdit editx editb)
 liftContextGeneralLens (MkCloseState lens) = MkCloseState $ liftContextEditLens lens
 
 -}
 liftContentEditLens ::
-       forall edita editb editn. EditLens' edita editb -> EditLens' (ContextEdit edita editn) (ContextEdit editb editn)
+       forall edita editb editn. EditLens edita editb -> EditLens (ContextEdit edita editn) (ContextEdit editb editn)
 liftContentEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens f pe)) = let
     f' = liftContentAnEditFunction f
     pe' :: forall m. MonadIO m
@@ -246,6 +246,6 @@ liftContentEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens f pe)) = l
 
 carryContextEditLens ::
        (Edit editx, Edit edita, Edit editb)
-    => EditLens' (ContextEdit editx edita) editb
-    -> EditLens' (ContextEdit editx edita) (ContextEdit editx editb)
+    => EditLens (ContextEdit editx edita) editb
+    -> EditLens (ContextEdit editx edita) (ContextEdit editx editb)
 carryContextEditLens lens = liftContentEditLens (tupleEditLens EditContext) <.> contextualiseEditLens lens

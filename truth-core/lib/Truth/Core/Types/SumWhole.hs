@@ -32,8 +32,8 @@ sumWholeLiftAnEditFunction fef =
 
 sumWholeLiftEditFunction ::
        forall edita editb. (SubjectReader (EditReader edita), FullSubjectReader (EditReader editb))
-    => EditFunction' edita editb
-    -> EditFunction' (SumWholeEdit edita) (SumWholeEdit editb)
+    => EditFunction edita editb
+    -> EditFunction (SumWholeEdit edita) (SumWholeEdit editb)
 sumWholeLiftEditFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ sumWholeLiftAnEditFunction f
 
 sumWholeLiftAnEditLens ::

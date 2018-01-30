@@ -111,7 +111,7 @@ instance InvertibleEdit PinaforeEdit where
         ml <- mr $ PinaforeReadGetLiteral v
         return [PinaforeEditSetLiteral v ml]
 
-type PinaforeLensValue = EditLens' PinaforeEdit
+type PinaforeLensValue = EditLens PinaforeEdit
 
 data APinaforeFunctionMorphism t a b = MkAPinaforeFunctionMorphism
     { pfFuncRead :: forall m. MonadIO m =>
@@ -211,7 +211,7 @@ pfPointedEditFunction (MkCloseUnlift (unlift :: Unlift t) (MkAPinaforeFunctionMo
             return [MkWholeEdit b]
     in MkPointedEditFunction $ MkCloseUnlift unlift MkAnEditFunction {..}
 -}
-type PinaforeFunctionValue t = EditFunction' PinaforeEdit (WholeEdit t)
+type PinaforeFunctionValue t = EditFunction PinaforeEdit (WholeEdit t)
 
 applyPinaforeFunction :: forall a b. PinaforeFunctionMorphism a b -> PinaforeFunctionValue a -> PinaforeFunctionValue b
 applyPinaforeFunction =
@@ -428,7 +428,7 @@ lensInverseFunctionMorphism (MkCloseUnlift unlift MkAPinaforeLensMorphism {..}) 
 pmInverseEditLens ::
        forall a b. (Eq a)
     => PinaforeLensMorphism a b
-    -> EditLens' (ContextEdit PinaforeEdit (WholeEdit (Maybe b))) (FiniteSetEdit a)
+    -> EditLens (ContextEdit PinaforeEdit (WholeEdit (Maybe b))) (FiniteSetEdit a)
 pmInverseEditLens (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {..}) = let
     getFiniteSet ::
            forall m edit. MonadIO m

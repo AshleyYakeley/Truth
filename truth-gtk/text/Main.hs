@@ -13,7 +13,7 @@ import Truth.World.File
 textCodec :: ReasonCodec ByteString String
 textCodec = utf8Codec . bijectionCodec packBijection
 
-textLens :: EditLens' ByteStringEdit (WholeEdit ((Result String) String))
+textLens :: EditLens ByteStringEdit (WholeEdit ((Result String) String))
 textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) <.> convertEditLens
 
 fileTextWindow :: Bool -> FilePath -> IO SomeUIWindow

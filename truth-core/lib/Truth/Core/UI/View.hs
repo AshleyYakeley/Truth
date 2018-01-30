@@ -79,7 +79,7 @@ instance Traversable (ViewResult edit) where
 
 mapViewResultEdit ::
        forall edita editb w. Edit editb
-    => EditLens' edita editb
+    => EditLens edita editb
     -> ViewResult editb w
     -> ViewResult edita w
 mapViewResultEdit lens@(MkCloseUnlift unlift flens) (MkViewResult w updateB a) = let
@@ -106,7 +106,7 @@ data ViewContext edit = MkViewContext
 
 mapViewContextEdit ::
        forall edita editb. (Edit edita, Edit editb)
-    => EditLens' edita editb
+    => EditLens edita editb
     -> ViewContext edita
     -> ViewContext editb
 mapViewContextEdit lens (MkViewContext objectA setSelectA os) = let
@@ -179,7 +179,7 @@ viewOpenSelection = MkView $ \MkViewContext {..} -> vcOpenSelection
 
 mapViewEdit ::
        forall edita editb a. (Edit edita, Edit editb)
-    => EditLens' edita editb
+    => EditLens edita editb
     -> View editb a
     -> View edita a
 mapViewEdit lens (MkView viewB) = MkView $ \contextA -> viewB $ mapViewContextEdit lens contextA
@@ -200,7 +200,7 @@ createViewReceiveUpdate recv = createViewReceiveUpdates $ \mr edits -> for_ edit
 
 mapUpdates ::
        forall r m edita editb. MonadUnliftIO m
-    => EditFunction' edita editb
+    => EditFunction edita editb
     -> MutableRead m (EditReader edita)
     -> [edita]
     -> (forall t. MonadTransUnlift t =>
@@ -220,7 +220,7 @@ createViewAddAspect aspect = liftInner $ (pure ()) {vrFirstAspect = aspect}
 
 mapCreateViewEdit ::
        forall edita editb a. (Edit edita, Edit editb)
-    => EditLens' edita editb
+    => EditLens edita editb
     -> CreateView editb a
     -> CreateView edita a
 mapCreateViewEdit lens (Compose wv) = Compose $ mapViewEdit lens $ fmap (mapViewResultEdit lens) wv

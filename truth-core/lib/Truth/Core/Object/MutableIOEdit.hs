@@ -61,7 +61,7 @@ openObject mr = do
             put $ Just objcl
             return $ fst objcl
 
-mutableIOEditLens :: forall edit. EditLens' (MutableIOEdit edit) edit
+mutableIOEditLens :: forall edit. EditLens (MutableIOEdit edit) edit
 mutableIOEditLens = let
     efGet :: ReadFunctionT (ObjectEditT edit) (MutableIOReader edit) (EditReader edit)
     efGet mr rt = do
@@ -93,8 +93,8 @@ mutableIOEditLens = let
 
 mutableIOLiftEditLens ::
        forall edita editb. Edit edita
-    => EditLens' edita editb
-    -> EditLens' (MutableIOEdit edita) (MutableIOEdit editb)
+    => EditLens edita editb
+    -> EditLens (MutableIOEdit edita) (MutableIOEdit editb)
 mutableIOLiftEditLens lens = let
     efGet :: ReadFunctionT IdentityT (MutableIOReader edita) (MutableIOReader editb)
     efGet mr ReadMutableIO = do

@@ -39,7 +39,7 @@ predefinedBindings =
                   proc fsp -> do
                       pairs <- cfmap getName -< fsp
                       returnA -< insertSet (Nothing, "") pairs
-              opts :: EditFunction' PinaforeEdit (ListEdit [(Maybe Point, String)] (WholeEdit (Maybe Point, String)))
+              opts :: EditFunction PinaforeEdit (ListEdit [(Maybe Point, String)] (WholeEdit (Maybe Point, String)))
               opts =
                   (orderedKeyList @(FiniteSet (Maybe Point, String)) $ \(_, a) (_, b) -> compare a b) <.>
                   convertEditFunction <.>

@@ -43,8 +43,8 @@ oneLiftAnEditFunction (MkAnEditFunction g u) = let
 
 oneLiftEditFunction ::
        forall f edita editb. MonadOne f
-    => EditFunction' edita editb
-    -> EditFunction' (OneEdit f edita) (OneEdit f editb)
+    => EditFunction edita editb
+    -> EditFunction (OneEdit f edita) (OneEdit f editb)
 oneLiftEditFunction (MkCloseUnlift unlift ef) = MkCloseUnlift unlift $ oneLiftAnEditFunction ef
 
 oneLiftAnEditLens ::
@@ -65,6 +65,6 @@ oneLiftAnEditLens (MkAnEditLens ef pe) = let
 
 oneLiftEditLens ::
        forall f edita editb. MonadOne f
-    => EditLens' edita editb
-    -> EditLens' (OneEdit f edita) (OneEdit f editb)
+    => EditLens edita editb
+    -> EditLens (OneEdit f edita) (OneEdit f editb)
 oneLiftEditLens (MkCloseUnlift unlift lens) = MkCloseUnlift unlift $ oneLiftAnEditLens lens

@@ -8,7 +8,7 @@ import Truth.Core.UI.Specifier
 data UILens edit where
     MkUILens
         :: forall edita editb. Edit editb
-        => EditLens' edita editb
+        => EditLens edita editb
         -> UISpec editb
         -> UILens edita
 
@@ -32,7 +32,7 @@ mapAspectSpec ff = ioMapAspectSpec (return . ff)
 
 uiLens ::
        forall edita editb. Edit editb
-    => EditLens' edita editb
+    => EditLens edita editb
     -> UISpec editb
     -> UISpec edita
 uiLens lens spec = MkUISpec $ MkUILens lens spec
@@ -43,10 +43,10 @@ uiConvert ::
     -> UISpec edita
 uiConvert = uiLens convertEditLens
 
-mapAspect :: Edit editb => EditLens' edita editb -> Aspect editb -> Aspect edita
+mapAspect :: Edit editb => EditLens edita editb -> Aspect editb -> Aspect edita
 mapAspect lens = mapAspectSpec $ uiLens lens
 
-ioMapAspect :: Edit editb => IO (EditLens' edita editb) -> Aspect editb -> Aspect edita
+ioMapAspect :: Edit editb => IO (EditLens edita editb) -> Aspect editb -> Aspect edita
 ioMapAspect mlens =
     ioMapAspectSpec $ \uispec -> do
         lens <- mlens
@@ -76,7 +76,7 @@ maybeNothingValueBijection def = let
     biBackwards a = Just a
     in MkBijection {..}
 
-maybeNothingGeneralLens :: Eq a => a -> EditLens' (WholeEdit (Maybe a)) (WholeEdit a)
+maybeNothingGeneralLens :: Eq a => a -> EditLens (WholeEdit (Maybe a)) (WholeEdit a)
 maybeNothingGeneralLens def = toEditLens $ maybeNothingValueBijection def
 
 uiNothingValue :: Eq a => a -> UISpec (WholeEdit a) -> UISpec (WholeEdit (Maybe a))

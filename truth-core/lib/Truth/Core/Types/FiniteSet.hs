@@ -33,7 +33,7 @@ wholeFiniteSetReadFunction mr (KeyReadItem subj ReadWhole) = do
 finiteSetEditLens ::
        forall subj. Eq subj
     => subj
-    -> EditLens' (FiniteSetEdit subj) (WholeEdit Bool)
+    -> EditLens (FiniteSetEdit subj) (WholeEdit Bool)
 finiteSetEditLens subj = let
     efGet :: ReadFunctionT IdentityT (FiniteSetReader subj) (WholeReader Bool)
     efGet mr ReadWhole = lift $ fmap isJust $ mr $ KeyReadItem subj ReadWhole

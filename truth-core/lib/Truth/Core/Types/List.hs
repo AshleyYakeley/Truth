@@ -126,7 +126,7 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSu
 listItemLens ::
        forall seq edit. (Num (Index seq), Ord (Index seq))
     => Unlift (StateT (SequencePoint seq))
-    -> EditLens' (ListEdit seq edit) (MaybeEdit edit)
+    -> EditLens (ListEdit seq edit) (MaybeEdit edit)
 listItemLens unlift = let
     efGet ::
            ReadFunctionT (StateT (SequencePoint seq)) (ListReader seq (EditReader edit)) (OneReader Maybe (EditReader edit))

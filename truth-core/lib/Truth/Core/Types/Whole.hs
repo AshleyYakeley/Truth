@@ -40,7 +40,7 @@ instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
 
 type WholeEdit a = WholeReaderEdit (WholeReader a)
 
-wholeEditFunction :: forall a b. (a -> b) -> EditFunction' (WholeEdit a) (WholeEdit b)
+wholeEditFunction :: forall a b. (a -> b) -> EditFunction (WholeEdit a) (WholeEdit b)
 wholeEditFunction ab =
     MkCloseUnlift identityUnlift $
     MkAnEditFunction
@@ -51,7 +51,7 @@ wholeEditFunction ab =
 wholeEditLens ::
        forall mf a b. (MonadOne mf)
     => Lens' mf a b
-    -> EditLens' (WholeEdit a) (WholeEdit b)
+    -> EditLens (WholeEdit a) (WholeEdit b)
 wholeEditLens lens =
     MkCloseUnlift identityUnlift $
     MkAnEditLens
@@ -87,14 +87,14 @@ instance IsEditLens (Codec a b) where
     type LensRange (Codec a b) = WholeEdit (Maybe b)
     toEditLens = toEditLens . codecInjection
 
-unitWholeEditFunction :: EditFunction' edit (WholeEdit ())
+unitWholeEditFunction :: EditFunction edit (WholeEdit ())
 unitWholeEditFunction = constEditFunction ()
 
 pairWholeEditFunction ::
        forall edit a b.
-       EditFunction' edit (WholeEdit a)
-    -> EditFunction' edit (WholeEdit b)
-    -> EditFunction' edit (WholeEdit (a, b))
+       EditFunction edit (WholeEdit a)
+    -> EditFunction edit (WholeEdit b)
+    -> EditFunction edit (WholeEdit (a, b))
 pairWholeEditFunction (MkCloseUnlift (ula :: Unlift ta) (MkAnEditFunction ga ua)) (MkCloseUnlift (ulb :: Unlift tb) (MkAnEditFunction gb ub)) = let
     lastm :: [t] -> Maybe t
     lastm [] = Nothing

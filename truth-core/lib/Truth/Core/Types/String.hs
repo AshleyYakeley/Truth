@@ -107,7 +107,7 @@ instance IsSequence seq => FullEdit (StringEdit seq) where
 stringSectionLens ::
        forall seq. IsSequence seq
     => SequenceRun seq
-    -> IO (EditLens' (StringEdit seq) (StringEdit seq))
+    -> IO (EditLens (StringEdit seq) (StringEdit seq))
 stringSectionLens initial =
     newMVar initial >>= \var ->
         return $ let

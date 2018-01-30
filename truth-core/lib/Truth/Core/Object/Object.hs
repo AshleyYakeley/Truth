@@ -24,7 +24,7 @@ pushEdit mmmu = do
 
 mapObject ::
        forall edita editb. Edit edita
-    => EditLens' edita editb
+    => EditLens edita editb
     -> Object edita
     -> Object editb
 mapObject (MkCloseUnlift (lensRun :: Unlift tl) lens@MkAnEditLens {..}) (MkObject (objRunA :: UnliftIO mr) objReadA objEditA)

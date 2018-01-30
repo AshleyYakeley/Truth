@@ -15,8 +15,8 @@ type MaybeEdit edit = OneWholeEdit Maybe edit
 
 oneWholeLiftEditFunction ::
        forall f edita editb. (MonadOne f, SubjectReader (EditReader edita), FullSubjectReader (EditReader editb))
-    => EditFunction' edita editb
-    -> EditFunction' (OneWholeEdit f edita) (OneWholeEdit f editb)
+    => EditFunction edita editb
+    -> EditFunction (OneWholeEdit f edita) (OneWholeEdit f editb)
 oneWholeLiftEditFunction = sumWholeLiftEditFunction . oneLiftEditFunction
 
 -- | suitable for Results; trying to put a failure code will be rejected
@@ -53,14 +53,14 @@ oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLe
 -- | suitable for Results; trying to put a failure code will be rejected
 oneWholeLiftEditLens ::
        forall f edita editb. (MonadOne f, FullSubjectReader (EditReader edita), Edit edita, FullEdit editb)
-    => EditLens' edita editb
-    -> EditLens' (OneWholeEdit f edita) (OneWholeEdit f editb)
+    => EditLens edita editb
+    -> EditLens (OneWholeEdit f edita) (OneWholeEdit f editb)
 oneWholeLiftEditLens (MkCloseUnlift unlift lens) = MkCloseUnlift unlift $ oneWholeLiftAnEditLens lens
 
 mustExistOneEditLens ::
        forall f edit. (MonadOne f, FullEdit edit)
     => String
-    -> EditLens' (OneWholeEdit f edit) edit
+    -> EditLens (OneWholeEdit f edit) edit
 mustExistOneEditLens err = let
     efGet :: ReadFunctionT IdentityT (OneReader f (EditReader edit)) (EditReader edit)
     efGet mr rt = do

@@ -18,8 +18,8 @@ mapColumn :: (r2 -> r1) -> Column r1 -> Column r2
 mapColumn f (MkColumn n t p) = MkColumn n (t . f) (p . f)
 
 data StoreEntry tedit rowtext rowprops = MkStoreEntry
-    { entryTextLens :: EditLens' tedit (WholeEdit rowtext)
-    , entryPropFunc :: EditFunction' tedit (WholeEdit rowprops)
+    { entryTextLens :: EditLens tedit (WholeEdit rowtext)
+    , entryPropFunc :: EditFunction tedit (WholeEdit rowprops)
     , entryRowText :: rowtext
     , entryRowProps :: rowprops
     }
@@ -47,8 +47,8 @@ addColumn tview store col = do
     return ()
 
 data KeyColumns tedit key =
-    forall rowprops rowtext. MkKeyColumns (key -> IO ( EditLens' tedit (WholeEdit rowtext)
-                                                     , EditFunction' tedit (WholeEdit rowprops)))
+    forall rowprops rowtext. MkKeyColumns (key -> IO ( EditLens tedit (WholeEdit rowtext)
+                                                     , EditFunction tedit (WholeEdit rowprops)))
                                           [Column (rowtext, rowprops)]
 
 oneKeyColumn :: KeyColumn tedit key -> KeyColumns tedit key
@@ -79,10 +79,10 @@ keyContainerView ::
        )
     => KeyColumns tedit (ContainerKey cont)
     -> (ContainerKey cont -> Aspect tedit)
-    -> EditLens' tedit (KeyEdit cont iedit)
+    -> EditLens tedit (KeyEdit cont iedit)
     -> GCreateView tedit
-keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens' tedit (WholeEdit rowtext)
-                                                                   , EditFunction' tedit (WholeEdit rowprops))) cols) getaspect tableLens = do
+keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens tedit (WholeEdit rowtext)
+                                                                   , EditFunction tedit (WholeEdit rowprops))) cols) getaspect tableLens = do
     let
         getStoreItem ::
                MonadUnliftIO m

@@ -75,8 +75,8 @@ optionFromStore store = do
 
 optionView ::
        forall t tedit. (Eq t, Edit tedit)
-    => EditFunction' tedit (ListEdit [(t, String)] (WholeEdit (t, String)))
-    -> EditLens' tedit (WholeEdit t)
+    => EditFunction tedit (ListEdit [(t, String)] (WholeEdit (t, String)))
+    -> EditLens tedit (WholeEdit t)
     -> GCreateView tedit
 optionView itemsFunction whichLens = do
     store <- mapCreateViewEdit (readOnlyEditLens itemsFunction) listStoreView

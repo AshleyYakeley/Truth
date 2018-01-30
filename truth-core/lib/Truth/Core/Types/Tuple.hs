@@ -105,7 +105,7 @@ splitTupleEditList ((MkTupleEdit wt t):rr) =
 tupleEditLens ::
        forall sel edit. (TestEquality sel)
     => sel edit
-    -> EditLens' (TupleEdit sel) edit
+    -> EditLens (TupleEdit sel) edit
 tupleEditLens seledit = let
     efGet :: ReadFunctionT IdentityT (TupleEditReader sel) (EditReader edit)
     efGet mr = remonadMutableRead IdentityT $ tupleReadFunction seledit mr

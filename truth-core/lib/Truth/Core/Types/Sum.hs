@@ -39,7 +39,7 @@ instance (FullEdit ea, Edit eb, EditReader ea ~ EditReader eb) => FullEdit (SumE
 
 sumRightEditFunction ::
        forall editl editr. (EditReader editl ~ EditReader editr)
-    => EditFunction' editr (SumEdit editl editr)
+    => EditFunction editr (SumEdit editl editr)
 sumRightEditFunction = let
     efGet :: ReadFunctionT IdentityT (EditReader editr) (EditReader editr)
     efGet mr = remonadMutableRead lift mr

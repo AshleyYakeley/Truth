@@ -15,7 +15,7 @@ data AnEditLens t edita editb = MkAnEditLens
                                  editb -> MutableRead m (EditReader edita) -> t m (Maybe [edita])
     }
 
-type EditLens' = CloseUnlift AnEditLens
+type EditLens = CloseUnlift AnEditLens
 
 instance Unliftable AnEditLens where
     fmapUnliftable t1t2 (MkAnEditLens f pe) = MkAnEditLens (fmapUnliftable t1t2 f) (\eb mr -> t1t2 $ pe eb mr)
@@ -65,17 +65,17 @@ elPutEdits lens (e:ee) mr =
         eea <- Compose $ elPutEdits lens ee $ applyEdits ea mr
         return $ ea ++ eea
 
-editLensFunction :: EditLens' edita editb -> EditFunction' edita editb
+editLensFunction :: EditLens edita editb -> EditFunction edita editb
 editLensFunction (MkCloseUnlift unlift (MkAnEditLens func _)) = MkCloseUnlift unlift func
 
-readOnlyEditLens :: EditFunction' edita editb -> EditLens' edita editb
+readOnlyEditLens :: EditFunction edita editb -> EditLens edita editb
 readOnlyEditLens (MkCloseUnlift unlift func) =
     MkCloseUnlift unlift $ MkAnEditLens func $ \_ _ -> withTransConstraintTM @MonadIO $ return Nothing
 
 constEditLens ::
        forall edita editb. SubjectReader (EditReader editb)
     => EditSubject editb
-    -> EditLens' edita editb
+    -> EditLens edita editb
 constEditLens b = readOnlyEditLens $ constEditFunction b
 
 convertAnEditFunction ::
@@ -98,12 +98,12 @@ convertAnEditFunction = let
 convertEditFunction ::
        forall edita editb.
        (EditSubject edita ~ EditSubject editb, FullSubjectReader (EditReader edita), Edit edita, FullEdit editb)
-    => EditFunction' edita editb
+    => EditFunction edita editb
 convertEditFunction = MkCloseUnlift identityUnlift convertAnEditFunction
 
 convertEditLens ::
        forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb)
-    => EditLens' edita editb
+    => EditLens edita editb
 convertEditLens = let
     elFunction :: AnEditFunction IdentityT edita editb
     elFunction = convertAnEditFunction
@@ -121,9 +121,9 @@ convertEditLens = let
 class IsEditLens lens where
     type LensDomain lens :: *
     type LensRange lens :: *
-    toEditLens :: lens -> EditLens' (LensDomain lens) (LensRange lens)
+    toEditLens :: lens -> EditLens (LensDomain lens) (LensRange lens)
 
-instance IsEditLens (EditLens' edita editb) where
-    type LensDomain (EditLens' edita editb) = edita
-    type LensRange (EditLens' edita editb) = editb
+instance IsEditLens (EditLens edita editb) where
+    type LensDomain (EditLens edita editb) = edita
+    type LensRange (EditLens edita editb) = editb
     toEditLens = id

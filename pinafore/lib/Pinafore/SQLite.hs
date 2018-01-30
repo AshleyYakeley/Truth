@@ -139,7 +139,7 @@ soupSchema = let
         in MkSubmapWitness {..}
     in MkDatabaseSchema {..}
 
-soupDatabaseLens :: EditLens' (SQLiteEdit PinaforeSchema) PinaforeEdit
+soupDatabaseLens :: EditLens (SQLiteEdit PinaforeSchema) PinaforeEdit
 soupDatabaseLens = let
     efGet :: ReadFunctionT IdentityT (SQLiteRead PinaforeSchema) PinaforeRead
     efGet mr (PinaforeReadGetValue p s) =

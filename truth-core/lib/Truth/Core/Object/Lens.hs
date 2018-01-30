@@ -8,7 +8,7 @@ import Truth.Core.Read
 
 mapSubscriber ::
        forall edita editb action. (Edit edita)
-    => EditLens' edita editb
+    => EditLens edita editb
     -> Subscriber edita action
     -> Subscriber editb action
 mapSubscriber lens@(MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens lensFunc _)) sub =

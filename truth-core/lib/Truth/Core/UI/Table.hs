@@ -18,12 +18,12 @@ tableCellPlain = let
 
 data KeyColumn tedit key = MkKeyColumn
     { kcName :: String
-    , kcContents :: key -> IO (EditLens' tedit (WholeEdit String), EditFunction' tedit (WholeEdit TableCellProps))
+    , kcContents :: key -> IO (EditLens tedit (WholeEdit String), EditFunction tedit (WholeEdit TableCellProps))
     }
 
 readOnlyKeyColumn ::
        String
-    -> (key -> IO (EditFunction' tedit (WholeEdit (String, TableCellProps))))
+    -> (key -> IO (EditFunction tedit (WholeEdit (String, TableCellProps))))
     -> KeyColumn tedit key
 readOnlyKeyColumn kcName getter = let
     kcContents key = do
@@ -42,7 +42,7 @@ data UITable tedit where
            )
         => [KeyColumn tedit (ContainerKey cont)]
         -> (ContainerKey cont -> Aspect tedit)
-        -> EditLens' tedit (KeyEdit cont iedit)
+        -> EditLens tedit (KeyEdit cont iedit)
         -> UITable tedit
 
 uiTable ::
@@ -55,7 +55,7 @@ uiTable ::
        )
     => [KeyColumn tedit (ContainerKey cont)]
     -> (ContainerKey cont -> Aspect tedit)
-    -> EditLens' tedit (KeyEdit cont iedit)
+    -> EditLens tedit (KeyEdit cont iedit)
     -> UISpec tedit
 uiTable cols getaspect lens = MkUISpec $ MkUITable cols getaspect lens
 

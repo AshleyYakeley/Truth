@@ -44,7 +44,7 @@ instance InvertibleEdit (NoEdit reader) where
 instance (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where
     replaceEdit _ _ = return ()
 
-noEditLens :: forall edit. EditLens' (NoEdit (EditReader edit)) edit
+noEditLens :: forall edit. EditLens (NoEdit (EditReader edit)) edit
 noEditLens = let
     efGet :: ReadFunctionT IdentityT (EditReader edit) (EditReader edit)
     efGet mr = remonadMutableRead IdentityT mr

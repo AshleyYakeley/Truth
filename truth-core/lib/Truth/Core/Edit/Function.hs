@@ -14,7 +14,7 @@ data AnEditFunction t edita editb = MkAnEditFunction
                                 edita -> MutableRead m (EditReader edita) -> t m [editb]
     }
 
-type EditFunction' = CloseUnlift AnEditFunction
+type EditFunction = CloseUnlift AnEditFunction
 
 instance Unliftable AnEditFunction where
     fmapUnliftable t1t2 (MkAnEditFunction g u) = MkAnEditFunction (\mr rt -> t1t2 $ g mr rt) (\ea mr -> t1t2 $ u ea mr)
@@ -54,7 +54,7 @@ instance UnliftCategory AnEditFunction where
                                 return $ mconcat editcss
         in MkAnEditFunction gAC uAC
 
-instance Category EditFunction' where
+instance Category EditFunction where
     id = cid
     (.) = (<.>)
 
@@ -73,7 +73,7 @@ efUpdates sef (ea:eas) mr = do
 funcEditFunction ::
        forall edita editb. (FullSubjectReader (EditReader edita), Edit edita, FullEdit editb)
     => (EditSubject edita -> EditSubject editb)
-    -> EditFunction' edita editb
+    -> EditFunction edita editb
 funcEditFunction ab = let
     efGet :: ReadFunctionT IdentityT (EditReader edita) (EditReader editb)
     efGet mra rt = lift $ (mSubjectToMutableRead $ fmap ab $ mutableReadToSubject mra) rt
@@ -86,14 +86,14 @@ funcEditFunction ab = let
         lift $ getReplaceEdits $ mSubjectToMutableRead $ fmap ab $ mutableReadToSubject $ applyEdit edita mra
     in MkCloseUnlift identityUnlift MkAnEditFunction {..}
 
-constEditFunction :: SubjectReader (EditReader editb) => EditSubject editb -> EditFunction' edita editb
+constEditFunction :: SubjectReader (EditReader editb) => EditSubject editb -> EditFunction edita editb
 constEditFunction b =
     MkCloseUnlift identityUnlift $
     MkAnEditFunction {efGet = \_ rt -> mSubjectToMutableRead (return b) rt, efUpdate = \_ _ -> return []}
 
 editFunctionRead ::
        forall m edita editb. MonadUnliftIO m
-    => EditFunction' edita editb
+    => EditFunction edita editb
     -> MutableRead m (EditReader edita)
     -> MutableRead m (EditReader editb)
 editFunctionRead (MkCloseUnlift unlift (MkAnEditFunction g _)) mr rt = unlift $ g mr rt
