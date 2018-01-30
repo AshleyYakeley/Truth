@@ -1,10 +1,11 @@
 module Truth.Core.Object.Savable
     ( SaveActions(..)
---    , saveBufferSubscriber
     ) where
 
+--    , saveBufferSubscriber
 --import Truth.Core.Edit
 import Truth.Core.Import
+
 --import Truth.Core.Object.Object
 --import Truth.Core.Object.Subscriber
 --import Truth.Core.Read
@@ -36,8 +37,7 @@ saveBufferMutableEdit update = let
     in MkMutableEdit {..}
 -}
 newtype SaveActions =
-    MkSaveActions (IO (Maybe (IO Bool, IO Bool)))
-{-
+    MkSaveActions (IO (Maybe (IO Bool, IO Bool))) {-
 saveBufferSubscriber ::
        forall edit action. FullEdit edit
     => Subscriber (WholeEdit (EditSubject edit)) action

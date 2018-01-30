@@ -64,8 +64,7 @@ qapply (MkAny QMorphism f) (MkAny QPoint a) = MkAny QPoint $ applyPinaforeLens f
 qapply (MkAny QMorphism f) (MkAny QSet a) =
     MkAny QSet $
     readOnlyEditLens $
-    convertEditFunction <.>
-    applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a)
+    convertEditFunction <.> applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a)
 qapply (MkAny QInverseMorphism f) (MkAny QLiteral a) =
     MkAny QSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) $ constEditLens $ Just a
 qapply (MkAny QInverseMorphism f) (MkAny QPoint a) = MkAny QSet $ applyInversePinaforeLens f a

@@ -22,9 +22,7 @@ data KeyColumn tedit key = MkKeyColumn
     }
 
 readOnlyKeyColumn ::
-       String
-    -> (key -> IO (EditFunction tedit (WholeEdit (String, TableCellProps))))
-    -> KeyColumn tedit key
+       String -> (key -> IO (EditFunction tedit (WholeEdit (String, TableCellProps)))) -> KeyColumn tedit key
 readOnlyKeyColumn kcName getter = let
     kcContents key = do
         func <- getter key

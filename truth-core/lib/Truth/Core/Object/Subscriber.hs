@@ -11,7 +11,6 @@ import Truth.Core.Import
 import Truth.Core.Object.Object
 import Truth.Core.Read
 
-
 newtype Subscriber edit actions = MkSubscriber
     { subscribe :: forall editor. (Object edit -> IO editor) -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
                                        -> (forall m. MonadUnliftIO m =>
@@ -67,16 +66,16 @@ makeSharedSubscriber parent = do
         child =
             MkSubscriber $ \initC updateC -> do
                 editorC <- initC objectC
-                key <-
-                    runC $ mvarUnlift var $ addStoreStateT $ MkStoreEntry $ updateC editorC
+                key <- runC $ mvarUnlift var $ addStoreStateT $ MkStoreEntry $ updateC editorC
                 let
                     closerC =
-                        runC $ mvarUnlift var $ do
-                                deleteStoreStateT key
-                                newstore <- get
-                                if isEmptyStore newstore
-                                    then liftIO closerP
-                                    else return ()
+                        runC $
+                        mvarUnlift var $ do
+                            deleteStoreStateT key
+                            newstore <- get
+                            if isEmptyStore newstore
+                                then liftIO closerP
+                                else return ()
                 return (editorC, closerC, actions)
     return child
 
@@ -86,16 +85,16 @@ objectSubscriber (MkObject run r e) =
         rec
             editor <-
                 initr $ let
-                e' edits = do
-                  maction <- e edits
-                  case maction of
-                      Nothing -> return Nothing
-                      Just action ->
-                          return $
-                          Just $ do
-                              action
-                              update editor r edits
-                in MkObject run r e'
+                    e' edits = do
+                        maction <- e edits
+                        case maction of
+                            Nothing -> return Nothing
+                            Just action ->
+                                return $
+                                Just $ do
+                                    action
+                                    update editor r edits
+                    in MkObject run r e'
         return (editor, return (), ())
 
 makeObjectSubscriber :: Object edit -> IO (Subscriber edit ())

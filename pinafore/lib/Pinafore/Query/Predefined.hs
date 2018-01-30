@@ -52,8 +52,7 @@ predefinedBindings =
               showCell Nothing = ("empty", tableCellPlain {tcItalic = True})
               mapLens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeFunctionValue (String, TableCellProps)
               mapLens lens =
-                  funcEditFunction showCell <.>
-                  editLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
+                  funcEditFunction showCell <.> editLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
               getColumn ::
                      (Text, Point -> Result String (PinaforeLensValue (WholeEdit (Maybe Point))))
                   -> KeyColumn PinaforeEdit Point

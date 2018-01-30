@@ -175,13 +175,12 @@ sqliteObject ::
 sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
     objRun :: UnliftIO (ReaderT Connection IO)
     objRun call = do
-       exists <- doesFileExist path
-       withConnection path $ \conn -> do
-           if exists
-               then return ()
-               else for_ (SQLite.toSchema schema) $ execute_ conn -- create the database if we're creating the file
-           runReaderT call conn
-
+        exists <- doesFileExist path
+        withConnection path $ \conn -> do
+            if exists
+                then return ()
+                else for_ (SQLite.toSchema schema) $ execute_ conn -- create the database if we're creating the file
+            runReaderT call conn
     wherePart :: Schema (TupleWhereClause SQLiteDatabase row) -> TupleWhereClause SQLiteDatabase row -> QueryString
     wherePart rowSchema wc =
         case wc of
@@ -200,8 +199,7 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
                 orderPart =
                     case oc of
                         MkTupleOrderClause [] -> ""
-                        MkTupleOrderClause ocs ->
-                            " ORDER BY " <> (intercalate' "," $ fmap (schemaString rowSchema) ocs)
+                        MkTupleOrderClause ocs -> " ORDER BY " <> (intercalate' "," $ fmap (schemaString rowSchema) ocs)
                 in "SELECT " <> schemaString rowSchema sc <> fromPart <> wherePart rowSchema wc <> orderPart
     tableSchema ::
            TupleTableSel tablesel row -> (SQLite.TableSchema (RowColSel row), Dict (IsSQLiteTable (RowColSel row)))
@@ -233,8 +231,7 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
         in "DELETE FROM " <> fromString tableName <> wherePart tableColumnRefs wc
     sqliteEditQuery (DatabaseUpdate (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc (MkTupleUpdateClause uis)) = let
         tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
-        in "UPDATE " <> fromString tableName <> " SET " <>
-           intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <>
+        in "UPDATE " <> fromString tableName <> " SET " <> intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <>
            wherePart tableColumnRefs wc
     objRead :: MutableRead (ReaderT Connection IO) (SQLiteRead tablesel)
     objRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =

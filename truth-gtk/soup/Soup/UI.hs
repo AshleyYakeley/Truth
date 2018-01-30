@@ -47,8 +47,7 @@ soupEditSpec = let
     getaspect :: Aspect (MaybeEdit (UUIDElementEdit PossibleNoteEdit))
     getaspect =
         return $
-        Just $
-        ("item", uiLens (oneWholeLiftEditLens $ tupleEditLens EditSecond) $ uiOneWhole $ uiOneWhole noteEditSpec)
+        Just $ ("item", uiLens (oneWholeLiftEditLens $ tupleEditLens EditSecond) $ uiOneWhole $ uiOneWhole noteEditSpec)
     in uiSimpleTable [nameColumn, pastColumn] getaspect
 
 soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)

@@ -4,18 +4,18 @@ module Main
     ( main
     ) where
 
+import Control.Monad.IO.Class
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.State
 import Data.Sequences
+import Data.Type.Equality
 import Prelude
 import Subscribe
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck
 import Truth.Core
-import Data.Type.Equality
 import Unsafe.Coerce
-import Control.Monad.IO.Class
 
 instance (Arbitrary (Index seq), Integral (Index seq)) => Arbitrary (SequencePoint seq) where
     arbitrary = MkSequencePoint <$> (getNonNegative <$> arbitrary)
@@ -113,12 +113,13 @@ testLensGet =
         ioProperty $ do
             MkCloseUnlift unlift MkAnEditLens {..} <- stringSectionLens run
             let MkAnEditFunction {..} = elFunction
-            unlift $ withTransConstraintTM @MonadIO $ do
-                let
-                    expected :: String
-                    expected = subjectToRead base $ StringReadSection run
-                found <- mutableReadToSubject $ efGet $ subjectToMutableRead base
-                return $ found === expected
+            unlift $
+                withTransConstraintTM @MonadIO $ do
+                    let
+                        expected :: String
+                        expected = subjectToRead base $ StringReadSection run
+                    found <- mutableReadToSubject $ efGet $ subjectToMutableRead base
+                    return $ found === expected
 
 showVar :: Show a => String -> a -> String
 showVar name val = name ++ " = " ++ show val
@@ -128,9 +129,10 @@ counterexamples [] = id
 counterexamples (s:ss) = counterexample s . counterexamples ss
 
 unsafeRefl :: forall a b. a :~: b
-unsafeRefl  = unsafeCoerce Refl
+unsafeRefl = unsafeCoerce Refl
 
-lensUpdateGetProperty :: forall state edita editb.
+lensUpdateGetProperty ::
+       forall state edita editb.
        ( Show edita
        , Edit edita
        , FullSubjectReader (EditReader edita)
@@ -150,32 +152,34 @@ lensUpdateGetProperty getlens oldA editA =
     ioProperty @Property $ do
         MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens {..}) <- getlens
         case unsafeRefl @t @(StateT state) of
-            Refl -> unlift $ do
-                let MkAnEditFunction {..} = elFunction
-                editFirst <- get
-                newA <- mutableReadToSubject $ applyEdit editA $ subjectToMutableRead oldA
-                oldB <- mutableReadToSubject $ efGet $ subjectToMutableRead oldA
-                editBs <- efUpdate editA $ subjectToMutableRead oldA
-                newState <- get
-                newB1 <- mutableReadToSubject $ applyEdits editBs $ subjectToMutableRead oldB
-                newB2 <- mutableReadToSubject $ efGet $ subjectToMutableRead newA
-                let
-                    vars =
-                        [ showVar "oldA" oldA
-                        , showVar "oldState" editFirst
-                        , showVar "oldB" oldB
-                        , showVar "editA" editA
-                        , showVar "editBs" editBs
-                        , showVar "newA" newA
-                        , showVar "newState" newState
-                        , showVar "newB (edits)" newB1
-                        , showVar "newB (lens )" newB2
-                        ]
-                return $ counterexamples vars $ newB1 === newB2
+            Refl ->
+                unlift $ do
+                    let MkAnEditFunction {..} = elFunction
+                    editFirst <- get
+                    newA <- mutableReadToSubject $ applyEdit editA $ subjectToMutableRead oldA
+                    oldB <- mutableReadToSubject $ efGet $ subjectToMutableRead oldA
+                    editBs <- efUpdate editA $ subjectToMutableRead oldA
+                    newState <- get
+                    newB1 <- mutableReadToSubject $ applyEdits editBs $ subjectToMutableRead oldB
+                    newB2 <- mutableReadToSubject $ efGet $ subjectToMutableRead newA
+                    let
+                        vars =
+                            [ showVar "oldA" oldA
+                            , showVar "oldState" editFirst
+                            , showVar "oldB" oldB
+                            , showVar "editA" editA
+                            , showVar "editBs" editBs
+                            , showVar "newA" newA
+                            , showVar "newState" newState
+                            , showVar "newB (edits)" newB1
+                            , showVar "newB (lens )" newB2
+                            ]
+                    return $ counterexamples vars $ newB1 === newB2
 
 testLensUpdate :: TestTree
 testLensUpdate =
-    testProperty "update" $ \run (base :: String) edit -> lensUpdateGetProperty @(SequenceRun String) (stringSectionLens run) base edit
+    testProperty "update" $ \run (base :: String) edit ->
+        lensUpdateGetProperty @(SequenceRun String) (stringSectionLens run) base edit
 
 testStringSectionLens :: TestTree
 testStringSectionLens =
@@ -186,11 +190,23 @@ testStringSectionLens =
         , localOption (QuickCheckTests 1) $
           testGroup "update special" $
           [ testProperty "1 0" $
-            lensUpdateGetProperty @(SequenceRun String) (stringSectionLens $ seqRun 0 1) "A" (StringReplaceSection (seqRun 1 0) "x")
+            lensUpdateGetProperty
+                @(SequenceRun String)
+                (stringSectionLens $ seqRun 0 1)
+                "A"
+                (StringReplaceSection (seqRun 1 0) "x")
           , testProperty "4 1" $
-            lensUpdateGetProperty @(SequenceRun String) (stringSectionLens $ seqRun 0 5) "ABCDE" (StringReplaceSection (seqRun 4 1) "pqrstu")
+            lensUpdateGetProperty
+                @(SequenceRun String)
+                (stringSectionLens $ seqRun 0 5)
+                "ABCDE"
+                (StringReplaceSection (seqRun 4 1) "pqrstu")
           , testProperty "4 2" $
-            lensUpdateGetProperty @(SequenceRun String) (stringSectionLens $ seqRun 0 5) "ABCDE" (StringReplaceSection (seqRun 4 2) "pqrstu")
+            lensUpdateGetProperty
+                @(SequenceRun String)
+                (stringSectionLens $ seqRun 0 5)
+                "ABCDE"
+                (StringReplaceSection (seqRun 4 2) "pqrstu")
           ]
         ]
 

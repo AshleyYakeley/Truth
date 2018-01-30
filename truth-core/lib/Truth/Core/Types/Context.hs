@@ -200,8 +200,7 @@ liftContentEditFunction ::
 liftContentEditFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ liftContentAnEditFunction f
 
 carryContextEditFunction ::
-       EditFunction (ContextEdit editx edita) editb
-    -> EditFunction (ContextEdit editx edita) (ContextEdit editx editb)
+       EditFunction (ContextEdit editx edita) editb -> EditFunction (ContextEdit editx edita) (ContextEdit editx editb)
 carryContextEditFunction func =
     liftContentEditFunction (editLensFunction $ tupleEditLens EditContext) <.> contextualiseEditFunction func
 

@@ -1,4 +1,5 @@
 {-# OPTIONS -fno-warn-redundant-constraints #-}
+
 module Truth.Core.Types.None where
 
 import Truth.Core.Edit
@@ -49,6 +50,6 @@ noEditLens = let
     efGet :: ReadFunctionT IdentityT (EditReader edit) (EditReader edit)
     efGet mr = remonadMutableRead IdentityT mr
     efUpdate edit _ = never edit
-    elFunction = MkAnEditFunction{..}
+    elFunction = MkAnEditFunction {..}
     elPutEdit _ _ = return Nothing
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}

@@ -7,7 +7,7 @@ import Shapes.Import
 
 newtype FreeT m a = FreeT
     { runFreeT :: forall t. MonadTransUnlift t =>
-                                   t m a
+                                t m a
     }
 
 instance Monad m => Functor (FreeT m) where

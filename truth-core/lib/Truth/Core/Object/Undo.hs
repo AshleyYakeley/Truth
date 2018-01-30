@@ -5,6 +5,7 @@ module Truth.Core.Object.Undo
 
 --import Truth.Core.Edit
 import Truth.Core.Import
+
 --import Truth.Core.Object.Object
 --import Truth.Core.Object.Subscriber
 --import Truth.Core.Read
@@ -36,8 +37,7 @@ updateUndoQueue mr edits = do
 data UndoActions = MkUndoActions
     { uaUndo :: IO ()
     , uaRedo :: IO ()
-    }
-{-
+    } {-
 undoQueueSubscriber ::
        forall edit actions. InvertibleEdit edit
     => Subscriber edit actions

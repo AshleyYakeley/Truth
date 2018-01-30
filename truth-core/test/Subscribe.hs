@@ -35,6 +35,7 @@ goldenTest' ::
             IO ())
     -> TestTree
 goldenTest' name call = goldenTest name ("test/golden/" ++ name ++ ".ref") ("test/golden/" ++ name ++ ".out") call
+
 {-
 testEditor :: Editor (WholeEdit a) () a
 testEditor = let
@@ -44,9 +45,8 @@ testEditor = let
     in MkEditor {..}
 -}
 testSavable :: TestTree
-testSavable =
-    testCase "Savable" $ do
-        return ()
+testSavable = testCase "Savable" $ do return ()
+
 {-
         object <- freeIOObject False (\_ -> True)
         sub <- makeObjectSubscriber object
@@ -56,7 +56,6 @@ testSavable =
         found <- subscribeEditor cleanSaveSub testEditor
         assertEqual "value" False found
 -}
-
 instance Integral (Index seq) => Show (StringRead seq t) where
     show StringReadLength = "StringReadLength"
     show (StringReadSection run) = "StringReadSection " ++ show run
@@ -106,7 +105,8 @@ testOutputEditor name call = let
         subDontEdits :: [[edit]] -> IO ()
         subDontEdits editss = do
             outputLn "runObject"
-            run $ for_ editss $ \edits -> do
+            run $
+                for_ editss $ \edits -> do
                     outputLn $ "push " ++ show edits
                     maction <- push edits
                     case maction of
@@ -115,7 +115,8 @@ testOutputEditor name call = let
         subDoEdits :: [[edit]] -> IO ()
         subDoEdits editss = do
             outputLn "runObject"
-            run $ for_ editss $ \edits -> do
+            run $
+                for_ editss $ \edits -> do
                     outputLn $ "push " ++ show edits
                     maction <- push edits
                     case maction of

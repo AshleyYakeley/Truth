@@ -48,7 +48,7 @@ oneLiftEditFunction ::
 oneLiftEditFunction (MkCloseUnlift unlift ef) = MkCloseUnlift unlift $ oneLiftAnEditFunction ef
 
 oneLiftAnEditLens ::
-       forall t f edita editb. (MonadOne f,MonadTransTunnel t)
+       forall t f edita editb. (MonadOne f, MonadTransTunnel t)
     => AnEditLens t edita editb
     -> AnEditLens t (OneEdit f edita) (OneEdit f editb)
 oneLiftAnEditLens (MkAnEditLens ef pe) = let

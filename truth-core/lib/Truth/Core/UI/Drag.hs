@@ -18,8 +18,7 @@ uiDragSource :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec e
 uiDragSource datatype lens spec = MkUISpec $ MkUIDragSource datatype lens spec
 
 data UIDragDestination edit where
-    MkUIDragDestination
-        :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec edit -> UIDragDestination edit
+    MkUIDragDestination :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec edit -> UIDragDestination edit
 
 instance Show (UIDragDestination edit) where
     show (MkUIDragDestination typename _ spec) = "drag-destination " ++ typename ++ " " ++ show spec
