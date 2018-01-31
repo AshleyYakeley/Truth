@@ -6,9 +6,9 @@ import Truth.Core.Import
 import Truth.Core.Object.Object
 import Truth.Core.Read
 
-context :: String -> String -> String
-context "" b = b
-context a b = a ++ ": " ++ b
+contextStr :: String -> String -> String
+contextStr "" b = b
+contextStr a b = a ++ ": " ++ b
 
 traceBracketArgs :: MonadIO m => String -> String -> (r -> String) -> m r -> m r
 traceBracketArgs s args showr ma = do
@@ -32,9 +32,14 @@ blankEditShower = MkEditShower {showRead = \_ -> "", showReadResult = \_ _ -> ""
 traceObject :: forall edit. String -> EditShower edit -> Object edit -> Object edit
 traceObject prefix MkEditShower {..} (MkObject (run :: UnliftIO m) r e) = let
     run' :: UnliftIO m
-    run' m = traceBracket (context prefix "object") $ run m
+    run' m = traceBracket (contextStr prefix "object") $ run m
     r' :: MutableRead m (EditReader edit)
-    r' rt = traceBracketArgs (context prefix "read") (showRead rt) (showReadResult rt) $ r rt
+    r' rt = traceBracketArgs (contextStr prefix "read") (showRead rt) (showReadResult rt) $ r rt
     e' :: [edit] -> m (Maybe (m ()))
-    e' edits = (fmap $ fmap $ traceBracketArgs (context prefix "edit") (showEdits edits) (\_ -> "")) $ e edits
+    e' edits = (fmap $ fmap $ traceBracketArgs (contextStr prefix "edit") (showEdits edits) (\_ -> "")) $ e edits
     in MkObject run' r' e'
+
+traceUnlift :: MonadTransConstraint MonadIO t => String -> Unlift t -> Unlift t
+traceUnlift name unlift tma =
+    traceBracket (contextStr name "outside") $
+    unlift $ withTransConstraintTM @MonadIO $ traceBracket (contextStr name "inside") tma
