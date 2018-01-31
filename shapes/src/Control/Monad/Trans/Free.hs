@@ -21,8 +21,22 @@ instance Monad m => Monad (FreeT m) where
     return = pure
     (FreeT tma) >>= f = FreeT $ withTransConstraintTM @Monad $ tma >>= (runFreeT . f)
 
+instance MonadFail m => MonadFail (FreeT m) where
+    fail s = FreeT $ withTransConstraintTM @MonadFail $ fail s
+
 instance MonadIO m => MonadIO (FreeT m) where
     liftIO ioa = FreeT $ withTransConstraintTM @MonadIO $ liftIO ioa
+
+instance MonadFix m => MonadFix (FreeT m) where
+    mfix afma = FreeT $ withTransConstraintTM @MonadFix $ mfix $ \a -> runFreeT $ afma a
+
+instance MonadPlus m => Alternative (FreeT m) where
+    empty = FreeT $ withTransConstraintTM @MonadPlus $ empty
+    (FreeT ma) <|> (FreeT mb) = FreeT $ withTransConstraintTM @MonadPlus $ ma <|> mb
+
+instance MonadPlus m => MonadPlus (FreeT m) where
+    mzero = FreeT $ withTransConstraintTM @MonadPlus $ mzero
+    mplus (FreeT ma) (FreeT mb) = FreeT $ withTransConstraintTM @MonadPlus $ mplus ma mb
 
 instance MonadTrans FreeT where
     lift ma = FreeT $ lift ma
@@ -30,7 +44,16 @@ instance MonadTrans FreeT where
 instance MonadTransConstraint Monad FreeT where
     hasTransConstraint = Dict
 
+instance MonadTransConstraint MonadFail FreeT where
+    hasTransConstraint = Dict
+
 instance MonadTransConstraint MonadIO FreeT where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadFix FreeT where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadPlus FreeT where
     hasTransConstraint = Dict
 
 instance MonadTransTunnel FreeT where

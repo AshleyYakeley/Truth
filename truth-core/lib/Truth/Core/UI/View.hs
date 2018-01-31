@@ -92,7 +92,7 @@ mapViewResultEdit lens@(MkCloseUnlift unlift flens) (MkViewResult w updateB a) =
         -> m ()
     updateA mrA editsA =
         unlift $
-        withTransConstraintTM @MonadIO $ do
+        withTransConstraintTM @MonadUnliftIO $ do
             editsB <- efUpdates elFunction editsA mrA
             updateB (efGet mrA) editsB
     a' = mapAspect lens a

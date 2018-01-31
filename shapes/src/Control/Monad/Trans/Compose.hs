@@ -7,7 +7,7 @@ import Shapes.Import
 
 newtype ComposeT (t1 :: (* -> *) -> (* -> *)) (t2 :: (* -> *) -> (* -> *)) (m :: * -> *) (a :: *) = MkComposeT
     { unComposeT :: t1 (t2 m) a
-    } deriving (Functor, Applicative, Monad, MonadIO)
+    } deriving (Functor, Applicative, Alternative, Monad, MonadFail, MonadIO, MonadFix, MonadPlus)
 
 lift1ComposeT :: (MonadTransTunnel t1, MonadTrans t2, Monad m) => t1 m a -> ComposeT t1 t2 m a
 lift1ComposeT t1ma = MkComposeT $ remonad lift t1ma
@@ -46,7 +46,7 @@ lift2ComposeTWithUnlift ::
     => ((forall a. ComposeT t1 t2 m a -> t2 m a) -> t2 m r)
     -> ComposeT t1 t2 m r
 lift2ComposeTWithUnlift call =
-    case hasTransConstraint @MonadIO @t2 @m of
+    case hasTransConstraint @MonadUnliftIO @t2 @m of
         Dict -> MkComposeT $ liftWithUnlift $ \unlift -> call $ \(MkComposeT ttma) -> unlift ttma
 
 instance (MonadTrans t1, MonadTransConstraint Monad t2) => MonadTrans (ComposeT t1 t2) where
@@ -76,6 +76,39 @@ instance (MonadTransConstraint MonadIO t1, MonadTransConstraint Monad t2, MonadT
                 case hasTransConstraint @MonadIO @t1 @(t2 m) of
                     Dict -> Dict
 
+instance (MonadTransConstraint MonadFail t1, MonadTransConstraint Monad t2, MonadTransConstraint MonadFail t2) =>
+         MonadTransConstraint MonadFail (ComposeT t1 t2) where
+    hasTransConstraint ::
+           forall m. MonadFail m
+        => Dict (MonadFail (ComposeT t1 t2 m))
+    hasTransConstraint =
+        case hasTransConstraint @MonadFail @t2 @m of
+            Dict ->
+                case hasTransConstraint @MonadFail @t1 @(t2 m) of
+                    Dict -> Dict
+
+instance (MonadTransConstraint MonadFix t1, MonadTransConstraint Monad t2, MonadTransConstraint MonadFix t2) =>
+         MonadTransConstraint MonadFix (ComposeT t1 t2) where
+    hasTransConstraint ::
+           forall m. MonadFix m
+        => Dict (MonadFix (ComposeT t1 t2 m))
+    hasTransConstraint =
+        case hasTransConstraint @MonadFix @t2 @m of
+            Dict ->
+                case hasTransConstraint @MonadFix @t1 @(t2 m) of
+                    Dict -> Dict
+
+instance (MonadTransConstraint MonadPlus t1, MonadTransConstraint Monad t2, MonadTransConstraint MonadPlus t2) =>
+         MonadTransConstraint MonadPlus (ComposeT t1 t2) where
+    hasTransConstraint ::
+           forall m. MonadPlus m
+        => Dict (MonadPlus (ComposeT t1 t2 m))
+    hasTransConstraint =
+        case hasTransConstraint @MonadPlus @t2 @m of
+            Dict ->
+                case hasTransConstraint @MonadPlus @t1 @(t2 m) of
+                    Dict -> Dict
+
 instance (MonadTransTunnel t1, MonadTransTunnel t2) => MonadTransTunnel (ComposeT t1 t2) where
     tunnel :: forall m2 r. (forall a. (forall m1. ComposeT t1 t2 m1 r -> m1 a) -> m2 a) -> ComposeT t1 t2 m2 r
     tunnel call =
@@ -95,7 +128,7 @@ instance (MonadTransUnlift t1, MonadTransUnlift t2) => MonadTransUnlift (Compose
         => ((forall a. ComposeT t1 t2 m a -> m a) -> m r)
         -> ComposeT t1 t2 m r
     liftWithUnlift call =
-        case hasTransConstraint @MonadIO @t2 @m of
+        case hasTransConstraint @MonadUnliftIO @t2 @m of
             Dict ->
                 MkComposeT $
                 liftWithUnlift $ \unlift1 ->

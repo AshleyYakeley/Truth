@@ -17,7 +17,7 @@ instance MonadStackIO IO where
     toMonadStack = IdentityT
     fromMonadStack = runIdentityT
 
-instance (MonadTransUnlift t, MonadStackIO m, MonadIO (t m)) => MonadStackIO (t m) where
+instance (MonadTransUnlift t, MonadStackIO m, MonadUnliftIO (t m)) => MonadStackIO (t m) where
     type MonadStackTrans (t m) = ComposeT t (MonadStackTrans m)
     toMonadStack tma = MkComposeT $ remonad toMonadStack tma
     fromMonadStack (MkComposeT tt) = remonad fromMonadStack tt
@@ -27,14 +27,14 @@ instance MonadTransUnlift t => MonadTransConstraint MonadStackIO t where
            forall m. MonadStackIO m
         => Dict (MonadStackIO (t m))
     hasTransConstraint =
-        case hasTransConstraint @MonadIO @t @m of
+        case hasTransConstraint @MonadUnliftIO @t @m of
             Dict -> Dict
 
 isCombineMonadIO ::
        forall ma mb. (MonadStackIO ma, MonadStackIO mb)
     => Dict (MonadStackIO (CombineMonadIO ma mb))
 isCombineMonadIO =
-    case hasTransConstraint @MonadIO @(MonadStackTrans ma) @mb of
+    case hasTransConstraint @MonadUnliftIO @(MonadStackTrans ma) @mb of
         Dict -> Dict
 
 type CombineMonadIO ma mb = MonadStackTrans ma mb

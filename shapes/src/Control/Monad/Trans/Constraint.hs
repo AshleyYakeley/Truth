@@ -26,10 +26,28 @@ withTransConstraintTM' tma =
     case hasTransConstraint @c @t @m of
         Dict -> tma
 
+withTransConstraintDict ::
+       forall c t m c'. (MonadTransConstraint c t, c m)
+    => (c (t m) =>
+            Dict (c' (t m)))
+    -> Dict (c' (t m))
+withTransConstraintDict dict =
+    case hasTransConstraint @c @t @m of
+        Dict -> dict
+
 instance MonadTransConstraint Monad IdentityT where
     hasTransConstraint = Dict
 
 instance MonadTransConstraint MonadIO IdentityT where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadFail IdentityT where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadFix IdentityT where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadPlus IdentityT where
     hasTransConstraint = Dict
 
 instance MonadTransConstraint Monad (ReaderT s) where
@@ -38,10 +56,28 @@ instance MonadTransConstraint Monad (ReaderT s) where
 instance MonadTransConstraint MonadIO (ReaderT s) where
     hasTransConstraint = Dict
 
+instance MonadTransConstraint MonadFail (ReaderT s) where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadFix (ReaderT s) where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadPlus (ReaderT s) where
+    hasTransConstraint = Dict
+
 instance Monoid s => MonadTransConstraint Monad (WriterT s) where
     hasTransConstraint = Dict
 
 instance Monoid s => MonadTransConstraint MonadIO (WriterT s) where
+    hasTransConstraint = Dict
+
+instance Monoid s => MonadTransConstraint MonadFail (WriterT s) where
+    hasTransConstraint = Dict
+
+instance Monoid s => MonadTransConstraint MonadFix (WriterT s) where
+    hasTransConstraint = Dict
+
+instance Monoid s => MonadTransConstraint MonadPlus (WriterT s) where
     hasTransConstraint = Dict
 
 instance MonadTransConstraint Monad (StateT s) where
@@ -50,10 +86,28 @@ instance MonadTransConstraint Monad (StateT s) where
 instance MonadTransConstraint MonadIO (StateT s) where
     hasTransConstraint = Dict
 
+instance MonadTransConstraint MonadFail (StateT s) where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadFix (StateT s) where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadPlus (StateT s) where
+    hasTransConstraint = Dict
+
 instance MonadTransConstraint Monad MaybeT where
     hasTransConstraint = Dict
 
 instance MonadTransConstraint MonadIO MaybeT where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadFail MaybeT where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadFix MaybeT where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadPlus MaybeT where
     hasTransConstraint = Dict
 
 instance MonadTransConstraint Monad (ExceptT e) where
@@ -62,14 +116,32 @@ instance MonadTransConstraint Monad (ExceptT e) where
 instance MonadTransConstraint MonadIO (ExceptT e) where
     hasTransConstraint = Dict
 
+instance MonadTransConstraint MonadFail (ExceptT e) where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadFix (ExceptT e) where
+    hasTransConstraint = Dict
+
+instance Monoid e => MonadTransConstraint MonadPlus (ExceptT e) where
+    hasTransConstraint = Dict
+
 instance MonadTransConstraint Monad ListT where
     hasTransConstraint = Dict
 
 instance MonadTransConstraint MonadIO ListT where
     hasTransConstraint = Dict
 
+instance MonadTransConstraint MonadFail ListT where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadPlus ListT where
+    hasTransConstraint = Dict
+
 instance MonadTransConstraint Monad (ContT s) where
     hasTransConstraint = Dict
 
 instance MonadTransConstraint MonadIO (ContT s) where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadFail (ContT s) where
     hasTransConstraint = Dict

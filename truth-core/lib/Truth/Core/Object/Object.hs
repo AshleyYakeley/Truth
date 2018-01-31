@@ -28,7 +28,7 @@ mapObject ::
     -> Object edita
     -> Object editb
 mapObject (MkCloseUnlift (lensRun :: Unlift tl) lens@MkAnEditLens {..}) (MkObject (objRunA :: UnliftIO mr) objReadA objEditA)
-    | Dict <- hasTransConstraint @MonadIO @tl @mr = let
+    | Dict <- hasTransConstraint @MonadUnliftIO @tl @mr = let
         MkAnEditFunction {..} = elFunction
         objRunB :: UnliftIO (tl mr)
         objRunB = objRunA . lensRun . impotent -- revert lens effects: all these effects will be replayed by the update

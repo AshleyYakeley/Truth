@@ -12,7 +12,7 @@ identityUnlift :: Unlift IdentityT
 identityUnlift = runIdentityT
 
 composeUnlift :: MonadTransUnlift tb => Unlift ta -> Unlift tb -> Unlift (ComposeT ta tb)
-composeUnlift ua ub (MkComposeT tatbma) = ub $ withTransConstraintTM @MonadIO $ ua tatbma
+composeUnlift ua ub (MkComposeT tatbma) = ub $ withTransConstraintTM @MonadUnliftIO $ ua tatbma
 
 mvarUnlift :: MVar s -> Unlift (StateT s)
 mvarUnlift var (StateT smr) = liftIOWithUnlift $ \unlift -> modifyMVar var $ \olds -> unlift $ fmap swap $ smr olds

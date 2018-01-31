@@ -43,7 +43,7 @@ dictWorkaround = Dict
 
 directorySoup :: Object FSEdit -> FilePath -> Object (SoupEdit (MutableIOEdit ByteStringEdit))
 directorySoup (MkObject (runFS :: UnliftIO m) readFS pushFS) dirpath =
-    case hasTransConstraint @MonadIO @(MonadStackTrans m) @(AutoClose FilePath (Object ByteStringEdit)) of
+    case hasTransConstraint @MonadUnliftIO @(MonadStackTrans m) @(AutoClose FilePath (Object ByteStringEdit)) of
         Dict -> let
             runSoup :: UnliftIO (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)))
             runSoup = combineUnliftIOs runFS runAutoClose

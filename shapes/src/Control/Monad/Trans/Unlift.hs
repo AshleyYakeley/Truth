@@ -4,7 +4,12 @@ import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Tunnel
 import Shapes.Import
 
-class (MonadTransConstraint MonadIO t, MonadTransTunnel t) =>
+class ( MonadTransConstraint MonadFail t
+      , MonadTransConstraint MonadIO t
+      , MonadTransConstraint MonadFix t
+      , MonadTransConstraint MonadPlus t
+      , MonadTransTunnel t
+      ) =>
       MonadTransUnlift t where
     liftWithUnlift ::
            forall m r. MonadUnliftIO m
@@ -16,7 +21,7 @@ class (MonadTransConstraint MonadIO t, MonadTransTunnel t) =>
         => t m a
         -> t m a
 
-class MonadIO m =>
+class (MonadFail m, MonadIO m, MonadFix m) =>
       MonadUnliftIO m where
     liftIOWithUnlift :: forall r. ((forall a. m a -> IO a) -> IO r) -> m r
     -- | perform action without any transformer effects (such as state change or output)
@@ -26,9 +31,14 @@ instance MonadUnliftIO IO where
     liftIOWithUnlift call = call id
     impotentIO = id
 
-instance (MonadTransUnlift t, MonadUnliftIO m, MonadIO (t m)) => MonadUnliftIO (t m) where
+instance (MonadTransUnlift t, MonadUnliftIO m, MonadFail (t m), MonadIO (t m), MonadFix (t m)) =>
+         MonadUnliftIO (t m) where
     liftIOWithUnlift call = liftWithUnlift $ \tmama -> liftIOWithUnlift $ \maioa -> call $ maioa . tmama
     impotentIO tma = impotent $ remonad impotentIO tma
+
+instance MonadTransUnlift t => MonadTransConstraint MonadUnliftIO t where
+    hasTransConstraint =
+        withTransConstraintDict @MonadFail $ withTransConstraintDict @MonadIO $ withTransConstraintDict @MonadFix $ Dict
 
 instance MonadTransUnlift IdentityT where
     liftWithUnlift call = IdentityT $ call $ runIdentityT
