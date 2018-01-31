@@ -25,15 +25,6 @@ fileTextWindow saveOpt path = do
         wholeTextObj = cacheObject $ mapObject textLens bsObj
     if saveOpt
         then do
-            fail "NYI: save & undo"
-        else do
-            let
-                textObj :: Object (OneWholeEdit (Result String) (StringEdit String))
-                textObj = convertObject wholeTextObj
-            textSub <- makeObjectSubscriber textObj
-            return $ MkSomeUIWindow $ MkUIWindow (takeFileName path) (uiOneWhole uiStringText) textSub
-
-{-
             let
                 baseSub :: Subscriber (WholeEdit ((Result String) String)) ()
                 baseSub = objectSubscriber wholeTextObj
@@ -44,7 +35,13 @@ fileTextWindow saveOpt path = do
                 undoBufferSub = undoQueueSubscriber bufferSub
             textSub <- makeSharedSubscriber undoBufferSub
             return $ MkSomeUIWindow $ MkUIWindow (takeFileName path) (uiOneWhole uiStringText) textSub
--}
+        else do
+            let
+                textObj :: Object (OneWholeEdit (Result String) (StringEdit String))
+                textObj = convertObject wholeTextObj
+            textSub <- makeObjectSubscriber textObj
+            return $ MkSomeUIWindow $ MkUIWindow (takeFileName path) (uiOneWhole uiStringText) textSub
+
 optParser :: O.Parser ([FilePath], Bool, Bool)
 optParser = (,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') <*> O.switch (O.long "save")
 
