@@ -5,6 +5,8 @@ import Truth.Core.Import
 import Truth.Core.Read
 import Truth.Core.Sequence
 
+import Truth.Debug
+
 data StringRead seq t where
     StringReadLength :: StringRead seq (SequencePoint seq)
     StringReadSection :: SequenceRun seq -> StringRead seq seq
@@ -168,4 +170,4 @@ stringSectionLens initial =
                             runa = relativeRun (negate $ runStart oldstate) runb
                         put oldstate {runLength = newlength}
                         return $ Just [StringReplaceSection runa sb]
-            in MkCloseUnlift (mvarUnlift var) MkAnEditLens {..}
+            in MkCloseUnlift (traceUnlift "stringSectionLens" $ mvarUnlift var) MkAnEditLens {..}

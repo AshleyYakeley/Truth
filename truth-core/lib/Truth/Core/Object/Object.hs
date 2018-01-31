@@ -7,6 +7,7 @@ import Truth.Core.Types.None
 import Truth.Core.Types.Pair
 import Truth.Core.Types.Tuple
 import Truth.Core.Types.Whole
+import Truth.Debug
 
 data Object edit = forall m. MonadStackIO m =>
                              MkObject
@@ -31,7 +32,7 @@ mapObject (MkCloseUnlift (lensRun :: Unlift tl) lens@MkAnEditLens {..}) (MkObjec
     | Dict <- hasTransConstraint @MonadUnliftIO @tl @mr = let
         MkAnEditFunction {..} = elFunction
         objRunB :: UnliftIO (tl mr)
-        objRunB = objRunA . lensRun . impotent -- revert lens effects: all these effects will be replayed by the update
+        objRunB = objRunA . (traceUnlift "mapObject" lensRun) . impotent -- revert lens effects: all these effects will be replayed by the update
         objReadB :: MutableRead (tl mr) (EditReader editb)
         objReadB = efGet objReadA
         objEditB :: [editb] -> tl mr (Maybe (tl mr ()))

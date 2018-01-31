@@ -10,6 +10,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.Object
 import Truth.Core.Read
+import Truth.Debug
 
 newtype Subscriber edit actions = MkSubscriber
     { subscribe :: forall editor. (Object edit -> IO editor) -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
@@ -93,7 +94,7 @@ objectSubscriber (MkObject run r e) =
                                 return $
                                 Just $ do
                                     action
-                                    update editor r edits
+                                    traceBracket "objectSubscriber.update" $ update editor r edits
                     in MkObject run r e'
         return (editor, return (), ())
 

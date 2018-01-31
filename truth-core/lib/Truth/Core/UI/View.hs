@@ -34,6 +34,7 @@ import Truth.Core.Read
 import Truth.Core.Types
 import Truth.Core.UI.Lens
 import Truth.Core.UI.Specifier
+import Truth.Debug
 
 data ViewResult edit w = MkViewResult
     { vrWidget :: w
@@ -91,6 +92,7 @@ mapViewResultEdit lens@(MkCloseUnlift unlift flens) (MkViewResult w updateB a) =
         -> [edita]
         -> m ()
     updateA mrA editsA =
+        traceUnlift "mapViewResultEdit.updateA"
         unlift $
         withTransConstraintTM @MonadUnliftIO $ do
             editsB <- efUpdates elFunction editsA mrA
@@ -207,6 +209,7 @@ mapUpdates ::
                       MutableRead (t m) (EditReader editb) -> [editb] -> t m r)
     -> m r
 mapUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnEditFunction {..}) mrA editsA call =
+    traceUnlift "mapUpdates"
     unlift $
     withTransConstraintTM @MonadIO $ do
         editsB <- efUpdates ef editsA mrA

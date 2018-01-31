@@ -3,8 +3,8 @@ module Truth.Debug where
 import Debug.Trace
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.Object
-import Truth.Core.Read
+--import Truth.Core.Object.Object
+--import Truth.Core.Read
 
 contextStr :: String -> String -> String
 contextStr "" b = b
@@ -28,7 +28,7 @@ data EditShower edit = MkEditShower
 
 blankEditShower :: EditShower edit
 blankEditShower = MkEditShower {showRead = \_ -> "", showReadResult = \_ _ -> "", showEdits = \_ -> ""}
-
+{-
 traceObject :: forall edit. String -> EditShower edit -> Object edit -> Object edit
 traceObject prefix MkEditShower {..} (MkObject (run :: UnliftIO m) r e) = let
     run' :: UnliftIO m
@@ -38,7 +38,7 @@ traceObject prefix MkEditShower {..} (MkObject (run :: UnliftIO m) r e) = let
     e' :: [edit] -> m (Maybe (m ()))
     e' edits = (fmap $ fmap $ traceBracketArgs (contextStr prefix "edit") (showEdits edits) (\_ -> "")) $ e edits
     in MkObject run' r' e'
-
+-}
 traceUnlift :: MonadTransConstraint MonadIO t => String -> Unlift t -> Unlift t
 traceUnlift name unlift tma =
     traceBracket (contextStr name "outside") $
