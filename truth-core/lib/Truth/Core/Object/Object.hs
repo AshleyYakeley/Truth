@@ -15,82 +15,6 @@ data Object edit = forall m. MonadStackIO m =>
     , objEdit :: [edit] -> m (Maybe (m ()))
     }
 
-pushEdit :: Monad m => m (Maybe (m ())) -> m ()
-pushEdit mmmu = do
-    mmu <- mmmu
-    case mmu of
-        Just mu -> mu
-        Nothing -> return ()
-
-mapObject ::
-       forall edita editb. Edit edita
-    => EditLens edita editb
-    -> Object edita
-    -> Object editb
-mapObject (MkCloseUnlift (lensRun :: Unlift tl) lens@MkAnEditLens {..}) (MkObject (objRunA :: UnliftIO mr) objReadA objEditA)
-    | Dict <- hasTransConstraint @MonadUnliftIO @tl @mr = let
-        MkAnEditFunction {..} = elFunction
-        objRunB :: UnliftIO (tl mr)
-        objRunB = objRunA . lensRun . impotent -- revert lens effects: all these effects will be replayed by the update
-        objReadB :: MutableRead (tl mr) (EditReader editb)
-        objReadB = efGet objReadA
-        objEditB :: [editb] -> tl mr (Maybe (tl mr ()))
-        objEditB editbs = do
-            meditas <- elPutEdits lens editbs objReadA
-            case meditas of
-                Nothing -> return Nothing
-                Just editas -> do
-                    mmu <- lift $ objEditA editas
-                    case mmu of
-                        Nothing -> return Nothing
-                        Just mu -> return $ Just $ lift mu
-        in MkObject @editb @(tl mr) objRunB objReadB objEditB
-
-pairObjects :: forall edita editb. Object edita -> Object editb -> Object (PairEdit edita editb)
-pairObjects (MkObject (runA :: UnliftIO ma) readA editA) (MkObject (runB :: UnliftIO mb) readB editB) =
-    case isCombineMonadIO @ma @mb of
-        Dict -> let
-            runAB :: UnliftIO (CombineMonadIO ma mb)
-            runAB = combineUnliftIOs runA runB
-            readAB :: MutableRead (CombineMonadIO ma mb) (PairEditReader edita editb)
-            readAB (MkTupleEditReader EditFirst r) = combineLiftFst @ma @mb $ readA r
-            readAB (MkTupleEditReader EditSecond r) = combineLiftSnd @ma @mb $ readB r
-            editAB :: [PairEdit edita editb] -> CombineMonadIO ma mb (Maybe (CombineMonadIO ma mb ()))
-            editAB edits = let
-                (eas, ebs) = partitionPairEdits edits
-                in liftA2
-                       (liftA2 $ \mau mbu -> (>>) (combineLiftFst @ma @mb mau) (combineLiftSnd @ma @mb mbu))
-                       (combineLiftFst @ma @mb $ editA eas)
-                       (combineLiftSnd @ma @mb $ editB ebs)
-            in MkObject runAB readAB editAB
-
-constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit
-constantObject subj = MkObject identityUnlift (subjectToMutableRead subj) $ \_ -> return Nothing
-
-alwaysEdit :: Monad m => ([edit] -> m ()) -> [edit] -> m (Maybe (m ()))
-alwaysEdit em edits = return $ Just $ em edits
-
-singleAlwaysEdit :: Monad m => (edit -> m ()) -> [edit] -> m (Maybe (m ()))
-singleAlwaysEdit em = alwaysEdit $ \edits -> for_ edits em
-
-testEditAction :: IO Bool -> IO () -> IO (Maybe (IO ()))
-testEditAction test action = do
-    ok <- test
-    return $
-        if ok
-            then Just action
-            else Nothing
-
-singleEdit :: Monad m => (edit -> m (Maybe (m ()))) -> [edit] -> m (Maybe (m ()))
-singleEdit call edits =
-    getCompose $ do
-        actions <- for edits $ \edit -> Compose $ call edit
-        return $ for_ actions id
-
-{-
-nonlockingObject :: MutableEdit IO edit -> Object edit
-nonlockingObject muted = MkObject $ \call -> call muted
--}
 noneObject :: Object (NoEdit (NoReader t))
 noneObject = let
     objRun :: UnliftIO IO
@@ -122,6 +46,60 @@ freeIOObject firsta allowed = do
     var <- newMVar firsta
     return $ mvarObject var allowed
 
+pushEdit :: Monad m => m (Maybe (m ())) -> m ()
+pushEdit mmmu = do
+    mmu <- mmmu
+    case mmu of
+        Just mu -> mu
+        Nothing -> return ()
+
+mapObject ::
+       forall edita editb. Edit edita
+    => EditLens edita editb
+    -> Object edita
+    -> Object editb
+mapObject (MkCloseUnlift (lensRun :: Unlift tl) lens@MkAnEditLens {..}) (MkObject (objRunA :: UnliftIO mr) objReadA objEditA)
+    | Dict <- hasTransConstraint @MonadUnliftIO @tl @mr = let
+        MkAnEditFunction {..} = elFunction
+        objRunB :: UnliftIO (tl mr)
+        objRunB = objRunA . lensRun . impotent -- revert lens effects: all these effects will be replayed by the update
+        objReadB :: MutableRead (tl mr) (EditReader editb)
+        objReadB = efGet objReadA
+        objEditB :: [editb] -> tl mr (Maybe (tl mr ()))
+        objEditB editbs = do
+            meditas <- elPutEdits lens editbs objReadA
+            case meditas of
+                Nothing -> return Nothing
+                Just editas -> do
+                    mmu <- lift $ objEditA editas
+                    case mmu of
+                        Nothing -> return Nothing
+                        Just mu -> return $ Just $ lift mu
+        in MkObject @editb @(tl mr) objRunB objReadB objEditB
+
+constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit
+constantObject subj = MkObject identityUnlift (subjectToMutableRead subj) $ \_ -> return Nothing
+
+alwaysEdit :: Monad m => ([edit] -> m ()) -> [edit] -> m (Maybe (m ()))
+alwaysEdit em edits = return $ Just $ em edits
+
+singleAlwaysEdit :: Monad m => (edit -> m ()) -> [edit] -> m (Maybe (m ()))
+singleAlwaysEdit em = alwaysEdit $ \edits -> for_ edits em
+
+testEditAction :: IO Bool -> IO () -> IO (Maybe (IO ()))
+testEditAction test action = do
+    ok <- test
+    return $
+        if ok
+            then Just action
+            else Nothing
+
+singleEdit :: Monad m => (edit -> m (Maybe (m ()))) -> [edit] -> m (Maybe (m ()))
+singleEdit call edits =
+    getCompose $ do
+        actions <- for edits $ \edit -> Compose $ call edit
+        return $ for_ actions id
+
 convertObject :: (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb) => Object edita -> Object editb
 convertObject = mapObject convertEditLens
 
@@ -149,3 +127,21 @@ cacheObject (MkObject (run :: UnliftIO m) rd push) = let
     push' :: [WholeEdit t] -> StateT t m (Maybe (StateT t m ()))
     push' = singleAlwaysEdit $ \(MkWholeEdit t) -> put t
     in MkObject run' rd' push'
+
+pairObjects :: forall edita editb. Object edita -> Object editb -> Object (PairEdit edita editb)
+pairObjects (MkObject (runA :: UnliftIO ma) readA editA) (MkObject (runB :: UnliftIO mb) readB editB) =
+    case isCombineMonadIO @ma @mb of
+        Dict -> let
+            runAB :: UnliftIO (CombineMonadIO ma mb)
+            runAB = combineUnliftIOs runA runB
+            readAB :: MutableRead (CombineMonadIO ma mb) (PairEditReader edita editb)
+            readAB (MkTupleEditReader EditFirst r) = combineLiftFst @ma @mb $ readA r
+            readAB (MkTupleEditReader EditSecond r) = combineLiftSnd @ma @mb $ readB r
+            editAB :: [PairEdit edita editb] -> CombineMonadIO ma mb (Maybe (CombineMonadIO ma mb ()))
+            editAB edits = let
+                (eas, ebs) = partitionPairEdits edits
+                in liftA2
+                       (liftA2 $ \mau mbu -> (>>) (combineLiftFst @ma @mb mau) (combineLiftSnd @ma @mb mbu))
+                       (combineLiftFst @ma @mb $ editA eas)
+                       (combineLiftSnd @ma @mb $ editB ebs)
+            in MkObject runAB readAB editAB
