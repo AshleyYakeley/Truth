@@ -1,5 +1,3 @@
-{-# OPTIONS -fno-warn-redundant-constraints #-}
-
 module Pinafore.Edit
     ( Predicate(..)
     , Point(..)

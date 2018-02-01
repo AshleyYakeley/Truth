@@ -1,5 +1,3 @@
-{-# OPTIONS -fno-warn-redundant-constraints #-}
-
 module Truth.Core.Edit.Function where
 
 import Truth.Core.Edit.Edit

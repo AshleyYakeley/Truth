@@ -1,5 +1,4 @@
 {-# OPTIONS -fno-warn-orphans #-}
-{-# OPTIONS -fno-warn-redundant-constraints #-}
 
 module Truth.Core.Types.ConsTuple where
 

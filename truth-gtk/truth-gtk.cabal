@@ -58,7 +58,6 @@ library
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances
@@ -141,7 +140,6 @@ test-suite test
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances
@@ -211,7 +209,6 @@ executable truth-text
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances
@@ -277,7 +274,6 @@ executable truth-soup
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances
