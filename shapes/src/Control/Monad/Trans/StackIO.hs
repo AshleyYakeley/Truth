@@ -52,4 +52,5 @@ combineLiftSnd ::
 combineLiftSnd = lift
 
 combineUnliftIOs :: MonadStackIO ma => UnliftIO ma -> UnliftIO mb -> UnliftIO (CombineMonadIO ma mb)
-combineUnliftIOs unlifta unliftb cmr = unlifta $ fromMonadStack $ remonad unliftb cmr
+combineUnliftIOs (MkUnliftIO unlifta) (MkUnliftIO unliftb) =
+    MkUnliftIO $ \cmr -> unlifta $ fromMonadStack $ remonad unliftb cmr

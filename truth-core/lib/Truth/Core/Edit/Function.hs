@@ -96,4 +96,4 @@ editFunctionRead ::
     => EditFunction edita editb
     -> MutableRead m (EditReader edita)
     -> MutableRead m (EditReader editb)
-editFunctionRead (MkCloseUnlift unlift (MkAnEditFunction g _)) mr rt = unlift $ g mr rt
+editFunctionRead (MkCloseUnlift unlift (MkAnEditFunction g _)) mr rt = runUnlift unlift $ g mr rt

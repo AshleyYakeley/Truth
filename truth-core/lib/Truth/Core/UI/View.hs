@@ -82,7 +82,7 @@ mapViewResultEdit ::
     => EditLens edita editb
     -> ViewResult editb w
     -> ViewResult edita w
-mapViewResultEdit lens@(MkCloseUnlift unlift flens) (MkViewResult w updateB a) = let
+mapViewResultEdit lens@(MkCloseUnlift (MkUnlift unlift) flens) (MkViewResult w updateB a) = let
     MkAnEditLens {..} = flens
     MkAnEditFunction {..} = elFunction
     updateA ::
@@ -155,7 +155,7 @@ viewObjectRead ::
     -> View edit r
 viewObjectRead call = do
     MkObject {..} <- viewObject
-    liftIO $ objRun $ call $ objRead
+    liftIO $ runUnliftIO objRun $ call $ objRead
 
 viewObjectMaybeEdit ::
        (forall m. MonadUnliftIO m =>
@@ -163,7 +163,7 @@ viewObjectMaybeEdit ::
     -> View edit r
 viewObjectMaybeEdit call = do
     MkObject {..} <- viewObject
-    liftIO $ objRun $ call $ objEdit
+    liftIO $ runUnliftIO objRun $ call $ objEdit
 
 viewObjectPushEdit ::
        (forall m. MonadUnliftIO m =>
@@ -206,7 +206,7 @@ mapUpdates ::
     -> (forall t. MonadTransUnlift t =>
                       MutableRead (t m) (EditReader editb) -> [editb] -> t m r)
     -> m r
-mapUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnEditFunction {..}) mrA editsA call =
+mapUpdates (MkCloseUnlift (MkUnlift unlift :: Unlift t) ef@MkAnEditFunction {..}) mrA editsA call =
     unlift $
     withTransConstraintTM @MonadIO $ do
         editsB <- efUpdates ef editsA mrA

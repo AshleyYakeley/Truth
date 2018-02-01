@@ -80,7 +80,7 @@ createFile path bs = do
 fileSystemObject :: Object FSEdit
 fileSystemObject = let
     objRun :: UnliftIO IO
-    objRun = id
+    objRun = MkUnliftIO id
     objRead :: MutableRead IO FSReader
     objRead (FSReadDirectory path) = do
         isDir <- doesDirectoryExist path

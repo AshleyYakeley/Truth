@@ -18,7 +18,7 @@ data Object edit = forall m. MonadStackIO m =>
 noneObject :: Object (NoEdit (NoReader t))
 noneObject = let
     objRun :: UnliftIO IO
-    objRun = id
+    objRun = MkUnliftIO id
     objRead :: MutableRead IO (NoReader t)
     objRead = never
     objEdit :: [NoEdit (NoReader t)] -> IO (Maybe (IO ()))
@@ -29,7 +29,7 @@ noneObject = let
 mvarObject :: forall a. MVar a -> (a -> Bool) -> Object (WholeEdit a)
 mvarObject var allowed = let
     objRun :: UnliftIO (StateT a IO)
-    objRun = mvarUnlift var
+    objRun = mvarUnliftIO var
     objRead :: MutableRead (StateT a IO) (WholeReader a)
     objRead ReadWhole = get
     objEdit :: [WholeEdit a] -> StateT a IO (Maybe (StateT a IO ()))
@@ -58,11 +58,15 @@ mapObject ::
     => EditLens edita editb
     -> Object edita
     -> Object editb
-mapObject (MkCloseUnlift (lensRun :: Unlift tl) lens@MkAnEditLens {..}) (MkObject (objRunA :: UnliftIO mr) objReadA objEditA)
+mapObject (MkCloseUnlift (MkUnlift lensRun :: Unlift tl) lens@MkAnEditLens {..}) (MkObject (MkUnliftIO objRunA :: UnliftIO mr) objReadA objEditA)
     | Dict <- hasTransConstraint @MonadUnliftIO @tl @mr = let
         MkAnEditFunction {..} = elFunction
         objRunB :: UnliftIO (tl mr)
-        objRunB = objRunA . lensRun . impotent -- revert lens effects: all these effects will be replayed by the update
+        objRunB =
+            MkUnliftIO $ \tmr ->
+                objRunA $ do
+                    MkUnlift du <- lensRun $ getDiscardingUnlift
+                    du tmr -- discard lens effects: all these effects will be replayed by the update
         objReadB :: MutableRead (tl mr) (EditReader editb)
         objReadB = efGet objReadA
         objEditB :: [editb] -> tl mr (Maybe (tl mr ()))
@@ -78,7 +82,7 @@ mapObject (MkCloseUnlift (lensRun :: Unlift tl) lens@MkAnEditLens {..}) (MkObjec
         in MkObject @editb @(tl mr) objRunB objReadB objEditB
 
 constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit
-constantObject subj = MkObject identityUnlift (subjectToMutableRead subj) $ \_ -> return Nothing
+constantObject subj = MkObject (MkUnliftIO id) (subjectToMutableRead subj) $ \_ -> return Nothing
 
 alwaysEdit :: Monad m => ([edit] -> m ()) -> [edit] -> m (Maybe (m ()))
 alwaysEdit em edits = return $ Just $ em edits
@@ -108,20 +112,21 @@ cacheObject ::
        forall t. Eq t
     => Object (WholeEdit t)
     -> Object (WholeEdit t)
-cacheObject (MkObject (run :: UnliftIO m) rd push) = let
+cacheObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
     run' :: UnliftIO (StateT t m)
-    run' ma =
-        run $ do
-            oldval <- rd ReadWhole
-            (r, newval) <- runStateT ma oldval
-            if oldval == newval
-                then return ()
-                else do
-                    maction <- push [MkWholeEdit newval]
-                    case maction of
-                        Just action -> action
-                        Nothing -> liftIO $ fail "disallowed cached edit"
-            return r
+    run' =
+        MkUnliftIO $ \ma ->
+            run $ do
+                oldval <- rd ReadWhole
+                (r, newval) <- runStateT ma oldval
+                if oldval == newval
+                    then return ()
+                    else do
+                        maction <- push [MkWholeEdit newval]
+                        case maction of
+                            Just action -> action
+                            Nothing -> liftIO $ fail "disallowed cached edit"
+                return r
     rd' :: MutableRead (StateT t m) (WholeReader t)
     rd' ReadWhole = get
     push' :: [WholeEdit t] -> StateT t m (Maybe (StateT t m ()))

@@ -37,19 +37,19 @@ switchView getview specfunc = do
     stateVar :: MVar (GViewResult edit) <- liftIO $ newMVar firstvr
     unlift <- liftOuter $ liftIOView return
     createViewAddAspect $
-        mvarUnlift stateVar $ do
+        mvarRun stateVar $ do
             vr <- get
             lift $ vrFirstAspect vr
     mapCreateViewEdit (readOnlyEditLens specfunc) $
         createViewReceiveUpdate $ \_ (MkWholeEdit newspec) ->
-            mvarUnlift stateVar $ do
+            mvarRun stateVar $ do
                 oldvr <- get
                 liftIO $ containerRemoveDestroy box $ vrWidget oldvr
                 newvr <- liftIO $ unlift $ getVR newspec
                 liftIO $ newWidgets newvr
                 put newvr
     createViewReceiveUpdates $ \mr edits ->
-        mvarUnlift stateVar $ do
+        mvarRun stateVar $ do
             vr <- get
             lift $ vrUpdate vr mr edits
     return $ toWidget box

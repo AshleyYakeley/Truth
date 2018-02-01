@@ -20,7 +20,7 @@ containerRemoveDestroy w1 w2 = do
 createButton :: (FullEdit edit) => EditSubject edit -> Object edit -> IO Button
 createButton subj MkObject {..} =
     makeButton "Create" $
-    objRun $ do
+    runUnliftIO objRun $ do
         edits <- getReplaceEditsFromSubject subj
         pushEdit $ objEdit edits
 
@@ -66,7 +66,7 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
             -> [OneWholeEdit f edit]
             -> m ()
         update mr wedits =
-            mvarUnlift stateVar $ do
+            mvarRun stateVar $ do
                 oldfvr <- get
                 newfu <- lift $ mr ReadHasOne
                 case (retrieveOne oldfvr, retrieveOne newfu) of
@@ -83,7 +83,7 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
                         liftIO $ newWidgets newfvr
                         put newfvr
     createViewAddAspect $
-        mvarUnlift stateVar $ do
+        mvarRun stateVar $ do
             fvr <- get
             case getMaybeOne fvr of
                 Just vr -> liftIO $ mapAspectSpec uispec $ vrFirstAspect vr

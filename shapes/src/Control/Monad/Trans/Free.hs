@@ -62,4 +62,8 @@ instance MonadTransTunnel FreeT where
 
 instance MonadTransUnlift FreeT where
     liftWithUnlift call = FreeT $ liftWithUnlift $ \unlift -> call $ \(FreeT tma) -> unlift tma
-    impotent (FreeT tma) = FreeT $ impotent tma
+    getDiscardingUnlift =
+        FreeT $
+        withTransConstraintTM @Monad $ do
+            MkUnlift unlift <- getDiscardingUnlift
+            return $ MkUnlift $ \(FreeT tma) -> unlift tma

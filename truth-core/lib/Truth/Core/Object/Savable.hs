@@ -28,13 +28,13 @@ saveBufferSubscriber subA =
         sbVar <- newMVar $ error "uninitialised save buffer"
         let
             initA :: Object (WholeEdit (EditSubject edit)) -> IO (editorB, SaveActions)
-            initA (MkObject (runA :: UnliftIO ma) readA pushA) =
+            initA (MkObject (MkUnliftIO runA :: UnliftIO ma) readA pushA) =
                 runA $ do
                     firstBuf <- readA ReadWhole
-                    mvarUnlift sbVar $ put $ MkSaveBuffer firstBuf False
+                    mvarRun sbVar $ put $ MkSaveBuffer firstBuf False
                     let
                         runB :: UnliftIO (StateT (SaveBuffer (EditSubject edit)) ma)
-                        runB = runA . mvarUnlift sbVar
+                        runB = MkUnliftIO $ runA . mvarRun sbVar
                         readB :: MutableRead (StateT (SaveBuffer (EditSubject edit)) ma) (EditReader edit)
                         readB = mSubjectToMutableRead $ fmap saveBuffer get
                     rec
@@ -60,19 +60,19 @@ saveBufferSubscriber subA =
                         saveAction :: IO Bool
                         saveAction =
                             runA $ do
-                                MkSaveBuffer buf _ <- mvarUnlift sbVar get
+                                MkSaveBuffer buf _ <- mvarRun sbVar get
                                 maction <- pushA [MkWholeEdit buf]
                                 case maction of
                                     Nothing -> return False
                                     Just action -> do
                                         action
-                                        mvarUnlift sbVar $ put $ MkSaveBuffer buf False
+                                        mvarRun sbVar $ put $ MkSaveBuffer buf False
                                         return True
                         revertAction :: IO Bool
                         revertAction =
                             runA $ do
                                 buf <- readA ReadWhole
-                                mvarUnlift sbVar $ put $ MkSaveBuffer buf False
+                                mvarRun sbVar $ put $ MkSaveBuffer buf False
                                 edits <- getReplaceEditsFromSubject buf
                                 updateB edB (subjectToMutableRead buf) edits
                                 return False
@@ -80,7 +80,7 @@ saveBufferSubscriber subA =
                         saveActions =
                             MkSaveActions $
                             runA $ do
-                                MkSaveBuffer _ changed <- mvarUnlift sbVar get
+                                MkSaveBuffer _ changed <- mvarRun sbVar get
                                 return $
                                     if changed
                                         then Just (saveAction, revertAction)
@@ -94,14 +94,14 @@ saveBufferSubscriber subA =
                 -> [WholeEdit (EditSubject edit)]
                 -> m ()
             updateA (edB, _) _ edits = do
-                MkSaveBuffer oldbuffer changed <- mvarUnlift sbVar get
+                MkSaveBuffer oldbuffer changed <- mvarRun sbVar get
                 if changed
                     then return ()
                     else do
                         newbuffer <- mutableReadToSubject $ applyEdits edits $ subjectToMutableRead oldbuffer
                         newedits <- getReplaceEditsFromSubject newbuffer
                         updateB edB (subjectToMutableRead newbuffer) newedits
-                        mvarUnlift sbVar $ put $ MkSaveBuffer newbuffer False
+                        mvarRun sbVar $ put $ MkSaveBuffer newbuffer False
         (edA, closerA, actionA) <- subscribe subA initA updateA
         let
             (edB, saveActions) = edA

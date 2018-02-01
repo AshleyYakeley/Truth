@@ -49,6 +49,10 @@ lift2ComposeTWithUnlift call =
     case hasTransConstraint @MonadUnliftIO @t2 @m of
         Dict -> MkComposeT $ liftWithUnlift $ \unlift -> call $ \(MkComposeT ttma) -> unlift ttma
 
+composeUnlift :: MonadTransUnlift tb => Unlift ta -> Unlift tb -> Unlift (ComposeT ta tb)
+composeUnlift (MkUnlift ua) (MkUnlift ub) =
+    MkUnlift $ \(MkComposeT tatbma) -> ub $ withTransConstraintTM @MonadUnliftIO $ ua tatbma
+
 instance (MonadTrans t1, MonadTransConstraint Monad t2) => MonadTrans (ComposeT t1 t2) where
     lift (ma :: m a) =
         case hasTransConstraint @Monad @t2 @m of
@@ -133,10 +137,14 @@ instance (MonadTransUnlift t1, MonadTransUnlift t2) => MonadTransUnlift (Compose
                 MkComposeT $
                 liftWithUnlift $ \unlift1 ->
                     liftWithUnlift $ \unlift2 -> call $ \(MkComposeT t1t2ma) -> unlift2 $ unlift1 t1t2ma
-    impotent ::
-           forall m a. Monad m
-        => ComposeT t1 t2 m a
-        -> ComposeT t1 t2 m a
-    impotent (MkComposeT ttma) =
+    getDiscardingUnlift ::
+           forall m. Monad m
+        => ComposeT t1 t2 m (Unlift (ComposeT t1 t2))
+    getDiscardingUnlift =
         case hasTransConstraint @Monad @t2 @m of
-            Dict -> MkComposeT $ impotent $ remonad impotent ttma
+            Dict ->
+                MkComposeT $
+                withTransConstraintTM @Monad $ do
+                    unlift1 <- getDiscardingUnlift
+                    unlift2 <- lift getDiscardingUnlift
+                    return $ composeUnlift unlift1 unlift2

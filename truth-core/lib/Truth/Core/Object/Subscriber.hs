@@ -59,18 +59,18 @@ makeSharedSubscriber parent = do
             -> MutableRead m (EditReader edit)
             -> [edit]
             -> m ()
-        updateP _ mutrP edits = mvarUnlift var $ updateStore mutrP edits
-    (objectC@(MkObject runC _ _), closerP, actions) <- subscribe parent initP updateP
+        updateP _ mutrP edits = mvarRun var $ updateStore mutrP edits
+    (objectC@(MkObject (MkUnliftIO runC) _ _), closerP, actions) <- subscribe parent initP updateP
     let
         child :: Subscriber edit actions
         child =
             MkSubscriber $ \initC updateC -> do
                 editorC <- initC objectC
-                key <- runC $ mvarUnlift var $ addStoreStateT $ MkStoreEntry $ updateC editorC
+                key <- runC $ mvarRun var $ addStoreStateT $ MkStoreEntry $ updateC editorC
                 let
                     closerC =
                         runC $
-                        mvarUnlift var $ do
+                        mvarRun var $ do
                             deleteStoreStateT key
                             newstore <- get
                             if isEmptyStore newstore

@@ -14,13 +14,10 @@ import Truth.Core.Object.Object
 import Truth.Core.Read
 import Truth.Core.Types.None
 
-newtype UnliftIOW m =
-    MkUnliftIOW (UnliftIO m)
-
 -- | Opens a session on the object. Returns an object that can be used without opening a new session, and a function that closes the session.
 openCloseObject :: Object edit -> IO (Object edit, IO ())
-openCloseObject (MkObject run r e) = do
-    (MkUnliftIOW run', close) <- withToOpen $ \call -> run $ liftIOWithUnlift $ \unlift -> call $ MkUnliftIOW unlift
+openCloseObject (MkObject (MkUnliftIO run) r e) = do
+    (run', close) <- withToOpen $ \call -> run $ liftIOWithUnlift $ \unlift -> call $ MkUnliftIO unlift
     return (MkObject run' r e, close)
 
 data MutableIOReader edit t where
@@ -32,7 +29,7 @@ instance SubjectReader (EditReader edit) => SubjectReader (MutableIOReader edit)
 
 instance FullSubjectReader (EditReader edit) => FullSubjectReader (MutableIOReader edit) where
     mutableReadToSubject mr = do
-        MkObject unlift mro _ <- mr ReadMutableIO
+        MkObject (MkUnliftIO unlift) mro _ <- mr ReadMutableIO
         liftIO $ unlift $ mutableReadToSubject mro
 
 type MutableIOEdit edit = NoEdit (MutableIOReader edit)
@@ -40,12 +37,13 @@ type MutableIOEdit edit = NoEdit (MutableIOReader edit)
 type ObjectEditT edit = StateT (Maybe (Object edit, IO ()))
 
 unliftObjectEditT :: Unlift (ObjectEditT edit)
-unliftObjectEditT smr = do
-    (r, ms) <- runStateT smr Nothing
-    case ms of
-        Nothing -> return ()
-        Just (_, close) -> liftIO close
-    return r
+unliftObjectEditT =
+    MkUnlift $ \smr -> do
+        (r, ms) <- runStateT smr Nothing
+        case ms of
+            Nothing -> return ()
+            Just (_, close) -> liftIO close
+        return r
 
 openObject ::
        forall edit m. MonadIO m
@@ -65,7 +63,7 @@ mutableIOEditLens :: forall edit. EditLens (MutableIOEdit edit) edit
 mutableIOEditLens = let
     efGet :: ReadFunctionT (ObjectEditT edit) (MutableIOReader edit) (EditReader edit)
     efGet mr rt = do
-        (MkObject run r _) <- openObject mr
+        (MkObject (MkUnliftIO run) r _) <- openObject mr
         liftIO $ run $ r rt
     efUpdate ::
            forall m. MonadIO m
@@ -81,7 +79,7 @@ mutableIOEditLens = let
         -> MutableRead m (EditReader (MutableIOEdit edit))
         -> ObjectEditT edit m (Maybe [MutableIOEdit edit])
     elPutEdit edit mr = do
-        (MkObject run _ e) <- openObject mr
+        (MkObject (MkUnliftIO run) _ e) <- openObject mr
         liftIO $
             run $ do
                 maction <- e [edit]

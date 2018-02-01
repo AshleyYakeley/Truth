@@ -17,7 +17,7 @@ doFile dbpath fpath str =
         FailureResult e -> fail e
         SuccessResult qval ->
             case mapObject (readOnlyEditLens (qdisplay qval)) (sqlitePinaforeObject dbpath) :: Object (WholeEdit (FiniteSet Text)) of
-                MkObject run rd _ ->
+                MkObject (MkUnliftIO run) rd _ ->
                     run $ do
                         items <- rd ReadWhole
                         for_ items $ \item -> liftIO $ putStrLn $ unpack item
