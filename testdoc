@@ -1,0 +1,3 @@
+#!/bin/sh -e
+stack build pinafore
+stack exec -- pinafore-query --doc

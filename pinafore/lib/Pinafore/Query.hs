@@ -5,6 +5,7 @@ module Pinafore.Query
     , QBindings
     , qdisplay
     , parseValue
+    , predefinedDoc
     ) where
 
 import Pinafore.Query.Expression
