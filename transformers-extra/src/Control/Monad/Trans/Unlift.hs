@@ -1,8 +1,20 @@
 module Control.Monad.Trans.Unlift where
 
+import Control.Concurrent.MVar
+import Control.Monad
+import Control.Monad.Fail
+import Control.Monad.Fix
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.Constraint
+import Control.Monad.Trans.Identity
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.State
 import Control.Monad.Trans.Tunnel
-import Shapes.Import
+import Control.Monad.Trans.Writer
+import Data.Constraint
+import Data.Kind
+import Data.Tuple
 
 newtype Unlift (t :: (* -> *) -> * -> *) = MkUnlift
     { runUnlift :: forall (m :: * -> *) (r :: *). MonadUnliftIO m =>

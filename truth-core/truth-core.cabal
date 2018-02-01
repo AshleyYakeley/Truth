@@ -207,6 +207,7 @@ test-suite test
         open-witness,
         template-haskell,
         transformers,
+        transformers-extra,
         witness,
         comonad,
         mono-traversable,

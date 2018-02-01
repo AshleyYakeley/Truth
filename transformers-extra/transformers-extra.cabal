@@ -1,5 +1,5 @@
 cabal-version: >=1.14
-name: shapes
+name: transformers-extra
 version: 0.1.0.0
 -- synopsis:
 -- description:
@@ -35,7 +35,6 @@ library
         LambdaCase
         MonadFailDesugaring
         MultiParamTypeClasses
-        NoImplicitPrelude
         PatternGuards
         PatternSynonyms
         PolyKinds
@@ -64,39 +63,11 @@ library
     build-depends:
         base >= 4.9 && < 5,
         constraints,
-        mono-traversable,
-        comonad,
-        lattices,
-        transformers,
-        transformers-extra,
-        hashable,
-        containers,
-        unordered-containers,
-        bytestring,
-        cereal,
-        text,
-        cereal-text,
-        random,
-        countable,
-        witness,
-        open-witness
+        transformers
     exposed-modules:
-        Data.Filterable
-        Data.Witness.All
-        Control.Constrained.Category
-        Data.CatFunctor
-        Data.Result
-        Data.MonadOne
-        Data.HasNewValue
-        Data.Injection
-        Data.Bijection
-        Data.Lens
-        Data.Store
-        Data.ConstFunction
-        Data.Codec
-        Data.Compose
-        Data.KeyContainer
-        Data.FiniteSet
-        Shapes
-    other-modules:
-        Shapes.Import
+        Control.Monad.Trans.Constraint
+        Control.Monad.Trans.Tunnel
+        Control.Monad.Trans.Unlift
+        Control.Monad.Trans.Compose
+        Control.Monad.Trans.Free
+        Control.Monad.Trans.StackIO

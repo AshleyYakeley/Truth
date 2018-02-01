@@ -1,4 +1,5 @@
 packages:
+- transformers-extra
 - shapes
 - truth-core
 - truth-gtk

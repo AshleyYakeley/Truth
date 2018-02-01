@@ -1,10 +1,14 @@
 module Control.Monad.Trans.StackIO where
 
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.Compose
 import Control.Monad.Trans.Constraint
+import Control.Monad.Trans.Identity
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift
-import Shapes.Import
+import Data.Constraint
+import Data.Kind
 
 class (MonadTransUnlift (MonadStackTrans m), MonadUnliftIO m) =>
       MonadStackIO m where

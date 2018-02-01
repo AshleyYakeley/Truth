@@ -1,9 +1,16 @@
 module Control.Monad.Trans.Free where
 
+import Control.Applicative
+import Control.Monad hiding (fail)
+import Control.Monad.Fail
+import Control.Monad.Fix
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift
-import Shapes.Import
+import Data.Constraint
+import Prelude hiding (fail)
 
 newtype FreeT m a = FreeT
     { runFreeT :: forall t. MonadTransUnlift t =>

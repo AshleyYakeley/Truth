@@ -1,9 +1,17 @@
 module Control.Monad.Trans.Compose where
 
+import Control.Applicative
+import Control.Monad
+import Control.Monad.Fail
+import Control.Monad.Fix
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.Constraint
+import Control.Monad.Trans.Except
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift
-import Shapes.Import
+import Data.Constraint
+import Data.Kind
 
 newtype ComposeT (t1 :: (* -> *) -> (* -> *)) (t2 :: (* -> *) -> (* -> *)) (m :: * -> *) (a :: *) = MkComposeT
     { unComposeT :: t1 (t2 m) a
