@@ -4,6 +4,7 @@ module Pinafore.Query.Predefined
 
 import Pinafore.AsText
 import Pinafore.Edit
+import Pinafore.Morphism
 import Pinafore.Query.Expression
 import Shapes
 import Truth.Core

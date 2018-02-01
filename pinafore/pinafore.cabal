@@ -80,6 +80,7 @@ library
     other-modules:
         Pinafore.AsText
         Pinafore.Edit
+        Pinafore.Morphism
         Pinafore.Query.Read
         Pinafore.Query.Predefined
         Pinafore.SQLite

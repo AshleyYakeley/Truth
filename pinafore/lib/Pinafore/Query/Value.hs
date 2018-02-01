@@ -2,6 +2,7 @@ module Pinafore.Query.Value where
 
 import Pinafore.AsText
 import Pinafore.Edit
+import Pinafore.Morphism
 import Shapes
 import Truth.Core
 
