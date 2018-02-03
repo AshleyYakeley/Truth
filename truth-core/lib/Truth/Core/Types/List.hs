@@ -59,9 +59,10 @@ instance (Enum (Index seq), Ord (Index seq)) => Floating (ListEdit seq edit) (Li
     floatingUpdate edit (ListInsertItem i a) = ListInsertItem (floatingUpdate edit i) a
     floatingUpdate _edit ListClear = ListClear
 
+type instance EditReader (ListEdit seq edit) = ListReader seq (EditReader edit)
+
 instance (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSubject edit ~ Element seq) =>
          Edit (ListEdit seq edit) where
-    type EditReader (ListEdit seq edit) = ListReader seq (EditReader edit)
     applyEdit (ListEditItem p edit) mr (ListReadItem i reader)
         | p == i = getCompose $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
     applyEdit (ListEditItem _ _) mr reader = mr reader

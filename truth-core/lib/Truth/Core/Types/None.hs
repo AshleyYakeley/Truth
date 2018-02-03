@@ -33,8 +33,9 @@ deriving instance Empty (NoEdit reader)
 
 instance Floating (NoEdit reader) (NoEdit reader)
 
+type instance EditReader (NoEdit reader) = reader
+
 instance Edit (NoEdit reader) where
-    type EditReader (NoEdit reader) = reader
     applyEdit edit _ = never edit
 
 instance InvertibleEdit (NoEdit reader) where

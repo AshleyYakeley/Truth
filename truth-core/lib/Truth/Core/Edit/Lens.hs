@@ -29,7 +29,7 @@ instance UnliftCategory AnEditLens where
         in MkAnEditLens ucId pe
     ucCompose ::
            forall tab tbc edita editb editc.
-           (MonadTransUnlift tab, MonadTransUnlift tbc, Edit edita, Edit editb, Edit editc)
+           (MonadTransUnlift tab, MonadTransUnlift tbc, Edit edita)
         => AnEditLens tbc editb editc
         -> AnEditLens tab edita editb
         -> AnEditLens (ComposeT tbc tab) edita editc

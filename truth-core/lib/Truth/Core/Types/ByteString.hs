@@ -30,8 +30,9 @@ data ByteStringEdit
 
 instance Floating ByteStringEdit ByteStringEdit
 
+type instance EditReader ByteStringEdit = ByteStringReader
+
 instance Edit ByteStringEdit where
-    type EditReader ByteStringEdit = ByteStringReader
     applyEdit (ByteStringSetLength n) _ ReadByteStringLength = return n
     applyEdit (ByteStringSetLength newlen) mr (ReadByteStringSection start len) =
         if start > newlen

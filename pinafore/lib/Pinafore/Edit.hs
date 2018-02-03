@@ -64,8 +64,9 @@ instance SubjectReader PinaforeRead where
 
 instance Floating PinaforeEdit PinaforeEdit
 
+type instance EditReader PinaforeEdit = PinaforeRead
+
 instance Edit PinaforeEdit where
-    type EditReader PinaforeEdit = PinaforeRead
     applyEdit (PinaforeEditSetValue p s mv) _ (PinaforeReadGetValue p' s')
         | p == p' && s == s' = return mv
     applyEdit (PinaforeEditSetValue p s mv) mr (PinaforeReadLookupValue p' v')

@@ -65,8 +65,9 @@ instance (TestEquality sel, TupleWitness Edit sel) => Floating (TupleEdit sel) (
                     Dict -> MkTupleEdit s2 $ floatingUpdate e1 e2
             Nothing -> edit
 
+type instance EditReader (TupleEdit sel) = TupleEditReader sel
+
 instance (TestEquality sel, TupleWitness Edit sel) => Edit (TupleEdit sel) where
-    type EditReader (TupleEdit sel) = TupleEditReader sel
     applyEdit (MkTupleEdit aggedite edit) mr aggreader@(MkTupleEditReader aggeditr reader) =
         case (tupleWitness (Proxy :: Proxy Edit) aggedite, testEquality aggedite aggeditr) of
             (Dict, Just Refl) -> applyEdit edit (mr . MkTupleEditReader aggedite) reader

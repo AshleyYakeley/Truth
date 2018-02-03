@@ -11,8 +11,9 @@ newtype OneEdit (f :: * -> *) edit =
 instance Floating edit edit => Floating (OneEdit f edit) (OneEdit f edit) where
     floatingUpdate (MkOneEdit e1) (MkOneEdit e2) = MkOneEdit $ floatingUpdate e1 e2
 
+type instance EditReader (OneEdit f edit) = OneReader f (EditReader edit)
+
 instance (MonadOne f, Edit edit) => Edit (OneEdit f edit) where
-    type EditReader (OneEdit f edit) = OneReader f (EditReader edit)
     applyEdit (MkOneEdit _edita) mr ReadHasOne = mr ReadHasOne
     applyEdit (MkOneEdit edita) mr (ReadOne reader) = getCompose $ applyEdit edita (oneReadFunctionF mr) reader
 

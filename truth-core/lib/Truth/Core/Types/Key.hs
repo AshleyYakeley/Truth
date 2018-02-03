@@ -75,9 +75,10 @@ replace old new (MkFiniteSet (a:aa))
     | old == a = MkFiniteSet $ new : aa
 replace old new (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ replace old new $ MkFiniteSet aa)
 
+type instance EditReader (KeyEdit cont edit) = KeyReader cont (EditReader edit)
+
 instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, HasKeyReader cont (EditReader edit)) =>
          Edit (KeyEdit cont edit) where
-    type EditReader (KeyEdit cont edit) = KeyReader cont (EditReader edit)
     applyEdit (KeyEditItem oldkey edit) mr kreader@(KeyReadItem key rt) = do
         mnewkey <- getCompose $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
         case mnewkey of

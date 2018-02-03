@@ -11,9 +11,10 @@ instance Floating edit t => Floating [edit] t where
     floatingUpdate [] = id
     floatingUpdate (e:ee) = floatingUpdate ee . floatingUpdate e
 
+type family EditReader (edit :: *) :: * -> *
+
 class (Floating edit edit) =>
       Edit (edit :: *) where
-    type EditReader edit :: * -> *
     applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit)
 
 type EditSubject edit = ReaderSubject (EditReader edit)

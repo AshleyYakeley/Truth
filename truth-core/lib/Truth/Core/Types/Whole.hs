@@ -24,8 +24,9 @@ newtype WholeReaderEdit (reader :: * -> *) =
 
 instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader)
 
+type instance EditReader (WholeReaderEdit reader) = reader
+
 instance (FullSubjectReader reader) => Edit (WholeReaderEdit reader) where
-    type EditReader (WholeReaderEdit reader) = reader
     applyEdit (MkWholeEdit a) _ = subjectToMutableRead a
 
 instance (FullSubjectReader reader) => InvertibleEdit (WholeReaderEdit reader) where
