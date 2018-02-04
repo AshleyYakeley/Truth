@@ -43,7 +43,8 @@ instance (Floating ea ea, Floating eb eb) => Floating (EitherEdit ea eb) (Either
     floatingUpdate (EitherEditRight e1) (EitherEditRight e2) = EitherEditRight $ floatingUpdate e1 e2
     floatingUpdate _ t = t
 
-type instance EditReader (EitherEdit ea eb) = EitherReader (EditReader ea) (EditReader eb)
+type instance EditReader (EitherEdit ea eb) =
+     EitherReader (EditReader ea) (EditReader eb)
 
 instance (Edit ea, Edit eb) => Edit (EitherEdit ea eb) where
     applyEdit (EitherEditLeft edit) mr (EitherReadLeft reader) =

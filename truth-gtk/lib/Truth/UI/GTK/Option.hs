@@ -74,7 +74,7 @@ optionFromStore store = do
     return $ toWidget widget
 
 optionView ::
-       forall t tedit. (Eq t, Edit tedit)
+       forall t tedit. (Eq t)
     => EditFunction tedit (ListEdit [(t, String)] (WholeEdit (t, String)))
     -> EditLens tedit (WholeEdit t)
     -> GCreateView tedit

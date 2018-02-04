@@ -50,5 +50,5 @@ noEditLens = let
     efGet mr = remonadMutableRead IdentityT mr
     efUpdate edit _ = never edit
     elFunction = MkAnEditFunction {..}
-    elPutEdit _ _ = return Nothing
+    elPutEdits _ _ = return Nothing
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}

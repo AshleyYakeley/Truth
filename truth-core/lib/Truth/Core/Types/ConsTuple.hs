@@ -32,12 +32,13 @@ emptyTupleLens = let
         -> IdentityT m [TupleEdit EmptyWitness]
     efUpdate _ _ = return []
     elFunction = MkAnEditFunction {..}
-    elPutEdit ::
+    elPutEdits ::
            forall m. MonadIO m
-        => TupleEdit EmptyWitness
+        => [TupleEdit EmptyWitness]
         -> MutableRead m (EditReader edita)
         -> IdentityT m (Maybe [edita])
-    elPutEdit (MkTupleEdit sel _) _ = never sel
+    elPutEdits [] _ = return $ Just []
+    elPutEdits ((MkTupleEdit sel _):_) _ = never sel
     in MkCloseUnlift identityUnlift MkAnEditLens {..}
 
 instance (c a, TupleWitness c r) => TupleWitness c (ConsWitness a r) where
@@ -74,12 +75,12 @@ firstEditLens = let
     efUpdate (MkTupleEdit (RestWitness _) _) _ = return []
     elFunction :: AnEditFunction IdentityT (TupleEdit (ConsWitness edit1 sel)) edit1
     elFunction = MkAnEditFunction {..}
-    elPutEdit ::
+    elPutEdits ::
            forall m. MonadIO m
-        => edit1
+        => [edit1]
         -> MutableRead m (EditReader (TupleEdit (ConsWitness edit1 sel)))
         -> IdentityT m (Maybe [TupleEdit (ConsWitness edit1 sel)])
-    elPutEdit edit _ = return $ Just [MkTupleEdit FirstWitness edit]
+    elPutEdits edits _ = return $ Just $ fmap (MkTupleEdit FirstWitness) edits
     in MkCloseUnlift identityUnlift MkAnEditLens {..}
 
 restEditLens :: forall sel edit1. EditLens (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel)
@@ -95,12 +96,12 @@ restEditLens = let
     efUpdate (MkTupleEdit (RestWitness sel) edit) _ = return [MkTupleEdit sel edit]
     elFunction :: AnEditFunction IdentityT (TupleEdit (ConsWitness edit1 sel)) (TupleEdit sel)
     elFunction = MkAnEditFunction {..}
-    elPutEdit ::
+    elPutEdits ::
            forall m. MonadIO m
-        => TupleEdit sel
+        => [TupleEdit sel]
         -> MutableRead m (EditReader (TupleEdit (ConsWitness edit1 sel)))
         -> IdentityT m (Maybe [TupleEdit (ConsWitness edit1 sel)])
-    elPutEdit (MkTupleEdit sel edit) _ = return $ Just [MkTupleEdit (RestWitness sel) edit]
+    elPutEdits edits _ = return $ Just $ fmap (\(MkTupleEdit sel edit) -> MkTupleEdit (RestWitness sel) edit) edits
     in MkCloseUnlift identityUnlift MkAnEditLens {..}
 
 consTuple :: EditSubject a -> Tuple r -> Tuple (ConsWitness a r)

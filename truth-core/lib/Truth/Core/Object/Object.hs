@@ -53,12 +53,8 @@ pushEdit mmmu = do
         Just mu -> mu
         Nothing -> return ()
 
-mapObject ::
-       forall edita editb. Edit edita
-    => EditLens edita editb
-    -> Object edita
-    -> Object editb
-mapObject (MkCloseUnlift (MkUnlift lensRun :: Unlift tl) lens@MkAnEditLens {..}) (MkObject (MkUnliftIO objRunA :: UnliftIO mr) objReadA objEditA)
+mapObject :: forall edita editb. EditLens edita editb -> Object edita -> Object editb
+mapObject (MkCloseUnlift (MkUnlift lensRun :: Unlift tl) MkAnEditLens {..}) (MkObject (MkUnliftIO objRunA :: UnliftIO mr) objReadA objEditA)
     | Dict <- hasTransConstraint @MonadUnliftIO @tl @mr = let
         MkAnEditFunction {..} = elFunction
         objRunB :: UnliftIO (tl mr)
@@ -71,7 +67,7 @@ mapObject (MkCloseUnlift (MkUnlift lensRun :: Unlift tl) lens@MkAnEditLens {..})
         objReadB = efGet objReadA
         objEditB :: [editb] -> tl mr (Maybe (tl mr ()))
         objEditB editbs = do
-            meditas <- elPutEdits lens editbs objReadA
+            meditas <- elPutEdits editbs objReadA
             case meditas of
                 Nothing -> return Nothing
                 Just editas -> do

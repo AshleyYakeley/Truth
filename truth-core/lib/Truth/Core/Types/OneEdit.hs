@@ -11,7 +11,8 @@ newtype OneEdit (f :: * -> *) edit =
 instance Floating edit edit => Floating (OneEdit f edit) (OneEdit f edit) where
     floatingUpdate (MkOneEdit e1) (MkOneEdit e2) = MkOneEdit $ floatingUpdate e1 e2
 
-type instance EditReader (OneEdit f edit) = OneReader f (EditReader edit)
+type instance EditReader (OneEdit f edit) =
+     OneReader f (EditReader edit)
 
 instance (MonadOne f, Edit edit) => Edit (OneEdit f edit) where
     applyEdit (MkOneEdit _edita) mr ReadHasOne = mr ReadHasOne
@@ -54,14 +55,15 @@ oneLiftAnEditLens ::
     -> AnEditLens t (OneEdit f edita) (OneEdit f editb)
 oneLiftAnEditLens (MkAnEditLens ef pe) = let
     elFunction = oneLiftAnEditFunction ef
-    elPutEdit ::
+    elPutEdits ::
            forall m. MonadIO m
-        => OneEdit f editb
+        => [OneEdit f editb]
         -> MutableRead m (EditReader (OneEdit f edita))
         -> t m (Maybe [OneEdit f edita])
-    elPutEdit (MkOneEdit eb) mr =
+    elPutEdits ebs mr =
         withTransConstraintTM @Monad $
-        fmap (fmap (fmap MkOneEdit . fromMaybe []) . getMaybeOne) $ transComposeOne $ pe eb $ oneReadFunctionF mr
+        fmap (fmap (fmap MkOneEdit . fromMaybe []) . getMaybeOne) $
+        transComposeOne $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
     in MkAnEditLens {..}
 
 oneLiftEditLens ::

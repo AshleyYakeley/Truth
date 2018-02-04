@@ -17,7 +17,7 @@ type UUIDElementEdit edit = PairEdit (ConstEdit UUID) edit
 type SoupEdit edit = KeyEdit [(UUID, EditSubject edit)] (UUIDElementEdit edit)
 
 liftSoupLens ::
-       forall edita editb. (SubjectReader (EditReader edita), FullSubjectReader (EditReader editb))
+       forall edita editb. (Edit edita, FullSubjectReader (EditReader edita), FullSubjectReader (EditReader editb))
     => (forall m. MonadIO m =>
                       EditSubject editb -> m (Maybe (EditSubject edita)))
     -> EditLens edita editb

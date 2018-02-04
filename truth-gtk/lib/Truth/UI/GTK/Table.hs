@@ -54,7 +54,7 @@ data KeyColumns tedit key =
 oneKeyColumn :: KeyColumn tedit key -> KeyColumns tedit key
 oneKeyColumn (MkKeyColumn n f) = MkKeyColumns f [MkColumn n fst snd]
 
-instance Edit tedit => Semigroup (KeyColumns tedit key) where
+instance Semigroup (KeyColumns tedit key) where
     MkKeyColumns f1 c1 <> MkKeyColumns f2 c2 =
         MkKeyColumns
             (\k -> do
@@ -65,18 +65,13 @@ instance Edit tedit => Semigroup (KeyColumns tedit key) where
                      , convertEditFunction <.> pairJoinEditFunctions func1 func2)) $
         fmap (mapColumn $ \(x, y) -> (fst x, fst y)) c1 <> fmap (mapColumn $ \(x, y) -> (snd x, snd y)) c2
 
-instance Edit tedit => Monoid (KeyColumns tedit key) where
+instance Monoid (KeyColumns tedit key) where
     mempty = MkKeyColumns (\_ -> return (constEditLens (), constEditFunction ())) []
     mappend = (<>)
 
 keyContainerView ::
        forall cont tedit iedit.
-       ( IONewItemKeyContainer cont
-       , Edit tedit
-       , FullSubjectReader (EditReader iedit)
-       , Edit iedit
-       , HasKeyReader cont (EditReader iedit)
-       )
+       (IONewItemKeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => KeyColumns tedit (ContainerKey cont)
     -> (ContainerKey cont -> Aspect tedit)
     -> EditLens tedit (KeyEdit cont iedit)

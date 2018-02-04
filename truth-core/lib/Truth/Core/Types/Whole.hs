@@ -61,8 +61,8 @@ wholeEditLens lens =
           { efGet = \mr ReadWhole -> lift $ fmap (lensGet lens) $ mr ReadWhole
           , efUpdate = \(MkWholeEdit a) _ -> return [MkWholeEdit $ lensGet lens a]
           }
-    , elPutEdit =
-          \(MkWholeEdit b) mr ->
+    , elPutEdits =
+          elPutEditsFromPutEdit $ \(MkWholeEdit b) mr ->
               lift $ do
                   olda <- mr ReadWhole
                   return $ fmap (\newa -> [MkWholeEdit newa]) $ getMaybeOne $ lensPutback lens b olda

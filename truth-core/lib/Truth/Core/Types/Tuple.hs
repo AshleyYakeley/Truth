@@ -118,10 +118,10 @@ tupleEditLens seledit = let
             Just Refl -> return [edit]
             Nothing -> return []
     elFunction = MkAnEditFunction {..}
-    elPutEdit ::
+    elPutEdits ::
            forall m. MonadIO m
-        => edit
+        => [edit]
         -> MutableRead m (EditReader (TupleEdit sel))
         -> IdentityT m (Maybe [TupleEdit sel])
-    elPutEdit edit _ = return $ Just [MkTupleEdit seledit edit]
+    elPutEdits edits _ = return $ Just $ fmap (MkTupleEdit seledit) edits
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}

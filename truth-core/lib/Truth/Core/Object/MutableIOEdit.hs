@@ -71,16 +71,16 @@ mutableIOEditLens = let
     efUpdate edit _ = never edit
     elFunction :: AnEditFunction (ObjectEditT edit) (MutableIOEdit edit) edit
     elFunction = MkAnEditFunction {..}
-    elPutEdit ::
+    elPutEdits ::
            forall m. MonadIO m
-        => edit
+        => [edit]
         -> MutableRead m (EditReader (MutableIOEdit edit))
         -> ObjectEditT edit m (Maybe [MutableIOEdit edit])
-    elPutEdit edit mr = do
+    elPutEdits edits mr = do
         (MkObject (MkUnliftIO run) _ e) <- openObject mr
         liftIO $
             run $ do
-                maction <- e [edit]
+                maction <- e edits
                 case maction of
                     Just action -> action
                     Nothing -> liftIO $ fail "mutableIOEditLens: failed"
@@ -104,10 +104,11 @@ mutableIOLiftEditLens lens = let
     efUpdate edit _ = never edit
     elFunction :: AnEditFunction IdentityT (MutableIOEdit edita) (MutableIOEdit editb)
     elFunction = MkAnEditFunction {..}
-    elPutEdit ::
+    elPutEdits ::
            forall m. MonadIO m
-        => MutableIOEdit editb
+        => [MutableIOEdit editb]
         -> MutableRead m (MutableIOReader edita)
         -> IdentityT m (Maybe [MutableIOEdit edita])
-    elPutEdit edit _ = never edit
+    elPutEdits [] _ = return $ Just []
+    elPutEdits (edit:_) _ = never edit
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}

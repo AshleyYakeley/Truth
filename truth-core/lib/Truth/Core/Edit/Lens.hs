@@ -9,8 +9,8 @@ import Truth.Core.Read
 
 data AnEditLens t edita editb = MkAnEditLens
     { elFunction :: AnEditFunction t edita editb
-    , elPutEdit :: forall m. MonadIO m =>
-                                 editb -> MutableRead m (EditReader edita) -> t m (Maybe [edita])
+    , elPutEdits :: forall m. MonadIO m =>
+                                  [editb] -> MutableRead m (EditReader edita) -> t m (Maybe [edita])
     }
 
 type EditLens = CloseUnlift AnEditLens
@@ -19,24 +19,23 @@ instance Unliftable AnEditLens where
     fmapUnliftable t1t2 (MkAnEditLens f pe) = MkAnEditLens (fmapUnliftable t1t2 f) (\eb mr -> t1t2 $ pe eb mr)
 
 instance UnliftCategory AnEditLens where
-    type UnliftCategoryConstraint AnEditLens edit = Edit edit
+    type UnliftCategoryConstraint AnEditLens edit = ()
     ucId = let
         pe :: forall m edit. MonadIO m
-           => edit
+           => [edit]
            -> MutableRead m (EditReader edit)
            -> IdentityT m (Maybe [edit])
-        pe edit _ = return $ Just [edit]
+        pe edits _ = return $ Just edits
         in MkAnEditLens ucId pe
     ucCompose ::
-           forall tab tbc edita editb editc.
-           (MonadTransUnlift tab, MonadTransUnlift tbc, Edit edita)
+           forall tab tbc edita editb editc. (MonadTransUnlift tab, MonadTransUnlift tbc)
         => AnEditLens tbc editb editc
         -> AnEditLens tab edita editb
         -> AnEditLens (ComposeT tbc tab) edita editc
     ucCompose (MkAnEditLens efBC peBC) lensAB@(MkAnEditLens efAB _) = let
         peAC ::
                forall m. MonadIO m
-            => editc
+            => [editc]
             -> MutableRead m (EditReader edita)
             -> ComposeT tbc tab m (Maybe [edita])
         peAC ec mra =
@@ -50,18 +49,31 @@ instance UnliftCategory AnEditLens where
         efAC = ucCompose efBC efAB
         in MkAnEditLens efAC peAC
 
-elPutEdits ::
-       (MonadIO m, Monad (t m), Edit edita)
-    => AnEditLens t edita editb
+elPutEditsFromPutEdit ::
+       (MonadTransConstraint MonadIO t, MonadIO m, Edit edita)
+    => (editb -> MutableRead m (EditReader edita) -> t m (Maybe [edita]))
     -> [editb]
     -> MutableRead m (EditReader edita)
     -> t m (Maybe [edita])
-elPutEdits _ [] _ = getCompose $ return []
-elPutEdits lens (e:ee) mr =
+elPutEditsFromPutEdit _ [] _ = withTransConstraintTM @MonadIO $ getCompose $ return []
+elPutEditsFromPutEdit elPutEdit (e:ee) mr =
+    withTransConstraintTM @MonadIO $
     getCompose $ do
-        ea <- Compose $ elPutEdit lens e mr
-        eea <- Compose $ elPutEdits lens ee $ applyEdits ea mr
+        ea <- Compose $ elPutEdit e mr
+        eea <- Compose $ elPutEditsFromPutEdit elPutEdit ee $ applyEdits ea mr
         return $ ea ++ eea
+
+elPutEditsFromSimplePutEdit ::
+       (MonadTransConstraint MonadIO t, MonadIO m)
+    => (editb -> t m (Maybe [edita]))
+    -> [editb]
+    -> MutableRead m (EditReader edita)
+    -> t m (Maybe [edita])
+elPutEditsFromSimplePutEdit putEdit editBs _ =
+    withTransConstraintTM @MonadIO $
+    getCompose $ do
+        editAss <- for editBs $ \edit -> Compose $ putEdit edit
+        return $ mconcat editAss
 
 editLensFunction :: EditLens edita editb -> EditFunction edita editb
 editLensFunction (MkCloseUnlift unlift (MkAnEditLens func _)) = MkCloseUnlift unlift func
@@ -105,13 +117,13 @@ convertEditLens ::
 convertEditLens = let
     elFunction :: AnEditFunction IdentityT edita editb
     elFunction = convertAnEditFunction
-    elPutEdit ::
+    elPutEdits ::
            forall m. MonadIO m
-        => editb
+        => [editb]
         -> MutableRead m (EditReader edita)
         -> IdentityT m (Maybe [edita])
-    elPutEdit editb mr = do
-        newsubject <- lift $ mutableReadToSubject $ applyEdit editb $ mSubjectToMutableRead $ mutableReadToSubject mr
+    elPutEdits editbs mr = do
+        newsubject <- lift $ mutableReadToSubject $ applyEdits editbs $ mSubjectToMutableRead $ mutableReadToSubject mr
         editas <- getReplaceEditsFromSubject newsubject
         return $ Just editas
     in MkCloseUnlift identityUnlift MkAnEditLens {..}

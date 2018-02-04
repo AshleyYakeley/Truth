@@ -169,4 +169,10 @@ stringSectionLens initial =
                             runa = relativeRun (negate $ runStart oldstate) runb
                         put oldstate {runLength = newlength}
                         return $ Just [StringReplaceSection runa sb]
+            elPutEdits ::
+                   forall m. MonadIO m
+                => [StringEdit seq]
+                -> MutableRead m (EditReader (StringEdit seq))
+                -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
+            elPutEdits = elPutEditsFromPutEdit elPutEdit
             in MkCloseUnlift (mvarUnlift var) MkAnEditLens {..}

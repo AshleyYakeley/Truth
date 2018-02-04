@@ -197,9 +197,8 @@ soupDatabaseLens = let
     elPutEdit ::
            forall m. MonadIO m
         => PinaforeEdit
-        -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
         -> IdentityT m (Maybe [SQLiteEdit PinaforeSchema])
-    elPutEdit (PinaforeEditSetValue p s (Just v)) _ =
+    elPutEdit (PinaforeEditSetValue p s (Just v)) =
         return $
         Just $
         pure $
@@ -210,13 +209,13 @@ soupDatabaseLens = let
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
-    elPutEdit (PinaforeEditSetValue p s Nothing) _ =
+    elPutEdit (PinaforeEditSetValue p s Nothing) =
         return $
         Just $
         pure $
         DatabaseDelete (MkTupleTableSel PinaforeTriple) $
         MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s
-    elPutEdit (PinaforeEditSetLiteral v (Just l)) _ =
+    elPutEdit (PinaforeEditSetLiteral v (Just l)) =
         return $
         Just $
         pure $
@@ -226,11 +225,17 @@ soupDatabaseLens = let
         MkAll $ \case
             LiteralKey -> v
             LiteralValue -> l
-    elPutEdit (PinaforeEditSetLiteral v Nothing) _ =
+    elPutEdit (PinaforeEditSetLiteral v Nothing) =
         return $
         Just $
         pure $
         DatabaseDelete (MkTupleTableSel PinaforeLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v
+    elPutEdits ::
+           forall m. MonadIO m
+        => [PinaforeEdit]
+        -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
+        -> IdentityT m (Maybe [SQLiteEdit PinaforeSchema])
+    elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
 
 sqlitePinaforeObject :: FilePath -> Object PinaforeEdit

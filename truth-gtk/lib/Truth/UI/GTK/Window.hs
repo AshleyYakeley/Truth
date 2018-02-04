@@ -45,7 +45,7 @@ allGetView =
         , dragGetView
         ]
 
-getTheView :: Edit edit => UISpec edit -> GCreateView edit
+getTheView :: UISpec edit -> GCreateView edit
 getTheView spec =
     case getUIView allGetView getTheView spec of
         Just view -> view
@@ -116,13 +116,7 @@ menuItemAction item action = do
     return ()
 
 makeViewWindow ::
-       (Edit edit, WindowButtons actions)
-    => GCreateView edit
-    -> IORef Int
-    -> IO ()
-    -> String
-    -> Subscriber edit actions
-    -> IO ()
+       (WindowButtons actions) => GCreateView edit -> IORef Int -> IO () -> String -> Subscriber edit actions -> IO ()
 makeViewWindow view windowCount tellclose title sub = do
     rec
         MkViewSubscription {..} <- subscribeView view sub openSelection
@@ -177,7 +171,7 @@ makeViewWindow view windowCount tellclose title sub = do
     widgetShowAll window
 
 makeViewWindowCountRef ::
-       (Edit edit, WindowButtons actions) => GCreateView edit -> IORef Int -> String -> Subscriber edit actions -> IO ()
+       WindowButtons actions => GCreateView edit -> IORef Int -> String -> Subscriber edit actions -> IO ()
 makeViewWindowCountRef view windowCount title sub = do
     makeViewWindow
         view

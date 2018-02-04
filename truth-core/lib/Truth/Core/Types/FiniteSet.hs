@@ -55,10 +55,15 @@ finiteSetEditLens subj = let
     elPutEdit ::
            forall m. MonadIO m
         => WholeEdit Bool
+        -> IdentityT m (Maybe [FiniteSetEdit subj])
+    elPutEdit (MkWholeEdit False) = return $ Just [KeyDeleteItem subj]
+    elPutEdit (MkWholeEdit True) = return $ Just [KeyInsertReplaceItem subj]
+    elPutEdits ::
+           forall m. MonadIO m
+        => [WholeEdit Bool]
         -> MutableRead m (EditReader (FiniteSetEdit subj))
         -> IdentityT m (Maybe [FiniteSetEdit subj])
-    elPutEdit (MkWholeEdit False) _ = return $ Just [KeyDeleteItem subj]
-    elPutEdit (MkWholeEdit True) _ = return $ Just [KeyInsertReplaceItem subj]
+    elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
     in MkCloseUnlift identityUnlift MkAnEditLens {..}
 
 instance Eq subj => JoinSemiLatticeEdit (FiniteSetEdit subj) where

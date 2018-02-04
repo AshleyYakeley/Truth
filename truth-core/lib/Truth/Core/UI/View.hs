@@ -77,11 +77,7 @@ instance Foldable (ViewResult edit) where
 instance Traversable (ViewResult edit) where
     sequenceA vrfa = fmap (\w -> MkViewResult w (vrUpdate vrfa) (vrFirstAspect vrfa)) $ vrWidget vrfa
 
-mapViewResultEdit ::
-       forall edita editb w. Edit editb
-    => EditLens edita editb
-    -> ViewResult editb w
-    -> ViewResult edita w
+mapViewResultEdit :: forall edita editb w. EditLens edita editb -> ViewResult editb w -> ViewResult edita w
 mapViewResultEdit lens@(MkCloseUnlift (MkUnlift unlift) flens) (MkViewResult w updateB a) = let
     MkAnEditLens {..} = flens
     MkAnEditFunction {..} = elFunction
@@ -105,7 +101,7 @@ data ViewContext edit = MkViewContext
     }
 
 mapViewContextEdit ::
-       forall edita editb. (Edit edita, Edit editb)
+       forall edita editb. ()
     => EditLens edita editb
     -> ViewContext edita
     -> ViewContext editb
@@ -178,7 +174,7 @@ viewOpenSelection :: View edit ()
 viewOpenSelection = MkView $ \MkViewContext {..} -> vcOpenSelection
 
 mapViewEdit ::
-       forall edita editb a. (Edit edita, Edit editb)
+       forall edita editb a. ()
     => EditLens edita editb
     -> View editb a
     -> View edita a
@@ -219,7 +215,7 @@ createViewAddAspect :: Aspect edit -> CreateView edit ()
 createViewAddAspect aspect = liftInner $ (pure ()) {vrFirstAspect = aspect}
 
 mapCreateViewEdit ::
-       forall edita editb a. (Edit edita, Edit editb)
+       forall edita editb a. ()
     => EditLens edita editb
     -> CreateView editb a
     -> CreateView edita a

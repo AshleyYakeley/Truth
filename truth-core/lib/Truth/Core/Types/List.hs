@@ -59,7 +59,8 @@ instance (Enum (Index seq), Ord (Index seq)) => Floating (ListEdit seq edit) (Li
     floatingUpdate edit (ListInsertItem i a) = ListInsertItem (floatingUpdate edit i) a
     floatingUpdate _edit ListClear = ListClear
 
-type instance EditReader (ListEdit seq edit) = ListReader seq (EditReader edit)
+type instance EditReader (ListEdit seq edit) =
+     ListReader seq (EditReader edit)
 
 instance (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSubject edit ~ Element seq) =>
          Edit (ListEdit seq edit) where
@@ -123,7 +124,7 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSu
             write $ ListInsertItem i item
 
 listItemLens ::
-       forall seq edit. (Num (Index seq), Ord (Index seq))
+       forall seq edit. (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSubject edit ~ Element seq)
     => Unlift (StateT (SequencePoint seq))
     -> EditLens (ListEdit seq edit) (MaybeEdit edit)
 listItemLens unlift = let
@@ -186,4 +187,10 @@ listItemLens unlift = let
     elPutEdit (SumEditLeft (MkWholeEdit (Just subj))) _ = do
         i <- get
         return $ Just [ListInsertItem i subj]
+    elPutEdits ::
+           forall m. MonadIO m
+        => [MaybeEdit edit]
+        -> MutableRead m (EditReader (ListEdit seq edit))
+        -> StateT (SequencePoint seq) m (Maybe [ListEdit seq edit])
+    elPutEdits = elPutEditsFromPutEdit elPutEdit
     in MkCloseUnlift unlift MkAnEditLens {..}

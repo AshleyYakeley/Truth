@@ -18,10 +18,7 @@ containerRemoveDestroy w1 w2 = do
     widgetDestroy w2
 
 switchView ::
-       forall edit. Edit edit
-    => (UISpec edit -> GCreateView edit)
-    -> EditFunction edit (WholeEdit (UISpec edit))
-    -> GCreateView edit
+       forall edit. (UISpec edit -> GCreateView edit) -> EditFunction edit (WholeEdit (UISpec edit)) -> GCreateView edit
 switchView getview specfunc = do
     box <- liftIO $ vBoxNew False 0
     let

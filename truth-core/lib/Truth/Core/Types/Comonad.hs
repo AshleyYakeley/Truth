@@ -20,7 +20,8 @@ newtype ComonadEdit (w :: * -> *) (edit :: *) =
 instance Floating edit edit => Floating (ComonadEdit w edit) (ComonadEdit w edit) where
     floatingUpdate (MkComonadEdit e1) (MkComonadEdit e2) = MkComonadEdit $ floatingUpdate e1 e2
 
-type instance EditReader (ComonadEdit w edit) = ComonadReader w (EditReader edit)
+type instance EditReader (ComonadEdit w edit) =
+     ComonadReader w (EditReader edit)
 
 instance Edit edit => Edit (ComonadEdit w edit) where
     applyEdit (MkComonadEdit edit) = comonadLiftReadFunction $ applyEdit edit
@@ -43,12 +44,12 @@ comonadEditLens =
             -> IdentityT m [edit]
         efUpdate (MkComonadEdit edit) _ = return [edit]
         elFunction = MkAnEditFunction {..}
-        elPutEdit ::
+        elPutEdits ::
                forall m. MonadIO m
-            => edit
+            => [edit]
             -> MutableRead m (EditReader (ComonadEdit w edit))
             -> IdentityT m (Maybe [ComonadEdit w edit])
-        elPutEdit edit _ = return $ Just [MkComonadEdit edit]
+        elPutEdits edits _ = return $ Just $ fmap MkComonadEdit edits
         in MkAnEditLens {..}
 
 comonadLiftReadFunction :: ReadFunction ra rb -> ReadFunction (ComonadReader w ra) (ComonadReader w rb)
@@ -67,10 +68,12 @@ comonadLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditF
         case hasTransConstraint @MonadIO @t @m of
             Dict -> fmap (fmap MkComonadEdit) $ u edita $ comonadReadFunction mr
     pe' :: forall m. MonadIO m
-        => ComonadEdit w editb
+        => [ComonadEdit w editb]
         -> MutableRead m (EditReader (ComonadEdit w edita))
         -> t m (Maybe [ComonadEdit w edita])
-    pe' (MkComonadEdit editb) mr =
+    pe' editbs mr =
         case hasTransConstraint @MonadIO @t @m of
-            Dict -> fmap (fmap $ fmap MkComonadEdit) $ pe editb $ comonadReadFunction mr
+            Dict ->
+                fmap (fmap $ fmap MkComonadEdit) $
+                pe (fmap (\(MkComonadEdit editb) -> editb) editbs) $ comonadReadFunction mr
     in MkCloseUnlift unlift $ MkAnEditLens (MkAnEditFunction g' u') pe'
