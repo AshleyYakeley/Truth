@@ -94,7 +94,12 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSu
     applyEdit (ListInsertItem _ _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
     applyEdit ListClear _mr reader = subjectToMutableRead mempty reader
 
-instance (IsSequence seq, FullSubjectReader (EditReader edit), InvertibleEdit edit, EditSubject edit ~ Element seq) =>
+instance ( IsSequence seq
+         , FullSubjectReader (EditReader edit)
+         , Edit edit
+         , InvertibleEdit edit
+         , EditSubject edit ~ Element seq
+         ) =>
          InvertibleEdit (ListEdit seq edit) where
     invertEdit (ListEditItem p edit) mr = do
         minvedits <- getCompose $ invertEdit edit $ itemReadFunction p mr

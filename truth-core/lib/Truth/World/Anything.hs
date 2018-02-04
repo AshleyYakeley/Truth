@@ -26,7 +26,7 @@ instance SubjectReader AnyReader where
 
 data AnyEdit where
     MkAnyEdit
-        :: forall edit. (InvertibleEdit edit, SubjectReader (EditReader edit))
+        :: forall edit. (Edit edit, InvertibleEdit edit, SubjectReader (EditReader edit))
         => IOWitness edit
         -> edit
         -> AnyEdit

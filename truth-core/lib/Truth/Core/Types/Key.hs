@@ -116,6 +116,7 @@ instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, Has
 
 instance ( KeyContainer cont
          , FullSubjectReader (EditReader edit)
+         , Edit edit
          , InvertibleEdit edit
          , HasKeyReader cont (EditReader edit)
          ) =>

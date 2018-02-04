@@ -19,8 +19,8 @@ instance (MonadOne f, Edit edit) => Edit (OneEdit f edit) where
     applyEdit (MkOneEdit edita) mr (ReadOne reader) = getCompose $ applyEdit edita (oneReadFunctionF mr) reader
 
 instance (MonadOne f, InvertibleEdit edit) => InvertibleEdit (OneEdit f edit) where
-    invertEdit (MkOneEdit edita) mr = do
-        fme <- getCompose $ invertEdit edita (oneReadFunctionF mr)
+    invertEdits editas mr = do
+        fme <- getCompose $ invertEdits (fmap (\(MkOneEdit edita) -> edita) editas) (oneReadFunctionF mr)
         return
             (case getMaybeOne fme of
                  Just edits -> fmap MkOneEdit edits

@@ -31,7 +31,8 @@ instance (Edit ea, Edit eb, EditReader ea ~ EditReader eb) => Edit (SumEdit ea e
     applyEdit (SumEditLeft edit) = applyEdit edit
     applyEdit (SumEditRight edit) = applyEdit edit
 
-instance (InvertibleEdit ea, InvertibleEdit eb, EditReader ea ~ EditReader eb) => InvertibleEdit (SumEdit ea eb) where
+instance (Edit ea, Edit eb, InvertibleEdit ea, InvertibleEdit eb, EditReader ea ~ EditReader eb) =>
+         InvertibleEdit (SumEdit ea eb) where
     invertEdit (SumEditLeft edit) mr = fmap (fmap SumEditLeft) $ invertEdit edit mr
     invertEdit (SumEditRight edit) mr = fmap (fmap SumEditRight) $ invertEdit edit mr
 

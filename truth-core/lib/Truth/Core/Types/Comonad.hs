@@ -27,7 +27,8 @@ instance Edit edit => Edit (ComonadEdit w edit) where
     applyEdit (MkComonadEdit edit) = comonadLiftReadFunction $ applyEdit edit
 
 instance InvertibleEdit edit => InvertibleEdit (ComonadEdit w edit) where
-    invertEdit (MkComonadEdit edit) mr = fmap (fmap MkComonadEdit) $ invertEdit edit $ comonadReadFunction mr
+    invertEdits edits mr =
+        fmap (fmap MkComonadEdit) $ invertEdits (fmap (\(MkComonadEdit edit) -> edit) edits) $ comonadReadFunction mr
 
 comonadEditLens :: forall w edit. EditLens (ComonadEdit w edit) edit
 comonadEditLens =
