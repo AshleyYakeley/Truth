@@ -54,7 +54,6 @@ library
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances
@@ -168,6 +167,7 @@ test-suite test
         GADTs
         GeneralizedNewtypeDeriving
         ImplicitParams
+        InstanceSigs
         KindSignatures
         LambdaCase
         MonadFailDesugaring
@@ -195,7 +195,6 @@ test-suite test
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances
@@ -208,6 +207,7 @@ test-suite test
         open-witness,
         template-haskell,
         transformers,
+        transformers-extra,
         witness,
         comonad,
         mono-traversable,

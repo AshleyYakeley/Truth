@@ -34,8 +34,8 @@ data UITable tedit where
         :: forall cont tedit iedit.
            ( IONewItemKeyContainer cont
            , FullSubjectReader (EditReader iedit)
-           , Edit tedit
-           , Edit iedit
+           --, Edit tedit
+           --, Edit iedit
            , HasKeyReader cont (EditReader iedit)
            )
         => [KeyColumn tedit (ContainerKey cont)]
@@ -47,8 +47,8 @@ uiTable ::
        forall cont tedit iedit.
        ( IONewItemKeyContainer cont
        , FullSubjectReader (EditReader iedit)
-       , Edit tedit
-       , Edit iedit
+       --, Edit tedit
+       --, Edit iedit
        , HasKeyReader cont (EditReader iedit)
        )
     => [KeyColumn tedit (ContainerKey cont)]

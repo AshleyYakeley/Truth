@@ -75,6 +75,8 @@ data DatabaseEdit database tablesel where
 
 instance Floating (DatabaseEdit database tablesel) (DatabaseEdit database tablesel)
 
+type instance EditReader (DatabaseEdit database tablesel) =
+     DatabaseRead database tablesel
+
 instance Database database tablesel => Edit (DatabaseEdit database tablesel) where
-    type EditReader (DatabaseEdit database tablesel) = DatabaseRead database tablesel
     applyEdit _ _ = return $ error "NYI: DatabaseEdit.applyEdit"

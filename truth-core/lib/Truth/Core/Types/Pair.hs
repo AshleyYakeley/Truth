@@ -77,16 +77,18 @@ fstLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditFunct
     efUpdate (MkTupleEdit EditSecond ex) _ = withTransConstraintTM @MonadIO $ return [MkTupleEdit EditSecond ex]
     elFunction :: AnEditFunction t (PairEdit edita editx) (PairEdit editb editx)
     elFunction = MkAnEditFunction {..}
-    elPutEdit ::
+    elPutEdits ::
            forall m. MonadIO m
-        => PairEdit editb editx
+        => [PairEdit editb editx]
         -> MutableRead m (EditReader (PairEdit edita editx))
         -> t m (Maybe [PairEdit edita editx])
-    elPutEdit (MkTupleEdit EditFirst eb) mr =
-        withTransConstraintTM @MonadIO $ do
-            msa <- pe eb $ firstReadFunction mr
-            return $ fmap (fmap (MkTupleEdit EditFirst)) msa
-    elPutEdit (MkTupleEdit EditSecond ex) _ = withTransConstraintTM @MonadIO $ return $ Just [MkTupleEdit EditSecond ex]
+    elPutEdits edits mr =
+        case partitionPairEdits edits of
+            (ebs, exs) ->
+                withTransConstraintTM @MonadIO $
+                getCompose $ do
+                    eas <- Compose $ pe ebs $ firstReadFunction mr
+                    return $ (fmap (MkTupleEdit EditFirst) eas) ++ (fmap (MkTupleEdit EditSecond) exs)
     in MkCloseUnlift unlift $ MkAnEditLens {..}
 
 sndLiftEditLens ::
@@ -107,16 +109,18 @@ sndLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditFunct
             return $ fmap (MkTupleEdit EditSecond) ebs
     elFunction :: AnEditFunction t (PairEdit editx edita) (PairEdit editx editb)
     elFunction = MkAnEditFunction {..}
-    elPutEdit ::
+    elPutEdits ::
            forall m. MonadIO m
-        => PairEdit editx editb
+        => [PairEdit editx editb]
         -> MutableRead m (EditReader (PairEdit editx edita))
         -> t m (Maybe [PairEdit editx edita])
-    elPutEdit (MkTupleEdit EditFirst ex) _ = withTransConstraintTM @MonadIO $ return $ Just [MkTupleEdit EditFirst ex]
-    elPutEdit (MkTupleEdit EditSecond eb) mr =
-        withTransConstraintTM @MonadIO $ do
-            msa <- pe eb $ secondReadFunction mr
-            return $ fmap (fmap (MkTupleEdit EditSecond)) msa
+    elPutEdits edits mr =
+        case partitionPairEdits edits of
+            (exs, ebs) ->
+                withTransConstraintTM @MonadIO $
+                getCompose $ do
+                    eas <- Compose $ pe ebs $ secondReadFunction mr
+                    return $ (fmap (MkTupleEdit EditFirst) exs) ++ (fmap (MkTupleEdit EditSecond) eas)
     in MkCloseUnlift unlift $ MkAnEditLens {..}
 
 pairJoinAnEditFunctions ::
@@ -156,9 +160,15 @@ pairJoinEditLenses =
         af12 = pairJoinAnEditFunctions af1 af2
         pe12 ::
                forall m. MonadIO m
-            => PairEdit editb1 editb2
+            => [PairEdit editb1 editb2]
             -> MutableRead m (EditReader edita)
             -> t m (Maybe [edita])
-        pe12 (MkTupleEdit EditFirst eb) mr = pe1 eb mr
-        pe12 (MkTupleEdit EditSecond eb) mr = pe2 eb mr
+        pe12 edits mr =
+            case partitionPairEdits edits of
+                (eb1, eb2) ->
+                    withTransConstraintTM @MonadIO $
+                    getCompose $ do
+                        ea1 <- Compose $ pe1 eb1 mr
+                        ea2 <- Compose $ pe2 eb2 mr
+                        return $ ea1 ++ ea2
         in MkCloseUnlift unlift $ MkAnEditLens af12 pe12

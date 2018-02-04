@@ -1,5 +1,3 @@
-{-# OPTIONS -fno-warn-redundant-constraints #-}
-
 module Truth.Core.Types.Key where
 
 import Truth.Core.Edit
@@ -77,9 +75,11 @@ replace old new (MkFiniteSet (a:aa))
     | old == a = MkFiniteSet $ new : aa
 replace old new (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ replace old new $ MkFiniteSet aa)
 
+type instance EditReader (KeyEdit cont edit) =
+     KeyReader cont (EditReader edit)
+
 instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, HasKeyReader cont (EditReader edit)) =>
          Edit (KeyEdit cont edit) where
-    type EditReader (KeyEdit cont edit) = KeyReader cont (EditReader edit)
     applyEdit (KeyEditItem oldkey edit) mr kreader@(KeyReadItem key rt) = do
         mnewkey <- getCompose $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
         case mnewkey of
@@ -116,6 +116,7 @@ instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, Has
 
 instance ( KeyContainer cont
          , FullSubjectReader (EditReader edit)
+         , Edit edit
          , InvertibleEdit edit
          , HasKeyReader cont (EditReader edit)
          ) =>
@@ -148,7 +149,8 @@ instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, Has
             write $ KeyInsertReplaceItem item
 
 getKeyElementEditLens ::
-       forall cont edit. (KeyContainer cont, HasKeyReader cont (EditReader edit), Edit edit)
+       forall cont edit.
+       (KeyContainer cont, HasKeyReader cont (EditReader edit), Edit edit, FullSubjectReader (EditReader edit))
     => ContainerKey cont
     -> IO (EditLens (KeyEdit cont edit) (MaybeEdit edit))
 getKeyElementEditLens initial =
@@ -215,6 +217,12 @@ getKeyElementEditLens initial =
                     put newkey
                     return $ Just [KeyEditItem oldkey edit]
                 Nothing -> return $ Just []
+        elPutEdits ::
+               forall m. MonadIO m
+            => [MaybeEdit edit]
+            -> MutableRead m (EditReader (KeyEdit cont edit))
+            -> StateT (ContainerKey cont) m (Maybe [KeyEdit cont edit])
+        elPutEdits = elPutEditsFromPutEdit elPutEdit
         in return $ MkCloseUnlift unlift MkAnEditLens {..}
 
 getKeyValueEditLens ::
@@ -280,9 +288,12 @@ liftKeyElementEditFunction (MkCloseUnlift unlift ef) = MkCloseUnlift unlift $ li
 liftKeyElementEditLens ::
        forall conta contb edita editb.
        ( ContainerKey conta ~ ContainerKey contb
+       , KeyContainer conta
+       , HasKeyReader conta (EditReader edita)
        , EditSubject edita ~ Element conta
        , EditSubject editb ~ Element contb
-       , SubjectReader (EditReader edita)
+       , Edit edita
+       , FullSubjectReader (EditReader edita)
        , FullSubjectReader (EditReader editb)
        )
     => (forall m. MonadIO m =>
@@ -304,10 +315,16 @@ liftKeyElementEditLens bma (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens ef 
     elPutEdit (KeyDeleteItem key) _ = withTransConstraintTM @MonadIO $ return $ Just [KeyDeleteItem key]
     elPutEdit (KeyEditItem key eb) mr =
         withTransConstraintTM @MonadIO $ do
-            mfresult <- transComposeOne $ pe eb (keyItemReadFunction @conta key mr)
+            mfresult <- transComposeOne $ pe [eb] (keyItemReadFunction @conta key mr)
             case mfresult of
                 Just fsea -> return $ fmap (fmap $ KeyEditItem key) fsea
                 Nothing -> return $ Just []
+    elPutEdits ::
+           forall m. MonadIO m
+        => [KeyEdit contb editb]
+        -> MutableRead m (EditReader (KeyEdit conta edita))
+        -> t m (Maybe [KeyEdit conta edita])
+    elPutEdits = elPutEditsFromPutEdit elPutEdit
     in MkCloseUnlift unlift $ MkAnEditLens {..}
 
 {-

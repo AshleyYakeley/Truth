@@ -78,11 +78,7 @@ instance Foldable (ViewResult edit) where
 instance Traversable (ViewResult edit) where
     sequenceA vrfa = fmap (\w -> MkViewResult w (vrUpdate vrfa) (vrFirstAspect vrfa)) $ vrWidget vrfa
 
-mapViewResultEdit ::
-       forall edita editb w. Edit editb
-    => EditLens edita editb
-    -> ViewResult editb w
-    -> ViewResult edita w
+mapViewResultEdit :: forall edita editb w. EditLens edita editb -> ViewResult editb w -> ViewResult edita w
 mapViewResultEdit lens@(MkCloseUnlift unlift flens) (MkViewResult w updateB a) = let
     MkAnEditLens {..} = flens
     MkAnEditFunction {..} = elFunction
@@ -92,8 +88,7 @@ mapViewResultEdit lens@(MkCloseUnlift unlift flens) (MkViewResult w updateB a) =
         -> [edita]
         -> m ()
     updateA mrA editsA =
-        traceUnlift "mapViewResultEdit.updateA"
-        unlift $
+        runUnlift (traceUnlift "mapViewResultEdit.updateA" unlift) $
         withTransConstraintTM @MonadUnliftIO $ do
             editsB <- efUpdates elFunction editsA mrA
             updateB (efGet mrA) editsB
@@ -107,7 +102,7 @@ data ViewContext edit = MkViewContext
     }
 
 mapViewContextEdit ::
-       forall edita editb. (Edit edita, Edit editb)
+       forall edita editb. ()
     => EditLens edita editb
     -> ViewContext edita
     -> ViewContext editb
@@ -157,7 +152,7 @@ viewObjectRead ::
     -> View edit r
 viewObjectRead call = do
     MkObject {..} <- viewObject
-    liftIO $ objRun $ call $ objRead
+    liftIO $ runUnliftIO objRun $ call $ objRead
 
 viewObjectMaybeEdit ::
        (forall m. MonadUnliftIO m =>
@@ -165,7 +160,7 @@ viewObjectMaybeEdit ::
     -> View edit r
 viewObjectMaybeEdit call = do
     MkObject {..} <- viewObject
-    liftIO $ objRun $ call $ objEdit
+    liftIO $ runUnliftIO objRun $ call $ objEdit
 
 viewObjectPushEdit ::
        (forall m. MonadUnliftIO m =>
@@ -180,7 +175,7 @@ viewOpenSelection :: View edit ()
 viewOpenSelection = MkView $ \MkViewContext {..} -> vcOpenSelection
 
 mapViewEdit ::
-       forall edita editb a. (Edit edita, Edit editb)
+       forall edita editb a. ()
     => EditLens edita editb
     -> View editb a
     -> View edita a
@@ -209,8 +204,7 @@ mapUpdates ::
                       MutableRead (t m) (EditReader editb) -> [editb] -> t m r)
     -> m r
 mapUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnEditFunction {..}) mrA editsA call =
-    traceUnlift "mapUpdates"
-    unlift $
+    runUnlift (traceUnlift "mapUpdates" unlift) $
     withTransConstraintTM @MonadIO $ do
         editsB <- efUpdates ef editsA mrA
         let
@@ -222,7 +216,7 @@ createViewAddAspect :: Aspect edit -> CreateView edit ()
 createViewAddAspect aspect = liftInner $ (pure ()) {vrFirstAspect = aspect}
 
 mapCreateViewEdit ::
-       forall edita editb a. (Edit edita, Edit editb)
+       forall edita editb a. ()
     => EditLens edita editb
     -> CreateView editb a
     -> CreateView edita a

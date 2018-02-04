@@ -60,8 +60,9 @@ instance IsSequence seq => Floating (StringEdit seq) (StringEdit seq) where
     floatingUpdate _ (StringReplaceWhole s) = StringReplaceWhole s
     floatingUpdate edit (StringReplaceSection run s) = StringReplaceSection (floatingUpdate edit run) s
 
+type instance EditReader (StringEdit seq) = StringRead seq
+
 instance IsSequence seq => Edit (StringEdit seq) where
-    type EditReader (StringEdit seq) = StringRead seq
     applyEdit (StringReplaceWhole s) _ reader = return $ subjectToRead s reader
     applyEdit (StringReplaceSection erunRaw s) mr StringReadLength = do
         oldlen <- mr StringReadLength
@@ -170,4 +171,10 @@ stringSectionLens initial =
                             runa = relativeRun (negate $ runStart oldstate) runb
                         put oldstate {runLength = newlength}
                         return $ Just [StringReplaceSection runa sb]
+            elPutEdits ::
+                   forall m. MonadIO m
+                => [StringEdit seq]
+                -> MutableRead m (EditReader (StringEdit seq))
+                -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
+            elPutEdits = elPutEditsFromPutEdit elPutEdit
             in MkCloseUnlift (traceUnlift "stringSectionLens" $ mvarUnlift var) MkAnEditLens {..}

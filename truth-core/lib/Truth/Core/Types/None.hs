@@ -1,5 +1,3 @@
-{-# OPTIONS -fno-warn-redundant-constraints #-}
-
 module Truth.Core.Types.None where
 
 import Truth.Core.Edit
@@ -35,8 +33,9 @@ deriving instance Empty (NoEdit reader)
 
 instance Floating (NoEdit reader) (NoEdit reader)
 
+type instance EditReader (NoEdit reader) = reader
+
 instance Edit (NoEdit reader) where
-    type EditReader (NoEdit reader) = reader
     applyEdit edit _ = never edit
 
 instance InvertibleEdit (NoEdit reader) where
@@ -51,5 +50,5 @@ noEditLens = let
     efGet mr = remonadMutableRead IdentityT mr
     efUpdate edit _ = never edit
     elFunction = MkAnEditFunction {..}
-    elPutEdit _ _ = return Nothing
+    elPutEdits _ _ = return Nothing
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}

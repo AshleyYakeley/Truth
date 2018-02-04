@@ -37,22 +37,30 @@ sumWholeLiftEditFunction ::
 sumWholeLiftEditFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ sumWholeLiftAnEditFunction f
 
 sumWholeLiftAnEditLens ::
-       (MonadTransConstraint MonadIO t, SubjectReader (EditReader edita), FullSubjectReader (EditReader editb))
+       forall t edita editb.
+       ( MonadTransConstraint MonadIO t
+       , Edit edita
+       , FullSubjectReader (EditReader edita)
+       , FullSubjectReader (EditReader editb)
+       )
     => (forall m. MonadIO m =>
                       EditSubject editb -> MutableRead m (EditReader edita) -> t m (Maybe (EditSubject edita)))
     -> AnEditLens t edita editb
     -> AnEditLens t (SumWholeEdit edita) (SumWholeEdit editb)
-sumWholeLiftAnEditLens pushback lens =
-    MkAnEditLens
-    { elFunction = sumWholeLiftAnEditFunction (elFunction lens)
-    , elPutEdit =
-          \peditb mr ->
-              withTransConstraintTM @MonadIO $
-              case peditb of
-                  SumEditLeft (MkWholeEdit b) -> do
-                      ma <- pushback b mr
-                      return $ fmap (pure . SumEditLeft . MkWholeEdit) ma
-                  SumEditRight editb -> do
-                      mstateedita <- elPutEdit lens editb mr
-                      return $ fmap (fmap SumEditRight) mstateedita
-    }
+sumWholeLiftAnEditLens pushback lens = let
+    elPutEdit ::
+           forall m. MonadIO m
+        => SumEdit (WholeReaderEdit (EditReader editb)) editb
+        -> MutableRead m (EditReader edita)
+        -> t m (Maybe [SumEdit (WholeReaderEdit (EditReader edita)) edita])
+    elPutEdit peditb mr =
+        withTransConstraintTM @MonadIO $
+        case peditb of
+            SumEditLeft (MkWholeEdit b) -> do
+                ma <- pushback b mr
+                return $ fmap (pure . SumEditLeft . MkWholeEdit) ma
+            SumEditRight editb -> do
+                mstateedita <- elPutEdits lens [editb] mr
+                return $ fmap (fmap SumEditRight) mstateedita
+    in MkAnEditLens
+       {elFunction = sumWholeLiftAnEditFunction (elFunction lens), elPutEdits = elPutEditsFromPutEdit elPutEdit}

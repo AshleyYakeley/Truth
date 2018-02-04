@@ -1,7 +1,14 @@
 module Control.Monad.Trans.Tunnel where
 
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.Constraint
-import Shapes.Import
+import Control.Monad.Trans.Except
+import Control.Monad.Trans.Identity
+import Control.Monad.Trans.List
+import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.State
+import Control.Monad.Trans.Writer
 
 class (MonadTrans t, MonadTransConstraint Monad t) =>
       MonadTransTunnel t where
@@ -73,8 +80,3 @@ instance MonadTransTunnel ListT where
                  Left e -> [Left e]
                  Right aa -> fmap Right aa) $
         runExceptT ma
-
-type UnliftIO m = forall r. m r -> IO r
-
-remonadUnliftIO :: MonadTransTunnel t => (forall a. m1 a -> m2 a) -> UnliftIO (t m2) -> UnliftIO (t m1)
-remonadUnliftIO ff r2 m1a = r2 $ remonad ff m1a

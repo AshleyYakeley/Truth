@@ -80,10 +80,10 @@ mustExistOneEditLens err = let
     efUpdate (SumEditRight (MkOneEdit edit)) _ = return [edit]
     elFunction :: AnEditFunction IdentityT (OneWholeEdit f edit) edit
     elFunction = MkAnEditFunction {..}
-    elPutEdit ::
+    elPutEdits ::
            forall m. MonadIO m
-        => edit
+        => [edit]
         -> MutableRead m (EditReader (OneWholeEdit f edit))
         -> IdentityT m (Maybe [OneWholeEdit f edit])
-    elPutEdit edit _ = return $ Just [SumEditRight $ MkOneEdit edit]
+    elPutEdits edits _ = return $ Just $ fmap (SumEditRight . MkOneEdit) edits
     in MkCloseUnlift identityUnlift MkAnEditLens {..}

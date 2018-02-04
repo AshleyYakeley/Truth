@@ -25,12 +25,14 @@ instance (Floating ea ea, Floating eb eb) => Floating (SumEdit ea eb) (SumEdit e
     floatingUpdate (SumEditRight e1) (SumEditRight e2) = SumEditRight $ floatingUpdate e1 e2
     floatingUpdate _ t = t
 
+type instance EditReader (SumEdit ea eb) = EditReader ea
+
 instance (Edit ea, Edit eb, EditReader ea ~ EditReader eb) => Edit (SumEdit ea eb) where
-    type EditReader (SumEdit ea eb) = EditReader ea
     applyEdit (SumEditLeft edit) = applyEdit edit
     applyEdit (SumEditRight edit) = applyEdit edit
 
-instance (InvertibleEdit ea, InvertibleEdit eb, EditReader ea ~ EditReader eb) => InvertibleEdit (SumEdit ea eb) where
+instance (Edit ea, Edit eb, InvertibleEdit ea, InvertibleEdit eb, EditReader ea ~ EditReader eb) =>
+         InvertibleEdit (SumEdit ea eb) where
     invertEdit (SumEditLeft edit) mr = fmap (fmap SumEditLeft) $ invertEdit edit mr
     invertEdit (SumEditRight edit) mr = fmap (fmap SumEditRight) $ invertEdit edit mr
 

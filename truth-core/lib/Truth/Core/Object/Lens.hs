@@ -22,8 +22,8 @@ mapSubscriber lens@(MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens lensFunc _)
             -> MutableRead m (EditReader edita)
             -> [edita]
             -> m ()
-        updateA editor mrA editAs = traceUnlift "mapSubscriber.updateA"
-            unlift $
+        updateA editor mrA editAs =
+            runUnlift (traceUnlift "mapSubscriber.updateA" unlift) $
             withTransConstraintTM @MonadUnliftIO $ do
                 editBs <- efUpdates lensFunc editAs mrA
                 updateB editor (efGet lensFunc mrA) editBs

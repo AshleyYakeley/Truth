@@ -1,21 +1,6 @@
-{-# OPTIONS -fno-warn-redundant-constraints #-}
-
 module Truth.Core.Edit.Unlift where
 
 import Truth.Core.Import
-
-type Unlift (t :: (* -> *) -> * -> *)
-     = forall (m :: * -> *) (r :: *). MonadUnliftIO m =>
-                                          t m r -> m r
-
-identityUnlift :: Unlift IdentityT
-identityUnlift = runIdentityT
-
-composeUnlift :: MonadTransUnlift tb => Unlift ta -> Unlift tb -> Unlift (ComposeT ta tb)
-composeUnlift ua ub (MkComposeT tatbma) = ub $ withTransConstraintTM @MonadUnliftIO $ ua tatbma
-
-mvarUnlift :: MVar s -> Unlift (StateT s)
-mvarUnlift var (StateT smr) = liftIOWithUnlift $ \unlift -> modifyMVar var $ \olds -> unlift $ fmap swap $ smr olds
 
 data CloseUnlift f (a :: k) (b :: k) =
     forall t. MonadTransUnlift t =>

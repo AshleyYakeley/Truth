@@ -26,7 +26,7 @@ instance SubjectReader AnyReader where
 
 data AnyEdit where
     MkAnyEdit
-        :: forall edit. (InvertibleEdit edit, SubjectReader (EditReader edit))
+        :: forall edit. (Edit edit, InvertibleEdit edit, SubjectReader (EditReader edit))
         => IOWitness edit
         -> edit
         -> AnyEdit
@@ -37,8 +37,9 @@ instance Floating AnyEdit AnyEdit where
             Just Refl -> MkAnyEdit info2 $ floatingUpdate edit1 edit2
             Nothing -> aedit2
 
+type instance EditReader AnyEdit = AnyReader
+
 instance Edit AnyEdit where
-    type EditReader AnyEdit = AnyReader
     applyEdit (MkAnyEdit ie edit) mr areader@(ReadAnyReader ir rt) = do
         MkAnyTypes oie <- mr ReadAnyTypes
         case (testEquality oie ie, testEquality oie ir) of

@@ -67,8 +67,9 @@ data FSEdit
 
 instance Floating FSEdit FSEdit
 
+type instance EditReader FSEdit = FSReader
+
 instance Edit FSEdit where
-    type EditReader FSEdit = FSReader
     applyEdit _ _ = undefined -- TODO
 
 createFile :: FilePath -> ByteString -> IO ()
@@ -80,7 +81,7 @@ createFile path bs = do
 fileSystemObject :: Object FSEdit
 fileSystemObject = let
     objRun :: UnliftIO IO
-    objRun = id
+    objRun = MkUnliftIO id
     objRead :: MutableRead IO FSReader
     objRead (FSReadDirectory path) = do
         isDir <- doesDirectoryExist path

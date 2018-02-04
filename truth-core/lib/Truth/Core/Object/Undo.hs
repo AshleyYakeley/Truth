@@ -48,12 +48,12 @@ undoQueueSubscriber sub =
         queueVar <- newMVar $ MkUndoQueue [] []
         let
             init' :: Object edit -> IO (editor, UndoActions)
-            init' object@(MkObject (runA :: UnliftIO ma) _ pushA) = do
+            init' object@(MkObject (MkUnliftIO runA :: UnliftIO ma) _ pushA) = do
                 editor <- init object
                 let
                     uaUndo :: IO ()
                     uaUndo =
-                        mvarUnlift queueVar $ do
+                        mvarRun queueVar $ do
                             MkUndoQueue ues res <- get
                             case ues of
                                 [] -> return () -- nothing to undo
@@ -72,7 +72,7 @@ undoQueueSubscriber sub =
                                         else return ()
                     uaRedo :: IO ()
                     uaRedo =
-                        mvarUnlift queueVar $ do
+                        mvarRun queueVar $ do
                             MkUndoQueue ues res <- get
                             case res of
                                 [] -> return () -- nothing to redo
@@ -98,7 +98,9 @@ undoQueueSubscriber sub =
                 -> m ()
             update' (editor, _) mr edits = do
                 update editor mr edits
-                _ <- mvarUnlift queueVar $ impotent $ updateUndoQueue mr edits -- impotent, so as to not change the queue on undo and redo edits
+                _ <- do
+                    MkUnlift du <- mvarRun queueVar $ getDiscardingUnlift
+                    du $ updateUndoQueue mr edits -- discard changes to the queue on undo and redo edits
                 return ()
         ((editor, undoActions), closer, actions) <- subscribe sub init' update'
         return (editor, closer, (actions, undoActions))

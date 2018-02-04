@@ -86,7 +86,7 @@ testOutputEditor name call = let
     outputLn :: MonadIO m => String -> m ()
     outputLn s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s
     editorInit :: Object edit -> IO (Object edit)
-    editorInit object@(MkObject run r _) = do
+    editorInit object@(MkObject (MkUnliftIO run) r _) = do
         val <- run $ mutableReadToSubject r
         outputLn $ "init: " ++ show val
         return object
@@ -101,7 +101,7 @@ testOutputEditor name call = let
         val <- mutableReadToSubject mr
         outputLn $ "receive " ++ show val
     editorDo :: Object edit -> actions -> IO ()
-    editorDo (MkObject run _ push) subActions = let
+    editorDo (MkObject (MkUnliftIO run) _ push) subActions = let
         subDontEdits :: [[edit]] -> IO ()
         subDontEdits editss = do
             outputLn "runObject"

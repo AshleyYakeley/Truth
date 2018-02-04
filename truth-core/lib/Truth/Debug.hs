@@ -3,9 +3,9 @@ module Truth.Debug where
 import Debug.Trace
 import Truth.Core.Edit
 import Truth.Core.Import
+
 --import Truth.Core.Object.Object
 --import Truth.Core.Read
-
 contextStr :: String -> String -> String
 contextStr "" b = b
 contextStr a b = a ++ ": " ++ b
@@ -28,11 +28,12 @@ data EditShower edit = MkEditShower
 
 blankEditShower :: EditShower edit
 blankEditShower = MkEditShower {showRead = \_ -> "", showReadResult = \_ _ -> "", showEdits = \_ -> ""}
+
 {-
 traceObject :: forall edit. String -> EditShower edit -> Object edit -> Object edit
-traceObject prefix MkEditShower {..} (MkObject (run :: UnliftIO m) r e) = let
+traceObject prefix MkEditShower {..} (MkObject (MkUnliftIO run :: UnliftIO m) r e) = let
     run' :: UnliftIO m
-    run' m = traceBracket (contextStr prefix "object") $ run m
+    run' = MkUnliftIO $ \m -> traceBracket (contextStr prefix "object") $ run m
     r' :: MutableRead m (EditReader edit)
     r' rt = traceBracketArgs (contextStr prefix "read") (showRead rt) (showReadResult rt) $ r rt
     e' :: [edit] -> m (Maybe (m ()))
@@ -40,6 +41,7 @@ traceObject prefix MkEditShower {..} (MkObject (run :: UnliftIO m) r e) = let
     in MkObject run' r' e'
 -}
 traceUnlift :: MonadTransConstraint MonadIO t => String -> Unlift t -> Unlift t
-traceUnlift name unlift tma =
-    traceBracket (contextStr name "outside") $
-    unlift $ withTransConstraintTM @MonadIO $ traceBracket (contextStr name "inside") tma
+traceUnlift name unlift =
+    MkUnlift $ \tma ->
+        traceBracket (contextStr name "outside") $
+        runUnlift unlift $ withTransConstraintTM @MonadIO $ traceBracket (contextStr name "inside") tma

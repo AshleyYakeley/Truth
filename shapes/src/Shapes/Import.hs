@@ -77,6 +77,13 @@ import Control.Monad.Trans.Reader as I (ReaderT(..), ask)
 import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT, get, put)
 import Control.Monad.Trans.Writer as I (WriterT(..), execWriterT, tell)
 
+-- transformers-extra
+import Control.Monad.Trans.Compose as I
+import Control.Monad.Trans.Constraint as I
+import Control.Monad.Trans.StackIO as I
+import Control.Monad.Trans.Tunnel as I
+import Control.Monad.Trans.Unlift as I
+
 -- hashable
 import Data.Hashable as I (Hashable)
 

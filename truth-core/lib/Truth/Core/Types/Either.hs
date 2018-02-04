@@ -1,5 +1,3 @@
-{-# OPTIONS -fno-warn-redundant-constraints #-}
-
 module Truth.Core.Types.Either where
 
 import Truth.Core.Edit
@@ -34,19 +32,28 @@ instance (FullSubjectReader ra, FullSubjectReader rb) => FullSubjectReader (Eith
             (Just a, Nothing) -> return $ Left a
             (Nothing, Just a) -> return $ Right a
             _ -> error $ "pureFromReader: inconsistent EitherReader"
-    -- note this edit cannot switch the subject between the left and right branches
 
+-- | note this edit cannot switch the subject between the left and right branches
 data EitherEdit ea eb
     = EitherEditLeft ea
     | EitherEditRight eb
+
+partitionEitherEdits :: forall ea eb. [EitherEdit ea eb] -> ([ea], [eb])
+partitionEitherEdits pes = let
+    toEither :: EitherEdit ea eb -> Either ea eb
+    toEither (EitherEditLeft ea) = Left ea
+    toEither (EitherEditRight eb) = Right eb
+    in partitionEithers $ fmap toEither pes
 
 instance (Floating ea ea, Floating eb eb) => Floating (EitherEdit ea eb) (EitherEdit ea eb) where
     floatingUpdate (EitherEditLeft e1) (EitherEditLeft e2) = EitherEditLeft $ floatingUpdate e1 e2
     floatingUpdate (EitherEditRight e1) (EitherEditRight e2) = EitherEditRight $ floatingUpdate e1 e2
     floatingUpdate _ t = t
 
+type instance EditReader (EitherEdit ea eb) =
+     EitherReader (EditReader ea) (EditReader eb)
+
 instance (Edit ea, Edit eb) => Edit (EitherEdit ea eb) where
-    type EditReader (EitherEdit ea eb) = EitherReader (EditReader ea) (EditReader eb)
     applyEdit (EitherEditLeft edit) mr (EitherReadLeft reader) =
         getCompose $ applyEdit edit (mapEitherReadLeft mr) reader
     applyEdit (EitherEditRight edit) mr (EitherReadRight reader) =
@@ -54,13 +61,8 @@ instance (Edit ea, Edit eb) => Edit (EitherEdit ea eb) where
     applyEdit _ mr reader = mr reader
 
 instance (InvertibleEdit ea, InvertibleEdit eb) => InvertibleEdit (EitherEdit ea eb) where
-    invertEdit (EitherEditLeft edit) mr = do
-        medits <- getCompose $ invertEdit edit $ mapEitherReadLeft mr
-        case medits of
-            Just edits -> return $ fmap EitherEditLeft edits
-            Nothing -> return []
-    invertEdit (EitherEditRight edit) mr = do
-        medits <- getCompose $ invertEdit edit $ mapEitherReadRight mr
-        case medits of
-            Just edits -> return $ fmap EitherEditRight edits
-            Nothing -> return []
+    invertEdits edits mr = do
+        let (eas, ebs) = partitionEitherEdits edits
+        meditas <- getCompose $ invertEdits eas $ mapEitherReadLeft mr
+        meditbs <- getCompose $ invertEdits ebs $ mapEitherReadRight mr
+        return $ (fmap EitherEditLeft $ fromMaybe [] meditas) ++ (fmap EitherEditRight $ fromMaybe [] meditbs)

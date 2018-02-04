@@ -6,11 +6,7 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier
 
 data UILens edit where
-    MkUILens
-        :: forall edita editb. Edit editb
-        => EditLens edita editb
-        -> UISpec editb
-        -> UILens edita
+    MkUILens :: forall edita editb. EditLens edita editb -> UISpec editb -> UILens edita
 
 instance Show (UILens edit) where
     show (MkUILens _ uispec) = "lens " ++ show uispec
@@ -30,11 +26,7 @@ ioMapAspectSpec ff getuispec = do
 mapAspectSpec :: (UISpec edita -> UISpec editb) -> Aspect edita -> Aspect editb
 mapAspectSpec ff = ioMapAspectSpec (return . ff)
 
-uiLens ::
-       forall edita editb. Edit editb
-    => EditLens edita editb
-    -> UISpec editb
-    -> UISpec edita
+uiLens :: forall edita editb. EditLens edita editb -> UISpec editb -> UISpec edita
 uiLens lens spec = MkUISpec $ MkUILens lens spec
 
 uiConvert ::
@@ -43,10 +35,10 @@ uiConvert ::
     -> UISpec edita
 uiConvert = uiLens convertEditLens
 
-mapAspect :: Edit editb => EditLens edita editb -> Aspect editb -> Aspect edita
+mapAspect :: EditLens edita editb -> Aspect editb -> Aspect edita
 mapAspect lens = mapAspectSpec $ uiLens lens
 
-ioMapAspect :: Edit editb => IO (EditLens edita editb) -> Aspect editb -> Aspect edita
+ioMapAspect :: IO (EditLens edita editb) -> Aspect editb -> Aspect edita
 ioMapAspect mlens =
     ioMapAspectSpec $ \uispec -> do
         lens <- mlens

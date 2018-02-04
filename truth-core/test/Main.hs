@@ -7,6 +7,7 @@ module Main
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.State
+import Control.Monad.Trans.Unlift
 import Data.Sequences
 import Data.Type.Equality
 import Prelude
@@ -111,7 +112,7 @@ testLensGet :: TestTree
 testLensGet =
     testProperty "get" $ \run (base :: String) ->
         ioProperty $ do
-            MkCloseUnlift unlift MkAnEditLens {..} <- stringSectionLens run
+            MkCloseUnlift (MkUnlift unlift) MkAnEditLens {..} <- stringSectionLens run
             let MkAnEditFunction {..} = elFunction
             unlift $
                 withTransConstraintTM @MonadIO $ do
@@ -150,7 +151,7 @@ lensUpdateGetProperty ::
     -> Property
 lensUpdateGetProperty getlens oldA editA =
     ioProperty @Property $ do
-        MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens {..}) <- getlens
+        MkCloseUnlift (MkUnlift unlift :: Unlift t) (MkAnEditLens {..}) <- getlens
         case unsafeRefl @t @(StateT state) of
             Refl ->
                 unlift $ do

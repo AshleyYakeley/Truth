@@ -1,15 +1,12 @@
 module Truth.Core.UI.GetView where
 
-import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.UI.Lens
 import Truth.Core.UI.Specifier
 import Truth.Core.UI.View
 
 newtype GetView w = MkGetView
-    { getUIView :: forall edit. Edit edit =>
-                                    (forall edit'. Edit edit' =>
-                                                       UISpec edit' -> CreateView edit' w) -> UISpec edit -> Maybe (CreateView edit w)
+    { getUIView :: forall edit. (forall edit'. UISpec edit' -> CreateView edit' w) -> UISpec edit -> Maybe (CreateView edit w)
     }
 
 instance Semigroup (GetView w) where

@@ -6,11 +6,6 @@ import Shapes.Import as I
 
 -- shapes
 import Control.Constrained.Category as I
-import Control.Monad.Trans.Compose as I
-import Control.Monad.Trans.Constraint as I
-import Control.Monad.Trans.StackIO as I
-import Control.Monad.Trans.Tunnel as I
-import Control.Monad.Trans.Unlift as I
 import Data.Bijection as I
 import Data.CatFunctor as I
 import Data.Codec as I

@@ -24,8 +24,9 @@ newtype WholeReaderEdit (reader :: * -> *) =
 
 instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader)
 
+type instance EditReader (WholeReaderEdit reader) = reader
+
 instance (FullSubjectReader reader) => Edit (WholeReaderEdit reader) where
-    type EditReader (WholeReaderEdit reader) = reader
     applyEdit (MkWholeEdit a) _ = subjectToMutableRead a
 
 instance (FullSubjectReader reader) => InvertibleEdit (WholeReaderEdit reader) where
@@ -60,8 +61,8 @@ wholeEditLens lens =
           { efGet = \mr ReadWhole -> lift $ fmap (lensGet lens) $ mr ReadWhole
           , efUpdate = \(MkWholeEdit a) _ -> return [MkWholeEdit $ lensGet lens a]
           }
-    , elPutEdit =
-          \(MkWholeEdit b) mr ->
+    , elPutEdits =
+          elPutEditsFromPutEdit $ \(MkWholeEdit b) mr ->
               lift $ do
                   olda <- mr ReadWhole
                   return $ fmap (\newa -> [MkWholeEdit newa]) $ getMaybeOne $ lensPutback lens b olda

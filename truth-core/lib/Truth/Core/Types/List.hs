@@ -1,5 +1,3 @@
-{-# OPTIONS -fno-warn-redundant-constraints #-}
-
 module Truth.Core.Types.List where
 
 import Truth.Core.Edit
@@ -61,9 +59,11 @@ instance (Enum (Index seq), Ord (Index seq)) => Floating (ListEdit seq edit) (Li
     floatingUpdate edit (ListInsertItem i a) = ListInsertItem (floatingUpdate edit i) a
     floatingUpdate _edit ListClear = ListClear
 
+type instance EditReader (ListEdit seq edit) =
+     ListReader seq (EditReader edit)
+
 instance (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSubject edit ~ Element seq) =>
          Edit (ListEdit seq edit) where
-    type EditReader (ListEdit seq edit) = ListReader seq (EditReader edit)
     applyEdit (ListEditItem p edit) mr (ListReadItem i reader)
         | p == i = getCompose $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
     applyEdit (ListEditItem _ _) mr reader = mr reader
@@ -94,7 +94,12 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSu
     applyEdit (ListInsertItem _ _) mr (ListReadItem i reader) = mr $ ListReadItem i reader
     applyEdit ListClear _mr reader = subjectToMutableRead mempty reader
 
-instance (IsSequence seq, FullSubjectReader (EditReader edit), InvertibleEdit edit, EditSubject edit ~ Element seq) =>
+instance ( IsSequence seq
+         , FullSubjectReader (EditReader edit)
+         , Edit edit
+         , InvertibleEdit edit
+         , EditSubject edit ~ Element seq
+         ) =>
          InvertibleEdit (ListEdit seq edit) where
     invertEdit (ListEditItem p edit) mr = do
         minvedits <- getCompose $ invertEdit edit $ itemReadFunction p mr
@@ -124,7 +129,7 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSu
             write $ ListInsertItem i item
 
 listItemLens ::
-       forall seq edit. (Num (Index seq), Ord (Index seq))
+       forall seq edit. (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSubject edit ~ Element seq)
     => Unlift (StateT (SequencePoint seq))
     -> EditLens (ListEdit seq edit) (MaybeEdit edit)
 listItemLens unlift = let
@@ -187,4 +192,10 @@ listItemLens unlift = let
     elPutEdit (SumEditLeft (MkWholeEdit (Just subj))) _ = do
         i <- get
         return $ Just [ListInsertItem i subj]
+    elPutEdits ::
+           forall m. MonadIO m
+        => [MaybeEdit edit]
+        -> MutableRead m (EditReader (ListEdit seq edit))
+        -> StateT (SequencePoint seq) m (Maybe [ListEdit seq edit])
+    elPutEdits = elPutEditsFromPutEdit elPutEdit
     in MkCloseUnlift unlift MkAnEditLens {..}

@@ -6,11 +6,12 @@ import Truth.Core.Import
 fileObject :: FilePath -> Object ByteStringEdit
 fileObject path = let
     objRun :: UnliftIO (ReaderT Handle IO)
-    objRun rt = do
-        h <- openBinaryFile path ReadWriteMode
-        r <- runReaderT rt h
-        hClose h
-        return r
+    objRun =
+        MkUnliftIO $ \rt -> do
+            h <- openBinaryFile path ReadWriteMode
+            r <- runReaderT rt h
+            hClose h
+            return r
     objRead :: MutableRead (ReaderT Handle IO) ByteStringReader
     objRead ReadByteStringLength = do
         h <- ask

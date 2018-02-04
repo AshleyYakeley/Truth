@@ -25,10 +25,11 @@ withToOpen withX = do
 type AutoClose key t = StateT (Map key (t, IO ())) IO
 
 runAutoClose :: Ord key => UnliftIO (AutoClose key t)
-runAutoClose ac = do
-    (a, mp) <- runStateT ac mempty
-    for_ (elems mp) snd
-    return a
+runAutoClose =
+    MkUnliftIO $ \ac -> do
+        (a, mp) <- runStateT ac mempty
+        for_ (elems mp) snd
+        return a
 
 acOpenObject :: Ord key => key -> (forall r. (t -> IO r) -> IO r) -> AutoClose key t t
 acOpenObject key withX = do
