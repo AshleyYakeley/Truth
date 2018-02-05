@@ -8,6 +8,7 @@ import Soup.Edit
 import Soup.Note
 import System.FilePath hiding ((<.>))
 import Truth.Core
+import Truth.Debug.Object
 import Truth.World.FileSystem
 
 fromResult :: Result String String -> (String, TableCellProps)
@@ -72,5 +73,5 @@ soupWindow dirpath = do
     let
         uiwTitle = takeFileName $ dropTrailingPathSeparator dirpath
         uiwSpec = soupEditSpec
-    uiwSubscriber <- makeObjectSubscriber $ soupObject dirpath
+    uiwSubscriber <- makeObjectSubscriber $ traceObject' "soup" $ soupObject dirpath
     return $ MkUIWindow {..}
