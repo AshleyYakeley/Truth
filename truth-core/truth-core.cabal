@@ -72,6 +72,7 @@ library
     exposed-modules:
         Truth.Core
         Truth.Debug
+        Truth.Debug.Object
         Truth.World.Anything
         Truth.World.File
         Truth.World.FileSystem
