@@ -11,6 +11,40 @@ data NoteSel t where
     NotePast :: NoteSel (WholeEdit Bool)
     NoteText :: NoteSel (StringEdit Text)
 
+instance (c (WholeEdit String), c (WholeEdit Bool), c (StringEdit Text)) => WitnessConstraint c NoteSel where
+    witnessConstraint NoteTitle = Dict
+    witnessConstraint NotePast = Dict
+    witnessConstraint NoteText = Dict
+
+instance Show (NoteSel t) where
+    show NoteTitle = "title"
+    show NotePast = "past"
+    show NoteText = "text"
+
+instance AllWitnessConstraint Show NoteSel where
+    allWitnessConstraint = Dict
+
+instance (c (WholeReader String), c (WholeReader Bool), c (StringRead Text)) => TupleReaderWitness c NoteSel where
+    tupleReaderWitness _ NoteTitle = Dict
+    tupleReaderWitness _ NotePast = Dict
+    tupleReaderWitness _ NoteText = Dict
+
+instance (c String, c Bool, c Text) => TupleSubjectWitness c NoteSel where
+    tupleSubjectWitness _ NoteTitle = Dict
+    tupleSubjectWitness _ NotePast = Dict
+    tupleSubjectWitness _ NoteText = Dict
+
+instance FiniteWitness NoteSel where
+    assembleWitnessF getw =
+        (\a b c ->
+             MkAllF $ \case
+                 NoteTitle -> a
+                 NotePast -> b
+                 NoteText -> c) <$>
+        getw NoteTitle <*>
+        getw NotePast <*>
+        getw NoteText
+
 instance TestEquality NoteSel where
     testEquality NoteTitle NoteTitle = Just Refl
     testEquality NotePast NotePast = Just Refl
@@ -26,16 +60,6 @@ instance TupleWitness FullEdit NoteSel where
     tupleWitness _ NoteTitle = Dict
     tupleWitness _ NotePast = Dict
     tupleWitness _ NoteText = Dict
-
-instance TupleReaderWitness SubjectReader NoteSel where
-    tupleReaderWitness _ NoteTitle = Dict
-    tupleReaderWitness _ NotePast = Dict
-    tupleReaderWitness _ NoteText = Dict
-
-instance TupleReaderWitness FullSubjectReader NoteSel where
-    tupleReaderWitness _ NoteTitle = Dict
-    tupleReaderWitness _ NotePast = Dict
-    tupleReaderWitness _ NoteText = Dict
 
 instance SubjectTupleSelector NoteSel
 

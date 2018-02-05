@@ -2,22 +2,22 @@ main: init: "ABCDE"
 lens: init: "BCD"
 var: "ABCDE"
 main: runObject
-main: push [StringReplaceSection 3+2 "PQR"]
+main: push [section 3+2 "PQR"]
 main: push ignored
 var: "ABCDE"
 main: runObject
-main: push [StringReplaceSection 1+1 "xy"]
-main: receive [StringReplaceSection 1+1 "xy"]
+main: push [section 1+1 "xy"]
+main: receive [section 1+1 "xy"]
 main: receive "AxyCDE"
-lens: receive [StringReplaceSection 0+1 "xy"]
+lens: receive [section 0+1 "xy"]
 lens: receive "xyCD"
 main: push succeeded
 var: "AxyCDE"
 main: runObject
-main: push [StringReplaceSection 2+2 "1"]
-main: receive [StringReplaceSection 2+2 "1"]
+main: push [section 2+2 "1"]
+main: receive [section 2+2 "1"]
 main: receive "Ax1DE"
-lens: receive [StringReplaceSection 1+2 "1"]
+lens: receive [section 1+2 "1"]
 lens: receive "x1D"
 main: push succeeded
 var: "Ax1DE"

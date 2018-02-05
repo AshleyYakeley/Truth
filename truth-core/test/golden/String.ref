@@ -1,22 +1,22 @@
 main: init: "ABCDE"
 var: "ABCDE"
 main: runObject
-main: push [StringReplaceSection 3+2 "PQR"]
+main: push [section 3+2 "PQR"]
 main: push ignored
 var: "ABCDE"
 main: runObject
-main: push [StringReplaceSection 2+1 ""]
+main: push [section 2+1 ""]
 main: push ignored
 var: "ABCDE"
 main: runObject
-main: push [StringReplaceSection 1+1 "xy"]
-main: receive [StringReplaceSection 1+1 "xy"]
+main: push [section 1+1 "xy"]
+main: receive [section 1+1 "xy"]
 main: receive "AxyCDE"
 main: push succeeded
 var: "AxyCDE"
 main: runObject
-main: push [StringReplaceSection 2+2 "1"]
-main: receive [StringReplaceSection 2+2 "1"]
+main: push [section 2+2 "1"]
+main: receive [section 2+2 "1"]
 main: receive "Ax1DE"
 main: push succeeded
 var: "Ax1DE"

@@ -24,3 +24,22 @@ traceObject prefix MkEditShower {..} (MkObject (MkUnliftIO run :: UnliftIO m) r 
     e' :: [edit] -> m (Maybe (m ()))
     e' edits = (fmap $ fmap $ traceBracketArgs (contextStr prefix "edit") (showEdits edits) (\_ -> "")) $ e edits
     in MkObject run' r' e'
+
+showEditShower ::
+       forall edit. (Show edit, AllWitnessConstraint Show (EditReader edit), WitnessConstraint Show (EditReader edit))
+    => EditShower edit
+showEditShower = let
+    showRead rt = showAllWitness rt
+    showReadResult :: forall t. EditReader edit t -> t -> String
+    showReadResult rt t =
+        case witnessConstraint @_ @Show rt of
+            Dict -> show t
+    showEdits edits = "[" ++ intercalate "," (fmap show edits) ++ "]"
+    in MkEditShower {..}
+
+traceObject' ::
+       (Show edit, AllWitnessConstraint Show (EditReader edit), WitnessConstraint Show (EditReader edit))
+    => String
+    -> Object edit
+    -> Object edit
+traceObject' prefix = traceObject prefix showEditShower

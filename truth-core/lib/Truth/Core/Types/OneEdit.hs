@@ -8,6 +8,9 @@ import Truth.Core.Types.OneReader
 newtype OneEdit (f :: * -> *) edit =
     MkOneEdit edit
 
+instance Show edit => Show (OneEdit f edit) where
+    show (MkOneEdit e) = "one " ++ show e
+
 instance Floating edit edit => Floating (OneEdit f edit) (OneEdit f edit) where
     floatingUpdate (MkOneEdit e1) (MkOneEdit e2) = MkOneEdit $ floatingUpdate e1 e2
 

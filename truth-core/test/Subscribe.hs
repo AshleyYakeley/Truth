@@ -8,7 +8,6 @@ import Control.Concurrent.MVar
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Unlift
 import Data.Foldable
-import Data.Sequences
 import Prelude
 import System.IO
 import Test.Tasty
@@ -56,21 +55,6 @@ testSavable = testCase "Savable" $ do return ()
         found <- subscribeEditor cleanSaveSub testEditor
         assertEqual "value" False found
 -}
-instance Integral (Index seq) => Show (StringRead seq t) where
-    show StringReadLength = "StringReadLength"
-    show (StringReadSection run) = "StringReadSection " ++ show run
-
-instance (Show (ReaderSubject reader)) => Show (WholeReaderEdit reader) where
-    show (MkWholeEdit a) = "whole " ++ show a
-
-instance (Show e1, Show e2) => Show (TupleEdit (PairSelector e1 e2)) where
-    show (MkTupleEdit EditFirst e) = "fst " ++ show e
-    show (MkTupleEdit EditSecond e) = "snd " ++ show e
-
-instance (Show seq, Integral (Index seq)) => Show (StringEdit seq) where
-    show (StringReplaceWhole sq) = "StringReplaceWhole " ++ show sq
-    show (StringReplaceSection run sq) = "StringReplaceSection " ++ show run ++ " " ++ show sq
-
 data SubscribeContext edit actions = MkSubscribeContext
     { subDoEdits :: [[edit]] -> IO ()
     , subDontEdits :: [[edit]] -> IO ()

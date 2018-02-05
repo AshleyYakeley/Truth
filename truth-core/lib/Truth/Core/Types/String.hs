@@ -11,6 +11,17 @@ data StringRead seq t where
     StringReadLength :: StringRead seq (SequencePoint seq)
     StringReadSection :: SequenceRun seq -> StringRead seq seq
 
+instance Integral (Index seq) => Show (StringRead seq t) where
+    show StringReadLength = "length"
+    show (StringReadSection run) = "section " ++ show run
+
+instance (c seq, c (SequencePoint seq)) => WitnessConstraint c (StringRead seq) where
+    witnessConstraint StringReadLength = Dict
+    witnessConstraint (StringReadSection _) = Dict
+
+instance Integral (Index seq) => AllWitnessConstraint Show (StringRead seq) where
+    allWitnessConstraint = Dict
+
 instance IsSequence seq => SubjectReader (StringRead seq) where
     type ReaderSubject (StringRead seq) = seq
     subjectToRead s StringReadLength = seqLength s
@@ -25,6 +36,10 @@ data StringEdit seq
     = StringReplaceWhole seq
     | StringReplaceSection (SequenceRun seq)
                            seq
+
+instance (Show seq, Integral (Index seq)) => Show (StringEdit seq) where
+    show (StringReplaceWhole s) = "whole " ++ show s
+    show (StringReplaceSection r s) = "section " ++ show r ++ " " ++ show s
 
 floatingUpdateLeft :: IsSequence seq => StringEdit seq -> SequencePoint seq -> SequencePoint seq
 floatingUpdateLeft (StringReplaceSection (MkSequenceRun ustart ulen) u) i = let

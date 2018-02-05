@@ -16,10 +16,6 @@ instance Eq QValue where
     (MkAny QLiteral a1) == (MkAny QLiteral a2) = a1 == a2
     _ == _ = error "QValue: not comparable"
 
-instance (Show e, Show a) => Show (Result e a) where
-    show (SuccessResult a) = "success " ++ show a
-    show (FailureResult e) = "failure " ++ show e
-
 testQueryValue :: (Eq a, Show a) => String -> QExpr a -> Maybe a -> TestTree
 testQueryValue name expr expected = testCase name $ assertEqual "result" expected $ qeval expr
 

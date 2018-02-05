@@ -15,6 +15,7 @@ newtype FiniteSet a = MkFiniteSet
                , MonoFoldable
                , GrowingAppend
                , Filterable
+               , Show
                )
 
 type instance Element (FiniteSet a) = a

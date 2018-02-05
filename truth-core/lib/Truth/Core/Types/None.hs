@@ -31,6 +31,9 @@ instance Finite (NoEdit reader) where
 
 deriving instance Empty (NoEdit reader)
 
+instance Show (NoEdit reader) where
+    show edit = never edit
+
 instance Floating (NoEdit reader) (NoEdit reader)
 
 type instance EditReader (NoEdit reader) = reader

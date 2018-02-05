@@ -19,6 +19,21 @@ data KeyReader cont reader t where
     KeyReadKeys :: KeyReader cont reader (FiniteSet (ContainerKey cont))
     KeyReadItem :: ContainerKey cont -> reader t -> KeyReader cont reader (Maybe t)
 
+instance (Show (ContainerKey cont), AllWitnessConstraint Show reader) => Show (KeyReader cont reader t) where
+    show KeyReadKeys = "keys"
+    show (KeyReadItem key rt) = "item " ++ show key ++ showAllWitness rt
+
+instance (Show (ContainerKey cont), AllWitnessConstraint Show reader) =>
+         AllWitnessConstraint Show (KeyReader cont reader) where
+    allWitnessConstraint = Dict
+
+instance (Show (ContainerKey cont), WitnessConstraint Show reader) =>
+         WitnessConstraint Show (KeyReader cont reader) where
+    witnessConstraint KeyReadKeys = Dict
+    witnessConstraint (KeyReadItem _ rt) =
+        case witnessConstraint @_ @Show rt of
+            Dict -> Dict
+
 keyItemReadFunction :: forall cont reader. ContainerKey cont -> ReadFunctionF Maybe (KeyReader cont reader) reader
 keyItemReadFunction key mr rt = Compose $ mr $ KeyReadItem key rt
 
@@ -47,6 +62,12 @@ data KeyEdit cont edit where
     KeyDeleteItem :: ContainerKey cont -> KeyEdit cont edit
     KeyInsertReplaceItem :: Element cont -> KeyEdit cont edit
     KeyClear :: KeyEdit cont edit
+
+instance (Show (ContainerKey cont), Show edit, Show (Element cont)) => Show (KeyEdit cont edit) where
+    show (KeyEditItem key edit) = "edit " ++ show key ++ " " ++ show edit
+    show (KeyDeleteItem key) = "delete " ++ show key
+    show (KeyInsertReplaceItem element) = "insert " ++ show element
+    show KeyClear = "clear"
 
 class (SubjectReader reader, ReaderSubject reader ~ Element cont) =>
       HasKeyReader cont reader where
