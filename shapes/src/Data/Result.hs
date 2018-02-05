@@ -71,6 +71,10 @@ instance MonadFix (Result e) where
         ma = ama $ getSuccess ma
         in ma
 
+instance (Show e, Show a) => Show (Result e a) where
+    show (SuccessResult a) = "success: " ++ show a
+    show (FailureResult e) = "failure: " ++ show e
+
 mapResult :: Bijection (Result e2 (Result e1 a)) (Result (Either e2 e1) a)
 mapResult = MkBijection forwards backwards
   where

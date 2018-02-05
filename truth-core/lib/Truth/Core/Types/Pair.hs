@@ -9,6 +9,17 @@ data PairSelector ea eb (et :: *) where
     EditFirst :: PairSelector ea eb ea
     EditSecond :: PairSelector ea eb eb
 
+instance (c ea, c eb) => WitnessConstraint c (PairSelector ea eb) where
+    witnessConstraint EditFirst = Dict
+    witnessConstraint EditSecond = Dict
+
+instance Show (PairSelector ea eb et) where
+    show EditFirst = "first"
+    show EditSecond = "second"
+
+instance AllWitnessConstraint Show (PairSelector ea eb) where
+    allWitnessConstraint = Dict
+
 type PairEditReader ea eb = TupleEditReader (PairSelector ea eb)
 
 type PairEdit ea eb = TupleEdit (PairSelector ea eb)

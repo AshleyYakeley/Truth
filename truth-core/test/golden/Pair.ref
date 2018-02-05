@@ -2,8 +2,8 @@ main: init: (False,False)
 var: (False,False)
 expected: (True,True)
 main: runObject
-main: push [fst whole True,snd whole True]
-main: receive [fst whole True,snd whole True]
+main: push [tuple first whole True,tuple second whole True]
+main: receive [tuple first whole True,tuple second whole True]
 main: receive (True,True)
 main: push succeeded
 var: (True,True)

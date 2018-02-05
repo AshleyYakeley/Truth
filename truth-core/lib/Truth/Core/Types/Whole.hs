@@ -9,6 +9,15 @@ import Truth.Core.Read
 data WholeReader (a :: *) (t :: *) where
     ReadWhole :: forall t. WholeReader t t
 
+instance Show (WholeReader a t) where
+    show ReadWhole = "whole"
+
+instance AllWitnessConstraint Show (WholeReader a) where
+    allWitnessConstraint = Dict
+
+instance Show a => WitnessConstraint Show (WholeReader a) where
+    witnessConstraint ReadWhole = Dict
+
 instance SubjectReader (WholeReader a) where
     type ReaderSubject (WholeReader a) = a
     subjectToRead msubj ReadWhole = msubj
@@ -21,6 +30,9 @@ wholeMutableRead ma ReadWhole = ma
 
 newtype WholeReaderEdit (reader :: * -> *) =
     MkWholeEdit (ReaderSubject reader)
+
+instance Show (ReaderSubject reader) => Show (WholeReaderEdit reader) where
+    show (MkWholeEdit subj) = "whole " ++ show subj
 
 instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader)
 

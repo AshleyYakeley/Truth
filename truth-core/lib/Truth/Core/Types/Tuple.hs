@@ -10,6 +10,14 @@ class TupleWitness (c :: * -> Constraint) (sel :: * -> *) where
 newtype Tuple sel =
     MkTuple (forall edit. sel edit -> EditSubject edit)
 
+instance (TupleSubjectWitness Show sel, FiniteWitness sel) => Show (Tuple sel) where
+    show (MkTuple f) = let
+        showWit :: AnyWitness sel -> String
+        showWit (MkAnyWitness se) =
+            case tupleSubjectWitness (Proxy :: Proxy Show) se of
+                Dict -> show $ f se
+        in "{" ++ intercalate "," (fmap showWit allWitnesses) ++ "}"
+
 class (TestEquality sel, TupleReaderWitness SubjectReader sel) =>
       SubjectTupleSelector (sel :: * -> *) where
     type TupleSubject sel :: *
@@ -21,6 +29,25 @@ class (TestEquality sel, TupleReaderWitness SubjectReader sel) =>
 
 data TupleEditReader sel t where
     MkTupleEditReader :: sel edit -> EditReader edit t -> TupleEditReader sel t
+
+instance TupleReaderWitness (WitnessConstraint c) sel => WitnessConstraint c (TupleEditReader sel) where
+    witnessConstraint (MkTupleEditReader (se :: sel edit) (rt :: EditReader edit t)) =
+        case tupleReaderWitness (Proxy :: Proxy (WitnessConstraint c)) se of
+            Dict ->
+                case witnessConstraint @_ @c rt of
+                    Dict -> Dict
+
+instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstraint Show) sel) =>
+         Show (TupleEditReader sel t) where
+    show (MkTupleEditReader (se :: sel edit) (rt :: EditReader edit t)) =
+        showAllWitness se ++
+        " " ++
+        case tupleReaderWitness (Proxy :: Proxy (AllWitnessConstraint Show)) se of
+            Dict -> showAllWitness rt
+
+instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstraint Show) sel) =>
+         AllWitnessConstraint Show (TupleEditReader sel) where
+    allWitnessConstraint = Dict
 
 tupleReadFunction :: sel edit -> ReadFunction (TupleEditReader sel) (EditReader edit)
 tupleReadFunction sel mr rt = mr $ MkTupleEditReader sel rt
@@ -92,6 +119,14 @@ instance ( SubjectTupleSelector sel
                 case tupleWitness (Proxy :: Proxy FullEdit) sel of
                     Dict -> replaceEdit (tupleReadFunction sel mr) $ writeEdit . MkTupleEdit sel
         return $ mconcat editss
+
+instance (WitnessConstraint Show sel, AllWitnessConstraint Show sel) => Show (TupleEdit sel) where
+    show (MkTupleEdit sel edit) =
+        "tuple " ++
+        showAllWitness sel ++
+        " " ++
+        case witnessConstraint @_ @Show sel of
+            Dict -> show edit
 
 splitTupleEditList :: TestEquality w => [TupleEdit w] -> AllF w []
 splitTupleEditList [] = MkAllF $ \_ -> []

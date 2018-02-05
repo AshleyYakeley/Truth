@@ -7,6 +7,25 @@ data OneReader (f :: * -> *) (reader :: * -> *) (t :: *) where
     ReadHasOne :: forall f reader. OneReader f reader (f ())
     ReadOne :: forall f reader t. reader t -> OneReader f reader (f t)
 
+instance AllWitnessConstraint Show reader => Show (OneReader f reader t) where
+    show ReadHasOne = "has"
+    show (ReadOne rt) = "one " ++ showAllWitness rt
+
+instance AllWitnessConstraint Show reader => AllWitnessConstraint Show (OneReader f reader) where
+    allWitnessConstraint = Dict
+
+instance (Show e, WitnessConstraint Show reader) => WitnessConstraint Show (OneReader (Result e) reader) where
+    witnessConstraint ReadHasOne = Dict
+    witnessConstraint (ReadOne rt) =
+        case witnessConstraint @_ @Show rt of
+            Dict -> Dict
+
+instance (Show e, WitnessConstraint Show reader) => WitnessConstraint Show (OneReader Maybe reader) where
+    witnessConstraint ReadHasOne = Dict
+    witnessConstraint (ReadOne rt) =
+        case witnessConstraint @_ @Show rt of
+            Dict -> Dict
+
 instance (Functor f, SubjectReader reader) => SubjectReader (OneReader f reader) where
     type ReaderSubject (OneReader f reader) = f (ReaderSubject reader)
     subjectToRead fsubj ReadHasOne = fmap (\_ -> ()) fsubj
