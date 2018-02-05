@@ -15,8 +15,10 @@ newtype FiniteSet a = MkFiniteSet
                , MonoFoldable
                , GrowingAppend
                , Filterable
-               , Show
                )
+
+instance Show a => Show (FiniteSet a) where
+    show (MkFiniteSet aa) = show aa
 
 type instance Element (FiniteSet a) = a
 
