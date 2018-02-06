@@ -21,6 +21,15 @@ openCloseObject (MkObject (MkUnliftIO run) r e) = do
 data MutableIOReader edit t where
     ReadMutableIO :: MutableIOReader edit (Object edit)
 
+instance Show (MutableIOReader edit t) where
+    show ReadMutableIO = "object"
+
+instance AllWitnessConstraint Show (MutableIOReader edit) where
+    allWitnessConstraint = Dict
+
+instance c (Object edit) => WitnessConstraint c (MutableIOReader edit) where
+    witnessConstraint ReadMutableIO = Dict
+
 instance SubjectReader (EditReader edit) => SubjectReader (MutableIOReader edit) where
     type ReaderSubject (MutableIOReader edit) = EditSubject edit
     subjectToRead subj ReadMutableIO = constantObject subj

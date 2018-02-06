@@ -16,6 +16,9 @@ data Object edit = forall m. MonadStackIO m =>
     , objEdit :: [edit] -> m (Maybe (m ()))
     }
 
+instance Show (Object edit) where
+    show (MkObject _ _ _) = "object"
+
 noneObject :: Object (NoEdit (NoReader t))
 noneObject = let
     objRun :: UnliftIO IO

@@ -7,11 +7,16 @@ contextStr :: String -> String -> String
 contextStr "" b = b
 contextStr a b = a ++ ": " ++ b
 
+traceIOM :: MonadIO m => String -> m ()
+traceIOM s = liftIO $ traceIO $ s
+
 traceBracketArgs :: MonadIO m => String -> String -> (r -> String) -> m r -> m r
 traceBracketArgs s args showr ma = do
-    liftIO $ traceIO $ s ++ " [ " ++ args
+    traceIOM $ s ++ " [" ++ (if null args then "" else " " ++ args)
     a <- ma
-    liftIO $ traceIO $ s ++ " ] " ++ showr a
+    let
+        ret = showr a
+    traceIOM $ s ++ " ]" ++ (if null ret then "" else " => " ++ ret)
     return a
 
 traceBracket :: MonadIO m => String -> m r -> m r
