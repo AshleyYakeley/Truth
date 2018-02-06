@@ -40,13 +40,13 @@ liftWithMVarStateT vma = do
     put finalstate
     return r
 
-readerTMVarToStateT :: MonadIO m => ReaderT (MVar s) m a -> StateT s m a
-readerTMVarToStateT rma = liftWithMVarStateT (runReaderT rma)
+readerTUnliftToT :: (MonadTransUnlift t, MonadUnliftIO m) => ReaderT (Unlift t) m a -> t m a
+readerTUnliftToT rma = liftWithUnlift $ runReaderT rma
 
-stateTToReaderTMVar :: MonadUnliftIO m => StateT s m a -> ReaderT (MVar s) m a
-stateTToReaderTMVar sma = do
-    var <- ask
-    lift $ mvarRun var sma
+tToReaderTUnlift :: MonadUnliftIO m => t m a -> ReaderT (Unlift t) m a
+tToReaderTUnlift tma = do
+    MkUnlift unlift <- ask
+    lift $ unlift tma
 
 class ( MonadTransConstraint MonadFail t
       , MonadTransConstraint MonadIO t
@@ -75,7 +75,7 @@ remonadUnliftIO ff (MkUnliftIO r2) = MkUnliftIO $ \m1a -> r2 $ remonad ff m1a
 mvarUnliftIO :: MVar s -> UnliftIO (StateT s IO)
 mvarUnliftIO var = MkUnliftIO $ mvarRun var
 
-class (MonadFail m, MonadIO m, MonadFix m) =>
+class (MonadFail m, MonadTunnelIO m, MonadFix m) =>
       MonadUnliftIO m where
     liftIOWithUnlift :: forall r. (UnliftIO m -> IO r) -> m r
     -- ^ lift with an 'UnliftIO' that accounts for all transformer effects

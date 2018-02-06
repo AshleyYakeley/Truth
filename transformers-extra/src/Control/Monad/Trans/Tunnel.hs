@@ -1,5 +1,6 @@
 module Control.Monad.Trans.Tunnel where
 
+import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Except
@@ -80,3 +81,16 @@ instance MonadTransTunnel ListT where
                  Left e -> [Left e]
                  Right aa -> fmap Right aa) $
         runExceptT ma
+
+class MonadIO m =>
+      MonadTunnelIO m where
+    tunnelIO :: forall r. (forall a. (m r -> IO a) -> IO a) -> m r
+
+remonadIO :: MonadTunnelIO m => (forall a. IO a -> IO a) -> m r -> m r
+remonadIO mma sm1 = tunnelIO $ \tun -> mma $ tun sm1
+
+instance MonadTunnelIO IO where
+    tunnelIO call = call id
+
+instance (MonadTransTunnel t, MonadTunnelIO m, MonadIO (t m)) => MonadTunnelIO (t m) where
+    tunnelIO call = tunnel $ \tun -> tunnelIO $ \maiob -> call $ \tmr -> maiob $ tun tmr
