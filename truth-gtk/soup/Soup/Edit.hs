@@ -11,6 +11,7 @@ import Shapes
 import System.FilePath hiding ((<.>))
 import Truth.Core
 import Truth.World.FileSystem
+import Truth.Debug.Object
 
 type UUIDElementEdit edit = PairEdit (ConstEdit UUID) edit
 
@@ -43,6 +44,7 @@ dictWorkaround = Dict
 
 directorySoup :: Object FSEdit -> FilePath -> Object (SoupEdit (MutableIOEdit ByteStringEdit))
 directorySoup (MkObject (runFS :: UnliftIO m) readFS pushFS) dirpath =
+    traceObject' "soupdir" $
     case hasTransConstraint @MonadUnliftIO @(MonadStackTrans m) @(AutoClose FilePath (Object ByteStringEdit)) of
         Dict -> let
             runSoup :: UnliftIO (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)))

@@ -11,6 +11,8 @@ import Truth.Core.Object.AutoClose
 import Truth.Core.Object.Object
 import Truth.Core.Read
 import Truth.Core.Types.None
+import Truth.Debug
+import Truth.Debug.Object
 
 -- | Opens a session on the object. Returns an object that can be used without opening a new session, and a function that closes the session.
 openCloseObject :: Object edit -> IO (Object edit, IO ())
@@ -45,26 +47,34 @@ type ObjectEditT edit = StateT (Maybe (Object edit, IO ()))
 
 unliftObjectEditT :: Unlift (ObjectEditT edit)
 unliftObjectEditT =
+    traceUnlift "unliftObjectEditT" $
     MkUnlift $ \smr -> do
         (r, ms) <- runStateT smr Nothing
         case ms of
-            Nothing -> return ()
-            Just (_, close) -> liftIO close
+            Nothing -> do
+                traceIOM "unliftObjectEditT: nothing"
+                return ()
+            Just (_, close) -> do
+                traceIOM "unliftObjectEditT: closing"
+                liftIO close
         return r
 
 openObject ::
        forall edit m. MonadIO m
     => MutableRead m (MutableIOReader edit)
     -> ObjectEditT edit m (Object edit)
-openObject mr = do
+openObject mr = traceBracket "openObject" $ do
     ms <- get
     case ms of
-        Just (obj, _) -> return obj
+        Just (obj, _) -> do
+            traceIOM "openObject: already"
+            return obj
         Nothing -> do
+            traceIOM "openObject: new"
             mainObj <- lift $ mr ReadMutableIO
             objcl <- liftIO $ openCloseObject mainObj
             put $ Just objcl
-            return $ fst objcl
+            return $ traceObject "opened" blankEditShower $ fst objcl
 
 mutableIOEditLens :: forall edit. EditLens (MutableIOEdit edit) edit
 mutableIOEditLens = let
@@ -120,4 +130,4 @@ mutableIOLiftEditLens lens = let
         -> IdentityT m (Maybe [MutableIOEdit edita])
     elPutEdits [] _ = return $ Just []
     elPutEdits (edit:_) _ = never edit
-    in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
+    in MkCloseUnlift (traceUnlift "mutableIOLiftEditLens" identityUnlift) $ MkAnEditLens {..}
