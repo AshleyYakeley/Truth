@@ -47,7 +47,8 @@ lift1ComposeTWithUnlift ::
     => ((forall a. ComposeT t1 t2 m a -> t1 m a) -> t1 m r)
     -> ComposeT t1 t2 m r
 lift1ComposeTWithUnlift call =
-    MkComposeT $ tunnel $ \tun -> liftWithUnlift $ \unlift -> tun $ call $ \(MkComposeT ttma) -> remonad unlift ttma
+    MkComposeT $
+    tunnel $ \tun -> liftWithUnlift $ \(MkUnlift unlift) -> tun $ call $ \(MkComposeT ttma) -> remonad unlift ttma
 
 lift2ComposeTWithUnlift ::
        forall t1 t2 m r. (MonadTransUnlift t1, MonadTransUnlift t2, MonadUnliftIO m)
@@ -55,7 +56,7 @@ lift2ComposeTWithUnlift ::
     -> ComposeT t1 t2 m r
 lift2ComposeTWithUnlift call =
     case hasTransConstraint @MonadUnliftIO @t2 @m of
-        Dict -> MkComposeT $ liftWithUnlift $ \unlift -> call $ \(MkComposeT ttma) -> unlift ttma
+        Dict -> MkComposeT $ liftWithUnlift $ \(MkUnlift unlift) -> call $ \(MkComposeT ttma) -> unlift ttma
 
 composeUnlift :: MonadTransUnlift tb => Unlift ta -> Unlift tb -> Unlift (ComposeT ta tb)
 composeUnlift (MkUnlift ua) (MkUnlift ub) =
@@ -137,14 +138,17 @@ instance (MonadTransTunnel t1, MonadTransTunnel t2) => MonadTransTunnel (Compose
 instance (MonadTransUnlift t1, MonadTransUnlift t2) => MonadTransUnlift (ComposeT t1 t2) where
     liftWithUnlift ::
            forall m r. MonadUnliftIO m
-        => ((forall a. ComposeT t1 t2 m a -> m a) -> m r)
+        => (Unlift (ComposeT t1 t2) -> m r)
         -> ComposeT t1 t2 m r
     liftWithUnlift call =
         case hasTransConstraint @MonadUnliftIO @t2 @m of
             Dict ->
                 MkComposeT $
-                liftWithUnlift $ \unlift1 ->
-                    liftWithUnlift $ \unlift2 -> call $ \(MkComposeT t1t2ma) -> unlift2 $ unlift1 t1t2ma
+                liftWithUnlift $ \(MkUnlift unlift1) ->
+                    liftWithUnlift $ \(MkUnlift unlift2) ->
+                        call $
+                        MkUnlift $ \(MkComposeT t1t2ma) ->
+                            unlift2 $ withTransConstraintTM @MonadUnliftIO $ unlift1 t1t2ma
     getDiscardingUnlift ::
            forall m. Monad m
         => ComposeT t1 t2 m (Unlift (ComposeT t1 t2))

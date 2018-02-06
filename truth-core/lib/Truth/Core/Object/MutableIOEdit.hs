@@ -15,7 +15,7 @@ import Truth.Core.Types.None
 -- | Opens a session on the object. Returns an object that can be used without opening a new session, and a function that closes the session.
 openCloseObject :: Object edit -> IO (Object edit, IO ())
 openCloseObject (MkObject (MkUnliftIO run) r e) = do
-    (run', close) <- withToOpen $ \call -> run $ liftIOWithUnlift $ \unlift -> call $ MkUnliftIO unlift
+    (run', close) <- withToOpen $ \call -> run $ liftIOWithUnlift $ call
     return (MkObject run' r e, close)
 
 data MutableIOReader edit t where
