@@ -21,7 +21,7 @@ data KeyReader cont reader t where
 
 instance (Show (ContainerKey cont), AllWitnessConstraint Show reader) => Show (KeyReader cont reader t) where
     show KeyReadKeys = "keys"
-    show (KeyReadItem key rt) = "item " ++ show key ++ showAllWitness rt
+    show (KeyReadItem key rt) = "item " ++ show key ++ " " ++ showAllWitness rt
 
 instance (Show (ContainerKey cont), AllWitnessConstraint Show reader) =>
          AllWitnessConstraint Show (KeyReader cont reader) where

@@ -9,11 +9,11 @@ import Truth.Debug
 data EditShower edit = MkEditShower
     { showRead :: forall t. EditReader edit t -> String
     , showReadResult :: forall t. EditReader edit t -> t -> String
-    , showEdits :: [edit] -> String
+    , showEdit :: edit -> String
     }
 
 blankEditShower :: EditShower edit
-blankEditShower = MkEditShower {showRead = \_ -> "", showReadResult = \_ _ -> "", showEdits = \_ -> ""}
+blankEditShower = MkEditShower {showRead = \_ -> "", showReadResult = \_ _ -> "", showEdit = \_ -> "edit"}
 
 traceObject :: forall edit. String -> EditShower edit -> Object edit -> Object edit
 traceObject prefix MkEditShower {..} (MkObject (MkUnliftIO run :: UnliftIO m) r e) = let
@@ -22,7 +22,7 @@ traceObject prefix MkEditShower {..} (MkObject (MkUnliftIO run :: UnliftIO m) r 
     r' :: MutableRead m (EditReader edit)
     r' rt = traceBracketArgs (contextStr prefix "read") (showRead rt) (showReadResult rt) $ r rt
     e' :: [edit] -> m (Maybe (m ()))
-    e' edits = (fmap $ fmap $ traceBracketArgs (contextStr prefix "edit") (showEdits edits) (\_ -> "")) $ e edits
+    e' edits = (fmap $ fmap $ traceBracketArgs (contextStr prefix "edit") ("[" ++ intercalate "," (fmap showEdit edits) ++ "]") (\_ -> "")) $ e edits
     in MkObject run' r' e'
 
 showEditShower ::
@@ -34,7 +34,7 @@ showEditShower = let
     showReadResult rt t =
         case witnessConstraint @_ @Show rt of
             Dict -> show t
-    showEdits edits = "[" ++ intercalate "," (fmap show edits) ++ "]"
+    showEdit = show
     in MkEditShower {..}
 
 traceObject' ::
