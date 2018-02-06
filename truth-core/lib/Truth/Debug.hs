@@ -12,11 +12,20 @@ traceIOM s = liftIO $ traceIO $ s
 
 traceBracketArgs :: MonadIO m => String -> String -> (r -> String) -> m r -> m r
 traceBracketArgs s args showr ma = do
-    traceIOM $ s ++ " [" ++ (if null args then "" else " " ++ args)
+    traceIOM $
+        s ++
+        " [" ++
+        (if null args
+             then ""
+             else " " ++ args)
     a <- ma
-    let
-        ret = showr a
-    traceIOM $ s ++ " ]" ++ (if null ret then "" else " => " ++ ret)
+    let ret = showr a
+    traceIOM $
+        s ++
+        " ]" ++
+        (if null ret
+             then ""
+             else " => " ++ ret)
     return a
 
 traceBracket :: MonadIO m => String -> m r -> m r
