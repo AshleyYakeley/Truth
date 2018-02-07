@@ -58,15 +58,25 @@ pushEdit mmmu = do
         Nothing -> return ()
 
 mapObject :: forall edita editb. EditLens edita editb -> Object edita -> Object editb
-mapObject (MkCloseUnlift (lensRun :: Unlift tl) MkAnEditLens {..}) (MkObject (MkUnliftIO objRunA :: UnliftIO mr) objReadA objEditA)
+mapObject = lensObject False
+
+lensObject :: forall edita editb. Bool -> EditLens edita editb -> Object edita -> Object editb
+lensObject discard (MkCloseUnlift (lensRun :: Unlift tl) MkAnEditLens {..}) (MkObject (MkUnliftIO objRunA :: UnliftIO mr) objReadA objEditA)
     | Dict <- hasTransConstraint @MonadUnliftIO @tl @mr = let
         MkAnEditFunction {..} = elFunction
-        objRunB :: UnliftIO (tl mr)
-        objRunB =
+        objRunBFull :: UnliftIO (tl mr)
+        objRunBFull = MkUnliftIO $ \tmr -> objRunA $ runUnlift (traceUnlift "mapObject.full" lensRun) $ liftWithUnlift $ \(MkUnlift unlift) -> unlift tmr
+        objRunBDiscard :: UnliftIO (tl mr)
+        objRunBDiscard =
             MkUnliftIO $ \tmr ->
                 objRunA $ do
-                    MkUnlift du <- runUnlift (traceUnlift "mapObject" lensRun) getDiscardingUnlift
+                    MkUnlift du <- runUnlift (traceUnlift "mapObject.discard" lensRun) getDiscardingUnlift
                     du tmr -- discard lens effects: all these effects will be replayed by the update
+        objRunB :: UnliftIO (tl mr)
+        objRunB =
+            if discard
+                then objRunBDiscard
+                else objRunBFull
         objReadB :: MutableRead (tl mr) (EditReader editb)
         objReadB = efGet objReadA
         objEditB :: [editb] -> tl mr (Maybe (tl mr ()))

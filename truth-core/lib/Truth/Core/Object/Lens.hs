@@ -15,7 +15,7 @@ mapSubscriber ::
 mapSubscriber lens@(MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens lensFunc _)) sub =
     MkSubscriber $ \(initialB :: Object editb -> IO editor) updateB -> let
         initialA :: Object edita -> IO editor
-        initialA objectA = initialB $ mapObject lens objectA
+        initialA objectA = initialB $ lensObject True lens objectA
         updateA ::
                forall m. MonadUnliftIO m
             => editor

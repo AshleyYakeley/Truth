@@ -108,7 +108,7 @@ mapViewContextEdit ::
     -> ViewContext editb
 mapViewContextEdit lens (MkViewContext objectA setSelectA os) = let
     objectB :: Object editb
-    objectB = mapObject lens objectA
+    objectB = lensObject True lens objectA
     setSelectB selB = setSelectA $ mapAspect lens selB
     in MkViewContext objectB setSelectB os
 

@@ -68,7 +68,7 @@ instance MonadTransTunnel FreeT where
     transExcept (FreeT txa) = FreeT $ transExcept txa
 
 instance MonadTransUnlift FreeT where
-    liftWithUnlift call = FreeT $ liftWithUnlift $ \unlift -> call $ \(FreeT tma) -> unlift tma
+    liftWithUnlift call = FreeT $ liftWithUnlift $ \(MkUnlift unlift) -> call $ MkUnlift $ \(FreeT tma) -> unlift tma
     getDiscardingUnlift =
         FreeT $
         withTransConstraintTM @Monad $ do

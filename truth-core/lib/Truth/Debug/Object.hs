@@ -22,7 +22,11 @@ traceObject prefix MkEditShower {..} (MkObject (MkUnliftIO run :: UnliftIO m) r 
     r' :: MutableRead m (EditReader edit)
     r' rt = traceBracketArgs (contextStr prefix "read") (showRead rt) (showReadResult rt) $ r rt
     e' :: [edit] -> m (Maybe (m ()))
-    e' edits = (fmap $ fmap $ traceBracketArgs (contextStr prefix "edit") ("[" ++ intercalate "," (fmap showEdit edits) ++ "]") (\_ -> "")) $ e edits
+    e' edits =
+        (fmap $
+         fmap $
+         traceBracketArgs (contextStr prefix "edit") ("[" ++ intercalate "," (fmap showEdit edits) ++ "]") (\_ -> "")) $
+        e edits
     in MkObject run' r' e'
 
 showEditShower ::
