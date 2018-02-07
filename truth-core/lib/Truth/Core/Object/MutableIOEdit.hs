@@ -66,6 +66,7 @@ openObject mr = do
             put $ Just objcl
             return $ fst objcl
 
+-- | This lens must not be used with 'mapSubscriber' or 'mapViewContextEdit'.
 mutableIOEditLens :: forall edit. EditLens (MutableIOEdit edit) edit
 mutableIOEditLens = let
     efGet :: ReadFunctionT (ObjectEditT edit) (MutableIOReader edit) (EditReader edit)
