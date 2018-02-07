@@ -1,8 +1,8 @@
-module Truth.Core.Object.MutableIOEdit
-    ( MutableIOReader(..)
-    , MutableIOEdit
-    , mutableIOEditLens
-    , mutableIOLiftEditLens
+module Truth.Core.Object.ObjectEdit
+    ( ObjectReader(..)
+    , ObjectEdit
+    , objectEditLens
+    , objectLiftEditLens
     ) where
 
 import Truth.Core.Edit
@@ -18,28 +18,28 @@ openCloseObject (MkObject (MkUnliftIO run) r e) = do
     (run', close) <- withToOpen $ \call -> run $ liftIOWithUnlift $ call
     return (MkObject run' r e, close)
 
-data MutableIOReader edit t where
-    ReadMutableIO :: MutableIOReader edit (Object edit)
+data ObjectReader edit t where
+    ReadObject :: ObjectReader edit (Object edit)
 
-instance Show (MutableIOReader edit t) where
-    show ReadMutableIO = "object"
+instance Show (ObjectReader edit t) where
+    show ReadObject = "object"
 
-instance AllWitnessConstraint Show (MutableIOReader edit) where
+instance AllWitnessConstraint Show (ObjectReader edit) where
     allWitnessConstraint = Dict
 
-instance c (Object edit) => WitnessConstraint c (MutableIOReader edit) where
-    witnessConstraint ReadMutableIO = Dict
+instance c (Object edit) => WitnessConstraint c (ObjectReader edit) where
+    witnessConstraint ReadObject = Dict
 
-instance SubjectReader (EditReader edit) => SubjectReader (MutableIOReader edit) where
-    type ReaderSubject (MutableIOReader edit) = EditSubject edit
-    subjectToRead subj ReadMutableIO = constantObject subj
+instance SubjectReader (EditReader edit) => SubjectReader (ObjectReader edit) where
+    type ReaderSubject (ObjectReader edit) = EditSubject edit
+    subjectToRead subj ReadObject = constantObject subj
 
-instance FullSubjectReader (EditReader edit) => FullSubjectReader (MutableIOReader edit) where
+instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader edit) where
     mutableReadToSubject mr = do
-        MkObject (MkUnliftIO unlift) mro _ <- mr ReadMutableIO
+        MkObject (MkUnliftIO unlift) mro _ <- mr ReadObject
         liftIO $ unlift $ mutableReadToSubject mro
 
-type MutableIOEdit edit = NoEdit (MutableIOReader edit)
+type ObjectEdit edit = NoEdit (ObjectReader edit)
 
 type ObjectEditT edit = StateT (Maybe (Object edit, IO ()))
 
@@ -54,38 +54,38 @@ unliftObjectEditT =
 
 openObject ::
        forall edit m. MonadIO m
-    => MutableRead m (MutableIOReader edit)
+    => MutableRead m (ObjectReader edit)
     -> ObjectEditT edit m (Object edit)
 openObject mr = do
     ms <- get
     case ms of
         Just (obj, _) -> return obj
         Nothing -> do
-            mainObj <- lift $ mr ReadMutableIO
+            mainObj <- lift $ mr ReadObject
             objcl <- liftIO $ openCloseObject mainObj
             put $ Just objcl
             return $ fst objcl
 
 -- | This lens must not be used with 'mapSubscriber' or 'mapViewContextEdit'.
-mutableIOEditLens :: forall edit. EditLens (MutableIOEdit edit) edit
-mutableIOEditLens = let
-    efGet :: ReadFunctionT (ObjectEditT edit) (MutableIOReader edit) (EditReader edit)
+objectEditLens :: forall edit. EditLens (ObjectEdit edit) edit
+objectEditLens = let
+    efGet :: ReadFunctionT (ObjectEditT edit) (ObjectReader edit) (EditReader edit)
     efGet mr rt = do
         (MkObject (MkUnliftIO run) r _) <- openObject mr
         liftIO $ run $ r rt
     efUpdate ::
            forall m. MonadIO m
-        => MutableIOEdit edit
-        -> MutableRead m (MutableIOReader edit)
+        => ObjectEdit edit
+        -> MutableRead m (ObjectReader edit)
         -> ObjectEditT edit m [edit]
     efUpdate edit _ = never edit
-    elFunction :: AnEditFunction (ObjectEditT edit) (MutableIOEdit edit) edit
+    elFunction :: AnEditFunction (ObjectEditT edit) (ObjectEdit edit) edit
     elFunction = MkAnEditFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [edit]
-        -> MutableRead m (EditReader (MutableIOEdit edit))
-        -> ObjectEditT edit m (Maybe [MutableIOEdit edit])
+        -> MutableRead m (EditReader (ObjectEdit edit))
+        -> ObjectEditT edit m (Maybe [ObjectEdit edit])
     elPutEdits edits mr = do
         (MkObject (MkUnliftIO run) _ e) <- openObject mr
         liftIO $
@@ -93,32 +93,32 @@ mutableIOEditLens = let
                 maction <- e edits
                 case maction of
                     Just action -> action
-                    Nothing -> liftIO $ fail "mutableIOEditLens: failed"
+                    Nothing -> liftIO $ fail "objectEditLens: failed"
         return $ Just []
     in MkCloseUnlift unliftObjectEditT $ MkAnEditLens {..}
 
-mutableIOLiftEditLens ::
+objectLiftEditLens ::
        forall edita editb. Edit edita
     => EditLens edita editb
-    -> EditLens (MutableIOEdit edita) (MutableIOEdit editb)
-mutableIOLiftEditLens lens = let
-    efGet :: ReadFunctionT IdentityT (MutableIOReader edita) (MutableIOReader editb)
-    efGet mr ReadMutableIO = do
-        object <- lift $ mr ReadMutableIO
+    -> EditLens (ObjectEdit edita) (ObjectEdit editb)
+objectLiftEditLens lens = let
+    efGet :: ReadFunctionT IdentityT (ObjectReader edita) (ObjectReader editb)
+    efGet mr ReadObject = do
+        object <- lift $ mr ReadObject
         return $ mapObject lens object
     efUpdate ::
            forall m. MonadIO m
-        => MutableIOEdit edita
-        -> MutableRead m (MutableIOReader edita)
-        -> IdentityT m [MutableIOEdit editb]
+        => ObjectEdit edita
+        -> MutableRead m (ObjectReader edita)
+        -> IdentityT m [ObjectEdit editb]
     efUpdate edit _ = never edit
-    elFunction :: AnEditFunction IdentityT (MutableIOEdit edita) (MutableIOEdit editb)
+    elFunction :: AnEditFunction IdentityT (ObjectEdit edita) (ObjectEdit editb)
     elFunction = MkAnEditFunction {..}
     elPutEdits ::
            forall m. MonadIO m
-        => [MutableIOEdit editb]
-        -> MutableRead m (MutableIOReader edita)
-        -> IdentityT m (Maybe [MutableIOEdit edita])
+        => [ObjectEdit editb]
+        -> MutableRead m (ObjectReader edita)
+        -> IdentityT m (Maybe [ObjectEdit edita])
     elPutEdits [] _ = return $ Just []
     elPutEdits (edit:_) _ = never edit
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}

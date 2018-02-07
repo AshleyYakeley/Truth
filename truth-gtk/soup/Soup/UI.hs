@@ -52,7 +52,7 @@ soupEditSpec = let
 
 soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)
 soupObject dirpath = let
-    rawSoupObject :: Object (SoupEdit (MutableIOEdit ByteStringEdit))
+    rawSoupObject :: Object (SoupEdit (ObjectEdit ByteStringEdit))
     rawSoupObject = directorySoup fileSystemObject dirpath
     soupItemInjection :: Injection' (Result String) ByteString (EditSubject PossibleNoteEdit)
     soupItemInjection = codecInjection noteCodec
@@ -63,8 +63,8 @@ soupObject dirpath = let
     paste s = return $ getMaybeOne $ injBackwards soupItemInjection s
     soupItemLens :: EditLens ByteStringEdit PossibleNoteEdit
     soupItemLens = convertEditLens <.> (wholeEditLens $ injectionLens soupItemInjection) <.> convertEditLens
-    lens :: EditLens (SoupEdit (MutableIOEdit ByteStringEdit)) (SoupEdit PossibleNoteEdit)
-    lens = liftSoupLens paste $ soupItemLens <.> mutableIOEditLens
+    lens :: EditLens (SoupEdit (ObjectEdit ByteStringEdit)) (SoupEdit PossibleNoteEdit)
+    lens = liftSoupLens paste $ soupItemLens <.> objectEditLens
     in mapObject lens rawSoupObject
 
 soupWindow :: FilePath -> IO (UIWindow ())

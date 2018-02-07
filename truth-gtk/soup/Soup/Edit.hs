@@ -41,14 +41,14 @@ dictWorkaround ::
     => Dict (MonadTransUnlift (MonadStackTrans m))
 dictWorkaround = Dict
 
-directorySoup :: Object FSEdit -> FilePath -> Object (SoupEdit (MutableIOEdit ByteStringEdit))
+directorySoup :: Object FSEdit -> FilePath -> Object (SoupEdit (ObjectEdit ByteStringEdit))
 directorySoup (MkObject (runFS :: UnliftIO m) readFS pushFS) dirpath =
     case hasTransConstraint @MonadUnliftIO @(MonadStackTrans m) @(AutoClose FilePath (Object ByteStringEdit)) of
         Dict -> let
             runSoup :: UnliftIO (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)))
             runSoup = combineUnliftIOs runFS runAutoClose
             readSoup ::
-                   MutableRead (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit))) (EditReader (SoupEdit (MutableIOEdit ByteStringEdit)))
+                   MutableRead (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit))) (EditReader (SoupEdit (ObjectEdit ByteStringEdit)))
             readSoup KeyReadKeys = do
                 mnames <- combineLiftFst $ readFS $ FSReadDirectory dirpath
                 return $
@@ -60,7 +60,7 @@ directorySoup (MkObject (runFS :: UnliftIO m) readFS pushFS) dirpath =
                 case mitem of
                     Just (FSFileItem _) -> return $ Just uuid
                     _ -> return Nothing
-            readSoup (KeyReadItem uuid (MkTupleEditReader EditSecond ReadMutableIO)) = do
+            readSoup (KeyReadItem uuid (MkTupleEditReader EditSecond ReadObject)) = do
                 let path = dirpath </> uuidToName uuid
                 mitem <- combineLiftFst $ readFS $ FSReadItem path
                 case mitem of
@@ -69,7 +69,7 @@ directorySoup (MkObject (runFS :: UnliftIO m) readFS pushFS) dirpath =
                         return $ Just muted
                     _ -> return Nothing
             pushSoup ::
-                   [SoupEdit (MutableIOEdit ByteStringEdit)]
+                   [SoupEdit (ObjectEdit ByteStringEdit)]
                 -> MonadStackTrans m (AutoClose FilePath (Object ByteStringEdit)) (Maybe (MonadStackTrans m (AutoClose FilePath (Object ByteStringEdit)) ()))
             pushSoup =
                 singleEdit $ \edit ->
