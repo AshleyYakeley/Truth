@@ -2,22 +2,24 @@ module Truth.World.File where
 
 import Truth.Core
 import Truth.Core.Import
+import Truth.Debug
 
 fileObject :: FilePath -> Object ByteStringEdit
 fileObject path = let
     objRun :: UnliftIO (ReaderT Handle IO)
     objRun =
-        MkUnliftIO $ \rt -> do
-            h <- openBinaryFile path ReadWriteMode
-            r <- runReaderT rt h
-            hClose h
-            return r
+        MkUnliftIO $ \rt ->
+            traceBracket ("fileObject.run " ++ path) $ do
+                h <- openBinaryFile path ReadWriteMode
+                r <- traceBracket "fileObject.run.action" $ runReaderT rt h
+                hClose h
+                return r
     objRead :: MutableRead (ReaderT Handle IO) ByteStringReader
-    objRead ReadByteStringLength = do
+    objRead ReadByteStringLength = traceBracket "fileObject.read length" $ do
         h <- ask
         n <- lift $ hFileSize h
         return $ fromInteger n
-    objRead (ReadByteStringSection start len) = do
+    objRead (ReadByteStringSection start len) = traceBracket "fileObject.read bytes" $ do
         h <- ask
         lift $ hSeek h AbsoluteSeek $ toInteger start
         lift $ hGet h $ fromIntegral len

@@ -7,6 +7,7 @@ import Truth.Core.Types.None
 import Truth.Core.Types.Pair
 import Truth.Core.Types.Tuple
 import Truth.Core.Types.Whole
+import Truth.Debug
 
 data Object edit = forall m. MonadStackIO m =>
                              MkObject
@@ -60,16 +61,16 @@ mapObject :: forall edita editb. EditLens edita editb -> Object edita -> Object 
 mapObject = lensObject False
 
 lensObject :: forall edita editb. Bool -> EditLens edita editb -> Object edita -> Object editb
-lensObject discard (MkCloseUnlift (MkUnlift lensRun :: Unlift tl) MkAnEditLens {..}) (MkObject (MkUnliftIO objRunA :: UnliftIO mr) objReadA objEditA)
+lensObject discard (MkCloseUnlift (lensRun :: Unlift tl) MkAnEditLens {..}) (MkObject (MkUnliftIO objRunA :: UnliftIO mr) objReadA objEditA)
     | Dict <- hasTransConstraint @MonadUnliftIO @tl @mr = let
         MkAnEditFunction {..} = elFunction
         objRunBFull :: UnliftIO (tl mr)
-        objRunBFull = MkUnliftIO $ \tmr -> objRunA $ lensRun $ liftWithUnlift $ \(MkUnlift unlift) -> unlift tmr
+        objRunBFull = MkUnliftIO $ \tmr -> objRunA $ runUnlift (traceUnlift "mapObject.full" lensRun) $ liftWithUnlift $ \(MkUnlift unlift) -> unlift tmr
         objRunBDiscard :: UnliftIO (tl mr)
         objRunBDiscard =
             MkUnliftIO $ \tmr ->
                 objRunA $ do
-                    MkUnlift du <- lensRun $ getDiscardingUnlift
+                    MkUnlift du <- runUnlift (traceUnlift "mapObject.discard" lensRun) getDiscardingUnlift
                     du tmr -- discard lens effects: all these effects will be replayed by the update
         objRunB :: UnliftIO (tl mr)
         objRunB =

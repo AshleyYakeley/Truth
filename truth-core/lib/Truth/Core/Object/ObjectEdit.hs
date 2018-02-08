@@ -10,6 +10,7 @@ import Truth.Core.Import
 import Truth.Core.Object.Object
 import Truth.Core.Read
 import Truth.Core.Types.None
+import Truth.Debug
 
 data ObjectReader edit t where
     ReadObject :: ObjectReader edit (Object edit)
@@ -88,4 +89,4 @@ objectLiftEditLens lens = let
         -> IdentityT m (Maybe [ObjectEdit edita])
     elPutEdits [] _ = return $ Just []
     elPutEdits (edit:_) _ = never edit
-    in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
+    in MkCloseUnlift (traceUnlift "mutableIOLiftEditLens" identityUnlift) $ MkAnEditLens {..}
