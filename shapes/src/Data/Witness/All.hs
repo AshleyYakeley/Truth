@@ -2,6 +2,17 @@ module Data.Witness.All where
 
 import Shapes.Import
 
+class AllWitnessConstraint (c :: kw -> Constraint) (w :: kt -> kw) where
+    allWitnessConstraint :: forall (t :: kt). Dict (c (w t))
+
+showAllWitness ::
+       forall w t. AllWitnessConstraint Show w
+    => w t
+    -> String
+showAllWitness wt =
+    case allWitnessConstraint @_ @_ @Show @w @t of
+        Dict -> show wt
+
 newtype All (w :: * -> *) = MkAll
     { getAll :: forall t. w t -> t
     }

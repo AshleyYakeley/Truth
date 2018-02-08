@@ -30,6 +30,7 @@ library
         GADTs
         GeneralizedNewtypeDeriving
         ImplicitParams
+        InstanceSigs
         KindSignatures
         LambdaCase
         MonadFailDesugaring
@@ -57,7 +58,6 @@ library
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances
@@ -68,6 +68,7 @@ library
         comonad,
         lattices,
         transformers,
+        transformers-extra,
         hashable,
         containers,
         unordered-containers,
@@ -83,9 +84,6 @@ library
         Data.Filterable
         Data.Witness.All
         Control.Constrained.Category
-        Control.Monad.Tunnel
-        Control.Monad.Trans.State.Extra
-        Control.Monad.IsStateIO
         Data.CatFunctor
         Data.Result
         Data.MonadOne

@@ -48,7 +48,7 @@ data DatabaseRead database tablesel t where
 
 instance Database database tablesel => SubjectReader (DatabaseRead database tablesel) where
     type ReaderSubject (DatabaseRead database tablesel) = AllF tablesel []
-    readFromSubject (MkAllF tables) (DatabaseSelect j wc oc sc) = let
+    subjectToRead (MkAllF tables) (DatabaseSelect j wc oc sc) = let
         doJoin :: TableJoin database tablesel row -> [row]
         doJoin (SingleTable tsel) = tables tsel
         doJoin (JoinTables jc j1 j2) = do
@@ -59,10 +59,10 @@ instance Database database tablesel => SubjectReader (DatabaseRead database tabl
            sortBy (orderClause @database @tablesel oc) $ filter (whereClause @database @tablesel wc) $ doJoin j
 
 instance Database database tablesel => FullSubjectReader (DatabaseRead database tablesel) where
-    subjectFromReader =
+    mutableReadToSubject mr =
         tableAssemble @database $ \(tsel :: tablesel row) -> do
             Dict <- return $ orderMonoid @database tsel
-            readable $ DatabaseSelect (SingleTable tsel) (whereAlways @database tsel) mempty (selectRow @database tsel)
+            mr $ DatabaseSelect (SingleTable tsel) (whereAlways @database tsel) mempty (selectRow @database tsel)
 
 data DatabaseEdit database tablesel where
     DatabaseInsert :: tablesel row -> InsertClause database tablesel row -> DatabaseEdit database tablesel
@@ -75,6 +75,8 @@ data DatabaseEdit database tablesel where
 
 instance Floating (DatabaseEdit database tablesel) (DatabaseEdit database tablesel)
 
+type instance EditReader (DatabaseEdit database tablesel) =
+     DatabaseRead database tablesel
+
 instance Database database tablesel => Edit (DatabaseEdit database tablesel) where
-    type EditReader (DatabaseEdit database tablesel) = DatabaseRead database tablesel
     applyEdit _ _ = return $ error "NYI: DatabaseEdit.applyEdit"

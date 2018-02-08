@@ -8,8 +8,8 @@ import Truth.Core.UI.Specifier
 data UIOption edit where
     MkUIOption
         :: Eq t
-        => GeneralFunction tedit (ListEdit [(t, String)] (WholeEdit (t, String)))
-        -> GeneralLens tedit (WholeEdit t)
+        => EditFunction tedit (ListEdit [(t, String)] (WholeEdit (t, String)))
+        -> EditLens tedit (WholeEdit t)
         -> UIOption tedit
 
 instance Show (UIOption edit) where
@@ -20,10 +20,10 @@ instance UIType UIOption where
 
 uiOption ::
        forall tedit t. Eq t
-    => GeneralFunction tedit (ListEdit [(t, String)] (WholeEdit (t, String)))
-    -> GeneralLens tedit (WholeEdit t)
+    => EditFunction tedit (ListEdit [(t, String)] (WholeEdit (t, String)))
+    -> EditLens tedit (WholeEdit t)
     -> UISpec tedit
 uiOption optlens sellens = MkUISpec $ MkUIOption optlens sellens
 
 uiSimpleOption :: Eq t => [(t, String)] -> UISpec (WholeEdit t)
-uiSimpleOption opts = uiOption (constGeneralFunction opts) cid
+uiSimpleOption opts = uiOption (constEditFunction opts) cid

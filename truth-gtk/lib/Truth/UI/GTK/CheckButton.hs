@@ -14,14 +14,14 @@ checkButtonGetView =
         fmap
             (\(MkUICheckbox name) -> do
                  widget <- liftIO checkButtonNew
-                 initial <- liftOuter $ viewMutableRead $ unReadable subjectFromReader
+                 initial <- liftOuter $ viewObjectRead mutableReadToSubject
                  liftIO $ set widget [buttonLabel := name, toggleButtonActive := initial]
                  changedSignal <-
                      liftOuter $
                      viewOn widget buttonActivated $
-                     viewMutableEdit $ \muted -> do
+                     viewObjectPushEdit $ \push -> do
                          st <- liftIO $ Gtk.get widget toggleButtonActive
-                         pushMutableEdit muted [MkWholeEdit st]
+                         push [MkWholeEdit st]
                  createViewReceiveUpdate $ \_ (MkWholeEdit st) ->
                      liftIO $ withSignalBlocked changedSignal $ set widget [toggleButtonActive := st]
                  return $ toWidget widget) $

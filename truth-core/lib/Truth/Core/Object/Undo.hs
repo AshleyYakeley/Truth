@@ -5,7 +5,7 @@ module Truth.Core.Object.Undo
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.MutableEdit
+
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Read
@@ -16,7 +16,7 @@ makeUndoEntry ::
        (MonadIO m, InvertibleEdit edit) => MutableRead m (EditReader edit) -> [edit] -> m (Maybe (UndoEntry edit))
 makeUndoEntry _ [] = return Nothing
 makeUndoEntry mr edits = do
-    unedits <- unReadable (invertEdits edits) mr
+    unedits <- invertEdits edits mr
     return $ Just (edits, unedits)
 
 data UndoQueue edit = MkUndoQueue
@@ -48,20 +48,20 @@ undoQueueSubscriber sub =
         queueVar <- newMVar $ MkUndoQueue [] []
         let
             init' :: Object edit -> IO (editor, UndoActions)
-            init' object = do
+            init' object@(MkObject (MkUnliftIO runA :: UnliftIO ma) _ pushA) = do
                 editor <- init object
                 let
                     uaUndo :: IO ()
                     uaUndo =
-                        mvarStateAccess queueVar $ do
+                        mvarRun queueVar $ do
                             MkUndoQueue ues res <- get
                             case ues of
                                 [] -> return () -- nothing to undo
                                 (entry:ee) -> do
                                     did <-
                                         lift $
-                                        runObject object $ \muted -> do
-                                            maction <- mutableEdit muted (snd entry)
+                                        runA $ do
+                                            maction <- pushA (snd entry)
                                             case maction of
                                                 Just action -> do
                                                     action
@@ -72,15 +72,15 @@ undoQueueSubscriber sub =
                                         else return ()
                     uaRedo :: IO ()
                     uaRedo =
-                        mvarStateAccess queueVar $ do
+                        mvarRun queueVar $ do
                             MkUndoQueue ues res <- get
                             case res of
                                 [] -> return () -- nothing to redo
                                 (entry:ee) -> do
                                     did <-
                                         lift $
-                                        runObject object $ \muted -> do
-                                            maction <- mutableEdit muted (fst entry)
+                                        runA $ do
+                                            maction <- pushA (fst entry)
                                             case maction of
                                                 Just action -> do
                                                     action
@@ -91,14 +91,16 @@ undoQueueSubscriber sub =
                                         else return ()
                 return (editor, MkUndoActions {..})
             update' ::
-                   forall m. IsStateIO m
+                   forall m. MonadUnliftIO m
                 => (editor, UndoActions)
                 -> MutableRead m (EditReader edit)
                 -> [edit]
                 -> m ()
             update' (editor, _) mr edits = do
                 update editor mr edits
-                _ <- mvarTryStateT queueVar $ updateUndoQueue mr edits -- mvarTryStateT, so as to not change the queue on undo and redo edits
+                _ <- do
+                    MkUnlift du <- mvarRun queueVar $ getDiscardingUnlift
+                    du $ updateUndoQueue mr edits -- discard changes to the queue on undo and redo edits
                 return ()
         ((editor, undoActions), closer, actions) <- subscribe sub init' update'
         return (editor, closer, (actions, undoActions))

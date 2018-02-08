@@ -10,6 +10,14 @@ class TupleWitness (c :: * -> Constraint) (sel :: * -> *) where
 newtype Tuple sel =
     MkTuple (forall edit. sel edit -> EditSubject edit)
 
+instance (TupleSubjectWitness Show sel, FiniteWitness sel) => Show (Tuple sel) where
+    show (MkTuple f) = let
+        showWit :: AnyWitness sel -> String
+        showWit (MkAnyWitness se) =
+            case tupleSubjectWitness (Proxy :: Proxy Show) se of
+                Dict -> show $ f se
+        in "{" ++ intercalate "," (fmap showWit allWitnesses) ++ "}"
+
 class (TestEquality sel, TupleReaderWitness SubjectReader sel) =>
       SubjectTupleSelector (sel :: * -> *) where
     type TupleSubject sel :: *
@@ -22,14 +30,33 @@ class (TestEquality sel, TupleReaderWitness SubjectReader sel) =>
 data TupleEditReader sel t where
     MkTupleEditReader :: sel edit -> EditReader edit t -> TupleEditReader sel t
 
+instance TupleReaderWitness (WitnessConstraint c) sel => WitnessConstraint c (TupleEditReader sel) where
+    witnessConstraint (MkTupleEditReader (se :: sel edit) (rt :: EditReader edit t)) =
+        case tupleReaderWitness (Proxy :: Proxy (WitnessConstraint c)) se of
+            Dict ->
+                case witnessConstraint @_ @c rt of
+                    Dict -> Dict
+
+instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstraint Show) sel) =>
+         Show (TupleEditReader sel t) where
+    show (MkTupleEditReader (se :: sel edit) (rt :: EditReader edit t)) =
+        showAllWitness se ++
+        " " ++
+        case tupleReaderWitness (Proxy :: Proxy (AllWitnessConstraint Show)) se of
+            Dict -> showAllWitness rt
+
+instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstraint Show) sel) =>
+         AllWitnessConstraint Show (TupleEditReader sel) where
+    allWitnessConstraint = Dict
+
 tupleReadFunction :: sel edit -> ReadFunction (TupleEditReader sel) (EditReader edit)
-tupleReadFunction sel r = readable $ MkTupleEditReader sel r
+tupleReadFunction sel mr rt = mr $ MkTupleEditReader sel rt
 
 instance (SubjectTupleSelector sel) => SubjectReader (TupleEditReader sel) where
     type ReaderSubject (TupleEditReader sel) = TupleSubject sel
-    readFromSubject a (MkTupleEditReader seledit reader) =
+    subjectToRead a (MkTupleEditReader seledit reader) =
         case tupleReaderWitness (Proxy :: Proxy SubjectReader) seledit of
-            Dict -> readFromSubject (tupleReadFromSubject seledit a) reader
+            Dict -> subjectToRead (tupleReadFromSubject seledit a) reader
 
 class TupleReaderWitness (c :: (* -> *) -> Constraint) (sel :: * -> *) where
     tupleReaderWitness :: forall proxy edit. proxy c -> sel edit -> Dict (c (EditReader edit))
@@ -49,11 +76,10 @@ tupleAllSelectors = getConst $ tupleConstruct $ \sel -> Const [MkAnyWitness sel]
 
 instance (SubjectTupleSelector sel, FiniteTupleSelector sel, TupleReaderWitness FullSubjectReader sel) =>
          FullSubjectReader (TupleEditReader sel) where
-    subjectFromReader =
-        tupleConstruct
-            (\(seledit :: sel edit) ->
-                 case tupleReaderWitness (Proxy :: Proxy FullSubjectReader) seledit of
-                     Dict -> mapReadable (readable . MkTupleEditReader seledit) subjectFromReader)
+    mutableReadToSubject mr =
+        tupleConstruct $ \(seledit :: sel edit) ->
+            case tupleReaderWitness (Proxy :: Proxy FullSubjectReader) seledit of
+                Dict -> mutableReadToSubject $ mr . MkTupleEditReader seledit
 
 data TupleEdit sel where
     MkTupleEdit :: sel edit -> edit -> TupleEdit sel
@@ -66,19 +92,19 @@ instance (TestEquality sel, TupleWitness Edit sel) => Floating (TupleEdit sel) (
                     Dict -> MkTupleEdit s2 $ floatingUpdate e1 e2
             Nothing -> edit
 
+type instance EditReader (TupleEdit sel) = TupleEditReader sel
+
 instance (TestEquality sel, TupleWitness Edit sel) => Edit (TupleEdit sel) where
-    type EditReader (TupleEdit sel) = TupleEditReader sel
-    applyEdit (MkTupleEdit aggedite edit) aggreader@(MkTupleEditReader aggeditr reader) =
+    applyEdit (MkTupleEdit aggedite edit) mr aggreader@(MkTupleEditReader aggeditr reader) =
         case (tupleWitness (Proxy :: Proxy Edit) aggedite, testEquality aggedite aggeditr) of
-            (Dict, Just Refl) -> mapReadable (readable . MkTupleEditReader aggedite) (applyEdit edit reader)
-            _ -> readable aggreader
+            (Dict, Just Refl) -> applyEdit edit (mr . MkTupleEditReader aggedite) reader
+            _ -> mr aggreader
 
 instance (TestEquality sel, TupleWitness Edit sel, TupleWitness InvertibleEdit sel) =>
          InvertibleEdit (TupleEdit sel) where
-    invertEdit (MkTupleEdit seledit edit) =
+    invertEdit (MkTupleEdit seledit edit) mr =
         case tupleWitness (Proxy :: Proxy InvertibleEdit) seledit of
-            Dict ->
-                fmap (fmap (MkTupleEdit seledit)) (mapReadable (readable . MkTupleEditReader seledit) (invertEdit edit))
+            Dict -> fmap (fmap (MkTupleEdit seledit)) $ invertEdit edit $ mr . MkTupleEditReader seledit
 
 instance ( SubjectTupleSelector sel
          , FiniteTupleSelector sel
@@ -87,14 +113,20 @@ instance ( SubjectTupleSelector sel
          , TupleWitness FullEdit sel
          ) =>
          FullEdit (TupleEdit sel) where
-    replaceEdit = do
+    replaceEdit mr writeEdit = do
         editss <-
-            traverse
-                (\(MkAnyWitness sel) ->
-                     case tupleWitness (Proxy :: Proxy FullEdit) sel of
-                         Dict -> reWriterReadable (MkTupleEdit sel) $ mapReadable (tupleReadFunction sel) replaceEdit)
-                tupleAllSelectors
+            for tupleAllSelectors $ \(MkAnyWitness sel) ->
+                case tupleWitness (Proxy :: Proxy FullEdit) sel of
+                    Dict -> replaceEdit (tupleReadFunction sel mr) $ writeEdit . MkTupleEdit sel
         return $ mconcat editss
+
+instance (WitnessConstraint Show sel, AllWitnessConstraint Show sel) => Show (TupleEdit sel) where
+    show (MkTupleEdit sel edit) =
+        "tuple " ++
+        showAllWitness sel ++
+        " " ++
+        case witnessConstraint @_ @Show sel of
+            Dict -> show edit
 
 splitTupleEditList :: TestEquality w => [TupleEdit w] -> AllF w []
 splitTupleEditList [] = MkAllF $ \_ -> []
@@ -104,33 +136,27 @@ splitTupleEditList ((MkTupleEdit wt t):rr) =
             Just Refl -> t : (getAllF (splitTupleEditList rr) wt')
             Nothing -> getAllF (splitTupleEditList rr) wt'
 
-tupleEditFunction ::
-       forall sel edit. TestEquality sel
-    => sel edit
-    -> PureEditFunction (TupleEdit sel) edit
-tupleEditFunction seledit = let
-    editAccess :: IOStateAccess ()
-    editAccess = unitStateAccess
-    editGet :: () -> ReadFunction (TupleEditReader sel) (EditReader edit)
-    editGet () = tupleReadFunction seledit
-    editUpdate (MkTupleEdit seledit' edit) () =
-        case testEquality seledit seledit' of
-            Just Refl -> return ((), [edit])
-            _ -> return ((), [])
-    in MkEditFunction {..}
-
 tupleEditLens ::
        forall sel edit. (TestEquality sel)
     => sel edit
-    -> PureEditLens (TupleEdit sel) edit
+    -> EditLens (TupleEdit sel) edit
 tupleEditLens seledit = let
-    editLensFunction = tupleEditFunction seledit
-    editLensPutEdit :: () -> edit -> Readable (TupleEditReader sel) (Maybe ((), [TupleEdit sel]))
-    editLensPutEdit () edit = return $ pure ((), [MkTupleEdit seledit edit])
-    in MkEditLens {..}
-
-tupleGeneralLens ::
-       forall sel edit. (TestEquality sel)
-    => sel edit
-    -> GeneralLens (TupleEdit sel) edit
-tupleGeneralLens seledit = MkCloseState $ tupleEditLens seledit
+    efGet :: ReadFunctionT IdentityT (TupleEditReader sel) (EditReader edit)
+    efGet mr = remonadMutableRead IdentityT $ tupleReadFunction seledit mr
+    efUpdate ::
+           forall m. MonadIO m
+        => TupleEdit sel
+        -> MutableRead m (EditReader (TupleEdit sel))
+        -> IdentityT m [edit]
+    efUpdate (MkTupleEdit seledit' edit) _ =
+        case testEquality seledit seledit' of
+            Just Refl -> return [edit]
+            Nothing -> return []
+    elFunction = MkAnEditFunction {..}
+    elPutEdits ::
+           forall m. MonadIO m
+        => [edit]
+        -> MutableRead m (EditReader (TupleEdit sel))
+        -> IdentityT m (Maybe [TupleEdit sel])
+    elPutEdits edits _ = return $ Just $ fmap (MkTupleEdit seledit) edits
+    in MkCloseUnlift identityUnlift $ MkAnEditLens {..}

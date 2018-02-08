@@ -15,11 +15,11 @@ deriving instance Empty (NoReader a t)
 
 instance SubjectReader (NoReader a) where
     type ReaderSubject (NoReader a) = a
-    readFromSubjectM _ = never
-    readFromSubject _ = never
+    mSubjectToMutableRead _ = never
+    subjectToRead _ = never
 
 instance FullSubjectReader (NoReader ()) where
-    subjectFromReader = return ()
+    mutableReadToSubject _ = return ()
 
 -- | Can't touch this.
 newtype NoEdit (reader :: * -> *) =
@@ -31,28 +31,27 @@ instance Finite (NoEdit reader) where
 
 deriving instance Empty (NoEdit reader)
 
+instance Show (NoEdit reader) where
+    show edit = never edit
+
 instance Floating (NoEdit reader) (NoEdit reader)
 
+type instance EditReader (NoEdit reader) = reader
+
 instance Edit (NoEdit reader) where
-    type EditReader (NoEdit reader) = reader
-    applyEdit = never
+    applyEdit edit _ = never edit
 
 instance InvertibleEdit (NoEdit reader) where
-    invertEdit = never
+    invertEdit edit _ = never edit
 
 instance (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where
-    replaceEdit = return ()
+    replaceEdit _ _ = return ()
 
-noEditFunction :: PureEditFunction (NoEdit (EditReader edit)) edit
-noEditFunction = let
-    editAccess :: IOStateAccess ()
-    editAccess = unitStateAccess
-    editGet _ = readable
-    editUpdate = never
-    in MkEditFunction {..}
-
-noEditLens :: PureEditLens (NoEdit (EditReader edit)) edit
+noEditLens :: forall edit. EditLens (NoEdit (EditReader edit)) edit
 noEditLens = let
-    editLensFunction = noEditFunction
-    editLensPutEdit () _ = return Nothing
-    in MkEditLens {..}
+    efGet :: ReadFunctionT IdentityT (EditReader edit) (EditReader edit)
+    efGet mr = remonadMutableRead IdentityT mr
+    efUpdate edit _ = never edit
+    elFunction = MkAnEditFunction {..}
+    elPutEdits _ _ = return Nothing
+    in MkCloseUnlift identityUnlift $ MkAnEditLens {..}

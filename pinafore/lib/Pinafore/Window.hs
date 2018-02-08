@@ -5,12 +5,12 @@ import Pinafore.Query
 import Pinafore.SQLite
 import Shapes
 import Truth.Core
-import Truth.Debug
+import Truth.Debug.Object
 
 pinaforeEditShower :: EditShower PinaforeEdit
 pinaforeEditShower = blankEditShower {
     showRead = show,
-    showEdits = show
+    showEdit = show
 }
 
 sqlitePinaforeWindow :: FilePath -> (FilePath, String) -> IO [UIWindow ()]

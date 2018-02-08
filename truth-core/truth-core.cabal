@@ -26,6 +26,7 @@ library
         GADTs
         GeneralizedNewtypeDeriving
         ImplicitParams
+        InstanceSigs
         KindSignatures
         LambdaCase
         MonadFailDesugaring
@@ -53,7 +54,6 @@ library
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances
@@ -72,6 +72,7 @@ library
     exposed-modules:
         Truth.Core
         Truth.Debug
+        Truth.Debug.Object
         Truth.World.Anything
         Truth.World.File
         Truth.World.FileSystem
@@ -83,17 +84,15 @@ library
     other-modules:
         Truth.Core.Import
         Truth.Core.Sequence
+        Truth.Core.Read.MutableRead
         Truth.Core.Read.SubjectReader
-        Truth.Core.Read.Readable
         Truth.Core.Read.FullSubjectReader
-        Truth.Core.Read.ReadFunction
-        Truth.Core.Read.WriterReadable
         Truth.Core.Read
         Truth.Core.Edit.Edit
         Truth.Core.Edit.FullEdit
-        Truth.Core.Edit.EditFunction
-        Truth.Core.Edit.EditLens
-        Truth.Core.Edit.General
+        Truth.Core.Edit.Unlift
+        Truth.Core.Edit.Function
+        Truth.Core.Edit.Lens
         Truth.Core.Edit
         Truth.Core.Types.None
         Truth.Core.Types.Whole
@@ -105,13 +104,11 @@ library
         Truth.Core.Types.OneWholeEdit
         Truth.Core.Types.Either
         Truth.Core.Types.Comonad
-        Truth.Core.Types.ComonadLift
         Truth.Core.Types.Tuple
         Truth.Core.Types.ConsTuple
         Truth.Core.Types.EitherTuple
         Truth.Core.Types.Pair
         Truth.Core.Types.Lattice
-        Truth.Core.Types.PointedEditLens
         Truth.Core.Types.Function
         Truth.Core.Types.Context
         Truth.Core.Types.List
@@ -122,10 +119,9 @@ library
         Truth.Core.Types.Database
         Truth.Core.Types.TupleDatabase
         Truth.Core.Types
-        Truth.Core.Object.MutableEdit
         Truth.Core.Object.Object
         Truth.Core.Object.AutoClose
-        Truth.Core.Object.MutableIOEdit
+        Truth.Core.Object.ObjectEdit
         Truth.Core.Object.Subscriber
         Truth.Core.Object.Lens
         Truth.Core.Object.Editor
@@ -172,6 +168,7 @@ test-suite test
         GADTs
         GeneralizedNewtypeDeriving
         ImplicitParams
+        InstanceSigs
         KindSignatures
         LambdaCase
         MonadFailDesugaring
@@ -199,7 +196,6 @@ test-suite test
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances
@@ -212,6 +208,7 @@ test-suite test
         open-witness,
         template-haskell,
         transformers,
+        transformers-extra,
         witness,
         comonad,
         mono-traversable,

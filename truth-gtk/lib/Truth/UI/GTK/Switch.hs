@@ -18,10 +18,7 @@ containerRemoveDestroy w1 w2 = do
     widgetDestroy w2
 
 switchView ::
-       forall edit. Edit edit
-    => (UISpec edit -> GCreateView edit)
-    -> GeneralFunction edit (WholeEdit (UISpec edit))
-    -> GCreateView edit
+       forall edit. (UISpec edit -> GCreateView edit) -> EditFunction edit (WholeEdit (UISpec edit)) -> GCreateView edit
 switchView getview specfunc = do
     box <- liftIO $ vBoxNew False 0
     let
@@ -31,25 +28,25 @@ switchView getview specfunc = do
         newWidgets vr = boxAddShow PackGrow box $ vrWidget vr
     firstvr <-
         liftOuter $ do
-            firstspec <- mapViewEdit (readOnlyGeneralLens specfunc) $ viewMutableRead $ \mr -> mr ReadWhole
+            firstspec <- mapViewEdit (readOnlyEditLens specfunc) $ viewObjectRead $ \mr -> mr ReadWhole
             getVR firstspec
     liftIO $ newWidgets firstvr
     stateVar :: MVar (GViewResult edit) <- liftIO $ newMVar firstvr
     unlift <- liftOuter $ liftIOView return
     createViewAddAspect $
-        mvarStateAccess stateVar $ do
+        mvarRun stateVar $ do
             vr <- get
             lift $ vrFirstAspect vr
-    mapCreateViewEdit (readOnlyGeneralLens specfunc) $
+    mapCreateViewEdit (readOnlyEditLens specfunc) $
         createViewReceiveUpdate $ \_ (MkWholeEdit newspec) ->
-            mvarStateAccess stateVar $ do
+            mvarRun stateVar $ do
                 oldvr <- get
                 liftIO $ containerRemoveDestroy box $ vrWidget oldvr
                 newvr <- liftIO $ unlift $ getVR newspec
                 liftIO $ newWidgets newvr
                 put newvr
     createViewReceiveUpdates $ \mr edits ->
-        mvarStateAccess stateVar $ do
+        mvarRun stateVar $ do
             vr <- get
             lift $ vrUpdate vr mr edits
     return $ toWidget box

@@ -15,6 +15,10 @@ resultToM :: MonadFail m => Result String a -> m a
 resultToM (SuccessResult a) = return a
 resultToM (FailureResult e) = fail e
 
+resultToEither :: Result e a -> Either e a
+resultToEither (FailureResult e) = Left e
+resultToEither (SuccessResult a) = Right a
+
 eitherToResult :: Either e a -> Result e a
 eitherToResult (Left e) = FailureResult e
 eitherToResult (Right a) = SuccessResult a
@@ -66,6 +70,10 @@ instance MonadFix (Result e) where
         getSuccess (FailureResult _) = error "mfix FailureResult"
         ma = ama $ getSuccess ma
         in ma
+
+instance (Show e, Show a) => Show (Result e a) where
+    show (SuccessResult a) = "success: " ++ show a
+    show (FailureResult e) = "failure: " ++ show e
 
 mapResult :: Bijection (Result e2 (Result e1 a)) (Result (Either e2 e1) a)
 mapResult = MkBijection forwards backwards

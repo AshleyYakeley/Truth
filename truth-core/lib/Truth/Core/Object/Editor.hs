@@ -2,14 +2,13 @@ module Truth.Core.Object.Editor where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.MutableEdit
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Read
 
 data Editor (edit :: *) actions r = forall editor. MkEditor
     { editorInit :: Object edit -> IO editor
-    , editorUpdate :: forall m. IsStateIO m =>
+    , editorUpdate :: forall m. MonadUnliftIO m =>
                                     editor -> MutableRead m (EditReader edit) -> [edit] -> m ()
     , editorDo :: editor -> actions -> IO r
     }
@@ -30,7 +29,7 @@ instance Applicative (Editor edit actions) where
             e2 <- ei2 object
             return (e1, e2)
         editorUpdate ::
-               forall m. IsStateIO m
+               forall m. MonadUnliftIO m
             => (editor1, editor2)
             -> MutableRead m (EditReader edit)
             -> [edit]
@@ -50,7 +49,7 @@ subscribeEditor subscriber editor =
         (MkEditor initr update f) -> do
             (e, close, actions) <- subscribe subscriber initr update
             finally (f e actions) close
-
+{-
 oneTransactionEditor ::
        forall actions edit r.
        (forall m. Monad m =>
@@ -62,3 +61,4 @@ oneTransactionEditor f = let
     editorUpdate _lapiw _mr _edits = return ()
     editorDo (MkObject object) _ = object f
     in MkEditor {..}
+-}

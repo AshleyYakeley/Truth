@@ -13,7 +13,7 @@ import Truth.World.File
 textCodec :: ReasonCodec ByteString String
 textCodec = utf8Codec . bijectionCodec packBijection
 
-textLens :: PureEditLens ByteStringEdit (WholeEdit ((Result String) String))
+textLens :: EditLens ByteStringEdit (WholeEdit ((Result String) String))
 textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) <.> convertEditLens
 
 fileTextWindow :: Bool -> FilePath -> IO SomeUIWindow
@@ -22,7 +22,7 @@ fileTextWindow saveOpt path = do
         bsObj :: Object ByteStringEdit
         bsObj = fileObject path
         wholeTextObj :: Object (WholeEdit ((Result String) String))
-        wholeTextObj = cacheObject $ mapObject (MkCloseState textLens) bsObj
+        wholeTextObj = cacheObject $ mapObject textLens bsObj
     if saveOpt
         then do
             let

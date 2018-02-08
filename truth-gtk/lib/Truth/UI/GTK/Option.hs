@@ -18,13 +18,14 @@ listStoreView ::
        (FullSubjectReader (EditReader edit), Edit edit)
     => CreateView (ListEdit [EditSubject edit] edit) (ListStore (EditSubject edit))
 listStoreView = do
-    initialList <- liftOuter $ viewMutableRead $ unReadable subjectFromReader
+    initialList <- liftOuter $ viewObjectRead mutableReadToSubject
     store <- liftIO $ listStoreNew initialList
     createViewReceiveUpdate $ \_mr ->
         \case
             ListEditItem (MkSequencePoint i) edit ->
                 liftIO $ do
-                    newval <- fromReadFunctionM (applyEdit edit) (listStoreGetValue store i)
+                    oldval <- listStoreGetValue store i
+                    newval <- mutableReadToSubject $ applyEdit edit $ subjectToMutableRead oldval
                     listStoreSetValue store i newval
             ListDeleteItem (MkSequencePoint i) -> liftIO $ listStoreRemove store i
             ListInsertItem (MkSequencePoint i) item -> liftIO $ listStoreInsert store i item
@@ -46,12 +47,12 @@ optionFromStore store = do
     changedSignal <-
         liftOuter $
         viewOn widget changed $
-        viewMutableEdit $ \muted -> do
+        viewObjectPushEdit $ \push -> do
             mi <- liftIO $ comboBoxGetActiveIter widget
             case mi of
                 Just i -> do
                     (t, _) <- liftIO $ listStoreGetValue store $ listStoreIterToIndex i
-                    pushMutableEdit muted [MkWholeEdit t]
+                    push [MkWholeEdit t]
                 Nothing -> return ()
     let
         update :: MonadIO m => t -> m ()
@@ -66,17 +67,17 @@ optionFromStore store = do
                             Nothing -> return ()
                     Nothing -> return ()
     liftOuter $
-        viewMutableRead $ \mr -> do
+        viewObjectRead $ \mr -> do
             t <- mr ReadWhole
             update t
     createViewReceiveUpdate $ \_mr (MkWholeEdit t) -> update t
     return $ toWidget widget
 
 optionView ::
-       forall t tedit. (Eq t, Edit tedit)
-    => GeneralFunction tedit (ListEdit [(t, String)] (WholeEdit (t, String)))
-    -> GeneralLens tedit (WholeEdit t)
+       forall t tedit. (Eq t)
+    => EditFunction tedit (ListEdit [(t, String)] (WholeEdit (t, String)))
+    -> EditLens tedit (WholeEdit t)
     -> GCreateView tedit
 optionView itemsFunction whichLens = do
-    store <- mapCreateViewEdit (readOnlyGeneralLens itemsFunction) listStoreView
+    store <- mapCreateViewEdit (readOnlyEditLens itemsFunction) listStoreView
     mapCreateViewEdit whichLens $ optionFromStore store

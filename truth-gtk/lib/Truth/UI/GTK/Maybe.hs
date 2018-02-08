@@ -18,11 +18,11 @@ containerRemoveDestroy w1 w2 = do
     widgetDestroy w2
 
 createButton :: (FullEdit edit) => EditSubject edit -> Object edit -> IO Button
-createButton subj object =
+createButton subj MkObject {..} =
     makeButton "Create" $
-    runObject object $ \muted -> do
-        edits <- fromReadableSubject (writerToReadable replaceEdit) subj
-        pushMutableEdit muted edits
+    runUnliftIO objRun $ do
+        edits <- getReplaceEditsFromSubject subj
+        pushEdit $ objEdit edits
 
 oneWholeView ::
        forall f edit wd. (MonadOne f, FullEdit edit, WidgetClass wd)
@@ -41,10 +41,10 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
         liftIOView $ \unlift ->
             for mDeleteValue $ \(MkLimit deleteValue) ->
                 makeButton "Delete" $
-                unlift $ viewMutableEdit $ \muted -> pushMutableEdit muted [SumEditLeft $ MkWholeEdit deleteValue]
+                unlift $ viewObjectPushEdit $ \push -> push [SumEditLeft $ MkWholeEdit deleteValue]
     let
         getVR :: f () -> View (OneWholeEdit f edit) (f (GViewResult edit))
-        getVR fu = for fu $ \() -> mapViewEdit (mustExistOneGeneralLens "object") $ getCompose $ baseView
+        getVR fu = for fu $ \() -> mapViewEdit (mustExistOneEditLens "object") $ getCompose $ baseView
         newWidgets :: f (GViewResult edit) -> IO ()
         newWidgets fg =
             case retrieveOne fg of
@@ -54,24 +54,24 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
                     boxAddShow PackGrow box $ vrWidget vr
     firstfvr <-
         liftOuter $ do
-            firstfu <- viewMutableRead $ \mr -> mr ReadHasOne
+            firstfu <- viewObjectRead $ \mr -> mr ReadHasOne
             getVR firstfu
     liftIO $ newWidgets firstfvr
     stateVar :: MVar (f (GViewResult edit)) <- liftIO $ newMVar firstfvr
     unlift <- liftOuter $ liftIOView return
     let
         update ::
-               forall m. IsStateIO m
+               forall m. MonadUnliftIO m
             => MutableRead m (OneReader f (EditReader edit))
             -> [OneWholeEdit f edit]
             -> m ()
         update mr wedits =
-            mvarStateAccess stateVar $ do
+            mvarRun stateVar $ do
                 oldfvr <- get
                 newfu <- lift $ mr ReadHasOne
                 case (retrieveOne oldfvr, retrieveOne newfu) of
                     (SuccessResult vr, SuccessResult ()) ->
-                        lift $ vrUpdate (mapViewResultEdit (mustExistOneGeneralLens "object") vr) mr wedits
+                        lift $ vrUpdate (mapViewResultEdit (mustExistOneEditLens "object") vr) mr wedits
                     (SuccessResult vr, FailureResult (MkLimit newlf)) -> do
                         liftIO $ containerRemoveDestroy box $ vrWidget vr
                         liftIO $ newWidgets newlf
@@ -83,13 +83,13 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
                         liftIO $ newWidgets newfvr
                         put newfvr
     createViewAddAspect $
-        mvarStateAccess stateVar $ do
+        mvarRun stateVar $ do
             fvr <- get
             case getMaybeOne fvr of
                 Just vr -> liftIO $ mapAspectSpec uispec $ vrFirstAspect vr
                 Nothing -> return Nothing
     createViewReceiveUpdates $ update
-    liftOuter $ viewMutableRead $ \mr -> update mr []
+    liftOuter $ viewObjectRead $ \mr -> update mr []
     return $ toWidget box
 
 placeholderLabel :: IO Label

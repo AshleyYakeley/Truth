@@ -17,6 +17,9 @@ newtype FiniteSet a = MkFiniteSet
                , Filterable
                )
 
+instance Show a => Show (FiniteSet a) where
+    show (MkFiniteSet aa) = show aa
+
 type instance Element (FiniteSet a) = a
 
 instance Traversable FiniteSet where

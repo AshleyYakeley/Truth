@@ -2,46 +2,41 @@ module Truth.Core.Object.AutoClose where
 
 import Data.Map.Strict hiding (lookup)
 import Truth.Core.Import
-import Truth.Core.Object.MutableEdit
-import Truth.Core.Object.Object
 
-runObjectIO :: Object edit -> (MutableEdit IO edit -> IO r) -> IO r
-runObjectIO object call =
-    runObject object $ \muted -> liftWithUnlift $ \unlift -> call $ remonadMutableEdit unlift muted
-
-openObject :: Object edit -> IO (MutableEdit IO edit, IO ())
-openObject object = do
-    mutedVar <- newEmptyMVar
+withToOpen :: (forall r. (t -> IO r) -> IO r) -> IO (t, IO ())
+withToOpen withX = do
+    tVar <- newEmptyMVar
     closerVar <- newEmptyMVar
     doneVar <- newEmptyMVar
     _ <-
         forkIO $ do
-            runObjectIO object $ \muted -> do
-                putMVar mutedVar muted
+            withX $ \t -> do
+                putMVar tVar t
                 takeMVar closerVar
             putMVar doneVar ()
-    muted <- takeMVar mutedVar
+    t <- takeMVar tVar
     let
         close :: IO ()
         close = do
             putMVar closerVar ()
             takeMVar doneVar
-    return (muted, close)
+    return (t, close)
 
-type AutoClose key edit = StateT (Map key (MutableEdit IO edit, IO ())) IO
+type AutoClose key t = StateT (Map key (t, IO ())) IO
 
-runAutoClose :: Ord key => AutoClose key edit a -> IO a
-runAutoClose ac = do
-    (a, mp) <- runStateT ac mempty
-    for_ (elems mp) snd
-    return a
+runAutoClose :: Ord key => UnliftIO (AutoClose key t)
+runAutoClose =
+    MkUnliftIO $ \ac -> do
+        (a, mp) <- runStateT ac mempty
+        for_ (elems mp) snd
+        return a
 
-acOpenObject :: Ord key => key -> Object edit -> AutoClose key edit (MutableEdit IO edit)
-acOpenObject key object = do
+acOpenObject :: Ord key => key -> (forall r. (t -> IO r) -> IO r) -> AutoClose key t t
+acOpenObject key withX = do
     oldmap <- get
     case lookup key oldmap of
         Just mutedcloser -> return $ fst mutedcloser
         Nothing -> do
-            mutedcloser <- lift $ openObject object
+            mutedcloser <- lift $ withToOpen withX
             put $ insert key mutedcloser oldmap
             return $ fst mutedcloser

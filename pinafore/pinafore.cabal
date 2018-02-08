@@ -26,6 +26,7 @@ library
         GADTs
         GeneralizedNewtypeDeriving
         ImplicitParams
+        InstanceSigs
         KindSignatures
         LambdaCase
         MonadFailDesugaring
@@ -53,7 +54,6 @@ library
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances
@@ -80,6 +80,7 @@ library
     other-modules:
         Pinafore.AsText
         Pinafore.Edit
+        Pinafore.Morphism
         Pinafore.Query.Read
         Pinafore.Query.Predefined
         Pinafore.SQLite
@@ -103,6 +104,7 @@ test-suite test
         GADTs
         GeneralizedNewtypeDeriving
         ImplicitParams
+        InstanceSigs
         KindSignatures
         LambdaCase
         MonadFailDesugaring
@@ -130,7 +132,6 @@ test-suite test
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances
@@ -175,6 +176,7 @@ executable pinafore
         GADTs
         GeneralizedNewtypeDeriving
         ImplicitParams
+        InstanceSigs
         KindSignatures
         LambdaCase
         MonadFailDesugaring
@@ -202,7 +204,6 @@ executable pinafore
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances
@@ -264,7 +265,6 @@ executable pinafore-query
         -Wall
         -Wincomplete-uni-patterns
         -Wincomplete-record-updates
-        -Wredundant-constraints
         -Wcompat
         -Wnoncanonical-monad-instances
         -Wnoncanonical-monadfail-instances

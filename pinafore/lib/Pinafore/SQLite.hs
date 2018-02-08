@@ -139,58 +139,68 @@ soupSchema = let
         in MkSubmapWitness {..}
     in MkDatabaseSchema {..}
 
-soupDatabaseLens :: GeneralLens (SQLiteEdit PinaforeSchema) PinaforeEdit
+soupDatabaseLens :: EditLens (SQLiteEdit PinaforeSchema) PinaforeEdit
 soupDatabaseLens = let
-    editAccess :: IOStateAccess ()
-    editAccess = unitStateAccess
-    editGet :: () -> ReadFunction (SQLiteRead PinaforeSchema) PinaforeRead
-    editGet () (PinaforeReadGetValue p s) = do
-        row <-
-            readable $
-            DatabaseSelect
-                (SingleTable $ MkTupleTableSel PinaforeTriple)
-                (MkTupleWhereClause $
-                 (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
-                mempty
-                (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
-        return $ fmap getSingleAll $ listToMaybe row
-    editGet () (PinaforeReadLookupValue p v) = do
-        row <-
-            readable $
-            DatabaseSelect
-                (SingleTable $ MkTupleTableSel PinaforeTriple)
-                (MkTupleWhereClause $
-                 (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleValue === ConstExpr v))
-                mempty
-                (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
-        return $ MkFiniteSet $ fmap getSingleAll row
-    editGet () (PinaforeReadGetPrimitive v) = do
-        (row :: [All ((:~:) Text)]) <-
-            readable $
-            DatabaseSelect
-                (SingleTable $ MkTupleTableSel PinaforeLiteral)
-                (MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v)
-                mempty
-                (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralValue)
-        return $ do
-            sa <- listToMaybe row
-            return $ getSingleAll sa
-    editGet () (PinaforeReadLookupPrimitive l) = do
-        row <-
-            readable $
-            DatabaseSelect
-                (SingleTable $ MkTupleTableSel PinaforeLiteral)
-                (MkTupleWhereClause $ ColumnExpr LiteralValue === ConstExpr l)
-                mempty
-                (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralKey)
-        return $ MkFiniteSet $ fmap getSingleAll row
-    editUpdate _ _ = return $ error "soupDatabaseLens.editUpdate"
-    editLensPutEdit ::
-           () -> PinaforeEdit -> Readable (SQLiteRead PinaforeSchema) (Maybe ((), [SQLiteEdit PinaforeSchema]))
-    editLensPutEdit () (PinaforeEditSetValue p s (Just v)) =
-        pure $
-        pure $
-        pure $
+    efGet :: ReadFunctionT IdentityT (SQLiteRead PinaforeSchema) PinaforeRead
+    efGet mr (PinaforeReadGetValue p s) =
+        lift $ do
+            row <-
+                mr $
+                DatabaseSelect
+                    (SingleTable $ MkTupleTableSel PinaforeTriple)
+                    (MkTupleWhereClause $
+                     (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleSubject === ConstExpr s))
+                    mempty
+                    (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
+            return $ fmap getSingleAll $ listToMaybe row
+    efGet mr (PinaforeReadLookupValue p v) =
+        lift $ do
+            row <-
+                mr $
+                DatabaseSelect
+                    (SingleTable $ MkTupleTableSel PinaforeTriple)
+                    (MkTupleWhereClause $
+                     (ColumnExpr TriplePredicate === ConstExpr p) /\ (ColumnExpr TripleValue === ConstExpr v))
+                    mempty
+                    (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
+            return $ MkFiniteSet $ fmap getSingleAll row
+    efGet mr (PinaforeReadGetLiteral v) =
+        lift $ do
+            (row :: [All ((:~:) Text)]) <-
+                mr $
+                DatabaseSelect
+                    (SingleTable $ MkTupleTableSel PinaforeLiteral)
+                    (MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v)
+                    mempty
+                    (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralValue)
+            return $ do
+                sa <- listToMaybe row
+                return $ getSingleAll sa
+    efGet mr (PinaforeReadLookupLiteral l) =
+        lift $ do
+            row <-
+                mr $
+                DatabaseSelect
+                    (SingleTable $ MkTupleTableSel PinaforeLiteral)
+                    (MkTupleWhereClause $ ColumnExpr LiteralValue === ConstExpr l)
+                    mempty
+                    (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralKey)
+            return $ MkFiniteSet $ fmap getSingleAll row
+    efUpdate ::
+           forall m. MonadIO m
+        => SQLiteEdit PinaforeSchema
+        -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
+        -> IdentityT m [PinaforeEdit]
+    efUpdate _ _ = return $ error "soupDatabaseLens.editUpdate"
+    elFunction :: AnEditFunction IdentityT (SQLiteEdit PinaforeSchema) PinaforeEdit
+    elFunction = MkAnEditFunction {..}
+    elPutEdit ::
+           forall m. MonadIO m
+        => PinaforeEdit
+        -> IdentityT m (Maybe [SQLiteEdit PinaforeSchema])
+    elPutEdit (PinaforeEditSetValue p s (Just v)) =
+        return $
+        Just $
         pure $
         DatabaseInsert (MkTupleTableSel PinaforeTriple) $
         MkTupleInsertClause $
@@ -199,17 +209,15 @@ soupDatabaseLens = let
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
-    editLensPutEdit () (PinaforeEditSetValue p s Nothing) =
-        pure $
-        pure $
-        pure $
+    elPutEdit (PinaforeEditSetValue p s Nothing) =
+        return $
+        Just $
         pure $
         DatabaseDelete (MkTupleTableSel PinaforeTriple) $
         MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s
-    editLensPutEdit () (PinaforeEditSetPrimitive v (Just l)) =
-        pure $
-        pure $
-        pure $
+    elPutEdit (PinaforeEditSetLiteral v (Just l)) =
+        return $
+        Just $
         pure $
         DatabaseInsert (MkTupleTableSel PinaforeLiteral) $
         MkTupleInsertClause $
@@ -217,14 +225,18 @@ soupDatabaseLens = let
         MkAll $ \case
             LiteralKey -> v
             LiteralValue -> l
-    editLensPutEdit () (PinaforeEditSetPrimitive v Nothing) =
-        pure $
-        pure $
-        pure $
+    elPutEdit (PinaforeEditSetLiteral v Nothing) =
+        return $
+        Just $
         pure $
         DatabaseDelete (MkTupleTableSel PinaforeLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v
-    editLensFunction = MkEditFunction {..}
-    in MkCloseState $ MkEditLens {..}
+    elPutEdits ::
+           forall m. MonadIO m
+        => [PinaforeEdit]
+        -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
+        -> IdentityT m (Maybe [SQLiteEdit PinaforeSchema])
+    elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
+    in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
 
 sqlitePinaforeObject :: FilePath -> Object PinaforeEdit
 sqlitePinaforeObject path = mapObject soupDatabaseLens $ sqliteObject path soupSchema
