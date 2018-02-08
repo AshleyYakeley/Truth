@@ -7,18 +7,10 @@ module Truth.Core.Object.ObjectEdit
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.AutoClose
 import Truth.Core.Object.Object
 import Truth.Core.Read
 import Truth.Core.Types.None
 import Truth.Debug
-import Truth.Debug.Object
-
--- | Opens a session on the object. Returns an object that can be used without opening a new session, and a function that closes the session.
-openCloseObject :: Object edit -> IO (Object edit, IO ())
-openCloseObject (MkObject (MkUnliftIO run) r e) = do
-    (run', close) <- withToOpen $ \call -> run $ liftIOWithUnlift $ call
-    return (MkObject run' r e, close)
 
 data ObjectReader edit t where
     ReadObject :: ObjectReader edit (Object edit)
@@ -43,61 +35,27 @@ instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader 
 
 type ObjectEdit edit = NoEdit (ObjectReader edit)
 
-type ObjectEditT edit = StateT (Maybe (Object edit, IO ()))
-
-unliftObjectEditT :: Unlift (ObjectEditT edit)
-unliftObjectEditT =
-    traceUnlift "unliftObjectEditT" $
-    MkUnlift $ \smr -> do
-        (r, ms) <- runStateT smr Nothing
-        case ms of
-            Nothing -> do
-                traceIOM "unliftObjectEditT: nothing"
-                return ()
-            Just (_, close) -> do
-                traceIOM "unliftObjectEditT: closing"
-                liftIO close
-        return r
-
-openObject ::
-       forall edit m. MonadIO m
-    => MutableRead m (ObjectReader edit)
-    -> ObjectEditT edit m (Object edit)
-openObject mr = traceBracket "openObject" $ do
-    ms <- get
-    case ms of
-        Just (obj, _) -> do
-            traceIOM "openObject: already"
-            return obj
-        Nothing -> do
-            traceIOM "openObject: new"
-            mainObj <- lift $ mr ReadObject
-            objcl <- liftIO $ openCloseObject mainObj
-            put $ Just objcl
-            return $ traceObject "opened" blankEditShower $ fst objcl
-
--- | This lens must not be used with 'mapSubscriber' or 'mapViewContextEdit'.
 objectEditLens :: forall edit. EditLens (ObjectEdit edit) edit
 objectEditLens = let
-    efGet :: ReadFunctionT (ObjectEditT edit) (ObjectReader edit) (EditReader edit)
+    efGet :: ReadFunctionT IdentityT (ObjectReader edit) (EditReader edit)
     efGet mr rt = do
-        (MkObject (MkUnliftIO run) r _) <- openObject mr
+        (MkObject (MkUnliftIO run) r _) <- lift $ mr ReadObject
         liftIO $ run $ r rt
     efUpdate ::
            forall m. MonadIO m
         => ObjectEdit edit
         -> MutableRead m (ObjectReader edit)
-        -> ObjectEditT edit m [edit]
+        -> IdentityT m [edit]
     efUpdate edit _ = never edit
-    elFunction :: AnEditFunction (ObjectEditT edit) (ObjectEdit edit) edit
+    elFunction :: AnEditFunction IdentityT (ObjectEdit edit) edit
     elFunction = MkAnEditFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [edit]
         -> MutableRead m (EditReader (ObjectEdit edit))
-        -> ObjectEditT edit m (Maybe [ObjectEdit edit])
+        -> IdentityT m (Maybe [ObjectEdit edit])
     elPutEdits edits mr = do
-        (MkObject (MkUnliftIO run) _ e) <- openObject mr
+        (MkObject (MkUnliftIO run) _ e) <- lift $ mr ReadObject
         liftIO $
             run $ do
                 maction <- e edits
@@ -105,7 +63,7 @@ objectEditLens = let
                     Just action -> action
                     Nothing -> liftIO $ fail "objectEditLens: failed"
         return $ Just []
-    in MkCloseUnlift unliftObjectEditT $ MkAnEditLens {..}
+    in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
 
 objectLiftEditLens ::
        forall edita editb. Edit edita
