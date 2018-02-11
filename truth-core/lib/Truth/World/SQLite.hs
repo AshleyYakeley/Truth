@@ -71,6 +71,12 @@ data Expr colsel t where
     EqualsExpr :: Eq t => Expr colsel t -> Expr colsel t -> Expr colsel Bool
     AndExpr :: Expr colsel Bool -> Expr colsel Bool -> Expr colsel Bool
 
+instance AllWitnessConstraint Show colsel => Show (Expr colsel t) where
+    show (ConstExpr t) = show $ toField t
+    show (ColumnExpr col) = showAllWitness col
+    show (EqualsExpr ea eb) = "(" ++ show ea ++ "=" ++ show eb ++ ")"
+    show (AndExpr ea eb) = "(" ++ show ea ++ " & " ++ show eb ++ ")"
+
 instance MeetSemiLattice (Expr colsel Bool) where
     (/\) = AndExpr
 
@@ -107,12 +113,18 @@ class (FiniteWitness colsel, WitnessConstraint FromField colsel, WitnessConstrai
 instance (FiniteWitness colsel, WitnessConstraint FromField colsel, WitnessConstraint ToField colsel) =>
          IsSQLiteTable colsel
 
-instance TupleDatabase SQLiteDatabase where
-    type TupleDatabaseRowWitness SQLiteDatabase = IsSQLiteTable
+instance TupleDatabaseType SQLiteDatabase where
+    type TupleDatabaseTypeRowWitness SQLiteDatabase = IsSQLiteTable
     type TupleExpr SQLiteDatabase colsel = Expr colsel
     evalTupleExpr expr (MkAllF tuple) = evalExpr expr tuple
     constBoolExpr = ConstExpr
     columnExpr = ColumnExpr
+
+instance AllWitnessConstraint Show colsel => AllWitnessConstraint Show (Expr colsel) where
+    allWitnessConstraint = Dict
+
+instance ShowableTupleDatabaseType SQLiteDatabase where
+    witnessShowTupleExpr = Dict
 
 instance (FiniteWitness colsel, WitnessConstraint FromField colsel) => FromRow (All colsel) where
     fromRow =
@@ -129,8 +141,8 @@ intercalate' _ [] = mempty
 intercalate' _ [a] = a
 intercalate' i (a:aa) = mconcat [a, i, intercalate' i aa]
 
-instance HasSchema (TupleSelectClause SQLiteDatabase row row') where
-    type Schema (TupleSelectClause SQLiteDatabase row row') = SubmapWitness (RowColSel row) ColumnRefSchema
+instance HasSchema (TupleSelectClause SQLiteDatabase tablesel row row') where
+    type Schema (TupleSelectClause SQLiteDatabase tablesel row row') = SubmapWitness (RowColSel row) ColumnRefSchema
     schemaString csch (MkTupleSelectClause mapSel) =
         intercalate' "," $ fmap (\(MkAnyWitness cs') -> schemaString csch $ mapSel cs') $ allWitnesses @(RowColSel row')
 

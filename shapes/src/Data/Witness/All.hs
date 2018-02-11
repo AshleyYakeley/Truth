@@ -1,9 +1,14 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Data.Witness.All where
 
 import Shapes.Import
 
 class AllWitnessConstraint (c :: kw -> Constraint) (w :: kt -> kw) where
     allWitnessConstraint :: forall (t :: kt). Dict (c (w t))
+
+instance AllWitnessConstraint Show ((:~:) t) where
+    allWitnessConstraint = Dict
 
 showAllWitness ::
        forall w t. AllWitnessConstraint Show w
@@ -27,14 +32,44 @@ allFToAll (MkAllF wtit) = MkAll $ \wt -> runIdentity $ wtit wt
 allToAllF :: All w -> AllF w Identity
 allToAllF (MkAll wtt) = MkAllF $ \wt -> Identity $ wtt wt
 
+type family UnAll (aw :: *) :: * -> * where
+    UnAll (All w) = w
+
 class WitnessConstraint (c :: k -> Constraint) (w :: k -> *) where
     witnessConstraint :: forall (t :: k). w t -> Dict (c t)
 
 class FiniteWitness (w :: k -> *) where
     assembleWitnessF :: Applicative m => (forall t. w t -> m (f t)) -> m (AllF w f)
 
+instance (TestEquality w, FiniteWitness w) => Countable (AnyWitness w) where
+    countPrevious = finiteCountPrevious
+    countMaybeNext = finiteCountMaybeNext
+
+instance (TestEquality w, FiniteWitness w) => Searchable (AnyWitness w) where
+    search = finiteSearch
+
+instance (TestEquality w, FiniteWitness w) => Finite (AnyWitness w) where
+    assemble ::
+           forall b f. Applicative f
+        => (AnyWitness w -> f b)
+        -> f (AnyWitness w -> b)
+    assemble afb =
+        fmap (\(MkAllF wtcb) (MkAnyWitness wt) -> getConst $ wtcb wt) $
+        assembleWitnessF $ \wt -> fmap Const $ afb $ MkAnyWitness wt
+    allValues = getConst $ assembleWitnessF $ \wt -> Const [MkAnyWitness wt]
+
 allWitnesses :: FiniteWitness w => [AnyWitness w]
 allWitnesses = getConst $ assembleWitnessF $ \wt -> Const [MkAnyWitness wt]
+
+instance (FiniteWitness w, AllWitnessConstraint Show w, WitnessConstraint Show w) => Show (All w) where
+    show (MkAll wtt) = let
+        showItem :: AnyWitness w -> String
+        showItem (MkAnyWitness wt) =
+            showAllWitness wt ++
+            " -> " ++
+            case witnessConstraint @_ @Show wt of
+                Dict -> show (wtt wt)
+        in "{" ++ intercalate "," (fmap showItem allWitnesses) ++ "}"
 
 assembleWitness :: (FiniteWitness w, Applicative m) => (forall t. w t -> m t) -> m (All w)
 assembleWitness wtmt = fmap allFToAll $ assembleWitnessF $ \wt -> fmap Identity $ wtmt wt
@@ -129,6 +164,19 @@ instance (WitnessConstraint c p, WitnessConstraint c q) => WitnessConstraint c (
     witnessConstraint (RightWitness rt) =
         case witnessConstraint @_ @c rt of
             Dict -> Dict
+
+instance (Show (p t), Show (q t)) => Show (EitherWitness p q t) where
+    show (LeftWitness rt) = show rt
+    show (RightWitness rt) = show rt
+
+instance (AllWitnessConstraint Show p, AllWitnessConstraint Show q) =>
+         AllWitnessConstraint Show (EitherWitness p q) where
+    allWitnessConstraint :: forall t. Dict (Show (EitherWitness p q t))
+    allWitnessConstraint =
+        case allWitnessConstraint @_ @_ @Show @p @t of
+            Dict ->
+                case allWitnessConstraint @_ @_ @Show @q @t of
+                    Dict -> Dict
 
 eitherAll :: All sel1 -> All sel2 -> All (EitherWitness sel1 sel2)
 eitherAll (MkAll tup1) (MkAll tup2) =

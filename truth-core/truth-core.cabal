@@ -117,7 +117,9 @@ library
         Truth.Core.Types.Key
         Truth.Core.Types.FiniteSet
         Truth.Core.Types.Database
-        Truth.Core.Types.TupleDatabase
+        Truth.Core.Types.Database.Show
+        Truth.Core.Types.Database.Tuple
+        Truth.Core.Types.Database.Tuple.Show
         Truth.Core.Types
         Truth.Core.Object.Object
         Truth.Core.Object.AutoClose
