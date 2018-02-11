@@ -46,6 +46,19 @@ data TripleTable t where
     TripleSubject :: TripleTable Point
     TripleValue :: TripleTable Point
 
+instance Show (TripleTable t) where
+    show TriplePredicate = "predicate"
+    show TripleSubject = "subject"
+    show TripleValue = "value"
+
+instance AllWitnessConstraint Show TripleTable where
+    allWitnessConstraint = Dict
+
+instance WitnessConstraint Show TripleTable where
+    witnessConstraint TriplePredicate = Dict
+    witnessConstraint TripleSubject = Dict
+    witnessConstraint TripleValue = Dict
+
 instance FiniteWitness TripleTable where
     assembleWitnessF getw =
         (\p s v ->
@@ -71,6 +84,17 @@ data LiteralTable t where
     LiteralKey :: LiteralTable Point
     LiteralValue :: LiteralTable Text
 
+instance Show (LiteralTable t) where
+    show LiteralKey = "key"
+    show LiteralValue = "value"
+
+instance AllWitnessConstraint Show LiteralTable where
+    allWitnessConstraint = Dict
+
+instance WitnessConstraint Show LiteralTable where
+    witnessConstraint LiteralKey = Dict
+    witnessConstraint LiteralValue = Dict
+
 instance FiniteWitness LiteralTable where
     assembleWitnessF getw =
         (\k v ->
@@ -91,6 +115,13 @@ instance WitnessConstraint ToField LiteralTable where
 data PinaforeSchema colsel where
     PinaforeTriple :: PinaforeSchema TripleTable
     PinaforeLiteral :: PinaforeSchema LiteralTable
+
+instance Show (PinaforeSchema colsel) where
+    show PinaforeTriple = "triple"
+    show PinaforeLiteral = "literal"
+
+instance AllWitnessConstraint Show PinaforeSchema where
+    allWitnessConstraint = Dict
 
 instance TestEquality PinaforeSchema where
     testEquality PinaforeTriple PinaforeTriple = Just Refl
@@ -138,6 +169,15 @@ soupSchema = let
             in MkTableSchema {..}
         in MkSubmapWitness {..}
     in MkDatabaseSchema {..}
+
+class (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstraint Show colsel) =>
+      IsPinaforeRow (colsel :: * -> *)
+
+instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstraint Show colsel) =>
+         IsPinaforeRow colsel
+
+instance TupleDatabase SQLiteDatabase PinaforeSchema where
+    type TupleDatabaseRowWitness SQLiteDatabase PinaforeSchema = IsPinaforeRow
 
 soupDatabaseLens :: EditLens (SQLiteEdit PinaforeSchema) PinaforeEdit
 soupDatabaseLens = let
@@ -237,6 +277,25 @@ soupDatabaseLens = let
         -> IdentityT m (Maybe [SQLiteEdit PinaforeSchema])
     elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
+
+instance WitnessConstraint FiniteWitness PinaforeSchema where
+    witnessConstraint PinaforeTriple = Dict
+    witnessConstraint PinaforeLiteral = Dict
+
+instance WitnessConstraint (AllWitnessConstraint Show) PinaforeSchema where
+    witnessConstraint PinaforeTriple = Dict
+    witnessConstraint PinaforeLiteral = Dict
+
+instance WitnessConstraint (WitnessConstraint Show) PinaforeSchema where
+    witnessConstraint PinaforeTriple = Dict
+    witnessConstraint PinaforeLiteral = Dict
+
+instance WitnessConstraint IsPinaforeRow PinaforeSchema where
+    witnessConstraint PinaforeTriple = Dict
+    witnessConstraint PinaforeLiteral = Dict
+
+instance ShowableTupleDatabase SQLiteDatabase PinaforeSchema where
+    witnessTupleRow = Dict
 
 sqlitePinaforeObject :: FilePath -> Object PinaforeEdit
 sqlitePinaforeObject path = mapObject soupDatabaseLens $ sqliteObject path soupSchema

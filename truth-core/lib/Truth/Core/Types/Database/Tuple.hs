@@ -1,4 +1,4 @@
-module Truth.Core.Types.TupleDatabase where
+module Truth.Core.Types.Database.Tuple where
 
 import Truth.Core.Import
 import Truth.Core.Types.Database
@@ -6,15 +6,19 @@ import Truth.Core.Types.Database
 data TupleTableSel tablesel row where
     MkTupleTableSel :: tablesel colsel -> TupleTableSel tablesel (All colsel)
 
-class TupleDatabase (database :: *) where
-    type TupleDatabaseRowWitness database :: (* -> *) -> Constraint
+class TupleDatabaseType (database :: *) where
+    type TupleDatabaseTypeRowWitness database :: (* -> *) -> Constraint
     type TupleExpr database (colsel :: * -> *) :: * -> *
     evalTupleExpr :: Applicative m => TupleExpr database colsel t -> AllF colsel m -> m t
     constBoolExpr :: Bool -> TupleExpr database colsel Bool
     columnExpr :: colsel t -> TupleExpr database colsel t
 
+class TupleDatabaseType database =>
+      TupleDatabase database (tablesel :: (* -> *) -> *) where
+    type TupleDatabaseRowWitness database (tablesel :: (* -> *) -> *) :: (* -> *) -> Constraint
+
 evalTupleExprIdentity ::
-       forall database colsel t. TupleDatabase database
+       forall database colsel t. TupleDatabaseType database
     => TupleExpr database colsel t
     -> All colsel
     -> t
@@ -42,11 +46,11 @@ instance TestEquality tablesel => TestEquality (TupleTableSel tablesel) where
         Refl <- testEquality selTable1 selTable2
         return Refl
 
-data TupleSelectClause database row t where
+data TupleSelectClause database tablesel row t where
     MkTupleSelectClause
-        :: TupleDatabaseRowWitness database colsel'
+        :: (TupleDatabaseTypeRowWitness database colsel', TupleDatabaseRowWitness database tablesel colsel')
         => (forall t. colsel' t -> TupleExpr database colsel t)
-        -> TupleSelectClause database (All colsel) (All colsel')
+        -> TupleSelectClause database tablesel (All colsel) (All colsel')
 
 data SortDir
     = SortAsc
@@ -73,8 +77,9 @@ instance Monoid (TupleOrderClause (All colsel)) where
 data TupleInsertClause row where
     MkTupleInsertClause :: [All colsel] -> TupleInsertClause (All colsel)
 
-instance ( WitnessConstraint (TupleDatabaseRowWitness database) tablesel
-         , TupleDatabase database
+instance ( WitnessConstraint (TupleDatabaseTypeRowWitness database) tablesel
+         , WitnessConstraint (TupleDatabaseRowWitness database tablesel) tablesel
+         , TupleDatabaseType database
          , TestEquality tablesel
          , FiniteWitness tablesel
          ) =>
@@ -110,11 +115,13 @@ instance ( WitnessConstraint (TupleDatabaseRowWitness database) tablesel
         oc (MkTupleOrderItem colsel SortDesc) = compare (Down $ tup1 colsel) (Down $ tup2 colsel)
         in mconcat $ fmap oc clauses
     orderMonoid (MkTupleTableSel _) = Dict
-    type SelectClause database (TupleTableSel tablesel) = TupleSelectClause database
+    type SelectClause database (TupleTableSel tablesel) = TupleSelectClause database tablesel
     selectClause (MkTupleSelectClause selexpr) tuple =
         MkAll $ \col -> evalTupleExprIdentity @database (selexpr col) tuple
     selectRow (MkTupleTableSel tsel) =
-        case witnessConstraint @_ @(TupleDatabaseRowWitness database) tsel of
-            Dict -> MkTupleSelectClause $ columnExpr @database
+        case witnessConstraint @_ @(TupleDatabaseTypeRowWitness database) tsel of
+            Dict ->
+                case witnessConstraint @_ @(TupleDatabaseRowWitness database tablesel) tsel of
+                    Dict -> MkTupleSelectClause $ columnExpr @database
     type JoinClause database (TupleTableSel tablesel) = TupleJoinClause
     joinClause OuterTupleJoinClause = eitherAll

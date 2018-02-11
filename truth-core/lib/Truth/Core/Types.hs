@@ -22,7 +22,9 @@ module Truth.Core.Types
     , module Truth.Core.Types.Key
     , module Truth.Core.Types.FiniteSet
     , module Truth.Core.Types.Database
-    , module Truth.Core.Types.TupleDatabase
+    , module Truth.Core.Types.Database.Show
+    , module Truth.Core.Types.Database.Tuple
+    , module Truth.Core.Types.Database.Tuple.Show
     ) where
 
 import Truth.Core.Types.ByteString
@@ -30,6 +32,9 @@ import Truth.Core.Types.Comonad
 import Truth.Core.Types.ConsTuple
 import Truth.Core.Types.Context
 import Truth.Core.Types.Database
+import Truth.Core.Types.Database.Show
+import Truth.Core.Types.Database.Tuple
+import Truth.Core.Types.Database.Tuple.Show
 import Truth.Core.Types.Either
 import Truth.Core.Types.EitherTuple
 import Truth.Core.Types.FiniteSet
@@ -46,6 +51,5 @@ import Truth.Core.Types.String
 import Truth.Core.Types.Sum
 import Truth.Core.Types.SumWhole
 import Truth.Core.Types.Tuple
-import Truth.Core.Types.TupleDatabase
 import Truth.Core.Types.Unit
 import Truth.Core.Types.Whole
