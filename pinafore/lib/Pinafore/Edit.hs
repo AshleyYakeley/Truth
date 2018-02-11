@@ -45,6 +45,15 @@ instance Show (PinaforeRead t) where
     show (PinaforeReadGetLiteral v) = "get literal of " ++ show v
     show (PinaforeReadLookupLiteral l) = "lookup literal for " ++ show l
 
+instance WitnessConstraint Show PinaforeRead where
+    witnessConstraint (PinaforeReadGetValue _ _) = Dict
+    witnessConstraint (PinaforeReadLookupValue _ _) = Dict
+    witnessConstraint (PinaforeReadGetLiteral _) = Dict
+    witnessConstraint (PinaforeReadLookupLiteral _) = Dict
+
+instance AllWitnessConstraint Show PinaforeRead where
+    allWitnessConstraint = Dict
+
 data PinaforeEdit where
     PinaforeEditSetValue :: Predicate -> Point -> Maybe Point -> PinaforeEdit -- pred subj mval
     PinaforeEditSetLiteral :: Point -> Maybe Text -> PinaforeEdit

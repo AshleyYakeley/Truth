@@ -23,9 +23,16 @@ traceObject prefix MkEditShower {..} (MkObject (MkUnliftIO run :: UnliftIO m) r 
     r' rt = traceBracketArgs (contextStr prefix "read") (showRead rt) (showReadResult rt) $ r rt
     e' :: [edit] -> m (Maybe (m ()))
     e' edits =
+        traceBracketArgs
+            (contextStr prefix "edit.examine")
+            ("[" ++ intercalate "," (fmap showEdit edits) ++ "]")
+            (\mx ->
+                 if isJust mx
+                     then "action"
+                     else "no action") $
         (fmap $
          fmap $
-         traceBracketArgs (contextStr prefix "edit") ("[" ++ intercalate "," (fmap showEdit edits) ++ "]") (\_ -> "")) $
+         traceBracketArgs (contextStr prefix "edit.do") ("[" ++ intercalate "," (fmap showEdit edits) ++ "]") (\_ -> "")) $
         e edits
     in MkObject run' r' e'
 
