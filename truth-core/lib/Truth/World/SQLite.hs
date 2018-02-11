@@ -16,6 +16,7 @@ import Database.SQLite.Simple.ToField
 import System.Directory
 import Truth.Core
 import Truth.Core.Import
+import Truth.Debug.Object
 import qualified Truth.World.SQLite.Schema as SQLite
 
 data QueryString =
@@ -260,3 +261,10 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
                     conn <- ask
                     lift $ execute conn s v
     in MkObject {..}
+
+sqliteObject' ::
+       forall tablesel. (WitnessConstraint IsSQLiteTable tablesel, ShowableTupleDatabase SQLiteDatabase tablesel)
+    => FilePath
+    -> SQLite.DatabaseSchema tablesel
+    -> Object (SQLiteEdit tablesel)
+sqliteObject' path schema = traceObject' "sqliteObject" $ sqliteObject path schema

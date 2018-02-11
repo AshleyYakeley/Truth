@@ -466,7 +466,7 @@ literalPinaforeMap = let
         => WholeEdit (Maybe val)
         -> MutableRead m (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point)))
         -> IdentityT m (Maybe [ContextEdit PinaforeEdit (WholeEdit (Maybe Point))])
-    elPutEdit (MkWholeEdit (fmap toText -> mbs)) mr = do
+    elPutEdit (MkWholeEdit (fmap toText -> mbs)) mr = traceBracket "literalPinaforeMap.elPutEdit" $ do
         msubj <- lift $ mr $ MkTupleEditReader EditContent ReadWhole
         case msubj of
             Just subj -> return $ Just [MkTupleEdit EditContext $ PinaforeEditSetLiteral subj mbs]
