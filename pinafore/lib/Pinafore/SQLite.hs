@@ -11,6 +11,7 @@ import Shapes
 import Truth.Core
 import Truth.World.SQLite
 import Truth.World.SQLite.Schema
+import Truth.Debug.Object
 
 instance FieldType UUID where
     fieldTypeName = "BLOB"
@@ -298,4 +299,4 @@ instance ShowableTupleDatabase SQLiteDatabase PinaforeSchema where
     witnessTupleRow = Dict
 
 sqlitePinaforeObject :: FilePath -> Object PinaforeEdit
-sqlitePinaforeObject path = mapObject soupDatabaseLens $ sqliteObject' path soupSchema
+sqlitePinaforeObject path = mapObject (traceArgThing "pinafore-SQLite" soupDatabaseLens) $ sqliteObject' path soupSchema

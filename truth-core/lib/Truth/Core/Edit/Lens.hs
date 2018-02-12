@@ -6,6 +6,7 @@ import Truth.Core.Edit.Function
 import Truth.Core.Edit.Unlift
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Debug
 
 data AnEditLens t edita editb = MkAnEditLens
     { elFunction :: AnEditFunction t edita editb
@@ -43,6 +44,7 @@ instance UnliftCategory AnEditLens where
                 Dict ->
                     case hasTransConstraint @MonadIO @tbc @(tab m) of
                         Dict ->
+                            traceBracketArgs "AnEditLens:(.).elPutEdits" (show $ length ec) (show . fmap length) $
                             getCompose $ do
                                 ebs <- Compose $ MkComposeT $ peBC ec $ efGet efAB mra
                                 Compose $ lift2ComposeT $ elPutEdits lensAB ebs mra

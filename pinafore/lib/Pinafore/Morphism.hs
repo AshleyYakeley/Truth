@@ -18,7 +18,6 @@ import Pinafore.AsText
 import Pinafore.Edit
 import Shapes
 import Truth.Core
-import Truth.Debug
 import Truth.Debug.Object
 
 type PinaforeLensValue = EditLens PinaforeEdit
@@ -221,7 +220,7 @@ instance UnliftCategory APinaforeLensMorphism where
                         return $ (fmap (MkTupleEdit EditContext) pinedits) ++ editpas2
         acForward ::
                AnEditLens (ComposeT tbc tab) (ContextEdit PinaforeEdit (WholeEdit (Maybe a))) (WholeEdit (Maybe c))
-        acForward = MkAnEditLens acFunc acPutEdit
+        acForward = traceAThing "(.)" $ MkAnEditLens acFunc acPutEdit
         acInvFuncRead ::
                forall m. MonadIO m
             => MutableRead m PinaforeRead
@@ -262,7 +261,7 @@ funcPinaforeLensMorphism amb bsa = let
         -> IdentityT m (Maybe [ContextEdit PinaforeEdit (WholeEdit (Maybe a))])
     elPutEdits _ _ = return Nothing
     pmForward :: AnEditLens IdentityT (ContextEdit PinaforeEdit (WholeEdit (Maybe a))) (WholeEdit (Maybe b))
-    pmForward = MkAnEditLens {..}
+    pmForward = traceAThing "funcPinaforeLensMorphism" $ MkAnEditLens {..}
     pfFuncRead ::
            forall m. MonadIO m
         => MutableRead m PinaforeRead
@@ -276,7 +275,7 @@ funcPinaforeLensMorphism amb bsa = let
 
 applyPinaforeLens ::
        PinaforeLensMorphism a b -> PinaforeLensValue (WholeEdit (Maybe a)) -> PinaforeLensValue (WholeEdit (Maybe b))
-applyPinaforeLens (MkCloseUnlift unlift pm) val = (MkCloseUnlift unlift $ pmForward pm) <.> contextualiseEditLens val
+applyPinaforeLens (MkCloseUnlift unlift pm) val = traceThing "applyPinaforeLens" $ (MkCloseUnlift unlift $ pmForward pm) <.> contextualiseEditLens val
 
 lensFunctionMorphism :: forall a b. PinaforeLensMorphism a b -> PinaforeFunctionMorphism a (Maybe b)
 lensFunctionMorphism (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {..}) = let
@@ -467,7 +466,7 @@ literalPinaforeMap = traceArgAThing "literalPinaforeMap" $ let
         => WholeEdit (Maybe val)
         -> MutableRead m (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point)))
         -> IdentityT m (Maybe [ContextEdit PinaforeEdit (WholeEdit (Maybe Point))])
-    elPutEdit (MkWholeEdit (fmap toText -> mbs)) mr = traceBracket "literalPinaforeMap.elPutEdit" $ do
+    elPutEdit (MkWholeEdit (fmap toText -> mbs)) mr = do
         msubj <- lift $ mr $ MkTupleEditReader EditContent ReadWhole
         case msubj of
             Just subj -> return $ Just [MkTupleEdit EditContext $ PinaforeEditSetLiteral subj mbs]
