@@ -12,7 +12,7 @@ import Shapes
 import Truth.Core
 
 valSpec ::
-       AsText val
+       (AsText val, Show val)
     => UISpec (WholeEdit (Maybe val))
     -> PinaforeLensValue (WholeEdit (Maybe Point))
     -> UISpec PinaforeEdit

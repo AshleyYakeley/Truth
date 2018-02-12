@@ -73,5 +73,5 @@ soupWindow dirpath = do
     let
         uiwTitle = takeFileName $ dropTrailingPathSeparator dirpath
         uiwSpec = soupEditSpec
-    uiwSubscriber <- makeObjectSubscriber $ traceObject' "soup" $ soupObject dirpath
+    uiwSubscriber <- makeObjectSubscriber $ traceArgThing "soup" $ soupObject dirpath
     return $ MkUIWindow {..}

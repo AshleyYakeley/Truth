@@ -267,4 +267,4 @@ sqliteObject' ::
     => FilePath
     -> SQLite.DatabaseSchema tablesel
     -> Object (SQLiteEdit tablesel)
-sqliteObject' path schema = traceObject' "sqliteObject" $ sqliteObject path schema
+sqliteObject' path schema = traceArgThing "sqliteObject" $ sqliteObject path schema

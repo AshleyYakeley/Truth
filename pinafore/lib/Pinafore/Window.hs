@@ -8,6 +8,6 @@ import Truth.Debug.Object
 
 sqlitePinaforeWindow :: FilePath -> (FilePath, String) -> IO [UIWindow ()]
 sqlitePinaforeWindow sqlitepath (puipath, puitext) = do
-    sub <- makeObjectSubscriber $ traceObject' "pinafore" $ sqlitePinaforeObject sqlitepath
+    sub <- makeObjectSubscriber $ traceArgThing "pinafore" $ sqlitePinaforeObject sqlitepath
     windows <- resultToM $ parseValue puipath puitext
     return $ fmap (\(title :: Text, spec) -> MkUIWindow (unpack title) spec sub) windows

@@ -44,7 +44,7 @@ dictWorkaround = Dict
 
 directorySoup :: Object FSEdit -> FilePath -> Object (SoupEdit (ObjectEdit ByteStringEdit))
 directorySoup (MkObject (runFS :: UnliftIO m) readFS pushFS) dirpath =
-    traceObject' "soupdir" $
+    traceArgThing "soupdir" $
     case hasTransConstraint @MonadUnliftIO @(MonadStackTrans m) @(AutoClose FilePath (Object ByteStringEdit)) of
         Dict -> let
             runSoup :: UnliftIO (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)))

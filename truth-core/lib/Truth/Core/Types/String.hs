@@ -6,6 +6,7 @@ import Truth.Core.Read
 import Truth.Core.Sequence
 
 import Truth.Debug
+import Truth.Debug.Object()
 
 data StringRead seq t where
     StringReadLength :: StringRead seq (SequencePoint seq)
@@ -128,7 +129,7 @@ stringSectionLens ::
     -> IO (EditLens (StringEdit seq) (StringEdit seq))
 stringSectionLens initial =
     newMVar initial >>= \var ->
-        return $ let
+        return $ traceThing "stringSectionLens" $ let
             getState ::
                    forall m. MonadIO m
                 => MutableRead m (EditReader (StringEdit seq))
@@ -192,4 +193,4 @@ stringSectionLens initial =
                 -> MutableRead m (EditReader (StringEdit seq))
                 -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
             elPutEdits = elPutEditsFromPutEdit elPutEdit
-            in MkCloseUnlift (traceUnlift "stringSectionLens" $ mvarUnlift var) MkAnEditLens {..}
+            in MkCloseUnlift (mvarUnlift var) MkAnEditLens {..}

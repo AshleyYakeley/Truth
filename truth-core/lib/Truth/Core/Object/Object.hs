@@ -65,12 +65,12 @@ lensObject discard (MkCloseUnlift (lensRun :: Unlift tl) MkAnEditLens {..}) (MkO
     | Dict <- hasTransConstraint @MonadUnliftIO @tl @mr = let
         MkAnEditFunction {..} = elFunction
         objRunBFull :: UnliftIO (tl mr)
-        objRunBFull = MkUnliftIO $ \tmr -> objRunA $ runUnlift (traceUnlift "mapObject.full" lensRun) $ liftWithUnlift $ \(MkUnlift unlift) -> unlift tmr
+        objRunBFull = MkUnliftIO $ \tmr -> objRunA $ runUnlift (traceThing "mapObject.run.full" lensRun) $ liftWithUnlift $ \(MkUnlift unlift) -> unlift tmr
         objRunBDiscard :: UnliftIO (tl mr)
         objRunBDiscard =
             MkUnliftIO $ \tmr ->
                 objRunA $ do
-                    MkUnlift du <- runUnlift (traceUnlift "mapObject.discard" lensRun) getDiscardingUnlift
+                    MkUnlift du <- runUnlift (traceThing "mapObject.run.discard" lensRun) getDiscardingUnlift
                     du tmr -- discard lens effects: all these effects will be replayed by the update
         objRunB :: UnliftIO (tl mr)
         objRunB =
@@ -80,15 +80,17 @@ lensObject discard (MkCloseUnlift (lensRun :: Unlift tl) MkAnEditLens {..}) (MkO
         objReadB :: MutableRead (tl mr) (EditReader editb)
         objReadB = efGet objReadA
         objEditB :: [editb] -> tl mr (Maybe (tl mr ()))
-        objEditB editbs = do
+        objEditB editbs = traceBracket "mapObject.edit" $ do
             meditas <- elPutEdits editbs objReadA
             case meditas of
-                Nothing -> return Nothing
+                Nothing -> do
+                    traceIOM "mapObject.edit Nothing"
+                    return Nothing
                 Just editas -> do
-                    mmu <- lift $ objEditA editas
+                    mmu <- traceBracket "mapObject.edit objEditA" $ lift $ objEditA editas
                     case mmu of
                         Nothing -> return Nothing
-                        Just mu -> return $ Just $ lift mu
+                        Just mu -> return $ Just $ traceBracket "mapObject.edit.run" $ lift mu
         in MkObject @editb @(tl mr) objRunB objReadB objEditB
 
 constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit

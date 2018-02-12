@@ -19,6 +19,7 @@ import Pinafore.Edit
 import Shapes
 import Truth.Core
 import Truth.Debug
+import Truth.Debug.Object
 
 type PinaforeLensValue = EditLens PinaforeEdit
 
@@ -430,9 +431,9 @@ applyInversePinaforeLens ::
 applyInversePinaforeLens pm val = pmInverseEditLens pm <.> contextualiseEditLens val
 
 literalPinaforeMap ::
-       forall val. AsText val
+       forall val. (AsText val, Show val)
     => AnEditLens IdentityT (ContextEdit PinaforeEdit (WholeEdit (Maybe Point))) (WholeEdit (Maybe val))
-literalPinaforeMap = let
+literalPinaforeMap = traceArgAThing "literalPinaforeMap" $ let
     efGet ::
            ReadFunctionT IdentityT (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) (WholeReader (Maybe val))
     efGet mr ReadWhole =
@@ -503,14 +504,14 @@ literalInverseFunction = let
     in MkAPinaforeFunctionMorphism {..}
 
 literalPinaforeLensMorphism ::
-       forall val. AsText val
+       forall val. (AsText val, Show val)
     => PinaforeLensMorphism Point val
 literalPinaforeLensMorphism =
     MkCloseUnlift identityUnlift $ MkAPinaforeLensMorphism literalPinaforeMap literalInverseFunction
 
 predicatePinaforeMap ::
        Predicate -> AnEditLens IdentityT (ContextEdit PinaforeEdit (WholeEdit (Maybe Point))) (WholeEdit (Maybe Point))
-predicatePinaforeMap prd = let
+predicatePinaforeMap prd = traceArgAThing "predicatePinaforeMap" $ let
     efGet ::
            ReadFunctionT IdentityT (ContextEditReader PinaforeEdit (WholeEdit (Maybe Point))) (WholeReader (Maybe Point))
     efGet mr ReadWhole =
