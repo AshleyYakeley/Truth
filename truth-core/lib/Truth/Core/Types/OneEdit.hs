@@ -17,7 +17,7 @@ instance Floating edit edit => Floating (OneEdit f edit) (OneEdit f edit) where
 type instance EditReader (OneEdit f edit) =
      OneReader f (EditReader edit)
 
-instance (MonadOne f, Edit edit) => Edit (OneEdit f edit) where
+instance (MonadOne f, ApplicableEdit edit) => ApplicableEdit (OneEdit f edit) where
     applyEdit (MkOneEdit _edita) mr ReadHasOne = mr ReadHasOne
     applyEdit (MkOneEdit edita) mr (ReadOne reader) = getCompose $ applyEdit edita (oneReadFunctionF mr) reader
 

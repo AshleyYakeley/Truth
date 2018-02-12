@@ -15,7 +15,7 @@ optionGetView =
         return $ optionView itemsFunction whichLens
 
 listStoreView ::
-       (FullSubjectReader (EditReader edit), Edit edit)
+       (FullSubjectReader (EditReader edit), ApplicableEdit edit)
     => CreateView (ListEdit [EditSubject edit] edit) (ListStore (EditSubject edit))
 listStoreView = do
     initialList <- liftOuter $ viewObjectRead mutableReadToSubject

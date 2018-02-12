@@ -51,7 +51,7 @@ instance TestEquality NoteSel where
     testEquality NoteText NoteText = Just Refl
     testEquality _ _ = Nothing
 
-instance TupleWitness Edit NoteSel where
+instance TupleWitness ApplicableEdit NoteSel where
     tupleWitness _ NoteTitle = Dict
     tupleWitness _ NotePast = Dict
     tupleWitness _ NoteText = Dict

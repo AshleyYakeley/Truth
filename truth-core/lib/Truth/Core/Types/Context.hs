@@ -175,7 +175,7 @@ liftContentEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens f pe)) = l
     in MkCloseUnlift unlift (MkAnEditLens f' pe')
 
 carryContextEditLens ::
-       (Edit editx, Edit edita, Edit editb)
+       (ApplicableEdit editx, ApplicableEdit edita, ApplicableEdit editb)
     => EditLens (ContextEdit editx edita) editb
     -> EditLens (ContextEdit editx edita) (ContextEdit editx editb)
 carryContextEditLens lens = liftContentEditLens (tupleEditLens EditContext) . contextualiseEditLens lens

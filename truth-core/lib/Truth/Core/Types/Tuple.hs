@@ -84,23 +84,23 @@ instance (SubjectTupleSelector sel, FiniteTupleSelector sel, TupleReaderWitness 
 data TupleEdit sel where
     MkTupleEdit :: sel edit -> edit -> TupleEdit sel
 
-instance (TestEquality sel, TupleWitness Edit sel) => Floating (TupleEdit sel) (TupleEdit sel) where
+instance (TestEquality sel, TupleWitness ApplicableEdit sel) => Floating (TupleEdit sel) (TupleEdit sel) where
     floatingUpdate (MkTupleEdit s1 e1) edit@(MkTupleEdit s2 e2) =
         case testEquality s1 s2 of
             Just Refl ->
-                case tupleWitness (Proxy :: Proxy Edit) s2 of
+                case tupleWitness (Proxy :: Proxy ApplicableEdit) s2 of
                     Dict -> MkTupleEdit s2 $ floatingUpdate e1 e2
             Nothing -> edit
 
 type instance EditReader (TupleEdit sel) = TupleEditReader sel
 
-instance (TestEquality sel, TupleWitness Edit sel) => Edit (TupleEdit sel) where
+instance (TestEquality sel, TupleWitness ApplicableEdit sel) => ApplicableEdit (TupleEdit sel) where
     applyEdit (MkTupleEdit aggedite edit) mr aggreader@(MkTupleEditReader aggeditr reader) =
-        case (tupleWitness (Proxy :: Proxy Edit) aggedite, testEquality aggedite aggeditr) of
+        case (tupleWitness (Proxy :: Proxy ApplicableEdit) aggedite, testEquality aggedite aggeditr) of
             (Dict, Just Refl) -> applyEdit edit (mr . MkTupleEditReader aggedite) reader
             _ -> mr aggreader
 
-instance (TestEquality sel, TupleWitness Edit sel, TupleWitness InvertibleEdit sel) =>
+instance (TestEquality sel, TupleWitness ApplicableEdit sel, TupleWitness InvertibleEdit sel) =>
          InvertibleEdit (TupleEdit sel) where
     invertEdit (MkTupleEdit seledit edit) mr =
         case tupleWitness (Proxy :: Proxy InvertibleEdit) seledit of
@@ -109,7 +109,7 @@ instance (TestEquality sel, TupleWitness Edit sel, TupleWitness InvertibleEdit s
 instance ( SubjectTupleSelector sel
          , FiniteTupleSelector sel
          , TupleReaderWitness FullSubjectReader sel
-         , TupleWitness Edit sel
+         , TupleWitness ApplicableEdit sel
          , TupleWitness FullEdit sel
          ) =>
          FullEdit (TupleEdit sel) where

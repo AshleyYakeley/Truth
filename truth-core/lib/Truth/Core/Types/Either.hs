@@ -53,7 +53,7 @@ instance (Floating ea ea, Floating eb eb) => Floating (EitherEdit ea eb) (Either
 type instance EditReader (EitherEdit ea eb) =
      EitherReader (EditReader ea) (EditReader eb)
 
-instance (Edit ea, Edit eb) => Edit (EitherEdit ea eb) where
+instance (ApplicableEdit ea, ApplicableEdit eb) => ApplicableEdit (EitherEdit ea eb) where
     applyEdit (EitherEditLeft edit) mr (EitherReadLeft reader) =
         getCompose $ applyEdit edit (mapEitherReadLeft mr) reader
     applyEdit (EitherEditRight edit) mr (EitherReadRight reader) =

@@ -38,7 +38,7 @@ instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader)
 
 type instance EditReader (WholeReaderEdit reader) = reader
 
-instance (FullSubjectReader reader) => Edit (WholeReaderEdit reader) where
+instance (FullSubjectReader reader) => ApplicableEdit (WholeReaderEdit reader) where
     applyEdit (MkWholeEdit a) _ = subjectToMutableRead a
 
 instance (FullSubjectReader reader) => InvertibleEdit (WholeReaderEdit reader) where

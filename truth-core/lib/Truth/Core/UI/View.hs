@@ -258,11 +258,11 @@ subscribeView (Compose (MkView (view :: ViewContext edit -> IO (ViewResult edit 
     return MkViewSubscription {..}
 
 tupleCreateView ::
-       (Applicative m, FiniteTupleSelector sel, TupleWitness Edit sel)
+       (Applicative m, FiniteTupleSelector sel, TupleWitness ApplicableEdit sel)
     => (forall edit. sel edit -> m (CreateView edit w))
     -> m (CreateView (TupleEdit sel) [w])
 tupleCreateView pickview =
     getCompose $
     for tupleAllSelectors $ \(MkAnyWitness sel) ->
-        case tupleWitness (Proxy :: Proxy Edit) sel of
+        case tupleWitness (Proxy :: Proxy ApplicableEdit) sel of
             Dict -> Compose $ fmap (mapCreateViewEdit (tupleEditLens sel)) (pickview sel)

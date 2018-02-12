@@ -23,7 +23,7 @@ instance Floating edit edit => Floating (ComonadEdit w edit) (ComonadEdit w edit
 type instance EditReader (ComonadEdit w edit) =
      ComonadReader w (EditReader edit)
 
-instance Edit edit => Edit (ComonadEdit w edit) where
+instance ApplicableEdit edit => ApplicableEdit (ComonadEdit w edit) where
     applyEdit (MkComonadEdit edit) = comonadLiftReadFunction $ applyEdit edit
 
 instance InvertibleEdit edit => InvertibleEdit (ComonadEdit w edit) where

@@ -64,7 +64,7 @@ efUpdates sef (ea:eas) mr = do
     return $ eb ++ ebs
 
 funcEditFunction ::
-       forall edita editb. (FullSubjectReader (EditReader edita), Edit edita, FullEdit editb)
+       forall edita editb. (FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
     => (EditSubject edita -> EditSubject editb)
     -> EditFunction edita editb
 funcEditFunction ab = let

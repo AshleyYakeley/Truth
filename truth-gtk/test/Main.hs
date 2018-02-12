@@ -9,7 +9,7 @@ import Truth.Core
 import Truth.UI.GTK
 
 testGView ::
-       forall edit. Edit edit
+       forall edit. ApplicableEdit edit
     => UISpec edit
     -> TestTree
 testGView uispec =

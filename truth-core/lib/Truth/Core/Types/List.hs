@@ -62,8 +62,8 @@ instance (Enum (Index seq), Ord (Index seq)) => Floating (ListEdit seq edit) (Li
 type instance EditReader (ListEdit seq edit) =
      ListReader seq (EditReader edit)
 
-instance (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSubject edit ~ Element seq) =>
-         Edit (ListEdit seq edit) where
+instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit edit, EditSubject edit ~ Element seq) =>
+         ApplicableEdit (ListEdit seq edit) where
     applyEdit (ListEditItem p edit) mr (ListReadItem i reader)
         | p == i = getCompose $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
     applyEdit (ListEditItem _ _) mr reader = mr reader
@@ -96,7 +96,7 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSu
 
 instance ( IsSequence seq
          , FullSubjectReader (EditReader edit)
-         , Edit edit
+         , ApplicableEdit edit
          , InvertibleEdit edit
          , EditSubject edit ~ Element seq
          ) =>
@@ -119,7 +119,7 @@ instance ( IsSequence seq
             Nothing -> return []
     invertEdit ListClear mr = getReplaceEdits mr
 
-instance (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSubject edit ~ Element seq) =>
+instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit edit, EditSubject edit ~ Element seq) =>
          FullEdit (ListEdit seq edit) where
     replaceEdit mr write = do
         write ListClear
@@ -129,7 +129,8 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSu
             write $ ListInsertItem i item
 
 listItemLens ::
-       forall seq edit. (IsSequence seq, FullSubjectReader (EditReader edit), Edit edit, EditSubject edit ~ Element seq)
+       forall seq edit.
+       (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit edit, EditSubject edit ~ Element seq)
     => Unlift (StateT (SequencePoint seq))
     -> EditLens (ListEdit seq edit) (MaybeEdit edit)
 listItemLens unlift = let

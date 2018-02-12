@@ -65,7 +65,7 @@ objectEditLens = let
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
 
 objectLiftEditLens ::
-       forall edita editb. Edit edita
+       forall edita editb. ApplicableEdit edita
     => EditLens edita editb
     -> EditLens (ObjectEdit edita) (ObjectEdit editb)
 objectLiftEditLens lens = let

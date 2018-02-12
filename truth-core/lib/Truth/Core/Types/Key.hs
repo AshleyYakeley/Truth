@@ -99,8 +99,12 @@ replace old new (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ replace 
 type instance EditReader (KeyEdit cont edit) =
      KeyReader cont (EditReader edit)
 
-instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, HasKeyReader cont (EditReader edit)) =>
-         Edit (KeyEdit cont edit) where
+instance ( KeyContainer cont
+         , FullSubjectReader (EditReader edit)
+         , ApplicableEdit edit
+         , HasKeyReader cont (EditReader edit)
+         ) =>
+         ApplicableEdit (KeyEdit cont edit) where
     applyEdit (KeyEditItem oldkey edit) mr kreader@(KeyReadItem key rt) = do
         mnewkey <- getCompose $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
         case mnewkey of
@@ -137,7 +141,7 @@ instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, Has
 
 instance ( KeyContainer cont
          , FullSubjectReader (EditReader edit)
-         , Edit edit
+         , ApplicableEdit edit
          , InvertibleEdit edit
          , HasKeyReader cont (EditReader edit)
          ) =>
@@ -160,7 +164,11 @@ instance ( KeyContainer cont
             Nothing -> return []
     invertEdit KeyClear mr = getReplaceEdits mr
 
-instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, HasKeyReader cont (EditReader edit)) =>
+instance ( KeyContainer cont
+         , FullSubjectReader (EditReader edit)
+         , ApplicableEdit edit
+         , HasKeyReader cont (EditReader edit)
+         ) =>
          FullEdit (KeyEdit cont edit) where
     replaceEdit mr write = do
         write KeyClear
@@ -171,7 +179,11 @@ instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, Has
 
 getKeyElementEditLens ::
        forall cont edit.
-       (KeyContainer cont, HasKeyReader cont (EditReader edit), Edit edit, FullSubjectReader (EditReader edit))
+       ( KeyContainer cont
+       , HasKeyReader cont (EditReader edit)
+       , ApplicableEdit edit
+       , FullSubjectReader (EditReader edit)
+       )
     => ContainerKey cont
     -> IO (EditLens (KeyEdit cont edit) (MaybeEdit edit))
 getKeyElementEditLens initial =
@@ -250,7 +262,7 @@ getKeyValueEditLens ::
        forall cont keyedit valueedit.
        ( KeyContainer cont
        , HasKeyReader cont (PairEditReader keyedit valueedit)
-       , Edit keyedit
+       , ApplicableEdit keyedit
        , FullSubjectReader (EditReader keyedit)
        , FullEdit valueedit
        )
@@ -313,7 +325,7 @@ liftKeyElementEditLens ::
        , HasKeyReader conta (EditReader edita)
        , EditSubject edita ~ Element conta
        , EditSubject editb ~ Element contb
-       , Edit edita
+       , ApplicableEdit edita
        , FullSubjectReader (EditReader edita)
        , FullSubjectReader (EditReader editb)
        )

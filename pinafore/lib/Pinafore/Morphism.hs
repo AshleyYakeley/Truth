@@ -106,7 +106,7 @@ applyPinaforeFunction =
             in MkAnEditFunction g u
 
 lensFunctionValue ::
-       (FullSubjectReader (EditReader edit), Edit edit)
+       (FullSubjectReader (EditReader edit), ApplicableEdit edit)
     => PinaforeLensValue edit
     -> PinaforeFunctionValue (EditSubject edit)
 lensFunctionValue lens = convertEditFunction . editLensFunction lens
@@ -387,7 +387,7 @@ pmInverseEditLens (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {.
     applyEdit' ::
            ContextEdit PinaforeEdit (WholeEdit (Maybe b))
         -> ReadFunction (ContextEditReader PinaforeEdit (WholeEdit (Maybe b))) (ContextEditReader PinaforeEdit (WholeEdit (Maybe b)))
-    -- removed line to avoid (Edit PinaforeEdit) constraint, possibly kinda hacky.
+    -- removed line to avoid (ApplicableEdit PinaforeEdit) constraint, possibly kinda hacky.
     -- applyEdit' (MkTupleEdit EditContext edit) mr (MkTupleEditReader EditContext rt) = applyEdit edit (mr . MkTupleEditReader EditContext) rt
     applyEdit' (MkTupleEdit EditContent edit) mr (MkTupleEditReader EditContent rt) =
         applyEdit edit (mr . MkTupleEditReader EditContent) rt
