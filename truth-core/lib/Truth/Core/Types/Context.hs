@@ -30,6 +30,17 @@ data WithContextSelector (editx :: *) (editn :: *) (edit :: *) where
     EditContext :: WithContextSelector editx editn editx
     EditContent :: WithContextSelector editx editn editn
 
+instance (c editx, c editn) => WitnessConstraint c (WithContextSelector editx editn) where
+    witnessConstraint EditContext = Dict
+    witnessConstraint EditContent = Dict
+
+instance Show (WithContextSelector editx editn t) where
+    show EditContext = "context"
+    show EditContent = "content"
+
+instance AllWitnessConstraint Show (WithContextSelector editx editn) where
+    allWitnessConstraint = Dict
+
 instance TestEquality (WithContextSelector ea eb) where
     testEquality EditContext EditContext = Just Refl
     testEquality EditContent EditContent = Just Refl

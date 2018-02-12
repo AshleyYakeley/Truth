@@ -78,7 +78,7 @@ instance Traversable (ViewResult edit) where
     sequenceA vrfa = fmap (\w -> MkViewResult w (vrUpdate vrfa) (vrFirstAspect vrfa)) $ vrWidget vrfa
 
 mapViewResultEdit :: forall edita editb w. EditLens edita editb -> ViewResult editb w -> ViewResult edita w
-mapViewResultEdit lens@(MkCloseUnlift (MkUnlift unlift) flens) (MkViewResult w updateB a) = let
+mapViewResultEdit lens@(MkCloseUnlift unlift flens) (MkViewResult w updateB a) = let
     MkAnEditLens {..} = flens
     MkAnEditFunction {..} = elFunction
     updateA ::
@@ -87,7 +87,7 @@ mapViewResultEdit lens@(MkCloseUnlift (MkUnlift unlift) flens) (MkViewResult w u
         -> [edita]
         -> m ()
     updateA mrA editsA =
-        unlift $
+        runUnlift unlift $
         withTransConstraintTM @MonadUnliftIO $ do
             editsB <- efUpdates elFunction editsA mrA
             updateB (efGet mrA) editsB
@@ -202,8 +202,8 @@ mapUpdates ::
     -> (forall t. MonadTransUnlift t =>
                       MutableRead (t m) (EditReader editb) -> [editb] -> t m r)
     -> m r
-mapUpdates (MkCloseUnlift (MkUnlift unlift :: Unlift t) ef@MkAnEditFunction {..}) mrA editsA call =
-    unlift $
+mapUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnEditFunction {..}) mrA editsA call =
+    runUnlift unlift $
     withTransConstraintTM @MonadIO $ do
         editsB <- efUpdates ef editsA mrA
         let
