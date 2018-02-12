@@ -31,8 +31,11 @@ traceBracketArgs s args showr ma = do
 traceBracket :: MonadIO m => String -> m r -> m r
 traceBracket s = traceBracketArgs s "" (\_ -> "")
 
-traceUnlift :: MonadTransConstraint MonadIO t => String -> Unlift t -> Unlift t
-traceUnlift name unlift =
-    MkUnlift $ \tma ->
-        traceBracket (contextStr name "outside") $
-        runUnlift unlift $ withTransConstraintTM @MonadIO $ traceBracket (contextStr name "inside") tma
+class TraceThing t where
+    traceThing :: String -> t -> t
+
+instance MonadTransConstraint MonadIO t => TraceThing (Unlift t) where
+    traceThing name unlift =
+        MkUnlift $ \tma ->
+            traceBracket (contextStr name "outside") $
+            runUnlift unlift $ withTransConstraintTM @MonadIO $ traceBracket (contextStr name "inside") tma
