@@ -79,8 +79,11 @@ editLensFunction :: EditLens edita editb -> EditFunction edita editb
 editLensFunction (MkCloseUnlift unlift (MkAnEditLens func _)) = MkCloseUnlift unlift func
 
 readOnlyEditLens :: EditFunction edita editb -> EditLens edita editb
-readOnlyEditLens (MkCloseUnlift unlift func) =
-    MkCloseUnlift unlift $ MkAnEditLens func $ \_ _ -> withTransConstraintTM @MonadIO $ return Nothing
+readOnlyEditLens (MkCloseUnlift unlift elFunction) = let
+    elPutEdits [] _ = withTransConstraintTM @MonadIO $ return $ Just []
+    -- must allow empty edit-lists so that composition works correctly
+    elPutEdits (_:_) _ = withTransConstraintTM @MonadIO $ return Nothing
+    in MkCloseUnlift unlift $ MkAnEditLens {..}
 
 constEditLens ::
        forall edita editb. SubjectReader (EditReader editb)
