@@ -73,10 +73,5 @@ data DatabaseEdit database tablesel where
         -> UpdateClause database tablesel row
         -> DatabaseEdit database tablesel
 
-instance Floating (DatabaseEdit database tablesel) (DatabaseEdit database tablesel)
-
 type instance EditReader (DatabaseEdit database tablesel) =
      DatabaseRead database tablesel
-
-instance Database database tablesel => ApplicableEdit (DatabaseEdit database tablesel) where
-    applyEdit _ _ = return $ error "NYI: DatabaseEdit.applyEdit"
