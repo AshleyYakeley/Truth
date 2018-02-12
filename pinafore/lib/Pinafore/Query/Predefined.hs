@@ -50,9 +50,8 @@ predefinitions
                   returnA -< insertSet (Nothing, "") pairs
           opts :: EditFunction PinaforeEdit (ListEdit [(Maybe Point, String)] (WholeEdit (Maybe Point, String)))
           opts =
-              (orderedKeyList @(FiniteSet (Maybe Point, String)) $ \(_, a) (_, b) -> compare a b) <.>
-              convertEditFunction <.>
-              applyPinaforeFunction getNames fset
+              (orderedKeyList @(FiniteSet (Maybe Point, String)) $ \(_, a) (_, b) -> compare a b) .
+              convertEditFunction . applyPinaforeFunction getNames fset
           in uiOption @PinaforeEdit @(Maybe Point) opts
         -- switch
     , pb "uiTable" $ \cols (asp :: Point -> Result String (Text, UISpec PinaforeEdit)) (val :: PinaforeLensValue (FiniteSetEdit Point)) -> let
@@ -61,7 +60,7 @@ predefinitions
           showCell Nothing = ("empty", tableCellPlain {tcItalic = True})
           mapLens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeFunctionValue (String, TableCellProps)
           mapLens lens =
-              funcEditFunction showCell <.> editLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
+              funcEditFunction showCell . editLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
           getColumn ::
                  (Text, Point -> Result String (PinaforeLensValue (WholeEdit (Maybe Point))))
               -> KeyColumn PinaforeEdit Point

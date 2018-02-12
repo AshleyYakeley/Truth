@@ -26,7 +26,7 @@ readOnlyKeyColumn ::
 readOnlyKeyColumn kcName getter = let
     kcContents key = do
         func <- getter key
-        return (readOnlyEditLens $ funcEditFunction fst <.> func, funcEditFunction snd <.> func)
+        return (readOnlyEditLens $ funcEditFunction fst . func, funcEditFunction snd . func)
     in MkKeyColumn {..}
 
 data UITable tedit where
@@ -67,7 +67,7 @@ uiSimpleTable ::
     => [KeyColumn (KeyEdit cont iedit) (ContainerKey cont)]
     -> Aspect (MaybeEdit iedit)
     -> UISpec (KeyEdit cont iedit)
-uiSimpleTable cols aspect = uiTable cols (\key -> ioMapAspect (getKeyElementEditLens key) aspect) cid
+uiSimpleTable cols aspect = uiTable cols (\key -> ioMapAspect (getKeyElementEditLens key) aspect) id
 
 instance Show (UITable edit) where
     show (MkUITable cols _ _) = "table (" ++ intercalate ", " (fmap kcName cols) ++ ")"

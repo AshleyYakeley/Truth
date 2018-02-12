@@ -30,20 +30,18 @@ soupEditSpec = let
             lens <- getKeyElementEditLens key
             let
                 valLens =
-                    oneWholeLiftEditLens (tupleEditLens NoteTitle) <.> mustExistOneEditLens "name" <.>
-                    oneWholeLiftEditLens (tupleEditLens EditSecond) <.>
-                    lens
-            return $ funcEditFunction fromResult <.> editLensFunction valLens
+                    oneWholeLiftEditLens (tupleEditLens NoteTitle) .
+                    mustExistOneEditLens "name" . oneWholeLiftEditLens (tupleEditLens EditSecond) . lens
+            return $ funcEditFunction fromResult . editLensFunction valLens
     pastColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
     pastColumn =
         readOnlyKeyColumn "Past" $ \key -> do
             lens <- getKeyElementEditLens key
             let
                 valLens =
-                    oneWholeLiftEditLens (tupleEditLens NotePast) <.> mustExistOneEditLens "past" <.>
-                    oneWholeLiftEditLens (tupleEditLens EditSecond) <.>
-                    lens
-            return $ funcEditFunction pastResult <.> editLensFunction valLens
+                    oneWholeLiftEditLens (tupleEditLens NotePast) .
+                    mustExistOneEditLens "past" . oneWholeLiftEditLens (tupleEditLens EditSecond) . lens
+            return $ funcEditFunction pastResult . editLensFunction valLens
     getaspect :: Aspect (MaybeEdit (UUIDElementEdit PossibleNoteEdit))
     getaspect =
         return $
@@ -62,9 +60,9 @@ soupObject dirpath = let
         -> m (Maybe ByteString)
     paste s = return $ getMaybeOne $ injBackwards soupItemInjection s
     soupItemLens :: EditLens ByteStringEdit PossibleNoteEdit
-    soupItemLens = convertEditLens <.> (wholeEditLens $ injectionLens soupItemInjection) <.> convertEditLens
+    soupItemLens = convertEditLens . (wholeEditLens $ injectionLens soupItemInjection) . convertEditLens
     lens :: EditLens (SoupEdit (ObjectEdit ByteStringEdit)) (SoupEdit PossibleNoteEdit)
-    lens = liftSoupLens paste $ soupItemLens <.> objectEditLens
+    lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
 soupWindow :: FilePath -> IO (UIWindow ())

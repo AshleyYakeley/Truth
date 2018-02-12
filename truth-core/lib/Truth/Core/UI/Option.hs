@@ -26,4 +26,4 @@ uiOption ::
 uiOption optlens sellens = MkUISpec $ MkUIOption optlens sellens
 
 uiSimpleOption :: Eq t => [(t, String)] -> UISpec (WholeEdit t)
-uiSimpleOption opts = uiOption (constEditFunction opts) cid
+uiSimpleOption opts = uiOption (constEditFunction opts) id

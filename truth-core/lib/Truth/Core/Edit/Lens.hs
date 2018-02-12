@@ -19,7 +19,6 @@ instance Unliftable AnEditLens where
     fmapUnliftable t1t2 (MkAnEditLens f pe) = MkAnEditLens (fmapUnliftable t1t2 f) (\eb mr -> t1t2 $ pe eb mr)
 
 instance UnliftCategory AnEditLens where
-    type UnliftCategoryConstraint AnEditLens edit = ()
     ucId = let
         pe :: forall m edit. MonadIO m
            => [edit]

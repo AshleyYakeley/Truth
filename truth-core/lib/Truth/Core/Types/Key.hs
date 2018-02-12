@@ -258,7 +258,7 @@ getKeyValueEditLens ::
     -> IO (EditLens (KeyEdit cont (PairEdit keyedit valueedit)) (MaybeEdit valueedit))
 getKeyValueEditLens key = do
     lens <- getKeyElementEditLens key
-    return $ (oneWholeLiftEditLens $ tupleEditLens EditSecond) <.> lens
+    return $ (oneWholeLiftEditLens $ tupleEditLens EditSecond) . lens
 
 liftKeyElementAnEditFunction ::
        forall t conta contb edita editb.

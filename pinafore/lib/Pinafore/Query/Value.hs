@@ -65,14 +65,14 @@ qapply (MkAny QMorphism f) (MkAny QPoint a) = MkAny QPoint $ applyPinaforeLens f
 qapply (MkAny QMorphism f) (MkAny QSet a) =
     MkAny QSet $
     readOnlyEditLens $
-    convertEditFunction <.> applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a)
+    convertEditFunction . applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a)
 qapply (MkAny QInverseMorphism f) (MkAny QLiteral a) =
     MkAny QSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) $ constEditLens $ Just a
 qapply (MkAny QInverseMorphism f) (MkAny QPoint a) = MkAny QSet $ applyInversePinaforeLens f a
 qapply (MkAny QInverseMorphism f) (MkAny QSet a) =
     MkAny QSet $
     readOnlyEditLens $
-    convertEditFunction <.>
+    convertEditFunction .
     applyPinaforeFunction (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f)) (lensFunctionValue a)
 qapply (MkAny tf _) (MkAny ta _) = qexception $ "cannot apply " ++ show tf ++ " to " ++ show ta
 
@@ -97,13 +97,13 @@ qmeet ::
        PinaforeLensValue (FiniteSetEdit Point)
     -> PinaforeLensValue (FiniteSetEdit Point)
     -> PinaforeLensValue (FiniteSetEdit Point)
-qmeet a b = readOnlyEditLens meetEditFunction <.> pairJoinEditLenses a b
+qmeet a b = readOnlyEditLens meetEditFunction . pairJoinEditLenses a b
 
 qjoin ::
        PinaforeLensValue (FiniteSetEdit Point)
     -> PinaforeLensValue (FiniteSetEdit Point)
     -> PinaforeLensValue (FiniteSetEdit Point)
-qjoin a b = readOnlyEditLens joinEditFunction <.> pairJoinEditLenses a b
+qjoin a b = readOnlyEditLens joinEditFunction . pairJoinEditLenses a b
 
 maybeToFiniteSet :: Maybe a -> FiniteSet a
 maybeToFiniteSet (Just a) = opoint a
@@ -152,7 +152,7 @@ instance FromQValue (PinaforeLensValue (WholeEdit (Maybe t))) => FromQValue (Pin
     qTypeDescriptionFrom = qTypeDescriptionFrom @(PinaforeLensValue (WholeEdit (Maybe t)))
 
 instance FromQValue (PinaforeLensValue (FiniteSetEdit Point)) where
-    fromQValue (MkAny QPoint v) = return $ (readOnlyEditLens $ funcEditFunction maybeToFiniteSet) <.> v
+    fromQValue (MkAny QPoint v) = return $ (readOnlyEditLens $ funcEditFunction maybeToFiniteSet) . v
     fromQValue (MkAny QSet v) = return v
     fromQValue v = badFromQValue v
     qTypeDescriptionFrom = "set"
