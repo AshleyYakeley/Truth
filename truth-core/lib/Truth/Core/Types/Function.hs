@@ -21,7 +21,7 @@ instance Finite a => FiniteTupleSelector (FunctionSelector a edit) where
     tupleConstruct f = assemble (\a -> f (MkFunctionSelector a))
 
 instance (c (EditReader edit)) => TupleReaderWitness c (FunctionSelector a edit) where
-    tupleReaderWitness _ (MkFunctionSelector _) = Dict
+    tupleReaderWitness (MkFunctionSelector _) = Dict
 
 instance (c edit) => TupleWitness c (FunctionSelector a edit) where
-    tupleWitness _ (MkFunctionSelector _) = Dict
+    tupleWitness (MkFunctionSelector _) = Dict

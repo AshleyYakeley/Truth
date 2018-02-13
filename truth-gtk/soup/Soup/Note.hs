@@ -25,14 +25,14 @@ instance AllWitnessConstraint Show NoteSel where
     allWitnessConstraint = Dict
 
 instance (c (WholeReader String), c (WholeReader Bool), c (StringRead Text)) => TupleReaderWitness c NoteSel where
-    tupleReaderWitness _ NoteTitle = Dict
-    tupleReaderWitness _ NotePast = Dict
-    tupleReaderWitness _ NoteText = Dict
+    tupleReaderWitness NoteTitle = Dict
+    tupleReaderWitness NotePast = Dict
+    tupleReaderWitness NoteText = Dict
 
 instance (c String, c Bool, c Text) => TupleSubjectWitness c NoteSel where
-    tupleSubjectWitness _ NoteTitle = Dict
-    tupleSubjectWitness _ NotePast = Dict
-    tupleSubjectWitness _ NoteText = Dict
+    tupleSubjectWitness NoteTitle = Dict
+    tupleSubjectWitness NotePast = Dict
+    tupleSubjectWitness NoteText = Dict
 
 instance FiniteWitness NoteSel where
     assembleWitnessF getw =
@@ -52,14 +52,14 @@ instance TestEquality NoteSel where
     testEquality _ _ = Nothing
 
 instance TupleWitness ApplicableEdit NoteSel where
-    tupleWitness _ NoteTitle = Dict
-    tupleWitness _ NotePast = Dict
-    tupleWitness _ NoteText = Dict
+    tupleWitness NoteTitle = Dict
+    tupleWitness NotePast = Dict
+    tupleWitness NoteText = Dict
 
 instance TupleWitness FullEdit NoteSel where
-    tupleWitness _ NoteTitle = Dict
-    tupleWitness _ NotePast = Dict
-    tupleWitness _ NoteText = Dict
+    tupleWitness NoteTitle = Dict
+    tupleWitness NotePast = Dict
+    tupleWitness NoteText = Dict
 
 instance SubjectTupleSelector NoteSel
 

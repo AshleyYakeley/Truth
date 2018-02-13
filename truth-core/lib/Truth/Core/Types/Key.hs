@@ -130,12 +130,12 @@ instance ( KeyContainer cont
     applyEdit (KeyDeleteItem _) mr (KeyReadItem key reader) = mr $ KeyReadItem key reader
     applyEdit (KeyInsertReplaceItem item) mr KeyReadKeys = do
         allkeys <- mr KeyReadKeys
-        let newkey = elementKey (Proxy :: Proxy cont) item
+        let newkey = elementKey @cont item
         if elem newkey allkeys
             then return allkeys
             else return $ insertSet newkey allkeys
     applyEdit (KeyInsertReplaceItem item) _mr (KeyReadItem key reader)
-        | elementKey (Proxy @cont) item == key = return $ Just $ subjectToRead item reader
+        | elementKey @cont item == key = return $ Just $ subjectToRead item reader
     applyEdit (KeyInsertReplaceItem _) mr (KeyReadItem key reader) = mr $ KeyReadItem key reader
     applyEdit KeyClear _mr reader = mSubjectToMutableRead (return mempty) reader
 
@@ -152,7 +152,7 @@ instance ( KeyContainer cont
             Just invedits -> return $ fmap (KeyEditItem key) invedits
             Nothing -> return []
     invertEdit (KeyInsertReplaceItem item) mr = do
-        let newkey = elementKey (Proxy :: Proxy cont) item
+        let newkey = elementKey @cont item
         molditem <- getCompose $ mutableReadToSubject $ keyItemReadFunction newkey mr
         case molditem of
             Just olditem -> return [KeyInsertReplaceItem olditem]
@@ -228,7 +228,7 @@ getKeyElementEditLens initial =
         efUpdate (KeyInsertReplaceItem item) _ = do
             key <- get
             return $
-                if elementKey (Proxy :: Proxy cont) item == key
+                if elementKey @cont item == key
                     then [SumEditLeft (MkWholeEdit (Just item))]
                     else []
         elFunction :: AnEditFunction (StateT (ContainerKey cont)) (KeyEdit cont edit) (MaybeEdit edit)
@@ -468,7 +468,7 @@ orderedKeyList cmp = let
                 then [ListDeleteItem i]
                 else []
     efUpdate (KeyInsertReplaceItem item) mr = do
-        (i, found) <- lift $ findKey (elementKey (Proxy :: Proxy cont) item) mr
+        (i, found) <- lift $ findKey (elementKey @cont item) mr
         if found
             then return [ListInsertItem i item]
             else do

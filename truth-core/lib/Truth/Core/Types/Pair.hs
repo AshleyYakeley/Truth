@@ -45,12 +45,12 @@ instance FiniteTupleSelector (PairSelector ea eb) where
     tupleConstruct f = (,) <$> f EditFirst <*> f EditSecond
 
 instance (c (EditReader ea), c (EditReader eb)) => TupleReaderWitness c (PairSelector ea eb) where
-    tupleReaderWitness _ EditFirst = Dict
-    tupleReaderWitness _ EditSecond = Dict
+    tupleReaderWitness EditFirst = Dict
+    tupleReaderWitness EditSecond = Dict
 
 instance (c ea, c eb) => TupleWitness c (PairSelector ea eb) where
-    tupleWitness _ EditFirst = Dict
-    tupleWitness _ EditSecond = Dict
+    tupleWitness EditFirst = Dict
+    tupleWitness EditSecond = Dict
 
 partitionPairEdits :: forall ea eb. [PairEdit ea eb] -> ([ea], [eb])
 partitionPairEdits pes = let

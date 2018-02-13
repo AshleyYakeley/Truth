@@ -105,7 +105,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
             unlift $
             mapViewEdit tableLens $
             viewObjectPushEdit $ \push -> do
-                item <- liftIO $ newKeyContainerItem (Proxy :: Proxy cont)
+                item <- liftIO $ newKeyContainerItem @cont
                 push [KeyInsertReplaceItem item]
     liftIO $ boxPackStart box newButton PackNatural 0
     liftIO $ boxPackStart box tview PackGrow 0
@@ -127,7 +127,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                         Just i -> liftIO $ listStoreRemove store i
                         Nothing -> return ()
                 KeyInsertReplaceItem item -> let
-                    key = elementKey (Proxy :: Proxy cont) item
+                    key = elementKey @cont item
                     in do
                            mindex <- findInStore key
                            case mindex of

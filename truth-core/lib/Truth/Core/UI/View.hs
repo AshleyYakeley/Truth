@@ -264,5 +264,5 @@ tupleCreateView ::
 tupleCreateView pickview =
     getCompose $
     for tupleAllSelectors $ \(MkAnyWitness sel) ->
-        case tupleWitness (Proxy :: Proxy ApplicableEdit) sel of
+        case tupleWitness @ApplicableEdit sel of
             Dict -> Compose $ fmap (mapCreateViewEdit (tupleEditLens sel)) (pickview sel)

@@ -5,7 +5,7 @@ import Truth.Core.Import
 import Truth.Core.Read
 
 class TupleWitness (c :: * -> Constraint) (sel :: * -> *) where
-    tupleWitness :: forall proxy edit. proxy c -> sel edit -> Dict (c edit)
+    tupleWitness :: forall edit. sel edit -> Dict (c edit)
 
 newtype Tuple sel =
     MkTuple (forall edit. sel edit -> EditSubject edit)
@@ -14,7 +14,7 @@ instance (TupleSubjectWitness Show sel, FiniteWitness sel) => Show (Tuple sel) w
     show (MkTuple f) = let
         showWit :: AnyWitness sel -> String
         showWit (MkAnyWitness se) =
-            case tupleSubjectWitness (Proxy :: Proxy Show) se of
+            case tupleSubjectWitness @Show se of
                 Dict -> show $ f se
         in "{" ++ intercalate "," (fmap showWit allWitnesses) ++ "}"
 
@@ -32,7 +32,7 @@ data TupleEditReader sel t where
 
 instance TupleReaderWitness (WitnessConstraint c) sel => WitnessConstraint c (TupleEditReader sel) where
     witnessConstraint (MkTupleEditReader (se :: sel edit) (rt :: EditReader edit t)) =
-        case tupleReaderWitness (Proxy :: Proxy (WitnessConstraint c)) se of
+        case tupleReaderWitness @(WitnessConstraint c) se of
             Dict ->
                 case witnessConstraint @_ @c rt of
                     Dict -> Dict
@@ -42,7 +42,7 @@ instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstrain
     show (MkTupleEditReader (se :: sel edit) (rt :: EditReader edit t)) =
         showAllWitness se ++
         " " ++
-        case tupleReaderWitness (Proxy :: Proxy (AllWitnessConstraint Show)) se of
+        case tupleReaderWitness @(AllWitnessConstraint Show) se of
             Dict -> showAllWitness rt
 
 instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstraint Show) sel) =>
@@ -55,14 +55,14 @@ tupleReadFunction sel mr rt = mr $ MkTupleEditReader sel rt
 instance (SubjectTupleSelector sel) => SubjectReader (TupleEditReader sel) where
     type ReaderSubject (TupleEditReader sel) = TupleSubject sel
     subjectToRead a (MkTupleEditReader seledit reader) =
-        case tupleReaderWitness (Proxy :: Proxy SubjectReader) seledit of
+        case tupleReaderWitness @SubjectReader seledit of
             Dict -> subjectToRead (tupleReadFromSubject seledit a) reader
 
 class TupleReaderWitness (c :: (* -> *) -> Constraint) (sel :: * -> *) where
-    tupleReaderWitness :: forall proxy edit. proxy c -> sel edit -> Dict (c (EditReader edit))
+    tupleReaderWitness :: forall edit. sel edit -> Dict (c (EditReader edit))
 
 class TupleSubjectWitness (c :: * -> Constraint) (sel :: * -> *) where
-    tupleSubjectWitness :: forall proxy edit. proxy c -> sel edit -> Dict (c (EditSubject edit))
+    tupleSubjectWitness :: forall edit. sel edit -> Dict (c (EditSubject edit))
 
 class TestEquality sel =>
       FiniteTupleSelector (sel :: * -> *) where
@@ -78,7 +78,7 @@ instance (SubjectTupleSelector sel, FiniteTupleSelector sel, TupleReaderWitness 
          FullSubjectReader (TupleEditReader sel) where
     mutableReadToSubject mr =
         tupleConstruct $ \(seledit :: sel edit) ->
-            case tupleReaderWitness (Proxy :: Proxy FullSubjectReader) seledit of
+            case tupleReaderWitness @FullSubjectReader seledit of
                 Dict -> mutableReadToSubject $ mr . MkTupleEditReader seledit
 
 data TupleEdit sel where
@@ -88,7 +88,7 @@ instance (TestEquality sel, TupleWitness ApplicableEdit sel) => Floating (TupleE
     floatingUpdate (MkTupleEdit s1 e1) edit@(MkTupleEdit s2 e2) =
         case testEquality s1 s2 of
             Just Refl ->
-                case tupleWitness (Proxy :: Proxy ApplicableEdit) s2 of
+                case tupleWitness @ApplicableEdit s2 of
                     Dict -> MkTupleEdit s2 $ floatingUpdate e1 e2
             Nothing -> edit
 
@@ -96,14 +96,14 @@ type instance EditReader (TupleEdit sel) = TupleEditReader sel
 
 instance (TestEquality sel, TupleWitness ApplicableEdit sel) => ApplicableEdit (TupleEdit sel) where
     applyEdit (MkTupleEdit aggedite edit) mr aggreader@(MkTupleEditReader aggeditr reader) =
-        case (tupleWitness (Proxy :: Proxy ApplicableEdit) aggedite, testEquality aggedite aggeditr) of
+        case (tupleWitness @ApplicableEdit aggedite, testEquality aggedite aggeditr) of
             (Dict, Just Refl) -> applyEdit edit (mr . MkTupleEditReader aggedite) reader
             _ -> mr aggreader
 
 instance (TestEquality sel, TupleWitness ApplicableEdit sel, TupleWitness InvertibleEdit sel) =>
          InvertibleEdit (TupleEdit sel) where
     invertEdit (MkTupleEdit seledit edit) mr =
-        case tupleWitness (Proxy :: Proxy InvertibleEdit) seledit of
+        case tupleWitness @InvertibleEdit seledit of
             Dict -> fmap (fmap (MkTupleEdit seledit)) $ invertEdit edit $ mr . MkTupleEditReader seledit
 
 instance ( SubjectTupleSelector sel
@@ -116,7 +116,7 @@ instance ( SubjectTupleSelector sel
     replaceEdit mr writeEdit = do
         editss <-
             for tupleAllSelectors $ \(MkAnyWitness sel) ->
-                case tupleWitness (Proxy :: Proxy FullEdit) sel of
+                case tupleWitness @FullEdit sel of
                     Dict -> replaceEdit (tupleReadFunction sel mr) $ writeEdit . MkTupleEdit sel
         return $ mconcat editss
 

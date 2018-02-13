@@ -38,17 +38,16 @@ instance HasNewValue Text where
 
 class HasNewValue1 p where
     newValue1 ::
-           forall proxy a r. (HasNewValue a)
-        => proxy (p a)
-        -> ((HasNewValue (p a)) =>
+           forall a r. (HasNewValue a)
+        => ((HasNewValue (p a)) =>
                 r)
         -> r
 
 instance HasNewValue1 [] where
-    newValue1 _ r = r
+    newValue1 r = r
 
 instance HasNewValue1 Maybe where
-    newValue1 _ r = r
+    newValue1 r = r
 
 instance HasNewValue1 (Result err) where
-    newValue1 _ r = r
+    newValue1 r = r

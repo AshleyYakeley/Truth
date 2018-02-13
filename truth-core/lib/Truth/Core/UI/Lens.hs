@@ -52,7 +52,7 @@ tupleEditUISpecs ::
 tupleEditUISpecs getSpec =
     fmap
         (\(MkAnyWitness seledit) ->
-             case tupleWitness (Proxy :: Proxy FullEdit) seledit of
+             case tupleWitness @FullEdit seledit of
                  Dict ->
                      case getSpec seledit of
                          spec -> MkUISpec $ MkUILens (tupleEditLens seledit) spec)

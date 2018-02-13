@@ -56,12 +56,12 @@ instance FiniteTupleSelector (WithContextSelector ex en) where
     tupleConstruct f = MkWithContext <$> f EditContext <*> f EditContent
 
 instance (c (EditReader ex), c (EditReader en)) => TupleReaderWitness c (WithContextSelector ex en) where
-    tupleReaderWitness _ EditContext = Dict
-    tupleReaderWitness _ EditContent = Dict
+    tupleReaderWitness EditContext = Dict
+    tupleReaderWitness EditContent = Dict
 
 instance (c ex, c en) => TupleWitness c (WithContextSelector ex en) where
-    tupleWitness _ EditContext = Dict
-    tupleWitness _ EditContent = Dict
+    tupleWitness EditContext = Dict
+    tupleWitness EditContent = Dict
 
 type ContextEditReader x n = TupleEditReader (WithContextSelector x n)
 
