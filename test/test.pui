@@ -1,8 +1,10 @@
+# Run "pinafore-query --doc" to see all predefined bindings.
+
 let
 # Useful
 window n s = [n,s];
 column n p = [n,p];
-uiPage n ui = [n,ui];
+ui_page n ui = [n,ui];
 
 # Ontology
 type = %f06efa5e-190f-4e5d-8633-495c5683c124;
@@ -29,43 +31,43 @@ birthdate = %b711b9b3-b43c-4ff6-be12-3291cc6b050a;
 deathdate = %805a9e65-d69a-4261-9c94-a3249885b6bb;
 
 # UI
-uiPeople pp = uiTable [column "Name" name] wPerson pp;
-uiPerson p = uiVertical
+ui_people pp = ui_table [column "Name" name] window_person pp;
+ui_person p = ui_vertical
 [
-    uiLabelled "Name" $ uiTextEntry $ name p,
-    uiPages
+    ui_labelled "Name" $ ui_textentry $ name p,
+    ui_pages
     [
-        uiPage "Social" $ uiVertical
+        ui_page "Social" $ ui_vertical
         [
-            uiLabelled "Email" $ uiTextEntry $ email p,
-            uiLabelled "Phone" $ uiTextEntry $ phone p
+            ui_labelled "Email" $ ui_textentry $ email p,
+            ui_labelled "Phone" $ ui_textentry $ phone p
         ],
-        uiPage "Home" $ let homep = home p in uiVertical
+        ui_page "Home" $ let homep = home p in ui_vertical
         [
-            uiLabelled "Address" $ uiTextArea $ address homep,
-            uiLabelled "City" $ uiTextEntry $ city homep,
-            uiLabelled "Postcode/ZIP" $ uiTextEntry $ postcode homep,
-            uiLabelled "State/Province" $ uiTextEntry $ province homep,
-            uiLabelled "Country" $ uiTextEntry $ country homep,
-            uiLabelled "Phone" $ uiTextEntry $ phone homep
+            ui_labelled "Address" $ ui_textarea $ address homep,
+            ui_labelled "City" $ ui_textentry $ city homep,
+            ui_labelled "Postcode/ZIP" $ ui_textentry $ postcode homep,
+            ui_labelled "State/Province" $ ui_textentry $ province homep,
+            ui_labelled "Country" $ ui_textentry $ country homep,
+            ui_labelled "Phone" $ ui_textentry $ phone homep
         ],
-        uiPage "Work" $ uiVertical
+        ui_page "Work" $ ui_vertical
         [
-            uiLabelled "Employer" $ uiTextEntry $ (name . employer) p
+            ui_labelled "Employer" $ ui_textentry $ (name . employer) p
         ],
-        uiPage "Family" $ uiVertical
+        ui_page "Family" $ ui_vertical
         [
-            uiLabelled "Birth" $ uiTextEntry $ birthdate p,
-            uiLabelled "Death" $ uiTextEntry $ deathdate p,
-            uiLabelled "Mother" $ uiPick name People $ mother p,
-            uiLabelled "Father" $ uiPick name People $ father p,
-            uiPeople $ children p
+            ui_labelled "Birth" $ ui_textentry $ birthdate p,
+            ui_labelled "Death" $ ui_textentry $ deathdate p,
+            ui_labelled "Mother" $ ui_pick name People $ mother p,
+            ui_labelled "Father" $ ui_pick name People $ father p,
+            ui_people $ children p
         ]
     ]
 ];
-wPerson p = window "Item" $ uiPerson p;
+window_person p = window "Item" $ ui_person p;
 
-wPeople = window "People" $ uiPeople People;
+window_people = window "People" $ ui_people People;
 
 in
-[wPeople]
+[window_people]

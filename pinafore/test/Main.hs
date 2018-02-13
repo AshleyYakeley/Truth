@@ -62,7 +62,7 @@ testQueries =
         , testQuery "false" $ Just "false"
         , testQuery "\"1\"" $ Just "1"
         , testQuery "3" $ Just "3"
-        , testQuery "uiTable" $ Just "<function>"
+        , testQuery "ui_table" $ Just "<function>"
         -- list construction
         , testQuery "[]" $ Just "[]"
         , testQuery "[1]" $ Just "[1]"

@@ -25,19 +25,17 @@ pb :: forall t. ToQValue t
 pb name val = (qbind name val, (name, qTypeDescriptionTo @t))
 
 predefinitions :: [(QBindings, (String, String))]
-predefinitions
-        -- UI
-        --pb "uiCheckbox" $ \name lens -> (uiLens lens $ uiCheckbox name :: UISpec PinaforeEdit),
- =
-    [ pb "uiTextEntry" $ valSpec $ uiNothingValue mempty uiTextEntry
-    , pb "uiTextArea" $ valSpec $ uiNothingValue mempty $ uiConvert uiTextText
-    , pb "uiLabelled" $ \text -> uiLabelled $ unpack (text :: Text)
-    , pb "uiVertical" uiVertical
-    , pb "uiPages" uiPages
+predefinitions =
+    [ pb "ui_textentry" $ valSpec $ uiNothingValue mempty uiTextEntry
+    , pb "ui_textarea" $ valSpec $ uiNothingValue mempty $ uiConvert uiTextText
+    , pb "ui_labelled" $ \text -> uiLabelled $ unpack (text :: Text)
+    , pb "ui_vertical" uiVertical
+    , pb "ui_pages" uiPages
         -- CSS
         -- drag
         -- icon
-    , pb "uiPick" $ \(nameMorphism :: PinaforeFunctionMorphism Point (Maybe Text)) (fset :: PinaforeFunctionValue (FiniteSet Point)) -> let
+        --, pb "ui_checkbox" $ \name lens -> (uiLens lens $ uiCheckbox name :: UISpec PinaforeEdit)
+    , pb "ui_pick" $ \(nameMorphism :: PinaforeFunctionMorphism Point (Maybe Text)) (fset :: PinaforeFunctionValue (FiniteSet Point)) -> let
           getName :: PinaforeFunctionMorphism Point (Maybe Point, String)
           getName =
               proc p -> do
@@ -54,7 +52,7 @@ predefinitions
               convertEditFunction . applyPinaforeFunction getNames fset
           in uiOption @PinaforeEdit @(Maybe Point) opts
         -- switch
-    , pb "uiTable" $ \cols (asp :: Point -> Result String (Text, UISpec PinaforeEdit)) (val :: PinaforeLensValue (FiniteSetEdit Point)) -> let
+    , pb "ui_table" $ \cols (asp :: Point -> Result String (Text, UISpec PinaforeEdit)) (val :: PinaforeLensValue (FiniteSetEdit Point)) -> let
           showCell :: Maybe String -> (String, TableCellProps)
           showCell (Just s) = (s, tableCellPlain)
           showCell Nothing = ("empty", tableCellPlain {tcItalic = True})
