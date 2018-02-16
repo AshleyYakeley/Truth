@@ -6,20 +6,27 @@ import GI.Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
-import Truth.UI.GTK.Useful
 
 verticalLayoutGetView :: GetGView
 verticalLayoutGetView =
     MkGetView $ \getview uispec -> do
-        MkUIVertical aspects <- isUISpec uispec
+        uilayout <- isUISpec uispec
+        (aspects, orientation) <-
+            return $
+            case uilayout of
+                MkUIHorizontal aspects -> (aspects, OrientationHorizontal)
+                MkUIVertical aspects -> (aspects, OrientationVertical)
         return $ do
-            widgets <- for aspects getview
-            liftIO $ arrangeWidgets widgets
+            widgets <-
+                for aspects $ \(item, grow) -> do
+                    w <- getview item
+                    return (w, grow)
+            liftIO $ arrangeWidgets orientation widgets
 
-arrangeWidgets :: [Widget] -> IO Widget
-arrangeWidgets widgets = do
-    vbox <- new Box [#orientation := OrientationVertical]
-    for_ widgets $ \widget -> do
-        grow <- isScrollable widget
-        #packStart vbox widget grow grow 0
+arrangeWidgets :: Orientation -> [(Widget, Bool)] -> IO Widget
+arrangeWidgets orientation widgets = do
+    vbox <- new Box [#orientation := orientation]
+    for_ widgets $ \(widget, grow)
+        --grow <- isScrollable widget
+     -> do #packStart vbox widget grow grow 0
     toWidget vbox

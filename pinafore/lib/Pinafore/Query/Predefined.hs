@@ -29,6 +29,7 @@ predefinitions =
     [ pb "ui_textentry" $ valSpec $ uiNothingValue mempty uiTextEntry
     , pb "ui_textarea" $ valSpec $ uiNothingValue mempty $ uiConvert uiText
     , pb "ui_labelled" $ \text -> uiLabelled text
+    , pb "ui_horizontal" uiHorizontal
     , pb "ui_vertical" uiVertical
     , pb "ui_pages" uiPages
         -- CSS

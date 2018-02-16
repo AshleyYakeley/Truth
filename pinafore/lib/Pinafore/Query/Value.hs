@@ -134,6 +134,12 @@ instance FromQValue Text where
     fromQValue v = badFromQValue v
     qTypeDescriptionFrom = "text"
 
+instance FromQValue Bool where
+    fromQValue (MkAny QLiteral "false") = return False
+    fromQValue (MkAny QLiteral "true") = return True
+    fromQValue v = badFromQValue v
+    qTypeDescriptionFrom = "boolean"
+
 instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
     fromQValue (MkAny QPoint v) = return v
     fromQValue v = badFromQValue v

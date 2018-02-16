@@ -32,7 +32,7 @@ testGViews =
     testGroup
         "GView"
         [ testGView $ (uiVertical [] :: UISpec (WholeEdit String))
-        , testGView $ uiVertical [MkUISpec MkUIUnknown :: UISpec (WholeEdit String)]
+        , testGView $ uiVertical [(MkUISpec MkUIUnknown :: UISpec (WholeEdit String), False)]
         ]
 
 tests :: TestTree

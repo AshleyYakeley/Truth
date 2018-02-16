@@ -47,18 +47,18 @@ ioMapAspect mlens =
 tupleEditUISpecs ::
        (TupleWitness FullEdit sel, FiniteTupleSelector sel)
     => (forall edit. FullEdit edit =>
-                         sel edit -> UISpec edit)
-    -> [UISpec (TupleEdit sel)]
+                         sel edit -> (UISpec edit, t))
+    -> [(UISpec (TupleEdit sel), t)]
 tupleEditUISpecs getSpec =
     fmap
         (\(MkAnyWitness seledit) ->
              case tupleWitness @FullEdit seledit of
                  Dict ->
                      case getSpec seledit of
-                         spec -> MkUISpec $ MkUILens (tupleEditLens seledit) spec)
+                         (spec, t) -> (MkUISpec $ MkUILens (tupleEditLens seledit) spec, t))
         tupleAllSelectors
-    -- not really a bijection
 
+-- | not really a bijection
 maybeNothingValueBijection :: Eq a => a -> Bijection (Maybe a) a
 maybeNothingValueBijection def = let
     biForwards (Just a) = a
