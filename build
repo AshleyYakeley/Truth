@@ -1,4 +1,4 @@
 #!/bin/bash -e
 ./hindent-all
-stack build --pedantic --test --haddock
+stack build --pedantic --test
 echo OK
