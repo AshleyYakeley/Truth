@@ -7,7 +7,7 @@ import Shapes
 import Truth.Core
 
 data QType t where
-    QException :: QType String
+    QException :: QType Text
     QLiteral :: QType Text
     QPoint :: QType (PinaforeLensValue (WholeEdit (Maybe Point)))
     QSet :: QType (PinaforeLensValue (FiniteSetEdit Point))
@@ -43,7 +43,7 @@ instance TestEquality QType where
 type QValue = Any QType
 
 instance Show QValue where
-    show (MkAny QException val) = "exception: " ++ val
+    show (MkAny QException val) = unpack $ "exception: " <> val
     show (MkAny QLiteral val) = unpack val
     show (MkAny QUISpec val) = show val
     show (MkAny QList val) = "[" ++ intercalate "," (fmap show val) ++ "]"
@@ -55,7 +55,7 @@ qliteral = MkAny QLiteral
 qfunction :: (QValue -> QValue) -> QValue
 qfunction = MkAny QFunction
 
-qexception :: String -> QValue
+qexception :: Text -> QValue
 qexception = MkAny QException
 
 qapply :: QValue -> QValue -> QValue
@@ -74,13 +74,13 @@ qapply (MkAny QInverseMorphism f) (MkAny QSet a) =
     readOnlyEditLens $
     convertEditFunction .
     applyPinaforeFunction (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f)) (lensFunctionValue a)
-qapply (MkAny tf _) (MkAny ta _) = qexception $ "cannot apply " ++ show tf ++ " to " ++ show ta
+qapply (MkAny tf _) (MkAny ta _) = qexception $ pack $ "cannot apply " ++ show tf ++ " to " ++ show ta
 
 qinvert :: QValue -> QValue
 qinvert (MkAny QException ex) = MkAny QException ex
 qinvert (MkAny QMorphism m) = MkAny QInverseMorphism m
 qinvert (MkAny QInverseMorphism m) = MkAny QMorphism m
-qinvert (MkAny t _) = qexception $ "cannot invert " ++ show t
+qinvert (MkAny t _) = qexception $ pack $ "cannot invert " ++ show t
 
 qcombine :: QValue -> QValue -> QValue
 qcombine (MkAny QMorphism g) (MkAny QMorphism f) = MkAny QMorphism $ g . f
@@ -115,14 +115,14 @@ qdisplay val =
         SuccessResult a -> a
         FailureResult _ -> constEditFunction $ opoint $ pack $ show val
 
-badFromQValue :: QValue -> Result String t
-badFromQValue (MkAny QException s) = fail s
+badFromQValue :: QValue -> Result Text t
+badFromQValue (MkAny QException s) = FailureResult s
 badFromQValue (MkAny t _) = fail $ "unexpected " ++ show t
 
 class FromQValue t where
-    fromQValue :: QValue -> Result String t
-    qTypeDescriptionFrom :: String
-    qTypeDescriptionFromSingle :: String
+    fromQValue :: QValue -> Result Text t
+    qTypeDescriptionFrom :: Text
+    qTypeDescriptionFromSingle :: Text
     qTypeDescriptionFromSingle = qTypeDescriptionFrom @t
 
 instance FromQValue QValue where
@@ -208,7 +208,7 @@ instance FromQValue (UISpec PinaforeEdit) where
 instance FromQValue t => FromQValue [t] where
     fromQValue (MkAny QList v) = for v fromQValue
     fromQValue v = badFromQValue v
-    qTypeDescriptionFrom = "[" ++ qTypeDescriptionFrom @t ++ "]"
+    qTypeDescriptionFrom = "[" <> qTypeDescriptionFrom @t <> "]"
 
 instance (FromQValue a, FromQValue b) => FromQValue (a, b) where
     fromQValue (MkAny QList [va, vb]) = do
@@ -216,40 +216,40 @@ instance (FromQValue a, FromQValue b) => FromQValue (a, b) where
         b <- fromQValue vb
         return (a, b)
     fromQValue v = badFromQValue v
-    qTypeDescriptionFrom = "(" ++ qTypeDescriptionFrom @a ++ ", " ++ qTypeDescriptionFrom @b ++ ")"
+    qTypeDescriptionFrom = "(" <> qTypeDescriptionFrom @a <> ", " <> qTypeDescriptionFrom @b <> ")"
 
-instance FromQValue t => FromQValue (Result String t) where
+instance FromQValue t => FromQValue (Result Text t) where
     fromQValue v = fmap return $ fromQValue v
-    qTypeDescriptionFrom = "result " ++ qTypeDescriptionFrom @t
+    qTypeDescriptionFrom = "result " <> qTypeDescriptionFrom @t
 
 instance FromQValue t => FromQValue (IO t) where
     fromQValue v = fmap return $ fromQValue v
-    qTypeDescriptionFrom = "action " ++ qTypeDescriptionFrom @t
+    qTypeDescriptionFrom = "action " <> qTypeDescriptionFrom @t
 
-instance (ToQValue a, FromQValue b) => FromQValue (a -> Result String b) where
+instance (ToQValue a, FromQValue b) => FromQValue (a -> Result Text b) where
     fromQValue vf = return $ fromQValue . qapply vf . toQValue
-    qTypeDescriptionFrom = qTypeDescriptionToSingle @a ++ " -> " ++ qTypeDescriptionFrom @b
-    qTypeDescriptionFromSingle = "(" ++ qTypeDescriptionFrom @(a -> Result String b) ++ ")"
+    qTypeDescriptionFrom = qTypeDescriptionToSingle @a <> " -> " <> qTypeDescriptionFrom @b
+    qTypeDescriptionFromSingle = "(" <> qTypeDescriptionFrom @(a -> Result Text b) <> ")"
 
 class ToQValue t where
     toQValue :: t -> QValue
-    qTypeDescriptionTo :: String
-    qTypeDescriptionToSingle :: String
+    qTypeDescriptionTo :: Text
+    qTypeDescriptionToSingle :: Text
     qTypeDescriptionToSingle = qTypeDescriptionTo @t
 
 instance ToQValue QValue where
     toQValue = id
     qTypeDescriptionTo = "value"
 
-instance ToQValue t => ToQValue (Result String t) where
+instance ToQValue t => ToQValue (Result Text t) where
     toQValue (SuccessResult a) = toQValue a
     toQValue (FailureResult e) = qexception e
-    qTypeDescriptionTo = "result " ++ qTypeDescriptionTo @t
+    qTypeDescriptionTo = "result " <> qTypeDescriptionTo @t
 
 instance (FromQValue a, ToQValue b) => ToQValue (a -> b) where
     toQValue ab = qfunction $ toQValue . fmap ab . fromQValue
-    qTypeDescriptionTo = qTypeDescriptionFromSingle @a ++ " -> " ++ qTypeDescriptionTo @b
-    qTypeDescriptionToSingle = "(" ++ qTypeDescriptionTo @(a -> b) ++ ")"
+    qTypeDescriptionTo = qTypeDescriptionFromSingle @a <> " -> " <> qTypeDescriptionTo @b
+    qTypeDescriptionToSingle = "(" <> qTypeDescriptionTo @(a -> b) <> ")"
 
 instance ToQValue Predicate where
     toQValue p = qpredicate p
@@ -277,11 +277,11 @@ instance ToQValue Integer where
 
 instance ToQValue t => ToQValue [t] where
     toQValue t = MkAny QList $ fmap toQValue t
-    qTypeDescriptionTo = "[" ++ qTypeDescriptionTo @t ++ "]"
+    qTypeDescriptionTo = "[" <> qTypeDescriptionTo @t <> "]"
 
 instance (ToQValue a, ToQValue b) => ToQValue (a, b) where
     toQValue (a, b) = toQValue [toQValue a, toQValue b]
-    qTypeDescriptionTo = "(" ++ qTypeDescriptionTo @a ++ ", " ++ qTypeDescriptionTo @b ++ ")"
+    qTypeDescriptionTo = "(" <> qTypeDescriptionTo @a <> ", " <> qTypeDescriptionTo @b <> ")"
 
 instance ToQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
     toQValue t = MkAny QPoint t

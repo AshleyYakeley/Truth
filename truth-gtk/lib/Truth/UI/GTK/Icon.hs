@@ -2,17 +2,14 @@ module Truth.UI.GTK.Icon
     ( iconGetView
     ) where
 
-import Graphics.UI.Gtk
+import GI.Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 
-whichIcon :: StockIcon -> StockId
-whichIcon SiDnD = stockDnd
-
 whichSize :: StockSize -> IconSize
 whichSize SizeDnD = IconSizeDnd
-whichSize (SizeCustom i) = IconSizeUser i
+whichSize (SizeCustom i) = AnotherIconSize i
 
 iconGetView :: GetGView
 iconGetView =
@@ -20,5 +17,5 @@ iconGetView =
         MkUIIcon icon size <- isUISpec uispec
         return $
             liftIO $ do
-                image <- imageNewFromStock (whichIcon icon) (whichSize size)
-                return $ toWidget image
+                image <- imageNewFromIconName (Just icon) (fromIntegral $ fromEnum $ whichSize size)
+                toWidget image

@@ -3,7 +3,7 @@ module Truth.UI.GTK.Drag
     ) where
 
 import Shapes
-    --import Graphics.UI.Gtk;
+    --import GI.Gtk;
 
 import Truth.Core
 import Truth.UI.GTK.GView

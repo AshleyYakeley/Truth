@@ -2,17 +2,17 @@ module Truth.UI.GTK.Switch
     ( switchGetView
     ) where
 
-import Graphics.UI.Gtk hiding (get)
+import GI.Gtk hiding (get)
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 
-boxAddShow :: (BoxClass w1, WidgetClass w2) => Packing -> w1 -> w2 -> IO ()
-boxAddShow packing w1 w2 = do
-    boxPackStart w1 w2 packing 0
+boxAddShow :: (IsBox w1, IsWidget w2) => Bool -> w1 -> w2 -> IO ()
+boxAddShow grow w1 w2 = do
+    boxPackStart w1 w2 grow grow 0
     widgetShow w2
 
-containerRemoveDestroy :: (ContainerClass w1, WidgetClass w2) => w1 -> w2 -> IO ()
+containerRemoveDestroy :: (IsContainer w1, IsWidget w2) => w1 -> w2 -> IO ()
 containerRemoveDestroy w1 w2 = do
     containerRemove w1 w2
     widgetDestroy w2
@@ -20,12 +20,12 @@ containerRemoveDestroy w1 w2 = do
 switchView ::
        forall edit. (UISpec edit -> GCreateView edit) -> EditFunction edit (WholeEdit (UISpec edit)) -> GCreateView edit
 switchView getview specfunc = do
-    box <- liftIO $ vBoxNew False 0
+    box <- liftIO $ boxNew OrientationVertical 0
     let
         getVR :: UISpec edit -> View edit (GViewResult edit)
         getVR spec = getCompose $ getview spec
         newWidgets :: GViewResult edit -> IO ()
-        newWidgets vr = boxAddShow PackGrow box $ vrWidget vr
+        newWidgets vr = boxAddShow True box $ vrWidget vr
     firstvr <-
         liftOuter $ do
             firstspec <- mapViewEdit (readOnlyEditLens specfunc) $ viewObjectRead $ \mr -> mr ReadWhole
@@ -49,7 +49,7 @@ switchView getview specfunc = do
         mvarRun stateVar $ do
             vr <- get
             lift $ vrUpdate vr mr edits
-    return $ toWidget box
+    toWidget box
 
 switchGetView :: GetGView
 switchGetView =

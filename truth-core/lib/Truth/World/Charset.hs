@@ -3,10 +3,10 @@ module Truth.World.Charset where
 import Truth.Core
 import Truth.Core.Import
 
-utf8Codec :: ReasonCodec [Word8] (String)
+utf8Codec :: ReasonCodec [Word8] String
 utf8Codec = MkCodec decodeUTF8 encodeUTF8
   where
-    decodeUTF8 :: [Word8] -> Result String String
+    decodeUTF8 :: [Word8] -> Result Text String
     decodeUTF8 os = evalStateT parse (os, 0)
       where
         getWord8 :: (Monad m) => StateT ([Word8], Int) m (Maybe Word8)
@@ -17,9 +17,9 @@ utf8Codec = MkCodec decodeUTF8 encodeUTF8
                          (case bb of
                               b:bs -> (Just b, (bs, i + 1))
                               [] -> (Nothing, s)))
-        decodeError :: StateT (s, Int) (Result String) a
+        decodeError :: StateT (s, Int) (Result Text) a
         decodeError = StateT (\(_, i) -> fail $ "decode error at byte " ++ show i)
-        parse :: StateT ([Word8], Int) (Result String) String
+        parse :: StateT ([Word8], Int) (Result Text) String
         parse = do
             mc <- parseChar
             case mc of
@@ -27,7 +27,7 @@ utf8Codec = MkCodec decodeUTF8 encodeUTF8
                     s <- parse
                     return (c : s)
                 _ -> return []
-        parseChar :: StateT ([Word8], Int) (Result String) (Maybe Char)
+        parseChar :: StateT ([Word8], Int) (Result Text) (Maybe Char)
         parseChar = do
             mb0 <- getWord8
             case mb0 of
@@ -59,16 +59,16 @@ utf8Codec = MkCodec decodeUTF8 encodeUTF8
                                  else decodeError
                         else convertOut (fromIntegral b0)
           where
-            extract10Bits :: (Maybe Word8) -> StateT ([Word8], Int) (Result String) Word8
+            extract10Bits :: (Maybe Word8) -> StateT ([Word8], Int) (Result Text) Word8
             extract10Bits (Just w)
                 | 0xC0 .&. w == 0x80 = return (0x3F .&. w)
             extract10Bits _ = decodeError
-            get10Bits :: StateT ([Word8], Int) (Result String) Word32
+            get10Bits :: StateT ([Word8], Int) (Result Text) Word32
             get10Bits = do
                 mb <- getWord8
                 b <- extract10Bits mb
                 return (fromIntegral b)
-            convertOut :: Word32 -> StateT ([Word8], Int) (Result String) (Maybe Char)
+            convertOut :: Word32 -> StateT ([Word8], Int) (Result Text) (Maybe Char)
             convertOut i
                 | i < 0x110000 = return (Just (toEnum (fromIntegral i)))
             convertOut _ = decodeError

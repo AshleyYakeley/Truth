@@ -3,15 +3,15 @@ module Truth.Core.UI.Icon where
 import Truth.Core.Import
 import Truth.Core.UI.Specifier
 
-data StockIcon =
-    SiDnD
+-- | https://specifications.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
+type IconName = Text
 
 data StockSize
     = SizeDnD
     | SizeCustom Int
 
 data UIIcon edit where
-    MkUIIcon :: StockIcon -> StockSize -> UIIcon edit
+    MkUIIcon :: IconName -> StockSize -> UIIcon edit
 
 instance Show (UIIcon edit) where
     show (MkUIIcon _ _) = "icon"
@@ -19,5 +19,5 @@ instance Show (UIIcon edit) where
 instance UIType UIIcon where
     uiWitness = $(iowitness [t|UIIcon|])
 
-uiIcon :: StockIcon -> StockSize -> UISpec edit
+uiIcon :: IconName -> StockSize -> UISpec edit
 uiIcon icon size = MkUISpec $ MkUIIcon icon size

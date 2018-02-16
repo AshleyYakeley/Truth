@@ -5,8 +5,8 @@ import Pinafore.SQLite
 import Shapes
 import Truth.Core
 
-sqlitePinaforeWindow :: FilePath -> (FilePath, String) -> IO [UIWindow ()]
+sqlitePinaforeWindow :: FilePath -> (FilePath, Text) -> IO [UIWindow ()]
 sqlitePinaforeWindow sqlitepath (puipath, puitext) = do
     sub <- makeObjectSubscriber $ sqlitePinaforeObject sqlitepath
-    windows <- resultToM $ parseValue puipath puitext
-    return $ fmap (\(title :: Text, spec) -> MkUIWindow (unpack title) spec sub) windows
+    windows <- resultToM $ mapResultFailure unpack $ parseValue puipath puitext
+    return $ fmap (\(title :: Text, spec) -> MkUIWindow title spec sub) windows

@@ -5,7 +5,7 @@ import Truth.Core.Object
 import Truth.Core.UI.Specifier
 
 data UIWindow actions = forall edit. MkUIWindow
-    { uiwTitle :: String
+    { uiwTitle :: Text
     , uiwSpec :: UISpec edit
     , uiwSubscriber :: Subscriber edit actions
     }

@@ -5,7 +5,7 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier
 
 data UICheckbox edit where
-    MkUICheckbox :: String -> UICheckbox (WholeEdit Bool)
+    MkUICheckbox :: Text -> UICheckbox (WholeEdit Bool)
 
 instance Show (UICheckbox edit) where
     show _ = "checkbox"
@@ -13,5 +13,5 @@ instance Show (UICheckbox edit) where
 instance UIType UICheckbox where
     uiWitness = $(iowitness [t|UICheckbox|])
 
-uiCheckbox :: String -> UISpec (WholeEdit Bool)
+uiCheckbox :: Text -> UISpec (WholeEdit Bool)
 uiCheckbox text = MkUISpec $ MkUICheckbox text

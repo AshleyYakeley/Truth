@@ -10,17 +10,17 @@ import System.FilePath hiding ((<.>))
 import Truth.Core
 import Truth.World.FileSystem
 
-fromResult :: Result String String -> (String, TableCellProps)
+fromResult :: Result Text Text -> (Text, TableCellProps)
 fromResult (SuccessResult "") = ("unnamed", tableCellPlain {tcItalic = True})
 fromResult (SuccessResult s) = (s, tableCellPlain)
-fromResult (FailureResult s) = ("<" ++ s ++ ">", tableCellPlain {tcItalic = True})
+fromResult (FailureResult s) = ("<" <> s <> ">", tableCellPlain {tcItalic = True})
 
-pastResult :: Result String Bool -> (String, TableCellProps)
+pastResult :: Result Text Bool -> (Text, TableCellProps)
 pastResult (SuccessResult False) = ("current", tableCellPlain)
 pastResult (SuccessResult True) = ("past", tableCellPlain)
-pastResult (FailureResult s) = ("<" ++ s ++ ">", tableCellPlain {tcItalic = True})
+pastResult (FailureResult s) = ("<" <> s <> ">", tableCellPlain {tcItalic = True})
 
-type PossibleNoteEdit = OneWholeEdit (Result String) NoteEdit
+type PossibleNoteEdit = OneWholeEdit (Result Text) NoteEdit
 
 soupEditSpec :: UISpec (SoupEdit PossibleNoteEdit)
 soupEditSpec = let
@@ -52,7 +52,7 @@ soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)
 soupObject dirpath = let
     rawSoupObject :: Object (SoupEdit (ObjectEdit ByteStringEdit))
     rawSoupObject = directorySoup fileSystemObject dirpath
-    soupItemInjection :: Injection' (Result String) ByteString (EditSubject PossibleNoteEdit)
+    soupItemInjection :: Injection' (Result Text) ByteString (EditSubject PossibleNoteEdit)
     soupItemInjection = codecInjection noteCodec
     paste ::
            forall m. MonadIO m
@@ -68,7 +68,7 @@ soupObject dirpath = let
 soupWindow :: FilePath -> IO (UIWindow ())
 soupWindow dirpath = do
     let
-        uiwTitle = takeFileName $ dropTrailingPathSeparator dirpath
+        uiwTitle = fromString $ takeFileName $ dropTrailingPathSeparator dirpath
         uiwSpec = soupEditSpec
     uiwSubscriber <- makeObjectSubscriber $ soupObject dirpath
     return $ MkUIWindow {..}

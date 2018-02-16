@@ -16,4 +16,4 @@ import Truth.Core.Sequence
 import Truth.Core.Types
 import Truth.Core.UI
 
-type ReasonCodec = Codec' (Result String)
+type ReasonCodec = Codec' (Result Text)

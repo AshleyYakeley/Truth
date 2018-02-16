@@ -32,6 +32,8 @@ library
         MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude
+        OverloadedLabels
+        OverloadedStrings
         PatternGuards
         PatternSynonyms
         PolyKinds
@@ -110,6 +112,8 @@ test-suite test
         MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude
+        OverloadedLabels
+        OverloadedStrings
         PatternGuards
         PatternSynonyms
         PolyKinds
@@ -182,6 +186,8 @@ executable pinafore
         MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude
+        OverloadedLabels
+        OverloadedStrings
         PatternGuards
         PatternSynonyms
         PolyKinds
@@ -243,6 +249,8 @@ executable pinafore-query
         MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude
+        OverloadedLabels
+        OverloadedStrings
         PatternGuards
         PatternSynonyms
         PolyKinds

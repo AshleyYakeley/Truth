@@ -73,13 +73,13 @@ data Keyword t where
     KWLet :: Keyword ()
     KWIn :: Keyword ()
     KWBool :: Keyword Bool
-    KWIdentifier :: Keyword String
+    KWSymbol :: Keyword Symbol
 
 instance Show (Keyword t) where
-    show KWLet = show "let"
-    show KWIn = show "in"
+    show KWLet = show ("let" :: String)
+    show KWIn = show ("in" :: String)
     show KWBool = "boolean constant"
-    show KWIdentifier = "identifier"
+    show KWSymbol = "symbol"
 
 readKeyword :: Keyword t -> Parser t
 readKeyword kw =
@@ -99,19 +99,19 @@ readKeyword kw =
               (_, "true") -> empty
               (KWBool, "false") -> return False
               (_, "false") -> empty
-              (KWIdentifier, name) -> return name
+              (KWSymbol, name) -> return $ MkSymbol $ pack name
               (_, _) -> empty) <?>
      show kw)
 
-readIdentifier :: Parser String
-readIdentifier = readKeyword KWIdentifier
+readSymbol :: Parser Symbol
+readSymbol = readKeyword KWSymbol
 
-readPattern :: Parser String
-readPattern = readIdentifier
+readPattern :: Parser Symbol
+readPattern = readSymbol
 
-readBinding :: Parser (String, QValueExpr)
+readBinding :: Parser (Symbol, QValueExpr)
 readBinding = do
-    name <- readIdentifier
+    name <- readSymbol
     args <- many readPattern
     readCharAndWS '='
     val <- readExpression
@@ -162,7 +162,7 @@ readExpression =
          body <- readExpression
          case getDuplicates bindings of
              [] -> return ()
-             l -> parserFail $ "duplicate bindings: " ++ intercalate ", " l
+             l -> parserFail $ "duplicate bindings: " ++ intercalate ", " (fmap show l)
          return $ qlets bindings body) <|>
     (do
          e1 <- readExpression1
@@ -221,7 +221,7 @@ readSingleExpression =
          b <- readKeyword KWBool
          return $ pure $ toQValue b) <|>
     (do
-         name <- readIdentifier
+         name <- readSymbol
          return $ qvar name) <|>
     (do
          n <- readNumber
@@ -265,8 +265,8 @@ readExpressionText = do
     readWS
     readExpression
 
-parseExpression :: SourceName -> String -> Result String QValueExpr
+parseExpression :: SourceName -> Text -> Result Text QValueExpr
 parseExpression name text =
-    case parse readExpressionText name text of
+    case parse readExpressionText name (unpack text) of
         Right a -> return a
         Left e -> fail $ show e

@@ -2,9 +2,7 @@ module Truth.UI.GTK.CSS
     ( cssGetView
     ) where
 
-import Graphics.UI.Gtk as Gtk
-import Graphics.UI.Gtk.General.CssProvider as Gtk
-import Graphics.UI.Gtk.General.StyleContext as Gtk
+import GI.Gtk as Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
@@ -17,26 +15,24 @@ cssGetView =
               MkUIName name spec <- isUISpec uispec
               return $ do
                   w <- getview spec
-                  liftIO $ widgetSetName w name
+                  #setName w name
                   return w
         , MkGetView $ \getview uispec -> do
               MkUICSSClass cssclass spec <- isUISpec uispec
               return $ do
                   w <- getview spec
-                  liftIO $ do
-                      sc <- widgetGetStyleContext w
-                      styleContextAddClass sc cssclass
-                      return w
+                  sc <- #getStyleContext w
+                  #addClass sc cssclass
+                  return w
         , MkGetView $ \getview uispec -> do
               MkUICSSStyleSheet full priority css spec <- isUISpec uispec
               return $ do
                   w <- getview spec
-                  liftIO $ do
-                      provider <- cssProviderNew
-                      cssProviderLoadFromString provider css
-                      children <- widgetGetTree full w
-                      for_ children $ \child -> do
-                          sc <- widgetGetStyleContext child
-                          styleContextAddProvider sc provider priority
-                      return w
+                  provider <- new CssProvider []
+                  #loadFromData provider $ encodeUtf8 css
+                  children <- liftIO $ widgetGetTree full w
+                  for_ children $ \child -> do
+                      sc <- #getStyleContext child
+                      #addProvider sc provider priority
+                  return w
         ]

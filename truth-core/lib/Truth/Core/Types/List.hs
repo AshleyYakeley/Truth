@@ -10,9 +10,6 @@ import Truth.Core.Types.OneWholeEdit
 import Truth.Core.Types.Sum
 import Truth.Core.Types.Whole
 
-packBijection :: Bijection ByteString [Word8]
-packBijection = MkBijection unpack pack
-
 data ListReader seq reader t where
     ListReadLength :: ListReader seq reader (SequencePoint seq)
     ListReadItem :: SequencePoint seq -> reader t -> ListReader seq reader (Maybe t)

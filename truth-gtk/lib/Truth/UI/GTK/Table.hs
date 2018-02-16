@@ -2,15 +2,19 @@ module Truth.UI.GTK.Table
     ( tableGetView
     ) where
 
-import Graphics.UI.Gtk
+import Data.GI.Base.Attributes
+import Data.GI.Gtk
+import GI.Gdk
+import GI.Gtk as Gtk
+import GI.Pango
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
 data Column row = MkColumn
-    { colName :: String
-    , colText :: row -> String
+    { colName :: Text
+    , colText :: row -> Text
     , colProps :: row -> TableCellProps
     }
 
@@ -24,24 +28,23 @@ data StoreEntry tedit rowtext rowprops = MkStoreEntry
     , entryRowProps :: rowprops
     }
 
-cellAttributes ::
-       CellRendererTextClass cell => Column (rowtext, rowprops) -> StoreEntry tedit rowtext rowprops -> [AttrOp cell]
+cellAttributes :: Column (rowtext, rowprops) -> StoreEntry tedit rowtext rowprops -> [AttrOp CellRendererText 'AttrSet]
 cellAttributes MkColumn {..} MkStoreEntry {..} = let
     entryRow = (entryRowText, entryRowProps)
     MkTableCellProps {..} = colProps entryRow
-    in [ cellText := colText entryRow
-       , cellTextStyle :=
+    in [ #text := colText entryRow
+       , #style :=
          if tcItalic
              then StyleItalic
              else StyleNormal
        ]
 
-addColumn :: TreeView -> ListStore (key, StoreEntry tedit rowtext rowprops) -> Column (rowtext, rowprops) -> IO ()
+addColumn :: TreeView -> SeqStore (key, StoreEntry tedit rowtext rowprops) -> Column (rowtext, rowprops) -> IO ()
 addColumn tview store col = do
-    renderer <- cellRendererTextNew
+    renderer <- new CellRendererText []
     column <- treeViewColumnNew
-    treeViewColumnSetTitle column $ colName col
-    cellLayoutPackStart column renderer False
+    #setTitle column $ colName col
+    #packStart column renderer False
     cellLayoutSetAttributes column renderer store $ \(_, entry) -> cellAttributes col entry
     _ <- treeViewAppendColumn tview column
     return ()
@@ -94,10 +97,10 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
         viewObjectRead $ \mr -> do
             MkFiniteSet initialKeys <- editFunctionRead (editLensFunction tableLens) mr KeyReadKeys
             for initialKeys $ getStoreItem mr
-    store <- liftIO $ listStoreNew initalRows
-    tview <- liftIO $ treeViewNewWithModel store
+    store <- seqStoreNew initalRows
+    tview <- treeViewNewWithModel store
     liftIO $ for_ cols $ addColumn tview store
-    box <- liftIO $ vBoxNew False 0
+    box <- boxNew OrientationVertical 0
     newButton <-
         liftOuter $
         liftIOView $ \unlift ->
@@ -107,15 +110,15 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
             viewObjectPushEdit $ \push -> do
                 item <- liftIO $ newKeyContainerItem @cont
                 push [KeyInsertReplaceItem item]
-    liftIO $ boxPackStart box newButton PackNatural 0
-    liftIO $ boxPackStart box tview PackGrow 0
+    #packStart box newButton False False 0
+    #packStart box tview True True 0
     let
         findInStore ::
                forall m. MonadIO m
             => ContainerKey cont
             -> m (Maybe Int)
         findInStore key = do
-            kk <- liftIO $ listStoreToList store
+            kk <- seqStoreToList store
             return $ lookup @[(ContainerKey cont, Int)] key $ zip (fmap fst kk) [0 ..]
     createViewReceiveUpdates $ \mr edits ->
         mapUpdates (editLensFunction tableLens) mr edits $ \_ edits' ->
@@ -124,7 +127,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                 KeyDeleteItem key -> do
                     mindex <- findInStore key
                     case mindex of
-                        Just i -> liftIO $ listStoreRemove store i
+                        Just i -> seqStoreRemove store $ fromIntegral i
                         Nothing -> return ()
                 KeyInsertReplaceItem item -> let
                     key = elementKey @cont item
@@ -134,13 +137,13 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                                Just _index -> return ()
                                Nothing -> do
                                    storeItem <- lift $ getStoreItem mr key
-                                   _ <- liftIO $ listStoreAppend store storeItem
+                                   _ <- seqStoreAppend store storeItem
                                    return ()
-                KeyClear -> liftIO $ listStoreClear store
+                KeyClear -> seqStoreClear store
                 KeyEditItem _ _ -> return () -- no change to the table structure
     -- do updates to the cells
     createViewReceiveUpdates $ \mr tedits ->
-        listStoreTraverse_ store $
+        seqStoreTraverse_ store $
         joinTraverse
             (\(key, oldcol) ->
                  mapUpdates (editLensFunction $ entryTextLens oldcol) mr tedits $ \_ edits' ->
@@ -163,32 +166,36 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
     _ <-
         liftOuter $
         liftIOView $ \unlift ->
-            on tview buttonPressEvent $ do
-                click <- eventClick
+            on tview #buttonPressEvent $ \event -> do
+                click <- Gtk.get event #type
                 case click of
-                    DoubleClick -> do
+                    EventType2buttonPress -> do
                         liftIO $ unlift viewOpenSelection
                         return True
                     _ -> return False
     let
         aspect :: Aspect tedit
         aspect = do
-            tsel <- treeViewGetSelection tview
-            ltpath <- treeSelectionGetSelectedRows tsel
+            tsel <- #getSelection tview
+            (ltpath, _) <- #getSelectedRows tsel
             case ltpath of
-                [[i]] -> do
-                    (key, _) <- listStoreGetValue store i
-                    getaspect key
+                [tpath] -> do
+                    ii <- #getIndices tpath
+                    case ii of
+                        [i] -> do
+                            (key, _) <- seqStoreGetValue store i
+                            getaspect key
+                        _ -> return Nothing
                 _ -> return Nothing
     createViewAddAspect aspect
     _ <-
         liftOuter $
         liftIOView $ \unlift ->
-            on box focus $ \_ ->
+            on box #focus $ \_ ->
                 unlift $ do
                     viewSetSelectedAspect aspect
                     return True
-    return $ toWidget box
+    toWidget box
 
 tableGetView :: GetGView
 tableGetView =

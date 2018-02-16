@@ -48,7 +48,7 @@ import Prelude as I
     , toInteger
     , undefined
     )
-import System.IO as I
+import System.IO as I hiding (appendFile, getContents, hGetContents, readFile, writeFile)
 import Text.Read as I (Read(..), readMaybe)
 import Text.Show as I (Show(..))
 
@@ -94,7 +94,7 @@ import Data.IntMap as I (IntMap, Key, traverseWithKey)
 import Data.HashMap.Lazy as I (HashMap)
 
 -- bytestring
-import Data.ByteString.Lazy as I (ByteString, hGet, hPut)
+import Data.ByteString.Lazy as I (ByteString, appendFile, getContents, hGet, hGetContents, hPut, readFile, writeFile)
 
 -- cereal
 import Data.Serialize as I (Serialize)

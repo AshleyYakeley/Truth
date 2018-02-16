@@ -18,10 +18,10 @@ optParser =
     (O.flag' ExprDocOption $ O.long "doc") <|>
     RunOption <$> (O.strOption (O.long "db")) <*> (O.many $ O.strArgument mempty)
 
-doFile :: FilePath -> FilePath -> String -> IO ()
-doFile dbpath fpath str =
-    case parseValue fpath str of
-        FailureResult e -> fail e
+doFile :: FilePath -> FilePath -> Text -> IO ()
+doFile dbpath fpath text =
+    case parseValue fpath text of
+        FailureResult e -> fail $ unpack e
         SuccessResult qval ->
             case mapObject (readOnlyEditLens (qdisplay qval)) (sqlitePinaforeObject dbpath) :: Object (WholeEdit (FiniteSet Text)) of
                 MkObject (MkUnliftIO run) rd _ ->
@@ -34,13 +34,13 @@ main = do
     args <- getArgs
     options <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
     case options of
-        ExprDocOption -> for_ predefinedDoc $ \(name, desc) -> putStrLn $ name ++ " ::\n    " ++ desc
+        ExprDocOption -> for_ predefinedDoc $ \(name, desc) -> putStrLn $ (show name) ++ " ::\n    " ++ unpack desc
         RunOption dbpath fpaths ->
             case fpaths of
                 [] -> do
-                    str <- getContents
-                    doFile dbpath "<stdin>" str
+                    bs <- getContents
+                    doFile dbpath "<stdin>" $ decodeUtf8 $ toStrict bs
                 _ ->
                     for_ fpaths $ \fpath -> do
-                        str <- readFile fpath
-                        doFile dbpath fpath str
+                        bs <- readFile fpath
+                        doFile dbpath fpath $ decodeUtf8 $ toStrict bs

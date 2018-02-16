@@ -26,7 +26,7 @@ testQueryValues :: TestTree
 testQueryValues =
     testGroup
         "query values"
-        [ testQueryValue "pure A" (pure "A") (Just "A")
+        [ testQueryValue "pure A" (pure "A") (Just "A" :: Maybe String)
         , testQueryValue "var a" (qvar "a") Nothing
         , testQueryValue
               "let a=1;b=2 in (a,b,a,b)"
@@ -40,13 +40,13 @@ testQueryValues =
           Just (qint 2, qint 1, qint 2, qint 1)
         ]
 
-testQuery :: String -> Maybe String -> TestTree
+testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
-    testCase query $
+    testCase (unpack query) $
     case (expected, parseValue "<input>" query) of
         (Nothing, FailureResult _) -> return ()
         (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ show v
-        (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ e
+        (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ unpack e
         (Just s, SuccessResult (v :: QValue)) -> assertEqual "result" s (show v)
 
 testQueries :: TestTree

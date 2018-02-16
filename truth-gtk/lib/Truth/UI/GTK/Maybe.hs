@@ -2,17 +2,17 @@ module Truth.UI.GTK.Maybe
     ( oneGetView
     ) where
 
-import Graphics.UI.Gtk hiding (get)
+import GI.Gtk hiding (get)
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 
-boxAddShow :: (BoxClass w1, WidgetClass w2) => Packing -> w1 -> w2 -> IO ()
-boxAddShow packing w1 w2 = do
-    boxPackStart w1 w2 packing 0
+boxAddShow :: (IsBox w1, IsWidget w2) => Bool -> w1 -> w2 -> IO ()
+boxAddShow grow w1 w2 = do
+    boxPackStart w1 w2 grow grow 0
     widgetShow w2
 
-containerRemoveDestroy :: (ContainerClass w1, WidgetClass w2) => w1 -> w2 -> IO ()
+containerRemoveDestroy :: (IsContainer w1, IsWidget w2) => w1 -> w2 -> IO ()
 containerRemoveDestroy w1 w2 = do
     containerRemove w1 w2
     widgetDestroy w2
@@ -25,7 +25,7 @@ createButton subj MkObject {..} =
         pushEdit $ objEdit edits
 
 oneWholeView ::
-       forall f edit wd. (MonadOne f, FullEdit edit, WidgetClass wd)
+       forall f edit wd. (MonadOne f, FullEdit edit, IsWidget wd)
     => (forall editb. (FullEdit editb) =>
                           UISpec editb -> UISpec (OneWholeEdit f editb))
     -> Maybe (Limit f)
@@ -33,7 +33,7 @@ oneWholeView ::
     -> GCreateView edit
     -> GCreateView (OneWholeEdit f edit)
 oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
-    box <- liftIO $ vBoxNew False 0
+    box <- new Box [#orientation := OrientationVertical]
     object <- liftOuter viewObject
     emptyWidget <- liftIO $ makeEmptywidget object
     mDeleteButton <-
@@ -48,10 +48,10 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
         newWidgets :: f (GViewResult edit) -> IO ()
         newWidgets fg =
             case retrieveOne fg of
-                FailureResult (MkLimit _) -> do boxAddShow PackGrow box emptyWidget
+                FailureResult (MkLimit _) -> do boxAddShow True box emptyWidget
                 SuccessResult vr -> do
-                    for_ mDeleteButton (boxAddShow PackNatural box)
-                    boxAddShow PackGrow box $ vrWidget vr
+                    for_ mDeleteButton (boxAddShow False box)
+                    boxAddShow True box $ vrWidget vr
     firstfvr <-
         liftOuter $ do
             firstfu <- viewObjectRead $ \mr -> mr ReadHasOne
@@ -79,7 +79,7 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
                     (FailureResult _, FailureResult (MkLimit newlf)) -> put newlf
                     (FailureResult _, SuccessResult ()) -> do
                         newfvr <- liftIO $ unlift $ getVR newfu
-                        for_ newfvr $ \_ -> liftIO $ containerRemove box emptyWidget
+                        for_ newfvr $ \_ -> liftIO $ #remove box emptyWidget
                         liftIO $ newWidgets newfvr
                         put newfvr
     createViewAddAspect $
@@ -90,12 +90,10 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
                 Nothing -> return Nothing
     createViewReceiveUpdates $ update
     liftOuter $ viewObjectRead $ \mr -> update mr []
-    return $ toWidget box
+    toWidget box
 
 placeholderLabel :: IO Label
-placeholderLabel = do
-    label <- labelNew (Just "Placeholder")
-    return label
+placeholderLabel = new Label [#label := "Placeholder"]
 
 oneGetView :: GetGView
 oneGetView =

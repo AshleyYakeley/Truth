@@ -2,7 +2,7 @@ module Truth.Core.UI.Specifier where
 
 import Truth.Core.Import
 
-type Aspect edit = IO (Maybe (String, UISpec edit))
+type Aspect edit = IO (Maybe (Text, UISpec edit))
 
 data UISpec (edit :: *) where
     MkUISpec

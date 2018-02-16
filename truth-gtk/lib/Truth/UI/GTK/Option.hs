@@ -2,7 +2,7 @@ module Truth.UI.GTK.Option
     ( optionGetView
     ) where
 
-import Graphics.UI.Gtk as Gtk
+import Data.GI.Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
@@ -16,54 +16,55 @@ optionGetView =
 
 listStoreView ::
        (FullSubjectReader (EditReader edit), ApplicableEdit edit)
-    => CreateView (ListEdit [EditSubject edit] edit) (ListStore (EditSubject edit))
+    => CreateView (ListEdit [EditSubject edit] edit) (SeqStore (EditSubject edit))
 listStoreView = do
-    initialList <- liftOuter $ viewObjectRead mutableReadToSubject
-    store <- liftIO $ listStoreNew initialList
+    subjectList <- liftOuter $ viewObjectRead mutableReadToSubject
+    store <- seqStoreNew subjectList
     createViewReceiveUpdate $ \_mr ->
         \case
-            ListEditItem (MkSequencePoint i) edit ->
-                liftIO $ do
-                    oldval <- listStoreGetValue store i
-                    newval <- mutableReadToSubject $ applyEdit edit $ subjectToMutableRead oldval
-                    listStoreSetValue store i newval
-            ListDeleteItem (MkSequencePoint i) -> liftIO $ listStoreRemove store i
-            ListInsertItem (MkSequencePoint i) item -> liftIO $ listStoreInsert store i item
-            ListClear -> liftIO $ listStoreClear store
+            ListEditItem (MkSequencePoint (fromIntegral -> i)) edit -> do
+                oldval <- seqStoreGetValue store i
+                newval <- mutableReadToSubject $ applyEdit edit $ subjectToMutableRead oldval
+                seqStoreSetValue store i newval
+            ListDeleteItem (MkSequencePoint (fromIntegral -> i)) -> seqStoreRemove store i
+            ListInsertItem (MkSequencePoint (fromIntegral -> i)) item -> seqStoreInsert store i item
+            ListClear -> seqStoreClear store
     return store
 
 optionFromStore ::
        forall t. Eq t
-    => ListStore (t, String)
+    => SeqStore (t, Text)
     -> GCreateView (WholeEdit t)
 optionFromStore store = do
     widget <-
         liftIO $ do
             widget <- comboBoxNewWithModel store
-            renderer <- cellRendererTextNew
-            cellLayoutPackStart widget renderer False
-            cellLayoutSetAttributes widget renderer store $ \(_, row) -> [cellText := row]
+            renderer <- new CellRendererText []
+            #packStart widget renderer False
+            cellLayoutSetAttributes widget renderer store $ \(_, row) -> [#text := row]
             return widget
     changedSignal <-
         liftOuter $
-        viewOn widget changed $
+        viewOn widget #changed $
         viewObjectPushEdit $ \push -> do
-            mi <- liftIO $ comboBoxGetActiveIter widget
+            mi <- #getActiveIter widget
             case mi of
-                Just i -> do
-                    (t, _) <- liftIO $ listStoreGetValue store $ listStoreIterToIndex i
+                (True, iter) -> do
+                    i <- seqStoreIterToIndex iter
+                    (t, _) <- seqStoreGetValue store i
                     push [MkWholeEdit t]
-                Nothing -> return ()
+                (False, _) -> return ()
     let
         update :: MonadIO m => t -> m ()
         update t =
             liftIO $ do
-                items <- listStoreToList store
+                items <- seqStoreToList store
                 case find (\(_, (t', _)) -> t == t') $ zip [(0 :: Int) ..] items of
                     Just (i, _) -> do
-                        mti <- treeModelGetIter store [i]
+                        tp <- treePathNewFromIndices [fromIntegral i]
+                        mti <- treeModelGetIter store tp
                         case mti of
-                            Just ti -> withSignalBlocked changedSignal $ comboBoxSetActiveIter widget ti
+                            Just ti -> withSignalBlocked widget changedSignal $ #setActiveIter widget $ Just ti
                             Nothing -> return ()
                     Nothing -> return ()
     liftOuter $
@@ -71,11 +72,11 @@ optionFromStore store = do
             t <- mr ReadWhole
             update t
     createViewReceiveUpdate $ \_mr (MkWholeEdit t) -> update t
-    return $ toWidget widget
+    toWidget widget
 
 optionView ::
        forall t tedit. (Eq t)
-    => EditFunction tedit (ListEdit [(t, String)] (WholeEdit (t, String)))
+    => EditFunction tedit (ListEdit [(t, Text)] (WholeEdit (t, Text)))
     -> EditLens tedit (WholeEdit t)
     -> GCreateView tedit
 optionView itemsFunction whichLens = do
