@@ -13,15 +13,14 @@ pagesGetView =
         MkUIPages pagespecs <- isUISpec uispec
         return $ do
             pages <-
-                for pagespecs $ \(pname, pspec) -> do
-                    pwidget <- getview pspec
-                    return (pname, pwidget)
+                for pagespecs $ \(headspec, bodyspec) -> do
+                    headwidget <- getview headspec
+                    bodywidget <- getview bodyspec
+                    return (headwidget, bodywidget)
             makeNotebook pages
 
-makeNotebook :: MonadIO m => [(Text, Widget)] -> m Widget
+makeNotebook :: MonadIO m => [(Widget, Widget)] -> m Widget
 makeNotebook pages = do
     notebook <- new Notebook []
-    for_ pages $ \(pname, pwidget) -> do
-        label <- new Label [#label := pname]
-        #appendPage notebook pwidget $ Just label
+    for_ pages $ \(headwidget, bodywidget) -> #appendPage notebook bodywidget $ Just headwidget
     toWidget notebook

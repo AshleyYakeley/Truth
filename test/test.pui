@@ -4,7 +4,7 @@ let
 # Useful
 window n s = [n,s];
 column n p = [n,p];
-ui_page n ui = [n,ui];
+ui_page n ui = [ui_label n,ui];
 ui_labelled n ui = ui_horizontal [[ui_label n,false],[ui,true]];
 
 # Ontology
