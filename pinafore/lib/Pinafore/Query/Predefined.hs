@@ -3,7 +3,7 @@ module Pinafore.Query.Predefined
     , predefinedDoc
     ) where
 
-import Pinafore.AsText
+--import Pinafore.AsText
 import Pinafore.Edit
 import Pinafore.Morphism
 import Pinafore.Query.Expression
@@ -11,12 +11,16 @@ import Pinafore.Query.Value
 import Shapes
 import Truth.Core
 
+{-
 valSpec ::
        AsText val
     => UISpec (WholeEdit (Maybe val))
     -> PinaforeLensValue (WholeEdit (Maybe Point))
     -> UISpec PinaforeEdit
 valSpec spec val = uiLens (applyPinaforeLens literalPinaforeLensMorphism val) spec
+-}
+valSpecText :: UISpec (WholeEdit (Maybe Text)) -> PinaforeLensValue (WholeEdit (Maybe Text)) -> UISpec PinaforeEdit
+valSpecText spec val = uiLens val spec
 
 pb :: forall t. ToQValue t
    => Symbol
@@ -26,9 +30,9 @@ pb name val = (qbind name val, (name, qTypeDescriptionTo @t))
 
 predefinitions :: [(QBindings, (Symbol, Text))]
 predefinitions =
-    [ pb "ui_textentry" $ valSpec $ uiNothingValue mempty uiTextEntry
-    , pb "ui_textarea" $ valSpec $ uiNothingValue mempty $ uiConvert uiText
-    , pb "ui_labelled" $ \text -> uiLabelled text
+    [ pb "ui_textentry" $ valSpecText $ uiNothingValue mempty uiTextEntry
+    , pb "ui_textarea" $ valSpecText $ uiNothingValue mempty $ uiConvert uiText
+    , pb "ui_label" $ valSpecText $ uiNothingValue mempty $ uiLabel
     , pb "ui_horizontal" uiHorizontal
     , pb "ui_vertical" uiVertical
     , pb "ui_pages" uiPages

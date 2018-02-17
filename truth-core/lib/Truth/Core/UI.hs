@@ -7,7 +7,7 @@ module Truth.Core.UI
     , module Truth.Core.UI.Layout
     , module Truth.Core.UI.Pages
     , module Truth.Core.UI.Icon
-    , module Truth.Core.UI.Labelled
+    , module Truth.Core.UI.Label
     , module Truth.Core.UI.Checkbox
     , module Truth.Core.UI.Option
     , module Truth.Core.UI.TextEntry
@@ -25,7 +25,7 @@ import Truth.Core.UI.Checkbox
 import Truth.Core.UI.Drag
 import Truth.Core.UI.GetView
 import Truth.Core.UI.Icon
-import Truth.Core.UI.Labelled
+import Truth.Core.UI.Label
 import Truth.Core.UI.Layout
 import Truth.Core.UI.Lens
 import Truth.Core.UI.One

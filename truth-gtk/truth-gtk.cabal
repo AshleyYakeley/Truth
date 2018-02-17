@@ -90,7 +90,7 @@ library
         Truth.UI.GTK.Window
         Truth.UI.GTK.CSS
         Truth.UI.GTK.Icon
-        Truth.UI.GTK.Labelled
+        Truth.UI.GTK.Label
         Truth.UI.GTK.Maybe
         Truth.UI.GTK.Switch
         Truth.UI.GTK.CheckButton

@@ -5,6 +5,7 @@ let
 window n s = [n,s];
 column n p = [n,p];
 ui_page n ui = [n,ui];
+ui_labelled n ui = ui_horizontal [[ui_label n,false],[ui,true]];
 
 # Ontology
 type = %f06efa5e-190f-4e5d-8633-495c5683c124;
@@ -34,33 +35,33 @@ deathdate = %805a9e65-d69a-4261-9c94-a3249885b6bb;
 ui_people pp = ui_table [column "Name" name] window_person pp;
 ui_person p = ui_vertical
 [
-    [ui_labelled "Name" $ ui_textentry $ name p,false],
+    [ui_labelled "Name: " $ ui_textentry $ name p,false],
     [ui_pages
     [
         ui_page "Social" $ ui_vertical
         [
-            [ui_labelled "Email" $ ui_textentry $ email p,false],
-            [ui_labelled "Phone" $ ui_textentry $ phone p,false]
+            [ui_labelled "Email: " $ ui_textentry $ email p,false],
+            [ui_labelled "Phone: " $ ui_textentry $ phone p,false]
         ],
         ui_page "Home" $ let homep = home p in ui_vertical
         [
-            [ui_labelled "Address" $ ui_textarea $ address homep,false],
-            [ui_labelled "City" $ ui_textentry $ city homep,false],
-            [ui_labelled "Postcode/ZIP" $ ui_textentry $ postcode homep,false],
-            [ui_labelled "State/Province" $ ui_textentry $ province homep,false],
-            [ui_labelled "Country" $ ui_textentry $ country homep,false],
-            [ui_labelled "Phone" $ ui_textentry $ phone homep,false]
+            [ui_labelled "Address: " $ ui_textarea $ address homep,false],
+            [ui_labelled "City: " $ ui_textentry $ city homep,false],
+            [ui_labelled "Postcode/ZIP: " $ ui_textentry $ postcode homep,false],
+            [ui_labelled "State/Province: " $ ui_textentry $ province homep,false],
+            [ui_labelled "Country: " $ ui_textentry $ country homep,false],
+            [ui_labelled "Phone: " $ ui_textentry $ phone homep,false]
         ],
         ui_page "Work" $ ui_vertical
         [
-            [ui_labelled "Employer" $ ui_textentry $ (name . employer) p,false]
+            [ui_labelled "Employer: " $ ui_textentry $ (name . employer) p,false]
         ],
         ui_page "Family" $ ui_vertical
         [
-            [ui_labelled "Birth" $ ui_textentry $ birthdate p,false],
-            [ui_labelled "Death" $ ui_textentry $ deathdate p,false],
-            [ui_labelled "Mother" $ ui_pick name People $ mother p,false],
-            [ui_labelled "Father" $ ui_pick name People $ father p,false],
+            [ui_labelled "Birth: " $ ui_textentry $ birthdate p,false],
+            [ui_labelled "Death: " $ ui_textentry $ deathdate p,false],
+            [ui_labelled "Mother: " $ ui_pick name People $ mother p,false],
+            [ui_labelled "Father: " $ ui_pick name People $ father p,false],
             [ui_people $ children p,true]
         ]
     ],true]

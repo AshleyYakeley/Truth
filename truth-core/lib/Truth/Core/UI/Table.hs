@@ -31,12 +31,7 @@ readOnlyKeyColumn kcName getter = let
 data UITable tedit where
     MkUITable
         :: forall cont tedit iedit.
-           ( IONewItemKeyContainer cont
-           , FullSubjectReader (EditReader iedit)
-           --, ApplicableEdit tedit
-           --, ApplicableEdit iedit
-           , HasKeyReader cont (EditReader iedit)
-           )
+           (IONewItemKeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
         => [KeyColumn tedit (ContainerKey cont)]
         -> (ContainerKey cont -> Aspect tedit)
         -> EditLens tedit (KeyEdit cont iedit)
@@ -44,12 +39,7 @@ data UITable tedit where
 
 uiTable ::
        forall cont tedit iedit.
-       ( IONewItemKeyContainer cont
-       , FullSubjectReader (EditReader iedit)
-       --, ApplicableEdit tedit
-       --, ApplicableEdit iedit
-       , HasKeyReader cont (EditReader iedit)
-       )
+       (IONewItemKeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => [KeyColumn tedit (ContainerKey cont)]
     -> (ContainerKey cont -> Aspect tedit)
     -> EditLens tedit (KeyEdit cont iedit)

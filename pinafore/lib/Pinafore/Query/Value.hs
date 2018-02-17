@@ -132,13 +132,13 @@ instance FromQValue QValue where
 instance FromQValue Text where
     fromQValue (MkAny QLiteral v) = return v
     fromQValue v = badFromQValue v
-    qTypeDescriptionFrom = "text"
+    qTypeDescriptionFrom = "text-literal"
 
 instance FromQValue Bool where
     fromQValue (MkAny QLiteral "false") = return False
     fromQValue (MkAny QLiteral "true") = return True
     fromQValue v = badFromQValue v
-    qTypeDescriptionFrom = "boolean"
+    qTypeDescriptionFrom = "boolean-literal"
 
 instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
     fromQValue (MkAny QPoint v) = return v
@@ -267,19 +267,19 @@ instance ToQValue Point where
 
 instance ToQValue Text where
     toQValue p = qliteral p
-    qTypeDescriptionTo = "text"
+    qTypeDescriptionTo = "text-literal"
 
 instance ToQValue Bool where
     toQValue t = toQValue $ toText t
-    qTypeDescriptionTo = "boolean"
+    qTypeDescriptionTo = "boolean-literal"
 
 instance ToQValue Int where
     toQValue t = toQValue $ toText t
-    qTypeDescriptionTo = "integer"
+    qTypeDescriptionTo = "integer-literal"
 
 instance ToQValue Integer where
     toQValue t = toQValue $ toText t
-    qTypeDescriptionTo = "integer"
+    qTypeDescriptionTo = "integer-literal"
 
 instance ToQValue t => ToQValue [t] where
     toQValue t = MkAny QList $ fmap toQValue t

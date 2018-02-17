@@ -13,7 +13,7 @@ import Truth.UI.GTK.Drag
 import Truth.UI.GTK.Entry
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Icon
-import Truth.UI.GTK.Labelled
+import Truth.UI.GTK.Label
 import Truth.UI.GTK.Maybe
 import Truth.UI.GTK.Option
 import Truth.UI.GTK.Pages
@@ -34,7 +34,7 @@ allGetView =
         [ lensGetView
         , cssGetView
         , iconGetView
-        , labelledGetView
+        , labelGetView
         , checkButtonGetView
         , optionGetView
         , textEntryGetView
