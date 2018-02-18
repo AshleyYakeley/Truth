@@ -14,18 +14,6 @@ instance Show (UILens edit) where
 instance UIType UILens where
     uiWitness = $(iowitness [t|UILens|])
 
-ioMapAspectSpec :: (UISpec edita -> IO (UISpec editb)) -> Aspect edita -> Aspect editb
-ioMapAspectSpec ff getuispec = do
-    muispec <- getuispec
-    case muispec of
-        Just (name, uispec) -> do
-            uispec' <- ff uispec
-            return $ Just (name, uispec')
-        Nothing -> return Nothing
-
-mapAspectSpec :: (UISpec edita -> UISpec editb) -> Aspect edita -> Aspect editb
-mapAspectSpec ff = ioMapAspectSpec (return . ff)
-
 uiLens :: forall edita editb. EditLens edita editb -> UISpec editb -> UISpec edita
 uiLens lens spec = MkUISpec $ MkUILens lens spec
 
@@ -35,14 +23,19 @@ uiConvert ::
     -> UISpec edita
 uiConvert = uiLens convertEditLens
 
-mapAspect :: EditLens edita editb -> Aspect editb -> Aspect edita
-mapAspect lens = mapAspectSpec $ uiLens lens
+mapUIWindow :: EditLens edita editb -> UIWindow editb -> UIWindow edita
+mapUIWindow lens (MkUIWindow title content) = MkUIWindow (title . editLensFunction lens) (uiLens lens content)
 
 ioMapAspect :: IO (EditLens edita editb) -> Aspect editb -> Aspect edita
-ioMapAspect mlens =
-    ioMapAspectSpec $ \uispec -> do
-        lens <- mlens
-        return $ uiLens lens uispec
+ioMapAspect iolens aspect = do
+    lens <- iolens
+    mwin <- aspect
+    return $ do
+        win <- mwin
+        return $ mapUIWindow lens win
+
+mapAspect :: EditLens edita editb -> Aspect editb -> Aspect edita
+mapAspect lens = ioMapAspect $ return lens
 
 tupleEditUISpecs ::
        (TupleWitness FullEdit sel, FiniteTupleSelector sel)

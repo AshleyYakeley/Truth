@@ -27,12 +27,12 @@ createButton subj MkObject {..} =
 oneWholeView ::
        forall f edit wd. (MonadOne f, FullEdit edit, IsWidget wd)
     => (forall editb. (FullEdit editb) =>
-                          UISpec editb -> UISpec (OneWholeEdit f editb))
+                          UIWindow editb -> UIWindow (OneWholeEdit f editb))
     -> Maybe (Limit f)
     -> (Object (OneWholeEdit f edit) -> IO wd)
     -> GCreateView edit
     -> GCreateView (OneWholeEdit f edit)
-oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
+oneWholeView mapwindow mDeleteValue makeEmptywidget baseView = do
     box <- new Box [#orientation := OrientationVertical]
     object <- liftOuter viewObject
     emptyWidget <- liftIO $ makeEmptywidget object
@@ -86,7 +86,7 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
         mvarRun stateVar $ do
             fvr <- get
             case getMaybeOne fvr of
-                Just vr -> liftIO $ mapAspectSpec uispec $ vrFirstAspect vr
+                Just vr -> liftIO $ fmap (fmap mapwindow) $ vrFirstAspect vr
                 Nothing -> return Nothing
     createViewReceiveUpdates $ update
     liftOuter $ viewObjectRead $ \mr -> update mr []
@@ -101,6 +101,12 @@ oneGetView =
         uit <- isUISpec uispec
         return $
             case uit of
-                MkUIMaybe mnewval itemspec ->
-                    oneWholeView (uiMaybe Nothing) (Just $ MkLimit Nothing) (createButton mnewval) $ getview itemspec
-                MkUIOneWhole itemspec -> oneWholeView uiOneWhole Nothing (\_ -> placeholderLabel) $ getview itemspec
+                MkUIMaybe mnewval itemspec -> let
+                    mapwindow (MkUIWindow title content) =
+                        MkUIWindow (funcEditFunction (fromOne "") . oneWholeLiftEditFunction title) $
+                        uiMaybe Nothing content
+                    in oneWholeView mapwindow (Just $ MkLimit Nothing) (createButton mnewval) $ getview itemspec
+                MkUIOneWhole itemspec -> let
+                    mapwindow (MkUIWindow title content) =
+                        MkUIWindow (funcEditFunction (fromOne "") . oneWholeLiftEditFunction title) $ uiOneWhole content
+                    in oneWholeView mapwindow Nothing (\_ -> placeholderLabel) $ getview itemspec

@@ -69,7 +69,7 @@ textView = do
             run <- getSequenceRun iter1 iter2
             -- get selection...
             lens <- stringSectionLens run
-            return $ Just ("section", uiLens lens $ MkUISpec MkUIText)
+            return $ Just (MkUIWindow (constEditFunction "section") $ uiLens lens $ MkUISpec MkUIText)
     createViewAddAspect aspect
     _ <-
         liftOuter $

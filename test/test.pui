@@ -66,7 +66,7 @@ ui_person p = ui_vertical
         ]
     ],true]
 ];
-window_person p = window "Item" $ ui_person p;
+window_person p = window (name p) $ ui_person p;
 
 window_people = window "People" $ ui_people People;
 

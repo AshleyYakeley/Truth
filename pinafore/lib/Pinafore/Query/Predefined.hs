@@ -57,7 +57,7 @@ predefinitions =
               convertEditFunction . applyPinaforeFunction getNames fset
           in uiOption @PinaforeEdit @(Maybe Point) opts
         -- switch
-    , pb "ui_table" $ \cols (asp :: Point -> Result Text (Text, UISpec PinaforeEdit)) (val :: PinaforeLensValue (FiniteSetEdit Point)) -> let
+    , pb "ui_table" $ \cols (asp :: Point -> Result Text (UIWindow PinaforeEdit)) (val :: PinaforeLensValue (FiniteSetEdit Point)) -> let
           showCell :: Maybe Text -> (Text, TableCellProps)
           showCell (Just s) = (s, tableCellPlain)
           showCell Nothing = ("empty", tableCellPlain {tcItalic = True})
@@ -73,7 +73,7 @@ predefinitions =
                   mapResultFailure unpack $ do
                       lens <- f p
                       return $ mapLens lens
-          aspect :: Point -> IO (Maybe (Text, UISpec PinaforeEdit))
+          aspect :: Point -> Aspect PinaforeEdit
           aspect point = resultToM $ mapResultFailure unpack $ fmap return $ asp point
           in uiTable (fmap getColumn cols) aspect val
     ]

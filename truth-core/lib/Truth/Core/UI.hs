@@ -17,7 +17,6 @@ module Truth.Core.UI
     , module Truth.Core.UI.Drag
     , module Truth.Core.UI.View
     , module Truth.Core.UI.GetView
-    , module Truth.Core.UI.Window
     ) where
 
 import Truth.Core.UI.CSS
@@ -37,5 +36,4 @@ import Truth.Core.UI.Table
 import Truth.Core.UI.TextEditor
 import Truth.Core.UI.TextEntry
 import Truth.Core.UI.View
-import Truth.Core.UI.Window
 import Truth.Core.UI.WindowButton

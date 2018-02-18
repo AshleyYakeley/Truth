@@ -1,6 +1,11 @@
 {-# LANGUAGE ViewPatterns, FlexibleContexts #-}
 
-module Truth.UI.GTK.Window where
+module Truth.UI.GTK.Window
+    ( WindowButtons(..)
+    , SomeUIWindow(..)
+    , truthMain
+    , getMaybeView
+    ) where
 
 import GI.GLib hiding (String)
 import GI.Gtk
@@ -47,9 +52,12 @@ allGetView =
         , dragGetView
         ]
 
+getMaybeView :: UISpec edit -> Maybe (GCreateView edit)
+getMaybeView = getUIView allGetView getTheView
+
 getTheView :: UISpec edit -> GCreateView edit
 getTheView spec =
-    case getUIView allGetView getTheView spec of
+    case getMaybeView spec of
         Just view -> view
         Nothing -> lastResortView spec
 
@@ -98,7 +106,7 @@ instance WindowButtons UndoActions where
 
 data SomeUIWindow =
     forall actions. WindowButtons actions =>
-                    MkSomeUIWindow (UIWindow actions)
+                    MkSomeUIWindow (UserInterface UIWindow actions)
 
 attachMenuItem :: IsMenuShell menushell => menushell -> Text -> IO MenuItem
 attachMenuItem menu name = do
@@ -117,41 +125,33 @@ menuItemAction item action = do
     _ <- on item #activate action
     return ()
 
-makeEmptyWindow :: EditFunction edit (WholeEdit Text) -> CreateView edit Window
-makeEmptyWindow titleEF = do
-    title <- liftOuter $ viewObjectRead $ \mr -> editFunctionRead titleEF mr ReadWhole
+createWindowAndChild :: UIWindow edit -> CreateView edit (Window, Widget)
+createWindowAndChild MkUIWindow {..} = do
+    title <- liftOuter $ viewObjectRead $ \mr -> editFunctionRead uiTitle mr ReadWhole
     window <-
         new
             Window
             [#title := title, #windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
     createViewReceiveUpdates $ \mr edits ->
-        mapUpdates titleEF mr edits $ \_ wedits ->
+        mapUpdates uiTitle mr edits $ \_ wedits ->
             withTransConstraintTM @MonadIO $
             case lastWholeEdit wedits of
                 Just st -> set window [#title := st]
                 Nothing -> return ()
-    return window
+    content <- getTheView uiContent
+    return (window, content)
 
-makeViewWindow ::
-       (WindowButtons actions)
-    => GCreateView edit
-    -> ProgramContext
-    -> IO ()
-    -> EditFunction edit (WholeEdit Text)
-    -> Subscriber edit actions
-    -> IO ()
-makeViewWindow view pc tellclose titleEF sub = do
+makeViewWindow :: (WindowButtons actions) => ProgramContext -> IO () -> UserInterface UIWindow actions -> IO ()
+makeViewWindow pc tellclose MkUserInterface {..} = do
     rec
-        MkViewSubscription {..} <- subscribeView ((,) <$> makeEmptyWindow titleEF <*> view) sub openSelection
+        MkViewSubscription {..} <-
+            subscribeView (createWindowAndChild userinterfaceSpecifier) userinterfaceSubscriber openSelection
         let
             openSelection :: IO ()
             openSelection = do
                 msel <- srGetSelection
                 case msel of
-                    Just (aspname, uiwSpec) -> let
-                        uiwTitle = funcEditFunction (\title -> aspname <> " of " <> title) . titleEF
-                        uiwSubscriber = sub
-                        in makeWindowCountRef pc MkUIWindow {..}
+                    Just window -> makeWindowCountRef pc $ MkUserInterface userinterfaceSubscriber window
                     Nothing -> return ()
     let
         (window, child) = srWidget
@@ -194,14 +194,12 @@ data ProgramContext = MkProgramContext
     , pcWindowCount :: MVar Int
     }
 
-makeViewWindowCountRef ::
-       WindowButtons actions
-    => GCreateView edit
-    -> ProgramContext
-    -> EditFunction edit (WholeEdit Text)
-    -> Subscriber edit actions
+makeWindowCountRef ::
+       forall actions. WindowButtons actions
+    => ProgramContext
+    -> UserInterface UIWindow actions
     -> IO ()
-makeViewWindowCountRef view pc@MkProgramContext {..} title sub = let
+makeWindowCountRef pc@MkProgramContext {..} ui = let
     closer =
         mvarRun pcWindowCount $ do
             i <- Shapes.get
@@ -210,16 +208,9 @@ makeViewWindowCountRef view pc@MkProgramContext {..} title sub = let
                 then #quit pcMainLoop
                 else return ()
     in mvarRun pcWindowCount $ do
-           lift $ makeViewWindow view pc closer title sub
+           lift $ makeViewWindow pc closer ui
            i <- Shapes.get
            Shapes.put $ i + 1
-
-makeWindowCountRef ::
-       forall actions. WindowButtons actions
-    => ProgramContext
-    -> UIWindow actions
-    -> IO ()
-makeWindowCountRef pc MkUIWindow {..} = makeViewWindowCountRef (getTheView uiwSpec) pc uiwTitle uiwSubscriber
 
 truthMain :: ([String] -> IO [SomeUIWindow]) -> IO ()
 truthMain getWindows = do

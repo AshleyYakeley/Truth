@@ -45,7 +45,9 @@ soupEditSpec = let
     getaspect :: Aspect (MaybeEdit (UUIDElementEdit PossibleNoteEdit))
     getaspect =
         return $
-        Just $ ("item", uiLens (oneWholeLiftEditLens $ tupleEditLens EditSecond) $ uiOneWhole $ uiOneWhole noteEditSpec)
+        Just $
+        MkUIWindow (constEditFunction "item") $
+        uiLens (oneWholeLiftEditLens $ tupleEditLens EditSecond) $ uiOneWhole $ uiOneWhole noteEditSpec
     in uiSimpleTable [nameColumn, pastColumn] getaspect
 
 soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)
@@ -65,10 +67,11 @@ soupObject dirpath = let
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: FilePath -> IO (UIWindow ())
+soupWindow :: FilePath -> IO (UserInterface UIWindow ())
 soupWindow dirpath = do
     let
-        uiwTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
-        uiwSpec = soupEditSpec
-    uiwSubscriber <- makeObjectSubscriber $ soupObject dirpath
-    return $ MkUIWindow {..}
+        uiTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
+        uiContent = soupEditSpec
+        userinterfaceSpecifier = MkUIWindow {..}
+    userinterfaceSubscriber <- makeObjectSubscriber $ soupObject dirpath
+    return $ MkUserInterface {..}

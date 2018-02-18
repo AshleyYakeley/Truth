@@ -211,6 +211,13 @@ instance FromQValue (UISpec PinaforeEdit) where
     fromQValue v = badFromQValue v
     qTypeDescriptionFrom = "uispec"
 
+instance FromQValue (UIWindow PinaforeEdit) where
+    fromQValue v = do
+        (title, content) <- fromQValue v
+        return $ MkUIWindow (funcEditFunction @(WholeEdit (Maybe Text)) (fromMaybe "") . title) content
+    qTypeDescriptionFrom =
+        qTypeDescriptionFrom @(EditFunction PinaforeEdit (WholeEdit (Maybe Text)), UISpec PinaforeEdit)
+
 instance FromQValue t => FromQValue [t] where
     fromQValue (MkAny QList v) = for v fromQValue
     fromQValue v = badFromQValue v

@@ -150,7 +150,6 @@ library
         Truth.Core.UI.Drag
         Truth.Core.UI.View
         Truth.Core.UI.GetView
-        Truth.Core.UI.Window
         Truth.Core.UI
 
 test-suite test

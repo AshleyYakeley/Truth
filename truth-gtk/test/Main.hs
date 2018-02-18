@@ -14,7 +14,7 @@ testGView ::
     -> TestTree
 testGView uispec =
     testCase (show uispec) $
-    case getUIView allGetView getTheView uispec of
+    case getMaybeView uispec of
         Just _ -> return ()
         Nothing -> assertFailure "not matched"
 
