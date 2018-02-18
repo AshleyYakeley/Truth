@@ -99,8 +99,12 @@ replace old new (MkFiniteSet (a:aa)) = MkFiniteSet $ a : (unFiniteSet $ replace 
 type instance EditReader (KeyEdit cont edit) =
      KeyReader cont (EditReader edit)
 
-instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, HasKeyReader cont (EditReader edit)) =>
-         Edit (KeyEdit cont edit) where
+instance ( KeyContainer cont
+         , FullSubjectReader (EditReader edit)
+         , ApplicableEdit edit
+         , HasKeyReader cont (EditReader edit)
+         ) =>
+         ApplicableEdit (KeyEdit cont edit) where
     applyEdit (KeyEditItem oldkey edit) mr kreader@(KeyReadItem key rt) = do
         mnewkey <- getCompose $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
         case mnewkey of
@@ -126,18 +130,18 @@ instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, Has
     applyEdit (KeyDeleteItem _) mr (KeyReadItem key reader) = mr $ KeyReadItem key reader
     applyEdit (KeyInsertReplaceItem item) mr KeyReadKeys = do
         allkeys <- mr KeyReadKeys
-        let newkey = elementKey (Proxy :: Proxy cont) item
+        let newkey = elementKey @cont item
         if elem newkey allkeys
             then return allkeys
             else return $ insertSet newkey allkeys
     applyEdit (KeyInsertReplaceItem item) _mr (KeyReadItem key reader)
-        | elementKey (Proxy @cont) item == key = return $ Just $ subjectToRead item reader
+        | elementKey @cont item == key = return $ Just $ subjectToRead item reader
     applyEdit (KeyInsertReplaceItem _) mr (KeyReadItem key reader) = mr $ KeyReadItem key reader
     applyEdit KeyClear _mr reader = mSubjectToMutableRead (return mempty) reader
 
 instance ( KeyContainer cont
          , FullSubjectReader (EditReader edit)
-         , Edit edit
+         , ApplicableEdit edit
          , InvertibleEdit edit
          , HasKeyReader cont (EditReader edit)
          ) =>
@@ -148,7 +152,7 @@ instance ( KeyContainer cont
             Just invedits -> return $ fmap (KeyEditItem key) invedits
             Nothing -> return []
     invertEdit (KeyInsertReplaceItem item) mr = do
-        let newkey = elementKey (Proxy :: Proxy cont) item
+        let newkey = elementKey @cont item
         molditem <- getCompose $ mutableReadToSubject $ keyItemReadFunction newkey mr
         case molditem of
             Just olditem -> return [KeyInsertReplaceItem olditem]
@@ -160,7 +164,11 @@ instance ( KeyContainer cont
             Nothing -> return []
     invertEdit KeyClear mr = getReplaceEdits mr
 
-instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, HasKeyReader cont (EditReader edit)) =>
+instance ( KeyContainer cont
+         , FullSubjectReader (EditReader edit)
+         , ApplicableEdit edit
+         , HasKeyReader cont (EditReader edit)
+         ) =>
          FullEdit (KeyEdit cont edit) where
     replaceEdit mr write = do
         write KeyClear
@@ -171,7 +179,11 @@ instance (KeyContainer cont, FullSubjectReader (EditReader edit), Edit edit, Has
 
 getKeyElementEditLens ::
        forall cont edit.
-       (KeyContainer cont, HasKeyReader cont (EditReader edit), Edit edit, FullSubjectReader (EditReader edit))
+       ( KeyContainer cont
+       , HasKeyReader cont (EditReader edit)
+       , ApplicableEdit edit
+       , FullSubjectReader (EditReader edit)
+       )
     => ContainerKey cont
     -> IO (EditLens (KeyEdit cont edit) (MaybeEdit edit))
 getKeyElementEditLens initial =
@@ -216,7 +228,7 @@ getKeyElementEditLens initial =
         efUpdate (KeyInsertReplaceItem item) _ = do
             key <- get
             return $
-                if elementKey (Proxy :: Proxy cont) item == key
+                if elementKey @cont item == key
                     then [SumEditLeft (MkWholeEdit (Just item))]
                     else []
         elFunction :: AnEditFunction (StateT (ContainerKey cont)) (KeyEdit cont edit) (MaybeEdit edit)
@@ -250,7 +262,7 @@ getKeyValueEditLens ::
        forall cont keyedit valueedit.
        ( KeyContainer cont
        , HasKeyReader cont (PairEditReader keyedit valueedit)
-       , Edit keyedit
+       , ApplicableEdit keyedit
        , FullSubjectReader (EditReader keyedit)
        , FullEdit valueedit
        )
@@ -258,7 +270,7 @@ getKeyValueEditLens ::
     -> IO (EditLens (KeyEdit cont (PairEdit keyedit valueedit)) (MaybeEdit valueedit))
 getKeyValueEditLens key = do
     lens <- getKeyElementEditLens key
-    return $ (oneWholeLiftEditLens $ tupleEditLens EditSecond) <.> lens
+    return $ (oneWholeLiftEditLens $ tupleEditLens EditSecond) . lens
 
 liftKeyElementAnEditFunction ::
        forall t conta contb edita editb.
@@ -313,7 +325,7 @@ liftKeyElementEditLens ::
        , HasKeyReader conta (EditReader edita)
        , EditSubject edita ~ Element conta
        , EditSubject editb ~ Element contb
-       , Edit edita
+       , ApplicableEdit edita
        , FullSubjectReader (EditReader edita)
        , FullSubjectReader (EditReader editb)
        )
@@ -456,7 +468,7 @@ orderedKeyList cmp = let
                 then [ListDeleteItem i]
                 else []
     efUpdate (KeyInsertReplaceItem item) mr = do
-        (i, found) <- lift $ findKey (elementKey (Proxy :: Proxy cont) item) mr
+        (i, found) <- lift $ findKey (elementKey @cont item) mr
         if found
             then return [ListInsertItem i item]
             else do

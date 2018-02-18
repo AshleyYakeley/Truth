@@ -19,3 +19,9 @@ instance (Functor f) => CatFunctor Bijection f where
 
 biSwap :: Bijection (a, b) (b, a)
 biSwap = MkBijection swap swap
+
+packBijection :: IsSequence t => Bijection [Element t] t
+packBijection = MkBijection pack unpack
+
+unpackBijection :: IsSequence t => Bijection t [Element t]
+unpackBijection = MkBijection unpack pack

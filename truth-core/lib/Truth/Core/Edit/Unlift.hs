@@ -8,26 +8,16 @@ data CloseUnlift f (a :: k) (b :: k) =
                             (f t a b)
 
 class UnliftCategory (f :: ((* -> *) -> (* -> *)) -> k -> k -> *) where
-    type UnliftCategoryConstraint f (a :: k) :: Constraint
-    ucId ::
-           forall a. UnliftCategoryConstraint f (a :: k)
-        => f IdentityT a a
+    ucId :: forall a. f IdentityT a a
     ucCompose ::
-           forall tab tbc a b c.
-           ( UnliftCategoryConstraint f a
-           , UnliftCategoryConstraint f b
-           , UnliftCategoryConstraint f c
-           , MonadTransUnlift tab
-           , MonadTransUnlift tbc
-           )
+           forall tab tbc a b c. (MonadTransUnlift tab, MonadTransUnlift tbc)
         => f tbc b c
         -> f tab a b
         -> f (ComposeT tbc tab) a c
 
-instance UnliftCategory f => ConstrainedCategory (CloseUnlift f) where
-    type CategoryConstraint (CloseUnlift f) a = UnliftCategoryConstraint f a
-    cid = MkCloseUnlift identityUnlift ucId
-    (MkCloseUnlift unliftBC fBC) <.> (MkCloseUnlift unliftAB fAB) =
+instance UnliftCategory f => Category (CloseUnlift f) where
+    id = MkCloseUnlift identityUnlift ucId
+    (MkCloseUnlift unliftBC fBC) . (MkCloseUnlift unliftAB fAB) =
         MkCloseUnlift (composeUnlift unliftBC unliftAB) (ucCompose fBC fAB)
 
 data PairUnlift f1 f2 (t :: (* -> *) -> (* -> *)) (a :: k) (b :: k) =

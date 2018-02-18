@@ -17,6 +17,6 @@ main =
         wmss <-
             for puipaths $ \puipath -> do
                 puitext <- readFile puipath
-                wms <- sqlitePinaforeWindow dbpath (puipath, puitext)
+                wms <- sqlitePinaforeWindow dbpath (puipath, decodeUtf8 $ toStrict puitext)
                 return $ fmap MkSomeUIWindow wms
         return $ mconcat wmss

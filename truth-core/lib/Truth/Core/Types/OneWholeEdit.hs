@@ -22,7 +22,7 @@ oneWholeLiftEditFunction = sumWholeLiftEditFunction . oneLiftEditFunction
 -- | suitable for Results; trying to put a failure code will be rejected
 oneWholeLiftAnEditLens ::
        forall t f edita editb.
-       (MonadTransUnlift t, MonadOne f, FullSubjectReader (EditReader edita), Edit edita, FullEdit editb)
+       (MonadTransUnlift t, MonadOne f, FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
     => AnEditLens t edita editb
     -> AnEditLens t (OneWholeEdit f edita) (OneWholeEdit f editb)
 oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLens alens
@@ -52,7 +52,7 @@ oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLe
 
 -- | suitable for Results; trying to put a failure code will be rejected
 oneWholeLiftEditLens ::
-       forall f edita editb. (MonadOne f, FullSubjectReader (EditReader edita), Edit edita, FullEdit editb)
+       forall f edita editb. (MonadOne f, FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
     => EditLens edita editb
     -> EditLens (OneWholeEdit f edita) (OneWholeEdit f editb)
 oneWholeLiftEditLens (MkCloseUnlift unlift lens) = MkCloseUnlift unlift $ oneWholeLiftAnEditLens lens

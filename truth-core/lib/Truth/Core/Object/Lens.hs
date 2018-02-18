@@ -7,7 +7,7 @@ import Truth.Core.Object.Subscriber
 import Truth.Core.Read
 
 mapSubscriber ::
-       forall edita editb action. (Edit edita)
+       forall edita editb action. (ApplicableEdit edita)
     => EditLens edita editb
     -> Subscriber edita action
     -> Subscriber editb action

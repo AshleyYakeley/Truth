@@ -7,11 +7,11 @@ import Truth.Core
 import Truth.World.JSON
 
 data NoteSel t where
-    NoteTitle :: NoteSel (WholeEdit String)
+    NoteTitle :: NoteSel (WholeEdit Text)
     NotePast :: NoteSel (WholeEdit Bool)
     NoteText :: NoteSel (StringEdit Text)
 
-instance (c (WholeEdit String), c (WholeEdit Bool), c (StringEdit Text)) => WitnessConstraint c NoteSel where
+instance (c (WholeEdit Text), c (WholeEdit Bool), c (StringEdit Text)) => WitnessConstraint c NoteSel where
     witnessConstraint NoteTitle = Dict
     witnessConstraint NotePast = Dict
     witnessConstraint NoteText = Dict
@@ -24,15 +24,15 @@ instance Show (NoteSel t) where
 instance AllWitnessConstraint Show NoteSel where
     allWitnessConstraint = Dict
 
-instance (c (WholeReader String), c (WholeReader Bool), c (StringRead Text)) => TupleReaderWitness c NoteSel where
-    tupleReaderWitness _ NoteTitle = Dict
-    tupleReaderWitness _ NotePast = Dict
-    tupleReaderWitness _ NoteText = Dict
+instance (c (WholeReader Text), c (WholeReader Bool), c (StringRead Text)) => TupleReaderWitness c NoteSel where
+    tupleReaderWitness NoteTitle = Dict
+    tupleReaderWitness NotePast = Dict
+    tupleReaderWitness NoteText = Dict
 
-instance (c String, c Bool, c Text) => TupleSubjectWitness c NoteSel where
-    tupleSubjectWitness _ NoteTitle = Dict
-    tupleSubjectWitness _ NotePast = Dict
-    tupleSubjectWitness _ NoteText = Dict
+instance (c Text, c Bool, c Text) => TupleSubjectWitness c NoteSel where
+    tupleSubjectWitness NoteTitle = Dict
+    tupleSubjectWitness NotePast = Dict
+    tupleSubjectWitness NoteText = Dict
 
 instance FiniteWitness NoteSel where
     assembleWitnessF getw =
@@ -51,15 +51,15 @@ instance TestEquality NoteSel where
     testEquality NoteText NoteText = Just Refl
     testEquality _ _ = Nothing
 
-instance TupleWitness Edit NoteSel where
-    tupleWitness _ NoteTitle = Dict
-    tupleWitness _ NotePast = Dict
-    tupleWitness _ NoteText = Dict
+instance TupleWitness ApplicableEdit NoteSel where
+    tupleWitness NoteTitle = Dict
+    tupleWitness NotePast = Dict
+    tupleWitness NoteText = Dict
 
 instance TupleWitness FullEdit NoteSel where
-    tupleWitness _ NoteTitle = Dict
-    tupleWitness _ NotePast = Dict
-    tupleWitness _ NoteText = Dict
+    tupleWitness NoteTitle = Dict
+    tupleWitness NotePast = Dict
+    tupleWitness NoteText = Dict
 
 instance SubjectTupleSelector NoteSel
 
@@ -87,9 +87,9 @@ noteEditSpec :: UISpec NoteEdit
 noteEditSpec =
     uiVertical $
     tupleEditUISpecs $ \case
-        NoteTitle -> uiTextEntry
-        NotePast -> uiCheckbox "past"
-        NoteText -> uiTextText
+        NoteTitle -> (uiTextEntry, False)
+        NotePast -> (uiCheckbox "past", False)
+        NoteText -> (uiText, True)
 
 type Note = Tuple NoteSel
 
@@ -106,15 +106,15 @@ parseMaybe :: Maybe a -> JSON.Parser a
 parseMaybe (Just a) = return a
 parseMaybe Nothing = empty
 
-parseField :: JSON.FromJSON a => String -> JSON.Object -> JSON.Parser a
+parseField :: JSON.FromJSON a => Text -> JSON.Object -> JSON.Parser a
 parseField key obj = do
-    val <- parseMaybe $ lookup (fromString key) obj
+    val <- parseMaybe $ lookup key obj
     JSON.parseJSON val
 
 instance JSON.FromJSON Note where
     parseJSON value = do
         obj :: JSON.Object <- JSON.parseJSON value
-        title :: String <- parseField "title" obj
+        title :: Text <- parseField "title" obj
         past :: Bool <- parseField "past" obj
         text :: Text <- parseField "" obj
         return $

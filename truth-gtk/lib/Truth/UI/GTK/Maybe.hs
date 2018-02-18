@@ -2,17 +2,17 @@ module Truth.UI.GTK.Maybe
     ( oneGetView
     ) where
 
-import Graphics.UI.Gtk hiding (get)
+import GI.Gtk hiding (get)
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 
-boxAddShow :: (BoxClass w1, WidgetClass w2) => Packing -> w1 -> w2 -> IO ()
-boxAddShow packing w1 w2 = do
-    boxPackStart w1 w2 packing 0
+boxAddShow :: (IsBox w1, IsWidget w2) => Bool -> w1 -> w2 -> IO ()
+boxAddShow grow w1 w2 = do
+    boxPackStart w1 w2 grow grow 0
     widgetShow w2
 
-containerRemoveDestroy :: (ContainerClass w1, WidgetClass w2) => w1 -> w2 -> IO ()
+containerRemoveDestroy :: (IsContainer w1, IsWidget w2) => w1 -> w2 -> IO ()
 containerRemoveDestroy w1 w2 = do
     containerRemove w1 w2
     widgetDestroy w2
@@ -25,15 +25,15 @@ createButton subj MkObject {..} =
         pushEdit $ objEdit edits
 
 oneWholeView ::
-       forall f edit wd. (MonadOne f, FullEdit edit, WidgetClass wd)
+       forall f edit wd. (MonadOne f, FullEdit edit, IsWidget wd)
     => (forall editb. (FullEdit editb) =>
-                          UISpec editb -> UISpec (OneWholeEdit f editb))
+                          UIWindow editb -> UIWindow (OneWholeEdit f editb))
     -> Maybe (Limit f)
     -> (Object (OneWholeEdit f edit) -> IO wd)
     -> GCreateView edit
     -> GCreateView (OneWholeEdit f edit)
-oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
-    box <- liftIO $ vBoxNew False 0
+oneWholeView mapwindow mDeleteValue makeEmptywidget baseView = do
+    box <- new Box [#orientation := OrientationVertical]
     object <- liftOuter viewObject
     emptyWidget <- liftIO $ makeEmptywidget object
     mDeleteButton <-
@@ -48,10 +48,10 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
         newWidgets :: f (GViewResult edit) -> IO ()
         newWidgets fg =
             case retrieveOne fg of
-                FailureResult (MkLimit _) -> do boxAddShow PackGrow box emptyWidget
+                FailureResult (MkLimit _) -> do boxAddShow True box emptyWidget
                 SuccessResult vr -> do
-                    for_ mDeleteButton (boxAddShow PackNatural box)
-                    boxAddShow PackGrow box $ vrWidget vr
+                    for_ mDeleteButton (boxAddShow False box)
+                    boxAddShow True box $ vrWidget vr
     firstfvr <-
         liftOuter $ do
             firstfu <- viewObjectRead $ \mr -> mr ReadHasOne
@@ -79,23 +79,21 @@ oneWholeView uispec mDeleteValue makeEmptywidget baseView = do
                     (FailureResult _, FailureResult (MkLimit newlf)) -> put newlf
                     (FailureResult _, SuccessResult ()) -> do
                         newfvr <- liftIO $ unlift $ getVR newfu
-                        for_ newfvr $ \_ -> liftIO $ containerRemove box emptyWidget
+                        for_ newfvr $ \_ -> liftIO $ #remove box emptyWidget
                         liftIO $ newWidgets newfvr
                         put newfvr
     createViewAddAspect $
         mvarRun stateVar $ do
             fvr <- get
             case getMaybeOne fvr of
-                Just vr -> liftIO $ mapAspectSpec uispec $ vrFirstAspect vr
+                Just vr -> liftIO $ fmap (fmap mapwindow) $ vrFirstAspect vr
                 Nothing -> return Nothing
     createViewReceiveUpdates $ update
     liftOuter $ viewObjectRead $ \mr -> update mr []
-    return $ toWidget box
+    toWidget box
 
 placeholderLabel :: IO Label
-placeholderLabel = do
-    label <- labelNew (Just "Placeholder")
-    return label
+placeholderLabel = new Label [#label := "Placeholder"]
 
 oneGetView :: GetGView
 oneGetView =
@@ -103,6 +101,12 @@ oneGetView =
         uit <- isUISpec uispec
         return $
             case uit of
-                MkUIMaybe mnewval itemspec ->
-                    oneWholeView (uiMaybe Nothing) (Just $ MkLimit Nothing) (createButton mnewval) $ getview itemspec
-                MkUIOneWhole itemspec -> oneWholeView uiOneWhole Nothing (\_ -> placeholderLabel) $ getview itemspec
+                MkUIMaybe mnewval itemspec -> let
+                    mapwindow (MkUIWindow title content) =
+                        MkUIWindow (funcEditFunction (fromOne "") . oneWholeLiftEditFunction title) $
+                        uiMaybe Nothing content
+                    in oneWholeView mapwindow (Just $ MkLimit Nothing) (createButton mnewval) $ getview itemspec
+                MkUIOneWhole itemspec -> let
+                    mapwindow (MkUIWindow title content) =
+                        MkUIWindow (funcEditFunction (fromOne "") . oneWholeLiftEditFunction title) $ uiOneWhole content
+                    in oneWholeView mapwindow Nothing (\_ -> placeholderLabel) $ getview itemspec

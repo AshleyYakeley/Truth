@@ -17,7 +17,7 @@ data UIOne edit
         :: forall f edit. (MonadOne f, FullEdit edit)
         => UISpec edit
         -> UIOne (OneWholeEdit f edit)
-        --MkUIOne :: forall f edit. (MonadOne f,Edit edit) => UISpec edit -> UIOne (OneEdit f edit);
+        --MkUIOne :: forall f edit. (MonadOne f,ApplicableEdit edit) => UISpec edit -> UIOne (OneEdit f edit);
 
 instance Show (UIOne edit) where
     show (MkUIMaybe _ uispec) = "maybe " ++ show uispec

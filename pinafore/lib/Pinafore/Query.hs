@@ -14,7 +14,7 @@ import Pinafore.Query.Read
 import Pinafore.Query.Value
 import Shapes
 
-parseValue :: FromQValue t => String -> String -> Result String t
+parseValue :: FromQValue t => String -> Text -> Result Text t
 parseValue name text = do
     expr <- parseExpression name text
     val <- qeval $ qlets predefinedBindings expr

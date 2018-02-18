@@ -1,7 +1,9 @@
 module Truth.UI.GTK.Useful where
 
+import Data.GI.Base.Signals
+import Data.GI.Gtk
 import Data.IORef
-import Graphics.UI.Gtk
+import GI.GObject
 import Shapes
 import Truth.Core
 
@@ -14,22 +16,29 @@ containerGetAllChildren cont = do
     readIORef ref
 
 widgetGetTree :: Bool -> Widget -> IO [Widget]
-widgetGetTree full w
-    | isA w gTypeContainer = do
-        children <-
-            (if full
-                 then containerGetAllChildren
-                 else containerGetChildren) $
-            castToContainer w
-        ww <- for children $ widgetGetTree full
-        return $ w : mconcat ww
-widgetGetTree _ w = return [w]
+widgetGetTree full w = do
+    mwc <- castTo Container w
+    case mwc of
+        Just wc -> do
+            children <-
+                (if full
+                     then containerGetAllChildren
+                     else containerGetChildren) $
+                wc
+            ww <- for children $ widgetGetTree full
+            return $ w : mconcat ww
+        Nothing -> return [w]
 
-withSignalBlocked :: (GObjectClass obj) => ConnectId obj -> IO a -> IO a
-withSignalBlocked conn = bracket_ (signalBlock conn) (signalUnblock conn)
+withSignalBlocked :: IsObject obj => obj -> SignalHandlerId -> IO a -> IO a
+withSignalBlocked obj conn = bracket_ (signalHandlerBlock obj conn) (signalHandlerUnblock obj conn)
 
-viewOn :: w -> Signal w (IO a) -> View edit a -> View edit (ConnectId w)
-viewOn widget signal v = liftIOView $ \unlift -> on widget signal $ unlift $ v
+viewOn ::
+       (GObject widget, SignalInfo info, HaskellCallbackType info ~ IO a)
+    => widget
+    -> SignalProxy widget info
+    -> View edit a
+    -> View edit SignalHandlerId
+viewOn widget signal v = liftIOView $ \unlift -> on widget signal $ unlift v
 
 tryWithMVar :: MVar a -> (Maybe a -> IO b) -> IO b
 tryWithMVar mv f = do
@@ -59,12 +68,21 @@ joinTraverse t1 t2 a0 = do
                     Nothing -> a1
         Nothing -> t2 a0
 
-listStoreTraverse_ :: MonadIO m => ListStore a -> (a -> m (Maybe a)) -> m ()
-listStoreTraverse_ store f = do
-    n <- liftIO $ listStoreGetSize store
+seqStoreTraverse_ :: MonadIO m => SeqStore a -> (a -> m (Maybe a)) -> m ()
+seqStoreTraverse_ store f = do
+    n <- seqStoreGetSize store
     for_ [0 .. (n - 1)] $ \i -> do
-        oldval <- liftIO $ listStoreGetValue store i
+        oldval <- seqStoreGetValue store i
         mnewval <- f oldval
         case mnewval of
-            Just newval -> liftIO $ listStoreSetValue store i newval
+            Just newval -> seqStoreSetValue store i newval
             Nothing -> return ()
+
+isScrollable :: GObject widget => widget -> IO Bool
+isScrollable widget = do
+    mViewport <- castTo Viewport widget
+    mTextView <- castTo TextView widget
+    return $
+        case (mViewport, mTextView) of
+            (Nothing, Nothing) -> False
+            _ -> True

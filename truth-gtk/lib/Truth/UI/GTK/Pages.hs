@@ -2,7 +2,7 @@ module Truth.UI.GTK.Pages
     ( pagesGetView
     ) where
 
-import Graphics.UI.Gtk
+import GI.Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
@@ -13,13 +13,14 @@ pagesGetView =
         MkUIPages pagespecs <- isUISpec uispec
         return $ do
             pages <-
-                for pagespecs $ \(pname, pspec) -> do
-                    pwidget <- getview pspec
-                    return (pname, pwidget)
-            liftIO $ makeNotebook pages
+                for pagespecs $ \(headspec, bodyspec) -> do
+                    headwidget <- getview headspec
+                    bodywidget <- getview bodyspec
+                    return (headwidget, bodywidget)
+            makeNotebook pages
 
-makeNotebook :: [(Text, Widget)] -> IO Widget
+makeNotebook :: MonadIO m => [(Widget, Widget)] -> m Widget
 makeNotebook pages = do
-    notebook <- notebookNew
-    for_ pages $ \(pname, pwidget) -> notebookAppendPage notebook pwidget pname
-    return $ toWidget notebook
+    notebook <- new Notebook []
+    for_ pages $ \(headwidget, bodywidget) -> #appendPage notebook bodywidget $ Just headwidget
+    toWidget notebook

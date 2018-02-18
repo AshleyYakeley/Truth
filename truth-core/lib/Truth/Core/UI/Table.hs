@@ -17,27 +17,21 @@ tableCellPlain = let
     in MkTableCellProps {..}
 
 data KeyColumn tedit key = MkKeyColumn
-    { kcName :: String
-    , kcContents :: key -> IO (EditLens tedit (WholeEdit String), EditFunction tedit (WholeEdit TableCellProps))
+    { kcName :: Text
+    , kcContents :: key -> IO (EditLens tedit (WholeEdit Text), EditFunction tedit (WholeEdit TableCellProps))
     }
 
-readOnlyKeyColumn ::
-       String -> (key -> IO (EditFunction tedit (WholeEdit (String, TableCellProps)))) -> KeyColumn tedit key
+readOnlyKeyColumn :: Text -> (key -> IO (EditFunction tedit (WholeEdit (Text, TableCellProps)))) -> KeyColumn tedit key
 readOnlyKeyColumn kcName getter = let
     kcContents key = do
         func <- getter key
-        return (readOnlyEditLens $ funcEditFunction fst <.> func, funcEditFunction snd <.> func)
+        return (readOnlyEditLens $ funcEditFunction fst . func, funcEditFunction snd . func)
     in MkKeyColumn {..}
 
 data UITable tedit where
     MkUITable
         :: forall cont tedit iedit.
-           ( IONewItemKeyContainer cont
-           , FullSubjectReader (EditReader iedit)
-           --, Edit tedit
-           --, Edit iedit
-           , HasKeyReader cont (EditReader iedit)
-           )
+           (IONewItemKeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
         => [KeyColumn tedit (ContainerKey cont)]
         -> (ContainerKey cont -> Aspect tedit)
         -> EditLens tedit (KeyEdit cont iedit)
@@ -45,12 +39,7 @@ data UITable tedit where
 
 uiTable ::
        forall cont tedit iedit.
-       ( IONewItemKeyContainer cont
-       , FullSubjectReader (EditReader iedit)
-       --, Edit tedit
-       --, Edit iedit
-       , HasKeyReader cont (EditReader iedit)
-       )
+       (IONewItemKeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => [KeyColumn tedit (ContainerKey cont)]
     -> (ContainerKey cont -> Aspect tedit)
     -> EditLens tedit (KeyEdit cont iedit)
@@ -61,16 +50,16 @@ uiSimpleTable ::
        forall cont iedit.
        ( IONewItemKeyContainer cont
        , FullSubjectReader (EditReader iedit)
-       , Edit iedit
+       , ApplicableEdit iedit
        , HasKeyReader cont (EditReader iedit)
        )
     => [KeyColumn (KeyEdit cont iedit) (ContainerKey cont)]
     -> Aspect (MaybeEdit iedit)
     -> UISpec (KeyEdit cont iedit)
-uiSimpleTable cols aspect = uiTable cols (\key -> ioMapAspect (getKeyElementEditLens key) aspect) cid
+uiSimpleTable cols aspect = uiTable cols (\key -> ioMapAspect (getKeyElementEditLens key) aspect) id
 
 instance Show (UITable edit) where
-    show (MkUITable cols _ _) = "table (" ++ intercalate ", " (fmap kcName cols) ++ ")"
+    show (MkUITable cols _ _) = "table (" ++ intercalate ", " (fmap (unpack . kcName) cols) ++ ")"
 
 instance UIType UITable where
     uiWitness = $(iowitness [t|UITable|])

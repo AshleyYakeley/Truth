@@ -37,6 +37,8 @@ library
         MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude
+        OverloadedLabels
+        OverloadedStrings
         PatternGuards
         PatternSynonyms
         PolyKinds
@@ -71,8 +73,13 @@ library
         countable,
         witness,
         open-witness,
-        glib,
-        gtk3,
+        haskell-gi-base,
+        gi-glib,
+        gi-gobject,
+        gi-gdk,
+        gi-pango,
+        gi-gtk,
+        gi-gtk-hs,
         shapes,
         truth-core
     exposed-modules:
@@ -83,7 +90,7 @@ library
         Truth.UI.GTK.Window
         Truth.UI.GTK.CSS
         Truth.UI.GTK.Icon
-        Truth.UI.GTK.Labelled
+        Truth.UI.GTK.Label
         Truth.UI.GTK.Maybe
         Truth.UI.GTK.Switch
         Truth.UI.GTK.CheckButton
@@ -120,6 +127,8 @@ test-suite test
         MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude
+        OverloadedLabels
+        OverloadedStrings
         PatternGuards
         PatternSynonyms
         PolyKinds
@@ -190,6 +199,8 @@ executable truth-text
         MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude
+        OverloadedLabels
+        OverloadedStrings
         PatternGuards
         PatternSynonyms
         PolyKinds
@@ -256,6 +267,8 @@ executable truth-soup
         MonadFailDesugaring
         MultiParamTypeClasses
         NoImplicitPrelude
+        OverloadedLabels
+        OverloadedStrings
         PatternGuards
         PatternSynonyms
         PolyKinds

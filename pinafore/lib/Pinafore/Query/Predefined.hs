@@ -3,7 +3,7 @@ module Pinafore.Query.Predefined
     , predefinedDoc
     ) where
 
-import Pinafore.AsText
+--import Pinafore.AsText
 import Pinafore.Edit
 import Pinafore.Morphism
 import Pinafore.Query.Expression
@@ -11,77 +11,80 @@ import Pinafore.Query.Value
 import Shapes
 import Truth.Core
 
+{-
 valSpec ::
        (AsText val, Show val)
     => UISpec (WholeEdit (Maybe val))
     -> PinaforeLensValue (WholeEdit (Maybe Point))
     -> UISpec PinaforeEdit
 valSpec spec val = uiLens (applyPinaforeLens literalPinaforeLensMorphism val) spec
+-}
+valSpecText :: UISpec (WholeEdit (Maybe Text)) -> PinaforeLensValue (WholeEdit (Maybe Text)) -> UISpec PinaforeEdit
+valSpecText spec val = uiLens val spec
 
 pb :: forall t. ToQValue t
-   => String
+   => Symbol
    -> t
-   -> (QBindings, (String, String))
+   -> (QBindings, (Symbol, Text))
 pb name val = (qbind name val, (name, qTypeDescriptionTo @t))
 
-predefinitions :: [(QBindings, (String, String))]
-predefinitions
-        -- UI
-        --pb "uiCheckbox" $ \name lens -> (uiLens lens $ uiCheckbox name :: UISpec PinaforeEdit),
- =
-    [ pb "uiTextEntry" $ valSpec $ uiNothingValue mempty uiTextEntry
-    , pb "uiTextArea" $ valSpec $ uiNothingValue mempty $ uiConvert uiTextText
-    , pb "uiLabelled" $ \text -> uiLabelled $ unpack (text :: Text)
-    , pb "uiVertical" uiVertical
-    , pb "uiPages" uiPages
+predefinitions :: [(QBindings, (Symbol, Text))]
+predefinitions =
+    [ pb "ui_textentry" $ valSpecText $ uiNothingValue mempty uiTextEntry
+    , pb "ui_textarea" $ valSpecText $ uiNothingValue mempty $ uiConvert uiText
+    , pb "ui_label" $ valSpecText $ uiNothingValue mempty $ uiLabel
+    , pb "ui_horizontal" uiHorizontal
+    , pb "ui_vertical" uiVertical
+    , pb "ui_pages" uiPages
         -- CSS
         -- drag
         -- icon
-    , pb "uiPick" $ \(nameMorphism :: PinaforeFunctionMorphism Point (Maybe Text)) (fset :: PinaforeFunctionValue (FiniteSet Point)) -> let
-          getName :: PinaforeFunctionMorphism Point (Maybe Point, String)
+        --, pb "ui_checkbox" $ \name lens -> (uiLens lens $ uiCheckbox name :: UISpec PinaforeEdit)
+    , pb "ui_pick" $ \(nameMorphism :: PinaforeFunctionMorphism Point (Maybe Text)) (fset :: PinaforeFunctionValue (FiniteSet Point)) -> let
+          getName :: PinaforeFunctionMorphism Point (Maybe Point, Text)
           getName =
               proc p -> do
                   n <- nameMorphism -< p
-                  returnA -< (Just p, unpack $ fromMaybe mempty n)
-          getNames :: PinaforeFunctionMorphism (FiniteSet Point) (FiniteSet (Maybe Point, String))
+                  returnA -< (Just p, fromMaybe mempty n)
+          getNames :: PinaforeFunctionMorphism (FiniteSet Point) (FiniteSet (Maybe Point, Text))
           getNames =
               proc fsp -> do
                   pairs <- cfmap getName -< fsp
                   returnA -< insertSet (Nothing, "") pairs
-          opts :: EditFunction PinaforeEdit (ListEdit [(Maybe Point, String)] (WholeEdit (Maybe Point, String)))
+          opts :: EditFunction PinaforeEdit (ListEdit [(Maybe Point, Text)] (WholeEdit (Maybe Point, Text)))
           opts =
-              (orderedKeyList @(FiniteSet (Maybe Point, String)) $ \(_, a) (_, b) -> compare a b) <.>
-              convertEditFunction <.>
-              applyPinaforeFunction getNames fset
+              (orderedKeyList @(FiniteSet (Maybe Point, Text)) $ \(_, a) (_, b) -> compare a b) .
+              convertEditFunction . applyPinaforeFunction getNames fset
           in uiOption @PinaforeEdit @(Maybe Point) opts
         -- switch
-    , pb "uiTable" $ \cols (asp :: Point -> Result String (Text, UISpec PinaforeEdit)) (val :: PinaforeLensValue (FiniteSetEdit Point)) -> let
-          showCell :: Maybe String -> (String, TableCellProps)
+    , pb "ui_table" $ \cols (asp :: Point -> Result Text (UIWindow PinaforeEdit)) (val :: PinaforeLensValue (FiniteSetEdit Point)) -> let
+          showCell :: Maybe Text -> (Text, TableCellProps)
           showCell (Just s) = (s, tableCellPlain)
           showCell Nothing = ("empty", tableCellPlain {tcItalic = True})
-          mapLens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeFunctionValue (String, TableCellProps)
+          mapLens :: PinaforeLensValue (WholeEdit (Maybe Point)) -> PinaforeFunctionValue (Text, TableCellProps)
           mapLens lens =
-              funcEditFunction showCell <.> editLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
+              funcEditFunction showCell . editLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
           getColumn ::
-                 (Text, Point -> Result String (PinaforeLensValue (WholeEdit (Maybe Point))))
+                 (Text, Point -> Result Text (PinaforeLensValue (WholeEdit (Maybe Point))))
               -> KeyColumn PinaforeEdit Point
           getColumn (name, f) =
-              readOnlyKeyColumn (unpack name) $ \p ->
-                  resultToM $ do
+              readOnlyKeyColumn name $ \p ->
+                  resultToM $
+                  mapResultFailure unpack $ do
                       lens <- f p
                       return $ mapLens lens
-          aspect :: Point -> IO (Maybe (String, UISpec PinaforeEdit))
-          aspect point = resultToM $ fmap (return . first unpack) $ asp point
+          aspect :: Point -> Aspect PinaforeEdit
+          aspect point = resultToM $ mapResultFailure unpack $ fmap return $ asp point
           in uiTable (fmap getColumn cols) aspect val
     ]
 
 pd :: forall t. ToQValue t
-   => String
+   => Symbol
    -> t
-   -> (String, String)
+   -> (Symbol, Text)
 pd name _ = (name, qTypeDescriptionTo @t)
 
-predefinedDoc :: [(String, String)]
+predefinedDoc :: [(Symbol, Text)]
 predefinedDoc = [pd "($)" qapply, pd "(.)" qcombine, pd "(&)" qmeet, pd "(|)" qjoin] ++ fmap snd predefinitions
 
 predefinedBindings :: QBindings

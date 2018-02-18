@@ -8,12 +8,12 @@ import Truth.Core.Read
 import Truth.Core.Types.Tuple
 
 instance TupleWitness c EmptyWitness where
-    tupleWitness _ = never
+    tupleWitness = never
 
 instance SubjectTupleSelector EmptyWitness
 
 instance TupleReaderWitness c EmptyWitness where
-    tupleReaderWitness _ = never
+    tupleReaderWitness = never
 
 instance FiniteTupleSelector EmptyWitness where
     tupleConstruct _ = pure $ MkTuple never
@@ -42,15 +42,15 @@ emptyTupleLens = let
     in MkCloseUnlift identityUnlift MkAnEditLens {..}
 
 instance (c a, TupleWitness c r) => TupleWitness c (ConsWitness a r) where
-    tupleWitness _ FirstWitness = Dict
-    tupleWitness pc (RestWitness r) = tupleWitness pc r
+    tupleWitness FirstWitness = Dict
+    tupleWitness (RestWitness r) = tupleWitness r
 
 instance (SubjectReader (EditReader a), TestEquality r, TupleReaderWitness SubjectReader r) =>
          SubjectTupleSelector (ConsWitness a r)
 
 instance (c (EditReader a), TupleReaderWitness c r) => TupleReaderWitness c (ConsWitness a r) where
-    tupleReaderWitness _ FirstWitness = Dict
-    tupleReaderWitness pc (RestWitness r) = tupleReaderWitness pc r
+    tupleReaderWitness FirstWitness = Dict
+    tupleReaderWitness (RestWitness r) = tupleReaderWitness r
 
 instance (FiniteTupleSelector r, TupleSubject r ~ Tuple r) => FiniteTupleSelector (ConsWitness a r) where
     tupleConstruct getsel =

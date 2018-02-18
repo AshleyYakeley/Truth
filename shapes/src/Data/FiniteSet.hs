@@ -58,7 +58,7 @@ instance Eq a => MeetSemiLattice (FiniteSet a) where
 instance Eq a => Lattice (FiniteSet a)
 
 instance Eq a => KeyContainer (FiniteSet a) where
-    elementKey _ a = a
+    elementKey a = a
     lookupElement key = List.find (\k -> k == key)
     insertElement e (MkFiniteSet []) = MkFiniteSet [e]
     insertElement e (MkFiniteSet (a:aa))
@@ -71,4 +71,4 @@ instance Eq a => KeyContainer (FiniteSet a) where
     fromElementList = MkFiniteSet
 
 instance (Eq key, Random key) => IONewItemKeyContainer (FiniteSet key) where
-    newKeyContainerItem _ = randomIO
+    newKeyContainerItem = randomIO

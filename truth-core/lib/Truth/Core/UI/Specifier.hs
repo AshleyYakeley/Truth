@@ -1,8 +1,8 @@
 module Truth.Core.UI.Specifier where
 
+import Truth.Core.Edit
 import Truth.Core.Import
-
-type Aspect edit = IO (Maybe (String, UISpec edit))
+import Truth.Core.Types
 
 data UISpec (edit :: *) where
     MkUISpec
@@ -23,3 +23,10 @@ isUISpec ::
 isUISpec (MkUISpec (tedit :: t' edit)) = do
     Refl <- testEquality (uiWitness @t) (uiWitness @t')
     return tedit
+
+data UIWindow edit = MkUIWindow
+    { uiTitle :: EditFunction edit (WholeEdit Text)
+    , uiContent :: UISpec edit
+    }
+
+type Aspect edit = IO (Maybe (UIWindow edit))

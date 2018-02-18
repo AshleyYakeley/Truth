@@ -38,7 +38,7 @@ instance Floating (NoEdit reader) (NoEdit reader)
 
 type instance EditReader (NoEdit reader) = reader
 
-instance Edit (NoEdit reader) where
+instance ApplicableEdit (NoEdit reader) where
     applyEdit edit _ = never edit
 
 instance InvertibleEdit (NoEdit reader) where

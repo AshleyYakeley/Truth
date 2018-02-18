@@ -7,15 +7,15 @@ import Truth.Core.Read
 import Truth.Core.Types.Tuple
 
 instance (TupleWitness c p, TupleWitness c q) => TupleWitness c (EitherWitness p q) where
-    tupleWitness pc (LeftWitness sel) = tupleWitness pc sel
-    tupleWitness pc (RightWitness sel) = tupleWitness pc sel
+    tupleWitness (LeftWitness sel) = tupleWitness sel
+    tupleWitness (RightWitness sel) = tupleWitness sel
 
 instance (TestEquality p, TupleReaderWitness SubjectReader p, TestEquality q, TupleReaderWitness SubjectReader q) =>
          SubjectTupleSelector (EitherWitness p q)
 
 instance (TupleReaderWitness c p, TupleReaderWitness c q) => TupleReaderWitness c (EitherWitness p q) where
-    tupleReaderWitness pc (LeftWitness sel) = tupleReaderWitness pc sel
-    tupleReaderWitness pc (RightWitness sel) = tupleReaderWitness pc sel
+    tupleReaderWitness (LeftWitness sel) = tupleReaderWitness sel
+    tupleReaderWitness (RightWitness sel) = tupleReaderWitness sel
 
 instance (FiniteTupleSelector p, TupleSubject p ~ Tuple p, FiniteTupleSelector q, TupleSubject q ~ Tuple q) =>
          FiniteTupleSelector (EitherWitness p q) where

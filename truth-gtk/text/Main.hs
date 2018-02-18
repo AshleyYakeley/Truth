@@ -10,37 +10,43 @@ import Truth.UI.GTK
 import Truth.World.Charset
 import Truth.World.File
 
-textCodec :: ReasonCodec ByteString String
-textCodec = utf8Codec . bijectionCodec packBijection
+textCodec :: ReasonCodec ByteString Text
+textCodec = bijectionCodec packBijection . utf8Codec . bijectionCodec unpackBijection
 
-textLens :: EditLens ByteStringEdit (WholeEdit ((Result String) String))
-textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) <.> convertEditLens
+textLens :: EditLens ByteStringEdit (WholeEdit ((Result Text) Text))
+textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) . convertEditLens
 
 fileTextWindow :: Bool -> FilePath -> IO SomeUIWindow
 fileTextWindow saveOpt path = do
     let
         bsObj :: Object ByteStringEdit
         bsObj = fileObject path
-        wholeTextObj :: Object (WholeEdit ((Result String) String))
+        wholeTextObj :: Object (WholeEdit ((Result Text) Text))
         wholeTextObj = cacheObject $ mapObject textLens bsObj
     if saveOpt
         then do
             let
-                baseSub :: Subscriber (WholeEdit ((Result String) String)) ()
+                baseSub :: Subscriber (WholeEdit ((Result Text) Text)) ()
                 baseSub = objectSubscriber wholeTextObj
-                bufferSub :: Subscriber (OneWholeEdit (Result String) (StringEdit String)) ((), SaveActions)
+                bufferSub :: Subscriber (OneWholeEdit (Result Text) (StringEdit Text)) ((), SaveActions)
                 bufferSub = saveBufferSubscriber baseSub
                 undoBufferSub ::
-                       Subscriber (OneWholeEdit (Result String) (StringEdit String)) (((), SaveActions), UndoActions)
+                       Subscriber (OneWholeEdit (Result Text) (StringEdit Text)) (((), SaveActions), UndoActions)
                 undoBufferSub = undoQueueSubscriber bufferSub
             textSub <- makeSharedSubscriber undoBufferSub
-            return $ MkSomeUIWindow $ MkUIWindow (takeFileName path) (uiOneWhole uiStringText) textSub
+            return $
+                MkSomeUIWindow $
+                MkUserInterface textSub $
+                MkUIWindow (constEditFunction $ fromString $ takeFileName path) (uiOneWhole uiText)
         else do
             let
-                textObj :: Object (OneWholeEdit (Result String) (StringEdit String))
+                textObj :: Object (OneWholeEdit (Result Text) (StringEdit Text))
                 textObj = convertObject wholeTextObj
             textSub <- makeObjectSubscriber textObj
-            return $ MkSomeUIWindow $ MkUIWindow (takeFileName path) (uiOneWhole uiStringText) textSub
+            return $
+                MkSomeUIWindow $
+                MkUserInterface textSub $
+                MkUIWindow (constEditFunction $ fromString $ takeFileName path) (uiOneWhole uiText)
 
 optParser :: O.Parser ([FilePath], Bool, Bool)
 optParser = (,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') <*> O.switch (O.long "save")

@@ -4,6 +4,7 @@ module Truth.Core.Object.Subscriber
     , liftIO
     , objectSubscriber
     , makeSharedSubscriber
+    , UserInterface(..)
     ) where
 
 import Truth.Core.Edit
@@ -100,3 +101,8 @@ objectSubscriber (MkObject run r e) =
 
 makeObjectSubscriber :: Object edit -> IO (Subscriber edit ())
 makeObjectSubscriber object = makeSharedSubscriber $ objectSubscriber object
+
+data UserInterface specifier actions = forall edit. MkUserInterface
+    { userinterfaceSubscriber :: Subscriber edit actions
+    , userinterfaceSpecifier :: specifier edit
+    }

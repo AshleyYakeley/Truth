@@ -5,7 +5,7 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier
 
 data UITextEntry edit where
-    MkUITextEntry :: UITextEntry (WholeEdit String)
+    MkUITextEntry :: UITextEntry (WholeEdit Text)
 
 instance Show (UITextEntry edit) where
     show MkUITextEntry = "text entry"
@@ -13,5 +13,5 @@ instance Show (UITextEntry edit) where
 instance UIType UITextEntry where
     uiWitness = $(iowitness [t|UITextEntry|])
 
-uiTextEntry :: UISpec (WholeEdit String)
+uiTextEntry :: UISpec (WholeEdit Text)
 uiTextEntry = MkUISpec MkUITextEntry

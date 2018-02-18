@@ -83,7 +83,6 @@ library
     exposed-modules:
         Data.Filterable
         Data.Witness.All
-        Control.Constrained.Category
         Data.CatFunctor
         Data.Result
         Data.MonadOne

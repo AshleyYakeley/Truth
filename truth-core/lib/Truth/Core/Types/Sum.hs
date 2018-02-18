@@ -31,16 +31,16 @@ instance (Floating ea ea, Floating eb eb) => Floating (SumEdit ea eb) (SumEdit e
 
 type instance EditReader (SumEdit ea eb) = EditReader ea
 
-instance (Edit ea, Edit eb, EditReader ea ~ EditReader eb) => Edit (SumEdit ea eb) where
+instance (ApplicableEdit ea, ApplicableEdit eb, EditReader ea ~ EditReader eb) => ApplicableEdit (SumEdit ea eb) where
     applyEdit (SumEditLeft edit) = applyEdit edit
     applyEdit (SumEditRight edit) = applyEdit edit
 
-instance (Edit ea, Edit eb, InvertibleEdit ea, InvertibleEdit eb, EditReader ea ~ EditReader eb) =>
+instance (ApplicableEdit ea, ApplicableEdit eb, InvertibleEdit ea, InvertibleEdit eb, EditReader ea ~ EditReader eb) =>
          InvertibleEdit (SumEdit ea eb) where
     invertEdit (SumEditLeft edit) mr = fmap (fmap SumEditLeft) $ invertEdit edit mr
     invertEdit (SumEditRight edit) mr = fmap (fmap SumEditRight) $ invertEdit edit mr
 
-instance (FullEdit ea, Edit eb, EditReader ea ~ EditReader eb) => FullEdit (SumEdit ea eb) where
+instance (FullEdit ea, ApplicableEdit eb, EditReader ea ~ EditReader eb) => FullEdit (SumEdit ea eb) where
     replaceEdit mr write = replaceEdit mr (\edit -> write $ SumEditLeft edit)
 
 sumRightEditFunction ::

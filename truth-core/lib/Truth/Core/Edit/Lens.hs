@@ -20,7 +20,6 @@ instance Unliftable AnEditLens where
     fmapUnliftable t1t2 (MkAnEditLens f pe) = MkAnEditLens (fmapUnliftable t1t2 f) (\eb mr -> t1t2 $ pe eb mr)
 
 instance UnliftCategory AnEditLens where
-    type UnliftCategoryConstraint AnEditLens edit = ()
     ucId = let
         pe :: forall m edit. MonadIO m
            => [edit]
@@ -52,7 +51,7 @@ instance UnliftCategory AnEditLens where
         in MkAnEditLens efAC peAC
 
 elPutEditsFromPutEdit ::
-       (MonadTransConstraint MonadIO t, MonadIO m, Edit edita)
+       (MonadTransConstraint MonadIO t, MonadIO m, ApplicableEdit edita)
     => (editb -> MutableRead m (EditReader edita) -> t m (Maybe [edita]))
     -> [editb]
     -> MutableRead m (EditReader edita)
@@ -95,7 +94,11 @@ constEditLens b = readOnlyEditLens $ constEditFunction b
 
 convertAnEditFunction ::
        forall edita editb.
-       (EditSubject edita ~ EditSubject editb, FullSubjectReader (EditReader edita), Edit edita, FullEdit editb)
+       ( EditSubject edita ~ EditSubject editb
+       , FullSubjectReader (EditReader edita)
+       , ApplicableEdit edita
+       , FullEdit editb
+       )
     => AnEditFunction IdentityT edita editb
 convertAnEditFunction = let
     efGet :: ReadFunctionT IdentityT (EditReader edita) (EditReader editb)
@@ -112,7 +115,11 @@ convertAnEditFunction = let
 
 convertEditFunction ::
        forall edita editb.
-       (EditSubject edita ~ EditSubject editb, FullSubjectReader (EditReader edita), Edit edita, FullEdit editb)
+       ( EditSubject edita ~ EditSubject editb
+       , FullSubjectReader (EditReader edita)
+       , ApplicableEdit edita
+       , FullEdit editb
+       )
     => EditFunction edita editb
 convertEditFunction = MkCloseUnlift identityUnlift convertAnEditFunction
 

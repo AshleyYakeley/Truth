@@ -4,9 +4,19 @@ import Data.List (head, nub, tail)
 import Pinafore.Query.Value
 import Shapes
 
+newtype Symbol =
+    MkSymbol Text
+    deriving (Eq)
+
+instance Show Symbol where
+    show (MkSymbol t) = unpack t
+
+instance IsString Symbol where
+    fromString s = MkSymbol $ fromString s
+
 data QExpr a
     = ClosedQExpr a
-    | OpenQExpr String
+    | OpenQExpr Symbol
                 (QExpr (QValue -> a))
 
 instance Functor QExpr where
@@ -18,7 +28,7 @@ instance Applicative QExpr where
     (ClosedQExpr ab) <*> expr = fmap ab expr
     (OpenQExpr name exprab) <*> expr = OpenQExpr name $ (\vab a v -> vab v a) <$> exprab <*> expr
 
-qabstract :: String -> QExpr a -> QExpr (QValue -> a)
+qabstract :: Symbol -> QExpr a -> QExpr (QValue -> a)
 qabstract _name (ClosedQExpr a) = ClosedQExpr $ \_ -> a
 qabstract name (OpenQExpr name' expr)
     | name == name' = fmap (\vva v -> vva v v) $ qabstract name expr
@@ -26,25 +36,25 @@ qabstract name (OpenQExpr name' expr) = OpenQExpr name' $ fmap (\vva v1 v2 -> vv
 
 qeval :: MonadFail m => QExpr a -> m a
 qeval (ClosedQExpr a) = return a
-qeval (OpenQExpr name _) = fail $ "undefined: " ++ name
+qeval (OpenQExpr name _) = fail $ "undefined: " ++ show name
 
 type QValueExpr = QExpr QValue
 
-exprAbstract :: String -> QValueExpr -> QValueExpr
+exprAbstract :: Symbol -> QValueExpr -> QValueExpr
 exprAbstract name expr = fmap qfunction $ qabstract name expr
 
-exprAbstracts :: [String] -> QValueExpr -> QValueExpr
+exprAbstracts :: [Symbol] -> QValueExpr -> QValueExpr
 exprAbstracts [] = id
 exprAbstracts (n:nn) = exprAbstract n . exprAbstracts nn
 
-qvar :: String -> QValueExpr
+qvar :: Symbol -> QValueExpr
 qvar name = OpenQExpr name $ ClosedQExpr id
 
-qlet :: String -> QValueExpr -> QExpr a -> QExpr a
+qlet :: Symbol -> QValueExpr -> QExpr a -> QExpr a
 qlet name val body = qabstract name body <*> val
 
 newtype QBindings =
-    MkQBindings [(String, QValueExpr)]
+    MkQBindings [(Symbol, QValueExpr)]
     deriving (Semigroup, Monoid)
 
 duplicates :: Eq a => [a] -> [a]
@@ -53,16 +63,16 @@ duplicates (a:aa)
     | elem a aa = a : duplicates aa
 duplicates (_:aa) = duplicates aa
 
-getDuplicates :: QBindings -> [String]
+getDuplicates :: QBindings -> [Symbol]
 getDuplicates (MkQBindings bb) = nub $ duplicates $ fmap fst bb
 
-qbind :: ToQValue t => String -> t -> QBindings
+qbind :: ToQValue t => Symbol -> t -> QBindings
 qbind name val = MkQBindings [(name, pure $ toQValue val)]
 
 qlets :: QBindings -> QExpr a -> QExpr a
 qlets (MkQBindings bb) body = let
     appCons vva vv = vva (head vv) (tail vv)
-    abstractList :: [String] -> QExpr a -> QExpr ([QValue] -> a)
+    abstractList :: [Symbol] -> QExpr a -> QExpr ([QValue] -> a)
     abstractList [] expr = fmap (\a _ -> a) expr
     abstractList (n:nn) expr = fmap appCons $ qabstract n $ abstractList nn expr
     abstractNames :: QExpr a -> QExpr ([QValue] -> a)

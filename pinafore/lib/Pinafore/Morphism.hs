@@ -45,7 +45,6 @@ instance Unliftable APinaforeFunctionMorphism where
     fmapUnliftable mapm (MkAPinaforeFunctionMorphism fr u) = MkAPinaforeFunctionMorphism (\mr a -> mapm $ fr mr a) u
 
 instance UnliftCategory APinaforeFunctionMorphism where
-    type UnliftCategoryConstraint APinaforeFunctionMorphism a = ()
     ucId = let
         pfFuncRead _ = return
         pfUpdate _ = False
@@ -59,10 +58,6 @@ instance UnliftCategory APinaforeFunctionMorphism where
                       lift1ComposeT $ lbc mr b
         , pfUpdate = \edit -> uab edit || ubc edit
         }
-
-instance Category PinaforeFunctionMorphism where
-    id = cid
-    (.) = (<.>)
 
 instance Arrow PinaforeFunctionMorphism where
     arr ab =
@@ -112,10 +107,10 @@ applyPinaforeFunction =
             in MkAnEditFunction g u
 
 lensFunctionValue ::
-       (FullSubjectReader (EditReader edit), Edit edit)
+       (FullSubjectReader (EditReader edit), ApplicableEdit edit)
     => PinaforeLensValue edit
     -> PinaforeFunctionValue (EditSubject edit)
-lensFunctionValue lens = convertEditFunction <.> editLensFunction lens
+lensFunctionValue lens = convertEditFunction . editLensFunction lens
 
 data APinaforeLensMorphism t a b = MkAPinaforeLensMorphism
     { pmForward :: AnEditLens t (ContextEdit PinaforeEdit (WholeEdit (Maybe a))) (WholeEdit (Maybe b))
@@ -132,7 +127,6 @@ bindReadContext mr _ (MkTupleEditReader EditContext rt) = mr $ MkTupleEditReader
 bindReadContext _ mr (MkTupleEditReader EditContent rt) = mr rt
 
 instance UnliftCategory APinaforeLensMorphism where
-    type UnliftCategoryConstraint APinaforeLensMorphism a = ()
     ucId = let
         efGet :: ReadFunctionT IdentityT (ContextEditReader PinaforeEdit (WholeEdit (Maybe a))) (WholeReader (Maybe a))
         efGet mr ReadWhole = lift $ mr $ MkTupleEditReader EditContent ReadWhole
@@ -237,10 +231,6 @@ instance UnliftCategory APinaforeLensMorphism where
         acInverse = MkAPinaforeFunctionMorphism acInvFuncRead acInvUpdate
         in MkAPinaforeLensMorphism acForward acInverse
 
-instance Category PinaforeLensMorphism where
-    id = cid
-    (.) = (<.>)
-
 funcPinaforeLensMorphism :: forall a b. (a -> Maybe b) -> (b -> FiniteSet a) -> PinaforeLensMorphism a b
 funcPinaforeLensMorphism amb bsa = let
     efGet :: ReadFunctionT IdentityT (ContextEditReader PinaforeEdit (WholeEdit (Maybe a))) (WholeReader (Maybe b))
@@ -275,7 +265,7 @@ funcPinaforeLensMorphism amb bsa = let
 
 applyPinaforeLens ::
        PinaforeLensMorphism a b -> PinaforeLensValue (WholeEdit (Maybe a)) -> PinaforeLensValue (WholeEdit (Maybe b))
-applyPinaforeLens (MkCloseUnlift unlift pm) val = traceThing "applyPinaforeLens" $ (MkCloseUnlift unlift $ pmForward pm) <.> contextualiseEditLens val
+applyPinaforeLens (MkCloseUnlift unlift pm) val = traceThing "applyPinaforeLens" $ (MkCloseUnlift unlift $ pmForward pm) . contextualiseEditLens val
 
 lensFunctionMorphism :: forall a b. PinaforeLensMorphism a b -> PinaforeFunctionMorphism a (Maybe b)
 lensFunctionMorphism (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {..}) = let
@@ -398,7 +388,7 @@ pmInverseEditLens (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {.
     applyEdit' ::
            ContextEdit PinaforeEdit (WholeEdit (Maybe b))
         -> ReadFunction (ContextEditReader PinaforeEdit (WholeEdit (Maybe b))) (ContextEditReader PinaforeEdit (WholeEdit (Maybe b)))
-    -- removed line to avoid (Edit PinaforeEdit) constraint, possibly kinda hacky.
+    -- removed line to avoid (ApplicableEdit PinaforeEdit) constraint, possibly kinda hacky.
     -- applyEdit' (MkTupleEdit EditContext edit) mr (MkTupleEditReader EditContext rt) = applyEdit edit (mr . MkTupleEditReader EditContext) rt
     applyEdit' (MkTupleEdit EditContent edit) mr (MkTupleEditReader EditContent rt) =
         applyEdit edit (mr . MkTupleEditReader EditContent) rt
@@ -427,7 +417,7 @@ applyInversePinaforeLens ::
     => PinaforeLensMorphism a b
     -> PinaforeLensValue (WholeEdit (Maybe b))
     -> PinaforeLensValue (FiniteSetEdit a)
-applyInversePinaforeLens pm val = pmInverseEditLens pm <.> contextualiseEditLens val
+applyInversePinaforeLens pm val = pmInverseEditLens pm . contextualiseEditLens val
 
 literalPinaforeMap ::
        forall val. (AsText val, Show val)

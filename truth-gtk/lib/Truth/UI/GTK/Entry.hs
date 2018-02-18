@@ -2,8 +2,8 @@ module Truth.UI.GTK.Entry
     ( textEntryGetView
     ) where
 
-import Graphics.UI.Gtk as Gtk
-import Shapes
+import GI.Gtk as Gtk
+import Shapes hiding (get)
 import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
@@ -13,16 +13,16 @@ textEntryGetView =
     MkGetView $ \_ uispec ->
         fmap
             (\MkUITextEntry -> do
-                 widget <- liftIO entryNew
+                 widget <- new Entry []
                  initial <- liftOuter $ viewObjectRead mutableReadToSubject
-                 liftIO $ set widget [entryText := initial]
+                 set widget [#text := initial]
                  changedSignal <-
                      liftOuter $
-                     viewOn widget editableChanged $
+                     viewOn widget #changed $
                      viewObjectPushEdit $ \push -> do
-                         st <- liftIO $ Gtk.get widget entryText
+                         st <- get widget #text
                          push [MkWholeEdit st]
                  createViewReceiveUpdate $ \_ (MkWholeEdit st) ->
-                     liftIO $ withSignalBlocked changedSignal $ set widget [entryText := st]
-                 return $ toWidget widget) $
+                     liftIO $ withSignalBlocked widget changedSignal $ set widget [#text := st]
+                 toWidget widget) $
         isUISpec uispec

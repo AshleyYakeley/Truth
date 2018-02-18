@@ -52,11 +52,16 @@ testApplyEditsSeq =
                assertEqual "" expected found
 
 applyEditSubject ::
-       (Edit edit, FullSubjectReader (EditReader edit)) => edit -> EditSubject edit -> IO (EditSubject edit)
+       (ApplicableEdit edit, FullSubjectReader (EditReader edit)) => edit -> EditSubject edit -> IO (EditSubject edit)
 applyEditSubject edit subj = mutableReadToSubject $ applyEdit edit $ subjectToMutableRead subj
 
 testEdit ::
-       (Edit edit, FullSubjectReader (EditReader edit), Eq (EditSubject edit), Show edit, Show (EditSubject edit))
+       ( ApplicableEdit edit
+       , FullSubjectReader (EditReader edit)
+       , Eq (EditSubject edit)
+       , Show edit
+       , Show (EditSubject edit)
+       )
     => edit
     -> EditSubject edit
     -> EditSubject edit
@@ -69,7 +74,7 @@ testEdit edit original expected = let
 
 testEditRead ::
        ( SubjectReader (EditReader edit)
-       , Edit edit
+       , ApplicableEdit edit
        , Eq t
        , Show t
        , Show edit
@@ -135,11 +140,11 @@ unsafeRefl = unsafeCoerce Refl
 lensUpdateGetProperty ::
        forall state edita editb.
        ( Show edita
-       , Edit edita
+       , ApplicableEdit edita
        , FullSubjectReader (EditReader edita)
        , Show (EditSubject edita)
        , Show editb
-       , Edit editb
+       , ApplicableEdit editb
        , FullSubjectReader (EditReader editb)
        , Eq (EditSubject editb)
        , Show (EditSubject editb)

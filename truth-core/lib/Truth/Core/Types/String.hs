@@ -78,7 +78,7 @@ instance IsSequence seq => Floating (StringEdit seq) (StringEdit seq) where
 
 type instance EditReader (StringEdit seq) = StringRead seq
 
-instance IsSequence seq => Edit (StringEdit seq) where
+instance IsSequence seq => ApplicableEdit (StringEdit seq) where
     applyEdit (StringReplaceWhole s) _ reader = return $ subjectToRead s reader
     applyEdit (StringReplaceSection erunRaw s) mr StringReadLength = do
         oldlen <- mr StringReadLength

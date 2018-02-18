@@ -38,7 +38,7 @@ instance Floating (WholeReaderEdit reader) (WholeReaderEdit reader)
 
 type instance EditReader (WholeReaderEdit reader) = reader
 
-instance (FullSubjectReader reader) => Edit (WholeReaderEdit reader) where
+instance (FullSubjectReader reader) => ApplicableEdit (WholeReaderEdit reader) where
     applyEdit (MkWholeEdit a) _ = subjectToMutableRead a
 
 instance (FullSubjectReader reader) => InvertibleEdit (WholeReaderEdit reader) where
@@ -50,6 +50,11 @@ instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
     replaceEdit mr write = do
         a <- mutableReadToSubject mr
         write $ MkWholeEdit a
+
+lastWholeEdit :: [WholeReaderEdit reader] -> Maybe (ReaderSubject reader)
+lastWholeEdit [] = Nothing
+lastWholeEdit [MkWholeEdit subj] = Just subj
+lastWholeEdit (_:ee) = lastWholeEdit ee
 
 type WholeEdit a = WholeReaderEdit (WholeReader a)
 

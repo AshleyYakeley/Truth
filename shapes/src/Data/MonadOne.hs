@@ -42,6 +42,9 @@ bindOne fa afb =
         SuccessResult a -> afb a
         FailureResult (MkLimit fx) -> fx
 
+fromOne :: MonadOne f => a -> f a -> a
+fromOne def fa = fromMaybe def $ getMaybeOne fa
+
 instance FunctorGetPure Identity where
     getPure = applicativeGetPure
 

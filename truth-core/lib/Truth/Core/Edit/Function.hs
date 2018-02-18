@@ -18,7 +18,6 @@ instance Unliftable AnEditFunction where
     fmapUnliftable t1t2 (MkAnEditFunction g u) = MkAnEditFunction (\mr rt -> t1t2 $ g mr rt) (\ea mr -> t1t2 $ u ea mr)
 
 instance UnliftCategory AnEditFunction where
-    type UnliftCategoryConstraint AnEditFunction edit = ()
     ucId = let
         efGet = remonadMutableRead IdentityT
         efUpdate edit _ = IdentityT $ return [edit]
@@ -52,10 +51,6 @@ instance UnliftCategory AnEditFunction where
                                 return $ mconcat editcss
         in MkAnEditFunction gAC uAC
 
-instance Category EditFunction where
-    id = cid
-    (.) = (<.>)
-
 efUpdates ::
        (MonadIO m, Monad (t m))
     => AnEditFunction t edita editb
@@ -69,7 +64,7 @@ efUpdates sef (ea:eas) mr = do
     return $ eb ++ ebs
 
 funcEditFunction ::
-       forall edita editb. (FullSubjectReader (EditReader edita), Edit edita, FullEdit editb)
+       forall edita editb. (FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
     => (EditSubject edita -> EditSubject editb)
     -> EditFunction edita editb
 funcEditFunction ab = let

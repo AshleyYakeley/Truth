@@ -142,8 +142,8 @@ instance WitnessConstraint IsSQLiteTable PinaforeSchema where
     witnessConstraint PinaforeTriple = Dict
     witnessConstraint PinaforeLiteral = Dict
 
-soupSchema :: DatabaseSchema PinaforeSchema
-soupSchema = let
+sqlitePinaforeSchema :: DatabaseSchema PinaforeSchema
+sqlitePinaforeSchema = let
     databaseTables = let
         subWitnessDomain = [MkAnyWitness PinaforeTriple, MkAnyWitness PinaforeLiteral]
         subWitnessMap :: PinaforeSchema t -> TableSchema t
@@ -180,8 +180,8 @@ instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstra
 instance TupleDatabase SQLiteDatabase PinaforeSchema where
     type TupleDatabaseRowWitness SQLiteDatabase PinaforeSchema = IsPinaforeRow
 
-soupDatabaseLens :: EditLens (SQLiteEdit PinaforeSchema) PinaforeEdit
-soupDatabaseLens = let
+sqlitePinaforeLens :: EditLens (SQLiteEdit PinaforeSchema) PinaforeEdit
+sqlitePinaforeLens = let
     efGet :: ReadFunctionT IdentityT (SQLiteRead PinaforeSchema) PinaforeRead
     efGet mr (PinaforeReadGetValue p s) =
         lift $ do
@@ -232,7 +232,7 @@ soupDatabaseLens = let
         => SQLiteEdit PinaforeSchema
         -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
         -> IdentityT m [PinaforeEdit]
-    efUpdate _ _ = return $ error "soupDatabaseLens.editUpdate"
+    efUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
     elFunction :: AnEditFunction IdentityT (SQLiteEdit PinaforeSchema) PinaforeEdit
     elFunction = MkAnEditFunction {..}
     elPutEdit ::
@@ -299,4 +299,4 @@ instance ShowableTupleDatabase SQLiteDatabase PinaforeSchema where
     witnessTupleRow = Dict
 
 sqlitePinaforeObject :: FilePath -> Object PinaforeEdit
-sqlitePinaforeObject path = mapObject (traceArgThing "pinafore-SQLite" soupDatabaseLens) $ sqliteObject' path soupSchema
+sqlitePinaforeObject path = mapObject (traceArgThing "pinafore-SQLite" sqlitePinaforeLens) $ sqliteObject' path sqlitePinaforeSchema

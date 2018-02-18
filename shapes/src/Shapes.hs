@@ -5,7 +5,6 @@ module Shapes
 import Shapes.Import as I
 
 -- shapes
-import Control.Constrained.Category as I
 import Data.Bijection as I
 import Data.CatFunctor as I
 import Data.Codec as I

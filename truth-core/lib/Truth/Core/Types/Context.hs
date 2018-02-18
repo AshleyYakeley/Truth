@@ -56,12 +56,12 @@ instance FiniteTupleSelector (WithContextSelector ex en) where
     tupleConstruct f = MkWithContext <$> f EditContext <*> f EditContent
 
 instance (c (EditReader ex), c (EditReader en)) => TupleReaderWitness c (WithContextSelector ex en) where
-    tupleReaderWitness _ EditContext = Dict
-    tupleReaderWitness _ EditContent = Dict
+    tupleReaderWitness EditContext = Dict
+    tupleReaderWitness EditContent = Dict
 
 instance (c ex, c en) => TupleWitness c (WithContextSelector ex en) where
-    tupleWitness _ EditContext = Dict
-    tupleWitness _ EditContent = Dict
+    tupleWitness EditContext = Dict
+    tupleWitness EditContent = Dict
 
 type ContextEditReader x n = TupleEditReader (WithContextSelector x n)
 
@@ -155,7 +155,7 @@ liftContentEditFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ liftCo
 carryContextEditFunction ::
        EditFunction (ContextEdit editx edita) editb -> EditFunction (ContextEdit editx edita) (ContextEdit editx editb)
 carryContextEditFunction func =
-    liftContentEditFunction (editLensFunction $ tupleEditLens EditContext) <.> contextualiseEditFunction func
+    liftContentEditFunction (editLensFunction $ tupleEditLens EditContext) . contextualiseEditFunction func
 
 liftContentEditLens ::
        forall edita editb editn. EditLens edita editb -> EditLens (ContextEdit edita editn) (ContextEdit editb editn)
@@ -175,7 +175,7 @@ liftContentEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens f pe)) = l
     in MkCloseUnlift unlift (MkAnEditLens f' pe')
 
 carryContextEditLens ::
-       (Edit editx, Edit edita, Edit editb)
+       (ApplicableEdit editx, ApplicableEdit edita, ApplicableEdit editb)
     => EditLens (ContextEdit editx edita) editb
     -> EditLens (ContextEdit editx edita) (ContextEdit editx editb)
-carryContextEditLens lens = liftContentEditLens (tupleEditLens EditContext) <.> contextualiseEditLens lens
+carryContextEditLens lens = liftContentEditLens (tupleEditLens EditContext) . contextualiseEditLens lens

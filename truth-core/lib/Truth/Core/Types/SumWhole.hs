@@ -39,7 +39,7 @@ sumWholeLiftEditFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ sumWh
 sumWholeLiftAnEditLens ::
        forall t edita editb.
        ( MonadTransConstraint MonadIO t
-       , Edit edita
+       , ApplicableEdit edita
        , FullSubjectReader (EditReader edita)
        , FullSubjectReader (EditReader editb)
        )

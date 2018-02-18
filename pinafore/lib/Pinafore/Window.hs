@@ -1,13 +1,19 @@
 module Pinafore.Window where
 
+import Pinafore.Edit
 import Pinafore.Query
 import Pinafore.SQLite
 import Shapes
 import Truth.Core
 import Truth.Debug.Object
 
-sqlitePinaforeWindow :: FilePath -> (FilePath, String) -> IO [UIWindow ()]
+type FilePinaforeType = [UIWindow PinaforeEdit]
+
+filePinaforeType :: Text
+filePinaforeType = qTypeDescriptionFrom @FilePinaforeType
+
+sqlitePinaforeWindow :: FilePath -> (FilePath, Text) -> IO [UserInterface UIWindow ()]
 sqlitePinaforeWindow sqlitepath (puipath, puitext) = do
     sub <- makeObjectSubscriber $ traceArgThing "pinafore" $ sqlitePinaforeObject sqlitepath
-    windows <- resultToM $ parseValue puipath puitext
-    return $ fmap (\(title :: Text, spec) -> MkUIWindow (unpack title) spec sub) windows
+    windows :: FilePinaforeType <- resultToM $ mapResultFailure unpack $ parseValue puipath puitext
+    return $ fmap (MkUserInterface sub) windows

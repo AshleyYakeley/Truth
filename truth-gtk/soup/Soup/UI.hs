@@ -11,17 +11,17 @@ import Truth.Core
 import Truth.Debug.Object
 import Truth.World.FileSystem
 
-fromResult :: Result String String -> (String, TableCellProps)
+fromResult :: Result Text Text -> (Text, TableCellProps)
 fromResult (SuccessResult "") = ("unnamed", tableCellPlain {tcItalic = True})
 fromResult (SuccessResult s) = (s, tableCellPlain)
-fromResult (FailureResult s) = ("<" ++ s ++ ">", tableCellPlain {tcItalic = True})
+fromResult (FailureResult s) = ("<" <> s <> ">", tableCellPlain {tcItalic = True})
 
-pastResult :: Result String Bool -> (String, TableCellProps)
+pastResult :: Result Text Bool -> (Text, TableCellProps)
 pastResult (SuccessResult False) = ("current", tableCellPlain)
 pastResult (SuccessResult True) = ("past", tableCellPlain)
-pastResult (FailureResult s) = ("<" ++ s ++ ">", tableCellPlain {tcItalic = True})
+pastResult (FailureResult s) = ("<" <> s <> ">", tableCellPlain {tcItalic = True})
 
-type PossibleNoteEdit = OneWholeEdit (Result String) NoteEdit
+type PossibleNoteEdit = OneWholeEdit (Result Text) NoteEdit
 
 soupEditSpec :: UISpec (SoupEdit PossibleNoteEdit)
 soupEditSpec = let
@@ -31,31 +31,31 @@ soupEditSpec = let
             lens <- getKeyElementEditLens key
             let
                 valLens =
-                    oneWholeLiftEditLens (tupleEditLens NoteTitle) <.> mustExistOneEditLens "name" <.>
-                    oneWholeLiftEditLens (tupleEditLens EditSecond) <.>
-                    lens
-            return $ funcEditFunction fromResult <.> editLensFunction valLens
+                    oneWholeLiftEditLens (tupleEditLens NoteTitle) .
+                    mustExistOneEditLens "name" . oneWholeLiftEditLens (tupleEditLens EditSecond) . lens
+            return $ funcEditFunction fromResult . editLensFunction valLens
     pastColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
     pastColumn =
         readOnlyKeyColumn "Past" $ \key -> do
             lens <- getKeyElementEditLens key
             let
                 valLens =
-                    oneWholeLiftEditLens (tupleEditLens NotePast) <.> mustExistOneEditLens "past" <.>
-                    oneWholeLiftEditLens (tupleEditLens EditSecond) <.>
-                    lens
-            return $ funcEditFunction pastResult <.> editLensFunction valLens
+                    oneWholeLiftEditLens (tupleEditLens NotePast) .
+                    mustExistOneEditLens "past" . oneWholeLiftEditLens (tupleEditLens EditSecond) . lens
+            return $ funcEditFunction pastResult . editLensFunction valLens
     getaspect :: Aspect (MaybeEdit (UUIDElementEdit PossibleNoteEdit))
     getaspect =
         return $
-        Just $ ("item", uiLens (oneWholeLiftEditLens $ tupleEditLens EditSecond) $ uiOneWhole $ uiOneWhole noteEditSpec)
+        Just $
+        MkUIWindow (constEditFunction "item") $
+        uiLens (oneWholeLiftEditLens $ tupleEditLens EditSecond) $ uiOneWhole $ uiOneWhole noteEditSpec
     in uiSimpleTable [nameColumn, pastColumn] getaspect
 
 soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)
 soupObject dirpath = let
     rawSoupObject :: Object (SoupEdit (ObjectEdit ByteStringEdit))
     rawSoupObject = directorySoup fileSystemObject dirpath
-    soupItemInjection :: Injection' (Result String) ByteString (EditSubject PossibleNoteEdit)
+    soupItemInjection :: Injection' (Result Text) ByteString (EditSubject PossibleNoteEdit)
     soupItemInjection = codecInjection noteCodec
     paste ::
            forall m. MonadIO m
@@ -63,15 +63,16 @@ soupObject dirpath = let
         -> m (Maybe ByteString)
     paste s = return $ getMaybeOne $ injBackwards soupItemInjection s
     soupItemLens :: EditLens ByteStringEdit PossibleNoteEdit
-    soupItemLens = convertEditLens <.> (wholeEditLens $ injectionLens soupItemInjection) <.> convertEditLens
+    soupItemLens = convertEditLens . (wholeEditLens $ injectionLens soupItemInjection) . convertEditLens
     lens :: EditLens (SoupEdit (ObjectEdit ByteStringEdit)) (SoupEdit PossibleNoteEdit)
-    lens = liftSoupLens paste $ soupItemLens <.> objectEditLens
+    lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: FilePath -> IO (UIWindow ())
+soupWindow :: FilePath -> IO (UserInterface UIWindow ())
 soupWindow dirpath = do
     let
-        uiwTitle = takeFileName $ dropTrailingPathSeparator dirpath
-        uiwSpec = soupEditSpec
-    uiwSubscriber <- makeObjectSubscriber $ traceArgThing "soup" $ soupObject dirpath
-    return $ MkUIWindow {..}
+        uiTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
+        uiContent = soupEditSpec
+        userinterfaceSpecifier = MkUIWindow {..}
+    userinterfaceSubscriber <- makeObjectSubscriber $ traceArgThing "soup" $ soupObject dirpath
+    return $ MkUserInterface {..}
