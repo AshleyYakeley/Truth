@@ -12,13 +12,13 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-data Column row = MkColumn
-    { colName :: Text
+data Column tedit row = MkColumn
+    { colName :: EditFunction tedit (WholeEdit Text)
     , colText :: row -> Text
     , colProps :: row -> TableCellProps
     }
 
-mapColumn :: (r2 -> r1) -> Column r1 -> Column r2
+mapColumn :: (r2 -> r1) -> Column tedit r1 -> Column tedit r2
 mapColumn f (MkColumn n t p) = MkColumn n (t . f) (p . f)
 
 data StoreEntry tedit rowtext rowprops = MkStoreEntry
@@ -28,7 +28,8 @@ data StoreEntry tedit rowtext rowprops = MkStoreEntry
     , entryRowProps :: rowprops
     }
 
-cellAttributes :: Column (rowtext, rowprops) -> StoreEntry tedit rowtext rowprops -> [AttrOp CellRendererText 'AttrSet]
+cellAttributes ::
+       Column tedit (rowtext, rowprops) -> StoreEntry tedit rowtext rowprops -> [AttrOp CellRendererText 'AttrSet]
 cellAttributes MkColumn {..} MkStoreEntry {..} = let
     entryRow = (entryRowText, entryRowProps)
     MkTableCellProps {..} = colProps entryRow
@@ -39,20 +40,24 @@ cellAttributes MkColumn {..} MkStoreEntry {..} = let
              else StyleNormal
        ]
 
-addColumn :: TreeView -> SeqStore (key, StoreEntry tedit rowtext rowprops) -> Column (rowtext, rowprops) -> IO ()
+addColumn ::
+       TreeView
+    -> SeqStore (key, StoreEntry tedit rowtext rowprops)
+    -> Column tedit (rowtext, rowprops)
+    -> CreateView tedit ()
 addColumn tview store col = do
     renderer <- new CellRendererText []
-    column <- treeViewColumnNew
-    #setTitle column $ colName col
+    column <- new TreeViewColumn []
+    createViewBindEditFunction (colName col) $ #setTitle column
     #packStart column renderer False
     cellLayoutSetAttributes column renderer store $ \(_, entry) -> cellAttributes col entry
-    _ <- treeViewAppendColumn tview column
+    _ <- #appendColumn tview column
     return ()
 
 data KeyColumns tedit key =
     forall rowprops rowtext. MkKeyColumns (key -> IO ( EditLens tedit (WholeEdit rowtext)
                                                      , EditFunction tedit (WholeEdit rowprops)))
-                                          [Column (rowtext, rowprops)]
+                                          [Column tedit (rowtext, rowprops)]
 
 oneKeyColumn :: KeyColumn tedit key -> KeyColumns tedit key
 oneKeyColumn (MkKeyColumn n f) = MkKeyColumns f [MkColumn n fst snd]
@@ -99,7 +104,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
             for initialKeys $ getStoreItem mr
     store <- seqStoreNew initalRows
     tview <- treeViewNewWithModel store
-    liftIO $ for_ cols $ addColumn tview store
+    for_ cols $ addColumn tview store
     box <- boxNew OrientationVertical 0
     newButton <-
         liftOuter $

@@ -26,7 +26,7 @@ soupEditSpec :: UISpec (SoupEdit PossibleNoteEdit)
 soupEditSpec = let
     nameColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
     nameColumn =
-        readOnlyKeyColumn "Name" $ \key -> do
+        readOnlyKeyColumn (constEditFunction "Name") $ \key -> do
             lens <- getKeyElementEditLens key
             let
                 valLens =
@@ -35,7 +35,7 @@ soupEditSpec = let
             return $ funcEditFunction fromResult . editLensFunction valLens
     pastColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
     pastColumn =
-        readOnlyKeyColumn "Past" $ \key -> do
+        readOnlyKeyColumn (constEditFunction "Past") $ \key -> do
             lens <- getKeyElementEditLens key
             let
                 valLens =

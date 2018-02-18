@@ -65,10 +65,11 @@ predefinitions =
           mapLens lens =
               funcEditFunction showCell . editLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
           getColumn ::
-                 (Text, Point -> Result Text (PinaforeLensValue (WholeEdit (Maybe Point))))
+                 ( PinaforeFunctionValue (Maybe Text)
+                 , Point -> Result Text (PinaforeLensValue (WholeEdit (Maybe Point))))
               -> KeyColumn PinaforeEdit Point
           getColumn (name, f) =
-              readOnlyKeyColumn name $ \p ->
+              readOnlyKeyColumn (funcEditFunction (fromMaybe mempty) . name) $ \p ->
                   resultToM $
                   mapResultFailure unpack $ do
                       lens <- f p
