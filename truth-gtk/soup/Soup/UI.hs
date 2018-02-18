@@ -31,7 +31,7 @@ soupEditSpec = let
             let
                 valLens =
                     oneWholeLiftEditLens (tupleEditLens NoteTitle) .
-                    mustExistOneEditLens "name" . oneWholeLiftEditLens (tupleEditLens EditSecond) . lens
+                    mustExistOneEditLens "name" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . lens
             return $ funcEditFunction fromResult . editLensFunction valLens
     pastColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
     pastColumn =
@@ -40,14 +40,14 @@ soupEditSpec = let
             let
                 valLens =
                     oneWholeLiftEditLens (tupleEditLens NotePast) .
-                    mustExistOneEditLens "past" . oneWholeLiftEditLens (tupleEditLens EditSecond) . lens
+                    mustExistOneEditLens "past" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . lens
             return $ funcEditFunction pastResult . editLensFunction valLens
     getaspect :: Aspect (MaybeEdit (UUIDElementEdit PossibleNoteEdit))
     getaspect =
         return $
         Just $
         MkUIWindow (constEditFunction "item") $
-        uiLens (oneWholeLiftEditLens $ tupleEditLens EditSecond) $ uiOneWhole $ uiOneWhole noteEditSpec
+        uiLens (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $ uiOneWhole $ uiOneWhole noteEditSpec
     in uiSimpleTable [nameColumn, pastColumn] getaspect
 
 soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)

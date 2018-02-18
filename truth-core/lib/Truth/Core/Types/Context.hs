@@ -27,55 +27,55 @@ instance (HasNewValue context, HasNewValue content) => HasNewValue (WithContext 
     newValue = MkWithContext newValue newValue
 
 data WithContextSelector (editx :: *) (editn :: *) (edit :: *) where
-    EditContext :: WithContextSelector editx editn editx
-    EditContent :: WithContextSelector editx editn editn
+    SelectContext :: WithContextSelector editx editn editx
+    SelectContent :: WithContextSelector editx editn editn
 
 instance (c editx, c editn) => WitnessConstraint c (WithContextSelector editx editn) where
-    witnessConstraint EditContext = Dict
-    witnessConstraint EditContent = Dict
+    witnessConstraint SelectContext = Dict
+    witnessConstraint SelectContent = Dict
 
 instance Show (WithContextSelector editx editn t) where
-    show EditContext = "context"
-    show EditContent = "content"
+    show SelectContext = "context"
+    show SelectContent = "content"
 
 instance AllWitnessConstraint Show (WithContextSelector editx editn) where
     allWitnessConstraint = Dict
 
 instance TestEquality (WithContextSelector ea eb) where
-    testEquality EditContext EditContext = Just Refl
-    testEquality EditContent EditContent = Just Refl
+    testEquality SelectContext SelectContext = Just Refl
+    testEquality SelectContent SelectContent = Just Refl
     testEquality _ _ = Nothing
 
 instance (SubjectReader (EditReader editx), SubjectReader (EditReader editn)) =>
          SubjectTupleSelector (WithContextSelector editx editn) where
     type TupleSubject (WithContextSelector editx editn) = WithContext (EditSubject editx) (EditSubject editn)
-    tupleReadFromSubject EditContext (MkWithContext x _n) = x
-    tupleReadFromSubject EditContent (MkWithContext _x n) = n
+    tupleReadFromSubject SelectContext (MkWithContext x _n) = x
+    tupleReadFromSubject SelectContent (MkWithContext _x n) = n
 
 instance FiniteTupleSelector (WithContextSelector ex en) where
-    tupleConstruct f = MkWithContext <$> f EditContext <*> f EditContent
+    tupleConstruct f = MkWithContext <$> f SelectContext <*> f SelectContent
 
 instance (c (EditReader ex), c (EditReader en)) => TupleReaderWitness c (WithContextSelector ex en) where
-    tupleReaderWitness EditContext = Dict
-    tupleReaderWitness EditContent = Dict
+    tupleReaderWitness SelectContext = Dict
+    tupleReaderWitness SelectContent = Dict
 
 instance (c ex, c en) => TupleWitness c (WithContextSelector ex en) where
-    tupleWitness EditContext = Dict
-    tupleWitness EditContent = Dict
+    tupleWitness SelectContext = Dict
+    tupleWitness SelectContent = Dict
 
 type ContextEditReader x n = TupleEditReader (WithContextSelector x n)
 
 type ContextEdit x n = TupleEdit (WithContextSelector x n)
 
 contextEditLens :: EditLens (ContextEdit editx editn) editx
-contextEditLens = tupleEditLens EditContext
+contextEditLens = tupleEditLens SelectContext
 
 contentEditLens :: EditLens (ContextEdit editx editn) editn
-contentEditLens = tupleEditLens EditContent
+contentEditLens = tupleEditLens SelectContent
 
 mapContextEdit :: (edita -> editb) -> ContextEdit editx edita -> ContextEdit editx editb
-mapContextEdit _ (MkTupleEdit EditContext edit) = MkTupleEdit EditContext edit
-mapContextEdit f (MkTupleEdit EditContent edit) = MkTupleEdit EditContent $ f edit
+mapContextEdit _ (MkTupleEdit SelectContext edit) = MkTupleEdit SelectContext edit
+mapContextEdit f (MkTupleEdit SelectContent edit) = MkTupleEdit SelectContent $ f edit
 
 contextualiseAnEditFunction ::
        forall t edita editb. MonadTransUnlift t
@@ -83,8 +83,8 @@ contextualiseAnEditFunction ::
     -> AnEditFunction t edita (ContextEdit edita editb)
 contextualiseAnEditFunction (MkAnEditFunction g u) = let
     g' :: ReadFunctionT t (EditReader edita) (ContextEditReader edita editb)
-    g' mr (MkTupleEditReader EditContext rt) = lift $ mr rt
-    g' mr (MkTupleEditReader EditContent rt) = g mr rt
+    g' mr (MkTupleEditReader SelectContext rt) = lift $ mr rt
+    g' mr (MkTupleEditReader SelectContent rt) = g mr rt
     u' :: forall m. MonadIO m
        => edita
        -> MutableRead m (EditReader edita)
@@ -92,7 +92,7 @@ contextualiseAnEditFunction (MkAnEditFunction g u) = let
     u' ea mr =
         withTransConstraintTM @MonadIO $ do
             ebs <- u ea mr
-            return $ (MkTupleEdit EditContext ea) : (fmap (MkTupleEdit EditContent) ebs)
+            return $ (MkTupleEdit SelectContext ea) : (fmap (MkTupleEdit SelectContent) ebs)
     in MkAnEditFunction g' u'
 
 contextualiseEditFunction :: EditFunction edita editb -> EditFunction edita (ContextEdit edita editb)
@@ -101,8 +101,8 @@ contextualiseEditFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ cont
 partitionContextEdits :: forall ea eb. [ContextEdit ea eb] -> ([ea], [eb])
 partitionContextEdits pes = let
     toEither :: ContextEdit ea eb -> Either ea eb
-    toEither (MkTupleEdit EditContext ea) = Left ea
-    toEither (MkTupleEdit EditContent eb) = Right eb
+    toEither (MkTupleEdit SelectContext ea) = Left ea
+    toEither (MkTupleEdit SelectContent eb) = Right eb
     in partitionEithers $ fmap toEither pes
 
 contextualiseAnEditLens ::
@@ -133,17 +133,17 @@ liftContentAnEditFunction ::
     -> AnEditFunction t (ContextEdit edita editn) (ContextEdit editb editn)
 liftContentAnEditFunction (MkAnEditFunction g u) = let
     g' :: ReadFunctionT t (ContextEditReader edita editn) (ContextEditReader editb editn)
-    g' mr (MkTupleEditReader EditContent rt) = lift $ mr $ MkTupleEditReader EditContent rt
-    g' mr (MkTupleEditReader EditContext rt) = g (mr . MkTupleEditReader EditContext) rt
+    g' mr (MkTupleEditReader SelectContent rt) = lift $ mr $ MkTupleEditReader SelectContent rt
+    g' mr (MkTupleEditReader SelectContext rt) = g (mr . MkTupleEditReader SelectContext) rt
     u' :: forall m. MonadIO m
        => ContextEdit edita editn
        -> MutableRead m (EditReader (ContextEdit edita editn))
        -> t m [ContextEdit editb editn]
-    u' (MkTupleEdit EditContent edit) _ = withTransConstraintTM @MonadIO $ return [MkTupleEdit EditContent edit]
-    u' (MkTupleEdit EditContext edit) mr =
+    u' (MkTupleEdit SelectContent edit) _ = withTransConstraintTM @MonadIO $ return [MkTupleEdit SelectContent edit]
+    u' (MkTupleEdit SelectContext edit) mr =
         withTransConstraintTM @MonadIO $ do
-            edits <- u edit (mr . MkTupleEditReader EditContext)
-            return $ fmap (MkTupleEdit EditContext) edits
+            edits <- u edit (mr . MkTupleEditReader SelectContext)
+            return $ fmap (MkTupleEdit SelectContext) edits
     in MkAnEditFunction g' u'
 
 liftContentEditFunction ::
@@ -155,7 +155,7 @@ liftContentEditFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ liftCo
 carryContextEditFunction ::
        EditFunction (ContextEdit editx edita) editb -> EditFunction (ContextEdit editx edita) (ContextEdit editx editb)
 carryContextEditFunction func =
-    liftContentEditFunction (editLensFunction $ tupleEditLens EditContext) . contextualiseEditFunction func
+    liftContentEditFunction (editLensFunction $ tupleEditLens SelectContext) . contextualiseEditFunction func
 
 liftContentEditLens ::
        forall edita editb editn. EditLens edita editb -> EditLens (ContextEdit edita editn) (ContextEdit editb editn)
@@ -170,12 +170,12 @@ liftContentEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens f pe)) = l
             (exs, ens) ->
                 withTransConstraintTM @MonadIO $
                 getCompose $ do
-                    es1 <- Compose $ pe exs (mr . MkTupleEditReader EditContext)
-                    return $ (fmap (MkTupleEdit EditContext) es1) ++ (fmap (MkTupleEdit EditContent) ens)
+                    es1 <- Compose $ pe exs (mr . MkTupleEditReader SelectContext)
+                    return $ (fmap (MkTupleEdit SelectContext) es1) ++ (fmap (MkTupleEdit SelectContent) ens)
     in MkCloseUnlift unlift (MkAnEditLens f' pe')
 
 carryContextEditLens ::
        (ApplicableEdit editx, ApplicableEdit edita, ApplicableEdit editb)
     => EditLens (ContextEdit editx edita) editb
     -> EditLens (ContextEdit editx edita) (ContextEdit editx editb)
-carryContextEditLens lens = liftContentEditLens (tupleEditLens EditContext) . contextualiseEditLens lens
+carryContextEditLens lens = liftContentEditLens (tupleEditLens SelectContext) . contextualiseEditLens lens

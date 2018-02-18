@@ -32,7 +32,7 @@ testApplyEditsPar =
     testCase "apply edits parallel" $ let
         start = (False, False)
         edits :: [PairEdit (WholeEdit Bool) (WholeEdit Bool)]
-        edits = [MkTupleEdit EditFirst $ MkWholeEdit True, MkTupleEdit EditSecond $ MkWholeEdit True]
+        edits = [MkTupleEdit SelectFirst $ MkWholeEdit True, MkTupleEdit SelectSecond $ MkWholeEdit True]
         expected = (True, True)
         rf = applyEdits edits
         in do
