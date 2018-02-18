@@ -27,6 +27,7 @@ import Truth.UI.GTK.Table
 import Truth.UI.GTK.Text
 import Truth.UI.GTK.Tuple
 import Truth.UI.GTK.Useful
+import Truth.Debug.Object
 
 lastResortView :: UISpec edit -> GCreateView edit
 lastResortView spec = do
@@ -148,11 +149,11 @@ makeViewWindow pc tellclose MkUserInterface {..} = do
             subscribeView (createWindowAndChild userinterfaceSpecifier) userinterfaceSubscriber openSelection
         let
             openSelection :: IO ()
-            openSelection = do
+            openSelection = traceBracket "Selection button" $ do
                 msel <- srGetSelection
                 case msel of
                     Just window -> makeWindowCountRef pc $ MkUserInterface userinterfaceSubscriber window
-                    Nothing -> return ()
+                    Nothing -> traceIOM $ "no selection"
     let
         (window, child) = srWidget
         closeRequest :: IO Bool
