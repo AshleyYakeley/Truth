@@ -68,8 +68,8 @@ maybeNothingValueBijection def = let
     biBackwards a = Just a
     in MkBijection {..}
 
-maybeNothingGeneralLens :: Eq a => a -> EditLens (WholeEdit (Maybe a)) (WholeEdit a)
-maybeNothingGeneralLens def = toEditLens $ maybeNothingValueBijection def
+maybeNothingEditLens :: Eq a => a -> EditLens (WholeEdit (Maybe a)) (WholeEdit a)
+maybeNothingEditLens def = toEditLens $ maybeNothingValueBijection def
 
 uiNothingValue :: Eq a => a -> UISpec (WholeEdit a) -> UISpec (WholeEdit (Maybe a))
-uiNothingValue def = uiLens $ maybeNothingGeneralLens def
+uiNothingValue def = uiLens $ maybeNothingEditLens def

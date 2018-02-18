@@ -51,6 +51,11 @@ instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
         a <- mutableReadToSubject mr
         write $ MkWholeEdit a
 
+lastWholeEdit :: [WholeReaderEdit reader] -> Maybe (ReaderSubject reader)
+lastWholeEdit [] = Nothing
+lastWholeEdit [MkWholeEdit subj] = Just subj
+lastWholeEdit (_:ee) = lastWholeEdit ee
+
 type WholeEdit a = WholeReaderEdit (WholeReader a)
 
 wholeEditFunction :: forall a b. (a -> b) -> EditFunction (WholeEdit a) (WholeEdit b)

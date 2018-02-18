@@ -117,32 +117,44 @@ menuItemAction item action = do
     _ <- on item #activate action
     return ()
 
+makeEmptyWindow :: EditFunction edit (WholeEdit Text) -> CreateView edit Window
+makeEmptyWindow titleEF = do
+    title <- liftOuter $ viewObjectRead $ \mr -> editFunctionRead titleEF mr ReadWhole
+    window <-
+        new
+            Window
+            [#title := title, #windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
+    createViewReceiveUpdates $ \mr edits ->
+        mapUpdates titleEF mr edits $ \_ wedits ->
+            withTransConstraintTM @MonadIO $
+            case lastWholeEdit wedits of
+                Just st -> set window [#title := st]
+                Nothing -> return ()
+    return window
+
 makeViewWindow ::
        (WindowButtons actions)
     => GCreateView edit
     -> ProgramContext
     -> IO ()
-    -> Text
+    -> EditFunction edit (WholeEdit Text)
     -> Subscriber edit actions
     -> IO ()
-makeViewWindow view pc tellclose title sub = do
+makeViewWindow view pc tellclose titleEF sub = do
     rec
-        MkViewSubscription {..} <- subscribeView view sub openSelection
+        MkViewSubscription {..} <- subscribeView ((,) <$> makeEmptyWindow titleEF <*> view) sub openSelection
         let
             openSelection :: IO ()
             openSelection = do
                 msel <- srGetSelection
                 case msel of
                     Just (aspname, uiwSpec) -> let
-                        uiwTitle = aspname <> " of " <> title
+                        uiwTitle = funcEditFunction (\title -> aspname <> " of " <> title) . titleEF
                         uiwSubscriber = sub
                         in makeWindowCountRef pc MkUIWindow {..}
                     Nothing -> return ()
-    window <-
-        new
-            Window
-            [#title := title, #windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
     let
+        (window, child) = srWidget
         closeRequest :: IO Bool
         closeRequest = do
             srCloser
@@ -162,19 +174,19 @@ makeViewWindow view pc tellclose title sub = do
     #packStart box menubar False False 0
     addButtons box srAction
     selectionButton <- makeButton "Selection" openSelection
-        -- this is only correct if srWidget has native scroll support, such as TextView
+        -- this is only correct if child has native scroll support, such as TextView
     sw <- new ScrolledWindow []
-    scrollable <- isScrollable srWidget
+    scrollable <- isScrollable child
     if scrollable
-        then set sw [containerChild := srWidget]
+        then set sw [containerChild := child]
         else do
             viewport <- new Viewport []
-            containerAdd viewport srWidget
+            containerAdd viewport child
             set sw [containerChild := viewport]
     #packStart box selectionButton False False 0
     #packStart box sw True True 0
     set window [containerChild := box]
-    #show srWidget
+    #show child
     #showAll window
 
 data ProgramContext = MkProgramContext
@@ -183,7 +195,12 @@ data ProgramContext = MkProgramContext
     }
 
 makeViewWindowCountRef ::
-       WindowButtons actions => GCreateView edit -> ProgramContext -> Text -> Subscriber edit actions -> IO ()
+       WindowButtons actions
+    => GCreateView edit
+    -> ProgramContext
+    -> EditFunction edit (WholeEdit Text)
+    -> Subscriber edit actions
+    -> IO ()
 makeViewWindowCountRef view pc@MkProgramContext {..} title sub = let
     closer =
         mvarRun pcWindowCount $ do

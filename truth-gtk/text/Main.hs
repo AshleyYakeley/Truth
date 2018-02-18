@@ -34,13 +34,17 @@ fileTextWindow saveOpt path = do
                        Subscriber (OneWholeEdit (Result Text) (StringEdit Text)) (((), SaveActions), UndoActions)
                 undoBufferSub = undoQueueSubscriber bufferSub
             textSub <- makeSharedSubscriber undoBufferSub
-            return $ MkSomeUIWindow $ MkUIWindow (fromString $ takeFileName path) (uiOneWhole uiText) textSub
+            return $
+                MkSomeUIWindow $
+                MkUIWindow (constEditFunction $ fromString $ takeFileName path) (uiOneWhole uiText) textSub
         else do
             let
                 textObj :: Object (OneWholeEdit (Result Text) (StringEdit Text))
                 textObj = convertObject wholeTextObj
             textSub <- makeObjectSubscriber textObj
-            return $ MkSomeUIWindow $ MkUIWindow (fromString $ takeFileName path) (uiOneWhole uiText) textSub
+            return $
+                MkSomeUIWindow $
+                MkUIWindow (constEditFunction $ fromString $ takeFileName path) (uiOneWhole uiText) textSub
 
 optParser :: O.Parser ([FilePath], Bool, Bool)
 optParser = (,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') <*> O.switch (O.long "save")

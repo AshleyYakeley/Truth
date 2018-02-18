@@ -34,7 +34,9 @@ main = do
     args <- getArgs
     options <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
     case options of
-        ExprDocOption -> for_ predefinedDoc $ \(name, desc) -> putStrLn $ (show name) ++ " ::\n    " ++ unpack desc
+        ExprDocOption -> do
+            for_ predefinedDoc $ \(name, desc) -> putStrLn $ (show name) ++ " :: " ++ unpack desc
+            putStrLn $ "<file> :: " ++ unpack filePinaforeType
         RunOption dbpath fpaths ->
             case fpaths of
                 [] -> do

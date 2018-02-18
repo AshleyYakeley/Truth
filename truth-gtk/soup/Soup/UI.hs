@@ -68,7 +68,7 @@ soupObject dirpath = let
 soupWindow :: FilePath -> IO (UIWindow ())
 soupWindow dirpath = do
     let
-        uiwTitle = fromString $ takeFileName $ dropTrailingPathSeparator dirpath
+        uiwTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
         uiwSpec = soupEditSpec
     uiwSubscriber <- makeObjectSubscriber $ soupObject dirpath
     return $ MkUIWindow {..}
