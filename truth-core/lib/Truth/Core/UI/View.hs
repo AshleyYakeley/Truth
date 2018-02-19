@@ -16,6 +16,7 @@ module Truth.Core.UI.View
     , CreateView
     , createViewReceiveUpdates
     , createViewReceiveUpdate
+    , createViewBindEditFunction
     , mapUpdates
     , createViewAddAspect
     , mapCreateViewEdit
@@ -210,6 +211,17 @@ mapUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnEditFunction {..}) mrA edi
             mrB :: MutableRead (t m) (EditReader editb)
             mrB = efGet mrA
         call mrB editsB
+
+createViewBindEditFunction :: EditFunction edit (WholeEdit t) -> (t -> IO ()) -> CreateView edit ()
+createViewBindEditFunction ef setf = do
+    initial <- liftOuter $ viewObjectRead $ \mr -> editFunctionRead ef mr ReadWhole
+    liftIO $ setf initial
+    createViewReceiveUpdates $ \mr edits ->
+        mapUpdates ef mr edits $ \_ wedits ->
+            withTransConstraintTM @MonadIO $
+            case lastWholeEdit wedits of
+                Just newval -> liftIO $ setf newval
+                Nothing -> return ()
 
 createViewAddAspect :: Aspect edit -> CreateView edit ()
 createViewAddAspect aspect = liftInner $ (pure ()) {vrFirstAspect = aspect}

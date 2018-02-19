@@ -62,9 +62,9 @@ wholeEditFunction :: forall a b. (a -> b) -> EditFunction (WholeEdit a) (WholeEd
 wholeEditFunction ab =
     MkCloseUnlift identityUnlift $
     MkAnEditFunction
-    { efGet = \mr ReadWhole -> lift $ fmap ab $ mr ReadWhole
-    , efUpdate = \(MkWholeEdit a) _ -> return [MkWholeEdit $ ab a]
-    }
+        { efGet = \mr ReadWhole -> lift $ fmap ab $ mr ReadWhole
+        , efUpdate = \(MkWholeEdit a) _ -> return [MkWholeEdit $ ab a]
+        }
 
 wholeEditLens ::
        forall mf a b. (MonadOne mf)
@@ -73,17 +73,17 @@ wholeEditLens ::
 wholeEditLens lens =
     MkCloseUnlift identityUnlift $
     MkAnEditLens
-    { elFunction =
-          MkAnEditFunction
-          { efGet = \mr ReadWhole -> lift $ fmap (lensGet lens) $ mr ReadWhole
-          , efUpdate = \(MkWholeEdit a) _ -> return [MkWholeEdit $ lensGet lens a]
-          }
-    , elPutEdits =
-          elPutEditsFromPutEdit $ \(MkWholeEdit b) mr ->
-              lift $ do
-                  olda <- mr ReadWhole
-                  return $ fmap (\newa -> [MkWholeEdit newa]) $ getMaybeOne $ lensPutback lens b olda
-    }
+        { elFunction =
+              MkAnEditFunction
+                  { efGet = \mr ReadWhole -> lift $ fmap (lensGet lens) $ mr ReadWhole
+                  , efUpdate = \(MkWholeEdit a) _ -> return [MkWholeEdit $ lensGet lens a]
+                  }
+        , elPutEdits =
+              elPutEditsFromPutEdit $ \(MkWholeEdit b) mr ->
+                  lift $ do
+                      olda <- mr ReadWhole
+                      return $ fmap (\newa -> [MkWholeEdit newa]) $ getMaybeOne $ lensPutback lens b olda
+        }
 
 instance MonadOne m => IsEditLens (Lens' m a b) where
     type LensDomain (Lens' m a b) = WholeEdit a

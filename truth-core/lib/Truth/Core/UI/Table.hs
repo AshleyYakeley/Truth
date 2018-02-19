@@ -17,11 +17,14 @@ tableCellPlain = let
     in MkTableCellProps {..}
 
 data KeyColumn tedit key = MkKeyColumn
-    { kcName :: Text
+    { kcName :: EditFunction tedit (WholeEdit Text)
     , kcContents :: key -> IO (EditLens tedit (WholeEdit Text), EditFunction tedit (WholeEdit TableCellProps))
     }
 
-readOnlyKeyColumn :: Text -> (key -> IO (EditFunction tedit (WholeEdit (Text, TableCellProps)))) -> KeyColumn tedit key
+readOnlyKeyColumn ::
+       EditFunction tedit (WholeEdit Text)
+    -> (key -> IO (EditFunction tedit (WholeEdit (Text, TableCellProps))))
+    -> KeyColumn tedit key
 readOnlyKeyColumn kcName getter = let
     kcContents key = do
         func <- getter key
@@ -59,7 +62,7 @@ uiSimpleTable ::
 uiSimpleTable cols aspect = uiTable cols (\key -> ioMapAspect (getKeyElementEditLens key) aspect) id
 
 instance Show (UITable edit) where
-    show (MkUITable cols _ _) = "table (" ++ intercalate ", " (fmap (unpack . kcName) cols) ++ ")"
+    show (MkUITable _ _ _) = "table"
 
 instance UIType UITable where
     uiWitness = $(iowitness [t|UITable|])

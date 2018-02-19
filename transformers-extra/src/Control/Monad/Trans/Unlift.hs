@@ -15,6 +15,7 @@ import Control.Monad.Trans.Writer
 import Data.Constraint
 import Data.Kind
 import Data.Tuple
+import Prelude
 
 newtype Unlift (t :: (* -> *) -> * -> *) = MkUnlift
     { runUnlift :: forall (m :: * -> *) (r :: *). MonadUnliftIO m =>

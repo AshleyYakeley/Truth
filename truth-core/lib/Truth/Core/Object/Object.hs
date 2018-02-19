@@ -152,8 +152,8 @@ pairObjects (MkObject (runA :: UnliftIO ma) readA editA) (MkObject (runB :: Unli
             runAB :: UnliftIO (CombineMonadIO ma mb)
             runAB = combineUnliftIOs runA runB
             readAB :: MutableRead (CombineMonadIO ma mb) (PairEditReader edita editb)
-            readAB (MkTupleEditReader EditFirst r) = combineLiftFst @ma @mb $ readA r
-            readAB (MkTupleEditReader EditSecond r) = combineLiftSnd @ma @mb $ readB r
+            readAB (MkTupleEditReader SelectFirst r) = combineLiftFst @ma @mb $ readA r
+            readAB (MkTupleEditReader SelectSecond r) = combineLiftSnd @ma @mb $ readB r
             editAB :: [PairEdit edita editb] -> CombineMonadIO ma mb (Maybe (CombineMonadIO ma mb ()))
             editAB edits = let
                 (eas, ebs) = partitionPairEdits edits

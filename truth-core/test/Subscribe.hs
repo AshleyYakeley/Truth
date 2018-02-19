@@ -1,4 +1,5 @@
 {-# OPTIONS -fno-warn-orphans #-}
+{-# LANGUAGE NoOverloadedStrings #-}
 
 module Subscribe
     ( testSubscribe
@@ -141,8 +142,8 @@ testPair =
         subscribeEditor sub $
         testOutputEditor "main" $ \MkSubscribeContext {..} -> do
             ?showVar
-            ?showExpected [MkTupleEdit EditFirst $ MkWholeEdit True, MkTupleEdit EditSecond $ MkWholeEdit True]
-            subDoEdits [[MkTupleEdit EditFirst $ MkWholeEdit True, MkTupleEdit EditSecond $ MkWholeEdit True]]
+            ?showExpected [MkTupleEdit SelectFirst $ MkWholeEdit True, MkTupleEdit SelectSecond $ MkWholeEdit True]
+            subDoEdits [[MkTupleEdit SelectFirst $ MkWholeEdit True, MkTupleEdit SelectSecond $ MkWholeEdit True]]
             ?showVar
 
 testString :: TestTree

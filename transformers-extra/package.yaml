@@ -1,0 +1,20 @@
+name: transformers-extra
+version: "0.1"
+_common: !include "../common.yaml"
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: src
+    dependencies:
+      - base >= 4.9 && < 5
+      - constraints
+      - transformers
+    exposed-modules:
+      - Control.Monad.Trans.Constraint
+      - Control.Monad.Trans.Tunnel
+      - Control.Monad.Trans.Unlift
+      - Control.Monad.Trans.Compose
+      - Control.Monad.Trans.Free
+      - Control.Monad.Trans.StackIO

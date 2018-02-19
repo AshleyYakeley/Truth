@@ -71,12 +71,12 @@ instance Eq subj => JoinSemiLatticeEdit (FiniteSetEdit subj) where
         efGet ::
                ReadFunctionT IdentityT (PairEditReader (FiniteSetEdit subj) (FiniteSetEdit subj)) (FiniteSetReader subj)
         efGet mr KeyReadKeys = do
-            keys1 <- lift $ mr $ MkTupleEditReader EditFirst KeyReadKeys
-            keys2 <- lift $ mr $ MkTupleEditReader EditSecond KeyReadKeys
+            keys1 <- lift $ mr $ MkTupleEditReader SelectFirst KeyReadKeys
+            keys2 <- lift $ mr $ MkTupleEditReader SelectSecond KeyReadKeys
             return $ keys1 \/ keys2
         efGet mr (KeyReadItem item ReadWhole) = do
-            (isJust -> r1) <- lift $ mr $ MkTupleEditReader EditFirst $ KeyReadItem item ReadWhole
-            (isJust -> r2) <- lift $ mr $ MkTupleEditReader EditSecond $ KeyReadItem item ReadWhole
+            (isJust -> r1) <- lift $ mr $ MkTupleEditReader SelectFirst $ KeyReadItem item ReadWhole
+            (isJust -> r2) <- lift $ mr $ MkTupleEditReader SelectSecond $ KeyReadItem item ReadWhole
             return $
                 if r1 \/ r2
                     then Just item
@@ -86,43 +86,43 @@ instance Eq subj => JoinSemiLatticeEdit (FiniteSetEdit subj) where
             => PairEdit (FiniteSetEdit subj) (FiniteSetEdit subj)
             -> MutableRead m (EditReader (PairEdit (FiniteSetEdit subj) (FiniteSetEdit subj)))
             -> IdentityT m [FiniteSetEdit subj]
-        efUpdate (MkTupleEdit EditFirst (KeyEditItem _ edit)) _ = never edit
-        efUpdate (MkTupleEdit EditFirst (KeyDeleteItem item)) mr = do
-            (isJust -> r2) <- lift $ mr $ MkTupleEditReader EditSecond $ KeyReadItem item ReadWhole
+        efUpdate (MkTupleEdit SelectFirst (KeyEditItem _ edit)) _ = never edit
+        efUpdate (MkTupleEdit SelectFirst (KeyDeleteItem item)) mr = do
+            (isJust -> r2) <- lift $ mr $ MkTupleEditReader SelectSecond $ KeyReadItem item ReadWhole
             return $
                 if r2
                     then []
                     else [KeyDeleteItem item]
-        efUpdate (MkTupleEdit EditFirst (KeyInsertReplaceItem item)) mr = do
-            (isJust -> r2) <- lift $ mr $ MkTupleEditReader EditSecond $ KeyReadItem item ReadWhole
+        efUpdate (MkTupleEdit SelectFirst (KeyInsertReplaceItem item)) mr = do
+            (isJust -> r2) <- lift $ mr $ MkTupleEditReader SelectSecond $ KeyReadItem item ReadWhole
             return $
                 if r2
                     then []
                     else [KeyInsertReplaceItem item]
-        efUpdate (MkTupleEdit EditFirst KeyClear) mr = do
-            keys1 <- lift $ mr $ MkTupleEditReader EditFirst KeyReadKeys
-            keys2 <- lift $ mr $ MkTupleEditReader EditSecond KeyReadKeys
+        efUpdate (MkTupleEdit SelectFirst KeyClear) mr = do
+            keys1 <- lift $ mr $ MkTupleEditReader SelectFirst KeyReadKeys
+            keys2 <- lift $ mr $ MkTupleEditReader SelectSecond KeyReadKeys
             return $
                 case (null keys1, null keys2) of
                     (True, _) -> []
                     (False, True) -> [KeyClear]
                     (False, False) -> fmap KeyDeleteItem $ toList $ difference keys1 keys2
-        efUpdate (MkTupleEdit EditSecond (KeyEditItem _ edit)) _ = never edit
-        efUpdate (MkTupleEdit EditSecond (KeyDeleteItem item)) mr = do
-            (isJust -> r1) <- lift $ mr $ MkTupleEditReader EditFirst $ KeyReadItem item ReadWhole
+        efUpdate (MkTupleEdit SelectSecond (KeyEditItem _ edit)) _ = never edit
+        efUpdate (MkTupleEdit SelectSecond (KeyDeleteItem item)) mr = do
+            (isJust -> r1) <- lift $ mr $ MkTupleEditReader SelectFirst $ KeyReadItem item ReadWhole
             return $
                 if r1
                     then []
                     else [KeyDeleteItem item]
-        efUpdate (MkTupleEdit EditSecond (KeyInsertReplaceItem item)) mr = do
-            (isJust -> r1) <- lift $ mr $ MkTupleEditReader EditFirst $ KeyReadItem item ReadWhole
+        efUpdate (MkTupleEdit SelectSecond (KeyInsertReplaceItem item)) mr = do
+            (isJust -> r1) <- lift $ mr $ MkTupleEditReader SelectFirst $ KeyReadItem item ReadWhole
             return $
                 if r1
                     then []
                     else [KeyInsertReplaceItem item]
-        efUpdate (MkTupleEdit EditSecond KeyClear) mr = do
-            keys2 <- lift $ mr $ MkTupleEditReader EditSecond KeyReadKeys
-            keys1 <- lift $ mr $ MkTupleEditReader EditFirst KeyReadKeys
+        efUpdate (MkTupleEdit SelectSecond KeyClear) mr = do
+            keys2 <- lift $ mr $ MkTupleEditReader SelectSecond KeyReadKeys
+            keys1 <- lift $ mr $ MkTupleEditReader SelectFirst KeyReadKeys
             return $
                 case (null keys2, null keys1) of
                     (True, _) -> []
@@ -135,12 +135,12 @@ instance Eq subj => MeetSemiLatticeEdit (FiniteSetEdit subj) where
         efGet ::
                ReadFunctionT IdentityT (PairEditReader (FiniteSetEdit subj) (FiniteSetEdit subj)) (FiniteSetReader subj)
         efGet mr KeyReadKeys = do
-            keys1 <- lift $ mr $ MkTupleEditReader EditFirst KeyReadKeys
-            keys2 <- lift $ mr $ MkTupleEditReader EditSecond KeyReadKeys
+            keys1 <- lift $ mr $ MkTupleEditReader SelectFirst KeyReadKeys
+            keys2 <- lift $ mr $ MkTupleEditReader SelectSecond KeyReadKeys
             return $ keys1 /\ keys2
         efGet mr (KeyReadItem item ReadWhole) = do
-            (isJust -> r1) <- lift $ mr $ MkTupleEditReader EditFirst $ KeyReadItem item ReadWhole
-            (isJust -> r2) <- lift $ mr $ MkTupleEditReader EditSecond $ KeyReadItem item ReadWhole
+            (isJust -> r1) <- lift $ mr $ MkTupleEditReader SelectFirst $ KeyReadItem item ReadWhole
+            (isJust -> r2) <- lift $ mr $ MkTupleEditReader SelectSecond $ KeyReadItem item ReadWhole
             return $
                 if r1 /\ r2
                     then Just item
@@ -150,42 +150,42 @@ instance Eq subj => MeetSemiLatticeEdit (FiniteSetEdit subj) where
             => PairEdit (FiniteSetEdit subj) (FiniteSetEdit subj)
             -> MutableRead m (EditReader (PairEdit (FiniteSetEdit subj) (FiniteSetEdit subj)))
             -> IdentityT m [FiniteSetEdit subj]
-        efUpdate (MkTupleEdit EditFirst (KeyEditItem _ edit)) _ = never edit
-        efUpdate (MkTupleEdit EditFirst (KeyDeleteItem item)) mr = do
-            (isJust -> r2) <- lift $ mr $ MkTupleEditReader EditSecond $ KeyReadItem item ReadWhole
+        efUpdate (MkTupleEdit SelectFirst (KeyEditItem _ edit)) _ = never edit
+        efUpdate (MkTupleEdit SelectFirst (KeyDeleteItem item)) mr = do
+            (isJust -> r2) <- lift $ mr $ MkTupleEditReader SelectSecond $ KeyReadItem item ReadWhole
             return $
                 if r2
                     then [KeyDeleteItem item]
                     else []
-        efUpdate (MkTupleEdit EditFirst (KeyInsertReplaceItem item)) mr = do
-            (isJust -> r2) <- lift $ mr $ MkTupleEditReader EditSecond $ KeyReadItem item ReadWhole
+        efUpdate (MkTupleEdit SelectFirst (KeyInsertReplaceItem item)) mr = do
+            (isJust -> r2) <- lift $ mr $ MkTupleEditReader SelectSecond $ KeyReadItem item ReadWhole
             return $
                 if r2
                     then [KeyInsertReplaceItem item]
                     else []
-        efUpdate (MkTupleEdit EditFirst KeyClear) mr = do
-            keys1 <- lift $ mr $ MkTupleEditReader EditFirst KeyReadKeys
-            keys2 <- lift $ mr $ MkTupleEditReader EditSecond KeyReadKeys
+        efUpdate (MkTupleEdit SelectFirst KeyClear) mr = do
+            keys1 <- lift $ mr $ MkTupleEditReader SelectFirst KeyReadKeys
+            keys2 <- lift $ mr $ MkTupleEditReader SelectSecond KeyReadKeys
             return $
                 if null $ keys1 /\ keys2
                     then []
                     else [KeyClear]
-        efUpdate (MkTupleEdit EditSecond (KeyEditItem _ edit)) _ = never edit
-        efUpdate (MkTupleEdit EditSecond (KeyDeleteItem item)) mr = do
-            (isJust -> r1) <- lift $ mr $ MkTupleEditReader EditFirst $ KeyReadItem item ReadWhole
+        efUpdate (MkTupleEdit SelectSecond (KeyEditItem _ edit)) _ = never edit
+        efUpdate (MkTupleEdit SelectSecond (KeyDeleteItem item)) mr = do
+            (isJust -> r1) <- lift $ mr $ MkTupleEditReader SelectFirst $ KeyReadItem item ReadWhole
             return $
                 if r1
                     then [KeyDeleteItem item]
                     else []
-        efUpdate (MkTupleEdit EditSecond (KeyInsertReplaceItem item)) mr = do
-            (isJust -> r1) <- lift $ mr $ MkTupleEditReader EditFirst $ KeyReadItem item ReadWhole
+        efUpdate (MkTupleEdit SelectSecond (KeyInsertReplaceItem item)) mr = do
+            (isJust -> r1) <- lift $ mr $ MkTupleEditReader SelectFirst $ KeyReadItem item ReadWhole
             return $
                 if r1
                     then [KeyInsertReplaceItem item]
                     else []
-        efUpdate (MkTupleEdit EditSecond KeyClear) mr = do
-            keys2 <- lift $ mr $ MkTupleEditReader EditSecond KeyReadKeys
-            keys1 <- lift $ mr $ MkTupleEditReader EditFirst KeyReadKeys
+        efUpdate (MkTupleEdit SelectSecond KeyClear) mr = do
+            keys2 <- lift $ mr $ MkTupleEditReader SelectSecond KeyReadKeys
+            keys1 <- lift $ mr $ MkTupleEditReader SelectFirst KeyReadKeys
             return $
                 if null $ keys2 /\ keys1
                     then []

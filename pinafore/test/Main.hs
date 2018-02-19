@@ -13,7 +13,7 @@ import Test.Tasty.HUnit
     -- for test only
 
 instance Eq QValue where
-    (MkAny QLiteral a1) == (MkAny QLiteral a2) = a1 == a2
+    (MkAny QConstant a1) == (MkAny QConstant a2) = a1 == a2
     _ == _ = error "QValue: not comparable"
 
 testQueryValue :: (Eq a, Show a) => String -> QExpr a -> Maybe a -> TestTree
@@ -120,6 +120,8 @@ testQueries =
         , testQuery "let a=1;b=a;a=3 in a" $ Nothing
         , testQuery "let a=1 in let b=a in let a=3 in b" $ Just "1"
         , testQuery "let a=1;b=a;a=3 in b" $ Nothing
+        -- operators
+        , testQuery "\"abc\" ++ \"def\"" $ Just "abcdef"
         ]
 
 tests :: TestTree

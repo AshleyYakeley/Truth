@@ -17,18 +17,18 @@ sumWholeLiftAnEditFunction ::
     -> AnEditFunction t (SumWholeEdit edita) (SumWholeEdit editb)
 sumWholeLiftAnEditFunction fef =
     MkAnEditFunction
-    { efGet = efGet fef
-    , efUpdate =
-          \pedita mr ->
-              withTransConstraintTM @MonadIO $
-              case pedita of
-                  SumEditLeft (MkWholeEdit a) -> do
-                      b <- mutableReadToSubject $ efGet fef $ subjectToMutableRead a
-                      return [SumEditLeft $ MkWholeEdit b]
-                  SumEditRight edita -> do
-                      editbs <- efUpdate fef edita mr
-                      return $ fmap SumEditRight editbs
-    }
+        { efGet = efGet fef
+        , efUpdate =
+              \pedita mr ->
+                  withTransConstraintTM @MonadIO $
+                  case pedita of
+                      SumEditLeft (MkWholeEdit a) -> do
+                          b <- mutableReadToSubject $ efGet fef $ subjectToMutableRead a
+                          return [SumEditLeft $ MkWholeEdit b]
+                      SumEditRight edita -> do
+                          editbs <- efUpdate fef edita mr
+                          return $ fmap SumEditRight editbs
+        }
 
 sumWholeLiftEditFunction ::
        forall edita editb. (SubjectReader (EditReader edita), FullSubjectReader (EditReader editb))
@@ -63,4 +63,4 @@ sumWholeLiftAnEditLens pushback lens = let
                 mstateedita <- elPutEdits lens [editb] mr
                 return $ fmap (fmap SumEditRight) mstateedita
     in MkAnEditLens
-       {elFunction = sumWholeLiftAnEditFunction (elFunction lens), elPutEdits = elPutEditsFromPutEdit elPutEdit}
+           {elFunction = sumWholeLiftAnEditFunction (elFunction lens), elPutEdits = elPutEditsFromPutEdit elPutEdit}

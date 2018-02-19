@@ -144,7 +144,10 @@ readInfix =
          return $ pure $ toQValue qmeet) <|>
     (do
          readCharAndWS '|'
-         return $ pure $ toQValue qjoin) <?>
+         return $ pure $ toQValue qjoin) <|>
+    (do
+         readStringAndWS "++"
+         return $ pure $ toQValue qappend) <?>
     "infix operator"
 
 readExpression :: Parser QValueExpr

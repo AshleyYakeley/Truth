@@ -15,6 +15,7 @@ import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import Data.Constraint
 import Data.Kind
+import Data.Monoid
 
 class MonadTrans t =>
       MonadTransConstraint (c :: (* -> *) -> Constraint) t where

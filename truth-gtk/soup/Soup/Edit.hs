@@ -58,12 +58,12 @@ directorySoup (MkObject (runFS :: UnliftIO m) readFS pushFS) dirpath =
                     case mnames of
                         Just names -> mapMaybe nameToUUID $ MkFiniteSet names
                         Nothing -> mempty
-            readSoup (KeyReadItem uuid (MkTupleEditReader EditFirst ReadWhole)) = do
+            readSoup (KeyReadItem uuid (MkTupleEditReader SelectFirst ReadWhole)) = do
                 mitem <- combineLiftFst $ readFS $ FSReadItem $ dirpath </> uuidToName uuid
                 case mitem of
                     Just (FSFileItem _) -> return $ Just uuid
                     _ -> return Nothing
-            readSoup (KeyReadItem uuid (MkTupleEditReader EditSecond ReadObject)) = do
+            readSoup (KeyReadItem uuid (MkTupleEditReader SelectSecond ReadObject)) = do
                 let path = dirpath </> uuidToName uuid
                 mitem <- combineLiftFst $ readFS $ FSReadItem path
                 case mitem of
@@ -79,8 +79,8 @@ directorySoup (MkObject (runFS :: UnliftIO m) readFS pushFS) dirpath =
                     fmap (fmap combineLiftFst) $
                     combineLiftFst $
                     case edit of
-                        KeyEditItem _uuid (MkTupleEdit EditFirst iedit) -> never iedit
-                        KeyEditItem _uuid (MkTupleEdit EditSecond iedit) -> never iedit
+                        KeyEditItem _uuid (MkTupleEdit SelectFirst iedit) -> never iedit
+                        KeyEditItem _uuid (MkTupleEdit SelectSecond iedit) -> never iedit
                         KeyDeleteItem uuid -> pushFS [FSEditDeleteNonDirectory $ dirpath </> uuidToName uuid]
                         KeyInsertReplaceItem (uuid, bs) -> pushFS [FSEditCreateFile (dirpath </> uuidToName uuid) bs]
                         KeyClear -> do

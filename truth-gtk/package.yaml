@@ -1,0 +1,118 @@
+name: truth-gtk
+version: "0.1"
+_common: !include "../common.yaml"
+<<: *author
+
+<<: *language
+
+flags:
+    build-examples:
+        description: Build examples
+        default: False
+        manual: False
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.9 && < 5
+      - bytestring
+      - text
+      - transformers
+      - mono-traversable
+      - countable
+      - witness
+      - open-witness
+      - haskell-gi-base
+      - gi-glib
+      - gi-gobject
+      - gi-gdk
+      - gi-pango
+      - gi-gtk
+      - gi-gtk-hs
+      - shapes
+      - truth-core
+    exposed-modules:
+      - Truth.UI.GTK
+    other-modules:
+      - Truth.UI.GTK.Useful
+      - Truth.UI.GTK.GView
+      - Truth.UI.GTK.Window
+      - Truth.UI.GTK.CSS
+      - Truth.UI.GTK.Icon
+      - Truth.UI.GTK.Label
+      - Truth.UI.GTK.Maybe
+      - Truth.UI.GTK.Switch
+      - Truth.UI.GTK.CheckButton
+      - Truth.UI.GTK.Option
+      - Truth.UI.GTK.Entry
+      - Truth.UI.GTK.Text
+      - Truth.UI.GTK.Tuple
+      - Truth.UI.GTK.Pages
+      - Truth.UI.GTK.Table
+      - Truth.UI.GTK.Drag
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.9 && < 5
+          - bytestring
+          - transformers
+          - mono-traversable
+          - countable
+          - witness
+          - open-witness
+          - glib
+          - gtk3
+          - shapes
+          - truth-core
+          - truth-gtk
+          - QuickCheck
+          - tasty
+          - tasty-hunit
+        main: Main.hs
+        other-modules:
+
+executables:
+    truth-text:
+        when:
+          - condition: "!flag(build-examples)"
+            buildable: False
+        source-dirs: text
+        dependencies:
+          - base >= 4.9 && < 5
+          - filepath
+          - bytestring
+          - uuid
+          - aeson
+          - glib
+          - gtk3
+          - shapes
+          - truth-core
+          - truth-gtk
+          - optparse-applicative
+        main: Main.hs
+        other-modules:
+    truth-soup:
+        when:
+          - condition: "!flag(build-examples)"
+            buildable: False
+        source-dirs: soup
+        dependencies:
+          - base >= 4.9 && < 5
+          - filepath
+          - bytestring
+          - uuid
+          - aeson
+          - glib
+          - gtk3
+          - shapes
+          - truth-core
+          - truth-gtk
+          - optparse-applicative
+        main: Main.hs
+        other-modules:
+          - Soup
+          - Soup.Note
+          - Soup.Edit
+          - Soup.UI

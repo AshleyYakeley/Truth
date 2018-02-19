@@ -20,12 +20,12 @@ instance Category Injection where
     id = MkInjection {injForwards = id, injBackwards = Just}
     bc . ab =
         MkInjection
-        { injForwards = (injForwards bc) . (injForwards ab)
-        , injBackwards =
-              \c -> do
-                  b <- injBackwards bc c
-                  injBackwards ab b
-        }
+            { injForwards = (injForwards bc) . (injForwards ab)
+            , injBackwards =
+                  \c -> do
+                      b <- injBackwards bc c
+                      injBackwards ab b
+            }
 
 instance (Traversable f) => CatFunctor Injection f where
     cfmap lens = MkInjection {injForwards = fmap (injForwards lens), injBackwards = traverse (injBackwards lens)}

@@ -270,7 +270,7 @@ getKeyValueEditLens ::
     -> IO (EditLens (KeyEdit cont (PairEdit keyedit valueedit)) (MaybeEdit valueedit))
 getKeyValueEditLens key = do
     lens <- getKeyElementEditLens key
-    return $ (oneWholeLiftEditLens $ tupleEditLens EditSecond) . lens
+    return $ (oneWholeLiftEditLens $ tupleEditLens SelectSecond) . lens
 
 liftKeyElementAnEditFunction ::
        forall t conta contb edita editb.
@@ -371,36 +371,36 @@ contextKeyEditLens = let
            ()
         -> KeyReader cont (ContextEditReader editx edit) t
         -> Readable (ContextEditReader editx (KeyEdit cont edit)) t
-    editGet () KeyReadKeys = readable $ MkTupleEditReader EditContent KeyReadKeys
-    editGet () (KeyReadItem _ (MkTupleEditReader EditContext reader)) =
-        fmap Just $ readable $ MkTupleEditReader EditContext reader
-    editGet () (KeyReadItem key (MkTupleEditReader EditContent reader)) =
-        readable $ MkTupleEditReader EditContent $ KeyReadItem key reader
+    editGet () KeyReadKeys = readable $ MkTupleEditReader SelectContent KeyReadKeys
+    editGet () (KeyReadItem _ (MkTupleEditReader SelectContext reader)) =
+        fmap Just $ readable $ MkTupleEditReader SelectContext reader
+    editGet () (KeyReadItem key (MkTupleEditReader SelectContent reader)) =
+        readable $ MkTupleEditReader SelectContent $ KeyReadItem key reader
     editUpdate ::
            ContextEdit editx (KeyEdit cont edit)
         -> ()
         -> Readable (ContextEditReader editx (KeyEdit cont edit)) ((), [KeyEdit cont (ContextEdit editx edit)])
-    editUpdate (MkTupleEdit EditContext edit) () = do
-        MkFiniteSet kk <- readable $ MkTupleEditReader EditContent KeyReadKeys
-        return $ pure $ fmap (\key -> KeyEditItem key $ MkTupleEdit EditContext edit) kk
-    editUpdate (MkTupleEdit EditContent (KeyEditItem key edit)) () =
-        return $ pure [KeyEditItem key (MkTupleEdit EditContent edit)]
-    editUpdate (MkTupleEdit EditContent (KeyDeleteItem key)) () = return $ pure [KeyDeleteItem key]
-    editUpdate (MkTupleEdit EditContent (KeyInsertReplaceItem el)) () = return $ pure [KeyInsertReplaceItem el]
-    editUpdate (MkTupleEdit EditContent KeyClear) () = return $ pure [KeyClear]
+    editUpdate (MkTupleEdit SelectContext edit) () = do
+        MkFiniteSet kk <- readable $ MkTupleEditReader SelectContent KeyReadKeys
+        return $ pure $ fmap (\key -> KeyEditItem key $ MkTupleEdit SelectContext edit) kk
+    editUpdate (MkTupleEdit SelectContent (KeyEditItem key edit)) () =
+        return $ pure [KeyEditItem key (MkTupleEdit SelectContent edit)]
+    editUpdate (MkTupleEdit SelectContent (KeyDeleteItem key)) () = return $ pure [KeyDeleteItem key]
+    editUpdate (MkTupleEdit SelectContent (KeyInsertReplaceItem el)) () = return $ pure [KeyInsertReplaceItem el]
+    editUpdate (MkTupleEdit SelectContent KeyClear) () = return $ pure [KeyClear]
     editLensFunction = MkEditFunction {..}
     editLensPutEdit ::
            ()
         -> KeyEdit cont (ContextEdit editx edit)
         -> Readable (ContextEditReader editx (KeyEdit cont edit)) (Maybe ((), [ContextEdit editx (KeyEdit cont edit)]))
-    editLensPutEdit () (KeyEditItem _ (MkTupleEdit EditContext edit)) =
-        return $ pure $ pure [MkTupleEdit EditContext edit]
-    editLensPutEdit () (KeyEditItem key (MkTupleEdit EditContent edit)) =
-        return $ pure $ pure [MkTupleEdit EditContent $ KeyEditItem key edit]
-    editLensPutEdit () (KeyDeleteItem key) = return $ pure $ pure [MkTupleEdit EditContent $ KeyDeleteItem key]
+    editLensPutEdit () (KeyEditItem _ (MkTupleEdit SelectContext edit)) =
+        return $ pure $ pure [MkTupleEdit SelectContext edit]
+    editLensPutEdit () (KeyEditItem key (MkTupleEdit SelectContent edit)) =
+        return $ pure $ pure [MkTupleEdit SelectContent $ KeyEditItem key edit]
+    editLensPutEdit () (KeyDeleteItem key) = return $ pure $ pure [MkTupleEdit SelectContent $ KeyDeleteItem key]
     editLensPutEdit () (KeyInsertReplaceItem el) =
-        return $ pure $ pure [MkTupleEdit EditContent $ KeyInsertReplaceItem el]
-    editLensPutEdit () KeyClear = return $ pure $ pure [MkTupleEdit EditContent KeyClear]
+        return $ pure $ pure [MkTupleEdit SelectContent $ KeyInsertReplaceItem el]
+    editLensPutEdit () KeyClear = return $ pure $ pure [MkTupleEdit SelectContent KeyClear]
     in MkEditLens {..}
 
 contextKeyGeneralLens :: EditLens (ContextEdit editx (KeyEdit cont edit)) (KeyEdit cont (ContextEdit editx edit))

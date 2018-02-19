@@ -128,17 +128,8 @@ menuItemAction item action = do
 
 createWindowAndChild :: UIWindow edit -> CreateView edit (Window, Widget)
 createWindowAndChild MkUIWindow {..} = do
-    title <- liftOuter $ viewObjectRead $ \mr -> editFunctionRead uiTitle mr ReadWhole
-    window <-
-        new
-            Window
-            [#title := title, #windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
-    createViewReceiveUpdates $ \mr edits ->
-        mapUpdates uiTitle mr edits $ \_ wedits ->
-            withTransConstraintTM @MonadIO $
-            case lastWholeEdit wedits of
-                Just st -> set window [#title := st]
-                Nothing -> return ()
+    window <- new Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
+    createViewBindEditFunction uiTitle $ \title -> set window [#title := title]
     content <- getTheView uiContent
     return (window, content)
 

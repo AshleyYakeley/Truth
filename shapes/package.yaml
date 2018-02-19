@@ -1,0 +1,47 @@
+name: shapes
+version: "0.1"
+_common: !include "../common.yaml"
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: src
+    dependencies:
+      - base >= 4.9 && < 5
+      - constraints
+      - mono-traversable
+      - comonad
+      - lattices
+      - transformers
+      - transformers-extra
+      - hashable
+      - containers
+      - unordered-containers
+      - bytestring
+      - cereal
+      - text
+      - cereal-text
+      - random
+      - countable
+      - witness
+      - open-witness
+    exposed-modules:
+      - Data.Filterable
+      - Data.Witness.All
+      - Data.CatFunctor
+      - Data.Result
+      - Data.MonadOne
+      - Data.HasNewValue
+      - Data.Injection
+      - Data.Bijection
+      - Data.Lens
+      - Data.Store
+      - Data.ConstFunction
+      - Data.Codec
+      - Data.Compose
+      - Data.KeyContainer
+      - Data.FiniteSet
+      - Shapes
+    other-modules:
+      - Shapes.Import
