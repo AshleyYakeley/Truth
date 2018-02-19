@@ -30,24 +30,24 @@ type Lens = Lens' Maybe
 instance IsBiMap Lens' where
     mapBiMapM ff lens =
         MkLens
-        { lensGet = lensGet lens
-        , lensPutback =
-              \b -> do
-                  ma <- lensPutback lens b
-                  return (ff ma)
-        }
+            { lensGet = lensGet lens
+            , lensPutback =
+                  \b -> do
+                      ma <- lensPutback lens b
+                      return (ff ma)
+            }
 
 instance (Applicative m, MonadOne m) => Category (Lens' m) where
     id = MkLens {lensGet = id, lensPutback = \b _ -> pure b}
     bc . ab =
         MkLens
-        { lensGet = (lensGet bc) . (lensGet ab)
-        , lensPutback =
-              \c a ->
-                  case retrieveOne (lensPutback bc c (lensGet ab a)) of
-                      SuccessResult b -> lensPutback ab b a
-                      FailureResult (MkLimit ff) -> ff
-        }
+            { lensGet = (lensGet bc) . (lensGet ab)
+            , lensPutback =
+                  \c a ->
+                      case retrieveOne (lensPutback bc c (lensGet ab a)) of
+                          SuccessResult b -> lensPutback ab b a
+                          FailureResult (MkLimit ff) -> ff
+            }
 
 instance (Traversable f, Applicative f, Applicative m) => CatFunctor (Lens' m) f where
     cfmap lens =
@@ -68,15 +68,15 @@ sndLens = let
 pickLens :: (Eq p) => p -> Lens' Identity (p -> a) a
 pickLens p =
     MkLens
-    { lensGet = \pa -> pa p
-    , lensPutback =
-          \a pa ->
-              Identity
-                  (\p' ->
-                       if p == p'
-                           then a
-                           else pa p')
-    }
+        { lensGet = \pa -> pa p
+        , lensPutback =
+              \a pa ->
+                  Identity
+                      (\p' ->
+                           if p == p'
+                               then a
+                               else pa p')
+        }
 
 bijectionLens :: Bijection a b -> Lens' Identity a b
 bijectionLens (MkBijection ab ba) = MkLens ab (\b _ -> return (ba b))

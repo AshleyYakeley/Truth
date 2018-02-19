@@ -50,13 +50,13 @@ instance UnliftCategory APinaforeFunctionMorphism where
         in MkAPinaforeFunctionMorphism {..}
     ucCompose (MkAPinaforeFunctionMorphism lbc ubc) (MkAPinaforeFunctionMorphism lab uab) =
         MkAPinaforeFunctionMorphism
-        { pfFuncRead =
-              \mr a ->
-                  withTransConstraintTM @MonadIO $ do
-                      b <- lift2ComposeT'' $ lab mr a
-                      lift1ComposeT $ lbc mr b
-        , pfUpdate = \edit -> uab edit || ubc edit
-        }
+            { pfFuncRead =
+                  \mr a ->
+                      withTransConstraintTM @MonadIO $ do
+                          b <- lift2ComposeT'' $ lab mr a
+                          lift1ComposeT $ lbc mr b
+            , pfUpdate = \edit -> uab edit || ubc edit
+            }
 
 instance Arrow PinaforeFunctionMorphism where
     arr ab =
