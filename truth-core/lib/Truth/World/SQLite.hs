@@ -1,5 +1,4 @@
 {-# OPTIONS -fno-warn-orphans #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Truth.World.SQLite
     ( module Truth.World.SQLite

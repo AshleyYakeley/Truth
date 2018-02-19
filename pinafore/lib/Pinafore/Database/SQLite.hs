@@ -1,5 +1,4 @@
 {-# OPTIONS -fno-warn-orphans #-}
-{-# LANGUAGE EmptyCase #-}
 
 module Pinafore.Database.SQLite
     ( sqlitePinaforeObject

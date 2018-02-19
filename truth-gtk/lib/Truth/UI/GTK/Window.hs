@@ -1,5 +1,3 @@
-{-# LANGUAGE ViewPatterns, FlexibleContexts #-}
-
 module Truth.UI.GTK.Window
     ( WindowButtons(..)
     , SomeUIWindow(..)
