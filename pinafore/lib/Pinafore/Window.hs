@@ -1,8 +1,8 @@
 module Pinafore.Window where
 
+import Pinafore.Database.SQLite
 import Pinafore.Edit
 import Pinafore.Query
-import Pinafore.SQLite
 import Shapes
 import Truth.Core
 

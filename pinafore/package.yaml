@@ -33,7 +33,8 @@ library:
       - Pinafore.Morphism
       - Pinafore.Query.Read
       - Pinafore.Query.Predefined
-      - Pinafore.SQLite
+      - Pinafore.Database
+      - Pinafore.Database.SQLite
 
 tests:
     test:
