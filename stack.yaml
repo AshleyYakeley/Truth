@@ -4,10 +4,6 @@ packages:
 - truth-core
 - truth-gtk
 - pinafore
-- location:
-    git: git@github.com:AshleyYakeley/hindent.git
-    commit: 5c451ddcd044acc6a1df893b9e29b10f451c6892
-  extra-dep: true
 
 resolver: lts-9.12
 
@@ -16,6 +12,8 @@ extra-deps:
 - mime-0.4.0.2
 - haskell-src-exts-1.20.1
 - gi-gtk-hs-0.3.5.0
+- git: git@github.com:AshleyYakeley/hindent.git
+  commit: 5c451ddcd044acc6a1df893b9e29b10f451c6892
 
 flags:
     truth-gtk:
