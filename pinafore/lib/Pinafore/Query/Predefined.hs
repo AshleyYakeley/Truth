@@ -86,7 +86,8 @@ pd :: forall t. ToQValue t
 pd name _ = (name, qTypeDescriptionTo @t)
 
 predefinedDoc :: [(Symbol, Text)]
-predefinedDoc = [pd "($)" qapply, pd "(.)" qcombine, pd "(&)" qmeet, pd "(|)" qjoin] ++ fmap snd predefinitions
+predefinedDoc =
+    [pd "($)" qapply, pd "(.)" qcombine, pd "(&)" qmeet, pd "(|)" qjoin, pd "(++)" qappend] ++ fmap snd predefinitions
 
 predefinedBindings :: QBindings
 predefinedBindings = mconcat $ fmap fst predefinitions

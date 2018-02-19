@@ -84,6 +84,12 @@ readOnlyEditLens (MkCloseUnlift unlift elFunction) = let
     elPutEdits (_:_) _ = withTransConstraintTM @MonadIO $ return Nothing
     in MkCloseUnlift unlift $ MkAnEditLens {..}
 
+funcEditLens ::
+       forall edita editb. (FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
+    => (EditSubject edita -> EditSubject editb)
+    -> EditLens edita editb
+funcEditLens f = readOnlyEditLens $ funcEditFunction f
+
 constEditLens ::
        forall edita editb. SubjectReader (EditReader editb)
     => EditSubject editb

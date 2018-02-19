@@ -8,7 +8,8 @@ import Truth.Core
 
 data QType t where
     QException :: QType Text
-    QLiteral :: QType Text
+    QConstant :: QType Text
+    QLiteral :: QType (PinaforeLensValue (WholeEdit (Maybe Text)))
     QPoint :: QType (PinaforeLensValue (WholeEdit (Maybe Point)))
     QSet :: QType (PinaforeLensValue (FiniteSetEdit Point))
     QMorphism :: QType (PinaforeLensMorphism Point Point)
@@ -19,6 +20,7 @@ data QType t where
 
 instance Show (QType t) where
     show QException = "exception"
+    show QConstant = "constant"
     show QLiteral = "literal"
     show QPoint = "point"
     show QSet = "set"
@@ -30,6 +32,7 @@ instance Show (QType t) where
 
 instance TestEquality QType where
     testEquality QException QException = Just Refl
+    testEquality QConstant QConstant = Just Refl
     testEquality QLiteral QLiteral = Just Refl
     testEquality QPoint QPoint = Just Refl
     testEquality QSet QSet = Just Refl
@@ -44,13 +47,13 @@ type QValue = Any QType
 
 instance Show QValue where
     show (MkAny QException val) = unpack $ "exception: " <> val
-    show (MkAny QLiteral val) = unpack val
+    show (MkAny QConstant val) = unpack val
     show (MkAny QUISpec val) = show val
     show (MkAny QList val) = "[" ++ intercalate "," (fmap show val) ++ "]"
     show (MkAny t _) = "<" ++ show t ++ ">"
 
-qliteral :: Text -> QValue
-qliteral = MkAny QLiteral
+qconstant :: Text -> QValue
+qconstant = MkAny QConstant
 
 qfunction :: (QValue -> QValue) -> QValue
 qfunction = MkAny QFunction
@@ -66,8 +69,10 @@ qapply (MkAny QMorphism f) (MkAny QSet a) =
     MkAny QSet $
     readOnlyEditLens $
     convertEditFunction . applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a)
-qapply (MkAny QInverseMorphism f) (MkAny QLiteral a) =
+qapply (MkAny QInverseMorphism f) (MkAny QConstant a) =
     MkAny QSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) $ constEditLens $ Just a
+qapply (MkAny QInverseMorphism f) (MkAny QLiteral a) =
+    MkAny QSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) a
 qapply (MkAny QInverseMorphism f) (MkAny QPoint a) = MkAny QSet $ applyInversePinaforeLens f a
 qapply (MkAny QInverseMorphism f) (MkAny QSet a) =
     MkAny QSet $
@@ -119,62 +124,93 @@ badFromQValue :: QValue -> Result Text t
 badFromQValue (MkAny QException s) = FailureResult s
 badFromQValue (MkAny t _) = fail $ "unexpected " ++ show t
 
+data Literal t
+    = LiteralConstant t
+    | LiteralFunction (PinaforeFunctionValue (Maybe t))
+
+instance Functor Literal where
+    fmap ab (LiteralConstant a) = LiteralConstant $ ab a
+    fmap ab (LiteralFunction a) = LiteralFunction $ funcEditFunction (fmap ab) . a
+
+instance Applicative Literal where
+    pure = LiteralConstant
+    LiteralConstant ab <*> LiteralConstant a = LiteralConstant $ ab a
+    lab <*> la = let
+        fab = literalToFunction lab
+        fa = literalToFunction la
+        in LiteralFunction $ funcEditFunction (\(mab, ma) -> mab <*> ma) . pairWholeEditFunction fab fa
+
+literalToFunction :: Literal t -> PinaforeFunctionValue (Maybe t)
+literalToFunction (LiteralConstant t) = constEditFunction $ Just t
+literalToFunction (LiteralFunction t) = t
+
+qappend :: Literal Text -> Literal Text -> Literal Text
+qappend = liftA2 (<>)
+
 class FromQValue t where
     fromQValue :: QValue -> Result Text t
     qTypeDescriptionFrom :: Text
     qTypeDescriptionFromSingle :: Text
     qTypeDescriptionFromSingle = qTypeDescriptionFrom @t
 
+instance {-# OVERLAPPABLE #-} AsText t => FromQValue t where
+    fromQValue v@(MkAny QConstant text) = case fromText text of
+            Just t -> return t
+            Nothing -> badFromQValue v
+    fromQValue v = badFromQValue v
+    qTypeDescriptionFrom = (textTypeDescription @t) <> "-constant"
+
 instance FromQValue QValue where
     fromQValue = return
     qTypeDescriptionFrom = "value"
 
-instance FromQValue Text where
-    fromQValue (MkAny QLiteral v) = return v
+instance AsText t => FromQValue (Literal t) where
+    fromQValue v@(MkAny QConstant text) = case fromText text of
+        Just a -> return $ LiteralConstant a
+        Nothing -> badFromQValue v
+    fromQValue (MkAny QLiteral v) = return $ LiteralFunction $ funcEditFunction (\mtext -> mtext >>= fromText) . editLensFunction v
+    fromQValue (MkAny QPoint v) =
+        return $ LiteralFunction $ editLensFunction $ applyPinaforeLens literalPinaforeLensMorphism v
     fromQValue v = badFromQValue v
-    qTypeDescriptionFrom = "text-literal"
+    qTypeDescriptionFrom = textTypeDescription @t
 
-instance FromQValue Bool where
-    fromQValue (MkAny QLiteral "false") = return False
-    fromQValue (MkAny QLiteral "true") = return True
+instance {-# OVERLAPPABLE #-} AsText t => FromQValue (PinaforeLensValue (WholeEdit (Maybe t))) where
+    fromQValue v@(MkAny QConstant text) = case fromText text of
+        Just a -> return $ constEditLens $ Just a
+        Nothing -> badFromQValue v
+    fromQValue (MkAny QLiteral v) = return $ (funcEditLens $ \mt -> mt >>= fromText) . v
+    fromQValue (MkAny QPoint v) = return $ applyPinaforeLens literalPinaforeLensMorphism v
     fromQValue v = badFromQValue v
-    qTypeDescriptionFrom = "boolean-literal"
+    qTypeDescriptionFrom = textTypeDescription @t
 
 instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
     fromQValue (MkAny QPoint v) = return v
     fromQValue v = badFromQValue v
     qTypeDescriptionFrom = "point"
 
-instance FromQValue (PinaforeLensValue (WholeEdit (Maybe Text))) where
-    fromQValue (MkAny QLiteral v) = return $ constEditLens $ Just v
-    fromQValue (MkAny QPoint v) = return $ applyPinaforeLens literalPinaforeLensMorphism v
-    fromQValue v = badFromQValue v
-    qTypeDescriptionFrom = "text"
-
-instance FromQValue (PinaforeLensValue (WholeEdit (Maybe t))) => FromQValue (PinaforeFunctionValue (Maybe t)) where
-    fromQValue v = do
-        a :: PinaforeLensValue (WholeEdit (Maybe t)) <- fromQValue v
-        return $ lensFunctionValue a
-    qTypeDescriptionFrom = qTypeDescriptionFrom @(PinaforeLensValue (WholeEdit (Maybe t)))
-
 instance FromQValue (PinaforeLensValue (FiniteSetEdit Point)) where
-    fromQValue (MkAny QPoint v) = return $ (readOnlyEditLens $ funcEditFunction maybeToFiniteSet) . v
+    fromQValue (MkAny QPoint v) = return $ (funcEditLens maybeToFiniteSet) . v
     fromQValue (MkAny QSet v) = return v
     fromQValue v = badFromQValue v
     qTypeDescriptionFrom = "set"
 
-instance FromQValue (PinaforeFunctionValue (FiniteSet Point)) where
-    fromQValue (MkAny QPoint a) =
-        return $ let
-            mms mmt = maybeToFiniteSet $ mmt >>= id
-            in applyPinaforeFunction (arr mms . cfmap (lensFunctionMorphism id)) (lensFunctionValue a)
-    fromQValue (MkAny QSet a) =
-        return $ applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism id)) (lensFunctionValue a)
-    fromQValue v = badFromQValue v
-    qTypeDescriptionFrom = "point"
+instance {-# OVERLAPPABLE #-} AsText t => FromQValue (PinaforeFunctionValue (Maybe t)) where
+    fromQValue v = do
+        cl :: Literal t <- fromQValue v
+        return $ literalToFunction cl
+    qTypeDescriptionFrom = textTypeDescription @t
 
-instance FromQValue (PinaforeFunctionValue (FiniteSet Text)) where
-    fromQValue (MkAny QLiteral a) = return $ constEditFunction $ opoint a
+instance FromQValue (PinaforeFunctionValue (Maybe Point)) where
+    fromQValue v = do
+        a :: PinaforeLensValue (WholeEdit (Maybe Point)) <- fromQValue v
+        return $ lensFunctionValue a
+    qTypeDescriptionFrom = qTypeDescriptionFrom @(PinaforeLensValue (WholeEdit (Maybe Point)))
+
+instance {-# OVERLAPPABLE #-} AsText t => FromQValue (PinaforeFunctionValue (FiniteSet t)) where
+    fromQValue v@(MkAny QConstant text) = case fromText text of
+        Just a -> return $ constEditFunction $ opoint a
+        Nothing -> badFromQValue v
+    fromQValue (MkAny QLiteral a) = return $ (funcEditFunction $ maybePoint . (\mt -> mt >>= fromText)) . editLensFunction a
     fromQValue (MkAny QPoint a) =
         return $ let
             mms mmt = maybeToFiniteSet $ mmt >>= id
@@ -189,16 +225,26 @@ instance FromQValue (PinaforeFunctionValue (FiniteSet Text)) where
     fromQValue v = badFromQValue v
     qTypeDescriptionFrom = "text"
 
-instance FromQValue (PinaforeLensMorphism Point Point) where
-    fromQValue (MkAny QMorphism v) = return v
+instance FromQValue (PinaforeFunctionValue (FiniteSet Point)) where
+    fromQValue (MkAny QPoint a) =
+        return $ let
+            mms mmt = maybeToFiniteSet $ mmt >>= id
+            in applyPinaforeFunction (arr mms . cfmap (lensFunctionMorphism id)) (lensFunctionValue a)
+    fromQValue (MkAny QSet a) =
+        return $ applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism id)) (lensFunctionValue a)
     fromQValue v = badFromQValue v
-    qTypeDescriptionFrom = "point-morphism"
+    qTypeDescriptionFrom = "point"
 
-instance FromQValue (PinaforeLensMorphism Point Text) where
+instance {-# OVERLAPPABLE #-} AsText t => FromQValue (PinaforeLensMorphism Point t) where
     fromQValue v = do
         m <- fromQValue v
         return $ literalPinaforeLensMorphism . m
     qTypeDescriptionFrom = "text-morphism"
+
+instance FromQValue (PinaforeLensMorphism Point Point) where
+    fromQValue (MkAny QMorphism v) = return v
+    fromQValue v = badFromQValue v
+    qTypeDescriptionFrom = "point-morphism"
 
 instance FromQValue (PinaforeLensMorphism a b) => FromQValue (PinaforeFunctionMorphism a (Maybe b)) where
     fromQValue v = do
@@ -250,6 +296,10 @@ class ToQValue t where
     qTypeDescriptionToSingle :: Text
     qTypeDescriptionToSingle = qTypeDescriptionTo @t
 
+instance {-# OVERLAPPABLE #-} AsText t => ToQValue t where
+    toQValue t = qconstant $ toText t
+    qTypeDescriptionTo = (textTypeDescription @t) <> "-constant"
+
 instance ToQValue QValue where
     toQValue = id
     qTypeDescriptionTo = "value"
@@ -272,21 +322,10 @@ instance ToQValue Point where
     toQValue p = qpoint p
     qTypeDescriptionTo = "point"
 
-instance ToQValue Text where
-    toQValue p = qliteral p
-    qTypeDescriptionTo = "text-literal"
-
-instance ToQValue Bool where
-    toQValue t = toQValue $ toText t
-    qTypeDescriptionTo = "boolean-literal"
-
-instance ToQValue Int where
-    toQValue t = toQValue $ toText t
-    qTypeDescriptionTo = "integer-literal"
-
-instance ToQValue Integer where
-    toQValue t = toQValue $ toText t
-    qTypeDescriptionTo = "integer-literal"
+instance AsText t => ToQValue (Literal t) where
+    toQValue (LiteralConstant t) = toQValue t
+    toQValue (LiteralFunction t) = toQValue t
+    qTypeDescriptionTo = textTypeDescription @t
 
 instance ToQValue t => ToQValue [t] where
     toQValue t = MkAny QList $ fmap toQValue t
@@ -296,6 +335,10 @@ instance (ToQValue a, ToQValue b) => ToQValue (a, b) where
     toQValue (a, b) = toQValue [toQValue a, toQValue b]
     qTypeDescriptionTo = "(" <> qTypeDescriptionTo @a <> ", " <> qTypeDescriptionTo @b <> ")"
 
+instance {-# OVERLAPPABLE #-} AsText t => ToQValue (PinaforeLensValue (WholeEdit (Maybe t))) where
+    toQValue t = MkAny QLiteral $ (funcEditLens $ fmap toText) . t
+    qTypeDescriptionTo = textTypeDescription @t
+
 instance ToQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
     toQValue t = MkAny QPoint t
     qTypeDescriptionTo = "point"
@@ -303,6 +346,10 @@ instance ToQValue (PinaforeLensValue (WholeEdit (Maybe Point))) where
 instance ToQValue (PinaforeLensValue (FiniteSetEdit Point)) where
     toQValue t = MkAny QSet t
     qTypeDescriptionTo = "set"
+
+instance ToQValue (PinaforeLensValue (WholeEdit t)) => ToQValue (PinaforeFunctionValue t) where
+    toQValue ef = toQValue $ readOnlyEditLens ef
+    qTypeDescriptionTo = "constant"
 
 instance edit ~ PinaforeEdit => ToQValue (UISpec edit) where
     toQValue t = MkAny QUISpec t
