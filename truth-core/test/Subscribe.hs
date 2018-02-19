@@ -1,4 +1,5 @@
 {-# OPTIONS -fno-warn-orphans #-}
+{-# LANGUAGE NoOverloadedStrings #-}
 
 module Subscribe
     ( testSubscribe

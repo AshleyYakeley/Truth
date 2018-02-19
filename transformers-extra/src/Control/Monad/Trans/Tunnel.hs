@@ -10,6 +10,7 @@ import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
+import Prelude
 
 class (MonadTrans t, MonadTransConstraint Monad t) =>
       MonadTransTunnel t where

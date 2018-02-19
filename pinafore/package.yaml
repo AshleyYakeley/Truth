@@ -1,0 +1,89 @@
+name: pinafore
+version: "0.1"
+_common: !include "../common.yaml"
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.9 && < 5
+      - time
+      - containers
+      - filepath
+      - directory
+      - cereal
+      - uuid
+      - aeson
+      - sqlite-simple
+      - mime
+      - shapes
+      - parsec
+      - truth-core
+    exposed-modules:
+      - Pinafore
+      - Pinafore.Window
+      - Pinafore.Query.Value
+      - Pinafore.Query.Expression
+      - Pinafore.Query
+    other-modules:
+      - Pinafore.AsText
+      - Pinafore.Edit
+      - Pinafore.Morphism
+      - Pinafore.Query.Read
+      - Pinafore.Query.Predefined
+      - Pinafore.SQLite
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.9 && < 5
+          - bytestring
+          - containers
+          - countable
+          - mime
+          - open-witness
+          - template-haskell
+          - transformers
+          - witness
+          - comonad
+          - mono-traversable
+          - shapes
+          - truth-core
+          - pinafore
+          - QuickCheck
+          - tasty
+          - tasty-hunit
+          - tasty-quickcheck
+          - tasty-golden
+        main: Main.hs
+        other-modules:
+
+executables:
+    pinafore:
+        source-dirs: app
+        dependencies:
+          - base >= 4.9 && < 5
+          - filepath
+          - bytestring
+          - glib
+          - gtk3
+          - shapes
+          - truth-core
+          - truth-gtk
+          - pinafore
+          - optparse-applicative
+        main: Main.hs
+    pinafore-query:
+        source-dirs: query
+        dependencies:
+          - base >= 4.9 && < 5
+          - filepath
+          - bytestring
+          - shapes
+          - truth-core
+          - pinafore
+          - optparse-applicative
+        main: Main.hs

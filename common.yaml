@@ -1,0 +1,56 @@
+- &author
+    author: Ashley Yakeley
+    copyright: (c) 2017-2018 Ashley Yakeley
+    license: GPL-2
+    license-file: LICENSE
+    maintainer: <ashley@semantic.org>
+
+- &language
+    default-extensions:
+      - AllowAmbiguousTypes
+      - Arrows
+      - ConstraintKinds
+      - DataKinds
+      - DefaultSignatures
+      - EmptyDataDecls
+      - ExistentialQuantification
+      - FlexibleContexts
+      - FlexibleInstances
+      - ForeignFunctionInterface
+      - FunctionalDependencies
+      - GADTs
+      - GeneralizedNewtypeDeriving
+      - ImplicitParams
+      - InstanceSigs
+      - KindSignatures
+      - LambdaCase
+      - MonadFailDesugaring
+      - MultiParamTypeClasses
+      - NoImplicitPrelude
+      - OverloadedLabels
+      - OverloadedStrings
+      - PatternGuards
+      - PatternSynonyms
+      - PolyKinds
+      - RankNTypes
+      - RecordWildCards
+      - RecursiveDo
+      - ScopedTypeVariables
+      - StandaloneDeriving
+      - TemplateHaskell
+      - TypeApplications
+      - TypeFamilies
+      - TypeInType
+      - TypeOperators
+      - TypeSynonymInstances
+      - UndecidableInstances
+      - UndecidableSuperClasses
+      - ViewPatterns
+    ghc-options:
+      - -Werror
+      - -Wall
+      - -Wincomplete-uni-patterns
+      - -Wincomplete-record-updates
+      - -Wcompat
+      - -Wnoncanonical-monad-instances
+      - -Wnoncanonical-monadfail-instances

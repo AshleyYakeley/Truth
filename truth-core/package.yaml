@@ -1,0 +1,128 @@
+name: truth-core
+version: "0.1"
+_common: !include "../common.yaml"
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.9 && < 5
+      - time
+      - containers
+      - filepath
+      - directory
+      - cereal
+      - uuid
+      - aeson
+      - sqlite-simple
+      - mime
+      - shapes
+    exposed-modules:
+      - Truth.Core
+      - Truth.Debug
+      - Truth.Debug.Object
+      - Truth.World.Anything
+      - Truth.World.File
+      - Truth.World.FileSystem
+      - Truth.World.Charset
+      - Truth.World.MIME
+      - Truth.World.JSON
+      - Truth.World.SQLite
+      - Truth.World.SQLite.Schema
+    other-modules:
+      - Truth.Core.Import
+      - Truth.Core.Sequence
+      - Truth.Core.Read.MutableRead
+      - Truth.Core.Read.SubjectReader
+      - Truth.Core.Read.FullSubjectReader
+      - Truth.Core.Read
+      - Truth.Core.Edit.Edit
+      - Truth.Core.Edit.FullEdit
+      - Truth.Core.Edit.Unlift
+      - Truth.Core.Edit.Function
+      - Truth.Core.Edit.Lens
+      - Truth.Core.Edit
+      - Truth.Core.Types.None
+      - Truth.Core.Types.Whole
+      - Truth.Core.Types.Unit
+      - Truth.Core.Types.Sum
+      - Truth.Core.Types.SumWhole
+      - Truth.Core.Types.OneReader
+      - Truth.Core.Types.OneEdit
+      - Truth.Core.Types.OneWholeEdit
+      - Truth.Core.Types.Either
+      - Truth.Core.Types.Comonad
+      - Truth.Core.Types.Tuple
+      - Truth.Core.Types.ConsTuple
+      - Truth.Core.Types.EitherTuple
+      - Truth.Core.Types.Pair
+      - Truth.Core.Types.Lattice
+      - Truth.Core.Types.Function
+      - Truth.Core.Types.Context
+      - Truth.Core.Types.List
+      - Truth.Core.Types.String
+      - Truth.Core.Types.ByteString
+      - Truth.Core.Types.Key
+      - Truth.Core.Types.FiniteSet
+      - Truth.Core.Types.Database
+      - Truth.Core.Types.Database.Show
+      - Truth.Core.Types.Database.Tuple
+      - Truth.Core.Types.Database.Tuple.Show
+      - Truth.Core.Types
+      - Truth.Core.Object.Object
+      - Truth.Core.Object.AutoClose
+      - Truth.Core.Object.ObjectEdit
+      - Truth.Core.Object.Subscriber
+      - Truth.Core.Object.Lens
+      - Truth.Core.Object.Editor
+      - Truth.Core.Object.Savable
+      - Truth.Core.Object.Undo
+      - Truth.Core.Object
+      - Truth.Core.UI.Specifier
+      - Truth.Core.UI.Lens
+      - Truth.Core.UI.CSS
+      - Truth.Core.UI.One
+      - Truth.Core.UI.Switch
+      - Truth.Core.UI.Layout
+      - Truth.Core.UI.Pages
+      - Truth.Core.UI.Icon
+      - Truth.Core.UI.Label
+      - Truth.Core.UI.Checkbox
+      - Truth.Core.UI.Option
+      - Truth.Core.UI.TextEntry
+      - Truth.Core.UI.TextEditor
+      - Truth.Core.UI.Table
+      - Truth.Core.UI.WindowButton
+      - Truth.Core.UI.Drag
+      - Truth.Core.UI.View
+      - Truth.Core.UI.GetView
+      - Truth.Core.UI
+
+tests:
+  test:
+    source-dirs: test
+    dependencies:
+      - base >= 4.9 && < 5
+      - bytestring
+      - containers
+      - countable
+      - mime
+      - open-witness
+      - template-haskell
+      - transformers
+      - transformers-extra
+      - witness
+      - comonad
+      - mono-traversable
+      - shapes
+      - truth-core
+      - QuickCheck
+      - tasty
+      - tasty-hunit
+      - tasty-quickcheck
+      - tasty-golden
+    main: Main.hs
+    other-modules:
+      - Subscribe
