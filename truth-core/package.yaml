@@ -26,6 +26,7 @@ library:
       - Truth.World.Anything
       - Truth.World.File
       - Truth.World.FileSystem
+      - Truth.World.ObjectStore
       - Truth.World.Charset
       - Truth.World.MIME
       - Truth.World.JSON

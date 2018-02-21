@@ -70,6 +70,9 @@ newtype UnliftIO m = MkUnliftIO
     { runUnliftIO :: forall r. m r -> IO r
     }
 
+identityUnliftIO :: UnliftIO IO
+identityUnliftIO = MkUnliftIO id
+
 remonadUnliftIO :: MonadTransTunnel t => (forall a. m1 a -> m2 a) -> UnliftIO (t m2) -> UnliftIO (t m1)
 remonadUnliftIO ff (MkUnliftIO r2) = MkUnliftIO $ \m1a -> r2 $ remonad ff m1a
 
