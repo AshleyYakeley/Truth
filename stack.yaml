@@ -1,4 +1,6 @@
 packages:
+- witness
+- open-witness
 - transformers-extra
 - shapes
 - truth-core
