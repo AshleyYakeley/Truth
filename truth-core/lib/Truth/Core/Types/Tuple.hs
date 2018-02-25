@@ -173,3 +173,27 @@ tupleEditLens seledit = let
         -> IdentityT m (Maybe [TupleEdit sel])
     elPutEdits edits _ = return $ Just $ fmap (MkTupleEdit seledit) edits
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
+
+tupleIsoLens ::
+       forall sela selb.
+       (forall edit. sela edit -> selb edit)
+    -> (forall edit. selb edit -> sela edit)
+    -> EditLens (TupleEdit sela) (TupleEdit selb)
+tupleIsoLens ab ba = let
+    efGet :: ReadFunctionT IdentityT (TupleEditReader sela) (TupleEditReader selb)
+    efGet mr (MkTupleEditReader seledit rt) = lift $ mr $ MkTupleEditReader (ba seledit) rt
+    efUpdate ::
+           forall m. MonadIO m
+        => TupleEdit sela
+        -> MutableRead m (EditReader (TupleEdit sela))
+        -> IdentityT m [TupleEdit selb]
+    efUpdate (MkTupleEdit seledit edit) _ = return [MkTupleEdit (ab seledit) edit]
+    elFunction :: AnEditFunction IdentityT (TupleEdit sela) (TupleEdit selb)
+    elFunction = MkAnEditFunction {..}
+    elPutEdits ::
+           forall m. MonadIO m
+        => [TupleEdit selb]
+        -> MutableRead m (EditReader (TupleEdit sela))
+        -> IdentityT m (Maybe [TupleEdit sela])
+    elPutEdits edits _ = return $ Just $ fmap (\(MkTupleEdit seledit edit) -> MkTupleEdit (ba seledit) edit) edits
+    in MkCloseUnlift identityUnlift MkAnEditLens {..}

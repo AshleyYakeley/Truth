@@ -29,8 +29,10 @@ library:
       - Pinafore.Query
     other-modules:
       - Pinafore.AsText
-      - Pinafore.Edit
       - Pinafore.Morphism
+      - Pinafore.Table
+      - Pinafore.File
+      - Pinafore.Pinafore
       - Pinafore.Query.Read
       - Pinafore.Query.Predefined
       - Pinafore.Database

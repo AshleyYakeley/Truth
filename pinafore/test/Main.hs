@@ -12,14 +12,14 @@ import Test.Tasty
 import Test.Tasty.HUnit
     -- for test only
 
-instance Eq QValue where
+instance Eq (QValue baseedit) where
     (MkAny QConstant a1) == (MkAny QConstant a2) = a1 == a2
     _ == _ = error "QValue: not comparable"
 
-testQueryValue :: (Eq a, Show a) => String -> QExpr a -> Maybe a -> TestTree
+testQueryValue :: (Eq a, Show a) => String -> QExpr baseedit a -> Maybe a -> TestTree
 testQueryValue name expr expected = testCase name $ assertEqual "result" expected $ qeval expr
 
-qint :: Int -> QValue
+qint :: Int -> QValue baseedit
 qint = toQValue
 
 testQueryValues :: TestTree
@@ -43,11 +43,11 @@ testQueryValues =
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
     testCase (unpack query) $
-    case (expected, parseValue "<input>" query) of
+    case (expected, parseValue @PinaforeTableEdit "<input>" query) of
         (Nothing, FailureResult _) -> return ()
         (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ show v
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ unpack e
-        (Just s, SuccessResult (v :: QValue)) -> assertEqual "result" s (show v)
+        (Just s, SuccessResult (v :: QValue PinaforeTableEdit)) -> assertEqual "result" s (show v)
 
 testQueries :: TestTree
 testQueries =

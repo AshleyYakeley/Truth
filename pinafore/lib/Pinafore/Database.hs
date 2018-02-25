@@ -1,6 +1,6 @@
 module Pinafore.Database where
 
-import Pinafore.Edit
+import Pinafore.Table
 import Shapes
 
 data TripleTable t where

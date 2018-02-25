@@ -20,28 +20,36 @@ instance UnliftCategory f => Category (CloseUnlift f) where
     (MkCloseUnlift unliftBC fBC) . (MkCloseUnlift unliftAB fAB) =
         MkCloseUnlift (composeUnlift unliftBC unliftAB) (ucCompose fBC fAB)
 
+type TransLift t1 t2
+     = forall m (a :: *). Monad m =>
+                              t1 m a -> t2 m a
+
+joinUnlifts ::
+       (forall t1 t2. (MonadTransUnlift t1, MonadTransUnlift t2) =>
+                          f1 t1 a1 b1 -> f2 t2 a2 b2 -> f3 (ComposeT t1 t2) a3 b3)
+    -> CloseUnlift f1 a1 b1
+    -> CloseUnlift f2 a2 b2
+    -> CloseUnlift f3 a3 b3
+joinUnlifts call (MkCloseUnlift unlift1 open1) (MkCloseUnlift unlift2 open2) =
+    MkCloseUnlift (composeUnlift unlift1 unlift2) $ call open1 open2
+
 data PairUnlift f1 f2 (t :: (* -> *) -> (* -> *)) (a :: k) (b :: k) =
     MkPairUnlift (f1 t a b)
                  (f2 t a b)
 
 class Unliftable (f :: ((* -> *) -> (* -> *)) -> k -> k -> *) where
-    fmapUnliftable ::
-           forall a b t1 t2.
-           (forall m x. Monad m =>
-                            t1 m x -> t2 m x)
-        -> f t1 a b
-        -> f t2 a b
+    fmapUnliftable :: forall a b t1 t2. TransLift t1 t2 -> f t1 a b -> f t2 a b
 
-joinUnlifts ::
+joinUnliftables ::
        (Unliftable f1, Unliftable f2)
     => (forall t. MonadTransUnlift t =>
-                      Unlift t -> f1 t a1 b1 -> f2 t a2 b2 -> r)
+                      f1 t a1 b1 -> f2 t a2 b2 -> f3 t a3 b3)
     -> CloseUnlift f1 a1 b1
     -> CloseUnlift f2 a2 b2
-    -> r
-joinUnlifts call (MkCloseUnlift unlift1 open1) (MkCloseUnlift unlift2 open2) =
-    call (composeUnlift unlift1 unlift2) (fmapUnliftable lift1ComposeT open1) (fmapUnliftable lift2ComposeT' open2)
+    -> CloseUnlift f3 a3 b3
+joinUnliftables call =
+    joinUnlifts $ \open1 open2 -> call (fmapUnliftable lift1ComposeT open1) (fmapUnliftable lift2ComposeT' open2)
 
 pairUnlift ::
        (Unliftable f1, Unliftable f2) => CloseUnlift f1 a b -> CloseUnlift f2 a b -> CloseUnlift (PairUnlift f1 f2) a b
-pairUnlift = joinUnlifts $ \unlift f1' f2' -> MkCloseUnlift unlift $ MkPairUnlift f1' f2'
+pairUnlift = joinUnliftables MkPairUnlift

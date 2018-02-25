@@ -126,8 +126,16 @@ fileSystemObject = let
                     renamePath fromPath toPath
     in MkObject {..}
 
-subdirectoryObject :: FilePath -> Object FSEdit -> Object FSEdit
-subdirectoryObject dir (MkObject (run :: UnliftIO m) rd push) = let
+subdirectoryObject :: Bool -> FilePath -> Object FSEdit -> Object FSEdit
+subdirectoryObject create dir (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
+    run' :: UnliftIO m
+    run' =
+        MkUnliftIO $ \ma ->
+            run $ do
+                if create
+                    then pushEdit $ push [FSEditCreateDirectory dir]
+                    else return ()
+                ma
     insideToOutside :: FilePath -> FilePath
     insideToOutside path = let
         relpath = makeRelative "/" path
@@ -161,4 +169,4 @@ subdirectoryObject dir (MkObject (run :: UnliftIO m) rd push) = let
     mapPath (FSEditRenameItem path1 path2) = FSEditRenameItem (insideToOutside path1) (insideToOutside path2)
     push' :: [FSEdit] -> m (Maybe (m ()))
     push' edits = push $ fmap mapPath edits
-    in MkObject run rd' push'
+    in MkObject run' rd' push'

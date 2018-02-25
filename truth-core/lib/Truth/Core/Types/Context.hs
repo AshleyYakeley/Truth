@@ -63,6 +63,14 @@ instance (c ex, c en) => TupleWitness c (WithContextSelector ex en) where
     tupleWitness SelectContext = Dict
     tupleWitness SelectContent = Dict
 
+instance IsFiniteConsWitness (WithContextSelector ex en) where
+    type FiniteConsWitness (WithContextSelector ex en) = '[ ex, en]
+    toLTW SelectContext = FirstListThingWitness
+    toLTW SelectContent = RestListThingWitness FirstListThingWitness
+    fromLTW FirstListThingWitness = SelectContext
+    fromLTW (RestListThingWitness FirstListThingWitness) = SelectContent
+    fromLTW (RestListThingWitness (RestListThingWitness lt)) = never lt
+
 type ContextEditReader x n = TupleEditReader (WithContextSelector x n)
 
 type ContextEdit x n = TupleEdit (WithContextSelector x n)
@@ -157,9 +165,11 @@ carryContextEditFunction ::
 carryContextEditFunction func =
     liftContentEditFunction (editLensFunction $ tupleEditLens SelectContext) . contextualiseEditFunction func
 
-liftContentEditLens ::
-       forall edita editb editn. EditLens edita editb -> EditLens (ContextEdit edita editn) (ContextEdit editb editn)
-liftContentEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens f pe)) = let
+liftContentAnEditLens ::
+       forall t edita editb editn. MonadTransUnlift t
+    => AnEditLens t edita editb
+    -> AnEditLens t (ContextEdit edita editn) (ContextEdit editb editn)
+liftContentAnEditLens (MkAnEditLens f pe) = let
     f' = liftContentAnEditFunction f
     pe' :: forall m. MonadIO m
         => [ContextEdit editb editn]
@@ -172,7 +182,11 @@ liftContentEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens f pe)) = l
                 getCompose $ do
                     es1 <- Compose $ pe exs (mr . MkTupleEditReader SelectContext)
                     return $ (fmap (MkTupleEdit SelectContext) es1) ++ (fmap (MkTupleEdit SelectContent) ens)
-    in MkCloseUnlift unlift (MkAnEditLens f' pe')
+    in MkAnEditLens f' pe'
+
+liftContentEditLens ::
+       forall edita editb editn. EditLens edita editb -> EditLens (ContextEdit edita editn) (ContextEdit editb editn)
+liftContentEditLens (MkCloseUnlift unlift alens) = MkCloseUnlift unlift $ liftContentAnEditLens alens
 
 carryContextEditLens ::
        (ApplicableEdit editx, ApplicableEdit edita, ApplicableEdit editb)

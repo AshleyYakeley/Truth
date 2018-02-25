@@ -3,9 +3,10 @@ module Pinafore.Query.Read
     ) where
 
 import Data.UUID
-import Pinafore.Edit
+
 import Pinafore.Query.Expression
 import Pinafore.Query.Value
+import Pinafore.Table
 import Shapes
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.String
@@ -109,7 +110,7 @@ readSymbol = readKeyword KWSymbol
 readPattern :: Parser Symbol
 readPattern = readSymbol
 
-readBinding :: Parser (Symbol, QValueExpr)
+readBinding :: HasPinaforeTableEdit baseedit => Parser (Symbol, QValueExpr baseedit)
 readBinding = do
     name <- readSymbol
     args <- many readPattern
@@ -117,7 +118,7 @@ readBinding = do
     val <- readExpression
     return (name, exprAbstracts args val)
 
-readBindings :: Parser QBindings
+readBindings :: HasPinaforeTableEdit baseedit => Parser (QBindings baseedit)
 readBindings =
     (do
          b <- readBinding
@@ -131,26 +132,28 @@ readBindings =
          readWS
          return $ MkQBindings [])
 
-readInfix :: Parser QValueExpr
+readInfix ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => Parser (QValueExpr baseedit)
 readInfix =
     (do
          readCharAndWS '$'
-         return $ pure $ toQValue qapply) <|>
+         return $ pure $ toQValue $ qapply @baseedit) <|>
     (do
          readCharAndWS '.'
-         return $ pure $ toQValue qcombine) <|>
+         return $ pure $ toQValue $ qcombine @baseedit) <|>
     (do
          readCharAndWS '&'
-         return $ pure $ toQValue qmeet) <|>
+         return $ pure $ toQValue $ qmeet @baseedit) <|>
     (do
          readCharAndWS '|'
-         return $ pure $ toQValue qjoin) <|>
+         return $ pure $ toQValue $ qjoin @baseedit) <|>
     (do
          readStringAndWS "++"
-         return $ pure $ toQValue qappend) <?>
+         return $ pure $ toQValue $ qappend @baseedit) <?>
     "infix operator"
 
-readExpression :: Parser QValueExpr
+readExpression :: HasPinaforeTableEdit baseedit => Parser (QValueExpr baseedit)
 readExpression =
     (do
          readCharAndWS '\\'
@@ -178,7 +181,7 @@ readExpression =
              Just (f, e2) -> return $ exprApplyAll f [e1, e2]
              Nothing -> return e1)
 
-readExpression1 :: Parser QValueExpr
+readExpression1 :: HasPinaforeTableEdit baseedit => Parser (QValueExpr baseedit)
 readExpression1 = do
     e1 <- readSingleExpression
     args <- many readSingleExpression
@@ -218,7 +221,9 @@ readNumber = let
            return $ negate n
     <|> readDigits <?> "number"
 
-readSingleExpression :: Parser QValueExpr
+readSingleExpression ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => Parser (QValueExpr baseedit)
 readSingleExpression =
     (do
          b <- readKeyword KWBool
@@ -252,7 +257,7 @@ readSingleExpression =
          return $ fmap (MkAny QList) $ sequenceA exprs) <|>
     (do
          readCharAndWS '@'
-         return $ pure $ toQValue qinvert) <|>
+         return $ pure $ toQValue $ qinvert @baseedit) <|>
     (do
          readCharAndWS '%'
          uuid <- readUUID
@@ -263,12 +268,12 @@ readSingleExpression =
          return $ pure $ toQValue $ MkPoint uuid) <?>
     "expression"
 
-readExpressionText :: Parser QValueExpr
+readExpressionText :: HasPinaforeTableEdit baseedit => Parser (QValueExpr baseedit)
 readExpressionText = do
     readWS
     readExpression
 
-parseExpression :: SourceName -> Text -> Result Text QValueExpr
+parseExpression :: HasPinaforeTableEdit baseedit => SourceName -> Text -> Result Text (QValueExpr baseedit)
 parseExpression name text =
     case parse readExpressionText name (unpack text) of
         Right a -> return a

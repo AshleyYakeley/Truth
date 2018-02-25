@@ -52,6 +52,14 @@ instance (c ea, c eb) => TupleWitness c (PairSelector ea eb) where
     tupleWitness SelectFirst = Dict
     tupleWitness SelectSecond = Dict
 
+instance IsFiniteConsWitness (PairSelector ea eb) where
+    type FiniteConsWitness (PairSelector ea eb) = '[ ea, eb]
+    toLTW SelectFirst = FirstListThingWitness
+    toLTW SelectSecond = RestListThingWitness FirstListThingWitness
+    fromLTW FirstListThingWitness = SelectFirst
+    fromLTW (RestListThingWitness FirstListThingWitness) = SelectSecond
+    fromLTW (RestListThingWitness (RestListThingWitness lt)) = never lt
+
 partitionPairEdits :: forall ea eb. [PairEdit ea eb] -> ([ea], [eb])
 partitionPairEdits pes = let
     toEither :: PairEdit ea eb -> Either ea eb
@@ -159,7 +167,7 @@ pairJoinEditFunctions ::
        EditFunction edita editb1
     -> EditFunction edita editb2
     -> EditFunction edita (PairEdit editb1 editb2)
-pairJoinEditFunctions = joinUnlifts $ \unlift af1 af2 -> MkCloseUnlift unlift $ pairJoinAnEditFunctions af1 af2
+pairJoinEditFunctions = joinUnliftables pairJoinAnEditFunctions
 
 pairJoinEditLenses ::
        forall edita editb1 editb2.
@@ -167,7 +175,7 @@ pairJoinEditLenses ::
     -> EditLens edita editb2
     -> EditLens edita (PairEdit editb1 editb2)
 pairJoinEditLenses =
-    joinUnlifts $ \(unlift :: Unlift t) (MkAnEditLens af1 pe1) (MkAnEditLens af2 pe2) -> let
+    joinUnliftables $ \(MkAnEditLens af1 pe1 :: AnEditLens t edita editb1) (MkAnEditLens af2 pe2) -> let
         af12 = pairJoinAnEditFunctions af1 af2
         pe12 ::
                forall m. MonadIO m
@@ -182,4 +190,4 @@ pairJoinEditLenses =
                         ea1 <- Compose $ pe1 eb1 mr
                         ea2 <- Compose $ pe2 eb2 mr
                         return $ ea1 ++ ea2
-        in MkCloseUnlift unlift $ MkAnEditLens af12 pe12
+        in MkAnEditLens af12 pe12

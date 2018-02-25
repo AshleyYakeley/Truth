@@ -237,3 +237,66 @@ splitWitnessList ((MkAny wt t):rr) =
         case testEquality wt wt' of
             Just Refl -> t : (getAllF (splitWitnessList rr) wt')
             Nothing -> getAllF (splitWitnessList rr) wt'
+
+data ListType' (f :: k -> *) (lt :: [k]) where
+    NilListType' :: ListType' f '[]
+    ConsListType' :: f a -> ListType' f lt -> ListType' f (a : lt)
+
+class KnownList (t :: [k]) where
+    listType :: ListType' Proxy t
+
+instance KnownList '[] where
+    listType = NilListType'
+
+instance KnownList lt => KnownList (a : lt) where
+    listType = ConsListType' Proxy listType
+
+data ListThingWitness (kk :: [k]) (t :: k) where
+    FirstListThingWitness :: ListThingWitness (t : tt) t
+    RestListThingWitness :: ListThingWitness aa t -> ListThingWitness (a : aa) t
+
+instance TestEquality (ListThingWitness tt) where
+    testEquality FirstListThingWitness FirstListThingWitness = Just Refl
+    testEquality (RestListThingWitness lt1) (RestListThingWitness lt2) = do
+        Refl <- testEquality lt1 lt2
+        return Refl
+    testEquality _ _ = Nothing
+
+instance Searchable (ListThingWitness '[] t) where
+    search = finiteSearch
+
+instance Eq (ListThingWitness tt t) where
+    lt1 == lt2 = isJust $ testEquality lt1 lt2
+
+instance Countable (ListThingWitness '[] t) where
+    countPrevious = finiteCountPrevious
+    countMaybeNext = finiteCountMaybeNext
+
+instance Finite (ListThingWitness '[] t) where
+    allValues = []
+
+instance Empty (ListThingWitness '[] t) where
+    never lt = case lt of {}
+
+class KnownList (FiniteConsWitness sel) =>
+      IsFiniteConsWitness (sel :: k -> *) where
+    type FiniteConsWitness sel :: [k]
+    toLTW :: forall t. sel t -> ListThingWitness (FiniteConsWitness sel) t
+    fromLTW :: forall t. ListThingWitness (FiniteConsWitness sel) t -> sel t
+
+instance KnownList edits => IsFiniteConsWitness (ListThingWitness edits) where
+    type FiniteConsWitness (ListThingWitness edits) = edits
+    toLTW = id
+    fromLTW = id
+
+instance IsFiniteConsWitness EmptyWitness where
+    type FiniteConsWitness EmptyWitness = '[]
+    toLTW wit = never wit
+    fromLTW lt = never lt
+
+instance IsFiniteConsWitness lt => IsFiniteConsWitness (ConsWitness a lt) where
+    type FiniteConsWitness (ConsWitness a lt) = a : (FiniteConsWitness lt)
+    toLTW FirstWitness = FirstListThingWitness
+    toLTW (RestWitness sel) = RestListThingWitness $ toLTW sel
+    fromLTW FirstListThingWitness = FirstWitness
+    fromLTW (RestListThingWitness lt) = RestWitness $ fromLTW lt
