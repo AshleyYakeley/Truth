@@ -89,9 +89,8 @@ readKeyword kw =
           firstC <- satisfy isAlpha
           rest <- many $ satisfy identifierChar
           readWS
-          case (kw, firstC : rest)
-            -- keywords
-                of
+          case (kw, firstC : rest) of
+              -- keywords
               (KWLet, "let") -> return ()
               (_, "let") -> empty
               (KWIn, "in") -> return ()

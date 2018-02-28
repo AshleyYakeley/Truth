@@ -1,4 +1,4 @@
 #!/bin/bash -e
-./hindent-all
+#./hindent-all
 stack build --pedantic --test
 echo OK
