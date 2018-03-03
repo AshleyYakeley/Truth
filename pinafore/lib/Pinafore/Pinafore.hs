@@ -16,11 +16,11 @@ instance TestEquality PinaforeSelector where
 
 instance IsFiniteConsWitness PinaforeSelector where
     type FiniteConsWitness PinaforeSelector = '[ PinaforeTableEdit, PinaforeFileEdit]
-    toLTW PinaforeSelectTable = FirstListThingWitness
-    toLTW PinaforeSelectFile = RestListThingWitness FirstListThingWitness
-    fromLTW FirstListThingWitness = PinaforeSelectTable
-    fromLTW (RestListThingWitness FirstListThingWitness) = PinaforeSelectFile
-    fromLTW (RestListThingWitness (RestListThingWitness lt)) = never lt
+    toLTW PinaforeSelectTable = FirstListElementWitness
+    toLTW PinaforeSelectFile = RestListElementWitness FirstListElementWitness
+    fromLTW FirstListElementWitness = PinaforeSelectTable
+    fromLTW (RestListElementWitness FirstListElementWitness) = PinaforeSelectFile
+    fromLTW (RestListElementWitness (RestListElementWitness lt)) = never lt
 
 type PinaforeEdit = TupleEdit PinaforeSelector
 

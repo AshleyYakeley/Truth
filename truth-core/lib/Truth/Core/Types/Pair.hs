@@ -54,11 +54,11 @@ instance (c ea, c eb) => TupleWitness c (PairSelector ea eb) where
 
 instance IsFiniteConsWitness (PairSelector ea eb) where
     type FiniteConsWitness (PairSelector ea eb) = '[ ea, eb]
-    toLTW SelectFirst = FirstListThingWitness
-    toLTW SelectSecond = RestListThingWitness FirstListThingWitness
-    fromLTW FirstListThingWitness = SelectFirst
-    fromLTW (RestListThingWitness FirstListThingWitness) = SelectSecond
-    fromLTW (RestListThingWitness (RestListThingWitness lt)) = never lt
+    toLTW SelectFirst = FirstListElementWitness
+    toLTW SelectSecond = RestListElementWitness FirstListElementWitness
+    fromLTW FirstListElementWitness = SelectFirst
+    fromLTW (RestListElementWitness FirstListElementWitness) = SelectSecond
+    fromLTW (RestListElementWitness (RestListElementWitness lt)) = never lt
 
 partitionPairEdits :: forall ea eb. [PairEdit ea eb] -> ([ea], [eb])
 partitionPairEdits pes = let

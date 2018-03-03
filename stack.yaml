@@ -15,7 +15,7 @@ extra-deps:
 - haskell-src-exts-1.20.1
 - gi-gtk-hs-0.3.5.0
 - git: git@github.com:AshleyYakeley/hindent.git
-  commit: ca23976879301337bd3e1b09baffd27da14fcd01
+  commit: 82412270de10544cd37ca70ea82ecb688dcb6aec
 
 flags:
     truth-gtk:

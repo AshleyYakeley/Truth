@@ -115,7 +115,7 @@ import Data.Empty as I
 import Data.Searchable as I
 
 -- witness
-import Data.Witness as I hiding (EitherWitness(..))
+import Data.Witness as I
 
 -- open-witness
 import Data.OpenWitness as I

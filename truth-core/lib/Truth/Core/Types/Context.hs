@@ -65,11 +65,11 @@ instance (c ex, c en) => TupleWitness c (WithContextSelector ex en) where
 
 instance IsFiniteConsWitness (WithContextSelector ex en) where
     type FiniteConsWitness (WithContextSelector ex en) = '[ ex, en]
-    toLTW SelectContext = FirstListThingWitness
-    toLTW SelectContent = RestListThingWitness FirstListThingWitness
-    fromLTW FirstListThingWitness = SelectContext
-    fromLTW (RestListThingWitness FirstListThingWitness) = SelectContent
-    fromLTW (RestListThingWitness (RestListThingWitness lt)) = never lt
+    toLTW SelectContext = FirstListElementWitness
+    toLTW SelectContent = RestListElementWitness FirstListElementWitness
+    fromLTW FirstListElementWitness = SelectContext
+    fromLTW (RestListElementWitness FirstListElementWitness) = SelectContent
+    fromLTW (RestListElementWitness (RestListElementWitness lt)) = never lt
 
 type ContextEditReader x n = TupleEditReader (WithContextSelector x n)
 

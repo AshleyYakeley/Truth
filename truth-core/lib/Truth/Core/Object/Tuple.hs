@@ -26,42 +26,42 @@ pairObjects (MkObject (runA :: UnliftIO ma) readA editA) (MkObject (runB :: Unli
                        (combineLiftSnd @ma @mb $ editB ebs)
             in MkObject runAB readAB editAB
 -}
-noneTupleObject :: Object (TupleEdit (ListThingWitness '[]))
+noneTupleObject :: Object (TupleEdit (ListElementWitness '[]))
 noneTupleObject = let
     objRun = identityUnliftIO
-    objRead :: forall t. TupleEditReader (ListThingWitness '[]) t -> IO t
+    objRead :: forall t. TupleEditReader (ListElementWitness '[]) t -> IO t
     objRead (MkTupleEditReader sel _) = case sel of {}
-    objEdit :: [TupleEdit (ListThingWitness '[])] -> IO (Maybe (IO ()))
+    objEdit :: [TupleEdit (ListElementWitness '[])] -> IO (Maybe (IO ()))
     objEdit [] = return $ Just $ return ()
     objEdit (MkTupleEdit sel _:_) = case sel of {}
     in MkObject {..}
 
 partitionListTupleEdits ::
        forall edit edits.
-       [TupleEdit (ListThingWitness (edit : edits))]
-    -> ([edit], [TupleEdit (ListThingWitness edits)])
+       [TupleEdit (ListElementWitness (edit : edits))]
+    -> ([edit], [TupleEdit (ListElementWitness edits)])
 partitionListTupleEdits pes = let
-    toEither :: TupleEdit (ListThingWitness (edit : edits)) -> Either edit (TupleEdit (ListThingWitness edits))
-    toEither (MkTupleEdit FirstListThingWitness ea) = Left ea
-    toEither (MkTupleEdit (RestListThingWitness sel) eb) = Right $ MkTupleEdit sel eb
+    toEither :: TupleEdit (ListElementWitness (edit : edits)) -> Either edit (TupleEdit (ListElementWitness edits))
+    toEither (MkTupleEdit FirstListElementWitness ea) = Left ea
+    toEither (MkTupleEdit (RestListElementWitness sel) eb) = Right $ MkTupleEdit sel eb
     in partitionEithers $ fmap toEither pes
 
 consTupleObjects ::
        forall edit edits.
        Object edit
-    -> Object (TupleEdit (ListThingWitness edits))
-    -> Object (TupleEdit (ListThingWitness (edit : edits)))
+    -> Object (TupleEdit (ListElementWitness edits))
+    -> Object (TupleEdit (ListElementWitness (edit : edits)))
 consTupleObjects (MkObject (runA :: UnliftIO ma) readA editA) (MkObject (runB :: UnliftIO mb) readB editB) =
     case isCombineMonadIO @ma @mb of
         Dict -> let
             runAB :: UnliftIO (CombineMonadIO ma mb)
             runAB = combineUnliftIOs runA runB
-            readAB :: MutableRead (CombineMonadIO ma mb) (TupleEditReader (ListThingWitness (edit : edits)))
-            readAB (MkTupleEditReader FirstListThingWitness r) = combineLiftFst @ma @mb $ readA r
-            readAB (MkTupleEditReader (RestListThingWitness sel) r) =
+            readAB :: MutableRead (CombineMonadIO ma mb) (TupleEditReader (ListElementWitness (edit : edits)))
+            readAB (MkTupleEditReader FirstListElementWitness r) = combineLiftFst @ma @mb $ readA r
+            readAB (MkTupleEditReader (RestListElementWitness sel) r) =
                 combineLiftSnd @ma @mb $ readB $ MkTupleEditReader sel r
             editAB ::
-                   [TupleEdit (ListThingWitness (edit : edits))]
+                   [TupleEdit (ListElementWitness (edit : edits))]
                 -> CombineMonadIO ma mb (Maybe (CombineMonadIO ma mb ()))
             editAB edits = let
                 (eas, ebs) = partitionListTupleEdits edits
@@ -73,20 +73,20 @@ consTupleObjects (MkObject (runA :: UnliftIO ma) readA editA) (MkObject (runB ::
 
 tupleListObject_ ::
        forall edits.
-       ListType' Proxy edits
-    -> (forall edit. ListThingWitness edits edit -> Object edit)
-    -> Object (TupleEdit (ListThingWitness edits))
+       ListType Proxy edits
+    -> (forall edit. ListElementWitness edits edit -> Object edit)
+    -> Object (TupleEdit (ListElementWitness edits))
 tupleListObject_ lt getObject =
     case lt of
-        NilListType' -> noneTupleObject
-        ConsListType' Proxy lt' ->
-            consTupleObjects (getObject FirstListThingWitness) $
-            tupleListObject_ lt' $ \sel -> getObject $ RestListThingWitness sel
+        NilListType -> noneTupleObject
+        ConsListType Proxy lt' ->
+            consTupleObjects (getObject FirstListElementWitness) $
+            tupleListObject_ lt' $ \sel -> getObject $ RestListElementWitness sel
 
 tupleListObject ::
        forall edits. KnownList edits
-    => (forall edit. ListThingWitness edits edit -> Object edit)
-    -> Object (TupleEdit (ListThingWitness edits))
+    => (forall edit. ListElementWitness edits edit -> Object edit)
+    -> Object (TupleEdit (ListElementWitness edits))
 tupleListObject = tupleListObject_ listType
 
 tupleObject ::
