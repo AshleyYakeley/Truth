@@ -11,7 +11,10 @@ contextStr "" b = b
 contextStr a b = a ++ ": " ++ b
 
 traceIOM :: MonadIO m => String -> m ()
-traceIOM s = liftIO $ traceIO $ s
+traceIOM s =
+    liftIO $ do
+        th <- myThreadId
+        traceIO $ show th ++ ": " ++ s
 
 traceBracketArgs :: MonadIO m => String -> String -> (r -> String) -> m r -> m r
 traceBracketArgs s args showr ma = do
@@ -38,10 +41,16 @@ class TraceThing t where
     traceThing :: String -> t -> t
 
 instance MonadTransConstraint MonadIO t => TraceThing (Unlift t) where
-    traceThing name unlift =
+    traceThing prefix unlift =
         MkUnlift $ \tma ->
-            traceBracket (contextStr name "outside") $
-            runUnlift unlift $ withTransConstraintTM @MonadIO $ traceBracket (contextStr name "inside") tma
+            traceBracket (contextStr prefix "outside") $
+            runUnlift unlift $ withTransConstraintTM @MonadIO $ traceBracket (contextStr prefix "inside") tma
+
+instance MonadIO m => TraceThing (UnliftIO m) where
+    traceThing prefix unlift =
+        MkUnliftIO $ \ma ->
+            traceBracket (contextStr prefix "outside") $
+            runUnliftIO unlift $ traceBracket (contextStr prefix "inside") ma
 
 class TraceArgThing t where
     traceArgThing :: String -> t -> t

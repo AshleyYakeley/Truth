@@ -18,4 +18,3 @@ import Data.Lens as I
 import Data.MonadOne as I
 import Data.Result as I
 import Data.Store as I
-import Data.Witness.All as I

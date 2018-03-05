@@ -28,7 +28,6 @@ library:
       - open-witness
     exposed-modules:
       - Data.Filterable
-      - Data.Witness.All
       - Data.CatFunctor
       - Data.Result
       - Data.MonadOne

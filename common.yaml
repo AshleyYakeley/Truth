@@ -12,6 +12,7 @@
       - ConstraintKinds
       - DataKinds
       - DefaultSignatures
+      - EmptyCase
       - EmptyDataDecls
       - ExistentialQuantification
       - FlexibleContexts

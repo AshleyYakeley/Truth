@@ -52,9 +52,9 @@ instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
         write $ MkWholeEdit a
 
 lastWholeEdit :: [WholeReaderEdit reader] -> Maybe (ReaderSubject reader)
-lastWholeEdit [] = Nothing
-lastWholeEdit [MkWholeEdit subj] = Just subj
-lastWholeEdit (_:ee) = lastWholeEdit ee
+lastWholeEdit edits = do
+    MkWholeEdit subj <- lastM edits
+    return subj
 
 type WholeEdit a = WholeReaderEdit (WholeReader a)
 
@@ -114,10 +114,6 @@ pairWholeEditFunction ::
     -> EditFunction edit (WholeEdit b)
     -> EditFunction edit (WholeEdit (a, b))
 pairWholeEditFunction (MkCloseUnlift (ula :: Unlift ta) (MkAnEditFunction ga ua)) (MkCloseUnlift (ulb :: Unlift tb) (MkAnEditFunction gb ub)) = let
-    lastm :: [t] -> Maybe t
-    lastm [] = Nothing
-    lastm [t] = Just t
-    lastm (_:tt) = lastm tt
     gab :: ReadFunctionT (ComposeT ta tb) (EditReader edit) (WholeReader (a, b))
     gab mr ReadWhole =
         withTransConstraintTM @MonadIO $ do
@@ -135,16 +131,16 @@ pairWholeEditFunction (MkCloseUnlift (ula :: Unlift ta) (MkAnEditFunction ga ua)
                     Dict -> do
                         weas <- lift1ComposeT $ ua edit mr
                         webs <- lift2ComposeT $ ub edit mr
-                        case (lastm weas, lastm webs) of
+                        case (lastWholeEdit weas, lastWholeEdit webs) of
                             (Nothing, Nothing) -> return []
                             (ma, mb) -> do
                                 a <-
                                     case ma of
-                                        Just (MkWholeEdit a) -> return a
+                                        Just a -> return a
                                         Nothing -> lift1ComposeT $ ga mr ReadWhole
                                 b <-
                                     case mb of
-                                        Just (MkWholeEdit b) -> return b
+                                        Just b -> return b
                                         Nothing -> lift2ComposeT $ gb mr ReadWhole
                                 return [MkWholeEdit (a, b)]
     in MkCloseUnlift (composeUnlift ula ulb) $ MkAnEditFunction gab uab

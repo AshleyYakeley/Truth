@@ -10,6 +10,7 @@ library:
     dependencies:
       - base >= 4.9 && < 5
       - time
+      - stm
       - containers
       - filepath
       - directory
@@ -26,6 +27,7 @@ library:
       - Truth.World.Anything
       - Truth.World.File
       - Truth.World.FileSystem
+      - Truth.World.ObjectStore
       - Truth.World.Charset
       - Truth.World.MIME
       - Truth.World.JSON
@@ -76,7 +78,9 @@ library:
       - Truth.Core.Object.ObjectEdit
       - Truth.Core.Object.Subscriber
       - Truth.Core.Object.Lens
+      - Truth.Core.Object.Tuple
       - Truth.Core.Object.Editor
+      - Truth.Core.Object.AsyncPush
       - Truth.Core.Object.Savable
       - Truth.Core.Object.Undo
       - Truth.Core.Object

@@ -1,15 +1,19 @@
 module Pinafore
     ( module Pinafore.AsText
-    , module Pinafore.Edit
     , module Pinafore.Morphism
+    , module Pinafore.Table
+    , module Pinafore.Pinafore
     , module Pinafore.Query
-    , module Pinafore.SQLite
+    , module Pinafore.Database
+    , module Pinafore.Database.SQLite
     , module Pinafore.Window
     ) where
 
 import Pinafore.AsText
-import Pinafore.Edit
+import Pinafore.Database
+import Pinafore.Database.SQLite
 import Pinafore.Morphism
+import Pinafore.Pinafore
 import Pinafore.Query
-import Pinafore.SQLite
+import Pinafore.Table
 import Pinafore.Window

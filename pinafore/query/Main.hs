@@ -20,10 +20,10 @@ optParser =
 
 doFile :: FilePath -> FilePath -> Text -> IO ()
 doFile dbpath fpath text =
-    case parseValue fpath text of
+    case parseValue @PinaforeTableEdit fpath text of
         FailureResult e -> fail $ unpack e
         SuccessResult qval ->
-            case mapObject (readOnlyEditLens (qdisplay qval)) (sqlitePinaforeObject dbpath) :: Object (WholeEdit (FiniteSet Text)) of
+            case mapObject (readOnlyEditLens (qdisplay qval)) (sqlitePinaforeTableObject dbpath) :: Object (WholeEdit (FiniteSet Text)) of
                 MkObject (MkUnliftIO run) rd _ ->
                     run $ do
                         items <- rd ReadWhole
@@ -35,7 +35,7 @@ main = do
     options <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
     case options of
         ExprDocOption -> do
-            for_ predefinedDoc $ \(name, desc) -> putStrLn $ (show name) ++ " :: " ++ unpack desc
+            for_ (predefinedDoc @PinaforeTableEdit) $ \(name, desc) -> putStrLn $ (show name) ++ " :: " ++ unpack desc
             putStrLn $ "<file> :: " ++ unpack filePinaforeType
         RunOption dbpath fpaths ->
             case fpaths of

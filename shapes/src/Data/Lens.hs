@@ -84,9 +84,6 @@ bijectionLens (MkBijection ab ba) = MkLens ab (\b _ -> return (ba b))
 injectionLens :: Injection' m a b -> Lens' m a b
 injectionLens lens = MkLens {lensGet = injForwards lens, lensPutback = \b -> pure (injBackwards lens b)}
 
-listElementLens :: (HasListElement n l) => NatType n -> Lens' Identity l (ListElement n l)
-listElementLens n = MkLens {lensGet = getListElement n, lensPutback = \e -> return . (putListElement n e)}
-
 hashMapLens :: (Eq key, Hashable key) => key -> Lens' Identity (HashMap key value) (Maybe value)
 hashMapLens key = let
     lensGet = lookup key

@@ -1,12 +1,12 @@
 {-# OPTIONS -fno-warn-orphans #-}
-{-# LANGUAGE EmptyCase #-}
 
-module Pinafore.SQLite
-    ( sqlitePinaforeObject
+module Pinafore.Database.SQLite
+    ( sqlitePinaforeTableObject
     ) where
 
 import Data.UUID
-import Pinafore.Edit
+import Pinafore.Database
+import Pinafore.Table
 import Shapes
 import Truth.Core
 import Truth.World.SQLite
@@ -42,35 +42,6 @@ instance FromField Predicate where
 instance ToField Predicate where
     toField (MkPredicate uuid) = toField uuid
 
-data TripleTable t where
-    TriplePredicate :: TripleTable Predicate
-    TripleSubject :: TripleTable Point
-    TripleValue :: TripleTable Point
-
-instance Show (TripleTable t) where
-    show TriplePredicate = "predicate"
-    show TripleSubject = "subject"
-    show TripleValue = "value"
-
-instance AllWitnessConstraint Show TripleTable where
-    allWitnessConstraint = Dict
-
-instance WitnessConstraint Show TripleTable where
-    witnessConstraint TriplePredicate = Dict
-    witnessConstraint TripleSubject = Dict
-    witnessConstraint TripleValue = Dict
-
-instance FiniteWitness TripleTable where
-    assembleWitnessF getw =
-        (\p s v ->
-             MkAllF $ \case
-                 TriplePredicate -> p
-                 TripleSubject -> s
-                 TripleValue -> v) <$>
-        getw TriplePredicate <*>
-        getw TripleSubject <*>
-        getw TripleValue
-
 instance WitnessConstraint FromField TripleTable where
     witnessConstraint TriplePredicate = Dict
     witnessConstraint TripleSubject = Dict
@@ -81,30 +52,6 @@ instance WitnessConstraint ToField TripleTable where
     witnessConstraint TripleSubject = Dict
     witnessConstraint TripleValue = Dict
 
-data LiteralTable t where
-    LiteralKey :: LiteralTable Point
-    LiteralValue :: LiteralTable Text
-
-instance Show (LiteralTable t) where
-    show LiteralKey = "key"
-    show LiteralValue = "value"
-
-instance AllWitnessConstraint Show LiteralTable where
-    allWitnessConstraint = Dict
-
-instance WitnessConstraint Show LiteralTable where
-    witnessConstraint LiteralKey = Dict
-    witnessConstraint LiteralValue = Dict
-
-instance FiniteWitness LiteralTable where
-    assembleWitnessF getw =
-        (\k v ->
-             MkAllF $ \case
-                 LiteralKey -> k
-                 LiteralValue -> v) <$>
-        getw LiteralKey <*>
-        getw LiteralValue
-
 instance WitnessConstraint FromField LiteralTable where
     witnessConstraint LiteralKey = Dict
     witnessConstraint LiteralValue = Dict
@@ -112,31 +59,6 @@ instance WitnessConstraint FromField LiteralTable where
 instance WitnessConstraint ToField LiteralTable where
     witnessConstraint LiteralKey = Dict
     witnessConstraint LiteralValue = Dict
-
-data PinaforeSchema colsel where
-    PinaforeTriple :: PinaforeSchema TripleTable
-    PinaforeLiteral :: PinaforeSchema LiteralTable
-
-instance Show (PinaforeSchema colsel) where
-    show PinaforeTriple = "triple"
-    show PinaforeLiteral = "literal"
-
-instance AllWitnessConstraint Show PinaforeSchema where
-    allWitnessConstraint = Dict
-
-instance TestEquality PinaforeSchema where
-    testEquality PinaforeTriple PinaforeTriple = Just Refl
-    testEquality PinaforeLiteral PinaforeLiteral = Just Refl
-    testEquality _ _ = Nothing
-
-instance FiniteWitness PinaforeSchema where
-    assembleWitnessF getTable =
-        (\ft fl ->
-             MkAllF $ \case
-                 PinaforeTriple -> ft
-                 PinaforeLiteral -> fl) <$>
-        getTable PinaforeTriple <*>
-        getTable PinaforeLiteral
 
 instance WitnessConstraint IsSQLiteTable PinaforeSchema where
     witnessConstraint PinaforeTriple = Dict
@@ -180,10 +102,10 @@ instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstra
 instance TupleDatabase SQLiteDatabase PinaforeSchema where
     type TupleDatabaseRowWitness SQLiteDatabase PinaforeSchema = IsPinaforeRow
 
-sqlitePinaforeLens :: EditLens (SQLiteEdit PinaforeSchema) PinaforeEdit
+sqlitePinaforeLens :: EditLens (SQLiteEdit PinaforeSchema) PinaforeTableEdit
 sqlitePinaforeLens = let
-    efGet :: ReadFunctionT IdentityT (SQLiteRead PinaforeSchema) PinaforeRead
-    efGet mr (PinaforeReadGetValue p s) =
+    efGet :: ReadFunctionT IdentityT (SQLiteRead PinaforeSchema) PinaforeTableRead
+    efGet mr (PinaforeTableReadGetValue p s) =
         lift $ do
             row <-
                 mr $
@@ -194,7 +116,7 @@ sqlitePinaforeLens = let
                     mempty
                     (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
             return $ fmap getSingleAll $ listToMaybe row
-    efGet mr (PinaforeReadLookupValue p v) =
+    efGet mr (PinaforeTableReadLookupValue p v) =
         lift $ do
             row <-
                 mr $
@@ -205,7 +127,7 @@ sqlitePinaforeLens = let
                     mempty
                     (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
             return $ MkFiniteSet $ fmap getSingleAll row
-    efGet mr (PinaforeReadGetLiteral v) =
+    efGet mr (PinaforeTableReadGetLiteral v) =
         lift $ do
             (row :: [All ((:~:) Text)]) <-
                 mr $
@@ -217,7 +139,7 @@ sqlitePinaforeLens = let
             return $ do
                 sa <- listToMaybe row
                 return $ getSingleAll sa
-    efGet mr (PinaforeReadLookupLiteral l) =
+    efGet mr (PinaforeTableReadLookupLiteral l) =
         lift $ do
             row <-
                 mr $
@@ -231,15 +153,15 @@ sqlitePinaforeLens = let
            forall m. MonadIO m
         => SQLiteEdit PinaforeSchema
         -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
-        -> IdentityT m [PinaforeEdit]
+        -> IdentityT m [PinaforeTableEdit]
     efUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
-    elFunction :: AnEditFunction IdentityT (SQLiteEdit PinaforeSchema) PinaforeEdit
+    elFunction :: AnEditFunction IdentityT (SQLiteEdit PinaforeSchema) PinaforeTableEdit
     elFunction = MkAnEditFunction {..}
     elPutEdit ::
            forall m. MonadIO m
-        => PinaforeEdit
+        => PinaforeTableEdit
         -> IdentityT m (Maybe [SQLiteEdit PinaforeSchema])
-    elPutEdit (PinaforeEditSetValue p s (Just v)) =
+    elPutEdit (PinaforeTableEditSetValue p s (Just v)) =
         return $
         Just $
         pure $
@@ -250,13 +172,13 @@ sqlitePinaforeLens = let
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
-    elPutEdit (PinaforeEditSetValue p s Nothing) =
+    elPutEdit (PinaforeTableEditSetValue p s Nothing) =
         return $
         Just $
         pure $
         DatabaseDelete (MkTupleTableSel PinaforeTriple) $
         MkTupleWhereClause $ ColumnExpr TriplePredicate === ConstExpr p /\ ColumnExpr TripleSubject === ConstExpr s
-    elPutEdit (PinaforeEditSetLiteral v (Just l)) =
+    elPutEdit (PinaforeTableEditSetLiteral v (Just l)) =
         return $
         Just $
         pure $
@@ -266,14 +188,14 @@ sqlitePinaforeLens = let
         MkAll $ \case
             LiteralKey -> v
             LiteralValue -> l
-    elPutEdit (PinaforeEditSetLiteral v Nothing) =
+    elPutEdit (PinaforeTableEditSetLiteral v Nothing) =
         return $
         Just $
         pure $
         DatabaseDelete (MkTupleTableSel PinaforeLiteral) $ MkTupleWhereClause $ ColumnExpr LiteralKey === ConstExpr v
     elPutEdits ::
            forall m. MonadIO m
-        => [PinaforeEdit]
+        => [PinaforeTableEdit]
         -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
         -> IdentityT m (Maybe [SQLiteEdit PinaforeSchema])
     elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
@@ -298,5 +220,5 @@ instance WitnessConstraint IsPinaforeRow PinaforeSchema where
 instance ShowableTupleDatabase SQLiteDatabase PinaforeSchema where
     witnessTupleRow = Dict
 
-sqlitePinaforeObject :: FilePath -> Object PinaforeEdit
-sqlitePinaforeObject path = mapObject (traceArgThing "pinafore-SQLite" sqlitePinaforeLens) $ sqliteObject' path sqlitePinaforeSchema
+sqlitePinaforeTableObject :: FilePath -> Object PinaforeTableEdit
+sqlitePinaforeTableObject path = mapObject (traceArgThing "pinafore-SQLite" sqlitePinaforeLens) $ sqliteObject' path sqlitePinaforeSchema

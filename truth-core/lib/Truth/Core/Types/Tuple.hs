@@ -100,11 +100,24 @@ instance (TestEquality sel, TupleWitness ApplicableEdit sel) => ApplicableEdit (
             (Dict, Just Refl) -> applyEdit edit (mr . MkTupleEditReader aggedite) reader
             _ -> mr aggreader
 
-instance (TestEquality sel, TupleWitness ApplicableEdit sel, TupleWitness InvertibleEdit sel) =>
-         InvertibleEdit (TupleEdit sel) where
-    invertEdit (MkTupleEdit seledit edit) mr =
-        case tupleWitness @InvertibleEdit seledit of
-            Dict -> fmap (fmap (MkTupleEdit seledit)) $ invertEdit edit $ mr . MkTupleEditReader seledit
+appendAssortedEdit :: TestEquality sel => TupleEdit sel -> [AnyF sel []] -> [AnyF sel []]
+appendAssortedEdit (MkTupleEdit seledit edit) [] = [MkAnyF seledit [edit]]
+appendAssortedEdit tedit@(MkTupleEdit seledit edit) (MkAnyF seledit' edits:rest) =
+    case testEquality seledit seledit' of
+        Just Refl -> (MkAnyF seledit' (edit : edits)) : rest
+        Nothing -> (MkAnyF seledit' edits) : (appendAssortedEdit tedit rest)
+
+assortEdits :: TestEquality sel => [TupleEdit sel] -> [AnyF sel []]
+assortEdits [] = []
+assortEdits (edit:edits) = appendAssortedEdit edit $ assortEdits edits
+
+instance (TestEquality sel, TupleWitness InvertibleEdit sel) => InvertibleEdit (TupleEdit sel) where
+    invertEdits tedits mr = do
+        invedits <-
+            for (assortEdits tedits) $ \(MkAnyF seledit edits) ->
+                case tupleWitness @InvertibleEdit seledit of
+                    Dict -> fmap (fmap (MkTupleEdit seledit)) $ invertEdits edits $ mr . MkTupleEditReader seledit
+        return $ mconcat invedits
 
 instance ( SubjectTupleSelector sel
          , FiniteTupleSelector sel
@@ -160,3 +173,27 @@ tupleEditLens seledit = let
         -> IdentityT m (Maybe [TupleEdit sel])
     elPutEdits edits _ = return $ Just $ fmap (MkTupleEdit seledit) edits
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
+
+tupleIsoLens ::
+       forall sela selb.
+       (forall edit. sela edit -> selb edit)
+    -> (forall edit. selb edit -> sela edit)
+    -> EditLens (TupleEdit sela) (TupleEdit selb)
+tupleIsoLens ab ba = let
+    efGet :: ReadFunctionT IdentityT (TupleEditReader sela) (TupleEditReader selb)
+    efGet mr (MkTupleEditReader seledit rt) = lift $ mr $ MkTupleEditReader (ba seledit) rt
+    efUpdate ::
+           forall m. MonadIO m
+        => TupleEdit sela
+        -> MutableRead m (EditReader (TupleEdit sela))
+        -> IdentityT m [TupleEdit selb]
+    efUpdate (MkTupleEdit seledit edit) _ = return [MkTupleEdit (ab seledit) edit]
+    elFunction :: AnEditFunction IdentityT (TupleEdit sela) (TupleEdit selb)
+    elFunction = MkAnEditFunction {..}
+    elPutEdits ::
+           forall m. MonadIO m
+        => [TupleEdit selb]
+        -> MutableRead m (EditReader (TupleEdit sela))
+        -> IdentityT m (Maybe [TupleEdit sela])
+    elPutEdits edits _ = return $ Just $ fmap (\(MkTupleEdit seledit edit) -> MkTupleEdit (ba seledit) edit) edits
+    in MkCloseUnlift identityUnlift MkAnEditLens {..}

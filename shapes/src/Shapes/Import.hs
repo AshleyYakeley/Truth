@@ -1,5 +1,6 @@
 module Shapes.Import
     ( module I
+    , module Shapes.Import
     ) where
 
 -- base
@@ -114,8 +115,13 @@ import Data.Empty as I
 import Data.Searchable as I
 
 -- witness
-import Data.Witness as I hiding (EitherWitness(..))
+import Data.Witness as I
 
 -- open-witness
 import Data.OpenWitness as I
 import Data.Type.Heterogeneous as I
+
+lastM :: [t] -> Maybe t
+lastM [] = Nothing
+lastM [t] = Just t
+lastM (_:tt) = lastM tt

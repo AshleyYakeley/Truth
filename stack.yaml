@@ -1,4 +1,6 @@
 packages:
+- witness
+- open-witness
 - transformers-extra
 - shapes
 - truth-core
@@ -13,7 +15,7 @@ extra-deps:
 - haskell-src-exts-1.20.1
 - gi-gtk-hs-0.3.5.0
 - git: git@github.com:AshleyYakeley/hindent.git
-  commit: 5c451ddcd044acc6a1df893b9e29b10f451c6892
+  commit: 82412270de10544cd37ca70ea82ecb688dcb6aec
 
 flags:
     truth-gtk:
