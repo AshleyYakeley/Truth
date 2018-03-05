@@ -9,6 +9,7 @@ module Truth.Core.Object.Subscriber
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Object.AutoClose
 import Truth.Core.Object.Object
 import Truth.Core.Read
 
@@ -80,9 +81,10 @@ makeSharedSubscriber parent = do
                 return (editorC, closerC, actions)
     return child
 
-objectSubscriber :: Object edit -> Subscriber edit ()
-objectSubscriber (MkObject run r e) =
+objectSubscriber :: OpenClose (Object edit) -> Subscriber edit ()
+objectSubscriber (MkOpenClose ocObject) =
     MkSubscriber $ \initr update -> do
+        (MkObject run r e, closer) <- ocObject
         rec
             editor <-
                 initr $ let
@@ -96,10 +98,10 @@ objectSubscriber (MkObject run r e) =
                                     action
                                     update editor r edits
                     in MkObject run r e'
-        return (editor, return (), ())
+        return (editor, closer, ())
 
 makeObjectSubscriber :: Object edit -> IO (Subscriber edit ())
-makeObjectSubscriber object = makeSharedSubscriber $ objectSubscriber object
+makeObjectSubscriber object = makeSharedSubscriber $ objectSubscriber $ pure object
 
 data UserInterface specifier actions = forall edit. MkUserInterface
     { userinterfaceSubscriber :: Subscriber edit actions

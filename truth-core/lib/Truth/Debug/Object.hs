@@ -7,6 +7,7 @@ module Truth.Debug.Object
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Object.AutoClose
 import Truth.Core.Object.Object
 import Truth.Core.Read
 import Truth.Debug
@@ -21,9 +22,9 @@ blankEditShower :: EditShower edit
 blankEditShower = MkEditShower {showRead = \_ -> "", showReadResult = \_ _ -> "", showEdit = \_ -> "edit"}
 
 traceObject :: forall edit. String -> EditShower edit -> Object edit -> Object edit
-traceObject prefix MkEditShower {..} (MkObject (MkUnliftIO run :: UnliftIO m) r e) = let
+traceObject prefix MkEditShower {..} (MkObject (run :: UnliftIO m) r e) = let
     run' :: UnliftIO m
-    run' = MkUnliftIO $ \m -> traceBracket (contextStr prefix "object") $ run m
+    run' = traceThing (contextStr prefix "run") run
     r' :: MutableRead m (EditReader edit)
     r' rt = traceBracketArgs (contextStr prefix "read") (showRead rt) (showReadResult rt) $ r rt
     e' :: [edit] -> m (Maybe (m ()))
@@ -69,3 +70,10 @@ instance TraceThing (Object edit) where
 
 instance ShowableEdit edit => TraceArgThing (Object edit) where
     traceArgThing prefix = traceObject prefix showEditShower
+
+instance TraceThing (OpenClose t) where
+    traceThing prefix (MkOpenClose oc) =
+        MkOpenClose $
+        traceBracket (contextStr prefix "open") $ do
+            (t, closer) <- oc
+            return (t, traceBracket (contextStr prefix "close") closer)

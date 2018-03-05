@@ -79,6 +79,7 @@ executables:
           - pinafore
           - optparse-applicative
         main: Main.hs
+        ghc-options: -threaded
     pinafore-query:
         source-dirs: query
         dependencies:

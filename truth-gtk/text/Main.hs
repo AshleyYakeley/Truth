@@ -27,7 +27,7 @@ fileTextWindow saveOpt path = do
         then do
             let
                 baseSub :: Subscriber (WholeEdit ((Result Text) Text)) ()
-                baseSub = objectSubscriber wholeTextObj
+                baseSub = objectSubscriber $ pure wholeTextObj
                 bufferSub :: Subscriber (OneWholeEdit (Result Text) (StringEdit Text)) ((), SaveActions)
                 bufferSub = saveBufferSubscriber baseSub
                 undoBufferSub ::

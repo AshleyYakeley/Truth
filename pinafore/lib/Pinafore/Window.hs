@@ -17,6 +17,7 @@ sqlitePinaforeWindow :: FilePath -> (FilePath, Text) -> IO [UserInterface UIWind
 sqlitePinaforeWindow dirpath (puipath, puitext) = do
     sub <-
         makeObjectSubscriber $
+        asyncPushObject $
         tupleObject $ \case
             PinaforeSelectTable -> sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
