@@ -9,7 +9,6 @@ module Truth.Core.Object.Subscriber
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.AutoClose
 import Truth.Core.Object.Object
 import Truth.Core.Read
 
@@ -81,8 +80,8 @@ makeSharedSubscriber parent = do
                 return (editorC, closerC, actions)
     return child
 
-objectSubscriber :: OpenClose (Object edit) -> Subscriber edit ()
-objectSubscriber (MkOpenClose ocObject) =
+objectSubscriber :: LifeCycle (Object edit) -> Subscriber edit ()
+objectSubscriber (MkLifeCycle ocObject) =
     MkSubscriber $ \initr update -> do
         (MkObject run r e, closer) <- ocObject
         rec

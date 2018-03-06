@@ -53,6 +53,9 @@ import System.IO as I hiding (appendFile, getContents, hGetContents, readFile, w
 import Text.Read as I (Read(..), readMaybe)
 import Text.Show as I (Show(..))
 
+-- stm
+import Control.Concurrent.STM as I
+
 -- constraints
 import Data.Constraint as I ((:-)(..), Dict(..))
 
