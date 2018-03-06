@@ -16,8 +16,9 @@ filePinaforeType = qTypeDescriptionFrom @PinaforeEdit @FilePinaforeType
 sqlitePinaforeWindow :: FilePath -> (FilePath, Text) -> IO [UserInterface UIWindow ()]
 sqlitePinaforeWindow dirpath (puipath, puitext) = do
     sub <-
-        makeObjectSubscriber $
+        makeSharedSubscriber $ objectSubscriber $
         asyncPushObject $
+        protectObject $
         tupleObject $ \case
             PinaforeSelectTable -> sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
