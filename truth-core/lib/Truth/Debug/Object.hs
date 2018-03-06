@@ -77,3 +77,16 @@ instance TraceThing (OpenClose t) where
         traceBracket (contextStr prefix "open") $ do
             (t, closer) <- oc
             return (t, traceBracket (contextStr prefix "close") closer)
+
+slowObject :: Int -> Object edit -> Object edit
+slowObject mus (MkObject run rd push) = let
+    push' edits = do
+        maction <- push edits
+        return $
+            case maction of
+                Nothing -> Nothing
+                Just action ->
+                    Just $ do
+                        traceBracket "slow: delay" $ liftIO $ threadDelay mus
+                        traceBracket "slow: action" $ action
+    in MkObject run rd push'
