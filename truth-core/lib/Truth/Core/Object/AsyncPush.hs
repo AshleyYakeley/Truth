@@ -7,6 +7,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.Object
 import Truth.Core.Read
+import Truth.Debug.Object
 
 data VarState
     = VSEmpty
@@ -23,6 +24,7 @@ asyncPushObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
                 pusher :: IO ()
                 pusher = do
                     maction <-
+                        traceBracket "actions: examine" $
                         atomically $ do
                             vs <- readTVar actionVar
                             case vs of
@@ -35,7 +37,7 @@ asyncPushObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
                                     return $ Just action
                     case maction of
                         Just action -> do
-                            action
+                            traceBracket "actions: do" action
                             pusher
                         Nothing -> return ()
                 waitForEmpty :: STM ()
@@ -62,6 +64,7 @@ asyncPushObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
                     Just $
                     lift $
                     liftIOWithUnlift $ \(MkUnliftIO unlift) ->
+                        traceBracket "post action" $
                         atomically $ do
                             vs <- readTVar actionVar
                             case vs of
