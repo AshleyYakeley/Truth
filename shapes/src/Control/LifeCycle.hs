@@ -34,6 +34,9 @@ instance Monad LifeCycle where
             (b, c2) <- runLifeCycle $ f a
             return (b, c2 >> c1)
 
+instance MonadFix LifeCycle where
+    mfix f = MkLifeCycle $ mfix $ \ ~(t, _) -> runLifeCycle $ f t
+
 instance MonadIO LifeCycle where
     liftIO ma =
         MkLifeCycle $ do

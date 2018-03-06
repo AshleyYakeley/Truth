@@ -133,7 +133,8 @@ createWindowAndChild MkUIWindow {..} = do
 makeViewWindow :: (WindowButtons actions) => ProgramContext -> IO () -> UserInterface UIWindow actions -> IO ()
 makeViewWindow pc tellclose MkUserInterface {..} = do
     rec
-        MkViewSubscription {..} <-
+        (MkViewSubscription {..}, srCloser) <-
+            runLifeCycle $
             subscribeView (createWindowAndChild userinterfaceSpecifier) userinterfaceSubscriber openSelection
         let
             openSelection :: IO ()

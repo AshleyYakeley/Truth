@@ -242,15 +242,18 @@ mapCreateViewAspect f (Compose vw) =
 data ViewSubscription edit action w = MkViewSubscription
     { srWidget :: w
     , srGetSelection :: Aspect edit
-    , srCloser :: IO ()
     , srAction :: action
     }
 
 instance Functor (ViewSubscription edit action) where
-    fmap f (MkViewSubscription w gs cl aa) = MkViewSubscription (f w) gs cl aa
+    fmap f (MkViewSubscription w gs aa) = MkViewSubscription (f w) gs aa
 
 subscribeView ::
-       forall edit w action. CreateView edit w -> Subscriber edit action -> IO () -> IO (ViewSubscription edit action w)
+       forall edit w action.
+       CreateView edit w
+    -> Subscriber edit action
+    -> IO ()
+    -> LifeCycle (ViewSubscription edit action w)
 subscribeView (Compose (MkView (view :: ViewContext edit -> IO (ViewResult edit w)))) sub vcOpenSelection = do
     let
         initialise :: Object edit -> IO (ViewResult edit w, IORef (Aspect edit))
@@ -261,7 +264,7 @@ subscribeView (Compose (MkView (view :: ViewContext edit -> IO (ViewResult edit 
                 selref <- newIORef $ vrFirstAspect vr
             return (vr, selref)
         receive (vr, _) = vrUpdate vr
-    ((MkViewResult {..}, selref), srCloser, srAction) <- subscribe sub initialise receive
+    ((MkViewResult {..}, selref), srAction) <- subscribe sub initialise receive
     let
         srGetSelection = do
             ss <- readIORef selref

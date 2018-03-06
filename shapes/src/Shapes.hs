@@ -5,6 +5,7 @@ module Shapes
 import Shapes.Import as I
 
 import Control.LifeCycle as I
+
 -- shapes
 import Data.Bijection as I
 import Data.CatFunctor as I

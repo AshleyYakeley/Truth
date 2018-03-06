@@ -46,9 +46,7 @@ instance Applicative (Editor edit actions) where
 subscribeEditor :: Subscriber edit actions -> Editor edit actions r -> IO r
 subscribeEditor subscriber editor =
     case editor of
-        (MkEditor initr update f) -> do
-            (e, close, actions) <- subscribe subscriber initr update
-            finally (f e actions) close
+        MkEditor initr update f -> withLifeCycle (subscribe subscriber initr update) $ \(e, actions) -> f e actions
 {-
 oneTransactionEditor ::
        forall actions edit r.
