@@ -1,0 +1,93 @@
+{
+  "version": "2.0.0",
+  "presentation": {
+    "reveal": "silent",
+    "panel": "dedicated"
+  },
+  "tasks": [
+    {
+      "group": "build",
+      "label": "Format",
+      "type": "shell",
+      "command": "cd ${workspaceRoot} && ./hindent-all && echo OK"
+    },
+    {
+      "group": "build",
+      "label": "Build",
+      "type": "shell",
+      "command": "cd ${workspaceRoot} && ./build",
+      "problemMatcher": [
+        {
+          "owner": "stack",
+          "fileLocation": "absolute",
+          "pattern": [
+            {
+              "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "severity": 4
+            },
+            {
+              "regexp": "^\\s+(.*)$",
+              "message": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "label": "Quick Build",
+      "type": "shell",
+      "command": "cd ${workspaceRoot} && stack build --pedantic --test --no-run-tests && echo OK",
+      "problemMatcher": [
+        {
+          "owner": "stack",
+          "fileLocation": "absolute",
+          "pattern": [
+            {
+              "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "severity": 4
+            },
+            {
+              "regexp": "^\\s+(.*)$",
+              "message": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": "build",
+      "label": "Clean & Build",
+      "type": "shell",
+      "command": "cd ${workspaceRoot} && stack clean && ./build",
+      "problemMatcher": [
+        {
+          "owner": "stack",
+          "fileLocation": "absolute",
+          "pattern": [
+            {
+              "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "severity": 4
+            },
+            {
+              "regexp": "^\\s+(.*)$",
+              "message": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
