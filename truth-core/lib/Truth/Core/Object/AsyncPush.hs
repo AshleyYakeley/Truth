@@ -17,8 +17,8 @@ asyncPushObject :: forall edit. Object edit -> Object edit
 asyncPushObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
     run' :: UnliftIO (ReaderT (TVar VarState) m)
     run' =
-        MkUnliftIO $ \rma -> do
-            actionVar :: TVar VarState <- newTVarIO $ VSEmpty
+        MkUnliftIO $ \rma -> run $ do
+            actionVar :: TVar VarState <- liftIO $ newTVarIO $ VSEmpty
             let
                 pusher :: IO ()
                 pusher = do
@@ -44,12 +44,12 @@ asyncPushObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
                     case vs of
                         VSEmpty -> return ()
                         _ -> mzero
-            _ <- forkIO pusher
-            a <- run $ runReaderT rma actionVar
-            atomically $ do
+            _ <- liftIO $ forkIO pusher
+            a <- runReaderT rma actionVar
+            liftIO $ atomically $ do
                 waitForEmpty
                 writeTVar actionVar $ VSDone
-            atomically waitForEmpty
+            liftIO $ atomically waitForEmpty
             return a
     push' :: [edit] -> ReaderT (TVar VarState) m (Maybe (ReaderT (TVar VarState) m ()))
     push' edits = do
