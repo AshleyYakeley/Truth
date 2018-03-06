@@ -43,6 +43,9 @@ instance MonadIO LifeCycle where
             a <- ma
             return (a, return ())
 
+lifeCycleClose :: IO () -> LifeCycle ()
+lifeCycleClose closer = MkLifeCycle $ return ((), closer)
+
 type With t = forall r. (t -> IO r) -> IO r
 
 withLifeCycle :: LifeCycle t -> With t
@@ -76,56 +79,43 @@ data VarState
     | VSDone
 
 deferrer :: LifeCycle (IO () -> IO ())
-deferrer =
-    MkLifeCycle $ do
-        actionVar :: TVar VarState <- newTVarIO $ VSEmpty
-        let
-            threadDo :: IO ()
-            threadDo = do
-                maction <-
-                    atomically $ do
-                        vs <- readTVar actionVar
-                        case vs of
-                            VSDone -> do
-                                writeTVar actionVar $ VSEmpty
-                                return Nothing
-                            VSEmpty -> mzero
-                            VSDo action -> do
-                                writeTVar actionVar $ VSEmpty
-                                return $ Just action
-                case maction of
-                    Just action -> do
-                        action
-                        threadDo
-                    Nothing -> return ()
-            waitForEmpty :: STM ()
-            waitForEmpty = do
-                vs <- readTVar actionVar
-                case vs of
-                    VSEmpty -> return ()
-                    _ -> mzero
-            closer :: IO ()
-            closer = do
-                atomically $ do
-                    waitForEmpty
-                    writeTVar actionVar $ VSDone
-                atomically waitForEmpty
-            request :: IO () -> IO ()
-            request action =
+deferrer = do
+    actionVar :: TVar VarState <- liftIO $ newTVarIO $ VSEmpty
+    let
+        threadDo :: IO ()
+        threadDo = do
+            maction <-
                 atomically $ do
                     vs <- readTVar actionVar
                     case vs of
-                        VSDone -> return ()
-                        VSEmpty -> writeTVar actionVar $ VSDo action
-                        VSDo oldaction -> writeTVar actionVar $ VSDo $ oldaction >> action
-        _ <- forkIO threadDo
-        return (request, closer)
-{-
-protectObject :: LifeCycle (UnliftIO IO)
-protectObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = MkLifeCycle $ do
-    var <- newMVar ()
-    let
-        run' :: forall a. m a -> IO a
-        run' ma = withMVar var $ \() -> run ma
-    return (MkObject (MkUnliftIO run') rd push,return ())
--}
+                        VSDone -> do
+                            writeTVar actionVar $ VSEmpty
+                            return Nothing
+                        VSEmpty -> mzero
+                        VSDo action -> do
+                            writeTVar actionVar $ VSEmpty
+                            return $ Just action
+            case maction of
+                Just action -> do
+                    action
+                    threadDo
+                Nothing -> return ()
+        waitForEmpty :: STM ()
+        waitForEmpty = do
+            vs <- readTVar actionVar
+            case vs of
+                VSEmpty -> return ()
+                _ -> mzero
+    _ <- liftIO $ forkIO threadDo
+    lifeCycleClose $ do
+        atomically $ do
+            waitForEmpty
+            writeTVar actionVar $ VSDone
+        atomically waitForEmpty
+    return $ \action ->
+        atomically $ do
+            vs <- readTVar actionVar
+            case vs of
+                VSDone -> return ()
+                VSEmpty -> writeTVar actionVar $ VSDo action
+                VSDo oldaction -> writeTVar actionVar $ VSDo $ oldaction >> action
