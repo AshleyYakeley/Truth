@@ -1,5 +1,5 @@
-module Truth.UI.GTK.Tuple
-    ( verticalLayoutGetView
+module Truth.UI.GTK.Layout
+    ( layoutGetView
     ) where
 
 import GI.Gtk
@@ -7,8 +7,8 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 
-verticalLayoutGetView :: GetGView
-verticalLayoutGetView =
+layoutGetView :: GetGView
+layoutGetView =
     MkGetView $ \getview uispec -> do
         uilayout <- isUISpec uispec
         (aspects, orientation) <-
