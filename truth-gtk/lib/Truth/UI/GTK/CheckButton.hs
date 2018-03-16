@@ -10,16 +10,15 @@ import Truth.UI.GTK.Useful
 
 createWidget :: UICheckbox edit -> CreateView edit Widget
 createWidget (MkUICheckbox name) = do
-    initial <- liftOuter $ viewObjectRead mutableReadToSubject
+    initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#label := name, #active := initial]
     changedSignal <-
-        liftOuter $
+        cvLiftView $
         viewOn widget #clicked $
-        viewObjectPushEdit $ \push -> do
+        viewObjectPushEdit $ \_ push -> do
             st <- Gtk.get widget #active
             push [MkWholeEdit st]
-    createViewReceiveUpdate $ \_ (MkWholeEdit st) ->
-        liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
+    cvBindEditFunction id $ \st -> liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
 
 checkButtonGetView :: GetGView

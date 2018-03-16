@@ -46,3 +46,14 @@ library:
       - Shapes
     other-modules:
       - Shapes.Import
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.9 && < 5
+          - shapes
+          - tasty
+          - tasty-hunit
+        main: Main.hs
+        other-modules:

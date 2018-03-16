@@ -13,16 +13,15 @@ textEntryGetView =
     MkGetView $ \_ uispec ->
         fmap
             (\MkUITextEntry -> do
-                 widget <- new Entry []
-                 initial <- liftOuter $ viewObjectRead mutableReadToSubject
-                 set widget [#text := initial]
+                 initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
+                 widget <- new Entry [#text := initial]
                  changedSignal <-
-                     liftOuter $
+                     cvLiftView $
                      viewOn widget #changed $
-                     viewObjectPushEdit $ \push -> do
+                     viewObjectPushEdit $ \_ push -> do
                          st <- get widget #text
                          push [MkWholeEdit st]
-                 createViewReceiveUpdate $ \_ (MkWholeEdit st) ->
+                 cvReceiveUpdate $ \_ _ (MkWholeEdit st) ->
                      liftIO $ withSignalBlocked widget changedSignal $ set widget [#text := st]
                  toWidget widget) $
         isUISpec uispec

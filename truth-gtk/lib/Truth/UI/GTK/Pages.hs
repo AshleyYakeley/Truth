@@ -17,10 +17,6 @@ pagesGetView =
                     headwidget <- getview headspec
                     bodywidget <- getview bodyspec
                     return (headwidget, bodywidget)
-            makeNotebook pages
-
-makeNotebook :: MonadIO m => [(Widget, Widget)] -> m Widget
-makeNotebook pages = do
-    notebook <- new Notebook []
-    for_ pages $ \(headwidget, bodywidget) -> #appendPage notebook bodywidget $ Just headwidget
-    toWidget notebook
+            notebook <- new Notebook []
+            for_ pages $ \(headwidget, bodywidget) -> #appendPage notebook bodywidget $ Just headwidget
+            toWidget notebook

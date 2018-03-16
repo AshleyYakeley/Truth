@@ -1,5 +1,12 @@
 module Truth.Core.Object.Subscriber
-    ( Subscriber(..)
+    ( mapUpdates
+    , ReceiveUpdatesM
+    , ReceiveUpdates
+    , ReceiveUpdatesT
+    , mapReceiveUpdates
+    , mapReceiveUpdatesT
+    , Subscriber(..)
+    , subscribeLifeCycle
     , makeObjectSubscriber
     , liftIO
     , objectSubscriber
@@ -10,14 +17,24 @@ module Truth.Core.Object.Subscriber
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.Object
+import Truth.Core.Object.Update
 import Truth.Core.Read
 
 newtype Subscriber edit actions = MkSubscriber
     { subscribe :: forall editor. (Object edit -> IO editor) -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
-                                       -> (forall m. MonadUnliftIO m =>
-                                                         editor -> MutableRead m (EditReader edit) -> [edit] -> m () -- receive: get updates (both others and from your mutableEdit calls)
-                                           ) -> LifeCycle (editor, actions)
+                                       -> (editor -> ReceiveUpdates edit) -- receive: get updates (both others and from your mutableEdit calls)
+                                           -> LifeCycle (editor, actions)
     }
+
+subscribeLifeCycle ::
+       Subscriber edit actions
+    -> (Object edit -> LifeCycle editor)
+    -> (editor -> ReceiveUpdates edit)
+    -> LifeCycle (editor, actions)
+subscribeLifeCycle sub init receive = do
+    ((editor, closer), actions) <- subscribe sub (runLifeCycle . init) (\(editor, _) -> receive editor)
+    lifeCycleClose closer
+    return (editor, actions)
 
 instance Functor (Subscriber edit) where
     fmap ab (MkSubscriber sub) =
@@ -26,23 +43,16 @@ instance Functor (Subscriber edit) where
             return (editor, ab a)
 
 newtype UpdateStoreEntry edit =
-    MkStoreEntry (forall m. MonadUnliftIO m =>
-                                MutableRead m (EditReader edit) -> [edit] -> m ())
+    MkStoreEntry (ReceiveUpdates edit)
 
 type UpdateStore edit = Store (UpdateStoreEntry edit)
 
-runUpdateStoreEntry ::
-       MonadUnliftIO m
-    => ((MutableRead m (EditReader edit) -> [edit] -> m ()) -> m ())
-    -> StateT (UpdateStoreEntry edit) m ()
+runUpdateStoreEntry :: MonadUnliftIO m => (ReceiveUpdatesM m edit -> m ()) -> StateT (UpdateStoreEntry edit) m ()
 runUpdateStoreEntry call = do
     MkStoreEntry update <- get
     lift $ call update
 
-runUpdateStore ::
-       MonadUnliftIO m
-    => (Key -> (MutableRead m (EditReader edit) -> [edit] -> m ()) -> m ())
-    -> StateT (UpdateStore edit) m ()
+runUpdateStore :: MonadUnliftIO m => (Key -> ReceiveUpdatesM m edit -> m ()) -> StateT (UpdateStore edit) m ()
 runUpdateStore call = traverseStoreStateT $ \key -> (runUpdateStoreEntry $ call key) >> return ()
 
 updateStore :: MonadUnliftIO m => MutableRead m (EditReader edit) -> [edit] -> StateT (UpdateStore edit) m ()
@@ -54,12 +64,7 @@ makeSharedSubscriber parent = do
     let
         initP :: Object edit -> IO (Object edit)
         initP objectP = return objectP
-        updateP ::
-               forall m. MonadUnliftIO m
-            => Object edit
-            -> MutableRead m (EditReader edit)
-            -> [edit]
-            -> m ()
+        updateP :: Object edit -> ReceiveUpdates edit
         updateP _ mutrP edits = mvarRun var $ updateStore mutrP edits
     ((objectC@(MkObject (MkUnliftIO runC) _ _), actions), closerP) <- runLifeCycle $ subscribe parent initP updateP
     let

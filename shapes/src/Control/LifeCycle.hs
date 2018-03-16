@@ -1,16 +1,25 @@
 module Control.LifeCycle
-    ( LifeCycle(..)
+    ( LifeState
+    , closeLifeState
+    , LifeCycle(..)
+    , lifeCycleClose
     , With
     , withLifeCycle
     , lifeCycleWith
+    , MonadLifeCycle(..)
     , deferrer
     ) where
 
 import Shapes.Import
 
+type LifeState t = (t, IO ())
+
 newtype LifeCycle t = MkLifeCycle
-    { runLifeCycle :: IO (t, IO ())
+    { runLifeCycle :: IO (LifeState t)
     }
+
+closeLifeState :: LifeState t -> IO ()
+closeLifeState = snd
 
 instance Functor LifeCycle where
     fmap ab (MkLifeCycle oc) =
@@ -72,6 +81,24 @@ lifeCycleWith withX =
                 putMVar closerVar ()
                 takeMVar doneVar
         return (t, close)
+
+class MonadIO m =>
+      MonadLifeCycle m where
+    liftLifeCycle :: forall a. LifeCycle a -> m a
+
+instance MonadLifeCycle LifeCycle where
+    liftLifeCycle lc = lc
+
+instance (MonadTrans t, MonadIO (t m), MonadLifeCycle m) => MonadLifeCycle (t m) where
+    liftLifeCycle lc = lift $ liftLifeCycle lc
+
+instance (MonadTrans t, MonadTransConstraint MonadIO t) => MonadTransConstraint MonadLifeCycle t where
+    hasTransConstraint ::
+           forall m. MonadLifeCycle m
+        => Dict (MonadLifeCycle (t m))
+    hasTransConstraint =
+        case hasTransConstraint @MonadIO @t @m of
+            Dict -> Dict
 
 data VarState
     = VSEmpty

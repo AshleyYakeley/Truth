@@ -76,6 +76,7 @@ library:
       - Truth.Core.Object.Object
       - Truth.Core.Object.AutoClose
       - Truth.Core.Object.ObjectEdit
+      - Truth.Core.Object.Update
       - Truth.Core.Object.Subscriber
       - Truth.Core.Object.Lens
       - Truth.Core.Object.Tuple
@@ -101,6 +102,7 @@ library:
       - Truth.Core.UI.WindowButton
       - Truth.Core.UI.Drag
       - Truth.Core.UI.View
+      - Truth.Core.UI.DynamicView
       - Truth.Core.UI.GetView
       - Truth.Core.UI
 

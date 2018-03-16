@@ -1,5 +1,7 @@
 module Truth.UI.GTK.Useful where
 
+import Data.GI.Base.Attributes
+import Data.GI.Base.Constructible
 import Data.GI.Base.Signals
 import Data.GI.Gtk
 import Data.IORef
@@ -86,3 +88,45 @@ isScrollable widget = do
         case (mViewport, mTextView) of
             (Nothing, Nothing) -> False
             _ -> True
+
+-- | Probably only use this for top-level widgets
+lcNewDestroy :: (MonadLifeCycle m, Constructible a tag, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> m a
+lcNewDestroy cc attrs =
+    liftLifeCycle $ do
+        a <- liftIO $ new cc attrs
+        lifeCycleClose $ widgetDestroy a
+        return a
+
+lcSetClear ::
+       (MonadLifeCycle m, AttrClearC info obj attr, AttrSetC info obj attr value)
+    => obj
+    -> AttrLabelProxy attr
+    -> value
+    -> m ()
+lcSetClear obj prop val =
+    liftLifeCycle $ do
+        set obj [prop := val]
+        lifeCycleClose $ clear obj prop
+
+lcContain :: (MonadLifeCycle m, IsContainer c, IsWidget w) => c -> w -> m ()
+lcContain c w =
+    liftLifeCycle $ do
+        containerAdd c w
+        lifeCycleClose $ containerRemove c w
+
+lcContainPackStart :: (MonadLifeCycle m, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> m ()
+lcContainPackStart grow box w =
+    liftLifeCycle $ do
+        boxPackStart box w grow grow 0
+        lifeCycleClose $ containerRemove box w
+
+makeButton :: MonadIO m => Text -> IO () -> m Button
+makeButton name action = do
+    button <- new Button [#label := name]
+    _ <- liftIO $ on button #clicked action
+    return button
+
+cvMakeButton :: Text -> View edit () -> CreateView edit Button
+cvMakeButton name action = do
+    unlift <- cvLiftView $ liftIOView return
+    makeButton name $ unlift action
