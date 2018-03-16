@@ -30,6 +30,7 @@ province = %dffae424-28d5-4543-b1b2-b8a744bbc0cd;
 country = %1257c340-0ec1-4ff7-9fd8-d2eaa7822463;
 birthdate = %b711b9b3-b43c-4ff6-be12-3291cc6b050a;
 deathdate = %805a9e65-d69a-4261-9c94-a3249885b6bb;
+married = %380ac576-9252-4783-b2d8-db222c683a22;
 
 # UI
 ui_people pp = ui_table [column "Name" name] window_person pp;
@@ -60,6 +61,7 @@ ui_person p = ui_vertical
         [
             [ui_labelled "Birth: " $ ui_textentry $ birthdate p,false],
             [ui_labelled "Death: " $ ui_textentry $ deathdate p,false],
+            [ui_checkbox "Married" $ married p,false],
             [ui_labelled "Mother: " $ ui_pick name People $ mother p,false],
             [ui_labelled "Father: " $ ui_pick name People $ father p,false],
             [ui_people $ children p,true]
