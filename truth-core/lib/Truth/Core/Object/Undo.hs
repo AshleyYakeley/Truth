@@ -45,7 +45,7 @@ undoQueueSubscriber ::
     -> Subscriber edit (actions, UndoActions)
 undoQueueSubscriber sub =
     MkSubscriber $ \(init :: Object edit -> IO editor) update -> do
-        queueVar <- newMVar $ MkUndoQueue [] []
+        queueVar <- liftIO $ newMVar $ MkUndoQueue [] []
         let
             init' :: Object edit -> IO (editor, UndoActions)
             init' object@(MkObject (MkUnliftIO runA :: UnliftIO ma) _ pushA) = do
@@ -102,5 +102,5 @@ undoQueueSubscriber sub =
                     MkUnlift du <- mvarRun queueVar $ getDiscardingUnlift
                     du $ updateUndoQueue mr edits -- discard changes to the queue on undo and redo edits
                 return ()
-        ((editor, undoActions), closer, actions) <- subscribe sub init' update'
-        return (editor, closer, (actions, undoActions))
+        ((editor, undoActions), actions) <- subscribe sub init' update'
+        return (editor, (actions, undoActions))

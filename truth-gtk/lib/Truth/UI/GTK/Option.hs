@@ -18,9 +18,9 @@ listStoreView ::
        (FullSubjectReader (EditReader edit), ApplicableEdit edit)
     => CreateView (ListEdit [EditSubject edit] edit) (SeqStore (EditSubject edit))
 listStoreView = do
-    subjectList <- liftOuter $ viewObjectRead mutableReadToSubject
+    subjectList <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     store <- seqStoreNew subjectList
-    createViewReceiveUpdate $ \_mr ->
+    cvReceiveUpdate $ \_ _mr ->
         \case
             ListEditItem (MkSequencePoint (fromIntegral -> i)) edit -> do
                 oldval <- seqStoreGetValue store i
@@ -36,17 +36,14 @@ optionFromStore ::
     => SeqStore (t, Text)
     -> GCreateView (WholeEdit t)
 optionFromStore store = do
-    widget <-
-        liftIO $ do
-            widget <- comboBoxNewWithModel store
-            renderer <- new CellRendererText []
-            #packStart widget renderer False
-            cellLayoutSetAttributes widget renderer store $ \(_, row) -> [#text := row]
-            return widget
+    widget <- comboBoxNewWithModel store
+    renderer <- new CellRendererText []
+    #packStart widget renderer False
+    cellLayoutSetAttributes widget renderer store $ \(_, row) -> [#text := row]
     changedSignal <-
-        liftOuter $
+        cvLiftView $
         viewOn widget #changed $
-        viewObjectPushEdit $ \push -> do
+        viewObjectPushEdit $ \_ push -> do
             mi <- #getActiveIter widget
             case mi of
                 (True, iter) -> do
@@ -67,11 +64,11 @@ optionFromStore store = do
                             Just ti -> withSignalBlocked widget changedSignal $ #setActiveIter widget $ Just ti
                             Nothing -> return ()
                     Nothing -> return ()
-    liftOuter $
-        viewObjectRead $ \mr -> do
+    cvLiftView $
+        viewObjectRead $ \_ mr -> do
             t <- mr ReadWhole
             update t
-    createViewReceiveUpdate $ \_mr (MkWholeEdit t) -> update t
+    cvReceiveUpdate $ \_ _mr (MkWholeEdit t) -> update t
     toWidget widget
 
 optionView ::

@@ -7,7 +7,6 @@ module Truth.Debug.Object
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.AutoClose
 import Truth.Core.Object.Object
 import Truth.Core.Read
 import Truth.Debug
@@ -71,9 +70,9 @@ instance TraceThing (Object edit) where
 instance ShowableEdit edit => TraceArgThing (Object edit) where
     traceArgThing prefix = traceObject prefix showEditShower
 
-instance TraceThing (OpenClose t) where
-    traceThing prefix (MkOpenClose oc) =
-        MkOpenClose $
+instance TraceThing (LifeCycle t) where
+    traceThing prefix (MkLifeCycle oc) =
+        MkLifeCycle $
         traceBracket (contextStr prefix "open") $ do
             (t, closer) <- oc
             return (t, traceBracket (contextStr prefix "close") closer)

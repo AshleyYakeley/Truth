@@ -6,49 +6,31 @@ import GI.Gtk hiding (get)
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
-
-boxAddShow :: (IsBox w1, IsWidget w2) => Bool -> w1 -> w2 -> IO ()
-boxAddShow grow w1 w2 = do
-    boxPackStart w1 w2 grow grow 0
-    widgetShow w2
-
-containerRemoveDestroy :: (IsContainer w1, IsWidget w2) => w1 -> w2 -> IO ()
-containerRemoveDestroy w1 w2 = do
-    containerRemove w1 w2
-    widgetDestroy w2
+import Truth.UI.GTK.Useful
 
 switchView ::
        forall edit. (UISpec edit -> GCreateView edit) -> EditFunction edit (WholeEdit (UISpec edit)) -> GCreateView edit
 switchView getview specfunc = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
-        getVR :: UISpec edit -> View edit (GViewResult edit)
-        getVR spec = getCompose $ getview spec
-        newWidgets :: GViewResult edit -> IO ()
-        newWidgets vr = boxAddShow True box $ vrWidget vr
-    firstvr <-
-        liftOuter $ do
-            firstspec <- mapViewEdit (readOnlyEditLens specfunc) $ viewObjectRead $ \mr -> mr ReadWhole
-            getVR firstspec
-    liftIO $ newWidgets firstvr
-    stateVar :: MVar (GViewResult edit) <- liftIO $ newMVar firstvr
-    unlift <- liftOuter $ liftIOView return
-    createViewAddAspect $
-        mvarRun stateVar $ do
-            vr <- get
-            lift $ vrFirstAspect vr
-    mapCreateViewEdit (readOnlyEditLens specfunc) $
-        createViewReceiveUpdate $ \_ (MkWholeEdit newspec) ->
-            mvarRun stateVar $ do
-                oldvr <- get
-                liftIO $ containerRemoveDestroy box $ vrWidget oldvr
-                newvr <- liftIO $ unlift $ getVR newspec
-                liftIO $ newWidgets newvr
-                put newvr
-    createViewReceiveUpdates $ \mr edits ->
-        mvarRun stateVar $ do
-            vr <- get
-            lift $ vrUpdate vr mr edits
+        getViewState :: UISpec edit -> View edit (ViewState edit ())
+        getViewState spec =
+            viewCreateView $ do
+                widget <- getview spec
+                lcContainPackStart True box widget
+    firstvs <-
+        cvLiftView $ do
+            firstspec <- mapViewEdit (readOnlyEditLens specfunc) $ viewObjectRead $ \_ mr -> mr ReadWhole
+            getViewState firstspec
+    cvDynamic @(ViewState edit ()) firstvs $ \(MkUnliftIO unliftIO) ->
+        mapReceiveUpdatesT specfunc $ \_ edits ->
+            case lastWholeEdit edits of
+                Nothing -> return ()
+                Just spec -> do
+                    oldvs <- get
+                    liftIO $ closeDynamicView oldvs
+                    newvs <- liftIO $ unliftIO $ getViewState spec
+                    put newvs
     toWidget box
 
 switchGetView :: GetGView

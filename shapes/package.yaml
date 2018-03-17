@@ -9,6 +9,7 @@ library:
     source-dirs: src
     dependencies:
       - base >= 4.9 && < 5
+      - stm
       - constraints
       - mono-traversable
       - comonad
@@ -41,6 +42,18 @@ library:
       - Data.Compose
       - Data.KeyContainer
       - Data.FiniteSet
+      - Control.LifeCycle
       - Shapes
     other-modules:
       - Shapes.Import
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.9 && < 5
+          - shapes
+          - tasty
+          - tasty-hunit
+        main: Main.hs
+        other-modules:

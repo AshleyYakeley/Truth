@@ -1,5 +1,5 @@
-module Truth.UI.GTK.Tuple
-    ( verticalLayoutGetView
+module Truth.UI.GTK.Layout
+    ( layoutGetView
     ) where
 
 import GI.Gtk
@@ -7,8 +7,8 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 
-verticalLayoutGetView :: GetGView
-verticalLayoutGetView =
+layoutGetView :: GetGView
+layoutGetView =
     MkGetView $ \getview uispec -> do
         uilayout <- isUISpec uispec
         (aspects, orientation) <-
@@ -21,12 +21,6 @@ verticalLayoutGetView =
                 for aspects $ \(item, grow) -> do
                     w <- getview item
                     return (w, grow)
-            liftIO $ arrangeWidgets orientation widgets
-
-arrangeWidgets :: Orientation -> [(Widget, Bool)] -> IO Widget
-arrangeWidgets orientation widgets = do
-    vbox <- new Box [#orientation := orientation]
-    for_ widgets $ \(widget, grow)
-        --grow <- isScrollable widget
-     -> do #packStart vbox widget grow grow 0
-    toWidget vbox
+            vbox <- new Box [#orientation := orientation]
+            for_ widgets $ \(widget, grow) -> #packStart vbox widget grow grow 0
+            toWidget vbox

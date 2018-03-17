@@ -46,7 +46,7 @@ library:
       - Truth.UI.GTK.Option
       - Truth.UI.GTK.Entry
       - Truth.UI.GTK.Text
-      - Truth.UI.GTK.Tuple
+      - Truth.UI.GTK.Layout
       - Truth.UI.GTK.Pages
       - Truth.UI.GTK.Table
       - Truth.UI.GTK.Drag

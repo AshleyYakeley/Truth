@@ -48,7 +48,7 @@ addColumn ::
 addColumn tview store col = do
     renderer <- new CellRendererText []
     column <- new TreeViewColumn []
-    createViewBindEditFunction (colName col) $ #setTitle column
+    cvBindEditFunction (colName col) $ #setTitle column
     #packStart column renderer False
     cellLayoutSetAttributes column renderer store $ \(_, entry) -> cellAttributes col entry
     _ <- #appendColumn tview column
@@ -98,23 +98,20 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
             entryRowProps <- editFunctionRead entryPropFunc mr ReadWhole
             return (key, MkStoreEntry {..})
     initalRows <-
-        liftOuter $
-        viewObjectRead $ \mr -> do
+        cvLiftView $
+        viewObjectRead $ \_ mr -> do
             MkFiniteSet initialKeys <- editFunctionRead (editLensFunction tableLens) mr KeyReadKeys
             for initialKeys $ getStoreItem mr
     store <- seqStoreNew initalRows
     tview <- treeViewNewWithModel store
     for_ cols $ addColumn tview store
-    box <- boxNew OrientationVertical 0
+    box <- new Box [#orientation := OrientationVertical]
     newButton <-
-        liftOuter $
-        liftIOView $ \unlift ->
-            makeButton "New" $
-            unlift $
-            mapViewEdit tableLens $
-            viewObjectPushEdit $ \push -> do
-                item <- liftIO $ newKeyContainerItem @cont
-                push [KeyInsertReplaceItem item]
+        cvMakeButton "New" $
+        mapViewEdit tableLens $
+        viewObjectPushEdit $ \_ push -> do
+            item <- liftIO $ newKeyContainerItem @cont
+            push [KeyInsertReplaceItem item]
     #packStart box newButton False False 0
     #packStart box tview True True 0
     let
@@ -125,7 +122,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
         findInStore key = do
             kk <- seqStoreToList store
             return $ lookup @[(ContainerKey cont, Int)] key $ zip (fmap fst kk) [0 ..]
-    createViewReceiveUpdates $ \mr edits ->
+    cvReceiveUpdates $ \_ mr edits ->
         mapUpdates (editLensFunction tableLens) mr edits $ \_ edits' ->
             withTransConstraintTM @MonadIO $
             for_ edits' $ \case
@@ -147,7 +144,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                 KeyClear -> seqStoreClear store
                 KeyEditItem _ _ -> return () -- no change to the table structure
     -- do updates to the cells
-    createViewReceiveUpdates $ \mr tedits ->
+    cvReceiveUpdates $ \_ mr tedits ->
         seqStoreTraverse_ store $
         joinTraverse
             (\(key, oldcol) ->
@@ -169,7 +166,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                                  mutableReadToSubject $ applyEdits edits' $ subjectToMutableRead $ entryRowProps oldcol
                              return $ Just (key, oldcol {entryRowProps = newprops}))
     _ <-
-        liftOuter $
+        cvLiftView $
         liftIOView $ \unlift ->
             on tview #buttonPressEvent $ \event -> do
                 click <- Gtk.get event #type
@@ -192,9 +189,9 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                             getaspect key
                         _ -> return Nothing
                 _ -> return Nothing
-    createViewAddAspect aspect
+    cvAddAspect aspect
     _ <-
-        liftOuter $
+        cvLiftView $
         liftIOView $ \unlift ->
             on box #focus $ \_ ->
                 unlift $ do

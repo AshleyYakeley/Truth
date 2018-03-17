@@ -24,7 +24,7 @@ saveBufferSubscriber ::
     -> Subscriber edit (action, SaveActions)
 saveBufferSubscriber subA =
     MkSubscriber $ \(initB :: Object edit -> IO editorB) updateB -> do
-        sbVar <- newMVar $ error "uninitialised save buffer"
+        sbVar <- liftIO $ newMVar $ error "uninitialised save buffer"
         let
             initA :: Object (WholeEdit (EditSubject edit)) -> IO (editorB, SaveActions)
             initA (MkObject (MkUnliftIO runA :: UnliftIO ma) readA pushA) =
@@ -101,9 +101,8 @@ saveBufferSubscriber subA =
                         newedits <- getReplaceEditsFromSubject newbuffer
                         updateB edB (subjectToMutableRead newbuffer) newedits
                         mvarRun sbVar $ put $ MkSaveBuffer newbuffer False
-        (edA, closerA, actionA) <- subscribe subA initA updateA
+        (edA, actionA) <- subscribe subA initA updateA
         let
             (edB, saveActions) = edA
             actionB = (actionA, saveActions)
-            closerB = closerA -- add UI query here
-        return (edB, closerB, actionB)
+        return (edB, actionB)

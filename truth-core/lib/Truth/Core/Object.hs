@@ -2,6 +2,7 @@ module Truth.Core.Object
     ( module Truth.Core.Object.Object
     , module Truth.Core.Object.AutoClose
     , module Truth.Core.Object.ObjectEdit
+    , module Truth.Core.Object.Update
     , module Truth.Core.Object.Subscriber
     , module Truth.Core.Object.Lens
     , module Truth.Core.Object.Editor
@@ -21,3 +22,4 @@ import Truth.Core.Object.Savable
 import Truth.Core.Object.Subscriber
 import Truth.Core.Object.Tuple
 import Truth.Core.Object.Undo
+import Truth.Core.Object.Update

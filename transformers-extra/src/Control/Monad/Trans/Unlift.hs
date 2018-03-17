@@ -66,6 +66,15 @@ class ( MonadTransConstraint MonadFail t
         => t m (Unlift t)
     -- ^ return an 'Unlift' that discards the transformer's effects (such as state change or output)
 
+-- | Swap two transformers in a transformer stack
+evertT ::
+       forall ta tb m r. (MonadTransUnlift ta, MonadTransUnlift tb, MonadUnliftIO m)
+    => ta (tb m) r
+    -> tb (ta m) r
+evertT tatbmr =
+    case hasTransConstraint @MonadUnliftIO @ta @m of
+        Dict -> liftWithUnlift $ \(MkUnlift unlift) -> remonad unlift tatbmr
+
 newtype UnliftIO m = MkUnliftIO
     { runUnliftIO :: forall r. m r -> IO r
     }

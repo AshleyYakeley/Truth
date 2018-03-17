@@ -14,11 +14,13 @@ module Truth.Core.UI.View
     , vrFirstAspect
     , mapViewResultEdit
     , CreateView
-    , createViewReceiveUpdates
-    , createViewReceiveUpdate
-    , createViewBindEditFunction
-    , mapUpdates
-    , createViewAddAspect
+    , ViewState
+    , viewCreateView
+    , cvLiftView
+    , cvReceiveUpdates
+    , cvReceiveUpdate
+    , cvBindEditFunction
+    , cvAddAspect
     , mapCreateViewEdit
     , mapCreateViewAspect
     , ViewSubscription(..)
@@ -38,8 +40,7 @@ import Truth.Core.UI.Specifier
 
 data ViewResult edit w = MkViewResult
     { vrWidget :: w
-    , vrUpdate :: forall m. MonadUnliftIO m =>
-                                MutableRead m (EditReader edit) -> [edit] -> m ()
+    , vrUpdate :: ReceiveUpdates edit
     , vrFirstAspect :: Aspect edit
     }
 
@@ -53,11 +54,7 @@ instance Applicative (ViewResult edit) where
         in MkViewResult {..}
     (MkViewResult w1 update1 fss1) <*> (MkViewResult w2 update2 fss2) = let
         vrWidget = w1 w2
-        vrUpdate ::
-               forall m. MonadUnliftIO m
-            => MutableRead m (EditReader edit)
-            -> [edit]
-            -> m ()
+        vrUpdate :: ReceiveUpdates edit
         vrUpdate mr edits = do
             update1 mr edits
             update2 mr edits
@@ -113,128 +110,109 @@ mapViewContextEdit lens (MkViewContext objectA setSelectA os) = let
     in MkViewContext objectB setSelectB os
 
 newtype View edit a =
-    MkView (ViewContext edit -> IO a)
-
-instance Functor (View edit) where
-    fmap f (MkView ma) =
-        MkView $ \context -> do
-            a <- ma context
-            return $ f a
-
-instance Applicative (View edit) where
-    pure a = MkView $ \_context -> pure a
-    (MkView mab) <*> (MkView ma) =
-        MkView $ \context -> do
-            ab <- mab context
-            a <- ma context
-            return $ ab a
-
-instance Monad (View edit) where
-    return = pure
-    (MkView ma) >>= f =
-        MkView $ \context -> do
-            a <- ma context
-            let MkView mb = f a
-            mb context
-
-instance MonadIO (View edit) where
-    liftIO ioa = MkView $ \_context -> ioa
+    MkView (ReaderT (ViewContext edit) IO a)
+    deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO)
 
 liftIOView :: forall edit a. ((forall r. View edit r -> IO r) -> IO a) -> View edit a
-liftIOView call = MkView $ \context -> call $ \(MkView view) -> view context
+liftIOView call = liftIOWithUnlift $ \(MkUnliftIO unlift) -> call unlift
 
 viewObject :: View edit (Object edit)
-viewObject = MkView $ \MkViewContext {..} -> return vcObject
+viewObject = MkView $ asks vcObject
 
 viewObjectRead ::
-       (forall m. MonadUnliftIO m =>
-                      MutableRead m (EditReader edit) -> m r)
+       (UnliftIO (View edit) -> forall m. MonadUnliftIO m =>
+                                              MutableRead m (EditReader edit) -> m r)
     -> View edit r
 viewObjectRead call = do
+    unliftIO <- liftIOView $ \unlift -> return $ MkUnliftIO unlift
     MkObject {..} <- viewObject
-    liftIO $ runUnliftIO objRun $ call $ objRead
+    liftIO $ runUnliftIO objRun $ call unliftIO $ objRead
 
 viewObjectMaybeEdit ::
-       (forall m. MonadUnliftIO m =>
-                      ([edit] -> m (Maybe (m ()))) -> m r)
+       (UnliftIO (View edit) -> forall m. MonadUnliftIO m =>
+                                              ([edit] -> m (Maybe (m ()))) -> m r)
     -> View edit r
 viewObjectMaybeEdit call = do
+    unliftIO <- liftIOView $ \unlift -> return $ MkUnliftIO unlift
     MkObject {..} <- viewObject
-    liftIO $ runUnliftIO objRun $ call $ objEdit
+    liftIO $ runUnliftIO objRun $ call unliftIO $ objEdit
 
 viewObjectPushEdit ::
-       (forall m. MonadUnliftIO m =>
-                      ([edit] -> m ()) -> m r)
+       (UnliftIO (View edit) -> forall m. MonadUnliftIO m =>
+                                              ([edit] -> m ()) -> m r)
     -> View edit r
-viewObjectPushEdit call = viewObjectMaybeEdit $ \push -> call $ \edits -> pushEdit $ push edits
+viewObjectPushEdit call = viewObjectMaybeEdit $ \unlift push -> call unlift $ \edits -> pushEdit $ push edits
 
 viewSetSelectedAspect :: Aspect edit -> View edit ()
-viewSetSelectedAspect aspect = MkView $ \MkViewContext {..} -> vcSetSelect aspect
+viewSetSelectedAspect aspect = do
+    setSelect <- MkView $ asks vcSetSelect
+    liftIO $ setSelect aspect
 
 viewOpenSelection :: View edit ()
-viewOpenSelection = MkView $ \MkViewContext {..} -> vcOpenSelection
+viewOpenSelection = do
+    openSelection <- MkView $ asks vcOpenSelection
+    liftIO openSelection
 
 mapViewEdit ::
        forall edita editb a. ()
     => EditLens edita editb
     -> View editb a
     -> View edita a
-mapViewEdit lens (MkView viewB) = MkView $ \contextA -> viewB $ mapViewContextEdit lens contextA
+mapViewEdit lens (MkView viewB) = MkView $ withReaderT (mapViewContextEdit lens) viewB
 
-type CreateView edit = Compose (View edit) (ViewResult edit)
+newtype CreateView edit a =
+    MkCreateView (Compose (ReaderT (ViewContext edit) LifeCycle) (ViewResult edit) a)
+    deriving (Functor, Applicative, Monad, MonadIO)
 
-createViewReceiveUpdates ::
-       (forall m. MonadUnliftIO m =>
-                      MutableRead m (EditReader edit) -> [edit] -> m ())
+type ViewState edit a = LifeState (ViewResult edit a)
+
+viewCreateView :: CreateView edit a -> View edit (ViewState edit a)
+viewCreateView (MkCreateView (Compose (ReaderT ff))) = MkView $ ReaderT $ \vc -> runLifeCycle $ ff vc
+
+cvLiftView :: View edit a -> CreateView edit a
+cvLiftView (MkView va) = MkCreateView $ liftOuter $ remonad liftIO va
+
+cvLiftViewResult :: ViewResult edit a -> CreateView edit a
+cvLiftViewResult vr = MkCreateView $ liftInner vr
+
+instance MonadLifeCycle (CreateView edit) where
+    liftLifeCycle lc = MkCreateView $ liftOuter $ lift lc
+
+cvReceiveUpdates :: (UnliftIO (View edit) -> ReceiveUpdates edit) -> CreateView edit ()
+cvReceiveUpdates recv = do
+    unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkUnliftIO unlift
+    cvLiftViewResult $ (pure ()) {vrUpdate = recv unliftIO}
+
+cvReceiveUpdate ::
+       (UnliftIO (View edit) -> forall m. MonadUnliftIO m =>
+                                              MutableRead m (EditReader edit) -> edit -> m ())
     -> CreateView edit ()
-createViewReceiveUpdates recv = liftInner $ (pure ()) {vrUpdate = recv}
+cvReceiveUpdate recv = cvReceiveUpdates $ \unlift mr edits -> for_ edits (recv unlift mr)
 
-createViewReceiveUpdate ::
-       (forall m. MonadUnliftIO m =>
-                      MutableRead m (EditReader edit) -> edit -> m ())
-    -> CreateView edit ()
-createViewReceiveUpdate recv = createViewReceiveUpdates $ \mr edits -> for_ edits (recv mr)
-
-mapUpdates ::
-       forall r m edita editb. MonadUnliftIO m
-    => EditFunction edita editb
-    -> MutableRead m (EditReader edita)
-    -> [edita]
-    -> (forall t. MonadTransUnlift t =>
-                      MutableRead (t m) (EditReader editb) -> [editb] -> t m r)
-    -> m r
-mapUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnEditFunction {..}) mrA editsA call =
-    runUnlift unlift $
-    withTransConstraintTM @MonadIO $ do
-        editsB <- efUpdates ef editsA mrA
-        let
-            mrB :: MutableRead (t m) (EditReader editb)
-            mrB = efGet mrA
-        call mrB editsB
-
-createViewBindEditFunction :: EditFunction edit (WholeEdit t) -> (t -> IO ()) -> CreateView edit ()
-createViewBindEditFunction ef setf = do
-    initial <- liftOuter $ viewObjectRead $ \mr -> editFunctionRead ef mr ReadWhole
-    liftIO $ setf initial
-    createViewReceiveUpdates $ \mr edits ->
-        mapUpdates ef mr edits $ \_ wedits ->
-            withTransConstraintTM @MonadIO $
+cvBindEditFunction :: EditFunction edit (WholeEdit t) -> (t -> View edit ()) -> CreateView edit ()
+cvBindEditFunction ef setf = do
+    initial <- cvLiftView $ viewObjectRead $ \_ mr -> editFunctionRead ef mr ReadWhole
+    cvLiftView $ setf initial
+    cvReceiveUpdates $ \(MkUnliftIO unlift) ->
+        mapReceiveUpdates ef $ \_ wedits ->
             case lastWholeEdit wedits of
-                Just newval -> liftIO $ setf newval
+                Just newval -> liftIO $ unlift $ setf newval
                 Nothing -> return ()
 
-createViewAddAspect :: Aspect edit -> CreateView edit ()
-createViewAddAspect aspect = liftInner $ (pure ()) {vrFirstAspect = aspect}
+cvAddAspect :: Aspect edit -> CreateView edit ()
+cvAddAspect aspect = cvLiftViewResult $ (pure ()) {vrFirstAspect = aspect}
 
 mapCreateViewEdit ::
        forall edita editb a. ()
     => EditLens edita editb
     -> CreateView editb a
     -> CreateView edita a
-mapCreateViewEdit lens (Compose wv) = Compose $ mapViewEdit lens $ fmap (mapViewResultEdit lens) wv
+mapCreateViewEdit lens (MkCreateView (Compose rclva)) =
+    MkCreateView $ Compose $ withReaderT (mapViewContextEdit lens) $ fmap (mapViewResultEdit lens) rclva
 
 mapCreateViewAspect :: (Aspect edit -> Aspect edit) -> CreateView edit w -> CreateView edit w
-mapCreateViewAspect f (Compose vw) =
+mapCreateViewAspect f (MkCreateView (Compose vw)) =
+    MkCreateView $
     Compose $ do
         MkViewResult w v ag <- vw
         return $ MkViewResult w v $ f ag
@@ -242,26 +220,29 @@ mapCreateViewAspect f (Compose vw) =
 data ViewSubscription edit action w = MkViewSubscription
     { srWidget :: w
     , srGetSelection :: Aspect edit
-    , srCloser :: IO ()
     , srAction :: action
     }
 
 instance Functor (ViewSubscription edit action) where
-    fmap f (MkViewSubscription w gs cl aa) = MkViewSubscription (f w) gs cl aa
+    fmap f (MkViewSubscription w gs aa) = MkViewSubscription (f w) gs aa
 
 subscribeView ::
-       forall edit w action. CreateView edit w -> Subscriber edit action -> IO () -> IO (ViewSubscription edit action w)
-subscribeView (Compose (MkView (view :: ViewContext edit -> IO (ViewResult edit w)))) sub vcOpenSelection = do
+       forall edit w action.
+       CreateView edit w
+    -> Subscriber edit action
+    -> IO ()
+    -> LifeCycle (ViewSubscription edit action w)
+subscribeView (MkCreateView (Compose (ReaderT (view :: ViewContext edit -> LifeCycle (ViewResult edit w))))) sub vcOpenSelection = do
     let
-        initialise :: Object edit -> IO (ViewResult edit w, IORef (Aspect edit))
+        initialise :: Object edit -> LifeCycle (ViewResult edit w, IORef (Aspect edit))
         initialise vcObject = do
             rec
-                let vcSetSelect ss = writeIORef selref ss
+                let vcSetSelect ss = liftIO $ writeIORef selref ss
                 vr <- view MkViewContext {..}
-                selref <- newIORef $ vrFirstAspect vr
+                selref <- liftIO $ newIORef $ vrFirstAspect vr
             return (vr, selref)
         receive (vr, _) = vrUpdate vr
-    ((MkViewResult {..}, selref), srCloser, srAction) <- subscribe sub initialise receive
+    ((MkViewResult {..}, selref), srAction) <- subscribeLifeCycle sub initialise receive
     let
         srGetSelection = do
             ss <- readIORef selref

@@ -16,12 +16,14 @@ module Truth.Core.UI
     , module Truth.Core.UI.WindowButton
     , module Truth.Core.UI.Drag
     , module Truth.Core.UI.View
+    , module Truth.Core.UI.DynamicView
     , module Truth.Core.UI.GetView
     ) where
 
 import Truth.Core.UI.CSS
 import Truth.Core.UI.Checkbox
 import Truth.Core.UI.Drag
+import Truth.Core.UI.DynamicView
 import Truth.Core.UI.GetView
 import Truth.Core.UI.Icon
 import Truth.Core.UI.Label

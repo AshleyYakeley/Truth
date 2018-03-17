@@ -17,13 +17,13 @@ import Truth.UI.GTK.Entry
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Icon
 import Truth.UI.GTK.Label
+import Truth.UI.GTK.Layout
 import Truth.UI.GTK.Maybe
 import Truth.UI.GTK.Option
 import Truth.UI.GTK.Pages
 import Truth.UI.GTK.Switch
 import Truth.UI.GTK.Table
 import Truth.UI.GTK.Text
-import Truth.UI.GTK.Tuple
 import Truth.UI.GTK.Useful
 import Truth.Debug.Object
 
@@ -46,7 +46,7 @@ allGetView =
         , tableGetView
         , oneGetView
         , switchGetView
-        , verticalLayoutGetView
+        , layoutGetView
         , pagesGetView
         , dragGetView
         ]
@@ -61,7 +61,7 @@ getTheView spec =
         Nothing -> lastResortView spec
 
 class WindowButtons actions where
-    addButtons :: Box -> actions -> IO ()
+    addButtons :: Box -> actions -> LifeCycle ()
 
 instance WindowButtons () where
     addButtons _ () = return ()
@@ -124,60 +124,69 @@ menuItemAction item action = do
     _ <- on item #activate action
     return ()
 
-createWindowAndChild :: UIWindow edit -> CreateView edit (Window, Widget)
-createWindowAndChild MkUIWindow {..} = do
-    window <- new Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
-    createViewBindEditFunction uiTitle $ \title -> set window [#title := title]
+createWindowAndChild ::
+       WindowButtons actions => UIWindow edit -> IO () -> IO Bool -> CreateView edit (actions -> LifeCycle ())
+createWindowAndChild MkUIWindow {..} openSelection closeRequest = do
+    window <- lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
+    cvBindEditFunction uiTitle $ \title -> set window [#title := title]
     content <- getTheView uiContent
-    return (window, content)
-
-makeViewWindow :: (WindowButtons actions) => ProgramContext -> IO () -> UserInterface UIWindow actions -> IO ()
-makeViewWindow pc tellclose MkUserInterface {..} = do
-    rec
-        MkViewSubscription {..} <-
-            subscribeView (createWindowAndChild userinterfaceSpecifier) userinterfaceSubscriber openSelection
-        let
-            openSelection :: IO ()
-            openSelection = traceBracket "Selection button" $ do
-                msel <- srGetSelection
-                case msel of
-                    Just window -> makeWindowCountRef pc $ MkUserInterface userinterfaceSubscriber window
-                    Nothing -> traceIOM $ "no selection"
-    let
-        (window, child) = srWidget
-        closeRequest :: IO Bool
-        closeRequest = do
-            srCloser
-            tellclose
-            return False -- run existing handler that closes the window
     _ <- on window #deleteEvent $ \_ -> liftIO closeRequest
     menubar <- menuBarNew
-    fileMI <- attachMenuItem menubar "File"
-    fileMenu <- attachSubmenu fileMI
-    closeMI <- attachMenuItem fileMenu "Close"
-    menuItemAction closeMI $ do
-        ok <- closeRequest
-        if ok
-            then return ()
-            else widgetDestroy window
-    box <- new Box [#orientation := OrientationVertical]
-    #packStart box menubar False False 0
-    addButtons box srAction
-    selectionButton <- makeButton "Selection" openSelection
-        -- this is only correct if child has native scroll support, such as TextView
-    sw <- new ScrolledWindow []
-    scrollable <- isScrollable child
-    if scrollable
-        then set sw [containerChild := child]
-        else do
-            viewport <- new Viewport []
-            containerAdd viewport child
-            set sw [containerChild := viewport]
-    #packStart box selectionButton False False 0
-    #packStart box sw True True 0
-    set window [containerChild := box]
-    #show child
-    #showAll window
+    fileMI <- liftIO $ attachMenuItem menubar "File"
+    fileMenu <- liftIO $ attachSubmenu fileMI
+    closeMI <- liftIO $ attachMenuItem fileMenu "Close"
+    liftIO $
+        menuItemAction closeMI $ do
+            ok <- closeRequest
+            if ok
+                then return ()
+                else widgetDestroy window
+    return $ \actions -> do
+        box <- new Box [#orientation := OrientationVertical]
+        #packStart box menubar False False 0
+        addButtons box actions
+        selectionButton <- makeButton "Selection" $ liftIO openSelection
+            -- this is only correct if content has native scroll support, such as TextView
+        sw <- new ScrolledWindow []
+        scrollable <- liftIO $ isScrollable content
+        if scrollable
+            then #add sw content
+            else do
+                viewport <- new Viewport []
+                #add viewport content
+                #add sw viewport
+        #packStart box selectionButton False False 0
+        #packStart box sw True True 0
+        #add window box
+        #show content
+        #showAll window
+
+makeViewWindow :: WindowButtons actions => ProgramContext -> IO () -> UserInterface UIWindow actions -> IO ()
+makeViewWindow pc tellclose MkUserInterface {..} = do
+    rec
+        ((), srCloser) <-
+            runLifeCycle $ do
+                rec
+                    MkViewSubscription {..} <-
+                        subscribeView
+                            (createWindowAndChild userinterfaceSpecifier openSelection closeRequest)
+                            userinterfaceSubscriber
+                            openSelection
+                    srWidget srAction
+                    let
+                        openSelection :: IO ()
+                        openSelection = traceBracket "Selection button" $ do
+                            msel <- srGetSelection
+                            case msel of
+                                Just window -> makeWindowCountRef pc $ MkUserInterface userinterfaceSubscriber window
+                                Nothing -> traceIOM $ "no selection"
+                        closeRequest :: IO Bool
+                        closeRequest = do
+                            srCloser
+                            tellclose
+                            return True -- don't run existing handler that closes the window
+                return ()
+    return ()
 
 data ProgramContext = MkProgramContext
     { pcMainLoop :: MainLoop

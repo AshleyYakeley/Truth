@@ -10,7 +10,7 @@ import Truth.UI.GTK.GView
 createWidget :: UILabel edit -> CreateView edit Widget
 createWidget MkUILabel = do
     widget <- new Label []
-    createViewBindEditFunction id $ \label -> set widget [#label := label]
+    cvBindEditFunction id $ \label -> set widget [#label := label]
     toWidget widget
 
 labelGetView :: GetGView

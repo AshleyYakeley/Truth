@@ -34,7 +34,8 @@ predefinitions ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => [(QBindings baseedit, (Symbol, Text))]
 predefinitions =
-    [ pb "ui_textentry" $ valSpecText $ uiNothingValue mempty uiTextEntry
+    [ pb "ui_checkbox" $ \name val -> uiLens val $ uiMaybeCheckbox name
+    , pb "ui_textentry" $ valSpecText $ uiNothingValue mempty uiTextEntry
     , pb "ui_textarea" $ valSpecText $ uiNothingValue mempty $ uiConvert uiText
     , pb "ui_label" $ valSpecText $ uiNothingValue mempty $ uiLabel
     , pb "ui_horizontal" uiHorizontal
@@ -43,7 +44,6 @@ predefinitions =
         -- CSS
         -- drag
         -- icon
-        --, pb "ui_checkbox" $ \name lens -> (uiLens lens $ uiCheckbox name :: UISpec baseedit)
     , pb "ui_pick" $ \(nameMorphism :: PinaforeFunctionMorphism baseedit Point (Maybe Text)) (fset :: PinaforeFunctionValue baseedit (FiniteSet Point)) -> let
           getName :: PinaforeFunctionMorphism baseedit Point (Maybe Point, Text)
           getName =
