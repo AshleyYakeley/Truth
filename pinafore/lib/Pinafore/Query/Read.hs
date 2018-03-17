@@ -4,9 +4,11 @@ module Pinafore.Query.Read
 
 import Data.UUID
 
+import Pinafore.Number
 import Pinafore.Query.Expression
 import Pinafore.Query.Value
 import Pinafore.Table
+import Prelude (Fractional(..))
 import Shapes
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.String
@@ -149,7 +151,19 @@ readInfix =
          return $ pure $ toQValue $ qjoin @baseedit) <|>
     (do
          readStringAndWS "++"
-         return $ pure $ toQValue $ qappend @baseedit) <?>
+         return $ pure $ toQValue $ qappend @baseedit) <|>
+    (do
+         readStringAndWS "+"
+         return $ pure $ toQValue $ liftA2 @(Literal baseedit) $ (+) @Number) <|>
+    (do
+         readStringAndWS "-"
+         return $ pure $ toQValue $ liftA2 @(Literal baseedit) $ (-) @Number) <|>
+    (do
+         readStringAndWS "*"
+         return $ pure $ toQValue $ liftA2 @(Literal baseedit) $ (*) @Number) <|>
+    (do
+         readStringAndWS "/"
+         return $ pure $ toQValue $ liftA2 @(Literal baseedit) $ (/) @Number) <?>
     "infix operator"
 
 readExpression :: HasPinaforeTableEdit baseedit => Parser (QValueExpr baseedit)

@@ -28,6 +28,7 @@ library:
       - Pinafore.Query.Expression
       - Pinafore.Query
     other-modules:
+      - Pinafore.Number
       - Pinafore.AsText
       - Pinafore.Morphism
       - Pinafore.Table
