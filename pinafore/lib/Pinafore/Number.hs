@@ -54,7 +54,13 @@ instance Num Number where
     fromInteger = ExactNumber . fromInteger
 
 instance Fractional Number where
-    (/) = arity2op @Fractional (+)
+    (/) (ExactNumber n) (ExactNumber 0) =
+        InexactNumber $
+        case compare n 0 of
+            GT -> 1 / 0
+            EQ -> 0 / 0
+            LT -> -1 / 0
+    (/) p q = arity2op @Fractional (/) p q
     recip = arity1op @Fractional recip
     fromRational = ExactNumber
 

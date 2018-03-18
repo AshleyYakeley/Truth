@@ -78,7 +78,7 @@ window_calc = window "Calc" $ ui_vertical
     [
         [ui_textentry aval,false],
         [ui_textentry bval,false],
-        [ui_label $ aval + bval,false]
+        [ui_label $ aval / bval,false]
     ];
 
 in

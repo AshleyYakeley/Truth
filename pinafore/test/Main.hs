@@ -31,6 +31,22 @@ instance Eq (PreciseEq Number) where
     (MkPreciseEq (InexactNumber a)) == (MkPreciseEq (InexactNumber b)) = MkPreciseEq a == MkPreciseEq b
     _ == _ = False
 
+testCalc :: String -> Number -> Number -> TestTree
+testCalc name expected found = testCase name $ assertEqual "" (MkPreciseEq expected) (MkPreciseEq found)
+
+testNumbersArithemetic :: TestTree
+testNumbersArithemetic =
+    testGroup
+        "arithmetic"
+        [ testCalc "1/0" (InexactNumber $ 1 / 0) (1 / 0)
+        , testCalc "-1/0" (InexactNumber $ -1 / 0) (-1 / 0)
+        , testCalc "0/0" (InexactNumber $ 0 / 0) (0 / 0)
+        , testCalc "2+3" (ExactNumber $ 5) $ 2 + 3
+        , testCalc "2*3" (ExactNumber $ 6) $ 2 * 3
+        , testCalc "2-3" (ExactNumber $ -1) $ 2 - 3
+        , testCalc "2/3" (ExactNumber $ 2 % 3) $ 2 / 3
+        ]
+
 testShowRead ::
        forall t. (Show t, Eq (PreciseEq t), Read t)
     => String
@@ -51,10 +67,10 @@ testRead ::
     -> TestTree
 testRead str t = testCase (show str) $ assertEqual "" (MkPreciseEq t) $ MkPreciseEq $ read str
 
-testNumbers :: TestTree
-testNumbers =
+testNumbersShowRead :: TestTree
+testNumbersShowRead =
     testGroup
-        "numbers"
+        "show,read"
         [ testShowRead "0" $ ExactNumber 0
         , testShowRead "1" $ ExactNumber 1
         , testShowRead "-1" $ ExactNumber $ negate 1
@@ -87,6 +103,9 @@ testNumbers =
         , testRead "0.0_" $ ExactNumber 0
         , testRead "0.0_0" $ ExactNumber 0
         ]
+
+testNumbers :: TestTree
+testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
 
 -- | for test only
 instance Eq (QValue baseedit) where
