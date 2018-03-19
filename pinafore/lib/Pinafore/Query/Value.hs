@@ -1,5 +1,6 @@
 module Pinafore.Query.Value where
 
+import Data.List (zipWith)
 import Pinafore.AsText
 import Pinafore.Morphism
 import Pinafore.Table
@@ -61,25 +62,39 @@ qfunction = MkAny QFunction
 qexception :: Text -> QValue baseedit
 qexception = MkAny QException
 
+qpartialapply :: HasPinaforeTableEdit baseedit => QValue baseedit -> Result Text (QValue baseedit -> QValue baseedit)
+qpartialapply (MkAny QException ex) = FailureResult ex
+qpartialapply (MkAny QFunction f) = return f
+qpartialapply (MkAny QMorphism f) =
+    return $ \case
+        MkAny QPoint a -> MkAny QPoint $ applyPinaforeLens f a
+        MkAny QSet a ->
+            MkAny QSet $
+            readOnlyEditLens $
+            convertEditFunction .
+            applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a)
+        MkAny ta _ -> qexception $ pack $ "cannot apply " ++ show QMorphism ++ " to " ++ show ta
+qpartialapply (MkAny QInverseMorphism f) =
+    return $ \case
+        MkAny QConstant a ->
+            MkAny QSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) $ constEditLens $ Just a
+        MkAny QLiteral a -> MkAny QSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) a
+        MkAny QPoint a -> MkAny QSet $ applyInversePinaforeLens f a
+        MkAny QSet a ->
+            MkAny QSet $
+            readOnlyEditLens $
+            convertEditFunction .
+            applyPinaforeFunction
+                (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f))
+                (lensFunctionValue a)
+        MkAny ta _ -> qexception $ pack $ "cannot apply " ++ show QInverseMorphism ++ " to " ++ show ta
+qpartialapply (MkAny tf _) = FailureResult $ pack $ "cannot apply " ++ show tf
+
 qapply :: HasPinaforeTableEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
-qapply (MkAny QException ex) _ = MkAny QException ex
-qapply (MkAny QFunction f) a = f a
-qapply (MkAny QMorphism f) (MkAny QPoint a) = MkAny QPoint $ applyPinaforeLens f a
-qapply (MkAny QMorphism f) (MkAny QSet a) =
-    MkAny QSet $
-    readOnlyEditLens $
-    convertEditFunction . applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a)
-qapply (MkAny QInverseMorphism f) (MkAny QConstant a) =
-    MkAny QSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) $ constEditLens $ Just a
-qapply (MkAny QInverseMorphism f) (MkAny QLiteral a) =
-    MkAny QSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) a
-qapply (MkAny QInverseMorphism f) (MkAny QPoint a) = MkAny QSet $ applyInversePinaforeLens f a
-qapply (MkAny QInverseMorphism f) (MkAny QSet a) =
-    MkAny QSet $
-    readOnlyEditLens $
-    convertEditFunction .
-    applyPinaforeFunction (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f)) (lensFunctionValue a)
-qapply (MkAny tf _) (MkAny ta _) = qexception $ pack $ "cannot apply " ++ show tf ++ " to " ++ show ta
+qapply vf va =
+    case qpartialapply vf of
+        SuccessResult f -> f va
+        FailureResult ex -> MkAny QException ex
 
 qinvert :: QValue baseedit -> QValue baseedit
 qinvert (MkAny QException ex) = MkAny QException ex
@@ -146,6 +161,62 @@ literalToFunction (LiteralFunction t) = t
 
 qappend :: Literal baseedit Text -> Literal baseedit Text -> Literal baseedit Text
 qappend = liftA2 (<>)
+
+fvalIfThenElse ::
+       forall baseedit t.
+       t
+    -> PinaforeFunctionValue baseedit (Maybe Bool)
+    -> PinaforeFunctionValue baseedit t
+    -> PinaforeFunctionValue baseedit t
+    -> PinaforeFunctionValue baseedit t
+fvalIfThenElse vdef vi vt ve = let
+    mIfThenElse :: (Maybe Bool, (t, t)) -> t
+    mIfThenElse (Just True, (v, _)) = v
+    mIfThenElse (Just False, (_, v)) = v
+    mIfThenElse (Nothing, _) = vdef
+    in funcEditFunction mIfThenElse . (pairJoinEditFunctions vi $ pairJoinEditFunctions vt ve)
+
+qfifthenelse ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => PinaforeFunctionValue baseedit (Maybe Bool)
+    -> QValue baseedit
+    -> QValue baseedit
+    -> QValue baseedit
+qfifthenelse _ v@(MkAny QException _) _ = v
+qfifthenelse _ _ v@(MkAny QException _) = v
+qfifthenelse f (MkAny QList lt) (MkAny QList le) =
+    if length lt == length le
+        then MkAny QList $ zipWith (qfifthenelse f) lt le
+        else qexception $ pack $ "cannot match lists of lengths " ++ show (length lt) ++ " and " ++ show (length le)
+qfifthenelse f t e
+    | SuccessResult vt <- fromQValue @baseedit @(PinaforeFunctionValue baseedit (Maybe Text)) t
+    , SuccessResult ve <- fromQValue @baseedit @(PinaforeFunctionValue baseedit (Maybe Text)) e =
+        toQValue $ fvalIfThenElse Nothing f vt ve
+qfifthenelse f t e
+    | SuccessResult vt <- fromQValue @baseedit @(PinaforeFunctionValue baseedit (Maybe Point)) t
+    , SuccessResult ve <- fromQValue @baseedit @(PinaforeFunctionValue baseedit (Maybe Point)) e =
+        toQValue $ fvalIfThenElse Nothing f vt ve
+qfifthenelse f t e
+    | SuccessResult vt <- fromQValue @baseedit @(PinaforeFunctionValue baseedit (FiniteSet Point)) t
+    , SuccessResult ve <- fromQValue @baseedit @(PinaforeFunctionValue baseedit (FiniteSet Point)) e =
+        toQValue $ fvalIfThenElse mempty f vt ve
+-- possibly add cases for QMorphism and QInverseMorphism?
+qfifthenelse f t e
+    | SuccessResult vt <- qpartialapply t
+    , SuccessResult ve <- qpartialapply e = MkAny QFunction $ \a -> qfifthenelse f (vt a) (ve a)
+qfifthenelse f (MkAny QUISpec vt) (MkAny QUISpec ve) = let
+    pickUISpec :: Maybe Bool -> UISpec baseedit
+    pickUISpec Nothing = uiVertical []
+    pickUISpec (Just True) = vt
+    pickUISpec (Just False) = ve
+    in toQValue $ wholeEditFunction pickUISpec . f
+qfifthenelse _ (MkAny tt _) (MkAny te _) = qexception $ pack $ "cannot match " ++ show tt ++ " and " ++ show te
+
+qifthenelse ::
+       HasPinaforeTableEdit baseedit => Literal baseedit Bool -> QValue baseedit -> QValue baseedit -> QValue baseedit
+qifthenelse (LiteralConstant True) vt _ = vt
+qifthenelse (LiteralConstant False) _ ve = ve
+qifthenelse (LiteralFunction f) vt ve = qfifthenelse f vt ve
 
 class FromQValue baseedit t where
     fromQValue :: QValue baseedit -> Result Text t
@@ -298,7 +369,9 @@ instance FromQValue baseedit t => FromQValue baseedit (IO t) where
 
 instance (ToQValue baseedit a, FromQValue baseedit b, HasPinaforeTableEdit baseedit) =>
          FromQValue baseedit (a -> Result Text b) where
-    fromQValue vf = return $ fromQValue . qapply vf . toQValue
+    fromQValue vf = do
+        f <- qpartialapply vf
+        return $ fromQValue . f . toQValue
     qTypeDescriptionFrom = qTypeDescriptionToSingle @baseedit @a <> " -> " <> qTypeDescriptionFrom @baseedit @b
     qTypeDescriptionFromSingle = "(" <> qTypeDescriptionFrom @baseedit @(a -> Result Text b) <> ")"
 
@@ -359,10 +432,19 @@ instance ToQValue baseedit (PinaforeLensValue baseedit (FiniteSetEdit Point)) wh
     toQValue t = MkAny QSet t
     qTypeDescriptionTo = "set"
 
-instance ToQValue baseedit (PinaforeLensValue baseedit (WholeEdit t)) =>
-         ToQValue baseedit (PinaforeFunctionValue baseedit t) where
+instance {-# OVERLAPPABLE #-} ToQValue baseedit (PinaforeLensValue baseedit (WholeEdit t)) =>
+                              ToQValue baseedit (PinaforeFunctionValue baseedit t) where
     toQValue ef = toQValue $ readOnlyEditLens ef
-    qTypeDescriptionTo = "constant"
+    qTypeDescriptionTo = "immutable " <> qTypeDescriptionTo @baseedit @(PinaforeLensValue baseedit (WholeEdit t))
+
+instance ToQValue baseedit (PinaforeFunctionValue baseedit (FiniteSet Point)) where
+    toQValue ef =
+        toQValue @_ @(PinaforeLensValue baseedit (FiniteSetEdit Point)) $ readOnlyEditLens $ convertEditFunction . ef
+    qTypeDescriptionTo = "immutable set"
+
+instance ToQValue baseedit (PinaforeFunctionValue baseedit (UISpec baseedit)) where
+    toQValue ef = MkAny QUISpec $ uiSwitch ef
+    qTypeDescriptionTo = "uispec"
 
 instance edit ~ baseedit => ToQValue baseedit (UISpec edit) where
     toQValue t = MkAny QUISpec t

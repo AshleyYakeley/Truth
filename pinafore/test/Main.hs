@@ -218,6 +218,10 @@ testQueries =
         , testQuery "let a=1;b=a;a=3 in b" $ Nothing
         -- operators
         , testQuery "\"abc\" ++ \"def\"" $ Just "abcdef"
+        -- if/then/else
+        , testQuery "if true then 3 else 4" $ Just "3"
+        , testQuery "if false then 3 else 4" $ Just "4"
+        , testQuery "if false then if true then 1 else 2 else if true then 3 else 4" $ Just "3"
         ]
 
 tests :: TestTree

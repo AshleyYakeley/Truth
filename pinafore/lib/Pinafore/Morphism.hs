@@ -9,6 +9,7 @@ module Pinafore.Morphism
     , PinaforeLensMorphism
     , mapPinaforeLensMorphismBase
     , funcPinaforeLensMorphism
+    , nullPinaforeLensMorphism
     , applyPinaforeLens
     , applyInversePinaforeLens
     , lensFunctionMorphism
@@ -332,6 +333,9 @@ funcPinaforeLensMorphism amb bsa = let
     pmInverse :: APinaforeFunctionMorphism baseedit IdentityT b (FiniteSet a)
     pmInverse = MkAPinaforeFunctionMorphism {..}
     in MkCloseUnlift identityUnlift MkAPinaforeLensMorphism {..}
+
+nullPinaforeLensMorphism :: forall baseedit a b. PinaforeLensMorphism baseedit a b
+nullPinaforeLensMorphism = funcPinaforeLensMorphism (\_ -> Nothing) (\_ -> mempty)
 
 applyPinaforeLens ::
        PinaforeLensMorphism baseedit a b
