@@ -35,7 +35,9 @@ nullGetView :: GetGView
 nullGetView =
     MkGetView $ \_ uispec -> do
         MkUINull <- isUISpec uispec
-        return $ new Widget []
+        return $ do
+            w <- new DrawingArea []
+            toWidget w
 
 allGetView :: GetGView
 allGetView =

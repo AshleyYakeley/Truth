@@ -63,6 +63,7 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
                                 lcContainPackStart False box button
                                 #show button
                             lcContainPackStart True box widget
+                            widgetShow widget
                     return $ PresentOVS vs
     firstdvs <-
         cvLiftView $ do

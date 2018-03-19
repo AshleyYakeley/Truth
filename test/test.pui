@@ -81,5 +81,16 @@ window_calc = window "Calc" $ ui_vertical
         [ui_label $ aval / bval,false]
     ];
 
+sw_pick = !59eb2d87-f815-47ef-b7dc-8fe434151bb6;
+sw_val1 = !6d9f7afa-1091-49cc-8646-8e613bb75ee5;
+sw_val2 = !6b91406b-896c-4658-b771-2d67bec91ee4;
+sw_val3 = !934712ae-73a7-4084-8a43-d618c737fd56;
+window_switch = window "Switch" $ ui_vertical
+    [
+        [ui_textentry sw_pick,false],
+        [ui_checkbox "pick" sw_pick,false],
+        [if sw_pick then ui_textarea sw_val1 else ui_textarea sw_val2,true]
+    ];
+
 in
-[window_people,window_calc]
+[window_people,window_calc,window_switch]
