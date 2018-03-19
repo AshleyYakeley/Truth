@@ -34,6 +34,7 @@ library:
       - Pinafore.Table
       - Pinafore.File
       - Pinafore.Pinafore
+      - Pinafore.Query.Token
       - Pinafore.Query.Read
       - Pinafore.Query.Predefined
       - Pinafore.Database

@@ -36,6 +36,7 @@ import Data.Word as I
 import Prelude as I
     ( Double
     , Enum(..)
+    , Fractional(..)
     , Integer
     , Integral(..)
     , Num(..)

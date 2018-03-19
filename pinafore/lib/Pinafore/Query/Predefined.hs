@@ -4,23 +4,13 @@ module Pinafore.Query.Predefined
     ) where
 
 import Pinafore.Morphism
+import Pinafore.Number
 import Pinafore.Query.Expression
 import Pinafore.Query.Value
-
---import Pinafore.AsText
---import Pinafore.Edit
 import Pinafore.Table
 import Shapes
 import Truth.Core
 
-{-
-valSpec ::
-       AsText val
-    => UISpec (WholeEdit (Maybe val))
-    -> PinaforeLensValue (WholeEdit (Maybe Point))
-    -> UISpec baseedit
-valSpec spec val = uiLens (applyPinaforeLens literalPinaforeLensMorphism val) spec
--}
 valSpecText :: UISpec (WholeEdit (Maybe Text)) -> PinaforeLensValue baseedit (WholeEdit (Maybe Text)) -> UISpec baseedit
 valSpecText spec val = uiLens val spec
 
@@ -31,13 +21,34 @@ pb :: forall baseedit t. ToQValue baseedit t
 pb name val = (qbind name val, (name, qTypeDescriptionTo @baseedit @t))
 
 isUnit :: Bijection (Maybe ()) Bool
-isUnit = MkBijection isJust $ \b -> if b then Just () else Nothing
+isUnit =
+    MkBijection isJust $ \b ->
+        if b
+            then Just ()
+            else Nothing
 
 predefinitions ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => [(QBindings baseedit, (Symbol, Text))]
 predefinitions =
-    [ pb "ui_unitcheckbox" $ \name val -> uiLens (toEditLens isUnit . val) $ uiCheckbox name
+    [ pb "$" $ qapply @baseedit
+    , pb "." $ qcombine @baseedit
+    , pb "&" $ qmeet @baseedit
+    , pb "|" $ qjoin @baseedit
+    , pb "++" $ qappend @baseedit
+    , pb "==" $ liftA2 @(Literal baseedit) $ (==) @Text
+    , pb "/=" $ liftA2 @(Literal baseedit) $ (/=) @Text
+    , pb "+" $ liftA2 @(Literal baseedit) $ (+) @Number
+    , pb "-" $ liftA2 @(Literal baseedit) $ (-) @Number
+    , pb "*" $ liftA2 @(Literal baseedit) $ (*) @Number
+    , pb "/" $ liftA2 @(Literal baseedit) $ (/) @Number
+    , pb "~==" $ liftA2 @(Literal baseedit) $ (==) @Number
+    , pb "~/=" $ liftA2 @(Literal baseedit) $ (/=) @Number
+    , pb "<" $ liftA2 @(Literal baseedit) $ (<) @Number
+    , pb "<=" $ liftA2 @(Literal baseedit) $ (<=) @Number
+    , pb ">" $ liftA2 @(Literal baseedit) $ (>) @Number
+    , pb ">=" $ liftA2 @(Literal baseedit) $ (>=) @Number
+    , pb "ui_unitcheckbox" $ \name val -> uiLens (toEditLens isUnit . val) $ uiCheckbox name
     , pb "ui_booleancheckbox" $ \name val -> uiLens val $ uiMaybeCheckbox name
     , pb "ui_textentry" $ valSpecText $ uiNothingValue mempty uiTextEntry
     , pb "ui_textarea" $ valSpecText $ uiNothingValue mempty $ uiConvert uiText
@@ -98,14 +109,7 @@ pd name _ = (name, qTypeDescriptionTo @baseedit @t)
 predefinedDoc ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => [(Symbol, Text)]
-predefinedDoc =
-    [ pd @baseedit "($)" (qapply @baseedit)
-    , pd @baseedit "(.)" (qcombine @baseedit)
-    , pd @baseedit "(&)" (qmeet @baseedit)
-    , pd @baseedit "(|)" (qjoin @baseedit)
-    , pd @baseedit "(++)" (qappend @baseedit)
-    ] ++
-    fmap snd (predefinitions @baseedit)
+predefinedDoc = [pd @baseedit "@" $ qinvert @baseedit] ++ fmap snd (predefinitions @baseedit)
 
 predefinedBindings :: HasPinaforeTableEdit baseedit => QBindings baseedit
 predefinedBindings = mconcat $ fmap fst predefinitions

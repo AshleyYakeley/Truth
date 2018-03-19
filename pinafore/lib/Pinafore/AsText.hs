@@ -31,6 +31,11 @@ instance AsText Bool where
     fromText text = lookup text $ fmap (\t -> (toText t, t)) allValues
     textTypeDescription = "boolean"
 
+instance AsText Number where
+    toText = pack . show
+    fromText = readMaybe . unpack
+    textTypeDescription = "number"
+
 instance AsText Int where
     toText = pack . show
     fromText = readMaybe . unpack
@@ -42,13 +47,12 @@ instance AsText Integer where
     textTypeDescription = "integer"
 
 instance AsText Double where
-    toText = pack . show
-    fromText = readMaybe . unpack
-    textTypeDescription = "number"
-
-instance AsText Number where
-    toText = pack . show
-    fromText = readMaybe . unpack
+    toText = toText . InexactNumber
+    fromText t = do
+        n <- fromText t
+        case n of
+            InexactNumber x -> return x
+            _ -> Nothing
     textTypeDescription = "number"
 
 instance AsText Day where

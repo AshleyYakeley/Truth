@@ -5,7 +5,7 @@ module Pinafore.Number
 
 import Data.List (head, iterate)
 import Data.Ratio
-import Prelude (Fractional(..), isNaN)
+import Prelude (isNaN)
 import Shapes hiding ((+++), option)
 import Text.ParserCombinators.ReadP hiding (many)
 
@@ -143,13 +143,14 @@ instance Read Number where
                                     else repN % (fixD * (repD - 1))
                     return $ (fixN % fixD) + repR
             return $ sign $ toRational intPart + decPart
+        readNaN :: ReadP Number
+        readNaN = do
+            _ <- string "NaN"
+            return $ InexactNumber $ 0 / 0
         readNumber :: ReadP Number
         readNumber = do
             skipSpaces
-            n <- fmap InexactNumber readInexact <++ fmap ExactNumber readExact
+            n <- fmap InexactNumber readInexact <++ fmap ExactNumber readExact <++ readNaN
             skipSpaces
             return n
-        in \s ->
-               case readP_to_S readNumber s of
-                   ps@[(_, "")] -> ps
-                   _ -> [(InexactNumber $ 0 / 0, "")]
+        in readP_to_S readNumber
