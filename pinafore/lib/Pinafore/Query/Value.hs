@@ -206,7 +206,7 @@ qfifthenelse f t e
     , SuccessResult ve <- qpartialapply e = MkAny QFunction $ \a -> qfifthenelse f (vt a) (ve a)
 qfifthenelse f (MkAny QUISpec vt) (MkAny QUISpec ve) = let
     pickUISpec :: Maybe Bool -> UISpec baseedit
-    pickUISpec Nothing = uiVertical []
+    pickUISpec Nothing = uiNull
     pickUISpec (Just True) = vt
     pickUISpec (Just False) = ve
     in toQValue $ wholeEditFunction pickUISpec . f

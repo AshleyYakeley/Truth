@@ -31,10 +31,17 @@ lastResortView spec = do
     w <- liftIO $ labelNew $ Just $ "missing viewer for " <> fromString (show spec)
     toWidget w
 
+nullGetView :: GetGView
+nullGetView =
+    MkGetView $ \_ uispec -> do
+        MkUINull <- isUISpec uispec
+        return $ new Widget []
+
 allGetView :: GetGView
 allGetView =
     mconcat
-        [ lensGetView
+        [ nullGetView
+        , lensGetView
         , cssGetView
         , iconGetView
         , labelGetView
