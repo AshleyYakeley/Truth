@@ -61,7 +61,7 @@ ui_person p = ui_vertical
         [
             [ui_labelled "Birth: " $ ui_textentry $ birthdate p,false],
             [ui_labelled "Death: " $ ui_textentry $ deathdate p,false],
-            [ui_checkbox "Married" $ married p,false],
+            [ui_booleancheckbox "Married" $ married p,false],
             [ui_labelled "Mother: " $ ui_pick name People $ mother p,false],
             [ui_labelled "Father: " $ ui_pick name People $ father p,false],
             [ui_people $ children p,true]
@@ -88,7 +88,7 @@ sw_val3 = !934712ae-73a7-4084-8a43-d618c737fd56;
 window_switch = window "Switch" $ ui_vertical
     [
         [ui_textentry sw_pick,false],
-        [ui_checkbox "pick" sw_pick,false],
+        [ui_booleancheckbox "pick" sw_pick,false],
         [if sw_pick then ui_textarea sw_val1 else ui_textarea sw_val2,true]
     ];
 

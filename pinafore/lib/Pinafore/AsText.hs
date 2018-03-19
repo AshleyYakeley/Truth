@@ -19,6 +19,12 @@ instance AsText String where
     fromText = Just . unpack
     textTypeDescription = "text"
 
+instance AsText () where
+    toText () = fromString "unit"
+    fromText "unit" = Just ()
+    fromText _ = Nothing
+    textTypeDescription = "unit"
+
 instance AsText Bool where
     toText True = fromString "true"
     toText False = fromString "false"

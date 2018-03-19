@@ -30,11 +30,15 @@ pb :: forall baseedit t. ToQValue baseedit t
    -> (QBindings baseedit, (Symbol, Text))
 pb name val = (qbind name val, (name, qTypeDescriptionTo @baseedit @t))
 
+isUnit :: Bijection (Maybe ()) Bool
+isUnit = MkBijection isJust $ \b -> if b then Just () else Nothing
+
 predefinitions ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => [(QBindings baseedit, (Symbol, Text))]
 predefinitions =
-    [ pb "ui_checkbox" $ \name val -> uiLens val $ uiMaybeCheckbox name
+    [ pb "ui_unitcheckbox" $ \name val -> uiLens (toEditLens isUnit . val) $ uiCheckbox name
+    , pb "ui_booleancheckbox" $ \name val -> uiLens val $ uiMaybeCheckbox name
     , pb "ui_textentry" $ valSpecText $ uiNothingValue mempty uiTextEntry
     , pb "ui_textarea" $ valSpecText $ uiNothingValue mempty $ uiConvert uiText
     , pb "ui_label" $ valSpecText $ uiNothingValue mempty $ uiLabel
