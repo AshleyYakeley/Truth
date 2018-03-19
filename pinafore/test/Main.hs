@@ -4,14 +4,110 @@ module Main
     ( main
     ) where
 
+import Data.Ratio
 import Pinafore
 import Pinafore.Query.Expression
 import Pinafore.Query.Value
+import Prelude (read)
+import Prelude (Fractional(..))
 import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
-    -- for test only
 
+newtype PreciseEq t =
+    MkPreciseEq t
+
+instance Show t => Show (PreciseEq t) where
+    show (MkPreciseEq a) = show a
+
+instance Eq (PreciseEq Rational) where
+    (MkPreciseEq a) == (MkPreciseEq b) = a == b
+
+instance Eq (PreciseEq Double) where
+    (MkPreciseEq a) == (MkPreciseEq b) = show a == show b
+
+instance Eq (PreciseEq Number) where
+    (MkPreciseEq (ExactNumber a)) == (MkPreciseEq (ExactNumber b)) = MkPreciseEq a == MkPreciseEq b
+    (MkPreciseEq (InexactNumber a)) == (MkPreciseEq (InexactNumber b)) = MkPreciseEq a == MkPreciseEq b
+    _ == _ = False
+
+testCalc :: String -> Number -> Number -> TestTree
+testCalc name expected found = testCase name $ assertEqual "" (MkPreciseEq expected) (MkPreciseEq found)
+
+testNumbersArithemetic :: TestTree
+testNumbersArithemetic =
+    testGroup
+        "arithmetic"
+        [ testCalc "1/0" (InexactNumber $ 1 / 0) (1 / 0)
+        , testCalc "-1/0" (InexactNumber $ -1 / 0) (-1 / 0)
+        , testCalc "0/0" (InexactNumber $ 0 / 0) (0 / 0)
+        , testCalc "2+3" (ExactNumber $ 5) $ 2 + 3
+        , testCalc "2*3" (ExactNumber $ 6) $ 2 * 3
+        , testCalc "2-3" (ExactNumber $ -1) $ 2 - 3
+        , testCalc "2/3" (ExactNumber $ 2 % 3) $ 2 / 3
+        ]
+
+testShowRead ::
+       forall t. (Show t, Eq (PreciseEq t), Read t)
+    => String
+    -> t
+    -> TestTree
+testShowRead str t =
+    testGroup
+        (show str)
+        [ testCase "show" $ assertEqual "" str $ show t
+        , testCase "read" $ assertEqual "" (MkPreciseEq t) $ MkPreciseEq $ read str
+        , testCase "read-show" $ assertEqual "" str $ show $ read @t str
+        ]
+
+testRead ::
+       forall t. (Show t, Eq (PreciseEq t), Read t)
+    => String
+    -> t
+    -> TestTree
+testRead str t = testCase (show str) $ assertEqual "" (MkPreciseEq t) $ MkPreciseEq $ read str
+
+testNumbersShowRead :: TestTree
+testNumbersShowRead =
+    testGroup
+        "show,read"
+        [ testShowRead "0" $ ExactNumber 0
+        , testShowRead "1" $ ExactNumber 1
+        , testShowRead "-1" $ ExactNumber $ negate 1
+        , testShowRead "0.5" $ ExactNumber $ 1 / 2
+        , testShowRead "0._3" $ ExactNumber $ 1 / 3
+        , testShowRead "-0._3" $ ExactNumber $ negate $ 1 / 3
+        , testShowRead "-0.0_3" $ ExactNumber $ negate $ 1 / 30
+        , testShowRead "0.3_571428" $ ExactNumber $ 5 / 14
+        , testShowRead "NaN" $ InexactNumber $ 0 / 0
+        , testShowRead "~0.0" $ InexactNumber 0
+        , testShowRead "~1.0" $ InexactNumber 1
+        , testShowRead "~-1.0" $ InexactNumber $ negate 1
+        , testShowRead "~Infinity" $ InexactNumber $ 1 / 0
+        , testShowRead "~-Infinity" $ InexactNumber $ -1 / 0
+        , testRead "" $ InexactNumber $ 0 / 0
+        , testRead " " $ InexactNumber $ 0 / 0
+        , testRead "  " $ InexactNumber $ 0 / 0
+        , testRead " 1" $ ExactNumber 1
+        , testRead "1 " $ ExactNumber 1
+        , testRead " 1 " $ ExactNumber 1
+        , testRead "z" $ InexactNumber $ 0 / 0
+        , testRead "ZZ" $ InexactNumber $ 0 / 0
+        , testRead "~1Z" $ InexactNumber $ 0 / 0
+        , testRead "~-1.1Z" $ InexactNumber $ 0 / 0
+        , testRead "0" $ ExactNumber 0
+        , testRead "0." $ ExactNumber 0
+        , testRead "0.0" $ ExactNumber 0
+        , testRead "0._" $ ExactNumber 0
+        , testRead "0._0" $ ExactNumber 0
+        , testRead "0.0_" $ ExactNumber 0
+        , testRead "0.0_0" $ ExactNumber 0
+        ]
+
+testNumbers :: TestTree
+testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
+
+-- | for test only
 instance Eq (QValue baseedit) where
     (MkAny QConstant a1) == (MkAny QConstant a2) = a1 == a2
     _ == _ = error "QValue: not comparable"
@@ -122,10 +218,14 @@ testQueries =
         , testQuery "let a=1;b=a;a=3 in b" $ Nothing
         -- operators
         , testQuery "\"abc\" ++ \"def\"" $ Just "abcdef"
+        -- if/then/else
+        , testQuery "if true then 3 else 4" $ Just "3"
+        , testQuery "if false then 3 else 4" $ Just "4"
+        , testQuery "if false then if true then 1 else 2 else if true then 3 else 4" $ Just "3"
         ]
 
 tests :: TestTree
-tests = localOption (mkTimeout 2000000) $ testGroup "pinafore" [testQueryValues, testQueries]
+tests = localOption (mkTimeout 2000000) $ testGroup "pinafore" [testNumbers, testQueryValues, testQueries]
 
 main :: IO ()
 main = defaultMain tests

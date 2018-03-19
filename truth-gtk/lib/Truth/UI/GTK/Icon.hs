@@ -15,8 +15,6 @@ iconGetView :: GetGView
 iconGetView =
     MkGetView $ \_ uispec -> do
         MkUIIcon icon size <- isUISpec uispec
-        return $
-            liftLifeCycle $ do
-                image <- imageNewFromIconName (Just icon) (fromIntegral $ fromEnum $ whichSize size)
-                lifeCycleClose $ widgetDestroy image
-                toWidget image
+        return $ do
+            image <- imageNewFromIconName (Just icon) (fromIntegral $ fromEnum $ whichSize size)
+            toWidget image

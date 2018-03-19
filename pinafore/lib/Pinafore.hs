@@ -1,5 +1,6 @@
 module Pinafore
-    ( module Pinafore.AsText
+    ( module Pinafore.Number
+    , module Pinafore.AsText
     , module Pinafore.Morphism
     , module Pinafore.Table
     , module Pinafore.Pinafore
@@ -13,6 +14,7 @@ import Pinafore.AsText
 import Pinafore.Database
 import Pinafore.Database.SQLite
 import Pinafore.Morphism
+import Pinafore.Number
 import Pinafore.Pinafore
 import Pinafore.Query
 import Pinafore.Table

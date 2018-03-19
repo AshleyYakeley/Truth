@@ -1,6 +1,7 @@
 module Pinafore.AsText where
 
 import Data.Time
+import Pinafore.Number
 import Shapes
 
 class AsText t where
@@ -35,6 +36,11 @@ instance AsText Integer where
     textTypeDescription = "integer"
 
 instance AsText Double where
+    toText = pack . show
+    fromText = readMaybe . unpack
+    textTypeDescription = "number"
+
+instance AsText Number where
     toText = pack . show
     fromText = readMaybe . unpack
     textTypeDescription = "number"

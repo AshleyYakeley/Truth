@@ -72,5 +72,14 @@ window_person p = window (name p) $ ui_person p;
 
 window_people = window "People" $ ui_people People;
 
+aval = !a4706230-2c61-44b1-b600-516e7a54c607;
+bval = !9d284ad2-e141-4114-ae50-8829a6db710f;
+window_calc = window "Calc" $ ui_vertical
+    [
+        [ui_textentry aval,false],
+        [ui_textentry bval,false],
+        [ui_label $ aval / bval,false]
+    ];
+
 in
-[window_people]
+[window_people,window_calc]

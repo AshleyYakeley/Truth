@@ -4,9 +4,11 @@ module Pinafore.Query.Read
 
 import Data.UUID
 
+import Pinafore.Number
 import Pinafore.Query.Expression
 import Pinafore.Query.Value
 import Pinafore.Table
+import Prelude (Fractional(..))
 import Shapes
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.String
@@ -73,12 +75,18 @@ identifierChar c = isAlphaNum c
 data Keyword t where
     KWLet :: Keyword ()
     KWIn :: Keyword ()
+    KWIf :: Keyword ()
+    KWThen :: Keyword ()
+    KWElse :: Keyword ()
     KWBool :: Keyword Bool
     KWSymbol :: Keyword Symbol
 
 instance Show (Keyword t) where
     show KWLet = show ("let" :: String)
     show KWIn = show ("in" :: String)
+    show KWIf = show ("if" :: String)
+    show KWThen = show ("then" :: String)
+    show KWElse = show ("else" :: String)
     show KWBool = "boolean constant"
     show KWSymbol = "symbol"
 
@@ -95,6 +103,12 @@ readKeyword kw =
               (_, "let") -> empty
               (KWIn, "in") -> return ()
               (_, "in") -> empty
+              (KWIf, "if") -> return ()
+              (_, "if") -> empty
+              (KWThen, "then") -> return ()
+              (_, "then") -> empty
+              (KWElse, "else") -> return ()
+              (_, "else") -> empty
               (KWBool, "true") -> return True
               (_, "true") -> empty
               (KWBool, "false") -> return False
@@ -149,10 +163,24 @@ readInfix =
          return $ pure $ toQValue $ qjoin @baseedit) <|>
     (do
          readStringAndWS "++"
-         return $ pure $ toQValue $ qappend @baseedit) <?>
+         return $ pure $ toQValue $ qappend @baseedit) <|>
+    (do
+         readStringAndWS "+"
+         return $ pure $ toQValue $ liftA2 @(Literal baseedit) $ (+) @Number) <|>
+    (do
+         readStringAndWS "-"
+         return $ pure $ toQValue $ liftA2 @(Literal baseedit) $ (-) @Number) <|>
+    (do
+         readStringAndWS "*"
+         return $ pure $ toQValue $ liftA2 @(Literal baseedit) $ (*) @Number) <|>
+    (do
+         readStringAndWS "/"
+         return $ pure $ toQValue $ liftA2 @(Literal baseedit) $ (/) @Number) <?>
     "infix operator"
 
-readExpression :: HasPinaforeTableEdit baseedit => Parser (QValueExpr baseedit)
+readExpression ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => Parser (QValueExpr baseedit)
 readExpression =
     (do
          readCharAndWS '\\'
@@ -169,6 +197,14 @@ readExpression =
              [] -> return ()
              l -> parserFail $ "duplicate bindings: " ++ intercalate ", " (fmap show l)
          return $ qlets bindings body) <|>
+    (do
+         readKeyword KWIf
+         etest <- readExpression
+         readKeyword KWThen
+         ethen <- readExpression
+         readKeyword KWElse
+         eelse <- readExpression
+         return $ exprApplyAll (pure $ toQValue $ qifthenelse @baseedit) [etest, ethen, eelse]) <|>
     (do
          e1 <- readExpression1
          mfe2 <-
