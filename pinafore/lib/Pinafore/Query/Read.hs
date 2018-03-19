@@ -44,31 +44,7 @@ readBindings =
 readExpression ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => Parser (QValueExpr baseedit)
-readExpression =
-    (do
-         readThis TokLambda
-         args <- many readPattern
-         readThis TokMap
-         val <- readExpression
-         return $ exprAbstracts args val) <|>
-    (do
-         readThis TokLet
-         bindings <- readBindings
-         readThis TokIn
-         body <- readExpression
-         case getDuplicates bindings of
-             [] -> return ()
-             l -> parserFail $ "duplicate bindings: " ++ intercalate ", " (fmap show l)
-         return $ qlets bindings body) <|>
-    (do
-         readThis TokIf
-         etest <- readExpression
-         readThis TokThen
-         ethen <- readExpression
-         readThis TokElse
-         eelse <- readExpression
-         return $ exprApplyAll (pure $ toQValue $ qifthenelse @baseedit) [etest, ethen, eelse]) <|>
-    (readInfixedExpression 0)
+readExpression = readInfixedExpression 0
 
 data FixAssoc
     = AssocNone
@@ -150,16 +126,45 @@ readInfixedExpression prec = do
                 return $ rightApply e1 $ fmap (\(_, name, e2) -> (qvar name, e2)) rest
         _ -> parserFail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(_, name, _) -> show name) rest)
 
-readExpression1 :: HasPinaforeTableEdit baseedit => Parser (QValueExpr baseedit)
-readExpression1 = do
-    e1 <- readSingleExpression
-    args <- many readSingleExpression
-    return $ exprApplyAll e1 args
-
-readSingleExpression ::
+readExpression1 ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => Parser (QValueExpr baseedit)
-readSingleExpression =
+readExpression1 =
+    (do
+         readThis TokLambda
+         args <- many readPattern
+         readThis TokMap
+         val <- readExpression
+         return $ exprAbstracts args val) <|>
+    (do
+         readThis TokLet
+         bindings <- readBindings
+         readThis TokIn
+         body <- readExpression
+         case getDuplicates bindings of
+             [] -> return ()
+             l -> parserFail $ "duplicate bindings: " ++ intercalate ", " (fmap show l)
+         return $ qlets bindings body) <|>
+    (do
+         readThis TokIf
+         etest <- readExpression
+         readThis TokThen
+         ethen <- readExpression
+         readThis TokElse
+         eelse <- readExpression
+         return $ exprApplyAll (pure $ toQValue $ qifthenelse @baseedit) [etest, ethen, eelse]) <|>
+    readExpression2
+
+readExpression2 :: HasPinaforeTableEdit baseedit => Parser (QValueExpr baseedit)
+readExpression2 = do
+    e1 <- readExpression3
+    args <- many readExpression3
+    return $ exprApplyAll e1 args
+
+readExpression3 ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => Parser (QValueExpr baseedit)
+readExpression3 =
     (do
          b <- readThis TokBool
          return $ pure $ toQValue b) <|>
