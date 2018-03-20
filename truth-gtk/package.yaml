@@ -38,6 +38,7 @@ library:
       - Truth.UI.GTK.GView
       - Truth.UI.GTK.Window
       - Truth.UI.GTK.CSS
+      - Truth.UI.GTK.Button
       - Truth.UI.GTK.Icon
       - Truth.UI.GTK.Label
       - Truth.UI.GTK.Maybe

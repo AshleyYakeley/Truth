@@ -79,7 +79,7 @@ instance Monoid (KeyColumns tedit key) where
 
 keyContainerView ::
        forall cont tedit iedit.
-       (IONewItemKeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
+       (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => KeyColumns tedit (ContainerKey cont)
     -> (ContainerKey cont -> Aspect tedit)
     -> EditLens tedit (KeyEdit cont iedit)
@@ -105,15 +105,6 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
     store <- seqStoreNew initalRows
     tview <- treeViewNewWithModel store
     for_ cols $ addColumn tview store
-    box <- new Box [#orientation := OrientationVertical]
-    newButton <-
-        cvMakeButton "New" $
-        mapViewEdit tableLens $
-        viewObjectPushEdit $ \_ push -> do
-            item <- liftIO $ newKeyContainerItem @cont
-            push [KeyInsertReplaceItem item]
-    #packStart box newButton False False 0
-    #packStart box tview True True 0
     let
         findInStore ::
                forall m. MonadIO m
@@ -193,11 +184,11 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
     _ <-
         cvLiftView $
         liftIOView $ \unlift ->
-            on box #focus $ \_ ->
+            on tview #focus $ \_ ->
                 unlift $ do
                     viewSetSelectedAspect aspect
                     return True
-    toWidget box
+    toWidget tview
 
 tableGetView :: GetGView
 tableGetView =

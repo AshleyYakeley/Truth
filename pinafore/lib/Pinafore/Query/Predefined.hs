@@ -59,6 +59,8 @@ predefinitions =
         -- CSS
         -- drag
         -- icon
+    , pb "ui_addbutton" $ \(name :: PinaforeFunctionValue baseedit (Maybe Text)) (val :: PinaforeLensValue baseedit (FiniteSetEdit Point)) ->
+          uiTableNewItemButton (funcEditFunction (fromMaybe mempty) . name) val
     , pb "ui_pick" $ \(nameMorphism :: PinaforeFunctionMorphism baseedit Point (Maybe Text)) (fset :: PinaforeFunctionValue baseedit (FiniteSet Point)) -> let
           getName :: PinaforeFunctionMorphism baseedit Point (Maybe Point, Text)
           getName =

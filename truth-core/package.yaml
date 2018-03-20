@@ -89,6 +89,7 @@ library:
       - Truth.Core.UI.Null
       - Truth.Core.UI.Lens
       - Truth.Core.UI.CSS
+      - Truth.Core.UI.Button
       - Truth.Core.UI.One
       - Truth.Core.UI.Switch
       - Truth.Core.UI.Layout

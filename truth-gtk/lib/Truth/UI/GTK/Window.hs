@@ -10,6 +10,7 @@ import GI.Gtk
 import Shapes
 import System.Environment
 import Truth.Core
+import Truth.UI.GTK.Button
 import Truth.UI.GTK.CSS
 import Truth.UI.GTK.CheckButton
 import Truth.UI.GTK.Drag
@@ -45,6 +46,7 @@ allGetView =
         [ nullGetView
         , lensGetView
         , cssGetView
+        , buttonGetView
         , iconGetView
         , labelGetView
         , checkButtonGetView

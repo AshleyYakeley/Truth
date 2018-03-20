@@ -1,11 +1,15 @@
 # Run "pinafore-query --doc" to see all predefined bindings.
 
 let
-# Useful
+
+### Useful
 window n s = [n,s];
 column n p = [n,p];
 ui_page n ui = [ui_label n,ui];
 ui_labelled n ui = ui_horizontal [[ui_label n,false],[ui,true]];
+
+
+### People
 
 # Ontology
 type = %f06efa5e-190f-4e5d-8633-495c5683c124;
@@ -33,7 +37,11 @@ deathdate = %805a9e65-d69a-4261-9c94-a3249885b6bb;
 married = %380ac576-9252-4783-b2d8-db222c683a22;
 
 # UI
-ui_people pp = ui_table [column "Name" name] window_person pp;
+ui_people pp = ui_vertical
+[
+    [ui_addbutton "New Person" pp,false],
+    [ui_table [column "Name" name] window_person pp,true]
+];
 ui_person p = ui_vertical
 [
     [ui_labelled "Name: " $ ui_textentry $ name p,false],
@@ -72,25 +80,29 @@ window_person p = window (name p) $ ui_person p;
 
 window_people = window "People" $ ui_people People;
 
+### Calculator
+
 aval = !a4706230-2c61-44b1-b600-516e7a54c607;
 bval = !9d284ad2-e141-4114-ae50-8829a6db710f;
 window_calc = window "Calc" $ ui_vertical
-    [
-        [ui_textentry aval,false],
-        [ui_textentry bval,false],
-        [ui_label $ aval / bval,false]
-    ];
+[
+    [ui_textentry aval,false],
+    [ui_textentry bval,false],
+    [ui_label $ aval / bval,false]
+];
+
+### Switching Value
 
 sw_pick = !59eb2d87-f815-47ef-b7dc-8fe434151bb6;
 sw_val1 = !6d9f7afa-1091-49cc-8646-8e613bb75ee5;
 sw_val2 = !6b91406b-896c-4658-b771-2d67bec91ee4;
 sw_val3 = !934712ae-73a7-4084-8a43-d618c737fd56;
 window_switch = window "Switch" $ ui_vertical
-    [
-        [ui_textentry sw_pick,false],
-        [ui_booleancheckbox "pick" sw_pick,false],
-        [if sw_pick then ui_textarea sw_val1 else ui_textarea sw_val2,true]
-    ];
+[
+    [ui_textentry sw_pick,false],
+    [ui_booleancheckbox "pick" sw_pick,false],
+    [if sw_pick then ui_textarea sw_val1 else ui_textarea sw_val2,true]
+];
 
 in
 [window_people,window_calc,window_switch]

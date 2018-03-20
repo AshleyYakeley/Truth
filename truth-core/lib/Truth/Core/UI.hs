@@ -3,6 +3,7 @@ module Truth.Core.UI
     , module Truth.Core.UI.Null
     , module Truth.Core.UI.Lens
     , module Truth.Core.UI.CSS
+    , module Truth.Core.UI.Button
     , module Truth.Core.UI.One
     , module Truth.Core.UI.Switch
     , module Truth.Core.UI.Layout
@@ -21,6 +22,7 @@ module Truth.Core.UI
     , module Truth.Core.UI.GetView
     ) where
 
+import Truth.Core.UI.Button
 import Truth.Core.UI.CSS
 import Truth.Core.UI.Checkbox
 import Truth.Core.UI.Drag
