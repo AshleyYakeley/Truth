@@ -337,7 +337,7 @@ instance FromQValue baseedit (PinaforeLensMorphism baseedit a b) =>
 instance FromQValue baseedit (UISpec baseedit) where
     fromQValue (MkAny QUISpec v) = return v
     fromQValue v = badFromQValue v
-    qTypeDescriptionFrom = "uispec"
+    qTypeDescriptionFrom = "ui"
 
 instance HasPinaforeTableEdit baseedit => FromQValue baseedit (UIWindow baseedit) where
     fromQValue v = do
@@ -444,8 +444,8 @@ instance ToQValue baseedit (PinaforeFunctionValue baseedit (FiniteSet Point)) wh
 
 instance ToQValue baseedit (PinaforeFunctionValue baseedit (UISpec baseedit)) where
     toQValue ef = MkAny QUISpec $ uiSwitch ef
-    qTypeDescriptionTo = "uispec"
+    qTypeDescriptionTo = "ui"
 
 instance edit ~ baseedit => ToQValue baseedit (UISpec edit) where
     toQValue t = MkAny QUISpec t
-    qTypeDescriptionTo = "uispec"
+    qTypeDescriptionTo = "ui"
