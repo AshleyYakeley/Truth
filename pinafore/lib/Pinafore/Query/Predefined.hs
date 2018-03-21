@@ -1,24 +1,47 @@
 module Pinafore.Query.Predefined
     ( predefinedBindings
     , predefinedDoc
+    , qdisplay
     ) where
 
 import Pinafore.Morphism
 import Pinafore.Number
+import Pinafore.Query.Convert
 import Pinafore.Query.Expression
+import Pinafore.Query.Literal
 import Pinafore.Query.Value
 import Pinafore.Table
 import Shapes
 import Truth.Core
 
-valSpecText :: UISpec (WholeEdit (Maybe Text)) -> PinaforeLensValue baseedit (WholeEdit (Maybe Text)) -> UISpec baseedit
+qcombine :: HasPinaforeTableEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
+qcombine (MkAny QTMorphism g) (MkAny QTMorphism f) = MkAny QTMorphism $ g . f
+qcombine (MkAny QTInverseMorphism g) (MkAny QTInverseMorphism f) = MkAny QTInverseMorphism $ g . f
+qcombine g f = MkAny QTFunction $ qapply g . qapply f
+
+qmeet :: QSet baseedit -> QSet baseedit -> QSet baseedit
+qmeet a b = readOnlyEditLens meetEditFunction . pairJoinEditLenses a b
+
+qjoin :: QSet baseedit -> QSet baseedit -> QSet baseedit
+qjoin a b = readOnlyEditLens joinEditFunction . pairJoinEditLenses a b
+
+qdisplay :: HasPinaforeTableEdit baseedit => QValue baseedit -> PinaforeFunctionValue baseedit (FiniteSet Text)
+qdisplay val =
+    case fromQValue val of
+        SuccessResult a -> a
+        FailureResult _ -> constEditFunction $ opoint $ pack $ show val
+
+qappend :: Literal baseedit Text -> Literal baseedit Text -> Literal baseedit Text
+qappend = liftA2 (<>)
+
+valSpecText :: UISpec (WholeEdit (Maybe Text)) -> QLiteral baseedit Text -> UISpec baseedit
 valSpecText spec val = uiLens val spec
 
 pb :: forall baseedit t. ToQValue baseedit t
    => Symbol
    -> t
    -> (QBindings baseedit, (Symbol, Text))
-pb name val = (qbind name val, (name, qTypeDescriptionTo @baseedit @t))
+pb name val = (qbind name val, (name, qTypeDescription @baseedit @t))
 
 isUnit :: Bijection (Maybe ()) Bool
 isUnit =
@@ -48,24 +71,26 @@ predefinitions =
     , pb "<=" $ liftA2 @(Literal baseedit) $ (<=) @Number
     , pb ">" $ liftA2 @(Literal baseedit) $ (>) @Number
     , pb ">=" $ liftA2 @(Literal baseedit) $ (>=) @Number
+    , pb "exists" $ \(val :: QImLiteral baseedit Text) ->
+          (funcEditFunction (Just . isJust) . val :: QImLiteral baseedit Bool)
+    , pb "ui_blank" uiNull
     , pb "ui_unitcheckbox" $ \name val -> uiLens (toEditLens isUnit . val) $ uiCheckbox name
     , pb "ui_booleancheckbox" $ \name val -> uiLens val $ uiMaybeCheckbox name
     , pb "ui_textentry" $ valSpecText $ uiNothingValue mempty uiTextEntry
     , pb "ui_textarea" $ valSpecText $ uiNothingValue mempty $ uiConvert uiText
     , pb "ui_label" $ valSpecText $ uiNothingValue mempty $ uiLabel
-    , pb "ui_blank" uiNull
     , pb "ui_horizontal" uiHorizontal
     , pb "ui_vertical" uiVertical
     , pb "ui_pages" uiPages
         -- CSS
         -- drag
         -- icon
-    , pb "ui_addbutton" $ \(name :: PinaforeFunctionValue baseedit (Maybe Text)) (val :: PinaforeLensValue baseedit (FiniteSetEdit Point)) ->
+    , pb "ui_addbutton" $ \(name :: QImLiteral baseedit Text) (val :: QSet baseedit) ->
           uiTableNewItemButton (funcEditFunction (fromMaybe mempty) . name) val
-    , pb "ui_windowbutton" $ \(name :: PinaforeFunctionValue baseedit (Maybe Text)) window ->
+    , pb "ui_windowbutton" $ \(name :: QImLiteral baseedit Text) window ->
           uiButton (funcEditFunction (fromMaybe mempty) . name) $ viewOpenWindow window
-    , pb "ui_pick" $ \(nameMorphism :: PinaforeFunctionMorphism baseedit Point (Maybe Text)) (fset :: PinaforeFunctionValue baseedit (FiniteSet Point)) -> let
-          getName :: PinaforeFunctionMorphism baseedit Point (Maybe Point, Text)
+    , pb "ui_pick" $ \(nameMorphism :: QImLiteralMorphism baseedit (Maybe Text)) (fset :: QImSet baseedit) -> let
+          getName :: QImLiteralMorphism baseedit (Maybe Point, Text)
           getName =
               proc p -> do
                   n <- nameMorphism -< p
@@ -81,19 +106,14 @@ predefinitions =
               convertEditFunction . applyPinaforeFunction getNames fset
           in uiOption @baseedit @(Maybe Point) opts
         -- switch
-    , pb "ui_table" $ \cols (asp :: Point -> Result Text (UIWindow baseedit)) (val :: PinaforeLensValue baseedit (FiniteSetEdit Point)) -> let
+    , pb "ui_table" $ \cols (asp :: Point -> Result Text (UIWindow baseedit)) (val :: QSet baseedit) -> let
           showCell :: Maybe Text -> (Text, TableCellProps)
           showCell (Just s) = (s, tableCellPlain)
           showCell Nothing = ("empty", tableCellPlain {tcItalic = True})
-          mapLens ::
-                 PinaforeLensValue baseedit (WholeEdit (Maybe Point))
-              -> PinaforeFunctionValue baseedit (Text, TableCellProps)
+          mapLens :: QPoint baseedit -> PinaforeFunctionValue baseedit (Text, TableCellProps)
           mapLens lens =
               funcEditFunction showCell . editLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
-          getColumn ::
-                 ( PinaforeFunctionValue baseedit (Maybe Text)
-                 , Point -> Result Text (PinaforeLensValue baseedit (WholeEdit (Maybe Point))))
-              -> KeyColumn baseedit Point
+          getColumn :: (QImLiteral baseedit Text, Point -> Result Text (QPoint baseedit)) -> KeyColumn baseedit Point
           getColumn (name, f) =
               readOnlyKeyColumn (funcEditFunction (fromMaybe mempty) . name) $ \p ->
                   resultToM $
@@ -105,11 +125,11 @@ predefinitions =
           in uiTable (fmap getColumn cols) aspect val
     ]
 
-pd :: forall baseedit t. ToQValue baseedit t
+pd :: forall baseedit t. HasQTypeDescription baseedit t
    => Symbol
    -> t
    -> (Symbol, Text)
-pd name _ = (name, qTypeDescriptionTo @baseedit @t)
+pd name _ = (name, qTypeDescription @baseedit @t)
 
 predefinedDoc ::
        forall baseedit. HasPinaforeTableEdit baseedit

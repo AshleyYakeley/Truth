@@ -1,13 +1,15 @@
 module Pinafore.Query
     ( QType(..)
     , QValue
-    , FromQValue(..)
+    , HasQTypeDescription(..)
+    , ToQValue(..)
     , QBindings
     , qdisplay
     , parseValue
     , predefinedDoc
     ) where
 
+import Pinafore.Query.Convert
 import Pinafore.Query.Expression
 import Pinafore.Query.Predefined
 import Pinafore.Query.Read

@@ -7,7 +7,6 @@ module Main
 import Data.Ratio
 import Pinafore
 import Pinafore.Query.Expression
-import Pinafore.Query.Value
 import Prelude (read)
 import Shapes
 import Test.Tasty
@@ -116,7 +115,7 @@ testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
 
 -- | for test only
 instance Eq (QValue baseedit) where
-    (MkAny QConstant a1) == (MkAny QConstant a2) = a1 == a2
+    (MkAny QTConstant a1) == (MkAny QTConstant a2) = a1 == a2
     _ == _ = error "QValue: not comparable"
 
 testQueryValue :: (Eq a, Show a) => String -> QExpr baseedit a -> Maybe a -> TestTree

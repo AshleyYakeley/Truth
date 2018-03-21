@@ -2,6 +2,7 @@ module Pinafore.Query.Read
     ( parseExpression
     ) where
 
+import Pinafore.Query.Convert
 import Pinafore.Query.Expression
 import Pinafore.Query.Token
 import Pinafore.Query.Value
@@ -194,7 +195,7 @@ readExpression3 =
                   return $ expr1 : exprs) <|>
              return []
          readThis TokCloseBracket
-         return $ fmap (MkAny QList) $ sequenceA exprs) <|>
+         return $ fmap (MkAny QTList) $ sequenceA exprs) <|>
     (do
          readThis TokInvert
          return $ pure $ toQValue $ qinvert @baseedit) <|>

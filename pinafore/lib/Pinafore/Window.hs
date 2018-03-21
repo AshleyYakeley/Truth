@@ -11,7 +11,7 @@ import Truth.Core
 type FilePinaforeType = [UIWindow PinaforeEdit]
 
 filePinaforeType :: Text
-filePinaforeType = qTypeDescriptionFrom @PinaforeEdit @FilePinaforeType
+filePinaforeType = qTypeDescription @PinaforeEdit @FilePinaforeType
 
 sqlitePinaforeWindow :: FilePath -> (FilePath, Text) -> IO [UserInterface UIWindow ()]
 sqlitePinaforeWindow dirpath (puipath, puitext) = do
