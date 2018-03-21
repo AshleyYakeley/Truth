@@ -89,8 +89,8 @@ predefinitions =
           uiTableNewItemButton (funcEditFunction (fromMaybe mempty) . name) val
     , pb "ui_windowbutton" $ \(name :: QImLiteral baseedit Text) window ->
           uiButton (funcEditFunction (fromMaybe mempty) . name) $ viewOpenWindow window
-    , pb "ui_pick" $ \(nameMorphism :: QImLiteralMorphism baseedit (Maybe Text)) (fset :: QImSet baseedit) -> let
-          getName :: QImLiteralMorphism baseedit (Maybe Point, Text)
+    , pb "ui_pick" $ \(nameMorphism :: QImLiteralMorphism baseedit Text) (fset :: QImSet baseedit) -> let
+          getName :: PinaforeFunctionMorphism baseedit Point (Maybe Point, Text)
           getName =
               proc p -> do
                   n <- nameMorphism -< p

@@ -21,7 +21,7 @@ type QLiteralMorphism baseedit = PinaforeLensMorphism baseedit Point
 
 type QPointMorphism baseedit = QLiteralMorphism baseedit Point
 
-type QImLiteralMorphism baseedit = PinaforeFunctionMorphism baseedit Point
+type QImLiteralMorphism baseedit t = PinaforeFunctionMorphism baseedit Point (Maybe t)
 
 type QImPointMorphism baseedit = QImLiteralMorphism baseedit Point
 

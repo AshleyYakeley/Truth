@@ -227,14 +227,25 @@ instance FromQValue baseedit (QPointMorphism baseedit) where
     fromQValue (MkAny QTMorphism v) = return v
     fromQValue v = badFromQValue v
 
--- im morphism
+-- QImLiteralMorphism
 --
-instance HasQTypeDescription baseedit (PinaforeLensMorphism baseedit a b) =>
-         HasQTypeDescription baseedit (PinaforeFunctionMorphism baseedit a (Maybe b)) where
-    qTypeDescription = "immutable " <> qTypeDescriptionSingle @baseedit @(PinaforeLensMorphism baseedit a b)
+instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription baseedit (QImLiteralMorphism baseedit t) where
+    qTypeDescription = "point ~> " <> textTypeDescription @t
+    qTypeDescriptionSingle = "(" <> qTypeDescription @baseedit @(QImLiteralMorphism baseedit t) <> ")"
 
-instance FromQValue baseedit (PinaforeLensMorphism baseedit a b) =>
-         FromQValue baseedit (PinaforeFunctionMorphism baseedit a (Maybe b)) where
+instance {-# OVERLAPPABLE #-} (AsText t, HasPinaforeTableEdit baseedit) =>
+                              FromQValue baseedit (QImLiteralMorphism baseedit t) where
+    fromQValue v = do
+        m <- fromQValue v
+        return $ lensFunctionMorphism m
+
+-- QImPointMorphism
+--
+instance HasQTypeDescription baseedit (QImPointMorphism baseedit) where
+    qTypeDescription = "point ~> point"
+    qTypeDescriptionSingle = "(" <> qTypeDescription @baseedit @(QImPointMorphism baseedit) <> ")"
+
+instance FromQValue baseedit (QImPointMorphism baseedit) where
     fromQValue v = do
         m <- fromQValue v
         return $ lensFunctionMorphism m
