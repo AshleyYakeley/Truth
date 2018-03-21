@@ -50,6 +50,9 @@ isUnit =
             then Just ()
             else Nothing
 
+clearText :: EditFunction (WholeEdit (Maybe Text)) (WholeEdit Text)
+clearText = funcEditFunction (fromMaybe mempty)
+
 predefinitions ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => [(QBindings baseedit, (Symbol, Text))]
@@ -79,8 +82,8 @@ predefinitions =
     , pb "openwindow" viewOpenWindow
     , pb "openselection" viewOpenSelection
     , pb "ui_blank" uiNull
-    , pb "ui_unitcheckbox" $ \name val -> uiLens (toEditLens isUnit . val) $ uiCheckbox name
-    , pb "ui_booleancheckbox" $ \name val -> uiLens val $ uiMaybeCheckbox name
+    , pb "ui_unitcheckbox" $ \name val -> uiCheckbox (clearText . name) $ toEditLens isUnit . val
+    , pb "ui_booleancheckbox" $ \name val -> uiMaybeCheckbox (clearText . name) val
     , pb "ui_textentry" $ valSpecText $ uiNothingValue mempty uiTextEntry
     , pb "ui_textarea" $ valSpecText $ uiNothingValue mempty $ uiConvert uiText
     , pb "ui_label" $ valSpecText $ uiNothingValue mempty $ uiLabel
@@ -90,8 +93,7 @@ predefinitions =
         -- CSS
         -- drag
         -- icon
-    , pb "ui_button" $ \(name :: QImLiteral baseedit Text) action ->
-          uiButton (funcEditFunction (fromMaybe mempty) . name) action
+    , pb "ui_button" $ \(name :: QImLiteral baseedit Text) action -> uiButton (clearText . name) action
     , pb "ui_pick" $ \(nameMorphism :: QImLiteralMorphism baseedit Text) (fset :: QImSet baseedit) -> let
           getName :: PinaforeFunctionMorphism baseedit Point (Maybe Point, Text)
           getName =
@@ -118,7 +120,7 @@ predefinitions =
               funcEditFunction showCell . editLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
           getColumn :: (QImLiteral baseedit Text, Point -> Result Text (QPoint baseedit)) -> KeyColumn baseedit Point
           getColumn (name, f) =
-              readOnlyKeyColumn (funcEditFunction (fromMaybe mempty) . name) $ \p ->
+              readOnlyKeyColumn (clearText . name) $ \p ->
                   resultToM $
                   mapResultFailure unpack $ do
                       lens <- f p
