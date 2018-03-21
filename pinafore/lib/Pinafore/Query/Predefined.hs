@@ -53,6 +53,7 @@ predefinitions =
     , pb "ui_textentry" $ valSpecText $ uiNothingValue mempty uiTextEntry
     , pb "ui_textarea" $ valSpecText $ uiNothingValue mempty $ uiConvert uiText
     , pb "ui_label" $ valSpecText $ uiNothingValue mempty $ uiLabel
+    , pb "ui_blank" uiNull
     , pb "ui_horizontal" uiHorizontal
     , pb "ui_vertical" uiVertical
     , pb "ui_pages" uiPages

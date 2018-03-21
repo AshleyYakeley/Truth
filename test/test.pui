@@ -108,9 +108,10 @@ window_switch = window "Switch" $ ui_vertical
 
 window_start = window "Pinafore" $ ui_vertical
 [
-    [ui_windowbutton "People" window_people,true],
-    [ui_windowbutton "Calculated Form" window_calc,true],
-    [ui_windowbutton "Switch" window_switch,true]
+    [ui_windowbutton "People" window_people,false],
+    [ui_windowbutton "Calculated Form" window_calc,false],
+    [ui_windowbutton "Switch" window_switch,false],
+    [ui_blank,true]
 ];
 
 in
