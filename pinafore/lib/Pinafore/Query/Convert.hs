@@ -250,6 +250,26 @@ instance FromQValue baseedit (QImPointMorphism baseedit) where
         m <- fromQValue v
         return $ lensFunctionMorphism m
 
+-- IO
+--
+instance HasQTypeDescription baseedit (IO ()) where
+    qTypeDescription = "action"
+
+instance ToQValue baseedit (IO ()) where
+    toQValue t = toQValue $ (liftIO t :: View baseedit ())
+
+-- View
+--
+instance baseedit ~ edit => HasQTypeDescription baseedit (View edit ()) where
+    qTypeDescription = "action"
+
+instance baseedit ~ edit => FromQValue baseedit (View edit ()) where
+    fromQValue (MkAny QTAction v) = return v
+    fromQValue v = badFromQValue v
+
+instance baseedit ~ edit => ToQValue baseedit (View edit ()) where
+    toQValue t = MkAny QTAction t
+
 -- UISpec
 --
 instance baseedit ~ edit => HasQTypeDescription baseedit (UISpec edit) where
@@ -318,14 +338,6 @@ instance FromQValue baseedit t => FromQValue baseedit (Result Text t) where
 instance ToQValue baseedit t => ToQValue baseedit (Result Text t) where
     toQValue (SuccessResult a) = toQValue a
     toQValue (FailureResult e) = qexception e
-
--- Action
---
-instance HasQTypeDescription baseedit t => HasQTypeDescription baseedit (IO t) where
-    qTypeDescription = "action " <> qTypeDescription @baseedit @t
-
-instance FromQValue baseedit t => FromQValue baseedit (IO t) where
-    fromQValue v = fmap return $ fromQValue v
 
 -- Function
 --

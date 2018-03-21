@@ -39,7 +39,7 @@ married = %380ac576-9252-4783-b2d8-db222c683a22;
 # UI
 ui_people pp = ui_vertical
 [
-    [ui_addbutton "New Person" pp,false],
+    [ui_button "New Person" $ additem pp,false],
     [ui_table [column "Name" name] window_person pp,true]
 ];
 ui_person p = ui_vertical
@@ -108,9 +108,9 @@ window_switch = window "Switch" $ ui_vertical
 
 window_start = window "Pinafore" $ ui_vertical
 [
-    [ui_windowbutton "People" window_people,false],
-    [ui_windowbutton "Calculated Form" window_calc,false],
-    [ui_windowbutton "Switch" window_switch,false],
+    [ui_button "People" $ openwindow window_people,false],
+    [ui_button "Calculated Form" $ openwindow window_calc,false],
+    [ui_button "Switch" $ openwindow window_switch,false],
     [ui_blank,true]
 ];
 

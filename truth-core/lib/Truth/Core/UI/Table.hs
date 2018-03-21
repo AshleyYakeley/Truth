@@ -69,14 +69,19 @@ instance Show (UITable edit) where
 instance UIType UITable where
     uiWitness = $(iowitness [t|UITable|])
 
+tableNewItem ::
+       forall tedit cont iedit. IONewItemKeyContainer cont
+    => EditLens tedit (KeyEdit cont iedit)
+    -> View tedit ()
+tableNewItem tableLens =
+    mapViewEdit tableLens $
+    viewObjectPushEdit $ \_ push -> do
+        item <- liftIO $ newKeyContainerItem @cont
+        push [KeyInsertReplaceItem item]
+
 uiTableNewItemButton ::
        forall tedit cont iedit. IONewItemKeyContainer cont
     => EditFunction tedit (WholeEdit Text)
     -> EditLens tedit (KeyEdit cont iedit)
     -> UISpec tedit
-uiTableNewItemButton label tableLens =
-    uiButton label $
-    mapViewEdit tableLens $
-    viewObjectPushEdit $ \_ push -> do
-        item <- liftIO $ newKeyContainerItem @cont
-        push [KeyInsertReplaceItem item]
+uiTableNewItemButton label tableLens = uiButton label $ tableNewItem tableLens

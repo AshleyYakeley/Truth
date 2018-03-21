@@ -73,6 +73,8 @@ predefinitions =
     , pb ">=" $ liftA2 @(Literal baseedit) $ (>=) @Number
     , pb "exists" $ \(val :: QImLiteral baseedit Text) ->
           (funcEditFunction (Just . isJust) . val :: QImLiteral baseedit Bool)
+    , pb "additem" $ \(val :: QSet baseedit) -> tableNewItem val
+    , pb "openwindow" viewOpenWindow
     , pb "ui_blank" uiNull
     , pb "ui_unitcheckbox" $ \name val -> uiLens (toEditLens isUnit . val) $ uiCheckbox name
     , pb "ui_booleancheckbox" $ \name val -> uiLens val $ uiMaybeCheckbox name
@@ -85,10 +87,8 @@ predefinitions =
         -- CSS
         -- drag
         -- icon
-    , pb "ui_addbutton" $ \(name :: QImLiteral baseedit Text) (val :: QSet baseedit) ->
-          uiTableNewItemButton (funcEditFunction (fromMaybe mempty) . name) val
-    , pb "ui_windowbutton" $ \(name :: QImLiteral baseedit Text) window ->
-          uiButton (funcEditFunction (fromMaybe mempty) . name) $ viewOpenWindow window
+    , pb "ui_button" $ \(name :: QImLiteral baseedit Text) action ->
+          uiButton (funcEditFunction (fromMaybe mempty) . name) action
     , pb "ui_pick" $ \(nameMorphism :: QImLiteralMorphism baseedit Text) (fset :: QImSet baseedit) -> let
           getName :: PinaforeFunctionMorphism baseedit Point (Maybe Point, Text)
           getName =

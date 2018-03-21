@@ -35,6 +35,7 @@ data QType baseedit t where
     QTInverseMorphism :: QType baseedit (QPointMorphism baseedit)
     QTList :: QType baseedit [QValue baseedit]
     QTFunction :: QType baseedit (QValue baseedit -> QValue baseedit)
+    QTAction :: QType baseedit (View baseedit ())
     QTUserInterface :: QType baseedit (UISpec baseedit)
 
 instance Show (QType baseedit t) where
@@ -47,6 +48,7 @@ instance Show (QType baseedit t) where
     show QTInverseMorphism = "inverse morphism"
     show QTList = "list"
     show QTFunction = "function"
+    show QTAction = "action"
     show QTUserInterface = "user interface"
 
 instance TestEquality (QType baseedit) where
@@ -59,6 +61,7 @@ instance TestEquality (QType baseedit) where
     testEquality QTInverseMorphism QTInverseMorphism = Just Refl
     testEquality QTList QTList = Just Refl
     testEquality QTFunction QTFunction = Just Refl
+    testEquality QTAction QTAction = Just Refl
     testEquality QTUserInterface QTUserInterface = Just Refl
     testEquality _ _ = Nothing
 
