@@ -182,6 +182,7 @@ makeViewWindow pc tellclose MkUserInterface {..} = do
                             (createWindowAndChild userinterfaceSpecifier openSelection closeRequest)
                             userinterfaceSubscriber
                             openSelection
+                            (\window -> makeWindowCountRef pc $ MkUserInterface userinterfaceSubscriber window)
                     srWidget srAction
                     let
                         openSelection :: IO ()

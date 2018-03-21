@@ -7,6 +7,7 @@ module Truth.Core.UI.View
     , viewObjectPushEdit
     , viewSetSelectedAspect
     , viewOpenSelection
+    , viewOpenWindow
     , mapViewEdit
     , ViewResult
     , vrWidget
@@ -96,6 +97,7 @@ data ViewContext edit = MkViewContext
     { vcObject :: Object edit
     , vcSetSelect :: Aspect edit -> IO ()
     , vcOpenSelection :: IO ()
+    , vcOpenWindow :: UIWindow edit -> IO ()
     }
 
 mapViewContextEdit ::
@@ -103,11 +105,12 @@ mapViewContextEdit ::
     => EditLens edita editb
     -> ViewContext edita
     -> ViewContext editb
-mapViewContextEdit lens (MkViewContext objectA setSelectA os) = let
+mapViewContextEdit lens (MkViewContext objectA setSelectA os owA) = let
     objectB :: Object editb
     objectB = lensObject True lens objectA
     setSelectB selB = setSelectA $ mapAspect lens selB
-    in MkViewContext objectB setSelectB os
+    owB window = owA $ mapUIWindow lens window
+    in MkViewContext objectB setSelectB os owB
 
 newtype View edit a =
     MkView (ReaderT (ViewContext edit) IO a)
@@ -152,6 +155,11 @@ viewOpenSelection :: View edit ()
 viewOpenSelection = do
     openSelection <- MkView $ asks vcOpenSelection
     liftIO openSelection
+
+viewOpenWindow :: UIWindow edit -> View edit ()
+viewOpenWindow window = do
+    openWindow <- MkView $ asks vcOpenWindow
+    liftIO $ openWindow window
 
 mapViewEdit ::
        forall edita editb a. ()
@@ -231,8 +239,9 @@ subscribeView ::
        CreateView edit w
     -> Subscriber edit action
     -> IO ()
+    -> (UIWindow edit -> IO ())
     -> LifeCycle (ViewSubscription edit action w)
-subscribeView (MkCreateView (Compose (ReaderT (view :: ViewContext edit -> LifeCycle (ViewResult edit w))))) sub vcOpenSelection = do
+subscribeView (MkCreateView (Compose (ReaderT (view :: ViewContext edit -> LifeCycle (ViewResult edit w))))) sub vcOpenSelection vcOpenWindow = do
     let
         initialise :: Object edit -> LifeCycle (ViewResult edit w, IORef (Aspect edit))
         initialise vcObject = do

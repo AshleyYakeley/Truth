@@ -104,5 +104,14 @@ window_switch = window "Switch" $ ui_vertical
     [if sw_pick then ui_textarea sw_val1 else ui_textarea sw_val2,true]
 ];
 
+### Start Window
+
+window_start = window "Pinafore" $ ui_vertical
+[
+    [ui_windowbutton "People" window_people,true],
+    [ui_windowbutton "Calculated Form" window_calc,true],
+    [ui_windowbutton "Switch" window_switch,true]
+];
+
 in
-[window_people,window_calc,window_switch]
+[window_start]

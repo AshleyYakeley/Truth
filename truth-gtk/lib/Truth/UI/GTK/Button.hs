@@ -9,12 +9,15 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-createWidget :: UIButton edit -> CreateView edit Widget
-createWidget (MkUIButton label action) = do
+createWidget :: EditFunction edit (WholeEdit Text) -> View edit () -> CreateView edit Widget
+createWidget label action = do
     widget <- new Button []
     cvBindEditFunction label $ \val -> set widget [#label := val]
     _ <- cvLiftView $ viewOn widget #clicked action
     toWidget widget
 
 buttonGetView :: GetGView
-buttonGetView = MkGetView $ \_ uispec -> fmap createWidget $ isUISpec uispec
+buttonGetView =
+    MkGetView $ \_ uispec -> do
+        MkUIButton label action <- isUISpec uispec
+        return $ createWidget label action

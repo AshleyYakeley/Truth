@@ -15,7 +15,6 @@ module Truth.Core.UI
     , module Truth.Core.UI.TextEntry
     , module Truth.Core.UI.TextEditor
     , module Truth.Core.UI.Table
-    , module Truth.Core.UI.WindowButton
     , module Truth.Core.UI.Drag
     , module Truth.Core.UI.View
     , module Truth.Core.UI.DynamicView
@@ -42,4 +41,3 @@ import Truth.Core.UI.Table
 import Truth.Core.UI.TextEditor
 import Truth.Core.UI.TextEntry
 import Truth.Core.UI.View
-import Truth.Core.UI.WindowButton

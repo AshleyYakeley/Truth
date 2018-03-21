@@ -101,7 +101,6 @@ library:
       - Truth.Core.UI.TextEntry
       - Truth.Core.UI.TextEditor
       - Truth.Core.UI.Table
-      - Truth.Core.UI.WindowButton
       - Truth.Core.UI.Drag
       - Truth.Core.UI.View
       - Truth.Core.UI.DynamicView

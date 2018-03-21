@@ -16,4 +16,4 @@ instance UIType UIButton where
     uiWitness = $(iowitness [t|UIButton|])
 
 uiButton :: EditFunction edit (WholeEdit Text) -> View edit () -> UISpec edit
-uiButton name action = MkUISpec $ MkUIButton name action
+uiButton label action = MkUISpec $ MkUIButton label action
