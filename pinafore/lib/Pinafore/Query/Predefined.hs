@@ -75,6 +75,7 @@ predefinitions =
           (funcEditFunction (Just . isJust) . val :: QImLiteral baseedit Bool)
     , pb "additem" $ \(val :: QSet baseedit) -> tableNewItem val
     , pb "openwindow" viewOpenWindow
+    , pb "openselection" viewOpenSelection
     , pb "ui_blank" uiNull
     , pb "ui_unitcheckbox" $ \name val -> uiLens (toEditLens isUnit . val) $ uiCheckbox name
     , pb "ui_booleancheckbox" $ \name val -> uiLens val $ uiMaybeCheckbox name

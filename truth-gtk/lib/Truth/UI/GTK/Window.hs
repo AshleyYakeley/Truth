@@ -134,9 +134,8 @@ menuItemAction item action = do
     _ <- on item #activate action
     return ()
 
-createWindowAndChild ::
-       WindowButtons actions => UIWindow edit -> IO () -> IO Bool -> CreateView edit (actions -> LifeCycle ())
-createWindowAndChild MkUIWindow {..} openSelection closeRequest = do
+createWindowAndChild :: WindowButtons actions => UIWindow edit -> IO Bool -> CreateView edit (actions -> LifeCycle ())
+createWindowAndChild MkUIWindow {..} closeRequest = do
     window <- lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
     cvBindEditFunction uiTitle $ \title -> set window [#title := title]
     content <- getTheView uiContent
@@ -155,8 +154,7 @@ createWindowAndChild MkUIWindow {..} openSelection closeRequest = do
         box <- new Box [#orientation := OrientationVertical]
         #packStart box menubar False False 0
         addButtons box actions
-        selectionButton <- makeButton "Selection" $ liftIO openSelection
-            -- this is only correct if content has native scroll support, such as TextView
+        -- this is only correct if content has native scroll support, such as TextView
         sw <- new ScrolledWindow []
         scrollable <- liftIO $ isScrollable content
         if scrollable
@@ -165,31 +163,29 @@ createWindowAndChild MkUIWindow {..} openSelection closeRequest = do
                 viewport <- new Viewport []
                 #add viewport content
                 #add sw viewport
-        #packStart box selectionButton False False 0
         #packStart box sw True True 0
         #add window box
         #show content
         #showAll window
 
 makeViewWindow :: WindowButtons actions => ProgramContext -> IO () -> UserInterface UIWindow actions -> IO ()
-makeViewWindow pc tellclose MkUserInterface {..} = do
+makeViewWindow pc tellclose (MkUserInterface sub (window :: UIWindow edit)) = do
+    let
+        newWindow :: UIWindow edit -> IO ()
+        newWindow w = makeWindowCountRef pc $ MkUserInterface sub w
     rec
         ((), srCloser) <-
             runLifeCycle $ do
                 rec
                     MkViewSubscription {..} <-
-                        subscribeView
-                            (createWindowAndChild userinterfaceSpecifier openSelection closeRequest)
-                            userinterfaceSubscriber
-                            openSelection
-                            (\window -> makeWindowCountRef pc $ MkUserInterface userinterfaceSubscriber window)
+                        subscribeView (createWindowAndChild window closeRequest) sub openSelection newWindow
                     srWidget srAction
                     let
                         openSelection :: IO ()
                         openSelection = do
                             msel <- srGetSelection
                             case msel of
-                                Just window -> makeWindowCountRef pc $ MkUserInterface userinterfaceSubscriber window
+                                Just w -> newWindow w
                                 Nothing -> return ()
                         closeRequest :: IO Bool
                         closeRequest = do
