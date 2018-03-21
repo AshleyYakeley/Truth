@@ -2,6 +2,7 @@ module Pinafore.AsText where
 
 import Data.Time
 import Pinafore.Number
+import Prelude (Rational)
 import Shapes
 
 class AsText t where
@@ -46,6 +47,15 @@ instance AsText Integer where
     fromText = readMaybe . unpack
     textTypeDescription = "integer"
 
+instance AsText Rational where
+    toText = toText . ExactNumber
+    fromText t = do
+        n <- fromText t
+        case n of
+            ExactNumber x -> return x
+            _ -> Nothing
+    textTypeDescription = "exact-number"
+
 instance AsText Double where
     toText = toText . InexactNumber
     fromText t = do
@@ -53,7 +63,7 @@ instance AsText Double where
         case n of
             InexactNumber x -> return x
             _ -> Nothing
-    textTypeDescription = "number"
+    textTypeDescription = "inexact-number"
 
 instance AsText Day where
     toText = pack . show

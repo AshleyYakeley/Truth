@@ -71,6 +71,8 @@ predefinitions =
     , pb "<=" $ liftA2 @(Literal baseedit) $ (<=) @Number
     , pb ">" $ liftA2 @(Literal baseedit) $ (>) @Number
     , pb ">=" $ liftA2 @(Literal baseedit) $ (>=) @Number
+    , pb "inexact" $ fmap @(Literal baseedit) numberToDouble
+    , pb "approximate" $ liftA2 @(Literal baseedit) approximate
     , pb "exists" $ \(val :: QImLiteral baseedit Text) ->
           (funcEditFunction (Just . isJust) . val :: QImLiteral baseedit Bool)
     , pb "additem" $ \(val :: QSet baseedit) -> tableNewItem val

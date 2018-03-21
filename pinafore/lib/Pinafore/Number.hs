@@ -1,11 +1,12 @@
 module Pinafore.Number
     ( Number(..)
     , numberToDouble
+    , approximate
     ) where
 
 import Data.List (head, iterate)
 import Data.Ratio
-import Prelude (isNaN)
+import Prelude (Floating(..), RealFrac(..), isNaN)
 import Shapes hiding ((+++), option)
 import Text.ParserCombinators.ReadP hiding (many)
 
@@ -16,6 +17,9 @@ data Number
 numberToDouble :: Number -> Double
 numberToDouble (ExactNumber a) = fromRational a
 numberToDouble (InexactNumber a) = a
+
+approximate :: Rational -> Number -> Rational
+approximate res n = res * toRational (round (n / fromRational res) :: Integer)
 
 arity1op ::
        forall c. (c Rational, c Double)
@@ -63,6 +67,44 @@ instance Fractional Number where
     (/) p q = arity2op @Fractional (/) p q
     recip = arity1op @Fractional recip
     fromRational = ExactNumber
+
+instance Real Number where
+    toRational (ExactNumber n) = n
+    toRational (InexactNumber n) = toRational n
+
+instance RealFrac Number where
+    properFraction (ExactNumber x) = let
+        (n, f) = properFraction x
+        in (n, ExactNumber f)
+    properFraction (InexactNumber x) = let
+        (n, f) = properFraction x
+        in (n, InexactNumber f)
+
+arity1DoubleOp :: (Double -> Double) -> Number -> Number
+arity1DoubleOp f x = InexactNumber $ f $ numberToDouble x
+
+arity2DoubleOp :: (Double -> Double -> Double) -> Number -> Number -> Number
+arity2DoubleOp f a b = InexactNumber $ f (numberToDouble a) (numberToDouble b)
+
+instance Floating Number where
+    pi = InexactNumber pi
+    exp = arity1DoubleOp exp
+    log = arity1DoubleOp log
+    sqrt = arity1DoubleOp sqrt
+    (**) = arity2DoubleOp (**)
+    logBase = arity2DoubleOp logBase
+    sin = arity1DoubleOp sin
+    cos = arity1DoubleOp cos
+    tan = arity1DoubleOp tan
+    asin = arity1DoubleOp asin
+    acos = arity1DoubleOp acos
+    atan = arity1DoubleOp atan
+    sinh = arity1DoubleOp sinh
+    cosh = arity1DoubleOp cosh
+    tanh = arity1DoubleOp tanh
+    asinh = arity1DoubleOp asinh
+    acosh = arity1DoubleOp acosh
+    atanh = arity1DoubleOp atanh
 
 instance Show Number where
     show (ExactNumber r) = let
