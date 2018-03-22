@@ -78,6 +78,8 @@ predefinitions =
     , pb "approximate" $ liftA2 @(Literal baseedit) approximate
     , pb "exists" $ \(val :: QImLiteral baseedit Text) ->
           (funcEditFunction (Just . isJust) . val :: QImLiteral baseedit Bool)
+    , pb "pass" (return () :: QAction baseedit)
+    , pb ">>" $ ((>>) :: QAction baseedit -> QAction baseedit -> QAction baseedit)
     , pb "additem" $ \(val :: QSet baseedit) -> tableNewItem val
     , pb "openwindow" viewOpenWindow
     , pb "openselection" viewOpenSelection

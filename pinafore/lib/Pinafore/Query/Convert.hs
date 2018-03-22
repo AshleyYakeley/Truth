@@ -256,18 +256,18 @@ instance HasQTypeDescription baseedit (IO ()) where
     qTypeDescription = "action"
 
 instance ToQValue baseedit (IO ()) where
-    toQValue t = toQValue $ (liftIO t :: View baseedit ())
+    toQValue t = toQValue $ (liftIO t :: QAction baseedit)
 
 -- View
 --
-instance baseedit ~ edit => HasQTypeDescription baseedit (View edit ()) where
+instance baseedit ~ edit => HasQTypeDescription baseedit (QAction edit) where
     qTypeDescription = "action"
 
-instance baseedit ~ edit => FromQValue baseedit (View edit ()) where
+instance baseedit ~ edit => FromQValue baseedit (QAction edit) where
     fromQValue (MkAny QTAction v) = return v
     fromQValue v = badFromQValue v
 
-instance baseedit ~ edit => ToQValue baseedit (View edit ()) where
+instance baseedit ~ edit => ToQValue baseedit (QAction edit) where
     toQValue t = MkAny QTAction t
 
 -- UISpec
