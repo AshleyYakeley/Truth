@@ -53,9 +53,10 @@ isUnit =
 clearText :: EditFunction (WholeEdit (Maybe Text)) (WholeEdit Text)
 clearText = funcEditFunction (fromMaybe mempty)
 
-newpoint :: forall baseedit. (Point -> QAction baseedit) -> QAction baseedit
-newpoint continue = do
+newpoint :: forall baseedit. QSet baseedit -> (Point -> QAction baseedit) -> QAction baseedit
+newpoint set continue = do
     point <- liftIO $ newKeyContainerItem @(FiniteSet Point)
+    liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem point]
     continue point
 
 getQImPoint :: QImPoint baseedit -> QActionM baseedit Point
