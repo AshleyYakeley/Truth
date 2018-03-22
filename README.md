@@ -12,9 +12,11 @@ It is built on Truth.
 It is currently focused on personal information management, such as contact, calendar, to-do, photo collection, etc.
 
 ## Running
+
+You will need Docker installed.
+
 ```shell
-sudo apt-get install -y haskell-stack gnome-platform-devel libgirepository1.0-dev libwebkit2gtk-4.0-dev
-stack setup
+sudo apt-get install -y haskell-stack
 stack build pinafore
 ./testpinafore
 ```

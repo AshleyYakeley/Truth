@@ -20,3 +20,7 @@ extra-deps:
 flags:
     truth-gtk:
         build-examples: true
+
+docker:
+    enable: true
+    auto-pull: true
