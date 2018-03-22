@@ -36,8 +36,8 @@ import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Read
 import Truth.Core.Types
-import Truth.Core.UI.Lens
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Lens
+import Truth.Core.UI.Specifier.Specifier
 
 data ViewResult edit w = MkViewResult
     { vrWidget :: w

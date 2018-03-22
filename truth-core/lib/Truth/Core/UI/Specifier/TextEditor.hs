@@ -1,8 +1,8 @@
-module Truth.Core.UI.TextEditor where
+module Truth.Core.UI.Specifier.TextEditor where
 
 import Truth.Core.Import
 import Truth.Core.Types
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 
 data UIText edit where
     MkUIText :: UIText (StringEdit Text)

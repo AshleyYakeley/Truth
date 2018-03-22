@@ -1,9 +1,9 @@
-module Truth.Core.UI.Switch where
+module Truth.Core.UI.Specifier.Switch where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Types
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 
 data UISwitch edit where
     MkUISwitch :: EditFunction edit (WholeEdit (UISpec edit)) -> UISwitch edit

@@ -1,9 +1,9 @@
-module Truth.Core.UI.Checkbox where
+module Truth.Core.UI.Specifier.Checkbox where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Types
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 
 data UICheckbox edit where
     MkUICheckbox :: EditFunction edit (WholeEdit Text) -> EditLens edit (WholeEdit Bool) -> UICheckbox edit

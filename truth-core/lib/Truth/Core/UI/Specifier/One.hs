@@ -1,9 +1,9 @@
-module Truth.Core.UI.One where
+module Truth.Core.UI.Specifier.One where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Types
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 
 data UIOne edit where
     -- view can create object

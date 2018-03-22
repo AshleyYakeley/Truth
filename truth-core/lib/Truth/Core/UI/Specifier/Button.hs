@@ -1,9 +1,9 @@
-module Truth.Core.UI.Button where
+module Truth.Core.UI.Specifier.Button where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Types
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.View
 
 data UIButton edit where

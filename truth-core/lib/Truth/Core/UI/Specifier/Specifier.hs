@@ -1,4 +1,4 @@
-module Truth.Core.UI.Specifier where
+module Truth.Core.UI.Specifier.Specifier where
 
 import Truth.Core.Edit
 import Truth.Core.Import

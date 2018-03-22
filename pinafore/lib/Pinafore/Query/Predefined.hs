@@ -59,11 +59,12 @@ newpoint continue = do
     continue point
 
 getQImPoint :: QImPoint baseedit -> QActionM baseedit Point
-getQImPoint qp = liftOuter $ do
-    mpoint <- viewObjectRead $ \_ mr -> editFunctionRead qp mr ReadWhole
-    case mpoint of
-        Just point -> return point
-        Nothing -> liftIO $ newKeyContainerItem @(FiniteSet Point)
+getQImPoint qp =
+    liftOuter $ do
+        mpoint <- viewObjectRead $ \_ mr -> editFunctionRead qp mr ReadWhole
+        case mpoint of
+            Just point -> return point
+            Nothing -> liftIO $ newKeyContainerItem @(FiniteSet Point)
 
 addpoint :: forall baseedit. QSet baseedit -> QImPoint baseedit -> QAction baseedit
 addpoint set qp = do

@@ -1,12 +1,12 @@
-module Truth.Core.UI.Table where
+module Truth.Core.UI.Specifier.Table where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 import Truth.Core.Types
-import Truth.Core.UI.Button
-import Truth.Core.UI.Lens
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Button
+import Truth.Core.UI.Specifier.Lens
+import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.View
 
 data TableCellProps = MkTableCellProps

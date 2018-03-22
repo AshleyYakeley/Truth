@@ -1,7 +1,7 @@
-module Truth.Core.UI.Pages where
+module Truth.Core.UI.Specifier.Pages where
 
 import Truth.Core.Import
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 
 data UIPages edit where
     MkUIPages :: [(UISpec edit, UISpec edit)] -> UIPages edit
