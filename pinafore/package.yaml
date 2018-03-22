@@ -75,8 +75,6 @@ executables:
           - base >= 4.9 && < 5
           - filepath
           - bytestring
-          - glib
-          - gtk3
           - shapes
           - truth-core
           - truth-gtk

@@ -63,8 +63,6 @@ tests:
           - countable
           - witness
           - open-witness
-          - glib
-          - gtk3
           - shapes
           - truth-core
           - truth-gtk
@@ -86,8 +84,6 @@ executables:
           - bytestring
           - uuid
           - aeson
-          - glib
-          - gtk3
           - shapes
           - truth-core
           - truth-gtk
@@ -105,8 +101,6 @@ executables:
           - bytestring
           - uuid
           - aeson
-          - glib
-          - gtk3
           - shapes
           - truth-core
           - truth-gtk

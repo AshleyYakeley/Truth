@@ -15,8 +15,6 @@ It is currently focused on personal information management, such as contact, cal
 ```shell
 sudo apt-get install -y haskell-stack gnome-platform-devel libgirepository1.0-dev libwebkit2gtk-4.0-dev
 stack setup
-# stack install alex happy
-# stack install gtk2hs-buildtools
 stack build pinafore
 ./testpinafore
 ```
