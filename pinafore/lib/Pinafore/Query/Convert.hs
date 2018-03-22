@@ -250,15 +250,7 @@ instance FromQValue baseedit (QImPointMorphism baseedit) where
         m <- fromQValue v
         return $ lensFunctionMorphism m
 
--- IO
---
-instance HasQTypeDescription baseedit (IO ()) where
-    qTypeDescription = "action"
-
-instance ToQValue baseedit (IO ()) where
-    toQValue t = toQValue $ (liftIO t :: QAction baseedit)
-
--- View
+-- QAction
 --
 instance baseedit ~ edit => HasQTypeDescription baseedit (QAction edit) where
     qTypeDescription = "action"
@@ -269,6 +261,28 @@ instance baseedit ~ edit => FromQValue baseedit (QAction edit) where
 
 instance baseedit ~ edit => ToQValue baseedit (QAction edit) where
     toQValue t = MkAny QTAction t
+
+-- IO
+--
+instance HasQTypeDescription baseedit (IO ()) where
+    qTypeDescription = "action"
+
+instance ToQValue baseedit (IO ()) where
+    toQValue t = toQValue $ (liftIO t :: QAction baseedit)
+
+-- View
+--
+instance baseedit ~ edit => HasQTypeDescription baseedit (View edit ()) where
+    qTypeDescription = "action"
+
+instance baseedit ~ edit => FromQValue baseedit (View edit ()) where
+    fromQValue (MkAny QTAction (Compose v)) = return $ do
+        _ <- v -- ignore failure
+        return ()
+    fromQValue v = badFromQValue v
+
+instance baseedit ~ edit => ToQValue baseedit (View edit ()) where
+    toQValue t = MkAny QTAction $ liftOuter t
 
 -- UISpec
 --
@@ -356,6 +370,15 @@ instance (ToQValue baseedit a, FromQValue baseedit b, HasPinaforeTableEdit basee
     fromQValue vf = do
         f <- qpartialapply vf
         return $ fromQValue . f . toQValue
+
+instance (HasPinaforeTableEdit baseedit, ToQValue baseedit a, edit ~ baseedit) =>
+         FromQValue baseedit (a -> QAction edit) where
+    fromQValue vf = do
+        f <- qpartialapply vf
+        return $ \a -> do
+            action <- liftInner $ fromQValue $ f $ toQValue a
+            action
+
 
 instance (FromQValue baseedit a, ToQValue baseedit b) => ToQValue baseedit (a -> b) where
     toQValue ab = qfunction $ toQValue . fmap ab . fromQValue

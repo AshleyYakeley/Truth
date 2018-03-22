@@ -53,6 +53,28 @@ isUnit =
 clearText :: EditFunction (WholeEdit (Maybe Text)) (WholeEdit Text)
 clearText = funcEditFunction (fromMaybe mempty)
 
+newpoint :: forall baseedit. (Point -> QAction baseedit) -> QAction baseedit
+newpoint continue = do
+    point <- liftIO $ newKeyContainerItem @(FiniteSet Point)
+    continue point
+
+getQImPoint :: QImPoint baseedit -> QActionM baseedit Point
+getQImPoint qp = liftOuter $ do
+    mpoint <- viewObjectRead $ \_ mr -> editFunctionRead qp mr ReadWhole
+    case mpoint of
+        Just point -> return point
+        Nothing -> liftIO $ newKeyContainerItem @(FiniteSet Point)
+
+addpoint :: forall baseedit. QSet baseedit -> QImPoint baseedit -> QAction baseedit
+addpoint set qp = do
+    point <- getQImPoint qp
+    liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem point]
+
+removepoint :: forall baseedit. QSet baseedit -> QImPoint baseedit -> QAction baseedit
+removepoint set qp = do
+    point <- getQImPoint qp
+    liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem point]
+
 predefinitions ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => [(QBindings baseedit, (Symbol, Text))]
@@ -80,7 +102,9 @@ predefinitions =
           (funcEditFunction (Just . isJust) . val :: QImLiteral baseedit Bool)
     , pb "pass" (return () :: QAction baseedit)
     , pb ">>" $ ((>>) :: QAction baseedit -> QAction baseedit -> QAction baseedit)
-    , pb "additem" $ \(val :: QSet baseedit) -> tableNewItem val
+    , pb "newpoint" $ newpoint @baseedit
+    , pb "addpoint" $ addpoint @baseedit
+    , pb "removepoint" $ removepoint @baseedit
     , pb "openwindow" viewOpenWindow
     , pb "openselection" viewOpenSelection
     , pb "ui_blank" uiNull

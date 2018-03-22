@@ -25,7 +25,9 @@ type QImLiteralMorphism baseedit t = PinaforeFunctionMorphism baseedit Point (Ma
 
 type QImPointMorphism baseedit = QImLiteralMorphism baseedit Point
 
-type QAction baseedit = View baseedit ()
+type QActionM baseedit = Compose (View baseedit) (Result Text)
+
+type QAction baseedit = QActionM baseedit ()
 
 data QType baseedit t where
     QTException :: QType baseedit Text
