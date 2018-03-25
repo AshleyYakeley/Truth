@@ -1,3 +1,3 @@
 #!/bin/sh -e
-stack build pinafore
-stack exec --docker-env DISPLAY -- pinafore-query --doc
+stack install pinafore
+`stack path --local-bin`/pinafore-query --doc
