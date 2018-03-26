@@ -8,6 +8,7 @@ module Truth.Core.UI.View
     , viewSetSelectedAspect
     , viewOpenSelection
     , viewOpenWindow
+    , viewRequest
     , mapViewEdit
     , ViewResult
     , vrWidget
@@ -98,6 +99,7 @@ data ViewContext edit = MkViewContext
     , vcSetSelect :: Aspect edit -> IO ()
     , vcOpenSelection :: IO ()
     , vcOpenWindow :: UIWindow edit -> IO ()
+    , vcRequest :: forall t. IOWitness t -> Maybe t
     }
 
 mapViewContextEdit ::
@@ -105,12 +107,12 @@ mapViewContextEdit ::
     => EditLens edita editb
     -> ViewContext edita
     -> ViewContext editb
-mapViewContextEdit lens (MkViewContext objectA setSelectA os owA) = let
+mapViewContextEdit lens (MkViewContext objectA setSelectA os owA oGA) = let
     objectB :: Object editb
     objectB = lensObject True lens objectA
     setSelectB selB = setSelectA $ mapAspect lens selB
     owB window = owA $ mapUIWindow lens window
-    in MkViewContext objectB setSelectB os owB
+    in MkViewContext objectB setSelectB os owB oGA
 
 newtype View edit a =
     MkView (ReaderT (ViewContext edit) IO a)
@@ -160,6 +162,9 @@ viewOpenWindow :: UIWindow edit -> View edit ()
 viewOpenWindow window = do
     openWindow <- MkView $ asks vcOpenWindow
     liftIO $ openWindow window
+
+viewRequest :: IOWitness t -> View edit (Maybe t)
+viewRequest wit = MkView $ asks (\vc -> vcRequest vc wit)
 
 mapViewEdit ::
        forall edita editb a. ()
@@ -240,8 +245,9 @@ subscribeView ::
     -> Subscriber edit action
     -> IO ()
     -> (UIWindow edit -> IO ())
+    -> (forall t. IOWitness t -> Maybe t)
     -> LifeCycle (ViewSubscription edit action w)
-subscribeView (MkCreateView (Compose (ReaderT (view :: ViewContext edit -> LifeCycle (ViewResult edit w))))) sub vcOpenSelection vcOpenWindow = do
+subscribeView (MkCreateView (Compose (ReaderT (view :: ViewContext edit -> LifeCycle (ViewResult edit w))))) sub vcOpenSelection vcOpenWindow vcRequest = do
     let
         initialise :: Object edit -> LifeCycle (ViewResult edit w, IORef (Aspect edit))
         initialise vcObject = do

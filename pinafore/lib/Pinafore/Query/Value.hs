@@ -27,6 +27,15 @@ type QImPointMorphism baseedit = QImLiteralMorphism baseedit Point
 
 type QActionM baseedit = Compose (View baseedit) (Result Text)
 
+actionRequest :: IOWitness t -> QActionM baseedit t
+actionRequest wit =
+    Compose $ do
+        mt <- viewRequest wit
+        return $
+            case mt of
+                Just t -> SuccessResult t
+                Nothing -> FailureResult $ "failed request"
+
 type QAction baseedit = QActionM baseedit ()
 
 data QType baseedit t where

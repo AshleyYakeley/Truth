@@ -19,11 +19,11 @@ optParser =
     RunOption <$> (O.strOption (O.long "db")) <*> (O.many $ O.strArgument mempty)
 
 doFile :: FilePath -> FilePath -> Text -> IO ()
-doFile dbpath fpath text =
-    case parseValue @PinaforeTableEdit fpath text of
+doFile dirpath fpath text =
+    case parseValue @PinaforeEdit fpath text of
         FailureResult e -> fail $ unpack e
         SuccessResult qval ->
-            case mapObject (readOnlyEditLens (qdisplay qval)) (sqlitePinaforeTableObject dbpath) :: Object (WholeEdit (FiniteSet Text)) of
+            case mapObject (readOnlyEditLens (qdisplay qval)) (sqlitePinaforeObject dirpath) :: Object (WholeEdit (FiniteSet Text)) of
                 MkObject (MkUnliftIO run) rd _ ->
                     run $ do
                         items <- rd ReadWhole
@@ -35,14 +35,14 @@ main = do
     options <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
     case options of
         ExprDocOption -> do
-            for_ (predefinedDoc @PinaforeTableEdit) $ \(name, desc) -> putStrLn $ (show name) ++ " :: " ++ unpack desc
+            for_ (predefinedDoc @PinaforeEdit) $ \(name, desc) -> putStrLn $ (show name) ++ " :: " ++ unpack desc
             putStrLn $ "<file> :: " ++ unpack filePinaforeType
-        RunOption dbpath fpaths ->
+        RunOption dirpath fpaths ->
             case fpaths of
                 [] -> do
                     bs <- getContents
-                    doFile dbpath "<stdin>" $ decodeUtf8 $ toStrict bs
+                    doFile dirpath "<stdin>" $ decodeUtf8 $ toStrict bs
                 _ ->
                     for_ fpaths $ \fpath -> do
                         bs <- readFile fpath
-                        doFile dbpath fpath $ decodeUtf8 $ toStrict bs
+                        doFile dirpath fpath $ decodeUtf8 $ toStrict bs

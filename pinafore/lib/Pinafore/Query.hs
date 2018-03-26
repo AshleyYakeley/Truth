@@ -9,6 +9,7 @@ module Pinafore.Query
     , predefinedDoc
     ) where
 
+import Pinafore.File
 import Pinafore.Query.Convert
 import Pinafore.Query.Expression
 import Pinafore.Query.Predefined
@@ -18,7 +19,7 @@ import Pinafore.Table
 import Shapes
 
 parseValue ::
-       forall baseedit t. (HasPinaforeTableEdit baseedit, FromQValue baseedit t)
+       forall baseedit t. (HasPinaforeTableEdit baseedit, HasPinaforeFileEdit baseedit, FromQValue baseedit t)
     => String
     -> Text
     -> Result Text t

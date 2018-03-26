@@ -4,6 +4,7 @@ module Pinafore.Query.Predefined
     , qdisplay
     ) where
 
+import Pinafore.File
 import Pinafore.Morphism
 import Pinafore.Number
 import Pinafore.Query.Convert
@@ -13,6 +14,8 @@ import Pinafore.Query.Value
 import Pinafore.Table
 import Shapes
 import Truth.Core
+import Truth.World.File
+import Truth.World.ObjectStore
 
 qcombine :: HasPinaforeTableEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
 qcombine (MkAny QTMorphism g) (MkAny QTMorphism f) = MkAny QTMorphism $ g . f
@@ -41,7 +44,7 @@ pb :: forall baseedit t. ToQValue baseedit t
    => Symbol
    -> t
    -> (QBindings baseedit, (Symbol, Text))
-pb name val = (qbind name val, (name, qTypeDescription @baseedit @t))
+pb name val = (qbind name val, (name, qTypeDescription @t))
 
 isUnit :: Bijection (Maybe ()) Bool
 isUnit =
@@ -53,9 +56,12 @@ isUnit =
 clearText :: EditFunction (WholeEdit (Maybe Text)) (WholeEdit Text)
 clearText = funcEditFunction (fromMaybe mempty)
 
+genpoint :: QActionM baseedit Point
+genpoint = liftIO $ newKeyContainerItem @(FiniteSet Point)
+
 newpoint :: forall baseedit. QSet baseedit -> (Point -> QAction baseedit) -> QAction baseedit
 newpoint set continue = do
-    point <- liftIO $ newKeyContainerItem @(FiniteSet Point)
+    point <- genpoint
     liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem point]
     continue point
 
@@ -77,8 +83,36 @@ removepoint set qp = do
     point <- getQImPoint qp
     liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem point]
 
+importfile ::
+       forall baseedit. HasPinaforeFileEdit baseedit
+    => QSet baseedit
+    -> (Point -> QAction baseedit)
+    -> QAction baseedit
+importfile set continue = do
+    chooseFile <- actionRequest witChooseFile
+    mpath <- liftIO chooseFile
+    case mpath of
+        Nothing -> return ()
+        Just path -> do
+            let sourceobject = fileObject path
+            newpoint set $ \point -> do
+                mdestobject <-
+                    liftOuter $
+                    mapViewEdit (tupleEditLens (MkFunctionSelector point) . pinaforeFileLens) $ do
+                        MkObject {..} <- viewObject
+                        liftIO $
+                            runUnliftIO objRun $ do
+                                pushEdit $ objEdit [SingleObjectDeleteCreate]
+                                objRead ReadSingleObjectStore
+                destobject <-
+                    case mdestobject of
+                        Nothing -> liftInner $ FailureResult $ fromString $ "failed to create object " ++ show point
+                        Just object -> return object
+                liftIO $ copyObject sourceobject destobject
+                continue point
+
 predefinitions ::
-       forall baseedit. HasPinaforeTableEdit baseedit
+       forall baseedit. (HasPinaforeTableEdit baseedit, HasPinaforeFileEdit baseedit)
     => [(QBindings baseedit, (Symbol, Text))]
 predefinitions =
     [ pb "$" $ qapply @baseedit
@@ -107,6 +141,7 @@ predefinitions =
     , pb "newpoint" $ newpoint @baseedit
     , pb "addpoint" $ addpoint @baseedit
     , pb "removepoint" $ removepoint @baseedit
+    , pb "importfile" $ importfile @baseedit
     , pb "openwindow" viewOpenWindow
     , pb "openselection" viewOpenSelection
     , pb "ui_blank" uiNull
@@ -158,16 +193,16 @@ predefinitions =
           in uiTable (fmap getColumn cols) aspect val
     ]
 
-pd :: forall baseedit t. HasQTypeDescription baseedit t
+pd :: forall t. HasQTypeDescription t
    => Symbol
    -> t
    -> (Symbol, Text)
-pd name _ = (name, qTypeDescription @baseedit @t)
+pd name _ = (name, qTypeDescription @t)
 
 predefinedDoc ::
-       forall baseedit. HasPinaforeTableEdit baseedit
+       forall baseedit. (HasPinaforeTableEdit baseedit, HasPinaforeFileEdit baseedit)
     => [(Symbol, Text)]
-predefinedDoc = [pd @baseedit "@" $ qinvert @baseedit] ++ fmap snd (predefinitions @baseedit)
+predefinedDoc = [pd "@" $ qinvert @baseedit] ++ fmap snd (predefinitions @baseedit)
 
-predefinedBindings :: HasPinaforeTableEdit baseedit => QBindings baseedit
+predefinedBindings :: (HasPinaforeTableEdit baseedit, HasPinaforeFileEdit baseedit) => QBindings baseedit
 predefinedBindings = mconcat $ fmap fst predefinitions

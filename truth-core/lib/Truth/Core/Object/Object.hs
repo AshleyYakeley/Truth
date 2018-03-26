@@ -54,6 +54,13 @@ pushEdit mmmu = do
         Just mu -> mu
         Nothing -> return ()
 
+pushOrFail :: MonadFail m => String -> m (Maybe (m ())) -> m ()
+pushOrFail s mmmu = do
+    mmu <- mmmu
+    case mmu of
+        Just mu -> mu
+        Nothing -> fail s
+
 mapObject :: forall edita editb. EditLens edita editb -> Object edita -> Object editb
 mapObject = lensObject False
 
@@ -139,3 +146,11 @@ cacheObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
     push' :: [WholeEdit t] -> StateT t m (Maybe (StateT t m ()))
     push' = singleAlwaysEdit $ \(MkWholeEdit t) -> put t
     in MkObject run' rd' push'
+
+copyObject :: FullEdit edit => Object edit -> Object edit -> IO ()
+copyObject (MkObject (runSrc :: UnliftIO ms) readSrc _) (MkObject (runDest :: UnliftIO md) _ pushDest) =
+    case isCombineMonadIO @ms @md of
+        Dict ->
+            runUnliftIO (combineUnliftIOs runSrc runDest) $
+            replaceEdit (remonadMutableRead (combineLiftFst @ms @md) readSrc) $ \edit ->
+                combineLiftSnd @ms @md $ pushOrFail "failed to copy object" $ pushDest [edit]

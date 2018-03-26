@@ -13,10 +13,10 @@ optParser = (,) <$> (O.strOption $ O.long "db") <*> (O.many $ O.strArgument memp
 main :: IO ()
 main =
     truthMain $ \args -> do
-        (dbpath, puipaths) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
+        (dirpath, puipaths) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
         wmss <-
             for puipaths $ \puipath -> do
                 puitext <- readFile puipath
-                wms <- sqlitePinaforeWindow dbpath (puipath, decodeUtf8 $ toStrict puitext)
+                wms <- sqlitePinaforeWindow dirpath (puipath, decodeUtf8 $ toStrict puitext)
                 return $ fmap MkSomeUIWindow wms
         return $ mconcat wmss

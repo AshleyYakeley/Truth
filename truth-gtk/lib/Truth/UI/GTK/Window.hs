@@ -6,7 +6,7 @@ module Truth.UI.GTK.Window
     ) where
 
 import GI.GLib hiding (String)
-import GI.Gtk
+import GI.Gtk as GI
 import Shapes
 import System.Environment
 import Truth.Core
@@ -60,6 +60,21 @@ allGetView =
         , pagesGetView
         , dragGetView
         ]
+
+getRequest :: forall t. IOWitness t -> Maybe t
+getRequest wit = do
+    Refl <- testEquality wit witChooseFile
+    return $ do
+        dialog <- new FileChooserDialog [#action := FileChooserActionOpen]
+        _ <- #addButton dialog "Cancel" $ fromIntegral $ fromEnum ResponseTypeCancel
+        _ <- #addButton dialog "Copy" $ fromIntegral $ fromEnum ResponseTypeOk
+        res <- #run dialog
+        mpath <-
+            case toEnum $ fromIntegral res of
+                ResponseTypeOk -> fileChooserGetFilename dialog
+                _ -> return Nothing
+        #destroy dialog
+        return mpath
 
 getMaybeView :: UISpec edit -> Maybe (GCreateView edit)
 getMaybeView = getUIView allGetView getTheView
@@ -178,7 +193,7 @@ makeViewWindow pc tellclose (MkUserInterface sub (window :: UIWindow edit)) = do
             runLifeCycle $ do
                 rec
                     MkViewSubscription {..} <-
-                        subscribeView (createWindowAndChild window closeRequest) sub openSelection newWindow
+                        subscribeView (createWindowAndChild window closeRequest) sub openSelection newWindow getRequest
                     srWidget srAction
                     let
                         openSelection :: IO ()
@@ -221,7 +236,7 @@ makeWindowCountRef pc@MkProgramContext {..} ui = let
 truthMain :: ([String] -> IO [SomeUIWindow]) -> IO ()
 truthMain getWindows = do
     args <- getArgs
-    _ <- GI.Gtk.init Nothing
+    _ <- GI.init Nothing
     pcMainLoop <- mainLoopNew Nothing False
     wms <- getWindows args
     -- _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50

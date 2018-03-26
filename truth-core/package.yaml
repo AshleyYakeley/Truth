@@ -85,6 +85,7 @@ library:
       - Truth.Core.Object.Savable
       - Truth.Core.Object.Undo
       - Truth.Core.Object
+      - Truth.Core.UI.Request
       - Truth.Core.UI.Specifier.Specifier
       - Truth.Core.UI.Specifier.Null
       - Truth.Core.UI.Specifier.Lens

@@ -1,5 +1,6 @@
 module Truth.Core.UI
-    ( module Truth.Core.UI.Specifier.Specifier
+    ( module Truth.Core.UI.Request
+    , module Truth.Core.UI.Specifier.Specifier
     , module Truth.Core.UI.Specifier.Null
     , module Truth.Core.UI.Specifier.Lens
     , module Truth.Core.UI.Specifier.CSS
@@ -23,6 +24,7 @@ module Truth.Core.UI
 
 import Truth.Core.UI.DynamicView
 import Truth.Core.UI.GetView
+import Truth.Core.UI.Request
 import Truth.Core.UI.Specifier.Button
 import Truth.Core.UI.Specifier.CSS
 import Truth.Core.UI.Specifier.Checkbox

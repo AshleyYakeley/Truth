@@ -15,4 +15,5 @@ instance HasPinaforeFileEdit PinaforeFileEdit where
     pinaforeFileLens = id
 
 directoryPinaforeFileObject :: FilePath -> Object PinaforeFileEdit
-directoryPinaforeFileObject path = directoryObjectStore (subdirectoryObject True path fileSystemObject) show
+directoryPinaforeFileObject path =
+    directoryObjectStore (subdirectoryObject True path fileSystemObject) (\(MkPoint uuid) -> show uuid)

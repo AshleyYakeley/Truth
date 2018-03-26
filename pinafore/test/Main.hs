@@ -145,11 +145,11 @@ testQueryValues =
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
     testCase (unpack query) $
-    case (expected, parseValue @PinaforeTableEdit "<input>" query) of
+    case (expected, parseValue @PinaforeEdit "<input>" query) of
         (Nothing, FailureResult _) -> return ()
         (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ show v
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ unpack e
-        (Just s, SuccessResult (v :: QValue PinaforeTableEdit)) -> assertEqual "result" s (show v)
+        (Just s, SuccessResult (v :: QValue PinaforeEdit)) -> assertEqual "result" s (show v)
 
 testQueries :: TestTree
 testQueries =
