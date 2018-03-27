@@ -105,8 +105,8 @@ fstLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditFunct
         case partitionPairEdits edits of
             (ebs, exs) ->
                 withTransConstraintTM @MonadIO $
-                getCompose $ do
-                    eas <- Compose $ pe ebs $ firstReadFunction mr
+                getComposeM $ do
+                    eas <- MkComposeM $ pe ebs $ firstReadFunction mr
                     return $ (fmap (MkTupleEdit SelectFirst) eas) ++ (fmap (MkTupleEdit SelectSecond) exs)
     in MkCloseUnlift unlift $ MkAnEditLens {..}
 
@@ -137,8 +137,8 @@ sndLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditFunct
         case partitionPairEdits edits of
             (exs, ebs) ->
                 withTransConstraintTM @MonadIO $
-                getCompose $ do
-                    eas <- Compose $ pe ebs $ secondReadFunction mr
+                getComposeM $ do
+                    eas <- MkComposeM $ pe ebs $ secondReadFunction mr
                     return $ (fmap (MkTupleEdit SelectFirst) exs) ++ (fmap (MkTupleEdit SelectSecond) eas)
     in MkCloseUnlift unlift $ MkAnEditLens {..}
 
@@ -186,8 +186,8 @@ pairJoinEditLenses =
             case partitionPairEdits edits of
                 (eb1, eb2) ->
                     withTransConstraintTM @MonadIO $
-                    getCompose $ do
-                        ea1 <- Compose $ pe1 eb1 mr
-                        ea2 <- Compose $ pe2 eb2 mr
+                    getComposeM $ do
+                        ea1 <- MkComposeM $ pe1 eb1 mr
+                        ea2 <- MkComposeM $ pe2 eb2 mr
                         return $ ea1 ++ ea2
         in MkAnEditLens af12 pe12

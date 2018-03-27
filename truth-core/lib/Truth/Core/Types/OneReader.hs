@@ -32,12 +32,12 @@ instance (Functor f, SubjectReader reader) => SubjectReader (OneReader f reader)
     subjectToRead fsubj (ReadOne reader) = fmap (\subj -> subjectToRead subj reader) fsubj
 
 oneReadFunctionF :: ReadFunctionF f (OneReader f reader) reader
-oneReadFunctionF mr rt = Compose $ mr $ ReadOne rt
+oneReadFunctionF mr rt = MkComposeM $ mr $ ReadOne rt
 
 liftMaybeReadFunction ::
        (MonadOne f, MonadTransTunnel t) => ReadFunctionT t ra rb -> ReadFunctionT t (OneReader f ra) (OneReader f rb)
 liftMaybeReadFunction _rfrarb mr ReadHasOne = lift $ mr ReadHasOne
 liftMaybeReadFunction rfrarb mr (ReadOne rbt) = transComposeOne $ rfrarb (oneReadFunctionF mr) rbt
 
-instance (Traversable f, Monad f, FullSubjectReader reader) => FullSubjectReader (OneReader f reader) where
-    mutableReadToSubject mr = getCompose $ mutableReadToSubject $ oneReadFunctionF mr
+instance (MonadOne f, FullSubjectReader reader) => FullSubjectReader (OneReader f reader) where
+    mutableReadToSubject mr = getComposeM $ mutableReadToSubject $ oneReadFunctionF mr

@@ -4,13 +4,13 @@ module Shapes
 
 import Shapes.Import as I
 
-import Control.LifeCycle as I
-
 -- shapes
+import Control.LifeCycle as I
+import Control.Monad.Compose as I
 import Data.Bijection as I
 import Data.CatFunctor as I
 import Data.Codec as I
-import Data.Compose as I
+import Data.Compose as I ()
 import Data.Filterable as I
 import Data.FiniteSet as I
 import Data.HasNewValue as I

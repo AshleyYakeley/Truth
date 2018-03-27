@@ -5,6 +5,4 @@ import Truth.Core
 
 type GCreateView edit = CreateView edit Widget
 
-type GViewResult edit = ViewResult edit Widget
-
 type GetGView = GetView Widget

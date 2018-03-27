@@ -114,8 +114,8 @@ testEditAction test action = do
 
 singleEdit :: Monad m => (edit -> m (Maybe (m ()))) -> [edit] -> m (Maybe (m ()))
 singleEdit call edits =
-    getCompose $ do
-        actions <- for edits $ \edit -> Compose $ call edit
+    getComposeM $ do
+        actions <- for edits $ \edit -> MkComposeM $ call edit
         return $ for_ actions id
 
 convertObject :: (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb) => Object edita -> Object editb

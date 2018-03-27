@@ -260,15 +260,15 @@ instance UnliftCategory (APinaforeLensMorphism baseedit) where
             -> ComposeT tbc tab m (Maybe [ContextEdit baseedit (WholeEdit (Maybe a))])
         acPutEdit editcs mra =
             withTransConstraintTM @MonadIO $
-            getCompose $ do
+            getComposeM $ do
                 editpbs <-
-                    Compose $
+                    MkComposeM $
                     MkComposeT $
                     withTransConstraintTM' @MonadIO $
                     bcPutEdit editcs $ bindReadContext (remonadMutableRead lift mra) $ abGet mra
                 case partitionContextEdits editpbs of
                     (pinedits, editbs) -> do
-                        editpas2 <- Compose $ lift2ComposeT'' $ abPutEdit editbs mra
+                        editpas2 <- MkComposeM $ lift2ComposeT'' $ abPutEdit editbs mra
                         return $ (fmap (MkTupleEdit SelectContext) pinedits) ++ editpas2
         acForward :: AnEditLens (ComposeT tbc tab) (ContextEdit baseedit (WholeEdit (Maybe a))) (WholeEdit (Maybe c))
         acForward = MkAnEditLens acFunc acPutEdit
@@ -479,12 +479,12 @@ pmInverseEditLens (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {.
         => [FiniteSetEdit a]
         -> MutableRead m (EditReader (ContextEdit baseedit (WholeEdit (Maybe b))))
         -> t m (Maybe [ContextEdit baseedit (WholeEdit (Maybe b))])
-    elPutEdits [] _ = withTransConstraintTM @MonadIO $ getCompose $ return []
+    elPutEdits [] _ = withTransConstraintTM @MonadIO $ getComposeM $ return []
     elPutEdits (e:ee) mr =
         withTransConstraintTM @MonadIO $
-        getCompose $ do
-            ea <- Compose $ elPutEdit e mr
-            eea <- Compose $ elPutEdits ee $ applyEdits' ea mr
+        getComposeM $ do
+            ea <- MkComposeM $ elPutEdit e mr
+            eea <- MkComposeM $ elPutEdits ee $ applyEdits' ea mr
             return $ ea ++ eea
     in MkCloseUnlift unlift $ MkAnEditLens {..}
 

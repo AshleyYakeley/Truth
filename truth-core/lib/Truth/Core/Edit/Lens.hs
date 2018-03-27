@@ -42,9 +42,9 @@ instance UnliftCategory AnEditLens where
                 Dict ->
                     case hasTransConstraint @MonadIO @tbc @(tab m) of
                         Dict ->
-                            getCompose $ do
-                                ebs <- Compose $ MkComposeT $ peBC ec $ efGet efAB mra
-                                Compose $ lift2ComposeT $ elPutEdits lensAB ebs mra
+                            getComposeM $ do
+                                ebs <- MkComposeM $ MkComposeT $ peBC ec $ efGet efAB mra
+                                MkComposeM $ lift2ComposeT $ elPutEdits lensAB ebs mra
         efAC = ucCompose efBC efAB
         in MkAnEditLens efAC peAC
 
@@ -54,12 +54,12 @@ elPutEditsFromPutEdit ::
     -> [editb]
     -> MutableRead m (EditReader edita)
     -> t m (Maybe [edita])
-elPutEditsFromPutEdit _ [] _ = withTransConstraintTM @MonadIO $ getCompose $ return []
+elPutEditsFromPutEdit _ [] _ = withTransConstraintTM @MonadIO $ getComposeM $ return []
 elPutEditsFromPutEdit elPutEdit (e:ee) mr =
     withTransConstraintTM @MonadIO $
-    getCompose $ do
-        ea <- Compose $ elPutEdit e mr
-        eea <- Compose $ elPutEditsFromPutEdit elPutEdit ee $ applyEdits ea mr
+    getComposeM $ do
+        ea <- MkComposeM $ elPutEdit e mr
+        eea <- MkComposeM $ elPutEditsFromPutEdit elPutEdit ee $ applyEdits ea mr
         return $ ea ++ eea
 
 elPutEditsFromSimplePutEdit ::
@@ -70,8 +70,8 @@ elPutEditsFromSimplePutEdit ::
     -> t m (Maybe [edita])
 elPutEditsFromSimplePutEdit putEdit editBs _ =
     withTransConstraintTM @MonadIO $
-    getCompose $ do
-        editAss <- for editBs $ \edit -> Compose $ putEdit edit
+    getComposeM $ do
+        editAss <- for editBs $ \edit -> MkComposeM $ putEdit edit
         return $ mconcat editAss
 
 editLensFunction :: EditLens edita editb -> EditFunction edita editb

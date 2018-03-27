@@ -35,11 +35,11 @@ instance (Show (ContainerKey cont), WitnessConstraint Show reader) =>
             Dict -> Dict
 
 keyItemReadFunction :: forall cont reader. ContainerKey cont -> ReadFunctionF Maybe (KeyReader cont reader) reader
-keyItemReadFunction key mr rt = Compose $ mr $ KeyReadItem key rt
+keyItemReadFunction key mr rt = MkComposeM $ mr $ KeyReadItem key rt
 
 knownKeyItemReadFunction :: forall cont reader. ContainerKey cont -> ReadFunction (KeyReader cont reader) reader
 knownKeyItemReadFunction key mr rt = do
-    mt <- getCompose $ keyItemReadFunction key mr rt
+    mt <- getComposeM $ keyItemReadFunction key mr rt
     case mt of
         Just t -> return t
         Nothing -> error $ "missing item in list"
@@ -106,10 +106,10 @@ instance ( KeyContainer cont
          ) =>
          ApplicableEdit (KeyEdit cont edit) where
     applyEdit (KeyEditItem oldkey edit) mr kreader@(KeyReadItem key rt) = do
-        mnewkey <- getCompose $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
+        mnewkey <- getComposeM $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
         case mnewkey of
             Just newkey
-                | key == newkey -> getCompose $ (applyEdit edit $ keyItemReadFunction key mr) rt
+                | key == newkey -> getComposeM $ (applyEdit edit $ keyItemReadFunction key mr) rt
             _ ->
                 if key == oldkey
                     then return Nothing
@@ -117,7 +117,7 @@ instance ( KeyContainer cont
     applyEdit (KeyEditItem oldkey edit) mr KeyReadKeys = do
         oldkeys <- mr KeyReadKeys
         mnewkey <-
-            getCompose $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
+            getComposeM $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
         return $
             case mnewkey of
                 Just newkey -> replace oldkey newkey oldkeys
@@ -147,18 +147,18 @@ instance ( KeyContainer cont
          ) =>
          InvertibleEdit (KeyEdit cont edit) where
     invertEdit (KeyEditItem key edit) mr = do
-        minvedits <- getCompose $ invertEdit edit $ keyItemReadFunction key mr
+        minvedits <- getComposeM $ invertEdit edit $ keyItemReadFunction key mr
         case minvedits of
             Just invedits -> return $ fmap (KeyEditItem key) invedits
             Nothing -> return []
     invertEdit (KeyInsertReplaceItem item) mr = do
         let newkey = elementKey @cont item
-        molditem <- getCompose $ mutableReadToSubject $ keyItemReadFunction newkey mr
+        molditem <- getComposeM $ mutableReadToSubject $ keyItemReadFunction newkey mr
         case molditem of
             Just olditem -> return [KeyInsertReplaceItem olditem]
             Nothing -> return [KeyDeleteItem newkey]
     invertEdit (KeyDeleteItem key) mr = do
-        ma <- getCompose $ mutableReadToSubject $ keyItemReadFunction key mr
+        ma <- getComposeM $ mutableReadToSubject $ keyItemReadFunction key mr
         case ma of
             Just a -> return [KeyInsertReplaceItem a]
             Nothing -> return []
@@ -218,7 +218,7 @@ getKeyElementEditLens initial =
             oldkey <- get
             if k == oldkey
                 then do
-                    mnewkey <- lift $ getCompose $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr
+                    mnewkey <- lift $ getComposeM $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr
                     case mnewkey of
                         Just newkey -> do
                             put newkey
@@ -244,7 +244,7 @@ getKeyElementEditLens initial =
             return $ Just [KeyDeleteItem key]
         elPutEdit (SumEditRight (MkOneEdit edit)) mr = do
             oldkey <- get
-            mnewkey <- lift $ getCompose $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr
+            mnewkey <- lift $ getComposeM $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr
             case mnewkey of
                 Just newkey -> do
                     put newkey

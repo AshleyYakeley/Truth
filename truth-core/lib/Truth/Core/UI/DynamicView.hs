@@ -34,10 +34,10 @@ cvDynamic firstdvs updateCV = do
             mvarRun stateVar $ do
                 updateCV unlift mr edits
                 newdvs <- get
-                lift $ for_ (dynamicViewStates newdvs) $ \(state, _) -> vrUpdate state mr edits
+                lift $ for_ (dynamicViewStates newdvs) $ \state -> vsUpdate state mr edits
     cvAddAspect $
         mvarRun stateVar $ do
             dvs <- get
-            liftIO $ vrFirstAspect $ fst $ dynamicViewFocus dvs
+            liftIO $ vsFirstAspect $ dynamicViewFocus dvs
     cvReceiveUpdates update
     cvLiftView $ viewObjectRead $ \unlift mr -> update unlift mr []

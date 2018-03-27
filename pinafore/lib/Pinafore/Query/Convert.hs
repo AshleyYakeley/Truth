@@ -275,14 +275,14 @@ instance HasQTypeDescription (View edit ()) where
     qTypeDescription = "action"
 
 instance baseedit ~ edit => FromQValue baseedit (View edit ()) where
-    fromQValue (MkAny QTAction (Compose v)) =
+    fromQValue (MkAny QTAction (MkComposeM v)) =
         return $ do
             _ <- v -- ignore failure
             return ()
     fromQValue v = badFromQValue v
 
 instance baseedit ~ edit => ToQValue baseedit (View edit ()) where
-    toQValue t = MkAny QTAction $ liftOuter t
+    toQValue t = MkAny QTAction $ lift t
 
 -- UISpec
 --

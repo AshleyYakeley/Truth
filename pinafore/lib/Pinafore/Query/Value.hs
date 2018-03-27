@@ -25,11 +25,11 @@ type QImLiteralMorphism baseedit t = PinaforeFunctionMorphism baseedit Point (Ma
 
 type QImPointMorphism baseedit = QImLiteralMorphism baseedit Point
 
-type QActionM baseedit = Compose (View baseedit) (Result Text)
+type QActionM baseedit = ComposeM (Result Text) (View baseedit)
 
 actionRequest :: IOWitness t -> QActionM baseedit t
 actionRequest wit =
-    Compose $ do
+    MkComposeM $ do
         mt <- viewRequest wit
         return $
             case mt of
