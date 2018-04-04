@@ -87,10 +87,6 @@ instance Show (QValue baseedit) where
     show (MkAny QTList val) = "[" ++ intercalate "," (fmap show val) ++ "]"
     show (MkAny t _) = "<" ++ show t ++ ">"
 
-badFromQValue :: QValue baseedit -> Result Text t
-badFromQValue (MkAny QTException s) = FailureResult s
-badFromQValue (MkAny t _) = fail $ "unexpected " ++ show t
-
 qconstant :: Text -> QValue baseedit
 qconstant = MkAny QTConstant
 

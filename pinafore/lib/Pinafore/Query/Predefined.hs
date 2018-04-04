@@ -83,12 +83,12 @@ removepoint set qp = do
     point <- getQImPoint qp
     liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem point]
 
-importfile ::
+file_import ::
        forall baseedit. HasPinaforeFileEdit baseedit
     => QSet baseedit
     -> (Point -> QAction baseedit)
     -> QAction baseedit
-importfile set continue = do
+file_import set continue = do
     chooseFile <- actionRequest witChooseFile
     mpath <- liftIO chooseFile
     case mpath of
@@ -98,7 +98,7 @@ importfile set continue = do
             newpoint set $ \point -> do
                 mdestobject <-
                     liftOuter $
-                    mapViewEdit (tupleEditLens (MkFunctionSelector point) . pinaforeFileLens) $ do
+                    mapViewEdit (pinaforeFileItemLens point) $ do
                         MkObject {..} <- viewObject
                         liftIO $
                             runUnliftIO objRun $ do
@@ -110,6 +110,32 @@ importfile set continue = do
                         Just object -> return object
                 liftIO $ copyObject sourceobject destobject
                 continue point
+
+file_size :: Object ByteStringEdit -> IO Int64
+file_size MkObject {..} = runUnliftIO objRun $ objRead ReadByteStringLength
+
+ui_table ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => [(QImLiteral baseedit Text, Point -> Result Text (QLiteral baseedit Text))]
+    -> (Point -> Result Text (UIWindow baseedit))
+    -> QSet baseedit
+    -> UISpec baseedit
+ui_table cols asp val = let
+    showCell :: Maybe Text -> (Text, TableCellProps)
+    showCell (Just s) = (s, tableCellPlain)
+    showCell Nothing = ("empty", tableCellPlain {tcItalic = True})
+    mapLens :: QLiteral baseedit Text -> PinaforeFunctionValue baseedit (Text, TableCellProps)
+    mapLens lens = funcEditFunction showCell . editLensFunction lens
+    getColumn :: (QImLiteral baseedit Text, Point -> Result Text (QLiteral baseedit Text)) -> KeyColumn baseedit Point
+    getColumn (name, f) =
+        readOnlyKeyColumn (clearText . name) $ \p ->
+            resultToM $
+            mapResultFailure unpack $ do
+                lens <- f p
+                return $ mapLens lens
+    aspect :: Point -> Aspect baseedit
+    aspect point = resultToM $ mapResultFailure unpack $ fmap return $ asp point
+    in uiTable (fmap getColumn cols) aspect val
 
 predefinitions ::
        forall baseedit. (HasPinaforeTableEdit baseedit, HasPinaforeFileEdit baseedit)
@@ -141,7 +167,8 @@ predefinitions =
     , pb "newpoint" $ newpoint @baseedit
     , pb "addpoint" $ addpoint @baseedit
     , pb "removepoint" $ removepoint @baseedit
-    , pb "importfile" $ importfile @baseedit
+    , pb "file_import" $ file_import @baseedit
+    , pb "file_size" $ fmap @(Literal baseedit) file_size
     , pb "openwindow" viewOpenWindow
     , pb "openselection" viewOpenSelection
     , pb "ui_blank" uiNull
@@ -174,23 +201,7 @@ predefinitions =
               convertEditFunction . applyPinaforeFunction getNames fset
           in uiOption @baseedit @(Maybe Point) opts
         -- switch
-    , pb "ui_table" $ \cols (asp :: Point -> Result Text (UIWindow baseedit)) (val :: QSet baseedit) -> let
-          showCell :: Maybe Text -> (Text, TableCellProps)
-          showCell (Just s) = (s, tableCellPlain)
-          showCell Nothing = ("empty", tableCellPlain {tcItalic = True})
-          mapLens :: QPoint baseedit -> PinaforeFunctionValue baseedit (Text, TableCellProps)
-          mapLens lens =
-              funcEditFunction showCell . editLensFunction (applyPinaforeLens literalPinaforeLensMorphism lens)
-          getColumn :: (QImLiteral baseedit Text, Point -> Result Text (QPoint baseedit)) -> KeyColumn baseedit Point
-          getColumn (name, f) =
-              readOnlyKeyColumn (clearText . name) $ \p ->
-                  resultToM $
-                  mapResultFailure unpack $ do
-                      lens <- f p
-                      return $ mapLens lens
-          aspect :: Point -> Aspect baseedit
-          aspect point = resultToM $ mapResultFailure unpack $ fmap return $ asp point
-          in uiTable (fmap getColumn cols) aspect val
+    , pb "ui_table" $ ui_table @baseedit
     ]
 
 pd :: forall t. HasQTypeDescription t

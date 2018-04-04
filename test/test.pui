@@ -118,8 +118,8 @@ window_file f = window "File" $ ui_vertical
 ];
 in window "Files" $ ui_vertical
 [
-    [ui_button "Import" $ importfile Files $ \f -> openwindow $ window_file f,false],
-    [ui_table [column "Caption" caption] window_file Files,true]
+    [ui_button "Import" $ file_import Files $ \f -> openwindow $ window_file f,false],
+    [ui_table [column "Caption" caption, column "Size" file_size] window_file Files,true]
 ];
 
 ### Start Window

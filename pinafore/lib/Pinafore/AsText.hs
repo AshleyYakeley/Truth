@@ -42,6 +42,11 @@ instance AsText Int where
     fromText = readMaybe . unpack
     textTypeDescription = "integer"
 
+instance AsText Int64 where
+    toText = pack . show
+    fromText = readMaybe . unpack
+    textTypeDescription = "integer"
+
 instance AsText Integer where
     toText = pack . show
     fromText = readMaybe . unpack

@@ -23,3 +23,7 @@ instance Applicative (Literal baseedit) where
 literalToFunction :: Literal baseedit t -> QImLiteral baseedit t
 literalToFunction (LiteralConstant t) = constEditFunction $ Just t
 literalToFunction (LiteralFunction t) = t
+
+ioLiteral :: Literal baseedit (IO t) -> Literal baseedit t
+ioLiteral (LiteralConstant iot) = LiteralFunction $ ioConstEditFunction $ fmap Just iot
+ioLiteral (LiteralFunction litiot) = LiteralFunction $ ioWholeEditFunction sequence . litiot

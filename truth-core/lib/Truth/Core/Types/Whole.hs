@@ -66,6 +66,21 @@ wholeEditFunction ab =
         , efUpdate = \(MkWholeEdit a) _ -> return [MkWholeEdit $ ab a]
         }
 
+ioWholeEditFunction :: forall a b. (a -> IO b) -> EditFunction (WholeEdit a) (WholeEdit b)
+ioWholeEditFunction aiob =
+    MkCloseUnlift identityUnlift $
+    MkAnEditFunction
+        { efGet =
+              \mr ReadWhole ->
+                  lift $ do
+                      a <- mr ReadWhole
+                      liftIO $ aiob a
+        , efUpdate =
+              \(MkWholeEdit a) _ -> do
+                  b <- liftIO $ aiob a
+                  return [MkWholeEdit b]
+        }
+
 wholeEditLens ::
        forall mf a b. (MonadOne mf)
     => Lens' mf a b

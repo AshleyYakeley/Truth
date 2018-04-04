@@ -7,16 +7,25 @@ module Pinafore.Query.Convert
 
 import Data.List (zipWith)
 import Pinafore.AsText
+import Pinafore.File
 import Pinafore.Morphism
 import Pinafore.Query.Literal
 import Pinafore.Query.Value
 import Pinafore.Table
 import Shapes
 import Truth.Core
+import Truth.World.ObjectStore
 
 maybeToFiniteSet :: Maybe a -> FiniteSet a
 maybeToFiniteSet (Just a) = opoint a
 maybeToFiniteSet Nothing = mempty
+
+badFromQValue ::
+       forall baseedit t. HasQTypeDescription t
+    => QValue baseedit
+    -> Result Text t
+badFromQValue (MkAny QTException s) = FailureResult s
+badFromQValue (MkAny t _) = fail $ "unexpected " ++ show t ++ " for " ++ unpack (qTypeDescription @t)
 
 class HasQTypeDescription t where
     qTypeDescription :: Text
@@ -57,10 +66,11 @@ instance edit ~ baseedit => ToQValue baseedit (QValue edit) where
 
 -- Literal
 --
-instance AsText t => HasQTypeDescription (Literal edit t) where
+instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (Literal edit t) where
     qTypeDescription = textTypeDescription @t
 
-instance (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) => FromQValue baseedit (Literal edit t) where
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
+                              FromQValue baseedit (Literal edit t) where
     fromQValue v@(MkAny QTConstant text) =
         case fromText text of
             Just a -> return $ LiteralConstant a
@@ -71,9 +81,34 @@ instance (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) => FromQValu
         return $ LiteralFunction $ editLensFunction $ applyPinaforeLens literalPinaforeLensMorphism v
     fromQValue v = badFromQValue v
 
-instance AsText t => ToQValue baseedit (Literal baseedit t) where
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t) => ToQValue baseedit (Literal edit t) where
     toQValue (LiteralConstant t) = toQValue t
     toQValue (LiteralFunction t) = toQValue t
+
+-- Literal IO
+--
+instance AsText t => HasQTypeDescription (Literal edit (IO t)) where
+    qTypeDescription = textTypeDescription @t
+
+instance (edit ~ baseedit, AsText t) => ToQValue baseedit (Literal edit (IO t)) where
+    toQValue liot = toQValue $ ioLiteral liot
+
+-- Literal Object ByteStringEdit
+--
+instance HasQTypeDescription (Literal edit (Object ByteStringEdit)) where
+    qTypeDescription = "file"
+
+instance (edit ~ baseedit, HasPinaforeFileEdit baseedit) =>
+         FromQValue baseedit (Literal edit (Object ByteStringEdit)) where
+    fromQValue v = do
+        qip :: QImPoint baseedit <- fromQValue v
+        return $
+            LiteralFunction $
+            functionEditApply
+                (functionLiftEditFunction singleObjectEditFunction .
+                 (functionEditMaybe (immutableEditFunction nullSingleObjectMutableRead) $
+                  editLensFunction pinaforeFileLens))
+                qip
 
 -- QLiteral
 --

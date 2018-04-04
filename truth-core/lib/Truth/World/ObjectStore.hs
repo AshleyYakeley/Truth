@@ -8,6 +8,10 @@ data SingleObjectReader edit t where
     ReadSingleObjectStore :: SingleObjectReader edit (Maybe (Object edit))
     GetSingleObjectRecoveryCode :: SingleObjectReader edit (Maybe Int)
 
+nullSingleObjectMutableRead :: Monad m => MutableRead m (SingleObjectReader edit)
+nullSingleObjectMutableRead ReadSingleObjectStore = return Nothing
+nullSingleObjectMutableRead GetSingleObjectRecoveryCode = return Nothing
+
 data SingleObjectEdit (edit :: *)
     = SingleObjectDeleteCreate
     | SingleObjectDelete
@@ -41,7 +45,23 @@ instance InvertibleEdit (SingleObjectEdit edit) where
                             | code == newcode -> []
                         Just code -> [SingleObjectRecover code]
 
-type ObjectStoreEdit name edit = TupleEdit (FunctionSelector name (SingleObjectEdit edit))
+type ObjectStoreEdit name edit = FunctionEdit name (SingleObjectEdit edit)
+
+singleObjectEditFunction :: forall edit. EditFunction (SingleObjectEdit edit) (WholeEdit (Maybe (Object edit)))
+singleObjectEditFunction =
+    MkCloseUnlift identityUnlift $ let
+        efGet :: ReadFunctionT IdentityT (SingleObjectReader edit) (WholeReader (Maybe (Object edit)))
+        efGet mr ReadWhole = lift $ mr ReadSingleObjectStore
+        efUpdate ::
+               forall m. MonadIO m
+            => SingleObjectEdit edit
+            -> MutableRead m (SingleObjectReader edit)
+            -> IdentityT m [WholeEdit (Maybe (Object edit))]
+        efUpdate SingleObjectDelete _ = return [MkWholeEdit Nothing]
+        efUpdate _ mr = do
+            mo <- lift $ mr ReadSingleObjectStore
+            return [MkWholeEdit mo]
+        in MkAnEditFunction {..}
 
 directoryObjectStore :: forall name. Object FSEdit -> (name -> String) -> Object (ObjectStoreEdit name ByteStringEdit)
 directoryObjectStore (MkObject (objRun :: UnliftIO m) rd push) nameStr = let

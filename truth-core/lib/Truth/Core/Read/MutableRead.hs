@@ -27,6 +27,4 @@ type ReadFunctionT t ra rb
      = forall m. MonadIO m =>
                      MutableRead m ra -> MutableRead (t m) rb
 
-type ReadFunctionF f ra rb
-     = forall m. MonadIO m =>
-                     MutableRead m ra -> MutableRead (ComposeM f m) rb
+type ReadFunctionF f ra rb = ReadFunctionT (ComposeM f) ra rb
