@@ -134,4 +134,4 @@ window_start = window "Pinafore" $ ui_vertical
 ];
 
 in
-[window_start]
+openwindow window_start

@@ -23,7 +23,7 @@ library:
       - truth-core
     exposed-modules:
       - Pinafore
-      - Pinafore.Window
+      - Pinafore.Main
       - Pinafore.Query.Value
       - Pinafore.Query.Convert
       - Pinafore.Query.Expression

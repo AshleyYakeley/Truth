@@ -10,4 +10,4 @@ me = !238f247b-a899-4c6e-8e1d-07e844bd8d2f;
 ui_person p = ui_textentry $ name p;
 window_person p = window "Name" $ ui_person p;
 
-in [window_person me]
+in openwindow $ window_person me

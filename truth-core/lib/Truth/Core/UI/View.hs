@@ -23,7 +23,6 @@ module Truth.Core.UI.View
     , cvAddAspect
     , mapCreateViewEdit
     , mapCreateViewAspect
-    , ViewSubscription(..)
     , subscribeView
     , tupleCreateView
     ) where
@@ -230,39 +229,49 @@ mapCreateViewAspect :: (Aspect edit -> Aspect edit) -> CreateView edit w -> Crea
 mapCreateViewAspect f (MkCreateView mw) =
     MkCreateView $ remonad (mapWriterOutput (\(MkViewOutput v ag) -> MkViewOutput v $ f ag)) mw
 
-data ViewSubscription edit action w = MkViewSubscription
-    { srWidget :: w
-    , srGetSelection :: Aspect edit
-    , srAction :: action
-    }
-
-instance Functor (ViewSubscription edit action) where
-    fmap f (MkViewSubscription w gs aa) = MkViewSubscription (f w) gs aa
-
-subscribeView ::
+subscribeView' ::
        forall edit w action.
        CreateView edit w
     -> Subscriber edit action
-    -> IO ()
     -> (UIWindow edit -> IO ())
     -> (forall t. IOWitness t -> Maybe t)
-    -> LifeCycle (ViewSubscription edit action w)
-subscribeView (MkCreateView (ReaderT (view :: ViewContext edit -> WriterT (ViewOutput edit) LifeCycle w))) sub vcOpenSelection vcOpenWindow vcRequest = do
+    -> LifeCycle (w, action)
+subscribeView' (MkCreateView (ReaderT (view :: ViewContext edit -> WriterT (ViewOutput edit) LifeCycle w))) sub vcOpenWindow vcRequest = do
     let
         initialise :: Object edit -> LifeCycle (ViewResult edit w, IORef (Aspect edit))
         initialise vcObject = do
             rec
-                let vcSetSelect ss = liftIO $ writeIORef selref ss
+                let
+                    vcSetSelect ss = liftIO $ writeIORef selref ss
+                    vcOpenSelection :: IO ()
+                    vcOpenSelection = do
+                        ss <- readIORef selref
+                        msel <- ss
+                        case msel of
+                            Just neww -> vcOpenWindow neww
+                            Nothing -> return ()
                 (w, vo) <- runWriterT $ view MkViewContext {..}
                 selref <- liftIO $ newIORef $ voFirstAspect vo
             return ((vo, w), selref)
+        receive :: (ViewResult edit w, IORef (Aspect edit)) -> ReceiveUpdates edit
         receive ((vo, _), _) = voUpdate vo
-    (((_, srWidget), selref), srAction) <- subscribeLifeCycle sub initialise receive
-    let
-        srGetSelection = do
-            ss <- readIORef selref
-            ss
-    return MkViewSubscription {..}
+    (((_, w), _), action) <- subscribeLifeCycle sub initialise receive
+    return (w, action)
+
+subscribeView ::
+       forall edit w action.
+       (IO () -> CreateView edit (action -> LifeCycle w))
+    -> Subscriber edit action
+    -> (UIWindow edit -> IO ())
+    -> (forall t. IOWitness t -> Maybe t)
+    -> IO w
+subscribeView createView sub openWindow getRequest = do
+    rec
+        (w, closer) <-
+            runLifeCycle $ do
+                (followUp, action) <- subscribeView' (createView closer) sub openWindow getRequest
+                followUp action
+    return w
 
 tupleCreateView ::
        (Applicative m, FiniteTupleSelector sel, TupleWitness ApplicableEdit sel)

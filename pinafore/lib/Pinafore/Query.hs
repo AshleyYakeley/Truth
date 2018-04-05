@@ -1,5 +1,6 @@
 module Pinafore.Query
     ( QType(..)
+    , QAction
     , QValue
     , HasQTypeDescription(..)
     , ToQValue(..)

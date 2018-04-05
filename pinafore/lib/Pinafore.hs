@@ -7,15 +7,15 @@ module Pinafore
     , module Pinafore.Query
     , module Pinafore.Database
     , module Pinafore.Database.SQLite
-    , module Pinafore.Window
+    , module Pinafore.Main
     ) where
 
 import Pinafore.AsText
 import Pinafore.Database
 import Pinafore.Database.SQLite
+import Pinafore.Main
 import Pinafore.Morphism
 import Pinafore.Number
 import Pinafore.Pinafore
 import Pinafore.Query
 import Pinafore.Table
-import Pinafore.Window

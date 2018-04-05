@@ -1,6 +1,5 @@
 module Truth.UI.GTK.Window
     ( WindowButtons(..)
-    , SomeUIWindow(..)
     , truthMain
     , getMaybeView
     ) where
@@ -128,10 +127,6 @@ instance WindowButtons UndoActions where
         #packStart hbox redoButton False False 0
         #packStart vbox hbox False False 0
 
-data SomeUIWindow =
-    forall actions. WindowButtons actions =>
-                    MkSomeUIWindow (UserInterface UIWindow actions)
-
 attachMenuItem :: IsMenuShell menushell => menushell -> Text -> IO MenuItem
 attachMenuItem menu name = do
     item <- menuItemNewWithLabel name
@@ -183,32 +178,22 @@ createWindowAndChild MkUIWindow {..} closeRequest = do
         #show content
         #showAll window
 
-makeViewWindow :: WindowButtons actions => ProgramContext -> IO () -> UserInterface UIWindow actions -> IO ()
-makeViewWindow pc tellclose (MkUserInterface sub (window :: UIWindow edit)) = do
-    let
-        newWindow :: UIWindow edit -> IO ()
-        newWindow w = makeWindowCountRef pc $ MkUserInterface sub w
-    rec
-        ((), srCloser) <-
-            runLifeCycle $ do
-                rec
-                    MkViewSubscription {..} <-
-                        subscribeView (createWindowAndChild window closeRequest) sub openSelection newWindow getRequest
-                    srWidget srAction
-                    let
-                        openSelection :: IO ()
-                        openSelection = do
-                            msel <- srGetSelection
-                            case msel of
-                                Just w -> newWindow w
-                                Nothing -> return ()
-                        closeRequest :: IO Bool
-                        closeRequest = do
-                            srCloser
-                            tellclose
-                            return True -- don't run existing handler that closes the window
-                return ()
-    return ()
+makeViewWindow ::
+       forall actions. WindowButtons actions
+    => ProgramContext
+    -> IO ()
+    -> UserInterface UIWindow actions
+    -> IO ()
+makeViewWindow pc tellclose (MkUserInterface sub (window :: UIWindow edit)) = let
+    newWindow :: UIWindow edit -> IO ()
+    newWindow w = makeWindowCountRef pc $ MkUserInterface sub w
+    createView :: IO () -> CreateView edit (actions -> LifeCycle ())
+    createView closer =
+        createWindowAndChild window $ do
+            closer
+            tellclose
+            return True -- don't run existing handler that closes the window
+    in subscribeView createView sub newWindow getRequest
 
 data ProgramContext = MkProgramContext
     { pcMainLoop :: MainLoop
@@ -233,15 +218,17 @@ makeWindowCountRef pc@MkProgramContext {..} ui = let
            i <- Shapes.get
            Shapes.put $ i + 1
 
-truthMain :: ([String] -> IO [SomeUIWindow]) -> IO ()
-truthMain getWindows = do
+truthMain ::
+       ([String] -> (forall actions. WindowButtons actions =>
+                                         UserInterface UIWindow actions -> IO ()) -> IO ())
+    -> IO ()
+truthMain appMain = do
     args <- getArgs
     _ <- GI.init Nothing
     pcMainLoop <- mainLoopNew Nothing False
-    wms <- getWindows args
     -- _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50
     pcWindowCount <- newMVar 0
-    for_ wms $ \(MkSomeUIWindow uiw) -> makeWindowCountRef MkProgramContext {..} uiw
+    appMain args $ \uiw -> makeWindowCountRef MkProgramContext {..} uiw
     c <- mvarRun pcWindowCount $ Shapes.get
     if c == 0
         then return ()

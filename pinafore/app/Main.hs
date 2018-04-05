@@ -3,7 +3,7 @@ module Main
     ) where
 
 import qualified Options.Applicative as O
-import Pinafore.Window
+import Pinafore.Main
 import Shapes
 import Truth.UI.GTK
 
@@ -12,11 +12,8 @@ optParser = (,) <$> (O.strOption $ O.long "db") <*> (O.many $ O.strArgument memp
 
 main :: IO ()
 main =
-    truthMain $ \args -> do
+    truthMain $ \args createWindow -> do
         (dirpath, puipaths) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
-        wmss <-
-            for puipaths $ \puipath -> do
-                puitext <- readFile puipath
-                wms <- sqlitePinaforeWindow dirpath (puipath, decodeUtf8 $ toStrict puitext)
-                return $ fmap MkSomeUIWindow wms
-        return $ mconcat wmss
+        for_ puipaths $ \puipath -> do
+            puitext <- readFile puipath
+            sqlitePinaforeMain dirpath (puipath, decodeUtf8 $ toStrict puitext) createWindow
