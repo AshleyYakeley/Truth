@@ -87,7 +87,7 @@ mapViewResultEdit lens (vo, a) = (mapViewOutput lens vo, a)
 data ViewContext edit = MkViewContext
     { vcObject :: Object edit
     , vcSetSelect :: Aspect edit -> IO ()
-    , vcOpenSelection :: IO ()
+    , vcOpenSelection :: Bool -> IO ()
     , vcOpenWindow :: UIWindow edit -> IO ()
     , vcRequest :: forall t. IOWitness t -> Maybe t
     }
@@ -143,10 +143,10 @@ viewSetSelectedAspect aspect = do
     setSelect <- MkView $ asks vcSetSelect
     liftIO $ setSelect aspect
 
-viewOpenSelection :: View edit ()
-viewOpenSelection = do
+viewOpenSelection :: Bool -> View edit ()
+viewOpenSelection live = do
     openSelection <- MkView $ asks vcOpenSelection
-    liftIO openSelection
+    liftIO $ openSelection live
 
 viewOpenWindow :: UIWindow edit -> View edit ()
 viewOpenWindow window = do
@@ -243,8 +243,8 @@ subscribeView' (MkCreateView (ReaderT (view :: ViewContext edit -> WriterT (View
             rec
                 let
                     vcSetSelect ss = liftIO $ writeIORef selref ss
-                    vcOpenSelection :: IO ()
-                    vcOpenSelection = do
+                    vcOpenSelection :: Bool -> IO ()
+                    vcOpenSelection _live = do
                         ss <- readIORef selref
                         msel <- ss
                         case msel of

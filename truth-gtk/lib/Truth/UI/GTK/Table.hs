@@ -163,7 +163,8 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                 click <- Gtk.get event #type
                 case click of
                     EventType2buttonPress -> do
-                        liftIO $ unlift viewOpenSelection
+                        mods <- Gtk.get event #state
+                        liftIO $ unlift $ viewOpenSelection $ elem ModifierTypeControlMask mods
                         return True
                     _ -> return False
     let
