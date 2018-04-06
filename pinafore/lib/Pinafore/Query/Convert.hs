@@ -220,6 +220,9 @@ instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit b
         applyPinaforeFunction
             (arr catMaybes . cfmap (lensFunctionMorphism literalPinaforeLensMorphism))
             (lensFunctionValue a)
+    fromQValue (MkAny QTList la) = do
+        lmt <- for la $ fromQValue @baseedit
+        return $ unWholeEditFunction $ fmap (MkFiniteSet . catMaybes) $ for lmt $ \mt -> MkWholeEditFunction mt
     fromQValue v = badFromQValue v
 
 -- QImSet
@@ -234,6 +237,9 @@ instance edit ~ baseedit => FromQValue baseedit (QImSet edit) where
             in applyPinaforeFunction (arr mms . cfmap (lensFunctionMorphism id)) (lensFunctionValue a)
     fromQValue (MkAny QTSet a) =
         return $ applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism id)) (lensFunctionValue a)
+    fromQValue (MkAny QTList la) = do
+        lmt <- for la $ fromQValue @baseedit
+        return $ unWholeEditFunction $ fmap (MkFiniteSet . catMaybes) $ for lmt $ \mt -> MkWholeEditFunction mt
     fromQValue v = badFromQValue v
 
 instance edit ~ baseedit => ToQValue baseedit (QImSet edit) where

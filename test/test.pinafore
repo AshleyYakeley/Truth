@@ -1,4 +1,4 @@
-# Run "pinafore-query --doc" to see all predefined bindings.
+# Run "pinafore --doc" to see all predefined bindings.
 
 let
 

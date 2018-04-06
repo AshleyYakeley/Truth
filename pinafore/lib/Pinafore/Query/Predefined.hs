@@ -34,6 +34,14 @@ qdisplay val =
         SuccessResult a -> a
         FailureResult _ -> constEditFunction $ opoint $ pack $ show val
 
+output ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => QValue baseedit
+    -> QAction baseedit
+output val = do
+    texts <- qGetFunctionValue $ qdisplay val
+    for_ texts $ \text -> liftIO $ putStrLn $ unpack text
+
 qappend :: Literal baseedit Text -> Literal baseedit Text -> Literal baseedit Text
 qappend = liftA2 (<>)
 
@@ -66,12 +74,11 @@ newpoint set continue = do
     continue point
 
 getQImPoint :: QImPoint baseedit -> QActionM baseedit Point
-getQImPoint qp =
-    liftOuter $ do
-        mpoint <- viewObjectRead $ \_ mr -> editFunctionRead qp mr ReadWhole
-        case mpoint of
-            Just point -> return point
-            Nothing -> liftIO $ newKeyContainerItem @(FiniteSet Point)
+getQImPoint qp = do
+    mpoint <- qGetFunctionValue qp
+    case mpoint of
+        Just point -> return point
+        Nothing -> liftIO $ newKeyContainerItem @(FiniteSet Point)
 
 addpoint :: forall baseedit. QSet baseedit -> QImPoint baseedit -> QAction baseedit
 addpoint set qp = do
@@ -164,6 +171,7 @@ predefinitions =
           (funcEditFunction (Just . isJust) . val :: QImLiteral baseedit Bool)
     , pb "pass" (return () :: QAction baseedit)
     , pb ">>" $ ((>>) :: QAction baseedit -> QAction baseedit -> QAction baseedit)
+    , pb "output" $ output @baseedit
     , pb "newpoint" $ newpoint @baseedit
     , pb "addpoint" $ addpoint @baseedit
     , pb "removepoint" $ removepoint @baseedit

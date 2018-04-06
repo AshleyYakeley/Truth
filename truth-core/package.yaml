@@ -48,6 +48,7 @@ library:
       - Truth.Core.Edit
       - Truth.Core.Types.None
       - Truth.Core.Types.Whole
+      - Truth.Core.Types.WholeEditFunction
       - Truth.Core.Types.Unit
       - Truth.Core.Types.Sum
       - Truth.Core.Types.SumWhole

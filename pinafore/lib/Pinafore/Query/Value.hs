@@ -27,6 +27,9 @@ type QImPointMorphism baseedit = QImLiteralMorphism baseedit Point
 
 type QActionM baseedit = ComposeM (Result Text) (View baseedit)
 
+qGetFunctionValue :: PinaforeFunctionValue baseedit t -> QActionM baseedit t
+qGetFunctionValue fval = liftOuter $ viewObjectRead $ \_ mr -> editFunctionRead fval mr ReadWhole
+
 actionRequest :: IOWitness t -> QActionM baseedit t
 actionRequest wit =
     MkComposeM $ do

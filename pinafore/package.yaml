@@ -82,14 +82,3 @@ executables:
           - optparse-applicative
         main: Main.hs
         ghc-options: -threaded
-    pinafore-query:
-        source-dirs: query
-        dependencies:
-          - base >= 4.9 && < 5
-          - filepath
-          - bytestring
-          - shapes
-          - truth-core
-          - pinafore
-          - optparse-applicative
-        main: Main.hs

@@ -5,7 +5,6 @@ module Pinafore.Query
     , HasQTypeDescription(..)
     , ToQValue(..)
     , QBindings
-    , qdisplay
     , parseValue
     , predefinedDoc
     ) where
