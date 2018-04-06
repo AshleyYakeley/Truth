@@ -79,6 +79,8 @@ executables:
           - truth-core
           - truth-gtk
           - pinafore
+          - directory
           - optparse-applicative
+          - xdg-basedir
         main: Main.hs
         ghc-options: -threaded
