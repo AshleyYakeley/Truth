@@ -14,6 +14,7 @@ import Pinafore.Query.Convert
 import Pinafore.Query.Expression
 import Pinafore.Query.Predefined
 import Pinafore.Query.Read
+import Pinafore.Query.Types
 import Pinafore.Query.Value
 import Pinafore.Table
 import Shapes

@@ -1,45 +1,10 @@
 module Pinafore.Query.Value where
 
-import Pinafore.Morphism
+import Pinafore.Query.Order
+import Pinafore.Query.Types
 import Pinafore.Table
 import Shapes
 import Truth.Core
-
-type QLiteral baseedit t = PinaforeLensValue baseedit (WholeEdit (Maybe t))
-
-type QImLiteral baseedit t = PinaforeFunctionValue baseedit (Maybe t)
-
-type QPoint baseedit = QLiteral baseedit Point
-
-type QImPoint baseedit = QImLiteral baseedit Point
-
-type QSet baseedit = PinaforeLensValue baseedit (FiniteSetEdit Point)
-
-type QImSet baseedit = PinaforeFunctionValue baseedit (FiniteSet Point)
-
-type QLiteralMorphism baseedit = PinaforeLensMorphism baseedit Point
-
-type QPointMorphism baseedit = QLiteralMorphism baseedit Point
-
-type QImLiteralMorphism baseedit t = PinaforeFunctionMorphism baseedit Point (Maybe t)
-
-type QImPointMorphism baseedit = QImLiteralMorphism baseedit Point
-
-type QActionM baseedit = ComposeM (Result Text) (View baseedit)
-
-qGetFunctionValue :: PinaforeFunctionValue baseedit t -> QActionM baseedit t
-qGetFunctionValue fval = liftOuter $ viewObjectRead $ \_ mr -> editFunctionRead fval mr ReadWhole
-
-actionRequest :: IOWitness t -> QActionM baseedit t
-actionRequest wit =
-    MkComposeM $ do
-        mt <- viewRequest wit
-        return $
-            case mt of
-                Just t -> SuccessResult t
-                Nothing -> FailureResult $ "failed request"
-
-type QAction baseedit = QActionM baseedit ()
 
 data QType baseedit t where
     QTException :: QType baseedit Text
@@ -52,6 +17,7 @@ data QType baseedit t where
     QTList :: QType baseedit [QValue baseedit]
     QTFunction :: QType baseedit (QValue baseedit -> QValue baseedit)
     QTAction :: QType baseedit (QAction baseedit)
+    QTOrder :: QType baseedit (QOrder baseedit)
     QTUserInterface :: QType baseedit (UISpec baseedit)
 
 instance Show (QType baseedit t) where
@@ -65,6 +31,7 @@ instance Show (QType baseedit t) where
     show QTList = "list"
     show QTFunction = "function"
     show QTAction = "action"
+    show QTOrder = "order"
     show QTUserInterface = "user interface"
 
 instance TestEquality (QType baseedit) where
@@ -78,6 +45,7 @@ instance TestEquality (QType baseedit) where
     testEquality QTList QTList = Just Refl
     testEquality QTFunction QTFunction = Just Refl
     testEquality QTAction QTAction = Just Refl
+    testEquality QTOrder QTOrder = Just Refl
     testEquality QTUserInterface QTUserInterface = Just Refl
     testEquality _ _ = Nothing
 
@@ -110,26 +78,15 @@ qpartialapply (MkAny QTException ex) = FailureResult ex
 qpartialapply (MkAny QTFunction f) = return f
 qpartialapply (MkAny QTMorphism f) =
     return $ \case
-        MkAny QTPoint a -> MkAny QTPoint $ applyPinaforeLens f a
-        MkAny QTSet a ->
-            MkAny QTSet $
-            readOnlyEditLens $
-            convertEditFunction .
-            applyPinaforeFunction (arr catMaybes . cfmap (lensFunctionMorphism f)) (lensFunctionValue a)
+        MkAny QTPoint a -> MkAny QTPoint $ qApplyMorphismValue f a
+        MkAny QTSet a -> MkAny QTSet $ qApplyMorphismSet f a
         MkAny ta _ -> qexception $ pack $ "cannot apply " ++ show QTMorphism ++ " to " ++ show ta
 qpartialapply (MkAny QTInverseMorphism f) =
     return $ \case
-        MkAny QTConstant a ->
-            MkAny QTSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) $ constEditLens $ Just a
-        MkAny QTLiteral a -> MkAny QTSet $ applyInversePinaforeLens (literalPinaforeLensMorphism . f) a
-        MkAny QTPoint a -> MkAny QTSet $ applyInversePinaforeLens f a
-        MkAny QTSet a ->
-            MkAny QTSet $
-            readOnlyEditLens $
-            convertEditFunction .
-            applyPinaforeFunction
-                (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f))
-                (lensFunctionValue a)
+        MkAny QTConstant a -> MkAny QTSet $ qInverseApplyMorphismConstant f a
+        MkAny QTLiteral a -> MkAny QTSet $ qInverseApplyMorphismLiteral f a
+        MkAny QTPoint a -> MkAny QTSet $ qInverseApplyMorphismPoint f a
+        MkAny QTSet a -> MkAny QTSet $ qInverseApplyMorphismSet f a
         MkAny ta _ -> qexception $ pack $ "cannot apply " ++ show QTInverseMorphism ++ " to " ++ show ta
 qpartialapply (MkAny tf _) = FailureResult $ pack $ "cannot apply " ++ show tf
 

@@ -1,6 +1,6 @@
 module Pinafore.Query.Literal where
 
-import Pinafore.Query.Value
+import Pinafore.Query.Types
 import Shapes
 import Truth.Core
 

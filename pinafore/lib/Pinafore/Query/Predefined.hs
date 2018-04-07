@@ -1,7 +1,6 @@
 module Pinafore.Query.Predefined
     ( predefinedBindings
     , predefinedDoc
-    , qdisplay
     ) where
 
 import Pinafore.File
@@ -10,6 +9,8 @@ import Pinafore.Number
 import Pinafore.Query.Convert
 import Pinafore.Query.Expression
 import Pinafore.Query.Literal
+import Pinafore.Query.Order
+import Pinafore.Query.Types
 import Pinafore.Query.Value
 import Pinafore.Table
 import Shapes
@@ -28,19 +29,31 @@ qmeet a b = readOnlyEditLens meetEditFunction . pairJoinEditLenses a b
 qjoin :: QSet baseedit -> QSet baseedit -> QSet baseedit
 qjoin a b = readOnlyEditLens joinEditFunction . pairJoinEditLenses a b
 
-qdisplay :: HasPinaforeTableEdit baseedit => QValue baseedit -> PinaforeFunctionValue baseedit (FiniteSet Text)
-qdisplay val =
-    case fromQValue val of
-        SuccessResult a -> a
-        FailureResult _ -> constEditFunction $ opoint $ pack $ show val
-
 output ::
        forall baseedit. HasPinaforeTableEdit baseedit
-    => QValue baseedit
+    => QImLiteral baseedit Text
     -> QAction baseedit
 output val = do
-    texts <- qGetFunctionValue $ qdisplay val
-    for_ texts $ \text -> liftIO $ putStrLn $ unpack text
+    mtext <- qGetFunctionValue val
+    for_ mtext $ \text -> liftIO $ putStr $ unpack text
+
+outputln ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => QImLiteral baseedit Text
+    -> QAction baseedit
+outputln val = do
+    mtext <- qGetFunctionValue val
+    for_ mtext $ \text -> liftIO $ putStrLn $ unpack text
+
+withset ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => QOrder baseedit
+    -> QImSet baseedit
+    -> (Point -> QAction baseedit)
+    -> QAction baseedit
+withset order set cont = do
+    points <- qGetFunctionValue $ qOrderSet order set
+    for_ points cont
 
 qappend :: Literal baseedit Text -> Literal baseedit Text -> Literal baseedit Text
 qappend = liftA2 (<>)
@@ -165,13 +178,21 @@ predefinitions =
     , pb "<=" $ liftA2 @(Literal baseedit) $ (<=) @Number
     , pb ">" $ liftA2 @(Literal baseedit) $ (>) @Number
     , pb ">=" $ liftA2 @(Literal baseedit) $ (>=) @Number
+    , pb "alphabetical" $ alphabetical @baseedit
+    , pb "numerical" $ numerical @baseedit
+    , pb "chronological" $ chronological @baseedit
+    , pb "orders" $ orders @baseedit
+    , pb "orderon" $ orderon @baseedit
+    , pb "rev" $ rev @baseedit
     , pb "inexact" $ fmap @(Literal baseedit) numberToDouble
     , pb "approximate" $ liftA2 @(Literal baseedit) approximate
     , pb "exists" $ \(val :: QImLiteral baseedit Text) ->
           (funcEditFunction (Just . isJust) . val :: QImLiteral baseedit Bool)
     , pb "pass" (return () :: QAction baseedit)
     , pb ">>" $ ((>>) :: QAction baseedit -> QAction baseedit -> QAction baseedit)
+    , pb "withset" $ withset @baseedit
     , pb "output" $ output @baseedit
+    , pb "outputln" $ outputln @baseedit
     , pb "newpoint" $ newpoint @baseedit
     , pb "addpoint" $ addpoint @baseedit
     , pb "removepoint" $ removepoint @baseedit

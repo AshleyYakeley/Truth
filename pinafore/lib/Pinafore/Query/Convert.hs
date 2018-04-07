@@ -10,6 +10,8 @@ import Pinafore.AsText
 import Pinafore.File
 import Pinafore.Morphism
 import Pinafore.Query.Literal
+import Pinafore.Query.Order
+import Pinafore.Query.Types
 import Pinafore.Query.Value
 import Pinafore.Table
 import Shapes
@@ -324,6 +326,18 @@ instance baseedit ~ edit => FromQValue baseedit (View edit ()) where
 
 instance baseedit ~ edit => ToQValue baseedit (View edit ()) where
     toQValue t = MkAny QTAction $ lift t
+
+-- QOrder
+--
+instance HasQTypeDescription (QOrder edit) where
+    qTypeDescription = "order"
+
+instance baseedit ~ edit => FromQValue baseedit (QOrder edit) where
+    fromQValue (MkAny QTOrder v) = return v
+    fromQValue v = badFromQValue v
+
+instance baseedit ~ edit => ToQValue baseedit (QOrder edit) where
+    toQValue t = MkAny QTOrder t
 
 -- UISpec
 --

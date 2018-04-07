@@ -5,4 +5,4 @@ father = %c005705f-9259-4d24-9713-db28a6e4f7d5;
 people = %f06efa5e-190f-4e5d-8633-495c5683c124;
 root = !78baed51-cb05-46b5-bcb4-49031532b890;
 in
-output $ name $ @people root
+withset (rev alphabetical) (name $ @people root) outputln
