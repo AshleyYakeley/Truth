@@ -17,7 +17,6 @@ library:
       - uuid
       - aeson
       - sqlite-simple
-      - mime
       - shapes
       - parsec
       - truth-core
@@ -52,7 +51,6 @@ tests:
           - bytestring
           - containers
           - countable
-          - mime
           - open-witness
           - template-haskell
           - transformers
