@@ -1,6 +1,7 @@
 module Pinafore.Query.Predefined
     ( predefinedBindings
     , predefinedDoc
+    , outputln
     ) where
 
 import Pinafore.File

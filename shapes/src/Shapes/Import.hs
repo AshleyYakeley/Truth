@@ -50,7 +50,7 @@ import Prelude as I
     , toInteger
     , undefined
     )
-import System.IO as I hiding (appendFile, getContents, hGetContents, readFile, writeFile)
+import System.IO as I hiding (appendFile, getContents, hGetContents, interact, readFile, writeFile)
 import Text.Read as I (Read(..), readMaybe)
 import Text.Show as I (Show(..))
 
@@ -79,7 +79,7 @@ import Control.Monad.Trans.Identity as I (IdentityT(..))
 import Control.Monad.Trans.List as I (ListT(..))
 import Control.Monad.Trans.Maybe as I (MaybeT(..))
 import Control.Monad.Trans.Reader as I (ReaderT(..), ask, asks, withReaderT)
-import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT, get, put)
+import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT, get, modify, put)
 import Control.Monad.Trans.Writer as I (WriterT(..), execWriterT, tell)
 
 -- transformers-extra

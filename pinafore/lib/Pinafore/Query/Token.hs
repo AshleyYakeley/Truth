@@ -84,6 +84,9 @@ instance Show (Token t) where
     show TokInfix = "infix"
     show TokNumber = "number"
 
+instance Show (Any Token) where
+    show (MkAny t _) = show t
+
 readWS :: Parser ()
 readWS = do
     spaces

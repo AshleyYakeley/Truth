@@ -1,5 +1,6 @@
 module Pinafore.Query.Read
     ( parseExpression
+    , parseInteractiveCommand
     ) where
 
 import Pinafore.Query.Convert
@@ -7,7 +8,7 @@ import Pinafore.Query.Expression
 import Pinafore.Query.Token
 import Pinafore.Query.Value
 import Pinafore.Table
-import Shapes
+import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
 type Parser = Parsec [(SourcePos, Any Token)] ()
@@ -41,6 +42,14 @@ readBindings =
                  return bb
          return $ MkQBindings $ b : (fromMaybe [] mbb)) <|>
     (do return $ MkQBindings [])
+
+readLetBindings :: HasPinaforeTableEdit baseedit => Parser (QValueExpr baseedit -> QValueExpr baseedit)
+readLetBindings = do
+    readThis TokLet
+    bindings <- readBindings
+    case getDuplicates bindings of
+        [] -> return $ qlets bindings
+        l -> parserFail $ "duplicate bindings: " ++ intercalate ", " (fmap show l)
 
 readExpression ::
        forall baseedit. HasPinaforeTableEdit baseedit
@@ -139,14 +148,10 @@ readExpression1 =
          val <- readExpression
          return $ exprAbstracts args val) <|>
     (do
-         readThis TokLet
-         bindings <- readBindings
+         bmap <- readLetBindings
          readThis TokIn
          body <- readExpression
-         case getDuplicates bindings of
-             [] -> return ()
-             l -> parserFail $ "duplicate bindings: " ++ intercalate ", " (fmap show l)
-         return $ qlets bindings body) <|>
+         return $ bmap body) <|>
     (do
          readThis TokIf
          etest <- readExpression
@@ -208,9 +213,24 @@ readExpression3 =
          return $ pure $ toQValue p) <?>
     "expression"
 
-parseExpression :: HasPinaforeTableEdit baseedit => SourceName -> Text -> Result Text (QValueExpr baseedit)
-parseExpression name text = do
+readInteractiveCommand ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => Parser (Either (QValueExpr baseedit -> QValueExpr baseedit) (QValueExpr baseedit))
+readInteractiveCommand = (eof >> return (Left id)) <|> (try $ fmap Right readExpression) <|> (fmap Left readLetBindings)
+
+parseReader :: Parser t -> SourceName -> Text -> Result Text t
+parseReader parser name text = do
     toks <- parseTokens name text
-    case parse readExpression name toks of
+    case parse parser name toks of
         Right a -> return a
         Left e -> fail $ show e
+
+parseExpression :: HasPinaforeTableEdit baseedit => SourceName -> Text -> Result Text (QValueExpr baseedit)
+parseExpression = parseReader readExpression
+
+parseInteractiveCommand ::
+       HasPinaforeTableEdit baseedit
+    => SourceName
+    -> Text
+    -> Result Text (Either (QValueExpr baseedit -> QValueExpr baseedit) (QValueExpr baseedit))
+parseInteractiveCommand = parseReader readInteractiveCommand

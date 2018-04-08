@@ -19,20 +19,29 @@ sqlitePinaforeObject dirpath =
         PinaforeSelectTable -> sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
         PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
 
+getSqlitePinaforeRunAction ::
+       forall baseedit. Object baseedit -> (UserInterface UIWindow () -> IO ()) -> IO (UnliftIO (QActionM baseedit))
+getSqlitePinaforeRunAction pinaforeObject createWindow = do
+    sub <- liftIO $ makeObjectSubscriber pinaforeObject
+    return $
+        MkUnliftIO $ \(MkComposeM action :: QActionM baseedit a) -> do
+            let
+                createView :: IO () -> CreateView baseedit (() -> LifeCycle (Result Text a))
+                createView _ = do
+                    a <- cvLiftView action
+                    return $ \() -> return a
+            result <- subscribeView createView sub (\win -> createWindow $ MkUserInterface sub win) $ \_ -> Nothing
+            case result of
+                SuccessResult t -> return t
+                FailureResult msg -> fail $ unpack msg
+
 sqlitePinaforeMain :: FilePath -> (FilePath, Text) -> (UserInterface UIWindow () -> IO ()) -> IO ()
 sqlitePinaforeMain dirpath (puipath, puitext) createWindow = do
-    sub <- liftIO $ makeObjectSubscriber $ sqlitePinaforeObject dirpath
-    let
-        runView :: forall a. View PinaforeEdit a -> IO a
-        runView view = let
-            createView :: IO () -> CreateView PinaforeEdit (() -> LifeCycle a)
-            createView _ = do
-                a <- cvLiftView view
-                return $ \() -> return a
-            in subscribeView createView sub (\win -> createWindow $ MkUserInterface sub win) $ \_ -> Nothing
-    MkComposeM action :: FilePinaforeType <-
-        resultToM $ mapResultFailure unpack $ parseValue @PinaforeEdit puipath puitext
-    result <- runView action
-    case result of
-        SuccessResult () -> return ()
-        FailureResult msg -> fail $ unpack msg
+    runAction <- getSqlitePinaforeRunAction (sqlitePinaforeObject dirpath) createWindow
+    action :: FilePinaforeType <- resultTextToM $ parseValue @PinaforeEdit puipath puitext
+    runUnliftIO runAction action
+
+sqlitePinaforeInteractive :: FilePath -> (UserInterface UIWindow () -> IO ()) -> IO ()
+sqlitePinaforeInteractive dirpath createWindow = do
+    runAction <- getSqlitePinaforeRunAction (sqlitePinaforeObject dirpath) createWindow
+    interact runAction

@@ -1,0 +1,3 @@
+#!/bin/sh -e
+stack install pinafore
+`stack path --local-bin`/pinafore --data test/pinafore

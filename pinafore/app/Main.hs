@@ -11,13 +11,15 @@ import Truth.UI.GTK
 
 data Options
     = ExprDocOption
-    | RunOption (Maybe FilePath)
+    | RunOption Bool
+                (Maybe FilePath)
                 [FilePath]
 
 optParser :: O.Parser Options
 optParser =
     (O.flag' ExprDocOption $ O.long "doc") <|>
-    RunOption <$> (O.optional $ O.strOption (O.long "data")) <*> (O.many $ O.strArgument mempty)
+    RunOption <$> (O.switch $ O.long "interactive" <> O.short 'i') <*> (O.optional $ O.strOption (O.long "data")) <*>
+    (O.many $ O.strArgument mempty)
 
 main :: IO ()
 main =
@@ -27,7 +29,7 @@ main =
             ExprDocOption -> do
                 for_ (predefinedDoc @PinaforeEdit) $ \(name, desc) -> putStrLn $ (show name) ++ " :: " ++ unpack desc
                 putStrLn $ "<file> :: " ++ unpack filePinaforeType
-            RunOption mdirpath fpaths -> do
+            RunOption fInteract mdirpath fpaths -> do
                 dirpath <-
                     case mdirpath of
                         Just dirpath -> return dirpath
@@ -38,9 +40,16 @@ main =
                     doFile fpath text = sqlitePinaforeMain dirpath (fpath, text) createWindow
                 case fpaths of
                     [] -> do
-                        ptext <- getContents
-                        doFile "<stdin>" $ decodeUtf8 $ toStrict ptext
-                    _ ->
+                        isterm <- hIsTerminalDevice stdin
+                        if isterm || fInteract
+                            then sqlitePinaforeInteractive dirpath createWindow
+                            else do
+                                ptext <- getContents
+                                doFile "<stdin>" $ decodeUtf8 $ toStrict ptext
+                    _ -> do
                         for_ fpaths $ \fpath -> do
                             ptext <- readFile fpath
                             doFile fpath $ decodeUtf8 $ toStrict ptext
+                        if fInteract
+                            then sqlitePinaforeInteractive dirpath createWindow
+                            else return ()

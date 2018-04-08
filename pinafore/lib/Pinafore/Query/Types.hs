@@ -64,6 +64,9 @@ qInverseApplyMorphismSet f a =
 
 type QActionM baseedit = ComposeM (Result Text) (View baseedit)
 
+resultTextToM :: MonadFail m => Result Text a -> m a
+resultTextToM = resultToM . mapResultFailure unpack
+
 qGetFunctionValue :: PinaforeFunctionValue baseedit t -> QActionM baseedit t
 qGetFunctionValue fval = liftOuter $ viewObjectRead $ \_ mr -> editFunctionRead fval mr ReadWhole
 
