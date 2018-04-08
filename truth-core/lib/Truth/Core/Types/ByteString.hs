@@ -107,9 +107,13 @@ instance InvertibleEdit ByteStringEdit where
                     else [ByteStringWrite writeStart oldbs]
         return $ lenEdit ++ writeEdit
 
+chunks :: Integral i => i -> i -> [(i, i)]
+chunks csize len = zip [0,csize ..] $ takeWhile ((<) 0) $ fmap (\n -> min csize $ len - (csize * n)) [0 ..]
+
 instance FullEdit ByteStringEdit where
     replaceEdit mr write = do
         len <- mr ReadByteStringLength
-        bs <- mr $ ReadByteStringSection 0 len
-        write $ ByteStringWrite 0 bs
         write $ ByteStringSetLength len
+        for_ (chunks 8192 len) $ \(start, size) -> do
+            bs <- mr $ ReadByteStringSection start size
+            write $ ByteStringWrite start bs

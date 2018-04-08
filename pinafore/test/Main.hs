@@ -7,9 +7,7 @@ module Main
 import Data.Ratio
 import Pinafore
 import Pinafore.Query.Expression
-import Pinafore.Query.Value
 import Prelude (read)
-import Prelude (Fractional(..))
 import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -29,6 +27,11 @@ instance Eq (PreciseEq Double) where
 instance Eq (PreciseEq Number) where
     (MkPreciseEq (ExactNumber a)) == (MkPreciseEq (ExactNumber b)) = MkPreciseEq a == MkPreciseEq b
     (MkPreciseEq (InexactNumber a)) == (MkPreciseEq (InexactNumber b)) = MkPreciseEq a == MkPreciseEq b
+    _ == _ = False
+
+instance Eq (PreciseEq t) => Eq (PreciseEq (Maybe t)) where
+    (MkPreciseEq Nothing) == (MkPreciseEq Nothing) = True
+    (MkPreciseEq (Just a)) == (MkPreciseEq (Just b)) = MkPreciseEq a == MkPreciseEq b
     _ == _ = False
 
 testCalc :: String -> Number -> Number -> TestTree
@@ -63,9 +66,9 @@ testShowRead str t =
 testRead ::
        forall t. (Show t, Eq (PreciseEq t), Read t)
     => String
-    -> t
+    -> Maybe t
     -> TestTree
-testRead str t = testCase (show str) $ assertEqual "" (MkPreciseEq t) $ MkPreciseEq $ read str
+testRead str t = testCase (show str) $ assertEqual "" (MkPreciseEq t) $ MkPreciseEq $ readMaybe str
 
 testNumbersShowRead :: TestTree
 testNumbersShowRead =
@@ -85,23 +88,26 @@ testNumbersShowRead =
         , testShowRead "~-1.0" $ InexactNumber $ negate 1
         , testShowRead "~Infinity" $ InexactNumber $ 1 / 0
         , testShowRead "~-Infinity" $ InexactNumber $ -1 / 0
-        , testRead "" $ InexactNumber $ 0 / 0
-        , testRead " " $ InexactNumber $ 0 / 0
-        , testRead "  " $ InexactNumber $ 0 / 0
-        , testRead " 1" $ ExactNumber 1
-        , testRead "1 " $ ExactNumber 1
-        , testRead " 1 " $ ExactNumber 1
-        , testRead "z" $ InexactNumber $ 0 / 0
-        , testRead "ZZ" $ InexactNumber $ 0 / 0
-        , testRead "~1Z" $ InexactNumber $ 0 / 0
-        , testRead "~-1.1Z" $ InexactNumber $ 0 / 0
-        , testRead "0" $ ExactNumber 0
-        , testRead "0." $ ExactNumber 0
-        , testRead "0.0" $ ExactNumber 0
-        , testRead "0._" $ ExactNumber 0
-        , testRead "0._0" $ ExactNumber 0
-        , testRead "0.0_" $ ExactNumber 0
-        , testRead "0.0_0" $ ExactNumber 0
+        , testRead "" $ Nothing @Number
+        , testRead " " $ Nothing @Number
+        , testRead "  " $ Nothing @Number
+        , testRead "NaN" $ Just $ InexactNumber $ 0 / 0
+        , testRead "~Infinity" $ Just $ InexactNumber $ 1 / 0
+        , testRead "~-Infinity" $ Just $ InexactNumber $ -1 / 0
+        , testRead " 1" $ Just $ ExactNumber 1
+        , testRead "1 " $ Just $ ExactNumber 1
+        , testRead " 1 " $ Just $ ExactNumber 1
+        , testRead "z" $ Nothing @Number
+        , testRead "ZZ" $ Nothing @Number
+        , testRead "~1Z" $ Nothing @Number
+        , testRead "~-1.1Z" $ Nothing @Number
+        , testRead "0" $ Just $ ExactNumber 0
+        , testRead "0." $ Just $ ExactNumber 0
+        , testRead "0.0" $ Just $ ExactNumber 0
+        , testRead "0._" $ Just $ ExactNumber 0
+        , testRead "0._0" $ Just $ ExactNumber 0
+        , testRead "0.0_" $ Just $ ExactNumber 0
+        , testRead "0.0_0" $ Just $ ExactNumber 0
         ]
 
 testNumbers :: TestTree
@@ -109,7 +115,7 @@ testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
 
 -- | for test only
 instance Eq (QValue baseedit) where
-    (MkAny QConstant a1) == (MkAny QConstant a2) = a1 == a2
+    (MkAny QTConstant a1) == (MkAny QTConstant a2) = a1 == a2
     _ == _ = error "QValue: not comparable"
 
 testQueryValue :: (Eq a, Show a) => String -> QExpr baseedit a -> Maybe a -> TestTree
@@ -139,11 +145,11 @@ testQueryValues =
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
     testCase (unpack query) $
-    case (expected, parseValue @PinaforeTableEdit "<input>" query) of
+    case (expected, parseValue @PinaforeEdit "<input>" query) of
         (Nothing, FailureResult _) -> return ()
         (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ show v
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ unpack e
-        (Just s, SuccessResult (v :: QValue PinaforeTableEdit)) -> assertEqual "result" s (show v)
+        (Just s, SuccessResult (v :: QValue PinaforeEdit)) -> assertEqual "result" s (show v)
 
 testQueries :: TestTree
 testQueries =
@@ -158,6 +164,12 @@ testQueries =
         , testQuery "false" $ Just "false"
         , testQuery "\"1\"" $ Just "1"
         , testQuery "3" $ Just "3"
+        , testQuery "3.2_4" $ Just "3.2_4"
+        , testQuery "~1" $ Just "~1.0"
+        , testQuery "~-2.4" $ Just "~-2.4"
+        , testQuery "NaN" $ Just "NaN"
+        , testQuery "~Infinity" $ Just "~Infinity"
+        , testQuery "~-Infinity" $ Just "~-Infinity"
         , testQuery "ui_table" $ Just "<function>"
         -- list construction
         , testQuery "[]" $ Just "[]"
@@ -217,7 +229,51 @@ testQueries =
         , testQuery "let a=1 in let b=a in let a=3 in b" $ Just "1"
         , testQuery "let a=1;b=a;a=3 in b" $ Nothing
         -- operators
+        , testQuery "0 == 1" $ Just "false"
+        , testQuery "1 == 1" $ Just "true"
+        , testQuery "0 /= 1" $ Just "true"
+        , testQuery "1 /= 1" $ Just "false"
+        , testQuery "0 <= 1" $ Just "true"
+        , testQuery "1 <= 1" $ Just "true"
+        , testQuery "2 <= 1" $ Just "false"
+        , testQuery "0 < 1" $ Just "true"
+        , testQuery "1 < 1" $ Just "false"
+        , testQuery "2 < 1" $ Just "false"
+        , testQuery "0 >= 1" $ Just "false"
+        , testQuery "1 >= 1" $ Just "true"
+        , testQuery "2 >= 1" $ Just "true"
+        , testQuery "0 >= ~1" $ Just "false"
+        , testQuery "1 >= ~1" $ Just "true"
+        , testQuery "2 >= ~1" $ Just "true"
+        , testQuery "0 > 1" $ Just "false"
+        , testQuery "1 > 1" $ Just "false"
+        , testQuery "2 > 1" $ Just "true"
+        , testQuery "1 == ~1" $ Just "false"
+        , testQuery "0 ~== 1" $ Just "false"
+        , testQuery "1 ~== 1" $ Just "true"
+        , testQuery "1 ~== ~1" $ Just "true"
+        , testQuery "0 ~== ~1" $ Just "false"
+        , testQuery "0 ~/= 1" $ Just "true"
+        , testQuery "1 ~/= 1" $ Just "false"
+        , testQuery "1 ~/= ~1" $ Just "false"
+        , testQuery "0 ~/= ~1" $ Just "true"
+        , testQuery "7+8" $ Just "15"
+        , testQuery "7 +8" $ Just "15"
+        , testQuery "7+ 8" $ Just "15"
+        , testQuery "7 + 8" $ Just "15"
+        , testQuery "\"abc\"++\"def\"" $ Just "abcdef"
+        , testQuery "\"abc\" ++\"def\"" $ Just "abcdef"
+        , testQuery "\"abc\"++ \"def\"" $ Just "abcdef"
         , testQuery "\"abc\" ++ \"def\"" $ Just "abcdef"
+        , testQuery "let f x = x + 2 in f -1" $ Just "1"
+        , testQuery "let f = 2 in f - 1" $ Just "1"
+        -- operator precedence
+        , testQuery "1 + 2 * 3" $ Just "7"
+        , testQuery "3 * 2 + 1" $ Just "7"
+        , testQuery "2 * 2 * 2" $ Just "8"
+        , testQuery "12 / 2 / 2" $ Just "3"
+        , testQuery "12 / 2 / 2" $ Just "3"
+        , testQuery "0 == 0 == 0" $ Nothing
         -- if/then/else
         , testQuery "if true then 3 else 4" $ Just "3"
         , testQuery "if false then 3 else 4" $ Just "4"

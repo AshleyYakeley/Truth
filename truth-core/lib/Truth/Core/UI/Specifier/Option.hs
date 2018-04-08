@@ -1,9 +1,9 @@
-module Truth.Core.UI.Option where
+module Truth.Core.UI.Specifier.Option where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Types
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 
 data UIOption edit where
     MkUIOption

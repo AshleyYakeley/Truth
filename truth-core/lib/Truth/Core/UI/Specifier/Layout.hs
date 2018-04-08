@@ -1,7 +1,7 @@
-module Truth.Core.UI.Layout where
+module Truth.Core.UI.Specifier.Layout where
 
 import Truth.Core.Import
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 
 data UILayout edit where
     MkUIHorizontal :: [(UISpec edit, Bool)] -> UILayout edit

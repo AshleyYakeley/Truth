@@ -63,26 +63,41 @@ efUpdates sef (ea:eas) mr = do
     ebs <- efUpdates sef eas mr
     return $ eb ++ ebs
 
-funcEditFunction ::
+ioFuncEditFunction ::
        forall edita editb. (FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
-    => (EditSubject edita -> EditSubject editb)
+    => (EditSubject edita -> IO (EditSubject editb))
     -> EditFunction edita editb
-funcEditFunction ab = let
+ioFuncEditFunction amb = let
     efGet :: ReadFunctionT IdentityT (EditReader edita) (EditReader editb)
-    efGet mra rt = lift $ (mSubjectToMutableRead $ fmap ab $ mutableReadToSubject mra) rt
+    efGet mra rt = lift $ (mSubjectToMutableRead $ mutableReadToSubject mra >>= \a -> liftIO (amb a)) rt
     efUpdate ::
            forall m. MonadIO m
         => edita
         -> MutableRead m (EditReader edita)
         -> IdentityT m [editb]
     efUpdate edita mra =
-        lift $ getReplaceEdits $ mSubjectToMutableRead $ fmap ab $ mutableReadToSubject $ applyEdit edita mra
+        lift $
+        getReplaceEdits $ mSubjectToMutableRead $ (mutableReadToSubject $ applyEdit edita mra) >>= \a -> liftIO (amb a)
     in MkCloseUnlift identityUnlift MkAnEditFunction {..}
 
+funcEditFunction ::
+       forall edita editb. (FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
+    => (EditSubject edita -> EditSubject editb)
+    -> EditFunction edita editb
+funcEditFunction ab = ioFuncEditFunction $ \a -> return $ ab a
+
+immutableEditFunction ::
+       (forall m. MonadIO m =>
+                      MutableRead m (EditReader editb))
+    -> EditFunction edita editb
+immutableEditFunction mr =
+    MkCloseUnlift identityUnlift $ MkAnEditFunction {efGet = \_ -> mr, efUpdate = \_ _ -> return []}
+
+ioConstEditFunction :: SubjectReader (EditReader editb) => IO (EditSubject editb) -> EditFunction edita editb
+ioConstEditFunction iob = immutableEditFunction $ mSubjectToMutableRead $ liftIO iob
+
 constEditFunction :: SubjectReader (EditReader editb) => EditSubject editb -> EditFunction edita editb
-constEditFunction b =
-    MkCloseUnlift identityUnlift $
-    MkAnEditFunction {efGet = \_ rt -> mSubjectToMutableRead (return b) rt, efUpdate = \_ _ -> return []}
+constEditFunction b = ioConstEditFunction $ return b
 
 editFunctionRead ::
        forall m edita editb. MonadUnliftIO m

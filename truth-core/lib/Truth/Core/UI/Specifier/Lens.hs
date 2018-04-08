@@ -1,9 +1,9 @@
-module Truth.Core.UI.Lens where
+module Truth.Core.UI.Specifier.Lens where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Types
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 
 data UILens edit where
     MkUILens :: forall edita editb. EditLens edita editb -> UISpec editb -> UILens edita

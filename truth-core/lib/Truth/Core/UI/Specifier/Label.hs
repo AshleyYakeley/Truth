@@ -1,8 +1,8 @@
-module Truth.Core.UI.Label where
+module Truth.Core.UI.Specifier.Label where
 
 import Truth.Core.Import
 import Truth.Core.Types
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 
 data UILabel edit where
     MkUILabel :: UILabel (WholeEdit Text)

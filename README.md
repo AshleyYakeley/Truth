@@ -7,16 +7,16 @@ An API is defined by an *edit* type, for changes, and an associated *reader* typ
 *User interface specifiers* define user interface elements and layout, which are then constructed with the GTK3 framework.
 
 ## Pinafore
-Pinafore is a triple-store database for storing knowledge, and a language ([example](test/test.pui)) for specifying ontologies and user interfaces.
+Pinafore is a triple-store database for storing knowledge, and a language ([example](test/test.pinafore)) for specifying ontologies and user interfaces.
 It is built on Truth.
 It is currently focused on personal information management, such as contact, calendar, to-do, photo collection, etc.
 
 ## Running
+
+You will need Docker installed.
+
 ```shell
-sudo apt-get install -y haskell-stack gnome-platform-devel libgirepository1.0-dev libwebkit2gtk-4.0-dev
-stack setup
-# stack install alex happy
-# stack install gtk2hs-buildtools
+sudo apt-get install -y haskell-stack
 stack build pinafore
 ./testpinafore
 ```

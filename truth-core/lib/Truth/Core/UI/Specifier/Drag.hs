@@ -1,9 +1,9 @@
-module Truth.Core.UI.Drag where
+module Truth.Core.UI.Specifier.Drag where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Types
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 
 data UIDragSource edit where
     MkUIDragSource :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec edit -> UIDragSource edit

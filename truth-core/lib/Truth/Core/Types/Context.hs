@@ -127,8 +127,8 @@ contextualiseAnEditLens (MkAnEditLens f pe) = let
         case partitionContextEdits edits of
             (eas, ebs) ->
                 withTransConstraintTM @MonadIO $
-                getCompose $ do
-                    eas' <- Compose $ pe ebs mr
+                getComposeM $ do
+                    eas' <- MkComposeM $ pe ebs mr
                     return $ eas ++ eas'
     in MkAnEditLens f' pe'
 
@@ -179,8 +179,8 @@ liftContentAnEditLens (MkAnEditLens f pe) = let
         case partitionContextEdits edits of
             (exs, ens) ->
                 withTransConstraintTM @MonadIO $
-                getCompose $ do
-                    es1 <- Compose $ pe exs (mr . MkTupleEditReader SelectContext)
+                getComposeM $ do
+                    es1 <- MkComposeM $ pe exs (mr . MkTupleEditReader SelectContext)
                     return $ (fmap (MkTupleEdit SelectContext) es1) ++ (fmap (MkTupleEdit SelectContent) ens)
     in MkAnEditLens f' pe'
 

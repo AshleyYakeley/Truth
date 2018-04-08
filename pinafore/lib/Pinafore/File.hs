@@ -14,5 +14,9 @@ class HasPinaforeFileEdit baseedit where
 instance HasPinaforeFileEdit PinaforeFileEdit where
     pinaforeFileLens = id
 
+pinaforeFileItemLens :: HasPinaforeFileEdit baseedit => Point -> EditLens baseedit (SingleObjectEdit ByteStringEdit)
+pinaforeFileItemLens point = tupleEditLens (MkFunctionSelector point) . pinaforeFileLens
+
 directoryPinaforeFileObject :: FilePath -> Object PinaforeFileEdit
-directoryPinaforeFileObject path = directoryObjectStore (subdirectoryObject True path fileSystemObject) show
+directoryPinaforeFileObject path =
+    directoryObjectStore (subdirectoryObject True path fileSystemObject) (\(MkPoint uuid) -> show uuid)

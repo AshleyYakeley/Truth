@@ -1,6 +1,7 @@
 module Truth.Core.Types
     ( module Truth.Core.Types.None
     , module Truth.Core.Types.Whole
+    , module Truth.Core.Types.WholeEditFunction
     , module Truth.Core.Types.Unit
     , module Truth.Core.Types.Sum
     , module Truth.Core.Types.SumWhole
@@ -53,3 +54,4 @@ import Truth.Core.Types.SumWhole
 import Truth.Core.Types.Tuple
 import Truth.Core.Types.Unit
 import Truth.Core.Types.Whole
+import Truth.Core.Types.WholeEditFunction

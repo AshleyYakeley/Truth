@@ -42,6 +42,7 @@ library:
       - Data.Compose
       - Data.KeyContainer
       - Data.FiniteSet
+      - Control.Monad.Compose
       - Control.LifeCycle
       - Shapes
     other-modules:

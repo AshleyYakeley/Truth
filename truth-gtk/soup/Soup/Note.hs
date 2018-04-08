@@ -88,7 +88,7 @@ noteEditSpec =
     uiVertical $
     tupleEditUISpecs $ \case
         NoteTitle -> (uiTextEntry, False)
-        NotePast -> (uiCheckbox "past", False)
+        NotePast -> (uiCheckbox (constEditFunction "past") id, False)
         NoteText -> (uiText, True)
 
 type Note = Tuple NoteSel

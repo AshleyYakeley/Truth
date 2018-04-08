@@ -1,15 +1,15 @@
 module Truth.UI.GTK.Window
     ( WindowButtons(..)
-    , SomeUIWindow(..)
     , truthMain
     , getMaybeView
     ) where
 
 import GI.GLib hiding (String)
-import GI.Gtk
+import GI.Gtk as GI
 import Shapes
 import System.Environment
 import Truth.Core
+import Truth.UI.GTK.Button
 import Truth.UI.GTK.CSS
 import Truth.UI.GTK.CheckButton
 import Truth.UI.GTK.Drag
@@ -25,7 +25,6 @@ import Truth.UI.GTK.Switch
 import Truth.UI.GTK.Table
 import Truth.UI.GTK.Text
 import Truth.UI.GTK.Useful
-import Truth.Debug.Object
 
 lastResortView :: UISpec edit -> GCreateView edit
 lastResortView spec = do
@@ -36,7 +35,9 @@ nullGetView :: GetGView
 nullGetView =
     MkGetView $ \_ uispec -> do
         MkUINull <- isUISpec uispec
-        return $ new Widget []
+        return $ do
+            w <- new DrawingArea []
+            toWidget w
 
 allGetView :: GetGView
 allGetView =
@@ -44,6 +45,7 @@ allGetView =
         [ nullGetView
         , lensGetView
         , cssGetView
+        , buttonGetView
         , iconGetView
         , labelGetView
         , checkButtonGetView
@@ -57,6 +59,21 @@ allGetView =
         , pagesGetView
         , dragGetView
         ]
+
+getRequest :: forall t. IOWitness t -> Maybe t
+getRequest wit = do
+    Refl <- testEquality wit witChooseFile
+    return $ do
+        dialog <- new FileChooserDialog [#action := FileChooserActionOpen]
+        _ <- #addButton dialog "Cancel" $ fromIntegral $ fromEnum ResponseTypeCancel
+        _ <- #addButton dialog "Copy" $ fromIntegral $ fromEnum ResponseTypeOk
+        res <- #run dialog
+        mpath <-
+            case toEnum $ fromIntegral res of
+                ResponseTypeOk -> fileChooserGetFilename dialog
+                _ -> return Nothing
+        #destroy dialog
+        return mpath
 
 getMaybeView :: UISpec edit -> Maybe (GCreateView edit)
 getMaybeView = getUIView allGetView getTheView
@@ -110,10 +127,6 @@ instance WindowButtons UndoActions where
         #packStart hbox redoButton False False 0
         #packStart vbox hbox False False 0
 
-data SomeUIWindow =
-    forall actions. WindowButtons actions =>
-                    MkSomeUIWindow (UserInterface UIWindow actions)
-
 attachMenuItem :: IsMenuShell menushell => menushell -> Text -> IO MenuItem
 attachMenuItem menu name = do
     item <- menuItemNewWithLabel name
@@ -131,9 +144,8 @@ menuItemAction item action = do
     _ <- on item #activate action
     return ()
 
-createWindowAndChild ::
-       WindowButtons actions => UIWindow edit -> IO () -> IO Bool -> CreateView edit (actions -> LifeCycle ())
-createWindowAndChild MkUIWindow {..} openSelection closeRequest = do
+createWindowAndChild :: WindowButtons actions => UIWindow edit -> IO Bool -> CreateView edit (actions -> LifeCycle ())
+createWindowAndChild MkUIWindow {..} closeRequest = do
     window <- lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
     cvBindEditFunction uiTitle $ \title -> set window [#title := title]
     content <- getTheView uiContent
@@ -152,8 +164,7 @@ createWindowAndChild MkUIWindow {..} openSelection closeRequest = do
         box <- new Box [#orientation := OrientationVertical]
         #packStart box menubar False False 0
         addButtons box actions
-        selectionButton <- makeButton "Selection" $ liftIO openSelection
-            -- this is only correct if content has native scroll support, such as TextView
+        -- this is only correct if content has native scroll support, such as TextView
         sw <- new ScrolledWindow []
         scrollable <- liftIO $ isScrollable content
         if scrollable
@@ -162,38 +173,27 @@ createWindowAndChild MkUIWindow {..} openSelection closeRequest = do
                 viewport <- new Viewport []
                 #add viewport content
                 #add sw viewport
-        #packStart box selectionButton False False 0
         #packStart box sw True True 0
         #add window box
         #show content
         #showAll window
 
-makeViewWindow :: WindowButtons actions => ProgramContext -> IO () -> UserInterface UIWindow actions -> IO ()
-makeViewWindow pc tellclose MkUserInterface {..} = do
-    rec
-        ((), srCloser) <-
-            runLifeCycle $ do
-                rec
-                    MkViewSubscription {..} <-
-                        subscribeView
-                            (createWindowAndChild userinterfaceSpecifier openSelection closeRequest)
-                            userinterfaceSubscriber
-                            openSelection
-                    srWidget srAction
-                    let
-                        openSelection :: IO ()
-                        openSelection = traceBracket "Selection button" $ do
-                            msel <- srGetSelection
-                            case msel of
-                                Just window -> makeWindowCountRef pc $ MkUserInterface userinterfaceSubscriber window
-                                Nothing -> traceIOM $ "no selection"
-                        closeRequest :: IO Bool
-                        closeRequest = do
-                            srCloser
-                            tellclose
-                            return True -- don't run existing handler that closes the window
-                return ()
-    return ()
+makeViewWindow ::
+       forall actions. WindowButtons actions
+    => ProgramContext
+    -> IO ()
+    -> UserInterface UIWindow actions
+    -> IO ()
+makeViewWindow pc tellclose (MkUserInterface sub (window :: UIWindow edit)) = let
+    newWindow :: UIWindow edit -> IO ()
+    newWindow w = makeWindowCountRef pc $ MkUserInterface sub w
+    createView :: IO () -> CreateView edit (actions -> LifeCycle ())
+    createView closer =
+        createWindowAndChild window $ do
+            closer
+            tellclose
+            return True -- don't run existing handler that closes the window
+    in subscribeView createView sub newWindow getRequest
 
 data ProgramContext = MkProgramContext
     { pcMainLoop :: MainLoop
@@ -218,15 +218,17 @@ makeWindowCountRef pc@MkProgramContext {..} ui = let
            i <- Shapes.get
            Shapes.put $ i + 1
 
-truthMain :: ([String] -> IO [SomeUIWindow]) -> IO ()
-truthMain getWindows = do
+truthMain ::
+       ([String] -> (forall actions. WindowButtons actions =>
+                                         UserInterface UIWindow actions -> IO ()) -> IO ())
+    -> IO ()
+truthMain appMain = do
     args <- getArgs
-    _ <- GI.Gtk.init Nothing
+    _ <- GI.init Nothing
     pcMainLoop <- mainLoopNew Nothing False
-    wms <- getWindows args
     -- _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50
     pcWindowCount <- newMVar 0
-    for_ wms $ \(MkSomeUIWindow uiw) -> makeWindowCountRef MkProgramContext {..} uiw
+    appMain args $ \uiw -> makeWindowCountRef MkProgramContext {..} uiw
     c <- mvarRun pcWindowCount $ Shapes.get
     if c == 0
         then return ()

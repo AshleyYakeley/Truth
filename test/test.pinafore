@@ -1,11 +1,15 @@
-# Run "pinafore-query --doc" to see all predefined bindings.
+# Run "pinafore --doc" to see all predefined bindings.
 
 let
-# Useful
+
+### Useful
 window n s = [n,s];
 column n p = [n,p];
 ui_page n ui = [ui_label n,ui];
 ui_labelled n ui = ui_horizontal [[ui_label n,false],[ui,true]];
+
+
+### People
 
 # Ontology
 type = %f06efa5e-190f-4e5d-8633-495c5683c124;
@@ -33,7 +37,12 @@ deathdate = %805a9e65-d69a-4261-9c94-a3249885b6bb;
 married = %380ac576-9252-4783-b2d8-db222c683a22;
 
 # UI
-ui_people pp = ui_table [column "Name" name] window_person pp;
+ui_people pp = ui_vertical
+[
+    [ui_button "New Person" $ newpoint pp $ \p -> openwindow (window_person p),false],
+    [ui_button "View Person" $ openselection,false],
+    [ui_table [column "Name" name] window_person pp,true]
+];
 ui_person p = ui_vertical
 [
     [ui_labelled "Name: " $ ui_textentry $ name p,false],
@@ -61,7 +70,7 @@ ui_person p = ui_vertical
         [
             [ui_labelled "Birth: " $ ui_textentry $ birthdate p,false],
             [ui_labelled "Death: " $ ui_textentry $ deathdate p,false],
-            [ui_checkbox "Married" $ married p,false],
+            [ui_booleancheckbox "Married" $ married p,false],
             [ui_labelled "Mother: " $ ui_pick name People $ mother p,false],
             [ui_labelled "Father: " $ ui_pick name People $ father p,false],
             [ui_people $ children p,true]
@@ -72,14 +81,57 @@ window_person p = window (name p) $ ui_person p;
 
 window_people = window "People" $ ui_people People;
 
+### Calculator
+
+window_calc = let
 aval = !a4706230-2c61-44b1-b600-516e7a54c607;
 bval = !9d284ad2-e141-4114-ae50-8829a6db710f;
-window_calc = window "Calc" $ ui_vertical
-    [
-        [ui_textentry aval,false],
-        [ui_textentry bval,false],
-        [ui_label $ aval / bval,false]
-    ];
+in window "Calc" $ ui_vertical
+[
+    [ui_textentry aval,false],
+    [ui_textentry bval,false],
+    [ui_label $ aval / bval,false]
+];
+
+### Switching Value
+
+window_switch = let
+sw_pick = !59eb2d87-f815-47ef-b7dc-8fe434151bb6;
+sw_val1 = !6d9f7afa-1091-49cc-8646-8e613bb75ee5;
+sw_val2 = !6b91406b-896c-4658-b771-2d67bec91ee4;
+sw_val3 = !934712ae-73a7-4084-8a43-d618c737fd56;
+in window "Switch" $ ui_vertical
+[
+    [ui_textentry sw_pick,false],
+    [ui_booleancheckbox "pick" sw_pick,false],
+    [if sw_pick then ui_textarea sw_val1 else ui_textarea sw_val2,true]
+];
+
+### Imported Files
+
+window_files = let
+Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
+caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
+window_file f = window "File" $ ui_vertical
+[
+    [ui_textentry $ caption f,false]
+];
+in window "Files" $ ui_vertical
+[
+    [ui_button "Import" $ file_import Files $ \f -> openwindow $ window_file f,false],
+    [ui_table [column "Caption" caption, column "Size" file_size] window_file Files,true]
+];
+
+### Start Window
+
+window_start = window "Pinafore" $ ui_vertical
+[
+    [ui_button "People" $ openwindow window_people,false],
+    [ui_button "Calculated Form" $ openwindow window_calc,false],
+    [ui_button "Switch" $ openwindow window_switch,false],
+    [ui_button "Files" $ openwindow window_files,false],
+    [ui_blank,true]
+];
 
 in
-[window_people,window_calc]
+openwindow window_start

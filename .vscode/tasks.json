@@ -13,7 +13,7 @@
     },
     {
       "group": "build",
-      "label": "Build",
+      "label": "Full Build",
       "type": "shell",
       "command": "cd ${workspaceRoot} && ./build",
       "problemMatcher": [

@@ -1,7 +1,7 @@
-module Truth.Core.UI.Icon where
+module Truth.Core.UI.Specifier.Icon where
 
 import Truth.Core.Import
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 
 -- | https://specifications.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
 type IconName = Text

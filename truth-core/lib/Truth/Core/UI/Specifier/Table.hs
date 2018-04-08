@@ -1,11 +1,13 @@
-module Truth.Core.UI.Table where
+module Truth.Core.UI.Specifier.Table where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 import Truth.Core.Types
-import Truth.Core.UI.Lens
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Button
+import Truth.Core.UI.Specifier.Lens
+import Truth.Core.UI.Specifier.Specifier
+import Truth.Core.UI.View
 
 data TableCellProps = MkTableCellProps
     { tcItalic :: Bool
@@ -34,7 +36,7 @@ readOnlyKeyColumn kcName getter = let
 data UITable tedit where
     MkUITable
         :: forall cont tedit iedit.
-           (IONewItemKeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
+           (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
         => [KeyColumn tedit (ContainerKey cont)]
         -> (ContainerKey cont -> Aspect tedit)
         -> EditLens tedit (KeyEdit cont iedit)
@@ -42,7 +44,7 @@ data UITable tedit where
 
 uiTable ::
        forall cont tedit iedit.
-       (IONewItemKeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
+       (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => [KeyColumn tedit (ContainerKey cont)]
     -> (ContainerKey cont -> Aspect tedit)
     -> EditLens tedit (KeyEdit cont iedit)
@@ -51,7 +53,7 @@ uiTable cols getaspect lens = MkUISpec $ MkUITable cols getaspect lens
 
 uiSimpleTable ::
        forall cont iedit.
-       ( IONewItemKeyContainer cont
+       ( KeyContainer cont
        , FullSubjectReader (EditReader iedit)
        , ApplicableEdit iedit
        , HasKeyReader cont (EditReader iedit)
@@ -66,3 +68,20 @@ instance Show (UITable edit) where
 
 instance UIType UITable where
     uiWitness = $(iowitness [t|UITable|])
+
+tableNewItem ::
+       forall tedit cont iedit. IONewItemKeyContainer cont
+    => EditLens tedit (KeyEdit cont iedit)
+    -> View tedit ()
+tableNewItem tableLens =
+    mapViewEdit tableLens $
+    viewObjectPushEdit $ \_ push -> do
+        item <- liftIO $ newKeyContainerItem @cont
+        push [KeyInsertReplaceItem item]
+
+uiTableNewItemButton ::
+       forall tedit cont iedit. IONewItemKeyContainer cont
+    => EditFunction tedit (WholeEdit Text)
+    -> EditLens tedit (KeyEdit cont iedit)
+    -> UISpec tedit
+uiTableNewItemButton label tableLens = uiButton label $ tableNewItem tableLens

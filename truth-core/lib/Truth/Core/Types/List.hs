@@ -15,11 +15,11 @@ data ListReader seq reader t where
     ListReadItem :: SequencePoint seq -> reader t -> ListReader seq reader (Maybe t)
 
 itemReadFunction :: SequencePoint seq -> ReadFunctionF Maybe (ListReader seq reader) reader
-itemReadFunction i mr rt = Compose $ mr $ ListReadItem i rt
+itemReadFunction i mr rt = MkComposeM $ mr $ ListReadItem i rt
 
 knownItemReadFunction :: Integral (Index seq) => SequencePoint seq -> ReadFunction (ListReader seq reader) reader
 knownItemReadFunction i mr rt = do
-    mt <- getCompose $ itemReadFunction i mr rt
+    mt <- getComposeM $ itemReadFunction i mr rt
     case mt of
         Just t -> return t
         Nothing -> error $ "missing item " ++ show i ++ " in list"
@@ -62,7 +62,7 @@ type instance EditReader (ListEdit seq edit) =
 instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit edit, EditSubject edit ~ Element seq) =>
          ApplicableEdit (ListEdit seq edit) where
     applyEdit (ListEditItem p edit) mr (ListReadItem i reader)
-        | p == i = getCompose $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
+        | p == i = getComposeM $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
     applyEdit (ListEditItem _ _) mr reader = mr reader
     applyEdit (ListDeleteItem p) mr ListReadLength = do
         len <- mr ListReadLength
@@ -99,7 +99,7 @@ instance ( IsSequence seq
          ) =>
          InvertibleEdit (ListEdit seq edit) where
     invertEdit (ListEditItem p edit) mr = do
-        minvedits <- getCompose $ invertEdit edit $ itemReadFunction p mr
+        minvedits <- getComposeM $ invertEdit edit $ itemReadFunction p mr
         case minvedits of
             Just invedits -> return $ fmap (ListEditItem p) invedits
             Nothing -> return []
@@ -110,7 +110,7 @@ instance ( IsSequence seq
                 then [ListDeleteItem p]
                 else []
     invertEdit (ListDeleteItem p) mr = do
-        ma <- getCompose $ mutableReadToSubject $ itemReadFunction p mr
+        ma <- getComposeM $ mutableReadToSubject $ itemReadFunction p mr
         case ma of
             Just a -> return [ListInsertItem p a]
             Nothing -> return []

@@ -1,7 +1,7 @@
-module Truth.Core.UI.CSS where
+module Truth.Core.UI.Specifier.CSS where
 
 import Truth.Core.Import
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Specifier
 
 data UIName edit where
     MkUIName :: Text -> UISpec edit -> UIName edit

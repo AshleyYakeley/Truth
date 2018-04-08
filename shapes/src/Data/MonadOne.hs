@@ -2,8 +2,6 @@
 
 module Data.MonadOne where
 
-import Control.Monad.Trans.Constraint
-import Control.Monad.Trans.Tunnel
 import Data.CatFunctor
 import Data.ConstFunction
 import Data.Result
@@ -85,9 +83,3 @@ constFunctionAp fcab =
     case retrieveOne fcab of
         FailureResult (MkLimit fx) -> pure fx
         SuccessResult cab -> cfmap cab
-
-transComposeOne :: (MonadTransTunnel t, Monad m, MonadOne f) => t (Compose m f) a -> t m (f a)
-transComposeOne tca =
-    withTransConstraintTM @Monad $
-    fmap (restoreOne . eitherToResult) $
-    transExcept $ remonad (ExceptT . fmap (resultToEither . retrieveOne) . getCompose) tca

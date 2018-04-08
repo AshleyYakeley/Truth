@@ -38,6 +38,7 @@ library:
       - Truth.UI.GTK.GView
       - Truth.UI.GTK.Window
       - Truth.UI.GTK.CSS
+      - Truth.UI.GTK.Button
       - Truth.UI.GTK.Icon
       - Truth.UI.GTK.Label
       - Truth.UI.GTK.Maybe
@@ -62,8 +63,6 @@ tests:
           - countable
           - witness
           - open-witness
-          - glib
-          - gtk3
           - shapes
           - truth-core
           - truth-gtk
@@ -85,8 +84,6 @@ executables:
           - bytestring
           - uuid
           - aeson
-          - glib
-          - gtk3
           - shapes
           - truth-core
           - truth-gtk
@@ -104,8 +101,6 @@ executables:
           - bytestring
           - uuid
           - aeson
-          - glib
-          - gtk3
           - shapes
           - truth-core
           - truth-gtk

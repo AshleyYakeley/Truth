@@ -1,3 +1,3 @@
 #!/bin/sh -e
-stack build pinafore
-stack exec -- pinafore --db test/pinafore test/simple.pui
+stack install pinafore
+`stack path --local-bin`/pinafore --data test/pinafore test/simple.pinafore

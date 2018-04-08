@@ -1,8 +1,8 @@
 module Truth.Core.UI.GetView where
 
 import Truth.Core.Import
-import Truth.Core.UI.Lens
-import Truth.Core.UI.Specifier
+import Truth.Core.UI.Specifier.Lens
+import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.View
 
 newtype GetView w = MkGetView

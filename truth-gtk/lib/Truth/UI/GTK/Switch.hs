@@ -18,6 +18,7 @@ switchView getview specfunc = do
             viewCreateView $ do
                 widget <- getview spec
                 lcContainPackStart True box widget
+                #show widget
     firstvs <-
         cvLiftView $ do
             firstspec <- mapViewEdit (readOnlyEditLens specfunc) $ viewObjectRead $ \_ mr -> mr ReadWhole

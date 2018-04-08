@@ -1,133 +1,33 @@
 module Pinafore.Query.Read
     ( parseExpression
+    , parseInteractiveCommand
     ) where
 
-import Data.UUID
-
-import Pinafore.Number
+import Pinafore.Query.Convert
 import Pinafore.Query.Expression
+import Pinafore.Query.Token
 import Pinafore.Query.Value
 import Pinafore.Table
-import Prelude (Fractional(..))
-import Shapes
+import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
-import Text.Parsec.String
 
-readWS :: Parser ()
-readWS = do
-    spaces
-    _ <-
-        optional
-            (do
-                 readComment
-                 readWS)
-    return ()
-    <?> "white space"
-  where
-    isLineBreak :: Char -> Bool
-    isLineBreak '\n' = True
-    isLineBreak '\r' = True
-    isLineBreak _ = False
-    readComment :: Parser ()
-    readComment = do
-        _ <- char '#'
-        _ <- many (satisfy (\c -> not (isLineBreak c)))
-        _ <- satisfy isLineBreak
-        return ()
+type Parser = Parsec [(SourcePos, Any Token)] ()
 
-readCharAndWS :: Char -> Parser ()
-readCharAndWS c = do
-    _ <- char c
-    readWS
-
-readStringAndWS :: String -> Parser ()
-readStringAndWS s = do
-    _ <- Text.Parsec.try $ string s
-    readWS
-
-readEscapedChar :: Parser Char
-readEscapedChar = do
-    _ <- char '\\'
-    c <- anyToken
-    case c of
-        'n' -> return '\n'
-        't' -> return '\t'
-        'r' -> return '\r'
-        'f' -> return '\f'
-        _ -> return c
-
-readQuotedString :: Parser String
-readQuotedString = do
-    _ <- char '"'
-    s <- many readQuotedChar
-    readCharAndWS '"'
-    return s
-    <?> "string"
-  where
-    readQuotedChar :: Parser Char
-    readQuotedChar = readEscapedChar <|> (satisfy ('"' /=))
-
-identifierChar :: Char -> Bool
-identifierChar '-' = True
-identifierChar '_' = True
-identifierChar c = isAlphaNum c
-
-data Keyword t where
-    KWLet :: Keyword ()
-    KWIn :: Keyword ()
-    KWIf :: Keyword ()
-    KWThen :: Keyword ()
-    KWElse :: Keyword ()
-    KWBool :: Keyword Bool
-    KWSymbol :: Keyword Symbol
-
-instance Show (Keyword t) where
-    show KWLet = show ("let" :: String)
-    show KWIn = show ("in" :: String)
-    show KWIf = show ("if" :: String)
-    show KWThen = show ("then" :: String)
-    show KWElse = show ("else" :: String)
-    show KWBool = "boolean constant"
-    show KWSymbol = "symbol"
-
-readKeyword :: Keyword t -> Parser t
-readKeyword kw =
-    Text.Parsec.try $
-    ((do
-          firstC <- satisfy isAlpha
-          rest <- many $ satisfy identifierChar
-          readWS
-          case (kw, firstC : rest) of
-              -- keywords
-              (KWLet, "let") -> return ()
-              (_, "let") -> empty
-              (KWIn, "in") -> return ()
-              (_, "in") -> empty
-              (KWIf, "if") -> return ()
-              (_, "if") -> empty
-              (KWThen, "then") -> return ()
-              (_, "then") -> empty
-              (KWElse, "else") -> return ()
-              (_, "else") -> empty
-              (KWBool, "true") -> return True
-              (_, "true") -> empty
-              (KWBool, "false") -> return False
-              (_, "false") -> empty
-              (KWSymbol, name) -> return $ MkSymbol $ pack name
-              (_, _) -> empty) <?>
-     show kw)
-
-readSymbol :: Parser Symbol
-readSymbol = readKeyword KWSymbol
+readThis :: Token t -> Parser t
+readThis tok =
+    token (\(_, MkAny tok' _) -> show tok') fst $ \(_, MkAny tok' t) ->
+        case testEquality tok tok' of
+            Just Refl -> Just t
+            Nothing -> Nothing
 
 readPattern :: Parser Symbol
-readPattern = readSymbol
+readPattern = readThis TokSymbol
 
 readBinding :: HasPinaforeTableEdit baseedit => Parser (Symbol, QValueExpr baseedit)
 readBinding = do
-    name <- readSymbol
+    name <- readThis TokSymbol
     args <- many readPattern
-    readCharAndWS '='
+    readThis TokAssign
     val <- readExpression
     return (name, exprAbstracts args val)
 
@@ -137,179 +37,200 @@ readBindings =
          b <- readBinding
          mbb <-
              optional $ do
-                 readCharAndWS ';'
+                 readThis TokSemicolon
                  MkQBindings bb <- readBindings
                  return bb
          return $ MkQBindings $ b : (fromMaybe [] mbb)) <|>
-    (do
-         readWS
-         return $ MkQBindings [])
+    (do return $ MkQBindings [])
 
-readInfix ::
-       forall baseedit. HasPinaforeTableEdit baseedit
-    => Parser (QValueExpr baseedit)
-readInfix =
-    (do
-         readCharAndWS '$'
-         return $ pure $ toQValue $ qapply @baseedit) <|>
-    (do
-         readCharAndWS '.'
-         return $ pure $ toQValue $ qcombine @baseedit) <|>
-    (do
-         readCharAndWS '&'
-         return $ pure $ toQValue $ qmeet @baseedit) <|>
-    (do
-         readCharAndWS '|'
-         return $ pure $ toQValue $ qjoin @baseedit) <|>
-    (do
-         readStringAndWS "++"
-         return $ pure $ toQValue $ qappend @baseedit) <|>
-    (do
-         readStringAndWS "+"
-         return $ pure $ toQValue $ liftA2 @(Literal baseedit) $ (+) @Number) <|>
-    (do
-         readStringAndWS "-"
-         return $ pure $ toQValue $ liftA2 @(Literal baseedit) $ (-) @Number) <|>
-    (do
-         readStringAndWS "*"
-         return $ pure $ toQValue $ liftA2 @(Literal baseedit) $ (*) @Number) <|>
-    (do
-         readStringAndWS "/"
-         return $ pure $ toQValue $ liftA2 @(Literal baseedit) $ (/) @Number) <?>
-    "infix operator"
+readLetBindings :: HasPinaforeTableEdit baseedit => Parser (QValueExpr baseedit -> QValueExpr baseedit)
+readLetBindings = do
+    readThis TokLet
+    bindings <- readBindings
+    case getDuplicates bindings of
+        [] -> return $ qlets bindings
+        l -> parserFail $ "duplicate bindings: " ++ intercalate ", " (fmap show l)
 
 readExpression ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => Parser (QValueExpr baseedit)
-readExpression =
+readExpression = readInfixedExpression 0
+
+data FixAssoc
+    = AssocNone
+    | AssocLeft
+    | AssocRight
+    deriving (Eq)
+
+data Fixity =
+    MkFixity FixAssoc
+             Int
+
+-- following Haskell
+-- https://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061
+operatorFixity :: Symbol -> Fixity
+operatorFixity "." = MkFixity AssocRight 9
+operatorFixity "*" = MkFixity AssocLeft 7
+operatorFixity "/" = MkFixity AssocLeft 7
+operatorFixity "+" = MkFixity AssocLeft 6
+operatorFixity "-" = MkFixity AssocLeft 6
+operatorFixity "++" = MkFixity AssocRight 5
+operatorFixity "==" = MkFixity AssocNone 4
+operatorFixity "/=" = MkFixity AssocNone 4
+operatorFixity "~==" = MkFixity AssocNone 4
+operatorFixity "~/=" = MkFixity AssocNone 4
+operatorFixity "<=" = MkFixity AssocNone 4
+operatorFixity "<" = MkFixity AssocNone 4
+operatorFixity ">=" = MkFixity AssocNone 4
+operatorFixity ">" = MkFixity AssocNone 4
+operatorFixity "&" = MkFixity AssocRight 3
+operatorFixity "|" = MkFixity AssocRight 2
+operatorFixity ">>" = MkFixity AssocLeft 1
+operatorFixity "$" = MkFixity AssocRight 0
+operatorFixity _ = MkFixity AssocLeft 9
+
+readInfix :: Int -> Parser (FixAssoc, Symbol)
+readInfix prec =
+    Text.Parsec.try $ do
+        name <- readThis TokInfix
+        let MkFixity assoc fprec = operatorFixity name
+        if prec == fprec
+            then return (assoc, name)
+            else empty
+
+leftApply ::
+       HasPinaforeTableEdit baseedit
+    => QValueExpr baseedit
+    -> [(QValueExpr baseedit, QValueExpr baseedit)]
+    -> QValueExpr baseedit
+leftApply e1 [] = e1
+leftApply e1 ((f, e2):rest) = leftApply (exprApplyAll f [e1, e2]) rest
+
+rightApply ::
+       HasPinaforeTableEdit baseedit
+    => QValueExpr baseedit
+    -> [(QValueExpr baseedit, QValueExpr baseedit)]
+    -> QValueExpr baseedit
+rightApply e1 [] = e1
+rightApply e1 ((f, e2):rest) = exprApplyAll f [e1, rightApply e2 rest]
+
+readInfixedExpression ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => Int
+    -> Parser (QValueExpr baseedit)
+readInfixedExpression 10 = readExpression1
+readInfixedExpression prec = do
+    e1 <- readInfixedExpression (succ prec)
+    rest <-
+        many $ do
+            (assoc, name) <- readInfix prec
+            e2 <- readInfixedExpression (succ prec)
+            return (assoc, name, e2)
+    case rest of
+        [] -> return e1
+        [(AssocNone, name, e2)] -> return $ exprApplyAll (qvar name) [e1, e2]
+        _
+            | all (\(assoc, _, _) -> assoc == AssocLeft) rest ->
+                return $ leftApply e1 $ fmap (\(_, name, e2) -> (qvar name, e2)) rest
+        _
+            | all (\(assoc, _, _) -> assoc == AssocRight) rest ->
+                return $ rightApply e1 $ fmap (\(_, name, e2) -> (qvar name, e2)) rest
+        _ -> parserFail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(_, name, _) -> show name) rest)
+
+readExpression1 ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => Parser (QValueExpr baseedit)
+readExpression1 =
     (do
-         readCharAndWS '\\'
+         readThis TokLambda
          args <- many readPattern
-         readStringAndWS "->"
+         readThis TokMap
          val <- readExpression
          return $ exprAbstracts args val) <|>
     (do
-         readKeyword KWLet
-         bindings <- readBindings
-         readKeyword KWIn
+         bmap <- readLetBindings
+         readThis TokIn
          body <- readExpression
-         case getDuplicates bindings of
-             [] -> return ()
-             l -> parserFail $ "duplicate bindings: " ++ intercalate ", " (fmap show l)
-         return $ qlets bindings body) <|>
+         return $ bmap body) <|>
     (do
-         readKeyword KWIf
+         readThis TokIf
          etest <- readExpression
-         readKeyword KWThen
+         readThis TokThen
          ethen <- readExpression
-         readKeyword KWElse
+         readThis TokElse
          eelse <- readExpression
          return $ exprApplyAll (pure $ toQValue $ qifthenelse @baseedit) [etest, ethen, eelse]) <|>
-    (do
-         e1 <- readExpression1
-         mfe2 <-
-             optional $ do
-                 f <- readInfix
-                 e2 <- readExpression
-                 return (f, e2)
-         case mfe2 of
-             Just (f, e2) -> return $ exprApplyAll f [e1, e2]
-             Nothing -> return e1)
+    readExpression2
 
-readExpression1 :: HasPinaforeTableEdit baseedit => Parser (QValueExpr baseedit)
-readExpression1 = do
-    e1 <- readSingleExpression
-    args <- many readSingleExpression
+readExpression2 :: HasPinaforeTableEdit baseedit => Parser (QValueExpr baseedit)
+readExpression2 = do
+    e1 <- readExpression3
+    args <- many readExpression3
     return $ exprApplyAll e1 args
 
-mpure :: Alternative m => Maybe a -> m a
-mpure (Just a) = pure a
-mpure Nothing = empty
-
-uuidChar :: Char -> Bool
-uuidChar '-' = True
-uuidChar c = isHexDigit c
-
-readUUID :: Parser UUID
-readUUID = do
-    uuid <- some $ satisfy uuidChar
-    readWS
-    mpure $ Data.UUID.fromString uuid
-
-readNumber :: Parser Integer
-readNumber = let
-    readDigit :: Parser Int
-    readDigit = do
-        c <- satisfy isDigit
-        return $ digitToInt c
-    assembleDigits :: [Int] -> Integer -> Integer
-    assembleDigits [] i = i
-    assembleDigits (d:dd) i = assembleDigits dd $ i * 10 + fromIntegral d
-    readDigits :: Parser Integer
-    readDigits = do
-        digits <- some readDigit
-        readWS
-        return $ assembleDigits digits 0
-    in do
-           _ <- char '-'
-           n <- readDigits
-           return $ negate n
-    <|> readDigits <?> "number"
-
-readSingleExpression ::
+readExpression3 ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => Parser (QValueExpr baseedit)
-readSingleExpression =
+readExpression3 =
     (do
-         b <- readKeyword KWBool
+         b <- readThis TokBool
          return $ pure $ toQValue b) <|>
     (do
-         name <- readSymbol
+         name <- readThis TokSymbol
          return $ qvar name) <|>
     (do
-         n <- readNumber
+         n <- readThis TokNumber
          return $ pure $ toQValue n) <|>
     (do
-         str <- readQuotedString
-         return $ pure $ toQValue $ (pack str :: Text)) <|>
+         str <- readThis TokString
+         return $ pure $ toQValue str) <|>
     (do
-         readCharAndWS '('
+         readThis TokOpenParen
          expr <- readExpression
-         readCharAndWS ')'
+         readThis TokCloseParen
          return $ expr) <|>
     (do
-         readCharAndWS '['
+         readThis TokOpenBracket
          exprs <-
              (do
                   expr1 <- readExpression
                   exprs <-
                       many $ do
-                          readCharAndWS ','
+                          readThis TokComma
                           readExpression
                   return $ expr1 : exprs) <|>
              return []
-         readCharAndWS ']'
-         return $ fmap (MkAny QList) $ sequenceA exprs) <|>
+         readThis TokCloseBracket
+         return $ fmap (MkAny QTList) $ sequenceA exprs) <|>
     (do
-         readCharAndWS '@'
+         readThis TokInvert
          return $ pure $ toQValue $ qinvert @baseedit) <|>
     (do
-         readCharAndWS '%'
-         uuid <- readUUID
-         return $ pure $ toQValue $ MkPredicate uuid) <|>
+         p <- readThis TokPredicate
+         return $ pure $ toQValue p) <|>
     (do
-         readCharAndWS '!'
-         uuid <- readUUID
-         return $ pure $ toQValue $ MkPoint uuid) <?>
+         p <- readThis TokPoint
+         return $ pure $ toQValue p) <?>
     "expression"
 
-readExpressionText :: HasPinaforeTableEdit baseedit => Parser (QValueExpr baseedit)
-readExpressionText = do
-    readWS
-    readExpression
+readInteractiveCommand ::
+       forall baseedit. HasPinaforeTableEdit baseedit
+    => Parser (Either (QValueExpr baseedit -> QValueExpr baseedit) (QValueExpr baseedit))
+readInteractiveCommand = (eof >> return (Left id)) <|> (try $ fmap Right readExpression) <|> (fmap Left readLetBindings)
 
-parseExpression :: HasPinaforeTableEdit baseedit => SourceName -> Text -> Result Text (QValueExpr baseedit)
-parseExpression name text =
-    case parse readExpressionText name (unpack text) of
+parseReader :: Parser t -> SourceName -> Text -> Result Text t
+parseReader parser name text = do
+    toks <- parseTokens name text
+    case parse parser name toks of
         Right a -> return a
         Left e -> fail $ show e
+
+parseExpression :: HasPinaforeTableEdit baseedit => SourceName -> Text -> Result Text (QValueExpr baseedit)
+parseExpression = parseReader readExpression
+
+parseInteractiveCommand ::
+       HasPinaforeTableEdit baseedit
+    => SourceName
+    -> Text
+    -> Result Text (Either (QValueExpr baseedit -> QValueExpr baseedit) (QValueExpr baseedit))
+parseInteractiveCommand = parseReader readInteractiveCommand
