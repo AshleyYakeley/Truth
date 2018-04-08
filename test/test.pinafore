@@ -128,9 +128,10 @@ window_constant = let
 cell = !895efbc7-e3e7-4901-b010-2bc3a703c21b;
 in window "Constant" $ ui_vertical
 [
-    [ui_textentry cell,false],
+    [ui_booleancheckbox "off" false,false],
+    [ui_booleancheckbox "on" true,false],
     [ui_textentry "constant",false],
-    [ui_blank,true]
+    [ui_textarea "constant",true]
 ];
 
 ### Start Window
