@@ -122,6 +122,17 @@ in window "Files" $ ui_vertical
     [ui_table [column "Caption" caption, column "Size" file_size] window_file Files,true]
 ];
 
+### Constant Edit
+
+window_constant = let
+cell = !895efbc7-e3e7-4901-b010-2bc3a703c21b;
+in window "Constant" $ ui_vertical
+[
+    [ui_textentry cell,false],
+    [ui_textentry "constant",false],
+    [ui_blank,true]
+];
+
 ### Start Window
 
 window_start = window "Pinafore" $ ui_vertical
@@ -130,6 +141,7 @@ window_start = window "Pinafore" $ ui_vertical
     [ui_button "Calculated Form" $ openwindow window_calc,false],
     [ui_button "Switch" $ openwindow window_switch,false],
     [ui_button "Files" $ openwindow window_files,false],
+    [ui_button "Constant" $ openwindow window_constant,false],
     [ui_blank,true]
 ];
 
