@@ -1,4 +1,4 @@
 #!/bin/bash -e
 ./hindent-all
-stack build --pedantic --test
+stack install --pedantic --test
 echo OK
