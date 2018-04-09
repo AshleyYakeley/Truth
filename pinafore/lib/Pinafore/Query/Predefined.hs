@@ -46,6 +46,15 @@ outputln val = do
     mtext <- qGetFunctionValue val
     for_ mtext $ \text -> liftIO $ putStrLn $ unpack text
 
+setcount :: FiniteSet Text -> Int
+setcount = olength
+
+setsum :: FiniteSet Number -> Number
+setsum (MkFiniteSet s) = sum s
+
+setmean :: FiniteSet Number -> Number
+setmean (MkFiniteSet s) = sum s / fromIntegral (olength s)
+
 withset ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => QOrder baseedit
@@ -179,6 +188,9 @@ predefinitions =
     , pb "<=" $ liftA2 @(Literal baseedit) $ (<=) @Number
     , pb ">" $ liftA2 @(Literal baseedit) $ (>) @Number
     , pb ">=" $ liftA2 @(Literal baseedit) $ (>=) @Number
+    , pb "count" $ fmap @(Literal baseedit) setcount
+    , pb "sum" $ fmap @(Literal baseedit) setsum
+    , pb "mean" $ fmap @(Literal baseedit) setmean
     , pb "alphabetical" $ alphabetical @baseedit
     , pb "numerical" $ numerical @baseedit
     , pb "chronological" $ chronological @baseedit
