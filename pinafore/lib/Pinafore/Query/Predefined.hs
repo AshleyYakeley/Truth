@@ -170,11 +170,15 @@ ui_table cols asp val = let
     aspect point = resultToM $ mapResultFailure unpack $ fmap return $ asp point
     in uiTable (fmap getColumn cols) aspect val
 
+literal_conv :: Text -> Text
+literal_conv = id
+
 predefinitions ::
        forall baseedit. (HasPinaforeTableEdit baseedit, HasPinaforeFileEdit baseedit)
     => [(QBindings baseedit, (Symbol, Text))]
 predefinitions =
     [ pb "$" $ qapply @baseedit
+    , pb "literal" $ fmap @(Literal baseedit) $ literal_conv
     , pb "." $ qcombine @baseedit
     , pb "&" $ qmeet @baseedit
     , pb "|" $ qjoin @baseedit
