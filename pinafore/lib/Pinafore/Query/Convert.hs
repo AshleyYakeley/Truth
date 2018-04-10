@@ -87,13 +87,24 @@ instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t) => ToQValue baseedit (
     toQValue (LiteralConstant t) = toQValue t
     toQValue (LiteralFunction t) = toQValue t
 
+-- Literal Point
+--
+instance HasQTypeDescription (Literal edit Point) where
+    qTypeDescription = "point"
+
+instance (edit ~ baseedit, HasPinaforeTableEdit baseedit) => FromQValue baseedit (Literal edit Point) where
+    fromQValue v =
+        case fromQValue v of
+            SuccessResult fp -> return $ LiteralFunction fp
+            FailureResult _ -> badFromQValue v
+
 -- Literal FiniteSet
 --
-instance AsText t => HasQTypeDescription (Literal edit (FiniteSet t)) where
+instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (Literal edit (FiniteSet t)) where
     qTypeDescription = textTypeDescription @t <> "-set"
 
-instance (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
-         FromQValue baseedit (Literal edit (FiniteSet t)) where
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
+                              FromQValue baseedit (Literal edit (FiniteSet t)) where
     fromQValue v =
         case fromQValue v of
             SuccessResult l -> return $ LiteralConstant $ MkFiniteSet l
@@ -101,6 +112,17 @@ instance (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
                 case fromQValue v of
                     SuccessResult (fs :: QImLiteralSet edit t) -> return $ LiteralFunction $ funcEditFunction Just . fs
                     FailureResult _ -> badFromQValue v
+
+-- Literal FiniteSet Point
+--
+instance HasQTypeDescription (Literal edit (FiniteSet Point)) where
+    qTypeDescription = "set"
+
+instance (edit ~ baseedit, HasPinaforeTableEdit baseedit) => FromQValue baseedit (Literal edit (FiniteSet Point)) where
+    fromQValue v =
+        case fromQValue v of
+            SuccessResult (fs :: QImLiteralSet edit Point) -> return $ LiteralFunction $ funcEditFunction Just . fs
+            FailureResult _ -> badFromQValue v
 
 -- Literal IO
 --

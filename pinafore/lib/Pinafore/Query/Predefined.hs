@@ -30,6 +30,9 @@ qmeet a b = readOnlyEditLens meetEditFunction . pairJoinEditLenses a b
 qjoin :: QSet baseedit -> QSet baseedit -> QSet baseedit
 qjoin a b = readOnlyEditLens joinEditFunction . pairJoinEditLenses a b
 
+set_member :: Point -> FiniteSet Point -> Bool
+set_member p set = elem p set
+
 output ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => QImLiteral baseedit Text
@@ -175,6 +178,7 @@ predefinitions =
     , pb "." $ qcombine @baseedit
     , pb "&" $ qmeet @baseedit
     , pb "|" $ qjoin @baseedit
+    , pb "member" $ liftA2 @(Literal baseedit) $ set_member
     , pb "++" $ qappend @baseedit
     , pb "==" $ liftA2 @(Literal baseedit) $ (==) @Text
     , pb "/=" $ liftA2 @(Literal baseedit) $ (/=) @Text
