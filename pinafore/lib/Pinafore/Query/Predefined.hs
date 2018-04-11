@@ -196,6 +196,8 @@ predefinitions =
     , pb "<=" $ liftA2 @(Literal baseedit) $ (<=) @Number
     , pb ">" $ liftA2 @(Literal baseedit) $ (>) @Number
     , pb ">=" $ liftA2 @(Literal baseedit) $ (>=) @Number
+    , pb "abs" $ fmap @(Literal baseedit) $ abs @Number
+    , pb "signum" $ fmap @(Literal baseedit) $ signum @Number
     , pb "count" $ fmap @(Literal baseedit) setcount
     , pb "sum" $ fmap @(Literal baseedit) setsum
     , pb "mean" $ fmap @(Literal baseedit) setmean
