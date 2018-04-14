@@ -1,4 +1,10 @@
-module Pinafore.Main where
+module Pinafore.Main
+    ( filePinaforeType
+    , PinaforeContext
+    , sqliteWithPinaforeContext
+    , pinaforeRunFile
+    , pinaforeInteract
+    ) where
 
 import Pinafore.Database.SQLite
 import Pinafore.File
@@ -13,11 +19,13 @@ type FilePinaforeType = QAction PinaforeEdit
 filePinaforeType :: Text
 filePinaforeType = qTypeDescription @FilePinaforeType
 
-sqlitePinaforeObject :: FilePath -> Object PinaforeEdit
-sqlitePinaforeObject dirpath =
-    tupleObject $ \case
-        PinaforeSelectTable -> sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
-        PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
+sqlitePinaforeObject :: FilePath -> With (Object PinaforeEdit)
+sqlitePinaforeObject dirpath cont =
+    exclusiveObject (sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3") $ \tableObject ->
+        cont $
+        tupleObject $ \case
+            PinaforeSelectTable -> tableObject
+            PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
 
 getSqlitePinaforeRunAction ::
        forall baseedit. Object baseedit -> (UserInterface UIWindow () -> IO ()) -> IO (UnliftIO (QActionM baseedit))
@@ -35,13 +43,19 @@ getSqlitePinaforeRunAction pinaforeObject createWindow = do
                 SuccessResult t -> return t
                 FailureResult msg -> fail $ unpack msg
 
-sqlitePinaforeMain :: FilePath -> (FilePath, Text) -> (UserInterface UIWindow () -> IO ()) -> IO ()
-sqlitePinaforeMain dirpath (puipath, puitext) createWindow = do
-    runAction <- getSqlitePinaforeRunAction (sqlitePinaforeObject dirpath) createWindow
+newtype PinaforeContext =
+    MkPinaforeContext (UnliftIO (QActionM PinaforeEdit))
+
+sqliteWithPinaforeContext :: FilePath -> (UserInterface UIWindow () -> IO ()) -> With PinaforeContext
+sqliteWithPinaforeContext dirpath createWindow cont =
+    sqlitePinaforeObject dirpath $ \pinaforeObject -> do
+        runAction <- getSqlitePinaforeRunAction pinaforeObject createWindow
+        cont $ MkPinaforeContext runAction
+
+pinaforeRunFile :: PinaforeContext -> FilePath -> Text -> IO ()
+pinaforeRunFile (MkPinaforeContext runAction) puipath puitext = do
     action :: FilePinaforeType <- resultTextToM $ parseValue @PinaforeEdit puipath puitext
     runUnliftIO runAction action
 
-sqlitePinaforeInteractive :: FilePath -> (UserInterface UIWindow () -> IO ()) -> IO ()
-sqlitePinaforeInteractive dirpath createWindow = do
-    runAction <- getSqlitePinaforeRunAction (sqlitePinaforeObject dirpath) createWindow
-    interact runAction
+pinaforeInteract :: PinaforeContext -> IO ()
+pinaforeInteract (MkPinaforeContext runAction) = interact runAction

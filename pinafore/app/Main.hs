@@ -35,21 +35,19 @@ main =
                         Just dirpath -> return dirpath
                         Nothing -> getUserDataDir "pinafore"
                 createDirectoryIfMissing True dirpath
-                let
-                    doFile :: FilePath -> Text -> IO ()
-                    doFile fpath text = sqlitePinaforeMain dirpath (fpath, text) createWindow
-                case fpaths of
-                    [] -> do
-                        isterm <- hIsTerminalDevice stdin
-                        if isterm || fInteract
-                            then sqlitePinaforeInteractive dirpath createWindow
-                            else do
-                                ptext <- getContents
-                                doFile "<stdin>" $ decodeUtf8 $ toStrict ptext
-                    _ -> do
-                        for_ fpaths $ \fpath -> do
-                            ptext <- readFile fpath
-                            doFile fpath $ decodeUtf8 $ toStrict ptext
-                        if fInteract
-                            then sqlitePinaforeInteractive dirpath createWindow
-                            else return ()
+                sqliteWithPinaforeContext dirpath createWindow $ \context ->
+                    case fpaths of
+                        [] -> do
+                            isterm <- hIsTerminalDevice stdin
+                            if isterm || fInteract
+                                then pinaforeInteract context
+                                else do
+                                    ptext <- getContents
+                                    pinaforeRunFile context "<stdin>" $ decodeUtf8 $ toStrict ptext
+                        _ -> do
+                            for_ fpaths $ \fpath -> do
+                                ptext <- readFile fpath
+                                pinaforeRunFile context fpath $ decodeUtf8 $ toStrict ptext
+                            if fInteract
+                                then pinaforeInteract context
+                                else return ()

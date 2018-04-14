@@ -87,6 +87,43 @@ instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t) => ToQValue baseedit (
     toQValue (LiteralConstant t) = toQValue t
     toQValue (LiteralFunction t) = toQValue t
 
+-- Literal Point
+--
+instance HasQTypeDescription (Literal edit Point) where
+    qTypeDescription = "point"
+
+instance (edit ~ baseedit, HasPinaforeTableEdit baseedit) => FromQValue baseedit (Literal edit Point) where
+    fromQValue v =
+        case fromQValue v of
+            SuccessResult fp -> return $ LiteralFunction fp
+            FailureResult _ -> badFromQValue v
+
+-- Literal FiniteSet
+--
+instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (Literal edit (FiniteSet t)) where
+    qTypeDescription = textTypeDescription @t <> "-set"
+
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
+                              FromQValue baseedit (Literal edit (FiniteSet t)) where
+    fromQValue v =
+        case fromQValue v of
+            SuccessResult l -> return $ LiteralConstant $ MkFiniteSet l
+            FailureResult _ ->
+                case fromQValue v of
+                    SuccessResult (fs :: QImLiteralSet edit t) -> return $ LiteralFunction $ funcEditFunction Just . fs
+                    FailureResult _ -> badFromQValue v
+
+-- Literal FiniteSet Point
+--
+instance HasQTypeDescription (Literal edit (FiniteSet Point)) where
+    qTypeDescription = "set"
+
+instance (edit ~ baseedit, HasPinaforeTableEdit baseedit) => FromQValue baseedit (Literal edit (FiniteSet Point)) where
+    fromQValue v =
+        case fromQValue v of
+            SuccessResult (fs :: QImLiteralSet edit Point) -> return $ LiteralFunction $ funcEditFunction Just . fs
+            FailureResult _ -> badFromQValue v
+
 -- Literal IO
 --
 instance AsText t => HasQTypeDescription (Literal edit (IO t)) where
@@ -198,13 +235,13 @@ instance edit ~ baseedit => FromQValue baseedit (QImPoint edit) where
 instance edit ~ baseedit => ToQValue baseedit (QImPoint edit) where
     toQValue ef = toQValue $ readOnlyEditLens ef
 
--- im set of t
+-- QImLiteralSet
 --
-instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (PinaforeFunctionValue edit (FiniteSet t)) where
+instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (QImLiteralSet edit t) where
     qTypeDescription = textTypeDescription @t <> "-set"
 
 instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
-                              FromQValue baseedit (PinaforeFunctionValue edit (FiniteSet t)) where
+                              FromQValue baseedit (QImLiteralSet edit t) where
     fromQValue v@(MkAny QTConstant text) =
         case fromText text of
             Just a -> return $ constEditFunction $ opoint a

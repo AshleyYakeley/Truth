@@ -157,3 +157,7 @@ copyObject (MkObject (runSrc :: UnliftIO ms) readSrc _) (MkObject (runDest :: Un
             runUnliftIO (combineUnliftIOs runSrc runDest) $
             replaceEdit (remonadMutableRead (combineLiftFst @ms @md) readSrc) $ \edit ->
                 combineLiftSnd @ms @md $ pushOrFail "failed to copy object" $ pushDest [edit]
+
+exclusiveObject :: forall edit. Object edit -> With (Object edit)
+exclusiveObject (MkObject (run :: UnliftIO m) rd push) call =
+    runUnliftIO run $ liftIOWithUnlift $ \unlift -> call $ MkObject unlift rd push

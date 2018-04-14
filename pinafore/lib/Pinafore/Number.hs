@@ -134,7 +134,7 @@ instance Show Number where
                                  c:rest -> '_' : (toDigit c) : (fmap toDigit $ takeWhile (/= c) rest)
                                  [] -> error "impossible"
                          predigits = fmap toDigit preNumbers
-                         in (i, '.' : (predigits ++ repeating))
+                         in (i, '.' : (take 1000 $ predigits ++ repeating))
         in sign ++ show i' ++ decimal'
     show (InexactNumber d)
         | isNaN d = show d

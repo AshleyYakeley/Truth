@@ -30,6 +30,9 @@ qmeet a b = readOnlyEditLens meetEditFunction . pairJoinEditLenses a b
 qjoin :: QSet baseedit -> QSet baseedit -> QSet baseedit
 qjoin a b = readOnlyEditLens joinEditFunction . pairJoinEditLenses a b
 
+set_member :: Point -> FiniteSet Point -> Bool
+set_member p set = elem p set
+
 output ::
        forall baseedit. HasPinaforeTableEdit baseedit
     => QImLiteral baseedit Text
@@ -45,6 +48,15 @@ outputln ::
 outputln val = do
     mtext <- qGetFunctionValue val
     for_ mtext $ \text -> liftIO $ putStrLn $ unpack text
+
+setcount :: FiniteSet Text -> Int
+setcount = olength
+
+setsum :: FiniteSet Number -> Number
+setsum (MkFiniteSet s) = sum s
+
+setmean :: FiniteSet Number -> Number
+setmean (MkFiniteSet s) = sum s / fromIntegral (olength s)
 
 withset ::
        forall baseedit. HasPinaforeTableEdit baseedit
@@ -158,14 +170,19 @@ ui_table cols asp val = let
     aspect point = resultToM $ mapResultFailure unpack $ fmap return $ asp point
     in uiTable (fmap getColumn cols) aspect val
 
+literal_conv :: Text -> Text
+literal_conv = id
+
 predefinitions ::
        forall baseedit. (HasPinaforeTableEdit baseedit, HasPinaforeFileEdit baseedit)
     => [(QBindings baseedit, (Symbol, Text))]
 predefinitions =
     [ pb "$" $ qapply @baseedit
+    , pb "literal" $ fmap @(Literal baseedit) $ literal_conv
     , pb "." $ qcombine @baseedit
     , pb "&" $ qmeet @baseedit
     , pb "|" $ qjoin @baseedit
+    , pb "member" $ liftA2 @(Literal baseedit) $ set_member
     , pb "++" $ qappend @baseedit
     , pb "==" $ liftA2 @(Literal baseedit) $ (==) @Text
     , pb "/=" $ liftA2 @(Literal baseedit) $ (/=) @Text
@@ -179,6 +196,11 @@ predefinitions =
     , pb "<=" $ liftA2 @(Literal baseedit) $ (<=) @Number
     , pb ">" $ liftA2 @(Literal baseedit) $ (>) @Number
     , pb ">=" $ liftA2 @(Literal baseedit) $ (>=) @Number
+    , pb "abs" $ fmap @(Literal baseedit) $ abs @Number
+    , pb "signum" $ fmap @(Literal baseedit) $ signum @Number
+    , pb "count" $ fmap @(Literal baseedit) setcount
+    , pb "sum" $ fmap @(Literal baseedit) setsum
+    , pb "mean" $ fmap @(Literal baseedit) setmean
     , pb "alphabetical" $ alphabetical @baseedit
     , pb "numerical" $ numerical @baseedit
     , pb "chronological" $ chronological @baseedit

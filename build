@@ -1,3 +1,3 @@
 #!/bin/bash -e
-stack build --pedantic --test
+stack install --pedantic --test
 echo OK
