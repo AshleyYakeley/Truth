@@ -21,7 +21,7 @@ optParser = (,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') 
 
 main :: IO ()
 main =
-    truthMain $ \args createWindow -> do
+    truthMain $ \args createWindow cont -> do
         (paths, double, saveOpt) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
         for_ paths $ \path -> do
             let
@@ -59,3 +59,4 @@ main =
             if double
                 then action
                 else return ()
+        cont ()

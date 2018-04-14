@@ -23,19 +23,20 @@ optParser =
 
 main :: IO ()
 main =
-    truthMain $ \args createWindow -> do
+    truthMain $ \args createWindow cont -> do
         options <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
         case options of
             ExprDocOption -> do
                 for_ (predefinedDoc @PinaforeEdit) $ \(name, desc) -> putStrLn $ (show name) ++ " :: " ++ unpack desc
                 putStrLn $ "<file> :: " ++ unpack filePinaforeType
+                cont ()
             RunOption fInteract mdirpath fpaths -> do
                 dirpath <-
                     case mdirpath of
                         Just dirpath -> return dirpath
                         Nothing -> getUserDataDir "pinafore"
                 createDirectoryIfMissing True dirpath
-                sqliteWithPinaforeContext dirpath createWindow $ \context ->
+                sqliteWithPinaforeContext dirpath createWindow $ \context -> do
                     case fpaths of
                         [] -> do
                             isterm <- hIsTerminalDevice stdin
@@ -51,3 +52,4 @@ main =
                             if fInteract
                                 then pinaforeInteract context
                                 else return ()
+                    cont ()
