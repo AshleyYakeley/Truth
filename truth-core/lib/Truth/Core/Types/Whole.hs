@@ -9,6 +9,9 @@ import Truth.Core.Read
 data WholeReader (a :: *) (t :: *) where
     ReadWhole :: forall t. WholeReader t t
 
+instance TestEquality (WholeReader a) where
+    testEquality ReadWhole ReadWhole = Just Refl
+
 instance Show (WholeReader a t) where
     show ReadWhole = "whole"
 
@@ -50,6 +53,8 @@ instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
     replaceEdit mr write = do
         a <- mutableReadToSubject mr
         write $ MkWholeEdit a
+
+instance (FullSubjectReader reader, TestEquality reader) => CacheableEdit (WholeReaderEdit reader)
 
 lastWholeEdit :: [WholeReaderEdit reader] -> Maybe (ReaderSubject reader)
 lastWholeEdit edits = do

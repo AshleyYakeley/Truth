@@ -28,7 +28,7 @@ main =
                 bsObj :: Object ByteStringEdit
                 bsObj = fileObject path
                 wholeTextObj :: Object (WholeEdit ((Result Text) Text))
-                wholeTextObj = cacheObject $ mapObject textLens bsObj
+                wholeTextObj = cacheWholeObject $ mapObject textLens bsObj
             action <-
                 if saveOpt
                     then do

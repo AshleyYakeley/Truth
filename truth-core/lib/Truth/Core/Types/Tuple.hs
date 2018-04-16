@@ -133,6 +133,28 @@ instance ( SubjectTupleSelector sel
                     Dict -> replaceEdit (tupleReadFunction sel mr) $ writeEdit . MkTupleEdit sel
         return $ mconcat editss
 
+data TupleEditCacheKey cache sel ct where
+    MkTupleEditCacheKey :: sel edit -> TupleEditCacheKey cache sel (cache (EditCacheKey cache edit))
+
+instance TestEquality sel => TestEquality (TupleEditCacheKey cache sel) where
+    testEquality (MkTupleEditCacheKey se1) (MkTupleEditCacheKey se2) = do
+        Refl <- testEquality se1 se2
+        return Refl
+
+instance (TestEquality sel, TupleWitness CacheableEdit sel) => CacheableEdit (TupleEdit sel) where
+    type EditCacheKey cache (TupleEdit sel) = TupleEditCacheKey cache sel
+    editCacheAdd (MkTupleEditReader (seledit :: sel edit) rt) t =
+        case tupleWitness @CacheableEdit seledit of
+            Dict ->
+                cacheModify_ (MkTupleEditCacheKey seledit) $ \moldcache ->
+                    Just $ editCacheAdd @edit rt t $ fromMaybe cacheEmpty moldcache
+    editCacheLookup (MkTupleEditReader (seledit :: sel edit) rt) cache =
+        case tupleWitness @CacheableEdit seledit of
+            Dict -> do
+                subcache <- cacheLookup (MkTupleEditCacheKey seledit) cache
+                editCacheLookup @edit rt subcache
+    editCacheUpdate = undefined
+
 instance (WitnessConstraint Show sel, AllWitnessConstraint Show sel) => Show (TupleEdit sel) where
     show (MkTupleEdit sel edit) =
         "tuple " ++
