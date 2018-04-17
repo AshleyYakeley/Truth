@@ -7,46 +7,50 @@ import Truth.Core.Read
 class IsCache (cache :: (* -> *) -> *) where
     cacheEmpty :: cache k
     cacheLookup :: TestEquality k => k t -> cache k -> Maybe t
-    cacheTraverse :: Applicative m => (forall t. k t -> t -> m (Maybe t)) -> cache k -> m (cache k)
-    cacheModify :: TestEquality k => k t -> (Maybe t -> (Maybe t, r)) -> cache k -> (cache k, r)
+    cacheTraverse :: Applicative m => (forall t. k t -> t -> m (Maybe t)) -> StateT (cache k) m ()
+    cacheModify :: (TestEquality k, Functor m) => k t -> StateT (Maybe t) m r -> StateT (cache k) m r
 
-cacheModify_ :: (IsCache cache, TestEquality k) => k t -> (Maybe t -> Maybe t) -> cache k -> cache k
-cacheModify_ key f cache = fst $ cacheModify key (\mt -> (f mt, ())) cache
+cacheAdd :: (IsCache cache, TestEquality k, Applicative m) => k t -> t -> StateT (cache k) m ()
+cacheAdd k t = cacheModify k $ StateT $ \_ -> pure ((), Just t)
 
-cacheAdd :: (IsCache cache, TestEquality k) => k t -> t -> cache k -> cache k
-cacheAdd k t cache = cacheModify_ k (\_ -> Just t) cache
-
+-- | not the best cache
 newtype ListCache k =
     MkListCache [Any k]
 
 instance IsCache ListCache where
     cacheEmpty = MkListCache []
     cacheLookup key (MkListCache cc) = listToMaybe $ mapMaybe (matchAny key) cc
-    cacheTraverse f (MkListCache cc) =
-        fmap (MkListCache . catMaybes) $ for cc $ \(MkAny key oldval) -> fmap (fmap $ MkAny key) $ f key oldval
-    cacheModify key f (MkListCache cc) = let
-        go [] =
-            case f Nothing of
-                (Nothing, r) -> (MkListCache [], r)
-                (Just val, r) -> (MkListCache [MkAny key val], r)
-        go (MkAny key' val:vv)
-            | Just Refl <- testEquality key key' =
-                case f $ Just val of
-                    (Nothing, r) -> (MkListCache vv, r)
-                    (Just newval, r) -> (MkListCache $ MkAny key' newval : vv, r)
-        go (v:vv) =
-            case go vv of
-                (MkListCache vv', r) -> (MkListCache $ v : vv', r)
-        in go cc
+    cacheTraverse f =
+        StateT $ \(MkListCache cc) ->
+            fmap (\newcc -> ((), MkListCache $ catMaybes newcc)) $
+            for cc $ \(MkAny key oldval) -> fmap (fmap $ MkAny key) $ f key oldval
+    cacheModify key f =
+        StateT $ \(MkListCache cc) -> let
+            go [] =
+                fmap
+                    (fmap
+                         (\case
+                              Nothing -> MkListCache []
+                              Just val -> MkListCache [MkAny key val])) $
+                runStateT f Nothing
+            go (MkAny key' val:vv)
+                | Just Refl <- testEquality key key' =
+                    fmap
+                        (fmap
+                             (\case
+                                  Nothing -> MkListCache vv
+                                  Just newval -> MkListCache $ MkAny key' newval : vv)) $
+                    runStateT f $ Just val
+            go (v:vv) = fmap (fmap (\(MkListCache vv') -> MkListCache $ v : vv')) $ go vv
+            in go cc
 
 class CacheableEdit (edit :: *) where
     type EditCacheKey (cache :: (* -> *) -> *) edit :: * -> *
     editCacheAdd ::
-           forall cache t. IsCache cache
+           forall cache m t. (IsCache cache, Applicative m)
         => EditReader edit t
         -> t
-        -> cache (EditCacheKey cache edit)
-        -> cache (EditCacheKey cache edit)
+        -> StateT (cache (EditCacheKey cache edit)) m ()
     editCacheLookup ::
            forall cache t. IsCache cache
         => EditReader edit t
@@ -55,14 +59,13 @@ class CacheableEdit (edit :: *) where
     editCacheUpdate ::
            forall cache. IsCache cache
         => edit
-        -> cache (EditCacheKey cache edit)
-        -> IO (cache (EditCacheKey cache edit))
+        -> StateT (cache (EditCacheKey cache edit)) IO ()
     -- defaults
     type EditCacheKey cache edit = EditReader edit
     default editCacheAdd ::
-        forall cache t.
-            (IsCache cache, EditCacheKey cache edit ~ EditReader edit, TestEquality (EditReader edit)) =>
-                    EditReader edit t -> t -> cache (EditCacheKey cache edit) -> cache (EditCacheKey cache edit)
+        forall cache m t.
+            (IsCache cache, Applicative m, EditCacheKey cache edit ~ EditReader edit, TestEquality (EditReader edit)) =>
+                    EditReader edit t -> t -> StateT (cache (EditCacheKey cache edit)) m ()
     editCacheAdd = cacheAdd
     default editCacheLookup ::
         forall cache t.
@@ -71,7 +74,7 @@ class CacheableEdit (edit :: *) where
     editCacheLookup = cacheLookup
     default editCacheUpdate ::
         (IsCache cache, ApplicableEdit edit, EditCacheKey cache edit ~ EditReader edit, TestEquality (EditReader edit)) =>
-                edit -> cache (EditCacheKey cache edit) -> IO (cache (EditCacheKey cache edit))
+                edit -> StateT (cache (EditCacheKey cache edit)) IO ()
     editCacheUpdate edit =
         cacheTraverse $ \rt val -> let
             tmr :: MutableRead (ComposeM Maybe IO) (EditReader edit)
@@ -80,3 +83,9 @@ class CacheableEdit (edit :: *) where
                     Refl <- testEquality rt rt'
                     return val
             in getComposeM $ applyEdit edit tmr rt
+
+editCacheUpdates ::
+       forall edit cache. (CacheableEdit edit, IsCache cache)
+    => [edit]
+    -> StateT (cache (EditCacheKey cache edit)) IO ()
+editCacheUpdates ee = for_ ee $ editCacheUpdate

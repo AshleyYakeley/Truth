@@ -79,7 +79,7 @@ import Control.Monad.Trans.Identity as I (IdentityT(..))
 import Control.Monad.Trans.List as I (ListT(..))
 import Control.Monad.Trans.Maybe as I (MaybeT(..))
 import Control.Monad.Trans.Reader as I (ReaderT(..), ask, asks, withReaderT)
-import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT, get, modify, put)
+import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT, get, modify, put, runState)
 import Control.Monad.Trans.Writer as I (WriterT(..), execWriterT, tell)
 
 -- transformers-extra
