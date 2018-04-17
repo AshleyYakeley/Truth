@@ -68,8 +68,7 @@ instance (MonadTrans t1, MonadTransConstraint Monad t2) => MonadTrans (ComposeT 
         case hasTransConstraint @Monad @t2 @m of
             Dict -> MkComposeT $ lift $ lift ma
 
-instance (MonadTransConstraint Monad t1, MonadTransConstraint Monad t2) =>
-         MonadTransConstraint Monad (ComposeT t1 t2) where
+instance (MonadTransConstraint Monad t1, MonadTransConstraint Monad t2) => MonadTransConstraint Monad (ComposeT t1 t2) where
     hasTransConstraint ::
            forall m. Monad m
         => Dict (Monad (ComposeT t1 t2 m))
@@ -80,7 +79,7 @@ instance (MonadTransConstraint Monad t1, MonadTransConstraint Monad t2) =>
                     Dict -> Dict
 
 instance (MonadTransConstraint MonadIO t1, MonadTransConstraint Monad t2, MonadTransConstraint MonadIO t2) =>
-         MonadTransConstraint MonadIO (ComposeT t1 t2) where
+             MonadTransConstraint MonadIO (ComposeT t1 t2) where
     hasTransConstraint ::
            forall m. MonadIO m
         => Dict (MonadIO (ComposeT t1 t2 m))
@@ -91,7 +90,7 @@ instance (MonadTransConstraint MonadIO t1, MonadTransConstraint Monad t2, MonadT
                     Dict -> Dict
 
 instance (MonadTransConstraint MonadFail t1, MonadTransConstraint Monad t2, MonadTransConstraint MonadFail t2) =>
-         MonadTransConstraint MonadFail (ComposeT t1 t2) where
+             MonadTransConstraint MonadFail (ComposeT t1 t2) where
     hasTransConstraint ::
            forall m. MonadFail m
         => Dict (MonadFail (ComposeT t1 t2 m))
@@ -102,7 +101,7 @@ instance (MonadTransConstraint MonadFail t1, MonadTransConstraint Monad t2, Mona
                     Dict -> Dict
 
 instance (MonadTransConstraint MonadFix t1, MonadTransConstraint Monad t2, MonadTransConstraint MonadFix t2) =>
-         MonadTransConstraint MonadFix (ComposeT t1 t2) where
+             MonadTransConstraint MonadFix (ComposeT t1 t2) where
     hasTransConstraint ::
            forall m. MonadFix m
         => Dict (MonadFix (ComposeT t1 t2 m))
@@ -113,7 +112,7 @@ instance (MonadTransConstraint MonadFix t1, MonadTransConstraint Monad t2, Monad
                     Dict -> Dict
 
 instance (MonadTransConstraint MonadPlus t1, MonadTransConstraint Monad t2, MonadTransConstraint MonadPlus t2) =>
-         MonadTransConstraint MonadPlus (ComposeT t1 t2) where
+             MonadTransConstraint MonadPlus (ComposeT t1 t2) where
     hasTransConstraint ::
            forall m. MonadPlus m
         => Dict (MonadPlus (ComposeT t1 t2 m))

@@ -18,8 +18,7 @@ import Data.Tuple
 import Prelude
 
 newtype Unlift (t :: (* -> *) -> * -> *) = MkUnlift
-    { runUnlift :: forall (m :: * -> *) (r :: *). MonadUnliftIO m =>
-                                                      t m r -> m r
+    { runUnlift :: forall (m :: * -> *) (r :: *). MonadUnliftIO m => t m r -> m r
     }
 
 identityUnlift :: Unlift IdentityT
@@ -54,8 +53,7 @@ class ( MonadTransConstraint MonadFail t
       , MonadTransConstraint MonadFix t
       , MonadTransConstraint MonadPlus t
       , MonadTransTunnel t
-      ) =>
-      MonadTransUnlift t where
+      ) => MonadTransUnlift t where
     liftWithUnlift ::
            forall m r. MonadUnliftIO m
         => (Unlift t -> m r)
@@ -88,8 +86,7 @@ remonadUnliftIO ff (MkUnliftIO r2) = MkUnliftIO $ \m1a -> r2 $ remonad ff m1a
 mvarUnliftIO :: MVar s -> UnliftIO (StateT s IO)
 mvarUnliftIO var = MkUnliftIO $ mvarRun var
 
-class (MonadFail m, MonadTunnelIO m, MonadFix m) =>
-      MonadUnliftIO m where
+class (MonadFail m, MonadTunnelIO m, MonadFix m) => MonadUnliftIO m where
     liftIOWithUnlift :: forall r. (UnliftIO m -> IO r) -> m r
     -- ^ lift with an 'UnliftIO' that accounts for all transformer effects
     getDiscardingUnliftIO :: m (UnliftIO m)
@@ -99,8 +96,7 @@ instance MonadUnliftIO IO where
     liftIOWithUnlift call = call $ MkUnliftIO id
     getDiscardingUnliftIO = return $ MkUnliftIO id
 
-instance (MonadTransUnlift t, MonadUnliftIO m, MonadFail (t m), MonadIO (t m), MonadFix (t m)) =>
-         MonadUnliftIO (t m) where
+instance (MonadTransUnlift t, MonadUnliftIO m, MonadFail (t m), MonadIO (t m), MonadFix (t m)) => MonadUnliftIO (t m) where
     liftIOWithUnlift call =
         liftWithUnlift $ \(MkUnlift tmama) ->
             liftIOWithUnlift $ \(MkUnliftIO maioa) -> call $ MkUnliftIO $ maioa . tmama

@@ -59,24 +59,19 @@ class CacheableEdit (edit :: *) where
         -> IO (cache (EditCacheKey cache edit))
     -- defaults
     type EditCacheKey cache edit = EditReader edit
-    default editCacheAdd :: forall cache t. ( IsCache cache
-                                            , EditCacheKey cache edit ~ EditReader edit
-                                            , TestEquality (EditReader edit)
-                                            ) =>
-                                                EditReader edit t -> t -> cache (EditCacheKey cache edit) -> cache (EditCacheKey cache edit)
+    default editCacheAdd ::
+        forall cache t.
+            (IsCache cache, EditCacheKey cache edit ~ EditReader edit, TestEquality (EditReader edit)) =>
+                    EditReader edit t -> t -> cache (EditCacheKey cache edit) -> cache (EditCacheKey cache edit)
     editCacheAdd = cacheAdd
-    default editCacheLookup :: forall cache t. ( IsCache cache
-                                               , EditCacheKey cache edit ~ EditReader edit
-                                               , TestEquality (EditReader edit)
-                                               ) =>
-                                                   EditReader edit t -> cache (EditCacheKey cache edit) -> Maybe t
+    default editCacheLookup ::
+        forall cache t.
+            (IsCache cache, EditCacheKey cache edit ~ EditReader edit, TestEquality (EditReader edit)) =>
+                    EditReader edit t -> cache (EditCacheKey cache edit) -> Maybe t
     editCacheLookup = cacheLookup
-    default editCacheUpdate :: ( IsCache cache
-                               , ApplicableEdit edit
-                               , EditCacheKey cache edit ~ EditReader edit
-                               , TestEquality (EditReader edit)
-                               ) =>
-                                  edit -> cache (EditCacheKey cache edit) -> IO (cache (EditCacheKey cache edit))
+    default editCacheUpdate ::
+        (IsCache cache, ApplicableEdit edit, EditCacheKey cache edit ~ EditReader edit, TestEquality (EditReader edit)) =>
+                edit -> cache (EditCacheKey cache edit) -> IO (cache (EditCacheKey cache edit))
     editCacheUpdate edit =
         cacheTraverse $ \rt val -> let
             tmr :: MutableRead (ComposeM Maybe IO) (EditReader edit)

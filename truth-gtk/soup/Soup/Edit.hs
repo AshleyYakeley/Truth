@@ -19,8 +19,7 @@ type SoupEdit edit = KeyEdit [(UUID, EditSubject edit)] (UUIDElementEdit edit)
 liftSoupLens ::
        forall edita editb.
        (ApplicableEdit edita, FullSubjectReader (EditReader edita), FullSubjectReader (EditReader editb))
-    => (forall m. MonadIO m =>
-                      EditSubject editb -> m (Maybe (EditSubject edita)))
+    => (forall m. MonadIO m => EditSubject editb -> m (Maybe (EditSubject edita)))
     -> EditLens edita editb
     -> EditLens (SoupEdit edita) (SoupEdit editb)
 liftSoupLens bmfa = let

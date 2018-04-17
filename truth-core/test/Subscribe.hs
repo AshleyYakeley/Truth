@@ -16,24 +16,14 @@ import Test.Tasty.Golden
 import Test.Tasty.HUnit
 import Truth.Core
 
-goldenTest ::
-       TestName
-    -> FilePath
-    -> FilePath
-    -> ((?handle :: Handle) =>
-            IO ())
-    -> TestTree
+goldenTest :: TestName -> FilePath -> FilePath -> ((?handle :: Handle) => IO ()) -> TestTree
 goldenTest name refPath outPath call =
     goldenVsFile name refPath outPath $
     withBinaryFile outPath WriteMode $ \h -> let
         ?handle = h
         in call
 
-goldenTest' ::
-       TestName
-    -> ((?handle :: Handle) =>
-            IO ())
-    -> TestTree
+goldenTest' :: TestName -> ((?handle :: Handle) => IO ()) -> TestTree
 goldenTest' name call = goldenTest name ("test/golden/" ++ name ++ ".ref") ("test/golden/" ++ name ++ ".out") call
 
 {-
@@ -116,8 +106,7 @@ testSubscription ::
        forall edit. (FullEdit edit, Show (EditSubject edit))
     => TestName
     -> EditSubject edit
-    -> ((?handle :: Handle, ?showVar :: IO (), ?showExpected :: [edit] -> IO ()) =>
-            Subscriber edit () -> IO ())
+    -> ((?handle :: Handle, ?showVar :: IO (), ?showExpected :: [edit] -> IO ()) => Subscriber edit () -> IO ())
     -> TestTree
 testSubscription name initial call =
     goldenTest' name $ do

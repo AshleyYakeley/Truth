@@ -17,16 +17,14 @@ import Data.Constraint
 import Data.Kind
 import Data.Monoid
 
-class MonadTrans t =>
-      MonadTransConstraint (c :: (* -> *) -> Constraint) t where
+class MonadTrans t => MonadTransConstraint (c :: (* -> *) -> Constraint) t where
     hasTransConstraint ::
            forall (m :: * -> *). c m
         => Dict (c (t m))
 
 withTransConstraintTM ::
        forall c t m a. (MonadTransConstraint c t, c m)
-    => (c (t m) =>
-            t m a)
+    => (c (t m) => t m a)
     -> t m a
 withTransConstraintTM tma =
     case hasTransConstraint @c @t @m of
@@ -34,8 +32,7 @@ withTransConstraintTM tma =
 
 withTransConstraintTM' ::
        forall c t' t m a. (MonadTransConstraint c t, c m)
-    => (c (t m) =>
-            t' (t m) a)
+    => (c (t m) => t' (t m) a)
     -> t' (t m) a
 withTransConstraintTM' tma =
     case hasTransConstraint @c @t @m of
@@ -43,8 +40,7 @@ withTransConstraintTM' tma =
 
 withTransConstraintDict ::
        forall c t m c'. (MonadTransConstraint c t, c m)
-    => (c (t m) =>
-            Dict (c' (t m)))
+    => (c (t m) => Dict (c' (t m)))
     -> Dict (c' (t m))
 withTransConstraintDict dict =
     case hasTransConstraint @c @t @m of

@@ -13,8 +13,7 @@ import Data.Constraint
 import Prelude hiding (fail)
 
 newtype FreeT m a = FreeT
-    { runFreeT :: forall t. MonadTransUnlift t =>
-                                t m a
+    { runFreeT :: forall t. MonadTransUnlift t => t m a
     }
 
 instance Monad m => Functor (FreeT m) where

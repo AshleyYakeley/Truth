@@ -34,12 +34,10 @@ class HasQTypeDescription t where
     qTypeDescriptionSingle :: Text
     qTypeDescriptionSingle = qTypeDescription @t
 
-class HasQTypeDescription t =>
-      FromQValue baseedit t where
+class HasQTypeDescription t => FromQValue baseedit t where
     fromQValue :: QValue baseedit -> Result Text t
 
-class HasQTypeDescription t =>
-      ToQValue baseedit t where
+class HasQTypeDescription t => ToQValue baseedit t where
     toQValue :: t -> QValue baseedit
 
 instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription t where
@@ -72,7 +70,7 @@ instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (Literal edit t) w
     qTypeDescription = textTypeDescription @t
 
 instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
-                              FromQValue baseedit (Literal edit t) where
+                                  FromQValue baseedit (Literal edit t) where
     fromQValue v@(MkAny QTConstant text) =
         case fromText text of
             Just a -> return $ LiteralConstant a
@@ -104,7 +102,7 @@ instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (Literal edit (Fin
     qTypeDescription = textTypeDescription @t <> "-set"
 
 instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
-                              FromQValue baseedit (Literal edit (FiniteSet t)) where
+                                  FromQValue baseedit (Literal edit (FiniteSet t)) where
     fromQValue v =
         case fromQValue v of
             SuccessResult l -> return $ LiteralConstant $ MkFiniteSet l
@@ -137,8 +135,7 @@ instance (edit ~ baseedit, AsText t) => ToQValue baseedit (Literal edit (IO t)) 
 instance HasQTypeDescription (Literal edit (Object ByteStringEdit)) where
     qTypeDescription = "file"
 
-instance (edit ~ baseedit, HasPinaforeFileEdit baseedit) =>
-         FromQValue baseedit (Literal edit (Object ByteStringEdit)) where
+instance (edit ~ baseedit, HasPinaforeFileEdit baseedit) => FromQValue baseedit (Literal edit (Object ByteStringEdit)) where
     fromQValue v = do
         qip :: QImPoint baseedit <- fromQValue v
         return $
@@ -155,7 +152,7 @@ instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (QLiteral edit t) 
     qTypeDescription = textTypeDescription @t <> "*"
 
 instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
-                              FromQValue baseedit (QLiteral edit t) where
+                                  FromQValue baseedit (QLiteral edit t) where
     fromQValue v@(MkAny QTConstant text) =
         case fromText text of
             Just a -> return $ constEditLens $ Just a
@@ -214,7 +211,7 @@ instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (QImLiteral edit t
     qTypeDescription = textTypeDescription @t
 
 instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
-                              FromQValue baseedit (QImLiteral edit t) where
+                                  FromQValue baseedit (QImLiteral edit t) where
     fromQValue v = do
         cl :: Literal baseedit t <- fromQValue v
         return $ literalToFunction cl
@@ -241,7 +238,7 @@ instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (QImLiteralSet edi
     qTypeDescription = textTypeDescription @t <> "-set"
 
 instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
-                              FromQValue baseedit (QImLiteralSet edit t) where
+                                  FromQValue baseedit (QImLiteralSet edit t) where
     fromQValue v@(MkAny QTConstant text) =
         case fromText text of
             Just a -> return $ constEditFunction $ opoint a
@@ -291,7 +288,7 @@ instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (QLiteralMorphism 
     qTypeDescriptionSingle = "(" <> qTypeDescription @(QLiteralMorphism edit t) <> ")"
 
 instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
-                              FromQValue baseedit (QLiteralMorphism edit t) where
+                                  FromQValue baseedit (QLiteralMorphism edit t) where
     fromQValue v = do
         m <- fromQValue v
         return $ literalPinaforeLensMorphism . m
@@ -313,7 +310,7 @@ instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (QImLiteralMorphis
     qTypeDescriptionSingle = "(" <> qTypeDescription @(QImLiteralMorphism edit t) <> ")"
 
 instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
-                              FromQValue baseedit (QImLiteralMorphism edit t) where
+                                  FromQValue baseedit (QImLiteralMorphism edit t) where
     fromQValue v = do
         m <- fromQValue v
         return $ lensFunctionMorphism m
@@ -456,13 +453,13 @@ instance (HasQTypeDescription a, HasQTypeDescription b) => HasQTypeDescription (
     qTypeDescriptionSingle = "(" <> qTypeDescription @(a -> Result Text b) <> ")"
 
 instance (ToQValue baseedit a, FromQValue baseedit b, HasPinaforeTableEdit baseedit) =>
-         FromQValue baseedit (a -> Result Text b) where
+             FromQValue baseedit (a -> Result Text b) where
     fromQValue vf = do
         f <- qpartialapply vf
         return $ fromQValue . f . toQValue
 
 instance (HasPinaforeTableEdit baseedit, ToQValue baseedit a, edit ~ baseedit) =>
-         FromQValue baseedit (a -> QAction edit) where
+             FromQValue baseedit (a -> QAction edit) where
     fromQValue vf = do
         f <- qpartialapply vf
         return $ \a -> do

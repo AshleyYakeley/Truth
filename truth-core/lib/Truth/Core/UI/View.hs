@@ -115,27 +115,20 @@ viewObject :: View edit (Object edit)
 viewObject = MkView $ asks vcObject
 
 viewObjectRead ::
-       (UnliftIO (View edit) -> forall m. MonadUnliftIO m =>
-                                              MutableRead m (EditReader edit) -> m r)
-    -> View edit r
+       (UnliftIO (View edit) -> forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> m r) -> View edit r
 viewObjectRead call = do
     unliftIO <- liftIOView $ \unlift -> return $ MkUnliftIO unlift
     MkObject {..} <- viewObject
     liftIO $ runUnliftIO objRun $ call unliftIO $ objRead
 
 viewObjectMaybeEdit ::
-       (UnliftIO (View edit) -> forall m. MonadUnliftIO m =>
-                                              ([edit] -> m (Maybe (m ()))) -> m r)
-    -> View edit r
+       (UnliftIO (View edit) -> forall m. MonadUnliftIO m => ([edit] -> m (Maybe (m ()))) -> m r) -> View edit r
 viewObjectMaybeEdit call = do
     unliftIO <- liftIOView $ \unlift -> return $ MkUnliftIO unlift
     MkObject {..} <- viewObject
     liftIO $ runUnliftIO objRun $ call unliftIO $ objEdit
 
-viewObjectPushEdit ::
-       (UnliftIO (View edit) -> forall m. MonadUnliftIO m =>
-                                              ([edit] -> m ()) -> m r)
-    -> View edit r
+viewObjectPushEdit :: (UnliftIO (View edit) -> forall m. MonadUnliftIO m => ([edit] -> m ()) -> m r) -> View edit r
 viewObjectPushEdit call = viewObjectMaybeEdit $ \unlift push -> call unlift $ \edits -> pushEdit $ push edits
 
 viewSetSelectedAspect :: Aspect edit -> View edit ()
@@ -193,8 +186,7 @@ cvReceiveUpdates recv = do
     cvLiftViewResult $ (mempty {voUpdate = recv unliftIO}, ())
 
 cvReceiveUpdate ::
-       (UnliftIO (View edit) -> forall m. MonadUnliftIO m =>
-                                              MutableRead m (EditReader edit) -> edit -> m ())
+       (UnliftIO (View edit) -> forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> edit -> m ())
     -> CreateView edit ()
 cvReceiveUpdate recv = cvReceiveUpdates $ \unlift mr edits -> for_ edits (recv unlift mr)
 

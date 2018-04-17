@@ -18,13 +18,12 @@ instance (TupleSubjectWitness Show sel, FiniteWitness sel) => Show (Tuple sel) w
                 Dict -> show $ f se
         in "{" ++ intercalate "," (fmap showWit allWitnesses) ++ "}"
 
-class (TestEquality sel, TupleReaderWitness SubjectReader sel) =>
-      SubjectTupleSelector (sel :: * -> *) where
+class (TestEquality sel, TupleReaderWitness SubjectReader sel) => SubjectTupleSelector (sel :: * -> *) where
     type TupleSubject sel :: *
     type TupleSubject sel = Tuple sel
     tupleReadFromSubject :: forall edit. sel edit -> TupleSubject sel -> EditSubject edit
-    default tupleReadFromSubject :: forall edit. (TupleSubject sel ~ Tuple sel) =>
-                                                     sel edit -> TupleSubject sel -> EditSubject edit
+    default tupleReadFromSubject ::
+        forall edit. (TupleSubject sel ~ Tuple sel) => sel edit -> TupleSubject sel -> EditSubject edit
     tupleReadFromSubject sel (MkTuple tuple) = tuple sel
 
 data TupleEditReader sel t where
@@ -38,7 +37,7 @@ instance TupleReaderWitness (WitnessConstraint c) sel => WitnessConstraint c (Tu
                     Dict -> Dict
 
 instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstraint Show) sel) =>
-         Show (TupleEditReader sel t) where
+             Show (TupleEditReader sel t) where
     show (MkTupleEditReader (se :: sel edit) (rt :: EditReader edit t)) =
         showAllWitness se ++
         " " ++
@@ -46,7 +45,7 @@ instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstrain
             Dict -> showAllWitness rt
 
 instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstraint Show) sel) =>
-         AllWitnessConstraint Show (TupleEditReader sel) where
+             AllWitnessConstraint Show (TupleEditReader sel) where
     allWitnessConstraint = Dict
 
 tupleReadFunction :: sel edit -> ReadFunction (TupleEditReader sel) (EditReader edit)
@@ -64,8 +63,7 @@ class TupleReaderWitness (c :: (* -> *) -> Constraint) (sel :: * -> *) where
 class TupleSubjectWitness (c :: * -> Constraint) (sel :: * -> *) where
     tupleSubjectWitness :: forall edit. sel edit -> Dict (c (EditSubject edit))
 
-class TestEquality sel =>
-      FiniteTupleSelector (sel :: * -> *) where
+class TestEquality sel => FiniteTupleSelector (sel :: * -> *) where
     tupleConstruct ::
            forall m. Applicative m
         => (forall edit. sel edit -> m (EditSubject edit))
@@ -75,7 +73,7 @@ tupleAllSelectors :: FiniteTupleSelector sel => [AnyWitness sel]
 tupleAllSelectors = getConst $ tupleConstruct $ \sel -> Const [MkAnyWitness sel]
 
 instance (SubjectTupleSelector sel, FiniteTupleSelector sel, TupleReaderWitness FullSubjectReader sel) =>
-         FullSubjectReader (TupleEditReader sel) where
+             FullSubjectReader (TupleEditReader sel) where
     mutableReadToSubject mr =
         tupleConstruct $ \(seledit :: sel edit) ->
             case tupleReaderWitness @FullSubjectReader seledit of
@@ -124,8 +122,7 @@ instance ( SubjectTupleSelector sel
          , TupleReaderWitness FullSubjectReader sel
          , TupleWitness ApplicableEdit sel
          , TupleWitness FullEdit sel
-         ) =>
-         FullEdit (TupleEdit sel) where
+         ) => FullEdit (TupleEdit sel) where
     replaceEdit mr writeEdit = do
         editss <-
             for tupleAllSelectors $ \(MkAnyWitness sel) ->

@@ -7,7 +7,7 @@ import Truth.Core.Types.None
 import Truth.Core.Types.Whole
 
 data Object edit = forall m. MonadStackIO m =>
-                             MkObject
+                                 MkObject
     { objRun :: UnliftIO m
     , objRead :: MutableRead m (EditReader edit)
     , objEdit :: [edit] -> m (Maybe (m ()))

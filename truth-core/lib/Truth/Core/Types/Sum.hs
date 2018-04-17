@@ -8,8 +8,7 @@ data SumReader ra rb (t :: *)
     = SumReadLeft (ra t)
     | SumReadRight (rb t)
 
-instance (SubjectReader ra, SubjectReader rb, ReaderSubject ra ~ ReaderSubject rb) =>
-         SubjectReader (SumReader ra rb) where
+instance (SubjectReader ra, SubjectReader rb, ReaderSubject ra ~ ReaderSubject rb) => SubjectReader (SumReader ra rb) where
     type ReaderSubject (SumReader ra rb) = ReaderSubject ra
     mSubjectToMutableRead msubj (SumReadLeft reader) = mSubjectToMutableRead msubj reader
     mSubjectToMutableRead msubj (SumReadRight reader) = mSubjectToMutableRead msubj reader
@@ -36,7 +35,7 @@ instance (ApplicableEdit ea, ApplicableEdit eb, EditReader ea ~ EditReader eb) =
     applyEdit (SumEditRight edit) = applyEdit edit
 
 instance (ApplicableEdit ea, ApplicableEdit eb, InvertibleEdit ea, InvertibleEdit eb, EditReader ea ~ EditReader eb) =>
-         InvertibleEdit (SumEdit ea eb) where
+             InvertibleEdit (SumEdit ea eb) where
     invertEdit (SumEditLeft edit) mr = fmap (fmap SumEditLeft) $ invertEdit edit mr
     invertEdit (SumEditRight edit) mr = fmap (fmap SumEditRight) $ invertEdit edit mr
 

@@ -39,8 +39,7 @@ mapAspect lens = ioMapAspect $ return lens
 
 tupleEditUISpecs ::
        (TupleWitness FullEdit sel, FiniteTupleSelector sel)
-    => (forall edit. FullEdit edit =>
-                         sel edit -> (UISpec edit, t))
+    => (forall edit. FullEdit edit => sel edit -> (UISpec edit, t))
     -> [(UISpec (TupleEdit sel), t)]
 tupleEditUISpecs getSpec =
     fmap

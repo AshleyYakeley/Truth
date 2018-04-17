@@ -43,8 +43,7 @@ sumWholeLiftAnEditLens ::
        , FullSubjectReader (EditReader edita)
        , FullSubjectReader (EditReader editb)
        )
-    => (forall m. MonadIO m =>
-                      EditSubject editb -> MutableRead m (EditReader edita) -> t m (Maybe (EditSubject edita)))
+    => (forall m. MonadIO m => EditSubject editb -> MutableRead m (EditReader edita) -> t m (Maybe (EditSubject edita)))
     -> AnEditLens t edita editb
     -> AnEditLens t (SumWholeEdit edita) (SumWholeEdit editb)
 sumWholeLiftAnEditLens pushback lens = let

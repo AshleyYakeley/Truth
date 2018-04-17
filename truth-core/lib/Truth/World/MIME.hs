@@ -23,8 +23,8 @@ data AnyCodec where
 
 data MIMEKnowledge = MkMIMEKnowledge
     { findMIMECodecByMIME :: MIMEContentType -> Maybe AnyCodec
-    , findMIMECodecByInfoT :: forall (edit :: *). IOWitness edit -> Maybe ( MIMEContentType
-                                                                          , Codec [Word8] (EditSubject edit))
+    , findMIMECodecByInfoT :: forall (edit :: *).
+                                      IOWitness edit -> Maybe (MIMEContentType, Codec [Word8] (EditSubject edit))
     }
 
 interpretInjection :: (?mimeKnowledge :: MIMEKnowledge) => Injection MIMEContent (Maybe Anything)

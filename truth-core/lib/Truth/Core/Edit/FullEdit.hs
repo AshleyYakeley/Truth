@@ -4,8 +4,7 @@ import Truth.Core.Edit.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 
-class (ApplicableEdit edit, FullSubjectReader (EditReader edit)) =>
-      FullEdit edit where
+class (ApplicableEdit edit, FullSubjectReader (EditReader edit)) => FullEdit edit where
     replaceEdit ::
            forall m. (MonadIO m)
         => MutableRead m (EditReader edit)

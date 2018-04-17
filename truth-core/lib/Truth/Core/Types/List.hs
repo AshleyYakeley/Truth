@@ -25,13 +25,13 @@ knownItemReadFunction i mr rt = do
         Nothing -> error $ "missing item " ++ show i ++ " in list"
 
 instance (IsSequence seq, SubjectReader reader, ReaderSubject reader ~ Element seq) =>
-         SubjectReader (ListReader seq reader) where
+             SubjectReader (ListReader seq reader) where
     type ReaderSubject (ListReader seq reader) = seq
     subjectToRead sq ListReadLength = seqLength sq
     subjectToRead sq (ListReadItem i reader) = fmap (\e -> subjectToRead e reader) $ seqIndex sq i
 
 instance (IsSequence seq, FullSubjectReader reader, ReaderSubject reader ~ Element seq) =>
-         FullSubjectReader (ListReader seq reader) where
+             FullSubjectReader (ListReader seq reader) where
     mutableReadToSubject mr = do
         len <- mr ListReadLength
         list <- for [0 .. pred len] $ \i -> mutableReadToSubject $ knownItemReadFunction i mr
@@ -60,7 +60,7 @@ type instance EditReader (ListEdit seq edit) =
      ListReader seq (EditReader edit)
 
 instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit edit, EditSubject edit ~ Element seq) =>
-         ApplicableEdit (ListEdit seq edit) where
+             ApplicableEdit (ListEdit seq edit) where
     applyEdit (ListEditItem p edit) mr (ListReadItem i reader)
         | p == i = getComposeM $ applyEdit edit (itemReadFunction i mr) reader -- already checks bounds
     applyEdit (ListEditItem _ _) mr reader = mr reader
@@ -96,8 +96,7 @@ instance ( IsSequence seq
          , ApplicableEdit edit
          , InvertibleEdit edit
          , EditSubject edit ~ Element seq
-         ) =>
-         InvertibleEdit (ListEdit seq edit) where
+         ) => InvertibleEdit (ListEdit seq edit) where
     invertEdit (ListEditItem p edit) mr = do
         minvedits <- getComposeM $ invertEdit edit $ itemReadFunction p mr
         case minvedits of
@@ -117,7 +116,7 @@ instance ( IsSequence seq
     invertEdit ListClear mr = getReplaceEdits mr
 
 instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit edit, EditSubject edit ~ Element seq) =>
-         FullEdit (ListEdit seq edit) where
+             FullEdit (ListEdit seq edit) where
     replaceEdit mr write = do
         write ListClear
         len <- mr ListReadLength

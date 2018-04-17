@@ -35,8 +35,7 @@ instance TestEquality (PairSelector ea eb) where
     testEquality SelectSecond SelectSecond = Just Refl
     testEquality _ _ = Nothing
 
-instance (SubjectReader (EditReader ea), SubjectReader (EditReader eb)) =>
-         SubjectTupleSelector (PairSelector ea eb) where
+instance (SubjectReader (EditReader ea), SubjectReader (EditReader eb)) => SubjectTupleSelector (PairSelector ea eb) where
     type TupleSubject (PairSelector ea eb) = (EditSubject ea, EditSubject eb)
     tupleReadFromSubject SelectFirst (a, _b) = a
     tupleReadFromSubject SelectSecond (_a, b) = b

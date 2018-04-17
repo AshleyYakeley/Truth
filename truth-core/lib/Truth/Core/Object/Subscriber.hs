@@ -21,9 +21,10 @@ import Truth.Core.Object.Update
 import Truth.Core.Read
 
 newtype Subscriber edit actions = MkSubscriber
-    { subscribe :: forall editor. (Object edit -> IO editor) -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
-                                       -> (editor -> ReceiveUpdates edit) -- receive: get updates (both others and from your mutableEdit calls)
-                                           -> LifeCycle (editor, actions)
+    { subscribe :: forall editor.
+                           (Object edit -> IO editor) -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
+                            -> (editor -> ReceiveUpdates edit) -- receive: get updates (both others and from your mutableEdit calls)
+                                -> LifeCycle (editor, actions)
     }
 
 subscribeLifeCycle ::

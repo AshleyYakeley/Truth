@@ -85,8 +85,7 @@ lifeCycleWith withX =
                 takeMVar doneVar
         return (t, close)
 
-class MonadIO m =>
-      MonadLifeCycle m where
+class MonadIO m => MonadLifeCycle m where
     liftLifeCycle :: forall a. LifeCycle a -> m a
 
 instance MonadLifeCycle LifeCycle where

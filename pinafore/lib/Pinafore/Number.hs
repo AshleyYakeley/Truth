@@ -23,8 +23,7 @@ approximate res n = res * toRational (round (n / fromRational res) :: Integer)
 
 arity1op ::
        forall c. (c Rational, c Double)
-    => (forall t. c t =>
-                      t -> t)
+    => (forall t. c t => t -> t)
     -> Number
     -> Number
 arity1op f (ExactNumber n) = ExactNumber $ f n
@@ -32,8 +31,7 @@ arity1op f (InexactNumber n) = InexactNumber $ f n
 
 arity2op ::
        forall c. (c Rational, c Double)
-    => (forall t. c t =>
-                      t -> t -> t)
+    => (forall t. c t => t -> t -> t)
     -> Number
     -> Number
     -> Number

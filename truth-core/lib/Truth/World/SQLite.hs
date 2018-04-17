@@ -107,10 +107,10 @@ instance HasSchema (Expr colsel t) where
     schemaString csch (AndExpr e1 e2) = "(" <> schemaString csch e1 <> " AND " <> schemaString csch e2 <> ")"
 
 class (FiniteWitness colsel, WitnessConstraint FromField colsel, WitnessConstraint ToField colsel) =>
-      IsSQLiteTable colsel
+          IsSQLiteTable colsel
 
 instance (FiniteWitness colsel, WitnessConstraint FromField colsel, WitnessConstraint ToField colsel) =>
-         IsSQLiteTable colsel
+             IsSQLiteTable colsel
 
 instance TupleDatabaseType SQLiteDatabase where
     type TupleDatabaseTypeRowWitness SQLiteDatabase = IsSQLiteTable

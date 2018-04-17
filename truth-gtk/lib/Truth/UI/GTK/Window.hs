@@ -219,8 +219,7 @@ makeWindowCountRef pc@MkProgramContext {..} ui = let
            Shapes.put $ i + 1
 
 truthMain ::
-       ([String] -> (forall actions. WindowButtons actions =>
-                                         UserInterface UIWindow actions -> IO ()) -> With ())
+       ([String] -> (forall actions. WindowButtons actions => UserInterface UIWindow actions -> IO ()) -> With ())
     -> IO ()
 truthMain appMain = do
     args <- getArgs

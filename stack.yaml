@@ -14,7 +14,7 @@ extra-deps:
 - mime-0.4.0.2
 - haskell-src-exts-1.20.1
 - git: git@github.com:AshleyYakeley/hindent.git
-  commit: 82412270de10544cd37ca70ea82ecb688dcb6aec
+  commit: f20a764f40bc68fa5ada1dd38318be936219fbd8
 
 flags:
     truth-gtk:

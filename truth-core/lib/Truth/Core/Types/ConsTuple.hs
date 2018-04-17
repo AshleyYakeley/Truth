@@ -46,7 +46,7 @@ instance (c a, TupleWitness c r) => TupleWitness c (ConsWitness a r) where
     tupleWitness (RestWitness r) = tupleWitness r
 
 instance (SubjectReader (EditReader a), TestEquality r, TupleReaderWitness SubjectReader r) =>
-         SubjectTupleSelector (ConsWitness a r)
+             SubjectTupleSelector (ConsWitness a r)
 
 instance (c (EditReader a), TupleReaderWitness c r) => TupleReaderWitness c (ConsWitness a r) where
     tupleReaderWitness FirstWitness = Dict

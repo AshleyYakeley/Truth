@@ -47,7 +47,7 @@ instance TestEquality (WithContextSelector ea eb) where
     testEquality _ _ = Nothing
 
 instance (SubjectReader (EditReader editx), SubjectReader (EditReader editn)) =>
-         SubjectTupleSelector (WithContextSelector editx editn) where
+             SubjectTupleSelector (WithContextSelector editx editn) where
     type TupleSubject (WithContextSelector editx editn) = WithContext (EditSubject editx) (EditSubject editn)
     tupleReadFromSubject SelectContext (MkWithContext x _n) = x
     tupleReadFromSubject SelectContent (MkWithContext _x n) = n
