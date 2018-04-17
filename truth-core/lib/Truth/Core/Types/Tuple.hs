@@ -142,9 +142,7 @@ instance (TestEquality sel, TupleWitness CacheableEdit sel) => CacheableEdit (Tu
     type EditCacheKey cache (TupleEdit sel) = TupleEditCacheKey cache sel
     editCacheAdd (MkTupleEditReader (seledit :: sel edit) rt) t =
         case tupleWitness @CacheableEdit seledit of
-            Dict ->
-                cacheModify (MkTupleEditCacheKey seledit) $
-                lensStateT (defaultLens cacheEmpty) $ editCacheAdd @edit rt t
+            Dict -> subcacheModify (MkTupleEditCacheKey seledit) $ editCacheAdd @edit rt t
     editCacheLookup (MkTupleEditReader (seledit :: sel edit) rt) cache =
         case tupleWitness @CacheableEdit seledit of
             Dict -> do
@@ -152,9 +150,7 @@ instance (TestEquality sel, TupleWitness CacheableEdit sel) => CacheableEdit (Tu
                 editCacheLookup @edit rt subcache
     editCacheUpdate (MkTupleEdit (seledit :: sel edit) edit) =
         case tupleWitness @CacheableEdit seledit of
-            Dict ->
-                cacheModify (MkTupleEditCacheKey seledit) $
-                lensStateT (defaultLens cacheEmpty) $ editCacheUpdate @edit edit
+            Dict -> subcacheModify (MkTupleEditCacheKey seledit) $ editCacheUpdate @edit edit
 
 instance (WitnessConstraint Show sel, AllWitnessConstraint Show sel) => Show (TupleEdit sel) where
     show (MkTupleEdit sel edit) =

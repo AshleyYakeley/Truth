@@ -219,7 +219,7 @@ makeWindowCountRef pc@MkProgramContext {..} ui = let
            Shapes.put $ i + 1
 
 truthMain ::
-       ([String] -> (forall actions. WindowButtons actions => UserInterface UIWindow actions -> IO ()) -> With ())
+       ([String] -> (forall actions. WindowButtons actions => UserInterface UIWindow actions -> IO ()) -> LifeCycle ())
     -> IO ()
 truthMain appMain = do
     args <- getArgs
@@ -227,7 +227,7 @@ truthMain appMain = do
     pcMainLoop <- mainLoopNew Nothing False
     -- _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50
     pcWindowCount <- newMVar 0
-    appMain args (\uiw -> makeWindowCountRef MkProgramContext {..} uiw) $ \() -> do
+    withLifeCycle (appMain args (\uiw -> makeWindowCountRef MkProgramContext {..} uiw)) $ \() -> do
         c <- mvarRun pcWindowCount $ Shapes.get
         if c == 0
             then return ()

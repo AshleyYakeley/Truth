@@ -13,6 +13,10 @@ class IsCache (cache :: (* -> *) -> *) where
 cacheAdd :: (IsCache cache, TestEquality k, Applicative m) => k t -> t -> StateT (cache k) m ()
 cacheAdd k t = cacheModify k $ StateT $ \_ -> pure ((), Just t)
 
+subcacheModify ::
+       (IsCache cache, TestEquality k, Functor m) => k (cache k') -> StateT (cache k') m r -> StateT (cache k) m r
+subcacheModify key st = cacheModify key $ lensStateT (defaultLens cacheEmpty) st
+
 -- | not the best cache
 newtype ListCache k =
     MkListCache [Any k]
@@ -89,3 +93,11 @@ editCacheUpdates ::
     => [edit]
     -> StateT (cache (EditCacheKey cache edit)) IO ()
 editCacheUpdates ee = for_ ee $ editCacheUpdate
+
+data SimpleCacheKey a b ct where
+    MkSimpleCacheKey :: a -> SimpleCacheKey a b b
+
+instance Eq a => TestEquality (SimpleCacheKey a b) where
+    testEquality (MkSimpleCacheKey a1) (MkSimpleCacheKey a2)
+        | a1 == a2 = Just Refl
+    testEquality _ _ = Nothing

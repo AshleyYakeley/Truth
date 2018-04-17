@@ -23,20 +23,22 @@ optParser =
 
 main :: IO ()
 main =
-    truthMain $ \args createWindow cont -> do
-        options <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
+    truthMain $ \args createWindow -> do
+        options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
         case options of
-            ExprDocOption -> do
-                for_ (predefinedDoc @PinaforeEdit) $ \(name, desc) -> putStrLn $ (show name) ++ " :: " ++ unpack desc
-                putStrLn $ "<file> :: " ++ unpack filePinaforeType
-                cont ()
+            ExprDocOption ->
+                liftIO $ do
+                    for_ (predefinedDoc @PinaforeEdit) $ \(name, desc) ->
+                        putStrLn $ (show name) ++ " :: " ++ unpack desc
+                    putStrLn $ "<file> :: " ++ unpack filePinaforeType
             RunOption fInteract mdirpath fpaths -> do
                 dirpath <-
                     case mdirpath of
                         Just dirpath -> return dirpath
-                        Nothing -> getUserDataDir "pinafore"
-                createDirectoryIfMissing True dirpath
-                sqliteWithPinaforeContext dirpath createWindow $ \context -> do
+                        Nothing -> liftIO $ getUserDataDir "pinafore"
+                liftIO $ createDirectoryIfMissing True dirpath
+                context <- sqlitePinaforeContext dirpath createWindow
+                liftIO $
                     case fpaths of
                         [] -> do
                             isterm <- hIsTerminalDevice stdin
@@ -52,4 +54,3 @@ main =
                             if fInteract
                                 then pinaforeInteract context
                                 else return ()
-                    cont ()

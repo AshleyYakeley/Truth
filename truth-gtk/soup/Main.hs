@@ -12,12 +12,12 @@ optParser = (,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2')
 
 main :: IO ()
 main =
-    truthMain $ \args createWindow cont -> do
-        (dirpaths, double) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
-        for_ dirpaths $ \dirpath -> do
-            w <- soupWindow dirpath
-            createWindow w
-            if double
-                then createWindow w
-                else return ()
-        cont ()
+    truthMain $ \args createWindow ->
+        liftIO $ do
+            (dirpaths, double) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
+            for_ dirpaths $ \dirpath -> do
+                w <- soupWindow dirpath
+                createWindow w
+                if double
+                    then createWindow w
+                    else return ()
