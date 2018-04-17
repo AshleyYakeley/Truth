@@ -4,8 +4,7 @@ import qualified Data.List as List
 import qualified Data.Maybe as List
 import Shapes.Import
 
-class Functor f =>
-      Filterable f where
+class Functor f => Filterable f where
     mapMaybe :: (a -> Maybe b) -> f a -> f b
     catMaybes :: f (Maybe a) -> f a
     catMaybes = mapMaybe id

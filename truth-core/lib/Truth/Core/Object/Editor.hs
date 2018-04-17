@@ -8,8 +8,7 @@ import Truth.Core.Read
 
 data Editor (edit :: *) actions r = forall editor. MkEditor
     { editorInit :: Object edit -> IO editor
-    , editorUpdate :: forall m. MonadUnliftIO m =>
-                                    editor -> MutableRead m (EditReader edit) -> [edit] -> m ()
+    , editorUpdate :: forall m. MonadUnliftIO m => editor -> MutableRead m (EditReader edit) -> [edit] -> m ()
     , editorDo :: editor -> actions -> IO r
     }
 

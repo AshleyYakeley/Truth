@@ -10,8 +10,7 @@ import Truth.Debug
 
 data AnEditLens t edita editb = MkAnEditLens
     { elFunction :: AnEditFunction t edita editb
-    , elPutEdits :: forall m. MonadIO m =>
-                                  [editb] -> MutableRead m (EditReader edita) -> t m (Maybe [edita])
+    , elPutEdits :: forall m. MonadIO m => [editb] -> MutableRead m (EditReader edita) -> t m (Maybe [edita])
     }
 
 type EditLens = CloseUnlift AnEditLens

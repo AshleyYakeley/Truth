@@ -7,6 +7,7 @@ module Control.LifeCycle
     , withLifeCycle
     , lifeCycleWith
     , MonadLifeCycle(..)
+    , listDeferrer
     , deferrer
     ) where
 
@@ -85,8 +86,7 @@ lifeCycleWith withX =
                 takeMVar doneVar
         return (t, close)
 
-class MonadIO m =>
-      MonadLifeCycle m where
+class MonadIO m => MonadLifeCycle m where
     liftLifeCycle :: forall a. LifeCycle a -> m a
 
 instance MonadLifeCycle LifeCycle where
@@ -103,36 +103,36 @@ instance (MonadTrans t, MonadTransConstraint MonadIO t) => MonadTransConstraint 
         case hasTransConstraint @MonadIO @t @m of
             Dict -> Dict
 
-data VarState
+data VarState t
     = VSEmpty
-    | VSDo (IO ())
+    | VSDo (NonEmpty t)
     | VSDone
 
-deferrer :: LifeCycle (IO () -> IO ())
-deferrer = do
-    actionVar :: TVar VarState <- liftIO $ newTVarIO $ VSEmpty
+listDeferrer :: forall t. (NonEmpty t -> IO ()) -> LifeCycle (t -> IO ())
+listDeferrer doit = do
+    bufferVar :: TVar (VarState t) <- liftIO $ newTVarIO $ VSEmpty
     let
         threadDo :: IO ()
         threadDo = do
-            maction <-
+            mvals <-
                 atomically $ do
-                    vs <- readTVar actionVar
+                    vs <- readTVar bufferVar
                     case vs of
                         VSDone -> do
-                            writeTVar actionVar $ VSEmpty
+                            writeTVar bufferVar $ VSEmpty
                             return Nothing
                         VSEmpty -> mzero
-                        VSDo action -> do
-                            writeTVar actionVar $ VSEmpty
-                            return $ Just action
-            case maction of
-                Just action -> do
-                    action
+                        VSDo cur -> do
+                            writeTVar bufferVar $ VSEmpty
+                            return $ Just cur
+            case mvals of
+                Just vals -> do
+                    doit vals
                     threadDo
                 Nothing -> return ()
         waitForEmpty :: STM ()
         waitForEmpty = do
-            vs <- readTVar actionVar
+            vs <- readTVar bufferVar
             case vs of
                 VSEmpty -> return ()
                 _ -> mzero
@@ -140,12 +140,15 @@ deferrer = do
     lifeCycleClose $ do
         atomically $ do
             waitForEmpty
-            writeTVar actionVar $ VSDone
+            writeTVar bufferVar $ VSDone
         atomically waitForEmpty
-    return $ \action ->
+    return $ \val ->
         atomically $ do
-            vs <- readTVar actionVar
+            vs <- readTVar bufferVar
             case vs of
                 VSDone -> return ()
-                VSEmpty -> writeTVar actionVar $ VSDo action
-                VSDo oldaction -> writeTVar actionVar $ VSDo $ oldaction >> action
+                VSEmpty -> writeTVar bufferVar $ VSDo $ opoint val
+                VSDo oldval -> writeTVar bufferVar $ VSDo $ oldval <> opoint val
+
+deferrer :: LifeCycle (IO () -> IO ())
+deferrer = listDeferrer sequence_

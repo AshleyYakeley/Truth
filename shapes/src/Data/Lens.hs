@@ -37,7 +37,7 @@ instance IsBiMap Lens' where
                       return (ff ma)
             }
 
-instance (Applicative m, MonadOne m) => Category (Lens' m) where
+instance MonadOne m => Category (Lens' m) where
     id = MkLens {lensGet = id, lensPutback = \b _ -> pure b}
     bc . ab =
         MkLens
@@ -78,6 +78,9 @@ pickLens p =
                                else pa p')
         }
 
+defaultLens :: a -> Lens' Identity (Maybe a) a
+defaultLens def = MkLens (fromMaybe def) $ \a _ -> Identity $ Just a
+
 bijectionLens :: Bijection a b -> Lens' Identity a b
 bijectionLens (MkBijection ab ba) = MkLens ab (\b _ -> return (ba b))
 
@@ -90,3 +93,9 @@ hashMapLens key = let
     lensPutback Nothing hm = Identity $ deleteMap key hm
     lensPutback (Just value) hm = Identity $ insertMap key value hm
     in MkLens {..}
+
+lensStateT :: Functor m => Lens' Identity a b -> StateT b m r -> StateT a m r
+lensStateT (MkLens g p) (StateT bmrb) =
+    StateT $ \olda -> let
+        mrb = bmrb $ g olda
+        in fmap (\(r, b) -> (r, runIdentity $ p b olda)) mrb

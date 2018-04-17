@@ -8,6 +8,9 @@ newtype NoReader (a :: *) (t :: *) =
     MkNoReader None
     deriving (Eq, Countable, Searchable)
 
+instance TestEquality (NoReader a) where
+    testEquality = never
+
 instance Finite (NoReader a t) where
     allValues = []
 
@@ -46,6 +49,8 @@ instance InvertibleEdit (NoEdit reader) where
 
 instance (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where
     replaceEdit _ _ = return ()
+
+instance TestEquality reader => CacheableEdit (NoEdit reader)
 
 noEditLens :: forall edit. EditLens (NoEdit (EditReader edit)) edit
 noEditLens = let

@@ -4,8 +4,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 
-class TestEquality tablesel =>
-      Database (dbType :: *) (tablesel :: * -> *) where
+class TestEquality tablesel => Database (dbType :: *) (tablesel :: * -> *) where
     tableAssemble :: Applicative m => (forall row. tablesel row -> m (f row)) -> m (AllF tablesel f)
     -- where
     type WhereClause dbType tablesel row :: *

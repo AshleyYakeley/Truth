@@ -42,6 +42,7 @@ library:
       - Truth.Core.Read
       - Truth.Core.Edit.Edit
       - Truth.Core.Edit.FullEdit
+      - Truth.Core.Edit.Cache
       - Truth.Core.Edit.Unlift
       - Truth.Core.Edit.Function
       - Truth.Core.Edit.Lens
@@ -83,6 +84,7 @@ library:
       - Truth.Core.Object.Tuple
       - Truth.Core.Object.Editor
       - Truth.Core.Object.AsyncPush
+      - Truth.Core.Object.Cache
       - Truth.Core.Object.Savable
       - Truth.Core.Object.Undo
       - Truth.Core.Object

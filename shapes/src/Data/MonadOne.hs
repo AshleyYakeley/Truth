@@ -10,8 +10,7 @@ import Shapes.Import
 newtype Limit f =
     MkLimit (forall a. f a)
 
-class (Traversable f, Monad f) =>
-      MonadOne f where
+class (Traversable f, Monad f) => MonadOne f where
     retrieveOne :: f a -> Result (Limit f) a
     getMaybeOne :: f a -> Maybe a
     getMaybeOne fa = resultToMaybe (retrieveOne fa)

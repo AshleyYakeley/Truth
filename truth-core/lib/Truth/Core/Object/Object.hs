@@ -8,7 +8,7 @@ import Truth.Core.Types.Whole
 import Truth.Debug
 
 data Object edit = forall m. MonadStackIO m =>
-                             MkObject
+                                 MkObject
     { objRun :: UnliftIO m
     , objRead :: MutableRead m (EditReader edit)
     , objEdit :: [edit] -> m (Maybe (m ()))
@@ -125,11 +125,11 @@ convertObject :: (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdi
 convertObject = mapObject convertEditLens
 
 -- | Combines all the edits made in each call to the object.
-cacheObject ::
+cacheWholeObject ::
        forall t. Eq t
     => Object (WholeEdit t)
     -> Object (WholeEdit t)
-cacheObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
+cacheWholeObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
     run' :: UnliftIO (StateT t m)
     run' =
         MkUnliftIO $ \ma ->

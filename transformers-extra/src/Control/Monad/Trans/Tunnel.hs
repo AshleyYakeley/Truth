@@ -12,8 +12,7 @@ import Control.Monad.Trans.State
 import Control.Monad.Trans.Writer
 import Prelude
 
-class (MonadTrans t, MonadTransConstraint Monad t) =>
-      MonadTransTunnel t where
+class (MonadTrans t, MonadTransConstraint Monad t) => MonadTransTunnel t where
     tunnel :: forall m2 r. (forall a. (forall m1. t m1 r -> m1 a) -> m2 a) -> t m2 r
     transExcept ::
            forall m e a. Monad m
@@ -83,8 +82,7 @@ instance MonadTransTunnel ListT where
                  Right aa -> fmap Right aa) $
         runExceptT ma
 
-class MonadIO m =>
-      MonadTunnelIO m where
+class MonadIO m => MonadTunnelIO m where
     tunnelIO :: forall r. (forall a. (m r -> IO a) -> IO a) -> m r
 
 remonadIO :: MonadTunnelIO m => (forall a. IO a -> IO a) -> m r -> m r

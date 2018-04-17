@@ -4,8 +4,8 @@ import Truth.Core.Import
 
 data CloseUnlift f (a :: k) (b :: k) =
     forall t. MonadTransUnlift t =>
-              MkCloseUnlift (Unlift t)
-                            (f t a b)
+                  MkCloseUnlift (Unlift t)
+                                (f t a b)
 
 class UnliftCategory (f :: ((* -> *) -> (* -> *)) -> k -> k -> *) where
     ucId :: forall a. f IdentityT a a
@@ -20,13 +20,11 @@ instance UnliftCategory f => Category (CloseUnlift f) where
     (MkCloseUnlift unliftBC fBC) . (MkCloseUnlift unliftAB fAB) =
         MkCloseUnlift (composeUnlift unliftBC unliftAB) (ucCompose fBC fAB)
 
-type TransLift t1 t2
-     = forall m (a :: *). Monad m =>
-                              t1 m a -> t2 m a
+type TransLift t1 t2 = forall m (a :: *). Monad m => t1 m a -> t2 m a
 
 joinUnlifts ::
-       (forall t1 t2. (MonadTransUnlift t1, MonadTransUnlift t2) =>
-                          f1 t1 a1 b1 -> f2 t2 a2 b2 -> f3 (ComposeT t1 t2) a3 b3)
+       (forall t1 t2.
+            (MonadTransUnlift t1, MonadTransUnlift t2) => f1 t1 a1 b1 -> f2 t2 a2 b2 -> f3 (ComposeT t1 t2) a3 b3)
     -> CloseUnlift f1 a1 b1
     -> CloseUnlift f2 a2 b2
     -> CloseUnlift f3 a3 b3
@@ -42,8 +40,7 @@ class Unliftable (f :: ((* -> *) -> (* -> *)) -> k -> k -> *) where
 
 joinUnliftables ::
        (Unliftable f1, Unliftable f2)
-    => (forall t. MonadTransUnlift t =>
-                      f1 t a1 b1 -> f2 t a2 b2 -> f3 t a3 b3)
+    => (forall t. MonadTransUnlift t => f1 t a1 b1 -> f2 t a2 b2 -> f3 t a3 b3)
     -> CloseUnlift f1 a1 b1
     -> CloseUnlift f2 a2 b2
     -> CloseUnlift f3 a3 b3

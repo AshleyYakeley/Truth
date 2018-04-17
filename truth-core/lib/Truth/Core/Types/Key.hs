@@ -24,11 +24,10 @@ instance (Show (ContainerKey cont), AllWitnessConstraint Show reader) => Show (K
     show (KeyReadItem key rt) = "item " ++ show key ++ " " ++ showAllWitness rt
 
 instance (Show (ContainerKey cont), AllWitnessConstraint Show reader) =>
-         AllWitnessConstraint Show (KeyReader cont reader) where
+             AllWitnessConstraint Show (KeyReader cont reader) where
     allWitnessConstraint = Dict
 
-instance (Show (ContainerKey cont), WitnessConstraint Show reader) =>
-         WitnessConstraint Show (KeyReader cont reader) where
+instance (Show (ContainerKey cont), WitnessConstraint Show reader) => WitnessConstraint Show (KeyReader cont reader) where
     witnessConstraint KeyReadKeys = Dict
     witnessConstraint (KeyReadItem _ rt) =
         case witnessConstraint @_ @Show rt of
@@ -45,13 +44,13 @@ knownKeyItemReadFunction key mr rt = do
         Nothing -> error $ "missing item in list"
 
 instance (KeyContainer cont, SubjectReader reader, ReaderSubject reader ~ Element cont) =>
-         SubjectReader (KeyReader cont reader) where
+             SubjectReader (KeyReader cont reader) where
     type ReaderSubject (KeyReader cont reader) = cont
     subjectToRead cont KeyReadKeys = MkFiniteSet $ keys cont
     subjectToRead cont (KeyReadItem key reader) = fmap (\e -> subjectToRead e reader) $ lookupElement key cont
 
 instance (KeyContainer cont, FullSubjectReader reader, ReaderSubject reader ~ Element cont) =>
-         FullSubjectReader (KeyReader cont reader) where
+             FullSubjectReader (KeyReader cont reader) where
     mutableReadToSubject mr = do
         MkFiniteSet allkeys <- mr KeyReadKeys
         list <- for allkeys $ \key -> mutableReadToSubject $ knownKeyItemReadFunction key mr
@@ -69,8 +68,7 @@ instance (Show (ContainerKey cont), Show edit, Show (Element cont)) => Show (Key
     show (KeyInsertReplaceItem element) = "insert " ++ show element
     show KeyClear = "clear"
 
-class (SubjectReader reader, ReaderSubject reader ~ Element cont) =>
-      HasKeyReader cont reader where
+class (SubjectReader reader, ReaderSubject reader ~ Element cont) => HasKeyReader cont reader where
     readKey ::
            forall m. MonadIO m
         => MutableRead m reader
@@ -81,8 +79,7 @@ instance ( EditSubject keyedit ~ key
          , SubjectReader (EditReader keyedit)
          , FullSubjectReader (EditReader keyedit)
          , SubjectReader (EditReader valedit)
-         ) =>
-         HasKeyReader [(key, val)] (PairEditReader keyedit valedit) where
+         ) => HasKeyReader [(key, val)] (PairEditReader keyedit valedit) where
     readKey mr = mutableReadToSubject $ firstReadFunction mr
 
 instance HasKeyReader (FiniteSet t) (WholeReader t) where
@@ -103,8 +100,7 @@ instance ( KeyContainer cont
          , FullSubjectReader (EditReader edit)
          , ApplicableEdit edit
          , HasKeyReader cont (EditReader edit)
-         ) =>
-         ApplicableEdit (KeyEdit cont edit) where
+         ) => ApplicableEdit (KeyEdit cont edit) where
     applyEdit (KeyEditItem oldkey edit) mr kreader@(KeyReadItem key rt) = do
         mnewkey <- getComposeM $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr -- the edit may change the element's key
         case mnewkey of
@@ -144,8 +140,7 @@ instance ( KeyContainer cont
          , ApplicableEdit edit
          , InvertibleEdit edit
          , HasKeyReader cont (EditReader edit)
-         ) =>
-         InvertibleEdit (KeyEdit cont edit) where
+         ) => InvertibleEdit (KeyEdit cont edit) where
     invertEdit (KeyEditItem key edit) mr = do
         minvedits <- getComposeM $ invertEdit edit $ keyItemReadFunction key mr
         case minvedits of
@@ -168,8 +163,7 @@ instance ( KeyContainer cont
          , FullSubjectReader (EditReader edit)
          , ApplicableEdit edit
          , HasKeyReader cont (EditReader edit)
-         ) =>
-         FullEdit (KeyEdit cont edit) where
+         ) => FullEdit (KeyEdit cont edit) where
     replaceEdit mr write = do
         write KeyClear
         allkeys <- mr KeyReadKeys
@@ -329,8 +323,7 @@ liftKeyElementEditLens ::
        , FullSubjectReader (EditReader edita)
        , FullSubjectReader (EditReader editb)
        )
-    => (forall m. MonadIO m =>
-                      EditSubject editb -> m (Maybe (EditSubject edita)))
+    => (forall m. MonadIO m => EditSubject editb -> m (Maybe (EditSubject edita)))
     -> EditLens edita editb
     -> EditLens (KeyEdit conta edita) (KeyEdit contb editb)
 liftKeyElementEditLens bma (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens ef pe)) = let

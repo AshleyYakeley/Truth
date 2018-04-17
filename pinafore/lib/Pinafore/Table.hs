@@ -111,6 +111,81 @@ instance InvertibleEdit PinaforeTableEdit where
         ml <- mr $ PinaforeTableReadGetLiteral v
         return [PinaforeTableEditSetLiteral v ml]
 
+data PointCacheKey cache t ct where
+    GetPointCacheKey :: PointCacheKey cache t (cache (SimpleCacheKey Point (Maybe t)))
+    LookupPointCacheKey :: PointCacheKey cache t (cache (SimpleCacheKey t (FiniteSet Point)))
+
+instance Eq t => TestEquality (PointCacheKey cache t) where
+    testEquality GetPointCacheKey GetPointCacheKey = Just Refl
+    testEquality LookupPointCacheKey LookupPointCacheKey = Just Refl
+    testEquality _ _ = Nothing
+
+data PinaforeTableEditCacheKey cache ct where
+    PredicatePinaforeTableEditCacheKey
+        :: Predicate -> PinaforeTableEditCacheKey cache (cache (PointCacheKey cache Point))
+    LiteralPinaforeTableEditCacheKey :: PinaforeTableEditCacheKey cache (cache (PointCacheKey cache Text))
+
+instance TestEquality (PinaforeTableEditCacheKey cache) where
+    testEquality (PredicatePinaforeTableEditCacheKey p1) (PredicatePinaforeTableEditCacheKey p2)
+        | p1 == p2 = Just Refl
+    testEquality LiteralPinaforeTableEditCacheKey LiteralPinaforeTableEditCacheKey = Just Refl
+    testEquality _ _ = Nothing
+
+instance CacheableEdit PinaforeTableEdit where
+    type EditCacheKey cache PinaforeTableEdit = PinaforeTableEditCacheKey cache
+    editCacheAdd (PinaforeTableReadGetValue p s) mv =
+        subcacheModify (PredicatePinaforeTableEditCacheKey p) $
+        subcacheModify GetPointCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
+    editCacheAdd (PinaforeTableReadLookupValue p v) fs =
+        subcacheModify (PredicatePinaforeTableEditCacheKey p) $
+        subcacheModify LookupPointCacheKey $ cacheAdd (MkSimpleCacheKey v) fs
+    editCacheAdd (PinaforeTableReadGetLiteral s) mv =
+        subcacheModify LiteralPinaforeTableEditCacheKey $
+        subcacheModify GetPointCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
+    editCacheAdd (PinaforeTableReadLookupLiteral v) fs =
+        subcacheModify LiteralPinaforeTableEditCacheKey $
+        subcacheModify LookupPointCacheKey $ cacheAdd (MkSimpleCacheKey v) fs
+    editCacheLookup (PinaforeTableReadGetValue p s) cache = do
+        subcache1 <- cacheLookup (PredicatePinaforeTableEditCacheKey p) cache
+        subcache2 <- cacheLookup GetPointCacheKey subcache1
+        cacheLookup (MkSimpleCacheKey s) subcache2
+    editCacheLookup (PinaforeTableReadLookupValue p v) cache = do
+        subcache1 <- cacheLookup (PredicatePinaforeTableEditCacheKey p) cache
+        subcache2 <- cacheLookup LookupPointCacheKey subcache1
+        cacheLookup (MkSimpleCacheKey v) subcache2
+    editCacheLookup (PinaforeTableReadGetLiteral s) cache = do
+        subcache1 <- cacheLookup LiteralPinaforeTableEditCacheKey cache
+        subcache2 <- cacheLookup GetPointCacheKey subcache1
+        cacheLookup (MkSimpleCacheKey s) subcache2
+    editCacheLookup (PinaforeTableReadLookupLiteral v) cache = do
+        subcache1 <- cacheLookup LiteralPinaforeTableEditCacheKey cache
+        subcache2 <- cacheLookup LookupPointCacheKey subcache1
+        cacheLookup (MkSimpleCacheKey v) subcache2
+    editCacheUpdate (PinaforeTableEditSetValue p s mv) =
+        subcacheModify (PredicatePinaforeTableEditCacheKey p) $ do
+            subcacheModify GetPointCacheKey $ cacheModify (MkSimpleCacheKey s) $ Shapes.put $ Just mv
+            subcacheModify LookupPointCacheKey $
+                cacheTraverse $ \(MkSimpleCacheKey v') ss' ->
+                    return $
+                    Just $
+                    (if mv == Just v'
+                         then insertElement
+                         else deleteElement)
+                        s
+                        ss'
+    editCacheUpdate (PinaforeTableEditSetLiteral v mt) =
+        subcacheModify LiteralPinaforeTableEditCacheKey $ do
+            subcacheModify GetPointCacheKey $ cacheModify (MkSimpleCacheKey v) $ Shapes.put $ Just mt
+            subcacheModify LookupPointCacheKey $
+                cacheTraverse $ \(MkSimpleCacheKey t') vv' ->
+                    return $
+                    Just $
+                    (if mt == Just t'
+                         then insertElement
+                         else deleteElement)
+                        v
+                        vv'
+
 class HasPinaforeTableEdit baseedit where
     pinaforeTableLens :: EditLens baseedit PinaforeTableEdit
 

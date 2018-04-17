@@ -39,8 +39,7 @@ instance HasNewValue Text where
 class HasNewValue1 p where
     newValue1 ::
            forall a r. (HasNewValue a)
-        => ((HasNewValue (p a)) =>
-                r)
+        => ((HasNewValue (p a)) => r)
         -> r
 
 instance HasNewValue1 [] where

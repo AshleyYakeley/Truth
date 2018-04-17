@@ -9,8 +9,7 @@ mapUpdates ::
     => EditFunction edita editb
     -> MutableRead m (EditReader edita)
     -> [edita]
-    -> (forall t. MonadTransUnlift t =>
-                      MutableRead (t m) (EditReader editb) -> [editb] -> t m a)
+    -> (forall t. MonadTransUnlift t => MutableRead (t m) (EditReader editb) -> [editb] -> t m a)
     -> m a
 mapUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnEditFunction {..}) (mrA :: MutableRead m (EditReader edita)) editsA call =
     runUnlift unlift $
@@ -23,13 +22,9 @@ mapUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnEditFunction {..}) (mrA ::
 
 type ReceiveUpdatesM m edit = MutableRead m (EditReader edit) -> [edit] -> m ()
 
-type ReceiveUpdates edit
-     = forall m. MonadUnliftIO m =>
-                     ReceiveUpdatesM m edit
+type ReceiveUpdates edit = forall m. MonadUnliftIO m => ReceiveUpdatesM m edit
 
-type ReceiveUpdatesT t edit
-     = forall m. MonadUnliftIO m =>
-                     MutableRead m (EditReader edit) -> [edit] -> t m ()
+type ReceiveUpdatesT t edit = forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> [edit] -> t m ()
 
 mapReceiveUpdates :: forall edita editb. EditFunction edita editb -> ReceiveUpdates editb -> ReceiveUpdates edita
 mapReceiveUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnEditFunction {..}) call (mrA :: MutableRead m (EditReader edita)) editsA =

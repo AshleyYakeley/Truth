@@ -4,8 +4,7 @@ import Data.HasNewValue
 import qualified Data.List
 import Shapes.Import
 
-class (MonoTraversable t, SetContainer t) =>
-      KeyContainer t where
+class (MonoTraversable t, SetContainer t) => KeyContainer t where
     elementKey :: Element t -> ContainerKey t
     lookupElement :: ContainerKey t -> t -> Maybe (Element t)
     insertElement :: Element t -> t -> t
@@ -26,8 +25,7 @@ instance Eq key => KeyContainer [(key, value)] where
     deleteElement k (a:aa) = a : (deleteElement k aa)
     fromElementList = id
 
-class KeyContainer t =>
-      IONewItemKeyContainer t where
+class KeyContainer t => IONewItemKeyContainer t where
     newKeyContainerItem :: IO (Element t)
 
 instance (Eq key, Random key, HasNewValue value) => IONewItemKeyContainer [(key, value)] where

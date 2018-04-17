@@ -13,8 +13,7 @@ instance Floating edit t => Floating [edit] t where
 
 type family EditReader (edit :: *) :: * -> *
 
-class (Floating edit edit) =>
-      ApplicableEdit (edit :: *) where
+class (Floating edit edit) => ApplicableEdit (edit :: *) where
     applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit)
 
 type EditSubject edit = ReaderSubject (EditReader edit)
@@ -35,8 +34,8 @@ class InvertibleEdit (edit :: *) where
         => [edit]
         -> MutableRead m (EditReader edit)
         -> m [edit]
-    default invertEdits :: (MonadIO m, ApplicableEdit edit, InvertibleEdit edit) =>
-        [edit] -> MutableRead m (EditReader edit) -> m [edit]
+    default invertEdits ::
+        (MonadIO m, ApplicableEdit edit, InvertibleEdit edit) => [edit] -> MutableRead m (EditReader edit) -> m [edit]
     invertEdits [] _mr = return []
     invertEdits (e:ee) mr = do
         u <- invertEdit e mr

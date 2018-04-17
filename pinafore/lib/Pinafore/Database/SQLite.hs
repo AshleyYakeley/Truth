@@ -94,10 +94,9 @@ sqlitePinaforeSchema = let
     in MkDatabaseSchema {..}
 
 class (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstraint Show colsel) =>
-      IsPinaforeRow (colsel :: * -> *)
+          IsPinaforeRow (colsel :: * -> *)
 
-instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstraint Show colsel) =>
-         IsPinaforeRow colsel
+instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstraint Show colsel) => IsPinaforeRow colsel
 
 instance TupleDatabase SQLiteDatabase PinaforeSchema where
     type TupleDatabaseRowWitness SQLiteDatabase PinaforeSchema = IsPinaforeRow

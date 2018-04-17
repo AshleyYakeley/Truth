@@ -19,12 +19,8 @@ stateMutableRead rt = do
     MkMutableReadW mr <- get
     lift $ mr rt
 
-type ReadFunction ra rb
-     = forall m. MonadIO m =>
-                     MutableRead m ra -> MutableRead m rb
+type ReadFunction ra rb = forall m. MonadIO m => MutableRead m ra -> MutableRead m rb
 
-type ReadFunctionT t ra rb
-     = forall m. MonadIO m =>
-                     MutableRead m ra -> MutableRead (t m) rb
+type ReadFunctionT t ra rb = forall m. MonadIO m => MutableRead m ra -> MutableRead (t m) rb
 
 type ReadFunctionF f ra rb = ReadFunctionT (ComposeM f) ra rb

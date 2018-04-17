@@ -41,8 +41,7 @@ instance Arrow ConstFunction where
     arr = FunctionConstFunction
     first abc = FunctionConstFunction (\(b, d) -> (applyConstFunction abc b, d))
 
-class (Functor f) =>
-      FunctorGetPure f where
+class (Functor f) => FunctorGetPure f where
     getPure :: forall a b. ConstFunction (f a) (b -> f b)
     getPure = FunctionConstFunction (\fa b -> fmap (const b) fa)
 

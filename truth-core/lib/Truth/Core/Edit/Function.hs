@@ -8,8 +8,7 @@ import Truth.Core.Read
 
 data AnEditFunction t edita editb = MkAnEditFunction
     { efGet :: ReadFunctionT t (EditReader edita) (EditReader editb)
-    , efUpdate :: forall m. MonadIO m =>
-                                edita -> MutableRead m (EditReader edita) -> t m [editb]
+    , efUpdate :: forall m. MonadIO m => edita -> MutableRead m (EditReader edita) -> t m [editb]
     }
 
 type EditFunction = CloseUnlift AnEditFunction
@@ -86,10 +85,7 @@ funcEditFunction ::
     -> EditFunction edita editb
 funcEditFunction ab = ioFuncEditFunction $ \a -> return $ ab a
 
-immutableEditFunction ::
-       (forall m. MonadIO m =>
-                      MutableRead m (EditReader editb))
-    -> EditFunction edita editb
+immutableEditFunction :: (forall m. MonadIO m => MutableRead m (EditReader editb)) -> EditFunction edita editb
 immutableEditFunction mr =
     MkCloseUnlift identityUnlift $ MkAnEditFunction {efGet = \_ -> mr, efUpdate = \_ _ -> return []}
 

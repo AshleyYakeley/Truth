@@ -13,8 +13,7 @@ class TupleDatabaseType (dbType :: *) where
     constBoolExpr :: Bool -> TupleExpr dbType colsel Bool
     columnExpr :: colsel t -> TupleExpr dbType colsel t
 
-class TupleDatabaseType dbType =>
-      TupleDatabase dbType (tablesel :: (* -> *) -> *) where
+class TupleDatabaseType dbType => TupleDatabase dbType (tablesel :: (* -> *) -> *) where
     type TupleDatabaseRowWitness dbType (tablesel :: (* -> *) -> *) :: (* -> *) -> Constraint
 
 evalTupleExprIdentity ::
@@ -82,8 +81,7 @@ instance ( WitnessConstraint (TupleDatabaseTypeRowWitness dbType) tablesel
          , TupleDatabaseType dbType
          , TestEquality tablesel
          , FiniteWitness tablesel
-         ) =>
-         Database dbType (TupleTableSel tablesel) where
+         ) => Database dbType (TupleTableSel tablesel) where
     tableAssemble getrow = let
         conv :: AllF tablesel (Compose f All) -> AllF (TupleTableSel tablesel) f
         conv (MkAllF tcfa) = MkAllF $ \(MkTupleTableSel tc) -> getCompose $ tcfa tc

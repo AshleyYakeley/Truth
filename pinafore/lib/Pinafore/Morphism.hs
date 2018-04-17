@@ -23,10 +23,8 @@ import Truth.Debug.Object
 type PinaforeLensValue baseedit = EditLens baseedit
 
 data APinaforeFunctionMorphism baseedit t a b = MkAPinaforeFunctionMorphism
-    { pfFuncRead :: forall m. MonadIO m =>
-                                  MutableRead m (EditReader baseedit) -> a -> t m b
-    , pfUpdate :: forall m. MonadIO m =>
-                                baseedit -> MutableRead m (EditReader baseedit) -> t m Bool
+    { pfFuncRead :: forall m. MonadIO m => MutableRead m (EditReader baseedit) -> a -> t m b
+    , pfUpdate :: forall m. MonadIO m => baseedit -> MutableRead m (EditReader baseedit) -> t m Bool
     }
 
 type PinaforeFunctionMorphism baseedit = CloseUnlift (APinaforeFunctionMorphism baseedit)
@@ -137,8 +135,7 @@ type PinaforeLensMorphism baseedit = CloseUnlift (APinaforeLensMorphism baseedit
 
 mkComposeT ::
        forall t1 t2 m a. (MonadTransConstraint MonadIO t2, MonadIO m)
-    => (MonadIO (t2 m) =>
-            t1 (t2 m) a)
+    => (MonadIO (t2 m) => t1 (t2 m) a)
     -> ComposeT t1 t2 m a
 mkComposeT =
     case hasTransConstraint @MonadIO @t2 @m of
