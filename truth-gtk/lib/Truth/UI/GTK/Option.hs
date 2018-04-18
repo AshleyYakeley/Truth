@@ -7,6 +7,7 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
+import Truth.Debug.Object
 
 optionGetView :: GetGView
 optionGetView =
@@ -20,8 +21,8 @@ listStoreView ::
 listStoreView = do
     subjectList <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     store <- seqStoreNew subjectList
-    cvReceiveUpdate $ \_ _mr ->
-        \case
+    cvReceiveUpdate $ \_ _mr e -> traceBracket "GTK.Option:listStore:receiveUpdate" $
+        case e of
             ListEditItem (MkSequencePoint (fromIntegral -> i)) edit -> do
                 oldval <- seqStoreGetValue store i
                 newval <- mutableReadToSubject $ applyEdit edit $ subjectToMutableRead oldval
@@ -43,6 +44,7 @@ optionFromStore store = do
     changedSignal <-
         cvLiftView $
         viewOn widget #changed $
+        traceBracket "GTK.Option:changed" $
         viewObjectPushEdit $ \_ push -> do
             mi <- #getActiveIter widget
             case mi of
@@ -68,7 +70,7 @@ optionFromStore store = do
         viewObjectRead $ \_ mr -> do
             t <- mr ReadWhole
             update t
-    cvReceiveUpdate $ \_ _mr (MkWholeEdit t) -> update t
+    cvReceiveUpdate $ \_ _mr (MkWholeEdit t) -> traceBracket "GTK.Option:receiveUpdate" $ update t
     toWidget widget
 
 optionView ::
