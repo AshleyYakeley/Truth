@@ -1,5 +1,6 @@
 module Pinafore.Query.Value where
 
+import Pinafore.Literal
 import Pinafore.Query.Order
 import Pinafore.Query.Types
 import Pinafore.Table
@@ -8,8 +9,8 @@ import Truth.Core
 
 data QType baseedit t where
     QTException :: QType baseedit Text
-    QTConstant :: QType baseedit Text
-    QTLiteral :: QType baseedit (QLiteral baseedit Text)
+    QTConstant :: QType baseedit Literal
+    QTLiteral :: QType baseedit (QLiteral baseedit Literal)
     QTPoint :: QType baseedit (QPoint baseedit)
     QTSet :: QType baseedit (QSet baseedit)
     QTMorphism :: QType baseedit (QPointMorphism baseedit)
@@ -53,12 +54,12 @@ type QValue baseedit = Any (QType baseedit)
 
 instance Show (QValue baseedit) where
     show (MkAny QTException val) = unpack $ "exception: " <> val
-    show (MkAny QTConstant val) = unpack val
+    show (MkAny QTConstant val) = unpack $ unLiteral val
     show (MkAny QTUserInterface val) = show val
     show (MkAny QTList val) = "[" ++ intercalate "," (fmap show val) ++ "]"
     show (MkAny t _) = "<" ++ show t ++ ">"
 
-qconstant :: Text -> QValue baseedit
+qconstant :: Literal -> QValue baseedit
 qconstant = MkAny QTConstant
 
 qpredicate :: HasPinaforeTableEdit baseedit => Predicate -> QValue baseedit

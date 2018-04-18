@@ -6,6 +6,7 @@ module Pinafore.Database.SQLite
 
 import Data.UUID
 import Pinafore.Database
+import Pinafore.Literal
 import Pinafore.Table
 import Shapes
 import Truth.Core
@@ -40,6 +41,15 @@ instance FromField Predicate where
 
 instance ToField Predicate where
     toField (MkPredicate uuid) = toField uuid
+
+instance FieldType Literal where
+    fieldTypeName = fieldTypeName @Text
+
+instance FromField Literal where
+    fromField f = fmap MkLiteral $ fromField f
+
+instance ToField Literal where
+    toField (MkLiteral t) = toField t
 
 instance WitnessConstraint FromField TripleTable where
     witnessConstraint TriplePredicate = Dict
@@ -127,7 +137,7 @@ sqlitePinaforeLens = let
             return $ MkFiniteSet $ fmap getSingleAll row
     efGet mr (PinaforeTableReadGetLiteral v) =
         lift $ do
-            (row :: [All ((:~:) Text)]) <-
+            (row :: [All ((:~:) Literal)]) <-
                 mr $
                 DatabaseSelect
                     (SingleTable $ MkTupleTableSel PinaforeLiteral)

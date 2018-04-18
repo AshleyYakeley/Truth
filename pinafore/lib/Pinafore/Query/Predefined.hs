@@ -5,6 +5,7 @@ module Pinafore.Query.Predefined
     ) where
 
 import Pinafore.File
+import Pinafore.Literal
 import Pinafore.Morphism
 import Pinafore.Number
 import Pinafore.Query.Convert
@@ -49,7 +50,7 @@ outputln val = do
     mtext <- qGetFunctionValue val
     for_ mtext $ \text -> liftIO $ putStrLn $ unpack text
 
-setcount :: FiniteSet Text -> Int
+setcount :: FiniteSet Literal -> Int
 setcount = olength
 
 setsum :: FiniteSet Number -> Number
@@ -170,7 +171,7 @@ ui_table cols asp val = let
     aspect point = resultToM $ mapResultFailure unpack $ fmap return $ asp point
     in uiTable (fmap getColumn cols) aspect val
 
-literal_conv :: Text -> Text
+literal_conv :: Literal -> Literal
 literal_conv = id
 
 predefinitions ::
@@ -184,8 +185,8 @@ predefinitions =
     , pb "|" $ qjoin @baseedit
     , pb "member" $ liftA2 @(Lifted baseedit) $ set_member
     , pb "++" $ qappend @baseedit
-    , pb "==" $ liftA2 @(Lifted baseedit) $ (==) @Text
-    , pb "/=" $ liftA2 @(Lifted baseedit) $ (/=) @Text
+    , pb "==" $ liftA2 @(Lifted baseedit) $ (==) @Literal
+    , pb "/=" $ liftA2 @(Lifted baseedit) $ (/=) @Literal
     , pb "+" $ liftA2 @(Lifted baseedit) $ (+) @Number
     , pb "-" $ liftA2 @(Lifted baseedit) $ (-) @Number
     , pb "*" $ liftA2 @(Lifted baseedit) $ (*) @Number
@@ -209,7 +210,7 @@ predefinitions =
     , pb "rev" $ rev @baseedit
     , pb "inexact" $ fmap @(Lifted baseedit) numberToDouble
     , pb "approximate" $ liftA2 @(Lifted baseedit) approximate
-    , pb "exists" $ \(val :: QImLiteral baseedit Text) ->
+    , pb "exists" $ \(val :: QImLiteral baseedit Literal) ->
           (funcEditFunction (Just . isJust) . val :: QImLiteral baseedit Bool)
     , pb "pass" (return () :: QAction baseedit)
     , pb ">>" $ ((>>) :: QAction baseedit -> QAction baseedit -> QAction baseedit)

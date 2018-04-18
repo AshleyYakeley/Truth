@@ -6,8 +6,8 @@ module Pinafore.Query.Convert
     ) where
 
 import Data.List (zipWith)
-import Pinafore.AsText
 import Pinafore.File
+import Pinafore.Literal
 import Pinafore.Morphism
 import Pinafore.Query.Lifted
 import Pinafore.Query.Order
@@ -40,18 +40,18 @@ class HasQTypeDescription t => FromQValue baseedit t where
 class HasQTypeDescription t => ToQValue baseedit t where
     toQValue :: t -> QValue baseedit
 
-instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription t where
-    qTypeDescription = textTypeDescription @t <> "!"
+instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription t where
+    qTypeDescription = literalTypeDescription @t <> "!"
 
-instance {-# OVERLAPPABLE #-} AsText t => FromQValue baseedit t where
+instance {-# OVERLAPPABLE #-} AsLiteral t => FromQValue baseedit t where
     fromQValue v@(MkAny QTConstant text) =
-        case fromText text of
+        case fromLiteral text of
             Just t -> return t
             Nothing -> badFromQValue v
     fromQValue v = badFromQValue v
 
-instance {-# OVERLAPPABLE #-} AsText t => ToQValue baseedit t where
-    toQValue t = qconstant $ toText t
+instance {-# OVERLAPPABLE #-} AsLiteral t => ToQValue baseedit t where
+    toQValue t = qconstant $ toLiteral t
 
 -- QValue
 --
@@ -66,22 +66,22 @@ instance edit ~ baseedit => ToQValue baseedit (QValue edit) where
 
 -- Lifted
 --
-instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (Lifted edit t) where
-    qTypeDescription = textTypeDescription @t
+instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription (Lifted edit t) where
+    qTypeDescription = literalTypeDescription @t
 
-instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t, HasPinaforeTableEdit baseedit) =>
                                   FromQValue baseedit (Lifted edit t) where
     fromQValue v@(MkAny QTConstant text) =
-        case fromText text of
+        case fromLiteral text of
             Just a -> return $ LiftedConstant a
             Nothing -> badFromQValue v
     fromQValue (MkAny QTLiteral v) =
-        return $ LiftedFunction $ funcEditFunction (\mtext -> mtext >>= fromText) . editLensFunction v
+        return $ LiftedFunction $ funcEditFunction (\mtext -> mtext >>= fromLiteral) . editLensFunction v
     fromQValue (MkAny QTPoint v) =
         return $ LiftedFunction $ editLensFunction $ applyPinaforeLens literalPinaforeLensMorphism v
     fromQValue v = badFromQValue v
 
-instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t) => ToQValue baseedit (Lifted edit t) where
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t) => ToQValue baseedit (Lifted edit t) where
     toQValue (LiftedConstant t) = toQValue t
     toQValue (LiftedFunction t) = toQValue t
 
@@ -98,10 +98,10 @@ instance (edit ~ baseedit, HasPinaforeTableEdit baseedit) => FromQValue baseedit
 
 -- Lifted FiniteSet
 --
-instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (Lifted edit (FiniteSet t)) where
-    qTypeDescription = textTypeDescription @t <> "-set"
+instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription (Lifted edit (FiniteSet t)) where
+    qTypeDescription = literalTypeDescription @t <> "-set"
 
-instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t, HasPinaforeTableEdit baseedit) =>
                                   FromQValue baseedit (Lifted edit (FiniteSet t)) where
     fromQValue v =
         case fromQValue v of
@@ -124,10 +124,10 @@ instance (edit ~ baseedit, HasPinaforeTableEdit baseedit) => FromQValue baseedit
 
 -- Lifted IO
 --
-instance AsText t => HasQTypeDescription (Lifted edit (IO t)) where
-    qTypeDescription = textTypeDescription @t
+instance AsLiteral t => HasQTypeDescription (Lifted edit (IO t)) where
+    qTypeDescription = literalTypeDescription @t
 
-instance (edit ~ baseedit, AsText t) => ToQValue baseedit (Lifted edit (IO t)) where
+instance (edit ~ baseedit, AsLiteral t) => ToQValue baseedit (Lifted edit (IO t)) where
     toQValue liot = toQValue $ ioLifted liot
 
 -- Lifted Object ByteStringEdit
@@ -148,21 +148,21 @@ instance (edit ~ baseedit, HasPinaforeFileEdit baseedit) => FromQValue baseedit 
 
 -- QLiteral
 --
-instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (QLiteral edit t) where
-    qTypeDescription = textTypeDescription @t <> "*"
+instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription (QLiteral edit t) where
+    qTypeDescription = literalTypeDescription @t <> "*"
 
-instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t, HasPinaforeTableEdit baseedit) =>
                                   FromQValue baseedit (QLiteral edit t) where
     fromQValue v@(MkAny QTConstant text) =
-        case fromText text of
+        case fromLiteral text of
             Just a -> return $ constEditLens $ Just a
             Nothing -> badFromQValue v
-    fromQValue (MkAny QTLiteral v) = return $ (funcEditLens $ \mt -> mt >>= fromText) . v
+    fromQValue (MkAny QTLiteral v) = return $ (funcEditLens $ \mt -> mt >>= fromLiteral) . v
     fromQValue (MkAny QTPoint v) = return $ applyPinaforeLens literalPinaforeLensMorphism v
     fromQValue v = badFromQValue v
 
-instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t) => ToQValue baseedit (QLiteral edit t) where
-    toQValue t = MkAny QTLiteral $ (funcEditLens $ fmap toText) . t
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t) => ToQValue baseedit (QLiteral edit t) where
+    toQValue t = MkAny QTLiteral $ (funcEditLens $ fmap toLiteral) . t
 
 -- Predicate
 --
@@ -207,16 +207,16 @@ instance edit ~ baseedit => ToQValue baseedit (QSet edit) where
 
 -- QImLiteral
 --
-instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (QImLiteral edit t) where
-    qTypeDescription = textTypeDescription @t
+instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription (QImLiteral edit t) where
+    qTypeDescription = literalTypeDescription @t
 
-instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t, HasPinaforeTableEdit baseedit) =>
                                   FromQValue baseedit (QImLiteral edit t) where
     fromQValue v = do
         cl :: Lifted baseedit t <- fromQValue v
         return $ liftedToFunction cl
 
-instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t) => ToQValue baseedit (QImLiteral edit t) where
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t) => ToQValue baseedit (QImLiteral edit t) where
     toQValue ef = toQValue $ readOnlyEditLens ef
 
 -- QImPoint
@@ -234,17 +234,17 @@ instance edit ~ baseedit => ToQValue baseedit (QImPoint edit) where
 
 -- QImLiteralSet
 --
-instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (QImLiteralSet edit t) where
-    qTypeDescription = textTypeDescription @t <> "-set"
+instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription (QImLiteralSet edit t) where
+    qTypeDescription = literalTypeDescription @t <> "-set"
 
-instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t, HasPinaforeTableEdit baseedit) =>
                                   FromQValue baseedit (QImLiteralSet edit t) where
     fromQValue v@(MkAny QTConstant text) =
-        case fromText text of
+        case fromLiteral text of
             Just a -> return $ constEditFunction $ opoint a
             Nothing -> badFromQValue v
     fromQValue (MkAny QTLiteral a) =
-        return $ (funcEditFunction $ maybePoint . (\mt -> mt >>= fromText)) . editLensFunction a
+        return $ (funcEditFunction $ maybePoint . (\mt -> mt >>= fromLiteral)) . editLensFunction a
     fromQValue (MkAny QTPoint a) =
         return $ let
             mms mmt = maybeToFiniteSet $ mmt >>= id
@@ -283,11 +283,11 @@ instance edit ~ baseedit => ToQValue baseedit (QImSet edit) where
 
 -- QLiteralMorphism
 --
-instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (QLiteralMorphism edit t) where
-    qTypeDescription = "point* ~> " <> textTypeDescription @t <> "*"
+instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription (QLiteralMorphism edit t) where
+    qTypeDescription = "point* ~> " <> literalTypeDescription @t <> "*"
     qTypeDescriptionSingle = "(" <> qTypeDescription @(QLiteralMorphism edit t) <> ")"
 
-instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t, HasPinaforeTableEdit baseedit) =>
                                   FromQValue baseedit (QLiteralMorphism edit t) where
     fromQValue v = do
         m <- fromQValue v
@@ -305,11 +305,11 @@ instance edit ~ baseedit => FromQValue baseedit (QPointMorphism edit) where
 
 -- QImLiteralMorphism
 --
-instance {-# OVERLAPPABLE #-} AsText t => HasQTypeDescription (QImLiteralMorphism edit t) where
-    qTypeDescription = "point ~> " <> textTypeDescription @t
+instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription (QImLiteralMorphism edit t) where
+    qTypeDescription = "point ~> " <> literalTypeDescription @t
     qTypeDescriptionSingle = "(" <> qTypeDescription @(QImLiteralMorphism edit t) <> ")"
 
-instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsText t, HasPinaforeTableEdit baseedit) =>
+instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t, HasPinaforeTableEdit baseedit) =>
                                   FromQValue baseedit (QImLiteralMorphism edit t) where
     fromQValue v = do
         m <- fromQValue v
