@@ -76,7 +76,6 @@ import Control.Monad.Trans.Class as I
 import Control.Monad.Trans.Cont as I (ContT(..))
 import Control.Monad.Trans.Except as I (ExceptT(..), runExceptT)
 import Control.Monad.Trans.Identity as I (IdentityT(..))
-import Control.Monad.Trans.List as I (ListT(..))
 import Control.Monad.Trans.Maybe as I (MaybeT(..))
 import Control.Monad.Trans.Reader as I (ReaderT(..), ask, asks, withReaderT)
 import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT, get, modify, put, runState)

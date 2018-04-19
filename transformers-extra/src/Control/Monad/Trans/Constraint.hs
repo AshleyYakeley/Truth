@@ -8,7 +8,6 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Cont
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Identity
-import Control.Monad.Trans.List
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
@@ -134,18 +133,6 @@ instance MonadTransConstraint MonadFix (ExceptT e) where
     hasTransConstraint = Dict
 
 instance Monoid e => MonadTransConstraint MonadPlus (ExceptT e) where
-    hasTransConstraint = Dict
-
-instance MonadTransConstraint Monad ListT where
-    hasTransConstraint = Dict
-
-instance MonadTransConstraint MonadIO ListT where
-    hasTransConstraint = Dict
-
-instance MonadTransConstraint MonadFail ListT where
-    hasTransConstraint = Dict
-
-instance MonadTransConstraint MonadPlus ListT where
     hasTransConstraint = Dict
 
 instance MonadTransConstraint Monad (ContT s) where
