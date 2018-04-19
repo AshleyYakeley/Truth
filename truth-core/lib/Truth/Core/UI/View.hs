@@ -120,7 +120,7 @@ viewObjectRead ::
 viewObjectRead call = do
     unliftIO <- liftIOView $ \unlift -> return $ MkUnliftIO unlift
     MkObject {..} <- viewObject
-    liftIO $ runUnliftIO objRun $ call unliftIO $ objRead
+    liftIO $ runUnliftIO (traceThing "viewObjectRead:run" objRun) $ call unliftIO $ objRead
 
 viewObjectMaybeEdit ::
        (UnliftIO (View edit) -> forall m. MonadUnliftIO m => ([edit] -> m (Maybe (m ()))) -> m r) -> View edit r
@@ -193,7 +193,7 @@ cvReceiveUpdate recv = cvReceiveUpdates $ \unlift mr edits -> for_ edits (recv u
 
 cvBindEditFunction :: EditFunction edit (WholeEdit t) -> (t -> View edit ()) -> CreateView edit ()
 cvBindEditFunction ef setf = do
-    initial <- cvLiftView $ viewObjectRead $ \_ mr -> editFunctionRead ef mr ReadWhole
+    initial <- traceBracket "cvBindEditFunction:initial" $ cvLiftView $ viewObjectRead $ \_ mr -> traceBracket "cvBindEditFunction:editFunctionRead" $ editFunctionRead ef mr ReadWhole
     cvLiftView $ setf initial
     cvReceiveUpdates $ \(MkUnliftIO unlift) ->
         mapReceiveUpdates ef $ \_ wedits ->

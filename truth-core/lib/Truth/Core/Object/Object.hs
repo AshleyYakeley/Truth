@@ -160,4 +160,4 @@ copyObject (MkObject (runSrc :: UnliftIO ms) readSrc _) (MkObject (runDest :: Un
 
 exclusiveObject :: forall edit. Object edit -> With (Object edit)
 exclusiveObject (MkObject (run :: UnliftIO m) rd push) call =
-    runUnliftIO run $ liftIOWithUnlift $ \unlift -> call $ MkObject unlift rd push
+    runUnliftIO (traceThing "exclusiveObject:back" run) $ liftIOWithUnlift $ \unlift -> call $ MkObject (traceThing "exclusiveObject:front" unlift) rd push

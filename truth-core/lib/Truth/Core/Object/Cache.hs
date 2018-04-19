@@ -11,17 +11,17 @@ cacheObject ::
     => Object edit
     -> LifeCycle (Object edit)
 cacheObject (MkObject unlift read push) = do
-    runAction <- listDeferrer $ \editsnl -> traceBracket "cache update" $ runUnliftIO unlift $ pushOrFail "cached object" $ push $ concat editsnl
+    runAction <- listDeferrer $ \editsnl -> traceBracket "cache update" $ runUnliftIO (traceThing "cacheObject:back.update" unlift) $ pushOrFail "cached object" $ push $ concat editsnl
     cacheVar <- liftIO $ newMVar $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
     return $ let
-        objRun = mvarUnliftIO cacheVar
+        objRun = traceThing "cacheObject:front" $ mvarUnliftIO cacheVar
         objRead :: MutableRead (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
         objRead rt = do
             oldcache <- get
             case editCacheLookup @edit rt oldcache of
                 Just t -> traceBracket "cache hit" $ return t
                 Nothing -> traceBracket "cache miss" $ do
-                    t <- liftIO $ runUnliftIO unlift $ read rt
+                    t <- liftIO $ runUnliftIO (traceThing "cacheObject:back.read" unlift) $ read rt
                     editCacheAdd @edit rt t
                     return t
         objEdit edits =
