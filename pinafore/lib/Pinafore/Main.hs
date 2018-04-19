@@ -28,9 +28,9 @@ sqlitePinaforeObject dirpath = do
             PinaforeSelectTable -> tableObject
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
 
-getSqlitePinaforeRunAction ::
+getPinaforeRunAction ::
        forall baseedit. Object baseedit -> (UserInterface UIWindow () -> IO ()) -> IO (UnliftIO (QActionM baseedit))
-getSqlitePinaforeRunAction pinaforeObject createWindow = do
+getPinaforeRunAction pinaforeObject createWindow = do
     sub <- liftIO $ makeObjectSubscriber pinaforeObject
     return $
         MkUnliftIO $ \(MkComposeM action :: QActionM baseedit a) -> do
@@ -50,7 +50,7 @@ newtype PinaforeContext =
 sqlitePinaforeContext :: FilePath -> (UserInterface UIWindow () -> IO ()) -> LifeCycle PinaforeContext
 sqlitePinaforeContext dirpath createWindow = do
     pinaforeObject <- sqlitePinaforeObject dirpath
-    runAction <- liftIO $ getSqlitePinaforeRunAction pinaforeObject createWindow
+    runAction <- liftIO $ getPinaforeRunAction pinaforeObject createWindow
     return $ MkPinaforeContext runAction
 
 pinaforeRunFile :: PinaforeContext -> FilePath -> Text -> IO ()
