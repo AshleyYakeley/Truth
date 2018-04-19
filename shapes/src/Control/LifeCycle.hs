@@ -56,6 +56,28 @@ instance MonadIO LifeCycle where
             a <- ma
             return (a, return ())
 
+instance MonadTunnelIO LifeCycle where
+    tunnelIO call = MkLifeCycle $ call runLifeCycle
+
+instance MonadUnliftIO LifeCycle where
+    liftIOWithUnlift call = do
+        var <- liftIO $ newMVar mempty
+        r <-
+            liftIO $
+            call $
+            MkUnliftIO $ \(MkLifeCycle mrs) -> do
+                (r, closer) <- mrs
+                liftIO $ modifyMVar var $ \oldcloser -> return (closer >> oldcloser, ())
+                return r
+        totalcloser <- liftIO $ takeMVar var
+        lifeCycleClose totalcloser
+        return r
+    getDiscardingUnliftIO =
+        return $
+        MkUnliftIO $ \mr -> do
+            (r, _discarded) <- runLifeCycle mr
+            return r
+
 lifeCycleClose :: IO () -> LifeCycle ()
 lifeCycleClose closer = MkLifeCycle $ return ((), closer)
 

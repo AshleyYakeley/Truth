@@ -159,7 +159,7 @@ mapViewEdit lens (MkView viewB) = MkView $ withReaderT (mapViewContextEdit lens)
 
 newtype CreateView edit a =
     MkCreateView (ReaderT (ViewContext edit) (WriterT (ViewOutput edit) LifeCycle) a)
-    deriving (Functor, Applicative, Monad, MonadIO)
+    deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO)
 
 type ViewState edit a = LifeState (ViewResult edit a)
 

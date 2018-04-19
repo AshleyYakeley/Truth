@@ -10,8 +10,8 @@ module Pinafore.Table
 
 import Data.Aeson (FromJSON)
 import Data.Serialize as Serialize (Serialize(..))
-import Data.UUID hiding (fromString, fromText, toText)
-import Pinafore.AsText
+import Data.UUID hiding (fromString)
+import Pinafore.Literal
 import Pinafore.Morphism
 import Shapes
 import Truth.Core
@@ -42,8 +42,8 @@ instance Serialize Point where
 data PinaforeTableRead t where
     PinaforeTableReadGetValue :: Predicate -> Point -> PinaforeTableRead (Maybe Point)
     PinaforeTableReadLookupValue :: Predicate -> Point -> PinaforeTableRead (FiniteSet Point)
-    PinaforeTableReadGetLiteral :: Point -> PinaforeTableRead (Maybe Text)
-    PinaforeTableReadLookupLiteral :: Text -> PinaforeTableRead (FiniteSet Point)
+    PinaforeTableReadGetLiteral :: Point -> PinaforeTableRead (Maybe Literal)
+    PinaforeTableReadLookupLiteral :: Literal -> PinaforeTableRead (FiniteSet Point)
 
 instance Show (PinaforeTableRead t) where
     show (PinaforeTableReadGetValue p s) = "get " ++ show p ++ " of " ++ show s
@@ -62,14 +62,14 @@ instance AllWitnessConstraint Show PinaforeTableRead where
 
 data PinaforeTableEdit where
     PinaforeTableEditSetValue :: Predicate -> Point -> Maybe Point -> PinaforeTableEdit -- pred subj mval
-    PinaforeTableEditSetLiteral :: Point -> Maybe Text -> PinaforeTableEdit
+    PinaforeTableEditSetLiteral :: Point -> Maybe Literal -> PinaforeTableEdit
 
 instance Show PinaforeTableEdit where
     show (PinaforeTableEditSetValue p s mv) = "set " ++ show p ++ " of " ++ show s ++ " to " ++ show mv
     show (PinaforeTableEditSetLiteral v ml) = "set literal of " ++ show v ++ " to " ++ show ml
 
 instance SubjectReader PinaforeTableRead where
-    type ReaderSubject PinaforeTableRead = ([(Predicate, Point, Point)], [(Point, Text)])
+    type ReaderSubject PinaforeTableRead = ([(Predicate, Point, Point)], [(Point, Literal)])
     subjectToRead (triples, _) (PinaforeTableReadGetValue rp rs) =
         listToMaybe $ [v | (p, s, v) <- triples, p == rp && s == rs]
     subjectToRead (triples, _) (PinaforeTableReadLookupValue rp rv) =
@@ -123,7 +123,7 @@ instance Eq t => TestEquality (PointCacheKey cache t) where
 data PinaforeTableEditCacheKey cache ct where
     PredicatePinaforeTableEditCacheKey
         :: Predicate -> PinaforeTableEditCacheKey cache (cache (PointCacheKey cache Point))
-    LiteralPinaforeTableEditCacheKey :: PinaforeTableEditCacheKey cache (cache (PointCacheKey cache Text))
+    LiteralPinaforeTableEditCacheKey :: PinaforeTableEditCacheKey cache (cache (PointCacheKey cache Literal))
 
 instance TestEquality (PinaforeTableEditCacheKey cache) where
     testEquality (PredicatePinaforeTableEditCacheKey p1) (PredicatePinaforeTableEditCacheKey p2)
@@ -193,7 +193,7 @@ instance HasPinaforeTableEdit PinaforeTableEdit where
     pinaforeTableLens = id
 
 literalPinaforeMap ::
-       forall val. AsText val
+       forall val. AsLiteral val
     => AnEditLens IdentityT (ContextEdit PinaforeTableEdit (WholeEdit (Maybe Point))) (WholeEdit (Maybe val))
 literalPinaforeMap = {-traceArgAThing "literalPinaforeMap" $-} let
     efGet ::
@@ -204,7 +204,7 @@ literalPinaforeMap = {-traceArgAThing "literalPinaforeMap" $-} let
             case msubj of
                 Just subj -> do
                     mbs <- mr $ MkTupleEditReader SelectContext $ PinaforeTableReadGetLiteral subj
-                    return $ mbs >>= fromText
+                    return $ mbs >>= fromLiteral
                 Nothing -> return Nothing
     efUpdate ::
            forall m. MonadIO m
@@ -215,13 +215,13 @@ literalPinaforeMap = {-traceArgAThing "literalPinaforeMap" $-} let
         msubj <- lift $ mr $ MkTupleEditReader SelectContent ReadWhole
         return $
             if Just s == msubj
-                then [MkWholeEdit $ mbs >>= fromText]
+                then [MkWholeEdit $ mbs >>= fromLiteral]
                 else []
     efUpdate (MkTupleEdit SelectContext _) _ = return []
     efUpdate (MkTupleEdit SelectContent (MkWholeEdit Nothing)) _ = return [MkWholeEdit Nothing]
     efUpdate (MkTupleEdit SelectContent (MkWholeEdit (Just subj))) mr = do
         mbs <- lift $ mr $ MkTupleEditReader SelectContext $ PinaforeTableReadGetLiteral subj
-        return $ [MkWholeEdit $ mbs >>= fromText]
+        return $ [MkWholeEdit $ mbs >>= fromLiteral]
     elFunction ::
            AnEditFunction IdentityT (ContextEdit PinaforeTableEdit (WholeEdit (Maybe Point))) (WholeEdit (Maybe val))
     elFunction = MkAnEditFunction {..}
@@ -230,7 +230,7 @@ literalPinaforeMap = {-traceArgAThing "literalPinaforeMap" $-} let
         => WholeEdit (Maybe val)
         -> MutableRead m (ContextEditReader PinaforeTableEdit (WholeEdit (Maybe Point)))
         -> IdentityT m (Maybe [ContextEdit PinaforeTableEdit (WholeEdit (Maybe Point))])
-    elPutEdit (MkWholeEdit (fmap toText -> mbs)) mr = do
+    elPutEdit (MkWholeEdit (fmap toLiteral -> mbs)) mr = do
         msubj <- lift $ mr $ MkTupleEditReader SelectContent ReadWhole
         case msubj of
             Just subj -> return $ Just [MkTupleEdit SelectContext $ PinaforeTableEditSetLiteral subj mbs]
@@ -252,7 +252,7 @@ literalPinaforeMap = {-traceArgAThing "literalPinaforeMap" $-} let
     in MkAnEditLens {..}
 
 literalInverseFunction ::
-       forall val. AsText val
+       forall val. AsLiteral val
     => APinaforeFunctionMorphism PinaforeTableEdit IdentityT val (FiniteSet Point)
 literalInverseFunction = let
     pfFuncRead ::
@@ -260,7 +260,7 @@ literalInverseFunction = let
         => MutableRead m PinaforeTableRead
         -> val
         -> IdentityT m (FiniteSet Point)
-    pfFuncRead mr val = lift $ mr $ PinaforeTableReadLookupLiteral $ toText val
+    pfFuncRead mr val = lift $ mr $ PinaforeTableReadLookupLiteral $ toLiteral val
     pfUpdate ::
            forall m. MonadIO m
         => PinaforeTableEdit
@@ -271,12 +271,12 @@ literalInverseFunction = let
     in MkAPinaforeFunctionMorphism {..}
 
 literalPinaforeTableLensMorphism ::
-       forall val. AsText val
+       forall val. AsLiteral val
     => PinaforeLensMorphism PinaforeTableEdit Point val
 literalPinaforeTableLensMorphism =
     MkCloseUnlift identityUnlift $ MkAPinaforeLensMorphism literalPinaforeMap literalInverseFunction
 
-literalPinaforeLensMorphism :: (HasPinaforeTableEdit baseedit, AsText val) => PinaforeLensMorphism baseedit Point val
+literalPinaforeLensMorphism :: (HasPinaforeTableEdit baseedit, AsLiteral val) => PinaforeLensMorphism baseedit Point val
 literalPinaforeLensMorphism = mapPinaforeLensMorphismBase pinaforeTableLens literalPinaforeTableLensMorphism
 
 predicatePinaforeMap ::

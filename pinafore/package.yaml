@@ -29,7 +29,7 @@ library:
       - Pinafore.Query
     other-modules:
       - Pinafore.Number
-      - Pinafore.AsText
+      - Pinafore.Literal
       - Pinafore.Morphism
       - Pinafore.Table
       - Pinafore.File
@@ -37,7 +37,7 @@ library:
       - Pinafore.Query.Token
       - Pinafore.Query.Read
       - Pinafore.Query.Types
-      - Pinafore.Query.Literal
+      - Pinafore.Query.Lifted
       - Pinafore.Query.Order
       - Pinafore.Query.Predefined
       - Pinafore.Database

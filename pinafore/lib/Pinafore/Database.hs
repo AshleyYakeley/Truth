@@ -1,5 +1,6 @@
 module Pinafore.Database where
 
+import Pinafore.Literal
 import Pinafore.Table
 import Shapes
 
@@ -34,7 +35,7 @@ instance FiniteWitness TripleTable where
 
 data LiteralTable t where
     LiteralKey :: LiteralTable Point
-    LiteralValue :: LiteralTable Text
+    LiteralValue :: LiteralTable Literal
 
 instance Show (LiteralTable t) where
     show LiteralKey = "key"

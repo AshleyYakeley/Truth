@@ -1,6 +1,6 @@
 module Pinafore.Query.Types where
 
-import Pinafore.AsText
+import Pinafore.Literal
 import Pinafore.Morphism
 import Pinafore.Table
 import Shapes
@@ -39,7 +39,7 @@ qApplyImMorphismPoint f a = applyPinaforeFunction (arr (\mmt -> mmt >>= id) . cf
 qApplyImMorphismSet :: QImLiteralMorphism baseedit t -> QImSet baseedit -> QImLiteralSet baseedit t
 qApplyImMorphismSet f a = applyPinaforeFunction (arr catMaybes . cfmap f) a
 
-qImSetToLiteral :: (HasPinaforeTableEdit baseedit, AsText val) => QImSet baseedit -> QImLiteralSet baseedit val
+qImSetToLiteral :: (HasPinaforeTableEdit baseedit, AsLiteral val) => QImSet baseedit -> QImLiteralSet baseedit val
 qImSetToLiteral = qApplyImMorphismSet $ lensFunctionMorphism literalPinaforeLensMorphism
 
 qApplyMorphismSet :: QPointMorphism baseedit -> QSet baseedit -> QSet baseedit
@@ -50,10 +50,10 @@ qInverseApplyMorphismPoint :: QPointMorphism baseedit -> QPoint baseedit -> QSet
 qInverseApplyMorphismPoint = applyInversePinaforeLens
 
 qInverseApplyMorphismLiteral ::
-       HasPinaforeTableEdit baseedit => QPointMorphism baseedit -> QLiteral baseedit Text -> QSet baseedit
+       HasPinaforeTableEdit baseedit => QPointMorphism baseedit -> QLiteral baseedit Literal -> QSet baseedit
 qInverseApplyMorphismLiteral f a = applyInversePinaforeLens (literalPinaforeLensMorphism . f) a
 
-qInverseApplyMorphismConstant :: HasPinaforeTableEdit baseedit => QPointMorphism baseedit -> Text -> QSet baseedit
+qInverseApplyMorphismConstant :: HasPinaforeTableEdit baseedit => QPointMorphism baseedit -> Literal -> QSet baseedit
 qInverseApplyMorphismConstant f a = qInverseApplyMorphismLiteral f $ constEditLens $ Just a
 
 qInverseApplyMorphismSet :: QPointMorphism baseedit -> QSet baseedit -> QSet baseedit

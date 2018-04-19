@@ -17,8 +17,9 @@ optionGetView =
 
 listStoreView ::
        (FullSubjectReader (EditReader edit), ApplicableEdit edit)
-    => CreateView (ListEdit [EditSubject edit] edit) (SeqStore (EditSubject edit))
-listStoreView = do
+    => UnliftIO IO
+    -> CreateView (ListEdit [EditSubject edit] edit) (SeqStore (EditSubject edit))
+listStoreView (MkUnliftIO blockSignal) = do
     subjectList <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     store <- seqStoreNew subjectList
     cvReceiveUpdate $ \_ _mr e -> traceBracket "GTK.Option:listStore:receiveUpdate" $
@@ -26,16 +27,17 @@ listStoreView = do
             ListEditItem (MkSequencePoint (fromIntegral -> i)) edit -> do
                 oldval <- seqStoreGetValue store i
                 newval <- mutableReadToSubject $ applyEdit edit $ subjectToMutableRead oldval
-                seqStoreSetValue store i newval
-            ListDeleteItem (MkSequencePoint (fromIntegral -> i)) -> seqStoreRemove store i
-            ListInsertItem (MkSequencePoint (fromIntegral -> i)) item -> seqStoreInsert store i item
-            ListClear -> seqStoreClear store
+                liftIO $ blockSignal $ seqStoreSetValue store i newval
+            ListDeleteItem (MkSequencePoint (fromIntegral -> i)) -> liftIO $ blockSignal $ seqStoreRemove store i
+            ListInsertItem (MkSequencePoint (fromIntegral -> i)) item ->
+                liftIO $ blockSignal $ seqStoreInsert store i item
+            ListClear -> liftIO $ blockSignal $ seqStoreClear store
     return store
 
 optionFromStore ::
        forall t. Eq t
     => SeqStore (t, Text)
-    -> GCreateView (WholeEdit t)
+    -> CreateView (WholeEdit t) (UnliftIO IO, Widget)
 optionFromStore store = do
     widget <- comboBoxNewWithModel store
     renderer <- new CellRendererText []
@@ -54,6 +56,8 @@ optionFromStore store = do
                     push [MkWholeEdit t]
                 (False, _) -> return ()
     let
+        blockSignal :: forall a. IO a -> IO a
+        blockSignal = withSignalBlocked widget changedSignal
         update :: MonadIO m => t -> m ()
         update t =
             liftIO $ do
@@ -63,7 +67,7 @@ optionFromStore store = do
                         tp <- treePathNewFromIndices [fromIntegral i]
                         mti <- treeModelGetIter store tp
                         case mti of
-                            Just ti -> withSignalBlocked widget changedSignal $ #setActiveIter widget $ Just ti
+                            Just ti -> blockSignal $ #setActiveIter widget $ Just ti
                             Nothing -> return ()
                     Nothing -> return ()
     cvLiftView $
@@ -71,7 +75,8 @@ optionFromStore store = do
             t <- mr ReadWhole
             update t
     cvReceiveUpdate $ \_ _mr (MkWholeEdit t) -> traceBracket "GTK.Option:receiveUpdate" $ update t
-    toWidget widget
+    w <- toWidget widget
+    return (MkUnliftIO blockSignal, w)
 
 optionView ::
        forall t tedit. (Eq t)
@@ -79,5 +84,7 @@ optionView ::
     -> EditLens tedit (WholeEdit t)
     -> GCreateView tedit
 optionView itemsFunction whichLens = do
-    store <- mapCreateViewEdit (readOnlyEditLens itemsFunction) listStoreView
-    mapCreateViewEdit whichLens $ optionFromStore store
+    rec
+        store <- mapCreateViewEdit (readOnlyEditLens itemsFunction) $ listStoreView blockSignal
+        (blockSignal, w) <- mapCreateViewEdit whichLens $ optionFromStore store
+    return w

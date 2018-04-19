@@ -5,11 +5,12 @@ module Pinafore.Query.Predefined
     ) where
 
 import Pinafore.File
+import Pinafore.Literal
 import Pinafore.Morphism
 import Pinafore.Number
 import Pinafore.Query.Convert
 import Pinafore.Query.Expression
-import Pinafore.Query.Literal
+import Pinafore.Query.Lifted
 import Pinafore.Query.Order
 import Pinafore.Query.Types
 import Pinafore.Query.Value
@@ -49,7 +50,7 @@ outputln val = do
     mtext <- qGetFunctionValue val
     for_ mtext $ \text -> liftIO $ putStrLn $ unpack text
 
-setcount :: FiniteSet Text -> Int
+setcount :: FiniteSet Literal -> Int
 setcount = olength
 
 setsum :: FiniteSet Number -> Number
@@ -68,7 +69,7 @@ withset order set cont = do
     points <- qGetFunctionValue $ qOrderSet order set
     for_ points cont
 
-qappend :: Literal baseedit Text -> Literal baseedit Text -> Literal baseedit Text
+qappend :: Lifted baseedit Text -> Lifted baseedit Text -> Lifted baseedit Text
 qappend = liftA2 (<>)
 
 valSpecText :: UISpec (WholeEdit (Maybe Text)) -> QLiteral baseedit Text -> UISpec baseedit
@@ -170,7 +171,7 @@ ui_table cols asp val = let
     aspect point = resultToM $ mapResultFailure unpack $ fmap return $ asp point
     in uiTable (fmap getColumn cols) aspect val
 
-literal_conv :: Text -> Text
+literal_conv :: Literal -> Literal
 literal_conv = id
 
 predefinitions ::
@@ -178,38 +179,38 @@ predefinitions ::
     => [(QBindings baseedit, (Symbol, Text))]
 predefinitions =
     [ pb "$" $ qapply @baseedit
-    , pb "literal" $ fmap @(Literal baseedit) $ literal_conv
+    , pb "literal" $ fmap @(Lifted baseedit) $ literal_conv
     , pb "." $ qcombine @baseedit
     , pb "&" $ qmeet @baseedit
     , pb "|" $ qjoin @baseedit
-    , pb "member" $ liftA2 @(Literal baseedit) $ set_member
+    , pb "member" $ liftA2 @(Lifted baseedit) $ set_member
     , pb "++" $ qappend @baseedit
-    , pb "==" $ liftA2 @(Literal baseedit) $ (==) @Text
-    , pb "/=" $ liftA2 @(Literal baseedit) $ (/=) @Text
-    , pb "+" $ liftA2 @(Literal baseedit) $ (+) @Number
-    , pb "-" $ liftA2 @(Literal baseedit) $ (-) @Number
-    , pb "*" $ liftA2 @(Literal baseedit) $ (*) @Number
-    , pb "/" $ liftA2 @(Literal baseedit) $ (/) @Number
-    , pb "~==" $ liftA2 @(Literal baseedit) $ (==) @Number
-    , pb "~/=" $ liftA2 @(Literal baseedit) $ (/=) @Number
-    , pb "<" $ liftA2 @(Literal baseedit) $ (<) @Number
-    , pb "<=" $ liftA2 @(Literal baseedit) $ (<=) @Number
-    , pb ">" $ liftA2 @(Literal baseedit) $ (>) @Number
-    , pb ">=" $ liftA2 @(Literal baseedit) $ (>=) @Number
-    , pb "abs" $ fmap @(Literal baseedit) $ abs @Number
-    , pb "signum" $ fmap @(Literal baseedit) $ signum @Number
-    , pb "count" $ fmap @(Literal baseedit) setcount
-    , pb "sum" $ fmap @(Literal baseedit) setsum
-    , pb "mean" $ fmap @(Literal baseedit) setmean
+    , pb "==" $ liftA2 @(Lifted baseedit) $ (==) @Literal
+    , pb "/=" $ liftA2 @(Lifted baseedit) $ (/=) @Literal
+    , pb "+" $ liftA2 @(Lifted baseedit) $ (+) @Number
+    , pb "-" $ liftA2 @(Lifted baseedit) $ (-) @Number
+    , pb "*" $ liftA2 @(Lifted baseedit) $ (*) @Number
+    , pb "/" $ liftA2 @(Lifted baseedit) $ (/) @Number
+    , pb "~==" $ liftA2 @(Lifted baseedit) $ (==) @Number
+    , pb "~/=" $ liftA2 @(Lifted baseedit) $ (/=) @Number
+    , pb "<" $ liftA2 @(Lifted baseedit) $ (<) @Number
+    , pb "<=" $ liftA2 @(Lifted baseedit) $ (<=) @Number
+    , pb ">" $ liftA2 @(Lifted baseedit) $ (>) @Number
+    , pb ">=" $ liftA2 @(Lifted baseedit) $ (>=) @Number
+    , pb "abs" $ fmap @(Lifted baseedit) $ abs @Number
+    , pb "signum" $ fmap @(Lifted baseedit) $ signum @Number
+    , pb "count" $ fmap @(Lifted baseedit) setcount
+    , pb "sum" $ fmap @(Lifted baseedit) setsum
+    , pb "mean" $ fmap @(Lifted baseedit) setmean
     , pb "alphabetical" $ alphabetical @baseedit
     , pb "numerical" $ numerical @baseedit
     , pb "chronological" $ chronological @baseedit
     , pb "orders" $ orders @baseedit
     , pb "orderon" $ orderon @baseedit
     , pb "rev" $ rev @baseedit
-    , pb "inexact" $ fmap @(Literal baseedit) numberToDouble
-    , pb "approximate" $ liftA2 @(Literal baseedit) approximate
-    , pb "exists" $ \(val :: QImLiteral baseedit Text) ->
+    , pb "inexact" $ fmap @(Lifted baseedit) numberToDouble
+    , pb "approximate" $ liftA2 @(Lifted baseedit) approximate
+    , pb "exists" $ \(val :: QImLiteral baseedit Literal) ->
           (funcEditFunction (Just . isJust) . val :: QImLiteral baseedit Bool)
     , pb "pass" (return () :: QAction baseedit)
     , pb ">>" $ ((>>) :: QAction baseedit -> QAction baseedit -> QAction baseedit)
@@ -220,7 +221,7 @@ predefinitions =
     , pb "addpoint" $ addpoint @baseedit
     , pb "removepoint" $ removepoint @baseedit
     , pb "file_import" $ file_import @baseedit
-    , pb "file_size" $ fmap @(Literal baseedit) file_size
+    , pb "file_size" $ fmap @(Lifted baseedit) file_size
     , pb "openwindow" viewOpenWindow
     , pb "openselection" viewOpenSelection
     , pb "ui_blank" uiNull
