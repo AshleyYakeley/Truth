@@ -128,5 +128,5 @@ makeButton name action = do
 
 cvMakeButton :: Text -> View edit () -> CreateView edit Button
 cvMakeButton name action = do
-    unlift <- cvLiftView $ liftIOView return
-    makeButton name $ unlift action
+    unlift <- cvLiftView $ askUnliftIO
+    makeButton name $ runUnliftIO unlift action

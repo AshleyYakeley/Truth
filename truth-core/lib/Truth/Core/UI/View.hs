@@ -106,7 +106,7 @@ mapViewContextEdit lens (MkViewContext objectA setSelectA os owA oGA) = let
 
 newtype View edit a =
     MkView (ReaderT (ViewContext edit) IO a)
-    deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO)
+    deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO, MonadAskUnliftIO)
 
 liftIOView :: forall edit a. ((forall r. View edit r -> IO r) -> IO a) -> View edit a
 liftIOView call = liftIOWithUnlift $ \(MkUnliftIO unlift) -> call unlift
@@ -117,14 +117,14 @@ viewObject = MkView $ asks vcObject
 viewObjectRead ::
        (UnliftIO (View edit) -> forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> m r) -> View edit r
 viewObjectRead call = do
-    unliftIO <- liftIOView $ \unlift -> return $ MkUnliftIO unlift
+    unliftIO <- askUnliftIO
     MkObject {..} <- viewObject
     liftIO $ runUnliftIO objRun $ call unliftIO $ objRead
 
 viewObjectMaybeEdit ::
        (UnliftIO (View edit) -> forall m. MonadUnliftIO m => ([edit] -> m (Maybe (m ()))) -> m r) -> View edit r
 viewObjectMaybeEdit call = do
-    unliftIO <- liftIOView $ \unlift -> return $ MkUnliftIO unlift
+    unliftIO <- askUnliftIO
     MkObject {..} <- viewObject
     liftIO $ runUnliftIO objRun $ call unliftIO $ objEdit
 

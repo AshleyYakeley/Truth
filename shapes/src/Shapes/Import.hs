@@ -83,6 +83,7 @@ import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT,
 import Control.Monad.Trans.Writer as I (WriterT(..), execWriterT, tell)
 
 -- transformers-extra
+import Control.Monad.Trans.AskUnlift as I
 import Control.Monad.Trans.Compose as I
 import Control.Monad.Trans.Constraint as I
 import Control.Monad.Trans.StackIO as I
