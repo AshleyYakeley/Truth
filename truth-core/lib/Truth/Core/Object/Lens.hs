@@ -4,29 +4,28 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
-import Truth.Core.Read
+import Truth.Core.Object.Update
 
 mapSubscriber ::
        forall edita editb action. (ApplicableEdit edita)
     => EditLens edita editb
     -> Subscriber edita action
     -> Subscriber editb action
-mapSubscriber lens@(MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens lensFunc _)) sub =
+mapSubscriber lens sub =
     MkSubscriber $ \(initialB :: Object editb -> IO editor) updateB -> let
+        getObjectB :: Object edita -> Object editb
+        getObjectB = lensObject True lens
         initialA :: Object edita -> IO editor
-        initialA objectA = initialB $ lensObject True lens objectA
-        updateA ::
-               forall m. MonadUnliftIO m
-            => editor
-            -> MutableRead m (EditReader edita)
-            -> [edita]
-            -> m ()
-        updateA editor mrA editAs =
-            runUnlift unlift $
-            withTransConstraintTM @MonadUnliftIO $ do
-                editBs <- efUpdates lensFunc editAs mrA
-                updateB editor (efGet lensFunc mrA) editBs
-        in subscribe sub initialA updateA
+        initialA objectA = do
+            editor <- initialB $ getObjectB objectA
+            return editor
+        updateA :: editor -> Object edita -> [edita] -> IO ()
+        updateA editor objectA editAs = do
+            editBs <- objectMapUpdates (editLensFunction lens) objectA editAs
+            updateB editor (getObjectB objectA) editBs
+        in do
+               (editor, objectA, actions) <- subscribe sub initialA updateA
+               return (editor, getObjectB objectA, actions)
 
 convertSubscriber ::
        forall edita editb actions. (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb)

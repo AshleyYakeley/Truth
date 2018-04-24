@@ -1,5 +1,6 @@
 module Truth.Core.Object
-    ( module Truth.Core.Object.Object
+    ( module Truth.Core.Object.DeferActionT
+    , module Truth.Core.Object.Object
     , module Truth.Core.Object.AutoClose
     , module Truth.Core.Object.ObjectEdit
     , module Truth.Core.Object.Update
@@ -16,6 +17,7 @@ module Truth.Core.Object
 import Truth.Core.Object.AsyncPush
 import Truth.Core.Object.AutoClose
 import Truth.Core.Object.Cache
+import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.Editor
 import Truth.Core.Object.Lens
 import Truth.Core.Object.Object

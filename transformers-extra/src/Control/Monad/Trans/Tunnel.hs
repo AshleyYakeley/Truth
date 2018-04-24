@@ -5,7 +5,6 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Identity
-import Control.Monad.Trans.List
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
@@ -70,16 +69,6 @@ instance MonadTransTunnel (ExceptT e) where
                  Left e' -> Right $ Left e'
                  Right (Left e) -> Left e
                  Right (Right a) -> Right $ Right a) $
-        runExceptT ma
-
-instance MonadTransTunnel ListT where
-    tunnel call = ListT $ call $ runListT
-    transExcept (ListT ma) =
-        ListT $
-        fmap
-            (\case
-                 Left e -> [Left e]
-                 Right aa -> fmap Right aa) $
         runExceptT ma
 
 class MonadIO m => MonadTunnelIO m where

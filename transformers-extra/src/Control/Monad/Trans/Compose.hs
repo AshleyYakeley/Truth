@@ -5,6 +5,7 @@ import Control.Monad
 import Control.Monad.Fail
 import Control.Monad.Fix
 import Control.Monad.IO.Class
+import Control.Monad.Trans.AskUnlift
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Except
@@ -159,4 +160,17 @@ instance (MonadTransUnlift t1, MonadTransUnlift t2) => MonadTransUnlift (Compose
                 withTransConstraintTM @Monad $ do
                     unlift1 <- getDiscardingUnlift
                     unlift2 <- lift getDiscardingUnlift
+                    return $ composeUnlift unlift1 unlift2
+
+instance (MonadTransAskUnlift t1, MonadTransAskUnlift t2) => MonadTransAskUnlift (ComposeT t1 t2) where
+    askUnlift ::
+           forall m. Monad m
+        => ComposeT t1 t2 m (Unlift (ComposeT t1 t2))
+    askUnlift =
+        case hasTransConstraint @Monad @t2 @m of
+            Dict ->
+                MkComposeT $
+                withTransConstraintTM @Monad $ do
+                    unlift1 <- askUnlift
+                    unlift2 <- lift askUnlift
                     return $ composeUnlift unlift1 unlift2

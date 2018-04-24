@@ -5,9 +5,22 @@ import Data.GI.Base.Constructible
 import Data.GI.Base.Signals
 import Data.GI.Gtk
 import Data.IORef
+import GI.GLib
 import GI.GObject
+import GI.Gdk
 import Shapes
 import Truth.Core
+
+deferToIdle :: MonadAskUnliftIO m => m () -> m ()
+deferToIdle action = do
+    unlift <- askUnliftIO
+    _ <-
+        liftIO $
+        threadsAddIdle PRIORITY_DEFAULT $
+        runUnliftIO unlift $ do
+            action
+            return False
+    return ()
 
 containerGetAllChildren :: Container -> IO [Widget]
 containerGetAllChildren cont = do
@@ -128,5 +141,5 @@ makeButton name action = do
 
 cvMakeButton :: Text -> View edit () -> CreateView edit Button
 cvMakeButton name action = do
-    unlift <- cvLiftView $ liftIOView return
-    makeButton name $ unlift action
+    unlift <- cvLiftView $ askUnliftIO
+    makeButton name $ runUnliftIO unlift action

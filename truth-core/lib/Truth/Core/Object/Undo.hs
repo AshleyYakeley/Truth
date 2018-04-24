@@ -90,17 +90,12 @@ undoQueueSubscriber sub =
                                         then put $ MkUndoQueue (entry : ues) ee
                                         else return ()
                 return (editor, MkUndoActions {..})
-            update' ::
-                   forall m. MonadUnliftIO m
-                => (editor, UndoActions)
-                -> MutableRead m (EditReader edit)
-                -> [edit]
-                -> m ()
-            update' (editor, _) mr edits = do
-                update editor mr edits
+            update' :: (editor, UndoActions) -> Object edit -> [edit] -> IO ()
+            update' (editor, _) object@MkObject {..} edits = do
+                update editor object edits
                 _ <- do
                     MkUnlift du <- mvarRun queueVar $ getDiscardingUnlift
-                    du $ updateUndoQueue mr edits -- discard changes to the queue on undo and redo edits
+                    runUnliftIO objRun $ du $ updateUndoQueue objRead edits -- discard changes to the queue on undo and redo edits
                 return ()
-        ((editor, undoActions), actions) <- subscribe sub init' update'
-        return (editor, (actions, undoActions))
+        ((editor, undoActions), object, actions) <- subscribe sub init' update'
+        return (editor, object, (actions, undoActions))

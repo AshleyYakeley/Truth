@@ -69,15 +69,16 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
         cvLiftView $ do
             firstfu <- viewObjectRead $ \_ mr -> mr ReadHasOne
             getWidgets firstfu
-    cvDynamic firstdvs $ \(MkUnliftIO unliftIO) mr _ -> do
+    unliftView <- cvLiftView askUnliftIO
+    cvDynamic firstdvs $ \(MkObject unliftIO mr _) _ -> do
         olddvs <- get
-        newfu <- lift $ mr ReadHasOne
+        newfu <- lift $ runUnliftIO unliftIO $ mr ReadHasOne
         case (olddvs, retrieveOne newfu) of
             (PresentOVS _, SuccessResult ()) -> return ()
             (MissingOVS _ vs, FailureResult newlf) -> put $ MissingOVS newlf vs
             _ -> do
                 liftIO $ closeDynamicView olddvs
-                newdvs <- liftIO $ unliftIO $ getWidgets newfu
+                newdvs <- liftIO $ runUnliftIO unliftView $ getWidgets newfu
                 put newdvs
     toWidget box
 
