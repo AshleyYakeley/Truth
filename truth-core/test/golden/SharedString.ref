@@ -7,17 +7,17 @@ main: push ignored
 var: "ABCDE"
 main: runObject
 main: push [section 1+1 "xy"]
+main: push succeeded
 main: receive [section 1+1 "xy"]
 main: receive "AxyCDE"
 lens: receive [section 0+1 "xy"]
 lens: receive "xyCD"
-main: push succeeded
 var: "AxyCDE"
 main: runObject
 main: push [section 2+2 "1"]
+main: push succeeded
 main: receive [section 2+2 "1"]
 main: receive "Ax1DE"
 lens: receive [section 1+2 "1"]
 lens: receive "x1D"
-main: push succeeded
 var: "Ax1DE"

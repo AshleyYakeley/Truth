@@ -91,7 +91,7 @@ objectSubscriber ocObject =
         rec
             let
                 run' :: UnliftIO (DeferActionT m)
-                run' = composeUnliftIO runDeferActionT run
+                run' = composeUnliftIOEvert runDeferActionT run
                 r' :: MutableRead (DeferActionT m) (EditReader edit)
                 r' = liftMutableRead r
                 e' :: [edit] -> DeferActionT m (Maybe (DeferActionT m ()))

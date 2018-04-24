@@ -7,7 +7,7 @@ var: "ABCDE"
 expected: "Ax1DE"
 main: runObject
 main: push [section 1+1 "xy",section 2+2 "1"]
+main: push succeeded
 main: receive [section 1+1 "xy",section 2+2 "1"]
 main: receive "Ax1DE"
-main: push succeeded
 var: "Ax1DE"
