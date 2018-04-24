@@ -75,6 +75,7 @@ library:
       - Truth.Core.Types.Database.Tuple
       - Truth.Core.Types.Database.Tuple.Show
       - Truth.Core.Types
+      - Truth.Core.Object.DeferActionT
       - Truth.Core.Object.Object
       - Truth.Core.Object.AutoClose
       - Truth.Core.Object.ObjectEdit
@@ -106,7 +107,9 @@ library:
       - Truth.Core.UI.Specifier.TextEditor
       - Truth.Core.UI.Specifier.Table
       - Truth.Core.UI.Specifier.Drag
+      - Truth.Core.UI.ViewContext
       - Truth.Core.UI.View
+      - Truth.Core.UI.CreateView
       - Truth.Core.UI.DynamicView
       - Truth.Core.UI.GetView
       - Truth.Core.UI

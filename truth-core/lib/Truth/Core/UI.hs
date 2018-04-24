@@ -18,10 +18,12 @@ module Truth.Core.UI
     , module Truth.Core.UI.Specifier.Table
     , module Truth.Core.UI.Specifier.Drag
     , module Truth.Core.UI.View
+    , module Truth.Core.UI.CreateView
     , module Truth.Core.UI.DynamicView
     , module Truth.Core.UI.GetView
     ) where
 
+import Truth.Core.UI.CreateView
 import Truth.Core.UI.DynamicView
 import Truth.Core.UI.GetView
 import Truth.Core.UI.Request
