@@ -19,6 +19,7 @@ textEntryGetView =
                  changedSignal <-
                      cvLiftView $
                      viewOn widget #changed $
+                     traceBracket "textEntryGetView.changed" $
                      viewObjectPushEdit $ \_ push -> do
                          st <- get widget #text
                          traceBracketArgs "textEntryGetView.push" (show st) show $ push [MkWholeEdit st]

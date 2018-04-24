@@ -5,6 +5,7 @@ module Truth.Core.Object.DeferActionT
     ) where
 
 import Truth.Core.Import
+import Truth.Debug.Object
 
 newtype DeferActionT m a =
     MkDeferActionT (WriterT [IO ()] m a)
@@ -56,8 +57,8 @@ deferActionT :: Monad m => IO () -> DeferActionT m ()
 deferActionT action = MkDeferActionT $ tell [action]
 
 runDeferActionT :: Unlift DeferActionT
-runDeferActionT =
+runDeferActionT = traceThing "runDeferActionT" $
     MkUnlift $ \(MkDeferActionT (WriterT wma)) -> do
         (a, actions) <- wma
-        for_ actions liftIO
+        traceBracket "runDeferActionT: actions" $ for_ actions liftIO
         return a

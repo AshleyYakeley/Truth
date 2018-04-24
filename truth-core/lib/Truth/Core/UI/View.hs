@@ -39,7 +39,7 @@ viewObjectRead call = do
 
 viewObjectMaybeEdit ::
        (UnliftIO (View edit) -> forall m. MonadUnliftIO m => ([edit] -> m (Maybe (m ()))) -> m r) -> View edit r
-viewObjectMaybeEdit call = do
+viewObjectMaybeEdit call = traceBracket "viewObjectPush" $ do
     unliftIO <- askUnliftIO
     MkObject {..} <- viewObject
     liftIO $ runUnliftIO objRun $ call unliftIO $ objEdit
