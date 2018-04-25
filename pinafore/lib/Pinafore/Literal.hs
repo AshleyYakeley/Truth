@@ -7,7 +7,10 @@ import Shapes
 
 newtype Literal = MkLiteral
     { unLiteral :: Text
-    } deriving (Eq, Show)
+    } deriving (Eq)
+
+instance Show Literal where
+    show (MkLiteral t) = show t
 
 class AsLiteral t where
     toLiteral :: t -> Literal

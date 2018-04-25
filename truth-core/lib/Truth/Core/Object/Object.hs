@@ -158,3 +158,6 @@ copyObject (MkObject (runSrc :: UnliftIO ms) readSrc _) (MkObject (runDest :: Un
 exclusiveObject :: forall edit. Object edit -> With (Object edit)
 exclusiveObject (MkObject (run :: UnliftIO m) rd push) call =
     runUnliftIO run $ liftIOWithUnlift $ \unlift -> call $ MkObject unlift rd push
+
+getObjectSubject :: FullSubjectReader (EditReader edit) => Object edit -> IO (EditSubject edit)
+getObjectSubject (MkObject unlift rd _) = runUnliftIO unlift $ mutableReadToSubject rd

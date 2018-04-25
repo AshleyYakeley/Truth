@@ -11,15 +11,27 @@ import Truth.UI.GTK
 
 data Options
     = ExprDocOption
+    | DumpTableOption (Maybe FilePath)
     | RunOption Bool
                 (Maybe FilePath)
                 [FilePath]
 
+optDataFlag :: O.Parser (Maybe FilePath)
+optDataFlag = O.optional $ O.strOption (O.long "data")
+
 optParser :: O.Parser Options
 optParser =
-    (O.flag' ExprDocOption $ O.long "doc") <|>
-    RunOption <$> (O.switch $ O.long "interactive" <> O.short 'i') <*> (O.optional $ O.strOption (O.long "data")) <*>
-    (O.many $ O.strArgument mempty)
+    (O.flag' ExprDocOption $ O.long "doc") <|> (O.flag' DumpTableOption $ O.long "dump-table") <*> optDataFlag <|>
+    RunOption <$> (O.switch $ O.long "interactive" <> O.short 'i') <*> optDataFlag <*> (O.many $ O.strArgument mempty)
+
+getDirPath :: MonadIO m => Maybe FilePath -> m FilePath
+getDirPath mdirpath = do
+    dirpath <-
+        case mdirpath of
+            Just dirpath -> return dirpath
+            Nothing -> liftIO $ getUserDataDir "pinafore"
+    liftIO $ createDirectoryIfMissing True dirpath
+    return dirpath
 
 main :: IO ()
 main =
@@ -31,12 +43,11 @@ main =
                     for_ (predefinedDoc @PinaforeEdit) $ \(name, desc) ->
                         putStrLn $ (show name) ++ " :: " ++ unpack desc
                     putStrLn $ "<file> :: " ++ unpack filePinaforeType
+            DumpTableOption mdirpath -> do
+                dirpath <- getDirPath mdirpath
+                liftIO $ sqlitePinaforeDumpTable dirpath
             RunOption fInteract mdirpath fpaths -> do
-                dirpath <-
-                    case mdirpath of
-                        Just dirpath -> return dirpath
-                        Nothing -> liftIO $ getUserDataDir "pinafore"
-                liftIO $ createDirectoryIfMissing True dirpath
+                dirpath <- getDirPath mdirpath
                 context <- sqlitePinaforeContext dirpath createWindow
                 liftIO $
                     case fpaths of
