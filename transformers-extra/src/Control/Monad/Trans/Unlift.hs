@@ -89,6 +89,9 @@ mvarUnliftIO var = MkUnliftIO $ mvarRun var
 composeUnliftIO :: (MonadTransUnlift t, MonadUnliftIO m) => Unlift t -> UnliftIO m -> UnliftIO (t m)
 composeUnliftIO (MkUnlift rt) (MkUnliftIO rm) = MkUnliftIO $ \tma -> rm $ rt tma
 
+composeUnliftIOEvert :: (MonadTransUnlift t, MonadUnliftIO m) => Unlift t -> UnliftIO m -> UnliftIO (t m)
+composeUnliftIOEvert (MkUnlift rt) (MkUnliftIO rm) = MkUnliftIO $ \tma -> rt $ remonad rm tma
+
 class (MonadFail m, MonadTunnelIO m, MonadFix m) => MonadUnliftIO m where
     liftIOWithUnlift :: forall r. (UnliftIO m -> IO r) -> m r
     -- ^ lift with an 'UnliftIO' that accounts for all transformer effects

@@ -8,11 +8,11 @@ main: push ignored
 var: "ABCDE"
 main: runObject
 main: push [section 1+1 "xy"]
-main: receive [section 1+1 "xy"]
-main: receive "AxyCDE"
 main: push succeeded
 main: push [section 2+2 "1"]
+main: push succeeded
+main: receive [section 1+1 "xy"]
+main: receive "Ax1DE"
 main: receive [section 2+2 "1"]
 main: receive "Ax1DE"
-main: push succeeded
 var: "Ax1DE"

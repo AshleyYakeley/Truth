@@ -2,14 +2,29 @@
   "version": "2.0.0",
   "presentation": {
     "reveal": "silent",
-    "panel": "dedicated"
+    "panel": "new"
   },
   "tasks": [
     {
       "group": "build",
       "label": "Format",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && ./hindent-all && echo OK"
+      "command": "cd ${workspaceRoot} && ./hindent-all && echo OK",
+      "problemMatcher": [
+        {
+          "owner": "hindent",
+          "fileLocation": "relative",
+          "pattern": [
+            {
+              "regexp": "^hindent: (.*):(\\d+):(\\d+):\\s+(.*)",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "message": 4
+            }
+          ]
+        }
+      ]
     },
     {
       "group": "build",
@@ -31,6 +46,19 @@
             {
               "regexp": "^\\s+(.*)$",
               "message": 1
+            }
+          ]
+        },
+        {
+          "owner": "hindent",
+          "fileLocation": "relative",
+          "pattern": [
+            {
+              "regexp": "^hindent: (.*):(\\d+):(\\d+):\\s+(.*)",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "message": 4
             }
           ]
         }
@@ -84,6 +112,19 @@
             {
               "regexp": "^\\s+(.*)$",
               "message": 1
+            }
+          ]
+        },
+        {
+          "owner": "hindent",
+          "fileLocation": "relative",
+          "pattern": [
+            {
+              "regexp": "^hindent: (.*):(\\d+):(\\d+):\\s+(.*)",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "message": 4
             }
           ]
         }

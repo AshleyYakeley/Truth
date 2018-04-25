@@ -2,6 +2,7 @@
 
 module Pinafore.Database.SQLite
     ( sqlitePinaforeTableObject
+    , sqlitePinaforeTableGetEntireDatabase
     ) where
 
 import Data.UUID
@@ -231,3 +232,6 @@ instance ShowableTupleDatabase SQLiteDatabase PinaforeSchema where
 
 sqlitePinaforeTableObject :: FilePath -> Object PinaforeTableEdit
 sqlitePinaforeTableObject path = mapObject (traceArgThing "pinafore-SQLite" sqlitePinaforeLens) $ sqliteObject' path sqlitePinaforeSchema
+
+sqlitePinaforeTableGetEntireDatabase :: FilePath -> IO (AllF (TupleTableSel PinaforeSchema) [])
+sqlitePinaforeTableGetEntireDatabase path = getObjectSubject $ sqliteObject path sqlitePinaforeSchema
