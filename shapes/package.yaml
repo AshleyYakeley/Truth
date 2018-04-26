@@ -31,6 +31,7 @@ library:
       - Data.Filterable
       - Data.CatFunctor
       - Data.Result
+      - Data.OneItem
       - Data.MonadOne
       - Data.HasNewValue
       - Data.Injection
