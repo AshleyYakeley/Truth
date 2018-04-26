@@ -1,6 +1,7 @@
 module Pinafore.Query.Value where
 
 import Pinafore.Literal
+import Pinafore.PredicateMorphism
 import Pinafore.Query.Order
 import Pinafore.Query.Types
 import Pinafore.Table

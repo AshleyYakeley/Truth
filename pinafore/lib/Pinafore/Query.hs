@@ -14,13 +14,13 @@ module Pinafore.Query
 
 import Control.Exception
 import Pinafore.File
+import Pinafore.PredicateMorphism
 import Pinafore.Query.Convert
 import Pinafore.Query.Expression
 import Pinafore.Query.Predefined
 import Pinafore.Query.Read
 import Pinafore.Query.Types
 import Pinafore.Query.Value
-import Pinafore.Table
 import Shapes
 import System.IO.Error
 

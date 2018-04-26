@@ -1,6 +1,7 @@
 module Pinafore.Pinafore where
 
 import Pinafore.File
+import Pinafore.PredicateMorphism
 import Pinafore.Table
 import Shapes
 import Truth.Core

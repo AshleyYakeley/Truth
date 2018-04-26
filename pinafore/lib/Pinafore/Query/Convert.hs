@@ -9,6 +9,7 @@ import Data.List (zipWith)
 import Pinafore.File
 import Pinafore.Literal
 import Pinafore.Morphism
+import Pinafore.PredicateMorphism
 import Pinafore.Query.Lifted
 import Pinafore.Query.Order
 import Pinafore.Query.Types

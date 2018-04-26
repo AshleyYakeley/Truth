@@ -3,11 +3,11 @@ module Pinafore.Query.Read
     , parseInteractiveCommand
     ) where
 
+import Pinafore.PredicateMorphism
 import Pinafore.Query.Convert
 import Pinafore.Query.Expression
 import Pinafore.Query.Token
 import Pinafore.Query.Value
-import Pinafore.Table
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 

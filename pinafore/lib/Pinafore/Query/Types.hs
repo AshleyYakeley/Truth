@@ -2,6 +2,7 @@ module Pinafore.Query.Types where
 
 import Pinafore.Literal
 import Pinafore.Morphism
+import Pinafore.PredicateMorphism
 import Pinafore.Table
 import Shapes
 import Truth.Core

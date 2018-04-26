@@ -8,6 +8,7 @@ import Pinafore.File
 import Pinafore.Literal
 import Pinafore.Morphism
 import Pinafore.Number
+import Pinafore.PredicateMorphism
 import Pinafore.Query.Convert
 import Pinafore.Query.Expression
 import Pinafore.Query.Lifted

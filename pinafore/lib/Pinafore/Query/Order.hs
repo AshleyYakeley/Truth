@@ -3,6 +3,7 @@ module Pinafore.Query.Order where
 import Data.Time
 import Pinafore.Morphism
 import Pinafore.Number
+import Pinafore.PredicateMorphism
 import Pinafore.Query.Types
 import Pinafore.Table
 import Shapes
