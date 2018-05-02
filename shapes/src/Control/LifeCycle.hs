@@ -128,15 +128,16 @@ instance (MonadTrans t, MonadTransConstraint MonadIO t) => MonadTransConstraint 
 data VarState t
     = VSEmpty
     | VSDo (NonEmpty t)
+           Bool
     | VSDone
 
-listDeferrer :: forall t. (NonEmpty t -> IO ()) -> LifeCycle (t -> IO ())
-listDeferrer doit = do
+listDeferrer :: forall t. Int -> (NonEmpty t -> IO ()) -> LifeCycle (Maybe t -> IO ())
+listDeferrer mus doit = do
     bufferVar :: TVar (VarState t) <- liftIO $ newTVarIO $ VSEmpty
     let
         threadDo :: IO ()
         threadDo = do
-            mvals <-
+            maction <-
                 atomically $ do
                     vs <- readTVar bufferVar
                     case vs of
@@ -144,12 +145,16 @@ listDeferrer doit = do
                             writeTVar bufferVar $ VSEmpty
                             return Nothing
                         VSEmpty -> mzero
-                        VSDo cur -> do
+                        VSDo vals True
+                            | mus > 0 -> do
+                                writeTVar bufferVar $ VSDo vals False
+                                return $ Just $ threadDelay mus
+                        VSDo vals _ -> do
                             writeTVar bufferVar $ VSEmpty
-                            return $ Just cur
-            case mvals of
-                Just vals -> do
-                    doit vals
+                            return $ Just $ doit vals
+            case maction of
+                Just action -> do
+                    action
                     threadDo
                 Nothing -> return ()
         waitForEmpty :: STM ()
@@ -158,19 +163,27 @@ listDeferrer doit = do
             case vs of
                 VSEmpty -> return ()
                 _ -> mzero
+        pushVal :: Maybe t -> IO ()
+        pushVal (Just val) =
+            atomically $ do
+                vs <- readTVar bufferVar
+                case vs of
+                    VSDone -> return ()
+                    VSEmpty -> writeTVar bufferVar $ VSDo (opoint val) True
+                    VSDo oldval _ -> writeTVar bufferVar $ VSDo (oldval <> opoint val) True
+        pushVal Nothing =
+            atomically $ do
+                vs <- readTVar bufferVar
+                case vs of
+                    VSDo oldval False -> writeTVar bufferVar $ VSDo oldval True
+                    _ -> return ()
     _ <- liftIO $ forkIO threadDo
     lifeCycleClose $ do
         atomically $ do
             waitForEmpty
             writeTVar bufferVar $ VSDone
         atomically waitForEmpty
-    return $ \val ->
-        atomically $ do
-            vs <- readTVar bufferVar
-            case vs of
-                VSDone -> return ()
-                VSEmpty -> writeTVar bufferVar $ VSDo $ opoint val
-                VSDo oldval -> writeTVar bufferVar $ VSDo $ oldval <> opoint val
+    return pushVal
 
 deferrer :: LifeCycle (IO () -> IO ())
-deferrer = listDeferrer sequence_
+deferrer = fmap (\pushVal -> pushVal . Just) $ listDeferrer 0 sequence_

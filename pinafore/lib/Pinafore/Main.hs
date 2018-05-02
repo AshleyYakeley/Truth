@@ -26,7 +26,7 @@ filePinaforeType = qTypeDescription @FilePinaforeType
 sqlitePinaforeObject :: FilePath -> LifeCycle (Object PinaforeEdit)
 sqlitePinaforeObject dirpath = do
     tableObject1 <- lifeCycleWith $ exclusiveObject $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
-    tableObject <- cacheObject tableObject1
+    tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
     return $
         tupleObject $ \case
             PinaforeSelectPoint -> pinaforeTablePointObject tableObject
