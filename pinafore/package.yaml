@@ -69,6 +69,7 @@ tests:
           - tasty-golden
         main: Main.hs
         other-modules:
+          - Test.Language
 
 executables:
     pinafore:
