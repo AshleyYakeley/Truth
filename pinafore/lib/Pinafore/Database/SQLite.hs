@@ -114,7 +114,7 @@ instance TupleDatabase SQLiteDatabase PinaforeSchema where
 sqlitePinaforeLens :: EditLens (SQLiteEdit PinaforeSchema) PinaforeTableEdit
 sqlitePinaforeLens = let
     efGet :: ReadFunctionT IdentityT (SQLiteRead PinaforeSchema) PinaforeTableRead
-    efGet mr (PinaforeTableReadGetValue p s) =
+    efGet mr (PinaforeTableReadGetPredicate p s) =
         lift $ do
             row <-
                 mr $
@@ -125,7 +125,7 @@ sqlitePinaforeLens = let
                     mempty
                     (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
             return $ fmap getSingleAll $ listToMaybe row
-    efGet mr (PinaforeTableReadLookupValue p v) =
+    efGet mr (PinaforeTableReadLookupPredicate p v) =
         lift $ do
             row <-
                 mr $
@@ -170,7 +170,7 @@ sqlitePinaforeLens = let
            forall m. MonadIO m
         => PinaforeTableEdit
         -> IdentityT m (Maybe [SQLiteEdit PinaforeSchema])
-    elPutEdit (PinaforeTableEditSetValue p s (Just v)) =
+    elPutEdit (PinaforeTableEditSetPredicate p s (Just v)) =
         return $
         Just $
         pure $
@@ -181,7 +181,7 @@ sqlitePinaforeLens = let
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
-    elPutEdit (PinaforeTableEditSetValue p s Nothing) =
+    elPutEdit (PinaforeTableEditSetPredicate p s Nothing) =
         return $
         Just $
         pure $

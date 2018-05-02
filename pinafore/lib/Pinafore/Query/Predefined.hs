@@ -21,7 +21,7 @@ import Truth.Core
 import Truth.World.File
 import Truth.World.ObjectStore
 
-qcombine :: HasPinaforeTableEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
+qcombine :: HasPinaforePointEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
 qcombine (MkAny QTMorphism g) (MkAny QTMorphism f) = MkAny QTMorphism $ g . f
 qcombine (MkAny QTInverseMorphism g) (MkAny QTInverseMorphism f) = MkAny QTInverseMorphism $ g . f
 qcombine g f = MkAny QTFunction $ qapply g . qapply f
@@ -36,7 +36,7 @@ set_member :: Point -> FiniteSet Point -> Bool
 set_member p set = elem p set
 
 output ::
-       forall baseedit. HasPinaforeTableEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => QImLiteral baseedit Text
     -> QAction baseedit
 output val = do
@@ -44,7 +44,7 @@ output val = do
     for_ mtext $ \text -> liftIO $ putStr $ unpack text
 
 outputln ::
-       forall baseedit. HasPinaforeTableEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => QImLiteral baseedit Text
     -> QAction baseedit
 outputln val = do
@@ -61,7 +61,7 @@ setmean :: FiniteSet Number -> Number
 setmean (MkFiniteSet s) = sum s / fromIntegral (olength s)
 
 withset ::
-       forall baseedit. HasPinaforeTableEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => QOrder baseedit
     -> QImSet baseedit
     -> (Point -> QAction baseedit)
@@ -102,11 +102,7 @@ newpoint set continue = do
     continue point
 
 getQImPoint :: QImPoint baseedit -> QActionM baseedit Point
-getQImPoint qp = do
-    mpoint <- qGetFunctionValue qp
-    case mpoint of
-        Just point -> return point
-        Nothing -> liftIO $ newKeyContainerItem @(FiniteSet Point)
+getQImPoint = qGetFunctionValue
 
 addpoint :: forall baseedit. QSet baseedit -> QImPoint baseedit -> QAction baseedit
 addpoint set qp = do
@@ -150,7 +146,7 @@ file_size :: Object ByteStringEdit -> IO Int64
 file_size MkObject {..} = runUnliftIO objRun $ objRead ReadByteStringLength
 
 ui_table ::
-       forall baseedit. HasPinaforeTableEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => [(QImLiteral baseedit Text, Point -> Result Text (QLiteral baseedit Text))]
     -> (Point -> Result Text (UIWindow baseedit))
     -> QSet baseedit
@@ -175,8 +171,27 @@ ui_table cols asp val = let
 literal_conv :: Literal -> Literal
 literal_conv = id
 
+ui_pick :: forall baseedit. QImLiteralMorphism baseedit Text -> QImSet baseedit -> QPoint baseedit -> UISpec baseedit
+ui_pick nameMorphism fset = let
+    getName :: PinaforeFunctionMorphism baseedit Point (Point, Text)
+    getName =
+        proc p -> do
+            n <- nameMorphism -< p
+            returnA -< (p, fromMaybe mempty n)
+    getNames :: PinaforeFunctionMorphism baseedit (FiniteSet Point) (FiniteSet (Point, Text))
+    getNames =
+        proc fsp -> do
+            pairs <- cfmap getName -< fsp
+            returnA -< pairs
+            -- returnA -< insertSet (Nothing, "") pairs
+    opts :: EditFunction baseedit (ListEdit [(Point, Text)] (WholeEdit (Point, Text)))
+    opts =
+        (orderedKeyList @(FiniteSet (Point, Text)) $ \(_, a) (_, b) -> compare a b) .
+        convertEditFunction . applyPinaforeFunction getNames fset
+    in uiOption @baseedit @Point opts
+
 predefinitions ::
-       forall baseedit. (HasPinaforeTableEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
     => [(QBindings baseedit, (Symbol, Text))]
 predefinitions =
     [ pb "$" $ qapply @baseedit
@@ -238,22 +253,7 @@ predefinitions =
         -- drag
         -- icon
     , pb "ui_button" $ \(name :: QImLiteral baseedit Text) action -> uiButton (clearText . name) action
-    , pb "ui_pick" $ \(nameMorphism :: QImLiteralMorphism baseedit Text) (fset :: QImSet baseedit) -> let
-          getName :: PinaforeFunctionMorphism baseedit Point (Maybe Point, Text)
-          getName =
-              proc p -> do
-                  n <- nameMorphism -< p
-                  returnA -< (Just p, fromMaybe mempty n)
-          getNames :: PinaforeFunctionMorphism baseedit (FiniteSet Point) (FiniteSet (Maybe Point, Text))
-          getNames =
-              proc fsp -> do
-                  pairs <- cfmap getName -< fsp
-                  returnA -< insertSet (Nothing, "") pairs
-          opts :: EditFunction baseedit (ListEdit [(Maybe Point, Text)] (WholeEdit (Maybe Point, Text)))
-          opts =
-              (orderedKeyList @(FiniteSet (Maybe Point, Text)) $ \(_, a) (_, b) -> compare a b) .
-              convertEditFunction . applyPinaforeFunction getNames fset
-          in uiOption @baseedit @(Maybe Point) opts
+    , pb "ui_pick" $ ui_pick
         -- switch
     , pb "ui_table" $ ui_table @baseedit
     ]
@@ -265,9 +265,9 @@ pd :: forall t. HasQTypeDescription t
 pd name _ = (name, qTypeDescription @t)
 
 predefinedDoc ::
-       forall baseedit. (HasPinaforeTableEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
     => [(Symbol, Text)]
 predefinedDoc = [pd "@" $ qinvert @baseedit] ++ fmap snd (predefinitions @baseedit)
 
-predefinedBindings :: (HasPinaforeTableEdit baseedit, HasPinaforeFileEdit baseedit) => QBindings baseedit
+predefinedBindings :: (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit) => QBindings baseedit
 predefinedBindings = mconcat $ fmap fst predefinitions

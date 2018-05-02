@@ -31,8 +31,8 @@ library:
       - Pinafore.Number
       - Pinafore.Literal
       - Pinafore.Morphism
+      - Pinafore.Point
       - Pinafore.Table
-      - Pinafore.Entity
       - Pinafore.PredicateMorphism
       - Pinafore.File
       - Pinafore.Pinafore

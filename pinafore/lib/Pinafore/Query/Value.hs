@@ -63,11 +63,11 @@ instance Show (QValue baseedit) where
 qconstant :: Literal -> QValue baseedit
 qconstant = MkAny QTConstant
 
-qpredicate :: HasPinaforeTableEdit baseedit => Predicate -> QValue baseedit
+qpredicate :: HasPinaforePointEdit baseedit => Predicate -> QValue baseedit
 qpredicate p = MkAny QTMorphism $ predicatePinaforeLensMorphism p
 
 qpoint :: Point -> QValue baseedit
-qpoint p = MkAny QTPoint $ constEditLens $ Just p
+qpoint p = MkAny QTPoint $ constEditLens p
 
 qfunction :: (QValue baseedit -> QValue baseedit) -> QValue baseedit
 qfunction = MkAny QTFunction
@@ -75,12 +75,12 @@ qfunction = MkAny QTFunction
 qexception :: Text -> QValue baseedit
 qexception = MkAny QTException
 
-qpartialapply :: HasPinaforeTableEdit baseedit => QValue baseedit -> Result Text (QValue baseedit -> QValue baseedit)
+qpartialapply :: HasPinaforePointEdit baseedit => QValue baseedit -> Result Text (QValue baseedit -> QValue baseedit)
 qpartialapply (MkAny QTException ex) = FailureResult ex
 qpartialapply (MkAny QTFunction f) = return f
 qpartialapply (MkAny QTMorphism f) =
     return $ \case
-        MkAny QTPoint a -> MkAny QTPoint $ qApplyMorphismValue f a
+        MkAny QTPoint a -> MkAny QTPoint $ qApplyMorphismPoint f a
         MkAny QTSet a -> MkAny QTSet $ qApplyMorphismSet f a
         MkAny ta _ -> qexception $ pack $ "cannot apply " ++ show QTMorphism ++ " to " ++ show ta
 qpartialapply (MkAny QTInverseMorphism f) =
@@ -92,7 +92,7 @@ qpartialapply (MkAny QTInverseMorphism f) =
         MkAny ta _ -> qexception $ pack $ "cannot apply " ++ show QTInverseMorphism ++ " to " ++ show ta
 qpartialapply (MkAny tf _) = FailureResult $ pack $ "cannot apply " ++ show tf
 
-qapply :: HasPinaforeTableEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
+qapply :: HasPinaforePointEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
 qapply vf va =
     case qpartialapply vf of
         SuccessResult f -> f va

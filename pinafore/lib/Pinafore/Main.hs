@@ -29,7 +29,7 @@ sqlitePinaforeObject dirpath = do
     tableObject <- cacheObject tableObject1
     return $
         tupleObject $ \case
-            PinaforeSelectTable -> tableObject
+            PinaforeSelectPoint -> pinaforeTablePointObject tableObject
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
 
 getPinaforeRunAction ::

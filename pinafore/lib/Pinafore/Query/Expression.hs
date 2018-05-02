@@ -83,9 +83,9 @@ qlets (MkQBindings bb) body = let
     exprs = fmap fix $ abstractNames $ for bb $ \(_, b) -> b
     in abstractNames body <*> exprs
 
-exprApply :: HasPinaforeTableEdit baseedit => QValueExpr baseedit -> QValueExpr baseedit -> QValueExpr baseedit
+exprApply :: HasPinaforePointEdit baseedit => QValueExpr baseedit -> QValueExpr baseedit -> QValueExpr baseedit
 exprApply = liftA2 qapply
 
-exprApplyAll :: HasPinaforeTableEdit baseedit => QValueExpr baseedit -> [QValueExpr baseedit] -> QValueExpr baseedit
+exprApplyAll :: HasPinaforePointEdit baseedit => QValueExpr baseedit -> [QValueExpr baseedit] -> QValueExpr baseedit
 exprApplyAll e [] = e
 exprApplyAll e (a:aa) = exprApplyAll (exprApply e a) aa
