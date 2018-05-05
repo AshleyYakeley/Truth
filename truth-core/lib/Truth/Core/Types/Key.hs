@@ -138,6 +138,7 @@ instance ( KeyContainer cont
 instance ( KeyContainer cont
          , FullSubjectReader (EditReader edit)
          , ApplicableEdit edit
+         , SubjectMapEdit edit
          , InvertibleEdit edit
          , HasKeyReader cont (EditReader edit)
          ) => InvertibleEdit (KeyEdit cont edit) where
@@ -159,9 +160,24 @@ instance ( KeyContainer cont
             Nothing -> return []
     invertEdit KeyClear mr = getReplaceEdits mr
 
+instance (KeyContainer cont, EditSubject edit ~ Element cont, SubjectMapEdit edit) => SubjectMapEdit (KeyEdit cont edit) where
+    mapSubjectEdits =
+        mapEditToMapEdits $ \keyedit subj ->
+            case keyedit of
+                KeyEditItem key edit ->
+                    case lookupElement key subj of
+                        Nothing -> return subj
+                        Just oldelem -> do
+                            newelem <- mapSubjectEdits [edit] oldelem
+                            return $ insertElement newelem subj
+                KeyDeleteItem key -> return $ deleteElement key subj
+                KeyInsertReplaceItem item -> return $ insertElement item subj
+                KeyClear -> return mempty
+
 instance ( KeyContainer cont
          , FullSubjectReader (EditReader edit)
          , ApplicableEdit edit
+         , SubjectMapEdit edit
          , HasKeyReader cont (EditReader edit)
          ) => FullEdit (KeyEdit cont edit) where
     replaceEdit mr write = do

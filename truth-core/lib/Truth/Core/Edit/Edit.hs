@@ -22,6 +22,29 @@ applyEdits :: (ApplicableEdit edit) => [edit] -> ReadFunction (EditReader edit) 
 applyEdits [] mr = mr
 applyEdits (e:es) mr = applyEdits es $ applyEdit e mr
 
+class SubjectReader (EditReader edit) => SubjectMapEdit (edit :: *) where
+    mapSubjectEdits ::
+           forall m. MonadIO m
+        => [edit]
+        -> EditSubject edit
+        -> m (EditSubject edit)
+    default mapSubjectEdits ::
+        forall m.
+            (MonadIO m, ApplicableEdit edit, FullSubjectReader (EditReader edit)) =>
+                    [edit] -> EditSubject edit -> m (EditSubject edit)
+    mapSubjectEdits edits subj = mutableReadToSubject $ applyEdits edits $ subjectToMutableRead subj
+
+mapEditToMapEdits ::
+       Monad m
+    => (edit -> EditSubject edit -> m (EditSubject edit))
+    -> [edit]
+    -> EditSubject edit
+    -> m (EditSubject edit)
+mapEditToMapEdits _ [] subj = return subj
+mapEditToMapEdits f (e:ee) oldsubj = do
+    newsubj <- f e oldsubj
+    mapEditToMapEdits f ee newsubj
+
 class InvertibleEdit (edit :: *) where
     invertEdit ::
            forall m. MonadIO m

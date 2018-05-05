@@ -95,8 +95,11 @@ lensObject discard (MkCloseUnlift (MkUnlift lensRun :: Unlift tl) MkAnEditLens {
                         Just mu -> return $ Just $ lift mu
         in MkObject @editb @(tl mr) objRunB objReadB objEditB
 
+readConstantObject :: MutableRead IO (EditReader edit) -> Object edit
+readConstantObject mr = MkObject (MkUnliftIO id) mr $ \_ -> return Nothing
+
 constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit
-constantObject subj = MkObject (MkUnliftIO id) (subjectToMutableRead subj) $ \_ -> return Nothing
+constantObject subj = readConstantObject $ subjectToMutableRead subj
 
 alwaysEdit :: Monad m => ([edit] -> m ()) -> [edit] -> m (Maybe (m ()))
 alwaysEdit em edits = return $ Just $ em edits
@@ -118,8 +121,20 @@ singleEdit call edits =
         actions <- for edits $ \edit -> MkComposeM $ call edit
         return $ for_ actions id
 
-convertObject :: (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb) => Object edita -> Object editb
-convertObject = mapObject convertEditLens
+convertObject ::
+       forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, SubjectMapEdit editb)
+    => Object edita
+    -> Object editb
+convertObject (MkObject (objRun :: UnliftIO m) mra pe) = let
+    objRead :: MutableRead m (EditReader editb)
+    objRead = mSubjectToMutableRead $ mutableReadToSubject mra
+    objEdit :: [editb] -> m (Maybe (m ()))
+    objEdit ebs = do
+        oldsubj <- mutableReadToSubject mra
+        newsubj <- mapSubjectEdits ebs oldsubj
+        eas <- getReplaceEditsFromSubject newsubj
+        pe eas
+    in MkObject {..}
 
 -- | Combines all the edits made in each call to the object.
 cacheWholeObject ::

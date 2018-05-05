@@ -110,6 +110,8 @@ instance InvertibleEdit ByteStringEdit where
 chunks :: Integral i => i -> i -> [(i, i)]
 chunks csize len = zip [0,csize ..] $ takeWhile ((<) 0) $ fmap (\n -> min csize $ len - (csize * n)) [0 ..]
 
+instance SubjectMapEdit ByteStringEdit
+
 instance FullEdit ByteStringEdit where
     replaceEdit mr write = do
         len <- mr ReadByteStringLength

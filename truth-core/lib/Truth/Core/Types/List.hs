@@ -93,6 +93,7 @@ instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit ed
 
 instance ( IsSequence seq
          , FullSubjectReader (EditReader edit)
+         , SubjectMapEdit edit
          , ApplicableEdit edit
          , InvertibleEdit edit
          , EditSubject edit ~ Element seq
@@ -115,8 +116,34 @@ instance ( IsSequence seq
             Nothing -> return []
     invertEdit ListClear mr = getReplaceEdits mr
 
-instance (IsSequence seq, FullSubjectReader (EditReader edit), ApplicableEdit edit, EditSubject edit ~ Element seq) =>
-             FullEdit (ListEdit seq edit) where
+instance (IsSequence seq, SubjectReader (EditReader edit), SubjectMapEdit edit, EditSubject edit ~ Element seq) =>
+             SubjectMapEdit (ListEdit seq edit) where
+    mapSubjectEdits =
+        mapEditToMapEdits $ \listedit subj ->
+            case listedit of
+                ListEditItem p edit -> let
+                    (before, after) = seqSplitAt p subj
+                    in case uncons after of
+                           Just (olditem, rest) -> do
+                               newitem <- mapSubjectEdits [edit] olditem
+                               return $ before `mappend` opoint newitem `mappend` rest
+                           Nothing -> return $ subj
+                ListDeleteItem p -> let
+                    (before, after) = seqSplitAt p subj
+                    in case uncons after of
+                           Just (_, rest) -> return $ mappend before rest
+                           Nothing -> return $ subj
+                ListInsertItem p item -> let
+                    (before, after) = seqSplitAt p subj
+                    in return $ before `mappend` opoint item `mappend` after
+                ListClear -> return mempty
+
+instance ( IsSequence seq
+         , FullSubjectReader (EditReader edit)
+         , ApplicableEdit edit
+         , SubjectMapEdit edit
+         , EditSubject edit ~ Element seq
+         ) => FullEdit (ListEdit seq edit) where
     replaceEdit mr write = do
         write ListClear
         len <- mr ListReadLength
