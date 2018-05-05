@@ -76,6 +76,43 @@ instance ApplicableEdit PinaforeTableEdit where
                 _ -> deleteSet v fv
     applyEdit _ mr rt = mr rt
 
+replaceFirst :: (a -> Maybe (Maybe a, b)) -> [a] -> ([a], Maybe b)
+replaceFirst _ [] = ([], Nothing)
+replaceFirst f (a:aa)
+    | Just (ma, b) <- f a =
+        case ma of
+            Just a' -> (a' : aa, Just b)
+            Nothing -> (aa, Just b)
+replaceFirst f (a:aa) =
+    case replaceFirst f aa of
+        (aa', mb) -> (a : aa', mb)
+
+instance SubjectMapEdit PinaforeTableEdit where
+    mapSubjectEdits =
+        mapEditToMapEdits $ \edit (oldtriples, oldliterals) ->
+            case edit of
+                PinaforeTableEditSetPredicate prd s mv -> let
+                    match (prd', s', _)
+                        | prd' == prd
+                        , s == s' = Just (fmap (\v -> (prd, s, v)) mv, ())
+                    match _ = Nothing
+                    (newtriples', mu) = replaceFirst match oldtriples
+                    newtriples =
+                        case (mu, mv) of
+                            (Nothing, Just v) -> (prd, s, v) : newtriples'
+                            _ -> newtriples'
+                    in return $ (newtriples, oldliterals)
+                PinaforeTableEditSetLiteral v ml -> let
+                    match (v', _)
+                        | v == v' = Just (fmap (\l -> (v, l)) ml, ())
+                    match _ = Nothing
+                    (newliterals', mu) = replaceFirst match oldliterals
+                    newliterals =
+                        case (mu, ml) of
+                            (Nothing, Just l) -> (v, l) : newliterals'
+                            _ -> newliterals'
+                    in return $ (oldtriples, newliterals)
+
 instance InvertibleEdit PinaforeTableEdit where
     invertEdit (PinaforeTableEditSetPredicate p s _) mr = do
         mv <- mr $ PinaforeTableReadGetPredicate p s
