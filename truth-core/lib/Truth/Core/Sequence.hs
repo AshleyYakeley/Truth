@@ -33,6 +33,9 @@ seqTake (MkSequencePoint p) = take p
 seqDrop :: IsSequence seq => SequencePoint seq -> seq -> seq
 seqDrop (MkSequencePoint p) = drop p
 
+seqSplitAt :: IsSequence seq => SequencePoint seq -> seq -> (seq, seq)
+seqSplitAt (MkSequencePoint p) = splitAt p
+
 data SequenceRun seq = MkSequenceRun
     { runStart :: SequencePoint seq
     , runLength :: SequencePoint seq

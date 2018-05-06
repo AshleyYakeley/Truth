@@ -51,6 +51,8 @@ instance (SubjectReader (EditReader editx), SubjectReader (EditReader editn)) =>
     type TupleSubject (WithContextSelector editx editn) = WithContext (EditSubject editx) (EditSubject editn)
     tupleReadFromSubject SelectContext (MkWithContext x _n) = x
     tupleReadFromSubject SelectContent (MkWithContext _x n) = n
+    tupleWriteToSubject SelectContext x (MkWithContext _ n) = MkWithContext x n
+    tupleWriteToSubject SelectContent n (MkWithContext x _) = MkWithContext x n
 
 instance FiniteTupleSelector (WithContextSelector ex en) where
     tupleConstruct f = MkWithContext <$> f SelectContext <*> f SelectContent

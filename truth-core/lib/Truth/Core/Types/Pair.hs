@@ -39,6 +39,8 @@ instance (SubjectReader (EditReader ea), SubjectReader (EditReader eb)) => Subje
     type TupleSubject (PairSelector ea eb) = (EditSubject ea, EditSubject eb)
     tupleReadFromSubject SelectFirst (a, _b) = a
     tupleReadFromSubject SelectSecond (_a, b) = b
+    tupleWriteToSubject SelectFirst a (_, b) = (a, b)
+    tupleWriteToSubject SelectSecond b (a, _) = (a, b)
 
 instance FiniteTupleSelector (PairSelector ea eb) where
     tupleConstruct f = (,) <$> f SelectFirst <*> f SelectSecond

@@ -25,6 +25,15 @@ class (TestEquality sel, TupleReaderWitness SubjectReader sel) => SubjectTupleSe
     default tupleReadFromSubject ::
         forall edit. (TupleSubject sel ~ Tuple sel) => sel edit -> TupleSubject sel -> EditSubject edit
     tupleReadFromSubject sel (MkTuple tuple) = tuple sel
+    tupleWriteToSubject :: forall edit. sel edit -> EditSubject edit -> TupleSubject sel -> TupleSubject sel
+    default tupleWriteToSubject ::
+        forall edit.
+            (TupleSubject sel ~ Tuple sel) => sel edit -> EditSubject edit -> TupleSubject sel -> TupleSubject sel
+    tupleWriteToSubject sel element (MkTuple tuple) =
+        MkTuple $ \sel' ->
+            case testEquality sel sel' of
+                Just Refl -> element
+                Nothing -> tuple sel'
 
 data TupleEditReader sel t where
     MkTupleEditReader :: sel edit -> EditReader edit t -> TupleEditReader sel t
@@ -117,10 +126,19 @@ instance (TestEquality sel, TupleWitness InvertibleEdit sel) => InvertibleEdit (
                     Dict -> fmap (fmap (MkTupleEdit seledit)) $ invertEdits edits $ mr . MkTupleEditReader seledit
         return $ mconcat invedits
 
+instance (SubjectTupleSelector sel, TupleWitness SubjectMapEdit sel) => SubjectMapEdit (TupleEdit sel) where
+    mapSubjectEdits =
+        mapEditToMapEdits $ \(MkTupleEdit sel edit) subj ->
+            case tupleWitness @SubjectMapEdit sel of
+                Dict -> do
+                    newelement <- mapSubjectEdits [edit] $ tupleReadFromSubject sel subj
+                    return $ tupleWriteToSubject sel newelement subj
+
 instance ( SubjectTupleSelector sel
          , FiniteTupleSelector sel
          , TupleReaderWitness FullSubjectReader sel
          , TupleWitness ApplicableEdit sel
+         , TupleWitness SubjectMapEdit sel
          , TupleWitness FullEdit sel
          ) => FullEdit (TupleEdit sel) where
     replaceEdit mr writeEdit = do

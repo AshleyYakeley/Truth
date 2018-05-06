@@ -49,6 +49,8 @@ instance (FullSubjectReader reader) => InvertibleEdit (WholeReaderEdit reader) w
         a <- mutableReadToSubject mr
         return [MkWholeEdit a]
 
+instance FullSubjectReader reader => SubjectMapEdit (WholeReaderEdit reader)
+
 instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
     replaceEdit mr write = do
         a <- mutableReadToSubject mr

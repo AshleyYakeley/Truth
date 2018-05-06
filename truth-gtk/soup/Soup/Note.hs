@@ -56,6 +56,11 @@ instance TupleWitness ApplicableEdit NoteSel where
     tupleWitness NotePast = Dict
     tupleWitness NoteText = Dict
 
+instance TupleWitness SubjectMapEdit NoteSel where
+    tupleWitness NoteTitle = Dict
+    tupleWitness NotePast = Dict
+    tupleWitness NoteText = Dict
+
 instance TupleWitness FullEdit NoteSel where
     tupleWitness NoteTitle = Dict
     tupleWitness NotePast = Dict

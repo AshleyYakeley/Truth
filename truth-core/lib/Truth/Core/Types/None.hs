@@ -47,6 +47,8 @@ instance ApplicableEdit (NoEdit reader) where
 instance InvertibleEdit (NoEdit reader) where
     invertEdit edit _ = never edit
 
+instance FullSubjectReader reader => SubjectMapEdit (NoEdit reader)
+
 instance (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (NoEdit reader) where
     replaceEdit _ _ = return ()
 

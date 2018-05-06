@@ -118,6 +118,8 @@ instance IsSequence seq => InvertibleEdit (StringEdit seq) where
         olds <- mr $ StringReadSection run
         return [StringReplaceSection (MkSequenceRun start (seqLength s)) olds]
 
+instance IsSequence seq => SubjectMapEdit (StringEdit seq)
+
 instance IsSequence seq => FullEdit (StringEdit seq) where
     replaceEdit mr writeEdit = do
         a <- mutableReadToSubject mr

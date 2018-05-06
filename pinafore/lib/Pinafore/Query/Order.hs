@@ -3,6 +3,7 @@ module Pinafore.Query.Order where
 import Data.Time
 import Pinafore.Morphism
 import Pinafore.Number
+import Pinafore.PredicateMorphism
 import Pinafore.Query.Types
 import Pinafore.Table
 import Shapes
@@ -24,24 +25,24 @@ instance Monoid (QOrder baseedit) where
     mappend = (<>)
 
 alphabetical ::
-       forall baseedit. HasPinaforeTableEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => QOrder baseedit
 alphabetical = MkQOrder (lensFunctionMorphism literalPinaforeLensMorphism) $ compare @Text
 
 numerical ::
-       forall baseedit. HasPinaforeTableEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => QOrder baseedit
 numerical = MkQOrder (lensFunctionMorphism literalPinaforeLensMorphism) $ compare @Number
 
 chronological ::
-       forall baseedit. HasPinaforeTableEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => QOrder baseedit
 chronological = MkQOrder (lensFunctionMorphism literalPinaforeLensMorphism) $ compare @UTCTime
 
 orderon :: forall baseedit. (QImPointMorphism baseedit) -> QOrder baseedit -> QOrder baseedit
 orderon f (MkQOrder (ef :: QImLiteralMorphism baseedit t) o) = let
     ef' :: QImLiteralMorphism baseedit t
-    ef' = arr (\mmt -> mmt >>= id) . cfmap ef . f
+    ef' = ef . f
     in MkQOrder ef' o
 
 orders :: forall baseedit. [QOrder baseedit] -> QOrder baseedit

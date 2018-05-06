@@ -21,8 +21,10 @@ optDataFlag = O.optional $ O.strOption (O.long "data")
 
 optParser :: O.Parser Options
 optParser =
-    (O.flag' ExprDocOption $ O.long "doc") <|> (O.flag' DumpTableOption $ O.long "dump-table") <*> optDataFlag <|>
-    RunOption <$> (O.switch $ O.long "interactive" <> O.short 'i') <*> optDataFlag <*> (O.many $ O.strArgument mempty)
+    (RunOption <$> (O.switch $ O.long "interactive" <> O.short 'i') <*> optDataFlag <*>
+     (O.many $ O.strArgument $ O.metavar "SCRIPT")) <|>
+    (O.flag' ExprDocOption $ O.long "doc") <|>
+    ((O.flag' DumpTableOption $ O.long "dump-table") <*> optDataFlag)
 
 getDirPath :: MonadIO m => Maybe FilePath -> m FilePath
 getDirPath mdirpath = do

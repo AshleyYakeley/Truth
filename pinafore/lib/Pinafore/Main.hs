@@ -1,6 +1,7 @@
 module Pinafore.Main
     ( filePinaforeType
     , PinaforeContext
+    , makePinaforeContext
     , sqlitePinaforeContext
     , sqlitePinaforeDumpTable
     , pinaforeRunFile
@@ -26,10 +27,10 @@ filePinaforeType = qTypeDescription @FilePinaforeType
 sqlitePinaforeObject :: FilePath -> LifeCycle (Object PinaforeEdit)
 sqlitePinaforeObject dirpath = do
     tableObject1 <- lifeCycleWith $ exclusiveObject $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
-    tableObject <- cacheObject tableObject1
+    tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
     return $
         tupleObject $ \case
-            PinaforeSelectTable -> tableObject
+            PinaforeSelectPoint -> pinaforeTablePointObject tableObject
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
 
 getPinaforeRunAction ::
@@ -51,11 +52,15 @@ getPinaforeRunAction pinaforeObject createWindow = do
 newtype PinaforeContext =
     MkPinaforeContext (UnliftIO (QActionM PinaforeEdit))
 
+makePinaforeContext :: Object PinaforeEdit -> (UserInterface UIWindow () -> IO ()) -> IO PinaforeContext
+makePinaforeContext pinaforeObject createWindow = do
+    runAction <- liftIO $ getPinaforeRunAction pinaforeObject createWindow
+    return $ MkPinaforeContext runAction
+
 sqlitePinaforeContext :: FilePath -> (UserInterface UIWindow () -> IO ()) -> LifeCycle PinaforeContext
 sqlitePinaforeContext dirpath createWindow = do
     pinaforeObject <- sqlitePinaforeObject dirpath
-    runAction <- liftIO $ getPinaforeRunAction pinaforeObject createWindow
-    return $ MkPinaforeContext runAction
+    liftIO $ makePinaforeContext pinaforeObject createWindow
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

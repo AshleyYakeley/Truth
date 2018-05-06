@@ -31,13 +31,16 @@ library:
       - Pinafore.Number
       - Pinafore.Literal
       - Pinafore.Morphism
+      - Pinafore.Point
       - Pinafore.Table
+      - Pinafore.PredicateMorphism
       - Pinafore.File
       - Pinafore.Pinafore
       - Pinafore.Query.Token
       - Pinafore.Query.Read
       - Pinafore.Query.Types
       - Pinafore.Query.Lifted
+      - Pinafore.Query.If
       - Pinafore.Query.Order
       - Pinafore.Query.Predefined
       - Pinafore.Database
@@ -67,6 +70,8 @@ tests:
           - tasty-golden
         main: Main.hs
         other-modules:
+          - Test.Language
+          - Test.Point
 
 executables:
     pinafore:

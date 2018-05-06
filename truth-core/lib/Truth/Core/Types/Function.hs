@@ -18,6 +18,9 @@ instance (Eq a) => TestEquality (FunctionSelector a editb) where
 instance (Finite a, SubjectReader (EditReader edit)) => SubjectTupleSelector (FunctionSelector a edit) where
     type TupleSubject (FunctionSelector a edit) = a -> EditSubject edit
     tupleReadFromSubject (MkFunctionSelector a) ab = ab a
+    tupleWriteToSubject (MkFunctionSelector a) b _ a'
+        | a == a' = b
+    tupleWriteToSubject _ _ ab a' = ab a'
 
 instance Finite a => FiniteTupleSelector (FunctionSelector a edit) where
     tupleConstruct f = assemble (\a -> f (MkFunctionSelector a))
@@ -31,6 +34,9 @@ instance (c edit) => TupleWitness c (FunctionSelector a edit) where
 type FunctionEditReader a edit = TupleEditReader (FunctionSelector a edit)
 
 type FunctionEdit a edit = TupleEdit (FunctionSelector a edit)
+
+constFunctionReadFunction :: ReadFunction (EditReader edit) (FunctionEditReader a edit)
+constFunctionReadFunction mr (MkTupleEditReader (MkFunctionSelector _) rt) = mr rt
 
 functionLiftEditFunction ::
        forall a edita editb. EditFunction edita editb -> EditFunction (FunctionEdit a edita) (FunctionEdit a editb)

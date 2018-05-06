@@ -14,18 +14,18 @@ module Pinafore.Query
 
 import Control.Exception
 import Pinafore.File
+import Pinafore.PredicateMorphism
 import Pinafore.Query.Convert
 import Pinafore.Query.Expression
 import Pinafore.Query.Predefined
 import Pinafore.Query.Read
 import Pinafore.Query.Types
 import Pinafore.Query.Value
-import Pinafore.Table
 import Shapes
 import System.IO.Error
 
 parseValue ::
-       forall baseedit t. (HasPinaforeTableEdit baseedit, HasPinaforeFileEdit baseedit, FromQValue baseedit t)
+       forall baseedit t. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit, FromQValue baseedit t)
     => String
     -> Text
     -> Result Text t
@@ -35,7 +35,7 @@ parseValue name text = do
     fromQValue val
 
 interactLoop ::
-       forall baseedit. HasPinaforeTableEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => StateT (QValueExpr baseedit -> IO ()) IO ()
 interactLoop = do
     liftIO $ putStr "pinafore> "
@@ -56,7 +56,7 @@ interactLoop = do
             interactLoop
 
 interact ::
-       forall baseedit. (HasPinaforeTableEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
     => UnliftIO (QActionM baseedit)
     -> IO ()
 interact runAction = do
