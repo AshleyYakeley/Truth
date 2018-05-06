@@ -20,6 +20,9 @@ instance Applicative (Lifted baseedit) where
         fa = liftedToFunction la
         in LiftedFunction $ funcEditFunction (\(mab, ma) -> mab <*> ma) . pairWholeEditFunction fab fa
 
+nullLifted :: Lifted baseedit t
+nullLifted = LiftedFunction $ constEditFunction Nothing
+
 liftedToFunction :: Lifted baseedit t -> QImLiteral baseedit t
 liftedToFunction (LiftedConstant t) = constEditFunction $ Just t
 liftedToFunction (LiftedFunction t) = t
@@ -27,3 +30,7 @@ liftedToFunction (LiftedFunction t) = t
 ioLifted :: Lifted baseedit (IO t) -> Lifted baseedit t
 ioLifted (LiftedConstant iot) = LiftedFunction $ ioConstEditFunction $ fmap Just iot
 ioLifted (LiftedFunction litiot) = LiftedFunction $ ioWholeEditFunction sequence . litiot
+
+unLifted :: Lifted baseedit t -> QActionM baseedit (Maybe t)
+unLifted (LiftedConstant t) = return $ Just t
+unLifted (LiftedFunction lt) = qGetFunctionValue lt

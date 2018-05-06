@@ -1,6 +1,7 @@
 module Pinafore.Main
     ( filePinaforeType
     , PinaforeContext
+    , makePinaforeContext
     , sqlitePinaforeContext
     , sqlitePinaforeDumpTable
     , pinaforeRunFile
@@ -51,11 +52,15 @@ getPinaforeRunAction pinaforeObject createWindow = do
 newtype PinaforeContext =
     MkPinaforeContext (UnliftIO (QActionM PinaforeEdit))
 
+makePinaforeContext :: Object PinaforeEdit -> (UserInterface UIWindow () -> IO ()) -> IO PinaforeContext
+makePinaforeContext pinaforeObject createWindow = do
+    runAction <- liftIO $ getPinaforeRunAction pinaforeObject createWindow
+    return $ MkPinaforeContext runAction
+
 sqlitePinaforeContext :: FilePath -> (UserInterface UIWindow () -> IO ()) -> LifeCycle PinaforeContext
 sqlitePinaforeContext dirpath createWindow = do
     pinaforeObject <- sqlitePinaforeObject dirpath
-    runAction <- liftIO $ getPinaforeRunAction pinaforeObject createWindow
-    return $ MkPinaforeContext runAction
+    liftIO $ makePinaforeContext pinaforeObject createWindow
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

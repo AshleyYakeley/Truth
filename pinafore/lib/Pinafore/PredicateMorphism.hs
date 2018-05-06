@@ -1,6 +1,7 @@
 module Pinafore.PredicateMorphism
     ( HasPinaforePointEdit(..)
     , predicatePinaforeLensMorphism
+    , literalPinaforeInverseFunctionMorphism
     , literalPinaforeLensMorphism
     ) where
 
@@ -135,20 +136,15 @@ literalPinaforeMap = let
 
 literalInverseFunction ::
        forall t. AsLiteral t
-    => APinaforeFunctionMorphism PinaforePointEdit IdentityT (Maybe t) (FiniteSet Point)
+    => APinaforeFunctionMorphism PinaforePointEdit IdentityT (Maybe t) Point
 literalInverseFunction = let
     pfFuncRead ::
            forall m. MonadIO m
         => MutableRead m PinaforePointRead
         -> Maybe t
-        -> IdentityT m (FiniteSet Point)
-    pfFuncRead _ Nothing = do
-        e <- newPoint
-        return $ opoint e
-    pfFuncRead mr (Just val) =
-        lift $ do
-            p <- mr $ PinaforePointReadFromLiteral val
-            return $ opoint p
+        -> IdentityT m Point
+    pfFuncRead _ Nothing = newPoint
+    pfFuncRead mr (Just val) = lift $ mr $ PinaforePointReadFromLiteral val
     pfUpdate ::
            forall m. MonadIO m
         => PinaforePointEdit
@@ -157,9 +153,15 @@ literalInverseFunction = let
     pfUpdate _ _ = return False
     in MkAPinaforeFunctionMorphism {..}
 
+literalPinaforeInverseFunctionMorphism ::
+       (HasPinaforePointEdit baseedit, AsLiteral t) => PinaforeFunctionMorphism baseedit (Maybe t) Point
+literalPinaforeInverseFunctionMorphism =
+    mapPinaforeFunctionMorphismBase (editLensFunction pinaforePointLens) $
+    MkCloseUnlift identityUnlift literalInverseFunction
+
 literalPinaforeTableLensMorphism :: AsLiteral t => PinaforeLensMorphism PinaforePointEdit Point (Maybe t)
 literalPinaforeTableLensMorphism =
-    MkCloseUnlift identityUnlift $ MkAPinaforeLensMorphism literalPinaforeMap literalInverseFunction
+    MkCloseUnlift identityUnlift $ MkAPinaforeLensMorphism literalPinaforeMap $ fmap opoint literalInverseFunction
 
 literalPinaforeLensMorphism ::
        (HasPinaforePointEdit baseedit, AsLiteral t) => PinaforeLensMorphism baseedit Point (Maybe t)

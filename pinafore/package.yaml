@@ -40,6 +40,7 @@ library:
       - Pinafore.Query.Read
       - Pinafore.Query.Types
       - Pinafore.Query.Lifted
+      - Pinafore.Query.If
       - Pinafore.Query.Order
       - Pinafore.Query.Predefined
       - Pinafore.Database
@@ -70,6 +71,7 @@ tests:
         main: Main.hs
         other-modules:
           - Test.Language
+          - Test.Point
 
 executables:
     pinafore:

@@ -41,7 +41,6 @@ qApplyMorphismValue = applyPinaforeLens
 qApplyImMorphismPoint :: QImLiteralMorphism baseedit t -> QImPoint baseedit -> QImLiteral baseedit t
 qApplyImMorphismPoint = applyPinaforeFunction
 
---qApplyImMorphismPoint f a = applyPinaforeFunction (arr (\mmt -> mmt >>= id) . cfmap f) a
 qApplyImMorphismSet :: QImLiteralMorphism baseedit t -> QImSet baseedit -> QImLiteralSet baseedit t
 qApplyImMorphismSet f a = applyPinaforeFunction (arr catMaybes . cfmap f) a
 

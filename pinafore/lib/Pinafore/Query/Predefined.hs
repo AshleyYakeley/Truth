@@ -114,6 +114,11 @@ removepoint set qp = do
     point <- getQImPoint qp
     liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem point]
 
+setpoint :: forall baseedit. QPoint baseedit -> QImPoint baseedit -> QAction baseedit
+setpoint var val = do
+    p :: Point <- getQImPoint val
+    liftOuter $ mapViewEdit var $ viewObjectPushEdit $ \_ push -> push [MkWholeEdit p]
+
 file_import ::
        forall baseedit. HasPinaforeFileEdit baseedit
     => QSet baseedit
@@ -190,19 +195,25 @@ ui_pick nameMorphism fset = let
         convertEditFunction . applyPinaforeFunction getNames fset
     in uiOption @baseedit @Point opts
 
+qfail :: forall baseedit. Lifted baseedit Text -> QAction baseedit
+qfail lt = do
+    mt <- unLifted lt
+    liftIO $ fail $ unpack $ fromMaybe "<null>" mt
+
 predefinitions ::
        forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
     => [(QBindings baseedit, (Symbol, Text))]
 predefinitions =
     [ pb "$" $ qapply @baseedit
     , pb "literal" $ fmap @(Lifted baseedit) $ literal_conv
+    , pb "null" $ nullLifted @baseedit @Literal
     , pb "." $ qcombine @baseedit
     , pb "&" $ qmeet @baseedit
     , pb "|" $ qjoin @baseedit
     , pb "member" $ liftA2 @(Lifted baseedit) $ set_member
     , pb "++" $ qappend @baseedit
-    , pb "==" $ liftA2 @(Lifted baseedit) $ (==) @Literal
-    , pb "/=" $ liftA2 @(Lifted baseedit) $ (/=) @Literal
+    , pb "==" $ liftA2 @(Lifted baseedit) $ (==) @Point
+    , pb "/=" $ liftA2 @(Lifted baseedit) $ (/=) @Point
     , pb "+" $ liftA2 @(Lifted baseedit) $ (+) @Number
     , pb "-" $ liftA2 @(Lifted baseedit) $ (-) @Number
     , pb "*" $ liftA2 @(Lifted baseedit) $ (*) @Number
@@ -230,9 +241,11 @@ predefinitions =
           (funcEditFunction (Just . isJust) . val :: QImLiteral baseedit Bool)
     , pb "pass" (return () :: QAction baseedit)
     , pb ">>" $ ((>>) :: QAction baseedit -> QAction baseedit -> QAction baseedit)
+    , pb "fail" $ qfail @baseedit
     , pb "withset" $ withset @baseedit
     , pb "output" $ output @baseedit
     , pb "outputln" $ outputln @baseedit
+    , pb "setpoint" $ setpoint @baseedit
     , pb "newpoint" $ newpoint @baseedit
     , pb "addpoint" $ addpoint @baseedit
     , pb "removepoint" $ removepoint @baseedit

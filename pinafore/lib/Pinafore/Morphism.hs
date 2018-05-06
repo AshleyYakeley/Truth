@@ -4,6 +4,7 @@ module Pinafore.Morphism
     , PinaforeFunctionValue
     , PinaforeFunctionMorphism
     , applyPinaforeFunction
+    , mapPinaforeFunctionMorphismBase
     , PinaforeLensValue
     , lensFunctionValue
     , PinaforeLensMorphism
@@ -25,6 +26,10 @@ data APinaforeFunctionMorphism baseedit t a b = MkAPinaforeFunctionMorphism
     { pfFuncRead :: forall m. MonadIO m => MutableRead m (EditReader baseedit) -> a -> t m b
     , pfUpdate :: forall m. MonadIO m => baseedit -> MutableRead m (EditReader baseedit) -> t m Bool
     }
+
+instance MonadTransConstraint MonadIO t => Functor (APinaforeFunctionMorphism baseedit t a) where
+    fmap ab (MkAPinaforeFunctionMorphism fr up) =
+        MkAPinaforeFunctionMorphism (\mr a -> withTransConstraintTM @MonadIO $ fmap ab $ fr mr a) up
 
 type PinaforeFunctionMorphism baseedit = CloseUnlift (APinaforeFunctionMorphism baseedit)
 
@@ -114,6 +119,38 @@ applyPinaforeFunction =
                         return [MkWholeEdit b]
                     else return []
         in MkAnEditFunction g u
+
+mapPinaforeFunctionMorphismBase ::
+       forall baseA baseB a b.
+       EditFunction baseB baseA
+    -> PinaforeFunctionMorphism baseA a b
+    -> PinaforeFunctionMorphism baseB a b
+mapPinaforeFunctionMorphismBase ef morph = let
+    call ::
+           forall t1 t2. (MonadTransUnlift t1, MonadTransUnlift t2)
+        => APinaforeFunctionMorphism baseA t1 a b
+        -> AnEditFunction t2 baseB baseA
+        -> APinaforeFunctionMorphism baseB (ComposeT t1 t2) a b
+    call (MkAPinaforeFunctionMorphism frA updateA) aef = let
+        readFunc :: ReadFunctionT t2 (EditReader baseB) (EditReader baseA)
+        readFunc = efGet aef
+        frB :: forall m. MonadIO m
+            => MutableRead m (EditReader baseB)
+            -> a
+            -> ComposeT t1 t2 m b
+        frB mr a = mkComposeT $ frA (readFunc mr) a
+        updateB ::
+               forall m. MonadIO m
+            => baseB
+            -> MutableRead m (EditReader baseB)
+            -> ComposeT t1 t2 m Bool
+        updateB beditB mr =
+            withTransConstraintTM @MonadIO $ do
+                beditAs <- lift2ComposeT' $ efUpdate aef beditB mr
+                chs <- for beditAs $ \beditA -> mkComposeT $ updateA beditA $ readFunc mr
+                return $ or chs
+        in MkAPinaforeFunctionMorphism frB updateB
+    in joinUnlifts call morph ef
 
 lensFunctionValue ::
        (FullSubjectReader (EditReader edit), ApplicableEdit edit)

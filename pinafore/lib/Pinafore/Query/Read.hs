@@ -6,6 +6,7 @@ module Pinafore.Query.Read
 import Pinafore.PredicateMorphism
 import Pinafore.Query.Convert
 import Pinafore.Query.Expression
+import Pinafore.Query.If
 import Pinafore.Query.Token
 import Pinafore.Query.Value
 import Shapes hiding (try)
