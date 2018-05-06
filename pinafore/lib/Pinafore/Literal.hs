@@ -12,7 +12,7 @@ newtype Literal = MkLiteral
 instance Show Literal where
     show (MkLiteral t) = show t
 
-class AsLiteral t where
+class (Eq t, Show t) => AsLiteral t where
     toLiteral :: t -> Literal
     fromLiteral :: Literal -> Maybe t
     literalTypeDescription :: Text

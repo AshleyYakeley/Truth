@@ -50,7 +50,35 @@ data PinaforePointRead t where
     PinaforePointReadToEither :: Point -> PinaforePointRead (Maybe (Either Point Point))
     PinaforePointReadFromEither :: Either Point Point -> PinaforePointRead Point
 
+instance Show (PinaforePointRead t) where
+    show (PinaforePointReadGetPredicate p s) = "get " ++ show p ++ " of " ++ show s
+    show (PinaforePointReadLookupPredicate p v) = "lookup " ++ show p ++ " for " ++ show v
+    show (PinaforePointReadToLiteral v) = "to literal " ++ show v
+    show (PinaforePointReadFromLiteral lit) = "from literal " ++ show (toLiteral lit)
+    show PinaforePointReadUnit = "unit"
+    show (PinaforePointReadToPair p) = "to pair " ++ show p
+    show (PinaforePointReadFromPair ab) = "from pair " ++ show ab
+    show (PinaforePointReadToEither p) = "to either " ++ show p
+    show (PinaforePointReadFromEither eab) = "from either " ++ show eab
+
+instance AllWitnessConstraint Show PinaforePointRead where
+    allWitnessConstraint = Dict
+
+instance WitnessConstraint Show PinaforePointRead where
+    witnessConstraint (PinaforePointReadGetPredicate _ _) = Dict
+    witnessConstraint (PinaforePointReadLookupPredicate _ _) = Dict
+    witnessConstraint (PinaforePointReadToLiteral _) = Dict
+    witnessConstraint (PinaforePointReadFromLiteral _) = Dict
+    witnessConstraint PinaforePointReadUnit = Dict
+    witnessConstraint (PinaforePointReadToPair _) = Dict
+    witnessConstraint (PinaforePointReadFromPair _) = Dict
+    witnessConstraint (PinaforePointReadToEither _) = Dict
+    witnessConstraint (PinaforePointReadFromEither _) = Dict
+
 data PinaforePointEdit where
     PinaforePointEditSetPredicate :: Predicate -> Point -> Point -> PinaforePointEdit -- pred subj val
 
 type instance EditReader PinaforePointEdit = PinaforePointRead
+
+instance Show PinaforePointEdit where
+    show (PinaforePointEditSetPredicate p s v) = "set " ++ show p ++ " of " ++ show s ++ " to " ++ show v
