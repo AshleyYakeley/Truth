@@ -96,7 +96,12 @@ lensObject discard (MkCloseUnlift (MkUnlift lensRun :: Unlift tl) MkAnEditLens {
         in MkObject @editb @(tl mr) objRunB objReadB objEditB
 
 readConstantObject :: MutableRead IO (EditReader edit) -> Object edit
-readConstantObject mr = MkObject (MkUnliftIO id) mr $ \_ -> return Nothing
+readConstantObject mr =
+    MkObject (MkUnliftIO id) mr $ 
+    -- must allow empty edit list
+    \case
+        [] -> return $ Just $ return ()
+        _ -> return Nothing
 
 constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit
 constantObject subj = readConstantObject $ subjectToMutableRead subj
