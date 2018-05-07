@@ -44,8 +44,8 @@ instance UnliftCategory AnEditLens where
                         Dict ->
                             traceBracketArgs "AnEditLens:(.).elPutEdits" (show $ length ec) (show . fmap length) $
                             getComposeM $ do
-                                ebs <- MkComposeM $ MkComposeT $ peBC ec $ efGet efAB mra
-                                MkComposeM $ lift2ComposeT $ elPutEdits lensAB ebs mra
+                                ebs <- traceBracket "AnEditLens:(.).elPutEdits: BC edits" $ MkComposeM $ MkComposeT $ peBC ec $ efGet efAB mra
+                                traceBracket "AnEditLens:(.).elPutEdits: AB edits" $ MkComposeM $ lift2ComposeT $ elPutEdits lensAB ebs mra
         efAC = ucCompose efBC efAB
         in MkAnEditLens efAC peAC
 
@@ -82,7 +82,7 @@ readOnlyEditLens :: EditFunction edita editb -> EditLens edita editb
 readOnlyEditLens (MkCloseUnlift unlift elFunction) = let
     elPutEdits [] _ = withTransConstraintTM @MonadIO $ return $ Just []
     -- must allow empty edit-lists so that composition works correctly
-    elPutEdits (_:_) _ = withTransConstraintTM @MonadIO $ return Nothing
+    elPutEdits (_:_) _ = withTransConstraintTM @MonadIO $ traceBracket "readOnlyEditLens:no" $ return Nothing
     in MkCloseUnlift unlift $ MkAnEditLens {..}
 
 funcEditLens ::

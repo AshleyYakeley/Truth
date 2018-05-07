@@ -20,6 +20,7 @@ import Shapes
 import Truth.Core
 import Truth.World.File
 import Truth.World.ObjectStore
+import Truth.Debug.Object
 
 qcombine :: HasPinaforePointEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
 qcombine (MkAny QTMorphism g) (MkAny QTMorphism f) = MkAny QTMorphism $ g . f
@@ -117,7 +118,7 @@ removepoint set qp = do
 setpoint :: forall baseedit. QPoint baseedit -> QImPoint baseedit -> QAction baseedit
 setpoint var val = do
     p :: Point <- getQImPoint val
-    liftOuter $ mapViewEdit var $ viewObjectPushEdit $ \_ push -> push [MkWholeEdit p]
+    traceBracket "setpoint: push" $ liftOuter $ mapViewEdit var $ viewObjectPushEdit $ \_ push -> push [MkWholeEdit p]
 
 file_import ::
        forall baseedit. HasPinaforeFileEdit baseedit

@@ -11,6 +11,7 @@ import Pinafore.Point
 import Shapes
 import Text.Read
 import Truth.Core
+import Truth.Debug.Object
 
 data PinaforeTableRead t where
     PinaforeTableReadGetPredicate :: Predicate -> Point -> PinaforeTableRead (Maybe Point)
@@ -215,7 +216,7 @@ unitPoint = MkPoint $ read "644eaa9b-0c57-4c5c-9606-e5303fda86f9"
 pinaforeTablePointObject :: Object PinaforeTableEdit -> Object PinaforePointEdit
 pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTableRead) tableMPush) = let
     tablePush :: [PinaforeTableEdit] -> m ()
-    tablePush edits = pushOrFail "can't push table edit" $ tableMPush edits
+    tablePush edits = traceBracket "pinaforeTablePointObject.tablePush" $ pushOrFail "can't push table edit" $ tableMPush edits
     objRead :: MutableRead m PinaforePointRead
     objRead (PinaforePointReadGetPredicate prd subj) = do
         mval <- tableRead $ PinaforeTableReadGetPredicate prd subj
@@ -268,7 +269,7 @@ pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTa
     objRead (PinaforePointReadFromEither (Left p)) = objRead $ PinaforePointReadGetPredicate predinl p
     objRead (PinaforePointReadFromEither (Right p)) = objRead $ PinaforePointReadGetPredicate predinr p
     objEdit :: [PinaforePointEdit] -> m (Maybe (m ()))
-    objEdit =
-        singleAlwaysEdit $ \(PinaforePointEditSetPredicate p s v) ->
-            tablePush [PinaforeTableEditSetPredicate p s $ Just v]
-    in MkObject {..}
+    objEdit edits = traceBracket "pinaforeTablePointObject.objEdit.examine" $
+        (singleAlwaysEdit $ \(PinaforePointEditSetPredicate p s v) ->
+            traceBracket "pinaforeTablePointObject.objEdit.do" $ tablePush [PinaforeTableEditSetPredicate p s $ Just v]) edits
+    in traceArgThing "pinaforeTablePointObject" $ MkObject {..}

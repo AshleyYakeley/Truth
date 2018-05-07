@@ -57,12 +57,24 @@ instance TraceAThing AnEditLens where
     traceAThing prefix (MkAnEditLens ef pe) =
         MkAnEditLens
             (traceAThing prefix ef)
-            (\ee mr -> withTransConstraintTM @MonadIO $ traceBracket (contextStr prefix "put") $ pe ee mr)
+            (\ee mr -> withTransConstraintTM @MonadIO $ traceBracket (contextStr prefix "put") $ do
+                mee <- pe ee mr
+                case mee of
+                    Just _ -> traceIOM (contextStr prefix "put: edits")
+                    Nothing -> traceIOM (contextStr prefix "put: no edits")
+                return mee
+                )
     traceArgAThing prefix (MkAnEditLens ef pe) =
         MkAnEditLens
             (traceArgAThing prefix ef)
             (\ee mr ->
-                 withTransConstraintTM @MonadIO $ traceBracketArgs (contextStr prefix "put") (show ee) show $ pe ee mr)
+                 withTransConstraintTM @MonadIO $ traceBracketArgs (contextStr prefix "put") (show ee) show $ do
+                mee <- pe ee mr
+                case mee of
+                    Just _ -> traceIOM (contextStr prefix "put: edits")
+                    Nothing -> traceIOM (contextStr prefix "put: no edits")
+                return mee
+                )
 
 instance TraceThing (Object edit) where
     traceThing prefix = traceObject prefix blankEditShower

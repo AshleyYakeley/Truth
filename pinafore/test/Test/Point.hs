@@ -8,13 +8,15 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Truth.Core
 import Truth.World.ObjectStore
+import Truth.Debug.Object
 
 makeTestObject :: IO (Object PinaforeEdit)
 makeTestObject = do
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <- freeIOObject ([], []) $ \_ -> True
     return $
+        traceThing "testObject.tupleObject" $
         tupleObject $ \case
-            PinaforeSelectPoint -> pinaforeTablePointObject $ convertObject tableStateObject
+            PinaforeSelectPoint -> pinaforeTablePointObject $ traceThing "testObject.convertObject" $ convertObject $ traceThing "testObject.tableStateObject" tableStateObject
             PinaforeSelectFile -> readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
 
 makeTestPinaforeContest :: IO PinaforeContext
@@ -39,7 +41,7 @@ prefix = pack $ "let " ++ intercalate ";" defs ++ " in "
 
 pointTest :: Text -> TestTree
 pointTest text =
-    testCase (unpack text) $ do
+    testCase (unpack text) $ traceBracket ("test case " ++ show text) $ do
         pc <- makeTestPinaforeContest
         pinaforeRunFile pc "<test>" $ prefix <> text
 
