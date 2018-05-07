@@ -173,9 +173,6 @@ ui_table cols asp val = let
     aspect entity = resultToM $ mapResultFailure unpack $ fmap return $ asp entity
     in uiTable (fmap getColumn cols) aspect val
 
-literal_conv :: Literal -> Literal
-literal_conv = id
-
 ui_pick ::
        forall baseedit. QMorphismLiteral baseedit Text -> QSetPoint baseedit -> QRefPoint baseedit -> UISpec baseedit
 ui_pick nameMorphism fset = let
@@ -201,17 +198,20 @@ qfail lt = do
     mt <- unLifted lt
     liftIO $ fail $ unpack $ fromMaybe "<null>" mt
 
+qsingle :: FiniteSet Literal -> Maybe Literal
+qsingle = getSingle
+
 predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => [(QBindings baseedit, (Symbol, Text))]
 predefinitions =
     [ pb "$" $ qapply @baseedit
-    , pb "literal" $ fmap @(Lifted baseedit) $ literal_conv
     , pb "null" $ nullLifted @baseedit @Literal
     , pb "." $ qcombine @baseedit
     , pb "&" $ qmeet @baseedit
     , pb "|" $ qjoin @baseedit
     , pb "member" $ liftA2 @(Lifted baseedit) $ set_member
+    , pb "single" $ fmap @(Lifted baseedit) $ qsingle
     , pb "++" $ qappend @baseedit
     , pb "==" $ liftA2 @(Lifted baseedit) $ (==) @Point
     , pb "/=" $ liftA2 @(Lifted baseedit) $ (/=) @Point

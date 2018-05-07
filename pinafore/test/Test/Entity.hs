@@ -26,6 +26,7 @@ defs :: [String]
 defs =
     [ "ornull a b = if exists a then a else b"
     , "testeq expected found = if expected == found then pass else fail (\"expected \" ++ (ornull expected \"null\") ++ \" but found \" ++ (ornull found \"null\"))"
+    , "testisnull t = if exists t then fail (\"expected null but found \" ++ t) else pass"
     , "ma = %3f1b6c1e-06ea-454c-b446-58ccd23ffda1"
     , "mb = %410a71b0-fc3c-415d-85eb-de8c1cb88267"
     , "mc = %69aa80b4-b3fd-42aa-961a-d1a5ee0cf950"
@@ -51,29 +52,48 @@ testEntity =
         , pointTest "pass >> pass"
         , pointTest "if true then pass else fail \"failed\""
         , pointTest "pass >> if true then pass else fail \"failed\""
+        -- numerical equal
         , pointTest "testeq 1 1"
         , pointTest "testeq 1 \"1\""
-        , pointTest "testeq \"false\" $ 0 == 1"
-        , pointTest "testeq \"true\" $ 1 == 1"
-        , pointTest "testeq \"true\" $ 0 /= 1"
-        , pointTest "testeq \"false\" $ 1 /= 1"
-        , pointTest "testeq \"false\" $ 1 == ~1"
+        , pointTest "testeq false $ 0 == 1"
+        , pointTest "testeq true $ 1 == 1"
+        , pointTest "testeq true $ 0 /= 1"
+        , pointTest "testeq false $ 1 /= 1"
+        , pointTest "testeq false $ 1 == ~1"
+        -- null & exists
         , pointTest "if exists null then fail \"failed\" else pass"
         , pointTest "if exists p1 then fail \"failed\" else pass"
         , pointTest "pass >> if exists p1 then fail \"failed\" else pass"
         , pointTest "if exists p1 then fail \"failed\" else pass >> pass"
+        , pointTest "testisnull null"
+        , pointTest "testisnull (ma p1)"
+        -- setentity
         , pointTest "setentity (ma p1) \"hello\""
         , pointTest "setentity (ma p1) p2"
         , pointTest "setentity (ma p1) p2 >> testeq p2 (ma p1)"
         , pointTest "setentity (ma p1) \"hello\" >> testeq \"hello\" (ma p1)"
+        -- addentity
         , pointTest "addentity (@ma \"hello\") p1"
         , pointTest "addentity (@ma \"hello\") p1 >> pass"
         , pointTest "addentity (@ma \"hello\") p1 >> testeq \"hello\" (ma p1)"
+        -- matching literals
         , pointTest "setentity (ma p1) \"hello\" >> setentity (ma p2) \"hello\" >> testeq (ma p1) (ma p2)"
+        -- composed morphisms
         , pointTest "setentity (ma $ mb p1) p2 >> testeq p2 (ma $ mb p1)"
         , pointTest "setentity (ma $ mb p1) \"hello\" >> testeq \"hello\" (ma $ mb p1)"
         , pointTest "setentity (ma . mb $ p1) p2 >> testeq p2 (ma $ mb p1)"
         , pointTest "setentity (ma . mb $ p1) \"hello\" >> testeq \"hello\" (ma $ mb p1)"
         , pointTest "setentity (ma $ mb p1) p2 >> testeq p2 (ma . mb $ p1)"
         , pointTest "setentity (ma $ mb p1) \"hello\" >> testeq \"hello\" (ma . mb $ p1)"
+        -- single
+        , pointTest "testisnull (single $ mb $ @ma 0)"
+        , pointTest "setentity (mb p1) 1 >> setentity (ma p1) 0 >> testeq 1 (single $ mb $ @ma 0)"
+        , pointTest
+              "setentity (mb p1) 1 >> setentity (ma p1) 0 >> setentity (mc p1) 0 >> testeq 1 (single $ mb $ @ma 0)"
+        , pointTest
+              "setentity (mb p1) 1 >> setentity (ma p1) 0 >> setentity (ma p1) 0 >> testeq 1 (single $ mb $ @ma 0)"
+        , pointTest
+              "setentity (mb p1) 1 >> setentity (mb p2) 2 >> setentity (ma p1) 0 >> setentity (ma p2) 0 >> testisnull (single $ mb $ @ma 0)"
+        , pointTest
+              "setentity (mb p1) 1 >> setentity (mb p2) 1 >> setentity (ma p1) 0 >> setentity (ma p2) 0 >> testeq 1 (single $ mb $ @ma 0)"
         ]

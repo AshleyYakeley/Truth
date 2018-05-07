@@ -84,6 +84,14 @@ instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t) => ToQValue baseedi
     toQValue (LiftedConstant t) = toQValue t
     toQValue (LiftedFunction t) = toQValue t
 
+-- Lifted Maybe
+--
+instance AsLiteral t => HasQTypeDescription (Lifted edit (Maybe t)) where
+    qTypeDescription = literalTypeDescription @t
+
+instance (edit ~ baseedit, AsLiteral t) => ToQValue baseedit (Lifted edit (Maybe t)) where
+    toQValue limt = toQValue $ maybeLifted limt
+
 -- Lifted Point
 --
 instance HasQTypeDescription (Lifted edit Point) where

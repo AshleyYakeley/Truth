@@ -34,3 +34,7 @@ ioLifted (LiftedFunction litiot) = LiftedFunction $ ioWholeEditFunction sequence
 unLifted :: Lifted baseedit t -> QActionM baseedit (Maybe t)
 unLifted (LiftedConstant t) = return $ Just t
 unLifted (LiftedFunction lt) = qGetFunctionValue lt
+
+maybeLifted :: Lifted baseedit (Maybe t) -> Lifted baseedit t
+maybeLifted (LiftedConstant (Just t)) = LiftedConstant t
+maybeLifted lmt = LiftedFunction $ funcEditFunction (\mmt -> mmt >>= id) . liftedToFunction lmt
