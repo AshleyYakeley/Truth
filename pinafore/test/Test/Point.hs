@@ -69,4 +69,11 @@ testPoint =
         , pointTest "addpoint (@ma \"hello\") p1"
         , pointTest "addpoint (@ma \"hello\") p1 >> pass"
         , pointTest "addpoint (@ma \"hello\") p1 >> testeq \"hello\" (ma p1)"
+        , pointTest "setpoint (ma p1) \"hello\" >> setpoint (ma p2) \"hello\" >> testeq (ma p1) (ma p2)"
+        , pointTest "setpoint (ma $ mb p1) p2 >> testeq p2 (ma $ mb p1)"
+        , pointTest "setpoint (ma $ mb p1) \"hello\" >> testeq \"hello\" (ma $ mb p1)"
+        , pointTest "setpoint (ma . mb $ p1) p2 >> testeq p2 (ma $ mb p1)"
+        , pointTest "setpoint (ma . mb $ p1) \"hello\" >> testeq \"hello\" (ma $ mb p1)"
+        , pointTest "setpoint (ma $ mb p1) p2 >> testeq p2 (ma . mb $ p1)"
+        , pointTest "setpoint (ma $ mb p1) \"hello\" >> testeq \"hello\" (ma . mb $ p1)"
         ]
