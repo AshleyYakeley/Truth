@@ -31,7 +31,7 @@ library:
       - Pinafore.Number
       - Pinafore.Literal
       - Pinafore.Morphism
-      - Pinafore.Point
+      - Pinafore.Entity
       - Pinafore.Table
       - Pinafore.PredicateMorphism
       - Pinafore.File
@@ -71,7 +71,7 @@ tests:
         main: Main.hs
         other-modules:
           - Test.Language
-          - Test.Point
+          - Test.Entity
 
 executables:
     pinafore:

@@ -6,8 +6,8 @@ module Pinafore.Table
     , pinaforeTablePointObject
     ) where
 
+import Pinafore.Entity
 import Pinafore.Literal
-import Pinafore.Point
 import Shapes
 import Text.Read
 import Truth.Core
@@ -212,12 +212,12 @@ predinr = MkPredicate $ read "bbc7a8ca-17e1-4d42-9230-e6b889dea2e5"
 unitPoint :: Point
 unitPoint = MkPoint $ read "644eaa9b-0c57-4c5c-9606-e5303fda86f9"
 
-pinaforeTablePointObject :: Object PinaforeTableEdit -> Object PinaforePointEdit
+pinaforeTablePointObject :: Object PinaforeTableEdit -> Object PinaforeEntityEdit
 pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTableRead) tableMPush) = let
     tablePush :: [PinaforeTableEdit] -> m ()
     tablePush edits = pushOrFail "can't push table edit" $ tableMPush edits
-    objRead :: MutableRead m PinaforePointRead
-    objRead (PinaforePointReadGetPredicate prd subj) = do
+    objRead :: MutableRead m PinaforeEntityRead
+    objRead (PinaforeEntityReadGetPredicate prd subj) = do
         mval <- tableRead $ PinaforeTableReadGetPredicate prd subj
         case mval of
             Just val -> return val
@@ -225,11 +225,11 @@ pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTa
                 val <- newPoint
                 tablePush [PinaforeTableEditSetPredicate prd subj $ Just val]
                 return val
-    objRead (PinaforePointReadLookupPredicate prd val) = tableRead $ PinaforeTableReadLookupPredicate prd val
-    objRead (PinaforePointReadToLiteral p) = do
+    objRead (PinaforeEntityReadLookupPredicate prd val) = tableRead $ PinaforeTableReadLookupPredicate prd val
+    objRead (PinaforeEntityReadToLiteral p) = do
         ml <- tableRead $ PinaforeTableReadGetLiteral p
         return $ ml >>= fromLiteral
-    objRead (PinaforePointReadFromLiteral t) = do
+    objRead (PinaforeEntityReadFromLiteral t) = do
         let l = toLiteral t
         s <- tableRead $ PinaforeTableReadLookupLiteral l
         case getSingle s of
@@ -238,13 +238,13 @@ pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTa
                 p <- newPoint -- could hash l instead
                 tablePush [PinaforeTableEditSetLiteral p $ Just l]
                 return p
-    objRead PinaforePointReadUnit = return unitPoint
-    objRead (PinaforePointReadToPair p) =
+    objRead PinaforeEntityReadUnit = return unitPoint
+    objRead (PinaforeEntityReadToPair p) =
         getComposeM $ do
             p1 <- MkComposeM $ tableRead $ PinaforeTableReadGetPredicate predfst p
             p2 <- MkComposeM $ tableRead $ PinaforeTableReadGetPredicate predsnd p
             return (p1, p2)
-    objRead (PinaforePointReadFromPair (p1, p2)) = do
+    objRead (PinaforeEntityReadFromPair (p1, p2)) = do
         s1 <- tableRead $ PinaforeTableReadLookupPredicate predfst p1
         s2 <- tableRead $ PinaforeTableReadLookupPredicate predsnd p2
         case getSingle $ s1 /\ s2 of
@@ -256,7 +256,7 @@ pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTa
                     , PinaforeTableEditSetPredicate predsnd p $ Just p2
                     ]
                 return p
-    objRead (PinaforePointReadToEither p) = do
+    objRead (PinaforeEntityReadToEither p) = do
         sl <- tableRead $ PinaforeTableReadLookupPredicate predinl p
         case getSingle sl of
             Just l -> return $ Just $ Left l
@@ -265,10 +265,10 @@ pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTa
                 case getSingle sr of
                     Just r -> return $ Just $ Right r
                     Nothing -> return Nothing
-    objRead (PinaforePointReadFromEither (Left p)) = objRead $ PinaforePointReadGetPredicate predinl p
-    objRead (PinaforePointReadFromEither (Right p)) = objRead $ PinaforePointReadGetPredicate predinr p
-    objEdit :: [PinaforePointEdit] -> m (Maybe (m ()))
+    objRead (PinaforeEntityReadFromEither (Left p)) = objRead $ PinaforeEntityReadGetPredicate predinl p
+    objRead (PinaforeEntityReadFromEither (Right p)) = objRead $ PinaforeEntityReadGetPredicate predinr p
+    objEdit :: [PinaforeEntityEdit] -> m (Maybe (m ()))
     objEdit =
-        singleAlwaysEdit $ \(PinaforePointEditSetPredicate p s v) ->
+        singleAlwaysEdit $ \(PinaforeEntityEditSetPredicate p s v) ->
             tablePush [PinaforeTableEditSetPredicate p s $ Just v]
     in MkObject {..}

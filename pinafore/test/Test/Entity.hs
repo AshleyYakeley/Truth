@@ -1,5 +1,5 @@
-module Test.Point
-    ( testPoint
+module Test.Entity
+    ( testEntity
     ) where
 
 import Pinafore
@@ -43,10 +43,10 @@ pointTest text =
         pc <- makeTestPinaforeContest
         pinaforeRunFile pc "<test>" $ prefix <> text
 
-testPoint :: TestTree
-testPoint =
+testEntity :: TestTree
+testEntity =
     testGroup
-        "point"
+        "entity"
         [ pointTest "pass"
         , pointTest "pass >> pass"
         , pointTest "if true then pass else fail \"failed\""
@@ -62,18 +62,18 @@ testPoint =
         , pointTest "if exists p1 then fail \"failed\" else pass"
         , pointTest "pass >> if exists p1 then fail \"failed\" else pass"
         , pointTest "if exists p1 then fail \"failed\" else pass >> pass"
-        , pointTest "setpoint (ma p1) \"hello\""
-        , pointTest "setpoint (ma p1) p2"
-        , pointTest "setpoint (ma p1) p2 >> testeq p2 (ma p1)"
-        , pointTest "setpoint (ma p1) \"hello\" >> testeq \"hello\" (ma p1)"
-        , pointTest "addpoint (@ma \"hello\") p1"
-        , pointTest "addpoint (@ma \"hello\") p1 >> pass"
-        , pointTest "addpoint (@ma \"hello\") p1 >> testeq \"hello\" (ma p1)"
-        , pointTest "setpoint (ma p1) \"hello\" >> setpoint (ma p2) \"hello\" >> testeq (ma p1) (ma p2)"
-        , pointTest "setpoint (ma $ mb p1) p2 >> testeq p2 (ma $ mb p1)"
-        , pointTest "setpoint (ma $ mb p1) \"hello\" >> testeq \"hello\" (ma $ mb p1)"
-        , pointTest "setpoint (ma . mb $ p1) p2 >> testeq p2 (ma $ mb p1)"
-        , pointTest "setpoint (ma . mb $ p1) \"hello\" >> testeq \"hello\" (ma $ mb p1)"
-        , pointTest "setpoint (ma $ mb p1) p2 >> testeq p2 (ma . mb $ p1)"
-        , pointTest "setpoint (ma $ mb p1) \"hello\" >> testeq \"hello\" (ma . mb $ p1)"
+        , pointTest "setentity (ma p1) \"hello\""
+        , pointTest "setentity (ma p1) p2"
+        , pointTest "setentity (ma p1) p2 >> testeq p2 (ma p1)"
+        , pointTest "setentity (ma p1) \"hello\" >> testeq \"hello\" (ma p1)"
+        , pointTest "addentity (@ma \"hello\") p1"
+        , pointTest "addentity (@ma \"hello\") p1 >> pass"
+        , pointTest "addentity (@ma \"hello\") p1 >> testeq \"hello\" (ma p1)"
+        , pointTest "setentity (ma p1) \"hello\" >> setentity (ma p2) \"hello\" >> testeq (ma p1) (ma p2)"
+        , pointTest "setentity (ma $ mb p1) p2 >> testeq p2 (ma $ mb p1)"
+        , pointTest "setentity (ma $ mb p1) \"hello\" >> testeq \"hello\" (ma $ mb p1)"
+        , pointTest "setentity (ma . mb $ p1) p2 >> testeq p2 (ma $ mb p1)"
+        , pointTest "setentity (ma . mb $ p1) \"hello\" >> testeq \"hello\" (ma $ mb p1)"
+        , pointTest "setentity (ma $ mb p1) p2 >> testeq p2 (ma . mb $ p1)"
+        , pointTest "setentity (ma $ mb p1) \"hello\" >> testeq \"hello\" (ma . mb $ p1)"
         ]

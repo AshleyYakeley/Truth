@@ -21,7 +21,7 @@ import Truth.Core
 import Truth.World.File
 import Truth.World.ObjectStore
 
-qcombine :: HasPinaforePointEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
+qcombine :: HasPinaforeEntityEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
 qcombine (MkAny QTMorphism g) (MkAny QTMorphism f) = MkAny QTMorphism $ g . f
 qcombine (MkAny QTInverseMorphism g) (MkAny QTInverseMorphism f) = MkAny QTInverseMorphism $ g . f
 qcombine g f = MkAny QTFunction $ qapply g . qapply f
@@ -36,7 +36,7 @@ set_member :: Point -> FiniteSet Point -> Bool
 set_member p set = elem p set
 
 output ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => QLiteral baseedit Text
     -> QAction baseedit
 output val = do
@@ -44,7 +44,7 @@ output val = do
     for_ mtext $ \text -> liftIO $ putStr $ unpack text
 
 outputln ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => QLiteral baseedit Text
     -> QAction baseedit
 outputln val = do
@@ -61,7 +61,7 @@ setmean :: FiniteSet Number -> Number
 setmean (MkFiniteSet s) = sum s / fromIntegral (olength s)
 
 withset ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => QOrder baseedit
     -> QSetPoint baseedit
     -> (Point -> QAction baseedit)
@@ -92,30 +92,30 @@ isUnit =
 clearText :: EditFunction (WholeEdit (Maybe Text)) (WholeEdit Text)
 clearText = funcEditFunction (fromMaybe mempty)
 
-genpoint :: QActionM baseedit Point
-genpoint = liftIO $ newKeyContainerItem @(FiniteSet Point)
+genentity :: QActionM baseedit Point
+genentity = liftIO $ newKeyContainerItem @(FiniteSet Point)
 
-newpoint :: forall baseedit. QRefSetPoint baseedit -> (Point -> QAction baseedit) -> QAction baseedit
-newpoint set continue = do
-    point <- genpoint
-    liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem point]
-    continue point
+newentity :: forall baseedit. QRefSetPoint baseedit -> (Point -> QAction baseedit) -> QAction baseedit
+newentity set continue = do
+    entity <- genentity
+    liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem entity]
+    continue entity
 
 getQImPoint :: QPoint baseedit -> QActionM baseedit Point
 getQImPoint = qGetFunctionValue
 
-addpoint :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAction baseedit
-addpoint set qp = do
-    point <- getQImPoint qp
-    liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem point]
+addentity :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAction baseedit
+addentity set qp = do
+    entity <- getQImPoint qp
+    liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem entity]
 
-removepoint :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAction baseedit
-removepoint set qp = do
-    point <- getQImPoint qp
-    liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem point]
+removeentity :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAction baseedit
+removeentity set qp = do
+    entity <- getQImPoint qp
+    liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem entity]
 
-setpoint :: forall baseedit. QRefPoint baseedit -> QPoint baseedit -> QAction baseedit
-setpoint var val = do
+setentity :: forall baseedit. QRefPoint baseedit -> QPoint baseedit -> QAction baseedit
+setentity var val = do
     p :: Point <- getQImPoint val
     liftOuter $ mapViewEdit var $ viewObjectPushEdit $ \_ push -> push [MkWholeEdit p]
 
@@ -131,10 +131,10 @@ file_import set continue = do
         Nothing -> return ()
         Just path -> do
             let sourceobject = fileObject path
-            newpoint set $ \point -> do
+            newentity set $ \entity -> do
                 mdestobject <-
                     liftOuter $
-                    mapViewEdit (pinaforeFileItemLens point) $ do
+                    mapViewEdit (pinaforeFileItemLens entity) $ do
                         MkObject {..} <- viewObject
                         liftIO $
                             runUnliftIO objRun $ do
@@ -142,16 +142,16 @@ file_import set continue = do
                                 objRead ReadSingleObjectStore
                 destobject <-
                     case mdestobject of
-                        Nothing -> liftInner $ FailureResult $ fromString $ "failed to create object " ++ show point
+                        Nothing -> liftInner $ FailureResult $ fromString $ "failed to create object " ++ show entity
                         Just object -> return object
                 liftIO $ copyObject sourceobject destobject
-                continue point
+                continue entity
 
 file_size :: Object ByteStringEdit -> IO Int64
 file_size MkObject {..} = runUnliftIO objRun $ objRead ReadByteStringLength
 
 ui_table ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => [(QLiteral baseedit Text, Point -> Result Text (QRefLiteral baseedit Text))]
     -> (Point -> Result Text (UIWindow baseedit))
     -> QRefSetPoint baseedit
@@ -170,7 +170,7 @@ ui_table cols asp val = let
                 lens <- f p
                 return $ mapLens lens
     aspect :: Point -> Aspect baseedit
-    aspect point = resultToM $ mapResultFailure unpack $ fmap return $ asp point
+    aspect entity = resultToM $ mapResultFailure unpack $ fmap return $ asp entity
     in uiTable (fmap getColumn cols) aspect val
 
 literal_conv :: Literal -> Literal
@@ -202,7 +202,7 @@ qfail lt = do
     liftIO $ fail $ unpack $ fromMaybe "<null>" mt
 
 predefinitions ::
-       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => [(QBindings baseedit, (Symbol, Text))]
 predefinitions =
     [ pb "$" $ qapply @baseedit
@@ -246,10 +246,10 @@ predefinitions =
     , pb "withset" $ withset @baseedit
     , pb "output" $ output @baseedit
     , pb "outputln" $ outputln @baseedit
-    , pb "setpoint" $ setpoint @baseedit
-    , pb "newpoint" $ newpoint @baseedit
-    , pb "addpoint" $ addpoint @baseedit
-    , pb "removepoint" $ removepoint @baseedit
+    , pb "setentity" $ setentity @baseedit
+    , pb "newentity" $ newentity @baseedit
+    , pb "addentity" $ addentity @baseedit
+    , pb "removeentity" $ removeentity @baseedit
     , pb "file_import" $ file_import @baseedit
     , pb "file_size" $ fmap @(Lifted baseedit) file_size
     , pb "openwindow" viewOpenWindow
@@ -279,9 +279,9 @@ pd :: forall t. HasQTypeDescription t
 pd name _ = (name, qTypeDescription @t)
 
 predefinedDoc ::
-       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => [(Symbol, Text)]
 predefinedDoc = [pd "@" $ qinvert @baseedit] ++ fmap snd (predefinitions @baseedit)
 
-predefinedBindings :: (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit) => QBindings baseedit
+predefinedBindings :: (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit) => QBindings baseedit
 predefinedBindings = mconcat $ fmap fst predefinitions

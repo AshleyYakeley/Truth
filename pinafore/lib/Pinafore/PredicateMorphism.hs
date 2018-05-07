@@ -1,37 +1,37 @@
 module Pinafore.PredicateMorphism
-    ( HasPinaforePointEdit(..)
+    ( HasPinaforeEntityEdit(..)
     , predicatePinaforeLensMorphism
     , literalPinaforeInverseFunctionMorphism
     , literalPinaforeLensMorphism
     ) where
 
+import Pinafore.Entity
 import Pinafore.Literal
 import Pinafore.Morphism
-import Pinafore.Point
 import Pinafore.Table (Predicate)
 import Shapes
 import Truth.Core
 
-class HasPinaforePointEdit baseedit where
-    pinaforePointLens :: EditLens baseedit PinaforePointEdit
+class HasPinaforeEntityEdit baseedit where
+    pinaforePointLens :: EditLens baseedit PinaforeEntityEdit
 
-instance HasPinaforePointEdit PinaforePointEdit where
+instance HasPinaforeEntityEdit PinaforeEntityEdit where
     pinaforePointLens = id
 
 predicatePinaforeMap ::
-       Predicate -> AnEditLens IdentityT (ContextEdit PinaforePointEdit (WholeEdit Point)) (WholeEdit Point)
+       Predicate -> AnEditLens IdentityT (ContextEdit PinaforeEntityEdit (WholeEdit Point)) (WholeEdit Point)
 predicatePinaforeMap prd = let
-    efGet :: ReadFunctionT IdentityT (ContextEditReader PinaforePointEdit (WholeEdit Point)) (WholeReader Point)
+    efGet :: ReadFunctionT IdentityT (ContextEditReader PinaforeEntityEdit (WholeEdit Point)) (WholeReader Point)
     efGet mr ReadWhole =
         lift $ do
             subj <- mr $ MkTupleEditReader SelectContent ReadWhole
-            mr $ MkTupleEditReader SelectContext $ PinaforePointReadGetPredicate prd subj
+            mr $ MkTupleEditReader SelectContext $ PinaforeEntityReadGetPredicate prd subj
     efUpdate ::
            forall m. MonadIO m
-        => ContextEdit PinaforePointEdit (WholeEdit Point)
-        -> MutableRead m (ContextEditReader PinaforePointEdit (WholeEdit Point))
+        => ContextEdit PinaforeEntityEdit (WholeEdit Point)
+        -> MutableRead m (ContextEditReader PinaforeEntityEdit (WholeEdit Point))
         -> IdentityT m [WholeEdit Point]
-    efUpdate (MkTupleEdit SelectContext (PinaforePointEditSetPredicate p s v)) mr
+    efUpdate (MkTupleEdit SelectContext (PinaforeEntityEditSetPredicate p s v)) mr
         | p == prd =
             lift $ do
                 subj <- mr $ MkTupleEditReader SelectContent ReadWhole
@@ -42,84 +42,85 @@ predicatePinaforeMap prd = let
     efUpdate (MkTupleEdit SelectContext _) _ = return []
     efUpdate (MkTupleEdit SelectContent (MkWholeEdit subj)) mr =
         lift $ do
-            val <- mr $ MkTupleEditReader SelectContext $ PinaforePointReadGetPredicate prd subj
+            val <- mr $ MkTupleEditReader SelectContext $ PinaforeEntityReadGetPredicate prd subj
             return [MkWholeEdit val]
-    elFunction :: AnEditFunction IdentityT (ContextEdit PinaforePointEdit (WholeEdit Point)) (WholeEdit Point)
+    elFunction :: AnEditFunction IdentityT (ContextEdit PinaforeEntityEdit (WholeEdit Point)) (WholeEdit Point)
     elFunction = MkAnEditFunction {..}
     elPutEdit ::
            forall m. MonadIO m
         => WholeEdit Point
-        -> MutableRead m (ContextEditReader PinaforePointEdit (WholeEdit Point))
-        -> IdentityT m (Maybe [ContextEdit PinaforePointEdit (WholeEdit Point)])
+        -> MutableRead m (ContextEditReader PinaforeEntityEdit (WholeEdit Point))
+        -> IdentityT m (Maybe [ContextEdit PinaforeEntityEdit (WholeEdit Point)])
     elPutEdit (MkWholeEdit v) mr = do
         subj <- lift $ mr $ MkTupleEditReader SelectContent ReadWhole
-        return $ Just [MkTupleEdit SelectContext $ PinaforePointEditSetPredicate prd subj v]
+        return $ Just [MkTupleEdit SelectContext $ PinaforeEntityEditSetPredicate prd subj v]
     elPutEdits ::
            forall m. MonadIO m
         => [WholeEdit Point]
-        -> MutableRead m (ContextEditReader PinaforePointEdit (WholeEdit Point))
-        -> IdentityT m (Maybe [ContextEdit PinaforePointEdit (WholeEdit Point)])
+        -> MutableRead m (ContextEditReader PinaforeEntityEdit (WholeEdit Point))
+        -> IdentityT m (Maybe [ContextEdit PinaforeEntityEdit (WholeEdit Point)])
     elPutEdits [] _ = return $ Just []
     elPutEdits [edit] mr = elPutEdit edit mr
     elPutEdits (_:edits) mr = elPutEdits edits mr -- just use the last WholeEdit.
     in MkAnEditLens {..}
 
-predicateInverseFunction :: Predicate -> APinaforeFunctionMorphism PinaforePointEdit IdentityT Point (FiniteSet Point)
+predicateInverseFunction :: Predicate -> APinaforeFunctionMorphism PinaforeEntityEdit IdentityT Point (FiniteSet Point)
 predicateInverseFunction prd = let
     pfFuncRead ::
            forall m. MonadIO m
-        => MutableRead m PinaforePointRead
+        => MutableRead m PinaforeEntityRead
         -> Point
         -> IdentityT m (FiniteSet Point)
-    pfFuncRead mr val = lift $ mr $ PinaforePointReadLookupPredicate prd val
+    pfFuncRead mr val = lift $ mr $ PinaforeEntityReadLookupPredicate prd val
     pfUpdate ::
            forall m. MonadIO m
-        => PinaforePointEdit
-        -> MutableRead m PinaforePointRead
+        => PinaforeEntityEdit
+        -> MutableRead m PinaforeEntityRead
         -> IdentityT m Bool
-    pfUpdate (PinaforePointEditSetPredicate p _ _) _
+    pfUpdate (PinaforeEntityEditSetPredicate p _ _) _
         | p == prd = return True
     pfUpdate _ _ = return False
     in MkAPinaforeFunctionMorphism {..}
 
-predicatePinaforeTableLensMorphism :: Predicate -> PinaforeLensMorphism PinaforePointEdit Point Point
+predicatePinaforeTableLensMorphism :: Predicate -> PinaforeLensMorphism PinaforeEntityEdit Point Point
 predicatePinaforeTableLensMorphism prd =
     MkCloseUnlift identityUnlift $ MkAPinaforeLensMorphism (predicatePinaforeMap prd) (predicateInverseFunction prd)
 
-predicatePinaforeLensMorphism :: HasPinaforePointEdit baseedit => Predicate -> PinaforeLensMorphism baseedit Point Point
+predicatePinaforeLensMorphism ::
+       HasPinaforeEntityEdit baseedit => Predicate -> PinaforeLensMorphism baseedit Point Point
 predicatePinaforeLensMorphism prd =
     mapPinaforeLensMorphismBase pinaforePointLens $ predicatePinaforeTableLensMorphism prd
 
 literalPinaforeMap ::
        forall t. AsLiteral t
-    => AnEditLens IdentityT (ContextEdit PinaforePointEdit (WholeEdit Point)) (WholeEdit (Maybe t))
+    => AnEditLens IdentityT (ContextEdit PinaforeEntityEdit (WholeEdit Point)) (WholeEdit (Maybe t))
 literalPinaforeMap = let
-    efGet :: ReadFunctionT IdentityT (ContextEditReader PinaforePointEdit (WholeEdit Point)) (WholeReader (Maybe t))
+    efGet :: ReadFunctionT IdentityT (ContextEditReader PinaforeEntityEdit (WholeEdit Point)) (WholeReader (Maybe t))
     efGet mr ReadWhole =
         lift $ do
             subj <- mr $ MkTupleEditReader SelectContent ReadWhole
-            mlit <- mr $ MkTupleEditReader SelectContext $ PinaforePointReadToLiteral subj
+            mlit <- mr $ MkTupleEditReader SelectContext $ PinaforeEntityReadToLiteral subj
             return $ mlit >>= fromLiteral
     efUpdate ::
            forall m. MonadIO m
-        => ContextEdit PinaforePointEdit (WholeEdit Point)
-        -> MutableRead m (ContextEditReader PinaforePointEdit (WholeEdit Point))
+        => ContextEdit PinaforeEntityEdit (WholeEdit Point)
+        -> MutableRead m (ContextEditReader PinaforeEntityEdit (WholeEdit Point))
         -> IdentityT m [WholeEdit (Maybe t)]
     efUpdate (MkTupleEdit SelectContext _) _ = return []
     efUpdate (MkTupleEdit SelectContent (MkWholeEdit subj)) mr =
         lift $ do
-            mlit <- mr $ MkTupleEditReader SelectContext $ PinaforePointReadToLiteral subj
+            mlit <- mr $ MkTupleEditReader SelectContext $ PinaforeEntityReadToLiteral subj
             return [MkWholeEdit $ mlit >>= fromLiteral]
-    elFunction :: AnEditFunction IdentityT (ContextEdit PinaforePointEdit (WholeEdit Point)) (WholeEdit (Maybe t))
+    elFunction :: AnEditFunction IdentityT (ContextEdit PinaforeEntityEdit (WholeEdit Point)) (WholeEdit (Maybe t))
     elFunction = MkAnEditFunction {..}
     elPutEdit ::
            forall m. MonadIO m
         => WholeEdit (Maybe t)
-        -> MutableRead m (ContextEditReader PinaforePointEdit (WholeEdit Point))
-        -> IdentityT m (Maybe [ContextEdit PinaforePointEdit (WholeEdit Point)])
+        -> MutableRead m (ContextEditReader PinaforeEntityEdit (WholeEdit Point))
+        -> IdentityT m (Maybe [ContextEdit PinaforeEntityEdit (WholeEdit Point)])
     elPutEdit (MkWholeEdit (Just t)) mr =
         lift $ do
-            p <- mr $ MkTupleEditReader SelectContext $ PinaforePointReadFromLiteral t
+            p <- mr $ MkTupleEditReader SelectContext $ PinaforeEntityReadFromLiteral t
             return $ Just [MkTupleEdit SelectContent $ MkWholeEdit p]
     elPutEdit (MkWholeEdit Nothing) _ = do
         e <- newPoint
@@ -127,8 +128,8 @@ literalPinaforeMap = let
     elPutEdits ::
            forall m. MonadIO m
         => [WholeEdit (Maybe t)]
-        -> MutableRead m (ContextEditReader PinaforePointEdit (WholeEdit Point))
-        -> IdentityT m (Maybe [ContextEdit PinaforePointEdit (WholeEdit Point)])
+        -> MutableRead m (ContextEditReader PinaforeEntityEdit (WholeEdit Point))
+        -> IdentityT m (Maybe [ContextEdit PinaforeEntityEdit (WholeEdit Point)])
     elPutEdits [] _ = return $ Just []
     elPutEdits [edit] mr = elPutEdit edit mr
     elPutEdits (_:edits) mr = elPutEdits edits mr -- just use the last WholeEdit.
@@ -136,33 +137,33 @@ literalPinaforeMap = let
 
 literalInverseFunction ::
        forall t. AsLiteral t
-    => APinaforeFunctionMorphism PinaforePointEdit IdentityT (Maybe t) Point
+    => APinaforeFunctionMorphism PinaforeEntityEdit IdentityT (Maybe t) Point
 literalInverseFunction = let
     pfFuncRead ::
            forall m. MonadIO m
-        => MutableRead m PinaforePointRead
+        => MutableRead m PinaforeEntityRead
         -> Maybe t
         -> IdentityT m Point
     pfFuncRead _ Nothing = newPoint
-    pfFuncRead mr (Just val) = lift $ mr $ PinaforePointReadFromLiteral val
+    pfFuncRead mr (Just val) = lift $ mr $ PinaforeEntityReadFromLiteral val
     pfUpdate ::
            forall m. MonadIO m
-        => PinaforePointEdit
-        -> MutableRead m PinaforePointRead
+        => PinaforeEntityEdit
+        -> MutableRead m PinaforeEntityRead
         -> IdentityT m Bool
     pfUpdate _ _ = return False
     in MkAPinaforeFunctionMorphism {..}
 
 literalPinaforeInverseFunctionMorphism ::
-       (HasPinaforePointEdit baseedit, AsLiteral t) => PinaforeFunctionMorphism baseedit (Maybe t) Point
+       (HasPinaforeEntityEdit baseedit, AsLiteral t) => PinaforeFunctionMorphism baseedit (Maybe t) Point
 literalPinaforeInverseFunctionMorphism =
     mapPinaforeFunctionMorphismBase (editLensFunction pinaforePointLens) $
     MkCloseUnlift identityUnlift literalInverseFunction
 
-literalPinaforeTableLensMorphism :: AsLiteral t => PinaforeLensMorphism PinaforePointEdit Point (Maybe t)
+literalPinaforeTableLensMorphism :: AsLiteral t => PinaforeLensMorphism PinaforeEntityEdit Point (Maybe t)
 literalPinaforeTableLensMorphism =
     MkCloseUnlift identityUnlift $ MkAPinaforeLensMorphism literalPinaforeMap $ fmap opoint literalInverseFunction
 
 literalPinaforeLensMorphism ::
-       (HasPinaforePointEdit baseedit, AsLiteral t) => PinaforeLensMorphism baseedit Point (Maybe t)
+       (HasPinaforeEntityEdit baseedit, AsLiteral t) => PinaforeLensMorphism baseedit Point (Maybe t)
 literalPinaforeLensMorphism = mapPinaforeLensMorphismBase pinaforePointLens literalPinaforeTableLensMorphism

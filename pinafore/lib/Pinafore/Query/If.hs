@@ -3,8 +3,8 @@ module Pinafore.Query.If
     ) where
 
 import Data.List (zipWith)
+import Pinafore.Entity
 import Pinafore.Morphism
-import Pinafore.Point
 import Pinafore.PredicateMorphism
 import Pinafore.Query.Convert
 import Pinafore.Query.Lifted
@@ -28,7 +28,7 @@ fvalIfThenElse iovdef vi vt ve = let
     in ioFuncEditFunction mIfThenElse . (pairJoinEditFunctions vi $ pairJoinEditFunctions vt ve)
 
 qfifthenelse ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => QLiteral baseedit Bool
     -> QValue baseedit
     -> QValue baseedit
@@ -73,7 +73,7 @@ qfifthenelse _ (MkAny tt _) (MkAny te _) =
     qexception $ pack $ "\"then\"/\"else\" cannot match " ++ show tt ++ " and " ++ show te
 
 qifthenelse ::
-       HasPinaforePointEdit baseedit => Lifted baseedit Bool -> QValue baseedit -> QValue baseedit -> QValue baseedit
+       HasPinaforeEntityEdit baseedit => Lifted baseedit Bool -> QValue baseedit -> QValue baseedit -> QValue baseedit
 qifthenelse (LiftedConstant True) valt _ = valt
 qifthenelse (LiftedConstant False) _ vale = vale
 qifthenelse (LiftedFunction func) valt vale = qfifthenelse func valt vale

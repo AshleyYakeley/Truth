@@ -25,17 +25,17 @@ instance Monoid (QOrder baseedit) where
     mappend = (<>)
 
 alphabetical ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => QOrder baseedit
 alphabetical = MkQOrder (lensFunctionMorphism literalPinaforeLensMorphism) $ compare @Text
 
 numerical ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => QOrder baseedit
 numerical = MkQOrder (lensFunctionMorphism literalPinaforeLensMorphism) $ compare @Number
 
 chronological ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => QOrder baseedit
 chronological = MkQOrder (lensFunctionMorphism literalPinaforeLensMorphism) $ compare @UTCTime
 

@@ -1,8 +1,8 @@
 module Pinafore.Query.Types where
 
+import Pinafore.Entity
 import Pinafore.Literal
 import Pinafore.Morphism
-import Pinafore.Point
 import Pinafore.PredicateMorphism
 import Pinafore.Table (Point)
 import Shapes
@@ -45,14 +45,14 @@ qInverseApplyMorphismRefToPoint :: QMorphismRefPoint baseedit -> QRefPoint basee
 qInverseApplyMorphismRefToPoint = applyInversePinaforeLens newPoint
 
 qInverseApplyMorphismRefToLiteral ::
-       (AsLiteral t, HasPinaforePointEdit baseedit)
+       (AsLiteral t, HasPinaforeEntityEdit baseedit)
     => QMorphismRefPoint baseedit
     -> QRefLiteral baseedit t
     -> QRefSetPoint baseedit
 qInverseApplyMorphismRefToLiteral f a = applyInversePinaforeLens (return Nothing) (literalPinaforeLensMorphism . f) a
 
 qInverseApplyMorphismRefToConstant ::
-       (AsLiteral t, HasPinaforePointEdit baseedit) => QMorphismRefPoint baseedit -> t -> QRefSetPoint baseedit
+       (AsLiteral t, HasPinaforeEntityEdit baseedit) => QMorphismRefPoint baseedit -> t -> QRefSetPoint baseedit
 qInverseApplyMorphismRefToConstant f a = qInverseApplyMorphismRefToLiteral f $ constEditLens $ Just a
 
 qInverseApplyMorphismRefToSet :: QMorphismRefPoint baseedit -> QRefSetPoint baseedit -> QRefSetPoint baseedit
