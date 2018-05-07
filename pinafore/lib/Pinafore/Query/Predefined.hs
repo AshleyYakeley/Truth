@@ -26,10 +26,10 @@ qcombine (MkAny QTMorphism g) (MkAny QTMorphism f) = MkAny QTMorphism $ g . f
 qcombine (MkAny QTInverseMorphism g) (MkAny QTInverseMorphism f) = MkAny QTInverseMorphism $ g . f
 qcombine g f = MkAny QTFunction $ qapply g . qapply f
 
-qmeet :: QSet baseedit -> QSet baseedit -> QSet baseedit
+qmeet :: QRefSetPoint baseedit -> QRefSetPoint baseedit -> QRefSetPoint baseedit
 qmeet a b = readOnlyEditLens meetEditFunction . pairJoinEditLenses a b
 
-qjoin :: QSet baseedit -> QSet baseedit -> QSet baseedit
+qjoin :: QRefSetPoint baseedit -> QRefSetPoint baseedit -> QRefSetPoint baseedit
 qjoin a b = readOnlyEditLens joinEditFunction . pairJoinEditLenses a b
 
 set_member :: Point -> FiniteSet Point -> Bool
@@ -37,7 +37,7 @@ set_member p set = elem p set
 
 output ::
        forall baseedit. HasPinaforePointEdit baseedit
-    => QImLiteral baseedit Text
+    => QLiteral baseedit Text
     -> QAction baseedit
 output val = do
     mtext <- qGetFunctionValue val
@@ -45,7 +45,7 @@ output val = do
 
 outputln ::
        forall baseedit. HasPinaforePointEdit baseedit
-    => QImLiteral baseedit Text
+    => QLiteral baseedit Text
     -> QAction baseedit
 outputln val = do
     mtext <- qGetFunctionValue val
@@ -63,7 +63,7 @@ setmean (MkFiniteSet s) = sum s / fromIntegral (olength s)
 withset ::
        forall baseedit. HasPinaforePointEdit baseedit
     => QOrder baseedit
-    -> QImSet baseedit
+    -> QSetPoint baseedit
     -> (Point -> QAction baseedit)
     -> QAction baseedit
 withset order set cont = do
@@ -73,7 +73,7 @@ withset order set cont = do
 qappend :: Lifted baseedit Text -> Lifted baseedit Text -> Lifted baseedit Text
 qappend = liftA2 (<>)
 
-valSpecText :: UISpec (WholeEdit (Maybe Text)) -> QLiteral baseedit Text -> UISpec baseedit
+valSpecText :: UISpec (WholeEdit (Maybe Text)) -> QRefLiteral baseedit Text -> UISpec baseedit
 valSpecText spec val = uiLens val spec
 
 pb :: forall baseedit t. ToQValue baseedit t
@@ -95,33 +95,33 @@ clearText = funcEditFunction (fromMaybe mempty)
 genpoint :: QActionM baseedit Point
 genpoint = liftIO $ newKeyContainerItem @(FiniteSet Point)
 
-newpoint :: forall baseedit. QSet baseedit -> (Point -> QAction baseedit) -> QAction baseedit
+newpoint :: forall baseedit. QRefSetPoint baseedit -> (Point -> QAction baseedit) -> QAction baseedit
 newpoint set continue = do
     point <- genpoint
     liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem point]
     continue point
 
-getQImPoint :: QImPoint baseedit -> QActionM baseedit Point
+getQImPoint :: QPoint baseedit -> QActionM baseedit Point
 getQImPoint = qGetFunctionValue
 
-addpoint :: forall baseedit. QSet baseedit -> QImPoint baseedit -> QAction baseedit
+addpoint :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAction baseedit
 addpoint set qp = do
     point <- getQImPoint qp
     liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem point]
 
-removepoint :: forall baseedit. QSet baseedit -> QImPoint baseedit -> QAction baseedit
+removepoint :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAction baseedit
 removepoint set qp = do
     point <- getQImPoint qp
     liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem point]
 
-setpoint :: forall baseedit. QPoint baseedit -> QImPoint baseedit -> QAction baseedit
+setpoint :: forall baseedit. QRefPoint baseedit -> QPoint baseedit -> QAction baseedit
 setpoint var val = do
     p :: Point <- getQImPoint val
     liftOuter $ mapViewEdit var $ viewObjectPushEdit $ \_ push -> push [MkWholeEdit p]
 
 file_import ::
        forall baseedit. HasPinaforeFileEdit baseedit
-    => QSet baseedit
+    => QRefSetPoint baseedit
     -> (Point -> QAction baseedit)
     -> QAction baseedit
 file_import set continue = do
@@ -152,17 +152,17 @@ file_size MkObject {..} = runUnliftIO objRun $ objRead ReadByteStringLength
 
 ui_table ::
        forall baseedit. HasPinaforePointEdit baseedit
-    => [(QImLiteral baseedit Text, Point -> Result Text (QLiteral baseedit Text))]
+    => [(QLiteral baseedit Text, Point -> Result Text (QRefLiteral baseedit Text))]
     -> (Point -> Result Text (UIWindow baseedit))
-    -> QSet baseedit
+    -> QRefSetPoint baseedit
     -> UISpec baseedit
 ui_table cols asp val = let
     showCell :: Maybe Text -> (Text, TableCellProps)
     showCell (Just s) = (s, tableCellPlain)
     showCell Nothing = ("empty", tableCellPlain {tcItalic = True})
-    mapLens :: QLiteral baseedit Text -> PinaforeFunctionValue baseedit (Text, TableCellProps)
+    mapLens :: QRefLiteral baseedit Text -> PinaforeFunctionValue baseedit (Text, TableCellProps)
     mapLens lens = funcEditFunction showCell . editLensFunction lens
-    getColumn :: (QImLiteral baseedit Text, Point -> Result Text (QLiteral baseedit Text)) -> KeyColumn baseedit Point
+    getColumn :: (QLiteral baseedit Text, Point -> Result Text (QRefLiteral baseedit Text)) -> KeyColumn baseedit Point
     getColumn (name, f) =
         readOnlyKeyColumn (clearText . name) $ \p ->
             resultToM $
@@ -176,7 +176,8 @@ ui_table cols asp val = let
 literal_conv :: Literal -> Literal
 literal_conv = id
 
-ui_pick :: forall baseedit. QImLiteralMorphism baseedit Text -> QImSet baseedit -> QPoint baseedit -> UISpec baseedit
+ui_pick ::
+       forall baseedit. QMorphismLiteral baseedit Text -> QSetPoint baseedit -> QRefPoint baseedit -> UISpec baseedit
 ui_pick nameMorphism fset = let
     getName :: PinaforeFunctionMorphism baseedit Point (Point, Text)
     getName =
@@ -237,8 +238,8 @@ predefinitions =
     , pb "rev" $ rev @baseedit
     , pb "inexact" $ fmap @(Lifted baseedit) numberToDouble
     , pb "approximate" $ liftA2 @(Lifted baseedit) approximate
-    , pb "exists" $ \(val :: QImLiteral baseedit Literal) ->
-          (funcEditFunction (Just . isJust) . val :: QImLiteral baseedit Bool)
+    , pb "exists" $ \(val :: QLiteral baseedit Literal) ->
+          (funcEditFunction (Just . isJust) . val :: QLiteral baseedit Bool)
     , pb "pass" (return () :: QAction baseedit)
     , pb ">>" $ ((>>) :: QAction baseedit -> QAction baseedit -> QAction baseedit)
     , pb "fail" $ qfail @baseedit
@@ -265,7 +266,7 @@ predefinitions =
         -- CSS
         -- drag
         -- icon
-    , pb "ui_button" $ \(name :: QImLiteral baseedit Text) action -> uiButton (clearText . name) action
+    , pb "ui_button" $ \(name :: QLiteral baseedit Text) action -> uiButton (clearText . name) action
     , pb "ui_pick" $ ui_pick
         -- switch
     , pb "ui_table" $ ui_table @baseedit

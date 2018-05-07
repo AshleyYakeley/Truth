@@ -8,62 +8,55 @@ import Pinafore.Table (Point)
 import Shapes
 import Truth.Core
 
-type QLiteral baseedit t = PinaforeLensValue baseedit (WholeEdit (Maybe t))
+type QRefLiteral baseedit t = PinaforeLensValue baseedit (WholeEdit (Maybe t))
 
-type QImLiteral baseedit t = PinaforeFunctionValue baseedit (Maybe t)
+type QLiteral baseedit t = PinaforeFunctionValue baseedit (Maybe t)
 
-type QPoint baseedit = PinaforeLensValue baseedit (WholeEdit Point)
+type QRefPoint baseedit = PinaforeLensValue baseedit (WholeEdit Point)
 
-type QImPoint baseedit = PinaforeFunctionValue baseedit Point
+type QPoint baseedit = PinaforeFunctionValue baseedit Point
 
-type QLiteralSet baseedit t = PinaforeLensValue baseedit (FiniteSetEdit t)
+type QRefSetPoint baseedit = PinaforeLensValue baseedit (FiniteSetEdit Point)
 
-type QSet baseedit = PinaforeLensValue baseedit (FiniteSetEdit Point)
+type QSetLiteral baseedit t = PinaforeFunctionValue baseedit (FiniteSet t)
 
-type QImLiteralSet baseedit t = PinaforeFunctionValue baseedit (FiniteSet t)
+type QSetPoint baseedit = QSetLiteral baseedit Point
 
-type QImSet baseedit = QImLiteralSet baseedit Point
+type QMorphismRefLiteral baseedit t = PinaforeLensMorphism baseedit Point (Maybe t)
 
-type QLiteralMorphism baseedit t = PinaforeLensMorphism baseedit Point (Maybe t)
+type QMorphismRefPoint baseedit = PinaforeLensMorphism baseedit Point Point
 
-type QPointMorphism baseedit = PinaforeLensMorphism baseedit Point Point
+type QMorphismLiteral baseedit t = PinaforeFunctionMorphism baseedit Point (Maybe t)
 
-type QImLiteralMorphism baseedit t = PinaforeFunctionMorphism baseedit Point (Maybe t)
+type QMorphismPoint baseedit = PinaforeFunctionMorphism baseedit Point Point
 
-type QImPointMorphism baseedit = PinaforeFunctionMorphism baseedit Point Point
+qApplyMorphismRefPoint :: QMorphismRefPoint baseedit -> QRefPoint baseedit -> QRefPoint baseedit
+qApplyMorphismRefPoint = applyPinaforeLens
 
-qApplyMorphismPoint :: QPointMorphism baseedit -> QPoint baseedit -> QPoint baseedit
-qApplyMorphismPoint = applyPinaforeLens
+qApplyMorphismLiteralSet :: QMorphismLiteral baseedit t -> QSetPoint baseedit -> QSetLiteral baseedit t
+qApplyMorphismLiteralSet f a = applyPinaforeFunction (arr catMaybes . cfmap f) a
 
-qApplyMorphismValue :: QLiteralMorphism baseedit t -> QPoint baseedit -> QLiteral baseedit t
-qApplyMorphismValue = applyPinaforeLens
-
-qApplyImMorphismPoint :: QImLiteralMorphism baseedit t -> QImPoint baseedit -> QImLiteral baseedit t
-qApplyImMorphismPoint = applyPinaforeFunction
-
-qApplyImMorphismSet :: QImLiteralMorphism baseedit t -> QImSet baseedit -> QImLiteralSet baseedit t
-qApplyImMorphismSet f a = applyPinaforeFunction (arr catMaybes . cfmap f) a
-
-qImSetToLiteral :: (HasPinaforePointEdit baseedit, AsLiteral val) => QImSet baseedit -> QImLiteralSet baseedit val
-qImSetToLiteral = qApplyImMorphismSet $ lensFunctionMorphism literalPinaforeLensMorphism
-
-qApplyMorphismSet :: QPointMorphism baseedit -> QSet baseedit -> QSet baseedit
-qApplyMorphismSet f a =
+qApplyMorphismRefPointSet :: QMorphismRefPoint baseedit -> QRefSetPoint baseedit -> QRefSetPoint baseedit
+qApplyMorphismRefPointSet f a =
     readOnlyEditLens $
     convertEditFunction . applyPinaforeFunction (cfmap $ lensFunctionMorphism f) (lensFunctionValue a)
 
-qInverseApplyMorphismPoint :: QPointMorphism baseedit -> QPoint baseedit -> QSet baseedit
-qInverseApplyMorphismPoint = applyInversePinaforeLens newPoint
+qInverseApplyMorphismRefToPoint :: QMorphismRefPoint baseedit -> QRefPoint baseedit -> QRefSetPoint baseedit
+qInverseApplyMorphismRefToPoint = applyInversePinaforeLens newPoint
 
-qInverseApplyMorphismLiteral ::
-       HasPinaforePointEdit baseedit => QPointMorphism baseedit -> QLiteral baseedit Literal -> QSet baseedit
-qInverseApplyMorphismLiteral f a = applyInversePinaforeLens (return Nothing) (literalPinaforeLensMorphism . f) a
+qInverseApplyMorphismRefToLiteral ::
+       (AsLiteral t, HasPinaforePointEdit baseedit)
+    => QMorphismRefPoint baseedit
+    -> QRefLiteral baseedit t
+    -> QRefSetPoint baseedit
+qInverseApplyMorphismRefToLiteral f a = applyInversePinaforeLens (return Nothing) (literalPinaforeLensMorphism . f) a
 
-qInverseApplyMorphismConstant :: HasPinaforePointEdit baseedit => QPointMorphism baseedit -> Literal -> QSet baseedit
-qInverseApplyMorphismConstant f a = qInverseApplyMorphismLiteral f $ constEditLens $ Just a
+qInverseApplyMorphismRefToConstant ::
+       (AsLiteral t, HasPinaforePointEdit baseedit) => QMorphismRefPoint baseedit -> t -> QRefSetPoint baseedit
+qInverseApplyMorphismRefToConstant f a = qInverseApplyMorphismRefToLiteral f $ constEditLens $ Just a
 
-qInverseApplyMorphismSet :: QPointMorphism baseedit -> QSet baseedit -> QSet baseedit
-qInverseApplyMorphismSet f a =
+qInverseApplyMorphismRefToSet :: QMorphismRefPoint baseedit -> QRefSetPoint baseedit -> QRefSetPoint baseedit
+qInverseApplyMorphismRefToSet f a =
     readOnlyEditLens $
     convertEditFunction .
     applyPinaforeFunction (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f)) (lensFunctionValue a)

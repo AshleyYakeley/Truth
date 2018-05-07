@@ -10,7 +10,7 @@ import Shapes
 import Truth.Core
 
 data QOrder baseedit =
-    forall t. MkQOrder (QImLiteralMorphism baseedit t)
+    forall t. MkQOrder (QMorphismLiteral baseedit t)
                        (t -> t -> Ordering)
 
 instance Semigroup (QOrder baseedit) where
@@ -39,9 +39,9 @@ chronological ::
     => QOrder baseedit
 chronological = MkQOrder (lensFunctionMorphism literalPinaforeLensMorphism) $ compare @UTCTime
 
-orderon :: forall baseedit. (QImPointMorphism baseedit) -> QOrder baseedit -> QOrder baseedit
-orderon f (MkQOrder (ef :: QImLiteralMorphism baseedit t) o) = let
-    ef' :: QImLiteralMorphism baseedit t
+orderon :: forall baseedit. (QMorphismPoint baseedit) -> QOrder baseedit -> QOrder baseedit
+orderon f (MkQOrder (ef :: QMorphismLiteral baseedit t) o) = let
+    ef' :: QMorphismLiteral baseedit t
     ef' = ef . f
     in MkQOrder ef' o
 
@@ -51,8 +51,8 @@ orders = mconcat
 rev :: forall baseedit. QOrder baseedit -> QOrder baseedit
 rev (MkQOrder ef o) = MkQOrder ef $ \a b -> o b a
 
-qOrderSet :: forall baseedit. QOrder baseedit -> QImSet baseedit -> PinaforeFunctionValue baseedit [Point]
-qOrderSet (MkQOrder (ofunc :: QImLiteralMorphism baseedit t) oord) pset = let
+qOrderSet :: forall baseedit. QOrder baseedit -> QSetPoint baseedit -> PinaforeFunctionValue baseedit [Point]
+qOrderSet (MkQOrder (ofunc :: QMorphismLiteral baseedit t) oord) pset = let
     cmp :: (Point, Maybe t) -> (Point, Maybe t) -> Ordering
     cmp (_, Just t1) (_, Just t2) = oord t1 t2
     cmp (_, Nothing) (_, Just _) = GT
@@ -63,7 +63,7 @@ qOrderSet (MkQOrder (ofunc :: QImLiteralMorphism baseedit t) oord) pset = let
         proc point -> do
             t <- ofunc -< point
             returnA -< (point, t)
-    upairs :: QImLiteralSet baseedit (Point, Maybe t)
+    upairs :: QSetLiteral baseedit (Point, Maybe t)
     upairs = applyPinaforeFunction (cfmap ofuncpair) pset
     sortpoints :: FiniteSet (Point, Maybe t) -> [Point]
     sortpoints (MkFiniteSet pairs) = fmap fst $ sortBy cmp pairs

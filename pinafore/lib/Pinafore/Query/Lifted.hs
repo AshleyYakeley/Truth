@@ -6,7 +6,7 @@ import Truth.Core
 
 data Lifted baseedit t
     = LiftedConstant t
-    | LiftedFunction (QImLiteral baseedit t)
+    | LiftedFunction (QLiteral baseedit t)
 
 instance Functor (Lifted baseedit) where
     fmap ab (LiftedConstant a) = LiftedConstant $ ab a
@@ -23,7 +23,7 @@ instance Applicative (Lifted baseedit) where
 nullLifted :: Lifted baseedit t
 nullLifted = LiftedFunction $ constEditFunction Nothing
 
-liftedToFunction :: Lifted baseedit t -> QImLiteral baseedit t
+liftedToFunction :: Lifted baseedit t -> QLiteral baseedit t
 liftedToFunction (LiftedConstant t) = constEditFunction $ Just t
 liftedToFunction (LiftedFunction t) = t
 

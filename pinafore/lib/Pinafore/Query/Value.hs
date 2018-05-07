@@ -11,11 +11,11 @@ import Truth.Core
 data QType baseedit t where
     QTException :: QType baseedit Text
     QTConstant :: QType baseedit Literal
-    QTLiteral :: QType baseedit (QLiteral baseedit Literal)
-    QTPoint :: QType baseedit (QPoint baseedit)
-    QTSet :: QType baseedit (QSet baseedit)
-    QTMorphism :: QType baseedit (QPointMorphism baseedit)
-    QTInverseMorphism :: QType baseedit (QPointMorphism baseedit)
+    QTLiteral :: QType baseedit (QRefLiteral baseedit Literal)
+    QTPoint :: QType baseedit (QRefPoint baseedit)
+    QTSet :: QType baseedit (QRefSetPoint baseedit)
+    QTMorphism :: QType baseedit (QMorphismRefPoint baseedit)
+    QTInverseMorphism :: QType baseedit (QMorphismRefPoint baseedit)
     QTList :: QType baseedit [QValue baseedit]
     QTFunction :: QType baseedit (QValue baseedit -> QValue baseedit)
     QTAction :: QType baseedit (QAction baseedit)
@@ -80,15 +80,15 @@ qpartialapply (MkAny QTException ex) = FailureResult ex
 qpartialapply (MkAny QTFunction f) = return f
 qpartialapply (MkAny QTMorphism f) =
     return $ \case
-        MkAny QTPoint a -> MkAny QTPoint $ qApplyMorphismPoint f a
-        MkAny QTSet a -> MkAny QTSet $ qApplyMorphismSet f a
+        MkAny QTPoint a -> MkAny QTPoint $ qApplyMorphismRefPoint f a
+        MkAny QTSet a -> MkAny QTSet $ qApplyMorphismRefPointSet f a
         MkAny ta _ -> qexception $ pack $ "cannot apply " ++ show QTMorphism ++ " to " ++ show ta
 qpartialapply (MkAny QTInverseMorphism f) =
     return $ \case
-        MkAny QTConstant a -> MkAny QTSet $ qInverseApplyMorphismConstant f a
-        MkAny QTLiteral a -> MkAny QTSet $ qInverseApplyMorphismLiteral f a
-        MkAny QTPoint a -> MkAny QTSet $ qInverseApplyMorphismPoint f a
-        MkAny QTSet a -> MkAny QTSet $ qInverseApplyMorphismSet f a
+        MkAny QTConstant a -> MkAny QTSet $ qInverseApplyMorphismRefToConstant f a
+        MkAny QTLiteral a -> MkAny QTSet $ qInverseApplyMorphismRefToLiteral f a
+        MkAny QTPoint a -> MkAny QTSet $ qInverseApplyMorphismRefToPoint f a
+        MkAny QTSet a -> MkAny QTSet $ qInverseApplyMorphismRefToSet f a
         MkAny ta _ -> qexception $ pack $ "cannot apply " ++ show QTInverseMorphism ++ " to " ++ show ta
 qpartialapply (MkAny tf _) = FailureResult $ pack $ "cannot apply " ++ show tf
 
