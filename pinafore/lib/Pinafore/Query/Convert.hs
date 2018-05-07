@@ -43,7 +43,7 @@ instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription t where
     qTypeDescription = literalTypeDescription @t <> "!"
 
 instance {-# OVERLAPPABLE #-} AsLiteral t => FromQValue baseedit t where
-    fromQValue v@(MkAny QTConstant text) =
+    fromQValue v@(MkAny QTConstLiteral text) =
         case fromLiteral text of
             Just t -> return t
             Nothing -> badFromQValue v
@@ -70,13 +70,13 @@ instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription (Lifted edit t)
 
 instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t, HasPinaforePointEdit baseedit) =>
                                   FromQValue baseedit (Lifted edit t) where
-    fromQValue v@(MkAny QTConstant text) =
+    fromQValue v@(MkAny QTConstLiteral text) =
         case fromLiteral text of
             Just a -> return $ LiftedConstant a
             Nothing -> badFromQValue v
-    fromQValue (MkAny QTLiteral v) =
+    fromQValue (MkAny QTRefLiteral v) =
         return $ LiftedFunction $ funcEditFunction (\mtext -> mtext >>= fromLiteral) . editLensFunction v
-    fromQValue (MkAny QTPoint v) =
+    fromQValue (MkAny QTRefPoint v) =
         return $ LiftedFunction $ editLensFunction $ applyPinaforeLens literalPinaforeLensMorphism v
     fromQValue v = badFromQValue v
 
@@ -150,16 +150,16 @@ instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription (QRefLiteral ed
 
 instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t, HasPinaforePointEdit baseedit) =>
                                   FromQValue baseedit (QRefLiteral edit t) where
-    fromQValue v@(MkAny QTConstant text) =
+    fromQValue v@(MkAny QTConstLiteral text) =
         case fromLiteral text of
             Just a -> return $ constEditLens $ Just a
             Nothing -> badFromQValue v
-    fromQValue (MkAny QTLiteral v) = return $ (funcEditLens $ \mt -> mt >>= fromLiteral) . v
-    fromQValue (MkAny QTPoint v) = return $ applyPinaforeLens literalPinaforeLensMorphism v
+    fromQValue (MkAny QTRefLiteral v) = return $ (funcEditLens $ \mt -> mt >>= fromLiteral) . v
+    fromQValue (MkAny QTRefPoint v) = return $ applyPinaforeLens literalPinaforeLensMorphism v
     fromQValue v = badFromQValue v
 
 instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t) => ToQValue baseedit (QRefLiteral edit t) where
-    toQValue t = MkAny QTLiteral $ (funcEditLens $ fmap toLiteral) . t
+    toQValue t = MkAny QTRefLiteral $ (funcEditLens $ fmap toLiteral) . t
 
 -- Predicate
 --
@@ -183,11 +183,11 @@ instance HasQTypeDescription (QRefPoint edit) where
     qTypeDescription = "point*"
 
 instance edit ~ baseedit => FromQValue baseedit (QRefPoint edit) where
-    fromQValue (MkAny QTPoint v) = return v
+    fromQValue (MkAny QTRefPoint v) = return v
     fromQValue v = badFromQValue v
 
 instance edit ~ baseedit => ToQValue baseedit (QRefPoint edit) where
-    toQValue t = MkAny QTPoint t
+    toQValue t = MkAny QTRefPoint t
 
 -- QRefSetPoint
 --
@@ -195,12 +195,12 @@ instance HasQTypeDescription (QRefSetPoint edit) where
     qTypeDescription = "set*"
 
 instance edit ~ baseedit => FromQValue baseedit (QRefSetPoint edit) where
-    fromQValue (MkAny QTPoint v) = return $ (funcEditLens opoint) . v
-    fromQValue (MkAny QTSet v) = return v
+    fromQValue (MkAny QTRefPoint v) = return $ (funcEditLens opoint) . v
+    fromQValue (MkAny QTRefSet v) = return v
     fromQValue v = badFromQValue v
 
 instance edit ~ baseedit => ToQValue baseedit (QRefSetPoint edit) where
-    toQValue t = MkAny QTSet t
+    toQValue t = MkAny QTRefSet t
 
 -- QLiteral
 --
@@ -239,18 +239,18 @@ instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription (QSetLiteral ed
 
 instance {-# OVERLAPPABLE #-} (edit ~ baseedit, AsLiteral t, HasPinaforePointEdit baseedit) =>
                                   FromQValue baseedit (QSetLiteral edit t) where
-    fromQValue v@(MkAny QTConstant text) =
+    fromQValue v@(MkAny QTConstLiteral text) =
         case fromLiteral text of
             Just a -> return $ constEditFunction $ opoint a
             Nothing -> badFromQValue v
-    fromQValue (MkAny QTLiteral a) =
+    fromQValue (MkAny QTRefLiteral a) =
         return $ (funcEditFunction $ maybePoint . (\mt -> mt >>= fromLiteral)) . editLensFunction a
-    fromQValue (MkAny QTPoint a) =
+    fromQValue (MkAny QTRefPoint a) =
         return $
         applyPinaforeFunction
             (arr maybeToFiniteSet . lensFunctionMorphism literalPinaforeLensMorphism)
             (lensFunctionValue a)
-    fromQValue (MkAny QTSet a) =
+    fromQValue (MkAny QTRefSet a) =
         return $
         applyPinaforeFunction
             (arr catMaybes . cfmap (lensFunctionMorphism literalPinaforeLensMorphism))
@@ -266,9 +266,9 @@ instance HasQTypeDescription (QSetPoint edit) where
     qTypeDescription = "set"
 
 instance (edit ~ baseedit, HasPinaforePointEdit baseedit) => FromQValue baseedit (QSetPoint edit) where
-    fromQValue (MkAny QTPoint a) =
+    fromQValue (MkAny QTRefPoint a) =
         return $ applyPinaforeFunction (arr opoint . lensFunctionMorphism id) (lensFunctionValue a)
-    fromQValue (MkAny QTSet a) = return $ applyPinaforeFunction (lensFunctionMorphism id) (lensFunctionValue a)
+    fromQValue (MkAny QTRefSet a) = return $ applyPinaforeFunction (lensFunctionMorphism id) (lensFunctionValue a)
     fromQValue (MkAny QTList la) = do
         lmt :: [QPoint baseedit] <- for la $ fromQValue @baseedit
         return $ unWholeEditFunction $ fmap MkFiniteSet $ for lmt $ \mt -> MkWholeEditFunction mt

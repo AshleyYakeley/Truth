@@ -115,7 +115,7 @@ testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
 
 -- | for test only
 instance Eq (QValue baseedit) where
-    (MkAny QTConstant a1) == (MkAny QTConstant a2) = a1 == a2
+    (MkAny QTConstLiteral a1) == (MkAny QTConstLiteral a2) = a1 == a2
     _ == _ = error "QValue: not comparable"
 
 testQueryValue :: (Eq a, Show a) => String -> QExpr baseedit a -> Maybe a -> TestTree
@@ -170,16 +170,16 @@ testQueries =
         , testQuery "NaN" $ Just "NaN"
         , testQuery "~Infinity" $ Just "~Infinity"
         , testQuery "~-Infinity" $ Just "~-Infinity"
-        , testQuery "ui_table" $ Just "<function>"
+        , testQuery "ui_table" $ Just "<value -> value>"
         -- list construction
         , testQuery "[]" $ Just "[]"
         , testQuery "[1]" $ Just "[1]"
         , testQuery "[1,2,3]" $ Just "[1,2,3]"
         -- functions
-        , testQuery "\\x -> x" $ Just "<function>"
-        , testQuery "\\x -> 1" $ Just "<function>"
-        , testQuery "\\x y -> y" $ Just "<function>"
-        , testQuery "\\x y z -> [x,y,z]" $ Just "<function>"
+        , testQuery "\\x -> x" $ Just "<value -> value>"
+        , testQuery "\\x -> 1" $ Just "<value -> value>"
+        , testQuery "\\x y -> y" $ Just "<value -> value>"
+        , testQuery "\\x y z -> [x,y,z]" $ Just "<value -> value>"
         -- let-binding
         , testQuery "let in 27" $ Just "27"
         , testQuery "let a=\"5\" in a" $ Just "5"
@@ -211,10 +211,10 @@ testQueries =
         , testQuery "let a=1;b=a in b" $ Just "1"
         , testQuery "let b=a;a=1 in b" $ Just "1"
         , testQuery "let a x = x in a 1" $ Just "1"
-        , testQuery "let a x = x; b = a in b" $ Just "<function>"
+        , testQuery "let a x = x; b = a in b" $ Just "<value -> value>"
         , testQuery "let a = \\x -> x in let b = a 1 in b" $ Just "1"
         , testQuery "let a x = x; b = a 1 in b" $ Just "1"
-        , testQuery "let a x = b; b = b in a" $ Just "<function>"
+        , testQuery "let a x = b; b = b in a" $ Just "<value -> value>"
         , testQuery "let a x = 1; b = b in a b" $ Just "1"
         , testQuery "let a x = 1; b = a b in b" $ Just "1"
         , testQuery "let b = a b; a x = 1 in b" $ Just "1"
@@ -229,10 +229,10 @@ testQueries =
         , testQuery "let a=1 in let b=a in let a=3 in b" $ Just "1"
         , testQuery "let a=1;b=a;a=3 in b" $ Nothing
         -- operators
-        , testQuery "0 == 1" $ Just "<literal>"
-        , testQuery "1 == 1" $ Just "<literal>"
-        , testQuery "0 /= 1" $ Just "<literal>"
-        , testQuery "1 /= 1" $ Just "<literal>"
+        , testQuery "0 == 1" $ Just "<literal*>"
+        , testQuery "1 == 1" $ Just "<literal*>"
+        , testQuery "0 /= 1" $ Just "<literal*>"
+        , testQuery "1 /= 1" $ Just "<literal*>"
         , testQuery "0 <= 1" $ Just "true"
         , testQuery "1 <= 1" $ Just "true"
         , testQuery "2 <= 1" $ Just "false"
@@ -248,7 +248,7 @@ testQueries =
         , testQuery "0 > 1" $ Just "false"
         , testQuery "1 > 1" $ Just "false"
         , testQuery "2 > 1" $ Just "true"
-        , testQuery "1 == ~1" $ Just "<literal>"
+        , testQuery "1 == ~1" $ Just "<literal*>"
         , testQuery "0 ~== 1" $ Just "false"
         , testQuery "1 ~== 1" $ Just "true"
         , testQuery "1 ~== ~1" $ Just "true"
