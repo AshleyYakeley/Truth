@@ -40,7 +40,7 @@ getPinaforeRunAction pinaforeObject createWindow = do
     return $
         MkUnliftIO $ \(MkComposeM action :: QActionM baseedit a) -> do
             let
-                createView :: IO () -> CreateView baseedit (() -> LifeCycle (Result Text a))
+                createView :: IO () -> CreateView (ConstEdit Point) baseedit (() -> LifeCycle (Result Text a))
                 createView _ = do
                     a <- cvLiftView action
                     return $ \() -> return a

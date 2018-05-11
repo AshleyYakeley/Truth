@@ -22,7 +22,7 @@ pastResult (FailureResult s) = ("<" <> s <> ">", tableCellPlain {tcItalic = True
 
 type PossibleNoteEdit = OneWholeEdit (Result Text) NoteEdit
 
-soupEditSpec :: UISpec (SoupEdit PossibleNoteEdit)
+soupEditSpec :: UISpec (ConstEdit UUID) (SoupEdit PossibleNoteEdit)
 soupEditSpec = let
     nameColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
     nameColumn =
@@ -42,10 +42,8 @@ soupEditSpec = let
                     oneWholeLiftEditLens (tupleEditLens NotePast) .
                     mustExistOneEditLens "past" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . lens
             return $ funcEditFunction pastResult . editLensFunction valLens
-    getaspect :: Aspect (MaybeEdit (UUIDElementEdit PossibleNoteEdit))
+    getaspect :: UIWindow (MaybeEdit (UUIDElementEdit PossibleNoteEdit))
     getaspect =
-        return $
-        Just $
         MkUIWindow (constEditFunction "item") $
         uiLens (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $ uiOneWhole $ uiOneWhole noteEditSpec
     in uiSimpleTable [nameColumn, pastColumn] getaspect

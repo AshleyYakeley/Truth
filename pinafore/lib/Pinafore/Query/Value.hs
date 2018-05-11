@@ -20,7 +20,7 @@ data QType baseedit t where
     QTFunction :: QType baseedit (QValue baseedit -> QValue baseedit)
     QTAction :: QType baseedit (QAction baseedit)
     QTOrder :: QType baseedit (QOrder baseedit)
-    QTUserInterface :: QType baseedit (UISpec baseedit)
+    QTUserInterface :: QType baseedit (UISpec (ConstEdit Point) baseedit)
 
 instance Show (QType baseedit t) where
     show QTException = "exception"

@@ -61,7 +61,7 @@ qInverseApplyMorphismRefToSet f a =
     convertEditFunction .
     applyPinaforeFunction (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f)) (lensFunctionValue a)
 
-type QActionM baseedit = ComposeM (Result Text) (View baseedit)
+type QActionM baseedit = ComposeM (Result Text) (View (ConstEdit Point) baseedit)
 
 resultTextToM :: MonadFail m => Result Text a -> m a
 resultTextToM = resultToM . mapResultFailure unpack

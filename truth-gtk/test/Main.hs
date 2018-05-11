@@ -9,8 +9,8 @@ import Truth.Core
 import Truth.UI.GTK
 
 testGView ::
-       forall edit. ApplicableEdit edit
-    => UISpec edit
+       forall edit seledit. ApplicableEdit edit
+    => UISpec seledit edit
     -> TestTree
 testGView uispec =
     testCase (show uispec) $
@@ -18,10 +18,10 @@ testGView uispec =
         Just _ -> return ()
         Nothing -> assertFailure "not matched"
 
-data UIUnknown edit where
-    MkUIUnknown :: UIUnknown edit
+data UIUnknown seledit edit where
+    MkUIUnknown :: UIUnknown seledit edit
 
-instance Show (UIUnknown edit) where
+instance Show (UIUnknown seledit edit) where
     show MkUIUnknown = "unknown"
 
 instance UIType UIUnknown where
@@ -31,8 +31,8 @@ testGViews :: TestTree
 testGViews =
     testGroup
         "GView"
-        [ testGView $ (uiNull :: UISpec (WholeEdit String))
-        , testGView $ uiVertical [(MkUISpec MkUIUnknown :: UISpec (WholeEdit String), False)]
+        [ testGView $ (uiNull :: UISpec UnitEdit (WholeEdit String))
+        , testGView $ uiVertical [(MkUISpec MkUIUnknown :: UISpec UnitEdit (WholeEdit String), False)]
         ]
 
 tests :: TestTree

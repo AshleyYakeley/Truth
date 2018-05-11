@@ -93,6 +93,7 @@ library:
       - Truth.Core.UI.Specifier.Specifier
       - Truth.Core.UI.Specifier.Null
       - Truth.Core.UI.Specifier.Lens
+      - Truth.Core.UI.Specifier.SelectionLens
       - Truth.Core.UI.Specifier.CSS
       - Truth.Core.UI.Specifier.Button
       - Truth.Core.UI.Specifier.One

@@ -73,7 +73,7 @@ withset order set cont = do
 qappend :: Lifted baseedit Text -> Lifted baseedit Text -> Lifted baseedit Text
 qappend = liftA2 (<>)
 
-valSpecText :: UISpec (WholeEdit (Maybe Text)) -> QRefLiteral baseedit Text -> UISpec baseedit
+valSpecText :: UISpec seledit (WholeEdit (Maybe Text)) -> QRefLiteral baseedit Text -> UISpec seledit baseedit
 valSpecText spec val = uiLens val spec
 
 pb :: forall baseedit t. ToQValue baseedit t
@@ -98,7 +98,7 @@ genentity = liftIO $ newKeyContainerItem @(FiniteSet Point)
 newentity :: forall baseedit. QRefSetPoint baseedit -> (Point -> QAction baseedit) -> QAction baseedit
 newentity set continue = do
     entity <- genentity
-    liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem entity]
+    liftOuter $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem entity]
     continue entity
 
 getQImPoint :: QPoint baseedit -> QActionM baseedit Point
@@ -107,17 +107,17 @@ getQImPoint = qGetFunctionValue
 addentity :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAction baseedit
 addentity set qp = do
     entity <- getQImPoint qp
-    liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem entity]
+    liftOuter $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem entity]
 
 removeentity :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAction baseedit
 removeentity set qp = do
     entity <- getQImPoint qp
-    liftOuter $ mapViewEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem entity]
+    liftOuter $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem entity]
 
 setentity :: forall baseedit. QRefPoint baseedit -> QPoint baseedit -> QAction baseedit
 setentity var val = do
     p :: Point <- getQImPoint val
-    liftOuter $ mapViewEdit var $ viewObjectPushEdit $ \_ push -> push [MkWholeEdit p]
+    liftOuter $ viewMapEdit var $ viewObjectPushEdit $ \_ push -> push [MkWholeEdit p]
 
 file_import ::
        forall baseedit. HasPinaforeFileEdit baseedit
@@ -134,7 +134,7 @@ file_import set continue = do
             newentity set $ \entity -> do
                 mdestobject <-
                     liftOuter $
-                    mapViewEdit (pinaforeFileItemLens entity) $ do
+                    viewMapEdit (pinaforeFileItemLens entity) $ do
                         MkObject {..} <- viewObject
                         liftIO $
                             runUnliftIO objRun $ do
@@ -155,7 +155,7 @@ ui_table ::
     => [(QLiteral baseedit Text, Point -> Result Text (QRefLiteral baseedit Text))]
     -> (Point -> Result Text (UIWindow baseedit))
     -> QRefSetPoint baseedit
-    -> UISpec baseedit
+    -> UISpec (ConstEdit Point) baseedit
 ui_table cols asp val = let
     showCell :: Maybe Text -> (Text, TableCellProps)
     showCell (Just s) = (s, tableCellPlain)
@@ -169,12 +169,16 @@ ui_table cols asp val = let
             mapResultFailure unpack $ do
                 lens <- f p
                 return $ mapLens lens
-    aspect :: Point -> Aspect baseedit
-    aspect entity = resultToM $ mapResultFailure unpack $ fmap return $ asp entity
+    aspect :: Point -> IO (UIWindow baseedit)
+    aspect entity = resultToM $ mapResultFailure unpack $ asp entity
     in uiTable (fmap getColumn cols) aspect val
 
 ui_pick ::
-       forall baseedit. QMorphismLiteral baseedit Text -> QSetPoint baseedit -> QRefPoint baseedit -> UISpec baseedit
+       forall baseedit seledit.
+       QMorphismLiteral baseedit Text
+    -> QSetPoint baseedit
+    -> QRefPoint baseedit
+    -> UISpec seledit baseedit
 ui_pick nameMorphism fset = let
     getName :: PinaforeFunctionMorphism baseedit Point (Point, Text)
     getName =
@@ -258,7 +262,7 @@ predefinitions =
     , pb "ui_unitcheckbox" $ \name val -> uiCheckbox (clearText . name) $ toEditLens isUnit . val
     , pb "ui_booleancheckbox" $ \name val -> uiMaybeCheckbox (clearText . name) val
     , pb "ui_textentry" $ valSpecText $ uiNothingValue mempty uiTextEntry
-    , pb "ui_textarea" $ valSpecText $ uiNothingValue mempty $ uiConvert uiText
+    , pb "ui_textarea" $ valSpecText $ uiNothingValue mempty $ uiNoSelectionLens $ uiConvert uiText
     , pb "ui_label" $ valSpecText $ uiNothingValue mempty $ uiLabel
     , pb "ui_horizontal" uiHorizontal
     , pb "ui_vertical" uiVertical

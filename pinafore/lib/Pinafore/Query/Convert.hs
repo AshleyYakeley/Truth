@@ -28,7 +28,7 @@ badFromQValue ::
 badFromQValue (MkAny QTException s) = FailureResult s
 badFromQValue (MkAny t _) = fail $ "unexpected " ++ show t ++ " for " ++ unpack (qTypeDescription @t)
 
-class HasQTypeDescription t where
+class HasQTypeDescription (t :: *) where
     qTypeDescription :: Text
     qTypeDescriptionSingle :: Text
     qTypeDescriptionSingle = qTypeDescription @t
@@ -352,18 +352,18 @@ instance ToQValue baseedit (IO ()) where
 
 -- View
 --
-instance HasQTypeDescription (View edit ()) where
+instance HasQTypeDescription (View seledit edit ()) where
     qTypeDescription = "action"
 
-instance baseedit ~ edit => FromQValue baseedit (View edit ()) where
+instance baseedit ~ edit => FromQValue baseedit (View seledit edit ()) where
     fromQValue (MkAny QTAction (MkComposeM v)) =
         return $ do
-            _ <- v -- ignore failure
+            _ <- viewNoAspect v -- ignore failure
             return ()
     fromQValue v = badFromQValue v
 
-instance baseedit ~ edit => ToQValue baseedit (View edit ()) where
-    toQValue t = MkAny QTAction $ lift t
+instance baseedit ~ edit => ToQValue baseedit (View seledit edit ()) where
+    toQValue t = MkAny QTAction $ lift $ viewNoAspect t
 
 -- QOrder
 --
@@ -379,32 +379,33 @@ instance baseedit ~ edit => ToQValue baseedit (QOrder edit) where
 
 -- UISpec
 --
-instance HasQTypeDescription (UISpec edit) where
+instance HasQTypeDescription (UISpec seledit edit) where
     qTypeDescription = "ui"
 
-instance baseedit ~ edit => FromQValue baseedit (UISpec edit) where
+instance (baseedit ~ edit, seledit ~ ConstEdit Point) => FromQValue baseedit (UISpec seledit edit) where
     fromQValue (MkAny QTUserInterface v) = return v
     fromQValue v = badFromQValue v
 
-instance baseedit ~ edit => ToQValue baseedit (UISpec edit) where
+instance (baseedit ~ edit, seledit ~ ConstEdit Point) => ToQValue baseedit (UISpec seledit edit) where
     toQValue t = MkAny QTUserInterface t
 
 -- UISpec function
 --
-instance HasQTypeDescription (PinaforeFunctionValue edit (UISpec edit)) where
+instance HasQTypeDescription (PinaforeFunctionValue edit (UISpec seledit edit)) where
     qTypeDescription = "ui"
 
-instance edit ~ baseedit => ToQValue baseedit (PinaforeFunctionValue edit (UISpec edit)) where
+instance (baseedit ~ edit, seledit ~ ConstEdit Point) =>
+             ToQValue baseedit (PinaforeFunctionValue edit (UISpec seledit edit)) where
     toQValue ef = MkAny QTUserInterface $ uiSwitch ef
 
 -- UIWindow
 --
 instance HasQTypeDescription (UIWindow edit) where
-    qTypeDescription = qTypeDescription @(EditFunction edit (WholeEdit (Maybe Text)), UISpec edit)
+    qTypeDescription = qTypeDescription @(EditFunction edit (WholeEdit (Maybe Text)), UISpec (ConstEdit Point) edit)
 
 instance (edit ~ baseedit, HasPinaforeEntityEdit baseedit) => FromQValue baseedit (UIWindow edit) where
     fromQValue v = do
-        (title, content) <- fromQValue v
+        (title, content :: UISpec (ConstEdit Point) baseedit) <- fromQValue v
         return $ MkUIWindow (funcEditFunction @(WholeEdit (Maybe Text)) (fromMaybe "") . title) content
 
 -- List

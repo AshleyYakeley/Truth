@@ -14,7 +14,7 @@ pagesGetView =
         return $ do
             pages <-
                 for pagespecs $ \(headspec, bodyspec) -> do
-                    headwidget <- getview headspec
+                    headwidget <- cvNoAspect $ getview headspec
                     bodywidget <- getview bodyspec
                     return (headwidget, bodywidget)
             notebook <- new Notebook []

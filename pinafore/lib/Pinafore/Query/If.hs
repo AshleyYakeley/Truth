@@ -55,7 +55,7 @@ qfifthenelse f t e
     | SuccessResult vt <- qpartialapply t
     , SuccessResult ve <- qpartialapply e = MkAny QTFunction $ \a -> qfifthenelse f (vt a) (ve a)
 qfifthenelse f (MkAny QTUserInterface vt) (MkAny QTUserInterface ve) = let
-    pickUISpec :: Maybe Bool -> UISpec baseedit
+    pickUISpec :: Maybe Bool -> UISpec (ConstEdit Point) baseedit
     pickUISpec Nothing = uiNull
     pickUISpec (Just True) = vt
     pickUISpec (Just False) = ve
