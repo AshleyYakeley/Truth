@@ -187,7 +187,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
         liftIOView $ \unlift ->
             on tview #focus $ \_ ->
                 unlift $ do
-                    viewSetSelectedAspect aspect
+                    viewSetSelection aspect
                     return True
     toWidget tview
 

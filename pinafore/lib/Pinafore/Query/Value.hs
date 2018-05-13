@@ -55,7 +55,7 @@ type QValue baseedit = Any (QType baseedit)
 
 instance Show (QValue baseedit) where
     show (MkAny QTException val) = unpack $ "exception: " <> val
-    show (MkAny QTConstLiteral val) = unpack $ unLiteral val
+    show (MkAny QTConstLiteral val) = show $ unpack $ unLiteral val
     show (MkAny QTUserInterface val) = show val
     show (MkAny QTList val) = "[" ++ intercalate "," (fmap show val) ++ "]"
     show (MkAny t _) = "<" ++ show t ++ ">"

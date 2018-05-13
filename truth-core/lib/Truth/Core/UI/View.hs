@@ -5,12 +5,14 @@ module Truth.Core.UI.View
     , viewObjectRead
     , viewObjectMaybeEdit
     , viewObjectPushEdit
-    , viewSetSelectedAspect
+    , viewSetSelection
+    , viewGetSelection
     , viewOpenSelection
     , viewOpenWindow
     , viewRequest
     , viewMapEdit
-    , viewMapSelectionEdit
+    , viewMapSetSelectionEdit
+    , viewMapGetSelectionEdit
     , viewNoAspect
     ) where
 
@@ -51,10 +53,16 @@ viewObjectPushEdit ::
        (UnliftIO (View seledit edit) -> forall m. MonadUnliftIO m => ([edit] -> m ()) -> m r) -> View seledit edit r
 viewObjectPushEdit call = viewObjectMaybeEdit $ \unlift push -> call unlift $ \edits -> pushEdit $ push edits
 
-viewSetSelectedAspect :: Aspect seledit edit -> View seledit edit ()
-viewSetSelectedAspect aspect = do
-    setSelect <- MkView $ asks vcSetSelect
+viewSetSelection :: Aspect seledit edit -> View seledit edit ()
+viewSetSelection aspect = do
+    setSelect <- MkView $ asks vcSetSelection
     liftIO $ setSelect aspect
+
+viewGetSelection :: View seledit edit (Maybe (Object seledit))
+viewGetSelection =
+    MkView $ do
+        sel <- asks vcGetSelection
+        liftIO sel
 
 viewOpenSelection :: View seledit edit ()
 viewOpenSelection = do
@@ -76,12 +84,19 @@ viewMapEdit ::
     -> View seledit edita a
 viewMapEdit lens (MkView viewB) = MkView $ withReaderT (vcMapEdit lens) viewB
 
-viewMapSelectionEdit ::
+viewMapSetSelectionEdit ::
        forall seledita seleditb edit a. ()
     => EditLens seledita seleditb
     -> View seledita edit a
     -> View seleditb edit a
-viewMapSelectionEdit lens (MkView view) = MkView $ withReaderT (vcMapSelectionEdit lens) view
+viewMapSetSelectionEdit lens (MkView view) = MkView $ withReaderT (vcMapSetSelectionEdit lens) view
+
+viewMapGetSelectionEdit ::
+       forall seledita seleditb edit a. ()
+    => EditLens seledita seleditb
+    -> View seleditb edit a
+    -> View seledita edit a
+viewMapGetSelectionEdit lens (MkView view) = MkView $ withReaderT (vcMapGetSelectionEdit lens) view
 
 viewNoAspect :: View seledita edit a -> View seleditb edit a
 viewNoAspect (MkView view) = MkView $ withReaderT vcNoAspect view

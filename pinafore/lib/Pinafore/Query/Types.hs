@@ -66,8 +66,14 @@ type QActionM baseedit = ComposeM (Result Text) (View (ConstEdit Point) baseedit
 resultTextToM :: MonadFail m => Result Text a -> m a
 resultTextToM = resultToM . mapResultFailure unpack
 
+qLiftView :: View (ConstEdit Point) baseedit a -> QActionM baseedit a
+qLiftView = liftOuter
+
+qLiftResult :: Result Text a -> QActionM baseedit a
+qLiftResult = liftInner
+
 qGetFunctionValue :: PinaforeFunctionValue baseedit t -> QActionM baseedit t
-qGetFunctionValue fval = liftOuter $ viewObjectRead $ \_ mr -> editFunctionRead fval mr ReadWhole
+qGetFunctionValue fval = qLiftView $ viewObjectRead $ \_ mr -> editFunctionRead fval mr ReadWhole
 
 actionRequest :: IOWitness t -> QActionM baseedit t
 actionRequest wit =

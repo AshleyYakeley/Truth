@@ -355,15 +355,15 @@ instance ToQValue baseedit (IO ()) where
 instance HasQTypeDescription (View seledit edit ()) where
     qTypeDescription = "action"
 
-instance baseedit ~ edit => FromQValue baseedit (View seledit edit ()) where
+instance (baseedit ~ edit, seledit ~ ConstEdit Point) => FromQValue baseedit (View seledit edit ()) where
     fromQValue (MkAny QTAction (MkComposeM v)) =
         return $ do
-            _ <- viewNoAspect v -- ignore failure
+            _ <- v -- ignore failure
             return ()
     fromQValue v = badFromQValue v
 
-instance baseedit ~ edit => ToQValue baseedit (View seledit edit ()) where
-    toQValue t = MkAny QTAction $ lift $ viewNoAspect t
+instance (baseedit ~ edit, seledit ~ ConstEdit Point) => ToQValue baseedit (View seledit edit ()) where
+    toQValue t = MkAny QTAction $ qLiftView t
 
 -- QOrder
 --
@@ -468,7 +468,7 @@ instance (HasPinaforeEntityEdit baseedit, ToQValue baseedit a, edit ~ baseedit) 
     fromQValue vf = do
         f <- qpartialapply vf
         return $ \a -> do
-            action <- liftInner $ fromQValue $ f $ toQValue a
+            action <- qLiftResult $ fromQValue $ f $ toQValue a
             action
 
 instance (FromQValue baseedit a, ToQValue baseedit b) => ToQValue baseedit (a -> b) where

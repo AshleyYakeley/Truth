@@ -98,7 +98,7 @@ genentity = liftIO $ newKeyContainerItem @(FiniteSet Point)
 newentity :: forall baseedit. QRefSetPoint baseedit -> (Point -> QAction baseedit) -> QAction baseedit
 newentity set continue = do
     entity <- genentity
-    liftOuter $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem entity]
+    qLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem entity]
     continue entity
 
 getQImPoint :: QPoint baseedit -> QActionM baseedit Point
@@ -107,17 +107,17 @@ getQImPoint = qGetFunctionValue
 addentity :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAction baseedit
 addentity set qp = do
     entity <- getQImPoint qp
-    liftOuter $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem entity]
+    qLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem entity]
 
 removeentity :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAction baseedit
 removeentity set qp = do
     entity <- getQImPoint qp
-    liftOuter $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem entity]
+    qLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem entity]
 
 setentity :: forall baseedit. QRefPoint baseedit -> QPoint baseedit -> QAction baseedit
 setentity var val = do
     p :: Point <- getQImPoint val
-    liftOuter $ viewMapEdit var $ viewObjectPushEdit $ \_ push -> push [MkWholeEdit p]
+    qLiftView $ viewMapEdit var $ viewObjectPushEdit $ \_ push -> push [MkWholeEdit p]
 
 file_import ::
        forall baseedit. HasPinaforeFileEdit baseedit
@@ -133,7 +133,7 @@ file_import set continue = do
             let sourceobject = fileObject path
             newentity set $ \entity -> do
                 mdestobject <-
-                    liftOuter $
+                    qLiftView $
                     viewMapEdit (pinaforeFileItemLens entity) $ do
                         MkObject {..} <- viewObject
                         liftIO $
@@ -142,13 +142,22 @@ file_import set continue = do
                                 objRead ReadSingleObjectStore
                 destobject <-
                     case mdestobject of
-                        Nothing -> liftInner $ FailureResult $ fromString $ "failed to create object " ++ show entity
+                        Nothing -> qLiftResult $ FailureResult $ fromString $ "failed to create object " ++ show entity
                         Just object -> return object
                 liftIO $ copyObject sourceobject destobject
                 continue entity
 
 file_size :: Object ByteStringEdit -> IO Int64
 file_size MkObject {..} = runUnliftIO objRun $ objRead ReadByteStringLength
+
+withSelection :: (Point -> QAction baseedit) -> QAction baseedit
+withSelection cont = do
+    mselection <- qLiftView viewGetSelection
+    case mselection of
+        Nothing -> return ()
+        Just MkObject {..} -> do
+            point <- liftIO $ runUnliftIO objRun $ objRead ReadWhole
+            cont point
 
 ui_table ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -205,11 +214,15 @@ qfail lt = do
 qsingle :: FiniteSet Literal -> Maybe Literal
 qsingle = getSingle
 
+qshow :: forall baseedit. QValue baseedit -> Text
+qshow v = pack $ show v
+
 predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => [(QBindings baseedit, (Symbol, Text))]
 predefinitions =
-    [ pb "$" $ qapply @baseedit
+    [ pb "show" $ qshow @baseedit
+    , pb "$" $ qapply @baseedit
     , pb "null" $ nullLifted @baseedit @Literal
     , pb "." $ qcombine @baseedit
     , pb "&" $ qmeet @baseedit
@@ -258,6 +271,7 @@ predefinitions =
     , pb "file_size" $ fmap @(Lifted baseedit) file_size
     , pb "openwindow" viewOpenWindow
     , pb "openselection" viewOpenSelection
+    , pb "withselection" $ withSelection @baseedit
     , pb "ui_blank" uiNull
     , pb "ui_unitcheckbox" $ \name val -> uiCheckbox (clearText . name) $ toEditLens isUnit . val
     , pb "ui_booleancheckbox" $ \name val -> uiMaybeCheckbox (clearText . name) val

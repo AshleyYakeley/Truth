@@ -41,6 +41,7 @@ ui_people pp = ui_vertical
 [
     [ui_button "New Person" $ newentity pp $ \p -> openwindow (window_person p),false],
     [ui_button "View Person" $ openselection,false],
+    [ui_button "Remove Person" $ withselection $ \p -> removeentity pp p,false],
     [ui_table [column "Name" name] window_person pp,true]
 ];
 ui_person p = ui_vertical

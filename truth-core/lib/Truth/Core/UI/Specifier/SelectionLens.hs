@@ -4,22 +4,22 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.UI.Specifier.Specifier
 
-data UISelectionLens seledit edit where
-    MkUISelectionLens
+data UISetSelectionLens seledit edit where
+    MkUISetSelectionLens
         :: forall seledita seleditb edit.
            EditLens seledita seleditb
         -> UISpec seledita edit
-        -> UISelectionLens seleditb edit
+        -> UISetSelectionLens seleditb edit
 
-instance Show (UISelectionLens seledit edit) where
-    show (MkUISelectionLens _ uispec) = "selection-lens " ++ show uispec
+instance Show (UISetSelectionLens seledit edit) where
+    show (MkUISetSelectionLens _ uispec) = "selection-lens " ++ show uispec
 
-instance UIType UISelectionLens where
-    uiWitness = $(iowitness [t|UISelectionLens|])
+instance UIType UISetSelectionLens where
+    uiWitness = $(iowitness [t|UISetSelectionLens|])
 
-uiSelectionLens ::
+uiSetSelectionLens ::
        forall seledita seleditb edit. EditLens seledita seleditb -> UISpec seledita edit -> UISpec seleditb edit
-uiSelectionLens lens spec = MkUISpec $ MkUISelectionLens lens spec
+uiSetSelectionLens lens spec = MkUISpec $ MkUISetSelectionLens lens spec
 
 uiAspectMapSelectionEdit :: EditLens seledita seleditb -> UIAspect seledita edit -> UIAspect seleditb edit
 uiAspectMapSelectionEdit lens (MkUIAspect window asplens) = MkUIAspect window (lens . asplens)

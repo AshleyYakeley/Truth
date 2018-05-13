@@ -63,7 +63,7 @@ interact runAction = do
     hSetBuffering stdout NoBuffering
     evalStateT interactLoop $ \expr ->
         runUnliftIO runAction $ do
-            val <- liftInner $ qeval $ qlets predefinedBindings expr
+            val <- qLiftResult $ qeval $ qlets predefinedBindings expr
             case fromQValue val of
                 SuccessResult action -> action
                 _ ->

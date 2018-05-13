@@ -29,8 +29,8 @@ lensGetView =
              MkUILens lens specb <- isUISpec speca
              return $ cvMapEdit lens $ getview specb) <|>
         (do
-             MkUISelectionLens lens specb <- isUISpec speca
-             return $ cvMapSelectionEdit lens $ getview specb) <|>
+             MkUISetSelectionLens lens specb <- isUISpec speca
+             return $ cvMapSetSelectionEdit lens $ getview specb) <|>
         (do
              MkUINoSelectionLens specb <- isUISpec speca
              return $ cvNoAspect $ getview specb)

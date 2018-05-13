@@ -205,7 +205,7 @@ makeViewWindow pc tellclose (MkUserInterface sub (window :: UIWindow edit)) = le
                ((), closer) <-
                    createView closer $ \cv ->
                        runLifeCycle $ do
-                           (followUp, action, _aspect) <- subscribeView' cv sub newWindow getRequest
+                           (followUp, action) <- subscribeView' cv sub newWindow getRequest
                            followUp action
            return ()
 

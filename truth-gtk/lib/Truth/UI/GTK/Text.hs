@@ -76,7 +76,7 @@ textView = do
         liftIOView $ \unlift ->
             on widget #focus $ \_ ->
                 unlift $ do
-                    viewSetSelectedAspect aspect
+                    viewSetSelection aspect
                     return True
     toWidget widget
 

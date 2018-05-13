@@ -12,7 +12,7 @@ module Truth.Core.UI.CreateView
     , cvBindEditFunction
     , cvAddAspect
     , cvMapEdit
-    , cvMapSelectionEdit
+    , cvMapSetSelectionEdit
     , cvNoAspect
     , cvMapAspect
     , subscribeView
@@ -71,9 +71,9 @@ voMapEdit lens@(MkCloseUnlift unlift flens) (MkViewOutput updateB a) = let
     a' = aspectMapEdit lens a
     in (MkViewOutput updateA a')
 
-voMapSelectionEdit ::
+voMapSetSelectionEdit ::
        forall seledita seleditb edit. EditLens seledita seleditb -> ViewOutput seledita edit -> ViewOutput seleditb edit
-voMapSelectionEdit lens (MkViewOutput upd asp) = MkViewOutput upd $ aspectMapSelectionEdit lens asp
+voMapSetSelectionEdit lens (MkViewOutput upd asp) = MkViewOutput upd $ aspectMapSelectionEdit lens asp
 
 voNoAspect :: ViewOutput seledita edit -> ViewOutput seleditb edit
 voNoAspect (MkViewOutput upd _) = MkViewOutput upd noAspect
@@ -147,13 +147,14 @@ cvMapEdit ::
 cvMapEdit lens (MkCreateView ma) =
     MkCreateView $ mapReaderContext (vcMapEdit lens) $ remonad (mapWriterOutput $ voMapEdit lens) ma
 
-cvMapSelectionEdit ::
+cvMapSetSelectionEdit ::
        forall seledita seleditb edit a. ()
     => EditLens seledita seleditb
     -> CreateView seledita edit a
     -> CreateView seleditb edit a
-cvMapSelectionEdit lens (MkCreateView ma) =
-    MkCreateView $ mapReaderContext (vcMapSelectionEdit lens) $ remonad (mapWriterOutput $ voMapSelectionEdit lens) ma
+cvMapSetSelectionEdit lens (MkCreateView ma) =
+    MkCreateView $
+    mapReaderContext (vcMapSetSelectionEdit lens) $ remonad (mapWriterOutput $ voMapSetSelectionEdit lens) ma
 
 cvNoAspect :: CreateView seledita edit a -> CreateView seleditb edit a
 cvNoAspect (MkCreateView ma) = MkCreateView $ mapReaderContext vcNoAspect $ remonad (mapWriterOutput voNoAspect) ma
@@ -168,32 +169,34 @@ subscribeView' ::
     -> Subscriber edit action
     -> (UIWindow edit -> IO ())
     -> (forall t. IOWitness t -> Maybe t)
-    -> LifeCycle (w, action, Aspect seledit edit)
+    -> LifeCycle (w, action)
 subscribeView' (MkCreateView (ReaderT (view :: ViewContext seledit edit -> WriterT (ViewOutput seledit edit) LifeCycle w))) sub vcOpenWindow vcRequest = do
     let
-        initialise :: Object edit -> LifeCycle (ViewResult seledit edit w, IORef (Aspect seledit edit))
+        initialise :: Object edit -> LifeCycle (ViewResult seledit edit w)
         initialise vcObject = do
             rec
                 let
-                    vcSetSelect ss = liftIO $ writeIORef selref ss
+                    vcSetSelection :: Aspect seledit edit -> IO ()
+                    vcSetSelection ss = liftIO $ writeIORef selref ss
+                    vcGetSelection :: IO (Maybe (Object seledit))
+                    vcGetSelection = do
+                        asp <- readIORef selref
+                        muasp <- asp
+                        for muasp $ \uasp -> return $ mapObject (uiaLens uasp) vcObject
                     vcOpenSelection :: IO ()
                     vcOpenSelection = do
-                        ss <- readIORef selref
-                        msel <- ss
-                        case msel of
+                        asp <- readIORef selref
+                        muasp <- asp
+                        case muasp of
                             Just (neww :: UIAspect seledit edit) -> vcOpenWindow $ uiaWindow neww
                             Nothing -> return ()
                 (w, vo) <- runWriterT $ view MkViewContext {..}
                 selref :: IORef (Aspect seledit edit) <- liftIO $ newIORef $ voFirstAspect vo
-            return ((vo, w), selref)
-        receive :: (ViewResult seledit edit w, IORef (Aspect seledit edit)) -> Object edit -> [edit] -> IO ()
-        receive ((vo, _), _) = voUpdate vo
-    (((_, w), selref), _, action) <- subscribeLifeCycle sub initialise receive
-    let
-        selaspect = do
-            ss <- readIORef selref
-            ss
-    return (w, action, selaspect)
+            return (vo, w)
+        receive :: (ViewResult seledit edit w) -> Object edit -> [edit] -> IO ()
+        receive (vo, _) = voUpdate vo
+    ((_, w), _, action) <- subscribeLifeCycle sub initialise receive
+    return (w, action)
 
 subscribeView ::
        forall seledit edit w action.
@@ -206,7 +209,7 @@ subscribeView createView sub openWindow getRequest = do
     rec
         (w, closer) <-
             runLifeCycle $ do
-                (followUp, action, _aspect) <- subscribeView' (createView closer) sub openWindow getRequest
+                (followUp, action) <- subscribeView' (createView closer) sub openWindow getRequest
                 followUp action
     return w
 
