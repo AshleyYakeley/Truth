@@ -2,5 +2,6 @@
 docker build -t local-build docker
 bin/hindent-all
 stack install --pedantic --test
+`stack path --local-bin`/pinafore --doc > mkdocs/docs/predefined.md
 stack exec --cwd mkdocs -- mkdocs build
 echo OK

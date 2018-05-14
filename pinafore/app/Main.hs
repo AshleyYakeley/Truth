@@ -17,7 +17,7 @@ data Options
                 [FilePath]
 
 optDataFlag :: O.Parser (Maybe FilePath)
-optDataFlag = O.optional $ O.strOption (O.long "data")
+optDataFlag = O.optional $ O.strOption $ O.long "data" <> O.metavar "PATH"
 
 optParser :: O.Parser Options
 optParser =
@@ -35,6 +35,24 @@ getDirPath mdirpath = do
     liftIO $ createDirectoryIfMissing True dirpath
     return dirpath
 
+putMarkdown :: String -> String -> String -> IO ()
+putMarkdown name tp desc = let
+    badchars :: String
+    badchars = "+-*>"
+    escapeChar :: Char -> String
+    escapeChar c =
+        if elem c badchars
+            then ['\\', c]
+            else [c]
+    escapeMarkdown :: String -> String
+    escapeMarkdown s = mconcat $ fmap escapeChar s
+    in do
+           putStrLn $ "**" ++ escapeMarkdown name ++ "** :: " ++ escapeMarkdown tp ++ "  "
+           if desc == ""
+               then return ()
+               else (putStrLn $ escapeMarkdown desc)
+           putStrLn ""
+
 main :: IO ()
 main =
     truthMain $ \args createWindow -> do
@@ -42,9 +60,8 @@ main =
         case options of
             ExprDocOption ->
                 liftIO $ do
-                    for_ (predefinedDoc @PinaforeEdit) $ \(name, desc) ->
-                        putStrLn $ (show name) ++ " :: " ++ unpack desc
-                    putStrLn $ "<file> :: " ++ unpack filePinaforeType
+                    for_ (predefinedDoc @PinaforeEdit) $ \(name, desc) -> putMarkdown (show name) (unpack desc) ""
+                    putMarkdown "<file>" (unpack filePinaforeType) "a script file passed to pinafore"
             DumpTableOption mdirpath -> do
                 dirpath <- getDirPath mdirpath
                 liftIO $ sqlitePinaforeDumpTable dirpath

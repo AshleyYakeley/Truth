@@ -1,1 +1,6 @@
 site_name: Pinafore
+repo_url: https://github.com/AshleyYakeley/Truth
+theme: readthedocs
+pages:
+- Home: 'index.md'
+- Predefined Functions: 'predefined.md'
