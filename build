@@ -1,4 +1,6 @@
 #!/bin/bash -e
+docker build -t local-build docker
 ./hindent-all
 stack install --pedantic --test
+stack exec --cwd mkdocs -- mkdocs build
 echo OK

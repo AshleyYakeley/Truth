@@ -22,4 +22,4 @@ flags:
 
 docker:
     enable: true
-    auto-pull: true
+    image: "local-build"
