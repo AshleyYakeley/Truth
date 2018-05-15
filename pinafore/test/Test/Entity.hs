@@ -67,6 +67,10 @@ testEntity =
         , pointTest "if exists p1 then fail \"failed\" else pass >> pass"
         , pointTest "testisnull null"
         , pointTest "testisnull (ma p1)"
+        , pointTest "testisnull $ null ?? null"
+        , pointTest "testeq 0 $ null ?? 0"
+        , pointTest "testeq 1 $ 1 ?? 0"
+        , pointTest "testeq 1 $ 1 ?? null"
         -- setentity
         , pointTest "setentity (ma p1) \"hello\""
         , pointTest "setentity (ma p1) p2"

@@ -217,6 +217,13 @@ qsingle = getSingle
 qshow :: forall baseedit. QValue baseedit -> Text
 qshow v = pack $ show v
 
+nulljoin :: forall baseedit. Lifted baseedit Literal -> Lifted baseedit Literal -> Lifted baseedit Literal
+nulljoin lx ly = let
+    qq :: Maybe Literal -> Maybe Literal -> Maybe Literal
+    qq Nothing y = y
+    qq x _ = x
+    in maybeLifted $ qq <$> liftedMaybe lx <*> liftedMaybe ly
+
 predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => [(QBindings baseedit, (Symbol, Text))]
@@ -224,6 +231,7 @@ predefinitions =
     [ pb "show" $ qshow @baseedit
     , pb "$" $ qapply @baseedit
     , pb "null" $ nullLifted @baseedit @Literal
+    , pb "??" $ nulljoin @baseedit
     , pb "." $ qcombine @baseedit
     , pb "&" $ qmeet @baseedit
     , pb "|" $ qjoin @baseedit

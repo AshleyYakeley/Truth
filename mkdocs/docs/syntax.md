@@ -76,7 +76,7 @@ In interactive mode, each command has syntax `<interactive-command>`.
 4 | | | `==` `/=` `~==` `~/=` `<=` `<` `>=` `>`
 3 | | `&` |
 2 | | `|` |
-1 | `>>` | |
+1 | `??` `>>` | |
 0 | | `$` |
 
 ## Lexical
