@@ -60,7 +60,8 @@ main =
         case options of
             ExprDocOption ->
                 liftIO $ do
-                    for_ (predefinedDoc @PinaforeEdit) $ \(name, desc) -> putMarkdown (show name) (unpack desc) ""
+                    for_ (predefinedDoc @PinaforeEdit) $ \(name, tp, desc) ->
+                        putMarkdown (show name) (unpack tp) (unpack desc)
                     putMarkdown "<file>" (unpack filePinaforeType) "a script file passed to pinafore"
             DumpTableOption mdirpath -> do
                 dirpath <- getDirPath mdirpath
