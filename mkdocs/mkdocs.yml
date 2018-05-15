@@ -3,4 +3,5 @@ repo_url: https://github.com/AshleyYakeley/Truth
 theme: readthedocs
 pages:
 - Home: 'index.md'
+- Syntax: 'syntax.md'
 - Predefined Functions: 'predefined.md'
