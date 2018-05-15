@@ -4,4 +4,5 @@ theme: readthedocs
 pages:
 - Home: 'index.md'
 - Syntax: 'syntax.md'
-- Predefined Functions: 'predefined.md'
+- Application & Composition: 'application.md'
+- Predefined Bindings: 'predefined.md'

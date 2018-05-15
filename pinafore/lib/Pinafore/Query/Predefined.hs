@@ -21,10 +21,10 @@ import Truth.Core
 import Truth.World.File
 import Truth.World.ObjectStore
 
-qcombine :: HasPinaforeEntityEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
-qcombine (MkAny QTMorphism g) (MkAny QTMorphism f) = MkAny QTMorphism $ g . f
-qcombine (MkAny QTInverseMorphism g) (MkAny QTInverseMorphism f) = MkAny QTInverseMorphism $ g . f
-qcombine g f = MkAny QTFunction $ qapply g . qapply f
+qcompose :: HasPinaforeEntityEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
+qcompose (MkAny QTMorphism g) (MkAny QTMorphism f) = MkAny QTMorphism $ g . f
+qcompose (MkAny QTInverseMorphism g) (MkAny QTInverseMorphism f) = MkAny QTInverseMorphism $ g . f
+qcompose g f = MkAny QTFunction $ qapply g . qapply f
 
 qmeet :: QRefSetPoint baseedit -> QRefSetPoint baseedit -> QRefSetPoint baseedit
 qmeet a b = readOnlyEditLens meetEditFunction . pairJoinEditLenses a b
@@ -230,19 +230,25 @@ predefinitions ::
     => [(QBindings baseedit, (Symbol, Text, Text))]
 predefinitions =
     [ pb "show" "Show a value statically." $ qshow @baseedit
+    -- Basic
     , pb "$" "Apply a function, morphism, or inverse morphism to a value." $ qapply @baseedit
-    , pb "null" "The null literal" $ nullLifted @baseedit @Literal
-    , pb "exists" "True if the literal is not null." $ \(val :: QLiteral baseedit Literal) ->
-          (funcEditFunction (Just . isJust) . val :: QLiteral baseedit Bool)
-    , pb "??" "`p ?? q` = `if exists p then p else q`." $ nulljoin @baseedit
-    , pb "." "Compose functions, morphisms, or inverse morphisms." $ qcombine @baseedit
+    , pb "." "Compose functions, morphisms, or inverse morphisms." $ qcompose @baseedit
+    -- Sets
     , pb "&" "Intersection of sets. The resulting set can be added to, but not deleted from." $ qmeet @baseedit
     , pb "|" "Union of sets. The resulting set can be deleted from, but not added to." $ qjoin @baseedit
     , pb "member" "Determine membership of a set" $ liftA2 @(Lifted baseedit) $ set_member
     , pb "single" "The member of a single-member set, or null." $ fmap @(Lifted baseedit) $ qsingle
-    , pb "++" "Concatenate text." $ qappend @baseedit
+    -- Literals
     , pb "==" "Equality. (TBD)" $ liftA2 @(Lifted baseedit) $ (==) @Point
     , pb "/=" "Non-equality. (TBD)" $ liftA2 @(Lifted baseedit) $ (/=) @Point
+    -- Nulls
+    , pb "null" "The null literal." $ nullLifted @baseedit @Literal
+    , pb "exists" "True if the literal is not null." $ \(val :: QLiteral baseedit Literal) ->
+          (funcEditFunction (Just . isJust) . val :: QLiteral baseedit Bool)
+    , pb "??" "`p ?? q` = `if exists p then p else q`." $ nulljoin @baseedit
+    -- Text
+    , pb "++" "Concatenate text." $ qappend @baseedit
+    -- Numeric
     , pb "+" "Numeric add." $ liftA2 @(Lifted baseedit) $ (+) @Number
     , pb "-" "Numeric Subtract." $ liftA2 @(Lifted baseedit) $ (-) @Number
     , pb "*" "Numeric Multiply." $ liftA2 @(Lifted baseedit) $ (*) @Number
@@ -255,18 +261,21 @@ predefinitions =
     , pb ">=" "Numeric greater or equal." $ liftA2 @(Lifted baseedit) $ (>=) @Number
     , pb "abs" "Numeric absolute value." $ fmap @(Lifted baseedit) $ abs @Number
     , pb "signum" "Numeric sign." $ fmap @(Lifted baseedit) $ signum @Number
+    , pb "inexact" "Convert a number to inexact." $ fmap @(Lifted baseedit) numberToDouble
+    , pb "approximate" "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`." $
+      liftA2 @(Lifted baseedit) approximate
+    -- Set Aggregation
     , pb "count" "Count of non-null literals in a set." $ fmap @(Lifted baseedit) setcount
     , pb "sum" "Sum of numbers in a set." $ fmap @(Lifted baseedit) setsum
     , pb "mean" "Mean of numbers in a set." $ fmap @(Lifted baseedit) setmean
+    -- Orders
     , pb "alphabetical" "Alphabetical order." $ alphabetical @baseedit
     , pb "numerical" "Numercal order." $ numerical @baseedit
     , pb "chronological" "Chronological order." $ chronological @baseedit
     , pb "orders" "Join orders by priority." $ orders @baseedit
     , pb "orderon" "Order by an order on a particular morphism." $ orderon @baseedit
     , pb "rev" "Reverse an order." $ rev @baseedit
-    , pb "inexact" "Convert a number to inexact." $ fmap @(Lifted baseedit) numberToDouble
-    , pb "approximate" "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`." $
-      liftA2 @(Lifted baseedit) approximate
+    -- Actions
     , pb "pass" "Do nothing." (return () :: QAction baseedit)
     , pb ">>" "Do actions in sequence." $ ((>>) :: QAction baseedit -> QAction baseedit -> QAction baseedit)
     , pb "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
@@ -277,8 +286,10 @@ predefinitions =
     , pb "newentity" "Create a new entity in a set and act on it." $ newentity @baseedit
     , pb "addentity" "Add an entity to a set." $ addentity @baseedit
     , pb "removeentity" "Remove an entity from a set." $ removeentity @baseedit
+    -- Files
     , pb "file_import" "Import a file into a set." $ file_import @baseedit
     , pb "file_size" "The size of a file." $ fmap @(Lifted baseedit) file_size
+    -- UI
     , pb "openwindow" "Open a new window with this title and UI." viewOpenWindow
     , pb "openselection" "Open the item selected in the UI of this window." viewOpenSelection
     , pb "withselection" "Act with the item selected in the UI of this window." $ withSelection @baseedit
