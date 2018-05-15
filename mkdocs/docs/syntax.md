@@ -22,37 +22,37 @@ In interactive mode, each command has syntax `<interactive-command>`.
 <expression> ::= <expression-infix[0]>
 
 <expression-infix[n]> ::=
-  <expression-infix[n+1]> |
-  <expression-infix[n]> <infix-operator[n]> <expression-infix[n+1]>
+    <expression-infix[n+1]> |
+    <expression-infix[n]> <infix-operator[n]> <expression-infix[n+1]>
 
 <expression-infix[10]> ::= <expression-1>
 
 <infix-operator[n]> ::= -- see table
 
 <expression-1> ::=
-  "\" <patterns> "->" <expression> |
-  <let-bindings> "in" <expression> |
-  "if" <expression> "then" <expression> "else" <expression> |
-  <expression-2>
+    "\" <patterns> "->" <expression> |
+    <let-bindings> "in" <expression> |
+    "if" <expression> "then" <expression> "else" <expression> |
+    <expression-2>
 
 <expression-2> ::= <expression-3> | <expression-2> <expression-3>
 
 <expression-3> ::=
-  symbol |
-  literal-boolean |
-  literal-number |
-  literal-text |
-  "@" |
-  literal-predicate |
-  literal-point |
-  "[" <comma-separated-expressions> "]" |
-  "(" <expression> ")"
+    symbol |
+    literal-boolean |
+    literal-number |
+    literal-text |
+    "@" |
+    literal-predicate |
+    literal-point |
+    "[" <comma-separated-expressions> "]" |
+    "(" <expression> ")"
 
 <comma-separated-expressions> ::=  | <comma-separated-expressions-1>
 
 <comma-separated-expressions-1> ::=
-  <expression> |
-  <comma-separated-expressions-1> "," <expression>
+    <expression> |
+    <comma-separated-expressions-1> "," <expression>
 
 <let-bindings> ::= "let" <bindings>
 
@@ -67,7 +67,7 @@ In interactive mode, each command has syntax `<interactive-command>`.
 
 ## Infix Operators
 
-| Level | (A x B) x C | A x (B x C) | A x B only |
+| [n] | (A x B) x C | A x (B x C) | A x B only |
 | --- | --- | --- | --- |
 9 | others | `.` |
 7 | `*` `/` | |
@@ -82,7 +82,7 @@ In interactive mode, each command has syntax `<interactive-command>`.
 ## Lexical
 
 ```no-highlight
-symbol = [[:alpha:]][[:alnum:]-_]*
+symbol = [[:alpha:]][-_[:alnum:]]*
 
 literal-boolean = (true)|(false)
 
@@ -90,7 +90,9 @@ literal-number = (-?[0-9]+(.[0-9]*(_[0-9]*)?)?)|(~-?[0-9]+(.[0-9]*)?(e-?[0-9]+)?
 
 literal-text = "([^"\\]|\\.)*"
 
-literal-predicate = %[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}
+literal-predicate =
+    %[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}
 
-literal-point = ![[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}
+literal-point =
+    ![[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}
 ```
