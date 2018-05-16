@@ -270,6 +270,17 @@ testQueries =
         , testQuery "\"abc\" ++ \"def\"" $ Just $ showText "abcdef"
         , testQuery "let f x = x + 2 in f -1" $ Just $ showText "1"
         , testQuery "let f = 2 in f - 1" $ Just $ showText "1"
+        -- boolean
+        , testQuery "true && true" $ Just $ showText "true"
+        , testQuery "true && false" $ Just $ showText "false"
+        , testQuery "false && true" $ Just $ showText "false"
+        , testQuery "false && false" $ Just $ showText "false"
+        , testQuery "true || true" $ Just $ showText "true"
+        , testQuery "true || false" $ Just $ showText "true"
+        , testQuery "false || true" $ Just $ showText "true"
+        , testQuery "false || false" $ Just $ showText "false"
+        , testQuery "not true" $ Just $ showText "false"
+        , testQuery "not false" $ Just $ showText "true"
         -- operator precedence
         , testQuery "1 + 2 * 3" $ Just $ showText "7"
         , testQuery "3 * 2 + 1" $ Just $ showText "7"

@@ -280,6 +280,12 @@ predefinitions =
                           (funcEditFunction (Just . isJust) . val :: QLiteral baseedit Bool)
                     , mkDefEntry "??" "`p ?? q` = `if exists p then p else q`." $ nulljoin @baseedit
                     ]
+              , docTreeEntry
+                    "Boolean"
+                    [ mkDefEntry "&&" "Boolean AND." $ liftA2 @(Lifted baseedit) (&&)
+                    , mkDefEntry "||" "Boolean OR." $ liftA2 @(Lifted baseedit) (||)
+                    , mkDefEntry "not" "Boolean NOT." $ fmap @(Lifted baseedit) not
+                    ]
               , docTreeEntry "Text" [mkDefEntry "++" "Concatenate text." $ qappend @baseedit]
               , docTreeEntry
                     "Numeric"

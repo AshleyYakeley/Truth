@@ -84,7 +84,9 @@ operatorFixity "<=" = MkFixity AssocNone 4
 operatorFixity "<" = MkFixity AssocNone 4
 operatorFixity ">=" = MkFixity AssocNone 4
 operatorFixity ">" = MkFixity AssocNone 4
+operatorFixity "&&" = MkFixity AssocRight 3
 operatorFixity "&" = MkFixity AssocRight 3
+operatorFixity "||" = MkFixity AssocRight 2
 operatorFixity "|" = MkFixity AssocRight 2
 operatorFixity ">>" = MkFixity AssocLeft 1
 operatorFixity "??" = MkFixity AssocLeft 1
