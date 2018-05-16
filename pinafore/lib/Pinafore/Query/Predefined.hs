@@ -212,8 +212,11 @@ qfail lt = do
 qsingle :: FiniteSet Literal -> Maybe Literal
 qsingle = getSingle
 
-qshow :: forall baseedit. QValue baseedit -> Text
-qshow v = pack $ show v
+qstatictype :: forall baseedit. QValue baseedit -> Text
+qstatictype (MkAny t _) = pack $ show t
+
+qstaticshow :: forall baseedit. QValue baseedit -> Text
+qstaticshow v = pack $ show v
 
 nulljoin :: forall baseedit. Lifted baseedit Literal -> Lifted baseedit Literal -> Lifted baseedit Literal
 nulljoin lx ly = let
@@ -365,7 +368,11 @@ predefinitions =
                     "A list table. First arg is columns (name, property), second is the window to open for a selection, third is the set of items." $
                 ui_table @baseedit
               ]
-        , docTreeEntry "Static" [mkDefEntry "static-show" "Show a value statically." $ qshow @baseedit]
+        , docTreeEntry
+              "Static"
+              [ mkDefEntry "static-type" "Get the static type of a value." $ qstatictype @baseedit
+              , mkDefEntry "static-show" "Show a value statically." $ qstaticshow @baseedit
+              ]
         ]
 
 predefinedDoc ::
