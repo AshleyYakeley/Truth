@@ -9,6 +9,9 @@ module Pinafore.Query
     , resultTextToM
     , parseValue
     , interact
+    , DefDoc(..)
+    , DocTree
+    , runDocTree
     , predefinedDoc
     ) where
 

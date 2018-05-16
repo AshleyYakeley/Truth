@@ -1,5 +1,8 @@
 module Pinafore.Query.Predefined
-    ( predefinedBindings
+    ( DefDoc(..)
+    , DocTree(..)
+    , runDocTree
+    , predefinedBindings
     , predefinedDoc
     , outputln
     ) where
@@ -10,6 +13,7 @@ import Pinafore.Morphism
 import Pinafore.Number
 import Pinafore.PredicateMorphism
 import Pinafore.Query.Convert
+import Pinafore.Query.Doc
 import Pinafore.Query.Expression
 import Pinafore.Query.Lifted
 import Pinafore.Query.Order
@@ -75,13 +79,6 @@ qappend = liftA2 (<>)
 
 valSpecText :: UISpec seledit (WholeEdit (Maybe Text)) -> QRefLiteral baseedit Text -> UISpec seledit baseedit
 valSpecText spec val = uiLens val spec
-
-pb :: forall baseedit t. ToQValue baseedit t
-   => Symbol
-   -> Text
-   -> t
-   -> (QBindings baseedit, (Symbol, Text, Text))
-pb name desc val = (qbind name val, (name, qTypeDescription @t, desc))
 
 isUnit :: Bijection (Maybe ()) Bool
 isUnit =
@@ -225,114 +222,158 @@ nulljoin lx ly = let
     qq x _ = x
     in maybeLifted $ qq <$> liftedMaybe lx <*> liftedMaybe ly
 
+type BindDoc baseedit = (Maybe (QBindings baseedit), DefDoc)
+
+mkDefEntry ::
+       forall baseedit t. ToQValue baseedit t
+    => Symbol
+    -> Text
+    -> t
+    -> DocTreeEntry (BindDoc baseedit)
+mkDefEntry name desc val = EntryDocTreeEntry (Just (qbind name val), mkDefDoc name desc val)
+
 predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
-    => [(QBindings baseedit, (Symbol, Text, Text))]
+    => DocTree (BindDoc baseedit)
 predefinitions =
-    [ pb "show" "Show a value statically." $ qshow @baseedit
-    -- Basic
-    , pb "$" "Apply a function, morphism, or inverse morphism to a value." $ qapply @baseedit
-    , pb "." "Compose functions, morphisms, or inverse morphisms." $ qcompose @baseedit
-    -- Sets
-    , pb "&" "Intersection of sets. The resulting set can be added to, but not deleted from." $ qmeet @baseedit
-    , pb "|" "Union of sets. The resulting set can be deleted from, but not added to." $ qjoin @baseedit
-    , pb "member" "Determine membership of a set" $ liftA2 @(Lifted baseedit) $ set_member
-    , pb "single" "The member of a single-member set, or null." $ fmap @(Lifted baseedit) $ qsingle
-    -- Literals
-    , pb "==" "Equality. (TBD)" $ liftA2 @(Lifted baseedit) $ (==) @Point
-    , pb "/=" "Non-equality. (TBD)" $ liftA2 @(Lifted baseedit) $ (/=) @Point
-    -- Nulls
-    , pb "null" "The null literal." $ nullLifted @baseedit @Literal
-    , pb "exists" "True if the literal is not null." $ \(val :: QLiteral baseedit Literal) ->
-          (funcEditFunction (Just . isJust) . val :: QLiteral baseedit Bool)
-    , pb "??" "`p ?? q` = `if exists p then p else q`." $ nulljoin @baseedit
-    -- Text
-    , pb "++" "Concatenate text." $ qappend @baseedit
-    -- Numeric
-    , pb "+" "Numeric add." $ liftA2 @(Lifted baseedit) $ (+) @Number
-    , pb "-" "Numeric Subtract." $ liftA2 @(Lifted baseedit) $ (-) @Number
-    , pb "*" "Numeric Multiply." $ liftA2 @(Lifted baseedit) $ (*) @Number
-    , pb "/" "Numeric Divide." $ liftA2 @(Lifted baseedit) $ (/) @Number
-    , pb "~==" "Numeric equality, folding exact and inexact numbers." $ liftA2 @(Lifted baseedit) $ (==) @Number
-    , pb "~/=" "Numeric non-equality." $ liftA2 @(Lifted baseedit) $ (/=) @Number
-    , pb "<" "Numeric strictly less." $ liftA2 @(Lifted baseedit) $ (<) @Number
-    , pb "<=" "Numeric less or equal." $ liftA2 @(Lifted baseedit) $ (<=) @Number
-    , pb ">" "Numeric strictly greater." $ liftA2 @(Lifted baseedit) $ (>) @Number
-    , pb ">=" "Numeric greater or equal." $ liftA2 @(Lifted baseedit) $ (>=) @Number
-    , pb "abs" "Numeric absolute value." $ fmap @(Lifted baseedit) $ abs @Number
-    , pb "signum" "Numeric sign." $ fmap @(Lifted baseedit) $ signum @Number
-    , pb "inexact" "Convert a number to inexact." $ fmap @(Lifted baseedit) numberToDouble
-    , pb "approximate" "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`." $
-      liftA2 @(Lifted baseedit) approximate
-    -- Set Aggregation
-    , pb "count" "Count of non-null literals in a set." $ fmap @(Lifted baseedit) setcount
-    , pb "sum" "Sum of numbers in a set." $ fmap @(Lifted baseedit) setsum
-    , pb "mean" "Mean of numbers in a set." $ fmap @(Lifted baseedit) setmean
-    -- Orders
-    , pb "alphabetical" "Alphabetical order." $ alphabetical @baseedit
-    , pb "numerical" "Numercal order." $ numerical @baseedit
-    , pb "chronological" "Chronological order." $ chronological @baseedit
-    , pb "orders" "Join orders by priority." $ orders @baseedit
-    , pb "orderon" "Order by an order on a particular morphism." $ orderon @baseedit
-    , pb "rev" "Reverse an order." $ rev @baseedit
-    -- Actions
-    , pb "pass" "Do nothing." (return () :: QAction baseedit)
-    , pb ">>" "Do actions in sequence." $ ((>>) :: QAction baseedit -> QAction baseedit -> QAction baseedit)
-    , pb "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
-    , pb "withset" "Perform an action on every member of a set, in the given order." $ withset @baseedit
-    , pb "output" "Output text to standard output." $ output @baseedit
-    , pb "outputln" "Output text and a newline to standard output." $ outputln @baseedit
-    , pb "setentity" "Set an entity reference to an entity." $ setentity @baseedit
-    , pb "newentity" "Create a new entity in a set and act on it." $ newentity @baseedit
-    , pb "addentity" "Add an entity to a set." $ addentity @baseedit
-    , pb "removeentity" "Remove an entity from a set." $ removeentity @baseedit
-    -- Files
-    , pb "file_import" "Import a file into a set." $ file_import @baseedit
-    , pb "file_size" "The size of a file." $ fmap @(Lifted baseedit) file_size
-    -- UI
-    , pb "openwindow" "Open a new window with this title and UI." viewOpenWindow
-    , pb "openselection" "Open the item selected in the UI of this window." viewOpenSelection
-    , pb "withselection" "Act with the item selected in the UI of this window." $ withSelection @baseedit
-    , pb "ui_blank" "Blank user-interface" uiNull
-    , pb "ui_unitcheckbox" "(TBD)" $ \name val -> uiCheckbox (clearText . name) $ toEditLens isUnit . val
-    , pb "ui_booleancheckbox" "Checkbox. Use ctrl-click to set to null." $ \name val ->
-          uiMaybeCheckbox (clearText . name) val
-    , pb "ui_textentry" "Text entry, empty text is null." $ valSpecText $ uiNothingValue mempty uiTextEntry
-    , pb "ui_textarea" "Text area, empty text is null." $
-      valSpecText $ uiNothingValue mempty $ uiNoSelectionLens $ uiConvert uiText
-    , pb "ui_label" "Label." $ valSpecText $ uiNothingValue mempty $ uiLabel
-    , pb "ui_horizontal"
-          "Items arranged horizontally, each flag is whether to expand into remaining space."
-          uiHorizontal
-    , pb "ui_vertical" "Items arranged vertically, each flag is whether to expand into remaining space." uiVertical
-    , pb "ui_pages"
-          "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
-          uiPages
-        -- CSS
-        -- drag
-        -- icon
-    , pb "ui_button" "A button with this text that does this action." $ \(name :: QLiteral baseedit Text) action ->
-          uiButton (clearText . name) action
-    , pb "ui_pick" "A drop-down menu." $ ui_pick
-        -- switch
-    , pb "ui_table"
-          "A list table. First arg is columns (name, property), second is the window to open for a selection, third is the set of items." $
-      ui_table @baseedit
-    ]
-
-pd :: forall t. HasQTypeDescription t
-   => Symbol
-   -> Text
-   -> t
-   -> (Symbol, Text, Text)
-pd name desc _ = (name, qTypeDescription @t, desc)
+    MkDocTree
+        "Predefined"
+        [ docTreeEntry
+              "Basic"
+              [ mkDefEntry "$" "Apply a function, morphism, or inverse morphism to a value." $ qapply @baseedit
+              , mkDefEntry "." "Compose functions, morphisms, or inverse morphisms." $ qcompose @baseedit
+              , EntryDocTreeEntry
+                    ( Nothing
+                    , mkDefDoc "@" "Invert a morphism to an inverse morphism, or an inverse morphism to a morphism." $
+                      qinvert @baseedit)
+              ]
+        , docTreeEntry
+              "Sets"
+              [ mkDefEntry "&" "Intersection of sets. The resulting set can be added to, but not deleted from." $
+                qmeet @baseedit
+              , mkDefEntry "|" "Union of sets. The resulting set can be deleted from, but not added to." $
+                qjoin @baseedit
+              , mkDefEntry "member" "Determine membership of a set" $ liftA2 @(Lifted baseedit) $ set_member
+              , mkDefEntry "single" "The member of a single-member set, or null." $ fmap @(Lifted baseedit) $ qsingle
+              ]
+        , docTreeEntry
+              "Literals"
+              [ mkDefEntry "==" "Equality. (TBD)" $ liftA2 @(Lifted baseedit) $ (==) @Point
+              , mkDefEntry "/=" "Non-equality. (TBD)" $ liftA2 @(Lifted baseedit) $ (/=) @Point
+              , docTreeEntry
+                    "Nulls"
+                    [ mkDefEntry "null" "The null literal." $ nullLifted @baseedit @Literal
+                    , mkDefEntry "exists" "True if the literal is not null." $ \(val :: QLiteral baseedit Literal) ->
+                          (funcEditFunction (Just . isJust) . val :: QLiteral baseedit Bool)
+                    , mkDefEntry "??" "`p ?? q` = `if exists p then p else q`." $ nulljoin @baseedit
+                    ]
+              , docTreeEntry "Text" [mkDefEntry "++" "Concatenate text." $ qappend @baseedit]
+              , docTreeEntry
+                    "Numeric"
+                    [ mkDefEntry "+" "Numeric add." $ liftA2 @(Lifted baseedit) $ (+) @Number
+                    , mkDefEntry "-" "Numeric Subtract." $ liftA2 @(Lifted baseedit) $ (-) @Number
+                    , mkDefEntry "*" "Numeric Multiply." $ liftA2 @(Lifted baseedit) $ (*) @Number
+                    , mkDefEntry "/" "Numeric Divide." $ liftA2 @(Lifted baseedit) $ (/) @Number
+                    , mkDefEntry "~==" "Numeric equality, folding exact and inexact numbers." $
+                      liftA2 @(Lifted baseedit) $ (==) @Number
+                    , mkDefEntry "~/=" "Numeric non-equality." $ liftA2 @(Lifted baseedit) $ (/=) @Number
+                    , mkDefEntry "<" "Numeric strictly less." $ liftA2 @(Lifted baseedit) $ (<) @Number
+                    , mkDefEntry "<=" "Numeric less or equal." $ liftA2 @(Lifted baseedit) $ (<=) @Number
+                    , mkDefEntry ">" "Numeric strictly greater." $ liftA2 @(Lifted baseedit) $ (>) @Number
+                    , mkDefEntry ">=" "Numeric greater or equal." $ liftA2 @(Lifted baseedit) $ (>=) @Number
+                    , mkDefEntry "abs" "Numeric absolute value." $ fmap @(Lifted baseedit) $ abs @Number
+                    , mkDefEntry "signum" "Numeric sign." $ fmap @(Lifted baseedit) $ signum @Number
+                    , mkDefEntry "inexact" "Convert a number to inexact." $ fmap @(Lifted baseedit) numberToDouble
+                    , mkDefEntry
+                          "approximate"
+                          "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`." $
+                      liftA2 @(Lifted baseedit) approximate
+                    ]
+              ]
+        , docTreeEntry
+              "Set Aggregation"
+              [ mkDefEntry "count" "Count of non-null literals in a set." $ fmap @(Lifted baseedit) setcount
+              , mkDefEntry "sum" "Sum of numbers in a set." $ fmap @(Lifted baseedit) setsum
+              , mkDefEntry "mean" "Mean of numbers in a set." $ fmap @(Lifted baseedit) setmean
+              ]
+        , docTreeEntry
+              "Orders"
+              [ mkDefEntry "alphabetical" "Alphabetical order." $ alphabetical @baseedit
+              , mkDefEntry "numerical" "Numercal order." $ numerical @baseedit
+              , mkDefEntry "chronological" "Chronological order." $ chronological @baseedit
+              , mkDefEntry "orders" "Join orders by priority." $ orders @baseedit
+              , mkDefEntry "orderon" "Order by an order on a particular morphism." $ orderon @baseedit
+              , mkDefEntry "rev" "Reverse an order." $ rev @baseedit
+              ]
+        , docTreeEntry
+              "Actions"
+              [ mkDefEntry "pass" "Do nothing." (return () :: QAction baseedit)
+              , mkDefEntry ">>" "Do actions in sequence." $
+                ((>>) :: QAction baseedit -> QAction baseedit -> QAction baseedit)
+              , mkDefEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
+              , mkDefEntry "withset" "Perform an action on every member of a set, in the given order." $
+                withset @baseedit
+              , mkDefEntry "output" "Output text to standard output." $ output @baseedit
+              , mkDefEntry "outputln" "Output text and a newline to standard output." $ outputln @baseedit
+              , mkDefEntry "setentity" "Set an entity reference to an entity." $ setentity @baseedit
+              , mkDefEntry "newentity" "Create a new entity in a set and act on it." $ newentity @baseedit
+              , mkDefEntry "addentity" "Add an entity to a set." $ addentity @baseedit
+              , mkDefEntry "removeentity" "Remove an entity from a set." $ removeentity @baseedit
+              ]
+        , docTreeEntry
+              "Files"
+              [ mkDefEntry "file_import" "Import a file into a set." $ file_import @baseedit
+              , mkDefEntry "file_size" "The size of a file." $ fmap @(Lifted baseedit) file_size
+              ]
+        , docTreeEntry
+              "UI"
+              [ mkDefEntry "openwindow" "Open a new window with this title and UI." viewOpenWindow
+              , mkDefEntry "openselection" "Open the item selected in the UI of this window." viewOpenSelection
+              , mkDefEntry "withselection" "Act with the item selected in the UI of this window." $
+                withSelection @baseedit
+              , mkDefEntry "ui_blank" "Blank user-interface" uiNull
+              , mkDefEntry "ui_unitcheckbox" "(TBD)" $ \name val ->
+                    uiCheckbox (clearText . name) $ toEditLens isUnit . val
+              , mkDefEntry "ui_booleancheckbox" "Checkbox. Use ctrl-click to set to null." $ \name val ->
+                    uiMaybeCheckbox (clearText . name) val
+              , mkDefEntry "ui_textentry" "Text entry, empty text is null." $
+                valSpecText $ uiNothingValue mempty uiTextEntry
+              , mkDefEntry "ui_textarea" "Text area, empty text is null." $
+                valSpecText $ uiNothingValue mempty $ uiNoSelectionLens $ uiConvert uiText
+              , mkDefEntry "ui_label" "Label." $ valSpecText $ uiNothingValue mempty $ uiLabel
+              , mkDefEntry
+                    "ui_horizontal"
+                    "Items arranged horizontally, each flag is whether to expand into remaining space."
+                    uiHorizontal
+              , mkDefEntry
+                    "ui_vertical"
+                    "Items arranged vertically, each flag is whether to expand into remaining space."
+                    uiVertical
+              , mkDefEntry
+                    "ui_pages"
+                    "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
+                    uiPages
+                -- CSS
+                -- drag
+                -- icon
+              , mkDefEntry "ui_button" "A button with this text that does this action." $ \(name :: QLiteral baseedit Text) action ->
+                    uiButton (clearText . name) action
+              , mkDefEntry "ui_pick" "A drop-down menu." $ ui_pick
+                -- switch
+              , mkDefEntry
+                    "ui_table"
+                    "A list table. First arg is columns (name, property), second is the window to open for a selection, third is the set of items." $
+                ui_table @baseedit
+              ]
+        , docTreeEntry "Static" [mkDefEntry "static-show" "Show a value statically." $ qshow @baseedit]
+        ]
 
 predefinedDoc ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
-    => [(Symbol, Text, Text)]
-predefinedDoc =
-    [pd "@" "Invert a morphism to an inverse morphism, or an inverse morphism to a morphism." $ qinvert @baseedit] ++
-    fmap snd (predefinitions @baseedit)
+    => DocTree DefDoc
+predefinedDoc = fmap snd $ predefinitions @baseedit
 
-predefinedBindings :: (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit) => QBindings baseedit
-predefinedBindings = mconcat $ fmap fst predefinitions
+predefinedBindings ::
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+    => QBindings baseedit
+predefinedBindings = mconcat $ catMaybes $ toList $ fmap fst $ predefinitions @baseedit

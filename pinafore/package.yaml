@@ -42,6 +42,7 @@ library:
       - Pinafore.Query.Lifted
       - Pinafore.Query.If
       - Pinafore.Query.Order
+      - Pinafore.Query.Doc
       - Pinafore.Query.Predefined
       - Pinafore.Database
       - Pinafore.Database.SQLite

@@ -35,8 +35,8 @@ getDirPath mdirpath = do
     liftIO $ createDirectoryIfMissing True dirpath
     return dirpath
 
-putMarkdown :: String -> String -> String -> IO ()
-putMarkdown name tp desc = let
+showDefEntry :: Int -> DefDoc -> IO ()
+showDefEntry _ (MkDefDoc name tp desc) = let
     badchars :: String
     badchars = "+-*>"
     escapeChar :: Char -> String
@@ -47,22 +47,22 @@ putMarkdown name tp desc = let
     escapeMarkdown :: String -> String
     escapeMarkdown s = mconcat $ fmap escapeChar s
     in do
-           putStrLn $ "**" ++ escapeMarkdown name ++ "** :: " ++ escapeMarkdown tp ++ "  "
+           putStrLn $ "**" ++ escapeMarkdown (show name) ++ "** :: " ++ escapeMarkdown (unpack tp) ++ "  "
            if desc == ""
                then return ()
-               else (putStrLn $ escapeMarkdown desc)
+               else putStrLn $ escapeMarkdown $ unpack desc
            putStrLn ""
+
+showDefTitle :: Int -> Text -> IO ()
+showDefTitle level title = putStrLn $ replicate level '#' ++ " " ++ unpack title
 
 main :: IO ()
 main =
     truthMain $ \args createWindow -> do
         options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
         case options of
-            ExprDocOption ->
-                liftIO $ do
-                    for_ (predefinedDoc @PinaforeEdit) $ \(name, tp, desc) ->
-                        putMarkdown (show name) (unpack tp) (unpack desc)
-                    putMarkdown "<file>" (unpack filePinaforeType) "a script file passed to pinafore"
+            ExprDocOption -> liftIO $ do runDocTree showDefTitle showDefEntry 2 $ predefinedDoc @PinaforeEdit
+                    -- putMarkdown "<file>" (unpack filePinaforeType) "a script file passed to pinafore"
             DumpTableOption mdirpath -> do
                 dirpath <- getDirPath mdirpath
                 liftIO $ sqlitePinaforeDumpTable dirpath
