@@ -73,8 +73,10 @@ operatorFixity :: Symbol -> Fixity
 operatorFixity "." = MkFixity AssocRight 9
 operatorFixity "*" = MkFixity AssocLeft 7
 operatorFixity "/" = MkFixity AssocLeft 7
+operatorFixity "/\\" = MkFixity AssocLeft 7
 operatorFixity "+" = MkFixity AssocLeft 6
 operatorFixity "-" = MkFixity AssocLeft 6
+operatorFixity "\\/" = MkFixity AssocLeft 6
 operatorFixity "++" = MkFixity AssocRight 5
 operatorFixity "==" = MkFixity AssocNone 4
 operatorFixity "/=" = MkFixity AssocNone 4
@@ -85,9 +87,7 @@ operatorFixity "<" = MkFixity AssocNone 4
 operatorFixity ">=" = MkFixity AssocNone 4
 operatorFixity ">" = MkFixity AssocNone 4
 operatorFixity "&&" = MkFixity AssocRight 3
-operatorFixity "&" = MkFixity AssocRight 3
 operatorFixity "||" = MkFixity AssocRight 2
-operatorFixity "|" = MkFixity AssocRight 2
 operatorFixity ">>" = MkFixity AssocLeft 1
 operatorFixity "??" = MkFixity AssocLeft 1
 operatorFixity "$" = MkFixity AssocRight 0

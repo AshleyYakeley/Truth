@@ -38,7 +38,7 @@ getDirPath mdirpath = do
 showDefEntry :: Int -> DefDoc -> IO ()
 showDefEntry _ (MkDefDoc name tp desc) = let
     badchars :: String
-    badchars = "+-*>"
+    badchars = "+-*>\\"
     escapeChar :: Char -> String
     escapeChar c =
         if elem c badchars

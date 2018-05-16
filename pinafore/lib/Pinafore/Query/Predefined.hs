@@ -261,9 +261,9 @@ predefinitions =
               ]
         , docTreeEntry
               "Sets"
-              [ mkDefEntry "&" "Intersection of sets. The resulting set can be added to, but not deleted from." $
+              [ mkDefEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
                 qmeet @baseedit
-              , mkDefEntry "|" "Union of sets. The resulting set can be deleted from, but not added to." $
+              , mkDefEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
                 qjoin @baseedit
               , mkDefEntry "member" "Determine membership of a set" $ liftA2 @(Lifted baseedit) $ set_member
               , mkDefEntry "single" "The member of a single-member set, or null." $ fmap @(Lifted baseedit) $ qsingle

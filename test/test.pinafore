@@ -19,8 +19,8 @@ People = @type !78baed51-cb05-46b5-bcb4-49031532b890;
 
 mother = %3afce58f-b7eb-4b11-8a75-2d66afd4d085;
 father = %c005705f-9259-4d24-9713-db28a6e4f7d5;
-parents p = mother p | father p;
-children p = @mother p | @father p;
+parents p = mother p \/ father p;
+children p = @mother p \/ @father p;
 
 employer = %72f612af-ae47-4c18-b3df-6932ae914f62;
 
