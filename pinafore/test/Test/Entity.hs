@@ -59,7 +59,10 @@ testEntity =
         , pointTest "testeq true $ is 1 1"
         , pointTest "testeq false $ is 1 ~1"
         , pointTest "testeq false $ is null 1"
-        , pointTest "testeq true $ is null null"
+        , pointTest "testeq false $ is null null"
+        , pointTest "let p = null in testeq false $ is p p"
+        , pointTest "testeq true $ is p1 p1"
+        , pointTest "testeq true $ is (ma p1) (ma p1)"
         -- null & exists
         , pointTest "if exists null then fail \"failed\" else pass"
         , pointTest "if exists p1 then fail \"failed\" else pass"

@@ -242,15 +242,22 @@ predefinitions =
     MkDocTree
         "Predefined"
         [ docTreeEntry
-              "Basic"
+              "Identity"
+              [ mkDefEntry "is" "Entity identity. This is always `true` or `false`." $
+                liftA2 @(Lifted baseedit) $ (==) @Point
+              , mkDefEntry
+                    "null"
+                    "Null inhabits every entity type, representing missing information. Note that `is null null` = `false`." $
+                nullLifted @baseedit @Literal
+              ]
+        , docTreeEntry
+              "Functions & Morphisms"
               [ mkDefEntry "$" "Apply a function, morphism, or inverse morphism to a value." $ qapply @baseedit
               , mkDefEntry "." "Compose functions, morphisms, or inverse morphisms." $ qcompose @baseedit
               , EntryDocTreeEntry
                     ( Nothing
                     , mkDefDoc "@" "Invert a morphism to an inverse morphism, or an inverse morphism to a morphism." $
                       qinvert @baseedit)
-              , mkDefEntry "is" "Entity equality. This is always `true` or `false`." $
-                liftA2 @(Lifted baseedit) $ (==) @Point
               ]
         , docTreeEntry
               "Sets"
@@ -269,8 +276,7 @@ predefinitions =
                 liftA2 @(Lifted baseedit) $ (/=) @Literal
               , docTreeEntry
                     "Nulls"
-                    [ mkDefEntry "null" "The null literal." $ nullLifted @baseedit @Literal
-                    , mkDefEntry "exists" "True if the literal is not null." $ \(val :: QLiteral baseedit Literal) ->
+                    [ mkDefEntry "exists" "True if the literal is not null." $ \(val :: QLiteral baseedit Literal) ->
                           (funcEditFunction (Just . isJust) . val :: QLiteral baseedit Bool)
                     , mkDefEntry "??" "`p ?? q` = `if exists p then p else q`." $ nulljoin @baseedit
                     ]
