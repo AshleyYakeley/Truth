@@ -232,10 +232,10 @@ testQueries =
         , testQuery "let a=1 in let b=a in let a=3 in b" $ Just $ showText "1"
         , testQuery "let a=1;b=a;a=3 in b" $ Nothing
         -- operators
-        , testQuery "0 == 1" $ Just "<literal*>"
-        , testQuery "1 == 1" $ Just "<literal*>"
-        , testQuery "0 /= 1" $ Just "<literal*>"
-        , testQuery "1 /= 1" $ Just "<literal*>"
+        , testQuery "0 == 1" $ Just $ showText "false"
+        , testQuery "1 == 1" $ Just $ showText "true"
+        , testQuery "0 /= 1" $ Just $ showText "true"
+        , testQuery "1 /= 1" $ Just $ showText "false"
         , testQuery "0 <= 1" $ Just $ showText "true"
         , testQuery "1 <= 1" $ Just $ showText "true"
         , testQuery "2 <= 1" $ Just $ showText "false"
@@ -251,7 +251,7 @@ testQueries =
         , testQuery "0 > 1" $ Just $ showText "false"
         , testQuery "1 > 1" $ Just $ showText "false"
         , testQuery "2 > 1" $ Just $ showText "true"
-        , testQuery "1 == ~1" $ Just "<literal*>"
+        , testQuery "1 == ~1" $ Just $ showText "false"
         , testQuery "0 ~== 1" $ Just $ showText "false"
         , testQuery "1 ~== 1" $ Just $ showText "true"
         , testQuery "1 ~== ~1" $ Just $ showText "true"

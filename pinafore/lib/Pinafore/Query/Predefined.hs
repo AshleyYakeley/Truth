@@ -249,6 +249,8 @@ predefinitions =
                     ( Nothing
                     , mkDefDoc "@" "Invert a morphism to an inverse morphism, or an inverse morphism to a morphism." $
                       qinvert @baseedit)
+              , mkDefEntry "is" "Entity equality. This is always `true` or `false`." $
+                liftA2 @(Lifted baseedit) $ (==) @Point
               ]
         , docTreeEntry
               "Sets"
@@ -261,8 +263,10 @@ predefinitions =
               ]
         , docTreeEntry
               "Literals"
-              [ mkDefEntry "==" "Equality. (TBD)" $ liftA2 @(Lifted baseedit) $ (==) @Point
-              , mkDefEntry "/=" "Non-equality. (TBD)" $ liftA2 @(Lifted baseedit) $ (/=) @Point
+              [ mkDefEntry "==" "Literal equality. Note that `null == x` and `x == null` are null for any x." $
+                liftA2 @(Lifted baseedit) $ (==) @Literal
+              , mkDefEntry "/=" "Literal non-equality. Note that `null /= x` and `x /= null` are null for any x." $
+                liftA2 @(Lifted baseedit) $ (/=) @Literal
               , docTreeEntry
                     "Nulls"
                     [ mkDefEntry "null" "The null literal." $ nullLifted @baseedit @Literal

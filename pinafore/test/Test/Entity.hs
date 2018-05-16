@@ -25,7 +25,7 @@ makeTestPinaforeContest = do
 defs :: [String]
 defs =
     [ "ornull a b = if exists a then a else b"
-    , "testeq expected found = if expected == found then pass else fail (\"expected \" ++ (ornull expected \"null\") ++ \" but found \" ++ (ornull found \"null\"))"
+    , "testeq expected found = if is expected found then pass else fail (\"expected \" ++ (ornull expected \"null\") ++ \" but found \" ++ (ornull found \"null\"))"
     , "testisnull t = if exists t then fail (\"expected null but found \" ++ t) else pass"
     , "ma = %3f1b6c1e-06ea-454c-b446-58ccd23ffda1"
     , "mb = %410a71b0-fc3c-415d-85eb-de8c1cb88267"
@@ -52,14 +52,14 @@ testEntity =
         , pointTest "pass >> pass"
         , pointTest "if true then pass else fail \"failed\""
         , pointTest "pass >> if true then pass else fail \"failed\""
-        -- numerical equal
+        -- equality
         , pointTest "testeq 1 1"
         , pointTest "testeq 1 \"1\""
-        , pointTest "testeq false $ 0 == 1"
-        , pointTest "testeq true $ 1 == 1"
-        , pointTest "testeq true $ 0 /= 1"
-        , pointTest "testeq false $ 1 /= 1"
-        , pointTest "testeq false $ 1 == ~1"
+        , pointTest "testeq false $ is 0 1"
+        , pointTest "testeq true $ is 1 1"
+        , pointTest "testeq false $ is 1 ~1"
+        , pointTest "testeq false $ is null 1"
+        , pointTest "testeq true $ is null null"
         -- null & exists
         , pointTest "if exists null then fail \"failed\" else pass"
         , pointTest "if exists p1 then fail \"failed\" else pass"
