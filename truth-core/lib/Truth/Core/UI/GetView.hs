@@ -3,11 +3,12 @@ module Truth.Core.UI.GetView where
 import Truth.Core.Import
 import Truth.Core.UI.CreateView
 import Truth.Core.UI.Specifier.Lens
+import Truth.Core.UI.Specifier.SelectionLens
 import Truth.Core.UI.Specifier.Specifier
 
 newtype GetView w = MkGetView
-    { getUIView :: forall edit.
-                           (forall edit'. UISpec edit' -> CreateView edit' w) -> UISpec edit -> Maybe (CreateView edit w)
+    { getUIView :: forall seledit edit.
+                           (forall seledit' edit'. UISpec seledit' edit' -> CreateView seledit' edit' w) -> UISpec seledit edit -> Maybe (CreateView seledit edit w)
     }
 
 instance Semigroup (GetView w) where
@@ -23,6 +24,13 @@ instance Monoid (GetView w) where
 
 lensGetView :: GetView w
 lensGetView =
-    MkGetView $ \getview speca -> do
-        MkUILens lens specb <- isUISpec speca
-        return $ mapCreateViewEdit lens $ getview specb
+    MkGetView $ \getview speca ->
+        (do
+             MkUILens lens specb <- isUISpec speca
+             return $ cvMapEdit lens $ getview specb) <|>
+        (do
+             MkUISetSelectionLens lens specb <- isUISpec speca
+             return $ cvMapSetSelectionEdit lens $ getview specb) <|>
+        (do
+             MkUINoSelectionLens specb <- isUISpec speca
+             return $ cvNoAspect $ getview specb)

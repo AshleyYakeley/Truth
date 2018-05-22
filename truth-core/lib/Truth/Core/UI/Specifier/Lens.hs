@@ -5,42 +5,45 @@ import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data UILens edit where
-    MkUILens :: forall edita editb. EditLens edita editb -> UISpec editb -> UILens edita
+data UILens seledit edit where
+    MkUILens :: forall seledit edita editb. EditLens edita editb -> UISpec seledit editb -> UILens seledit edita
 
-instance Show (UILens edit) where
+instance Show (UILens seledit edit) where
     show (MkUILens _ uispec) = "lens " ++ show uispec
 
 instance UIType UILens where
     uiWitness = $(iowitness [t|UILens|])
 
-uiLens :: forall edita editb. EditLens edita editb -> UISpec editb -> UISpec edita
+uiLens :: forall seledit edita editb. EditLens edita editb -> UISpec seledit editb -> UISpec seledit edita
 uiLens lens spec = MkUISpec $ MkUILens lens spec
 
 uiConvert ::
-       forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb)
-    => UISpec editb
-    -> UISpec edita
+       forall seledit edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb)
+    => UISpec seledit editb
+    -> UISpec seledit edita
 uiConvert = uiLens convertEditLens
 
-mapUIWindow :: EditLens edita editb -> UIWindow editb -> UIWindow edita
-mapUIWindow lens (MkUIWindow title content) = MkUIWindow (title . editLensFunction lens) (uiLens lens content)
+uiWindowMapEdit :: EditLens edita editb -> UIWindow editb -> UIWindow edita
+uiWindowMapEdit lens (MkUIWindow title content) = MkUIWindow (title . editLensFunction lens) (uiLens lens content)
 
-ioMapAspect :: IO (EditLens edita editb) -> Aspect editb -> Aspect edita
-ioMapAspect iolens aspect = do
+uiAspectMapEdit :: EditLens edita editb -> UIAspect seledit editb -> UIAspect seledit edita
+uiAspectMapEdit lens (MkUIAspect window asplens) = MkUIAspect (uiWindowMapEdit lens window) (asplens . lens)
+
+aspectIOMapEdit :: IO (EditLens edita editb) -> Aspect seledit editb -> Aspect seledit edita
+aspectIOMapEdit iolens aspect = do
     lens <- iolens
     mwin <- aspect
     return $ do
         win <- mwin
-        return $ mapUIWindow lens win
+        return $ uiAspectMapEdit lens win
 
-mapAspect :: EditLens edita editb -> Aspect editb -> Aspect edita
-mapAspect lens = ioMapAspect $ return lens
+aspectMapEdit :: EditLens edita editb -> Aspect seledit editb -> Aspect seledit edita
+aspectMapEdit lens = aspectIOMapEdit $ return lens
 
 tupleEditUISpecs ::
        (TupleWitness FullEdit sel, FiniteTupleSelector sel)
-    => (forall edit. FullEdit edit => sel edit -> (UISpec edit, t))
-    -> [(UISpec (TupleEdit sel), t)]
+    => (forall edit. FullEdit edit => sel edit -> (UISpec seledit edit, t))
+    -> [(UISpec seledit (TupleEdit sel), t)]
 tupleEditUISpecs getSpec =
     fmap
         (\(MkAnyWitness seledit) ->
@@ -63,5 +66,5 @@ maybeNothingValueBijection def = let
 maybeNothingEditLens :: Eq a => a -> EditLens (WholeEdit (Maybe a)) (WholeEdit a)
 maybeNothingEditLens def = toEditLens $ maybeNothingValueBijection def
 
-uiNothingValue :: Eq a => a -> UISpec (WholeEdit a) -> UISpec (WholeEdit (Maybe a))
+uiNothingValue :: Eq a => a -> UISpec seledit (WholeEdit a) -> UISpec seledit (WholeEdit (Maybe a))
 uiNothingValue def = uiLens $ maybeNothingEditLens def

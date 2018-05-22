@@ -5,26 +5,28 @@ import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data UIDragSource edit where
-    MkUIDragSource :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec edit -> UIDragSource edit
+data UIDragSource seledit edit where
+    MkUIDragSource
+        :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec seledit edit -> UIDragSource seledit edit
 
-instance Show (UIDragSource edit) where
+instance Show (UIDragSource seledit edit) where
     show (MkUIDragSource typename _ spec) = "drag-source " ++ typename ++ " " ++ show spec
 
 instance UIType UIDragSource where
     uiWitness = $(iowitness [t|UIDragSource|])
 
-uiDragSource :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec edit -> UISpec edit
+uiDragSource :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec seledit edit -> UISpec seledit edit
 uiDragSource datatype lens spec = MkUISpec $ MkUIDragSource datatype lens spec
 
-data UIDragDestination edit where
-    MkUIDragDestination :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec edit -> UIDragDestination edit
+data UIDragDestination seledit edit where
+    MkUIDragDestination
+        :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec seledit edit -> UIDragDestination seledit edit
 
-instance Show (UIDragDestination edit) where
+instance Show (UIDragDestination seledit edit) where
     show (MkUIDragDestination typename _ spec) = "drag-destination " ++ typename ++ " " ++ show spec
 
 instance UIType UIDragDestination where
     uiWitness = $(iowitness [t|UIDragDestination|])
 
-uiDragDestination :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec edit -> UISpec edit
+uiDragDestination :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec seledit edit -> UISpec seledit edit
 uiDragDestination datatype lens spec = MkUISpec $ MkUIDragDestination datatype lens spec

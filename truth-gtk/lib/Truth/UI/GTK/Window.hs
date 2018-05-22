@@ -26,7 +26,7 @@ import Truth.UI.GTK.Table
 import Truth.UI.GTK.Text
 import Truth.UI.GTK.Useful
 
-lastResortView :: UISpec edit -> GCreateView edit
+lastResortView :: UISpec seledit edit -> GCreateView seledit edit
 lastResortView spec = do
     w <- liftIO $ labelNew $ Just $ "missing viewer for " <> fromString (show spec)
     toWidget w
@@ -75,10 +75,10 @@ getRequest wit = do
         #destroy dialog
         return mpath
 
-getMaybeView :: UISpec edit -> Maybe (GCreateView edit)
+getMaybeView :: UISpec seledit edit -> Maybe (GCreateView seledit edit)
 getMaybeView = getUIView allGetView getTheView
 
-getTheView :: UISpec edit -> GCreateView edit
+getTheView :: UISpec seledit edit -> GCreateView seledit edit
 getTheView spec =
     case getMaybeView spec of
         Just view -> view
@@ -144,39 +144,46 @@ menuItemAction item action = do
     _ <- on item #activate action
     return ()
 
-createWindowAndChild :: WindowButtons actions => UIWindow edit -> IO Bool -> CreateView edit (actions -> LifeCycle ())
-createWindowAndChild MkUIWindow {..} closeRequest = do
-    window <- lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
-    cvBindEditFunction uiTitle $ \title -> set window [#title := title]
-    content <- getTheView uiContent
-    _ <- on window #deleteEvent $ \_ -> liftIO closeRequest
-    menubar <- menuBarNew
-    fileMI <- liftIO $ attachMenuItem menubar "File"
-    fileMenu <- liftIO $ attachSubmenu fileMI
-    closeMI <- liftIO $ attachMenuItem fileMenu "Close"
-    liftIO $
-        menuItemAction closeMI $ do
-            ok <- closeRequest
-            if ok
-                then return ()
-                else widgetDestroy window
-    return $ \actions -> do
-        box <- new Box [#orientation := OrientationVertical]
-        #packStart box menubar False False 0
-        addButtons box actions
-        -- this is only correct if content has native scroll support, such as TextView
-        sw <- new ScrolledWindow []
-        scrollable <- liftIO $ isScrollable content
-        if scrollable
-            then #add sw content
-            else do
-                viewport <- new Viewport []
-                #add viewport content
-                #add sw viewport
-        #packStart box sw True True 0
-        #add window box
-        #show content
-        #showAll window
+createWindowAndChild ::
+       WindowButtons actions
+    => UIWindow edit
+    -> IO Bool
+    -> (forall seledit. CreateView seledit edit (actions -> LifeCycle ()) -> r)
+    -> r
+createWindowAndChild MkUIWindow {..} closeRequest cont =
+    cont $ do
+        window <-
+            lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
+        cvBindEditFunction uiTitle $ \title -> set window [#title := title]
+        content <- getTheView uiContent
+        _ <- on window #deleteEvent $ \_ -> liftIO closeRequest
+        menubar <- menuBarNew
+        fileMI <- liftIO $ attachMenuItem menubar "File"
+        fileMenu <- liftIO $ attachSubmenu fileMI
+        closeMI <- liftIO $ attachMenuItem fileMenu "Close"
+        liftIO $
+            menuItemAction closeMI $ do
+                ok <- closeRequest
+                if ok
+                    then return ()
+                    else widgetDestroy window
+        return $ \actions -> do
+            box <- new Box [#orientation := OrientationVertical]
+            #packStart box menubar False False 0
+            addButtons box actions
+            -- this is only correct if content has native scroll support, such as TextView
+            sw <- new ScrolledWindow []
+            scrollable <- liftIO $ isScrollable content
+            if scrollable
+                then #add sw content
+                else do
+                    viewport <- new Viewport []
+                    #add viewport content
+                    #add sw viewport
+            #packStart box sw True True 0
+            #add window box
+            #show content
+            #showAll window
 
 makeViewWindow ::
        forall actions. WindowButtons actions
@@ -187,13 +194,20 @@ makeViewWindow ::
 makeViewWindow pc tellclose (MkUserInterface sub (window :: UIWindow edit)) = let
     newWindow :: UIWindow edit -> IO ()
     newWindow w = makeWindowCountRef pc $ MkUserInterface sub w
-    createView :: IO () -> CreateView edit (actions -> LifeCycle ())
+    createView :: forall r. IO () -> (forall seledit. CreateView seledit edit (actions -> LifeCycle ()) -> r) -> r
     createView closer =
         createWindowAndChild window $ do
             closer
             tellclose
             return True -- don't run existing handler that closes the window
-    in subscribeView createView sub newWindow getRequest
+    in do
+           rec
+               ((), closer) <-
+                   createView closer $ \cv ->
+                       runLifeCycle $ do
+                           (followUp, action) <- subscribeView' cv sub newWindow getRequest
+                           followUp action
+           return ()
 
 data ProgramContext = MkProgramContext
     { pcMainLoop :: MainLoop

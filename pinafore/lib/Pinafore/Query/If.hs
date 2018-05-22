@@ -3,8 +3,8 @@ module Pinafore.Query.If
     ) where
 
 import Data.List (zipWith)
+import Pinafore.Entity
 import Pinafore.Morphism
-import Pinafore.Point
 import Pinafore.PredicateMorphism
 import Pinafore.Query.Convert
 import Pinafore.Query.Lifted
@@ -16,7 +16,7 @@ import Truth.Core
 fvalIfThenElse ::
        forall baseedit t.
        IO t
-    -> QImLiteral baseedit Bool
+    -> QLiteral baseedit Bool
     -> PinaforeFunctionValue baseedit t
     -> PinaforeFunctionValue baseedit t
     -> PinaforeFunctionValue baseedit t
@@ -28,8 +28,8 @@ fvalIfThenElse iovdef vi vt ve = let
     in ioFuncEditFunction mIfThenElse . (pairJoinEditFunctions vi $ pairJoinEditFunctions vt ve)
 
 qfifthenelse ::
-       forall baseedit. HasPinaforePointEdit baseedit
-    => QImLiteral baseedit Bool
+       forall baseedit. HasPinaforeEntityEdit baseedit
+    => QLiteral baseedit Bool
     -> QValue baseedit
     -> QValue baseedit
     -> QValue baseedit
@@ -40,21 +40,22 @@ qfifthenelse f (MkAny QTList lt) (MkAny QTList le) =
         then MkAny QTList $ zipWith (qfifthenelse f) lt le
         else qexception $ pack $ "cannot match lists of lengths " ++ show (length lt) ++ " and " ++ show (length le)
 qfifthenelse f t e
-    | SuccessResult vt <- fromQValue @baseedit @(QImLiteral baseedit Text) t
-    , SuccessResult ve <- fromQValue @baseedit @(QImLiteral baseedit Text) e =
+    | SuccessResult vt <- fromQValue @baseedit @(QLiteral baseedit Text) t
+    , SuccessResult ve <- fromQValue @baseedit @(QLiteral baseedit Text) e =
         toQValue $ fvalIfThenElse (return Nothing) f vt ve
 qfifthenelse f t e
-    | SuccessResult vt <- fromQValue @baseedit @(QImPoint baseedit) t
-    , SuccessResult ve <- fromQValue @baseedit @(QImPoint baseedit) e = toQValue $ fvalIfThenElse newPoint f vt ve
+    | SuccessResult vt <- fromQValue @baseedit @(QPoint baseedit) t
+    , SuccessResult ve <- fromQValue @baseedit @(QPoint baseedit) e = toQValue $ fvalIfThenElse newPoint f vt ve
 qfifthenelse f t e
-    | SuccessResult vt <- fromQValue @baseedit @(QImSet baseedit) t
-    , SuccessResult ve <- fromQValue @baseedit @(QImSet baseedit) e = toQValue $ fvalIfThenElse (return mempty) f vt ve
+    | SuccessResult vt <- fromQValue @baseedit @(QSetPoint baseedit) t
+    , SuccessResult ve <- fromQValue @baseedit @(QSetPoint baseedit) e =
+        toQValue $ fvalIfThenElse (return mempty) f vt ve
 -- possibly add cases for QTMorphism and QTInverseMorphism?
 qfifthenelse f t e
     | SuccessResult vt <- qpartialapply t
     , SuccessResult ve <- qpartialapply e = MkAny QTFunction $ \a -> qfifthenelse f (vt a) (ve a)
 qfifthenelse f (MkAny QTUserInterface vt) (MkAny QTUserInterface ve) = let
-    pickUISpec :: Maybe Bool -> UISpec baseedit
+    pickUISpec :: Maybe Bool -> UISpec (ConstEdit Point) baseedit
     pickUISpec Nothing = uiNull
     pickUISpec (Just True) = vt
     pickUISpec (Just False) = ve
@@ -72,7 +73,7 @@ qfifthenelse _ (MkAny tt _) (MkAny te _) =
     qexception $ pack $ "\"then\"/\"else\" cannot match " ++ show tt ++ " and " ++ show te
 
 qifthenelse ::
-       HasPinaforePointEdit baseedit => Lifted baseedit Bool -> QValue baseedit -> QValue baseedit -> QValue baseedit
+       HasPinaforeEntityEdit baseedit => Lifted baseedit Bool -> QValue baseedit -> QValue baseedit -> QValue baseedit
 qifthenelse (LiftedConstant True) valt _ = valt
 qifthenelse (LiftedConstant False) _ vale = vale
 qifthenelse (LiftedFunction func) valt vale = qfifthenelse func valt vale

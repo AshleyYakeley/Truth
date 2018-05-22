@@ -1,0 +1,2 @@
+#!/bin/bash -e
+stack exec --cwd mkdocs -- mkdocs serve

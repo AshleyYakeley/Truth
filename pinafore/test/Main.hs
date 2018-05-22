@@ -5,12 +5,12 @@ module Main
     ) where
 
 import Shapes
+import Test.Entity
 import Test.Language
-import Test.Point
 import Test.Tasty
 
 tests :: TestTree
-tests = testGroup "pinafore" [testLanguage, testPoint]
+tests = testGroup "pinafore" [testLanguage, testEntity]
 
 main :: IO ()
 main = defaultMain tests

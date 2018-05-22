@@ -9,7 +9,7 @@
       "group": "build",
       "label": "Format",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && ./hindent-all && echo OK",
+      "command": "cd ${workspaceRoot} && hindent-all && echo OK",
       "problemMatcher": [
         {
           "owner": "hindent",
@@ -30,7 +30,7 @@
       "group": "build",
       "label": "Full Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && ./build",
+      "command": "cd ${workspaceRoot} && build",
       "problemMatcher": [
         {
           "owner": "stack",
@@ -96,7 +96,7 @@
       "group": "build",
       "label": "Clean & Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && stack clean && ./build",
+      "command": "cd ${workspaceRoot} && stack clean && build",
       "problemMatcher": [
         {
           "owner": "stack",

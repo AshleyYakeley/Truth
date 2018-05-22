@@ -3,6 +3,7 @@ module Truth.Core.UI
     , module Truth.Core.UI.Specifier.Specifier
     , module Truth.Core.UI.Specifier.Null
     , module Truth.Core.UI.Specifier.Lens
+    , module Truth.Core.UI.Specifier.SelectionLens
     , module Truth.Core.UI.Specifier.CSS
     , module Truth.Core.UI.Specifier.Button
     , module Truth.Core.UI.Specifier.One
@@ -39,6 +40,7 @@ import Truth.Core.UI.Specifier.Null
 import Truth.Core.UI.Specifier.One
 import Truth.Core.UI.Specifier.Option
 import Truth.Core.UI.Specifier.Pages
+import Truth.Core.UI.Specifier.SelectionLens
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.Specifier.Switch
 import Truth.Core.UI.Specifier.Table

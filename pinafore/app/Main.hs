@@ -17,7 +17,7 @@ data Options
                 [FilePath]
 
 optDataFlag :: O.Parser (Maybe FilePath)
-optDataFlag = O.optional $ O.strOption (O.long "data")
+optDataFlag = O.optional $ O.strOption $ O.long "data" <> O.metavar "PATH"
 
 optParser :: O.Parser Options
 optParser =
@@ -35,16 +35,34 @@ getDirPath mdirpath = do
     liftIO $ createDirectoryIfMissing True dirpath
     return dirpath
 
+showDefEntry :: Int -> DefDoc -> IO ()
+showDefEntry _ (MkDefDoc name tp desc) = let
+    badchars :: String
+    badchars = "+-*>\\"
+    escapeChar :: Char -> String
+    escapeChar c =
+        if elem c badchars
+            then ['\\', c]
+            else [c]
+    escapeMarkdown :: String -> String
+    escapeMarkdown s = mconcat $ fmap escapeChar s
+    in do
+           putStrLn $ "**" ++ escapeMarkdown (show name) ++ "** :: " ++ escapeMarkdown (unpack tp) ++ "  "
+           if desc == ""
+               then return ()
+               else putStrLn $ escapeMarkdown $ unpack desc
+           putStrLn ""
+
+showDefTitle :: Int -> Text -> IO ()
+showDefTitle level title = putStrLn $ replicate level '#' ++ " " ++ unpack title
+
 main :: IO ()
 main =
     truthMain $ \args createWindow -> do
         options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
         case options of
-            ExprDocOption ->
-                liftIO $ do
-                    for_ (predefinedDoc @PinaforeEdit) $ \(name, desc) ->
-                        putStrLn $ (show name) ++ " :: " ++ unpack desc
-                    putStrLn $ "<file> :: " ++ unpack filePinaforeType
+            ExprDocOption -> liftIO $ do runDocTree showDefTitle showDefEntry 2 $ predefinedDoc @PinaforeEdit
+                    -- putMarkdown "<file>" (unpack filePinaforeType) "a script file passed to pinafore"
             DumpTableOption mdirpath -> do
                 dirpath <- getDirPath mdirpath
                 liftIO $ sqlitePinaforeDumpTable dirpath

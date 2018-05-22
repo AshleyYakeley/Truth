@@ -1,3 +1,0 @@
-#!/bin/bash -e
-stack install --pedantic --test
-echo OK

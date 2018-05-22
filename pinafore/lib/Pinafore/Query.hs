@@ -9,6 +9,9 @@ module Pinafore.Query
     , resultTextToM
     , parseValue
     , interact
+    , DefDoc(..)
+    , DocTree
+    , runDocTree
     , predefinedDoc
     ) where
 
@@ -25,7 +28,7 @@ import Shapes
 import System.IO.Error
 
 parseValue ::
-       forall baseedit t. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit, FromQValue baseedit t)
+       forall baseedit t. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, FromQValue baseedit t)
     => String
     -> Text
     -> Result Text t
@@ -35,7 +38,7 @@ parseValue name text = do
     fromQValue val
 
 interactLoop ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => StateT (QValueExpr baseedit -> IO ()) IO ()
 interactLoop = do
     liftIO $ putStr "pinafore> "
@@ -56,14 +59,14 @@ interactLoop = do
             interactLoop
 
 interact ::
-       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => UnliftIO (QActionM baseedit)
     -> IO ()
 interact runAction = do
     hSetBuffering stdout NoBuffering
     evalStateT interactLoop $ \expr ->
         runUnliftIO runAction $ do
-            val <- liftInner $ qeval $ qlets predefinedBindings expr
+            val <- qLiftResult $ qeval $ qlets predefinedBindings expr
             case fromQValue val of
                 SuccessResult action -> action
                 _ ->
