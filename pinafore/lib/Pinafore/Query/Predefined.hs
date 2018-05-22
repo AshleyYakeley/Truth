@@ -251,10 +251,6 @@ predefinitions =
               "Identity"
               [ mkDefEntry "is" "Entity identity. This is always `true` or `false`." $
                 liftA2 @(Lifted baseedit) $ (==) @Point
-              , mkDefEntry
-                    "null"
-                    "Null inhabits every entity type, representing missing information. Note that `is null null` = `false`." $
-                nullLifted @baseedit @Literal
               ]
         , docTreeEntry
               "Functions & Morphisms"
@@ -284,7 +280,11 @@ predefinitions =
                 liftA2 @(Lifted baseedit) $ (/=) @Literal
               , docTreeEntry
                     "Nulls"
-                    [ mkDefEntry "exists" "True if the literal is not null." $ \(val :: QLiteral baseedit Literal) ->
+                    [ mkDefEntry
+                          "null"
+                          "Null inhabits every literal type, representing missing information. Note that `is null null` = `false`." $
+                      nullLifted @baseedit @Literal
+                    , mkDefEntry "exists" "True if the literal is not null." $ \(val :: QLiteral baseedit Literal) ->
                           (funcEditFunction (Just . isJust) . val :: QLiteral baseedit Bool)
                     , mkDefEntry "??" "`p ?? q` = `if exists p then p else q`." $ nulljoin @baseedit
                     ]
