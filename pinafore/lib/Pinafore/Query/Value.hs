@@ -80,11 +80,13 @@ qpartialapply (MkAny QTException ex) = FailureResult ex
 qpartialapply (MkAny QTFunction f) = return f
 qpartialapply (MkAny QTMorphism f) =
     return $ \case
+        MkAny QTException ex -> qexception ex
         MkAny QTRefPoint a -> MkAny QTRefPoint $ qApplyMorphismRefPoint f a
         MkAny QTRefSet a -> MkAny QTRefSet $ qApplyMorphismRefPointSet f a
         MkAny ta _ -> qexception $ pack $ "cannot apply " ++ show QTMorphism ++ " to " ++ show ta
 qpartialapply (MkAny QTInverseMorphism f) =
     return $ \case
+        MkAny QTException ex -> qexception ex
         MkAny QTConstLiteral a -> MkAny QTRefSet $ qInverseApplyMorphismRefToConstant f a
         MkAny QTRefLiteral a -> MkAny QTRefSet $ qInverseApplyMorphismRefToLiteral f a
         MkAny QTRefPoint a -> MkAny QTRefSet $ qInverseApplyMorphismRefToPoint f a

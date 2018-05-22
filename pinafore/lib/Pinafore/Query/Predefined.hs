@@ -27,7 +27,7 @@ import Truth.World.ObjectStore
 
 qcompose :: HasPinaforeEntityEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
 qcompose (MkAny QTMorphism g) (MkAny QTMorphism f) = MkAny QTMorphism $ g . f
-qcompose (MkAny QTInverseMorphism g) (MkAny QTInverseMorphism f) = MkAny QTInverseMorphism $ g . f
+qcompose (MkAny QTInverseMorphism g) (MkAny QTInverseMorphism f) = MkAny QTInverseMorphism $ f . g
 qcompose g f = MkAny QTFunction $ qapply g . qapply f
 
 qmeet :: QRefSetPoint baseedit -> QRefSetPoint baseedit -> QRefSetPoint baseedit
@@ -111,6 +111,9 @@ removeentity :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAc
 removeentity set qp = do
     entity <- getQImPoint qp
     qLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem entity]
+
+removeall :: forall baseedit. QRefSetPoint baseedit -> QAction baseedit
+removeall set = do qLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyClear]
 
 setentity :: forall baseedit. QRefPoint baseedit -> QPoint baseedit -> QAction baseedit
 setentity var val = do
@@ -212,6 +215,9 @@ qfail lt = do
 qsingle :: FiniteSet Literal -> Maybe Literal
 qsingle = getSingle
 
+immutableset :: FiniteSet Point -> FiniteSet Point
+immutableset = id
+
 qstatictype :: forall baseedit. QValue baseedit -> Text
 qstatictype (MkAny t _) = pack $ show t
 
@@ -254,6 +260,7 @@ predefinitions =
               "Functions & Morphisms"
               [ mkDefEntry "$" "Apply a function, morphism, or inverse morphism to a value." $ qapply @baseedit
               , mkDefEntry "." "Compose functions, morphisms, or inverse morphisms." $ qcompose @baseedit
+              , mkDefEntry "identity" "The identity morphism." $ (id :: QMorphismRefPoint baseedit)
               , EntryDocTreeEntry
                     ( Nothing
                     , mkDefDoc "@" "Invert a morphism to an inverse morphism, or an inverse morphism to a morphism." $
@@ -267,6 +274,7 @@ predefinitions =
                 qjoin @baseedit
               , mkDefEntry "member" "Determine membership of a set" $ liftA2 @(Lifted baseedit) $ set_member
               , mkDefEntry "single" "The member of a single-member set, or null." $ fmap @(Lifted baseedit) $ qsingle
+              , mkDefEntry "immutableset" "A set as immutable." $ fmap @(Lifted baseedit) $ immutableset
               ]
         , docTreeEntry
               "Literals"
@@ -338,6 +346,7 @@ predefinitions =
               , mkDefEntry "newentity" "Create a new entity in a set and act on it." $ newentity @baseedit
               , mkDefEntry "addentity" "Add an entity to a set." $ addentity @baseedit
               , mkDefEntry "removeentity" "Remove an entity from a set." $ removeentity @baseedit
+              , mkDefEntry "removeall" "Remove all entities from a set." $ removeall @baseedit
               ]
         , docTreeEntry
               "Files"
@@ -353,7 +362,7 @@ predefinitions =
               , mkDefEntry "ui_blank" "Blank user-interface" uiNull
               , mkDefEntry "ui_unitcheckbox" "(TBD)" $ \name val ->
                     uiCheckbox (clearText . name) $ toEditLens isUnit . val
-              , mkDefEntry "ui_booleancheckbox" "Checkbox. Use ctrl-click to set to null." $ \name val ->
+              , mkDefEntry "ui_booleancheckbox" "Checkbox. Use shift-click to set to null." $ \name val ->
                     uiMaybeCheckbox (clearText . name) val
               , mkDefEntry "ui_textentry" "Text entry, empty text is null." $
                 valSpecText $ uiNothingValue mempty uiTextEntry

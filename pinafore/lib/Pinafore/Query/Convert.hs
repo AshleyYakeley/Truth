@@ -128,6 +128,10 @@ instance (edit ~ baseedit, HasPinaforeEntityEdit baseedit) => FromQValue baseedi
             SuccessResult (fs :: QSetLiteral edit Point) -> return $ LiftedFunction $ funcEditFunction Just . fs
             FailureResult _ -> badFromQValue v
 
+instance edit ~ baseedit => ToQValue baseedit (Lifted edit (FiniteSet Point)) where
+    toQValue (LiftedConstant x) = toQValue x
+    toQValue (LiftedFunction x) = toQValue (funcEditFunction (fromMaybe mempty) . x :: QSetPoint baseedit)
+
 -- Lifted IO
 --
 instance AsLiteral t => HasQTypeDescription (Lifted edit (IO t)) where
@@ -307,6 +311,9 @@ instance edit ~ baseedit => FromQValue baseedit (QMorphismRefPoint edit) where
     fromQValue (MkAny QTMorphism v) = return v
     fromQValue v = badFromQValue v
 
+instance edit ~ baseedit => ToQValue baseedit (QMorphismRefPoint edit) where
+    toQValue = MkAny QTMorphism
+
 -- QMorphismLiteral
 --
 instance {-# OVERLAPPABLE #-} AsLiteral t => HasQTypeDescription (QMorphismLiteral edit t) where
@@ -419,6 +426,19 @@ instance FromQValue baseedit t => FromQValue baseedit [t] where
 
 instance ToQValue baseedit t => ToQValue baseedit [t] where
     toQValue t = MkAny QTList $ fmap toQValue t
+
+-- FiniteSet
+--
+instance HasQTypeDescription t => HasQTypeDescription (FiniteSet t) where
+    qTypeDescription = "[" <> qTypeDescription @t <> "]"
+
+instance FromQValue baseedit t => FromQValue baseedit (FiniteSet t) where
+    fromQValue v
+        | SuccessResult l <- fromQValue v = return $ MkFiniteSet l
+    fromQValue v = badFromQValue v
+
+instance ToQValue baseedit t => ToQValue baseedit (FiniteSet t) where
+    toQValue t = toQValue $ toList t
 
 -- Pair
 --

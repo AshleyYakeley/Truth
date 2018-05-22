@@ -56,10 +56,7 @@ qInverseApplyMorphismRefToConstant ::
 qInverseApplyMorphismRefToConstant f a = qInverseApplyMorphismRefToLiteral f $ constEditLens $ Just a
 
 qInverseApplyMorphismRefToSet :: QMorphismRefPoint baseedit -> QRefSetPoint baseedit -> QRefSetPoint baseedit
-qInverseApplyMorphismRefToSet f a =
-    readOnlyEditLens $
-    convertEditFunction .
-    applyPinaforeFunction (arr (mconcat . unFiniteSet) . cfmap (lensInverseFunctionMorphism f)) (lensFunctionValue a)
+qInverseApplyMorphismRefToSet = applyInversePinaforeLensSet newPoint
 
 type QActionM baseedit = ComposeM (Result Text) (View (ConstEdit Point) baseedit)
 
