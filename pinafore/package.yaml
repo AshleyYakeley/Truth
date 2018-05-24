@@ -37,6 +37,7 @@ library:
       - Pinafore.File
       - Pinafore.Pinafore
       - Pinafore.Types
+      - Pinafore.Language.Type
       - Pinafore.Language.Token
       - Pinafore.Language.Read
       - Pinafore.Language.Lifted
