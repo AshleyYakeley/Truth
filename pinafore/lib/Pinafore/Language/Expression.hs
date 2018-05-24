@@ -1,9 +1,9 @@
-module Pinafore.Query.Expression where
+module Pinafore.Language.Expression where
 
 import Data.List (head, nub, tail)
+import Pinafore.Language.Convert
+import Pinafore.Language.Value
 import Pinafore.PredicateMorphism
-import Pinafore.Query.Convert
-import Pinafore.Query.Value
 import Shapes
 
 newtype Symbol =

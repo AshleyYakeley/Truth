@@ -1,4 +1,4 @@
-module Pinafore.Query
+module Pinafore.Language
     ( QType(..)
     , QActionM
     , QAction
@@ -17,13 +17,13 @@ module Pinafore.Query
 
 import Control.Exception
 import Pinafore.File
+import Pinafore.Language.Convert
+import Pinafore.Language.Expression
+import Pinafore.Language.Predefined
+import Pinafore.Language.Read
+import Pinafore.Language.Value
 import Pinafore.PredicateMorphism
-import Pinafore.Query.Convert
-import Pinafore.Query.Expression
-import Pinafore.Query.Predefined
-import Pinafore.Query.Read
-import Pinafore.Query.Types
-import Pinafore.Query.Value
+import Pinafore.Types
 import Shapes
 import System.IO.Error
 

@@ -11,9 +11,9 @@ module Pinafore.Main
 import Pinafore.Database
 import Pinafore.Database.SQLite
 import Pinafore.File
+import Pinafore.Language
 import Pinafore.Literal
 import Pinafore.Pinafore
-import Pinafore.Query
 import Pinafore.Table
 import Shapes
 import System.FilePath

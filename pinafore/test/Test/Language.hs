@@ -6,7 +6,7 @@ module Test.Language
 
 import Data.Ratio
 import Pinafore
-import Pinafore.Query.Expression
+import Pinafore.Language.Expression
 import Prelude (read)
 import Shapes
 import Test.Tasty

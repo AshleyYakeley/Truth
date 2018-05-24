@@ -1,6 +1,6 @@
-module Pinafore.Query.Lifted where
+module Pinafore.Language.Lifted where
 
-import Pinafore.Query.Types
+import Pinafore.Types
 import Shapes
 import Truth.Core
 

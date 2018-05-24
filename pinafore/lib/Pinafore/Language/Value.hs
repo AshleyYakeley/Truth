@@ -1,10 +1,10 @@
-module Pinafore.Query.Value where
+module Pinafore.Language.Value where
 
+import Pinafore.Language.Order
 import Pinafore.Literal
 import Pinafore.PredicateMorphism
-import Pinafore.Query.Order
-import Pinafore.Query.Types
 import Pinafore.Table
+import Pinafore.Types
 import Shapes
 import Truth.Core
 

@@ -1,15 +1,15 @@
-module Pinafore.Query.If
+module Pinafore.Language.If
     ( qifthenelse
     ) where
 
 import Data.List (zipWith)
 import Pinafore.Entity
+import Pinafore.Language.Convert
+import Pinafore.Language.Lifted
+import Pinafore.Language.Value
 import Pinafore.Morphism
 import Pinafore.PredicateMorphism
-import Pinafore.Query.Convert
-import Pinafore.Query.Lifted
-import Pinafore.Query.Types
-import Pinafore.Query.Value
+import Pinafore.Types
 import Shapes
 import Truth.Core
 

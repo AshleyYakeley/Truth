@@ -4,7 +4,7 @@ module Pinafore
     , module Pinafore.Morphism
     , module Pinafore.Table
     , module Pinafore.Pinafore
-    , module Pinafore.Query
+    , module Pinafore.Language
     , module Pinafore.Database
     , module Pinafore.Database.SQLite
     , module Pinafore.Main
@@ -12,10 +12,10 @@ module Pinafore
 
 import Pinafore.Database
 import Pinafore.Database.SQLite
+import Pinafore.Language
 import Pinafore.Literal
 import Pinafore.Main
 import Pinafore.Morphism
 import Pinafore.Number
 import Pinafore.Pinafore
-import Pinafore.Query
 import Pinafore.Table

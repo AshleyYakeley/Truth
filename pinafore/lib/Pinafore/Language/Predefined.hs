@@ -1,4 +1,4 @@
-module Pinafore.Query.Predefined
+module Pinafore.Language.Predefined
     ( DefDoc(..)
     , DocTree(..)
     , runDocTree
@@ -8,18 +8,18 @@ module Pinafore.Query.Predefined
     ) where
 
 import Pinafore.File
+import Pinafore.Language.Convert
+import Pinafore.Language.Doc
+import Pinafore.Language.Expression
+import Pinafore.Language.Lifted
+import Pinafore.Language.Order
+import Pinafore.Language.Value
 import Pinafore.Literal
 import Pinafore.Morphism
 import Pinafore.Number
 import Pinafore.PredicateMorphism
-import Pinafore.Query.Convert
-import Pinafore.Query.Doc
-import Pinafore.Query.Expression
-import Pinafore.Query.Lifted
-import Pinafore.Query.Order
-import Pinafore.Query.Types
-import Pinafore.Query.Value
 import Pinafore.Table
+import Pinafore.Types
 import Shapes
 import Truth.Core
 import Truth.World.File

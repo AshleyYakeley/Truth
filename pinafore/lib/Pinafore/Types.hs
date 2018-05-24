@@ -1,4 +1,4 @@
-module Pinafore.Query.Types where
+module Pinafore.Types where
 
 import Pinafore.Entity
 import Pinafore.Literal

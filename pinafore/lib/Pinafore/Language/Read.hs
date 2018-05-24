@@ -1,14 +1,14 @@
-module Pinafore.Query.Read
+module Pinafore.Language.Read
     ( parseExpression
     , parseInteractiveCommand
     ) where
 
+import Pinafore.Language.Convert
+import Pinafore.Language.Expression
+import Pinafore.Language.If
+import Pinafore.Language.Token
+import Pinafore.Language.Value
 import Pinafore.PredicateMorphism
-import Pinafore.Query.Convert
-import Pinafore.Query.Expression
-import Pinafore.Query.If
-import Pinafore.Query.Token
-import Pinafore.Query.Value
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 

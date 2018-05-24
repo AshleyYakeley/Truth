@@ -1,11 +1,11 @@
-module Pinafore.Query.Token
+module Pinafore.Language.Token
     ( Token(..)
     , parseTokens
     ) where
 
 import Data.UUID
+import Pinafore.Language.Expression
 import Pinafore.Number
-import Pinafore.Query.Expression
 import Pinafore.Table
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)

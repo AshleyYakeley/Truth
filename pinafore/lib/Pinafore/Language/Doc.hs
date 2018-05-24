@@ -1,7 +1,7 @@
-module Pinafore.Query.Doc where
+module Pinafore.Language.Doc where
 
-import Pinafore.Query.Convert
-import Pinafore.Query.Expression
+import Pinafore.Language.Convert
+import Pinafore.Language.Expression
 import Shapes
 
 data DocTree a =

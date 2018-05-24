@@ -23,10 +23,10 @@ library:
     exposed-modules:
       - Pinafore
       - Pinafore.Main
-      - Pinafore.Query.Value
-      - Pinafore.Query.Convert
-      - Pinafore.Query.Expression
-      - Pinafore.Query
+      - Pinafore.Language.Value
+      - Pinafore.Language.Convert
+      - Pinafore.Language.Expression
+      - Pinafore.Language
     other-modules:
       - Pinafore.Number
       - Pinafore.Literal
@@ -36,14 +36,14 @@ library:
       - Pinafore.PredicateMorphism
       - Pinafore.File
       - Pinafore.Pinafore
-      - Pinafore.Query.Token
-      - Pinafore.Query.Read
-      - Pinafore.Query.Types
-      - Pinafore.Query.Lifted
-      - Pinafore.Query.If
-      - Pinafore.Query.Order
-      - Pinafore.Query.Doc
-      - Pinafore.Query.Predefined
+      - Pinafore.Types
+      - Pinafore.Language.Token
+      - Pinafore.Language.Read
+      - Pinafore.Language.Lifted
+      - Pinafore.Language.If
+      - Pinafore.Language.Order
+      - Pinafore.Language.Doc
+      - Pinafore.Language.Predefined
       - Pinafore.Database
       - Pinafore.Database.SQLite
 

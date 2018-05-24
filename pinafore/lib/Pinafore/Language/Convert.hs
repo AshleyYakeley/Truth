@@ -1,4 +1,4 @@
-module Pinafore.Query.Convert
+module Pinafore.Language.Convert
     ( HasQTypeDescription(..)
     , FromQValue(..)
     , ToQValue(..)
@@ -6,13 +6,13 @@ module Pinafore.Query.Convert
 
 import Pinafore.Entity
 import Pinafore.File
+import Pinafore.Language.Lifted
+import Pinafore.Language.Order
+import Pinafore.Language.Value
 import Pinafore.Literal
 import Pinafore.Morphism
 import Pinafore.PredicateMorphism
-import Pinafore.Query.Lifted
-import Pinafore.Query.Order
-import Pinafore.Query.Types
-import Pinafore.Query.Value
+import Pinafore.Types
 import Shapes
 import Truth.Core
 import Truth.World.ObjectStore

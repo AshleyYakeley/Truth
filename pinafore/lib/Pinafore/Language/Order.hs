@@ -1,11 +1,11 @@
-module Pinafore.Query.Order where
+module Pinafore.Language.Order where
 
 import Data.Time
 import Pinafore.Morphism
 import Pinafore.Number
 import Pinafore.PredicateMorphism
-import Pinafore.Query.Types
 import Pinafore.Table
+import Pinafore.Types
 import Shapes
 import Truth.Core
 
