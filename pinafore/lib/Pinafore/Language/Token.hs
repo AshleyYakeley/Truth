@@ -25,14 +25,14 @@ data Token t where
     TokThen :: Token ()
     TokElse :: Token ()
     TokBool :: Token Bool
-    TokSymbol :: Token Symbol
+    TokName :: Token Name
     TokLambda :: Token ()
     TokAssign :: Token ()
     TokMap :: Token ()
     TokPoint :: Token Point
     TokPredicate :: Token Predicate
     TokInvert :: Token ()
-    TokInfix :: Token Symbol
+    TokInfix :: Token Name
     TokNumber :: Token Number
 
 instance TestEquality Token where
@@ -49,7 +49,7 @@ instance TestEquality Token where
     testEquality TokThen TokThen = Just Refl
     testEquality TokElse TokElse = Just Refl
     testEquality TokBool TokBool = Just Refl
-    testEquality TokSymbol TokSymbol = Just Refl
+    testEquality TokName TokName = Just Refl
     testEquality TokLambda TokLambda = Just Refl
     testEquality TokAssign TokAssign = Just Refl
     testEquality TokMap TokMap = Just Refl
@@ -74,7 +74,7 @@ instance Show (Token t) where
     show TokThen = show ("then" :: String)
     show TokElse = show ("else" :: String)
     show TokBool = "boolean constant"
-    show TokSymbol = "symbol"
+    show TokName = "symbol"
     show TokLambda = "\\"
     show TokAssign = "="
     show TokMap = "->"
@@ -166,7 +166,7 @@ readTextToken = do
         "else" -> return $ MkAny TokElse ()
         "true" -> return $ MkAny TokBool True
         "false" -> return $ MkAny TokBool False
-        name -> return $ MkAny TokSymbol $ MkSymbol $ pack name
+        name -> return $ MkAny TokName $ MkName $ pack name
 
 uuidChar :: Char -> Bool
 uuidChar '-' = True
@@ -198,7 +198,7 @@ readOpToken = do
             uuid <- readUUID
             return $ MkAny TokPredicate $ MkPredicate uuid
         "@" -> return $ MkAny TokInvert ()
-        _ -> return $ MkAny TokInfix $ MkSymbol $ pack name
+        _ -> return $ MkAny TokInfix $ MkName $ pack name
 
 readChar :: Char -> Token () -> Parser (Any Token)
 readChar c tok = do

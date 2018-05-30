@@ -21,16 +21,16 @@ readThis tok =
             Just Refl -> Just t
             Nothing -> Nothing
 
-readPattern :: Parser Symbol
-readPattern = readThis TokSymbol
+readPattern :: Parser Name
+readPattern = readThis TokName
 
-readBinding :: HasPinaforeEntityEdit baseedit => Parser (Symbol, QValueExpr baseedit)
+readBinding :: HasPinaforeEntityEdit baseedit => Parser (Name, QValueExpr baseedit)
 readBinding = do
-    name <- readThis TokSymbol
+    name <- readThis TokName
     args <- many readPattern
     readThis TokAssign
     val <- readExpression
-    return (name, exprAbstracts args val)
+    return (name, qExprAbstracts args val)
 
 readBindings :: HasPinaforeEntityEdit baseedit => Parser (QBindings baseedit)
 readBindings =
@@ -69,7 +69,7 @@ data Fixity =
 
 -- following Haskell
 -- https://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061
-operatorFixity :: Symbol -> Fixity
+operatorFixity :: Name -> Fixity
 operatorFixity "." = MkFixity AssocRight 9
 operatorFixity "*" = MkFixity AssocLeft 7
 operatorFixity "/" = MkFixity AssocLeft 7
@@ -93,7 +93,7 @@ operatorFixity "??" = MkFixity AssocLeft 1
 operatorFixity "$" = MkFixity AssocRight 0
 operatorFixity _ = MkFixity AssocLeft 9
 
-readInfix :: Int -> Parser (FixAssoc, Symbol)
+readInfix :: Int -> Parser (FixAssoc, Name)
 readInfix prec =
     Text.Parsec.try $ do
         name <- readThis TokInfix
@@ -108,7 +108,7 @@ leftApply ::
     -> [(QValueExpr baseedit, QValueExpr baseedit)]
     -> QValueExpr baseedit
 leftApply e1 [] = e1
-leftApply e1 ((f, e2):rest) = leftApply (exprApplyAll f [e1, e2]) rest
+leftApply e1 ((f, e2):rest) = leftApply (qExprApplyAll f [e1, e2]) rest
 
 rightApply ::
        HasPinaforeEntityEdit baseedit
@@ -116,7 +116,7 @@ rightApply ::
     -> [(QValueExpr baseedit, QValueExpr baseedit)]
     -> QValueExpr baseedit
 rightApply e1 [] = e1
-rightApply e1 ((f, e2):rest) = exprApplyAll f [e1, rightApply e2 rest]
+rightApply e1 ((f, e2):rest) = qExprApplyAll f [e1, rightApply e2 rest]
 
 readInfixedExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -132,7 +132,7 @@ readInfixedExpression prec = do
             return (assoc, name, e2)
     case rest of
         [] -> return e1
-        [(AssocNone, name, e2)] -> return $ exprApplyAll (qvar name) [e1, e2]
+        [(AssocNone, name, e2)] -> return $ qExprApplyAll (qvar name) [e1, e2]
         _
             | all (\(assoc, _, _) -> assoc == AssocLeft) rest ->
                 return $ leftApply e1 $ fmap (\(_, name, e2) -> (qvar name, e2)) rest
@@ -150,7 +150,7 @@ readExpression1 =
          args <- many readPattern
          readThis TokMap
          val <- readExpression
-         return $ exprAbstracts args val) <|>
+         return $ qExprAbstracts args val) <|>
     (do
          bmap <- readLetBindings
          readThis TokIn
@@ -163,14 +163,14 @@ readExpression1 =
          ethen <- readExpression
          readThis TokElse
          eelse <- readExpression
-         return $ exprApplyAll (pure $ toQValue $ qifthenelse @baseedit) [etest, ethen, eelse]) <|>
+         return $ qExprApplyAll (pure $ toQValue $ qifthenelse @baseedit) [etest, ethen, eelse]) <|>
     readExpression2
 
 readExpression2 :: HasPinaforeEntityEdit baseedit => Parser (QValueExpr baseedit)
 readExpression2 = do
     e1 <- readExpression3
     args <- many readExpression3
-    return $ exprApplyAll e1 args
+    return $ qExprApplyAll e1 args
 
 readExpression3 ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -180,7 +180,7 @@ readExpression3 =
          b <- readThis TokBool
          return $ pure $ toQValue b) <|>
     (do
-         name <- readThis TokSymbol
+         name <- readThis TokName
          return $ qvar name) <|>
     (do
          n <- readThis TokNumber

@@ -37,13 +37,13 @@ runDocTree showTitle showEntry level (MkDocTree title entries) = do
         EntryDocTreeEntry a -> showEntry level a
 
 data DefDoc =
-    MkDefDoc Symbol
+    MkDefDoc Name
              Text
              Text
 
 mkDefDoc ::
        forall t. HasQTypeDescription t
-    => Symbol
+    => Name
     -> Text
     -> t
     -> DefDoc

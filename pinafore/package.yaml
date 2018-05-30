@@ -28,6 +28,11 @@ library:
       - Pinafore.Language.Expression
       - Pinafore.Language
     other-modules:
+      - Language.Expression.Name
+      - Language.Expression.Expression
+      - Language.Expression.Typed
+      - Language.Expression.Type.UniType
+      - Language.Expression.Type.HindleyMilner
       - Pinafore.Number
       - Pinafore.Literal
       - Pinafore.Morphism

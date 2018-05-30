@@ -235,7 +235,7 @@ type BindDoc baseedit = (Maybe (QBindings baseedit), DefDoc)
 
 mkDefEntry ::
        forall baseedit t. ToQValue baseedit t
-    => Symbol
+    => Name
     -> Text
     -> t
     -> DocTreeEntry (BindDoc baseedit)
