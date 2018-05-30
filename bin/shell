@@ -1,3 +1,4 @@
 #!/bin/bash -e
 export PATH=`dirname $0`:$PATH
+export BINPATH=`stack path --local-bin`
 exec /bin/bash "$@"

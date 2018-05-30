@@ -1,7 +1,10 @@
 #!/bin/bash -e
+if [ -z "${BINPATH}" ]; then
+    export BINPATH=`stack path --local-bin`
+fi
 docker build -t local-build docker
 bin/hindent-all
 stack install --pedantic --test
-`stack path --local-bin`/pinafore --doc > mkdocs/docs/predefined.md
+$BINPATH/pinafore --doc > mkdocs/docs/predefined.md
 stack exec --cwd mkdocs -- mkdocs build
 echo OK

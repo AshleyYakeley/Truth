@@ -1,5 +1,7 @@
 #!/bin/bash -e
-BINPATH=`stack path --local-bin`
+if [ -z "${BINPATH}" ]; then
+    export BINPATH=`stack path --local-bin`
+fi
 stack install hindent
 for f in `find -name '*.hs' -not -path '*.stack-work/*' | grep -xvf .hindent.ignore`
 do $BINPATH/hindent $f

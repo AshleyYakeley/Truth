@@ -1,3 +1,6 @@
 #!/bin/sh -e
+if [ -z "${BINPATH}" ]; then
+    export BINPATH=`stack path --local-bin`
+fi
 stack install truth-gtk
-`stack path --local-bin`/truth-text -2 --save Notes
+$BINPATH/truth-text -2 --save Notes
