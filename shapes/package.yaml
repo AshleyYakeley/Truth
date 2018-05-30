@@ -58,4 +58,3 @@ tests:
           - tasty
           - tasty-hunit
         main: Main.hs
-        other-modules:
