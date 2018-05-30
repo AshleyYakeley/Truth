@@ -1,9 +1,0 @@
-#!/bin/bash -e
-if [ -z "${BINPATH}" ]; then
-    export BINPATH=`stack path --local-bin`
-fi
-./hindent-all
-stack install --pedantic --test
-SRCPATH="$BINPATH/pinafore"
-sudo install -m 755 --strip $SRCPATH /usr/local/bin/
-echo OK
