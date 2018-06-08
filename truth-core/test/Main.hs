@@ -34,6 +34,7 @@ testApplyEditsPar =
         edits :: [PairEdit (WholeEdit Bool) (WholeEdit Bool)]
         edits = [MkTupleEdit SelectFirst $ MkWholeEdit True, MkTupleEdit SelectSecond $ MkWholeEdit True]
         expected = (True, True)
+        rf :: ReadFunction (TupleEditReader (PairSelector (WholeEdit Bool) (WholeEdit Bool))) (TupleEditReader (PairSelector (WholeEdit Bool) (WholeEdit Bool)))
         rf = applyEdits edits
         in do
                found <- mutableReadToSubject $ rf $ subjectToMutableRead start
@@ -46,6 +47,7 @@ testApplyEditsSeq =
         edits :: [WholeEdit Int]
         edits = [MkWholeEdit 1, MkWholeEdit 2]
         expected = 2
+        rf :: ReadFunction (WholeReader Int) (WholeReader Int)
         rf = applyEdits edits
         in do
                found <- mutableReadToSubject $ rf $ subjectToMutableRead start
