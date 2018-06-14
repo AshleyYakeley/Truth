@@ -71,7 +71,7 @@
       },
       "label": "Quick Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && stack build --pedantic --test --no-run-tests && echo OK",
+      "command": "cd ${workspaceRoot} && stack build --test --no-run-tests && echo OK",
       "problemMatcher": [
         {
           "owner": "stack",

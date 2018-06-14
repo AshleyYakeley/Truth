@@ -30,6 +30,7 @@
       - NoImplicitPrelude
       - OverloadedLabels
       - OverloadedStrings
+      - PartialTypeSignatures
       - PatternGuards
       - PatternSynonyms
       - PolyKinds
@@ -55,3 +56,4 @@
       - -Wcompat
       - -Wnoncanonical-monad-instances
       - -Wnoncanonical-monadfail-instances
+      - -Wno-partial-type-signatures
