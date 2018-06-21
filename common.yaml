@@ -49,7 +49,6 @@
       - UndecidableSuperClasses
       - ViewPatterns
     ghc-options:
-      - -Werror
       - -Wall
       - -Wincomplete-uni-patterns
       - -Wincomplete-record-updates

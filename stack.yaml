@@ -23,3 +23,6 @@ flags:
 docker:
     enable: true
     image: "local-build"
+
+ghc-options:
+    "$locals": -Werror
