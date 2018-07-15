@@ -56,4 +56,4 @@ mapReceiveUpdatesT (MkCloseUnlift (unlift :: Unlift tlens) ef@MkAnEditFunction {
             let
                 mrB :: MutableRead (tlens m) (EditReader editb)
                 mrB = efGet mrA
-            evertT $ call mrB editsB
+            commuteT $ call mrB editsB
