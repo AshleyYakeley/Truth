@@ -7,12 +7,10 @@ packages:
 - truth-gtk
 - pinafore
 
-resolver: lts-9.21
+resolver: lts-12.0
 
 extra-deps:
-- directory-1.3.1.1
 - mime-0.4.0.2
-- haskell-src-exts-1.20.1
 - git: git@github.com:AshleyYakeley/hindent.git
   commit: 5f8f95de55a524ed0b812ba6827550a29f4e02df
 

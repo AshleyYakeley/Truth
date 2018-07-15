@@ -47,9 +47,6 @@ maybeToOk :: Maybe a -> Ok a
 maybeToOk (Just a) = Ok a
 maybeToOk Nothing = Errors []
 
-instance FromField SQLData where
-    fromField f = pure $ fieldData f
-
 data SQLiteDatabase
 
 type SQLiteRead tablesel = TupleDatabaseRead SQLiteDatabase tablesel
