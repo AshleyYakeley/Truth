@@ -3,6 +3,7 @@
 let
 
 ### Useful
+unit = !a137c642-14e0-4f7a-84ae-580d95f2640a;
 window n s = [n,s];
 column n p = [n,p];
 ui_page n ui = [ui_label n,ui];
@@ -85,8 +86,8 @@ window_people = window "People" $ ui_people People;
 ### Calculator
 
 window_calc = let
-aval = !a4706230-2c61-44b1-b600-516e7a54c607;
-bval = !9d284ad2-e141-4114-ae50-8829a6db710f;
+aval = %a4706230-2c61-44b1-b600-516e7a54c607 unit;
+bval = %9d284ad2-e141-4114-ae50-8829a6db710f unit;
 in window "Calc" $ ui_vertical
 [
     [ui_textentry aval,false],
@@ -97,10 +98,10 @@ in window "Calc" $ ui_vertical
 ### Switching Value
 
 window_switch = let
-sw_pick = !59eb2d87-f815-47ef-b7dc-8fe434151bb6;
-sw_val1 = !6d9f7afa-1091-49cc-8646-8e613bb75ee5;
-sw_val2 = !6b91406b-896c-4658-b771-2d67bec91ee4;
-sw_val3 = !934712ae-73a7-4084-8a43-d618c737fd56;
+sw_pick = %59eb2d87-f815-47ef-b7dc-8fe434151bb6 unit;
+sw_val1 = %6d9f7afa-1091-49cc-8646-8e613bb75ee5 unit;
+sw_val2 = %6b91406b-896c-4658-b771-2d67bec91ee4 unit;
+sw_val3 = %934712ae-73a7-4084-8a43-d618c737fd56 unit;
 in window "Switch" $ ui_vertical
 [
     [ui_textentry sw_pick,false],
@@ -125,9 +126,7 @@ in window "Files" $ ui_vertical
 
 ### Constant Edit
 
-window_constant = let
-cell = !895efbc7-e3e7-4901-b010-2bc3a703c21b;
-in window "Constant" $ ui_vertical
+window_constant = window "Constant" $ ui_vertical
 [
     [ui_booleancheckbox "off" false,false],
     [ui_booleancheckbox "on" true,false],
