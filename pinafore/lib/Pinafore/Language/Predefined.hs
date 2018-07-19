@@ -343,10 +343,10 @@ predefinitions =
                 withset @baseedit
               , mkDefEntry "output" "Output text to standard output." $ output @baseedit
               , mkDefEntry "outputln" "Output text and a newline to standard output." $ outputln @baseedit
-              , mkDefEntry "setentity" "Set an entity reference to an entity." $ setentity @baseedit
+              , mkDefEntry ":=" "Set an entity reference to an entity." $ setentity @baseedit
               , mkDefEntry "newentity" "Create a new entity in a set and act on it." $ newentity @baseedit
-              , mkDefEntry "addentity" "Add an entity to a set." $ addentity @baseedit
-              , mkDefEntry "removeentity" "Remove an entity from a set." $ removeentity @baseedit
+              , mkDefEntry "+=" "Add an entity to a set." $ addentity @baseedit
+              , mkDefEntry "-=" "Remove an entity from a set." $ removeentity @baseedit
               , mkDefEntry "removeall" "Remove all entities from a set." $ removeall @baseedit
               ]
         , docTreeEntry

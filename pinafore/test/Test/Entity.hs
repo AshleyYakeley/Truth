@@ -85,128 +85,106 @@ testEntity =
               , pointTest "testeq 1 $ 1 ?? null"
               ]
         , testGroup
-              "setentity"
-              [ pointTest "setentity (ma p1) \"hello\""
-              , pointTest "setentity (ma p1) p2"
-              , pointTest "setentity (ma p1) p2 >> testeq p2 (ma p1)"
-              , pointTest "setentity (ma p1) \"hello\" >> testeq \"hello\" (ma p1)"
+              ":="
+              [ pointTest "ma p1 := \"hello\""
+              , pointTest "ma p1 := p2"
+              , pointTest "ma p1 := p2 >> testeq p2 (ma p1)"
+              , pointTest "ma p1 := \"hello\" >> testeq \"hello\" (ma p1)"
               ]
         , testGroup
-              "addentity"
-              [ pointTest "addentity (@ma \"hello\") p1"
-              , pointTest "addentity (@ma \"hello\") p1 >> pass"
-              , pointTest "addentity (@ma \"hello\") p1 >> testeq \"hello\" (ma p1)"
+              "+="
+              [ pointTest "@ma \"hello\" += p1"
+              , pointTest "@ma \"hello\" += p1 >> pass"
+              , pointTest "@ma \"hello\" += p1 >> testeq \"hello\" (ma p1)"
               ]
-        , testGroup
-              "removeentity"
-              [pointTest "addentity (@ma \"hello\") p1 >> removeentity (@ma \"hello\") p1 >> testisnull (ma p1)"]
-        , testGroup
-              "removeall"
-              [pointTest "addentity (@ma \"hello\") p1 >> removeall (@ma \"hello\") >> testisnull (ma p1)"]
-        , testGroup
-              "matching literals"
-              [pointTest "setentity (ma p1) \"hello\" >> setentity (ma p2) \"hello\" >> testeq (ma p1) (ma p2)"]
+        , testGroup "-=" [pointTest "@ma \"hello\" += p1 >> @ma \"hello\" -= p1 >> testisnull (ma p1)"]
+        , testGroup "removeall" [pointTest "@ma \"hello\" += p1 >> removeall (@ma \"hello\") >> testisnull (ma p1)"]
+        , testGroup "matching literals" [pointTest "ma p1 := \"hello\" >> ma p2 := \"hello\" >> testeq (ma p1) (ma p2)"]
         , testGroup
               "identity morphism"
-              [ pointTest "setentity (identity $ ma p1) p2 >> testeq p2 (ma p1)"
-              , pointTest "setentity (ma $ identity p1) p2 >> testeq p2 (ma p1)"
-              , pointTest "setentity ((identity . ma) p1) p2 >> testeq p2 (ma p1)"
-              , pointTest "setentity ((ma . identity) p1) p2 >> testeq p2 (ma p1)"
-              , pointTest "setentity (ma p1) p2 >> testeq p2 (identity $ ma p1)"
-              , pointTest "setentity (ma p1) p2 >> testeq p2 (ma $ identity p1)"
-              , pointTest "setentity (ma p1) p2 >> testeq p2 ((identity . ma) p1)"
-              , pointTest "setentity (ma p1) p2 >> testeq p2 ((ma . identity) p1)"
-              , pointTest "setentity (identity $ ma p1) p2 >> testeq p2 (identity $ ma p1)"
+              [ pointTest "(identity $ ma p1) := p2 >> testeq p2 (ma p1)"
+              , pointTest "(ma $ identity p1) := p2 >> testeq p2 (ma p1)"
+              , pointTest "((identity . ma) p1) := p2 >> testeq p2 (ma p1)"
+              , pointTest "((ma . identity) p1) := p2 >> testeq p2 (ma p1)"
+              , pointTest "ma p1 := p2 >> testeq p2 (identity $ ma p1)"
+              , pointTest "ma p1 := p2 >> testeq p2 (ma $ identity p1)"
+              , pointTest "ma p1 := p2 >> testeq p2 ((identity . ma) p1)"
+              , pointTest "ma p1 := p2 >> testeq p2 ((ma . identity) p1)"
+              , pointTest "(identity $ ma p1) := p2 >> testeq p2 (identity $ ma p1)"
               ]
         , testGroup
               "identity inverse morphism"
-              [ pointTest "addentity (@identity $ @ma \"hello\") p1 >> testisnull (ma p1)"
-              , pointTest "addentity (immutableset $ @ma \"hello\") p1 >> testisnull (ma p1)"
-              , pointTest "addentity (@ma $ @identity \"hello\") p1 >> testisnull (ma p1)"
-              , pointTest "addentity (@ma $ immutableset [\"hello\"]) p1 >> testisnull (ma p1)"
-              , pointTest "addentity ((@identity . @ma) \"hello\") p1 >> testeq \"hello\" (ma p1)"
-              , pointTest "addentity ((@ma . @identity) \"hello\") p1 >> testeq \"hello\" (ma p1)"
-              , pointTest "addentity (@ma \"hello\") p1 >> removeentity (@ma \"hello\") p1 >> testisnull (ma p1)"
-              , pointTest
-                    "addentity (@ma \"hello\") p1 >> removeentity (@identity $ @ma \"hello\") p1 >> testeq \"hello\" (ma p1)"
-              , pointTest
-                    "addentity (@ma \"hello\") p1 >> removeentity (immutableset $ @ma \"hello\") p1 >> testeq \"hello\" (ma p1)"
-              , pointTest
-                    "addentity (@ma \"hello\") p1 >> removeentity (@ma $ @identity \"hello\") p1 >> testisnull (ma p1)"
-              , pointTest
-                    "addentity (@ma \"hello\") p1 >> removeentity (@ma $ immutableset [\"hello\"]) p1 >> testisnull (ma p1)"
-              , pointTest
-                    "addentity (@ma \"hello\") p1 >> removeentity ((@identity . @ma) \"hello\") p1 >> testisnull (ma p1)"
-              , pointTest
-                    "addentity (@ma \"hello\") p1 >> removeentity ((@ma . @identity) \"hello\") p1 >> testisnull (ma p1)"
+              [ pointTest "(@identity $ @ma \"hello\") += p1 >> testisnull (ma p1)"
+              , pointTest "(immutableset $ @ma \"hello\") += p1 >> testisnull (ma p1)"
+              , pointTest "(@ma $ @identity \"hello\") += p1 >> testisnull (ma p1)"
+              , pointTest "(@ma $ immutableset [\"hello\"]) += p1 >> testisnull (ma p1)"
+              , pointTest "((@identity . @ma) \"hello\") += p1 >> testeq \"hello\" (ma p1)"
+              , pointTest "((@ma . @identity) \"hello\") += p1 >> testeq \"hello\" (ma p1)"
+              , pointTest "@ma \"hello\" += p1 >> @ma \"hello\" -= p1 >> testisnull (ma p1)"
+              , pointTest "@ma \"hello\" += p1 >> (@identity $ @ma \"hello\") -= p1 >> testeq \"hello\" (ma p1)"
+              , pointTest "@ma \"hello\" += p1 >> (immutableset $ @ma \"hello\") -= p1 >> testeq \"hello\" (ma p1)"
+              , pointTest "@ma \"hello\" += p1 >> (@ma $ @identity \"hello\") -= p1 >> testisnull (ma p1)"
+              , pointTest "@ma \"hello\" += p1 >> (@ma $ immutableset [\"hello\"]) -= p1 >> testisnull (ma p1)"
+              , pointTest "@ma \"hello\" += p1 >> ((@identity . @ma) \"hello\") -= p1 >> testisnull (ma p1)"
+              , pointTest "@ma \"hello\" += p1 >> ((@ma . @identity) \"hello\") -= p1 >> testisnull (ma p1)"
               ]
         , testGroup
               "composed morphisms"
-              [ pointTest "setentity (ma $ mb p1) p2 >> testeq p2 (ma $ mb p1)"
-              , pointTest "setentity (ma $ mb p1) \"hello\" >> testeq \"hello\" (ma $ mb p1)"
-              , pointTest "setentity (ma . mb $ p1) p2 >> testeq p2 (ma $ mb p1)"
-              , pointTest "setentity (ma . mb $ p1) \"hello\" >> testeq \"hello\" (ma $ mb p1)"
-              , pointTest "setentity (ma $ mb p1) p2 >> testeq p2 (ma . mb $ p1)"
-              , pointTest "setentity (ma $ mb p1) \"hello\" >> testeq \"hello\" (ma . mb $ p1)"
+              [ pointTest "(ma $ mb p1) := p2 >> testeq p2 (ma $ mb p1)"
+              , pointTest "(ma $ mb p1) := \"hello\" >> testeq \"hello\" (ma $ mb p1)"
+              , pointTest "(ma . mb $ p1) := p2 >> testeq p2 (ma $ mb p1)"
+              , pointTest "(ma . mb $ p1) := \"hello\" >> testeq \"hello\" (ma $ mb p1)"
+              , pointTest "(ma $ mb p1) := p2 >> testeq p2 (ma . mb $ p1)"
+              , pointTest "(ma $ mb p1) := \"hello\" >> testeq \"hello\" (ma . mb $ p1)"
               ]
         , testGroup
               "composed inverse morphisms"
-              [ pointTest "addentity (@mb $ @ma \"hello\") p1 >> testeq \"hello\" (ma $ mb p1)"
-              , pointTest "addentity ((@mb . @ma) \"hello\") p1 >> testeq \"hello\" (ma $ mb p1)"
-              , pointTest "addentity ((@mb . @ma) \"hello\") p1 >> testisnull (mb $ ma p1)"
-              , pointTest "setentity (mb p1) p2 >> addentity ((@mb . @ma) \"hello\") p1 >> testeq p2 (mb p1)"
-              , pointTest "setentity (mb p1) p2 >> addentity ((@mb . @ma) \"hello\") p1 >> testeq \"hello\" (ma p2)"
-              , pointTest "setentity (mb p1) p2 >> addentity ( @mb $ @ma  \"hello\") p1 >> testneq p2 (mb p1)"
-              , pointTest "setentity (mb p1) p2 >> addentity ( @mb $ @ma  \"hello\") p1 >> testneq \"hello\" (ma p2)"
+              [ pointTest "(@mb $ @ma \"hello\") += p1 >> testeq \"hello\" (ma $ mb p1)"
+              , pointTest "((@mb . @ma) \"hello\") += p1 >> testeq \"hello\" (ma $ mb p1)"
+              , pointTest "((@mb . @ma) \"hello\") += p1 >> testisnull (mb $ ma p1)"
+              , pointTest "mb p1 := p2 >> ((@mb . @ma) \"hello\") += p1 >> testeq p2 (mb p1)"
+              , pointTest "mb p1 := p2 >> ((@mb . @ma) \"hello\") += p1 >> testeq \"hello\" (ma p2)"
+              , pointTest "mb p1 := p2 >> ( @mb $ @ma  \"hello\") += p1 >> testneq p2 (mb p1)"
+              , pointTest "mb p1 := p2 >> ( @mb $ @ma  \"hello\") += p1 >> testneq \"hello\" (ma p2)"
+              , pointTest "mb p1 := p2 >> ma p2 := \"hello\" >> ((@mb . @ma) \"hello\") -= p1 >> testeq p2 (mb p1)"
+              , pointTest "mb p1 := p2 >> ma p2 := \"hello\" >> ((@mb . @ma) \"hello\") -= p1 >> testisnull (ma p2)"
+              , pointTest "mb p1 := p2 >> ma p2 := \"hello\" >> ( @mb $ @ma  \"hello\") -= p1 >> testneq p2 (mb p1)"
               , pointTest
-                    "setentity (mb p1) p2 >> setentity (ma p2) \"hello\" >> removeentity ((@mb . @ma) \"hello\") p1 >> testeq p2 (mb p1)"
+                    "mb p1 := p2 >> ma p2 := \"hello\" >> ( @mb $ @ma  \"hello\") -= p1 >> testeq \"hello\" (ma p2)"
+              , pointTest "mb p1 := p2 >> ma p2 := \"hello\" >> removeall ((@mb . @ma) \"hello\") >> testeq p2 (mb p1)"
+              , pointTest "mb p1 := p2 >> ma p2 := \"hello\" >> removeall ((@mb . @ma) \"hello\") >> testisnull (ma p2)"
+              , pointTest "mb p1 := p2 >> ma p2 := \"hello\" >> removeall ( @mb $ @ma  \"hello\") >> testneq p2 (mb p1)"
               , pointTest
-                    "setentity (mb p1) p2 >> setentity (ma p2) \"hello\" >> removeentity ((@mb . @ma) \"hello\") p1 >> testisnull (ma p2)"
-              , pointTest
-                    "setentity (mb p1) p2 >> setentity (ma p2) \"hello\" >> removeentity ( @mb $ @ma  \"hello\") p1 >> testneq p2 (mb p1)"
-              , pointTest
-                    "setentity (mb p1) p2 >> setentity (ma p2) \"hello\" >> removeentity ( @mb $ @ma  \"hello\") p1 >> testeq \"hello\" (ma p2)"
-              , pointTest
-                    "setentity (mb p1) p2 >> setentity (ma p2) \"hello\" >> removeall ((@mb . @ma) \"hello\") >> testeq p2 (mb p1)"
-              , pointTest
-                    "setentity (mb p1) p2 >> setentity (ma p2) \"hello\" >> removeall ((@mb . @ma) \"hello\") >> testisnull (ma p2)"
-              , pointTest
-                    "setentity (mb p1) p2 >> setentity (ma p2) \"hello\" >> removeall ( @mb $ @ma  \"hello\") >> testneq p2 (mb p1)"
-              , pointTest
-                    "setentity (mb p1) p2 >> setentity (ma p2) \"hello\" >> removeall ( @mb $ @ma  \"hello\") >> testeq \"hello\" (ma p2)"
+                    "mb p1 := p2 >> ma p2 := \"hello\" >> removeall ( @mb $ @ma  \"hello\") >> testeq \"hello\" (ma p2)"
               ]
         , testGroup
               "single"
               [ pointTest "testisnull (single $ mb $ @ma 0)"
-              , pointTest "setentity (mb p1) 1 >> setentity (ma p1) 0 >> testeq 1 (single $ mb $ @ma 0)"
-              , pointTest
-                    "setentity (mb p1) 1 >> setentity (ma p1) 0 >> setentity (mc p1) 0 >> testeq 1 (single $ mb $ @ma 0)"
-              , pointTest
-                    "setentity (mb p1) 1 >> setentity (ma p1) 0 >> setentity (ma p1) 0 >> testeq 1 (single $ mb $ @ma 0)"
-              , pointTest
-                    "setentity (mb p1) 1 >> setentity (mb p2) 2 >> setentity (ma p1) 0 >> setentity (ma p2) 0 >> testisnull (single $ mb $ @ma 0)"
-              , pointTest
-                    "setentity (mb p1) 1 >> setentity (mb p2) 1 >> setentity (ma p1) 0 >> setentity (ma p2) 0 >> testeq 1 (single $ mb $ @ma 0)"
+              , pointTest "mb p1 := 1 >> ma p1 := 0 >> testeq 1 (single $ mb $ @ma 0)"
+              , pointTest "mb p1 := 1 >> ma p1 := 0 >> mc p1 := 0 >> testeq 1 (single $ mb $ @ma 0)"
+              , pointTest "mb p1 := 1 >> ma p1 := 0 >> ma p1 := 0 >> testeq 1 (single $ mb $ @ma 0)"
+              , pointTest "mb p1 := 1 >> mb p2 := 2 >> ma p1 := 0 >> ma p2 := 0 >> testisnull (single $ mb $ @ma 0)"
+              , pointTest "mb p1 := 1 >> mb p2 := 1 >> ma p1 := 0 >> ma p2 := 0 >> testeq 1 (single $ mb $ @ma 0)"
               ]
         , testGroup
               "null set member"
-              [ pointTest "addentity (@ma p1) null >> testeq 0 (count (@ma p1))"
-              , pointTest "addentity (@ma p1) null >> addentity (@ma p1) 10 >> testeq 1 (count (@ma p1))"
-              , pointTest "addentity (@ma p1) null >> addentity (@ma p1) 10 >> testeq 10 (sum (@ma p1))"
-              , pointTest "addentity (@ma p1) null >> addentity (@ma p1) 10 >> testeq 10 (mean (@ma p1))"
-              , pointTest "addentity (@ma p1) null >> addentity (@ma p1) 10 >> testeq 10 (single $ @ma p1)"
+              [ pointTest "@ma p1 += null >> testeq 0 (count (@ma p1))"
+              , pointTest "@ma p1 += null >> @ma p1 += 10 >> testeq 1 (count (@ma p1))"
+              , pointTest "@ma p1 += null >> @ma p1 += 10 >> testeq 10 (sum (@ma p1))"
+              , pointTest "@ma p1 += null >> @ma p1 += 10 >> testeq 10 (mean (@ma p1))"
+              , pointTest "@ma p1 += null >> @ma p1 += 10 >> testeq 10 (single $ @ma p1)"
               , pointTest $
                 "let counter = ma p1 in " <>
-                "setentity counter 0 >> addentity (@ma p1) null >> addentity (@ma p1) 10 >> withset (orders []) (@ma p1) (\\p -> setentity counter (counter + 1)) >> testeq 2 counter"
+                "counter := 0 >> @ma p1 += null >> @ma p1 += 10 >> withset (orders []) (@ma p1) (\\p -> counter := counter + 1) >> testeq 2 counter"
               , pointTest $
                 "let counter = ma p1 in " <>
-                "setentity counter 0 >> addentity (@ma p1) null >> addentity (@ma p1) null >> addentity (@ma p1) 10 >> withset (orders []) (@ma p1) (\\p -> setentity counter (counter + 1)) >> testeq 3 counter"
+                "counter := 0 >> @ma p1 += null >> @ma p1 += null >> @ma p1 += 10 >> withset (orders []) (@ma p1) (\\p -> counter := counter + 1) >> testeq 3 counter"
               ]
         , testGroup
               "multiple set member"
-              [ pointTest "addentity (@ma p1) 1 >> addentity (@ma p1) 1 >> testeq 1 (count (@ma p1))"
+              [ pointTest "@ma p1 += 1 >> @ma p1 += 1 >> testeq 1 (count (@ma p1))"
               , pointTest $
                 "let counter = ma p1 in " <>
-                "setentity counter 0 >> addentity (@ma p1) 1 >> addentity (@ma p1) 1 >> withset (orders []) (@ma p1) (\\p -> setentity counter (counter + 1)) >> testeq 1 counter"
+                "counter := 0 >> @ma p1 += 1 >> @ma p1 += 1 >> withset (orders []) (@ma p1) (\\p -> counter := counter + 1) >> testeq 1 counter"
               ]
         ]
