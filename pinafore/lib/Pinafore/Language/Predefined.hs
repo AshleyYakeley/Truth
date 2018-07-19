@@ -12,6 +12,7 @@ import Pinafore.Language.Convert
 import Pinafore.Language.Doc
 import Pinafore.Language.Expression
 import Pinafore.Language.Lifted
+import Pinafore.Language.Name
 import Pinafore.Language.Order
 import Pinafore.Language.Value
 import Pinafore.Literal
@@ -235,7 +236,7 @@ type BindDoc baseedit = (Maybe (QBindings baseedit), DefDoc)
 
 mkDefEntry ::
        forall baseedit t. ToQValue baseedit t
-    => Symbol
+    => Name
     -> Text
     -> t
     -> DocTreeEntry (BindDoc baseedit)

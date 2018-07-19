@@ -1,7 +1,7 @@
 module Pinafore.Language.Doc where
 
 import Pinafore.Language.Convert
-import Pinafore.Language.Expression
+import Pinafore.Language.Name
 import Shapes
 
 data DocTree a =
@@ -37,13 +37,13 @@ runDocTree showTitle showEntry level (MkDocTree title entries) = do
         EntryDocTreeEntry a -> showEntry level a
 
 data DefDoc =
-    MkDefDoc Symbol
+    MkDefDoc Name
              Text
              Text
 
 mkDefDoc ::
        forall t. HasQTypeDescription t
-    => Symbol
+    => Name
     -> Text
     -> t
     -> DefDoc

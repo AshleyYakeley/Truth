@@ -25,6 +25,7 @@ library:
       - Pinafore.Main
       - Pinafore.Language.Value
       - Pinafore.Language.Convert
+      - Pinafore.Language.Name
       - Pinafore.Language.Expression
       - Pinafore.Language
     other-modules:

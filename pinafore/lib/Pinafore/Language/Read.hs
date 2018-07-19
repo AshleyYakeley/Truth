@@ -6,6 +6,7 @@ module Pinafore.Language.Read
 import Pinafore.Language.Convert
 import Pinafore.Language.Expression
 import Pinafore.Language.If
+import Pinafore.Language.Name
 import Pinafore.Language.Token
 import Pinafore.Language.Value
 import Pinafore.PredicateMorphism
@@ -21,12 +22,12 @@ readThis tok =
             Just Refl -> Just t
             Nothing -> Nothing
 
-readPattern :: Parser Symbol
-readPattern = readThis TokSymbol
+readPattern :: Parser Name
+readPattern = readThis TokName
 
-readBinding :: HasPinaforeEntityEdit baseedit => Parser (Symbol, QValueExpr baseedit)
+readBinding :: HasPinaforeEntityEdit baseedit => Parser (Name, QValueExpr baseedit)
 readBinding = do
-    name <- readThis TokSymbol
+    name <- readThis TokName
     args <- many readPattern
     readThis TokAssign
     val <- readExpression
@@ -69,7 +70,7 @@ data Fixity =
 
 -- following Haskell
 -- https://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061
-operatorFixity :: Symbol -> Fixity
+operatorFixity :: Name -> Fixity
 operatorFixity "." = MkFixity AssocRight 9
 operatorFixity "*" = MkFixity AssocLeft 7
 operatorFixity "/" = MkFixity AssocLeft 7
@@ -93,7 +94,7 @@ operatorFixity "??" = MkFixity AssocLeft 1
 operatorFixity "$" = MkFixity AssocRight 0
 operatorFixity _ = MkFixity AssocLeft 9
 
-readInfix :: Int -> Parser (FixAssoc, Symbol)
+readInfix :: Int -> Parser (FixAssoc, Name)
 readInfix prec =
     Text.Parsec.try $ do
         name <- readThis TokInfix
@@ -180,7 +181,7 @@ readExpression3 =
          b <- readThis TokBool
          return $ pure $ toQValue b) <|>
     (do
-         name <- readThis TokSymbol
+         name <- readThis TokName
          return $ qvar name) <|>
     (do
          n <- readThis TokNumber
