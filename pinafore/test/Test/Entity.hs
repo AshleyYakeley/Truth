@@ -198,5 +198,15 @@ testEntity =
               , pointTest $
                 "let counter = ma p1 in " <>
                 "setentity counter 0 >> addentity (@ma p1) null >> addentity (@ma p1) 10 >> withset (orders []) (@ma p1) (\\p -> setentity counter (counter + 1)) >> testeq 2 counter"
+              , pointTest $
+                "let counter = ma p1 in " <>
+                "setentity counter 0 >> addentity (@ma p1) null >> addentity (@ma p1) null >> addentity (@ma p1) 10 >> withset (orders []) (@ma p1) (\\p -> setentity counter (counter + 1)) >> testeq 3 counter"
+              ]
+        , testGroup
+              "multiple set member"
+              [ pointTest "addentity (@ma p1) 1 >> addentity (@ma p1) 1 >> testeq 1 (count (@ma p1))"
+              , pointTest $
+                "let counter = ma p1 in " <>
+                "setentity counter 0 >> addentity (@ma p1) 1 >> addentity (@ma p1) 1 >> withset (orders []) (@ma p1) (\\p -> setentity counter (counter + 1)) >> testeq 1 counter"
               ]
         ]
