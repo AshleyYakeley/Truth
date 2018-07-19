@@ -188,4 +188,15 @@ testEntity =
               , pointTest
                     "setentity (mb p1) 1 >> setentity (mb p2) 1 >> setentity (ma p1) 0 >> setentity (ma p2) 0 >> testeq 1 (single $ mb $ @ma 0)"
               ]
+        , testGroup
+              "null set member"
+              [ pointTest "addentity (@ma p1) null >> testeq 0 (count (@ma p1))"
+              , pointTest "addentity (@ma p1) null >> addentity (@ma p1) 10 >> testeq 1 (count (@ma p1))"
+              , pointTest "addentity (@ma p1) null >> addentity (@ma p1) 10 >> testeq 10 (sum (@ma p1))"
+              , pointTest "addentity (@ma p1) null >> addentity (@ma p1) 10 >> testeq 10 (mean (@ma p1))"
+              , pointTest "addentity (@ma p1) null >> addentity (@ma p1) 10 >> testeq 10 (single $ @ma p1)"
+              , pointTest $
+                "let counter = ma p1 in " <>
+                "setentity counter 0 >> addentity (@ma p1) null >> addentity (@ma p1) 10 >> withset (orders []) (@ma p1) (\\p -> setentity counter (counter + 1)) >> testeq 2 counter"
+              ]
         ]
