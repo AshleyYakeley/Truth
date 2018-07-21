@@ -107,6 +107,9 @@ wholeEditLens lens =
                       return $ fmap (\newa -> [MkWholeEdit newa]) $ getMaybeOne $ lensPutback lens b olda
         }
 
+bijectionWholeEditLens :: Bijection a b -> EditLens (WholeEdit a) (WholeEdit b)
+bijectionWholeEditLens = wholeEditLens . bijectionLens
+
 instance MonadOne m => IsEditLens (Lens' m a b) where
     type LensDomain (Lens' m a b) = WholeEdit a
     type LensRange (Lens' m a b) = WholeEdit b

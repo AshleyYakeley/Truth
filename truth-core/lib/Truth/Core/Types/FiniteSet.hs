@@ -191,3 +191,33 @@ instance Eq subj => MeetSemiLatticeEdit (FiniteSetEdit subj) where
                     then []
                     else [KeyClear]
         in MkCloseUnlift identityUnlift MkAnEditFunction {..}
+
+bijectionFiniteSetEditLens :: forall a b. Bijection a b -> EditLens (FiniteSetEdit a) (FiniteSetEdit b)
+bijectionFiniteSetEditLens (MkBijection ab ba) = let
+    mapFiniteSetEdit :: forall p q. (p -> q) -> FiniteSetEdit p -> FiniteSetEdit q
+    mapFiniteSetEdit _ (KeyEditItem _ edit) = never edit
+    mapFiniteSetEdit pq (KeyDeleteItem p) = KeyDeleteItem $ pq p
+    mapFiniteSetEdit pq (KeyInsertReplaceItem p) = KeyInsertReplaceItem $ pq p
+    mapFiniteSetEdit _ KeyClear = KeyClear
+    efGet ::
+           forall m t. MonadIO m
+        => MutableRead m (FiniteSetReader a)
+        -> FiniteSetReader b t
+        -> IdentityT m t
+    efGet mra KeyReadKeys = lift $ fmap (fmap ab) $ mra KeyReadKeys
+    efGet mra (KeyReadItem b ReadWhole) = lift $ fmap (fmap ab) $ mra $ KeyReadItem (ba b) ReadWhole
+    efUpdate ::
+           forall m. MonadIO m
+        => FiniteSetEdit a
+        -> MutableRead m (EditReader (FiniteSetEdit a))
+        -> IdentityT m [FiniteSetEdit b]
+    efUpdate ea _ = return $ pure $ mapFiniteSetEdit ab ea
+    elFunction :: AnEditFunction IdentityT (FiniteSetEdit a) (FiniteSetEdit b)
+    elFunction = MkAnEditFunction {..}
+    elPutEdits ::
+           forall m. MonadIO m
+        => [FiniteSetEdit b]
+        -> MutableRead m (EditReader (FiniteSetEdit a))
+        -> IdentityT m (Maybe [FiniteSetEdit a])
+    elPutEdits ebs _ = return $ Just $ fmap (mapFiniteSetEdit ba) ebs
+    in MkCloseUnlift identityUnlift MkAnEditLens {..}

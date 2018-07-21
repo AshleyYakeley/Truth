@@ -11,6 +11,7 @@ module Pinafore.Morphism
     , mapPinaforeLensMorphismBase
     , funcPinaforeLensMorphism
     , nullPinaforeLensMorphism
+    , bijectionPinaforeLensMorphism
     , applyPinaforeLens
     , applyInversePinaforeLens
     , applyInversePinaforeLensSet
@@ -369,6 +370,9 @@ funcPinaforeLensMorphism ab bsa = let
 
 nullPinaforeLensMorphism :: forall baseedit a b. PinaforeLensMorphism baseedit a (Maybe b)
 nullPinaforeLensMorphism = funcPinaforeLensMorphism (\_ -> Nothing) (\_ -> mempty)
+
+bijectionPinaforeLensMorphism :: Bijection a b -> PinaforeLensMorphism baseedit a b
+bijectionPinaforeLensMorphism (MkBijection ab ba) = funcPinaforeLensMorphism ab (\b -> opoint $ ba b)
 
 applyPinaforeLens ::
        PinaforeLensMorphism baseedit a b
