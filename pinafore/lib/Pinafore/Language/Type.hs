@@ -1,6 +1,5 @@
 module Pinafore.Language.Type where
 
-import GHC.Exts (Any)
 import GHC.TypeLits
 import Pinafore.Language.Order
 import Pinafore.Literal
@@ -11,112 +10,11 @@ import Pinafore.Types
 import Prelude (Bounded(..))
 import Shapes
 import Truth.Core
-import Unsafe.Coerce
 
--- This is "soft" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type (AnyBox) for type variables.
+import Language.Expression.Type.Dolan
+import Language.Expression.Type.Soft.Var
+
 type Func a b = a -> b
-
-type TopType = ()
-
-type BottomType = None
-
-newtype JoinType a b =
-    MkJoinType (Either a b)
-
-newtype MeetType a b =
-    MkMeetType (a, b)
-
-data TypePolarity
-    = PositivePolarity
-    | NegativePolarity
-
-class IsTypePolarity (polarity :: TypePolarity) where
-    type InvertPolarity polarity :: TypePolarity
-    type LimitType polarity :: Type
-    showLimitType :: Text
-    type JoinMeetType polarity :: Type -> Type -> Type
-    showJoinMeetType :: Text
-    jmLeftIdentity :: Bijection (JoinMeetType polarity (LimitType polarity) a) a
-    jmRightIdentity :: Bijection (JoinMeetType polarity a (LimitType polarity)) a
-    jmMap :: (a1 -> a2) -> (b1 -> b2) -> JoinMeetType polarity a1 b1 -> JoinMeetType polarity a2 b2
-
-jmBiMap ::
-       forall polarity a1 a2 b1 b2. IsTypePolarity polarity
-    => Bijection a1 a2
-    -> Bijection b1 b2
-    -> Bijection (JoinMeetType polarity a1 b1) (JoinMeetType polarity a2 b2)
-jmBiMap (MkBijection a1a2 a2a1) (MkBijection b1b2 b2b1) =
-    MkBijection (jmMap @polarity a1a2 b1b2) (jmMap @polarity a2a1 b2b1)
-
-instance IsTypePolarity 'PositivePolarity where
-    type InvertPolarity 'PositivePolarity = 'NegativePolarity
-    type LimitType 'PositivePolarity = BottomType
-    showLimitType = "Bottom"
-    type JoinMeetType 'PositivePolarity = JoinType
-    showJoinMeetType = "|"
-    jmLeftIdentity = let
-        unjoin :: JoinType None a -> a
-        unjoin (MkJoinType (Left n)) = never n
-        unjoin (MkJoinType (Right a)) = a
-        in MkBijection unjoin $ \a -> MkJoinType (Right a)
-    jmRightIdentity = let
-        unjoin :: JoinType a None -> a
-        unjoin (MkJoinType (Left a)) = a
-        unjoin (MkJoinType (Right n)) = never n
-        in MkBijection unjoin $ \a -> MkJoinType (Left a)
-    jmMap a1a2 _ (MkJoinType (Left a)) = MkJoinType $ Left $ a1a2 a
-    jmMap _ b1b2 (MkJoinType (Right b)) = MkJoinType $ Right $ b1b2 b
-
-instance IsTypePolarity 'NegativePolarity where
-    type InvertPolarity 'NegativePolarity = 'PositivePolarity
-    type LimitType 'NegativePolarity = TopType
-    showLimitType = "Top"
-    type JoinMeetType 'NegativePolarity = MeetType
-    showJoinMeetType = "&"
-    jmLeftIdentity = MkBijection (\(MkMeetType ((), a)) -> a) $ \a -> MkMeetType ((), a)
-    jmRightIdentity = MkBijection (\(MkMeetType (a, ())) -> a) $ \a -> MkMeetType (a, ())
-    jmMap a1a2 b1b2 (MkMeetType (a, b)) = MkMeetType (a1a2 a, b1b2 b)
-
-type family MInvertPolarity (polarity :: Maybe TypePolarity) :: Maybe TypePolarity where
-    MInvertPolarity ('Just polarity) = 'Just (InvertPolarity polarity)
-    MInvertPolarity 'Nothing = 'Nothing
-
-data SymbolWitness (symbol :: Symbol) where
-    MkSymbolWitness :: KnownSymbol symbol => SymbolWitness symbol
-
-fromSymbolWitness :: forall (symbol :: Symbol). SymbolWitness symbol -> String
-fromSymbolWitness MkSymbolWitness = symbolVal (Proxy :: Proxy symbol)
-
-toSymbolWitness :: String -> (forall (symbol :: Symbol). SymbolWitness symbol -> r) -> r
-toSymbolWitness s cont =
-    case someSymbolVal s of
-        SomeSymbol p -> let
-            psw :: forall (symbol :: Symbol). KnownSymbol symbol
-                => Proxy symbol
-                -> SymbolWitness symbol
-            psw _ = MkSymbolWitness
-            in cont $ psw p
-
-newtype AnyBox (name :: Symbol) =
-    MkAnyBox GHC.Exts.Any
-
-unsafeRenameAnybox :: AnyBox name1 -> AnyBox name2
-unsafeRenameAnybox (MkAnyBox a) = MkAnyBox a
-
-unsafeToAnyBox :: a -> AnyBox name
-unsafeToAnyBox a = MkAnyBox $ unsafeCoerce a
-
-unsafeFromAnyBox :: AnyBox name -> a
-unsafeFromAnyBox (MkAnyBox a) = unsafeCoerce a
-
-renameAnyBox ::
-       (String -> String)
-    -> SymbolWitness name1
-    -> (forall (name2 :: Symbol). SymbolWitness name2 -> Bijection (AnyBox name1) (AnyBox name2) -> r)
-    -> r
-renameAnyBox sf namewit1 cont =
-    toSymbolWitness (sf $ fromSymbolWitness namewit1) $ \namewit2 ->
-        cont namewit2 (MkBijection unsafeRenameAnybox unsafeRenameAnybox)
 
 class ExprShow t where
     exprShowPrec :: t -> (Text, Int)
@@ -161,6 +59,7 @@ type QMorphism baseedit a b = PinaforeLensMorphism baseedit a b
 newtype Entity (name :: Symbol) =
     MkEntity Point
 
+-- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('SVar') for type variables.
 data PinaforeType (baseedit :: Type) (mpolarity :: Maybe TypePolarity) (t :: Type) where
     LimitPinaforeType :: IsTypePolarity polarity => PinaforeType baseedit ('Just polarity) (LimitType polarity)
     JoinMeetPinaforeType
@@ -194,7 +93,7 @@ data PinaforeType (baseedit :: Type) (mpolarity :: Maybe TypePolarity) (t :: Typ
         -> PinaforeType baseedit 'Nothing b
         -> PinaforeType baseedit mpolarity (QMorphism baseedit a b)
     GroundPinaforeType :: GroundType baseedit t -> PinaforeType baseedit mpolarity t
-    VarPinaforeType :: SymbolWitness name -> PinaforeType baseedit mpolarity (AnyBox name)
+    VarPinaforeType :: SymbolWitness name -> PinaforeType baseedit mpolarity (SVar name)
 
 polarisePinaforeType :: PinaforeType baseedit 'Nothing t -> PinaforeType baseedit ('Just polarity) t
 polarisePinaforeType (FunctionPinaforeType ta tb) =
@@ -251,7 +150,7 @@ renamePinaforeTypeVars sf (InverseMorphismPinaforeType ta tb) cont =
             cont (InverseMorphismPinaforeType ta' tb') $ biIsoBi' bija . biIsoBi bijb
 renamePinaforeTypeVars _ (GroundPinaforeType t) cont = cont (GroundPinaforeType t) id
 renamePinaforeTypeVars sf (VarPinaforeType namewit1) cont =
-    renameAnyBox sf namewit1 $ \namewit2 bij -> cont (VarPinaforeType namewit2) bij
+    renameSVar sf namewit1 $ \namewit2 bij -> cont (VarPinaforeType namewit2) bij
 
 isPinaforeSameType ::
        PinaforeType baseedit 'Nothing p -> PinaforeType baseedit 'Nothing q -> Result Text (Bijection p q)
@@ -397,8 +296,3 @@ instance IsSubtype LiteralType where
     isSubtype NumberLiteralType NumberLiteralType = return id
     isSubtype BottomLiteralType _ = return never
     isSubtype ta tb = FailureResult $ "cannot match " <> exprShow ta <> " with " <> exprShow tb
-{-
-class PinaforeTypeWitness w where
-    castToRaw :: w baseedit t -> t -> QValue baseedit
-    castFromRaw :: w baseedit t -> QValue baseedit -> Maybe t
--}
