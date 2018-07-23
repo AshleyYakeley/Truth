@@ -35,6 +35,7 @@ library:
       - Data.SameItem
       - Data.MonadOne
       - Data.HasNewValue
+      - Data.IsoVariant
       - Data.Injection
       - Data.Bijection
       - Data.Lens

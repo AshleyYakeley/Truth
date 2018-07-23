@@ -374,6 +374,12 @@ nullPinaforeLensMorphism = funcPinaforeLensMorphism (\_ -> Nothing) (\_ -> mempt
 bijectionPinaforeLensMorphism :: Bijection a b -> PinaforeLensMorphism baseedit a b
 bijectionPinaforeLensMorphism (MkBijection ab ba) = funcPinaforeLensMorphism ab (\b -> opoint $ ba b)
 
+instance IsoVariant (PinaforeLensMorphism baseedit t) where
+    isoMap ab ba m = bijectionPinaforeLensMorphism (MkBijection ab ba) . m
+
+instance IsoVariant' (PinaforeLensMorphism baseedit) where
+    isoMap' ab ba m = m . bijectionPinaforeLensMorphism (MkBijection ba ab)
+
 applyPinaforeLens ::
        PinaforeLensMorphism baseedit a b
     -> PinaforeLensValue baseedit (WholeEdit a)

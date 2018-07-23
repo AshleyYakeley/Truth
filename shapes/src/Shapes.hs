@@ -15,6 +15,7 @@ import Data.Filterable as I
 import Data.FiniteSet as I
 import Data.HasNewValue as I
 import Data.Injection as I
+import Data.IsoVariant as I
 import Data.KeyContainer as I
 import Data.Lens as I
 import Data.MonadOne as I
