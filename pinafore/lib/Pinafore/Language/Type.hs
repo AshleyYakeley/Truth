@@ -152,8 +152,45 @@ renamePinaforeTypeVars _ (GroundPinaforeType t) cont = cont (GroundPinaforeType 
 renamePinaforeTypeVars sf (VarPinaforeType namewit1) cont =
     renameSVar sf namewit1 $ \namewit2 bij -> cont (VarPinaforeType namewit2) bij
 
+getTypeVars :: PinaforeType baseedit mpolarity t -> [String]
+getTypeVars LimitPinaforeType = mempty
+getTypeVars (JoinMeetPinaforeType ta tb) = getTypeVars ta <> getTypeVars tb
+getTypeVars (FunctionPinaforeType ta tb) = getTypeVars ta <> getTypeVars tb
+getTypeVars (ListPinaforeType t) = getTypeVars t
+getTypeVars (PairPinaforeType ta tb) = getTypeVars ta <> getTypeVars tb
+getTypeVars (MutableReferencePinaforeType t) = getTypeVars t
+getTypeVars (ConstReferencePinaforeType t) = getTypeVars t
+getTypeVars (MutableSetPinaforeType t) = getTypeVars t
+getTypeVars (ConstSetPinaforeType t) = getTypeVars t
+getTypeVars (MorphismPinaforeType ta tb) = getTypeVars ta <> getTypeVars tb
+getTypeVars (InverseMorphismPinaforeType ta tb) = getTypeVars ta <> getTypeVars tb
+getTypeVars (GroundPinaforeType _) = mempty
+getTypeVars (VarPinaforeType swit) = pure $ fromSymbolWitness swit
+
+data Biunification baseedit =
+    forall p q. MkBiunification (PinaforeType baseedit ('Just 'PositivePolarity) p)
+                                (PinaforeType baseedit ('Just 'NegativePolarity) q)
+
+instance Semigroup (Biunification baseedit) where
+    (MkBiunification ap aq) <> (MkBiunification bp bq) =
+        MkBiunification (JoinMeetPinaforeType ap bp) (JoinMeetPinaforeType aq bq)
+
+instance Monoid (Biunification baseedit) where
+    mempty = MkBiunification LimitPinaforeType LimitPinaforeType
+
+type BiunificationTable baseedit = String -> Biunification baseedit
+
+type BiunifierM baseedit = WriterT (BiunificationTable baseedit) (Result Text)
+
+tellBiunification :: SymbolWitness name -> Biunification baseedit -> BiunifierM baseedit ()
+tellBiunification swit u =
+    tell $ \s ->
+        if s == fromSymbolWitness swit
+            then u
+            else mempty
+
 isPinaforeSameType ::
-       PinaforeType baseedit 'Nothing p -> PinaforeType baseedit 'Nothing q -> Result Text (Bijection p q)
+       PinaforeType baseedit 'Nothing p -> PinaforeType baseedit 'Nothing q -> BiunifierM baseedit (Bijection p q)
 isPinaforeSameType tp tq = do
     pq <- isPinaforeSubtype (polarisePinaforeType tp) (polarisePinaforeType tq)
     qp <- isPinaforeSubtype (polarisePinaforeType tq) (polarisePinaforeType tp)
@@ -162,7 +199,7 @@ isPinaforeSameType tp tq = do
 isPinaforeSubtype ::
        PinaforeType baseedit ('Just 'PositivePolarity) p
     -> PinaforeType baseedit ('Just 'NegativePolarity) q
-    -> Result Text (p -> q)
+    -> BiunifierM baseedit (p -> q)
 isPinaforeSubtype LimitPinaforeType _ = return never
 isPinaforeSubtype _ LimitPinaforeType = return $ \_ -> ()
 isPinaforeSubtype (JoinMeetPinaforeType tp1 tp2) tq = do
@@ -204,8 +241,14 @@ isPinaforeSubtype (InverseMorphismPinaforeType tpa tpb) (InverseMorphismPinafore
     aa <- isPinaforeSameType tpa tqa
     bb <- isPinaforeSameType tpb tqb
     return $ \pp -> biIsoMap' aa $ biIsoMap bb $ pp
-isPinaforeSubtype (GroundPinaforeType tp) (GroundPinaforeType tq) = isSubtype tp tq
-isPinaforeSubtype tp tq = FailureResult $ "cannot match " <> exprShow tp <> " with " <> exprShow tq
+isPinaforeSubtype (GroundPinaforeType tp) (GroundPinaforeType tq) = lift $ isSubtype tp tq
+isPinaforeSubtype (VarPinaforeType swit) tq = do
+    tellBiunification swit $ MkBiunification LimitPinaforeType tq
+    return unsafeFromSVar
+isPinaforeSubtype tp (VarPinaforeType swit) = do
+    tellBiunification swit $ MkBiunification tp LimitPinaforeType
+    return unsafeToSVar
+isPinaforeSubtype tp tq = fail $ unpack $ "cannot match " <> exprShow tp <> " with " <> exprShow tq
 
 simplifyType ::
        PinaforeType baseedit mpolarity a -> (forall b. PinaforeType baseedit mpolarity b -> Bijection a b -> r) -> r
@@ -296,3 +339,16 @@ instance IsSubtype LiteralType where
     isSubtype NumberLiteralType NumberLiteralType = return id
     isSubtype BottomLiteralType _ = return never
     isSubtype ta tb = FailureResult $ "cannot match " <> exprShow ta <> " with " <> exprShow tb
+{-
+getRenaming :: [String] -> [String] -> String -> String
+getRenaming = ff
+
+applyPinaforeType :: forall baseedit f x r. PinaforeType baseedit ('Just 'PositivePolarity) f -> PinaforeType baseedit ('Just 'PositivePolarity) x -> (forall fx. PinaforeType baseedit ('Just 'PositivePolarity) fx -> (f -> x -> fx) -> r) -> Result Text r
+applyPinaforeType ft xt cont = let
+    fvars = getTypeVars ft
+    xvars = getTypeVars xt
+    renamer = getRenaming fvars xvars
+    in renamePinaforeTypeVars renamer xt $ \xt' xx' -> do
+        (pq,table) <- runWriterT $ isPinaforeSubtype ft $ FunctionPinaforeType xt' $ VarPinaforeType $ MkSymbolWitness @""
+        return $ cont foo $ \f x -> foo' $ pq f $ biForwards xx' x
+-}
