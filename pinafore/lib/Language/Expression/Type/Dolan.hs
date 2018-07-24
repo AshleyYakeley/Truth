@@ -18,6 +18,7 @@ data TypePolarity
 
 class IsTypePolarity (polarity :: TypePolarity) where
     type InvertPolarity polarity :: TypePolarity
+    isInvertPolarity :: Dict (IsTypePolarity (InvertPolarity polarity))
     type LimitType polarity :: Type
     showLimitType :: Text
     type JoinMeetType polarity :: Type -> Type -> Type
@@ -36,6 +37,7 @@ jmBiMap (MkBijection a1a2 a2a1) (MkBijection b1b2 b2b1) =
 
 instance IsTypePolarity 'PositivePolarity where
     type InvertPolarity 'PositivePolarity = 'NegativePolarity
+    isInvertPolarity = Dict
     type LimitType 'PositivePolarity = BottomType
     showLimitType = "Bottom"
     type JoinMeetType 'PositivePolarity = JoinType
@@ -55,6 +57,7 @@ instance IsTypePolarity 'PositivePolarity where
 
 instance IsTypePolarity 'NegativePolarity where
     type InvertPolarity 'NegativePolarity = 'PositivePolarity
+    isInvertPolarity = Dict
     type LimitType 'NegativePolarity = TopType
     showLimitType = "Top"
     type JoinMeetType 'NegativePolarity = MeetType
@@ -63,6 +66,21 @@ instance IsTypePolarity 'NegativePolarity where
     jmRightIdentity = MkBijection (\(MkMeetType (a, ())) -> a) $ \a -> MkMeetType (a, ())
     jmMap a1a2 b1b2 (MkMeetType (a, b)) = MkMeetType (a1a2 a, b1b2 b)
 
-type family MInvertPolarity (polarity :: Maybe TypePolarity) :: Maybe TypePolarity where
-    MInvertPolarity ('Just polarity) = 'Just (InvertPolarity polarity)
-    MInvertPolarity 'Nothing = 'Nothing
+-- | For dealing with non-co/contravariance, see Dolan sec. 9.1
+data TypeRange t pq where
+    MkTypeRange :: (p -> t) -> (t -> q) -> TypeRange t '( p, q)
+
+data RangeMap pq1 pq2 where
+    MkRangeMap :: (q1 -> q2) -> (p2 -> p1) -> RangeMap '( p1, q1) '( p2, q2)
+
+class MapTypeRange f where
+    mapTypeRange :: RangeMap a b -> f a -> f b
+
+instance MapTypeRange (TypeRange t) where
+    mapTypeRange (MkRangeMap qq pp) (MkTypeRange pt tq) = MkTypeRange (pt . pp) (qq . tq)
+
+class MapTypeRange' f where
+    mapTypeRange' :: RangeMap a b -> f a t -> f b t
+
+data TypeRangeWitness tw polarity pq where
+    MkTypeRangeWitness :: tw (InvertPolarity polarity) p -> tw polarity q -> TypeRangeWitness tw polarity '( p, q)
