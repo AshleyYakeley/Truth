@@ -1,4 +1,4 @@
-module Language.Expression.Type.Soft.Var where
+module Language.Expression.SoftType.Var where
 
 import GHC.Exts (Any)
 import GHC.TypeLits

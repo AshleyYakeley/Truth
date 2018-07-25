@@ -1,6 +1,9 @@
 module Pinafore.Language.Type where
 
 import GHC.TypeLits
+import Language.Expression.SoftType.Dolan
+import Language.Expression.SoftType.TypeRange
+import Language.Expression.SoftType.Var
 import Pinafore.Language.Order
 import Pinafore.Literal
 import Pinafore.Morphism
@@ -10,9 +13,6 @@ import Pinafore.Types
 import Prelude (Bounded(..))
 import Shapes
 import Truth.Core
-
-import Language.Expression.Type.Dolan
-import Language.Expression.Type.Soft.Var
 
 type Func a b = a -> b
 
