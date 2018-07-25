@@ -34,6 +34,8 @@ data PinaforeMutableReference baseedit pq =
     forall t. MkPinaforeMutableReference (TypeRange t pq)
                                          (PinaforeLensValue baseedit (WholeEdit t))
 
+instance IsoMapTypeRange (PinaforeMutableReference baseedit)
+
 instance MapTypeRange (PinaforeMutableReference baseedit) where
     mapTypeRange f (MkPinaforeMutableReference r lens) = MkPinaforeMutableReference (mapTypeRange f r) lens
 
@@ -42,6 +44,8 @@ type PinaforeConstReference = WholeEditFunction
 data PinaforeMutableSet baseedit pq =
     forall t. MkPinaforeMutableSet (TypeRange t pq)
                                    (PinaforeLensValue baseedit (FiniteSetEdit t))
+
+instance IsoMapTypeRange (PinaforeMutableSet baseedit)
 
 instance MapTypeRange (PinaforeMutableSet baseedit) where
     mapTypeRange f (MkPinaforeMutableSet r s) = MkPinaforeMutableSet (mapTypeRange f r) s
@@ -59,8 +63,12 @@ data PinaforeMorphism baseedit pqa pqb =
                                    (TypeRange b pqb)
                                    (PinaforeLensMorphism baseedit a b)
 
+instance IsoMapTypeRange (PinaforeMorphism baseedit pqa)
+
 instance MapTypeRange (PinaforeMorphism baseedit pqa) where
     mapTypeRange f (MkPinaforeMorphism ra rb m) = MkPinaforeMorphism ra (mapTypeRange f rb) m
+
+instance IsoMapTypeRange' (PinaforeMorphism baseedit)
 
 instance MapTypeRange' (PinaforeMorphism baseedit) where
     mapTypeRange' f (MkPinaforeMorphism ra rb m) = MkPinaforeMorphism (mapTypeRange f ra) rb m
@@ -103,45 +111,60 @@ data PinaforeType (baseedit :: Type) (polarity :: TypePolarity) (t :: Type) wher
     GroundPinaforeType :: GroundType baseedit t -> PinaforeType baseedit polarity t
     VarPinaforeType :: SymbolWitness name -> PinaforeType baseedit polarity (SVar name)
 
-{-
-renamePinaforeTypeVars :: forall baseedit polarity t1 r.
-       IsTypePolarity polarity
+renamePinaforeRangeTypeVars ::
+       forall baseedit polarity t1 r. IsTypePolarity polarity
+    => (String -> String)
+    -> PinaforeRangeType baseedit polarity t1
+    -> (forall t2. PinaforeRangeType baseedit polarity t2 -> WithRange Bijection t1 t2 -> r)
+    -> r
+renamePinaforeRangeTypeVars sf (MkTypeRangeWitness ta tb) cont =
+    case isInvertPolarity @polarity of
+        Dict ->
+            renamePinaforeTypeVars sf ta $ \ta' bija ->
+                renamePinaforeTypeVars sf tb $ \tb' bijb ->
+                    cont (MkTypeRangeWitness ta' tb') $ MkWithRange (invert bija) bijb
+
+renamePinaforeTypeVars ::
+       forall baseedit polarity t1 r. IsTypePolarity polarity
     => (String -> String)
     -> PinaforeType baseedit polarity t1
     -> (forall t2. PinaforeType baseedit polarity t2 -> Bijection t1 t2 -> r)
     -> r
 renamePinaforeTypeVars _ LimitPinaforeType cont = cont LimitPinaforeType id
-renamePinaforeTypeVars sf t@(JoinMeetPinaforeType ta tb) cont =
+renamePinaforeTypeVars sf (JoinMeetPinaforeType ta tb) cont =
     renamePinaforeTypeVars sf ta $ \ta' bija ->
-        renamePinaforeTypeVars sf tb $ \tb' bijb ->
-            cont (JoinMeetPinaforeType ta' tb') $ jmBiMap @polarity bija bijb t
+        renamePinaforeTypeVars sf tb $ \tb' bijb -> cont (JoinMeetPinaforeType ta' tb') $ jmBiMap @polarity bija bijb
 renamePinaforeTypeVars sf (FunctionPinaforeType ta tb) cont =
-    renamePinaforeTypeVars sf ta $ \ta' bija ->
-        renamePinaforeTypeVars sf tb $ \tb' bijb -> cont (FunctionPinaforeType ta' tb') $ biIsoBi' bija . biIsoBi bijb
+    case isInvertPolarity @polarity of
+        Dict ->
+            renamePinaforeTypeVars sf ta $ \ta' bija ->
+                renamePinaforeTypeVars sf tb $ \tb' bijb ->
+                    cont (FunctionPinaforeType ta' tb') $ biIsoBi' bija . biIsoBi bijb
 renamePinaforeTypeVars sf (ListPinaforeType t) cont =
     renamePinaforeTypeVars sf t $ \t' bij -> cont (ListPinaforeType t') $ biIsoBi bij
 renamePinaforeTypeVars sf (PairPinaforeType ta tb) cont =
     renamePinaforeTypeVars sf ta $ \ta' bija ->
         renamePinaforeTypeVars sf tb $ \tb' bijb -> cont (PairPinaforeType ta' tb') $ biIsoBi' bija . biIsoBi bijb
 renamePinaforeTypeVars sf (MutableReferencePinaforeType t) cont =
-    renamePinaforeTypeVars sf t $ \t' bij -> cont (MutableReferencePinaforeType t') $ biIsoBi bij
+    renamePinaforeRangeTypeVars sf t $ \t' bij -> cont (MutableReferencePinaforeType t') $ isoBiTypeRange bij
 renamePinaforeTypeVars sf (ConstReferencePinaforeType t) cont =
     renamePinaforeTypeVars sf t $ \t' bij -> cont (ConstReferencePinaforeType t') $ biIsoBi bij
 renamePinaforeTypeVars sf (MutableSetPinaforeType t) cont =
-    renamePinaforeTypeVars sf t $ \t' bij -> cont (MutableSetPinaforeType t') $ biIsoBi bij
+    renamePinaforeRangeTypeVars sf t $ \t' bij -> cont (MutableSetPinaforeType t') $ isoBiTypeRange bij
 renamePinaforeTypeVars sf (ConstSetPinaforeType t) cont =
     renamePinaforeTypeVars sf t $ \t' bij -> cont (ConstSetPinaforeType t') $ biIsoBi bij
 renamePinaforeTypeVars sf (MorphismPinaforeType ta tb) cont =
-    renamePinaforeTypeVars sf ta $ \ta' bija ->
-        renamePinaforeTypeVars sf tb $ \tb' bijb -> cont (MorphismPinaforeType ta' tb') $ biIsoBi' bija . biIsoBi bijb
+    renamePinaforeRangeTypeVars sf ta $ \ta' bija ->
+        renamePinaforeRangeTypeVars sf tb $ \tb' bijb ->
+            cont (MorphismPinaforeType ta' tb') $ isoBiTypeRange' bija . isoBiTypeRange bijb
 renamePinaforeTypeVars sf (InverseMorphismPinaforeType ta tb) cont =
-    renamePinaforeTypeVars sf ta $ \ta' bija ->
-        renamePinaforeTypeVars sf tb $ \tb' bijb ->
-            cont (InverseMorphismPinaforeType ta' tb') $ biIsoBi' bija . biIsoBi bijb
+    renamePinaforeRangeTypeVars sf ta $ \ta' bija ->
+        renamePinaforeRangeTypeVars sf tb $ \tb' bijb ->
+            cont (InverseMorphismPinaforeType ta' tb') $ isoBiTypeRange' bija . isoBiTypeRange bijb
 renamePinaforeTypeVars _ (GroundPinaforeType t) cont = cont (GroundPinaforeType t) id
 renamePinaforeTypeVars sf (VarPinaforeType namewit1) cont =
     renameSVar sf namewit1 $ \namewit2 bij -> cont (VarPinaforeType namewit2) bij
--}
+
 getRangeTypeVars :: PinaforeRangeType baseedit polarity t -> [String]
 getRangeTypeVars (MkTypeRangeWitness tp tq) = getTypeVars tp <> getTypeVars tq
 
@@ -182,22 +205,14 @@ tellBiunification swit u =
             then u
             else mempty
 
-{-
-isPinaforeSameType ::
-       PinaforeType baseedit 'Nothing p -> PinaforeType baseedit 'Nothing q -> BiunifierM baseedit (Bijection p q)
-isPinaforeSameType tp tq = do
-    pq <- isPinaforeSubtype (polarisePinaforeType tp) (polarisePinaforeType tq)
-    qp <- isPinaforeSubtype (polarisePinaforeType tq) (polarisePinaforeType tp)
-    return $ MkBijection pq qp
--}
 isPinaforeRangeSubtype ::
        PinaforeRangeType baseedit 'PositivePolarity p
     -> PinaforeRangeType baseedit 'NegativePolarity q
-    -> BiunifierM baseedit (RangeMap p q)
+    -> BiunifierM baseedit (WithRange (->) p q)
 isPinaforeRangeSubtype (MkTypeRangeWitness tpa tpb) (MkTypeRangeWitness tqa tqb) = do
     bb <- isPinaforeSubtype tpb tqb
     aa <- isPinaforeSubtype tqa tpa
-    return $ MkRangeMap bb aa
+    return $ MkWithRange aa bb
 
 isPinaforeSubtype ::
        PinaforeType baseedit 'PositivePolarity p

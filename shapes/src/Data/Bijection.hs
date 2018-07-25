@@ -41,3 +41,9 @@ packBijection = MkBijection pack unpack
 
 unpackBijection :: IsSequence t => Bijection t [Element t]
 unpackBijection = MkBijection unpack pack
+
+class Category cat => Groupoid (cat :: k -> k -> Type) where
+    invert :: cat a b -> cat b a
+
+instance Groupoid Bijection where
+    invert (MkBijection ab ba) = MkBijection ba ab
