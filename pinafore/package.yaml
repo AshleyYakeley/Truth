@@ -21,11 +21,14 @@ library:
       - parsec
       - truth-core
     exposed-modules:
+      - Language.Expression.Witness
       - Language.Expression.Expression
       - Language.Expression.NameWit
-      - Language.Expression.Bindings
-      - Language.Expression.Sealed
       - Language.Expression.Named
+      - Language.Expression.Sealed
+      - Language.Expression.Renamer
+      - Language.Expression.Unifier
+      - Language.Expression.Bindings
       - Language.Expression.Typed
       - Language.Expression.Unitype
       - Pinafore
@@ -40,6 +43,7 @@ library:
       - Language.Expression.UVar
       - Language.Expression.Dolan.TypeRange
       - Language.Expression.Dolan.Polarity
+      - Language.Expression.Dolan.Variance
       - Pinafore.Number
       - Pinafore.Literal
       - Pinafore.Morphism

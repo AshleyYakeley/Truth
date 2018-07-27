@@ -1,27 +1,34 @@
 module Language.Expression.Typed where
 
 import Language.Expression.Bindings
-import Language.Expression.NameWit
-import Language.Expression.Named
+import Language.Expression.Renamer
 import Language.Expression.Sealed
+import Language.Expression.Unifier
 import Shapes
 
-class Monad (TSMonad ts) => TypeSystem (ts :: Type) where
-    type VarWitness ts :: Type -> Type
-    type ValWitness ts :: Type -> Type
+class ( Monad (TSMonad ts)
+      , Renamer (TypeRenamer ts)
+      , RenamerNegWitness (TypeRenamer ts) ~ NegWitness ts
+      , RenamerPosWitness (TypeRenamer ts) ~ PosWitness ts
+      , Unifier (TypeUnifier ts)
+      , UnifierMonad (TypeUnifier ts) ~ TSMonad ts
+      , UnifierNegWitness (TypeUnifier ts) ~ NegWitness ts
+      , UnifierPosWitness (TypeUnifier ts) ~ PosWitness ts
+      ) => TypeSystem (ts :: Type) where
+    type TypeRenamer ts :: Type -> Type
+    type TypeUnifier ts :: Type -> Type
+    type NegWitness ts :: Type -> Type
+    type PosWitness ts :: Type -> Type
     type TSMonad ts :: Type -> Type
-    typeSystemVarJoiner :: TypeJoiner (TSMonad ts) (VarWitness ts)
-    typeSystemChecker :: TypeChecker (TSMonad ts) (ValWitness ts) (VarWitness ts)
-    typeSystemApplyWitness :: ApplyWitness (TSMonad ts) (ValWitness ts)
-    typeSystemAbstractWitness :: AbstractWitness (TSMonad ts) (VarWitness ts) (ValWitness ts)
-    typeSystemGenerateVariable :: (forall t. VarWitness ts t -> ValWitness ts t -> TSMonad ts r) -> TSMonad ts r
+    typeSystemFunctionPosWitness :: FunctionPosWitness (NegWitness ts) (PosWitness ts)
+    typeSystemFunctionNegWitness :: FunctionNegWitness (NegWitness ts) (PosWitness ts)
 
-type TypedExpression name ts = SealedNamedExpression name (VarWitness ts) (ValWitness ts)
+type TypedExpression name ts = SealedExpression name (NegWitness ts) (PosWitness ts)
 
 evalTypedExpression ::
        forall ts name m. (MonadFail m, Show name)
     => TypedExpression name ts
-    -> m (Any (ValWitness ts))
+    -> m (Any (PosWitness ts))
 evalTypedExpression = evalSealedExpression
 
 applyTypedExpression ::
@@ -29,22 +36,24 @@ applyTypedExpression ::
     => TypedExpression name ts
     -> TypedExpression name ts
     -> TSMonad ts (TypedExpression name ts)
-applyTypedExpression = applySealedExpression (typeSystemApplyWitness @ts)
+applyTypedExpression = applySealedExpression @(TypeRenamer ts) @(TypeUnifier ts) (typeSystemFunctionNegWitness @ts)
 
 abstractTypedExpression ::
        forall ts name. (Eq name, TypeSystem ts)
     => name
     -> TypedExpression name ts
     -> TSMonad ts (TypedExpression name ts)
-abstractTypedExpression = abstractSealedNamedExpression (typeSystemVarJoiner @ts) (typeSystemAbstractWitness @ts)
+abstractTypedExpression =
+    abstractSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) (typeSystemFunctionPosWitness @ts)
 
 varTypedExpression ::
        forall ts name. TypeSystem ts
     => name
     -> TSMonad ts (TypedExpression name ts)
-varTypedExpression name = typeSystemGenerateVariable @ts $ \vwt twt -> return $ varSealedNameExpression name vwt twt
+varTypedExpression name =
+    return $ runRenamer @(TypeRenamer ts) $ renameNewVar $ \vwt twt -> return $ varSealedExpression name vwt twt
 
-constTypedExpression :: forall ts name t. ValWitness ts t -> t -> TypedExpression name ts
+constTypedExpression :: forall ts name t. PosWitness ts t -> t -> TypedExpression name ts
 constTypedExpression = constSealedExpression
 
 letTypedExpression ::
@@ -53,20 +62,23 @@ letTypedExpression ::
     -> TypedExpression name ts
     -> TypedExpression name ts
     -> TSMonad ts (TypedExpression name ts)
-letTypedExpression = letSealedNamedExpression (typeSystemVarJoiner @ts) (typeSystemChecker @ts)
+letTypedExpression = letSealedExpression @(TypeRenamer ts) @(TypeUnifier ts)
 
-type TypedBindings name ts = NamedBindings name (VarWitness ts) (ValWitness ts)
+type TypedBindings name ts = Bindings name (TypeUnifier ts)
 
-singleTypedBinding :: forall ts name. name -> TypedExpression name ts -> TypedBindings name ts
-singleTypedBinding = singleNamedBinding
+singleTypedBinding ::
+       forall ts name. TypeSystem ts
+    => name
+    -> TypedExpression name ts
+    -> TypedBindings name ts
+singleTypedBinding = singleBinding
 
 uncheckedBindingsLetTypedExpression ::
        forall ts name. (Eq name, TypeSystem ts)
     => TypedBindings name ts
     -> TypedExpression name ts
     -> TSMonad ts (TypedExpression name ts)
-uncheckedBindingsLetTypedExpression =
-    uncheckedBindingsLetSealedNamedExpression (typeSystemVarJoiner @ts) (typeSystemChecker @ts)
+uncheckedBindingsLetTypedExpression = bindingsLetSealedExpression @(TypeRenamer ts) @(TypeUnifier ts)
 
 typedBindingsCheckDuplicates ::
        forall ts name m. (Eq name, Show name, TypeSystem ts, MonadFail m)

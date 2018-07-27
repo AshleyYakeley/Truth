@@ -1,22 +1,50 @@
 module Language.Expression.Unitype where
 
-import Language.Expression.NameWit
-import Language.Expression.Sealed
+import Language.Expression.Renamer
 import Language.Expression.Typed
+import Language.Expression.Unifier
 import Shapes
 
 data Unitype (m :: Type -> Type) (val :: Type)
+
+newtype UnitypeRenamer (val :: Type) a =
+    MkUnitypeRenamer (Identity a)
+    deriving (Functor, Applicative, Monad)
+
+instance Namespace (UnitypeRenamer val) where
+    type NamespaceNegWitness (UnitypeRenamer val) = ((:~:) val)
+    type NamespacePosWitness (UnitypeRenamer val) = ((:~:) val)
+    renameNegWitness Refl cont = cont Refl id
+    renamePosWitness Refl cont = cont Refl id
+
+instance Renamer (UnitypeRenamer val) where
+    type RenamerNamespace (UnitypeRenamer val) = UnitypeRenamer val
+    renameNewVar cont = cont Refl Refl
+    namespace = id
+    runRenamer (MkUnitypeRenamer ia) = runIdentity ia
+
+newtype UnitypeUnifier (m :: Type -> Type) (val :: Type) a =
+    MkUnitypeUnifier (Identity a)
+    deriving (Functor, Applicative)
+
+instance Monad m => Unifier (UnitypeUnifier m val) where
+    type UnifierMonad (UnitypeUnifier m val) = m
+    type UnifierNegWitness (UnitypeUnifier m val) = ((:~:) val)
+    type UnifierPosWitness (UnitypeUnifier m val) = ((:~:) val)
+    unifyNegWitnesses Refl Refl cont = cont Refl $ pure (id, id)
+    unifyPosWitnesses Refl Refl cont = cont Refl $ pure (id, id)
+    unifyPosNegWitnesses Refl Refl = return $ pure id
+    solveUnifier Refl (MkUnitypeUnifier ia) cont = cont Refl id $ runIdentity ia
 
 class UnitypeValue val where
     applyValue :: val -> val -> val
     abstractValue :: (val -> val) -> val
 
 instance (Monad m, UnitypeValue val) => TypeSystem (Unitype m val) where
-    type VarWitness (Unitype m val) = ((:~:) val)
-    type ValWitness (Unitype m val) = ((:~:) val)
+    type TypeRenamer (Unitype m val) = UnitypeRenamer val
+    type TypeUnifier (Unitype m val) = UnitypeUnifier m val
+    type NegWitness (Unitype m val) = ((:~:) val)
+    type PosWitness (Unitype m val) = ((:~:) val)
     type TSMonad (Unitype m val) = m
-    typeSystemVarJoiner = MkTypeJoiner Refl $ \Refl Refl -> return $ MkJoiner Refl id id
-    typeSystemChecker = MkTypeChecker $ \Refl Refl -> return id
-    typeSystemApplyWitness Refl Refl cont = cont Refl applyValue
-    typeSystemAbstractWitness Refl Refl cont = cont Refl abstractValue
-    typeSystemGenerateVariable cont = cont Refl Refl
+    typeSystemFunctionPosWitness Refl Refl cont = cont Refl abstractValue
+    typeSystemFunctionNegWitness Refl Refl cont = cont Refl applyValue

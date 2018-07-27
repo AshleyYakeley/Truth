@@ -9,8 +9,27 @@ type BottomType = None
 newtype JoinType a b =
     MkJoinType (Either a b)
 
+join1 :: a -> JoinType a b
+join1 v = MkJoinType $ Left v
+
+join2 :: b -> JoinType a b
+join2 v = MkJoinType $ Right v
+
+joinBimap :: (a1 -> a2) -> (b1 -> b2) -> JoinType a1 b1 -> JoinType a2 b2
+joinBimap f _ (MkJoinType (Left v)) = MkJoinType $ Left $ f v
+joinBimap _ f (MkJoinType (Right v)) = MkJoinType $ Right $ f v
+
 newtype MeetType a b =
     MkMeetType (a, b)
+
+meet1 :: MeetType a b -> a
+meet1 (MkMeetType (v, _)) = v
+
+meet2 :: MeetType a b -> b
+meet2 (MkMeetType (_, v)) = v
+
+meetBimap :: (a1 -> a2) -> (b1 -> b2) -> MeetType a1 b1 -> MeetType a2 b2
+meetBimap aa bb (MkMeetType (a, b)) = MkMeetType (aa a, bb b)
 
 data TypePolarity
     = PositivePolarity
@@ -23,6 +42,7 @@ class IsTypePolarity (polarity :: TypePolarity) where
     showLimitType :: Text
     type JoinMeetType polarity :: Type -> Type -> Type
     showJoinMeetType :: Text
+    type ConvertType polarity (a :: Type) (b :: Type) :: Type
     jmLeftIdentity :: Bijection (JoinMeetType polarity (LimitType polarity) a) a
     jmRightIdentity :: Bijection (JoinMeetType polarity a (LimitType polarity)) a
     jmMap :: (a1 -> a2) -> (b1 -> b2) -> JoinMeetType polarity a1 b1 -> JoinMeetType polarity a2 b2
@@ -42,6 +62,7 @@ instance IsTypePolarity 'PositivePolarity where
     showLimitType = "Bottom"
     type JoinMeetType 'PositivePolarity = JoinType
     showJoinMeetType = "|"
+    type ConvertType 'PositivePolarity a b = a -> b
     jmLeftIdentity = let
         unjoin :: JoinType None a -> a
         unjoin (MkJoinType (Left n)) = never n
@@ -62,6 +83,7 @@ instance IsTypePolarity 'NegativePolarity where
     showLimitType = "Top"
     type JoinMeetType 'NegativePolarity = MeetType
     showJoinMeetType = "&"
+    type ConvertType 'NegativePolarity a b = b -> a
     jmLeftIdentity = MkBijection (\(MkMeetType ((), a)) -> a) $ \a -> MkMeetType ((), a)
     jmRightIdentity = MkBijection (\(MkMeetType (a, ())) -> a) $ \a -> MkMeetType (a, ())
     jmMap a1a2 b1b2 (MkMeetType (a, b)) = MkMeetType (a1a2 a, b1b2 b)

@@ -235,7 +235,7 @@ nulljoin lx ly = let
 type BindDoc baseedit = (Maybe (QBindings baseedit), DefDoc)
 
 mkDefEntry ::
-       forall baseedit t. ToQValue baseedit t
+       forall baseedit t. (HasPinaforeEntityEdit baseedit, ToQValue baseedit t)
     => Name
     -> Text
     -> t

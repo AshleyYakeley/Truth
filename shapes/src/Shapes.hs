@@ -4,6 +4,8 @@ module Shapes
 
 import Shapes.Import as I
 
+import Control.Category.Dual as I
+
 -- shapes
 import Control.LifeCycle as I
 import Control.Monad.Compose as I
@@ -17,6 +19,7 @@ import Data.HasNewValue as I
 import Data.Injection as I
 import Data.IsoVariant as I
 import Data.KeyContainer as I
+import Data.KindMorphism as I
 import Data.Lens as I
 import Data.MonadOne as I
 import Data.MonoApplicative as I

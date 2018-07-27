@@ -2,10 +2,13 @@ module Language.Expression.UVar
     ( UVar
     , unsafeUVarBijection
     , renameUVar
+    , varRenamerGenerateSymbol
+    , varRenamerGenerateSuggestedSymbol
     ) where
 
 import GHC.Exts (Any)
 import GHC.TypeLits
+import Language.Expression.Renamer
 import Shapes
 import Unsafe.Coerce
 
@@ -25,10 +28,22 @@ unsafeUVarBijection :: Bijection a (UVar name)
 unsafeUVarBijection = MkBijection unsafeToUVar unsafeFromUVar
 
 renameUVar ::
-       (String -> String)
+       Monad m
+    => (String -> m String)
     -> SymbolWitness name1
-    -> (forall (name2 :: Symbol). SymbolWitness name2 -> Bijection (UVar name1) (UVar name2) -> r)
-    -> r
-renameUVar sf namewit1 cont =
-    toSymbolWitness (sf $ fromSymbolWitness namewit1) $ \namewit2 ->
-        cont namewit2 (MkBijection unsafeRenameAnybox unsafeRenameAnybox)
+    -> (forall (name2 :: Symbol). SymbolWitness name2 -> Bijection (UVar name1) (UVar name2) -> m r)
+    -> m r
+renameUVar sf namewit1 cont = do
+    newname <- sf $ fromSymbolWitness namewit1
+    toSymbolWitness newname $ \namewit2 -> cont namewit2 (MkBijection unsafeRenameAnybox unsafeRenameAnybox)
+
+varRenamerGenerateSymbol :: (forall (name :: Symbol). SymbolWitness name -> VarRenamer ts a) -> VarRenamer ts a
+varRenamerGenerateSymbol cont = do
+    s <- varRenamerGenerate
+    toSymbolWitness s cont
+
+varRenamerGenerateSuggestedSymbol ::
+       String -> (forall (name :: Symbol). SymbolWitness name -> VarRenamer ts a) -> VarRenamer ts a
+varRenamerGenerateSuggestedSymbol name cont = do
+    name' <- varRenamerGenerateSuggested name
+    toSymbolWitness name' cont

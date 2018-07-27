@@ -43,7 +43,7 @@ qAbstractsExpr (n:nn) = qAbstractExpr n . qAbstractsExpr nn
 
 type QBindings baseedit = TypedBindings Name (TS baseedit)
 
-qBindVal :: ToQValue baseedit t => Name -> t -> QBindings baseedit
+qBindVal :: (HasPinaforeEntityEdit baseedit, ToQValue baseedit t) => Name -> t -> QBindings baseedit
 qBindVal name val = qBindExpr name $ qConstExpr val
 
 qApplyExpr ::
@@ -60,7 +60,11 @@ qApplyAllExpr e (a:aa) = qApplyAllExpr (qApplyExpr e a) aa
 qSequenceExpr :: [QExpr baseedit] -> QExpr baseedit
 qSequenceExpr = osequenceA $ MkAny QTList
 
-qBindExpr :: forall baseedit. Name -> QExpr baseedit -> QBindings baseedit
+qBindExpr ::
+       forall baseedit. HasPinaforeEntityEdit baseedit
+    => Name
+    -> QExpr baseedit
+    -> QBindings baseedit
 qBindExpr = singleTypedBinding @(TS baseedit)
 
 qLetExpr ::

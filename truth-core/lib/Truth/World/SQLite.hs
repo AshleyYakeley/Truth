@@ -233,15 +233,16 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
     sqliteEditQuery :: SQLiteEdit tablesel -> QueryString
     sqliteEditQuery (DatabaseInsert (tableSchema -> (SQLite.MkTableSchema {..}, Dict)) (MkTupleInsertClause ic)) = let
         tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
-        in "INSERT OR REPLACE INTO " <> fromString tableName <> " VALUES " <>
-           intercalate' "," (fmap (rowSchemaString tableColumnRefs) ic)
+        in "INSERT OR REPLACE INTO " <>
+           fromString tableName <> " VALUES " <> intercalate' "," (fmap (rowSchemaString tableColumnRefs) ic)
     sqliteEditQuery (DatabaseDelete (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc) = let
         tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
         in "DELETE FROM " <> fromString tableName <> wherePart tableColumnRefs wc
     sqliteEditQuery (DatabaseUpdate (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc (MkTupleUpdateClause uis)) = let
         tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
-        in "UPDATE " <> fromString tableName <> " SET " <> intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <>
-           wherePart tableColumnRefs wc
+        in "UPDATE " <>
+           fromString tableName <>
+           " SET " <> intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <> wherePart tableColumnRefs wc
     objRead :: MutableRead (ReaderT Connection IO) (SQLiteRead tablesel)
     objRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
         case sqliteReadQuery r of
