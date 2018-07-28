@@ -1,82 +1,31 @@
 module Pinafore.Language.Expression where
 
-import Data.List (head, nub, tail)
+import Language.Expression.Expression
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Value
 import Pinafore.PredicateMorphism
 import Shapes
 
-data QExpr baseedit a
-    = ClosedQExpr a
-    | OpenQExpr Name
-                (QExpr baseedit (QValue baseedit -> a))
+type QExpr baseedit = Expression Name (QValue baseedit)
 
-instance Functor (QExpr baseedit) where
-    fmap ab (ClosedQExpr a) = ClosedQExpr $ ab a
-    fmap ab (OpenQExpr name expr) = OpenQExpr name $ fmap (\va v -> ab $ va v) expr
+type QValueExpr baseedit = ValueExpression Name (QValue baseedit)
 
-instance Applicative (QExpr baseedit) where
-    pure = ClosedQExpr
-    (ClosedQExpr ab) <*> expr = fmap ab expr
-    (OpenQExpr name exprab) <*> expr = OpenQExpr name $ (\vab a v -> vab v a) <$> exprab <*> expr
+qAbstractExpr :: Name -> QValueExpr baseedit -> QValueExpr baseedit
+qAbstractExpr name expr = fmap qfunction $ abstractExpression name expr
 
-qabstract :: Name -> QExpr baseedit a -> QExpr baseedit (QValue baseedit -> a)
-qabstract _name (ClosedQExpr a) = ClosedQExpr $ \_ -> a
-qabstract name (OpenQExpr name' expr)
-    | name == name' = fmap (\vva v -> vva v v) $ qabstract name expr
-qabstract name (OpenQExpr name' expr) = OpenQExpr name' $ fmap (\vva v1 v2 -> vva v2 v1) $ qabstract name expr
+qAbstractsExpr :: [Name] -> QValueExpr baseedit -> QValueExpr baseedit
+qAbstractsExpr [] = id
+qAbstractsExpr (n:nn) = qAbstractExpr n . qAbstractsExpr nn
 
-qeval :: MonadFail m => QExpr baseedit a -> m a
-qeval (ClosedQExpr a) = return a
-qeval (OpenQExpr name _) = fail $ "undefined: " ++ show name
+type QBindings baseedit = Bindings Name (QValue baseedit)
 
-type QValueExpr baseedit = QExpr baseedit (QValue baseedit)
+qBindVal :: ToQValue baseedit t => Name -> t -> QBindings baseedit
+qBindVal name val = bindExpression name $ pure $ toQValue val
 
-exprAbstract :: Name -> QValueExpr baseedit -> QValueExpr baseedit
-exprAbstract name expr = fmap qfunction $ qabstract name expr
+qApplyExpr :: HasPinaforeEntityEdit baseedit => QValueExpr baseedit -> QValueExpr baseedit -> QValueExpr baseedit
+qApplyExpr = liftA2 qapply
 
-exprAbstracts :: [Name] -> QValueExpr baseedit -> QValueExpr baseedit
-exprAbstracts [] = id
-exprAbstracts (n:nn) = exprAbstract n . exprAbstracts nn
-
-qvar :: Name -> QValueExpr baseedit
-qvar name = OpenQExpr name $ ClosedQExpr id
-
-qlet :: Name -> QValueExpr baseedit -> QExpr baseedit a -> QExpr baseedit a
-qlet name val body = qabstract name body <*> val
-
-newtype QBindings baseedit =
-    MkQBindings [(Name, QValueExpr baseedit)]
-    deriving (Semigroup, Monoid)
-
-duplicates :: Eq a => [a] -> [a]
-duplicates [] = []
-duplicates (a:aa)
-    | elem a aa = a : duplicates aa
-duplicates (_:aa) = duplicates aa
-
-getDuplicates :: QBindings baseedit -> [Name]
-getDuplicates (MkQBindings bb) = nub $ duplicates $ fmap fst bb
-
-qbind :: ToQValue baseedit t => Name -> t -> QBindings baseedit
-qbind name val = MkQBindings [(name, pure $ toQValue val)]
-
-qlets :: forall baseedit a. QBindings baseedit -> QExpr baseedit a -> QExpr baseedit a
-qlets (MkQBindings bb) body = let
-    appCons vva vv = vva (head vv) (tail vv)
-    abstractList :: [Name] -> QExpr baseedit t -> QExpr baseedit ([QValue baseedit] -> t)
-    abstractList [] expr = fmap (\a _ -> a) expr
-    abstractList (n:nn) expr = fmap appCons $ qabstract n $ abstractList nn expr
-    abstractNames :: QExpr baseedit t -> QExpr baseedit ([QValue baseedit] -> t)
-    abstractNames = abstractList (fmap fst bb)
-    exprs :: QExpr baseedit [QValue baseedit]
-    exprs = fmap fix $ abstractNames $ for bb $ \(_, b) -> b
-    in abstractNames body <*> exprs
-
-exprApply :: HasPinaforeEntityEdit baseedit => QValueExpr baseedit -> QValueExpr baseedit -> QValueExpr baseedit
-exprApply = liftA2 qapply
-
-exprApplyAll :: HasPinaforeEntityEdit baseedit => QValueExpr baseedit -> [QValueExpr baseedit] -> QValueExpr baseedit
-exprApplyAll e [] = e
-exprApplyAll e (a:aa) = exprApplyAll (exprApply e a) aa
+qApplyAllExpr :: HasPinaforeEntityEdit baseedit => QValueExpr baseedit -> [QValueExpr baseedit] -> QValueExpr baseedit
+qApplyAllExpr e [] = e
+qApplyAllExpr e (a:aa) = qApplyAllExpr (qApplyExpr e a) aa

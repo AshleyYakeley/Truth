@@ -3,6 +3,7 @@ module Pinafore.Language.Read
     , parseInteractiveCommand
     ) where
 
+import Language.Expression.Expression
 import Pinafore.Language.Convert
 import Pinafore.Language.Expression
 import Pinafore.Language.If
@@ -25,13 +26,13 @@ readThis tok =
 readPattern :: Parser Name
 readPattern = readThis TokName
 
-readBinding :: HasPinaforeEntityEdit baseedit => Parser (Name, QValueExpr baseedit)
+readBinding :: HasPinaforeEntityEdit baseedit => Parser (QBindings baseedit)
 readBinding = do
     name <- readThis TokName
     args <- many readPattern
     readThis TokAssign
     val <- readExpression
-    return (name, exprAbstracts args val)
+    return $ bindExpression name $ qAbstractsExpr args val
 
 readBindings :: HasPinaforeEntityEdit baseedit => Parser (QBindings baseedit)
 readBindings =
@@ -40,18 +41,15 @@ readBindings =
          mbb <-
              optional $ do
                  readThis TokSemicolon
-                 MkQBindings bb <- readBindings
-                 return bb
-         return $ MkQBindings $ b : (fromMaybe [] mbb)) <|>
-    (do return $ MkQBindings [])
+                 readBindings
+         return $ b <> fromMaybe mempty mbb) <|>
+    (do return mempty)
 
 readLetBindings :: HasPinaforeEntityEdit baseedit => Parser (QValueExpr baseedit -> QValueExpr baseedit)
 readLetBindings = do
     readThis TokLet
     bindings <- readBindings
-    case getDuplicates bindings of
-        [] -> return $ qlets bindings
-        l -> parserFail $ "duplicate bindings: " ++ intercalate ", " (fmap show l)
+    bindingsLetExpression bindings
 
 readExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -112,7 +110,7 @@ leftApply ::
     -> [(QValueExpr baseedit, QValueExpr baseedit)]
     -> QValueExpr baseedit
 leftApply e1 [] = e1
-leftApply e1 ((f, e2):rest) = leftApply (exprApplyAll f [e1, e2]) rest
+leftApply e1 ((f, e2):rest) = leftApply (qApplyAllExpr f [e1, e2]) rest
 
 rightApply ::
        HasPinaforeEntityEdit baseedit
@@ -120,7 +118,7 @@ rightApply ::
     -> [(QValueExpr baseedit, QValueExpr baseedit)]
     -> QValueExpr baseedit
 rightApply e1 [] = e1
-rightApply e1 ((f, e2):rest) = exprApplyAll f [e1, rightApply e2 rest]
+rightApply e1 ((f, e2):rest) = qApplyAllExpr f [e1, rightApply e2 rest]
 
 readInfixedExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -136,13 +134,13 @@ readInfixedExpression prec = do
             return (assoc, name, e2)
     case rest of
         [] -> return e1
-        [(AssocNone, name, e2)] -> return $ exprApplyAll (qvar name) [e1, e2]
+        [(AssocNone, name, e2)] -> return $ qApplyAllExpr (varExpression name) [e1, e2]
         _
             | all (\(assoc, _, _) -> assoc == AssocLeft) rest ->
-                return $ leftApply e1 $ fmap (\(_, name, e2) -> (qvar name, e2)) rest
+                return $ leftApply e1 $ fmap (\(_, name, e2) -> (varExpression name, e2)) rest
         _
             | all (\(assoc, _, _) -> assoc == AssocRight) rest ->
-                return $ rightApply e1 $ fmap (\(_, name, e2) -> (qvar name, e2)) rest
+                return $ rightApply e1 $ fmap (\(_, name, e2) -> (varExpression name, e2)) rest
         _ -> parserFail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(_, name, _) -> show name) rest)
 
 readExpression1 ::
@@ -154,7 +152,7 @@ readExpression1 =
          args <- many readPattern
          readThis TokMap
          val <- readExpression
-         return $ exprAbstracts args val) <|>
+         return $ qAbstractsExpr args val) <|>
     (do
          bmap <- readLetBindings
          readThis TokIn
@@ -167,14 +165,14 @@ readExpression1 =
          ethen <- readExpression
          readThis TokElse
          eelse <- readExpression
-         return $ exprApplyAll (pure $ toQValue $ qifthenelse @baseedit) [etest, ethen, eelse]) <|>
+         return $ qApplyAllExpr (pure $ toQValue $ qifthenelse @baseedit) [etest, ethen, eelse]) <|>
     readExpression2
 
 readExpression2 :: HasPinaforeEntityEdit baseedit => Parser (QValueExpr baseedit)
 readExpression2 = do
     e1 <- readExpression3
     args <- many readExpression3
-    return $ exprApplyAll e1 args
+    return $ qApplyAllExpr e1 args
 
 readExpression3 ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -185,7 +183,7 @@ readExpression3 =
          return $ pure $ toQValue b) <|>
     (do
          name <- readThis TokName
-         return $ qvar name) <|>
+         return $ varExpression name) <|>
     (do
          n <- readThis TokNumber
          return $ pure $ toQValue n) <|>

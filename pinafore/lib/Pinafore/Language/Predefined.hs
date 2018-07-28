@@ -240,7 +240,7 @@ mkDefEntry ::
     -> Text
     -> t
     -> DocTreeEntry (BindDoc baseedit)
-mkDefEntry name desc val = EntryDocTreeEntry (Just (qbind name val), mkDefDoc name desc val)
+mkDefEntry name desc val = EntryDocTreeEntry (Just (qBindVal name val), mkDefDoc name desc val)
 
 predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)

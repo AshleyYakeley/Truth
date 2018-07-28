@@ -5,6 +5,7 @@ module Test.Language
     ) where
 
 import Data.Ratio
+import Language.Expression.Expression
 import Pinafore
 import Pinafore.Language.Expression
 import Prelude (read)
@@ -119,7 +120,7 @@ instance Eq (QValue baseedit) where
     _ == _ = error "QValue: not comparable"
 
 testQueryValue :: (Eq a, Show a) => String -> QExpr baseedit a -> Maybe a -> TestTree
-testQueryValue name expr expected = testCase name $ assertEqual "result" expected $ qeval expr
+testQueryValue name expr expected = testCase name $ assertEqual "result" expected $ evalExpression expr
 
 qint :: Int -> QValue baseedit
 qint = toQValue
@@ -129,16 +130,18 @@ testQueryValues =
     testGroup
         "query values"
         [ testQueryValue "pure A" (pure "A") (Just "A" :: Maybe String)
-        , testQueryValue "var a" (qvar "a") Nothing
+        , testQueryValue "var a" (varExpression "a") Nothing
         , testQueryValue
               "let a=1;b=2 in (a,b,a,b)"
-              (qlet "a" (pure $ qint 1) $
-               qlet "b" (pure $ qint 2) $ (,,,) <$> (qvar "a") <*> (qvar "b") <*> (qvar "a") <*> (qvar "b")) $
+              (letExpression "a" (pure $ qint 1) $
+               letExpression "b" (pure $ qint 2) $
+               (,,,) <$> (varExpression "a") <*> (varExpression "b") <*> (varExpression "a") <*> (varExpression "b")) $
           Just (qint 1, qint 2, qint 1, qint 2)
         , testQueryValue
               "let a=1;b=2 in (b,a,b,a)"
-              (qlet "a" (pure $ qint 1) $
-               qlet "b" (pure $ qint 2) $ (,,,) <$> (qvar "b") <*> (qvar "a") <*> (qvar "b") <*> (qvar "a")) $
+              (letExpression "a" (pure $ qint 1) $
+               letExpression "b" (pure $ qint 2) $
+               (,,,) <$> (varExpression "b") <*> (varExpression "a") <*> (varExpression "b") <*> (varExpression "a")) $
           Just (qint 2, qint 1, qint 2, qint 1)
         ]
 

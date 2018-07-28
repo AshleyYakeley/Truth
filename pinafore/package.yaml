@@ -21,6 +21,7 @@ library:
       - parsec
       - truth-core
     exposed-modules:
+      - Language.Expression.Expression
       - Pinafore
       - Pinafore.Main
       - Pinafore.Language.Value
