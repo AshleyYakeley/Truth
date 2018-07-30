@@ -16,7 +16,7 @@ module Pinafore.Language
     ) where
 
 import Control.Exception
-import Language.Expression.Expression
+import Language.Expression.Unitype
 import Pinafore.File
 import Pinafore.Language.Convert
 import Pinafore.Language.Expression

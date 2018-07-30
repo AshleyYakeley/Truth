@@ -3,7 +3,7 @@ module Pinafore.Language.Read
     , parseInteractiveCommand
     ) where
 
-import Language.Expression.Expression
+import Language.Expression.Unitype
 import Pinafore.Language.Convert
 import Pinafore.Language.Expression
 import Pinafore.Language.If
@@ -134,13 +134,13 @@ readInfixedExpression prec = do
             return (assoc, name, e2)
     case rest of
         [] -> return e1
-        [(AssocNone, name, e2)] -> return $ qApplyAllExpr (varExpression name) [e1, e2]
+        [(AssocNone, name, e2)] -> return $ qApplyAllExpr (varUniNamedExpression name) [e1, e2]
         _
             | all (\(assoc, _, _) -> assoc == AssocLeft) rest ->
-                return $ leftApply e1 $ fmap (\(_, name, e2) -> (varExpression name, e2)) rest
+                return $ leftApply e1 $ fmap (\(_, name, e2) -> (varUniNamedExpression name, e2)) rest
         _
             | all (\(assoc, _, _) -> assoc == AssocRight) rest ->
-                return $ rightApply e1 $ fmap (\(_, name, e2) -> (varExpression name, e2)) rest
+                return $ rightApply e1 $ fmap (\(_, name, e2) -> (varUniNamedExpression name, e2)) rest
         _ -> parserFail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(_, name, _) -> show name) rest)
 
 readExpression1 ::
@@ -183,7 +183,7 @@ readExpression3 =
          return $ pure $ toQValue b) <|>
     (do
          name <- readThis TokName
-         return $ varExpression name) <|>
+         return $ varUniNamedExpression name) <|>
     (do
          n <- readThis TokNumber
          return $ pure $ toQValue n) <|>

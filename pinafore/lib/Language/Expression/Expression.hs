@@ -1,87 +1,38 @@
-module Language.Expression.Expression
-    ( Expression
-    , ValueExpression
-    , evalExpression
-    , abstractExpression
-    , varExpression
-    , Bindings
-    , bindExpression
-    , letExpression
-    , bindingsLetExpression
-    , uncheckedBindingsLetExpression
-    ) where
+module Language.Expression.Expression where
 
-import Data.List (head, nub, tail)
 import Shapes
 
-data Expression name val a
+data Expression w a
     = ClosedExpression a
-    | OpenExpression name
-                     (Expression name val (val -> a))
+    | forall t. OpenExpression (w t)
+                               (Expression w (t -> a))
 
-instance Functor (Expression name val) where
+instance Functor (Expression w) where
     fmap ab (ClosedExpression a) = ClosedExpression $ ab a
     fmap ab (OpenExpression name expr) = OpenExpression name $ fmap (\va v -> ab $ va v) expr
 
-instance Applicative (Expression name val) where
+instance Applicative (Expression w) where
     pure = ClosedExpression
     (ClosedExpression ab) <*> expr = fmap ab expr
     (OpenExpression name exprab) <*> expr = OpenExpression name $ (\vab a v -> vab v a) <$> exprab <*> expr
 
-abstractExpression :: Eq name => name -> Expression name val a -> Expression name val (val -> a)
-abstractExpression _name (ClosedExpression a) = ClosedExpression $ \_ -> a
-abstractExpression name (OpenExpression name' expr)
-    | name == name' = fmap (\vva v -> vva v v) $ abstractExpression name expr
-abstractExpression name (OpenExpression name' expr) =
-    OpenExpression name' $ fmap (\vva v1 v2 -> vva v2 v1) $ abstractExpression name expr
+expressionFreeWitnesses :: (forall t. w t -> r) -> Expression w a -> [r]
+expressionFreeWitnesses _wr (ClosedExpression _) = []
+expressionFreeWitnesses wr (OpenExpression wt expr) = (wr wt) : expressionFreeWitnesses wr expr
 
-evalExpression :: (MonadFail m, Show name) => Expression name val a -> m a
+evalExpression :: (MonadFail m, AllWitnessConstraint Show w) => Expression w a -> m a
 evalExpression (ClosedExpression a) = return a
-evalExpression (OpenExpression name _) = fail $ "undefined: " ++ show name
+evalExpression expr = fail $ "undefined: " <> intercalate ", " (expressionFreeWitnesses showAllWitness expr)
 
-type ValueExpression name val = Expression name val val
+abstractExpression :: (forall t'. w t' -> Maybe (t -> t')) -> Expression w a -> Expression w (t -> a)
+abstractExpression _match (ClosedExpression a) = ClosedExpression $ \_ -> a
+abstractExpression match (OpenExpression wt expr)
+    | Just ff <- match wt = fmap (\vva v -> vva v (ff v)) $ abstractExpression match expr
+abstractExpression match (OpenExpression nw expr) =
+    OpenExpression nw $ fmap (\vva v1 v2 -> vva v2 v1) $ abstractExpression match expr
 
-varExpression :: name -> ValueExpression name val
-varExpression name = OpenExpression name $ ClosedExpression id
+varExpression :: w t -> Expression w t
+varExpression wt = OpenExpression wt $ ClosedExpression id
 
-letExpression :: Eq name => name -> ValueExpression name val -> Expression name val a -> Expression name val a
-letExpression name val body = abstractExpression name body <*> val
-
-newtype Bindings name val =
-    MkBindings [(name, ValueExpression name val)]
-    deriving (Semigroup, Monoid)
-
-bindExpression :: name -> ValueExpression name val -> Bindings name val
-bindExpression name vexpr = MkBindings $ pure (name, vexpr)
-
-duplicates :: Eq a => [a] -> [a]
-duplicates [] = []
-duplicates (a:aa)
-    | elem a aa = a : duplicates aa
-duplicates (_:aa) = duplicates aa
-
-bindingsDuplicates :: Eq name => Bindings name val -> [name]
-bindingsDuplicates (MkBindings bb) = nub $ duplicates $ fmap fst bb
-
-uncheckedBindingsLetExpression ::
-       forall name val a. Eq name
-    => Bindings name val
-    -> Expression name val a
-    -> Expression name val a
-uncheckedBindingsLetExpression (MkBindings bb) body = let
-    appCons vva vv = vva (head vv) (tail vv)
-    abstractList :: [name] -> Expression name val t -> Expression name val ([val] -> t)
-    abstractList [] expr = fmap (\a _ -> a) expr
-    abstractList (n:nn) expr = fmap appCons $ abstractExpression n $ abstractList nn expr
-    abstractNames :: Expression name val t -> Expression name val ([val] -> t)
-    abstractNames = abstractList (fmap fst bb)
-    exprs :: Expression name val [val]
-    exprs = fmap fix $ abstractNames $ for bb $ \(_, b) -> b
-    in abstractNames body <*> exprs
-
-bindingsLetExpression ::
-       (MonadFail m, Eq name, Show name) => Bindings name val -> m (Expression name val a -> Expression name val a)
-bindingsLetExpression bindings =
-    case bindingsDuplicates bindings of
-        [] -> return $ uncheckedBindingsLetExpression bindings
-        l -> fail $ "duplicate bindings: " ++ intercalate ", " (fmap show l)
+letExpression :: (forall t'. w t' -> Maybe (t -> t')) -> Expression w t -> Expression w a -> Expression w a
+letExpression match val body = abstractExpression match body <*> val

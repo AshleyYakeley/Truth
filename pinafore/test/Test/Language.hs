@@ -5,7 +5,7 @@ module Test.Language
     ) where
 
 import Data.Ratio
-import Language.Expression.Expression
+import Language.Expression.Unitype
 import Pinafore
 import Pinafore.Language.Expression
 import Prelude (read)
@@ -130,18 +130,20 @@ testQueryValues =
     testGroup
         "query values"
         [ testQueryValue "pure A" (pure "A") (Just "A" :: Maybe String)
-        , testQueryValue "var a" (varExpression "a") Nothing
+        , testQueryValue "var a" (varUniNamedExpression "a") Nothing
         , testQueryValue
               "let a=1;b=2 in (a,b,a,b)"
-              (letExpression "a" (pure $ qint 1) $
-               letExpression "b" (pure $ qint 2) $
-               (,,,) <$> (varExpression "a") <*> (varExpression "b") <*> (varExpression "a") <*> (varExpression "b")) $
+              (letUniNamedExpression "a" (pure $ qint 1) $
+               letUniNamedExpression "b" (pure $ qint 2) $
+               (,,,) <$> (varUniNamedExpression "a") <*> (varUniNamedExpression "b") <*> (varUniNamedExpression "a") <*>
+               (varUniNamedExpression "b")) $
           Just (qint 1, qint 2, qint 1, qint 2)
         , testQueryValue
               "let a=1;b=2 in (b,a,b,a)"
-              (letExpression "a" (pure $ qint 1) $
-               letExpression "b" (pure $ qint 2) $
-               (,,,) <$> (varExpression "b") <*> (varExpression "a") <*> (varExpression "b") <*> (varExpression "a")) $
+              (letUniNamedExpression "a" (pure $ qint 1) $
+               letUniNamedExpression "b" (pure $ qint 2) $
+               (,,,) <$> (varUniNamedExpression "b") <*> (varUniNamedExpression "a") <*> (varUniNamedExpression "b") <*>
+               (varUniNamedExpression "a")) $
           Just (qint 2, qint 1, qint 2, qint 1)
         ]
 

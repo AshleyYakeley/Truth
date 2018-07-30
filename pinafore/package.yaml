@@ -22,6 +22,9 @@ library:
       - truth-core
     exposed-modules:
       - Language.Expression.Expression
+      - Language.Expression.Sealed
+      - Language.Expression.Named
+      - Language.Expression.Unitype
       - Pinafore
       - Pinafore.Main
       - Pinafore.Language.Value

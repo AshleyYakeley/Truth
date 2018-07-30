@@ -1,18 +1,18 @@
 module Pinafore.Language.Expression where
 
-import Language.Expression.Expression
+import Language.Expression.Unitype
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Value
 import Pinafore.PredicateMorphism
 import Shapes
 
-type QExpr baseedit = Expression Name (QValue baseedit)
+type QExpr baseedit = UniNamedExpression Name (QValue baseedit)
 
 type QValueExpr baseedit = ValueExpression Name (QValue baseedit)
 
 qAbstractExpr :: Name -> QValueExpr baseedit -> QValueExpr baseedit
-qAbstractExpr name expr = fmap qfunction $ abstractExpression name expr
+qAbstractExpr name expr = fmap qfunction $ abstractUniNamedExpression name expr
 
 qAbstractsExpr :: [Name] -> QValueExpr baseedit -> QValueExpr baseedit
 qAbstractsExpr [] = id
