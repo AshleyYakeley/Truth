@@ -4,7 +4,7 @@ if [ -z "${BINPATH}" ]; then
 fi
 docker build -t local-build docker
 bin/hindent-all
-stack install --test
+stack install --test --haddock
 install -m 755 --strip "$BINPATH/pinafore" "${XDG_DATA_HOME:-$HOME/.local/share}/../bin/"
 $BINPATH/pinafore --doc > mkdocs/docs/predefined.md
 stack exec --cwd mkdocs -- mkdocs build
