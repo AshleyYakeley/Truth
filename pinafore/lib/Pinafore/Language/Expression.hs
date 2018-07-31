@@ -7,18 +7,18 @@ import Pinafore.Language.Value
 import Pinafore.PredicateMorphism
 import Shapes
 
-type QExpression baseedit = SealedUnitypeExpression Name (QValue baseedit)
+type QExpr baseedit = SealedUnitypeExpression Name (QValue baseedit)
 
-qConstExpr :: ToQValue baseedit a => a -> QExpression baseedit
+qConstExpr :: ToQValue baseedit a => a -> QExpr baseedit
 qConstExpr a = opoint $ toQValue a
 
-qVarExpr :: Name -> QExpression baseedit
+qVarExpr :: Name -> QExpr baseedit
 qVarExpr = varSealedUnitypeExpression
 
-qAbstractExpr :: Name -> QExpression baseedit -> QExpression baseedit
+qAbstractExpr :: Name -> QExpr baseedit -> QExpr baseedit
 qAbstractExpr = abstractSealedUnitypeExpression qfunction
 
-qAbstractsExpr :: [Name] -> QExpression baseedit -> QExpression baseedit
+qAbstractsExpr :: [Name] -> QExpr baseedit -> QExpr baseedit
 qAbstractsExpr [] = id
 qAbstractsExpr (n:nn) = qAbstractExpr n . qAbstractsExpr nn
 
@@ -27,13 +27,27 @@ type QBindings baseedit = UnitypeBindings Name (QValue baseedit)
 qBindVal :: ToQValue baseedit t => Name -> t -> QBindings baseedit
 qBindVal name val = bindExpression name $ opoint $ toQValue val
 
-qApplyExpr :: HasPinaforeEntityEdit baseedit => QExpression baseedit -> QExpression baseedit -> QExpression baseedit
+qApplyExpr :: HasPinaforeEntityEdit baseedit => QExpr baseedit -> QExpr baseedit -> QExpr baseedit
 qApplyExpr = oliftA2 qapply
 
-qApplyAllExpr ::
-       HasPinaforeEntityEdit baseedit => QExpression baseedit -> [QExpression baseedit] -> QExpression baseedit
+qApplyAllExpr :: HasPinaforeEntityEdit baseedit => QExpr baseedit -> [QExpr baseedit] -> QExpr baseedit
 qApplyAllExpr e [] = e
 qApplyAllExpr e (a:aa) = qApplyAllExpr (qApplyExpr e a) aa
 
-qSequenceExpr :: [QExpression baseedit] -> QExpression baseedit
+qSequenceExpr :: [QExpr baseedit] -> QExpr baseedit
 qSequenceExpr = osequenceA $ MkAny QTList
+
+qBindExpr :: Name -> QExpr baseedit -> QBindings baseedit
+qBindExpr = bindExpression
+
+qLetExpr :: Name -> QExpr baseedit -> QExpr baseedit -> QExpr baseedit
+qLetExpr = letSealedUnitypeExpression
+
+qBindingsLetExpr :: MonadFail m => QBindings baseedit -> m (QExpr baseedit -> QExpr baseedit)
+qBindingsLetExpr = bindingsLetExpression
+
+qUncheckedBindingsLetExpr :: QBindings baseedit -> QExpr baseedit -> QExpr baseedit
+qUncheckedBindingsLetExpr = uncheckedBindingsLetExpression
+
+qEvalExpr :: MonadFail m => QExpr baseedit -> m (QValue baseedit)
+qEvalExpr = evalSealedUnitypeExpression

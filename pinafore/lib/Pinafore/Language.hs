@@ -16,7 +16,6 @@ module Pinafore.Language
     ) where
 
 import Control.Exception
-import Language.Expression.Unitype
 import Pinafore.File
 import Pinafore.Language.Convert
 import Pinafore.Language.Expression
@@ -35,12 +34,12 @@ parseValue ::
     -> Result Text t
 parseValue name text = do
     expr <- parseExpression @baseedit name text
-    val <- evalSealedUnitypeExpression $ uncheckedBindingsLetExpression predefinedBindings expr
+    val <- qEvalExpr $ qUncheckedBindingsLetExpr predefinedBindings expr
     fromQValue val
 
 interactLoop ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => StateT (QExpression baseedit -> IO ()) IO ()
+    => StateT (QExpr baseedit -> IO ()) IO ()
 interactLoop = do
     liftIO $ putStr "pinafore> "
     eof <- liftIO isEOF
@@ -67,7 +66,7 @@ interact runAction = do
     hSetBuffering stdout NoBuffering
     evalStateT interactLoop $ \expr ->
         runUnliftIO runAction $ do
-            val <- qLiftResult $ evalSealedUnitypeExpression $ uncheckedBindingsLetExpression predefinedBindings expr
+            val <- qLiftResult $ qEvalExpr $ qUncheckedBindingsLetExpr predefinedBindings expr
             case fromQValue val of
                 SuccessResult action -> action
                 _ ->

@@ -3,7 +3,6 @@ module Pinafore.Language.Read
     , parseInteractiveCommand
     ) where
 
-import Language.Expression.Unitype
 import Pinafore.Language.Convert
 import Pinafore.Language.Expression
 import Pinafore.Language.If
@@ -32,7 +31,7 @@ readBinding = do
     args <- many readPattern
     readThis TokAssign
     val <- readExpression
-    return $ bindExpression name $ qAbstractsExpr args val
+    return $ qBindExpr name $ qAbstractsExpr args val
 
 readBindings :: HasPinaforeEntityEdit baseedit => Parser (QBindings baseedit)
 readBindings =
@@ -45,15 +44,15 @@ readBindings =
          return $ b <> fromMaybe mempty mbb) <|>
     (do return mempty)
 
-readLetBindings :: HasPinaforeEntityEdit baseedit => Parser (QExpression baseedit -> QExpression baseedit)
+readLetBindings :: HasPinaforeEntityEdit baseedit => Parser (QExpr baseedit -> QExpr baseedit)
 readLetBindings = do
     readThis TokLet
     bindings <- readBindings
-    bindingsLetExpression bindings
+    qBindingsLetExpr bindings
 
 readExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (QExpression baseedit)
+    => Parser (QExpr baseedit)
 readExpression = readInfixedExpression 0
 
 data FixAssoc
@@ -104,26 +103,18 @@ readInfix prec =
             then return (assoc, name)
             else empty
 
-leftApply ::
-       HasPinaforeEntityEdit baseedit
-    => QExpression baseedit
-    -> [(QExpression baseedit, QExpression baseedit)]
-    -> QExpression baseedit
+leftApply :: HasPinaforeEntityEdit baseedit => QExpr baseedit -> [(QExpr baseedit, QExpr baseedit)] -> QExpr baseedit
 leftApply e1 [] = e1
 leftApply e1 ((f, e2):rest) = leftApply (qApplyAllExpr f [e1, e2]) rest
 
-rightApply ::
-       HasPinaforeEntityEdit baseedit
-    => QExpression baseedit
-    -> [(QExpression baseedit, QExpression baseedit)]
-    -> QExpression baseedit
+rightApply :: HasPinaforeEntityEdit baseedit => QExpr baseedit -> [(QExpr baseedit, QExpr baseedit)] -> QExpr baseedit
 rightApply e1 [] = e1
 rightApply e1 ((f, e2):rest) = qApplyAllExpr f [e1, rightApply e2 rest]
 
 readInfixedExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Int
-    -> Parser (QExpression baseedit)
+    -> Parser (QExpr baseedit)
 readInfixedExpression 10 = readExpression1
 readInfixedExpression prec = do
     e1 <- readInfixedExpression (succ prec)
@@ -134,18 +125,18 @@ readInfixedExpression prec = do
             return (assoc, name, e2)
     case rest of
         [] -> return e1
-        [(AssocNone, name, e2)] -> return $ qApplyAllExpr (varSealedUnitypeExpression name) [e1, e2]
+        [(AssocNone, name, e2)] -> return $ qApplyAllExpr (qVarExpr name) [e1, e2]
         _
             | all (\(assoc, _, _) -> assoc == AssocLeft) rest ->
-                return $ leftApply e1 $ fmap (\(_, name, e2) -> (varSealedUnitypeExpression name, e2)) rest
+                return $ leftApply e1 $ fmap (\(_, name, e2) -> (qVarExpr name, e2)) rest
         _
             | all (\(assoc, _, _) -> assoc == AssocRight) rest ->
-                return $ rightApply e1 $ fmap (\(_, name, e2) -> (varSealedUnitypeExpression name, e2)) rest
+                return $ rightApply e1 $ fmap (\(_, name, e2) -> (qVarExpr name, e2)) rest
         _ -> parserFail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(_, name, _) -> show name) rest)
 
 readExpression1 ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (QExpression baseedit)
+    => Parser (QExpr baseedit)
 readExpression1 =
     (do
          readThis TokLambda
@@ -168,7 +159,7 @@ readExpression1 =
          return $ qApplyAllExpr (opoint $ toQValue $ qifthenelse @baseedit) [etest, ethen, eelse]) <|>
     readExpression2
 
-readExpression2 :: HasPinaforeEntityEdit baseedit => Parser (QExpression baseedit)
+readExpression2 :: HasPinaforeEntityEdit baseedit => Parser (QExpr baseedit)
 readExpression2 = do
     e1 <- readExpression3
     args <- many readExpression3
@@ -176,7 +167,7 @@ readExpression2 = do
 
 readExpression3 ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (QExpression baseedit)
+    => Parser (QExpr baseedit)
 readExpression3 =
     (do
          b <- readThis TokBool
@@ -221,7 +212,7 @@ readExpression3 =
 
 readInteractiveCommand ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (Either (QExpression baseedit -> QExpression baseedit) (QExpression baseedit))
+    => Parser (Either (QExpr baseedit -> QExpr baseedit) (QExpr baseedit))
 readInteractiveCommand = (eof >> return (Left id)) <|> (try $ fmap Right readExpression) <|> (fmap Left readLetBindings)
 
 parseReader :: Parser t -> SourceName -> Text -> Result Text t
@@ -231,12 +222,12 @@ parseReader parser name text = do
         Right a -> return a
         Left e -> fail $ show e
 
-parseExpression :: HasPinaforeEntityEdit baseedit => SourceName -> Text -> Result Text (QExpression baseedit)
+parseExpression :: HasPinaforeEntityEdit baseedit => SourceName -> Text -> Result Text (QExpr baseedit)
 parseExpression = parseReader readExpression
 
 parseInteractiveCommand ::
        HasPinaforeEntityEdit baseedit
     => SourceName
     -> Text
-    -> Result Text (Either (QExpression baseedit -> QExpression baseedit) (QExpression baseedit))
+    -> Result Text (Either (QExpr baseedit -> QExpr baseedit) (QExpr baseedit))
 parseInteractiveCommand = parseReader readInteractiveCommand

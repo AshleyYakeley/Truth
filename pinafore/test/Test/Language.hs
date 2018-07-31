@@ -5,7 +5,6 @@ module Test.Language
     ) where
 
 import Data.Ratio
-import Language.Expression.Unitype
 import Pinafore
 import Pinafore.Language.Expression
 import Prelude (read)
@@ -120,8 +119,8 @@ instance Eq (QValue baseedit) where
     (MkAny QTList a1) == (MkAny QTList a2) = a1 == a2
     (MkAny t1 _) == (MkAny t2 _) = error $ "QValue: " <> show t1 <> " & " <> show t2 <> " not comparable"
 
-testQueryValue :: String -> QExpression baseedit -> Maybe (QValue baseedit) -> TestTree
-testQueryValue name expr expected = testCase name $ assertEqual "result" expected $ evalSealedUnitypeExpression expr
+testQueryValue :: String -> QExpr baseedit -> Maybe (QValue baseedit) -> TestTree
+testQueryValue name expr expected = testCase name $ assertEqual "result" expected $ qEvalExpr expr
 
 qint :: Int -> QValue baseedit
 qint = toQValue
@@ -131,18 +130,16 @@ testQueryValues =
     testGroup
         "query values"
         [ testQueryValue "pure A" (opoint $ toQValue ("A" :: Text)) (Just $ toQValue ("A" :: Text))
-        , testQueryValue "var a" (varSealedUnitypeExpression "a") Nothing
+        , testQueryValue "var a" (qVarExpr "a") Nothing
         , testQueryValue
               "let a=1;b=2 in (a,b,a,b)"
-              (letSealedUnitypeExpression "a" (opoint $ qint 1) $
-               letSealedUnitypeExpression "b" (opoint $ qint 2) $
-               qSequenceExpr [qVarExpr "a", qVarExpr "b", qVarExpr "a", qVarExpr "b"]) $
+              (qLetExpr "a" (opoint $ qint 1) $
+               qLetExpr "b" (opoint $ qint 2) $ qSequenceExpr [qVarExpr "a", qVarExpr "b", qVarExpr "a", qVarExpr "b"]) $
           Just $ toQValue ([1, 2, 1, 2] :: [Int])
         , testQueryValue
               "let a=1;b=2 in (b,a,b,a)"
-              (letSealedUnitypeExpression "a" (opoint $ qint 1) $
-               letSealedUnitypeExpression "b" (opoint $ qint 2) $
-               qSequenceExpr [qVarExpr "b", qVarExpr "a", qVarExpr "b", qVarExpr "a"]) $
+              (qLetExpr "a" (opoint $ qint 1) $
+               qLetExpr "b" (opoint $ qint 2) $ qSequenceExpr [qVarExpr "b", qVarExpr "a", qVarExpr "b", qVarExpr "a"]) $
           Just $ toQValue ([2, 1, 2, 1] :: [Int])
         ]
 
