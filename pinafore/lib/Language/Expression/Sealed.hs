@@ -8,12 +8,13 @@ data SealedExpression vw tw =
                                  (Expression vw t)
 
 letSealedExpression ::
-       (forall t t'. tw t -> vw t' -> Maybe (t -> t'))
+       Applicative m
+    => (forall t t'. tw t -> vw t' -> Maybe (m (t -> t')))
     -> SealedExpression vw tw
     -> SealedExpression vw tw
-    -> SealedExpression vw tw
+    -> m (SealedExpression vw tw)
 letSealedExpression match (MkSealedExpression twv val) (MkSealedExpression twt body) =
-    MkSealedExpression twt $ letExpression (match twv) val body
+    fmap (MkSealedExpression twt) $ letExpression (match twv) val body
 
 applySealedExpression ::
        (forall r f a. tw f -> tw a -> (forall fa. tw fa -> (f -> a -> fa) -> r) -> m r)

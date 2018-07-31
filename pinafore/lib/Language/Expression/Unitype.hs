@@ -20,14 +20,14 @@ import Shapes
 
 type UnitypeExpression name val = NamedExpression name ((:~:) val)
 
-uniNamedMatch :: Eq name => name -> NamedWitness name ((:~:) t) t' -> Maybe (t -> t')
+uniNamedMatch :: Eq name => name -> NamedWitness name ((:~:) t) t' -> Maybe (Identity (t -> t'))
 uniNamedMatch name (MkNamedWitness name' Refl) =
     if name == name'
-        then Just id
+        then Just $ Identity id
         else Nothing
 
 abstractUniNamedExpression :: Eq name => name -> UnitypeExpression name val a -> UnitypeExpression name val (val -> a)
-abstractUniNamedExpression name = abstractExpression $ uniNamedMatch name
+abstractUniNamedExpression name expr = runIdentity $ abstractExpression (uniNamedMatch name) expr
 
 type SealedUnitypeExpression name val = SealedNamedExpression name ((:~:) val) ((:~:) val)
 
@@ -75,7 +75,7 @@ letSealedUnitypeExpression ::
     -> SealedUnitypeExpression name val
     -> SealedUnitypeExpression name val
 letSealedUnitypeExpression name (MkSealedUnitypeExpression val) (MkSealedUnitypeExpression body) =
-    MkSealedUnitypeExpression $ letExpression (uniNamedMatch name) val body
+    MkSealedUnitypeExpression $ runIdentity $ letExpression (uniNamedMatch name) val body
 
 type UnitypeBindings name val = Bindings name ((:~:) val) ((:~:) val)
 

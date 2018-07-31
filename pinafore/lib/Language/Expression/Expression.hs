@@ -24,15 +24,22 @@ evalExpression :: (MonadFail m, AllWitnessConstraint Show w) => Expression w a -
 evalExpression (ClosedExpression a) = return a
 evalExpression expr = fail $ "undefined: " <> intercalate ", " (expressionFreeWitnesses showAllWitness expr)
 
-abstractExpression :: (forall t'. w t' -> Maybe (t -> t')) -> Expression w a -> Expression w (t -> a)
-abstractExpression _match (ClosedExpression a) = ClosedExpression $ \_ -> a
+abstractExpression ::
+       Applicative m => (forall t'. w t' -> Maybe (m (t -> t'))) -> Expression w a -> m (Expression w (t -> a))
+abstractExpression _match (ClosedExpression a) = pure $ ClosedExpression $ \_ -> a
 abstractExpression match (OpenExpression wt expr)
-    | Just ff <- match wt = fmap (\vva v -> vva v (ff v)) $ abstractExpression match expr
+    | Just mff <- match wt =
+        (\ff expr' -> fmap (\vva v -> vva v (ff v)) expr') <$> mff <*> abstractExpression match expr
 abstractExpression match (OpenExpression nw expr) =
-    OpenExpression nw $ fmap (\vva v1 v2 -> vva v2 v1) $ abstractExpression match expr
+    fmap (OpenExpression nw . fmap (\vva v1 v2 -> vva v2 v1)) $ abstractExpression match expr
 
 varExpression :: w t -> Expression w t
 varExpression wt = OpenExpression wt $ ClosedExpression id
 
-letExpression :: (forall t'. w t' -> Maybe (t -> t')) -> Expression w t -> Expression w a -> Expression w a
-letExpression match val body = abstractExpression match body <*> val
+letExpression ::
+       Applicative m
+    => (forall t'. w t' -> Maybe (m (t -> t')))
+    -> Expression w t
+    -> Expression w a
+    -> m (Expression w a)
+letExpression match val body = fmap (\expr -> expr <*> val) $ abstractExpression match body
