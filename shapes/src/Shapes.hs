@@ -18,6 +18,7 @@ import Data.Injection as I
 import Data.KeyContainer as I
 import Data.Lens as I
 import Data.MonadOne as I
+import Data.MonoApplicative as I
 import Data.Result as I
 import Data.SameItem as I
 import Data.Store as I

@@ -117,10 +117,11 @@ testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
 -- | for test only
 instance Eq (QValue baseedit) where
     (MkAny QTConstLiteral a1) == (MkAny QTConstLiteral a2) = a1 == a2
-    _ == _ = error "QValue: not comparable"
+    (MkAny QTList a1) == (MkAny QTList a2) = a1 == a2
+    (MkAny t1 _) == (MkAny t2 _) = error $ "QValue: " <> show t1 <> " & " <> show t2 <> " not comparable"
 
-testQueryValue :: (Eq a, Show a) => String -> QExpr baseedit a -> Maybe a -> TestTree
-testQueryValue name expr expected = testCase name $ assertEqual "result" expected $ evalExpression expr
+testQueryValue :: String -> QExpression baseedit -> Maybe (QValue baseedit) -> TestTree
+testQueryValue name expr expected = testCase name $ assertEqual "result" expected $ evalSealedUnitypeExpression expr
 
 qint :: Int -> QValue baseedit
 qint = toQValue
@@ -129,22 +130,20 @@ testQueryValues :: TestTree
 testQueryValues =
     testGroup
         "query values"
-        [ testQueryValue "pure A" (pure "A") (Just "A" :: Maybe String)
-        , testQueryValue "var a" (varUniNamedExpression "a") Nothing
+        [ testQueryValue "pure A" (opoint $ toQValue ("A" :: Text)) (Just $ toQValue ("A" :: Text))
+        , testQueryValue "var a" (varSealedUnitypeExpression "a") Nothing
         , testQueryValue
               "let a=1;b=2 in (a,b,a,b)"
-              (letUniNamedExpression "a" (pure $ qint 1) $
-               letUniNamedExpression "b" (pure $ qint 2) $
-               (,,,) <$> (varUniNamedExpression "a") <*> (varUniNamedExpression "b") <*> (varUniNamedExpression "a") <*>
-               (varUniNamedExpression "b")) $
-          Just (qint 1, qint 2, qint 1, qint 2)
+              (letSealedUnitypeExpression "a" (opoint $ qint 1) $
+               letSealedUnitypeExpression "b" (opoint $ qint 2) $
+               qSequenceExpr [qVarExpr "a", qVarExpr "b", qVarExpr "a", qVarExpr "b"]) $
+          Just $ toQValue ([1, 2, 1, 2] :: [Int])
         , testQueryValue
               "let a=1;b=2 in (b,a,b,a)"
-              (letUniNamedExpression "a" (pure $ qint 1) $
-               letUniNamedExpression "b" (pure $ qint 2) $
-               (,,,) <$> (varUniNamedExpression "b") <*> (varUniNamedExpression "a") <*> (varUniNamedExpression "b") <*>
-               (varUniNamedExpression "a")) $
-          Just (qint 2, qint 1, qint 2, qint 1)
+              (letSealedUnitypeExpression "a" (opoint $ qint 1) $
+               letSealedUnitypeExpression "b" (opoint $ qint 2) $
+               qSequenceExpr [qVarExpr "b", qVarExpr "a", qVarExpr "b", qVarExpr "a"]) $
+          Just $ toQValue ([2, 1, 2, 1] :: [Int])
         ]
 
 testQuery :: Text -> Maybe String -> TestTree

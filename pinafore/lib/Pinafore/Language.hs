@@ -35,12 +35,12 @@ parseValue ::
     -> Result Text t
 parseValue name text = do
     expr <- parseExpression @baseedit name text
-    val <- evalExpression $ uncheckedBindingsLetExpression predefinedBindings expr
+    val <- evalSealedUnitypeExpression $ uncheckedBindingsLetExpression predefinedBindings expr
     fromQValue val
 
 interactLoop ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => StateT (QValueExpr baseedit -> IO ()) IO ()
+    => StateT (QExpression baseedit -> IO ()) IO ()
 interactLoop = do
     liftIO $ putStr "pinafore> "
     eof <- liftIO isEOF
@@ -67,7 +67,7 @@ interact runAction = do
     hSetBuffering stdout NoBuffering
     evalStateT interactLoop $ \expr ->
         runUnliftIO runAction $ do
-            val <- qLiftResult $ evalExpression $ uncheckedBindingsLetExpression predefinedBindings expr
+            val <- qLiftResult $ evalSealedUnitypeExpression $ uncheckedBindingsLetExpression predefinedBindings expr
             case fromQValue val of
                 SuccessResult action -> action
                 _ ->

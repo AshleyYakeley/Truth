@@ -45,7 +45,7 @@ readBindings =
          return $ b <> fromMaybe mempty mbb) <|>
     (do return mempty)
 
-readLetBindings :: HasPinaforeEntityEdit baseedit => Parser (QValueExpr baseedit -> QValueExpr baseedit)
+readLetBindings :: HasPinaforeEntityEdit baseedit => Parser (QExpression baseedit -> QExpression baseedit)
 readLetBindings = do
     readThis TokLet
     bindings <- readBindings
@@ -53,7 +53,7 @@ readLetBindings = do
 
 readExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (QValueExpr baseedit)
+    => Parser (QExpression baseedit)
 readExpression = readInfixedExpression 0
 
 data FixAssoc
@@ -106,24 +106,24 @@ readInfix prec =
 
 leftApply ::
        HasPinaforeEntityEdit baseedit
-    => QValueExpr baseedit
-    -> [(QValueExpr baseedit, QValueExpr baseedit)]
-    -> QValueExpr baseedit
+    => QExpression baseedit
+    -> [(QExpression baseedit, QExpression baseedit)]
+    -> QExpression baseedit
 leftApply e1 [] = e1
 leftApply e1 ((f, e2):rest) = leftApply (qApplyAllExpr f [e1, e2]) rest
 
 rightApply ::
        HasPinaforeEntityEdit baseedit
-    => QValueExpr baseedit
-    -> [(QValueExpr baseedit, QValueExpr baseedit)]
-    -> QValueExpr baseedit
+    => QExpression baseedit
+    -> [(QExpression baseedit, QExpression baseedit)]
+    -> QExpression baseedit
 rightApply e1 [] = e1
 rightApply e1 ((f, e2):rest) = qApplyAllExpr f [e1, rightApply e2 rest]
 
 readInfixedExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Int
-    -> Parser (QValueExpr baseedit)
+    -> Parser (QExpression baseedit)
 readInfixedExpression 10 = readExpression1
 readInfixedExpression prec = do
     e1 <- readInfixedExpression (succ prec)
@@ -134,18 +134,18 @@ readInfixedExpression prec = do
             return (assoc, name, e2)
     case rest of
         [] -> return e1
-        [(AssocNone, name, e2)] -> return $ qApplyAllExpr (varUniNamedExpression name) [e1, e2]
+        [(AssocNone, name, e2)] -> return $ qApplyAllExpr (varSealedUnitypeExpression name) [e1, e2]
         _
             | all (\(assoc, _, _) -> assoc == AssocLeft) rest ->
-                return $ leftApply e1 $ fmap (\(_, name, e2) -> (varUniNamedExpression name, e2)) rest
+                return $ leftApply e1 $ fmap (\(_, name, e2) -> (varSealedUnitypeExpression name, e2)) rest
         _
             | all (\(assoc, _, _) -> assoc == AssocRight) rest ->
-                return $ rightApply e1 $ fmap (\(_, name, e2) -> (varUniNamedExpression name, e2)) rest
+                return $ rightApply e1 $ fmap (\(_, name, e2) -> (varSealedUnitypeExpression name, e2)) rest
         _ -> parserFail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(_, name, _) -> show name) rest)
 
 readExpression1 ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (QValueExpr baseedit)
+    => Parser (QExpression baseedit)
 readExpression1 =
     (do
          readThis TokLambda
@@ -165,10 +165,10 @@ readExpression1 =
          ethen <- readExpression
          readThis TokElse
          eelse <- readExpression
-         return $ qApplyAllExpr (pure $ toQValue $ qifthenelse @baseedit) [etest, ethen, eelse]) <|>
+         return $ qApplyAllExpr (opoint $ toQValue $ qifthenelse @baseedit) [etest, ethen, eelse]) <|>
     readExpression2
 
-readExpression2 :: HasPinaforeEntityEdit baseedit => Parser (QValueExpr baseedit)
+readExpression2 :: HasPinaforeEntityEdit baseedit => Parser (QExpression baseedit)
 readExpression2 = do
     e1 <- readExpression3
     args <- many readExpression3
@@ -176,20 +176,20 @@ readExpression2 = do
 
 readExpression3 ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (QValueExpr baseedit)
+    => Parser (QExpression baseedit)
 readExpression3 =
     (do
          b <- readThis TokBool
-         return $ pure $ toQValue b) <|>
+         return $ qConstExpr b) <|>
     (do
          name <- readThis TokName
-         return $ varUniNamedExpression name) <|>
+         return $ qVarExpr name) <|>
     (do
          n <- readThis TokNumber
-         return $ pure $ toQValue n) <|>
+         return $ qConstExpr n) <|>
     (do
          str <- readThis TokString
-         return $ pure $ toQValue str) <|>
+         return $ qConstExpr str) <|>
     (do
          readThis TokOpenParen
          expr <- readExpression
@@ -207,21 +207,21 @@ readExpression3 =
                   return $ expr1 : exprs) <|>
              return []
          readThis TokCloseBracket
-         return $ fmap (MkAny QTList) $ sequenceA exprs) <|>
+         return $ qSequenceExpr exprs) <|>
     (do
          readThis TokInvert
-         return $ pure $ toQValue $ qinvert @baseedit) <|>
+         return $ qConstExpr $ qinvert @baseedit) <|>
     (do
          p <- readThis TokPredicate
-         return $ pure $ toQValue p) <|>
+         return $ qConstExpr p) <|>
     (do
          p <- readThis TokPoint
-         return $ pure $ toQValue p) <?>
+         return $ qConstExpr p) <?>
     "expression"
 
 readInteractiveCommand ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (Either (QValueExpr baseedit -> QValueExpr baseedit) (QValueExpr baseedit))
+    => Parser (Either (QExpression baseedit -> QExpression baseedit) (QExpression baseedit))
 readInteractiveCommand = (eof >> return (Left id)) <|> (try $ fmap Right readExpression) <|> (fmap Left readLetBindings)
 
 parseReader :: Parser t -> SourceName -> Text -> Result Text t
@@ -231,12 +231,12 @@ parseReader parser name text = do
         Right a -> return a
         Left e -> fail $ show e
 
-parseExpression :: HasPinaforeEntityEdit baseedit => SourceName -> Text -> Result Text (QValueExpr baseedit)
+parseExpression :: HasPinaforeEntityEdit baseedit => SourceName -> Text -> Result Text (QExpression baseedit)
 parseExpression = parseReader readExpression
 
 parseInteractiveCommand ::
        HasPinaforeEntityEdit baseedit
     => SourceName
     -> Text
-    -> Result Text (Either (QValueExpr baseedit -> QValueExpr baseedit) (QValueExpr baseedit))
+    -> Result Text (Either (QExpression baseedit -> QExpression baseedit) (QExpression baseedit))
 parseInteractiveCommand = parseReader readInteractiveCommand

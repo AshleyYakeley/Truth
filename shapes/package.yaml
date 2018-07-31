@@ -29,6 +29,7 @@ library:
       - open-witness
     exposed-modules:
       - Data.Filterable
+      - Data.MonoApplicative
       - Data.CatFunctor
       - Data.Result
       - Data.SameItem

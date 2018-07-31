@@ -7,25 +7,33 @@ import Pinafore.Language.Value
 import Pinafore.PredicateMorphism
 import Shapes
 
-type QExpr baseedit = UniNamedExpression Name (QValue baseedit)
+type QExpression baseedit = SealedUnitypeExpression Name (QValue baseedit)
 
-type QValueExpr baseedit = ValueExpression Name (QValue baseedit)
+qConstExpr :: ToQValue baseedit a => a -> QExpression baseedit
+qConstExpr a = opoint $ toQValue a
 
-qAbstractExpr :: Name -> QValueExpr baseedit -> QValueExpr baseedit
-qAbstractExpr name expr = fmap qfunction $ abstractUniNamedExpression name expr
+qVarExpr :: Name -> QExpression baseedit
+qVarExpr = varSealedUnitypeExpression
 
-qAbstractsExpr :: [Name] -> QValueExpr baseedit -> QValueExpr baseedit
+qAbstractExpr :: Name -> QExpression baseedit -> QExpression baseedit
+qAbstractExpr = abstractSealedUnitypeExpression qfunction
+
+qAbstractsExpr :: [Name] -> QExpression baseedit -> QExpression baseedit
 qAbstractsExpr [] = id
 qAbstractsExpr (n:nn) = qAbstractExpr n . qAbstractsExpr nn
 
-type QBindings baseedit = Bindings Name (QValue baseedit)
+type QBindings baseedit = UnitypeBindings Name (QValue baseedit)
 
 qBindVal :: ToQValue baseedit t => Name -> t -> QBindings baseedit
-qBindVal name val = bindExpression name $ pure $ toQValue val
+qBindVal name val = bindExpression name $ opoint $ toQValue val
 
-qApplyExpr :: HasPinaforeEntityEdit baseedit => QValueExpr baseedit -> QValueExpr baseedit -> QValueExpr baseedit
-qApplyExpr = liftA2 qapply
+qApplyExpr :: HasPinaforeEntityEdit baseedit => QExpression baseedit -> QExpression baseedit -> QExpression baseedit
+qApplyExpr = oliftA2 qapply
 
-qApplyAllExpr :: HasPinaforeEntityEdit baseedit => QValueExpr baseedit -> [QValueExpr baseedit] -> QValueExpr baseedit
+qApplyAllExpr ::
+       HasPinaforeEntityEdit baseedit => QExpression baseedit -> [QExpression baseedit] -> QExpression baseedit
 qApplyAllExpr e [] = e
 qApplyAllExpr e (a:aa) = qApplyAllExpr (qApplyExpr e a) aa
+
+qSequenceExpr :: [QExpression baseedit] -> QExpression baseedit
+qSequenceExpr = osequenceA $ MkAny QTList
