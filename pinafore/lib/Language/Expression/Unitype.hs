@@ -19,17 +19,18 @@ import Shapes
 
 type UnitypeExpression name val = NamedExpression name ((:~:) val)
 
-uniNamedMatch :: Eq name => name -> NamedWitness name ((:~:) t) t' -> Maybe (Identity (t -> t'))
-uniNamedMatch name (MkNamedWitness name' Refl) =
-    if name == name'
-        then Just $ Identity id
-        else Nothing
+unitypeBinder :: (Eq name, Applicative m) => name -> NamedBinder m name ((:~:) val) val
+unitypeBinder name =
+    MkBinder $ \(MkNamedWitness name' Refl) ->
+        if name == name'
+            then Just $ pure id
+            else Nothing
 
-reflBinder :: Binder Identity ((:~:) val) ((:~:) val)
-reflBinder = MkBinder $ \Refl Refl -> Just (return id)
+unitypeChecker :: Applicative m => TypeChecker m ((:~:) val) ((:~:) val)
+unitypeChecker Refl Refl = pure id
 
 abstractUniNamedExpression :: Eq name => name -> UnitypeExpression name val a -> UnitypeExpression name val (val -> a)
-abstractUniNamedExpression name expr = runIdentity $ abstractExpression (uniNamedMatch name) expr
+abstractUniNamedExpression name expr = runIdentity $ abstractExpression (unitypeBinder name) expr
 
 type SealedUnitypeExpression name val = SealedNamedExpression name ((:~:) val) ((:~:) val)
 
@@ -77,7 +78,7 @@ letSealedUnitypeExpression ::
     -> SealedUnitypeExpression name val
     -> SealedUnitypeExpression name val
 letSealedUnitypeExpression name (MkSealedUnitypeExpression val) (MkSealedUnitypeExpression body) =
-    MkSealedUnitypeExpression $ runIdentity $ letExpression (uniNamedMatch name) val body
+    MkSealedUnitypeExpression $ runIdentity $ letExpression (unitypeBinder name) val body
 
 type UnitypeBindings name val = NamedBindings Identity name ((:~:) val) ((:~:) val)
 
@@ -87,7 +88,7 @@ uncheckedBindingsLetUnitypeExpression ::
     -> SealedUnitypeExpression name val
     -> SealedUnitypeExpression name val
 uncheckedBindingsLetUnitypeExpression bindings expr =
-    runIdentity $ uncheckedBindingsLetExpression reflBinder bindings expr
+    runIdentity $ uncheckedBindingsLetExpression unitypeChecker bindings expr
 
 bindingsLetUnitypeExpression ::
        (MonadFail m, Eq name, Show name)

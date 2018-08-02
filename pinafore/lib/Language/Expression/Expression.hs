@@ -24,22 +24,18 @@ evalExpression :: (MonadFail m, AllWitnessConstraint Show w) => Expression w a -
 evalExpression (ClosedExpression a) = return a
 evalExpression expr = fail $ "undefined: " <> intercalate ", " (expressionFreeWitnesses showAllWitness expr)
 
-abstractExpression ::
-       Applicative m => (forall t'. w t' -> Maybe (m (t -> t'))) -> Expression w a -> m (Expression w (t -> a))
-abstractExpression _match (ClosedExpression a) = pure $ ClosedExpression $ \_ -> a
-abstractExpression match (OpenExpression wt expr)
-    | Just mff <- match wt =
-        (\ff expr' -> fmap (\vva v -> vva v (ff v)) expr') <$> mff <*> abstractExpression match expr
-abstractExpression match (OpenExpression nw expr) =
-    fmap (OpenExpression nw . fmap (\vva v1 v2 -> vva v2 v1)) $ abstractExpression match expr
+newtype Binder m w t =
+    MkBinder (forall v. w v -> Maybe (m (t -> v)))
+
+abstractExpression :: Applicative m => Binder m w t -> Expression w a -> m (Expression w (t -> a))
+abstractExpression _binder (ClosedExpression a) = pure $ ClosedExpression $ \_ -> a
+abstractExpression binder@(MkBinder b) (OpenExpression wt expr)
+    | Just mff <- b wt = (\ff expr' -> fmap (\vva v -> vva v (ff v)) expr') <$> mff <*> abstractExpression binder expr
+abstractExpression binder (OpenExpression nw expr) =
+    fmap (OpenExpression nw . fmap (\vva v1 v2 -> vva v2 v1)) $ abstractExpression binder expr
 
 varExpression :: w t -> Expression w t
 varExpression wt = OpenExpression wt $ ClosedExpression id
 
-letExpression ::
-       Applicative m
-    => (forall t'. w t' -> Maybe (m (t -> t')))
-    -> Expression w t
-    -> Expression w a
-    -> m (Expression w a)
-letExpression match val body = fmap (\expr -> expr <*> val) $ abstractExpression match body
+letExpression :: Applicative m => Binder m w t -> Expression w t -> Expression w a -> m (Expression w a)
+letExpression binder val body = fmap (\expr -> expr <*> val) $ abstractExpression binder body

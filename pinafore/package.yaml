@@ -22,6 +22,7 @@ library:
       - truth-core
     exposed-modules:
       - Language.Expression.Expression
+      - Language.Expression.Bindings
       - Language.Expression.Sealed
       - Language.Expression.Named
       - Language.Expression.Unitype

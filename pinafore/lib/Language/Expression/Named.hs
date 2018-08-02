@@ -1,6 +1,7 @@
 module Language.Expression.Named where
 
 import Data.List (nub)
+import Language.Expression.Bindings
 import Language.Expression.Expression
 import Language.Expression.Sealed
 import Shapes
@@ -19,13 +20,15 @@ type NamedExpression name w = Expression (NamedWitness name w)
 
 type SealedNamedExpression name vw tw = SealedExpression (NamedWitness name vw) tw
 
-type NamedBinder m name vw tw = Binder m (NamedWitness name vw) tw
+type TypeChecker m tw vw = forall t v. tw t -> vw v -> m (t -> v)
 
-mkNamedBinder :: Eq name => Binder m vw tw -> name -> NamedBinder m name vw tw
-mkNamedBinder (MkBinder binder) name =
-    MkBinder $ \twt (MkNamedWitness name' vwv) ->
+type NamedBinder m name vw t = Binder m (NamedWitness name vw) t
+
+mkNamedBinder :: Eq name => TypeChecker m tw vw -> name -> tw t -> NamedBinder m name vw t
+mkNamedBinder checker name twt =
+    MkBinder $ \(MkNamedWitness name' vwv) ->
         if name == name'
-            then binder twt vwv
+            then Just $ checker twt vwv
             else Nothing
 
 newtype NamedBindings m name vw tw =
@@ -33,9 +36,9 @@ newtype NamedBindings m name vw tw =
     deriving (Semigroup, Monoid)
 
 namedBindingsToBindings ::
-       Eq name => Binder m vw tw -> NamedBindings m name vw tw -> Bindings m (NamedWitness name vw) tw
-namedBindingsToBindings binder (MkNamedBindings bb) =
-    MkBindings $ fmap (\(name, expr) -> (mkNamedBinder binder name, expr)) bb
+       Eq name => TypeChecker m tw vw -> NamedBindings m name vw tw -> Bindings m (NamedWitness name vw)
+namedBindingsToBindings checker (MkNamedBindings bb) =
+    mconcat $ fmap (\(name, MkSealedExpression twt expr) -> singleBinding (mkNamedBinder checker name twt) expr) bb
 
 bindingsDuplicates :: Eq name => NamedBindings m name vw tw -> [name]
 bindingsDuplicates (MkNamedBindings bb) = let
@@ -54,8 +57,8 @@ bindExpression name vexpr = MkNamedBindings $ pure (name, vexpr)
 
 uncheckedBindingsLetExpression ::
        forall m name vw tw. (Eq name, Monad m)
-    => Binder m vw tw
+    => TypeChecker m tw vw
     -> NamedBindings m name vw tw
     -> SealedNamedExpression name vw tw
     -> m (SealedNamedExpression name vw tw)
-uncheckedBindingsLetExpression binder nb = bindingsLetSealedExpression $ namedBindingsToBindings binder nb
+uncheckedBindingsLetExpression checker nb = bindingsLetSealedExpression $ namedBindingsToBindings checker nb
