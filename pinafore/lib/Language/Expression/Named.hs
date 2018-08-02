@@ -19,12 +19,26 @@ type NamedExpression name w = Expression (NamedWitness name w)
 
 type SealedNamedExpression name vw tw = SealedExpression (NamedWitness name vw) tw
 
-newtype Bindings name vw tw =
-    MkBindings [(name, SealedNamedExpression name vw tw)]
+type NamedBinder m name vw tw = Binder m (NamedWitness name vw) tw
+
+mkNamedBinder :: Eq name => Binder m vw tw -> name -> NamedBinder m name vw tw
+mkNamedBinder (MkBinder binder) name =
+    MkBinder $ \twt (MkNamedWitness name' vwv) ->
+        if name == name'
+            then binder twt vwv
+            else Nothing
+
+newtype NamedBindings m name vw tw =
+    MkNamedBindings [(name, SealedNamedExpression name vw tw)]
     deriving (Semigroup, Monoid)
 
-bindingsDuplicates :: Eq name => Bindings name vw tw -> [name]
-bindingsDuplicates (MkBindings bb) = let
+namedBindingsToBindings ::
+       Eq name => Binder m vw tw -> NamedBindings m name vw tw -> Bindings m (NamedWitness name vw) tw
+namedBindingsToBindings binder (MkNamedBindings bb) =
+    MkBindings $ fmap (\(name, expr) -> (mkNamedBinder binder name, expr)) bb
+
+bindingsDuplicates :: Eq name => NamedBindings m name vw tw -> [name]
+bindingsDuplicates (MkNamedBindings bb) = let
     duplicates ::
            forall a. Eq a
         => [a]
@@ -35,5 +49,13 @@ bindingsDuplicates (MkBindings bb) = let
     duplicates (_:aa) = duplicates aa
     in nub $ duplicates $ fmap fst bb
 
-bindExpression :: name -> SealedNamedExpression name vw tw -> Bindings name vw tw
-bindExpression name vexpr = MkBindings $ pure (name, vexpr)
+bindExpression :: name -> SealedNamedExpression name vw tw -> NamedBindings m name vw tw
+bindExpression name vexpr = MkNamedBindings $ pure (name, vexpr)
+
+uncheckedBindingsLetExpression ::
+       forall m name vw tw. (Eq name, Monad m)
+    => Binder m vw tw
+    -> NamedBindings m name vw tw
+    -> SealedNamedExpression name vw tw
+    -> m (SealedNamedExpression name vw tw)
+uncheckedBindingsLetExpression binder nb = bindingsLetSealedExpression $ namedBindingsToBindings binder nb

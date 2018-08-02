@@ -44,10 +44,10 @@ qLetExpr :: Name -> QExpr baseedit -> QExpr baseedit -> QExpr baseedit
 qLetExpr = letSealedUnitypeExpression
 
 qBindingsLetExpr :: MonadFail m => QBindings baseedit -> m (QExpr baseedit -> QExpr baseedit)
-qBindingsLetExpr = bindingsLetExpression
+qBindingsLetExpr = bindingsLetUnitypeExpression
 
 qUncheckedBindingsLetExpr :: QBindings baseedit -> QExpr baseedit -> QExpr baseedit
-qUncheckedBindingsLetExpr = uncheckedBindingsLetExpression
+qUncheckedBindingsLetExpr = uncheckedBindingsLetUnitypeExpression
 
 qEvalExpr :: MonadFail m => QExpr baseedit -> m (QValue baseedit)
 qEvalExpr = evalSealedUnitypeExpression

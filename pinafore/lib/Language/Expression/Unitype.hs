@@ -8,11 +8,10 @@ module Language.Expression.Unitype
     , UnitypeBindings
     , bindExpression
     , letSealedUnitypeExpression
-    , bindingsLetExpression
-    , uncheckedBindingsLetExpression
+    , bindingsLetUnitypeExpression
+    , uncheckedBindingsLetUnitypeExpression
     ) where
 
-import Data.List (head, tail)
 import Language.Expression.Expression
 import Language.Expression.Named
 import Language.Expression.Sealed
@@ -25,6 +24,9 @@ uniNamedMatch name (MkNamedWitness name' Refl) =
     if name == name'
         then Just $ Identity id
         else Nothing
+
+reflBinder :: Binder Identity ((:~:) val) ((:~:) val)
+reflBinder = MkBinder $ \Refl Refl -> Just (return id)
 
 abstractUniNamedExpression :: Eq name => name -> UnitypeExpression name val a -> UnitypeExpression name val (val -> a)
 abstractUniNamedExpression name expr = runIdentity $ abstractExpression (uniNamedMatch name) expr
@@ -77,29 +79,21 @@ letSealedUnitypeExpression ::
 letSealedUnitypeExpression name (MkSealedUnitypeExpression val) (MkSealedUnitypeExpression body) =
     MkSealedUnitypeExpression $ runIdentity $ letExpression (uniNamedMatch name) val body
 
-type UnitypeBindings name val = Bindings name ((:~:) val) ((:~:) val)
+type UnitypeBindings name val = NamedBindings Identity name ((:~:) val) ((:~:) val)
 
-uncheckedBindingsLetExpression ::
+uncheckedBindingsLetUnitypeExpression ::
        forall name val. Eq name
     => UnitypeBindings name val
     -> SealedUnitypeExpression name val
     -> SealedUnitypeExpression name val
-uncheckedBindingsLetExpression (MkBindings bb) (MkSealedUnitypeExpression body) = let
-    appCons vva vv = vva (head vv) (tail vv)
-    abstractList :: [name] -> UnitypeExpression name val t -> UnitypeExpression name val ([val] -> t)
-    abstractList [] expr = fmap (\a _ -> a) expr
-    abstractList (n:nn) expr = fmap appCons $ abstractUniNamedExpression n $ abstractList nn expr
-    abstractNames :: UnitypeExpression name val t -> UnitypeExpression name val ([val] -> t)
-    abstractNames = abstractList (fmap fst bb)
-    exprs :: UnitypeExpression name val [val]
-    exprs = fmap fix $ abstractNames $ for bb $ \(_, MkSealedUnitypeExpression b) -> b
-    in MkSealedUnitypeExpression $ abstractNames body <*> exprs
+uncheckedBindingsLetUnitypeExpression bindings expr =
+    runIdentity $ uncheckedBindingsLetExpression reflBinder bindings expr
 
-bindingsLetExpression ::
+bindingsLetUnitypeExpression ::
        (MonadFail m, Eq name, Show name)
     => UnitypeBindings name val
     -> m (SealedUnitypeExpression name val -> SealedUnitypeExpression name val)
-bindingsLetExpression bindings =
+bindingsLetUnitypeExpression bindings =
     case bindingsDuplicates bindings of
-        [] -> return $ uncheckedBindingsLetExpression bindings
+        [] -> return $ uncheckedBindingsLetUnitypeExpression bindings
         l -> fail $ "duplicate bindings: " ++ intercalate ", " (fmap show l)
