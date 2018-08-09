@@ -119,7 +119,7 @@ instance Eq (QValue baseedit) where
     (MkAny QTList a1) == (MkAny QTList a2) = a1 == a2
     (MkAny t1 _) == (MkAny t2 _) = error $ "QValue: " <> show t1 <> " & " <> show t2 <> " not comparable"
 
-testQueryValue :: String -> QExpr baseedit -> Maybe (QValue baseedit) -> TestTree
+testQueryValue :: String -> QExpr PinaforeEdit -> Maybe (QValue PinaforeEdit) -> TestTree
 testQueryValue name expr expected = testCase name $ assertEqual "result" expected $ qEvalExpr expr
 
 qint :: Int -> QValue baseedit

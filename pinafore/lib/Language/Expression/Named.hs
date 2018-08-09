@@ -1,64 +1,83 @@
 module Language.Expression.Named where
 
-import Data.List (nub)
 import Language.Expression.Bindings
-import Language.Expression.Expression
+import Language.Expression.NameWit
 import Language.Expression.Sealed
 import Shapes
 
-data NamedWitness name w t =
-    MkNamedWitness name
-                   (w t)
+data UnitWitness a b where
+    MkUnitWitness :: a -> UnitWitness a ()
 
-instance Show name => Show (NamedWitness name w t) where
-    show (MkNamedWitness name _) = show name
+instance Eq a => TestEquality (UnitWitness a) where
+    testEquality (MkUnitWitness a1) (MkUnitWitness a2)
+        | a1 == a2 = Just Refl
+    testEquality _ _ = Nothing
 
-instance Show name => AllWitnessConstraint Show (NamedWitness name w) where
+instance Show a => Show (UnitWitness a b) where
+    show (MkUnitWitness a) = show a
+
+instance Show a => AllWitnessConstraint Show (UnitWitness a) where
     allWitnessConstraint = Dict
 
-type NamedExpression name w = Expression (NamedWitness name w)
+data UnitWitness' a b c where
+    MkUnitWitness' :: a c -> UnitWitness' a () c
 
-type SealedNamedExpression name vw tw = SealedExpression (NamedWitness name vw) tw
+type NameWitness name w = NameTypeWitness (UnitWitness name) (UnitWitness' w)
 
-type TypeChecker m tw vw = forall t v. tw t -> vw v -> m (t -> v)
+type NamedExpression name w = NameTypeExpression (UnitWitness name) (UnitWitness' w)
 
-type NamedBinder m name vw t = Binder m (NamedWitness name vw) t
+type SealedNamedExpression name vw tw = SealedExpression (UnitWitness name) (UnitWitness' vw) tw
 
-mkNamedBinder :: Eq name => TypeChecker m tw vw -> name -> tw t -> NamedBinder m name vw t
-mkNamedBinder checker name twt =
-    MkBinder $ \(MkNamedWitness name' vwv) ->
-        if name == name'
-            then Just $ checker twt vwv
-            else Nothing
+nameJoiner :: Joiner w ta tb -> Joiner (UnitWitness' w ()) ta tb
+nameJoiner (MkJoiner wtab conva convb) = MkJoiner (MkUnitWitness' wtab) conva convb
 
-newtype NamedBindings m name vw tw =
-    MkNamedBindings [(name, SealedNamedExpression name vw tw)]
-    deriving (Semigroup, Monoid)
+nameTypeJoiner :: Functor m => TypeJoiner m w -> TypeJoiner m (UnitWitness' w ())
+nameTypeJoiner (MkTypeJoiner wt0 joinwit) =
+    MkTypeJoiner (MkUnitWitness' wt0) $ \(MkUnitWitness' wta) (MkUnitWitness' wtb) -> fmap nameJoiner $ joinwit wta wtb
 
-namedBindingsToBindings ::
-       Eq name => TypeChecker m tw vw -> NamedBindings m name vw tw -> Bindings m (NamedWitness name vw)
-namedBindingsToBindings checker (MkNamedBindings bb) =
-    mconcat $ fmap (\(name, MkSealedExpression twt expr) -> singleBinding (mkNamedBinder checker name twt) expr) bb
+nameTypeChecker :: TypeChecker m w1 w2 -> TypeChecker m w1 (UnitWitness' w2 ())
+nameTypeChecker (MkTypeChecker checker) = MkTypeChecker $ \w1a (MkUnitWitness' w2a) -> checker w1a w2a
 
-bindingsDuplicates :: Eq name => NamedBindings m name vw tw -> [name]
-bindingsDuplicates (MkNamedBindings bb) = let
-    duplicates ::
-           forall a. Eq a
-        => [a]
-        -> [a]
-    duplicates [] = []
-    duplicates (a:aa)
-        | elem a aa = a : duplicates aa
-    duplicates (_:aa) = duplicates aa
-    in nub $ duplicates $ fmap fst bb
+nameAbstractWitness :: AbstractWitness m vw tw -> AbstractWitness m (UnitWitness' vw ()) tw
+nameAbstractWitness absw (MkUnitWitness' vwa) = absw vwa
 
-bindExpression :: name -> SealedNamedExpression name vw tw -> NamedBindings m name vw tw
-bindExpression name vexpr = MkNamedBindings $ pure (name, vexpr)
-
-uncheckedBindingsLetExpression ::
-       forall m name vw tw. (Eq name, Monad m)
-    => TypeChecker m tw vw
-    -> NamedBindings m name vw tw
+letSealedNamedExpression ::
+       (Eq name, Monad m)
+    => TypeJoiner m vw
+    -> TypeChecker m tw vw
+    -> name
+    -> SealedNamedExpression name vw tw
     -> SealedNamedExpression name vw tw
     -> m (SealedNamedExpression name vw tw)
-uncheckedBindingsLetExpression checker nb = bindingsLetSealedExpression $ namedBindingsToBindings checker nb
+letSealedNamedExpression joiner checker name =
+    letSealedExpression (nameTypeJoiner joiner) (nameTypeChecker checker) (MkUnitWitness name)
+
+varSealedNameExpression :: name -> vw t -> tw t -> SealedNamedExpression name vw tw
+varSealedNameExpression name vwt = varSealedExpression (MkUnitWitness name) (MkUnitWitness' vwt)
+
+abstractSealedNamedExpression ::
+       (Eq name, Monad m)
+    => TypeJoiner m vw
+    -> AbstractWitness m vw tw
+    -> name
+    -> SealedNamedExpression name vw tw
+    -> m (SealedNamedExpression name vw tw)
+abstractSealedNamedExpression joiner absw name =
+    abstractSealedExpression (nameTypeJoiner joiner) (nameAbstractWitness absw) (MkUnitWitness name)
+
+type NamedBindings name vw = Bindings (UnitWitness name) (UnitWitness' vw)
+
+singleNamedBinding :: name -> SealedNamedExpression name vw tw -> NamedBindings name vw tw
+singleNamedBinding name = singleBinding (MkUnitWitness name)
+
+uncheckedBindingsLetSealedNamedExpression ::
+       (Eq name, Monad m)
+    => TypeJoiner m vw
+    -> TypeChecker m tw vw
+    -> NamedBindings name vw tw
+    -> SealedNamedExpression name vw tw
+    -> m (SealedNamedExpression name vw tw)
+uncheckedBindingsLetSealedNamedExpression joiner checker =
+    bindingsLetSealedExpression
+        (\(MkUnitWitness _) -> nameTypeJoiner joiner)
+        (\(MkUnitWitness _) -> nameTypeChecker checker)

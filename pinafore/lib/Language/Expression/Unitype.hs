@@ -1,100 +1,22 @@
-{-# OPTIONS -fno-warn-orphans #-}
+module Language.Expression.Unitype where
 
-module Language.Expression.Unitype
-    ( SealedUnitypeExpression
-    , abstractSealedUnitypeExpression
-    , varSealedUnitypeExpression
-    , evalSealedUnitypeExpression
-    , UnitypeBindings
-    , bindExpression
-    , letSealedUnitypeExpression
-    , bindingsLetUnitypeExpression
-    , uncheckedBindingsLetUnitypeExpression
-    ) where
-
-import Language.Expression.Expression
-import Language.Expression.Named
+import Language.Expression.NameWit
 import Language.Expression.Sealed
+import Language.Expression.Typed
 import Shapes
 
-type UnitypeExpression name val = NamedExpression name ((:~:) val)
+data Unitype (m :: Type -> Type) (val :: Type)
 
-unitypeBinder :: (Eq name, Applicative m) => name -> NamedBinder m name ((:~:) val) val
-unitypeBinder name =
-    MkBinder $ \(MkNamedWitness name' Refl) ->
-        if name == name'
-            then Just $ pure id
-            else Nothing
+class UnitypeValue val where
+    applyValue :: val -> val -> val
+    abstractValue :: (val -> val) -> val
 
-unitypeChecker :: Applicative m => TypeChecker m ((:~:) val) ((:~:) val)
-unitypeChecker Refl Refl = pure id
-
-abstractUniNamedExpression :: Eq name => name -> UnitypeExpression name val a -> UnitypeExpression name val (val -> a)
-abstractUniNamedExpression name expr = runIdentity $ abstractExpression (unitypeBinder name) expr
-
-type SealedUnitypeExpression name val = SealedNamedExpression name ((:~:) val) ((:~:) val)
-
-pattern MkSealedUnitypeExpression ::
-        UnitypeExpression name val val -> SealedUnitypeExpression name val
-
-pattern MkSealedUnitypeExpression expr =
-        MkSealedExpression Refl expr
-
-{-# COMPLETE MkSealedUnitypeExpression #-}
-
-type instance Element (SealedUnitypeExpression name val) = val
-
-instance MonoFunctor (SealedUnitypeExpression name val) where
-    omap ab (MkSealedUnitypeExpression expr) = MkSealedUnitypeExpression $ fmap ab expr
-
-instance MonoPointed (SealedUnitypeExpression name val) where
-    opoint = constSealedExpression Refl
-
-instance MonoApplicative (SealedUnitypeExpression name val) where
-    oliftA2 appf vexpr bexpr =
-        runIdentity $ applySealedExpression (\Refl Refl cont -> Identity $ cont Refl appf) vexpr bexpr
-    osequenceA conv exprs = MkSealedUnitypeExpression $ fmap conv $ sequenceA $ fmap unSealedUnitypeExpression exprs
-
-unSealedUnitypeExpression :: SealedUnitypeExpression name val -> UnitypeExpression name val val
-unSealedUnitypeExpression (MkSealedUnitypeExpression expr) = expr
-
-abstractSealedUnitypeExpression ::
-       Eq name => ((val -> val) -> val) -> name -> SealedUnitypeExpression name val -> SealedUnitypeExpression name val
-abstractSealedUnitypeExpression tofunc name (MkSealedUnitypeExpression expr) =
-    MkSealedUnitypeExpression $ fmap tofunc $ abstractUniNamedExpression name expr
-
-varSealedUnitypeExpression :: name -> SealedUnitypeExpression name val
-varSealedUnitypeExpression name = MkSealedUnitypeExpression $ varExpression $ MkNamedWitness name Refl
-
-evalSealedUnitypeExpression :: (MonadFail m, Show name) => SealedUnitypeExpression name val -> m val
-evalSealedUnitypeExpression expr = do
-    MkAny Refl a <- evalSealedExpression expr
-    return a
-
-letSealedUnitypeExpression ::
-       Eq name
-    => name
-    -> SealedUnitypeExpression name val
-    -> SealedUnitypeExpression name val
-    -> SealedUnitypeExpression name val
-letSealedUnitypeExpression name (MkSealedUnitypeExpression val) (MkSealedUnitypeExpression body) =
-    MkSealedUnitypeExpression $ runIdentity $ letExpression (unitypeBinder name) val body
-
-type UnitypeBindings name val = NamedBindings Identity name ((:~:) val) ((:~:) val)
-
-uncheckedBindingsLetUnitypeExpression ::
-       forall name val. Eq name
-    => UnitypeBindings name val
-    -> SealedUnitypeExpression name val
-    -> SealedUnitypeExpression name val
-uncheckedBindingsLetUnitypeExpression bindings expr =
-    runIdentity $ uncheckedBindingsLetExpression unitypeChecker bindings expr
-
-bindingsLetUnitypeExpression ::
-       (MonadFail m, Eq name, Show name)
-    => UnitypeBindings name val
-    -> m (SealedUnitypeExpression name val -> SealedUnitypeExpression name val)
-bindingsLetUnitypeExpression bindings =
-    case bindingsDuplicates bindings of
-        [] -> return $ uncheckedBindingsLetUnitypeExpression bindings
-        l -> fail $ "duplicate bindings: " ++ intercalate ", " (fmap show l)
+instance (Monad m, UnitypeValue val) => TypeSystem (Unitype m val) where
+    type VarWitness (Unitype m val) = ((:~:) val)
+    type ValWitness (Unitype m val) = ((:~:) val)
+    type TSMonad (Unitype m val) = m
+    typeSystemVarJoiner = MkTypeJoiner Refl $ \Refl Refl -> return $ MkJoiner Refl id id
+    typeSystemChecker = MkTypeChecker $ \Refl Refl -> return id
+    typeSystemApplyWitness Refl Refl cont = cont Refl applyValue
+    typeSystemAbstractWitness Refl Refl cont = cont Refl abstractValue
+    typeSystemGenerateVariable cont = cont Refl Refl
