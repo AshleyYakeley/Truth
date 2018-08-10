@@ -1,9 +1,9 @@
 module Pinafore.Language.Type where
 
 import GHC.TypeLits
-import Language.Expression.SoftType.Dolan
-import Language.Expression.SoftType.TypeRange
-import Language.Expression.SoftType.Var
+import Language.Expression.Dolan.Polarity
+import Language.Expression.Dolan.TypeRange
+import Language.Expression.UVar
 import Pinafore.Language.Order
 import Pinafore.Literal
 import Pinafore.Morphism
@@ -78,7 +78,7 @@ type PinaforeRangeType baseedit = TypeRangeWitness (PinaforeType baseedit)
 newtype Entity (name :: Symbol) =
     MkEntity Point
 
--- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('SVar') for type variables.
+-- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVar') for type variables.
 data PinaforeType (baseedit :: Type) (polarity :: TypePolarity) (t :: Type) where
     LimitPinaforeType :: PinaforeType baseedit polarity (LimitType polarity)
     JoinMeetPinaforeType
@@ -109,7 +109,7 @@ data PinaforeType (baseedit :: Type) (polarity :: TypePolarity) (t :: Type) wher
         -> PinaforeRangeType baseedit polarity b
         -> PinaforeType baseedit polarity (PinaforeMorphism baseedit a b)
     GroundPinaforeType :: GroundType baseedit t -> PinaforeType baseedit polarity t
-    VarPinaforeType :: SymbolWitness name -> PinaforeType baseedit polarity (SVar name)
+    VarPinaforeType :: SymbolWitness name -> PinaforeType baseedit polarity (UVar name)
 
 renamePinaforeRangeTypeVars ::
        forall baseedit polarity t1 r. IsTypePolarity polarity
@@ -163,7 +163,7 @@ renamePinaforeTypeVars sf (InverseMorphismPinaforeType ta tb) cont =
             cont (InverseMorphismPinaforeType ta' tb') $ isoBiTypeRange' bija . isoBiTypeRange bijb
 renamePinaforeTypeVars _ (GroundPinaforeType t) cont = cont (GroundPinaforeType t) id
 renamePinaforeTypeVars sf (VarPinaforeType namewit1) cont =
-    renameSVar sf namewit1 $ \namewit2 bij -> cont (VarPinaforeType namewit2) bij
+    renameUVar sf namewit1 $ \namewit2 bij -> cont (VarPinaforeType namewit2) bij
 
 getRangeTypeVars :: PinaforeRangeType baseedit polarity t -> [String]
 getRangeTypeVars (MkTypeRangeWitness tp tq) = getTypeVars tp <> getTypeVars tq
@@ -262,10 +262,10 @@ isPinaforeSubtype (InverseMorphismPinaforeType tpa tpb) (InverseMorphismPinafore
 isPinaforeSubtype (GroundPinaforeType tp) (GroundPinaforeType tq) = lift $ isSubtype tp tq
 isPinaforeSubtype (VarPinaforeType swit) tq = do
     tellBiunification swit $ MkBiunification LimitPinaforeType tq
-    return unsafeFromSVar
+    return $ biBackwards unsafeUVarBijection
 isPinaforeSubtype tp (VarPinaforeType swit) = do
     tellBiunification swit $ MkBiunification tp LimitPinaforeType
-    return unsafeToSVar
+    return $ biForwards unsafeUVarBijection
 isPinaforeSubtype tp tq = fail $ unpack $ "cannot match " <> exprShow tp <> " with " <> exprShow tq
 
 simplifyType ::

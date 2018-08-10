@@ -1,6 +1,6 @@
-module Language.Expression.SoftType.TypeRange where
+module Language.Expression.Dolan.TypeRange where
 
-import Language.Expression.SoftType.Dolan
+import Language.Expression.Dolan.Polarity
 import Shapes
 
 -- | For dealing with non-co/contravariance, see Dolan sec. 9.1

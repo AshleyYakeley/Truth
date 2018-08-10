@@ -37,9 +37,9 @@ library:
       - Pinafore.Language.Expression
       - Pinafore.Language
     other-modules:
-      - Language.Expression.SoftType.Var
-      - Language.Expression.SoftType.TypeRange
-      - Language.Expression.SoftType.Dolan
+      - Language.Expression.UVar
+      - Language.Expression.Dolan.TypeRange
+      - Language.Expression.Dolan.Polarity
       - Pinafore.Number
       - Pinafore.Literal
       - Pinafore.Morphism

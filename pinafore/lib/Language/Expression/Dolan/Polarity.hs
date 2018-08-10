@@ -1,4 +1,4 @@
-module Language.Expression.SoftType.Dolan where
+module Language.Expression.Dolan.Polarity where
 
 import Shapes
 
