@@ -2,9 +2,16 @@ module Language.Expression.Dolan.Polarity where
 
 import Shapes
 
-type TopType = ()
+data TopType =
+    MkTopType
 
-type BottomType = None
+newtype BottomType =
+    MkBottomType None
+    deriving (Eq, Searchable, Countable, Empty)
+
+instance Finite BottomType where
+    allValues = []
+    assemble _ = pure never
 
 newtype JoinType a b =
     MkJoinType (Either a b)
@@ -64,12 +71,12 @@ instance IsTypePolarity 'PositivePolarity where
     showJoinMeetType = "|"
     type ConvertType 'PositivePolarity a b = a -> b
     jmLeftIdentity = let
-        unjoin :: JoinType None a -> a
+        unjoin :: JoinType BottomType a -> a
         unjoin (MkJoinType (Left n)) = never n
         unjoin (MkJoinType (Right a)) = a
         in MkBijection unjoin $ \a -> MkJoinType (Right a)
     jmRightIdentity = let
-        unjoin :: JoinType a None -> a
+        unjoin :: JoinType a BottomType -> a
         unjoin (MkJoinType (Left a)) = a
         unjoin (MkJoinType (Right n)) = never n
         in MkBijection unjoin $ \a -> MkJoinType (Left a)
@@ -84,6 +91,6 @@ instance IsTypePolarity 'NegativePolarity where
     type JoinMeetType 'NegativePolarity = MeetType
     showJoinMeetType = "&"
     type ConvertType 'NegativePolarity a b = b -> a
-    jmLeftIdentity = MkBijection (\(MkMeetType ((), a)) -> a) $ \a -> MkMeetType ((), a)
-    jmRightIdentity = MkBijection (\(MkMeetType (a, ())) -> a) $ \a -> MkMeetType (a, ())
+    jmLeftIdentity = MkBijection (\(MkMeetType (MkTopType, a)) -> a) $ \a -> MkMeetType (MkTopType, a)
+    jmRightIdentity = MkBijection (\(MkMeetType (a, MkTopType)) -> a) $ \a -> MkMeetType (a, MkTopType)
     jmMap a1a2 b1b2 (MkMeetType (a, b)) = MkMeetType (a1a2 a, b1b2 b)

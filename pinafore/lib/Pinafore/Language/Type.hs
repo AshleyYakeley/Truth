@@ -295,8 +295,8 @@ meetPinaforeTypes ::
     -> PinaforeType baseedit 'NegativePolarity b
     -> (forall ab. PinaforeType baseedit 'NegativePolarity ab -> (ab -> a) -> (ab -> b) -> r)
     -> r
-meetPinaforeTypes LimitPinaforeType tb cont = cont tb (\_ -> ()) id
-meetPinaforeTypes ta LimitPinaforeType cont = cont ta id (\_ -> ())
+meetPinaforeTypes LimitPinaforeType tb cont = cont tb (\_ -> MkTopType) id
+meetPinaforeTypes ta LimitPinaforeType cont = cont ta id (\_ -> MkTopType)
 meetPinaforeTypes (VarPinaforeType na) (VarPinaforeType nb) cont
     | Just Refl <- testEquality na nb = cont (VarPinaforeType na) id id
 meetPinaforeTypes ta tb cont = cont (JoinMeetPinaforeType ta tb) meet1 meet2
@@ -357,7 +357,7 @@ unifyPosNegPinaforeTypes ::
     -> PinaforeType baseedit 'NegativePolarity b
     -> Result Text (PinaforeUnifier baseedit (a -> b))
 unifyPosNegPinaforeTypes LimitPinaforeType _ = return $ pure $ never
-unifyPosNegPinaforeTypes _ LimitPinaforeType = return $ pure $ \_ -> ()
+unifyPosNegPinaforeTypes _ LimitPinaforeType = return $ pure $ \_ -> MkTopType
 unifyPosNegPinaforeTypes (JoinMeetPinaforeType t1 t2) tb = do
     uf1 <- unifyPosNegPinaforeTypes t1 tb
     uf2 <- unifyPosNegPinaforeTypes t2 tb
