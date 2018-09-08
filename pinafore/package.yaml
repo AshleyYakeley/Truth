@@ -31,6 +31,7 @@ library:
       - Language.Expression.Bindings
       - Language.Expression.Typed
       - Language.Expression.Unitype
+      - Language.Expression.Dolan
       - Pinafore
       - Pinafore.Main
       - Pinafore.Language.Value
@@ -89,6 +90,7 @@ tests:
         other-modules:
           - Test.Language
           - Test.Entity
+          - Test.Type
 
 executables:
     pinafore:

@@ -49,9 +49,9 @@ abstractTypedExpression =
 varTypedExpression ::
        forall ts name. TypeSystem ts
     => name
-    -> TSMonad ts (TypedExpression name ts)
+    -> TypedExpression name ts
 varTypedExpression name =
-    return $ runRenamer @(TypeRenamer ts) $ renameNewVar $ \vwt twt -> return $ varSealedExpression name vwt twt
+    runRenamer @(TypeRenamer ts) $ renameNewVar $ \vwt twt -> return $ varSealedExpression name vwt twt
 
 constTypedExpression :: forall ts name t. PosWitness ts t -> t -> TypedExpression name ts
 constTypedExpression = constSealedExpression

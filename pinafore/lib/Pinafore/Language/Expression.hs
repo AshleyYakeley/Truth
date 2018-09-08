@@ -28,7 +28,7 @@ qVarExpr ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Name
     -> QExpr baseedit
-qVarExpr name = runIdentity $ varTypedExpression @(TS baseedit) name
+qVarExpr name = varTypedExpression @(TS baseedit) name
 
 qAbstractExpr ::
        forall baseedit. HasPinaforeEntityEdit baseedit

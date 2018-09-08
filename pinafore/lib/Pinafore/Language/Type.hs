@@ -3,9 +3,7 @@
 module Pinafore.Language.Type where
 
 import GHC.TypeLits
-import Language.Expression.Dolan.Polarity
-import Language.Expression.Dolan.TypeRange
-import Language.Expression.Dolan.Variance
+import Language.Expression.Dolan
 import Language.Expression.Expression
 import Language.Expression.Renamer
 import Language.Expression.Typed
@@ -516,21 +514,27 @@ bisubstituteNegativeType bisub (GroundPinaforeType gt args) cont = let
                bisubstituteNegativeArgs bisub dvt (pinaforeGroundTypeVary gt) args id $ \args' conv ->
                    cont (GroundPinaforeType gt args') conv
 
-bisubstituteWitness ::
-       Bisubstitution (PinaforeType baseedit)
-    -> BisubstitutionWitness baseedit t
-    -> (forall t'. BisubstitutionWitness baseedit t' -> (t' -> t) -> r)
-    -> r
-bisubstituteWitness bisub (PositiveBisubstitutionWitness vn tp) cont =
-    bisubstitutePositiveType bisub tp $ \tp' conv -> cont (PositiveBisubstitutionWitness vn tp') $ \pv -> pv . conv
-bisubstituteWitness bisub (NegativeBisubstitutionWitness vn tp) cont =
-    bisubstituteNegativeType bisub tp $ \tp' conv -> cont (NegativeBisubstitutionWitness vn tp') $ \pv -> conv . pv
-
-bisubstituteExpression ::
-       Bisubstitution (PinaforeType baseedit) -> PinaforeUnifier baseedit a -> PinaforeUnifier baseedit a
-bisubstituteExpression _ (ClosedExpression a) = ClosedExpression a
-bisubstituteExpression bisub (OpenExpression wit expr) =
-    bisubstituteWitness bisub wit $ \wit' conv -> OpenExpression wit' $ fmap (\ca -> ca . conv) expr
+bisubstituteUnifier ::
+       Bisubstitution (PinaforeType baseedit) -> PinaforeUnifier baseedit a -> Result Text (PinaforeUnifier baseedit a)
+bisubstituteUnifier _ (ClosedExpression a) = return $ ClosedExpression a
+bisubstituteUnifier bisub@(MkBisubstitution bn _ tq _ qconv) (OpenExpression (PositiveBisubstitutionWitness vn tp) uval)
+    | Just Refl <- testEquality bn vn = do
+        uconv <- unifyPosNegPinaforeTypes tp tq
+        uval' <- bisubstituteUnifier bisub uval
+        return $ (\conv val -> val $ qconv . conv) <$> uconv <*> uval'
+bisubstituteUnifier bisub@(MkBisubstitution bn tp _ pconv _) (OpenExpression (NegativeBisubstitutionWitness vn tq) uval)
+    | Just Refl <- testEquality bn vn = do
+        uconv <- unifyPosNegPinaforeTypes tp tq
+        uval' <- bisubstituteUnifier bisub uval
+        return $ (\conv val -> val $ conv . pconv) <$> uconv <*> uval'
+bisubstituteUnifier bisub (OpenExpression (PositiveBisubstitutionWitness vn tp) uval) =
+    bisubstitutePositiveType bisub tp $ \tp' conv -> do
+        uval' <- bisubstituteUnifier bisub uval
+        return $ OpenExpression (PositiveBisubstitutionWitness vn tp') $ fmap (\ca pv -> ca $ (pv . conv)) uval'
+bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) uval) =
+    bisubstituteNegativeType bisub tp $ \tp' conv -> do
+        uval' <- bisubstituteUnifier bisub uval
+        return $ OpenExpression (NegativeBisubstitutionWitness vn tp') $ fmap (\ca pv -> ca $ (conv . pv)) uval'
 
 runUnifier ::
        forall baseedit t a r.
@@ -553,9 +557,10 @@ runUnifier t (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolWitness
             (VarPinaforeType vn)
             (biBackwards varBij)
             (biForwards varBij . join2)
-    expr' = bisubstituteExpression bisub expr
-    in bisubstitutePositiveType bisub t $ \t' conv ->
-           runUnifier t' expr' $ \t'' convt ca -> cont t'' (convt . conv) (ca $ biForwards varBij . join1)
+    in do
+           expr' <- bisubstituteUnifier bisub expr
+           bisubstitutePositiveType bisub t $ \t' conv ->
+               runUnifier t' expr' $ \t'' convt ca -> cont t'' (convt . conv) (ca $ biForwards varBij . join1)
 runUnifier t (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolWitness name) (tq :: PinaforeType baseedit 'NegativePolarity vw)) expr) cont = let
     varBij :: Bijection (MeetType vw (UVar name)) (UVar name)
     varBij = unsafeUVarBijection
@@ -566,9 +571,10 @@ runUnifier t (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolWitness
             (JoinMeetPinaforeType tq (VarPinaforeType vn))
             (meet2 . biBackwards varBij)
             (biForwards varBij)
-    expr' = bisubstituteExpression bisub expr
-    in bisubstitutePositiveType bisub t $ \t' conv ->
-           runUnifier t' expr' $ \t'' convt ca -> cont t'' (convt . conv) (ca $ meet1 . biBackwards varBij)
+    in do
+           expr' <- bisubstituteUnifier bisub expr
+           bisubstitutePositiveType bisub t $ \t' conv ->
+               runUnifier t' expr' $ \t'' convt ca -> cont t'' (convt . conv) (ca $ meet1 . biBackwards varBij)
 
 instance Unifier (PinaforeUnifier baseedit) where
     type UnifierMonad (PinaforeUnifier baseedit) = Result Text
@@ -693,6 +699,9 @@ instance IsTypePolarity polarity => ExprShow (PinaforeType baseedit polarity t) 
     exprShowPrec (VarPinaforeType namewit) = (pack $ show namewit, 0)
     exprShowPrec (GroundPinaforeType gt args) = exprShowPrecGroundType gt args
 
+instance IsTypePolarity polarity => Show (PinaforeType baseedit polarity t) where
+    show v = unpack $ exprShow v
+
 exprShowPrecGroundType ::
        forall baseedit polarity dv t ta. IsTypePolarity polarity
     => PinaforeGroundType baseedit dv t
@@ -745,12 +754,14 @@ data LiteralType (t :: Type) where
     LiteralLiteralType :: LiteralType Literal
     TextLiteralType :: LiteralType Text
     NumberLiteralType :: LiteralType Number
+    BooleanLiteralType :: LiteralType Bool
     BottomLiteralType :: LiteralType BottomType
 
 instance TestEquality LiteralType where
     testEquality LiteralLiteralType LiteralLiteralType = Just Refl
     testEquality TextLiteralType TextLiteralType = Just Refl
     testEquality NumberLiteralType NumberLiteralType = Just Refl
+    testEquality BooleanLiteralType BooleanLiteralType = Just Refl
     testEquality BottomLiteralType BottomLiteralType = Just Refl
     testEquality _ _ = Nothing
 
@@ -758,13 +769,16 @@ instance ExprShow (LiteralType t) where
     exprShowPrec LiteralLiteralType = ("Literal", 0)
     exprShowPrec TextLiteralType = ("Text", 0)
     exprShowPrec NumberLiteralType = ("Number", 0)
+    exprShowPrec BooleanLiteralType = ("Boolean", 0)
     exprShowPrec BottomLiteralType = ("LiteralBottom", 0)
 
 instance IsSubtype LiteralType where
     isSubtype LiteralLiteralType LiteralLiteralType = return id
     isSubtype TextLiteralType LiteralLiteralType = return toLiteral
     isSubtype NumberLiteralType LiteralLiteralType = return toLiteral
+    isSubtype BooleanLiteralType LiteralLiteralType = return toLiteral
     isSubtype TextLiteralType TextLiteralType = return id
     isSubtype NumberLiteralType NumberLiteralType = return id
+    isSubtype BooleanLiteralType BooleanLiteralType = return id
     isSubtype BottomLiteralType _ = return never
     isSubtype ta tb = FailureResult $ "cannot match " <> exprShow ta <> " with " <> exprShow tb
