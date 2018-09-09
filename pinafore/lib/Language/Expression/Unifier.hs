@@ -1,5 +1,6 @@
 module Language.Expression.Unifier where
 
+import Language.Expression.Expression
 import Language.Expression.Named
 import Shapes
 
@@ -7,6 +8,7 @@ class (Monad (UnifierMonad unifier), Applicative unifier) => Unifier unifier whe
     type UnifierMonad unifier :: Type -> Type
     type UnifierNegWitness unifier :: Type -> Type
     type UnifierPosWitness unifier :: Type -> Type
+    type UnifierSubstitutions unifier :: Type
     unifyNegWitnesses ::
            UnifierNegWitness unifier a
         -> UnifierNegWitness unifier b
@@ -19,11 +21,28 @@ class (Monad (UnifierMonad unifier), Applicative unifier) => Unifier unifier whe
         -> UnifierMonad unifier r
     unifyPosNegWitnesses ::
            UnifierPosWitness unifier a -> UnifierNegWitness unifier b -> UnifierMonad unifier (unifier (a -> b))
-    solveUnifier ::
-           UnifierPosWitness unifier t
-        -> unifier a
-        -> (forall t'. UnifierPosWitness unifier t' -> (t -> t') -> a -> UnifierMonad unifier r)
-        -> UnifierMonad unifier r
+    solveUnifier :: unifier a -> UnifierMonad unifier (a, UnifierSubstitutions unifier)
+    unifierPosSubstitute ::
+           UnifierSubstitutions unifier
+        -> UnifierPosWitness unifier t
+        -> (forall t'. UnifierPosWitness unifier t' -> (t -> t') -> r)
+        -> r
+    unifierNegSubstitute ::
+           UnifierSubstitutions unifier
+        -> UnifierNegWitness unifier t
+        -> (forall t'. UnifierNegWitness unifier t' -> (t' -> t) -> r)
+        -> r
+
+unifierExpressionSubstitute ::
+       forall unifier name a. Unifier unifier
+    => UnifierSubstitutions unifier
+    -> NamedExpression name (UnifierNegWitness unifier) a
+    -> NamedExpression name (UnifierNegWitness unifier) a
+unifierExpressionSubstitute _ (ClosedExpression a) = ClosedExpression a
+unifierExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) =
+    unifierNegSubstitute @unifier subs tw $ \tw' conv ->
+        OpenExpression (MkNameWitness name tw') $
+        fmap (\ta -> ta . conv) $ unifierExpressionSubstitute @unifier subs expr
 
 data UnifyExpression name unifier a =
     forall conv. MkUnifyExpression (unifier conv)

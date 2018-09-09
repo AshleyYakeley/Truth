@@ -76,7 +76,7 @@ testType =
         , exprTypeTest "apply nb number" (return "{} -> Boolean | a") $ applyTypedExpression @TS nbFuncExpr numExpr
         , exprTypeTest "apply nb boolean" (fail "can't cast Boolean to Number") $
           applyTypedExpression @TS nbFuncExpr boolExpr
-        , exprTypeTest "apply id var" (return "{v :: a} -> a") $ applyTypedExpression @TS idExpr varExpr
-        , exprTypeTest "apply nb var" (return "{v :: Number} -> Boolean | b") $
+        , exprTypeTest "apply id var" (return "{v :: (c & x) & a} -> c") $ applyTypedExpression @TS idExpr varExpr
+        , exprTypeTest "apply nb var" (return "{v :: Number & a} -> Boolean | b") $
           applyTypedExpression @TS nbFuncExpr varExpr
         ]

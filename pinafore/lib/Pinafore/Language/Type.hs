@@ -536,18 +536,13 @@ bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) 
         uval' <- bisubstituteUnifier bisub uval
         return $ OpenExpression (NegativeBisubstitutionWitness vn tp') $ fmap (\ca pv -> ca $ (conv . pv)) uval'
 
-runUnifier ::
-       forall baseedit t a r.
-       PinaforeType baseedit 'PositivePolarity t
-    -> PinaforeUnifier baseedit a
-    -> (forall t'. PinaforeType baseedit 'PositivePolarity t' -> (t -> t') -> a -> Result Text r)
-    -> Result Text r
-runUnifier t (ClosedExpression a) cont = cont t id a
-runUnifier _ (OpenExpression (PositiveBisubstitutionWitness vn tp) _) _
+runUnifier :: forall baseedit a. PinaforeUnifier baseedit a -> Result Text (a, [Bisubstitution (PinaforeType baseedit)])
+runUnifier (ClosedExpression a) = return (a, [])
+runUnifier (OpenExpression (PositiveBisubstitutionWitness vn tp) _)
     | occursInType vn tp = fail $ "can't construct recursive type " <> show vn <> " = " <> unpack (exprShow tp)
-runUnifier _ (OpenExpression (NegativeBisubstitutionWitness vn tp) _) _
+runUnifier (OpenExpression (NegativeBisubstitutionWitness vn tp) _)
     | occursInType vn tp = fail $ "can't construct recursive type " <> show vn <> " = " <> unpack (exprShow tp)
-runUnifier t (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolWitness name) (tp :: PinaforeType baseedit 'PositivePolarity vw)) expr) cont = let
+runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolWitness name) (tp :: PinaforeType baseedit 'PositivePolarity vw)) expr) = let
     varBij :: Bijection (JoinType vw (UVar name)) (UVar name)
     varBij = unsafeUVarBijection
     bisub =
@@ -559,9 +554,9 @@ runUnifier t (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolWitness
             (biForwards varBij . join2)
     in do
            expr' <- bisubstituteUnifier bisub expr
-           bisubstitutePositiveType bisub t $ \t' conv ->
-               runUnifier t' expr' $ \t'' convt ca -> cont t'' (convt . conv) (ca $ biForwards varBij . join1)
-runUnifier t (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolWitness name) (tq :: PinaforeType baseedit 'NegativePolarity vw)) expr) cont = let
+           (ca, subs) <- runUnifier expr'
+           return (ca $ biForwards varBij . join1, bisub : subs)
+runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolWitness name) (tq :: PinaforeType baseedit 'NegativePolarity vw)) expr) = let
     varBij :: Bijection (MeetType vw (UVar name)) (UVar name)
     varBij = unsafeUVarBijection
     bisub =
@@ -573,18 +568,26 @@ runUnifier t (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolWitness
             (biForwards varBij)
     in do
            expr' <- bisubstituteUnifier bisub expr
-           bisubstitutePositiveType bisub t $ \t' conv ->
-               runUnifier t' expr' $ \t'' convt ca -> cont t'' (convt . conv) (ca $ meet1 . biBackwards varBij)
+           (ca, subs) <- runUnifier expr'
+           return (ca $ meet1 . biBackwards varBij, bisub : subs)
 
 instance Unifier (PinaforeUnifier baseedit) where
     type UnifierMonad (PinaforeUnifier baseedit) = Result Text
     type UnifierNegWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'NegativePolarity
     type UnifierPosWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'PositivePolarity
+    type UnifierSubstitutions (PinaforeUnifier baseedit) = [Bisubstitution (PinaforeType baseedit)]
     unifyNegWitnesses ta tb cont = meetPinaforeTypes ta tb $ \tab conva convb -> cont tab $ pure (conva, convb)
     unifyPosWitnesses ta tb cont = joinPinaforeTypes ta tb $ \tab conva convb -> cont tab $ pure (conva, convb)
     unifyPosNegWitnesses = unifyPosNegPinaforeTypes
-    solveUnifier t expr cont =
-        runUnifier t expr $ \t' conv a -> simplifyType t' $ \t'' conv' -> cont t'' (conv' . conv) a
+    solveUnifier = runUnifier
+    unifierPosSubstitute [] tp cont = cont tp id
+    unifierPosSubstitute (sub:subs) tp cont =
+        bisubstitutePositiveType sub tp $ \tp' conv1 ->
+            unifierPosSubstitute @(PinaforeUnifier baseedit) subs tp' $ \tp'' convr -> cont tp'' (convr . conv1)
+    unifierNegSubstitute [] tp cont = cont tp id
+    unifierNegSubstitute (sub:subs) tp cont =
+        bisubstituteNegativeType sub tp $ \tp' conv1 ->
+            unifierNegSubstitute @(PinaforeUnifier baseedit) subs tp' $ \tp'' convr -> cont tp'' (conv1 . convr)
 
 type PinaforeTypeNamespace baseedit (w :: k -> Type)
      = forall t1 r.
@@ -609,14 +612,6 @@ renameTypeArg ContravarianceType =
         Dict -> renamePinaforeTypeVars
 renameTypeArg RangevarianceType = renamePinaforeRangeTypeVars
 
--- type LiftBijection (f :: kp -> kq) = forall (a :: kp) (b :: kp). KindBijection kp a b -> KindBijection kq (f a) (f b)
-{-
-vcBijection ::
-       forall (v :: SingleVariance) k (f :: SingleVarianceKind v -> k). HasKindMorphism k
-    => SingleVarianceType v
-    -> SingleVarianceMap v f
-    -> LiftBijection f
--}
 renameTypeArgs ::
        forall baseedit (polarity :: TypePolarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv).
        IsTypePolarity polarity

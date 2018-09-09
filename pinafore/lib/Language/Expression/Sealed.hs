@@ -91,8 +91,12 @@ abstractSealedExpression absw name sexpr =
         MkAbstracter abstract <- abstractNamedExpression @unifier
         return $ do
             MkAbstractResult vwt (unifierExpression -> uexpr') <- abstract name expr
-            solveUnifier @unifier twt uexpr' $ \twt' tconv expr' ->
-                absw vwt twt' $ \twf abconv -> return $ MkSealedExpression twf $ fmap (abconv . fmap tconv) expr'
+            (expr', subs) <- solveUnifier @unifier uexpr'
+            unifierPosSubstitute @unifier subs twt $ \twt' tconv ->
+                absw vwt twt' $ \twf abconv ->
+                    return $
+                    MkSealedExpression twf $
+                    unifierExpressionSubstitute @unifier subs $ fmap (abconv . fmap tconv) expr'
 
 applySealedExpression ::
        forall renamer unifier name.
@@ -113,8 +117,12 @@ applySealedExpression appw sexprf sexpra =
             return $
             appw ta vx $ \vax convf -> do
                 uconv <- unifyPosNegWitnesses tf vax
-                solveUnifier @unifier tx uconv $ \tx' tconv convu ->
-                    return $ MkSealedExpression tx' $ (\t t1 -> tconv $ convf (convu t) t1) <$> exprf <*> expra
+                (convu, subs) <- solveUnifier @unifier uconv
+                unifierPosSubstitute @unifier subs tx $ \tx' tconv ->
+                    return $
+                    MkSealedExpression tx' $
+                    unifierExpressionSubstitute @unifier subs $
+                    (\t t1 -> tconv $ convf (convu t) t1) <$> exprf <*> expra
 
 -- | not recursive
 letSealedExpression ::
@@ -137,8 +145,11 @@ letSealedExpression name sexpre sexprb =
         return $ do
             MkAbstractResult vt (unifierExpression -> uexprf) <- abstract name exprb
             uconvet <- unifyPosNegWitnesses te vt
-            solveUnifier @unifier tb ((\exprf convet -> fmap (\tt2 -> tt2 . convet) exprf) <$> uexprf <*> uconvet) $ \tb' tconv exprf' ->
-                return $ MkSealedExpression tb' $ (fmap tconv) <$> exprf' <*> expre
+            (exprf', subs) <-
+                solveUnifier @unifier $ (\exprf convet -> fmap (\tt2 -> tt2 . convet) exprf) <$> uexprf <*> uconvet
+            unifierPosSubstitute @unifier subs tb $ \tb' tconv ->
+                return $
+                MkSealedExpression tb' $ unifierExpressionSubstitute @unifier subs $ (fmap tconv) <$> exprf' <*> expre
 
 constSealedExpression :: tw t -> t -> SealedExpression name vw tw
 constSealedExpression twt t = MkSealedExpression twt $ pure t

@@ -82,9 +82,10 @@ bindingsLetSealedExpression (MkBindings bindings) sexprb =
         return $ do
             ues <- abstractNames exprs
             ueb <- abstractNames exprb
-            let uresult = (,) <$> unifierExpression ues <*> unifierExpression ueb
-            solveUnifier @unifier tb uresult $ \tb' tconv (es, eb) ->
-                return $ MkSealedExpression tb' $ fmap tconv $ eb <*> fmap fix es
+            ((es, eb), subs) <- solveUnifier @unifier $ (,) <$> unifierExpression ues <*> unifierExpression ueb
+            unifierPosSubstitute @unifier subs tb $ \tb' tconv ->
+                return $
+                MkSealedExpression tb' $ unifierExpressionSubstitute @unifier subs $ fmap tconv $ eb <*> fmap fix es
 
 duplicates ::
        forall a. Eq a

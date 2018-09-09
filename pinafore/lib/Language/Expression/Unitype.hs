@@ -31,10 +31,13 @@ instance Monad m => Unifier (UnitypeUnifier m val) where
     type UnifierMonad (UnitypeUnifier m val) = m
     type UnifierNegWitness (UnitypeUnifier m val) = ((:~:) val)
     type UnifierPosWitness (UnitypeUnifier m val) = ((:~:) val)
+    type UnifierSubstitutions (UnitypeUnifier m val) = ()
     unifyNegWitnesses Refl Refl cont = cont Refl $ pure (id, id)
     unifyPosWitnesses Refl Refl cont = cont Refl $ pure (id, id)
     unifyPosNegWitnesses Refl Refl = return $ pure id
-    solveUnifier Refl (MkUnitypeUnifier ia) cont = cont Refl id $ runIdentity ia
+    solveUnifier (MkUnitypeUnifier ia) = return $ (runIdentity ia, ())
+    unifierPosSubstitute () Refl cont = cont Refl id
+    unifierNegSubstitute () Refl cont = cont Refl id
 
 class UnitypeValue val where
     applyValue :: val -> val -> val
