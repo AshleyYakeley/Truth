@@ -2,6 +2,7 @@ module Language.Expression.Unifier where
 
 import Language.Expression.Expression
 import Language.Expression.Named
+import Language.Expression.Sealed
 import Shapes
 
 class (Monad (UnifierMonad unifier), Applicative unifier) => Unifier unifier where
@@ -32,6 +33,9 @@ class (Monad (UnifierMonad unifier), Applicative unifier) => Unifier unifier whe
         -> UnifierNegWitness unifier t
         -> (forall t'. UnifierNegWitness unifier t' -> (t' -> t) -> r)
         -> r
+    simplifyExpressionType ::
+           SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
+        -> SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
 
 unifierExpressionSubstitute ::
        forall unifier name a. Unifier unifier
@@ -43,6 +47,15 @@ unifierExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) =
     unifierNegSubstitute @unifier subs tw $ \tw' conv ->
         OpenExpression (MkNameWitness name tw') $
         fmap (\ta -> ta . conv) $ unifierExpressionSubstitute @unifier subs expr
+
+unifierExpressionSubstituteAndSimplify ::
+       forall unifier name a. Unifier unifier
+    => UnifierSubstitutions unifier
+    -> UnifierPosWitness unifier a
+    -> NamedExpression name (UnifierNegWitness unifier) a
+    -> SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
+unifierExpressionSubstituteAndSimplify subs twt expr =
+    simplifyExpressionType @unifier $ MkSealedExpression twt $ unifierExpressionSubstitute @unifier subs expr
 
 data UnifyExpression name unifier a =
     forall conv. MkUnifyExpression (unifier conv)

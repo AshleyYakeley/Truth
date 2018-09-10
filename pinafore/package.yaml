@@ -28,6 +28,7 @@ library:
       - Language.Expression.Sealed
       - Language.Expression.Renamer
       - Language.Expression.Unifier
+      - Language.Expression.Abstract
       - Language.Expression.Bindings
       - Language.Expression.Typed
       - Language.Expression.Unitype

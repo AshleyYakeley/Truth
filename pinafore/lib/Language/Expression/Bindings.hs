@@ -10,6 +10,7 @@ module Language.Expression.Bindings
     ) where
 
 import Data.List (nub)
+import Language.Expression.Abstract
 import Language.Expression.Named
 import Language.Expression.Renamer
 import Language.Expression.Sealed
@@ -84,8 +85,7 @@ bindingsLetSealedExpression (MkBindings bindings) sexprb =
             ueb <- abstractNames exprb
             ((es, eb), subs) <- solveUnifier @unifier $ (,) <$> unifierExpression ues <*> unifierExpression ueb
             unifierPosSubstitute @unifier subs tb $ \tb' tconv ->
-                return $
-                MkSealedExpression tb' $ unifierExpressionSubstitute @unifier subs $ fmap tconv $ eb <*> fmap fix es
+                return $ unifierExpressionSubstituteAndSimplify @unifier subs tb' $ fmap tconv $ eb <*> fmap fix es
 
 duplicates ::
        forall a. Eq a

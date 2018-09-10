@@ -1,5 +1,6 @@
 module Language.Expression.Typed where
 
+import Language.Expression.Abstract
 import Language.Expression.Bindings
 import Language.Expression.Renamer
 import Language.Expression.Sealed

@@ -6,6 +6,7 @@ import GHC.TypeLits
 import Language.Expression.Dolan
 import Language.Expression.Expression
 import Language.Expression.Renamer
+import Language.Expression.Sealed
 import Language.Expression.Typed
 import Language.Expression.UVar
 import Language.Expression.Unifier
@@ -588,6 +589,8 @@ instance Unifier (PinaforeUnifier baseedit) where
     unifierNegSubstitute (sub:subs) tp cont =
         bisubstituteNegativeType sub tp $ \tp' conv1 ->
             unifierNegSubstitute @(PinaforeUnifier baseedit) subs tp' $ \tp'' convr -> cont tp'' (conv1 . convr)
+    simplifyExpressionType (MkSealedExpression twt expr) =
+        simplifyType twt $ \twt' conv -> MkSealedExpression twt' $ fmap conv expr
 
 type PinaforeTypeNamespace baseedit (w :: k -> Type)
      = forall t1 r.
