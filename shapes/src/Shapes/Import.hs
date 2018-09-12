@@ -65,6 +65,9 @@ import Data.Containers as I
 import Data.MonoTraversable as I
 import Data.Sequences as I hiding (catMaybes, filter)
 
+-- contravariant
+import Data.Functor.Contravariant as I (Contravariant(..))
+
 -- comonad
 import Control.Comonad as I
 

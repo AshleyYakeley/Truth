@@ -19,7 +19,7 @@ instance Namespace (UnitypeRenamer val) where
 
 instance Renamer (UnitypeRenamer val) where
     type RenamerNamespace (UnitypeRenamer val) = UnitypeRenamer val
-    renameNewVar cont = cont Refl Refl
+    renameNewVar cont = cont Refl Refl id
     namespace = id
     runRenamer (MkUnitypeRenamer ia) = runIdentity ia
 

@@ -122,19 +122,19 @@ type family SingleArgument (sv :: SingleVariance) (ft :: TypePolarity -> Type ->
     SingleArgument 'Contravariance ft polarity = ft (InvertPolarity polarity)
     SingleArgument 'Rangevariance ft polarity = TypeRangeWitness ft polarity
 
-data DolanArguments (dv :: DolanVariance) (ft :: TypePolarity -> Type -> Type) (polarity :: TypePolarity) (t :: DolanVarianceKind dv) (ta :: Type) where
-    NilDolanArguments :: DolanArguments '[] ft polarity t t
+data DolanArguments (dv :: DolanVariance) (ft :: TypePolarity -> Type -> Type) (t :: DolanVarianceKind dv) (polarity :: TypePolarity) (ta :: Type) where
+    NilDolanArguments :: DolanArguments '[] ft t polarity t
     ConsDolanArguments
         :: SingleArgument sv ft polarity a
-        -> DolanArguments dv ft polarity (t a) ta
-        -> DolanArguments (sv ': dv) ft polarity t ta
+        -> DolanArguments dv ft (t a) polarity ta
+        -> DolanArguments (sv ': dv) ft t polarity ta
 
 --type family DolanArguments (dk :: DolanVariance) (ft :: TypePolarity -> Type -> Type) (polarity :: TypePolarity) (t :: DolanVarianceKind dk) (ta :: Type)
 bijectTypeArguments ::
        forall ft dk polarity ta t t' r.
        KindBijection (DolanVarianceKind dk) t t'
-    -> DolanArguments dk ft polarity t ta
-    -> (forall ta'. DolanArguments dk ft polarity t' ta' -> Bijection ta ta' -> r)
+    -> DolanArguments dk ft t polarity ta
+    -> (forall ta'. DolanArguments dk ft t' polarity ta' -> Bijection ta ta' -> r)
     -> r
 bijectTypeArguments bij NilDolanArguments cont = cont NilDolanArguments bij
 bijectTypeArguments bij (ConsDolanArguments arg args) cont =

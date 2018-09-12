@@ -2,6 +2,7 @@ module Test.Type
     ( testType
     ) where
 
+import GHC.TypeLits
 import Language.Expression.Dolan
 import Language.Expression.Expression
 import Language.Expression.Named
@@ -32,33 +33,54 @@ exprTypeTest name expected mexpr =
         expr <- mexpr
         return $ showTypes expr
 
+class ToPinaforeType baseedit t where
+    toPinaforeType :: PinaforeTypeF baseedit 'PositivePolarity t
+
+class FromPinaforeType baseedit t where
+    fromPinaforeType :: PinaforeTypeF baseedit 'NegativePolarity t
+
+instance KnownSymbol name => ToPinaforeType baseedit (UVar name) where
+    toPinaforeType = singlePositivePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType $ MkSymbolWitness
+
+instance KnownSymbol name => FromPinaforeType baseedit (UVar name) where
+    fromPinaforeType = singleNegativePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType $ MkSymbolWitness
+
+instance (FromPinaforeType baseedit a, ToPinaforeType baseedit b) => ToPinaforeType baseedit (a -> b) where
+    toPinaforeType =
+        unTypeF fromPinaforeType $ \ta conva ->
+            unTypeF toPinaforeType $ \tb convb ->
+                contramap (\ab -> convb . ab . conva) $
+                singlePositivePinaforeTypeF $
+                mkTypeF $
+                GroundPinaforeSingularType FuncPinaforeGroundType $
+                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+
+instance ToPinaforeType baseedit (Maybe Bool) where
+    toPinaforeType =
+        singlePositivePinaforeTypeF $
+        mkTypeF $ GroundPinaforeSingularType (LiteralPinaforeGroundType BooleanLiteralType) NilDolanArguments
+
+instance ToPinaforeType baseedit (Maybe Number) where
+    toPinaforeType =
+        singlePositivePinaforeTypeF $
+        mkTypeF $ GroundPinaforeSingularType (LiteralPinaforeGroundType NumberLiteralType) NilDolanArguments
+
+instance FromPinaforeType baseedit (Maybe Number) where
+    fromPinaforeType =
+        singleNegativePinaforeTypeF $
+        mkTypeF $ GroundPinaforeSingularType (LiteralPinaforeGroundType NumberLiteralType) NilDolanArguments
+
 idExpr :: PExpression
-idExpr =
-    toSymbolWitness "x" $ \v ->
-        MkSealedExpression
-            (GroundPinaforeType FuncPinaforeGroundType $
-             ConsDolanArguments (VarPinaforeType v) $ ConsDolanArguments (VarPinaforeType v) NilDolanArguments) $
-        ClosedExpression id
+idExpr = typeFExpression toPinaforeType $ \(v :: UVar "x") -> v
 
 nbFuncExpr :: PExpression
-nbFuncExpr =
-    MkSealedExpression
-        (GroundPinaforeType FuncPinaforeGroundType $
-         ConsDolanArguments (GroundPinaforeType (LiteralPinaforeGroundType NumberLiteralType) NilDolanArguments) $
-         ConsDolanArguments
-             (GroundPinaforeType (LiteralPinaforeGroundType BooleanLiteralType) NilDolanArguments)
-             NilDolanArguments) $
-    ClosedExpression $ \_ -> Just False
+nbFuncExpr = typeFExpression toPinaforeType $ \(_ :: Maybe Number) -> Just False
 
 numExpr :: PExpression
-numExpr =
-    constTypedExpression @TS (GroundPinaforeType (LiteralPinaforeGroundType NumberLiteralType) NilDolanArguments) $
-    Just 3
+numExpr = typeFExpression toPinaforeType $ Just (3 :: Number)
 
 boolExpr :: PExpression
-boolExpr =
-    constTypedExpression @TS (GroundPinaforeType (LiteralPinaforeGroundType BooleanLiteralType) NilDolanArguments) $
-    Just False
+boolExpr = typeFExpression toPinaforeType $ Just False
 
 varExpr :: PExpression
 varExpr = varTypedExpression @TS "v"
@@ -72,11 +94,11 @@ testType =
         , exprTypeTest "id" (return "{} -> x -> x") $ return idExpr
         , exprTypeTest "nb" (return "{} -> Number -> Boolean") $ return nbFuncExpr
         , exprTypeTest "var" (return "{v :: a} -> a") $ return varExpr
-        , exprTypeTest "apply id number" (return "{} -> Number | b") $ applyTypedExpression @TS idExpr numExpr
-        , exprTypeTest "apply nb number" (return "{} -> Boolean | a") $ applyTypedExpression @TS nbFuncExpr numExpr
+        , exprTypeTest "apply id number" (return "{} -> b | Number") $ applyTypedExpression @TS idExpr numExpr
+        , exprTypeTest "apply nb number" (return "{} -> a | Boolean") $ applyTypedExpression @TS nbFuncExpr numExpr
         , exprTypeTest "apply nb boolean" (fail "can't cast Boolean to Number") $
           applyTypedExpression @TS nbFuncExpr boolExpr
-        , exprTypeTest "apply id var" (return "{v :: (c & x) & a} -> c") $ applyTypedExpression @TS idExpr varExpr
-        , exprTypeTest "apply nb var" (return "{v :: Number & a} -> Boolean | b") $
+        , exprTypeTest "apply id var" (return "{v :: a & (x & c)} -> c") $ applyTypedExpression @TS idExpr varExpr
+        , exprTypeTest "apply nb var" (return "{v :: a & Number} -> b | Boolean") $
           applyTypedExpression @TS nbFuncExpr varExpr
         ]

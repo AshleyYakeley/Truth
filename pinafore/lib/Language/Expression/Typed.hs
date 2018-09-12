@@ -52,7 +52,7 @@ varTypedExpression ::
     => name
     -> TypedExpression name ts
 varTypedExpression name =
-    runRenamer @(TypeRenamer ts) $ renameNewVar $ \vwt twt -> return $ varSealedExpression name vwt twt
+    runRenamer @(TypeRenamer ts) $ renameNewVar $ \vwt twt conv -> return $ varSealedExpression name vwt twt conv
 
 constTypedExpression :: forall ts name t. PosWitness ts t -> t -> TypedExpression name ts
 constTypedExpression = constSealedExpression

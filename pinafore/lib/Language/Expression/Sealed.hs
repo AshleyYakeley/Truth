@@ -28,8 +28,8 @@ evalSealedExpression (MkSealedExpression twa expr) = do
     a <- evalExpression expr
     return $ MkAny twa a
 
-varSealedExpression :: name -> vw t -> tw t -> SealedExpression name vw tw
-varSealedExpression n vwt twt = MkSealedExpression twt $ varNamedExpression n vwt
+varSealedExpression :: name -> vw tv -> tw tt -> (tv -> tt) -> SealedExpression name vw tw
+varSealedExpression n vwt twt conv = MkSealedExpression twt $ fmap conv $ varNamedExpression n vwt
 
 type instance Element (SealedExpression name vw ((:~:) val)) = val
 

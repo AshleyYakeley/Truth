@@ -22,6 +22,10 @@ join1 v = MkJoinType $ Left v
 join2 :: b -> JoinType a b
 join2 v = MkJoinType $ Right v
 
+joinf :: (a -> r) -> (b -> r) -> JoinType a b -> r
+joinf f _ (MkJoinType (Left v)) = f v
+joinf _ f (MkJoinType (Right v)) = f v
+
 joinBimap :: (a1 -> a2) -> (b1 -> b2) -> JoinType a1 b1 -> JoinType a2 b2
 joinBimap f _ (MkJoinType (Left v)) = MkJoinType $ Left $ f v
 joinBimap _ f (MkJoinType (Right v)) = MkJoinType $ Right $ f v
@@ -35,6 +39,9 @@ meet1 (MkMeetType (v, _)) = v
 meet2 :: MeetType a b -> b
 meet2 (MkMeetType (_, v)) = v
 
+meetf :: (r -> a) -> (r -> b) -> r -> MeetType a b
+meetf f1 f2 v = MkMeetType (f1 v, f2 v)
+
 meetBimap :: (a1 -> a2) -> (b1 -> b2) -> MeetType a1 b1 -> MeetType a2 b2
 meetBimap aa bb (MkMeetType (a, b)) = MkMeetType (aa a, bb b)
 
@@ -43,6 +50,7 @@ data TypePolarity
     | NegativePolarity
 
 class IsTypePolarity (polarity :: TypePolarity) where
+    whichTypePolarity :: Either (polarity :~: 'PositivePolarity) (polarity :~: 'NegativePolarity)
     type InvertPolarity polarity :: TypePolarity
     isInvertPolarity :: Dict (IsTypePolarity (InvertPolarity polarity))
     type LimitType polarity :: Type
@@ -63,6 +71,7 @@ jmBiMap (MkBijection a1a2 a2a1) (MkBijection b1b2 b2b1) =
     MkBijection (jmMap @polarity a1a2 b1b2) (jmMap @polarity a2a1 b2b1)
 
 instance IsTypePolarity 'PositivePolarity where
+    whichTypePolarity = Left Refl
     type InvertPolarity 'PositivePolarity = 'NegativePolarity
     isInvertPolarity = Dict
     type LimitType 'PositivePolarity = BottomType
@@ -84,6 +93,7 @@ instance IsTypePolarity 'PositivePolarity where
     jmMap _ b1b2 (MkJoinType (Right b)) = MkJoinType $ Right $ b1b2 b
 
 instance IsTypePolarity 'NegativePolarity where
+    whichTypePolarity = Right Refl
     type InvertPolarity 'NegativePolarity = 'PositivePolarity
     isInvertPolarity = Dict
     type LimitType 'NegativePolarity = TopType
@@ -94,3 +104,24 @@ instance IsTypePolarity 'NegativePolarity where
     jmLeftIdentity = MkBijection (\(MkMeetType (MkTopType, a)) -> a) $ \a -> MkMeetType (MkTopType, a)
     jmRightIdentity = MkBijection (\(MkMeetType (a, MkTopType)) -> a) $ \a -> MkMeetType (a, MkTopType)
     jmMap a1a2 b1b2 (MkMeetType (a, b)) = MkMeetType (a1a2 a, b1b2 b)
+
+data TypeF (wit :: TypePolarity -> Type -> Type) (polarity :: TypePolarity) (t :: Type) :: Type where
+    MkTypeF :: wit polarity t' -> ConvertType polarity t t' -> TypeF wit polarity t
+
+mkTypeF ::
+       forall wit polarity t. IsTypePolarity polarity
+    => wit polarity t
+    -> TypeF wit polarity t
+mkTypeF t =
+    case whichTypePolarity @polarity of
+        Left Refl -> MkTypeF t id
+        Right Refl -> MkTypeF t id
+
+unTypeF :: TypeF wit polarity t -> (forall t'. wit polarity t' -> ConvertType polarity t t' -> r) -> r
+unTypeF (MkTypeF t conv) cont = cont t conv
+
+instance Functor (TypeF wit 'NegativePolarity) where
+    fmap ab (MkTypeF t conv) = MkTypeF t $ ab . conv
+
+instance Contravariant (TypeF wit 'PositivePolarity) where
+    contramap ab (MkTypeF t conv) = MkTypeF t $ conv . ab

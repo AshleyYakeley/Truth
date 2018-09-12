@@ -12,6 +12,7 @@ library:
       - stm
       - constraints
       - mono-traversable
+      - contravariant
       - comonad
       - lattices
       - transformers

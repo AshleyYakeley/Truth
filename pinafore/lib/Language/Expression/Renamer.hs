@@ -28,7 +28,7 @@ type RenamerPosWitness rn = NamespacePosWitness (RenamerNamespace rn)
 
 class (Monad rn, Namespace (RenamerNamespace rn)) => Renamer rn where
     type RenamerNamespace rn :: Type -> Type
-    renameNewVar :: (forall t. RenamerNegWitness rn t -> RenamerPosWitness rn t -> rn r) -> rn r
+    renameNewVar :: (forall tp tq. RenamerNegWitness rn tq -> RenamerPosWitness rn tp -> (tq -> tp) -> rn r) -> rn r
     namespace :: RenamerNamespace rn r -> rn r
     runRenamer :: rn r -> r
 

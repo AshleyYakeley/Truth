@@ -51,7 +51,7 @@ abstractNamedExpression ::
        )
     => renamer (Abstracter unifier)
 abstractNamedExpression =
-    renameNewVar $ \vwt0 _ ->
+    renameNewVar $ \vwt0 _ _ ->
         return $
         MkAbstracter $ \name expr ->
             abstractNamedExpressionUnifier @unifier name vwt0 expr $ \vwt uconv expr' ->
@@ -99,7 +99,7 @@ applySealedExpression appw sexprf sexpra =
     runRenamer @renamer $ do
         MkSealedExpression tf exprf <- renameSealedExpression sexprf
         MkSealedExpression ta expra <- renameSealedExpression sexpra
-        renameNewVar $ \vx tx ->
+        renameNewVar $ \vx tx convvar ->
             return $
             appw ta vx $ \vax convf -> do
                 uconv <- unifyPosNegWitnesses tf vax
@@ -107,7 +107,7 @@ applySealedExpression appw sexprf sexpra =
                 unifierPosSubstitute @unifier subs tx $ \tx' tconv ->
                     return $
                     unifierExpressionSubstituteAndSimplify @unifier subs tx' $
-                    (\t t1 -> tconv $ convf (convu t) t1) <$> exprf <*> expra
+                    (\t t1 -> tconv $ convvar $ convf (convu t) t1) <$> exprf <*> expra
 
 -- | not recursive
 letSealedExpression ::
