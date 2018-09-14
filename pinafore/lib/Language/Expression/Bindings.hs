@@ -9,7 +9,6 @@ module Language.Expression.Bindings
     , bindingsLetSealedExpression
     ) where
 
-import Data.List (nub)
 import Language.Expression.Abstract
 import Language.Expression.Named
 import Language.Expression.Renamer

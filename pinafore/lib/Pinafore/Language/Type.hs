@@ -8,6 +8,7 @@ module Pinafore.Language.Type
 import GHC.TypeLits
 import Language.Expression.Dolan
 import Language.Expression.Expression
+import Language.Expression.Named
 import Language.Expression.Renamer
 import Language.Expression.Sealed
 import Language.Expression.Typed
@@ -290,7 +291,7 @@ meetPinaforeTypes ::
     -> PinaforeType baseedit 'NegativePolarity b
     -> (forall ab. PinaforeType baseedit 'NegativePolarity ab -> (ab -> a) -> (ab -> b) -> r)
     -> r
-meetPinaforeTypes NilPinaforeType tb cont = cont tb (\_ -> MkTopType) id
+meetPinaforeTypes NilPinaforeType tb cont = cont tb alwaysTop id
 meetPinaforeTypes (ConsPinaforeType ta tr) tb cont =
     meetPinaforeTypes tr tb $ \trb conva convb -> cont (ConsPinaforeType ta trb) (meetBimap id conva) (convb . meet2)
 
@@ -371,7 +372,7 @@ unifyPosNegPinaforeTypes1 ::
        PinaforeSingularType baseedit 'PositivePolarity a
     -> PinaforeType baseedit 'NegativePolarity b
     -> Result Text (PinaforeUnifier baseedit (a -> b))
-unifyPosNegPinaforeTypes1 _ NilPinaforeType = return $ pure $ \_ -> MkTopType
+unifyPosNegPinaforeTypes1 _ NilPinaforeType = return $ pure alwaysTop
 unifyPosNegPinaforeTypes1 ta (ConsPinaforeType t1 t2) = do
     uf1 <- unifyPosNegPinaforeSingularTypes ta t1
     uf2 <- unifyPosNegPinaforeTypes1 ta t2
@@ -563,7 +564,7 @@ bisubstituteNegativeVar ::
     -> PinaforeType baseedit 'NegativePolarity t
     -> PinaforeUnifier baseedit ((UVar name -> t) -> a)
     -> PinaforeUnifier baseedit a
-bisubstituteNegativeVar _ NilPinaforeType uf = fmap (\fa -> fa $ \_ -> MkTopType) uf
+bisubstituteNegativeVar _ NilPinaforeType uf = fmap (\fa -> fa alwaysTop) uf
 bisubstituteNegativeVar vn (ConsPinaforeType t1 tr) uf =
     OpenExpression (NegativeBisubstitutionWitness vn t1) $
     bisubstituteNegativeVar vn tr $ fmap (\fa fr f1 -> fa $ meetf f1 fr) uf
@@ -658,8 +659,13 @@ instance Unifier (PinaforeUnifier baseedit) where
     solveUnifier = runUnifier
     unifierPosSubstitute subs t = unTypeF $ bisubstituteAllPositiveType subs t
     unifierNegSubstitute subs t = unTypeF $ bisubstituteAllNegativeType subs t
-    simplifyExpressionType (MkSealedExpression twt expr) =
-        simplifyType twt $ \twt' conv -> MkSealedExpression twt' $ fmap conv expr
+    -- Simplification:
+    -- 1. merge duplicate ground types in join/meet (on each type)
+    -- 2. eliminate one-sided vars (on whole expression)
+    -- 3. merge shared vars (on whole expression)
+    -- 4. merge duplicate vars in join/meet (on each type)
+    simplifyExpressionType =
+        mergeDuplicateVarsExpression . mergeSharedVars . eliminateOneSidedVars . mergeDuplicateGroundTypesExpression
 
 type PinaforeTypeNamespace baseedit (w :: k -> Type)
      = forall t1 r.
@@ -755,13 +761,6 @@ instance TypeSystem (PinaforeTypeSystem baseedit) where
         GroundPinaforeSingularType FuncPinaforeGroundType $
         ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
-simplifyType ::
-       forall baseedit a r.
-       PinaforeType baseedit 'PositivePolarity a
-    -> (forall b. PinaforeType baseedit 'PositivePolarity b -> (a -> b) -> r)
-    -> r
-simplifyType t cont = cont t id
-
 instance IsTypePolarity polarity => ExprShow (PinaforeSingularType baseedit polarity t) where
     exprShowPrec (VarPinaforeSingularType namewit) = (pack $ show namewit, 0)
     exprShowPrec (GroundPinaforeSingularType gt args) = exprShowPrecGroundType gt args
@@ -855,3 +854,99 @@ instance IsSubtype LiteralType where
     isSubtype BooleanLiteralType BooleanLiteralType = return id
     isSubtype BottomLiteralType _ = return never
     isSubtype ta tb = FailureResult $ "cannot match " <> exprShow ta <> " with " <> exprShow tb
+
+type PinaforeExpression baseedit name
+     = SealedExpression name (PinaforeType baseedit 'NegativePolarity) (PinaforeType baseedit 'PositivePolarity)
+
+mergeDuplicateGroundTypesExpression :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+mergeDuplicateGroundTypesExpression expr = expr
+
+class GetExpressionVars t where
+    -- | (positive, negative)
+    getExpressionVars :: t -> ([AnyWitness SymbolWitness], [AnyWitness SymbolWitness])
+
+instance IsTypePolarity polarity => GetExpressionVars (TypeRangeWitness (PinaforeType baseedit) polarity a) where
+    getExpressionVars (MkTypeRangeWitness tp tq) =
+        case isInvertPolarity @polarity of
+            Dict -> getExpressionVars tp <> getExpressionVars tq
+
+getArgExpressionVars ::
+       forall baseedit polarity sv a. IsTypePolarity polarity
+    => SingleVarianceType sv
+    -> SingleArgument sv (PinaforeType baseedit) polarity a
+    -> ([AnyWitness SymbolWitness], [AnyWitness SymbolWitness])
+getArgExpressionVars CovarianceType t = getExpressionVars t
+getArgExpressionVars ContravarianceType t =
+    case isInvertPolarity @polarity of
+        Dict -> getExpressionVars t
+getArgExpressionVars RangevarianceType t = getExpressionVars t
+
+getArgsExpressionVars ::
+       forall baseedit polarity dv gt t. IsTypePolarity polarity
+    => DolanVarianceType dv
+    -> DolanArguments dv (PinaforeType baseedit) gt polarity t
+    -> ([AnyWitness SymbolWitness], [AnyWitness SymbolWitness])
+getArgsExpressionVars NilListType NilDolanArguments = mempty
+getArgsExpressionVars (ConsListType sv dv) (ConsDolanArguments arg args) =
+    getArgExpressionVars @baseedit @polarity sv arg <> getArgsExpressionVars dv args
+
+instance IsTypePolarity polarity => GetExpressionVars (PinaforeSingularType baseedit polarity t) where
+    getExpressionVars (GroundPinaforeSingularType gt args) = getArgsExpressionVars (pinaforeGroundTypeKind gt) args
+    getExpressionVars (VarPinaforeSingularType vn) =
+        case whichTypePolarity @polarity of
+            Left Refl -> ([MkAnyWitness vn], [])
+            Right Refl -> ([], [MkAnyWitness vn])
+
+instance IsTypePolarity polarity => GetExpressionVars (PinaforeType baseedit polarity t) where
+    getExpressionVars NilPinaforeType = mempty
+    getExpressionVars (ConsPinaforeType t1 tr) = getExpressionVars t1 <> getExpressionVars tr
+
+instance GetExpressionVars (NamedExpression name (PinaforeType baseedit 'NegativePolarity) t) where
+    getExpressionVars (ClosedExpression _) = mempty
+    getExpressionVars (OpenExpression (MkNameWitness _ t) expr) = getExpressionVars t <> getExpressionVars expr
+
+instance GetExpressionVars (PinaforeExpression baseedit name) where
+    getExpressionVars (MkSealedExpression twt expr) = getExpressionVars twt <> getExpressionVars expr
+
+bisubstituteExpression ::
+       PinaforeBisubstitution baseedit
+    -> NamedExpression name (PinaforeType baseedit 'NegativePolarity) t
+    -> NamedExpression name (PinaforeType baseedit 'NegativePolarity) t
+bisubstituteExpression _ (ClosedExpression a) = ClosedExpression a
+bisubstituteExpression sub (OpenExpression (MkNameWitness name t) expr) =
+    case bisubstituteNegativeType sub t of
+        MkTypeF wit' conv ->
+            OpenExpression (MkNameWitness name wit') $ fmap (\ta -> ta . conv) $ bisubstituteExpression sub expr
+
+bisubstituteSealedExpression ::
+       PinaforeBisubstitution baseedit -> PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+bisubstituteSealedExpression sub (MkSealedExpression t expr) =
+    typeFSealedExpression (bisubstitutePositiveType sub t) $ bisubstituteExpression sub expr
+
+bisubstitutesSealedExpression ::
+       [PinaforeBisubstitution baseedit] -> PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+bisubstitutesSealedExpression [] expr = expr
+bisubstitutesSealedExpression (sub:subs) expr =
+    bisubstitutesSealedExpression subs $ bisubstituteSealedExpression sub expr
+
+eliminateOneSidedVars :: forall baseedit name. PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+eliminateOneSidedVars expr = let
+    (setFromList -> posvars, setFromList -> negvars) = getExpressionVars expr
+    posonlyvars :: FiniteSet _
+    posonlyvars = difference posvars negvars
+    negonlyvars :: FiniteSet _
+    negonlyvars = difference negvars posvars
+    mkbisub :: AnyWitness SymbolWitness -> PinaforeBisubstitution baseedit
+    mkbisub (MkAnyWitness vn) =
+        MkBisubstitution
+            vn
+            (contramap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
+            (fmap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
+    bisubs = toList $ fmap mkbisub $ posonlyvars <> negonlyvars
+    in bisubstitutesSealedExpression bisubs expr
+
+mergeSharedVars :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+mergeSharedVars expr = expr
+
+mergeDuplicateVarsExpression :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+mergeDuplicateVarsExpression expr = expr

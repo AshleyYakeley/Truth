@@ -5,6 +5,9 @@ import Shapes
 data TopType =
     MkTopType
 
+alwaysTop :: a -> TopType
+alwaysTop _ = MkTopType
+
 newtype BottomType =
     MkBottomType None
     deriving (Eq, Searchable, Countable, Empty)
@@ -104,24 +107,3 @@ instance IsTypePolarity 'NegativePolarity where
     jmLeftIdentity = MkBijection (\(MkMeetType (MkTopType, a)) -> a) $ \a -> MkMeetType (MkTopType, a)
     jmRightIdentity = MkBijection (\(MkMeetType (a, MkTopType)) -> a) $ \a -> MkMeetType (a, MkTopType)
     jmMap a1a2 b1b2 (MkMeetType (a, b)) = MkMeetType (a1a2 a, b1b2 b)
-
-data TypeF (wit :: TypePolarity -> Type -> Type) (polarity :: TypePolarity) (t :: Type) :: Type where
-    MkTypeF :: wit polarity t' -> ConvertType polarity t t' -> TypeF wit polarity t
-
-mkTypeF ::
-       forall wit polarity t. IsTypePolarity polarity
-    => wit polarity t
-    -> TypeF wit polarity t
-mkTypeF t =
-    case whichTypePolarity @polarity of
-        Left Refl -> MkTypeF t id
-        Right Refl -> MkTypeF t id
-
-unTypeF :: TypeF wit polarity t -> (forall t'. wit polarity t' -> ConvertType polarity t t' -> r) -> r
-unTypeF (MkTypeF t conv) cont = cont t conv
-
-instance Functor (TypeF wit 'NegativePolarity) where
-    fmap ab (MkTypeF t conv) = MkTypeF t $ ab . conv
-
-instance Contravariant (TypeF wit 'PositivePolarity) where
-    contramap ab (MkTypeF t conv) = MkTypeF t $ conv . ab

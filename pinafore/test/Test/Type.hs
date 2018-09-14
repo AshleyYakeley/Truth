@@ -71,16 +71,16 @@ instance FromPinaforeType baseedit (Maybe Number) where
         mkTypeF $ GroundPinaforeSingularType (LiteralPinaforeGroundType NumberLiteralType) NilDolanArguments
 
 idExpr :: PExpression
-idExpr = typeFExpression toPinaforeType $ \(v :: UVar "x") -> v
+idExpr = typeFConstExpression toPinaforeType $ \(v :: UVar "x") -> v
 
 nbFuncExpr :: PExpression
-nbFuncExpr = typeFExpression toPinaforeType $ \(_ :: Maybe Number) -> Just False
+nbFuncExpr = typeFConstExpression toPinaforeType $ \(_ :: Maybe Number) -> Just False
 
 numExpr :: PExpression
-numExpr = typeFExpression toPinaforeType $ Just (3 :: Number)
+numExpr = typeFConstExpression toPinaforeType $ Just (3 :: Number)
 
 boolExpr :: PExpression
-boolExpr = typeFExpression toPinaforeType $ Just False
+boolExpr = typeFConstExpression toPinaforeType $ Just False
 
 varExpr :: PExpression
 varExpr = varTypedExpression @TS "v"
@@ -94,11 +94,10 @@ testType =
         , exprTypeTest "id" (return "{} -> x -> x") $ return idExpr
         , exprTypeTest "nb" (return "{} -> Number -> Boolean") $ return nbFuncExpr
         , exprTypeTest "var" (return "{v :: a} -> a") $ return varExpr
-        , exprTypeTest "apply id number" (return "{} -> b | Number") $ applyTypedExpression @TS idExpr numExpr
-        , exprTypeTest "apply nb number" (return "{} -> a | Boolean") $ applyTypedExpression @TS nbFuncExpr numExpr
+        , exprTypeTest "apply id number" (return "{} -> Number") $ applyTypedExpression @TS idExpr numExpr
+        , exprTypeTest "apply nb number" (return "{} -> Boolean") $ applyTypedExpression @TS nbFuncExpr numExpr
         , exprTypeTest "apply nb boolean" (fail "can't cast Boolean to Number") $
           applyTypedExpression @TS nbFuncExpr boolExpr
-        , exprTypeTest "apply id var" (return "{v :: a & (x & c)} -> c") $ applyTypedExpression @TS idExpr varExpr
-        , exprTypeTest "apply nb var" (return "{v :: a & Number} -> b | Boolean") $
-          applyTypedExpression @TS nbFuncExpr varExpr
+        , exprTypeTest "apply id var" (return "{v :: c} -> c") $ applyTypedExpression @TS idExpr varExpr
+        , exprTypeTest "apply nb var" (return "{v :: Number} -> Boolean") $ applyTypedExpression @TS nbFuncExpr varExpr
         ]
