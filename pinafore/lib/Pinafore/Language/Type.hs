@@ -91,7 +91,7 @@ data PinaforeGroundType baseedit (dk :: DolanVariance) (t :: DolanVarianceKind d
     ActionPinaforeGroundType :: PinaforeGroundType baseedit '[] (QAction baseedit)
     OrderPinaforeGroundType :: PinaforeGroundType baseedit '[] (QOrder baseedit)
     UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit '[] (UISpec (ConstEdit Point) baseedit)
-    LiteralPinaforeGroundType :: LiteralType t -> PinaforeGroundType baseedit '[] (Maybe t)
+    LiteralPinaforeGroundType :: LiteralType t -> PinaforeGroundType baseedit '[] t
     PointPinaforeGroundType :: SymbolWitness name -> PinaforeGroundType baseedit '[] (Entity name)
     FuncPinaforeGroundType :: PinaforeGroundType baseedit '[ 'Contravariance, 'Covariance] (->)
     ListPinaforeGroundType :: PinaforeGroundType baseedit '[ 'Covariance] []
