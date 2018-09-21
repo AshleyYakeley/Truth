@@ -21,7 +21,7 @@ class (Monad (UnifierMonad unifier), Applicative unifier) => Unifier unifier whe
         -> (forall ab. UnifierPosWitness unifier ab -> unifier (a -> ab, b -> ab) -> UnifierMonad unifier r)
         -> UnifierMonad unifier r
     unifyPosNegWitnesses ::
-           UnifierPosWitness unifier a -> UnifierNegWitness unifier b -> UnifierMonad unifier (unifier (a -> b))
+           UnifierPosWitness unifier a -> UnifierNegWitness unifier b -> Compose (UnifierMonad unifier) unifier (a -> b)
     solveUnifier :: unifier a -> UnifierMonad unifier (a, UnifierSubstitutions unifier)
     unifierPosSubstitute ::
            UnifierSubstitutions unifier
@@ -36,6 +36,12 @@ class (Monad (UnifierMonad unifier), Applicative unifier) => Unifier unifier whe
     simplifyExpressionType ::
            SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
         -> SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
+
+unifierFail :: MonadFail (UnifierMonad unifier) => String -> Compose (UnifierMonad unifier) unifier a
+unifierFail s = Compose $ fail s
+
+liftUnifier :: Monad (UnifierMonad unifier) => unifier a -> Compose (UnifierMonad unifier) unifier a
+liftUnifier ua = Compose $ return ua
 
 unifierExpressionSubstitute ::
        forall unifier name a. Unifier unifier

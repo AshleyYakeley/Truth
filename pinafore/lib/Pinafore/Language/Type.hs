@@ -1,3 +1,4 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Type
@@ -266,6 +267,8 @@ data BisubstitutionWitness baseedit t where
 
 type PinaforeUnifier baseedit = Expression (BisubstitutionWitness baseedit)
 
+type PinaforeFullUnifier baseedit = Compose (Result Text) (Expression (BisubstitutionWitness baseedit))
+
 joinPinaforeTypes ::
        forall baseedit (a :: Type) (b :: Type) r.
        PinaforeType baseedit 'PositivePolarity a
@@ -307,15 +310,15 @@ unifyPosNegVariance ::
        SingleVarianceType sv
     -> SingleArgument sv (PinaforeType baseedit) 'PositivePolarity a
     -> SingleArgument sv (PinaforeType baseedit) 'NegativePolarity b
-    -> Result Text (PinaforeUnifier baseedit (SingleVarianceFunc sv a b))
+    -> PinaforeFullUnifier baseedit (SingleVarianceFunc sv a b)
 unifyPosNegVariance CovarianceType ta tb = unifyPosNegPinaforeTypes ta tb
 unifyPosNegVariance ContravarianceType ta tb = do
-    uba <- unifyPosNegPinaforeTypes tb ta
-    return $ fmap MkCatDual uba
+    ba <- unifyPosNegPinaforeTypes tb ta
+    return $ MkCatDual ba
 unifyPosNegVariance RangevarianceType (MkTypeRangeWitness tpa tqa) (MkTypeRangeWitness tpb tqb) = do
-    upba <- unifyPosNegPinaforeTypes tpb tpa
-    uqab <- unifyPosNegPinaforeTypes tqa tqb
-    return $ MkRangeFunc <$> upba <*> uqab
+    pba <- unifyPosNegPinaforeTypes tpb tpa
+    qab <- unifyPosNegPinaforeTypes tqa tqb
+    return $ MkRangeFunc pba qab
 
 unifyPosNegArguments ::
        forall baseedit dv gta gtb ta tb.
@@ -323,34 +326,30 @@ unifyPosNegArguments ::
     -> DolanKindVary dv gta
     -> DolanArguments dv (PinaforeType baseedit) gta 'PositivePolarity ta
     -> DolanArguments dv (PinaforeType baseedit) gtb 'NegativePolarity tb
-    -> PinaforeUnifier baseedit (KindFunction (DolanVarianceKind dv) gta gtb)
-    -> Result Text (PinaforeUnifier baseedit (ta -> tb))
-unifyPosNegArguments NilListType NilDolanKindVary NilDolanArguments NilDolanArguments ugtconv = return ugtconv
-unifyPosNegArguments (ConsListType (svt :: SingleVarianceType sv) (dvt :: DolanVarianceType dv')) (ConsDolanKindVary svm dvm) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) ugtconv = do
-    usfunc <- unifyPosNegVariance svt sta stb
-    let
-        ff :: forall a b.
-              KindFunction (DolanVarianceKind dv) gta gtb
-           -> SingleVarianceFunc sv a b
-           -> KindFunction (DolanVarianceKind dv') (gta a) (gtb b)
-        ff (MkNestedMorphism gtconv) sfunc =
-            case dolanVarianceKMCategory @(->) dvt of
-                Dict -> gtconv . svm sfunc
-    unifyPosNegArguments dvt dvm dta dtb $ ff <$> ugtconv <*> usfunc
+    -> PinaforeFullUnifier baseedit (KindFunction (DolanVarianceKind dv) gta gtb -> ta -> tb)
+unifyPosNegArguments NilListType NilDolanKindVary NilDolanArguments NilDolanArguments = pure id
+unifyPosNegArguments (ConsListType (svt :: SingleVarianceType sv) (dvt :: DolanVarianceType dv')) (ConsDolanKindVary svm dvm) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) = do
+    sfunc <- unifyPosNegVariance svt sta stb
+    f <- unifyPosNegArguments dvt dvm dta dtb
+    pure $
+        case dolanVarianceKMCategory @(->) dvt of
+            Dict -> \(MkNestedMorphism conv) -> f (conv . svm sfunc)
 
 unifyPosNegGroundTypes ::
        PinaforeGroundType baseedit dva gta
     -> DolanArguments dva (PinaforeType baseedit) gta 'PositivePolarity ta
     -> PinaforeGroundType baseedit dvb gtb
     -> DolanArguments dvb (PinaforeType baseedit) gtb 'NegativePolarity tb
-    -> Result Text (PinaforeUnifier baseedit (ta -> tb))
+    -> PinaforeFullUnifier baseedit (ta -> tb)
 unifyPosNegGroundTypes ga argsa gb argsb
     | Just (Refl, HRefl) <- testPinaforeGroundTypeEquality ga gb = let
         vkt = pinaforeGroundTypeKind ga
         in case dolanVarianceKMCategory @(->) vkt of
-               Dict -> unifyPosNegArguments vkt (pinaforeGroundTypeVary ga) argsa argsb $ pure id
+               Dict -> do
+                   f <- unifyPosNegArguments vkt (pinaforeGroundTypeVary ga) argsa argsb
+                   return $ f id
 unifyPosNegGroundTypes ga argsa gb argsb =
-    fail $
+    unifierFail $
     "can't cast " <>
     (unpack $ exprShow $ GroundPinaforeSingularType ga argsa) <>
     " to " <> (unpack $ exprShow $ GroundPinaforeSingularType gb argsb)
@@ -358,43 +357,43 @@ unifyPosNegGroundTypes ga argsa gb argsb =
 unifyPosNegPinaforeSingularTypes ::
        PinaforeSingularType baseedit 'PositivePolarity a
     -> PinaforeSingularType baseedit 'NegativePolarity b
-    -> Result Text (PinaforeUnifier baseedit (a -> b))
+    -> PinaforeFullUnifier baseedit (a -> b)
 unifyPosNegPinaforeSingularTypes (VarPinaforeSingularType na) (VarPinaforeSingularType nb)
-    | Just Refl <- testEquality na nb = return $ pure id
+    | Just Refl <- testEquality na nb = pure id
 unifyPosNegPinaforeSingularTypes (VarPinaforeSingularType na) tb =
-    return $ varExpression $ NegativeBisubstitutionWitness na tb
+    liftUnifier $ varExpression $ NegativeBisubstitutionWitness na tb
 unifyPosNegPinaforeSingularTypes ta (VarPinaforeSingularType nb) =
-    return $ varExpression $ PositiveBisubstitutionWitness nb ta
+    liftUnifier $ varExpression $ PositiveBisubstitutionWitness nb ta
 unifyPosNegPinaforeSingularTypes (GroundPinaforeSingularType gta argsa) (GroundPinaforeSingularType gtb argsb) =
     unifyPosNegGroundTypes gta argsa gtb argsb
 
 unifyPosNegPinaforeTypes1 ::
        PinaforeSingularType baseedit 'PositivePolarity a
     -> PinaforeType baseedit 'NegativePolarity b
-    -> Result Text (PinaforeUnifier baseedit (a -> b))
-unifyPosNegPinaforeTypes1 _ NilPinaforeType = return $ pure alwaysTop
+    -> PinaforeFullUnifier baseedit (a -> b)
+unifyPosNegPinaforeTypes1 _ NilPinaforeType = pure alwaysTop
 unifyPosNegPinaforeTypes1 ta (ConsPinaforeType t1 t2) = do
-    uf1 <- unifyPosNegPinaforeSingularTypes ta t1
-    uf2 <- unifyPosNegPinaforeTypes1 ta t2
-    return $ meetf <$> uf1 <*> uf2
+    f1 <- unifyPosNegPinaforeSingularTypes ta t1
+    f2 <- unifyPosNegPinaforeTypes1 ta t2
+    return $ meetf f1 f2
 
 unifyPosNegPinaforeTypes ::
        PinaforeType baseedit 'PositivePolarity a
     -> PinaforeType baseedit 'NegativePolarity b
-    -> Result Text (PinaforeUnifier baseedit (a -> b))
-unifyPosNegPinaforeTypes NilPinaforeType _ = return $ pure $ never
+    -> PinaforeFullUnifier baseedit (a -> b)
+unifyPosNegPinaforeTypes NilPinaforeType _ = pure never
 unifyPosNegPinaforeTypes (ConsPinaforeType ta1 tar) tb = do
-    uf1 <- unifyPosNegPinaforeTypes1 ta1 tb
-    uf2 <- unifyPosNegPinaforeTypes tar tb
-    return $ joinf <$> uf1 <*> uf2
+    f1 <- unifyPosNegPinaforeTypes1 ta1 tb
+    f2 <- unifyPosNegPinaforeTypes tar tb
+    return $ joinf f1 f2
 
 unifyPosNegPinaforeTypeF ::
        PinaforeTypeF baseedit 'PositivePolarity a
     -> PinaforeTypeF baseedit 'NegativePolarity b
-    -> Result Text (PinaforeUnifier baseedit (a -> b))
+    -> PinaforeFullUnifier baseedit (a -> b)
 unifyPosNegPinaforeTypeF (MkTypeF ta conva) (MkTypeF tb convb) = do
-    uconv <- unifyPosNegPinaforeTypes ta tb
-    return $ fmap (\conv -> convb . conv . conva) uconv
+    conv <- unifyPosNegPinaforeTypes ta tb
+    return $ convb . conv . conva
 
 occursInArg ::
        forall baseedit polarity n sv a.
@@ -507,29 +506,30 @@ bisubstituteNegativeVar vn (ConsPinaforeType t1 tr) uf =
     OpenExpression (NegativeBisubstitutionWitness vn t1) $
     bisubstituteNegativeVar vn tr $ fmap (\fa fr f1 -> fa $ meetf f1 fr) uf
 
-bisubstituteUnifier ::
-       PinaforeBisubstitution baseedit -> PinaforeUnifier baseedit a -> Result Text (PinaforeUnifier baseedit a)
-bisubstituteUnifier _ (ClosedExpression a) = return $ ClosedExpression a
+bisubstituteUnifier :: PinaforeBisubstitution baseedit -> PinaforeUnifier baseedit a -> PinaforeFullUnifier baseedit a
+bisubstituteUnifier _ (ClosedExpression a) = pure a
 bisubstituteUnifier bisub@(MkBisubstitution bn _ tq) (OpenExpression (PositiveBisubstitutionWitness vn tp) uval)
     | Just Refl <- testEquality bn vn = do
-        uconv <- unifyPosNegPinaforeTypeF (singlePositivePinaforeTypeF $ mkTypeF tp) tq
-        uval' <- bisubstituteUnifier bisub uval
-        return $ (\conv val -> val conv) <$> uconv <*> uval'
+        conv <- unifyPosNegPinaforeTypeF (singlePositivePinaforeTypeF $ mkTypeF tp) tq
+        val' <- bisubstituteUnifier bisub uval
+        return $ val' conv
 bisubstituteUnifier bisub@(MkBisubstitution bn tp _) (OpenExpression (NegativeBisubstitutionWitness vn tq) uval)
     | Just Refl <- testEquality bn vn = do
-        uconv <- unifyPosNegPinaforeTypeF tp (singleNegativePinaforeTypeF $ mkTypeF tq)
-        uval' <- bisubstituteUnifier bisub uval
-        return $ (\conv val -> val conv) <$> uconv <*> uval'
+        conv <- unifyPosNegPinaforeTypeF tp (singleNegativePinaforeTypeF $ mkTypeF tq)
+        val' <- bisubstituteUnifier bisub uval
+        return $ val' conv
 bisubstituteUnifier bisub (OpenExpression (PositiveBisubstitutionWitness vn tp) uval) =
     case bisubstitutePositiveSingularType bisub tp of
-        MkTypeF tp' conv -> do
-            uval' <- bisubstituteUnifier bisub uval
-            return $ bisubstitutePositiveVar vn tp' $ fmap (\ca pv -> ca $ (pv . conv)) uval'
+        MkTypeF tp' conv ->
+            Compose $ do
+                uval' <- getCompose $ bisubstituteUnifier bisub uval
+                return $ bisubstitutePositiveVar vn tp' $ fmap (\ca pv -> ca $ (pv . conv)) uval'
 bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) uval) =
     case bisubstituteNegativeSingularType bisub tp of
-        MkTypeF tp' conv -> do
-            uval' <- bisubstituteUnifier bisub uval
-            return $ bisubstituteNegativeVar vn tp' $ fmap (\ca pv -> ca $ (conv . pv)) uval'
+        MkTypeF tp' conv ->
+            Compose $ do
+                uval' <- getCompose $ bisubstituteUnifier bisub uval
+                return $ bisubstituteNegativeVar vn tp' $ fmap (\ca pv -> ca $ (conv . pv)) uval'
 
 runUnifier :: forall baseedit a. PinaforeUnifier baseedit a -> Result Text (a, [PinaforeBisubstitution baseedit])
 runUnifier (ClosedExpression a) = return (a, [])
@@ -549,7 +549,7 @@ runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolWitness n
                  (singlePositivePinaforeTypeF $ mkTypeF tp))
             (fmap (biForwards varBij . join1) $ singleNegativePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
     in do
-           expr' <- bisubstituteUnifier bisub expr
+           expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'
            return (ca $ biForwards varBij . join2, bisub : subs)
 runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolWitness name) (tq :: PinaforeSingularType baseedit 'NegativePolarity vw)) expr) = let
@@ -564,7 +564,7 @@ runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolWitness n
                  (singleNegativePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
                  (singleNegativePinaforeTypeF $ mkTypeF tq))
     in do
-           expr' <- bisubstituteUnifier bisub expr
+           expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'
            return (ca $ meet2 . biBackwards varBij, bisub : subs)
 

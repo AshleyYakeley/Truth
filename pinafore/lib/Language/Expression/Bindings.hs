@@ -56,7 +56,7 @@ mkBound ((MkBinding name sexpr):bb) = do
         abstractNames' e = do
             MkUnifyExpression uconvRest e' <- abstractNames e
             MkAbstractResult vwt (MkUnifyExpression uconvFirst e'') <- abstract name e'
-            uconvVar <- unifyPosNegWitnesses @unifier twt vwt
+            uconvVar <- getCompose $ unifyPosNegWitnesses @unifier twt vwt
             let uresult = (,,) <$> uconvFirst <*> uconvRest <*> uconvVar
             return $
                 MkUnifyExpression uresult $
