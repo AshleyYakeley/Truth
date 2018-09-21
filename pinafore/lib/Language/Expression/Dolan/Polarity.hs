@@ -19,19 +19,29 @@ instance Finite BottomType where
 newtype JoinType a b =
     MkJoinType (Either a b)
 
+pattern LeftJoinType :: a -> JoinType a b
+
+pattern LeftJoinType v = MkJoinType (Left v)
+
+pattern RightJoinType :: b -> JoinType a b
+
+pattern RightJoinType v = MkJoinType (Right v)
+
+{-# COMPLETE LeftJoinType, RightJoinType #-}
+
 join1 :: a -> JoinType a b
-join1 v = MkJoinType $ Left v
+join1 = LeftJoinType
 
 join2 :: b -> JoinType a b
-join2 v = MkJoinType $ Right v
+join2 = RightJoinType
 
 joinf :: (a -> r) -> (b -> r) -> JoinType a b -> r
-joinf f _ (MkJoinType (Left v)) = f v
-joinf _ f (MkJoinType (Right v)) = f v
+joinf f _ (LeftJoinType v) = f v
+joinf _ f (RightJoinType v) = f v
 
 joinBimap :: (a1 -> a2) -> (b1 -> b2) -> JoinType a1 b1 -> JoinType a2 b2
-joinBimap f _ (MkJoinType (Left v)) = MkJoinType $ Left $ f v
-joinBimap _ f (MkJoinType (Right v)) = MkJoinType $ Right $ f v
+joinBimap f _ (LeftJoinType v) = LeftJoinType $ f v
+joinBimap _ f (RightJoinType v) = RightJoinType $ f v
 
 newtype MeetType a b =
     MkMeetType (a, b)
@@ -60,7 +70,7 @@ class IsTypePolarity (polarity :: TypePolarity) where
     showLimitType :: Text
     type JoinMeetType polarity :: Type -> Type -> Type
     showJoinMeetType :: Text
-    type ConvertType polarity (a :: Type) (b :: Type) :: Type
+    type ConvertType polarity (a :: k) (b :: k) :: Type
     jmLeftIdentity :: Bijection (JoinMeetType polarity (LimitType polarity) a) a
     jmRightIdentity :: Bijection (JoinMeetType polarity a (LimitType polarity)) a
     jmMap :: (a1 -> a2) -> (b1 -> b2) -> JoinMeetType polarity a1 b1 -> JoinMeetType polarity a2 b2
@@ -81,7 +91,7 @@ instance IsTypePolarity 'PositivePolarity where
     showLimitType = "Bottom"
     type JoinMeetType 'PositivePolarity = JoinType
     showJoinMeetType = "|"
-    type ConvertType 'PositivePolarity a b = a -> b
+    type ConvertType 'PositivePolarity (a :: k) (b :: k) = KindFunction k a b
     jmLeftIdentity = let
         unjoin :: JoinType BottomType a -> a
         unjoin (MkJoinType (Left n)) = never n
@@ -103,7 +113,7 @@ instance IsTypePolarity 'NegativePolarity where
     showLimitType = "Top"
     type JoinMeetType 'NegativePolarity = MeetType
     showJoinMeetType = "&"
-    type ConvertType 'NegativePolarity a b = b -> a
+    type ConvertType 'NegativePolarity (a :: k) (b :: k) = KindFunction k b a
     jmLeftIdentity = MkBijection (\(MkMeetType (MkTopType, a)) -> a) $ \a -> MkMeetType (MkTopType, a)
     jmRightIdentity = MkBijection (\(MkMeetType (a, MkTopType)) -> a) $ \a -> MkMeetType (a, MkTopType)
     jmMap a1a2 b1b2 (MkMeetType (a, b)) = MkMeetType (a1a2 a, b1b2 b)

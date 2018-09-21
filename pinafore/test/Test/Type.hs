@@ -130,6 +130,15 @@ instance (ToTypeF (PinaforeType baseedit) a) => ToTypeF (PinaforeSingularType ba
 instance (ToTypeF (PinaforeType baseedit) a) => ToTypeF (PinaforeType baseedit) [a] where
     toTypeF = singlePositivePinaforeTypeF toTypeF
 
+instance (FromTypeF (PinaforeType baseedit) a) => FromTypeF (PinaforeSingularType baseedit) [a] where
+    fromTypeF =
+        unTypeF fromTypeF $ \ta conva ->
+            fmap (fmap conva) $
+            mkTypeF $ GroundPinaforeSingularType ListPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+
+instance (FromTypeF (PinaforeType baseedit) a) => FromTypeF (PinaforeType baseedit) [a] where
+    fromTypeF = singleNegativePinaforeTypeF fromTypeF
+
 instance ToTypeF (PinaforeSingularType baseedit) Bool where
     toTypeF = mkTypeF $ GroundPinaforeSingularType (LiteralPinaforeGroundType BooleanLiteralType) NilDolanArguments
 
@@ -199,6 +208,18 @@ thingExpr =
 dotExpr :: PExpression
 dotExpr = typeFConstExpression toTypeF $ \(f :: UVar "b" -> UVar "c") (g :: UVar "a" -> UVar "b") -> f . g
 
+listNumBoolFuncExpr :: PExpression
+listNumBoolFuncExpr = typeFConstExpression toTypeF $ \(_ :: [Number]) -> [True]
+
+listBoolNumFuncExpr :: PExpression
+listBoolNumFuncExpr = typeFConstExpression toTypeF $ \(_ :: [Bool]) -> [2 :: Number]
+
+joinExpr :: PExpression -> PExpression -> Result Text PExpression
+joinExpr exp1 exp2 = do
+    je <- apExpr ifelseExpr boolExpr
+    e <- apExpr je exp1
+    apExpr e exp2
+
 testType :: TestTree
 testType =
     testGroup
@@ -215,12 +236,24 @@ testType =
         , exprTypeTest "apply nb var" (return "{v :: Number} -> Boolean") $ apExpr nbFuncExpr varExpr
         , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
         , exprTypeTest "list1" (return "{} -> a -> [a]") $ return list1Expr
-        , exprTypeTest "listNumBool" (return "{} -> [Number | Boolean]") $ do
+        , exprTypeTest "listNumBool" (return "{} -> [Boolean | Number]") $ do
               lne <- apExpr list1Expr numExpr
               lbe <- apExpr list1Expr boolExpr
-              e1 <- apExpr ifelseExpr boolExpr
-              e2 <- apExpr e1 lne
-              apExpr e2 lbe
+              joinExpr lne lbe
+        , exprTypeTest "listlistNumBool" (return "{} -> [[Boolean | Number]]") $ do
+              lne <- apExpr list1Expr numExpr
+              lbe <- apExpr list1Expr boolExpr
+              llne <- apExpr list1Expr lne
+              llbe <- apExpr list1Expr lbe
+              joinExpr llne llbe
+        , exprTypeTest "[number] -> [boolean]" (return "{} -> [Number] -> [Boolean]") $ return listNumBoolFuncExpr
+        , exprTypeTest "[boolean] -> [number]" (return "{} -> [Boolean] -> [Number]") $ return listBoolNumFuncExpr
+        , exprTypeTest "[nn] -> [bb]" (return "{} -> [Number] -> [Boolean]") $
+          joinExpr listNumBoolFuncExpr listNumBoolFuncExpr
+        , exprTypeTest "[bb] -> [nn]" (return "{} -> [Boolean] -> [Number]") $
+          joinExpr listBoolNumFuncExpr listBoolNumFuncExpr
+        , exprTypeTest "[bn] -> [bn]" (return "{} -> [Boolean & Number] -> [Number | Boolean]") $
+          joinExpr listNumBoolFuncExpr listBoolNumFuncExpr
         , exprTypeTest "snd" (return "{} -> (Top, a) -> a") $ return sndExpr
         , exprTypeTest "thing" (return "{} -> (a, b) -> (a, a | b)") $ return thingExpr
         , exprTypeTest "snd . thing" (return "{} -> (c, c) -> c") $ do

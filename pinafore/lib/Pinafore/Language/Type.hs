@@ -433,72 +433,6 @@ data Bisubstitution (wit :: TypePolarity -> Type -> Type) =
 
 type PinaforeBisubstitution baseedit = Bisubstitution (PinaforeType baseedit)
 
-bisubstitutePositiveVariance ::
-       SingleVarianceType sv
-    -> PinaforeBisubstitution baseedit
-    -> SingleArgument sv (PinaforeType baseedit) 'PositivePolarity a
-    -> (forall a'. SingleArgument sv (PinaforeType baseedit) 'PositivePolarity a' -> SingleVarianceFunc sv a a' -> r)
-    -> r
-bisubstitutePositiveVariance CovarianceType bisub arg cont = unTypeF (bisubstitutePositiveType bisub arg) cont
-bisubstitutePositiveVariance ContravarianceType bisub arg cont =
-    case bisubstituteNegativeType bisub arg of
-        MkTypeF arg' conv -> cont arg' $ MkCatDual conv
-bisubstitutePositiveVariance RangevarianceType bisub (MkTypeRangeWitness tp tq) cont =
-    case bisubstituteNegativeType bisub tp of
-        MkTypeF tp' convp ->
-            case bisubstitutePositiveType bisub tq of
-                MkTypeF tq' convq -> cont (MkTypeRangeWitness tp' tq') $ MkRangeFunc convp convq
-
-bisubstituteNegativeVariance ::
-       SingleVarianceType sv
-    -> PinaforeBisubstitution baseedit
-    -> SingleArgument sv (PinaforeType baseedit) 'NegativePolarity a
-    -> (forall a'. SingleArgument sv (PinaforeType baseedit) 'NegativePolarity a' -> SingleVarianceFunc sv a' a -> r)
-    -> r
-bisubstituteNegativeVariance CovarianceType bisub arg cont = unTypeF (bisubstituteNegativeType bisub arg) cont
-bisubstituteNegativeVariance ContravarianceType bisub arg cont =
-    case bisubstitutePositiveType bisub arg of
-        MkTypeF arg' conv -> cont arg' $ MkCatDual conv
-bisubstituteNegativeVariance RangevarianceType bisub (MkTypeRangeWitness tp tq) cont =
-    case bisubstitutePositiveType bisub tp of
-        MkTypeF tp' convp ->
-            case bisubstituteNegativeType bisub tq of
-                MkTypeF tq' convq -> cont (MkTypeRangeWitness tp' tq') $ MkRangeFunc convp convq
-
-bisubstitutePositiveArgs ::
-       PinaforeBisubstitution baseedit
-    -> DolanVarianceType dv
-    -> DolanKindVary dv gt
-    -> DolanArguments dv (PinaforeType baseedit) gt 'PositivePolarity t
-    -> KindFunction (DolanVarianceKind dv) gt gt'
-    -> TypeF (DolanArguments dv (PinaforeType baseedit) gt') 'PositivePolarity t
-bisubstitutePositiveArgs _ NilListType NilDolanKindVary NilDolanArguments conv = MkTypeF NilDolanArguments conv
-bisubstitutePositiveArgs bisub (ConsListType svt dvt) (ConsDolanKindVary svm dvm) (ConsDolanArguments sta dta) conv =
-    bisubstitutePositiveVariance svt bisub sta $ \sta' svf ->
-        case conv of
-            MkNestedMorphism mconv ->
-                case dolanVarianceKMCategory @(->) dvt of
-                    Dict ->
-                        case bisubstitutePositiveArgs bisub dvt dvm dta (mconv . svm svf) of
-                            MkTypeF dta' conv' -> MkTypeF (ConsDolanArguments sta' dta') conv'
-
-bisubstituteNegativeArgs ::
-       PinaforeBisubstitution baseedit
-    -> DolanVarianceType dv
-    -> DolanKindVary dv gt
-    -> DolanArguments dv (PinaforeType baseedit) gt 'NegativePolarity t
-    -> KindFunction (DolanVarianceKind dv) gt' gt
-    -> TypeF (DolanArguments dv (PinaforeType baseedit) gt') 'NegativePolarity t
-bisubstituteNegativeArgs _ NilListType NilDolanKindVary NilDolanArguments conv = MkTypeF NilDolanArguments conv
-bisubstituteNegativeArgs bisub (ConsListType svt dvt) (ConsDolanKindVary svm dvm) (ConsDolanArguments sta dta) conv =
-    bisubstituteNegativeVariance svt bisub sta $ \sta' svf ->
-        case conv of
-            MkNestedMorphism mconv ->
-                case dolanVarianceKMCategory @(->) dvt of
-                    Dict ->
-                        case bisubstituteNegativeArgs bisub dvt dvm dta (svm svf . mconv) of
-                            MkTypeF dta' conv' -> MkTypeF (ConsDolanArguments sta' dta') conv'
-
 bisubstitutePositiveSingularType ::
        PinaforeBisubstitution baseedit
     -> PinaforeSingularType baseedit 'PositivePolarity t
@@ -510,7 +444,15 @@ bisubstitutePositiveSingularType bisub (GroundPinaforeSingularType gt args) = le
     dvt = pinaforeGroundTypeKind gt
     in case dolanVarianceKMCategory @(->) dvt of
            Dict ->
-               case bisubstitutePositiveArgs bisub dvt (pinaforeGroundTypeVary gt) args id of
+               case mapArgsTypeF
+                        @_
+                        @_
+                        @'PositivePolarity
+                        (bisubstituteType bisub)
+                        dvt
+                        (pinaforeGroundTypeVary gt)
+                        args
+                        id of
                    MkTypeF args' conv ->
                        singlePositivePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt args') conv
 
@@ -525,7 +467,15 @@ bisubstituteNegativeSingularType bisub (GroundPinaforeSingularType gt args) = le
     dvt = pinaforeGroundTypeKind gt
     in case dolanVarianceKMCategory @(->) dvt of
            Dict ->
-               case bisubstituteNegativeArgs bisub dvt (pinaforeGroundTypeVary gt) args id of
+               case mapArgsTypeF
+                        @_
+                        @_
+                        @'NegativePolarity
+                        (bisubstituteType bisub)
+                        dvt
+                        (pinaforeGroundTypeVary gt)
+                        args
+                        id of
                    MkTypeF args' conv ->
                        singleNegativePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt args') conv
 
@@ -548,6 +498,16 @@ bisubstituteNegativeType bisub (ConsPinaforeType ta tb) = let
     tfa = bisubstituteNegativeSingularType bisub ta
     tfb = bisubstituteNegativeType bisub tb
     in meetPinaforeTypeF tfa tfb
+
+bisubstituteType ::
+       forall baseedit polarity t. IsTypePolarity polarity
+    => PinaforeBisubstitution baseedit
+    -> PinaforeType baseedit polarity t
+    -> PinaforeTypeF baseedit polarity t
+bisubstituteType =
+    case whichTypePolarity @polarity of
+        Left Refl -> bisubstitutePositiveType
+        Right Refl -> bisubstituteNegativeType
 
 bisubstitutePositiveVar ::
        SymbolWitness name
@@ -669,7 +629,8 @@ instance Unifier (PinaforeUnifier baseedit) where
 
 type PinaforeTypeNamespace baseedit (w :: k -> Type)
      = forall t1 r.
-               w t1 -> (forall t2. w t2 -> KindBijection k t1 t2 -> VarNamespace (PinaforeTypeSystem baseedit) r) -> VarNamespace (PinaforeTypeSystem baseedit) r
+               w t1 -> (forall t2.
+                            InKind t2 => w t2 -> KindBijection k t1 t2 -> VarNamespace (PinaforeTypeSystem baseedit) r) -> VarNamespace (PinaforeTypeSystem baseedit) r
 
 renamePinaforeRangeTypeVars ::
        forall baseedit polarity. IsTypePolarity polarity
@@ -858,8 +819,107 @@ instance IsSubtype LiteralType where
 type PinaforeExpression baseedit name
      = SealedExpression name (PinaforeType baseedit 'NegativePolarity) (PinaforeType baseedit 'PositivePolarity)
 
+mergeJoin :: JoinType a (JoinType a b) -> JoinType a b
+mergeJoin (LeftJoinType v) = LeftJoinType v
+mergeJoin (RightJoinType v) = v
+
+mergeMeet :: MeetType a b -> MeetType a (MeetType a b)
+mergeMeet (MkMeetType (a, b)) = MkMeetType (a, MkMeetType (a, b))
+
+swapJoinRight :: JoinType a (JoinType b c) -> JoinType (JoinType a b) c
+swapJoinRight (LeftJoinType v) = LeftJoinType $ LeftJoinType v
+swapJoinRight (RightJoinType (LeftJoinType v)) = LeftJoinType $ RightJoinType v
+swapJoinRight (RightJoinType (RightJoinType v)) = RightJoinType v
+
+swapMeetRight :: MeetType (MeetType a b) c -> MeetType a (MeetType b c)
+swapMeetRight (MkMeetType (MkMeetType (a, b), c)) = MkMeetType (a, MkMeetType (b, c))
+
+consPositiveDolanArguments ::
+       forall ft sv dv t (a :: SingleVarianceKind sv) ta. InKind a
+    => SingleArgument sv ft 'PositivePolarity a
+    -> TypeF (DolanArguments dv ft (t a)) 'PositivePolarity ta
+    -> TypeF (DolanArguments (sv ': dv) ft t) 'PositivePolarity ta
+consPositiveDolanArguments svt (MkTypeF dvt conv) = MkTypeF (ConsDolanArguments svt dvt) conv
+
+mergeDuplicatePositiveSingularGroundTypes ::
+       PinaforeSingularType baseedit 'PositivePolarity t1
+    -> PinaforeType baseedit 'PositivePolarity tr
+    -> PinaforeTypeF baseedit 'PositivePolarity (JoinType t1 tr)
+mergeDuplicatePositiveSingularGroundTypes ts NilPinaforeType = mkTypeF $ ConsPinaforeType ts NilPinaforeType
+mergeDuplicatePositiveSingularGroundTypes (VarPinaforeSingularType vn1) (ConsPinaforeType (VarPinaforeSingularType vn2) tr)
+    | Just Refl <- testEquality vn1 vn2 =
+        contramap mergeJoin $ mergeDuplicatePositiveSingularGroundTypes (VarPinaforeSingularType vn1) tr
+mergeDuplicatePositiveSingularGroundTypes (GroundPinaforeSingularType gt1 args1) (ConsPinaforeType (GroundPinaforeSingularType gt2 args2) tr)
+    | Just (Refl, HRefl) <- testPinaforeGroundTypeEquality gt1 gt2 =
+        case mergeDolanArguments
+                 mergeGroundTypesInTypes
+                 (pinaforeGroundTypeKind gt1)
+                 (pinaforeGroundTypeVary gt1)
+                 args1
+                 args2 of
+            MkTypeF args' convargs ->
+                contramap (joinBimap convargs id . swapJoinRight) $
+                mergeDuplicatePositiveSingularGroundTypes (GroundPinaforeSingularType gt1 args') tr
+mergeDuplicatePositiveSingularGroundTypes ts (ConsPinaforeType t1 tr) =
+    case mergeDuplicatePositiveSingularGroundTypes ts tr of
+        MkTypeF tsr conv ->
+            MkTypeF (ConsPinaforeType t1 tsr) $ \case
+                LeftJoinType v -> RightJoinType $ conv $ LeftJoinType v
+                RightJoinType (LeftJoinType v) -> LeftJoinType v
+                RightJoinType (RightJoinType v) -> RightJoinType $ conv $ RightJoinType v
+
+mergeDuplicateNegativeSingularGroundTypes ::
+       PinaforeSingularType baseedit 'NegativePolarity t1
+    -> PinaforeType baseedit 'NegativePolarity tr
+    -> PinaforeTypeF baseedit 'NegativePolarity (MeetType t1 tr)
+mergeDuplicateNegativeSingularGroundTypes ts NilPinaforeType = mkTypeF $ ConsPinaforeType ts NilPinaforeType
+mergeDuplicateNegativeSingularGroundTypes (VarPinaforeSingularType vn1) (ConsPinaforeType (VarPinaforeSingularType vn2) tr)
+    | Just Refl <- testEquality vn1 vn2 =
+        fmap mergeMeet $ mergeDuplicateNegativeSingularGroundTypes (VarPinaforeSingularType vn1) tr
+mergeDuplicateNegativeSingularGroundTypes (GroundPinaforeSingularType gt1 args1) (ConsPinaforeType (GroundPinaforeSingularType gt2 args2) tr)
+    | Just (Refl, HRefl) <- testPinaforeGroundTypeEquality gt1 gt2 =
+        case mergeDolanArguments
+                 mergeGroundTypesInTypes
+                 (pinaforeGroundTypeKind gt1)
+                 (pinaforeGroundTypeVary gt1)
+                 args1
+                 args2 of
+            MkTypeF args' convargs ->
+                fmap (swapMeetRight . meetBimap convargs id) $
+                mergeDuplicateNegativeSingularGroundTypes (GroundPinaforeSingularType gt1 args') tr
+mergeDuplicateNegativeSingularGroundTypes ts (ConsPinaforeType t1 tr) =
+    case mergeDuplicateNegativeSingularGroundTypes ts tr of
+        MkTypeF tsr conv ->
+            MkTypeF (ConsPinaforeType t1 tsr) $ \(MkMeetType (a, b)) ->
+                MkMeetType (meet1 $ conv b, MkMeetType (a, meet2 $ conv b))
+
+mergeDuplicatePositiveGroundTypes ::
+       PinaforeType baseedit 'PositivePolarity t -> PinaforeTypeF baseedit 'PositivePolarity t
+mergeDuplicatePositiveGroundTypes NilPinaforeType = mkTypeF NilPinaforeType
+mergeDuplicatePositiveGroundTypes (ConsPinaforeType t1 tr) =
+    case mergeDuplicatePositiveGroundTypes tr of
+        MkTypeF tr' conv -> contramap (joinBimap id conv) $ mergeDuplicatePositiveSingularGroundTypes t1 tr'
+
+mergeDuplicateNegativeGroundTypes ::
+       PinaforeType baseedit 'NegativePolarity t -> PinaforeTypeF baseedit 'NegativePolarity t
+mergeDuplicateNegativeGroundTypes NilPinaforeType = mkTypeF NilPinaforeType
+mergeDuplicateNegativeGroundTypes (ConsPinaforeType t1 tr) =
+    case mergeDuplicateNegativeGroundTypes tr of
+        MkTypeF tr' conv -> fmap (meetBimap id conv) $ mergeDuplicateNegativeSingularGroundTypes t1 tr'
+
+mergeGroundTypesInTypes ::
+       forall baseedit polarity ta tb. IsTypePolarity polarity
+    => PinaforeType baseedit polarity ta
+    -> PinaforeType baseedit polarity tb
+    -> PinaforeTypeF baseedit polarity (JoinMeetType polarity ta tb)
+mergeGroundTypesInTypes ta tb =
+    case whichTypePolarity @polarity of
+        Left Refl -> chainTypeF mergeDuplicatePositiveGroundTypes $ joinPinaforeTypeF (mkTypeF ta) (mkTypeF tb)
+        Right Refl -> chainTypeF mergeDuplicateNegativeGroundTypes $ meetPinaforeTypeF (mkTypeF ta) (mkTypeF tb)
+
 mergeDuplicateGroundTypesExpression :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
-mergeDuplicateGroundTypesExpression expr = expr
+mergeDuplicateGroundTypesExpression =
+    mapSealedExpressionTypes mergeDuplicatePositiveGroundTypes mergeDuplicateNegativeGroundTypes
 
 class GetExpressionVars t where
     -- | (positive, negative)
@@ -908,26 +968,12 @@ instance GetExpressionVars (NamedExpression name (PinaforeType baseedit 'Negativ
 instance GetExpressionVars (PinaforeExpression baseedit name) where
     getExpressionVars (MkSealedExpression twt expr) = getExpressionVars twt <> getExpressionVars expr
 
-bisubstituteExpression ::
-       PinaforeBisubstitution baseedit
-    -> NamedExpression name (PinaforeType baseedit 'NegativePolarity) t
-    -> NamedExpression name (PinaforeType baseedit 'NegativePolarity) t
-bisubstituteExpression _ (ClosedExpression a) = ClosedExpression a
-bisubstituteExpression sub (OpenExpression (MkNameWitness name t) expr) =
-    case bisubstituteNegativeType sub t of
-        MkTypeF wit' conv ->
-            OpenExpression (MkNameWitness name wit') $ fmap (\ta -> ta . conv) $ bisubstituteExpression sub expr
-
-bisubstituteSealedExpression ::
-       PinaforeBisubstitution baseedit -> PinaforeExpression baseedit name -> PinaforeExpression baseedit name
-bisubstituteSealedExpression sub (MkSealedExpression t expr) =
-    typeFSealedExpression (bisubstitutePositiveType sub t) $ bisubstituteExpression sub expr
-
 bisubstitutesSealedExpression ::
        [PinaforeBisubstitution baseedit] -> PinaforeExpression baseedit name -> PinaforeExpression baseedit name
 bisubstitutesSealedExpression [] expr = expr
 bisubstitutesSealedExpression (sub:subs) expr =
-    bisubstitutesSealedExpression subs $ bisubstituteSealedExpression sub expr
+    bisubstitutesSealedExpression subs $
+    mapSealedExpressionTypes (bisubstitutePositiveType sub) (bisubstituteNegativeType sub) expr
 
 eliminateOneSidedVars :: forall baseedit name. PinaforeExpression baseedit name -> PinaforeExpression baseedit name
 eliminateOneSidedVars expr = let

@@ -46,6 +46,7 @@ library:
       - Language.Expression.Dolan.TypeRange
       - Language.Expression.Dolan.Polarity
       - Language.Expression.Dolan.Variance
+      - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.TypeF
       - Pinafore.Number
       - Pinafore.Literal

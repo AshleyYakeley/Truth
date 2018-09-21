@@ -1,6 +1,5 @@
 module Language.Expression.Dolan.Variance where
 
-import Language.Expression.Dolan.Polarity
 import Language.Expression.Dolan.TypeRange
 import Shapes
 
@@ -117,26 +116,4 @@ instance HasDolanVary '[ 'Covariance, 'Covariance] Either where
                      Right b -> Right b) $
         dolanVary @('[ 'Covariance])
 
-type family SingleArgument (sv :: SingleVariance) (ft :: TypePolarity -> Type -> Type) (polarity :: TypePolarity) :: SingleVarianceKind sv -> Type where
-    SingleArgument 'Covariance ft polarity = ft polarity
-    SingleArgument 'Contravariance ft polarity = ft (InvertPolarity polarity)
-    SingleArgument 'Rangevariance ft polarity = TypeRangeWitness ft polarity
-
-data DolanArguments (dv :: DolanVariance) (ft :: TypePolarity -> Type -> Type) (t :: DolanVarianceKind dv) (polarity :: TypePolarity) (ta :: Type) where
-    NilDolanArguments :: DolanArguments '[] ft t polarity t
-    ConsDolanArguments
-        :: SingleArgument sv ft polarity a
-        -> DolanArguments dv ft (t a) polarity ta
-        -> DolanArguments (sv ': dv) ft t polarity ta
-
---type family DolanArguments (dk :: DolanVariance) (ft :: TypePolarity -> Type -> Type) (polarity :: TypePolarity) (t :: DolanVarianceKind dk) (ta :: Type)
-bijectTypeArguments ::
-       forall ft dk polarity ta t t' r.
-       KindBijection (DolanVarianceKind dk) t t'
-    -> DolanArguments dk ft t polarity ta
-    -> (forall ta'. DolanArguments dk ft t' polarity ta' -> Bijection ta ta' -> r)
-    -> r
-bijectTypeArguments bij NilDolanArguments cont = cont NilDolanArguments bij
-bijectTypeArguments bij (ConsDolanArguments arg args) cont =
-    bijectTypeArguments (unNestedMorphism @_ @_ @_ @t @t' bij) args $ \args' bijargs ->
-        cont (ConsDolanArguments arg args') bijargs
+type InVarianceKind sv (a :: SingleVarianceKind sv) = InKind a
