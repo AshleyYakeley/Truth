@@ -2,7 +2,7 @@ module Language.Expression.Dolan.Arguments
     ( SingleArgument
     , DolanArguments(..)
     , bijectTypeArguments
-    , mapArgsTypeF
+    , mapDolanArguments
     , mergeDolanArguments
     ) where
 
@@ -104,6 +104,20 @@ mapArgsTypeF f (ConsListType svt dvt) (ConsDolanKindVary svm dvm) (ConsDolanArgu
                                 MkNestedMorphism mconv ->
                                     case mapArgsTypeF @ft @_ @polarity f dvt dvm dta (svm svf . mconv) of
                                         MkTypeF dta' conv' -> MkTypeF (ConsDolanArguments sta' dta') conv'
+
+mapDolanArguments ::
+       forall ft dv polarity gt t. IsTypePolarity polarity
+    => (forall polarity' t'. IsTypePolarity polarity' => ft polarity' t' -> TypeF ft polarity' t')
+    -> DolanVarianceType dv
+    -> DolanKindVary dv gt
+    -> DolanArguments dv ft gt polarity t
+    -> TypeF (DolanArguments dv ft gt) polarity t
+mapDolanArguments f dvt dvm args =
+    case dolanVarianceKMCategory @(->) dvt of
+        Dict ->
+            case whichTypePolarity @polarity of
+                Left Refl -> mapArgsTypeF f dvt dvm args id
+                Right Refl -> mapArgsTypeF f dvt dvm args id
 
 type family PositiveSVJoinMeetType (sv :: SingleVariance) (a :: SingleVarianceKind sv) (b :: SingleVarianceKind sv) = (r :: SingleVarianceKind sv) | r -> sv a b where
     PositiveSVJoinMeetType 'Covariance a b = JoinType a b

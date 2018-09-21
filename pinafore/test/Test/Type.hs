@@ -8,6 +8,7 @@ import Language.Expression.Expression
 import Language.Expression.Named
 import Language.Expression.Sealed
 import Language.Expression.Typed
+import Language.Expression.Unifier
 import Pinafore
 import Pinafore.Language.Name
 import Pinafore.Language.Type
@@ -236,11 +237,11 @@ testType =
         , exprTypeTest "apply nb var" (return "{v :: Number} -> Boolean") $ apExpr nbFuncExpr varExpr
         , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
         , exprTypeTest "list1" (return "{} -> a -> [a]") $ return list1Expr
-        , exprTypeTest "listNumBool" (return "{} -> [Boolean | Number]") $ do
+        , exprTypeTest "listNumBool" (return "{} -> [Number | Boolean]") $ do
               lne <- apExpr list1Expr numExpr
               lbe <- apExpr list1Expr boolExpr
               joinExpr lne lbe
-        , exprTypeTest "listlistNumBool" (return "{} -> [[Boolean | Number]]") $ do
+        , exprTypeTest "listlistNumBool" (return "{} -> [[Number | Boolean]]") $ do
               lne <- apExpr list1Expr numExpr
               lbe <- apExpr list1Expr boolExpr
               llne <- apExpr list1Expr lne
@@ -252,7 +253,7 @@ testType =
           joinExpr listNumBoolFuncExpr listNumBoolFuncExpr
         , exprTypeTest "[bb] -> [nn]" (return "{} -> [Boolean] -> [Number]") $
           joinExpr listBoolNumFuncExpr listBoolNumFuncExpr
-        , exprTypeTest "[bn] -> [bn]" (return "{} -> [Boolean & Number] -> [Number | Boolean]") $
+        , exprTypeTest "[nb] -> [bn]" (return "{} -> [Number & Boolean] -> [Boolean | Number]") $
           joinExpr listNumBoolFuncExpr listBoolNumFuncExpr
         , exprTypeTest "snd" (return "{} -> (Top, a) -> a") $ return sndExpr
         , exprTypeTest "thing" (return "{} -> (a, b) -> (a, a | b)") $ return thingExpr
@@ -266,4 +267,34 @@ testType =
         , exprTypeTest "thing $ twice number" (return "{} -> (Number, Number)") $ do
               e1 <- apExpr twiceExpr numExpr
               apExpr thingExpr e1
+        , exprTypeTest "simplify $ thing $ twice number" (return "{} -> (Number, Number)") $ do
+              e1 <- apExpr twiceExpr numExpr
+              r <- apExpr thingExpr e1
+              return $ simplifyExpressionType @(TypeUnifier TS) r
+        , exprTypeTest "simplify duplicate" (return "{} -> Number") $
+          return $
+          simplifyExpressionType @(TypeUnifier TS) $
+          typeFConstExpression toTypeF (MkJoinType (Right 3) :: JoinType Number Number)
+        , exprTypeTest "simplify duplicate list" (return "{} -> [Number]") $
+          return $
+          simplifyExpressionType @(TypeUnifier TS) $
+          typeFConstExpression toTypeF (MkJoinType (Right [3]) :: JoinType [Number] [Number])
+        , exprTypeTest "simplify duplicate pair" (return "{} -> (Number, Number)") $
+          return $
+          simplifyExpressionType @(TypeUnifier TS) $
+          typeFConstExpression toTypeF (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
+        , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
+          return $
+          simplifyExpressionType @(TypeUnifier TS) $
+          typeFConstExpression toTypeF ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
+        , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
+          return $
+          simplifyExpressionType @(TypeUnifier TS) $
+          typeFConstExpression
+              toTypeF
+              ((MkJoinType (Right 3), MkJoinType (Right 3)) :: (JoinType Number Number, JoinType Number Number))
+        , exprTypeTest "simplify duplicate in list" (return "{} -> [Number]") $
+          return $
+          simplifyExpressionType @(TypeUnifier TS) $
+          typeFConstExpression toTypeF ([MkJoinType (Right 3)] :: [JoinType Number Number])
         ]
