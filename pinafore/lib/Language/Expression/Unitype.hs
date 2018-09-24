@@ -63,6 +63,6 @@ instance (Monad m, UnitypeValue val) => TypeSystem (Unitype m val) where
     type TypeUnifier (Unitype m val) = UnitypeUnifier m val
     type NegWitness (Unitype m val) = ((:~:) val)
     type PosWitness (Unitype m val) = ((:~:) val)
-    type TSMonad (Unitype m val) = m
+    type TypeCheck (Unitype m val) = m
     typeSystemFunctionPosWitness Refl Refl cont = cont Refl abstractValue
     typeSystemFunctionNegWitness Refl Refl cont = cont Refl applyValue

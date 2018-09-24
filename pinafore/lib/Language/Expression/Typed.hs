@@ -7,12 +7,12 @@ import Language.Expression.Sealed
 import Language.Expression.Unifier
 import Shapes
 
-class ( Monad (TSMonad ts)
+class ( Monad (TypeCheck ts)
       , Renamer (TypeRenamer ts)
       , RenamerNegWitness (TypeRenamer ts) ~ NegWitness ts
       , RenamerPosWitness (TypeRenamer ts) ~ PosWitness ts
       , Unifier (TypeUnifier ts)
-      , UnifierMonad (TypeUnifier ts) ~ TypeRenamer ts (TSMonad ts)
+      , UnifierMonad (TypeUnifier ts) ~ TypeRenamer ts (TypeCheck ts)
       , UnifierNegWitness (TypeUnifier ts) ~ NegWitness ts
       , UnifierPosWitness (TypeUnifier ts) ~ PosWitness ts
       ) => TypeSystem (ts :: Type) where
@@ -20,13 +20,13 @@ class ( Monad (TSMonad ts)
     type TypeUnifier ts :: Type -> Type
     type NegWitness ts :: Type -> Type
     type PosWitness ts :: Type -> Type
-    type TSMonad ts :: Type -> Type
+    type TypeCheck ts :: Type -> Type
     typeSystemFunctionPosWitness :: FunctionPosWitness (NegWitness ts) (PosWitness ts)
     typeSystemFunctionNegWitness :: FunctionNegWitness (NegWitness ts) (PosWitness ts)
 
 type TypedExpression name ts = SealedExpression name (NegWitness ts) (PosWitness ts)
 
-type TypeMonadRenamer ts = TypeRenamer ts (TSMonad ts)
+type TypeMonadRenamer ts = TypeRenamer ts (TypeCheck ts)
 
 evalTypedExpression ::
        forall ts name m. (MonadFail m, Show name)
@@ -38,7 +38,7 @@ applyTypedExpression ::
        forall ts name. TypeSystem ts
     => TypedExpression name ts
     -> TypedExpression name ts
-    -> TSMonad ts (TypedExpression name ts)
+    -> TypeCheck ts (TypedExpression name ts)
 applyTypedExpression tf ta =
     runRenamer @(TypeRenamer ts) $
     applySealedExpression @(TypeRenamer ts) @(TypeUnifier ts) (typeSystemFunctionNegWitness @ts) tf ta
@@ -47,7 +47,7 @@ abstractTypedExpression ::
        forall ts name. (Eq name, TypeSystem ts)
     => name
     -> TypedExpression name ts
-    -> TSMonad ts (TypedExpression name ts)
+    -> TypeCheck ts (TypedExpression name ts)
 abstractTypedExpression n expr =
     runRenamer @(TypeRenamer ts) $
     abstractSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) (typeSystemFunctionPosWitness @ts) n expr
@@ -69,7 +69,7 @@ letTypedExpression ::
     => name
     -> TypedExpression name ts
     -> TypedExpression name ts
-    -> TSMonad ts (TypedExpression name ts)
+    -> TypeCheck ts (TypedExpression name ts)
 letTypedExpression n expv expb =
     runRenamer @(TypeRenamer ts) $ letSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) n expv expb
 
@@ -86,7 +86,7 @@ uncheckedBindingsLetTypedExpression ::
        forall ts name. (Eq name, TypeSystem ts)
     => TypedBindings name ts
     -> TypedExpression name ts
-    -> TSMonad ts (TypedExpression name ts)
+    -> TypeCheck ts (TypedExpression name ts)
 uncheckedBindingsLetTypedExpression bb expb =
     runRenamer @(TypeRenamer ts) $ bindingsLetSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) bb expb
 

@@ -690,7 +690,7 @@ instance TypeSystem (PinaforeTypeSystem baseedit) where
     type TypeUnifier (PinaforeTypeSystem baseedit) = PinaforeUnifier baseedit
     type NegWitness (PinaforeTypeSystem baseedit) = PinaforeType baseedit 'NegativePolarity
     type PosWitness (PinaforeTypeSystem baseedit) = PinaforeType baseedit 'PositivePolarity
-    type TSMonad (PinaforeTypeSystem baseedit) = Result Text
+    type TypeCheck (PinaforeTypeSystem baseedit) = Result Text
     typeSystemFunctionPosWitness ta tb =
         unTypeF $
         singlePositivePinaforeTypeF $

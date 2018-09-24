@@ -10,38 +10,38 @@ import Pinafore.Language.Value
 import Pinafore.PredicateMorphism
 import Shapes
 
-type TS baseedit = Unitype Identity (QValue baseedit)
+type PinaforeTypeSystem baseedit = Unitype Identity (QValue baseedit)
 
 instance HasPinaforeEntityEdit baseedit => UnitypeValue (QValue baseedit) where
     applyValue = qapply
     abstractValue = qfunction
 
-type QExpr baseedit = TypedExpression Name (TS baseedit)
+type QExpr baseedit = TypedExpression Name (PinaforeTypeSystem baseedit)
 
 qConstExpr ::
        forall baseedit a. ToQValue baseedit a
     => a
     -> QExpr baseedit
-qConstExpr a = constTypedExpression @(TS baseedit) Refl $ toQValue a
+qConstExpr a = constTypedExpression @(PinaforeTypeSystem baseedit) Refl $ toQValue a
 
 qVarExpr ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Name
     -> QExpr baseedit
-qVarExpr name = varTypedExpression @(TS baseedit) name
+qVarExpr name = varTypedExpression @(PinaforeTypeSystem baseedit) name
 
 qAbstractExpr ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Name
     -> QExpr baseedit
     -> QExpr baseedit
-qAbstractExpr name expr = runIdentity $ abstractTypedExpression @(TS baseedit) name expr
+qAbstractExpr name expr = runIdentity $ abstractTypedExpression @(PinaforeTypeSystem baseedit) name expr
 
 qAbstractsExpr :: HasPinaforeEntityEdit baseedit => [Name] -> QExpr baseedit -> QExpr baseedit
 qAbstractsExpr [] = id
 qAbstractsExpr (n:nn) = qAbstractExpr n . qAbstractsExpr nn
 
-type QBindings baseedit = TypedBindings Name (TS baseedit)
+type QBindings baseedit = TypedBindings Name (PinaforeTypeSystem baseedit)
 
 qBindVal :: (HasPinaforeEntityEdit baseedit, ToQValue baseedit t) => Name -> t -> QBindings baseedit
 qBindVal name val = qBindExpr name $ qConstExpr val
@@ -51,7 +51,7 @@ qApplyExpr ::
     => QExpr baseedit
     -> QExpr baseedit
     -> QExpr baseedit
-qApplyExpr exprf expra = runIdentity $ applyTypedExpression @(TS baseedit) exprf expra
+qApplyExpr exprf expra = runIdentity $ applyTypedExpression @(PinaforeTypeSystem baseedit) exprf expra
 
 qApplyAllExpr :: HasPinaforeEntityEdit baseedit => QExpr baseedit -> [QExpr baseedit] -> QExpr baseedit
 qApplyAllExpr e [] = e
@@ -65,7 +65,7 @@ qBindExpr ::
     => Name
     -> QExpr baseedit
     -> QBindings baseedit
-qBindExpr = singleTypedBinding @(TS baseedit)
+qBindExpr = singleTypedBinding @(PinaforeTypeSystem baseedit)
 
 qLetExpr ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -73,14 +73,14 @@ qLetExpr ::
     -> QExpr baseedit
     -> QExpr baseedit
     -> QExpr baseedit
-qLetExpr name exp body = runIdentity $ letTypedExpression @(TS baseedit) name exp body
+qLetExpr name exp body = runIdentity $ letTypedExpression @(PinaforeTypeSystem baseedit) name exp body
 
 qBindingsLetExpr ::
        forall baseedit m. (MonadFail m, HasPinaforeEntityEdit baseedit)
     => QBindings baseedit
     -> m (QExpr baseedit -> QExpr baseedit)
 qBindingsLetExpr bindings = do
-    typedBindingsCheckDuplicates @(TS baseedit) bindings
+    typedBindingsCheckDuplicates @(PinaforeTypeSystem baseedit) bindings
     return $ qUncheckedBindingsLetExpr bindings
 
 qUncheckedBindingsLetExpr ::
@@ -88,12 +88,12 @@ qUncheckedBindingsLetExpr ::
     => QBindings baseedit
     -> QExpr baseedit
     -> QExpr baseedit
-qUncheckedBindingsLetExpr b e = runIdentity $ uncheckedBindingsLetTypedExpression @(TS baseedit) b e
+qUncheckedBindingsLetExpr b e = runIdentity $ uncheckedBindingsLetTypedExpression @(PinaforeTypeSystem baseedit) b e
 
 qEvalExpr ::
        forall baseedit m. MonadFail m
     => QExpr baseedit
     -> m (QValue baseedit)
 qEvalExpr expr = do
-    MkAny Refl val <- evalTypedExpression @(TS baseedit) expr
+    MkAny Refl val <- evalTypedExpression @(PinaforeTypeSystem baseedit) expr
     return val
