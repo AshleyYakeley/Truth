@@ -12,11 +12,13 @@ data SealedExpression name vw tw =
                                  (NamedExpression name vw t)
 
 renameSealedExpression ::
-       Renamer rn
+       (Renamer rn, Monad m)
     => SealedExpression name (RenamerNegWitness rn) (RenamerPosWitness rn)
-    -> rn (SealedExpression name (RenamerNegWitness rn) (RenamerPosWitness rn))
+    -> rn m (SealedExpression name (RenamerNegWitness rn) (RenamerPosWitness rn))
 renameSealedExpression (MkSealedExpression twt expr) =
-    namespace $ do
+    withTransConstraintTM @Monad $
+    namespace $
+    withTransConstraintTM @Monad $ do
         expr' <- renameExpression expr
         renamePosWitness twt $ \twt' bij -> return $ MkSealedExpression twt' $ fmap (biForwards bij) expr'
 

@@ -1,8 +1,5 @@
 module Language.Expression.Renamer
-    ( Namespace(..)
-    , RenamerNegWitness
-    , RenamerPosWitness
-    , Renamer(..)
+    ( Renamer(..)
     , VarNamespace
     , runVarNamespace
     , varNamespaceRename
@@ -14,57 +11,73 @@ module Language.Expression.Renamer
 
 import Shapes
 
-class Monad ns => Namespace ns where
-    type NamespaceNegWitness ns :: Type -> Type
-    type NamespacePosWitness ns :: Type -> Type
+class (MonadTransConstraint Monad rn, MonadTransConstraint Monad (RenamerNamespace rn)) => Renamer rn where
+    type RenamerNegWitness rn :: Type -> Type
+    type RenamerPosWitness rn :: Type -> Type
+    type RenamerNamespace rn :: (Type -> Type) -> (Type -> Type)
     renameNegWitness ::
-           NamespaceNegWitness ns t -> (forall t'. NamespaceNegWitness ns t' -> Bijection t t' -> ns r) -> ns r
+           Monad m
+        => RenamerNegWitness rn t
+        -> (forall t'. RenamerNegWitness rn t' -> Bijection t t' -> RenamerNamespace rn (rn m) r)
+        -> RenamerNamespace rn (rn m) r
     renamePosWitness ::
-           NamespacePosWitness ns t -> (forall t'. NamespacePosWitness ns t' -> Bijection t t' -> ns r) -> ns r
+           Monad m
+        => RenamerPosWitness rn t
+        -> (forall t'. RenamerPosWitness rn t' -> Bijection t t' -> RenamerNamespace rn (rn m) r)
+        -> RenamerNamespace rn (rn m) r
+    renameNewVar ::
+           Monad m
+        => (forall tp tq. RenamerNegWitness rn tq -> RenamerPosWitness rn tp -> (tq -> tp) -> rn m r)
+        -> rn m r
+    namespace :: Monad m => RenamerNamespace rn (rn m) r -> rn m r
+    runRenamer :: Monad m => rn m r -> m r
 
-type RenamerNegWitness rn = NamespaceNegWitness (RenamerNamespace rn)
+newtype VarNamespace (ts :: Type) m a =
+    MkVarNamespace (StateT [(String, String)] m a)
+    deriving (Functor, Applicative, Monad, MonadFail, MonadTrans)
 
-type RenamerPosWitness rn = NamespacePosWitness (RenamerNamespace rn)
+instance MonadTransConstraint Monad (VarNamespace ts) where
+    hasTransConstraint = Dict
 
-class (Monad rn, Namespace (RenamerNamespace rn)) => Renamer rn where
-    type RenamerNamespace rn :: Type -> Type
-    renameNewVar :: (forall tp tq. RenamerNegWitness rn tq -> RenamerPosWitness rn tp -> (tq -> tp) -> rn r) -> rn r
-    namespace :: RenamerNamespace rn r -> rn r
-    runRenamer :: rn r -> r
+instance MonadTransConstraint MonadFail (VarNamespace ts) where
+    hasTransConstraint = Dict
 
-newtype VarNamespace ts a =
-    MkVarNamespace (StateT [(String, String)] (VarRenamer ts) a)
-    deriving (Functor, Applicative, Monad)
-
-runVarNamespace :: VarNamespace ts a -> VarRenamer ts a
+runVarNamespace :: Monad m => VarNamespace ts (VarRenamer ts m) a -> VarRenamer ts m a
 runVarNamespace (MkVarNamespace ma) = do
     (a, _) <- runStateT ma []
     return a
 
-varNamespaceRename :: String -> VarNamespace ts String
-varNamespaceRename oldname =
-    MkVarNamespace $ do
-        pairs <- get
-        case lookup oldname pairs of
-            Just newname -> return newname
-            Nothing -> do
-                newname <- lift $ varRenamerGenerateSuggested oldname
-                put $ (oldname, newname) : pairs
-                return newname
+varNamespaceRename :: Monad m => String -> VarNamespace ts (VarRenamer ts m) String
+varNamespaceRename oldname = do
+    pairs <- MkVarNamespace get
+    case lookup oldname pairs of
+        Just newname -> return newname
+        Nothing -> do
+            newname <- MkVarNamespace $ lift $ varRenamerGenerateSuggested oldname
+            MkVarNamespace $ put $ (oldname, newname) : pairs
+            return newname
 
-newtype VarRenamer ts a =
-    MkVarRenamer (State ([String], Int) a)
-    deriving (Functor, Applicative, Monad)
+newtype VarRenamer (ts :: Type) m a =
+    MkVarRenamer (StateT ([String], Int) m a)
+    deriving (Functor, Applicative, Monad, MonadFail, MonadTrans)
 
-runVarRenamer :: VarRenamer ts a -> a
-runVarRenamer (MkVarRenamer ga) = fst $ runState ga ([], 0)
+instance MonadTransConstraint Monad (VarRenamer ts) where
+    hasTransConstraint = Dict
+
+instance MonadTransConstraint MonadFail (VarRenamer ts) where
+    hasTransConstraint = Dict
+
+runVarRenamer :: Monad m => VarRenamer ts m a -> m a
+runVarRenamer (MkVarRenamer ma) = do
+    (a, _) <- runStateT ma ([], 0)
+    return a
 
 varName :: Int -> String
 varName i
     | i < 26 = pure $ toEnum $ i + fromEnum 'a'
 varName i = varName ((div i 26) - 1) <> (pure $ toEnum $ (mod i 26) + fromEnum 'a')
 
-varRenamerGenerate :: VarRenamer ts String
+varRenamerGenerate :: Monad m => VarRenamer ts m String
 varRenamerGenerate = do
     (vars, i) <- MkVarRenamer get
     let newname = varName i
@@ -76,7 +89,7 @@ varRenamerGenerate = do
             MkVarRenamer $ put (newname : vars, succ i)
             return newname
 
-varRenamerGenerateSuggested :: String -> VarRenamer ts String
+varRenamerGenerateSuggested :: Monad m => String -> VarRenamer ts m String
 varRenamerGenerateSuggested name = do
     (vars, i) <- MkVarRenamer $ get
     if elem name vars

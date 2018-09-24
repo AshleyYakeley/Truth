@@ -45,11 +45,16 @@ varNamedExpression :: name -> vw t -> NamedExpression name vw t
 varNamedExpression n t = varNameTypeExpression (MkUnitWitness n) (MkUnitWitness' t)
 
 renameExpression ::
-       Namespace ns
-    => NamedExpression name (NamespaceNegWitness ns) t
-    -> ns (NamedExpression name (NamespaceNegWitness ns) t)
-renameExpression (ClosedExpression a) = return (ClosedExpression a)
+       forall rn name m t. (Monad m, Renamer rn)
+    => NamedExpression name (RenamerNegWitness rn) t
+    -> RenamerNamespace rn (rn m) (NamedExpression name (RenamerNegWitness rn) t)
+renameExpression (ClosedExpression a) =
+    case hasTransConstraint @Monad @rn @m of
+        Dict -> withTransConstraintTM @Monad $ return (ClosedExpression a)
 renameExpression (OpenExpression (MkNameWitness name vw) expr) =
-    renameNegWitness vw $ \vw' bij -> do
-        expr' <- renameExpression expr
-        return $ OpenExpression (MkNameWitness name vw') $ fmap (\va -> va . biBackwards bij) expr'
+    case hasTransConstraint @Monad @rn @m of
+        Dict ->
+            withTransConstraintTM @Monad $
+            renameNegWitness vw $ \vw' bij -> do
+                expr' <- renameExpression expr
+                return $ OpenExpression (MkNameWitness name vw') $ fmap (\va -> va . biBackwards bij) expr'

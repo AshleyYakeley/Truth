@@ -267,7 +267,8 @@ data BisubstitutionWitness baseedit t where
 
 type PinaforeUnifier baseedit = Expression (BisubstitutionWitness baseedit)
 
-type PinaforeFullUnifier baseedit = Compose (Result Text) (Expression (BisubstitutionWitness baseedit))
+type PinaforeFullUnifier baseedit
+     = Compose (VarRenamer (PinaforeTypeSystem baseedit) (Result Text)) (PinaforeUnifier baseedit)
 
 joinPinaforeTypes ::
        forall baseedit (a :: Type) (b :: Type) r.
@@ -531,7 +532,10 @@ bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) 
                 uval' <- getCompose $ bisubstituteUnifier bisub uval
                 return $ bisubstituteNegativeVar vn tp' $ fmap (\ca pv -> ca $ (conv . pv)) uval'
 
-runUnifier :: forall baseedit a. PinaforeUnifier baseedit a -> Result Text (a, [PinaforeBisubstitution baseedit])
+runUnifier ::
+       forall baseedit a.
+       PinaforeUnifier baseedit a
+    -> VarRenamer (PinaforeTypeSystem baseedit) (Result Text) (a, [PinaforeBisubstitution baseedit])
 runUnifier (ClosedExpression a) = return (a, [])
 runUnifier (OpenExpression (PositiveBisubstitutionWitness vn tp) _)
     | occursInSingularType vn tp = fail $ "can't construct recursive type " <> show vn <> " = " <> unpack (exprShow tp)
@@ -587,7 +591,7 @@ bisubstituteAllNegativeType (sub:subs) t =
         MkTypeF t' conv -> fmap conv $ bisubstituteAllNegativeType subs t'
 
 instance Unifier (PinaforeUnifier baseedit) where
-    type UnifierMonad (PinaforeUnifier baseedit) = Result Text
+    type UnifierMonad (PinaforeUnifier baseedit) = VarRenamer (PinaforeTypeSystem baseedit) (Result Text)
     type UnifierNegWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'NegativePolarity
     type UnifierPosWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'PositivePolarity
     type UnifierSubstitutions (PinaforeUnifier baseedit) = [PinaforeBisubstitution baseedit]
@@ -605,10 +609,12 @@ instance Unifier (PinaforeUnifier baseedit) where
     simplifyExpressionType =
         mergeDuplicateVarsExpression . mergeSharedVars . eliminateOneSidedVars . mergeDuplicatesInExpression
 
-type PinaforeTypeNamespace baseedit (w :: k -> Type)
-     = forall t1 r.
-               w t1 -> (forall t2.
-                            InKind t2 => w t2 -> KindBijection k t1 t2 -> VarNamespace (PinaforeTypeSystem baseedit) r) -> VarNamespace (PinaforeTypeSystem baseedit) r
+type TypeNamespace (ts :: Type) (w :: k -> Type)
+     = forall t1 m r.
+           Monad m =>
+                   w t1 -> (forall t2. InKind t2 => w t2 -> KindBijection k t1 t2 -> VarNamespace ts (VarRenamer ts m) r) -> VarNamespace ts (VarRenamer ts m) r
+
+type PinaforeTypeNamespace baseedit w = TypeNamespace (PinaforeTypeSystem baseedit) w
 
 renamePinaforeRangeTypeVars ::
        forall baseedit polarity. IsTypePolarity polarity
@@ -663,14 +669,12 @@ renamePinaforeTypeVars (ConsPinaforeType ta tb) cont =
 
 data PinaforeTypeSystem (baseedit :: Type)
 
-instance Namespace (VarNamespace (PinaforeTypeSystem baseedit)) where
-    type NamespaceNegWitness (VarNamespace (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'NegativePolarity
-    type NamespacePosWitness (VarNamespace (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'PositivePolarity
-    renameNegWitness = renamePinaforeTypeVars
-    renamePosWitness = renamePinaforeTypeVars
-
 instance Renamer (VarRenamer (PinaforeTypeSystem baseedit)) where
     type RenamerNamespace (VarRenamer (PinaforeTypeSystem baseedit)) = VarNamespace (PinaforeTypeSystem baseedit)
+    type RenamerNegWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'NegativePolarity
+    type RenamerPosWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'PositivePolarity
+    renameNegWitness = renamePinaforeTypeVars
+    renamePosWitness = renamePinaforeTypeVars
     renameNewVar cont = do
         n <- varRenamerGenerate
         toSymbolWitness n $ \wit ->

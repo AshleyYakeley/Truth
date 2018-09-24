@@ -12,11 +12,11 @@ class ( Monad (TSMonad ts)
       , RenamerNegWitness (TypeRenamer ts) ~ NegWitness ts
       , RenamerPosWitness (TypeRenamer ts) ~ PosWitness ts
       , Unifier (TypeUnifier ts)
-      , UnifierMonad (TypeUnifier ts) ~ TSMonad ts
+      , UnifierMonad (TypeUnifier ts) ~ TypeRenamer ts (TSMonad ts)
       , UnifierNegWitness (TypeUnifier ts) ~ NegWitness ts
       , UnifierPosWitness (TypeUnifier ts) ~ PosWitness ts
       ) => TypeSystem (ts :: Type) where
-    type TypeRenamer ts :: Type -> Type
+    type TypeRenamer ts :: (Type -> Type) -> (Type -> Type)
     type TypeUnifier ts :: Type -> Type
     type NegWitness ts :: Type -> Type
     type PosWitness ts :: Type -> Type
@@ -25,6 +25,8 @@ class ( Monad (TSMonad ts)
     typeSystemFunctionNegWitness :: FunctionNegWitness (NegWitness ts) (PosWitness ts)
 
 type TypedExpression name ts = SealedExpression name (NegWitness ts) (PosWitness ts)
+
+type TypeMonadRenamer ts = TypeRenamer ts (TSMonad ts)
 
 evalTypedExpression ::
        forall ts name m. (MonadFail m, Show name)
@@ -37,22 +39,27 @@ applyTypedExpression ::
     => TypedExpression name ts
     -> TypedExpression name ts
     -> TSMonad ts (TypedExpression name ts)
-applyTypedExpression = applySealedExpression @(TypeRenamer ts) @(TypeUnifier ts) (typeSystemFunctionNegWitness @ts)
+applyTypedExpression tf ta =
+    runRenamer @(TypeRenamer ts) $
+    applySealedExpression @(TypeRenamer ts) @(TypeUnifier ts) (typeSystemFunctionNegWitness @ts) tf ta
 
 abstractTypedExpression ::
        forall ts name. (Eq name, TypeSystem ts)
     => name
     -> TypedExpression name ts
     -> TSMonad ts (TypedExpression name ts)
-abstractTypedExpression =
-    abstractSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) (typeSystemFunctionPosWitness @ts)
+abstractTypedExpression n expr =
+    runRenamer @(TypeRenamer ts) $
+    abstractSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) (typeSystemFunctionPosWitness @ts) n expr
 
 varTypedExpression ::
        forall ts name. TypeSystem ts
     => name
     -> TypedExpression name ts
 varTypedExpression name =
-    runRenamer @(TypeRenamer ts) $ renameNewVar $ \vwt twt conv -> return $ varSealedExpression name vwt twt conv
+    runIdentity $
+    runRenamer @(TypeRenamer ts) $
+    renameNewVar $ \vwt twt conv -> withTransConstraintTM @Monad $ return $ varSealedExpression name vwt twt conv
 
 constTypedExpression :: forall ts name t. PosWitness ts t -> t -> TypedExpression name ts
 constTypedExpression = constSealedExpression
@@ -63,7 +70,8 @@ letTypedExpression ::
     -> TypedExpression name ts
     -> TypedExpression name ts
     -> TSMonad ts (TypedExpression name ts)
-letTypedExpression = letSealedExpression @(TypeRenamer ts) @(TypeUnifier ts)
+letTypedExpression n expv expb =
+    runRenamer @(TypeRenamer ts) $ letSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) n expv expb
 
 type TypedBindings name ts = Bindings name (TypeUnifier ts)
 
@@ -79,7 +87,8 @@ uncheckedBindingsLetTypedExpression ::
     => TypedBindings name ts
     -> TypedExpression name ts
     -> TSMonad ts (TypedExpression name ts)
-uncheckedBindingsLetTypedExpression = bindingsLetSealedExpression @(TypeRenamer ts) @(TypeUnifier ts)
+uncheckedBindingsLetTypedExpression bb expb =
+    runRenamer @(TypeRenamer ts) $ bindingsLetSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) bb expb
 
 typedBindingsCheckDuplicates ::
        forall ts name m. (Eq name, Show name, TypeSystem ts, MonadFail m)

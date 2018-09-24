@@ -37,13 +37,14 @@ renameUVar sf namewit1 cont = do
     newname <- sf $ fromSymbolWitness namewit1
     toSymbolWitness newname $ \namewit2 -> cont namewit2 (MkBijection unsafeRenameAnybox unsafeRenameAnybox)
 
-varRenamerGenerateSymbol :: (forall (name :: Symbol). SymbolWitness name -> VarRenamer ts a) -> VarRenamer ts a
+varRenamerGenerateSymbol ::
+       Monad m => (forall (name :: Symbol). SymbolWitness name -> VarRenamer ts m a) -> VarRenamer ts m a
 varRenamerGenerateSymbol cont = do
     s <- varRenamerGenerate
     toSymbolWitness s cont
 
 varRenamerGenerateSuggestedSymbol ::
-       String -> (forall (name :: Symbol). SymbolWitness name -> VarRenamer ts a) -> VarRenamer ts a
+       Monad m => String -> (forall (name :: Symbol). SymbolWitness name -> VarRenamer ts m a) -> VarRenamer ts m a
 varRenamerGenerateSuggestedSymbol name cont = do
     name' <- varRenamerGenerateSuggested name
     toSymbolWitness name' cont
