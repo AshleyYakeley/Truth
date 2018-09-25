@@ -4,7 +4,7 @@ module Language.Expression.Bindings
     ( Bindings
     , singleBinding
     , bindingsNames
-    , bindingsDuplicates
+    , checkDuplicates
     , bindingsCheckDuplicates
     , bindingsLetSealedExpression
     ) where
@@ -102,11 +102,11 @@ duplicates (_:aa) = duplicates aa
 bindingsNames :: Bindings name unifier -> [name]
 bindingsNames (MkBindings bb) = fmap (\(MkBinding name _) -> name) bb
 
-bindingsDuplicates :: Eq name => Bindings name unifier -> [name]
-bindingsDuplicates bindings = nub $ duplicates $ bindingsNames bindings
-
-bindingsCheckDuplicates :: (Show name, Eq name, MonadFail m) => Bindings name unifier -> m ()
-bindingsCheckDuplicates bindings =
-    case bindingsDuplicates bindings of
+checkDuplicates :: (Show name, Eq name, MonadFail m) => [name] -> m ()
+checkDuplicates nn =
+    case nub $ duplicates nn of
         [] -> return ()
         b -> fail $ "duplicate bindings: " <> (intercalate ", " $ fmap show b)
+
+bindingsCheckDuplicates :: (Show name, Eq name, MonadFail m) => Bindings name unifier -> m ()
+bindingsCheckDuplicates bindings = checkDuplicates $ bindingsNames bindings

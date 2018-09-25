@@ -119,8 +119,12 @@ instance Eq (QValue baseedit) where
     (MkAny QTList a1) == (MkAny QTList a2) = a1 == a2
     (MkAny t1 _) == (MkAny t2 _) = error $ "QValue: " <> show t1 <> " & " <> show t2 <> " not comparable"
 
-testQueryValue :: String -> QExpr PinaforeEdit -> Maybe (QValue PinaforeEdit) -> TestTree
-testQueryValue name expr expected = testCase name $ assertEqual "result" expected $ qEvalExpr expr
+testQueryValue :: String -> QTypeCheck (QExpr PinaforeEdit) -> Maybe (QValue PinaforeEdit) -> TestTree
+testQueryValue name texpr expected =
+    testCase name $
+    case runQTypeCheck texpr of
+        SuccessResult expr -> assertEqual "result" expected $ qEvalExpr expr
+        FailureResult err -> fail $ unpack err
 
 qint :: Int -> QValue baseedit
 qint = toQValue
@@ -129,17 +133,23 @@ testQueryValues :: TestTree
 testQueryValues =
     testGroup
         "query values"
-        [ testQueryValue "pure A" (opoint $ toQValue ("A" :: Text)) (Just $ toQValue ("A" :: Text))
+        [ testQueryValue "pure A" (return $ opoint $ toQValue ("A" :: Text)) (Just $ toQValue ("A" :: Text))
         , testQueryValue "var a" (qVarExpr "a") Nothing
         , testQueryValue
               "let a=1;b=2 in (a,b,a,b)"
-              (qLetExpr "a" (opoint $ qint 1) $
-               qLetExpr "b" (opoint $ qint 2) $ qSequenceExpr [qVarExpr "a", qVarExpr "b", qVarExpr "a", qVarExpr "b"]) $
+              (do
+                   ae <- qVarExpr "a"
+                   be <- qVarExpr "b"
+                   e1 <- qLetExpr "b" (opoint $ qint 2) $ qSequenceExpr [ae, be, ae, be]
+                   qLetExpr "a" (opoint $ qint 1) e1) $
           Just $ toQValue ([1, 2, 1, 2] :: [Int])
         , testQueryValue
               "let a=1;b=2 in (b,a,b,a)"
-              (qLetExpr "a" (opoint $ qint 1) $
-               qLetExpr "b" (opoint $ qint 2) $ qSequenceExpr [qVarExpr "b", qVarExpr "a", qVarExpr "b", qVarExpr "a"]) $
+              (do
+                   ae <- qVarExpr "a"
+                   be <- qVarExpr "b"
+                   e1 <- qLetExpr "b" (opoint $ qint 2) $ qSequenceExpr [be, ae, be, ae]
+                   qLetExpr "a" (opoint $ qint 1) e1) $
           Just $ toQValue ([2, 1, 2, 1] :: [Int])
         ]
 

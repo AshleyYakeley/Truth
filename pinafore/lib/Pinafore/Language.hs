@@ -5,7 +5,6 @@ module Pinafore.Language
     , QValue
     , HasQTypeDescription(..)
     , ToQValue(..)
-    , QBindings
     , resultTextToM
     , parseValue
     , interact
@@ -33,8 +32,12 @@ parseValue ::
     -> Text
     -> Result Text t
 parseValue name text = do
-    expr <- parseExpression @baseedit name text
-    val <- qEvalExpr $ qUncheckedBindingsLetExpr predefinedBindings expr
+    texpr <- parseExpression @baseedit name text
+    rexpr <-
+        runQTypeCheck $ do
+            expr <- texpr
+            qUncheckedBindingsLetExpr predefinedBindings expr
+    val <- qEvalExpr rexpr
     fromQValue val
 
 interactLoop ::
@@ -52,10 +55,18 @@ interactLoop = do
                     (runUnliftIO unlift $ do
                          p <- resultTextToM $ parseInteractiveCommand @baseedit "<input>" $ pack str
                          case p of
-                             Left bind -> modify $ \eval -> eval . bind
-                             Right expr -> do
+                             LetInteractiveCommand bind ->
+                                 modify $ \eval expr -> do
+                                     case runQTypeCheck $ bind expr of
+                                         SuccessResult expr' -> eval expr'
+                                         FailureResult err -> putStrLn $ unpack err
+                             ExpressionInteractiveCommand texpr -> do
                                  eval <- get
-                                 liftIO $ eval expr) $ \err -> putStrLn $ ioeGetErrorString err
+                                 liftIO $
+                                     case runQTypeCheck texpr of
+                                         SuccessResult expr -> eval expr
+                                         FailureResult err -> putStrLn $ unpack err) $ \err ->
+                    putStrLn $ ioeGetErrorString err
             interactLoop
 
 interact ::
@@ -66,10 +77,13 @@ interact runAction = do
     hSetBuffering stdout NoBuffering
     evalStateT interactLoop $ \expr ->
         runUnliftIO runAction $ do
-            val <- qLiftResult $ qEvalExpr $ qUncheckedBindingsLetExpr predefinedBindings expr
-            case fromQValue val of
-                SuccessResult action -> action
-                _ ->
-                    case fromQValue $ qapply (toQValue outputln) val of
+            case runQTypeCheck $ qUncheckedBindingsLetExpr predefinedBindings expr of
+                SuccessResult expr' -> do
+                    val <- qLiftResult $ qEvalExpr expr'
+                    case fromQValue val of
                         SuccessResult action -> action
-                        _ -> liftIO $ putStrLn $ show val
+                        _ ->
+                            case fromQValue $ qapply (toQValue outputln) val of
+                                SuccessResult action -> action
+                                _ -> liftIO $ putStrLn $ show val
+                FailureResult err -> liftIO $ putStrLn $ unpack err

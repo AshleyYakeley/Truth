@@ -232,7 +232,7 @@ nulljoin lx ly = let
     qq x _ = x
     in maybeLifted $ qq <$> liftedMaybe lx <*> liftedMaybe ly
 
-type BindDoc baseedit = (Maybe (QBindings baseedit), DefDoc)
+type BindDoc baseedit = (Maybe (QBindList baseedit), DefDoc)
 
 mkDefEntry ::
        forall baseedit t. (HasPinaforeEntityEdit baseedit, ToQValue baseedit t)
@@ -408,5 +408,5 @@ predefinedDoc = fmap snd $ predefinitions @baseedit
 
 predefinedBindings ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
-    => QBindings baseedit
+    => QBindList baseedit
 predefinedBindings = mconcat $ catMaybes $ toList $ fmap fst $ predefinitions @baseedit
