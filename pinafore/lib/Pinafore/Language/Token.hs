@@ -6,7 +6,8 @@ module Pinafore.Language.Token
 import Data.UUID
 import Pinafore.Language.Name
 import Pinafore.Number
-import Pinafore.Table
+
+--import Pinafore.Table
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.String
@@ -18,6 +19,8 @@ data Token t where
     TokCloseParen :: Token ()
     TokOpenBracket :: Token ()
     TokCloseBracket :: Token ()
+    TokOpenBrace :: Token ()
+    TokCloseBrace :: Token ()
     TokString :: Token Text
     TokLet :: Token ()
     TokIn :: Token ()
@@ -29,10 +32,12 @@ data Token t where
     TokLambda :: Token ()
     TokAssign :: Token ()
     TokMap :: Token ()
-    TokPoint :: Token Point
-    TokPredicate :: Token Predicate
-    TokInvert :: Token ()
-    TokInfix :: Token Name
+    TokPropMap :: Token ()
+    TokProperty :: Token ()
+    TokPoint :: Token ()
+    TokUUID :: Token UUID
+    TokAt :: Token ()
+    TokOperator :: Token Name
     TokNumber :: Token Number
 
 instance TestEquality Token where
@@ -42,6 +47,8 @@ instance TestEquality Token where
     testEquality TokCloseParen TokCloseParen = Just Refl
     testEquality TokOpenBracket TokOpenBracket = Just Refl
     testEquality TokCloseBracket TokCloseBracket = Just Refl
+    testEquality TokOpenBrace TokOpenBrace = Just Refl
+    testEquality TokCloseBrace TokCloseBrace = Just Refl
     testEquality TokString TokString = Just Refl
     testEquality TokLet TokLet = Just Refl
     testEquality TokIn TokIn = Just Refl
@@ -53,10 +60,12 @@ instance TestEquality Token where
     testEquality TokLambda TokLambda = Just Refl
     testEquality TokAssign TokAssign = Just Refl
     testEquality TokMap TokMap = Just Refl
+    testEquality TokPropMap TokPropMap = Just Refl
+    testEquality TokProperty TokProperty = Just Refl
     testEquality TokPoint TokPoint = Just Refl
-    testEquality TokPredicate TokPredicate = Just Refl
-    testEquality TokInvert TokInvert = Just Refl
-    testEquality TokInfix TokInfix = Just Refl
+    testEquality TokUUID TokUUID = Just Refl
+    testEquality TokAt TokAt = Just Refl
+    testEquality TokOperator TokOperator = Just Refl
     testEquality TokNumber TokNumber = Just Refl
     testEquality _ _ = Nothing
 
@@ -67,6 +76,8 @@ instance Show (Token t) where
     show TokCloseParen = ")"
     show TokOpenBracket = "["
     show TokCloseBracket = "]"
+    show TokOpenBrace = "{"
+    show TokCloseBrace = "}"
     show TokString = "quoted string"
     show TokLet = show ("let" :: String)
     show TokIn = show ("in" :: String)
@@ -78,10 +89,12 @@ instance Show (Token t) where
     show TokLambda = "\\"
     show TokAssign = "="
     show TokMap = "->"
-    show TokPoint = "!"
-    show TokPredicate = "%"
-    show TokInvert = "@"
-    show TokInfix = "infix"
+    show TokPropMap = "~>"
+    show TokProperty = "property"
+    show TokPoint = "point"
+    show TokUUID = "%"
+    show TokAt = "@"
+    show TokOperator = "infix"
     show TokNumber = "number"
 
 instance Show (Any Token) where
@@ -161,6 +174,8 @@ readTextToken = do
         -- keywords
         "let" -> return $ MkAny TokLet ()
         "in" -> return $ MkAny TokIn ()
+        "property" -> return $ MkAny TokProperty ()
+        "point" -> return $ MkAny TokPoint ()
         "if" -> return $ MkAny TokIf ()
         "then" -> return $ MkAny TokThen ()
         "else" -> return $ MkAny TokElse ()
@@ -191,14 +206,12 @@ readOpToken = do
         "\\" -> return $ MkAny TokLambda ()
         "=" -> return $ MkAny TokAssign ()
         "->" -> return $ MkAny TokMap ()
-        "!" -> do
-            uuid <- readUUID
-            return $ MkAny TokPoint $ MkPoint uuid
+        "~>" -> return $ MkAny TokPropMap ()
         "%" -> do
             uuid <- readUUID
-            return $ MkAny TokPredicate $ MkPredicate uuid
-        "@" -> return $ MkAny TokInvert ()
-        _ -> return $ MkAny TokInfix $ MkName $ pack name
+            return $ MkAny TokUUID uuid
+        "@" -> return $ MkAny TokAt ()
+        _ -> return $ MkAny TokOperator $ MkName $ pack name
 
 readChar :: Char -> Token () -> Parser (Any Token)
 readChar c tok = do
@@ -212,6 +225,8 @@ readToken = do
         readChar ';' TokSemicolon <|> readChar ',' TokComma <|> readChar '(' TokOpenParen <|> readChar ')' TokCloseParen <|>
         readChar '[' TokOpenBracket <|>
         readChar ']' TokCloseBracket <|>
+        readChar '{' TokOpenBrace <|>
+        readChar '}' TokCloseBrace <|>
         try readNumber <|>
         readQuotedString <|>
         readTextToken <|>

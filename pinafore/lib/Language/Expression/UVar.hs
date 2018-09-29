@@ -7,7 +7,6 @@ module Language.Expression.UVar
     ) where
 
 import GHC.Exts (Any)
-import GHC.TypeLits
 import Language.Expression.Renamer
 import Shapes
 import Unsafe.Coerce

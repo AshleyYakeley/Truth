@@ -59,25 +59,23 @@ mapArgTypeF CovarianceType f arg =
         Left Refl -> MkArgTypeF
         Right Refl -> MkArgTypeF
 mapArgTypeF ContravarianceType f arg =
-    case isInvertPolarity @polarity of
-        Dict ->
-            case f arg of
-                MkTypeF arg' conv ->
-                    MkArgTypeF arg' $
-                    case whichTypePolarity @polarity of
-                        Left Refl -> MkCatDual conv
-                        Right Refl -> MkCatDual conv
+    invertPolarity @polarity $
+    case f arg of
+        MkTypeF arg' conv ->
+            MkArgTypeF arg' $
+            case whichTypePolarity @polarity of
+                Left Refl -> MkCatDual conv
+                Right Refl -> MkCatDual conv
 mapArgTypeF RangevarianceType f (MkTypeRangeWitness tp tq) =
-    case isInvertPolarity @polarity of
-        Dict ->
-            case f tp of
-                MkTypeF tp' convp ->
-                    case f tq of
-                        MkTypeF tq' convq ->
-                            MkArgTypeF (MkTypeRangeWitness tp' tq') $
-                            case whichTypePolarity @polarity of
-                                Left Refl -> MkRangeFunc convp convq
-                                Right Refl -> MkRangeFunc convp convq
+    invertPolarity @polarity $
+    case f tp of
+        MkTypeF tp' convp ->
+            case f tq of
+                MkTypeF tq' convq ->
+                    MkArgTypeF (MkTypeRangeWitness tp' tq') $
+                    case whichTypePolarity @polarity of
+                        Left Refl -> MkWithRange convp convq
+                        Right Refl -> MkWithRange convp convq
 
 mapArgsTypeF ::
        forall ft dv polarity gt gt' t. IsTypePolarity polarity
@@ -149,23 +147,21 @@ mergeArgTypeF CovarianceType f arga argb =
                 Left Refl -> MkArgTypeF argab conv
                 Right Refl -> MkArgTypeF argab conv
 mergeArgTypeF ContravarianceType f arga argb =
-    case isInvertPolarity @polarity of
-        Dict ->
-            case f arga argb of
-                MkTypeF argab conv ->
-                    case whichTypePolarity @polarity of
-                        Left Refl -> MkArgTypeF argab $ MkCatDual conv
-                        Right Refl -> MkArgTypeF argab $ MkCatDual conv
+    invertPolarity @polarity $
+    case f arga argb of
+        MkTypeF argab conv ->
+            case whichTypePolarity @polarity of
+                Left Refl -> MkArgTypeF argab $ MkCatDual conv
+                Right Refl -> MkArgTypeF argab $ MkCatDual conv
 mergeArgTypeF RangevarianceType f (MkTypeRangeWitness tpa tqa) (MkTypeRangeWitness tpb tqb) =
-    case isInvertPolarity @polarity of
-        Dict ->
-            case f tpa tpb of
-                MkTypeF tpab convp ->
-                    case f tqa tqb of
-                        MkTypeF tqab convq ->
-                            case whichTypePolarity @polarity of
-                                Left Refl -> MkArgTypeF (MkTypeRangeWitness tpab tqab) $ MkRangeFunc convp convq
-                                Right Refl -> MkArgTypeF (MkTypeRangeWitness tpab tqab) $ MkRangeFunc convp convq
+    invertPolarity @polarity $
+    case f tpa tpb of
+        MkTypeF tpab convp ->
+            case f tqa tqb of
+                MkTypeF tqab convq ->
+                    case whichTypePolarity @polarity of
+                        Left Refl -> MkArgTypeF (MkTypeRangeWitness tpab tqab) $ MkWithRange convp convq
+                        Right Refl -> MkArgTypeF (MkTypeRangeWitness tpab tqab) $ MkWithRange convp convq
 
 psvf1 ::
        forall polarity sv a b c. (IsTypePolarity polarity, InVarianceKind sv a, InVarianceKind sv b)
@@ -179,17 +175,17 @@ psvf1 =
                 CovarianceType -> \conv -> conv . join1
                 ContravarianceType -> \(MkCatDual conv) -> MkCatDual $ meet1 . conv
                 RangevarianceType ->
-                    \(MkRangeFunc convp convq) ->
+                    \(MkWithRange convp convq) ->
                         case (inKind @_ @a, inKind @_ @b) of
-                            (MkPairWitness _ _, MkPairWitness _ _) -> MkRangeFunc (meet1 . convp) (convq . join1)
+                            (MkPairWitness _ _, MkPairWitness _ _) -> MkWithRange (meet1 . convp) (convq . join1)
         Right Refl ->
             \case
                 CovarianceType -> \conv -> meet1 . conv
                 ContravarianceType -> \(MkCatDual conv) -> MkCatDual $ conv . join1
                 RangevarianceType ->
-                    \(MkRangeFunc convp convq) ->
+                    \(MkWithRange convp convq) ->
                         case (inKind @_ @a, inKind @_ @b) of
-                            (MkPairWitness _ _, MkPairWitness _ _) -> MkRangeFunc (convp . join1) (meet1 . convq)
+                            (MkPairWitness _ _, MkPairWitness _ _) -> MkWithRange (convp . join1) (meet1 . convq)
 
 psvf2 ::
        forall polarity sv a b c. (IsTypePolarity polarity, InVarianceKind sv a, InVarianceKind sv b)
@@ -203,17 +199,17 @@ psvf2 =
                 CovarianceType -> \conv -> conv . join2
                 ContravarianceType -> \(MkCatDual conv) -> MkCatDual $ meet2 . conv
                 RangevarianceType ->
-                    \(MkRangeFunc convp convq) ->
+                    \(MkWithRange convp convq) ->
                         case (inKind @_ @a, inKind @_ @b) of
-                            (MkPairWitness _ _, MkPairWitness _ _) -> MkRangeFunc (meet2 . convp) (convq . join2)
+                            (MkPairWitness _ _, MkPairWitness _ _) -> MkWithRange (meet2 . convp) (convq . join2)
         Right Refl ->
             \case
                 CovarianceType -> \conv -> meet2 . conv
                 ContravarianceType -> \(MkCatDual conv) -> MkCatDual $ conv . join2
                 RangevarianceType ->
-                    \(MkRangeFunc convp convq) ->
+                    \(MkWithRange convp convq) ->
                         case (inKind @_ @a, inKind @_ @b) of
-                            (MkPairWitness _ _, MkPairWitness _ _) -> MkRangeFunc (convp . join2) (meet2 . convq)
+                            (MkPairWitness _ _, MkPairWitness _ _) -> MkWithRange (convp . join2) (meet2 . convq)
 
 mergeArgsTypeF ::
        forall ft dv polarity gta gtb gtab ta tb. IsTypePolarity polarity

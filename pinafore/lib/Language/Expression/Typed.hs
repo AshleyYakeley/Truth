@@ -28,11 +28,36 @@ type TypedExpression name ts = SealedExpression name (NegWitness ts) (PosWitness
 
 type TypeMonadRenamer ts = TypeRenamer ts (TypeCheck ts)
 
+typedUnifyPosNegWitnesses ::
+       forall ts a b. TypeSystem ts
+    => PosWitness ts a
+    -> NegWitness ts b
+    -> TypeCheck ts (a -> b)
+typedUnifyPosNegWitnesses wa wb = runRenamer @(TypeRenamer ts) $ solveUnifyPosNegWitnesses @(TypeUnifier ts) wa wb
+
 evalTypedExpression ::
        forall ts name m. (MonadFail m, Show name)
     => TypedExpression name ts
     -> m (Any (PosWitness ts))
 evalTypedExpression = evalSealedExpression
+
+typedAnyToVal ::
+       forall ts t. TypeSystem ts
+    => NegWitness ts t
+    -> Any (PosWitness ts)
+    -> TypeCheck ts t
+typedAnyToVal witn (MkAny witp val) = do
+    conv <- typedUnifyPosNegWitnesses @ts witp witn
+    return $ conv val
+
+evalTypedExpressionToType ::
+       forall ts name t. (TypeSystem ts, MonadFail (TypeCheck ts), Show name)
+    => NegWitness ts t
+    -> TypedExpression name ts
+    -> TypeCheck ts t
+evalTypedExpressionToType witn expr = do
+    aval <- evalTypedExpression @ts expr
+    typedAnyToVal @ts witn aval
 
 applyTypedExpression ::
        forall ts name. TypeSystem ts
@@ -61,7 +86,7 @@ varTypedExpression name =
     runRenamer @(TypeRenamer ts) $
     renameNewVar $ \vwt twt conv -> withTransConstraintTM @Monad $ return $ varSealedExpression name vwt twt conv
 
-constTypedExpression :: forall ts name t. PosWitness ts t -> t -> TypedExpression name ts
+constTypedExpression :: forall ts name. Any (PosWitness ts) -> TypedExpression name ts
 constTypedExpression = constSealedExpression
 
 letTypedExpression ::

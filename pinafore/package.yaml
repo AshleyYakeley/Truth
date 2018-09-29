@@ -35,7 +35,6 @@ library:
       - Language.Expression.Dolan
       - Pinafore
       - Pinafore.Main
-      - Pinafore.Language.Value
       - Pinafore.Language.Type
       - Pinafore.Language.Convert
       - Pinafore.Language.Name
@@ -48,20 +47,29 @@ library:
       - Language.Expression.Dolan.Variance
       - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.TypeF
+      - Pinafore.Know
       - Pinafore.Number
       - Pinafore.Literal
       - Pinafore.Morphism
       - Pinafore.Entity
+      - Pinafore.Action
       - Pinafore.Table
       - Pinafore.PredicateMorphism
       - Pinafore.File
       - Pinafore.Pinafore
       - Pinafore.Types
+      - Pinafore.Language.Entity
+      - Pinafore.Language.Literal
+      - Pinafore.Language.Reference
+      - Pinafore.Language.Set
+      - Pinafore.Language.Morphism
       - Pinafore.Language.Token
       - Pinafore.Language.Read
-      - Pinafore.Language.Lifted
       - Pinafore.Language.If
+      - Pinafore.Language.Show
       - Pinafore.Language.Order
+      - Pinafore.Language.GroundType
+      - Pinafore.Language.Convert.Base
       - Pinafore.Language.Doc
       - Pinafore.Language.Predefined
       - Pinafore.Database

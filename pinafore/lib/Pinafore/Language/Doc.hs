@@ -42,9 +42,9 @@ data DefDoc =
              Text
 
 mkDefDoc ::
-       forall t. HasQTypeDescription t
+       forall baseedit t. HasQTypeDescription baseedit t
     => Name
     -> Text
     -> t
     -> DefDoc
-mkDefDoc name desc _ = MkDefDoc name (qTypeDescription @t) desc
+mkDefDoc name desc _ = MkDefDoc name (qTypeDescription @baseedit @t) desc

@@ -7,6 +7,7 @@ module Pinafore.Table
     ) where
 
 import Pinafore.Entity
+import Pinafore.Know
 import Pinafore.Literal
 import Shapes
 import Text.Read
@@ -228,7 +229,7 @@ pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTa
     objRead (PinaforeEntityReadLookupPredicate prd val) = tableRead $ PinaforeTableReadLookupPredicate prd val
     objRead (PinaforeEntityReadToLiteral p) = do
         ml <- tableRead $ PinaforeTableReadGetLiteral p
-        return $ ml >>= fromLiteral
+        return $ maybeToKnow ml >>= fromLiteral
     objRead (PinaforeEntityReadFromLiteral t) = do
         let l = toLiteral t
         s <- tableRead $ PinaforeTableReadLookupLiteral l
@@ -240,6 +241,7 @@ pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTa
                 return p
     objRead PinaforeEntityReadUnit = return unitPoint
     objRead (PinaforeEntityReadToPair p) =
+        fmap maybeToKnow $
         getComposeM $ do
             p1 <- MkComposeM $ tableRead $ PinaforeTableReadGetPredicate predfst p
             p2 <- MkComposeM $ tableRead $ PinaforeTableReadGetPredicate predsnd p
@@ -259,12 +261,12 @@ pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTa
     objRead (PinaforeEntityReadToEither p) = do
         sl <- tableRead $ PinaforeTableReadLookupPredicate predinl p
         case getSingle sl of
-            Just l -> return $ Just $ Left l
+            Just l -> return $ Known $ Left l
             Nothing -> do
                 sr <- tableRead $ PinaforeTableReadLookupPredicate predinr p
                 case getSingle sr of
-                    Just r -> return $ Just $ Right r
-                    Nothing -> return Nothing
+                    Just r -> return $ Known $ Right r
+                    Nothing -> return Unknown
     objRead (PinaforeEntityReadFromEither (Left p)) = objRead $ PinaforeEntityReadGetPredicate predinl p
     objRead (PinaforeEntityReadFromEither (Right p)) = objRead $ PinaforeEntityReadGetPredicate predinr p
     objEdit :: [PinaforeEntityEdit] -> m (Maybe (m ()))

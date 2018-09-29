@@ -85,6 +85,26 @@ instance Arrow (PinaforeFunctionMorphism baseedit) where
             u
     second = cfmap
 
+instance ArrowChoice (PinaforeFunctionMorphism baseedit) where
+    left (MkCloseUnlift unlift (MkAPinaforeFunctionMorphism pfr pfu)) =
+        MkCloseUnlift unlift $
+        MkAPinaforeFunctionMorphism
+            (\mr ebd ->
+                 withTransConstraintTM @Monad $
+                 case ebd of
+                     Left b -> fmap Left (pfr mr b)
+                     Right d -> return $ Right d)
+            pfu
+    right (MkCloseUnlift unlift (MkAPinaforeFunctionMorphism pfr pfu)) =
+        MkCloseUnlift unlift $
+        MkAPinaforeFunctionMorphism
+            (\mr ebd ->
+                 withTransConstraintTM @Monad $
+                 case ebd of
+                     Left d -> return $ Left d
+                     Right b -> fmap Right (pfr mr b))
+            pfu
+
 instance Traversable f => CatFunctor (PinaforeFunctionMorphism baseedit) f where
     cfmap (MkCloseUnlift unlift (MkAPinaforeFunctionMorphism f u)) =
         MkCloseUnlift unlift $ MkAPinaforeFunctionMorphism (\mr fa -> withTransConstraintTM @MonadIO $ for fa $ f mr) u

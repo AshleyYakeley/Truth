@@ -2,7 +2,6 @@ module Test.Type
     ( testType
     ) where
 
-import GHC.TypeLits
 import Language.Expression.Dolan
 import Language.Expression.Expression
 import Language.Expression.Named
@@ -10,6 +9,7 @@ import Language.Expression.Sealed
 import Language.Expression.Typed
 import Language.Expression.Unifier
 import Pinafore
+import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes
@@ -27,144 +27,14 @@ showVars (OpenExpression (MkNameWitness name t) expr) = (show name <> " :: " <> 
 showTypes :: PExpression -> String
 showTypes (MkSealedExpression t expr) = "{" <> intercalate ", " (showVars expr) <> "} -> " <> show t
 
-exprTypeTest :: String -> Result Text String -> Result Text PExpression -> TestTree
+exprTypeTest :: String -> Result Text String -> PinaforeTypeCheck PExpression -> TestTree
 exprTypeTest name expected mexpr =
     testCase name $
     assertEqual "" expected $ do
-        expr <- mexpr
+        expr <- runPinaforeTypeCheck mexpr
         return $ showTypes expr
 
-class ToTypeF wit t where
-    toTypeF :: TypeF wit 'PositivePolarity t
-
-class FromTypeF wit t where
-    fromTypeF :: TypeF wit 'NegativePolarity t
-
-instance ToTypeF (PinaforeType baseedit) BottomType where
-    toTypeF = mkTypeF NilPinaforeType
-
-instance FromTypeF (PinaforeType baseedit) TopType where
-    fromTypeF = mkTypeF NilPinaforeType
-
-instance (ToTypeF (PinaforeType baseedit) a, ToTypeF (PinaforeType baseedit) b) =>
-             ToTypeF (PinaforeType baseedit) (JoinType a b) where
-    toTypeF = joinPinaforeTypeF toTypeF toTypeF
-
-instance (FromTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit) b) =>
-             FromTypeF (PinaforeType baseedit) (MeetType a b) where
-    fromTypeF = meetPinaforeTypeF fromTypeF fromTypeF
-
-instance KnownSymbol name => ToTypeF (PinaforeSingularType baseedit) (UVar name) where
-    toTypeF = mkTypeF $ VarPinaforeSingularType MkSymbolWitness
-
-instance KnownSymbol name => ToTypeF (PinaforeType baseedit) (UVar name) where
-    toTypeF = singlePositivePinaforeTypeF toTypeF
-
-instance KnownSymbol name => FromTypeF (PinaforeSingularType baseedit) (UVar name) where
-    fromTypeF = mkTypeF $ VarPinaforeSingularType MkSymbolWitness
-
-instance KnownSymbol name => FromTypeF (PinaforeType baseedit) (UVar name) where
-    fromTypeF = singleNegativePinaforeTypeF fromTypeF
-
-instance (ToTypeF (PinaforeType baseedit) a, ToTypeF (PinaforeType baseedit) b) =>
-             ToTypeF (PinaforeSingularType baseedit) (a, b) where
-    toTypeF =
-        unTypeF toTypeF $ \ta conva ->
-            unTypeF toTypeF $ \tb convb ->
-                contramap (\(a, b) -> (conva a, convb b)) $
-                mkTypeF $
-                GroundPinaforeSingularType PairPinaforeGroundType $
-                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
-
-instance (ToTypeF (PinaforeType baseedit) a, ToTypeF (PinaforeType baseedit) b) =>
-             ToTypeF (PinaforeType baseedit) (a, b) where
-    toTypeF = singlePositivePinaforeTypeF toTypeF
-
-instance (FromTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit) b) =>
-             FromTypeF (PinaforeSingularType baseedit) (a, b) where
-    fromTypeF =
-        unTypeF fromTypeF $ \ta conva ->
-            unTypeF fromTypeF $ \tb convb ->
-                fmap (\(a, b) -> (conva a, convb b)) $
-                mkTypeF $
-                GroundPinaforeSingularType PairPinaforeGroundType $
-                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
-
-instance (FromTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit) b) =>
-             FromTypeF (PinaforeType baseedit) (a, b) where
-    fromTypeF = singleNegativePinaforeTypeF fromTypeF
-
-instance (FromTypeF (PinaforeType baseedit) a, ToTypeF (PinaforeType baseedit) b) =>
-             ToTypeF (PinaforeSingularType baseedit) (a -> b) where
-    toTypeF =
-        unTypeF fromTypeF $ \ta conva ->
-            unTypeF toTypeF $ \tb convb ->
-                contramap (\ab -> convb . ab . conva) $
-                mkTypeF $
-                GroundPinaforeSingularType FuncPinaforeGroundType $
-                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
-
-instance (FromTypeF (PinaforeType baseedit) a, ToTypeF (PinaforeType baseedit) b) =>
-             ToTypeF (PinaforeType baseedit) (a -> b) where
-    toTypeF = singlePositivePinaforeTypeF toTypeF
-
-instance (ToTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit) b) =>
-             FromTypeF (PinaforeSingularType baseedit) (a -> b) where
-    fromTypeF =
-        unTypeF toTypeF $ \ta conva ->
-            unTypeF fromTypeF $ \tb convb ->
-                fmap (\ab -> convb . ab . conva) $
-                mkTypeF $
-                GroundPinaforeSingularType FuncPinaforeGroundType $
-                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
-
-instance (ToTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit) b) =>
-             FromTypeF (PinaforeType baseedit) (a -> b) where
-    fromTypeF = singleNegativePinaforeTypeF fromTypeF
-
-instance (ToTypeF (PinaforeType baseedit) a) => ToTypeF (PinaforeSingularType baseedit) [a] where
-    toTypeF =
-        unTypeF toTypeF $ \ta conva ->
-            contramap (fmap conva) $
-            mkTypeF $ GroundPinaforeSingularType ListPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
-
-instance (ToTypeF (PinaforeType baseedit) a) => ToTypeF (PinaforeType baseedit) [a] where
-    toTypeF = singlePositivePinaforeTypeF toTypeF
-
-instance (FromTypeF (PinaforeType baseedit) a) => FromTypeF (PinaforeSingularType baseedit) [a] where
-    fromTypeF =
-        unTypeF fromTypeF $ \ta conva ->
-            fmap (fmap conva) $
-            mkTypeF $ GroundPinaforeSingularType ListPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
-
-instance (FromTypeF (PinaforeType baseedit) a) => FromTypeF (PinaforeType baseedit) [a] where
-    fromTypeF = singleNegativePinaforeTypeF fromTypeF
-
-instance ToTypeF (PinaforeSingularType baseedit) Bool where
-    toTypeF = mkTypeF $ GroundPinaforeSingularType (LiteralPinaforeGroundType BooleanLiteralType) NilDolanArguments
-
-instance ToTypeF (PinaforeType baseedit) Bool where
-    toTypeF = singlePositivePinaforeTypeF toTypeF
-
-instance FromTypeF (PinaforeSingularType baseedit) Bool where
-    fromTypeF = mkTypeF $ GroundPinaforeSingularType (LiteralPinaforeGroundType BooleanLiteralType) NilDolanArguments
-
-instance FromTypeF (PinaforeType baseedit) Bool where
-    fromTypeF = singleNegativePinaforeTypeF fromTypeF
-
-instance ToTypeF (PinaforeSingularType baseedit) Number where
-    toTypeF = mkTypeF $ GroundPinaforeSingularType (LiteralPinaforeGroundType NumberLiteralType) NilDolanArguments
-
-instance ToTypeF (PinaforeType baseedit) Number where
-    toTypeF = singlePositivePinaforeTypeF toTypeF
-
-instance FromTypeF (PinaforeSingularType baseedit) Number where
-    fromTypeF = mkTypeF $ GroundPinaforeSingularType (LiteralPinaforeGroundType NumberLiteralType) NilDolanArguments
-
-instance FromTypeF (PinaforeType baseedit) Number where
-    fromTypeF = singleNegativePinaforeTypeF fromTypeF
-
-apExpr :: PExpression -> PExpression -> Result Text PExpression
+apExpr :: PExpression -> PExpression -> PinaforeTypeCheck PExpression
 apExpr = applyTypedExpression @TS
 
 idExpr :: PExpression
@@ -215,7 +85,7 @@ listNumBoolFuncExpr = typeFConstExpression toTypeF $ \(_ :: [Number]) -> [True]
 listBoolNumFuncExpr :: PExpression
 listBoolNumFuncExpr = typeFConstExpression toTypeF $ \(_ :: [Bool]) -> [2 :: Number]
 
-joinExpr :: PExpression -> PExpression -> Result Text PExpression
+joinExpr :: PExpression -> PExpression -> PinaforeTypeCheck PExpression
 joinExpr exp1 exp2 = do
     je <- apExpr ifelseExpr boolExpr
     e <- apExpr je exp1
@@ -255,7 +125,7 @@ testType =
           joinExpr listBoolNumFuncExpr listBoolNumFuncExpr
         , exprTypeTest "[nb] -> [bn]" (return "{} -> [Number & Boolean] -> [Boolean | Number]") $
           joinExpr listNumBoolFuncExpr listBoolNumFuncExpr
-        , exprTypeTest "snd" (return "{} -> (Top, a) -> a") $ return sndExpr
+        , exprTypeTest "snd" (return "{} -> (Any, a) -> a") $ return sndExpr
         , exprTypeTest "thing" (return "{} -> (a, b) -> (a, a | b)") $ return thingExpr
         , exprTypeTest "snd . thing" (return "{} -> (c, c) -> c") $ do
               e1 <- apExpr dotExpr sndExpr

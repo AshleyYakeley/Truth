@@ -3,10 +3,11 @@
 
 module Pinafore.Language.Type
     ( module Pinafore.Language.Type
-    , UVar
+    , module Pinafore.Language.GroundType
+    , module Language.Expression.UVar
+    , module Language.Expression.Dolan
     ) where
 
-import GHC.TypeLits
 import Language.Expression.Dolan
 import Language.Expression.Expression
 import Language.Expression.Named
@@ -15,181 +16,15 @@ import Language.Expression.Sealed
 import Language.Expression.Typed
 import Language.Expression.UVar
 import Language.Expression.Unifier
-import Pinafore.Language.Order
-import Pinafore.Literal
-import Pinafore.Morphism
-import Pinafore.Number
-import Pinafore.Table (Point)
-import Pinafore.Types
-import Prelude (Bounded(..))
+import Pinafore.Language.Entity
+import Pinafore.Language.GroundType
+
+--import Pinafore.Language.Know
+import Pinafore.Language.Literal
+import Pinafore.Language.Show
 import Shapes
-import Truth.Core
-
-class ExprShow t where
-    exprShowPrec :: t -> (Text, Int)
-
-precShow :: Int -> (Text, Int) -> Text
-precShow c (s, p)
-    | c < p = "(" <> s <> ")"
-precShow _ (s, _) = s
-
-exprPrecShow :: ExprShow t => Int -> t -> Text
-exprPrecShow c t = precShow c $ exprShowPrec t
-
-exprShow :: ExprShow t => t -> Text
-exprShow = exprPrecShow maxBound
-
-data PinaforeMutableReference baseedit pq =
-    forall t. MkPinaforeMutableReference (TypeRange t pq)
-                                         (PinaforeLensValue baseedit (WholeEdit t))
-
-instance IsoMapTypeRange (PinaforeMutableReference baseedit)
-
-instance MapTypeRange (PinaforeMutableReference baseedit) where
-    mapTypeRange f (MkPinaforeMutableReference r lens) = MkPinaforeMutableReference (mapTypeRange f r) lens
-
-type PinaforeConstReference = WholeEditFunction
-
-data PinaforeMutableSet baseedit pq =
-    forall t. MkPinaforeMutableSet (TypeRange t pq)
-                                   (PinaforeLensValue baseedit (FiniteSetEdit t))
-
-instance IsoMapTypeRange (PinaforeMutableSet baseedit)
-
-instance MapTypeRange (PinaforeMutableSet baseedit) where
-    mapTypeRange f (MkPinaforeMutableSet r s) = MkPinaforeMutableSet (mapTypeRange f r) s
-
-newtype PinaforeConstSet baseedit t =
-    MkPinaforeConstSet (PinaforeFunctionValue baseedit (FiniteSet t))
-
-instance Functor (PinaforeConstSet baseedit) where
-    fmap ab (MkPinaforeConstSet ef) = MkPinaforeConstSet $ wholeEditFunction (fmap ab) . ef
-
-instance IsoVariant (PinaforeConstSet baseedit)
-
-data PinaforeMorphism baseedit pqa pqb =
-    forall a b. MkPinaforeMorphism (TypeRange a pqa)
-                                   (TypeRange b pqb)
-                                   (PinaforeLensMorphism baseedit a b)
-
-instance IsoMapTypeRange (PinaforeMorphism baseedit pqa)
-
-instance MapTypeRange (PinaforeMorphism baseedit pqa) where
-    mapTypeRange f (MkPinaforeMorphism ra rb m) = MkPinaforeMorphism ra (mapTypeRange f rb) m
-
-instance IsoMapTypeRange' (PinaforeMorphism baseedit)
-
-instance MapTypeRange' (PinaforeMorphism baseedit) where
-    mapTypeRange' f (MkPinaforeMorphism ra rb m) = MkPinaforeMorphism (mapTypeRange f ra) rb m
 
 type PinaforeRangeType baseedit = TypeRangeWitness (PinaforeType baseedit)
-
-newtype Entity (name :: Symbol) =
-    MkEntity Point
-
--- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
-data PinaforeGroundType baseedit (dk :: DolanVariance) (t :: DolanVarianceKind dk) where
-    ActionPinaforeGroundType :: PinaforeGroundType baseedit '[] (QAction baseedit)
-    OrderPinaforeGroundType :: PinaforeGroundType baseedit '[] (QOrder baseedit)
-    UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit '[] (UISpec (ConstEdit Point) baseedit)
-    LiteralPinaforeGroundType :: LiteralType t -> PinaforeGroundType baseedit '[] t
-    PointPinaforeGroundType :: SymbolWitness name -> PinaforeGroundType baseedit '[] (Entity name)
-    FuncPinaforeGroundType :: PinaforeGroundType baseedit '[ 'Contravariance, 'Covariance] (->)
-    ListPinaforeGroundType :: PinaforeGroundType baseedit '[ 'Covariance] []
-    PairPinaforeGroundType :: PinaforeGroundType baseedit '[ 'Covariance, 'Covariance] (,)
-    MutableReferencePinaforeGroundType
-        :: PinaforeGroundType baseedit '[ 'Rangevariance] (PinaforeMutableReference baseedit)
-    ConstReferencePinaforeGroundType :: PinaforeGroundType baseedit '[ 'Covariance] (PinaforeConstReference baseedit)
-    MutableSetPinaforeGroundType :: PinaforeGroundType baseedit '[ 'Rangevariance] (PinaforeMutableSet baseedit)
-    ConstSetPinaforeGroundType :: PinaforeGroundType baseedit '[ 'Covariance] (PinaforeConstSet baseedit)
-    MorphismPinaforeGroundType
-        :: PinaforeGroundType baseedit '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit)
-    InverseMorphismPinaforeGroundType
-        :: PinaforeGroundType baseedit '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit)
-
-testPinaforeGroundTypeEquality ::
-       PinaforeGroundType baseedit dka ta -> PinaforeGroundType baseedit dkb tb -> Maybe (dka :~: dkb, ta :~~: tb)
-testPinaforeGroundTypeEquality ActionPinaforeGroundType ActionPinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality OrderPinaforeGroundType OrderPinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality UserInterfacePinaforeGroundType UserInterfacePinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality (LiteralPinaforeGroundType t1) (LiteralPinaforeGroundType t2) = do
-    Refl <- testEquality t1 t2
-    Just (Refl, HRefl)
-testPinaforeGroundTypeEquality (PointPinaforeGroundType t1) (PointPinaforeGroundType t2) = do
-    Refl <- testEquality t1 t2
-    Just (Refl, HRefl)
-testPinaforeGroundTypeEquality FuncPinaforeGroundType FuncPinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality ListPinaforeGroundType ListPinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality PairPinaforeGroundType PairPinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality MutableReferencePinaforeGroundType MutableReferencePinaforeGroundType =
-    Just (Refl, HRefl)
-testPinaforeGroundTypeEquality ConstReferencePinaforeGroundType ConstReferencePinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality MutableSetPinaforeGroundType MutableSetPinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality ConstSetPinaforeGroundType ConstSetPinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality MorphismPinaforeGroundType MorphismPinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality InverseMorphismPinaforeGroundType InverseMorphismPinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality _ _ = Nothing
-
-instance HasDolanVary '[ 'Rangevariance] (PinaforeMutableReference baseedit) where
-    dolanVary =
-        ConsDolanKindVary
-            (mkRangevary $ \mapr (MkPinaforeMutableReference range lval) -> MkPinaforeMutableReference (mapr range) lval) $
-        NilDolanKindVary
-
-instance HasDolanVary '[ 'Covariance] (PinaforeConstReference baseedit) where
-    dolanVary = ConsDolanKindVary fmap $ NilDolanKindVary
-
-instance HasDolanVary '[ 'Rangevariance] (PinaforeMutableSet baseedit) where
-    dolanVary =
-        ConsDolanKindVary
-            (mkRangevary $ \mapr (MkPinaforeMutableSet range lval) -> MkPinaforeMutableSet (mapr range) lval) $
-        NilDolanKindVary
-
-instance HasDolanVary '[ 'Covariance] (PinaforeConstSet baseedit) where
-    dolanVary = ConsDolanKindVary fmap NilDolanKindVary
-
-instance HasDolanVary '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit) where
-    dolanVary =
-        ConsDolanKindVary
-            (mkRangevary $ \mapr ->
-                 MkNestedMorphism $ \(MkPinaforeMorphism ra rb lm) -> MkPinaforeMorphism (mapr ra) rb lm) $
-        ConsDolanKindVary (mkRangevary $ \mapr (MkPinaforeMorphism ra rb lm) -> MkPinaforeMorphism ra (mapr rb) lm) $
-        NilDolanKindVary
-
-pinaforeGroundTypeVary ::
-       forall baseedit (dk :: DolanVariance) (f :: DolanVarianceKind dk).
-       PinaforeGroundType baseedit dk f
-    -> DolanKindVary dk f
-pinaforeGroundTypeVary ActionPinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary OrderPinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary UserInterfacePinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary (LiteralPinaforeGroundType _) = dolanVary @dk
-pinaforeGroundTypeVary (PointPinaforeGroundType _) = dolanVary @dk
-pinaforeGroundTypeVary FuncPinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary ListPinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary PairPinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary MutableReferencePinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary ConstReferencePinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary MutableSetPinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary ConstSetPinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary MorphismPinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary InverseMorphismPinaforeGroundType = dolanVary @dk
-
-pinaforeGroundTypeKind :: PinaforeGroundType baseedit dk t -> DolanVarianceType dk
-pinaforeGroundTypeKind ActionPinaforeGroundType = representative
-pinaforeGroundTypeKind OrderPinaforeGroundType = representative
-pinaforeGroundTypeKind UserInterfacePinaforeGroundType = representative
-pinaforeGroundTypeKind (LiteralPinaforeGroundType _) = representative
-pinaforeGroundTypeKind (PointPinaforeGroundType _) = representative
-pinaforeGroundTypeKind FuncPinaforeGroundType = representative
-pinaforeGroundTypeKind ListPinaforeGroundType = representative
-pinaforeGroundTypeKind PairPinaforeGroundType = representative
-pinaforeGroundTypeKind MutableReferencePinaforeGroundType = representative
-pinaforeGroundTypeKind ConstReferencePinaforeGroundType = representative
-pinaforeGroundTypeKind MutableSetPinaforeGroundType = representative
-pinaforeGroundTypeKind ConstSetPinaforeGroundType = representative
-pinaforeGroundTypeKind MorphismPinaforeGroundType = representative
-pinaforeGroundTypeKind InverseMorphismPinaforeGroundType = representative
 
 data PinaforeType (baseedit :: Type) (polarity :: TypePolarity) (t :: Type) where
     NilPinaforeType :: PinaforeType baseedit polarity (LimitType polarity)
@@ -198,23 +33,32 @@ data PinaforeType (baseedit :: Type) (polarity :: TypePolarity) (t :: Type) wher
         -> PinaforeType baseedit polarity tr
         -> PinaforeType baseedit polarity (JoinMeetType polarity t tr)
 
+singlePinaforeType ::
+       PinaforeSingularType baseedit polarity t
+    -> PinaforeType baseedit polarity (JoinMeetType polarity t (LimitType polarity))
+singlePinaforeType st = ConsPinaforeType st NilPinaforeType
+
+literalPinaforeType :: LiteralType t -> PinaforeType baseedit polarity (JoinMeetType polarity t (LimitType polarity))
+literalPinaforeType t = singlePinaforeType $ GroundPinaforeSingularType (LiteralPinaforeGroundType t) NilDolanArguments
+
 type PinaforeTypeF (baseedit :: Type) = TypeF (PinaforeType baseedit)
 
 -- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVar') for type variables.
 data PinaforeSingularType (baseedit :: Type) (polarity :: TypePolarity) (t :: Type) where
     GroundPinaforeSingularType
-        :: PinaforeGroundType baseedit dv t
+        :: PinaforeGroundType baseedit polarity dv t
         -> DolanArguments dv (PinaforeType baseedit) t polarity ta
         -> PinaforeSingularType baseedit polarity ta
     VarPinaforeSingularType :: SymbolWitness name -> PinaforeSingularType baseedit polarity (UVar name)
 
-singlePositivePinaforeTypeF ::
-       TypeF (PinaforeSingularType baseedit) 'PositivePolarity t -> PinaforeTypeF baseedit 'PositivePolarity t
-singlePositivePinaforeTypeF (MkTypeF st conv) = contramap conv $ MkTypeF (ConsPinaforeType st NilPinaforeType) join1
-
-singleNegativePinaforeTypeF ::
-       TypeF (PinaforeSingularType baseedit) 'NegativePolarity t -> PinaforeTypeF baseedit 'NegativePolarity t
-singleNegativePinaforeTypeF (MkTypeF st conv) = fmap conv $ MkTypeF (ConsPinaforeType st NilPinaforeType) meet1
+singlePinaforeTypeF ::
+       forall baseedit polarity t. IsTypePolarity polarity
+    => TypeF (PinaforeSingularType baseedit) polarity t
+    -> PinaforeTypeF baseedit polarity t
+singlePinaforeTypeF (MkTypeF st conv) =
+    case whichTypePolarity @polarity of
+        Left Refl -> contramap conv $ MkTypeF (singlePinaforeType st) join1
+        Right Refl -> fmap conv $ MkTypeF (singlePinaforeType st) meet1
 
 type LiftBijection (f :: kp -> kq) = forall (a :: kp) (b :: kp). KindBijection kp a b -> KindBijection kq (f a) (f b)
 
@@ -226,7 +70,7 @@ vcBijection ::
 vcBijection CovarianceType conv (MkBijection ab ba) = mkKindBijection (conv ab) (conv ba)
 vcBijection ContravarianceType conv (MkBijection ba ab) = mkKindBijection (conv $ MkCatDual ab) (conv $ MkCatDual ba)
 vcBijection RangevarianceType conv (MkPairMorphism (MkBijection papb pbpa) (MkBijection qaqb qbqa)) =
-    mkKindBijection (conv $ MkRangeFunc pbpa qaqb) (conv $ MkRangeFunc papb qbqa)
+    mkKindBijection (conv $ MkWithRange pbpa qaqb) (conv $ MkWithRange papb qbqa)
 
 getRangeTypeVars :: PinaforeRangeType baseedit polarity t -> [String]
 getRangeTypeVars (MkTypeRangeWitness tp tq) = getTypeVars tp <> getTypeVars tq
@@ -268,7 +112,10 @@ data BisubstitutionWitness baseedit t where
 type PinaforeUnifier baseedit = Expression (BisubstitutionWitness baseedit)
 
 type PinaforeFullUnifier baseedit
-     = Compose (VarRenamer (PinaforeTypeSystem baseedit) (Result Text)) (PinaforeUnifier baseedit)
+     = Compose (VarRenamer (PinaforeTypeSystem baseedit) PinaforeTypeCheck) (PinaforeUnifier baseedit)
+
+fullUnifierResult :: Result Text a -> PinaforeFullUnifier baseedit a
+fullUnifierResult ra = Compose $ fmap pure $ lift $ typeCheckResult ra
 
 joinPinaforeTypes ::
        forall baseedit (a :: Type) (b :: Type) r.
@@ -307,6 +154,16 @@ meetPinaforeTypeF ::
 meetPinaforeTypeF (MkTypeF ta conva) (MkTypeF tb convb) =
     fmap (meetBimap conva convb) $ meetPinaforeTypes ta tb $ \tab conva' convb' -> MkTypeF tab $ meetf conva' convb'
 
+joinMeetAnyPinaforeTypes ::
+       forall baseedit polarity. IsTypePolarity polarity
+    => AnyWitness (PinaforeType baseedit polarity)
+    -> AnyWitness (PinaforeType baseedit polarity)
+    -> AnyWitness (PinaforeType baseedit polarity)
+joinMeetAnyPinaforeTypes (MkAnyWitness ta) (MkAnyWitness tb) =
+    case whichTypePolarity @polarity of
+        Left Refl -> joinPinaforeTypes ta tb $ \tab _ _ -> MkAnyWitness tab
+        Right Refl -> meetPinaforeTypes ta tb $ \tab _ _ -> MkAnyWitness tab
+
 unifyPosNegVariance ::
        SingleVarianceType sv
     -> SingleArgument sv (PinaforeType baseedit) 'PositivePolarity a
@@ -319,36 +176,71 @@ unifyPosNegVariance ContravarianceType ta tb = do
 unifyPosNegVariance RangevarianceType (MkTypeRangeWitness tpa tqa) (MkTypeRangeWitness tpb tqb) = do
     pba <- unifyPosNegPinaforeTypes tpb tpa
     qab <- unifyPosNegPinaforeTypes tqa tqb
-    return $ MkRangeFunc pba qab
+    return $ MkWithRange pba qab
 
-unifyPosNegArguments ::
+unifyPosNegArguments' ::
        forall baseedit dv gta gtb ta tb.
        DolanVarianceType dv
     -> DolanKindVary dv gta
     -> DolanArguments dv (PinaforeType baseedit) gta 'PositivePolarity ta
     -> DolanArguments dv (PinaforeType baseedit) gtb 'NegativePolarity tb
     -> PinaforeFullUnifier baseedit (KindFunction (DolanVarianceKind dv) gta gtb -> ta -> tb)
-unifyPosNegArguments NilListType NilDolanKindVary NilDolanArguments NilDolanArguments = pure id
-unifyPosNegArguments (ConsListType (svt :: SingleVarianceType sv) (dvt :: DolanVarianceType dv')) (ConsDolanKindVary svm dvm) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) = do
+unifyPosNegArguments' NilListType NilDolanKindVary NilDolanArguments NilDolanArguments = pure id
+unifyPosNegArguments' (ConsListType (svt :: SingleVarianceType sv) (dvt :: DolanVarianceType dv')) (ConsDolanKindVary svm dvm) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) = do
     sfunc <- unifyPosNegVariance svt sta stb
-    f <- unifyPosNegArguments dvt dvm dta dtb
+    f <- unifyPosNegArguments' dvt dvm dta dtb
     pure $
         case dolanVarianceKMCategory @(->) dvt of
             Dict -> \(MkNestedMorphism conv) -> f (conv . svm sfunc)
 
+unifyPosNegArguments ::
+       forall baseedit polarity dv gt ta tb.
+       PinaforeGroundType baseedit polarity dv gt
+    -> DolanArguments dv (PinaforeType baseedit) gt 'PositivePolarity ta
+    -> DolanArguments dv (PinaforeType baseedit) gt 'NegativePolarity tb
+    -> PinaforeFullUnifier baseedit (ta -> tb)
+unifyPosNegArguments gt argsa argsb = let
+    vkt = pinaforeGroundTypeKind gt
+    in case dolanVarianceKMCategory @(->) vkt of
+           Dict -> do
+               f <- unifyPosNegArguments' vkt (pinaforeGroundTypeVary gt) argsa argsb
+               return $ f id
+
 unifyPosNegGroundTypes ::
-       PinaforeGroundType baseedit dva gta
+       PinaforeGroundType baseedit 'PositivePolarity dva gta
     -> DolanArguments dva (PinaforeType baseedit) gta 'PositivePolarity ta
-    -> PinaforeGroundType baseedit dvb gtb
+    -> PinaforeGroundType baseedit 'NegativePolarity dvb gtb
     -> DolanArguments dvb (PinaforeType baseedit) gtb 'NegativePolarity tb
     -> PinaforeFullUnifier baseedit (ta -> tb)
-unifyPosNegGroundTypes ga argsa gb argsb
-    | Just (Refl, HRefl) <- testPinaforeGroundTypeEquality ga gb = let
-        vkt = pinaforeGroundTypeKind ga
-        in case dolanVarianceKMCategory @(->) vkt of
-               Dict -> do
-                   f <- unifyPosNegArguments vkt (pinaforeGroundTypeVary ga) argsa argsb
-                   return $ f id
+unifyPosNegGroundTypes ActionPinaforeGroundType NilDolanArguments ActionPinaforeGroundType NilDolanArguments = pure id
+unifyPosNegGroundTypes OrderPinaforeGroundType argsa OrderPinaforeGroundType argsb =
+    unifyPosNegArguments OrderPinaforeGroundType argsa argsb
+unifyPosNegGroundTypes UserInterfacePinaforeGroundType NilDolanArguments UserInterfacePinaforeGroundType NilDolanArguments =
+    pure id
+unifyPosNegGroundTypes (LiteralPinaforeGroundType la) NilDolanArguments (LiteralPinaforeGroundType lb) NilDolanArguments
+    | Just conv <- isSubtype la lb = pure conv
+unifyPosNegGroundTypes PointPinaforeGroundType NilDolanArguments PointPinaforeGroundType NilDolanArguments = pure id
+unifyPosNegGroundTypes PointPinaforeGroundType NilDolanArguments EntityPinaforeGroundType NilDolanArguments =
+    pure pointToEntity
+unifyPosNegGroundTypes PointPinaforeGroundType NilDolanArguments (NamedEntityPinaforeGroundType _) NilDolanArguments =
+    pure $ MkNamedEntity
+unifyPosNegGroundTypes EntityPinaforeGroundType NilDolanArguments EntityPinaforeGroundType NilDolanArguments = pure id
+unifyPosNegGroundTypes (NamedEntityPinaforeGroundType t1) NilDolanArguments (NamedEntityPinaforeGroundType t2) NilDolanArguments
+    | Just Refl <- testEquality t1 t2 = pure id
+unifyPosNegGroundTypes (NamedEntityPinaforeGroundType _) NilDolanArguments EntityPinaforeGroundType NilDolanArguments =
+    pure namedToEntity
+unifyPosNegGroundTypes FuncPinaforeGroundType argsa FuncPinaforeGroundType argsb =
+    unifyPosNegArguments FuncPinaforeGroundType argsa argsb
+unifyPosNegGroundTypes ListPinaforeGroundType argsa ListPinaforeGroundType argsb =
+    unifyPosNegArguments ListPinaforeGroundType argsa argsb
+unifyPosNegGroundTypes PairPinaforeGroundType argsa PairPinaforeGroundType argsb =
+    unifyPosNegArguments PairPinaforeGroundType argsa argsb
+unifyPosNegGroundTypes ReferencePinaforeGroundType argsa ReferencePinaforeGroundType argsb =
+    unifyPosNegArguments ReferencePinaforeGroundType argsa argsb
+unifyPosNegGroundTypes SetPinaforeGroundType argsa SetPinaforeGroundType argsb =
+    unifyPosNegArguments SetPinaforeGroundType argsa argsb
+unifyPosNegGroundTypes MorphismPinaforeGroundType argsa MorphismPinaforeGroundType argsb =
+    unifyPosNegArguments MorphismPinaforeGroundType argsa argsb
 unifyPosNegGroundTypes ga argsa gb argsb =
     unifierFail $
     "can't cast " <>
@@ -439,11 +331,11 @@ bisubstitutePositiveSingularType ::
     -> PinaforeTypeF baseedit 'PositivePolarity t
 bisubstitutePositiveSingularType (MkBisubstitution n tp _) (VarPinaforeSingularType n')
     | Just Refl <- testEquality n n' = tp
-bisubstitutePositiveSingularType _ t@(VarPinaforeSingularType _) = singlePositivePinaforeTypeF $ mkTypeF t
+bisubstitutePositiveSingularType _ t@(VarPinaforeSingularType _) = singlePinaforeTypeF $ mkTypeF t
 bisubstitutePositiveSingularType bisub (GroundPinaforeSingularType gt args) = let
     dvt = pinaforeGroundTypeKind gt
     in case mapDolanArguments (bisubstituteType bisub) dvt (pinaforeGroundTypeVary gt) args of
-           MkTypeF args' conv -> singlePositivePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt args') conv
+           MkTypeF args' conv -> singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt args') conv
 
 bisubstituteNegativeSingularType ::
        PinaforeBisubstitution baseedit
@@ -451,11 +343,11 @@ bisubstituteNegativeSingularType ::
     -> PinaforeTypeF baseedit 'NegativePolarity t
 bisubstituteNegativeSingularType (MkBisubstitution n _ tq) (VarPinaforeSingularType n')
     | Just Refl <- testEquality n n' = tq
-bisubstituteNegativeSingularType _ t@(VarPinaforeSingularType _) = singleNegativePinaforeTypeF $ mkTypeF t
+bisubstituteNegativeSingularType _ t@(VarPinaforeSingularType _) = singlePinaforeTypeF $ mkTypeF t
 bisubstituteNegativeSingularType bisub (GroundPinaforeSingularType gt args) = let
     dvt = pinaforeGroundTypeKind gt
     in case mapDolanArguments (bisubstituteType bisub) dvt (pinaforeGroundTypeVary gt) args of
-           MkTypeF args' conv -> singleNegativePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt args') conv
+           MkTypeF args' conv -> singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt args') conv
 
 bisubstitutePositiveType ::
        PinaforeBisubstitution baseedit
@@ -511,12 +403,12 @@ bisubstituteUnifier :: PinaforeBisubstitution baseedit -> PinaforeUnifier baseed
 bisubstituteUnifier _ (ClosedExpression a) = pure a
 bisubstituteUnifier bisub@(MkBisubstitution bn _ tq) (OpenExpression (PositiveBisubstitutionWitness vn tp) uval)
     | Just Refl <- testEquality bn vn = do
-        conv <- unifyPosNegPinaforeTypeF (singlePositivePinaforeTypeF $ mkTypeF tp) tq
+        conv <- unifyPosNegPinaforeTypeF (singlePinaforeTypeF $ mkTypeF tp) tq
         val' <- bisubstituteUnifier bisub uval
         return $ val' conv
 bisubstituteUnifier bisub@(MkBisubstitution bn tp _) (OpenExpression (NegativeBisubstitutionWitness vn tq) uval)
     | Just Refl <- testEquality bn vn = do
-        conv <- unifyPosNegPinaforeTypeF tp (singleNegativePinaforeTypeF $ mkTypeF tq)
+        conv <- unifyPosNegPinaforeTypeF tp (singlePinaforeTypeF $ mkTypeF tq)
         val' <- bisubstituteUnifier bisub uval
         return $ val' conv
 bisubstituteUnifier bisub (OpenExpression (PositiveBisubstitutionWitness vn tp) uval) =
@@ -532,10 +424,23 @@ bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) 
                 uval' <- getCompose $ bisubstituteUnifier bisub uval
                 return $ bisubstituteNegativeVar vn tp' $ fmap (\ca pv -> ca $ (conv . pv)) uval'
 
+data TypeContext =
+    MkTypeContext
+
+newtype PinaforeTypeCheck a =
+    MkPinaforeTypeCheck (ReaderT TypeContext (Result Text) a)
+    deriving (Functor, Applicative, Monad, MonadFail)
+
+typeCheckResult :: Result Text a -> PinaforeTypeCheck a
+typeCheckResult ra = MkPinaforeTypeCheck $ lift ra
+
+runPinaforeTypeCheck :: PinaforeTypeCheck a -> Result Text a
+runPinaforeTypeCheck (MkPinaforeTypeCheck qa) = runReaderT qa MkTypeContext
+
 runUnifier ::
        forall baseedit a.
        PinaforeUnifier baseedit a
-    -> VarRenamer (PinaforeTypeSystem baseedit) (Result Text) (a, [PinaforeBisubstitution baseedit])
+    -> VarRenamer (PinaforeTypeSystem baseedit) PinaforeTypeCheck (a, [PinaforeBisubstitution baseedit])
 runUnifier (ClosedExpression a) = return (a, [])
 runUnifier (OpenExpression (PositiveBisubstitutionWitness vn tp) _)
     | occursInSingularType vn tp = fail $ "can't construct recursive type " <> show vn <> " = " <> unpack (exprShow tp)
@@ -549,9 +454,9 @@ runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolWitness n
             vn
             (contramap (biBackwards varBij) $
              joinPinaforeTypeF
-                 (singlePositivePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
-                 (singlePositivePinaforeTypeF $ mkTypeF tp))
-            (fmap (biForwards varBij . join1) $ singleNegativePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
+                 (singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
+                 (singlePinaforeTypeF $ mkTypeF tp))
+            (fmap (biForwards varBij . join1) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
     in do
            expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'
@@ -562,11 +467,11 @@ runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolWitness n
     bisub =
         MkBisubstitution
             vn
-            (contramap (meet1 . biBackwards varBij) $ singlePositivePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
+            (contramap (meet1 . biBackwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
             (fmap (biForwards varBij) $
              meetPinaforeTypeF
-                 (singleNegativePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
-                 (singleNegativePinaforeTypeF $ mkTypeF tq))
+                 (singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
+                 (singlePinaforeTypeF $ mkTypeF tq))
     in do
            expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'
@@ -591,7 +496,7 @@ bisubstituteAllNegativeType (sub:subs) t =
         MkTypeF t' conv -> fmap conv $ bisubstituteAllNegativeType subs t'
 
 instance Unifier (PinaforeUnifier baseedit) where
-    type UnifierMonad (PinaforeUnifier baseedit) = VarRenamer (PinaforeTypeSystem baseedit) (Result Text)
+    type UnifierMonad (PinaforeUnifier baseedit) = VarRenamer (PinaforeTypeSystem baseedit) PinaforeTypeCheck
     type UnifierNegWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'NegativePolarity
     type UnifierPosWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'PositivePolarity
     type UnifierSubstitutions (PinaforeUnifier baseedit) = [PinaforeBisubstitution baseedit]
@@ -620,10 +525,9 @@ renamePinaforeRangeTypeVars ::
        forall baseedit polarity. IsTypePolarity polarity
     => PinaforeTypeNamespace baseedit (PinaforeRangeType baseedit polarity)
 renamePinaforeRangeTypeVars (MkTypeRangeWitness ta tb) cont =
-    case isInvertPolarity @polarity of
-        Dict ->
-            renamePinaforeTypeVars ta $ \ta' bija ->
-                renamePinaforeTypeVars tb $ \tb' bijb -> cont (MkTypeRangeWitness ta' tb') $ MkPairMorphism bija bijb
+    invertPolarity @polarity $
+    renamePinaforeTypeVars ta $ \ta' bija ->
+        renamePinaforeTypeVars tb $ \tb' bijb -> cont (MkTypeRangeWitness ta' tb') $ MkPairMorphism bija bijb
 
 renameTypeArg ::
        forall baseedit polarity v. IsTypePolarity polarity
@@ -678,9 +582,7 @@ instance Renamer (VarRenamer (PinaforeTypeSystem baseedit)) where
     renameNewVar cont = do
         n <- varRenamerGenerate
         toSymbolWitness n $ \wit ->
-            cont
-                (ConsPinaforeType (VarPinaforeSingularType wit) NilPinaforeType)
-                (ConsPinaforeType (VarPinaforeSingularType wit) NilPinaforeType) $
+            cont (singlePinaforeType $ VarPinaforeSingularType wit) (singlePinaforeType $ VarPinaforeSingularType wit) $
             join1 . meet1
     namespace = runVarNamespace
     runRenamer = runVarRenamer
@@ -690,16 +592,16 @@ instance TypeSystem (PinaforeTypeSystem baseedit) where
     type TypeUnifier (PinaforeTypeSystem baseedit) = PinaforeUnifier baseedit
     type NegWitness (PinaforeTypeSystem baseedit) = PinaforeType baseedit 'NegativePolarity
     type PosWitness (PinaforeTypeSystem baseedit) = PinaforeType baseedit 'PositivePolarity
-    type TypeCheck (PinaforeTypeSystem baseedit) = Result Text
+    type TypeCheck (PinaforeTypeSystem baseedit) = PinaforeTypeCheck
     typeSystemFunctionPosWitness ta tb =
         unTypeF $
-        singlePositivePinaforeTypeF $
+        singlePinaforeTypeF $
         mkTypeF $
         GroundPinaforeSingularType FuncPinaforeGroundType $
         ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
     typeSystemFunctionNegWitness ta tb =
         unTypeF $
-        singleNegativePinaforeTypeF $
+        singlePinaforeTypeF $
         mkTypeF $
         GroundPinaforeSingularType FuncPinaforeGroundType $
         ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
@@ -719,84 +621,41 @@ instance IsTypePolarity polarity => Show (PinaforeType baseedit polarity t) wher
 
 exprShowPrecGroundType ::
        forall baseedit polarity dv t ta. IsTypePolarity polarity
-    => PinaforeGroundType baseedit dv t
+    => PinaforeGroundType baseedit polarity dv t
     -> DolanArguments dv (PinaforeType baseedit) t polarity ta
     -> (Text, Int)
+exprShowPrecGroundType InvertLimitPinaforeGroundType NilDolanArguments =
+    invertPolarity @polarity (showLimitType @(InvertPolarity polarity), 0)
 exprShowPrecGroundType ActionPinaforeGroundType NilDolanArguments = ("Action", 0)
-exprShowPrecGroundType OrderPinaforeGroundType NilDolanArguments = ("Order", 0)
+exprShowPrecGroundType OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+    invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)
 exprShowPrecGroundType UserInterfacePinaforeGroundType NilDolanArguments = ("UI", 0)
 exprShowPrecGroundType (LiteralPinaforeGroundType t) NilDolanArguments = exprShowPrec t
-exprShowPrecGroundType (PointPinaforeGroundType n) NilDolanArguments = (pack $ show n, 0)
+exprShowPrecGroundType PointPinaforeGroundType NilDolanArguments = ("Point", 0)
+exprShowPrecGroundType EntityPinaforeGroundType NilDolanArguments = ("Entity", 0)
+exprShowPrecGroundType (NamedEntityPinaforeGroundType n) NilDolanArguments = (pack $ show n, 0)
 exprShowPrecGroundType FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
-    case isInvertPolarity @polarity of
-        Dict -> (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
+    invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
 exprShowPrecGroundType ListPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) = ("[" <> exprShow ta <> "]", 0)
 exprShowPrecGroundType PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     ("(" <> exprShow ta <> ", " <> exprShow tb <> ")", 0)
-exprShowPrecGroundType MutableReferencePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("MRef " <> exprPrecShow 0 ta, 2)
-exprShowPrecGroundType ConstReferencePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("CRef " <> exprPrecShow 0 ta, 2)
-exprShowPrecGroundType MutableSetPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("MSet " <> exprPrecShow 0 ta, 2)
-exprShowPrecGroundType ConstSetPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("CSet " <> exprPrecShow 0 ta, 2)
+exprShowPrecGroundType ReferencePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+    ("Ref " <> exprPrecShow 0 ta, 2)
+exprShowPrecGroundType SetPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+    ("Set " <> exprPrecShow 0 ta, 2)
 exprShowPrecGroundType MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
-    case isInvertPolarity @polarity of
-        Dict -> (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
-exprShowPrecGroundType InverseMorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
-    case isInvertPolarity @polarity of
-        Dict -> (exprPrecShow 2 ta <> " <~ " <> exprPrecShow 3 tb, 3)
+    invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
 
 instance IsTypePolarity polarity => ExprShow (PinaforeRangeType baseedit polarity a) where
     exprShowPrec (MkTypeRangeWitness NilPinaforeType NilPinaforeType) = ("0", 0)
     exprShowPrec (MkTypeRangeWitness NilPinaforeType t) = ("+" <> exprPrecShow 0 t, 0)
-    exprShowPrec (MkTypeRangeWitness t NilPinaforeType) =
-        case isInvertPolarity @polarity of
-            Dict -> ("-" <> exprPrecShow 0 t, 0)
+    exprShowPrec (MkTypeRangeWitness t NilPinaforeType) = invertPolarity @polarity ("-" <> exprPrecShow 0 t, 0)
     exprShowPrec (MkTypeRangeWitness t1 t2) =
-        case isInvertPolarity @polarity of
-            Dict ->
-                case (exprShowPrec t1, exprShowPrec t2) of
-                    (sp1, sp2)
-                        | sp1 == sp2 -> sp1
-                    (sp1, sp2) -> ("(" <> "-" <> precShow 0 sp1 <> " / " <> "+" <> precShow 0 sp2 <> ")", 0)
-
-class IsSubtype w where
-    isSubtype :: w a -> w b -> Result Text (a -> b)
-
-data LiteralType (t :: Type) where
-    LiteralLiteralType :: LiteralType Literal
-    TextLiteralType :: LiteralType Text
-    NumberLiteralType :: LiteralType Number
-    BooleanLiteralType :: LiteralType Bool
-    BottomLiteralType :: LiteralType BottomType
-
-instance TestEquality LiteralType where
-    testEquality LiteralLiteralType LiteralLiteralType = Just Refl
-    testEquality TextLiteralType TextLiteralType = Just Refl
-    testEquality NumberLiteralType NumberLiteralType = Just Refl
-    testEquality BooleanLiteralType BooleanLiteralType = Just Refl
-    testEquality BottomLiteralType BottomLiteralType = Just Refl
-    testEquality _ _ = Nothing
-
-instance ExprShow (LiteralType t) where
-    exprShowPrec LiteralLiteralType = ("Literal", 0)
-    exprShowPrec TextLiteralType = ("Text", 0)
-    exprShowPrec NumberLiteralType = ("Number", 0)
-    exprShowPrec BooleanLiteralType = ("Boolean", 0)
-    exprShowPrec BottomLiteralType = ("LiteralBottom", 0)
-
-instance IsSubtype LiteralType where
-    isSubtype LiteralLiteralType LiteralLiteralType = return id
-    isSubtype TextLiteralType LiteralLiteralType = return toLiteral
-    isSubtype NumberLiteralType LiteralLiteralType = return toLiteral
-    isSubtype BooleanLiteralType LiteralLiteralType = return toLiteral
-    isSubtype TextLiteralType TextLiteralType = return id
-    isSubtype NumberLiteralType NumberLiteralType = return id
-    isSubtype BooleanLiteralType BooleanLiteralType = return id
-    isSubtype BottomLiteralType _ = return never
-    isSubtype ta tb = FailureResult $ "cannot match " <> exprShow ta <> " with " <> exprShow tb
+        invertPolarity @polarity $
+        case (exprShowPrec t1, exprShowPrec t2) of
+            (sp1, sp2)
+                | sp1 == sp2 -> sp1
+            (sp1, sp2) -> ("{" <> "-" <> precShow 0 sp1 <> ", " <> "+" <> precShow 0 sp2 <> "}", 0)
 
 type PinaforeExpression baseedit name
      = SealedExpression name (PinaforeType baseedit 'NegativePolarity) (PinaforeType baseedit 'PositivePolarity)
@@ -918,8 +777,7 @@ class GetExpressionVars t where
 
 instance IsTypePolarity polarity => GetExpressionVars (TypeRangeWitness (PinaforeType baseedit) polarity a) where
     getExpressionVars (MkTypeRangeWitness tp tq) =
-        case isInvertPolarity @polarity of
-            Dict -> getExpressionVars tp <> getExpressionVars tq
+        invertPolarity @polarity $ getExpressionVars tp <> getExpressionVars tq
 
 getArgExpressionVars ::
        forall baseedit polarity sv a. IsTypePolarity polarity
@@ -927,9 +785,7 @@ getArgExpressionVars ::
     -> SingleArgument sv (PinaforeType baseedit) polarity a
     -> ([AnyWitness SymbolWitness], [AnyWitness SymbolWitness])
 getArgExpressionVars CovarianceType t = getExpressionVars t
-getArgExpressionVars ContravarianceType t =
-    case isInvertPolarity @polarity of
-        Dict -> getExpressionVars t
+getArgExpressionVars ContravarianceType t = invertPolarity @polarity $ getExpressionVars t
 getArgExpressionVars RangevarianceType t = getExpressionVars t
 
 getArgsExpressionVars ::

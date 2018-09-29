@@ -43,6 +43,16 @@ unifierFail s = Compose $ fail s
 liftUnifier :: Monad (UnifierMonad unifier) => unifier a -> Compose (UnifierMonad unifier) unifier a
 liftUnifier ua = Compose $ return ua
 
+solveUnifyPosNegWitnesses ::
+       forall unifier a b. Unifier unifier
+    => UnifierPosWitness unifier a
+    -> UnifierNegWitness unifier b
+    -> UnifierMonad unifier (a -> b)
+solveUnifyPosNegWitnesses wa wb = do
+    uab <- getCompose $ unifyPosNegWitnesses @unifier wa wb
+    (ab, _) <- solveUnifier uab
+    return ab
+
 unifierExpressionSubstitute ::
        forall unifier name a. Unifier unifier
     => UnifierSubstitutions unifier

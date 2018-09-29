@@ -18,8 +18,12 @@ numberToDouble :: Number -> Double
 numberToDouble (ExactNumber a) = fromRational a
 numberToDouble (InexactNumber a) = a
 
+{-
 approximate :: Rational -> Number -> Rational
 approximate res n = res * toRational (round (n / fromRational res) :: Integer)
+-}
+approximate :: Number -> Number -> Number
+approximate res n = res * fromInteger (round (n / res) :: Integer)
 
 arity1op ::
        forall c. (c Rational, c Double)

@@ -6,7 +6,6 @@ module Test.Language
 
 import Data.Ratio
 import Pinafore
-import Pinafore.Language.Expression
 import Prelude (read)
 import Shapes
 import Test.Tasty
@@ -113,27 +112,34 @@ testNumbersShowRead =
 testNumbers :: TestTree
 testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
 
+{-
+type QValue baseedit = Any (PinaforeType baseedit 'PositivePolarity)
+
+toQValue :: ToPinaforeType baseedit t => t -> QValue baseedit
+toQValue v = case toTypeF of
+    MkTypeF t conv -> MkAny t $ conv v
+
 -- | for test only
 instance Eq (QValue baseedit) where
     (MkAny QTConstLiteral a1) == (MkAny QTConstLiteral a2) = a1 == a2
     (MkAny QTList a1) == (MkAny QTList a2) = a1 == a2
     (MkAny t1 _) == (MkAny t2 _) = error $ "QValue: " <> show t1 <> " & " <> show t2 <> " not comparable"
 
-testQueryValue :: String -> QTypeCheck (QExpr PinaforeEdit) -> Maybe (QValue PinaforeEdit) -> TestTree
+testQueryValue :: String -> PinaforeTypeCheck (QExpr PinaforeEdit) -> Maybe (QValue PinaforeEdit) -> TestTree
 testQueryValue name texpr expected =
     testCase name $
-    case runQTypeCheck texpr of
+    case runPinaforeTypeCheck texpr of
         SuccessResult expr -> assertEqual "result" expected $ qEvalExpr expr
         FailureResult err -> fail $ unpack err
 
 qint :: Int -> QValue baseedit
 qint = toQValue
-
+-}
 testQueryValues :: TestTree
-testQueryValues =
-    testGroup
-        "query values"
-        [ testQueryValue "pure A" (return $ opoint $ toQValue ("A" :: Text)) (Just $ toQValue ("A" :: Text))
+testQueryValues = testGroup "query values" []
+
+{-
+             testQueryValue "pure A" (return $ opoint $ toQValue ("A" :: Text)) (Just $ toQValue ("A" :: Text))
         , testQueryValue "var a" (qVarExpr "a") Nothing
         , testQueryValue
               "let a=1;b=2 in (a,b,a,b)"
@@ -151,16 +157,16 @@ testQueryValues =
                    e1 <- qLetExpr "b" (opoint $ qint 2) $ qSequenceExpr [be, ae, be, ae]
                    qLetExpr "a" (opoint $ qint 1) e1) $
           Just $ toQValue ([2, 1, 2, 1] :: [Int])
-        ]
-
+-}
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
     testCase (unpack query) $
     case (expected, parseValue @PinaforeEdit "<input>" query) of
         (Nothing, FailureResult _) -> return ()
-        (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ show v
+        (Nothing, SuccessResult (MkAny t v)) ->
+            assertFailure $ "expected failure, found success: " ++ showPinaforeValue t v
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ unpack e
-        (Just s, SuccessResult (v :: QValue PinaforeEdit)) -> assertEqual "result" s (show v)
+        (Just s, SuccessResult (MkAny t v)) -> assertEqual "result" s (showPinaforeValue t v)
 
 showText :: Text -> String
 showText = show
@@ -184,16 +190,16 @@ testQueries =
         , testQuery "NaN" $ Just $ showText "NaN"
         , testQuery "~Infinity" $ Just $ showText "~Infinity"
         , testQuery "~-Infinity" $ Just $ showText "~-Infinity"
-        , testQuery "ui_table" $ Just "<value -> value>"
+        , testQuery "ui_table" $ Just "<?>"
         -- list construction
         , testQuery "[]" $ Just $ show @[Text] []
         , testQuery "[1]" $ Just $ show @[Text] ["1"]
         , testQuery "[1,2,3]" $ Just $ show @[Text] ["1", "2", "3"]
         -- functions
-        , testQuery "\\x -> x" $ Just "<value -> value>"
-        , testQuery "\\x -> 1" $ Just "<value -> value>"
-        , testQuery "\\x y -> y" $ Just "<value -> value>"
-        , testQuery "\\x y z -> [x,y,z]" $ Just "<value -> value>"
+        , testQuery "\\x -> x" $ Just "<?>"
+        , testQuery "\\x -> 1" $ Just "<?>"
+        , testQuery "\\x y -> y" $ Just "<?>"
+        , testQuery "\\x y z -> [x,y,z]" $ Just "<?>"
         -- let-binding
         , testQuery "let in 27" $ Just $ showText "27"
         , testQuery "let a=\"5\" in a" $ Just $ showText "5"
@@ -225,10 +231,10 @@ testQueries =
         , testQuery "let a=1;b=a in b" $ Just $ showText "1"
         , testQuery "let b=a;a=1 in b" $ Just $ showText "1"
         , testQuery "let a x = x in a 1" $ Just $ showText "1"
-        , testQuery "let a x = x; b = a in b" $ Just "<value -> value>"
+        , testQuery "let a x = x; b = a in b" $ Just "<?>"
         , testQuery "let a = \\x -> x in let b = a 1 in b" $ Just $ showText "1"
         , testQuery "let a x = x; b = a 1 in b" $ Just $ showText "1"
-        , testQuery "let a x = b; b = b in a" $ Just "<value -> value>"
+        , testQuery "let a x = b; b = b in a" $ Just "<?>"
         , testQuery "let a x = 1; b = b in a b" $ Just $ showText "1"
         , testQuery "let a x = 1; b = a b in b" $ Just $ showText "1"
         , testQuery "let b = a b; a x = 1 in b" $ Just $ showText "1"

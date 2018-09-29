@@ -32,13 +32,10 @@ instance Is SingleVarianceType 'Contravariance where
 instance Is SingleVarianceType 'Rangevariance where
     representative = RangevarianceType
 
-data RangeFunc (a :: (Type, Type)) (b :: (Type, Type)) where
-    MkRangeFunc :: forall pa qa pb qb. (pb -> pa) -> (qa -> qb) -> RangeFunc '( pa, qa) '( pb, qb)
-
 type family SingleVarianceFunc (v :: SingleVariance) :: SingleVarianceKind v -> SingleVarianceKind v -> Type where
     SingleVarianceFunc 'Covariance = (->)
     SingleVarianceFunc 'Contravariance = CatDual (->)
-    SingleVarianceFunc 'Rangevariance = RangeFunc
+    SingleVarianceFunc 'Rangevariance = WithRange (->)
 
 type DolanVariance = [SingleVariance]
 
@@ -72,7 +69,7 @@ mkRangevary ::
        forall k (f :: (Type, Type) -> k).
        (forall a b. (forall t. TypeRange t a -> TypeRange t b) -> KindFunction k (f a) (f b))
     -> SingleVarianceMap 'Rangevariance f
-mkRangevary f (MkRangeFunc pbpa qaqb) = f $ \(MkTypeRange pt tq) -> MkTypeRange (pt . pbpa) (qaqb . tq)
+mkRangevary f (MkWithRange pbpa qaqb) = f $ \(MkTypeRange pt tq) -> MkTypeRange (pt . pbpa) (qaqb . tq)
 
 data DolanKindVary (dv :: DolanVariance) (gt :: DolanVarianceKind dv) where
     NilDolanKindVary :: forall (gt :: Type). DolanKindVary '[] gt

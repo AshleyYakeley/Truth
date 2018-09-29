@@ -17,7 +17,49 @@ In interactive mode, each command has syntax `<interactive-command>`.
 ```
 <file> ::= <expression>
 
-<interactive-command> ::= <expression> | <let-bindings>
+<interactive-command> ::= <expression> | <let-declarations>
+
+<type> :: =
+    <type-1> "|" <type> |
+    <type-1> "&" <type> |
+    <type-1>
+
+<type-1> ::=
+    <type-range-3> "~>" <type-range-3> |
+    <type-3> "->" <type-1> |
+    <type-2>
+
+<type-2> ::=
+    "Order" <type-3> |
+    "Ref" <type-range-3> |
+    "Set" <type-range-3> |
+    <type-3>
+
+<type-3> ::=
+    "(" <type> ")" |
+    "(" <type> "," <type> ")" |
+    "(" ")" |
+    <type-var> |
+    <type-const>
+
+<type-range-3> ::=
+    "{" <type-contravariant> "," <type-covariant> "}" |
+    "-" <type-3> |
+    "+" <type-3> |
+    "0" |
+    <type-3>
+
+<type-contravariant> ::=
+    "0" |
+    "-" <type>
+
+<type-covariant> ::=
+    "0" |
+    "+" <type>
+
+<type-var> ::= symbol -- lowercase first letter
+
+<type-const> ::= symbol -- upper first letter
 
 <expression> ::= <expression-infix[0]>
 
@@ -31,18 +73,19 @@ In interactive mode, each command has syntax `<interactive-command>`.
 
 <expression-1> ::=
     "\" <patterns> "->" <expression> |
-    <let-bindings> "in" <expression> |
+    <let-declarations> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
     <expression-2>
 
 <expression-2> ::= <expression-3> | <expression-2> <expression-3>
 
 <expression-3> ::=
+    "property" "@"<type-3> uuid |
+    "point" "@"<type-3> uuid |
     symbol |
     literal-boolean |
     literal-number |
     literal-text |
-    "@" |
     literal-predicate |
     literal-point |
     "[" <comma-separated-expressions> "]" |
@@ -54,11 +97,14 @@ In interactive mode, each command has syntax `<interactive-command>`.
     <expression> |
     <comma-separated-expressions-1> "," <expression>
 
-<let-bindings> ::= "let" <bindings>
+<let-declarations> ::= "let" <declarations>
 
-<bindings> ::=  | <binding> ";" <bindings>
+<declarations> ::=  | <declaration> ";" <declarations>
 
-<binding> ::= symbol <patterns> "=" <expression>
+<declaration> ::=
+    "entity" <type-const> |
+    "subtype" <type-const> "<=" <type-const> |
+    symbol <patterns> "=" <expression>
 
 <patterns> ::=  | <pattern> <patterns>
 
@@ -69,7 +115,7 @@ In interactive mode, each command has syntax `<interactive-command>`.
 
 | [n] | (A x B) x C | A x (B x C) | A x B only |
 | --- | --- | --- | --- |
-9 | others | `.` |
+9 | others | `.` `<.>` |
 8 | `*` `/` `/\` | |
 7 | `+` `-` `\/` | |
 6 | | `++` |

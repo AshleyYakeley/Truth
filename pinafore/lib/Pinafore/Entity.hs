@@ -9,6 +9,7 @@ module Pinafore.Entity
 import Data.Aeson (FromJSON)
 import Data.Serialize as Serialize (Serialize(..))
 import Data.UUID hiding (fromString)
+import Pinafore.Know
 import Pinafore.Literal
 import Shapes
 import Truth.Core
@@ -42,12 +43,12 @@ newPoint = liftIO randomIO
 data PinaforeEntityRead t where
     PinaforeEntityReadGetPredicate :: Predicate -> Point -> PinaforeEntityRead Point
     PinaforeEntityReadLookupPredicate :: Predicate -> Point -> PinaforeEntityRead (FiniteSet Point)
-    PinaforeEntityReadToLiteral :: AsLiteral t => Point -> PinaforeEntityRead (Maybe t)
+    PinaforeEntityReadToLiteral :: AsLiteral t => Point -> PinaforeEntityRead (Know t)
     PinaforeEntityReadFromLiteral :: AsLiteral t => t -> PinaforeEntityRead Point
     PinaforeEntityReadUnit :: PinaforeEntityRead Point
-    PinaforeEntityReadToPair :: Point -> PinaforeEntityRead (Maybe (Point, Point))
+    PinaforeEntityReadToPair :: Point -> PinaforeEntityRead (Know (Point, Point))
     PinaforeEntityReadFromPair :: (Point, Point) -> PinaforeEntityRead Point
-    PinaforeEntityReadToEither :: Point -> PinaforeEntityRead (Maybe (Either Point Point))
+    PinaforeEntityReadToEither :: Point -> PinaforeEntityRead (Know (Either Point Point))
     PinaforeEntityReadFromEither :: Either Point Point -> PinaforeEntityRead Point
 
 instance Show (PinaforeEntityRead t) where

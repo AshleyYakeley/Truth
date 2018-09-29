@@ -7,14 +7,19 @@ module Pinafore.Language.Predefined
     , outputln
     ) where
 
+import Pinafore.Action
 import Pinafore.File
+import Pinafore.Know
 import Pinafore.Language.Convert
 import Pinafore.Language.Doc
+import Pinafore.Language.Entity
 import Pinafore.Language.Expression
-import Pinafore.Language.Lifted
+import Pinafore.Language.Morphism
 import Pinafore.Language.Name
 import Pinafore.Language.Order
-import Pinafore.Language.Value
+import Pinafore.Language.Reference
+import Pinafore.Language.Set
+import Pinafore.Language.Type
 import Pinafore.Literal
 import Pinafore.Morphism
 import Pinafore.Number
@@ -23,111 +28,91 @@ import Pinafore.Table
 import Pinafore.Types
 import Shapes
 import Truth.Core
-import Truth.World.File
-import Truth.World.ObjectStore
 
-qcompose :: HasPinaforeEntityEdit baseedit => QValue baseedit -> QValue baseedit -> QValue baseedit
-qcompose (MkAny QTMorphism g) (MkAny QTMorphism f) = MkAny QTMorphism $ g . f
-qcompose (MkAny QTInverseMorphism g) (MkAny QTInverseMorphism f) = MkAny QTInverseMorphism $ f . g
-qcompose g f = MkAny QTFunction $ qapply g . qapply f
+--import Truth.World.File
+type A = UVar "a"
 
-qmeet :: QRefSetPoint baseedit -> QRefSetPoint baseedit -> QRefSetPoint baseedit
-qmeet a b = readOnlyEditLens meetEditFunction . pairJoinEditLenses a b
+type B = UVar "b"
 
-qjoin :: QRefSetPoint baseedit -> QRefSetPoint baseedit -> QRefSetPoint baseedit
-qjoin a b = readOnlyEditLens joinEditFunction . pairJoinEditLenses a b
+type C = UVar "c"
 
-set_member :: Point -> FiniteSet Point -> Bool
-set_member p set = elem p set
+qapply :: (A -> B) -> A -> B
+qapply = ($)
+
+qcompose :: (B -> C) -> (A -> B) -> A -> C
+qcompose = (.)
+
+qmeet ::
+       PinaforeSet baseedit '( A, MeetType Entity A)
+    -> PinaforeSet baseedit '( A, MeetType Entity A)
+    -> PinaforeSet baseedit '( MeetType Entity A, A)
+qmeet = pinaforeSetMeet
+
+qjoin ::
+       PinaforeSet baseedit '( A, MeetType Entity A)
+    -> PinaforeSet baseedit '( A, MeetType Entity A)
+    -> PinaforeSet baseedit '( MeetType Entity A, A)
+qjoin = pinaforeSetJoin
 
 output ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => QLiteral baseedit Text
-    -> QAction baseedit
+    => QFuncValue baseedit Text
+    -> PinaforeAction baseedit
 output val = do
-    mtext <- qGetFunctionValue val
+    mtext <- pinaforeFunctionValueGet val
     for_ mtext $ \text -> liftIO $ putStr $ unpack text
 
 outputln ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => QLiteral baseedit Text
-    -> QAction baseedit
+    => QFuncValue baseedit Text
+    -> PinaforeAction baseedit
 outputln val = do
-    mtext <- qGetFunctionValue val
+    mtext <- pinaforeFunctionValueGet val
     for_ mtext $ \text -> liftIO $ putStrLn $ unpack text
 
-setcount :: FiniteSet Literal -> Int
-setcount = olength
+qappend :: Text -> Text -> Text
+qappend = (<>)
 
-setsum :: FiniteSet Number -> Number
-setsum (MkFiniteSet s) = sum s
-
-setmean :: FiniteSet Number -> Number
-setmean (MkFiniteSet s) = sum s / fromIntegral (olength s)
-
-withset ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => QOrder baseedit
-    -> QSetPoint baseedit
-    -> (Point -> QAction baseedit)
-    -> QAction baseedit
-withset order set cont = do
-    points <- qGetFunctionValue $ qOrderSet order set
-    for_ points cont
-
-qappend :: Lifted baseedit Text -> Lifted baseedit Text -> Lifted baseedit Text
-qappend = liftA2 (<>)
-
-valSpecText :: UISpec seledit (WholeEdit (Maybe Text)) -> QRefLiteral baseedit Text -> UISpec seledit baseedit
+valSpecText :: UISpec seledit (WholeEdit (Know Text)) -> QLensValue baseedit Text -> UISpec seledit baseedit
 valSpecText spec val = uiLens val spec
 
-isUnit :: Bijection (Maybe ()) Bool
-isUnit =
-    MkBijection isJust $ \b ->
-        if b
-            then Just ()
-            else Nothing
+clearText :: EditFunction (WholeEdit (Know Text)) (WholeEdit Text)
+clearText = funcEditFunction (fromKnow mempty)
 
-clearText :: EditFunction (WholeEdit (Maybe Text)) (WholeEdit Text)
-clearText = funcEditFunction (fromMaybe mempty)
-
-genentity :: QActionM baseedit Point
-genentity = liftIO $ newKeyContainerItem @(FiniteSet Point)
-
-newentity :: forall baseedit. QRefSetPoint baseedit -> (Point -> QAction baseedit) -> QAction baseedit
+newentity ::
+       forall baseedit.
+       PinaforeSet baseedit '( Point, TopType)
+    -> (Point -> PinaforeAction baseedit)
+    -> PinaforeAction baseedit
 newentity set continue = do
-    entity <- genentity
-    qLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem entity]
-    continue entity
+    point <- pinaforeSetAddNew set
+    continue point
 
-getQImPoint :: QPoint baseedit -> QActionM baseedit Point
-getQImPoint = qGetFunctionValue
+getentity ::
+       forall baseedit.
+       PinaforeReference baseedit '( BottomType, A)
+    -> (A -> PinaforeAction baseedit)
+    -> PinaforeAction baseedit
+getentity ref cont = do
+    kq <- getPinaforeReference ref
+    case kq of
+        Known q -> cont q
+        Unknown -> return ()
 
-addentity :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAction baseedit
-addentity set qp = do
-    entity <- getQImPoint qp
-    qLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem entity]
+setentity :: forall baseedit. PinaforeReference baseedit '( A, TopType) -> A -> PinaforeAction baseedit
+setentity ref val = setPinaforeReference ref (Known val)
 
-removeentity :: forall baseedit. QRefSetPoint baseedit -> QPoint baseedit -> QAction baseedit
-removeentity set qp = do
-    entity <- getQImPoint qp
-    qLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem entity]
+deleteentity :: forall baseedit. PinaforeReference baseedit '( BottomType, TopType) -> PinaforeAction baseedit
+deleteentity ref = setPinaforeReference ref Unknown
 
-removeall :: forall baseedit. QRefSetPoint baseedit -> QAction baseedit
-removeall set = do qLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyClear]
-
-setentity :: forall baseedit. QRefPoint baseedit -> QPoint baseedit -> QAction baseedit
-setentity var val = do
-    p :: Point <- getQImPoint val
-    qLiftView $ viewMapEdit var $ viewObjectPushEdit $ \_ push -> push [MkWholeEdit p]
-
+{-
 file_import ::
        forall baseedit. HasPinaforeFileEdit baseedit
-    => QRefSetPoint baseedit
-    -> (Point -> QAction baseedit)
-    -> QAction baseedit
+    => QLensSet baseedit A
+    -> (A -> PinaforeAction baseedit)
+    -> PinaforeAction baseedit
 file_import set continue = do
-    chooseFile <- actionRequest witChooseFile
+    chooseFile <- pinaforeActionRequest witChooseFile
     mpath <- liftIO chooseFile
     case mpath of
         Nothing -> return ()
@@ -135,7 +120,7 @@ file_import set continue = do
             let sourceobject = fileObject path
             newentity set $ \entity -> do
                 mdestobject <-
-                    qLiftView $
+                    pinaforeLiftView $
                     viewMapEdit (pinaforeFileItemLens entity) $ do
                         MkObject {..} <- viewObject
                         liftIO $
@@ -144,17 +129,17 @@ file_import set continue = do
                                 objRead ReadSingleObjectStore
                 destobject <-
                     case mdestobject of
-                        Nothing -> qLiftResult $ FailureResult $ fromString $ "failed to create object " ++ show entity
+                        Nothing -> pinaforeLiftResult $ FailureResult $ fromString $ "failed to create object " ++ show entity
                         Just object -> return object
                 liftIO $ copyObject sourceobject destobject
                 continue entity
 
 file_size :: Object ByteStringEdit -> IO Int64
 file_size MkObject {..} = runUnliftIO objRun $ objRead ReadByteStringLength
-
-withSelection :: (Point -> QAction baseedit) -> QAction baseedit
+-}
+withSelection :: (Entity -> PinaforeAction baseedit) -> PinaforeAction baseedit
 withSelection cont = do
-    mselection <- qLiftView viewGetSelection
+    mselection <- pinaforeLiftView viewGetSelection
     case mselection of
         Nothing -> return ()
         Just MkObject {..} -> do
@@ -163,84 +148,81 @@ withSelection cont = do
 
 ui_table ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => [(QLiteral baseedit Text, Point -> Result Text (QRefLiteral baseedit Text))]
-    -> (Point -> Result Text (UIWindow baseedit))
-    -> QRefSetPoint baseedit
-    -> UISpec (ConstEdit Point) baseedit
+    => [(PinaforeReference baseedit '( BottomType, Text), A -> PinaforeReference baseedit '( BottomType, Text))]
+    -> (A -> UIWindow baseedit)
+    -> PinaforeSet baseedit '( A, MeetType Entity A)
+    -> UISpec (ConstEdit Entity) baseedit
 ui_table cols asp val = let
-    showCell :: Maybe Text -> (Text, TableCellProps)
-    showCell (Just s) = (s, tableCellPlain)
-    showCell Nothing = ("empty", tableCellPlain {tcItalic = True})
-    mapLens :: QRefLiteral baseedit Text -> PinaforeFunctionValue baseedit (Text, TableCellProps)
-    mapLens lens = funcEditFunction showCell . editLensFunction lens
-    getColumn :: (QLiteral baseedit Text, Point -> Result Text (QRefLiteral baseedit Text)) -> KeyColumn baseedit Point
+    showCell :: Know Text -> (Text, TableCellProps)
+    showCell (Known s) = (s, tableCellPlain)
+    showCell Unknown = ("unknown", tableCellPlain {tcItalic = True})
+    mapLens :: PinaforeFunctionValue baseedit (Know Text) -> PinaforeFunctionValue baseedit (Text, TableCellProps)
+    mapLens ff = funcEditFunction showCell . ff
+    getColumn ::
+           (PinaforeReference baseedit '( BottomType, Text), A -> PinaforeReference baseedit '( BottomType, Text))
+        -> KeyColumn baseedit (MeetType Entity A)
     getColumn (name, f) =
-        readOnlyKeyColumn (clearText . name) $ \p ->
-            resultToM $
-            mapResultFailure unpack $ do
-                lens <- f p
-                return $ mapLens lens
-    aspect :: Point -> IO (UIWindow baseedit)
-    aspect entity = resultToM $ mapResultFailure unpack $ asp entity
-    in uiTable (fmap getColumn cols) aspect val
+        readOnlyKeyColumn (clearText . pinaforeReferenceToFunction name) $ \p ->
+            return $ mapLens $ pinaforeReferenceToFunction $ f $ meet2 p
+    aspect :: MeetType Entity A -> IO (UIWindow baseedit)
+    aspect entity = return $ asp $ meet2 entity
+    in uiSetSelectionLens (funcNoEditLens meet1) $
+       uiTable (fmap getColumn cols) aspect $ unPinaforeSet $ contraMapTypeRange meet2 val
+
+type PickerType = Know (MeetType Entity A)
+
+type PickerPairType = (PickerType, Text)
 
 ui_pick ::
        forall baseedit seledit.
-       QMorphismLiteral baseedit Text
-    -> QSetPoint baseedit
-    -> QRefPoint baseedit
+       PinaforeMorphism baseedit '( A, TopType) '( BottomType, Text)
+    -> PinaforeSet baseedit '( A, MeetType Entity A)
+    -> PinaforeReference baseedit '( A, MeetType Entity A)
     -> UISpec seledit baseedit
-ui_pick nameMorphism fset = let
-    getName :: PinaforeFunctionMorphism baseedit Point (Point, Text)
+ui_pick nameMorphism fset ref = let
+    getName :: PinaforeFunctionMorphism baseedit (MeetType Entity A) PickerPairType
     getName =
         proc p -> do
-            n <- nameMorphism -< p
-            returnA -< (p, fromMaybe mempty n)
-    getNames :: PinaforeFunctionMorphism baseedit (FiniteSet Point) (FiniteSet (Point, Text))
+            n <- pinaforeMorphismFunction nameMorphism -< meet2 p
+            returnA -< (Known p, n)
+    getNames :: PinaforeFunctionMorphism baseedit (FiniteSet (MeetType Entity A)) (FiniteSet PickerPairType)
     getNames =
         proc fsp -> do
             pairs <- cfmap getName -< fsp
-            returnA -< pairs
-            -- returnA -< insertSet (Nothing, "") pairs
-    opts :: EditFunction baseedit (ListEdit [(Point, Text)] (WholeEdit (Point, Text)))
+            returnA -< insertSet (Unknown, "") pairs
+    opts :: EditFunction baseedit (ListEdit [PickerPairType] (WholeEdit PickerPairType))
     opts =
-        (orderedKeyList @(FiniteSet (Point, Text)) $ \(_, a) (_, b) -> compare a b) .
-        convertEditFunction . applyPinaforeFunction getNames fset
-    in uiOption @baseedit @Point opts
+        (orderedKeyList @(FiniteSet PickerPairType) $ \(_, a) (_, b) -> compare a b) .
+        convertEditFunction . applyPinaforeFunction getNames (pinaforeSetFunctionValue fset)
+    in uiOption @baseedit @PickerType opts $ unPinaforeReference $ contraMapTypeRange meet2 ref
 
-qfail :: forall baseedit. Lifted baseedit Text -> QAction baseedit
-qfail lt = do
-    mt <- unLifted lt
-    liftIO $ fail $ unpack $ fromMaybe "<null>" mt
+qfail :: forall baseedit. Text -> PinaforeAction baseedit
+qfail t = liftIO $ fail $ unpack t
 
-qsingle :: FiniteSet Literal -> Maybe Literal
-qsingle = getSingle
-
-immutableset :: FiniteSet Point -> FiniteSet Point
-immutableset = id
-
-qstatictype :: forall baseedit. QValue baseedit -> Text
-qstatictype (MkAny t _) = pack $ show t
-
-qstaticshow :: forall baseedit. QValue baseedit -> Text
-qstaticshow v = pack $ show v
-
+{-
 nulljoin :: forall baseedit. Lifted baseedit Literal -> Lifted baseedit Literal -> Lifted baseedit Literal
 nulljoin lx ly = let
     qq :: Maybe Literal -> Maybe Literal -> Maybe Literal
     qq Nothing y = y
     qq x _ = x
     in maybeLifted $ qq <$> liftedMaybe lx <*> liftedMaybe ly
-
+-}
 type BindDoc baseedit = (Maybe (QBindList baseedit), DefDoc)
 
 mkDefEntry ::
-       forall baseedit t. (HasPinaforeEntityEdit baseedit, ToQValue baseedit t)
+       forall baseedit t. (HasPinaforeEntityEdit baseedit, ToPinaforeType baseedit t)
     => Name
     -> Text
     -> t
     -> DocTreeEntry (BindDoc baseedit)
-mkDefEntry name desc val = EntryDocTreeEntry (Just (qBindVal name val), mkDefDoc name desc val)
+mkDefEntry name desc val = EntryDocTreeEntry (Just (qBindVal name val), mkDefDoc @baseedit name desc val)
+
+nulljoin ::
+       forall baseedit.
+       PinaforeImmutableReference baseedit A
+    -> PinaforeImmutableReference baseedit A
+    -> PinaforeImmutableReference baseedit A
+nulljoin = (<|>)
 
 predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
@@ -248,20 +230,25 @@ predefinitions ::
 predefinitions =
     MkDocTree
         "Predefined"
-        [ docTreeEntry
-              "Identity"
-              [ mkDefEntry "is" "Entity identity. This is always `true` or `false`." $
-                liftA2 @(Lifted baseedit) $ (==) @Point
-              ]
+        [ docTreeEntry "Identity" [mkDefEntry "is" "Entity identity. This is always `true` or `false`." $ (==) @Entity]
         , docTreeEntry
               "Functions & Morphisms"
-              [ mkDefEntry "$" "Apply a function, morphism, or inverse morphism to a value." $ qapply @baseedit
-              , mkDefEntry "." "Compose functions, morphisms, or inverse morphisms." $ qcompose @baseedit
-              , mkDefEntry "identity" "The identity morphism." $ (id :: QMorphismRefPoint baseedit)
+              [ mkDefEntry "$" "Apply a function, morphism, or inverse morphism to a value." qapply
+              , mkDefEntry "." "Compose functions." qcompose
+              , mkDefEntry
+                    "identity"
+                    "The identity morphism."
+                    (identityPinaforeMorphism :: PinaforeMorphism baseedit '( A, A) '( A, A))
+              , mkDefEntry
+                    "<.>"
+                    "Compose morphisms."
+                    (composePinaforeMorphism :: PinaforeMorphism baseedit '( B, B) '( C, C) -> PinaforeMorphism baseedit '( A, A) '( B, B) -> PinaforeMorphism baseedit '( A, A) '( C, C))
+              {-
               , EntryDocTreeEntry
                     ( Nothing
                     , mkDefDoc "@" "Invert a morphism to an inverse morphism, or an inverse morphism to a morphism." $
                       qinvert @baseedit)
+            -}
               ]
         , docTreeEntry
               "Sets"
@@ -269,91 +256,114 @@ predefinitions =
                 qmeet @baseedit
               , mkDefEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
                 qjoin @baseedit
-              , mkDefEntry "member" "Determine membership of a set" $ liftA2 @(Lifted baseedit) $ set_member
-              , mkDefEntry "single" "The member of a single-member set, or null." $ fmap @(Lifted baseedit) $ qsingle
-              , mkDefEntry "immutableset" "A set as immutable." $ fmap @(Lifted baseedit) $ immutableset
+              , mkDefEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
+              , mkDefEntry "contains" "Determine membership of a set." $ pinaforeSetContains @baseedit
+              , mkDefEntry "single" "The member of a single-member set, or null." $ pinaforeSetSingle @baseedit @A
               ]
         , docTreeEntry
               "Literals"
               [ mkDefEntry "==" "Literal equality. Note that `null == x` and `x == null` are null for any x." $
-                liftA2 @(Lifted baseedit) $ (==) @Literal
+                (==) @Literal
               , mkDefEntry "/=" "Literal non-equality. Note that `null /= x` and `x /= null` are null for any x." $
-                liftA2 @(Lifted baseedit) $ (/=) @Literal
+                (/=) @Literal
               , docTreeEntry
                     "Nulls"
                     [ mkDefEntry
                           "null"
                           "Null inhabits every literal type, representing missing information. Note that `is null null` = `false`." $
-                      nullLifted @baseedit @Literal
-                    , mkDefEntry "exists" "True if the literal is not null." $ \(val :: QLiteral baseedit Literal) ->
-                          (funcEditFunction (Just . isJust) . val :: QLiteral baseedit Bool)
+                      (empty :: PinaforeImmutableReference baseedit A)
+                    , mkDefEntry "exists" "True if the literal is not null." $ \(val :: QFuncValue baseedit Literal) ->
+                          (funcEditFunction (Known . isKnown) . val :: QFuncValue baseedit Bool)
                     , mkDefEntry "??" "`p ?? q` = `if exists p then p else q`." $ nulljoin @baseedit
                     ]
               , docTreeEntry
                     "Boolean"
-                    [ mkDefEntry "&&" "Boolean AND." $ liftA2 @(Lifted baseedit) (&&)
-                    , mkDefEntry "||" "Boolean OR." $ liftA2 @(Lifted baseedit) (||)
-                    , mkDefEntry "not" "Boolean NOT." $ fmap @(Lifted baseedit) not
+                    [ mkDefEntry "&&" "Boolean AND." (&&)
+                    , mkDefEntry "||" "Boolean OR." (||)
+                    , mkDefEntry "not" "Boolean NOT." not
                     ]
-              , docTreeEntry "Text" [mkDefEntry "++" "Concatenate text." $ qappend @baseedit]
+              , docTreeEntry "Text" [mkDefEntry "++" "Concatenate text." qappend]
               , docTreeEntry
                     "Numeric"
-                    [ mkDefEntry "+" "Numeric add." $ liftA2 @(Lifted baseedit) $ (+) @Number
-                    , mkDefEntry "-" "Numeric Subtract." $ liftA2 @(Lifted baseedit) $ (-) @Number
-                    , mkDefEntry "*" "Numeric Multiply." $ liftA2 @(Lifted baseedit) $ (*) @Number
-                    , mkDefEntry "/" "Numeric Divide." $ liftA2 @(Lifted baseedit) $ (/) @Number
-                    , mkDefEntry "~==" "Numeric equality, folding exact and inexact numbers." $
-                      liftA2 @(Lifted baseedit) $ (==) @Number
-                    , mkDefEntry "~/=" "Numeric non-equality." $ liftA2 @(Lifted baseedit) $ (/=) @Number
-                    , mkDefEntry "<" "Numeric strictly less." $ liftA2 @(Lifted baseedit) $ (<) @Number
-                    , mkDefEntry "<=" "Numeric less or equal." $ liftA2 @(Lifted baseedit) $ (<=) @Number
-                    , mkDefEntry ">" "Numeric strictly greater." $ liftA2 @(Lifted baseedit) $ (>) @Number
-                    , mkDefEntry ">=" "Numeric greater or equal." $ liftA2 @(Lifted baseedit) $ (>=) @Number
-                    , mkDefEntry "abs" "Numeric absolute value." $ fmap @(Lifted baseedit) $ abs @Number
-                    , mkDefEntry "signum" "Numeric sign." $ fmap @(Lifted baseedit) $ signum @Number
-                    , mkDefEntry "inexact" "Convert a number to inexact." $ fmap @(Lifted baseedit) numberToDouble
+                    [ mkDefEntry "+" "Numeric add." $ (+) @Number
+                    , mkDefEntry "-" "Numeric Subtract." $ (-) @Number
+                    , mkDefEntry "*" "Numeric Multiply." $ (*) @Number
+                    , mkDefEntry "/" "Numeric Divide." $ (/) @Number
+                    , mkDefEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
+                    , mkDefEntry "~/=" "Numeric non-equality." $ (/=) @Number
+                    , mkDefEntry "<" "Numeric strictly less." $ (<) @Number
+                    , mkDefEntry "<=" "Numeric less or equal." $ (<=) @Number
+                    , mkDefEntry ">" "Numeric strictly greater." $ (>) @Number
+                    , mkDefEntry ">=" "Numeric greater or equal." $ (>=) @Number
+                    , mkDefEntry "abs" "Numeric absolute value." $ abs @Number
+                    , mkDefEntry "signum" "Numeric sign." $ signum @Number
+                    , mkDefEntry "inexact" "Convert a number to inexact." numberToDouble
                     , mkDefEntry
                           "approximate"
-                          "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`." $
-                      liftA2 @(Lifted baseedit) approximate
+                          "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`."
+                          approximate
                     ]
               ]
         , docTreeEntry
               "Set Aggregation"
-              [ mkDefEntry "count" "Count of non-null literals in a set." $ fmap @(Lifted baseedit) setcount
-              , mkDefEntry "sum" "Sum of numbers in a set." $ fmap @(Lifted baseedit) setsum
-              , mkDefEntry "mean" "Mean of numbers in a set." $ fmap @(Lifted baseedit) setmean
+              [ mkDefEntry "count" "Count of non-null literals in a set." $
+                pinaforeSetFunc @baseedit @TopType @Int olength
+              , mkDefEntry "sum" "Sum of numbers in a set." $ pinaforeSetFunc @baseedit @Number @Number sum
+              , mkDefEntry "mean" "Mean of numbers in a set." $
+                pinaforeSetFunc @baseedit @Number @Number $ \s -> sum s / fromIntegral (olength s)
               ]
         , docTreeEntry
               "Orders"
               [ mkDefEntry "alphabetical" "Alphabetical order." $ alphabetical @baseedit
               , mkDefEntry "numerical" "Numercal order." $ numerical @baseedit
-              , mkDefEntry "chronological" "Chronological order." $ chronological @baseedit
-              , mkDefEntry "orders" "Join orders by priority." $ orders @baseedit
-              , mkDefEntry "orderon" "Order by an order on a particular morphism." $ orderon @baseedit
-              , mkDefEntry "rev" "Reverse an order." $ rev @baseedit
+              --, mkDefEntry "chronological" "Chronological order." $ chronological @baseedit
+              , mkDefEntry "orders" "Join orders by priority." $ orders @baseedit @A
+              , mkDefEntry "orderon" "Order by an order on a particular morphism." $ orderon @baseedit @A @B
+              , mkDefEntry "rev" "Reverse an order." $ rev @baseedit @A
+              , mkDefEntry "orderEQ" "Equal by an order." $ pinaforeOrderCompare @baseedit @A $ (==) EQ
+              , mkDefEntry "orderLT" "Less than by an order." $ pinaforeOrderCompare @baseedit @A $ (==) LT
+              , mkDefEntry "orderLE" "Less than or equal to by an order." $ pinaforeOrderCompare @baseedit @A $ (/=) GT
+              , mkDefEntry "orderGT" "Greater than by an order." $ pinaforeOrderCompare @baseedit @A $ (==) GT
+              , mkDefEntry "orderGE" "Greater than or equal to by an order." $
+                pinaforeOrderCompare @baseedit @A $ (/=) LT
               ]
         , docTreeEntry
               "Actions"
-              [ mkDefEntry "pass" "Do nothing." (return () :: QAction baseedit)
+              [ mkDefEntry "pass" "Do nothing." (return () :: PinaforeAction baseedit)
               , mkDefEntry ">>" "Do actions in sequence." $
-                ((>>) :: QAction baseedit -> QAction baseedit -> QAction baseedit)
+                ((>>) :: PinaforeAction baseedit -> PinaforeAction baseedit -> PinaforeAction baseedit)
               , mkDefEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
-              , mkDefEntry "withset" "Perform an action on every member of a set, in the given order." $
-                withset @baseedit
+              , mkDefEntry "with" "Perform an action on the value of a reference." $ pinaforeReferenceWith @baseedit @A
+              , mkDefEntry
+                    "for"
+                    "Perform an action on each value of a list."
+                    (for_ :: [A] -> (A -> PinaforeAction baseedit) -> PinaforeAction baseedit)
               , mkDefEntry "output" "Output text to standard output." $ output @baseedit
               , mkDefEntry "outputln" "Output text and a newline to standard output." $ outputln @baseedit
-              , mkDefEntry ":=" "Set an entity reference to an entity." $ setentity @baseedit
+              , mkDefEntry ":=" "Set a reference to a value." $ setentity @baseedit
+              , mkDefEntry "delete" "Delete an entity reference." $ deleteentity @baseedit
               , mkDefEntry "newentity" "Create a new entity in a set and act on it." $ newentity @baseedit
-              , mkDefEntry "+=" "Add an entity to a set." $ addentity @baseedit
-              , mkDefEntry "-=" "Remove an entity from a set." $ removeentity @baseedit
-              , mkDefEntry "removeall" "Remove all entities from a set." $ removeall @baseedit
+              , mkDefEntry "get" "Get a reference." $ getentity @baseedit
+              , mkDefEntry
+                    "+="
+                    "Add an entity to a set."
+                    (pinaforeSetAdd :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit)
+              , mkDefEntry
+                    "-="
+                    "Remove an entity from a set."
+                    (pinaforeSetRemove :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit)
+              , mkDefEntry
+                    "removeall"
+                    "Remove all entities from a set."
+                    (pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit)
               ]
+        {-
         , docTreeEntry
               "Files"
               [ mkDefEntry "file_import" "Import a file into a set." $ file_import @baseedit
-              , mkDefEntry "file_size" "The size of a file." $ fmap @(Lifted baseedit) file_size
+              , mkDefEntry "file_size" "The size of a file." file_size
               ]
+        -}
         , docTreeEntry
               "UI"
               [ mkDefEntry "openwindow" "Open a new window with this title and UI." viewOpenWindow
@@ -362,14 +372,14 @@ predefinitions =
                 withSelection @baseedit
               , mkDefEntry "ui_blank" "Blank user-interface" uiNull
               , mkDefEntry "ui_unitcheckbox" "(TBD)" $ \name val ->
-                    uiCheckbox (clearText . name) $ toEditLens isUnit . val
+                    uiCheckbox (clearText . name) $ toEditLens knowBool . val
               , mkDefEntry "ui_booleancheckbox" "Checkbox. Use shift-click to set to null." $ \name val ->
-                    uiMaybeCheckbox (clearText . name) val
+                    uiMaybeCheckbox (clearText . name) $ (bijectionWholeEditLens knowMaybe) . val
               , mkDefEntry "ui_textentry" "Text entry, empty text is null." $
-                valSpecText $ uiNothingValue mempty uiTextEntry
+                valSpecText $ uiUnknownValue mempty uiTextEntry
               , mkDefEntry "ui_textarea" "Text area, empty text is null." $
-                valSpecText $ uiNothingValue mempty $ uiNoSelectionLens $ uiConvert uiText
-              , mkDefEntry "ui_label" "Label." $ valSpecText $ uiNothingValue mempty $ uiLabel
+                valSpecText $ uiUnknownValue mempty $ uiNoSelectionLens $ uiConvert uiText
+              , mkDefEntry "ui_label" "Label." $ valSpecText $ uiUnknownValue mempty $ uiLabel
               , mkDefEntry
                     "ui_horizontal"
                     "Items arranged horizontally, each flag is whether to expand into remaining space."
@@ -385,7 +395,7 @@ predefinitions =
                 -- CSS
                 -- drag
                 -- icon
-              , mkDefEntry "ui_button" "A button with this text that does this action." $ \(name :: QLiteral baseedit Text) action ->
+              , mkDefEntry "ui_button" "A button with this text that does this action." $ \(name :: QFuncValue baseedit Text) action ->
                     uiButton (clearText . name) action
               , mkDefEntry "ui_pick" "A drop-down menu." $ ui_pick
                 -- switch
@@ -393,11 +403,6 @@ predefinitions =
                     "ui_table"
                     "A list table. First arg is columns (name, property), second is the window to open for a selection, third is the set of items." $
                 ui_table @baseedit
-              ]
-        , docTreeEntry
-              "Static"
-              [ mkDefEntry "static-type" "Get the static type of a value." $ qstatictype @baseedit
-              , mkDefEntry "static-show" "Show a value statically." $ qstaticshow @baseedit
               ]
         ]
 

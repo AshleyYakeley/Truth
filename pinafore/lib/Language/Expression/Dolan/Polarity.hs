@@ -58,6 +58,9 @@ meetf f1 f2 v = MkMeetType (f1 v, f2 v)
 meetBimap :: (a1 -> a2) -> (b1 -> b2) -> MeetType a1 b1 -> MeetType a2 b2
 meetBimap aa bb (MkMeetType (a, b)) = MkMeetType (aa a, bb b)
 
+instance Eq a => Eq (MeetType a b) where
+    (MkMeetType (a1, _)) == (MkMeetType (a2, _)) = a1 == a2
+
 data TypePolarity
     = PositivePolarity
     | NegativePolarity
@@ -75,6 +78,14 @@ class IsTypePolarity (polarity :: TypePolarity) where
     jmRightIdentity :: Bijection (JoinMeetType polarity a (LimitType polarity)) a
     jmMap :: (a1 -> a2) -> (b1 -> b2) -> JoinMeetType polarity a1 b1 -> JoinMeetType polarity a2 b2
 
+invertPolarity ::
+       forall polarity r. IsTypePolarity polarity
+    => (IsTypePolarity (InvertPolarity polarity) => r)
+    -> r
+invertPolarity v =
+    case isInvertPolarity @polarity of
+        Dict -> v
+
 jmBiMap ::
        forall polarity a1 a2 b1 b2. IsTypePolarity polarity
     => Bijection a1 a2
@@ -88,7 +99,7 @@ instance IsTypePolarity 'PositivePolarity where
     type InvertPolarity 'PositivePolarity = 'NegativePolarity
     isInvertPolarity = Dict
     type LimitType 'PositivePolarity = BottomType
-    showLimitType = "Bottom"
+    showLimitType = "None"
     type JoinMeetType 'PositivePolarity = JoinType
     showJoinMeetType = "|"
     type ConvertType 'PositivePolarity (a :: k) (b :: k) = KindFunction k a b
@@ -110,7 +121,7 @@ instance IsTypePolarity 'NegativePolarity where
     type InvertPolarity 'NegativePolarity = 'PositivePolarity
     isInvertPolarity = Dict
     type LimitType 'NegativePolarity = TopType
-    showLimitType = "Top"
+    showLimitType = "Any"
     type JoinMeetType 'NegativePolarity = MeetType
     showJoinMeetType = "&"
     type ConvertType 'NegativePolarity (a :: k) (b :: k) = KindFunction k b a

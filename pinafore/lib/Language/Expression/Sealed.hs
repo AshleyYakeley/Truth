@@ -22,8 +22,8 @@ renameSealedExpression (MkSealedExpression twt expr) =
         expr' <- renameExpression expr
         renamePosWitness twt $ \twt' bij -> return $ MkSealedExpression twt' $ fmap (biForwards bij) expr'
 
-constSealedExpression :: tw t -> t -> SealedExpression name vw tw
-constSealedExpression twt t = MkSealedExpression twt $ pure t
+constSealedExpression :: Any tw -> SealedExpression name vw tw
+constSealedExpression (MkAny twt t) = MkSealedExpression twt $ pure t
 
 evalSealedExpression :: (MonadFail m, Show name) => SealedExpression name vw tw -> m (Any tw)
 evalSealedExpression (MkSealedExpression twa expr) = do
@@ -39,7 +39,7 @@ instance MonoFunctor (SealedExpression name vw ((:~:) val)) where
     omap ab (MkSealedExpression Refl expr) = MkSealedExpression Refl $ fmap ab expr
 
 instance MonoPointed (SealedExpression name vw ((:~:) val)) where
-    opoint = constSealedExpression Refl
+    opoint p = constSealedExpression $ MkAny Refl p
 
 instance MonoApplicative (SealedExpression name vw ((:~:) val)) where
     oliftA2 appf (MkSealedExpression Refl vexpr) (MkSealedExpression Refl bexpr) =
