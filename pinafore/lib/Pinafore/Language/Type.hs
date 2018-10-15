@@ -18,8 +18,6 @@ import Language.Expression.UVar
 import Language.Expression.Unifier
 import Pinafore.Language.Entity
 import Pinafore.Language.GroundType
-
---import Pinafore.Language.Know
 import Pinafore.Language.Literal
 import Pinafore.Language.Show
 import Shapes
@@ -154,15 +152,25 @@ meetPinaforeTypeF ::
 meetPinaforeTypeF (MkTypeF ta conva) (MkTypeF tb convb) =
     fmap (meetBimap conva convb) $ meetPinaforeTypes ta tb $ \tab conva' convb' -> MkTypeF tab $ meetf conva' convb'
 
-joinMeetAnyPinaforeTypes ::
-       forall baseedit polarity. IsTypePolarity polarity
-    => AnyWitness (PinaforeType baseedit polarity)
-    -> AnyWitness (PinaforeType baseedit polarity)
-    -> AnyWitness (PinaforeType baseedit polarity)
-joinMeetAnyPinaforeTypes (MkAnyWitness ta) (MkAnyWitness tb) =
-    case whichTypePolarity @polarity of
-        Left Refl -> joinPinaforeTypes ta tb $ \tab _ _ -> MkAnyWitness tab
-        Right Refl -> meetPinaforeTypes ta tb $ \tab _ _ -> MkAnyWitness tab
+instance IsTypePolarity polarity => Semigroup (AnyWitness (PinaforeType baseedit polarity)) where
+    MkAnyWitness ta <> MkAnyWitness tb =
+        case whichTypePolarity @polarity of
+            Left Refl -> joinPinaforeTypes ta tb $ \tab _ _ -> MkAnyWitness tab
+            Right Refl -> meetPinaforeTypes ta tb $ \tab _ _ -> MkAnyWitness tab
+
+instance IsTypePolarity polarity => Monoid (AnyWitness (PinaforeType baseedit polarity)) where
+    mappend = (<>)
+    mempty = MkAnyWitness NilPinaforeType
+
+instance IsTypePolarity polarity => Semigroup (AnyInKind (TypeRangeWitness (PinaforeType baseedit) polarity)) where
+    MkAnyInKind (MkTypeRangeWitness tp1 tq1) <> MkAnyInKind (MkTypeRangeWitness tp2 tq2) =
+        invertPolarity @polarity $
+        case (MkAnyWitness tp1 <> MkAnyWitness tp2, MkAnyWitness tq1 <> MkAnyWitness tq2) of
+            (MkAnyWitness tp12, MkAnyWitness tq12) -> MkAnyInKind (MkTypeRangeWitness tp12 tq12)
+
+instance IsTypePolarity polarity => Monoid (AnyInKind (TypeRangeWitness (PinaforeType baseedit) polarity)) where
+    mappend = (<>)
+    mempty = MkAnyInKind (MkTypeRangeWitness NilPinaforeType NilPinaforeType)
 
 unifyPosNegVariance ::
        SingleVarianceType sv
@@ -647,14 +655,12 @@ exprShowPrecGroundType MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDo
     invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
 
 instance IsTypePolarity polarity => ExprShow (PinaforeRangeType baseedit polarity a) where
-    exprShowPrec (MkTypeRangeWitness NilPinaforeType NilPinaforeType) = ("0", 0)
-    exprShowPrec (MkTypeRangeWitness NilPinaforeType t) = ("+" <> exprPrecShow 0 t, 0)
-    exprShowPrec (MkTypeRangeWitness t NilPinaforeType) = invertPolarity @polarity ("-" <> exprPrecShow 0 t, 0)
+    exprShowPrec (MkTypeRangeWitness NilPinaforeType NilPinaforeType) = ("{}", 0)
+    exprShowPrec (MkTypeRangeWitness NilPinaforeType t) = ("{+" <> exprPrecShow 0 t <> "}", 0)
+    exprShowPrec (MkTypeRangeWitness t NilPinaforeType) = invertPolarity @polarity ("{-" <> exprPrecShow 0 t <> "}", 0)
     exprShowPrec (MkTypeRangeWitness t1 t2) =
         invertPolarity @polarity $
         case (exprShowPrec t1, exprShowPrec t2) of
-            (sp1, sp2)
-                | sp1 == sp2 -> sp1
             (sp1, sp2) -> ("{" <> "-" <> precShow 0 sp1 <> ", " <> "+" <> precShow 0 sp2 <> "}", 0)
 
 type PinaforeExpression baseedit name

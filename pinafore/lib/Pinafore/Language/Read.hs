@@ -47,6 +47,20 @@ readParen = readBracketed TokOpenParen TokCloseParen
 readBracket :: Parser t -> Parser t
 readBracket = readBracketed TokOpenBracket TokCloseBracket
 
+readCommaList1 :: Semigroup t => Parser t -> Parser t
+readCommaList1 p = do
+    v1 <- p
+    mv2 <-
+        optional $ do
+            readThis TokComma
+            readCommaList1 p
+    case mv2 of
+        Just v2 -> return $ v1 <> v2
+        Nothing -> return v1
+
+readCommaList :: Monoid t => Parser t -> Parser t
+readCommaList p = readCommaList1 p <|> return mempty
+
 readJoinMeet ::
        forall polarity. IsTypePolarity polarity
     => Parser ()
@@ -65,7 +79,7 @@ readType = do
             readJoinMeet @polarity
             readType
     case mt2 of
-        Just t2 -> return $ joinMeetAnyPinaforeTypes t1 t2
+        Just t2 -> return $ t1 <> t2
         Nothing -> return t1
 
 readType1 ::
@@ -153,15 +167,12 @@ readType3 =
 readTypeRange3 ::
        forall baseedit polarity. IsTypePolarity polarity
     => Parser (AnyInKind (TypeRangeWitness (PinaforeType baseedit) polarity))
-readTypeRange3 =
-    (readBracketed TokOpenBrace TokCloseBrace $ do
-         MkAnyWitness tp <- invertPolarity @polarity readTypeContravariant
-         readThis TokComma
-         MkAnyWitness tq <- readTypeCovariant
-         return $ MkAnyInKind $ MkTypeRangeWitness tp tq) <|>
-    (do
-         readZero
-         return $ MkAnyInKind $ MkTypeRangeWitness NilPinaforeType NilPinaforeType) <|>
+readTypeRange3 = readBracketed TokOpenBrace TokCloseBrace $ readCommaList readTypeRangeItem
+
+readTypeRangeItem ::
+       forall baseedit polarity. IsTypePolarity polarity
+    => Parser (AnyInKind (TypeRangeWitness (PinaforeType baseedit) polarity))
+readTypeRangeItem =
     (do
          readExactlyThis TokOperator "+"
          MkAnyWitness tq <- readType3
@@ -170,30 +181,6 @@ readTypeRange3 =
          readExactlyThis TokOperator "-"
          MkAnyWitness tp <- invertPolarity @polarity readType3
          return $ MkAnyInKind $ MkTypeRangeWitness tp NilPinaforeType)
-
-readTypeContravariant ::
-       forall baseedit polarity. IsTypePolarity polarity
-    => Parser (AnyWitness (PinaforeType baseedit polarity))
-readTypeContravariant =
-    readZeroType <|> do
-        readExactlyThis TokOperator "-"
-        readType
-
-readTypeCovariant ::
-       forall baseedit polarity. IsTypePolarity polarity
-    => Parser (AnyWitness (PinaforeType baseedit polarity))
-readTypeCovariant =
-    readZeroType <|> do
-        readExactlyThis TokOperator "+"
-        readType
-
-readZeroType :: Parser (AnyWitness (PinaforeType baseedit polarity))
-readZeroType = do
-    readZero
-    return $ MkAnyWitness NilPinaforeType
-
-readZero :: Parser ()
-readZero = readExactlyThis TokNumber 0
 
 readTypeVar :: Parser (AnyWitness SymbolWitness)
 readTypeVar = do

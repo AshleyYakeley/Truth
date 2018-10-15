@@ -14,7 +14,7 @@ In interactive mode, each command has syntax `<interactive-command>`.
 
 ## Grammar
 
-```
+```no-highlight
 <file> ::= <expression>
 
 <interactive-command> ::= <expression> | <let-declarations>
@@ -42,19 +42,16 @@ In interactive mode, each command has syntax `<interactive-command>`.
     <type-var> |
     <type-const>
 
-<type-range-3> ::=
-    "{" <type-contravariant> "," <type-covariant> "}" |
-    "-" <type-3> |
-    "+" <type-3> |
-    "0" |
-    <type-3>
+<type-range-3> ::= "{" <type-range-items> "}"
 
-<type-contravariant> ::=
-    "0" |
-    "-" <type>
+<type-range-items> ::= | <type-range-items-1>
 
-<type-covariant> ::=
-    "0" |
+<type-range-items-1> ::=
+    <type-range-item> |
+    <type-range-item> "," <type-range-items-1>
+
+<type-range-item> ::=
+    "-" <type> |
     "+" <type>
 
 <type-var> ::= symbol -- lowercase first letter
