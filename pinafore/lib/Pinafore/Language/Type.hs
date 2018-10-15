@@ -655,13 +655,20 @@ exprShowPrecGroundType MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDo
     invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
 
 instance IsTypePolarity polarity => ExprShow (PinaforeRangeType baseedit polarity a) where
-    exprShowPrec (MkTypeRangeWitness NilPinaforeType NilPinaforeType) = ("{}", 0)
-    exprShowPrec (MkTypeRangeWitness NilPinaforeType t) = ("{+" <> exprPrecShow 0 t <> "}", 0)
-    exprShowPrec (MkTypeRangeWitness t NilPinaforeType) = invertPolarity @polarity ("{-" <> exprPrecShow 0 t <> "}", 0)
-    exprShowPrec (MkTypeRangeWitness t1 t2) =
-        invertPolarity @polarity $
-        case (exprShowPrec t1, exprShowPrec t2) of
-            (sp1, sp2) -> ("{" <> "-" <> precShow 0 sp1 <> ", " <> "+" <> precShow 0 sp2 <> "}", 0)
+    exprShowPrec (MkTypeRangeWitness t1 t2) = let
+        getpieces ::
+               forall pol t. IsTypePolarity pol
+            => PinaforeType baseedit pol t
+            -> [Text]
+        getpieces NilPinaforeType = []
+        getpieces (ConsPinaforeType t tr) = exprPrecShow 0 t : getpieces tr
+        contrapieces = fmap ("-" <>) $ invertPolarity @polarity $ getpieces t1
+        copieces = fmap ("+" <>) $ getpieces t2
+        pieces :: [Text]
+        pieces = contrapieces <> copieces
+        text :: Text
+        text = "{" <> ointercalate "," pieces <> "}"
+        in (text, 0)
 
 type PinaforeExpression baseedit name
      = SealedExpression name (PinaforeType baseedit 'NegativePolarity) (PinaforeType baseedit 'PositivePolarity)
