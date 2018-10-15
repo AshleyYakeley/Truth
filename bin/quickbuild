@@ -1,0 +1,7 @@
+#!/bin/bash -e
+if [ -z "${BINPATH}" ]; then
+    export BINPATH=`stack path --local-bin`
+fi
+stack install --test --no-run-tests
+$BINPATH/pinafore --doc > mkdocs/docs/predefined.md
+echo OK
