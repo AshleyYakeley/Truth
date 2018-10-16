@@ -54,21 +54,11 @@ qjoin ::
     -> PinaforeSet baseedit '( MeetType Entity A, A)
 qjoin = pinaforeSetJoin
 
-output ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => QFuncValue baseedit Text
-    -> PinaforeAction baseedit
-output val = do
-    mtext <- pinaforeFunctionValueGet val
-    for_ mtext $ \text -> liftIO $ putStr $ unpack text
+output :: forall baseedit. Text -> PinaforeAction baseedit
+output text = liftIO $ putStr $ unpack text
 
-outputln ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => QFuncValue baseedit Text
-    -> PinaforeAction baseedit
-outputln val = do
-    mtext <- pinaforeFunctionValueGet val
-    for_ mtext $ \text -> liftIO $ putStrLn $ unpack text
+outputln :: forall baseedit. Text -> PinaforeAction baseedit
+outputln text = liftIO $ putStrLn $ unpack text
 
 qappend :: Text -> Text -> Text
 qappend = (<>)
@@ -199,14 +189,6 @@ ui_pick nameMorphism fset ref = let
 qfail :: forall baseedit. Text -> PinaforeAction baseedit
 qfail t = liftIO $ fail $ unpack t
 
-{-
-nulljoin :: forall baseedit. Lifted baseedit Literal -> Lifted baseedit Literal -> Lifted baseedit Literal
-nulljoin lx ly = let
-    qq :: Maybe Literal -> Maybe Literal -> Maybe Literal
-    qq Nothing y = y
-    qq x _ = x
-    in maybeLifted $ qq <$> liftedMaybe lx <*> liftedMaybe ly
--}
 type BindDoc baseedit = (Maybe (QBindList baseedit), DefDoc)
 
 mkDefEntry ::
@@ -217,74 +199,30 @@ mkDefEntry ::
     -> DocTreeEntry (BindDoc baseedit)
 mkDefEntry name desc val = EntryDocTreeEntry (Just (qBindVal name val), mkDefDoc @baseedit name desc val)
 
-nulljoin ::
-       forall baseedit.
-       PinaforeImmutableReference baseedit A
-    -> PinaforeImmutableReference baseedit A
-    -> PinaforeImmutableReference baseedit A
-nulljoin = (<|>)
-
 predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => DocTree (BindDoc baseedit)
 predefinitions =
     MkDocTree
         "Predefined"
-        [ docTreeEntry "Identity" [mkDefEntry "is" "Entity identity. This is always `true` or `false`." $ (==) @Entity]
-        , docTreeEntry
-              "Functions & Morphisms"
-              [ mkDefEntry "$" "Apply a function, morphism, or inverse morphism to a value." qapply
-              , mkDefEntry "." "Compose functions." qcompose
-              , mkDefEntry
-                    "identity"
-                    "The identity morphism."
-                    (identityPinaforeMorphism :: PinaforeMorphism baseedit '( A, A) '( A, A))
-              , mkDefEntry
-                    "<.>"
-                    "Compose morphisms."
-                    (composePinaforeMorphism :: PinaforeMorphism baseedit '( B, B) '( C, C) -> PinaforeMorphism baseedit '( A, A) '( B, B) -> PinaforeMorphism baseedit '( A, A) '( C, C))
-              {-
-              , EntryDocTreeEntry
-                    ( Nothing
-                    , mkDefDoc "@" "Invert a morphism to an inverse morphism, or an inverse morphism to a morphism." $
-                      qinvert @baseedit)
-            -}
-              ]
-        , docTreeEntry
-              "Sets"
-              [ mkDefEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
-                qmeet @baseedit
-              , mkDefEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
-                qjoin @baseedit
-              , mkDefEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
-              , mkDefEntry "contains" "Determine membership of a set." $ pinaforeSetContains @baseedit
-              , mkDefEntry "single" "The member of a single-member set, or null." $ pinaforeSetSingle @baseedit @A
-              ]
-        , docTreeEntry
-              "Literals"
-              [ mkDefEntry "==" "Literal equality. Note that `null == x` and `x == null` are null for any x." $
-                (==) @Literal
-              , mkDefEntry "/=" "Literal non-equality. Note that `null /= x` and `x /= null` are null for any x." $
-                (/=) @Literal
-              , docTreeEntry
-                    "Nulls"
-                    [ mkDefEntry
-                          "null"
-                          "Null inhabits every literal type, representing missing information. Note that `is null null` = `false`." $
-                      (empty :: PinaforeImmutableReference baseedit A)
-                    , mkDefEntry "exists" "True if the literal is not null." $ \(val :: QFuncValue baseedit Literal) ->
-                          (funcEditFunction (Known . isKnown) . val :: QFuncValue baseedit Bool)
-                    , mkDefEntry "??" "`p ?? q` = `if exists p then p else q`." $ nulljoin @baseedit
-                    ]
+        ""
+        [ docTreeEntry
+              "Literals & Entities"
+              ""
+              [ mkDefEntry "==" "Literal equality." $ (==) @Literal
+              , mkDefEntry "/=" "Literal non-equality." $ (/=) @Literal
+              , mkDefEntry "totext" "The text of a literal." unLiteral
               , docTreeEntry
                     "Boolean"
+                    ""
                     [ mkDefEntry "&&" "Boolean AND." (&&)
                     , mkDefEntry "||" "Boolean OR." (||)
                     , mkDefEntry "not" "Boolean NOT." not
                     ]
-              , docTreeEntry "Text" [mkDefEntry "++" "Concatenate text." qappend]
+              , docTreeEntry "Text" "" [mkDefEntry "++" "Concatenate text." qappend]
               , docTreeEntry
                     "Numeric"
+                    ""
                     [ mkDefEntry "+" "Numeric add." $ (+) @Number
                     , mkDefEntry "-" "Numeric Subtract." $ (-) @Number
                     , mkDefEntry "*" "Numeric Multiply." $ (*) @Number
@@ -305,8 +243,78 @@ predefinitions =
                     ]
               ]
         , docTreeEntry
-              "Set Aggregation"
-              [ mkDefEntry "count" "Count of non-null literals in a set." $
+              "Functions"
+              ""
+              [ mkDefEntry "$" "Apply a function, morphism, or inverse morphism to a value." qapply
+              , mkDefEntry "." "Compose functions." qcompose
+              ]
+        , docTreeEntry
+              "Morphisms"
+              "Morphisms relate entities."
+              [ mkDefEntry
+                    "identity"
+                    "The identity morphism."
+                    (identityPinaforeMorphism :: PinaforeMorphism baseedit '( A, A) '( A, A))
+              , mkDefEntry
+                    "<.>"
+                    "Compose morphisms."
+                    (composePinaforeMorphism :: PinaforeMorphism baseedit '( B, B) '( C, C) -> PinaforeMorphism baseedit '( A, A) '( B, B) -> PinaforeMorphism baseedit '( A, A) '( C, C))
+              {-
+              , EntryDocTreeEntry
+                    ( Nothing
+                    , mkDefDoc "@" "Invert a morphism to an inverse morphism, or an inverse morphism to a morphism." $
+                      qinvert @baseedit)
+            -}
+              ]
+        , docTreeEntry
+              "References"
+              "A reference of type `Ref {-p,+q}` has a setting type of `p` and a getting type of `q`. References keep track of updates, and will update user interfaces constructed from them when their value changes."
+              [ mkDefEntry
+                    "pureref"
+                    "A constant reference for a value."
+                    (pure :: A -> PinaforeImmutableReference baseedit A)
+              , mkDefEntry
+                    "comapref"
+                    "Map a function on getting a reference."
+                    (coMapTypeRange :: (A -> B) -> PinaforeReference baseedit '( C, A) -> PinaforeReference baseedit '( C, B))
+              , mkDefEntry
+                    "contramapref"
+                    "Map a function on setting a reference."
+                    (contraMapTypeRange :: (B -> A) -> PinaforeReference baseedit '( A, C) -> PinaforeReference baseedit '( B, C))
+              , mkDefEntry
+                    "applyref"
+                    "Combine references."
+                    ((<*>) :: PinaforeImmutableReference baseedit (A -> B) -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit B)
+              , mkDefEntry
+                    "unknown"
+                    "The unknown reference, representing missing information."
+                    (empty :: PinaforeImmutableReference baseedit BottomType)
+              , mkDefEntry "exists" "True if the literal is not null." $ \(val :: QFuncValue baseedit Literal) ->
+                    (funcEditFunction (Known . isKnown) . val :: QFuncValue baseedit Bool)
+              , mkDefEntry
+                    "??"
+                    "`p ?? q` = `p` if it exists, else `q`."
+                    ((<|>) :: PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A)
+              ]
+        , docTreeEntry
+              "Sets"
+              ""
+              [ mkDefEntry
+                    "comapset"
+                    "Map a function on getting from a set."
+                    (coMapTypeRange :: (A -> B) -> PinaforeSet baseedit '( C, A) -> PinaforeSet baseedit '( C, B))
+              , mkDefEntry
+                    "contramapset"
+                    "Map a function on setting to a set."
+                    (contraMapTypeRange :: (B -> A) -> PinaforeSet baseedit '( A, C) -> PinaforeSet baseedit '( B, C))
+              , mkDefEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
+                qmeet @baseedit
+              , mkDefEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
+                qjoin @baseedit
+              , mkDefEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
+              , mkDefEntry "contains" "Determine membership of a set." $ pinaforeSetContains @baseedit
+              , mkDefEntry "single" "The member of a single-member set, or null." $ pinaforeSetSingle @baseedit @A
+              , mkDefEntry "count" "Count of non-null literals in a set." $
                 pinaforeSetFunc @baseedit @TopType @Int olength
               , mkDefEntry "sum" "Sum of numbers in a set." $ pinaforeSetFunc @baseedit @Number @Number sum
               , mkDefEntry "mean" "Mean of numbers in a set." $
@@ -314,11 +322,16 @@ predefinitions =
               ]
         , docTreeEntry
               "Orders"
+              ""
               [ mkDefEntry "alphabetical" "Alphabetical order." $ alphabetical @baseedit
               , mkDefEntry "numerical" "Numercal order." $ numerical @baseedit
               --, mkDefEntry "chronological" "Chronological order." $ chronological @baseedit
               , mkDefEntry "orders" "Join orders by priority." $ orders @baseedit @A
-              , mkDefEntry "orderon" "Order by an order on a particular morphism." $ orderon @baseedit @A @B
+              , mkDefEntry
+                    "maporder"
+                    "Map a function on an order."
+                    (contramap :: (B -> A) -> PinaforeOrder baseedit A -> PinaforeOrder baseedit B)
+              , mkDefEntry "orderon" "Order by an order on a particular morphism." $ orderon @baseedit @B @A
               , mkDefEntry "rev" "Reverse an order." $ rev @baseedit @A
               , mkDefEntry "orderEQ" "Equal by an order." $ pinaforeOrderCompare @baseedit @A $ (==) EQ
               , mkDefEntry "orderLT" "Less than by an order." $ pinaforeOrderCompare @baseedit @A $ (==) LT
@@ -329,6 +342,7 @@ predefinitions =
               ]
         , docTreeEntry
               "Actions"
+              ""
               [ mkDefEntry "pass" "Do nothing." (return () :: PinaforeAction baseedit)
               , mkDefEntry ">>" "Do actions in sequence." $
                 ((>>) :: PinaforeAction baseedit -> PinaforeAction baseedit -> PinaforeAction baseedit)
@@ -366,6 +380,7 @@ predefinitions =
         -}
         , docTreeEntry
               "UI"
+              "A user interface is something that goes inside a window."
               [ mkDefEntry "openwindow" "Open a new window with this title and UI." viewOpenWindow
               , mkDefEntry "openselection" "Open the item selected in the UI of this window." viewOpenSelection
               , mkDefEntry "withselection" "Act with the item selected in the UI of this window." $

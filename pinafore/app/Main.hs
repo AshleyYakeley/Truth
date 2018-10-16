@@ -47,7 +47,7 @@ showDefEntry _ (MkDefDoc name tp desc) = let
     escapeMarkdown :: String -> String
     escapeMarkdown s = mconcat $ fmap escapeChar s
     in do
-           putStrLn $ "**" ++ escapeMarkdown (show name) ++ "** :: " ++ escapeMarkdown (unpack tp) ++ "  "
+           putStrLn $ "**`" ++ show name ++ "`** :: `" ++ unpack tp ++ "`  "
            if desc == ""
                then return ()
                else putStrLn $ escapeMarkdown $ unpack desc
@@ -56,12 +56,19 @@ showDefEntry _ (MkDefDoc name tp desc) = let
 showDefTitle :: Int -> Text -> IO ()
 showDefTitle level title = putStrLn $ replicate level '#' ++ " " ++ unpack title
 
+showDefDesc :: Int -> Text -> IO ()
+showDefDesc _ "" = return ()
+showDefDesc _ desc = do
+    putStrLn $ unpack desc
+    putStrLn ""
+
 main :: IO ()
 main =
     truthMain $ \args createWindow -> do
         options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
         case options of
-            ExprDocOption -> liftIO $ do runDocTree showDefTitle showDefEntry 2 $ predefinedDoc @PinaforeEdit
+            ExprDocOption ->
+                liftIO $ do runDocTree showDefTitle showDefDesc showDefEntry 2 $ predefinedDoc @PinaforeEdit
                     -- putMarkdown "<file>" (unpack filePinaforeType) "a script file passed to pinafore"
             DumpTableOption mdirpath -> do
                 dirpath <- getDirPath mdirpath
