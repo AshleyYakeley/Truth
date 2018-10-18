@@ -25,6 +25,9 @@ contraTypeRange pt = MkTypeRange pt alwaysTop
 typeRangeBijection :: TypeRange a '( b, b) -> Bijection a b
 typeRangeBijection (MkTypeRange ba ab) = MkBijection ab ba
 
+bijectTypeRanges :: TypeRange a '( p, q) -> TypeRange b '( q, p) -> Bijection a b
+bijectTypeRanges (MkTypeRange pa aq) (MkTypeRange qb bp) = MkBijection (qb . aq) (pa . bp)
+
 unifyTypeRange1 :: (q -> p) -> TypeRange t '( p, q) -> TypeRange t '( p, p)
 unifyTypeRange1 qp (MkTypeRange pt tq) = MkTypeRange pt (qp . tq)
 
@@ -77,11 +80,17 @@ class IsoMapTypeRange' f where
     default isoMapTypeRange' :: MapTypeRange' f => WithRange Bijection a b -> f a t -> f b t
     isoMapTypeRange' (MkWithRange a b) = mapTypeRange' $ MkWithRange (biForwards a) (biForwards b)
 
+isoBiTypeRange' :: IsoMapTypeRange' f => WithRange Bijection a b -> Bijection (f a t) (f b t)
+isoBiTypeRange' rbij = MkBijection (isoMapTypeRange' rbij) (isoMapTypeRange' $ invertWithRange rbij)
+
 class IsoMapTypeRange' f => MapTypeRange' f where
     mapTypeRange' :: WithRange (->) a b -> f a t -> f b t
 
-isoBiTypeRange' :: IsoMapTypeRange' f => WithRange Bijection a b -> Bijection (f a t) (f b t)
-isoBiTypeRange' rbij = MkBijection (isoMapTypeRange' rbij) (isoMapTypeRange' $ invertWithRange rbij)
+coMapTypeRange' :: MapTypeRange' f => (q1 -> q2) -> f '( p, q1) t -> f '( p, q2) t
+coMapTypeRange' qq = mapTypeRange' $ coWithRange qq
+
+contraMapTypeRange' :: MapTypeRange' f => (p2 -> p1) -> f '( p1, q) t -> f '( p2, q) t
+contraMapTypeRange' pp = mapTypeRange' $ contraWithRange pp
 
 data TypeRangeWitness tw polarity (pq :: (Type, Type)) where
     MkTypeRangeWitness :: tw (InvertPolarity polarity) p -> tw polarity q -> TypeRangeWitness tw polarity '( p, q)

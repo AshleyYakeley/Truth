@@ -12,6 +12,7 @@ module Pinafore.Know
     , uiUnknownValue
     ) where
 
+import Language.Expression.Dolan
 import Shapes
 import Truth.Core
 
@@ -36,6 +37,9 @@ instance Traversable Know where
 instance Show a => Show (Know a) where
     show Unknown = "Unknown"
     show (Known a) = "Known " <> show a
+
+instance HasDolanVary '[ 'Covariance] Know where
+    dolanVary = ConsDolanKindVary fmap $ NilDolanKindVary
 
 fromKnow :: a -> Know a -> a
 fromKnow _ (Known v) = v
