@@ -69,6 +69,7 @@ library:
       - Pinafore.Language.Show
       - Pinafore.Language.Order
       - Pinafore.Language.GroundType
+      - Pinafore.Language.TypeContext
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.Doc
       - Pinafore.Language.Predefined

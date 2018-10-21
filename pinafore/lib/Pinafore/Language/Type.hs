@@ -6,6 +6,7 @@ module Pinafore.Language.Type
     , module Pinafore.Language.GroundType
     , module Language.Expression.UVar
     , module Language.Expression.Dolan
+    , module Pinafore.Language.TypeContext
     ) where
 
 import Language.Expression.Dolan
@@ -20,6 +21,7 @@ import Pinafore.Language.Entity
 import Pinafore.Language.GroundType
 import Pinafore.Language.Literal
 import Pinafore.Language.Show
+import Pinafore.Language.TypeContext
 import Shapes
 
 type PinaforeRangeType baseedit = TypeRangeWitness (PinaforeType baseedit)
@@ -431,19 +433,6 @@ bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) 
             Compose $ do
                 uval' <- getCompose $ bisubstituteUnifier bisub uval
                 return $ bisubstituteNegativeVar vn tp' $ fmap (\ca pv -> ca $ (conv . pv)) uval'
-
-data TypeContext =
-    MkTypeContext
-
-newtype PinaforeTypeCheck a =
-    MkPinaforeTypeCheck (ReaderT TypeContext (Result Text) a)
-    deriving (Functor, Applicative, Monad, MonadFail)
-
-typeCheckResult :: Result Text a -> PinaforeTypeCheck a
-typeCheckResult ra = MkPinaforeTypeCheck $ lift ra
-
-runPinaforeTypeCheck :: PinaforeTypeCheck a -> Result Text a
-runPinaforeTypeCheck (MkPinaforeTypeCheck qa) = runReaderT qa MkTypeContext
 
 runUnifier ::
        forall baseedit a.
