@@ -38,15 +38,15 @@ typedUnifyPosNegWitnesses wa wb = runRenamer @(TypeRenamer ts) $ solveUnifyPosNe
 evalTypedExpression ::
        forall ts name m. (MonadFail m, Show name)
     => TypedExpression name ts
-    -> m (Any (PosWitness ts))
+    -> m (AnyValue (PosWitness ts))
 evalTypedExpression = evalSealedExpression
 
 typedAnyToVal ::
        forall ts t. TypeSystem ts
     => NegWitness ts t
-    -> Any (PosWitness ts)
+    -> AnyValue (PosWitness ts)
     -> TypeCheck ts t
-typedAnyToVal witn (MkAny witp val) = do
+typedAnyToVal witn (MkAnyValue witp val) = do
     conv <- typedUnifyPosNegWitnesses @ts witp witn
     return $ conv val
 
@@ -86,7 +86,7 @@ varTypedExpression name =
     runRenamer @(TypeRenamer ts) $
     renameNewVar $ \vwt twt conv -> withTransConstraintTM @Monad $ return $ varSealedExpression name vwt twt conv
 
-constTypedExpression :: forall ts name. Any (PosWitness ts) -> TypedExpression name ts
+constTypedExpression :: forall ts name. AnyValue (PosWitness ts) -> TypedExpression name ts
 constTypedExpression = constSealedExpression
 
 letTypedExpression ::

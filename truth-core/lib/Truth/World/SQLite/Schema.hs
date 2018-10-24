@@ -58,12 +58,12 @@ instance Show (SubmapWitness colsel ColumnSchema) where
     show schema = let
         columns = subWitnessCodomain schema
         in "(" ++
-           intercalate "," (fmap (\(MkAnyWitness isch) -> show isch) $ columns) ++
+           intercalate "," (fmap (\(MkAnyW isch) -> show isch) $ columns) ++
            ",PRIMARY KEY (" ++
            intercalate
                ","
                (mapMaybe
-                    (\(MkAnyWitness MkColumnSchema {..}) ->
+                    (\(MkAnyW MkColumnSchema {..}) ->
                          if columnPrimaryKey
                              then Just columnName
                              else Nothing)
@@ -75,7 +75,7 @@ class ToSchema t where
 
 data IndexSchema colsel = MkIndexSchema
     { indexName :: String
-    , indexColumns :: [AnyWitness colsel]
+    , indexColumns :: [AnyW colsel]
     }
 
 data TableSchema colsel = MkTableSchema
@@ -94,8 +94,7 @@ instance ToSchema (TableSchema colsel) where
             " ON " ++
             tableName ++
             " (" ++
-            intercalate "," (fmap (\(MkAnyWitness col) -> columnName $ subWitnessMap tableColumns col) indexColumns) ++
-            ")"
+            intercalate "," (fmap (\(MkAnyW col) -> columnName $ subWitnessMap tableColumns col) indexColumns) ++ ")"
         in createTable : (fmap showIndex tableIndexes)
 
 data DatabaseSchema tablesel = MkDatabaseSchema
@@ -104,7 +103,7 @@ data DatabaseSchema tablesel = MkDatabaseSchema
 
 instance ToSchema (SubmapWitness tablesel TableSchema) where
     toSchema MkSubmapWitness {..} =
-        mconcat $ fmap (\(MkAnyWitness table) -> toSchema $ subWitnessMap table) $ subWitnessDomain
+        mconcat $ fmap (\(MkAnyW table) -> toSchema $ subWitnessMap table) $ subWitnessDomain
 
 instance ToSchema (DatabaseSchema databaseTablesel) where
     toSchema MkDatabaseSchema {..} = toSchema databaseTables

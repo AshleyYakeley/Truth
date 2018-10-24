@@ -38,10 +38,10 @@ class ToTypeF wit t where
 toValue ::
        forall wit t. ToTypeF wit t
     => t
-    -> Any (wit 'PositivePolarity)
+    -> AnyValue (wit 'PositivePolarity)
 toValue t =
     case toTypeF @wit @t of
-        MkTypeF tt conv -> MkAny tt $ conv t
+        MkTypeF tt conv -> MkAnyValue tt $ conv t
 
 class FromTypeF wit t where
     fromTypeF :: TypeF wit 'NegativePolarity t

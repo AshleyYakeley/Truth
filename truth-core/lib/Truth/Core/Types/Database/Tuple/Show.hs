@@ -32,7 +32,7 @@ class ( WitnessConstraint (TupleDatabaseRowWitness dbType tablesel) tablesel
         => Dict (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstraint Show colsel)
 
 instance ( ShowableTupleDatabaseType dbType
-         , row ~ All colsel
+         , row ~ AllValue colsel
          , AllWitnessConstraint Show colsel
          , WitnessConstraint Show colsel
          ) => Show (TupleWhereClause dbType row) where
@@ -45,7 +45,7 @@ instance (AllWitnessConstraint Show colsel, AllWitnessConstraint Show (TupleExpr
     show (MkTupleUpdateItem item expr) = showAllWitness item ++ " " ++ showAllWitness expr
 
 instance ( ShowableTupleDatabaseType dbType
-         , row ~ All colsel
+         , row ~ AllValue colsel
          , AllWitnessConstraint Show colsel
          , WitnessConstraint Show colsel
          ) => Show (TupleUpdateClause dbType row) where
@@ -58,10 +58,10 @@ instance ( ShowableTupleDatabaseType dbType
          , WitnessConstraint Show colsel
          , FiniteWitness colsel'
          , AllWitnessConstraint Show colsel'
-         ) => Show (TupleSelectClause dbType tablesel (All colsel) (All colsel')) where
+         ) => Show (TupleSelectClause dbType tablesel (AllValue colsel) (AllValue colsel')) where
     show (MkTupleSelectClause ft) = let
-        showItem :: AnyWitness colsel' -> String
-        showItem (MkAnyWitness col) =
+        showItem :: AnyW colsel' -> String
+        showItem (MkAnyW col) =
             showAllWitness col ++
             " -> " ++
             case witnessShowTupleExpr @dbType @colsel of
@@ -71,18 +71,18 @@ instance ( ShowableTupleDatabaseType dbType
 instance AllWitnessConstraint Show colsel => Show (TupleOrderItem colsel) where
     show (MkTupleOrderItem col dir) = showAllWitness col ++ show dir
 
-instance (row ~ All colsel, AllWitnessConstraint Show colsel) => Show (TupleOrderClause row) where
+instance (row ~ AllValue colsel, AllWitnessConstraint Show colsel) => Show (TupleOrderClause row) where
     show (MkTupleOrderClause items) = show items
 
-instance (row ~ All colsel, FiniteWitness colsel, AllWitnessConstraint Show colsel, WitnessConstraint Show colsel) =>
+instance (row ~ AllValue colsel, FiniteWitness colsel, AllWitnessConstraint Show colsel, WitnessConstraint Show colsel) =>
              Show (TupleInsertClause row) where
     show (MkTupleInsertClause ics) = show ics
 
 instance ShowableTupleDatabase dbType tablesel => ShowableDatabase dbType (TupleTableSel tablesel) where
-    type ShowableRow dbType (TupleTableSel tablesel) row = ( row ~ (All (UnAll row))
-                                                           , FiniteWitness (UnAll row)
-                                                           , WitnessConstraint Show (UnAll row)
-                                                           , AllWitnessConstraint Show (UnAll row))
+    type ShowableRow dbType (TupleTableSel tablesel) row = ( row ~ (AllValue (UnAllValue row))
+                                                           , FiniteWitness (UnAllValue row)
+                                                           , WitnessConstraint Show (UnAllValue row)
+                                                           , AllWitnessConstraint Show (UnAllValue row))
     showableRow = Dict
     showableTable (MkTupleTableSel tsel) =
         case witnessConstraint @_ @FiniteWitness tsel of
@@ -95,8 +95,8 @@ instance ShowableTupleDatabase dbType tablesel => ShowableDatabase dbType (Tuple
     showableSelectClause sc@(MkTupleSelectClause _) = let
         dict ::
                forall colsel colsel'. TupleDatabaseRowWitness dbType tablesel colsel'
-            => TupleSelectClause dbType tablesel (All colsel) (All colsel')
-            -> Dict (ShowableRow dbType (TupleTableSel tablesel) (All colsel'))
+            => TupleSelectClause dbType tablesel (AllValue colsel) (AllValue colsel')
+            -> Dict (ShowableRow dbType (TupleTableSel tablesel) (AllValue colsel'))
         dict _ =
             case witnessTupleRow @dbType @tablesel @colsel' of
                 Dict -> Dict

@@ -113,17 +113,17 @@ testNumbers :: TestTree
 testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
 
 {-
-type QValue baseedit = Any (PinaforeType baseedit 'PositivePolarity)
+type QValue baseedit = AnyValue (PinaforeType baseedit 'PositivePolarity)
 
 toQValue :: ToPinaforeType baseedit t => t -> QValue baseedit
 toQValue v = case toTypeF of
-    MkTypeF t conv -> MkAny t $ conv v
+    MkTypeF t conv -> MkAnyValue t $ conv v
 
 -- | for test only
 instance Eq (QValue baseedit) where
-    (MkAny QTConstLiteral a1) == (MkAny QTConstLiteral a2) = a1 == a2
-    (MkAny QTList a1) == (MkAny QTList a2) = a1 == a2
-    (MkAny t1 _) == (MkAny t2 _) = error $ "QValue: " <> show t1 <> " & " <> show t2 <> " not comparable"
+    (MkAnyValue QTConstLiteral a1) == (MkAnyValue QTConstLiteral a2) = a1 == a2
+    (MkAnyValue QTList a1) == (MkAnyValue QTList a2) = a1 == a2
+    (MkAnyValue t1 _) == (MkAnyValue t2 _) = error $ "QValue: " <> show t1 <> " & " <> show t2 <> " not comparable"
 
 testQueryValue :: String -> PinaforeTypeCheck (QExpr PinaforeEdit) -> Maybe (QValue PinaforeEdit) -> TestTree
 testQueryValue name texpr expected =
@@ -163,10 +163,10 @@ testQuery query expected =
     testCase (unpack query) $
     case (expected, parseValue @PinaforeEdit "<input>" query) of
         (Nothing, FailureResult _) -> return ()
-        (Nothing, SuccessResult (MkAny t v)) ->
+        (Nothing, SuccessResult (MkAnyValue t v)) ->
             assertFailure $ "expected failure, found success: " ++ showPinaforeValue t v
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ unpack e
-        (Just s, SuccessResult (MkAny t v)) -> assertEqual "result" s (showPinaforeValue t v)
+        (Just s, SuccessResult (MkAnyValue t v)) -> assertEqual "result" s (showPinaforeValue t v)
 
 showText :: Text -> String
 showText = show

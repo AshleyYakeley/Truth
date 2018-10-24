@@ -14,7 +14,7 @@ import Pinafore.Language.Name
 import Shapes
 
 data NamedType =
-    EntityNamedType (AnyWitness SymbolWitness)
+    EntityNamedType (AnyW SymbolWitness)
 
 data TypeContext = MkTypeContext
     { tcNames :: LazyMap Name NamedType

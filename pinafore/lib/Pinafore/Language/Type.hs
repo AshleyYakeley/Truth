@@ -154,21 +154,21 @@ meetPinaforeTypeF ::
 meetPinaforeTypeF (MkTypeF ta conva) (MkTypeF tb convb) =
     fmap (meetBimap conva convb) $ meetPinaforeTypes ta tb $ \tab conva' convb' -> MkTypeF tab $ meetf conva' convb'
 
-instance IsTypePolarity polarity => Semigroup (AnyWitness (PinaforeType baseedit polarity)) where
-    MkAnyWitness ta <> MkAnyWitness tb =
+instance IsTypePolarity polarity => Semigroup (AnyW (PinaforeType baseedit polarity)) where
+    MkAnyW ta <> MkAnyW tb =
         case whichTypePolarity @polarity of
-            Left Refl -> joinPinaforeTypes ta tb $ \tab _ _ -> MkAnyWitness tab
-            Right Refl -> meetPinaforeTypes ta tb $ \tab _ _ -> MkAnyWitness tab
+            Left Refl -> joinPinaforeTypes ta tb $ \tab _ _ -> MkAnyW tab
+            Right Refl -> meetPinaforeTypes ta tb $ \tab _ _ -> MkAnyW tab
 
-instance IsTypePolarity polarity => Monoid (AnyWitness (PinaforeType baseedit polarity)) where
+instance IsTypePolarity polarity => Monoid (AnyW (PinaforeType baseedit polarity)) where
     mappend = (<>)
-    mempty = MkAnyWitness NilPinaforeType
+    mempty = MkAnyW NilPinaforeType
 
 instance IsTypePolarity polarity => Semigroup (AnyInKind (TypeRangeWitness (PinaforeType baseedit) polarity)) where
     MkAnyInKind (MkTypeRangeWitness tp1 tq1) <> MkAnyInKind (MkTypeRangeWitness tp2 tq2) =
         invertPolarity @polarity $
-        case (MkAnyWitness tp1 <> MkAnyWitness tp2, MkAnyWitness tq1 <> MkAnyWitness tq2) of
-            (MkAnyWitness tp12, MkAnyWitness tq12) -> MkAnyInKind (MkTypeRangeWitness tp12 tq12)
+        case (MkAnyW tp1 <> MkAnyW tp2, MkAnyW tq1 <> MkAnyW tq2) of
+            (MkAnyW tp12, MkAnyW tq12) -> MkAnyInKind (MkTypeRangeWitness tp12 tq12)
 
 instance IsTypePolarity polarity => Monoid (AnyInKind (TypeRangeWitness (PinaforeType baseedit) polarity)) where
     mappend = (<>)
@@ -775,7 +775,7 @@ mergeDuplicatesInExpression = mapSealedExpressionTypes mergeDuplicatesInType mer
 
 class GetExpressionVars t where
     -- | (positive, negative)
-    getExpressionVars :: t -> ([AnyWitness SymbolWitness], [AnyWitness SymbolWitness])
+    getExpressionVars :: t -> ([AnyW SymbolWitness], [AnyW SymbolWitness])
 
 instance IsTypePolarity polarity => GetExpressionVars (TypeRangeWitness (PinaforeType baseedit) polarity a) where
     getExpressionVars (MkTypeRangeWitness tp tq) =
@@ -785,7 +785,7 @@ getArgExpressionVars ::
        forall baseedit polarity sv a. IsTypePolarity polarity
     => SingleVarianceType sv
     -> SingleArgument sv (PinaforeType baseedit) polarity a
-    -> ([AnyWitness SymbolWitness], [AnyWitness SymbolWitness])
+    -> ([AnyW SymbolWitness], [AnyW SymbolWitness])
 getArgExpressionVars CovarianceType t = getExpressionVars t
 getArgExpressionVars ContravarianceType t = invertPolarity @polarity $ getExpressionVars t
 getArgExpressionVars RangevarianceType t = getExpressionVars t
@@ -794,7 +794,7 @@ getArgsExpressionVars ::
        forall baseedit polarity dv gt t. IsTypePolarity polarity
     => DolanVarianceType dv
     -> DolanArguments dv (PinaforeType baseedit) gt polarity t
-    -> ([AnyWitness SymbolWitness], [AnyWitness SymbolWitness])
+    -> ([AnyW SymbolWitness], [AnyW SymbolWitness])
 getArgsExpressionVars NilListType NilDolanArguments = mempty
 getArgsExpressionVars (ConsListType sv dv) (ConsDolanArguments arg args) =
     getArgExpressionVars @baseedit @polarity sv arg <> getArgsExpressionVars dv args
@@ -803,8 +803,8 @@ instance IsTypePolarity polarity => GetExpressionVars (PinaforeSingularType base
     getExpressionVars (GroundPinaforeSingularType gt args) = getArgsExpressionVars (pinaforeGroundTypeKind gt) args
     getExpressionVars (VarPinaforeSingularType vn) =
         case whichTypePolarity @polarity of
-            Left Refl -> ([MkAnyWitness vn], [])
-            Right Refl -> ([], [MkAnyWitness vn])
+            Left Refl -> ([MkAnyW vn], [])
+            Right Refl -> ([], [MkAnyW vn])
 
 instance IsTypePolarity polarity => GetExpressionVars (PinaforeType baseedit polarity t) where
     getExpressionVars NilPinaforeType = mempty
@@ -831,8 +831,8 @@ eliminateOneSidedVars expr = let
     posonlyvars = difference posvars negvars
     negonlyvars :: FiniteSet _
     negonlyvars = difference negvars posvars
-    mkbisub :: AnyWitness SymbolWitness -> PinaforeBisubstitution baseedit
-    mkbisub (MkAnyWitness vn) =
+    mkbisub :: AnyW SymbolWitness -> PinaforeBisubstitution baseedit
+    mkbisub (MkAnyW vn) =
         MkBisubstitution
             vn
             (contramap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)

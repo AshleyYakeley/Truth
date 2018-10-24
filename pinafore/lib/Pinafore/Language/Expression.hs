@@ -15,7 +15,7 @@ import Shapes
 
 type QExpr baseedit = TypedExpression Name (PinaforeTypeSystem baseedit)
 
-qConstExprAny :: forall baseedit. Any (PinaforeType baseedit 'PositivePolarity) -> QExpr baseedit
+qConstExprAny :: forall baseedit. AnyValue (PinaforeType baseedit 'PositivePolarity) -> QExpr baseedit
 qConstExprAny = constTypedExpression @(PinaforeTypeSystem baseedit)
 
 qConstExpr ::
@@ -92,12 +92,12 @@ qUncheckedBindingsLetExpr bl e = do
 qEvalExpr ::
        forall baseedit m. MonadFail m
     => QExpr baseedit
-    -> m (Any (PinaforeType baseedit 'PositivePolarity))
+    -> m (AnyValue (PinaforeType baseedit 'PositivePolarity))
 qEvalExpr expr = evalTypedExpression @(PinaforeTypeSystem baseedit) expr
 
 typedAnyToPinaforeVal ::
        forall baseedit t. FromPinaforeType baseedit t
-    => Any (PinaforeType baseedit 'PositivePolarity)
+    => AnyValue (PinaforeType baseedit 'PositivePolarity)
     -> Result Text t
 typedAnyToPinaforeVal aval =
     case fromTypeF of

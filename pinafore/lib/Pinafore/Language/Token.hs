@@ -103,8 +103,8 @@ instance Show (Token t) where
     show TokOperator = "infix"
     show TokNumber = "number"
 
-instance Show (Any Token) where
-    show (MkAny t _) = show t
+instance Show (AnyValue Token) where
+    show (MkAnyValue t _) = show t
 
 readWS :: Parser ()
 readWS = do
@@ -139,12 +139,12 @@ readEscapedChar = do
         'f' -> return '\f'
         _ -> return c
 
-readQuotedString :: Parser (Any Token)
+readQuotedString :: Parser (AnyValue Token)
 readQuotedString = do
     _ <- char '"'
     s <- many readQuotedChar
     _ <- char '"'
-    return $ MkAny TokString $ pack s
+    return $ MkAnyValue TokString $ pack s
   where
     readQuotedChar :: Parser Char
     readQuotedChar = readEscapedChar <|> (satisfy ('"' /=))
@@ -154,9 +154,9 @@ identifierChar '-' = True
 identifierChar '_' = True
 identifierChar c = isAlphaNum c
 
-readNumber :: Parser (Any Token)
+readNumber :: Parser (AnyValue Token)
 readNumber =
-    fmap (MkAny TokNumber) $
+    fmap (MkAnyValue TokNumber) $
     (try $ do
          _ <- string "NaN"
          return $ InexactNumber $ 0 / 0) <|>
@@ -172,24 +172,24 @@ readNumber =
              Just n -> return $ n
              Nothing -> empty)
 
-readTextToken :: Parser (Any Token)
+readTextToken :: Parser (AnyValue Token)
 readTextToken = do
     firstC <- satisfy isAlpha
     rest <- many $ satisfy identifierChar
     case firstC : rest of
         -- keywords
-        "let" -> return $ MkAny TokLet ()
-        "in" -> return $ MkAny TokIn ()
-        "property" -> return $ MkAny TokProperty ()
-        "point" -> return $ MkAny TokPoint ()
-        "if" -> return $ MkAny TokIf ()
-        "then" -> return $ MkAny TokThen ()
-        "else" -> return $ MkAny TokElse ()
-        "entity" -> return $ MkAny TokEntity ()
-        "subtype" -> return $ MkAny TokSubtype ()
-        "true" -> return $ MkAny TokBool True
-        "false" -> return $ MkAny TokBool False
-        name -> return $ MkAny TokName $ MkName $ pack name
+        "let" -> return $ MkAnyValue TokLet ()
+        "in" -> return $ MkAnyValue TokIn ()
+        "property" -> return $ MkAnyValue TokProperty ()
+        "point" -> return $ MkAnyValue TokPoint ()
+        "if" -> return $ MkAnyValue TokIf ()
+        "then" -> return $ MkAnyValue TokThen ()
+        "else" -> return $ MkAnyValue TokElse ()
+        "entity" -> return $ MkAnyValue TokEntity ()
+        "subtype" -> return $ MkAnyValue TokSubtype ()
+        "true" -> return $ MkAnyValue TokBool True
+        "false" -> return $ MkAnyValue TokBool False
+        name -> return $ MkAnyValue TokName $ MkName $ pack name
 
 uuidChar :: Char -> Bool
 uuidChar '-' = True
@@ -204,29 +204,29 @@ readUUID = do
     uuid <- some $ satisfy uuidChar
     mpure $ Data.UUID.fromString uuid
 
-readOpToken :: Parser (Any Token)
+readOpToken :: Parser (AnyValue Token)
 readOpToken = do
     name <-
         many1 $
         satisfy $ \c ->
             elem c ("!$%&*+./<=>?@\\^|-~:" :: String) || (not (isAscii c) && (isSymbol c || isPunctuation c))
     case name of
-        "\\" -> return $ MkAny TokLambda ()
-        "=" -> return $ MkAny TokAssign ()
-        "->" -> return $ MkAny TokMap ()
-        "~>" -> return $ MkAny TokPropMap ()
+        "\\" -> return $ MkAnyValue TokLambda ()
+        "=" -> return $ MkAnyValue TokAssign ()
+        "->" -> return $ MkAnyValue TokMap ()
+        "~>" -> return $ MkAnyValue TokPropMap ()
         "%" -> do
             uuid <- readUUID
-            return $ MkAny TokUUID uuid
-        "@" -> return $ MkAny TokAt ()
-        _ -> return $ MkAny TokOperator $ MkName $ pack name
+            return $ MkAnyValue TokUUID uuid
+        "@" -> return $ MkAnyValue TokAt ()
+        _ -> return $ MkAnyValue TokOperator $ MkName $ pack name
 
-readChar :: Char -> Token () -> Parser (Any Token)
+readChar :: Char -> Token () -> Parser (AnyValue Token)
 readChar c tok = do
     _ <- char c
-    return $ MkAny tok ()
+    return $ MkAnyValue tok ()
 
-readToken :: Parser ((SourcePos, Any Token))
+readToken :: Parser ((SourcePos, AnyValue Token))
 readToken = do
     pos <- getPosition
     t <-
@@ -242,12 +242,12 @@ readToken = do
     readWS
     return (pos, t)
 
-readTokens :: Parser [(SourcePos, Any Token)]
+readTokens :: Parser [(SourcePos, AnyValue Token)]
 readTokens = do
     readWS
     many readToken
 
-parseTokens :: SourceName -> Text -> Result Text [(SourcePos, Any Token)]
+parseTokens :: SourceName -> Text -> Result Text [(SourcePos, AnyValue Token)]
 parseTokens name text =
     case parse readTokens name (unpack text) of
         Right a -> return a

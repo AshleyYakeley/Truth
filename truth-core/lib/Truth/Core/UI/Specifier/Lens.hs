@@ -46,7 +46,7 @@ tupleEditUISpecs ::
     -> [(UISpec seledit (TupleEdit sel), t)]
 tupleEditUISpecs getSpec =
     fmap
-        (\(MkAnyWitness seledit) ->
+        (\(MkAnyW seledit) ->
              case tupleWitness @FullEdit seledit of
                  Dict ->
                      case getSpec seledit of

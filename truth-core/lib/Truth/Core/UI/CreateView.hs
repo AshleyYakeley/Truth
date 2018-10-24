@@ -219,6 +219,6 @@ tupleCreateView ::
     -> m (CreateView seledit (TupleEdit sel) [w])
 tupleCreateView pickview =
     fmap sequence $
-    for tupleAllSelectors $ \(MkAnyWitness sel) ->
+    for tupleAllSelectors $ \(MkAnyW sel) ->
         case tupleWitness @ApplicableEdit sel of
             Dict -> fmap (cvMapEdit (tupleEditLens sel)) (pickview sel)

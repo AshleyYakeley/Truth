@@ -77,28 +77,28 @@ instance WitnessConstraint IsSQLiteTable PinaforeSchema where
 sqlitePinaforeSchema :: DatabaseSchema PinaforeSchema
 sqlitePinaforeSchema = let
     databaseTables = let
-        subWitnessDomain = [MkAnyWitness PinaforeTriple, MkAnyWitness PinaforeLiteral]
+        subWitnessDomain = [MkAnyW PinaforeTriple, MkAnyW PinaforeLiteral]
         subWitnessMap :: PinaforeSchema t -> TableSchema t
         subWitnessMap PinaforeTriple = let
             tableName = "triple"
             tableColumns = let
-                domain = [MkAnyWitness TripleSubject, MkAnyWitness TriplePredicate, MkAnyWitness TripleValue]
+                domain = [MkAnyW TripleSubject, MkAnyW TriplePredicate, MkAnyW TripleValue]
                 witmap :: TripleTable t -> ColumnSchema t
                 witmap TriplePredicate = MkColumnSchema "predicate" ColumnTypeNotNull True
                 witmap TripleSubject = MkColumnSchema "subject" ColumnTypeNotNull True
                 witmap TripleValue = MkColumnSchema "value" ColumnTypeNotNull False
                 in MkSubmapWitness domain witmap
-            tableIndexes = [MkIndexSchema "predval" [MkAnyWitness TriplePredicate, MkAnyWitness TripleValue]]
+            tableIndexes = [MkIndexSchema "predval" [MkAnyW TriplePredicate, MkAnyW TripleValue]]
             in MkTableSchema {..}
         subWitnessMap PinaforeLiteral = let
             tableName = "literal"
             tableColumns = let
-                domain = [MkAnyWitness LiteralKey, MkAnyWitness LiteralValue]
+                domain = [MkAnyW LiteralKey, MkAnyW LiteralValue]
                 witmap :: LiteralTable t -> ColumnSchema t
                 witmap LiteralKey = MkColumnSchema "key" ColumnTypeNotNull True
                 witmap LiteralValue = MkColumnSchema "value" ColumnTypeNotNull False
                 in MkSubmapWitness domain witmap
-            tableIndexes = [MkIndexSchema "litval" [MkAnyWitness LiteralValue]]
+            tableIndexes = [MkIndexSchema "litval" [MkAnyW LiteralValue]]
             in MkTableSchema {..}
         in MkSubmapWitness {..}
     in MkDatabaseSchema {..}
@@ -138,7 +138,7 @@ sqlitePinaforeLens = let
             return $ MkFiniteSet $ fmap getSingleAll row
     efGet mr (PinaforeTableReadGetLiteral v) =
         lift $ do
-            (row :: [All ((:~:) Literal)]) <-
+            (row :: [AllValue ((:~:) Literal)]) <-
                 mr $
                 DatabaseSelect
                     (SingleTable $ MkTupleTableSel PinaforeLiteral)
@@ -177,7 +177,7 @@ sqlitePinaforeLens = let
         DatabaseInsert (MkTupleTableSel PinaforeTriple) $
         MkTupleInsertClause $
         pure $
-        MkAll $ \case
+        MkAllValue $ \case
             TriplePredicate -> p
             TripleSubject -> s
             TripleValue -> v
@@ -194,7 +194,7 @@ sqlitePinaforeLens = let
         DatabaseInsert (MkTupleTableSel PinaforeLiteral) $
         MkTupleInsertClause $
         pure $
-        MkAll $ \case
+        MkAllValue $ \case
             LiteralKey -> v
             LiteralValue -> l
     elPutEdit (PinaforeTableEditSetLiteral v Nothing) =

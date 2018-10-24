@@ -35,7 +35,7 @@ parseValue ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => String
     -> Text
-    -> Result Text (Any (PinaforeType baseedit 'PositivePolarity))
+    -> Result Text (AnyValue (PinaforeType baseedit 'PositivePolarity))
 parseValue name text = do
     texpr <- parseExpression @baseedit name text
     rexpr <-
@@ -122,5 +122,5 @@ interact runAction = do
                                 SuccessResult v -> outputln v
                                 _ ->
                                     case val of
-                                        MkAny t v -> liftIO $ putStrLn $ showPinaforeValue t v
+                                        MkAnyValue t v -> liftIO $ putStrLn $ showPinaforeValue t v
                 FailureResult err -> liftIO $ putStrLn $ unpack err

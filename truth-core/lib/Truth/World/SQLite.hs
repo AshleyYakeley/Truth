@@ -55,7 +55,7 @@ type SQLiteEdit tablesel = TupleDatabaseEdit SQLiteDatabase tablesel
 
 type family RowColSel (row :: *) :: * -> *
 
-type instance RowColSel (All colsel) = colsel
+type instance RowColSel (AllValue colsel) = colsel
 
 class HasSchema (t :: *) where
     type Schema t :: *
@@ -122,7 +122,7 @@ instance AllWitnessConstraint Show colsel => AllWitnessConstraint Show (Expr col
 instance ShowableTupleDatabaseType SQLiteDatabase where
     witnessShowTupleExpr = Dict
 
-instance (FiniteWitness colsel, WitnessConstraint FromField colsel) => FromRow (All colsel) where
+instance (FiniteWitness colsel, WitnessConstraint FromField colsel) => FromRow (AllValue colsel) where
     fromRow =
         assembleWitness $ \wt ->
             case witnessConstraint @Type @FromField wt of
@@ -140,7 +140,7 @@ intercalate' i (a:aa) = mconcat [a, i, intercalate' i aa]
 instance HasSchema (TupleSelectClause SQLiteDatabase tablesel row row') where
     type Schema (TupleSelectClause SQLiteDatabase tablesel row row') = SubmapWitness (RowColSel row) ColumnRefSchema
     schemaString csch (MkTupleSelectClause mapSel) =
-        intercalate' "," $ fmap (\(MkAnyWitness cs') -> schemaString csch $ mapSel cs') $ allWitnesses @(RowColSel row')
+        intercalate' "," $ fmap (\(MkAnyW cs') -> schemaString csch $ mapSel cs') $ allWitnesses @(RowColSel row')
 
 instance HasSchema (TupleOrderItem colsel) where
     type Schema (TupleOrderItem colsel) = SubmapWitness colsel ColumnRefSchema
@@ -195,7 +195,7 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
         case wc of
             MkTupleWhereClause (ConstExpr True) -> ""
             _ -> " WHERE " <> schemaString rowSchema wc
-    sqliteReadQuery :: SQLiteRead tablesel [All colsel] -> QueryString
+    sqliteReadQuery :: SQLiteRead tablesel [AllValue colsel] -> QueryString
     sqliteReadQuery (DatabaseSelect jc wc oc sc) =
         case evalState (joinTableSchema databaseTables jc) 1 of
             (tabRefs, rowSchema) -> let
@@ -216,13 +216,13 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
         case witnessConstraint @_ @IsSQLiteTable tsel of
             Dict -> (subWitnessMap databaseTables tsel, Dict)
     rowSchemaString ::
-           WitnessConstraint ToField colsel => SubmapWitness colsel ColumnRefSchema -> All colsel -> QueryString
-    rowSchemaString MkSubmapWitness {..} (MkAll row) =
+           WitnessConstraint ToField colsel => SubmapWitness colsel ColumnRefSchema -> AllValue colsel -> QueryString
+    rowSchemaString MkSubmapWitness {..} (MkAllValue row) =
         "(" <>
         intercalate'
             ","
             (fmap
-                 (\(MkAnyWitness col) ->
+                 (\(MkAnyW col) ->
                       case witnessConstraint @_ @ToField col of
                           Dict -> valQueryString $ row col)
                  subWitnessDomain) <>
