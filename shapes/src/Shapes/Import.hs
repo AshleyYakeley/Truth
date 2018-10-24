@@ -80,7 +80,7 @@ import Control.Monad.Trans.Cont as I (ContT(..))
 import Control.Monad.Trans.Except as I (ExceptT(..), runExceptT)
 import Control.Monad.Trans.Identity as I (IdentityT(..))
 import Control.Monad.Trans.Maybe as I (MaybeT(..))
-import Control.Monad.Trans.Reader as I (ReaderT(..), ask, asks, withReaderT)
+import Control.Monad.Trans.Reader as I (ReaderT(..), ask, asks, local, withReaderT)
 import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT, get, modify, put, runState)
 import Control.Monad.Trans.Writer as I (WriterT(..), execWriterT, tell)
 
@@ -97,6 +97,8 @@ import Data.Hashable as I (Hashable)
 
 -- containers
 import Data.IntMap as I (IntMap, Key, traverseWithKey)
+import qualified Data.Map.Lazy
+import qualified Data.Map.Strict
 
 -- unordered-containers
 import Data.HashMap.Lazy as I (HashMap)
@@ -127,6 +129,10 @@ import Data.Witness as I
 -- open-witness
 import Data.OpenWitness as I
 import Data.Type.Heterogeneous as I
+
+type LazyMap = Data.Map.Lazy.Map
+
+type StrictMap = Data.Map.Strict.Map
 
 lastM :: [t] -> Maybe t
 lastM [] = Nothing

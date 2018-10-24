@@ -114,8 +114,8 @@ type PinaforeUnifier baseedit = Expression (BisubstitutionWitness baseedit)
 type PinaforeFullUnifier baseedit
      = Compose (VarRenamer (PinaforeTypeSystem baseedit) PinaforeTypeCheck) (PinaforeUnifier baseedit)
 
-fullUnifierResult :: Result Text a -> PinaforeFullUnifier baseedit a
-fullUnifierResult ra = Compose $ fmap pure $ lift $ typeCheckResult ra
+unifierLiftTypeCheck :: PinaforeTypeCheck a -> PinaforeFullUnifier baseedit a
+unifierLiftTypeCheck tca = Compose $ fmap pure $ lift tca
 
 joinPinaforeTypes ::
        forall baseedit (a :: Type) (b :: Type) r.
@@ -235,8 +235,8 @@ unifyPosNegGroundTypes PointPinaforeGroundType NilDolanArguments EntityPinaforeG
 unifyPosNegGroundTypes PointPinaforeGroundType NilDolanArguments (NamedEntityPinaforeGroundType _) NilDolanArguments =
     pure $ MkNamedEntity
 unifyPosNegGroundTypes EntityPinaforeGroundType NilDolanArguments EntityPinaforeGroundType NilDolanArguments = pure id
-unifyPosNegGroundTypes (NamedEntityPinaforeGroundType t1) NilDolanArguments (NamedEntityPinaforeGroundType t2) NilDolanArguments
-    | Just Refl <- testEquality t1 t2 = pure id
+unifyPosNegGroundTypes (NamedEntityPinaforeGroundType t1) NilDolanArguments (NamedEntityPinaforeGroundType t2) NilDolanArguments =
+    unifierLiftTypeCheck $ getEntitySubtype t1 t2
 unifyPosNegGroundTypes (NamedEntityPinaforeGroundType _) NilDolanArguments EntityPinaforeGroundType NilDolanArguments =
     pure namedToEntity
 unifyPosNegGroundTypes FuncPinaforeGroundType argsa FuncPinaforeGroundType argsb =
@@ -252,10 +252,10 @@ unifyPosNegGroundTypes SetPinaforeGroundType argsa SetPinaforeGroundType argsb =
 unifyPosNegGroundTypes MorphismPinaforeGroundType argsa MorphismPinaforeGroundType argsb =
     unifyPosNegArguments MorphismPinaforeGroundType argsa argsb
 unifyPosNegGroundTypes ga argsa gb argsb =
-    unifierFail $
-    "can't cast " <>
-    (unpack $ exprShow $ GroundPinaforeSingularType ga argsa) <>
-    " to " <> (unpack $ exprShow $ GroundPinaforeSingularType gb argsb)
+    unifierLiftTypeCheck $
+    convertFailure
+        (unpack $ exprShow $ GroundPinaforeSingularType ga argsa)
+        (unpack $ exprShow $ GroundPinaforeSingularType gb argsb)
 
 unifyPosNegPinaforeSingularTypes ::
        PinaforeSingularType baseedit 'PositivePolarity a

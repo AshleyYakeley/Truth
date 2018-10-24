@@ -37,9 +37,6 @@ class (Monad (UnifierMonad unifier), Applicative unifier) => Unifier unifier whe
            SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
         -> SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
 
-unifierFail :: MonadFail (UnifierMonad unifier) => String -> Compose (UnifierMonad unifier) unifier a
-unifierFail s = Compose $ fail s
-
 liftUnifier :: Monad (UnifierMonad unifier) => unifier a -> Compose (UnifierMonad unifier) unifier a
 liftUnifier ua = Compose $ return ua
 

@@ -4,7 +4,7 @@ import Shapes
 
 newtype Name =
     MkName Text
-    deriving (Eq, MonoFoldable)
+    deriving (Eq, Ord, MonoFoldable)
 
 instance Show Name where
     show (MkName t) = unpack t

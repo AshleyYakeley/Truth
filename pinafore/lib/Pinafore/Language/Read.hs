@@ -240,33 +240,64 @@ readTypeName = do
 readPattern :: Parser Name
 readPattern = readThis TokName
 
-readBinding :: HasPinaforeEntityEdit baseedit => Parser (QBindList baseedit)
+newtype TypeDecls =
+    MkTypeDecls (forall a. PinaforeTypeCheck a -> PinaforeTypeCheck a)
+
+instance Semigroup TypeDecls where
+    (MkTypeDecls a) <> (MkTypeDecls b) = MkTypeDecls (a . b)
+
+instance Monoid TypeDecls where
+    mempty = MkTypeDecls id
+    mappend = (<>)
+
+type Declarations baseedit = (TypeDecls, QBindList baseedit)
+
+readEntityDeclaration :: Parser (Declarations baseedit)
+readEntityDeclaration = do
+    readThis TokEntity
+    n <- readThis TokName
+    return (MkTypeDecls $ withNewTypeName n $ EntityNamedType $ toSymbolWitness (unpack n) MkAnyWitness, mempty)
+
+readSubtypeDeclaration :: Parser (Declarations baseedit)
+readSubtypeDeclaration = do
+    readThis TokSubtype
+    na <- readThis TokName
+    readExactlyThis TokOperator "<="
+    nb <- readThis TokName
+    return (MkTypeDecls $ withEntitySubtype (na, nb), mempty)
+
+readBinding :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
 readBinding = do
     name <- readThis TokName
     args <- many readPattern
     readThis TokAssign
     tval <- readExpression
-    return $
-        qBindExpr name $ do
-            val <- tval
-            qAbstractsExpr args val
+    return
+        ( mempty
+        , qBindExpr name $ do
+              val <- tval
+              qAbstractsExpr args val)
 
-readBindings :: HasPinaforeEntityEdit baseedit => Parser (QBindList baseedit)
-readBindings =
+readDeclaration :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
+readDeclaration = readEntityDeclaration <|> readSubtypeDeclaration <|> readBinding
+
+readDeclarations :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
+readDeclarations =
     (do
-         b <- readBinding
+         b <- readDeclaration
          mbl <-
              optional $ do
                  readThis TokSemicolon
-                 readBindings
+                 readDeclarations
          return $ b <> fromMaybe mempty mbl) <|>
     (do return mempty)
 
 readLetBindings :: HasPinaforeEntityEdit baseedit => Parser (QExpr baseedit -> PinaforeTypeCheck (QExpr baseedit))
 readLetBindings = do
     readThis TokLet
-    bl <- readBindings
-    qBindingsLetExpr bl
+    (MkTypeDecls td, bl) <- readDeclarations
+    f <- qBindingsLetExpr bl
+    return $ \expr -> td $ f expr
 
 readExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit

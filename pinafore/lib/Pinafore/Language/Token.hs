@@ -27,6 +27,8 @@ data Token t where
     TokIf :: Token ()
     TokThen :: Token ()
     TokElse :: Token ()
+    TokEntity :: Token ()
+    TokSubtype :: Token ()
     TokBool :: Token Bool
     TokName :: Token Name
     TokLambda :: Token ()
@@ -55,6 +57,8 @@ instance TestEquality Token where
     testEquality TokIf TokIf = Just Refl
     testEquality TokThen TokThen = Just Refl
     testEquality TokElse TokElse = Just Refl
+    testEquality TokEntity TokEntity = Just Refl
+    testEquality TokSubtype TokSubtype = Just Refl
     testEquality TokBool TokBool = Just Refl
     testEquality TokName TokName = Just Refl
     testEquality TokLambda TokLambda = Just Refl
@@ -84,6 +88,8 @@ instance Show (Token t) where
     show TokIf = show ("if" :: String)
     show TokThen = show ("then" :: String)
     show TokElse = show ("else" :: String)
+    show TokEntity = show ("entity" :: String)
+    show TokSubtype = show ("subtype" :: String)
     show TokBool = "boolean constant"
     show TokName = "name"
     show TokLambda = "\\"
@@ -179,6 +185,8 @@ readTextToken = do
         "if" -> return $ MkAny TokIf ()
         "then" -> return $ MkAny TokThen ()
         "else" -> return $ MkAny TokElse ()
+        "entity" -> return $ MkAny TokEntity ()
+        "subtype" -> return $ MkAny TokSubtype ()
         "true" -> return $ MkAny TokBool True
         "false" -> return $ MkAny TokBool False
         name -> return $ MkAny TokName $ MkName $ pack name

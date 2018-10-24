@@ -102,7 +102,7 @@ testType =
         , exprTypeTest "var" (return "{v :: a} -> a") $ return varExpr
         , exprTypeTest "apply id number" (return "{} -> Number") $ apExpr idExpr numExpr
         , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
-        , exprTypeTest "apply nb boolean" (fail "can't cast Boolean to Number") $ apExpr nbFuncExpr boolExpr
+        , exprTypeTest "apply nb boolean" (fail "cannot convert Boolean to Number") $ apExpr nbFuncExpr boolExpr
         , exprTypeTest "apply id var" (return "{v :: c} -> c") $ apExpr idExpr varExpr
         , exprTypeTest "apply nb var" (return "{v :: Number} -> Boolean") $ apExpr nbFuncExpr varExpr
         , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
