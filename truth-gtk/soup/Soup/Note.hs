@@ -129,5 +129,5 @@ instance JSON.FromJSON Note where
                     NotePast -> past
                     NoteText -> text
 
-noteCodec :: ReasonCodec ByteString (EditSubject NoteEdit)
+noteCodec :: ReasonCodec LazyByteString (EditSubject NoteEdit)
 noteCodec = jsonValueCodec . jsonCodec

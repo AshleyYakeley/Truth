@@ -1,16 +1,14 @@
 module Pinafore.Entity
     ( Predicate(..)
-    , Point(..)
-    , newPoint
     , PinaforeEntityRead(..)
     , PinaforeEntityEdit(..)
     ) where
 
 import Data.Aeson (FromJSON)
-import Data.Serialize as Serialize (Serialize(..))
 import Data.UUID hiding (fromString)
 import Pinafore.Know
 import Pinafore.Literal
+import Pinafore.Point
 import Shapes
 import Truth.Core
 
@@ -20,24 +18,6 @@ newtype Predicate =
 
 instance Show Predicate where
     show (MkPredicate uuid) = '%' : show uuid
-
-newtype Point =
-    MkPoint UUID
-    deriving (Eq, Random, FromJSON)
-
-instance Show Point where
-    show (MkPoint uuid) = '!' : show uuid
-
-instance Serialize Point where
-    put (MkPoint uuid) = Serialize.put (toByteString uuid)
-    get = do
-        bs <- Serialize.get
-        case fromByteString bs of
-            Just uuid -> return $ MkPoint uuid
-            Nothing -> fail "deserialize bad UUID"
-
-newPoint :: MonadIO m => m Point
-newPoint = liftIO randomIO
 
 -- | Some of these reads may add to the database, but will always give consistent results between changes.
 data PinaforeEntityRead t where

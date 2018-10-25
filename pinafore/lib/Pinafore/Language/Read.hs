@@ -14,6 +14,7 @@ import Pinafore.Language.Morphism
 import Pinafore.Language.Name
 import Pinafore.Language.Token
 import Pinafore.Language.Type
+import Pinafore.Point
 import Pinafore.PredicateMorphism
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)

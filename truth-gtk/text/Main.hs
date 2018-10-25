@@ -10,7 +10,7 @@ import Truth.UI.GTK
 import Truth.World.Charset
 import Truth.World.File
 
-textCodec :: ReasonCodec ByteString Text
+textCodec :: ReasonCodec LazyByteString Text
 textCodec = bijectionCodec packBijection . utf8Codec . bijectionCodec unpackBijection
 
 textLens :: EditLens ByteStringEdit (WholeEdit ((Result Text) Text))

@@ -104,7 +104,9 @@ import qualified Data.Map.Strict
 import Data.HashMap.Lazy as I (HashMap)
 
 -- bytestring
-import Data.ByteString.Lazy as I (ByteString, appendFile, getContents, hGet, hGetContents, hPut, readFile, writeFile)
+import qualified Data.ByteString
+import Data.ByteString.Lazy as I (appendFile, getContents, hGet, hGetContents, hPut, readFile, writeFile)
+import qualified Data.ByteString.Lazy
 
 -- cereal
 import Data.Serialize as I (Serialize)
@@ -129,6 +131,10 @@ import Data.Witness as I
 -- open-witness
 import Data.OpenWitness as I
 import Data.Type.Heterogeneous as I
+
+type LazyByteString = Data.ByteString.Lazy.ByteString
+
+type StrictByteString = Data.ByteString.ByteString
 
 type LazyMap = Data.Map.Lazy.Map
 

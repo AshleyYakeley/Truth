@@ -18,7 +18,10 @@ instance FieldType Int64 where
 instance FieldType Text where
     fieldTypeName = "TEXT"
 
-instance FieldType ByteString where
+instance FieldType LazyByteString where
+    fieldTypeName = "BLOB"
+
+instance FieldType StrictByteString where
     fieldTypeName = "BLOB"
 
 instance FieldType Double where

@@ -9,7 +9,7 @@ import Pinafore.Entity
 import Pinafore.Know
 import Pinafore.Literal
 import Pinafore.Morphism
-import Pinafore.Table (Predicate)
+import Pinafore.Point
 import Shapes
 import Truth.Core
 

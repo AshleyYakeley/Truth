@@ -19,6 +19,8 @@ library:
       - sqlite-simple
       - shapes
       - parsec
+      - memory
+      - cryptonite
       - truth-core
     exposed-modules:
       - Language.Expression.Witness
@@ -51,6 +53,7 @@ library:
       - Pinafore.Number
       - Pinafore.Literal
       - Pinafore.Morphism
+      - Pinafore.Point
       - Pinafore.Entity
       - Pinafore.Action
       - Pinafore.Table

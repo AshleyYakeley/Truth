@@ -3,12 +3,13 @@ module Pinafore.Literal where
 import Data.Time
 import Pinafore.Know
 import Pinafore.Number
+import Pinafore.Point
 import Prelude (Rational)
 import Shapes
 
 newtype Literal = MkLiteral
     { unLiteral :: Text
-    } deriving (Eq)
+    } deriving (Eq, Serialize)
 
 instance Show Literal where
     show (MkLiteral t) = show t
@@ -20,6 +21,9 @@ class (Eq t, Show t) => AsLiteral t where
     toLiteral :: t -> Literal
     fromLiteral :: Literal -> Know t
     literalTypeDescription :: Text
+
+literalToPoint :: AsLiteral t => t -> Point
+literalToPoint v = hashToPoint $ \call -> [call @Text "literal", call $ toLiteral v]
 
 instance AsLiteral Literal where
     toLiteral = id

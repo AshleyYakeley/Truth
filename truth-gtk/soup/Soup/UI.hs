@@ -52,12 +52,12 @@ soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)
 soupObject dirpath = let
     rawSoupObject :: Object (SoupEdit (ObjectEdit ByteStringEdit))
     rawSoupObject = directorySoup fileSystemObject dirpath
-    soupItemInjection :: Injection' (Result Text) ByteString (EditSubject PossibleNoteEdit)
+    soupItemInjection :: Injection' (Result Text) LazyByteString (EditSubject PossibleNoteEdit)
     soupItemInjection = codecInjection noteCodec
     paste ::
            forall m. MonadIO m
         => EditSubject PossibleNoteEdit
-        -> m (Maybe ByteString)
+        -> m (Maybe LazyByteString)
     paste s = return $ getMaybeOne $ injBackwards soupItemInjection s
     soupItemLens :: EditLens ByteStringEdit PossibleNoteEdit
     soupItemLens = convertEditLens . (wholeEditLens $ injectionLens soupItemInjection) . convertEditLens

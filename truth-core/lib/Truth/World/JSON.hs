@@ -4,7 +4,7 @@ import qualified Data.Aeson as JSON
 import Truth.Core
 import Truth.Core.Import
 
-jsonCodec :: ReasonCodec ByteString JSON.Value
+jsonCodec :: ReasonCodec LazyByteString JSON.Value
 jsonCodec = MkCodec (resultFromMaybe (fromString "fail to decode to JSON") . JSON.decode) JSON.encode
 
 propertyLens :: Text -> Lens' Identity JSON.Object (Maybe JSON.Value)

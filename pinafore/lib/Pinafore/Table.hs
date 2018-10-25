@@ -9,6 +9,7 @@ module Pinafore.Table
 import Pinafore.Entity
 import Pinafore.Know
 import Pinafore.Literal
+import Pinafore.Point
 import Shapes
 import Text.Read
 import Truth.Core
