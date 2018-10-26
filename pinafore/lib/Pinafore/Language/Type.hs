@@ -22,6 +22,7 @@ import Pinafore.Language.GroundType
 import Pinafore.Language.Literal
 import Pinafore.Language.Show
 import Pinafore.Language.TypeContext
+import Pinafore.Literal
 import Shapes
 
 type PinaforeRangeType baseedit = TypeRangeWitness (PinaforeType baseedit)
@@ -239,6 +240,18 @@ unifyPosNegGroundTypes (NamedEntityPinaforeGroundType t1) NilDolanArguments (Nam
     unifierLiftTypeCheck $ getEntitySubtype t1 t2
 unifyPosNegGroundTypes (NamedEntityPinaforeGroundType _) NilDolanArguments EntityPinaforeGroundType NilDolanArguments =
     pure namedToEntity
+unifyPosNegGroundTypes (LiteralPinaforeGroundType tl) NilDolanArguments EntityPinaforeGroundType NilDolanArguments =
+    pure $
+    case literalTypeAsLiteral tl of
+        Dict -> pointToEntity . literalToPoint
+unifyPosNegGroundTypes PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) EntityPinaforeGroundType NilDolanArguments =
+    (\conva convb (a, b) -> pairToEntity (meet1 $ conva a, meet1 $ convb b)) <$>
+    unifyPosNegPinaforeTypes
+        ta
+        (singlePinaforeType $ GroundPinaforeSingularType EntityPinaforeGroundType NilDolanArguments) <*>
+    unifyPosNegPinaforeTypes
+        tb
+        (singlePinaforeType $ GroundPinaforeSingularType EntityPinaforeGroundType NilDolanArguments)
 unifyPosNegGroundTypes FuncPinaforeGroundType argsa FuncPinaforeGroundType argsb =
     unifyPosNegArguments FuncPinaforeGroundType argsa argsb
 unifyPosNegGroundTypes ListPinaforeGroundType argsa ListPinaforeGroundType argsb =
