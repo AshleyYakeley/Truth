@@ -2,6 +2,7 @@ module Pinafore.Language.Order where
 
 import Data.Time
 import Language.Expression.Dolan
+import Pinafore.Know
 import Pinafore.Language.Morphism
 import Pinafore.Language.Reference
 import Pinafore.Morphism
@@ -11,7 +12,7 @@ import Shapes
 import Truth.Core
 
 data PinaforeOrder baseedit a =
-    forall t. MkPinaforeOrder (PinaforeFunctionMorphism baseedit a t)
+    forall t. MkPinaforeOrder (PinaforeFunctionMorphism baseedit (Know a) t)
                               (t -> t -> Ordering)
 
 instance Semigroup (PinaforeOrder baseedit a) where
@@ -26,7 +27,7 @@ instance Monoid (PinaforeOrder baseedit a) where
     mappend = (<>)
 
 instance Contravariant (PinaforeOrder baseedit) where
-    contramap ba (MkPinaforeOrder ef o) = MkPinaforeOrder (ef . (arr ba)) o
+    contramap ba (MkPinaforeOrder ef o) = MkPinaforeOrder (ef . (arr $ fmap ba)) o
 
 instance HasDolanVary '[ 'Contravariance] (PinaforeOrder baseedit) where
     dolanVary = ConsDolanKindVary (\(MkCatDual ba) -> contramap ba) $ NilDolanKindVary
@@ -54,14 +55,14 @@ rev :: forall baseedit a. PinaforeOrder baseedit a -> PinaforeOrder baseedit a
 rev (MkPinaforeOrder ef o) = MkPinaforeOrder ef $ \a b -> o b a
 
 qOrderSet :: forall baseedit a. PinaforeOrder baseedit a -> QFuncSet baseedit a -> PinaforeFunctionValue baseedit [a]
-qOrderSet (MkPinaforeOrder (ofunc :: PinaforeFunctionMorphism baseedit a t) oord) pset = let
+qOrderSet (MkPinaforeOrder (ofunc :: PinaforeFunctionMorphism baseedit (Know a) t) oord) pset = let
     cmp :: (a, t) -> (a, t) -> Ordering
     cmp (_, t1) (_, t2) = oord t1 t2
     ofuncpair :: PinaforeFunctionMorphism baseedit a (a, t)
     ofuncpair =
-        proc point -> do
-            t <- ofunc -< point
-            returnA -< (point, t)
+        proc a -> do
+            kt <- ofunc -< Known a
+            returnA -< (a, kt)
     upairs :: QFuncSet baseedit (a, t)
     upairs = applyPinaforeFunction (cfmap ofuncpair) pset
     sortpoints :: FiniteSet (a, t) -> [a]
@@ -76,4 +77,5 @@ pinaforeOrderCompare ::
     -> PinaforeImmutableReference baseedit a
     -> PinaforeImmutableReference baseedit b
 pinaforeOrderCompare ob (MkPinaforeOrder ef o) fv1 fv2 =
-    (\v1 v2 -> ob $ o v1 v2) <$> (applyImmutableReference ef fv1) <*> (applyImmutableReference ef fv2)
+    (\v1 v2 -> ob $ o v1 v2) <$> (applyImmutableReference (fmap Known ef) fv1) <*>
+    (applyImmutableReference (fmap Known ef) fv2)

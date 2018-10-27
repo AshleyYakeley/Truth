@@ -173,8 +173,8 @@ ui_pick nameMorphism fset ref = let
     getName :: PinaforeFunctionMorphism baseedit (MeetType Entity A) PickerPairType
     getName =
         proc p -> do
-            n <- pinaforeMorphismFunction nameMorphism -< meet2 p
-            returnA -< (Known p, n)
+            n <- pinaforeMorphismFunction nameMorphism -< Known $ meet2 p
+            returnA -< (Known p, fromKnow "" n)
     getNames :: PinaforeFunctionMorphism baseedit (FiniteSet (MeetType Entity A)) (FiniteSet PickerPairType)
     getNames =
         proc fsp -> do

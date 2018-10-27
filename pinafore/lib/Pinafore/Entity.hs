@@ -57,9 +57,9 @@ instance WitnessConstraint Show PinaforeEntityRead where
     witnessConstraint (PinaforeEntityReadFromEither _) = Dict
 
 data PinaforeEntityEdit where
-    PinaforeEntityEditSetPredicate :: Predicate -> Point -> Point -> PinaforeEntityEdit -- pred subj val
+    PinaforeEntityEditSetPredicate :: Predicate -> Point -> Know Point -> PinaforeEntityEdit -- pred subj kval
 
 type instance EditReader PinaforeEntityEdit = PinaforeEntityRead
 
 instance Show PinaforeEntityEdit where
-    show (PinaforeEntityEditSetPredicate p s v) = "set " ++ show p ++ " of " ++ show s ++ " to " ++ show v
+    show (PinaforeEntityEditSetPredicate p s kv) = "set " ++ show p ++ " of " ++ show s ++ " to " ++ show kv

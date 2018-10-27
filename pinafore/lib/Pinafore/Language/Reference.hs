@@ -76,8 +76,7 @@ pinaforeImmutableToReference (MkPinaforeImmutableReference ef) =
     MkPinaforeReference (MkTypeRange never id) $ readOnlyEditLens ef
 
 applyImmutableReference ::
-       PinaforeFunctionMorphism baseedit a b
+       PinaforeFunctionMorphism baseedit (Know a) (Know b)
     -> PinaforeImmutableReference baseedit a
     -> PinaforeImmutableReference baseedit b
-applyImmutableReference m (MkPinaforeImmutableReference v) =
-    MkPinaforeImmutableReference $ applyPinaforeFunction (cfmap m) v
+applyImmutableReference m (MkPinaforeImmutableReference v) = MkPinaforeImmutableReference $ applyPinaforeFunction m v

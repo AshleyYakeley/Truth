@@ -30,6 +30,12 @@ pattern Unknown = MkKnow Nothing
 
 {-# COMPLETE Known, Unknown #-}
 
+instance Ord a => Ord (Know a) where
+    compare Unknown Unknown = EQ
+    compare Unknown (Known _) = LT
+    compare (Known _) Unknown = GT
+    compare (Known a) (Known b) = compare a b
+
 instance Traversable Know where
     traverse afb (Known a) = fmap Known $ afb a
     traverse _ Unknown = pure Unknown

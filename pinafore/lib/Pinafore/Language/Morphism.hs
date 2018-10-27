@@ -1,6 +1,7 @@
 module Pinafore.Language.Morphism where
 
 import Language.Expression.Dolan
+import Pinafore.Know
 import Pinafore.Morphism
 import Shapes
 
@@ -36,11 +37,11 @@ pinaforeLensMorphism :: PinaforeLensMorphism baseedit a b -> PinaforeMorphism ba
 pinaforeLensMorphism = MkPinaforeMorphism identityTypeRange identityTypeRange
 
 pinaforeMorphismFunction ::
-       PinaforeMorphism baseedit '( a, TopType) '( BottomType, b) -> PinaforeFunctionMorphism baseedit a b
+       PinaforeMorphism baseedit '( a, TopType) '( BottomType, b) -> PinaforeFunctionMorphism baseedit (Know a) (Know b)
 pinaforeMorphismFunction (MkPinaforeMorphism tra trb pm) =
-    proc a -> do
-        tb <- lensFunctionMorphism pm -< typeRangeContra tra a
-        returnA -< typeRangeCo trb tb
+    proc ka -> do
+        tb <- lensFunctionMorphism pm -< fmap (typeRangeContra tra) ka
+        returnA -< fmap (typeRangeCo trb) tb
 
 identityPinaforeMorphism :: PinaforeMorphism baseedit '( t, t) '( t, t)
 identityPinaforeMorphism = pinaforeLensMorphism id

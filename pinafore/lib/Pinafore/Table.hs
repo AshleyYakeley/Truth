@@ -273,5 +273,5 @@ pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTa
     objEdit :: [PinaforeEntityEdit] -> m (Maybe (m ()))
     objEdit =
         singleAlwaysEdit $ \(PinaforeEntityEditSetPredicate p s v) ->
-            tablePush [PinaforeTableEditSetPredicate p s $ Just v]
+            tablePush [PinaforeTableEditSetPredicate p s $ knowToMaybe v]
     in MkObject {..}
