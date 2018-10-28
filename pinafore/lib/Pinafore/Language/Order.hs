@@ -5,6 +5,7 @@ import Language.Expression.Dolan
 import Pinafore.Know
 import Pinafore.Language.Morphism
 import Pinafore.Language.Reference
+import Pinafore.Language.Set
 import Pinafore.Morphism
 import Pinafore.Number
 import Pinafore.Types
@@ -54,7 +55,8 @@ orders = mconcat
 rev :: forall baseedit a. PinaforeOrder baseedit a -> PinaforeOrder baseedit a
 rev (MkPinaforeOrder ef o) = MkPinaforeOrder ef $ \a b -> o b a
 
-qOrderSet :: forall baseedit a. PinaforeOrder baseedit a -> QFuncSet baseedit a -> PinaforeFunctionValue baseedit [a]
+qOrderSet ::
+       forall baseedit a. PinaforeOrder baseedit a -> QFuncSet baseedit a -> PinaforeFunctionValue baseedit (Know [a])
 qOrderSet (MkPinaforeOrder (ofunc :: PinaforeFunctionMorphism baseedit (Know a) t) oord) pset = let
     cmp :: (a, t) -> (a, t) -> Ordering
     cmp (_, t1) (_, t2) = oord t1 t2
@@ -67,7 +69,7 @@ qOrderSet (MkPinaforeOrder (ofunc :: PinaforeFunctionMorphism baseedit (Know a) 
     upairs = applyPinaforeFunction (cfmap ofuncpair) pset
     sortpoints :: FiniteSet (a, t) -> [a]
     sortpoints (MkFiniteSet pairs) = fmap fst $ sortBy cmp pairs
-    in unWholeEditFunction $ fmap sortpoints $ MkWholeEditFunction upairs
+    in unWholeEditFunction $ fmap (Known . sortpoints) $ MkWholeEditFunction upairs
 
 pinaforeOrderCompare ::
        forall baseedit a b.
@@ -79,3 +81,10 @@ pinaforeOrderCompare ::
 pinaforeOrderCompare ob (MkPinaforeOrder ef o) fv1 fv2 =
     (\v1 v2 -> ob $ o v1 v2) <$> (applyImmutableReference (fmap Known ef) fv1) <*>
     (applyImmutableReference (fmap Known ef) fv2)
+
+pinaforeSetGetOrdered ::
+       forall baseedit a.
+       PinaforeOrder baseedit a
+    -> PinaforeSet baseedit '( BottomType, a)
+    -> PinaforeReference baseedit '( BottomType, [a])
+pinaforeSetGetOrdered order set = pinaforeFunctionToReference $ qOrderSet order $ pinaforeSetFunctionValue set

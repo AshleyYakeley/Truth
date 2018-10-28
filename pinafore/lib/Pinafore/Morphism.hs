@@ -430,42 +430,44 @@ lensInverseFunctionMorphism (MkCloseUnlift unlift MkAPinaforeLensMorphism {..}) 
 pmInverseEditLens ::
        forall baseedit a b. Eq a
     => PinaforeLensMorphism baseedit a b
-    -> EditLens (ContextEdit baseedit (WholeEdit b)) (FiniteSetEdit a)
+    -> EditLens (ContextEdit baseedit (WholeEdit (Know b))) (FiniteSetEdit a)
 pmInverseEditLens (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {..}) = let
     getFiniteSet ::
            forall m edit. MonadIO m
-        => b
+        => Know b
         -> MutableRead m (ContextEditReader baseedit edit)
         -> t m (FiniteSet a)
-    getFiniteSet b mr = withTransConstraintTM @MonadIO $ pfFuncRead pmInverse (tupleReadFunction SelectContext mr) b
-    fsetReadFunction :: ReadFunctionT t (ContextEditReader baseedit (WholeEdit b)) (WholeReader (FiniteSet a))
+    getFiniteSet (Known b) mr =
+        withTransConstraintTM @MonadIO $ pfFuncRead pmInverse (tupleReadFunction SelectContext mr) b
+    getFiniteSet Unknown _ = withTransConstraintTM @MonadIO $ return mempty
+    fsetReadFunction :: ReadFunctionT t (ContextEditReader baseedit (WholeEdit (Know b))) (WholeReader (FiniteSet a))
     fsetReadFunction mr ReadWhole =
         withTransConstraintTM @MonadIO $ do
-            b <- lift $ mr (MkTupleEditReader SelectContent ReadWhole)
-            pfFuncRead pmInverse (tupleReadFunction SelectContext mr) b
-    efGet :: ReadFunctionT t (ContextEditReader baseedit (WholeEdit b)) (FiniteSetReader a)
+            kb <- lift $ mr (MkTupleEditReader SelectContent ReadWhole)
+            getFiniteSet kb mr
+    efGet :: ReadFunctionT t (ContextEditReader baseedit (WholeEdit (Know b))) (FiniteSetReader a)
     efGet mr rt = withTransConstraintTM @MonadIO $ wholeFiniteSetReadFunction (fsetReadFunction mr) rt
     efUpdate ::
            forall m. MonadIO m
-        => ContextEdit baseedit (WholeEdit b)
-        -> MutableRead m (EditReader (ContextEdit baseedit (WholeEdit b)))
+        => ContextEdit baseedit (WholeEdit (Know b))
+        -> MutableRead m (EditReader (ContextEdit baseedit (WholeEdit (Know b))))
         -> t m [FiniteSetEdit a]
     efUpdate (MkTupleEdit SelectContext pinaedit) mr =
         withTransConstraintTM @MonadIO $ do
             ch <- pfUpdate pmInverse pinaedit $ tupleReadFunction SelectContext mr
             if ch
                 then do
-                    mb <- lift $ mr $ MkTupleEditReader SelectContent ReadWhole
-                    aset <- getFiniteSet mb mr
+                    kb <- lift $ mr $ MkTupleEditReader SelectContent ReadWhole
+                    aset <- getFiniteSet kb mr
                     aedits <- getReplaceEditsFromSubject aset
                     return aedits
                 else return []
-    efUpdate (MkTupleEdit SelectContent (MkWholeEdit mb)) mr =
+    efUpdate (MkTupleEdit SelectContent (MkWholeEdit kb)) mr =
         withTransConstraintTM @MonadIO $ do
-            aset <- getFiniteSet mb mr
+            aset <- getFiniteSet kb mr
             aedits <- getReplaceEditsFromSubject aset
             return aedits
-    elFunction :: AnEditFunction t (ContextEdit baseedit (WholeEdit b)) (FiniteSetEdit a)
+    elFunction :: AnEditFunction t (ContextEdit baseedit (WholeEdit (Know b))) (FiniteSetEdit a)
     elFunction = MkAnEditFunction {..}
     putEditBA ::
            forall m. MonadIO m
@@ -479,10 +481,10 @@ pmInverseEditLens (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {.
         -> Know b
         -> MutableRead m (EditReader baseedit)
         -> t m (Maybe [baseedit])
-    putEditAB a b mr =
+    putEditAB a kb mr =
         withTransConstraintTM @MonadIO $ do
             medits <-
-                putEditBA [MkWholeEdit b] $ \case
+                putEditBA [MkWholeEdit kb] $ \case
                     MkTupleEditReader SelectContext rt -> mr rt
                     MkTupleEditReader SelectContent ReadWhole -> return $ Known a
             return $
@@ -497,8 +499,8 @@ pmInverseEditLens (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {.
     elPutEdit ::
            forall m. MonadIO m
         => FiniteSetEdit a
-        -> MutableRead m (EditReader (ContextEdit baseedit (WholeEdit b)))
-        -> t m (Maybe [ContextEdit baseedit (WholeEdit b)])
+        -> MutableRead m (EditReader (ContextEdit baseedit (WholeEdit (Know b))))
+        -> t m (Maybe [ContextEdit baseedit (WholeEdit (Know b))])
     elPutEdit (KeyEditItem _ edit) _ = never edit
     elPutEdit (KeyDeleteItem a) mr =
         withTransConstraintTM @MonadIO $ do
@@ -506,33 +508,33 @@ pmInverseEditLens (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {.
             return $ fmap (\pedits -> fmap (MkTupleEdit SelectContext) pedits) mpedits
     elPutEdit (KeyInsertReplaceItem a) mr =
         withTransConstraintTM @MonadIO $ do
-            b <- lift $ mr $ MkTupleEditReader SelectContent ReadWhole
-            mpedits <- putEditAB a (Known b) $ tupleReadFunction SelectContext mr
+            kb <- lift $ mr $ MkTupleEditReader SelectContent ReadWhole
+            mpedits <- putEditAB a kb $ tupleReadFunction SelectContext mr
             return $ fmap (\pedits -> fmap (MkTupleEdit SelectContext) pedits) mpedits
     elPutEdit KeyClear mr =
         withTransConstraintTM @MonadIO $ do
-            b <- lift $ mr $ MkTupleEditReader SelectContent ReadWhole
-            aa <- pfFuncRead pmInverse (tupleReadFunction SelectContext mr) b
+            kb <- lift $ mr $ MkTupleEditReader SelectContent ReadWhole
+            aa <- getFiniteSet kb mr
             lmpedits <- for (toList aa) $ \a -> putEditAB a Unknown $ tupleReadFunction SelectContext mr
             return $ fmap (\lpedits -> fmap (MkTupleEdit SelectContext) $ mconcat lpedits) $ sequenceA lmpedits
     applyEdit' ::
-           ContextEdit baseedit (WholeEdit b)
-        -> ReadFunction (ContextEditReader baseedit (WholeEdit b)) (ContextEditReader baseedit (WholeEdit b))
+           ContextEdit baseedit (WholeEdit (Know b))
+        -> ReadFunction (ContextEditReader baseedit (WholeEdit (Know b))) (ContextEditReader baseedit (WholeEdit (Know b)))
     -- removed line to avoid (ApplicableEdit baseedit) constraint, possibly kinda hacky.
     -- applyEdit' (MkTupleEdit SelectContext edit) mr (MkTupleEditReader SelectContext rt) = applyEdit edit (mr . MkTupleEditReader SelectContext) rt
     applyEdit' (MkTupleEdit SelectContent edit) mr (MkTupleEditReader SelectContent rt) =
         applyEdit edit (mr . MkTupleEditReader SelectContent) rt
     applyEdit' _ mr rt = mr rt
     applyEdits' ::
-           [ContextEdit baseedit (WholeEdit b)]
-        -> ReadFunction (ContextEditReader baseedit (WholeEdit b)) (ContextEditReader baseedit (WholeEdit b))
+           [ContextEdit baseedit (WholeEdit (Know b))]
+        -> ReadFunction (ContextEditReader baseedit (WholeEdit (Know b))) (ContextEditReader baseedit (WholeEdit (Know b)))
     applyEdits' [] mr = mr
     applyEdits' (e:es) mr = applyEdits' es $ applyEdit' e mr
     elPutEdits ::
            forall m. MonadIO m
         => [FiniteSetEdit a]
-        -> MutableRead m (ContextEditReader baseedit (WholeEdit b))
-        -> t m (Maybe [ContextEdit baseedit (WholeEdit b)])
+        -> MutableRead m (ContextEditReader baseedit (WholeEdit (Know b)))
+        -> t m (Maybe [ContextEdit baseedit (WholeEdit (Know b))])
     elPutEdits [] _ = withTransConstraintTM @MonadIO $ getComposeM $ return []
     elPutEdits (e:ee) mr =
         withTransConstraintTM @MonadIO $
@@ -545,15 +547,16 @@ pmInverseEditLens (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {.
 applyInversePinaforeLens ::
        forall baseedit a b. (Eq a, Eq b)
     => PinaforeLensMorphism baseedit a b
-    -> PinaforeLensValue baseedit (WholeEdit b)
+    -> PinaforeLensValue baseedit (WholeEdit (Know b))
     -> PinaforeLensValue baseedit (FiniteSetEdit a)
 applyInversePinaforeLens pm val = pmInverseEditLens pm . contextualiseEditLens val
 
 pmInverseEditLensSet ::
-       forall baseedit a b. (Eq a, Eq b, Random b)
-    => PinaforeLensMorphism baseedit a b
+       forall baseedit a b. (Eq a, Eq b)
+    => IO b
+    -> PinaforeLensMorphism baseedit a b
     -> EditLens (ContextEdit baseedit (FiniteSetEdit b)) (FiniteSetEdit a)
-pmInverseEditLensSet (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {..}) = let
+pmInverseEditLensSet newb (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {..}) = let
     getPointPreimage ::
            forall m edit. MonadIO m
         => b
@@ -668,7 +671,7 @@ pmInverseEditLensSet (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism
             return $ fmap (\pedits -> fmap (MkTupleEdit SelectContext) pedits) mpedits
     elPutEdit' (KeyInsertReplaceItem a) mr =
         withTransConstraintTM @MonadIO $ do
-            b <- liftIO $ newKeyContainerItem @(FiniteSet b)
+            b <- liftIO newb
             getComposeM $ do
                 pedits <- MkComposeM $ putEditAB a (Known b) $ tupleReadFunction SelectContext mr
                 return $ (MkTupleEdit SelectContent $ KeyInsertReplaceItem b) : fmap (MkTupleEdit SelectContext) pedits
@@ -699,8 +702,9 @@ pmInverseEditLensSet (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism
     in MkCloseUnlift unlift $ MkAnEditLens elFunction' elPutEdits'
 
 applyInversePinaforeLensSet ::
-       forall baseedit a b. (Eq a, Eq b, Random b)
-    => PinaforeLensMorphism baseedit a b
+       forall baseedit a b. (Eq a, Eq b)
+    => IO b
+    -> PinaforeLensMorphism baseedit a b
     -> PinaforeLensValue baseedit (FiniteSetEdit b)
     -> PinaforeLensValue baseedit (FiniteSetEdit a)
-applyInversePinaforeLensSet pm val = pmInverseEditLensSet pm . contextualiseEditLens val
+applyInversePinaforeLensSet newb pm val = pmInverseEditLensSet newb pm . contextualiseEditLens val

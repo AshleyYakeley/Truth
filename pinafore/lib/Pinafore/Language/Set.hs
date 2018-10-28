@@ -4,7 +4,6 @@ import Language.Expression.Dolan
 import Pinafore.Action
 import Pinafore.Know
 import Pinafore.Language.Entity
-import Pinafore.Language.Order
 import Pinafore.Language.Reference
 import Pinafore.Morphism
 import Pinafore.Table (Point)
@@ -85,14 +84,6 @@ pinaforeSetContains ::
        PinaforeSet baseedit '( BottomType, Entity) -> PinaforeReference baseedit '( BottomType, Entity -> Bool)
 pinaforeSetContains set =
     pinaforeFunctionToReference $ funcEditFunction (\s -> Known $ \p -> member p s) . pinaforeSetFunctionValue set
-
-pinaforeSetGetOrdered ::
-       forall baseedit a.
-       PinaforeOrder baseedit a
-    -> PinaforeSet baseedit '( BottomType, a)
-    -> PinaforeReference baseedit '( BottomType, [a])
-pinaforeSetGetOrdered order set =
-    pinaforeFunctionToReference $ funcEditFunction Known . (qOrderSet order $ pinaforeSetFunctionValue set)
 
 pinaforeSetSingle ::
        forall baseedit a.

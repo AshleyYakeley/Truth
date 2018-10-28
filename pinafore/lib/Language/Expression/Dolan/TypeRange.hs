@@ -40,6 +40,9 @@ unUnifyTypeRange1 pq (MkTypeRange pt tp) = MkTypeRange pt (pq . tp)
 unUnifyTypeRange2 :: (p -> q) -> TypeRange t '( q, q) -> TypeRange t '( p, q)
 unUnifyTypeRange2 pq (MkTypeRange qt tq) = MkTypeRange (qt . pq) tq
 
+unjoinTypeRange :: TypeRange t '( JoinType p1 p2, q) -> (TypeRange t '( p1, q), TypeRange t '( p2, q))
+unjoinTypeRange tr = (contraMapTypeRange join1 tr, contraMapTypeRange join2 tr)
+
 data WithRange cat pq1 pq2 where
     MkWithRange :: cat p2 p1 -> cat q1 q2 -> WithRange cat '( p1, q1) '( p2, q2)
 

@@ -36,6 +36,18 @@ type B = UVar "b"
 
 type C = UVar "c"
 
+type AP = UVar "ap"
+
+type BP = UVar "bp"
+
+type CP = UVar "cp"
+
+type AQ = UVar "aq"
+
+type BQ = UVar "bq"
+
+type CQ = UVar "cq"
+
 qapply :: (A -> B) -> A -> B
 qapply = ($)
 
@@ -84,9 +96,9 @@ getentity ::
     -> (A -> PinaforeAction baseedit)
     -> PinaforeAction baseedit
 getentity ref cont = do
-    kq <- getPinaforeReference ref
-    case kq of
-        Known q -> cont q
+    ka <- getPinaforeReference ref
+    case ka of
+        Known a -> cont a
         Unknown -> return ()
 
 setentity :: forall baseedit. PinaforeReference baseedit '( A, TopType) -> A -> PinaforeAction baseedit
@@ -249,24 +261,6 @@ predefinitions =
               , mkDefEntry "." "Compose functions." qcompose
               ]
         , docTreeEntry
-              "Morphisms"
-              "Morphisms relate entities."
-              [ mkDefEntry
-                    "identity"
-                    "The identity morphism."
-                    (identityPinaforeMorphism :: PinaforeMorphism baseedit '( A, A) '( A, A))
-              , mkDefEntry
-                    "<.>"
-                    "Compose morphisms."
-                    (composePinaforeMorphism :: PinaforeMorphism baseedit '( B, B) '( C, C) -> PinaforeMorphism baseedit '( A, A) '( B, B) -> PinaforeMorphism baseedit '( A, A) '( C, C))
-              {-
-              , EntryDocTreeEntry
-                    ( Nothing
-                    , mkDefDoc "@" "Invert a morphism to an inverse morphism, or an inverse morphism to a morphism." $
-                      qinvert @baseedit)
-            -}
-              ]
-        , docTreeEntry
               "References"
               "A reference of type `Ref {-p,+q}` has a setting type of `p` and a getting type of `q`. References keep track of updates, and will update user interfaces constructed from them when their value changes."
               [ mkDefEntry
@@ -319,6 +313,18 @@ predefinitions =
               , mkDefEntry "sum" "Sum of numbers in a set." $ pinaforeSetFunc @baseedit @Number @Number sum
               , mkDefEntry "mean" "Mean of numbers in a set." $
                 pinaforeSetFunc @baseedit @Number @Number $ \s -> sum s / fromIntegral (olength s)
+              ]
+        , docTreeEntry
+              "Morphisms"
+              "Morphisms relate entities."
+              [ mkDefEntry "identity" "The identity morphism." $ identityPinaforeMorphism @baseedit @A
+              , mkDefEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
+              , mkDefEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseedit @AP @AQ @BP @BQ
+              , mkDefEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseedit @A @B
+              , mkDefEntry "!@" "Co-apply a morphism to a reference." $
+                pinaforeApplyInverseMorphismRef @baseedit @AP @AQ @BP @BQ
+              , mkDefEntry "!@@" "Co-apply a morphism to a set." $
+                pinaforeApplyInverseMorphismSet @baseedit @AP @AQ @BP @BQ
               ]
         , docTreeEntry
               "Orders"
