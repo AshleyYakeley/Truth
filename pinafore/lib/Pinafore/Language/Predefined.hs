@@ -201,6 +201,12 @@ ui_pick nameMorphism fset ref = let
 qfail :: forall baseedit. Text -> PinaforeAction baseedit
 qfail t = liftIO $ fail $ unpack t
 
+ui_dynamic ::
+       forall baseedit.
+       PinaforeImmutableReference baseedit (UISpec (ConstEdit Entity) baseedit)
+    -> UISpec (ConstEdit Entity) baseedit
+ui_dynamic uiref = uiSwitch $ pinaforeImmutableReferenceValue uiNull uiref
+
 type BindDoc baseedit = (Maybe (QBindList baseedit), DefDoc)
 
 mkDefEntry ::
@@ -257,9 +263,7 @@ predefinitions =
         , docTreeEntry
               "Functions"
               ""
-              [ mkDefEntry "$" "Apply a function, morphism, or inverse morphism to a value." qapply
-              , mkDefEntry "." "Compose functions." qcompose
-              ]
+              [mkDefEntry "$" "Apply a function to a value." qapply, mkDefEntry "." "Compose functions." qcompose]
         , docTreeEntry
               "References"
               "A reference of type `Ref {-p,+q}` has a setting type of `p` and a getting type of `q`. References keep track of updates, and will update user interfaces constructed from them when their value changes."
@@ -419,11 +423,11 @@ predefinitions =
               , mkDefEntry "ui_button" "A button with this text that does this action." $ \(name :: QFuncValue baseedit Text) action ->
                     uiButton (clearText . name) action
               , mkDefEntry "ui_pick" "A drop-down menu." $ ui_pick
-                -- switch
               , mkDefEntry
                     "ui_table"
                     "A list table. First arg is columns (name, property), second is the window to open for a selection, third is the set of items." $
                 ui_table @baseedit
+              , mkDefEntry "ui_dynamic" "A UI that can be updated to different UIs." $ ui_dynamic @baseedit
               ]
         ]
 
