@@ -6,8 +6,9 @@ These are the main differences:
 * Line comments start with `#`, not `--`.
 There are no block comments.
 * Layout is not significant.
-Instead, bindings within a `let` block are separated by `;`.
-* There are no tuples as such. Use `[ ]` list syntax instead.
+Instead, declarations within a `let` block are separated by `;`.
+* There's no "top level" for declarations.
+All declarations are local to a `let` block.
 
 A file passed to `pinafore` has syntax `<file>`.
 In interactive mode, each command has syntax `<interactive-command>`.
@@ -86,8 +87,6 @@ In interactive mode, each command has syntax `<interactive-command>`.
     literal-boolean |
     literal-number |
     literal-text |
-    literal-predicate |
-    literal-point |
     "[" <comma-separated-expressions> "]" |
     "(" <expression> ")"
 
@@ -137,9 +136,6 @@ literal-number = (-?[0-9]+(.[0-9]*(_[0-9]*)?)?)|(~-?[0-9]+(.[0-9]*)?(e-?[0-9]+)?
 
 literal-text = "([^"\\]|\\.)*"
 
-literal-predicate =
+uuid =
     %[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}
-
-literal-point =
-    ![[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}
 ```

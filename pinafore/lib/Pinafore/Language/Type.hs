@@ -9,6 +9,7 @@ module Pinafore.Language.Type
     , module Pinafore.Language.TypeContext
     ) where
 
+import qualified Data.List as List
 import Language.Expression.Dolan
 import Language.Expression.Expression
 import Language.Expression.Named
@@ -664,12 +665,18 @@ instance IsTypePolarity polarity => ExprShow (PinaforeRangeType baseedit polarit
             -> [Text]
         getpieces NilPinaforeType = []
         getpieces (ConsPinaforeType t tr) = exprPrecShow 0 t : getpieces tr
-        contrapieces = fmap ("-" <>) $ invertPolarity @polarity $ getpieces t1
-        copieces = fmap ("+" <>) $ getpieces t2
+        contrapieces = nub $ invertPolarity @polarity $ getpieces t1
+        copieces = nub $ getpieces t2
+        bothpieces = List.intersect contrapieces copieces
+        rcontrapieces = contrapieces List.\\ bothpieces
+        rcopieces = copieces List.\\ bothpieces
         pieces :: [Text]
-        pieces = contrapieces <> copieces
+        pieces = bothpieces <> fmap ("-" <>) rcontrapieces <> fmap ("+" <>) rcopieces
         text :: Text
-        text = "{" <> ointercalate "," pieces <> "}"
+        text =
+            case pieces of
+                [t] -> t
+                _ -> "{" <> ointercalate "," pieces <> "}"
         in (text, 0)
 
 type PinaforeExpression baseedit name
