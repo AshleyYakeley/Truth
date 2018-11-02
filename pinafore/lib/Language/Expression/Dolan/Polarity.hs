@@ -67,7 +67,7 @@ data TypePolarity
 
 class IsTypePolarity (polarity :: TypePolarity) where
     whichTypePolarity :: Either (polarity :~: 'PositivePolarity) (polarity :~: 'NegativePolarity)
-    type InvertPolarity polarity :: TypePolarity
+    type InvertPolarity polarity = (inv :: TypePolarity) | inv -> polarity
     isInvertPolarity :: Dict (IsTypePolarity (InvertPolarity polarity))
     type LimitType polarity :: Type
     showLimitType :: Text

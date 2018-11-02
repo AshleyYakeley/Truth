@@ -42,7 +42,9 @@ In interactive mode, each command has syntax `<interactive-command>`.
     <type-var> |
     <type-const>
 
-<type-range-3> ::= "{" <type-range-items> "}"
+<type-range-3> ::=
+    "{" <type-range-items> "}" |
+    <type-range-item>
 
 <type-range-items> ::= | <type-range-items-1>
 
@@ -51,6 +53,7 @@ In interactive mode, each command has syntax `<interactive-command>`.
     <type-range-item> "," <type-range-items-1>
 
 <type-range-item> ::=
+    <type> |
     "-" <type> |
     "+" <type>
 

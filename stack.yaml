@@ -14,7 +14,7 @@ extra-deps:
 - git: https://github.com/AshleyYakeley/haskell-src-exts.git
   commit: eb9e6bfd89b2a97fb9ac52d967465f62d2c6ed64
 - git: https://github.com/AshleyYakeley/hindent.git
-  commit: 6a593f9476e501fcb41294c226f124cf88573ace
+  commit: 7b7edb71b35094498519ed487ff0942e3324466d
 
 flags:
     truth-gtk:

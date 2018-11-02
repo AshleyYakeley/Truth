@@ -5,6 +5,7 @@ module Pinafore.Language.Read
     ) where
 
 import Data.UUID hiding (fromString)
+import Language.Expression.Dolan.MPolarity
 import Pinafore.Entity
 import Pinafore.Language.Entity
 import Pinafore.Language.Expression
@@ -62,126 +63,164 @@ readCommaList1 p = do
 readCommaList :: Monoid t => Parser t -> Parser t
 readCommaList p = readCommaList1 p <|> return mempty
 
+type PinaforeType3 baseedit = MPolarType (PinaforeType baseedit)
+
+type PinaforeTypeRange3 baseedit = MPolarTypeRange (PinaforeType baseedit)
+
 readJoinMeet ::
-       forall polarity. IsTypePolarity polarity
+       forall mpolarity. Is MPolarity mpolarity
     => Parser ()
 readJoinMeet =
-    case whichTypePolarity @polarity of
-        Left _ -> readExactlyThis TokOperator "|"
-        Right _ -> readExactlyThis TokOperator "&"
+    case representative @_ @MPolarity @mpolarity of
+        PositiveMPolarity -> readExactlyThis TokOperator "|"
+        NegativeMPolarity -> readExactlyThis TokOperator "&"
+        BothMPolarity -> mempty
 
 readType ::
-       forall baseedit polarity. IsTypePolarity polarity
-    => Parser (AnyW (PinaforeType baseedit polarity))
+       forall baseedit mpolarity. Is MPolarity mpolarity
+    => Parser (PinaforeType3 baseedit mpolarity)
 readType = do
     t1 <- readType1
     mt2 <-
         optional $ do
-            readJoinMeet @polarity
+            readJoinMeet @mpolarity
             readType
     case mt2 of
-        Just t2 -> return $ t1 <> t2
+        Just t2 -> return $ toMPolar (<>) t1 t2
         Nothing -> return t1
 
 readType1 ::
-       forall baseedit polarity. IsTypePolarity polarity
-    => Parser (AnyW (PinaforeType baseedit polarity))
+       forall baseedit mpolarity. Is MPolarity mpolarity
+    => Parser (PinaforeType3 baseedit mpolarity)
 readType1 =
     (try $ do
-         MkAnyInKind t1 <- readTypeRange3
+         at1 <- readTypeRange3
          readThis TokPropMap
-         MkAnyInKind t2 <- readTypeRange3
+         at2 <- readTypeRange3
          return $
-             MkAnyW $
-             singlePinaforeType $
-             GroundPinaforeSingularType MorphismPinaforeGroundType $
-             ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments) <|>
-    (try $
-     invertPolarity @polarity $ do
-         MkAnyW t1 <- invertPolarity @polarity readType3
+             toMPolar
+                 (\(MkAnyInKind t1) (MkAnyInKind t2) ->
+                      MkAnyW $
+                      singlePinaforeType $
+                      GroundPinaforeSingularType MorphismPinaforeGroundType $
+                      ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments)
+                 at1
+                 at2) <|>
+    (try $ do
+         at1 <- invertMPolarity @mpolarity readType3
          readThis TokMap
-         MkAnyW t2 <- readType1
+         at2 <- readType1
          return $
-             MkAnyW $
-             singlePinaforeType $
-             GroundPinaforeSingularType FuncPinaforeGroundType $
-             ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments) <|>
+             toMPolar
+                 (\(MkAnyW t1) (MkAnyW t2) ->
+                      MkAnyW $
+                      singlePinaforeType $
+                      GroundPinaforeSingularType FuncPinaforeGroundType $
+                      ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments)
+                 (MkInvertMPolarType at1)
+                 (at2)) <|>
     readType2
 
 readType2 ::
-       forall baseedit polarity. IsTypePolarity polarity
-    => Parser (AnyW (PinaforeType baseedit polarity))
+       forall baseedit mpolarity. Is MPolarity mpolarity
+    => Parser (PinaforeType3 baseedit mpolarity)
 readType2 =
     (do
          readExactlyThis TokName "Ref"
-         MkAnyInKind t <- readTypeRange3
+         at1 <- readTypeRange3
          return $
-             MkAnyW $
-             singlePinaforeType $
-             GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments t NilDolanArguments) <|>
+             toMPolar
+                 (\(MkAnyInKind t1) ->
+                      MkAnyW $
+                      singlePinaforeType $
+                      GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
+                 at1) <|>
     (do
          readExactlyThis TokName "Set"
-         MkAnyInKind t <- readTypeRange3
+         at1 <- readTypeRange3
          return $
-             MkAnyW $
-             singlePinaforeType $
-             GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments t NilDolanArguments) <|>
+             toMPolar
+                 (\(MkAnyInKind t1) ->
+                      MkAnyW $
+                      singlePinaforeType $
+                      GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
+                 at1) <|>
     (do
          readExactlyThis TokName "Order"
-         MkAnyW t <- invertPolarity @polarity readType3
+         at1 <- invertMPolarity @mpolarity readType3
          return $
-             MkAnyW $
-             singlePinaforeType $
-             GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments t NilDolanArguments) <|>
+             toMPolar
+                 (\(MkAnyW t1) ->
+                      MkAnyW $
+                      singlePinaforeType $
+                      GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
+                 (MkInvertMPolarType at1)) <|>
     readType3
 
 readType3 ::
-       forall baseedit polarity. IsTypePolarity polarity
-    => Parser (AnyW (PinaforeType baseedit polarity))
+       forall baseedit mpolarity. Is MPolarity mpolarity
+    => Parser (PinaforeType3 baseedit mpolarity)
 readType3 =
     (do
-         MkAnyW t <- readBracket readType
+         at1 <- readBracket $ readType
          return $
-             MkAnyW $
-             singlePinaforeType $
-             GroundPinaforeSingularType ListPinaforeGroundType $ ConsDolanArguments t NilDolanArguments) <|>
+             toMPolar
+                 (\(MkAnyW t1) ->
+                      MkAnyW $
+                      singlePinaforeType $
+                      GroundPinaforeSingularType ListPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
+                 at1) <|>
     (do
          MkAnyW s <- readTypeVar
-         return $ MkAnyW $ singlePinaforeType $ VarPinaforeSingularType s) <|>
+         return $ toMPolar $ MkAnyW $ singlePinaforeType $ VarPinaforeSingularType s) <|>
     readTypeConst <|>
     (readParen $ do
-         mt <- optional readType
+         mt <- optional $ readType
          case mt of
-             Just (MkAnyW t) -> do
+             Just at1 -> do
                  comma <- optional $ readThis TokComma
                  case comma of
                      Just () -> do
-                         MkAnyW t2 <- readType
+                         at2 <- readType
                          return $
-                             MkAnyW $
-                             singlePinaforeType $
-                             GroundPinaforeSingularType PairPinaforeGroundType $
-                             ConsDolanArguments t $ ConsDolanArguments t2 NilDolanArguments
-                     Nothing -> return $ MkAnyW t
-             Nothing -> return $ MkAnyW $ literalPinaforeType UnitLiteralType)
+                             toMPolar
+                                 (\(MkAnyW t1) (MkAnyW t2) ->
+                                      MkAnyW $
+                                      singlePinaforeType $
+                                      GroundPinaforeSingularType PairPinaforeGroundType $
+                                      ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments)
+                                 at1
+                                 at2
+                     Nothing -> return at1
+             Nothing -> return $ toMPolar $ MkAnyW $ literalPinaforeType UnitLiteralType)
 
 readTypeRange3 ::
-       forall baseedit polarity. IsTypePolarity polarity
-    => Parser (AnyInKind (TypeRangeWitness (PinaforeType baseedit) polarity))
-readTypeRange3 = readBracketed TokOpenBrace TokCloseBrace $ readCommaList readTypeRangeItem
+       forall baseedit mpolarity. Is MPolarity mpolarity
+    => Parser (PinaforeTypeRange3 baseedit mpolarity)
+readTypeRange3 = readBracketed TokOpenBrace TokCloseBrace $ readCommaList readTypeRangeItem <|> readTypeRangeItem
 
 readTypeRangeItem ::
-       forall baseedit polarity. IsTypePolarity polarity
-    => Parser (AnyInKind (TypeRangeWitness (PinaforeType baseedit) polarity))
+       forall baseedit mpolarity. Is MPolarity mpolarity
+    => Parser (PinaforeTypeRange3 baseedit mpolarity)
 readTypeRangeItem =
     (do
          readExactlyThis TokOperator "+"
-         MkAnyW tq <- readType3
-         return $ MkAnyInKind $ MkTypeRangeWitness NilPinaforeType tq) <|>
+         atq <- readType3
+         return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkTypeRangeWitness NilPinaforeType tq) atq) <|>
     (do
          readExactlyThis TokOperator "-"
-         MkAnyW tp <- invertPolarity @polarity readType3
-         return $ MkAnyInKind $ MkTypeRangeWitness tp NilPinaforeType)
+         atp <- invertMPolarity @mpolarity readType3
+         return $
+             toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkTypeRangeWitness tp NilPinaforeType) (MkInvertMPolarType atp)) <|>
+    (do
+         BothMPolarType atw <- readType3 @baseedit @'Nothing
+         let
+             ff :: forall polarity. IsTypePolarity polarity
+                => AnyInKind (TypeRangeWitness (PinaforeType baseedit) polarity)
+             ff =
+                 case (invertPolarity @polarity $ atw @(InvertPolarity polarity), atw @polarity) of
+                     (MkAnyW tp, MkAnyW tq) -> MkAnyInKind $ MkTypeRangeWitness tp tq
+         return $ toMPolar ff)
 
 readTypeVar :: Parser (AnyW SymbolWitness)
 readTypeVar = do
@@ -192,37 +231,56 @@ readTypeVar = do
         _ -> mzero
 
 readTypeConst ::
-       forall baseedit polarity. IsTypePolarity polarity
-    => Parser (AnyW (PinaforeType baseedit polarity))
+       forall baseedit mpolarity. Is MPolarity mpolarity
+    => Parser (PinaforeType3 baseedit mpolarity)
 readTypeConst = do
     n <- readTypeName
     case n of
         "Any" ->
-            case whichTypePolarity @polarity of
-                Left Refl ->
-                    return $
-                    MkAnyW $
-                    singlePinaforeType $ GroundPinaforeSingularType InvertLimitPinaforeGroundType NilDolanArguments
-                Right Refl -> return $ MkAnyW NilPinaforeType
+            return $
+            toMPolar $ let
+                t :: forall polarity. IsTypePolarity polarity
+                  => AnyW (PinaforeType baseedit polarity)
+                t =
+                    case whichTypePolarity @polarity of
+                        Left Refl ->
+                            MkAnyW $
+                            singlePinaforeType $
+                            GroundPinaforeSingularType InvertLimitPinaforeGroundType NilDolanArguments
+                        Right Refl -> MkAnyW NilPinaforeType
+                in t
         "None" ->
-            case whichTypePolarity @polarity of
-                Left Refl -> return $ MkAnyW NilPinaforeType
-                Right Refl ->
-                    return $
-                    MkAnyW $
-                    singlePinaforeType $ GroundPinaforeSingularType InvertLimitPinaforeGroundType NilDolanArguments
+            return $
+            toMPolar $ let
+                t :: forall polarity. IsTypePolarity polarity
+                  => AnyW (PinaforeType baseedit polarity)
+                t =
+                    case whichTypePolarity @polarity of
+                        Left Refl -> MkAnyW NilPinaforeType
+                        Right Refl ->
+                            MkAnyW $
+                            singlePinaforeType $
+                            GroundPinaforeSingularType InvertLimitPinaforeGroundType NilDolanArguments
+                in t
         "Entity" ->
-            return $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType EntityPinaforeGroundType NilDolanArguments
+            return $
+            toMPolar $
+            MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType EntityPinaforeGroundType NilDolanArguments
         "Point" ->
-            return $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType PointPinaforeGroundType NilDolanArguments
-        "Literal" -> return $ MkAnyW $ literalPinaforeType LiteralLiteralType
-        "Text" -> return $ MkAnyW $ literalPinaforeType TextLiteralType
-        "Number" -> return $ MkAnyW $ literalPinaforeType NumberLiteralType
-        "Bool" -> return $ MkAnyW $ literalPinaforeType BooleanLiteralType
+            return $
+            toMPolar $
+            MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType PointPinaforeGroundType NilDolanArguments
+        "Literal" -> return $ toMPolar $ MkAnyW $ literalPinaforeType LiteralLiteralType
+        "Text" -> return $ toMPolar $ MkAnyW $ literalPinaforeType TextLiteralType
+        "Number" -> return $ toMPolar $ MkAnyW $ literalPinaforeType NumberLiteralType
+        "Bool" -> return $ toMPolar $ MkAnyW $ literalPinaforeType BooleanLiteralType
         "Action" ->
-            return $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType ActionPinaforeGroundType NilDolanArguments
+            return $
+            toMPolar $
+            MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType ActionPinaforeGroundType NilDolanArguments
         "UI" ->
             return $
+            toMPolar $
             MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType UserInterfacePinaforeGroundType NilDolanArguments
         _ -> fail $ "unknown type: " <> show n
 
@@ -514,14 +572,14 @@ readExpression3 =
     (do
          readThis TokProperty
          readThis TokAt
-         MkAnyW tp <- readType3
+         SingleMPolarType (MkAnyW tp) <- readType3 @baseedit @('Just 'PositivePolarity)
          uuid <- readThis TokUUID
          prop <- makeProperty tp uuid
          return $ return $ qConstExprAny $ MkAnyValue tp prop) <|>
     (do
          readThis TokPoint
          readThis TokAt
-         MkAnyW tp <- readType3
+         SingleMPolarType (MkAnyW tp) <- readType3 @baseedit @('Just 'PositivePolarity)
          uuid <- readThis TokUUID
          pt <- makePoint tp uuid
          return $ return $ qConstExprAny $ MkAnyValue tp pt) <|>
