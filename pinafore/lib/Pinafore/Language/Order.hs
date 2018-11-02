@@ -2,13 +2,10 @@ module Pinafore.Language.Order where
 
 import Data.Time
 import Language.Expression.Dolan
-import Pinafore.Know
+import Pinafore.Base
 import Pinafore.Language.Morphism
 import Pinafore.Language.Reference
 import Pinafore.Language.Set
-import Pinafore.Morphism
-import Pinafore.Number
-import Pinafore.Types
 import Shapes
 import Truth.Core
 
@@ -56,7 +53,10 @@ rev :: forall baseedit a. PinaforeOrder baseedit a -> PinaforeOrder baseedit a
 rev (MkPinaforeOrder ef o) = MkPinaforeOrder ef $ \a b -> o b a
 
 qOrderSet ::
-       forall baseedit a. PinaforeOrder baseedit a -> QFuncSet baseedit a -> PinaforeFunctionValue baseedit (Know [a])
+       forall baseedit a.
+       PinaforeOrder baseedit a
+    -> PinaforeFunctionValue baseedit (FiniteSet a)
+    -> PinaforeFunctionValue baseedit (Know [a])
 qOrderSet (MkPinaforeOrder (ofunc :: PinaforeFunctionMorphism baseedit (Know a) t) oord) pset = let
     cmp :: (a, t) -> (a, t) -> Ordering
     cmp (_, t1) (_, t2) = oord t1 t2
@@ -65,7 +65,7 @@ qOrderSet (MkPinaforeOrder (ofunc :: PinaforeFunctionMorphism baseedit (Know a) 
         proc a -> do
             kt <- ofunc -< Known a
             returnA -< (a, kt)
-    upairs :: QFuncSet baseedit (a, t)
+    upairs :: PinaforeFunctionValue baseedit (FiniteSet (a, t))
     upairs = applyPinaforeFunction (cfmap ofuncpair) pset
     sortpoints :: FiniteSet (a, t) -> [a]
     sortpoints (MkFiniteSet pairs) = fmap fst $ sortBy cmp pairs

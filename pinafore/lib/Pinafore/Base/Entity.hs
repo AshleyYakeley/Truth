@@ -1,6 +1,6 @@
-module Pinafore.Language.Entity where
+module Pinafore.Base.Entity where
 
-import Pinafore.Point
+import Pinafore.Base.Point
 import Shapes
 
 newtype Entity =
@@ -9,13 +9,6 @@ newtype Entity =
 
 pointToEntity :: Point -> Entity
 pointToEntity = MkEntity
-
-newtype NamedEntity (name :: Symbol) = MkNamedEntity
-    { unNamedEntity :: Point
-    }
-
-namedToEntity :: NamedEntity name -> Entity
-namedToEntity (MkNamedEntity p) = MkEntity p
 
 pairToEntity :: (Entity, Entity) -> Entity
 pairToEntity (a, b) = pointToEntity $ hashToPoint $ \call -> [call @Text "pair", call a, call b]

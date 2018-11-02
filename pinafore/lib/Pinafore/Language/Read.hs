@@ -6,17 +6,15 @@ module Pinafore.Language.Read
 
 import Data.UUID hiding (fromString)
 import Language.Expression.Dolan.MPolarity
-import Pinafore.Entity
-import Pinafore.Language.Entity
+import Pinafore.Base
 import Pinafore.Language.Expression
 import Pinafore.Language.If
 import Pinafore.Language.Literal
 import Pinafore.Language.Morphism
 import Pinafore.Language.Name
+import Pinafore.Language.NamedEntity
 import Pinafore.Language.Token
 import Pinafore.Language.Type
-import Pinafore.Point
-import Pinafore.PredicateMorphism
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
@@ -321,7 +319,7 @@ readSubtypeDeclaration = do
     nb <- readThis TokName
     return (MkTypeDecls $ withEntitySubtype (na, nb), mempty)
 
-readBinding :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
+readBinding :: HasPinaforePointEdit baseedit => Parser (Declarations baseedit)
 readBinding = do
     name <- readThis TokName
     args <- many readPattern
@@ -333,10 +331,10 @@ readBinding = do
               val <- tval
               qAbstractsExpr args val)
 
-readDeclaration :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
+readDeclaration :: HasPinaforePointEdit baseedit => Parser (Declarations baseedit)
 readDeclaration = readEntityDeclaration <|> readSubtypeDeclaration <|> readBinding
 
-readDeclarations :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
+readDeclarations :: HasPinaforePointEdit baseedit => Parser (Declarations baseedit)
 readDeclarations =
     (do
          b <- readDeclaration
@@ -347,7 +345,7 @@ readDeclarations =
          return $ b <> fromMaybe mempty mbl) <|>
     (do return mempty)
 
-readLetBindings :: HasPinaforeEntityEdit baseedit => Parser (QExpr baseedit -> PinaforeTypeCheck (QExpr baseedit))
+readLetBindings :: HasPinaforePointEdit baseedit => Parser (QExpr baseedit -> PinaforeTypeCheck (QExpr baseedit))
 readLetBindings = do
     readThis TokLet
     (MkTypeDecls td, bl) <- readDeclarations
@@ -355,7 +353,7 @@ readLetBindings = do
     return $ \expr -> td $ f expr
 
 readExpression ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => Parser (PinaforeTypeCheck (QExpr baseedit))
 readExpression = readInfixedExpression 0
 
@@ -409,7 +407,7 @@ readInfix prec =
             else empty
 
 leftApply ::
-       HasPinaforeEntityEdit baseedit
+       HasPinaforePointEdit baseedit
     => QExpr baseedit
     -> [(QExpr baseedit, QExpr baseedit)]
     -> PinaforeTypeCheck (QExpr baseedit)
@@ -419,7 +417,7 @@ leftApply e1 ((f, e2):rest) = do
     leftApply ee rest
 
 rightApply ::
-       HasPinaforeEntityEdit baseedit
+       HasPinaforePointEdit baseedit
     => QExpr baseedit
     -> [(QExpr baseedit, QExpr baseedit)]
     -> PinaforeTypeCheck (QExpr baseedit)
@@ -429,7 +427,7 @@ rightApply e1 ((f, e2):rest) = do
     qApplyAllExpr f [e1, ee]
 
 readInfixedExpression ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => Int
     -> Parser (PinaforeTypeCheck (QExpr baseedit))
 readInfixedExpression 10 = readExpression1
@@ -468,7 +466,7 @@ readInfixedExpression prec = do
         _ -> parserFail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(_, name, _) -> show name) rest)
 
 readExpression1 ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => Parser (PinaforeTypeCheck (QExpr baseedit))
 readExpression1 =
     (do
@@ -500,7 +498,7 @@ readExpression1 =
              qApplyAllExpr (qConstExpr qifthenelse) [etest, ethen, eelse]) <|>
     readExpression2
 
-readExpression2 :: HasPinaforeEntityEdit baseedit => Parser (PinaforeTypeCheck (QExpr baseedit))
+readExpression2 :: HasPinaforePointEdit baseedit => Parser (PinaforeTypeCheck (QExpr baseedit))
 readExpression2 = do
     te1 <- readExpression3
     targs <- many readExpression3
@@ -540,8 +538,7 @@ makePointTypeRange (MkTypeRangeWitness tp tq) = do
     convq <- makePositivePointConversion tq
     return $ MkTypeRange convp convq
 
-makeProperty ::
-       (MonadFail m, HasPinaforeEntityEdit baseedit) => PinaforeType baseedit 'PositivePolarity t -> UUID -> m t
+makeProperty :: (MonadFail m, HasPinaforePointEdit baseedit) => PinaforeType baseedit 'PositivePolarity t -> UUID -> m t
 makeProperty (ConsPinaforeType (GroundPinaforeSingularType MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments))) NilPinaforeType) uuid = do
     tra <- makePointTypeRange ta
     trb <- makePointTypeRange tb
@@ -554,7 +551,7 @@ makePoint (ConsPinaforeType (GroundPinaforeSingularType (NamedEntityPinaforeGrou
 makePoint tp _ = fail $ "not an entity type: " <> show tp
 
 readExpression3 ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => Parser (PinaforeTypeCheck (QExpr baseedit))
 readExpression3 =
     (do
@@ -606,7 +603,7 @@ data InteractiveCommand baseedit
     | ExpressionInteractiveCommand (PinaforeTypeCheck (QExpr baseedit))
 
 readInteractiveCommand ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => Parser (InteractiveCommand baseedit)
 readInteractiveCommand =
     (eof >> return (LetInteractiveCommand return)) <|> (try $ fmap ExpressionInteractiveCommand readExpression) <|>
@@ -620,9 +617,9 @@ parseReader parser name text = do
         Left e -> fail $ show e
 
 parseExpression ::
-       HasPinaforeEntityEdit baseedit => SourceName -> Text -> Result Text (PinaforeTypeCheck (QExpr baseedit))
+       HasPinaforePointEdit baseedit => SourceName -> Text -> Result Text (PinaforeTypeCheck (QExpr baseedit))
 parseExpression = parseReader readExpression
 
 parseInteractiveCommand ::
-       HasPinaforeEntityEdit baseedit => SourceName -> Text -> Result Text (InteractiveCommand baseedit)
+       HasPinaforePointEdit baseedit => SourceName -> Text -> Result Text (InteractiveCommand baseedit)
 parseInteractiveCommand = parseReader readInteractiveCommand

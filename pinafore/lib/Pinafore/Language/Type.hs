@@ -18,12 +18,12 @@ import Language.Expression.Sealed
 import Language.Expression.Typed
 import Language.Expression.UVar
 import Language.Expression.Unifier
-import Pinafore.Language.Entity
+import Pinafore.Base
 import Pinafore.Language.GroundType
 import Pinafore.Language.Literal
+import Pinafore.Language.NamedEntity
 import Pinafore.Language.Show
 import Pinafore.Language.TypeContext
-import Pinafore.Literal
 import Shapes
 
 type PinaforeRangeType baseedit = TypeRangeWitness (PinaforeType baseedit)

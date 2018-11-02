@@ -1,4 +1,4 @@
-module Pinafore.Morphism
+module Pinafore.Base.Morphism
     ( APinaforeFunctionMorphism(..)
     , APinaforeLensMorphism(..)
     , PinaforeFunctionValue
@@ -19,7 +19,7 @@ module Pinafore.Morphism
     , lensInverseFunctionMorphism
     ) where
 
-import Pinafore.Know
+import Pinafore.Base.Know
 import Shapes
 import Truth.Core
 

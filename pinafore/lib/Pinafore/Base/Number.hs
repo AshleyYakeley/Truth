@@ -1,4 +1,4 @@
-module Pinafore.Number
+module Pinafore.Base.Number
     ( Number(..)
     , numberToDouble
     , approximate

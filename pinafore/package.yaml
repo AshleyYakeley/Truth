@@ -35,13 +35,15 @@ library:
       - Language.Expression.Typed
       - Language.Expression.Unitype
       - Language.Expression.Dolan
-      - Pinafore
-      - Pinafore.Main
+      - Pinafore.Base
+      - Pinafore.Storage
       - Pinafore.Language.Type
       - Pinafore.Language.Convert
       - Pinafore.Language.Name
-      - Pinafore.Language.Expression
       - Pinafore.Language
+      - Pinafore.Main
+      - Pinafore.Pinafore
+      - Pinafore
     other-modules:
       - Language.Expression.UVar
       - Language.Expression.Dolan.TypeRange
@@ -50,20 +52,17 @@ library:
       - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.TypeF
       - Language.Expression.Dolan.MPolarity
-      - Pinafore.Know
-      - Pinafore.Number
-      - Pinafore.Literal
-      - Pinafore.Morphism
-      - Pinafore.Point
-      - Pinafore.Entity
-      - Pinafore.Action
-      - Pinafore.Table
-      - Pinafore.PredicateMorphism
-      - Pinafore.File
-      - Pinafore.Pinafore
-      - Pinafore.Types
-      - Pinafore.Language.Entity
+      - Pinafore.Base.Know
+      - Pinafore.Base.Number
+      - Pinafore.Base.Literal
+      - Pinafore.Base.Morphism
+      - Pinafore.Base.Point
+      - Pinafore.Base.Edit
+      - Pinafore.Base.Entity
+      - Pinafore.Base.PredicateMorphism
+      - Pinafore.Base.Action
       - Pinafore.Language.Literal
+      - Pinafore.Language.NamedEntity
       - Pinafore.Language.Reference
       - Pinafore.Language.Set
       - Pinafore.Language.Morphism
@@ -75,10 +74,13 @@ library:
       - Pinafore.Language.GroundType
       - Pinafore.Language.TypeContext
       - Pinafore.Language.Convert.Base
+      - Pinafore.Language.Expression
       - Pinafore.Language.Doc
       - Pinafore.Language.Predefined
-      - Pinafore.Database
-      - Pinafore.Database.SQLite
+      - Pinafore.Storage.Table
+      - Pinafore.Storage.Database
+      - Pinafore.Storage.Database.SQLite
+      - Pinafore.Storage.File
 
 tests:
     test:

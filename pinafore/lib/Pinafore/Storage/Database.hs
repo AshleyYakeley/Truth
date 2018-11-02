@@ -1,7 +1,6 @@
-module Pinafore.Database where
+module Pinafore.Storage.Database where
 
-import Pinafore.Literal
-import Pinafore.Table
+import Pinafore.Base
 import Shapes
 
 data TripleTable t where

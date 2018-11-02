@@ -1,14 +1,14 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Database.SQLite
+module Pinafore.Storage.Database.SQLite
     ( sqlitePinaforeTableObject
     , sqlitePinaforeTableGetEntireDatabase
     ) where
 
 import Data.UUID
-import Pinafore.Database
-import Pinafore.Literal
-import Pinafore.Table
+import Pinafore.Base
+import Pinafore.Storage.Database
+import Pinafore.Storage.Table
 import Shapes
 import Truth.Core
 import Truth.World.SQLite

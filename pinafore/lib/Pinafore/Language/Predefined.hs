@@ -7,12 +7,9 @@ module Pinafore.Language.Predefined
     , outputln
     ) where
 
-import Pinafore.Action
-import Pinafore.File
-import Pinafore.Know
+import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Doc
-import Pinafore.Language.Entity
 import Pinafore.Language.Expression
 import Pinafore.Language.Morphism
 import Pinafore.Language.Name
@@ -20,12 +17,7 @@ import Pinafore.Language.Order
 import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Pinafore.Language.Type
-import Pinafore.Literal
-import Pinafore.Morphism
-import Pinafore.Number
-import Pinafore.PredicateMorphism
-import Pinafore.Table
-import Pinafore.Types
+import Pinafore.Storage.File
 import Shapes
 import Truth.Core
 
@@ -75,7 +67,10 @@ outputln text = liftIO $ putStrLn $ unpack text
 qappend :: Text -> Text -> Text
 qappend = (<>)
 
-valSpecText :: UISpec seledit (WholeEdit (Know Text)) -> QLensValue baseedit Text -> UISpec seledit baseedit
+valSpecText ::
+       UISpec seledit (WholeEdit (Know Text))
+    -> PinaforeLensValue baseedit (WholeEdit (Know Text))
+    -> UISpec seledit baseedit
 valSpecText spec val = uiLens val spec
 
 clearText :: EditFunction (WholeEdit (Know Text)) (WholeEdit Text)
@@ -110,7 +105,7 @@ deleteentity ref = setPinaforeReference ref Unknown
 {-
 file_import ::
        forall baseedit. HasPinaforeFileEdit baseedit
-    => QLensSet baseedit A
+    => PinaforeSet baseedit '( A, A)
     -> (A -> PinaforeAction baseedit)
     -> PinaforeAction baseedit
 file_import set continue = do
@@ -149,7 +144,7 @@ withSelection cont = do
             cont point
 
 ui_table ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => [(PinaforeReference baseedit '( BottomType, Text), A -> PinaforeReference baseedit '( BottomType, Text))]
     -> (A -> UIWindow baseedit)
     -> PinaforeSet baseedit '( A, MeetType Entity A)
@@ -210,7 +205,7 @@ ui_dynamic uiref = uiSwitch $ pinaforeImmutableReferenceValue uiNull uiref
 type BindDoc baseedit = (Maybe (QBindList baseedit), DefDoc)
 
 mkDefEntry ::
-       forall baseedit t. (HasPinaforeEntityEdit baseedit, ToPinaforeType baseedit t)
+       forall baseedit t. (HasPinaforePointEdit baseedit, ToPinaforeType baseedit t)
     => Name
     -> Text
     -> t
@@ -218,7 +213,7 @@ mkDefEntry ::
 mkDefEntry name desc val = EntryDocTreeEntry (Just (qBindVal name val), mkDefDoc @baseedit name desc val)
 
 predefinitions ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
     => DocTree (BindDoc baseedit)
 predefinitions =
     MkDocTree
@@ -287,8 +282,8 @@ predefinitions =
                     "unknown"
                     "The unknown reference, representing missing information."
                     (empty :: PinaforeImmutableReference baseedit BottomType)
-              , mkDefEntry "exists" "True if the literal is not null." $ \(val :: QFuncValue baseedit Literal) ->
-                    (funcEditFunction (Known . isKnown) . val :: QFuncValue baseedit Bool)
+              , mkDefEntry "exists" "True if the literal is not null." $ \(val :: PinaforeFunctionValue baseedit (Know Literal)) ->
+                    (funcEditFunction (Known . isKnown) . val :: PinaforeFunctionValue baseedit (Know Bool))
               , mkDefEntry
                     "??"
                     "`p ?? q` = `p` if it exists, else `q`."
@@ -420,7 +415,7 @@ predefinitions =
                 -- CSS
                 -- drag
                 -- icon
-              , mkDefEntry "ui_button" "A button with this text that does this action." $ \(name :: QFuncValue baseedit Text) action ->
+              , mkDefEntry "ui_button" "A button with this text that does this action." $ \(name :: PinaforeFunctionValue baseedit (Know Text)) action ->
                     uiButton (clearText . name) action
               , mkDefEntry "ui_pick" "A drop-down menu." $ ui_pick
               , mkDefEntry
@@ -432,11 +427,11 @@ predefinitions =
         ]
 
 predefinedDoc ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
     => DocTree DefDoc
 predefinedDoc = fmap snd $ predefinitions @baseedit
 
 predefinedBindings ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
     => QBindList baseedit
 predefinedBindings = mconcat $ catMaybes $ toList $ fmap fst $ predefinitions @baseedit

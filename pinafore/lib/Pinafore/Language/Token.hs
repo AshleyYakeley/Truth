@@ -4,10 +4,10 @@ module Pinafore.Language.Token
     ) where
 
 import Data.UUID
+import Pinafore.Base
 import Pinafore.Language.Name
-import Pinafore.Number
 
---import Pinafore.Table
+--import Pinafore.Storage.Table
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.String

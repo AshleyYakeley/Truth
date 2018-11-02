@@ -1,9 +1,9 @@
-module Pinafore.Literal where
+module Pinafore.Base.Literal where
 
 import Data.Time
-import Pinafore.Know
-import Pinafore.Number
-import Pinafore.Point
+import Pinafore.Base.Know
+import Pinafore.Base.Number
+import Pinafore.Base.Point
 import Prelude (Rational)
 import Shapes
 

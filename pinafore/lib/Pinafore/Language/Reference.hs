@@ -1,9 +1,7 @@
 module Pinafore.Language.Reference where
 
 import Language.Expression.Dolan
-import Pinafore.Action
-import Pinafore.Know
-import Pinafore.Morphism
+import Pinafore.Base
 import Shapes
 import Truth.Core
 

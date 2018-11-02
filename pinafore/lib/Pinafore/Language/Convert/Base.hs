@@ -10,16 +10,13 @@ module Pinafore.Language.Convert.Base
     ) where
 
 import Language.Expression.Dolan
-import Pinafore.Action
-import Pinafore.Know
-import Pinafore.Language.Entity
+import Pinafore.Base
 import Pinafore.Language.Morphism
+import Pinafore.Language.NamedEntity
 import Pinafore.Language.Order
 import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Pinafore.Language.Type
-import Pinafore.Morphism
-import Pinafore.Table (Point)
 import Shapes
 import Truth.Core
 
@@ -443,25 +440,3 @@ literalInstances t =
   instance FromTypeF (PinaforeType baseedit) $( t ) where
           fromTypeF = singlePinaforeTypeF fromTypeF
   |]
-{-
--- Predicate
-instance ToTypeF (PinaforeSingularType baseedit) Predicate where
-    toTypeF = contramap (MkPinaforeMorphism (MkTypeRange fooa foob) foo2 . predicatePinaforeLensMorphism) $ mkTypeF $ GroundPinaforeSingularType MorphismPinaforeGroundType $  ConsDolanArguments (MkTypeRangeWitness NilPinaforeType NilPinaforeType) $ ConsDolanArguments (MkTypeRangeWitness NilPinaforeType NilPinaforeType) NilDolanArguments
-
-instance ToTypeF (PinaforeType baseedit) Predicate where
-    toTypeF = singlePinaforeTypeF toTypeF
--}
-{-
-        • Could not deduce (ToTypeF (PinaforeType baseedit) (QMorphismRefPoint baseedit))
-        • Could not deduce (FromTypeF (PinaforeType baseedit) (FiniteSet Point))
-        • Could not deduce (ToTypeF (PinaforeType baseedit) (Maybe Literal))
-        • Could not deduce (ToTypeF (PinaforeType baseedit) (FiniteSet Point))
-        • Could not deduce (FromTypeF (PinaforeType baseedit) (GHC.Real.Ratio Integer))
-        • Could not deduce (FromTypeF (PinaforeType baseedit) (FiniteSet Number))
-        • Could not deduce (FromTypeF (PinaforeType baseedit) (PinaforeFunctionMorphism baseedit Point Point))
-        • Could not deduce (FromTypeF (PinaforeType baseedit) (PinaforeFunctionValue (FiniteSet Point)))
-        • Could not deduce (FromTypeF (PinaforeType baseedit) (PinaforeFunctionValue Point))
-        • Could not deduce (ToTypeF (PinaforeType baseedit) (IO Int64))
-        • Could not deduce (FromTypeF (PinaforeType baseedit) (PinaforeFunctionMorphism baseedit Point (Know Text)))
-        • Could not deduce (FromTypeF (PinaforeType baseedit) (Result Text (QLensValue baseedit Text)))
--}

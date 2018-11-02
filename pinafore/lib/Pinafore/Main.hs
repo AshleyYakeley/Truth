@@ -8,13 +8,13 @@ module Pinafore.Main
     , pinaforeInteract
     ) where
 
-import Pinafore.Database
-import Pinafore.Database.SQLite
-import Pinafore.File
+import Pinafore.Base
 import Pinafore.Language
-import Pinafore.Literal
 import Pinafore.Pinafore
-import Pinafore.Table
+import Pinafore.Storage.Database
+import Pinafore.Storage.Database.SQLite
+import Pinafore.Storage.File
+import Pinafore.Storage.Table
 import Shapes
 import System.FilePath
 import Truth.Core

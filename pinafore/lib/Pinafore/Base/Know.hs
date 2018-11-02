@@ -1,4 +1,4 @@
-module Pinafore.Know
+module Pinafore.Base.Know
     ( Know
     , pattern Known
     , pattern Unknown

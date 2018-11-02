@@ -1,8 +1,7 @@
 module Pinafore.Language.Literal where
 
+import Pinafore.Base
 import Pinafore.Language.Show
-import Pinafore.Literal
-import Pinafore.Number
 import Shapes
 
 class IsSubtype w where

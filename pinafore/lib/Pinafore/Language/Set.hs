@@ -1,12 +1,9 @@
 module Pinafore.Language.Set where
 
 import Language.Expression.Dolan
-import Pinafore.Action
-import Pinafore.Know
-import Pinafore.Language.Entity
+import Pinafore.Base
 import Pinafore.Language.Reference
-import Pinafore.Morphism
-import Pinafore.Table (Point)
+import Pinafore.Storage.Table (Point)
 import Shapes
 import Truth.Core
 

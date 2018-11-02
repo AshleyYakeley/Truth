@@ -1,12 +1,9 @@
 module Pinafore.Language.Morphism where
 
 import Language.Expression.Dolan
-import Pinafore.Know
-import Pinafore.Language.Entity
+import Pinafore.Base
 import Pinafore.Language.Reference
 import Pinafore.Language.Set
-import Pinafore.Morphism
-import Pinafore.Point
 import Shapes
 import Truth.Core
 

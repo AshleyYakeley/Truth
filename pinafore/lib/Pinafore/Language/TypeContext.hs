@@ -9,8 +9,8 @@ module Pinafore.Language.TypeContext
     , getEntitySubtype
     ) where
 
-import Pinafore.Language.Entity
 import Pinafore.Language.Name
+import Pinafore.Language.NamedEntity
 import Shapes
 
 data NamedType =

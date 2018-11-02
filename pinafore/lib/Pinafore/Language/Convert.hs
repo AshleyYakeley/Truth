@@ -5,12 +5,9 @@ module Pinafore.Language.Convert
     ) where
 
 import Data.Ratio
-import Pinafore.Know
+import Pinafore.Base
 import Pinafore.Language.Convert.Base
-import Pinafore.Language.Entity
 import Pinafore.Language.Type
-import Pinafore.Literal
-import Pinafore.Number
 import Shapes
 import Truth.Core
 

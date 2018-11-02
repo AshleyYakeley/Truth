@@ -1,6 +1,6 @@
-module Pinafore.File where
+module Pinafore.Storage.File where
 
-import Pinafore.Table
+import Pinafore.Storage.Table
 import Shapes
 import Truth.Core
 import Truth.World.FileSystem

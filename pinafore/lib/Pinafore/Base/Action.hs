@@ -1,8 +1,8 @@
-module Pinafore.Action where
+module Pinafore.Base.Action where
 
-import Pinafore.Language.Entity
-import Pinafore.Morphism
-import Pinafore.Table (Point)
+import Pinafore.Base.Entity
+import Pinafore.Base.Morphism
+import Pinafore.Base.Point
 import Shapes
 import Truth.Core
 

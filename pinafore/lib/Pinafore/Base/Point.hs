@@ -1,4 +1,4 @@
-module Pinafore.Point where
+module Pinafore.Base.Point where
 
 import Crypto.Hash
 import Data.Aeson (FromJSON)

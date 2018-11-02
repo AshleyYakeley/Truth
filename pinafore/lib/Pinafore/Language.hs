@@ -17,22 +17,19 @@ module Pinafore.Language
     ) where
 
 import Control.Exception
-import Pinafore.Action
-import Pinafore.File
+import Pinafore.Base
 import Pinafore.Language.Convert
-import Pinafore.Language.Entity
 import Pinafore.Language.Expression
 import Pinafore.Language.Literal
 import Pinafore.Language.Predefined
 import Pinafore.Language.Read
 import Pinafore.Language.Type
-import Pinafore.Literal
-import Pinafore.PredicateMorphism
+import Pinafore.Storage.File
 import Shapes
 import System.IO.Error
 
 parseValue ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
     => String
     -> Text
     -> Result Text (AnyValue (PinaforeType baseedit 'PositivePolarity))
@@ -45,7 +42,7 @@ parseValue name text = do
     qEvalExpr rexpr
 
 parseValueAtType ::
-       forall baseedit t. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, FromPinaforeType baseedit t)
+       forall baseedit t. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit, FromPinaforeType baseedit t)
     => String
     -> Text
     -> Result Text t
@@ -76,7 +73,7 @@ showPinaforeValue NilPinaforeType v = never v
 showPinaforeValue (ConsPinaforeType ts tt) v = joinf (showPinaforeSingularValue ts) (showPinaforeValue tt) v
 
 interactLoop ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
+       forall baseedit. HasPinaforePointEdit baseedit
     => StateT (QExpr baseedit -> IO ()) IO ()
 interactLoop = do
     liftIO $ putStr "pinafore> "
@@ -105,7 +102,7 @@ interactLoop = do
             interactLoop
 
 interact ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
     => UnliftIO (PinaforeActionM baseedit)
     -> IO ()
 interact runAction = do

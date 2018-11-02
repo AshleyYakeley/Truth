@@ -1,15 +1,14 @@
 module Pinafore.Language.GroundType where
 
 import Language.Expression.Dolan
-import Pinafore.Language.Entity
-
-import Pinafore.Action
+import Pinafore.Base
 import Pinafore.Language.Literal
 import Pinafore.Language.Morphism
+import Pinafore.Language.NamedEntity
 import Pinafore.Language.Order
 import Pinafore.Language.Reference
 import Pinafore.Language.Set
-import Pinafore.Table (Point)
+import Pinafore.Storage.Table (Point)
 import Shapes
 import Truth.Core
 
