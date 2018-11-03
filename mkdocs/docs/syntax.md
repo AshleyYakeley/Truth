@@ -11,14 +11,18 @@ Instead, declarations within a `let` block are separated by `;`.
 All declarations are local to a `let` block.
 
 A file passed to `pinafore` has syntax `<file>`.
-In interactive mode, each command has syntax `<interactive-command>`.
+In interactive mode, each line has syntax `<interactive>`.
 
 ## Grammar
 
 ```no-highlight
 <file> ::= <expression>
 
-<interactive-command> ::= <expression> | <let-declarations>
+<interactive> ::= <expression> | <let-declarations> | ":" <interactive-command>
+
+<interactive-command> ::=
+    "t" <expression> |
+    "type" <expression>
 
 <type> :: =
     <type-1> "|" <type> |

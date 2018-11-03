@@ -601,12 +601,29 @@ readExpression3 =
 data InteractiveCommand baseedit
     = LetInteractiveCommand (QExpr baseedit -> PinaforeTypeCheck (QExpr baseedit))
     | ExpressionInteractiveCommand (PinaforeTypeCheck (QExpr baseedit))
+    | ShowTypeInteractiveCommand (PinaforeTypeCheck (QExpr baseedit))
+    | ErrorInteractiveCommand Text
+
+showTypeInteractiveCommand ::
+       forall baseedit. HasPinaforePointEdit baseedit
+    => Parser (InteractiveCommand baseedit)
+showTypeInteractiveCommand = do
+    expr <- readExpression
+    return $ ShowTypeInteractiveCommand expr
 
 readInteractiveCommand ::
        forall baseedit. HasPinaforePointEdit baseedit
     => Parser (InteractiveCommand baseedit)
 readInteractiveCommand =
-    (eof >> return (LetInteractiveCommand return)) <|> (try $ fmap ExpressionInteractiveCommand readExpression) <|>
+    (do
+         readExactlyThis TokOperator ":"
+         MkName cmd <- readThis TokName
+         case cmd of
+             "t" -> showTypeInteractiveCommand
+             "type" -> showTypeInteractiveCommand
+             _ -> return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd) <|>
+    (eof >> return (LetInteractiveCommand return)) <|>
+    (try $ fmap ExpressionInteractiveCommand readExpression) <|>
     (fmap LetInteractiveCommand readLetBindings)
 
 parseReader :: Parser t -> SourceName -> Text -> Result Text t

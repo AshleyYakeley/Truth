@@ -57,7 +57,7 @@ showPinaforeGroundValue ::
     -> String
 showPinaforeGroundValue (LiteralPinaforeGroundType t) NilDolanArguments v =
     case literalTypeAsLiteral t of
-        Dict -> show $ toLiteral v
+        Dict -> unpack $ unLiteral $ toLiteral v
 showPinaforeGroundValue PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) (a, b) =
     "(" <> showPinaforeValue ta a <> ", " <> showPinaforeValue tb b <> ")"
 showPinaforeGroundValue ListPinaforeGroundType (ConsDolanArguments t NilDolanArguments) v =
@@ -72,10 +72,40 @@ showPinaforeValue :: PinaforeType baseedit 'PositivePolarity t -> t -> String
 showPinaforeValue NilPinaforeType v = never v
 showPinaforeValue (ConsPinaforeType ts tt) v = joinf (showPinaforeSingularValue ts) (showPinaforeValue tt) v
 
+type Interact baseedit = StateT (QExpr baseedit -> Result Text (QExpr baseedit)) IO
+
+interactEvalExpression ::
+       (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
+    => PinaforeTypeCheck (QExpr baseedit)
+    -> Interact baseedit (AnyValue (PinaforeType baseedit 'PositivePolarity))
+interactEvalExpression texpr = do
+    bind <- get
+    let
+        rval = do
+            expr <- runPinaforeTypeCheck texpr
+            expr' <- bind expr
+            expr'' <- runPinaforeTypeCheck $ qUncheckedBindingsLetExpr predefinedBindings expr'
+            qEvalExpr expr''
+    case rval of
+        SuccessResult val -> return val
+        FailureResult err -> fail $ unpack err
+
+runValue :: AnyValue (PinaforeType baseedit 'PositivePolarity) -> PinaforeActionM baseedit ()
+runValue val =
+    case typedAnyToPinaforeVal val of
+        SuccessResult action -> action
+        _ ->
+            case typedAnyToPinaforeVal val of
+                SuccessResult v -> outputln v
+                _ ->
+                    case val of
+                        MkAnyValue t v -> liftIO $ putStrLn $ showPinaforeValue t v
+
 interactLoop ::
-       forall baseedit. HasPinaforePointEdit baseedit
-    => StateT (QExpr baseedit -> IO ()) IO ()
-interactLoop = do
+       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
+    => UnliftIO (PinaforeActionM baseedit)
+    -> Interact baseedit ()
+interactLoop runAction = do
     liftIO $ putStr "pinafore> "
     eof <- liftIO isEOF
     if eof
@@ -88,18 +118,18 @@ interactLoop = do
                          p <- resultTextToM $ parseInteractiveCommand @baseedit "<input>" $ pack str
                          case p of
                              LetInteractiveCommand bind ->
-                                 modify $ \eval expr -> do
-                                     case runPinaforeTypeCheck $ bind expr of
-                                         SuccessResult expr' -> eval expr'
-                                         FailureResult err -> putStrLn $ unpack err
+                                 modify $ \oldbind expr -> do
+                                     expr' <- runPinaforeTypeCheck $ bind expr
+                                     oldbind expr'
                              ExpressionInteractiveCommand texpr -> do
-                                 eval <- get
-                                 liftIO $
-                                     case runPinaforeTypeCheck texpr of
-                                         SuccessResult expr -> eval expr
-                                         FailureResult err -> putStrLn $ unpack err) $ \err ->
-                    putStrLn $ ioeGetErrorString err
-            interactLoop
+                                 val <- interactEvalExpression texpr
+                                 lift $ runUnliftIO runAction $ runValue val
+                             ShowTypeInteractiveCommand texpr -> do
+                                 MkAnyValue t _ <- interactEvalExpression texpr
+                                 lift $ putStrLn $ ":: " <> show t
+                             ErrorInteractiveCommand err -> liftIO $ putStrLn $ unpack err) $ \err ->
+                    putStrLn $ "error: " <> ioeGetErrorString err
+            interactLoop runAction
 
 interact ::
        forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
@@ -107,17 +137,4 @@ interact ::
     -> IO ()
 interact runAction = do
     hSetBuffering stdout NoBuffering
-    evalStateT interactLoop $ \expr ->
-        runUnliftIO runAction $ do
-            case runPinaforeTypeCheck $ qUncheckedBindingsLetExpr predefinedBindings expr of
-                SuccessResult expr' -> do
-                    val <- pinaforeLiftResult $ qEvalExpr expr'
-                    case typedAnyToPinaforeVal val of
-                        SuccessResult action -> action
-                        _ ->
-                            case typedAnyToPinaforeVal val of
-                                SuccessResult v -> outputln v
-                                _ ->
-                                    case val of
-                                        MkAnyValue t v -> liftIO $ putStrLn $ showPinaforeValue t v
-                FailureResult err -> liftIO $ putStrLn $ unpack err
+    evalStateT (interactLoop runAction) return
