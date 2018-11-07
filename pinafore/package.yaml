@@ -37,13 +37,11 @@ library:
       - Language.Expression.Dolan
       - Pinafore.Base
       - Pinafore.Storage
-      - Pinafore.Language.Type
-      - Pinafore.Language.Convert
-      - Pinafore.Language.Name
       - Pinafore.Language
       - Pinafore.Main
       - Pinafore.Pinafore
       - Pinafore
+      - Pinafore.Test
     other-modules:
       - Language.Expression.UVar
       - Language.Expression.Dolan.TypeRange
@@ -52,6 +50,7 @@ library:
       - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.TypeF
       - Language.Expression.Dolan.MPolarity
+      - Language.Expression.Dolan.TypeRangeF
       - Pinafore.Base.Know
       - Pinafore.Base.Number
       - Pinafore.Base.Literal
@@ -61,6 +60,7 @@ library:
       - Pinafore.Base.Entity
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
+      - Pinafore.Language.Name
       - Pinafore.Language.Literal
       - Pinafore.Language.NamedEntity
       - Pinafore.Language.Reference
@@ -74,7 +74,9 @@ library:
       - Pinafore.Language.GroundType
       - Pinafore.Language.TypeContext
       - Pinafore.Language.Convert.Base
+      - Pinafore.Language.Type
       - Pinafore.Language.Expression
+      - Pinafore.Language.Convert
       - Pinafore.Language.Doc
       - Pinafore.Language.Predefined
       - Pinafore.Storage.Table
@@ -109,6 +111,7 @@ tests:
           - Test.Language
           - Test.Entity
           - Test.Type
+          - Test.ReadType
 
 executables:
     pinafore:

@@ -90,15 +90,15 @@ instance Show (Token t) where
     show TokElse = show ("else" :: String)
     show TokEntity = show ("entity" :: String)
     show TokSubtype = show ("subtype" :: String)
-    show TokBool = "boolean constant"
+    show TokBool = "boolean"
     show TokName = "name"
     show TokLambda = "\\"
     show TokAssign = "="
     show TokMap = "->"
     show TokPropMap = "~>"
-    show TokProperty = "property"
-    show TokPoint = "point"
-    show TokUUID = "%"
+    show TokProperty = show ("property" :: String)
+    show TokPoint = show ("point" :: String)
+    show TokUUID = "uuid"
     show TokAt = "@"
     show TokOperator = "infix"
     show TokNumber = "number"

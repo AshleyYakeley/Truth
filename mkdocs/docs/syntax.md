@@ -85,7 +85,7 @@ In interactive mode, each line has syntax `<interactive>`.
 <expression-2> ::= <expression-3> | <expression-2> <expression-3>
 
 <expression-3> ::=
-    "property" "@"<type-3> uuid |
+    "property" "@"<type-const> "@"<type-const> uuid |
     "point" "@"<type-3> uuid |
     symbol |
     literal-boolean |

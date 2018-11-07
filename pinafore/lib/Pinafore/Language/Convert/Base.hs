@@ -1,3 +1,5 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Pinafore.Language.Convert.Base
     ( HasQTypeDescription
     , qTypeDescription
@@ -29,39 +31,9 @@ qTypeDescription =
     case toTypeF @(PinaforeType baseedit) @t of
         MkTypeF w _ -> pack $ show w
 
-class ToTypeF wit t where
-    toTypeF :: TypeF wit 'PositivePolarity t
-
-toValue ::
-       forall wit t. ToTypeF wit t
-    => t
-    -> AnyValue (wit 'PositivePolarity)
-toValue t =
-    case toTypeF @wit @t of
-        MkTypeF tt conv -> MkAnyValue tt $ conv t
-
-class FromTypeF wit t where
-    fromTypeF :: TypeF wit 'NegativePolarity t
-
 type ToPinaforeType baseedit = ToTypeF (PinaforeType baseedit)
 
 type FromPinaforeType baseedit = FromTypeF (PinaforeType baseedit)
-
-unToWithTypeF ::
-       (FromTypeF tw pa, ToTypeF tw qa)
-    => (forall pt qt. TypeRangeWitness tw 'PositivePolarity '( pt, qt) -> WithRange (->) '( pa, qa) '( pt, qt) -> r)
-    -> r
-unToWithTypeF cont =
-    unTypeF fromTypeF $ \tp convp ->
-        unTypeF toTypeF $ \tq convq -> cont (MkTypeRangeWitness tp tq) (MkWithRange convp convq)
-
-unFromWithTypeF ::
-       (ToTypeF tw pa, FromTypeF tw qa)
-    => (forall pt qt. TypeRangeWitness tw 'NegativePolarity '( pt, qt) -> WithRange (->) '( pt, qt) '( pa, qa) -> r)
-    -> r
-unFromWithTypeF cont =
-    unTypeF toTypeF $ \tp convp ->
-        unTypeF fromTypeF $ \tq convq -> cont (MkTypeRangeWitness tp tq) (MkWithRange convp convq)
 
 -- top, bottom, join, meet
 instance ToTypeF (PinaforeType baseedit) BottomType where

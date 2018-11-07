@@ -25,6 +25,9 @@ mkTypeF t =
 unTypeF :: TypeF wit polarity t -> (forall t'. wit polarity t' -> ConvertType polarity t t' -> r) -> r
 unTypeF (MkTypeF t conv) cont = cont t conv
 
+toTypeFAnyValue :: TypeF wit 'PositivePolarity t -> t -> AnyValue (wit 'PositivePolarity)
+toTypeFAnyValue (MkTypeF t conv) v = MkAnyValue t $ conv v
+
 mapTypeF ::
        forall (k :: Type) wit polarity (a :: k) (b :: k). (Category (KindMorphism k (->)), IsTypePolarity polarity)
     => ConvertType polarity b a
@@ -77,3 +80,15 @@ mapSealedExpressionTypes ::
     -> SealedExpression name (wit 'NegativePolarity) (wit 'PositivePolarity)
 mapSealedExpressionTypes mapPos mapNeg (MkSealedExpression tt expr) =
     typeFSealedExpression (mapPos tt) $ mapExpressionTypes mapNeg expr
+
+class ToTypeF wit t where
+    toTypeF :: TypeF wit 'PositivePolarity t
+
+class FromTypeF wit t where
+    fromTypeF :: TypeF wit 'NegativePolarity t
+
+toValue ::
+       forall wit t. ToTypeF wit t
+    => t
+    -> AnyValue (wit 'PositivePolarity)
+toValue = toTypeFAnyValue $ toTypeF @wit @t

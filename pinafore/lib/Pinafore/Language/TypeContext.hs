@@ -25,6 +25,13 @@ newtype PinaforeTypeCheck a =
     MkPinaforeTypeCheck (ReaderT TypeContext (Result Text) a)
     deriving (Functor, Applicative, Monad, MonadFail)
 
+instance Semigroup a => Semigroup (PinaforeTypeCheck a) where
+    (<>) = liftA2 (<>)
+
+instance Monoid a => Monoid (PinaforeTypeCheck a) where
+    mappend = (<>)
+    mempty = pure mempty
+
 runPinaforeTypeCheck :: PinaforeTypeCheck a -> Result Text a
 runPinaforeTypeCheck (MkPinaforeTypeCheck qa) = runReaderT qa $ MkTypeContext mempty mempty
 

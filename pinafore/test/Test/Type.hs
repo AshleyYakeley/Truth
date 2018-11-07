@@ -9,9 +9,7 @@ import Language.Expression.Sealed
 import Language.Expression.Typed
 import Language.Expression.Unifier
 import Pinafore
-import Pinafore.Language.Convert
-import Pinafore.Language.Name
-import Pinafore.Language.Type
+import Pinafore.Test
 import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit

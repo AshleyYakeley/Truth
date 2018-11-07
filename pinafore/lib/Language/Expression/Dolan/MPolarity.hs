@@ -29,6 +29,15 @@ type family InvertMPolarity (mpolarity :: Maybe TypePolarity) :: Maybe TypePolar
     InvertMPolarity ('Just polarity) = 'Just (InvertPolarity polarity)
     InvertMPolarity 'Nothing = 'Nothing
 
+isMPolarity ::
+       forall polarity r. IsTypePolarity polarity
+    => (Is MPolarity ('Just polarity) => r)
+    -> r
+isMPolarity v =
+    case whichTypePolarity @polarity of
+        Left Refl -> v
+        Right Refl -> v
+
 invertMPolarity ::
        forall mpolarity r. Is MPolarity mpolarity
     => (Is MPolarity (InvertMPolarity mpolarity) => r)

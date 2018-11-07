@@ -25,6 +25,9 @@ contraTypeRange pt = MkTypeRange pt alwaysTop
 typeRangeBijection :: TypeRange a '( b, b) -> Bijection a b
 typeRangeBijection (MkTypeRange ba ab) = MkBijection ab ba
 
+bijectionTypeRange :: Bijection a b -> TypeRange a '( b, b)
+bijectionTypeRange (MkBijection ab ba) = MkTypeRange ba ab
+
 bijectTypeRanges :: TypeRange a '( p, q) -> TypeRange b '( q, p) -> Bijection a b
 bijectTypeRanges (MkTypeRange pa aq) (MkTypeRange qb bp) = MkBijection (qb . aq) (pa . bp)
 
@@ -97,3 +100,6 @@ contraMapTypeRange' pp = mapTypeRange' $ contraWithRange pp
 
 data TypeRangeWitness tw polarity (pq :: (Type, Type)) where
     MkTypeRangeWitness :: tw (InvertPolarity polarity) p -> tw polarity q -> TypeRangeWitness tw polarity '( p, q)
+
+rangeTypeInKind :: forall tw polarity. Subrepresentative (TypeRangeWitness tw polarity) (KindWitness (Type, Type))
+rangeTypeInKind (MkTypeRangeWitness _ _) = Dict

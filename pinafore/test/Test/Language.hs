@@ -169,7 +169,7 @@ testQuery query expected =
         (Just s, SuccessResult (MkAnyValue t v)) -> assertEqual "result" s (showPinaforeValue t v)
 
 showText :: Text -> String
-showText = show
+showText = unpack
 
 testQueries :: TestTree
 testQueries =
@@ -193,8 +193,8 @@ testQueries =
         , testQuery "ui_table" $ Just "<?>"
         -- list construction
         , testQuery "[]" $ Just $ show @[Text] []
-        , testQuery "[1]" $ Just $ show @[Text] ["1"]
-        , testQuery "[1,2,3]" $ Just $ show @[Text] ["1", "2", "3"]
+        , testQuery "[1]" $ Just $ "[1]"
+        , testQuery "[1,2,3]" $ Just "[1,2,3]"
         -- functions
         , testQuery "\\x -> x" $ Just "<?>"
         , testQuery "\\x -> 1" $ Just "<?>"
