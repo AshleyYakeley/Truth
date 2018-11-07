@@ -60,6 +60,7 @@ library:
       - Pinafore.Base.Entity
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
+      - Pinafore.Base.ImmutableReference
       - Pinafore.Language.Name
       - Pinafore.Language.Literal
       - Pinafore.Language.NamedEntity

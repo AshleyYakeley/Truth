@@ -49,22 +49,6 @@ pinaforeReferenceWith ref cont = do
         Known a -> cont a
         Unknown -> return ()
 
-newtype PinaforeImmutableReference baseedit a =
-    MkPinaforeImmutableReference (PinaforeFunctionValue baseedit (Know a))
-
-instance Functor (PinaforeImmutableReference baseedit) where
-    fmap ab (MkPinaforeImmutableReference a) = MkPinaforeImmutableReference $ funcEditFunction (fmap ab) . a
-
-instance Applicative (PinaforeImmutableReference baseedit) where
-    pure a = MkPinaforeImmutableReference $ constEditFunction $ Known a
-    (MkPinaforeImmutableReference fab) <*> (MkPinaforeImmutableReference fa) =
-        MkPinaforeImmutableReference $ funcEditFunction (\(mab, ma) -> mab <*> ma) . pairWholeEditFunction fab fa
-
-instance Alternative (PinaforeImmutableReference baseedit) where
-    empty = MkPinaforeImmutableReference $ constEditFunction Unknown
-    (MkPinaforeImmutableReference fa) <|> (MkPinaforeImmutableReference fb) =
-        MkPinaforeImmutableReference $ funcEditFunction (\(ma, mb) -> ma <|> mb) . pairWholeEditFunction fa fb
-
 pinaforeReferenceToImmutable :: PinaforeReference baseedit '( BottomType, a) -> PinaforeImmutableReference baseedit a
 pinaforeReferenceToImmutable (MkPinaforeReference (MkRange _ tq) lens) =
     MkPinaforeImmutableReference $ funcEditFunction (fmap tq) . editLensFunction lens
@@ -72,12 +56,3 @@ pinaforeReferenceToImmutable (MkPinaforeReference (MkRange _ tq) lens) =
 pinaforeImmutableToReference :: PinaforeImmutableReference baseedit a -> PinaforeReference baseedit '( BottomType, a)
 pinaforeImmutableToReference (MkPinaforeImmutableReference ef) =
     MkPinaforeReference (MkRange never id) $ readOnlyEditLens ef
-
-pinaforeImmutableReferenceValue :: a -> PinaforeImmutableReference baseedit a -> PinaforeFunctionValue baseedit a
-pinaforeImmutableReferenceValue def (MkPinaforeImmutableReference f) = funcEditFunction (fromKnow def) . f
-
-applyImmutableReference ::
-       PinaforeFunctionMorphism baseedit (Know a) (Know b)
-    -> PinaforeImmutableReference baseedit a
-    -> PinaforeImmutableReference baseedit b
-applyImmutableReference m (MkPinaforeImmutableReference v) = MkPinaforeImmutableReference $ applyPinaforeFunction m v
