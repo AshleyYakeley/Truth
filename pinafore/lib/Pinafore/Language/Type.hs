@@ -26,7 +26,7 @@ import Pinafore.Language.Show
 import Pinafore.Language.TypeContext
 import Shapes
 
-type PinaforeRangeType baseedit = TypeRangeWitness (PinaforeType baseedit)
+type PinaforeRangeType baseedit = RangeType (PinaforeType baseedit)
 
 data PinaforeType (baseedit :: Type) (polarity :: TypePolarity) (t :: Type) where
     NilPinaforeType :: PinaforeType baseedit polarity (LimitType polarity)
@@ -75,7 +75,7 @@ vcBijection RangevarianceType conv (MkPairMorphism (MkBijection papb pbpa) (MkBi
     mkKindBijection (conv $ MkWithRange pbpa qaqb) (conv $ MkWithRange papb qbqa)
 
 getRangeTypeVars :: PinaforeRangeType baseedit polarity t -> [String]
-getRangeTypeVars (MkTypeRangeWitness tp tq) = getTypeVars tp <> getTypeVars tq
+getRangeTypeVars (MkRangeType tp tq) = getTypeVars tp <> getTypeVars tq
 
 getArgTypeVars ::
        forall baseedit polarity v a.
@@ -84,7 +84,7 @@ getArgTypeVars ::
     -> [String]
 getArgTypeVars CovarianceType ft = getTypeVars ft
 getArgTypeVars ContravarianceType ft = getTypeVars ft
-getArgTypeVars RangevarianceType (MkTypeRangeWitness ta tb) = getTypeVars ta <> getTypeVars tb
+getArgTypeVars RangevarianceType (MkRangeType ta tb) = getTypeVars ta <> getTypeVars tb
 
 getArgsTypeVars ::
        forall baseedit polarity dv t ta.
@@ -166,15 +166,15 @@ instance IsTypePolarity polarity => Monoid (AnyW (PinaforeType baseedit polarity
     mappend = (<>)
     mempty = MkAnyW NilPinaforeType
 
-instance IsTypePolarity polarity => Semigroup (AnyInKind (TypeRangeWitness (PinaforeType baseedit) polarity)) where
-    MkAnyInKind (MkTypeRangeWitness tp1 tq1) <> MkAnyInKind (MkTypeRangeWitness tp2 tq2) =
+instance IsTypePolarity polarity => Semigroup (AnyInKind (RangeType (PinaforeType baseedit) polarity)) where
+    MkAnyInKind (MkRangeType tp1 tq1) <> MkAnyInKind (MkRangeType tp2 tq2) =
         invertPolarity @polarity $
         case (MkAnyW tp1 <> MkAnyW tp2, MkAnyW tq1 <> MkAnyW tq2) of
-            (MkAnyW tp12, MkAnyW tq12) -> MkAnyInKind (MkTypeRangeWitness tp12 tq12)
+            (MkAnyW tp12, MkAnyW tq12) -> MkAnyInKind (MkRangeType tp12 tq12)
 
-instance IsTypePolarity polarity => Monoid (AnyInKind (TypeRangeWitness (PinaforeType baseedit) polarity)) where
+instance IsTypePolarity polarity => Monoid (AnyInKind (RangeType (PinaforeType baseedit) polarity)) where
     mappend = (<>)
-    mempty = MkAnyInKind (MkTypeRangeWitness NilPinaforeType NilPinaforeType)
+    mempty = MkAnyInKind (MkRangeType NilPinaforeType NilPinaforeType)
 
 unifyPosNegVariance ::
        SingleVarianceType sv
@@ -185,7 +185,7 @@ unifyPosNegVariance CovarianceType ta tb = unifyPosNegPinaforeTypes ta tb
 unifyPosNegVariance ContravarianceType ta tb = do
     ba <- unifyPosNegPinaforeTypes tb ta
     return $ MkCatDual ba
-unifyPosNegVariance RangevarianceType (MkTypeRangeWitness tpa tqa) (MkTypeRangeWitness tpb tqb) = do
+unifyPosNegVariance RangevarianceType (MkRangeType tpa tqa) (MkRangeType tpb tqb) = do
     pba <- unifyPosNegPinaforeTypes tpb tpa
     qab <- unifyPosNegPinaforeTypes tqa tqb
     return $ MkWithRange pba qab
@@ -320,7 +320,7 @@ occursInArg ::
     -> Bool
 occursInArg CovarianceType n t = occursInType n t
 occursInArg ContravarianceType n t = occursInType n t
-occursInArg RangevarianceType n (MkTypeRangeWitness tp tq) = occursInType n tp || occursInType n tq
+occursInArg RangevarianceType n (MkRangeType tp tq) = occursInType n tp || occursInType n tq
 
 occursInArgs ::
        forall baseedit polarity n dv t a.
@@ -535,10 +535,10 @@ type PinaforeTypeNamespace baseedit w = TypeNamespace (PinaforeTypeSystem baseed
 renamePinaforeRangeTypeVars ::
        forall baseedit polarity. IsTypePolarity polarity
     => PinaforeTypeNamespace baseedit (PinaforeRangeType baseedit polarity)
-renamePinaforeRangeTypeVars (MkTypeRangeWitness ta tb) cont =
+renamePinaforeRangeTypeVars (MkRangeType ta tb) cont =
     invertPolarity @polarity $
     renamePinaforeTypeVars ta $ \ta' bija ->
-        renamePinaforeTypeVars tb $ \tb' bijb -> cont (MkTypeRangeWitness ta' tb') $ MkPairMorphism bija bijb
+        renamePinaforeTypeVars tb $ \tb' bijb -> cont (MkRangeType ta' tb') $ MkPairMorphism bija bijb
 
 renameTypeArg ::
        forall baseedit polarity v. IsTypePolarity polarity
@@ -658,7 +658,7 @@ exprShowPrecGroundType MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDo
     invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
 
 instance IsTypePolarity polarity => ExprShow (PinaforeRangeType baseedit polarity a) where
-    exprShowPrec (MkTypeRangeWitness t1 t2) = let
+    exprShowPrec (MkRangeType t1 t2) = let
         getpieces ::
                forall pol t. IsTypePolarity pol
             => PinaforeType baseedit pol t
@@ -797,9 +797,8 @@ class GetExpressionVars t where
     -- | (positive, negative)
     getExpressionVars :: t -> ([AnyW SymbolWitness], [AnyW SymbolWitness])
 
-instance IsTypePolarity polarity => GetExpressionVars (TypeRangeWitness (PinaforeType baseedit) polarity a) where
-    getExpressionVars (MkTypeRangeWitness tp tq) =
-        invertPolarity @polarity $ getExpressionVars tp <> getExpressionVars tq
+instance IsTypePolarity polarity => GetExpressionVars (RangeType (PinaforeType baseedit) polarity a) where
+    getExpressionVars (MkRangeType tp tq) = invertPolarity @polarity $ getExpressionVars tp <> getExpressionVars tq
 
 getArgExpressionVars ::
        forall baseedit polarity sv a. IsTypePolarity polarity

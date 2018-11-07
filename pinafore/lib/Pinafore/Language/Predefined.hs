@@ -164,7 +164,7 @@ ui_table cols asp val = let
     aspect :: MeetType Entity A -> IO (UIWindow baseedit)
     aspect entity = return $ asp $ meet2 entity
     in uiSetSelectionLens (funcNoEditLens meet1) $
-       uiTable (fmap getColumn cols) aspect $ unPinaforeSet $ contraMapTypeRange meet2 val
+       uiTable (fmap getColumn cols) aspect $ unPinaforeSet $ contraMapRange meet2 val
 
 type PickerType = Know (MeetType Entity A)
 
@@ -191,7 +191,7 @@ ui_pick nameMorphism fset ref = let
     opts =
         (orderedKeyList @(FiniteSet PickerPairType) $ \(_, a) (_, b) -> compare a b) .
         convertEditFunction . applyPinaforeFunction getNames (pinaforeSetFunctionValue fset)
-    in uiOption @baseedit @PickerType opts $ unPinaforeReference $ contraMapTypeRange meet2 ref
+    in uiOption @baseedit @PickerType opts $ unPinaforeReference $ contraMapRange meet2 ref
 
 qfail :: forall baseedit. Text -> PinaforeAction baseedit
 qfail t = liftIO $ fail $ unpack t
@@ -269,11 +269,11 @@ predefinitions =
               , mkDefEntry
                     "comapref"
                     "Map a function on getting a reference."
-                    (coMapTypeRange :: (A -> B) -> PinaforeReference baseedit '( C, A) -> PinaforeReference baseedit '( C, B))
+                    (coMapRange :: (A -> B) -> PinaforeReference baseedit '( C, A) -> PinaforeReference baseedit '( C, B))
               , mkDefEntry
                     "contramapref"
                     "Map a function on setting a reference."
-                    (contraMapTypeRange :: (B -> A) -> PinaforeReference baseedit '( A, C) -> PinaforeReference baseedit '( B, C))
+                    (contraMapRange :: (B -> A) -> PinaforeReference baseedit '( A, C) -> PinaforeReference baseedit '( B, C))
               , mkDefEntry
                     "applyref"
                     "Combine references."
@@ -295,11 +295,11 @@ predefinitions =
               [ mkDefEntry
                     "comapset"
                     "Map a function on getting from a set."
-                    (coMapTypeRange :: (A -> B) -> PinaforeSet baseedit '( C, A) -> PinaforeSet baseedit '( C, B))
+                    (coMapRange :: (A -> B) -> PinaforeSet baseedit '( C, A) -> PinaforeSet baseedit '( C, B))
               , mkDefEntry
                     "contramapset"
                     "Map a function on setting to a set."
-                    (contraMapTypeRange :: (B -> A) -> PinaforeSet baseedit '( A, C) -> PinaforeSet baseedit '( B, C))
+                    (contraMapRange :: (B -> A) -> PinaforeSet baseedit '( A, C) -> PinaforeSet baseedit '( B, C))
               , mkDefEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
                 qmeet @baseedit
               , mkDefEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $

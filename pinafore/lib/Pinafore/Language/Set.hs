@@ -9,16 +9,16 @@ import Truth.Core
 
 data PinaforeSet baseedit pq =
     forall t. Eq t =>
-                  MkPinaforeSet (TypeRange t pq)
+                  MkPinaforeSet (Range t pq)
                                 (PinaforeLensValue baseedit (FiniteSetEdit t))
 
 unPinaforeSet :: PinaforeSet baseedit '( p, p) -> PinaforeLensValue baseedit (FiniteSetEdit p)
-unPinaforeSet (MkPinaforeSet tr lv) = (bijectionFiniteSetEditLens $ typeRangeBijection tr) . lv
+unPinaforeSet (MkPinaforeSet tr lv) = (bijectionFiniteSetEditLens $ rangeBijection tr) . lv
 
-instance IsoMapTypeRange (PinaforeSet baseedit)
+instance IsoMapRange (PinaforeSet baseedit)
 
-instance MapTypeRange (PinaforeSet baseedit) where
-    mapTypeRange f (MkPinaforeSet r s) = MkPinaforeSet (mapTypeRange f r) s
+instance MapRange (PinaforeSet baseedit) where
+    mapRange f (MkPinaforeSet r s) = MkPinaforeSet (mapRange f r) s
 
 instance HasDolanVary '[ 'Rangevariance] (PinaforeSet baseedit) where
     dolanVary =
@@ -26,18 +26,18 @@ instance HasDolanVary '[ 'Rangevariance] (PinaforeSet baseedit) where
         NilDolanKindVary
 
 pinaforeSetValue :: PinaforeSet baseedit '( q, q) -> PinaforeLensValue baseedit (FiniteSetEdit q)
-pinaforeSetValue (MkPinaforeSet tr lv) = bijectionFiniteSetEditLens (typeRangeBijection tr) . lv
+pinaforeSetValue (MkPinaforeSet tr lv) = bijectionFiniteSetEditLens (rangeBijection tr) . lv
 
 valuePinaforeSet :: Eq q => PinaforeLensValue baseedit (FiniteSetEdit q) -> PinaforeSet baseedit '( q, q)
-valuePinaforeSet lv = MkPinaforeSet identityTypeRange lv
+valuePinaforeSet lv = MkPinaforeSet identityRange lv
 
 pinaforeSetMeetValue ::
        PinaforeSet baseedit '( t, MeetType Entity t) -> PinaforeLensValue baseedit (FiniteSetEdit (MeetType Entity t))
-pinaforeSetMeetValue (MkPinaforeSet tr lv) = pinaforeSetValue $ MkPinaforeSet (unifyTypeRange2 meet2 tr) lv
+pinaforeSetMeetValue (MkPinaforeSet tr lv) = pinaforeSetValue $ MkPinaforeSet (unifyRange2 meet2 tr) lv
 
 meetValuePinaforeSet ::
        PinaforeLensValue baseedit (FiniteSetEdit (MeetType Entity t)) -> PinaforeSet baseedit '( MeetType Entity t, t)
-meetValuePinaforeSet lv = MkPinaforeSet (unUnifyTypeRange1 meet2 identityTypeRange) lv
+meetValuePinaforeSet lv = MkPinaforeSet (unUnifyRange1 meet2 identityRange) lv
 
 pinaforeSetMeet ::
        PinaforeSet baseedit '( t, MeetType Entity t)
@@ -57,8 +57,7 @@ pinaforeSetJoin seta setb =
 
 pinaforeSetAdd :: PinaforeSet baseedit '( p, q) -> p -> PinaforeAction baseedit
 pinaforeSetAdd (MkPinaforeSet tr set) p =
-    pinaforeLiftView $
-    viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem $ typeRangeContra tr p]
+    pinaforeLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem $ rangeContra tr p]
 
 pinaforeSetAddNew :: PinaforeSet baseedit '( Point, TopType) -> PinaforeActionM baseedit Point
 pinaforeSetAddNew set = do
@@ -68,14 +67,14 @@ pinaforeSetAddNew set = do
 
 pinaforeSetRemove :: PinaforeSet baseedit '( p, q) -> p -> PinaforeAction baseedit
 pinaforeSetRemove (MkPinaforeSet tr set) p =
-    pinaforeLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem $ typeRangeContra tr p]
+    pinaforeLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyDeleteItem $ rangeContra tr p]
 
 pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit
 pinaforeSetRemoveAll (MkPinaforeSet _ set) =
     pinaforeLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyClear]
 
 pinaforeSetFunctionValue :: PinaforeSet baseedit '( t, a) -> PinaforeFunctionValue baseedit (FiniteSet a)
-pinaforeSetFunctionValue (MkPinaforeSet tr set) = funcEditFunction (fmap $ typeRangeCo tr) . lensFunctionValue set
+pinaforeSetFunctionValue (MkPinaforeSet tr set) = funcEditFunction (fmap $ rangeCo tr) . lensFunctionValue set
 
 pinaforeSetContains ::
        PinaforeSet baseedit '( BottomType, Entity) -> PinaforeReference baseedit '( BottomType, Entity -> Bool)

@@ -7,15 +7,15 @@ module Language.Expression.Dolan.Arguments
     ) where
 
 import Language.Expression.Dolan.Polarity
+import Language.Expression.Dolan.Range
 import Language.Expression.Dolan.TypeF
-import Language.Expression.Dolan.TypeRange
 import Language.Expression.Dolan.Variance
 import Shapes
 
 type family SingleArgument (sv :: SingleVariance) (ft :: TypePolarity -> Type -> Type) (polarity :: TypePolarity) :: SingleVarianceKind sv -> Type where
     SingleArgument 'Covariance ft polarity = ft polarity
     SingleArgument 'Contravariance ft polarity = ft (InvertPolarity polarity)
-    SingleArgument 'Rangevariance ft polarity = TypeRangeWitness ft polarity
+    SingleArgument 'Rangevariance ft polarity = RangeType ft polarity
 
 data DolanArguments (dv :: DolanVariance) (ft :: TypePolarity -> Type -> Type) (gt :: DolanVarianceKind dv) (polarity :: TypePolarity) (ta :: Type) where
     NilDolanArguments :: DolanArguments '[] ft t polarity t
@@ -66,13 +66,13 @@ mapArgTypeF ContravarianceType f arg =
             case whichTypePolarity @polarity of
                 Left Refl -> MkCatDual conv
                 Right Refl -> MkCatDual conv
-mapArgTypeF RangevarianceType f (MkTypeRangeWitness tp tq) =
+mapArgTypeF RangevarianceType f (MkRangeType tp tq) =
     invertPolarity @polarity $
     case f tp of
         MkTypeF tp' convp ->
             case f tq of
                 MkTypeF tq' convq ->
-                    MkArgTypeF (MkTypeRangeWitness tp' tq') $
+                    MkArgTypeF (MkRangeType tp' tq') $
                     case whichTypePolarity @polarity of
                         Left Refl -> MkWithRange convp convq
                         Right Refl -> MkWithRange convp convq
@@ -153,15 +153,15 @@ mergeArgTypeF ContravarianceType f arga argb =
             case whichTypePolarity @polarity of
                 Left Refl -> MkArgTypeF argab $ MkCatDual conv
                 Right Refl -> MkArgTypeF argab $ MkCatDual conv
-mergeArgTypeF RangevarianceType f (MkTypeRangeWitness tpa tqa) (MkTypeRangeWitness tpb tqb) =
+mergeArgTypeF RangevarianceType f (MkRangeType tpa tqa) (MkRangeType tpb tqb) =
     invertPolarity @polarity $
     case f tpa tpb of
         MkTypeF tpab convp ->
             case f tqa tqb of
                 MkTypeF tqab convq ->
                     case whichTypePolarity @polarity of
-                        Left Refl -> MkArgTypeF (MkTypeRangeWitness tpab tqab) $ MkWithRange convp convq
-                        Right Refl -> MkArgTypeF (MkTypeRangeWitness tpab tqab) $ MkWithRange convp convq
+                        Left Refl -> MkArgTypeF (MkRangeType tpab tqab) $ MkWithRange convp convq
+                        Right Refl -> MkArgTypeF (MkRangeType tpab tqab) $ MkWithRange convp convq
 
 psvf1 ::
        forall polarity sv a b c. (IsTypePolarity polarity, InVarianceKind sv a, InVarianceKind sv b)

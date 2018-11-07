@@ -7,36 +7,36 @@ import Truth.Core
 
 data PinaforeReference (baseedit :: Type) (pq :: (Type, Type)) where
     MkPinaforeReference
-        :: TypeRange t pq -> PinaforeLensValue baseedit (WholeEdit (Know t)) -> PinaforeReference baseedit pq
+        :: Range t pq -> PinaforeLensValue baseedit (WholeEdit (Know t)) -> PinaforeReference baseedit pq
 
 unPinaforeReference :: PinaforeReference baseedit '( p, p) -> PinaforeLensValue baseedit (WholeEdit (Know p))
-unPinaforeReference (MkPinaforeReference tr lv) = (bijectionWholeEditLens $ cfmap $ typeRangeBijection tr) . lv
+unPinaforeReference (MkPinaforeReference tr lv) = (bijectionWholeEditLens $ cfmap $ rangeBijection tr) . lv
 
 getPinaforeReference :: PinaforeReference baseedit '( BottomType, q) -> PinaforeActionM baseedit (Know q)
-getPinaforeReference (MkPinaforeReference (MkTypeRange _ tq) lens) = do
+getPinaforeReference (MkPinaforeReference (MkRange _ tq) lens) = do
     t <- pinaforeFunctionValueGet $ lensFunctionValue lens
     return $ fmap tq t
 
 setPinaforeReference :: PinaforeReference baseedit '( p, TopType) -> Know p -> PinaforeAction baseedit
-setPinaforeReference (MkPinaforeReference (MkTypeRange pt _) lens) mp = pinaforeLensValueSet lens $ fmap pt mp
+setPinaforeReference (MkPinaforeReference (MkRange pt _) lens) mp = pinaforeLensValueSet lens $ fmap pt mp
 
-instance IsoMapTypeRange (PinaforeReference baseedit)
+instance IsoMapRange (PinaforeReference baseedit)
 
-instance MapTypeRange (PinaforeReference baseedit) where
-    mapTypeRange f (MkPinaforeReference r s) = MkPinaforeReference (mapTypeRange f r) s
+instance MapRange (PinaforeReference baseedit) where
+    mapRange f (MkPinaforeReference r s) = MkPinaforeReference (mapRange f r) s
 
 instance HasDolanVary '[ 'Rangevariance] (PinaforeReference baseedit) where
-    dolanVary = ConsDolanKindVary mapTypeRange $ NilDolanKindVary
+    dolanVary = ConsDolanKindVary mapRange $ NilDolanKindVary
 
 pinaforeReferenceToFunction :: PinaforeReference baseedit '( BottomType, a) -> PinaforeFunctionValue baseedit (Know a)
-pinaforeReferenceToFunction (MkPinaforeReference (MkTypeRange _ tq) lens) =
+pinaforeReferenceToFunction (MkPinaforeReference (MkRange _ tq) lens) =
     funcEditFunction (fmap tq) . editLensFunction lens
 
 pinaforeLensToReference :: PinaforeLensValue baseedit (WholeEdit (Know a)) -> PinaforeReference baseedit '( a, a)
-pinaforeLensToReference lens = MkPinaforeReference identityTypeRange lens
+pinaforeLensToReference lens = MkPinaforeReference identityRange lens
 
 pinaforeFunctionToReference :: PinaforeFunctionValue baseedit (Know a) -> PinaforeReference baseedit '( BottomType, a)
-pinaforeFunctionToReference ef = MkPinaforeReference (MkTypeRange never id) $ readOnlyEditLens ef
+pinaforeFunctionToReference ef = MkPinaforeReference (MkRange never id) $ readOnlyEditLens ef
 
 pinaforeReferenceWith ::
        forall baseedit a.
@@ -66,12 +66,12 @@ instance Alternative (PinaforeImmutableReference baseedit) where
         MkPinaforeImmutableReference $ funcEditFunction (\(ma, mb) -> ma <|> mb) . pairWholeEditFunction fa fb
 
 pinaforeReferenceToImmutable :: PinaforeReference baseedit '( BottomType, a) -> PinaforeImmutableReference baseedit a
-pinaforeReferenceToImmutable (MkPinaforeReference (MkTypeRange _ tq) lens) =
+pinaforeReferenceToImmutable (MkPinaforeReference (MkRange _ tq) lens) =
     MkPinaforeImmutableReference $ funcEditFunction (fmap tq) . editLensFunction lens
 
 pinaforeImmutableToReference :: PinaforeImmutableReference baseedit a -> PinaforeReference baseedit '( BottomType, a)
 pinaforeImmutableToReference (MkPinaforeImmutableReference ef) =
-    MkPinaforeReference (MkTypeRange never id) $ readOnlyEditLens ef
+    MkPinaforeReference (MkRange never id) $ readOnlyEditLens ef
 
 pinaforeImmutableReferenceValue :: a -> PinaforeImmutableReference baseedit a -> PinaforeFunctionValue baseedit a
 pinaforeImmutableReferenceValue def (MkPinaforeImmutableReference f) = funcEditFunction (fromKnow def) . f

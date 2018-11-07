@@ -217,7 +217,7 @@ instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit) p, ToTypeF (Pinafor
              ToTypeF (PinaforeSingularType baseedit) (PinaforeReference edit '( p, q)) where
     toTypeF =
         unToWithTypeF $ \tpq conv ->
-            contramap (mapTypeRange conv) $
+            contramap (mapRange conv) $
             mkTypeF $ GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit) p, ToTypeF (PinaforeType baseedit) q) =>
@@ -228,7 +228,7 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType baseedit) p, FromTypeF (Pinafor
              FromTypeF (PinaforeSingularType baseedit) (PinaforeReference edit '( p, q)) where
     fromTypeF =
         unFromWithTypeF $ \tpq conv ->
-            fmap (mapTypeRange conv) $
+            fmap (mapRange conv) $
             mkTypeF $ GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance (baseedit ~ edit, ToTypeF (PinaforeType baseedit) p, FromTypeF (PinaforeType baseedit) q) =>
@@ -238,7 +238,7 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType baseedit) p, FromTypeF (Pinafor
 -- PinaforeLensValue
 instance (baseedit ~ edit, FromTypeF (PinaforeType edit) t, ToTypeF (PinaforeType edit) t) =>
              ToTypeF (PinaforeType baseedit) (PinaforeLensValue edit (WholeEdit (Know t))) where
-    toTypeF = contramap (MkPinaforeReference identityTypeRange) toTypeF
+    toTypeF = contramap (MkPinaforeReference identityRange) toTypeF
 
 instance (baseedit ~ edit, FromTypeF (PinaforeType edit) t, ToTypeF (PinaforeType edit) t) =>
              FromTypeF (PinaforeType baseedit) (PinaforeLensValue edit (WholeEdit (Know t))) where
@@ -262,7 +262,7 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType edit) t) =>
              ToTypeF (PinaforeType baseedit) (PinaforeFunctionValue edit (Know t)) where
     toTypeF = contramap pinaforeFunctionToReference toTypeF
 
---    LiteralPinaforeReference :: TypeRange t pq -> PinaforeLensValue baseedit (WholeEdit (Maybe t)) -> PinaforeReference baseedit pq
+--    LiteralPinaforeReference :: Range t pq -> PinaforeLensValue baseedit (WholeEdit (Maybe t)) -> PinaforeReference baseedit pq
 {-
 instance baseedit ~ edit => ToTypeF (PinaforeType baseedit) (PinaforeLensValue baseedit (WholeEdit Point)) where
     toTypeF = contramap entityLensValuePinaforeReference toTypeF
@@ -276,7 +276,7 @@ instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit) p, ToTypeF (Pinafor
              ToTypeF (PinaforeSingularType baseedit) (PinaforeSet edit '( p, q)) where
     toTypeF =
         unToWithTypeF $ \tpq conv ->
-            contramap (mapTypeRange conv) $
+            contramap (mapRange conv) $
             mkTypeF $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit) p, ToTypeF (PinaforeType baseedit) q) =>
@@ -287,7 +287,7 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType baseedit) p, FromTypeF (Pinafor
              FromTypeF (PinaforeSingularType baseedit) (PinaforeSet edit '( p, q)) where
     fromTypeF =
         unFromWithTypeF $ \tpq conv ->
-            fmap (mapTypeRange conv) $
+            fmap (mapRange conv) $
             mkTypeF $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance (baseedit ~ edit, ToTypeF (PinaforeType baseedit) p, FromTypeF (PinaforeType baseedit) q) =>
@@ -301,7 +301,7 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType edit) t, FromTypeF (PinaforeTyp
 
 instance (baseedit ~ edit, Eq t, ToTypeF (PinaforeType baseedit) t, FromTypeF (PinaforeType baseedit) t) =>
              ToTypeF (PinaforeType baseedit) (PinaforeLensValue edit (FiniteSetEdit t)) where
-    toTypeF = contramap (MkPinaforeSet identityTypeRange) toTypeF
+    toTypeF = contramap (MkPinaforeSet identityRange) toTypeF
 
 -- PinaforeMorphism
 instance ( baseedit ~ edit
@@ -313,7 +313,7 @@ instance ( baseedit ~ edit
     toTypeF =
         unToWithTypeF $ \ta conva ->
             unToWithTypeF $ \tb convb ->
-                contramap (mapTypeRange' conva . mapTypeRange convb) $
+                contramap (mapRange' conva . mapRange convb) $
                 mkTypeF $
                 GroundPinaforeSingularType MorphismPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
@@ -335,7 +335,7 @@ instance ( baseedit ~ edit
     fromTypeF =
         unFromWithTypeF $ \ta conva ->
             unFromWithTypeF $ \tb convb ->
-                fmap (mapTypeRange' conva . mapTypeRange convb) $
+                fmap (mapRange' conva . mapRange convb) $
                 mkTypeF $
                 GroundPinaforeSingularType MorphismPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments

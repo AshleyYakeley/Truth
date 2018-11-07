@@ -1,6 +1,6 @@
 module Language.Expression.Dolan.Variance where
 
-import Language.Expression.Dolan.TypeRange
+import Language.Expression.Dolan.Range
 import Shapes
 
 data SingleVariance
@@ -67,9 +67,9 @@ type SingleVarianceMap (v :: SingleVariance) (gt :: SingleVarianceKind v -> k)
 
 mkRangevary ::
        forall k (f :: (Type, Type) -> k).
-       (forall a b. (forall t. TypeRange t a -> TypeRange t b) -> KindFunction k (f a) (f b))
+       (forall a b. (forall t. Range t a -> Range t b) -> KindFunction k (f a) (f b))
     -> SingleVarianceMap 'Rangevariance f
-mkRangevary f (MkWithRange pbpa qaqb) = f $ \(MkTypeRange pt tq) -> MkTypeRange (pt . pbpa) (qaqb . tq)
+mkRangevary f (MkWithRange pbpa qaqb) = f $ \(MkRange pt tq) -> MkRange (pt . pbpa) (qaqb . tq)
 
 data DolanKindVary (dv :: DolanVariance) (gt :: DolanVarianceKind dv) where
     NilDolanKindVary :: forall (gt :: Type). DolanKindVary '[] gt

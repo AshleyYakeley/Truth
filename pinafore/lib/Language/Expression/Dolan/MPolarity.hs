@@ -1,7 +1,7 @@
 module Language.Expression.Dolan.MPolarity where
 
 import Language.Expression.Dolan.Polarity
-import Language.Expression.Dolan.TypeRange
+import Language.Expression.Dolan.Range
 import Shapes
 
 -- The only purpose of this module is for parsing types simultaneously as positive and negative.
@@ -98,26 +98,25 @@ instance FromMPolar (MPolarType w mpolarity) where
     fromMPolarSingle (SingleMPolarType aw) = aw
     fromMPolarBoth (BothMPolarType aw) = aw
 
-data MPolarTypeRange w mpolarity where
-    SingleMPolarTypeRange
-        :: IsTypePolarity polarity => AnyInKind (TypeRangeWitness w polarity) -> MPolarTypeRange w ('Just polarity)
-    BothMPolarTypeRange
-        :: (forall polarity. IsTypePolarity polarity => AnyInKind (TypeRangeWitness w polarity))
-        -> MPolarTypeRange w 'Nothing
+data MPolarRangeType w mpolarity where
+    SingleMPolarRangeType
+        :: IsTypePolarity polarity => AnyInKind (RangeType w polarity) -> MPolarRangeType w ('Just polarity)
+    BothMPolarRangeType
+        :: (forall polarity. IsTypePolarity polarity => AnyInKind (RangeType w polarity)) -> MPolarRangeType w 'Nothing
 
 instance ( Is MPolarity mpolarity
-         , Semigroup (AnyInKind (TypeRangeWitness w 'NegativePolarity))
-         , Semigroup (AnyInKind (TypeRangeWitness w 'PositivePolarity))
-         ) => Semigroup (MPolarTypeRange w mpolarity) where
+         , Semigroup (AnyInKind (RangeType w 'NegativePolarity))
+         , Semigroup (AnyInKind (RangeType w 'PositivePolarity))
+         ) => Semigroup (MPolarRangeType w mpolarity) where
     (<>) =
         case representative @_ @MPolarity @mpolarity of
-            PositiveMPolarity -> \(SingleMPolarTypeRange a) (SingleMPolarTypeRange b) -> SingleMPolarTypeRange $ a <> b
-            NegativeMPolarity -> \(SingleMPolarTypeRange a) (SingleMPolarTypeRange b) -> SingleMPolarTypeRange $ a <> b
+            PositiveMPolarity -> \(SingleMPolarRangeType a) (SingleMPolarRangeType b) -> SingleMPolarRangeType $ a <> b
+            NegativeMPolarity -> \(SingleMPolarRangeType a) (SingleMPolarRangeType b) -> SingleMPolarRangeType $ a <> b
             BothMPolarity ->
-                \(BothMPolarTypeRange a) (BothMPolarTypeRange b) ->
-                    BothMPolarTypeRange $ let
+                \(BothMPolarRangeType a) (BothMPolarRangeType b) ->
+                    BothMPolarRangeType $ let
                         x :: forall polarity. IsTypePolarity polarity
-                          => AnyInKind (TypeRangeWitness w polarity)
+                          => AnyInKind (RangeType w polarity)
                         x =
                             case whichTypePolarity @polarity of
                                 Left Refl -> a @polarity <> b @polarity
@@ -125,36 +124,36 @@ instance ( Is MPolarity mpolarity
                         in x
 
 instance ( Is MPolarity mpolarity
-         , Monoid (AnyInKind (TypeRangeWitness w 'NegativePolarity))
-         , Monoid (AnyInKind (TypeRangeWitness w 'PositivePolarity))
-         ) => Monoid (MPolarTypeRange w mpolarity) where
+         , Monoid (AnyInKind (RangeType w 'NegativePolarity))
+         , Monoid (AnyInKind (RangeType w 'PositivePolarity))
+         ) => Monoid (MPolarRangeType w mpolarity) where
     mappend = (<>)
     mempty =
         case representative @_ @MPolarity @mpolarity of
-            PositiveMPolarity -> SingleMPolarTypeRange mempty
-            NegativeMPolarity -> SingleMPolarTypeRange mempty
+            PositiveMPolarity -> SingleMPolarRangeType mempty
+            NegativeMPolarity -> SingleMPolarRangeType mempty
             BothMPolarity ->
-                BothMPolarTypeRange $ let
+                BothMPolarRangeType $ let
                     x :: forall polarity. IsTypePolarity polarity
-                      => AnyInKind (TypeRangeWitness w polarity)
+                      => AnyInKind (RangeType w polarity)
                     x =
                         case whichTypePolarity @polarity of
                             Left Refl -> mempty
                             Right Refl -> mempty
                     in x
 
-type instance ConvertMPolarity (MPolarTypeRange w mpolarity) =
+type instance ConvertMPolarity (MPolarRangeType w mpolarity) =
      mpolarity
 
-instance ToMPolar (MPolarTypeRange w mpolarity) where
-    type ToMPolarConvert (MPolarTypeRange w mpolarity) polarity = AnyInKind (TypeRangeWitness w polarity)
-    toMPolarSingle = SingleMPolarTypeRange
-    toMPolarBoth = BothMPolarTypeRange
+instance ToMPolar (MPolarRangeType w mpolarity) where
+    type ToMPolarConvert (MPolarRangeType w mpolarity) polarity = AnyInKind (RangeType w polarity)
+    toMPolarSingle = SingleMPolarRangeType
+    toMPolarBoth = BothMPolarRangeType
 
-instance FromMPolar (MPolarTypeRange w mpolarity) where
-    type FromMPolarConvert (MPolarTypeRange w mpolarity) polarity = AnyInKind (TypeRangeWitness w polarity)
-    fromMPolarSingle (SingleMPolarTypeRange aw) = aw
-    fromMPolarBoth (BothMPolarTypeRange aw) = aw
+instance FromMPolar (MPolarRangeType w mpolarity) where
+    type FromMPolarConvert (MPolarRangeType w mpolarity) polarity = AnyInKind (RangeType w polarity)
+    fromMPolarSingle (SingleMPolarRangeType aw) = aw
+    fromMPolarBoth (BothMPolarRangeType aw) = aw
 
 type instance ConvertMPolarity (arg -> t) = ConvertMPolarity t
 

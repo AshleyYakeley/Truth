@@ -63,7 +63,7 @@ readCommaList p = readCommaList1 p <|> return mempty
 
 type PinaforeType3 baseedit = MPolarType (PinaforeType baseedit)
 
-type PinaforeTypeRange3 baseedit = MPolarTypeRange (PinaforeType baseedit)
+type PinaforeRangeType3 baseedit = MPolarRangeType (PinaforeType baseedit)
 
 readJoinMeet ::
        forall mpolarity. Is MPolarity mpolarity
@@ -202,33 +202,33 @@ readType3 =
 
 readTypeRange3 ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeTypeRange3 baseedit mpolarity))
+    => Parser (PinaforeTypeCheck (PinaforeRangeType3 baseedit mpolarity))
 readTypeRange3 = (readBracketed TokOpenBrace TokCloseBrace $ readCommaList readTypeRangeItem) <|> readTypeRangeItem
 
 readTypeRangeItem ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeTypeRange3 baseedit mpolarity))
+    => Parser (PinaforeTypeCheck (PinaforeRangeType3 baseedit mpolarity))
 readTypeRangeItem =
     (do
          readExactlyThis TokOperator "+"
          atq <- readType3
-         return $ fmap (toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkTypeRangeWitness NilPinaforeType tq)) atq) <|>
+         return $ fmap (toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType NilPinaforeType tq)) atq) <|>
     (do
          readExactlyThis TokOperator "-"
          atp <- invertMPolarity @mpolarity readType3
          return $
              fmap
-                 (toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkTypeRangeWitness tp NilPinaforeType))
+                 (toMPolar (\(MkAnyW tp) -> MkAnyInKind $ MkRangeType tp NilPinaforeType))
                  (fmap MkInvertMPolarType atp)) <|>
     (do
          mt <- readType3 @baseedit @'Nothing
          let
              ff :: forall polarity. IsTypePolarity polarity
                 => PinaforeType3 baseedit 'Nothing
-                -> AnyInKind (TypeRangeWitness (PinaforeType baseedit) polarity)
+                -> AnyInKind (RangeType (PinaforeType baseedit) polarity)
              ff (BothMPolarType atw) =
                  case (invertPolarity @polarity $ atw @(InvertPolarity polarity), atw @polarity) of
-                     (MkAnyW tp, MkAnyW tq) -> MkAnyInKind $ MkTypeRangeWitness tp tq
+                     (MkAnyW tp, MkAnyW tq) -> MkAnyInKind $ MkRangeType tp tq
          return $ fmap (\t -> toMPolar $ ff t) mt)
 
 readTypeVar :: Parser (AnyW SymbolWitness)
@@ -549,7 +549,7 @@ makePoint (ConsPinaforeType (GroundPinaforeSingularType EntityPinaforeGroundType
     return $ LeftJoinType $ MkEntity p
 makePoint tp _ = fail $ "not a point type: " <> show tp
 
-type PinaforeRangeF baseedit t = AnyF (TypeRangeWitness (PinaforeType baseedit) 'PositivePolarity) (TypeRange t)
+type PinaforeRangeF baseedit t = AnyF (RangeType (PinaforeType baseedit) 'PositivePolarity) (Range t)
 
 readLiteralType :: Parser (AnyW LiteralType)
 readLiteralType =
