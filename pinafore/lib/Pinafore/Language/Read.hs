@@ -247,33 +247,13 @@ readTypeConst = do
     n <- readTypeName
     case n of
         "Any" ->
-            return $
-            return $
-            toMPolar $ let
-                t :: forall polarity. IsTypePolarity polarity
-                  => AnyW (PinaforeType baseedit polarity)
-                t =
-                    case whichTypePolarity @polarity of
-                        Left Refl ->
-                            MkAnyW $
-                            singlePinaforeType $
-                            GroundPinaforeSingularType InvertLimitPinaforeGroundType NilDolanArguments
-                        Right Refl -> MkAnyW NilPinaforeType
-                in t
+            case representative @_ @MPolarity @mpolarity of
+                NegativeMPolarity -> return $ return $ toMPolar $ MkAnyW NilPinaforeType
+                _ -> fail $ unpack n <> " not allowed as positive type"
         "None" ->
-            return $
-            return $
-            toMPolar $ let
-                t :: forall polarity. IsTypePolarity polarity
-                  => AnyW (PinaforeType baseedit polarity)
-                t =
-                    case whichTypePolarity @polarity of
-                        Left Refl -> MkAnyW NilPinaforeType
-                        Right Refl ->
-                            MkAnyW $
-                            singlePinaforeType $
-                            GroundPinaforeSingularType InvertLimitPinaforeGroundType NilDolanArguments
-                in t
+            case representative @_ @MPolarity @mpolarity of
+                PositiveMPolarity -> return $ return $ toMPolar $ MkAnyW NilPinaforeType
+                _ -> fail $ unpack n <> " not allowed as negative type"
         "Entity" ->
             return $
             return $

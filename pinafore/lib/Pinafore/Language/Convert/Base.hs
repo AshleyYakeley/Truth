@@ -50,18 +50,6 @@ instance (FromTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit)
              FromTypeF (PinaforeType baseedit) (MeetType a b) where
     fromTypeF = meetPinaforeTypeF fromTypeF fromTypeF
 
-instance ToTypeF (PinaforeSingularType baseedit) TopType where
-    toTypeF = mkTypeF $ GroundPinaforeSingularType InvertLimitPinaforeGroundType NilDolanArguments
-
-instance ToTypeF (PinaforeType baseedit) TopType where
-    toTypeF = singlePinaforeTypeF toTypeF
-
-instance FromTypeF (PinaforeSingularType baseedit) BottomType where
-    fromTypeF = mkTypeF $ GroundPinaforeSingularType InvertLimitPinaforeGroundType NilDolanArguments
-
-instance FromTypeF (PinaforeType baseedit) BottomType where
-    fromTypeF = singlePinaforeTypeF fromTypeF
-
 -- UVar
 instance KnownSymbol name => ToTypeF (PinaforeSingularType baseedit) (UVar name) where
     toTypeF = mkTypeF $ VarPinaforeSingularType MkSymbolWitness

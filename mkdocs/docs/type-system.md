@@ -40,8 +40,7 @@ Thus "order on" is contravariant.
 
 `Any` and `None` are the top and bottom of the type hierachy. That is, for any `P`, we have `None <= P` and `P <= Any`.
 
-Generally, `Any` is used as a negative type and `None` as a positive type, but in Pinafore, `Any` and `None` are each both positive and negative types.
-This is used for example to type immutable references, with the (contravariant) type parameter for writing to the reference as `None` to represent that it cannot be written to.
+`Any` is only a negative type, and `None` is only a positive type.
 
 ## Conjunction and Disjunction
 

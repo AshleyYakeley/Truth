@@ -2,10 +2,6 @@
 
 For all types T, `None <= T` and `T <= Any`.
 
-`T <= None` implies `T = None`
-
-`Any <= T` implies `T = Any`
-
 ## Entity types
 
 Entities are the things that can be represented as points in the triple-store.

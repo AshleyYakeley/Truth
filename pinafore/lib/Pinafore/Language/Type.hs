@@ -635,8 +635,6 @@ exprShowPrecGroundType ::
     => PinaforeGroundType baseedit polarity dv t
     -> DolanArguments dv (PinaforeType baseedit) t polarity ta
     -> (Text, Int)
-exprShowPrecGroundType InvertLimitPinaforeGroundType NilDolanArguments =
-    invertPolarity @polarity (showLimitType @(InvertPolarity polarity), 0)
 exprShowPrecGroundType ActionPinaforeGroundType NilDolanArguments = ("Action", 0)
 exprShowPrecGroundType OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)

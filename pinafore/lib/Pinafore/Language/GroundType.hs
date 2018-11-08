@@ -14,7 +14,6 @@ import Truth.Core
 
 -- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
 data PinaforeGroundType baseedit (polarity :: TypePolarity) (dk :: DolanVariance) (t :: DolanVarianceKind dk) where
-    InvertLimitPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (LimitType (InvertPolarity polarity))
     ActionPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (PinaforeAction baseedit)
     OrderPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance] (PinaforeOrder baseedit)
     UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (UISpec (ConstEdit Entity) baseedit)
@@ -34,7 +33,6 @@ testPinaforeGroundTypeEquality ::
        PinaforeGroundType baseedit polarity dka ta
     -> PinaforeGroundType baseedit polarity dkb tb
     -> Maybe (dka :~: dkb, ta :~~: tb)
-testPinaforeGroundTypeEquality InvertLimitPinaforeGroundType InvertLimitPinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality ActionPinaforeGroundType ActionPinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality OrderPinaforeGroundType OrderPinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality UserInterfacePinaforeGroundType UserInterfacePinaforeGroundType = Just (Refl, HRefl)
@@ -58,7 +56,6 @@ pinaforeGroundTypeVary ::
        forall baseedit polarity (dk :: DolanVariance) (f :: DolanVarianceKind dk).
        PinaforeGroundType baseedit polarity dk f
     -> DolanKindVary dk f
-pinaforeGroundTypeVary InvertLimitPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary ActionPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary OrderPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary UserInterfacePinaforeGroundType = dolanVary @dk
@@ -74,7 +71,6 @@ pinaforeGroundTypeVary SetPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary MorphismPinaforeGroundType = dolanVary @dk
 
 pinaforeGroundTypeKind :: PinaforeGroundType baseedit polarity dk t -> DolanVarianceType dk
-pinaforeGroundTypeKind InvertLimitPinaforeGroundType = representative
 pinaforeGroundTypeKind ActionPinaforeGroundType = representative
 pinaforeGroundTypeKind OrderPinaforeGroundType = representative
 pinaforeGroundTypeKind UserInterfacePinaforeGroundType = representative
