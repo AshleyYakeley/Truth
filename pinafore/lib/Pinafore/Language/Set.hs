@@ -76,10 +76,68 @@ pinaforeSetRemoveAll (MkPinaforeSet _ set) =
 pinaforeSetFunctionValue :: PinaforeSet baseedit '( t, a) -> PinaforeFunctionValue baseedit (FiniteSet a)
 pinaforeSetFunctionValue (MkPinaforeSet tr set) = funcEditFunction (fmap $ rangeCo tr) . lensFunctionValue set
 
-pinaforeSetContains ::
+pinaforeSetMembership ::
        PinaforeSet baseedit '( BottomType, Entity) -> PinaforeReference baseedit '( TopType, Entity -> Bool)
-pinaforeSetContains set =
+pinaforeSetMembership set =
     pinaforeFunctionToReference $ funcEditFunction (\s -> Known $ \p -> member p s) . pinaforeSetFunctionValue set
+
+pinaforeSetContains ::
+       PinaforeSet baseedit '( a, TopType)
+    -> PinaforeReference baseedit '( BottomType, a)
+    -> PinaforeReference baseedit '( TopType, Bool)
+pinaforeSetContains (MkPinaforeSet (rangeContra -> conv) (editLensFunction -> setf)) (pinaforeReferenceToFunction -> fva) = let
+    containsEditFunction ::
+           forall a b. Eq b
+        => (a -> b)
+        -> EditFunction (PairEdit (FiniteSetEdit b) (WholeEdit (Know a))) (WholeEdit (Know Bool))
+    containsEditFunction ab = let
+        getf ::
+               forall m. MonadIO m
+            => Know a
+            -> MutableRead m (PairEditReader (FiniteSetEdit b) (WholeEdit (Know a)))
+            -> m (Know Bool)
+        getf Unknown _ = return Unknown
+        getf (Known a) mr = do
+            mu <- mr $ MkTupleEditReader SelectFirst $ KeyReadItem (ab a) ReadWhole
+            return $ Known $ isJust mu
+        efGet ::
+               ReadFunctionT IdentityT (PairEditReader (FiniteSetEdit b) (WholeEdit (Know a))) (WholeReader (Know Bool))
+        efGet mr ReadWhole =
+            lift $ do
+                ka <- mr $ MkTupleEditReader SelectSecond ReadWhole
+                getf ka mr
+        efUpdate ::
+               forall m. MonadIO m
+            => PairEdit (FiniteSetEdit b) (WholeEdit (Know a))
+            -> MutableRead m (PairEditReader (FiniteSetEdit b) (WholeEdit (Know a)))
+            -> IdentityT m [WholeEdit (Know Bool)]
+        efUpdate (MkTupleEdit SelectFirst (KeyEditItem _ edit)) _ = never edit
+        efUpdate (MkTupleEdit SelectFirst (KeyDeleteItem b)) mr =
+            lift $ do
+                ka <- mr $ MkTupleEditReader SelectSecond ReadWhole
+                case ka of
+                    Known a
+                        | ab a == b -> return $ pure $ MkWholeEdit $ Known False
+                    _ -> return []
+        efUpdate (MkTupleEdit SelectFirst (KeyInsertReplaceItem b)) mr =
+            lift $ do
+                ka <- mr $ MkTupleEditReader SelectSecond ReadWhole
+                case ka of
+                    Known a
+                        | ab a == b -> return $ pure $ MkWholeEdit $ Known True
+                    _ -> return []
+        efUpdate (MkTupleEdit SelectFirst KeyClear) mr =
+            lift $ do
+                ka <- mr $ MkTupleEditReader SelectSecond ReadWhole
+                case ka of
+                    Known _ -> return $ pure $ MkWholeEdit $ Known False
+                    _ -> return []
+        efUpdate (MkTupleEdit SelectSecond (MkWholeEdit ka)) mr =
+            lift $ do
+                kk <- getf ka mr
+                return $ pure $ MkWholeEdit kk
+        in MkCloseUnlift identityUnlift MkAnEditFunction {..}
+    in pinaforeFunctionToReference $ containsEditFunction conv . pairJoinEditFunctions setf fva
 
 pinaforeSetSingle ::
        forall baseedit a.

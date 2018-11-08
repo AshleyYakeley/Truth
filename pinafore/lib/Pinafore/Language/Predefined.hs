@@ -305,7 +305,7 @@ predefinitions =
               , mkDefEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
                 qjoin @baseedit
               , mkDefEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
-              , mkDefEntry "contains" "Determine membership of a set." $ pinaforeSetContains @baseedit
+              , mkDefEntry "membership" "Get the membership of a set." $ pinaforeSetMembership @baseedit
               , mkDefEntry "single" "The member of a single-member set, or null." $ pinaforeSetSingle @baseedit @A
               , mkDefEntry "count" "Count of non-null literals in a set." $
                 pinaforeSetFunc @baseedit @TopType @Int olength
@@ -319,7 +319,7 @@ predefinitions =
               [ mkDefEntry "identity" "The identity morphism." $ identityPinaforeMorphism @baseedit @A
               , mkDefEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
               , mkDefEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseedit @AP @AQ @BP @BQ
-              , mkDefEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseedit @A @B
+              , mkDefEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseedit @A @BP @BQ
               , mkDefEntry "!@" "Co-apply a morphism to a reference." $
                 pinaforeApplyInverseMorphismRef @baseedit @AP @AQ @BP @BQ
               , mkDefEntry "!@@" "Co-apply a morphism to a set." $
