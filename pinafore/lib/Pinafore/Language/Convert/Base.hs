@@ -238,11 +238,11 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType baseedit) p, FromTypeF (Pinafor
 -- PinaforeLensValue
 instance (baseedit ~ edit, FromTypeF (PinaforeType edit) t, ToTypeF (PinaforeType edit) t) =>
              ToTypeF (PinaforeType baseedit) (PinaforeLensValue edit (WholeEdit (Know t))) where
-    toTypeF = contramap (MkPinaforeReference identityRange) toTypeF
+    toTypeF = contramap pinaforeLensToReference toTypeF
 
 instance (baseedit ~ edit, FromTypeF (PinaforeType edit) t, ToTypeF (PinaforeType edit) t) =>
              FromTypeF (PinaforeType baseedit) (PinaforeLensValue edit (WholeEdit (Know t))) where
-    fromTypeF = fmap unPinaforeReference fromTypeF
+    fromTypeF = fmap pinaforeReferenceToLens fromTypeF
 
 -- PinaforeImmutableReference
 instance (baseedit ~ edit, FromTypeF (PinaforeType edit) a) =>

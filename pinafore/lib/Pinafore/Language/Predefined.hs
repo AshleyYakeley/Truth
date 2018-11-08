@@ -191,7 +191,7 @@ ui_pick nameMorphism fset ref = let
     opts =
         (orderedKeyList @(FiniteSet PickerPairType) $ \(_, a) (_, b) -> compare a b) .
         convertEditFunction . applyPinaforeFunction getNames (pinaforeSetFunctionValue fset)
-    in uiOption @baseedit @PickerType opts $ unPinaforeReference $ contraMapRange meet2 ref
+    in uiOption @baseedit @PickerType opts $ pinaforeReferenceToLens $ contraMapRange meet2 ref
 
 qfail :: forall baseedit. Text -> PinaforeAction baseedit
 qfail t = liftIO $ fail $ unpack t

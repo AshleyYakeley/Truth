@@ -63,8 +63,10 @@ pinaforeApplyMorphismRef ::
        PinaforeMorphism baseedit '( qa, pa) '( pb, qb)
     -> PinaforeReference baseedit '( pa, qa)
     -> PinaforeReference baseedit '( pb, qb)
-pinaforeApplyMorphismRef (MkPinaforeMorphism tra trb m) (MkPinaforeReference tra' lv) =
-    MkPinaforeReference trb $ applyPinaforeLens m $ bijectionWholeEditLens (cfmap $ bijectRanges tra' tra) . lv
+pinaforeApplyMorphismRef (MkPinaforeMorphism tra trb m) (LensPinaforeReference tra' lv) =
+    LensPinaforeReference trb $ applyPinaforeLens m $ bijectionWholeEditLens (cfmap $ bijectRanges tra' tra) . lv
+pinaforeApplyMorphismRef (MkPinaforeMorphism (MkRange fa _) (MkRange _ fb) m) (ImmutPinaforeReference fv) =
+    ImmutPinaforeReference $ fmap fb $ applyImmutableReference (lensFunctionMorphism m) $ fmap fa fv
 
 pinaforeApplyMorphismSet ::
        forall baseedit a b.
@@ -84,8 +86,10 @@ pinaforeApplyInverseMorphismRef ::
        PinaforeMorphism baseedit '( pb, qb) '( qa, pa)
     -> PinaforeReference baseedit '( pa, qa)
     -> PinaforeSet baseedit '( pb, qb)
-pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb tra m) (MkPinaforeReference tra' lv) =
+pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb tra m) (LensPinaforeReference tra' lv) =
     MkPinaforeSet trb $ applyInversePinaforeLens m $ bijectionWholeEditLens (cfmap $ bijectRanges tra' tra) . lv
+pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb (MkRange fa _) m) (ImmutPinaforeReference fv) =
+    MkPinaforeSet trb $ applyInversePinaforeLens m $ immutableReferenceToLens $ fmap fa fv
 
 pinaforeApplyInverseMorphismSet ::
        forall baseedit pa qa pb qb.

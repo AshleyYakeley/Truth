@@ -77,14 +77,14 @@ pinaforeSetFunctionValue :: PinaforeSet baseedit '( t, a) -> PinaforeFunctionVal
 pinaforeSetFunctionValue (MkPinaforeSet tr set) = funcEditFunction (fmap $ rangeCo tr) . lensFunctionValue set
 
 pinaforeSetContains ::
-       PinaforeSet baseedit '( BottomType, Entity) -> PinaforeReference baseedit '( BottomType, Entity -> Bool)
+       PinaforeSet baseedit '( BottomType, Entity) -> PinaforeReference baseedit '( TopType, Entity -> Bool)
 pinaforeSetContains set =
     pinaforeFunctionToReference $ funcEditFunction (\s -> Known $ \p -> member p s) . pinaforeSetFunctionValue set
 
 pinaforeSetSingle ::
        forall baseedit a.
        PinaforeSet baseedit '( BottomType, MeetType Entity a)
-    -> PinaforeReference baseedit '( BottomType, a)
+    -> PinaforeReference baseedit '( TopType, a)
 pinaforeSetSingle set =
     pinaforeFunctionToReference $ funcEditFunction (fmap meet2 . maybeToKnow . getSingle) . pinaforeSetFunctionValue set
 
@@ -92,5 +92,5 @@ pinaforeSetFunc ::
        forall baseedit a b.
        (FiniteSet a -> b)
     -> PinaforeSet baseedit '( BottomType, a)
-    -> PinaforeReference baseedit '( BottomType, b)
+    -> PinaforeReference baseedit '( TopType, b)
 pinaforeSetFunc f set = pinaforeFunctionToReference $ funcEditFunction (Known . f) . pinaforeSetFunctionValue set

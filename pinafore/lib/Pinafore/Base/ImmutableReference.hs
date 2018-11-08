@@ -1,5 +1,6 @@
 module Pinafore.Base.ImmutableReference where
 
+import Pinafore.Base.Action
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
@@ -21,8 +22,17 @@ instance Alternative (PinaforeImmutableReference baseedit) where
     (MkPinaforeImmutableReference fa) <|> (MkPinaforeImmutableReference fb) =
         MkPinaforeImmutableReference $ funcEditFunction (\(ma, mb) -> ma <|> mb) . pairWholeEditFunction fa fb
 
+immutableReferenceToFunction :: PinaforeImmutableReference baseedit a -> PinaforeFunctionValue baseedit (Know a)
+immutableReferenceToFunction (MkPinaforeImmutableReference fv) = fv
+
+immutableReferenceToLens :: PinaforeImmutableReference baseedit a -> PinaforeLensValue baseedit (WholeEdit (Know a))
+immutableReferenceToLens ref = readOnlyEditLens $ immutableReferenceToFunction ref
+
+getImmutableReference :: PinaforeImmutableReference baseedit a -> PinaforeActionM baseedit (Know a)
+getImmutableReference ref = pinaforeFunctionValueGet $ immutableReferenceToFunction ref
+
 pinaforeImmutableReferenceValue :: a -> PinaforeImmutableReference baseedit a -> PinaforeFunctionValue baseedit a
-pinaforeImmutableReferenceValue def (MkPinaforeImmutableReference f) = funcEditFunction (fromKnow def) . f
+pinaforeImmutableReferenceValue def ref = funcEditFunction (fromKnow def) . immutableReferenceToFunction ref
 
 applyImmutableReference ::
        PinaforeFunctionMorphism baseedit (Know a) (Know b)
