@@ -644,7 +644,19 @@ readExpression3 =
              SingleMPolarType (MkAnyW tp) <- mt
              pt <- makePoint tp $ MkPoint uuid
              return $ qConstExprAny $ MkAnyValue tp pt) <|>
-    (readParen readExpression) <|>
+    (readParen $ do
+         ce1 <- readExpression
+         mce2 <-
+             optional $ do
+                 readThis TokComma
+                 readExpression
+         case mce2 of
+             Just ce2 ->
+                 return $ do
+                     e1 <- ce1
+                     e2 <- ce2
+                     qApplyAllExpr (qConstExpr ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))) [e1, e2]
+             Nothing -> return ce1) <|>
     (do
          readThis TokOpenBracket
          mexprs <-
