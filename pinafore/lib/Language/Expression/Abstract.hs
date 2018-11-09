@@ -64,47 +64,49 @@ type FunctionPosWitness vw tw = forall r a b. vw a -> tw b -> (forall f. tw f ->
 type FunctionNegWitness vw tw = forall r a b. tw a -> vw b -> (forall f. vw f -> (f -> (a -> b)) -> r) -> r
 
 abstractSealedExpression ::
-       forall renamer unifier name.
+       forall renamer unifier m name.
        ( Eq name
+       , Monad m
        , Renamer renamer
        , Unifier unifier
        , RenamerNegWitness renamer ~ UnifierNegWitness unifier
        , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , UnifierMonad unifier ~ renamer m
        )
     => FunctionPosWitness (RenamerNegWitness renamer) (RenamerPosWitness renamer)
     -> name
     -> SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer)
-    -> UnifierMonad unifier (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
+    -> m (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
 abstractSealedExpression absw name sexpr =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
         MkSealedExpression twt expr <- renameSealedExpression sexpr
         MkAbstracter abstract <- abstractNamedExpression @unifier
-        lift $ do
-            MkAbstractResult vwt (unifierExpression -> uexpr') <- abstract name expr
-            (expr', subs) <- solveUnifier @unifier uexpr'
-            unifierPosSubstitute @unifier subs twt $ \twt' tconv ->
-                absw vwt twt' $ \twf abconv ->
-                    return $ unifierExpressionSubstituteAndSimplify @unifier subs twf $ fmap (abconv . fmap tconv) expr'
+        MkAbstractResult vwt (unifierExpression -> uexpr') <- abstract name expr
+        (expr', subs) <- solveUnifier @unifier uexpr'
+        unifierPosSubstitute @unifier subs twt $ \twt' tconv ->
+            absw vwt twt' $ \twf abconv ->
+                return $ unifierExpressionSubstituteAndSimplify @unifier subs twf $ fmap (abconv . fmap tconv) expr'
 
 applySealedExpression ::
-       forall renamer unifier name.
-       ( Renamer renamer
+       forall renamer unifier m name.
+       ( Monad m
+       , Renamer renamer
        , Unifier unifier
        , RenamerNegWitness renamer ~ UnifierNegWitness unifier
        , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , UnifierMonad unifier ~ renamer m
        )
     => FunctionNegWitness (RenamerNegWitness renamer) (RenamerPosWitness renamer)
     -> SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer)
     -> SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer)
-    -> UnifierMonad unifier (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
+    -> m (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
 applySealedExpression appw sexprf sexpra =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
         MkSealedExpression tf exprf <- renameSealedExpression sexprf
         MkSealedExpression ta expra <- renameSealedExpression sexpra
         renameNewVar $ \vx tx convvar ->
-            lift $
             appw ta vx $ \vax convf -> do
                 uconv <- getCompose $ unifyPosNegWitnesses tf vax
                 (convu, subs) <- solveUnifier @unifier uconv
@@ -115,27 +117,28 @@ applySealedExpression appw sexprf sexpra =
 
 -- | not recursive
 letSealedExpression ::
-       forall renamer unifier name.
+       forall renamer unifier m name.
        ( Eq name
+       , Monad m
        , Renamer renamer
        , Unifier unifier
        , RenamerNegWitness renamer ~ UnifierNegWitness unifier
        , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , UnifierMonad unifier ~ renamer m
        )
     => name
     -> SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer)
     -> SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer)
-    -> UnifierMonad unifier (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
+    -> m (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
 letSealedExpression name sexpre sexprb =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
         MkSealedExpression te expre <- renameSealedExpression sexpre
         MkSealedExpression tb exprb <- renameSealedExpression sexprb
         MkAbstracter abstract <- abstractNamedExpression @unifier
-        lift $ do
-            MkAbstractResult vt (unifierExpression -> uexprf) <- abstract name exprb
-            uconvet <- getCompose $ unifyPosNegWitnesses te vt
-            (exprf', subs) <-
-                solveUnifier @unifier $ (\exprf convet -> fmap (\tt2 -> tt2 . convet) exprf) <$> uexprf <*> uconvet
-            unifierPosSubstitute @unifier subs tb $ \tb' tconv ->
-                return $ unifierExpressionSubstituteAndSimplify @unifier subs tb' $ (fmap tconv) <$> exprf' <*> expre
+        MkAbstractResult vt (unifierExpression -> uexprf) <- abstract name exprb
+        uconvet <- getCompose $ unifyPosNegWitnesses te vt
+        (exprf', subs) <-
+            solveUnifier @unifier $ (\exprf convet -> fmap (\tt2 -> tt2 . convet) exprf) <$> uexprf <*> uconvet
+        unifierPosSubstitute @unifier subs tb $ \tb' tconv ->
+            return $ unifierExpressionSubstituteAndSimplify @unifier subs tb' $ (fmap tconv) <$> exprf' <*> expre

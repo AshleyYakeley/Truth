@@ -65,7 +65,6 @@ applyTypedExpression ::
     -> TypedExpression name ts
     -> TypeCheck ts (TypedExpression name ts)
 applyTypedExpression tf ta =
-    runRenamer @(TypeRenamer ts) $
     applySealedExpression @(TypeRenamer ts) @(TypeUnifier ts) (typeSystemFunctionNegWitness @ts) tf ta
 
 abstractTypedExpression ::
@@ -74,7 +73,6 @@ abstractTypedExpression ::
     -> TypedExpression name ts
     -> TypeCheck ts (TypedExpression name ts)
 abstractTypedExpression n expr =
-    runRenamer @(TypeRenamer ts) $
     abstractSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) (typeSystemFunctionPosWitness @ts) n expr
 
 varTypedExpression ::
@@ -95,8 +93,7 @@ letTypedExpression ::
     -> TypedExpression name ts
     -> TypedExpression name ts
     -> TypeCheck ts (TypedExpression name ts)
-letTypedExpression n expv expb =
-    runRenamer @(TypeRenamer ts) $ letSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) n expv expb
+letTypedExpression n expv expb = letSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) n expv expb
 
 type TypedBindings name ts = Bindings name (TypeUnifier ts)
 
