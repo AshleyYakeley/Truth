@@ -112,8 +112,7 @@ uncheckedBindingsLetTypedExpression ::
     => TypedBindings name ts
     -> TypedExpression name ts
     -> TypeCheck ts (TypedExpression name ts)
-uncheckedBindingsLetTypedExpression bb expb =
-    runRenamer @(TypeRenamer ts) $ bindingsLetSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) bb expb
+uncheckedBindingsLetTypedExpression bb expb = bindingsLetSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) bb expb
 
 typedBindingsCheckDuplicates ::
        forall ts name m. (Eq name, Show name, TypeSystem ts, MonadFail m)

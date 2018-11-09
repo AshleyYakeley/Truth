@@ -68,27 +68,28 @@ mkBound ((MkBinding name sexpr):bb) =
             in MkBound abstractNames' exprs'
 
 bindingsLetSealedExpression ::
-       forall renamer unifier name.
-       ( Eq name
+       forall renamer unifier m name.
+       ( Monad m
+       , Eq name
        , Renamer renamer
        , Unifier unifier
        , RenamerNegWitness renamer ~ UnifierNegWitness unifier
        , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , UnifierMonad unifier ~ renamer m
        )
     => Bindings name unifier
     -> SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer)
-    -> UnifierMonad unifier (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
+    -> m (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
 bindingsLetSealedExpression (MkBindings bindings) sexprb =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
         MkBound abstractNames exprs <- mkBound bindings
         MkSealedExpression tb exprb <- renameSealedExpression sexprb
-        lift $ do
-            ues <- abstractNames exprs
-            ueb <- abstractNames exprb
-            ((es, eb), subs) <- solveUnifier @unifier $ (,) <$> unifierExpression ues <*> unifierExpression ueb
-            unifierPosSubstitute @unifier subs tb $ \tb' tconv ->
-                return $ unifierExpressionSubstituteAndSimplify @unifier subs tb' $ fmap tconv $ eb <*> fmap fix es
+        ues <- abstractNames exprs
+        ueb <- abstractNames exprb
+        ((es, eb), subs) <- solveUnifier @unifier $ (,) <$> unifierExpression ues <*> unifierExpression ueb
+        unifierPosSubstitute @unifier subs tb $ \tb' tconv ->
+            return $ unifierExpressionSubstituteAndSimplify @unifier subs tb' $ fmap tconv $ eb <*> fmap fix es
 
 duplicates ::
        forall a. Eq a
