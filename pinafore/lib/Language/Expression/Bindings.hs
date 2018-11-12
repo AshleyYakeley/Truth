@@ -41,6 +41,7 @@ mkBound ::
        , Unifier unifier
        , RenamerNegWitness renamer ~ UnifierNegWitness unifier
        , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , UnifierMonad unifier ~ renamer m
        )
     => [Binding name unifier]
     -> renamer m (Bound name unifier)
@@ -50,7 +51,6 @@ mkBound ((MkBinding name sexpr):bb) =
     withTransConstraintTM @Monad $ do
         MkSealedExpression twt expr <- renameSealedExpression sexpr
         MkBound abstractNames exprs <- mkBound bb
-        MkAbstracter abstract <- abstractNamedExpression @unifier
         return $ let
             abstractNames' ::
                    forall a.
@@ -58,7 +58,7 @@ mkBound ((MkBinding name sexpr):bb) =
                 -> UnifierMonad unifier (UnifyExpression name unifier (_ -> a))
             abstractNames' e = do
                 MkUnifyExpression uconvRest e' <- abstractNames e
-                MkAbstractResult vwt (MkUnifyExpression uconvFirst e'') <- abstract name e'
+                MkAbstractResult vwt (MkUnifyExpression uconvFirst e'') <- abstractNamedExpression @unifier name e'
                 uconvVar <- getCompose $ unifyPosNegWitnesses @unifier twt vwt
                 let uresult = (,,) <$> uconvFirst <*> uconvRest <*> uconvVar
                 return $
