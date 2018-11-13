@@ -103,7 +103,7 @@ applySealedExpression appw sexprf sexpra =
         MkSealedExpression ta expra <- renameSealedExpression sexpra
         renameNewVar $ \vx tx convvar ->
             appw ta vx $ \vax convf -> do
-                uconv <- getCompose $ unifyPosNegWitnesses tf vax
+                uconv <- unifyPosNegWitnesses tf vax
                 (convu, subs) <- solveUnifier @unifier uconv
                 unifierPosSubstitute @unifier subs tx $ \tx' tconv ->
                     return $
@@ -131,7 +131,7 @@ letSealedExpression name sexpre sexprb =
         MkSealedExpression te expre <- renameSealedExpression sexpre
         MkSealedExpression tb exprb <- renameSealedExpression sexprb
         MkAbstractResult vt (unifierExpression -> uexprf) <- abstractNamedExpression @unifier name exprb
-        uconvet <- getCompose $ unifyPosNegWitnesses te vt
+        uconvet <- unifyPosNegWitnesses te vt
         (exprf', subs) <-
             solveUnifier @unifier $ (\exprf convet -> fmap (\tt2 -> tt2 . convet) exprf) <$> uexprf <*> uconvet
         unifierPosSubstitute @unifier subs tb $ \tb' tconv ->

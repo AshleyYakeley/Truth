@@ -513,7 +513,7 @@ instance Unifier (PinaforeUnifier baseedit) where
     type UnifierSubstitutions (PinaforeUnifier baseedit) = [PinaforeBisubstitution baseedit]
     unifyNegWitnesses ta tb cont = meetPinaforeTypes ta tb $ \tab conva convb -> cont tab $ pure (conva, convb)
     unifyPosWitnesses ta tb cont = joinPinaforeTypes ta tb $ \tab conva convb -> cont tab $ pure (conva, convb)
-    unifyPosNegWitnesses = unifyPosNegPinaforeTypes
+    unifyPosNegWitnesses tq tp = getCompose $ unifyPosNegPinaforeTypes tq tp
     solveUnifier = runUnifier
     unifierPosSubstitute subs t = unTypeF $ bisubstituteAllPositiveType subs t
     unifierNegSubstitute subs t = unTypeF $ bisubstituteAllNegativeType subs t

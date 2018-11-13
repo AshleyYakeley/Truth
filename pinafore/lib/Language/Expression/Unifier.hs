@@ -21,7 +21,7 @@ class (Monad (UnifierMonad unifier), Applicative unifier) => Unifier unifier whe
         -> (forall ab. UnifierPosWitness unifier ab -> unifier (a -> ab, b -> ab) -> UnifierMonad unifier r)
         -> UnifierMonad unifier r
     unifyPosNegWitnesses ::
-           UnifierPosWitness unifier a -> UnifierNegWitness unifier b -> Compose (UnifierMonad unifier) unifier (a -> b)
+           UnifierPosWitness unifier a -> UnifierNegWitness unifier b -> UnifierMonad unifier (unifier (a -> b))
     solveUnifier :: unifier a -> UnifierMonad unifier (a, UnifierSubstitutions unifier)
     unifierPosSubstitute ::
            UnifierSubstitutions unifier
@@ -46,7 +46,7 @@ solveUnifyPosNegWitnesses ::
     -> UnifierNegWitness unifier b
     -> UnifierMonad unifier (a -> b)
 solveUnifyPosNegWitnesses wa wb = do
-    uab <- getCompose $ unifyPosNegWitnesses @unifier wa wb
+    uab <- unifyPosNegWitnesses @unifier wa wb
     (ab, _) <- solveUnifier uab
     return ab
 
