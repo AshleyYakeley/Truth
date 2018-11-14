@@ -68,7 +68,9 @@ unifierExpressionSubstituteAndSimplify ::
     -> NamedExpression name (UnifierNegWitness unifier) a
     -> SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
 unifierExpressionSubstituteAndSimplify subs twt expr =
-    simplifyExpressionType @unifier $ MkSealedExpression twt $ unifierExpressionSubstitute @unifier subs expr
+    simplifyExpressionType @unifier $
+    unifierPosSubstitute @unifier subs twt $ \twt' tconv ->
+        MkSealedExpression twt' $ unifierExpressionSubstitute @unifier subs $ fmap tconv expr
 
 data UnifyExpression name unifier a =
     forall conv. MkUnifyExpression (unifier conv)

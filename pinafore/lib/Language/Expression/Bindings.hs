@@ -79,9 +79,7 @@ mkBound ((MkBinding name sexpr):bb) =
                 -> Bindings name unifier
             getbinds' subs fexpr =
                 getbinds subs (fmap snd fexpr) <>
-                (singleBinding name $
-                 unifierPosSubstitute @unifier subs twt $ \twt' tconv ->
-                     unifierExpressionSubstituteAndSimplify @unifier subs twt' $ fmap (tconv . fst) fexpr)
+                (singleBinding name $ unifierExpressionSubstituteAndSimplify @unifier subs twt $ fmap fst fexpr)
             in MkBound abstractNames' exprs' getbinds'
 
 boundToBindings ::
@@ -114,8 +112,7 @@ bindingsLetSealedExpression (MkBindings bindings) sexprb =
         MkSealedExpression tb exprb <- renameSealedExpression sexprb
         uexprb' <- letBindNamedExpression @unifier (\name -> lookup name $ bindingsMap bindings') exprb
         (exprb', subs) <- solveUnifier @unifier $ unifierExpression uexprb'
-        unifierPosSubstitute @unifier subs tb $ \tb' tconv ->
-            return $ unifierExpressionSubstituteAndSimplify @unifier subs tb' $ fmap tconv exprb'
+        return $ unifierExpressionSubstituteAndSimplify @unifier subs tb exprb'
 
 duplicates ::
        forall a. Eq a
