@@ -55,6 +55,34 @@ abstractNamedExpression name expr =
         abstractNamedExpressionUnifier @unifier name vwt0 expr $ \vwt uconv expr' ->
             return $ MkAbstractResult vwt $ MkUnifyExpression uconv $ fmap (\tua t'ttu -> tua . snd . t'ttu) expr'
 
+letBindNamedExpression ::
+       forall unifier renamer m name a.
+       ( Renamer renamer
+       , Monad m
+       , Unifier unifier
+       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
+       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , UnifierMonad unifier ~ renamer m
+       , Eq name
+       )
+    => (name -> Maybe (SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)))
+    -> NamedExpression name (UnifierNegWitness unifier) a
+    -> UnifierMonad unifier (UnifyExpression name unifier a)
+letBindNamedExpression _ (ClosedExpression a) = return $ pure a
+letBindNamedExpression bindmap (OpenExpression (MkNameWitness name vwt) expr) = do
+    uerest <- letBindNamedExpression @unifier bindmap expr
+    case bindmap name of
+        Just bindexpr -> do
+            MkSealedExpression twt bindexpr' <- renameSealedExpression bindexpr
+            ubindconv <- unifyPosNegWitnesses @unifier twt vwt
+            let uebind = MkUnifyExpression ubindconv $ fmap (\t1 tt -> tt t1) bindexpr'
+            return $ uerest <*> uebind
+        Nothing ->
+            return $
+            case uerest of
+                MkUnifyExpression uconv expr' ->
+                    MkUnifyExpression uconv $ OpenExpression (MkNameWitness name vwt) (fmap (\cta t c -> cta c t) expr')
+
 type FunctionPosWitness vw tw = forall r a b. vw a -> tw b -> (forall f. tw f -> ((a -> b) -> f) -> r) -> r
 
 type FunctionNegWitness vw tw = forall r a b. tw a -> vw b -> (forall f. vw f -> (f -> (a -> b)) -> r) -> r

@@ -105,7 +105,7 @@ singleTypedBinding ::
 singleTypedBinding = singleBinding
 
 uncheckedBindingsLetTypedExpression ::
-       forall ts name. (Eq name, TypeSystem ts)
+       forall ts name. (Ord name, TypeSystem ts)
     => TypedBindings name ts
     -> TypedExpression name ts
     -> TypeCheck ts (TypedExpression name ts)
