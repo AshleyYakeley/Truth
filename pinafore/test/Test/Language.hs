@@ -239,6 +239,10 @@ testQueries =
         , testQuery "let a x = 1; b = a b in b" $ Just $ showText "1"
         , testQuery "let b = a b; a x = 1 in b" $ Just $ showText "1"
         , testQuery "let a x = 1; b = a c; c=b in b" $ Just $ showText "1"
+        -- recursive let-binding polymorphism
+        , testQuery "let i = \\x -> x in (1 + i 1, i false)" $ Just "(2, false)"
+        , testQuery "let i = \\x -> x; r = (1 + i 1, i false) in r" $ Just "(2, false)"
+        , testQuery "let r = (1 + i 1, i false); i = \\x -> x in r" $ Just "(2, false)"
         -- duplicate bindings
         , testQuery "let a=1;a=1 in a" $ Nothing
         , testQuery "let a=1;a=2 in a" $ Nothing
