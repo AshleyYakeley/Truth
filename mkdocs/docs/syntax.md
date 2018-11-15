@@ -92,7 +92,8 @@ In interactive mode, each line has syntax `<interactive>`.
     literal-number |
     literal-text |
     "[" <comma-separated-expressions> "]" |
-    "(" <expression> ")"
+    "(" <expression> ")" |
+    "(" <infix-operator[n]> ")"
 
 <comma-separated-expressions> ::=  | <comma-separated-expressions-1>
 
