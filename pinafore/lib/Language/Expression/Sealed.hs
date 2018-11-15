@@ -33,6 +33,9 @@ evalSealedExpression (MkSealedExpression twa expr) = do
 varSealedExpression :: name -> vw tv -> tw tt -> (tv -> tt) -> SealedExpression name vw tw
 varSealedExpression n vwt twt conv = MkSealedExpression twt $ fmap conv $ varNamedExpression n vwt
 
+sealedExpressionFreeNames :: SealedExpression name vw tw -> [name]
+sealedExpressionFreeNames (MkSealedExpression _ expr) = namedExpressionFreeNames expr
+
 type instance Element (SealedExpression name vw ((:~:) val)) = val
 
 instance MonoFunctor (SealedExpression name vw ((:~:) val)) where

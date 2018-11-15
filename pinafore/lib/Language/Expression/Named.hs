@@ -34,6 +34,9 @@ pattern MkNameWitness name wit =
 
 type NamedExpression name w = NameTypeExpression (UnitWitness name) (UnitWitness' w)
 
+namedExpressionFreeNames :: NamedExpression name vw a -> [name]
+namedExpressionFreeNames expr = expressionFreeWitnesses (\(MkNameWitness n _) -> n) expr
+
 substituteExpression :: WitnessSubstitution Type vw1 vw2 -> NamedExpression name vw1 a -> NamedExpression name vw2 a
 substituteExpression _ (ClosedExpression a) = ClosedExpression a
 substituteExpression witmap@(MkWitnessMap wm) (OpenExpression (MkNameWitness name wt) expr) =

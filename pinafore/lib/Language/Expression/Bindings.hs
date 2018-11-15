@@ -9,6 +9,7 @@ module Language.Expression.Bindings
     , bindingsLetSealedExpression
     ) where
 
+import Data.Graph
 import Language.Expression.Abstract
 import Language.Expression.Named
 import Language.Expression.Renamer
@@ -91,6 +92,13 @@ boundToBindings (MkBound abstractNames exprs getbinds) = do
     (fexpr, subs) <- solveUnifier @unifier $ unifierExpression uexprvv
     return $ getbinds subs $ fmap fix fexpr
 
+getBindingNode :: Binding name unifier -> (Binding name unifier, name, [name])
+getBindingNode b@(MkBinding n expr) = (b, n, sealedExpressionFreeNames expr)
+
+-- | Group bindings into a topologically-sorted list of strongly-connected components
+clumpBindings :: Ord name => Bindings name unifier -> [Bindings name unifier]
+clumpBindings (MkBindings bb) = fmap (MkBindings . flattenSCC) $ stronglyConnComp $ fmap getBindingNode bb
+
 bindingsLetSealedExpression ::
        forall renamer unifier m name.
        ( Monad m
@@ -104,7 +112,27 @@ bindingsLetSealedExpression ::
     => Bindings name unifier
     -> SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer)
     -> m (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
-bindingsLetSealedExpression (MkBindings bindings) sexprb =
+bindingsLetSealedExpression bindings = let
+    doClumps [] expr = return expr
+    doClumps (b:bb) expr = do
+        expr' <- doClumps bb expr
+        bindingsComponentLetSealedExpression b expr'
+    in doClumps $ clumpBindings bindings
+
+bindingsComponentLetSealedExpression ::
+       forall renamer unifier m name.
+       ( Monad m
+       , Ord name
+       , Renamer renamer
+       , Unifier unifier
+       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
+       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , UnifierMonad unifier ~ renamer m
+       )
+    => Bindings name unifier
+    -> SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer)
+    -> m (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
+bindingsComponentLetSealedExpression (MkBindings bindings) sexprb =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
         bound <- mkBound bindings
