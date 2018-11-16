@@ -338,39 +338,51 @@ instance ( baseedit ~ edit
 
 -- Entity
 instance ToTypeF (PinaforeSingularType baseedit) Entity where
-    toTypeF = mkTypeF $ GroundPinaforeSingularType EntityPinaforeGroundType NilDolanArguments
+    toTypeF =
+        mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments
 
 instance ToTypeF (PinaforeType baseedit) Entity where
     toTypeF = singlePinaforeTypeF toTypeF
 
 instance FromTypeF (PinaforeSingularType baseedit) Entity where
-    fromTypeF = mkTypeF $ GroundPinaforeSingularType EntityPinaforeGroundType NilDolanArguments
+    fromTypeF =
+        mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments
 
 instance FromTypeF (PinaforeType baseedit) Entity where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- NamedEntity
 instance KnownSymbol name => ToTypeF (PinaforeSingularType baseedit) (NamedEntity name) where
-    toTypeF = mkTypeF $ GroundPinaforeSingularType (NamedEntityPinaforeGroundType MkSymbolWitness) NilDolanArguments
+    toTypeF =
+        mkTypeF $
+        GroundPinaforeSingularType
+            (SimpleEntityPinaforeGroundType $ NamedSimpleEntityType MkSymbolWitness)
+            NilDolanArguments
 
 instance KnownSymbol name => ToTypeF (PinaforeType baseedit) (NamedEntity name) where
     toTypeF = singlePinaforeTypeF toTypeF
 
 instance KnownSymbol name => FromTypeF (PinaforeSingularType baseedit) (NamedEntity name) where
-    fromTypeF = mkTypeF $ GroundPinaforeSingularType (NamedEntityPinaforeGroundType MkSymbolWitness) NilDolanArguments
+    fromTypeF =
+        mkTypeF $
+        GroundPinaforeSingularType
+            (SimpleEntityPinaforeGroundType $ NamedSimpleEntityType MkSymbolWitness)
+            NilDolanArguments
 
 instance KnownSymbol name => FromTypeF (PinaforeType baseedit) (NamedEntity name) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- Point
 instance ToTypeF (PinaforeSingularType baseedit) Point where
-    toTypeF = mkTypeF $ GroundPinaforeSingularType PointPinaforeGroundType NilDolanArguments
+    toTypeF =
+        mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType PointSimpleEntityType) NilDolanArguments
 
 instance ToTypeF (PinaforeType baseedit) Point where
     toTypeF = singlePinaforeTypeF toTypeF
 
 instance FromTypeF (PinaforeSingularType baseedit) Point where
-    fromTypeF = mkTypeF $ GroundPinaforeSingularType PointPinaforeGroundType NilDolanArguments
+    fromTypeF =
+        mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType PointSimpleEntityType) NilDolanArguments
 
 instance FromTypeF (PinaforeType baseedit) Point where
     fromTypeF = singlePinaforeTypeF fromTypeF
@@ -384,7 +396,8 @@ literalInstances t =
           toTypeF
             = mkTypeF $
                 GroundPinaforeSingularType
-                  (LiteralPinaforeGroundType representative)
+                  (SimpleEntityPinaforeGroundType $
+                     LiteralSimpleEntityType representative)
                   NilDolanArguments
   
   instance ToTypeF (PinaforeType baseedit) $( t ) where
@@ -394,7 +407,8 @@ literalInstances t =
           fromTypeF
             = mkTypeF $
                 GroundPinaforeSingularType
-                  (LiteralPinaforeGroundType representative)
+                  (SimpleEntityPinaforeGroundType $
+                     LiteralSimpleEntityType representative)
                   NilDolanArguments
   
   instance FromTypeF (PinaforeType baseedit) $( t ) where

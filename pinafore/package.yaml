@@ -64,6 +64,7 @@ library:
       - Pinafore.Language.Name
       - Pinafore.Language.Literal
       - Pinafore.Language.NamedEntity
+      - Pinafore.Language.SimpleEntityType
       - Pinafore.Language.Reference
       - Pinafore.Language.Set
       - Pinafore.Language.Morphism

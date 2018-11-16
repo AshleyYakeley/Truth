@@ -4,6 +4,7 @@
 module Pinafore.Language.Type
     ( module Pinafore.Language.Type
     , module Pinafore.Language.GroundType
+    , module Pinafore.Language.SimpleEntityType
     , module Language.Expression.UVar
     , module Language.Expression.Dolan
     , module Pinafore.Language.TypeContext
@@ -21,8 +22,8 @@ import Language.Expression.Unifier
 import Pinafore.Base
 import Pinafore.Language.GroundType
 import Pinafore.Language.Literal
-import Pinafore.Language.NamedEntity
 import Pinafore.Language.Show
+import Pinafore.Language.SimpleEntityType
 import Pinafore.Language.TypeContext
 import Shapes
 
@@ -41,7 +42,9 @@ singlePinaforeType ::
 singlePinaforeType st = ConsPinaforeType st NilPinaforeType
 
 literalPinaforeType :: LiteralType t -> PinaforeType baseedit polarity (JoinMeetType polarity t (LimitType polarity))
-literalPinaforeType t = singlePinaforeType $ GroundPinaforeSingularType (LiteralPinaforeGroundType t) NilDolanArguments
+literalPinaforeType t =
+    singlePinaforeType $
+    GroundPinaforeSingularType (SimpleEntityPinaforeGroundType $ LiteralSimpleEntityType t) NilDolanArguments
 
 type PinaforeTypeF (baseedit :: Type) = TypeF (PinaforeType baseedit)
 
@@ -229,30 +232,18 @@ unifyPosNegGroundTypes OrderPinaforeGroundType argsa OrderPinaforeGroundType arg
     unifyPosNegArguments OrderPinaforeGroundType argsa argsb
 unifyPosNegGroundTypes UserInterfacePinaforeGroundType NilDolanArguments UserInterfacePinaforeGroundType NilDolanArguments =
     pure id
-unifyPosNegGroundTypes (LiteralPinaforeGroundType la) NilDolanArguments (LiteralPinaforeGroundType lb) NilDolanArguments
-    | Just conv <- isSubtype la lb = pure conv
-unifyPosNegGroundTypes PointPinaforeGroundType NilDolanArguments PointPinaforeGroundType NilDolanArguments = pure id
-unifyPosNegGroundTypes PointPinaforeGroundType NilDolanArguments EntityPinaforeGroundType NilDolanArguments =
-    pure pointToEntity
-unifyPosNegGroundTypes PointPinaforeGroundType NilDolanArguments (NamedEntityPinaforeGroundType _) NilDolanArguments =
-    pure $ MkNamedEntity
-unifyPosNegGroundTypes EntityPinaforeGroundType NilDolanArguments EntityPinaforeGroundType NilDolanArguments = pure id
-unifyPosNegGroundTypes (NamedEntityPinaforeGroundType t1) NilDolanArguments (NamedEntityPinaforeGroundType t2) NilDolanArguments =
-    unifierLiftTypeCheck $ getEntitySubtype t1 t2
-unifyPosNegGroundTypes (NamedEntityPinaforeGroundType _) NilDolanArguments EntityPinaforeGroundType NilDolanArguments =
-    pure namedToEntity
-unifyPosNegGroundTypes (LiteralPinaforeGroundType tl) NilDolanArguments EntityPinaforeGroundType NilDolanArguments =
-    pure $
-    case literalTypeAsLiteral tl of
-        Dict -> pointToEntity . literalToPoint
-unifyPosNegGroundTypes PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) EntityPinaforeGroundType NilDolanArguments =
+unifyPosNegGroundTypes (SimpleEntityPinaforeGroundType t1) NilDolanArguments (SimpleEntityPinaforeGroundType t2) NilDolanArguments =
+    unifierLiftTypeCheck $ getSubtype t1 t2
+unifyPosNegGroundTypes PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments =
     (\conva convb (a, b) -> pairToEntity (meet1 $ conva a, meet1 $ convb b)) <$>
     unifyPosNegPinaforeTypes
         ta
-        (singlePinaforeType $ GroundPinaforeSingularType EntityPinaforeGroundType NilDolanArguments) <*>
+        (singlePinaforeType $
+         GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments) <*>
     unifyPosNegPinaforeTypes
         tb
-        (singlePinaforeType $ GroundPinaforeSingularType EntityPinaforeGroundType NilDolanArguments)
+        (singlePinaforeType $
+         GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments)
 unifyPosNegGroundTypes FuncPinaforeGroundType argsa FuncPinaforeGroundType argsb =
     unifyPosNegArguments FuncPinaforeGroundType argsa argsb
 unifyPosNegGroundTypes ListPinaforeGroundType argsa ListPinaforeGroundType argsb =
@@ -639,10 +630,7 @@ exprShowPrecGroundType ActionPinaforeGroundType NilDolanArguments = ("Action", 0
 exprShowPrecGroundType OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)
 exprShowPrecGroundType UserInterfacePinaforeGroundType NilDolanArguments = ("UI", 0)
-exprShowPrecGroundType (LiteralPinaforeGroundType t) NilDolanArguments = exprShowPrec t
-exprShowPrecGroundType PointPinaforeGroundType NilDolanArguments = ("Point", 0)
-exprShowPrecGroundType EntityPinaforeGroundType NilDolanArguments = ("Entity", 0)
-exprShowPrecGroundType (NamedEntityPinaforeGroundType n) NilDolanArguments = (pack $ show n, 0)
+exprShowPrecGroundType (SimpleEntityPinaforeGroundType t) NilDolanArguments = exprShowPrec t
 exprShowPrecGroundType FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
 exprShowPrecGroundType ListPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) = ("[" <> exprShow ta <> "]", 0)

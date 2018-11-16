@@ -2,13 +2,11 @@ module Pinafore.Language.GroundType where
 
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.Literal
 import Pinafore.Language.Morphism
-import Pinafore.Language.NamedEntity
 import Pinafore.Language.Order
 import Pinafore.Language.Reference
 import Pinafore.Language.Set
-import Pinafore.Storage.Table (Point)
+import Pinafore.Language.SimpleEntityType
 import Shapes
 import Truth.Core
 
@@ -17,10 +15,7 @@ data PinaforeGroundType baseedit (polarity :: TypePolarity) (dk :: DolanVariance
     ActionPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (PinaforeAction baseedit)
     OrderPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance] (PinaforeOrder baseedit)
     UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (UISpec (ConstEdit Entity) baseedit)
-    LiteralPinaforeGroundType :: LiteralType t -> PinaforeGroundType baseedit polarity '[] t
-    PointPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] Point
-    EntityPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] Entity
-    NamedEntityPinaforeGroundType :: SymbolWitness name -> PinaforeGroundType baseedit polarity '[] (NamedEntity name)
+    SimpleEntityPinaforeGroundType :: SimpleEntityType t -> PinaforeGroundType baseedit polarity '[] t
     FuncPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance, 'Covariance] (->)
     ListPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] []
     PairPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance, 'Covariance] (,)
@@ -36,12 +31,7 @@ testPinaforeGroundTypeEquality ::
 testPinaforeGroundTypeEquality ActionPinaforeGroundType ActionPinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality OrderPinaforeGroundType OrderPinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality UserInterfacePinaforeGroundType UserInterfacePinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality (LiteralPinaforeGroundType t1) (LiteralPinaforeGroundType t2) = do
-    Refl <- testEquality t1 t2
-    Just (Refl, HRefl)
-testPinaforeGroundTypeEquality PointPinaforeGroundType PointPinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality EntityPinaforeGroundType EntityPinaforeGroundType = Just (Refl, HRefl)
-testPinaforeGroundTypeEquality (NamedEntityPinaforeGroundType t1) (NamedEntityPinaforeGroundType t2) = do
+testPinaforeGroundTypeEquality (SimpleEntityPinaforeGroundType t1) (SimpleEntityPinaforeGroundType t2) = do
     Refl <- testEquality t1 t2
     Just (Refl, HRefl)
 testPinaforeGroundTypeEquality FuncPinaforeGroundType FuncPinaforeGroundType = Just (Refl, HRefl)
@@ -59,10 +49,7 @@ pinaforeGroundTypeVary ::
 pinaforeGroundTypeVary ActionPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary OrderPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary UserInterfacePinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary (LiteralPinaforeGroundType _) = dolanVary @dk
-pinaforeGroundTypeVary PointPinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary EntityPinaforeGroundType = dolanVary @dk
-pinaforeGroundTypeVary (NamedEntityPinaforeGroundType _) = dolanVary @dk
+pinaforeGroundTypeVary (SimpleEntityPinaforeGroundType _) = dolanVary @dk
 pinaforeGroundTypeVary FuncPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary ListPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary PairPinaforeGroundType = dolanVary @dk
@@ -74,10 +61,7 @@ pinaforeGroundTypeKind :: PinaforeGroundType baseedit polarity dk t -> DolanVari
 pinaforeGroundTypeKind ActionPinaforeGroundType = representative
 pinaforeGroundTypeKind OrderPinaforeGroundType = representative
 pinaforeGroundTypeKind UserInterfacePinaforeGroundType = representative
-pinaforeGroundTypeKind (LiteralPinaforeGroundType _) = representative
-pinaforeGroundTypeKind PointPinaforeGroundType = representative
-pinaforeGroundTypeKind EntityPinaforeGroundType = representative
-pinaforeGroundTypeKind (NamedEntityPinaforeGroundType _) = representative
+pinaforeGroundTypeKind (SimpleEntityPinaforeGroundType _) = representative
 pinaforeGroundTypeKind FuncPinaforeGroundType = representative
 pinaforeGroundTypeKind ListPinaforeGroundType = representative
 pinaforeGroundTypeKind PairPinaforeGroundType = representative

@@ -12,6 +12,7 @@ import Pinafore.Language.Literal
 import Pinafore.Language.Morphism
 import Pinafore.Language.Name
 import Pinafore.Language.NamedEntity
+import Pinafore.Language.Show
 import Pinafore.Language.Token
 import Pinafore.Language.Type
 import Shapes hiding (try)
@@ -258,12 +259,16 @@ readTypeConst = do
             return $
             return $
             toMPolar $
-            MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType EntityPinaforeGroundType NilDolanArguments
+            MkAnyW $
+            singlePinaforeType $
+            GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments
         "Point" ->
             return $
             return $
             toMPolar $
-            MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType PointPinaforeGroundType NilDolanArguments
+            MkAnyW $
+            singlePinaforeType $
+            GroundPinaforeSingularType (SimpleEntityPinaforeGroundType PointSimpleEntityType) NilDolanArguments
         "Action" ->
             return $
             return $
@@ -285,7 +290,9 @@ readTypeConst = do
                         toMPolar $
                         MkAnyW $
                         singlePinaforeType $
-                        GroundPinaforeSingularType (NamedEntityPinaforeGroundType sw) NilDolanArguments
+                        GroundPinaforeSingularType
+                            (SimpleEntityPinaforeGroundType $ NamedSimpleEntityType sw)
+                            NilDolanArguments
 
 nameToLiteralType :: Name -> Maybe (AnyW LiteralType)
 nameToLiteralType "Literal" = Just $ MkAnyW LiteralLiteralType
@@ -521,13 +528,13 @@ readExpression2 = do
         qApplyAllExpr e1 args
 
 makePoint :: MonadFail m => PinaforeType baseedit 'PositivePolarity t -> Point -> m t
-makePoint (ConsPinaforeType (GroundPinaforeSingularType (NamedEntityPinaforeGroundType _) NilDolanArguments) NilPinaforeType) p =
-    return $ LeftJoinType $ MkNamedEntity p
-makePoint (ConsPinaforeType (GroundPinaforeSingularType PointPinaforeGroundType NilDolanArguments) NilPinaforeType) p =
-    return $ LeftJoinType p
-makePoint (ConsPinaforeType (GroundPinaforeSingularType EntityPinaforeGroundType NilDolanArguments) NilPinaforeType) p =
-    return $ LeftJoinType $ MkEntity p
-makePoint tp _ = fail $ "not a point type: " <> show tp
+makePoint (ConsPinaforeType (GroundPinaforeSingularType (SimpleEntityPinaforeGroundType t) NilDolanArguments) NilPinaforeType) p =
+    case t of
+        TopSimpleEntityType -> return $ LeftJoinType $ MkEntity p
+        PointSimpleEntityType -> return $ LeftJoinType p
+        NamedSimpleEntityType _ -> return $ LeftJoinType $ MkNamedEntity p
+        _ -> fail $ unpack $ "not a point type: " <> exprShow t
+makePoint t _ = fail $ unpack $ "not a point type: " <> exprShow t
 
 type PinaforeRangeF baseedit t = AnyF (RangeType (PinaforeType baseedit) 'PositivePolarity) (Range t)
 
@@ -543,9 +550,15 @@ readLiteralType =
 literalRangeF :: forall baseedit t. LiteralType t -> PinaforeRangeF baseedit t
 literalRangeF lt = let
     tfp :: TypeF (PinaforeType baseedit) 'NegativePolarity t
-    tfp = singlePinaforeTypeF $ mkTypeF $ GroundPinaforeSingularType (LiteralPinaforeGroundType lt) NilDolanArguments
+    tfp =
+        singlePinaforeTypeF $
+        mkTypeF $
+        GroundPinaforeSingularType (SimpleEntityPinaforeGroundType $ LiteralSimpleEntityType lt) NilDolanArguments
     tfq :: TypeF (PinaforeType baseedit) 'PositivePolarity t
-    tfq = singlePinaforeTypeF $ mkTypeF $ GroundPinaforeSingularType (LiteralPinaforeGroundType lt) NilDolanArguments
+    tfq =
+        singlePinaforeTypeF $
+        mkTypeF $
+        GroundPinaforeSingularType (SimpleEntityPinaforeGroundType $ LiteralSimpleEntityType lt) NilDolanArguments
     in biTypeF (tfp, tfq)
 
 entityRangeF :: forall baseedit name. SymbolWitness name -> PinaforeRangeF baseedit Point

@@ -55,7 +55,7 @@ showPinaforeGroundValue ::
     -> DolanArguments dv (PinaforeType baseedit) t 'PositivePolarity ta
     -> ta
     -> String
-showPinaforeGroundValue (LiteralPinaforeGroundType t) NilDolanArguments v =
+showPinaforeGroundValue (SimpleEntityPinaforeGroundType (LiteralSimpleEntityType t)) NilDolanArguments v =
     case literalTypeAsLiteral t of
         Dict -> unpack $ unLiteral $ toLiteral v
 showPinaforeGroundValue PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) (a, b) =

@@ -7,6 +7,7 @@ module Pinafore.Language.TypeContext
     , withNewTypeName
     , withEntitySubtype
     , getEntitySubtype
+    , TypeCheckSubtype(..)
     ) where
 
 import Pinafore.Language.Name
@@ -82,3 +83,6 @@ getEntitySubtype wa wb = let
            if isSupertype subtypes [fromString sa] (fromString sb)
                then return castNamedEntity
                else convertFailure sa sb
+
+class TypeCheckSubtype w where
+    getSubtype :: w a -> w b -> PinaforeTypeCheck (a -> b)
