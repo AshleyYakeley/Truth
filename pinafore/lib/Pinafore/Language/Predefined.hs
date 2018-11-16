@@ -191,6 +191,9 @@ mkDefEntry ::
     -> DocTreeEntry (BindDoc baseedit)
 mkDefEntry name desc val = EntryDocTreeEntry (Just (qBindVal name val), mkDefDoc @baseedit name desc val)
 
+entityuuid :: Entity -> Text
+entityuuid (MkEntity p) = pack $ show p
+
 predefinitions ::
        forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
     => DocTree (BindDoc baseedit)
@@ -203,6 +206,7 @@ predefinitions =
               ""
               [ mkDefEntry "==" "Literal equality." $ (==) @Literal
               , mkDefEntry "/=" "Literal non-equality." $ (/=) @Literal
+              , mkDefEntry "entityuuid" "UUID of an entity." entityuuid
               , mkDefEntry "totext" "The text of a literal." unLiteral
               , docTreeEntry
                     "Boolean"

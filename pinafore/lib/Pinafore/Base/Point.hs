@@ -12,7 +12,7 @@ newtype Point =
     deriving (Eq, Random, FromJSON)
 
 instance Show Point where
-    show (MkPoint uuid) = '!' : show uuid
+    show (MkPoint uuid) = '%' : show uuid
 
 instance Serialize Point where
     put (MkPoint uuid) = Serialize.put (toByteString uuid)
