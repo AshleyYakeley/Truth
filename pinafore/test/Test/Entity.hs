@@ -24,22 +24,23 @@ makeTestPinaforeContest = do
 
 defs :: [String]
 defs =
-    [ "ornull a b = if exists a then a else b"
-    , "testeq expected found = if is expected found then pass else fail (\"expected \" ++ (ornull expected \"null\") ++ \" but found \" ++ (ornull found \"null\"))"
-    , "testneq expected found = if not (is expected found) then pass else fail (\"expected not \" ++ (ornull expected \"null\") ++ \" but found \" ++ (ornull found \"null\"))"
-    , "testisnull t = if exists t then fail (\"expected null but found \" ++ t) else pass"
-    , "ma = %3f1b6c1e-06ea-454c-b446-58ccd23ffda1"
-    , "mb = %410a71b0-fc3c-415d-85eb-de8c1cb88267"
-    , "mc = %69aa80b4-b3fd-42aa-961a-d1a5ee0cf950"
-    , "md = %917589a7-e181-4b5e-918e-15dfd1729f0f"
-    , "p1 = !d4d3096a-b1f7-4cb1-8dfa-c907e57baed1"
-    , "p2 = !6a76c6b3-c9d6-4e76-af3a-863b7c46b34c"
-    , "p3 = !5048ecd6-bebb-4500-a508-f188b4cc7443"
-    , "p4 = !6ffe864b-d2c3-4857-8057-ef472475eb2b"
+    [
+      "testeq expected found = if expected == found then pass else fail $ \"expected \" ++ totext expected ++ \" but found \" ++ totext found"
+    , "testneq expected found = if not (expected == found) then pass else fail $ \"expected not \" ++ totext expected ++ \" but found \" ++ totext found"
+    -- , "testisnull t = if exists t then fail (\"expected null but found \" ++ t) else pass"
+    , "entity T"
+    , "ma = property @T @T %3f1b6c1e-06ea-454c-b446-58ccd23ffda1"
+    , "mb = property @T @T %410a71b0-fc3c-415d-85eb-de8c1cb88267"
+    , "mc = property @T @T %69aa80b4-b3fd-42aa-961a-d1a5ee0cf950"
+    , "md = property @T @T %917589a7-e181-4b5e-918e-15dfd1729f0f"
+    , "p1 = point @T %d4d3096a-b1f7-4cb1-8dfa-c907e57baed1"
+    , "p2 = point @T %6a76c6b3-c9d6-4e76-af3a-863b7c46b34c"
+    , "p3 = point @T %5048ecd6-bebb-4500-a508-f188b4cc7443"
+    , "p4 = point @T %6ffe864b-d2c3-4857-8057-ef472475eb2b"
     ]
 
 prefix :: Text
-prefix = pack $ "let " ++ intercalate ";" defs ++ " in "
+prefix = pack $ "let\n" ++ intercalate ";\n" defs ++ "\nin "
 
 pointTest :: Text -> TestTree
 pointTest text =
@@ -62,14 +63,11 @@ testEntity =
               "equality"
               [ pointTest "testeq 1 1"
               , pointTest "testeq 1 \"1\""
-              , pointTest "testeq false $ is 0 1"
-              , pointTest "testeq true $ is 1 1"
-              , pointTest "testeq false $ is 1 ~1"
-              , pointTest "testeq false $ is null 1"
-              , pointTest "testeq false $ is null null"
-              , pointTest "let p = null in testeq false $ is p p"
-              , pointTest "testeq true $ is p1 p1"
-              , pointTest "testeq true $ is (ma p1) (ma p1)"
+              , pointTest "testeq false $ 0 == 1"
+              , pointTest "testeq true $ 1 == 1"
+              , pointTest "testeq false $ 1 == ~1"
+              , pointTest "testeq true $ p1 == p1"
+              , pointTest "testeq true $ (ma !$ p1) == (ma !$ p1)"
               ]
         , testGroup
               "null & exists"
@@ -86,20 +84,20 @@ testEntity =
               ]
         , testGroup
               ":="
-              [ pointTest "ma p1 := \"hello\""
-              , pointTest "ma p1 := p2"
-              , pointTest "ma p1 := p2 >> testeq p2 (ma p1)"
-              , pointTest "ma p1 := \"hello\" >> testeq \"hello\" (ma p1)"
+              [ pointTest "ma !$ p1 := \"hello\""
+              , pointTest "ma !$ p1 := p2"
+              , pointTest "ma !$ p1 := p2 >> testeq p2 (ma p1)"
+              , pointTest "ma !$ p1 := \"hello\" >> testeq \"hello\" (ma !$ p1)"
               ]
         , testGroup
               "+="
-              [ pointTest "@ma \"hello\" += p1"
-              , pointTest "@ma \"hello\" += p1 >> pass"
-              , pointTest "@ma \"hello\" += p1 >> testeq \"hello\" (ma p1)"
+              [ pointTest "ma !@ \"hello\" += p1"
+              , pointTest "ma !@ \"hello\" += p1 >> pass"
+              , pointTest "ma !@ \"hello\" += p1 >> testeq \"hello\" (ma !$ p1)"
               ]
-        , testGroup "-=" [pointTest "@ma \"hello\" += p1 >> @ma \"hello\" -= p1 >> testisnull (ma p1)"]
-        , testGroup "removeall" [pointTest "@ma \"hello\" += p1 >> removeall (@ma \"hello\") >> testisnull (ma p1)"]
-        , testGroup "matching literals" [pointTest "ma p1 := \"hello\" >> ma p2 := \"hello\" >> testeq (ma p1) (ma p2)"]
+        , testGroup "-=" [pointTest "ma !@ \"hello\" += p1 >> ma !@ \"hello\" -= p1 >> testisnull (ma !$ p1)"]
+        , testGroup "removeall" [pointTest "@ma !@ \"hello\" += p1 >> removeall (ma !$ \"hello\") >> testisnull (ma !$ p1)"]
+        , testGroup "matching literals" [pointTest "ma !$ p1 := \"hello\" >> ma !$ p2 := \"hello\" >> testeq (ma !$ p1) (ma !$ p2)"]
         , testGroup
               "identity morphism"
               [ pointTest "(identity $ ma p1) := p2 >> testeq p2 (ma p1)"
