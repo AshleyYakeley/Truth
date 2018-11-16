@@ -40,32 +40,11 @@ type BQ = UVar "bq"
 
 type CQ = UVar "cq"
 
-qapply :: (A -> B) -> A -> B
-qapply = ($)
-
-qcompose :: (B -> C) -> (A -> B) -> A -> C
-qcompose = (.)
-
-qmeet ::
-       PinaforeSet baseedit '( A, MeetType Entity A)
-    -> PinaforeSet baseedit '( A, MeetType Entity A)
-    -> PinaforeSet baseedit '( MeetType Entity A, A)
-qmeet = pinaforeSetMeet
-
-qjoin ::
-       PinaforeSet baseedit '( A, MeetType Entity A)
-    -> PinaforeSet baseedit '( A, MeetType Entity A)
-    -> PinaforeSet baseedit '( MeetType Entity A, A)
-qjoin = pinaforeSetJoin
-
 output :: forall baseedit. Text -> PinaforeAction baseedit
 output text = liftIO $ putStr $ unpack text
 
 outputln :: forall baseedit. Text -> PinaforeAction baseedit
 outputln text = liftIO $ putStrLn $ unpack text
-
-qappend :: Text -> Text -> Text
-qappend = (<>)
 
 valSpecText ::
        UISpec seledit (WholeEdit (Know Text))
@@ -232,7 +211,7 @@ predefinitions =
                     , mkDefEntry "||" "Boolean OR." (||)
                     , mkDefEntry "not" "Boolean NOT." not
                     ]
-              , docTreeEntry "Text" "" [mkDefEntry "++" "Concatenate text." qappend]
+              , docTreeEntry "Text" "" [mkDefEntry "++" "Concatenate text." $ (<>) @Text]
               , docTreeEntry
                     "Numeric"
                     ""
@@ -256,9 +235,18 @@ predefinitions =
                     ]
               ]
         , docTreeEntry
+              "Pairs"
+              ""
+              [ mkDefEntry "fst" "Get the first member of a pair." $ fst @A @B
+              , mkDefEntry "snd" "Get the second member of a pair." $ snd @A @B
+              ]
+        , docTreeEntry
               "Functions"
               ""
-              [mkDefEntry "$" "Apply a function to a value." qapply, mkDefEntry "." "Compose functions." qcompose]
+              [ mkDefEntry "id" "The identity function." $ id @(->) @A
+              , mkDefEntry "$" "Apply a function to a value." $ id @(->) @(A -> B)
+              , mkDefEntry "." "Compose functions." $ (.) @(->) @A @B @C
+              ]
         , docTreeEntry
               "References"
               "A reference of type `Ref {-p,+q}` has a setting type of `p` and a getting type of `q`. References keep track of updates, and will update user interfaces constructed from them when their value changes."
@@ -301,9 +289,9 @@ predefinitions =
                     "Map a function on setting to a set."
                     (contraMapRange :: (B -> A) -> PinaforeSet baseedit '( A, C) -> PinaforeSet baseedit '( B, C))
               , mkDefEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
-                qmeet @baseedit
+                pinaforeSetMeet @baseedit @A
               , mkDefEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
-                qjoin @baseedit
+                pinaforeSetJoin @baseedit @A
               , mkDefEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
               , mkDefEntry "membership" "Get the membership of a set." $ pinaforeSetMembership @baseedit
               , mkDefEntry "single" "The member of a single-member set, or null." $ pinaforeSetSingle @baseedit @A

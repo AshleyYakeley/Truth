@@ -40,6 +40,7 @@ meetValuePinaforeSet ::
 meetValuePinaforeSet lv = MkPinaforeSet (unUnifyRange1 meet2 identityRange) lv
 
 pinaforeSetMeet ::
+       forall baseedit t.
        PinaforeSet baseedit '( t, MeetType Entity t)
     -> PinaforeSet baseedit '( t, MeetType Entity t)
     -> PinaforeSet baseedit '( MeetType Entity t, t)
@@ -48,6 +49,7 @@ pinaforeSetMeet seta setb =
     readOnlyEditLens meetEditFunction . pairJoinEditLenses (pinaforeSetMeetValue seta) (pinaforeSetMeetValue setb)
 
 pinaforeSetJoin ::
+       forall baseedit t.
        PinaforeSet baseedit '( t, MeetType Entity t)
     -> PinaforeSet baseedit '( t, MeetType Entity t)
     -> PinaforeSet baseedit '( MeetType Entity t, t)
