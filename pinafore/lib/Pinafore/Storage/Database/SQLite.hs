@@ -25,32 +25,33 @@ instance FromField UUID where
 instance ToField UUID where
     toField = toField . toByteString
 
+instance FieldType Anchor where
+    fieldTypeName = fieldTypeName @UUID
+
+deriving instance FromField Anchor
+
+deriving instance ToField Anchor
+
 instance FieldType Point where
-    fieldTypeName = "BLOB"
+    fieldTypeName = fieldTypeName @Anchor
 
-instance FromField Point where
-    fromField f = fmap MkPoint $ fromField f
+deriving instance FromField Point
 
-instance ToField Point where
-    toField (MkPoint uuid) = toField uuid
+deriving instance ToField Point
 
 instance FieldType Predicate where
-    fieldTypeName = "BLOB"
+    fieldTypeName = fieldTypeName @Anchor
 
-instance FromField Predicate where
-    fromField f = fmap MkPredicate $ fromField f
+deriving instance FromField Predicate
 
-instance ToField Predicate where
-    toField (MkPredicate uuid) = toField uuid
+deriving instance ToField Predicate
 
 instance FieldType Literal where
     fieldTypeName = fieldTypeName @Text
 
-instance FromField Literal where
-    fromField f = fmap MkLiteral $ fromField f
+deriving instance FromField Literal
 
-instance ToField Literal where
-    toField (MkLiteral t) = toField t
+deriving instance ToField Literal
 
 instance WitnessConstraint FromField TripleTable where
     witnessConstraint TriplePredicate = Dict

@@ -39,7 +39,7 @@ data Token t where
     TokPropMap :: Token ()
     TokProperty :: Token ()
     TokPoint :: Token ()
-    TokUUID :: Token UUID
+    TokAnchor :: Token Anchor
     TokAt :: Token ()
     TokOperator :: Token Name
     TokNumber :: Token Number
@@ -71,7 +71,7 @@ instance TestEquality Token where
     testEquality TokPropMap TokPropMap = Just Refl
     testEquality TokProperty TokProperty = Just Refl
     testEquality TokPoint TokPoint = Just Refl
-    testEquality TokUUID TokUUID = Just Refl
+    testEquality TokAnchor TokAnchor = Just Refl
     testEquality TokAt TokAt = Just Refl
     testEquality TokOperator TokOperator = Just Refl
     testEquality TokNumber TokNumber = Just Refl
@@ -104,7 +104,7 @@ instance Show (Token t) where
     show TokPropMap = "~>"
     show TokProperty = show ("property" :: String)
     show TokPoint = show ("point" :: String)
-    show TokUUID = "uuid"
+    show TokAnchor = "anchor"
     show TokAt = "@"
     show TokOperator = "infix"
     show TokNumber = "number"
@@ -145,12 +145,12 @@ readEscapedChar = do
         'f' -> return '\f'
         _ -> return c
 
-readQuotedString :: Parser (AnyValue Token)
+readQuotedString :: Parser Text
 readQuotedString = do
     _ <- char '"'
     s <- many readQuotedChar
     _ <- char '"'
-    return $ MkAnyValue TokString $ pack s
+    return $ pack s
   where
     readQuotedChar :: Parser Char
     readQuotedChar = readEscapedChar <|> (satisfy ('"' /=))
@@ -223,9 +223,13 @@ readOpToken = do
         "->" -> return $ MkAnyValue TokMap ()
         "~>" -> return $ MkAnyValue TokPropMap ()
         "%" -> return $ MkAnyValue TokUnref ()
-        "!" -> do
-            uuid <- readUUID
-            return $ MkAnyValue TokUUID uuid
+        "!" ->
+            (do
+                 uuid <- readUUID
+                 return $ MkAnyValue TokAnchor $ MkAnchor uuid) <|>
+            (do
+                 s <- readQuotedString
+                 return $ MkAnyValue TokAnchor $ hashToAnchor $ \call -> [call @Text "anchor:", call s])
         "@" -> return $ MkAnyValue TokAt ()
         _ -> return $ MkAnyValue TokOperator $ MkName $ pack name
 
@@ -244,7 +248,7 @@ readToken = do
         readChar '{' TokOpenBrace <|>
         readChar '}' TokCloseBrace <|>
         try readNumber <|>
-        readQuotedString <|>
+        fmap (MkAnyValue TokString) readQuotedString <|>
         readTextToken <|>
         readOpToken
     readWS

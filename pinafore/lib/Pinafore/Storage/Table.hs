@@ -1,5 +1,6 @@
 module Pinafore.Storage.Table
-    ( Predicate(..)
+    ( Anchor(..)
+    , Predicate(..)
     , Point(..)
     , PinaforeTableRead(..)
     , PinaforeTableEdit(..)
@@ -197,19 +198,19 @@ instance CacheableEdit PinaforeTableEdit where
 
 ---
 predfst :: Predicate
-predfst = MkPredicate $ read "9fa17b88-89f3-4baf-b4b3-fdb7280a0020"
+predfst = MkPredicate $ MkAnchor $ read "9fa17b88-89f3-4baf-b4b3-fdb7280a0020"
 
 predsnd :: Predicate
-predsnd = MkPredicate $ read "3c667db3-c3a5-4ef9-9b15-6cad178c50c7"
+predsnd = MkPredicate $ MkAnchor $ read "3c667db3-c3a5-4ef9-9b15-6cad178c50c7"
 
 predinl :: Predicate
-predinl = MkPredicate $ read "ffb8fee1-6971-46c0-9954-62c2ec53e98a"
+predinl = MkPredicate $ MkAnchor $ read "ffb8fee1-6971-46c0-9954-62c2ec53e98a"
 
 predinr :: Predicate
-predinr = MkPredicate $ read "bbc7a8ca-17e1-4d42-9230-e6b889dea2e5"
+predinr = MkPredicate $ MkAnchor $ read "bbc7a8ca-17e1-4d42-9230-e6b889dea2e5"
 
 unitPoint :: Point
-unitPoint = MkPoint $ read "644eaa9b-0c57-4c5c-9606-e5303fda86f9"
+unitPoint = MkPoint $ MkAnchor $ read "644eaa9b-0c57-4c5c-9606-e5303fda86f9"
 
 pinaforeTablePointObject :: Object PinaforeTableEdit -> Object PinaforePointEdit
 pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTableRead) tableMPush) = let

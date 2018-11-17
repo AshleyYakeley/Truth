@@ -163,11 +163,11 @@ readExpression3 =
          readThis TokPoint
          readThis TokAt
          mt <- readType3 @baseedit @('Just 'PositivePolarity)
-         uuid <- readThis TokUUID
+         anchor <- readThis TokAnchor
          return $
              liftRefNotation $ do
                  SingleMPolarType (MkAnyW tp) <- mt
-                 pt <- makePoint tp $ MkPoint uuid
+                 pt <- makePoint tp $ MkPoint anchor
                  return $ qConstExprAny $ MkAnyValue tp pt) <|>
     (readParen $
      (do

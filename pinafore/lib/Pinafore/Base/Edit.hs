@@ -5,7 +5,6 @@ module Pinafore.Base.Edit
     ) where
 
 import Data.Aeson (FromJSON)
-import Data.UUID hiding (fromString)
 import Pinafore.Base.Know
 import Pinafore.Base.Literal
 import Pinafore.Base.Point
@@ -13,11 +12,8 @@ import Shapes
 import Truth.Core
 
 newtype Predicate =
-    MkPredicate UUID
-    deriving (Eq, FromJSON)
-
-instance Show Predicate where
-    show (MkPredicate uuid) = '%' : show uuid
+    MkPredicate Anchor
+    deriving (Eq, FromJSON, Show)
 
 -- | Some of these reads may add to the database, but will always give consistent results between changes.
 data PinaforePointRead t where

@@ -70,7 +70,7 @@ readProperty = do
     crfpa <- readPropertyTypeA @baseedit
     readThis TokAt
     crfplb <- readPropertyTypeB @baseedit
-    uuid <- readThis TokUUID
+    uuid <- readThis TokAnchor
     return $ do
         MkAnyF rta pra <- crfpa
         rfplb <- crfplb

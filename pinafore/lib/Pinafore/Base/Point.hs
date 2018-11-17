@@ -7,27 +7,34 @@ import Data.Serialize as Serialize (Serialize(..), encode)
 import Data.UUID hiding (fromString)
 import Shapes
 
-newtype Point =
-    MkPoint UUID
+newtype Anchor =
+    MkAnchor UUID
     deriving (Eq, Random, FromJSON)
 
-instance Show Point where
-    show (MkPoint uuid) = '!' : show uuid
+instance Show Anchor where
+    show (MkAnchor uuid) = '!' : show uuid
 
-instance Serialize Point where
-    put (MkPoint uuid) = Serialize.put (toByteString uuid)
+instance Serialize Anchor where
+    put (MkAnchor uuid) = Serialize.put (toByteString uuid)
     get = do
         bs <- Serialize.get
         case fromByteString bs of
-            Just uuid -> return $ MkPoint uuid
+            Just uuid -> return $ MkAnchor uuid
             Nothing -> fail "deserialize bad UUID"
+
+hashToAnchor :: (forall r. (forall t. Serialize t => t -> r) -> [r]) -> Anchor
+hashToAnchor f =
+    MkAnchor $
+    fromMaybe (error "hash failure") $
+    fromByteString $
+    fromStrict $ take 16 $ convert $ hashFinalize $ hashUpdates (hashInit @SHA3_256) $ f Serialize.encode
+
+newtype Point =
+    MkPoint Anchor
+    deriving (Eq, Random, FromJSON, Show, Serialize)
 
 newPoint :: MonadIO m => m Point
 newPoint = liftIO randomIO
 
 hashToPoint :: (forall r. (forall t. Serialize t => t -> r) -> [r]) -> Point
-hashToPoint f =
-    MkPoint $
-    fromMaybe (error "hash failure") $
-    fromByteString $
-    fromStrict $ take 16 $ convert $ hashFinalize $ hashUpdates (hashInit @SHA3_256) $ f Serialize.encode
+hashToPoint f = MkPoint $ hashToAnchor f
