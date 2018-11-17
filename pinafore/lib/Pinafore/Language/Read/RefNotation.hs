@@ -1,4 +1,4 @@
-module Pinafore.Language.RefNotation
+module Pinafore.Language.Read.RefNotation
     ( RefNotation
     , RefExpression
     , liftRefNotation

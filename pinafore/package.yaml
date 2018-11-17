@@ -69,7 +69,14 @@ library:
       - Pinafore.Language.Set
       - Pinafore.Language.Morphism
       - Pinafore.Language.Token
-      - Pinafore.Language.RefNotation
+      - Pinafore.Language.Read.RefNotation
+      - Pinafore.Language.Read.Parser
+      - Pinafore.Language.Read.Type
+      - Pinafore.Language.Read.TypeDecls
+      - Pinafore.Language.Read.Property
+      - Pinafore.Language.Read.Infix
+      - Pinafore.Language.Read.Expression
+      - Pinafore.Language.Read.Interactive
       - Pinafore.Language.Read
       - Pinafore.Language.If
       - Pinafore.Language.Show
