@@ -12,6 +12,7 @@ import Pinafore.Language.Literal
 import Pinafore.Language.Morphism
 import Pinafore.Language.Name
 import Pinafore.Language.NamedEntity
+import Pinafore.Language.RefNotation
 import Pinafore.Language.Show
 import Pinafore.Language.Token
 import Pinafore.Language.Type
@@ -313,23 +314,35 @@ readTypeName =
 readPattern :: Parser Name
 readPattern = readThis TokName
 
-newtype TypeDecls =
-    MkTypeDecls (forall a. PinaforeTypeCheck a -> PinaforeTypeCheck a)
+newtype TypeDecls baseedit =
+    MkTypeDecls (forall a. RefNotation baseedit a -> RefNotation baseedit a)
 
-instance Semigroup TypeDecls where
+instance Semigroup (TypeDecls baseedit) where
     (MkTypeDecls a) <> (MkTypeDecls b) = MkTypeDecls (a . b)
 
-instance Monoid TypeDecls where
+instance Monoid (TypeDecls baseedit) where
     mempty = MkTypeDecls id
     mappend = (<>)
 
-type Declarations baseedit = (TypeDecls, QBindList baseedit)
+data Declarations baseedit =
+    MkDeclarations (TypeDecls baseedit)
+                   (RefNotation baseedit (QBindList baseedit))
+
+instance Semigroup (Declarations baseedit) where
+    (MkDeclarations ta ba) <> (MkDeclarations tb bb) = MkDeclarations (ta <> tb) (liftA2 (<>) ba bb)
+
+instance Monoid (Declarations baseedit) where
+    mempty = MkDeclarations mempty $ return mempty
+    mappend = (<>)
 
 readEntityDeclaration :: Parser (Declarations baseedit)
 readEntityDeclaration = do
     readThis TokEntity
     n <- readTypeName
-    return (MkTypeDecls $ withNewTypeName n $ EntityNamedType $ toSymbolWitness (unpack n) MkAnyW, mempty)
+    return $
+        MkDeclarations
+            (MkTypeDecls $ remonadRefNotation $ withNewTypeName n $ EntityNamedType $ toSymbolWitness (unpack n) MkAnyW)
+            (return mempty)
 
 readSubtypeDeclaration :: Parser (Declarations baseedit)
 readSubtypeDeclaration = do
@@ -337,19 +350,19 @@ readSubtypeDeclaration = do
     na <- readTypeName
     readExactlyThis TokOperator "<="
     nb <- readTypeName
-    return (MkTypeDecls $ withEntitySubtype (na, nb), mempty)
+    return $ MkDeclarations (MkTypeDecls $ remonadRefNotation $ withEntitySubtype (na, nb)) (return mempty)
 
 readBinding :: HasPinaforePointEdit baseedit => Parser (Declarations baseedit)
 readBinding = do
     name <- readThis TokName
     args <- many readPattern
     readThis TokAssign
-    tval <- readExpression
-    return
-        ( mempty
-        , qBindExpr name $ do
-              val <- tval
-              qAbstractsExpr args val)
+    rval <- readExpression
+    return $
+        MkDeclarations mempty $ do
+            val <- rval
+            expr <- liftRefNotation $ qAbstractsExpr args val
+            return $ qBindExpr name expr
 
 readDeclaration :: HasPinaforePointEdit baseedit => Parser (Declarations baseedit)
 readDeclaration = readEntityDeclaration <|> readSubtypeDeclaration <|> readBinding
@@ -365,16 +378,24 @@ readDeclarations =
          return $ b <> fromMaybe mempty mbl) <|>
     (do return mempty)
 
-readLetBindings :: HasPinaforePointEdit baseedit => Parser (QExpr baseedit -> PinaforeTypeCheck (QExpr baseedit))
+readLetBindings :: HasPinaforePointEdit baseedit => Parser (QExpr baseedit -> RefExpression baseedit)
 readLetBindings = do
     readThis TokLet
-    (MkTypeDecls td, bl) <- readDeclarations
-    f <- qBindingsLetExpr bl
-    return $ \expr -> td $ f expr
+    MkDeclarations (MkTypeDecls td) rbl <- readDeclarations
+    return $ \expr ->
+        td $ do
+            bl <- rbl
+            f <- qBindingsLetExpr bl
+            liftRefNotation $ f expr
+
+readTopLetBindings :: HasPinaforePointEdit baseedit => Parser (QExpr baseedit -> PinaforeTypeCheck (QExpr baseedit))
+readTopLetBindings = do
+    f <- readLetBindings
+    return $ \e -> runRefNotation $ f e
 
 readExpression ::
        forall baseedit. HasPinaforePointEdit baseedit
-    => Parser (PinaforeTypeCheck (QExpr baseedit))
+    => Parser (RefExpression baseedit)
 readExpression = readInfixedExpression 0
 
 data FixAssoc
@@ -427,29 +448,23 @@ readInfix prec =
             else empty
 
 leftApply ::
-       HasPinaforePointEdit baseedit
-    => QExpr baseedit
-    -> [(QExpr baseedit, QExpr baseedit)]
-    -> PinaforeTypeCheck (QExpr baseedit)
+       HasPinaforePointEdit baseedit => QExpr baseedit -> [(QExpr baseedit, QExpr baseedit)] -> RefExpression baseedit
 leftApply e1 [] = return e1
 leftApply e1 ((f, e2):rest) = do
-    ee <- qApplyAllExpr f [e1, e2]
+    ee <- liftRefNotation $ qApplyAllExpr f [e1, e2]
     leftApply ee rest
 
 rightApply ::
-       HasPinaforePointEdit baseedit
-    => QExpr baseedit
-    -> [(QExpr baseedit, QExpr baseedit)]
-    -> PinaforeTypeCheck (QExpr baseedit)
+       HasPinaforePointEdit baseedit => QExpr baseedit -> [(QExpr baseedit, QExpr baseedit)] -> RefExpression baseedit
 rightApply e1 [] = return e1
 rightApply e1 ((f, e2):rest) = do
     ee <- rightApply e2 rest
-    qApplyAllExpr f [e1, ee]
+    liftRefNotation $ qApplyAllExpr f [e1, ee]
 
 readInfixedExpression ::
        forall baseedit. HasPinaforePointEdit baseedit
     => Int
-    -> Parser (PinaforeTypeCheck (QExpr baseedit))
+    -> Parser (RefExpression baseedit)
 readInfixedExpression 10 = readExpression1
 readInfixedExpression prec = do
     te1 <- readInfixedExpression (succ prec)
@@ -464,7 +479,7 @@ readInfixedExpression prec = do
             return $ do
                 e1 <- te1
                 e2 <- te2
-                qApplyAllExpr (qVarExpr name) [e1, e2]
+                liftRefNotation $ qApplyAllExpr (qVarExpr name) [e1, e2]
         _
             | all (\(assoc, _, _) -> assoc == AssocLeft) rest ->
                 return $ do
@@ -487,7 +502,7 @@ readInfixedExpression prec = do
 
 readExpression1 ::
        forall baseedit. HasPinaforePointEdit baseedit
-    => Parser (PinaforeTypeCheck (QExpr baseedit))
+    => Parser (RefExpression baseedit)
 readExpression1 =
     (do
          readThis TokLambda
@@ -496,7 +511,7 @@ readExpression1 =
          mval <- readExpression
          return $ do
              val <- mval
-             qAbstractsExpr args val) <|>
+             liftRefNotation $ qAbstractsExpr args val) <|>
     (do
          bmap <- readLetBindings
          readThis TokIn
@@ -515,17 +530,17 @@ readExpression1 =
              etest <- metest
              ethen <- methen
              eelse <- meelse
-             qApplyAllExpr (qConstExpr qifthenelse) [etest, ethen, eelse]) <|>
+             liftRefNotation $ qApplyAllExpr (qConstExpr qifthenelse) [etest, ethen, eelse]) <|>
     readExpression2
 
-readExpression2 :: HasPinaforePointEdit baseedit => Parser (PinaforeTypeCheck (QExpr baseedit))
+readExpression2 :: HasPinaforePointEdit baseedit => Parser (RefExpression baseedit)
 readExpression2 = do
     te1 <- readExpression3
     targs <- many readExpression3
     return $ do
         e1 <- te1
         args <- sequence targs
-        qApplyAllExpr e1 args
+        liftRefNotation $ qApplyAllExpr e1 args
 
 makePoint :: MonadFail m => PinaforeType baseedit 'PositivePolarity t -> Point -> m t
 makePoint (ConsPinaforeType (GroundPinaforeSingularType (SimpleEntityPinaforeGroundType t) NilDolanArguments) NilPinaforeType) p =
@@ -633,7 +648,7 @@ readProperty = do
 
 readExpression3 ::
        forall baseedit. HasPinaforePointEdit baseedit
-    => Parser (PinaforeTypeCheck (QExpr baseedit))
+    => Parser (RefExpression baseedit)
 readExpression3 =
     (do
          b <- readThis TokBool
@@ -647,16 +662,25 @@ readExpression3 =
     (do
          str <- readThis TokString
          return $ return $ qConstExpr str) <|>
-    readProperty <|>
+    fmap liftRefNotation readProperty <|>
+    (do
+         readThis TokRef
+         rexpr <- readExpression3
+         return $ refNotationQuote rexpr) <|>
+    (do
+         readThis TokUnref
+         rexpr <- readExpression3
+         return $ refNotationUnquote rexpr) <|>
     (do
          readThis TokPoint
          readThis TokAt
          mt <- readType3 @baseedit @('Just 'PositivePolarity)
          uuid <- readThis TokUUID
-         return $ do
-             SingleMPolarType (MkAnyW tp) <- mt
-             pt <- makePoint tp $ MkPoint uuid
-             return $ qConstExprAny $ MkAnyValue tp pt) <|>
+         return $
+             liftRefNotation $ do
+                 SingleMPolarType (MkAnyW tp) <- mt
+                 pt <- makePoint tp $ MkPoint uuid
+                 return $ qConstExprAny $ MkAnyValue tp pt) <|>
     (readParen $
      (do
           name <- readThis TokOperator
@@ -672,7 +696,8 @@ readExpression3 =
                   return $ do
                       e1 <- ce1
                       e2 <- ce2
-                      qApplyAllExpr (qConstExpr ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))) [e1, e2]
+                      liftRefNotation $
+                          qApplyAllExpr (qConstExpr ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))) [e1, e2]
               Nothing -> return ce1)) <|>
     (do
          readThis TokOpenBracket
@@ -688,8 +713,15 @@ readExpression3 =
          readThis TokCloseBracket
          return $ do
              exprs <- sequence mexprs
-             qSequenceExpr exprs) <?>
+             liftRefNotation $ qSequenceExpr exprs) <?>
     "expression"
+
+readTopExpression ::
+       forall baseedit. HasPinaforePointEdit baseedit
+    => Parser (PinaforeTypeCheck (QExpr baseedit))
+readTopExpression = do
+    rexpr <- readExpression
+    return $ runRefNotation rexpr
 
 data InteractiveCommand baseedit
     = LetInteractiveCommand (QExpr baseedit -> PinaforeTypeCheck (QExpr baseedit))
@@ -701,7 +733,7 @@ showTypeInteractiveCommand ::
        forall baseedit. HasPinaforePointEdit baseedit
     => Parser (InteractiveCommand baseedit)
 showTypeInteractiveCommand = do
-    expr <- readExpression
+    expr <- readTopExpression
     return $ ShowTypeInteractiveCommand expr
 
 readInteractiveCommand ::
@@ -716,8 +748,8 @@ readInteractiveCommand =
              "type" -> showTypeInteractiveCommand
              _ -> return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd) <|>
     (eof >> return (LetInteractiveCommand return)) <|>
-    (try $ fmap ExpressionInteractiveCommand readExpression) <|>
-    (fmap LetInteractiveCommand readLetBindings)
+    (try $ fmap ExpressionInteractiveCommand readTopExpression) <|>
+    (fmap LetInteractiveCommand readTopLetBindings)
 
 parseReader :: Parser t -> SourceName -> Text -> Result Text t
 parseReader parser name text = do
@@ -728,7 +760,7 @@ parseReader parser name text = do
 
 parseExpression ::
        HasPinaforePointEdit baseedit => SourceName -> Text -> Result Text (PinaforeTypeCheck (QExpr baseedit))
-parseExpression = parseReader readExpression
+parseExpression = parseReader readTopExpression
 
 parseType ::
        forall baseedit polarity. (HasPinaforePointEdit baseedit, IsTypePolarity polarity)

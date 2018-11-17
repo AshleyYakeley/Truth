@@ -7,10 +7,10 @@ window n s = (n,s);
 entity Person;
 
 # Properties of Person
-name = property @Person @Text %498260df-6a8a-44f0-b285-68a63565a33b;
+name = property @Person @Text !498260df-6a8a-44f0-b285-68a63565a33b;
 
 # One particular Person
-me = point @Person %238f247b-a899-4c6e-8e1d-07e844bd8d2f;
+me = point @Person !238f247b-a899-4c6e-8e1d-07e844bd8d2f;
 
 # UI
 ui_person p = ui_textentry $ name !$ pureref p;

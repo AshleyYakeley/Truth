@@ -24,8 +24,7 @@ makeTestPinaforeContest = do
 
 defs :: [String]
 defs =
-    [
-      "testeq expected found = if expected == found then pass else fail $ \"expected \" ++ totext expected ++ \" but found \" ++ totext found"
+    [ "testeq expected found = if expected == found then pass else fail $ \"expected \" ++ totext expected ++ \" but found \" ++ totext found"
     , "testneq expected found = if not (expected == found) then pass else fail $ \"expected not \" ++ totext expected ++ \" but found \" ++ totext found"
     -- , "testisnull t = if exists t then fail (\"expected null but found \" ++ t) else pass"
     , "entity T"
@@ -96,8 +95,12 @@ testEntity =
               , pointTest "ma !@ \"hello\" += p1 >> testeq \"hello\" (ma !$ p1)"
               ]
         , testGroup "-=" [pointTest "ma !@ \"hello\" += p1 >> ma !@ \"hello\" -= p1 >> testisnull (ma !$ p1)"]
-        , testGroup "removeall" [pointTest "@ma !@ \"hello\" += p1 >> removeall (ma !$ \"hello\") >> testisnull (ma !$ p1)"]
-        , testGroup "matching literals" [pointTest "ma !$ p1 := \"hello\" >> ma !$ p2 := \"hello\" >> testeq (ma !$ p1) (ma !$ p2)"]
+        , testGroup
+              "removeall"
+              [pointTest "@ma !@ \"hello\" += p1 >> removeall (ma !$ \"hello\") >> testisnull (ma !$ p1)"]
+        , testGroup
+              "matching literals"
+              [pointTest "ma !$ p1 := \"hello\" >> ma !$ p2 := \"hello\" >> testeq (ma !$ p1) (ma !$ p2)"]
         , testGroup
               "identity morphism"
               [ pointTest "(identity $ ma p1) := p2 >> testeq p2 (ma p1)"

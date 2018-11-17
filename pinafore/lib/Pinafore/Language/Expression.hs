@@ -57,21 +57,18 @@ qSequenceExpr (e:ee) = do
     ee' <- qSequenceExpr ee
     qApplyAllExpr qConsList [e, ee']
 
-type QBindList baseedit = [(Name, PinaforeTypeCheck (QExpr baseedit))]
+type QBindList baseedit = [(Name, QExpr baseedit)]
 
 bindListToBindings ::
        forall baseedit. QBindList baseedit -> PinaforeTypeCheck (TypedBindings Name (PinaforeTypeSystem baseedit))
 bindListToBindings bl =
-    fmap mconcat $
-    for bl $ \(n, me) -> do
-        e <- me
-        return $ singleTypedBinding @(PinaforeTypeSystem baseedit) n e
+    fmap mconcat $ for bl $ \(n, e) -> return $ singleTypedBinding @(PinaforeTypeSystem baseedit) n e
 
-qBindExpr :: forall baseedit. Name -> PinaforeTypeCheck (QExpr baseedit) -> QBindList baseedit
+qBindExpr :: forall baseedit. Name -> QExpr baseedit -> QBindList baseedit
 qBindExpr n e = pure (n, e)
 
 qBindVal :: ToPinaforeType baseedit t => Name -> t -> QBindList baseedit
-qBindVal name val = qBindExpr name $ return $ qConstExpr val
+qBindVal name val = qBindExpr name $ qConstExpr val
 
 qLetExpr :: forall baseedit. Name -> QExpr baseedit -> QExpr baseedit -> PinaforeTypeCheck (QExpr baseedit)
 qLetExpr name exp body = letTypedExpression @(PinaforeTypeSystem baseedit) name exp body

@@ -69,6 +69,7 @@ library:
       - Pinafore.Language.Set
       - Pinafore.Language.Morphism
       - Pinafore.Language.Token
+      - Pinafore.Language.RefNotation
       - Pinafore.Language.Read
       - Pinafore.Language.If
       - Pinafore.Language.Show

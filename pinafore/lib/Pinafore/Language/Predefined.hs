@@ -345,6 +345,7 @@ predefinitions =
                 ((>>) :: PinaforeAction baseedit -> PinaforeAction baseedit -> PinaforeAction baseedit)
               , mkDefEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
               , mkDefEntry "with" "Perform an action on the value of a reference." $ pinaforeReferenceWith @baseedit @A
+              , mkDefEntry "runref" "Run an action from a reference." $ runPinaforeReference @baseedit
               , mkDefEntry
                     "for"
                     "Perform an action on each value of a list."

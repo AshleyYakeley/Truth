@@ -87,6 +87,8 @@ In interactive mode, each line has syntax `<interactive>`.
 <expression-3> ::=
     "property" "@"<type-const> "@"<type-const> uuid |
     "point" "@"<type-3> uuid |
+    "ref" <expression-3> |
+    "%" <expression-3> |
     symbol |
     literal-boolean |
     literal-number |
@@ -142,5 +144,5 @@ literal-number = (-?[0-9]+(.[0-9]*(_[0-9]*)?)?)|(~-?[0-9]+(.[0-9]*)?(e-?[0-9]+)?
 literal-text = "([^"\\]|\\.)*"
 
 uuid =
-    %[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}
+    ![[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}
 ```

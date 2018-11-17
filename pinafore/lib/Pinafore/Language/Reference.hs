@@ -59,3 +59,6 @@ pinaforeReferenceWith ref cont = do
     case ka of
         Known a -> cont a
         Unknown -> return ()
+
+runPinaforeReference :: PinaforeReference baseedit '( BottomType, PinaforeAction baseedit) -> PinaforeAction baseedit
+runPinaforeReference ref = pinaforeReferenceWith ref id
