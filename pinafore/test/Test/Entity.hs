@@ -45,7 +45,8 @@ pointTest :: Text -> TestTree
 pointTest text =
     testCase (unpack text) $ do
         pc <- makeTestPinaforeContest
-        pinaforeRunFile pc "<test>" $ prefix <> text
+        action <- pinaforeInterpretFile pc "<test>" $ prefix <> text
+        action
 
 testEntity :: TestTree
 testEntity =

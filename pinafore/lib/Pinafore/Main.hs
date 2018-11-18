@@ -4,7 +4,7 @@ module Pinafore.Main
     , makePinaforeContext
     , sqlitePinaforeContext
     , sqlitePinaforeDumpTable
-    , pinaforeRunFile
+    , pinaforeInterpretFile
     , pinaforeInteract
     ) where
 
@@ -81,10 +81,10 @@ sqlitePinaforeDumpTable dirpath = do
                 Nothing -> show v
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
-pinaforeRunFile :: PinaforeContext -> FilePath -> Text -> IO ()
-pinaforeRunFile (MkPinaforeContext runAction) puipath puitext = do
+pinaforeInterpretFile :: PinaforeContext -> FilePath -> Text -> IO (IO ())
+pinaforeInterpretFile (MkPinaforeContext runAction) puipath puitext = do
     action :: FilePinaforeType <- resultTextToM $ parseValueAtType @PinaforeEdit puipath puitext
-    runUnliftIO runAction action
+    return $ runUnliftIO runAction action
 
 pinaforeInteract :: PinaforeContext -> IO ()
 pinaforeInteract (MkPinaforeContext runAction) = interact runAction

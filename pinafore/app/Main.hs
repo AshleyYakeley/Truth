@@ -13,6 +13,7 @@ data Options
     = ExprDocOption
     | DumpTableOption (Maybe FilePath)
     | RunOption Bool
+                Bool
                 (Maybe FilePath)
                 [FilePath]
 
@@ -21,7 +22,8 @@ optDataFlag = O.optional $ O.strOption $ O.long "data" <> O.metavar "PATH"
 
 optParser :: O.Parser Options
 optParser =
-    (RunOption <$> (O.switch $ O.long "interactive" <> O.short 'i') <*> optDataFlag <*>
+    (RunOption <$> (O.switch $ O.long "interactive" <> O.short 'i') <*> (O.switch $ O.long "no-run" <> O.short 'n') <*>
+     optDataFlag <*>
      (O.many $ O.strArgument $ O.metavar "SCRIPT")) <|>
     (O.flag' ExprDocOption $ O.long "doc") <|>
     ((O.flag' DumpTableOption $ O.long "dump-table") <*> optDataFlag)
@@ -73,7 +75,7 @@ main =
             DumpTableOption mdirpath -> do
                 dirpath <- getDirPath mdirpath
                 liftIO $ sqlitePinaforeDumpTable dirpath
-            RunOption fInteract mdirpath fpaths -> do
+            RunOption fInteract fNoRun mdirpath fpaths -> do
                 dirpath <- getDirPath mdirpath
                 context <- sqlitePinaforeContext dirpath createWindow
                 liftIO $
@@ -84,11 +86,17 @@ main =
                                 then pinaforeInteract context
                                 else do
                                     ptext <- getContents
-                                    pinaforeRunFile context "<stdin>" $ decodeUtf8 $ toStrict ptext
+                                    action <- pinaforeInterpretFile context "<stdin>" $ decodeUtf8 $ toStrict ptext
+                                    if fNoRun
+                                        then return ()
+                                        else action
                         _ -> do
                             for_ fpaths $ \fpath -> do
                                 ptext <- readFile fpath
-                                pinaforeRunFile context fpath $ decodeUtf8 $ toStrict ptext
+                                action <- pinaforeInterpretFile context fpath $ decodeUtf8 $ toStrict ptext
+                                if fNoRun
+                                    then return ()
+                                    else action
                             if fInteract
                                 then pinaforeInteract context
                                 else return ()
