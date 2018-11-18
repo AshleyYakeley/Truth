@@ -68,7 +68,7 @@ library:
       - Pinafore.Language.Reference
       - Pinafore.Language.Set
       - Pinafore.Language.Morphism
-      - Pinafore.Language.Token
+      - Pinafore.Language.Read.Token
       - Pinafore.Language.Read.RefNotation
       - Pinafore.Language.Read.Parser
       - Pinafore.Language.Read.Type

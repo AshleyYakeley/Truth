@@ -12,10 +12,10 @@ import Pinafore.Language.Read.Infix
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Property
 import Pinafore.Language.Read.RefNotation
+import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
 import Pinafore.Language.Read.TypeDecls
 import Pinafore.Language.Show
-import Pinafore.Language.Token
 import Pinafore.Language.Type
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)

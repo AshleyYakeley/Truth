@@ -1,6 +1,6 @@
 module Pinafore.Language.Read.Parser where
 
-import Pinafore.Language.Token
+import Pinafore.Language.Read.Token
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 

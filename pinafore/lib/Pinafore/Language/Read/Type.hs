@@ -9,7 +9,7 @@ import Pinafore.Language.Expression
 import Pinafore.Language.Literal
 import Pinafore.Language.Name
 import Pinafore.Language.Read.Parser
-import Pinafore.Language.Token
+import Pinafore.Language.Read.Token
 import Pinafore.Language.Type
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)

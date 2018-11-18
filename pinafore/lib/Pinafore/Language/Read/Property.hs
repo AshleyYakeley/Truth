@@ -8,8 +8,8 @@ import Pinafore.Language.Literal
 import Pinafore.Language.Morphism
 import Pinafore.Language.NamedEntity
 import Pinafore.Language.Read.Parser
+import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
-import Pinafore.Language.Token
 import Pinafore.Language.Type
 import Shapes hiding (try)
 
