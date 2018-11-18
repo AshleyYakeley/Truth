@@ -152,8 +152,7 @@ readExpression3 =
          return $ return $ qConstExpr str) <|>
     fmap liftRefNotation readProperty <|>
     (do
-         readThis TokRef
-         rexpr <- readExpression3
+         rexpr <- readBracketed TokOpenBrace TokCloseBrace $ readExpression
          return $ refNotationQuote rexpr) <|>
     (do
          readThis TokUnref
@@ -188,8 +187,8 @@ readExpression3 =
                           qApplyAllExpr (qConstExpr ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))) [e1, e2]
               Nothing -> return ce1)) <|>
     (do
-         readThis TokOpenBracket
          mexprs <-
+             readBracketed TokOpenBracket TokCloseBracket $
              (do
                   expr1 <- readExpression
                   exprs <-
@@ -198,7 +197,6 @@ readExpression3 =
                           readExpression
                   return $ expr1 : exprs) <|>
              return []
-         readThis TokCloseBracket
          return $ do
              exprs <- sequence mexprs
              liftRefNotation $ qSequenceExpr exprs) <?>

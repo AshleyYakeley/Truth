@@ -22,7 +22,6 @@ data Token t where
     TokOpenBrace :: Token ()
     TokCloseBrace :: Token ()
     TokString :: Token Text
-    TokRef :: Token ()
     TokUnref :: Token ()
     TokLet :: Token ()
     TokIn :: Token ()
@@ -54,7 +53,6 @@ instance TestEquality Token where
     testEquality TokOpenBrace TokOpenBrace = Just Refl
     testEquality TokCloseBrace TokCloseBrace = Just Refl
     testEquality TokString TokString = Just Refl
-    testEquality TokRef TokRef = Just Refl
     testEquality TokUnref TokUnref = Just Refl
     testEquality TokLet TokLet = Just Refl
     testEquality TokIn TokIn = Just Refl
@@ -87,7 +85,6 @@ instance Show (Token t) where
     show TokOpenBrace = "{"
     show TokCloseBrace = "}"
     show TokString = "quoted string"
-    show TokRef = show ("ref" :: String)
     show TokUnref = "unreference"
     show TokLet = show ("let" :: String)
     show TokIn = show ("in" :: String)
@@ -184,7 +181,6 @@ readTextToken = do
     rest <- many $ satisfy identifierChar
     case firstC : rest of
         -- keywords
-        "ref" -> return $ MkAnyValue TokRef ()
         "let" -> return $ MkAnyValue TokLet ()
         "in" -> return $ MkAnyValue TokIn ()
         "property" -> return $ MkAnyValue TokProperty ()
