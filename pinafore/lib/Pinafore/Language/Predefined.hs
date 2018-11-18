@@ -204,7 +204,9 @@ predefinitions =
         [ docTreeEntry
               "Literals & Entities"
               ""
-              [ mkDefEntry "==" "Literal equality." $ (==) @Literal
+              [ mkDefEntry "is" "Entity equality." $ (==) @Entity
+              , mkDefEntry "==" "Literal equality. Same as Entity equality restricted to Literal, but faster." $
+                (==) @Literal
               , mkDefEntry "/=" "Literal non-equality." $ (/=) @Literal
               , mkDefEntry "entityuuid" "UUID of an entity." entityuuid
               , mkDefEntry "totext" "The text of a literal." unLiteral
@@ -274,11 +276,11 @@ predefinitions =
                     "unknown"
                     "The unknown reference, representing missing information."
                     (empty :: PinaforeImmutableReference baseedit BottomType)
-              , mkDefEntry "exists" "True if the literal is not null." $ \(val :: PinaforeFunctionValue baseedit (Know Literal)) ->
+              , mkDefEntry "known" "True if the literal is known." $ \(val :: PinaforeFunctionValue baseedit (Know Literal)) ->
                     (funcEditFunction (Known . isKnown) . val :: PinaforeFunctionValue baseedit (Know Bool))
               , mkDefEntry
                     "??"
-                    "`p ?? q` = `p` if it exists, else `q`."
+                    "`p ?? q` = `p` if it is known, else `q`."
                     ((<|>) :: PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A)
               ]
         , docTreeEntry
@@ -298,9 +300,8 @@ predefinitions =
                 pinaforeSetJoin @baseedit @A
               , mkDefEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
               , mkDefEntry "membership" "Get the membership of a set." $ pinaforeSetMembership @baseedit
-              , mkDefEntry "single" "The member of a single-member set, or null." $ pinaforeSetSingle @baseedit @A
-              , mkDefEntry "count" "Count of non-null literals in a set." $
-                pinaforeSetFunc @baseedit @TopType @Int olength
+              , mkDefEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetSingle @baseedit @A
+              , mkDefEntry "count" "Count of members in a set." $ pinaforeSetFunc @baseedit @TopType @Int olength
               , mkDefEntry "sum" "Sum of numbers in a set." $ pinaforeSetFunc @baseedit @Number @Number sum
               , mkDefEntry "mean" "Mean of numbers in a set." $
                 pinaforeSetFunc @baseedit @Number @Number $ \s -> sum s / fromIntegral (olength s)
@@ -386,11 +387,11 @@ predefinitions =
               , mkDefEntry "ui_blank" "Blank user-interface" uiNull
               , mkDefEntry "ui_unitcheckbox" "(TBD)" $ \name val ->
                     uiCheckbox (clearText . name) $ toEditLens knowBool . val
-              , mkDefEntry "ui_booleancheckbox" "Checkbox. Use shift-click to set to null." $ \name val ->
+              , mkDefEntry "ui_booleancheckbox" "Checkbox. Use shift-click to set to unknown." $ \name val ->
                     uiMaybeCheckbox (clearText . name) $ (bijectionWholeEditLens knowMaybe) . val
-              , mkDefEntry "ui_textentry" "Text entry, empty text is null." $
+              , mkDefEntry "ui_textentry" "Text entry, empty text is unknown." $
                 valSpecText $ uiUnknownValue mempty uiTextEntry
-              , mkDefEntry "ui_textarea" "Text area, empty text is null." $
+              , mkDefEntry "ui_textarea" "Text area, empty text is unknown." $
                 valSpecText $ uiUnknownValue mempty $ uiNoSelectionLens $ uiConvert uiText
               , mkDefEntry "ui_label" "Label." $ valSpecText $ uiUnknownValue mempty $ uiLabel
               , mkDefEntry
