@@ -13,7 +13,7 @@ entity Root;
 root = point @Root !78baed51-cb05-46b5-bcb4-49031532b890;
 
 # The set of people connected to root.
-people = property @Person @Root !f06efa5e-190f-4e5d-8633-495c5683c124 !@ pureref root;
+people = property @Person @Root !f06efa5e-190f-4e5d-8633-495c5683c124 !@ {root};
 
 in
 with (members (rev alphabetical) (name !$$ people)) $ \l -> for l outputln
