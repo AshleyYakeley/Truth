@@ -36,6 +36,10 @@ defs =
     , "md = property @T @T !\"md\""
     , "la = property @T @Text !\"la\""
     , "na = property @T @Number !\"na\""
+    , "nb = property @T @Number !\"nb\""
+    , "nc = property @T @Number !\"nb\""
+    , "ra = property @Text @T !\"ra\""
+    , "rna = property @Number @T !\"rna\""
     , "p1 = point @T !d4d3096a-b1f7-4cb1-8dfa-c907e57baed1"
     , "p2 = point @T !6a76c6b3-c9d6-4e76-af3a-863b7c46b34c"
     , "p3 = point @T !5048ecd6-bebb-4500-a508-f188b4cc7443"
@@ -79,7 +83,6 @@ testEntity =
               , pointTest "pass >> runreforfail {if %(known $ la !$ {p1}) then fail \"failed\" else pass}"
               , pointTest "runreforfail {pass >> if %(known $ la !$ {p1}) then fail \"failed\" else pass}"
               , pointTest "runreforfail {if %(known $ la !$ {p1}) then fail \"failed\" else pass} >> pass"
-              , pointTest "runreforfail {(if %(known $ la !$ {p1}) then fail \"failed\" else pass} >> pass)"
               , pointTest "testisunknown unknown"
               , pointTest "testisunknown (la !$ {p1})"
               , pointTest "testisunknown $ unknown ?? unknown"
@@ -89,10 +92,10 @@ testEntity =
               ]
         , testGroup
               ":="
-              [ pointTest "la !$ {p1} := {\"hello\"}"
+              [ pointTest "la !$ {p1} := \"hello\""
               , pointTest "ma !$ {p1} := p2"
               , pointTest "ma !$ {p1} := p2 >> testeq {p2} (ma !$ {p1})"
-              , pointTest "la !$ {p1} := {\"hello\"} >> testeq {\"hello\"} (la !$ {p1})"
+              , pointTest "la !$ {p1} := \"hello\" >> testeq {\"hello\"} (la !$ {p1})"
               ]
         , testGroup
               "+="
@@ -106,7 +109,7 @@ testEntity =
               [pointTest "la !@ {\"hello\"} += p1 >> removeall (la !@ {\"hello\"}) >> testisunknown (la !$ {p1})"]
         , testGroup
               "matching literals"
-              [pointTest "la !$ {p1} := {\"hello\"} >> la !$ {p2} := {\"hello\"} >> testeq (la !$ {p1}) (la !$ {p2})"]
+              [pointTest "la !$ {p1} := \"hello\" >> la !$ {p2} := \"hello\" >> testeq (la !$ {p1}) (la !$ {p2})"]
         , testGroup
               "identity morphism"
               [ pointTest "(identity !$ ma !$ {p1}) := p2 >> testeq {p2} (ma !$ {p1})"
@@ -119,6 +122,7 @@ testEntity =
               , pointTest "ma !$ {p1} := p2 >> testeq {p2} ((ma !. identity) !$ {p1})"
               , pointTest "(identity !$ ma !$ {p1}) := p2 >> testeq {p2} (identity !$ ma !$ {p1})"
               ]
+{-
         , testGroup
               "identity inverse morphism"
               [ pointTest "(identity !@@ la !@ {\"hello\"}) += p1 >> testisunknown (la !$ {p1})"
@@ -129,7 +133,7 @@ testEntity =
               , pointTest "((la !. identity) !@ {\"hello\"}) += p1 >> testeq {\"hello\"} (la !$ {p1})"
               , pointTest "la !@ {\"hello\"} += p1 >> la !@ {\"hello\"} -= p1 >> testisunknown (ma !$ {p1})"
               , pointTest
-                    "la !@ {\"hello\"} += p1 >> (@identity $ la !@ {\"hello\"}) -= p1 >> testeq {\"hello\"} (ma !$ {p1})"
+                    "la !@ {\"hello\"} += p1 >> (identity !@@ la !@ {\"hello\"}) -= p1 >> testeq {\"hello\"} (ma !$ {p1})"
               , pointTest
                     "la !@ {\"hello\"} += p1 >> (immutableset $ la !@ {\"hello\"}) -= p1 >> testeq {\"hello\"} (ma !$ {p1})"
               , pointTest
@@ -140,15 +144,17 @@ testEntity =
               , pointTest
                     "la !@ {\"hello\"} += p1 >> ((la !. identity) !@ {\"hello\"}) -= p1 >> testisunknown (ma !$ {p1})"
               ]
+-}
         , testGroup
               "composed morphisms"
               [ pointTest "(ma !$ mb !$ {p1}) := p2 >> testeq {p2} (ma !$ mb !$ {p1})"
-              , pointTest "(la !$ mb !$ {p1}) := {\"hello\"} >> testeq {\"hello\"} (la !$ mb !$ {p1})"
+              , pointTest "(la !$ mb !$ {p1}) := \"hello\" >> testeq {\"hello\"} (la !$ mb !$ {p1})"
               , pointTest "(ma !. mb !$ {p1}) := p2 >> testeq {p2} (ma !$ mb !$ {p1})"
-              , pointTest "(la !. mb !$ {p1}) := {\"hello\"} >> testeq {\"hello\"} (la !$ mb !$ {p1})"
+              , pointTest "(la !. mb !$ {p1}) := \"hello\" >> testeq {\"hello\"} (la !$ mb !$ {p1})"
               , pointTest "(ma !$ mb !$ {p1}) := p2 >> testeq {p2} (ma !. mb !$ {p1})"
-              , pointTest "(la !$ mb !$ {p1}) := {\"hello\"} >> testeq {\"hello\"} (la !. mb !$ {p1})"
+              , pointTest "(la !$ mb !$ {p1}) := \"hello\" >> testeq {\"hello\"} (la !. mb !$ {p1})"
               ]
+{-
         , testGroup
               "composed inverse morphisms"
               [ pointTest "(mb !@@ la !@ {\"hello\"}) += p1 >> testeq {\"hello\"} (la !$ mb !$ {p1})"
@@ -173,35 +179,26 @@ testEntity =
               , pointTest
                     "mb p1 := p2 >> ma p2 := {\"hello\"} >> removeall ( @mb $ @ma  {\"hello\"}) >> testeq {\"hello\"} (ma p2)"
               ]
+ -}
         , testGroup
               "single"
-              [ pointTest "testisunknown (single $ mb $ @ma 0)"
-              , pointTest "mb p1 := 1 >> ma p1 := 0 >> testeq 1 (single $ mb $ @ma 0)"
-              , pointTest "mb p1 := 1 >> ma p1 := 0 >> mc p1 := 0 >> testeq 1 (single $ mb $ @ma 0)"
-              , pointTest "mb p1 := 1 >> ma p1 := 0 >> ma p1 := 0 >> testeq 1 (single $ mb $ @ma 0)"
-              , pointTest "mb p1 := 1 >> mb p2 := 2 >> ma p1 := 0 >> ma p2 := 0 >> testisunknown (single $ mb $ @ma 0)"
-              , pointTest "mb p1 := 1 >> mb p2 := 1 >> ma p1 := 0 >> ma p2 := 0 >> testeq 1 (single $ mb $ @ma 0)"
-              ]
-        , testGroup
-              "null set member"
-              [ pointTest "@ma p1 += null >> testeq 0 (count (@ma p1))"
-              , pointTest "@ma p1 += null >> @ma p1 += 10 >> testeq 1 (count (@ma p1))"
-              , pointTest "@ma p1 += null >> @ma p1 += 10 >> testeq 10 (sum (@ma p1))"
-              , pointTest "@ma p1 += null >> @ma p1 += 10 >> testeq 10 (mean (@ma p1))"
-              , pointTest "@ma p1 += null >> @ma p1 += 10 >> testeq 10 (single $ @ma p1)"
-              , pointTest $
-                "let counter = ma p1 in " <>
-                "counter := 0 >> @ma p1 += null >> @ma p1 += 10 >> withset (orders []) (@ma p1) (\\p -> counter := counter + 1) >> testeq 2 counter"
-              , pointTest $
-                "let counter = ma p1 in " <>
-                "counter := 0 >> @ma p1 += null >> @ma p1 += null >> @ma p1 += 10 >> withset (orders []) (@ma p1) (\\p -> counter := counter + 1) >> testeq 3 counter"
+              [ pointTest "testisunknown (single $ nb !$$ na !@ {0})"
+              , pointTest "nb !$ {p1} := 1 >> na !$ {p1} := 0 >> testeq {1} (single $ nb !$$ na !@ {0})"
+              , pointTest
+                    "nb !$ {p1} := 1 >> na !$ {p1} := 0 >> nc !$ {p1} := 0 >> testeq {1} (single $ nb !$$ na !@ {0})"
+              , pointTest
+                    "nb !$ {p1} := 1 >> na !$ {p1} := 0 >> na !$ {p1} := 0 >> testeq {1} (single $ nb !$$ na !@ {0})"
+              , pointTest
+                    "nb !$ {p1} := 1 >> nb !$ {p2} := 2 >> na !$ {p1} := 0 >> na !$ {p2} := 0 >> testisunknown (single $ nb !$$ na !@ {0})"
+              , pointTest
+                    "nb !$ {p1} := 1 >> nb !$ {p2} := 1 >> na !$ {p1} := 0 >> na !$ {p2} := 0 >> testeq {1} (single $ nb !$$ na !@ {0})"
               ]
         , testGroup
               "multiple set member"
-              [ pointTest "la !@ {p1} += {\"hello\"} >> la !@ {p1} += {\"hello\"} >> testeq 1 (count (la !@ {p1}))"
-              , pointTest "la !@ {p1} += {\"h\"} >> la !@ {p1} += {\"hello\"} >> testeq 2 (count (la !@ {p1}))"
+              [ pointTest "ra !@ {p1} += \"hello\" >> ra !@ {p1} += \"hello\" >> testeq {1} (count (ra !@ {p1}))"
+              , pointTest "ra !@ {p1} += \"h\" >> ra !@ {p1} += \"hello\" >> testeq {2} (count (ra !@ {p1}))"
               , pointTest $
-                "let counter = na !$ {p1} in " <>
-                "counter := 0 >> ma !@ p1 += 1 >> @ma p1 += 1 >> withset (orders []) (@ma p1) (\\p -> counter := {%counter + 1}) >> testeq 1 counter"
+                "let counter = na !$ {p1};someset = rna !@ {p1} in " <>
+                "counter := 0 >> someset += 1 >> someset += 1 >> (with (members (orders []) someset) $ \\pp -> for pp $ \\p -> runref {counter := %counter + 1}) >> testeq {1} counter"
               ]
         ]
