@@ -149,16 +149,6 @@ sqlitePinaforeLens = let
             return $ do
                 sa <- listToMaybe row
                 return $ getSingleAll sa
-    efGet mr (PinaforeTableReadLookupLiteral l) =
-        lift $ do
-            row <-
-                mr $
-                DatabaseSelect
-                    (SingleTable $ MkTupleTableSel PinaforeLiteral)
-                    (MkTupleWhereClause $ ColumnExpr LiteralValue === ConstExpr l)
-                    mempty
-                    (MkTupleSelectClause $ \Refl -> ColumnExpr LiteralKey)
-            return $ MkFiniteSet $ fmap getSingleAll row
     efUpdate ::
            forall m. MonadIO m
         => SQLiteEdit PinaforeSchema

@@ -11,8 +11,8 @@ pointToEntity :: Point -> Entity
 pointToEntity = MkEntity
 
 pairToEntity :: (Entity, Entity) -> Entity
-pairToEntity (a, b) = pointToEntity $ hashToPoint $ \call -> [call @Text "pair", call a, call b]
+pairToEntity (a, b) = pointToEntity $ hashToPoint $ \call -> [call @Text "pair:", call a, call b]
 
 eitherToEntity :: Either Entity Entity -> Entity
-eitherToEntity (Left v) = pointToEntity $ hashToPoint $ \call -> [call @Text "Left", call v]
-eitherToEntity (Right v) = pointToEntity $ hashToPoint $ \call -> [call @Text "Right", call v]
+eitherToEntity (Left v) = pointToEntity $ hashToPoint $ \call -> [call @Text "Left:", call v]
+eitherToEntity (Right v) = pointToEntity $ hashToPoint $ \call -> [call @Text "Right:", call v]

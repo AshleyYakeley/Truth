@@ -61,6 +61,7 @@ library:
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
       - Pinafore.Base.ImmutableReference
+      - Pinafore.Base.ConstructorAdapter
       - Pinafore.Language.Name
       - Pinafore.Language.Literal
       - Pinafore.Language.NamedEntity
@@ -68,6 +69,14 @@ library:
       - Pinafore.Language.Reference
       - Pinafore.Language.Set
       - Pinafore.Language.Morphism
+      - Pinafore.Language.If
+      - Pinafore.Language.Show
+      - Pinafore.Language.Order
+      - Pinafore.Language.GroundType
+      - Pinafore.Language.TypeContext
+      - Pinafore.Language.Convert.Base
+      - Pinafore.Language.Type
+      - Pinafore.Language.EntityType
       - Pinafore.Language.Read.Token
       - Pinafore.Language.Read.RefNotation
       - Pinafore.Language.Read.Parser
@@ -78,13 +87,6 @@ library:
       - Pinafore.Language.Read.Expression
       - Pinafore.Language.Read.Interactive
       - Pinafore.Language.Read
-      - Pinafore.Language.If
-      - Pinafore.Language.Show
-      - Pinafore.Language.Order
-      - Pinafore.Language.GroundType
-      - Pinafore.Language.TypeContext
-      - Pinafore.Language.Convert.Base
-      - Pinafore.Language.Type
       - Pinafore.Language.Expression
       - Pinafore.Language.Convert
       - Pinafore.Language.Doc

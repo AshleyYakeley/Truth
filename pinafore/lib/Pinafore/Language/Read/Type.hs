@@ -1,10 +1,11 @@
 module Pinafore.Language.Read.Type
     ( readTypeName
     , readType3
-    , readLiteralType
+    , readEntityType
     , parseType
     ) where
 
+import Pinafore.Language.EntityType
 import Pinafore.Language.Expression
 import Pinafore.Language.Literal
 import Pinafore.Language.Name
@@ -262,14 +263,22 @@ readTypeName =
                 | isUpper c -> return s
             _ -> mzero
 
-readLiteralType :: Parser (AnyW LiteralType)
-readLiteralType =
-    (try $ do
+readEntityType :: Parser (PinaforeTypeCheck (AnyW EntityType))
+readEntityType =
+    (do
          n <- readTypeName
-         case nameToLiteralType n of
-             Just t -> return t
-             Nothing -> mzero) <|>
-    (readParen $ return $ MkAnyW UnitLiteralType)
+         return $
+             case n of
+                 "Entity" -> return $ MkAnyW $ SimpleEntityType TopSimpleEntityType
+                 "Point" -> return $ MkAnyW $ SimpleEntityType PointSimpleEntityType
+                 _
+                     | Just (MkAnyW lt) <- nameToLiteralType n ->
+                         return $ MkAnyW $ SimpleEntityType $ LiteralSimpleEntityType lt
+                 _ -> do
+                     nt <- lookupNamedType n
+                     case nt of
+                         EntityNamedType (MkAnyW sw) -> return $ MkAnyW $ SimpleEntityType $ NamedSimpleEntityType sw) <|>
+    (readParen $ return $ return $ MkAnyW $ SimpleEntityType $ LiteralSimpleEntityType $ UnitLiteralType)
 
 parseType ::
        forall baseedit polarity. IsTypePolarity polarity

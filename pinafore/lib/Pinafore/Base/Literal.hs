@@ -23,7 +23,7 @@ class (Eq t, Show t) => AsLiteral t where
     literalTypeDescription :: Text
 
 literalToPoint :: AsLiteral t => t -> Point
-literalToPoint v = hashToPoint $ \call -> [call @Text "literal", call $ toLiteral v]
+literalToPoint v = hashToPoint $ \call -> [call @Text "literal:", call $ toLiteral v]
 
 instance AsLiteral Literal where
     toLiteral = id
