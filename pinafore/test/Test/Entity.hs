@@ -185,6 +185,6 @@ testEntity =
               , pointTest "ra !@ {p1} += \"h\" >> ra !@ {p1} += \"hello\" >> testeq {2} (count (ra !@ {p1}))"
               , pointTest $
                 "let counter = na !$ {p1};someset = rna !@ {p1} in " <>
-                "counter := 0 >> someset += 1 >> someset += 1 >> (with (members (orders []) someset) $ \\pp -> for pp $ \\p -> runref {counter := %counter + 1}) >> testeq {1} counter"
+                "counter := 0 >> someset += 1 >> someset += 1 >> (get (members (orders []) someset) $ \\pp -> for pp $ \\p -> runref {counter := %counter + 1}) >> testeq {1} counter"
               ]
         ]

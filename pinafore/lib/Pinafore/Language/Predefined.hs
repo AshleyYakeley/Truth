@@ -64,17 +64,6 @@ newentity set continue = do
     point <- pinaforeSetAddNew set
     continue point
 
-getentity ::
-       forall baseedit.
-       PinaforeReference baseedit '( BottomType, A)
-    -> (A -> PinaforeAction baseedit)
-    -> PinaforeAction baseedit
-getentity ref cont = do
-    ka <- getPinaforeReference ref
-    case ka of
-        Known a -> cont a
-        Unknown -> return ()
-
 setentity :: forall baseedit. PinaforeReference baseedit '( A, TopType) -> A -> PinaforeAction baseedit
 setentity ref val = setPinaforeReference ref (Known val)
 
@@ -345,9 +334,7 @@ predefinitions =
               , mkDefEntry ">>" "Do actions in sequence." $
                 ((>>) :: PinaforeAction baseedit -> PinaforeAction baseedit -> PinaforeAction baseedit)
               , mkDefEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
-              , mkDefEntry "with" "Perform an action on the value of a reference." $ getentity @baseedit
-              , mkDefEntry "get1" "Perform an action on the value of a reference." $ getentity @baseedit
-              --, mkDefEntry "with" "Perform an action on the value of a reference." $ pinaforeReferenceWith @baseedit @A
+              , mkDefEntry "get" "Get a reference and perform an action on it." $ pinaforeReferenceWith @baseedit @A
               , mkDefEntry "runref" "Run an action from a reference." $ runPinaforeReference @baseedit
               , mkDefEntry
                     "for"
@@ -358,9 +345,6 @@ predefinitions =
               , mkDefEntry ":=" "Set a reference to a value." $ setentity @baseedit
               , mkDefEntry "delete" "Delete an entity reference." $ deleteentity @baseedit
               , mkDefEntry "newentity" "Create a new entity in a set and act on it." $ newentity @baseedit
-              , mkDefEntry "get" "Get a reference." $ getentity @baseedit
-              , mkDefEntry "with1" "Get a reference." $ getentity @baseedit
-              , mkDefEntry "qqpp" "Get a reference." $ getentity @baseedit
               , mkDefEntry
                     "+="
                     "Add an entity to a set."
