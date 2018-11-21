@@ -3,24 +3,10 @@ module Test.Entity
     ) where
 
 import Pinafore
+import Pinafore.Test
 import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
-import Truth.Core
-import Truth.World.ObjectStore
-
-makeTestObject :: IO (Object PinaforeEdit)
-makeTestObject = do
-    tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <- freeIOObject ([], []) $ \_ -> True
-    return $
-        tupleObject $ \case
-            PinaforeSelectPoint -> pinaforeTablePointObject $ convertObject tableStateObject
-            PinaforeSelectFile -> readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
-
-makeTestPinaforeContest :: IO PinaforeContext
-makeTestPinaforeContest = do
-    pinaforeObject <- makeTestObject
-    makePinaforeContext pinaforeObject $ \_ -> return ()
 
 defs :: [String]
 defs =
@@ -52,7 +38,7 @@ prefix = pack $ "let\n" ++ intercalate ";\n" defs ++ "\nin\n"
 pointTest :: Text -> TestTree
 pointTest text =
     testCase (unpack text) $ do
-        pc <- makeTestPinaforeContest
+        pc <- makeTestPinaforeContext
         _action <- pinaforeInterpretFile pc "<test>" $ prefix <> text
         return ()
 

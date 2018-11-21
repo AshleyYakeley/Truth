@@ -94,9 +94,34 @@
     },
     {
       "group": "test",
-      "label": "Quick Test",
+      "label": "Test",
       "type": "shell",
       "command": "cd ${workspaceRoot} && stack build --test && echo OK",
+      "problemMatcher": [
+        {
+          "owner": "stack",
+          "fileLocation": "absolute",
+          "pattern": [
+            {
+              "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "severity": 4
+            },
+            {
+              "regexp": "^\\s+(.*)$",
+              "message": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": "test",
+      "label": "Benchmark",
+      "type": "shell",
+      "command": "cd ${workspaceRoot} && stack build --bench && echo OK",
       "problemMatcher": [
         {
           "owner": "stack",

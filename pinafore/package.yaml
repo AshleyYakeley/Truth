@@ -125,6 +125,16 @@ tests:
           - Test.Type
           - Test.ReadType
 
+benchmarks:
+    benchmark:
+        source-dirs: benchmark
+        dependencies:
+          - base >= 4.9 && < 5
+          - criterion
+          - shapes
+          - pinafore
+        main: Main.hs
+
 executables:
     pinafore:
         source-dirs: app

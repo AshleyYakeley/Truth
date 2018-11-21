@@ -2,6 +2,6 @@
 if [ -z "${BINPATH}" ]; then
     export BINPATH=`stack path --local-bin`
 fi
-stack install --test --no-run-tests
+stack install --test --no-run-tests --bench --no-run-benchmarks
 $BINPATH/pinafore --doc > mkdocs/docs/predefined.md
 echo OK
