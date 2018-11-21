@@ -113,7 +113,6 @@ testNumbers :: TestTree
 testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
 
 {-
-type QValue baseedit = AnyValue (PinaforeType baseedit 'PositivePolarity)
 
 toQValue :: ToPinaforeType baseedit t => t -> QValue baseedit
 toQValue v = case toTypeF of

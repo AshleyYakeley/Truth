@@ -181,7 +181,7 @@ ui_dynamic ::
     -> UISpec (ConstEdit Entity) baseedit
 ui_dynamic uiref = uiSwitch $ pinaforeImmutableReferenceValue uiNull uiref
 
-type BindDoc baseedit = (Maybe (QBindList baseedit), DefDoc)
+type BindDoc baseedit = (Maybe (Name, QValue baseedit), DefDoc)
 
 mkDefEntry ::
        forall baseedit t. (HasPinaforePointEdit baseedit, ToPinaforeType baseedit t)
@@ -189,7 +189,7 @@ mkDefEntry ::
     -> Text
     -> t
     -> DocTreeEntry (BindDoc baseedit)
-mkDefEntry name desc val = EntryDocTreeEntry (Just (qBindVal name val), mkDefDoc @baseedit name desc val)
+mkDefEntry name desc val = EntryDocTreeEntry (Just (name, toValue val), mkDefDoc @baseedit name desc val)
 
 entityuuid :: Entity -> Text
 entityuuid (MkEntity p) = pack $ show p
@@ -345,7 +345,9 @@ predefinitions =
               , mkDefEntry ">>" "Do actions in sequence." $
                 ((>>) :: PinaforeAction baseedit -> PinaforeAction baseedit -> PinaforeAction baseedit)
               , mkDefEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
-              , mkDefEntry "with" "Perform an action on the value of a reference." $ pinaforeReferenceWith @baseedit @A
+              , mkDefEntry "with" "Perform an action on the value of a reference." $ getentity @baseedit
+              , mkDefEntry "get1" "Perform an action on the value of a reference." $ getentity @baseedit
+              --, mkDefEntry "with" "Perform an action on the value of a reference." $ pinaforeReferenceWith @baseedit @A
               , mkDefEntry "runref" "Run an action from a reference." $ runPinaforeReference @baseedit
               , mkDefEntry
                     "for"
@@ -357,6 +359,8 @@ predefinitions =
               , mkDefEntry "delete" "Delete an entity reference." $ deleteentity @baseedit
               , mkDefEntry "newentity" "Create a new entity in a set and act on it." $ newentity @baseedit
               , mkDefEntry "get" "Get a reference." $ getentity @baseedit
+              , mkDefEntry "with1" "Get a reference." $ getentity @baseedit
+              , mkDefEntry "qqpp" "Get a reference." $ getentity @baseedit
               , mkDefEntry
                     "+="
                     "Add an entity to a set."
@@ -427,5 +431,5 @@ predefinedDoc = fmap snd $ predefinitions @baseedit
 
 predefinedBindings ::
        forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
-    => QBindList baseedit
-predefinedBindings = mconcat $ catMaybes $ toList $ fmap fst $ predefinitions @baseedit
+    => StrictMap Name (QValue baseedit)
+predefinedBindings = mapFromList $ catMaybes $ toList $ fmap fst $ predefinitions @baseedit

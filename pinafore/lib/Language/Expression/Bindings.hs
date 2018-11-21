@@ -7,6 +7,7 @@ module Language.Expression.Bindings
     , checkDuplicates
     , bindingsCheckDuplicates
     , bindingsLetSealedExpression
+    , valuesLetSealedExpression
     ) where
 
 import Data.Graph
@@ -139,6 +140,27 @@ bindingsComponentLetSealedExpression (MkBindings bindings) sexprb =
         bindings' <- boundToBindings bound
         MkSealedExpression tb exprb <- renameSealedExpression sexprb
         uexprb' <- letBindNamedExpression @unifier (\name -> lookup name $ bindingsMap bindings') exprb
+        (exprb', subs) <- solveUnifier @unifier $ unifierExpression uexprb'
+        return $ unifierExpressionSubstituteAndSimplify @unifier subs tb exprb'
+
+valuesLetSealedExpression ::
+       forall renamer unifier m name.
+       ( Monad m
+       , Ord name
+       , Renamer renamer
+       , Unifier unifier
+       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
+       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , UnifierMonad unifier ~ renamer m
+       )
+    => (name -> Maybe (AnyValue (UnifierPosWitness unifier)))
+    -> SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer)
+    -> m (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
+valuesLetSealedExpression valbind sexprb =
+    runRenamer @renamer $
+    withTransConstraintTM @Monad $ do
+        MkSealedExpression tb exprb <- renameSealedExpression sexprb
+        uexprb' <- letBindNamedExpression @unifier (\name -> fmap constSealedExpression $ valbind name) exprb
         (exprb', subs) <- solveUnifier @unifier $ unifierExpression uexprb'
         return $ unifierExpressionSubstituteAndSimplify @unifier subs tb exprb'
 

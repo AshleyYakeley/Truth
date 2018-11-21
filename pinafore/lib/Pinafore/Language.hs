@@ -32,13 +32,13 @@ parseValue ::
        forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
     => String
     -> Text
-    -> Result Text (AnyValue (PinaforeType baseedit 'PositivePolarity))
+    -> Result Text (QValue baseedit)
 parseValue name text = do
     texpr <- parseExpression @baseedit name text
     rexpr <-
         runPinaforeTypeCheck $ do
             expr <- texpr
-            qUncheckedBindingsLetExpr predefinedBindings expr
+            qValuesLetExpr (\n -> lookup n predefinedBindings) expr
     qEvalExpr rexpr
 
 parseValueAtType ::
@@ -77,20 +77,20 @@ type Interact baseedit = StateT (QExpr baseedit -> Result Text (QExpr baseedit))
 interactEvalExpression ::
        (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
     => PinaforeTypeCheck (QExpr baseedit)
-    -> Interact baseedit (AnyValue (PinaforeType baseedit 'PositivePolarity))
+    -> Interact baseedit (QValue baseedit)
 interactEvalExpression texpr = do
     bind <- get
     let
         rval = do
             expr <- runPinaforeTypeCheck texpr
             expr' <- bind expr
-            expr'' <- runPinaforeTypeCheck $ qUncheckedBindingsLetExpr predefinedBindings expr'
+            expr'' <- runPinaforeTypeCheck $ qValuesLetExpr (\name -> lookup name predefinedBindings) expr'
             qEvalExpr expr''
     case rval of
         SuccessResult val -> return val
         FailureResult err -> fail $ unpack err
 
-runValue :: AnyValue (PinaforeType baseedit 'PositivePolarity) -> PinaforeActionM baseedit ()
+runValue :: QValue baseedit -> PinaforeActionM baseedit ()
 runValue val =
     case typedAnyToPinaforeVal val of
         SuccessResult action -> action

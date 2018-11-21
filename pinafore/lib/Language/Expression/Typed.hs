@@ -24,6 +24,8 @@ class ( Monad (TypeCheck ts)
     typeSystemFunctionPosWitness :: FunctionPosWitness (NegWitness ts) (PosWitness ts)
     typeSystemFunctionNegWitness :: FunctionNegWitness (NegWitness ts) (PosWitness ts)
 
+type TypedValue ts = AnyValue (PosWitness ts)
+
 type TypedExpression name ts = SealedExpression name (NegWitness ts) (PosWitness ts)
 
 type TypeMonadRenamer ts = TypeRenamer ts (TypeCheck ts)
@@ -38,13 +40,13 @@ typedUnifyPosNegWitnesses wa wb = runRenamer @(TypeRenamer ts) $ solveUnifyPosNe
 evalTypedExpression ::
        forall ts name m. (MonadFail m, Show name)
     => TypedExpression name ts
-    -> m (AnyValue (PosWitness ts))
+    -> m (TypedValue ts)
 evalTypedExpression = evalSealedExpression
 
 typedAnyToVal ::
        forall ts t. TypeSystem ts
     => NegWitness ts t
-    -> AnyValue (PosWitness ts)
+    -> TypedValue ts
     -> TypeCheck ts t
 typedAnyToVal witn (MkAnyValue witp val) = do
     conv <- typedUnifyPosNegWitnesses @ts witp witn
@@ -84,7 +86,7 @@ varTypedExpression name =
     runRenamer @(TypeRenamer ts) $
     renameNewVar $ \vwt twt conv -> withTransConstraintTM @Monad $ return $ varSealedExpression name vwt twt conv
 
-constTypedExpression :: forall ts name. AnyValue (PosWitness ts) -> TypedExpression name ts
+constTypedExpression :: forall ts name. TypedValue ts -> TypedExpression name ts
 constTypedExpression = constSealedExpression
 
 letTypedExpression ::
@@ -110,6 +112,13 @@ uncheckedBindingsLetTypedExpression ::
     -> TypedExpression name ts
     -> TypeCheck ts (TypedExpression name ts)
 uncheckedBindingsLetTypedExpression bb expb = bindingsLetSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) bb expb
+
+valuesLetTypedExpression ::
+       forall ts name. (Ord name, TypeSystem ts)
+    => (name -> Maybe (TypedValue ts))
+    -> TypedExpression name ts
+    -> TypeCheck ts (TypedExpression name ts)
+valuesLetTypedExpression valbind expb = valuesLetSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) valbind expb
 
 typedBindingsCheckDuplicates ::
        forall ts name m. (Eq name, Show name, TypeSystem ts, MonadFail m)
