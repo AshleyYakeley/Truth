@@ -9,12 +9,13 @@ import Shapes
 
 benchmarkText :: Text -> Benchmark
 benchmarkText text =
-    env (fmap const makeTestPinaforeContext) $ \pc ->
-        bgroup
-            (show $ unpack text)
-            [ bench "check" $ nfIO $ pinaforeInterpretFile (pc ()) "<test>" text >> return ()
-            , env (fmap const $ pinaforeInterpretFile (pc ()) "<test>" text) $ \action -> bench "run" $ nfIO (action ())
-            ]
+    env (fmap const makeTestPinaforeContext) $ \tpc -> let
+        (pc, _) = tpc ()
+        in bgroup
+               (show $ unpack text)
+               [ bench "check" $ nfIO $ pinaforeInterpretFile pc "<test>" text >> return ()
+               , env (fmap const $ pinaforeInterpretFile pc "<test>" text) $ \action -> bench "run" $ nfIO (action ())
+               ]
 
 main :: IO ()
 main =

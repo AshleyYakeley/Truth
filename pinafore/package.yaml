@@ -61,7 +61,6 @@ library:
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
       - Pinafore.Base.ImmutableReference
-      - Pinafore.Base.ConstructorAdapter
       - Pinafore.Language.Name
       - Pinafore.Language.Literal
       - Pinafore.Language.NamedEntity

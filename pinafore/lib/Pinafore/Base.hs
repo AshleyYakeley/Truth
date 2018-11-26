@@ -3,7 +3,6 @@ module Pinafore.Base
     ) where
 
 import Pinafore.Base.Action as I
-import Pinafore.Base.ConstructorAdapter as I
 import Pinafore.Base.Edit as I
 import Pinafore.Base.Entity as I
 import Pinafore.Base.ImmutableReference as I

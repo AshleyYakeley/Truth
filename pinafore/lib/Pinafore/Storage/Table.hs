@@ -193,7 +193,7 @@ pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTa
     objRead (PinaforePointReadLookupPredicate prd val) = tableRead $ PinaforeTableReadLookupPredicate prd val
     objRead (PinaforePointReadToLiteral p) = do
         ml <- tableRead $ PinaforeTableReadGetLiteral p
-        return $ maybeToKnow ml >>= fromLiteral
+        return $ maybeToKnow ml
     objEdit :: [PinaforePointEdit] -> m (Maybe (m ()))
     objEdit =
         singleAlwaysEdit $ \case

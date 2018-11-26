@@ -57,32 +57,26 @@ simpleEntityTypeEq (LiteralSimpleEntityType lt) =
     case literalTypeAsLiteral lt of
         Dict -> Dict
 
-simpleEntityPointAdapter ::
-       forall baseedit t. HasPinaforePointEdit baseedit
-    => HasPinaforePointEdit baseedit => SimpleEntityType t -> PointAdapter baseedit t
-simpleEntityPointAdapter TopSimpleEntityType = bijectionConstructorAdapter $ MkBijection MkEntity $ \(MkEntity p) -> p
-simpleEntityPointAdapter PointSimpleEntityType = bijectionConstructorAdapter id
-simpleEntityPointAdapter (NamedSimpleEntityType _) =
-    bijectionConstructorAdapter $ MkBijection MkNamedEntity unNamedEntity
+simpleEntityPointAdapter :: forall t. SimpleEntityType t -> PointAdapter t
+simpleEntityPointAdapter TopSimpleEntityType = bijectionPointAdapter $ MkBijection MkEntity $ \(MkEntity p) -> p
+simpleEntityPointAdapter PointSimpleEntityType = bijectionPointAdapter id
+simpleEntityPointAdapter (NamedSimpleEntityType _) = bijectionPointAdapter $ MkBijection MkNamedEntity unNamedEntity
 simpleEntityPointAdapter (LiteralSimpleEntityType tl) =
-    mapConstructorAdapter pinaforePointLens $
     case literalTypeAsLiteral tl of
-        Dict ->
-            MkCloseUnlift identityUnlift $ let
-                caConvert = literalToPoint
-                caGet ::
-                       forall m. MonadIO m
-                    => Point
-                    -> MutableRead m PinaforePointRead
-                    -> IdentityT m (Know t)
-                caGet p mr =
-                    lift $ do
-                        kl <- mr $ PinaforePointReadToLiteral p
-                        return $ kl >>= fromLiteral
-                caPut ::
-                       forall m. MonadIO m
-                    => t
-                    -> MutableRead m PinaforePointRead
-                    -> IdentityT m [PinaforePointEdit]
-                caPut t _mr = lift $ return [PinaforePointEditSetLiteral (literalToPoint t) (Known $ toLiteral t)]
-                in MkAConstructorAdapter {..}
+        Dict -> let
+            pointAdapterConvert = literalToPoint
+            pointAdapterGet ::
+                   forall m. MonadIO m
+                => Point
+                -> MutableRead m PinaforePointRead
+                -> m (Know t)
+            pointAdapterGet p mr = do
+                kl <- mr $ PinaforePointReadToLiteral p
+                return $ kl >>= fromLiteral
+            pointAdapterPut ::
+                   forall m. MonadIO m
+                => t
+                -> MutableRead m PinaforePointRead
+                -> m [PinaforePointEdit]
+            pointAdapterPut t _mr = return [PinaforePointEditSetLiteral (literalToPoint t) (Known $ toLiteral t)]
+            in MkPointAdapter {..}

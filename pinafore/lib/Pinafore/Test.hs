@@ -21,15 +21,16 @@ import Shapes
 import Truth.Core
 import Truth.World.ObjectStore
 
-makeTestObject :: IO (Object PinaforeEdit)
-makeTestObject = do
-    tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <- freeIOObject ([], []) $ \_ -> True
-    return $
-        tupleObject $ \case
-            PinaforeSelectPoint -> pinaforeTablePointObject $ convertObject tableStateObject
-            PinaforeSelectFile -> readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
-
-makeTestPinaforeContext :: IO PinaforeContext
+makeTestPinaforeContext :: IO (PinaforeContext, IO (EditSubject PinaforeTableEdit))
 makeTestPinaforeContext = do
-    pinaforeObject <- makeTestObject
-    makePinaforeContext pinaforeObject $ \_ -> return ()
+    tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <- freeIOObject ([], []) $ \_ -> True
+    let
+        pinaforeObject :: Object PinaforeEdit
+        pinaforeObject =
+            tupleObject $ \case
+                PinaforeSelectPoint -> pinaforeTablePointObject $ convertObject tableStateObject
+                PinaforeSelectFile -> readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
+        getTableState :: IO (EditSubject PinaforeTableEdit)
+        getTableState = getObjectSubject tableStateObject
+    pc <- makePinaforeContext pinaforeObject $ \_ -> return ()
+    return (pc, getTableState)

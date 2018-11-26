@@ -37,9 +37,8 @@ readProperty = do
                                mkTypeF $
                                GroundPinaforeSingularType MorphismPinaforeGroundType $
                                ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
-                           backMorphism = constructorAdapterBackwardMorphism $ entityPointAdapter eta
-                           frontMorphism = constructorAdapterForwardMorphism $ entityPointAdapter etb
-                           morphism = frontMorphism . predicatePinaforeLensMorphism (MkPredicate uuid) . backMorphism
+                           morphism =
+                               propertyMorphism (entityPointAdapter eta) (entityPointAdapter etb) (MkPredicate uuid)
                            pinamorphism = MkPinaforeMorphism pra prb morphism
                            anyval = toTypeFAnyValue typef pinamorphism
                            in return $ qConstExprAny anyval

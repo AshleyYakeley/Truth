@@ -354,8 +354,12 @@ instance UnliftCategory (APinaforeLensMorphism baseedit) where
         in MkAPinaforeLensMorphism acForward acInverse
 
 funcPinaforeLensMorphism ::
-       forall baseedit a b. (Know a -> Know b) -> (b -> FiniteSet a) -> PinaforeLensMorphism baseedit a b
-funcPinaforeLensMorphism ab bsa = let
+       forall baseedit a b.
+       (Know a -> Know b)
+    -> (b -> FiniteSet a)
+    -> (Know b -> Maybe (Know a))
+    -> PinaforeLensMorphism baseedit a b
+funcPinaforeLensMorphism ab bsa bma = let
     efGet :: ReadFunctionT IdentityT (ContextEditReader baseedit (WholeEdit (Know a))) (WholeReader (Know b))
     efGet mr ReadWhole = lift $ fmap ab $ mr $ MkTupleEditReader SelectContent ReadWhole
     efUpdate ::
@@ -367,12 +371,20 @@ funcPinaforeLensMorphism ab bsa = let
     efUpdate (MkTupleEdit SelectContent (MkWholeEdit a)) _ = return [MkWholeEdit $ ab a]
     elFunction :: AnEditFunction IdentityT (ContextEdit baseedit (WholeEdit (Know a))) (WholeEdit (Know b))
     elFunction = MkAnEditFunction {..}
+    elPutEdit ::
+           forall m. MonadIO m
+        => WholeEdit (Know b)
+        -> MutableRead m (EditReader (ContextEdit baseedit (WholeEdit (Know a))))
+        -> IdentityT m (Maybe [ContextEdit baseedit (WholeEdit (Know a))])
+    elPutEdit (MkWholeEdit kb) _ = return $ fmap (pure . MkTupleEdit SelectContent . MkWholeEdit) (bma kb)
     elPutEdits ::
            forall m. MonadIO m
         => [WholeEdit (Know b)]
         -> MutableRead m (EditReader (ContextEdit baseedit (WholeEdit (Know a))))
         -> IdentityT m (Maybe [ContextEdit baseedit (WholeEdit (Know a))])
-    elPutEdits _ _ = return Nothing
+    elPutEdits [] _ = return $ Just []
+    elPutEdits [edit] mr = elPutEdit edit mr
+    elPutEdits (_:edits) mr = elPutEdits edits mr -- just use the last WholeEdit.
     pmForward :: AnEditLens IdentityT (ContextEdit baseedit (WholeEdit (Know a))) (WholeEdit (Know b))
     pmForward = MkAnEditLens {..}
     pfFuncRead ::
@@ -392,10 +404,11 @@ funcPinaforeLensMorphism ab bsa = let
     in MkCloseUnlift identityUnlift MkAPinaforeLensMorphism {..}
 
 nullPinaforeLensMorphism :: forall baseedit a b. PinaforeLensMorphism baseedit a b
-nullPinaforeLensMorphism = funcPinaforeLensMorphism (\_ -> Unknown) (\_ -> mempty)
+nullPinaforeLensMorphism = funcPinaforeLensMorphism (\_ -> Unknown) (\_ -> mempty) (\_ -> Nothing)
 
 bijectionPinaforeLensMorphism :: Bijection a b -> PinaforeLensMorphism baseedit a b
-bijectionPinaforeLensMorphism (MkBijection ab ba) = funcPinaforeLensMorphism (fmap ab) (\b -> opoint $ ba b)
+bijectionPinaforeLensMorphism (MkBijection ab ba) =
+    funcPinaforeLensMorphism (fmap ab) (\b -> opoint $ ba b) (\kb -> Just $ fmap ba kb)
 
 instance IsoVariant (PinaforeLensMorphism baseedit t) where
     isoMap ab ba m = bijectionPinaforeLensMorphism (MkBijection ab ba) . m

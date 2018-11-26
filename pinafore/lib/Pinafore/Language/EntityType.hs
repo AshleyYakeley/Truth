@@ -21,5 +21,5 @@ entityTypeToType :: IsTypePolarity polarity => EntityType t -> PinaforeTypeF bas
 entityTypeToType (SimpleEntityType t) =
     singlePinaforeTypeF $ mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType t) NilDolanArguments
 
-entityPointAdapter :: HasPinaforePointEdit baseedit => EntityType t -> PointAdapter baseedit t
+entityPointAdapter :: EntityType t -> PointAdapter t
 entityPointAdapter (SimpleEntityType t) = simpleEntityPointAdapter t

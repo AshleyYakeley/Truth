@@ -13,6 +13,7 @@ defs =
     [ "runreforfail r = runref (r ?? {fail \"unknown ref\"})"
     , "testeq expected found = runreforfail {if is %expected %found then pass else fail \"not equal\"}"
     , "testneq expected found = runreforfail {if not $ is %expected %found then pass else fail \"equal\"}"
+    , "testisknown t = runref {if %(known t) then pass else fail \"known\"}"
     , "testisunknown t = runref {if %(known t) then fail \"known\" else pass}"
     , "testeqval e f = testeq {e} {f}"
     , "entity T"
@@ -23,7 +24,7 @@ defs =
     , "la = property @T @Text !\"la\""
     , "na = property @T @Number !\"na\""
     , "nb = property @T @Number !\"nb\""
-    , "nc = property @T @Number !\"nb\""
+    , "nc = property @T @Number !\"nc\""
     , "ra = property @Text @T !\"ra\""
     , "rna = property @Number @T !\"rna\""
     , "p1 = point @T !d4d3096a-b1f7-4cb1-8dfa-c907e57baed1"
@@ -38,15 +39,18 @@ prefix = pack $ "let\n" ++ intercalate ";\n" defs ++ "\nin\n"
 pointTest :: Text -> TestTree
 pointTest text =
     testCase (unpack text) $ do
-        pc <- makeTestPinaforeContext
-        _action <- pinaforeInterpretFile pc "<test>" $ prefix <> text
-        return ()
+        (pc, _getTableState) <- makeTestPinaforeContext
+        action <- pinaforeInterpretFile pc "<test>" $ prefix <> text
+        action
 
 testEntity :: TestTree
 testEntity =
     testGroup
         "entity"
         [ testGroup
+              "current" -- stack test pinafore --test-arguments "--pattern entity.current"
+              []
+        , testGroup
               "pass"
               [ pointTest "pass"
               , pointTest "pass >> pass"
@@ -82,6 +86,9 @@ testEntity =
               , pointTest "ma !$ {p1} := p2"
               , pointTest "ma !$ {p1} := p2 >> testeq {p2} (ma !$ {p1})"
               , pointTest "la !$ {p1} := \"hello\" >> testeq {\"hello\"} (la !$ {p1})"
+              , pointTest "ra !$ {\"hello\"} := p1 >> testeq {p1} (ra !$ {\"hello\"})"
+              , pointTest "ra !$ {\"hello\"} := p1 >> runref {outputln (totext $ %(count (ra !@ {p1})))}"
+              , pointTest "ra !$ {\"hello\"} := p1 >> testeq {1} (count (ra !@ {p1}))"
               ]
         , testGroup
               "+="
@@ -139,6 +146,7 @@ testEntity =
               , pointTest "(la !. mb !$ {p1}) := \"hello\" >> testeq {\"hello\"} (la !$ mb !$ {p1})"
               , pointTest "(ma !$ mb !$ {p1}) := p2 >> testeq {p2} (ma !. mb !$ {p1})"
               , pointTest "(la !$ mb !$ {p1}) := \"hello\" >> testeq {\"hello\"} (la !. mb !$ {p1})"
+              , pointTest "(mb !. ma) !$ {p2} := p1 >> testeq {p1} (mb !$ ma !$ {p2})"
               ]
 {-
         , testGroup
@@ -181,8 +189,12 @@ testEntity =
               ]
         , testGroup
               "multiple set member"
-              [ pointTest "ra !@ {p1} += \"hello\" >> ra !@ {p1} += \"hello\" >> testeq {1} (count (ra !@ {p1}))"
+              [ pointTest "testeq {0} (count (ra !@ {p1}))"
+              , pointTest "ra !@ {p1} += \"hello\" >> testeq {p1} (ra !$ {\"hello\"})"
+              , pointTest "ra !@ {p1} += \"hello\" >> testeq {1} (count (ra !@ {p1}))"
+              , pointTest "ra !@ {p1} += \"hello\" >> ra !@ {p1} += \"hello\" >> testeq {1} (count (ra !@ {p1}))"
               , pointTest "ra !@ {p1} += \"h\" >> ra !@ {p1} += \"hello\" >> testeq {2} (count (ra !@ {p1}))"
+              , pointTest "ma !$ {p2} := p1 >> testeq {1} (count (ma !@ {p1}))"
               , pointTest $
                 "let counter = na !$ {p1};someset = rna !@ {p1} in " <>
                 "counter := 0 >> someset += 1 >> someset += 1 >> (get (members (orders []) someset) $ \\pp -> for pp $ \\p -> runref {counter := %counter + 1}) >> testeq {1} counter"
