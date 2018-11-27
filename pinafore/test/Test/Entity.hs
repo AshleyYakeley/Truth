@@ -143,32 +143,32 @@ testEntity =
               , pointTest "(eta !$ eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta !. eeb !$ {e1})"
               , pointTest "(eeb !. eea) !$ {e2} := e1 >> testeq {e1} (eeb !$ eea !$ {e2})"
               ]
-{-
         , testGroup
               "composed inverse morphisms"
               [ pointTest "(eeb !@@ eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
-              , pointTest "((@eeb . @eea) {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
-              , pointTest "((@eeb . @eea) {\"hello\"}) += e1 >> testisunknown (eeb $ eea e1)"
-              , pointTest "eeb e1 := e2 >> ((@eeb . @eea) {\"hello\"}) += e1 >> testeq e2 (eeb e1)"
-              , pointTest "eeb e1 := e2 >> ((@eeb . @eea) {\"hello\"}) += e1 >> testeq {\"hello\"} (eea e2)"
-              , pointTest "eeb e1 := e2 >> ( @eeb $ @eea  {\"hello\"}) += e1 >> testneq e2 (eeb e1)"
-              , pointTest "eeb e1 := e2 >> ( @eeb $ @eea  {\"hello\"}) += e1 >> testneq {\"hello\"} (eea e2)"
-              , pointTest "eeb e1 := e2 >> eea e2 := {\"hello\"} >> ((@eeb . @eea) {\"hello\"}) -= e1 >> testeq e2 (eeb e1)"
+              , pointTest "((eta !. eeb) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
+              , pointTest "((eta !. eeb) !@ {\"hello\"}) += e1 >> testisunknown (eta !$ {e1})"
+              , pointTest "eeb !$ {e1} := e2 >> ((eta !. eeb) !@ {\"hello\"}) += e1 >> testeq {e2} (eeb !$ {e1})"
+              , pointTest "eeb !$ {e1} := e2 >> ((eta !. eeb) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e2})"
+              , pointTest "eeb !$ {e1} := e2 >> (eeb !@@ eta !@  {\"hello\"}) += e1 >> testneq {e2} (eeb !$ {e1})"
+              , pointTest "eeb !$ {e1} := e2 >> (eeb !@@ eta !@  {\"hello\"}) += e1 >> testisunknown (eta !$ {e2})"
               , pointTest
-                    "eeb e1 := e2 >> eea e2 := {\"hello\"} >> ((@eeb . @eea) {\"hello\"}) -= e1 >> testisunknown (eea e2)"
-              , pointTest "eeb e1 := e2 >> eea e2 := {\"hello\"} >> ( @eeb $ @eea  {\"hello\"}) -= e1 >> testneq e2 (eeb e1)"
+                    "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> ((eta !. eeb) !@ {\"hello\"}) -= e1 >> testeq {e2} (eeb !$ {e1})"
               , pointTest
-                    "eeb e1 := e2 >> eea e2 := {\"hello\"} >> ( @eeb $ @eea  {\"hello\"}) -= e1 >> testeq {\"hello\"} (eea e2)"
+                    "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> ((eta !. eeb) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e2})"
               , pointTest
-                    "eeb e1 := e2 >> eea e2 := {\"hello\"} >> removeall ((@eeb . @eea) {\"hello\"}) >> testeq e2 (eeb e1)"
+                    "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> (eeb !@@ eta !@ {\"hello\"}) -= e1 >> testneq {e2} (eeb !$ {e1})"
               , pointTest
-                    "eeb e1 := e2 >> eea e2 := {\"hello\"} >> removeall ((@eeb . @eea) {\"hello\"}) >> testisunknown (eea e2)"
+                    "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> (eeb !@@ eta !@ {\"hello\"}) -= e1 >> testeq {\"hello\"} (eta !$ {e2})"
               , pointTest
-                    "eeb e1 := e2 >> eea e2 := {\"hello\"} >> removeall ( @eeb $ @eea  {\"hello\"}) >> testneq e2 (eeb e1)"
+                    "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeall ((eta !. eeb) !@ {\"hello\"}) >> testeq {e2} (eeb !$ {e1})"
               , pointTest
-                    "eeb e1 := e2 >> eea e2 := {\"hello\"} >> removeall ( @eeb $ @eea  {\"hello\"}) >> testeq {\"hello\"} (eea e2)"
+                    "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeall ((eta !. eeb) !@ {\"hello\"}) >> testisunknown (eta !$ {e2})"
+              , pointTest
+                    "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeall (eeb !@@ eta !@ {\"hello\"}) >> testneq {e2} (eeb !$ {e1})"
+              , pointTest
+                    "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeall (eeb !@@ eta !@ {\"hello\"}) >> testeq {\"hello\"} (eta !$ {e2})"
               ]
--}
         , testGroup
               "single"
               [ pointTest "testisunknown (single $ enb !$$ ena !@ {0})"
