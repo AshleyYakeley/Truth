@@ -244,12 +244,24 @@ unifyPosNegGroundTypes PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanA
         tb
         (singlePinaforeType $
          GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments)
+unifyPosNegGroundTypes EitherPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments =
+    (\conva convb eab -> eitherToEntity $ either (Left . meet1 . conva) (Right . meet1 . convb) eab) <$>
+    unifyPosNegPinaforeTypes
+        ta
+        (singlePinaforeType $
+         GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments) <*>
+    unifyPosNegPinaforeTypes
+        tb
+        (singlePinaforeType $
+         GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments)
 unifyPosNegGroundTypes FuncPinaforeGroundType argsa FuncPinaforeGroundType argsb =
     unifyPosNegArguments FuncPinaforeGroundType argsa argsb
 unifyPosNegGroundTypes ListPinaforeGroundType argsa ListPinaforeGroundType argsb =
     unifyPosNegArguments ListPinaforeGroundType argsa argsb
 unifyPosNegGroundTypes PairPinaforeGroundType argsa PairPinaforeGroundType argsb =
     unifyPosNegArguments PairPinaforeGroundType argsa argsb
+unifyPosNegGroundTypes EitherPinaforeGroundType argsa EitherPinaforeGroundType argsb =
+    unifyPosNegArguments EitherPinaforeGroundType argsa argsb
 unifyPosNegGroundTypes ReferencePinaforeGroundType argsa ReferencePinaforeGroundType argsb =
     unifyPosNegArguments ReferencePinaforeGroundType argsa argsb
 unifyPosNegGroundTypes SetPinaforeGroundType argsa SetPinaforeGroundType argsb =
@@ -636,6 +648,8 @@ exprShowPrecGroundType FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanA
 exprShowPrecGroundType ListPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) = ("[" <> exprShow ta <> "]", 0)
 exprShowPrecGroundType PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     ("(" <> exprShow ta <> ", " <> exprShow tb <> ")", 0)
+exprShowPrecGroundType EitherPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
+    ("Either " <> exprShow ta <> " " <> exprShow tb, 2)
 exprShowPrecGroundType ReferencePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     ("Ref " <> exprPrecShow 0 ta, 2)
 exprShowPrecGroundType SetPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =

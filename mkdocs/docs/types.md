@@ -52,8 +52,6 @@ The contents of a user interface window. Can be composed in various ways.
 
 ## Either
 
-(not yet implemented)
-
 `Either a b`, both `a` and `b` are covariant
 
 `a <= Entity` and `b <= Entity` implies `Either a b <= Entity` (not yet implemented) 

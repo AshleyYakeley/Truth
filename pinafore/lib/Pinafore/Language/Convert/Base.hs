@@ -89,6 +89,35 @@ instance (FromTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit)
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
 instance (FromTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit) b) =>
+             FromTypeF (PinaforeType baseedit) (Either a b) where
+    fromTypeF = singlePinaforeTypeF fromTypeF
+
+-- Either
+instance (ToTypeF (PinaforeType baseedit) a, ToTypeF (PinaforeType baseedit) b) =>
+             ToTypeF (PinaforeSingularType baseedit) (Either a b) where
+    toTypeF =
+        unTypeF toTypeF $ \ta conva ->
+            unTypeF toTypeF $ \tb convb ->
+                contramap (either (Left . conva) (Right . convb)) $
+                mkTypeF $
+                GroundPinaforeSingularType EitherPinaforeGroundType $
+                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+
+instance (ToTypeF (PinaforeType baseedit) a, ToTypeF (PinaforeType baseedit) b) =>
+             ToTypeF (PinaforeType baseedit) (Either a b) where
+    toTypeF = singlePinaforeTypeF toTypeF
+
+instance (FromTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit) b) =>
+             FromTypeF (PinaforeSingularType baseedit) (Either a b) where
+    fromTypeF =
+        unTypeF fromTypeF $ \ta conva ->
+            unTypeF fromTypeF $ \tb convb ->
+                fmap (either (Left . conva) (Right . convb)) $
+                mkTypeF $
+                GroundPinaforeSingularType EitherPinaforeGroundType $
+                ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
+
+instance (FromTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit) b) =>
              FromTypeF (PinaforeType baseedit) (a, b) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 

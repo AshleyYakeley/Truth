@@ -60,6 +60,10 @@ showPinaforeGroundValue (SimpleEntityPinaforeGroundType (LiteralSimpleEntityType
         Dict -> unpack $ unLiteral $ toLiteral v
 showPinaforeGroundValue PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) (a, b) =
     "(" <> showPinaforeValue ta a <> ", " <> showPinaforeValue tb b <> ")"
+showPinaforeGroundValue EitherPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments _tb NilDolanArguments)) (Left x) =
+    "Left " <> showPinaforeValue ta x
+showPinaforeGroundValue EitherPinaforeGroundType (ConsDolanArguments _ta (ConsDolanArguments tb NilDolanArguments)) (Right x) =
+    "Right " <> showPinaforeValue tb x
 showPinaforeGroundValue ListPinaforeGroundType (ConsDolanArguments t NilDolanArguments) v =
     "[" <> intercalate "," (fmap (showPinaforeValue t) v) <> "]"
 showPinaforeGroundValue _ _ _ = "<?>"

@@ -19,6 +19,7 @@ data PinaforeGroundType baseedit (polarity :: TypePolarity) (dk :: DolanVariance
     FuncPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance, 'Covariance] (->)
     ListPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] []
     PairPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance, 'Covariance] (,)
+    EitherPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance, 'Covariance] Either
     ReferencePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeReference baseedit)
     SetPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeSet baseedit)
     MorphismPinaforeGroundType
@@ -37,6 +38,7 @@ testPinaforeGroundTypeEquality (SimpleEntityPinaforeGroundType t1) (SimpleEntity
 testPinaforeGroundTypeEquality FuncPinaforeGroundType FuncPinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality ListPinaforeGroundType ListPinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality PairPinaforeGroundType PairPinaforeGroundType = Just (Refl, HRefl)
+testPinaforeGroundTypeEquality EitherPinaforeGroundType EitherPinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality ReferencePinaforeGroundType ReferencePinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality SetPinaforeGroundType SetPinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality MorphismPinaforeGroundType MorphismPinaforeGroundType = Just (Refl, HRefl)
@@ -53,6 +55,7 @@ pinaforeGroundTypeVary (SimpleEntityPinaforeGroundType _) = dolanVary @dk
 pinaforeGroundTypeVary FuncPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary ListPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary PairPinaforeGroundType = dolanVary @dk
+pinaforeGroundTypeVary EitherPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary ReferencePinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary SetPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary MorphismPinaforeGroundType = dolanVary @dk
@@ -65,6 +68,7 @@ pinaforeGroundTypeKind (SimpleEntityPinaforeGroundType _) = representative
 pinaforeGroundTypeKind FuncPinaforeGroundType = representative
 pinaforeGroundTypeKind ListPinaforeGroundType = representative
 pinaforeGroundTypeKind PairPinaforeGroundType = representative
+pinaforeGroundTypeKind EitherPinaforeGroundType = representative
 pinaforeGroundTypeKind ReferencePinaforeGroundType = representative
 pinaforeGroundTypeKind SetPinaforeGroundType = representative
 pinaforeGroundTypeKind MorphismPinaforeGroundType = representative

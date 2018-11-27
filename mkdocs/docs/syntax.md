@@ -35,6 +35,7 @@ In interactive mode, each line has syntax `<interactive>`.
     <type-2>
 
 <type-2> ::=
+    "Either" <type-3> <type-3> |
     "Order" <type-3> |
     "Ref" <type-range-3> |
     "Set" <type-range-3> |

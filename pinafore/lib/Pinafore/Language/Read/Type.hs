@@ -80,6 +80,20 @@ readType2 ::
     => Parser (PinaforeTypeCheck (PinaforeType3 baseedit mpolarity))
 readType2 =
     (do
+         readExactlyThis TokName "Either"
+         at1 <- readType3
+         at2 <- readType3
+         return $
+             liftA2
+                 (toMPolar
+                      (\(MkAnyW t1) (MkAnyW t2) ->
+                           MkAnyW $
+                           singlePinaforeType $
+                           GroundPinaforeSingularType EitherPinaforeGroundType $
+                           ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments))
+                 at1
+                 at2) <|>
+    (do
          readExactlyThis TokName "Ref"
          at1 <- readTypeRange3
          return $

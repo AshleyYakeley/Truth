@@ -236,6 +236,13 @@ predefinitions =
               , mkDefEntry "snd" "Get the second member of a pair." $ snd @A @B
               ]
         , docTreeEntry
+              "Either"
+              ""
+              [ mkDefEntry "left" "Construct an Either from the left." $ Left @A @B
+              , mkDefEntry "right" "Construct an Either from the right." $ Right @A @B
+              , mkDefEntry "either" "Eliminate an Either" $ either @A @C @B
+              ]
+        , docTreeEntry
               "Functions"
               ""
               [ mkDefEntry "id" "The identity function." $ id @(->) @A
