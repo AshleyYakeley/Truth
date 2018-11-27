@@ -16,21 +16,21 @@ defs =
     , "testisknown t = runref {if %(known t) then pass else fail \"known\"}"
     , "testisunknown t = runref {if %(known t) then fail \"known\" else pass}"
     , "testeqval e f = testeq {e} {f}"
-    , "entity T"
-    , "ma = property @T @T !\"ma\""
-    , "mb = property @T @T !\"mb\""
-    , "mc = property @T @T !\"mc\""
-    , "md = property @T @T !\"md\""
-    , "la = property @T @Text !\"la\""
-    , "na = property @T @Number !\"na\""
-    , "nb = property @T @Number !\"nb\""
-    , "nc = property @T @Number !\"nc\""
-    , "ra = property @Text @T !\"ra\""
-    , "rna = property @Number @T !\"rna\""
-    , "p1 = point @T !d4d3096a-b1f7-4cb1-8dfa-c907e57baed1"
-    , "p2 = point @T !6a76c6b3-c9d6-4e76-af3a-863b7c46b34c"
-    , "p3 = point @T !5048ecd6-bebb-4500-a508-f188b4cc7443"
-    , "p4 = point @T !6ffe864b-d2c3-4857-8057-ef472475eb2b"
+    , "entity E"
+    , "eea = property @E @E !\"eea\""
+    , "eeb = property @E @E !\"eeb\""
+    , "eec = property @E @E !\"eec\""
+    , "eed = property @E @E !\"eed\""
+    , "eta = property @E @Text !\"eta\""
+    , "ena = property @E @Number !\"ena\""
+    , "enb = property @E @Number !\"enb\""
+    , "enc = property @E @Number !\"enc\""
+    , "tea = property @Text @E !\"tea\""
+    , "nea = property @Number @E !\"nea\""
+    , "e1 = point @E !d4d3096a-b1f7-4cb1-8dfa-c907e57baed1"
+    , "e2 = point @E !6a76c6b3-c9d6-4e76-af3a-863b7c46b34c"
+    , "e3 = point @E !5048ecd6-bebb-4500-a508-f188b4cc7443"
+    , "e4 = point @E !6ffe864b-d2c3-4857-8057-ef472475eb2b"
     ]
 
 prefix :: Text
@@ -67,14 +67,14 @@ testEntity =
               ]
         , testGroup
               "unknown & known"
-              [ pointTest "testisunknown {% (la !$ {p1}) == % (la !$ {p1})}"
+              [ pointTest "testisunknown {% (eta !$ {e1}) == % (eta !$ {e1})}"
               , pointTest "runreforfail {if %(known unknown) then fail \"failed\" else pass}"
-              , pointTest "runreforfail {if %(known $ la !$ {p1}) then fail \"failed\" else pass}"
-              , pointTest "pass >> runreforfail {if %(known $ la !$ {p1}) then fail \"failed\" else pass}"
-              , pointTest "runreforfail {pass >> if %(known $ la !$ {p1}) then fail \"failed\" else pass}"
-              , pointTest "runreforfail {if %(known $ la !$ {p1}) then fail \"failed\" else pass} >> pass"
+              , pointTest "runreforfail {if %(known $ eta !$ {e1}) then fail \"failed\" else pass}"
+              , pointTest "pass >> runreforfail {if %(known $ eta !$ {e1}) then fail \"failed\" else pass}"
+              , pointTest "runreforfail {pass >> if %(known $ eta !$ {e1}) then fail \"failed\" else pass}"
+              , pointTest "runreforfail {if %(known $ eta !$ {e1}) then fail \"failed\" else pass} >> pass"
               , pointTest "testisunknown unknown"
-              , pointTest "testisunknown (la !$ {p1})"
+              , pointTest "testisunknown (eta !$ {e1})"
               , pointTest "testisunknown $ unknown ?? unknown"
               , pointTest "testeq {0} $ unknown ?? {0}"
               , pointTest "testeq {1} $ {1} ?? {0}"
@@ -82,121 +82,116 @@ testEntity =
               ]
         , testGroup
               ":="
-              [ pointTest "la !$ {p1} := \"hello\""
-              , pointTest "ma !$ {p1} := p2"
-              , pointTest "ma !$ {p1} := p2 >> testeq {p2} (ma !$ {p1})"
-              , pointTest "la !$ {p1} := \"hello\" >> testeq {\"hello\"} (la !$ {p1})"
-              , pointTest "ra !$ {\"hello\"} := p1 >> testeq {p1} (ra !$ {\"hello\"})"
-              , pointTest "ra !$ {\"hello\"} := p1 >> runref {outputln (totext $ %(count (ra !@ {p1})))}"
-              , pointTest "ra !$ {\"hello\"} := p1 >> testeq {1} (count (ra !@ {p1}))"
+              [ pointTest "eta !$ {e1} := \"hello\""
+              , pointTest "eea !$ {e1} := e2"
+              , pointTest "eea !$ {e1} := e2 >> testeq {e2} (eea !$ {e1})"
+              , pointTest "eta !$ {e1} := \"hello\" >> testeq {\"hello\"} (eta !$ {e1})"
+              , pointTest "tea !$ {\"hello\"} := e1 >> testeq {e1} (tea !$ {\"hello\"})"
+              , pointTest "tea !$ {\"hello\"} := e1 >> runref {outputln (totext $ %(count (tea !@ {e1})))}"
+              , pointTest "tea !$ {\"hello\"} := e1 >> testeq {1} (count (tea !@ {e1}))"
               ]
         , testGroup
               "+="
-              [ pointTest "la !@ {\"hello\"} += p1"
-              , pointTest "la !@ {\"hello\"} += p1 >> pass"
-              , pointTest "la !@ {\"hello\"} += p1 >> testeq {\"hello\"} (la !$ {p1})"
+              [ pointTest "eta !@ {\"hello\"} += e1"
+              , pointTest "eta !@ {\"hello\"} += e1 >> pass"
+              , pointTest "eta !@ {\"hello\"} += e1 >> testeq {\"hello\"} (eta !$ {e1})"
               ]
-        , testGroup "-=" [pointTest "la !@ {\"hello\"} += p1 >> la !@ {\"hello\"} -= p1 >> testisunknown (la !$ {p1})"]
+        , testGroup
+              "-="
+              [pointTest "eta !@ {\"hello\"} += e1 >> eta !@ {\"hello\"} -= e1 >> testisunknown (eta !$ {e1})"]
         , testGroup
               "removeall"
-              [pointTest "la !@ {\"hello\"} += p1 >> removeall (la !@ {\"hello\"}) >> testisunknown (la !$ {p1})"]
+              [pointTest "eta !@ {\"hello\"} += e1 >> removeall (eta !@ {\"hello\"}) >> testisunknown (eta !$ {e1})"]
         , testGroup
               "matching literals"
-              [pointTest "la !$ {p1} := \"hello\" >> la !$ {p2} := \"hello\" >> testeq (la !$ {p1}) (la !$ {p2})"]
+              [pointTest "eta !$ {e1} := \"hello\" >> eta !$ {e2} := \"hello\" >> testeq (eta !$ {e1}) (eta !$ {e2})"]
         , testGroup
               "identity morphism"
-              [ pointTest "(identity !$ ma !$ {p1}) := p2 >> testeq {p2} (ma !$ {p1})"
-              , pointTest "(ma !$ identity !$ {p1}) := p2 >> testeq {p2} (ma !$ {p1})"
-              , pointTest "((identity !. ma) !$ {p1}) := p2 >> testeq {p2} (ma !$ {p1})"
-              , pointTest "((ma !. identity) !$ {p1}) := p2 >> testeq {p2} (ma !$ {p1})"
-              , pointTest "ma !$ {p1} := p2 >> testeq {p2} (identity !$ ma !$ {p1})"
-              , pointTest "ma !$ {p1} := p2 >> testeq {p2} (ma !$ identity !$ {p1})"
-              , pointTest "ma !$ {p1} := p2 >> testeq {p2} ((identity !. ma) !$ {p1})"
-              , pointTest "ma !$ {p1} := p2 >> testeq {p2} ((ma !. identity) !$ {p1})"
-              , pointTest "(identity !$ ma !$ {p1}) := p2 >> testeq {p2} (identity !$ ma !$ {p1})"
+              [ pointTest "(identity !$ eea !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
+              , pointTest "(eea !$ identity !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
+              , pointTest "((identity !. eea) !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
+              , pointTest "((eea !. identity) !$ {e1}) := e2 >> testeq {e2} (eea !$ {e1})"
+              , pointTest "eea !$ {e1} := e2 >> testeq {e2} (identity !$ eea !$ {e1})"
+              , pointTest "eea !$ {e1} := e2 >> testeq {e2} (eea !$ identity !$ {e1})"
+              , pointTest "eea !$ {e1} := e2 >> testeq {e2} ((identity !. eea) !$ {e1})"
+              , pointTest "eea !$ {e1} := e2 >> testeq {e2} ((eea !. identity) !$ {e1})"
+              , pointTest "(identity !$ eea !$ {e1}) := e2 >> testeq {e2} (identity !$ eea !$ {e1})"
               ]
-{-
         , testGroup
               "identity inverse morphism"
-              [ pointTest "(identity !@@ la !@ {\"hello\"}) += p1 >> testisunknown (la !$ {p1})"
-              , pointTest "(immutableset $ la !@ {\"hello\"}) += p1 >> testisunknown (la !$ {p1})"
-              , pointTest "(la !@@ identity !@ {\"hello\"}) += p1 >> testisunknown (la !$ {p1})"
-              , pointTest "(la !@@ immutableset [{\"hello\"}]) += p1 >> testisunknown (la !$ {p1})"
-              , pointTest "((identity !. la) !@ {\"hello\"}) += p1 >> testeq {\"hello\"} (la !$ {p1})"
-              , pointTest "((la !. identity) !@ {\"hello\"}) += p1 >> testeq {\"hello\"} (la !$ {p1})"
-              , pointTest "la !@ {\"hello\"} += p1 >> la !@ {\"hello\"} -= p1 >> testisunknown (ma !$ {p1})"
+              [ pointTest "(identity !@@ eta !@ {\"hello\"}) += e1 >> testisunknown (eta !$ {e1})"
+              , pointTest "(eea !@@ identity !@ {e2}) += e1 >> testneq {e2} (eea !$ {e1})"
+              , pointTest "((identity !. eta) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
+              , pointTest "((eta !. identity) !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ {e1})"
+              , pointTest "eta !@ {\"hello\"} += e1 >> eta !@ {\"hello\"} -= e1 >> testisunknown (eta !$ {e1})"
               , pointTest
-                    "la !@ {\"hello\"} += p1 >> (identity !@@ la !@ {\"hello\"}) -= p1 >> testeq {\"hello\"} (ma !$ {p1})"
+                    "eta !@ {\"hello\"} += e1 >> (identity !@@ eta !@ {\"hello\"}) -= e1 >> testeq {\"hello\"} (eta !$ {e1})"
+              , pointTest "eea !@ {e2} += e1 >> testeq {e2} (eea !$ {e1})"
+              , pointTest "eea !@ {e2} += e1 >> (eea !@@ identity !@ {e2}) -= e1 >> testneq {e2} (eea !$ {e1})"
               , pointTest
-                    "la !@ {\"hello\"} += p1 >> (immutableset $ la !@ {\"hello\"}) -= p1 >> testeq {\"hello\"} (ma !$ {p1})"
+                    "eta !@ {\"hello\"} += e1 >> ((identity !. eta) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e1})"
               , pointTest
-                    "la !@ {\"hello\"} += p1 >> (la !@ identity !@ {\"hello\"}) -= p1 >> testisunknown (ma !$ {p1})"
-              , pointTest "la !@ {\"hello\"} += p1 >> (la !@ pureset [{\"hello\"}]) -= p1 >> testisunknown (ma !$ {p1})"
-              , pointTest
-                    "la !@ {\"hello\"} += p1 >> ((identity !. ma) !@ {\"hello\"}) -= p1 >> testisunknown (ma !$ {p1})"
-              , pointTest
-                    "la !@ {\"hello\"} += p1 >> ((la !. identity) !@ {\"hello\"}) -= p1 >> testisunknown (ma !$ {p1})"
+                    "eta !@ {\"hello\"} += e1 >> ((eta !. identity) !@ {\"hello\"}) -= e1 >> testisunknown (eta !$ {e1})"
               ]
--}
         , testGroup
               "composed morphisms"
-              [ pointTest "(ma !$ mb !$ {p1}) := p2 >> testeq {p2} (ma !$ mb !$ {p1})"
-              , pointTest "(la !$ mb !$ {p1}) := \"hello\" >> testeq {\"hello\"} (la !$ mb !$ {p1})"
-              , pointTest "(ma !. mb !$ {p1}) := p2 >> testeq {p2} (ma !$ mb !$ {p1})"
-              , pointTest "(la !. mb !$ {p1}) := \"hello\" >> testeq {\"hello\"} (la !$ mb !$ {p1})"
-              , pointTest "(ma !$ mb !$ {p1}) := p2 >> testeq {p2} (ma !. mb !$ {p1})"
-              , pointTest "(la !$ mb !$ {p1}) := \"hello\" >> testeq {\"hello\"} (la !. mb !$ {p1})"
-              , pointTest "(mb !. ma) !$ {p2} := p1 >> testeq {p1} (mb !$ ma !$ {p2})"
+              [ pointTest "(eea !$ eeb !$ {e1}) := e2 >> testeq {e2} (eea !$ eeb !$ {e1})"
+              , pointTest "(eta !$ eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
+              , pointTest "(eea !. eeb !$ {e1}) := e2 >> testeq {e2} (eea !$ eeb !$ {e1})"
+              , pointTest "(eta !. eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
+              , pointTest "(eea !$ eeb !$ {e1}) := e2 >> testeq {e2} (eea !. eeb !$ {e1})"
+              , pointTest "(eta !$ eeb !$ {e1}) := \"hello\" >> testeq {\"hello\"} (eta !. eeb !$ {e1})"
+              , pointTest "(eeb !. eea) !$ {e2} := e1 >> testeq {e1} (eeb !$ eea !$ {e2})"
               ]
 {-
         , testGroup
               "composed inverse morphisms"
-              [ pointTest "(mb !@@ la !@ {\"hello\"}) += p1 >> testeq {\"hello\"} (la !$ mb !$ {p1})"
-              , pointTest "((@mb . @ma) {\"hello\"}) += p1 >> testeq {\"hello\"} (la !$ mb !$ {p1})"
-              , pointTest "((@mb . @ma) {\"hello\"}) += p1 >> testisunknown (mb $ ma p1)"
-              , pointTest "mb p1 := p2 >> ((@mb . @ma) {\"hello\"}) += p1 >> testeq p2 (mb p1)"
-              , pointTest "mb p1 := p2 >> ((@mb . @ma) {\"hello\"}) += p1 >> testeq {\"hello\"} (ma p2)"
-              , pointTest "mb p1 := p2 >> ( @mb $ @ma  {\"hello\"}) += p1 >> testneq p2 (mb p1)"
-              , pointTest "mb p1 := p2 >> ( @mb $ @ma  {\"hello\"}) += p1 >> testneq {\"hello\"} (ma p2)"
-              , pointTest "mb p1 := p2 >> ma p2 := {\"hello\"} >> ((@mb . @ma) {\"hello\"}) -= p1 >> testeq p2 (mb p1)"
+              [ pointTest "(eeb !@@ eta !@ {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
+              , pointTest "((@eeb . @eea) {\"hello\"}) += e1 >> testeq {\"hello\"} (eta !$ eeb !$ {e1})"
+              , pointTest "((@eeb . @eea) {\"hello\"}) += e1 >> testisunknown (eeb $ eea e1)"
+              , pointTest "eeb e1 := e2 >> ((@eeb . @eea) {\"hello\"}) += e1 >> testeq e2 (eeb e1)"
+              , pointTest "eeb e1 := e2 >> ((@eeb . @eea) {\"hello\"}) += e1 >> testeq {\"hello\"} (eea e2)"
+              , pointTest "eeb e1 := e2 >> ( @eeb $ @eea  {\"hello\"}) += e1 >> testneq e2 (eeb e1)"
+              , pointTest "eeb e1 := e2 >> ( @eeb $ @eea  {\"hello\"}) += e1 >> testneq {\"hello\"} (eea e2)"
+              , pointTest "eeb e1 := e2 >> eea e2 := {\"hello\"} >> ((@eeb . @eea) {\"hello\"}) -= e1 >> testeq e2 (eeb e1)"
               , pointTest
-                    "mb p1 := p2 >> ma p2 := {\"hello\"} >> ((@mb . @ma) {\"hello\"}) -= p1 >> testisunknown (ma p2)"
-              , pointTest "mb p1 := p2 >> ma p2 := {\"hello\"} >> ( @mb $ @ma  {\"hello\"}) -= p1 >> testneq p2 (mb p1)"
+                    "eeb e1 := e2 >> eea e2 := {\"hello\"} >> ((@eeb . @eea) {\"hello\"}) -= e1 >> testisunknown (eea e2)"
+              , pointTest "eeb e1 := e2 >> eea e2 := {\"hello\"} >> ( @eeb $ @eea  {\"hello\"}) -= e1 >> testneq e2 (eeb e1)"
               , pointTest
-                    "mb p1 := p2 >> ma p2 := {\"hello\"} >> ( @mb $ @ma  {\"hello\"}) -= p1 >> testeq {\"hello\"} (ma p2)"
+                    "eeb e1 := e2 >> eea e2 := {\"hello\"} >> ( @eeb $ @eea  {\"hello\"}) -= e1 >> testeq {\"hello\"} (eea e2)"
               , pointTest
-                    "mb p1 := p2 >> ma p2 := {\"hello\"} >> removeall ((@mb . @ma) {\"hello\"}) >> testeq p2 (mb p1)"
+                    "eeb e1 := e2 >> eea e2 := {\"hello\"} >> removeall ((@eeb . @eea) {\"hello\"}) >> testeq e2 (eeb e1)"
               , pointTest
-                    "mb p1 := p2 >> ma p2 := {\"hello\"} >> removeall ((@mb . @ma) {\"hello\"}) >> testisunknown (ma p2)"
+                    "eeb e1 := e2 >> eea e2 := {\"hello\"} >> removeall ((@eeb . @eea) {\"hello\"}) >> testisunknown (eea e2)"
               , pointTest
-                    "mb p1 := p2 >> ma p2 := {\"hello\"} >> removeall ( @mb $ @ma  {\"hello\"}) >> testneq p2 (mb p1)"
+                    "eeb e1 := e2 >> eea e2 := {\"hello\"} >> removeall ( @eeb $ @eea  {\"hello\"}) >> testneq e2 (eeb e1)"
               , pointTest
-                    "mb p1 := p2 >> ma p2 := {\"hello\"} >> removeall ( @mb $ @ma  {\"hello\"}) >> testeq {\"hello\"} (ma p2)"
+                    "eeb e1 := e2 >> eea e2 := {\"hello\"} >> removeall ( @eeb $ @eea  {\"hello\"}) >> testeq {\"hello\"} (eea e2)"
               ]
- -}
+-}
         , testGroup
               "single"
-              [ pointTest "testisunknown (single $ nb !$$ na !@ {0})"
-              , pointTest "nb !$ {p1} := 1 >> na !$ {p1} := 0 >> testeq {1} (single $ nb !$$ na !@ {0})"
+              [ pointTest "testisunknown (single $ enb !$$ ena !@ {0})"
+              , pointTest "enb !$ {e1} := 1 >> ena !$ {e1} := 0 >> testeq {1} (single $ enb !$$ ena !@ {0})"
               , pointTest
-                    "nb !$ {p1} := 1 >> na !$ {p1} := 0 >> nc !$ {p1} := 0 >> testeq {1} (single $ nb !$$ na !@ {0})"
+                    "enb !$ {e1} := 1 >> ena !$ {e1} := 0 >> enc !$ {e1} := 0 >> testeq {1} (single $ enb !$$ ena !@ {0})"
               , pointTest
-                    "nb !$ {p1} := 1 >> na !$ {p1} := 0 >> na !$ {p1} := 0 >> testeq {1} (single $ nb !$$ na !@ {0})"
+                    "enb !$ {e1} := 1 >> ena !$ {e1} := 0 >> ena !$ {e1} := 0 >> testeq {1} (single $ enb !$$ ena !@ {0})"
               , pointTest
-                    "nb !$ {p1} := 1 >> nb !$ {p2} := 2 >> na !$ {p1} := 0 >> na !$ {p2} := 0 >> testisunknown (single $ nb !$$ na !@ {0})"
+                    "enb !$ {e1} := 1 >> enb !$ {e2} := 2 >> ena !$ {e1} := 0 >> ena !$ {e2} := 0 >> testisunknown (single $ enb !$$ ena !@ {0})"
               , pointTest
-                    "nb !$ {p1} := 1 >> nb !$ {p2} := 1 >> na !$ {p1} := 0 >> na !$ {p2} := 0 >> testeq {1} (single $ nb !$$ na !@ {0})"
+                    "enb !$ {e1} := 1 >> enb !$ {e2} := 1 >> ena !$ {e1} := 0 >> ena !$ {e2} := 0 >> testeq {1} (single $ enb !$$ ena !@ {0})"
               ]
         , testGroup
               "multiple set member"
-              [ pointTest "testeq {0} (count (ra !@ {p1}))"
-              , pointTest "ra !@ {p1} += \"hello\" >> testeq {p1} (ra !$ {\"hello\"})"
-              , pointTest "ra !@ {p1} += \"hello\" >> testeq {1} (count (ra !@ {p1}))"
-              , pointTest "ra !@ {p1} += \"hello\" >> ra !@ {p1} += \"hello\" >> testeq {1} (count (ra !@ {p1}))"
-              , pointTest "ra !@ {p1} += \"h\" >> ra !@ {p1} += \"hello\" >> testeq {2} (count (ra !@ {p1}))"
-              , pointTest "ma !$ {p2} := p1 >> testeq {1} (count (ma !@ {p1}))"
+              [ pointTest "testeq {0} (count (tea !@ {e1}))"
+              , pointTest "tea !@ {e1} += \"hello\" >> testeq {e1} (tea !$ {\"hello\"})"
+              , pointTest "tea !@ {e1} += \"hello\" >> testeq {1} (count (tea !@ {e1}))"
+              , pointTest "tea !@ {e1} += \"hello\" >> tea !@ {e1} += \"hello\" >> testeq {1} (count (tea !@ {e1}))"
+              , pointTest "tea !@ {e1} += \"h\" >> tea !@ {e1} += \"hello\" >> testeq {2} (count (tea !@ {e1}))"
+              , pointTest "eea !$ {e2} := e1 >> testeq {1} (count (eea !@ {e1}))"
               , pointTest $
-                "let counter = na !$ {p1};someset = rna !@ {p1} in " <>
+                "let counter = ena !$ {e1};someset = nea !@ {e1} in " <>
                 "counter := 0 >> someset += 1 >> someset += 1 >> (get (members (orders []) someset) $ \\pp -> for pp $ \\p -> runref {counter := %counter + 1}) >> testeq {1} counter"
               ]
         ]

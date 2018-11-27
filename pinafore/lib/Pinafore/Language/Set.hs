@@ -7,10 +7,8 @@ import Pinafore.Storage.Table (Point)
 import Shapes
 import Truth.Core
 
-data PinaforeSet baseedit pq =
-    forall t. Eq t =>
-                  MkPinaforeSet (Range t pq)
-                                (PinaforeLensValue baseedit (FiniteSetEdit t))
+data PinaforeSet baseedit pq where
+    MkPinaforeSet :: Eq t => Range t pq -> PinaforeLensValue baseedit (FiniteSetEdit t) -> PinaforeSet baseedit pq
 
 unPinaforeSet :: PinaforeSet baseedit '( p, p) -> PinaforeLensValue baseedit (FiniteSetEdit p)
 unPinaforeSet (MkPinaforeSet tr lv) = (bijectionFiniteSetEditLens $ rangeBijection tr) . lv
