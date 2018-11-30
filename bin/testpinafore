@@ -1,6 +1,3 @@
 #!/bin/sh -e
-if [ -z "${BINPATH}" ]; then
-    export BINPATH=`stack path --local-bin`
-fi
-stack install pinafore
-$BINPATH/pinafore --data test/pinafore test/test.pinafore
+stack --no-docker install pinafore
+`stack --no-docker path --local-bin`/pinafore --data test/pinafore test/test.pinafore

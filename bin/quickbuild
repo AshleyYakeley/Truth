@@ -1,7 +1,4 @@
 #!/bin/bash -e
-if [ -z "${BINPATH}" ]; then
-    export BINPATH=`stack path --local-bin`
-fi
-stack install --test --no-run-tests --bench --no-run-benchmarks
-$BINPATH/pinafore --doc > mkdocs/docs/predefined.md
+stack --no-docker install --test --no-run-tests --bench --no-run-benchmarks
+`stack --no-docker path --local-bin`/pinafore --doc > mkdocs/docs/predefined.md
 echo OK
