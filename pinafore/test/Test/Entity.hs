@@ -2,6 +2,7 @@ module Test.Entity
     ( testEntity
     ) where
 
+import Control.Exception
 import Pinafore
 import Pinafore.Test
 import Shapes
@@ -43,6 +44,26 @@ pointTest text =
         action <- pinaforeInterpretFile pc "<test>" $ prefix <> text
         action
 
+assertThrows :: IO a -> IO ()
+assertThrows ma = do
+    t <- catch (ma >> return True) $ \(_ :: SomeException) -> return False
+    if t
+        then assertFailure "no exception"
+        else return ()
+
+badParseText :: Text -> TestTree
+badParseText text =
+    testCase (unpack text) $ do
+        (pc, _getTableState) <- makeTestPinaforeContext
+        assertThrows $ pinaforeInterpretFile pc "<test>" $ prefix <> text
+
+exceptionTest :: Text -> TestTree
+exceptionTest text =
+    testCase (unpack text) $ do
+        (pc, _getTableState) <- makeTestPinaforeContext
+        action <- pinaforeInterpretFile pc "<test>" $ prefix <> text
+        assertThrows action
+
 testEntity :: TestTree
 testEntity =
     testGroup
@@ -56,6 +77,26 @@ testEntity =
               , pointTest "pass >> pass"
               , pointTest "if true then pass else fail \"failed\""
               , pointTest "pass >> if true then pass else fail \"failed\""
+              ]
+        , testGroup
+              "bad parse"
+              [ badParseText ""
+              , badParseText "x"
+              , badParseText "("
+              , badParseText ")"
+              , badParseText "pass x"
+              , badParseText "pass pass"
+              , badParseText "pass in"
+              , badParseText "pass ("
+              , badParseText "pass )"
+              , badParseText "pass let"
+              ]
+        , testGroup
+              "fail"
+              [ exceptionTest "fail \"text\""
+              , exceptionTest "let in fail \"text\""
+              , exceptionTest "let t = 1 in fail \"text\""
+              , exceptionTest "let entity E in fail \"text\""
               ]
         , testGroup
               "equality"
@@ -204,8 +245,18 @@ testEntity =
               , pointTest "let entity T1 in let entity T2 in let p = property @T1 @T2 !\"p\" in pass"
               ]
         , testGroup
-              "Pair"
+              "Pair/Either"
               [ pointTest
-                    "let enta = property @E @(Number, Text) !\"enta\" in enta !$ {e1} := (74,\"hmm\") in testeq {(74,\"hmm\")} $ enta !$ {e1}"
+                    "let enta = property @E @(Number, Text) !\"enta\" in enta !$ {e1} := (74,\"hmm\") >> (testneq {(71,\"hmm\")} $ enta !$ {e1})"
+              , pointTest
+                    "let enta = property @E @(Number, Text) !\"enta\" in enta !$ {e1} := (74,\"hmm\") >> (testeq {(74,\"hmm\")} $ enta !$ {e1})"
+              , pointTest
+                    "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := left 74 >> (testneq {left 73} $ enta !$ {e1})"
+              , pointTest
+                    "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := left 74 >> (testeq {left 74} $ enta !$ {e1})"
+              , pointTest
+                    "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := right \"abc\" >> (testneq {right \"adbc\"} $ enta !$ {e1})"
+              , pointTest
+                    "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := right \"abc\" >> (testeq {right \"abc\"} $ enta !$ {e1})"
               ]
         ]

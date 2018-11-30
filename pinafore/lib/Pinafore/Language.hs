@@ -34,7 +34,7 @@ parseValue ::
     -> Text
     -> Result Text (QValue baseedit)
 parseValue name text = do
-    texpr <- parseExpression @baseedit name text
+    texpr <- parseTopExpression @baseedit name text
     rexpr <-
         runPinaforeTypeCheck $ do
             expr <- texpr

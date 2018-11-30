@@ -1,5 +1,5 @@
 module Pinafore.Language.Read
-    ( parseExpression
+    ( parseTopExpression
     , parseType
     , InteractiveCommand(..)
     , parseInteractiveCommand
@@ -14,6 +14,6 @@ import Pinafore.Language.Read.Type
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
-parseExpression ::
+parseTopExpression ::
        HasPinaforeEntityEdit baseedit => SourceName -> Text -> Result Text (PinaforeTypeCheck (QExpr baseedit))
-parseExpression = parseReader readTopExpression
+parseTopExpression = parseReader readTopExpression

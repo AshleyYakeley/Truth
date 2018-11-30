@@ -208,4 +208,5 @@ readTopExpression ::
     => Parser (PinaforeTypeCheck (QExpr baseedit))
 readTopExpression = do
     rexpr <- readExpression
+    eof
     return $ runRefNotation rexpr
