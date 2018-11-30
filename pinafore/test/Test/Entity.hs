@@ -194,4 +194,18 @@ testEntity =
                 "let counter = ena !$ {e1};someset = nea !@ {e1} in " <>
                 "counter := 0 >> someset += 1 >> someset += 1 >> (get (members (orders []) someset) $ \\pp -> for pp $ \\p -> runref {counter := %counter + 1}) >> testeq {1} counter"
               ]
+        , testGroup
+              "Types"
+              [ pointTest "let entity T1; p = property @T1 @T1 !\"p\" in pass"
+              , pointTest "let entity T1 in let p = property @T1 @T1 !\"p\" in pass"
+              , pointTest "let entity T1; entity T2; p = property @T1 @T2 !\"p\" in pass"
+              , pointTest "let entity T1; entity T2 in let p = property @T1 @T2 !\"p\" in pass"
+              , pointTest "let entity T1 in let entity T2; p = property @T1 @T2 !\"p\" in pass"
+              , pointTest "let entity T1 in let entity T2 in let p = property @T1 @T2 !\"p\" in pass"
+              ]
+        , testGroup
+              "Pair"
+              [ pointTest
+                    "let enta = property @E @(Number, Text) !\"enta\" in enta !$ {e1} := (74,\"hmm\") in testeq {(74,\"hmm\")} $ enta !$ {e1}"
+              ]
         ]

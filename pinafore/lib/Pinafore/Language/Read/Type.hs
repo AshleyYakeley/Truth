@@ -1,7 +1,7 @@
 module Pinafore.Language.Read.Type
     ( readTypeName
     , readType3
-    , readEntityType
+    , readEntityType3
     , parseType
     ) where
 
@@ -15,7 +15,7 @@ import Pinafore.Language.Type
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
-type PinaforeType3 baseedit = MPolarType (PinaforeType baseedit)
+type PinaforeTypeM baseedit = MPolarType (PinaforeType baseedit)
 
 type PinaforeRangeType3 baseedit = MPolarRangeType (PinaforeType baseedit)
 
@@ -30,7 +30,7 @@ readJoinMeet =
 
 readType ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeType3 baseedit mpolarity))
+    => Parser (PinaforeTypeCheck (PinaforeTypeM baseedit mpolarity))
 readType = do
     t1 <- readType1
     mt2 <-
@@ -43,7 +43,7 @@ readType = do
 
 readType1 ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeType3 baseedit mpolarity))
+    => Parser (PinaforeTypeCheck (PinaforeTypeM baseedit mpolarity))
 readType1 =
     (try $ do
          at1 <- readTypeRange3
@@ -77,7 +77,7 @@ readType1 =
 
 readType2 ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeType3 baseedit mpolarity))
+    => Parser (PinaforeTypeCheck (PinaforeTypeM baseedit mpolarity))
 readType2 =
     (do
          readExactlyThis TokName "Either"
@@ -131,7 +131,7 @@ readType2 =
 
 readType3 ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeType3 baseedit mpolarity))
+    => Parser (PinaforeTypeCheck (PinaforeTypeM baseedit mpolarity))
 readType3 =
     (do
          at1 <- readBracket $ readType
@@ -192,7 +192,7 @@ readTypeRangeItem =
          mt <- readType3 @baseedit @'Nothing
          let
              ff :: forall polarity. IsTypePolarity polarity
-                => PinaforeType3 baseedit 'Nothing
+                => PinaforeTypeM baseedit 'Nothing
                 -> AnyInKind (RangeType (PinaforeType baseedit) polarity)
              ff (BothMPolarType atw) =
                  case (invertPolarity @polarity $ atw @(InvertPolarity polarity), atw @polarity) of
@@ -210,7 +210,7 @@ readTypeVar =
 
 readTypeConst ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeType3 baseedit mpolarity))
+    => Parser (PinaforeTypeCheck (PinaforeTypeM baseedit mpolarity))
 readTypeConst = do
     n <- readTypeName
     case n of
@@ -229,13 +229,13 @@ readTypeConst = do
             MkAnyW $
             singlePinaforeType $
             GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments
-        "Point" ->
+        "NewEntity" ->
             return $
             return $
             toMPolar $
             MkAnyW $
             singlePinaforeType $
-            GroundPinaforeSingularType (SimpleEntityPinaforeGroundType PointSimpleEntityType) NilDolanArguments
+            GroundPinaforeSingularType (SimpleEntityPinaforeGroundType NewSimpleEntityType) NilDolanArguments
         "Action" ->
             return $
             return $
@@ -277,22 +277,16 @@ readTypeName =
                 | isUpper c -> return s
             _ -> mzero
 
-readEntityType :: Parser (PinaforeTypeCheck (AnyW EntityType))
-readEntityType =
-    (do
-         n <- readTypeName
-         return $
-             case n of
-                 "Entity" -> return $ MkAnyW $ SimpleEntityType TopSimpleEntityType
-                 "Point" -> return $ MkAnyW $ SimpleEntityType PointSimpleEntityType
-                 _
-                     | Just (MkAnyW lt) <- nameToLiteralType n ->
-                         return $ MkAnyW $ SimpleEntityType $ LiteralSimpleEntityType lt
-                 _ -> do
-                     nt <- lookupNamedType n
-                     case nt of
-                         EntityNamedType (MkAnyW sw) -> return $ MkAnyW $ SimpleEntityType $ NamedSimpleEntityType sw) <|>
-    (readParen $ return $ return $ MkAnyW $ SimpleEntityType $ LiteralSimpleEntityType $ UnitLiteralType)
+readEntityType3 :: Parser (PinaforeTypeCheck (AnyW EntityType))
+readEntityType3 = do
+    ctm <- readType3 @_ @'Nothing
+    return $ do
+        BothMPolarType atm <- ctm
+        case atm @'PositivePolarity of
+            MkAnyW tm ->
+                case typeToEntityType tm of
+                    Just t -> return t
+                    Nothing -> fail $ show tm <> " is not an Entity type"
 
 parseType ::
        forall baseedit polarity. IsTypePolarity polarity

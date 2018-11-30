@@ -55,9 +55,8 @@ library:
       - Pinafore.Base.Number
       - Pinafore.Base.Literal
       - Pinafore.Base.Morphism
-      - Pinafore.Base.Point
-      - Pinafore.Base.Edit
       - Pinafore.Base.Entity
+      - Pinafore.Base.Edit
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
       - Pinafore.Base.ImmutableReference

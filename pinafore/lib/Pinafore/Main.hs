@@ -30,7 +30,7 @@ sqlitePinaforeObject dirpath = do
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
     return $
         tupleObject $ \case
-            PinaforeSelectPoint -> pinaforeTablePointObject tableObject
+            PinaforeSelectPoint -> pinaforeTableEntityObject tableObject
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
 
 getPinaforeRunAction ::
@@ -69,7 +69,7 @@ sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
     MkAllF tables <- sqlitePinaforeTableGetEntireDatabase $ dirpath </> "tables.sqlite3"
     for_ (tables $ MkTupleTableSel PinaforeTriple) $ \(MkAllValue row) -> let
-        littable :: [(Point, Literal)]
+        littable :: [(Entity, Literal)]
         littable =
             fmap (\(MkAllValue lrow) -> (lrow LiteralKey, lrow LiteralValue)) $ tables $ MkTupleTableSel PinaforeLiteral
         p = row TriplePredicate

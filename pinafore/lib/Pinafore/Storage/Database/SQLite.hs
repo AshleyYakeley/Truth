@@ -32,12 +32,12 @@ deriving instance FromField Anchor
 
 deriving instance ToField Anchor
 
-instance FieldType Point where
+instance FieldType Entity where
     fieldTypeName = fieldTypeName @Anchor
 
-deriving instance FromField Point
+deriving instance FromField Entity
 
-deriving instance ToField Point
+deriving instance ToField Entity
 
 instance FieldType Predicate where
     fieldTypeName = fieldTypeName @Anchor

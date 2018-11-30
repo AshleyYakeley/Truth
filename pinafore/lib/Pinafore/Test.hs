@@ -28,7 +28,7 @@ makeTestPinaforeContext = do
         pinaforeObject :: Object PinaforeEdit
         pinaforeObject =
             tupleObject $ \case
-                PinaforeSelectPoint -> pinaforeTablePointObject $ convertObject tableStateObject
+                PinaforeSelectPoint -> pinaforeTableEntityObject $ convertObject tableStateObject
                 PinaforeSelectFile -> readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getObjectSubject tableStateObject

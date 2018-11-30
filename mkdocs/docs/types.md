@@ -4,9 +4,9 @@ For all types T, `None <= T` and `T <= Any`.
 
 ## Entity types
 
-Entities are the things that can be represented as points in the triple-store.
+Entities are the things that can be represented as subjects and values in the triple-store.
 
-For any user-created entity type `T`, `Point <= T` and `T <= Entity`.
+For any open entity type `T`, `NewEntity <= T` and `T <= Entity`.
 
 ## Literals
 
@@ -48,13 +48,13 @@ The contents of a user interface window. Can be composed in various ways.
 
 `(a,b)`, both `a` and `b` are covariant
 
-`a <= Entity` and `b <= Entity` implies `(a,b) <= Entity` (not yet implemented) 
+`a <= Entity` and `b <= Entity` implies `(a,b) <= Entity`
 
 ## Either
 
 `Either a b`, both `a` and `b` are covariant
 
-`a <= Entity` and `b <= Entity` implies `Either a b <= Entity` (not yet implemented) 
+`a <= Entity` and `b <= Entity` implies `Either a b <= Entity`
 
 ## References
 

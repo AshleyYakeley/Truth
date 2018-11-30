@@ -15,5 +15,5 @@ import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
 parseExpression ::
-       HasPinaforePointEdit baseedit => SourceName -> Text -> Result Text (PinaforeTypeCheck (QExpr baseedit))
+       HasPinaforeEntityEdit baseedit => SourceName -> Text -> Result Text (PinaforeTypeCheck (QExpr baseedit))
 parseExpression = parseReader readTopExpression

@@ -7,7 +7,7 @@ import Shapes
 import Truth.Core
 
 data PinaforeSelector t where
-    PinaforeSelectPoint :: PinaforeSelector PinaforePointEdit
+    PinaforeSelectPoint :: PinaforeSelector PinaforeEntityEdit
     PinaforeSelectFile :: PinaforeSelector PinaforeFileEdit
 
 instance TestEquality PinaforeSelector where
@@ -16,7 +16,7 @@ instance TestEquality PinaforeSelector where
     testEquality _ _ = Nothing
 
 instance IsFiniteConsWitness PinaforeSelector where
-    type FiniteConsWitness PinaforeSelector = '[ PinaforePointEdit, PinaforeFileEdit]
+    type FiniteConsWitness PinaforeSelector = '[ PinaforeEntityEdit, PinaforeFileEdit]
     toLTW PinaforeSelectPoint = FirstListElementWitness
     toLTW PinaforeSelectFile = RestListElementWitness FirstListElementWitness
     fromLTW FirstListElementWitness = PinaforeSelectPoint
@@ -27,8 +27,8 @@ type PinaforeEdit = TupleEdit PinaforeSelector
 
 type PinaforeRead = EditReader PinaforeEdit
 
-instance HasPinaforePointEdit PinaforeEdit where
-    pinaforePointLens = tupleEditLens PinaforeSelectPoint
+instance HasPinaforeEntityEdit PinaforeEdit where
+    pinaforeEntityLens = tupleEditLens PinaforeSelectPoint
 
 instance HasPinaforeFileEdit PinaforeEdit where
     pinaforeFileLens = tupleEditLens PinaforeSelectFile

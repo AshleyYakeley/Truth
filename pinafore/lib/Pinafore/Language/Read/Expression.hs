@@ -37,7 +37,7 @@ instance Monoid (Declarations baseedit) where
 typeDeclarations :: TypeDecls baseedit -> Declarations baseedit
 typeDeclarations td = MkDeclarations td $ return mempty
 
-readBinding :: HasPinaforePointEdit baseedit => Parser (Declarations baseedit)
+readBinding :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
 readBinding = do
     name <- readThis TokName
     args <- many readPattern
@@ -49,10 +49,10 @@ readBinding = do
             expr <- liftRefNotation $ qAbstractsExpr args val
             return $ qBindExpr name expr
 
-readDeclaration :: HasPinaforePointEdit baseedit => Parser (Declarations baseedit)
+readDeclaration :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
 readDeclaration = fmap typeDeclarations readTypeDeclaration <|> readBinding
 
-readDeclarations :: HasPinaforePointEdit baseedit => Parser (Declarations baseedit)
+readDeclarations :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
 readDeclarations =
     (do
          b <- readDeclaration
@@ -63,28 +63,31 @@ readDeclarations =
          return $ b <> fromMaybe mempty mbl) <|>
     (do return mempty)
 
-readLetBindings :: HasPinaforePointEdit baseedit => Parser (QExpr baseedit -> RefExpression baseedit)
+readLetBindings :: HasPinaforeEntityEdit baseedit => Parser (RefExpression baseedit -> RefExpression baseedit)
 readLetBindings = do
     readThis TokLet
     MkDeclarations (MkTypeDecls td) rbl <- readDeclarations
-    return $ \expr ->
+    return $ \mexpr ->
         td $ do
+            expr <- td mexpr
             bl <- rbl
             f <- qBindingsLetExpr bl
             liftRefNotation $ f expr
 
-readTopLetBindings :: HasPinaforePointEdit baseedit => Parser (QExpr baseedit -> PinaforeTypeCheck (QExpr baseedit))
+readTopLetBindings ::
+       HasPinaforeEntityEdit baseedit
+    => Parser (PinaforeTypeCheck (QExpr baseedit) -> PinaforeTypeCheck (QExpr baseedit))
 readTopLetBindings = do
     f <- readLetBindings
-    return $ \e -> runRefNotation $ f e
+    return $ \e -> runRefNotation $ f $ liftRefNotation e
 
 readExpression ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (RefExpression baseedit)
 readExpression = readExpressionInfixed readExpression1
 
 readExpression1 ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (RefExpression baseedit)
 readExpression1 =
     (do
@@ -99,9 +102,7 @@ readExpression1 =
          bmap <- readLetBindings
          readThis TokIn
          mbody <- readExpression
-         return $ do
-             body <- mbody
-             bmap body) <|>
+         return $ bmap mbody) <|>
     (do
          readThis TokIf
          metest <- readExpression
@@ -116,7 +117,7 @@ readExpression1 =
              liftRefNotation $ qApplyAllExpr (qConstExpr qifthenelse) [etest, ethen, eelse]) <|>
     readExpression2
 
-readExpression2 :: HasPinaforePointEdit baseedit => Parser (RefExpression baseedit)
+readExpression2 :: HasPinaforeEntityEdit baseedit => Parser (RefExpression baseedit)
 readExpression2 = do
     te1 <- readExpression3
     targs <- many readExpression3
@@ -125,17 +126,17 @@ readExpression2 = do
         args <- sequence targs
         liftRefNotation $ qApplyAllExpr e1 args
 
-makePoint :: MonadFail m => PinaforeType baseedit 'PositivePolarity t -> Point -> m t
+makePoint :: MonadFail m => PinaforeType baseedit 'PositivePolarity t -> Entity -> m t
 makePoint (ConsPinaforeType (GroundPinaforeSingularType (SimpleEntityPinaforeGroundType t) NilDolanArguments) NilPinaforeType) p =
     case t of
-        TopSimpleEntityType -> return $ LeftJoinType $ MkEntity p
-        PointSimpleEntityType -> return $ LeftJoinType p
+        TopSimpleEntityType -> return $ LeftJoinType p
+        NewSimpleEntityType -> return $ LeftJoinType $ MkNewEntity p
         NamedSimpleEntityType _ -> return $ LeftJoinType $ MkNamedEntity p
         _ -> fail $ unpack $ "not a point type: " <> exprShow t
 makePoint t _ = fail $ unpack $ "not a point type: " <> exprShow t
 
 readExpression3 ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (RefExpression baseedit)
 readExpression3 =
     (do
@@ -203,7 +204,7 @@ readExpression3 =
     "expression"
 
 readTopExpression ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (PinaforeTypeCheck (QExpr baseedit))
 readTopExpression = do
     rexpr <- readExpression

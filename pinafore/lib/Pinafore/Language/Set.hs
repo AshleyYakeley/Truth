@@ -3,7 +3,7 @@ module Pinafore.Language.Set where
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Reference
-import Pinafore.Storage.Table (Point)
+import Pinafore.Storage.Table (Entity)
 import Shapes
 import Truth.Core
 
@@ -59,7 +59,7 @@ pinaforeSetAdd :: PinaforeSet baseedit '( p, q) -> p -> PinaforeAction baseedit
 pinaforeSetAdd (MkPinaforeSet tr set) p =
     pinaforeLiftView $ viewMapEdit set $ viewObjectPushEdit $ \_ push -> push [KeyInsertReplaceItem $ rangeContra tr p]
 
-pinaforeSetAddNew :: PinaforeSet baseedit '( Point, TopType) -> PinaforeActionM baseedit Point
+pinaforeSetAddNew :: PinaforeSet baseedit '( Entity, TopType) -> PinaforeActionM baseedit Entity
 pinaforeSetAddNew set = do
     point <- pinaforeGeneratePoint
     pinaforeSetAdd set point

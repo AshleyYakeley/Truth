@@ -57,8 +57,8 @@ clearText = funcEditFunction (fromKnow mempty)
 
 newentity ::
        forall baseedit.
-       PinaforeSet baseedit '( Point, TopType)
-    -> (Point -> PinaforeAction baseedit)
+       PinaforeSet baseedit '( Entity, TopType)
+    -> (Entity -> PinaforeAction baseedit)
     -> PinaforeAction baseedit
 newentity set continue = do
     point <- pinaforeSetAddNew set
@@ -112,7 +112,7 @@ withSelection cont = do
             cont point
 
 ui_table ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => [(PinaforeReference baseedit '( BottomType, Text), A -> PinaforeReference baseedit '( BottomType, Text))]
     -> (A -> UIWindow baseedit)
     -> PinaforeSet baseedit '( A, MeetType Entity A)
@@ -173,7 +173,7 @@ ui_dynamic uiref = uiSwitch $ pinaforeImmutableReferenceValue uiNull uiref
 type BindDoc baseedit = (Maybe (Name, QValue baseedit), DefDoc)
 
 mkDefEntry ::
-       forall baseedit t. (HasPinaforePointEdit baseedit, ToPinaforeType baseedit t)
+       forall baseedit t. (HasPinaforeEntityEdit baseedit, ToPinaforeType baseedit t)
     => Name
     -> Text
     -> t
@@ -181,10 +181,10 @@ mkDefEntry ::
 mkDefEntry name desc val = EntryDocTreeEntry (Just (name, toValue val), mkDefDoc @baseedit name desc val)
 
 entityuuid :: Entity -> Text
-entityuuid (MkEntity p) = pack $ show p
+entityuuid p = pack $ show p
 
 predefinitions ::
-       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => DocTree (BindDoc baseedit)
 predefinitions =
     MkDocTree
@@ -416,11 +416,11 @@ predefinitions =
         ]
 
 predefinedDoc ::
-       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => DocTree DefDoc
 predefinedDoc = fmap snd $ predefinitions @baseedit
 
 predefinedBindings ::
-       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => StrictMap Name (QValue baseedit)
 predefinedBindings = mapFromList $ catMaybes $ toList $ fmap fst $ predefinitions @baseedit

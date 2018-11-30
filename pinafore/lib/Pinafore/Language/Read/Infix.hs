@@ -65,21 +65,21 @@ readInfix prec =
             else empty
 
 leftApply ::
-       HasPinaforePointEdit baseedit => QExpr baseedit -> [(QExpr baseedit, QExpr baseedit)] -> RefExpression baseedit
+       HasPinaforeEntityEdit baseedit => QExpr baseedit -> [(QExpr baseedit, QExpr baseedit)] -> RefExpression baseedit
 leftApply e1 [] = return e1
 leftApply e1 ((f, e2):rest) = do
     ee <- liftRefNotation $ qApplyAllExpr f [e1, e2]
     leftApply ee rest
 
 rightApply ::
-       HasPinaforePointEdit baseedit => QExpr baseedit -> [(QExpr baseedit, QExpr baseedit)] -> RefExpression baseedit
+       HasPinaforeEntityEdit baseedit => QExpr baseedit -> [(QExpr baseedit, QExpr baseedit)] -> RefExpression baseedit
 rightApply e1 [] = return e1
 rightApply e1 ((f, e2):rest) = do
     ee <- rightApply e2 rest
     liftRefNotation $ qApplyAllExpr f [e1, ee]
 
 readInfixedExpression ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (RefExpression baseedit)
     -> Int
     -> Parser (RefExpression baseedit)
@@ -119,7 +119,7 @@ readInfixedExpression pe prec = do
         _ -> parserFail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(_, name, _) -> show name) rest)
 
 readExpressionInfixed ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (RefExpression baseedit)
     -> Parser (RefExpression baseedit)
 readExpressionInfixed pe = readInfixedExpression pe 0

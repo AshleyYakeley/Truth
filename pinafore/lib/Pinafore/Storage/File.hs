@@ -6,7 +6,7 @@ import Truth.Core
 import Truth.World.FileSystem
 import Truth.World.ObjectStore
 
-type PinaforeFileEdit = ObjectStoreEdit Point ByteStringEdit
+type PinaforeFileEdit = ObjectStoreEdit Entity ByteStringEdit
 
 class HasPinaforeFileEdit baseedit where
     pinaforeFileLens :: EditLens baseedit PinaforeFileEdit
@@ -14,7 +14,7 @@ class HasPinaforeFileEdit baseedit where
 instance HasPinaforeFileEdit PinaforeFileEdit where
     pinaforeFileLens = id
 
-pinaforeFileItemLens :: HasPinaforeFileEdit baseedit => Point -> EditLens baseedit (SingleObjectEdit ByteStringEdit)
+pinaforeFileItemLens :: HasPinaforeFileEdit baseedit => Entity -> EditLens baseedit (SingleObjectEdit ByteStringEdit)
 pinaforeFileItemLens point = tupleEditLens (MkFunctionSelector point) . pinaforeFileLens
 
 directoryPinaforeFileObject :: FilePath -> Object PinaforeFileEdit

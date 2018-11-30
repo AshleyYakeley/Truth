@@ -5,8 +5,8 @@ import Shapes
 
 data TripleTable t where
     TriplePredicate :: TripleTable Predicate
-    TripleSubject :: TripleTable Point
-    TripleValue :: TripleTable Point
+    TripleSubject :: TripleTable Entity
+    TripleValue :: TripleTable Entity
 
 instance Show (TripleTable t) where
     show TriplePredicate = "predicate"
@@ -33,7 +33,7 @@ instance FiniteWitness TripleTable where
         getw TripleValue
 
 data LiteralTable t where
-    LiteralKey :: LiteralTable Point
+    LiteralKey :: LiteralTable Entity
     LiteralValue :: LiteralTable Literal
 
 instance Show (LiteralTable t) where

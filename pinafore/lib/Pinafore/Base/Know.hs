@@ -18,7 +18,7 @@ import Truth.Core
 
 newtype Know a =
     MkKnow (Maybe a)
-    deriving (Eq, Functor, Foldable, Applicative, Alternative, Monad, MonadPlus)
+    deriving (Eq, Functor, Foldable, Applicative, Alternative, Monad, MonadPlus, MonadOne)
 
 pattern Known :: a -> Know a
 

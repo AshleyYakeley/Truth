@@ -1,9 +1,9 @@
 module Pinafore.Base.Literal where
 
 import Data.Time
+import Pinafore.Base.Entity
 import Pinafore.Base.Know
 import Pinafore.Base.Number
-import Pinafore.Base.Point
 import Prelude (Rational)
 import Shapes
 
@@ -22,8 +22,8 @@ class (Eq t, Show t) => AsLiteral t where
     fromLiteral :: Literal -> Know t
     literalTypeDescription :: Text
 
-literalToPoint :: AsLiteral t => t -> Point
-literalToPoint v = hashToPoint $ \call -> [call @Text "literal:", call $ toLiteral v]
+literalToEntity :: AsLiteral t => t -> Entity
+literalToEntity v = hashToEntity $ \call -> [call @Text "literal:", call $ toLiteral v]
 
 instance AsLiteral Literal where
     toLiteral = id

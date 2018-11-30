@@ -13,20 +13,20 @@ import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
 data InteractiveCommand baseedit
-    = LetInteractiveCommand (QExpr baseedit -> PinaforeTypeCheck (QExpr baseedit))
+    = LetInteractiveCommand (PinaforeTypeCheck (QExpr baseedit) -> PinaforeTypeCheck (QExpr baseedit))
     | ExpressionInteractiveCommand (PinaforeTypeCheck (QExpr baseedit))
     | ShowTypeInteractiveCommand (PinaforeTypeCheck (QExpr baseedit))
     | ErrorInteractiveCommand Text
 
 showTypeInteractiveCommand ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (InteractiveCommand baseedit)
 showTypeInteractiveCommand = do
     expr <- readTopExpression
     return $ ShowTypeInteractiveCommand expr
 
 readInteractiveCommand ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (InteractiveCommand baseedit)
 readInteractiveCommand =
     (do
@@ -36,10 +36,10 @@ readInteractiveCommand =
              "t" -> showTypeInteractiveCommand
              "type" -> showTypeInteractiveCommand
              _ -> return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd) <|>
-    (eof >> return (LetInteractiveCommand return)) <|>
+    (eof >> return (LetInteractiveCommand id)) <|>
     (try $ fmap ExpressionInteractiveCommand readTopExpression) <|>
     (fmap LetInteractiveCommand readTopLetBindings)
 
 parseInteractiveCommand ::
-       HasPinaforePointEdit baseedit => SourceName -> Text -> Result Text (InteractiveCommand baseedit)
+       HasPinaforeEntityEdit baseedit => SourceName -> Text -> Result Text (InteractiveCommand baseedit)
 parseInteractiveCommand = parseReader readInteractiveCommand

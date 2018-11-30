@@ -2,6 +2,7 @@ module Pinafore.Language.Morphism where
 
 import Language.Expression.Dolan
 import Pinafore.Base
+import Pinafore.Language.NamedEntity
 import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Shapes
@@ -92,11 +93,11 @@ pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb (MkRange fa _) m) (Immut
 
 pinaforeApplyInverseMorphismSet ::
        forall baseedit ap aq bp bq.
-       PinaforeMorphism baseedit '( bp, bq) '( JoinType Point aq, ap)
+       PinaforeMorphism baseedit '( bp, bq) '( JoinType NewEntity aq, ap)
     -> PinaforeSet baseedit '( ap, aq)
     -> PinaforeSet baseedit '( bp, bq)
 pinaforeApplyInverseMorphismSet (MkPinaforeMorphism trb trpa m) (MkPinaforeSet tra' set) = let
     (trp, tra) = unjoinRange trpa
     in MkPinaforeSet trb $
-       applyInversePinaforeLensSet (fmap (rangeContra trp) newPoint) m $
+       applyInversePinaforeLensSet (fmap (rangeContra trp . MkNewEntity) newEntity) m $
        (bijectionFiniteSetEditLens $ bijectRanges tra' tra) . set

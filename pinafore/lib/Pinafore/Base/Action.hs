@@ -2,7 +2,6 @@ module Pinafore.Base.Action where
 
 import Pinafore.Base.Entity
 import Pinafore.Base.Morphism
-import Pinafore.Base.Point
 import Shapes
 import Truth.Core
 
@@ -34,8 +33,8 @@ pinaforeActionRequest wit =
 
 type PinaforeAction baseedit = PinaforeActionM baseedit ()
 
-pinaforeGeneratePoint :: PinaforeActionM baseedit Point
-pinaforeGeneratePoint = liftIO $ newKeyContainerItem @(FiniteSet Point)
+pinaforeGeneratePoint :: PinaforeActionM baseedit Entity
+pinaforeGeneratePoint = liftIO $ newKeyContainerItem @(FiniteSet Entity)
 
 pinaforeListFor :: [a] -> (a -> PinaforeAction baseedit) -> PinaforeAction baseedit
 pinaforeListFor = for_

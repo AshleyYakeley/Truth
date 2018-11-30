@@ -1,10 +1,10 @@
 module Pinafore.Storage.Table
     ( Anchor(..)
     , Predicate(..)
-    , Point(..)
+    , Entity(..)
     , PinaforeTableRead(..)
     , PinaforeTableEdit(..)
-    , pinaforeTablePointObject
+    , pinaforeTableEntityObject
     ) where
 
 import Pinafore.Base
@@ -12,9 +12,9 @@ import Shapes
 import Truth.Core
 
 data PinaforeTableRead t where
-    PinaforeTableReadGetPredicate :: Predicate -> Point -> PinaforeTableRead (Maybe Point)
-    PinaforeTableReadLookupPredicate :: Predicate -> Point -> PinaforeTableRead (FiniteSet Point)
-    PinaforeTableReadGetLiteral :: Point -> PinaforeTableRead (Maybe Literal)
+    PinaforeTableReadGetPredicate :: Predicate -> Entity -> PinaforeTableRead (Maybe Entity)
+    PinaforeTableReadLookupPredicate :: Predicate -> Entity -> PinaforeTableRead (FiniteSet Entity)
+    PinaforeTableReadGetLiteral :: Entity -> PinaforeTableRead (Maybe Literal)
 
 instance Show (PinaforeTableRead t) where
     show (PinaforeTableReadGetPredicate p s) = "get " ++ show p ++ " of " ++ show s
@@ -30,15 +30,15 @@ instance AllWitnessConstraint Show PinaforeTableRead where
     allWitnessConstraint = Dict
 
 data PinaforeTableEdit where
-    PinaforeTableEditSetPredicate :: Predicate -> Point -> Maybe Point -> PinaforeTableEdit -- pred subj mval
-    PinaforeTableEditSetLiteral :: Point -> Maybe Literal -> PinaforeTableEdit
+    PinaforeTableEditSetPredicate :: Predicate -> Entity -> Maybe Entity -> PinaforeTableEdit -- pred subj mval
+    PinaforeTableEditSetLiteral :: Entity -> Maybe Literal -> PinaforeTableEdit
 
 instance Show PinaforeTableEdit where
     show (PinaforeTableEditSetPredicate p s mv) = "set " ++ show p ++ " of " ++ show s ++ " to " ++ show mv
     show (PinaforeTableEditSetLiteral v ml) = "set literal of " ++ show v ++ " to " ++ show ml
 
 instance SubjectReader PinaforeTableRead where
-    type ReaderSubject PinaforeTableRead = ([(Predicate, Point, Point)], [(Point, Literal)])
+    type ReaderSubject PinaforeTableRead = ([(Predicate, Entity, Entity)], [(Entity, Literal)])
     subjectToRead (triples, _) (PinaforeTableReadGetPredicate rp rs) =
         listToMaybe $ [v | (p, s, v) <- triples, p == rp && s == rs]
     subjectToRead (triples, _) (PinaforeTableReadLookupPredicate rp rv) =
@@ -109,19 +109,19 @@ instance InvertibleEdit PinaforeTableEdit where
         ml <- mr $ PinaforeTableReadGetLiteral v
         return [PinaforeTableEditSetLiteral v ml]
 
-data PointCacheKey cache t ct where
-    GetPointCacheKey :: PointCacheKey cache t (cache (SimpleCacheKey Point (Maybe t)))
-    LookupPointCacheKey :: PointCacheKey cache t (cache (SimpleCacheKey t (FiniteSet Point)))
+data EntityCacheKey cache t ct where
+    GetEntityCacheKey :: EntityCacheKey cache t (cache (SimpleCacheKey Entity (Maybe t)))
+    LookupEntityCacheKey :: EntityCacheKey cache t (cache (SimpleCacheKey t (FiniteSet Entity)))
 
-instance Eq t => TestEquality (PointCacheKey cache t) where
-    testEquality GetPointCacheKey GetPointCacheKey = Just Refl
-    testEquality LookupPointCacheKey LookupPointCacheKey = Just Refl
+instance Eq t => TestEquality (EntityCacheKey cache t) where
+    testEquality GetEntityCacheKey GetEntityCacheKey = Just Refl
+    testEquality LookupEntityCacheKey LookupEntityCacheKey = Just Refl
     testEquality _ _ = Nothing
 
 data PinaforeTableEditCacheKey cache ct where
     PredicatePinaforeTableEditCacheKey
-        :: Predicate -> PinaforeTableEditCacheKey cache (cache (PointCacheKey cache Point))
-    LiteralPinaforeTableEditCacheKey :: PinaforeTableEditCacheKey cache (cache (PointCacheKey cache Literal))
+        :: Predicate -> PinaforeTableEditCacheKey cache (cache (EntityCacheKey cache Entity))
+    LiteralPinaforeTableEditCacheKey :: PinaforeTableEditCacheKey cache (cache (EntityCacheKey cache Literal))
 
 instance TestEquality (PinaforeTableEditCacheKey cache) where
     testEquality (PredicatePinaforeTableEditCacheKey p1) (PredicatePinaforeTableEditCacheKey p2)
@@ -133,29 +133,29 @@ instance CacheableEdit PinaforeTableEdit where
     type EditCacheKey cache PinaforeTableEdit = PinaforeTableEditCacheKey cache
     editCacheAdd (PinaforeTableReadGetPredicate p s) mv =
         subcacheModify (PredicatePinaforeTableEditCacheKey p) $
-        subcacheModify GetPointCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
+        subcacheModify GetEntityCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
     editCacheAdd (PinaforeTableReadLookupPredicate p v) fs =
         subcacheModify (PredicatePinaforeTableEditCacheKey p) $
-        subcacheModify LookupPointCacheKey $ cacheAdd (MkSimpleCacheKey v) fs
+        subcacheModify LookupEntityCacheKey $ cacheAdd (MkSimpleCacheKey v) fs
     editCacheAdd (PinaforeTableReadGetLiteral s) mv =
         subcacheModify LiteralPinaforeTableEditCacheKey $
-        subcacheModify GetPointCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
+        subcacheModify GetEntityCacheKey $ cacheAdd (MkSimpleCacheKey s) mv
     editCacheLookup (PinaforeTableReadGetPredicate p s) cache = do
         subcache1 <- cacheLookup (PredicatePinaforeTableEditCacheKey p) cache
-        subcache2 <- cacheLookup GetPointCacheKey subcache1
+        subcache2 <- cacheLookup GetEntityCacheKey subcache1
         cacheLookup (MkSimpleCacheKey s) subcache2
     editCacheLookup (PinaforeTableReadLookupPredicate p v) cache = do
         subcache1 <- cacheLookup (PredicatePinaforeTableEditCacheKey p) cache
-        subcache2 <- cacheLookup LookupPointCacheKey subcache1
+        subcache2 <- cacheLookup LookupEntityCacheKey subcache1
         cacheLookup (MkSimpleCacheKey v) subcache2
     editCacheLookup (PinaforeTableReadGetLiteral s) cache = do
         subcache1 <- cacheLookup LiteralPinaforeTableEditCacheKey cache
-        subcache2 <- cacheLookup GetPointCacheKey subcache1
+        subcache2 <- cacheLookup GetEntityCacheKey subcache1
         cacheLookup (MkSimpleCacheKey s) subcache2
     editCacheUpdate (PinaforeTableEditSetPredicate p s mv) =
         subcacheModify (PredicatePinaforeTableEditCacheKey p) $ do
-            subcacheModify GetPointCacheKey $ cacheModify (MkSimpleCacheKey s) $ Shapes.put $ Just mv
-            subcacheModify LookupPointCacheKey $
+            subcacheModify GetEntityCacheKey $ cacheModify (MkSimpleCacheKey s) $ Shapes.put $ Just mv
+            subcacheModify LookupEntityCacheKey $
                 cacheTraverse $ \(MkSimpleCacheKey v') ss' ->
                     return $
                     Just $
@@ -166,8 +166,8 @@ instance CacheableEdit PinaforeTableEdit where
                         ss'
     editCacheUpdate (PinaforeTableEditSetLiteral v mt) =
         subcacheModify LiteralPinaforeTableEditCacheKey $ do
-            subcacheModify GetPointCacheKey $ cacheModify (MkSimpleCacheKey v) $ Shapes.put $ Just mt
-            subcacheModify LookupPointCacheKey $
+            subcacheModify GetEntityCacheKey $ cacheModify (MkSimpleCacheKey v) $ Shapes.put $ Just mt
+            subcacheModify LookupEntityCacheKey $
                 cacheTraverse $ \(MkSimpleCacheKey t') vv' ->
                     return $
                     Just $
@@ -177,26 +177,28 @@ instance CacheableEdit PinaforeTableEdit where
                         v
                         vv'
 
-pinaforeTablePointObject :: Object PinaforeTableEdit -> Object PinaforePointEdit
-pinaforeTablePointObject (MkObject objRun (tableRead :: MutableRead m PinaforeTableRead) tableMPush) = let
+pinaforeTableEntityObject :: Object PinaforeTableEdit -> Object PinaforeEntityEdit
+pinaforeTableEntityObject (MkObject objRun (tableRead :: MutableRead m PinaforeTableRead) tableMPush) = let
     tablePush :: [PinaforeTableEdit] -> m ()
     tablePush edits = pushOrFail "can't push table edit" $ tableMPush edits
-    objRead :: MutableRead m PinaforePointRead
-    objRead (PinaforePointReadGetPredicate prd subj) = do
+    objRead :: MutableRead m PinaforeEntityRead
+    objRead (PinaforeEntityReadGetPredicate prd subj) =
+        fmap maybeToKnow $ tableRead $ PinaforeTableReadGetPredicate prd subj
+    objRead (PinaforeEntityReadGetProperty prd subj) = do
         mval <- tableRead $ PinaforeTableReadGetPredicate prd subj
         case mval of
             Just val -> return val
             Nothing -> do
-                val <- newPoint
+                val <- newEntity
                 tablePush [PinaforeTableEditSetPredicate prd subj $ Just val]
                 return val
-    objRead (PinaforePointReadLookupPredicate prd val) = tableRead $ PinaforeTableReadLookupPredicate prd val
-    objRead (PinaforePointReadToLiteral p) = do
+    objRead (PinaforeEntityReadLookupPredicate prd val) = tableRead $ PinaforeTableReadLookupPredicate prd val
+    objRead (PinaforeEntityReadToLiteral p) = do
         ml <- tableRead $ PinaforeTableReadGetLiteral p
         return $ maybeToKnow ml
-    objEdit :: [PinaforePointEdit] -> m (Maybe (m ()))
+    objEdit :: [PinaforeEntityEdit] -> m (Maybe (m ()))
     objEdit =
         singleAlwaysEdit $ \case
-            PinaforePointEditSetPredicate p s kv -> tablePush [PinaforeTableEditSetPredicate p s $ knowToMaybe kv]
-            PinaforePointEditSetLiteral p kl -> tablePush [PinaforeTableEditSetLiteral p $ knowToMaybe kl]
+            PinaforeEntityEditSetPredicate p s kv -> tablePush [PinaforeTableEditSetPredicate p s $ knowToMaybe kv]
+            PinaforeEntityEditSetLiteral p kl -> tablePush [PinaforeTableEditSetLiteral p $ knowToMaybe kl]
     in MkObject {..}

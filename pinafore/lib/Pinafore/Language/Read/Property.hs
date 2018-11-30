@@ -13,14 +13,14 @@ import Pinafore.Language.Type
 import Shapes hiding (try)
 
 readProperty ::
-       forall baseedit. HasPinaforePointEdit baseedit
+       forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (PinaforeTypeCheck (QExpr baseedit))
 readProperty = do
     readThis TokProperty
     readThis TokAt
-    ceta <- readEntityType
+    ceta <- readEntityType3
     readThis TokAt
-    cetb <- readEntityType
+    cetb <- readEntityType3
     uuid <- readThis TokAnchor
     return $ do
         MkAnyW eta <- ceta
@@ -37,8 +37,7 @@ readProperty = do
                                mkTypeF $
                                GroundPinaforeSingularType MorphismPinaforeGroundType $
                                ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
-                           morphism =
-                               propertyMorphism (entityPointAdapter eta) (entityPointAdapter etb) (MkPredicate uuid)
+                           morphism = propertyMorphism (entityAdapter eta) (entityAdapter etb) (MkPredicate uuid)
                            pinamorphism = MkPinaforeMorphism pra prb morphism
                            anyval = toTypeFAnyValue typef pinamorphism
                            in return $ qConstExprAny anyval

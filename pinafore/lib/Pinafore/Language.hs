@@ -29,7 +29,7 @@ import Shapes
 import System.IO.Error
 
 parseValue ::
-       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => String
     -> Text
     -> Result Text (QValue baseedit)
@@ -42,7 +42,7 @@ parseValue name text = do
     qEvalExpr rexpr
 
 parseValueAtType ::
-       forall baseedit t. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit, FromPinaforeType baseedit t)
+       forall baseedit t. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, FromPinaforeType baseedit t)
     => String
     -> Text
     -> Result Text t
@@ -79,7 +79,7 @@ showPinaforeValue (ConsPinaforeType ts tt) v = joinf (showPinaforeSingularValue 
 type Interact baseedit = StateT (QExpr baseedit -> Result Text (QExpr baseedit)) IO
 
 interactEvalExpression ::
-       (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
+       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => PinaforeTypeCheck (QExpr baseedit)
     -> Interact baseedit (QValue baseedit)
 interactEvalExpression texpr = do
@@ -106,7 +106,7 @@ runValue val =
                         MkAnyValue t v -> liftIO $ putStrLn $ showPinaforeValue t v
 
 interactLoop ::
-       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => UnliftIO (PinaforeActionM baseedit)
     -> Interact baseedit ()
 interactLoop runAction = do
@@ -123,7 +123,7 @@ interactLoop runAction = do
                          case p of
                              LetInteractiveCommand bind ->
                                  modify $ \oldbind expr -> do
-                                     expr' <- runPinaforeTypeCheck $ bind expr
+                                     expr' <- runPinaforeTypeCheck $ bind $ return expr
                                      oldbind expr'
                              ExpressionInteractiveCommand texpr -> do
                                  val <- interactEvalExpression texpr
@@ -136,7 +136,7 @@ interactLoop runAction = do
             interactLoop runAction
 
 interact ::
-       forall baseedit. (HasPinaforePointEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => UnliftIO (PinaforeActionM baseedit)
     -> IO ()
 interact runAction = do

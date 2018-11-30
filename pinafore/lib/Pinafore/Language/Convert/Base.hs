@@ -281,12 +281,12 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType edit) t) =>
 
 --    LiteralPinaforeReference :: Range t pq -> PinaforeLensValue baseedit (WholeEdit (Maybe t)) -> PinaforeReference baseedit pq
 {-
-instance baseedit ~ edit => ToTypeF (PinaforeType baseedit) (PinaforeLensValue baseedit (WholeEdit Point)) where
+instance baseedit ~ edit => ToTypeF (PinaforeType baseedit) (PinaforeLensValue baseedit (WholeEdit Entity)) where
     toTypeF = contramap entityLensValuePinaforeReference toTypeF
 -}
 {-
 literalLensValuePinaforeReference :: AsLiteral t => PinaforeLensValue baseedit (WholeEdit (Maybe t)) -> PinaforeReference baseedit '( t,t)
-entityLensValuePinaforeReference :: PinaforeLensValue baseedit (WholeEdit Point) -> PinaforeReference baseedit '( NamedEntity name,NamedEntity name)
+entityLensValuePinaforeReference :: PinaforeLensValue baseedit (WholeEdit Entity) -> PinaforeReference baseedit '( NamedEntity name,NamedEntity name)
 -}
 -- PinaforeSet
 instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit) p, ToTypeF (PinaforeType baseedit) q) =>
@@ -401,19 +401,19 @@ instance KnownSymbol name => FromTypeF (PinaforeSingularType baseedit) (NamedEnt
 instance KnownSymbol name => FromTypeF (PinaforeType baseedit) (NamedEntity name) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
--- Point
-instance ToTypeF (PinaforeSingularType baseedit) Point where
+-- NewEntity
+instance ToTypeF (PinaforeSingularType baseedit) NewEntity where
     toTypeF =
-        mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType PointSimpleEntityType) NilDolanArguments
+        mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType NewSimpleEntityType) NilDolanArguments
 
-instance ToTypeF (PinaforeType baseedit) Point where
+instance ToTypeF (PinaforeType baseedit) NewEntity where
     toTypeF = singlePinaforeTypeF toTypeF
 
-instance FromTypeF (PinaforeSingularType baseedit) Point where
+instance FromTypeF (PinaforeSingularType baseedit) NewEntity where
     fromTypeF =
-        mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType PointSimpleEntityType) NilDolanArguments
+        mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType NewSimpleEntityType) NilDolanArguments
 
-instance FromTypeF (PinaforeType baseedit) Point where
+instance FromTypeF (PinaforeType baseedit) NewEntity where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- Literal

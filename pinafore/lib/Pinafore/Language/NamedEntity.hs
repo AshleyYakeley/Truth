@@ -4,8 +4,12 @@ import Pinafore.Base
 import Shapes
 
 newtype NamedEntity (name :: Symbol) = MkNamedEntity
-    { unNamedEntity :: Point
+    { unNamedEntity :: Entity
     } deriving (Eq)
 
-namedToEntity :: NamedEntity name -> Entity
-namedToEntity (MkNamedEntity p) = MkEntity p
+newtype NewEntity = MkNewEntity
+    { unNewEntity :: Entity
+    } deriving (Eq)
+
+newNamedEntity :: NewEntity -> NamedEntity name
+newNamedEntity (MkNewEntity e) = MkNamedEntity e
