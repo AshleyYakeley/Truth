@@ -69,8 +69,8 @@ instance Semigroup (KeyColumns tedit key) where
                  (lens1, func1) <- f1 k
                  (lens2, func2) <- f2 k
                  return $
-                     ( convertEditLens . pairJoinEditLenses lens1 lens2
-                     , convertEditFunction . pairJoinEditFunctions func1 func2)) $
+                     ( convertEditLens . pairCombineEditLenses lens1 lens2
+                     , convertEditFunction . pairCombineEditFunctions func1 func2)) $
         fmap (mapColumn $ \(x, y) -> (fst x, fst y)) c1 <> fmap (mapColumn $ \(x, y) -> (snd x, snd y)) c2
 
 instance Monoid (KeyColumns tedit key) where

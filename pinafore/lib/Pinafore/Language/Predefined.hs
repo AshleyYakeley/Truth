@@ -294,6 +294,7 @@ predefinitions =
                 pinaforeSetMeet @baseedit @A
               , mkDefEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
                 pinaforeSetJoin @baseedit @A
+              , mkDefEntry "setsum" "Sum of sets." $ pinaforeSetSum @baseedit @AP @AQ @BP @BQ
               , mkDefEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
               , mkDefEntry "membership" "Get the membership of a set." $ pinaforeSetMembership @baseedit
               , mkDefEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetSingle @baseedit @A

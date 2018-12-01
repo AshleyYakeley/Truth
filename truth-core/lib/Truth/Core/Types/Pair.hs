@@ -143,12 +143,12 @@ sndLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditFunct
                     return $ (fmap (MkTupleEdit SelectFirst) exs) ++ (fmap (MkTupleEdit SelectSecond) eas)
     in MkCloseUnlift unlift $ MkAnEditLens {..}
 
-pairJoinAnEditFunctions ::
+pairCombineAnEditFunctions ::
        forall t edita editb1 editb2. MonadTransUnlift t
     => AnEditFunction t edita editb1
     -> AnEditFunction t edita editb2
     -> AnEditFunction t edita (PairEdit editb1 editb2)
-pairJoinAnEditFunctions (MkAnEditFunction g1 u1) (MkAnEditFunction g2 u2) = let
+pairCombineAnEditFunctions (MkAnEditFunction g1 u1) (MkAnEditFunction g2 u2) = let
     g12 :: ReadFunctionT t (EditReader edita) (PairEditReader editb1 editb2)
     g12 mr (MkTupleEditReader SelectFirst rt) = g1 mr rt
     g12 mr (MkTupleEditReader SelectSecond rt) = g2 mr rt
@@ -163,21 +163,21 @@ pairJoinAnEditFunctions (MkAnEditFunction g1 u1) (MkAnEditFunction g2 u2) = let
             return $ fmap (MkTupleEdit SelectFirst) eb1s ++ fmap (MkTupleEdit SelectSecond) eb2s
     in MkAnEditFunction g12 u12
 
-pairJoinEditFunctions ::
+pairCombineEditFunctions ::
        forall edita editb1 editb2.
        EditFunction edita editb1
     -> EditFunction edita editb2
     -> EditFunction edita (PairEdit editb1 editb2)
-pairJoinEditFunctions = joinUnliftables pairJoinAnEditFunctions
+pairCombineEditFunctions = joinUnliftables pairCombineAnEditFunctions
 
-pairJoinEditLenses ::
+pairCombineEditLenses ::
        forall edita editb1 editb2.
        EditLens edita editb1
     -> EditLens edita editb2
     -> EditLens edita (PairEdit editb1 editb2)
-pairJoinEditLenses =
+pairCombineEditLenses =
     joinUnliftables $ \(MkAnEditLens af1 pe1 :: AnEditLens t edita editb1) (MkAnEditLens af2 pe2) -> let
-        af12 = pairJoinAnEditFunctions af1 af2
+        af12 = pairCombineAnEditFunctions af1 af2
         pe12 ::
                forall m. MonadIO m
             => [PairEdit editb1 editb2]

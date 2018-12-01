@@ -19,6 +19,13 @@ data FiniteSetReader subj t where
 -}
 type FiniteSetReader subj = KeyReader (FiniteSet subj) (WholeReader subj)
 
+{- equivalent to:
+data FiniteSetEdit subj where
+    KeyEditItem :: subj -> ConstEdit subj -> FiniteSetEdit subj
+    KeyDeleteItem :: subj -> FiniteSetEdit subj
+    KeyInsertReplaceItem :: subj -> FiniteSetEdit subj
+    KeyClear :: FiniteSetEdit subj
+-}
 type FiniteSetEdit subj = KeyEdit (FiniteSet subj) (ConstEdit subj)
 
 wholeFiniteSetReadFunction :: Eq subj => ReadFunction (WholeReader (FiniteSet subj)) (FiniteSetReader subj)

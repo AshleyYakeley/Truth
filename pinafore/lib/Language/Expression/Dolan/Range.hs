@@ -16,6 +16,13 @@ rangeContra (MkRange pt _) = pt
 identityRange :: Range t '( t, t)
 identityRange = MkRange id id
 
+pairRange :: Range a '( ap, aq) -> Range b '( bp, bq) -> Range (a, b) '( (ap, bp), (aq, bq))
+pairRange (MkRange pa aq) (MkRange pb bq) = MkRange (\(a, b) -> (pa a, pb b)) (\(a, b) -> (aq a, bq b))
+
+eitherRange :: Range a '( ap, aq) -> Range b '( bp, bq) -> Range (Either a b) '( Either ap bp, Either aq bq)
+eitherRange (MkRange pa aq) (MkRange pb bq) =
+    MkRange (either (Left . pa) (Right . pb)) (either (Left . aq) (Right . bq))
+
 coRange :: (t -> q) -> Range t '( BottomType, q)
 coRange tq = MkRange never tq
 
