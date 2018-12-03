@@ -1,0 +1,25 @@
+{
+    "name": "pinafore",
+    "displayName": "pinafore",
+    "description": "Pinafore Language",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.29.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "pinafore",
+            "aliases": ["Pinafore", "pinafore"],
+            "extensions": [".pinafore"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "pinafore",
+            "scopeName": "source.pinafore",
+            "path": "./syntaxes/pinafore.tmLanguage.json"
+        }]
+    }
+}
