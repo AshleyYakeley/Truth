@@ -212,6 +212,7 @@ readTypeConst ::
        forall baseedit mpolarity. Is MPolarity mpolarity
     => Parser (PinaforeTypeCheck (PinaforeTypeM baseedit mpolarity))
 readTypeConst = do
+    spos <- getPosition
     n <- readTypeName
     case n of
         "Any" ->
@@ -249,7 +250,8 @@ readTypeConst = do
         _
             | Just (MkAnyW lt) <- nameToLiteralType n -> return $ return $ toMPolar $ MkAnyW $ literalPinaforeType lt
         _ ->
-            return $ do
+            return $
+            runSourcePos spos $ do
                 nt <- lookupNamedType n
                 case nt of
                     EntityNamedType (MkAnyW sw) ->
@@ -290,7 +292,7 @@ readEntityType3 = do
 
 parseType ::
        forall baseedit polarity. IsTypePolarity polarity
-    => SourceName
+    => SourcePos
     -> Text
     -> Result Text (PinaforeTypeCheck (AnyW (PinaforeType baseedit polarity)))
 parseType =

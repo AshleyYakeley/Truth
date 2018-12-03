@@ -41,5 +41,9 @@ readInteractiveCommand =
     (fmap LetInteractiveCommand readTopLetBindings)
 
 parseInteractiveCommand ::
-       HasPinaforeEntityEdit baseedit => SourceName -> Text -> Result Text (InteractiveCommand baseedit)
-parseInteractiveCommand = parseReader readInteractiveCommand
+       HasPinaforeEntityEdit baseedit => SourcePos -> Text -> Result Text (SourcePos, InteractiveCommand baseedit)
+parseInteractiveCommand =
+    parseReader $ do
+        spos <- getPosition
+        ic <- readInteractiveCommand
+        return (spos, ic)

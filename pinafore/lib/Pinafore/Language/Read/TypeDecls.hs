@@ -4,7 +4,7 @@ import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
-import Pinafore.Language.Type
+import Pinafore.Language.TypeContext
 import Shapes hiding (try)
 
 newtype TypeDecls baseedit =
@@ -19,17 +19,21 @@ instance Monoid (TypeDecls baseedit) where
 
 readEntityDeclaration :: Parser (TypeDecls baseedit)
 readEntityDeclaration = do
+    spos <- getPosition
     readThis TokEntity
     n <- readTypeName
-    return $ MkTypeDecls $ remonadRefNotation $ withNewTypeName n $ EntityNamedType $ toSymbolWitness (unpack n) MkAnyW
+    return $
+        MkTypeDecls $
+        remonadRefNotation $ mapSourcePos spos $ withNewTypeName n $ EntityNamedType $ toSymbolWitness (unpack n) MkAnyW
 
 readSubtypeDeclaration :: Parser (TypeDecls baseedit)
 readSubtypeDeclaration = do
+    spos <- getPosition
     readThis TokSubtype
     na <- readTypeName
     readExactlyThis TokOperator "<="
     nb <- readTypeName
-    return $ MkTypeDecls $ remonadRefNotation $ withEntitySubtype (na, nb)
+    return $ MkTypeDecls $ remonadRefNotation $ mapSourcePos spos $ withEntitySubtype (na, nb)
 
 readTypeDeclaration :: Parser (TypeDecls baseedit)
 readTypeDeclaration = readEntityDeclaration <|> readSubtypeDeclaration

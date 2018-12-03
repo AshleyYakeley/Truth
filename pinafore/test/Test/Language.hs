@@ -160,7 +160,7 @@ testQueryValues = testGroup "query values" []
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
     testCase (unpack query) $
-    case (expected, parseValue @PinaforeEdit "<input>" query) of
+    case (expected, parseValue @PinaforeEdit (initialPos "<input>") query) of
         (Nothing, FailureResult _) -> return ()
         (Nothing, SuccessResult (MkAnyValue t v)) ->
             assertFailure $ "expected failure, found success: " ++ showPinaforeValue t v

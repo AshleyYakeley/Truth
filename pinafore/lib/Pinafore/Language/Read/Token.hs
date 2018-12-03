@@ -250,13 +250,16 @@ readToken = do
     readWS
     return (pos, t)
 
-readTokens :: Parser [(SourcePos, AnyValue Token)]
-readTokens = do
+readTokens :: SourcePos -> Parser [(SourcePos, AnyValue Token)]
+readTokens spos = do
+    setPosition spos
     readWS
-    many readToken
+    toks <- many readToken
+    eof
+    return toks
 
-parseTokens :: SourceName -> Text -> Result Text [(SourcePos, AnyValue Token)]
-parseTokens name text =
-    case parse readTokens name (unpack text) of
+parseTokens :: SourcePos -> Text -> Result Text [(SourcePos, AnyValue Token)]
+parseTokens spos text =
+    case parse (readTokens spos) (sourceName spos) (unpack text) of
         Right a -> return a
         Left e -> fail $ show e

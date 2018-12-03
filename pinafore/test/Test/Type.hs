@@ -25,14 +25,14 @@ showVars (OpenExpression (MkNameWitness name t) expr) = (show name <> " :: " <> 
 showTypes :: PExpression -> String
 showTypes (MkSealedExpression t expr) = "{" <> intercalate ", " (showVars expr) <> "} -> " <> show t
 
-exprTypeTest :: String -> Result Text String -> PinaforeTypeCheck PExpression -> TestTree
+exprTypeTest :: String -> Result Text String -> SourcePinaforeTypeCheck PExpression -> TestTree
 exprTypeTest name expected mexpr =
     testCase name $
     assertEqual "" expected $ do
-        expr <- runPinaforeTypeCheck mexpr
+        expr <- runSourcePinaforeTypeCheck (initialPos "<input>") mexpr
         return $ showTypes expr
 
-apExpr :: PExpression -> PExpression -> PinaforeTypeCheck PExpression
+apExpr :: PExpression -> PExpression -> SourcePinaforeTypeCheck PExpression
 apExpr = applyTypedExpression @TS
 
 idExpr :: PExpression
@@ -83,7 +83,7 @@ listNumBoolFuncExpr = typeFConstExpression toTypeF $ \(_ :: [Number]) -> [True]
 listBoolNumFuncExpr :: PExpression
 listBoolNumFuncExpr = typeFConstExpression toTypeF $ \(_ :: [Bool]) -> [2 :: Number]
 
-joinExpr :: PExpression -> PExpression -> PinaforeTypeCheck PExpression
+joinExpr :: PExpression -> PExpression -> SourcePinaforeTypeCheck PExpression
 joinExpr exp1 exp2 = do
     je <- apExpr ifelseExpr boolExpr
     e <- apExpr je exp1
@@ -100,7 +100,8 @@ testType =
         , exprTypeTest "var" (return "{v :: a} -> a") $ return varExpr
         , exprTypeTest "apply id number" (return "{} -> Number") $ apExpr idExpr numExpr
         , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
-        , exprTypeTest "apply nb boolean" (fail "cannot convert Boolean to Number") $ apExpr nbFuncExpr boolExpr
+        , exprTypeTest "apply nb boolean" (fail "\"<input>\" (line 1, column 1): cannot convert Boolean to Number") $
+          apExpr nbFuncExpr boolExpr
         , exprTypeTest "apply id var" (return "{v :: c} -> c") $ apExpr idExpr varExpr
         , exprTypeTest "apply nb var" (return "{v :: Number} -> Boolean") $ apExpr nbFuncExpr varExpr
         , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr

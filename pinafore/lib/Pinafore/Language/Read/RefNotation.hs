@@ -57,17 +57,18 @@ aprefExpr =
     qConstExpr
         ((<*>) :: PinaforeImmutableReference baseedit (A -> B) -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit B)
 
-aplist :: QExpr baseedit -> [QExpr baseedit] -> PinaforeTypeCheck (QExpr baseedit)
+aplist :: QExpr baseedit -> [QExpr baseedit] -> SourcePinaforeTypeCheck (QExpr baseedit)
 aplist expr [] = return expr
 aplist expr (arg:args) = do
     expr' <- qApplyAllExpr aprefExpr [expr, arg]
     aplist expr' args
 
-refNotationQuote :: RefExpression baseedit -> RefExpression baseedit
-refNotationQuote rexpr =
+refNotationQuote :: SourcePos -> RefExpression baseedit -> RefExpression baseedit
+refNotationQuote spos rexpr =
     lift $ do
         (expr, binds) <- runWriterT rexpr
-        lift $ do
-            aexpr <- qAbstractsExpr (fmap fst binds) expr
-            raexpr <- qApplyExpr purerefExpr aexpr
-            aplist raexpr $ fmap snd binds
+        lift $
+            runSourcePos spos $ do
+                aexpr <- qAbstractsExpr (fmap fst binds) expr
+                raexpr <- qApplyExpr purerefExpr aexpr
+                aplist raexpr $ fmap snd binds

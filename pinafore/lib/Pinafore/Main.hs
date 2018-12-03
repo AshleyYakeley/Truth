@@ -83,7 +83,7 @@ sqlitePinaforeDumpTable dirpath = do
 
 pinaforeInterpretFile :: PinaforeContext -> FilePath -> Text -> IO (IO ())
 pinaforeInterpretFile (MkPinaforeContext runAction) puipath puitext = do
-    action :: FilePinaforeType <- resultTextToM $ parseValueAtType @PinaforeEdit puipath puitext
+    action :: FilePinaforeType <- resultTextToM $ parseValueAtType @PinaforeEdit (initialPos puipath) puitext
     return $ runUnliftIO runAction action
 
 pinaforeInteract :: PinaforeContext -> IO ()

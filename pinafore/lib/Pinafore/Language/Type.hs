@@ -117,9 +117,9 @@ data BisubstitutionWitness baseedit t where
 type PinaforeUnifier baseedit = Expression (BisubstitutionWitness baseedit)
 
 type PinaforeFullUnifier baseedit
-     = Compose (VarRenamer (PinaforeTypeSystem baseedit) PinaforeTypeCheck) (PinaforeUnifier baseedit)
+     = Compose (VarRenamer (PinaforeTypeSystem baseedit) SourcePinaforeTypeCheck) (PinaforeUnifier baseedit)
 
-unifierLiftTypeCheck :: PinaforeTypeCheck a -> PinaforeFullUnifier baseedit a
+unifierLiftTypeCheck :: SourcePinaforeTypeCheck a -> PinaforeFullUnifier baseedit a
 unifierLiftTypeCheck tca = Compose $ fmap pure $ lift tca
 
 joinPinaforeTypes ::
@@ -454,7 +454,7 @@ bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) 
 runUnifier ::
        forall baseedit a.
        PinaforeUnifier baseedit a
-    -> VarRenamer (PinaforeTypeSystem baseedit) PinaforeTypeCheck (a, [PinaforeBisubstitution baseedit])
+    -> VarRenamer (PinaforeTypeSystem baseedit) SourcePinaforeTypeCheck (a, [PinaforeBisubstitution baseedit])
 runUnifier (ClosedExpression a) = return (a, [])
 runUnifier (OpenExpression (PositiveBisubstitutionWitness vn tp) _)
     | occursInSingularType vn tp = fail $ "can't construct recursive type " <> show vn <> " = " <> unpack (exprShow tp)
@@ -510,7 +510,7 @@ bisubstituteAllNegativeType (sub:subs) t =
         MkTypeF t' conv -> fmap conv $ bisubstituteAllNegativeType subs t'
 
 instance Unifier (PinaforeUnifier baseedit) where
-    type UnifierMonad (PinaforeUnifier baseedit) = VarRenamer (PinaforeTypeSystem baseedit) PinaforeTypeCheck
+    type UnifierMonad (PinaforeUnifier baseedit) = VarRenamer (PinaforeTypeSystem baseedit) SourcePinaforeTypeCheck
     type UnifierNegWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'NegativePolarity
     type UnifierPosWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'PositivePolarity
     type UnifierSubstitutions (PinaforeUnifier baseedit) = [PinaforeBisubstitution baseedit]
@@ -606,7 +606,7 @@ instance TypeSystem (PinaforeTypeSystem baseedit) where
     type TypeUnifier (PinaforeTypeSystem baseedit) = PinaforeUnifier baseedit
     type NegWitness (PinaforeTypeSystem baseedit) = PinaforeType baseedit 'NegativePolarity
     type PosWitness (PinaforeTypeSystem baseedit) = PinaforeType baseedit 'PositivePolarity
-    type TypeCheck (PinaforeTypeSystem baseedit) = PinaforeTypeCheck
+    type TypeCheck (PinaforeTypeSystem baseedit) = SourcePinaforeTypeCheck
     typeSystemFunctionPosWitness ta tb =
         unTypeF $
         singlePinaforeTypeF $

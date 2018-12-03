@@ -1,11 +1,13 @@
 module Pinafore.Test
     ( parseType
     , runPinaforeTypeCheck
+    , runSourcePinaforeTypeCheck
     , PinaforeTypeSystem
     , Name
     , UVar
     , PinaforeType
     , PinaforeTypeCheck
+    , SourcePinaforeTypeCheck
     , toTypeF
     , module Pinafore.Test
     ) where

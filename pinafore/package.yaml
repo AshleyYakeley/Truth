@@ -94,6 +94,8 @@ library:
       - Pinafore.Storage.Database.SQLite
       - Pinafore.Storage.File
 
+extra-source-files: examples/*
+
 tests:
     test:
         source-dirs: test
@@ -122,6 +124,7 @@ tests:
           - Test.Entity
           - Test.Type
           - Test.ReadType
+          - Test.Examples
 
 benchmarks:
     benchmark:

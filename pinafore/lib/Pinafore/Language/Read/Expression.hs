@@ -39,6 +39,7 @@ typeDeclarations td = MkDeclarations td $ return mempty
 
 readBinding :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
 readBinding = do
+    spos <- getPosition
     name <- readThis TokName
     args <- many readPattern
     readThis TokAssign
@@ -46,7 +47,7 @@ readBinding = do
     return $
         MkDeclarations mempty $ do
             val <- rval
-            expr <- liftRefNotation $ qAbstractsExpr args val
+            expr <- liftRefNotation $ runSourcePos spos $ qAbstractsExpr args val
             return $ qBindExpr name expr
 
 readDeclaration :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
@@ -65,6 +66,7 @@ readDeclarations =
 
 readLetBindings :: HasPinaforeEntityEdit baseedit => Parser (RefExpression baseedit -> RefExpression baseedit)
 readLetBindings = do
+    spos <- getPosition
     readThis TokLet
     MkDeclarations (MkTypeDecls td) rbl <- readDeclarations
     return $ \mexpr ->
@@ -72,7 +74,7 @@ readLetBindings = do
             expr <- td mexpr
             bl <- rbl
             f <- qBindingsLetExpr bl
-            liftRefNotation $ f expr
+            liftRefNotation $ runSourcePos spos $ f expr
 
 readTopLetBindings ::
        HasPinaforeEntityEdit baseedit
@@ -91,19 +93,21 @@ readExpression1 ::
     => Parser (RefExpression baseedit)
 readExpression1 =
     (do
+         spos <- getPosition
          readThis TokLambda
          args <- many readPattern
          readThis TokMap
          mval <- readExpression
          return $ do
              val <- mval
-             liftRefNotation $ qAbstractsExpr args val) <|>
+             liftRefNotation $ runSourcePos spos $ qAbstractsExpr args val) <|>
     (do
          bmap <- readLetBindings
          readThis TokIn
          mbody <- readExpression
          return $ bmap mbody) <|>
     (do
+         spos <- getPosition
          readThis TokIf
          metest <- readExpression
          readThis TokThen
@@ -114,17 +118,18 @@ readExpression1 =
              etest <- metest
              ethen <- methen
              eelse <- meelse
-             liftRefNotation $ qApplyAllExpr (qConstExpr qifthenelse) [etest, ethen, eelse]) <|>
+             liftRefNotation $ runSourcePos spos $ qApplyAllExpr (qConstExpr qifthenelse) [etest, ethen, eelse]) <|>
     readExpression2
 
 readExpression2 :: HasPinaforeEntityEdit baseedit => Parser (RefExpression baseedit)
 readExpression2 = do
+    spos <- getPosition
     te1 <- readExpression3
     targs <- many readExpression3
     return $ do
         e1 <- te1
         args <- sequence targs
-        liftRefNotation $ qApplyAllExpr e1 args
+        liftRefNotation $ runSourcePos spos $ qApplyAllExpr e1 args
 
 makePoint :: MonadFail m => PinaforeType baseedit 'PositivePolarity t -> Entity -> m t
 makePoint (ConsPinaforeType (GroundPinaforeSingularType (SimpleEntityPinaforeGroundType t) NilDolanArguments) NilPinaforeType) p =
@@ -151,10 +156,13 @@ readExpression3 =
     (do
          str <- readThis TokString
          return $ return $ qConstExpr str) <|>
-    fmap liftRefNotation readProperty <|>
     (do
+         mprop <- readProperty
+         return $ liftRefNotation mprop) <|>
+    (do
+         spos <- getPosition
          rexpr <- readBracketed TokOpenBrace TokCloseBrace $ readExpression
-         return $ refNotationQuote rexpr) <|>
+         return $ refNotationQuote spos rexpr) <|>
     (do
          readThis TokUnref
          rexpr <- readExpression3
@@ -174,6 +182,7 @@ readExpression3 =
           name <- readThis TokOperator
           return $ return $ qVarExpr name) <|>
      (do
+          spos <- getPosition
           ce1 <- readExpression
           mce2 <-
               optional $ do
@@ -185,9 +194,11 @@ readExpression3 =
                       e1 <- ce1
                       e2 <- ce2
                       liftRefNotation $
+                          runSourcePos spos $
                           qApplyAllExpr (qConstExpr ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))) [e1, e2]
               Nothing -> return ce1)) <|>
     (do
+         spos <- getPosition
          mexprs <-
              readBracketed TokOpenBracket TokCloseBracket $
              (do
@@ -200,7 +211,7 @@ readExpression3 =
              return []
          return $ do
              exprs <- sequence mexprs
-             liftRefNotation $ qSequenceExpr exprs) <?>
+             liftRefNotation $ runSourcePos spos $ qSequenceExpr exprs) <?>
     "expression"
 
 readTopExpression ::

@@ -1,15 +1,21 @@
-module Pinafore.Language.Read.Parser where
+module Pinafore.Language.Read.Parser
+    ( module Pinafore.Language.Read.Parser
+    , SourcePos
+    , initialPos
+    , getPosition
+    ) where
 
 import Pinafore.Language.Read.Token
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
+import Text.Parsec.Pos (initialPos)
 
 type Parser = Parsec [(SourcePos, AnyValue Token)] ()
 
-parseReader :: Parser t -> SourceName -> Text -> Result Text t
-parseReader parser name text = do
-    toks <- parseTokens name text
-    case parse parser name toks of
+parseReader :: Parser t -> SourcePos -> Text -> Result Text t
+parseReader parser spos text = do
+    toks <- parseTokens spos text
+    case parse parser (sourceName spos) toks of
         Right a -> return a
         Left e -> fail $ show e
 

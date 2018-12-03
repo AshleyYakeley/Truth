@@ -8,6 +8,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.Read.Token
+import Pinafore.Language.TypeContext
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
@@ -65,18 +66,26 @@ readInfix prec =
             else empty
 
 leftApply ::
-       HasPinaforeEntityEdit baseedit => QExpr baseedit -> [(QExpr baseedit, QExpr baseedit)] -> RefExpression baseedit
-leftApply e1 [] = return e1
-leftApply e1 ((f, e2):rest) = do
-    ee <- liftRefNotation $ qApplyAllExpr f [e1, e2]
-    leftApply ee rest
+       HasPinaforeEntityEdit baseedit
+    => SourcePos
+    -> QExpr baseedit
+    -> [(QExpr baseedit, QExpr baseedit)]
+    -> RefExpression baseedit
+leftApply _ e1 [] = return e1
+leftApply spos e1 ((f, e2):rest) = do
+    ee <- liftRefNotation $ runSourcePos spos $ qApplyAllExpr f [e1, e2]
+    leftApply spos ee rest
 
 rightApply ::
-       HasPinaforeEntityEdit baseedit => QExpr baseedit -> [(QExpr baseedit, QExpr baseedit)] -> RefExpression baseedit
-rightApply e1 [] = return e1
-rightApply e1 ((f, e2):rest) = do
-    ee <- rightApply e2 rest
-    liftRefNotation $ qApplyAllExpr f [e1, ee]
+       HasPinaforeEntityEdit baseedit
+    => SourcePos
+    -> QExpr baseedit
+    -> [(QExpr baseedit, QExpr baseedit)]
+    -> RefExpression baseedit
+rightApply _ e1 [] = return e1
+rightApply spos e1 ((f, e2):rest) = do
+    ee <- rightApply spos e2 rest
+    liftRefNotation $ runSourcePos spos $ qApplyAllExpr f [e1, ee]
 
 readInfixedExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -85,6 +94,7 @@ readInfixedExpression ::
     -> Parser (RefExpression baseedit)
 readInfixedExpression pe 10 = pe
 readInfixedExpression pe prec = do
+    spos <- getPosition
     te1 <- readInfixedExpression pe (succ prec)
     rest <-
         many $ do
@@ -97,7 +107,7 @@ readInfixedExpression pe prec = do
             return $ do
                 e1 <- te1
                 e2 <- te2
-                liftRefNotation $ qApplyAllExpr (qVarExpr name) [e1, e2]
+                liftRefNotation $ runSourcePos spos $ qApplyAllExpr (qVarExpr name) [e1, e2]
         _
             | all (\(assoc, _, _) -> assoc == AssocLeft) rest ->
                 return $ do
@@ -106,7 +116,7 @@ readInfixedExpression pe prec = do
                         for rest $ \(_, name, te2) -> do
                             e2 <- te2
                             return (qVarExpr name, e2)
-                    leftApply e1 pairs
+                    leftApply spos e1 pairs
         _
             | all (\(assoc, _, _) -> assoc == AssocRight) rest ->
                 return $ do
@@ -115,7 +125,7 @@ readInfixedExpression pe prec = do
                         for rest $ \(_, name, te2) -> do
                             e2 <- te2
                             return (qVarExpr name, e2)
-                    rightApply e1 pairs
+                    rightApply spos e1 pairs
         _ -> parserFail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(_, name, _) -> show name) rest)
 
 readExpressionInfixed ::
