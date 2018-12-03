@@ -33,8 +33,8 @@ pinaforeActionRequest wit =
 
 type PinaforeAction baseedit = PinaforeActionM baseedit ()
 
-pinaforeGeneratePoint :: PinaforeActionM baseedit Entity
-pinaforeGeneratePoint = liftIO $ newKeyContainerItem @(FiniteSet Entity)
+pinaforeNewEntity :: PinaforeActionM baseedit Entity
+pinaforeNewEntity = liftIO $ newKeyContainerItem @(FiniteSet Entity)
 
 pinaforeListFor :: [a] -> (a -> PinaforeAction baseedit) -> PinaforeAction baseedit
 pinaforeListFor = for_

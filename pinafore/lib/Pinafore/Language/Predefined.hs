@@ -13,6 +13,7 @@ import Pinafore.Language.Doc
 import Pinafore.Language.Expression
 import Pinafore.Language.Morphism
 import Pinafore.Language.Name
+import Pinafore.Language.NamedEntity
 import Pinafore.Language.Order
 import Pinafore.Language.Reference
 import Pinafore.Language.Set
@@ -57,12 +58,12 @@ clearText = funcEditFunction (fromKnow mempty)
 
 newentity ::
        forall baseedit.
-       PinaforeSet baseedit '( Entity, TopType)
-    -> (Entity -> PinaforeAction baseedit)
+       PinaforeSet baseedit '( NewEntity, TopType)
+    -> (NewEntity -> PinaforeAction baseedit)
     -> PinaforeAction baseedit
 newentity set continue = do
-    point <- pinaforeSetAddNew set
-    continue point
+    e <- pinaforeSetAddNew set
+    continue e
 
 setentity :: forall baseedit. PinaforeReference baseedit '( A, TopType) -> A -> PinaforeAction baseedit
 setentity ref val = setPinaforeReference ref (Known val)
@@ -102,14 +103,14 @@ file_import set continue = do
 file_size :: Object ByteStringEdit -> IO Int64
 file_size MkObject {..} = runUnliftIO objRun $ objRead ReadByteStringLength
 -}
-withSelection :: (Entity -> PinaforeAction baseedit) -> PinaforeAction baseedit
+withSelection :: (NewEntity -> PinaforeAction baseedit) -> PinaforeAction baseedit
 withSelection cont = do
     mselection <- pinaforeLiftView viewGetSelection
     case mselection of
         Nothing -> return ()
         Just MkObject {..} -> do
-            point <- liftIO $ runUnliftIO objRun $ objRead ReadWhole
-            cont point
+            e <- liftIO $ runUnliftIO objRun $ objRead ReadWhole
+            cont $ MkNewEntity e
 
 ui_table ::
        forall baseedit. HasPinaforeEntityEdit baseedit

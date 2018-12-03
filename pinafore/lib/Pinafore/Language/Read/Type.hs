@@ -267,7 +267,7 @@ nameToLiteralType :: Name -> Maybe (AnyW LiteralType)
 nameToLiteralType "Literal" = Just $ MkAnyW LiteralLiteralType
 nameToLiteralType "Text" = Just $ MkAnyW TextLiteralType
 nameToLiteralType "Number" = Just $ MkAnyW NumberLiteralType
-nameToLiteralType "Bool" = Just $ MkAnyW BooleanLiteralType
+nameToLiteralType "Boolean" = Just $ MkAnyW BooleanLiteralType
 nameToLiteralType _ = Nothing
 
 readTypeName :: Parser Name
