@@ -38,6 +38,7 @@ operatorFixity "+" = MkFixity AssocLeft 7
 operatorFixity "-" = MkFixity AssocLeft 7
 operatorFixity "\\/" = MkFixity AssocLeft 7
 operatorFixity "??" = MkFixity AssocLeft 7
+operatorFixity ":" = MkFixity AssocRight 6
 operatorFixity "++" = MkFixity AssocRight 6
 operatorFixity "==" = MkFixity AssocNone 5
 operatorFixity "/=" = MkFixity AssocNone 5

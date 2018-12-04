@@ -25,7 +25,7 @@ testReadTypes =
     testGroup
         "read type"
         [ testReadType "()"
-        , testReadType "Bool"
+        , testReadType "Boolean"
         , testReadType "Literal"
         , testReadType "Entity"
         , testReadType "NewEntity"

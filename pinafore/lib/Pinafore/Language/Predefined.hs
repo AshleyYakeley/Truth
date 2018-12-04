@@ -244,11 +244,21 @@ predefinitions =
               , mkDefEntry "either" "Eliminate an Either" $ either @A @C @B
               ]
         , docTreeEntry
+              "Lists"
+              ""
+              [ mkDefEntry ":" "Construct a list" $ (:) @A
+              , mkDefEntry "list" "Eliminate an list" $ \(fnil :: B) fcons (l :: [A]) ->
+                    case l of
+                        [] -> fnil
+                        (a:aa) -> fcons a aa
+              ]
+        , docTreeEntry
               "Functions"
               ""
               [ mkDefEntry "id" "The identity function." $ id @(->) @A
               , mkDefEntry "$" "Apply a function to a value." $ id @(->) @(A -> B)
               , mkDefEntry "." "Compose functions." $ (.) @(->) @A @B @C
+              , mkDefEntry "error" "Error." $ ((\t -> error (unpack t)) :: Text -> BottomType)
               ]
         , docTreeEntry
               "References"
