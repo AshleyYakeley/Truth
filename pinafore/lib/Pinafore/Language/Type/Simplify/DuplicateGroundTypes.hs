@@ -1,5 +1,5 @@
 module Pinafore.Language.Type.Simplify.DuplicateGroundTypes
-    ( mergeDuplicateGroundTypesExpression
+    ( mergeDuplicateGroundTypesInTypes
     ) where
 
 import Language.Expression.Dolan
@@ -108,5 +108,5 @@ mergeDuplicatesInTypes ta tb =
         Left Refl -> chainTypeF mergeDuplicatesInType $ joinPinaforeTypeF (mkTypeF ta) (mkTypeF tb)
         Right Refl -> chainTypeF mergeDuplicatesInType $ meetPinaforeTypeF (mkTypeF ta) (mkTypeF tb)
 
-mergeDuplicateGroundTypesExpression :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
-mergeDuplicateGroundTypesExpression = mapSealedExpressionTypes mergeDuplicatesInType mergeDuplicatesInType
+mergeDuplicateGroundTypesInTypes :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+mergeDuplicateGroundTypesInTypes = mapSealedExpressionTypes mergeDuplicatesInType mergeDuplicatesInType

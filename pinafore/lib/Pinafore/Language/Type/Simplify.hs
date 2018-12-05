@@ -3,27 +3,34 @@ module Pinafore.Language.Type.Simplify
     ) where
 
 import Pinafore.Language.Type.Simplify.DuplicateGroundTypes
+import Pinafore.Language.Type.Simplify.DuplicateTypeVars
 import Pinafore.Language.Type.Simplify.OneSidedTypeVars
+import Pinafore.Language.Type.Simplify.SharedTypeVars
 import Pinafore.Language.Type.Type
 import Shapes
 
 -- Simplification:
 -- 1. merge duplicate ground types in join/meet (on each type)
+-- e.g. "[a]|[b]" => "[a|b]"
+--
 -- 2. eliminate one-sided type vars (on whole expression)
+-- Type vars are one-sided if they appear only in positive position, or only in negative position.
+-- e.g. "a -> [b]" => "Any -> [None]"
+--
 -- 3. merge shared type vars (on whole expression)
+-- Two type variables are shared, if they always appear together (join/meet) in the positive positions, or in the negative positions.
+-- e.g. "a -> b -> a|b" => "a -> a -> a|a"
+--
 -- 4. merge duplicate type vars in join/meet (on each type)
+-- e.g. "a|a" => "a"
+--
 -- 5. merge free (term) variables with subtypes
+-- e.g. "{v::a,v::a} => b" => "{v::a} => b"
 pinaforeSimplifyExpressionType :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
 pinaforeSimplifyExpressionType =
-    mergeFreeTermVars .
-    mergeDuplicateTypeVarsExpression .
-    mergeSharedTypeVars . eliminateOneSidedTypeVars . mergeDuplicateGroundTypesExpression
+    mergeFreeExpressionTermVars .
+    mergeDuplicateTypeVarsInTypes .
+    mergeSharedTypeVarsInExpression . eliminateOneSidedTypeVarsInExpression . mergeDuplicateGroundTypesInTypes
 
-mergeSharedTypeVars :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
-mergeSharedTypeVars expr = expr
-
-mergeDuplicateTypeVarsExpression :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
-mergeDuplicateTypeVarsExpression expr = expr
-
-mergeFreeTermVars :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
-mergeFreeTermVars expr = expr
+mergeFreeExpressionTermVars :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+mergeFreeExpressionTermVars expr = expr

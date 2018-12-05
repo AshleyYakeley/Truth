@@ -1,5 +1,5 @@
 module Pinafore.Language.Type.Simplify.OneSidedTypeVars
-    ( eliminateOneSidedTypeVars
+    ( eliminateOneSidedTypeVarsInExpression
     ) where
 
 import Language.Expression.Dolan
@@ -61,8 +61,9 @@ bisubstitutesSealedExpression (sub:subs) expr =
     bisubstitutesSealedExpression subs $
     mapSealedExpressionTypes (bisubstitutePositiveType sub) (bisubstituteNegativeType sub) expr
 
-eliminateOneSidedTypeVars :: forall baseedit name. PinaforeExpression baseedit name -> PinaforeExpression baseedit name
-eliminateOneSidedTypeVars expr = let
+eliminateOneSidedTypeVarsInExpression ::
+       forall baseedit name. PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+eliminateOneSidedTypeVarsInExpression expr = let
     (setFromList -> posvars, setFromList -> negvars) = getExpressionVars expr
     posonlyvars :: FiniteSet _
     posonlyvars = difference posvars negvars

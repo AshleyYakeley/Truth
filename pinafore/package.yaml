@@ -77,6 +77,8 @@ library:
       - Pinafore.Language.Type.Rename
       - Pinafore.Language.Type.Simplify.OneSidedTypeVars
       - Pinafore.Language.Type.Simplify.DuplicateGroundTypes
+      - Pinafore.Language.Type.Simplify.SharedTypeVars
+      - Pinafore.Language.Type.Simplify.DuplicateTypeVars
       - Pinafore.Language.Type.Simplify
       - Pinafore.Language.Type.Unify
       - Pinafore.Language.Type
