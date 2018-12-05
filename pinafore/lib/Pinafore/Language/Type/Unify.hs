@@ -346,6 +346,13 @@ bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) 
                 uval' <- getCompose $ bisubstituteUnifier bisub uval
                 return $ bisubstituteNegativeVar vn tp' $ fmap (\ca pv -> ca $ (conv . pv)) uval'
 
+bisubstitutesSealedExpression ::
+       [PinaforeBisubstitution baseedit] -> PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+bisubstitutesSealedExpression [] expr = expr
+bisubstitutesSealedExpression (sub:subs) expr =
+    bisubstitutesSealedExpression subs $
+    mapSealedExpressionTypes (bisubstitutePositiveType sub) (bisubstituteNegativeType sub) expr
+
 runUnifier ::
        forall baseedit a. UnifierConstraint baseedit
     => PinaforeUnifier baseedit a

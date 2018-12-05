@@ -5,6 +5,7 @@ module Pinafore.Language
     , qTypeDescription
     , ToPinaforeType
     , resultTextToM
+    , parseExpression
     , parseValue
     , parseValueAtType
     , interact
@@ -30,17 +31,24 @@ import Pinafore.Storage.File
 import Shapes
 import System.IO.Error
 
+parseExpression ::
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+    => SourcePos
+    -> Text
+    -> Result Text (QExpr baseedit)
+parseExpression spos text = do
+    texpr <- parseTopExpression @baseedit spos text
+    runPinaforeTypeCheck $ do
+        expr <- texpr
+        runSourcePos spos $ qValuesLetExpr (\n -> lookup n predefinedBindings) expr
+
 parseValue ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => SourcePos
     -> Text
     -> Result Text (QValue baseedit)
 parseValue spos text = do
-    texpr <- parseTopExpression @baseedit spos text
-    rexpr <-
-        runPinaforeTypeCheck $ do
-            expr <- texpr
-            runSourcePos spos $ qValuesLetExpr (\n -> lookup n predefinedBindings) expr
+    rexpr <- parseExpression spos text
     qEvalExpr rexpr
 
 parseValueAtType ::

@@ -54,13 +54,6 @@ instance GetExpressionVars (NamedExpression name (PinaforeType baseedit 'Negativ
 instance GetExpressionVars (PinaforeExpression baseedit name) where
     getExpressionVars (MkSealedExpression twt expr) = getExpressionVars twt <> getExpressionVars expr
 
-bisubstitutesSealedExpression ::
-       [PinaforeBisubstitution baseedit] -> PinaforeExpression baseedit name -> PinaforeExpression baseedit name
-bisubstitutesSealedExpression [] expr = expr
-bisubstitutesSealedExpression (sub:subs) expr =
-    bisubstitutesSealedExpression subs $
-    mapSealedExpressionTypes (bisubstitutePositiveType sub) (bisubstituteNegativeType sub) expr
-
 eliminateOneSidedTypeVarsInExpression ::
        forall baseedit name. PinaforeExpression baseedit name -> PinaforeExpression baseedit name
 eliminateOneSidedTypeVarsInExpression expr = let

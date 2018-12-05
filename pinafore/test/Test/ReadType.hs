@@ -11,14 +11,11 @@ import Test.Tasty.HUnit
 
 testReadType :: Text -> TestTree
 testReadType text =
-    testCase (unpack text) $ let
-        r = do
-            mt <- parseType @PinaforeEdit @'PositivePolarity (initialPos "<input>") text
-            _ <- runPinaforeTypeCheck mt
-            return ()
-        in case r of
-               SuccessResult _ -> return ()
-               FailureResult err -> fail $ unpack err
+    testCase (unpack text) $
+    resultTextToM $ do
+        mt <- parseType @PinaforeEdit @'PositivePolarity (initialPos "<input>") text
+        _ <- runPinaforeTypeCheck mt
+        return ()
 
 testReadTypes :: TestTree
 testReadTypes =

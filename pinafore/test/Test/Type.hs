@@ -89,83 +89,130 @@ joinExpr exp1 exp2 = do
     e <- apExpr je exp1
     apExpr e exp2
 
+textTypeTest :: Text -> String -> TestTree
+textTypeTest text r =
+    testCase (unpack text) $ do
+        expr <- resultTextToM $ parseExpression @PinaforeEdit (initialPos "<input>") text
+        assertEqual "" r $ showTypes expr
+
+simplifyTypeTest :: Text -> String -> TestTree
+simplifyTypeTest text e =
+    testCase (unpack text) $ do
+        MkAnyW t <-
+            resultTextToM $ do
+                ct <- parseType @PinaforeEdit @'PositivePolarity (initialPos "<input>") text
+                runPinaforeTypeCheck ct
+        case pinaforeSimplifyExpressionType $ MkSealedExpression t $ ClosedExpression undefined of
+            MkSealedExpression t' _ -> assertEqual "" e $ show t'
+
 testType :: TestTree
 testType =
     testGroup
         "type"
-        [ exprTypeTest "number" (return "{} -> Number") $ return numExpr
-        , exprTypeTest "boolean" (return "{} -> Boolean") $ return boolExpr
-        , exprTypeTest "id" (return "{} -> x -> x") $ return idExpr
-        , exprTypeTest "nb" (return "{} -> Number -> Boolean") $ return nbFuncExpr
-        , exprTypeTest "var" (return "{v :: a} -> a") $ return varExpr
-        , exprTypeTest "apply id number" (return "{} -> Number") $ apExpr idExpr numExpr
-        , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
-        , exprTypeTest "apply nb boolean" (fail "\"<input>\" (line 1, column 1): cannot convert Boolean to Number") $
-          apExpr nbFuncExpr boolExpr
-        , exprTypeTest "apply id var" (return "{v :: c} -> c") $ apExpr idExpr varExpr
-        , exprTypeTest "apply nb var" (return "{v :: Number} -> Boolean") $ apExpr nbFuncExpr varExpr
-        , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
-        , exprTypeTest "list1" (return "{} -> a -> [a]") $ return list1Expr
-        , exprTypeTest "listNumBool" (return "{} -> [Number | Boolean]") $ do
-              lne <- apExpr list1Expr numExpr
-              lbe <- apExpr list1Expr boolExpr
-              joinExpr lne lbe
-        , exprTypeTest "listlistNumBool" (return "{} -> [[Number | Boolean]]") $ do
-              lne <- apExpr list1Expr numExpr
-              lbe <- apExpr list1Expr boolExpr
-              llne <- apExpr list1Expr lne
-              llbe <- apExpr list1Expr lbe
-              joinExpr llne llbe
-        , exprTypeTest "[number] -> [boolean]" (return "{} -> [Number] -> [Boolean]") $ return listNumBoolFuncExpr
-        , exprTypeTest "[boolean] -> [number]" (return "{} -> [Boolean] -> [Number]") $ return listBoolNumFuncExpr
-        , exprTypeTest "[nn] -> [bb]" (return "{} -> [Number] -> [Boolean]") $
-          joinExpr listNumBoolFuncExpr listNumBoolFuncExpr
-        , exprTypeTest "[bb] -> [nn]" (return "{} -> [Boolean] -> [Number]") $
-          joinExpr listBoolNumFuncExpr listBoolNumFuncExpr
-        , exprTypeTest "[nb] -> [bn]" (return "{} -> [Number & Boolean] -> [Boolean | Number]") $
-          joinExpr listNumBoolFuncExpr listBoolNumFuncExpr
-        , exprTypeTest "snd" (return "{} -> (Any, a) -> a") $ return sndExpr
-        , exprTypeTest "thing" (return "{} -> (a, b) -> (a, a | b)") $ return thingExpr
-        , exprTypeTest "snd . thing" (return "{} -> (c, c) -> c") $ do
-              e1 <- apExpr dotExpr sndExpr
-              apExpr e1 thingExpr
-        , exprTypeTest "twice" (return "{} -> a -> (a, a)") $ return twiceExpr
-        {-
-        , exprTypeTest "thing . twice" (return "{} -> a -> (a, a)") $ do
-              e1 <- apExpr dotExpr thingExpr
-              apExpr e1 twiceExpr
-        -}
-        , exprTypeTest "thing $ twice number" (return "{} -> (Number, Number)") $ do
-              e1 <- apExpr twiceExpr numExpr
-              apExpr thingExpr e1
-        , exprTypeTest "simplify $ thing $ twice number" (return "{} -> (Number, Number)") $ do
-              e1 <- apExpr twiceExpr numExpr
-              r <- apExpr thingExpr e1
-              return $ simplifyExpressionType @(TypeUnifier TS) r
-        , exprTypeTest "simplify duplicate" (return "{} -> Number") $
-          return $
-          simplifyExpressionType @(TypeUnifier TS) $
-          typeFConstExpression toTypeF (MkJoinType (Right 3) :: JoinType Number Number)
-        , exprTypeTest "simplify duplicate list" (return "{} -> [Number]") $
-          return $
-          simplifyExpressionType @(TypeUnifier TS) $
-          typeFConstExpression toTypeF (MkJoinType (Right [3]) :: JoinType [Number] [Number])
-        , exprTypeTest "simplify duplicate pair" (return "{} -> (Number, Number)") $
-          return $
-          simplifyExpressionType @(TypeUnifier TS) $
-          typeFConstExpression toTypeF (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
-        , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
-          return $
-          simplifyExpressionType @(TypeUnifier TS) $
-          typeFConstExpression toTypeF ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
-        , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
-          return $
-          simplifyExpressionType @(TypeUnifier TS) $
-          typeFConstExpression
-              toTypeF
-              ((MkJoinType (Right 3), MkJoinType (Right 3)) :: (JoinType Number Number, JoinType Number Number))
-        , exprTypeTest "simplify duplicate in list" (return "{} -> [Number]") $
-          return $
-          simplifyExpressionType @(TypeUnifier TS) $
-          typeFConstExpression toTypeF ([MkJoinType (Right 3)] :: [JoinType Number Number])
+        [ testGroup
+              "pure"
+              [ exprTypeTest "number" (return "{} -> Number") $ return numExpr
+              , exprTypeTest "boolean" (return "{} -> Boolean") $ return boolExpr
+              , exprTypeTest "id" (return "{} -> x -> x") $ return idExpr
+              , exprTypeTest "nb" (return "{} -> Number -> Boolean") $ return nbFuncExpr
+              , exprTypeTest "var" (return "{v :: a} -> a") $ return varExpr
+              , exprTypeTest "apply id number" (return "{} -> Number") $ apExpr idExpr numExpr
+              , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
+              , exprTypeTest
+                    "apply nb boolean"
+                    (fail "\"<input>\" (line 1, column 1): cannot convert Boolean to Number") $
+                apExpr nbFuncExpr boolExpr
+              , exprTypeTest "apply id var" (return "{v :: c} -> c") $ apExpr idExpr varExpr
+              , exprTypeTest "apply nb var" (return "{v :: Number} -> Boolean") $ apExpr nbFuncExpr varExpr
+              , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
+              , exprTypeTest "list1" (return "{} -> a -> [a]") $ return list1Expr
+              , exprTypeTest "listNumBool" (return "{} -> [Number | Boolean]") $ do
+                    lne <- apExpr list1Expr numExpr
+                    lbe <- apExpr list1Expr boolExpr
+                    joinExpr lne lbe
+              , exprTypeTest "listlistNumBool" (return "{} -> [[Number | Boolean]]") $ do
+                    lne <- apExpr list1Expr numExpr
+                    lbe <- apExpr list1Expr boolExpr
+                    llne <- apExpr list1Expr lne
+                    llbe <- apExpr list1Expr lbe
+                    joinExpr llne llbe
+              , exprTypeTest "[number] -> [boolean]" (return "{} -> [Number] -> [Boolean]") $ return listNumBoolFuncExpr
+              , exprTypeTest "[boolean] -> [number]" (return "{} -> [Boolean] -> [Number]") $ return listBoolNumFuncExpr
+              , exprTypeTest "[nn] -> [bb]" (return "{} -> [Number] -> [Boolean]") $
+                joinExpr listNumBoolFuncExpr listNumBoolFuncExpr
+              , exprTypeTest "[bb] -> [nn]" (return "{} -> [Boolean] -> [Number]") $
+                joinExpr listBoolNumFuncExpr listBoolNumFuncExpr
+              , exprTypeTest "[nb] -> [bn]" (return "{} -> [Number & Boolean] -> [Boolean | Number]") $
+                joinExpr listNumBoolFuncExpr listBoolNumFuncExpr
+              , exprTypeTest "snd" (return "{} -> (Any, a) -> a") $ return sndExpr
+              , exprTypeTest "thing" (return "{} -> (a, b) -> (a, a | b)") $ return thingExpr
+              , exprTypeTest "snd . thing" (return "{} -> (c, c) -> c") $ do
+                    e1 <- apExpr dotExpr sndExpr
+                    apExpr e1 thingExpr
+              , exprTypeTest "twice" (return "{} -> a -> (a, a)") $ return twiceExpr
+              {-
+              , exprTypeTest "thing . twice" (return "{} -> a -> (a, a)") $ do
+                    e1 <- apExpr dotExpr thingExpr
+                    apExpr e1 twiceExpr
+              -}
+              , exprTypeTest "thing $ twice number" (return "{} -> (Number, Number)") $ do
+                    e1 <- apExpr twiceExpr numExpr
+                    apExpr thingExpr e1
+              , exprTypeTest "simplify $ thing $ twice number" (return "{} -> (Number, Number)") $ do
+                    e1 <- apExpr twiceExpr numExpr
+                    r <- apExpr thingExpr e1
+                    return $ simplifyExpressionType @(TypeUnifier TS) r
+              , exprTypeTest "simplify duplicate" (return "{} -> Number") $
+                return $
+                simplifyExpressionType @(TypeUnifier TS) $
+                typeFConstExpression toTypeF (MkJoinType (Right 3) :: JoinType Number Number)
+              , exprTypeTest "simplify duplicate list" (return "{} -> [Number]") $
+                return $
+                simplifyExpressionType @(TypeUnifier TS) $
+                typeFConstExpression toTypeF (MkJoinType (Right [3]) :: JoinType [Number] [Number])
+              , exprTypeTest "simplify duplicate pair" (return "{} -> (Number, Number)") $
+                return $
+                simplifyExpressionType @(TypeUnifier TS) $
+                typeFConstExpression toTypeF (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
+              , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
+                return $
+                simplifyExpressionType @(TypeUnifier TS) $
+                typeFConstExpression toTypeF ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
+              , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
+                return $
+                simplifyExpressionType @(TypeUnifier TS) $
+                typeFConstExpression
+                    toTypeF
+                    ((MkJoinType (Right 3), MkJoinType (Right 3)) :: (JoinType Number Number, JoinType Number Number))
+              , exprTypeTest "simplify duplicate in list" (return "{} -> [Number]") $
+                return $
+                simplifyExpressionType @(TypeUnifier TS) $
+                typeFConstExpression toTypeF ([MkJoinType (Right 3)] :: [JoinType Number Number])
+              ]
+        , testGroup
+              "read"
+              [ textTypeTest "v" "{v :: a} -> a"
+              , textTypeTest "if t then v1 else v2" "{t :: Boolean, v1 :: c, v2 :: c} -> c"
+              , textTypeTest "[]" "{} -> [None]"
+              , textTypeTest "\\v -> 1" "{} -> Any -> Number"
+              , textTypeTest "[v1,v2]" "{v1 :: a, v2 :: a} -> [a]"
+              --, textTypeTest "[v,v,v]" "{v :: a} -> [a]"
+              --, textTypeTest "let v = x in [v,v,v]" "{x :: a} -> [a]"
+              , textTypeTest "\\x -> let v = x in [v,v,v]" "{} -> a' -> [a']"
+              , textTypeTest "\\v1 v2 -> [v1,v2]" "{} -> a -> a -> [a]"
+              , textTypeTest "\\v1 v2 v3 -> ([v1,v2],[v2,v3])" "{} -> a' -> (a & a') -> a -> ([a'], [a])"
+              , textTypeTest
+                    "\\v1 v2 v3 -> (([v1,v2],[v2,v3]),[v3,v1])"
+                    "{} -> (a & a') -> (a'' & a') -> (a & a'') -> (([a'], [a'']), [a])"
+              ]
+        , testGroup
+              "simplify"
+              [ simplifyTypeTest "a" "None"
+              , simplifyTypeTest "a -> (a|a)" "a -> a"
+              , simplifyTypeTest "a -> b -> (a|b)" "a -> a -> a"
+              , simplifyTypeTest "(a,b)-> (a|b)" "(a, a) -> a"
+              , simplifyTypeTest "(a,b)-> (a,a|b)" "(a, b) -> (a, a | b)"
+              , simplifyTypeTest "(a,b)-> (b,a|b)" "(a, b) -> (b, a | b)"
+              , simplifyTypeTest "(a&b)-> (a,b)" "a -> (a, a)"
+              ]
         ]
