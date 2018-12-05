@@ -73,6 +73,12 @@ library:
       - Pinafore.Language.GroundType
       - Pinafore.Language.TypeContext
       - Pinafore.Language.Convert.Base
+      - Pinafore.Language.Type.Type
+      - Pinafore.Language.Type.Rename
+      - Pinafore.Language.Type.Simplify.OneSidedTypeVars
+      - Pinafore.Language.Type.Simplify.DuplicateGroundTypes
+      - Pinafore.Language.Type.Simplify
+      - Pinafore.Language.Type.Unify
       - Pinafore.Language.Type
       - Pinafore.Language.EntityType
       - Pinafore.Language.Read.Token
