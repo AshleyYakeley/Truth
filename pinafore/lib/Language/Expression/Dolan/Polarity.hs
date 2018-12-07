@@ -43,6 +43,14 @@ joinBimap :: (a1 -> a2) -> (b1 -> b2) -> JoinType a1 b1 -> JoinType a2 b2
 joinBimap f _ (LeftJoinType v) = LeftJoinType $ f v
 joinBimap _ f (RightJoinType v) = RightJoinType $ f v
 
+unjoin1 :: JoinType a BottomType -> a
+unjoin1 (MkJoinType (Left a)) = a
+unjoin1 (MkJoinType (Right n)) = never n
+
+unjoin2 :: JoinType BottomType a -> a
+unjoin2 (MkJoinType (Left n)) = never n
+unjoin2 (MkJoinType (Right a)) = a
+
 newtype MeetType a b =
     MkMeetType (a, b)
 
@@ -51,6 +59,12 @@ meet1 (MkMeetType (v, _)) = v
 
 meet2 :: MeetType a b -> b
 meet2 (MkMeetType (_, v)) = v
+
+unmeet1 :: a -> MeetType a TopType
+unmeet1 a = MkMeetType (a, MkTopType)
+
+unmeet2 :: a -> MeetType TopType a
+unmeet2 a = MkMeetType (MkTopType, a)
 
 meetf :: (r -> a) -> (r -> b) -> r -> MeetType a b
 meetf f1 f2 v = MkMeetType (f1 v, f2 v)
@@ -103,16 +117,8 @@ instance IsTypePolarity 'PositivePolarity where
     type JoinMeetType 'PositivePolarity = JoinType
     showJoinMeetType = "|"
     type ConvertType 'PositivePolarity (a :: k) (b :: k) = KindFunction k a b
-    jmLeftIdentity = let
-        unjoin :: JoinType BottomType a -> a
-        unjoin (MkJoinType (Left n)) = never n
-        unjoin (MkJoinType (Right a)) = a
-        in MkBijection unjoin $ \a -> MkJoinType (Right a)
-    jmRightIdentity = let
-        unjoin :: JoinType a BottomType -> a
-        unjoin (MkJoinType (Left a)) = a
-        unjoin (MkJoinType (Right n)) = never n
-        in MkBijection unjoin $ \a -> MkJoinType (Left a)
+    jmLeftIdentity = MkBijection unjoin2 $ \a -> MkJoinType (Right a)
+    jmRightIdentity = MkBijection unjoin1 $ \a -> MkJoinType (Left a)
     jmMap a1a2 _ (MkJoinType (Left a)) = MkJoinType $ Left $ a1a2 a
     jmMap _ b1b2 (MkJoinType (Right b)) = MkJoinType $ Right $ b1b2 b
 

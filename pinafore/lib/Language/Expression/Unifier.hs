@@ -34,8 +34,9 @@ class (Monad (UnifierMonad unifier), Applicative unifier) => Unifier unifier whe
         -> (forall t'. UnifierNegWitness unifier t' -> (t' -> t) -> r)
         -> r
     simplifyExpressionType ::
-           SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
-        -> SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
+           forall name. Eq name
+        => SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
+        -> UnifierMonad unifier (SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier))
 
 liftUnifier :: Monad (UnifierMonad unifier) => unifier a -> Compose (UnifierMonad unifier) unifier a
 liftUnifier ua = Compose $ return ua
@@ -62,11 +63,11 @@ unifierExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) =
         fmap (\ta -> ta . conv) $ unifierExpressionSubstitute @unifier subs expr
 
 unifierExpressionSubstituteAndSimplify ::
-       forall unifier name a. Unifier unifier
+       forall unifier name a. (Unifier unifier, Eq name)
     => UnifierSubstitutions unifier
     -> UnifierPosWitness unifier a
     -> NamedExpression name (UnifierNegWitness unifier) a
-    -> SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
+    -> UnifierMonad unifier (SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier))
 unifierExpressionSubstituteAndSimplify subs twt expr =
     simplifyExpressionType @unifier $
     unifierPosSubstitute @unifier subs twt $ \twt' tconv ->

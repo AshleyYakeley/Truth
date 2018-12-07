@@ -7,11 +7,10 @@ import Language.Expression.Expression
 import Language.Expression.Renamer
 import Language.Expression.UVar
 import Language.Expression.Unifier
-import Pinafore.Base
 import Pinafore.Language.GroundType
 import Pinafore.Language.Show
-import Pinafore.Language.SimpleEntityType
 import Pinafore.Language.Type.Rename
+import Pinafore.Language.Type.Subtype
 import Pinafore.Language.Type.Type
 import Pinafore.Language.TypeContext
 import Shapes
@@ -55,57 +54,23 @@ data BisubstitutionWitness baseedit t where
 
 type PinaforeUnifier baseedit = Expression (BisubstitutionWitness baseedit)
 
-type UnifierConstraint baseedit
-     = UnifierMonad (PinaforeUnifier baseedit) ~ VarRenamer (PinaforeTypeSystem baseedit) SourcePinaforeTypeCheck
+type PinaforeUnifierMonad baseedit = VarRenamer (PinaforeTypeSystem baseedit) SourcePinaforeTypeCheck
 
-type PinaforeFullUnifier baseedit
-     = Compose (VarRenamer (PinaforeTypeSystem baseedit) SourcePinaforeTypeCheck) (PinaforeUnifier baseedit)
+type UnifierConstraint baseedit = UnifierMonad (PinaforeUnifier baseedit) ~ PinaforeUnifierMonad baseedit
+
+type PinaforeFullUnifier baseedit = Compose (PinaforeUnifierMonad baseedit) (PinaforeUnifier baseedit)
 
 unifierLiftTypeCheck :: SourcePinaforeTypeCheck a -> PinaforeFullUnifier baseedit a
 unifierLiftTypeCheck tca = Compose $ fmap pure $ lift tca
 
-unifyPosNegVariance ::
+unifySubtypeContext ::
        UnifierConstraint baseedit
-    => SingleVarianceType sv
-    -> SingleArgument sv (PinaforeType baseedit) 'PositivePolarity a
-    -> SingleArgument sv (PinaforeType baseedit) 'NegativePolarity b
-    -> PinaforeFullUnifier baseedit (SingleVarianceFunc sv a b)
-unifyPosNegVariance CovarianceType ta tb = unifyPosNegPinaforeTypes ta tb
-unifyPosNegVariance ContravarianceType ta tb = do
-    ba <- unifyPosNegPinaforeTypes tb ta
-    return $ MkCatDual ba
-unifyPosNegVariance RangevarianceType (MkRangeType tpa tqa) (MkRangeType tpb tqb) = do
-    pba <- unifyPosNegPinaforeTypes tpb tpa
-    qab <- unifyPosNegPinaforeTypes tqa tqb
-    return $ MkWithRange pba qab
-
-unifyPosNegArguments' ::
-       forall baseedit dv gta gtb ta tb. UnifierConstraint baseedit
-    => DolanVarianceType dv
-    -> DolanKindVary dv gta
-    -> DolanArguments dv (PinaforeType baseedit) gta 'PositivePolarity ta
-    -> DolanArguments dv (PinaforeType baseedit) gtb 'NegativePolarity tb
-    -> PinaforeFullUnifier baseedit (KindFunction (DolanVarianceKind dv) gta gtb -> ta -> tb)
-unifyPosNegArguments' NilListType NilDolanKindVary NilDolanArguments NilDolanArguments = pure id
-unifyPosNegArguments' (ConsListType (svt :: SingleVarianceType sv) (dvt :: DolanVarianceType dv')) (ConsDolanKindVary svm dvm) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) = do
-    sfunc <- unifyPosNegVariance svt sta stb
-    f <- unifyPosNegArguments' dvt dvm dta dtb
-    pure $
-        case dolanVarianceKMCategory @(->) dvt of
-            Dict -> \(MkNestedMorphism conv) -> f (conv . svm sfunc)
-
-unifyPosNegArguments ::
-       forall baseedit polarity dv gt ta tb. UnifierConstraint baseedit
-    => PinaforeGroundType baseedit polarity dv gt
-    -> DolanArguments dv (PinaforeType baseedit) gt 'PositivePolarity ta
-    -> DolanArguments dv (PinaforeType baseedit) gt 'NegativePolarity tb
-    -> PinaforeFullUnifier baseedit (ta -> tb)
-unifyPosNegArguments gt argsa argsb = let
-    vkt = pinaforeGroundTypeKind gt
-    in case dolanVarianceKMCategory @(->) vkt of
-           Dict -> do
-               f <- unifyPosNegArguments' vkt (pinaforeGroundTypeVary gt) argsa argsb
-               return $ f id
+    => SubtypeContext baseedit (PinaforeFullUnifier baseedit) 'PositivePolarity 'NegativePolarity
+unifySubtypeContext = let
+    subtypeTypes = unifyPosNegPinaforeTypes
+    subtypeLift = unifierLiftTypeCheck
+    subtypeInverted = unifySubtypeContext
+    in MkSubtypeContext {..}
 
 unifyPosNegGroundTypes ::
        UnifierConstraint baseedit
@@ -114,52 +79,7 @@ unifyPosNegGroundTypes ::
     -> PinaforeGroundType baseedit 'NegativePolarity dvb gtb
     -> DolanArguments dvb (PinaforeType baseedit) gtb 'NegativePolarity tb
     -> PinaforeFullUnifier baseedit (ta -> tb)
-unifyPosNegGroundTypes ActionPinaforeGroundType NilDolanArguments ActionPinaforeGroundType NilDolanArguments = pure id
-unifyPosNegGroundTypes OrderPinaforeGroundType argsa OrderPinaforeGroundType argsb =
-    unifyPosNegArguments OrderPinaforeGroundType argsa argsb
-unifyPosNegGroundTypes UserInterfacePinaforeGroundType NilDolanArguments UserInterfacePinaforeGroundType NilDolanArguments =
-    pure id
-unifyPosNegGroundTypes (SimpleEntityPinaforeGroundType t1) NilDolanArguments (SimpleEntityPinaforeGroundType t2) NilDolanArguments =
-    unifierLiftTypeCheck $ getSubtype t1 t2
-unifyPosNegGroundTypes PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments =
-    (\conva convb (a, b) -> pairToEntity (meet1 $ conva a, meet1 $ convb b)) <$>
-    unifyPosNegPinaforeTypes
-        ta
-        (singlePinaforeType $
-         GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments) <*>
-    unifyPosNegPinaforeTypes
-        tb
-        (singlePinaforeType $
-         GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments)
-unifyPosNegGroundTypes EitherPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments =
-    (\conva convb eab -> eitherToEntity $ either (Left . meet1 . conva) (Right . meet1 . convb) eab) <$>
-    unifyPosNegPinaforeTypes
-        ta
-        (singlePinaforeType $
-         GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments) <*>
-    unifyPosNegPinaforeTypes
-        tb
-        (singlePinaforeType $
-         GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments)
-unifyPosNegGroundTypes FuncPinaforeGroundType argsa FuncPinaforeGroundType argsb =
-    unifyPosNegArguments FuncPinaforeGroundType argsa argsb
-unifyPosNegGroundTypes ListPinaforeGroundType argsa ListPinaforeGroundType argsb =
-    unifyPosNegArguments ListPinaforeGroundType argsa argsb
-unifyPosNegGroundTypes PairPinaforeGroundType argsa PairPinaforeGroundType argsb =
-    unifyPosNegArguments PairPinaforeGroundType argsa argsb
-unifyPosNegGroundTypes EitherPinaforeGroundType argsa EitherPinaforeGroundType argsb =
-    unifyPosNegArguments EitherPinaforeGroundType argsa argsb
-unifyPosNegGroundTypes ReferencePinaforeGroundType argsa ReferencePinaforeGroundType argsb =
-    unifyPosNegArguments ReferencePinaforeGroundType argsa argsb
-unifyPosNegGroundTypes SetPinaforeGroundType argsa SetPinaforeGroundType argsb =
-    unifyPosNegArguments SetPinaforeGroundType argsa argsb
-unifyPosNegGroundTypes MorphismPinaforeGroundType argsa MorphismPinaforeGroundType argsb =
-    unifyPosNegArguments MorphismPinaforeGroundType argsa argsb
-unifyPosNegGroundTypes ga argsa gb argsb =
-    unifierLiftTypeCheck $
-    convertFailure
-        (unpack $ exprShow $ GroundPinaforeSingularType ga argsa)
-        (unpack $ exprShow $ GroundPinaforeSingularType gb argsb)
+unifyPosNegGroundTypes = subtypeGroundTypes unifySubtypeContext
 
 unifyPosNegPinaforeSingularTypes ::
        UnifierConstraint baseedit
@@ -356,7 +276,7 @@ bisubstitutesSealedExpression (sub:subs) expr =
 runUnifier ::
        forall baseedit a. UnifierConstraint baseedit
     => PinaforeUnifier baseedit a
-    -> VarRenamer (PinaforeTypeSystem baseedit) SourcePinaforeTypeCheck (a, [PinaforeBisubstitution baseedit])
+    -> PinaforeUnifierMonad baseedit (a, [PinaforeBisubstitution baseedit])
 runUnifier (ClosedExpression a) = return (a, [])
 runUnifier (OpenExpression (PositiveBisubstitutionWitness vn tp) _)
     | occursInSingularType vn tp = fail $ "can't construct recursive type " <> show vn <> " = " <> unpack (exprShow tp)

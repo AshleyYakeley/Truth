@@ -50,7 +50,7 @@ instance Monad m => Unifier (UnitypeUnifier m val) where
     solveUnifier (MkUnitypeUnifier ia) = pure $ (runIdentity ia, ())
     unifierPosSubstitute () Refl cont = cont Refl id
     unifierNegSubstitute () Refl cont = cont Refl id
-    simplifyExpressionType expr = expr
+    simplifyExpressionType expr = return expr
 
 class UnitypeValue val where
     applyValue :: val -> val -> val

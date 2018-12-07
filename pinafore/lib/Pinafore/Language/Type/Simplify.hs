@@ -4,9 +4,11 @@ module Pinafore.Language.Type.Simplify
 
 import Pinafore.Language.Type.Simplify.DuplicateGroundTypes
 import Pinafore.Language.Type.Simplify.DuplicateTypeVars
+import Pinafore.Language.Type.Simplify.FreeVars
 import Pinafore.Language.Type.Simplify.OneSidedTypeVars
 import Pinafore.Language.Type.Simplify.SharedTypeVars
 import Pinafore.Language.Type.Type
+import Pinafore.Language.Type.Unify
 import Shapes
 
 -- Simplification:
@@ -26,11 +28,11 @@ import Shapes
 --
 -- 5. merge free (term) variables with subtypes
 -- e.g. "{v::a,v::a} => b" => "{v::a} => b"
-pinaforeSimplifyExpressionType :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+pinaforeSimplifyExpressionType ::
+       forall baseedit name. Eq name
+    => PinaforeExpression baseedit name
+    -> PinaforeUnifierMonad baseedit (PinaforeExpression baseedit name)
 pinaforeSimplifyExpressionType =
     mergeFreeExpressionTermVars .
     mergeDuplicateTypeVarsInTypes .
     mergeSharedTypeVarsInExpression . eliminateOneSidedTypeVarsInExpression . mergeDuplicateGroundTypesInTypes
-
-mergeFreeExpressionTermVars :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
-mergeFreeExpressionTermVars expr = expr

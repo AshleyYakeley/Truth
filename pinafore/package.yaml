@@ -74,11 +74,13 @@ library:
       - Pinafore.Language.TypeContext
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.Type.Type
+      - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type.Rename
       - Pinafore.Language.Type.Simplify.OneSidedTypeVars
       - Pinafore.Language.Type.Simplify.DuplicateGroundTypes
       - Pinafore.Language.Type.Simplify.SharedTypeVars
       - Pinafore.Language.Type.Simplify.DuplicateTypeVars
+      - Pinafore.Language.Type.Simplify.FreeVars
       - Pinafore.Language.Type.Simplify
       - Pinafore.Language.Type.Unify
       - Pinafore.Language.Type

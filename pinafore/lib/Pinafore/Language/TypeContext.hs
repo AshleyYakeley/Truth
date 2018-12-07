@@ -31,7 +31,7 @@ data TypeContext = MkTypeContext
 
 newtype PinaforeTypeCheck a =
     MkPinaforeTypeCheck (ReaderT TypeContext (Result Text) a)
-    deriving (Functor, Applicative, Monad, MonadFail)
+    deriving (Functor, Applicative, Alternative, Monad, MonadPlus, MonadFail)
 
 instance Semigroup a => Semigroup (PinaforeTypeCheck a) where
     (<>) = liftA2 (<>)
@@ -51,7 +51,7 @@ pLocalTypeContext maptc (MkPinaforeTypeCheck ma) = MkPinaforeTypeCheck $ local m
 
 newtype SourcePinaforeTypeCheck a =
     MkSourcePinaforeTypeCheck (ReaderT SourcePos PinaforeTypeCheck a)
-    deriving (Functor, Applicative, Monad)
+    deriving (Functor, Applicative, Alternative, Monad, MonadPlus)
 
 runSourcePos :: SourcePos -> SourcePinaforeTypeCheck a -> PinaforeTypeCheck a
 runSourcePos spos (MkSourcePinaforeTypeCheck ma) = runReaderT ma spos

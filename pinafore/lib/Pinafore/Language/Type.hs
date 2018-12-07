@@ -23,7 +23,7 @@ import Pinafore.Language.TypeContext
 import Shapes
 
 instance Unifier (PinaforeUnifier baseedit) where
-    type UnifierMonad (PinaforeUnifier baseedit) = VarRenamer (PinaforeTypeSystem baseedit) SourcePinaforeTypeCheck
+    type UnifierMonad (PinaforeUnifier baseedit) = PinaforeUnifierMonad baseedit
     type UnifierNegWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'NegativePolarity
     type UnifierPosWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'PositivePolarity
     type UnifierSubstitutions (PinaforeUnifier baseedit) = [PinaforeBisubstitution baseedit]

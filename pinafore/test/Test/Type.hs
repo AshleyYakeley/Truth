@@ -5,6 +5,7 @@ module Test.Type
 import Language.Expression.Dolan
 import Language.Expression.Expression
 import Language.Expression.Named
+import Language.Expression.Renamer
 import Language.Expression.Sealed
 import Language.Expression.Typed
 import Language.Expression.Unifier
@@ -98,11 +99,15 @@ textTypeTest text r =
 simplifyTypeTest :: Text -> String -> TestTree
 simplifyTypeTest text e =
     testCase (unpack text) $ do
-        MkAnyW t <-
+        simpexpr <-
             resultTextToM $ do
                 ct <- parseType @PinaforeEdit @'PositivePolarity (initialPos "<input>") text
-                runPinaforeTypeCheck ct
-        case pinaforeSimplifyExpressionType $ MkSealedExpression t $ ClosedExpression undefined of
+                runPinaforeTypeCheck $ do
+                    MkAnyW t <- ct
+                    runSourcePos (initialPos "<input>") $
+                        runRenamer @(TypeRenamer TS) $
+                        pinaforeSimplifyExpressionType @_ @Name $ MkSealedExpression t $ ClosedExpression undefined
+        case simpexpr of
             MkSealedExpression t' _ -> assertEqual "" e $ show t'
 
 testType :: TestTree
@@ -161,31 +166,31 @@ testType =
               , exprTypeTest "simplify $ thing $ twice number" (return "{} -> (Number, Number)") $ do
                     e1 <- apExpr twiceExpr numExpr
                     r <- apExpr thingExpr e1
-                    return $ simplifyExpressionType @(TypeUnifier TS) r
+                    runRenamer @(TypeRenamer TS) $ simplifyExpressionType @(TypeUnifier TS) r
               , exprTypeTest "simplify duplicate" (return "{} -> Number") $
-                return $
+                runRenamer @(TypeRenamer TS) $
                 simplifyExpressionType @(TypeUnifier TS) $
                 typeFConstExpression toTypeF (MkJoinType (Right 3) :: JoinType Number Number)
               , exprTypeTest "simplify duplicate list" (return "{} -> [Number]") $
-                return $
+                runRenamer @(TypeRenamer TS) $
                 simplifyExpressionType @(TypeUnifier TS) $
                 typeFConstExpression toTypeF (MkJoinType (Right [3]) :: JoinType [Number] [Number])
               , exprTypeTest "simplify duplicate pair" (return "{} -> (Number, Number)") $
-                return $
+                runRenamer @(TypeRenamer TS) $
                 simplifyExpressionType @(TypeUnifier TS) $
                 typeFConstExpression toTypeF (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
               , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
-                return $
+                runRenamer @(TypeRenamer TS) $
                 simplifyExpressionType @(TypeUnifier TS) $
                 typeFConstExpression toTypeF ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
               , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
-                return $
+                runRenamer @(TypeRenamer TS) $
                 simplifyExpressionType @(TypeUnifier TS) $
                 typeFConstExpression
                     toTypeF
                     ((MkJoinType (Right 3), MkJoinType (Right 3)) :: (JoinType Number Number, JoinType Number Number))
               , exprTypeTest "simplify duplicate in list" (return "{} -> [Number]") $
-                return $
+                runRenamer @(TypeRenamer TS) $
                 simplifyExpressionType @(TypeUnifier TS) $
                 typeFConstExpression toTypeF ([MkJoinType (Right 3)] :: [JoinType Number Number])
               ]
@@ -196,8 +201,9 @@ testType =
               , textTypeTest "[]" "{} -> [None]"
               , textTypeTest "\\v -> 1" "{} -> Any -> Number"
               , textTypeTest "[v1,v2]" "{v1 :: a, v2 :: a} -> [a]"
-              --, textTypeTest "[v,v,v]" "{v :: a} -> [a]"
-              --, textTypeTest "let v = x in [v,v,v]" "{x :: a} -> [a]"
+              , textTypeTest "[v,v,v]" "{v :: a} -> [a]"
+              , textTypeTest "(v 3,v \"text\")" "{v :: Number -> a, v :: Text -> b} -> (a, b)"
+              , textTypeTest "let v = x in [v,v,v]" "{x :: a'} -> [a']"
               , textTypeTest "\\x -> let v = x in [v,v,v]" "{} -> a' -> [a']"
               , textTypeTest "\\v1 v2 -> [v1,v2]" "{} -> a -> a -> [a]"
               , textTypeTest "\\v1 v2 v3 -> ([v1,v2],[v2,v3])" "{} -> a' -> (a & a') -> a -> ([a'], [a])"

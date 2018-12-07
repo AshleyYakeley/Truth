@@ -2,6 +2,7 @@ module Pinafore.Test
     ( parseType
     , runPinaforeTypeCheck
     , runSourcePinaforeTypeCheck
+    , runSourcePos
     , PinaforeTypeSystem
     , Name
     , UVar

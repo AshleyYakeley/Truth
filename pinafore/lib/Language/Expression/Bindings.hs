@@ -40,7 +40,7 @@ data Bound name unifier =
     forall vals. MkBound (forall a.
                                   NamedExpression name (UnifierNegWitness unifier) a -> UnifierMonad unifier (UnifyExpression name unifier (vals -> a)))
                          (NamedExpression name (UnifierNegWitness unifier) vals)
-                         (UnifierSubstitutions unifier -> NamedExpression name (UnifierNegWitness unifier) vals -> Bindings name unifier)
+                         (UnifierSubstitutions unifier -> NamedExpression name (UnifierNegWitness unifier) vals -> UnifierMonad unifier (Bindings name unifier))
 
 mkBound ::
        forall name renamer unifier m.
@@ -56,7 +56,7 @@ mkBound ::
     -> renamer m (Bound name unifier)
 mkBound [] =
     withTransConstraintTM @Monad $
-    return $ MkBound (\e -> return $ unifyExpression $ fmap (\a _ -> a) e) (pure ()) (\_ _ -> mempty)
+    return $ MkBound (\e -> return $ unifyExpression $ fmap (\a _ -> a) e) (pure ()) (\_ _ -> return mempty)
 mkBound ((MkBinding name sexpr):bb) =
     withTransConstraintTM @Monad $ do
         MkSealedExpression twt expr <- renameSealedExpression sexpr
@@ -78,10 +78,11 @@ mkBound ((MkBinding name sexpr):bb) =
             getbinds' ::
                    UnifierSubstitutions unifier
                 -> NamedExpression name (UnifierNegWitness unifier) _
-                -> Bindings name unifier
-            getbinds' subs fexpr =
-                getbinds subs (fmap snd fexpr) <>
-                (singleBinding name $ unifierExpressionSubstituteAndSimplify @unifier subs twt $ fmap fst fexpr)
+                -> UnifierMonad unifier (Bindings name unifier)
+            getbinds' subs fexpr = do
+                b1 <- getbinds subs (fmap snd fexpr)
+                e <- unifierExpressionSubstituteAndSimplify @unifier subs twt $ fmap fst fexpr
+                return $ b1 <> singleBinding name e
             in MkBound abstractNames' exprs' getbinds'
 
 boundToBindings ::
@@ -91,7 +92,7 @@ boundToBindings ::
 boundToBindings (MkBound abstractNames exprs getbinds) = do
     uexprvv <- abstractNames exprs
     (fexpr, subs) <- solveUnifier @unifier $ unifierExpression uexprvv
-    return $ getbinds subs $ fmap fix fexpr
+    getbinds subs $ fmap fix fexpr
 
 getBindingNode :: Binding name unifier -> (Binding name unifier, name, [name])
 getBindingNode b@(MkBinding n expr) = (b, n, sealedExpressionFreeNames expr)
@@ -141,7 +142,7 @@ bindingsComponentLetSealedExpression (MkBindings bindings) sexprb =
         MkSealedExpression tb exprb <- renameSealedExpression sexprb
         uexprb' <- letBindNamedExpression @unifier (\name -> lookup name $ bindingsMap bindings') exprb
         (exprb', subs) <- solveUnifier @unifier $ unifierExpression uexprb'
-        return $ unifierExpressionSubstituteAndSimplify @unifier subs tb exprb'
+        unifierExpressionSubstituteAndSimplify @unifier subs tb exprb'
 
 valuesLetSealedExpression ::
        forall renamer unifier m name.
@@ -162,7 +163,7 @@ valuesLetSealedExpression valbind sexprb =
         MkSealedExpression tb exprb <- renameSealedExpression sexprb
         uexprb' <- letBindNamedExpression @unifier (\name -> fmap constSealedExpression $ valbind name) exprb
         (exprb', subs) <- solveUnifier @unifier $ unifierExpression uexprb'
-        return $ unifierExpressionSubstituteAndSimplify @unifier subs tb exprb'
+        unifierExpressionSubstituteAndSimplify @unifier subs tb exprb'
 
 duplicates ::
        forall a. Eq a

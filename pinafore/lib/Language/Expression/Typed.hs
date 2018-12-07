@@ -62,7 +62,7 @@ evalTypedExpressionToType witn expr = do
     typedAnyToVal @ts witn aval
 
 applyTypedExpression ::
-       forall ts name. TypeSystem ts
+       forall ts name. (Eq name, TypeSystem ts)
     => TypedExpression name ts
     -> TypedExpression name ts
     -> TypeCheck ts (TypedExpression name ts)
