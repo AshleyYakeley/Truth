@@ -14,7 +14,7 @@ testReadType text =
     testCase (unpack text) $
     resultTextToM $ do
         mt <- parseType @PinaforeEdit @'PositivePolarity (initialPos "<input>") text
-        _ <- runPinaforeTypeCheck mt
+        _ <- runScoped mt
         return ()
 
 testReadTypes :: TestTree

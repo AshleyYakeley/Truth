@@ -69,7 +69,7 @@ instance GetExpressionVarUses (NamedExpression name (PinaforeType baseedit 'Nega
     getExpressionVarUses (ClosedExpression _) = mempty
     getExpressionVarUses (OpenExpression (MkNameWitness _ t) expr) = getExpressionVarUses t <> getExpressionVarUses expr
 
-instance GetExpressionVarUses (PinaforeExpression baseedit name) where
+instance GetExpressionVarUses (PinaforeExpression baseedit) where
     getExpressionVarUses (MkSealedExpression twt expr) = getExpressionVarUses twt <> getExpressionVarUses expr
 
 findShare ::
@@ -88,8 +88,7 @@ findShare uses = let
     goodpair pair = all (gooduse pair) uses
     in find goodpair pairs
 
-mergeSharedTypeVarsInExpression ::
-       forall baseedit name. PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+mergeSharedTypeVarsInExpression :: forall baseedit. PinaforeExpression baseedit -> PinaforeExpression baseedit
 mergeSharedTypeVarsInExpression expr = let
     (posuses, neguses) = getExpressionVarUses expr
     in case findShare posuses <|> findShare neguses of

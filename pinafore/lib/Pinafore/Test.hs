@@ -1,14 +1,14 @@
 module Pinafore.Test
     ( parseType
-    , runPinaforeTypeCheck
-    , runSourcePinaforeTypeCheck
+    , runScoped
+    , runSourceScoped
     , runSourcePos
     , PinaforeTypeSystem
     , Name
     , UVar
     , PinaforeType
-    , PinaforeTypeCheck
-    , SourcePinaforeTypeCheck
+    , PinaforeScoped
+    , PinaforeSourceScoped
     , pinaforeSimplifyExpressionType
     , toTypeF
     , module Pinafore.Test

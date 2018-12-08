@@ -71,7 +71,7 @@ library:
       - Pinafore.Language.Show
       - Pinafore.Language.Order
       - Pinafore.Language.GroundType
-      - Pinafore.Language.TypeContext
+      - Pinafore.Language.Scope
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.Type.Type
       - Pinafore.Language.Type.Subtype

@@ -3,8 +3,8 @@ module Pinafore.Language.SimpleEntityType where
 import Pinafore.Base
 import Pinafore.Language.Literal
 import Pinafore.Language.NamedEntity
+import Pinafore.Language.Scope
 import Pinafore.Language.Show
-import Pinafore.Language.TypeContext
 import Shapes
 import Truth.Core
 

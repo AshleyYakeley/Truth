@@ -12,22 +12,22 @@ module Language.Expression.Renamer
 import Shapes
 
 class (MonadTransConstraint Monad rn, MonadTransConstraint Monad (RenamerNamespace rn)) => Renamer rn where
-    type RenamerNegWitness rn :: Type -> Type
-    type RenamerPosWitness rn :: Type -> Type
+    type RenamerTSNegWitness rn :: Type -> Type
+    type RenamerTSPosWitness rn :: Type -> Type
     type RenamerNamespace rn :: (Type -> Type) -> (Type -> Type)
-    renameNegWitness ::
+    renameTSNegWitness ::
            Monad m
-        => RenamerNegWitness rn t
-        -> (forall t'. RenamerNegWitness rn t' -> Bijection t t' -> RenamerNamespace rn (rn m) r)
+        => RenamerTSNegWitness rn t
+        -> (forall t'. RenamerTSNegWitness rn t' -> Bijection t t' -> RenamerNamespace rn (rn m) r)
         -> RenamerNamespace rn (rn m) r
-    renamePosWitness ::
+    renameTSPosWitness ::
            Monad m
-        => RenamerPosWitness rn t
-        -> (forall t'. RenamerPosWitness rn t' -> Bijection t t' -> RenamerNamespace rn (rn m) r)
+        => RenamerTSPosWitness rn t
+        -> (forall t'. RenamerTSPosWitness rn t' -> Bijection t t' -> RenamerNamespace rn (rn m) r)
         -> RenamerNamespace rn (rn m) r
     renameNewVar ::
            Monad m
-        => (forall tp tq. RenamerNegWitness rn tq -> RenamerPosWitness rn tp -> (tq -> tp) -> rn m r)
+        => (forall tp tq. RenamerTSNegWitness rn tq -> RenamerTSPosWitness rn tp -> (tq -> tp) -> rn m r)
         -> rn m r
     namespace :: Monad m => RenamerNamespace rn (rn m) r -> rn m r
     runRenamer :: Monad m => rn m r -> m r

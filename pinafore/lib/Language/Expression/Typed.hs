@@ -7,121 +7,123 @@ import Language.Expression.Sealed
 import Language.Expression.Unifier
 import Shapes
 
-class ( Monad (TypeCheck ts)
-      , Renamer (TypeRenamer ts)
-      , RenamerNegWitness (TypeRenamer ts) ~ NegWitness ts
-      , RenamerPosWitness (TypeRenamer ts) ~ PosWitness ts
-      , Unifier (TypeUnifier ts)
-      , UnifierMonad (TypeUnifier ts) ~ TypeRenamer ts (TypeCheck ts)
-      , UnifierNegWitness (TypeUnifier ts) ~ NegWitness ts
-      , UnifierPosWitness (TypeUnifier ts) ~ PosWitness ts
+class ( Monad (TSScoped ts)
+      , Renamer (TSRenamer ts)
+      , RenamerTSNegWitness (TSRenamer ts) ~ TSNegWitness ts
+      , RenamerTSPosWitness (TSRenamer ts) ~ TSPosWitness ts
+      , Unifier (TSUnifier ts)
+      , UnifierMonad (TSUnifier ts) ~ TSRenamer ts (TSScoped ts)
+      , UnifierTSNegWitness (TSUnifier ts) ~ TSNegWitness ts
+      , UnifierTSPosWitness (TSUnifier ts) ~ TSPosWitness ts
       ) => TypeSystem (ts :: Type) where
-    type TypeRenamer ts :: (Type -> Type) -> (Type -> Type)
-    type TypeUnifier ts :: Type -> Type
-    type NegWitness ts :: Type -> Type
-    type PosWitness ts :: Type -> Type
-    type TypeCheck ts :: Type -> Type
-    typeSystemFunctionPosWitness :: FunctionPosWitness (NegWitness ts) (PosWitness ts)
-    typeSystemFunctionNegWitness :: FunctionNegWitness (NegWitness ts) (PosWitness ts)
+    type TSRenamer ts :: (Type -> Type) -> (Type -> Type)
+    type TSUnifier ts :: Type -> Type
+    type TSNegWitness ts :: Type -> Type
+    type TSPosWitness ts :: Type -> Type
+    type TSScoped ts :: Type -> Type
+    typeSystemFunctionTSPosWitness :: FunctionTSPosWitness (TSNegWitness ts) (TSPosWitness ts)
+    typeSystemFunctionTSNegWitness :: FunctionTSNegWitness (TSNegWitness ts) (TSPosWitness ts)
 
-type TypedValue ts = AnyValue (PosWitness ts)
+type TSName ts = UnifierName (TSUnifier ts)
 
-type TypedExpression name ts = SealedExpression name (NegWitness ts) (PosWitness ts)
+type TSValue ts = AnyValue (TSPosWitness ts)
 
-type TypeMonadRenamer ts = TypeRenamer ts (TypeCheck ts)
+type TSSealedExpression ts = SealedExpression (TSName ts) (TSNegWitness ts) (TSPosWitness ts)
 
-typedUnifyPosNegWitnesses ::
+type TSRenamerScoped ts = TSRenamer ts (TSScoped ts)
+
+typedUnifyPosTSNegWitnesses ::
        forall ts a b. TypeSystem ts
-    => PosWitness ts a
-    -> NegWitness ts b
-    -> TypeCheck ts (a -> b)
-typedUnifyPosNegWitnesses wa wb = runRenamer @(TypeRenamer ts) $ solveUnifyPosNegWitnesses @(TypeUnifier ts) wa wb
+    => TSPosWitness ts a
+    -> TSNegWitness ts b
+    -> TSScoped ts (a -> b)
+typedUnifyPosTSNegWitnesses wa wb = runRenamer @(TSRenamer ts) $ solveUnifyPosTSNegWitnesses @(TSUnifier ts) wa wb
 
-evalTypedExpression ::
-       forall ts name m. (MonadFail m, Show name)
-    => TypedExpression name ts
-    -> m (TypedValue ts)
-evalTypedExpression = evalSealedExpression
+evalTSSealedExpression ::
+       forall ts m. (MonadFail m, Show (TSName ts))
+    => TSSealedExpression ts
+    -> m (TSValue ts)
+evalTSSealedExpression = evalSealedExpression
 
 typedAnyToVal ::
        forall ts t. TypeSystem ts
-    => NegWitness ts t
-    -> TypedValue ts
-    -> TypeCheck ts t
+    => TSNegWitness ts t
+    -> TSValue ts
+    -> TSScoped ts t
 typedAnyToVal witn (MkAnyValue witp val) = do
-    conv <- typedUnifyPosNegWitnesses @ts witp witn
+    conv <- typedUnifyPosTSNegWitnesses @ts witp witn
     return $ conv val
 
-evalTypedExpressionToType ::
-       forall ts name t. (TypeSystem ts, MonadFail (TypeCheck ts), Show name)
-    => NegWitness ts t
-    -> TypedExpression name ts
-    -> TypeCheck ts t
-evalTypedExpressionToType witn expr = do
-    aval <- evalTypedExpression @ts expr
+evalTSSealedExpressionToType ::
+       forall ts t. (TypeSystem ts, MonadFail (TSScoped ts), Show (TSName ts))
+    => TSNegWitness ts t
+    -> TSSealedExpression ts
+    -> TSScoped ts t
+evalTSSealedExpressionToType witn expr = do
+    aval <- evalTSSealedExpression @ts expr
     typedAnyToVal @ts witn aval
 
-applyTypedExpression ::
-       forall ts name. (Eq name, TypeSystem ts)
-    => TypedExpression name ts
-    -> TypedExpression name ts
-    -> TypeCheck ts (TypedExpression name ts)
-applyTypedExpression tf ta =
-    applySealedExpression @(TypeRenamer ts) @(TypeUnifier ts) (typeSystemFunctionNegWitness @ts) tf ta
+applyTSSealedExpression ::
+       forall ts. TypeSystem ts
+    => TSSealedExpression ts
+    -> TSSealedExpression ts
+    -> TSScoped ts (TSSealedExpression ts)
+applyTSSealedExpression tf ta =
+    applySealedExpression @(TSRenamer ts) @(TSUnifier ts) (typeSystemFunctionTSNegWitness @ts) tf ta
 
-abstractTypedExpression ::
-       forall ts name. (Eq name, TypeSystem ts)
-    => name
-    -> TypedExpression name ts
-    -> TypeCheck ts (TypedExpression name ts)
-abstractTypedExpression n expr =
-    abstractSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) (typeSystemFunctionPosWitness @ts) n expr
+abstractTSSealedExpression ::
+       forall ts. TypeSystem ts
+    => TSName ts
+    -> TSSealedExpression ts
+    -> TSScoped ts (TSSealedExpression ts)
+abstractTSSealedExpression n expr =
+    abstractSealedExpression @(TSRenamer ts) @(TSUnifier ts) (typeSystemFunctionTSPosWitness @ts) n expr
 
-varTypedExpression ::
-       forall ts name. TypeSystem ts
-    => name
-    -> TypedExpression name ts
-varTypedExpression name =
+varTSSealedExpression ::
+       forall ts. TypeSystem ts
+    => TSName ts
+    -> TSSealedExpression ts
+varTSSealedExpression name =
     runIdentity $
-    runRenamer @(TypeRenamer ts) $
+    runRenamer @(TSRenamer ts) $
     renameNewVar $ \vwt twt conv -> withTransConstraintTM @Monad $ return $ varSealedExpression name vwt twt conv
 
-constTypedExpression :: forall ts name. TypedValue ts -> TypedExpression name ts
-constTypedExpression = constSealedExpression
+constTSSealedExpression :: forall ts. TSValue ts -> TSSealedExpression ts
+constTSSealedExpression = constSealedExpression
 
-letTypedExpression ::
-       forall ts name. (Eq name, TypeSystem ts)
-    => name
-    -> TypedExpression name ts
-    -> TypedExpression name ts
-    -> TypeCheck ts (TypedExpression name ts)
-letTypedExpression n expv expb = letSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) n expv expb
+letTSSealedExpression ::
+       forall ts. TypeSystem ts
+    => TSName ts
+    -> TSSealedExpression ts
+    -> TSSealedExpression ts
+    -> TSScoped ts (TSSealedExpression ts)
+letTSSealedExpression n expv expb = letSealedExpression @(TSRenamer ts) @(TSUnifier ts) n expv expb
 
-type TypedBindings name ts = Bindings name (TypeUnifier ts)
+type TypedBindings ts = Bindings (TSUnifier ts)
 
 singleTypedBinding ::
-       forall ts name. TypeSystem ts
-    => name
-    -> TypedExpression name ts
-    -> TypedBindings name ts
+       forall ts. TypeSystem ts
+    => TSName ts
+    -> TSSealedExpression ts
+    -> TypedBindings ts
 singleTypedBinding = singleBinding
 
-uncheckedBindingsLetTypedExpression ::
-       forall ts name. (Ord name, TypeSystem ts)
-    => TypedBindings name ts
-    -> TypedExpression name ts
-    -> TypeCheck ts (TypedExpression name ts)
-uncheckedBindingsLetTypedExpression bb expb = bindingsLetSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) bb expb
+uncheckedBindingsLetTSSealedExpression ::
+       forall ts. (Ord (TSName ts), TypeSystem ts)
+    => TypedBindings ts
+    -> TSSealedExpression ts
+    -> TSScoped ts (TSSealedExpression ts)
+uncheckedBindingsLetTSSealedExpression bb expb = bindingsLetSealedExpression @(TSRenamer ts) @(TSUnifier ts) bb expb
 
-valuesLetTypedExpression ::
-       forall ts name. (Ord name, TypeSystem ts)
-    => (name -> Maybe (TypedValue ts))
-    -> TypedExpression name ts
-    -> TypeCheck ts (TypedExpression name ts)
-valuesLetTypedExpression valbind expb = valuesLetSealedExpression @(TypeRenamer ts) @(TypeUnifier ts) valbind expb
+valuesLetTSSealedExpression ::
+       forall ts. (Ord (TSName ts), TypeSystem ts)
+    => (TSName ts -> Maybe (TSValue ts))
+    -> TSSealedExpression ts
+    -> TSScoped ts (TSSealedExpression ts)
+valuesLetTSSealedExpression valbind expb = valuesLetSealedExpression @(TSRenamer ts) @(TSUnifier ts) valbind expb
 
 typedBindingsCheckDuplicates ::
-       forall ts name m. (Eq name, Show name, TypeSystem ts, MonadFail m)
-    => TypedBindings name ts
+       forall ts m. (Show (TSName ts), TypeSystem ts, MonadFail m)
+    => TypedBindings ts
     -> m ()
 typedBindingsCheckDuplicates = bindingsCheckDuplicates

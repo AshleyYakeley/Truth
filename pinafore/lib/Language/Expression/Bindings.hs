@@ -18,42 +18,45 @@ import Language.Expression.Sealed
 import Language.Expression.Unifier
 import Shapes
 
-data Binding (name :: Type) (unifier :: Type -> Type) where
+data Binding (unifier :: Type -> Type) where
     MkBinding
-        :: name -> SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier) -> Binding name unifier
+        :: UnifierName unifier
+        -> SealedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) (UnifierTSPosWitness unifier)
+        -> Binding unifier
 
-newtype Bindings name unifier =
-    MkBindings [Binding name unifier]
+newtype Bindings unifier =
+    MkBindings [Binding unifier]
     deriving (Semigroup, Monoid)
 
 singleBinding ::
-       name -> SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier) -> Bindings name unifier
+       UnifierName unifier
+    -> SealedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) (UnifierTSPosWitness unifier)
+    -> Bindings unifier
 singleBinding name expr = MkBindings $ pure $ MkBinding name expr
 
 bindingsMap ::
-       Ord name
-    => Bindings name unifier
-    -> StrictMap name (SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier))
+       Ord (UnifierName unifier)
+    => Bindings unifier
+    -> StrictMap (UnifierName unifier) (SealedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) (UnifierTSPosWitness unifier))
 bindingsMap (MkBindings bb) = mapFromList $ fmap (\(MkBinding n e) -> (n, e)) bb
 
-data Bound name unifier =
+data Bound unifier =
     forall vals. MkBound (forall a.
-                                  NamedExpression name (UnifierNegWitness unifier) a -> UnifierMonad unifier (UnifyExpression name unifier (vals -> a)))
-                         (NamedExpression name (UnifierNegWitness unifier) vals)
-                         (UnifierSubstitutions unifier -> NamedExpression name (UnifierNegWitness unifier) vals -> UnifierMonad unifier (Bindings name unifier))
+                                  NamedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) a -> UnifierMonad unifier (UnifyExpression unifier (vals -> a)))
+                         (NamedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) vals)
+                         (UnifierSubstitutions unifier -> NamedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) vals -> UnifierMonad unifier (Bindings unifier))
 
 mkBound ::
-       forall name renamer unifier m.
-       ( Eq name
-       , Monad m
+       forall renamer unifier m.
+       ( Monad m
        , Renamer renamer
        , Unifier unifier
-       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
-       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , RenamerTSNegWitness renamer ~ UnifierTSNegWitness unifier
+       , RenamerTSPosWitness renamer ~ UnifierTSPosWitness unifier
        , UnifierMonad unifier ~ renamer m
        )
-    => [Binding name unifier]
-    -> renamer m (Bound name unifier)
+    => [Binding unifier]
+    -> renamer m (Bound unifier)
 mkBound [] =
     withTransConstraintTM @Monad $
     return $ MkBound (\e -> return $ unifyExpression $ fmap (\a _ -> a) e) (pure ()) (\_ _ -> return mempty)
@@ -64,12 +67,12 @@ mkBound ((MkBinding name sexpr):bb) =
         return $ let
             abstractNames' ::
                    forall a.
-                   NamedExpression name (UnifierNegWitness unifier) a
-                -> UnifierMonad unifier (UnifyExpression name unifier (_ -> a))
+                   NamedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) a
+                -> UnifierMonad unifier (UnifyExpression unifier (_ -> a))
             abstractNames' e = do
                 MkUnifyExpression uconvRest e' <- abstractNames e
                 MkAbstractResult vwt (MkUnifyExpression uconvFirst e'') <- abstractNamedExpression @unifier name e'
-                uconvVar <- unifyPosNegWitnesses @unifier twt vwt
+                uconvVar <- unifyPosTSNegWitnesses @unifier twt vwt
                 let uresult = (,,) <$> uconvFirst <*> uconvRest <*> uconvVar
                 return $
                     MkUnifyExpression uresult $
@@ -77,8 +80,8 @@ mkBound ((MkBinding name sexpr):bb) =
             exprs' = (,) <$> expr <*> exprs
             getbinds' ::
                    UnifierSubstitutions unifier
-                -> NamedExpression name (UnifierNegWitness unifier) _
-                -> UnifierMonad unifier (Bindings name unifier)
+                -> NamedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) _
+                -> UnifierMonad unifier (Bindings unifier)
             getbinds' subs fexpr = do
                 b1 <- getbinds subs (fmap snd fexpr)
                 e <- unifierExpressionSubstituteAndSimplify @unifier subs twt $ fmap fst fexpr
@@ -86,34 +89,34 @@ mkBound ((MkBinding name sexpr):bb) =
             in MkBound abstractNames' exprs' getbinds'
 
 boundToBindings ::
-       forall name unifier. (Eq name, Unifier unifier)
-    => Bound name unifier
-    -> UnifierMonad unifier (Bindings name unifier)
+       forall unifier. Unifier unifier
+    => Bound unifier
+    -> UnifierMonad unifier (Bindings unifier)
 boundToBindings (MkBound abstractNames exprs getbinds) = do
     uexprvv <- abstractNames exprs
     (fexpr, subs) <- solveUnifier @unifier $ unifierExpression uexprvv
     getbinds subs $ fmap fix fexpr
 
-getBindingNode :: Binding name unifier -> (Binding name unifier, name, [name])
+getBindingNode :: Binding unifier -> (Binding unifier, UnifierName unifier, [UnifierName unifier])
 getBindingNode b@(MkBinding n expr) = (b, n, sealedExpressionFreeNames expr)
 
 -- | Group bindings into a topologically-sorted list of strongly-connected components
-clumpBindings :: Ord name => Bindings name unifier -> [Bindings name unifier]
+clumpBindings :: Ord (UnifierName unifier) => Bindings unifier -> [Bindings unifier]
 clumpBindings (MkBindings bb) = fmap (MkBindings . flattenSCC) $ stronglyConnComp $ fmap getBindingNode bb
 
 bindingsLetSealedExpression ::
-       forall renamer unifier m name.
+       forall renamer unifier m.
        ( Monad m
-       , Ord name
+       , Ord (UnifierName unifier)
        , Renamer renamer
        , Unifier unifier
-       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
-       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , RenamerTSNegWitness renamer ~ UnifierTSNegWitness unifier
+       , RenamerTSPosWitness renamer ~ UnifierTSPosWitness unifier
        , UnifierMonad unifier ~ renamer m
        )
-    => Bindings name unifier
-    -> SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer)
-    -> m (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
+    => Bindings unifier
+    -> SealedExpression (UnifierName unifier) (RenamerTSNegWitness renamer) (RenamerTSPosWitness renamer)
+    -> m (SealedExpression (UnifierName unifier) (RenamerTSNegWitness renamer) (RenamerTSPosWitness renamer))
 bindingsLetSealedExpression bindings = let
     doClumps [] expr = return expr
     doClumps (b:bb) expr = do
@@ -122,18 +125,18 @@ bindingsLetSealedExpression bindings = let
     in doClumps $ clumpBindings bindings
 
 bindingsComponentLetSealedExpression ::
-       forall renamer unifier m name.
+       forall renamer unifier m.
        ( Monad m
-       , Ord name
+       , Ord (UnifierName unifier)
        , Renamer renamer
        , Unifier unifier
-       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
-       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , RenamerTSNegWitness renamer ~ UnifierTSNegWitness unifier
+       , RenamerTSPosWitness renamer ~ UnifierTSPosWitness unifier
        , UnifierMonad unifier ~ renamer m
        )
-    => Bindings name unifier
-    -> SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer)
-    -> m (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
+    => Bindings unifier
+    -> SealedExpression (UnifierName unifier) (RenamerTSNegWitness renamer) (RenamerTSPosWitness renamer)
+    -> m (SealedExpression (UnifierName unifier) (RenamerTSNegWitness renamer) (RenamerTSPosWitness renamer))
 bindingsComponentLetSealedExpression (MkBindings bindings) sexprb =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
@@ -145,18 +148,17 @@ bindingsComponentLetSealedExpression (MkBindings bindings) sexprb =
         unifierExpressionSubstituteAndSimplify @unifier subs tb exprb'
 
 valuesLetSealedExpression ::
-       forall renamer unifier m name.
+       forall renamer unifier m.
        ( Monad m
-       , Ord name
        , Renamer renamer
        , Unifier unifier
-       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
-       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , RenamerTSNegWitness renamer ~ UnifierTSNegWitness unifier
+       , RenamerTSPosWitness renamer ~ UnifierTSPosWitness unifier
        , UnifierMonad unifier ~ renamer m
        )
-    => (name -> Maybe (AnyValue (UnifierPosWitness unifier)))
-    -> SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer)
-    -> m (SealedExpression name (RenamerNegWitness renamer) (RenamerPosWitness renamer))
+    => (UnifierName unifier -> Maybe (AnyValue (UnifierTSPosWitness unifier)))
+    -> SealedExpression (UnifierName unifier) (RenamerTSNegWitness renamer) (RenamerTSPosWitness renamer)
+    -> m (SealedExpression (UnifierName unifier) (RenamerTSNegWitness renamer) (RenamerTSPosWitness renamer))
 valuesLetSealedExpression valbind sexprb =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
@@ -174,7 +176,7 @@ duplicates (a:aa)
     | elem a aa = a : duplicates aa
 duplicates (_:aa) = duplicates aa
 
-bindingsNames :: Bindings name unifier -> [name]
+bindingsNames :: Bindings unifier -> [UnifierName unifier]
 bindingsNames (MkBindings bb) = fmap (\(MkBinding name _) -> name) bb
 
 checkDuplicates :: (Show name, Eq name, MonadFail m) => [name] -> m ()
@@ -183,5 +185,6 @@ checkDuplicates nn =
         [] -> return ()
         b -> fail $ "duplicate bindings: " <> (intercalate ", " $ fmap show b)
 
-bindingsCheckDuplicates :: (Show name, Eq name, MonadFail m) => Bindings name unifier -> m ()
+bindingsCheckDuplicates ::
+       (Show (UnifierName unifier), Eq (UnifierName unifier), MonadFail m) => Bindings unifier -> m ()
 bindingsCheckDuplicates bindings = checkDuplicates $ bindingsNames bindings

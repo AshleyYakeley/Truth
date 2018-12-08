@@ -14,7 +14,7 @@ import Shapes hiding (try)
 
 readProperty ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (PinaforeTypeCheck (QExpr baseedit))
+    => Parser (PinaforeScoped baseedit (QExpr baseedit))
 readProperty = do
     readThis TokProperty
     readThis TokAt

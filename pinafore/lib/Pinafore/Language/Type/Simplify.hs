@@ -29,9 +29,7 @@ import Shapes
 -- 5. merge free (term) variables with subtypes
 -- e.g. "{v::a,v::a} => b" => "{v::a} => b"
 pinaforeSimplifyExpressionType ::
-       forall baseedit name. Eq name
-    => PinaforeExpression baseedit name
-    -> PinaforeUnifierMonad baseedit (PinaforeExpression baseedit name)
+       forall baseedit. PinaforeExpression baseedit -> PinaforeUnifierMonad baseedit (PinaforeExpression baseedit)
 pinaforeSimplifyExpressionType =
     mergeFreeExpressionTermVars .
     mergeDuplicateTypeVarsInTypes .

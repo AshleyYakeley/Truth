@@ -14,7 +14,7 @@ import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes
 
-type RefNotation baseedit = WriterT [(Name, QExpr baseedit)] (StateT Int PinaforeTypeCheck)
+type RefNotation baseedit = WriterT [(Name, QExpr baseedit)] (StateT Int (PinaforeScoped baseedit))
 
 runRefWriterT :: MonadFail m => WriterT [(Name, QExpr baseedit)] m a -> m a
 runRefWriterT wma = do
@@ -23,15 +23,15 @@ runRefWriterT wma = do
         [] -> return a
         _ -> fail "unquote outside Ref quote"
 
-liftRefNotation :: PinaforeTypeCheck a -> RefNotation baseedit a
+liftRefNotation :: PinaforeScoped baseedit a -> RefNotation baseedit a
 liftRefNotation = lift . lift
 
 remonadRefNotation ::
-       (forall a. PinaforeTypeCheck a -> PinaforeTypeCheck a)
+       (forall a. PinaforeScoped baseedit a -> PinaforeScoped baseedit a)
     -> (forall a. RefNotation baseedit a -> RefNotation baseedit a)
 remonadRefNotation mm = remonad $ remonad mm
 
-runRefNotation :: RefNotation baseedit a -> PinaforeTypeCheck a
+runRefNotation :: RefNotation baseedit a -> PinaforeScoped baseedit a
 runRefNotation rexpr = evalStateT (runRefWriterT rexpr) 0
 
 type RefExpression baseedit = RefNotation baseedit (QExpr baseedit)
@@ -57,7 +57,7 @@ aprefExpr =
     qConstExpr
         ((<*>) :: PinaforeImmutableReference baseedit (A -> B) -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit B)
 
-aplist :: QExpr baseedit -> [QExpr baseedit] -> SourcePinaforeTypeCheck (QExpr baseedit)
+aplist :: QExpr baseedit -> [QExpr baseedit] -> PinaforeSourceScoped baseedit (QExpr baseedit)
 aplist expr [] = return expr
 aplist expr (arg:args) = do
     expr' <- qApplyAllExpr aprefExpr [expr, arg]

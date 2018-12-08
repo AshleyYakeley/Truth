@@ -5,57 +5,57 @@ import Language.Expression.Named
 import Language.Expression.Sealed
 import Shapes
 
-class (Monad (UnifierMonad unifier), Applicative unifier) => Unifier unifier where
+class (Monad (UnifierMonad unifier), Applicative unifier, Eq (UnifierName unifier)) => Unifier unifier where
+    type UnifierName unifier :: Type
     type UnifierMonad unifier :: Type -> Type
-    type UnifierNegWitness unifier :: Type -> Type
-    type UnifierPosWitness unifier :: Type -> Type
+    type UnifierTSNegWitness unifier :: Type -> Type
+    type UnifierTSPosWitness unifier :: Type -> Type
     type UnifierSubstitutions unifier :: Type
-    unifyNegWitnesses ::
-           UnifierNegWitness unifier a
-        -> UnifierNegWitness unifier b
-        -> (forall ab. UnifierNegWitness unifier ab -> unifier (ab -> a, ab -> b) -> UnifierMonad unifier r)
+    unifyTSNegWitnesses ::
+           UnifierTSNegWitness unifier a
+        -> UnifierTSNegWitness unifier b
+        -> (forall ab. UnifierTSNegWitness unifier ab -> unifier (ab -> a, ab -> b) -> UnifierMonad unifier r)
         -> UnifierMonad unifier r
-    unifyPosWitnesses ::
-           UnifierPosWitness unifier a
-        -> UnifierPosWitness unifier b
-        -> (forall ab. UnifierPosWitness unifier ab -> unifier (a -> ab, b -> ab) -> UnifierMonad unifier r)
+    unifyTSPosWitnesses ::
+           UnifierTSPosWitness unifier a
+        -> UnifierTSPosWitness unifier b
+        -> (forall ab. UnifierTSPosWitness unifier ab -> unifier (a -> ab, b -> ab) -> UnifierMonad unifier r)
         -> UnifierMonad unifier r
-    unifyPosNegWitnesses ::
-           UnifierPosWitness unifier a -> UnifierNegWitness unifier b -> UnifierMonad unifier (unifier (a -> b))
+    unifyPosTSNegWitnesses ::
+           UnifierTSPosWitness unifier a -> UnifierTSNegWitness unifier b -> UnifierMonad unifier (unifier (a -> b))
     solveUnifier :: unifier a -> UnifierMonad unifier (a, UnifierSubstitutions unifier)
     unifierPosSubstitute ::
            UnifierSubstitutions unifier
-        -> UnifierPosWitness unifier t
-        -> (forall t'. UnifierPosWitness unifier t' -> (t -> t') -> r)
+        -> UnifierTSPosWitness unifier t
+        -> (forall t'. UnifierTSPosWitness unifier t' -> (t -> t') -> r)
         -> r
     unifierNegSubstitute ::
            UnifierSubstitutions unifier
-        -> UnifierNegWitness unifier t
-        -> (forall t'. UnifierNegWitness unifier t' -> (t' -> t) -> r)
+        -> UnifierTSNegWitness unifier t
+        -> (forall t'. UnifierTSNegWitness unifier t' -> (t' -> t) -> r)
         -> r
     simplifyExpressionType ::
-           forall name. Eq name
-        => SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier)
-        -> UnifierMonad unifier (SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier))
+           SealedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) (UnifierTSPosWitness unifier)
+        -> UnifierMonad unifier (SealedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) (UnifierTSPosWitness unifier))
 
 liftUnifier :: Monad (UnifierMonad unifier) => unifier a -> Compose (UnifierMonad unifier) unifier a
 liftUnifier ua = Compose $ return ua
 
-solveUnifyPosNegWitnesses ::
+solveUnifyPosTSNegWitnesses ::
        forall unifier a b. Unifier unifier
-    => UnifierPosWitness unifier a
-    -> UnifierNegWitness unifier b
+    => UnifierTSPosWitness unifier a
+    -> UnifierTSNegWitness unifier b
     -> UnifierMonad unifier (a -> b)
-solveUnifyPosNegWitnesses wa wb = do
-    uab <- unifyPosNegWitnesses @unifier wa wb
+solveUnifyPosTSNegWitnesses wa wb = do
+    uab <- unifyPosTSNegWitnesses @unifier wa wb
     (ab, _) <- solveUnifier uab
     return ab
 
 unifierExpressionSubstitute ::
-       forall unifier name a. Unifier unifier
+       forall unifier a. Unifier unifier
     => UnifierSubstitutions unifier
-    -> NamedExpression name (UnifierNegWitness unifier) a
-    -> NamedExpression name (UnifierNegWitness unifier) a
+    -> NamedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) a
+    -> NamedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) a
 unifierExpressionSubstitute _ (ClosedExpression a) = ClosedExpression a
 unifierExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) =
     unifierNegSubstitute @unifier subs tw $ \tw' conv ->
@@ -63,32 +63,36 @@ unifierExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) =
         fmap (\ta -> ta . conv) $ unifierExpressionSubstitute @unifier subs expr
 
 unifierExpressionSubstituteAndSimplify ::
-       forall unifier name a. (Unifier unifier, Eq name)
+       forall unifier a. Unifier unifier
     => UnifierSubstitutions unifier
-    -> UnifierPosWitness unifier a
-    -> NamedExpression name (UnifierNegWitness unifier) a
-    -> UnifierMonad unifier (SealedExpression name (UnifierNegWitness unifier) (UnifierPosWitness unifier))
+    -> UnifierTSPosWitness unifier a
+    -> NamedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) a
+    -> UnifierMonad unifier (SealedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) (UnifierTSPosWitness unifier))
 unifierExpressionSubstituteAndSimplify subs twt expr =
     simplifyExpressionType @unifier $
     unifierPosSubstitute @unifier subs twt $ \twt' tconv ->
         MkSealedExpression twt' $ unifierExpressionSubstitute @unifier subs $ fmap tconv expr
 
-data UnifyExpression name unifier a =
+data UnifyExpression unifier a =
     forall conv. MkUnifyExpression (unifier conv)
-                                   (NamedExpression name (UnifierNegWitness unifier) (conv -> a))
+                                   (NamedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) (conv -> a))
 
-instance Functor (UnifyExpression name unifier) where
+instance Functor (UnifyExpression unifier) where
     fmap ab (MkUnifyExpression uconv expr) = MkUnifyExpression uconv $ fmap (fmap ab) expr
 
-instance Applicative unifier => Applicative (UnifyExpression name unifier) where
+instance Applicative unifier => Applicative (UnifyExpression unifier) where
     pure a = MkUnifyExpression (pure ()) $ pure $ \_ -> a
     liftA2 abc (MkUnifyExpression uconva expra) (MkUnifyExpression uconvb exprb) =
         MkUnifyExpression (liftA2 (,) uconva uconvb) $ liftA2 (\caa cbb (ca, cb) -> abc (caa ca) (cbb cb)) expra exprb
 
 unifyExpression ::
-       Applicative unifier => NamedExpression name (UnifierNegWitness unifier) a -> UnifyExpression name unifier a
+       Applicative unifier
+    => NamedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) a
+    -> UnifyExpression unifier a
 unifyExpression expr = MkUnifyExpression (pure ()) $ fmap (\a _ -> a) expr
 
 unifierExpression ::
-       Functor unifier => UnifyExpression name unifier a -> unifier (NamedExpression name (UnifierNegWitness unifier) a)
+       Functor unifier
+    => UnifyExpression unifier a
+    -> unifier (NamedExpression (UnifierName unifier) (UnifierTSNegWitness unifier) a)
 unifierExpression (MkUnifyExpression uconv expr) = fmap (\conv -> fmap (\conva -> conva conv) expr) uconv

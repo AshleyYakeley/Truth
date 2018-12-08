@@ -66,5 +66,5 @@ mergeInType (ConsPinaforeType t1 tr) =
                         Left Refl -> contramap (joinBimap conv1 convr) $ mergeInPositiveSingularType t1' tr'
                         Right Refl -> fmap (meetBimap conv1 convr) $ mergeInNegativeSingularType t1' tr'
 
-mergeDuplicateTypeVarsInTypes :: PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+mergeDuplicateTypeVarsInTypes :: PinaforeExpression baseedit -> PinaforeExpression baseedit
 mergeDuplicateTypeVarsInTypes = mapSealedExpressionTypes mergeInType mergeInType

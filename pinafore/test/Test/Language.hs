@@ -124,10 +124,10 @@ instance Eq (QValue baseedit) where
     (MkAnyValue QTList a1) == (MkAnyValue QTList a2) = a1 == a2
     (MkAnyValue t1 _) == (MkAnyValue t2 _) = error $ "QValue: " <> show t1 <> " & " <> show t2 <> " not comparable"
 
-testQueryValue :: String -> PinaforeTypeCheck (QExpr PinaforeEdit) -> Maybe (QValue PinaforeEdit) -> TestTree
+testQueryValue :: String -> Scoped (QExpr PinaforeEdit) -> Maybe (QValue PinaforeEdit) -> TestTree
 testQueryValue name texpr expected =
     testCase name $
-    case runPinaforeTypeCheck texpr of
+    case runScoped texpr of
         SuccessResult expr -> assertEqual "result" expected $ qEvalExpr expr
         FailureResult err -> fail $ unpack err
 
@@ -209,6 +209,7 @@ testQueries =
               [ testQuery "let in 27" $ Just $ showText "27"
               , testQuery "let a=\"5\" in a" $ Just $ showText "5"
               , testQuery "let a=5 in a" $ Just $ showText "5"
+              , testQuery "let a=1 in let a=2 in a" $ Just $ showText "2"
               , testQuery "let a=1;b=2 in a" $ Just $ showText "1"
               , testQuery "let a=1;b=2 in b" $ Just $ showText "2"
               , testQuery "let a=1;b=2 in b" $ Just $ showText "2"

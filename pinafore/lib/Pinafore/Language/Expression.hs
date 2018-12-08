@@ -2,7 +2,7 @@
 
 module Pinafore.Language.Expression
     ( module Pinafore.Language.Expression
-    , PinaforeTypeCheck
+    , PinaforeScoped
     ) where
 
 import Language.Expression.Bindings
@@ -13,12 +13,12 @@ import Pinafore.Language.Name
 import Pinafore.Language.Type
 import Shapes
 
-type QExpr baseedit = TypedExpression Name (PinaforeTypeSystem baseedit)
+type QExpr baseedit = TSSealedExpression (PinaforeTypeSystem baseedit)
 
-type QValue baseedit = TypedValue (PinaforeTypeSystem baseedit)
+type QValue baseedit = TSValue (PinaforeTypeSystem baseedit)
 
 qConstExprAny :: forall baseedit. QValue baseedit -> QExpr baseedit
-qConstExprAny = constTypedExpression @(PinaforeTypeSystem baseedit)
+qConstExprAny = constTSSealedExpression @(PinaforeTypeSystem baseedit)
 
 qConstExpr ::
        forall baseedit a. ToPinaforeType baseedit a
@@ -27,21 +27,21 @@ qConstExpr ::
 qConstExpr a = qConstExprAny $ toValue a
 
 qVarExpr :: forall baseedit. Name -> QExpr baseedit
-qVarExpr name = varTypedExpression @(PinaforeTypeSystem baseedit) name
+qVarExpr name = varTSSealedExpression @(PinaforeTypeSystem baseedit) name
 
-qAbstractExpr :: forall baseedit. Name -> QExpr baseedit -> SourcePinaforeTypeCheck (QExpr baseedit)
-qAbstractExpr name expr = abstractTypedExpression @(PinaforeTypeSystem baseedit) name expr
+qAbstractExpr :: forall baseedit. Name -> QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit)
+qAbstractExpr name expr = abstractTSSealedExpression @(PinaforeTypeSystem baseedit) name expr
 
-qAbstractsExpr :: [Name] -> QExpr baseedit -> SourcePinaforeTypeCheck (QExpr baseedit)
+qAbstractsExpr :: [Name] -> QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit)
 qAbstractsExpr [] e = return e
 qAbstractsExpr (n:nn) e = do
     e' <- qAbstractsExpr nn e
     qAbstractExpr n e'
 
-qApplyExpr :: forall baseedit. QExpr baseedit -> QExpr baseedit -> SourcePinaforeTypeCheck (QExpr baseedit)
-qApplyExpr exprf expra = applyTypedExpression @(PinaforeTypeSystem baseedit) exprf expra
+qApplyExpr :: forall baseedit. QExpr baseedit -> QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit)
+qApplyExpr exprf expra = applyTSSealedExpression @(PinaforeTypeSystem baseedit) exprf expra
 
-qApplyAllExpr :: QExpr baseedit -> [QExpr baseedit] -> SourcePinaforeTypeCheck (QExpr baseedit)
+qApplyAllExpr :: QExpr baseedit -> [QExpr baseedit] -> PinaforeSourceScoped baseedit (QExpr baseedit)
 qApplyAllExpr e [] = return e
 qApplyAllExpr e (a:aa) = do
     e' <- qApplyExpr e a
@@ -53,7 +53,7 @@ qEmptyList = qConstExpr ([] :: [UVar "a"])
 qConsList :: QExpr baseedit
 qConsList = qConstExpr ((:) :: UVar "a" -> [UVar "a"] -> [UVar "a"])
 
-qSequenceExpr :: [QExpr baseedit] -> SourcePinaforeTypeCheck (QExpr baseedit)
+qSequenceExpr :: [QExpr baseedit] -> PinaforeSourceScoped baseedit (QExpr baseedit)
 qSequenceExpr [] = return $ qEmptyList
 qSequenceExpr (e:ee) = do
     ee' <- qSequenceExpr ee
@@ -62,7 +62,9 @@ qSequenceExpr (e:ee) = do
 type QBindList baseedit = [(Name, QExpr baseedit)]
 
 bindListToBindings ::
-       forall baseedit. QBindList baseedit -> SourcePinaforeTypeCheck (TypedBindings Name (PinaforeTypeSystem baseedit))
+       forall baseedit.
+       QBindList baseedit
+    -> PinaforeSourceScoped baseedit (TypedBindings (PinaforeTypeSystem baseedit))
 bindListToBindings bl =
     fmap mconcat $ for bl $ \(n, e) -> return $ singleTypedBinding @(PinaforeTypeSystem baseedit) n e
 
@@ -72,32 +74,35 @@ qBindExpr n e = pure (n, e)
 qBindVal :: ToPinaforeType baseedit t => Name -> t -> QBindList baseedit
 qBindVal name val = qBindExpr name $ qConstExpr val
 
-qLetExpr :: forall baseedit. Name -> QExpr baseedit -> QExpr baseedit -> SourcePinaforeTypeCheck (QExpr baseedit)
-qLetExpr name exp body = letTypedExpression @(PinaforeTypeSystem baseedit) name exp body
+qLetExpr :: forall baseedit. Name -> QExpr baseedit -> QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit)
+qLetExpr name exp body = letTSSealedExpression @(PinaforeTypeSystem baseedit) name exp body
 
 qBindingsLetExpr ::
        forall baseedit m. MonadFail m
     => QBindList baseedit
-    -> m (QExpr baseedit -> SourcePinaforeTypeCheck (QExpr baseedit))
+    -> m (QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit))
 qBindingsLetExpr bl = do
     checkDuplicates $ fmap fst bl
     return $ \e -> qUncheckedBindingsLetExpr bl e
 
 qUncheckedBindingsLetExpr ::
-       forall baseedit. QBindList baseedit -> QExpr baseedit -> SourcePinaforeTypeCheck (QExpr baseedit)
+       forall baseedit. QBindList baseedit -> QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit)
 qUncheckedBindingsLetExpr bl e = do
     bindings <- bindListToBindings bl
-    uncheckedBindingsLetTypedExpression @(PinaforeTypeSystem baseedit) bindings e
+    uncheckedBindingsLetTSSealedExpression @(PinaforeTypeSystem baseedit) bindings e
 
 qValuesLetExpr ::
-       forall baseedit. (Name -> Maybe (QValue baseedit)) -> QExpr baseedit -> SourcePinaforeTypeCheck (QExpr baseedit)
-qValuesLetExpr = valuesLetTypedExpression @(PinaforeTypeSystem baseedit)
+       forall baseedit.
+       (Name -> Maybe (QValue baseedit))
+    -> QExpr baseedit
+    -> PinaforeSourceScoped baseedit (QExpr baseedit)
+qValuesLetExpr = valuesLetTSSealedExpression @(PinaforeTypeSystem baseedit)
 
 qEvalExpr ::
        forall baseedit m. MonadFail m
     => QExpr baseedit
     -> m (QValue baseedit)
-qEvalExpr expr = evalTypedExpression @(PinaforeTypeSystem baseedit) expr
+qEvalExpr expr = evalTSSealedExpression @(PinaforeTypeSystem baseedit) expr
 
 typedAnyToPinaforeVal ::
        forall baseedit t. FromPinaforeType baseedit t
@@ -106,5 +111,4 @@ typedAnyToPinaforeVal ::
     -> Result Text t
 typedAnyToPinaforeVal spos aval =
     case fromTypeF of
-        MkTypeF wit conv ->
-            runSourcePinaforeTypeCheck spos $ fmap conv $ typedAnyToVal @(PinaforeTypeSystem baseedit) wit aval
+        MkTypeF wit conv -> runSourceScoped spos $ fmap conv $ typedAnyToVal @(PinaforeTypeSystem baseedit) wit aval

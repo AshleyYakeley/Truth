@@ -51,11 +51,10 @@ instance GetExpressionVars (NamedExpression name (PinaforeType baseedit 'Negativ
     getExpressionVars (ClosedExpression _) = mempty
     getExpressionVars (OpenExpression (MkNameWitness _ t) expr) = getExpressionVars t <> getExpressionVars expr
 
-instance GetExpressionVars (PinaforeExpression baseedit name) where
+instance GetExpressionVars (PinaforeExpression baseedit) where
     getExpressionVars (MkSealedExpression twt expr) = getExpressionVars twt <> getExpressionVars expr
 
-eliminateOneSidedTypeVarsInExpression ::
-       forall baseedit name. PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+eliminateOneSidedTypeVarsInExpression :: forall baseedit. PinaforeExpression baseedit -> PinaforeExpression baseedit
 eliminateOneSidedTypeVarsInExpression expr = let
     (setFromList -> posvars, setFromList -> negvars) = getExpressionVars expr
     posonlyvars :: FiniteSet _

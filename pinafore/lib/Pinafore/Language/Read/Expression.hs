@@ -78,7 +78,7 @@ readLetBindings = do
 
 readTopLetBindings ::
        HasPinaforeEntityEdit baseedit
-    => Parser (PinaforeTypeCheck (QExpr baseedit) -> PinaforeTypeCheck (QExpr baseedit))
+    => Parser (PinaforeScoped baseedit (QExpr baseedit) -> PinaforeScoped baseedit (QExpr baseedit))
 readTopLetBindings = do
     f <- readLetBindings
     return $ \e -> runRefNotation $ f $ liftRefNotation e
@@ -216,7 +216,7 @@ readExpression3 =
 
 readTopExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (PinaforeTypeCheck (QExpr baseedit))
+    => Parser (PinaforeScoped baseedit (QExpr baseedit))
 readTopExpression = do
     rexpr <- readExpression
     eof

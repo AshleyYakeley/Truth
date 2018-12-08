@@ -6,6 +6,8 @@ import Language.Expression.Sealed
 import Language.Expression.UVar
 import Pinafore.Language.GroundType
 import Pinafore.Language.Literal
+import Pinafore.Language.Name
+import Pinafore.Language.Scope
 import Pinafore.Language.Show
 import Pinafore.Language.SimpleEntityType
 import Shapes
@@ -164,7 +166,11 @@ instance IsTypePolarity polarity => ExprShow (PinaforeRangeType baseedit polarit
                 _ -> "{" <> ointercalate "," pieces <> "}"
         in (text, 0)
 
-type PinaforeExpression baseedit name
-     = SealedExpression name (PinaforeType baseedit 'NegativePolarity) (PinaforeType baseedit 'PositivePolarity)
+type PinaforeExpression baseedit
+     = SealedExpression Name (PinaforeType baseedit 'NegativePolarity) (PinaforeType baseedit 'PositivePolarity)
 
 data PinaforeTypeSystem (baseedit :: Type)
+
+type PinaforeScoped baseedit = Scoped (PinaforeExpression baseedit)
+
+type PinaforeSourceScoped baseedit = SourceScoped (PinaforeExpression baseedit)

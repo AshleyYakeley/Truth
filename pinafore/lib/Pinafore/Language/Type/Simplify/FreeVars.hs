@@ -126,7 +126,7 @@ mergeFreeTermVars (OpenExpression wit expr) = do
     mergeFreeTermVar wit expr'
 
 mergeFreeExpressionTermVars ::
-       Eq name => PinaforeExpression baseedit name -> PinaforeUnifierMonad baseedit (PinaforeExpression baseedit name)
+       PinaforeExpression baseedit -> PinaforeUnifierMonad baseedit (PinaforeExpression baseedit)
 mergeFreeExpressionTermVars (MkSealedExpression t expr) = do
     expr' <- mergeFreeTermVars $ expr
     return $ MkSealedExpression t expr'

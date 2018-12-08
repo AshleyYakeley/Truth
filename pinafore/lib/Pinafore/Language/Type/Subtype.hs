@@ -8,15 +8,15 @@ module Pinafore.Language.Type.Subtype
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.GroundType
+import Pinafore.Language.Scope
 import Pinafore.Language.Show
 import Pinafore.Language.SimpleEntityType
 import Pinafore.Language.Type.Type
-import Pinafore.Language.TypeContext
 import Shapes
 
 data SubtypeContext baseedit m pola polb = MkSubtypeContext
     { subtypeTypes :: forall ta tb. PinaforeType baseedit pola ta -> PinaforeType baseedit polb tb -> m (ta -> tb)
-    , subtypeLift :: forall a. SourcePinaforeTypeCheck a -> m a
+    , subtypeLift :: forall a. PinaforeSourceScoped baseedit a -> m a
     , subtypeInverted :: SubtypeContext baseedit m (InvertPolarity polb) (InvertPolarity pola)
     }
 

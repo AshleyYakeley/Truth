@@ -17,7 +17,7 @@ import Test.Tasty.HUnit
 
 type TS = PinaforeTypeSystem PinaforeEdit
 
-type PExpression = TypedExpression Name TS
+type PExpression = TSSealedExpression TS
 
 showVars :: NamedExpression Name (PinaforeType PinaforeEdit 'NegativePolarity) t -> [String]
 showVars (ClosedExpression _) = []
@@ -26,15 +26,15 @@ showVars (OpenExpression (MkNameWitness name t) expr) = (show name <> " :: " <> 
 showTypes :: PExpression -> String
 showTypes (MkSealedExpression t expr) = "{" <> intercalate ", " (showVars expr) <> "} -> " <> show t
 
-exprTypeTest :: String -> Result Text String -> SourcePinaforeTypeCheck PExpression -> TestTree
+exprTypeTest :: String -> Result Text String -> PinaforeSourceScoped PinaforeEdit PExpression -> TestTree
 exprTypeTest name expected mexpr =
     testCase name $
     assertEqual "" expected $ do
-        expr <- runSourcePinaforeTypeCheck (initialPos "<input>") mexpr
+        expr <- runSourceScoped (initialPos "<input>") mexpr
         return $ showTypes expr
 
-apExpr :: PExpression -> PExpression -> SourcePinaforeTypeCheck PExpression
-apExpr = applyTypedExpression @TS
+apExpr :: PExpression -> PExpression -> PinaforeSourceScoped PinaforeEdit PExpression
+apExpr = applyTSSealedExpression @TS
 
 idExpr :: PExpression
 idExpr = typeFConstExpression toTypeF $ \(v :: UVar "x") -> v
@@ -49,7 +49,7 @@ boolExpr :: PExpression
 boolExpr = typeFConstExpression toTypeF False
 
 varExpr :: PExpression
-varExpr = varTypedExpression @TS "v"
+varExpr = varTSSealedExpression @TS "v"
 
 ifelseExpr :: PExpression
 ifelseExpr =
@@ -84,7 +84,7 @@ listNumBoolFuncExpr = typeFConstExpression toTypeF $ \(_ :: [Number]) -> [True]
 listBoolNumFuncExpr :: PExpression
 listBoolNumFuncExpr = typeFConstExpression toTypeF $ \(_ :: [Bool]) -> [2 :: Number]
 
-joinExpr :: PExpression -> PExpression -> SourcePinaforeTypeCheck PExpression
+joinExpr :: PExpression -> PExpression -> PinaforeSourceScoped PinaforeEdit PExpression
 joinExpr exp1 exp2 = do
     je <- apExpr ifelseExpr boolExpr
     e <- apExpr je exp1
@@ -102,11 +102,11 @@ simplifyTypeTest text e =
         simpexpr <-
             resultTextToM $ do
                 ct <- parseType @PinaforeEdit @'PositivePolarity (initialPos "<input>") text
-                runPinaforeTypeCheck $ do
+                runScoped $ do
                     MkAnyW t <- ct
                     runSourcePos (initialPos "<input>") $
-                        runRenamer @(TypeRenamer TS) $
-                        pinaforeSimplifyExpressionType @_ @Name $ MkSealedExpression t $ ClosedExpression undefined
+                        runRenamer @(TSRenamer TS) $
+                        pinaforeSimplifyExpressionType $ MkSealedExpression t $ ClosedExpression undefined
         case simpexpr of
             MkSealedExpression t' _ -> assertEqual "" e $ show t'
 
@@ -166,32 +166,32 @@ testType =
               , exprTypeTest "simplify $ thing $ twice number" (return "{} -> (Number, Number)") $ do
                     e1 <- apExpr twiceExpr numExpr
                     r <- apExpr thingExpr e1
-                    runRenamer @(TypeRenamer TS) $ simplifyExpressionType @(TypeUnifier TS) r
+                    runRenamer @(TSRenamer TS) $ simplifyExpressionType @(TSUnifier TS) r
               , exprTypeTest "simplify duplicate" (return "{} -> Number") $
-                runRenamer @(TypeRenamer TS) $
-                simplifyExpressionType @(TypeUnifier TS) $
+                runRenamer @(TSRenamer TS) $
+                simplifyExpressionType @(TSUnifier TS) $
                 typeFConstExpression toTypeF (MkJoinType (Right 3) :: JoinType Number Number)
               , exprTypeTest "simplify duplicate list" (return "{} -> [Number]") $
-                runRenamer @(TypeRenamer TS) $
-                simplifyExpressionType @(TypeUnifier TS) $
+                runRenamer @(TSRenamer TS) $
+                simplifyExpressionType @(TSUnifier TS) $
                 typeFConstExpression toTypeF (MkJoinType (Right [3]) :: JoinType [Number] [Number])
               , exprTypeTest "simplify duplicate pair" (return "{} -> (Number, Number)") $
-                runRenamer @(TypeRenamer TS) $
-                simplifyExpressionType @(TypeUnifier TS) $
+                runRenamer @(TSRenamer TS) $
+                simplifyExpressionType @(TSUnifier TS) $
                 typeFConstExpression toTypeF (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
               , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
-                runRenamer @(TypeRenamer TS) $
-                simplifyExpressionType @(TypeUnifier TS) $
+                runRenamer @(TSRenamer TS) $
+                simplifyExpressionType @(TSUnifier TS) $
                 typeFConstExpression toTypeF ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
               , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
-                runRenamer @(TypeRenamer TS) $
-                simplifyExpressionType @(TypeUnifier TS) $
+                runRenamer @(TSRenamer TS) $
+                simplifyExpressionType @(TSUnifier TS) $
                 typeFConstExpression
                     toTypeF
                     ((MkJoinType (Right 3), MkJoinType (Right 3)) :: (JoinType Number Number, JoinType Number Number))
               , exprTypeTest "simplify duplicate in list" (return "{} -> [Number]") $
-                runRenamer @(TypeRenamer TS) $
-                simplifyExpressionType @(TypeUnifier TS) $
+                runRenamer @(TSRenamer TS) $
+                simplifyExpressionType @(TSUnifier TS) $
                 typeFConstExpression toTypeF ([MkJoinType (Right 3)] :: [JoinType Number Number])
               ]
         , testGroup

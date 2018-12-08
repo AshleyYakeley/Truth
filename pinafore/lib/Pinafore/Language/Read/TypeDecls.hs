@@ -4,7 +4,7 @@ import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
-import Pinafore.Language.TypeContext
+import Pinafore.Language.Scope
 import Shapes hiding (try)
 
 newtype TypeDecls baseedit =

@@ -13,9 +13,9 @@ import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
 data InteractiveCommand baseedit
-    = LetInteractiveCommand (PinaforeTypeCheck (QExpr baseedit) -> PinaforeTypeCheck (QExpr baseedit))
-    | ExpressionInteractiveCommand (PinaforeTypeCheck (QExpr baseedit))
-    | ShowTypeInteractiveCommand (PinaforeTypeCheck (QExpr baseedit))
+    = LetInteractiveCommand (PinaforeScoped baseedit (QExpr baseedit) -> PinaforeScoped baseedit (QExpr baseedit))
+    | ExpressionInteractiveCommand (PinaforeScoped baseedit (QExpr baseedit))
+    | ShowTypeInteractiveCommand (PinaforeScoped baseedit (QExpr baseedit))
     | ErrorInteractiveCommand Text
 
 showTypeInteractiveCommand ::

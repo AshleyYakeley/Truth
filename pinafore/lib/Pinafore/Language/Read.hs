@@ -14,5 +14,5 @@ import Pinafore.Language.Read.Type
 import Shapes hiding (try)
 
 parseTopExpression ::
-       HasPinaforeEntityEdit baseedit => SourcePos -> Text -> Result Text (PinaforeTypeCheck (QExpr baseedit))
+       HasPinaforeEntityEdit baseedit => SourcePos -> Text -> Result Text (PinaforeScoped baseedit (QExpr baseedit))
 parseTopExpression = parseReader readTopExpression

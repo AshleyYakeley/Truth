@@ -12,7 +12,6 @@ import Pinafore.Language.Show
 import Pinafore.Language.Type.Rename
 import Pinafore.Language.Type.Subtype
 import Pinafore.Language.Type.Type
-import Pinafore.Language.TypeContext
 import Shapes
 
 getRangeTypeVars :: PinaforeRangeType baseedit polarity t -> [String]
@@ -54,13 +53,13 @@ data BisubstitutionWitness baseedit t where
 
 type PinaforeUnifier baseedit = Expression (BisubstitutionWitness baseedit)
 
-type PinaforeUnifierMonad baseedit = VarRenamer (PinaforeTypeSystem baseedit) SourcePinaforeTypeCheck
+type PinaforeUnifierMonad baseedit = VarRenamer (PinaforeTypeSystem baseedit) (PinaforeSourceScoped baseedit)
 
 type UnifierConstraint baseedit = UnifierMonad (PinaforeUnifier baseedit) ~ PinaforeUnifierMonad baseedit
 
 type PinaforeFullUnifier baseedit = Compose (PinaforeUnifierMonad baseedit) (PinaforeUnifier baseedit)
 
-unifierLiftTypeCheck :: SourcePinaforeTypeCheck a -> PinaforeFullUnifier baseedit a
+unifierLiftTypeCheck :: PinaforeSourceScoped baseedit a -> PinaforeFullUnifier baseedit a
 unifierLiftTypeCheck tca = Compose $ fmap pure $ lift tca
 
 unifySubtypeContext ::
@@ -267,7 +266,7 @@ bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) 
                 return $ bisubstituteNegativeVar vn tp' $ fmap (\ca pv -> ca $ (conv . pv)) uval'
 
 bisubstitutesSealedExpression ::
-       [PinaforeBisubstitution baseedit] -> PinaforeExpression baseedit name -> PinaforeExpression baseedit name
+       [PinaforeBisubstitution baseedit] -> PinaforeExpression baseedit -> PinaforeExpression baseedit
 bisubstitutesSealedExpression [] expr = expr
 bisubstitutesSealedExpression (sub:subs) expr =
     bisubstitutesSealedExpression subs $

@@ -6,7 +6,6 @@ module Pinafore.Language.Read.Type
     ) where
 
 import Pinafore.Language.EntityType
-import Pinafore.Language.Expression
 import Pinafore.Language.Literal
 import Pinafore.Language.Name
 import Pinafore.Language.Read.Parser
@@ -30,7 +29,7 @@ readJoinMeet =
 
 readType ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeTypeM baseedit mpolarity))
+    => Parser (PinaforeScoped baseedit (PinaforeTypeM baseedit mpolarity))
 readType = do
     t1 <- readType1
     mt2 <-
@@ -43,7 +42,7 @@ readType = do
 
 readType1 ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeTypeM baseedit mpolarity))
+    => Parser (PinaforeScoped baseedit (PinaforeTypeM baseedit mpolarity))
 readType1 =
     (try $ do
          at1 <- readTypeRange3
@@ -77,7 +76,7 @@ readType1 =
 
 readType2 ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeTypeM baseedit mpolarity))
+    => Parser (PinaforeScoped baseedit (PinaforeTypeM baseedit mpolarity))
 readType2 =
     (do
          readExactlyThis TokName "Either"
@@ -131,7 +130,7 @@ readType2 =
 
 readType3 ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeTypeM baseedit mpolarity))
+    => Parser (PinaforeScoped baseedit (PinaforeTypeM baseedit mpolarity))
 readType3 =
     (do
          at1 <- readBracket $ readType
@@ -170,12 +169,12 @@ readType3 =
 
 readTypeRange3 ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeRangeType3 baseedit mpolarity))
+    => Parser (PinaforeScoped baseedit (PinaforeRangeType3 baseedit mpolarity))
 readTypeRange3 = (readBracketed TokOpenBrace TokCloseBrace $ readCommaList readTypeRangeItem) <|> readTypeRangeItem
 
 readTypeRangeItem ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeRangeType3 baseedit mpolarity))
+    => Parser (PinaforeScoped baseedit (PinaforeRangeType3 baseedit mpolarity))
 readTypeRangeItem =
     (do
          readExactlyThis TokOperator "+"
@@ -210,7 +209,7 @@ readTypeVar =
 
 readTypeConst ::
        forall baseedit mpolarity. Is MPolarity mpolarity
-    => Parser (PinaforeTypeCheck (PinaforeTypeM baseedit mpolarity))
+    => Parser (PinaforeScoped baseedit (PinaforeTypeM baseedit mpolarity))
 readTypeConst = do
     spos <- getPosition
     n <- readTypeName
@@ -279,7 +278,7 @@ readTypeName =
                 | isUpper c -> return s
             _ -> mzero
 
-readEntityType3 :: Parser (PinaforeTypeCheck (AnyW EntityType))
+readEntityType3 :: Parser (PinaforeScoped baseedit (AnyW EntityType))
 readEntityType3 = do
     ctm <- readType3 @_ @'Nothing
     return $ do
@@ -294,7 +293,7 @@ parseType ::
        forall baseedit polarity. IsTypePolarity polarity
     => SourcePos
     -> Text
-    -> Result Text (PinaforeTypeCheck (AnyW (PinaforeType baseedit polarity)))
+    -> Result Text (PinaforeScoped baseedit (AnyW (PinaforeType baseedit polarity)))
 parseType =
     parseReader $ do
         mt <- isMPolarity @polarity $ readType @baseedit @('Just polarity)
