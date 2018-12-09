@@ -1,2 +1,3 @@
 #!/bin/sh
+rm -rf $HOME/.vscode/extensions/ashleyyakeley.pinafore-0.0.1
 cp -a vsc-extension $HOME/.vscode/extensions/ashleyyakeley.pinafore-0.0.1
