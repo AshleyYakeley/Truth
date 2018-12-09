@@ -112,51 +112,9 @@ testNumbersShowRead =
 testNumbers :: TestTree
 testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
 
-{-
-
-toQValue :: ToPinaforeType baseedit t => t -> QValue baseedit
-toQValue v = case toTypeF of
-    MkTypeF t conv -> MkAnyValue t $ conv v
-
--- | for test only
-instance Eq (QValue baseedit) where
-    (MkAnyValue QTConstLiteral a1) == (MkAnyValue QTConstLiteral a2) = a1 == a2
-    (MkAnyValue QTList a1) == (MkAnyValue QTList a2) = a1 == a2
-    (MkAnyValue t1 _) == (MkAnyValue t2 _) = error $ "QValue: " <> show t1 <> " & " <> show t2 <> " not comparable"
-
-testQueryValue :: String -> Scoped (QExpr PinaforeEdit) -> Maybe (QValue PinaforeEdit) -> TestTree
-testQueryValue name texpr expected =
-    testCase name $
-    case runScoped texpr of
-        SuccessResult expr -> assertEqual "result" expected $ qEvalExpr expr
-        FailureResult err -> fail $ unpack err
-
-qint :: Int -> QValue baseedit
-qint = toQValue
--}
 testQueryValues :: TestTree
 testQueryValues = testGroup "query values" []
 
-{-
-             testQueryValue "pure A" (return $ opoint $ toQValue ("A" :: Text)) (Just $ toQValue ("A" :: Text))
-        , testQueryValue "var a" (qVarExpr "a") Nothing
-        , testQueryValue
-              "let a=1;b=2 in (a,b,a,b)"
-              (do
-                   ae <- qVarExpr "a"
-                   be <- qVarExpr "b"
-                   e1 <- qLetExpr "b" (opoint $ qint 2) $ qSequenceExpr [ae, be, ae, be]
-                   qLetExpr "a" (opoint $ qint 1) e1) $
-          Just $ toQValue ([1, 2, 1, 2] :: [Int])
-        , testQueryValue
-              "let a=1;b=2 in (b,a,b,a)"
-              (do
-                   ae <- qVarExpr "a"
-                   be <- qVarExpr "b"
-                   e1 <- qLetExpr "b" (opoint $ qint 2) $ qSequenceExpr [be, ae, be, ae]
-                   qLetExpr "a" (opoint $ qint 1) e1) $
-          Just $ toQValue ([2, 1, 2, 1] :: [Int])
--}
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
     testCase (unpack query) $
@@ -203,6 +161,15 @@ testQueries =
               , testQuery "\\x -> 1" $ Just "<?>"
               , testQuery "\\x y -> y" $ Just "<?>"
               , testQuery "\\x y z -> [x,y,z]" $ Just "<?>"
+              ]
+        , testGroup
+              "predefined"
+              [ testQuery "abs" $ Just $ showText "<?>"
+              , testQuery "fst" $ Just $ showText "<?>"
+              , testQuery "(+)" $ Just $ showText "<?>"
+              , testQuery "\\a b -> a + b" $ Just $ showText "<?>"
+              , testQuery "(==)" $ Just $ showText "<?>"
+              , testQuery "\\a b -> a == b" $ Just $ showText "<?>"
               ]
         , testGroup
               "let-binding"

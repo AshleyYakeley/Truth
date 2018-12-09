@@ -71,10 +71,13 @@ readLetBindings = do
     MkDeclarations (MkTypeDecls td) rbl <- readDeclarations
     return $ \mexpr ->
         td $ do
-            expr <- td mexpr
             bl <- rbl
             f <- qBindingsLetExpr bl
-            liftRefNotation $ runSourcePos spos $ f expr
+            remonadRefNotation
+                (mapSourcePos spos $ \se -> do
+                     bmap <- f
+                     withNewBindings bmap se) $
+                td mexpr
 
 readTopLetBindings ::
        HasPinaforeEntityEdit baseedit
@@ -150,11 +153,7 @@ readExpression3 =
     (do
          spos <- getPosition
          name <- readThis TokName
-         return $ do
-             mexpr <- liftRefNotation $ runSourcePos spos $ lookupBinding name
-             case mexpr of
-                 Just expr -> return expr
-                 Nothing -> return $ qVarExpr name) <|>
+         return $ varRefExpr spos name) <|>
     (do
          n <- readThis TokNumber
          return $ return $ qConstExpr n) <|>
@@ -184,8 +183,9 @@ readExpression3 =
                  return $ qConstExprAny $ MkAnyValue tp pt) <|>
     (readParen $
      (do
+          spos <- getPosition
           name <- readThis TokOperator
-          return $ return $ qVarExpr name) <|>
+          return $ varRefExpr spos name) <|>
      (do
           spos <- getPosition
           ce1 <- readExpression

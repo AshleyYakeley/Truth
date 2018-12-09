@@ -107,16 +107,18 @@ readInfixedExpression pe prec = do
         [(AssocNone, name, te2)] ->
             return $ do
                 e1 <- te1
+                eop <- varRefExpr spos name
                 e2 <- te2
-                liftRefNotation $ runSourcePos spos $ qApplyAllExpr (qVarExpr name) [e1, e2]
+                liftRefNotation $ runSourcePos spos $ qApplyAllExpr eop [e1, e2]
         _
             | all (\(assoc, _, _) -> assoc == AssocLeft) rest ->
                 return $ do
                     e1 <- te1
                     pairs <-
                         for rest $ \(_, name, te2) -> do
+                            eop <- varRefExpr spos name
                             e2 <- te2
-                            return (qVarExpr name, e2)
+                            return (eop, e2)
                     leftApply spos e1 pairs
         _
             | all (\(assoc, _, _) -> assoc == AssocRight) rest ->
@@ -124,8 +126,9 @@ readInfixedExpression pe prec = do
                     e1 <- te1
                     pairs <-
                         for rest $ \(_, name, te2) -> do
+                            eop <- varRefExpr spos name
                             e2 <- te2
-                            return (qVarExpr name, e2)
+                            return (eop, e2)
                     rightApply spos e1 pairs
         _ -> parserFail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(_, name, _) -> show name) rest)
 

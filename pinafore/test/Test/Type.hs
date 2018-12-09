@@ -211,8 +211,8 @@ testType =
               , textTypeTest
                     "((v 3,v false),v 3)"
                     "{v :: Number -> a', v :: Boolean -> b', v :: Number -> b} -> ((a', b'), b)"
-              , textTypeTest "let v = x in [v,v,v]" "{x :: a'} -> [a']"
-              , textTypeTest "\\x -> let v = x in [v,v,v]" "{} -> a' -> [a']"
+              , textTypeTest "let v = x in [v,v,v]" "{x :: a} -> [a]"
+              , textTypeTest "\\x -> let v = x in [v,v,v]" "{} -> a -> [a]"
               , textTypeTest "\\v1 v2 -> [v1,v2]" "{} -> a -> a -> [a]"
               , textTypeTest "\\v1 v2 v3 -> ([v1,v2],[v2,v3])" "{} -> a' -> (a & a') -> a -> ([a'], [a])"
               , textTypeTest

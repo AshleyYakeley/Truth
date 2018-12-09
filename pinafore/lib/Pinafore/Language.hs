@@ -38,9 +38,7 @@ parseExpression ::
     -> Result Text (QExpr baseedit)
 parseExpression spos text = do
     texpr <- parseTopExpression @baseedit spos text
-    runScoped $ do
-        expr <- texpr
-        runSourcePos spos $ qValuesLetExpr (\n -> lookup n predefinedBindings) expr
+    runSourceScoped spos $ withNewBindings (qValuesLetExpr predefinedBindings) $ liftSourcePos texpr
 
 parseValue ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
@@ -89,7 +87,7 @@ showPinaforeValue (ConsPinaforeType ts tt) v = joinf (showPinaforeSingularValue 
 type Interact baseedit = StateT (SourcePos, QExpr baseedit -> Result Text (QExpr baseedit)) IO
 
 interactEvalExpression ::
-       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => PinaforeScoped baseedit (QExpr baseedit)
     -> Interact baseedit (QValue baseedit)
 interactEvalExpression texpr = do
@@ -98,7 +96,9 @@ interactEvalExpression texpr = do
         rval = do
             expr <- runScoped texpr
             expr' <- bind expr
-            expr'' <- runScoped $ runSourcePos spos $ qValuesLetExpr (\name -> lookup name predefinedBindings) expr'
+            expr'' <-
+                runScoped $
+                runSourcePos spos $ withNewBindings (qValuesLetExpr $ predefinedBindings @baseedit) $ return expr'
             qEvalExpr expr''
     case rval of
         SuccessResult val -> return val

@@ -105,13 +105,25 @@ bindingsLetSealedExpression ::
        , UnifierMonad unifier ~ renamer m
        )
     => Bindings unifier
-    -> UnifierSealedExpression unifier
-    -> m (UnifierSealedExpression unifier)
+    -> m (StrictMap (UnifierName unifier) (UnifierSealedExpression unifier))
 bindingsLetSealedExpression bindings = let
-    doClumps [] expr = return expr
-    doClumps (b:bb) expr = do
-        expr' <- doClumps bb expr
-        bindingsComponentLetSealedExpression b expr'
+    doClumps [] = return mempty
+    doClumps (b:bb) = do
+        m1 <- bindingsComponentLetSealedExpression @renamer @unifier b
+        bb' <-
+            for bb $ \(MkBindings binds) -> do
+                binds' <-
+                    for binds $ \(MkBinding n sexprb) -> do
+                        runRenamer @renamer $
+                            withTransConstraintTM @Monad $ do
+                                MkSealedExpression tb exprb <- renameSealedExpression sexprb
+                                uexprb' <- letBindNamedExpression @unifier (\name -> lookup name m1) exprb
+                                (exprb', subs) <- solveUnifier @unifier $ unifierExpression uexprb'
+                                sexprb' <- unifierExpressionSubstituteAndSimplify @unifier subs tb exprb'
+                                return $ MkBinding n sexprb'
+                return $ MkBindings binds'
+        m2 <- doClumps bb'
+        return $ m1 <> m2
     in doClumps $ clumpBindings bindings
 
 bindingsComponentLetSealedExpression ::
@@ -125,37 +137,19 @@ bindingsComponentLetSealedExpression ::
        , UnifierMonad unifier ~ renamer m
        )
     => Bindings unifier
-    -> UnifierSealedExpression unifier
-    -> m (UnifierSealedExpression unifier)
-bindingsComponentLetSealedExpression (MkBindings bindings) sexprb =
+    -> m (StrictMap (UnifierName unifier) (UnifierSealedExpression unifier))
+bindingsComponentLetSealedExpression (MkBindings bindings) =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
         bound <- mkBound bindings
         bindings' <- boundToBindings bound
-        MkSealedExpression tb exprb <- renameSealedExpression sexprb
-        uexprb' <- letBindNamedExpression @unifier (\name -> lookup name $ bindingsMap bindings') exprb
-        (exprb', subs) <- solveUnifier @unifier $ unifierExpression uexprb'
-        unifierExpressionSubstituteAndSimplify @unifier subs tb exprb'
+        return $ bindingsMap bindings'
 
 valuesLetSealedExpression ::
-       forall renamer unifier m.
-       ( Monad m
-       , Renamer renamer
-       , Unifier unifier
-       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
-       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
-       , UnifierMonad unifier ~ renamer m
-       )
-    => (UnifierName unifier -> Maybe (AnyValue (UnifierPosWitness unifier)))
-    -> UnifierSealedExpression unifier
-    -> m (UnifierSealedExpression unifier)
-valuesLetSealedExpression valbind sexprb =
-    runRenamer @renamer $
-    withTransConstraintTM @Monad $ do
-        MkSealedExpression tb exprb <- renameSealedExpression sexprb
-        uexprb' <- letBindNamedExpression @unifier (\name -> fmap constSealedExpression $ valbind name) exprb
-        (exprb', subs) <- solveUnifier @unifier $ unifierExpression uexprb'
-        unifierExpressionSubstituteAndSimplify @unifier subs tb exprb'
+       forall unifier.
+       StrictMap (UnifierName unifier) (AnyValue (UnifierPosWitness unifier))
+    -> StrictMap (UnifierName unifier) (UnifierSealedExpression unifier)
+valuesLetSealedExpression = fmap constSealedExpression
 
 duplicates ::
        forall a. Eq a

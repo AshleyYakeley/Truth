@@ -1,6 +1,7 @@
 module Pinafore.Language.Read.RefNotation
     ( RefNotation
     , RefExpression
+    , varRefExpr
     , liftRefNotation
     , remonadRefNotation
     , runRefNotation
@@ -35,6 +36,14 @@ runRefNotation :: RefNotation baseedit a -> PinaforeScoped baseedit a
 runRefNotation rexpr = evalStateT (runRefWriterT rexpr) 0
 
 type RefExpression baseedit = RefNotation baseedit (QExpr baseedit)
+
+varRefExpr :: SourcePos -> Name -> RefExpression baseedit
+varRefExpr spos name =
+    liftRefNotation $ do
+        mexpr <- runSourcePos spos $ lookupBinding name
+        case mexpr of
+            Just expr -> return expr
+            Nothing -> return $ qVarExpr name
 
 refNotationUnquote :: RefExpression baseedit -> RefExpression baseedit
 refNotationUnquote rexpr = do

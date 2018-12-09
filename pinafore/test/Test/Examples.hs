@@ -24,5 +24,5 @@ testExamples =
         [ testExample "empty.pinafore"
         , testExample "simple.pinafore"
         , testExample "testquery.pinafore"
-        --, testExample "test.pinafore"
+        , testExample "test.pinafore"
         ]
