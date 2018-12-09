@@ -104,9 +104,7 @@ simplifyTypeTest text e =
                 ct <- parseType @PinaforeEdit @'PositivePolarity (initialPos "<input>") text
                 runScoped $ do
                     MkAnyW t <- ct
-                    runSourcePos (initialPos "<input>") $
-                        runRenamer @(TSRenamer TS) $
-                        pinaforeSimplifyExpressionType $ MkSealedExpression t $ ClosedExpression undefined
+                    return $ pinaforeSimplifyExpressionType $ MkSealedExpression t $ ClosedExpression undefined
         case simpexpr of
             MkSealedExpression t' _ -> assertEqual "" e $ show t'
 
@@ -201,8 +199,8 @@ testType =
               , textTypeTest "[]" "{} -> [None]"
               , textTypeTest "\\v -> 1" "{} -> Any -> Number"
               , textTypeTest "[v1,v2]" "{v1 :: a, v2 :: a} -> [a]"
-              , textTypeTest "[v,v,v]" "{v :: a} -> [a]"
-              , textTypeTest "[x,y,x,y]" "{x :: a, y :: a} -> [a]"
+              , textTypeTest "[v,v,v]" "{v :: a, v :: a, v :: a} -> [a]"
+              , textTypeTest "[x,y,x,y]" "{x :: a, y :: a, x :: a, y :: a} -> [a]"
               , textTypeTest "(v 3,v \"text\")" "{v :: Number -> a, v :: Text -> b} -> (a, b)"
               , textTypeTest "(v,v)" "{v :: a, v :: b} -> (a, b)"
               , textTypeTest "(v 3,v 3)" "{v :: Number -> a, v :: Number -> b} -> (a, b)"
@@ -211,7 +209,7 @@ testType =
               , textTypeTest
                     "((v 3,v false),v 3)"
                     "{v :: Number -> a', v :: Boolean -> b', v :: Number -> b} -> ((a', b'), b)"
-              , textTypeTest "let v = x in [v,v,v]" "{x :: a} -> [a]"
+              , textTypeTest "let v = x in [v,v,v]" "{x :: a, x :: a, x :: a} -> [a]"
               , textTypeTest "\\x -> let v = x in [v,v,v]" "{} -> a -> [a]"
               , textTypeTest "\\v1 v2 -> [v1,v2]" "{} -> a -> a -> [a]"
               , textTypeTest "\\v1 v2 v3 -> ([v1,v2],[v2,v3])" "{} -> a' -> (a & a') -> a -> ([a'], [a])"

@@ -35,7 +35,7 @@ instance Unifier (PinaforeUnifier baseedit) where
     solveUnifier = runUnifier
     unifierPosSubstitute subs t = unTypeF $ bisubstituteAllPositiveType subs t
     unifierNegSubstitute subs t = unTypeF $ bisubstituteAllNegativeType subs t
-    simplifyExpressionType = pinaforeSimplifyExpressionType
+    simplifyExpressionType = return . pinaforeSimplifyExpressionType
 
 instance TypeSystem (PinaforeTypeSystem baseedit) where
     type TSRenamer (PinaforeTypeSystem baseedit) = VarRenamer (PinaforeTypeSystem baseedit)

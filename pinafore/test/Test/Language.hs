@@ -205,6 +205,8 @@ testQueries =
         , testGroup
               "recursive let-binding"
               [ testQuery "let a=1 in a" $ Just $ showText "1"
+              , testQuery "let a=1 in let a=2 in a" $ Just $ showText "2"
+              , testQuery "let a=1;a=2 in a" $ Nothing
               , testQuery "let a=1;b=a in b" $ Just $ showText "1"
               , testQuery "let b=a;a=1 in b" $ Just $ showText "1"
               , testQuery "let a x = x in a 1" $ Just $ showText "1"
