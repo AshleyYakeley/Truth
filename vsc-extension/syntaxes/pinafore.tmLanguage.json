@@ -25,7 +25,7 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.pinafore",
-				"match": "\\b(if|then|else|let|in|entity|subtype|property|point)\\b"
+				"match": "\\b(if|then|else|let|in|opentype|subtype|property|entity)\\b"
 			}]
 		},
 		"strings": {

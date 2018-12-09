@@ -87,7 +87,7 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <expression-3> ::=
     "property" "@"<type-const> "@"<type-const> anchor |
-    "point" "@"<type-3> anchor |
+    "entity" "@"<type-3> anchor |
     "{" <expression> "}" |
     "%" <expression-3> |
     symbol |
@@ -109,7 +109,7 @@ In interactive mode, each line has syntax `<interactive>`.
 <declarations> ::=  | <declaration> ";" <declarations>
 
 <declaration> ::=
-    "entity" <type-const> |
+    "opentype" <type-const> |
     "subtype" <type-const> "<=" <type-const> |
     symbol <patterns> "=" <expression>
 

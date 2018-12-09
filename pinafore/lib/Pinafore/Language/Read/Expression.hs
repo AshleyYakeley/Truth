@@ -134,14 +134,14 @@ readExpression2 = do
         args <- sequence targs
         liftRefNotation $ runSourcePos spos $ qApplyAllExpr e1 args
 
-makePoint :: MonadFail m => PinaforeType baseedit 'PositivePolarity t -> Entity -> m t
-makePoint (ConsPinaforeType (GroundPinaforeSingularType (SimpleEntityPinaforeGroundType t) NilDolanArguments) NilPinaforeType) p =
+makeEntity :: MonadFail m => PinaforeType baseedit 'PositivePolarity t -> Entity -> m t
+makeEntity (ConsPinaforeType (GroundPinaforeSingularType (SimpleEntityPinaforeGroundType t) NilDolanArguments) NilPinaforeType) p =
     case t of
         TopSimpleEntityType -> return $ LeftJoinType p
         NewSimpleEntityType -> return $ LeftJoinType $ MkNewEntity p
         NamedSimpleEntityType _ -> return $ LeftJoinType $ MkNamedEntity p
-        _ -> fail $ unpack $ "not a point type: " <> exprShow t
-makePoint t _ = fail $ unpack $ "not a point type: " <> exprShow t
+        _ -> fail $ unpack $ "not an open entity type: " <> exprShow t
+makeEntity t _ = fail $ unpack $ "not an open entity type: " <> exprShow t
 
 readExpression3 ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -172,14 +172,14 @@ readExpression3 =
          rexpr <- readExpression3
          return $ refNotationUnquote rexpr) <|>
     (do
-         readThis TokPoint
+         readThis TokEntity
          readThis TokAt
          mt <- readType3 @baseedit @('Just 'PositivePolarity)
          anchor <- readThis TokAnchor
          return $
              liftRefNotation $ do
                  SingleMPolarType (MkAnyW tp) <- mt
-                 pt <- makePoint tp $ MkPoint anchor
+                 pt <- makeEntity tp $ MkPoint anchor
                  return $ qConstExprAny $ MkAnyValue tp pt) <|>
     (readParen $
      (do

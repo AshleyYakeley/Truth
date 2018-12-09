@@ -4,13 +4,13 @@ window n s = (n,s);
 
 # Ontology
 # Define a type of entity for people
-entity Person;
+opentype Person;
 
 # Properties of Person
 name = property @Person @Text !498260df-6a8a-44f0-b285-68a63565a33b;
 
 # One particular Person
-me = point @Person !4527c8ac-580d-443c-8496-2b5a93021f98;
+me = entity @Person !4527c8ac-580d-443c-8496-2b5a93021f98;
 
 # UI
 ui_person p = ui_textentry $ name !$ {p};

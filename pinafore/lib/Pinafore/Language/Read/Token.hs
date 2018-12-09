@@ -28,7 +28,7 @@ data Token t where
     TokIf :: Token ()
     TokThen :: Token ()
     TokElse :: Token ()
-    TokEntity :: Token ()
+    TokOpenType :: Token ()
     TokSubtype :: Token ()
     TokBool :: Token Bool
     TokName :: Token Name
@@ -37,7 +37,7 @@ data Token t where
     TokMap :: Token ()
     TokPropMap :: Token ()
     TokProperty :: Token ()
-    TokPoint :: Token ()
+    TokEntity :: Token ()
     TokAnchor :: Token Anchor
     TokAt :: Token ()
     TokOperator :: Token Name
@@ -59,7 +59,7 @@ instance TestEquality Token where
     testEquality TokIf TokIf = Just Refl
     testEquality TokThen TokThen = Just Refl
     testEquality TokElse TokElse = Just Refl
-    testEquality TokEntity TokEntity = Just Refl
+    testEquality TokOpenType TokOpenType = Just Refl
     testEquality TokSubtype TokSubtype = Just Refl
     testEquality TokBool TokBool = Just Refl
     testEquality TokName TokName = Just Refl
@@ -68,7 +68,7 @@ instance TestEquality Token where
     testEquality TokMap TokMap = Just Refl
     testEquality TokPropMap TokPropMap = Just Refl
     testEquality TokProperty TokProperty = Just Refl
-    testEquality TokPoint TokPoint = Just Refl
+    testEquality TokEntity TokEntity = Just Refl
     testEquality TokAnchor TokAnchor = Just Refl
     testEquality TokAt TokAt = Just Refl
     testEquality TokOperator TokOperator = Just Refl
@@ -91,7 +91,7 @@ instance Show (Token t) where
     show TokIf = show ("if" :: String)
     show TokThen = show ("then" :: String)
     show TokElse = show ("else" :: String)
-    show TokEntity = show ("entity" :: String)
+    show TokOpenType = show ("opentype" :: String)
     show TokSubtype = show ("subtype" :: String)
     show TokBool = "boolean"
     show TokName = "name"
@@ -100,7 +100,7 @@ instance Show (Token t) where
     show TokMap = "->"
     show TokPropMap = "~>"
     show TokProperty = show ("property" :: String)
-    show TokPoint = show ("point" :: String)
+    show TokEntity = show ("entity" :: String)
     show TokAnchor = "anchor"
     show TokAt = "@"
     show TokOperator = "infix"
@@ -184,11 +184,11 @@ readTextToken = do
         "let" -> return $ MkAnyValue TokLet ()
         "in" -> return $ MkAnyValue TokIn ()
         "property" -> return $ MkAnyValue TokProperty ()
-        "point" -> return $ MkAnyValue TokPoint ()
+        "entity" -> return $ MkAnyValue TokEntity ()
         "if" -> return $ MkAnyValue TokIf ()
         "then" -> return $ MkAnyValue TokThen ()
         "else" -> return $ MkAnyValue TokElse ()
-        "entity" -> return $ MkAnyValue TokEntity ()
+        "opentype" -> return $ MkAnyValue TokOpenType ()
         "subtype" -> return $ MkAnyValue TokSubtype ()
         "true" -> return $ MkAnyValue TokBool True
         "false" -> return $ MkAnyValue TokBool False

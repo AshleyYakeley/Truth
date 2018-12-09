@@ -17,10 +17,10 @@ instance Monoid (TypeDecls baseedit) where
     mempty = MkTypeDecls id
     mappend = (<>)
 
-readEntityDeclaration :: Parser (TypeDecls baseedit)
-readEntityDeclaration = do
+readOpenTypeDeclaration :: Parser (TypeDecls baseedit)
+readOpenTypeDeclaration = do
     spos <- getPosition
-    readThis TokEntity
+    readThis TokOpenType
     n <- readTypeName
     return $
         MkTypeDecls $
@@ -36,4 +36,4 @@ readSubtypeDeclaration = do
     return $ MkTypeDecls $ remonadRefNotation $ mapSourcePos spos $ withEntitySubtype (na, nb)
 
 readTypeDeclaration :: Parser (TypeDecls baseedit)
-readTypeDeclaration = readEntityDeclaration <|> readSubtypeDeclaration
+readTypeDeclaration = readOpenTypeDeclaration <|> readSubtypeDeclaration

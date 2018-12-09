@@ -15,7 +15,7 @@ instance HasPinaforeFileEdit PinaforeFileEdit where
     pinaforeFileLens = id
 
 pinaforeFileItemLens :: HasPinaforeFileEdit baseedit => Entity -> EditLens baseedit (SingleObjectEdit ByteStringEdit)
-pinaforeFileItemLens point = tupleEditLens (MkFunctionSelector point) . pinaforeFileLens
+pinaforeFileItemLens entity = tupleEditLens (MkFunctionSelector entity) . pinaforeFileLens
 
 directoryPinaforeFileObject :: FilePath -> Object PinaforeFileEdit
 directoryPinaforeFileObject path =

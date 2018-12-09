@@ -17,7 +17,7 @@ defs =
     , "testisknown t = runref {if %(known t) then pass else fail \"known\"}"
     , "testisunknown t = runref {if %(known t) then fail \"known\" else pass}"
     , "testeqval e f = testeq {e} {f}"
-    , "entity E"
+    , "opentype E"
     , "eea = property @E @E !\"eea\""
     , "eeb = property @E @E !\"eeb\""
     , "eec = property @E @E !\"eec\""
@@ -28,10 +28,10 @@ defs =
     , "enc = property @E @Number !\"enc\""
     , "tea = property @Text @E !\"tea\""
     , "nea = property @Number @E !\"nea\""
-    , "e1 = point @E !d4d3096a-b1f7-4cb1-8dfa-c907e57baed1"
-    , "e2 = point @E !6a76c6b3-c9d6-4e76-af3a-863b7c46b34c"
-    , "e3 = point @E !5048ecd6-bebb-4500-a508-f188b4cc7443"
-    , "e4 = point @E !6ffe864b-d2c3-4857-8057-ef472475eb2b"
+    , "e1 = entity @E !d4d3096a-b1f7-4cb1-8dfa-c907e57baed1"
+    , "e2 = entity @E !6a76c6b3-c9d6-4e76-af3a-863b7c46b34c"
+    , "e3 = entity @E !5048ecd6-bebb-4500-a508-f188b4cc7443"
+    , "e4 = entity @E !6ffe864b-d2c3-4857-8057-ef472475eb2b"
     ]
 
 prefix :: Text
@@ -96,7 +96,7 @@ testEntity =
               [ exceptionTest "fail \"text\""
               , exceptionTest "let in fail \"text\""
               , exceptionTest "let t = 1 in fail \"text\""
-              , exceptionTest "let entity E in fail \"text\""
+              , exceptionTest "let opentype E in fail \"text\""
               ]
         , testGroup
               "equality"
@@ -237,12 +237,12 @@ testEntity =
               ]
         , testGroup
               "Types"
-              [ pointTest "let entity T1; p = property @T1 @T1 !\"p\" in pass"
-              , pointTest "let entity T1 in let p = property @T1 @T1 !\"p\" in pass"
-              , pointTest "let entity T1; entity T2; p = property @T1 @T2 !\"p\" in pass"
-              , pointTest "let entity T1; entity T2 in let p = property @T1 @T2 !\"p\" in pass"
-              , pointTest "let entity T1 in let entity T2; p = property @T1 @T2 !\"p\" in pass"
-              , pointTest "let entity T1 in let entity T2 in let p = property @T1 @T2 !\"p\" in pass"
+              [ pointTest "let opentype T1; p = property @T1 @T1 !\"p\" in pass"
+              , pointTest "let opentype T1 in let p = property @T1 @T1 !\"p\" in pass"
+              , pointTest "let opentype T1; opentype T2; p = property @T1 @T2 !\"p\" in pass"
+              , pointTest "let opentype T1; opentype T2 in let p = property @T1 @T2 !\"p\" in pass"
+              , pointTest "let opentype T1 in let opentype T2; p = property @T1 @T2 !\"p\" in pass"
+              , pointTest "let opentype T1 in let opentype T2 in let p = property @T1 @T2 !\"p\" in pass"
               ]
         , testGroup
               "Pair/Either"
