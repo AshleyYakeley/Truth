@@ -49,8 +49,8 @@ varNamedExpression n t = varNameTypeExpression (MkUnitWitness n) (MkUnitWitness'
 
 renameExpression ::
        forall rn name m t. (Monad m, Renamer rn)
-    => NamedExpression name (RenamerTSNegWitness rn) t
-    -> RenamerNamespace rn (rn m) (NamedExpression name (RenamerTSNegWitness rn) t)
+    => NamedExpression name (RenamerNegWitness rn) t
+    -> RenamerNamespace rn (rn m) (NamedExpression name (RenamerNegWitness rn) t)
 renameExpression (ClosedExpression a) =
     case hasTransConstraint @Monad @rn @m of
         Dict -> withTransConstraintTM @Monad $ return (ClosedExpression a)

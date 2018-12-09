@@ -11,7 +11,7 @@ module Pinafore.Language.Type
 
 import Language.Expression.Dolan
 import Language.Expression.Renamer
-import Language.Expression.Typed
+import Language.Expression.TypeSystem
 import Language.Expression.UVar
 import Language.Expression.Unifier
 import Pinafore.Language.GroundType
@@ -26,12 +26,12 @@ import Shapes
 instance Unifier (PinaforeUnifier baseedit) where
     type UnifierName (PinaforeUnifier baseedit) = Name
     type UnifierMonad (PinaforeUnifier baseedit) = PinaforeUnifierMonad baseedit
-    type UnifierTSNegWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'NegativePolarity
-    type UnifierTSPosWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'PositivePolarity
+    type UnifierNegWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'NegativePolarity
+    type UnifierPosWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'PositivePolarity
     type UnifierSubstitutions (PinaforeUnifier baseedit) = [PinaforeBisubstitution baseedit]
-    unifyTSNegWitnesses ta tb cont = meetPinaforeTypes ta tb $ \tab conva convb -> cont tab $ pure (conva, convb)
-    unifyTSPosWitnesses ta tb cont = joinPinaforeTypes ta tb $ \tab conva convb -> cont tab $ pure (conva, convb)
-    unifyPosTSNegWitnesses tq tp = getCompose $ unifyPosNegPinaforeTypes tq tp
+    unifyNegWitnesses ta tb cont = meetPinaforeTypes ta tb $ \tab conva convb -> cont tab $ pure (conva, convb)
+    unifyPosWitnesses ta tb cont = joinPinaforeTypes ta tb $ \tab conva convb -> cont tab $ pure (conva, convb)
+    unifyPosNegWitnesses tq tp = getCompose $ unifyPosNegPinaforeTypes tq tp
     solveUnifier = runUnifier
     unifierPosSubstitute subs t = unTypeF $ bisubstituteAllPositiveType subs t
     unifierNegSubstitute subs t = unTypeF $ bisubstituteAllNegativeType subs t
@@ -40,16 +40,14 @@ instance Unifier (PinaforeUnifier baseedit) where
 instance TypeSystem (PinaforeTypeSystem baseedit) where
     type TSRenamer (PinaforeTypeSystem baseedit) = VarRenamer (PinaforeTypeSystem baseedit)
     type TSUnifier (PinaforeTypeSystem baseedit) = PinaforeUnifier baseedit
-    type TSNegWitness (PinaforeTypeSystem baseedit) = PinaforeType baseedit 'NegativePolarity
-    type TSPosWitness (PinaforeTypeSystem baseedit) = PinaforeType baseedit 'PositivePolarity
     type TSScoped (PinaforeTypeSystem baseedit) = PinaforeSourceScoped baseedit
-    typeSystemFunctionTSPosWitness ta tb =
+    tsFunctionPosWitness ta tb =
         unTypeF $
         singlePinaforeTypeF $
         mkTypeF $
         GroundPinaforeSingularType FuncPinaforeGroundType $
         ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
-    typeSystemFunctionTSNegWitness ta tb =
+    tsFunctionNegWitness ta tb =
         unTypeF $
         singlePinaforeTypeF $
         mkTypeF $

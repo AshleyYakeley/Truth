@@ -148,8 +148,13 @@ readExpression3 =
          b <- readThis TokBool
          return $ return $ qConstExpr b) <|>
     (do
+         spos <- getPosition
          name <- readThis TokName
-         return $ return $ qVarExpr name) <|>
+         return $ do
+             mexpr <- liftRefNotation $ runSourcePos spos $ lookupBinding name
+             case mexpr of
+                 Just expr -> return expr
+                 Nothing -> return $ qVarExpr name) <|>
     (do
          n <- readThis TokNumber
          return $ return $ qConstExpr n) <|>

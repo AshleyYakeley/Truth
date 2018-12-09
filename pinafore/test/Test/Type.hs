@@ -7,7 +7,7 @@ import Language.Expression.Expression
 import Language.Expression.Named
 import Language.Expression.Renamer
 import Language.Expression.Sealed
-import Language.Expression.Typed
+import Language.Expression.TypeSystem
 import Language.Expression.Unifier
 import Pinafore
 import Pinafore.Test
@@ -34,7 +34,7 @@ exprTypeTest name expected mexpr =
         return $ showTypes expr
 
 apExpr :: PExpression -> PExpression -> PinaforeSourceScoped PinaforeEdit PExpression
-apExpr = applyTSSealedExpression @TS
+apExpr = tsApply @TS
 
 idExpr :: PExpression
 idExpr = typeFConstExpression toTypeF $ \(v :: UVar "x") -> v
@@ -49,7 +49,7 @@ boolExpr :: PExpression
 boolExpr = typeFConstExpression toTypeF False
 
 varExpr :: PExpression
-varExpr = varTSSealedExpression @TS "v"
+varExpr = tsVar @TS "v"
 
 ifelseExpr :: PExpression
 ifelseExpr =

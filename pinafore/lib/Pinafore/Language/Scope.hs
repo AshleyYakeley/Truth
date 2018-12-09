@@ -88,7 +88,7 @@ lookupBinding name = do
     (scopeBindings -> names) <- spScope
     return $ lookup name names
 
-withNewBindings :: (StrictMap Name expr) -> SourceScoped expr a -> SourceScoped expr a
+withNewBindings :: StrictMap Name expr -> SourceScoped expr a -> SourceScoped expr a
 withNewBindings bb ma = spLocalScope (\tc -> tc {scopeBindings = bb <> (scopeBindings tc)}) ma
 
 lookupNamedType :: Name -> SourceScoped expr NamedType

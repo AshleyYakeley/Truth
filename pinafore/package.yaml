@@ -32,7 +32,7 @@ library:
       - Language.Expression.Unifier
       - Language.Expression.Abstract
       - Language.Expression.Bindings
-      - Language.Expression.Typed
+      - Language.Expression.TypeSystem
       - Language.Expression.Unitype
       - Language.Expression.Dolan
       - Pinafore.Base

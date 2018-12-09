@@ -82,8 +82,8 @@ renamePinaforeTypeVars (ConsPinaforeType ta tb) cont =
 
 instance Renamer (VarRenamer (PinaforeTypeSystem baseedit)) where
     type RenamerNamespace (VarRenamer (PinaforeTypeSystem baseedit)) = VarNamespace (PinaforeTypeSystem baseedit)
-    type RenamerTSNegWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'NegativePolarity
-    type RenamerTSPosWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'PositivePolarity
+    type RenamerNegWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'NegativePolarity
+    type RenamerPosWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'PositivePolarity
     renameTSNegWitness = renamePinaforeTypeVars
     renameTSPosWitness = renamePinaforeTypeVars
     renameNewVar cont = do

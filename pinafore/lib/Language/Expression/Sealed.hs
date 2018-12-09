@@ -13,8 +13,8 @@ data SealedExpression name vw tw =
 
 renameSealedExpression ::
        (Renamer rn, Monad m)
-    => SealedExpression name (RenamerTSNegWitness rn) (RenamerTSPosWitness rn)
-    -> rn m (SealedExpression name (RenamerTSNegWitness rn) (RenamerTSPosWitness rn))
+    => SealedExpression name (RenamerNegWitness rn) (RenamerPosWitness rn)
+    -> rn m (SealedExpression name (RenamerNegWitness rn) (RenamerPosWitness rn))
 renameSealedExpression (MkSealedExpression twt expr) =
     withTransConstraintTM @Monad $
     namespace $
