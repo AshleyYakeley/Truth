@@ -25,7 +25,7 @@ readPattern = readThis TokName
 
 data Declarations baseedit =
     MkDeclarations (TypeDecls baseedit)
-                   (RefNotation baseedit (QBindList baseedit))
+                   (RefNotation baseedit (QBindings baseedit))
 
 instance Semigroup (Declarations baseedit) where
     (MkDeclarations ta ba) <> (MkDeclarations tb bb) = MkDeclarations (ta <> tb) (liftA2 (<>) ba bb)

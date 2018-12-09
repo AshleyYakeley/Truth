@@ -59,16 +59,12 @@ qSequenceExpr (e:ee) = do
     ee' <- qSequenceExpr ee
     qApplyAllExpr qConsList [e, ee']
 
-type QBindList baseedit = [(Name, QExpr baseedit)]
+type QBindings baseedit = TSBindings (PinaforeTypeSystem baseedit)
 
-bindListToBindings ::
-       forall baseedit. QBindList baseedit -> PinaforeSourceScoped baseedit (TSBindings (PinaforeTypeSystem baseedit))
-bindListToBindings bl = fmap mconcat $ for bl $ \(n, e) -> return $ tsSingleBinding @(PinaforeTypeSystem baseedit) n e
+qBindExpr :: forall baseedit. Name -> QExpr baseedit -> QBindings baseedit
+qBindExpr = singleBinding
 
-qBindExpr :: forall baseedit. Name -> QExpr baseedit -> QBindList baseedit
-qBindExpr n e = pure (n, e)
-
-qBindVal :: ToPinaforeType baseedit t => Name -> t -> QBindList baseedit
+qBindVal :: ToPinaforeType baseedit t => Name -> t -> QBindings baseedit
 qBindVal name val = qBindExpr name $ qConstExpr val
 
 qLetExpr :: forall baseedit. Name -> QExpr baseedit -> QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit)
@@ -76,17 +72,15 @@ qLetExpr name exp body = tsLet @(PinaforeTypeSystem baseedit) name exp body
 
 qBindingsLetExpr ::
        forall baseedit m. MonadFail m
-    => QBindList baseedit
+    => QBindings baseedit
     -> m (QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit))
-qBindingsLetExpr bl = do
-    checkDuplicates $ fmap fst bl
-    return $ \e -> qUncheckedBindingsLetExpr bl e
+qBindingsLetExpr b = do
+    tsBindingsCheckDuplicates @(PinaforeTypeSystem baseedit) b
+    return $ \e -> qUncheckedBindingsLetExpr b e
 
 qUncheckedBindingsLetExpr ::
-       forall baseedit. QBindList baseedit -> QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit)
-qUncheckedBindingsLetExpr bl e = do
-    bindings <- bindListToBindings bl
-    tsUncheckedLet @(PinaforeTypeSystem baseedit) bindings e
+       forall baseedit. QBindings baseedit -> QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit)
+qUncheckedBindingsLetExpr = tsUncheckedLet @(PinaforeTypeSystem baseedit)
 
 qValuesLetExpr ::
        forall baseedit.

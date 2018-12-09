@@ -4,7 +4,6 @@ module Language.Expression.Bindings
     ( Bindings
     , singleBinding
     , bindingsNames
-    , checkDuplicates
     , bindingsCheckDuplicates
     , bindingsLetSealedExpression
     , valuesLetSealedExpression
