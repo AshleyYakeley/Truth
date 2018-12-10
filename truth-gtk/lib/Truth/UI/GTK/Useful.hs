@@ -17,7 +17,7 @@ deferToIdle action = do
     _ <-
         liftIO $
         threadsAddIdle PRIORITY_DEFAULT $
-        runUnliftIO unlift $ do
+        runTransform unlift $ do
             action
             return False
     return ()
@@ -142,4 +142,4 @@ makeButton name action = do
 cvMakeButton :: Text -> View seledit edit () -> CreateView seledit edit Button
 cvMakeButton name action = do
     unlift <- cvLiftView $ askUnliftIO
-    makeButton name $ runUnliftIO unlift action
+    makeButton name $ runTransform unlift action

@@ -19,7 +19,7 @@ instance Show (Object edit) where
 noneObject :: Object (NoEdit (NoReader t))
 noneObject = let
     objRun :: UnliftIO IO
-    objRun = MkUnliftIO id
+    objRun = MkTransform id
     objRead :: MutableRead IO (NoReader t)
     objRead = never
     objEdit :: [NoEdit (NoReader t)] -> IO (Maybe (IO ()))
@@ -65,14 +65,14 @@ mapObject :: forall edita editb. EditLens edita editb -> Object edita -> Object 
 mapObject = lensObject False
 
 lensObject :: forall edita editb. Bool -> EditLens edita editb -> Object edita -> Object editb
-lensObject discard (MkCloseUnlift (MkUnlift lensRun :: Unlift tl) MkAnEditLens {..}) (MkObject (MkUnliftIO objRunA :: UnliftIO mr) objReadA objEditA)
+lensObject discard (MkCloseUnlift (MkUnlift lensRun :: Unlift tl) MkAnEditLens {..}) (MkObject (MkTransform objRunA :: UnliftIO mr) objReadA objEditA)
     | Dict <- hasTransConstraint @MonadUnliftIO @tl @mr = let
         MkAnEditFunction {..} = elFunction
         objRunBFull :: UnliftIO (tl mr)
-        objRunBFull = MkUnliftIO $ \tmr -> objRunA $ lensRun $ liftWithUnlift $ \(MkUnlift unlift) -> unlift tmr
+        objRunBFull = MkTransform $ \tmr -> objRunA $ lensRun $ liftWithUnlift $ \(MkUnlift unlift) -> unlift tmr
         objRunBDiscard :: UnliftIO (tl mr)
         objRunBDiscard =
-            MkUnliftIO $ \tmr ->
+            MkTransform $ \tmr ->
                 objRunA $ do
                     MkUnlift du <- lensRun $ getDiscardingUnlift
                     du tmr -- discard lens effects: all these effects will be replayed by the update
@@ -97,7 +97,7 @@ lensObject discard (MkCloseUnlift (MkUnlift lensRun :: Unlift tl) MkAnEditLens {
 
 readConstantObject :: MutableRead IO (EditReader edit) -> Object edit
 readConstantObject mr =
-    MkObject (MkUnliftIO id) mr $ 
+    MkObject (MkTransform id) mr $ 
     -- must allow empty edit list
     \case
         [] -> return $ Just $ return ()
@@ -146,10 +146,10 @@ cacheWholeObject ::
        forall t. Eq t
     => Object (WholeEdit t)
     -> Object (WholeEdit t)
-cacheWholeObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
+cacheWholeObject (MkObject (MkTransform run :: UnliftIO m) rd push) = let
     run' :: UnliftIO (StateT t m)
     run' =
-        MkUnliftIO $ \ma ->
+        MkTransform $ \ma ->
             run $ do
                 oldval <- rd ReadWhole
                 (r, newval) <- runStateT ma oldval
@@ -171,13 +171,13 @@ copyObject :: FullEdit edit => Object edit -> Object edit -> IO ()
 copyObject (MkObject (runSrc :: UnliftIO ms) readSrc _) (MkObject (runDest :: UnliftIO md) _ pushDest) =
     case isCombineMonadIO @ms @md of
         Dict ->
-            runUnliftIO (combineUnliftIOs runSrc runDest) $
+            runTransform (combineUnliftIOs runSrc runDest) $
             replaceEdit (remonadMutableRead (combineLiftFst @ms @md) readSrc) $ \edit ->
                 combineLiftSnd @ms @md $ pushOrFail "failed to copy object" $ pushDest [edit]
 
 exclusiveObject :: forall edit. Object edit -> With (Object edit)
 exclusiveObject (MkObject (run :: UnliftIO m) rd push) call =
-    runUnliftIO run $ liftIOWithUnlift $ \unlift -> call $ MkObject unlift rd push
+    runTransform run $ liftIOWithUnlift $ \unlift -> call $ MkObject unlift rd push
 
 getObjectSubject :: FullSubjectReader (EditReader edit) => Object edit -> IO (EditSubject edit)
-getObjectSubject (MkObject unlift rd _) = runUnliftIO unlift $ mutableReadToSubject rd
+getObjectSubject (MkObject unlift rd _) = runTransform unlift $ mutableReadToSubject rd

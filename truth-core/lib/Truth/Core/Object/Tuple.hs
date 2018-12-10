@@ -28,7 +28,7 @@ pairObjects (MkObject (runA :: UnliftIO ma) readA editA) (MkObject (runB :: Unli
 -}
 noneTupleObject :: Object (TupleEdit (ListElementWitness '[]))
 noneTupleObject = let
-    objRun = identityUnliftIO
+    objRun = id
     objRead :: forall t. TupleEditReader (ListElementWitness '[]) t -> IO t
     objRead (MkTupleEditReader sel _) = case sel of {}
     objEdit :: [TupleEdit (ListElementWitness '[])] -> IO (Maybe (IO ()))

@@ -65,7 +65,7 @@ voMapEdit lens@(MkCloseUnlift unlift flens) (MkViewOutput updateB a) = let
     updateA :: Object edita -> [edita] -> IO ()
     updateA objA@(MkObject ou omr _) editsA = do
         editsB <-
-            runUnliftIO (composeUnliftIO unlift ou) $
+            runTransform (composeUnliftTransform unlift ou) $
             withTransConstraintTM @MonadUnliftIO $ efUpdates elFunction editsA omr
         updateB (mapObject lens objA) editsB
     a' = aspectMapEdit lens a
@@ -112,8 +112,8 @@ cvReceiveIOUpdates recv = do cvLiftViewResult $ (mempty {voUpdate = recv}, ())
 
 cvReceiveUpdates :: (UnliftIO (View seledit edit) -> ReceiveUpdates edit) -> CreateView seledit edit ()
 cvReceiveUpdates recv = do
-    unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkUnliftIO unlift
-    cvReceiveIOUpdates $ \(MkObject unliftObj mr _) edits -> runUnliftIO unliftObj $ recv unliftIO mr edits
+    unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkTransform unlift
+    cvReceiveIOUpdates $ \(MkObject unliftObj mr _) edits -> runTransform unliftObj $ recv unliftIO mr edits
 
 cvReceiveUpdate ::
        (UnliftIO (View seledit edit) -> forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> edit -> m ())
@@ -124,7 +124,7 @@ cvBindEditFunction :: EditFunction edit (WholeEdit t) -> (t -> View seledit edit
 cvBindEditFunction ef setf = do
     initial <- cvLiftView $ viewObjectRead $ \_ mr -> editFunctionRead ef mr ReadWhole
     cvLiftView $ setf initial
-    cvReceiveUpdates $ \(MkUnliftIO unlift) ->
+    cvReceiveUpdates $ \(MkTransform unlift) ->
         mapReceiveUpdates ef $ \_ wedits ->
             case lastWholeEdit wedits of
                 Just newval -> liftIO $ unlift $ setf newval

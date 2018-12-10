@@ -28,7 +28,7 @@ newtype View seledit edit a =
     deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO, MonadAskUnliftIO)
 
 liftIOView :: forall seledit edit a. ((forall r. View seledit edit r -> IO r) -> IO a) -> View seledit edit a
-liftIOView call = liftIOWithUnlift $ \(MkUnliftIO unlift) -> call unlift
+liftIOView call = liftIOWithUnlift $ \(MkTransform unlift) -> call unlift
 
 viewObject :: View seledit edit (Object edit)
 viewObject = MkView $ asks vcObject
@@ -39,7 +39,7 @@ viewObjectRead ::
 viewObjectRead call = do
     unliftIO <- askUnliftIO
     MkObject {..} <- viewObject
-    liftIO $ runUnliftIO objRun $ call unliftIO $ objRead
+    liftIO $ runTransform objRun $ call unliftIO $ objRead
 
 viewObjectMaybeEdit ::
        (UnliftIO (View seledit edit) -> forall m. MonadUnliftIO m => ([edit] -> m (Maybe (m ()))) -> m r)
@@ -47,7 +47,7 @@ viewObjectMaybeEdit ::
 viewObjectMaybeEdit call = do
     unliftIO <- askUnliftIO
     MkObject {..} <- viewObject
-    liftIO $ runUnliftIO objRun $ call unliftIO $ objEdit
+    liftIO $ runTransform objRun $ call unliftIO $ objEdit
 
 viewObjectPushEdit ::
        (UnliftIO (View seledit edit) -> forall m. MonadUnliftIO m => ([edit] -> m ()) -> m r) -> View seledit edit r

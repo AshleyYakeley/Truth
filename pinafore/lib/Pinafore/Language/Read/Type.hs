@@ -291,11 +291,10 @@ readEntityType3 = do
 
 parseType ::
        forall baseedit polarity. IsTypePolarity polarity
-    => SourcePos
-    -> Text
-    -> Result Text (PinaforeScoped baseedit (AnyW (PinaforeType baseedit polarity)))
+    => Text
+    -> PinaforeSourceScoped baseedit (AnyW (PinaforeType baseedit polarity))
 parseType =
-    parseReader $ do
+    parseScopedReader $ do
         mt <- isMPolarity @polarity $ readType @baseedit @('Just polarity)
         return $ do
             SingleMPolarType atw <- mt

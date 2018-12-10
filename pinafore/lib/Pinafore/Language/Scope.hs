@@ -2,8 +2,10 @@ module Pinafore.Language.Scope
     ( NamedType(..)
     , Scoped
     , runScoped
+    , liftScoped
     , SourcePos
     , SourceScoped
+    , askSourcePos
     , runSourcePos
     , liftSourcePos
     , mapSourcePos
@@ -46,6 +48,9 @@ instance Monoid a => Monoid (Scoped expr a) where
 runScoped :: Scoped expr a -> Result Text a
 runScoped (MkScoped qa) = runReaderT qa $ MkScope mempty mempty mempty
 
+liftScoped :: Result Text a -> Scoped expr a
+liftScoped ra = MkScoped $ lift ra
+
 pScope :: Scoped expr (Scope expr)
 pScope = MkScoped ask
 
@@ -55,6 +60,9 @@ pLocalScope maptc (MkScoped ma) = MkScoped $ local maptc ma
 newtype SourceScoped expr a =
     MkSourceScoped (ReaderT SourcePos (Scoped expr) a)
     deriving (Functor, Applicative, Alternative, Monad, MonadPlus)
+
+askSourcePos :: SourceScoped expr SourcePos
+askSourcePos = MkSourceScoped ask
 
 runSourcePos :: SourcePos -> SourceScoped expr a -> Scoped expr a
 runSourcePos spos (MkSourceScoped ma) = runReaderT ma spos
@@ -88,8 +96,8 @@ lookupBinding name = do
     (scopeBindings -> names) <- spScope
     return $ lookup name names
 
-withNewBindings :: StrictMap Name expr -> SourceScoped expr a -> SourceScoped expr a
-withNewBindings bb ma = spLocalScope (\tc -> tc {scopeBindings = bb <> (scopeBindings tc)}) ma
+withNewBindings :: StrictMap Name expr -> Scoped expr a -> Scoped expr a
+withNewBindings bb ma = pLocalScope (\tc -> tc {scopeBindings = bb <> (scopeBindings tc)}) ma
 
 lookupNamedType :: Name -> SourceScoped expr NamedType
 lookupNamedType name = do

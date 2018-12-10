@@ -81,7 +81,7 @@ createFile path bs = do
 fileSystemObject :: Object FSEdit
 fileSystemObject = let
     objRun :: UnliftIO IO
-    objRun = MkUnliftIO id
+    objRun = MkTransform id
     objRead :: MutableRead IO FSReader
     objRead (FSReadDirectory path) = do
         isDir <- doesDirectoryExist path
@@ -127,10 +127,10 @@ fileSystemObject = let
     in MkObject {..}
 
 subdirectoryObject :: Bool -> FilePath -> Object FSEdit -> Object FSEdit
-subdirectoryObject create dir (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
+subdirectoryObject create dir (MkObject (MkTransform run :: UnliftIO m) rd push) = let
     run' :: UnliftIO m
     run' =
-        MkUnliftIO $ \ma ->
+        MkTransform $ \ma ->
             run $ do
                 if create
                     then pushEdit $ push [FSEditCreateDirectory dir]

@@ -90,7 +90,7 @@ file_import set continue = do
                     viewMapEdit (pinaforeFileItemLens entity) $ do
                         MkObject {..} <- viewObject
                         liftIO $
-                            runUnliftIO objRun $ do
+                            runTransform objRun $ do
                                 pushEdit $ objEdit [SingleObjectDeleteCreate]
                                 objRead ReadSingleObjectStore
                 destobject <-
@@ -101,7 +101,7 @@ file_import set continue = do
                 continue entity
 
 file_size :: Object ByteStringEdit -> IO Int64
-file_size MkObject {..} = runUnliftIO objRun $ objRead ReadByteStringLength
+file_size MkObject {..} = runTransform objRun $ objRead ReadByteStringLength
 -}
 withSelection :: (NewEntity -> PinaforeAction baseedit) -> PinaforeAction baseedit
 withSelection cont = do
@@ -109,7 +109,7 @@ withSelection cont = do
     case mselection of
         Nothing -> return ()
         Just MkObject {..} -> do
-            e <- liftIO $ runUnliftIO objRun $ objRead ReadWhole
+            e <- liftIO $ runTransform objRun $ objRead ReadWhole
             cont $ MkNewEntity e
 
 ui_table ::

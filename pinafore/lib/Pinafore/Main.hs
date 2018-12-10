@@ -5,6 +5,7 @@ module Pinafore.Main
     , sqlitePinaforeContext
     , sqlitePinaforeDumpTable
     , pinaforeInterpretFile
+    , pinaforeInteractHandles
     , pinaforeInteract
     ) where
 
@@ -41,7 +42,7 @@ getPinaforeRunAction ::
 getPinaforeRunAction pinaforeObject createWindow = do
     sub <- liftIO $ makeObjectSubscriber pinaforeObject
     return $
-        MkUnliftIO $ \(MkComposeM action :: PinaforeActionM baseedit a) -> do
+        MkTransform $ \(MkComposeM action :: PinaforeActionM baseedit a) -> do
             let
                 createView :: IO () -> CreateView (ConstEdit Entity) baseedit (() -> LifeCycle (Result Text a))
                 createView _ = do
@@ -84,7 +85,10 @@ sqlitePinaforeDumpTable dirpath = do
 pinaforeInterpretFile :: PinaforeContext -> FilePath -> Text -> IO (IO ())
 pinaforeInterpretFile (MkPinaforeContext runAction) puipath puitext = do
     action :: FilePinaforeType <- resultTextToM $ parseValueAtType @PinaforeEdit (initialPos puipath) puitext
-    return $ runUnliftIO runAction action
+    return $ runTransform runAction action
+
+pinaforeInteractHandles :: Handle -> Handle -> Bool -> PinaforeContext -> IO ()
+pinaforeInteractHandles inh outh echo (MkPinaforeContext runAction) = interact inh outh echo runAction
 
 pinaforeInteract :: PinaforeContext -> IO ()
-pinaforeInteract (MkPinaforeContext runAction) = interact runAction
+pinaforeInteract = pinaforeInteractHandles stdin stdout False

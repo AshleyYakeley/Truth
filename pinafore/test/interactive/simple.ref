@@ -1,0 +1,7 @@
+pinafore> false
+false
+pinafore> 3
+3
+pinafore> 4 * 2
+8
+pinafore> <END>

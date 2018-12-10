@@ -250,16 +250,20 @@ readToken = do
     readWS
     return (pos, t)
 
-readTokens :: SourcePos -> Parser [(SourcePos, AnyValue Token)]
-readTokens spos = do
-    setPosition spos
+readTokens :: SourcePos -> Parser (SourcePos, [(SourcePos, AnyValue Token)])
+readTokens oldpos = do
+    setPosition oldpos
     readWS
     toks <- many readToken
     eof
-    return toks
+    newpos <- getPosition
+    return (newpos, toks)
 
-parseTokens :: SourcePos -> Text -> Result Text [(SourcePos, AnyValue Token)]
-parseTokens spos text =
-    case parse (readTokens spos) (sourceName spos) (unpack text) of
-        Right a -> return a
+parseTokens :: Text -> StateT SourcePos (Result Text) [(SourcePos, AnyValue Token)]
+parseTokens text = do
+    oldpos <- get
+    case parse (readTokens oldpos) (sourceName oldpos) (unpack text) of
+        Right (newpos, a) -> do
+            put newpos
+            return a
         Left e -> fail $ show e

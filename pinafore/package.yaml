@@ -122,6 +122,7 @@ tests:
           - shapes
           - truth-core
           - pinafore
+          - filepath
           - QuickCheck
           - tasty
           - tasty-hunit
@@ -134,6 +135,7 @@ tests:
           - Test.Type
           - Test.ReadType
           - Test.Examples
+          - Test.Interactive
 
 benchmarks:
     benchmark:

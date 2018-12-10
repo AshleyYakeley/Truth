@@ -7,7 +7,7 @@ module Subscribe
 
 import Control.Concurrent.MVar
 import Control.Monad.IO.Class
-import Control.Monad.Trans.Unlift
+import Control.Monad.Trans.Transform
 import Data.Foldable
 import Prelude
 import System.IO
@@ -61,17 +61,17 @@ testOutputEditor name call = let
     outputLn :: MonadIO m => String -> m ()
     outputLn s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s
     editorInit :: Object edit -> IO ()
-    editorInit (MkObject (MkUnliftIO run) r _) = do
+    editorInit (MkObject (MkTransform run) r _) = do
         val <- run $ mutableReadToSubject r
         outputLn $ "init: " ++ show val
         return ()
     editorUpdate :: () -> Object edit -> [edit] -> IO ()
-    editorUpdate () (MkObject (MkUnliftIO run) mr _) edits = do
+    editorUpdate () (MkObject (MkTransform run) mr _) edits = do
         outputLn $ "receive " ++ show edits
         val <- run $ mutableReadToSubject mr
         outputLn $ "receive " ++ show val
     editorDo :: () -> Object edit -> actions -> IO ()
-    editorDo () (MkObject (MkUnliftIO run) _ push) subActions = let
+    editorDo () (MkObject (MkTransform run) _ push) subActions = let
         subDontEdits :: [[edit]] -> IO ()
         subDontEdits editss = do
             outputLn "runObject"

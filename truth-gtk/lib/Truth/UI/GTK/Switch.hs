@@ -34,7 +34,7 @@ switchView getview specfunc = do
             Just spec -> do
                 oldvs <- get
                 liftIO $ closeDynamicView oldvs
-                newvs <- liftIO $ runUnliftIO unliftView $ getViewState spec
+                newvs <- liftIO $ runTransform unliftView $ getViewState spec
                 put newvs
     toWidget box
 

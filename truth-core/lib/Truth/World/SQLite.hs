@@ -183,7 +183,7 @@ sqliteObject ::
 sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
     objRun :: UnliftIO (ReaderT Connection IO)
     objRun =
-        MkUnliftIO $ \call -> do
+        MkTransform $ \call -> do
             exists <- doesFileExist path
             withConnection path $ \conn -> do
                 if exists

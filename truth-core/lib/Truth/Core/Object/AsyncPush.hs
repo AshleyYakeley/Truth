@@ -10,20 +10,20 @@ import Truth.Core.Object.Object
 import Truth.Core.Read
 
 protectObject :: forall edit. Object edit -> LifeCycle (Object edit)
-protectObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) =
+protectObject (MkObject (MkTransform run :: UnliftIO m) rd push) =
     MkLifeCycle $ do
         var <- newMVar ()
         let
             run' :: forall a. m a -> IO a
             run' ma = withMVar var $ \() -> run ma
-        return (MkObject (MkUnliftIO run') rd push, return ())
+        return (MkObject (MkTransform run') rd push, return ())
 
 -- | pushes complete within an object run
 asyncPushWithinObject :: forall edit. Object edit -> Object edit
-asyncPushWithinObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
+asyncPushWithinObject (MkObject (MkTransform run :: UnliftIO m) rd push) = let
     run' :: UnliftIO (ReaderT (IO () -> IO ()) m)
     run' =
-        MkUnliftIO $ \rma ->
+        MkTransform $ \rma ->
             run $ do
                 (request, closer) <- liftIO $ runLifeCycle deferrer
                 a <- runReaderT rma request
@@ -36,7 +36,7 @@ asyncPushWithinObject (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
         return $
             case maction of
                 Nothing -> Nothing
-                Just action -> Just $ lift $ liftIOWithUnlift $ \(MkUnliftIO unlift) -> request $ unlift action
+                Just action -> Just $ lift $ liftIOWithUnlift $ \(MkTransform unlift) -> request $ unlift action
     rd' :: MutableRead (ReaderT (IO () -> IO ()) m) (EditReader edit)
     rd' = liftMutableRead rd
     in MkObject run' rd' push'
@@ -52,6 +52,6 @@ asyncPushObject ocObject = let
             return $
                 case maction of
                     Nothing -> Nothing
-                    Just action -> Just $ liftIO $ request $ runUnliftIO run action
+                    Just action -> Just $ liftIO $ request $ runTransform run action
         in MkObject run rd push'
     in ff <$> ocObject <*> deferrer

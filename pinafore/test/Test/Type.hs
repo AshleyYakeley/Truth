@@ -101,10 +101,8 @@ simplifyTypeTest text e =
     testCase (unpack text) $ do
         simpexpr <-
             resultTextToM $ do
-                ct <- parseType @PinaforeEdit @'PositivePolarity (initialPos "<input>") text
-                runScoped $ do
-                    MkAnyW t <- ct
-                    return $ pinaforeSimplifyExpressionType $ MkSealedExpression t $ ClosedExpression undefined
+                MkAnyW t <- runSourceScoped (initialPos "<input>") $ parseType @PinaforeEdit @'PositivePolarity text
+                return $ pinaforeSimplifyExpressionType $ MkSealedExpression t $ ClosedExpression undefined
         case simpexpr of
             MkSealedExpression t' _ -> assertEqual "" e $ show t'
 

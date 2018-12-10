@@ -8,6 +8,7 @@ import Control.Monad.Trans.Identity
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
+import Control.Monad.Trans.Transform
 import Control.Monad.Trans.Writer
 import Prelude
 
@@ -20,6 +21,12 @@ class (MonadTrans t, MonadTransConstraint Monad t) => MonadTransTunnel t where
 
 remonad :: MonadTransTunnel t => (forall a. m1 a -> m2 a) -> t m1 r -> t m2 r
 remonad mma sm1 = tunnel $ \tun -> mma $ tun sm1
+
+remonadTransform :: MonadTransTunnel t => (forall a. m1 a -> m2 a) -> Transform (t m2) n -> Transform (t m1) n
+remonadTransform ff (MkTransform r2) = MkTransform $ \m1a -> r2 $ remonad ff m1a
+
+liftTransform :: MonadTransTunnel t => Transform m1 m2 -> Transform (t m1) (t m2)
+liftTransform (MkTransform mm) = MkTransform $ remonad mm
 
 instance MonadTransTunnel IdentityT where
     tunnel call = IdentityT $ call $ runIdentityT

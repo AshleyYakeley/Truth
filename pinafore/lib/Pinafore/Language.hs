@@ -31,14 +31,16 @@ import Pinafore.Storage.File
 import Shapes
 import System.IO.Error
 
+runPinaforeScoped ::
+       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit) => PinaforeScoped baseedit a -> Result Text a
+runPinaforeScoped scp = runScoped $ withNewBindings (qValuesLetExpr predefinedBindings) scp
+
 parseExpression ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => SourcePos
     -> Text
     -> Result Text (QExpr baseedit)
-parseExpression spos text = do
-    texpr <- parseTopExpression @baseedit spos text
-    runSourceScoped spos $ withNewBindings (qValuesLetExpr predefinedBindings) $ liftSourcePos texpr
+parseExpression spos text = runPinaforeScoped $ runSourcePos spos $ parseTopExpression @baseedit text
 
 parseValue ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
@@ -84,28 +86,18 @@ showPinaforeValue :: PinaforeType baseedit 'PositivePolarity t -> t -> String
 showPinaforeValue NilPinaforeType v = never v
 showPinaforeValue (ConsPinaforeType ts tt) v = joinf (showPinaforeSingularValue ts) (showPinaforeValue tt) v
 
-type Interact baseedit = StateT (SourcePos, QExpr baseedit -> Result Text (QExpr baseedit)) IO
+type Interact baseedit = StateT SourcePos (ReaderStateT (PinaforeScoped baseedit) IO)
 
 interactEvalExpression ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => PinaforeScoped baseedit (QExpr baseedit)
     -> Interact baseedit (QValue baseedit)
 interactEvalExpression texpr = do
-    (spos, bind) <- get
-    let
-        rval = do
-            expr <- runScoped texpr
-            expr' <- bind expr
-            expr'' <-
-                runScoped $
-                runSourcePos spos $ withNewBindings (qValuesLetExpr $ predefinedBindings @baseedit) $ return expr'
-            qEvalExpr expr''
-    case rval of
-        SuccessResult val -> return val
-        FailureResult err -> fail $ unpack err
+    expr <- lift $ liftRS texpr
+    qEvalExpr expr
 
-runValue :: SourcePos -> QValue baseedit -> PinaforeActionM baseedit ()
-runValue spos val =
+runValue :: Handle -> SourcePos -> QValue baseedit -> PinaforeActionM baseedit ()
+runValue outh spos val =
     case typedAnyToPinaforeVal spos val of
         SuccessResult action -> action
         _ ->
@@ -113,55 +105,56 @@ runValue spos val =
                 SuccessResult v -> outputln v
                 _ ->
                     case val of
-                        MkAnyValue t v -> liftIO $ putStrLn $ showPinaforeValue t v
+                        MkAnyValue t v -> liftIO $ hPutStrLn outh $ showPinaforeValue t v
 
 interactParse ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Text
     -> Interact baseedit (InteractiveCommand baseedit)
-interactParse t = do
-    (oldpos, bind) <- get
-    (newpos, p) <- resultTextToM $ parseInteractiveCommand @baseedit oldpos t
-    put (newpos, bind)
-    return p
+interactParse t = remonad resultTextToM $ parseInteractiveCommand @baseedit t
 
 interactLoop ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
-    => UnliftIO (PinaforeActionM baseedit)
+    => Handle
+    -> Handle
+    -> Bool
+    -> UnliftIO (PinaforeActionM baseedit)
     -> Interact baseedit ()
-interactLoop runAction = do
-    liftIO $ putStr "pinafore> "
-    eof <- liftIO isEOF
+interactLoop inh outh echo runAction = do
+    liftIO $ hPutStr outh "pinafore> "
+    eof <- liftIO $ hIsEOF inh
     if eof
         then return ()
         else do
-            str <- liftIO getLine
+            str <- liftIO $ hGetLine inh
+            let inputstr = str <> "\n"
+            if echo
+                then liftIO $ hPutStr outh inputstr
+                else return ()
             liftIOWithUnlift $ \unlift ->
                 catch
-                    (runUnliftIO unlift $ do
-                         p <- interactParse $ pack str
+                    (runTransform unlift $ do
+                         p <- interactParse $ pack inputstr
                          case p of
-                             LetInteractiveCommand bind ->
-                                 modify $ \(spos, oldbind) ->
-                                     ( spos
-                                     , \expr -> do
-                                           expr' <- runScoped $ bind $ return expr
-                                           oldbind expr')
+                             LetInteractiveCommand (MkTransform bind) -> lift $ updateRS bind
                              ExpressionInteractiveCommand texpr -> do
                                  val <- interactEvalExpression texpr
-                                 (spos, _) <- get
-                                 lift $ runUnliftIO runAction $ runValue spos val
+                                 lift $ lift $ runTransform runAction $ runValue outh (initialPos "<input>") val
                              ShowTypeInteractiveCommand texpr -> do
                                  MkAnyValue t _ <- interactEvalExpression texpr
-                                 lift $ putStrLn $ ":: " <> show t
-                             ErrorInteractiveCommand err -> liftIO $ putStrLn $ unpack err) $ \err ->
-                    putStrLn $ "error: " <> ioeGetErrorString err
-            interactLoop runAction
+                                 lift $ lift $ hPutStrLn outh $ ":: " <> show t
+                             ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err) $ \err ->
+                    hPutStrLn outh $ "error: " <> ioeGetErrorString err
+            interactLoop inh outh echo runAction
 
 interact ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
-    => UnliftIO (PinaforeActionM baseedit)
+    => Handle
+    -> Handle
+    -> Bool
+    -> UnliftIO (PinaforeActionM baseedit)
     -> IO ()
-interact runAction = do
-    hSetBuffering stdout NoBuffering
-    evalStateT (interactLoop runAction) (initialPos "<input>", return)
+interact inh outh echo runAction = do
+    hSetBuffering outh NoBuffering
+    evalReaderStateT (evalStateT (interactLoop inh outh echo runAction) (initialPos "<input>")) $
+        resultTextToM . runPinaforeScoped

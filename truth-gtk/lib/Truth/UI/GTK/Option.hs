@@ -18,7 +18,7 @@ listStoreView ::
        (FullSubjectReader (EditReader edit), ApplicableEdit edit)
     => UnliftIO IO
     -> CreateView seledit (ListEdit [EditSubject edit] edit) (SeqStore (EditSubject edit))
-listStoreView (MkUnliftIO blockSignal) = do
+listStoreView (MkTransform blockSignal) = do
     subjectList <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     store <- seqStoreNew subjectList
     cvReceiveUpdate $ \_ _mr ->
@@ -74,7 +74,7 @@ optionFromStore store = do
             update t
     cvReceiveUpdate $ \_ _mr (MkWholeEdit t) -> update t
     w <- toWidget widget
-    return (MkUnliftIO blockSignal, w)
+    return (MkTransform blockSignal, w)
 
 optionView ::
        forall t tedit seledit. (Eq t)

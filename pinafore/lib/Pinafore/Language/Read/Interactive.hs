@@ -13,7 +13,7 @@ import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
 data InteractiveCommand baseedit
-    = LetInteractiveCommand (PinaforeScoped baseedit (QExpr baseedit) -> PinaforeScoped baseedit (QExpr baseedit))
+    = LetInteractiveCommand (Transform (PinaforeScoped baseedit) (PinaforeScoped baseedit))
     | ExpressionInteractiveCommand (PinaforeScoped baseedit (QExpr baseedit))
     | ShowTypeInteractiveCommand (PinaforeScoped baseedit (QExpr baseedit))
     | ErrorInteractiveCommand Text
@@ -41,9 +41,5 @@ readInteractiveCommand =
     (fmap LetInteractiveCommand readTopLetBindings)
 
 parseInteractiveCommand ::
-       HasPinaforeEntityEdit baseedit => SourcePos -> Text -> Result Text (SourcePos, InteractiveCommand baseedit)
-parseInteractiveCommand =
-    parseReader $ do
-        spos <- getPosition
-        ic <- readInteractiveCommand
-        return (spos, ic)
+       HasPinaforeEntityEdit baseedit => Text -> StateT SourcePos (Result Text) (InteractiveCommand baseedit)
+parseInteractiveCommand = parseReader readInteractiveCommand
