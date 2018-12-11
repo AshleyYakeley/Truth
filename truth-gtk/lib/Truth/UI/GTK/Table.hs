@@ -175,7 +175,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                 [tpath] -> do
                     ii <- #getIndices tpath
                     case ii of
-                        [i] -> do
+                        Just [i] -> do
                             (key, _) <- seqStoreGetValue store i
                             uiw <- getuiwindow key
                             return $ Just $ MkUIAspect uiw $ constEditLens key
