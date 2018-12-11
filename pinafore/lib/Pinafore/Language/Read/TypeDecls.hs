@@ -5,6 +5,7 @@ import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
 import Pinafore.Language.Scope
+import Pinafore.Language.Type
 import Shapes hiding (try)
 
 newtype TypeDecls baseedit =
@@ -17,23 +18,27 @@ instance Monoid (TypeDecls baseedit) where
     mempty = MkTypeDecls id
     mappend = (<>)
 
-readOpenTypeDeclaration :: Parser (TypeDecls baseedit)
+readOpenTypeDeclaration :: Parser (PinaforeScoped baseedit (TypeDecls baseedit))
 readOpenTypeDeclaration = do
     spos <- getPosition
     readThis TokOpenType
     n <- readTypeName
     return $
-        MkTypeDecls $
-        remonadRefNotation $ mapSourcePos spos $ withNewTypeName n $ EntityNamedType $ toSymbolWitness (unpack n) MkAnyW
+        runSourcePos spos $ do
+            MkTransform withnt <- withNewTypeName n $ EntityNamedType $ toSymbolWitness (unpack n) MkAnyW
+            return $ MkTypeDecls $ remonadRefNotation withnt
 
-readSubtypeDeclaration :: Parser (TypeDecls baseedit)
+readSubtypeDeclaration :: Parser (PinaforeScoped baseedit (TypeDecls baseedit))
 readSubtypeDeclaration = do
     spos <- getPosition
     readThis TokSubtype
     na <- readTypeName
     readExactlyThis TokOperator "<="
     nb <- readTypeName
-    return $ MkTypeDecls $ remonadRefNotation $ mapSourcePos spos $ withEntitySubtype (na, nb)
+    return $
+        runSourcePos spos $ do
+            MkTransform smap <- withEntitySubtype (na, nb)
+            return $ MkTypeDecls $ remonadRefNotation smap
 
-readTypeDeclaration :: Parser (TypeDecls baseedit)
+readTypeDeclaration :: Parser (PinaforeScoped baseedit (TypeDecls baseedit))
 readTypeDeclaration = readOpenTypeDeclaration <|> readSubtypeDeclaration

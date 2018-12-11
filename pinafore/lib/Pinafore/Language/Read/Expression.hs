@@ -37,7 +37,7 @@ instance Monoid (Declarations baseedit) where
 typeDeclarations :: TypeDecls baseedit -> Declarations baseedit
 typeDeclarations td = MkDeclarations td $ return mempty
 
-readBinding :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
+readBinding :: HasPinaforeEntityEdit baseedit => Parser (PinaforeScoped baseedit (Declarations baseedit))
 readBinding = do
     spos <- getPosition
     name <- readThis TokName
@@ -45,15 +45,16 @@ readBinding = do
     readThis TokAssign
     rval <- readExpression
     return $
+        return $
         MkDeclarations mempty $ do
             val <- rval
             expr <- liftRefNotation $ runSourcePos spos $ qAbstractsExpr args val
             return $ qBindExpr name expr
 
-readDeclaration :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
-readDeclaration = fmap typeDeclarations readTypeDeclaration <|> readBinding
+readDeclaration :: HasPinaforeEntityEdit baseedit => Parser (PinaforeScoped baseedit (Declarations baseedit))
+readDeclaration = fmap (fmap typeDeclarations) readTypeDeclaration <|> readBinding
 
-readDeclarations :: HasPinaforeEntityEdit baseedit => Parser (Declarations baseedit)
+readDeclarations :: HasPinaforeEntityEdit baseedit => Parser (PinaforeScoped baseedit (Declarations baseedit))
 readDeclarations =
     (do
          b <- readDeclaration
@@ -64,27 +65,34 @@ readDeclarations =
          return $ b <> fromMaybe mempty mbl) <|>
     (do return mempty)
 
-readLetBindings :: HasPinaforeEntityEdit baseedit => Parser (Transform (RefNotation baseedit) (RefNotation baseedit))
+readLetBindings ::
+       HasPinaforeEntityEdit baseedit
+    => Parser (PinaforeScoped baseedit (Transform (RefNotation baseedit) (RefNotation baseedit)))
 readLetBindings = do
     spos <- getPosition
     readThis TokLet
-    MkDeclarations (MkTypeDecls td) rbl <- readDeclarations
-    return $
-        MkTransform $ \ra ->
-            td $ do
-                bl <- rbl
-                f <- qBindingsLetExpr bl
-                remonadRefNotation
-                    (\se -> do
-                         bmap <- runSourcePos spos f
-                         withNewBindings bmap se) $
-                    td ra
+    sdecl <- readDeclarations
+    return $ do
+        MkDeclarations (MkTypeDecls td) rbl <- sdecl
+        return $
+            MkTransform $ \ra ->
+                td $ do
+                    bl <- rbl
+                    f <- qBindingsLetExpr bl
+                    remonadRefNotation
+                        (\se -> do
+                             bmap <- runSourcePos spos f
+                             withNewBindings bmap se) $
+                        td ra
 
 readTopLetBindings ::
-       HasPinaforeEntityEdit baseedit => Parser (Transform (PinaforeScoped baseedit) (PinaforeScoped baseedit))
+       HasPinaforeEntityEdit baseedit
+    => Parser (PinaforeScoped baseedit (Transform (PinaforeScoped baseedit) (PinaforeScoped baseedit)))
 readTopLetBindings = do
-    MkTransform f <- readLetBindings
-    return $ MkTransform $ \a -> runRefNotation $ f $ liftRefNotation a
+    sf <- readLetBindings
+    return $ do
+        MkTransform f <- sf
+        return $ MkTransform $ \a -> runRefNotation $ f $ liftRefNotation a
 
 readExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -105,10 +113,12 @@ readExpression1 =
              val <- mval
              liftRefNotation $ runSourcePos spos $ qAbstractsExpr args val) <|>
     (do
-         MkTransform bmap <- readLetBindings
+         rbmap <- readLetBindings
          readThis TokIn
          mbody <- readExpression
-         return $ bmap mbody) <|>
+         return $ do
+             MkTransform bmap <- liftRefNotation rbmap
+             bmap mbody) <|>
     (do
          spos <- getPosition
          readThis TokIf

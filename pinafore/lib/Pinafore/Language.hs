@@ -47,9 +47,11 @@ parseValue ::
     => SourcePos
     -> Text
     -> Result Text (QValue baseedit)
-parseValue spos text = do
-    rexpr <- parseExpression spos text
-    qEvalExpr rexpr
+parseValue spos text =
+    runPinaforeScoped $
+    runSourcePos spos $ do
+        rexpr <- parseTopExpression @baseedit text
+        qEvalExpr rexpr
 
 parseValueAtType ::
        forall baseedit t. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, FromPinaforeType baseedit t)
@@ -90,11 +92,14 @@ type Interact baseedit = StateT SourcePos (ReaderStateT (PinaforeScoped baseedit
 
 interactEvalExpression ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
-    => PinaforeScoped baseedit (QExpr baseedit)
+    => SourcePos
+    -> PinaforeScoped baseedit (QExpr baseedit)
     -> Interact baseedit (QValue baseedit)
-interactEvalExpression texpr = do
-    expr <- lift $ liftRS texpr
-    qEvalExpr expr
+interactEvalExpression spos texpr =
+    lift $
+    liftRS $ do
+        expr <- texpr
+        runSourcePos spos $ qEvalExpr expr
 
 runValue :: Handle -> SourcePos -> QValue baseedit -> PinaforeActionM baseedit ()
 runValue outh spos val =
@@ -134,14 +139,18 @@ interactLoop inh outh echo runAction = do
             liftIOWithUnlift $ \unlift ->
                 catch
                     (runTransform unlift $ do
+                         spos <- get
                          p <- interactParse $ pack inputstr
                          case p of
-                             LetInteractiveCommand (MkTransform bind) -> lift $ updateRS bind
+                             LetInteractiveCommand fbind ->
+                                 lift $ do
+                                     MkTransform bind <- liftRS fbind
+                                     updateRS bind
                              ExpressionInteractiveCommand texpr -> do
-                                 val <- interactEvalExpression texpr
-                                 lift $ lift $ runTransform runAction $ runValue outh (initialPos "<input>") val
+                                 val <- interactEvalExpression spos texpr
+                                 lift $ lift $ runTransform runAction $ runValue outh spos val
                              ShowTypeInteractiveCommand texpr -> do
-                                 MkAnyValue t _ <- interactEvalExpression texpr
+                                 MkAnyValue t _ <- interactEvalExpression spos texpr
                                  lift $ lift $ hPutStrLn outh $ ":: " <> show t
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err) $ \err ->
                     hPutStrLn outh $ "error: " <> ioeGetErrorString err

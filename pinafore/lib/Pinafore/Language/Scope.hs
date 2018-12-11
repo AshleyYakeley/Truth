@@ -79,9 +79,6 @@ runSourceScoped spos spa = runScoped $ runSourcePos spos spa
 spScope :: SourceScoped expr (Scope expr)
 spScope = MkSourceScoped $ lift pScope
 
-spLocalScope :: (Scope expr -> Scope expr) -> SourceScoped expr a -> SourceScoped expr a
-spLocalScope maptc (MkSourceScoped ma) = MkSourceScoped $ remonad (pLocalScope maptc) ma
-
 instance MonadFail (SourceScoped expr) where
     fail s =
         MkSourceScoped $ do
@@ -99,10 +96,15 @@ lookupBinding name = do
 withNewBindings :: StrictMap Name expr -> Scoped expr a -> Scoped expr a
 withNewBindings bb ma = pLocalScope (\tc -> tc {scopeBindings = bb <> (scopeBindings tc)}) ma
 
+lookupNamedTypeM :: Name -> SourceScoped expr (Maybe NamedType)
+lookupNamedTypeM name = do
+    (scopeTypes -> names) <- spScope
+    return $ lookup name names
+
 lookupNamedType :: Name -> SourceScoped expr NamedType
 lookupNamedType name = do
-    (scopeTypes -> names) <- spScope
-    case lookup name names of
+    mnt <- lookupNamedTypeM name
+    case mnt of
         Just nt -> return nt
         Nothing -> fail $ "unknown type: " <> unpack name
 
@@ -124,14 +126,18 @@ isSupertype st aa a = let
 castNamedEntity :: NamedEntity na -> NamedEntity nb
 castNamedEntity (MkNamedEntity p) = MkNamedEntity p
 
-withNewTypeName :: Name -> NamedType -> SourceScoped expr a -> SourceScoped expr a
-withNewTypeName s t ma = spLocalScope (\tc -> tc {scopeTypes = insertMap s t (scopeTypes tc)}) ma
+withNewTypeName :: Name -> NamedType -> SourceScoped expr (Transform (Scoped expr) (Scoped expr))
+withNewTypeName name t = do
+    mnt <- lookupNamedTypeM name
+    case mnt of
+        Just _ -> fail $ "duplicate type declaration: " <> unpack name
+        Nothing -> return $ MkTransform $ pLocalScope (\tc -> tc {scopeTypes = insertMap name t (scopeTypes tc)})
 
-withEntitySubtype :: (Name, Name) -> SourceScoped expr a -> SourceScoped expr a
-withEntitySubtype rel@(a, b) ma = do
+withEntitySubtype :: (Name, Name) -> SourceScoped expr (Transform (Scoped expr) (Scoped expr))
+withEntitySubtype rel@(a, b) = do
     _ <- lookupNamedType a
     _ <- lookupNamedType b
-    spLocalScope (\tc -> tc {scopeEntitySubtypes = rel : (scopeEntitySubtypes tc)}) ma
+    return $ MkTransform $ pLocalScope (\tc -> tc {scopeEntitySubtypes = rel : (scopeEntitySubtypes tc)})
 
 getEntitySubtype :: SymbolWitness na -> SymbolWitness nb -> SourceScoped expr (NamedEntity na -> NamedEntity nb)
 getEntitySubtype wa wb = let

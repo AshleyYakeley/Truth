@@ -13,7 +13,7 @@ import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
 data InteractiveCommand baseedit
-    = LetInteractiveCommand (Transform (PinaforeScoped baseedit) (PinaforeScoped baseedit))
+    = LetInteractiveCommand (PinaforeScoped baseedit (Transform (PinaforeScoped baseedit) (PinaforeScoped baseedit)))
     | ExpressionInteractiveCommand (PinaforeScoped baseedit (QExpr baseedit))
     | ShowTypeInteractiveCommand (PinaforeScoped baseedit (QExpr baseedit))
     | ErrorInteractiveCommand Text
@@ -36,7 +36,7 @@ readInteractiveCommand =
              "t" -> showTypeInteractiveCommand
              "type" -> showTypeInteractiveCommand
              _ -> return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd) <|>
-    (eof >> return (LetInteractiveCommand id)) <|>
+    (eof >> return (LetInteractiveCommand $ return id)) <|>
     (try $ fmap ExpressionInteractiveCommand readTopExpression) <|>
     (fmap LetInteractiveCommand readTopLetBindings)
 

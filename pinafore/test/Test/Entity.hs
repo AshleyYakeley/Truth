@@ -96,7 +96,7 @@ testEntity =
               [ exceptionTest "fail \"text\""
               , exceptionTest "let in fail \"text\""
               , exceptionTest "let t = 1 in fail \"text\""
-              , exceptionTest "let opentype E in fail \"text\""
+              , exceptionTest "let opentype T in fail \"text\""
               ]
         , testGroup
               "equality"
@@ -105,6 +105,16 @@ testEntity =
               , pointTest "testeqval false $ 0 == 1"
               , pointTest "testeqval true $ 1 == 1"
               , pointTest "testeqval false $ 1 == ~1"
+              ]
+        , testGroup
+              "reference notation"
+              [ pointTest "runreforfail {pass}"
+              , pointTest "let p = pass in runreforfail {p}"
+              , pointTest "runreforfail {let p = pass in p}"
+              , pointTest "runreforfail {%{pass}}"
+              , pointTest "let rp = {pass} in runreforfail {%rp}"
+              , pointTest "runreforfail {let rp = {pass} in %rp}"
+              , pointTest "let rp = {pass} in runreforfail {let p= %rp in p}"
               ]
         , testGroup
               "unknown & known"
