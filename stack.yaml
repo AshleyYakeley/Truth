@@ -11,10 +11,9 @@ resolver: lts-12.2
 
 extra-deps:
 - mime-0.4.0.2
-- git: https://github.com/AshleyYakeley/haskell-src-exts.git
-  commit: eb9e6bfd89b2a97fb9ac52d967465f62d2c6ed64
+- haskell-src-exts-1.21.0
 - git: https://github.com/AshleyYakeley/hindent.git
-  commit: 7b7edb71b35094498519ed487ff0942e3324466d
+  commit: ca4d121c29b20cbf10ab3e8ee4d1773119d0492d
 
 flags:
     truth-gtk:
