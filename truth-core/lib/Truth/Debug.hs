@@ -1,5 +1,6 @@
 module Truth.Debug where
 
+import Data.Time.Clock.System
 import Debug.Trace
 import Truth.Core.Edit.Edit
 import Truth.Core.Edit.Function
@@ -11,10 +12,15 @@ contextStr "" b = b
 contextStr a b = a ++ ": " ++ b
 
 traceIOM :: MonadIO m => String -> m ()
-traceIOM s =
+traceIOM msg =
     liftIO $ do
+        MkSystemTime s ns <- getSystemTime
         th <- myThreadId
-        traceIO $ show th ++ ": " ++ s
+        let
+            showMod :: Int -> Word32 -> String
+            showMod 0 _ = ""
+            showMod n x = showMod (pred n) (div x 10) <> show (mod x 10)
+        traceIO $ show s <> "." <> showMod 9 ns <> ": " <> show th <> ": " <> msg
 
 traceBracketArgs :: MonadIO m => String -> String -> (r -> String) -> m r -> m r
 traceBracketArgs s args showr ma = do
