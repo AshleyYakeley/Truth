@@ -111,7 +111,7 @@ predright :: Predicate
 predright = MkPredicate $ MkAnchor $ read "bbc7a8ca-17e1-4d42-9230-e6b889dea2e5"
 
 --unitPoint :: Entity
---unitPoint = MkPoint $ MkAnchor $ read "644eaa9b-0c57-4c5c-9606-e5303fda86f9"
+--unitPoint = MkEntity $ MkAnchor $ read "644eaa9b-0c57-4c5c-9606-e5303fda86f9"
 entityAdapter :: EntityType t -> EntityAdapter t
 entityAdapter (SimpleEntityType t) = simpleEntityAdapter t
 entityAdapter (PairEntityType ta tb) = let

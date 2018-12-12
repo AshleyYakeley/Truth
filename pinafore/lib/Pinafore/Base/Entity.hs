@@ -9,7 +9,7 @@ import Shapes
 
 newtype Anchor =
     MkAnchor UUID
-    deriving (Eq, Random, FromJSON)
+    deriving (Eq, Ord, Random, FromJSON)
 
 instance Show Anchor where
     show (MkAnchor uuid) = '!' : show uuid
@@ -30,14 +30,14 @@ hashToAnchor f =
     fromStrict $ take 16 $ convert $ hashFinalize $ hashUpdates (hashInit @SHA3_256) $ f Serialize.encode
 
 newtype Entity =
-    MkPoint Anchor
-    deriving (Eq, Random, FromJSON, Show, Serialize)
+    MkEntity Anchor
+    deriving (Eq, Ord, Random, FromJSON, Show, Serialize)
 
 newEntity :: MonadIO m => m Entity
 newEntity = liftIO randomIO
 
 hashToEntity :: (forall r. (forall t. Serialize t => t -> r) -> [r]) -> Entity
-hashToEntity f = MkPoint $ hashToAnchor f
+hashToEntity f = MkEntity $ hashToAnchor f
 
 pairToEntity :: (Entity, Entity) -> Entity
 pairToEntity (a, b) = hashToEntity $ \call -> [call @Text "pair:", call a, call b]

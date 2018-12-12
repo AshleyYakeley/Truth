@@ -19,4 +19,4 @@ pinaforeFileItemLens entity = tupleEditLens (MkFunctionSelector entity) . pinafo
 
 directoryPinaforeFileObject :: FilePath -> Object PinaforeFileEdit
 directoryPinaforeFileObject path =
-    directoryObjectStore (subdirectoryObject True path fileSystemObject) (\(MkPoint (MkAnchor uuid)) -> show uuid)
+    directoryObjectStore (subdirectoryObject True path fileSystemObject) (\(MkEntity (MkAnchor uuid)) -> show uuid)

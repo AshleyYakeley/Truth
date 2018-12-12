@@ -69,10 +69,11 @@ sqlitePinaforeContext dirpath createWindow = do
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
     MkAllF tables <- sqlitePinaforeTableGetEntireDatabase $ dirpath </> "tables.sqlite3"
-    for_ (tables $ MkTupleTableSel PinaforeTriple) $ \(MkAllValue row) -> let
+    let
         littable :: [(Entity, Literal)]
         littable =
             fmap (\(MkAllValue lrow) -> (lrow LiteralKey, lrow LiteralValue)) $ tables $ MkTupleTableSel PinaforeLiteral
+    for_ (tables $ MkTupleTableSel PinaforeTriple) $ \(MkAllValue row) -> let
         p = row TriplePredicate
         s = row TripleSubject
         v = row TripleValue

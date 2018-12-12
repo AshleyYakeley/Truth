@@ -189,7 +189,7 @@ readExpression3 =
          return $
              liftRefNotation $ do
                  SingleMPolarType (MkAnyW tp) <- mt
-                 pt <- makeEntity tp $ MkPoint anchor
+                 pt <- makeEntity tp $ MkEntity anchor
                  return $ qConstExprAny $ MkAnyValue tp pt) <|>
     (readParen $
      (do
