@@ -1,9 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Storage.Database.SQLite
-    ( sqlitePinaforeTableObject
-    , sqlitePinaforeTableGetEntireDatabase
-    ) where
+module Pinafore.Storage.Database.SQLite where
 
 import Data.UUID
 import Pinafore.Base

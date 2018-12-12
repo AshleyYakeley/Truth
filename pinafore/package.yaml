@@ -163,3 +163,18 @@ executables:
           - xdg-basedir
         main: Main.hs
         ghc-options: -threaded
+    pinaconvert:
+        source-dirs: convert
+        dependencies:
+          - base >= 4.9 && < 5
+          - filepath
+          - bytestring
+          - shapes
+          - truth-core
+          - pinafore
+          - directory
+          - optparse-applicative
+          - xdg-basedir
+        main: Main.hs
+        ghc-options: -threaded
+
