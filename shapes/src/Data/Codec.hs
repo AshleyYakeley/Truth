@@ -48,7 +48,7 @@ bijectionCodec (MkBijection p q) = MkCodec (pure . p) q
 instance (Traversable f, Applicative m) => CatFunctor (Codec' m) f where
     cfmap codec = MkCodec {decode = traverse (decode codec), encode = fmap (encode codec)}
 
-serializeCodec :: Serialize t => Codec' (Result String) ByteString t
+serializeCodec :: Serialize t => Codec' (Result String) LazyByteString t
 serializeCodec = let
     encode = Serialize.encodeLazy
     decode = eitherToResult . Serialize.decodeLazy

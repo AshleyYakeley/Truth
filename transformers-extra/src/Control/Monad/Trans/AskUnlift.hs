@@ -8,6 +8,7 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Identity
 import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Transform
 import Control.Monad.Trans.Unlift
 import Data.Constraint
 import Prelude
@@ -23,14 +24,14 @@ class MonadUnliftIO m => MonadAskUnliftIO m where
     askUnliftIO :: m (UnliftIO m)
 
 instance MonadAskUnliftIO IO where
-    askUnliftIO = return $ MkUnliftIO id
+    askUnliftIO = return $ MkTransform id
 
 instance (MonadTransAskUnlift t, MonadAskUnliftIO m, MonadFail (t m), MonadIO (t m), MonadFix (t m)) =>
              MonadAskUnliftIO (t m) where
     askUnliftIO = do
         MkUnlift unlift <- askUnlift
-        MkUnliftIO unliftIO <- lift askUnliftIO
-        return $ MkUnliftIO $ unliftIO . unlift
+        MkTransform unliftIO <- lift askUnliftIO
+        return $ MkTransform $ unliftIO . unlift
 
 instance MonadTransAskUnlift t => MonadTransConstraint MonadAskUnliftIO t where
     hasTransConstraint =

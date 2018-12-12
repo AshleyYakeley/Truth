@@ -30,6 +30,7 @@
       - NoImplicitPrelude
       - OverloadedLabels
       - OverloadedStrings
+      - PartialTypeSignatures
       - PatternGuards
       - PatternSynonyms
       - PolyKinds
@@ -41,6 +42,7 @@
       - TemplateHaskell
       - TypeApplications
       - TypeFamilies
+      - TypeFamilyDependencies
       - TypeInType
       - TypeOperators
       - TypeSynonymInstances
@@ -48,10 +50,10 @@
       - UndecidableSuperClasses
       - ViewPatterns
     ghc-options:
-      - -Werror
       - -Wall
       - -Wincomplete-uni-patterns
       - -Wincomplete-record-updates
       - -Wcompat
       - -Wnoncanonical-monad-instances
       - -Wnoncanonical-monadfail-instances
+      - -Wno-partial-type-signatures

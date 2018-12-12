@@ -70,7 +70,6 @@ tests:
           - tasty
           - tasty-hunit
         main: Main.hs
-        other-modules:
 
 executables:
     truth-text:
@@ -89,7 +88,6 @@ executables:
           - truth-gtk
           - optparse-applicative
         main: Main.hs
-        other-modules:
     truth-soup:
         when:
           - condition: "!flag(build-examples)"

@@ -1,0 +1,5 @@
+pinafore> let opentype A
+pinafore> let opentype B
+pinafore> let opentype A
+error: "<input>" (line 3, column 5): duplicate type declaration: A
+pinafore> <END>

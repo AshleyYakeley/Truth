@@ -14,8 +14,10 @@ library:
     exposed-modules:
       - Control.Monad.Trans.Constraint
       - Control.Monad.Trans.Tunnel
+      - Control.Monad.Trans.Transform
       - Control.Monad.Trans.Unlift
       - Control.Monad.Trans.AskUnlift
       - Control.Monad.Trans.Compose
       - Control.Monad.Trans.Free
       - Control.Monad.Trans.StackIO
+      - Control.Monad.Trans.ReaderState

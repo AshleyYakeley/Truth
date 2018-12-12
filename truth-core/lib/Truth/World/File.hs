@@ -8,7 +8,7 @@ fileObject :: FilePath -> Object ByteStringEdit
 fileObject path = let
     objRun :: UnliftIO (ReaderT Handle IO)
     objRun =
-        MkUnliftIO $ \rt ->
+        MkTransform $ \rt ->
             traceBracket ("fileObject.run " ++ path) $ do
                 h <- openBinaryFile path ReadWriteMode
                 r <- traceBracket "fileObject.run.action" $ runReaderT rt h

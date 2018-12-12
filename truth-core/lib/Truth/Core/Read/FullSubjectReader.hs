@@ -10,3 +10,14 @@ class (SubjectReader reader) => FullSubjectReader (reader :: * -> *) where
         => MutableRead m reader
         -> m (ReaderSubject reader)
     -- ^ Construct the subject by making MutableRead calls
+
+ioFuncReadFunction ::
+       (FullSubjectReader ra, SubjectReader rb) => (ReaderSubject ra -> IO (ReaderSubject rb)) -> ReadFunction ra rb
+ioFuncReadFunction f mra =
+    mSubjectToMutableRead $ do
+        a <- mutableReadToSubject mra
+        liftIO $ f a
+
+funcReadFunction ::
+       (FullSubjectReader ra, SubjectReader rb) => (ReaderSubject ra -> ReaderSubject rb) -> ReadFunction ra rb
+funcReadFunction f = ioFuncReadFunction $ return . f

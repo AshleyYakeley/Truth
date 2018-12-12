@@ -1,6 +1,7 @@
 module Data.Bijection where
 
 import Data.CatFunctor
+import Data.IsoVariant
 import Shapes.Import
 
 data Bijection a b = MkBijection
@@ -17,6 +18,21 @@ instance Category Bijection where
 instance (Functor f) => CatFunctor Bijection f where
     cfmap bi = MkBijection {biForwards = fmap (biForwards bi), biBackwards = fmap (biBackwards bi)}
 
+biIsoMap :: IsoVariant f => Bijection a b -> f a -> f b
+biIsoMap (MkBijection ab ba) = isoMap ab ba
+
+biIsoBi :: IsoVariant f => Bijection a b -> Bijection (f a) (f b)
+biIsoBi (MkBijection ab ba) = MkBijection (isoMap ab ba) (isoMap ba ab)
+
+biIsoMap' :: IsoVariant' f => Bijection a b -> f a t -> f b t
+biIsoMap' (MkBijection ab ba) = isoMap' ab ba
+
+biIsoBi' :: IsoVariant' f => Bijection a b -> Bijection (f a t) (f b t)
+biIsoBi' (MkBijection ab ba) = MkBijection (isoMap' ab ba) (isoMap' ba ab)
+
+biFBi :: Functor f => Bijection a b -> Bijection (f a) (f b)
+biFBi (MkBijection ab ba) = MkBijection (fmap ab) (fmap ba)
+
 biSwap :: Bijection (a, b) (b, a)
 biSwap = MkBijection swap swap
 
@@ -25,3 +41,9 @@ packBijection = MkBijection pack unpack
 
 unpackBijection :: IsSequence t => Bijection t [Element t]
 unpackBijection = MkBijection unpack pack
+
+class Category cat => Groupoid (cat :: k -> k -> Type) where
+    invert :: cat a b -> cat b a
+
+instance Groupoid Bijection where
+    invert (MkBijection ab ba) = MkBijection ba ab

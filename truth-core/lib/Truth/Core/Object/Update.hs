@@ -7,7 +7,7 @@ import Truth.Core.Read
 
 objectMapUpdates :: EditFunction edita editb -> Object edita -> [edita] -> IO [editb]
 objectMapUpdates (MkCloseUnlift unlift ef) MkObject {..} editAs =
-    runUnliftIO objRun $ runUnlift unlift $ withTransConstraintTM @MonadUnliftIO $ efUpdates ef editAs objRead
+    runTransform objRun $ runUnlift unlift $ withTransConstraintTM @MonadUnliftIO $ efUpdates ef editAs objRead
 
 mapUpdates ::
        forall edita editb m a. MonadUnliftIO m
@@ -56,4 +56,4 @@ mapReceiveUpdatesT (MkCloseUnlift (unlift :: Unlift tlens) ef@MkAnEditFunction {
             let
                 mrB :: MutableRead (tlens m) (EditReader editb)
                 mrB = efGet mrA
-            evertT $ call mrB editsB
+            commuteT $ call mrB editsB

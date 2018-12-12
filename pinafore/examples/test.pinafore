@@ -1,0 +1,166 @@
+# Run "pinafore --doc" to see all predefined bindings.
+
+let
+
+### Useful
+# unit = !a137c642-14e0-4f7a-84ae-580d95f2640a;
+# window :: Ref +Text -> UI -> (Ref +Text,UI);
+window n s = (n,s);
+ui_page n ui = (ui_label n,ui);
+ui_labelled n ui = ui_horizontal [(ui_label n,false),(ui,true)];
+
+
+### People
+
+# Ontology
+
+opentype Type;
+opentype Person;
+
+type = property @Person @Type !f06efa5e-190f-4e5d-8633-495c5683c124;
+name = property @Person @Text !498260df-6a8a-44f0-b285-68a63565a33b;
+
+People = type !@ {entity @Type !78baed51-cb05-46b5-bcb4-49031532b890};
+
+mother = property @Person @Person !3afce58f-b7eb-4b11-8a75-2d66afd4d085;
+father = property @Person @Person !c005705f-9259-4d24-9713-db28a6e4f7d5;
+# parents :: Ref +Person -> Set +Person;
+# parents p = (mother !$ p) \/ (father !$ p);
+# children :: Ref +Person -> Set +Person;
+children p = mother !@ p \/ father !@ p;
+
+employer = property @Person @Person !72f612af-ae47-4c18-b3df-6932ae914f62;
+
+email = property @Person @Text !8649b74c-123e-4ece-be3b-b734b0db3ea7;
+
+phone = property @Person @Text !83dfc88b-7b5b-4262-a548-0af84d5e3b63;
+
+opentype Location;
+home = property @Person @Location !b4f7736e-2db4-486c-aae5-b6a9b1035fd0;
+address = property @Location @Text !fd83bef7-145c-4e40-a2d6-938bb5fb6da1;
+locphone = property @Location @Text !83dfc88b-7b5b-4262-a548-0af84d5e3b63;
+city = property @Location @Text !55c84133-64f2-47a6-8b3c-e01256ec9779;
+postcode = property @Location @Text !80f99100-407b-4a6b-a4f0-a025c94132b3;
+province = property @Location @Text !dffae424-28d5-4543-b1b2-b8a744bbc0cd;
+country = property @Location @Text !1257c340-0ec1-4ff7-9fd8-d2eaa7822463;
+
+birthdate = property @Person @Text !b711b9b3-b43c-4ff6-be12-3291cc6b050a;
+deathdate = property @Person @Text !805a9e65-d69a-4261-9c94-a3249885b6bb;
+married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
+
+# UI
+# ui_people :: Set Person -> UI;
+ui_people pp = ui_vertical
+[
+    (ui_button {"New Person"} $ newentity pp $ \p -> openwindow (window_person p),false),
+    (ui_button {"View Person"} $ openselection,false),
+    (ui_button {"Remove Person"} $ withselection $ \p -> pp -= p,false),
+    (ui_table [({"Name"},\p -> name !$ {p})] window_person pp,true)
+];
+
+# ui_person :: Person -> UI;
+ui_person p = ui_vertical
+[
+    (ui_labelled {"Name: "} $ ui_textentry $ name !$ {p},false),
+    (ui_pages
+    [
+        ui_page {"Social"} $ ui_vertical
+        [
+            (ui_labelled {"Email: "} $ ui_textentry $ email !$ {p},false),
+            (ui_labelled {"Phone: "} $ ui_textentry $ phone !$ {p},false)
+        ],
+        ui_page {"Home"} $ let homep = home !$ {p} in ui_vertical
+        [
+            (ui_labelled {"Address: "} $ ui_textarea $ address !$ homep,false),
+            (ui_labelled {"City: "} $ ui_textentry $ city !$ homep,false),
+            (ui_labelled {"Postcode/ZIP: "} $ ui_textentry $ postcode !$ homep,false),
+            (ui_labelled {"State/Province: "} $ ui_textentry $ province !$ homep,false),
+            (ui_labelled {"Country: "} $ ui_textentry $ country !$ homep,false),
+            (ui_labelled {"Phone: "} $ ui_textentry $ locphone !$ homep,false)
+        ],
+        ui_page {"Work"} $ ui_vertical
+        [
+            (ui_labelled {"Employer: "} $ ui_textentry $ (name !. employer) !$ {p},false)
+        ],
+        ui_page {"Family"} $ ui_vertical
+        [
+            (ui_labelled {"Birth: "} $ ui_textentry $ birthdate !$ {p},false),
+            (ui_labelled {"Death: "} $ ui_textentry $ deathdate !$ {p},false),
+            (ui_booleancheckbox {"Married"} $ married !$ {p},false),
+            (ui_labelled {"Mother: "} $ ui_pick name People $ mother !$ {p},false),
+            (ui_labelled {"Father: "} $ ui_pick name People $ father !$ {p},false),
+            (ui_people $ children {p},true)
+        ]
+    ],true)
+];
+
+# window_person :: Person -> (Ref +Text,UI);
+window_person p = window (name !$ {p}) $ ui_person p;
+
+window_people = window {"People"} $ ui_people People;
+
+### Calculator
+
+window_calc = let
+#aval = %a4706230-2c61-44b1-b600-516e7a54c607 unit;
+#bval = %9d284ad2-e141-4114-ae50-8829a6db710f unit;
+in window {"Calc"} $ ui_vertical
+[
+    #(ui_textentry aval,false),
+    #(ui_textentry bval,false),
+    #(ui_label $ aval / bval,false)
+];
+
+### Switching Value
+
+window_switch = let
+#sw_pick = %59eb2d87-f815-47ef-b7dc-8fe434151bb6 unit;
+#sw_val1 = %6d9f7afa-1091-49cc-8646-8e613bb75ee5 unit;
+#sw_val2 = %6b91406b-896c-4658-b771-2d67bec91ee4 unit;
+#sw_val3 = %934712ae-73a7-4084-8a43-d618c737fd56 unit;
+in window {"Switch"} $ ui_vertical
+[
+    #(ui_textentry sw_pick,false),
+    #(ui_booleancheckbox "pick" sw_pick,false),
+    #(if sw_pick then ui_textarea sw_val1 else ui_textarea sw_val2,true)
+];
+
+### Imported Files
+
+window_files = let
+#Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
+#caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
+window_file f = window {"File"} $ ui_vertical
+[
+    #(ui_textentry $ caption f,false)
+];
+in window {"Files"} $ ui_vertical
+[
+    #(ui_button "Import" $ file_import Files $ \f -> openwindow $ window_file f,false),
+    #(ui_table [column "Caption" caption, column "Size" file_size] window_file Files,true)
+];
+
+### Constant Edit
+
+window_constant = window {"Constant"} $ ui_vertical
+[
+    (ui_booleancheckbox {"off"} {false},false),
+    (ui_booleancheckbox {"on"} {true},false),
+    (ui_textentry {"constant"},false),
+    (ui_textarea {"constant"},true)
+];
+
+### Start Window
+
+window_start = window {"Pinafore"} $ ui_vertical
+[
+    (ui_button {"People"} $ openwindow window_people,false),
+    (ui_button {"Calculated Form"} $ openwindow window_calc,false),
+    (ui_button {"Switch"} $ openwindow window_switch,false),
+    (ui_button {"Files"} $ openwindow window_files,false),
+    (ui_button {"Constant"} $ openwindow window_constant,false),
+    (ui_blank,true)
+];
+
+in
+openwindow window_start

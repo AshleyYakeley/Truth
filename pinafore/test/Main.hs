@@ -6,11 +6,17 @@ module Main
 
 import Shapes
 import Test.Entity
+import Test.Examples
+import Test.Interactive
 import Test.Language
+import Test.ReadType
 import Test.Tasty
-
-tests :: TestTree
-tests = testGroup "pinafore" [testLanguage, testEntity]
+import Test.Type
 
 main :: IO ()
-main = defaultMain tests
+main = do
+    testInteractive <- getTestInteractive
+    let
+        tests :: TestTree
+        tests = testGroup "pinafore" [testType, testLanguage, testReadTypes, testEntity, testExamples, testInteractive]
+    defaultMain tests

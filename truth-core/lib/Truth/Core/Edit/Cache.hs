@@ -19,15 +19,15 @@ subcacheModify key st = cacheModify key $ lensStateT (defaultLens cacheEmpty) st
 
 -- | not the best cache
 newtype ListCache k =
-    MkListCache [Any k]
+    MkListCache [AnyValue k]
 
 instance IsCache ListCache where
     cacheEmpty = MkListCache []
-    cacheLookup key (MkListCache cc) = listToMaybe $ mapMaybe (matchAny key) cc
+    cacheLookup key (MkListCache cc) = listToMaybe $ mapMaybe (matchAnyValue key) cc
     cacheTraverse f =
         StateT $ \(MkListCache cc) ->
             fmap (\newcc -> ((), MkListCache $ catMaybes newcc)) $
-            for cc $ \(MkAny key oldval) -> fmap (fmap $ MkAny key) $ f key oldval
+            for cc $ \(MkAnyValue key oldval) -> fmap (fmap $ MkAnyValue key) $ f key oldval
     cacheModify key f =
         StateT $ \(MkListCache cc) -> let
             go [] =
@@ -35,15 +35,15 @@ instance IsCache ListCache where
                     (fmap
                          (\case
                               Nothing -> MkListCache []
-                              Just val -> MkListCache [MkAny key val])) $
+                              Just val -> MkListCache [MkAnyValue key val])) $
                 runStateT f Nothing
-            go (MkAny key' val:vv)
+            go (MkAnyValue key' val:vv)
                 | Just Refl <- testEquality key key' =
                     fmap
                         (fmap
                              (\case
                                   Nothing -> MkListCache vv
-                                  Just newval -> MkListCache $ MkAny key' newval : vv)) $
+                                  Just newval -> MkListCache $ MkAnyValue key' newval : vv)) $
                     runStateT f $ Just val
             go (v:vv) = fmap (fmap (\(MkListCache vv') -> MkListCache $ v : vv')) $ go vv
             in go cc

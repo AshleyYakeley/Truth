@@ -19,6 +19,10 @@ instance (MonadOne inner, Monad outer) => Applicative (ComposeM inner outer) whe
         a <- ma
         return $ ab a
 
+instance (MonadOne inner, Monad outer, Alternative inner) => Alternative (ComposeM inner outer) where
+    empty = MkComposeM $ pure empty
+    (MkComposeM oia) <|> (MkComposeM oib) = MkComposeM $ liftA2 (<|>) oia oib
+
 instance (MonadOne inner, Monad outer) => Monad (ComposeM inner outer) where
     return = pure
     (MkComposeM oia) >>= p =

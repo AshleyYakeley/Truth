@@ -5,6 +5,7 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Compose
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Identity
+import Control.Monad.Trans.Transform
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift
 import Data.Constraint
@@ -56,5 +57,5 @@ combineLiftSnd ::
 combineLiftSnd = lift
 
 combineUnliftIOs :: MonadStackIO ma => UnliftIO ma -> UnliftIO mb -> UnliftIO (CombineMonadIO ma mb)
-combineUnliftIOs (MkUnliftIO unlifta) (MkUnliftIO unliftb) =
-    MkUnliftIO $ \cmr -> unlifta $ fromMonadStack $ remonad unliftb cmr
+combineUnliftIOs (MkTransform unlifta) (MkTransform unliftb) =
+    MkTransform $ \cmr -> unlifta $ fromMonadStack $ remonad unliftb cmr

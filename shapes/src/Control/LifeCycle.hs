@@ -65,7 +65,7 @@ instance MonadUnliftIO LifeCycle where
         r <-
             liftIO $
             call $
-            MkUnliftIO $ \(MkLifeCycle mrs) -> do
+            MkTransform $ \(MkLifeCycle mrs) -> do
                 (r, closer) <- mrs
                 liftIO $ modifyMVar var $ \oldcloser -> return (closer >> oldcloser, ())
                 return r
@@ -74,7 +74,7 @@ instance MonadUnliftIO LifeCycle where
         return r
     getDiscardingUnliftIO =
         return $
-        MkUnliftIO $ \mr -> do
+        MkTransform $ \mr -> do
             (r, _discarded) <- runLifeCycle mr
             return r
 

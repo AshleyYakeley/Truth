@@ -1,0 +1,4 @@
+#!/bin/bash -e
+stack --no-docker install --test --no-run-tests --bench --no-run-benchmarks
+`stack --no-docker path --local-bin`/pinafore --doc > mkdocs/docs/predefined.md
+echo OK

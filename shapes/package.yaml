@@ -12,6 +12,7 @@ library:
       - stm
       - constraints
       - mono-traversable
+      - contravariant
       - comonad
       - lattices
       - transformers
@@ -29,11 +30,13 @@ library:
       - open-witness
     exposed-modules:
       - Data.Filterable
+      - Data.MonoApplicative
       - Data.CatFunctor
       - Data.Result
       - Data.SameItem
       - Data.MonadOne
       - Data.HasNewValue
+      - Data.IsoVariant
       - Data.Injection
       - Data.Bijection
       - Data.Lens
@@ -43,6 +46,8 @@ library:
       - Data.Compose
       - Data.KeyContainer
       - Data.FiniteSet
+      - Data.KindMorphism
+      - Control.Category.Dual
       - Control.Monad.Compose
       - Control.LifeCycle
       - Shapes
@@ -58,4 +63,3 @@ tests:
           - tasty
           - tasty-hunit
         main: Main.hs
-        other-modules:

@@ -19,33 +19,91 @@ library:
       - sqlite-simple
       - shapes
       - parsec
+      - memory
+      - cryptonite
       - truth-core
     exposed-modules:
-      - Pinafore
+      - Language.Expression.Witness
+      - Language.Expression.Expression
+      - Language.Expression.NameWit
+      - Language.Expression.Named
+      - Language.Expression.Sealed
+      - Language.Expression.Renamer
+      - Language.Expression.Unifier
+      - Language.Expression.Abstract
+      - Language.Expression.Bindings
+      - Language.Expression.TypeSystem
+      - Language.Expression.Unitype
+      - Language.Expression.Dolan
+      - Pinafore.Base
+      - Pinafore.Storage
+      - Pinafore.Language
       - Pinafore.Main
-      - Pinafore.Query.Value
-      - Pinafore.Query.Convert
-      - Pinafore.Query.Expression
-      - Pinafore.Query
-    other-modules:
-      - Pinafore.Number
-      - Pinafore.Literal
-      - Pinafore.Morphism
-      - Pinafore.Entity
-      - Pinafore.Table
-      - Pinafore.PredicateMorphism
-      - Pinafore.File
       - Pinafore.Pinafore
-      - Pinafore.Query.Token
-      - Pinafore.Query.Read
-      - Pinafore.Query.Types
-      - Pinafore.Query.Lifted
-      - Pinafore.Query.If
-      - Pinafore.Query.Order
-      - Pinafore.Query.Doc
-      - Pinafore.Query.Predefined
-      - Pinafore.Database
-      - Pinafore.Database.SQLite
+      - Pinafore
+      - Pinafore.Test
+    other-modules:
+      - Language.Expression.UVar
+      - Language.Expression.Dolan.Range
+      - Language.Expression.Dolan.Polarity
+      - Language.Expression.Dolan.Variance
+      - Language.Expression.Dolan.Arguments
+      - Language.Expression.Dolan.TypeF
+      - Language.Expression.Dolan.MPolarity
+      - Language.Expression.Dolan.RangeF
+      - Pinafore.Base.Know
+      - Pinafore.Base.Number
+      - Pinafore.Base.Literal
+      - Pinafore.Base.Morphism
+      - Pinafore.Base.Entity
+      - Pinafore.Base.Edit
+      - Pinafore.Base.PredicateMorphism
+      - Pinafore.Base.Action
+      - Pinafore.Base.ImmutableReference
+      - Pinafore.Language.Name
+      - Pinafore.Language.Literal
+      - Pinafore.Language.NamedEntity
+      - Pinafore.Language.SimpleEntityType
+      - Pinafore.Language.Reference
+      - Pinafore.Language.Set
+      - Pinafore.Language.Morphism
+      - Pinafore.Language.If
+      - Pinafore.Language.Show
+      - Pinafore.Language.Order
+      - Pinafore.Language.GroundType
+      - Pinafore.Language.Scope
+      - Pinafore.Language.Convert.Base
+      - Pinafore.Language.Type.Type
+      - Pinafore.Language.Type.Subtype
+      - Pinafore.Language.Type.Rename
+      - Pinafore.Language.Type.Simplify.OneSidedTypeVars
+      - Pinafore.Language.Type.Simplify.DuplicateGroundTypes
+      - Pinafore.Language.Type.Simplify.SharedTypeVars
+      - Pinafore.Language.Type.Simplify.DuplicateTypeVars
+      - Pinafore.Language.Type.Simplify
+      - Pinafore.Language.Type.Unify
+      - Pinafore.Language.Type
+      - Pinafore.Language.EntityType
+      - Pinafore.Language.Read.Token
+      - Pinafore.Language.Read.RefNotation
+      - Pinafore.Language.Read.Parser
+      - Pinafore.Language.Read.Type
+      - Pinafore.Language.Read.TypeDecls
+      - Pinafore.Language.Read.Property
+      - Pinafore.Language.Read.Infix
+      - Pinafore.Language.Read.Expression
+      - Pinafore.Language.Read.Interactive
+      - Pinafore.Language.Read
+      - Pinafore.Language.Expression
+      - Pinafore.Language.Convert
+      - Pinafore.Language.Doc
+      - Pinafore.Language.Predefined
+      - Pinafore.Storage.Table
+      - Pinafore.Storage.Database
+      - Pinafore.Storage.Database.SQLite
+      - Pinafore.Storage.File
+
+extra-source-files: examples/*
 
 tests:
     test:
@@ -64,6 +122,7 @@ tests:
           - shapes
           - truth-core
           - pinafore
+          - filepath
           - QuickCheck
           - tasty
           - tasty-hunit
@@ -73,6 +132,20 @@ tests:
         other-modules:
           - Test.Language
           - Test.Entity
+          - Test.Type
+          - Test.ReadType
+          - Test.Examples
+          - Test.Interactive
+
+benchmarks:
+    benchmark:
+        source-dirs: benchmark
+        dependencies:
+          - base >= 4.9 && < 5
+          - criterion
+          - shapes
+          - pinafore
+        main: Main.hs
 
 executables:
     pinafore:

@@ -31,7 +31,7 @@ instance SubjectReader (EditReader edit) => SubjectReader (ObjectReader edit) wh
 
 instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader edit) where
     mutableReadToSubject mr = do
-        MkObject (MkUnliftIO unlift) mro _ <- mr ReadObject
+        MkObject (MkTransform unlift) mro _ <- mr ReadObject
         liftIO $ unlift $ mutableReadToSubject mro
 
 type ObjectEdit edit = NoEdit (ObjectReader edit)
@@ -40,7 +40,7 @@ objectEditLens :: forall edit. EditLens (ObjectEdit edit) edit
 objectEditLens = let
     efGet :: ReadFunctionT IdentityT (ObjectReader edit) (EditReader edit)
     efGet mr rt = do
-        (MkObject (MkUnliftIO run) r _) <- lift $ mr ReadObject
+        (MkObject (MkTransform run) r _) <- lift $ mr ReadObject
         liftIO $ run $ r rt
     efUpdate ::
            forall m. MonadIO m
@@ -56,7 +56,7 @@ objectEditLens = let
         -> MutableRead m (EditReader (ObjectEdit edit))
         -> IdentityT m (Maybe [ObjectEdit edit])
     elPutEdits edits mr = do
-        (MkObject (MkUnliftIO run) _ e) <- lift $ mr ReadObject
+        (MkObject (MkTransform run) _ e) <- lift $ mr ReadObject
         liftIO $
             run $ do
                 maction <- e edits

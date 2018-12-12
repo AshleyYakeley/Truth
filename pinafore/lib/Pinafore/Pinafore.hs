@@ -1,8 +1,8 @@
 module Pinafore.Pinafore where
 
-import Pinafore.Entity
-import Pinafore.File
-import Pinafore.PredicateMorphism
+import Pinafore.Base.Edit
+import Pinafore.Base.PredicateMorphism
+import Pinafore.Storage.File
 import Shapes
 import Truth.Core
 
@@ -28,7 +28,7 @@ type PinaforeEdit = TupleEdit PinaforeSelector
 type PinaforeRead = EditReader PinaforeEdit
 
 instance HasPinaforeEntityEdit PinaforeEdit where
-    pinaforePointLens = tupleEditLens PinaforeSelectPoint
+    pinaforeEntityLens = tupleEditLens PinaforeSelectPoint
 
 instance HasPinaforeFileEdit PinaforeEdit where
     pinaforeFileLens = tupleEditLens PinaforeSelectFile

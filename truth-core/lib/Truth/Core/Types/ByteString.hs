@@ -6,10 +6,10 @@ import Truth.Core.Read
 
 data ByteStringReader t where
     ReadByteStringLength :: ByteStringReader Int64
-    ReadByteStringSection :: Int64 -> Int64 -> ByteStringReader ByteString
+    ReadByteStringSection :: Int64 -> Int64 -> ByteStringReader LazyByteString
 
 instance SubjectReader ByteStringReader where
-    type ReaderSubject ByteStringReader = ByteString
+    type ReaderSubject ByteStringReader = LazyByteString
     -- | Make MutableEdit calls when you've actually got the subject
     mSubjectToMutableRead msubj ReadByteStringLength = do
         subj <- msubj
@@ -26,7 +26,7 @@ instance FullSubjectReader ByteStringReader where
 data ByteStringEdit
     = ByteStringSetLength Int64
     | ByteStringWrite Int64
-                      ByteString
+                      LazyByteString
 
 instance Floating ByteStringEdit ByteStringEdit
 

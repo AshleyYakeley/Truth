@@ -54,11 +54,39 @@ instance (FullSubjectReader reader, ReaderSubject reader ~ ()) => FullEdit (NoEd
 
 instance TestEquality reader => CacheableEdit (NoEdit reader)
 
-noEditLens :: forall edit. EditLens (NoEdit (EditReader edit)) edit
-noEditLens = let
-    efGet :: ReadFunctionT IdentityT (EditReader edit) (EditReader edit)
-    efGet mr = remonadMutableRead IdentityT mr
+readFunctionNoEditFunction :: forall ra editb. ReadFunction ra (EditReader editb) -> EditFunction (NoEdit ra) editb
+readFunctionNoEditFunction rf = let
+    efGet :: forall . ReadFunctionT IdentityT ra (EditReader editb)
+    efGet mra rb = lift $ rf mra rb
     efUpdate edit _ = never edit
-    elFunction = MkAnEditFunction {..}
-    elPutEdits _ _ = return Nothing
-    in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
+    in MkCloseUnlift identityUnlift MkAnEditFunction {..}
+
+readFunctionNoEditLens :: forall ra editb. ReadFunction ra (EditReader editb) -> EditLens (NoEdit ra) editb
+readFunctionNoEditLens rf = readOnlyEditLens $ readFunctionNoEditFunction rf
+
+noEditLens :: forall edit. EditLens (NoEdit (EditReader edit)) edit
+noEditLens = readFunctionNoEditLens $ \rt -> rt
+
+ioFuncNoEditFunction ::
+       (FullSubjectReader ra, SubjectReader (EditReader editb))
+    => (ReaderSubject ra -> IO (EditSubject editb))
+    -> EditFunction (NoEdit ra) editb
+ioFuncNoEditFunction f = readFunctionNoEditFunction $ ioFuncReadFunction f
+
+funcNoEditFunction ::
+       (FullSubjectReader ra, SubjectReader (EditReader editb))
+    => (ReaderSubject ra -> EditSubject editb)
+    -> EditFunction (NoEdit ra) editb
+funcNoEditFunction f = ioFuncNoEditFunction $ return . f
+
+ioFuncNoEditLens ::
+       (FullSubjectReader ra, SubjectReader (EditReader editb))
+    => (ReaderSubject ra -> IO (EditSubject editb))
+    -> EditLens (NoEdit ra) editb
+ioFuncNoEditLens f = readOnlyEditLens $ ioFuncNoEditFunction f
+
+funcNoEditLens ::
+       (FullSubjectReader ra, SubjectReader (EditReader editb))
+    => (ReaderSubject ra -> EditSubject editb)
+    -> EditLens (NoEdit ra) editb
+funcNoEditLens f = ioFuncNoEditLens $ return . f

@@ -1,0 +1,58 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Pinafore",
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#anchors"
+		}
+	],
+	"repository": {
+		"comments": {
+			"name": "comment.line.pinafore",
+			"begin": "#",
+			"end": "$",
+			"patterns": []
+		},
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.pinafore",
+				"match": "\\b(if|then|else|let|in|opentype|subtype|property|entity)\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.pinafore",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.pinafore",
+					"match": "\\\\."
+				}
+			]
+		},
+		"anchors": {
+			"patterns": [
+				{
+					"name": "constant.anchor.uuid.pinafore",
+					"match": "![-0-9A-Fa-f]+"
+				},
+				{
+					"name": "constant.anchor.string.pinafore",
+					"begin": "!\"",
+					"end": "\"",
+					"patterns": []
+				}
+			]
+		}
+	},
+	"scopeName": "source.pinafore"
+}

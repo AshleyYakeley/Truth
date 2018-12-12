@@ -10,6 +10,7 @@ import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Identity
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
+import Control.Monad.Trans.Transform
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Writer
 import Data.Constraint
@@ -26,7 +27,7 @@ identityUnlift = MkUnlift runIdentityT
 
 mvarRun :: MonadUnliftIO m => MVar s -> StateT s m r -> m r
 mvarRun var (StateT smr) =
-    liftIOWithUnlift $ \(MkUnliftIO unlift) -> modifyMVar var $ \olds -> unlift $ fmap swap $ smr olds
+    liftIOWithUnlift $ \(MkTransform unlift) -> modifyMVar var $ \olds -> unlift $ fmap swap $ smr olds
 
 mvarUnlift :: MVar s -> Unlift (StateT s)
 mvarUnlift var = MkUnlift $ mvarRun var
@@ -65,32 +66,25 @@ class ( MonadTransConstraint MonadFail t
     -- ^ return an 'Unlift' that discards the transformer's effects (such as state change or output)
 
 -- | Swap two transformers in a transformer stack
-evertT ::
+commuteT ::
        forall ta tb m r. (MonadTransUnlift ta, MonadTransUnlift tb, MonadUnliftIO m)
     => ta (tb m) r
     -> tb (ta m) r
-evertT tatbmr =
+commuteT tatbmr =
     case hasTransConstraint @MonadUnliftIO @ta @m of
         Dict -> liftWithUnlift $ \(MkUnlift unlift) -> remonad unlift tatbmr
 
-newtype UnliftIO m = MkUnliftIO
-    { runUnliftIO :: forall r. m r -> IO r
-    }
-
-identityUnliftIO :: UnliftIO IO
-identityUnliftIO = MkUnliftIO id
-
-remonadUnliftIO :: MonadTransTunnel t => (forall a. m1 a -> m2 a) -> UnliftIO (t m2) -> UnliftIO (t m1)
-remonadUnliftIO ff (MkUnliftIO r2) = MkUnliftIO $ \m1a -> r2 $ remonad ff m1a
+type UnliftIO m = Transform m IO
 
 mvarUnliftIO :: MVar s -> UnliftIO (StateT s IO)
-mvarUnliftIO var = MkUnliftIO $ mvarRun var
+mvarUnliftIO var = MkTransform $ mvarRun var
 
-composeUnliftIO :: (MonadTransUnlift t, MonadUnliftIO m) => Unlift t -> UnliftIO m -> UnliftIO (t m)
-composeUnliftIO (MkUnlift rt) (MkUnliftIO rm) = MkUnliftIO $ \tma -> rm $ rt tma
+composeUnliftTransform :: (MonadTransUnlift t, MonadUnliftIO m) => Unlift t -> Transform m n -> Transform (t m) n
+composeUnliftTransform (MkUnlift rt) (MkTransform rm) = MkTransform $ \tma -> rm $ rt tma
 
-composeUnliftIOEvert :: (MonadTransUnlift t, MonadUnliftIO m) => Unlift t -> UnliftIO m -> UnliftIO (t m)
-composeUnliftIOEvert (MkUnlift rt) (MkUnliftIO rm) = MkUnliftIO $ \tma -> rt $ remonad rm tma
+composeUnliftTransformCommute ::
+       (MonadTransUnlift t, MonadUnliftIO m, MonadUnliftIO n) => Unlift t -> Transform m n -> Transform (t m) n
+composeUnliftTransformCommute (MkUnlift rt) (MkTransform rm) = MkTransform $ \tma -> rt $ remonad rm tma
 
 class (MonadFail m, MonadTunnelIO m, MonadFix m) => MonadUnliftIO m where
     liftIOWithUnlift :: forall r. (UnliftIO m -> IO r) -> m r
@@ -99,17 +93,17 @@ class (MonadFail m, MonadTunnelIO m, MonadFix m) => MonadUnliftIO m where
     -- ^ return an 'UnliftIO' that discards all transformer effects (such as state change or output)
 
 instance MonadUnliftIO IO where
-    liftIOWithUnlift call = call $ MkUnliftIO id
-    getDiscardingUnliftIO = return $ MkUnliftIO id
+    liftIOWithUnlift call = call $ MkTransform id
+    getDiscardingUnliftIO = return $ MkTransform id
 
 instance (MonadTransUnlift t, MonadUnliftIO m, MonadFail (t m), MonadIO (t m), MonadFix (t m)) => MonadUnliftIO (t m) where
     liftIOWithUnlift call =
         liftWithUnlift $ \(MkUnlift tmama) ->
-            liftIOWithUnlift $ \(MkUnliftIO maioa) -> call $ MkUnliftIO $ maioa . tmama
+            liftIOWithUnlift $ \(MkTransform maioa) -> call $ MkTransform $ maioa . tmama
     getDiscardingUnliftIO = do
         MkUnlift unlift <- getDiscardingUnlift
-        MkUnliftIO unliftIO <- lift getDiscardingUnliftIO
-        return $ MkUnliftIO $ unliftIO . unlift
+        MkTransform unliftIO <- lift getDiscardingUnliftIO
+        return $ MkTransform $ unliftIO . unlift
 
 instance MonadTransUnlift t => MonadTransConstraint MonadUnliftIO t where
     hasTransConstraint =

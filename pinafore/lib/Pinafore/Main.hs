@@ -4,25 +4,26 @@ module Pinafore.Main
     , makePinaforeContext
     , sqlitePinaforeContext
     , sqlitePinaforeDumpTable
-    , pinaforeRunFile
+    , pinaforeInterpretFile
+    , pinaforeInteractHandles
     , pinaforeInteract
     ) where
 
-import Pinafore.Database
-import Pinafore.Database.SQLite
-import Pinafore.File
-import Pinafore.Literal
+import Pinafore.Base
+import Pinafore.Language
 import Pinafore.Pinafore
-import Pinafore.Query
-import Pinafore.Table
+import Pinafore.Storage.Database
+import Pinafore.Storage.Database.SQLite
+import Pinafore.Storage.File
+import Pinafore.Storage.Table
 import Shapes
 import System.FilePath
 import Truth.Core
 
-type FilePinaforeType = QAction PinaforeEdit
+type FilePinaforeType = PinaforeAction PinaforeEdit
 
 filePinaforeType :: Text
-filePinaforeType = qTypeDescription @FilePinaforeType
+filePinaforeType = qTypeDescription @PinaforeEdit @FilePinaforeType
 
 sqlitePinaforeObject :: FilePath -> LifeCycle (Object PinaforeEdit)
 sqlitePinaforeObject dirpath = do
@@ -30,17 +31,20 @@ sqlitePinaforeObject dirpath = do
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
     return $
         tupleObject $ \case
-            PinaforeSelectPoint -> pinaforeTablePointObject tableObject
+            PinaforeSelectPoint -> pinaforeTableEntityObject tableObject
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
 
 getPinaforeRunAction ::
-       forall baseedit. Object baseedit -> (UserInterface UIWindow () -> IO ()) -> IO (UnliftIO (QActionM baseedit))
+       forall baseedit.
+       Object baseedit
+    -> (UserInterface UIWindow () -> IO ())
+    -> IO (UnliftIO (PinaforeActionM baseedit))
 getPinaforeRunAction pinaforeObject createWindow = do
     sub <- liftIO $ makeObjectSubscriber pinaforeObject
     return $
-        MkUnliftIO $ \(MkComposeM action :: QActionM baseedit a) -> do
+        MkTransform $ \(MkComposeM action :: PinaforeActionM baseedit a) -> do
             let
-                createView :: IO () -> CreateView (ConstEdit Point) baseedit (() -> LifeCycle (Result Text a))
+                createView :: IO () -> CreateView (ConstEdit Entity) baseedit (() -> LifeCycle (Result Text a))
                 createView _ = do
                     a <- cvLiftView action
                     return $ \() -> return a
@@ -50,7 +54,7 @@ getPinaforeRunAction pinaforeObject createWindow = do
                 FailureResult msg -> fail $ unpack msg
 
 newtype PinaforeContext =
-    MkPinaforeContext (UnliftIO (QActionM PinaforeEdit))
+    MkPinaforeContext (UnliftIO (PinaforeActionM PinaforeEdit))
 
 makePinaforeContext :: Object PinaforeEdit -> (UserInterface UIWindow () -> IO ()) -> IO PinaforeContext
 makePinaforeContext pinaforeObject createWindow = do
@@ -65,10 +69,11 @@ sqlitePinaforeContext dirpath createWindow = do
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
     MkAllF tables <- sqlitePinaforeTableGetEntireDatabase $ dirpath </> "tables.sqlite3"
-    for_ (tables $ MkTupleTableSel PinaforeTriple) $ \(MkAll row) -> let
-        littable :: [(Point, Literal)]
+    let
+        littable :: [(Entity, Literal)]
         littable =
-            fmap (\(MkAll lrow) -> (lrow LiteralKey, lrow LiteralValue)) $ tables $ MkTupleTableSel PinaforeLiteral
+            fmap (\(MkAllValue lrow) -> (lrow LiteralKey, lrow LiteralValue)) $ tables $ MkTupleTableSel PinaforeLiteral
+    for_ (tables $ MkTupleTableSel PinaforeTriple) $ \(MkAllValue row) -> let
         p = row TriplePredicate
         s = row TripleSubject
         v = row TripleValue
@@ -78,10 +83,13 @@ sqlitePinaforeDumpTable dirpath = do
                 Nothing -> show v
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
-pinaforeRunFile :: PinaforeContext -> FilePath -> Text -> IO ()
-pinaforeRunFile (MkPinaforeContext runAction) puipath puitext = do
-    action :: FilePinaforeType <- resultTextToM $ parseValue @PinaforeEdit puipath puitext
-    runUnliftIO runAction action
+pinaforeInterpretFile :: PinaforeContext -> FilePath -> Text -> IO (IO ())
+pinaforeInterpretFile (MkPinaforeContext runAction) puipath puitext = do
+    action :: FilePinaforeType <- resultTextToM $ parseValueAtType @PinaforeEdit (initialPos puipath) puitext
+    return $ runTransform runAction action
+
+pinaforeInteractHandles :: Handle -> Handle -> Bool -> PinaforeContext -> IO ()
+pinaforeInteractHandles inh outh echo (MkPinaforeContext runAction) = interact inh outh echo runAction
 
 pinaforeInteract :: PinaforeContext -> IO ()
-pinaforeInteract (MkPinaforeContext runAction) = interact runAction
+pinaforeInteract = pinaforeInteractHandles stdin stdout False

@@ -6,7 +6,6 @@ module Test.Language
 
 import Data.Ratio
 import Pinafore
-import Pinafore.Query.Expression
 import Prelude (read)
 import Shapes
 import Test.Tasty
@@ -113,185 +112,207 @@ testNumbersShowRead =
 testNumbers :: TestTree
 testNumbers = testGroup "numbers" [testNumbersArithemetic, testNumbersShowRead]
 
--- | for test only
-instance Eq (QValue baseedit) where
-    (MkAny QTConstLiteral a1) == (MkAny QTConstLiteral a2) = a1 == a2
-    _ == _ = error "QValue: not comparable"
-
-testQueryValue :: (Eq a, Show a) => String -> QExpr baseedit a -> Maybe a -> TestTree
-testQueryValue name expr expected = testCase name $ assertEqual "result" expected $ qeval expr
-
-qint :: Int -> QValue baseedit
-qint = toQValue
-
 testQueryValues :: TestTree
-testQueryValues =
-    testGroup
-        "query values"
-        [ testQueryValue "pure A" (pure "A") (Just "A" :: Maybe String)
-        , testQueryValue "var a" (qvar "a") Nothing
-        , testQueryValue
-              "let a=1;b=2 in (a,b,a,b)"
-              (qlet "a" (pure $ qint 1) $
-               qlet "b" (pure $ qint 2) $ (,,,) <$> (qvar "a") <*> (qvar "b") <*> (qvar "a") <*> (qvar "b")) $
-          Just (qint 1, qint 2, qint 1, qint 2)
-        , testQueryValue
-              "let a=1;b=2 in (b,a,b,a)"
-              (qlet "a" (pure $ qint 1) $
-               qlet "b" (pure $ qint 2) $ (,,,) <$> (qvar "b") <*> (qvar "a") <*> (qvar "b") <*> (qvar "a")) $
-          Just (qint 2, qint 1, qint 2, qint 1)
-        ]
+testQueryValues = testGroup "query values" []
 
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
     testCase (unpack query) $
-    case (expected, parseValue @PinaforeEdit "<input>" query) of
+    case (expected, parseValue @PinaforeEdit (initialPos "<input>") query) of
         (Nothing, FailureResult _) -> return ()
-        (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ show v
+        (Nothing, SuccessResult (MkAnyValue t v)) ->
+            assertFailure $ "expected failure, found success: " ++ showPinaforeValue t v
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ unpack e
-        (Just s, SuccessResult (v :: QValue PinaforeEdit)) -> assertEqual "result" s (show v)
+        (Just s, SuccessResult (MkAnyValue t v)) -> assertEqual "result" s (showPinaforeValue t v)
 
 showText :: Text -> String
-showText = show
+showText = unpack
 
 testQueries :: TestTree
 testQueries =
     testGroup
         "queries"
-        [ testQuery "" $ Nothing
-        , testQuery "x" $ Nothing
-        -- constants
-        , testQuery "\"\"" $ Just $ showText ""
-        , testQuery "\"Hello \"" $ Just $ showText "Hello "
-        , testQuery "true" $ Just $ showText "true"
-        , testQuery "false" $ Just $ showText "false"
-        , testQuery "\"1\"" $ Just $ showText "1"
-        , testQuery "3" $ Just $ showText "3"
-        , testQuery "3.2_4" $ Just $ showText "3.2_4"
-        , testQuery "~1" $ Just $ showText "~1.0"
-        , testQuery "~-2.4" $ Just $ showText "~-2.4"
-        , testQuery "NaN" $ Just $ showText "NaN"
-        , testQuery "~Infinity" $ Just $ showText "~Infinity"
-        , testQuery "~-Infinity" $ Just $ showText "~-Infinity"
-        , testQuery "ui_table" $ Just "<value -> value>"
-        -- list construction
-        , testQuery "[]" $ Just $ show @[Text] []
-        , testQuery "[1]" $ Just $ show @[Text] ["1"]
-        , testQuery "[1,2,3]" $ Just $ show @[Text] ["1", "2", "3"]
-        -- functions
-        , testQuery "\\x -> x" $ Just "<value -> value>"
-        , testQuery "\\x -> 1" $ Just "<value -> value>"
-        , testQuery "\\x y -> y" $ Just "<value -> value>"
-        , testQuery "\\x y z -> [x,y,z]" $ Just "<value -> value>"
-        -- let-binding
-        , testQuery "let in 27" $ Just $ showText "27"
-        , testQuery "let a=\"5\" in a" $ Just $ showText "5"
-        , testQuery "let a=5 in a" $ Just $ showText "5"
-        , testQuery "let a=1;b=2 in a" $ Just $ showText "1"
-        , testQuery "let a=1;b=2 in b" $ Just $ showText "2"
-        , testQuery "let a=1;b=2 in b" $ Just $ showText "2"
-        , testQuery "let a=1;b=\"2\" in b" $ Just $ showText "2"
-        , testQuery "let a=1 ;b=\"2\" in b" $ Just $ showText "2"
-        , testQuery "let a= 1 ;b=\"2\" in b" $ Just $ showText "2"
-        , testQuery "let a=7;b=a in a" $ Just $ showText "7"
-        , testQuery "let a=7;b=a in b" $ Just $ showText "7"
-        , testQuery "let a=2 in let b=a in b" $ Just $ showText "2"
-        -- partial keywords
-        , testQuery "let i=1 in i" $ Just $ showText "1"
-        , testQuery "let inx=1 in inx" $ Just $ showText "1"
-        , testQuery "let l=1 in l" $ Just $ showText "1"
-        , testQuery "let le=1 in le" $ Just $ showText "1"
-        , testQuery "let letx=1 in letx" $ Just $ showText "1"
-        , testQuery "let letre=1 in letre" $ Just $ showText "1"
-        , testQuery "let letrecx=1 in letrecx" $ Just $ showText "1"
-        , testQuery "let tru=1 in tru" $ Just $ showText "1"
-        , testQuery "let truex=1 in truex" $ Just $ showText "1"
-        , testQuery "let f=1 in f" $ Just $ showText "1"
-        , testQuery "let fals=1 in fals" $ Just $ showText "1"
-        , testQuery "let falsex=1 in falsex" $ Just $ showText "1"
-        -- recursive let-binding
-        , testQuery "let a=1 in a" $ Just $ showText "1"
-        , testQuery "let a=1;b=a in b" $ Just $ showText "1"
-        , testQuery "let b=a;a=1 in b" $ Just $ showText "1"
-        , testQuery "let a x = x in a 1" $ Just $ showText "1"
-        , testQuery "let a x = x; b = a in b" $ Just "<value -> value>"
-        , testQuery "let a = \\x -> x in let b = a 1 in b" $ Just $ showText "1"
-        , testQuery "let a x = x; b = a 1 in b" $ Just $ showText "1"
-        , testQuery "let a x = b; b = b in a" $ Just "<value -> value>"
-        , testQuery "let a x = 1; b = b in a b" $ Just $ showText "1"
-        , testQuery "let a x = 1; b = a b in b" $ Just $ showText "1"
-        , testQuery "let b = a b; a x = 1 in b" $ Just $ showText "1"
-        , testQuery "let a x = 1; b = a c; c=b in b" $ Just $ showText "1"
-        -- duplicate bindings
-        , testQuery "let a=1;a=1 in a" $ Nothing
-        , testQuery "let a=1;a=2 in a" $ Nothing
-        , testQuery "let a=1;b=0;a=2 in a" $ Nothing
-        -- lexical scoping
-        , testQuery "let a=1 in let b=a in let a=3 in a" $ Just $ showText "3"
-        , testQuery "let a=1;b=a;a=3 in a" $ Nothing
-        , testQuery "let a=1 in let b=a in let a=3 in b" $ Just $ showText "1"
-        , testQuery "let a=1;b=a;a=3 in b" $ Nothing
-        -- operators
-        , testQuery "0 == 1" $ Just $ showText "false"
-        , testQuery "1 == 1" $ Just $ showText "true"
-        , testQuery "0 /= 1" $ Just $ showText "true"
-        , testQuery "1 /= 1" $ Just $ showText "false"
-        , testQuery "0 <= 1" $ Just $ showText "true"
-        , testQuery "1 <= 1" $ Just $ showText "true"
-        , testQuery "2 <= 1" $ Just $ showText "false"
-        , testQuery "0 < 1" $ Just $ showText "true"
-        , testQuery "1 < 1" $ Just $ showText "false"
-        , testQuery "2 < 1" $ Just $ showText "false"
-        , testQuery "0 >= 1" $ Just $ showText "false"
-        , testQuery "1 >= 1" $ Just $ showText "true"
-        , testQuery "2 >= 1" $ Just $ showText "true"
-        , testQuery "0 >= ~1" $ Just $ showText "false"
-        , testQuery "1 >= ~1" $ Just $ showText "true"
-        , testQuery "2 >= ~1" $ Just $ showText "true"
-        , testQuery "0 > 1" $ Just $ showText "false"
-        , testQuery "1 > 1" $ Just $ showText "false"
-        , testQuery "2 > 1" $ Just $ showText "true"
-        , testQuery "1 == ~1" $ Just $ showText "false"
-        , testQuery "0 ~== 1" $ Just $ showText "false"
-        , testQuery "1 ~== 1" $ Just $ showText "true"
-        , testQuery "1 ~== ~1" $ Just $ showText "true"
-        , testQuery "0 ~== ~1" $ Just $ showText "false"
-        , testQuery "0 ~/= 1" $ Just $ showText "true"
-        , testQuery "1 ~/= 1" $ Just $ showText "false"
-        , testQuery "1 ~/= ~1" $ Just $ showText "false"
-        , testQuery "0 ~/= ~1" $ Just $ showText "true"
-        , testQuery "7+8" $ Just $ showText "15"
-        , testQuery "7 +8" $ Just $ showText "15"
-        , testQuery "7+ 8" $ Just $ showText "15"
-        , testQuery "7 + 8" $ Just $ showText "15"
-        , testQuery "\"abc\"++\"def\"" $ Just $ showText "abcdef"
-        , testQuery "\"abc\" ++\"def\"" $ Just $ showText "abcdef"
-        , testQuery "\"abc\"++ \"def\"" $ Just $ showText "abcdef"
-        , testQuery "\"abc\" ++ \"def\"" $ Just $ showText "abcdef"
-        , testQuery "let f x = x + 2 in f -1" $ Just $ showText "1"
-        , testQuery "let f = 2 in f - 1" $ Just $ showText "1"
-        -- boolean
-        , testQuery "true && true" $ Just $ showText "true"
-        , testQuery "true && false" $ Just $ showText "false"
-        , testQuery "false && true" $ Just $ showText "false"
-        , testQuery "false && false" $ Just $ showText "false"
-        , testQuery "true || true" $ Just $ showText "true"
-        , testQuery "true || false" $ Just $ showText "true"
-        , testQuery "false || true" $ Just $ showText "true"
-        , testQuery "false || false" $ Just $ showText "false"
-        , testQuery "not true" $ Just $ showText "false"
-        , testQuery "not false" $ Just $ showText "true"
-        -- operator precedence
-        , testQuery "1 + 2 * 3" $ Just $ showText "7"
-        , testQuery "3 * 2 + 1" $ Just $ showText "7"
-        , testQuery "2 * 2 * 2" $ Just $ showText "8"
-        , testQuery "12 / 2 / 2" $ Just $ showText "3"
-        , testQuery "12 / 2 / 2" $ Just $ showText "3"
-        , testQuery "0 == 0 == 0" $ Nothing
-        -- if/then/else
-        , testQuery "if true then 3 else 4" $ Just $ showText "3"
-        , testQuery "if false then 3 else 4" $ Just $ showText "4"
-        , testQuery "if false then if true then 1 else 2 else if true then 3 else 4" $ Just $ showText "3"
+        [ testGroup "trivial" [testQuery "" $ Nothing, testQuery "x" $ Nothing]
+        , testGroup
+              "constants"
+              [ testQuery "\"\"" $ Just $ showText ""
+              , testQuery "\"Hello \"" $ Just $ showText "Hello "
+              , testQuery "true" $ Just $ showText "true"
+              , testQuery "false" $ Just $ showText "false"
+              , testQuery "\"1\"" $ Just $ showText "1"
+              , testQuery "3" $ Just $ showText "3"
+              , testQuery "3.2_4" $ Just $ showText "3.2_4"
+              , testQuery "~1" $ Just $ showText "~1.0"
+              , testQuery "~-2.4" $ Just $ showText "~-2.4"
+              , testQuery "NaN" $ Just $ showText "NaN"
+              , testQuery "~Infinity" $ Just $ showText "~Infinity"
+              , testQuery "~-Infinity" $ Just $ showText "~-Infinity"
+              , testQuery "ui_table" $ Just "<?>"
+              ]
+        , testGroup
+              "list construction"
+              [ testQuery "[]" $ Just $ show @[Text] []
+              , testQuery "[1]" $ Just $ "[1]"
+              , testQuery "[1,2,3]" $ Just "[1,2,3]"
+              ]
+        , testGroup
+              "functions"
+              [ testQuery "\\x -> x" $ Just "<?>"
+              , testQuery "\\x -> 1" $ Just "<?>"
+              , testQuery "\\x y -> y" $ Just "<?>"
+              , testQuery "\\x y z -> [x,y,z]" $ Just "<?>"
+              ]
+        , testGroup
+              "predefined"
+              [ testQuery "abs" $ Just $ showText "<?>"
+              , testQuery "fst" $ Just $ showText "<?>"
+              , testQuery "(+)" $ Just $ showText "<?>"
+              , testQuery "\\a b -> a + b" $ Just $ showText "<?>"
+              , testQuery "(==)" $ Just $ showText "<?>"
+              , testQuery "\\a b -> a == b" $ Just $ showText "<?>"
+              ]
+        , testGroup
+              "let-binding"
+              [ testQuery "let in 27" $ Just $ showText "27"
+              , testQuery "let a=\"5\" in a" $ Just $ showText "5"
+              , testQuery "let a=5 in a" $ Just $ showText "5"
+              , testQuery "let a=1 in let a=2 in a" $ Just $ showText "2"
+              , testQuery "let a=1;b=2 in a" $ Just $ showText "1"
+              , testQuery "let a=1;b=2 in b" $ Just $ showText "2"
+              , testQuery "let a=1;b=2 in b" $ Just $ showText "2"
+              , testQuery "let a=1;b=\"2\" in b" $ Just $ showText "2"
+              , testQuery "let a=1 ;b=\"2\" in b" $ Just $ showText "2"
+              , testQuery "let a= 1 ;b=\"2\" in b" $ Just $ showText "2"
+              , testQuery "let a=7;b=a in a" $ Just $ showText "7"
+              , testQuery "let a=7;b=a in b" $ Just $ showText "7"
+              , testQuery "let a=2 in let b=a in b" $ Just $ showText "2"
+              ]
+        , testGroup
+              "partial keywords"
+              [ testQuery "let i=1 in i" $ Just $ showText "1"
+              , testQuery "let inx=1 in inx" $ Just $ showText "1"
+              , testQuery "let l=1 in l" $ Just $ showText "1"
+              , testQuery "let le=1 in le" $ Just $ showText "1"
+              , testQuery "let letx=1 in letx" $ Just $ showText "1"
+              , testQuery "let letre=1 in letre" $ Just $ showText "1"
+              , testQuery "let letrecx=1 in letrecx" $ Just $ showText "1"
+              , testQuery "let tru=1 in tru" $ Just $ showText "1"
+              , testQuery "let truex=1 in truex" $ Just $ showText "1"
+              , testQuery "let f=1 in f" $ Just $ showText "1"
+              , testQuery "let fals=1 in fals" $ Just $ showText "1"
+              , testQuery "let falsex=1 in falsex" $ Just $ showText "1"
+              ]
+        , testGroup
+              "recursive let-binding"
+              [ testQuery "let a=1 in a" $ Just $ showText "1"
+              , testQuery "let a=1 in let a=2 in a" $ Just $ showText "2"
+              , testQuery "let a=1;a=2 in a" $ Nothing
+              , testQuery "let a=1;b=a in b" $ Just $ showText "1"
+              , testQuery "let b=a;a=1 in b" $ Just $ showText "1"
+              , testQuery "let a x = x in a 1" $ Just $ showText "1"
+              , testQuery "let a x = x; b = a in b" $ Just "<?>"
+              , testQuery "let a = \\x -> x in let b = a 1 in b" $ Just $ showText "1"
+              , testQuery "let a x = x; b = a 1 in b" $ Just $ showText "1"
+              , testQuery "let a x = b; b = b in a" $ Just "<?>"
+              , testQuery "let a x = 1; b = b in a b" $ Just $ showText "1"
+              , testQuery "let a x = 1; b = a b in b" $ Just $ showText "1"
+              , testQuery "let b = a b; a x = 1 in b" $ Just $ showText "1"
+              , testQuery "let a x = 1; b = a c; c=b in b" $ Just $ showText "1"
+              ]
+        , testGroup
+              "recursive let-binding polymorphism"
+              [ testQuery "let i = \\x -> x in (1 + i 1, i false)" $ Just "(2, false)"
+              , testQuery "let i = \\x -> x; r = (1 + i 1, i false) in r" $ Just "(2, false)"
+              , testQuery "let r = (1 + i 1, i false); i = \\x -> x in r" $ Just "(2, false)"
+              ]
+        , testGroup
+              "duplicate bindings"
+              [ testQuery "let a=1;a=1 in a" $ Nothing
+              , testQuery "let a=1;a=2 in a" $ Nothing
+              , testQuery "let a=1;b=0;a=2 in a" $ Nothing
+              ]
+        , testGroup
+              "lexical scoping"
+              [ testQuery "let a=1 in let b=a in let a=3 in a" $ Just $ showText "3"
+              , testQuery "let a=1;b=a;a=3 in a" $ Nothing
+              , testQuery "let a=1 in let b=a in let a=3 in b" $ Just $ showText "1"
+              , testQuery "let a=1;b=a;a=3 in b" $ Nothing
+              ]
+        , testGroup
+              "operators"
+              [ testQuery "0 == 1" $ Just $ showText "false"
+              , testQuery "1 == 1" $ Just $ showText "true"
+              , testQuery "0 /= 1" $ Just $ showText "true"
+              , testQuery "1 /= 1" $ Just $ showText "false"
+              , testQuery "0 <= 1" $ Just $ showText "true"
+              , testQuery "1 <= 1" $ Just $ showText "true"
+              , testQuery "2 <= 1" $ Just $ showText "false"
+              , testQuery "0 < 1" $ Just $ showText "true"
+              , testQuery "1 < 1" $ Just $ showText "false"
+              , testQuery "2 < 1" $ Just $ showText "false"
+              , testQuery "0 >= 1" $ Just $ showText "false"
+              , testQuery "1 >= 1" $ Just $ showText "true"
+              , testQuery "2 >= 1" $ Just $ showText "true"
+              , testQuery "0 >= ~1" $ Just $ showText "false"
+              , testQuery "1 >= ~1" $ Just $ showText "true"
+              , testQuery "2 >= ~1" $ Just $ showText "true"
+              , testQuery "0 > 1" $ Just $ showText "false"
+              , testQuery "1 > 1" $ Just $ showText "false"
+              , testQuery "2 > 1" $ Just $ showText "true"
+              , testQuery "1 == ~1" $ Just $ showText "false"
+              , testQuery "0 ~== 1" $ Just $ showText "false"
+              , testQuery "1 ~== 1" $ Just $ showText "true"
+              , testQuery "1 ~== ~1" $ Just $ showText "true"
+              , testQuery "0 ~== ~1" $ Just $ showText "false"
+              , testQuery "0 ~/= 1" $ Just $ showText "true"
+              , testQuery "1 ~/= 1" $ Just $ showText "false"
+              , testQuery "1 ~/= ~1" $ Just $ showText "false"
+              , testQuery "0 ~/= ~1" $ Just $ showText "true"
+              , testQuery "7+8" $ Just $ showText "15"
+              , testQuery "7 +8" $ Just $ showText "15"
+              , testQuery "7+ 8" $ Just $ showText "15"
+              , testQuery "7 + 8" $ Just $ showText "15"
+              , testQuery "\"abc\"++\"def\"" $ Just $ showText "abcdef"
+              , testQuery "\"abc\" ++\"def\"" $ Just $ showText "abcdef"
+              , testQuery "\"abc\"++ \"def\"" $ Just $ showText "abcdef"
+              , testQuery "\"abc\" ++ \"def\"" $ Just $ showText "abcdef"
+              , testQuery "let f x = x + 2 in f -1" $ Just $ showText "1"
+              , testQuery "let f = 2 in f - 1" $ Just $ showText "1"
+              ]
+        , testGroup
+              "boolean"
+              [ testQuery "true && true" $ Just $ showText "true"
+              , testQuery "true && false" $ Just $ showText "false"
+              , testQuery "false && true" $ Just $ showText "false"
+              , testQuery "false && false" $ Just $ showText "false"
+              , testQuery "true || true" $ Just $ showText "true"
+              , testQuery "true || false" $ Just $ showText "true"
+              , testQuery "false || true" $ Just $ showText "true"
+              , testQuery "false || false" $ Just $ showText "false"
+              , testQuery "not true" $ Just $ showText "false"
+              , testQuery "not false" $ Just $ showText "true"
+              ]
+        , testGroup
+              "operator precedence"
+              [ testQuery "1 + 2 * 3" $ Just $ showText "7"
+              , testQuery "3 * 2 + 1" $ Just $ showText "7"
+              , testQuery "2 * 2 * 2" $ Just $ showText "8"
+              , testQuery "12 / 2 / 2" $ Just $ showText "3"
+              , testQuery "12 / 2 / 2" $ Just $ showText "3"
+              , testQuery "0 == 0 == 0" $ Nothing
+              ]
+        , testGroup
+              "if/then/else"
+              [ testQuery "if true then 3 else 4" $ Just $ showText "3"
+              , testQuery "if false then 3 else 4" $ Just $ showText "4"
+              , testQuery "if false then if true then 1 else 2 else if true then 3 else 4" $ Just $ showText "3"
+              ]
+        , testGroup "pairs" [testQuery "fst (7,9)" $ Just $ showText "7", testQuery "snd (7,9)" $ Just $ showText "9"]
+        , testGroup
+              "either"
+              [ testQuery "either (\\a -> (\"left\",a)) (\\a -> (\"right\",a)) $ left \"x\"" $ Just "(left, x)"
+              , testQuery "either (\\a -> (\"left\",a)) (\\a -> (\"right\",a)) $ right \"x\"" $ Just "(right, x)"
+              ]
         ]
 
 testLanguage :: TestTree

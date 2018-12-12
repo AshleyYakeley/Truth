@@ -7,7 +7,7 @@ type AutoClose key t = StateT (Map key (t, IO ())) IO
 
 runAutoClose :: Ord key => UnliftIO (AutoClose key t)
 runAutoClose =
-    MkUnliftIO $ \ac -> do
+    MkTransform $ \ac -> do
         (a, mp) <- runStateT ac mempty
         for_ (elems mp) snd
         return a

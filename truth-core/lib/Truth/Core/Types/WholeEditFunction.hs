@@ -15,3 +15,5 @@ instance Applicative (WholeEditFunction edit) where
     pure a = MkWholeEditFunction $ constEditFunction a
     MkWholeEditFunction fab <*> MkWholeEditFunction fa =
         MkWholeEditFunction $ funcEditFunction (\(ab, a) -> ab a) . pairWholeEditFunction fab fa
+
+instance IsoVariant (WholeEditFunction edit)

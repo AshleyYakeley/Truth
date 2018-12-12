@@ -1,3 +1,3 @@
 #!/bin/sh -e
-stack install truth-gtk
-`stack path --local-bin`/truth-text Notes
+stack --no-docker install truth-gtk
+`stack --no-docker path --local-bin`/truth-text Notes

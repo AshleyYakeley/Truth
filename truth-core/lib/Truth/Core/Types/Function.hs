@@ -89,7 +89,7 @@ functionEditApply ::
     => EditFunction edita (FunctionEdit p editb)
     -> EditFunction edita (WholeEdit p)
     -> EditFunction edita editb
-functionEditApply eff efwp = applyFunctionEditFunction . pairJoinEditFunctions eff efwp
+functionEditApply eff efwp = applyFunctionEditFunction . pairCombineEditFunctions eff efwp
 
 maybeFunctionEditFunction ::
        forall a edit. EditFunction (PairEdit edit (FunctionEdit a edit)) (FunctionEdit (Maybe a) edit)
@@ -113,4 +113,4 @@ functionEditMaybe ::
        EditFunction edita editb
     -> EditFunction edita (FunctionEdit p editb)
     -> EditFunction edita (FunctionEdit (Maybe p) editb)
-functionEditMaybe efn eff = maybeFunctionEditFunction . pairJoinEditFunctions efn eff
+functionEditMaybe efn eff = maybeFunctionEditFunction . pairCombineEditFunctions efn eff

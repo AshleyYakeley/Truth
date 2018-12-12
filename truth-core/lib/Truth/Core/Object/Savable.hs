@@ -29,12 +29,13 @@ saveBufferSubscriber subA =
         let
             initA :: Object (WholeEdit (EditSubject edit)) -> IO (editorB, Object edit, SaveActions)
             initA (MkObject (unliftA :: UnliftIO ma) readA pushA) =
-                runUnliftIO unliftA $ do
+                runTransform unliftA $ do
                     firstBuf <- readA ReadWhole
                     mvarRun sbVar $ put $ MkSaveBuffer firstBuf False
                     let
                         runB :: UnliftIO (StateT (SaveBuffer (EditSubject edit)) (DeferActionT ma))
-                        runB = composeUnliftIO (mvarUnlift sbVar) $ composeUnliftIO runDeferActionT unliftA
+                        runB =
+                            composeUnliftTransform (mvarUnlift sbVar) $ composeUnliftTransform runDeferActionT unliftA
                         readB ::
                                MutableRead (StateT (SaveBuffer (EditSubject edit)) (DeferActionT ma)) (EditReader edit)
                         readB = mSubjectToMutableRead $ fmap saveBuffer get
@@ -60,7 +61,7 @@ saveBufferSubscriber subA =
                     let
                         saveAction :: IO Bool
                         saveAction =
-                            runUnliftIO unliftA $ do
+                            runTransform unliftA $ do
                                 MkSaveBuffer buf _ <- mvarRun sbVar get
                                 maction <- pushA [MkWholeEdit buf]
                                 case maction of
@@ -72,7 +73,7 @@ saveBufferSubscriber subA =
                         revertAction :: IO Bool
                         revertAction = do
                             edits <-
-                                runUnliftIO unliftA $ do
+                                runTransform unliftA $ do
                                     buf <- readA ReadWhole
                                     mvarRun sbVar $ put $ MkSaveBuffer buf False
                                     getReplaceEditsFromSubject buf
@@ -81,7 +82,7 @@ saveBufferSubscriber subA =
                         saveActions :: SaveActions
                         saveActions =
                             MkSaveActions $
-                            runUnliftIO unliftA $ do
+                            runTransform unliftA $ do
                                 MkSaveBuffer _ changed <- mvarRun sbVar get
                                 return $
                                     if changed

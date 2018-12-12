@@ -40,7 +40,7 @@ instance Eq a => IsSet (FiniteSet a) where
     insertSet = insertElement
     deleteSet = deleteElement
     singletonSet = MkFiniteSet . pure
-    setFromList = MkFiniteSet
+    setFromList = MkFiniteSet . nub
     setToList = unFiniteSet
 
 instance MonoPointed (FiniteSet a) where

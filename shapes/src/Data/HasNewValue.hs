@@ -15,7 +15,10 @@ instance HasNewValue Bool where
 instance HasNewValue Int where
     newValue = 0
 
-instance HasNewValue ByteString where
+instance HasNewValue LazyByteString where
+    newValue = mempty
+
+instance HasNewValue StrictByteString where
     newValue = mempty
 
 instance HasNewValue Word8 where

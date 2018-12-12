@@ -65,7 +65,7 @@ makeSharedSubscriber parent = do
         initP _ = return ()
         updateP :: () -> Object edit -> [edit] -> IO ()
         updateP () _ edits = mvarRun var $ updateStore edits
-    (((), objectC@(MkObject (MkUnliftIO runC) _ _), actions), closerP) <- runLifeCycle $ subscribe parent initP updateP
+    (((), objectC@(MkObject (MkTransform runC) _ _), actions), closerP) <- runLifeCycle $ subscribe parent initP updateP
     let
         child :: Subscriber edit actions
         child =
@@ -92,7 +92,7 @@ objectSubscriber ocObject =
         rec
             let
                 run' :: UnliftIO (DeferActionT m)
-                run' = composeUnliftIOEvert runDeferActionT run
+                run' = composeUnliftTransformCommute runDeferActionT run
                 r' :: MutableRead (DeferActionT m) (EditReader edit)
                 r' = liftMutableRead r
                 e' :: [edit] -> DeferActionT m (Maybe (DeferActionT m ()))

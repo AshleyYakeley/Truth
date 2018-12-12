@@ -48,9 +48,6 @@ maybeToOk :: Maybe a -> Ok a
 maybeToOk (Just a) = Ok a
 maybeToOk Nothing = Errors []
 
-instance FromField SQLData where
-    fromField f = pure $ fieldData f
-
 data SQLiteDatabase
 
 type SQLiteRead tablesel = TupleDatabaseRead SQLiteDatabase tablesel
@@ -59,7 +56,7 @@ type SQLiteEdit tablesel = TupleDatabaseEdit SQLiteDatabase tablesel
 
 type family RowColSel (row :: *) :: * -> *
 
-type instance RowColSel (All colsel) = colsel
+type instance RowColSel (AllValue colsel) = colsel
 
 class HasSchema (t :: *) where
     type Schema t :: *
@@ -126,7 +123,7 @@ instance AllWitnessConstraint Show colsel => AllWitnessConstraint Show (Expr col
 instance ShowableTupleDatabaseType SQLiteDatabase where
     witnessShowTupleExpr = Dict
 
-instance (FiniteWitness colsel, WitnessConstraint FromField colsel) => FromRow (All colsel) where
+instance (FiniteWitness colsel, WitnessConstraint FromField colsel) => FromRow (AllValue colsel) where
     fromRow =
         assembleWitness $ \wt ->
             case witnessConstraint @Type @FromField wt of
@@ -144,7 +141,7 @@ intercalate' i (a:aa) = mconcat [a, i, intercalate' i aa]
 instance HasSchema (TupleSelectClause SQLiteDatabase tablesel row row') where
     type Schema (TupleSelectClause SQLiteDatabase tablesel row row') = SubmapWitness (RowColSel row) ColumnRefSchema
     schemaString csch (MkTupleSelectClause mapSel) =
-        intercalate' "," $ fmap (\(MkAnyWitness cs') -> schemaString csch $ mapSel cs') $ allWitnesses @(RowColSel row')
+        intercalate' "," $ fmap (\(MkAnyW cs') -> schemaString csch $ mapSel cs') $ allWitnesses @(RowColSel row')
 
 instance HasSchema (TupleOrderItem colsel) where
     type Schema (TupleOrderItem colsel) = SubmapWitness colsel ColumnRefSchema
@@ -187,7 +184,7 @@ sqliteObject ::
 sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
     objRun :: UnliftIO (ReaderT Connection IO)
     objRun =
-        MkUnliftIO $ \call -> do
+        MkTransform $ \call -> do
             exists <- doesFileExist path
             withConnection path $ \conn -> do
                 if exists
@@ -199,7 +196,7 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
         case wc of
             MkTupleWhereClause (ConstExpr True) -> ""
             _ -> " WHERE " <> schemaString rowSchema wc
-    sqliteReadQuery :: SQLiteRead tablesel [All colsel] -> QueryString
+    sqliteReadQuery :: SQLiteRead tablesel [AllValue colsel] -> QueryString
     sqliteReadQuery (DatabaseSelect jc wc oc sc) =
         case evalState (joinTableSchema databaseTables jc) 1 of
             (tabRefs, rowSchema) -> let
@@ -220,13 +217,13 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
         case witnessConstraint @_ @IsSQLiteTable tsel of
             Dict -> (subWitnessMap databaseTables tsel, Dict)
     rowSchemaString ::
-           WitnessConstraint ToField colsel => SubmapWitness colsel ColumnRefSchema -> All colsel -> QueryString
-    rowSchemaString MkSubmapWitness {..} (MkAll row) =
+           WitnessConstraint ToField colsel => SubmapWitness colsel ColumnRefSchema -> AllValue colsel -> QueryString
+    rowSchemaString MkSubmapWitness {..} (MkAllValue row) =
         "(" <>
         intercalate'
             ","
             (fmap
-                 (\(MkAnyWitness col) ->
+                 (\(MkAnyW col) ->
                       case witnessConstraint @_ @ToField col of
                           Dict -> valQueryString $ row col)
                  subWitnessDomain) <>
@@ -237,15 +234,16 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
     sqliteEditQuery :: SQLiteEdit tablesel -> QueryString
     sqliteEditQuery (DatabaseInsert (tableSchema -> (SQLite.MkTableSchema {..}, Dict)) (MkTupleInsertClause ic)) = let
         tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
-        in "INSERT OR REPLACE INTO " <> fromString tableName <> " VALUES " <>
-           intercalate' "," (fmap (rowSchemaString tableColumnRefs) ic)
+        in "INSERT OR REPLACE INTO " <>
+           fromString tableName <> " VALUES " <> intercalate' "," (fmap (rowSchemaString tableColumnRefs) ic)
     sqliteEditQuery (DatabaseDelete (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc) = let
         tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
         in "DELETE FROM " <> fromString tableName <> wherePart tableColumnRefs wc
     sqliteEditQuery (DatabaseUpdate (tableSchema -> (SQLite.MkTableSchema {..}, _)) wc (MkTupleUpdateClause uis)) = let
         tableColumnRefs = mapSubmapWitness (columnRef "") tableColumns
-        in "UPDATE " <> fromString tableName <> " SET " <> intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <>
-           wherePart tableColumnRefs wc
+        in "UPDATE " <>
+           fromString tableName <>
+           " SET " <> intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <> wherePart tableColumnRefs wc
     objRead :: MutableRead (ReaderT Connection IO) (SQLiteRead tablesel)
     objRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
         case sqliteReadQuery r of

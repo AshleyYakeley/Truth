@@ -48,9 +48,9 @@ instance MonadTransConstraint MonadIO t => TraceThing (Unlift t) where
 
 instance MonadIO m => TraceThing (UnliftIO m) where
     traceThing prefix unlift =
-        MkUnliftIO $ \ma ->
+        MkTransform $ \ma ->
             traceBracket (contextStr prefix "outside") $
-            runUnliftIO unlift $ traceBracket (contextStr prefix "inside") ma
+            runTransform unlift $ traceBracket (contextStr prefix "inside") ma
 
 class TraceArgThing t where
     traceArgThing :: String -> t -> t

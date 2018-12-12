@@ -4,5 +4,6 @@ theme: readthedocs
 pages:
 - Home: 'index.md'
 - Syntax: 'syntax.md'
-- Application & Composition: 'application.md'
+- Type System: 'type-system.md'
+- Types: 'types.md'
 - Predefined Bindings: 'predefined.md'

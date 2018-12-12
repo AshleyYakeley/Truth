@@ -12,7 +12,7 @@ type FileSystem = FileSystemDirectory
 type FileSystemDirectory = [(String, FileSystemItem)]
 
 data FileSystemItem
-    = FileItem ByteString
+    = FileItem LazyByteString
     | DirectoryItem FileSystemDirectory
     | SymbolicLinkItem FilePath
     | OtherItem
@@ -57,7 +57,7 @@ instance SubjectReader FSReader where
 data FSEdit
     = FSEditCreateDirectory FilePath
     | FSEditCreateFile FilePath
-                       ByteString
+                       LazyByteString
     | FSEditCreateSymbolicLink FilePath
                                FilePath
     | FSEditDeleteNonDirectory FilePath
@@ -72,7 +72,7 @@ type instance EditReader FSEdit = FSReader
 instance ApplicableEdit FSEdit where
     applyEdit _ _ = undefined -- TODO
 
-createFile :: FilePath -> ByteString -> IO ()
+createFile :: FilePath -> LazyByteString -> IO ()
 createFile path bs = do
     h <- openFile path WriteMode
     hPut h bs
@@ -81,7 +81,7 @@ createFile path bs = do
 fileSystemObject :: Object FSEdit
 fileSystemObject = let
     objRun :: UnliftIO IO
-    objRun = MkUnliftIO id
+    objRun = MkTransform id
     objRead :: MutableRead IO FSReader
     objRead (FSReadDirectory path) = do
         isDir <- doesDirectoryExist path
@@ -127,10 +127,10 @@ fileSystemObject = let
     in MkObject {..}
 
 subdirectoryObject :: Bool -> FilePath -> Object FSEdit -> Object FSEdit
-subdirectoryObject create dir (MkObject (MkUnliftIO run :: UnliftIO m) rd push) = let
+subdirectoryObject create dir (MkObject (MkTransform run :: UnliftIO m) rd push) = let
     run' :: UnliftIO m
     run' =
-        MkUnliftIO $ \ma ->
+        MkTransform $ \ma ->
             run $ do
                 if create
                     then pushEdit $ push [FSEditCreateDirectory dir]

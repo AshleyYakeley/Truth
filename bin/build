@@ -1,6 +1,10 @@
 #!/bin/bash -e
+if [ -z "${BINPATH}" ]; then
+    export BINPATH=`stack path --local-bin`
+fi
 docker build -t local-build docker
-stack install --pedantic --test
-`stack path --local-bin`/pinafore --doc > mkdocs/docs/predefined.md
+stack install --test --bench --haddock
+install -m 755 --strip "$BINPATH/pinafore" "${XDG_DATA_HOME:-$HOME/.local/share}/../bin/"
+$BINPATH/pinafore --doc > mkdocs/docs/predefined.md
 stack exec --cwd mkdocs -- mkdocs build
 echo OK
