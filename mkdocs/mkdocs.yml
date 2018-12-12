@@ -1,7 +1,7 @@
 site_name: Pinafore
 repo_url: https://github.com/AshleyYakeley/Truth
 theme: readthedocs
-pages:
+nav:
 - Home: 'index.md'
 - Syntax: 'syntax.md'
 - Type System: 'type-system.md'
