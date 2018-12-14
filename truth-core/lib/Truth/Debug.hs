@@ -2,6 +2,7 @@ module Truth.Debug where
 
 import Data.Time.Clock.System
 import Debug.Trace
+import System.IO.Unsafe
 import Truth.Core.Edit.Edit
 import Truth.Core.Edit.Function
 import Truth.Core.Edit.Unlift
@@ -42,6 +43,12 @@ traceBracketArgs s args showr ma = do
 
 traceBracket :: MonadIO m => String -> m r -> m r
 traceBracket s = traceBracketArgs s "" (\_ -> "")
+
+tracePure :: String -> a -> a
+tracePure s = seq (unsafePerformIO (traceIOM s))
+
+tracePureBracket :: Monad m => String -> m a -> m a
+tracePureBracket s ma = (tracePure (s ++ " [") ma) >>= (\a -> return $ tracePure (s ++ " ]") a)
 
 class TraceThing t where
     traceThing :: String -> t -> t

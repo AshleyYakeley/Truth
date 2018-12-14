@@ -1,5 +1,6 @@
 module Pinafore.Base.Entity where
 
+import Control.DeepSeq
 import Crypto.Hash
 import Data.Aeson (FromJSON)
 import Data.ByteArray (convert)
@@ -9,7 +10,7 @@ import Shapes
 
 newtype Anchor =
     MkAnchor UUID
-    deriving (Eq, Ord, Random, FromJSON)
+    deriving (Eq, Ord, Random, FromJSON, NFData)
 
 instance Show Anchor where
     show (MkAnchor uuid) = '!' : show uuid
@@ -31,7 +32,7 @@ hashToAnchor f =
 
 newtype Entity =
     MkEntity Anchor
-    deriving (Eq, Ord, Random, FromJSON, Show, Serialize)
+    deriving (Eq, Ord, Random, FromJSON, Show, Serialize, NFData)
 
 newEntity :: MonadIO m => m Entity
 newEntity = liftIO randomIO
