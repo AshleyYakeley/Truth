@@ -7,6 +7,7 @@ module Pinafore.Language.Predefined
     , outputln
     ) where
 
+import Data.Time.Clock.System
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Doc
@@ -184,6 +185,11 @@ mkDefEntry name desc val = EntryDocTreeEntry (Just (name, toValue val), mkDefDoc
 
 entityuuid :: Entity -> Text
 entityuuid p = pack $ show p
+
+gettimems :: IO Integer
+gettimems = do
+      MkSystemTime s ns <- getSystemTime
+      return $ (toInteger s) * 1000 + div (toInteger ns) 1000000
 
 predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
@@ -377,6 +383,7 @@ predefinitions =
                     "removeall"
                     "Remove all entities from a set."
                     (pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit)
+              , mkDefEntry "withtimems" "Get the time as a whole number of milliseconds" ((\cont -> liftIO gettimems >>= cont) :: (Integer -> PinaforeAction baseedit) -> PinaforeAction baseedit)
               ]
         {-
         , docTreeEntry

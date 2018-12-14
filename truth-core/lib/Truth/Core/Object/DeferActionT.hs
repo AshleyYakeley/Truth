@@ -49,7 +49,7 @@ instance MonadTransUnlift DeferActionT where
     liftWithUnlift utmr =
         MkDeferActionT $ liftWithUnlift $ \(MkUnlift unlift) -> utmr $ MkUnlift $ \(MkDeferActionT wma) -> unlift wma
     getDiscardingUnlift =
-        MkDeferActionT $ do
+        MkDeferActionT $ tracePureBracket "DeferActionT.getDiscardingUnlift" $ do
             MkUnlift du <- getDiscardingUnlift
             return $ MkUnlift $ \(MkDeferActionT wma) -> du wma
 

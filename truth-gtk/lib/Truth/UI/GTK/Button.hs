@@ -8,12 +8,13 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
+import Truth.Debug.Object
 
 createWidget :: EditFunction edit (WholeEdit Text) -> View seledit edit () -> CreateView seledit edit Widget
 createWidget label action = do
     widget <- new Button []
-    cvBindEditFunction label $ \val -> set widget [#label := val]
-    _ <- cvLiftView $ viewOn widget #clicked action
+    traceBracket "GTK.Button:create.bind" $ cvBindEditFunction label $ \val -> set widget [#label := val]
+    _ <- cvLiftView $ viewOn widget #clicked $ traceBracket "GTK.Button:click" $ action
     toWidget widget
 
 buttonGetView :: GetGView

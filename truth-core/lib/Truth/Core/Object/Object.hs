@@ -70,13 +70,13 @@ lensObject discard (MkCloseUnlift (lensRun :: Unlift tl) MkAnEditLens {..}) (MkO
     | Dict <- hasTransConstraint @MonadUnliftIO @tl @mr = let
         MkAnEditFunction {..} = elFunction
         objRunBFull :: UnliftIO (tl mr)
-        objRunBFull = MkTransform $ \tmr -> objRunA $ runUnlift (traceThing "mapObject.run.full" lensRun) $ liftWithUnlift $ \(MkUnlift unlift) -> unlift tmr
+        objRunBFull = MkTransform $ \tmr -> objRunA $ runUnlift (traceThing "lensObject.run.full" lensRun) $ liftWithUnlift $ \(MkUnlift unlift) -> unlift tmr
         objRunBDiscard :: UnliftIO (tl mr)
         objRunBDiscard =
             MkTransform $ \tmr ->
                 objRunA $ do
-                    MkUnlift du <- runUnlift (traceThing "mapObject.run.discard" lensRun) getDiscardingUnlift
-                    du tmr -- discard lens effects: all these effects will be replayed by the update
+                    MkUnlift du <- runUnlift (traceThing "lensObject.run.discard" lensRun) $ traceBracket "lensObject.run.discard.getDiscardingUnlift" $ getDiscardingUnlift
+                    traceBracket "lensObject.run.discard.unlift" $ du tmr -- discard lens effects: all these effects will be replayed by the update
         objRunB :: UnliftIO (tl mr)
         objRunB =
             if discard
@@ -85,17 +85,17 @@ lensObject discard (MkCloseUnlift (lensRun :: Unlift tl) MkAnEditLens {..}) (MkO
         objReadB :: MutableRead (tl mr) (EditReader editb)
         objReadB = efGet objReadA
         objEditB :: [editb] -> tl mr (Maybe (tl mr ()))
-        objEditB editbs = traceBracket "mapObject.edit" $ do
-            meditas <- traceBracket "mapObject.edit lens" $ elPutEdits editbs objReadA
+        objEditB editbs = traceBracket "lensObject.edit" $ do
+            meditas <- traceBracket "lensObject.edit lens" $ elPutEdits editbs objReadA
             case meditas of
                 Nothing -> do
-                    traceIOM "mapObject.edit Nothing"
+                    traceIOM "lensObject.edit Nothing"
                     return Nothing
                 Just editas -> do
-                    mmu <- traceBracket "mapObject.edit objEditA" $ lift $ objEditA editas
+                    mmu <- traceBracket "lensObject.edit objEditA" $ lift $ objEditA editas
                     case mmu of
-                        Nothing -> traceBracket "mapObject.edit.examine: no action" $ return Nothing
-                        Just mu -> traceBracket "mapObject.edit.examine: action" $ return $ Just $ traceBracket "mapObject.edit.run" $ lift mu
+                        Nothing -> traceBracket "lensObject.edit.examine: no action" $ return Nothing
+                        Just mu -> traceBracket "lensObject.edit.examine: action" $ return $ Just $ traceBracket "lensObject.edit.run" $ lift mu
         in MkObject @editb @(tl mr) objRunB objReadB objEditB
 
 readConstantObject :: MutableRead IO (EditReader edit) -> Object edit

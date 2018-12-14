@@ -17,10 +17,12 @@ cacheObject mus (MkObject unlift read push) = do
     return $ let
         objRun = traceThing "cacheObject:front" $ mvarUnliftIO cacheVar
         objRead :: MutableRead (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
-        objRead rt = do
+        objRead rt = traceBracket "cache read" $ do
             oldcache <- get
             case editCacheLookup @edit rt oldcache of
-                Just t -> traceBracket "cache hit" $ return t
+                Just t -> do
+                    traceIOM "cache hit"
+                    return t
                 Nothing -> traceBracket "cache miss" $ do
                     t <- liftIO $ runTransform (traceThing "cacheObject:back.read" unlift) $ read rt
                     liftIO $ runAction Nothing -- still reading, don't push yet

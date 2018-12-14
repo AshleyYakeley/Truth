@@ -25,6 +25,7 @@ import Truth.UI.GTK.Switch
 import Truth.UI.GTK.Table
 import Truth.UI.GTK.Text
 import Truth.UI.GTK.Useful
+import Truth.Debug.Object
 
 lastResortView :: UISpec seledit edit -> GCreateView seledit edit
 lastResortView spec = do
@@ -156,18 +157,18 @@ createWindowAndChild MkUIWindow {..} closeRequest cont =
             lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
         cvBindEditFunction uiTitle $ \title -> set window [#title := title]
         content <- getTheView uiContent
-        _ <- on window #deleteEvent $ \_ -> liftIO closeRequest
+        _ <- on window #deleteEvent $ \_ -> traceBracket "GTK.Window:close" $ liftIO closeRequest
         menubar <- menuBarNew
         fileMI <- liftIO $ attachMenuItem menubar "File"
         fileMenu <- liftIO $ attachSubmenu fileMI
         closeMI <- liftIO $ attachMenuItem fileMenu "Close"
         liftIO $
-            menuItemAction closeMI $ do
+            menuItemAction closeMI $ traceBracket "GTK.Window:menu.close" $ do
                 ok <- closeRequest
                 if ok
                     then return ()
                     else widgetDestroy window
-        return $ \actions -> do
+        return $ \actions -> traceBracket "GTK.Window:create" $ do
             box <- new Box [#orientation := OrientationVertical]
             #packStart box menubar False False 0
             addButtons box actions
@@ -239,7 +240,7 @@ truthMain appMain = do
     args <- getArgs
     _ <- GI.init Nothing
     pcMainLoop <- mainLoopNew Nothing False
-    -- _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50
+    -- _ <- timeoutAdd PRIORITY_DEFAULT 50 (yield >> return True)
     pcWindowCount <- newMVar 0
     withLifeCycle (appMain args (\uiw -> makeWindowCountRef MkProgramContext {..} uiw)) $ \() -> do
         c <- mvarRun pcWindowCount $ Shapes.get

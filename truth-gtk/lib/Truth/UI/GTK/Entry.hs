@@ -19,11 +19,11 @@ textEntryGetView =
                  changedSignal <-
                      cvLiftView $
                      viewOn widget #changed $
-                     traceBracket "textEntryGetView.changed" $
+                     traceBracket "GTK.TextEntry:changed" $
                      viewObjectPushEdit $ \_ push -> do
                          st <- get widget #text
-                         traceBracketArgs "textEntryGetView.push" (show st) show $ push [MkWholeEdit st]
-                 cvReceiveUpdate $ \_ _ (MkWholeEdit st) -> traceBracketArgs "textEntryGetView.update" (show st) show $
+                         traceBracketArgs "GTK.TextEntry:push" (show st) show $ push [MkWholeEdit st]
+                 cvReceiveUpdate $ \_ _ (MkWholeEdit st) -> traceBracketArgs "GTK.TextEntry:update" (show st) show $
                      liftIO $ withSignalBlocked widget changedSignal $ set widget [#text := st]
                  toWidget widget) $
         isUISpec uispec

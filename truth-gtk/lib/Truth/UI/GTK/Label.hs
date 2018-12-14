@@ -9,9 +9,9 @@ import Truth.UI.GTK.GView
 import Truth.Debug.Object
 
 createWidget :: UILabel seledit edit -> CreateView seledit edit Widget
-createWidget MkUILabel = traceBracket "labelGetView:createWidget" $ do
+createWidget MkUILabel = traceBracket "GTK.Label:create" $ do
     widget <- new Label []
-    traceBracket "labelGetView:createWidget.bind" $ cvBindEditFunction id $ \label -> traceBracket "labelGetView:set" $ set widget [#label := label]
+    traceBracket "GTK.Label:create.bind" $ cvBindEditFunction id $ \label -> traceBracket "GTK.Label:set" $ set widget [#label := label]
     toWidget widget
 
 labelGetView :: GetGView

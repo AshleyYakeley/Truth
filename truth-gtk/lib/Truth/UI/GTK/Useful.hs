@@ -10,6 +10,7 @@ import GI.GObject
 import GI.Gdk
 import Shapes
 import Truth.Core
+import Truth.Debug.Object
 
 deferToIdle :: MonadAskUnliftIO m => m () -> m ()
 deferToIdle action = do
@@ -107,7 +108,7 @@ lcNewDestroy :: (MonadLifeCycle m, Constructible a tag, IsWidget a) => (ManagedP
 lcNewDestroy cc attrs =
     liftLifeCycle $ do
         a <- liftIO $ new cc attrs
-        lifeCycleClose $ widgetDestroy a
+        lifeCycleClose $ traceBracket "GTK.Widget:close" $ widgetDestroy a
         return a
 
 lcSetClear ::

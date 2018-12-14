@@ -20,7 +20,7 @@ switchView getview specfunc = do
         getViewState :: UISpec seledit edit -> View seledit edit (ViewState seledit edit ())
         getViewState spec =
             viewCreateView $ do
-                widget <- traceBracket "switchView:getViewState.getview" $ getview spec
+                widget <- traceBracket "GTK.Switch:getViewState.getview" $ getview spec
                 lcContainPackStart True box widget
                 #show widget
     firstvs <-
@@ -28,14 +28,14 @@ switchView getview specfunc = do
             firstspec <- viewMapEdit (readOnlyEditLens specfunc) $ viewObjectRead $ \_ mr -> mr ReadWhole
             getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
-    cvDynamic @(ViewState seledit edit ()) firstvs $ \object edits -> traceBracket "switchView:update" $ do
+    cvDynamic @(ViewState seledit edit ()) firstvs $ \object edits -> traceBracket "GTK.Switch:update" $ do
         whedits <- liftIO $ objectMapUpdates specfunc object edits
         case lastWholeEdit whedits of
             Nothing -> return ()
             Just spec -> do
                 oldvs <- get
                 liftIO $ closeDynamicView oldvs
-                newvs <- liftIO $ runTransform (traceThing "switchView:update.getViewState" unliftView) $ getViewState spec
+                newvs <- liftIO $ runTransform (traceThing "GTK.Switch:update.getViewState" unliftView) $ getViewState spec
                 put newvs
     toWidget box
 

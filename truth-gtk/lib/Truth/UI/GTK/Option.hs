@@ -22,7 +22,7 @@ listStoreView ::
 listStoreView (MkTransform blockSignal) = do
     subjectList <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     store <- seqStoreNew subjectList
-    cvReceiveUpdate $ \_ _mr e -> traceBracket "GTK.Option:listStore:receiveUpdate" $
+    cvReceiveUpdate $ \_ _mr e -> traceBracket "GTK.Option:ListStore:receiveUpdate" $
         case e of
             ListEditItem (MkSequencePoint (fromIntegral -> i)) edit -> do
                 oldval <- seqStoreGetValue store i

@@ -11,6 +11,7 @@ import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
+import Truth.Debug.Object
 
 class HasPinaforeEntityEdit baseedit where
     pinaforeEntityLens :: EditLens baseedit PinaforeEntityEdit
@@ -42,7 +43,7 @@ predicatePinaforeMap ::
     -> EntityAdapter b
     -> Predicate
     -> AnEditLens IdentityT (ContextEdit PinaforeEntityEdit (WholeEdit (Know a))) (WholeEdit (Know b))
-predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) prd = let
+predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) prd = traceAThing "predicatePinaforeMap" $ let
     rfp :: ReadFunction (ContextEditReader PinaforeEntityEdit (WholeEdit (Know a))) PinaforeEntityRead
     rfp = tupleReadFunction SelectContext
     efGet :: ReadFunctionT IdentityT (ContextEditReader PinaforeEntityEdit (WholeEdit (Know a))) (WholeReader (Know b))
@@ -126,7 +127,7 @@ predicateInverseFunction (MkEntityAdapter _ aget _) (MkEntityAdapter bp _ _) prd
         => MutableRead m PinaforeEntityRead
         -> b
         -> IdentityT m (FiniteSet a)
-    pfFuncRead mr valb =
+    pfFuncRead mr valb = traceBracket "predicateInverseFunction.pfFuncRead" $
         lift $ do
             setp <- mr $ PinaforeEntityReadLookupPredicate prd $ bp valb
             setka <- for setp $ \p -> aget p mr
@@ -137,8 +138,8 @@ predicateInverseFunction (MkEntityAdapter _ aget _) (MkEntityAdapter bp _ _) prd
         -> MutableRead m PinaforeEntityRead
         -> IdentityT m Bool
     pfUpdate (PinaforeEntityEditSetPredicate p _ _) _
-        | p == prd = return True
-    pfUpdate _ _ = return False
+        | p == prd = traceBracket "predicateInverseFunction.pfUpdate: True" $ return True
+    pfUpdate _ _ = traceBracket "predicateInverseFunction.pfUpdate: False" $ return False
     in MkAPinaforeFunctionMorphism {..}
 
 predicatePinaforeTableLensMorphism ::
