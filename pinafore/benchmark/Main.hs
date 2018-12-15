@@ -56,7 +56,26 @@ benchScripts =
               "let cpass x = pass in let f = \\a -> let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in d in cpass (f 3)"
         , benchScript $
           pack $
-          "let g r = get r $ \\x -> pass; q = [" <> intercalate "," (replicate 30 "g (pureref \"\")") <> "] in for q id"
+          "let g r = get r $ \\x -> pass; q = [" <> intercalate "," (replicate 50 "g (pureref 1)") <> "] in for q id"
+        , benchScript $
+          pack $
+          "let g1 r = get r $ \\x -> pass; g2 r = get r $ \\x -> pass; q = [" <>
+          intercalate "," (replicate 25 "g1 (pureref 1)" <> replicate 25 "g2 (pureref 1)") <> "] in for q id"
+        , benchScript $
+          pack $
+          "let g r = get r $ \\x -> pass in let q = [" <>
+          intercalate "," (replicate 50 "g (pureref 1)") <> "] in for q id"
+        , benchScript $
+          pack $
+          "let g r = get r $ \\x -> pass in let q = [" <>
+          intercalate "," (fmap (\(i :: Int) -> "g (pureref " <> show i <> ")") [1 .. 50]) <> "] in for q id"
+        , benchScript $
+          pack $
+          "let g r = get r $ \\x -> pass; q = [" <>
+          intercalate "," (replicate 50 "get (pureref 1) $ \\x -> pass") <> "] in for q id"
+        , benchScript $
+          pack $
+          "let g r = list pass (\\x y -> pass) r; q = [" <> intercalate "," (replicate 50 "g [1]") <> "] in for q id"
         ]
 
 main :: IO ()
