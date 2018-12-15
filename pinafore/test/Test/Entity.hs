@@ -37,12 +37,15 @@ defs =
 prefix :: Text
 prefix = pack $ "let\n" ++ intercalate ";\n" defs ++ "\nin\n"
 
-pointTest :: Text -> TestTree
-pointTest text =
-    testCase (unpack text) $ do
+scriptTest :: Text -> Text -> TestTree
+scriptTest name text =
+    testCase (unpack name) $ do
         (pc, _getTableState) <- makeTestPinaforeContext
-        action <- pinaforeInterpretFile pc "<test>" $ prefix <> text
+        action <- pinaforeInterpretFile pc "<test>" text
         action
+
+pointTest :: Text -> TestTree
+pointTest text = scriptTest text $ prefix <> text
 
 assertThrows :: IO a -> IO ()
 assertThrows ma = do
