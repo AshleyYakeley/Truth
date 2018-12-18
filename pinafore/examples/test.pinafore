@@ -52,24 +52,24 @@ married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
 # ui_people :: Set Person -> UI;
 ui_people pp = ui_vertical
 [
-    (ui_button {"New Person"} $ newentity pp $ \p -> openwindow (window_person p),false),
+    (ui_button {"New Person"} $ newentity pp $ \p -> openwindow (window_person {p}),false),
     (ui_button {"View Person"} $ openselection,false),
     (ui_button {"Remove Person"} $ withselection $ \p -> pp -= p,false),
-    (ui_table [({"Name"},\p -> name !$ {p})] window_person pp,true)
+    (ui_table [({"Name"},\p -> name !$ {p})] (\p -> window_person {p}) pp,true)
 ];
 
-# ui_person :: Person -> UI;
+# ui_person :: Ref Person -> UI;
 ui_person p = ui_vertical
 [
-    (ui_labelled {"Name: "} $ ui_textentry $ name !$ {p},false),
+    (ui_labelled {"Name: "} $ ui_textentry $ name !$ p,false),
     (ui_pages
     [
         ui_page {"Social"} $ ui_vertical
         [
-            (ui_labelled {"Email: "} $ ui_textentry $ email !$ {p},false),
-            (ui_labelled {"Phone: "} $ ui_textentry $ phone !$ {p},false)
+            (ui_labelled {"Email: "} $ ui_textentry $ email !$ p,false),
+            (ui_labelled {"Phone: "} $ ui_textentry $ phone !$ p,false)
         ],
-        ui_page {"Home"} $ let homep = home !$ {p} in ui_vertical
+        ui_page {"Home"} $ let homep = home !$ p in ui_vertical
         [
             (ui_labelled {"Address: "} $ ui_textarea $ address !$ homep,false),
             (ui_labelled {"City: "} $ ui_textentry $ city !$ homep,false),
@@ -80,30 +80,32 @@ ui_person p = ui_vertical
         ],
         ui_page {"Work"} $ ui_vertical
         [
-            (ui_labelled {"Employer: "} $ ui_textentry $ (name !. employer) !$ {p},false)
+            (ui_labelled {"Employer: "} $ ui_textentry $ (name !. employer) !$ p,false)
         ],
         ui_page {"Family"} $ ui_vertical
         [
-            (ui_labelled {"Birth: "} $ ui_textentry $ birthdate !$ {p},false),
-            (ui_labelled {"Death: "} $ ui_textentry $ deathdate !$ {p},false),
-            (ui_booleancheckbox {"Married"} $ married !$ {p},false),
-            (ui_labelled {"Mother: "} $ ui_pick name People $ mother !$ {p},false),
-            (ui_labelled {"Father: "} $ ui_pick name People $ father !$ {p},false),
-            (ui_people $ children {p},true)
+            (ui_labelled {"Birth: "} $ ui_textentry $ birthdate !$ p,false),
+            (ui_labelled {"Death: "} $ ui_textentry $ deathdate !$ p,false),
+            (ui_booleancheckbox {"Married"} $ married !$ p,false),
+            (ui_labelled {"Mother: "} $ ui_pick name People $ mother !$ p,false),
+            (ui_labelled {"Father: "} $ ui_pick name People $ father !$ p,false),
+            (ui_people $ children p,true)
         ]
     ],true)
 ];
 
-# window_person :: Person -> (Ref +Text,UI);
-window_person p = window (name !$ {p}) $ ui_person p;
+# window_person :: Ref Person -> (Ref +Text,UI);
+window_person p = window (name !$ p) $ ui_person p;
 
 window_people = window {"People"} $ ui_people People;
 
 ### Calculator
 
 window_calc = let
-#aval = %a4706230-2c61-44b1-b600-516e7a54c607 unit;
-#bval = %9d284ad2-e141-4114-ae50-8829a6db710f unit;
+opentype P;
+pvalue = property @P @Number !"pvalue";
+aval = pvalue !$ {entity @P !a4706230-2c61-44b1-b600-516e7a54c607};
+bval = pvalue !$ {entity @P !9d284ad2-e141-4114-ae50-8829a6db710f};
 in window {"Calc"} $ ui_vertical
 [
     #(ui_textentry aval,false),
@@ -114,15 +116,17 @@ in window {"Calc"} $ ui_vertical
 ### Switching Value
 
 window_switch = let
-#sw_pick = %59eb2d87-f815-47ef-b7dc-8fe434151bb6 unit;
-#sw_val1 = %6d9f7afa-1091-49cc-8646-8e613bb75ee5 unit;
-#sw_val2 = %6b91406b-896c-4658-b771-2d67bec91ee4 unit;
-#sw_val3 = %934712ae-73a7-4084-8a43-d618c737fd56 unit;
+opentype P;
+pbool = property @P @Boolean !"pbool";
+ptext = property @P @Text !"ptext";
+sw_pick = pbool !$ {entity @P !59eb2d87-f815-47ef-b7dc-8fe434151bb6};
+sw_val1 = ptext !$ {entity @P !6d9f7afa-1091-49cc-8646-8e613bb75ee5};
+sw_val2 = ptext !$ {entity @P !934712ae-73a7-4084-8a43-d618c737fd56};
 in window {"Switch"} $ ui_vertical
 [
     #(ui_textentry sw_pick,false),
-    #(ui_booleancheckbox "pick" sw_pick,false),
-    #(if sw_pick then ui_textarea sw_val1 else ui_textarea sw_val2,true)
+    (ui_booleancheckbox {"pick"} sw_pick,false),
+    (ui_dynamic {if %sw_pick then ui_textarea sw_val1 else ui_textarea sw_val2},true)
 ];
 
 ### Imported Files
