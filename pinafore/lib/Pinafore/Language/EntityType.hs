@@ -25,6 +25,11 @@ instance TestEquality EntityType where
         return Refl
     testEquality _ _ = Nothing
 
+instance Show (EntityType t) where
+    show et =
+        case entityTypeToType @_ @'PositivePolarity et of
+            MkTypeF t _ -> show t
+
 entityTypeEq :: EntityType t -> Dict (Eq t)
 entityTypeEq (SimpleEntityType st) = simpleEntityTypeEq st
 entityTypeEq (PairEntityType ta tb) =

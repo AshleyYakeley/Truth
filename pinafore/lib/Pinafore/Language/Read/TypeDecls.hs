@@ -5,18 +5,9 @@ import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
 import Pinafore.Language.Scope
+import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes hiding (try)
-
-newtype TypeDecls baseedit =
-    MkTypeDecls (forall a. RefNotation baseedit a -> RefNotation baseedit a)
-
-instance Semigroup (TypeDecls baseedit) where
-    (MkTypeDecls a) <> (MkTypeDecls b) = MkTypeDecls (a . b)
-
-instance Monoid (TypeDecls baseedit) where
-    mempty = MkTypeDecls id
-    mappend = (<>)
 
 readOpenTypeDeclaration :: Parser (PinaforeScoped baseedit (TypeDecls baseedit))
 readOpenTypeDeclaration = do

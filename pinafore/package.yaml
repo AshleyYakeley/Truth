@@ -85,16 +85,17 @@ library:
       - Pinafore.Language.Type.Unify
       - Pinafore.Language.Type
       - Pinafore.Language.EntityType
+      - Pinafore.Language.Syntax
       - Pinafore.Language.Read.Token
       - Pinafore.Language.Read.RefNotation
       - Pinafore.Language.Read.Parser
       - Pinafore.Language.Read.Type
       - Pinafore.Language.Read.TypeDecls
-      - Pinafore.Language.Read.Property
       - Pinafore.Language.Read.Infix
       - Pinafore.Language.Read.Expression
       - Pinafore.Language.Read.Interactive
       - Pinafore.Language.Read
+      - Pinafore.Language.Interpret
       - Pinafore.Language.Expression
       - Pinafore.Language.Convert
       - Pinafore.Language.Doc

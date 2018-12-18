@@ -5,6 +5,7 @@ module Pinafore.Language.Read.Interactive
 
 import Pinafore.Base
 import Pinafore.Language.Expression
+import Pinafore.Language.Interpret
 import Pinafore.Language.Name
 import Pinafore.Language.Read.Expression
 import Pinafore.Language.Read.Parser
@@ -23,7 +24,7 @@ showTypeInteractiveCommand ::
     => Parser (InteractiveCommand baseedit)
 showTypeInteractiveCommand = do
     expr <- readTopExpression
-    return $ ShowTypeInteractiveCommand expr
+    return $ ShowTypeInteractiveCommand $ interpretTopExpression expr
 
 readInteractiveCommand ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -37,8 +38,12 @@ readInteractiveCommand =
              "type" -> showTypeInteractiveCommand
              _ -> return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd) <|>
     (eof >> return (LetInteractiveCommand $ return id)) <|>
-    (try $ fmap ExpressionInteractiveCommand readTopExpression) <|>
-    (fmap LetInteractiveCommand readTopLetBindings)
+    (try $ do
+         sexpr <- readTopExpression
+         return $ ExpressionInteractiveCommand $ interpretTopExpression sexpr) <|>
+    (do
+         stdecls <- readTopDeclarations
+         return $ LetInteractiveCommand $ interpretTopDeclarations stdecls)
 
 parseInteractiveCommand ::
        HasPinaforeEntityEdit baseedit => Text -> StateT SourcePos (Result Text) (InteractiveCommand baseedit)

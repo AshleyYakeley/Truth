@@ -1,60 +1,39 @@
 module Pinafore.Language.Read.Expression
     ( readTopExpression
-    , readTopLetBindings
+    , readTopDeclarations
     ) where
 
 import Pinafore.Base
-import Pinafore.Language.Expression
 import Pinafore.Language.If
-import Pinafore.Language.Name
-import Pinafore.Language.NamedEntity
 import Pinafore.Language.Read.Infix
 import Pinafore.Language.Read.Parser
-import Pinafore.Language.Read.Property
-import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
 import Pinafore.Language.Read.TypeDecls
-import Pinafore.Language.Show
+import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
-readPattern :: Parser Name
-readPattern = readThis TokName
+readPattern :: Parser SyntaxPattern
+readPattern = do
+    name <- readThis TokName
+    return $ MkSyntaxPattern name
 
-data Declarations baseedit =
-    MkDeclarations (TypeDecls baseedit)
-                   (RefNotation baseedit (QBindings baseedit))
-
-instance Semigroup (Declarations baseedit) where
-    (MkDeclarations ta ba) <> (MkDeclarations tb bb) = MkDeclarations (ta <> tb) (liftA2 (<>) ba bb)
-
-instance Monoid (Declarations baseedit) where
-    mempty = MkDeclarations mempty $ return mempty
-    mappend = (<>)
-
-typeDeclarations :: TypeDecls baseedit -> Declarations baseedit
-typeDeclarations td = MkDeclarations td $ return mempty
-
-readBinding :: HasPinaforeEntityEdit baseedit => Parser (PinaforeScoped baseedit (Declarations baseedit))
+readBinding :: HasPinaforeEntityEdit baseedit => Parser (SyntaxBinding baseedit)
 readBinding = do
     spos <- getPosition
     name <- readThis TokName
     args <- many readPattern
     readThis TokAssign
     rval <- readExpression
-    return $
-        return $
-        MkDeclarations mempty $ do
-            val <- rval
-            expr <- liftRefNotation $ runSourcePos spos $ qAbstractsExpr args val
-            return $ qBindExpr name expr
+    return $ MkSyntaxBinding spos name args rval
 
-readDeclaration :: HasPinaforeEntityEdit baseedit => Parser (PinaforeScoped baseedit (Declarations baseedit))
-readDeclaration = fmap (fmap typeDeclarations) readTypeDeclaration <|> readBinding
+readDeclaration :: HasPinaforeEntityEdit baseedit => Parser (SyntaxDeclarations baseedit)
+readDeclaration =
+    fmap typeSyntaxDeclarations readTypeDeclaration <|> fmap (MkSyntaxDeclarations mempty . pure) readBinding
 
-readDeclarations :: HasPinaforeEntityEdit baseedit => Parser (PinaforeScoped baseedit (Declarations baseedit))
+readDeclarations :: HasPinaforeEntityEdit baseedit => Parser (SyntaxDeclarations baseedit)
 readDeclarations =
     (do
          b <- readDeclaration
@@ -63,62 +42,45 @@ readDeclarations =
                  readThis TokSemicolon
                  readDeclarations
          return $ b <> fromMaybe mempty mbl) <|>
-    (do return mempty)
+    (return mempty)
 
-readLetBindings ::
-       HasPinaforeEntityEdit baseedit
-    => Parser (PinaforeScoped baseedit (Transform (RefNotation baseedit) (RefNotation baseedit)))
+readLetBindings :: HasPinaforeEntityEdit baseedit => Parser (SyntaxDeclarations baseedit)
 readLetBindings = do
-    spos <- getPosition
     readThis TokLet
-    sdecl <- readDeclarations
-    return $ do
-        MkDeclarations (MkTypeDecls td) rbl <- sdecl
-        return $
-            MkTransform $ \ra ->
-                td $ do
-                    bl <- rbl
-                    f <- qBindingsLetExpr bl
-                    remonadRefNotation
-                        (\se -> do
-                             bmap <- runSourcePos spos f
-                             withNewBindings bmap se) $
-                        td ra
+    readDeclarations
 
-readTopLetBindings ::
-       HasPinaforeEntityEdit baseedit
-    => Parser (PinaforeScoped baseedit (Transform (PinaforeScoped baseedit) (PinaforeScoped baseedit)))
-readTopLetBindings = do
-    sf <- readLetBindings
-    return $ do
-        MkTransform f <- sf
-        return $ MkTransform $ \a -> runRefNotation $ f $ liftRefNotation a
+readTopDeclarations :: HasPinaforeEntityEdit baseedit => Parser (SyntaxTopDeclarations baseedit)
+readTopDeclarations = do
+    spos <- getPosition
+    sdecls <- readLetBindings
+    return $ MkSyntaxTopDeclarations spos sdecls
+
+readSourcePos :: Parser (SyntaxExpression' baseedit) -> Parser (SyntaxExpression baseedit)
+readSourcePos p = do
+    spos <- getPosition
+    expr' <- p
+    return $ MkSyntaxExpression spos expr'
 
 readExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (RefExpression baseedit)
-readExpression = readExpressionInfixed readExpression1
+    => Parser (SyntaxExpression baseedit)
+readExpression = readExpressionInfixed $ readSourcePos readExpression1'
 
-readExpression1 ::
+readExpression1' ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (RefExpression baseedit)
-readExpression1 =
+    => Parser (SyntaxExpression' baseedit)
+readExpression1' =
     (do
-         spos <- getPosition
          readThis TokLambda
          args <- many readPattern
          readThis TokMap
          mval <- readExpression
-         return $ do
-             val <- mval
-             liftRefNotation $ runSourcePos spos $ qAbstractsExpr args val) <|>
+         return $ SEAbstract args mval) <|>
     (do
-         rbmap <- readLetBindings
+         sdecls <- readLetBindings
          readThis TokIn
-         mbody <- readExpression
-         return $ do
-             MkTransform bmap <- liftRefNotation rbmap
-             bmap mbody) <|>
+         sbody <- readExpression
+         return $ SELet sdecls sbody) <|>
     (do
          spos <- getPosition
          readThis TokIf
@@ -127,94 +89,75 @@ readExpression1 =
          methen <- readExpression
          readThis TokElse
          meelse <- readExpression
-         return $ do
-             etest <- metest
-             ethen <- methen
-             eelse <- meelse
-             liftRefNotation $ runSourcePos spos $ qApplyAllExpr (qConstExpr qifthenelse) [etest, ethen, eelse]) <|>
-    readExpression2
+         return $ SEApply (MkSyntaxExpression spos $ SEConst $ toValue qifthenelse) [metest, methen, meelse]) <|>
+    readExpression2'
 
-readExpression2 :: HasPinaforeEntityEdit baseedit => Parser (RefExpression baseedit)
-readExpression2 = do
-    spos <- getPosition
-    te1 <- readExpression3
-    targs <- many readExpression3
-    return $ do
-        e1 <- te1
-        args <- sequence targs
-        liftRefNotation $ runSourcePos spos $ qApplyAllExpr e1 args
-
-makeEntity :: MonadFail m => PinaforeType baseedit 'PositivePolarity t -> Entity -> m t
-makeEntity (ConsPinaforeType (GroundPinaforeSingularType (SimpleEntityPinaforeGroundType t) NilDolanArguments) NilPinaforeType) p =
-    case t of
-        TopSimpleEntityType -> return $ LeftJoinType p
-        NewSimpleEntityType -> return $ LeftJoinType $ MkNewEntity p
-        NamedSimpleEntityType _ -> return $ LeftJoinType $ MkNamedEntity p
-        _ -> fail $ unpack $ "not an open entity type: " <> exprShow t
-makeEntity t _ = fail $ unpack $ "not an open entity type: " <> exprShow t
+readExpression2' :: HasPinaforeEntityEdit baseedit => Parser (SyntaxExpression' baseedit)
+readExpression2' = do
+    sfunc <- readExpression3
+    sargs <- many readExpression3
+    return $ SEApply sfunc sargs
 
 readExpression3 ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (RefExpression baseedit)
-readExpression3 =
+    => Parser (SyntaxExpression baseedit)
+readExpression3 = readSourcePos readExpression3'
+
+readExpression3' ::
+       forall baseedit. HasPinaforeEntityEdit baseedit
+    => Parser (SyntaxExpression' baseedit)
+readExpression3' =
     (do
          b <- readThis TokBool
-         return $ return $ qConstExpr b) <|>
+         return $ SEConst $ toValue b) <|>
     (do
-         spos <- getPosition
          name <- readThis TokName
-         return $ varRefExpr spos name) <|>
+         return $ SEVar name) <|>
     (do
          n <- readThis TokNumber
-         return $ return $ qConstExpr n) <|>
+         return $ SEConst $ toValue n) <|>
     (do
          str <- readThis TokString
-         return $ return $ qConstExpr str) <|>
+         return $ SEConst $ toValue str) <|>
     (do
-         mprop <- readProperty
-         return $ liftRefNotation mprop) <|>
+         readThis TokProperty
+         readThis TokAt
+         sta <- readEntityType3
+         readThis TokAt
+         stb <- readEntityType3
+         anchor <- readThis TokAnchor
+         return $ SEProperty sta stb anchor) <|>
     (do
-         spos <- getPosition
          rexpr <- readBracketed TokOpenBrace TokCloseBrace $ readExpression
-         return $ refNotationQuote spos rexpr) <|>
+         return $ SERef rexpr) <|>
     (do
          readThis TokUnref
          rexpr <- readExpression3
-         return $ refNotationUnquote rexpr) <|>
+         return $ SEUnref rexpr) <|>
     (do
          readThis TokEntity
          readThis TokAt
-         mt <- readType3 @baseedit @('Just 'PositivePolarity)
+         mt <- readEntityType3
          anchor <- readThis TokAnchor
-         return $
-             liftRefNotation $ do
-                 SingleMPolarType (MkAnyW tp) <- mt
-                 pt <- makeEntity tp $ MkEntity anchor
-                 return $ qConstExprAny $ MkAnyValue tp pt) <|>
+         return $ SEEntity mt anchor) <|>
     (readParen $
      (do
-          spos <- getPosition
           name <- readThis TokOperator
-          return $ varRefExpr spos name) <|>
+          return $ SEVar name) <|>
      (do
-          spos <- getPosition
-          ce1 <- readExpression
-          mce2 <-
+          sexpr1@(MkSyntaxExpression _ sexpr1') <- readExpression
+          msexpr2 <-
               optional $ do
                   readThis TokComma
                   readExpression
-          case mce2 of
-              Just ce2 ->
-                  return $ do
-                      e1 <- ce1
-                      e2 <- ce2
-                      liftRefNotation $
-                          runSourcePos spos $
-                          qApplyAllExpr (qConstExpr ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))) [e1, e2]
-              Nothing -> return ce1)) <|>
+          case msexpr2 of
+              Just sexpr2 -> do
+                  sfun <-
+                      readSourcePos $ return $ SEConst $ toValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
+                  return $ SEApply sfun [sexpr1, sexpr2]
+              Nothing -> return sexpr1')) <|>
     (do
-         spos <- getPosition
-         mexprs <-
+         sexprs <-
              readBracketed TokOpenBracket TokCloseBracket $
              (do
                   expr1 <- readExpression
@@ -224,15 +167,13 @@ readExpression3 =
                           readExpression
                   return $ expr1 : exprs) <|>
              return []
-         return $ do
-             exprs <- sequence mexprs
-             liftRefNotation $ runSourcePos spos $ qSequenceExpr exprs) <?>
+         return $ SEList sexprs) <?>
     "expression"
 
 readTopExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (PinaforeScoped baseedit (QExpr baseedit))
+    => Parser (SyntaxExpression baseedit)
 readTopExpression = do
-    rexpr <- readExpression
+    sexpr <- readExpression
     eof
-    return $ runRefNotation rexpr
+    return sexpr
