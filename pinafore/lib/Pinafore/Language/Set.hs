@@ -154,7 +154,9 @@ pinaforeSetFunc ::
     -> PinaforeReference baseedit '( TopType, b)
 pinaforeSetFunc f set = pinaforeFunctionToReference $ funcEditFunction (Known . f) . pinaforeSetFunctionValue set
 
-setSumLens :: forall a b. EditLens (PairEdit (FiniteSetEdit a) (FiniteSetEdit b)) (FiniteSetEdit (Either a b))
+setSumLens ::
+       forall a b. (Eq a, Eq b)
+    => EditLens (PairEdit (FiniteSetEdit a) (FiniteSetEdit b)) (FiniteSetEdit (Either a b))
 setSumLens = let
     efGet :: ReadFunctionT IdentityT (PairEditReader (FiniteSetEdit a) (FiniteSetEdit b)) (FiniteSetReader (Either a b))
     efGet mr KeyReadKeys =
