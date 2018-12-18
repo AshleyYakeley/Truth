@@ -66,3 +66,67 @@ data SyntaxExpression baseedit =
 data SyntaxTopDeclarations baseedit =
     MkSyntaxTopDeclarations SourcePos
                             (SyntaxDeclarations baseedit)
+
+class SyntaxFreeVariables t where
+    syntaxFreeVariables :: t -> FiniteSet Name
+
+instance SyntaxFreeVariables t => SyntaxFreeVariables [t] where
+    syntaxFreeVariables tt = mconcat $ fmap syntaxFreeVariables tt
+
+instance SyntaxFreeVariables (SyntaxExpression baseedit) where
+    syntaxFreeVariables (MkSyntaxExpression _ e) = syntaxFreeVariables e
+
+instance SyntaxFreeVariables (SyntaxExpression' baseedit) where
+    syntaxFreeVariables (SEConst _) = mempty
+    syntaxFreeVariables (SEVar name) = opoint name
+    syntaxFreeVariables (SEApply f args) = union (syntaxFreeVariables f) (syntaxFreeVariables args)
+    syntaxFreeVariables (SEAbstract pats expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pats)
+    syntaxFreeVariables (SERef expr) = syntaxFreeVariables expr
+    syntaxFreeVariables (SEUnref expr) = syntaxFreeVariables expr
+    syntaxFreeVariables (SELet binds expr) =
+        difference (syntaxFreeVariables binds <> syntaxFreeVariables expr) (syntaxBindingVariables binds)
+    syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
+    syntaxFreeVariables (SEProperty _ _ _) = mempty
+    syntaxFreeVariables (SEEntity _ _) = mempty
+
+instance SyntaxFreeVariables (SyntaxBinding baseedit) where
+    syntaxFreeVariables (MkSyntaxBinding _ _ pats expr) =
+        difference (syntaxFreeVariables expr) (syntaxBindingVariables pats)
+
+instance SyntaxFreeVariables (SyntaxDeclarations baseedit) where
+    syntaxFreeVariables (MkSyntaxDeclarations _ binds) = syntaxFreeVariables binds
+
+class SyntaxBindingVariables t where
+    syntaxBindingVariables :: t -> FiniteSet Name
+
+instance SyntaxBindingVariables t => SyntaxBindingVariables [t] where
+    syntaxBindingVariables tt = mconcat $ fmap syntaxBindingVariables tt
+
+instance SyntaxBindingVariables SyntaxPattern where
+    syntaxBindingVariables (MkSyntaxPattern name) = singletonSet name
+
+instance SyntaxBindingVariables (SyntaxDeclarations baseedit) where
+    syntaxBindingVariables (MkSyntaxDeclarations _ binds) = syntaxBindingVariables binds
+
+instance SyntaxBindingVariables (SyntaxBinding baseedit) where
+    syntaxBindingVariables (MkSyntaxBinding _ name _ _) = singletonSet name
+
+checkSyntaxBindingsDuplicates :: MonadFail m => [SyntaxBinding baseedit] -> m ()
+checkSyntaxBindingsDuplicates = let
+    duplicates ::
+           forall a. Eq a
+        => [a]
+        -> [a]
+    duplicates [] = []
+    duplicates (a:aa)
+        | elem a aa = a : duplicates aa
+    duplicates (_:aa) = duplicates aa
+    checkDuplicates ::
+           forall m name. (Show name, Eq name, MonadFail m)
+        => [name]
+        -> m ()
+    checkDuplicates nn =
+        case nub $ duplicates nn of
+            [] -> return ()
+            b -> fail $ "duplicate bindings: " <> (intercalate ", " $ fmap show b)
+    in checkDuplicates . fmap (\(MkSyntaxBinding _ name _ _) -> name)

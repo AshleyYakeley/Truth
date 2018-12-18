@@ -106,20 +106,14 @@ tsSingleBinding ::
     -> TSBindings ts
 tsSingleBinding = singleBinding
 
-tsUncheckedLet ::
+tsUncheckedComponentLet ::
        forall ts. (Ord (TSName ts), TypeSystem ts)
     => TSBindings ts
     -> TSScoped ts (StrictMap (TSName ts) (TSSealedExpression ts))
-tsUncheckedLet = bindingsLetSealedExpression @(TSRenamer ts) @(TSUnifier ts)
+tsUncheckedComponentLet = bindingsComponentLetSealedExpression @(TSRenamer ts) @(TSUnifier ts)
 
 tsValuesLet ::
        forall ts. (Ord (TSName ts), TypeSystem ts)
     => StrictMap (TSName ts) (TSValue ts)
     -> StrictMap (TSName ts) (TSSealedExpression ts)
 tsValuesLet = valuesLetSealedExpression @(TSUnifier ts)
-
-tsBindingsCheckDuplicates ::
-       forall ts m. (Show (TSName ts), TypeSystem ts, MonadFail m)
-    => TSBindings ts
-    -> m ()
-tsBindingsCheckDuplicates = bindingsCheckDuplicates

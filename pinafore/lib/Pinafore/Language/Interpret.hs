@@ -3,6 +3,7 @@ module Pinafore.Language.Interpret
     , interpretTopDeclarations
     ) where
 
+import Data.Graph
 import Pinafore.Base
 import Pinafore.Language.EntityType
 import Pinafore.Language.Expression
@@ -23,6 +24,46 @@ interpretExpression ::
     -> RefExpression baseedit
 interpretExpression (MkSyntaxExpression spos sexpr) = interpretExpression' spos sexpr
 
+getBindingNode :: SyntaxBinding baseedit -> (SyntaxBinding baseedit, Name, [Name])
+getBindingNode b@(MkSyntaxBinding _ n _ _) = (b, n, setToList $ syntaxFreeVariables b)
+
+-- | Group bindings into a topologically-sorted list of strongly-connected components
+clumpBindings :: [SyntaxBinding baseedit] -> [[SyntaxBinding baseedit]]
+clumpBindings bb = fmap flattenSCC $ stronglyConnComp $ fmap getBindingNode bb
+
+interpretLetBindingsClump ::
+       HasPinaforeEntityEdit baseedit
+    => SourcePos
+    -> [SyntaxBinding baseedit]
+    -> RefNotation baseedit a
+    -> RefNotation baseedit a
+interpretLetBindingsClump spos sbinds ra = do
+    bl <- interpretBindings sbinds
+    remonadRefNotation
+        (\se -> do
+             bmap <- runSourcePos spos $ qUncheckedBindingsComponentLetExpr bl
+             withNewBindings bmap se) $
+        ra
+
+interpretLetBindingss ::
+       HasPinaforeEntityEdit baseedit
+    => SourcePos
+    -> [[SyntaxBinding baseedit]]
+    -> RefNotation baseedit a
+    -> RefNotation baseedit a
+interpretLetBindingss _ [] ra = ra
+interpretLetBindingss spos (b:bb) ra = interpretLetBindingsClump spos b $ interpretLetBindingss spos bb ra
+
+interpretLetBindings ::
+       HasPinaforeEntityEdit baseedit
+    => SourcePos
+    -> [SyntaxBinding baseedit]
+    -> RefNotation baseedit a
+    -> RefNotation baseedit a
+interpretLetBindings spos sbinds ra = do
+    checkSyntaxBindingsDuplicates sbinds
+    interpretLetBindingss spos (clumpBindings sbinds) ra
+
 interpretDeclarations ::
        HasPinaforeEntityEdit baseedit
     => SourcePos
@@ -30,16 +71,7 @@ interpretDeclarations ::
     -> PinaforeScoped baseedit (Transform (RefNotation baseedit) (RefNotation baseedit))
 interpretDeclarations spos (MkSyntaxDeclarations stypedecls sbinds) = do
     MkTypeDecls td <- stypedecls
-    return $
-        MkTransform $ \ra ->
-            td $ do
-                bl <- interpretBindings sbinds
-                f <- qBindingsLetExpr bl
-                remonadRefNotation
-                    (\se -> do
-                         bmap <- runSourcePos spos f
-                         withNewBindings bmap se) $
-                    td ra
+    return $ MkTransform $ \ra -> td $ interpretLetBindings spos sbinds $ td ra
 
 interpretExpression' ::
        forall baseedit. HasPinaforeEntityEdit baseedit

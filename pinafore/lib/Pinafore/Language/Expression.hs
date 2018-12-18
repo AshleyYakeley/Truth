@@ -70,17 +70,9 @@ qBindVal name val = qBindExpr name $ qConstExpr val
 qLetExpr :: forall baseedit. Name -> QExpr baseedit -> QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit)
 qLetExpr name exp body = tsLet @(PinaforeTypeSystem baseedit) name exp body
 
-qBindingsLetExpr ::
-       forall baseedit m. MonadFail m
-    => QBindings baseedit
-    -> m (PinaforeSourceScoped baseedit (StrictMap Name (QExpr baseedit)))
-qBindingsLetExpr b = do
-    tsBindingsCheckDuplicates @(PinaforeTypeSystem baseedit) b
-    return $ qUncheckedBindingsLetExpr b
-
-qUncheckedBindingsLetExpr ::
+qUncheckedBindingsComponentLetExpr ::
        forall baseedit. QBindings baseedit -> PinaforeSourceScoped baseedit (StrictMap Name (QExpr baseedit))
-qUncheckedBindingsLetExpr = tsUncheckedLet @(PinaforeTypeSystem baseedit)
+qUncheckedBindingsComponentLetExpr = tsUncheckedComponentLet @(PinaforeTypeSystem baseedit)
 
 qValuesLetExpr :: forall baseedit. StrictMap Name (QValue baseedit) -> StrictMap Name (QExpr baseedit)
 qValuesLetExpr = tsValuesLet @(PinaforeTypeSystem baseedit)
