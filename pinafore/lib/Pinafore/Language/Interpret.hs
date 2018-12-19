@@ -14,6 +14,7 @@ import Pinafore.Language.NamedEntity
 import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
+import Pinafore.Language.Type.Subsume
 import Shapes
 
 interpretPattern :: SyntaxPattern -> Name
@@ -132,11 +133,22 @@ makeEntity (SimpleEntityType NewSimpleEntityType) p = return $ MkNewEntity p
 makeEntity (SimpleEntityType (NamedSimpleEntityType _)) p = return $ MkNamedEntity p
 makeEntity t _ = fail $ "not an open entity type: " <> show t
 
+interpretTypeSignature ::
+       Maybe SyntaxType -> PinaforeExpression baseedit -> PinaforeSourceScoped baseedit (PinaforeExpression baseedit)
+interpretTypeSignature Nothing expr = return expr
+interpretTypeSignature (Just st) expr = do
+    at <- interpretType st
+    subsumeExpression at expr
+
 interpretBinding ::
        HasPinaforeEntityEdit baseedit => SyntaxBinding baseedit -> RefNotation baseedit (QBindings baseedit)
-interpretBinding (MkSyntaxBinding spos _mtype name sargs sexpr) = do
+interpretBinding (MkSyntaxBinding spos mtype name sargs sexpr) = do
     val <- interpretExpression sexpr
-    expr <- liftRefNotation $ runSourcePos spos $ qAbstractsExpr (fmap interpretPattern sargs) val
+    expr <-
+        liftRefNotation $
+        runSourcePos spos $ do
+            expr <- qAbstractsExpr (fmap interpretPattern sargs) val
+            interpretTypeSignature mtype expr
     return $ qBindExpr name expr
 
 interpretBindings ::

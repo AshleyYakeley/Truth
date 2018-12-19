@@ -316,15 +316,15 @@ testQueries =
         , testGroup
               "type signature"
               [ testQuery "let i :: a -> a; i x = x in i 3" $ Just $ showText "3"
-              , testQuery "let i :: Int -> Int; i x = x in i 3" $ Just $ showText "3"
+              , testQuery "let i :: Number -> Number; i x = x in i 3" $ Just $ showText "3"
               , testQuery "let i :: Text -> Text; i x = x in i 3" $ Nothing
               , testQuery "let i :: a -> a; i x = x in i \"t\"" $ Nothing
-              , testQuery "let i :: Int -> Int; i x = x in i \"t\"" $ Nothing
+              , testQuery "let i :: Number -> Number; i x = x in i \"t\"" $ Nothing
               , testQuery "let i :: Text -> Text; i x = x in i \"t\"" $ Just $ showText "t"
               , testQuery "let i :: a -> a; i x = x in 0" $ Just $ showText "0"
-              , testQuery "let i :: a -> Int; i x = x in 0" $ Nothing
-              , testQuery "let i :: Int -> a; i x = x in 0" $ Nothing
-              , testQuery "let i :: Int -> Int; i x = x in 0" $ Just $ showText "0"
+              , testQuery "let i :: a -> Number; i x = x in 0" $ Nothing
+              , testQuery "let i :: Number -> a; i x = x in 0" $ Nothing
+              , testQuery "let i :: Number -> Number; i x = x in 0" $ Just $ showText "0"
               ]
         ]
 
