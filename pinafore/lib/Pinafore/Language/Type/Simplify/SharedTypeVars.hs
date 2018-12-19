@@ -1,5 +1,6 @@
 module Pinafore.Language.Type.Simplify.SharedTypeVars
-    ( mergeSharedTypeVarsInExpression
+    ( mergeSharedTypeVarsInType
+    , mergeSharedTypeVarsInExpression
     ) where
 
 import Language.Expression.Dolan
@@ -87,6 +88,24 @@ findShare uses = let
     goodpair :: (a, a) -> Bool
     goodpair pair = all (gooduse pair) uses
     in find goodpair pairs
+
+mergeSharedTypeVarsInType ::
+       forall baseedit polarity t. IsTypePolarity polarity
+    => PinaforeType baseedit polarity t
+    -> PinaforeTypeF baseedit polarity t
+mergeSharedTypeVarsInType t = let
+    (posuses, neguses) = getExpressionVarUses t
+    in case findShare posuses <|> findShare neguses of
+           Just (MkAnyW (va :: SymbolWitness na), MkAnyW (vb :: SymbolWitness nb)) -> let
+               varBij :: Bijection (UVar na) (UVar nb)
+               varBij = unsafeUVarBijection
+               bisub =
+                   MkBisubstitution
+                       vb
+                       (contramap (biBackwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
+                       (fmap (biForwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
+               in chainTypeF mergeSharedTypeVarsInType $ bisubstituteType bisub t
+           Nothing -> mkTypeF t
 
 mergeSharedTypeVarsInExpression :: forall baseedit. PinaforeExpression baseedit -> PinaforeExpression baseedit
 mergeSharedTypeVarsInExpression expr = let

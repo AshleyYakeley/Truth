@@ -1,5 +1,6 @@
 module Pinafore.Language.Type.Simplify.OneSidedTypeVars
-    ( eliminateOneSidedTypeVarsInExpression
+    ( eliminateOneSidedTypeVarsInType
+    , eliminateOneSidedTypeVarsInExpression
     ) where
 
 import Language.Expression.Dolan
@@ -53,6 +54,25 @@ instance GetExpressionVars (NamedExpression name (PinaforeType baseedit 'Negativ
 
 instance GetExpressionVars (PinaforeExpression baseedit) where
     getExpressionVars (MkSealedExpression twt expr) = getExpressionVars twt <> getExpressionVars expr
+
+eliminateOneSidedTypeVarsInType ::
+       forall baseedit polarity t. IsTypePolarity polarity
+    => PinaforeType baseedit polarity t
+    -> PinaforeTypeF baseedit polarity t
+eliminateOneSidedTypeVarsInType t = let
+    (setFromList -> posvars, setFromList -> negvars) = getExpressionVars t
+    posonlyvars :: FiniteSet _
+    posonlyvars = difference posvars negvars
+    negonlyvars :: FiniteSet _
+    negonlyvars = difference negvars posvars
+    mkbisub :: AnyW SymbolWitness -> PinaforeBisubstitution baseedit
+    mkbisub (MkAnyW vn) =
+        MkBisubstitution
+            vn
+            (contramap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
+            (fmap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
+    bisubs = toList $ fmap mkbisub $ posonlyvars <> negonlyvars
+    in bisubstitutesType bisubs t
 
 eliminateOneSidedTypeVarsInExpression :: forall baseedit. PinaforeExpression baseedit -> PinaforeExpression baseedit
 eliminateOneSidedTypeVarsInExpression expr = let

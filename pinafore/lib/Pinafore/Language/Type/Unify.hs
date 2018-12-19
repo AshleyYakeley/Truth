@@ -216,6 +216,14 @@ bisubstituteType =
         Left Refl -> bisubstitutePositiveType
         Right Refl -> bisubstituteNegativeType
 
+bisubstitutesType ::
+       forall baseedit polarity t. IsTypePolarity polarity
+    => [PinaforeBisubstitution baseedit]
+    -> PinaforeType baseedit polarity t
+    -> PinaforeTypeF baseedit polarity t
+bisubstitutesType [] t = mkTypeF t
+bisubstitutesType (sub:subs) t = chainTypeF (bisubstitutesType subs) $ bisubstituteType sub t
+
 bisubstitutePositiveVar ::
        SymbolWitness name
     -> PinaforeType baseedit 'PositivePolarity t

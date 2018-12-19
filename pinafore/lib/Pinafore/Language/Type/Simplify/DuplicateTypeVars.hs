@@ -1,5 +1,6 @@
 module Pinafore.Language.Type.Simplify.DuplicateTypeVars
-    ( mergeDuplicateTypeVarsInTypes
+    ( mergeDuplicateTypeVarsInType
+    , mergeDuplicateTypeVarsInExpression
     ) where
 
 import Language.Expression.Dolan
@@ -19,7 +20,7 @@ mergeInSingularType ::
     => PinaforeSingularType baseedit polarity t
     -> TypeF (PinaforeSingularType baseedit) polarity t
 mergeInSingularType (GroundPinaforeSingularType gt args) =
-    case mapDolanArguments mergeInType (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args of
+    case mapDolanArguments mergeDuplicateTypeVarsInType (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args of
         MkTypeF args' conv -> MkTypeF (GroundPinaforeSingularType gt args') conv
 mergeInSingularType t = mkTypeF t
 
@@ -52,19 +53,19 @@ mergeInNegativeSingularType ts (ConsPinaforeType t1 tr) =
             MkTypeF (ConsPinaforeType t1 tsr) $ \(MkMeetType (a, b)) ->
                 MkMeetType (meet1 $ conv b, MkMeetType (a, meet2 $ conv b))
 
-mergeInType ::
+mergeDuplicateTypeVarsInType ::
        forall baseedit polarity t. IsTypePolarity polarity
     => PinaforeType baseedit polarity t
     -> PinaforeTypeF baseedit polarity t
-mergeInType NilPinaforeType = mkTypeF NilPinaforeType
-mergeInType (ConsPinaforeType t1 tr) =
+mergeDuplicateTypeVarsInType NilPinaforeType = mkTypeF NilPinaforeType
+mergeDuplicateTypeVarsInType (ConsPinaforeType t1 tr) =
     case mergeInSingularType t1 of
         MkTypeF t1' conv1 ->
-            case mergeInType tr of
+            case mergeDuplicateTypeVarsInType tr of
                 MkTypeF tr' convr ->
                     case whichTypePolarity @polarity of
                         Left Refl -> contramap (joinBimap conv1 convr) $ mergeInPositiveSingularType t1' tr'
                         Right Refl -> fmap (meetBimap conv1 convr) $ mergeInNegativeSingularType t1' tr'
 
-mergeDuplicateTypeVarsInTypes :: PinaforeExpression baseedit -> PinaforeExpression baseedit
-mergeDuplicateTypeVarsInTypes = mapSealedExpressionTypes mergeInType mergeInType
+mergeDuplicateTypeVarsInExpression :: PinaforeExpression baseedit -> PinaforeExpression baseedit
+mergeDuplicateTypeVarsInExpression = mapSealedExpressionTypes mergeDuplicateTypeVarsInType mergeDuplicateTypeVarsInType

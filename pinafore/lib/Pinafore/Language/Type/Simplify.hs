@@ -1,7 +1,9 @@
 module Pinafore.Language.Type.Simplify
-    ( pinaforeSimplifyExpressionType
+    ( pinaforeSimplifyType
+    , pinaforeSimplifyExpressionType
     ) where
 
+import Language.Expression.Dolan
 import Pinafore.Language.Type.Simplify.DuplicateGroundTypes
 import Pinafore.Language.Type.Simplify.DuplicateTypeVars
 import Pinafore.Language.Type.Simplify.OneSidedTypeVars
@@ -25,5 +27,15 @@ import Shapes
 -- e.g. "a|a" => "a"
 pinaforeSimplifyExpressionType :: forall baseedit. PinaforeExpression baseedit -> PinaforeExpression baseedit
 pinaforeSimplifyExpressionType =
-    mergeDuplicateTypeVarsInTypes .
-    mergeSharedTypeVarsInExpression . eliminateOneSidedTypeVarsInExpression . mergeDuplicateGroundTypesInTypes
+    mergeDuplicateTypeVarsInExpression .
+    mergeSharedTypeVarsInExpression . eliminateOneSidedTypeVarsInExpression . mergeDuplicateGroundTypesInExpression
+
+-- | This is used for type signatures
+pinaforeSimplifyType ::
+       forall baseedit polarity t. IsTypePolarity polarity
+    => PinaforeType baseedit polarity t
+    -> PinaforeTypeF baseedit polarity t
+pinaforeSimplifyType t =
+    chainTypeF mergeDuplicateTypeVarsInType $
+    chainTypeF mergeSharedTypeVarsInType $
+    chainTypeF eliminateOneSidedTypeVarsInType $ mergeDuplicateGroundTypesInType t
