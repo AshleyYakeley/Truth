@@ -83,6 +83,7 @@ library:
       - Pinafore.Language.Type.Simplify.DuplicateTypeVars
       - Pinafore.Language.Type.Simplify
       - Pinafore.Language.Type.Unify
+      - Pinafore.Language.Type.Subsume
       - Pinafore.Language.Type
       - Pinafore.Language.EntityType
       - Pinafore.Language.Syntax
@@ -95,6 +96,7 @@ library:
       - Pinafore.Language.Read.Expression
       - Pinafore.Language.Read.Interactive
       - Pinafore.Language.Read
+      - Pinafore.Language.Interpret.Type
       - Pinafore.Language.Interpret
       - Pinafore.Language.Expression
       - Pinafore.Language.Convert

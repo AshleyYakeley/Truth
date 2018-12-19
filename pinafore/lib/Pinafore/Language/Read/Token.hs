@@ -15,6 +15,7 @@ import Text.Parsec.String
 data Token t where
     TokSemicolon :: Token ()
     TokComma :: Token ()
+    TokTypeJudge :: Token ()
     TokOpenParen :: Token ()
     TokCloseParen :: Token ()
     TokOpenBracket :: Token ()
@@ -46,6 +47,7 @@ data Token t where
 instance TestEquality Token where
     testEquality TokSemicolon TokSemicolon = Just Refl
     testEquality TokComma TokComma = Just Refl
+    testEquality TokTypeJudge TokTypeJudge = Just Refl
     testEquality TokOpenParen TokOpenParen = Just Refl
     testEquality TokCloseParen TokCloseParen = Just Refl
     testEquality TokOpenBracket TokOpenBracket = Just Refl
@@ -78,6 +80,7 @@ instance TestEquality Token where
 instance Show (Token t) where
     show TokSemicolon = ";"
     show TokComma = ","
+    show TokTypeJudge = "::"
     show TokOpenParen = "("
     show TokCloseParen = ")"
     show TokOpenBracket = "["
@@ -214,6 +217,7 @@ readOpToken = do
         satisfy $ \c ->
             elem c ("!$%&*+./<=>?@\\^|-~:" :: String) || (not (isAscii c) && (isSymbol c || isPunctuation c))
     case name of
+        "::" -> return $ MkAnyValue TokTypeJudge ()
         "\\" -> return $ MkAnyValue TokLambda ()
         "=" -> return $ MkAnyValue TokAssign ()
         "->" -> return $ MkAnyValue TokMap ()

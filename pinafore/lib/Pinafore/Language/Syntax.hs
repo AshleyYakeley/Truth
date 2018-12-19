@@ -1,7 +1,6 @@
 module Pinafore.Language.Syntax where
 
 import Pinafore.Base
-import Pinafore.Language.EntityType
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
 import Pinafore.Language.Read.RefNotation
@@ -32,8 +31,37 @@ instance Monoid (SyntaxDeclarations baseedit) where
 typeSyntaxDeclarations :: PinaforeScoped baseedit (TypeDecls baseedit) -> SyntaxDeclarations baseedit
 typeSyntaxDeclarations td = MkSyntaxDeclarations td mempty
 
+data SyntaxVariance
+    = CoSyntaxVariance
+    | ContraSyntaxVariance
+
+data SyntaxType
+    = ConstSyntaxType Name
+    | VarSyntaxType Name
+    | UnitSyntaxType
+    | OrderSyntaxType SyntaxType
+    | RefSyntaxType SyntaxType
+    | SetSyntaxType SyntaxType
+    | ListSyntaxType SyntaxType
+    | MorphismSyntaxType SyntaxType
+                         SyntaxType
+    | FunctionSyntaxType SyntaxType
+                         SyntaxType
+    | EitherSyntaxType SyntaxType
+                       SyntaxType
+    | PairSyntaxType SyntaxType
+                     SyntaxType
+    | RangeSyntaxType [(Maybe SyntaxVariance, SyntaxType)]
+    | OrSyntaxType SyntaxType
+                   SyntaxType
+    | AndSyntaxType SyntaxType
+                    SyntaxType
+    | TopSyntaxType
+    | BottomSyntaxType
+
 data SyntaxBinding baseedit =
     MkSyntaxBinding SourcePos
+                    (Maybe SyntaxType)
                     Name
                     [SyntaxPattern]
                     (SyntaxExpression baseedit)
@@ -53,10 +81,10 @@ data SyntaxExpression' baseedit
     | SELet (SyntaxDeclarations baseedit)
             (SyntaxExpression baseedit)
     | SEList [SyntaxExpression baseedit]
-    | SEProperty (PinaforeScoped baseedit (AnyW EntityType))
-                 (PinaforeScoped baseedit (AnyW EntityType))
+    | SEProperty SyntaxType
+                 SyntaxType
                  Anchor
-    | SEEntity (PinaforeScoped baseedit (AnyW EntityType))
+    | SEEntity SyntaxType
                Anchor
 
 data SyntaxExpression baseedit =
@@ -90,7 +118,7 @@ instance SyntaxFreeVariables (SyntaxExpression' baseedit) where
     syntaxFreeVariables (SEEntity _ _) = mempty
 
 instance SyntaxFreeVariables (SyntaxBinding baseedit) where
-    syntaxFreeVariables (MkSyntaxBinding _ _ pats expr) =
+    syntaxFreeVariables (MkSyntaxBinding _ _ _ pats expr) =
         difference (syntaxFreeVariables expr) (syntaxBindingVariables pats)
 
 instance SyntaxFreeVariables (SyntaxDeclarations baseedit) where
@@ -109,7 +137,7 @@ instance SyntaxBindingVariables (SyntaxDeclarations baseedit) where
     syntaxBindingVariables (MkSyntaxDeclarations _ binds) = syntaxBindingVariables binds
 
 instance SyntaxBindingVariables (SyntaxBinding baseedit) where
-    syntaxBindingVariables (MkSyntaxBinding _ name _ _) = singletonSet name
+    syntaxBindingVariables (MkSyntaxBinding _ _ name _ _) = singletonSet name
 
 checkSyntaxBindingsDuplicates :: MonadFail m => [SyntaxBinding baseedit] -> m ()
 checkSyntaxBindingsDuplicates = let
@@ -129,4 +157,4 @@ checkSyntaxBindingsDuplicates = let
         case nub $ duplicates nn of
             [] -> return ()
             b -> fail $ "duplicate bindings: " <> (intercalate ", " $ fmap show b)
-    in checkDuplicates . fmap (\(MkSyntaxBinding _ name _ _) -> name)
+    in checkDuplicates . fmap (\(MkSyntaxBinding _ _ name _ _) -> name)

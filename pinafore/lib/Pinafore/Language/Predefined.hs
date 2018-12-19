@@ -247,7 +247,7 @@ predefinitions =
               "Lists"
               ""
               [ mkDefEntry ":" "Construct a list" $ (:) @A
-              , mkDefEntry "list" "Eliminate an list" $ \(fnil :: B) fcons (l :: [A]) ->
+              , mkDefEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                     case l of
                         [] -> fnil
                         (a:aa) -> fcons a aa

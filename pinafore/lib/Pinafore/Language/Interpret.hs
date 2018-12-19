@@ -7,6 +7,7 @@ import Data.Graph
 import Pinafore.Base
 import Pinafore.Language.EntityType
 import Pinafore.Language.Expression
+import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Morphism
 import Pinafore.Language.Name
 import Pinafore.Language.NamedEntity
@@ -25,7 +26,7 @@ interpretExpression ::
 interpretExpression (MkSyntaxExpression spos sexpr) = interpretExpression' spos sexpr
 
 getBindingNode :: SyntaxBinding baseedit -> (SyntaxBinding baseedit, Name, [Name])
-getBindingNode b@(MkSyntaxBinding _ n _ _) = (b, n, setToList $ syntaxFreeVariables b)
+getBindingNode b@(MkSyntaxBinding _ _ n _ _) = (b, n, setToList $ syntaxFreeVariables b)
 
 -- | Group bindings into a topologically-sorted list of strongly-connected components
 clumpBindings :: [SyntaxBinding baseedit] -> [[SyntaxBinding baseedit]]
@@ -96,10 +97,10 @@ interpretExpression' _ (SEUnref sexpr) = refNotationUnquote $ interpretExpressio
 interpretExpression' spos (SEList sexprs) = do
     exprs <- for sexprs interpretExpression
     liftRefNotation $ runSourcePos spos $ qSequenceExpr exprs
-interpretExpression' _ (SEProperty sta stb anchor) =
+interpretExpression' spos (SEProperty sta stb anchor) =
     liftRefNotation $ do
-        MkAnyW eta <- sta
-        MkAnyW etb <- stb
+        MkAnyW eta <- runSourcePos spos $ interpretEntityType sta
+        MkAnyW etb <- runSourcePos spos $ interpretEntityType stb
         let
             bta = biTypeF (entityTypeToType eta, entityTypeToType eta)
             btb = biTypeF (entityTypeToType etb, entityTypeToType etb)
@@ -116,9 +117,9 @@ interpretExpression' _ (SEProperty sta stb anchor) =
                            pinamorphism = MkPinaforeMorphism pra prb morphism
                            anyval = toTypeFAnyValue typef pinamorphism
                            in return $ qConstExprAny anyval
-interpretExpression' _ (SEEntity st anchor) =
+interpretExpression' spos (SEEntity st anchor) =
     liftRefNotation $ do
-        MkAnyW tp <- st
+        MkAnyW tp <- runSourcePos spos $ interpretEntityType st
         pt <- makeEntity tp $ MkEntity anchor
         let
             typef = entityTypeToType tp
@@ -133,7 +134,7 @@ makeEntity t _ = fail $ "not an open entity type: " <> show t
 
 interpretBinding ::
        HasPinaforeEntityEdit baseedit => SyntaxBinding baseedit -> RefNotation baseedit (QBindings baseedit)
-interpretBinding (MkSyntaxBinding spos name sargs sexpr) = do
+interpretBinding (MkSyntaxBinding spos _mtype name sargs sexpr) = do
     val <- interpretExpression sexpr
     expr <- liftRefNotation $ runSourcePos spos $ qAbstractsExpr (fmap interpretPattern sargs) val
     return $ qBindExpr name expr

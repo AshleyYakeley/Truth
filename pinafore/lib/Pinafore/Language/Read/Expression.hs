@@ -20,14 +20,33 @@ readPattern = do
     name <- readThis TokName
     return $ MkSyntaxPattern name
 
+readTypeSignature :: Parser SyntaxType
+readTypeSignature = do
+    readThis TokTypeJudge
+    readType
+
+readBindingRest :: HasPinaforeEntityEdit baseedit => Parser ([SyntaxPattern], SyntaxExpression baseedit)
+readBindingRest = do
+    args <- many readPattern
+    readThis TokAssign
+    rval <- readExpression
+    return (args, rval)
+
 readBinding :: HasPinaforeEntityEdit baseedit => Parser (SyntaxBinding baseedit)
 readBinding = do
     spos <- getPosition
     name <- readThis TokName
-    args <- many readPattern
-    readThis TokAssign
-    rval <- readExpression
-    return $ MkSyntaxBinding spos name args rval
+    (do
+         tp <- readTypeSignature
+         readThis TokSemicolon
+         name' <- readThis TokName
+         (args, rval) <- readBindingRest
+         if name == name'
+             then return $ MkSyntaxBinding spos (Just tp) name' args rval
+             else fail $ "type signature name " <> show name <> " does not match definition for " <> show name') <|>
+        (do
+             (args, rval) <- readBindingRest
+             return $ MkSyntaxBinding spos Nothing name args rval)
 
 readDeclaration :: HasPinaforeEntityEdit baseedit => Parser (SyntaxDeclarations baseedit)
 readDeclaration =
@@ -122,9 +141,9 @@ readExpression3' =
     (do
          readThis TokProperty
          readThis TokAt
-         sta <- readEntityType3
+         sta <- readType3
          readThis TokAt
-         stb <- readEntityType3
+         stb <- readType3
          anchor <- readThis TokAnchor
          return $ SEProperty sta stb anchor) <|>
     (do
@@ -137,7 +156,7 @@ readExpression3' =
     (do
          readThis TokEntity
          readThis TokAt
-         mt <- readEntityType3
+         mt <- readType3
          anchor <- readThis TokAnchor
          return $ SEEntity mt anchor) <|>
     (readParen $

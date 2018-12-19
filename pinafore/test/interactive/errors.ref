@@ -22,8 +22,8 @@ error: "<input>" (line 2, column 1): undefined: a
 pinafore> p
 error: "<input>" (line 2, column 1): undefined: q
 pinafore> entity @X !"x"
-error: "<input>" (line 2, column 9): unknown type: X
+error: "<input>" (line 1, column 1): unknown type: X
 pinafore> let y = entity @Y !"y"
 pinafore> 35
-error: "<input>" (line 2, column 17): unknown type: Y
+error: "<input>" (line 2, column 9): unknown type: Y
 pinafore> <END>

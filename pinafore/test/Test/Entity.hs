@@ -249,7 +249,7 @@ testEntity =
                 "counter := 0 >> someset += 1 >> someset += 1 >> (get (members (orders []) someset) $ \\pp -> for pp $ \\p -> runref {counter := %counter + 1}) >> testeq {1} counter"
               ]
         , testGroup
-              "Types"
+              "types"
               [ pointTest "let opentype T1; p = property @T1 @T1 !\"p\" in pass"
               , pointTest "let opentype T1 in let p = property @T1 @T1 !\"p\" in pass"
               , pointTest "let opentype T1; opentype T2; p = property @T1 @T2 !\"p\" in pass"
