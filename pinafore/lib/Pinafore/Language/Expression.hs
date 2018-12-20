@@ -11,6 +11,7 @@ import Language.Expression.TypeSystem
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Type
+import Pinafore.Language.Type.Subsume ()
 import Shapes
 
 type QExpr baseedit = TSSealedExpression (PinaforeTypeSystem baseedit)
@@ -91,3 +92,10 @@ typedAnyToPinaforeVal ::
 typedAnyToPinaforeVal spos aval =
     case fromTypeF of
         MkTypeF wit conv -> runSourceScoped spos $ fmap conv $ tsAnyToVal @(PinaforeTypeSystem baseedit) wit aval
+
+qSubsumeExpr ::
+       forall baseedit.
+       AnyW (PinaforeType baseedit 'PositivePolarity)
+    -> PinaforeExpression baseedit
+    -> PinaforeSourceScoped baseedit (PinaforeExpression baseedit)
+qSubsumeExpr t expr = tsSubsume @(PinaforeTypeSystem baseedit) t expr

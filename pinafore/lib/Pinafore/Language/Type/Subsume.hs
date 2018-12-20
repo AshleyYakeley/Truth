@@ -1,16 +1,25 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Pinafore.Language.Type.Subsume
-    ( subsumeExpression
+    (
     ) where
 
 import Pinafore.Language.Type
 import Pinafore.Language.Type.Simplify
+import Pinafore.Language.Type.Unify
 import Shapes
 
--- the user's declared type WILL be simplified first
-subsumeExpression ::
-       AnyW (PinaforeType baseedit 'PositivePolarity)
-    -> PinaforeExpression baseedit
-    -> PinaforeSourceScoped baseedit (PinaforeExpression baseedit)
-subsumeExpression (MkAnyW rawdecltype) expr =
-    case pinaforeSimplifyType rawdecltype of
-        MkTypeF _decltype _ -> return expr
+--import Language.Expression.Sealed
+import Language.Expression.Subsumer
+
+pinaforeSubsumePosWitnesses ::
+       PinaforeType baseedit 'PositivePolarity inf
+    -> PinaforeType baseedit 'PositivePolarity decl
+    -> PinaforeUnifierMonad baseedit (PinaforeUnifier baseedit (inf -> decl))
+pinaforeSubsumePosWitnesses _ _ = return undefined
+
+instance Subsumer (PinaforeUnifier baseedit) where
+    subsumePosWitnesses = pinaforeSubsumePosWitnesses
+    simplifyPosType (MkAnyW t) =
+        case pinaforeSimplifyType t of
+            MkTypeF t' _ -> MkAnyW t'

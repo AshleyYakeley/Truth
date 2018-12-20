@@ -14,7 +14,6 @@ import Pinafore.Language.NamedEntity
 import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
-import Pinafore.Language.Type.Subsume
 import Shapes
 
 interpretPattern :: SyntaxPattern -> Name
@@ -138,7 +137,7 @@ interpretTypeSignature ::
 interpretTypeSignature Nothing expr = return expr
 interpretTypeSignature (Just st) expr = do
     at <- interpretType st
-    subsumeExpression at expr
+    qSubsumeExpr at expr
 
 interpretBinding ::
        HasPinaforeEntityEdit baseedit => SyntaxBinding baseedit -> RefNotation baseedit (QBindings baseedit)

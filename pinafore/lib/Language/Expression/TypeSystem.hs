@@ -4,6 +4,7 @@ import Language.Expression.Abstract
 import Language.Expression.Bindings
 import Language.Expression.Renamer
 import Language.Expression.Sealed
+import Language.Expression.Subsumer
 import Language.Expression.Unifier
 import Shapes
 
@@ -117,3 +118,10 @@ tsValuesLet ::
     => StrictMap (TSName ts) (TSValue ts)
     -> StrictMap (TSName ts) (TSSealedExpression ts)
 tsValuesLet = valuesLetSealedExpression @(TSUnifier ts)
+
+tsSubsume ::
+       forall ts. (TypeSystem ts, Subsumer (TSUnifier ts))
+    => AnyW (TSPosWitness ts)
+    -> TSSealedExpression ts
+    -> TSScoped ts (TSSealedExpression ts)
+tsSubsume t expr = runRenamer @(TSRenamer ts) $ subsumeExpression @(TSUnifier ts) t expr

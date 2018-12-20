@@ -1,6 +1,7 @@
 module Language.Expression.Unitype where
 
 import Language.Expression.Renamer
+import Language.Expression.Subsumer
 import Language.Expression.TypeSystem
 import Language.Expression.Unifier
 import Shapes
@@ -52,6 +53,10 @@ instance (Monad m, Eq name) => Unifier (UnitypeUnifier m name val) where
     unifierPosSubstitute () Refl cont = cont Refl id
     unifierNegSubstitute () Refl cont = cont Refl id
     simplifyExpressionType expr = return expr
+
+instance (Monad m, Eq name) => Subsumer (UnitypeUnifier m name val) where
+    subsumePosWitnesses Refl Refl = return $ pure id
+    simplifyPosType = id
 
 class UnitypeValue val where
     applyValue :: val -> val -> val
