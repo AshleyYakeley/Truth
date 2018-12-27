@@ -78,12 +78,14 @@ library:
       - Pinafore.Language.Type.Type
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type.Rename
+      - Pinafore.Language.Type.Bisubstitute
       - Pinafore.Language.Type.Simplify.OneSidedTypeVars
       - Pinafore.Language.Type.Simplify.DuplicateGroundTypes
       - Pinafore.Language.Type.Simplify.SharedTypeVars
       - Pinafore.Language.Type.Simplify.DuplicateTypeVars
       - Pinafore.Language.Type.Simplify
       - Pinafore.Language.Type.Unify
+      - Pinafore.Language.Type.Inverted
       - Pinafore.Language.Type.Subsume
       - Pinafore.Language.Type
       - Pinafore.Language.EntityType

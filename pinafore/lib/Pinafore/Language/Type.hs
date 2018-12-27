@@ -18,14 +18,17 @@ import Pinafore.Language.GroundType
 import Pinafore.Language.Name
 import Pinafore.Language.Scope
 import Pinafore.Language.SimpleEntityType
+import Pinafore.Language.Type.Bisubstitute
+import Pinafore.Language.Type.Rename ()
 import Pinafore.Language.Type.Simplify
+import Pinafore.Language.Type.Subsume
 import Pinafore.Language.Type.Type
 import Pinafore.Language.Type.Unify
 import Shapes
 
 instance Unifier (PinaforeUnifier baseedit) where
     type UnifierName (PinaforeUnifier baseedit) = Name
-    type UnifierMonad (PinaforeUnifier baseedit) = PinaforeUnifierMonad baseedit
+    type UnifierMonad (PinaforeUnifier baseedit) = PinaforeTypeCheck baseedit
     type UnifierNegWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'NegativePolarity
     type UnifierPosWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'PositivePolarity
     type UnifierSubstitutions (PinaforeUnifier baseedit) = [PinaforeBisubstitution baseedit]
@@ -41,6 +44,7 @@ instance TypeSystem (PinaforeTypeSystem baseedit) where
     type TSRenamer (PinaforeTypeSystem baseedit) = VarRenamer (PinaforeTypeSystem baseedit)
     type TSUnifier (PinaforeTypeSystem baseedit) = PinaforeUnifier baseedit
     type TSScoped (PinaforeTypeSystem baseedit) = PinaforeSourceScoped baseedit
+    type TSSubsumer (PinaforeTypeSystem baseedit) = PinaforeSubsumer baseedit
     tsFunctionPosWitness ta tb =
         unTypeF $
         singlePinaforeTypeF $

@@ -42,7 +42,7 @@ newtype UnitypeUnifier (m :: Type -> Type) (name :: Type) (val :: Type) a =
 
 instance (Monad m, Eq name) => Unifier (UnitypeUnifier m name val) where
     type UnifierName (UnitypeUnifier m name val) = name
-    type UnifierMonad (UnitypeUnifier m name val) = UnitypeRenamer val m
+    type UnifierMonad (UnitypeUnifier m name val) = m
     type UnifierNegWitness (UnitypeUnifier m name val) = ((:~:) val)
     type UnifierPosWitness (UnitypeUnifier m name val) = ((:~:) val)
     type UnifierSubstitutions (UnitypeUnifier m name val) = ()
@@ -54,7 +54,17 @@ instance (Monad m, Eq name) => Unifier (UnitypeUnifier m name val) where
     unifierNegSubstitute () Refl cont = cont Refl id
     simplifyExpressionType expr = return expr
 
-instance (Monad m, Eq name) => Subsumer (UnitypeUnifier m name val) where
+newtype UnitypeSubsumer (m :: Type -> Type) (val :: Type) a =
+    MkUnitypeSubsumer (Identity a)
+    deriving (Functor, Applicative)
+
+instance Monad m => Subsumer (UnitypeSubsumer m val) where
+    type SubsumerMonad (UnitypeSubsumer m val) = m
+    type SubsumerNegWitness (UnitypeSubsumer m val) = ((:~:) val)
+    type SubsumerPosWitness (UnitypeSubsumer m val) = ((:~:) val)
+    type SubsumerSubstitutions (UnitypeSubsumer m val) = ()
+    solveSubsumer (MkUnitypeSubsumer ia) = pure $ (runIdentity ia, ())
+    subsumerNegSubstitute () Refl cont = cont Refl id
     subsumePosWitnesses Refl Refl = return $ pure id
     simplifyPosType = id
 
@@ -66,7 +76,8 @@ data Unitype (m :: Type -> Type) (name :: Type) (val :: Type)
 
 instance (Monad m, Eq name, UnitypeValue val) => TypeSystem (Unitype m name val) where
     type TSRenamer (Unitype m name val) = UnitypeRenamer val
-    type TSUnifier (Unitype m name val) = UnitypeUnifier m name val
+    type TSUnifier (Unitype m name val) = UnitypeUnifier (UnitypeRenamer val m) name val
+    type TSSubsumer (Unitype m name val) = UnitypeSubsumer (UnitypeRenamer val m) val
     type TSScoped (Unitype m name val) = m
     tsFunctionPosWitness Refl Refl cont = cont Refl abstractValue
     tsFunctionNegWitness Refl Refl cont = cont Refl applyValue

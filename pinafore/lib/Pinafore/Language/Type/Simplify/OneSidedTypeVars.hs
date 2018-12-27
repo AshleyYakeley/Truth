@@ -8,6 +8,7 @@ import Language.Expression.Expression
 import Language.Expression.Named
 import Language.Expression.Sealed
 import Pinafore.Language.GroundType
+import Pinafore.Language.Type.Bisubstitute
 import Pinafore.Language.Type.Type
 import Pinafore.Language.Type.Unify
 import Shapes

@@ -4,12 +4,11 @@ module Pinafore.Language.Type.Unify where
 
 import Language.Expression.Dolan
 import Language.Expression.Expression
-import Language.Expression.Renamer
 import Language.Expression.UVar
 import Language.Expression.Unifier
 import Pinafore.Language.GroundType
 import Pinafore.Language.Show
-import Pinafore.Language.Type.Rename
+import Pinafore.Language.Type.Bisubstitute
 import Pinafore.Language.Type.Subtype
 import Pinafore.Language.Type.Type
 import Shapes
@@ -53,11 +52,9 @@ data BisubstitutionWitness baseedit t where
 
 type PinaforeUnifier baseedit = Expression (BisubstitutionWitness baseedit)
 
-type PinaforeUnifierMonad baseedit = VarRenamer (PinaforeTypeSystem baseedit) (PinaforeSourceScoped baseedit)
+type UnifierConstraint baseedit = UnifierMonad (PinaforeUnifier baseedit) ~ PinaforeTypeCheck baseedit
 
-type UnifierConstraint baseedit = UnifierMonad (PinaforeUnifier baseedit) ~ PinaforeUnifierMonad baseedit
-
-type PinaforeFullUnifier baseedit = Compose (PinaforeUnifierMonad baseedit) (PinaforeUnifier baseedit)
+type PinaforeFullUnifier baseedit = Compose (PinaforeTypeCheck baseedit) (PinaforeUnifier baseedit)
 
 unifierLiftTypeCheck :: PinaforeSourceScoped baseedit a -> PinaforeFullUnifier baseedit a
 unifierLiftTypeCheck tca = Compose $ fmap pure $ lift tca
@@ -155,75 +152,6 @@ occursInType :: SymbolWitness n -> PinaforeType baseedit polarity a -> Bool
 occursInType _ NilPinaforeType = False
 occursInType n (ConsPinaforeType t1 t2) = occursInSingularType n t1 || occursInType n t2
 
-data Bisubstitution (wit :: TypePolarity -> Type -> Type) =
-    forall name. MkBisubstitution (SymbolWitness name)
-                                  (TypeF wit 'PositivePolarity (UVar name))
-                                  (TypeF wit 'NegativePolarity (UVar name))
-
-type PinaforeBisubstitution baseedit = Bisubstitution (PinaforeType baseedit)
-
-bisubstitutePositiveSingularType ::
-       PinaforeBisubstitution baseedit
-    -> PinaforeSingularType baseedit 'PositivePolarity t
-    -> PinaforeTypeF baseedit 'PositivePolarity t
-bisubstitutePositiveSingularType (MkBisubstitution n tp _) (VarPinaforeSingularType n')
-    | Just Refl <- testEquality n n' = tp
-bisubstitutePositiveSingularType _ t@(VarPinaforeSingularType _) = singlePinaforeTypeF $ mkTypeF t
-bisubstitutePositiveSingularType bisub (GroundPinaforeSingularType gt args) = let
-    dvt = pinaforeGroundTypeKind gt
-    in case mapDolanArguments (bisubstituteType bisub) dvt (pinaforeGroundTypeVary gt) args of
-           MkTypeF args' conv -> singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt args') conv
-
-bisubstituteNegativeSingularType ::
-       PinaforeBisubstitution baseedit
-    -> PinaforeSingularType baseedit 'NegativePolarity t
-    -> PinaforeTypeF baseedit 'NegativePolarity t
-bisubstituteNegativeSingularType (MkBisubstitution n _ tq) (VarPinaforeSingularType n')
-    | Just Refl <- testEquality n n' = tq
-bisubstituteNegativeSingularType _ t@(VarPinaforeSingularType _) = singlePinaforeTypeF $ mkTypeF t
-bisubstituteNegativeSingularType bisub (GroundPinaforeSingularType gt args) = let
-    dvt = pinaforeGroundTypeKind gt
-    in case mapDolanArguments (bisubstituteType bisub) dvt (pinaforeGroundTypeVary gt) args of
-           MkTypeF args' conv -> singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt args') conv
-
-bisubstitutePositiveType ::
-       PinaforeBisubstitution baseedit
-    -> PinaforeType baseedit 'PositivePolarity t
-    -> PinaforeTypeF baseedit 'PositivePolarity t
-bisubstitutePositiveType _ NilPinaforeType = mkTypeF NilPinaforeType
-bisubstitutePositiveType bisub (ConsPinaforeType ta tb) = let
-    tfa = bisubstitutePositiveSingularType bisub ta
-    tfb = bisubstitutePositiveType bisub tb
-    in joinPinaforeTypeF tfa tfb
-
-bisubstituteNegativeType ::
-       PinaforeBisubstitution baseedit
-    -> PinaforeType baseedit 'NegativePolarity t
-    -> PinaforeTypeF baseedit 'NegativePolarity t
-bisubstituteNegativeType _ NilPinaforeType = mkTypeF NilPinaforeType
-bisubstituteNegativeType bisub (ConsPinaforeType ta tb) = let
-    tfa = bisubstituteNegativeSingularType bisub ta
-    tfb = bisubstituteNegativeType bisub tb
-    in meetPinaforeTypeF tfa tfb
-
-bisubstituteType ::
-       forall baseedit polarity t. IsTypePolarity polarity
-    => PinaforeBisubstitution baseedit
-    -> PinaforeType baseedit polarity t
-    -> PinaforeTypeF baseedit polarity t
-bisubstituteType =
-    case whichTypePolarity @polarity of
-        Left Refl -> bisubstitutePositiveType
-        Right Refl -> bisubstituteNegativeType
-
-bisubstitutesType ::
-       forall baseedit polarity t. IsTypePolarity polarity
-    => [PinaforeBisubstitution baseedit]
-    -> PinaforeType baseedit polarity t
-    -> PinaforeTypeF baseedit polarity t
-bisubstitutesType [] t = mkTypeF t
-bisubstitutesType (sub:subs) t = chainTypeF (bisubstitutesType subs) $ bisubstituteType sub t
-
 bisubstitutePositiveVar ::
        SymbolWitness name
     -> PinaforeType baseedit 'PositivePolarity t
@@ -283,7 +211,7 @@ bisubstitutesSealedExpression (sub:subs) expr =
 runUnifier ::
        forall baseedit a. UnifierConstraint baseedit
     => PinaforeUnifier baseedit a
-    -> PinaforeUnifierMonad baseedit (a, [PinaforeBisubstitution baseedit])
+    -> PinaforeTypeCheck baseedit (a, [PinaforeBisubstitution baseedit])
 runUnifier (ClosedExpression a) = return (a, [])
 runUnifier (OpenExpression (PositiveBisubstitutionWitness vn tp) _)
     | occursInSingularType vn tp = fail $ "can't construct recursive type " <> show vn <> " = " <> unpack (exprShow tp)
@@ -319,21 +247,3 @@ runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolWitness n
            expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'
            return (ca $ meet2 . biBackwards varBij, bisub : subs)
-
-bisubstituteAllPositiveType ::
-       [PinaforeBisubstitution baseedit]
-    -> PinaforeType baseedit 'PositivePolarity t
-    -> PinaforeTypeF baseedit 'PositivePolarity t
-bisubstituteAllPositiveType [] t = mkTypeF t
-bisubstituteAllPositiveType (sub:subs) t =
-    case bisubstitutePositiveType sub t of
-        MkTypeF t' conv -> contramap conv $ bisubstituteAllPositiveType subs t'
-
-bisubstituteAllNegativeType ::
-       [PinaforeBisubstitution baseedit]
-    -> PinaforeType baseedit 'NegativePolarity t
-    -> PinaforeTypeF baseedit 'NegativePolarity t
-bisubstituteAllNegativeType [] t = mkTypeF t
-bisubstituteAllNegativeType (sub:subs) t =
-    case bisubstituteNegativeType sub t of
-        MkTypeF t' conv -> fmap conv $ bisubstituteAllNegativeType subs t'

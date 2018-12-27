@@ -2,6 +2,7 @@ module Pinafore.Language.Type.Type where
 
 import qualified Data.List as List
 import Language.Expression.Dolan
+import Language.Expression.Renamer
 import Language.Expression.Sealed
 import Language.Expression.UVar
 import Pinafore.Language.GroundType
@@ -174,3 +175,5 @@ data PinaforeTypeSystem (baseedit :: Type)
 type PinaforeScoped baseedit = Scoped (PinaforeExpression baseedit)
 
 type PinaforeSourceScoped baseedit = SourceScoped (PinaforeExpression baseedit)
+
+type PinaforeTypeCheck baseedit = VarRenamer (PinaforeTypeSystem baseedit) (PinaforeSourceScoped baseedit)

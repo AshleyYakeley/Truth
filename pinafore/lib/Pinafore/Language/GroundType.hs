@@ -72,3 +72,17 @@ pinaforeGroundTypeKind EitherPinaforeGroundType = representative
 pinaforeGroundTypeKind ReferencePinaforeGroundType = representative
 pinaforeGroundTypeKind SetPinaforeGroundType = representative
 pinaforeGroundTypeKind MorphismPinaforeGroundType = representative
+
+invertGroundTypePolarity ::
+       PinaforeGroundType baseedit polarity dk t -> Maybe (PinaforeGroundType baseedit (InvertPolarity polarity) dk t)
+invertGroundTypePolarity ActionPinaforeGroundType = Just ActionPinaforeGroundType
+invertGroundTypePolarity OrderPinaforeGroundType = Just OrderPinaforeGroundType
+invertGroundTypePolarity UserInterfacePinaforeGroundType = Just UserInterfacePinaforeGroundType
+invertGroundTypePolarity (SimpleEntityPinaforeGroundType t) = Just $ SimpleEntityPinaforeGroundType t
+invertGroundTypePolarity FuncPinaforeGroundType = Just FuncPinaforeGroundType
+invertGroundTypePolarity ListPinaforeGroundType = Just ListPinaforeGroundType
+invertGroundTypePolarity PairPinaforeGroundType = Just PairPinaforeGroundType
+invertGroundTypePolarity EitherPinaforeGroundType = Just EitherPinaforeGroundType
+invertGroundTypePolarity ReferencePinaforeGroundType = Just ReferencePinaforeGroundType
+invertGroundTypePolarity SetPinaforeGroundType = Just SetPinaforeGroundType
+invertGroundTypePolarity MorphismPinaforeGroundType = Just MorphismPinaforeGroundType

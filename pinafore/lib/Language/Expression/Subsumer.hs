@@ -1,26 +1,58 @@
 module Language.Expression.Subsumer where
 
+import Language.Expression.Expression
+import Language.Expression.Named
 import Language.Expression.Sealed
-import Language.Expression.Unifier
+
+--import Language.Expression.Unifier
 import Shapes
 
-class Unifier subsumer => Subsumer subsumer where
+class (Monad (SubsumerMonad subsumer), Applicative subsumer) => Subsumer subsumer where
+    type SubsumerMonad subsumer :: Type -> Type
+    type SubsumerNegWitness subsumer :: Type -> Type
+    type SubsumerPosWitness subsumer :: Type -> Type
+    type SubsumerSubstitutions subsumer :: Type
+    solveSubsumer :: subsumer a -> SubsumerMonad subsumer (a, SubsumerSubstitutions subsumer)
     -- This should generate substitutions only for the inferred type, not the declared type.
+    subsumerNegSubstitute ::
+           SubsumerSubstitutions subsumer
+        -> SubsumerNegWitness subsumer t
+        -> (forall t'. SubsumerNegWitness subsumer t' -> (t' -> t) -> r)
+        -> r
     subsumePosWitnesses ::
-           UnifierPosWitness subsumer inf
-        -> UnifierPosWitness subsumer decl
-        -> UnifierMonad subsumer (subsumer (inf -> decl))
-    simplifyPosType :: AnyW (UnifierPosWitness subsumer) -> AnyW (UnifierPosWitness subsumer)
+           SubsumerPosWitness subsumer inf
+        -> SubsumerPosWitness subsumer decl
+        -> SubsumerMonad subsumer (subsumer (inf -> decl))
+    simplifyPosType :: AnyW (SubsumerPosWitness subsumer) -> AnyW (SubsumerPosWitness subsumer)
+
+type SubsumerOpenExpression name subsumer = NamedExpression name (SubsumerNegWitness subsumer)
+
+type SubsumerSealedExpression name subsumer
+     = SealedExpression name (SubsumerNegWitness subsumer) (SubsumerPosWitness subsumer)
+
+liftSubsumer :: Monad (SubsumerMonad subsumer) => subsumer a -> Compose (SubsumerMonad subsumer) subsumer a
+liftSubsumer ua = Compose $ return ua
+
+subsumerExpressionSubstitute ::
+       forall subsumer name a. Subsumer subsumer
+    => SubsumerSubstitutions subsumer
+    -> SubsumerOpenExpression name subsumer a
+    -> SubsumerOpenExpression name subsumer a
+subsumerExpressionSubstitute _ (ClosedExpression a) = ClosedExpression a
+subsumerExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) =
+    subsumerNegSubstitute @subsumer subs tw $ \tw' conv ->
+        OpenExpression (MkNameWitness name tw') $
+        fmap (\ta -> ta . conv) $ subsumerExpressionSubstitute @subsumer subs expr
 
 -- Note the user's declared type will be simplified first, so they'll end up seeing a simplified version of the type they declared for their expression.
 subsumeExpression ::
-       forall subsumer. Subsumer subsumer
-    => AnyW (UnifierPosWitness subsumer)
-    -> UnifierSealedExpression subsumer
-    -> UnifierMonad subsumer (UnifierSealedExpression subsumer)
+       forall subsumer name. Subsumer subsumer
+    => AnyW (SubsumerPosWitness subsumer)
+    -> SubsumerSealedExpression name subsumer
+    -> SubsumerMonad subsumer (SubsumerSealedExpression name subsumer)
 subsumeExpression rawdecltype (MkSealedExpression inftype expr) =
     case simplifyPosType @subsumer rawdecltype of
         MkAnyW decltype -> do
             uab <- subsumePosWitnesses @subsumer inftype decltype
-            (conv, subs) <- solveUnifier uab
-            return $ MkSealedExpression decltype $ fmap conv $ unifierExpressionSubstitute @subsumer subs expr
+            (conv, subs) <- solveSubsumer uab
+            return $ MkSealedExpression decltype $ fmap conv $ subsumerExpressionSubstitute @subsumer subs expr

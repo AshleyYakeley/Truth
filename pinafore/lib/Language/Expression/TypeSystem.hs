@@ -13,10 +13,15 @@ class ( Monad (TSScoped ts)
       , Unifier (TSUnifier ts)
       , RenamerNegWitness (TSRenamer ts) ~ UnifierNegWitness (TSUnifier ts)
       , RenamerPosWitness (TSRenamer ts) ~ UnifierPosWitness (TSUnifier ts)
+      , Subsumer (TSSubsumer ts)
+      , SubsumerNegWitness (TSSubsumer ts) ~ UnifierNegWitness (TSUnifier ts)
+      , SubsumerPosWitness (TSSubsumer ts) ~ UnifierPosWitness (TSUnifier ts)
       , TSRenamer ts (TSScoped ts) ~ UnifierMonad (TSUnifier ts)
+      , TSRenamer ts (TSScoped ts) ~ SubsumerMonad (TSSubsumer ts)
       ) => TypeSystem (ts :: Type) where
     type TSRenamer ts :: (Type -> Type) -> (Type -> Type)
     type TSUnifier ts :: Type -> Type
+    type TSSubsumer ts :: Type -> Type
     type TSScoped ts :: Type -> Type
     tsFunctionPosWitness :: FunctionPosWitness (TSNegWitness ts) (TSPosWitness ts)
     tsFunctionNegWitness :: FunctionNegWitness (TSNegWitness ts) (TSPosWitness ts)
@@ -120,8 +125,8 @@ tsValuesLet ::
 tsValuesLet = valuesLetSealedExpression @(TSUnifier ts)
 
 tsSubsume ::
-       forall ts. (TypeSystem ts, Subsumer (TSUnifier ts))
+       forall ts. (TypeSystem ts)
     => AnyW (TSPosWitness ts)
     -> TSSealedExpression ts
     -> TSScoped ts (TSSealedExpression ts)
-tsSubsume t expr = runRenamer @(TSRenamer ts) $ subsumeExpression @(TSUnifier ts) t expr
+tsSubsume t expr = runRenamer @(TSRenamer ts) $ subsumeExpression @(TSSubsumer ts) t expr

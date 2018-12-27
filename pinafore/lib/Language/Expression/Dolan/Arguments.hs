@@ -3,6 +3,7 @@ module Language.Expression.Dolan.Arguments
     , DolanArguments(..)
     , bijectTypeArguments
     , mapDolanArguments
+    , mapInvertDolanArguments
     , mergeDolanArguments
     ) where
 
@@ -116,6 +117,76 @@ mapDolanArguments f dvt dvm args =
             case whichTypePolarity @polarity of
                 Left Refl -> mapArgsTypeF f dvt dvm args id
                 Right Refl -> mapArgsTypeF f dvt dvm args id
+
+mapInvertArgTypeF ::
+       forall m ft sv polarity t. (Monad m, IsTypePolarity polarity)
+    => SingleVarianceType sv
+    -> (forall polarity' t'. IsTypePolarity polarity' => ft polarity' t' -> m (TypeF ft (InvertPolarity polarity') t'))
+    -> SingleArgument sv ft polarity t
+    -> m (ArgTypeF sv ft (InvertPolarity polarity) t)
+mapInvertArgTypeF CovarianceType f arg = do
+    MkTypeF arg' conv <- f arg
+    return $
+        MkArgTypeF arg' $
+        case whichTypePolarity @polarity of
+            Left Refl -> conv
+            Right Refl -> conv
+mapInvertArgTypeF ContravarianceType f arg =
+    invertPolarity @polarity $ do
+        MkTypeF arg' conv <- f arg
+        return $
+            MkArgTypeF arg' $
+            case whichTypePolarity @polarity of
+                Left Refl -> MkCatDual conv
+                Right Refl -> MkCatDual conv
+mapInvertArgTypeF RangevarianceType f (MkRangeType tp tq) =
+    invertPolarity @polarity $ do
+        MkTypeF tp' convp <- f tp
+        MkTypeF tq' convq <- f tq
+        return $
+            MkArgTypeF (MkRangeType tp' tq') $
+            case whichTypePolarity @polarity of
+                Left Refl -> MkWithRange convp convq
+                Right Refl -> MkWithRange convp convq
+
+mapInvertArgsTypeF ::
+       forall m ft dv polarity gt gt' t. (Monad m, IsTypePolarity polarity)
+    => (forall polarity' t'. IsTypePolarity polarity' => ft polarity' t' -> m (TypeF ft (InvertPolarity polarity') t'))
+    -> DolanVarianceType dv
+    -> DolanKindVary dv gt
+    -> DolanArguments dv ft gt polarity t
+    -> ConvertType (InvertPolarity polarity) gt gt'
+    -> m (TypeF (DolanArguments dv ft gt') (InvertPolarity polarity) t)
+mapInvertArgsTypeF _ NilListType NilDolanKindVary NilDolanArguments conv = return $ MkTypeF NilDolanArguments conv
+mapInvertArgsTypeF f (ConsListType svt dvt) (ConsDolanKindVary svm dvm) (ConsDolanArguments sta dta) conv = do
+    MkArgTypeF sta' svf <- mapInvertArgTypeF @m @ft @_ @polarity svt f sta
+    case dolanVarianceKMCategory @(->) dvt of
+        Dict ->
+            case whichTypePolarity @polarity of
+                Left Refl ->
+                    case conv of
+                        MkNestedMorphism mconv -> do
+                            MkTypeF dta' conv' <- mapInvertArgsTypeF @m @ft @_ @polarity f dvt dvm dta (svm svf . mconv)
+                            return $ MkTypeF (ConsDolanArguments sta' dta') conv'
+                Right Refl ->
+                    case conv of
+                        MkNestedMorphism mconv -> do
+                            MkTypeF dta' conv' <- mapInvertArgsTypeF @m @ft @_ @polarity f dvt dvm dta (mconv . svm svf)
+                            return $ MkTypeF (ConsDolanArguments sta' dta') conv'
+
+mapInvertDolanArguments ::
+       forall m ft dv polarity gt t. (Monad m, IsTypePolarity polarity)
+    => (forall polarity' t'. IsTypePolarity polarity' => ft polarity' t' -> m (TypeF ft (InvertPolarity polarity') t'))
+    -> DolanVarianceType dv
+    -> DolanKindVary dv gt
+    -> DolanArguments dv ft gt polarity t
+    -> m (TypeF (DolanArguments dv ft gt) (InvertPolarity polarity) t)
+mapInvertDolanArguments f dvt dvm args =
+    case dolanVarianceKMCategory @(->) dvt of
+        Dict ->
+            case whichTypePolarity @polarity of
+                Left Refl -> mapInvertArgsTypeF f dvt dvm args id
+                Right Refl -> mapInvertArgsTypeF f dvt dvm args id
 
 type family PositiveSVJoinMeetType (sv :: SingleVariance) (a :: SingleVarianceKind sv) (b :: SingleVarianceKind sv) = (r :: SingleVarianceKind sv) | r -> sv a b where
     PositiveSVJoinMeetType 'Covariance a b = JoinType a b
