@@ -17,8 +17,8 @@ class (Monad (SubsumerMonad subsumer), Applicative subsumer) => Subsumer subsume
     subsumerNegSubstitute ::
            SubsumerSubstitutions subsumer
         -> SubsumerNegWitness subsumer t
-        -> (forall t'. SubsumerNegWitness subsumer t' -> (t' -> t) -> r)
-        -> r
+        -> (forall t'. SubsumerNegWitness subsumer t' -> (t' -> t) -> SubsumerMonad subsumer r)
+        -> SubsumerMonad subsumer r
     subsumePosWitnesses ::
            SubsumerPosWitness subsumer inf
         -> SubsumerPosWitness subsumer decl
@@ -37,12 +37,12 @@ subsumerExpressionSubstitute ::
        forall subsumer name a. Subsumer subsumer
     => SubsumerSubstitutions subsumer
     -> SubsumerOpenExpression name subsumer a
-    -> SubsumerOpenExpression name subsumer a
-subsumerExpressionSubstitute _ (ClosedExpression a) = ClosedExpression a
+    -> SubsumerMonad subsumer (SubsumerOpenExpression name subsumer a)
+subsumerExpressionSubstitute _ (ClosedExpression a) = return $ ClosedExpression a
 subsumerExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) =
-    subsumerNegSubstitute @subsumer subs tw $ \tw' conv ->
-        OpenExpression (MkNameWitness name tw') $
-        fmap (\ta -> ta . conv) $ subsumerExpressionSubstitute @subsumer subs expr
+    subsumerNegSubstitute @subsumer subs tw $ \tw' conv -> do
+        expr' <- subsumerExpressionSubstitute @subsumer subs expr
+        return $ OpenExpression (MkNameWitness name tw') $ fmap (\ta -> ta . conv) expr'
 
 -- Note the user's declared type will be simplified first, so they'll end up seeing a simplified version of the type they declared for their expression.
 subsumeExpression ::
@@ -55,4 +55,5 @@ subsumeExpression rawdecltype (MkSealedExpression inftype expr) =
         MkAnyW decltype -> do
             uab <- subsumePosWitnesses @subsumer inftype decltype
             (conv, subs) <- solveSubsumer uab
-            return $ MkSealedExpression decltype $ fmap conv $ subsumerExpressionSubstitute @subsumer subs expr
+            expr' <- subsumerExpressionSubstitute @subsumer subs expr
+            return $ MkSealedExpression decltype $ fmap conv expr'

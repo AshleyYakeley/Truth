@@ -3,7 +3,7 @@
 let
 
 ### Useful
-window :: Ref +Text -> UI -> (Ref +Text,UI);
+window :: Ref Text -> UI -> (Ref Text,UI);
 window n s = (n,s);
 ui_page n ui = (ui_label n,ui);
 ui_labelled n ui = ui_horizontal [(ui_label n,false),(ui,true)];
@@ -23,9 +23,9 @@ People = type !@ {entity @Type !78baed51-cb05-46b5-bcb4-49031532b890};
 
 mother = property @Person @Person !3afce58f-b7eb-4b11-8a75-2d66afd4d085;
 father = property @Person @Person !c005705f-9259-4d24-9713-db28a6e4f7d5;
-# parents :: Ref +Person -> Set +Person;
+# parents :: Ref Person -> Set Person;
 # parents p = (mother !$ p) \/ (father !$ p);
-children :: Ref +Person -> Set +Person;
+children :: Ref Person -> Set Person;
 children p = mother !@ p \/ father !@ p;
 
 employer = property @Person @Person !72f612af-ae47-4c18-b3df-6932ae914f62;
@@ -93,7 +93,7 @@ ui_person p = ui_vertical
     ],true)
 ];
 
-window_person :: Ref Person -> (Ref +Text,UI);
+window_person :: Ref Person -> (Ref Text,UI);
 window_person p = window (name !$ p) $ ui_person p;
 
 window_people = window {"People"} $ ui_people People;

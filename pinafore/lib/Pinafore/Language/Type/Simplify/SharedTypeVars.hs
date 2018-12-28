@@ -11,7 +11,6 @@ import Language.Expression.UVar
 import Pinafore.Language.GroundType
 import Pinafore.Language.Type.Bisubstitute
 import Pinafore.Language.Type.Type
-import Pinafore.Language.Type.Unify
 import Shapes
 
 class GetExpressionVarUses t where
@@ -103,9 +102,10 @@ mergeSharedTypeVarsInType t = let
                bisub =
                    MkBisubstitution
                        vb
-                       (contramap (biBackwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
-                       (fmap (biForwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
-               in chainTypeF mergeSharedTypeVarsInType $ bisubstituteType bisub t
+                       (return $
+                        contramap (biBackwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
+                       (return $ fmap (biForwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
+               in chainTypeF mergeSharedTypeVarsInType $ runIdentity $ bisubstituteType bisub t
            Nothing -> mkTypeF t
 
 mergeSharedTypeVarsInExpression :: forall baseedit. PinaforeExpression baseedit -> PinaforeExpression baseedit
@@ -118,7 +118,8 @@ mergeSharedTypeVarsInExpression expr = let
                bisub =
                    MkBisubstitution
                        vb
-                       (contramap (biBackwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
-                       (fmap (biForwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
-               in mergeSharedTypeVarsInExpression $ bisubstitutesSealedExpression [bisub] expr
+                       (return $
+                        contramap (biBackwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
+                       (return $ fmap (biForwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
+               in mergeSharedTypeVarsInExpression $ runIdentity $ bisubstitutesSealedExpression [bisub] expr
            Nothing -> expr

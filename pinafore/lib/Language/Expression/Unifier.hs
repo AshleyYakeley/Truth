@@ -27,13 +27,13 @@ class (Monad (UnifierMonad unifier), Applicative unifier, Eq (UnifierName unifie
     unifierPosSubstitute ::
            UnifierSubstitutions unifier
         -> UnifierPosWitness unifier t
-        -> (forall t'. UnifierPosWitness unifier t' -> (t -> t') -> r)
-        -> r
+        -> (forall t'. UnifierPosWitness unifier t' -> (t -> t') -> UnifierMonad unifier r)
+        -> UnifierMonad unifier r
     unifierNegSubstitute ::
            UnifierSubstitutions unifier
         -> UnifierNegWitness unifier t
-        -> (forall t'. UnifierNegWitness unifier t' -> (t' -> t) -> r)
-        -> r
+        -> (forall t'. UnifierNegWitness unifier t' -> (t' -> t) -> UnifierMonad unifier r)
+        -> UnifierMonad unifier r
     simplifyExpressionType :: UnifierSealedExpression unifier -> UnifierMonad unifier (UnifierSealedExpression unifier)
 
 type UnifierOpenExpression unifier = NamedExpression (UnifierName unifier) (UnifierNegWitness unifier)
@@ -58,12 +58,12 @@ unifierExpressionSubstitute ::
        forall unifier a. Unifier unifier
     => UnifierSubstitutions unifier
     -> UnifierOpenExpression unifier a
-    -> UnifierOpenExpression unifier a
-unifierExpressionSubstitute _ (ClosedExpression a) = ClosedExpression a
+    -> UnifierMonad unifier (UnifierOpenExpression unifier a)
+unifierExpressionSubstitute _ (ClosedExpression a) = return $ ClosedExpression a
 unifierExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) =
-    unifierNegSubstitute @unifier subs tw $ \tw' conv ->
-        OpenExpression (MkNameWitness name tw') $
-        fmap (\ta -> ta . conv) $ unifierExpressionSubstitute @unifier subs expr
+    unifierNegSubstitute @unifier subs tw $ \tw' conv -> do
+        expr' <- unifierExpressionSubstitute @unifier subs expr
+        return $ OpenExpression (MkNameWitness name tw') $ fmap (\ta -> ta . conv) expr'
 
 unifierExpressionSubstituteAndSimplify ::
        forall unifier a. Unifier unifier
@@ -72,9 +72,9 @@ unifierExpressionSubstituteAndSimplify ::
     -> UnifierOpenExpression unifier a
     -> UnifierMonad unifier (UnifierSealedExpression unifier)
 unifierExpressionSubstituteAndSimplify subs twt expr =
-    simplifyExpressionType @unifier $
-    unifierPosSubstitute @unifier subs twt $ \twt' tconv ->
-        MkSealedExpression twt' $ unifierExpressionSubstitute @unifier subs $ fmap tconv expr
+    unifierPosSubstitute @unifier subs twt $ \twt' tconv -> do
+        expr' <- unifierExpressionSubstitute @unifier subs $ fmap tconv expr
+        simplifyExpressionType @unifier $ MkSealedExpression twt' expr'
 
 data UnifyExpression unifier a =
     forall conv. MkUnifyExpression (unifier conv)

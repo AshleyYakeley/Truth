@@ -36,8 +36,12 @@ instance Unifier (PinaforeUnifier baseedit) where
     unifyPosWitnesses ta tb cont = joinPinaforeTypes ta tb $ \tab conva convb -> cont tab $ pure (conva, convb)
     unifyPosNegWitnesses tq tp = getCompose $ unifyPosNegPinaforeTypes tq tp
     solveUnifier = runUnifier
-    unifierPosSubstitute subs t = unTypeF $ bisubstituteAllPositiveType subs t
-    unifierNegSubstitute subs t = unTypeF $ bisubstituteAllNegativeType subs t
+    unifierPosSubstitute subs t cont = do
+        t' <- bisubstituteAllPositiveType subs t
+        unTypeF t' cont
+    unifierNegSubstitute subs t cont = do
+        t' <- bisubstituteAllNegativeType subs t
+        unTypeF t' cont
     simplifyExpressionType = return . pinaforeSimplifyExpressionType
 
 instance TypeSystem (PinaforeTypeSystem baseedit) where

@@ -10,7 +10,6 @@ import Language.Expression.Sealed
 import Pinafore.Language.GroundType
 import Pinafore.Language.Type.Bisubstitute
 import Pinafore.Language.Type.Type
-import Pinafore.Language.Type.Unify
 import Shapes
 
 class GetExpressionVars t where
@@ -66,14 +65,14 @@ eliminateOneSidedTypeVarsInType t = let
     posonlyvars = difference posvars negvars
     negonlyvars :: FiniteSet _
     negonlyvars = difference negvars posvars
-    mkbisub :: AnyW SymbolWitness -> PinaforeBisubstitution baseedit
+    mkbisub :: AnyW SymbolWitness -> PinaforeBisubstitutionM Identity baseedit
     mkbisub (MkAnyW vn) =
         MkBisubstitution
             vn
-            (contramap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
-            (fmap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
+            (return $ contramap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
+            (return $ fmap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
     bisubs = toList $ fmap mkbisub $ posonlyvars <> negonlyvars
-    in bisubstitutesType bisubs t
+    in runIdentity $ bisubstitutesType bisubs t
 
 eliminateOneSidedTypeVarsInExpression :: forall baseedit. PinaforeExpression baseedit -> PinaforeExpression baseedit
 eliminateOneSidedTypeVarsInExpression expr = let
@@ -82,11 +81,11 @@ eliminateOneSidedTypeVarsInExpression expr = let
     posonlyvars = difference posvars negvars
     negonlyvars :: FiniteSet _
     negonlyvars = difference negvars posvars
-    mkbisub :: AnyW SymbolWitness -> PinaforeBisubstitution baseedit
+    mkbisub :: AnyW SymbolWitness -> PinaforeBisubstitutionM Identity baseedit
     mkbisub (MkAnyW vn) =
         MkBisubstitution
             vn
-            (contramap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
-            (fmap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
+            (return $ contramap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
+            (return $ fmap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
     bisubs = toList $ fmap mkbisub $ posonlyvars <> negonlyvars
-    in bisubstitutesSealedExpression bisubs expr
+    in runIdentity $ bisubstitutesSealedExpression bisubs expr

@@ -27,7 +27,7 @@ minimalPositiveSupertypeSingular (VarPinaforeSingularType v) =
 minimalPositiveSupertypeSingular (GroundPinaforeSingularType gt args) = do
     gt' <- invertGroundTypePolarity gt
     MkTypeF args' conv <-
-        mapInvertDolanArguments limitInvertType (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args
+        mapInvertDolanArgumentsM limitInvertType (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args
     return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt' args') conv
 
 minimalPositiveSupertype ::
@@ -46,7 +46,7 @@ maximalNegativeSubtypeSingular (VarPinaforeSingularType v) =
 maximalNegativeSubtypeSingular (GroundPinaforeSingularType gt args) = do
     gt' <- invertGroundTypePolarity gt
     MkTypeF args' conv <-
-        mapInvertDolanArguments limitInvertType (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args
+        mapInvertDolanArgumentsM limitInvertType (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args
     return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt' args') conv
 
 maximalNegativeSubtype ::
@@ -206,7 +206,7 @@ data InvertSubstitution (wit :: TypePolarity -> Type -> Type) where
 type PinaforeInvertSubstitution baseedit = InvertSubstitution (PinaforeType baseedit)
 
 invertSubstitute ::
-       () => PinaforeInvertSubstitution baseedit -> PinaforeSubsumer baseedit a -> PinaforeFullSubsumer baseedit a
+       PinaforeInvertSubstitution baseedit -> PinaforeSubsumer baseedit a -> PinaforeFullSubsumer baseedit a
 invertSubstitute _ (ClosedExpression a) = pure a
 invertSubstitute bisub@(NegInvertSubstitution bn n' _ bij) (OpenExpression (NegativeSubsumeWitness vn vtp) expr)
     | Just Refl <- testEquality bn vn =
@@ -250,7 +250,6 @@ instance Subsumer (PinaforeSubsumer baseedit) where
     type SubsumerSubstitutions (PinaforeSubsumer baseedit) = [PinaforeBisubstitution baseedit]
     solveSubsumer (ClosedExpression a) = return (a, [])
     solveSubsumer (OpenExpression (NegativeSubsumeWitness (vn :: SymbolWitness name) (tp :: PinaforeType baseedit 'NegativePolarity t)) expr) = do
-        tq <- limitInvertType' tp
         let
             varBij :: Bijection (JoinType (UVar name) t) (UVar name)
             varBij = unsafeUVarBijection
@@ -258,14 +257,17 @@ instance Subsumer (PinaforeSubsumer baseedit) where
             bisub =
                 MkBisubstitution
                     vn
-                    (contramap (biBackwards varBij) $
-                     joinPinaforeTypeF (singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn) tq)
-                    (fmap (biForwards varBij . join1) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
+                    (do
+                         tq <- limitInvertType' tp
+                         return $
+                             contramap (biBackwards varBij) $
+                             joinPinaforeTypeF (singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn) tq)
+                    (return $
+                     fmap (biForwards varBij . join1) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
         expr' <- getCompose $ invertSubstitute (NegInvertSubstitution vn vn tp varBij) expr
         (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ biForwards varBij . join2) expr'
         return (expr'', bisub : bisubs)
     solveSubsumer (OpenExpression (PositiveSubsumeWitness (vn :: SymbolWitness name) (tp :: PinaforeType baseedit 'PositivePolarity t)) expr) = do
-        tq <- limitInvertType' tp
         let
             varBij :: Bijection (MeetType (UVar name) t) (UVar name)
             varBij = unsafeUVarBijection
@@ -273,13 +275,19 @@ instance Subsumer (PinaforeSubsumer baseedit) where
             bisub =
                 MkBisubstitution
                     vn
-                    (contramap (meet1 . biBackwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
-                    (fmap (biForwards varBij) $
-                     meetPinaforeTypeF (singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn) tq)
+                    (return $
+                     contramap (meet1 . biBackwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
+                    (do
+                         tq <- limitInvertType' tp
+                         return $
+                             fmap (biForwards varBij) $
+                             meetPinaforeTypeF (singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn) tq)
         expr' <- getCompose $ invertSubstitute (PosInvertSubstitution vn vn tp varBij) expr
         (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ meet2 . biBackwards varBij) expr'
         return (expr'', bisub : bisubs)
-    subsumerNegSubstitute subs t = unTypeF $ bisubstituteAllNegativeType subs t
+    subsumerNegSubstitute subs t cont = do
+        t' <- bisubstituteAllNegativeType subs t
+        unTypeF t' cont
     subsumePosWitnesses tinf tdecl = getCompose $ subsumePositiveType tinf tdecl
     simplifyPosType (MkAnyW t) =
         case pinaforeSimplifyType t of

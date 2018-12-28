@@ -13,7 +13,7 @@ import Language.Expression.Dolan.Variance as I
 import Language.Expression.UVar
 import Shapes
 
-data Bisubstitution (wit :: TypePolarity -> Type -> Type) =
+data Bisubstitution m (wit :: TypePolarity -> Type -> Type) =
     forall name. MkBisubstitution (SymbolWitness name)
-                                  (TypeF wit 'PositivePolarity (UVar name))
-                                  (TypeF wit 'NegativePolarity (UVar name))
+                                  (m (TypeF wit 'PositivePolarity (UVar name)))
+                                  (m (TypeF wit 'NegativePolarity (UVar name)))

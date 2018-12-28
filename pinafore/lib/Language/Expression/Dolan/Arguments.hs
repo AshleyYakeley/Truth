@@ -2,8 +2,9 @@ module Language.Expression.Dolan.Arguments
     ( SingleArgument
     , DolanArguments(..)
     , bijectTypeArguments
+    , mapDolanArgumentsM
     , mapDolanArguments
-    , mapInvertDolanArguments
+    , mapInvertDolanArgumentsM
     , mergeDolanArguments
     ) where
 
@@ -49,60 +50,74 @@ data ArgTypeF (sv :: SingleVariance) (ft :: TypePolarity -> Type -> Type) (polar
         -> ArgTypeF sv ft polarity t
 
 mapArgTypeF ::
-       forall ft sv polarity t. IsTypePolarity polarity
+       forall m ft sv polarity t. (Monad m, IsTypePolarity polarity)
     => SingleVarianceType sv
-    -> (forall polarity' t'. IsTypePolarity polarity' => ft polarity' t' -> TypeF ft polarity' t')
+    -> (forall polarity' t'. IsTypePolarity polarity' => ft polarity' t' -> m (TypeF ft polarity' t'))
     -> SingleArgument sv ft polarity t
-    -> ArgTypeF sv ft polarity t
-mapArgTypeF CovarianceType f arg =
-    unTypeF (f arg) $
-    case whichTypePolarity @polarity of
-        Left Refl -> MkArgTypeF
-        Right Refl -> MkArgTypeF
+    -> m (ArgTypeF sv ft polarity t)
+mapArgTypeF CovarianceType f arg = do
+    tf <- f arg
+    return $
+        unTypeF tf $
+        case whichTypePolarity @polarity of
+            Left Refl -> MkArgTypeF
+            Right Refl -> MkArgTypeF
 mapArgTypeF ContravarianceType f arg =
-    invertPolarity @polarity $
-    case f arg of
-        MkTypeF arg' conv ->
+    invertPolarity @polarity $ do
+        MkTypeF arg' conv <- f arg
+        return $
             MkArgTypeF arg' $
             case whichTypePolarity @polarity of
                 Left Refl -> MkCatDual conv
                 Right Refl -> MkCatDual conv
 mapArgTypeF RangevarianceType f (MkRangeType tp tq) =
-    invertPolarity @polarity $
-    case f tp of
-        MkTypeF tp' convp ->
-            case f tq of
-                MkTypeF tq' convq ->
-                    MkArgTypeF (MkRangeType tp' tq') $
-                    case whichTypePolarity @polarity of
-                        Left Refl -> MkWithRange convp convq
-                        Right Refl -> MkWithRange convp convq
+    invertPolarity @polarity $ do
+        MkTypeF tp' convp <- f tp
+        MkTypeF tq' convq <- f tq
+        return $
+            MkArgTypeF (MkRangeType tp' tq') $
+            case whichTypePolarity @polarity of
+                Left Refl -> MkWithRange convp convq
+                Right Refl -> MkWithRange convp convq
 
 mapArgsTypeF ::
-       forall ft dv polarity gt gt' t. IsTypePolarity polarity
-    => (forall polarity' t'. IsTypePolarity polarity' => ft polarity' t' -> TypeF ft polarity' t')
+       forall m ft dv polarity gt gt' t. (Monad m, IsTypePolarity polarity)
+    => (forall polarity' t'. IsTypePolarity polarity' => ft polarity' t' -> m (TypeF ft polarity' t'))
     -> DolanVarianceType dv
     -> DolanKindVary dv gt
     -> DolanArguments dv ft gt polarity t
     -> ConvertType polarity gt gt'
-    -> TypeF (DolanArguments dv ft gt') polarity t
-mapArgsTypeF _ NilListType NilDolanKindVary NilDolanArguments conv = MkTypeF NilDolanArguments conv
-mapArgsTypeF f (ConsListType svt dvt) (ConsDolanKindVary svm dvm) (ConsDolanArguments sta dta) conv =
-    case mapArgTypeF @ft @_ @polarity svt f sta of
-        MkArgTypeF sta' svf ->
-            case dolanVarianceKMCategory @(->) dvt of
-                Dict ->
-                    case whichTypePolarity @polarity of
-                        Left Refl ->
-                            case conv of
-                                MkNestedMorphism mconv ->
-                                    case mapArgsTypeF @ft @_ @polarity f dvt dvm dta (mconv . svm svf) of
-                                        MkTypeF dta' conv' -> MkTypeF (ConsDolanArguments sta' dta') conv'
-                        Right Refl ->
-                            case conv of
-                                MkNestedMorphism mconv ->
-                                    case mapArgsTypeF @ft @_ @polarity f dvt dvm dta (svm svf . mconv) of
-                                        MkTypeF dta' conv' -> MkTypeF (ConsDolanArguments sta' dta') conv'
+    -> m (TypeF (DolanArguments dv ft gt') polarity t)
+mapArgsTypeF _ NilListType NilDolanKindVary NilDolanArguments conv = return $ MkTypeF NilDolanArguments conv
+mapArgsTypeF f (ConsListType svt dvt) (ConsDolanKindVary svm dvm) (ConsDolanArguments sta dta) conv = do
+    MkArgTypeF sta' svf <- mapArgTypeF @m @ft @_ @polarity svt f sta
+    case dolanVarianceKMCategory @(->) dvt of
+        Dict ->
+            case whichTypePolarity @polarity of
+                Left Refl ->
+                    case conv of
+                        MkNestedMorphism mconv -> do
+                            MkTypeF dta' conv' <- mapArgsTypeF @m @ft @_ @polarity f dvt dvm dta (mconv . svm svf)
+                            return $ MkTypeF (ConsDolanArguments sta' dta') conv'
+                Right Refl ->
+                    case conv of
+                        MkNestedMorphism mconv -> do
+                            MkTypeF dta' conv' <- mapArgsTypeF @m @ft @_ @polarity f dvt dvm dta (svm svf . mconv)
+                            return $ MkTypeF (ConsDolanArguments sta' dta') conv'
+
+mapDolanArgumentsM ::
+       forall m ft dv polarity gt t. (Monad m, IsTypePolarity polarity)
+    => (forall polarity' t'. IsTypePolarity polarity' => ft polarity' t' -> m (TypeF ft polarity' t'))
+    -> DolanVarianceType dv
+    -> DolanKindVary dv gt
+    -> DolanArguments dv ft gt polarity t
+    -> m (TypeF (DolanArguments dv ft gt) polarity t)
+mapDolanArgumentsM f dvt dvm args =
+    case dolanVarianceKMCategory @(->) dvt of
+        Dict ->
+            case whichTypePolarity @polarity of
+                Left Refl -> mapArgsTypeF f dvt dvm args id
+                Right Refl -> mapArgsTypeF f dvt dvm args id
 
 mapDolanArguments ::
        forall ft dv polarity gt t. IsTypePolarity polarity
@@ -111,12 +126,7 @@ mapDolanArguments ::
     -> DolanKindVary dv gt
     -> DolanArguments dv ft gt polarity t
     -> TypeF (DolanArguments dv ft gt) polarity t
-mapDolanArguments f dvt dvm args =
-    case dolanVarianceKMCategory @(->) dvt of
-        Dict ->
-            case whichTypePolarity @polarity of
-                Left Refl -> mapArgsTypeF f dvt dvm args id
-                Right Refl -> mapArgsTypeF f dvt dvm args id
+mapDolanArguments f dvt kv args = runIdentity $ mapDolanArgumentsM (\t -> return $ f t) dvt kv args
 
 mapInvertArgTypeF ::
        forall m ft sv polarity t. (Monad m, IsTypePolarity polarity)
@@ -174,14 +184,14 @@ mapInvertArgsTypeF f (ConsListType svt dvt) (ConsDolanKindVary svm dvm) (ConsDol
                             MkTypeF dta' conv' <- mapInvertArgsTypeF @m @ft @_ @polarity f dvt dvm dta (mconv . svm svf)
                             return $ MkTypeF (ConsDolanArguments sta' dta') conv'
 
-mapInvertDolanArguments ::
+mapInvertDolanArgumentsM ::
        forall m ft dv polarity gt t. (Monad m, IsTypePolarity polarity)
     => (forall polarity' t'. IsTypePolarity polarity' => ft polarity' t' -> m (TypeF ft (InvertPolarity polarity') t'))
     -> DolanVarianceType dv
     -> DolanKindVary dv gt
     -> DolanArguments dv ft gt polarity t
     -> m (TypeF (DolanArguments dv ft gt) (InvertPolarity polarity) t)
-mapInvertDolanArguments f dvt dvm args =
+mapInvertDolanArgumentsM f dvt dvm args =
     case dolanVarianceKMCategory @(->) dvt of
         Dict ->
             case whichTypePolarity @polarity of

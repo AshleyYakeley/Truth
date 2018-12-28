@@ -127,11 +127,11 @@ testType =
               , exprTypeTest "apply nb var" (return "{v :: Number} -> Boolean") $ apExpr nbFuncExpr varExpr
               , exprTypeTest "ifelse" (return "{} -> Boolean -> a -> a -> a") $ return ifelseExpr
               , exprTypeTest "list1" (return "{} -> a -> [a]") $ return list1Expr
-              , exprTypeTest "listNumBool" (return "{} -> [Number | Boolean]") $ do
+              , exprTypeTest "listNumBool" (return "{} -> [Boolean | Number]") $ do
                     lne <- apExpr list1Expr numExpr
                     lbe <- apExpr list1Expr boolExpr
                     joinExpr lne lbe
-              , exprTypeTest "listlistNumBool" (return "{} -> [[Number | Boolean]]") $ do
+              , exprTypeTest "listlistNumBool" (return "{} -> [[Boolean | Number]]") $ do
                     lne <- apExpr list1Expr numExpr
                     lbe <- apExpr list1Expr boolExpr
                     llne <- apExpr list1Expr lne
@@ -143,7 +143,7 @@ testType =
                 joinExpr listNumBoolFuncExpr listNumBoolFuncExpr
               , exprTypeTest "[bb] -> [nn]" (return "{} -> [Boolean] -> [Number]") $
                 joinExpr listBoolNumFuncExpr listBoolNumFuncExpr
-              , exprTypeTest "[nb] -> [bn]" (return "{} -> [Number & Boolean] -> [Boolean | Number]") $
+              , exprTypeTest "[nb] -> [bn]" (return "{} -> [Boolean & Number] -> [Number | Boolean]") $
                 joinExpr listNumBoolFuncExpr listBoolNumFuncExpr
               , exprTypeTest "snd" (return "{} -> (Any, a) -> a") $ return sndExpr
               , exprTypeTest "thing" (return "{} -> (a, b) -> (a, a | b)") $ return thingExpr
