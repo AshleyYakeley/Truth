@@ -214,6 +214,34 @@ testType =
               , textTypeTest
                     "\\v1 v2 v3 -> (([v1,v2],[v2,v3]),[v3,v1])"
                     "{} -> (a & a') -> (a'' & a') -> (a & a'') -> (([a'], [a'']), [a])"
+              , textTypeTest "\\x -> let y :: Boolean | Number; y = x in y" "{} -> Boolean -> Boolean | Number"
+              , textTypeTest
+                    "\\x -> let y :: (a -> a, Boolean | Number); y = x in y"
+                    "{} -> (a -> a, Boolean) -> (a -> a, Boolean | Number)"
+              , textTypeTest
+                    "\\x -> let y :: (b -> b, Boolean | Number); y = x in y"
+                    "{} -> (b -> b, Boolean) -> (b -> b, Boolean | Number)"
+              , textTypeTest
+                    "\\x -> let y :: (Boolean, Number); y = (x,x) in y"
+                    "{} -> (Number & Boolean) -> (Boolean, Number)"
+              , textTypeTest
+                    "\\x1 -> \\x2 -> let y :: (Boolean, Number); y = (x1,x2) in y"
+                    "{} -> Boolean -> Number -> (Boolean, Number)"
+              , textTypeTest
+                    "\\x1 -> \\x2 -> let y :: (a -> a, a -> (a,a)); y = (x1,x2) in y"
+                    "{} -> (a -> a) -> (a -> (a, a)) -> (a -> a, a -> (a, a))"
+              , textTypeTest
+                    "\\x1 -> \\x2 -> let y :: (a -> a, b -> (b,b)); y = (x1,x2) in y"
+                    "{} -> (a -> a) -> (b -> (b, b)) -> (a -> a, b -> (b, b))"
+              , textTypeTest
+                    "\\x1 -> \\x2 -> let y :: (b -> b, a -> (a,a)); y = (x1,x2) in y"
+                    "{} -> (b -> b) -> (a -> (a, a)) -> (b -> b, a -> (a, a))"
+              , textTypeTest
+                    "\\x1 -> \\x2 -> let y :: (a -> b, b -> a); y = (x1,x2) in y"
+                    "{} -> (a -> b) -> (b -> a) -> (a -> b, b -> a)"
+              , textTypeTest
+                    "\\x1 -> \\x2 -> let y :: (c -> d, d -> c); y = (x1,x2) in y"
+                    "{} -> (c -> d) -> (d -> c) -> (c -> d, d -> c)"
               ]
         , testGroup
               "simplify"
