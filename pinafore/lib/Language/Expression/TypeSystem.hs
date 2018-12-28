@@ -129,4 +129,8 @@ tsSubsume ::
     => AnyW (TSPosWitness ts)
     -> TSSealedExpression ts
     -> TSScoped ts (TSSealedExpression ts)
-tsSubsume t expr = runRenamer @(TSRenamer ts) $ subsumeExpression @(TSSubsumer ts) t expr
+tsSubsume (MkAnyW t) expr =
+    runRenamer @(TSRenamer ts) $ do
+        at' <- namespace $ withTransConstraintTM @Monad $ renameTSPosWitness t $ \t' _ -> return $ MkAnyW t'
+        expr' <- renameSealedExpression expr
+        subsumeExpression @(TSSubsumer ts) at' expr'

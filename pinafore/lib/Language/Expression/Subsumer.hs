@@ -1,10 +1,14 @@
-module Language.Expression.Subsumer where
+module Language.Expression.Subsumer
+    ( Subsumer(..)
+    , SubsumerOpenExpression
+    , SubsumerSealedExpression
+    , liftSubsumer
+    , subsumeExpression
+    ) where
 
 import Language.Expression.Expression
 import Language.Expression.Named
 import Language.Expression.Sealed
-
---import Language.Expression.Unifier
 import Shapes
 
 class (Monad (SubsumerMonad subsumer), Applicative subsumer) => Subsumer subsumer where
