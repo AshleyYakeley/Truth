@@ -69,6 +69,10 @@ data SyntaxBinding baseedit =
 data SyntaxPattern =
     MkSyntaxPattern Name
 
+data SyntaxCase baseedit =
+    MkSyntaxCase SyntaxPattern
+                 (SyntaxExpression baseedit)
+
 data SyntaxExpression' baseedit
     = SEConst (QValue baseedit)
     | SEVar Name
@@ -80,6 +84,8 @@ data SyntaxExpression' baseedit
     | SEUnref (SyntaxExpression baseedit)
     | SELet (SyntaxDeclarations baseedit)
             (SyntaxExpression baseedit)
+    | SECase (SyntaxExpression baseedit)
+             [SyntaxCase baseedit]
     | SEList [SyntaxExpression baseedit]
     | SEProperty SyntaxType
                  SyntaxType
@@ -104,6 +110,9 @@ instance SyntaxFreeVariables t => SyntaxFreeVariables [t] where
 instance SyntaxFreeVariables (SyntaxExpression baseedit) where
     syntaxFreeVariables (MkSyntaxExpression _ e) = syntaxFreeVariables e
 
+instance SyntaxFreeVariables (SyntaxCase baseedit) where
+    syntaxFreeVariables (MkSyntaxCase pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
+
 instance SyntaxFreeVariables (SyntaxExpression' baseedit) where
     syntaxFreeVariables (SEConst _) = mempty
     syntaxFreeVariables (SEVar name) = opoint name
@@ -113,6 +122,7 @@ instance SyntaxFreeVariables (SyntaxExpression' baseedit) where
     syntaxFreeVariables (SEUnref expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SELet binds expr) =
         difference (syntaxFreeVariables binds <> syntaxFreeVariables expr) (syntaxBindingVariables binds)
+    syntaxFreeVariables (SECase expr cases) = union (syntaxFreeVariables expr) (syntaxFreeVariables cases)
     syntaxFreeVariables (SEList exprs) = syntaxFreeVariables exprs
     syntaxFreeVariables (SEProperty _ _ _) = mempty
     syntaxFreeVariables (SEEntity _ _) = mempty

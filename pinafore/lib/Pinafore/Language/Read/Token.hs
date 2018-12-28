@@ -26,6 +26,9 @@ data Token t where
     TokUnref :: Token ()
     TokLet :: Token ()
     TokIn :: Token ()
+    TokCase :: Token ()
+    TokOf :: Token ()
+    TokEnd :: Token ()
     TokIf :: Token ()
     TokThen :: Token ()
     TokElse :: Token ()
@@ -58,6 +61,9 @@ instance TestEquality Token where
     testEquality TokUnref TokUnref = Just Refl
     testEquality TokLet TokLet = Just Refl
     testEquality TokIn TokIn = Just Refl
+    testEquality TokCase TokCase = Just Refl
+    testEquality TokOf TokOf = Just Refl
+    testEquality TokEnd TokEnd = Just Refl
     testEquality TokIf TokIf = Just Refl
     testEquality TokThen TokThen = Just Refl
     testEquality TokElse TokElse = Just Refl
@@ -91,6 +97,9 @@ instance Show (Token t) where
     show TokUnref = "unreference"
     show TokLet = show ("let" :: String)
     show TokIn = show ("in" :: String)
+    show TokCase = show ("case" :: String)
+    show TokOf = show ("of" :: String)
+    show TokEnd = show ("end" :: String)
     show TokIf = show ("if" :: String)
     show TokThen = show ("then" :: String)
     show TokElse = show ("else" :: String)
@@ -186,6 +195,9 @@ readTextToken = do
         -- keywords
         "let" -> return $ MkAnyValue TokLet ()
         "in" -> return $ MkAnyValue TokIn ()
+        "case" -> return $ MkAnyValue TokCase ()
+        "of" -> return $ MkAnyValue TokOf ()
+        "end" -> return $ MkAnyValue TokEnd ()
         "property" -> return $ MkAnyValue TokProperty ()
         "entity" -> return $ MkAnyValue TokEntity ()
         "if" -> return $ MkAnyValue TokIf ()

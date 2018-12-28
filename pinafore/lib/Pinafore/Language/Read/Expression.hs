@@ -85,6 +85,28 @@ readExpression ::
     => Parser (SyntaxExpression baseedit)
 readExpression = readExpressionInfixed $ readSourcePos readExpression1'
 
+readCase ::
+       forall baseedit. HasPinaforeEntityEdit baseedit
+    => Parser (SyntaxCase baseedit)
+readCase = do
+    pat <- readPattern
+    readThis TokMap
+    e <- readExpression
+    return $ MkSyntaxCase pat e
+
+readCases ::
+       forall baseedit. HasPinaforeEntityEdit baseedit
+    => Parser [SyntaxCase baseedit]
+readCases =
+    (do
+         c <- readCase
+         mcl <-
+             optional $ do
+                 readThis TokSemicolon
+                 readCases
+         return $ c : fromMaybe [] mcl) <|>
+    (return [])
+
 readExpression1' ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (SyntaxExpression' baseedit)
@@ -100,6 +122,13 @@ readExpression1' =
          readThis TokIn
          sbody <- readExpression
          return $ SELet sdecls sbody) <|>
+    (do
+         readThis TokCase
+         sbody <- readExpression
+         readThis TokOf
+         scases <- readCases
+         readThis TokEnd
+         return $ SECase sbody scases) <|>
     (do
          spos <- getPosition
          readThis TokIf

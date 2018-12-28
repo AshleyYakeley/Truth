@@ -86,6 +86,7 @@ interpretExpression' spos (SEAbstract sargs sbody) = do
 interpretExpression' spos (SELet decls sbody) = do
     MkTransform bmap <- liftRefNotation $ interpretDeclarations spos decls
     bmap $ interpretExpression sbody
+interpretExpression' _ (SECase _ _) = fail "NYI: case"
 interpretExpression' spos (SEApply sf sargs) = do
     f <- interpretExpression sf
     args <- for sargs interpretExpression
