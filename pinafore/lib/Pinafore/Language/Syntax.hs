@@ -66,6 +66,11 @@ data SyntaxBinding baseedit =
                     [SyntaxPattern]
                     (SyntaxExpression baseedit)
 
+data SyntaxLiteral
+    = SLNumber Number
+    | SLString Text
+    | SLConstructor Name
+
 data SyntaxPattern =
     MkSyntaxPattern Name
 
@@ -73,8 +78,13 @@ data SyntaxCase baseedit =
     MkSyntaxCase SyntaxPattern
                  (SyntaxExpression baseedit)
 
+data SyntaxConstant
+    = SCIfThenElse
+    | SCPair
+    | SCLiteral SyntaxLiteral
+
 data SyntaxExpression' baseedit
-    = SEConst (QValue baseedit)
+    = SEConst SyntaxConstant
     | SEVar Name
     | SEApply (SyntaxExpression baseedit)
               [SyntaxExpression baseedit]

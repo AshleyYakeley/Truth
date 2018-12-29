@@ -78,8 +78,8 @@ testEntity =
               "pass"
               [ pointTest "pass"
               , pointTest "pass >> pass"
-              , pointTest "if true then pass else fail \"failed\""
-              , pointTest "pass >> if true then pass else fail \"failed\""
+              , pointTest "if True then pass else fail \"failed\""
+              , pointTest "pass >> if True then pass else fail \"failed\""
               ]
         , testGroup
               "bad parse"
@@ -105,9 +105,9 @@ testEntity =
               "equality"
               [ pointTest "testeqval 1 1"
               , pointTest "testeqval 1 \"1\""
-              , pointTest "testeqval false $ 0 == 1"
-              , pointTest "testeqval true $ 1 == 1"
-              , pointTest "testeqval false $ 1 == ~1"
+              , pointTest "testeqval False $ 0 == 1"
+              , pointTest "testeqval True $ 1 == 1"
+              , pointTest "testeqval False $ 1 == ~1"
               ]
         , testGroup
               "reference notation"

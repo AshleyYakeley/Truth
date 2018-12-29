@@ -203,9 +203,9 @@ testType =
               , textTypeTest "(v,v)" "{v :: a, v :: b} -> (a, b)"
               , textTypeTest "(v 3,v 3)" "{v :: Number -> a, v :: Number -> b} -> (a, b)"
               , textTypeTest "[v 3]" "{v :: Number -> a} -> [a]"
-              , textTypeTest "(v 3,v false)" "{v :: Number -> a, v :: Boolean -> b} -> (a, b)"
+              , textTypeTest "(v 3,v False)" "{v :: Number -> a, v :: Boolean -> b} -> (a, b)"
               , textTypeTest
-                    "((v 3,v false),v 3)"
+                    "((v 3,v False),v 3)"
                     "{v :: Number -> a', v :: Boolean -> b', v :: Number -> b} -> ((a', b'), b)"
               , textTypeTest "let v = x in [v,v,v]" "{x :: a, x :: a, x :: a} -> [a]"
               , textTypeTest "\\x -> let v = x in [v,v,v]" "{} -> a -> [a]"

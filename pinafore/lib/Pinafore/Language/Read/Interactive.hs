@@ -32,7 +32,7 @@ readInteractiveCommand ::
 readInteractiveCommand =
     (do
          readExactlyThis TokOperator ":"
-         MkName cmd <- readThis TokName
+         MkName cmd <- readThis TokLName
          case cmd of
              "t" -> showTypeInteractiveCommand
              "type" -> showTypeInteractiveCommand

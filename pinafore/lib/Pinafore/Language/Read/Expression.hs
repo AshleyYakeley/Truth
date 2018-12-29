@@ -4,20 +4,18 @@ module Pinafore.Language.Read.Expression
     ) where
 
 import Pinafore.Base
-import Pinafore.Language.If
 import Pinafore.Language.Read.Infix
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
 import Pinafore.Language.Read.TypeDecls
 import Pinafore.Language.Syntax
-import Pinafore.Language.Type
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
 readPattern :: Parser SyntaxPattern
 readPattern = do
-    name <- readThis TokName
+    name <- readThis TokLName
     return $ MkSyntaxPattern name
 
 readTypeSignature :: Parser SyntaxType
@@ -35,11 +33,11 @@ readBindingRest = do
 readBinding :: HasPinaforeEntityEdit baseedit => Parser (SyntaxBinding baseedit)
 readBinding = do
     spos <- getPosition
-    name <- readThis TokName
+    name <- readThis TokLName
     (do
          tp <- readTypeSignature
          readThis TokSemicolon
-         name' <- readThis TokName
+         name' <- readThis TokLName
          (args, rval) <- readBindingRest
          if name == name'
              then return $ MkSyntaxBinding spos (Just tp) name' args rval
@@ -137,7 +135,7 @@ readExpression1' =
          methen <- readExpression
          readThis TokElse
          meelse <- readExpression
-         return $ SEApply (MkSyntaxExpression spos $ SEConst $ toValue qifthenelse) [metest, methen, meelse]) <|>
+         return $ SEApply (MkSyntaxExpression spos $ SEConst SCIfThenElse) [metest, methen, meelse]) <|>
     readExpression2'
 
 readExpression2' :: HasPinaforeEntityEdit baseedit => Parser (SyntaxExpression' baseedit)
@@ -156,17 +154,17 @@ readExpression3' ::
     => Parser (SyntaxExpression' baseedit)
 readExpression3' =
     (do
-         b <- readThis TokBool
-         return $ SEConst $ toValue b) <|>
+         name <- readThis TokUName
+         return $ SEConst $ SCLiteral $ SLConstructor name) <|>
     (do
-         name <- readThis TokName
+         name <- readThis TokLName
          return $ SEVar name) <|>
     (do
          n <- readThis TokNumber
-         return $ SEConst $ toValue n) <|>
+         return $ SEConst $ SCLiteral $ SLNumber n) <|>
     (do
          str <- readThis TokString
-         return $ SEConst $ toValue str) <|>
+         return $ SEConst $ SCLiteral $ SLString str) <|>
     (do
          readThis TokProperty
          readThis TokAt
@@ -200,8 +198,7 @@ readExpression3' =
                   readExpression
           case msexpr2 of
               Just sexpr2 -> do
-                  sfun <-
-                      readSourcePos $ return $ SEConst $ toValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
+                  sfun <- readSourcePos $ return $ SEConst SCPair
                   return $ SEApply sfun [sexpr1, sexpr2]
               Nothing -> return sexpr1')) <|>
     (do

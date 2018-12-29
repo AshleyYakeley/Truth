@@ -7,6 +7,7 @@ import Data.Graph
 import Pinafore.Base
 import Pinafore.Language.EntityType
 import Pinafore.Language.Expression
+import Pinafore.Language.If
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Morphism
 import Pinafore.Language.Name
@@ -74,6 +75,21 @@ interpretDeclarations spos (MkSyntaxDeclarations stypedecls sbinds) = do
     MkTypeDecls td <- stypedecls
     return $ MkTransform $ \ra -> td $ interpretLetBindings spos sbinds $ td ra
 
+interpretConstructor :: Name -> RefExpression baseedit
+interpretConstructor "True" = return $ qConstExprAny $ toValue True
+interpretConstructor "False" = return $ qConstExprAny $ toValue False
+interpretConstructor n = fail $ "unknown constructor: " <> show n
+
+interpretLiteral :: SyntaxLiteral -> RefExpression baseedit
+interpretLiteral (SLNumber v) = return $ qConstExprAny $ toValue v
+interpretLiteral (SLString v) = return $ qConstExprAny $ toValue v
+interpretLiteral (SLConstructor v) = interpretConstructor v
+
+interpretConstant :: SyntaxConstant -> RefExpression baseedit
+interpretConstant SCIfThenElse = return $ qConstExprAny $ toValue qifthenelse
+interpretConstant SCPair = return $ qConstExprAny $ toValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
+interpretConstant (SCLiteral lit) = interpretLiteral lit
+
 interpretExpression' ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => SourcePos
@@ -91,7 +107,7 @@ interpretExpression' spos (SEApply sf sargs) = do
     f <- interpretExpression sf
     args <- for sargs interpretExpression
     liftRefNotation $ runSourcePos spos $ qApplyAllExpr f args
-interpretExpression' _ (SEConst val) = return $ qConstExprAny val
+interpretExpression' _ (SEConst c) = interpretConstant c
 interpretExpression' spos (SEVar name) = varRefExpr spos name
 interpretExpression' spos (SERef sexpr) = refNotationQuote spos $ interpretExpression sexpr
 interpretExpression' _ (SEUnref sexpr) = refNotationUnquote $ interpretExpression sexpr

@@ -9,7 +9,6 @@ import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Syntax
 import Shapes hiding (try)
-import Text.Parsec hiding ((<|>), many, optional)
 
 readType :: Parser SyntaxType
 readType = do
@@ -40,20 +39,20 @@ readType1 = do
 readType2 :: Parser SyntaxType
 readType2 =
     (do
-         readExactlyThis TokName "Either"
+         readExactlyThis TokUName "Either"
          t1 <- readType3
          t2 <- readType3
          return $ EitherSyntaxType t1 t2) <|>
     (do
-         readExactlyThis TokName "Ref"
+         readExactlyThis TokUName "Ref"
          t1 <- readType3
          return $ RefSyntaxType t1) <|>
     (do
-         readExactlyThis TokName "Set"
+         readExactlyThis TokUName "Set"
          t1 <- readType3
          return $ SetSyntaxType t1) <|>
     (do
-         readExactlyThis TokName "Order"
+         readExactlyThis TokUName "Order"
          t1 <- readType3
          return $ OrderSyntaxType t1) <|>
     readType3
@@ -105,13 +104,7 @@ readSignedType =
          return (Just ContraSyntaxVariance, t1))
 
 readTypeVar :: Parser Name
-readTypeVar =
-    try $ do
-        name <- readThis TokName
-        case unpack name of
-            c:_
-                | isLower c -> return name
-            _ -> mzero
+readTypeVar = readThis TokLName
 
 readTypeConst :: Parser SyntaxType
 readTypeConst = do
@@ -123,10 +116,4 @@ readTypeConst = do
         _ -> return $ ConstSyntaxType name
 
 readTypeName :: Parser Name
-readTypeName =
-    try $ do
-        name <- readThis TokName
-        case unpack name of
-            c:_
-                | isUpper c -> return name
-            _ -> mzero
+readTypeName = readThis TokUName

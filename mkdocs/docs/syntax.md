@@ -138,7 +138,7 @@ In interactive mode, each line has syntax `<interactive>`.
 ```no-highlight
 symbol = [[:alpha:]][-_[:alnum:]]*
 
-literal-boolean = (true)|(false)
+literal-boolean = (True)|(False)
 
 literal-number = (-?[0-9]+(.[0-9]*(_[0-9]*)?)?)|(~-?[0-9]+(.[0-9]*)?(e-?[0-9]+)?)|(NaN)
 

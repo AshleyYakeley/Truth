@@ -52,8 +52,8 @@ instance AsLiteral () where
     literalTypeDescription = "unit"
 
 instance AsLiteral Bool where
-    toLiteral True = MkLiteral $ fromString "true"
-    toLiteral False = MkLiteral $ fromString "false"
+    toLiteral True = MkLiteral $ fromString "True"
+    toLiteral False = MkLiteral $ fromString "False"
     fromLiteral text = maybeToKnow $ lookup text $ fmap (\t -> (toLiteral t, t)) allValues
     literalTypeDescription = "boolean"
 

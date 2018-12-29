@@ -34,8 +34,8 @@ data Token t where
     TokElse :: Token ()
     TokOpenType :: Token ()
     TokSubtype :: Token ()
-    TokBool :: Token Bool
-    TokName :: Token Name
+    TokUName :: Token Name
+    TokLName :: Token Name
     TokLambda :: Token ()
     TokAssign :: Token ()
     TokMap :: Token ()
@@ -69,8 +69,8 @@ instance TestEquality Token where
     testEquality TokElse TokElse = Just Refl
     testEquality TokOpenType TokOpenType = Just Refl
     testEquality TokSubtype TokSubtype = Just Refl
-    testEquality TokBool TokBool = Just Refl
-    testEquality TokName TokName = Just Refl
+    testEquality TokUName TokUName = Just Refl
+    testEquality TokLName TokLName = Just Refl
     testEquality TokLambda TokLambda = Just Refl
     testEquality TokAssign TokAssign = Just Refl
     testEquality TokMap TokMap = Just Refl
@@ -105,8 +105,8 @@ instance Show (Token t) where
     show TokElse = show ("else" :: String)
     show TokOpenType = show ("opentype" :: String)
     show TokSubtype = show ("subtype" :: String)
-    show TokBool = "boolean"
-    show TokName = "name"
+    show TokUName = "uname"
+    show TokLName = "lname"
     show TokLambda = "\\"
     show TokAssign = "="
     show TokMap = "->"
@@ -205,9 +205,9 @@ readTextToken = do
         "else" -> return $ MkAnyValue TokElse ()
         "opentype" -> return $ MkAnyValue TokOpenType ()
         "subtype" -> return $ MkAnyValue TokSubtype ()
-        "true" -> return $ MkAnyValue TokBool True
-        "false" -> return $ MkAnyValue TokBool False
-        name -> return $ MkAnyValue TokName $ MkName $ pack name
+        name
+            | isUpper firstC -> return $ MkAnyValue TokUName $ MkName $ pack name
+        name -> return $ MkAnyValue TokLName $ MkName $ pack name
 
 uuidChar :: Char -> Bool
 uuidChar '-' = True
