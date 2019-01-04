@@ -41,6 +41,11 @@ type UnifierOpenExpression unifier = NamedExpression (UnifierName unifier) (Unif
 type UnifierSealedExpression unifier
      = SealedExpression (UnifierName unifier) (UnifierNegWitness unifier) (UnifierPosWitness unifier)
 
+type UnifierOpenPattern unifier = NamedPattern (UnifierName unifier) (UnifierPosWitness unifier)
+
+type UnifierSealedPattern unifier
+     = SealedPattern (UnifierName unifier) (UnifierPosWitness unifier) (UnifierNegWitness unifier)
+
 liftUnifier :: Monad (UnifierMonad unifier) => unifier a -> Compose (UnifierMonad unifier) unifier a
 liftUnifier ua = Compose $ return ua
 

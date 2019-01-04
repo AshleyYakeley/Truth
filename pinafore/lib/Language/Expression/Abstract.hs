@@ -4,6 +4,7 @@ module Language.Expression.Abstract where
 
 import Language.Expression.Expression
 import Language.Expression.Named
+import Language.Expression.Pattern
 import Language.Expression.Renamer
 import Language.Expression.Sealed
 import Language.Expression.Unifier
@@ -37,6 +38,9 @@ data AbstractResult unifier a =
     forall t. MkAbstractResult (UnifierNegWitness unifier t)
                                (UnifyExpression unifier (t -> a))
 
+instance Functor (AbstractResult unifier) where
+    fmap ab (MkAbstractResult vwt uexpr) = MkAbstractResult vwt $ fmap (fmap ab) uexpr
+
 abstractNamedExpression ::
        forall unifier renamer m a.
        ( Renamer renamer
@@ -53,6 +57,61 @@ abstractNamedExpression name expr =
     renameNewVar $ \vwt0 _ _ ->
         abstractNamedExpressionUnifier @unifier name vwt0 expr $ \vwt uconv expr' ->
             return $ MkAbstractResult vwt $ MkUnifyExpression uconv $ fmap (\tua t'ttu -> tua . snd . t'ttu) expr'
+
+abstractUnifyExpression ::
+       forall unifier renamer m a.
+       ( Renamer renamer
+       , Monad m
+       , Unifier unifier
+       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
+       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , UnifierMonad unifier ~ renamer m
+       )
+    => UnifierName unifier
+    -> UnifyExpression unifier a
+    -> UnifierMonad unifier (AbstractResult unifier a)
+abstractUnifyExpression name (MkUnifyExpression uconv expr) = do
+    MkAbstractResult vwt (MkUnifyExpression uabsconv expr') <- abstractNamedExpression @unifier name expr
+    return $
+        MkAbstractResult vwt $
+        MkUnifyExpression ((,) <$> uabsconv <*> uconv) $ fmap (\f (absconv, conv) t -> f absconv t conv) expr'
+
+patternAbstractUnifyExpression ::
+       forall unifier renamer m q a t.
+       ( Renamer renamer
+       , Monad m
+       , Unifier unifier
+       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
+       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , UnifierMonad unifier ~ renamer m
+       )
+    => UnifierOpenPattern unifier q t
+    -> UnifyExpression unifier a
+    -> UnifierMonad unifier (UnifyExpression unifier (q -> Maybe (a, t)))
+patternAbstractUnifyExpression (ClosedPattern qmt) expr = return $ fmap (\a q -> qmt q >>= \t -> Just (a, t)) expr
+patternAbstractUnifyExpression (OpenPattern (MkNameWitness name vwt) pat) expr = do
+    MkAbstractResult absvwt absexpr <- abstractUnifyExpression @unifier name expr
+    uabsconv <- unifyPosNegWitnesses vwt absvwt
+    MkUnifyExpression uconv rexpr <- patternAbstractUnifyExpression @unifier pat absexpr
+    return $
+        MkUnifyExpression ((,) <$> uabsconv <*> uconv) $
+        fmap (\f (absconv, conv) q -> fmap (\(t2a, (t1, t)) -> (t2a $ absconv t1, t)) $ f conv q) rexpr
+
+patternAbstractExpression ::
+       forall unifier renamer m a.
+       ( Renamer renamer
+       , Monad m
+       , Unifier unifier
+       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
+       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , UnifierMonad unifier ~ renamer m
+       )
+    => UnifierSealedPattern unifier
+    -> UnifyExpression unifier a
+    -> UnifierMonad unifier (AbstractResult unifier (Maybe a))
+patternAbstractExpression (MkSealedPattern vwt pat) uexpr = do
+    uexpr' <- patternAbstractUnifyExpression @unifier pat uexpr
+    return $ fmap (fmap fst) $ MkAbstractResult vwt uexpr'
 
 letBindNamedExpression ::
        forall unifier renamer m a.

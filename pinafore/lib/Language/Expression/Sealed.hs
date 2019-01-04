@@ -4,6 +4,7 @@ module Language.Expression.Sealed where
 
 import Language.Expression.Expression
 import Language.Expression.Named
+import Language.Expression.Pattern
 import Language.Expression.Renamer
 import Shapes
 
@@ -49,3 +50,18 @@ instance MonoApplicative (SealedExpression name vw ((:~:) val)) where
         MkSealedExpression Refl $ appf <$> vexpr <*> bexpr
     osequenceA conv exprs =
         MkSealedExpression Refl $ fmap conv $ sequenceA $ fmap (\(MkSealedExpression Refl expr) -> expr) exprs
+
+data SealedPattern name vw tw =
+    forall t. MkSealedPattern (tw t)
+                              (NamedPattern name vw t ())
+
+renameSealedPattern ::
+       (Renamer rn, Monad m)
+    => SealedPattern name (RenamerPosWitness rn) (RenamerNegWitness rn)
+    -> rn m (SealedPattern name (RenamerPosWitness rn) (RenamerNegWitness rn))
+renameSealedPattern (MkSealedPattern twt expr) =
+    withTransConstraintTM @Monad $
+    namespace $
+    withTransConstraintTM @Monad $ do
+        expr' <- renamePattern expr
+        renameTSNegWitness twt $ \twt' bij -> return $ MkSealedPattern twt' $ contramap1Pattern (biBackwards bij) expr'

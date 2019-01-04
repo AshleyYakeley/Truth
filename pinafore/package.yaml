@@ -26,6 +26,7 @@ library:
     exposed-modules:
       - Language.Expression.Witness
       - Language.Expression.Expression
+      - Language.Expression.Pattern
       - Language.Expression.NameWit
       - Language.Expression.Named
       - Language.Expression.Sealed
