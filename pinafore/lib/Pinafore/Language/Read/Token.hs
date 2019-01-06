@@ -36,6 +36,7 @@ data Token t where
     TokSubtype :: Token ()
     TokUName :: Token Name
     TokLName :: Token Name
+    TokUnderscore :: Token ()
     TokLambda :: Token ()
     TokAssign :: Token ()
     TokMap :: Token ()
@@ -71,6 +72,7 @@ instance TestEquality Token where
     testEquality TokSubtype TokSubtype = Just Refl
     testEquality TokUName TokUName = Just Refl
     testEquality TokLName TokLName = Just Refl
+    testEquality TokUnderscore TokUnderscore = Just Refl
     testEquality TokLambda TokLambda = Just Refl
     testEquality TokAssign TokAssign = Just Refl
     testEquality TokMap TokMap = Just Refl
@@ -107,6 +109,7 @@ instance Show (Token t) where
     show TokSubtype = show ("subtype" :: String)
     show TokUName = "uname"
     show TokLName = "lname"
+    show TokUnderscore = show ("_" :: String)
     show TokLambda = "\\"
     show TokAssign = "="
     show TokMap = "->"
@@ -164,6 +167,10 @@ readQuotedString = do
     readQuotedChar :: Parser Char
     readQuotedChar = readEscapedChar <|> (satisfy ('"' /=))
 
+identifierFirstChar :: Char -> Bool
+identifierFirstChar '_' = True
+identifierFirstChar c = isAlpha c
+
 identifierChar :: Char -> Bool
 identifierChar '-' = True
 identifierChar '_' = True
@@ -189,10 +196,11 @@ readNumber =
 
 readTextToken :: Parser (AnyValue Token)
 readTextToken = do
-    firstC <- satisfy isAlpha
+    firstC <- satisfy identifierFirstChar
     rest <- many $ satisfy identifierChar
     case firstC : rest of
         -- keywords
+        "_" -> return $ MkAnyValue TokUnderscore ()
         "let" -> return $ MkAnyValue TokLet ()
         "in" -> return $ MkAnyValue TokIn ()
         "case" -> return $ MkAnyValue TokCase ()

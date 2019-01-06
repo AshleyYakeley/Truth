@@ -18,7 +18,8 @@ import Pinafore.Language.Type
 import Shapes
 
 interpretPattern :: SyntaxPattern -> Name
-interpretPattern (MkSyntaxPattern n) = n
+interpretPattern (VarSyntaxPattern n) = n
+interpretPattern _ = error "NYI: patterns"
 
 interpretExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit

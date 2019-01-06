@@ -71,8 +71,13 @@ data SyntaxLiteral
     | SLString Text
     | SLConstructor Name
 
-data SyntaxPattern =
-    MkSyntaxPattern Name
+data SyntaxPattern
+    = AnySyntaxPattern
+    | VarSyntaxPattern Name
+    | BothSyntaxPattern SyntaxPattern
+                        SyntaxPattern
+    | ConstructorSyntaxPattern Name
+                               [SyntaxPattern]
 
 data SyntaxCase baseedit =
     MkSyntaxCase SyntaxPattern
@@ -151,7 +156,11 @@ instance SyntaxBindingVariables t => SyntaxBindingVariables [t] where
     syntaxBindingVariables tt = mconcat $ fmap syntaxBindingVariables tt
 
 instance SyntaxBindingVariables SyntaxPattern where
-    syntaxBindingVariables (MkSyntaxPattern name) = singletonSet name
+    syntaxBindingVariables AnySyntaxPattern = mempty
+    syntaxBindingVariables (VarSyntaxPattern name) = singletonSet name
+    syntaxBindingVariables (BothSyntaxPattern pat1 pat2) =
+        union (syntaxBindingVariables pat1) (syntaxBindingVariables pat2)
+    syntaxBindingVariables (ConstructorSyntaxPattern _ pats) = syntaxBindingVariables pats
 
 instance SyntaxBindingVariables (SyntaxDeclarations baseedit) where
     syntaxBindingVariables (MkSyntaxDeclarations _ binds) = syntaxBindingVariables binds

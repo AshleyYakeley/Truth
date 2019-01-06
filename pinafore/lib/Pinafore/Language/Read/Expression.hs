@@ -13,10 +13,37 @@ import Pinafore.Language.Syntax
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
-readPattern :: Parser SyntaxPattern
-readPattern = do
-    name <- readThis TokLName
-    return $ MkSyntaxPattern name
+readPatterns :: Parser [SyntaxPattern]
+readPatterns = many readPattern2
+
+readPattern1 :: Parser SyntaxPattern
+readPattern1 =
+    (do
+         consname <- readThis TokUName
+         pats <- readPatterns
+         return $ ConstructorSyntaxPattern consname pats) <|>
+    readPattern2
+
+readPattern2 :: Parser SyntaxPattern
+readPattern2 = do
+    pat1 <- readPattern3
+    mpat2 <-
+        optional $ do
+            readExactlyThis TokOperator "@"
+            readPattern2
+    case mpat2 of
+        Nothing -> return pat1
+        Just pat2 -> return $ BothSyntaxPattern pat1 pat2
+
+readPattern3 :: Parser SyntaxPattern
+readPattern3 =
+    (do
+         name <- readThis TokLName
+         return $ VarSyntaxPattern name) <|>
+    (do
+         readThis TokUnderscore
+         return AnySyntaxPattern) <|>
+    readParen readPattern1
 
 readTypeSignature :: Parser SyntaxType
 readTypeSignature = do
@@ -25,7 +52,7 @@ readTypeSignature = do
 
 readBindingRest :: HasPinaforeEntityEdit baseedit => Parser ([SyntaxPattern], SyntaxExpression baseedit)
 readBindingRest = do
-    args <- many readPattern
+    args <- readPatterns
     readThis TokAssign
     rval <- readExpression
     return (args, rval)
@@ -87,7 +114,7 @@ readCase ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (SyntaxCase baseedit)
 readCase = do
-    pat <- readPattern
+    pat <- readPattern1
     readThis TokMap
     e <- readExpression
     return $ MkSyntaxCase pat e
@@ -111,7 +138,7 @@ readExpression1' ::
 readExpression1' =
     (do
          readThis TokLambda
-         args <- many readPattern
+         args <- readPatterns
          readThis TokMap
          mval <- readExpression
          return $ SEAbstract args mval) <|>

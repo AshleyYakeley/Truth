@@ -63,9 +63,9 @@ In interactive mode, each line has syntax `<interactive>`.
     "-" <type> |
     "+" <type>
 
-<type-var> ::= symbol -- lowercase first letter
+<type-var> ::= lname
 
-<type-const> ::= symbol -- upper first letter
+<type-const> ::= uname
 
 <expression> ::= <expression-infix[0]>
 
@@ -81,6 +81,7 @@ In interactive mode, each line has syntax `<interactive>`.
     "\" <patterns> "->" <expression> |
     <let-declarations> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
+    "case" <expression> "of" <cases> "end" |
     <expression-2>
 
 <expression-2> ::= <expression-3> | <expression-2> <expression-3>
@@ -90,7 +91,8 @@ In interactive mode, each line has syntax `<interactive>`.
     "entity" "@"<type-3> anchor |
     "{" <expression> "}" |
     "%" <expression-3> |
-    symbol |
+    lname |
+    uname |
     literal-boolean |
     literal-number |
     literal-text |
@@ -104,6 +106,10 @@ In interactive mode, each line has syntax `<interactive>`.
     <expression> |
     <comma-separated-expressions-1> "," <expression>
 
+<cases> ::=  | <case> ";" <cases>
+
+<case> ::= <pattern-1> "->" <expression>
+
 <let-declarations> ::= "let" <declarations>
 
 <declarations> ::=  | <declaration> ";" <declarations>
@@ -111,11 +117,15 @@ In interactive mode, each line has syntax `<interactive>`.
 <declaration> ::=
     "opentype" <type-const> |
     "subtype" <type-const> "<=" <type-const> |
-    symbol <patterns> "=" <expression>
+    lname <patterns> "=" <expression>
 
-<patterns> ::=  | <pattern> <patterns>
+<patterns> ::=  | <pattern-2> <patterns>
 
-<pattern> ::= symbol
+<pattern-1> ::= <pattern-2> | uname <patterns>
+
+<pattern-2> ::= <pattern-3> | <pattern-3> "@" <pattern-2>
+
+<pattern-3> ::= lname | "_" | "(" <pattern-1> ")"
 ```
 
 ## Infix Operators
@@ -136,7 +146,9 @@ In interactive mode, each line has syntax `<interactive>`.
 ## Lexical
 
 ```no-highlight
-symbol = [[:alpha:]][-_[:alnum:]]*
+uname = [[:upper:]][-_[:alnum:]]*
+
+lname = [_[:lower:]][-_[:alnum:]]*
 
 literal-boolean = (True)|(False)
 
