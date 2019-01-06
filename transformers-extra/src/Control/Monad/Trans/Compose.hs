@@ -12,7 +12,6 @@ import Control.Monad.Trans.Except
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift
 import Data.Constraint
-import Data.Kind
 import Prelude
 
 newtype ComposeT (t1 :: (* -> *) -> (* -> *)) (t2 :: (* -> *) -> (* -> *)) (m :: * -> *) (a :: *) = MkComposeT

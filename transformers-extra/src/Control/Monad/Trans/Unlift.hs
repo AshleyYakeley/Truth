@@ -14,7 +14,6 @@ import Control.Monad.Trans.Transform
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Writer
 import Data.Constraint
-import Data.Kind
 import Data.Tuple
 import Prelude
 

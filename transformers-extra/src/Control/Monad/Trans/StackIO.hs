@@ -9,7 +9,6 @@ import Control.Monad.Trans.Transform
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift
 import Data.Constraint
-import Data.Kind
 import Prelude
 
 class (MonadTransUnlift (MonadStackTrans m), MonadUnliftIO m) => MonadStackIO m where

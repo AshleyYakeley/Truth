@@ -1,4 +1,3 @@
-{-# LANGUAGE ApplicativeDo #-}
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Type.Subsume

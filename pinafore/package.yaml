@@ -8,7 +8,7 @@ _common: !include "../common.yaml"
 library:
     source-dirs: lib
     dependencies:
-      - base >= 4.9 && < 5
+      - base >= 4.12
       - time
       - deepseq
       - containers
@@ -117,7 +117,7 @@ tests:
     test:
         source-dirs: test
         dependencies:
-          - base >= 4.9 && < 5
+          - base >= 4.12
           - bytestring
           - containers
           - countable
@@ -149,7 +149,7 @@ benchmarks:
     benchmark:
         source-dirs: benchmark
         dependencies:
-          - base >= 4.9 && < 5
+          - base >= 4.12
           - criterion
           - shapes
           - pinafore
@@ -159,7 +159,7 @@ executables:
     pinafore:
         source-dirs: app
         dependencies:
-          - base >= 4.9 && < 5
+          - base >= 4.12
           - filepath
           - bytestring
           - shapes

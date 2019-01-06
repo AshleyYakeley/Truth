@@ -14,7 +14,7 @@ flags:
 library:
     source-dirs: lib
     dependencies:
-      - base >= 4.9 && < 5
+      - base >= 4.12
       - bytestring
       - text
       - transformers
@@ -56,7 +56,7 @@ tests:
     test:
         source-dirs: test
         dependencies:
-          - base >= 4.9 && < 5
+          - base >= 4.12
           - bytestring
           - transformers
           - mono-traversable
@@ -78,7 +78,7 @@ executables:
             buildable: False
         source-dirs: text
         dependencies:
-          - base >= 4.9 && < 5
+          - base >= 4.12
           - filepath
           - bytestring
           - uuid
@@ -94,7 +94,7 @@ executables:
             buildable: False
         source-dirs: soup
         dependencies:
-          - base >= 4.9 && < 5
+          - base >= 4.12
           - filepath
           - bytestring
           - uuid

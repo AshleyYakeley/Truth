@@ -1,5 +1,3 @@
-{-# LANGUAGE ApplicativeDo #-}
-
 module Language.Expression.Abstract where
 
 import Language.Expression.Expression
