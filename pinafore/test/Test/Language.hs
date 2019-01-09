@@ -326,6 +326,23 @@ testQueries =
               , testQuery "let i :: Number -> a; i x = x in 0" $ Nothing
               , testQuery "let i :: Number -> Number; i x = x in 0" $ Just $ showText "0"
               ]
+        , testGroup
+              "patterns"
+              [ testQuery "(\\a -> 5) 2" $ Just $ showText "5"
+              , testQuery "(\\a -> a) 2" $ Just $ showText "2"
+              , testQuery "(\\_ -> 5) 2" $ Just $ showText "5"
+              , testQuery "(\\a@b -> (a,b)) 2" $ Just "(2, 2)"
+              ]
+        , testGroup
+              "case"
+              [ testQuery "case 2 of a -> 5 end" $ Just $ showText "5"
+              , testQuery "case 2 of a -> 5; a -> 3 end" $ Just $ showText "5"
+              , testQuery "case 2 of a -> 5; a -> 3; end" $ Just $ showText "5"
+              , testQuery "case 2 of a -> a end" $ Just $ showText "2"
+              , testQuery "case 2 of _ -> 5 end" $ Just $ showText "5"
+              , testQuery "case 2 of _ -> 5; _ -> 3 end" $ Just $ showText "5"
+              , testQuery "case 2 of a@b -> (a,b) end" $ Just $ showText "(2, 2)"
+              ]
         ]
 
 testLanguage :: TestTree

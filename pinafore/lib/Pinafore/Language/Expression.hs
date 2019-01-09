@@ -16,6 +16,8 @@ import Shapes
 
 type QExpr baseedit = TSSealedExpression (PinaforeTypeSystem baseedit)
 
+type QPattern baseedit = TSSealedPattern (PinaforeTypeSystem baseedit)
+
 type QValue baseedit = TSValue (PinaforeTypeSystem baseedit)
 
 qConstExprAny :: forall baseedit. QValue baseedit -> QExpr baseedit
@@ -38,6 +40,27 @@ qAbstractsExpr [] e = return e
 qAbstractsExpr (n:nn) e = do
     e' <- qAbstractsExpr nn e
     qAbstractExpr n e'
+
+qVarPattern :: forall baseedit. Name -> QPattern baseedit
+qVarPattern = tsVarPattern @(PinaforeTypeSystem baseedit)
+
+qAnyPattern :: forall baseedit. QPattern baseedit
+qAnyPattern = tsAnyPattern @(PinaforeTypeSystem baseedit)
+
+qBothPattern ::
+       forall baseedit. QPattern baseedit -> QPattern baseedit -> PinaforeSourceScoped baseedit (QPattern baseedit)
+qBothPattern = tsBothPattern @(PinaforeTypeSystem baseedit)
+
+qCase ::
+       forall baseedit.
+       QExpr baseedit
+    -> [(QPattern baseedit, QExpr baseedit)]
+    -> PinaforeSourceScoped baseedit (QExpr baseedit)
+qCase = tsCase @(PinaforeTypeSystem baseedit)
+
+qCaseAbstract ::
+       forall baseedit. [(QPattern baseedit, QExpr baseedit)] -> PinaforeSourceScoped baseedit (QExpr baseedit)
+qCaseAbstract = tsCaseAbstract @(PinaforeTypeSystem baseedit)
 
 qApplyExpr :: forall baseedit. QExpr baseedit -> QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit)
 qApplyExpr exprf expra = tsApply @(PinaforeTypeSystem baseedit) exprf expra

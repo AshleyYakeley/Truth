@@ -1,11 +1,13 @@
 module Pinafore.Language.Type.Simplify.OneSidedTypeVars
     ( eliminateOneSidedTypeVarsInType
     , eliminateOneSidedTypeVarsInExpression
+    , eliminateOneSidedTypeVarsInPattern
     ) where
 
 import Language.Expression.Dolan
 import Language.Expression.Expression
 import Language.Expression.Named
+import Language.Expression.Pattern
 import Language.Expression.Sealed
 import Pinafore.Language.GroundType
 import Pinafore.Language.Type.Bisubstitute
@@ -52,8 +54,15 @@ instance GetExpressionVars (NamedExpression name (PinaforeType baseedit 'Negativ
     getExpressionVars (ClosedExpression _) = mempty
     getExpressionVars (OpenExpression (MkNameWitness _ t) expr) = getExpressionVars t <> getExpressionVars expr
 
+instance GetExpressionVars (NamedPattern name (PinaforeType baseedit 'PositivePolarity) a b) where
+    getExpressionVars (ClosedPattern _) = mempty
+    getExpressionVars (OpenPattern (MkNameWitness _ t) expr) = getExpressionVars t <> getExpressionVars expr
+
 instance GetExpressionVars (PinaforeExpression baseedit) where
     getExpressionVars (MkSealedExpression twt expr) = getExpressionVars twt <> getExpressionVars expr
+
+instance GetExpressionVars (PinaforePattern baseedit) where
+    getExpressionVars (MkSealedPattern twt pat) = getExpressionVars twt <> getExpressionVars pat
 
 eliminateOneSidedTypeVarsInType ::
        forall baseedit polarity t. IsTypePolarity polarity
@@ -74,8 +83,11 @@ eliminateOneSidedTypeVarsInType t = let
     bisubs = toList $ fmap mkbisub $ posonlyvars <> negonlyvars
     in runIdentity $ bisubstitutesType bisubs t
 
-eliminateOneSidedTypeVarsInExpression :: forall baseedit. PinaforeExpression baseedit -> PinaforeExpression baseedit
-eliminateOneSidedTypeVarsInExpression expr = let
+getEliminateBisubs ::
+       forall baseedit t. GetExpressionVars t
+    => t
+    -> [PinaforeBisubstitutionM Identity baseedit]
+getEliminateBisubs expr = let
     (setFromList -> posvars, setFromList -> negvars) = getExpressionVars expr
     posonlyvars :: FiniteSet _
     posonlyvars = difference posvars negvars
@@ -87,5 +99,10 @@ eliminateOneSidedTypeVarsInExpression expr = let
             vn
             (return $ contramap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
             (return $ fmap (\_ -> error "bad bisubstitution") $ mkTypeF NilPinaforeType)
-    bisubs = toList $ fmap mkbisub $ posonlyvars <> negonlyvars
-    in runIdentity $ bisubstitutesSealedExpression bisubs expr
+    in toList $ fmap mkbisub $ posonlyvars <> negonlyvars
+
+eliminateOneSidedTypeVarsInExpression :: forall baseedit. PinaforeExpression baseedit -> PinaforeExpression baseedit
+eliminateOneSidedTypeVarsInExpression expr = runIdentity $ bisubstitutesSealedExpression (getEliminateBisubs expr) expr
+
+eliminateOneSidedTypeVarsInPattern :: forall baseedit. PinaforePattern baseedit -> PinaforePattern baseedit
+eliminateOneSidedTypeVarsInPattern pat = runIdentity $ bisubstitutesSealedPattern (getEliminateBisubs pat) pat

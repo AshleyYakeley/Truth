@@ -32,7 +32,7 @@ instance Renamer (UnitypeRenamer val) where
     renameTSNegWitness Refl cont = cont Refl id
     renameTSPosWitness Refl cont = cont Refl id
     type RenamerNamespace (UnitypeRenamer val) = UnitypeNamespace val
-    renameNewVar cont = cont Refl Refl id
+    renameNewVar = return $ MkNewVar Refl Refl id
     namespace (MkUnitypeNamespace ia) = ia
     runRenamer (MkUnitypeRenamer ia) = ia
 
@@ -53,6 +53,7 @@ instance (Monad m, Eq name) => Unifier (UnitypeUnifier m name val) where
     unifierPosSubstitute () Refl cont = cont Refl id
     unifierNegSubstitute () Refl cont = cont Refl id
     simplifyExpressionType expr = return expr
+    simplifyPatternType pat = return pat
 
 newtype UnitypeSubsumer (m :: Type -> Type) (val :: Type) a =
     MkUnitypeSubsumer (Identity a)

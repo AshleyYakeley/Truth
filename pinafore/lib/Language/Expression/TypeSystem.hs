@@ -36,6 +36,8 @@ type TSValue ts = AnyValue (TSPosWitness ts)
 
 type TSSealedExpression ts = UnifierSealedExpression (TSUnifier ts)
 
+type TSSealedPattern ts = UnifierSealedPattern (TSUnifier ts)
+
 type TSMonad ts = TSRenamer ts (TSScoped ts)
 
 tsUnify ::
@@ -83,6 +85,19 @@ tsAbstract ::
     -> TSScoped ts (TSSealedExpression ts)
 tsAbstract n expr = abstractSealedExpression @(TSRenamer ts) @(TSUnifier ts) (tsFunctionPosWitness @ts) n expr
 
+tsCase ::
+       forall ts. TypeSystem ts
+    => TSSealedExpression ts
+    -> [(TSSealedPattern ts, TSSealedExpression ts)]
+    -> TSScoped ts (TSSealedExpression ts)
+tsCase expr cases = caseSealedExpression @(TSRenamer ts) @(TSUnifier ts) expr cases
+
+tsCaseAbstract ::
+       forall ts. TypeSystem ts
+    => [(TSSealedPattern ts, TSSealedExpression ts)]
+    -> TSScoped ts (TSSealedExpression ts)
+tsCaseAbstract cases = caseAbstractSealedExpression @(TSRenamer ts) @(TSUnifier ts) (tsFunctionPosWitness @ts) cases
+
 tsVar ::
        forall ts. TypeSystem ts
     => TSName ts
@@ -90,7 +105,9 @@ tsVar ::
 tsVar name =
     runIdentity $
     runRenamer @(TSRenamer ts) $
-    renameNewVar $ \vwt twt conv -> withTransConstraintTM @Monad $ return $ varSealedExpression name vwt twt conv
+    withTransConstraintTM @Monad $ do
+        MkNewVar vwt twt conv <- renameNewVar
+        return $ varSealedExpression name vwt twt conv
 
 tsConst :: forall ts. TSValue ts -> TSSealedExpression ts
 tsConst = constSealedExpression
@@ -125,7 +142,7 @@ tsValuesLet ::
 tsValuesLet = valuesLetSealedExpression @(TSUnifier ts)
 
 tsSubsume ::
-       forall ts. (TypeSystem ts)
+       forall ts. TypeSystem ts
     => AnyW (TSPosWitness ts)
     -> TSSealedExpression ts
     -> TSScoped ts (TSSealedExpression ts)
@@ -134,3 +151,31 @@ tsSubsume (MkAnyW t) expr =
         at' <- namespace $ withTransConstraintTM @Monad $ renameTSPosWitness t $ \t' _ -> return $ MkAnyW t'
         expr' <- renameSealedExpression expr
         subsumeExpression @(TSSubsumer ts) at' expr'
+
+tsVarPattern ::
+       forall ts. TypeSystem ts
+    => TSName ts
+    -> TSSealedPattern ts
+tsVarPattern name =
+    runIdentity $
+    runRenamer @(TSRenamer ts) $
+    withTransConstraintTM @Monad $ do
+        MkNewVar vwt twt conv <- renameNewVar
+        return $ varSealedPattern name vwt twt conv
+
+tsAnyPattern ::
+       forall ts. TypeSystem ts
+    => TSSealedPattern ts
+tsAnyPattern =
+    runIdentity $
+    runRenamer @(TSRenamer ts) $
+    withTransConstraintTM @Monad $ do
+        MkNewVar twt _ _ <- renameNewVar
+        return $ anySealedPattern twt
+
+tsBothPattern ::
+       forall ts. TypeSystem ts
+    => TSSealedPattern ts
+    -> TSSealedPattern ts
+    -> TSScoped ts (TSSealedPattern ts)
+tsBothPattern pat1 pat2 = bothSealedPattern @(TSRenamer ts) @(TSUnifier ts) pat1 pat2

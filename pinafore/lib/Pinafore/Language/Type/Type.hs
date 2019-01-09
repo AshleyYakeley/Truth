@@ -170,6 +170,9 @@ instance IsTypePolarity polarity => ExprShow (PinaforeRangeType baseedit polarit
 type PinaforeExpression baseedit
      = SealedExpression Name (PinaforeType baseedit 'NegativePolarity) (PinaforeType baseedit 'PositivePolarity)
 
+type PinaforePattern baseedit
+     = SealedPattern Name (PinaforeType baseedit 'PositivePolarity) (PinaforeType baseedit 'NegativePolarity)
+
 data PinaforeTypeSystem (baseedit :: Type)
 
 type PinaforeScoped baseedit = Scoped (PinaforeExpression baseedit)

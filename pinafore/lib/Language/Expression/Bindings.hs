@@ -49,7 +49,7 @@ mkBound ::
     -> renamer m (Bound unifier)
 mkBound [] =
     withTransConstraintTM @Monad $
-    return $ MkBound (\e -> return $ unifyExpression $ fmap (\a _ -> a) e) (pure ()) (\_ _ -> return mempty)
+    return $ MkBound (\e -> return $ exprUnifyExpression $ fmap (\a _ -> a) e) (pure ()) (\_ _ -> return mempty)
 mkBound ((MkBinding name sexpr):bb) =
     withTransConstraintTM @Monad $ do
         MkSealedExpression twt expr <- renameSealedExpression sexpr

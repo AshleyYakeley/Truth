@@ -86,10 +86,13 @@ instance Renamer (VarRenamer (PinaforeTypeSystem baseedit)) where
     type RenamerPosWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'PositivePolarity
     renameTSNegWitness = renamePinaforeTypeVars
     renameTSPosWitness = renamePinaforeTypeVars
-    renameNewVar cont = do
+    renameNewVar = do
         n <- varRenamerGenerate
         toSymbolWitness n $ \wit ->
-            cont (singlePinaforeType $ VarPinaforeSingularType wit) (singlePinaforeType $ VarPinaforeSingularType wit) $
+            return $
+            MkNewVar
+                (singlePinaforeType $ VarPinaforeSingularType wit)
+                (singlePinaforeType $ VarPinaforeSingularType wit) $
             join1 . meet1
     namespace = runVarNamespace
     runRenamer = runVarRenamer

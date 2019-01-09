@@ -1,6 +1,7 @@
 module Pinafore.Language.Type.Simplify.DuplicateGroundTypes
     ( mergeDuplicateGroundTypesInType
     , mergeDuplicateGroundTypesInExpression
+    , mergeDuplicateGroundTypesInPattern
     ) where
 
 import Language.Expression.Dolan
@@ -88,3 +89,7 @@ mergeDuplicateGroundTypesInType (ConsPinaforeType t1 tr) =
 mergeDuplicateGroundTypesInExpression :: PinaforeExpression baseedit -> PinaforeExpression baseedit
 mergeDuplicateGroundTypesInExpression =
     mapSealedExpressionTypes mergeDuplicateGroundTypesInType mergeDuplicateGroundTypesInType
+
+mergeDuplicateGroundTypesInPattern :: PinaforePattern baseedit -> PinaforePattern baseedit
+mergeDuplicateGroundTypesInPattern =
+    mapSealedPatternTypes mergeDuplicateGroundTypesInType mergeDuplicateGroundTypesInType

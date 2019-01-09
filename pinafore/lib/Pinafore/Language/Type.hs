@@ -43,6 +43,7 @@ instance Unifier (PinaforeUnifier baseedit) where
         t' <- bisubstituteAllNegativeType subs t
         unTypeF t' cont
     simplifyExpressionType = return . pinaforeSimplifyExpressionType
+    simplifyPatternType = return . pinaforeSimplifyPatternType
 
 instance TypeSystem (PinaforeTypeSystem baseedit) where
     type TSRenamer (PinaforeTypeSystem baseedit) = VarRenamer (PinaforeTypeSystem baseedit)

@@ -13,36 +13,46 @@ import Pinafore.Language.Syntax
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 
+readSourcePosPattern :: Parser SyntaxPattern' -> Parser SyntaxPattern
+readSourcePosPattern p = do
+    spos <- getPosition
+    expr' <- p
+    return $ MkSyntaxPattern spos expr'
+
 readPatterns :: Parser [SyntaxPattern]
 readPatterns = many readPattern2
 
 readPattern1 :: Parser SyntaxPattern
 readPattern1 =
-    (do
-         consname <- readThis TokUName
-         pats <- readPatterns
-         return $ ConstructorSyntaxPattern consname pats) <|>
+    readSourcePosPattern
+        (do
+             consname <- readThis TokUName
+             pats <- readPatterns
+             return $ ConstructorSyntaxPattern consname pats) <|>
     readPattern2
 
 readPattern2 :: Parser SyntaxPattern
 readPattern2 = do
+    spos <- getPosition
     pat1 <- readPattern3
     mpat2 <-
         optional $ do
-            readExactlyThis TokOperator "@"
+            readThis TokAt
             readPattern2
     case mpat2 of
         Nothing -> return pat1
-        Just pat2 -> return $ BothSyntaxPattern pat1 pat2
+        Just pat2 -> return $ MkSyntaxPattern spos $ BothSyntaxPattern pat1 pat2
 
 readPattern3 :: Parser SyntaxPattern
 readPattern3 =
-    (do
-         name <- readThis TokLName
-         return $ VarSyntaxPattern name) <|>
-    (do
-         readThis TokUnderscore
-         return AnySyntaxPattern) <|>
+    readSourcePosPattern
+        (do
+             name <- readThis TokLName
+             return $ VarSyntaxPattern name) <|>
+    readSourcePosPattern
+        (do
+             readThis TokUnderscore
+             return AnySyntaxPattern) <|>
     readParen readPattern1
 
 readTypeSignature :: Parser SyntaxType
@@ -67,11 +77,11 @@ readBinding = do
          name' <- readThis TokLName
          (args, rval) <- readBindingRest
          if name == name'
-             then return $ MkSyntaxBinding spos (Just tp) name' args rval
+             then return $ MkSyntaxBinding spos (Just tp) name' $ seAbstracts spos args rval
              else fail $ "type signature name " <> show name <> " does not match definition for " <> show name') <|>
         (do
              (args, rval) <- readBindingRest
-             return $ MkSyntaxBinding spos Nothing name args rval)
+             return $ MkSyntaxBinding spos Nothing name $ seAbstracts spos args rval)
 
 readDeclaration :: HasPinaforeEntityEdit baseedit => Parser (SyntaxDeclarations baseedit)
 readDeclaration =
@@ -108,7 +118,7 @@ readSourcePos p = do
 readExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (SyntaxExpression baseedit)
-readExpression = readExpressionInfixed $ readSourcePos readExpression1'
+readExpression = readExpressionInfixed readExpression1
 
 readCase ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -132,28 +142,31 @@ readCases =
          return $ c : fromMaybe [] mcl) <|>
     (return [])
 
-readExpression1' ::
+readExpression1 ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (SyntaxExpression' baseedit)
-readExpression1' =
+    => Parser (SyntaxExpression baseedit)
+readExpression1 =
     (do
+         spos <- getPosition
          readThis TokLambda
          args <- readPatterns
          readThis TokMap
          mval <- readExpression
-         return $ SEAbstract args mval) <|>
-    (do
-         sdecls <- readLetBindings
-         readThis TokIn
-         sbody <- readExpression
-         return $ SELet sdecls sbody) <|>
-    (do
-         readThis TokCase
-         sbody <- readExpression
-         readThis TokOf
-         scases <- readCases
-         readThis TokEnd
-         return $ SECase sbody scases) <|>
+         return $ seAbstracts spos args mval) <|>
+    readSourcePos
+        (do
+             sdecls <- readLetBindings
+             readThis TokIn
+             sbody <- readExpression
+             return $ SELet sdecls sbody) <|>
+    readSourcePos
+        (do
+             readThis TokCase
+             sbody <- readExpression
+             readThis TokOf
+             scases <- readCases
+             readThis TokEnd
+             return $ SECase sbody scases) <|>
     (do
          spos <- getPosition
          readThis TokIf
@@ -162,84 +175,90 @@ readExpression1' =
          methen <- readExpression
          readThis TokElse
          meelse <- readExpression
-         return $ SEApply (MkSyntaxExpression spos $ SEConst SCIfThenElse) [metest, methen, meelse]) <|>
-    readExpression2'
+         return $ seApplys spos (seConst spos SCIfThenElse) [metest, methen, meelse]) <|>
+    readExpression2
 
-readExpression2' :: HasPinaforeEntityEdit baseedit => Parser (SyntaxExpression' baseedit)
-readExpression2' = do
+readExpression2 :: HasPinaforeEntityEdit baseedit => Parser (SyntaxExpression baseedit)
+readExpression2 = do
+    spos <- getPosition
     sfunc <- readExpression3
     sargs <- many readExpression3
-    return $ SEApply sfunc sargs
+    return $ seApplys spos sfunc sargs
 
 readExpression3 ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (SyntaxExpression baseedit)
-readExpression3 = readSourcePos readExpression3'
-
-readExpression3' ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (SyntaxExpression' baseedit)
-readExpression3' =
-    (do
-         name <- readThis TokUName
-         return $ SEConst $ SCLiteral $ SLConstructor name) <|>
-    (do
-         name <- readThis TokLName
-         return $ SEVar name) <|>
-    (do
-         n <- readThis TokNumber
-         return $ SEConst $ SCLiteral $ SLNumber n) <|>
-    (do
-         str <- readThis TokString
-         return $ SEConst $ SCLiteral $ SLString str) <|>
-    (do
-         readThis TokProperty
-         readThis TokAt
-         sta <- readType3
-         readThis TokAt
-         stb <- readType3
-         anchor <- readThis TokAnchor
-         return $ SEProperty sta stb anchor) <|>
-    (do
-         rexpr <- readBracketed TokOpenBrace TokCloseBrace $ readExpression
-         return $ SERef rexpr) <|>
-    (do
-         readThis TokUnref
-         rexpr <- readExpression3
-         return $ SEUnref rexpr) <|>
-    (do
-         readThis TokEntity
-         readThis TokAt
-         mt <- readType3
-         anchor <- readThis TokAnchor
-         return $ SEEntity mt anchor) <|>
+readExpression3 =
+    readSourcePos
+        (do
+             name <- readThis TokUName
+             return $ SEConst $ SCLiteral $ SLConstructor name) <|>
+    readSourcePos
+        (do
+             name <- readThis TokLName
+             return $ SEVar name) <|>
+    readSourcePos
+        (do
+             n <- readThis TokNumber
+             return $ SEConst $ SCLiteral $ SLNumber n) <|>
+    readSourcePos
+        (do
+             str <- readThis TokString
+             return $ SEConst $ SCLiteral $ SLString str) <|>
+    readSourcePos
+        (do
+             readThis TokProperty
+             readThis TokAt
+             sta <- readType3
+             readThis TokAt
+             stb <- readType3
+             anchor <- readThis TokAnchor
+             return $ SEProperty sta stb anchor) <|>
+    readSourcePos
+        (do
+             rexpr <- readBracketed TokOpenBrace TokCloseBrace $ readExpression
+             return $ SERef rexpr) <|>
+    readSourcePos
+        (do
+             readThis TokUnref
+             rexpr <- readExpression3
+             return $ SEUnref rexpr) <|>
+    readSourcePos
+        (do
+             readThis TokEntity
+             readThis TokAt
+             mt <- readType3
+             anchor <- readThis TokAnchor
+             return $ SEEntity mt anchor) <|>
     (readParen $
+     readSourcePos
+         (do
+              name <- readThis TokOperator
+              return $ SEVar name) <|>
      (do
-          name <- readThis TokOperator
-          return $ SEVar name) <|>
-     (do
-          sexpr1@(MkSyntaxExpression _ sexpr1') <- readExpression
+          sexpr1 <- readExpression
           msexpr2 <-
               optional $ do
                   readThis TokComma
                   readExpression
           case msexpr2 of
               Just sexpr2 -> do
-                  sfun <- readSourcePos $ return $ SEConst SCPair
-                  return $ SEApply sfun [sexpr1, sexpr2]
-              Nothing -> return sexpr1')) <|>
-    (do
-         sexprs <-
-             readBracketed TokOpenBracket TokCloseBracket $
-             (do
-                  expr1 <- readExpression
-                  exprs <-
-                      many $ do
-                          readThis TokComma
-                          readExpression
-                  return $ expr1 : exprs) <|>
-             return []
-         return $ SEList sexprs) <?>
+                  spos <- getPosition
+                  return $ seApplys spos (seConst spos SCPair) [sexpr1, sexpr2]
+              Nothing -> return sexpr1)) <|>
+    readSourcePos
+        (do
+             sexprs <-
+                 readBracketed TokOpenBracket TokCloseBracket $
+                 (do
+                      expr1 <- readExpression
+                      exprs <-
+                          many $ do
+                              readThis TokComma
+                              readExpression
+                      return $ expr1 : exprs) <|>
+                 return []
+             return $ SEList sexprs) <?>
     "expression"
 
 readTopExpression ::

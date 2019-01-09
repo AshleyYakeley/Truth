@@ -17,9 +17,18 @@ import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes
 
-interpretPattern :: SyntaxPattern -> Name
-interpretPattern (VarSyntaxPattern n) = n
-interpretPattern _ = error "NYI: patterns"
+interpretPattern :: SyntaxPattern -> RefNotation baseedit (QPattern baseedit)
+interpretPattern (MkSyntaxPattern _ AnySyntaxPattern) = return qAnyPattern
+interpretPattern (MkSyntaxPattern _ (VarSyntaxPattern n)) = return $ qVarPattern n
+interpretPattern (MkSyntaxPattern spos (BothSyntaxPattern spat1 spat2)) = do
+    pat1 <- interpretPattern spat1
+    pat2 <- interpretPattern spat2
+    liftRefNotation $ runSourcePos spos $ qBothPattern pat1 pat2
+interpretPattern (MkSyntaxPattern _ (ConstructorSyntaxPattern _ _)) = fail "NYI: constructor patterns"
+
+interpretPatternOrName :: SyntaxPattern -> Either Name (RefNotation baseedit (QPattern baseedit))
+interpretPatternOrName (MkSyntaxPattern _ (VarSyntaxPattern n)) = Left n
+interpretPatternOrName pat = Right $ interpretPattern pat
 
 interpretExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -28,7 +37,7 @@ interpretExpression ::
 interpretExpression (MkSyntaxExpression spos sexpr) = interpretExpression' spos sexpr
 
 getBindingNode :: SyntaxBinding baseedit -> (SyntaxBinding baseedit, Name, [Name])
-getBindingNode b@(MkSyntaxBinding _ _ n _ _) = (b, n, setToList $ syntaxFreeVariables b)
+getBindingNode b@(MkSyntaxBinding _ _ n _) = (b, n, setToList $ syntaxFreeVariables b)
 
 -- | Group bindings into a topologically-sorted list of strongly-connected components
 clumpBindings :: [SyntaxBinding baseedit] -> [[SyntaxBinding baseedit]]
@@ -91,23 +100,36 @@ interpretConstant SCIfThenElse = return $ qConstExprAny $ toValue qifthenelse
 interpretConstant SCPair = return $ qConstExprAny $ toValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
 interpretConstant (SCLiteral lit) = interpretLiteral lit
 
+interpretCase ::
+       HasPinaforeEntityEdit baseedit => SyntaxCase baseedit -> RefNotation baseedit (QPattern baseedit, QExpr baseedit)
+interpretCase (MkSyntaxCase spat sexpr) = do
+    pat <- interpretPattern spat
+    expr <- interpretExpression sexpr
+    return (pat, expr)
+
 interpretExpression' ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => SourcePos
     -> SyntaxExpression' baseedit
     -> RefExpression baseedit
-interpretExpression' spos (SEAbstract sargs sbody) = do
+interpretExpression' spos (SEAbstract spat sbody) = do
     val <- interpretExpression sbody
-    let args = fmap interpretPattern sargs
-    liftRefNotation $ runSourcePos spos $ qAbstractsExpr args val
+    case interpretPatternOrName spat of
+        Left name -> liftRefNotation $ runSourcePos spos $ qAbstractExpr name val
+        Right mpat -> do
+            pat <- mpat
+            liftRefNotation $ runSourcePos spos $ qCaseAbstract [(pat, val)]
 interpretExpression' spos (SELet decls sbody) = do
     MkTransform bmap <- liftRefNotation $ interpretDeclarations spos decls
     bmap $ interpretExpression sbody
-interpretExpression' _ (SECase _ _) = fail "NYI: case"
-interpretExpression' spos (SEApply sf sargs) = do
+interpretExpression' spos (SECase sbody scases) = do
+    body <- interpretExpression sbody
+    pairs <- for scases interpretCase
+    liftRefNotation $ runSourcePos spos $ qCase body pairs
+interpretExpression' spos (SEApply sf sarg) = do
     f <- interpretExpression sf
-    args <- for sargs interpretExpression
-    liftRefNotation $ runSourcePos spos $ qApplyAllExpr f args
+    arg <- interpretExpression sarg
+    liftRefNotation $ runSourcePos spos $ qApplyExpr f arg
 interpretExpression' _ (SEConst c) = interpretConstant c
 interpretExpression' spos (SEVar name) = varRefExpr spos name
 interpretExpression' spos (SERef sexpr) = refNotationQuote spos $ interpretExpression sexpr
@@ -159,13 +181,9 @@ interpretTypeSignature (Just st) expr = do
 
 interpretBinding ::
        HasPinaforeEntityEdit baseedit => SyntaxBinding baseedit -> RefNotation baseedit (QBindings baseedit)
-interpretBinding (MkSyntaxBinding spos mtype name sargs sexpr) = do
+interpretBinding (MkSyntaxBinding spos mtype name sexpr) = do
     val <- interpretExpression sexpr
-    expr <-
-        liftRefNotation $
-        runSourcePos spos $ do
-            expr <- qAbstractsExpr (fmap interpretPattern sargs) val
-            interpretTypeSignature mtype expr
+    expr <- liftRefNotation $ runSourcePos spos $ interpretTypeSignature mtype val
     return $ qBindExpr name expr
 
 interpretBindings ::

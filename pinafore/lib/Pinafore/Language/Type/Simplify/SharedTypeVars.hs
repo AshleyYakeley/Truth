@@ -1,11 +1,13 @@
 module Pinafore.Language.Type.Simplify.SharedTypeVars
     ( mergeSharedTypeVarsInType
     , mergeSharedTypeVarsInExpression
+    , mergeSharedTypeVarsInPattern
     ) where
 
 import Language.Expression.Dolan
 import Language.Expression.Expression
 import Language.Expression.Named
+import Language.Expression.Pattern
 import Language.Expression.Sealed
 import Language.Expression.UVar
 import Pinafore.Language.GroundType
@@ -70,8 +72,15 @@ instance GetExpressionVarUses (NamedExpression name (PinaforeType baseedit 'Nega
     getExpressionVarUses (ClosedExpression _) = mempty
     getExpressionVarUses (OpenExpression (MkNameWitness _ t) expr) = getExpressionVarUses t <> getExpressionVarUses expr
 
+instance GetExpressionVarUses (NamedPattern name (PinaforeType baseedit 'PositivePolarity) a b) where
+    getExpressionVarUses (ClosedPattern _) = mempty
+    getExpressionVarUses (OpenPattern (MkNameWitness _ t) expr) = getExpressionVarUses t <> getExpressionVarUses expr
+
 instance GetExpressionVarUses (PinaforeExpression baseedit) where
     getExpressionVarUses (MkSealedExpression twt expr) = getExpressionVarUses twt <> getExpressionVarUses expr
+
+instance GetExpressionVarUses (PinaforePattern baseedit) where
+    getExpressionVarUses (MkSealedPattern twt expr) = getExpressionVarUses twt <> getExpressionVarUses expr
 
 findShare ::
        forall a. Eq a
@@ -123,3 +132,19 @@ mergeSharedTypeVarsInExpression expr = let
                        (return $ fmap (biForwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
                in mergeSharedTypeVarsInExpression $ runIdentity $ bisubstitutesSealedExpression [bisub] expr
            Nothing -> expr
+
+mergeSharedTypeVarsInPattern :: forall baseedit. PinaforePattern baseedit -> PinaforePattern baseedit
+mergeSharedTypeVarsInPattern pat = let
+    (posuses, neguses) = getExpressionVarUses pat
+    in case findShare posuses <|> findShare neguses of
+           Just (MkAnyW (va :: SymbolWitness na), MkAnyW (vb :: SymbolWitness nb)) -> let
+               varBij :: Bijection (UVar na) (UVar nb)
+               varBij = unsafeUVarBijection
+               bisub =
+                   MkBisubstitution
+                       vb
+                       (return $
+                        contramap (biBackwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
+                       (return $ fmap (biForwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
+               in mergeSharedTypeVarsInPattern $ runIdentity $ bisubstitutesSealedPattern [bisub] pat
+           Nothing -> pat

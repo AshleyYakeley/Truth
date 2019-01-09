@@ -63,7 +63,6 @@ data SyntaxBinding baseedit =
     MkSyntaxBinding SourcePos
                     (Maybe SyntaxType)
                     Name
-                    [SyntaxPattern]
                     (SyntaxExpression baseedit)
 
 data SyntaxLiteral
@@ -71,13 +70,17 @@ data SyntaxLiteral
     | SLString Text
     | SLConstructor Name
 
-data SyntaxPattern
+data SyntaxPattern'
     = AnySyntaxPattern
     | VarSyntaxPattern Name
     | BothSyntaxPattern SyntaxPattern
                         SyntaxPattern
     | ConstructorSyntaxPattern Name
                                [SyntaxPattern]
+
+data SyntaxPattern =
+    MkSyntaxPattern SourcePos
+                    SyntaxPattern'
 
 data SyntaxCase baseedit =
     MkSyntaxCase SyntaxPattern
@@ -92,8 +95,8 @@ data SyntaxExpression' baseedit
     = SEConst SyntaxConstant
     | SEVar Name
     | SEApply (SyntaxExpression baseedit)
-              [SyntaxExpression baseedit]
-    | SEAbstract [SyntaxPattern]
+              (SyntaxExpression baseedit)
+    | SEAbstract SyntaxPattern
                  (SyntaxExpression baseedit)
     | SERef (SyntaxExpression baseedit)
     | SEUnref (SyntaxExpression baseedit)
@@ -107,6 +110,23 @@ data SyntaxExpression' baseedit
                  Anchor
     | SEEntity SyntaxType
                Anchor
+
+seConst :: SourcePos -> SyntaxConstant -> SyntaxExpression baseedit
+seConst spos sc = MkSyntaxExpression spos $ SEConst sc
+
+seAbstract :: SourcePos -> SyntaxPattern -> SyntaxExpression baseedit -> SyntaxExpression baseedit
+seAbstract spos pat expr = MkSyntaxExpression spos $ SEAbstract pat expr
+
+seAbstracts :: SourcePos -> [SyntaxPattern] -> SyntaxExpression baseedit -> SyntaxExpression baseedit
+seAbstracts _ [] expr = expr
+seAbstracts spos (p:pp) expr = seAbstract spos p $ seAbstracts spos pp expr
+
+seApply :: SourcePos -> SyntaxExpression baseedit -> SyntaxExpression baseedit -> SyntaxExpression baseedit
+seApply spos f a = MkSyntaxExpression spos $ SEApply f a
+
+seApplys :: SourcePos -> SyntaxExpression baseedit -> [SyntaxExpression baseedit] -> SyntaxExpression baseedit
+seApplys _ f [] = f
+seApplys spos f (a:aa) = seApplys spos (seApply spos f a) aa
 
 data SyntaxExpression baseedit =
     MkSyntaxExpression SourcePos
@@ -131,8 +151,8 @@ instance SyntaxFreeVariables (SyntaxCase baseedit) where
 instance SyntaxFreeVariables (SyntaxExpression' baseedit) where
     syntaxFreeVariables (SEConst _) = mempty
     syntaxFreeVariables (SEVar name) = opoint name
-    syntaxFreeVariables (SEApply f args) = union (syntaxFreeVariables f) (syntaxFreeVariables args)
-    syntaxFreeVariables (SEAbstract pats expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pats)
+    syntaxFreeVariables (SEApply f arg) = union (syntaxFreeVariables f) (syntaxFreeVariables arg)
+    syntaxFreeVariables (SEAbstract pat expr) = difference (syntaxFreeVariables expr) (syntaxBindingVariables pat)
     syntaxFreeVariables (SERef expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SEUnref expr) = syntaxFreeVariables expr
     syntaxFreeVariables (SELet binds expr) =
@@ -143,8 +163,7 @@ instance SyntaxFreeVariables (SyntaxExpression' baseedit) where
     syntaxFreeVariables (SEEntity _ _) = mempty
 
 instance SyntaxFreeVariables (SyntaxBinding baseedit) where
-    syntaxFreeVariables (MkSyntaxBinding _ _ _ pats expr) =
-        difference (syntaxFreeVariables expr) (syntaxBindingVariables pats)
+    syntaxFreeVariables (MkSyntaxBinding _ _ _ expr) = syntaxFreeVariables expr
 
 instance SyntaxFreeVariables (SyntaxDeclarations baseedit) where
     syntaxFreeVariables (MkSyntaxDeclarations _ binds) = syntaxFreeVariables binds
@@ -156,6 +175,9 @@ instance SyntaxBindingVariables t => SyntaxBindingVariables [t] where
     syntaxBindingVariables tt = mconcat $ fmap syntaxBindingVariables tt
 
 instance SyntaxBindingVariables SyntaxPattern where
+    syntaxBindingVariables (MkSyntaxPattern _ pat) = syntaxBindingVariables pat
+
+instance SyntaxBindingVariables SyntaxPattern' where
     syntaxBindingVariables AnySyntaxPattern = mempty
     syntaxBindingVariables (VarSyntaxPattern name) = singletonSet name
     syntaxBindingVariables (BothSyntaxPattern pat1 pat2) =
@@ -166,7 +188,7 @@ instance SyntaxBindingVariables (SyntaxDeclarations baseedit) where
     syntaxBindingVariables (MkSyntaxDeclarations _ binds) = syntaxBindingVariables binds
 
 instance SyntaxBindingVariables (SyntaxBinding baseedit) where
-    syntaxBindingVariables (MkSyntaxBinding _ _ name _ _) = singletonSet name
+    syntaxBindingVariables (MkSyntaxBinding _ _ name _) = singletonSet name
 
 checkSyntaxBindingsDuplicates :: MonadFail m => [SyntaxBinding baseedit] -> m ()
 checkSyntaxBindingsDuplicates = let
@@ -186,4 +208,4 @@ checkSyntaxBindingsDuplicates = let
         case nub $ duplicates nn of
             [] -> return ()
             b -> fail $ "duplicate bindings: " <> (intercalate ", " $ fmap show b)
-    in checkDuplicates . fmap (\(MkSyntaxBinding _ _ name _ _) -> name)
+    in checkDuplicates . fmap (\(MkSyntaxBinding _ _ name _) -> name)

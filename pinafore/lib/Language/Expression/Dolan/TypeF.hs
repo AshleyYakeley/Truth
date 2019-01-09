@@ -3,6 +3,7 @@ module Language.Expression.Dolan.TypeF where
 import Language.Expression.Dolan.Polarity
 import Language.Expression.Expression
 import Language.Expression.Named
+import Language.Expression.Pattern
 import Language.Expression.Sealed
 import Shapes
 
@@ -102,6 +103,42 @@ mapSealedExpressionTypes ::
     -> SealedExpression name (wit 'NegativePolarity) (wit 'PositivePolarity)
 mapSealedExpressionTypes mapPos mapNeg expr =
     runIdentity $ mapSealedExpressionTypesM (\t -> Identity $ mapPos t) (\t -> Identity $ mapNeg t) expr
+
+typeFSealedPattern ::
+       TypeF wit 'NegativePolarity t
+    -> NamedPattern name (wit 'PositivePolarity) t ()
+    -> SealedPattern name (wit 'PositivePolarity) (wit 'NegativePolarity)
+typeFSealedPattern (MkTypeF tt conv) pat = MkSealedPattern tt $ pat . arr conv
+
+mapPatternTypes ::
+       Monad m
+    => (forall t. wit 'PositivePolarity t -> m (TypeF wit 'PositivePolarity t))
+    -> NamedPattern name (wit 'PositivePolarity) a b
+    -> m (NamedPattern name (wit 'PositivePolarity) a b)
+mapPatternTypes _ (ClosedPattern a) = return $ ClosedPattern a
+mapPatternTypes mapPos (OpenPattern (MkNameWitness name tt) pat) = do
+    MkTypeF tt' conv <- mapPos tt
+    pat' <- mapPatternTypes mapPos pat
+    return $ OpenPattern (MkNameWitness name tt') $ fmap (\(t, b) -> (conv t, b)) pat'
+
+mapSealedPatternTypesM ::
+       Monad m
+    => (forall t. wit 'PositivePolarity t -> m (TypeF wit 'PositivePolarity t))
+    -> (forall t. wit 'NegativePolarity t -> m (TypeF wit 'NegativePolarity t))
+    -> SealedPattern name (wit 'PositivePolarity) (wit 'NegativePolarity)
+    -> m (SealedPattern name (wit 'PositivePolarity) (wit 'NegativePolarity))
+mapSealedPatternTypesM mapPos mapNeg (MkSealedPattern tt expr) = do
+    ttf <- mapNeg tt
+    expr' <- mapPatternTypes mapPos expr
+    return $ typeFSealedPattern ttf expr'
+
+mapSealedPatternTypes ::
+       (forall t. wit 'PositivePolarity t -> TypeF wit 'PositivePolarity t)
+    -> (forall t. wit 'NegativePolarity t -> TypeF wit 'NegativePolarity t)
+    -> SealedPattern name (wit 'PositivePolarity) (wit 'NegativePolarity)
+    -> SealedPattern name (wit 'PositivePolarity) (wit 'NegativePolarity)
+mapSealedPatternTypes mapPos mapNeg expr =
+    runIdentity $ mapSealedPatternTypesM (\t -> Identity $ mapPos t) (\t -> Identity $ mapNeg t) expr
 
 class ToTypeF wit t where
     toTypeF :: TypeF wit 'PositivePolarity t

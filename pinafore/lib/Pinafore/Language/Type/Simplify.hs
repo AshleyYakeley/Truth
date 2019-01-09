@@ -1,6 +1,7 @@
 module Pinafore.Language.Type.Simplify
     ( pinaforeSimplifyType
     , pinaforeSimplifyExpressionType
+    , pinaforeSimplifyPatternType
     ) where
 
 import Language.Expression.Dolan
@@ -29,6 +30,11 @@ pinaforeSimplifyExpressionType :: forall baseedit. PinaforeExpression baseedit -
 pinaforeSimplifyExpressionType =
     mergeDuplicateTypeVarsInExpression .
     mergeSharedTypeVarsInExpression . eliminateOneSidedTypeVarsInExpression . mergeDuplicateGroundTypesInExpression
+
+pinaforeSimplifyPatternType :: forall baseedit. PinaforePattern baseedit -> PinaforePattern baseedit
+pinaforeSimplifyPatternType =
+    mergeDuplicateTypeVarsInPattern .
+    mergeSharedTypeVarsInPattern . eliminateOneSidedTypeVarsInPattern . mergeDuplicateGroundTypesInPattern
 
 -- | This is used for type signatures
 pinaforeSimplifyType ::

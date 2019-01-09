@@ -71,7 +71,7 @@ leftApply ::
     -> [(SourcePos, SyntaxExpression baseedit, SyntaxExpression baseedit)]
     -> SyntaxExpression baseedit
 leftApply e1 [] = e1
-leftApply e1 ((spos, f, e2):rest) = leftApply (MkSyntaxExpression spos $ SEApply f [e1, e2]) rest
+leftApply e1 ((spos, f, e2):rest) = leftApply (seApplys spos f [e1, e2]) rest
 
 rightApply ::
        HasPinaforeEntityEdit baseedit
@@ -79,7 +79,7 @@ rightApply ::
     -> [(SourcePos, SyntaxExpression baseedit, SyntaxExpression baseedit)]
     -> SyntaxExpression baseedit
 rightApply e1 [] = e1
-rightApply e1 ((spos, f, e2):rest) = MkSyntaxExpression spos $ SEApply f [e1, rightApply e2 rest]
+rightApply e1 ((spos, f, e2):rest) = seApplys spos f [e1, rightApply e2 rest]
 
 readInfixedExpression ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -97,7 +97,7 @@ readInfixedExpression pe prec = do
             return (name, assoc, seop, se2)
     case rest of
         [] -> return se1
-        [(_, AssocNone, seop, se2)] -> return $ MkSyntaxExpression spos $ SEApply seop [se1, se2]
+        [(_, AssocNone, seop, se2)] -> return $ seApplys spos seop [se1, se2]
         _
             | all (\(_, assoc, _, _) -> assoc == AssocLeft) rest ->
                 return $ leftApply se1 $ fmap (\(_, _, seop, se2) -> (spos, seop, se2)) rest

@@ -107,3 +107,10 @@ bisubstitutesSealedExpression [] expr = return $ expr
 bisubstitutesSealedExpression (sub:subs) expr = do
     expr' <- mapSealedExpressionTypesM (bisubstitutePositiveType sub) (bisubstituteNegativeType sub) expr
     bisubstitutesSealedExpression subs expr'
+
+bisubstitutesSealedPattern ::
+       Monad m => [PinaforeBisubstitutionM m baseedit] -> PinaforePattern baseedit -> m (PinaforePattern baseedit)
+bisubstitutesSealedPattern [] expr = return $ expr
+bisubstitutesSealedPattern (sub:subs) expr = do
+    expr' <- mapSealedPatternTypesM (bisubstitutePositiveType sub) (bisubstituteNegativeType sub) expr
+    bisubstitutesSealedPattern subs expr'

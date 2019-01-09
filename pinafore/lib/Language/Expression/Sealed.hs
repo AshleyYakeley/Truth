@@ -65,3 +65,9 @@ renameSealedPattern (MkSealedPattern twt expr) =
     withTransConstraintTM @Monad $ do
         expr' <- renamePattern expr
         renameTSNegWitness twt $ \twt' bij -> return $ MkSealedPattern twt' $ contramap1Pattern (biBackwards bij) expr'
+
+varSealedPattern :: name -> tw t -> vw v -> (t -> v) -> SealedPattern name vw tw
+varSealedPattern n twt vwt conv = MkSealedPattern twt $ varNamedPattern n vwt . arr conv
+
+anySealedPattern :: tw t -> SealedPattern name vw tw
+anySealedPattern twt = MkSealedPattern twt $ pure ()
