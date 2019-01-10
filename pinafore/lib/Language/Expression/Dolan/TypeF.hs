@@ -1,9 +1,6 @@
 module Language.Expression.Dolan.TypeF where
 
 import Language.Expression.Dolan.Polarity
-import Language.Expression.Expression
-import Language.Expression.Named
-import Language.Expression.Pattern
 import Language.Expression.Sealed
 import Shapes
 
@@ -67,48 +64,6 @@ chainTypeF f (MkTypeF t conv) = mapTypeF conv $ f t
 typeFConstExpression ::
        TypeF wit 'PositivePolarity t -> t -> SealedExpression name (wit 'NegativePolarity) (wit 'PositivePolarity)
 typeFConstExpression (MkTypeF tt conv) t = MkSealedExpression tt $ pure $ conv t
-
-class MapTypes wit a | a -> wit where
-    mapTypesM ::
-           forall m. Monad m
-        => (forall t. wit 'PositivePolarity t -> m (TypeF wit 'PositivePolarity t))
-        -> (forall t. wit 'NegativePolarity t -> m (TypeF wit 'NegativePolarity t))
-        -> a
-        -> m a
-
-mapTypes ::
-       MapTypes wit a
-    => (forall t. wit 'PositivePolarity t -> TypeF wit 'PositivePolarity t)
-    -> (forall t. wit 'NegativePolarity t -> TypeF wit 'NegativePolarity t)
-    -> a
-    -> a
-mapTypes mapPos mapNeg a = runIdentity $ mapTypesM (\t -> Identity $ mapPos t) (\t -> Identity $ mapNeg t) a
-
-instance MapTypes wit (NamedExpression name (wit 'NegativePolarity) a) where
-    mapTypesM _ _ (ClosedExpression a) = return $ ClosedExpression a
-    mapTypesM mapPos mapNeg (OpenExpression (MkNameWitness name tt) expr) = do
-        MkTypeF tt' conv <- mapNeg tt
-        expr' <- mapTypesM mapPos mapNeg expr
-        return $ OpenExpression (MkNameWitness name tt') $ fmap (\ta -> ta . conv) expr'
-
-instance MapTypes wit (SealedExpression name (wit 'NegativePolarity) (wit 'PositivePolarity)) where
-    mapTypesM mapPos mapNeg (MkSealedExpression tt expr) = do
-        MkTypeF tt' conv <- mapPos tt
-        expr' <- mapTypesM mapPos mapNeg expr
-        return $ MkSealedExpression tt' $ fmap conv expr'
-
-instance MapTypes wit (NamedPattern name (wit 'PositivePolarity) a b) where
-    mapTypesM _ _ (ClosedPattern a) = return $ ClosedPattern a
-    mapTypesM mapPos mapNeg (OpenPattern (MkNameWitness name tt) pat) = do
-        MkTypeF tt' conv <- mapPos tt
-        pat' <- mapTypesM mapPos mapNeg pat
-        return $ OpenPattern (MkNameWitness name tt') $ fmap (\(t, b) -> (conv t, b)) pat'
-
-instance MapTypes wit (SealedPattern name (wit 'PositivePolarity) (wit 'NegativePolarity)) where
-    mapTypesM mapPos mapNeg (MkSealedPattern tt pat) = do
-        MkTypeF tt' conv <- mapNeg tt
-        pat' <- mapTypesM mapPos mapNeg pat
-        return $ MkSealedPattern tt' $ pat' . arr conv
 
 class ToTypeF wit t where
     toTypeF :: TypeF wit 'PositivePolarity t

@@ -1,6 +1,5 @@
 module Pinafore.Language.Type.Simplify.DuplicateGroundTypes
-    ( mergeDuplicateGroundTypesInType
-    , mergeDuplicateGroundTypes
+    ( mergeDuplicateGroundTypes
     ) where
 
 import Language.Expression.Dolan
@@ -86,7 +85,7 @@ mergeDuplicateGroundTypesInType (ConsPinaforeType t1 tr) =
                         Right Refl -> fmap (meetBimap conv1 convr) $ mergeInNegativeSingularType t1' tr'
 
 mergeDuplicateGroundTypes ::
-       forall baseedit a. MapTypes (PinaforeType baseedit) a
+       forall baseedit a. TypeMappable (PinaforeType baseedit) a
     => a
     -> a
 mergeDuplicateGroundTypes = mapTypes mergeDuplicateGroundTypesInType mergeDuplicateGroundTypesInType

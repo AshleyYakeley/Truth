@@ -1,6 +1,5 @@
 module Pinafore.Language.Type.Simplify.DuplicateTypeVars
-    ( mergeDuplicateTypeVarsInType
-    , mergeDuplicateTypeVars
+    ( mergeDuplicateTypeVars
     ) where
 
 import Language.Expression.Dolan
@@ -68,7 +67,7 @@ mergeDuplicateTypeVarsInType (ConsPinaforeType t1 tr) =
                         Right Refl -> fmap (meetBimap conv1 convr) $ mergeInNegativeSingularType t1' tr'
 
 mergeDuplicateTypeVars ::
-       forall baseedit a. MapTypes (PinaforeType baseedit) a
+       forall baseedit a. TypeMappable (PinaforeType baseedit) a
     => a
     -> a
 mergeDuplicateTypeVars = mapTypes mergeDuplicateTypeVarsInType mergeDuplicateTypeVarsInType

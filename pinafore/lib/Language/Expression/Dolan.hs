@@ -9,6 +9,7 @@ import Language.Expression.Dolan.Polarity as I
 import Language.Expression.Dolan.Range as I
 import Language.Expression.Dolan.RangeF as I
 import Language.Expression.Dolan.TypeF as I
+import Language.Expression.Dolan.TypeMappable as I
 import Language.Expression.Dolan.Variance as I
 import Language.Expression.UVar
 import Shapes

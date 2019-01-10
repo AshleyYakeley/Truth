@@ -79,7 +79,7 @@ bisubstitutesType (sub:subs) t = do
     tf <- bisubstituteType sub t
     chainTypeFM (bisubstitutesType subs) tf
 
-bisubstitutes :: (Monad m, MapTypes (PinaforeType baseedit) a) => [PinaforeBisubstitutionM m baseedit] -> a -> m a
+bisubstitutes :: (Monad m, TypeMappable (PinaforeType baseedit) a) => [PinaforeBisubstitutionM m baseedit] -> a -> m a
 bisubstitutes [] expr = return $ expr
 bisubstitutes (sub:subs) expr = do
     expr' <- mapTypesM (bisubstitutePositiveType sub) (bisubstituteNegativeType sub) expr

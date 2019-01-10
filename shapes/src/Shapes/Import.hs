@@ -82,7 +82,7 @@ import Control.Monad.Trans.Identity as I (IdentityT(..))
 import Control.Monad.Trans.Maybe as I (MaybeT(..))
 import Control.Monad.Trans.Reader as I (ReaderT(..), ask, asks, local, withReaderT)
 import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT, get, modify, put, runState)
-import Control.Monad.Trans.Writer as I (Writer, WriterT(..), execWriterT, runWriter, tell)
+import Control.Monad.Trans.Writer as I (Writer, WriterT(..), execWriter, execWriterT, runWriter, tell)
 
 -- transformers-extra
 import Control.Monad.Trans.AskUnlift as I

@@ -1,33 +1,28 @@
 module Pinafore.Language.Type.Simplify.VarUses
-    ( GetExpressionVarUses(..)
-    , GetExpressionVars(..)
+    ( mappableGetVarUses
+    , mappableGetVars
     ) where
 
 import Language.Expression.Dolan
-import Language.Expression.Expression
-import Language.Expression.Named
-import Language.Expression.Pattern
-import Language.Expression.Sealed
 import Pinafore.Language.GroundType
 import Pinafore.Language.Type.Type
 import Shapes
 
-class GetExpressionVarUses t where
+class GetVarUses t where
     -- | (positive, negative)
-    getExpressionVarUses :: t -> ([[AnyW SymbolWitness]], [[AnyW SymbolWitness]])
+    getVarUses :: t -> ([[AnyW SymbolWitness]], [[AnyW SymbolWitness]])
 
-instance IsTypePolarity polarity => GetExpressionVarUses (RangeType (PinaforeType baseedit) polarity a) where
-    getExpressionVarUses (MkRangeType tp tq) =
-        invertPolarity @polarity $ getExpressionVarUses tp <> getExpressionVarUses tq
+instance IsTypePolarity polarity => GetVarUses (RangeType (PinaforeType baseedit) polarity a) where
+    getVarUses (MkRangeType tp tq) = invertPolarity @polarity $ getVarUses tp <> getVarUses tq
 
 getArgExpressionVarUses ::
        forall baseedit polarity sv a. IsTypePolarity polarity
     => SingleVarianceType sv
     -> SingleArgument sv (PinaforeType baseedit) polarity a
     -> ([[AnyW SymbolWitness]], [[AnyW SymbolWitness]])
-getArgExpressionVarUses CovarianceType t = getExpressionVarUses t
-getArgExpressionVarUses ContravarianceType t = invertPolarity @polarity $ getExpressionVarUses t
-getArgExpressionVarUses RangevarianceType t = getExpressionVarUses t
+getArgExpressionVarUses CovarianceType t = getVarUses t
+getArgExpressionVarUses ContravarianceType t = invertPolarity @polarity $ getVarUses t
+getArgExpressionVarUses RangevarianceType t = getVarUses t
 
 getArgsExpressionVarUses ::
        forall baseedit polarity dv gt t. IsTypePolarity polarity
@@ -38,15 +33,14 @@ getArgsExpressionVarUses NilListType NilDolanArguments = mempty
 getArgsExpressionVarUses (ConsListType sv dv) (ConsDolanArguments arg args) =
     getArgExpressionVarUses @baseedit @polarity sv arg <> getArgsExpressionVarUses dv args
 
-instance IsTypePolarity polarity => GetExpressionVarUses (PinaforeSingularType baseedit polarity t) where
-    getExpressionVarUses (GroundPinaforeSingularType gt args) =
-        getArgsExpressionVarUses (pinaforeGroundTypeKind gt) args
-    getExpressionVarUses (VarPinaforeSingularType _) = mempty
+instance IsTypePolarity polarity => GetVarUses (PinaforeSingularType baseedit polarity t) where
+    getVarUses (GroundPinaforeSingularType gt args) = getArgsExpressionVarUses (pinaforeGroundTypeKind gt) args
+    getVarUses (VarPinaforeSingularType _) = mempty
 
-getExpressionVarUses' ::
+getVarUses' ::
        IsTypePolarity polarity => PinaforeType baseedit polarity t -> ([[AnyW SymbolWitness]], [[AnyW SymbolWitness]])
-getExpressionVarUses' NilPinaforeType = mempty
-getExpressionVarUses' (ConsPinaforeType t1 tr) = getExpressionVarUses t1 <> getExpressionVarUses' tr
+getVarUses' NilPinaforeType = mempty
+getVarUses' (ConsPinaforeType t1 tr) = getVarUses t1 <> getVarUses' tr
 
 getJMSingleTypeVars :: IsTypePolarity polarity => PinaforeSingularType baseedit polarity t -> [AnyW SymbolWitness]
 getJMSingleTypeVars (VarPinaforeSingularType vn) = [MkAnyW vn]
@@ -56,28 +50,26 @@ getJMTypeVars :: IsTypePolarity polarity => PinaforeType baseedit polarity t -> 
 getJMTypeVars NilPinaforeType = mempty
 getJMTypeVars (ConsPinaforeType t1 tr) = getJMSingleTypeVars t1 <> getJMTypeVars tr
 
-instance IsTypePolarity polarity => GetExpressionVarUses (PinaforeType baseedit polarity t) where
-    getExpressionVarUses t =
+instance IsTypePolarity polarity => GetVarUses (PinaforeType baseedit polarity t) where
+    getVarUses t =
         case getJMTypeVars t of
             tv ->
                 (case whichTypePolarity @polarity of
                      Left Refl -> ([tv], [])
                      Right Refl -> ([], [tv])) <>
-                getExpressionVarUses' t
+                getVarUses' t
 
-instance GetExpressionVarUses (NamedExpression name (PinaforeType baseedit 'NegativePolarity) t) where
-    getExpressionVarUses (ClosedExpression _) = mempty
-    getExpressionVarUses (OpenExpression (MkNameWitness _ t) expr) = getExpressionVarUses t <> getExpressionVarUses expr
-
-instance GetExpressionVarUses (NamedPattern name (PinaforeType baseedit 'PositivePolarity) a b) where
-    getExpressionVarUses (ClosedPattern _) = mempty
-    getExpressionVarUses (OpenPattern (MkNameWitness _ t) expr) = getExpressionVarUses t <> getExpressionVarUses expr
-
-instance GetExpressionVarUses (PinaforeExpression baseedit) where
-    getExpressionVarUses (MkSealedExpression twt expr) = getExpressionVarUses twt <> getExpressionVarUses expr
-
-instance GetExpressionVarUses (PinaforePattern baseedit) where
-    getExpressionVarUses (MkSealedPattern twt expr) = getExpressionVarUses twt <> getExpressionVarUses expr
+mappableGetVarUses ::
+       forall baseedit a. TypeMappable (PinaforeType baseedit) a
+    => a
+    -> ([[AnyW SymbolWitness]], [[AnyW SymbolWitness]])
+mappableGetVarUses a =
+    mconcat $
+    fmap
+        (\case
+             Left (MkAnyW t) -> getVarUses t
+             Right (MkAnyW t) -> getVarUses t) $
+    mappableGetTypes @_ @(PinaforeType baseedit) a
 
 class GetExpressionVars t where
     -- | (positive, negative)
@@ -115,16 +107,14 @@ instance IsTypePolarity polarity => GetExpressionVars (PinaforeType baseedit pol
     getExpressionVars NilPinaforeType = mempty
     getExpressionVars (ConsPinaforeType t1 tr) = getExpressionVars t1 <> getExpressionVars tr
 
-instance GetExpressionVars (NamedExpression name (PinaforeType baseedit 'NegativePolarity) t) where
-    getExpressionVars (ClosedExpression _) = mempty
-    getExpressionVars (OpenExpression (MkNameWitness _ t) expr) = getExpressionVars t <> getExpressionVars expr
-
-instance GetExpressionVars (NamedPattern name (PinaforeType baseedit 'PositivePolarity) a b) where
-    getExpressionVars (ClosedPattern _) = mempty
-    getExpressionVars (OpenPattern (MkNameWitness _ t) expr) = getExpressionVars t <> getExpressionVars expr
-
-instance GetExpressionVars (PinaforeExpression baseedit) where
-    getExpressionVars (MkSealedExpression twt expr) = getExpressionVars twt <> getExpressionVars expr
-
-instance GetExpressionVars (PinaforePattern baseedit) where
-    getExpressionVars (MkSealedPattern twt pat) = getExpressionVars twt <> getExpressionVars pat
+mappableGetVars ::
+       forall baseedit a. TypeMappable (PinaforeType baseedit) a
+    => a
+    -> ([AnyW SymbolWitness], [AnyW SymbolWitness])
+mappableGetVars a =
+    mconcat $
+    fmap
+        (\case
+             Left (MkAnyW t) -> getExpressionVars t
+             Right (MkAnyW t) -> getExpressionVars t) $
+    mappableGetTypes @_ @(PinaforeType baseedit) a

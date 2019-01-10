@@ -289,5 +289,5 @@ instance Subsumer (PinaforeSubsumer baseedit) where
         unTypeF t' cont
     subsumePosWitnesses tinf tdecl = getCompose $ subsumePositiveType tinf tdecl
     simplifyPosType (MkAnyW t) =
-        case pinaforeSimplifyType t of
+        case pinaforeSimplifyTypes $ mkTypeF t of
             MkTypeF t' _ -> MkAnyW t'

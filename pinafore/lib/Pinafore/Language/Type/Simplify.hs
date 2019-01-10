@@ -1,6 +1,5 @@
 module Pinafore.Language.Type.Simplify
-    ( pinaforeSimplifyType
-    , pinaforeSimplifyTypes
+    ( pinaforeSimplifyTypes
     ) where
 
 import Language.Expression.Dolan
@@ -8,7 +7,6 @@ import Pinafore.Language.Type.Simplify.DuplicateGroundTypes
 import Pinafore.Language.Type.Simplify.DuplicateTypeVars
 import Pinafore.Language.Type.Simplify.OneSidedTypeVars
 import Pinafore.Language.Type.Simplify.SharedTypeVars
-import Pinafore.Language.Type.Simplify.VarUses
 import Pinafore.Language.Type.Type
 import Shapes
 
@@ -27,19 +25,9 @@ import Shapes
 -- 4. merge duplicate type vars in join/meet (on each type)
 -- e.g. "a|a" => "a"
 pinaforeSimplifyTypes ::
-       forall baseedit a. (MapTypes (PinaforeType baseedit) a, GetExpressionVarUses a, GetExpressionVars a)
+       forall baseedit a. TypeMappable (PinaforeType baseedit) a
     => a
     -> a
 pinaforeSimplifyTypes =
     mergeDuplicateTypeVars @baseedit .
     mergeSharedTypeVars @baseedit . eliminateOneSidedTypeVars @baseedit . mergeDuplicateGroundTypes @baseedit
-
--- | This is used for type signatures
-pinaforeSimplifyType ::
-       forall baseedit polarity t. IsTypePolarity polarity
-    => PinaforeType baseedit polarity t
-    -> PinaforeTypeF baseedit polarity t
-pinaforeSimplifyType t =
-    chainTypeF mergeDuplicateTypeVarsInType $
-    chainTypeF mergeSharedTypeVarsInType $
-    chainTypeF eliminateOneSidedTypeVarsInType $ mergeDuplicateGroundTypesInType t

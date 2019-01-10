@@ -52,6 +52,7 @@ library:
       - Language.Expression.Dolan.Variance
       - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.TypeF
+      - Language.Expression.Dolan.TypeMappable
       - Language.Expression.Dolan.MPolarity
       - Language.Expression.Dolan.RangeF
       - Pinafore.Base.Know
