@@ -79,38 +79,8 @@ bisubstitutesType (sub:subs) t = do
     tf <- bisubstituteType sub t
     chainTypeFM (bisubstitutesType subs) tf
 
-bisubstituteAllPositiveType ::
-       Monad m
-    => [PinaforeBisubstitutionM m baseedit]
-    -> PinaforeType baseedit 'PositivePolarity t
-    -> m (PinaforeTypeF baseedit 'PositivePolarity t)
-bisubstituteAllPositiveType [] t = return $ mkTypeF t
-bisubstituteAllPositiveType (sub:subs) t = do
-    MkTypeF t' conv <- bisubstitutePositiveType sub t
-    tf <- bisubstituteAllPositiveType subs t'
-    return $ contramap conv tf
-
-bisubstituteAllNegativeType ::
-       Monad m
-    => [PinaforeBisubstitutionM m baseedit]
-    -> PinaforeType baseedit 'NegativePolarity t
-    -> m (PinaforeTypeF baseedit 'NegativePolarity t)
-bisubstituteAllNegativeType [] t = return $ mkTypeF t
-bisubstituteAllNegativeType (sub:subs) t = do
-    MkTypeF t' conv <- bisubstituteNegativeType sub t
-    tf <- bisubstituteAllNegativeType subs t'
-    return $ fmap conv tf
-
-bisubstitutesSealedExpression ::
-       Monad m => [PinaforeBisubstitutionM m baseedit] -> PinaforeExpression baseedit -> m (PinaforeExpression baseedit)
-bisubstitutesSealedExpression [] expr = return $ expr
-bisubstitutesSealedExpression (sub:subs) expr = do
-    expr' <- mapSealedExpressionTypesM (bisubstitutePositiveType sub) (bisubstituteNegativeType sub) expr
-    bisubstitutesSealedExpression subs expr'
-
-bisubstitutesSealedPattern ::
-       Monad m => [PinaforeBisubstitutionM m baseedit] -> PinaforePattern baseedit -> m (PinaforePattern baseedit)
-bisubstitutesSealedPattern [] expr = return $ expr
-bisubstitutesSealedPattern (sub:subs) expr = do
-    expr' <- mapSealedPatternTypesM (bisubstitutePositiveType sub) (bisubstituteNegativeType sub) expr
-    bisubstitutesSealedPattern subs expr'
+bisubstitutes :: (Monad m, MapTypes (PinaforeType baseedit) a) => [PinaforeBisubstitutionM m baseedit] -> a -> m a
+bisubstitutes [] expr = return $ expr
+bisubstitutes (sub:subs) expr = do
+    expr' <- mapTypesM (bisubstitutePositiveType sub) (bisubstituteNegativeType sub) expr
+    bisubstitutes subs expr'

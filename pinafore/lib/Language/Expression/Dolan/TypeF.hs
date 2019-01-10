@@ -64,81 +64,51 @@ chainTypeF ::
     -> TypeF witb polarity t'
 chainTypeF f (MkTypeF t conv) = mapTypeF conv $ f t
 
-typeFSealedExpression ::
-       TypeF wit 'PositivePolarity t
-    -> NamedExpression name (wit 'NegativePolarity) t
-    -> SealedExpression name (wit 'NegativePolarity) (wit 'PositivePolarity)
-typeFSealedExpression (MkTypeF tt conv) expr = MkSealedExpression tt $ fmap conv expr
-
 typeFConstExpression ::
        TypeF wit 'PositivePolarity t -> t -> SealedExpression name (wit 'NegativePolarity) (wit 'PositivePolarity)
-typeFConstExpression tf t = typeFSealedExpression tf $ pure t
+typeFConstExpression (MkTypeF tt conv) t = MkSealedExpression tt $ pure $ conv t
 
-mapExpressionTypes ::
-       Monad m
-    => (forall t. wit 'NegativePolarity t -> m (TypeF wit 'NegativePolarity t))
-    -> NamedExpression name (wit 'NegativePolarity) a
-    -> m (NamedExpression name (wit 'NegativePolarity) a)
-mapExpressionTypes _ (ClosedExpression a) = return $ ClosedExpression a
-mapExpressionTypes mapNeg (OpenExpression (MkNameWitness name tt) expr) = do
-    MkTypeF tt' conv <- mapNeg tt
-    expr' <- mapExpressionTypes mapNeg expr
-    return $ OpenExpression (MkNameWitness name tt') $ fmap (\ta -> ta . conv) expr'
+class MapTypes wit a | a -> wit where
+    mapTypesM ::
+           forall m. Monad m
+        => (forall t. wit 'PositivePolarity t -> m (TypeF wit 'PositivePolarity t))
+        -> (forall t. wit 'NegativePolarity t -> m (TypeF wit 'NegativePolarity t))
+        -> a
+        -> m a
 
-mapSealedExpressionTypesM ::
-       Monad m
-    => (forall t. wit 'PositivePolarity t -> m (TypeF wit 'PositivePolarity t))
-    -> (forall t. wit 'NegativePolarity t -> m (TypeF wit 'NegativePolarity t))
-    -> SealedExpression name (wit 'NegativePolarity) (wit 'PositivePolarity)
-    -> m (SealedExpression name (wit 'NegativePolarity) (wit 'PositivePolarity))
-mapSealedExpressionTypesM mapPos mapNeg (MkSealedExpression tt expr) = do
-    ttf <- mapPos tt
-    expr' <- mapExpressionTypes mapNeg expr
-    return $ typeFSealedExpression ttf expr'
-
-mapSealedExpressionTypes ::
-       (forall t. wit 'PositivePolarity t -> TypeF wit 'PositivePolarity t)
+mapTypes ::
+       MapTypes wit a
+    => (forall t. wit 'PositivePolarity t -> TypeF wit 'PositivePolarity t)
     -> (forall t. wit 'NegativePolarity t -> TypeF wit 'NegativePolarity t)
-    -> SealedExpression name (wit 'NegativePolarity) (wit 'PositivePolarity)
-    -> SealedExpression name (wit 'NegativePolarity) (wit 'PositivePolarity)
-mapSealedExpressionTypes mapPos mapNeg expr =
-    runIdentity $ mapSealedExpressionTypesM (\t -> Identity $ mapPos t) (\t -> Identity $ mapNeg t) expr
+    -> a
+    -> a
+mapTypes mapPos mapNeg a = runIdentity $ mapTypesM (\t -> Identity $ mapPos t) (\t -> Identity $ mapNeg t) a
 
-typeFSealedPattern ::
-       TypeF wit 'NegativePolarity t
-    -> NamedPattern name (wit 'PositivePolarity) t ()
-    -> SealedPattern name (wit 'PositivePolarity) (wit 'NegativePolarity)
-typeFSealedPattern (MkTypeF tt conv) pat = MkSealedPattern tt $ pat . arr conv
+instance MapTypes wit (NamedExpression name (wit 'NegativePolarity) a) where
+    mapTypesM _ _ (ClosedExpression a) = return $ ClosedExpression a
+    mapTypesM mapPos mapNeg (OpenExpression (MkNameWitness name tt) expr) = do
+        MkTypeF tt' conv <- mapNeg tt
+        expr' <- mapTypesM mapPos mapNeg expr
+        return $ OpenExpression (MkNameWitness name tt') $ fmap (\ta -> ta . conv) expr'
 
-mapPatternTypes ::
-       Monad m
-    => (forall t. wit 'PositivePolarity t -> m (TypeF wit 'PositivePolarity t))
-    -> NamedPattern name (wit 'PositivePolarity) a b
-    -> m (NamedPattern name (wit 'PositivePolarity) a b)
-mapPatternTypes _ (ClosedPattern a) = return $ ClosedPattern a
-mapPatternTypes mapPos (OpenPattern (MkNameWitness name tt) pat) = do
-    MkTypeF tt' conv <- mapPos tt
-    pat' <- mapPatternTypes mapPos pat
-    return $ OpenPattern (MkNameWitness name tt') $ fmap (\(t, b) -> (conv t, b)) pat'
+instance MapTypes wit (SealedExpression name (wit 'NegativePolarity) (wit 'PositivePolarity)) where
+    mapTypesM mapPos mapNeg (MkSealedExpression tt expr) = do
+        MkTypeF tt' conv <- mapPos tt
+        expr' <- mapTypesM mapPos mapNeg expr
+        return $ MkSealedExpression tt' $ fmap conv expr'
 
-mapSealedPatternTypesM ::
-       Monad m
-    => (forall t. wit 'PositivePolarity t -> m (TypeF wit 'PositivePolarity t))
-    -> (forall t. wit 'NegativePolarity t -> m (TypeF wit 'NegativePolarity t))
-    -> SealedPattern name (wit 'PositivePolarity) (wit 'NegativePolarity)
-    -> m (SealedPattern name (wit 'PositivePolarity) (wit 'NegativePolarity))
-mapSealedPatternTypesM mapPos mapNeg (MkSealedPattern tt expr) = do
-    ttf <- mapNeg tt
-    expr' <- mapPatternTypes mapPos expr
-    return $ typeFSealedPattern ttf expr'
+instance MapTypes wit (NamedPattern name (wit 'PositivePolarity) a b) where
+    mapTypesM _ _ (ClosedPattern a) = return $ ClosedPattern a
+    mapTypesM mapPos mapNeg (OpenPattern (MkNameWitness name tt) pat) = do
+        MkTypeF tt' conv <- mapPos tt
+        pat' <- mapTypesM mapPos mapNeg pat
+        return $ OpenPattern (MkNameWitness name tt') $ fmap (\(t, b) -> (conv t, b)) pat'
 
-mapSealedPatternTypes ::
-       (forall t. wit 'PositivePolarity t -> TypeF wit 'PositivePolarity t)
-    -> (forall t. wit 'NegativePolarity t -> TypeF wit 'NegativePolarity t)
-    -> SealedPattern name (wit 'PositivePolarity) (wit 'NegativePolarity)
-    -> SealedPattern name (wit 'PositivePolarity) (wit 'NegativePolarity)
-mapSealedPatternTypes mapPos mapNeg expr =
-    runIdentity $ mapSealedPatternTypesM (\t -> Identity $ mapPos t) (\t -> Identity $ mapNeg t) expr
+instance MapTypes wit (SealedPattern name (wit 'PositivePolarity) (wit 'NegativePolarity)) where
+    mapTypesM mapPos mapNeg (MkSealedPattern tt pat) = do
+        MkTypeF tt' conv <- mapNeg tt
+        pat' <- mapTypesM mapPos mapNeg pat
+        return $ MkSealedPattern tt' $ pat' . arr conv
 
 class ToTypeF wit t where
     toTypeF :: TypeF wit 'PositivePolarity t

@@ -24,7 +24,9 @@ interpretPattern (MkSyntaxPattern spos (BothSyntaxPattern spat1 spat2)) = do
     pat1 <- interpretPattern spat1
     pat2 <- interpretPattern spat2
     liftRefNotation $ runSourcePos spos $ qBothPattern pat1 pat2
-interpretPattern (MkSyntaxPattern _ (ConstructorSyntaxPattern _ _)) = fail "NYI: constructor patterns"
+interpretPattern (MkSyntaxPattern _ (ConstructorSyntaxPattern _name spats)) = do
+    _pats <- for spats interpretPattern
+    fail "NYI: constructor patterns"
 
 interpretPatternOrName :: SyntaxPattern -> Either Name (RefNotation baseedit (QPattern baseedit))
 interpretPatternOrName (MkSyntaxPattern _ (VarSyntaxPattern n)) = Left n

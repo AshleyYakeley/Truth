@@ -285,7 +285,7 @@ instance Subsumer (PinaforeSubsumer baseedit) where
         (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ meet2 . biBackwards varBij) expr'
         return (expr'', bisub : bisubs)
     subsumerNegSubstitute subs t cont = do
-        t' <- bisubstituteAllNegativeType subs t
+        t' <- bisubstitutesType subs t
         unTypeF t' cont
     subsumePosWitnesses tinf tdecl = getCompose $ subsumePositiveType tinf tdecl
     simplifyPosType (MkAnyW t) =

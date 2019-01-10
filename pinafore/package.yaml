@@ -80,6 +80,7 @@ library:
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type.Rename
       - Pinafore.Language.Type.Bisubstitute
+      - Pinafore.Language.Type.Simplify.VarUses
       - Pinafore.Language.Type.Simplify.OneSidedTypeVars
       - Pinafore.Language.Type.Simplify.DuplicateGroundTypes
       - Pinafore.Language.Type.Simplify.SharedTypeVars

@@ -9,7 +9,7 @@ module Pinafore.Test
     , PinaforeType
     , PinaforeScoped
     , PinaforeSourceScoped
-    , pinaforeSimplifyExpressionType
+    , pinaforeSimplifyTypes
     , toTypeF
     , module Pinafore.Test
     ) where

@@ -37,13 +37,13 @@ instance Unifier (PinaforeUnifier baseedit) where
     unifyPosNegWitnesses tq tp = getCompose $ unifyPosNegPinaforeTypes tq tp
     solveUnifier = runUnifier
     unifierPosSubstitute subs t cont = do
-        t' <- bisubstituteAllPositiveType subs t
+        t' <- bisubstitutesType subs t
         unTypeF t' cont
     unifierNegSubstitute subs t cont = do
-        t' <- bisubstituteAllNegativeType subs t
+        t' <- bisubstitutesType subs t
         unTypeF t' cont
-    simplifyExpressionType = return . pinaforeSimplifyExpressionType
-    simplifyPatternType = return . pinaforeSimplifyPatternType
+    simplifyExpressionType = return . pinaforeSimplifyTypes
+    simplifyPatternType = return . pinaforeSimplifyTypes
 
 instance TypeSystem (PinaforeTypeSystem baseedit) where
     type TSRenamer (PinaforeTypeSystem baseedit) = VarRenamer (PinaforeTypeSystem baseedit)
