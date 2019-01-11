@@ -63,13 +63,13 @@ renameTypeArgs (ConsListType svt dvt) (ConsDolanKindVary svm dvm) (ConsDolanArgu
                     renameTypeArgs dvt dvm args' $ \args'' bijargs' ->
                         cont (ConsDolanArguments arg' args'') $ bijargs' . bijargs
 
-renamePinaforeSinglularTypeVars ::
+renamePinaforeSingularTypeVars ::
        forall baseedit polarity. IsTypePolarity polarity
     => PinaforeTypeNamespace baseedit (PinaforeSingularType baseedit polarity)
-renamePinaforeSinglularTypeVars (GroundPinaforeSingularType gt args) cont =
+renamePinaforeSingularTypeVars (GroundPinaforeSingularType gt args) cont =
     renameTypeArgs @baseedit @polarity (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args $ \args' bij ->
         cont (GroundPinaforeSingularType gt args') bij
-renamePinaforeSinglularTypeVars (VarPinaforeSingularType namewit1) cont =
+renamePinaforeSingularTypeVars (VarPinaforeSingularType namewit1) cont =
     renameUVar varNamespaceRename namewit1 $ \namewit2 bij -> cont (VarPinaforeSingularType namewit2) bij
 
 renamePinaforeTypeVars ::
@@ -77,15 +77,15 @@ renamePinaforeTypeVars ::
     => PinaforeTypeNamespace baseedit (PinaforeType baseedit polarity)
 renamePinaforeTypeVars NilPinaforeType cont = cont NilPinaforeType id
 renamePinaforeTypeVars (ConsPinaforeType ta tb) cont =
-    renamePinaforeSinglularTypeVars ta $ \ta' bija ->
+    renamePinaforeSingularTypeVars ta $ \ta' bija ->
         renamePinaforeTypeVars tb $ \tb' bijb -> cont (ConsPinaforeType ta' tb') $ jmBiMap @polarity bija bijb
 
 instance Renamer (VarRenamer (PinaforeTypeSystem baseedit)) where
     type RenamerNamespace (VarRenamer (PinaforeTypeSystem baseedit)) = VarNamespace (PinaforeTypeSystem baseedit)
     type RenamerNegWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'NegativePolarity
     type RenamerPosWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'PositivePolarity
-    renameTSNegWitness = renamePinaforeTypeVars
-    renameTSPosWitness = renamePinaforeTypeVars
+    renameTSNegWitness t f = renamePinaforeTypeVars t $ \t' bij -> f t' $ biBackwards bij
+    renameTSPosWitness t f = renamePinaforeTypeVars t $ \t' bij -> f t' $ biForwards bij
     renameNewVar = do
         n <- varRenamerGenerate
         toSymbolWitness n $ \wit ->

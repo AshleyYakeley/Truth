@@ -24,12 +24,12 @@ class (MonadTransConstraint Monad rn, MonadTransConstraint Monad (RenamerNamespa
     renameTSNegWitness ::
            Monad m
         => RenamerNegWitness rn t
-        -> (forall t'. RenamerNegWitness rn t' -> Bijection t t' -> RenamerNamespace rn (rn m) r)
+        -> (forall t'. RenamerNegWitness rn t' -> (t' -> t) -> RenamerNamespace rn (rn m) r)
         -> RenamerNamespace rn (rn m) r
     renameTSPosWitness ::
            Monad m
         => RenamerPosWitness rn t
-        -> (forall t'. RenamerPosWitness rn t' -> Bijection t t' -> RenamerNamespace rn (rn m) r)
+        -> (forall t'. RenamerPosWitness rn t' -> (t -> t') -> RenamerNamespace rn (rn m) r)
         -> RenamerNamespace rn (rn m) r
     renameNewVar :: Monad m => rn m (NewVar rn)
     namespace :: Monad m => RenamerNamespace rn (rn m) r -> rn m r

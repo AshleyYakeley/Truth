@@ -59,9 +59,9 @@ renameExpression (OpenExpression (MkNameWitness name vw) expr) =
     case hasTransConstraint @Monad @rn @m of
         Dict ->
             withTransConstraintTM @Monad $
-            renameTSNegWitness vw $ \vw' bij -> do
+            renameTSNegWitness vw $ \vw' conv -> do
                 expr' <- renameExpression expr
-                return $ OpenExpression (MkNameWitness name vw') $ fmap (\va -> va . biBackwards bij) expr'
+                return $ OpenExpression (MkNameWitness name vw') $ fmap (\va -> va . conv) expr'
 
 type NamedPattern name w = NameTypePattern (UnitWitness name) (UnitWitness' w)
 
@@ -85,6 +85,6 @@ renamePattern (OpenPattern (MkNameWitness name vw) pat) =
     case hasTransConstraint @Monad @rn @m of
         Dict ->
             withTransConstraintTM @Monad $
-            renameTSPosWitness vw $ \vw' bij -> do
+            renameTSPosWitness vw $ \vw' conv -> do
                 pat' <- renamePattern pat
-                return $ OpenPattern (MkNameWitness name vw') $ fmap (\(t, a) -> (biForwards bij t, a)) pat'
+                return $ OpenPattern (MkNameWitness name vw') $ fmap (\(t, a) -> (conv t, a)) pat'

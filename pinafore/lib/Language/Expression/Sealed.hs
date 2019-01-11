@@ -21,7 +21,7 @@ renameSealedExpression (MkSealedExpression twt expr) =
     namespace $
     withTransConstraintTM @Monad $ do
         expr' <- renameExpression expr
-        renameTSPosWitness twt $ \twt' bij -> return $ MkSealedExpression twt' $ fmap (biForwards bij) expr'
+        renameTSPosWitness twt $ \twt' conv -> return $ MkSealedExpression twt' $ fmap conv expr'
 
 constSealedExpression :: AnyValue tw -> SealedExpression name vw tw
 constSealedExpression (MkAnyValue twt t) = MkSealedExpression twt $ pure t
@@ -64,7 +64,7 @@ renameSealedPattern (MkSealedPattern twt expr) =
     namespace $
     withTransConstraintTM @Monad $ do
         expr' <- renamePattern expr
-        renameTSNegWitness twt $ \twt' bij -> return $ MkSealedPattern twt' $ contramap1Pattern (biBackwards bij) expr'
+        renameTSNegWitness twt $ \twt' conv -> return $ MkSealedPattern twt' $ contramap1Pattern conv expr'
 
 varSealedPattern :: name -> tw t -> vw v -> (t -> v) -> SealedPattern name vw tw
 varSealedPattern n twt vwt conv = MkSealedPattern twt $ varNamedPattern n vwt . arr conv
