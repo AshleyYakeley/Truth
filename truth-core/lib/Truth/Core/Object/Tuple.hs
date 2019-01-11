@@ -84,10 +84,10 @@ tupleListObject_ lt getObject =
             tupleListObject_ lt' $ \sel -> getObject $ RestListElementWitness sel
 
 tupleListObject ::
-       forall edits. KnownList edits
+       forall edits. Is (ListType Proxy) edits
     => (forall edit. ListElementWitness edits edit -> Object edit)
     -> Object (TupleEdit (ListElementWitness edits))
-tupleListObject = tupleListObject_ listType
+tupleListObject = tupleListObject_ representative
 
 tupleObject ::
        forall sel. IsFiniteConsWitness sel
