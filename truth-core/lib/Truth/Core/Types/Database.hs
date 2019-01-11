@@ -4,29 +4,29 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 
-class TestEquality tablesel => Database (dbType :: *) (tablesel :: * -> *) where
+class TestEquality tablesel => Database (dbType :: Type) (tablesel :: Type -> Type) where
     tableAssemble :: Applicative m => (forall row. tablesel row -> m (f row)) -> m (AllF tablesel f)
     -- where
-    type WhereClause dbType tablesel row :: *
+    type WhereClause dbType tablesel row :: Type
     whereClause :: WhereClause dbType tablesel row -> row -> Bool
     whereAlways :: tablesel row -> WhereClause dbType tablesel row
     -- insert
-    type InsertClause dbType tablesel row :: *
+    type InsertClause dbType tablesel row :: Type
     insertClause :: InsertClause dbType tablesel row -> [row]
     insertIntoTable :: tablesel row -> [row] -> InsertClause dbType tablesel row
     -- update
-    type UpdateClause dbType tablesel row :: *
+    type UpdateClause dbType tablesel row :: Type
     updateClause :: UpdateClause dbType tablesel row -> row -> row
     -- order
-    type OrderClause dbType tablesel row :: *
+    type OrderClause dbType tablesel row :: Type
     orderClause :: OrderClause dbType tablesel row -> row -> row -> Ordering
     orderMonoid :: tablesel row -> Dict (Monoid (OrderClause dbType tablesel row))
     -- select
-    type SelectClause dbType tablesel :: * -> * -> *
+    type SelectClause dbType tablesel :: Type -> Type -> Type
     selectClause :: SelectClause dbType tablesel rowA rowB -> rowA -> rowB
     selectRow :: tablesel row -> SelectClause dbType tablesel row row
     -- join
-    type JoinClause dbType tablesel :: * -> * -> * -> *
+    type JoinClause dbType tablesel :: Type -> Type -> Type -> Type
     joinClause :: JoinClause dbType tablesel rowA rowB rowC -> rowA -> rowB -> rowC -- outer joins only?
 
 data TableJoin dbType tablesel row where

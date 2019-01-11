@@ -22,12 +22,12 @@
       - GADTs
       - GeneralizedNewtypeDeriving
       - ImplicitParams
+      - NoImplicitPrelude
       - InstanceSigs
       - KindSignatures
       - LambdaCase
       - MonadFailDesugaring
       - MultiParamTypeClasses
-      - NoImplicitPrelude
       - OverloadedLabels
       - OverloadedStrings
       - PartialTypeSignatures
@@ -39,6 +39,7 @@
       - RecursiveDo
       - ScopedTypeVariables
       - StandaloneDeriving
+      - NoStarIsType
       - TemplateHaskell
       - TypeApplications
       - TypeFamilies

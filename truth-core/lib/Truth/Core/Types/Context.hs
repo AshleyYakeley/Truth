@@ -26,7 +26,7 @@ instance Comonad (WithContext context) where
 instance (HasNewValue context, HasNewValue content) => HasNewValue (WithContext context content) where
     newValue = MkWithContext newValue newValue
 
-data WithContextSelector (editx :: *) (editn :: *) (edit :: *) where
+data WithContextSelector (editx :: Type) (editn :: Type) (edit :: Type) where
     SelectContext :: WithContextSelector editx editn editx
     SelectContent :: WithContextSelector editx editn editn
 
@@ -67,11 +67,11 @@ instance (c ex, c en) => TupleWitness c (WithContextSelector ex en) where
 
 instance IsFiniteConsWitness (WithContextSelector ex en) where
     type FiniteConsWitness (WithContextSelector ex en) = '[ ex, en]
-    toLTW SelectContext = FirstListElementWitness
-    toLTW SelectContent = RestListElementWitness FirstListElementWitness
-    fromLTW FirstListElementWitness = SelectContext
-    fromLTW (RestListElementWitness FirstListElementWitness) = SelectContent
-    fromLTW (RestListElementWitness (RestListElementWitness lt)) = never lt
+    toLTW SelectContext = FirstElementType
+    toLTW SelectContent = RestElementType FirstElementType
+    fromLTW FirstElementType = SelectContext
+    fromLTW (RestElementType FirstElementType) = SelectContent
+    fromLTW (RestElementType (RestElementType lt)) = never lt
 
 type ContextEditReader x n = TupleEditReader (WithContextSelector x n)
 

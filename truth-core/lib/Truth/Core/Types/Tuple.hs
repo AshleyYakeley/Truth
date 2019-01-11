@@ -4,7 +4,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 
-class TupleWitness (c :: * -> Constraint) (sel :: * -> *) where
+class TupleWitness (c :: Type -> Constraint) (sel :: Type -> Type) where
     tupleWitness :: forall edit. sel edit -> Dict (c edit)
 
 newtype Tuple sel =
@@ -18,8 +18,8 @@ instance (TupleSubjectWitness Show sel, FiniteWitness sel) => Show (Tuple sel) w
                 Dict -> show $ f se
         in "{" ++ intercalate "," (fmap showWit allWitnesses) ++ "}"
 
-class (TestEquality sel, TupleReaderWitness SubjectReader sel) => SubjectTupleSelector (sel :: * -> *) where
-    type TupleSubject sel :: *
+class (TestEquality sel, TupleReaderWitness SubjectReader sel) => SubjectTupleSelector (sel :: Type -> Type) where
+    type TupleSubject sel :: Type
     type TupleSubject sel = Tuple sel
     tupleReadFromSubject :: forall edit. sel edit -> TupleSubject sel -> EditSubject edit
     default tupleReadFromSubject ::
@@ -66,13 +66,13 @@ instance (SubjectTupleSelector sel) => SubjectReader (TupleEditReader sel) where
         case tupleReaderWitness @SubjectReader seledit of
             Dict -> subjectToRead (tupleReadFromSubject seledit a) reader
 
-class TupleReaderWitness (c :: (* -> *) -> Constraint) (sel :: * -> *) where
+class TupleReaderWitness (c :: (Type -> Type) -> Constraint) (sel :: Type -> Type) where
     tupleReaderWitness :: forall edit. sel edit -> Dict (c (EditReader edit))
 
-class TupleSubjectWitness (c :: * -> Constraint) (sel :: * -> *) where
+class TupleSubjectWitness (c :: Type -> Constraint) (sel :: Type -> Type) where
     tupleSubjectWitness :: forall edit. sel edit -> Dict (c (EditSubject edit))
 
-class TestEquality sel => FiniteTupleSelector (sel :: * -> *) where
+class TestEquality sel => FiniteTupleSelector (sel :: Type -> Type) where
     tupleConstruct ::
            forall m. Applicative m
         => (forall edit. sel edit -> m (EditSubject edit))

@@ -14,11 +14,12 @@ import Control.Monad.Trans.Transform
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Writer
 import Data.Constraint
+import Data.Kind
 import Data.Tuple
 import Prelude
 
-newtype Unlift (t :: (* -> *) -> * -> *) = MkUnlift
-    { runUnlift :: forall (m :: * -> *) (r :: *). MonadUnliftIO m => t m r -> m r
+newtype Unlift (t :: (Type -> Type) -> Type -> Type) = MkUnlift
+    { runUnlift :: forall (m :: Type -> Type) (r :: Type). MonadUnliftIO m => t m r -> m r
     }
 
 identityUnlift :: Unlift IdentityT

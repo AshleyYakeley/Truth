@@ -7,7 +7,7 @@ import Truth.Core.Types.Pair
 import Truth.Core.Types.Tuple
 import Truth.Core.Types.Whole
 
-data FunctionSelector a (eb :: *) (et :: *) where
+data FunctionSelector a (eb :: Type) (et :: Type) where
     MkFunctionSelector :: a -> FunctionSelector a edit edit
 
 instance (Eq a) => TestEquality (FunctionSelector a editb) where

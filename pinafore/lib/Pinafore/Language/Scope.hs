@@ -26,7 +26,7 @@ import Shapes
 import Text.Parsec (SourcePos)
 
 data NamedType =
-    EntityNamedType (AnyW SymbolWitness)
+    EntityNamedType (AnyW SymbolType)
 
 data Scope expr = MkScope
     { scopeBindings :: StrictMap Name expr
@@ -139,7 +139,7 @@ withEntitySubtype rel@(a, b) = do
     _ <- lookupNamedType b
     return $ MkTransform $ pLocalScope (\tc -> tc {scopeEntitySubtypes = rel : (scopeEntitySubtypes tc)})
 
-getEntitySubtype :: SymbolWitness na -> SymbolWitness nb -> SourceScoped expr (NamedEntity na -> NamedEntity nb)
+getEntitySubtype :: SymbolType na -> SymbolType nb -> SourceScoped expr (NamedEntity na -> NamedEntity nb)
 getEntitySubtype wa wb = let
     sa = fromSymbolWitness wa
     sb = fromSymbolWitness wb

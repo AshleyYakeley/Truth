@@ -76,9 +76,9 @@ limitInvertType' t =
 -- Kind of the dual of 'BisubstitutionWitness'.
 data SubsumeWitness baseedit t where
     PositiveSubsumeWitness
-        :: SymbolWitness name -> PinaforeType baseedit 'PositivePolarity p -> SubsumeWitness baseedit (UVar name -> p)
+        :: SymbolType name -> PinaforeType baseedit 'PositivePolarity p -> SubsumeWitness baseedit (UVar name -> p)
     NegativeSubsumeWitness
-        :: SymbolWitness name -> PinaforeType baseedit 'NegativePolarity q -> SubsumeWitness baseedit (q -> UVar name)
+        :: SymbolType name -> PinaforeType baseedit 'NegativePolarity q -> SubsumeWitness baseedit (q -> UVar name)
 
 type PinaforeSubsumer baseedit = Expression (SubsumeWitness baseedit)
 
@@ -190,14 +190,14 @@ subsumeNegativeType ta (ConsPinaforeType t1 tr) = liftA2 meetf (subsumeNegativeT
 
 data InvertSubstitution (wit :: TypePolarity -> Type -> Type) where
     NegInvertSubstitution
-        :: SymbolWitness name
-        -> SymbolWitness name'
+        :: SymbolType name
+        -> SymbolType name'
         -> wit 'NegativePolarity t
         -> Bijection (JoinType (UVar name') t) (UVar name)
         -> InvertSubstitution wit
     PosInvertSubstitution
-        :: SymbolWitness name
-        -> SymbolWitness name'
+        :: SymbolType name
+        -> SymbolType name'
         -> wit 'PositivePolarity t
         -> Bijection (MeetType (UVar name') t) (UVar name)
         -> InvertSubstitution wit
@@ -248,7 +248,7 @@ instance Subsumer (PinaforeSubsumer baseedit) where
     type SubsumerPosWitness (PinaforeSubsumer baseedit) = PinaforeType baseedit 'PositivePolarity
     type SubsumerSubstitutions (PinaforeSubsumer baseedit) = [PinaforeBisubstitution baseedit]
     solveSubsumer (ClosedExpression a) = return (a, [])
-    solveSubsumer (OpenExpression (NegativeSubsumeWitness (vn :: SymbolWitness name) (tp :: PinaforeType baseedit 'NegativePolarity t)) expr) = do
+    solveSubsumer (OpenExpression (NegativeSubsumeWitness (vn :: SymbolType name) (tp :: PinaforeType baseedit 'NegativePolarity t)) expr) = do
         let
             varBij :: Bijection (JoinType (UVar name) t) (UVar name)
             varBij = unsafeUVarBijection
@@ -266,7 +266,7 @@ instance Subsumer (PinaforeSubsumer baseedit) where
         expr' <- getCompose $ invertSubstitute (NegInvertSubstitution vn vn tp varBij) expr
         (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ biForwards varBij . join2) expr'
         return (expr'', bisub : bisubs)
-    solveSubsumer (OpenExpression (PositiveSubsumeWitness (vn :: SymbolWitness name) (tp :: PinaforeType baseedit 'PositivePolarity t)) expr) = do
+    solveSubsumer (OpenExpression (PositiveSubsumeWitness (vn :: SymbolType name) (tp :: PinaforeType baseedit 'PositivePolarity t)) expr) = do
         let
             varBij :: Bijection (MeetType (UVar name) t) (UVar name)
             varBij = unsafeUVarBijection

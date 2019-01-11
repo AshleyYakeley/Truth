@@ -4,7 +4,7 @@ import Truth.Core.Import
 import Truth.Core.Read.MutableRead
 import Truth.Core.Read.SubjectReader
 
-class (SubjectReader reader) => FullSubjectReader (reader :: * -> *) where
+class (SubjectReader reader) => FullSubjectReader (reader :: Type -> Type) where
     mutableReadToSubject ::
            forall m. MonadIO m
         => MutableRead m reader

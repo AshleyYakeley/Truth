@@ -53,12 +53,12 @@ type SQLiteRead tablesel = TupleDatabaseRead SQLiteDatabase tablesel
 
 type SQLiteEdit tablesel = TupleDatabaseEdit SQLiteDatabase tablesel
 
-type family RowColSel (row :: *) :: * -> *
+type family RowColSel (row :: Type) :: Type -> Type
 
 type instance RowColSel (AllValue colsel) = colsel
 
-class HasSchema (t :: *) where
-    type Schema t :: *
+class HasSchema (t :: Type) where
+    type Schema t :: Type
     schemaString :: Schema t -> t -> QueryString
 
 data Expr colsel t where

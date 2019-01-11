@@ -12,7 +12,7 @@ nullSingleObjectMutableRead :: Monad m => MutableRead m (SingleObjectReader edit
 nullSingleObjectMutableRead ReadSingleObjectStore = return Nothing
 nullSingleObjectMutableRead GetSingleObjectRecoveryCode = return Nothing
 
-data SingleObjectEdit (edit :: *)
+data SingleObjectEdit (edit :: Type)
     = SingleObjectDeleteCreate
     | SingleObjectDelete
     | SingleObjectRecover Int

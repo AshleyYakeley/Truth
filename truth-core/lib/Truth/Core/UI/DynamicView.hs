@@ -5,9 +5,9 @@ import Truth.Core.Object
 import Truth.Core.UI.CreateView
 import Truth.Core.UI.View
 
-class DynamicViewState (dvs :: *) where
-    type DynamicViewSelEdit dvs :: *
-    type DynamicViewEdit dvs :: *
+class DynamicViewState (dvs :: Type) where
+    type DynamicViewSelEdit dvs :: Type
+    type DynamicViewEdit dvs :: Type
     dynamicViewStates :: dvs -> [ViewState (DynamicViewSelEdit dvs) (DynamicViewEdit dvs) ()]
     dynamicViewFocus :: dvs -> ViewState (DynamicViewSelEdit dvs) (DynamicViewEdit dvs) ()
 

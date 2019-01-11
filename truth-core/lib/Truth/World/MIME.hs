@@ -19,11 +19,11 @@ type MIMETuple edit = WithContextSelector (WholeEdit MIMEContentType) edit
 type MIMEContentEdit edit = TupleEdit (MIMETuple edit)
 
 data AnyCodec where
-    MkAnyCodec :: forall (edit :: *). IOWitness edit -> Codec [Word8] (EditSubject edit) -> AnyCodec
+    MkAnyCodec :: forall (edit :: Type). IOWitness edit -> Codec [Word8] (EditSubject edit) -> AnyCodec
 
 data MIMEKnowledge = MkMIMEKnowledge
     { findMIMECodecByMIME :: MIMEContentType -> Maybe AnyCodec
-    , findMIMECodecByInfoT :: forall (edit :: *).
+    , findMIMECodecByInfoT :: forall (edit :: Type).
                                       IOWitness edit -> Maybe (MIMEContentType, Codec [Word8] (EditSubject edit))
     }
 

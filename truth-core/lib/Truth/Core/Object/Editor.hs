@@ -4,7 +4,7 @@ import Truth.Core.Import
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 
-data Editor (edit :: *) actions r = forall editor. MkEditor
+data Editor (edit :: Type) actions r = forall editor. MkEditor
     { editorInit :: Object edit -> IO editor
     , editorUpdate :: editor -> Object edit -> [edit] -> IO ()
     , editorDo :: editor -> Object edit -> actions -> IO r

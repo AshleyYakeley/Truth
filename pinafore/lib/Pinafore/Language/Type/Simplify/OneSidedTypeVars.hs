@@ -18,7 +18,7 @@ getEliminateBisubs expr = let
     posonlyvars = difference posvars negvars
     negonlyvars :: FiniteSet _
     negonlyvars = difference negvars posvars
-    mkbisub :: AnyW SymbolWitness -> PinaforeBisubstitutionM Identity baseedit
+    mkbisub :: AnyW SymbolType -> PinaforeBisubstitutionM Identity baseedit
     mkbisub (MkAnyW vn) =
         MkBisubstitution
             vn

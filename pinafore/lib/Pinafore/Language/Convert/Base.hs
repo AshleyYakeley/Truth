@@ -52,13 +52,13 @@ instance (FromTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit)
 
 -- UVar
 instance KnownSymbol name => ToTypeF (PinaforeSingularType baseedit) (UVar name) where
-    toTypeF = mkTypeF $ VarPinaforeSingularType MkSymbolWitness
+    toTypeF = mkTypeF $ VarPinaforeSingularType MkSymbolType
 
 instance KnownSymbol name => ToTypeF (PinaforeType baseedit) (UVar name) where
     toTypeF = singlePinaforeTypeF toTypeF
 
 instance KnownSymbol name => FromTypeF (PinaforeSingularType baseedit) (UVar name) where
-    fromTypeF = mkTypeF $ VarPinaforeSingularType MkSymbolWitness
+    fromTypeF = mkTypeF $ VarPinaforeSingularType MkSymbolType
 
 instance KnownSymbol name => FromTypeF (PinaforeType baseedit) (UVar name) where
     fromTypeF = singlePinaforeTypeF fromTypeF
@@ -385,7 +385,7 @@ instance KnownSymbol name => ToTypeF (PinaforeSingularType baseedit) (NamedEntit
     toTypeF =
         mkTypeF $
         GroundPinaforeSingularType
-            (SimpleEntityPinaforeGroundType $ NamedSimpleEntityType MkSymbolWitness)
+            (SimpleEntityPinaforeGroundType $ NamedSimpleEntityType MkSymbolType)
             NilDolanArguments
 
 instance KnownSymbol name => ToTypeF (PinaforeType baseedit) (NamedEntity name) where
@@ -395,7 +395,7 @@ instance KnownSymbol name => FromTypeF (PinaforeSingularType baseedit) (NamedEnt
     fromTypeF =
         mkTypeF $
         GroundPinaforeSingularType
-            (SimpleEntityPinaforeGroundType $ NamedSimpleEntityType MkSymbolWitness)
+            (SimpleEntityPinaforeGroundType $ NamedSimpleEntityType MkSymbolType)
             NilDolanArguments
 
 instance KnownSymbol name => FromTypeF (PinaforeType baseedit) (NamedEntity name) where

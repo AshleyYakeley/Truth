@@ -10,7 +10,7 @@ import Shapes
 
 class GetVarUses t where
     -- | (positive, negative)
-    getVarUses :: t -> ([[AnyW SymbolWitness]], [[AnyW SymbolWitness]])
+    getVarUses :: t -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
 
 instance IsTypePolarity polarity => GetVarUses (RangeType (PinaforeType baseedit) polarity a) where
     getVarUses (MkRangeType tp tq) = invertPolarity @polarity $ getVarUses tp <> getVarUses tq
@@ -19,7 +19,7 @@ getArgExpressionVarUses ::
        forall baseedit polarity sv a. IsTypePolarity polarity
     => SingleVarianceType sv
     -> SingleArgument sv (PinaforeType baseedit) polarity a
-    -> ([[AnyW SymbolWitness]], [[AnyW SymbolWitness]])
+    -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
 getArgExpressionVarUses CovarianceType t = getVarUses t
 getArgExpressionVarUses ContravarianceType t = invertPolarity @polarity $ getVarUses t
 getArgExpressionVarUses RangevarianceType t = getVarUses t
@@ -28,7 +28,7 @@ getArgsExpressionVarUses ::
        forall baseedit polarity dv gt t. IsTypePolarity polarity
     => DolanVarianceType dv
     -> DolanArguments dv (PinaforeType baseedit) gt polarity t
-    -> ([[AnyW SymbolWitness]], [[AnyW SymbolWitness]])
+    -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
 getArgsExpressionVarUses NilListType NilDolanArguments = mempty
 getArgsExpressionVarUses (ConsListType sv dv) (ConsDolanArguments arg args) =
     getArgExpressionVarUses @baseedit @polarity sv arg <> getArgsExpressionVarUses dv args
@@ -37,16 +37,15 @@ instance IsTypePolarity polarity => GetVarUses (PinaforeSingularType baseedit po
     getVarUses (GroundPinaforeSingularType gt args) = getArgsExpressionVarUses (pinaforeGroundTypeKind gt) args
     getVarUses (VarPinaforeSingularType _) = mempty
 
-getVarUses' ::
-       IsTypePolarity polarity => PinaforeType baseedit polarity t -> ([[AnyW SymbolWitness]], [[AnyW SymbolWitness]])
+getVarUses' :: IsTypePolarity polarity => PinaforeType baseedit polarity t -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
 getVarUses' NilPinaforeType = mempty
 getVarUses' (ConsPinaforeType t1 tr) = getVarUses t1 <> getVarUses' tr
 
-getJMSingleTypeVars :: IsTypePolarity polarity => PinaforeSingularType baseedit polarity t -> [AnyW SymbolWitness]
+getJMSingleTypeVars :: IsTypePolarity polarity => PinaforeSingularType baseedit polarity t -> [AnyW SymbolType]
 getJMSingleTypeVars (VarPinaforeSingularType vn) = [MkAnyW vn]
 getJMSingleTypeVars (GroundPinaforeSingularType _ _) = []
 
-getJMTypeVars :: IsTypePolarity polarity => PinaforeType baseedit polarity t -> [AnyW SymbolWitness]
+getJMTypeVars :: IsTypePolarity polarity => PinaforeType baseedit polarity t -> [AnyW SymbolType]
 getJMTypeVars NilPinaforeType = mempty
 getJMTypeVars (ConsPinaforeType t1 tr) = getJMSingleTypeVars t1 <> getJMTypeVars tr
 
@@ -62,7 +61,7 @@ instance IsTypePolarity polarity => GetVarUses (PinaforeType baseedit polarity t
 mappableGetVarUses ::
        forall baseedit a. TypeMappable (PinaforeType baseedit) a
     => a
-    -> ([[AnyW SymbolWitness]], [[AnyW SymbolWitness]])
+    -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
 mappableGetVarUses a =
     mconcat $
     fmap
@@ -73,7 +72,7 @@ mappableGetVarUses a =
 
 class GetExpressionVars t where
     -- | (positive, negative)
-    getExpressionVars :: t -> ([AnyW SymbolWitness], [AnyW SymbolWitness])
+    getExpressionVars :: t -> ([AnyW SymbolType], [AnyW SymbolType])
 
 instance IsTypePolarity polarity => GetExpressionVars (RangeType (PinaforeType baseedit) polarity a) where
     getExpressionVars (MkRangeType tp tq) = invertPolarity @polarity $ getExpressionVars tp <> getExpressionVars tq
@@ -82,7 +81,7 @@ getArgExpressionVars ::
        forall baseedit polarity sv a. IsTypePolarity polarity
     => SingleVarianceType sv
     -> SingleArgument sv (PinaforeType baseedit) polarity a
-    -> ([AnyW SymbolWitness], [AnyW SymbolWitness])
+    -> ([AnyW SymbolType], [AnyW SymbolType])
 getArgExpressionVars CovarianceType t = getExpressionVars t
 getArgExpressionVars ContravarianceType t = invertPolarity @polarity $ getExpressionVars t
 getArgExpressionVars RangevarianceType t = getExpressionVars t
@@ -91,7 +90,7 @@ getArgsExpressionVars ::
        forall baseedit polarity dv gt t. IsTypePolarity polarity
     => DolanVarianceType dv
     -> DolanArguments dv (PinaforeType baseedit) gt polarity t
-    -> ([AnyW SymbolWitness], [AnyW SymbolWitness])
+    -> ([AnyW SymbolType], [AnyW SymbolType])
 getArgsExpressionVars NilListType NilDolanArguments = mempty
 getArgsExpressionVars (ConsListType sv dv) (ConsDolanArguments arg args) =
     getArgExpressionVars @baseedit @polarity sv arg <> getArgsExpressionVars dv args
@@ -110,7 +109,7 @@ instance IsTypePolarity polarity => GetExpressionVars (PinaforeType baseedit pol
 mappableGetVars ::
        forall baseedit a. TypeMappable (PinaforeType baseedit) a
     => a
-    -> ([AnyW SymbolWitness], [AnyW SymbolWitness])
+    -> ([AnyW SymbolType], [AnyW SymbolType])
 mappableGetVars a =
     mconcat $
     fmap

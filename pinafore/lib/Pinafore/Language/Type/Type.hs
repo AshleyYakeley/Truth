@@ -28,7 +28,7 @@ data PinaforeSingularType (baseedit :: Type) (polarity :: TypePolarity) (t :: Ty
         :: PinaforeGroundType baseedit polarity dv t
         -> DolanArguments dv (PinaforeType baseedit) t polarity ta
         -> PinaforeSingularType baseedit polarity ta
-    VarPinaforeSingularType :: SymbolWitness name -> PinaforeSingularType baseedit polarity (UVar name)
+    VarPinaforeSingularType :: SymbolType name -> PinaforeSingularType baseedit polarity (UVar name)
 
 type PinaforeTypeF (baseedit :: Type) = TypeF (PinaforeType baseedit)
 

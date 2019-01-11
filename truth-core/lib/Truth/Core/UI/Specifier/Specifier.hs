@@ -4,16 +4,16 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Types
 
-data UISpec (seledit :: *) (edit :: *) where
+data UISpec (seledit :: Type) (edit :: Type) where
     MkUISpec
-        :: forall (t :: * -> * -> *) (seledit :: *) (edit :: *). (Show (t seledit edit), UIType t)
+        :: forall (t :: Type -> Type -> Type) (seledit :: Type) (edit :: Type). (Show (t seledit edit), UIType t)
         => t seledit edit
         -> UISpec seledit edit
 
 instance Show (UISpec seledit edit) where
     show (MkUISpec tedit) = show tedit
 
-class UIType (t :: * -> * -> *) where
+class UIType (t :: Type -> Type -> Type) where
     uiWitness :: IOWitness t
 
 isUISpec ::

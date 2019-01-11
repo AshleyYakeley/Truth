@@ -32,7 +32,7 @@ mergeSharedTypeVars ::
 mergeSharedTypeVars expr = let
     (posuses, neguses) = mappableGetVarUses @baseedit expr
     in case findShare posuses <|> findShare neguses of
-           Just (MkAnyW (va :: SymbolWitness na), MkAnyW (vb :: SymbolWitness nb)) -> let
+           Just (MkAnyW (va :: SymbolType na), MkAnyW (vb :: SymbolType nb)) -> let
                varBij :: Bijection (UVar na) (UVar nb)
                varBij = unsafeUVarBijection
                bisub =

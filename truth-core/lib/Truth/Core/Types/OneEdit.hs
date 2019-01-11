@@ -5,7 +5,7 @@ import Truth.Core.Import
 import Truth.Core.Read
 import Truth.Core.Types.OneReader
 
-newtype OneEdit (f :: * -> *) edit =
+newtype OneEdit (f :: Type -> Type) edit =
     MkOneEdit edit
 
 instance Show edit => Show (OneEdit f edit) where

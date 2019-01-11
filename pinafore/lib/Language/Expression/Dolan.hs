@@ -15,6 +15,6 @@ import Language.Expression.UVar
 import Shapes
 
 data Bisubstitution m (wit :: TypePolarity -> Type -> Type) =
-    forall name. MkBisubstitution (SymbolWitness name)
+    forall name. MkBisubstitution (SymbolType name)
                                   (m (TypeF wit 'PositivePolarity (UVar name)))
                                   (m (TypeF wit 'NegativePolarity (UVar name)))

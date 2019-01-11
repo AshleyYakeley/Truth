@@ -4,7 +4,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 
-newtype ComonadReader (w :: * -> *) (reader :: * -> *) (t :: *) where
+newtype ComonadReader (w :: Type -> Type) (reader :: Type -> Type) (t :: Type) where
     ReadExtract :: forall w reader t. reader t -> ComonadReader w reader t
 
 instance (Comonad w, SubjectReader reader) => SubjectReader (ComonadReader w reader) where
@@ -14,7 +14,7 @@ instance (Comonad w, SubjectReader reader) => SubjectReader (ComonadReader w rea
 comonadReadFunction :: ReadFunction (ComonadReader w reader) reader
 comonadReadFunction mr rt = mr $ ReadExtract rt
 
-newtype ComonadEdit (w :: * -> *) (edit :: *) =
+newtype ComonadEdit (w :: Type -> Type) (edit :: Type) =
     MkComonadEdit edit
 
 instance Floating edit edit => Floating (ComonadEdit w edit) (ComonadEdit w edit) where

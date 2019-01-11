@@ -12,7 +12,7 @@ import Truth.Core
 data SimpleEntityType t where
     TopSimpleEntityType :: SimpleEntityType Entity
     NewSimpleEntityType :: SimpleEntityType NewEntity
-    NamedSimpleEntityType :: SymbolWitness name -> SimpleEntityType (NamedEntity name)
+    NamedSimpleEntityType :: SymbolType name -> SimpleEntityType (NamedEntity name)
     LiteralSimpleEntityType :: LiteralType t -> SimpleEntityType t
 
 instance TestEquality SimpleEntityType where
