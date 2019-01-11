@@ -71,3 +71,12 @@ varSealedPattern n twt vwt conv = MkSealedPattern twt $ varNamedPattern n vwt . 
 
 anySealedPattern :: tw t -> SealedPattern name vw tw
 anySealedPattern twt = MkSealedPattern twt $ pure ()
+
+data PatternConstructor name vw tw =
+    forall t lt. MkPatternConstructor (tw t)
+                                      (ListType vw lt)
+                                      (NamedPattern name vw t (HList lt))
+
+sealedPatternConstructor :: MonadFail m => PatternConstructor name vw tw -> m (SealedPattern name vw tw)
+sealedPatternConstructor (MkPatternConstructor twt NilListType pat) = return $ MkSealedPattern twt pat
+sealedPatternConstructor _ = fail "Not enough arguments to constructor in pattern"

@@ -71,3 +71,32 @@ instance TypeMappable wit (SealedPattern name (wit 'PositivePolarity) (wit 'Nega
         MkTypeF tt' conv <- mapNeg tt
         pat' <- mapTypesM mapPos mapNeg pat
         return $ MkSealedPattern tt' $ pat' . arr conv
+
+data HListPolWit wit polarity t where
+    MkHListPolWit :: ListType (wit polarity) t -> HListPolWit wit polarity (HList t)
+
+liftHListPolwit ::
+       forall m wit polarity. (IsTypePolarity polarity, Applicative m)
+    => (forall t. wit polarity t -> m (TypeF wit polarity t))
+    -> forall t'. HListPolWit wit polarity t' -> m (TypeF (HListPolWit wit) polarity t')
+liftHListPolwit _ff (MkHListPolWit NilListType) = pure $ mkTypeF $ MkHListPolWit NilListType
+liftHListPolwit ff (MkHListPolWit (ConsListType t tt)) = let
+    combineTFs ::
+           forall a lt.
+           TypeF wit polarity a
+        -> TypeF (HListPolWit wit) polarity (HList lt)
+        -> TypeF (HListPolWit wit) polarity (a, HList lt)
+    combineTFs (MkTypeF w1 conv1) (MkTypeF (MkHListPolWit wr) convr) =
+        MkTypeF (MkHListPolWit $ ConsListType w1 wr) $
+        case whichTypePolarity @polarity of
+            Left Refl -> \(a1, ar) -> (conv1 a1, convr ar)
+            Right Refl -> \(a1, ar) -> (conv1 a1, convr ar)
+    in combineTFs <$> ff t <*> liftHListPolwit ff (MkHListPolWit tt)
+
+instance TypeMappable wit (PatternConstructor name (wit 'PositivePolarity) (wit 'NegativePolarity)) where
+    mapTypesM mapPos mapNeg (MkPatternConstructor tt lvw pat) = do
+        MkTypeF tt' conv <- mapNeg tt
+        pat' <- mapTypesM mapPos mapNeg pat
+        MkTypeF (MkHListPolWit lvw') lconv <-
+            mapTypesM (liftHListPolwit mapPos) (liftHListPolwit mapNeg) $ mkTypeF $ MkHListPolWit lvw
+        return $ MkPatternConstructor tt' lvw' $ fmap lconv $ pat' . arr conv
