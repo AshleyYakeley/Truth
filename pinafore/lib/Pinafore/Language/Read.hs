@@ -20,7 +20,7 @@ parseTopExpression :: HasPinaforeEntityEdit baseedit => Text -> PinaforeSourceSc
 parseTopExpression = parseScopedReader $ fmap interpretTopExpression readTopExpression
 
 parseType ::
-       forall baseedit polarity. IsTypePolarity polarity
+       forall baseedit polarity. Is PolarityType polarity
     => Text
     -> PinaforeSourceScoped baseedit (AnyW (PinaforeType baseedit polarity))
 parseType text = do

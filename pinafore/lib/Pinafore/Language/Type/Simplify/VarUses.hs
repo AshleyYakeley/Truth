@@ -4,6 +4,7 @@ module Pinafore.Language.Type.Simplify.VarUses
     ) where
 
 import Language.Expression.Dolan
+import Language.Expression.Polarity
 import Pinafore.Language.GroundType
 import Pinafore.Language.Type.Type
 import Shapes
@@ -12,11 +13,11 @@ class GetVarUses t where
     -- | (positive, negative)
     getVarUses :: t -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
 
-instance IsTypePolarity polarity => GetVarUses (RangeType (PinaforeType baseedit) polarity a) where
+instance Is PolarityType polarity => GetVarUses (RangeType (PinaforeType baseedit) polarity a) where
     getVarUses (MkRangeType tp tq) = invertPolarity @polarity $ getVarUses tp <> getVarUses tq
 
 getArgExpressionVarUses ::
-       forall baseedit polarity sv a. IsTypePolarity polarity
+       forall baseedit polarity sv a. Is PolarityType polarity
     => SingleVarianceType sv
     -> SingleArgument sv (PinaforeType baseedit) polarity a
     -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
@@ -25,7 +26,7 @@ getArgExpressionVarUses ContravarianceType t = invertPolarity @polarity $ getVar
 getArgExpressionVarUses RangevarianceType t = getVarUses t
 
 getArgsExpressionVarUses ::
-       forall baseedit polarity dv gt t. IsTypePolarity polarity
+       forall baseedit polarity dv gt t. Is PolarityType polarity
     => DolanVarianceType dv
     -> DolanArguments dv (PinaforeType baseedit) gt polarity t
     -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
@@ -33,29 +34,30 @@ getArgsExpressionVarUses NilListType NilDolanArguments = mempty
 getArgsExpressionVarUses (ConsListType sv dv) (ConsDolanArguments arg args) =
     getArgExpressionVarUses @baseedit @polarity sv arg <> getArgsExpressionVarUses dv args
 
-instance IsTypePolarity polarity => GetVarUses (PinaforeSingularType baseedit polarity t) where
+instance Is PolarityType polarity => GetVarUses (PinaforeSingularType baseedit polarity t) where
     getVarUses (GroundPinaforeSingularType gt args) = getArgsExpressionVarUses (pinaforeGroundTypeKind gt) args
     getVarUses (VarPinaforeSingularType _) = mempty
 
-getVarUses' :: IsTypePolarity polarity => PinaforeType baseedit polarity t -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
+getVarUses' ::
+       Is PolarityType polarity => PinaforeType baseedit polarity t -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
 getVarUses' NilPinaforeType = mempty
 getVarUses' (ConsPinaforeType t1 tr) = getVarUses t1 <> getVarUses' tr
 
-getJMSingleTypeVars :: IsTypePolarity polarity => PinaforeSingularType baseedit polarity t -> [AnyW SymbolType]
+getJMSingleTypeVars :: Is PolarityType polarity => PinaforeSingularType baseedit polarity t -> [AnyW SymbolType]
 getJMSingleTypeVars (VarPinaforeSingularType vn) = [MkAnyW vn]
 getJMSingleTypeVars (GroundPinaforeSingularType _ _) = []
 
-getJMTypeVars :: IsTypePolarity polarity => PinaforeType baseedit polarity t -> [AnyW SymbolType]
+getJMTypeVars :: Is PolarityType polarity => PinaforeType baseedit polarity t -> [AnyW SymbolType]
 getJMTypeVars NilPinaforeType = mempty
 getJMTypeVars (ConsPinaforeType t1 tr) = getJMSingleTypeVars t1 <> getJMTypeVars tr
 
-instance IsTypePolarity polarity => GetVarUses (PinaforeType baseedit polarity t) where
+instance Is PolarityType polarity => GetVarUses (PinaforeType baseedit polarity t) where
     getVarUses t =
         case getJMTypeVars t of
             tv ->
-                (case whichTypePolarity @polarity of
-                     Left Refl -> ([tv], [])
-                     Right Refl -> ([], [tv])) <>
+                (case representative @_ @_ @polarity of
+                     PositiveType -> ([tv], [])
+                     NegativeType -> ([], [tv])) <>
                 getVarUses' t
 
 mappableGetVarUses ::
@@ -74,11 +76,11 @@ class GetExpressionVars t where
     -- | (positive, negative)
     getExpressionVars :: t -> ([AnyW SymbolType], [AnyW SymbolType])
 
-instance IsTypePolarity polarity => GetExpressionVars (RangeType (PinaforeType baseedit) polarity a) where
+instance Is PolarityType polarity => GetExpressionVars (RangeType (PinaforeType baseedit) polarity a) where
     getExpressionVars (MkRangeType tp tq) = invertPolarity @polarity $ getExpressionVars tp <> getExpressionVars tq
 
 getArgExpressionVars ::
-       forall baseedit polarity sv a. IsTypePolarity polarity
+       forall baseedit polarity sv a. Is PolarityType polarity
     => SingleVarianceType sv
     -> SingleArgument sv (PinaforeType baseedit) polarity a
     -> ([AnyW SymbolType], [AnyW SymbolType])
@@ -87,7 +89,7 @@ getArgExpressionVars ContravarianceType t = invertPolarity @polarity $ getExpres
 getArgExpressionVars RangevarianceType t = getExpressionVars t
 
 getArgsExpressionVars ::
-       forall baseedit polarity dv gt t. IsTypePolarity polarity
+       forall baseedit polarity dv gt t. Is PolarityType polarity
     => DolanVarianceType dv
     -> DolanArguments dv (PinaforeType baseedit) gt polarity t
     -> ([AnyW SymbolType], [AnyW SymbolType])
@@ -95,14 +97,14 @@ getArgsExpressionVars NilListType NilDolanArguments = mempty
 getArgsExpressionVars (ConsListType sv dv) (ConsDolanArguments arg args) =
     getArgExpressionVars @baseedit @polarity sv arg <> getArgsExpressionVars dv args
 
-instance IsTypePolarity polarity => GetExpressionVars (PinaforeSingularType baseedit polarity t) where
+instance Is PolarityType polarity => GetExpressionVars (PinaforeSingularType baseedit polarity t) where
     getExpressionVars (GroundPinaforeSingularType gt args) = getArgsExpressionVars (pinaforeGroundTypeKind gt) args
     getExpressionVars (VarPinaforeSingularType vn) =
-        case whichTypePolarity @polarity of
-            Left Refl -> ([MkAnyW vn], [])
-            Right Refl -> ([], [MkAnyW vn])
+        case representative @_ @_ @polarity of
+            PositiveType -> ([MkAnyW vn], [])
+            NegativeType -> ([], [MkAnyW vn])
 
-instance IsTypePolarity polarity => GetExpressionVars (PinaforeType baseedit polarity t) where
+instance Is PolarityType polarity => GetExpressionVars (PinaforeType baseedit polarity t) where
     getExpressionVars NilPinaforeType = mempty
     getExpressionVars (ConsPinaforeType t1 tr) = getExpressionVars t1 <> getExpressionVars tr
 

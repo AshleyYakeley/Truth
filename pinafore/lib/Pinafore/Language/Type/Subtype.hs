@@ -6,6 +6,7 @@ module Pinafore.Language.Type.Subtype
     ) where
 
 import Language.Expression.Dolan
+import Language.Expression.Polarity
 import Pinafore.Base
 import Pinafore.Language.GroundType
 import Pinafore.Language.Scope
@@ -21,16 +22,16 @@ data SubtypeContext baseedit m pola polb = MkSubtypeContext
     }
 
 meetUnjoin1 ::
-       forall polarity a. IsTypePolarity polarity
+       forall polarity a. Is PolarityType polarity
     => JoinMeetType polarity a (LimitType polarity)
     -> a
 meetUnjoin1 =
-    case whichTypePolarity @polarity of
-        Left Refl -> unjoin1
-        Right Refl -> meet1
+    case representative @_ @_ @polarity of
+        PositiveType -> unjoin1
+        NegativeType -> meet1
 
 subtypeVariance ::
-       (Applicative m, IsTypePolarity pola, IsTypePolarity polb)
+       (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext baseedit m pola polb
     -> SingleVarianceType sv
     -> SingleArgument sv (PinaforeType baseedit) pola a
@@ -46,7 +47,7 @@ subtypeVariance sc RangevarianceType (MkRangeType tpa tqa) (MkRangeType tpb tqb)
     return $ MkWithRange pba qab
 
 subtypeArguments' ::
-       forall baseedit m pola polb dv gta gtb ta tb. (Applicative m, IsTypePolarity pola, IsTypePolarity polb)
+       forall baseedit m pola polb dv gta gtb ta tb. (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext baseedit m pola polb
     -> DolanVarianceType dv
     -> DolanKindVary dv gta
@@ -62,7 +63,7 @@ subtypeArguments' sc (ConsListType (svt :: SingleVarianceType sv) (dvt :: DolanV
             Dict -> \(MkNestedMorphism conv) -> f (conv . svm sfunc)
 
 subtypeArguments ::
-       forall baseedit m pola polb pol dv gt argsa argsb. (Applicative m, IsTypePolarity pola, IsTypePolarity polb)
+       forall baseedit m pola polb pol dv gt argsa argsb. (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext baseedit m pola polb
     -> PinaforeGroundType baseedit pol dv gt
     -> DolanArguments dv (PinaforeType baseedit) gt pola argsa
@@ -74,7 +75,7 @@ subtypeArguments sc gt argsa argsb = let
            Dict -> fmap (\f -> f id) $ subtypeArguments' sc vkt (pinaforeGroundTypeVary gt) argsa argsb
 
 subtypeGroundTypes ::
-       forall baseedit m pola polb dva gta a dvb gtb b. (Applicative m, IsTypePolarity pola, IsTypePolarity polb)
+       forall baseedit m pola polb dva gta a dvb gtb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext baseedit m pola polb
     -> PinaforeGroundType baseedit pola dva gta
     -> DolanArguments dva (PinaforeType baseedit) gta pola a

@@ -118,7 +118,7 @@ typedAnyToPinaforeVal spos aval =
 
 qSubsumeExpr ::
        forall baseedit.
-       AnyW (PinaforeType baseedit 'PositivePolarity)
+       AnyW (PinaforeType baseedit 'Positive)
     -> PinaforeExpression baseedit
     -> PinaforeSourceScoped baseedit (PinaforeExpression baseedit)
 qSubsumeExpr t expr = tsSubsume @(PinaforeTypeSystem baseedit) t expr

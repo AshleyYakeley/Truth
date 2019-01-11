@@ -5,6 +5,7 @@ module Pinafore.Language.Type.Rename
     ) where
 
 import Language.Expression.Dolan
+import Language.Expression.Polarity
 import Language.Expression.Renamer
 import Language.Expression.UVar
 import Pinafore.Language.GroundType
@@ -31,7 +32,7 @@ type TypeNamespace (ts :: Type) (w :: k -> Type)
 type PinaforeTypeNamespace baseedit w = TypeNamespace (PinaforeTypeSystem baseedit) w
 
 renamePinaforeRangeTypeVars ::
-       forall baseedit polarity. IsTypePolarity polarity
+       forall baseedit polarity. Is PolarityType polarity
     => PinaforeTypeNamespace baseedit (PinaforeRangeType baseedit polarity)
 renamePinaforeRangeTypeVars (MkRangeType ta tb) cont =
     invertPolarity @polarity $
@@ -39,7 +40,7 @@ renamePinaforeRangeTypeVars (MkRangeType ta tb) cont =
         renamePinaforeTypeVars tb $ \tb' bijb -> cont (MkRangeType ta' tb') $ MkPairMorphism bija bijb
 
 renameTypeArg ::
-       forall baseedit polarity v. IsTypePolarity polarity
+       forall baseedit polarity v. Is PolarityType polarity
     => SingleVarianceType v
     -> PinaforeTypeNamespace baseedit (SingleArgument v (PinaforeType baseedit) polarity)
 renameTypeArg CovarianceType = renamePinaforeTypeVars
@@ -49,8 +50,8 @@ renameTypeArg ContravarianceType =
 renameTypeArg RangevarianceType = renamePinaforeRangeTypeVars
 
 renameTypeArgs ::
-       forall baseedit (polarity :: TypePolarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv).
-       IsTypePolarity polarity
+       forall baseedit (polarity :: Polarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv).
+       Is PolarityType polarity
     => DolanVarianceType dv
     -> DolanKindVary dv t
     -> PinaforeTypeNamespace baseedit (DolanArguments dv (PinaforeType baseedit) t polarity)
@@ -64,7 +65,7 @@ renameTypeArgs (ConsListType svt dvt) (ConsDolanKindVary svm dvm) (ConsDolanArgu
                         cont (ConsDolanArguments arg' args'') $ bijargs' . bijargs
 
 renamePinaforeSingularTypeVars ::
-       forall baseedit polarity. IsTypePolarity polarity
+       forall baseedit polarity. Is PolarityType polarity
     => PinaforeTypeNamespace baseedit (PinaforeSingularType baseedit polarity)
 renamePinaforeSingularTypeVars (GroundPinaforeSingularType gt args) cont =
     renameTypeArgs @baseedit @polarity (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args $ \args' bij ->
@@ -73,17 +74,21 @@ renamePinaforeSingularTypeVars (VarPinaforeSingularType namewit1) cont =
     renameUVar varNamespaceRename namewit1 $ \namewit2 bij -> cont (VarPinaforeSingularType namewit2) bij
 
 renamePinaforeTypeVars ::
-       forall baseedit polarity. IsTypePolarity polarity
+       forall baseedit polarity. Is PolarityType polarity
     => PinaforeTypeNamespace baseedit (PinaforeType baseedit polarity)
 renamePinaforeTypeVars NilPinaforeType cont = cont NilPinaforeType id
 renamePinaforeTypeVars (ConsPinaforeType ta tb) cont =
     renamePinaforeSingularTypeVars ta $ \ta' bija ->
-        renamePinaforeTypeVars tb $ \tb' bijb -> cont (ConsPinaforeType ta' tb') $ jmBiMap @polarity bija bijb
+        renamePinaforeTypeVars tb $ \tb' bijb ->
+            cont (ConsPinaforeType ta' tb') $
+            case representative @_ @_ @polarity of
+                PositiveType -> biJoinBimap bija bijb
+                NegativeType -> biMeetBimap bija bijb
 
 instance Renamer (VarRenamer (PinaforeTypeSystem baseedit)) where
     type RenamerNamespace (VarRenamer (PinaforeTypeSystem baseedit)) = VarNamespace (PinaforeTypeSystem baseedit)
-    type RenamerNegWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'NegativePolarity
-    type RenamerPosWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'PositivePolarity
+    type RenamerNegWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'Negative
+    type RenamerPosWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'Positive
     renameTSNegWitness t f = renamePinaforeTypeVars t $ \t' bij -> f t' $ biBackwards bij
     renameTSPosWitness t f = renamePinaforeTypeVars t $ \t' bij -> f t' $ biForwards bij
     renameNewVar = do

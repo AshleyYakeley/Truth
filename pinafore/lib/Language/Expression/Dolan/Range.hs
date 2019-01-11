@@ -1,6 +1,7 @@
 module Language.Expression.Dolan.Range where
 
-import Language.Expression.Dolan.Polarity
+import Language.Expression.Dolan.JoinMeet
+import Language.Expression.Polarity
 import Shapes
 
 -- | For dealing with non-co/contravariance, see Dolan sec. 9.1

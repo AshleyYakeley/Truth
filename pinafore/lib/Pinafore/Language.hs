@@ -63,8 +63,8 @@ parseValueAtType spos text = do
     typedAnyToPinaforeVal @baseedit spos val
 
 showPinaforeGroundValue ::
-       PinaforeGroundType baseedit 'PositivePolarity dv t
-    -> DolanArguments dv (PinaforeType baseedit) t 'PositivePolarity ta
+       PinaforeGroundType baseedit 'Positive dv t
+    -> DolanArguments dv (PinaforeType baseedit) t 'Positive ta
     -> ta
     -> String
 showPinaforeGroundValue (SimpleEntityPinaforeGroundType (LiteralSimpleEntityType t)) NilDolanArguments v =
@@ -80,11 +80,11 @@ showPinaforeGroundValue ListPinaforeGroundType (ConsDolanArguments t NilDolanArg
     "[" <> intercalate "," (fmap (showPinaforeValue t) v) <> "]"
 showPinaforeGroundValue _ _ _ = "<?>"
 
-showPinaforeSingularValue :: PinaforeSingularType baseedit 'PositivePolarity t -> t -> String
+showPinaforeSingularValue :: PinaforeSingularType baseedit 'Positive t -> t -> String
 showPinaforeSingularValue (VarPinaforeSingularType _) _ = "<?>"
 showPinaforeSingularValue (GroundPinaforeSingularType gt args) v = showPinaforeGroundValue gt args v
 
-showPinaforeValue :: PinaforeType baseedit 'PositivePolarity t -> t -> String
+showPinaforeValue :: PinaforeType baseedit 'Positive t -> t -> String
 showPinaforeValue NilPinaforeType v = never v
 showPinaforeValue (ConsPinaforeType ts tt) v = joinf (showPinaforeSingularValue ts) (showPinaforeValue tt) v
 

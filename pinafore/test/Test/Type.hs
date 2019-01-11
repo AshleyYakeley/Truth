@@ -5,8 +5,10 @@ module Test.Type
 import Language.Expression.Dolan
 import Language.Expression.Expression
 import Language.Expression.Named
+import Language.Expression.Polarity
 import Language.Expression.Renamer
 import Language.Expression.Sealed
+import Language.Expression.TypeF
 import Language.Expression.TypeSystem
 import Language.Expression.Unifier
 import Pinafore
@@ -19,7 +21,7 @@ type TS = PinaforeTypeSystem PinaforeEdit
 
 type PExpression = TSSealedExpression TS
 
-showVars :: NamedExpression Name (PinaforeType PinaforeEdit 'NegativePolarity) t -> [String]
+showVars :: NamedExpression Name (PinaforeType PinaforeEdit 'Negative) t -> [String]
 showVars (ClosedExpression _) = []
 showVars (OpenExpression (MkNameWitness name t) expr) = (show name <> " :: " <> show t) : showVars expr
 
@@ -101,7 +103,7 @@ simplifyTypeTest text e =
     testCase (unpack text) $ do
         simpexpr <-
             resultTextToM $ do
-                MkAnyW t <- runSourceScoped (initialPos "<input>") $ parseType @PinaforeEdit @'PositivePolarity text
+                MkAnyW t <- runSourceScoped (initialPos "<input>") $ parseType @PinaforeEdit @'Positive text
                 return $
                     pinaforeSimplifyTypes @PinaforeEdit @PExpression $ MkSealedExpression t $ ClosedExpression undefined
         case simpexpr of

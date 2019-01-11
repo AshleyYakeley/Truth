@@ -3,6 +3,7 @@ module Pinafore.Language.Type.Simplify.OneSidedTypeVars
     ) where
 
 import Language.Expression.Dolan
+import Language.Expression.TypeF
 import Pinafore.Language.Type.Bisubstitute
 import Pinafore.Language.Type.Simplify.VarUses
 import Pinafore.Language.Type.Type

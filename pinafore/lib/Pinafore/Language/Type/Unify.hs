@@ -4,6 +4,8 @@ module Pinafore.Language.Type.Unify where
 
 import Language.Expression.Dolan
 import Language.Expression.Expression
+import Language.Expression.Polarity
+import Language.Expression.TypeF
 import Language.Expression.UVar
 import Language.Expression.Unifier
 import Pinafore.Language.GroundType
@@ -43,11 +45,11 @@ getTypeVars (ConsPinaforeType (VarPinaforeSingularType swit) tr) = fromSymbolWit
 data BisubstitutionWitness baseedit t where
     PositiveBisubstitutionWitness
         :: SymbolType name
-        -> PinaforeSingularType baseedit 'PositivePolarity p
+        -> PinaforeSingularType baseedit 'Positive p
         -> BisubstitutionWitness baseedit (p -> UVar name)
     NegativeBisubstitutionWitness
         :: SymbolType name
-        -> PinaforeSingularType baseedit 'NegativePolarity q
+        -> PinaforeSingularType baseedit 'Negative q
         -> BisubstitutionWitness baseedit (UVar name -> q)
 
 type PinaforeUnifier baseedit = Expression (BisubstitutionWitness baseedit)
@@ -63,8 +65,7 @@ fullUnifierLiftSourceScoped :: PinaforeSourceScoped baseedit a -> PinaforeFullUn
 fullUnifierLiftSourceScoped tca = fullUnifierLiftTypeCheck $ lift tca
 
 unifySubtypeContext ::
-       UnifierConstraint baseedit
-    => SubtypeContext baseedit (PinaforeFullUnifier baseedit) 'PositivePolarity 'NegativePolarity
+       UnifierConstraint baseedit => SubtypeContext baseedit (PinaforeFullUnifier baseedit) 'Positive 'Negative
 unifySubtypeContext = let
     subtypeTypes = unifyPosNegPinaforeTypes
     subtypeLift = fullUnifierLiftSourceScoped
@@ -73,17 +74,17 @@ unifySubtypeContext = let
 
 unifyPosNegGroundTypes ::
        UnifierConstraint baseedit
-    => PinaforeGroundType baseedit 'PositivePolarity dva gta
-    -> DolanArguments dva (PinaforeType baseedit) gta 'PositivePolarity ta
-    -> PinaforeGroundType baseedit 'NegativePolarity dvb gtb
-    -> DolanArguments dvb (PinaforeType baseedit) gtb 'NegativePolarity tb
+    => PinaforeGroundType baseedit 'Positive dva gta
+    -> DolanArguments dva (PinaforeType baseedit) gta 'Positive ta
+    -> PinaforeGroundType baseedit 'Negative dvb gtb
+    -> DolanArguments dvb (PinaforeType baseedit) gtb 'Negative tb
     -> PinaforeFullUnifier baseedit (ta -> tb)
 unifyPosNegGroundTypes = subtypeGroundTypes unifySubtypeContext
 
 unifyPosNegPinaforeSingularTypes ::
        UnifierConstraint baseedit
-    => PinaforeSingularType baseedit 'PositivePolarity a
-    -> PinaforeSingularType baseedit 'NegativePolarity b
+    => PinaforeSingularType baseedit 'Positive a
+    -> PinaforeSingularType baseedit 'Negative b
     -> PinaforeFullUnifier baseedit (a -> b)
 unifyPosNegPinaforeSingularTypes (VarPinaforeSingularType na) (VarPinaforeSingularType nb)
     | Just Refl <- testEquality na nb = pure id
@@ -96,8 +97,8 @@ unifyPosNegPinaforeSingularTypes (GroundPinaforeSingularType gta argsa) (GroundP
 
 unifyPosNegPinaforeTypes1 ::
        UnifierConstraint baseedit
-    => PinaforeSingularType baseedit 'PositivePolarity a
-    -> PinaforeType baseedit 'NegativePolarity b
+    => PinaforeSingularType baseedit 'Positive a
+    -> PinaforeType baseedit 'Negative b
     -> PinaforeFullUnifier baseedit (a -> b)
 unifyPosNegPinaforeTypes1 _ NilPinaforeType = pure alwaysTop
 unifyPosNegPinaforeTypes1 ta (ConsPinaforeType t1 t2) = do
@@ -107,8 +108,8 @@ unifyPosNegPinaforeTypes1 ta (ConsPinaforeType t1 t2) = do
 
 unifyPosNegPinaforeTypes ::
        UnifierConstraint baseedit
-    => PinaforeType baseedit 'PositivePolarity a
-    -> PinaforeType baseedit 'NegativePolarity b
+    => PinaforeType baseedit 'Positive a
+    -> PinaforeType baseedit 'Negative b
     -> PinaforeFullUnifier baseedit (a -> b)
 unifyPosNegPinaforeTypes NilPinaforeType _ = pure never
 unifyPosNegPinaforeTypes (ConsPinaforeType ta1 tar) tb = do
@@ -118,8 +119,8 @@ unifyPosNegPinaforeTypes (ConsPinaforeType ta1 tar) tb = do
 
 unifyPosNegPinaforeTypeF ::
        UnifierConstraint baseedit
-    => PinaforeTypeF baseedit 'PositivePolarity a
-    -> PinaforeTypeF baseedit 'NegativePolarity b
+    => PinaforeTypeF baseedit 'Positive a
+    -> PinaforeTypeF baseedit 'Negative b
     -> PinaforeFullUnifier baseedit (a -> b)
 unifyPosNegPinaforeTypeF (MkTypeF ta conva) (MkTypeF tb convb) = do
     conv <- unifyPosNegPinaforeTypes ta tb
@@ -156,13 +157,13 @@ occursInType _ NilPinaforeType = False
 occursInType n (ConsPinaforeType t1 t2) = occursInSingularType n t1 || occursInType n t2
 
 bisubstitutePositiveVar ::
-       SymbolType name -> PinaforeType baseedit 'PositivePolarity t -> PinaforeUnifier baseedit (t -> UVar name)
+       SymbolType name -> PinaforeType baseedit 'Positive t -> PinaforeUnifier baseedit (t -> UVar name)
 bisubstitutePositiveVar _ NilPinaforeType = pure never
 bisubstitutePositiveVar vn (ConsPinaforeType t1 tr) =
     OpenExpression (PositiveBisubstitutionWitness vn t1) $ fmap (\fr f1 -> joinf f1 fr) $ bisubstitutePositiveVar vn tr
 
 bisubstituteNegativeVar ::
-       SymbolType name -> PinaforeType baseedit 'NegativePolarity t -> PinaforeUnifier baseedit (UVar name -> t)
+       SymbolType name -> PinaforeType baseedit 'Negative t -> PinaforeUnifier baseedit (UVar name -> t)
 bisubstituteNegativeVar _ NilPinaforeType = pure alwaysTop
 bisubstituteNegativeVar vn (ConsPinaforeType t1 tr) =
     OpenExpression (NegativeBisubstitutionWitness vn t1) $ fmap (\fr f1 -> meetf f1 fr) $ bisubstituteNegativeVar vn tr
@@ -215,7 +216,7 @@ runUnifier (OpenExpression (PositiveBisubstitutionWitness vn tp) _)
     | occursInSingularType vn tp = fail $ "can't construct recursive type " <> show vn <> " = " <> unpack (exprShow tp)
 runUnifier (OpenExpression (NegativeBisubstitutionWitness vn tp) _)
     | occursInSingularType vn tp = fail $ "can't construct recursive type " <> show vn <> " = " <> unpack (exprShow tp)
-runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name) (tp :: PinaforeSingularType baseedit 'PositivePolarity vw)) expr) = let
+runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name) (tp :: PinaforeSingularType baseedit 'Positive vw)) expr) = let
     varBij :: Bijection (JoinType (UVar name) vw) (UVar name)
     varBij = unsafeUVarBijection
     bisub =
@@ -231,7 +232,7 @@ runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name
            expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'
            return (ca $ biForwards varBij . join2, bisub : subs)
-runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolType name) (tq :: PinaforeSingularType baseedit 'NegativePolarity vw)) expr) = let
+runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolType name) (tq :: PinaforeSingularType baseedit 'Negative vw)) expr) = let
     varBij :: Bijection (MeetType (UVar name) vw) (UVar name)
     varBij = unsafeUVarBijection
     bisub =

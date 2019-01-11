@@ -2,7 +2,7 @@ module Test.ReadType
     ( testReadTypes
     ) where
 
-import Language.Expression.Dolan
+import Language.Expression.Polarity
 import Pinafore
 import Pinafore.Test
 import Shapes
@@ -13,7 +13,7 @@ testReadType :: Text -> TestTree
 testReadType text =
     testCase (unpack text) $
     resultTextToM $ do
-        _ <- runSourceScoped (initialPos "<input>") $ parseType @PinaforeEdit @'PositivePolarity text
+        _ <- runSourceScoped (initialPos "<input>") $ parseType @PinaforeEdit @'Positive text
         return ()
 
 testReadTypes :: TestTree

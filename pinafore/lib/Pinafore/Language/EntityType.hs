@@ -27,7 +27,7 @@ instance TestEquality EntityType where
 
 instance Show (EntityType t) where
     show et =
-        case entityTypeToType @_ @'PositivePolarity et of
+        case entityTypeToType @_ @'Positive et of
             MkTypeF t _ -> show t
 
 entityTypeEq :: EntityType t -> Dict (Eq t)
@@ -40,7 +40,7 @@ entityTypeEq (EitherEntityType ta tb) =
         (Dict, Dict) -> Dict
 
 entityTypeToType ::
-       forall baseedit polarity t. IsTypePolarity polarity
+       forall baseedit polarity t. Is PolarityType polarity
     => EntityType t
     -> PinaforeTypeF baseedit polarity t
 entityTypeToType (SimpleEntityType t) =
@@ -48,8 +48,8 @@ entityTypeToType (SimpleEntityType t) =
 entityTypeToType (PairEntityType eta etb) = let
     taf = entityTypeToType @baseedit @polarity eta
     tbf = entityTypeToType @baseedit @polarity etb
-    in case whichTypePolarity @polarity of
-           Left Refl ->
+    in case representative @_ @_ @polarity of
+           PositiveType ->
                unTypeF taf $ \ta conva ->
                    unTypeF tbf $ \tb convb ->
                        singlePinaforeTypeF $
@@ -57,7 +57,7 @@ entityTypeToType (PairEntityType eta etb) = let
                        mkTypeF $
                        GroundPinaforeSingularType PairPinaforeGroundType $
                        ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
-           Right Refl ->
+           NegativeType ->
                unTypeF taf $ \ta conva ->
                    unTypeF tbf $ \tb convb ->
                        singlePinaforeTypeF $
@@ -68,8 +68,8 @@ entityTypeToType (PairEntityType eta etb) = let
 entityTypeToType (EitherEntityType eta etb) = let
     taf = entityTypeToType @baseedit @polarity eta
     tbf = entityTypeToType @baseedit @polarity etb
-    in case whichTypePolarity @polarity of
-           Left Refl ->
+    in case representative @_ @_ @polarity of
+           PositiveType ->
                unTypeF taf $ \ta conva ->
                    unTypeF tbf $ \tb convb ->
                        singlePinaforeTypeF $
@@ -77,7 +77,7 @@ entityTypeToType (EitherEntityType eta etb) = let
                        mkTypeF $
                        GroundPinaforeSingularType EitherPinaforeGroundType $
                        ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
-           Right Refl ->
+           NegativeType ->
                unTypeF taf $ \ta conva ->
                    unTypeF tbf $ \tb convb ->
                        singlePinaforeTypeF $

@@ -1,6 +1,7 @@
 module Pinafore.Language.GroundType where
 
 import Language.Expression.Dolan
+import Language.Expression.Polarity
 import Pinafore.Base
 import Pinafore.Language.Morphism
 import Pinafore.Language.Order
@@ -11,7 +12,7 @@ import Shapes
 import Truth.Core
 
 -- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
-data PinaforeGroundType baseedit (polarity :: TypePolarity) (dk :: DolanVariance) (t :: DolanVarianceKind dk) where
+data PinaforeGroundType baseedit (polarity :: Polarity) (dk :: DolanVariance) (t :: DolanVarianceKind dk) where
     ActionPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (PinaforeAction baseedit)
     OrderPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance] (PinaforeOrder baseedit)
     UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (UISpec (ConstEdit Entity) baseedit)

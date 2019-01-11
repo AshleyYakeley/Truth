@@ -24,6 +24,8 @@ library:
       - cryptonite
       - truth-core
     exposed-modules:
+      - Language.Expression.Polarity
+      - Language.Expression.TypeF
       - Language.Expression.Witness
       - Language.Expression.Expression
       - Language.Expression.Pattern
@@ -48,10 +50,9 @@ library:
     other-modules:
       - Language.Expression.UVar
       - Language.Expression.Dolan.Range
-      - Language.Expression.Dolan.Polarity
+      - Language.Expression.Dolan.JoinMeet
       - Language.Expression.Dolan.Variance
       - Language.Expression.Dolan.Arguments
-      - Language.Expression.Dolan.TypeF
       - Language.Expression.Dolan.TypeMappable
       - Language.Expression.Dolan.MPolarity
       - Language.Expression.Dolan.RangeF

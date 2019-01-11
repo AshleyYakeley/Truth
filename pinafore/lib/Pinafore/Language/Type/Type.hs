@@ -2,8 +2,10 @@ module Pinafore.Language.Type.Type where
 
 import qualified Data.List as List
 import Language.Expression.Dolan
+import Language.Expression.Polarity
 import Language.Expression.Renamer
 import Language.Expression.Sealed
+import Language.Expression.TypeF
 import Language.Expression.UVar
 import Pinafore.Language.GroundType
 import Pinafore.Language.Literal
@@ -15,7 +17,7 @@ import Shapes
 
 type PinaforeRangeType baseedit = RangeType (PinaforeType baseedit)
 
-data PinaforeType (baseedit :: Type) (polarity :: TypePolarity) (t :: Type) where
+data PinaforeType (baseedit :: Type) (polarity :: Polarity) (t :: Type) where
     NilPinaforeType :: PinaforeType baseedit polarity (LimitType polarity)
     ConsPinaforeType
         :: PinaforeSingularType baseedit polarity t
@@ -23,7 +25,7 @@ data PinaforeType (baseedit :: Type) (polarity :: TypePolarity) (t :: Type) wher
         -> PinaforeType baseedit polarity (JoinMeetType polarity t tr)
 
 -- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVar') for type variables.
-data PinaforeSingularType (baseedit :: Type) (polarity :: TypePolarity) (t :: Type) where
+data PinaforeSingularType (baseedit :: Type) (polarity :: Polarity) (t :: Type) where
     GroundPinaforeSingularType
         :: PinaforeGroundType baseedit polarity dv t
         -> DolanArguments dv (PinaforeType baseedit) t polarity ta
@@ -33,13 +35,13 @@ data PinaforeSingularType (baseedit :: Type) (polarity :: TypePolarity) (t :: Ty
 type PinaforeTypeF (baseedit :: Type) = TypeF (PinaforeType baseedit)
 
 singlePinaforeTypeF ::
-       forall baseedit polarity t. IsTypePolarity polarity
+       forall baseedit polarity t. Is PolarityType polarity
     => TypeF (PinaforeSingularType baseedit) polarity t
     -> PinaforeTypeF baseedit polarity t
 singlePinaforeTypeF (MkTypeF st conv) =
-    case whichTypePolarity @polarity of
-        Left Refl -> contramap conv $ MkTypeF (singlePinaforeType st) join1
-        Right Refl -> fmap conv $ MkTypeF (singlePinaforeType st) meet1
+    case representative @_ @_ @polarity of
+        PositiveType -> contramap conv $ MkTypeF (singlePinaforeType st) join1
+        NegativeType -> fmap conv $ MkTypeF (singlePinaforeType st) meet1
 
 singlePinaforeType ::
        PinaforeSingularType baseedit polarity t
@@ -53,9 +55,9 @@ literalPinaforeType t =
 
 joinPinaforeTypes ::
        forall baseedit (a :: Type) (b :: Type) r.
-       PinaforeType baseedit 'PositivePolarity a
-    -> PinaforeType baseedit 'PositivePolarity b
-    -> (forall ab. PinaforeType baseedit 'PositivePolarity ab -> (a -> ab) -> (b -> ab) -> r)
+       PinaforeType baseedit 'Positive a
+    -> PinaforeType baseedit 'Positive b
+    -> (forall ab. PinaforeType baseedit 'Positive ab -> (a -> ab) -> (b -> ab) -> r)
     -> r
 joinPinaforeTypes NilPinaforeType tb cont = cont tb never id
 joinPinaforeTypes (ConsPinaforeType ta tr) tb cont =
@@ -63,18 +65,18 @@ joinPinaforeTypes (ConsPinaforeType ta tr) tb cont =
 
 joinPinaforeTypeF ::
        forall baseedit (a :: Type) (b :: Type).
-       PinaforeTypeF baseedit 'PositivePolarity a
-    -> PinaforeTypeF baseedit 'PositivePolarity b
-    -> PinaforeTypeF baseedit 'PositivePolarity (JoinType a b)
+       PinaforeTypeF baseedit 'Positive a
+    -> PinaforeTypeF baseedit 'Positive b
+    -> PinaforeTypeF baseedit 'Positive (JoinType a b)
 joinPinaforeTypeF (MkTypeF ta conva) (MkTypeF tb convb) =
     contramap (joinBimap conva convb) $
     joinPinaforeTypes ta tb $ \tab conva' convb' -> MkTypeF tab $ joinf conva' convb'
 
 meetPinaforeTypes ::
        forall baseedit (a :: Type) (b :: Type) r.
-       PinaforeType baseedit 'NegativePolarity a
-    -> PinaforeType baseedit 'NegativePolarity b
-    -> (forall ab. PinaforeType baseedit 'NegativePolarity ab -> (ab -> a) -> (ab -> b) -> r)
+       PinaforeType baseedit 'Negative a
+    -> PinaforeType baseedit 'Negative b
+    -> (forall ab. PinaforeType baseedit 'Negative ab -> (ab -> a) -> (ab -> b) -> r)
     -> r
 meetPinaforeTypes NilPinaforeType tb cont = cont tb alwaysTop id
 meetPinaforeTypes (ConsPinaforeType ta tr) tb cont =
@@ -82,47 +84,54 @@ meetPinaforeTypes (ConsPinaforeType ta tr) tb cont =
 
 meetPinaforeTypeF ::
        forall baseedit (a :: Type) (b :: Type).
-       PinaforeTypeF baseedit 'NegativePolarity a
-    -> PinaforeTypeF baseedit 'NegativePolarity b
-    -> PinaforeTypeF baseedit 'NegativePolarity (MeetType a b)
+       PinaforeTypeF baseedit 'Negative a
+    -> PinaforeTypeF baseedit 'Negative b
+    -> PinaforeTypeF baseedit 'Negative (MeetType a b)
 meetPinaforeTypeF (MkTypeF ta conva) (MkTypeF tb convb) =
     fmap (meetBimap conva convb) $ meetPinaforeTypes ta tb $ \tab conva' convb' -> MkTypeF tab $ meetf conva' convb'
 
-instance IsTypePolarity polarity => Semigroup (AnyW (PinaforeType baseedit polarity)) where
+instance Is PolarityType polarity => Semigroup (AnyW (PinaforeType baseedit polarity)) where
     MkAnyW ta <> MkAnyW tb =
-        case whichTypePolarity @polarity of
-            Left Refl -> joinPinaforeTypes ta tb $ \tab _ _ -> MkAnyW tab
-            Right Refl -> meetPinaforeTypes ta tb $ \tab _ _ -> MkAnyW tab
+        case representative @_ @_ @polarity of
+            PositiveType -> joinPinaforeTypes ta tb $ \tab _ _ -> MkAnyW tab
+            NegativeType -> meetPinaforeTypes ta tb $ \tab _ _ -> MkAnyW tab
 
-instance IsTypePolarity polarity => Monoid (AnyW (PinaforeType baseedit polarity)) where
+instance Is PolarityType polarity => Monoid (AnyW (PinaforeType baseedit polarity)) where
     mappend = (<>)
     mempty = MkAnyW NilPinaforeType
 
-instance IsTypePolarity polarity => Semigroup (AnyInKind (RangeType (PinaforeType baseedit) polarity)) where
+instance Is PolarityType polarity => Semigroup (AnyInKind (RangeType (PinaforeType baseedit) polarity)) where
     MkAnyInKind (MkRangeType tp1 tq1) <> MkAnyInKind (MkRangeType tp2 tq2) =
         invertPolarity @polarity $
         case (MkAnyW tp1 <> MkAnyW tp2, MkAnyW tq1 <> MkAnyW tq2) of
             (MkAnyW tp12, MkAnyW tq12) -> MkAnyInKind (MkRangeType tp12 tq12)
 
-instance IsTypePolarity polarity => Monoid (AnyInKind (RangeType (PinaforeType baseedit) polarity)) where
+instance Is PolarityType polarity => Monoid (AnyInKind (RangeType (PinaforeType baseedit) polarity)) where
     mappend = (<>)
     mempty = MkAnyInKind (MkRangeType NilPinaforeType NilPinaforeType)
 
-instance IsTypePolarity polarity => ExprShow (PinaforeSingularType baseedit polarity t) where
+instance Is PolarityType polarity => ExprShow (PinaforeSingularType baseedit polarity t) where
     exprShowPrec (VarPinaforeSingularType namewit) = (pack $ show namewit, 0)
     exprShowPrec (GroundPinaforeSingularType gt args) = exprShowPrecGroundType gt args
 
-instance IsTypePolarity polarity => ExprShow (PinaforeType baseedit polarity t) where
-    exprShowPrec NilPinaforeType = (showLimitType @polarity, 0)
+instance Is PolarityType polarity => ExprShow (PinaforeType baseedit polarity t) where
+    exprShowPrec NilPinaforeType =
+        case representative @_ @_ @polarity of
+            PositiveType -> ("None", 0)
+            NegativeType -> ("Any", 0)
     exprShowPrec (ConsPinaforeType ta NilPinaforeType) = exprShowPrec ta
-    exprShowPrec (ConsPinaforeType ta tb) =
-        (exprPrecShow 2 ta <> " " <> showJoinMeetType @polarity <> " " <> exprPrecShow 2 tb, 3)
+    exprShowPrec (ConsPinaforeType ta tb) = let
+        jmConnector =
+            case representative @_ @_ @polarity of
+                PositiveType -> " | "
+                NegativeType -> " & "
+        in (exprPrecShow 2 ta <> jmConnector <> exprPrecShow 2 tb, 3)
 
-instance IsTypePolarity polarity => Show (PinaforeType baseedit polarity t) where
+instance Is PolarityType polarity => Show (PinaforeType baseedit polarity t) where
     show v = unpack $ exprShow v
 
 exprShowPrecGroundType ::
-       forall baseedit polarity dv t ta. IsTypePolarity polarity
+       forall baseedit polarity dv t ta. Is PolarityType polarity
     => PinaforeGroundType baseedit polarity dv t
     -> DolanArguments dv (PinaforeType baseedit) t polarity ta
     -> (Text, Int)
@@ -145,10 +154,10 @@ exprShowPrecGroundType SetPinaforeGroundType (ConsDolanArguments ta NilDolanArgu
 exprShowPrecGroundType MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
 
-instance IsTypePolarity polarity => ExprShow (PinaforeRangeType baseedit polarity a) where
+instance Is PolarityType polarity => ExprShow (PinaforeRangeType baseedit polarity a) where
     exprShowPrec (MkRangeType t1 t2) = let
         getpieces ::
-               forall pol t. IsTypePolarity pol
+               forall pol t. Is PolarityType pol
             => PinaforeType baseedit pol t
             -> [Text]
         getpieces NilPinaforeType = []
@@ -168,10 +177,9 @@ instance IsTypePolarity polarity => ExprShow (PinaforeRangeType baseedit polarit
         in (text, 0)
 
 type PinaforeExpression baseedit
-     = SealedExpression Name (PinaforeType baseedit 'NegativePolarity) (PinaforeType baseedit 'PositivePolarity)
+     = SealedExpression Name (PinaforeType baseedit 'Negative) (PinaforeType baseedit 'Positive)
 
-type PinaforePattern baseedit
-     = SealedPattern Name (PinaforeType baseedit 'PositivePolarity) (PinaforeType baseedit 'NegativePolarity)
+type PinaforePattern baseedit = SealedPattern Name (PinaforeType baseedit 'Positive) (PinaforeType baseedit 'Negative)
 
 data PinaforeTypeSystem (baseedit :: Type)
 
