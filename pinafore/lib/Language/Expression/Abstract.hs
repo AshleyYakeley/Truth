@@ -140,7 +140,7 @@ letBindNamedExpression bindmap (OpenExpression (MkNameWitness name vwt) expr) = 
     uerest <- letBindNamedExpression @unifier bindmap expr
     case bindmap name of
         Just bindexpr -> do
-            MkSealedExpression twt bindexpr' <- renameSealedExpression bindexpr
+            MkSealedExpression twt bindexpr' <- rename bindexpr
             ubindconv <- unifyPosNegWitnesses @unifier twt vwt
             let uebind = MkUnifyExpression ubindconv $ fmap (\t1 tt -> tt t1) bindexpr'
             return $ uerest <*> uebind
@@ -163,7 +163,7 @@ abstractSealedExpression ::
 abstractSealedExpression absw name sexpr =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
-        MkSealedExpression twt expr <- renameSealedExpression sexpr
+        MkSealedExpression twt expr <- rename sexpr
         MkAbstractResult vwt (unifierExpression -> uexpr') <- abstractNamedExpression @unifier name expr
         (expr', subs) <- solveUnifier @unifier uexpr'
         absw vwt twt $ \twf abconv -> unifierExpressionSubstituteAndSimplify @unifier subs twf $ fmap abconv expr'
@@ -177,8 +177,8 @@ applySealedExpression ::
 applySealedExpression appw sexprf sexpra =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
-        MkSealedExpression tf exprf <- renameSealedExpression sexprf
-        MkSealedExpression ta expra <- renameSealedExpression sexpra
+        MkSealedExpression tf exprf <- rename sexprf
+        MkSealedExpression ta expra <- rename sexpra
         MkNewVar vx tx convvar <- renameNewVar
         appw ta vx $ \vax convf -> do
             uconv <- unifyPosNegWitnesses tf vax
@@ -196,8 +196,8 @@ letSealedExpression ::
 letSealedExpression name sexpre sexprb =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
-        MkSealedExpression te expre <- renameSealedExpression sexpre
-        MkSealedExpression tb exprb <- renameSealedExpression sexprb
+        MkSealedExpression te expre <- rename sexpre
+        MkSealedExpression tb exprb <- rename sexprb
         MkAbstractResult vt (unifierExpression -> uexprf) <- abstractNamedExpression @unifier name exprb
         uconvet <- unifyPosNegWitnesses te vt
         (exprf', subs) <-
@@ -212,8 +212,8 @@ bothSealedPattern ::
 bothSealedPattern spat1 spat2 =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
-        MkSealedPattern tw1 pat1 <- renameSealedPattern spat1
-        MkSealedPattern tw2 pat2 <- renameSealedPattern spat2
+        MkSealedPattern tw1 pat1 <- rename spat1
+        MkSealedPattern tw2 pat2 <- rename spat2
         unifyNegWitnesses @unifier tw1 tw2 $ \twr uconv -> do
             solveUnifierPattern @unifier twr $
                 fmap
@@ -233,11 +233,11 @@ caseSealedExpression sbexpr rawcases =
     withTransConstraintTM @Monad $ do
         patrs <-
             for rawcases $ \(rawpat, rawexpr) -> do
-                pat <- renameSealedPattern rawpat
-                expr <- renameSealedExpression rawexpr
+                pat <- rename rawpat
+                expr <- rename rawexpr
                 patternAbstractSealedExpression @unifier pat expr
         MkPatternResult rvwt rtwt ruexpr <- joinPatternResults patrs
-        MkSealedExpression btwt bexpr <- renameSealedExpression sbexpr
+        MkSealedExpression btwt bexpr <- rename sbexpr
         uconv <- unifyPosNegWitnesses @unifier btwt rvwt
         solveUnifierExpression rtwt $
             (\conv rexpr -> (\t1a t -> runIdentity $ t1a $ conv t) <$> rexpr <*> bexpr) <$> uconv <*>
@@ -253,8 +253,8 @@ caseAbstractSealedExpression absw rawcases =
     withTransConstraintTM @Monad $ do
         patrs <-
             for rawcases $ \(rawpat, rawexpr) -> do
-                pat <- renameSealedPattern rawpat
-                expr <- renameSealedExpression rawexpr
+                pat <- rename rawpat
+                expr <- rename rawexpr
                 patternAbstractSealedExpression @unifier pat expr
         MkPatternResult rvwt rtwt ruexpr <- joinPatternResults patrs
         absw rvwt rtwt $ \rfwt fconv ->

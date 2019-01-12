@@ -3,7 +3,6 @@ module Language.Expression.Named where
 import Language.Expression.Expression
 import Language.Expression.NameWit
 import Language.Expression.Pattern
-import Language.Expression.Renamer
 import Language.Expression.TypeF
 import Language.Expression.TypeMappable
 import Language.Expression.Witness
@@ -64,21 +63,6 @@ substituteExpression witmap@(MkWitnessMap wm) (OpenExpression (MkNameWitness nam
 varNamedExpression :: name -> vw t -> NamedExpression name vw t
 varNamedExpression n t = varNameTypeExpression (MkUnitType n) (MkUnitType' t)
 
-renameExpression ::
-       forall rn name m t. (Monad m, Renamer rn)
-    => NamedExpression name (RenamerNegWitness rn) t
-    -> RenamerNamespace rn (rn m) (NamedExpression name (RenamerNegWitness rn) t)
-renameExpression (ClosedExpression a) =
-    case hasTransConstraint @Monad @rn @m of
-        Dict -> withTransConstraintTM @Monad $ return (ClosedExpression a)
-renameExpression (OpenExpression (MkNameWitness name vw) expr) =
-    case hasTransConstraint @Monad @rn @m of
-        Dict ->
-            withTransConstraintTM @Monad $ do
-                MkTypeF vw' conv <- renameTSNegWitness vw
-                expr' <- renameExpression expr
-                return $ OpenExpression (MkNameWitness name vw') $ fmap (\va -> va . conv) expr'
-
 type NamedPattern name w = NameTypePattern (UnitType name) (UnitType' w)
 
 substitutePattern :: WitnessSubstitution Type vw1 vw2 -> NamedPattern name vw1 q a -> NamedPattern name vw2 q a
@@ -89,18 +73,3 @@ substitutePattern witmap@(MkWitnessMap wm) (OpenPattern (MkNameWitness name wt) 
 
 varNamedPattern :: name -> vw t -> NamedPattern name vw t ()
 varNamedPattern n t = varNameTypePattern (MkUnitType n) (MkUnitType' t)
-
-renamePattern ::
-       forall rn name m q a. (Monad m, Renamer rn)
-    => NamedPattern name (RenamerPosWitness rn) q a
-    -> RenamerNamespace rn (rn m) (NamedPattern name (RenamerPosWitness rn) q a)
-renamePattern (ClosedPattern a) =
-    case hasTransConstraint @Monad @rn @m of
-        Dict -> withTransConstraintTM @Monad $ return (ClosedPattern a)
-renamePattern (OpenPattern (MkNameWitness name vw) pat) =
-    case hasTransConstraint @Monad @rn @m of
-        Dict ->
-            withTransConstraintTM @Monad $ do
-                MkTypeF vw' conv <- renameTSPosWitness vw
-                pat' <- renamePattern pat
-                return $ OpenPattern (MkNameWitness name vw') $ fmap (\(t, a) -> (conv t, a)) pat'

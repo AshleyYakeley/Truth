@@ -52,7 +52,7 @@ mkBound [] =
     return $ MkBound (\e -> return $ exprUnifyExpression $ fmap (\a _ -> a) e) (pure ()) (\_ _ -> return mempty)
 mkBound ((MkBinding name sexpr):bb) =
     withTransConstraintTM @Monad $ do
-        MkSealedExpression twt expr <- renameSealedExpression sexpr
+        MkSealedExpression twt expr <- rename sexpr
         MkBound abstractNames exprs getbinds <- mkBound bb
         return $ let
             abstractNames' ::

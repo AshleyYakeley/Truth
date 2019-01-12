@@ -154,7 +154,7 @@ tsSubsume (MkAnyW t) expr =
             withTransConstraintTM @Monad $ do
                 MkTypeF t' _ <- renameTSPosWitness t
                 return $ MkAnyW t'
-        expr' <- renameSealedExpression expr
+        expr' <- rename expr
         subsumeExpression @(TSSubsumer ts) at' expr'
 
 tsVarPattern ::

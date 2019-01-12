@@ -2,9 +2,7 @@ module Language.Expression.Sealed where
 
 import Language.Expression.Expression
 import Language.Expression.Named
-import Language.Expression.Pattern
 import Language.Expression.Polarity
-import Language.Expression.Renamer
 import Language.Expression.TypeF
 import Language.Expression.TypeMappable
 import Shapes
@@ -12,18 +10,6 @@ import Shapes
 data SealedExpression name vw tw =
     forall t. MkSealedExpression (tw t)
                                  (NamedExpression name vw t)
-
-renameSealedExpression ::
-       (Renamer rn, Monad m)
-    => SealedExpression name (RenamerNegWitness rn) (RenamerPosWitness rn)
-    -> rn m (SealedExpression name (RenamerNegWitness rn) (RenamerPosWitness rn))
-renameSealedExpression (MkSealedExpression twt expr) =
-    withTransConstraintTM @Monad $
-    namespace $
-    withTransConstraintTM @Monad $ do
-        expr' <- renameExpression expr
-        MkTypeF twt' conv <- renameTSPosWitness twt
-        return $ MkSealedExpression twt' $ fmap conv expr'
 
 constSealedExpression :: AnyValue tw -> SealedExpression name vw tw
 constSealedExpression (MkAnyValue twt t) = MkSealedExpression twt $ pure t
@@ -71,18 +57,6 @@ instance TypeMappable poswit negwit (SealedPattern name poswit negwit) where
 
 typeFConstExpression :: TypeF poswit 'Positive t -> t -> SealedExpression name negwit poswit
 typeFConstExpression (MkTypeF tt conv) t = MkSealedExpression tt $ pure $ conv t
-
-renameSealedPattern ::
-       (Renamer rn, Monad m)
-    => SealedPattern name (RenamerPosWitness rn) (RenamerNegWitness rn)
-    -> rn m (SealedPattern name (RenamerPosWitness rn) (RenamerNegWitness rn))
-renameSealedPattern (MkSealedPattern twt expr) =
-    withTransConstraintTM @Monad $
-    namespace $
-    withTransConstraintTM @Monad $ do
-        expr' <- renamePattern expr
-        MkTypeF twt' conv <- renameTSNegWitness twt
-        return $ MkSealedPattern twt' $ contramap1Pattern conv expr'
 
 varSealedPattern :: name -> tw t -> vw v -> (t -> v) -> SealedPattern name vw tw
 varSealedPattern n twt vwt conv = MkSealedPattern twt $ varNamedPattern n vwt . arr conv
