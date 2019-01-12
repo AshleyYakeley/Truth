@@ -1,5 +1,3 @@
-{-# LANGUAGE ApplicativeDo #-}
-
 module Language.Expression.Sealed where
 
 import Language.Expression.Expression
@@ -24,7 +22,8 @@ renameSealedExpression (MkSealedExpression twt expr) =
     namespace $
     withTransConstraintTM @Monad $ do
         expr' <- renameExpression expr
-        renameTSPosWitness twt $ \twt' conv -> return $ MkSealedExpression twt' $ fmap conv expr'
+        MkTypeF twt' conv <- renameTSPosWitness twt
+        return $ MkSealedExpression twt' $ fmap conv expr'
 
 constSealedExpression :: AnyValue tw -> SealedExpression name vw tw
 constSealedExpression (MkAnyValue twt t) = MkSealedExpression twt $ pure t
@@ -82,7 +81,8 @@ renameSealedPattern (MkSealedPattern twt expr) =
     namespace $
     withTransConstraintTM @Monad $ do
         expr' <- renamePattern expr
-        renameTSNegWitness twt $ \twt' conv -> return $ MkSealedPattern twt' $ contramap1Pattern conv expr'
+        MkTypeF twt' conv <- renameTSNegWitness twt
+        return $ MkSealedPattern twt' $ contramap1Pattern conv expr'
 
 varSealedPattern :: name -> tw t -> vw v -> (t -> v) -> SealedPattern name vw tw
 varSealedPattern n twt vwt conv = MkSealedPattern twt $ varNamedPattern n vwt . arr conv
@@ -117,21 +117,12 @@ liftHListPolwit ff (MkHListPolWit (ConsListType t tt)) = let
     in combineTFs <$> ff t <*> liftHListPolwit ff (MkHListPolWit tt)
 
 instance TypeMappable (poswit :: Type -> Type) (negwit :: Type -> Type) (PatternConstructor name poswit negwit) where
-    mapTypesM ::
-           forall m. Monad m
-        => (forall a. poswit a -> m (TypeF poswit 'Positive a))
-        -> (forall a. negwit a -> m (TypeF negwit 'Negative a))
-        -> PatternConstructor name poswit negwit
-        -> m (PatternConstructor name poswit negwit)
     mapTypesM mapPos mapNeg (MkPatternConstructor (tt :: negwit t) lvw pat) = do
-        tf <- mapNeg tt
-        case tf of
-            MkTypeF (tt' :: negwit t') (conv :: t' -> t) -> do
-                pat' <- mapTypesM @poswit @negwit mapPos mapNeg pat
-                ltf <- mapTypesM (liftHListPolwit mapPos) mapNeg $ mkTypeF @'Positive $ MkHListPolWit lvw
-                case ltf of
-                    MkTypeF (MkHListPolWit lvw') lconv ->
-                        return $ MkPatternConstructor tt' lvw' $ fmap lconv $ pat' . arr conv
+        MkTypeF tt' conv <- mapNeg tt
+        pat' <- mapTypesM @poswit @negwit mapPos mapNeg pat
+        MkTypeF (MkHListPolWit lvw') lconv <-
+            mapTypesM (liftHListPolwit mapPos) mapNeg $ mkTypeF @'Positive $ MkHListPolWit lvw
+        return $ MkPatternConstructor tt' lvw' $ fmap lconv $ pat' . arr conv
 
 sealedPatternConstructor :: MonadFail m => PatternConstructor name vw tw -> m (SealedPattern name vw tw)
 sealedPatternConstructor (MkPatternConstructor twt NilListType pat) = return $ MkSealedPattern twt pat

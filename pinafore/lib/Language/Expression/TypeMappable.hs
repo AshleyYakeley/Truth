@@ -1,8 +1,5 @@
 module Language.Expression.TypeMappable where
 
-import Language.Expression.Expression
-import Language.Expression.Named
-import Language.Expression.Pattern
 import Language.Expression.Polarity
 import Language.Expression.TypeF
 import Shapes
@@ -44,17 +41,3 @@ instance (Category (KindMorphism k (->))) => TypeMappable (poswit :: k -> Type) 
 
 instance (Category (KindMorphism k (->))) => TypeMappable poswit (negwit :: k -> Type) (TypeF negwit 'Negative t) where
     mapTypesM _ mapNeg = chainTypeFM mapNeg
-
-instance TypeMappable poswit negwit (NamedExpression name negwit a) where
-    mapTypesM _ _ (ClosedExpression a) = return $ ClosedExpression a
-    mapTypesM mapPos mapNeg (OpenExpression (MkNameWitness name tt) expr) = do
-        MkTypeF tt' conv <- mapNeg tt
-        expr' <- mapTypesM mapPos mapNeg expr
-        return $ OpenExpression (MkNameWitness name tt') $ fmap (\ta -> ta . conv) expr'
-
-instance TypeMappable poswit negwit (NamedPattern name poswit a b) where
-    mapTypesM _ _ (ClosedPattern a) = return $ ClosedPattern a
-    mapTypesM mapPos mapNeg (OpenPattern (MkNameWitness name tt) pat) = do
-        MkTypeF tt' conv <- mapPos tt
-        pat' <- mapTypesM mapPos mapNeg pat
-        return $ OpenPattern (MkNameWitness name tt') $ fmap (\(t, b) -> (conv t, b)) pat'

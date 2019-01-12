@@ -4,6 +4,8 @@ import Language.Expression.Expression
 import Language.Expression.NameWit
 import Language.Expression.Pattern
 import Language.Expression.Renamer
+import Language.Expression.TypeF
+import Language.Expression.TypeMappable
 import Language.Expression.Witness
 import Shapes
 
@@ -35,6 +37,20 @@ pattern MkNameWitness name wit =
 
 type NamedExpression name w = NameTypeExpression (UnitType name) (UnitType' w)
 
+instance TypeMappable poswit negwit (NamedExpression name negwit a) where
+    mapTypesM _ _ (ClosedExpression a) = return $ ClosedExpression a
+    mapTypesM mapPos mapNeg (OpenExpression (MkNameWitness name tt) expr) = do
+        MkTypeF tt' conv <- mapNeg tt
+        expr' <- mapTypesM mapPos mapNeg expr
+        return $ OpenExpression (MkNameWitness name tt') $ fmap (\ta -> ta . conv) expr'
+
+instance TypeMappable poswit negwit (NamedPattern name poswit a b) where
+    mapTypesM _ _ (ClosedPattern a) = return $ ClosedPattern a
+    mapTypesM mapPos mapNeg (OpenPattern (MkNameWitness name tt) pat) = do
+        MkTypeF tt' conv <- mapPos tt
+        pat' <- mapTypesM mapPos mapNeg pat
+        return $ OpenPattern (MkNameWitness name tt') $ fmap (\(t, b) -> (conv t, b)) pat'
+
 namedExpressionFreeNames :: NamedExpression name vw a -> [name]
 namedExpressionFreeNames expr = expressionFreeWitnesses (\(MkNameWitness n _) -> n) expr
 
@@ -58,8 +74,8 @@ renameExpression (ClosedExpression a) =
 renameExpression (OpenExpression (MkNameWitness name vw) expr) =
     case hasTransConstraint @Monad @rn @m of
         Dict ->
-            withTransConstraintTM @Monad $
-            renameTSNegWitness vw $ \vw' conv -> do
+            withTransConstraintTM @Monad $ do
+                MkTypeF vw' conv <- renameTSNegWitness vw
                 expr' <- renameExpression expr
                 return $ OpenExpression (MkNameWitness name vw') $ fmap (\va -> va . conv) expr'
 
@@ -84,7 +100,7 @@ renamePattern (ClosedPattern a) =
 renamePattern (OpenPattern (MkNameWitness name vw) pat) =
     case hasTransConstraint @Monad @rn @m of
         Dict ->
-            withTransConstraintTM @Monad $
-            renameTSPosWitness vw $ \vw' conv -> do
+            withTransConstraintTM @Monad $ do
+                MkTypeF vw' conv <- renameTSPosWitness vw
                 pat' <- renamePattern pat
                 return $ OpenPattern (MkNameWitness name vw') $ fmap (\(t, a) -> (conv t, a)) pat'

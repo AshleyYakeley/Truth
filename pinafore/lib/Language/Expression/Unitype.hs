@@ -2,6 +2,7 @@ module Language.Expression.Unitype where
 
 import Language.Expression.Renamer
 import Language.Expression.Subsumer
+import Language.Expression.TypeF
 import Language.Expression.TypeSystem
 import Language.Expression.Unifier
 import Shapes
@@ -29,8 +30,8 @@ instance MonadTransConstraint Monad (UnitypeRenamer val) where
 instance Renamer (UnitypeRenamer val) where
     type RenamerNegWitness (UnitypeRenamer val) = ((:~:) val)
     type RenamerPosWitness (UnitypeRenamer val) = ((:~:) val)
-    renameTSNegWitness Refl cont = cont Refl id
-    renameTSPosWitness Refl cont = cont Refl id
+    renameTSNegWitness Refl = return $ MkTypeF Refl id
+    renameTSPosWitness Refl = return $ MkTypeF Refl id
     type RenamerNamespace (UnitypeRenamer val) = UnitypeNamespace val
     renameNewVar = return $ MkNewVar Refl Refl id
     namespace (MkUnitypeNamespace ia) = ia

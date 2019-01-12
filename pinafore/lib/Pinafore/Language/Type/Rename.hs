@@ -7,6 +7,7 @@ module Pinafore.Language.Type.Rename
 import Language.Expression.Dolan
 import Language.Expression.Polarity
 import Language.Expression.Renamer
+import Language.Expression.TypeF
 import Language.Expression.UVar
 import Pinafore.Language.GroundType
 import Pinafore.Language.Type.Type
@@ -89,8 +90,8 @@ instance Renamer (VarRenamer (PinaforeTypeSystem baseedit)) where
     type RenamerNamespace (VarRenamer (PinaforeTypeSystem baseedit)) = VarNamespace (PinaforeTypeSystem baseedit)
     type RenamerNegWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'Negative
     type RenamerPosWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'Positive
-    renameTSNegWitness t f = renamePinaforeTypeVars t $ \t' bij -> f t' $ biBackwards bij
-    renameTSPosWitness t f = renamePinaforeTypeVars t $ \t' bij -> f t' $ biForwards bij
+    renameTSNegWitness t = renamePinaforeTypeVars t $ \t' bij -> return $ MkTypeF t' $ biBackwards bij
+    renameTSPosWitness t = renamePinaforeTypeVars t $ \t' bij -> return $ MkTypeF t' $ biForwards bij
     renameNewVar = do
         n <- varRenamerGenerate
         toSymbolWitness n $ \wit ->

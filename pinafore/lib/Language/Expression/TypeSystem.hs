@@ -5,6 +5,7 @@ import Language.Expression.Bindings
 import Language.Expression.Renamer
 import Language.Expression.Sealed
 import Language.Expression.Subsumer
+import Language.Expression.TypeF
 import Language.Expression.Unifier
 import Shapes
 
@@ -148,7 +149,11 @@ tsSubsume ::
     -> TSScoped ts (TSSealedExpression ts)
 tsSubsume (MkAnyW t) expr =
     runRenamer @(TSRenamer ts) $ do
-        at' <- namespace $ withTransConstraintTM @Monad $ renameTSPosWitness t $ \t' _ -> return $ MkAnyW t'
+        at' <-
+            namespace $
+            withTransConstraintTM @Monad $ do
+                MkTypeF t' _ <- renameTSPosWitness t
+                return $ MkAnyW t'
         expr' <- renameSealedExpression expr
         subsumeExpression @(TSSubsumer ts) at' expr'
 
