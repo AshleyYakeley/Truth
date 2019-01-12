@@ -8,7 +8,9 @@ module Language.Expression.Subsumer
 
 import Language.Expression.Expression
 import Language.Expression.Named
+import Language.Expression.Polarity
 import Language.Expression.Sealed
+import Language.Expression.TypeF
 import Shapes
 
 class (Monad (SubsumerMonad subsumer), Applicative subsumer) => Subsumer subsumer where
@@ -21,8 +23,7 @@ class (Monad (SubsumerMonad subsumer), Applicative subsumer) => Subsumer subsume
     subsumerNegSubstitute ::
            SubsumerSubstitutions subsumer
         -> SubsumerNegWitness subsumer t
-        -> (forall t'. SubsumerNegWitness subsumer t' -> (t' -> t) -> SubsumerMonad subsumer r)
-        -> SubsumerMonad subsumer r
+        -> SubsumerMonad subsumer (TypeF (SubsumerNegWitness subsumer) 'Negative t)
     subsumePosWitnesses ::
            SubsumerPosWitness subsumer inf
         -> SubsumerPosWitness subsumer decl
@@ -43,10 +44,10 @@ subsumerExpressionSubstitute ::
     -> SubsumerOpenExpression name subsumer a
     -> SubsumerMonad subsumer (SubsumerOpenExpression name subsumer a)
 subsumerExpressionSubstitute _ (ClosedExpression a) = return $ ClosedExpression a
-subsumerExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) =
-    subsumerNegSubstitute @subsumer subs tw $ \tw' conv -> do
-        expr' <- subsumerExpressionSubstitute @subsumer subs expr
-        return $ OpenExpression (MkNameWitness name tw') $ fmap (\ta -> ta . conv) expr'
+subsumerExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) = do
+    MkTypeF tw' conv <- subsumerNegSubstitute @subsumer subs tw
+    expr' <- subsumerExpressionSubstitute @subsumer subs expr
+    return $ OpenExpression (MkNameWitness name tw') $ fmap (\ta -> ta . conv) expr'
 
 -- Note the user's declared type will be simplified first, so they'll end up seeing a simplified version of the type they declared for their expression.
 subsumeExpression ::
