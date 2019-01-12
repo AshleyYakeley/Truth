@@ -1,7 +1,6 @@
 module Language.Expression.TypeF where
 
 import Language.Expression.Polarity
-import Language.Expression.Sealed
 import Shapes
 
 data TypeF (wit :: k -> Type) (polarity :: Polarity) (t :: k) :: Type where
@@ -60,6 +59,3 @@ chainTypeF ::
     -> TypeF wita polarity t'
     -> TypeF witb polarity t'
 chainTypeF f (MkTypeF t conv) = mapTypeF conv $ f t
-
-typeFConstExpression :: TypeF poswit 'Positive t -> t -> SealedExpression name negwit poswit
-typeFConstExpression (MkTypeF tt conv) t = MkSealedExpression tt $ pure $ conv t

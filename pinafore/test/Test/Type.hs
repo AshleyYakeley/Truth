@@ -8,7 +8,6 @@ import Language.Expression.Named
 import Language.Expression.Polarity
 import Language.Expression.Renamer
 import Language.Expression.Sealed
-import Language.Expression.TypeF
 import Language.Expression.TypeSystem
 import Language.Expression.Unifier
 import Pinafore

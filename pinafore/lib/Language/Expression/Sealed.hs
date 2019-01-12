@@ -5,7 +5,10 @@ module Language.Expression.Sealed where
 import Language.Expression.Expression
 import Language.Expression.Named
 import Language.Expression.Pattern
+import Language.Expression.Polarity
 import Language.Expression.Renamer
+import Language.Expression.TypeF
+import Language.Expression.TypeMappable
 import Shapes
 
 data SealedExpression name vw tw =
@@ -51,9 +54,24 @@ instance MonoApplicative (SealedExpression name vw ((:~:) val)) where
     osequenceA conv exprs =
         MkSealedExpression Refl $ fmap conv $ sequenceA $ fmap (\(MkSealedExpression Refl expr) -> expr) exprs
 
+instance TypeMappable poswit negwit (SealedExpression name negwit poswit) where
+    mapTypesM mapPos mapNeg (MkSealedExpression tt expr) = do
+        MkTypeF tt' conv <- mapPos tt
+        expr' <- mapTypesM mapPos mapNeg expr
+        return $ MkSealedExpression tt' $ fmap conv expr'
+
 data SealedPattern name vw tw =
     forall t. MkSealedPattern (tw t)
                               (NamedPattern name vw t ())
+
+instance TypeMappable poswit negwit (SealedPattern name poswit negwit) where
+    mapTypesM mapPos mapNeg (MkSealedPattern tt pat) = do
+        MkTypeF tt' conv <- mapNeg tt
+        pat' <- mapTypesM mapPos mapNeg pat
+        return $ MkSealedPattern tt' $ pat' . arr conv
+
+typeFConstExpression :: TypeF poswit 'Positive t -> t -> SealedExpression name negwit poswit
+typeFConstExpression (MkTypeF tt conv) t = MkSealedExpression tt $ pure $ conv t
 
 renameSealedPattern ::
        (Renamer rn, Monad m)
@@ -72,10 +90,48 @@ varSealedPattern n twt vwt conv = MkSealedPattern twt $ varNamedPattern n vwt . 
 anySealedPattern :: tw t -> SealedPattern name vw tw
 anySealedPattern twt = MkSealedPattern twt $ pure ()
 
-data PatternConstructor name vw tw =
+data PatternConstructor (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
     forall t lt. MkPatternConstructor (tw t)
                                       (ListType vw lt)
                                       (NamedPattern name vw t (HList lt))
+
+data HListPolWit wit t where
+    MkHListPolWit :: ListType wit t -> HListPolWit wit (HList t)
+
+liftHListPolwit ::
+       forall m wit polarity. (Is PolarityType polarity, Applicative m)
+    => (forall t. wit t -> m (TypeF wit polarity t))
+    -> forall t'. HListPolWit wit t' -> m (TypeF (HListPolWit wit) polarity t')
+liftHListPolwit _ff (MkHListPolWit NilListType) = pure $ mkTypeF $ MkHListPolWit NilListType
+liftHListPolwit ff (MkHListPolWit (ConsListType t tt)) = let
+    combineTFs ::
+           forall a lt.
+           TypeF wit polarity a
+        -> TypeF (HListPolWit wit) polarity (HList lt)
+        -> TypeF (HListPolWit wit) polarity (a, HList lt)
+    combineTFs (MkTypeF w1 conv1) (MkTypeF (MkHListPolWit wr) convr) =
+        MkTypeF (MkHListPolWit $ ConsListType w1 wr) $
+        case representative @_ @_ @polarity of
+            PositiveType -> \(a1, ar) -> (conv1 a1, convr ar)
+            NegativeType -> \(a1, ar) -> (conv1 a1, convr ar)
+    in combineTFs <$> ff t <*> liftHListPolwit ff (MkHListPolWit tt)
+
+instance TypeMappable (poswit :: Type -> Type) (negwit :: Type -> Type) (PatternConstructor name poswit negwit) where
+    mapTypesM ::
+           forall m. Monad m
+        => (forall a. poswit a -> m (TypeF poswit 'Positive a))
+        -> (forall a. negwit a -> m (TypeF negwit 'Negative a))
+        -> PatternConstructor name poswit negwit
+        -> m (PatternConstructor name poswit negwit)
+    mapTypesM mapPos mapNeg (MkPatternConstructor (tt :: negwit t) lvw pat) = do
+        tf <- mapNeg tt
+        case tf of
+            MkTypeF (tt' :: negwit t') (conv :: t' -> t) -> do
+                pat' <- mapTypesM @poswit @negwit mapPos mapNeg pat
+                ltf <- mapTypesM (liftHListPolwit mapPos) mapNeg $ mkTypeF @'Positive $ MkHListPolWit lvw
+                case ltf of
+                    MkTypeF (MkHListPolWit lvw') lconv ->
+                        return $ MkPatternConstructor tt' lvw' $ fmap lconv $ pat' . arr conv
 
 sealedPatternConstructor :: MonadFail m => PatternConstructor name vw tw -> m (SealedPattern name vw tw)
 sealedPatternConstructor (MkPatternConstructor twt NilListType pat) = return $ MkSealedPattern twt pat
