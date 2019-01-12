@@ -165,8 +165,8 @@ abstractSealedExpression absw name sexpr =
     withTransConstraintTM @Monad $ do
         MkSealedExpression twt expr <- rename sexpr
         MkAbstractResult vwt (unifierExpression -> uexpr') <- abstractNamedExpression @unifier name expr
-        (expr', subs) <- solveUnifier @unifier uexpr'
-        absw vwt twt $ \twf abconv -> unifierExpressionSubstituteAndSimplify @unifier subs twf $ fmap abconv expr'
+        absw vwt twt $ \twf abconv -> do
+            unifierSolve @unifier $ fmap (\expr' -> MkSealedExpression twf $ fmap abconv expr') uexpr'
 
 applySealedExpression ::
        forall renamer unifier m. UnifierRenamerConstraint unifier renamer m
@@ -181,10 +181,11 @@ applySealedExpression appw sexprf sexpra =
         MkSealedExpression ta expra <- rename sexpra
         MkNewVar vx tx convvar <- renameNewVar
         appw ta vx $ \vax convf -> do
-            uconv <- unifyPosNegWitnesses tf vax
-            (convu, subs) <- solveUnifier @unifier uconv
-            unifierExpressionSubstituteAndSimplify @unifier subs tx $
-                (\t t1 -> convvar $ convf (convu t) t1) <$> exprf <*> expra
+            uconv <- unifyPosNegWitnesses @unifier tf vax
+            unifierSolve @unifier $
+                fmap
+                    (\convu -> MkSealedExpression tx $ (\t t1 -> convvar $ convf (convu t) t1) <$> exprf <*> expra)
+                    uconv
 
 -- | not recursive
 letSealedExpression ::
@@ -199,10 +200,10 @@ letSealedExpression name sexpre sexprb =
         MkSealedExpression te expre <- rename sexpre
         MkSealedExpression tb exprb <- rename sexprb
         MkAbstractResult vt (unifierExpression -> uexprf) <- abstractNamedExpression @unifier name exprb
-        uconvet <- unifyPosNegWitnesses te vt
-        (exprf', subs) <-
-            solveUnifier @unifier $ (\exprf convet -> fmap (\tt2 -> tt2 . convet) exprf) <$> uexprf <*> uconvet
-        unifierExpressionSubstituteAndSimplify @unifier subs tb $ exprf' <*> expre
+        uconvet <- unifyPosNegWitnesses @unifier te vt
+        unifierSolve @unifier $
+            (\exprf convet -> MkSealedExpression tb $ fmap (\tt2 -> tt2 . convet) exprf <*> expre) <$> uexprf <*>
+            uconvet
 
 bothSealedPattern ::
        forall renamer unifier m. UnifierRenamerConstraint unifier renamer m
@@ -215,9 +216,10 @@ bothSealedPattern spat1 spat2 =
         MkSealedPattern tw1 pat1 <- rename spat1
         MkSealedPattern tw2 pat2 <- rename spat2
         unifyNegWitnesses @unifier tw1 tw2 $ \twr uconv -> do
-            solveUnifierPattern @unifier twr $
+            unifierSolve @unifier $
                 fmap
                     (\(abt1, abt2) ->
+                         MkSealedPattern twr $
                          proc ab -> do
                              pat1 -< abt1 ab
                              pat2 -< abt2 ab)
@@ -239,8 +241,9 @@ caseSealedExpression sbexpr rawcases =
         MkPatternResult rvwt rtwt ruexpr <- joinPatternResults patrs
         MkSealedExpression btwt bexpr <- rename sbexpr
         uconv <- unifyPosNegWitnesses @unifier btwt rvwt
-        solveUnifierExpression rtwt $
-            (\conv rexpr -> (\t1a t -> runIdentity $ t1a $ conv t) <$> rexpr <*> bexpr) <$> uconv <*>
+        unifierSolve $
+            (\conv rexpr -> MkSealedExpression rtwt $ (\t1a t -> runIdentity $ t1a $ conv t) <$> rexpr <*> bexpr) <$>
+            uconv <*>
             unifierExpression ruexpr
 
 caseAbstractSealedExpression ::
@@ -258,5 +261,6 @@ caseAbstractSealedExpression absw rawcases =
                 patternAbstractSealedExpression @unifier pat expr
         MkPatternResult rvwt rtwt ruexpr <- joinPatternResults patrs
         absw rvwt rtwt $ \rfwt fconv ->
-            solveUnifierExpression rfwt $
-            (\rexpr -> fmap (\tia -> fconv $ \t -> runIdentity $ tia t) rexpr) <$> unifierExpression ruexpr
+            unifierSolve $
+            (\rexpr -> MkSealedExpression rfwt $ fmap (\tia -> fconv $ \t -> runIdentity $ tia t) rexpr) <$>
+            unifierExpression ruexpr

@@ -72,7 +72,7 @@ mkBound ((MkBinding name sexpr):bb) =
                 -> UnifierMonad unifier (Bindings unifier)
             getbinds' subs fexpr = do
                 b1 <- getbinds subs (fmap snd fexpr)
-                e <- unifierExpressionSubstituteAndSimplify @unifier subs twt $ fmap fst fexpr
+                e <- unifierSubstituteAndSimplify @unifier subs $ MkSealedExpression twt $ fmap fst fexpr
                 return $ b1 <> singleBinding name e
             in MkBound abstractNames' exprs' getbinds'
 

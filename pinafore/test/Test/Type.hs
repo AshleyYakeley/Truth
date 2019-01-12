@@ -164,32 +164,31 @@ testType =
               , exprTypeTest "simplify $ thing $ twice number" (return "{} -> (Number, Number)") $ do
                     e1 <- apExpr twiceExpr numExpr
                     r <- apExpr thingExpr e1
-                    runRenamer @(TSRenamer TS) $ simplifyExpressionType @(TSUnifier TS) r
+                    runRenamer @(TSRenamer TS) $ simplify @(TSUnifier TS) r
               , exprTypeTest "simplify duplicate" (return "{} -> Number") $
                 runRenamer @(TSRenamer TS) $
-                simplifyExpressionType @(TSUnifier TS) $
-                typeFConstExpression toTypeF (MkJoinType (Right 3) :: JoinType Number Number)
+                simplify @(TSUnifier TS) $ typeFConstExpression toTypeF (MkJoinType (Right 3) :: JoinType Number Number)
               , exprTypeTest "simplify duplicate list" (return "{} -> [Number]") $
                 runRenamer @(TSRenamer TS) $
-                simplifyExpressionType @(TSUnifier TS) $
+                simplify @(TSUnifier TS) $
                 typeFConstExpression toTypeF (MkJoinType (Right [3]) :: JoinType [Number] [Number])
               , exprTypeTest "simplify duplicate pair" (return "{} -> (Number, Number)") $
                 runRenamer @(TSRenamer TS) $
-                simplifyExpressionType @(TSUnifier TS) $
+                simplify @(TSUnifier TS) $
                 typeFConstExpression toTypeF (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
               , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
                 runRenamer @(TSRenamer TS) $
-                simplifyExpressionType @(TSUnifier TS) $
+                simplify @(TSUnifier TS) $
                 typeFConstExpression toTypeF ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
               , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
                 runRenamer @(TSRenamer TS) $
-                simplifyExpressionType @(TSUnifier TS) $
+                simplify @(TSUnifier TS) $
                 typeFConstExpression
                     toTypeF
                     ((MkJoinType (Right 3), MkJoinType (Right 3)) :: (JoinType Number Number, JoinType Number Number))
               , exprTypeTest "simplify duplicate in list" (return "{} -> [Number]") $
                 runRenamer @(TSRenamer TS) $
-                simplifyExpressionType @(TSUnifier TS) $
+                simplify @(TSUnifier TS) $
                 typeFConstExpression toTypeF ([MkJoinType (Right 3)] :: [JoinType Number Number])
               ]
         , testGroup

@@ -1,9 +1,10 @@
 module Language.Expression.Unifier where
 
-import Language.Expression.Expression
 import Language.Expression.Named
-import Language.Expression.Pattern
+import Language.Expression.Polarity
 import Language.Expression.Sealed
+import Language.Expression.TypeF
+import Language.Expression.TypeMappable
 import Shapes
 
 class (Monad (UnifierMonad unifier), Applicative unifier, Eq (UnifierName unifier)) => Unifier unifier where
@@ -28,15 +29,17 @@ class (Monad (UnifierMonad unifier), Applicative unifier, Eq (UnifierName unifie
     unifierPosSubstitute ::
            UnifierSubstitutions unifier
         -> UnifierPosWitness unifier t
-        -> (forall t'. UnifierPosWitness unifier t' -> (t -> t') -> UnifierMonad unifier r)
-        -> UnifierMonad unifier r
+        -> UnifierMonad unifier (TypeF (UnifierPosWitness unifier) 'Positive t)
     unifierNegSubstitute ::
            UnifierSubstitutions unifier
         -> UnifierNegWitness unifier t
-        -> (forall t'. UnifierNegWitness unifier t' -> (t' -> t) -> UnifierMonad unifier r)
-        -> UnifierMonad unifier r
-    simplifyExpressionType :: UnifierSealedExpression unifier -> UnifierMonad unifier (UnifierSealedExpression unifier)
-    simplifyPatternType :: UnifierSealedPattern unifier -> UnifierMonad unifier (UnifierSealedPattern unifier)
+        -> UnifierMonad unifier (TypeF (UnifierNegWitness unifier) 'Negative t)
+    simplify ::
+           forall a. UnifierMappable unifier a
+        => a
+        -> UnifierMonad unifier a
+
+type UnifierMappable unifier = TypeMappable (UnifierPosWitness unifier) (UnifierNegWitness unifier)
 
 type UnifierOpenExpression unifier = NamedExpression (UnifierName unifier) (UnifierNegWitness unifier)
 
@@ -61,67 +64,29 @@ solveUnifyPosNegWitnesses wa wb = do
     (ab, _) <- solveUnifier uab
     return ab
 
-unifierExpressionSubstitute ::
-       forall unifier a. Unifier unifier
+unifierSubstitute ::
+       forall unifier a. (Unifier unifier, UnifierMappable unifier a)
     => UnifierSubstitutions unifier
-    -> UnifierOpenExpression unifier a
-    -> UnifierMonad unifier (UnifierOpenExpression unifier a)
-unifierExpressionSubstitute _ (ClosedExpression a) = return $ ClosedExpression a
-unifierExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) =
-    unifierNegSubstitute @unifier subs tw $ \tw' conv -> do
-        expr' <- unifierExpressionSubstitute @unifier subs expr
-        return $ OpenExpression (MkNameWitness name tw') $ fmap (\ta -> ta . conv) expr'
+    -> a
+    -> UnifierMonad unifier a
+unifierSubstitute subs = mapTypesM (unifierPosSubstitute @unifier subs) (unifierNegSubstitute @unifier subs)
 
-unifierPatternSubstitute ::
-       forall unifier a b. Unifier unifier
+unifierSubstituteAndSimplify ::
+       forall unifier a. (Unifier unifier, UnifierMappable unifier a)
     => UnifierSubstitutions unifier
-    -> UnifierOpenPattern unifier a b
-    -> UnifierMonad unifier (UnifierOpenPattern unifier a b)
-unifierPatternSubstitute _ (ClosedPattern a) = return $ ClosedPattern a
-unifierPatternSubstitute subs (OpenPattern (MkNameWitness name tw) pat) =
-    unifierPosSubstitute @unifier subs tw $ \tw' conv -> do
-        pat' <- unifierPatternSubstitute @unifier subs pat
-        return $ OpenPattern (MkNameWitness name tw') $ fmap (\(t, b) -> (conv t, b)) pat'
+    -> a
+    -> UnifierMonad unifier a
+unifierSubstituteAndSimplify subs a = do
+    a' <- unifierSubstitute @unifier subs a
+    simplify @unifier a'
 
-unifierExpressionSubstituteAndSimplify ::
-       forall unifier a. Unifier unifier
-    => UnifierSubstitutions unifier
-    -> UnifierPosWitness unifier a
-    -> UnifierOpenExpression unifier a
-    -> UnifierMonad unifier (UnifierSealedExpression unifier)
-unifierExpressionSubstituteAndSimplify subs twt expr =
-    unifierPosSubstitute @unifier subs twt $ \twt' tconv -> do
-        expr' <- unifierExpressionSubstitute @unifier subs $ fmap tconv expr
-        simplifyExpressionType @unifier $ MkSealedExpression twt' expr'
-
-unifierPatternSubstituteAndSimplify ::
-       forall unifier a. Unifier unifier
-    => UnifierSubstitutions unifier
-    -> UnifierNegWitness unifier a
-    -> UnifierOpenPattern unifier a ()
-    -> UnifierMonad unifier (UnifierSealedPattern unifier)
-unifierPatternSubstituteAndSimplify subs twt pat =
-    unifierNegSubstitute @unifier subs twt $ \twt' tconv -> do
-        pat' <- unifierPatternSubstitute @unifier subs $ pat . arr tconv
-        simplifyPatternType @unifier $ MkSealedPattern twt' pat'
-
-solveUnifierExpression ::
-       forall unifier a. Unifier unifier
-    => UnifierPosWitness unifier a
-    -> unifier (UnifierOpenExpression unifier a)
-    -> UnifierMonad unifier (UnifierSealedExpression unifier)
-solveUnifierExpression rtwt uexp = do
-    (expr', subs) <- solveUnifier @unifier uexp
-    unifierExpressionSubstituteAndSimplify @unifier subs rtwt expr'
-
-solveUnifierPattern ::
-       forall unifier a. Unifier unifier
-    => UnifierNegWitness unifier a
-    -> unifier (UnifierOpenPattern unifier a ())
-    -> UnifierMonad unifier (UnifierSealedPattern unifier)
-solveUnifierPattern rtwt uexp = do
-    (pat', subs) <- solveUnifier @unifier uexp
-    unifierPatternSubstituteAndSimplify @unifier subs rtwt pat'
+unifierSolve ::
+       forall unifier a. (Unifier unifier, UnifierMappable unifier a)
+    => unifier a
+    -> UnifierMonad unifier a
+unifierSolve ua = do
+    (a, subs) <- solveUnifier @unifier ua
+    unifierSubstituteAndSimplify @unifier subs a
 
 data UnifyExpression unifier a =
     forall conv. MkUnifyExpression (unifier conv)

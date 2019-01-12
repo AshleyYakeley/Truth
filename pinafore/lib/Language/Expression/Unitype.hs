@@ -51,10 +51,9 @@ instance (Monad m, Eq name) => Unifier (UnitypeUnifier m name val) where
     unifyPosWitnesses Refl Refl cont = cont Refl $ pure (id, id)
     unifyPosNegWitnesses Refl Refl = return $ pure id
     solveUnifier (MkUnitypeUnifier ia) = pure $ (runIdentity ia, ())
-    unifierPosSubstitute () Refl cont = cont Refl id
-    unifierNegSubstitute () Refl cont = cont Refl id
-    simplifyExpressionType expr = return expr
-    simplifyPatternType pat = return pat
+    unifierPosSubstitute () Refl = return $ MkTypeF Refl id
+    unifierNegSubstitute () Refl = return $ MkTypeF Refl id
+    simplify = return
 
 newtype UnitypeSubsumer (m :: Type -> Type) (val :: Type) a =
     MkUnitypeSubsumer (Identity a)
