@@ -44,7 +44,7 @@ entityTypeToType ::
     => EntityType t
     -> PinaforeTypeF baseedit polarity t
 entityTypeToType (SimpleEntityType t) =
-    singlePinaforeTypeF $ mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType t) NilDolanArguments
+    singlePinaforeTypeF $ mkPTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType t) NilDolanArguments
 entityTypeToType (PairEntityType eta etb) = let
     taf = entityTypeToType @baseedit @polarity eta
     tbf = entityTypeToType @baseedit @polarity etb
@@ -54,7 +54,7 @@ entityTypeToType (PairEntityType eta etb) = let
                    unTypeF tbf $ \tb convb ->
                        singlePinaforeTypeF $
                        contramap (\(a, b) -> (conva a, convb b)) $
-                       mkTypeF $
+                       mkPTypeF $
                        GroundPinaforeSingularType PairPinaforeGroundType $
                        ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
            NegativeType ->
@@ -62,7 +62,7 @@ entityTypeToType (PairEntityType eta etb) = let
                    unTypeF tbf $ \tb convb ->
                        singlePinaforeTypeF $
                        fmap (\(a, b) -> (conva a, convb b)) $
-                       mkTypeF $
+                       mkPTypeF $
                        GroundPinaforeSingularType PairPinaforeGroundType $
                        ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 entityTypeToType (EitherEntityType eta etb) = let
@@ -74,7 +74,7 @@ entityTypeToType (EitherEntityType eta etb) = let
                    unTypeF tbf $ \tb convb ->
                        singlePinaforeTypeF $
                        contramap (either (Left . conva) (Right . convb)) $
-                       mkTypeF $
+                       mkPTypeF $
                        GroundPinaforeSingularType EitherPinaforeGroundType $
                        ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
            NegativeType ->
@@ -82,7 +82,7 @@ entityTypeToType (EitherEntityType eta etb) = let
                    unTypeF tbf $ \tb convb ->
                        singlePinaforeTypeF $
                        fmap (either (Left . conva) (Right . convb)) $
-                       mkTypeF $
+                       mkPTypeF $
                        GroundPinaforeSingularType EitherPinaforeGroundType $
                        ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 

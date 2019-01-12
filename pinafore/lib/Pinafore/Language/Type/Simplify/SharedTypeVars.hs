@@ -3,7 +3,6 @@ module Pinafore.Language.Type.Simplify.SharedTypeVars
     ) where
 
 import Language.Expression.Dolan
-import Language.Expression.TypeF
 import Language.Expression.UVar
 import Pinafore.Language.Type.Bisubstitute
 import Pinafore.Language.Type.Simplify.VarUses
@@ -27,7 +26,7 @@ findShare uses = let
     in find goodpair pairs
 
 mergeSharedTypeVars ::
-       forall baseedit a. TypeMappable (PinaforeType baseedit) a
+       forall baseedit a. PTypeMappable (PinaforeType baseedit) a
     => a
     -> a
 mergeSharedTypeVars expr = let
@@ -40,7 +39,7 @@ mergeSharedTypeVars expr = let
                    MkBisubstitution
                        vb
                        (return $
-                        contramap (biBackwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
-                       (return $ fmap (biForwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType va)
-               in mergeSharedTypeVars $ runIdentity $ bisubstitutes [bisub] expr
+                        contramap (biBackwards varBij) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType va)
+                       (return $ fmap (biForwards varBij) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType va)
+               in mergeSharedTypeVars @baseedit $ runIdentity $ bisubstitutes @baseedit [bisub] expr
            Nothing -> expr

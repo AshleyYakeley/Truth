@@ -19,17 +19,17 @@ mergeMeet (MkMeetType (a, b)) = MkMeetType (a, MkMeetType (a, b))
 mergeInSingularType ::
        Is PolarityType polarity
     => PinaforeSingularType baseedit polarity t
-    -> TypeF (PinaforeSingularType baseedit) polarity t
+    -> PTypeF (PinaforeSingularType baseedit) polarity t
 mergeInSingularType (GroundPinaforeSingularType gt args) =
     case mapDolanArguments mergeDuplicateTypeVarsInType (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args of
         MkTypeF args' conv -> MkTypeF (GroundPinaforeSingularType gt args') conv
-mergeInSingularType t = mkTypeF t
+mergeInSingularType t = mkPTypeF t
 
 mergeInPositiveSingularType ::
        PinaforeSingularType baseedit 'Positive t1
     -> PinaforeType baseedit 'Positive tr
     -> PinaforeTypeF baseedit 'Positive (JoinType t1 tr)
-mergeInPositiveSingularType ts NilPinaforeType = mkTypeF $ ConsPinaforeType ts NilPinaforeType
+mergeInPositiveSingularType ts NilPinaforeType = mkPTypeF $ ConsPinaforeType ts NilPinaforeType
 mergeInPositiveSingularType (VarPinaforeSingularType vn1) (ConsPinaforeType (VarPinaforeSingularType vn2) tr)
     | Just Refl <- testEquality vn1 vn2 =
         contramap mergeJoin $ mergeInPositiveSingularType (VarPinaforeSingularType vn1) tr
@@ -45,7 +45,7 @@ mergeInNegativeSingularType ::
        PinaforeSingularType baseedit 'Negative t1
     -> PinaforeType baseedit 'Negative tr
     -> PinaforeTypeF baseedit 'Negative (MeetType t1 tr)
-mergeInNegativeSingularType ts NilPinaforeType = mkTypeF $ ConsPinaforeType ts NilPinaforeType
+mergeInNegativeSingularType ts NilPinaforeType = mkPTypeF $ ConsPinaforeType ts NilPinaforeType
 mergeInNegativeSingularType (VarPinaforeSingularType vn1) (ConsPinaforeType (VarPinaforeSingularType vn2) tr)
     | Just Refl <- testEquality vn1 vn2 = fmap mergeMeet $ mergeInNegativeSingularType (VarPinaforeSingularType vn1) tr
 mergeInNegativeSingularType ts (ConsPinaforeType t1 tr) =
@@ -58,7 +58,7 @@ mergeDuplicateTypeVarsInType ::
        forall baseedit polarity t. Is PolarityType polarity
     => PinaforeType baseedit polarity t
     -> PinaforeTypeF baseedit polarity t
-mergeDuplicateTypeVarsInType NilPinaforeType = mkTypeF NilPinaforeType
+mergeDuplicateTypeVarsInType NilPinaforeType = mkPTypeF NilPinaforeType
 mergeDuplicateTypeVarsInType (ConsPinaforeType t1 tr) =
     case mergeInSingularType t1 of
         MkTypeF t1' conv1 ->
@@ -69,7 +69,7 @@ mergeDuplicateTypeVarsInType (ConsPinaforeType t1 tr) =
                         NegativeType -> fmap (meetBimap conv1 convr) $ mergeInNegativeSingularType t1' tr'
 
 mergeDuplicateTypeVars ::
-       forall baseedit a. TypeMappable (PinaforeType baseedit) a
+       forall baseedit a. PTypeMappable (PinaforeType baseedit) a
     => a
     -> a
-mergeDuplicateTypeVars = mapTypes mergeDuplicateTypeVarsInType mergeDuplicateTypeVarsInType
+mergeDuplicateTypeVars = mapPTypes @(PinaforeType baseedit) mergeDuplicateTypeVarsInType mergeDuplicateTypeVarsInType

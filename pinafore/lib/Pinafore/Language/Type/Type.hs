@@ -32,11 +32,11 @@ data PinaforeSingularType (baseedit :: Type) (polarity :: Polarity) (t :: Type) 
         -> PinaforeSingularType baseedit polarity ta
     VarPinaforeSingularType :: SymbolType name -> PinaforeSingularType baseedit polarity (UVar name)
 
-type PinaforeTypeF (baseedit :: Type) = TypeF (PinaforeType baseedit)
+type PinaforeTypeF (baseedit :: Type) polarity = PTypeF (PinaforeType baseedit) polarity
 
 singlePinaforeTypeF ::
        forall baseedit polarity t. Is PolarityType polarity
-    => TypeF (PinaforeSingularType baseedit) polarity t
+    => PTypeF (PinaforeSingularType baseedit) polarity t
     -> PinaforeTypeF baseedit polarity t
 singlePinaforeTypeF (MkTypeF st conv) =
     case representative @_ @_ @polarity of

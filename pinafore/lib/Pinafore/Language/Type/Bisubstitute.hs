@@ -3,6 +3,7 @@ module Pinafore.Language.Type.Bisubstitute where
 import Language.Expression.Dolan
 import Language.Expression.Polarity
 import Language.Expression.TypeF
+import Language.Expression.TypeMappable
 import Pinafore.Language.GroundType
 import Pinafore.Language.Type.Type
 import Shapes
@@ -18,7 +19,7 @@ bisubstitutePositiveSingularType ::
     -> m (PinaforeTypeF baseedit 'Positive t)
 bisubstitutePositiveSingularType (MkBisubstitution n tp _) (VarPinaforeSingularType n')
     | Just Refl <- testEquality n n' = tp
-bisubstitutePositiveSingularType _ t@(VarPinaforeSingularType _) = return $ singlePinaforeTypeF $ mkTypeF t
+bisubstitutePositiveSingularType _ t@(VarPinaforeSingularType _) = return $ singlePinaforeTypeF $ mkPTypeF t
 bisubstitutePositiveSingularType bisub (GroundPinaforeSingularType gt args) = let
     dvt = pinaforeGroundTypeKind gt
     in do
@@ -32,7 +33,7 @@ bisubstituteNegativeSingularType ::
     -> m (PinaforeTypeF baseedit 'Negative t)
 bisubstituteNegativeSingularType (MkBisubstitution n _ tq) (VarPinaforeSingularType n')
     | Just Refl <- testEquality n n' = tq
-bisubstituteNegativeSingularType _ t@(VarPinaforeSingularType _) = return $ singlePinaforeTypeF $ mkTypeF t
+bisubstituteNegativeSingularType _ t@(VarPinaforeSingularType _) = return $ singlePinaforeTypeF $ mkPTypeF t
 bisubstituteNegativeSingularType bisub (GroundPinaforeSingularType gt args) = let
     dvt = pinaforeGroundTypeKind gt
     in do
@@ -44,7 +45,7 @@ bisubstitutePositiveType ::
     => PinaforeBisubstitutionM m baseedit
     -> PinaforeType baseedit 'Positive t
     -> m (PinaforeTypeF baseedit 'Positive t)
-bisubstitutePositiveType _ NilPinaforeType = return $ mkTypeF NilPinaforeType
+bisubstitutePositiveType _ NilPinaforeType = return $ mkPTypeF NilPinaforeType
 bisubstitutePositiveType bisub (ConsPinaforeType ta tb) = do
     tfa <- bisubstitutePositiveSingularType bisub ta
     tfb <- bisubstitutePositiveType bisub tb
@@ -55,7 +56,7 @@ bisubstituteNegativeType ::
     => PinaforeBisubstitutionM m baseedit
     -> PinaforeType baseedit 'Negative t
     -> m (PinaforeTypeF baseedit 'Negative t)
-bisubstituteNegativeType _ NilPinaforeType = return $ mkTypeF NilPinaforeType
+bisubstituteNegativeType _ NilPinaforeType = return $ mkPTypeF NilPinaforeType
 bisubstituteNegativeType bisub (ConsPinaforeType ta tb) = do
     tfa <- bisubstituteNegativeSingularType bisub ta
     tfb <- bisubstituteNegativeType bisub tb
@@ -76,12 +77,16 @@ bisubstitutesType ::
     => [PinaforeBisubstitutionM m baseedit]
     -> PinaforeType baseedit polarity t
     -> m (PinaforeTypeF baseedit polarity t)
-bisubstitutesType [] t = return $ mkTypeF t
+bisubstitutesType [] t = return $ mkPTypeF t
 bisubstitutesType (sub:subs) t = do
     tf <- bisubstituteType sub t
     chainTypeFM (bisubstitutesType subs) tf
 
-bisubstitutes :: (Monad m, TypeMappable (PinaforeType baseedit) a) => [PinaforeBisubstitutionM m baseedit] -> a -> m a
+bisubstitutes ::
+       forall baseedit m a. (Monad m, PTypeMappable (PinaforeType baseedit) a)
+    => [PinaforeBisubstitutionM m baseedit]
+    -> a
+    -> m a
 bisubstitutes [] expr = return $ expr
 bisubstitutes (sub:subs) expr = do
     expr' <- mapTypesM (bisubstitutePositiveType sub) (bisubstituteNegativeType sub) expr

@@ -1,5 +1,6 @@
 module Language.Expression.Dolan.RangeF where
 
+import Language.Expression.Dolan.PType
 import Language.Expression.Dolan.Range
 import Language.Expression.Polarity
 import Language.Expression.TypeF
@@ -19,5 +20,5 @@ unFromWithTypeF ::
 unFromWithTypeF cont =
     unTypeF toTypeF $ \tp convp -> unTypeF fromTypeF $ \tq convq -> cont (MkRangeType tp tq) (MkWithRange convp convq)
 
-biTypeF :: (TypeF tw 'Negative t, TypeF tw 'Positive t) -> AnyF (RangeType tw 'Positive) (Range t)
+biTypeF :: (PTypeF tw 'Negative t, PTypeF tw 'Positive t) -> AnyF (RangeType tw 'Positive) (Range t)
 biTypeF (MkTypeF tp convp, MkTypeF tq convq) = MkAnyF (MkRangeType tp tq) (MkRange convp convq)

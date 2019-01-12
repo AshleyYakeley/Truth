@@ -46,8 +46,8 @@ instance Unifier (PinaforeUnifier baseedit) where
     unifierNegSubstitute subs t cont = do
         t' <- bisubstitutesType subs t
         unTypeF t' cont
-    simplifyExpressionType = return . pinaforeSimplifyTypes
-    simplifyPatternType = return . pinaforeSimplifyTypes
+    simplifyExpressionType = return . pinaforeSimplifyTypes @baseedit
+    simplifyPatternType = return . pinaforeSimplifyTypes @baseedit
 
 instance TypeSystem (PinaforeTypeSystem baseedit) where
     type TSRenamer (PinaforeTypeSystem baseedit) = VarRenamer (PinaforeTypeSystem baseedit)
@@ -57,12 +57,12 @@ instance TypeSystem (PinaforeTypeSystem baseedit) where
     tsFunctionPosWitness ta tb =
         unTypeF $
         singlePinaforeTypeF $
-        mkTypeF $
+        mkPTypeF $
         GroundPinaforeSingularType FuncPinaforeGroundType $
         ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
     tsFunctionNegWitness ta tb =
         unTypeF $
         singlePinaforeTypeF $
-        mkTypeF $
+        mkPTypeF $
         GroundPinaforeSingularType FuncPinaforeGroundType $
         ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments

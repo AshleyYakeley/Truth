@@ -179,7 +179,7 @@ bisubstituteUnifier bisub@(MkBisubstitution bn _ mtq) (OpenExpression (PositiveB
         conv <-
             Compose $ do
                 tq <- mtq
-                getCompose $ unifyPosNegPinaforeTypeF (singlePinaforeTypeF $ mkTypeF tp) tq
+                getCompose $ unifyPosNegPinaforeTypeF (singlePinaforeTypeF $ mkPTypeF tp) tq
         val' <- bisubstituteUnifier bisub uval
         pure $ val' conv
 bisubstituteUnifier bisub@(MkBisubstitution bn mtp _) (OpenExpression (NegativeBisubstitutionWitness vn tq) uval)
@@ -187,7 +187,7 @@ bisubstituteUnifier bisub@(MkBisubstitution bn mtp _) (OpenExpression (NegativeB
         conv <-
             Compose $ do
                 tp <- mtp
-                getCompose $ unifyPosNegPinaforeTypeF tp (singlePinaforeTypeF $ mkTypeF tq)
+                getCompose $ unifyPosNegPinaforeTypeF tp (singlePinaforeTypeF $ mkPTypeF tq)
         val' <- bisubstituteUnifier bisub uval
         pure $ val' conv
 bisubstituteUnifier bisub (OpenExpression (PositiveBisubstitutionWitness vn tp) uval) =
@@ -225,9 +225,9 @@ runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name
             (return $
              contramap (biBackwards varBij) $
              joinPinaforeTypeF
-                 (singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
-                 (singlePinaforeTypeF $ mkTypeF tp))
-            (return $ fmap (biForwards varBij . join1) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
+                 (singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
+                 (singlePinaforeTypeF $ mkPTypeF tp))
+            (return $ fmap (biForwards varBij . join1) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
     in do
            expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'
@@ -239,12 +239,12 @@ runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolType name
         MkBisubstitution
             vn
             (return $
-             contramap (meet1 . biBackwards varBij) $ singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
+             contramap (meet1 . biBackwards varBij) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
             (return $
              fmap (biForwards varBij) $
              meetPinaforeTypeF
-                 (singlePinaforeTypeF $ mkTypeF $ VarPinaforeSingularType vn)
-                 (singlePinaforeTypeF $ mkTypeF tq))
+                 (singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
+                 (singlePinaforeTypeF $ mkPTypeF tq))
     in do
            expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'

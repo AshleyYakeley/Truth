@@ -5,6 +5,7 @@ module Pinafore.Language.Type.Simplify.VarUses
 
 import Language.Expression.Dolan
 import Language.Expression.Polarity
+import Language.Expression.TypeMappable
 import Pinafore.Language.GroundType
 import Pinafore.Language.Type.Type
 import Shapes
@@ -61,7 +62,7 @@ instance Is PolarityType polarity => GetVarUses (PinaforeType baseedit polarity 
                 getVarUses' t
 
 mappableGetVarUses ::
-       forall baseedit a. TypeMappable (PinaforeType baseedit) a
+       forall baseedit a. PTypeMappable (PinaforeType baseedit) a
     => a
     -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
 mappableGetVarUses a =
@@ -70,7 +71,7 @@ mappableGetVarUses a =
         (\case
              Left (MkAnyW t) -> getVarUses t
              Right (MkAnyW t) -> getVarUses t) $
-    mappableGetTypes @_ @(PinaforeType baseedit) a
+    mappableGetTypes @_ @(PinaforeType baseedit 'Positive) @(PinaforeType baseedit 'Negative) a
 
 class GetExpressionVars t where
     -- | (positive, negative)
@@ -109,7 +110,7 @@ instance Is PolarityType polarity => GetExpressionVars (PinaforeType baseedit po
     getExpressionVars (ConsPinaforeType t1 tr) = getExpressionVars t1 <> getExpressionVars tr
 
 mappableGetVars ::
-       forall baseedit a. TypeMappable (PinaforeType baseedit) a
+       forall baseedit a. PTypeMappable (PinaforeType baseedit) a
     => a
     -> ([AnyW SymbolType], [AnyW SymbolType])
 mappableGetVars a =
@@ -118,4 +119,4 @@ mappableGetVars a =
         (\case
              Left (MkAnyW t) -> getExpressionVars t
              Right (MkAnyW t) -> getExpressionVars t) $
-    mappableGetTypes @_ @(PinaforeType baseedit) a
+    mappableGetTypes @_ @(PinaforeType baseedit 'Positive) @(PinaforeType baseedit 'Negative) a

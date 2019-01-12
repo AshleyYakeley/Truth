@@ -37,10 +37,10 @@ type FromPinaforeType baseedit = FromTypeF (PinaforeType baseedit)
 
 -- top, bottom, join, meet
 instance ToTypeF (PinaforeType baseedit) BottomType where
-    toTypeF = mkTypeF NilPinaforeType
+    toTypeF = mkPTypeF NilPinaforeType
 
 instance FromTypeF (PinaforeType baseedit) TopType where
-    fromTypeF = mkTypeF NilPinaforeType
+    fromTypeF = mkPTypeF NilPinaforeType
 
 instance (ToTypeF (PinaforeType baseedit) a, ToTypeF (PinaforeType baseedit) b) =>
              ToTypeF (PinaforeType baseedit) (JoinType a b) where
@@ -52,13 +52,13 @@ instance (FromTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit)
 
 -- UVar
 instance KnownSymbol name => ToTypeF (PinaforeSingularType baseedit) (UVar name) where
-    toTypeF = mkTypeF $ VarPinaforeSingularType MkSymbolType
+    toTypeF = mkPTypeF $ VarPinaforeSingularType MkSymbolType
 
 instance KnownSymbol name => ToTypeF (PinaforeType baseedit) (UVar name) where
     toTypeF = singlePinaforeTypeF toTypeF
 
 instance KnownSymbol name => FromTypeF (PinaforeSingularType baseedit) (UVar name) where
-    fromTypeF = mkTypeF $ VarPinaforeSingularType MkSymbolType
+    fromTypeF = mkPTypeF $ VarPinaforeSingularType MkSymbolType
 
 instance KnownSymbol name => FromTypeF (PinaforeType baseedit) (UVar name) where
     fromTypeF = singlePinaforeTypeF fromTypeF
@@ -70,7 +70,7 @@ instance (ToTypeF (PinaforeType baseedit) a, ToTypeF (PinaforeType baseedit) b) 
         unTypeF toTypeF $ \ta conva ->
             unTypeF toTypeF $ \tb convb ->
                 contramap (\(a, b) -> (conva a, convb b)) $
-                mkTypeF $
+                mkPTypeF $
                 GroundPinaforeSingularType PairPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
@@ -84,7 +84,7 @@ instance (FromTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit)
         unTypeF fromTypeF $ \ta conva ->
             unTypeF fromTypeF $ \tb convb ->
                 fmap (\(a, b) -> (conva a, convb b)) $
-                mkTypeF $
+                mkPTypeF $
                 GroundPinaforeSingularType PairPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
@@ -99,7 +99,7 @@ instance (ToTypeF (PinaforeType baseedit) a, ToTypeF (PinaforeType baseedit) b) 
         unTypeF toTypeF $ \ta conva ->
             unTypeF toTypeF $ \tb convb ->
                 contramap (either (Left . conva) (Right . convb)) $
-                mkTypeF $
+                mkPTypeF $
                 GroundPinaforeSingularType EitherPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
@@ -113,7 +113,7 @@ instance (FromTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit)
         unTypeF fromTypeF $ \ta conva ->
             unTypeF fromTypeF $ \tb convb ->
                 fmap (either (Left . conva) (Right . convb)) $
-                mkTypeF $
+                mkPTypeF $
                 GroundPinaforeSingularType EitherPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
@@ -128,7 +128,7 @@ instance (FromTypeF (PinaforeType baseedit) a, ToTypeF (PinaforeType baseedit) b
         unTypeF fromTypeF $ \ta conva ->
             unTypeF toTypeF $ \tb convb ->
                 contramap (\ab -> convb . ab . conva) $
-                mkTypeF $
+                mkPTypeF $
                 GroundPinaforeSingularType FuncPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
@@ -142,7 +142,7 @@ instance (ToTypeF (PinaforeType baseedit) a, FromTypeF (PinaforeType baseedit) b
         unTypeF toTypeF $ \ta conva ->
             unTypeF fromTypeF $ \tb convb ->
                 fmap (\ab -> convb . ab . conva) $
-                mkTypeF $
+                mkPTypeF $
                 GroundPinaforeSingularType FuncPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
@@ -155,7 +155,7 @@ instance (ToTypeF (PinaforeType baseedit) a) => ToTypeF (PinaforeSingularType ba
     toTypeF =
         unTypeF toTypeF $ \ta conva ->
             contramap (fmap conva) $
-            mkTypeF $ GroundPinaforeSingularType ListPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkPTypeF $ GroundPinaforeSingularType ListPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (ToTypeF (PinaforeType baseedit) a) => ToTypeF (PinaforeType baseedit) [a] where
     toTypeF = singlePinaforeTypeF toTypeF
@@ -164,20 +164,20 @@ instance (FromTypeF (PinaforeType baseedit) a) => FromTypeF (PinaforeSingularTyp
     fromTypeF =
         unTypeF fromTypeF $ \ta conva ->
             fmap (fmap conva) $
-            mkTypeF $ GroundPinaforeSingularType ListPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkPTypeF $ GroundPinaforeSingularType ListPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (FromTypeF (PinaforeType baseedit) a) => FromTypeF (PinaforeType baseedit) [a] where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- PinaforeAction
 instance baseedit ~ edit => ToTypeF (PinaforeSingularType baseedit) (PinaforeAction edit) where
-    toTypeF = mkTypeF $ GroundPinaforeSingularType ActionPinaforeGroundType NilDolanArguments
+    toTypeF = mkPTypeF $ GroundPinaforeSingularType ActionPinaforeGroundType NilDolanArguments
 
 instance baseedit ~ edit => ToTypeF (PinaforeType baseedit) (PinaforeAction edit) where
     toTypeF = singlePinaforeTypeF toTypeF
 
 instance baseedit ~ edit => FromTypeF (PinaforeSingularType baseedit) (PinaforeAction edit) where
-    fromTypeF = mkTypeF $ GroundPinaforeSingularType ActionPinaforeGroundType NilDolanArguments
+    fromTypeF = mkPTypeF $ GroundPinaforeSingularType ActionPinaforeGroundType NilDolanArguments
 
 instance baseedit ~ edit => FromTypeF (PinaforeType baseedit) (PinaforeAction edit) where
     fromTypeF = singlePinaforeTypeF fromTypeF
@@ -200,7 +200,7 @@ instance (baseedit ~ edit, FromTypeF (PinaforeType edit) a) =>
     toTypeF =
         unTypeF fromTypeF $ \ta conv ->
             contramap (contramap conv) $
-            mkTypeF $ GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkPTypeF $ GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (baseedit ~ edit, FromTypeF (PinaforeType edit) a) => ToTypeF (PinaforeType baseedit) (PinaforeOrder edit a) where
     toTypeF = singlePinaforeTypeF toTypeF
@@ -210,21 +210,21 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType edit) a) =>
     fromTypeF =
         unTypeF toTypeF $ \ta conv ->
             fmap (contramap conv) $
-            mkTypeF $ GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkPTypeF $ GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (baseedit ~ edit, ToTypeF (PinaforeType edit) a) => FromTypeF (PinaforeType baseedit) (PinaforeOrder edit a) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- UISpec
 instance (baseedit ~ edit, seledit ~ ConstEdit Entity) => ToTypeF (PinaforeSingularType baseedit) (UISpec seledit edit) where
-    toTypeF = mkTypeF $ GroundPinaforeSingularType UserInterfacePinaforeGroundType NilDolanArguments
+    toTypeF = mkPTypeF $ GroundPinaforeSingularType UserInterfacePinaforeGroundType NilDolanArguments
 
 instance (baseedit ~ edit, seledit ~ ConstEdit Entity) => ToTypeF (PinaforeType baseedit) (UISpec seledit edit) where
     toTypeF = singlePinaforeTypeF toTypeF
 
 instance (baseedit ~ edit, seledit ~ ConstEdit Entity) =>
              FromTypeF (PinaforeSingularType baseedit) (UISpec seledit edit) where
-    fromTypeF = mkTypeF $ GroundPinaforeSingularType UserInterfacePinaforeGroundType NilDolanArguments
+    fromTypeF = mkPTypeF $ GroundPinaforeSingularType UserInterfacePinaforeGroundType NilDolanArguments
 
 instance (baseedit ~ edit, seledit ~ ConstEdit Entity) => FromTypeF (PinaforeType baseedit) (UISpec seledit edit) where
     fromTypeF = singlePinaforeTypeF fromTypeF
@@ -235,7 +235,7 @@ instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit) p, ToTypeF (Pinafor
     toTypeF =
         unToWithTypeF $ \tpq conv ->
             contramap (mapRange conv) $
-            mkTypeF $ GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkPTypeF $ GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit) p, ToTypeF (PinaforeType baseedit) q) =>
              ToTypeF (PinaforeType baseedit) (PinaforeReference edit '( p, q)) where
@@ -246,7 +246,7 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType baseedit) p, FromTypeF (Pinafor
     fromTypeF =
         unFromWithTypeF $ \tpq conv ->
             fmap (mapRange conv) $
-            mkTypeF $ GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkPTypeF $ GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance (baseedit ~ edit, ToTypeF (PinaforeType baseedit) p, FromTypeF (PinaforeType baseedit) q) =>
              FromTypeF (PinaforeType baseedit) (PinaforeReference edit '( p, q)) where
@@ -294,7 +294,7 @@ instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit) p, ToTypeF (Pinafor
     toTypeF =
         unToWithTypeF $ \tpq conv ->
             contramap (mapRange conv) $
-            mkTypeF $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkPTypeF $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit) p, ToTypeF (PinaforeType baseedit) q) =>
              ToTypeF (PinaforeType baseedit) (PinaforeSet edit '( p, q)) where
@@ -305,7 +305,7 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType baseedit) p, FromTypeF (Pinafor
     fromTypeF =
         unFromWithTypeF $ \tpq conv ->
             fmap (mapRange conv) $
-            mkTypeF $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkPTypeF $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance (baseedit ~ edit, ToTypeF (PinaforeType baseedit) p, FromTypeF (PinaforeType baseedit) q) =>
              FromTypeF (PinaforeType baseedit) (PinaforeSet edit '( p, q)) where
@@ -331,7 +331,7 @@ instance ( baseedit ~ edit
         unToWithTypeF $ \ta conva ->
             unToWithTypeF $ \tb convb ->
                 contramap (mapRange' conva . mapRange convb) $
-                mkTypeF $
+                mkPTypeF $
                 GroundPinaforeSingularType MorphismPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
@@ -353,7 +353,7 @@ instance ( baseedit ~ edit
         unFromWithTypeF $ \ta conva ->
             unFromWithTypeF $ \tb convb ->
                 fmap (mapRange' conva . mapRange convb) $
-                mkTypeF $
+                mkPTypeF $
                 GroundPinaforeSingularType MorphismPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
@@ -368,14 +368,14 @@ instance ( baseedit ~ edit
 -- Entity
 instance ToTypeF (PinaforeSingularType baseedit) Entity where
     toTypeF =
-        mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments
+        mkPTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments
 
 instance ToTypeF (PinaforeType baseedit) Entity where
     toTypeF = singlePinaforeTypeF toTypeF
 
 instance FromTypeF (PinaforeSingularType baseedit) Entity where
     fromTypeF =
-        mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments
+        mkPTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments
 
 instance FromTypeF (PinaforeType baseedit) Entity where
     fromTypeF = singlePinaforeTypeF fromTypeF
@@ -383,7 +383,7 @@ instance FromTypeF (PinaforeType baseedit) Entity where
 -- NamedEntity
 instance KnownSymbol name => ToTypeF (PinaforeSingularType baseedit) (NamedEntity name) where
     toTypeF =
-        mkTypeF $
+        mkPTypeF $
         GroundPinaforeSingularType
             (SimpleEntityPinaforeGroundType $ NamedSimpleEntityType MkSymbolType)
             NilDolanArguments
@@ -393,7 +393,7 @@ instance KnownSymbol name => ToTypeF (PinaforeType baseedit) (NamedEntity name) 
 
 instance KnownSymbol name => FromTypeF (PinaforeSingularType baseedit) (NamedEntity name) where
     fromTypeF =
-        mkTypeF $
+        mkPTypeF $
         GroundPinaforeSingularType
             (SimpleEntityPinaforeGroundType $ NamedSimpleEntityType MkSymbolType)
             NilDolanArguments
@@ -404,14 +404,14 @@ instance KnownSymbol name => FromTypeF (PinaforeType baseedit) (NamedEntity name
 -- NewEntity
 instance ToTypeF (PinaforeSingularType baseedit) NewEntity where
     toTypeF =
-        mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType NewSimpleEntityType) NilDolanArguments
+        mkPTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType NewSimpleEntityType) NilDolanArguments
 
 instance ToTypeF (PinaforeType baseedit) NewEntity where
     toTypeF = singlePinaforeTypeF toTypeF
 
 instance FromTypeF (PinaforeSingularType baseedit) NewEntity where
     fromTypeF =
-        mkTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType NewSimpleEntityType) NilDolanArguments
+        mkPTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType NewSimpleEntityType) NilDolanArguments
 
 instance FromTypeF (PinaforeType baseedit) NewEntity where
     fromTypeF = singlePinaforeTypeF fromTypeF
@@ -423,7 +423,7 @@ literalInstances t =
   
   instance ToTypeF (PinaforeSingularType baseedit) $( t ) where
           toTypeF
-            = mkTypeF $
+            = mkPTypeF $
                 GroundPinaforeSingularType
                   (SimpleEntityPinaforeGroundType $
                      LiteralSimpleEntityType representative)
@@ -434,7 +434,7 @@ literalInstances t =
   
   instance FromTypeF (PinaforeSingularType baseedit) $( t ) where
           fromTypeF
-            = mkTypeF $
+            = mkPTypeF $
                 GroundPinaforeSingularType
                   (SimpleEntityPinaforeGroundType $
                      LiteralSimpleEntityType representative)

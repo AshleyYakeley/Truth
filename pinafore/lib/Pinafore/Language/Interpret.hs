@@ -152,7 +152,7 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                        withSubrepresentative rangeTypeInKind rtb $ let
                            typef =
                                singlePinaforeTypeF $
-                               mkTypeF $
+                               mkPTypeF $
                                GroundPinaforeSingularType MorphismPinaforeGroundType $
                                ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
                            morphism = propertyMorphism (entityAdapter eta) (entityAdapter etb) (MkPredicate anchor)
