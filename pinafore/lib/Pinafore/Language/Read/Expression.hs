@@ -4,56 +4,16 @@ module Pinafore.Language.Read.Expression
     ) where
 
 import Pinafore.Base
+import Pinafore.Language.Read.Constructor
 import Pinafore.Language.Read.Infix
 import Pinafore.Language.Read.Parser
+import Pinafore.Language.Read.Pattern
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
 import Pinafore.Language.Read.TypeDecls
 import Pinafore.Language.Syntax
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
-
-readSourcePosPattern :: Parser SyntaxPattern' -> Parser SyntaxPattern
-readSourcePosPattern p = do
-    spos <- getPosition
-    expr' <- p
-    return $ MkSyntaxPattern spos expr'
-
-readPatterns :: Parser [SyntaxPattern]
-readPatterns = many readPattern2
-
-readPattern1 :: Parser SyntaxPattern
-readPattern1 =
-    readSourcePosPattern
-        (do
-             consname <- readThis TokUName
-             pats <- readPatterns
-             return $ ConstructorSyntaxPattern consname pats) <|>
-    readPattern2
-
-readPattern2 :: Parser SyntaxPattern
-readPattern2 = do
-    spos <- getPosition
-    pat1 <- readPattern3
-    mpat2 <-
-        optional $ do
-            readThis TokAt
-            readPattern2
-    case mpat2 of
-        Nothing -> return pat1
-        Just pat2 -> return $ MkSyntaxPattern spos $ BothSyntaxPattern pat1 pat2
-
-readPattern3 :: Parser SyntaxPattern
-readPattern3 =
-    readSourcePosPattern
-        (do
-             name <- readThis TokLName
-             return $ VarSyntaxPattern name) <|>
-    readSourcePosPattern
-        (do
-             readThis TokUnderscore
-             return AnySyntaxPattern) <|>
-    readParen readPattern1
 
 readTypeSignature :: Parser SyntaxType
 readTypeSignature = do
@@ -191,20 +151,12 @@ readExpression3 ::
 readExpression3 =
     readSourcePos
         (do
-             name <- readThis TokUName
-             return $ SEConst $ SCLiteral $ SLConstructor name) <|>
-    readSourcePos
-        (do
              name <- readThis TokLName
              return $ SEVar name) <|>
     readSourcePos
         (do
-             n <- readThis TokNumber
-             return $ SEConst $ SCLiteral $ SLNumber n) <|>
-    readSourcePos
-        (do
-             str <- readThis TokString
-             return $ SEConst $ SCLiteral $ SLString str) <|>
+             c <- readConstructor
+             return $ SEConst $ SCConstructor c) <|>
     readSourcePos
         (do
              readThis TokProperty
@@ -244,7 +196,7 @@ readExpression3 =
           case msexpr2 of
               Just sexpr2 -> do
                   spos <- getPosition
-                  return $ seApplys spos (seConst spos SCPair) [sexpr1, sexpr2]
+                  return $ seApplys spos (seConst spos $ SCConstructor SLPair) [sexpr1, sexpr2]
               Nothing -> return sexpr1)) <|>
     readSourcePos
         (do

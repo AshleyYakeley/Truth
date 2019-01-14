@@ -362,7 +362,7 @@ testQueries =
               , testGroup
                     "String"
                     [ testQuery "case \"Hello\" of \"Hello\" -> True; _ -> False end" $ Just $ showText "True"
-                    , testQuery "case \"thing\" of 37 -> True; _ -> False end" $ Just $ showText "False"
+                    , testQuery "case \"thing\" of \"Hello\" -> True; _ -> False end" $ Just $ showText "False"
                     , testQuery "case \"thing\" of \"Hello\" -> 1; \"thing\" -> 2; _ -> 3 end" $ Just $ showText "2"
                     ]
               , testGroup
@@ -375,7 +375,7 @@ testQueries =
                     ]
               , testGroup "Pair" [testQuery "case (2,True) of (2,a) -> a end" $ Just $ showText "True"]
               , testGroup
-                    "Pair"
+                    "List"
                     [ testQuery "case [] of [] -> True; _ -> False end" $ Just $ showText "True"
                     , testQuery "case [] of _:_ -> True; _ -> False end" $ Just $ showText "False"
                     , testQuery "case [1,2] of [] -> True; _ -> False end" $ Just $ showText "False"

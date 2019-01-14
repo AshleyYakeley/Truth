@@ -208,7 +208,7 @@ mkDefPatEntry ::
 mkDefPatEntry name desc val pat = let
     bdName = name
     bdValue = toValue val
-    bdPattern = Just $ mkPatternConstructor fromTypeF toTypeF pat
+    bdPattern = Just $ toPatternConstructor pat
     bdDoc = mkDefDoc @baseedit name desc val
     in EntryDocTreeEntry MkBindDoc {..}
 

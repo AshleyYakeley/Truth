@@ -101,6 +101,8 @@ library:
       - Pinafore.Language.Read.Type
       - Pinafore.Language.Read.TypeDecls
       - Pinafore.Language.Read.Infix
+      - Pinafore.Language.Read.Constructor
+      - Pinafore.Language.Read.Pattern
       - Pinafore.Language.Read.Expression
       - Pinafore.Language.Read.Interactive
       - Pinafore.Language.Read

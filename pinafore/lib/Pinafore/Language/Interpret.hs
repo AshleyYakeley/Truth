@@ -4,6 +4,7 @@ module Pinafore.Language.Interpret
     ) where
 
 import Data.Graph
+import Language.Expression.Sealed
 import Pinafore.Base
 import Pinafore.Language.EntityType
 import Pinafore.Language.Expression
@@ -17,6 +18,26 @@ import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes
 
+type A = UVar "a"
+
+type B = UVar "b"
+
+interpretPatternConstructor :: SyntaxConstructor -> PinaforeSourceScoped baseedit (QPatternConstructor baseedit)
+interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
+interpretPatternConstructor (SLNumber v) =
+    return $
+    toPatternConstructor $ \v' ->
+        if v == v'
+            then Just ()
+            else Nothing
+interpretPatternConstructor (SLString v) =
+    return $
+    toPatternConstructor $ \v' ->
+        if v == v'
+            then Just ()
+            else Nothing
+interpretPatternConstructor SLPair = return $ toPatternConstructor $ \(a :: A, b :: B) -> Just $ (a, (b, ()))
+
 interpretPattern :: SyntaxPattern -> RefNotation baseedit (QPattern baseedit)
 interpretPattern (MkSyntaxPattern _ AnySyntaxPattern) = return qAnyPattern
 interpretPattern (MkSyntaxPattern _ (VarSyntaxPattern n)) = return $ qVarPattern n
@@ -24,8 +45,8 @@ interpretPattern (MkSyntaxPattern spos (BothSyntaxPattern spat1 spat2)) = do
     pat1 <- interpretPattern spat1
     pat2 <- interpretPattern spat2
     liftRefNotation $ runSourcePos spos $ qBothPattern pat1 pat2
-interpretPattern (MkSyntaxPattern spos (ConstructorSyntaxPattern name spats)) = do
-    pc <- liftRefNotation $ runSourcePos spos $ lookupPatternConstructor name
+interpretPattern (MkSyntaxPattern spos (ConstructorSyntaxPattern scons spats)) = do
+    pc <- liftRefNotation $ runSourcePos spos $ interpretPatternConstructor scons
     pats <- for spats interpretPattern
     liftRefNotation $ runSourcePos spos $ qConstructPattern pc pats
 
@@ -88,22 +109,22 @@ interpretDeclarations spos (MkSyntaxDeclarations stypedecls sbinds) = do
     MkTypeDecls td <- stypedecls
     return $ MkTransform $ \ra -> td $ interpretLetBindings spos sbinds $ td ra
 
-interpretConstructor :: SourcePos -> Name -> RefExpression baseedit
-interpretConstructor spos n = do
+interpretNamedConstructor :: SourcePos -> Name -> RefExpression baseedit
+interpretNamedConstructor spos n = do
     me <- liftRefNotation $ runSourcePos spos $ lookupBinding n
     case me of
         Just e -> return e
         Nothing -> fail $ "unknown constructor: " <> show n
 
-interpretLiteral :: SourcePos -> SyntaxLiteral -> RefExpression baseedit
-interpretLiteral _ (SLNumber v) = return $ qConstExprAny $ toValue v
-interpretLiteral _ (SLString v) = return $ qConstExprAny $ toValue v
-interpretLiteral spos (SLConstructor v) = interpretConstructor spos v
+interpretConstructor :: SourcePos -> SyntaxConstructor -> RefExpression baseedit
+interpretConstructor _ (SLNumber v) = return $ qConstExprAny $ toValue v
+interpretConstructor _ (SLString v) = return $ qConstExprAny $ toValue v
+interpretConstructor spos (SLNamedConstructor v) = interpretNamedConstructor spos v
+interpretConstructor _ SLPair = return $ qConstExprAny $ toValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
 
 interpretConstant :: SourcePos -> SyntaxConstant -> RefExpression baseedit
 interpretConstant _ SCIfThenElse = return $ qConstExprAny $ toValue qifthenelse
-interpretConstant _ SCPair = return $ qConstExprAny $ toValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
-interpretConstant spos (SCLiteral lit) = interpretLiteral spos lit
+interpretConstant spos (SCConstructor lit) = interpretConstructor spos lit
 
 interpretCase ::
        HasPinaforeEntityEdit baseedit => SyntaxCase baseedit -> RefNotation baseedit (QPattern baseedit, QExpr baseedit)

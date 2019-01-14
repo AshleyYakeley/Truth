@@ -125,7 +125,7 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <pattern-2> ::= <pattern-3> | <pattern-3> "@" <pattern-2>
 
-<pattern-3> ::= lname | "_" | "(" <pattern-1> ")"
+<pattern-3> ::= literal-number | literal-text | lname | "_" | "(" <pattern-1> ")"
 ```
 
 ## Infix Operators

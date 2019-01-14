@@ -65,17 +65,18 @@ data SyntaxBinding baseedit =
                     Name
                     (SyntaxExpression baseedit)
 
-data SyntaxLiteral
+data SyntaxConstructor
     = SLNumber Number
     | SLString Text
-    | SLConstructor Name
+    | SLNamedConstructor Name
+    | SLPair
 
 data SyntaxPattern'
     = AnySyntaxPattern
     | VarSyntaxPattern Name
     | BothSyntaxPattern SyntaxPattern
                         SyntaxPattern
-    | ConstructorSyntaxPattern Name
+    | ConstructorSyntaxPattern SyntaxConstructor
                                [SyntaxPattern]
 
 data SyntaxPattern =
@@ -88,8 +89,7 @@ data SyntaxCase baseedit =
 
 data SyntaxConstant
     = SCIfThenElse
-    | SCPair
-    | SCLiteral SyntaxLiteral
+    | SCConstructor SyntaxConstructor
 
 data SyntaxExpression' baseedit
     = SEConst SyntaxConstant

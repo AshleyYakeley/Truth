@@ -76,13 +76,14 @@ liftHListPolwit ::
     -> forall t'. HListWit wit t' -> m (TypeF (HListWit wit) polarity t')
 liftHListPolwit ff (MkHListWit lwt) = fmap hlistTypeF $ mapMListType ff lwt
 
-mkPatternConstructor ::
-       TypeF negwit 'Negative t
-    -> TypeF (HListWit poswit) 'Positive (HList lt)
-    -> (t -> Maybe (HList lt))
+toPatternConstructor ::
+       forall name poswit negwit t lt. (FromTypeF negwit t, ToTypeF (HListWit poswit) (HList lt))
+    => (t -> Maybe (HList lt))
     -> PatternConstructor name poswit negwit
-mkPatternConstructor (MkTypeF nwt conv) (MkTypeF (MkHListWit tlt) lconv) f =
-    MkPatternConstructor nwt tlt $ ClosedPattern $ fmap lconv . f . conv
+toPatternConstructor f =
+    case (fromTypeF @negwit @t, toTypeF @(HListWit poswit) @(HList lt)) of
+        (MkTypeF nwt conv, MkTypeF (MkHListWit tlt) lconv) ->
+            MkPatternConstructor nwt tlt $ ClosedPattern $ fmap lconv . f . conv
 
 instance TypeMappable (poswit :: Type -> Type) (negwit :: Type -> Type) (PatternConstructor name poswit negwit) where
     mapTypesM mapPos mapNeg (MkPatternConstructor (tt :: negwit t) lvw pat) = do
