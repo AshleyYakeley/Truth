@@ -12,7 +12,7 @@ import Shapes
 import Truth.Core
 
 -- UIWindow
-instance baseedit ~ edit => FromTypeF (PinaforeType baseedit) (UIWindow edit) where
+instance baseedit ~ edit => FromTypeF (PinaforeType baseedit 'Negative) (UIWindow edit) where
     fromTypeF =
         fmap
             (\(title, content :: UISpec (ConstEdit Entity) edit) ->
@@ -31,17 +31,17 @@ $(literalInstances [t|Bool|])
 $(literalInstances [t|()|])
 
 -- Double
-instance ToTypeF (PinaforeType baseedit) Double where
+instance ToTypeF (PinaforeType baseedit 'Positive) Double where
     toTypeF = contramap InexactNumber toTypeF
 
 -- Rational
-instance ToTypeF (PinaforeType baseedit) Rational where
+instance ToTypeF (PinaforeType baseedit 'Positive) Rational where
     toTypeF = contramap ExactNumber toTypeF
 
 -- Integer
-instance ToTypeF (PinaforeType baseedit) Integer where
+instance ToTypeF (PinaforeType baseedit 'Positive) Integer where
     toTypeF = contramap (ExactNumber . toRational) toTypeF
 
 -- Int
-instance ToTypeF (PinaforeType baseedit) Int where
+instance ToTypeF (PinaforeType baseedit 'Positive) Int where
     toTypeF = contramap (ExactNumber . toRational) toTypeF

@@ -39,7 +39,7 @@ type TSSealedExpression ts = UnifierSealedExpression (TSUnifier ts)
 
 type TSSealedPattern ts = UnifierSealedPattern (TSUnifier ts)
 
-type TSMonad ts = TSRenamer ts (TSScoped ts)
+type TSPatternConstructor ts = UnifierPatternConstructor (TSUnifier ts)
 
 tsUnify ::
        forall ts a b. TypeSystem ts
@@ -183,4 +183,17 @@ tsBothPattern ::
     => TSSealedPattern ts
     -> TSSealedPattern ts
     -> TSScoped ts (TSSealedPattern ts)
-tsBothPattern pat1 pat2 = bothSealedPattern @(TSRenamer ts) @(TSUnifier ts) pat1 pat2
+tsBothPattern = bothSealedPattern @(TSRenamer ts) @(TSUnifier ts)
+
+tsSealPatternConstructor ::
+       forall ts m. MonadFail m
+    => TSPatternConstructor ts
+    -> m (TSSealedPattern ts)
+tsSealPatternConstructor = sealedPatternConstructor
+
+tsApplyPatternConstructor ::
+       forall ts. (TypeSystem ts, MonadFail (TSScoped ts))
+    => TSPatternConstructor ts
+    -> TSSealedPattern ts
+    -> TSScoped ts (TSPatternConstructor ts)
+tsApplyPatternConstructor = applyPatternConstructor @(TSRenamer ts) @(TSUnifier ts)

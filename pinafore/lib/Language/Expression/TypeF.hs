@@ -59,3 +59,37 @@ chainTypeF ::
     -> TypeF wita polarity t'
     -> TypeF witb polarity t'
 chainTypeF f (MkTypeF t conv) = mapTypeF conv $ f t
+
+hlistTypeF ::
+       forall wit polarity lt. Is PolarityType polarity
+    => ListType (TypeF wit polarity) lt
+    -> TypeF (HListWit wit) polarity (HList lt)
+hlistTypeF NilListType = mkTypeF $ MkHListWit NilListType
+hlistTypeF (ConsListType (MkTypeF t conv1) tt) =
+    case hlistTypeF tt of
+        MkTypeF (MkHListWit tt') convr ->
+            MkTypeF (MkHListWit $ ConsListType t tt') $
+            case representative @_ @_ @polarity of
+                PositiveType -> \(a1, ar) -> (conv1 a1, convr ar)
+                NegativeType -> \(a1, ar) -> (conv1 a1, convr ar)
+
+class ToTypeF wit t where
+    toTypeF :: TypeF wit 'Positive t
+
+class FromTypeF wit t where
+    fromTypeF :: TypeF wit 'Negative t
+
+toValue ::
+       forall wit t. ToTypeF wit t
+    => t
+    -> AnyValue wit
+toValue = toTypeFAnyValue $ toTypeF @wit @t
+
+instance ToTypeF (HListWit wit) () where
+    toTypeF = mkTypeF (MkHListWit NilListType)
+
+instance (ToTypeF wit t1, ToTypeF (HListWit wit) tr) => ToTypeF (HListWit wit) (t1, tr) where
+    toTypeF =
+        case (toTypeF @wit @t1, toTypeF @(HListWit wit) @tr) of
+            (MkTypeF t1 conv1, MkTypeF (MkHListWit tr) convr) ->
+                MkTypeF (MkHListWit $ ConsListType t1 tr) $ \(a1, ar) -> (conv1 a1, convr ar)

@@ -3,10 +3,12 @@ module Pinafore.Language.Predefined
     , DocTree(..)
     , runDocTree
     , predefinedBindings
+    , predefinedPatternConstructors
     , predefinedDoc
     , outputln
     ) where
 
+import Language.Expression.Sealed
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Doc
@@ -171,7 +173,12 @@ ui_dynamic ::
     -> UISpec (ConstEdit Entity) baseedit
 ui_dynamic uiref = uiSwitch $ pinaforeImmutableReferenceValue uiNull uiref
 
-type BindDoc baseedit = (Maybe (Name, QValue baseedit), DefDoc)
+data BindDoc baseedit = MkBindDoc
+    { bdName :: Name
+    , bdValue :: QValue baseedit
+    , bdPattern :: Maybe (QPatternConstructor baseedit)
+    , bdDoc :: DefDoc
+    }
 
 mkDefEntry ::
        forall baseedit t. (HasPinaforeEntityEdit baseedit, ToPinaforeType baseedit t)
@@ -179,7 +186,31 @@ mkDefEntry ::
     -> Text
     -> t
     -> DocTreeEntry (BindDoc baseedit)
-mkDefEntry name desc val = EntryDocTreeEntry (Just (name, toValue val), mkDefDoc @baseedit name desc val)
+mkDefEntry name desc val = let
+    bdName = name
+    bdValue = toValue val
+    bdPattern = Nothing
+    bdDoc = mkDefDoc @baseedit name desc val
+    in EntryDocTreeEntry MkBindDoc {..}
+
+mkDefPatEntry ::
+       forall baseedit t v lt.
+       ( HasPinaforeEntityEdit baseedit
+       , ToPinaforeType baseedit t
+       , FromPinaforeType baseedit v
+       , ToTypeF (HListWit (PinaforeType baseedit 'Positive)) (HList lt)
+       )
+    => Name
+    -> Text
+    -> t
+    -> (v -> Maybe (HList lt))
+    -> DocTreeEntry (BindDoc baseedit)
+mkDefPatEntry name desc val pat = let
+    bdName = name
+    bdValue = toValue val
+    bdPattern = Just $ mkPatternConstructor fromTypeF toTypeF pat
+    bdDoc = mkDefDoc @baseedit name desc val
+    in EntryDocTreeEntry MkBindDoc {..}
 
 entityuuid :: Entity -> Text
 entityuuid p = pack $ show p
@@ -203,7 +234,15 @@ predefinitions =
               , docTreeEntry
                     "Boolean"
                     ""
-                    [ mkDefEntry "&&" "Boolean AND." (&&)
+                    [ mkDefPatEntry "True" "Boolean TRUE." True $ \v ->
+                          if v
+                              then Just ()
+                              else Nothing
+                    , mkDefPatEntry "False" "Boolean FALSE." False $ \v ->
+                          if v
+                              then Nothing
+                              else Just ()
+                    , mkDefEntry "&&" "Boolean AND." (&&)
                     , mkDefEntry "||" "Boolean OR." (||)
                     , mkDefEntry "not" "Boolean NOT." not
                     ]
@@ -430,9 +469,22 @@ predefinitions =
 predefinedDoc ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => DocTree DefDoc
-predefinedDoc = fmap snd $ predefinitions @baseedit
+predefinedDoc = fmap bdDoc $ predefinitions @baseedit
 
 predefinedBindings ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => StrictMap Name (QValue baseedit)
-predefinedBindings = mapFromList $ catMaybes $ toList $ fmap fst $ predefinitions @baseedit
+predefinedBindings = mapFromList $ toList $ fmap (\doc -> (bdName doc, bdValue doc)) $ predefinitions @baseedit
+
+predefinedPatternConstructors ::
+       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+    => StrictMap Name (PinaforePatternConstructor baseedit)
+predefinedPatternConstructors =
+    mapFromList $
+    catMaybes $
+    toList $
+    fmap
+        (\doc -> do
+             pat <- bdPattern doc
+             return (bdName doc, pat)) $
+    predefinitions @baseedit

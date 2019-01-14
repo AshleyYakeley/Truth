@@ -264,3 +264,27 @@ caseAbstractSealedExpression absw rawcases =
             unifierSolve $
             (\rexpr -> MkSealedExpression rfwt $ fmap (\tia -> fconv $ \t -> runIdentity $ tia t) rexpr) <$>
             unifierExpression ruexpr
+
+applyPatternConstructor ::
+       forall renamer unifier m. (UnifierRenamerConstraint unifier renamer m, MonadFail m)
+    => UnifierPatternConstructor unifier
+    -> UnifierSealedPattern unifier
+    -> m (UnifierPatternConstructor unifier)
+applyPatternConstructor patcon patarg =
+    runRenamer @renamer $
+    withTransConstraintTM @Monad $ do
+        MkPatternConstructor pct pclt pcpat <- rename patcon
+        case pclt of
+            NilListType -> lift $ fail "Too many arguments to constructor in pattern"
+            ConsListType pca pcla -> do
+                MkSealedPattern ta pata <- rename patarg
+                uconv <- unifyPosNegWitnesses @unifier pca ta
+                unifierSolve @unifier $
+                    fmap
+                        (\conv ->
+                             MkPatternConstructor pct pcla $
+                             proc t -> do
+                                 (a, l) <- pcpat -< t
+                                 pata -< conv a
+                                 returnA -< l)
+                        uconv

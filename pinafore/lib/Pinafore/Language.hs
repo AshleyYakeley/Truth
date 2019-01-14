@@ -33,7 +33,9 @@ import System.IO.Error
 
 runPinaforeScoped ::
        (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit) => PinaforeScoped baseedit a -> Result Text a
-runPinaforeScoped scp = runScoped $ withNewBindings (qValuesLetExpr predefinedBindings) scp
+runPinaforeScoped scp =
+    runScoped $
+    withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
 
 parseExpression ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)

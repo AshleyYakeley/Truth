@@ -13,18 +13,6 @@ mkPTypeF ::
     -> PTypeF wit polarity t
 mkPTypeF = mkTypeF
 
-class ToTypeF wit t where
-    toTypeF :: PTypeF wit 'Positive t
-
-class FromTypeF wit t where
-    fromTypeF :: PTypeF wit 'Negative t
-
-toValue ::
-       forall wit t. ToTypeF wit t
-    => t
-    -> AnyValue (wit 'Positive)
-toValue = toTypeFAnyValue $ toTypeF @wit @t
-
 type PTypeMappable (wit :: Polarity -> k -> Type) = TypeMappable (wit 'Positive) (wit 'Negative)
 
 mapPTypes ::

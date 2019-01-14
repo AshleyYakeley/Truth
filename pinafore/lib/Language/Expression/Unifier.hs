@@ -51,6 +51,9 @@ type UnifierOpenPattern unifier = NamedPattern (UnifierName unifier) (UnifierPos
 type UnifierSealedPattern unifier
      = SealedPattern (UnifierName unifier) (UnifierPosWitness unifier) (UnifierNegWitness unifier)
 
+type UnifierPatternConstructor unifier
+     = PatternConstructor (UnifierName unifier) (UnifierPosWitness unifier) (UnifierNegWitness unifier)
+
 liftUnifier :: Monad (UnifierMonad unifier) => unifier a -> Compose (UnifierMonad unifier) unifier a
 liftUnifier ua = Compose $ return ua
 

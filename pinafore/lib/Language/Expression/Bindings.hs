@@ -1,5 +1,3 @@
-{-# LANGUAGE ApplicativeDo #-}
-
 module Language.Expression.Bindings
     ( Bindings
     , singleBinding

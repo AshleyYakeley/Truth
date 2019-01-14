@@ -7,14 +7,14 @@ import Language.Expression.TypeF
 import Shapes
 
 unToWithTypeF ::
-       (FromTypeF tw pa, ToTypeF tw qa)
+       (FromTypeF (tw 'Negative) pa, ToTypeF (tw 'Positive) qa)
     => (forall pt qt. RangeType tw 'Positive '( pt, qt) -> WithRange (->) '( pa, qa) '( pt, qt) -> r)
     -> r
 unToWithTypeF cont =
     unTypeF fromTypeF $ \tp convp -> unTypeF toTypeF $ \tq convq -> cont (MkRangeType tp tq) (MkWithRange convp convq)
 
 unFromWithTypeF ::
-       (ToTypeF tw pa, FromTypeF tw qa)
+       (ToTypeF (tw 'Positive) pa, FromTypeF (tw 'Negative) qa)
     => (forall pt qt. RangeType tw 'Negative '( pt, qt) -> WithRange (->) '( pt, qt) '( pa, qa) -> r)
     -> r
 unFromWithTypeF cont =

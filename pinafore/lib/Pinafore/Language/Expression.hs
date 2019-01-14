@@ -18,6 +18,8 @@ type QExpr baseedit = TSSealedExpression (PinaforeTypeSystem baseedit)
 
 type QPattern baseedit = TSSealedPattern (PinaforeTypeSystem baseedit)
 
+type QPatternConstructor baseedit = TSPatternConstructor (PinaforeTypeSystem baseedit)
+
 type QValue baseedit = TSValue (PinaforeTypeSystem baseedit)
 
 qConstExprAny :: forall baseedit. QValue baseedit -> QExpr baseedit
@@ -50,6 +52,38 @@ qAnyPattern = tsAnyPattern @(PinaforeTypeSystem baseedit)
 qBothPattern ::
        forall baseedit. QPattern baseedit -> QPattern baseedit -> PinaforeSourceScoped baseedit (QPattern baseedit)
 qBothPattern = tsBothPattern @(PinaforeTypeSystem baseedit)
+
+qApplyPatternConstructor ::
+       forall baseedit.
+       QPatternConstructor baseedit
+    -> QPattern baseedit
+    -> PinaforeSourceScoped baseedit (QPatternConstructor baseedit)
+qApplyPatternConstructor = tsApplyPatternConstructor @(PinaforeTypeSystem baseedit)
+
+qSealPatternConstructor ::
+       forall baseedit m. MonadFail m
+    => QPatternConstructor baseedit
+    -> m (QPattern baseedit)
+qSealPatternConstructor = tsSealPatternConstructor @(PinaforeTypeSystem baseedit)
+
+qApplyAllPatternConstructor ::
+       forall baseedit.
+       QPatternConstructor baseedit
+    -> [QPattern baseedit]
+    -> PinaforeSourceScoped baseedit (QPatternConstructor baseedit)
+qApplyAllPatternConstructor pc [] = return pc
+qApplyAllPatternConstructor pc (pat:pats) = do
+    pc' <- qApplyPatternConstructor pc pat
+    qApplyAllPatternConstructor pc' pats
+
+qConstructPattern ::
+       forall baseedit.
+       QPatternConstructor baseedit
+    -> [QPattern baseedit]
+    -> PinaforeSourceScoped baseedit (QPattern baseedit)
+qConstructPattern pc pats = do
+    pc' <- qApplyAllPatternConstructor pc pats
+    qSealPatternConstructor pc'
 
 qCase ::
        forall baseedit.

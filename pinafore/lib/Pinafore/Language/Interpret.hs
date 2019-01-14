@@ -24,9 +24,10 @@ interpretPattern (MkSyntaxPattern spos (BothSyntaxPattern spat1 spat2)) = do
     pat1 <- interpretPattern spat1
     pat2 <- interpretPattern spat2
     liftRefNotation $ runSourcePos spos $ qBothPattern pat1 pat2
-interpretPattern (MkSyntaxPattern _ (ConstructorSyntaxPattern _name spats)) = do
-    _pats <- for spats interpretPattern
-    fail "NYI: constructor patterns"
+interpretPattern (MkSyntaxPattern spos (ConstructorSyntaxPattern name spats)) = do
+    pc <- liftRefNotation $ runSourcePos spos $ lookupPatternConstructor name
+    pats <- for spats interpretPattern
+    liftRefNotation $ runSourcePos spos $ qConstructPattern pc pats
 
 interpretPatternOrName :: SyntaxPattern -> Either Name (RefNotation baseedit (QPattern baseedit))
 interpretPatternOrName (MkSyntaxPattern _ (VarSyntaxPattern n)) = Left n
@@ -87,20 +88,22 @@ interpretDeclarations spos (MkSyntaxDeclarations stypedecls sbinds) = do
     MkTypeDecls td <- stypedecls
     return $ MkTransform $ \ra -> td $ interpretLetBindings spos sbinds $ td ra
 
-interpretConstructor :: Name -> RefExpression baseedit
-interpretConstructor "True" = return $ qConstExprAny $ toValue True
-interpretConstructor "False" = return $ qConstExprAny $ toValue False
-interpretConstructor n = fail $ "unknown constructor: " <> show n
+interpretConstructor :: SourcePos -> Name -> RefExpression baseedit
+interpretConstructor spos n = do
+    me <- liftRefNotation $ runSourcePos spos $ lookupBinding n
+    case me of
+        Just e -> return e
+        Nothing -> fail $ "unknown constructor: " <> show n
 
-interpretLiteral :: SyntaxLiteral -> RefExpression baseedit
-interpretLiteral (SLNumber v) = return $ qConstExprAny $ toValue v
-interpretLiteral (SLString v) = return $ qConstExprAny $ toValue v
-interpretLiteral (SLConstructor v) = interpretConstructor v
+interpretLiteral :: SourcePos -> SyntaxLiteral -> RefExpression baseedit
+interpretLiteral _ (SLNumber v) = return $ qConstExprAny $ toValue v
+interpretLiteral _ (SLString v) = return $ qConstExprAny $ toValue v
+interpretLiteral spos (SLConstructor v) = interpretConstructor spos v
 
-interpretConstant :: SyntaxConstant -> RefExpression baseedit
-interpretConstant SCIfThenElse = return $ qConstExprAny $ toValue qifthenelse
-interpretConstant SCPair = return $ qConstExprAny $ toValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
-interpretConstant (SCLiteral lit) = interpretLiteral lit
+interpretConstant :: SourcePos -> SyntaxConstant -> RefExpression baseedit
+interpretConstant _ SCIfThenElse = return $ qConstExprAny $ toValue qifthenelse
+interpretConstant _ SCPair = return $ qConstExprAny $ toValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
+interpretConstant spos (SCLiteral lit) = interpretLiteral spos lit
 
 interpretCase ::
        HasPinaforeEntityEdit baseedit => SyntaxCase baseedit -> RefNotation baseedit (QPattern baseedit, QExpr baseedit)
@@ -132,7 +135,7 @@ interpretExpression' spos (SEApply sf sarg) = do
     f <- interpretExpression sf
     arg <- interpretExpression sarg
     liftRefNotation $ runSourcePos spos $ qApplyExpr f arg
-interpretExpression' _ (SEConst c) = interpretConstant c
+interpretExpression' spos (SEConst c) = interpretConstant spos c
 interpretExpression' spos (SEVar name) = varRefExpr spos name
 interpretExpression' spos (SERef sexpr) = refNotationQuote spos $ interpretExpression sexpr
 interpretExpression' _ (SEUnref sexpr) = refNotationUnquote $ interpretExpression sexpr

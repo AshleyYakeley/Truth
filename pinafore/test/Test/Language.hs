@@ -335,13 +335,23 @@ testQueries =
               ]
         , testGroup
               "case"
-              [ testQuery "case 2 of a -> 5 end" $ Just $ showText "5"
-              , testQuery "case 2 of a -> 5; a -> 3 end" $ Just $ showText "5"
-              , testQuery "case 2 of a -> 5; a -> 3; end" $ Just $ showText "5"
-              , testQuery "case 2 of a -> a end" $ Just $ showText "2"
-              , testQuery "case 2 of _ -> 5 end" $ Just $ showText "5"
-              , testQuery "case 2 of _ -> 5; _ -> 3 end" $ Just $ showText "5"
-              , testQuery "case 2 of a@b -> (a,b) end" $ Just $ showText "(2, 2)"
+              [ testGroup
+                    "basic"
+                    [ testQuery "case 2 of a -> 5 end" $ Just $ showText "5"
+                    , testQuery "case 2 of a -> 5; a -> 3 end" $ Just $ showText "5"
+                    , testQuery "case 2 of a -> 5; a -> 3; end" $ Just $ showText "5"
+                    , testQuery "case 2 of a -> a end" $ Just $ showText "2"
+                    , testQuery "case 2 of _ -> 5 end" $ Just $ showText "5"
+                    , testQuery "case 2 of _ -> 5; _ -> 3 end" $ Just $ showText "5"
+                    , testQuery "case 2 of a@b -> (a,b) end" $ Just $ showText "(2, 2)"
+                    ]
+              , testGroup
+                    "Boolean"
+                    [ testQuery "case True of True -> 5; False -> 7 end" $ Just $ showText "5"
+                    , testQuery "case False of True -> 5; False -> 7 end" $ Just $ showText "7"
+                    , testQuery "case True of False -> 7; True -> 5 end" $ Just $ showText "5"
+                    , testQuery "case False of False -> 7; True -> 5 end" $ Just $ showText "7"
+                    ]
               ]
         ]
 
