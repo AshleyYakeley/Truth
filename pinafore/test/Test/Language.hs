@@ -310,8 +310,8 @@ testQueries =
         , testGroup "pairs" [testQuery "fst (7,9)" $ Just $ showText "7", testQuery "snd (7,9)" $ Just $ showText "9"]
         , testGroup
               "either"
-              [ testQuery "either (\\a -> (\"left\",a)) (\\a -> (\"right\",a)) $ left \"x\"" $ Just "(left, x)"
-              , testQuery "either (\\a -> (\"left\",a)) (\\a -> (\"right\",a)) $ right \"x\"" $ Just "(right, x)"
+              [ testQuery "either (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Left \"x\"" $ Just "(Left, x)"
+              , testQuery "either (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Right \"x\"" $ Just "(Right, x)"
               ]
         , testGroup
               "type signature"
@@ -370,7 +370,7 @@ testQueries =
                     [ testQuery "case Left 3 of Left a -> a; Right _ -> 1 end" $ Just $ showText "3"
                     , testQuery "case Right 4 of Left a -> a + 1; Right a -> a end" $ Just $ showText "4"
                     , testQuery "case Right 7 of Right 4 -> True; _ -> False end" $ Just $ showText "False"
-                    , testQuery "case Right 7 of Right 4 -> 1; Right 4 -> 2; Left _ -> 3; _ -> 4 end" $
+                    , testQuery "case Right 7 of Right 4 -> 1; Right 7 -> 2; Left _ -> 3; _ -> 4 end" $
                       Just $ showText "2"
                     ]
               , testGroup "Pair" [testQuery "case (2,True) of (2,a) -> a end" $ Just $ showText "True"]

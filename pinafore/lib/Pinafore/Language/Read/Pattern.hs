@@ -19,13 +19,16 @@ readPatterns :: Parser [SyntaxPattern]
 readPatterns = many readPattern2
 
 readPattern1 :: Parser SyntaxPattern
-readPattern1 =
-    readSourcePosPattern
-        (do
-             c <- readConstructor
-             pats <- readPatterns
-             return $ ConstructorSyntaxPattern c pats) <|>
-    readPattern2
+readPattern1 = do
+    f <- readPattern2
+    args <- readPatterns
+    case args of
+        [] -> return f
+        _ ->
+            case f of
+                MkSyntaxPattern spos (ConstructorSyntaxPattern c cargs) ->
+                    return $ MkSyntaxPattern spos $ ConstructorSyntaxPattern c $ cargs <> args
+                _ -> fail "cannot apply pattern"
 
 readPattern2 :: Parser SyntaxPattern
 readPattern2 = do
@@ -41,6 +44,10 @@ readPattern2 = do
 
 readPattern3 :: Parser SyntaxPattern
 readPattern3 =
+    readSourcePosPattern
+        (do
+             c <- readConstructor
+             return $ ConstructorSyntaxPattern c []) <|>
     readSourcePosPattern
         (do
              name <- readThis TokLName

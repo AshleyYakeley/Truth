@@ -121,11 +121,11 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <patterns> ::=  | <pattern-2> <patterns>
 
-<pattern-1> ::= <pattern-2> | uname <patterns>
+<pattern-1> ::= <pattern-2> <patterns>
 
 <pattern-2> ::= <pattern-3> | <pattern-3> "@" <pattern-2>
 
-<pattern-3> ::= literal-number | literal-text | lname | "_" | "(" <pattern-1> ")"
+<pattern-3> ::= uname | literal-number | literal-text | lname | "_" | "(" <pattern-1> ")"
 ```
 
 ## Infix Operators

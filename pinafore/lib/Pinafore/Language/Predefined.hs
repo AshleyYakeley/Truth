@@ -278,8 +278,14 @@ predefinitions =
         , docTreeEntry
               "Either"
               ""
-              [ mkDefEntry "left" "Construct an Either from the left." $ Left @A @B
-              , mkDefEntry "right" "Construct an Either from the right." $ Right @A @B
+              [ mkDefPatEntry "Left" "Construct an Either from the left." (Left @A @B) $ \(ea :: Either A B) ->
+                    case ea of
+                        Left v -> Just (v, ())
+                        _ -> Nothing
+              , mkDefPatEntry "Right" "Construct an Either from the right." (Right @A @B) $ \(ea :: Either A B) ->
+                    case ea of
+                        Right v -> Just (v, ())
+                        _ -> Nothing
               , mkDefEntry "either" "Eliminate an Either" $ either @A @C @B
               ]
         , docTreeEntry

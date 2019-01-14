@@ -264,12 +264,12 @@ testEntity =
               , pointTest
                     "let enta = property @E @(Number, Text) !\"enta\" in enta !$ {e1} := (74,\"hmm\") >> (testeq {(74,\"hmm\")} $ enta !$ {e1})"
               , pointTest
-                    "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := left 74 >> (testneq {left 73} $ enta !$ {e1})"
+                    "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Left 74 >> (testneq {Left 73} $ enta !$ {e1})"
               , pointTest
-                    "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := left 74 >> (testeq {left 74} $ enta !$ {e1})"
+                    "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Left 74 >> (testeq {Left 74} $ enta !$ {e1})"
               , pointTest
-                    "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := right \"abc\" >> (testneq {right \"adbc\"} $ enta !$ {e1})"
+                    "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testneq {Right \"adbc\"} $ enta !$ {e1})"
               , pointTest
-                    "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := right \"abc\" >> (testeq {right \"abc\"} $ enta !$ {e1})"
+                    "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testeq {Right \"abc\"} $ enta !$ {e1})"
               ]
         ]
