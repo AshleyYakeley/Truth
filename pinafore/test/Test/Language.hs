@@ -332,6 +332,7 @@ testQueries =
               , testQuery "(\\a -> a) 2" $ Just $ showText "2"
               , testQuery "(\\_ -> 5) 2" $ Just $ showText "5"
               , testQuery "(\\a@b -> (a,b)) 2" $ Just "(2, 2)"
+              , testQuery "(\\(a,b) -> a + b) (5,6)" $ Just $ showText "11"
               ]
         , testGroup
               "case"
@@ -351,6 +352,41 @@ testQueries =
                     , testQuery "case False of True -> 5; False -> 7 end" $ Just $ showText "7"
                     , testQuery "case True of False -> 7; True -> 5 end" $ Just $ showText "5"
                     , testQuery "case False of False -> 7; True -> 5 end" $ Just $ showText "7"
+                    ]
+              , testGroup
+                    "Number"
+                    [ testQuery "case 37 of 37 -> True; _ -> False end" $ Just $ showText "True"
+                    , testQuery "case 38 of 37 -> True; _ -> False end" $ Just $ showText "False"
+                    , testQuery "case -24.3 of 37 -> 1; -24.3 -> 2; _ -> 3 end" $ Just $ showText "2"
+                    ]
+              , testGroup
+                    "String"
+                    [ testQuery "case \"Hello\" of \"Hello\" -> True; _ -> False end" $ Just $ showText "True"
+                    , testQuery "case \"thing\" of 37 -> True; _ -> False end" $ Just $ showText "False"
+                    , testQuery "case \"thing\" of \"Hello\" -> 1; \"thing\" -> 2; _ -> 3 end" $ Just $ showText "2"
+                    ]
+              , testGroup
+                    "Either"
+                    [ testQuery "case Left 3 of Left a -> a; Right _ -> 1 end" $ Just $ showText "3"
+                    , testQuery "case Right 4 of Left a -> a + 1; Right a -> a end" $ Just $ showText "4"
+                    , testQuery "case Right 7 of Right 4 -> True; _ -> False end" $ Just $ showText "False"
+                    , testQuery "case Right 7 of Right 4 -> 1; Right 4 -> 2; Left _ -> 3; _ -> 4 end" $
+                      Just $ showText "2"
+                    ]
+              , testGroup "Pair" [testQuery "case (2,True) of (2,a) -> a end" $ Just $ showText "True"]
+              , testGroup
+                    "Pair"
+                    [ testQuery "case [] of [] -> True; _ -> False end" $ Just $ showText "True"
+                    , testQuery "case [] of _:_ -> True; _ -> False end" $ Just $ showText "False"
+                    , testQuery "case [1,2] of [] -> True; _ -> False end" $ Just $ showText "False"
+                    , testQuery "case [3,4] of _:_ -> True; _ -> False end" $ Just $ showText "True"
+                    , testQuery "case [3] of a:b -> (a,b) end" $ Just $ showText "(3, [])"
+                    , testQuery "case [3,4] of a:b -> (a,b) end" $ Just $ showText "(3, [4])"
+                    , testQuery "case [3,4,5] of a:b -> (a,b) end" $ Just $ showText "(3, [4, 5])"
+                    , testQuery "case [3] of [a,b] -> 1, _ -> 2 end" $ Just $ showText "2"
+                    , testQuery "case [3,4] of [a,b] -> 1, _ -> 2 end" $ Just $ showText "1"
+                    , testQuery "case [3,4,5] of [a,b] -> 1, _ -> 2 end" $ Just $ showText "2"
+                    , testQuery "case [3,4] of [a,b] -> (a,b) end" $ Just $ showText "(3, 4)"
                     ]
               ]
         ]
