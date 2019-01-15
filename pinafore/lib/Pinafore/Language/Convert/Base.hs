@@ -147,6 +147,26 @@ instance (ToTypeF (PinaforeType baseedit 'Positive) a, FromTypeF (PinaforeType b
              FromTypeF (PinaforeType baseedit 'Negative) (a -> b) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
+-- Maybe
+instance (ToTypeF (PinaforeType baseedit 'Positive) a) => ToTypeF (PinaforeSingularType baseedit 'Positive) (Maybe a) where
+    toTypeF =
+        unTypeF toTypeF $ \ta conva ->
+            contramap (fmap conva) $
+            mkPTypeF $ GroundPinaforeSingularType MaybePinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+
+instance (ToTypeF (PinaforeType baseedit 'Positive) a) => ToTypeF (PinaforeType baseedit 'Positive) (Maybe a) where
+    toTypeF = singlePinaforeTypeF toTypeF
+
+instance (FromTypeF (PinaforeType baseedit 'Negative) a) =>
+             FromTypeF (PinaforeSingularType baseedit 'Negative) (Maybe a) where
+    fromTypeF =
+        unTypeF fromTypeF $ \ta conva ->
+            fmap (fmap conva) $
+            mkPTypeF $ GroundPinaforeSingularType MaybePinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+
+instance (FromTypeF (PinaforeType baseedit 'Negative) a) => FromTypeF (PinaforeType baseedit 'Negative) (Maybe a) where
+    fromTypeF = singlePinaforeTypeF fromTypeF
+
 -- []
 instance (ToTypeF (PinaforeType baseedit 'Positive) a) => ToTypeF (PinaforeSingularType baseedit 'Positive) [a] where
     toTypeF =

@@ -142,6 +142,7 @@ exprShowPrecGroundType UserInterfacePinaforeGroundType NilDolanArguments = ("UI"
 exprShowPrecGroundType (SimpleEntityPinaforeGroundType t) NilDolanArguments = exprShowPrec t
 exprShowPrecGroundType FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
+exprShowPrecGroundType MaybePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) = ("Maybe " <> exprShow ta, 2)
 exprShowPrecGroundType ListPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) = ("[" <> exprShow ta <> "]", 0)
 exprShowPrecGroundType PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     ("(" <> exprShow ta <> ", " <> exprShow tb <> ")", 0)

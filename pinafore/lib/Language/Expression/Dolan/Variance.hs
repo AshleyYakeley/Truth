@@ -85,6 +85,9 @@ class HasDolanVary (dk :: DolanVariance) (f :: DolanVarianceKind dk) | f -> dk w
 instance HasDolanVary '[] f where
     dolanVary = NilDolanKindVary
 
+instance HasDolanVary '[ 'Covariance] Maybe where
+    dolanVary = ConsDolanKindVary fmap $ NilDolanKindVary
+
 instance HasDolanVary '[ 'Covariance] [] where
     dolanVary = ConsDolanKindVary fmap $ NilDolanKindVary
 

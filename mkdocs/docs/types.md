@@ -44,6 +44,12 @@ An order on a type.
 
 The contents of a user interface window. Can be composed in various ways.
 
+## Maybe
+
+`Maybe a`, a is covariant
+
+`a <= Entity` implies `Maybe a <= Entity`
+
 ## Pairs
 
 `(a,b)`, both `a` and `b` are covariant

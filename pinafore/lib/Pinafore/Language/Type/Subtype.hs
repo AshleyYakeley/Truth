@@ -89,6 +89,13 @@ subtypeGroundTypes _ UserInterfacePinaforeGroundType NilDolanArguments UserInter
     pure id
 subtypeGroundTypes sc (SimpleEntityPinaforeGroundType t1) NilDolanArguments (SimpleEntityPinaforeGroundType t2) NilDolanArguments =
     subtypeLift sc $ getSubtype t1 t2
+subtypeGroundTypes sc MaybePinaforeGroundType (ConsDolanArguments t NilDolanArguments) (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments =
+    (\conv ma -> maybeToEntity $ fmap (meetUnjoin1 @polb . conv) ma) <$>
+    subtypeTypes
+        sc
+        t
+        (singlePinaforeType $
+         GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments)
 subtypeGroundTypes sc PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments =
     (\conva convb (a, b) -> pairToEntity (meetUnjoin1 @polb $ conva a, meetUnjoin1 @polb $ convb b)) <$>
     subtypeTypes
@@ -116,6 +123,8 @@ subtypeGroundTypes sc EitherPinaforeGroundType (ConsDolanArguments ta (ConsDolan
          GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments)
 subtypeGroundTypes sc FuncPinaforeGroundType argsa FuncPinaforeGroundType argsb =
     subtypeArguments sc FuncPinaforeGroundType argsa argsb
+subtypeGroundTypes sc MaybePinaforeGroundType argsa MaybePinaforeGroundType argsb =
+    subtypeArguments sc MaybePinaforeGroundType argsa argsb
 subtypeGroundTypes sc ListPinaforeGroundType argsa ListPinaforeGroundType argsb =
     subtypeArguments sc ListPinaforeGroundType argsa argsb
 subtypeGroundTypes sc PairPinaforeGroundType argsa PairPinaforeGroundType argsb =

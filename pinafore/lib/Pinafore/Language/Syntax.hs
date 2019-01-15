@@ -47,6 +47,7 @@ data SyntaxType
                          SyntaxType
     | FunctionSyntaxType SyntaxType
                          SyntaxType
+    | MaybeSyntaxType SyntaxType
     | EitherSyntaxType SyntaxType
                        SyntaxType
     | PairSyntaxType SyntaxType

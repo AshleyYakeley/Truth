@@ -39,6 +39,10 @@ readType1 = do
 readType2 :: Parser SyntaxType
 readType2 =
     (do
+         readExactlyThis TokUName "Maybe"
+         t1 <- readType3
+         return $ MaybeSyntaxType t1) <|>
+    (do
          readExactlyThis TokUName "Either"
          t1 <- readType3
          t2 <- readType3

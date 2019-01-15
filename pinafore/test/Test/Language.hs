@@ -325,6 +325,10 @@ testQueries =
               , testQuery "let i :: a -> Number; i x = x in 0" $ Nothing
               , testQuery "let i :: Number -> a; i x = x in 0" $ Nothing
               , testQuery "let i :: Number -> Number; i x = x in 0" $ Just $ showText "0"
+              , testQuery "let i :: Either Number Boolean; i = Left 5 in i" $ Just $ showText "Left 5"
+              , testQuery "let i :: Either Number Boolean; i = Right False in i" $ Just $ showText "Right False"
+              , testQuery "let i :: Maybe Number; i = Just 5 in i" $ Just $ showText "Just 5"
+              , testQuery "let i :: Maybe Number; i = Nothing in i" $ Just $ showText "Nothing"
               ]
         , testGroup
               "patterns"
@@ -375,6 +379,11 @@ testQueries =
                     ]
               , testGroup "Unit" [testQuery "case () of () -> 4 end" $ Just $ showText "4"]
               , testGroup "Pair" [testQuery "case (2,True) of (2,a) -> a end" $ Just $ showText "True"]
+              , testGroup
+                    "Maybe"
+                    [ testQuery "case Just 3 of Just a -> a + 1; Nothing -> 7 end" $ Just $ showText "4"
+                    , testQuery "case Nothing of Just a -> a + 1; Nothing -> 7 end" $ Just $ showText "7"
+                    ]
               , testGroup
                     "List"
                     [ testQuery "case [] of [] -> True; _ -> False end" $ Just $ showText "True"

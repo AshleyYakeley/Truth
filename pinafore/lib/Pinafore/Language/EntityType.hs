@@ -8,11 +8,15 @@ import Truth.Core
 
 data EntityType t where
     SimpleEntityType :: SimpleEntityType t -> EntityType t
+    MaybeEntityType :: EntityType t -> EntityType (Maybe t)
     PairEntityType :: EntityType ta -> EntityType tb -> EntityType (ta, tb)
     EitherEntityType :: EntityType ta -> EntityType tb -> EntityType (Either ta tb)
 
 instance TestEquality EntityType where
     testEquality (SimpleEntityType t1) (SimpleEntityType t2) = do
+        Refl <- testEquality t1 t2
+        return Refl
+    testEquality (MaybeEntityType t1) (MaybeEntityType t2) = do
         Refl <- testEquality t1 t2
         return Refl
     testEquality (PairEntityType t1a t1b) (PairEntityType t2a t2b) = do
@@ -32,6 +36,9 @@ instance Show (EntityType t) where
 
 entityTypeEq :: EntityType t -> Dict (Eq t)
 entityTypeEq (SimpleEntityType st) = simpleEntityTypeEq st
+entityTypeEq (MaybeEntityType t) =
+    case entityTypeEq t of
+        Dict -> Dict
 entityTypeEq (PairEntityType ta tb) =
     case (entityTypeEq ta, entityTypeEq tb) of
         (Dict, Dict) -> Dict
@@ -45,6 +52,21 @@ entityTypeToType ::
     -> PinaforeTypeF baseedit polarity t
 entityTypeToType (SimpleEntityType t) =
     singlePinaforeTypeF $ mkPTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType t) NilDolanArguments
+entityTypeToType (MaybeEntityType et) = let
+    tf = entityTypeToType @baseedit @polarity et
+    in case representative @_ @_ @polarity of
+           PositiveType ->
+               unTypeF tf $ \t conv ->
+                   singlePinaforeTypeF $
+                   contramap (fmap conv) $
+                   mkPTypeF $
+                   GroundPinaforeSingularType MaybePinaforeGroundType $ ConsDolanArguments t NilDolanArguments
+           NegativeType ->
+               unTypeF tf $ \t conv ->
+                   singlePinaforeTypeF $
+                   fmap (fmap conv) $
+                   mkPTypeF $
+                   GroundPinaforeSingularType MaybePinaforeGroundType $ ConsDolanArguments t NilDolanArguments
 entityTypeToType (PairEntityType eta etb) = let
     taf = entityTypeToType @baseedit @polarity eta
     tbf = entityTypeToType @baseedit @polarity etb
@@ -89,6 +111,9 @@ entityTypeToType (EitherEntityType eta etb) = let
 singularTypeToEntityType :: PinaforeSingularType baseedit polarity t -> Maybe (AnyW EntityType)
 singularTypeToEntityType (GroundPinaforeSingularType (SimpleEntityPinaforeGroundType st) NilDolanArguments) =
     Just $ MkAnyW $ SimpleEntityType st
+singularTypeToEntityType (GroundPinaforeSingularType MaybePinaforeGroundType (ConsDolanArguments t NilDolanArguments)) = do
+    MkAnyW et <- typeToEntityType t
+    return $ MkAnyW $ MaybeEntityType et
 singularTypeToEntityType (GroundPinaforeSingularType PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments))) = do
     MkAnyW eta <- typeToEntityType ta
     MkAnyW etb <- typeToEntityType tb
@@ -115,10 +140,43 @@ predleft = MkPredicate $ MkAnchor $ read "ffb8fee1-6971-46c0-9954-62c2ec53e98a"
 predright :: Predicate
 predright = MkPredicate $ MkAnchor $ read "bbc7a8ca-17e1-4d42-9230-e6b889dea2e5"
 
+predjust :: Predicate
+predjust = MkPredicate $ MkAnchor $ read "c0e3fe40-598b-4c38-a28c-5be0decb1d9c"
+
 --unitPoint :: Entity
 --unitPoint = MkEntity $ MkAnchor $ read "644eaa9b-0c57-4c5c-9606-e5303fda86f9"
 entityAdapter :: EntityType t -> EntityAdapter t
 entityAdapter (SimpleEntityType t) = simpleEntityAdapter t
+entityAdapter (MaybeEntityType t) = let
+    MkEntityAdapter ae aget aput = entityAdapter t
+    entityAdapterConvert a = maybeToEntity $ fmap ae a
+    entityAdapterGet ::
+           forall m. MonadIO m
+        => Entity
+        -> MutableRead m PinaforeEntityRead
+        -> m (Know _)
+    entityAdapterGet p mr =
+        getComposeM $
+        (do
+             pa <- MkComposeM $ mr $ PinaforeEntityReadGetPredicate predjust p
+             a <- MkComposeM $ aget pa mr
+             return $ Just a) <|>
+        (if p == maybeToEntity Nothing
+             then return Nothing
+             else empty)
+    entityAdapterPut ::
+           forall m. MonadIO m
+        => _
+        -> MutableRead m PinaforeEntityRead
+        -> m [PinaforeEntityEdit]
+    entityAdapterPut v mr = let
+        p = entityAdapterConvert v
+        in case v of
+               Just a -> do
+                   aedits <- aput a mr
+                   return $ aedits <> [PinaforeEntityEditSetPredicate predjust p $ Known $ ae a]
+               Nothing -> return []
+    in MkEntityAdapter {..}
 entityAdapter (PairEntityType ta tb) = let
     MkEntityAdapter ae aget aput = entityAdapter ta
     MkEntityAdapter be bget bput = entityAdapter tb
@@ -187,10 +245,3 @@ entityAdapter (EitherEntityType ta tb) = let
                    bedits <- bput b mr
                    return $ bedits <> [PinaforeEntityEditSetPredicate predright pab $ Known $ be b]
     in MkEntityAdapter {..}
-{-
-data EntityAdapter t = MkEntityAdapter
-    { entityAdapterConvert :: t -> Entity
-    , entityAdapterGet :: forall m. MonadIO m => Entity -> MutableRead m PinaforeEntityRead -> m (Know t)
-    , entityAdapterPut :: forall m. MonadIO m => t -> MutableRead m PinaforeEntityRead -> m [PinaforeEntityEdit]
-    }
--}

@@ -71,6 +71,9 @@ showPinaforeGroundValue ::
 showPinaforeGroundValue (SimpleEntityPinaforeGroundType (LiteralSimpleEntityType t)) NilDolanArguments v =
     case literalTypeAsLiteral t of
         Dict -> unpack $ unLiteral $ toLiteral v
+showPinaforeGroundValue MaybePinaforeGroundType (ConsDolanArguments t NilDolanArguments) (Just x) =
+    "Just " <> showPinaforeValue t x
+showPinaforeGroundValue MaybePinaforeGroundType (ConsDolanArguments _t NilDolanArguments) Nothing = "Nothing"
 showPinaforeGroundValue PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) (a, b) =
     "(" <> showPinaforeValue ta a <> ", " <> showPinaforeValue tb b <> ")"
 showPinaforeGroundValue EitherPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments _tb NilDolanArguments)) (Left x) =

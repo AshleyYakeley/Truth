@@ -296,6 +296,18 @@ predefinitions =
                     ]
               ]
         , docTreeEntry
+              "Maybe"
+              ""
+              [ mkValPatEntry "Just" "Construct a Maybe from a value." (Just @A) $ \(v :: Maybe A) ->
+                    case v of
+                        Just a -> Just (a, ())
+                        _ -> Nothing
+              , mkValPatEntry "Nothing" "Construct a Maybe without a value." (Nothing @A) $ \(v :: Maybe A) ->
+                    case v of
+                        Nothing -> Just ()
+                        _ -> Nothing
+              ]
+        , docTreeEntry
               "Pairs"
               ""
               [ mkValEntry "fst" "Get the first member of a pair." $ fst @A @B

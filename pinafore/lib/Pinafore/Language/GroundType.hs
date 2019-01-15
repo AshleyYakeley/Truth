@@ -18,6 +18,7 @@ data PinaforeGroundType baseedit (polarity :: Polarity) (dk :: DolanVariance) (t
     UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (UISpec (ConstEdit Entity) baseedit)
     SimpleEntityPinaforeGroundType :: SimpleEntityType t -> PinaforeGroundType baseedit polarity '[] t
     FuncPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance, 'Covariance] (->)
+    MaybePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] Maybe
     ListPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] []
     PairPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance, 'Covariance] (,)
     EitherPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance, 'Covariance] Either
@@ -37,6 +38,7 @@ testPinaforeGroundTypeEquality (SimpleEntityPinaforeGroundType t1) (SimpleEntity
     Refl <- testEquality t1 t2
     Just (Refl, HRefl)
 testPinaforeGroundTypeEquality FuncPinaforeGroundType FuncPinaforeGroundType = Just (Refl, HRefl)
+testPinaforeGroundTypeEquality MaybePinaforeGroundType MaybePinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality ListPinaforeGroundType ListPinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality PairPinaforeGroundType PairPinaforeGroundType = Just (Refl, HRefl)
 testPinaforeGroundTypeEquality EitherPinaforeGroundType EitherPinaforeGroundType = Just (Refl, HRefl)
@@ -54,6 +56,7 @@ pinaforeGroundTypeVary OrderPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary UserInterfacePinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary (SimpleEntityPinaforeGroundType _) = dolanVary @dk
 pinaforeGroundTypeVary FuncPinaforeGroundType = dolanVary @dk
+pinaforeGroundTypeVary MaybePinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary ListPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary PairPinaforeGroundType = dolanVary @dk
 pinaforeGroundTypeVary EitherPinaforeGroundType = dolanVary @dk
@@ -67,6 +70,7 @@ pinaforeGroundTypeKind OrderPinaforeGroundType = representative
 pinaforeGroundTypeKind UserInterfacePinaforeGroundType = representative
 pinaforeGroundTypeKind (SimpleEntityPinaforeGroundType _) = representative
 pinaforeGroundTypeKind FuncPinaforeGroundType = representative
+pinaforeGroundTypeKind MaybePinaforeGroundType = representative
 pinaforeGroundTypeKind ListPinaforeGroundType = representative
 pinaforeGroundTypeKind PairPinaforeGroundType = representative
 pinaforeGroundTypeKind EitherPinaforeGroundType = representative
@@ -81,6 +85,7 @@ invertGroundTypePolarity OrderPinaforeGroundType = Just OrderPinaforeGroundType
 invertGroundTypePolarity UserInterfacePinaforeGroundType = Just UserInterfacePinaforeGroundType
 invertGroundTypePolarity (SimpleEntityPinaforeGroundType t) = Just $ SimpleEntityPinaforeGroundType t
 invertGroundTypePolarity FuncPinaforeGroundType = Just FuncPinaforeGroundType
+invertGroundTypePolarity MaybePinaforeGroundType = Just MaybePinaforeGroundType
 invertGroundTypePolarity ListPinaforeGroundType = Just ListPinaforeGroundType
 invertGroundTypePolarity PairPinaforeGroundType = Just PairPinaforeGroundType
 invertGroundTypePolarity EitherPinaforeGroundType = Just EitherPinaforeGroundType

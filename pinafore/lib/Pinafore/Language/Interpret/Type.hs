@@ -85,6 +85,15 @@ interpretTypeM (FunctionSyntaxType st1 st2) = do
                  ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments)
             (MkInvertMPolarW at1)
             at2
+interpretTypeM (MaybeSyntaxType st1) = do
+    at1 <- interpretTypeM st1
+    return $
+        toMPolar
+            (\(MkAnyW t1) ->
+                 MkAnyW $
+                 singlePinaforeType $
+                 GroundPinaforeSingularType MaybePinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
+            at1
 interpretTypeM (EitherSyntaxType st1 st2) = do
     at1 <- interpretTypeM st1
     at2 <- interpretTypeM st2
