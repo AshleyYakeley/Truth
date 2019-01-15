@@ -36,6 +36,7 @@ interpretPatternConstructor (SLString v) =
         if v == v'
             then Just ()
             else Nothing
+interpretPatternConstructor SLUnit = return $ toPatternConstructor $ \() -> Just ()
 interpretPatternConstructor SLPair = return $ toPatternConstructor $ \(a :: A, b :: B) -> Just $ (a, (b, ()))
 
 interpretPattern :: SyntaxPattern -> RefNotation baseedit (QPattern baseedit)
@@ -121,6 +122,7 @@ interpretConstructor _ (SLNumber v) = return $ qConstExprAny $ toValue v
 interpretConstructor _ (SLString v) = return $ qConstExprAny $ toValue v
 interpretConstructor spos (SLNamedConstructor v) = interpretNamedConstructor spos v
 interpretConstructor _ SLPair = return $ qConstExprAny $ toValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
+interpretConstructor _ SLUnit = return $ qConstExprAny $ toValue ()
 
 interpretConstant :: SourcePos -> SyntaxConstant -> RefExpression baseedit
 interpretConstant _ SCIfThenElse = return $ qConstExprAny $ toValue qifthenelse

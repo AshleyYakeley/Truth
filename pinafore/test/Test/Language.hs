@@ -373,6 +373,7 @@ testQueries =
                     , testQuery "case Right 7 of Right 4 -> 1; Right 7 -> 2; Left _ -> 3; _ -> 4 end" $
                       Just $ showText "2"
                     ]
+              , testGroup "Unit" [testQuery "case () of () -> 4 end" $ Just $ showText "4"]
               , testGroup "Pair" [testQuery "case (2,True) of (2,a) -> a end" $ Just $ showText "True"]
               , testGroup
                     "List"

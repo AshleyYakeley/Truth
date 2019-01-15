@@ -187,16 +187,18 @@ readExpression3 =
               name <- readThis TokOperator
               return $ SEVar name) <|>
      (do
-          sexpr1 <- readExpression
-          msexpr2 <-
-              optional $ do
-                  readThis TokComma
-                  readExpression
-          case msexpr2 of
-              Just sexpr2 -> do
-                  spos <- getPosition
-                  return $ seApplys spos (seConst spos $ SCConstructor SLPair) [sexpr1, sexpr2]
-              Nothing -> return sexpr1)) <|>
+          spos <- getPosition
+          msexpr1 <- optional readExpression
+          case msexpr1 of
+              Nothing -> return $ seConst spos $ SCConstructor SLUnit
+              Just sexpr1 -> do
+                  msexpr2 <-
+                      optional $ do
+                          readThis TokComma
+                          readExpression
+                  case msexpr2 of
+                      Just sexpr2 -> do return $ seApplys spos (seConst spos $ SCConstructor SLPair) [sexpr1, sexpr2]
+                      Nothing -> return sexpr1)) <|>
     readSourcePos
         (do
              sexprs <-

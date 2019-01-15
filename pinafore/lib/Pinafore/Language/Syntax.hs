@@ -70,6 +70,7 @@ data SyntaxConstructor
     | SLString Text
     | SLNamedConstructor Name
     | SLPair
+    | SLUnit
 
 data SyntaxPattern'
     = AnySyntaxPattern

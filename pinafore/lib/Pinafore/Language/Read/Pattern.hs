@@ -82,4 +82,18 @@ readPattern4 =
          spos <- getPosition
          pats <- readBracket $ readCommaList $ fmap pure readPattern1
          return $ listPattern spos pats) <|>
-    readParen readPattern1 <?> "pattern"
+    readParen
+        (do
+             spos <- getPosition
+             mpat1 <- optional readPattern1
+             case mpat1 of
+                 Nothing -> return $ MkSyntaxPattern spos $ ConstructorSyntaxPattern SLUnit []
+                 Just pat1 -> do
+                     mpat2 <-
+                         optional $ do
+                             readThis TokComma
+                             readPattern1
+                     case mpat2 of
+                         Nothing -> return pat1
+                         Just pat2 -> return $ MkSyntaxPattern spos $ ConstructorSyntaxPattern SLPair [pat1, pat2]) <?>
+    "pattern"

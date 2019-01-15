@@ -97,6 +97,8 @@ In interactive mode, each line has syntax `<interactive>`.
     literal-number |
     literal-text |
     "[" <comma-separated(<expression>)> "]" |
+    "(" ")" |
+    "(" <expression> "," <expression> ")" |
     "(" <expression> ")" |
     "(" <infix-operator[n]> ")"
 
@@ -127,7 +129,16 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <pattern-3> ::= <pattern-4> | <pattern-4> "@" <pattern-3>
 
-<pattern-4> ::= uname | literal-number | literal-text | lname | "_" | "[" <comma-separated(<pattern>)> "]" | "(" <pattern-1> ")"
+<pattern-4> ::=
+    uname |
+    literal-number |
+    literal-text |
+    lname |
+    "_" |
+    "[" <comma-separated(<pattern>)> "]" |
+    "(" ")" |
+    "(" <pattern-1> "," <pattern-1> ")" |
+    "(" <pattern-1> ")"
 ```
 
 ## Infix Operators
