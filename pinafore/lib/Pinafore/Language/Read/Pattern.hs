@@ -30,20 +30,42 @@ readPattern1 = do
                     return $ MkSyntaxPattern spos $ ConstructorSyntaxPattern c $ cargs <> args
                 _ -> fail "cannot apply pattern"
 
+nilPattern :: SourcePos -> SyntaxPattern
+nilPattern spos = MkSyntaxPattern spos $ ConstructorSyntaxPattern (SLNamedConstructor "[]") []
+
+consPattern :: SourcePos -> SyntaxPattern -> SyntaxPattern -> SyntaxPattern
+consPattern spos pat1 pat2 = MkSyntaxPattern spos $ ConstructorSyntaxPattern (SLNamedConstructor ":") [pat1, pat2]
+
 readPattern2 :: Parser SyntaxPattern
 readPattern2 = do
     spos <- getPosition
     pat1 <- readPattern3
     mpat2 <-
         optional $ do
-            readThis TokAt
+            readExactlyThis TokOperator ":"
             readPattern2
+    case mpat2 of
+        Nothing -> return pat1
+        Just pat2 -> return $ consPattern spos pat1 pat2
+
+readPattern3 :: Parser SyntaxPattern
+readPattern3 = do
+    spos <- getPosition
+    pat1 <- readPattern4
+    mpat2 <-
+        optional $ do
+            readThis TokAt
+            readPattern3
     case mpat2 of
         Nothing -> return pat1
         Just pat2 -> return $ MkSyntaxPattern spos $ BothSyntaxPattern pat1 pat2
 
-readPattern3 :: Parser SyntaxPattern
-readPattern3 =
+listPattern :: SourcePos -> [SyntaxPattern] -> SyntaxPattern
+listPattern spos [] = nilPattern spos
+listPattern spos (p:pp) = consPattern spos p $ listPattern spos pp
+
+readPattern4 :: Parser SyntaxPattern
+readPattern4 =
     readSourcePosPattern
         (do
              c <- readConstructor
@@ -56,4 +78,8 @@ readPattern3 =
         (do
              readThis TokUnderscore
              return AnySyntaxPattern) <|>
-    readParen readPattern1
+    (do
+         spos <- getPosition
+         pats <- readBracket $ readCommaList $ fmap pure readPattern1
+         return $ listPattern spos pats) <|>
+    readParen readPattern1 <?> "pattern"

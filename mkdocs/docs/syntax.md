@@ -96,15 +96,15 @@ In interactive mode, each line has syntax `<interactive>`.
     literal-boolean |
     literal-number |
     literal-text |
-    "[" <comma-separated-expressions> "]" |
+    "[" <comma-separated(<expression>)> "]" |
     "(" <expression> ")" |
     "(" <infix-operator[n]> ")"
 
-<comma-separated-expressions> ::=  | <comma-separated-expressions-1>
+<comma-separated(n)> ::=  | <comma-separated-1(n)>
 
-<comma-separated-expressions-1> ::=
-    <expression> |
-    <comma-separated-expressions-1> "," <expression>
+<comma-separated-1(n)> ::=
+    n |
+    <comma-separated-1(n)> "," n
 
 <cases> ::=  | <case> ";" <cases>
 
@@ -123,9 +123,11 @@ In interactive mode, each line has syntax `<interactive>`.
 
 <pattern-1> ::= <pattern-2> <patterns>
 
-<pattern-2> ::= <pattern-3> | <pattern-3> "@" <pattern-2>
+<pattern-2> ::= <pattern-3> | <pattern-3> ":" <pattern-2>
 
-<pattern-3> ::= uname | literal-number | literal-text | lname | "_" | "(" <pattern-1> ")"
+<pattern-3> ::= <pattern-4> | <pattern-4> "@" <pattern-3>
+
+<pattern-4> ::= uname | literal-number | literal-text | lname | "_" | "[" <comma-separated(<pattern>)> "]" | "(" <pattern-1> ")"
 ```
 
 ## Infix Operators

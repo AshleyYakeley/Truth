@@ -153,7 +153,7 @@ testQueries =
               "list construction"
               [ testQuery "[]" $ Just $ show @[Text] []
               , testQuery "[1]" $ Just $ "[1]"
-              , testQuery "[1,2,3]" $ Just "[1,2,3]"
+              , testQuery "[1,2,3]" $ Just "[1, 2, 3]"
               ]
         , testGroup
               "functions"
@@ -383,9 +383,9 @@ testQueries =
                     , testQuery "case [3] of a:b -> (a,b) end" $ Just $ showText "(3, [])"
                     , testQuery "case [3,4] of a:b -> (a,b) end" $ Just $ showText "(3, [4])"
                     , testQuery "case [3,4,5] of a:b -> (a,b) end" $ Just $ showText "(3, [4, 5])"
-                    , testQuery "case [3] of [a,b] -> 1, _ -> 2 end" $ Just $ showText "2"
-                    , testQuery "case [3,4] of [a,b] -> 1, _ -> 2 end" $ Just $ showText "1"
-                    , testQuery "case [3,4,5] of [a,b] -> 1, _ -> 2 end" $ Just $ showText "2"
+                    , testQuery "case [3] of [a,b] -> 1; _ -> 2 end" $ Just $ showText "2"
+                    , testQuery "case [3,4] of [a,b] -> 1; _ -> 2 end" $ Just $ showText "1"
+                    , testQuery "case [3,4,5] of [a,b] -> 1; _ -> 2 end" $ Just $ showText "2"
                     , testQuery "case [3,4] of [a,b] -> (a,b) end" $ Just $ showText "(3, 4)"
                     ]
               ]

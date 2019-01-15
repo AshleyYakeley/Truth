@@ -11,7 +11,6 @@ import Pinafore.Language.Read.Expression
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Token
 import Shapes hiding (try)
-import Text.Parsec hiding ((<|>), many, optional)
 
 data InteractiveCommand baseedit
     = LetInteractiveCommand (PinaforeScoped baseedit (Transform (PinaforeScoped baseedit) (PinaforeScoped baseedit)))
@@ -37,7 +36,7 @@ readInteractiveCommand =
              "t" -> showTypeInteractiveCommand
              "type" -> showTypeInteractiveCommand
              _ -> return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd) <|>
-    (eof >> return (LetInteractiveCommand $ return id)) <|>
+    (parseEnd >> return (LetInteractiveCommand $ return id)) <|>
     (try $ do
          sexpr <- readTopExpression
          return $ ExpressionInteractiveCommand $ interpretTopExpression sexpr) <|>

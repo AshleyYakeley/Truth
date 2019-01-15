@@ -8,7 +8,6 @@ import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Syntax
 import Shapes hiding (try)
-import Text.Parsec hiding ((<|>), many, optional)
 
 data FixAssoc
     = AssocNone
@@ -57,7 +56,7 @@ operatorFixity _ = MkFixity AssocLeft 9
 
 readInfix :: Int -> Parser (Name, FixAssoc, SyntaxExpression baseedit)
 readInfix prec =
-    Text.Parsec.try $ do
+    try $ do
         spos <- getPosition
         name <- readThis TokOperator
         let MkFixity assoc fprec = operatorFixity name
@@ -104,8 +103,7 @@ readInfixedExpression pe prec = do
         _
             | all (\(_, assoc, _, _) -> assoc == AssocRight) rest ->
                 return $ rightApply se1 $ fmap (\(_, _, seop, se2) -> (spos, seop, se2)) rest
-        _ ->
-            parserFail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(name, _, _, _) -> show name) rest)
+        _ -> fail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(name, _, _, _) -> show name) rest)
 
 readExpressionInfixed ::
        forall baseedit. HasPinaforeEntityEdit baseedit

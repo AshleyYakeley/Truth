@@ -38,7 +38,7 @@ getDirPath mdirpath = do
     return dirpath
 
 showDefEntry :: Int -> DefDoc -> IO ()
-showDefEntry _ (MkDefDoc name tp desc) = let
+showDefEntry _ MkDefDoc {..} = let
     badchars :: String
     badchars = "+-*>\\"
     escapeChar :: Char -> String
@@ -49,10 +49,19 @@ showDefEntry _ (MkDefDoc name tp desc) = let
     escapeMarkdown :: String -> String
     escapeMarkdown s = mconcat $ fmap escapeChar s
     in do
-           putStrLn $ "**`" ++ show name ++ "`** :: `" ++ unpack tp ++ "`  "
-           if desc == ""
+           putStrLn $
+               "**`" ++
+               show docName ++
+               "`** :: `" ++
+               unpack docValueType ++
+               "`" <>
+               (if docIsPattern
+                    then " (also pattern)"
+                    else "") <>
+               "  "
+           if docDescription == ""
                then return ()
-               else putStrLn $ escapeMarkdown $ unpack desc
+               else putStrLn $ escapeMarkdown $ unpack docDescription
            putStrLn ""
 
 showDefTitle :: Int -> Text -> IO ()

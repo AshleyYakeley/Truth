@@ -13,7 +13,6 @@ import Pinafore.Language.Read.Type
 import Pinafore.Language.Read.TypeDecls
 import Pinafore.Language.Syntax
 import Shapes hiding (try)
-import Text.Parsec hiding ((<|>), many, optional)
 
 readTypeSignature :: Parser SyntaxType
 readTypeSignature = do
@@ -218,5 +217,5 @@ readTopExpression ::
     => Parser (SyntaxExpression baseedit)
 readTopExpression = do
     sexpr <- readExpression
-    eof
+    parseEnd
     return sexpr

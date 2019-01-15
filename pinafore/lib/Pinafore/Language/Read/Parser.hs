@@ -3,6 +3,8 @@ module Pinafore.Language.Read.Parser
     , SourcePos
     , initialPos
     , getPosition
+    , try
+    , (<?>)
     ) where
 
 import Pinafore.Language.Read.Token
@@ -13,6 +15,9 @@ import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.Pos (initialPos)
 
 type Parser = Parsec [(SourcePos, AnyValue Token)] ()
+
+parseEnd :: Parser ()
+parseEnd = eof
 
 parseReader :: Parser a -> Text -> StateT SourcePos (Result Text) a
 parseReader parser text = do

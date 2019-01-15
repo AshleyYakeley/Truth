@@ -175,25 +175,28 @@ ui_dynamic uiref = uiSwitch $ pinaforeImmutableReferenceValue uiNull uiref
 
 data BindDoc baseedit = MkBindDoc
     { bdName :: Name
-    , bdValue :: QValue baseedit
+    , bdValue :: Maybe (QValue baseedit)
     , bdPattern :: Maybe (QPatternConstructor baseedit)
     , bdDoc :: DefDoc
     }
 
-mkDefEntry ::
+mkValEntry ::
        forall baseedit t. (HasPinaforeEntityEdit baseedit, ToPinaforeType baseedit t)
     => Name
     -> Text
     -> t
     -> DocTreeEntry (BindDoc baseedit)
-mkDefEntry name desc val = let
+mkValEntry name docDescription val = let
     bdName = name
-    bdValue = toValue val
+    bdValue = Just $ toValue val
     bdPattern = Nothing
-    bdDoc = mkDefDoc @baseedit name desc val
+    docName = name
+    docValueType = qTypeDescription @baseedit @t
+    docIsPattern = False
+    bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
-mkDefPatEntry ::
+mkValPatEntry ::
        forall baseedit t v lt.
        ( HasPinaforeEntityEdit baseedit
        , ToPinaforeType baseedit t
@@ -205,11 +208,34 @@ mkDefPatEntry ::
     -> t
     -> (v -> Maybe (HList lt))
     -> DocTreeEntry (BindDoc baseedit)
-mkDefPatEntry name desc val pat = let
+mkValPatEntry name docDescription val pat = let
     bdName = name
-    bdValue = toValue val
+    bdValue = Just $ toValue val
     bdPattern = Just $ toPatternConstructor pat
-    bdDoc = mkDefDoc @baseedit name desc val
+    docName = name
+    docValueType = qTypeDescription @baseedit @t
+    docIsPattern = True
+    bdDoc = MkDefDoc {..}
+    in EntryDocTreeEntry MkBindDoc {..}
+
+mkPatEntry ::
+       forall baseedit v lt.
+       ( HasPinaforeEntityEdit baseedit
+       , FromPinaforeType baseedit v
+       , ToTypeF (HListWit (PinaforeType baseedit 'Positive)) (HList lt)
+       )
+    => Name
+    -> Text
+    -> Text
+    -> (v -> Maybe (HList lt))
+    -> DocTreeEntry (BindDoc baseedit)
+mkPatEntry name docDescription docValueType pat = let
+    bdName = name
+    bdValue = Nothing
+    bdPattern = Just $ toPatternConstructor pat
+    docName = name
+    docIsPattern = True
+    bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
 
 entityuuid :: Entity -> Text
@@ -225,45 +251,45 @@ predefinitions =
         [ docTreeEntry
               "Literals & Entities"
               ""
-              [ mkDefEntry "is" "Entity equality." $ (==) @Entity
-              , mkDefEntry "==" "Literal equality. Same as Entity equality restricted to Literal, but faster." $
+              [ mkValEntry "is" "Entity equality." $ (==) @Entity
+              , mkValEntry "==" "Literal equality. Same as Entity equality restricted to Literal, but faster." $
                 (==) @Literal
-              , mkDefEntry "/=" "Literal non-equality." $ (/=) @Literal
-              , mkDefEntry "entityuuid" "UUID of an entity." entityuuid
-              , mkDefEntry "totext" "The text of a literal." unLiteral
+              , mkValEntry "/=" "Literal non-equality." $ (/=) @Literal
+              , mkValEntry "entityuuid" "UUID of an entity." entityuuid
+              , mkValEntry "totext" "The text of a literal." unLiteral
               , docTreeEntry
                     "Boolean"
                     ""
-                    [ mkDefPatEntry "True" "Boolean TRUE." True $ \v ->
+                    [ mkValPatEntry "True" "Boolean TRUE." True $ \v ->
                           if v
                               then Just ()
                               else Nothing
-                    , mkDefPatEntry "False" "Boolean FALSE." False $ \v ->
+                    , mkValPatEntry "False" "Boolean FALSE." False $ \v ->
                           if v
                               then Nothing
                               else Just ()
-                    , mkDefEntry "&&" "Boolean AND." (&&)
-                    , mkDefEntry "||" "Boolean OR." (||)
-                    , mkDefEntry "not" "Boolean NOT." not
+                    , mkValEntry "&&" "Boolean AND." (&&)
+                    , mkValEntry "||" "Boolean OR." (||)
+                    , mkValEntry "not" "Boolean NOT." not
                     ]
-              , docTreeEntry "Text" "" [mkDefEntry "++" "Concatenate text." $ (<>) @Text]
+              , docTreeEntry "Text" "" [mkValEntry "++" "Concatenate text." $ (<>) @Text]
               , docTreeEntry
                     "Numeric"
                     ""
-                    [ mkDefEntry "+" "Numeric add." $ (+) @Number
-                    , mkDefEntry "-" "Numeric Subtract." $ (-) @Number
-                    , mkDefEntry "*" "Numeric Multiply." $ (*) @Number
-                    , mkDefEntry "/" "Numeric Divide." $ (/) @Number
-                    , mkDefEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
-                    , mkDefEntry "~/=" "Numeric non-equality." $ (/=) @Number
-                    , mkDefEntry "<" "Numeric strictly less." $ (<) @Number
-                    , mkDefEntry "<=" "Numeric less or equal." $ (<=) @Number
-                    , mkDefEntry ">" "Numeric strictly greater." $ (>) @Number
-                    , mkDefEntry ">=" "Numeric greater or equal." $ (>=) @Number
-                    , mkDefEntry "abs" "Numeric absolute value." $ abs @Number
-                    , mkDefEntry "signum" "Numeric sign." $ signum @Number
-                    , mkDefEntry "inexact" "Convert a number to inexact." numberToDouble
-                    , mkDefEntry
+                    [ mkValEntry "+" "Numeric add." $ (+) @Number
+                    , mkValEntry "-" "Numeric Subtract." $ (-) @Number
+                    , mkValEntry "*" "Numeric Multiply." $ (*) @Number
+                    , mkValEntry "/" "Numeric Divide." $ (/) @Number
+                    , mkValEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
+                    , mkValEntry "~/=" "Numeric non-equality." $ (/=) @Number
+                    , mkValEntry "<" "Numeric strictly less." $ (<) @Number
+                    , mkValEntry "<=" "Numeric less or equal." $ (<=) @Number
+                    , mkValEntry ">" "Numeric strictly greater." $ (>) @Number
+                    , mkValEntry ">=" "Numeric greater or equal." $ (>=) @Number
+                    , mkValEntry "abs" "Numeric absolute value." $ abs @Number
+                    , mkValEntry "signum" "Numeric sign." $ signum @Number
+                    , mkValEntry "inexact" "Convert a number to inexact." numberToDouble
+                    , mkValEntry
                           "approximate"
                           "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`."
                           approximate
@@ -272,27 +298,34 @@ predefinitions =
         , docTreeEntry
               "Pairs"
               ""
-              [ mkDefEntry "fst" "Get the first member of a pair." $ fst @A @B
-              , mkDefEntry "snd" "Get the second member of a pair." $ snd @A @B
+              [ mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
+              , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
               ]
         , docTreeEntry
               "Either"
               ""
-              [ mkDefPatEntry "Left" "Construct an Either from the left." (Left @A @B) $ \(ea :: Either A B) ->
-                    case ea of
-                        Left v -> Just (v, ())
+              [ mkValPatEntry "Left" "Construct an Either from the left." (Left @A @B) $ \(v :: Either A B) ->
+                    case v of
+                        Left a -> Just (a, ())
                         _ -> Nothing
-              , mkDefPatEntry "Right" "Construct an Either from the right." (Right @A @B) $ \(ea :: Either A B) ->
-                    case ea of
-                        Right v -> Just (v, ())
+              , mkValPatEntry "Right" "Construct an Either from the right." (Right @A @B) $ \(v :: Either A B) ->
+                    case v of
+                        Right a -> Just (a, ())
                         _ -> Nothing
-              , mkDefEntry "either" "Eliminate an Either" $ either @A @C @B
+              , mkValEntry "either" "Eliminate an Either" $ either @A @C @B
               ]
         , docTreeEntry
               "Lists"
               ""
-              [ mkDefEntry ":" "Construct a list" $ (:) @A
-              , mkDefEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
+              [ mkPatEntry "[]" "Empty list" "[a]" $ \(v :: [A]) ->
+                    case v of
+                        [] -> Just ()
+                        _ -> Nothing
+              , mkValPatEntry ":" "Construct a list" ((:) @A) $ \(v :: [A]) ->
+                    case v of
+                        a:b -> Just (a, (b, ()))
+                        _ -> Nothing
+              , mkValEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                     case l of
                         [] -> fnil
                         (a:aa) -> fcons a aa
@@ -300,37 +333,37 @@ predefinitions =
         , docTreeEntry
               "Functions"
               ""
-              [ mkDefEntry "id" "The identity function." $ id @(->) @A
-              , mkDefEntry "$" "Apply a function to a value." $ id @(->) @(A -> B)
-              , mkDefEntry "." "Compose functions." $ (.) @(->) @A @B @C
-              , mkDefEntry "error" "Error." $ ((\t -> error (unpack t)) :: Text -> BottomType)
+              [ mkValEntry "id" "The identity function." $ id @(->) @A
+              , mkValEntry "$" "Apply a function to a value." $ id @(->) @(A -> B)
+              , mkValEntry "." "Compose functions." $ (.) @(->) @A @B @C
+              , mkValEntry "error" "Error." $ ((\t -> error (unpack t)) :: Text -> BottomType)
               ]
         , docTreeEntry
               "References"
               "A reference of type `Ref {-p,+q}` has a setting type of `p` and a getting type of `q`. References keep track of updates, and will update user interfaces constructed from them when their value changes."
-              [ mkDefEntry
+              [ mkValEntry
                     "pureref"
                     "A constant reference for a value."
                     (pure :: A -> PinaforeImmutableReference baseedit A)
-              , mkDefEntry
+              , mkValEntry
                     "comapref"
                     "Map a function on getting a reference."
                     (coMapRange :: (A -> B) -> PinaforeReference baseedit '( C, A) -> PinaforeReference baseedit '( C, B))
-              , mkDefEntry
+              , mkValEntry
                     "contramapref"
                     "Map a function on setting a reference."
                     (contraMapRange :: (B -> A) -> PinaforeReference baseedit '( A, C) -> PinaforeReference baseedit '( B, C))
-              , mkDefEntry
+              , mkValEntry
                     "applyref"
                     "Combine references."
                     ((<*>) :: PinaforeImmutableReference baseedit (A -> B) -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit B)
-              , mkDefEntry
+              , mkValEntry
                     "unknown"
                     "The unknown reference, representing missing information."
                     (empty :: PinaforeImmutableReference baseedit BottomType)
-              , mkDefEntry "known" "True if the literal is known." $ \(val :: PinaforeFunctionValue baseedit (Know Literal)) ->
+              , mkValEntry "known" "True if the literal is known." $ \(val :: PinaforeFunctionValue baseedit (Know Literal)) ->
                     (funcEditFunction (Known . isKnown) . val :: PinaforeFunctionValue baseedit (Know Bool))
-              , mkDefEntry
+              , mkValEntry
                     "??"
                     "`p ?? q` = `p` if it is known, else `q`."
                     ((<|>) :: PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A)
@@ -338,86 +371,86 @@ predefinitions =
         , docTreeEntry
               "Sets"
               ""
-              [ mkDefEntry
+              [ mkValEntry
                     "comapset"
                     "Map a function on getting from a set."
                     (coMapRange :: (A -> B) -> PinaforeSet baseedit '( C, A) -> PinaforeSet baseedit '( C, B))
-              , mkDefEntry
+              , mkValEntry
                     "contramapset"
                     "Map a function on setting to a set."
                     (contraMapRange :: (B -> A) -> PinaforeSet baseedit '( A, C) -> PinaforeSet baseedit '( B, C))
-              , mkDefEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
+              , mkValEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
                 pinaforeSetMeet @baseedit @A
-              , mkDefEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
+              , mkValEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
                 pinaforeSetJoin @baseedit @A
-              , mkDefEntry "setsum" "Sum of sets." $ pinaforeSetSum @baseedit @AP @AQ @BP @BQ
-              , mkDefEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
-              , mkDefEntry "membership" "Get the membership of a set." $ pinaforeSetMembership @baseedit
-              , mkDefEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetSingle @baseedit @A
-              , mkDefEntry "count" "Count of members in a set." $ pinaforeSetFunc @baseedit @TopType @Int olength
-              , mkDefEntry "sum" "Sum of numbers in a set." $ pinaforeSetFunc @baseedit @Number @Number sum
-              , mkDefEntry "mean" "Mean of numbers in a set." $
+              , mkValEntry "setsum" "Sum of sets." $ pinaforeSetSum @baseedit @AP @AQ @BP @BQ
+              , mkValEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
+              , mkValEntry "membership" "Get the membership of a set." $ pinaforeSetMembership @baseedit
+              , mkValEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetSingle @baseedit @A
+              , mkValEntry "count" "Count of members in a set." $ pinaforeSetFunc @baseedit @TopType @Int olength
+              , mkValEntry "sum" "Sum of numbers in a set." $ pinaforeSetFunc @baseedit @Number @Number sum
+              , mkValEntry "mean" "Mean of numbers in a set." $
                 pinaforeSetFunc @baseedit @Number @Number $ \s -> sum s / fromIntegral (olength s)
               ]
         , docTreeEntry
               "Morphisms"
               "Morphisms relate entities."
-              [ mkDefEntry "identity" "The identity morphism." $ identityPinaforeMorphism @baseedit @A
-              , mkDefEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
-              , mkDefEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseedit @AP @AQ @BP @BQ
-              , mkDefEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseedit @A @BP @BQ
-              , mkDefEntry "!@" "Co-apply a morphism to a reference." $
+              [ mkValEntry "identity" "The identity morphism." $ identityPinaforeMorphism @baseedit @A
+              , mkValEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
+              , mkValEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseedit @AP @AQ @BP @BQ
+              , mkValEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseedit @A @BP @BQ
+              , mkValEntry "!@" "Co-apply a morphism to a reference." $
                 pinaforeApplyInverseMorphismRef @baseedit @AP @AQ @BP @BQ
-              , mkDefEntry "!@@" "Co-apply a morphism to a set." $
+              , mkValEntry "!@@" "Co-apply a morphism to a set." $
                 pinaforeApplyInverseMorphismSet @baseedit @AP @AQ @BP @BQ
               ]
         , docTreeEntry
               "Orders"
               ""
-              [ mkDefEntry "alphabetical" "Alphabetical order." $ alphabetical @baseedit
-              , mkDefEntry "numerical" "Numercal order." $ numerical @baseedit
-              --, mkDefEntry "chronological" "Chronological order." $ chronological @baseedit
-              , mkDefEntry "orders" "Join orders by priority." $ orders @baseedit @A
-              , mkDefEntry
+              [ mkValEntry "alphabetical" "Alphabetical order." $ alphabetical @baseedit
+              , mkValEntry "numerical" "Numercal order." $ numerical @baseedit
+              --, mkValEntry "chronological" "Chronological order." $ chronological @baseedit
+              , mkValEntry "orders" "Join orders by priority." $ orders @baseedit @A
+              , mkValEntry
                     "maporder"
                     "Map a function on an order."
                     (contramap :: (B -> A) -> PinaforeOrder baseedit A -> PinaforeOrder baseedit B)
-              , mkDefEntry "orderon" "Order by an order on a particular morphism." $ orderon @baseedit @B @A
-              , mkDefEntry "rev" "Reverse an order." $ rev @baseedit @A
-              , mkDefEntry "orderEQ" "Equal by an order." $ pinaforeOrderCompare @baseedit @A $ (==) EQ
-              , mkDefEntry "orderLT" "Less than by an order." $ pinaforeOrderCompare @baseedit @A $ (==) LT
-              , mkDefEntry "orderLE" "Less than or equal to by an order." $ pinaforeOrderCompare @baseedit @A $ (/=) GT
-              , mkDefEntry "orderGT" "Greater than by an order." $ pinaforeOrderCompare @baseedit @A $ (==) GT
-              , mkDefEntry "orderGE" "Greater than or equal to by an order." $
+              , mkValEntry "orderon" "Order by an order on a particular morphism." $ orderon @baseedit @B @A
+              , mkValEntry "rev" "Reverse an order." $ rev @baseedit @A
+              , mkValEntry "orderEQ" "Equal by an order." $ pinaforeOrderCompare @baseedit @A $ (==) EQ
+              , mkValEntry "orderLT" "Less than by an order." $ pinaforeOrderCompare @baseedit @A $ (==) LT
+              , mkValEntry "orderLE" "Less than or equal to by an order." $ pinaforeOrderCompare @baseedit @A $ (/=) GT
+              , mkValEntry "orderGT" "Greater than by an order." $ pinaforeOrderCompare @baseedit @A $ (==) GT
+              , mkValEntry "orderGE" "Greater than or equal to by an order." $
                 pinaforeOrderCompare @baseedit @A $ (/=) LT
               ]
         , docTreeEntry
               "Actions"
               ""
-              [ mkDefEntry "pass" "Do nothing." (return () :: PinaforeAction baseedit)
-              , mkDefEntry ">>" "Do actions in sequence." $
+              [ mkValEntry "pass" "Do nothing." (return () :: PinaforeAction baseedit)
+              , mkValEntry ">>" "Do actions in sequence." $
                 ((>>) :: PinaforeAction baseedit -> PinaforeAction baseedit -> PinaforeAction baseedit)
-              , mkDefEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
-              , mkDefEntry "get" "Get a reference and perform an action on it." $ pinaforeReferenceWith @baseedit @A
-              , mkDefEntry "runref" "Run an action from a reference." $ runPinaforeReference @baseedit
-              , mkDefEntry
+              , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
+              , mkValEntry "get" "Get a reference and perform an action on it." $ pinaforeReferenceWith @baseedit @A
+              , mkValEntry "runref" "Run an action from a reference." $ runPinaforeReference @baseedit
+              , mkValEntry
                     "for"
                     "Perform an action on each value of a list."
                     (for_ :: [A] -> (A -> PinaforeAction baseedit) -> PinaforeAction baseedit)
-              , mkDefEntry "output" "Output text to standard output." $ output @baseedit
-              , mkDefEntry "outputln" "Output text and a newline to standard output." $ outputln @baseedit
-              , mkDefEntry ":=" "Set a reference to a value." $ setentity @baseedit
-              , mkDefEntry "delete" "Delete an entity reference." $ deleteentity @baseedit
-              , mkDefEntry "newentity" "Create a new entity in a set and act on it." $ newentity @baseedit
-              , mkDefEntry
+              , mkValEntry "output" "Output text to standard output." $ output @baseedit
+              , mkValEntry "outputln" "Output text and a newline to standard output." $ outputln @baseedit
+              , mkValEntry ":=" "Set a reference to a value." $ setentity @baseedit
+              , mkValEntry "delete" "Delete an entity reference." $ deleteentity @baseedit
+              , mkValEntry "newentity" "Create a new entity in a set and act on it." $ newentity @baseedit
+              , mkValEntry
                     "+="
                     "Add an entity to a set."
                     (pinaforeSetAdd :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit)
-              , mkDefEntry
+              , mkValEntry
                     "-="
                     "Remove an entity from a set."
                     (pinaforeSetRemove :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit)
-              , mkDefEntry
+              , mkValEntry
                     "removeall"
                     "Remove all entities from a set."
                     (pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit)
@@ -425,50 +458,50 @@ predefinitions =
         {-
         , docTreeEntry
               "Files"
-              [ mkDefEntry "file_import" "Import a file into a set." $ file_import @baseedit
-              , mkDefEntry "file_size" "The size of a file." file_size
+              [ mkValEntry "file_import" "Import a file into a set." $ file_import @baseedit
+              , mkValEntry "file_size" "The size of a file." file_size
               ]
         -}
         , docTreeEntry
               "UI"
               "A user interface is something that goes inside a window."
-              [ mkDefEntry "openwindow" "Open a new window with this title and UI." viewOpenWindow
-              , mkDefEntry "openselection" "Open the item selected in the UI of this window." viewOpenSelection
-              , mkDefEntry "withselection" "Act with the item selected in the UI of this window." $
+              [ mkValEntry "openwindow" "Open a new window with this title and UI." viewOpenWindow
+              , mkValEntry "openselection" "Open the item selected in the UI of this window." viewOpenSelection
+              , mkValEntry "withselection" "Act with the item selected in the UI of this window." $
                 withSelection @baseedit
-              , mkDefEntry "ui_blank" "Blank user-interface" uiNull
-              , mkDefEntry "ui_unitcheckbox" "(TBD)" $ \name val ->
+              , mkValEntry "ui_blank" "Blank user-interface" uiNull
+              , mkValEntry "ui_unitcheckbox" "(TBD)" $ \name val ->
                     uiCheckbox (clearText . name) $ toEditLens knowBool . val
-              , mkDefEntry "ui_booleancheckbox" "Checkbox. Use shift-click to set to unknown." $ \name val ->
+              , mkValEntry "ui_booleancheckbox" "Checkbox. Use shift-click to set to unknown." $ \name val ->
                     uiMaybeCheckbox (clearText . name) $ (bijectionWholeEditLens knowMaybe) . val
-              , mkDefEntry "ui_textentry" "Text entry, empty text is unknown." $
+              , mkValEntry "ui_textentry" "Text entry, empty text is unknown." $
                 valSpecText $ uiUnknownValue mempty uiTextEntry
-              , mkDefEntry "ui_textarea" "Text area, empty text is unknown." $
+              , mkValEntry "ui_textarea" "Text area, empty text is unknown." $
                 valSpecText $ uiUnknownValue mempty $ uiNoSelectionLens $ uiConvert uiText
-              , mkDefEntry "ui_label" "Label." $ valSpecText $ uiUnknownValue mempty $ uiLabel
-              , mkDefEntry
+              , mkValEntry "ui_label" "Label." $ valSpecText $ uiUnknownValue mempty $ uiLabel
+              , mkValEntry
                     "ui_horizontal"
                     "Items arranged horizontally, each flag is whether to expand into remaining space."
                     uiHorizontal
-              , mkDefEntry
+              , mkValEntry
                     "ui_vertical"
                     "Items arranged vertically, each flag is whether to expand into remaining space."
                     uiVertical
-              , mkDefEntry
+              , mkValEntry
                     "ui_pages"
                     "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content."
                     uiPages
                 -- CSS
                 -- drag
                 -- icon
-              , mkDefEntry "ui_button" "A button with this text that does this action." $ \(name :: PinaforeFunctionValue baseedit (Know Text)) action ->
+              , mkValEntry "ui_button" "A button with this text that does this action." $ \(name :: PinaforeFunctionValue baseedit (Know Text)) action ->
                     uiButton (clearText . name) action
-              , mkDefEntry "ui_pick" "A drop-down menu." $ ui_pick
-              , mkDefEntry
+              , mkValEntry "ui_pick" "A drop-down menu." $ ui_pick
+              , mkValEntry
                     "ui_table"
                     "A list table. First arg is columns (name, property), second is the window to open for a selection, third is the set of items." $
                 ui_table @baseedit
-              , mkDefEntry "ui_dynamic" "A UI that can be updated to different UIs." $ ui_dynamic @baseedit
+              , mkValEntry "ui_dynamic" "A UI that can be updated to different UIs." $ ui_dynamic @baseedit
               ]
         ]
 
@@ -480,7 +513,15 @@ predefinedDoc = fmap bdDoc $ predefinitions @baseedit
 predefinedBindings ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => StrictMap Name (QValue baseedit)
-predefinedBindings = mapFromList $ toList $ fmap (\doc -> (bdName doc, bdValue doc)) $ predefinitions @baseedit
+predefinedBindings =
+    mapFromList $
+    catMaybes $
+    toList $
+    fmap
+        (\doc -> do
+             val <- bdValue doc
+             return (bdName doc, val)) $
+    predefinitions @baseedit
 
 predefinedPatternConstructors ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)

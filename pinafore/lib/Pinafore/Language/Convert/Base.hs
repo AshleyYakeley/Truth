@@ -1,8 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
 module Pinafore.Language.Convert.Base
-    ( HasQTypeDescription
-    , qTypeDescription
+    ( qTypeDescription
     , ToTypeF(..)
     , FromTypeF(..)
     , toValue
@@ -22,10 +21,8 @@ import Pinafore.Language.Type
 import Shapes
 import Truth.Core
 
-type HasQTypeDescription baseedit = ToPinaforeType baseedit
-
 qTypeDescription ::
-       forall baseedit t. HasQTypeDescription baseedit t
+       forall baseedit t. ToPinaforeType baseedit t
     => Text
 qTypeDescription =
     case toTypeF @(PinaforeType baseedit 'Positive) @t of

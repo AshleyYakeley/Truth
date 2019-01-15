@@ -1,7 +1,6 @@
 module Pinafore.Language
     ( PinaforeActionM
     , PinaforeAction
-    , HasQTypeDescription
     , qTypeDescription
     , ToPinaforeType
     , resultTextToM
@@ -79,7 +78,7 @@ showPinaforeGroundValue EitherPinaforeGroundType (ConsDolanArguments ta (ConsDol
 showPinaforeGroundValue EitherPinaforeGroundType (ConsDolanArguments _ta (ConsDolanArguments tb NilDolanArguments)) (Right x) =
     "Right " <> showPinaforeValue tb x
 showPinaforeGroundValue ListPinaforeGroundType (ConsDolanArguments t NilDolanArguments) v =
-    "[" <> intercalate "," (fmap (showPinaforeValue t) v) <> "]"
+    "[" <> intercalate ", " (fmap (showPinaforeValue t) v) <> "]"
 showPinaforeGroundValue _ _ _ = "<?>"
 
 showPinaforeSingularValue :: PinaforeSingularType baseedit 'Positive t -> t -> String
