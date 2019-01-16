@@ -6,9 +6,10 @@ These are the main differences:
 * Line comments start with `#`, not `--`.
 There are no block comments.
 * Layout is not significant.
-Instead, declarations within a `let` block are separated by `;`.
+Instead, declarations within a `let` block, and cases within a `case` statement, are separated by `;`.
+`case` statements are terminated with `end`.
 * There's no "top level" for declarations.
-All declarations are local to a `let` block.
+All declarations, including type declarations, are local to a `let` block.
 
 A file passed to `pinafore` has syntax `<file>`.
 In interactive mode, each line has syntax `<interactive>`.

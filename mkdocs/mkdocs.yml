@@ -6,4 +6,5 @@ nav:
 - Syntax: 'syntax.md'
 - Type System: 'type-system.md'
 - Types: 'types.md'
+- Reference Notation: 'reference-notation.md'
 - Predefined Bindings: 'predefined.md'

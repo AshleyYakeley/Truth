@@ -1,6 +1,6 @@
 ## Any and None
 
-For all types T, `None <= T` and `T <= Any`.
+For all types `T`, `None <= T` and `T <= Any`.
 
 ## Entity types
 
@@ -20,21 +20,66 @@ For any open entity type `T`, `NewEntity <= T` and `T <= Entity`.
 
 `Text <= Literal`
 
-## Functions
+## Maybe
 
-`a -> b`, a is contravariant, b is covariant
+`Maybe a`  
+(`a` is covariant)
+
+`a <= Entity` implies `Maybe a <= Entity`.
+
+#### Constructors & Functions
+`Just :: a -> Maybe a`  
+`Nothing :: Maybe None`
+
+## Pairs
+
+`(a,b)`  
+(both `a` and `b` are covariant)
+
+`a <= Entity` and `b <= Entity` implies `(a,b) <= Entity`.
+
+There are no higher-arity tuples than pair.
+
+#### Constructors & Functions
+`\x y -> (x, y) :: a -> b -> (a, b)`  
+`fst :: (a, Any) -> a`  
+`snd :: (Any, b) -> b`
+
+## Either
+
+`Either a b`  
+(both `a` and `b` are covariant)
+
+`a <= Entity` and `b <= Entity` implies `Either a b <= Entity`.
+
+#### Constructors & Functions
+`Left :: a -> Either a None`  
+`Right :: b -> Either None b`
 
 ## Lists
 
-`[a]`, a is covariant
+`[a]`  
+(`a` is covariant)
+
+#### Constructors & Functions
+`[] :: [None]`  
+`\x y -> x:y :: a -> [a] -> [a]`
+
+## Functions
+
+`a -> b`  
+(`a` is contravariant, `b` is covariant)
 
 ## Actions
 
-`Action`, roughly equivalent to the Haskell `IO ()`
+`Action`
+
+Roughly equivalent to the Haskell `IO ()`.
 
 ## Orders
 
-`Order a`, a is contravariant
+`Order a`  
+(`a` is contravariant)
 
 An order on a type.
 
@@ -43,24 +88,6 @@ An order on a type.
 `UI`
 
 The contents of a user interface window. Can be composed in various ways.
-
-## Maybe
-
-`Maybe a`, a is covariant
-
-`a <= Entity` implies `Maybe a <= Entity`
-
-## Pairs
-
-`(a,b)`, both `a` and `b` are covariant
-
-`a <= Entity` and `b <= Entity` implies `(a,b) <= Entity`
-
-## Either
-
-`Either a b`, both `a` and `b` are covariant
-
-`a <= Entity` and `b <= Entity` implies `Either a b <= Entity`
 
 ## References
 

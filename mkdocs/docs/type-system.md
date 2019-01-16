@@ -55,30 +55,29 @@ A value passed to a `P & Q` must be both a `P` and a `Q`.
 As in Haskell, the first letter is upper case for type constants, and lower case for type variables.
 
 Type variables play essentially the same role as they do in Hindley-Milner typing, though in the context of Dolan typing they are best understood as connecting (negative) inputs to (positive) outputs.
-Type variables on only one side can be eliminated (see next).
+Type variables on only one side can be eliminated.
 
 ## Type Simplification
 
 1. Any type variables that appears only in the positive position are replaced by `None`. Likewise, any only in the negative position, with `Any`.  
-`\x y -> x :: a -> b -> a` --> `\x y -> x :: a -> Any -> a`  
-`[] :: [a]` --> `[] :: [None]`
+`\x y -> x :: a -> b -> a` &rarr; `\x y -> x :: a -> Any -> a`  
+`[] :: [a]` &rarr; `[] :: [None]`
 
 1. `None` and `Any` act as identities for `|` and `&`, respectively.  
-`Int | None` --> `Int`
+`Int | None` &rarr; `Int`
 
 1. Redundant types in joins (`|` or `&`) are eliminated.  
-`Text & Text` --> `Text`.  
+`Text & Text` &rarr; `Text`.  
 More generally, if `P <= Q` then  
-`P | Q` --> `Q`  
-`P & Q` --> `P`
+`P | Q` &rarr; `Q`  
+`P & Q` &rarr; `P`
 
 1. Matching parameterised types are collapsed along their parameters. For example:  
-`(A -> X) | (B -> Y)` --> `(A & B) -> (X | Y)`  
-`[A] & [B]` --> `[A & B]`
+`(A -> X) | (B -> Y)` &rarr; `(A & B) -> (X | Y)`  
+`[A] & [B]` &rarr; `[A & B]`
 
 1. Type variables are merged if they appear in all the same positive positions, or in all the same negative positions.  
-`a -> b -> (a | b)` --> `a -> a -> a` (`a` and `b` appear in the same set of positive positions)  
-(not yet implemented)
+`a -> b -> (a | b)` &rarr; `a -> a -> a` (`a` and `b` appear in the same set of positive positions)
 
 ## Type Ranges
 
@@ -96,5 +95,11 @@ In negative position,
 `T {}` = `T {-None,+Any}`  
 `T {+a}` = `T {-None,+a}`  
 `T {+Int,-a,-Entity}` = `T {-(a | Entity),+Int}`
+
+And also,
+
+`T A` = `T {A}` = `T {-A,+A}`  
+`T +A` = `T {+A}`  
+`T -A` = `T {-A}`  
 
 It's important to remember that `-` and `+` indicated contravariance and covariance, not negative and positive polarity.
