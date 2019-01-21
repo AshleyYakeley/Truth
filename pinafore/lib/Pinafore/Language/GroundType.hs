@@ -31,7 +31,7 @@ data DolanSingularType (gt :: Polarity -> forall (dk :: DolanVariance) -> DolanV
 -- PinaforeGroundType baseedit :: Polarity -> forall (dk :: DolanVariance) -> DolanVarianceKind dk -> Type
 -}
 data PinaforeGroundType baseedit (polarity :: Polarity) (dk :: DolanVariance) (t :: DolanVarianceKind dk) where
-    ActionPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (PinaforeAction baseedit)
+    ActionPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (PinaforeAction baseedit ())
     OrderPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance] (PinaforeOrder baseedit)
     UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] (PinaforeUI baseedit)
     SimpleEntityPinaforeGroundType :: SimpleEntityType t -> PinaforeGroundType baseedit polarity '[] t

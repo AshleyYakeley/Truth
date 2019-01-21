@@ -12,8 +12,8 @@ import Pinafore.Storage.File
 file_import ::
        forall baseedit. HasPinaforeFileEdit baseedit
     => PinaforeSet baseedit '( A, A)
-    -> (A -> PinaforeAction baseedit)
-    -> PinaforeAction baseedit
+    -> (A -> PinaforeAction baseedit ())
+    -> PinaforeAction baseedit ()
 file_import set continue = do
     chooseFile <- pinaforeActionRequest witChooseFile
     mpath <- liftIO chooseFile

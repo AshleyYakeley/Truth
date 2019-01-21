@@ -188,16 +188,16 @@ instance (FromTypeF (PinaforeType baseedit 'Negative) a) => FromTypeF (PinaforeT
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- PinaforeAction
-instance baseedit ~ edit => ToTypeF (PinaforeSingularType baseedit 'Positive) (PinaforeAction edit) where
+instance baseedit ~ edit => ToTypeF (PinaforeSingularType baseedit 'Positive) (PinaforeAction edit ()) where
     toTypeF = mkPTypeF $ GroundPinaforeSingularType ActionPinaforeGroundType NilDolanArguments
 
-instance baseedit ~ edit => ToTypeF (PinaforeType baseedit 'Positive) (PinaforeAction edit) where
+instance baseedit ~ edit => ToTypeF (PinaforeType baseedit 'Positive) (PinaforeAction edit ()) where
     toTypeF = singlePinaforeTypeF toTypeF
 
-instance baseedit ~ edit => FromTypeF (PinaforeSingularType baseedit 'Negative) (PinaforeAction edit) where
+instance baseedit ~ edit => FromTypeF (PinaforeSingularType baseedit 'Negative) (PinaforeAction edit ()) where
     fromTypeF = mkPTypeF $ GroundPinaforeSingularType ActionPinaforeGroundType NilDolanArguments
 
-instance baseedit ~ edit => FromTypeF (PinaforeType baseedit 'Negative) (PinaforeAction edit) where
+instance baseedit ~ edit => FromTypeF (PinaforeType baseedit 'Negative) (PinaforeAction edit ()) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- PinaforeOrder

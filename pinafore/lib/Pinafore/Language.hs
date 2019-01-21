@@ -1,6 +1,5 @@
 module Pinafore.Language
-    ( PinaforeActionM
-    , PinaforeAction
+    ( PinaforeAction
     , qTypeDescription
     , ToPinaforeType
     , resultTextToM
@@ -114,7 +113,7 @@ interactEvalExpression spos texpr =
         expr <- texpr
         runSourcePos spos $ qEvalExpr expr
 
-runValue :: Handle -> SourcePos -> QValue baseedit -> PinaforeActionM baseedit ()
+runValue :: Handle -> SourcePos -> QValue baseedit -> PinaforeAction baseedit ()
 runValue outh spos val =
     case typedAnyToPinaforeVal spos val of
         SuccessResult action -> action

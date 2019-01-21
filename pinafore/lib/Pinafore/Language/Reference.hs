@@ -42,23 +42,24 @@ pinaforeReferenceToLens (ImmutPinaforeReference ir) = immutableReferenceToLens i
 pinaforeLensToReference :: PinaforeLensValue baseedit (WholeEdit (Know a)) -> PinaforeReference baseedit '( a, a)
 pinaforeLensToReference lens = LensPinaforeReference identityRange lens
 
-getPinaforeReference :: PinaforeReference baseedit '( BottomType, q) -> PinaforeActionM baseedit (Know q)
+getPinaforeReference :: PinaforeReference baseedit '( BottomType, q) -> PinaforeAction baseedit (Know q)
 getPinaforeReference ref = getImmutableReference $ pinaforeReferenceToImmutable ref
 
-setPinaforeReference :: PinaforeReference baseedit '( p, TopType) -> Know p -> PinaforeAction baseedit
+setPinaforeReference :: PinaforeReference baseedit '( p, TopType) -> Know p -> PinaforeAction baseedit ()
 setPinaforeReference (LensPinaforeReference (MkRange pt _) lens) mp = pinaforeLensValueSet lens $ fmap pt mp
 setPinaforeReference (ImmutPinaforeReference _) _ = return ()
 
 pinaforeReferenceWith ::
        forall baseedit a.
        PinaforeReference baseedit '( BottomType, a)
-    -> (a -> PinaforeAction baseedit)
-    -> PinaforeAction baseedit
+    -> (a -> PinaforeAction baseedit ())
+    -> PinaforeAction baseedit ()
 pinaforeReferenceWith ref cont = do
     ka <- getPinaforeReference ref
     case ka of
         Known a -> cont a
         Unknown -> return ()
 
-runPinaforeReference :: PinaforeReference baseedit '( BottomType, PinaforeAction baseedit) -> PinaforeAction baseedit
+runPinaforeReference ::
+       PinaforeReference baseedit '( BottomType, PinaforeAction baseedit ()) -> PinaforeAction baseedit ()
 runPinaforeReference ref = pinaforeReferenceWith ref id

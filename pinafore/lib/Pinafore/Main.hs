@@ -21,7 +21,7 @@ import System.FilePath
 import Truth.Core
 import Truth.UI.GTK
 
-type FilePinaforeType = PinaforeAction PinaforeEdit
+type FilePinaforeType = PinaforeAction PinaforeEdit ()
 
 filePinaforeType :: Text
 filePinaforeType = qTypeDescription @PinaforeEdit @FilePinaforeType
@@ -42,7 +42,7 @@ makePinaforeContext pinaforeObject createWindow = do
     (_, obj, _) <- subscribe sub (\_ -> return ()) (\_ _ _ -> return ())
     return $
         MkPinaforeContext $
-        MkTransform $ \(action :: PinaforeActionM baseedit a) -> let
+        MkTransform $ \(action :: PinaforeAction baseedit a) -> let
             openwin :: UIWindow baseedit -> IO ()
             openwin uiw = createWindow $ MkUserInterface sub uiw
             in runReaderT action (openwin, obj)

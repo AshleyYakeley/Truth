@@ -16,28 +16,28 @@ import Pinafore.Storage.File
 import Shapes
 import Truth.Core
 
-output :: forall baseedit. Text -> PinaforeAction baseedit
+output :: forall baseedit. Text -> PinaforeAction baseedit ()
 output text = liftIO $ putStr $ unpack text
 
-outputln :: forall baseedit. Text -> PinaforeAction baseedit
+outputln :: forall baseedit. Text -> PinaforeAction baseedit ()
 outputln text = liftIO $ putStrLn $ unpack text
 
 newentity ::
        forall baseedit.
        PinaforeSet baseedit '( NewEntity, TopType)
-    -> (NewEntity -> PinaforeAction baseedit)
-    -> PinaforeAction baseedit
+    -> (NewEntity -> PinaforeAction baseedit ())
+    -> PinaforeAction baseedit ()
 newentity set continue = do
     e <- pinaforeSetAddNew set
     continue e
 
-setentity :: forall baseedit. PinaforeReference baseedit '( A, TopType) -> A -> PinaforeAction baseedit
+setentity :: forall baseedit. PinaforeReference baseedit '( A, TopType) -> A -> PinaforeAction baseedit ()
 setentity ref val = setPinaforeReference ref (Known val)
 
-deleteentity :: forall baseedit. PinaforeReference baseedit '( BottomType, TopType) -> PinaforeAction baseedit
+deleteentity :: forall baseedit. PinaforeReference baseedit '( BottomType, TopType) -> PinaforeAction baseedit ()
 deleteentity ref = setPinaforeReference ref Unknown
 
-qfail :: forall baseedit. Text -> PinaforeAction baseedit
+qfail :: forall baseedit. Text -> PinaforeAction baseedit ()
 qfail t = liftIO $ fail $ unpack t
 
 entityuuid :: Entity -> Text
@@ -236,16 +236,16 @@ base_predefinitions =
     , docTreeEntry
           "Actions"
           ""
-          [ mkValEntry "pass" "Do nothing." (return () :: PinaforeAction baseedit)
+          [ mkValEntry "pass" "Do nothing." (return () :: PinaforeAction baseedit ())
           , mkValEntry ">>" "Do actions in sequence." $
-            ((>>) :: PinaforeAction baseedit -> PinaforeAction baseedit -> PinaforeAction baseedit)
+            ((>>) :: PinaforeAction baseedit () -> PinaforeAction baseedit () -> PinaforeAction baseedit ())
           , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
           , mkValEntry "get" "Get a reference and perform an action on it." $ pinaforeReferenceWith @baseedit @A
           , mkValEntry "runref" "Run an action from a reference." $ runPinaforeReference @baseedit
           , mkValEntry
                 "for"
                 "Perform an action on each value of a list."
-                (for_ :: [A] -> (A -> PinaforeAction baseedit) -> PinaforeAction baseedit)
+                (for_ :: [A] -> (A -> PinaforeAction baseedit ()) -> PinaforeAction baseedit ())
           , mkValEntry "output" "Output text to standard output." $ output @baseedit
           , mkValEntry "outputln" "Output text and a newline to standard output." $ outputln @baseedit
           , mkValEntry ":=" "Set a reference to a value." $ setentity @baseedit
@@ -254,14 +254,14 @@ base_predefinitions =
           , mkValEntry
                 "+="
                 "Add an entity to a set."
-                (pinaforeSetAdd :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit)
+                (pinaforeSetAdd :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
           , mkValEntry
                 "-="
                 "Remove an entity from a set."
-                (pinaforeSetRemove :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit)
+                (pinaforeSetRemove :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
           , mkValEntry
                 "removeall"
                 "Remove all entities from a set."
-                (pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit)
+                (pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit ())
           ]
     ]

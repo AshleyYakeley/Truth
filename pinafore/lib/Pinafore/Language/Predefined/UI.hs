@@ -73,7 +73,7 @@ ui_pick nameMorphism fset ref = let
 ui_button ::
        (?pinafore :: PinaforeContext baseedit)
     => PinaforeImmutableReference baseedit Text
-    -> PinaforeAction baseedit
+    -> PinaforeAction baseedit ()
     -> UISpec BottomType baseedit
 ui_button text action = uiButton (clearText . immutableReferenceToFunction text) (runPinaforeAction action)
 
@@ -86,8 +86,8 @@ ui_dynamic uiref = uiSwitch $ pinaforeImmutableReferenceValue uiNull uiref
 openwindow ::
        PinaforeImmutableReference baseedit Text
     -> UISpec A baseedit
-    -> (A -> PinaforeAction baseedit)
-    -> PinaforeAction baseedit
+    -> (A -> PinaforeAction baseedit ())
+    -> PinaforeAction baseedit ()
 openwindow title uiContent action = do
     unlift <- askUnliftIO
     let
@@ -96,7 +96,7 @@ openwindow title uiContent action = do
     pinaforeNewWindow MkUIWindow {..}
 
 {-
-withSelection :: (NewEntity -> PinaforeAction baseedit) -> PinaforeAction baseedit
+withSelection :: (NewEntity -> PinaforeAction baseedit ()) -> PinaforeAction baseedit ()
 withSelection cont = do
     maspect <- pinaforeGetSelectionAspect
     case maspect of

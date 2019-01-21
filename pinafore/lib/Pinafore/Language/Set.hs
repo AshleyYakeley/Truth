@@ -56,19 +56,19 @@ pinaforeSetJoin seta setb =
     meetValuePinaforeSet $
     readOnlyEditLens joinEditFunction . pairCombineEditLenses (pinaforeSetMeetValue seta) (pinaforeSetMeetValue setb)
 
-pinaforeSetAdd :: PinaforeSet baseedit '( p, q) -> p -> PinaforeAction baseedit
+pinaforeSetAdd :: PinaforeSet baseedit '( p, q) -> p -> PinaforeAction baseedit ()
 pinaforeSetAdd (MkPinaforeSet tr set) p = pinaforeLensPush set [KeyInsertReplaceItem $ rangeContra tr p]
 
-pinaforeSetAddNew :: PinaforeSet baseedit '( NewEntity, TopType) -> PinaforeActionM baseedit NewEntity
+pinaforeSetAddNew :: PinaforeSet baseedit '( NewEntity, TopType) -> PinaforeAction baseedit NewEntity
 pinaforeSetAddNew set = do
     (MkNewEntity -> e) <- pinaforeNewEntity
     pinaforeSetAdd set e
     return e
 
-pinaforeSetRemove :: PinaforeSet baseedit '( p, q) -> p -> PinaforeAction baseedit
+pinaforeSetRemove :: PinaforeSet baseedit '( p, q) -> p -> PinaforeAction baseedit ()
 pinaforeSetRemove (MkPinaforeSet tr set) p = pinaforeLensPush set [KeyDeleteItem $ rangeContra tr p]
 
-pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit
+pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit ()
 pinaforeSetRemoveAll (MkPinaforeSet _ set) = pinaforeLensPush set [KeyClear]
 
 pinaforeSetFunctionValue :: PinaforeSet baseedit '( t, a) -> PinaforeFunctionValue baseedit (FiniteSet a)
