@@ -279,4 +279,12 @@ testEntity =
               , pointTest
                     "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testeq {Right \"abc\"} $ enta !$ {e1})"
               ]
+        , testGroup
+              "do"
+              [ pointTest "do return () end"
+              , pointTest "do return (); end"
+              , pointTest "do testeqval 3 3 end"
+              , pointTest "do a <- return 3; testeqval 3 a end"
+              , pointTest "do a <- return 3; b <- return $ a + a; testeqval 6 b end"
+              ]
         ]

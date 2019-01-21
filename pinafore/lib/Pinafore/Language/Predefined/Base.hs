@@ -5,6 +5,7 @@ module Pinafore.Language.Predefined.Base
 
 import Pinafore.Base
 import Pinafore.Language.Doc
+import Pinafore.Language.If
 import Pinafore.Language.Morphism
 import Pinafore.Language.Order
 import Pinafore.Language.Predefined.Defs
@@ -150,8 +151,8 @@ base_predefinitions =
           "Actions"
           ""
           [ mkValEntry "return" "A value as an Action." $ return @(PinaforeAction baseedit) @A
-          , mkValEntry ">>=" "Bind the result of an Action to an Action." $ (>>=) @(PinaforeAction baseedit) @A @B
-          , mkValEntry ">>" "Do actions in sequence." $ (>>) @(PinaforeAction baseedit) @TopType @A
+          , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind @baseedit
+          , mkValEntry ">>" "Do actions in sequence." $ qbind_ @baseedit
           , mkValEntry "afix" "The fixed point of an Action." $ mfix @(PinaforeAction baseedit) @A
           , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
           , mkValEntry

@@ -126,6 +126,8 @@ interpretConstructor _ SLUnit = return $ qConstExprAny $ toValue ()
 
 interpretConstant :: SourcePos -> SyntaxConstant -> RefExpression baseedit
 interpretConstant _ SCIfThenElse = return $ qConstExprAny $ toValue qifthenelse
+interpretConstant _ SCBind = return $ qConstExprAny $ toValue qbind
+interpretConstant _ SCBind_ = return $ qConstExprAny $ toValue qbind_
 interpretConstant spos (SCConstructor lit) = interpretConstructor spos lit
 
 interpretCase ::

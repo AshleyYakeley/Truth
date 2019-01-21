@@ -6,8 +6,8 @@ These are the main differences:
 * Line comments start with `#`, not `--`.
 There are no block comments.
 * Layout is not significant.
-Instead, declarations within a `let` block, and cases within a `case` statement, are separated by `;`.
-`case` statements are terminated with `end`.
+Instead, declarations within a `let` block, lines within a `do` statement, and cases within a `case` statement, are separated by `;`.
+Also, `case` and `do` statements are terminated with `end`.
 * There's no "top level" for declarations.
 All declarations, including type declarations, are local to a `let` block.
 
@@ -84,6 +84,7 @@ In interactive mode, each line has syntax `<interactive>`.
     <let-declarations> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
     "case" <expression> "of" <cases> "end" |
+    "do" <do-lines> <expression> "end" |
     <expression-2>
 
 <expression-2> ::= <expression-3> | <expression-2> <expression-3>
@@ -113,6 +114,10 @@ In interactive mode, each line has syntax `<interactive>`.
 <cases> ::=  | <case> ";" <cases>
 
 <case> ::= <pattern-1> "->" <expression>
+
+<do-lines> =  | <do-line> ";" <do-lines>
+
+<do-line> = <expression> | <pattern> "<-" <expression>
 
 <let-declarations> ::= "let" <declarations>
 

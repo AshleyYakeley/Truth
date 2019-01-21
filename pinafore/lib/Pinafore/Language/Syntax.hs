@@ -93,6 +93,8 @@ data SyntaxCase baseedit =
 
 data SyntaxConstant
     = SCIfThenElse
+    | SCBind
+    | SCBind_
     | SCConstructor SyntaxConstructor
 
 data SyntaxExpression' baseedit
@@ -139,6 +141,21 @@ data SyntaxExpression baseedit =
 data SyntaxTopDeclarations baseedit =
     MkSyntaxTopDeclarations SourcePos
                             (SyntaxDeclarations baseedit)
+
+class HasSourcePos t where
+    getSourcePos :: t -> SourcePos
+
+instance HasSourcePos SyntaxPattern where
+    getSourcePos (MkSyntaxPattern spos _) = spos
+
+instance HasSourcePos (SyntaxBinding baseedit) where
+    getSourcePos (MkSyntaxBinding spos _ _ _) = spos
+
+instance HasSourcePos (SyntaxExpression baseedit) where
+    getSourcePos (MkSyntaxExpression spos _) = spos
+
+instance HasSourcePos (SyntaxTopDeclarations baseedit) where
+    getSourcePos (MkSyntaxTopDeclarations spos _) = spos
 
 class SyntaxFreeVariables t where
     syntaxFreeVariables :: t -> FiniteSet Name

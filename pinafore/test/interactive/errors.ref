@@ -1,10 +1,10 @@
 pinafore> )
 error: "<input>" (line 1, column 1):
-unexpected ("<input>" (line 1, column 1),))
+unexpected ("<input>" (line 1, column 1),")")
 expecting end of input or expression
 pinafore> (
 error: "<input>" (line 1, column 1):
-unexpected ("<input>" (line 1, column 1),()
+unexpected ("<input>" (line 1, column 1),"(")
 expecting end of input or expression
 pinafore> in
 error: "<input>" (line 1, column 1):
