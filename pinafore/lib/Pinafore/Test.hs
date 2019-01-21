@@ -20,7 +20,6 @@ import Pinafore.Language.Name
 import Pinafore.Language.Read
 import Pinafore.Language.Type
 import Pinafore.Language.Type.Simplify
-import Pinafore.Main
 import Pinafore.Pinafore
 import Pinafore.Storage
 import Shapes
@@ -51,5 +50,5 @@ withTestPinaforeContext f =
 
 withNullPinaforeContext :: ((?pinafore :: PinaforeContext baseedit) => r) -> r
 withNullPinaforeContext f = let
-    ?pinafore = MkPinaforeContext $ MkTransform $ \_ -> fail "null Pinafore context"
+    ?pinafore = nullPinaforeContext
     in f

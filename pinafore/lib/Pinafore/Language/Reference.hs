@@ -46,7 +46,7 @@ getPinaforeReference :: PinaforeReference baseedit '( BottomType, q) -> Pinafore
 getPinaforeReference ref = getImmutableReference $ pinaforeReferenceToImmutable ref
 
 setPinaforeReference :: PinaforeReference baseedit '( p, TopType) -> Know p -> PinaforeAction baseedit ()
-setPinaforeReference (LensPinaforeReference (MkRange pt _) lens) mp = pinaforeLensValueSet lens $ fmap pt mp
+setPinaforeReference (LensPinaforeReference (MkRange pt _) lens) mp = pinaforeLensPush lens [MkWholeEdit $ fmap pt mp]
 setPinaforeReference (ImmutPinaforeReference _) _ = return ()
 
 pinaforeReferenceWith ::

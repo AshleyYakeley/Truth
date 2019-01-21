@@ -61,7 +61,7 @@ pinaforeSetAdd (MkPinaforeSet tr set) p = pinaforeLensPush set [KeyInsertReplace
 
 pinaforeSetAddNew :: PinaforeSet baseedit '( NewEntity, TopType) -> PinaforeAction baseedit NewEntity
 pinaforeSetAddNew set = do
-    (MkNewEntity -> e) <- pinaforeNewEntity
+    (MkNewEntity -> e) <- liftIO $ newKeyContainerItem @(FiniteSet Entity)
     pinaforeSetAdd set e
     return e
 

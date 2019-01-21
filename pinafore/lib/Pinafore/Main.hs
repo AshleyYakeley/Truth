@@ -35,18 +35,6 @@ sqlitePinaforeObject dirpath = do
             PinaforeSelectPoint -> pinaforeTableEntityObject tableObject
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
 
-makePinaforeContext ::
-       forall baseedit. Object baseedit -> (UserInterface UIWindow -> IO ()) -> LifeCycle (PinaforeContext baseedit)
-makePinaforeContext pinaforeObject createWindow = do
-    sub <- liftIO $ makeObjectSubscriber pinaforeObject
-    (_, obj, _) <- subscribe sub (\_ -> return ()) (\_ _ _ -> return ())
-    return $
-        MkPinaforeContext $
-        MkTransform $ \(action :: PinaforeAction baseedit a) -> let
-            openwin :: UIWindow baseedit -> IO ()
-            openwin uiw = createWindow $ MkUserInterface sub uiw
-            in runReaderT action (openwin, obj)
-
 sqlitePinaforeContext :: FilePath -> (UserInterface UIWindow -> IO ()) -> LifeCycle (PinaforeContext PinaforeEdit)
 sqlitePinaforeContext dirpath createWindow = do
     pinaforeObject <- sqlitePinaforeObject dirpath

@@ -32,7 +32,7 @@ file_import set continue = do
                                 objRead ReadSingleObjectStore
                 destobject <-
                     case mdestobject of
-                        Nothing -> pinaforeLiftResult $ FailureResult $ fromString $ "failed to create object " ++ show entity
+                        Nothing -> fail "failed to create object " ++ show entity
                         Just object -> return object
                 liftIO $ copyObject sourceobject destobject
                 continue entity
