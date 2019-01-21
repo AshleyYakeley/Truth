@@ -4,8 +4,6 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 import Truth.Core.Types
-import Truth.Core.UI.Specifier.Button
-import Truth.Core.UI.Specifier.Lens
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.View
 
@@ -33,23 +31,21 @@ readOnlyKeyColumn kcName getter = let
         return (readOnlyEditLens $ funcEditFunction fst . func, funcEditFunction snd . func)
     in MkKeyColumn {..}
 
-data UITable seledit tedit where
+data UITable sel tedit where
     MkUITable
         :: forall cont tedit iedit.
            (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
         => [KeyColumn tedit (ContainerKey cont)]
-        -> (ContainerKey cont -> IO (UIWindow tedit))
         -> EditLens tedit (KeyEdit cont iedit)
-        -> UITable (ConstEdit (ContainerKey cont)) tedit
+        -> UITable (ContainerKey cont) tedit
 
 uiTable ::
        forall cont tedit iedit.
        (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => [KeyColumn tedit (ContainerKey cont)]
-    -> (ContainerKey cont -> IO (UIWindow tedit))
     -> EditLens tedit (KeyEdit cont iedit)
-    -> UISpec (ConstEdit (ContainerKey cont)) tedit
-uiTable cols getaspect lens = MkUISpec $ MkUITable cols getaspect lens
+    -> UISpec (ContainerKey cont) tedit
+uiTable cols lens = MkUISpec $ MkUITable cols lens
 
 uiSimpleTable ::
        forall cont iedit.
@@ -59,35 +55,21 @@ uiSimpleTable ::
        , HasKeyReader cont (EditReader iedit)
        )
     => [KeyColumn (KeyEdit cont iedit) (ContainerKey cont)]
-    -> UIWindow (MaybeEdit iedit)
-    -> UISpec (ConstEdit (ContainerKey cont)) (KeyEdit cont iedit)
-uiSimpleTable cols uiw =
-    uiTable
-        cols
-        (\key -> do
-             elemlens <- getKeyElementEditLens key
-             return $ uiWindowMapEdit elemlens uiw)
-        id
+    -> UISpec (ContainerKey cont) (KeyEdit cont iedit)
+uiSimpleTable cols = uiTable cols id
 
-instance Show (UITable seledit edit) where
-    show (MkUITable _ _ _) = "table"
+instance Show (UITable sel edit) where
+    show (MkUITable _ _) = "table"
 
 instance UIType UITable where
     uiWitness = $(iowitness [t|UITable|])
 
 tableNewItem ::
-       forall tedit cont iedit seledit. IONewItemKeyContainer cont
+       forall tedit cont iedit sel. IONewItemKeyContainer cont
     => EditLens tedit (KeyEdit cont iedit)
-    -> View seledit tedit ()
+    -> View sel tedit ()
 tableNewItem tableLens =
     viewMapEdit tableLens $
     viewObjectPushEdit $ \_ push -> do
         item <- liftIO $ newKeyContainerItem @cont
         push [KeyInsertReplaceItem item]
-
-uiTableNewItemButton ::
-       forall tedit cont iedit seledit. IONewItemKeyContainer cont
-    => EditFunction tedit (WholeEdit Text)
-    -> EditLens tedit (KeyEdit cont iedit)
-    -> UISpec seledit tedit
-uiTableNewItemButton label tableLens = uiButton label $ tableNewItem tableLens

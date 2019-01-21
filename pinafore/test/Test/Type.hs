@@ -94,7 +94,7 @@ joinExpr exp1 exp2 = do
 textTypeTest :: Text -> String -> TestTree
 textTypeTest text r =
     testCase (unpack text) $ do
-        expr <- resultTextToM $ parseExpression @PinaforeEdit (initialPos "<input>") text
+        expr <- resultTextToM $ withNullPinaforeContext $ parseExpression @PinaforeEdit (initialPos "<input>") text
         assertEqual "" r $ showTypes expr
 
 simplifyTypeTest :: Text -> String -> TestTree

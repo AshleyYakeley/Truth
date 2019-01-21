@@ -3,11 +3,10 @@
 let
 
 ### Useful
-window :: Ref Text -> UI -> (Ref Text,UI);
-window n s = (n,s);
 ui_page n ui = (ui_label n,ui);
 ui_labelled n ui = ui_horizontal [(ui_label n,False),(ui,True)];
-
+simplewindow :: Ref +Text -> UI Any -> Action;
+simplewindow title ui = openwindow title ui $ \_ -> pass;
 
 ### People
 
@@ -48,17 +47,17 @@ deathdate = property @Person @Text !805a9e65-d69a-4261-9c94-a3249885b6bb;
 married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
 
 # UI
-ui_people :: Set Person -> UI;
+ui_people :: Set Person -> UI Person;
 ui_people pp = ui_vertical
 [
-    (ui_button {"New Person"} $ newentity pp $ \p -> openwindow (window_person {p}),False),
+    (ui_button {"New Person"} $ newentity pp window_person,False),
     (ui_button {"View Person"} $ openselection,False),
     (ui_button {"Remove Person"} $ withselection $ \p -> pp -= p,False),
-    (ui_table [({"Name"},\p -> name !$ {p})] (\p -> window_person {p}) pp,True)
+    (ui_table [({"Name"},\p -> name !$ {p})] pp,True)
 ];
 
-ui_person :: Ref Person -> UI;
-ui_person p = ui_vertical
+ui_person :: Ref Person -> UI None;
+ui_person p = ui_ignore $ ui_vertical
 [
     (ui_labelled {"Name: "} $ ui_textentry $ name !$ p,False),
     (ui_pages
@@ -93,19 +92,21 @@ ui_person p = ui_vertical
     ],True)
 ];
 
-window_person :: Ref Person -> (Ref Text,UI);
-window_person p = window (name !$ p) $ ui_person p;
+window_person :: Person -> Action;
+window_person p = simplewindow (name !$ {p}) (ui_person {p});
 
-window_people = window {"People"} $ ui_people people;
+window_people :: Action;
+window_people = openwindow {"People"} (ui_people people) window_person;
 
 ### Calculator
 
+window_calc :: Action;
 window_calc = let
 opentype P;
 pvalue = property @P @Number !"pvalue";
 aval = pvalue !$ {entity @P !a4706230-2c61-44b1-b600-516e7a54c607};
 bval = pvalue !$ {entity @P !9d284ad2-e141-4114-ae50-8829a6db710f};
-in window {"Calc"} $ ui_vertical
+in simplewindow {"Calc"} $ ui_vertical
 [
     #(ui_textentry aval,False),
     #(ui_textentry bval,False),
@@ -114,6 +115,7 @@ in window {"Calc"} $ ui_vertical
 
 ### Switching Value
 
+window_switch :: Action;
 window_switch = let
 opentype P;
 pbool = property @P @Boolean !"pbool";
@@ -121,7 +123,7 @@ ptext = property @P @Text !"ptext";
 sw_pick = pbool !$ {entity @P !59eb2d87-f815-47ef-b7dc-8fe434151bb6};
 sw_val1 = ptext !$ {entity @P !6d9f7afa-1091-49cc-8646-8e613bb75ee5};
 sw_val2 = ptext !$ {entity @P !934712ae-73a7-4084-8a43-d618c737fd56};
-in window {"Switch"} $ ui_vertical
+in simplewindow {"Switch"} $ ui_vertical
 [
     #(ui_textentry sw_pick,False),
     (ui_booleancheckbox {"pick"} sw_pick,False),
@@ -130,14 +132,15 @@ in window {"Switch"} $ ui_vertical
 
 ### Imported Files
 
+window_files :: Action;
 window_files = let
 #Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
 #caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
-window_file f = window {"File"} $ ui_vertical
+window_file f = simplewindow {"File"} $ ui_vertical
 [
     #(ui_textentry $ caption f,False)
 ];
-in window {"Files"} $ ui_vertical
+in simplewindow {"Files"} $ ui_vertical
 [
     #(ui_button "Import" $ file_import Files $ \f -> openwindow $ window_file f,False),
     #(ui_table [column "Caption" caption, column "Size" file_size] window_file Files,True)
@@ -145,7 +148,8 @@ in window {"Files"} $ ui_vertical
 
 ### Constant Edit
 
-window_constant = window {"Constant"} $ ui_vertical
+window_constant :: Action;
+window_constant = simplewindow {"Constant"} $ ui_vertical
 [
     (ui_booleancheckbox {"off"} {False},False),
     (ui_booleancheckbox {"on"} {True},False),
@@ -155,15 +159,16 @@ window_constant = window {"Constant"} $ ui_vertical
 
 ### Start Window
 
-window_start = window {"Pinafore"} $ ui_vertical
+window_start :: Action;
+window_start = simplewindow {"Pinafore"} $ ui_vertical
 [
-    (ui_button {"People"} $ openwindow window_people,False),
-    (ui_button {"Calculated Form"} $ openwindow window_calc,False),
-    (ui_button {"Switch"} $ openwindow window_switch,False),
-    (ui_button {"Files"} $ openwindow window_files,False),
-    (ui_button {"Constant"} $ openwindow window_constant,False),
+    (ui_button {"People"} window_people,False),
+    (ui_button {"Calculated Form"} window_calc,False),
+    (ui_button {"Switch"} window_switch,False),
+    (ui_button {"Files"} window_files,False),
+    (ui_button {"Constant"} window_constant,False),
     (ui_blank,True)
 ];
 
 in
-openwindow window_start
+window_start

@@ -138,7 +138,8 @@ exprShowPrecGroundType ::
 exprShowPrecGroundType ActionPinaforeGroundType NilDolanArguments = ("Action", 0)
 exprShowPrecGroundType OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)
-exprShowPrecGroundType UserInterfacePinaforeGroundType NilDolanArguments = ("UI", 0)
+exprShowPrecGroundType UserInterfacePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+    ("UI " <> exprShow ta, 2)
 exprShowPrecGroundType (SimpleEntityPinaforeGroundType t) NilDolanArguments = exprShowPrec t
 exprShowPrecGroundType FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)

@@ -91,5 +91,4 @@ tupleObject ::
        forall sel. IsFiniteConsWitness sel
     => (forall edit. sel edit -> Object edit)
     -> Object (TupleEdit sel)
-tupleObject pickObject =
-    mapObject (tupleIsoLens fromLTW toLTW) $ tupleListObject $ \seledit -> pickObject $ fromLTW seledit
+tupleObject pickObject = mapObject (tupleIsoLens fromLTW toLTW) $ tupleListObject $ \sel -> pickObject $ fromLTW sel

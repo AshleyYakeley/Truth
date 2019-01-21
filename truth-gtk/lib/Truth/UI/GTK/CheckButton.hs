@@ -9,7 +9,7 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-createWidget :: UICheckbox seledit edit -> CreateView seledit edit Widget
+createWidget :: UICheckbox sel edit -> CreateView sel edit Widget
 createWidget (MkUICheckbox label lens) = do
     initial <- cvLiftView $ viewMapEdit lens $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial]

@@ -52,6 +52,10 @@ readType2 =
          t1 <- readType3
          return $ RefSyntaxType t1) <|>
     (do
+         readExactlyThis TokUName "UI"
+         t1 <- readType3
+         return $ UISyntaxType t1) <|>
+    (do
          readExactlyThis TokUName "Set"
          t1 <- readType3
          return $ SetSyntaxType t1) <|>

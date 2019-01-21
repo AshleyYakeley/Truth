@@ -1,5 +1,6 @@
 module Truth.UI.GTK.Window
     ( WindowButtons(..)
+    , UserInterface(..)
     , truthMain
     , getMaybeView
     ) where
@@ -26,7 +27,7 @@ import Truth.UI.GTK.Table
 import Truth.UI.GTK.Text
 import Truth.UI.GTK.Useful
 
-lastResortView :: UISpec seledit edit -> GCreateView seledit edit
+lastResortView :: UISpec sel edit -> GCreateView sel edit
 lastResortView spec = do
     w <- liftIO $ labelNew $ Just $ "missing viewer for " <> fromString (show spec)
     toWidget w
@@ -75,10 +76,10 @@ getRequest wit = do
         #destroy dialog
         return mpath
 
-getMaybeView :: UISpec seledit edit -> Maybe (GCreateView seledit edit)
+getMaybeView :: UISpec sel edit -> Maybe (GCreateView sel edit)
 getMaybeView = getUIView allGetView getTheView
 
-getTheView :: UISpec seledit edit -> GCreateView seledit edit
+getTheView :: UISpec sel edit -> GCreateView sel edit
 getTheView spec =
     case getMaybeView spec of
         Just view -> view
@@ -148,10 +149,10 @@ createWindowAndChild ::
        WindowButtons actions
     => UIWindow edit
     -> IO Bool
-    -> (forall seledit. CreateView seledit edit (actions -> LifeCycle ()) -> r)
+    -> (forall sel. (sel -> IO ()) -> (Aspect sel -> CreateView sel edit (actions -> LifeCycle ())) -> r)
     -> r
 createWindowAndChild MkUIWindow {..} closeRequest cont =
-    cont $ do
+    cont uiAction $ \_getAspect -> do
         window <-
             lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
         cvBindEditFunction uiTitle $ \title -> set window [#title := title]
@@ -185,16 +186,19 @@ createWindowAndChild MkUIWindow {..} closeRequest cont =
             #show content
             #showAll window
 
-makeViewWindow ::
-       forall actions. WindowButtons actions
-    => ProgramContext
-    -> IO ()
-    -> UserInterface UIWindow actions
-    -> IO ()
-makeViewWindow pc tellclose (MkUserInterface sub (window :: UIWindow edit)) = let
-    newWindow :: UIWindow edit -> IO ()
-    newWindow w = makeWindowCountRef pc $ MkUserInterface sub w
-    createView :: forall r. IO () -> (forall seledit. CreateView seledit edit (actions -> LifeCycle ()) -> r) -> r
+data UserInterface specifier = forall edit actions. WindowButtons actions =>
+                                                        MkUserInterface
+    { userinterfaceSubscriber :: Subscriber edit actions
+    , userinterfaceSpecifier :: specifier edit
+    }
+
+makeViewWindow :: IO () -> UserInterface UIWindow -> IO ()
+makeViewWindow tellclose (MkUserInterface (sub :: Subscriber edit actions) (window :: UIWindow edit)) = let
+    createView ::
+           forall r.
+           IO ()
+        -> (forall sel. (sel -> IO ()) -> (Aspect sel -> CreateView sel edit (actions -> LifeCycle ())) -> r)
+        -> r
     createView closer =
         createWindowAndChild window $ do
             closer
@@ -203,9 +207,9 @@ makeViewWindow pc tellclose (MkUserInterface sub (window :: UIWindow edit)) = le
     in do
            rec
                ((), closer) <-
-                   createView closer $ \cv ->
+                   createView closer $ \onSelection cv ->
                        runLifeCycle $ do
-                           (followUp, action) <- subscribeView' cv sub newWindow getRequest
+                           (followUp, action) <- subscribeView' cv sub onSelection getRequest
                            followUp action
            return ()
 
@@ -214,12 +218,8 @@ data ProgramContext = MkProgramContext
     , pcWindowCount :: MVar Int
     }
 
-makeWindowCountRef ::
-       forall actions. WindowButtons actions
-    => ProgramContext
-    -> UserInterface UIWindow actions
-    -> IO ()
-makeWindowCountRef pc@MkProgramContext {..} ui = let
+makeWindowCountRef :: ProgramContext -> UserInterface UIWindow -> IO ()
+makeWindowCountRef MkProgramContext {..} ui = let
     closer =
         mvarRun pcWindowCount $ do
             i <- Shapes.get
@@ -228,13 +228,11 @@ makeWindowCountRef pc@MkProgramContext {..} ui = let
                 then #quit pcMainLoop
                 else return ()
     in mvarRun pcWindowCount $ do
-           lift $ makeViewWindow pc closer ui
+           lift $ makeViewWindow closer ui
            i <- Shapes.get
            Shapes.put $ i + 1
 
-truthMain ::
-       ([String] -> (forall actions. WindowButtons actions => UserInterface UIWindow actions -> IO ()) -> LifeCycle ())
-    -> IO ()
+truthMain :: ([String] -> (UserInterface UIWindow -> IO ()) -> LifeCycle ()) -> IO ()
 truthMain appMain = do
     args <- getArgs
     _ <- GI.init Nothing

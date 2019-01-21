@@ -6,13 +6,10 @@ module Truth.Core.UI.View
     , viewObjectMaybeEdit
     , viewObjectPushEdit
     , viewSetSelection
-    , viewGetSelection
     , viewOpenSelection
-    , viewOpenWindow
     , viewRequest
     , viewMapEdit
     , viewMapSetSelectionEdit
-    , viewMapGetSelectionEdit
     , viewNoAspect
     ) where
 
@@ -23,80 +20,61 @@ import Truth.Core.Read
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.ViewContext
 
-newtype View seledit edit a =
-    MkView (ReaderT (ViewContext seledit edit) IO a)
+newtype View sel edit a =
+    MkView (ReaderT (ViewContext sel edit) IO a)
     deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO, MonadAskUnliftIO)
 
-liftIOView :: forall seledit edit a. ((forall r. View seledit edit r -> IO r) -> IO a) -> View seledit edit a
+liftIOView :: forall sel edit a. ((forall r. View sel edit r -> IO r) -> IO a) -> View sel edit a
 liftIOView call = liftIOWithUnlift $ \(MkTransform unlift) -> call unlift
 
-viewObject :: View seledit edit (Object edit)
+viewObject :: View sel edit (Object edit)
 viewObject = MkView $ asks vcObject
 
 viewObjectRead ::
-       (UnliftIO (View seledit edit) -> forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> m r)
-    -> View seledit edit r
+       (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> m r)
+    -> View sel edit r
 viewObjectRead call = do
     unliftIO <- askUnliftIO
     MkObject {..} <- viewObject
     liftIO $ runTransform objRun $ call unliftIO $ objRead
 
 viewObjectMaybeEdit ::
-       (UnliftIO (View seledit edit) -> forall m. MonadUnliftIO m => ([edit] -> m (Maybe (m ()))) -> m r)
-    -> View seledit edit r
+       (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => ([edit] -> m (Maybe (m ()))) -> m r) -> View sel edit r
 viewObjectMaybeEdit call = do
     unliftIO <- askUnliftIO
     MkObject {..} <- viewObject
     liftIO $ runTransform objRun $ call unliftIO $ objEdit
 
 viewObjectPushEdit ::
-       (UnliftIO (View seledit edit) -> forall m. MonadUnliftIO m => ([edit] -> m ()) -> m r) -> View seledit edit r
+       (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => ([edit] -> m ()) -> m r) -> View sel edit r
 viewObjectPushEdit call = viewObjectMaybeEdit $ \unlift push -> call unlift $ \edits -> pushEdit $ push edits
 
-viewSetSelection :: Aspect seledit edit -> View seledit edit ()
+viewSetSelection :: Aspect sel -> View sel edit ()
 viewSetSelection aspect = do
     setSelect <- MkView $ asks vcSetSelection
     liftIO $ setSelect aspect
 
-viewGetSelection :: View seledit edit (Maybe (Object seledit))
-viewGetSelection =
-    MkView $ do
-        sel <- asks vcGetSelection
-        liftIO sel
-
-viewOpenSelection :: View seledit edit ()
+viewOpenSelection :: View sel edit ()
 viewOpenSelection = do
     openSelection <- MkView $ asks vcOpenSelection
     liftIO openSelection
 
-viewOpenWindow :: UIWindow edit -> View seledit edit ()
-viewOpenWindow window = do
-    openWindow <- MkView $ asks vcOpenWindow
-    liftIO $ openWindow window
-
-viewRequest :: IOWitness t -> View seledit edit (Maybe t)
+viewRequest :: IOWitness t -> View sel edit (Maybe t)
 viewRequest wit = MkView $ asks (\vc -> vcRequest vc wit)
 
 viewMapEdit ::
-       forall seledit edita editb a. ()
+       forall sel edita editb a. ()
     => EditLens edita editb
-    -> View seledit editb a
-    -> View seledit edita a
+    -> View sel editb a
+    -> View sel edita a
 viewMapEdit lens (MkView viewB) = MkView $ withReaderT (vcMapEdit lens) viewB
 
 viewMapSetSelectionEdit ::
-       forall seledita seleditb edit a. ()
-    => EditLens seledita seleditb
-    -> View seledita edit a
-    -> View seleditb edit a
-viewMapSetSelectionEdit lens (MkView view) = MkView $ withReaderT (vcMapSetSelectionEdit lens) view
+       forall sela selb edit a. ()
+    => (sela -> selb)
+    -> View sela edit a
+    -> View selb edit a
+viewMapSetSelectionEdit f (MkView view) = MkView $ withReaderT (vcMapSetSelection f) view
 
-viewMapGetSelectionEdit ::
-       forall seledita seleditb edit a. ()
-    => EditLens seledita seleditb
-    -> View seleditb edit a
-    -> View seledita edit a
-viewMapGetSelectionEdit lens (MkView view) = MkView $ withReaderT (vcMapGetSelectionEdit lens) view
-
-viewNoAspect :: View seledita edit a -> View seleditb edit a
+viewNoAspect :: View sela edit a -> View selb edit a
 viewNoAspect (MkView view) = MkView $ withReaderT vcNoAspect view

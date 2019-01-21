@@ -40,16 +40,3 @@ subscribeEditor subscriber editor =
     case editor of
         MkEditor initr update f ->
             withLifeCycle (subscribe subscriber initr update) $ \(e, object, actions) -> f e object actions
-{-
-oneTransactionEditor ::
-       forall actions edit r.
-       (forall m. Monad m =>
-                      MutableEdit m edit -> m r)
-    -> Editor edit actions r
-oneTransactionEditor f = let
-    editorInit :: Object edit -> IO (Object edit)
-    editorInit object = return object
-    editorUpdate _lapiw _mr _edits = return ()
-    editorDo (MkObject object) _ = object f
-    in MkEditor {..}
--}

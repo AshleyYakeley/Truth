@@ -16,8 +16,7 @@ main =
         liftIO $ do
             (dirpaths, double) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
             for_ dirpaths $ \dirpath -> do
-                w <- soupWindow dirpath
-                createWindow w
+                soupWindow createWindow dirpath
                 if double
-                    then createWindow w
+                    then soupWindow createWindow dirpath
                     else return ()

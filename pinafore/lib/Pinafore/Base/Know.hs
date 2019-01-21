@@ -74,5 +74,5 @@ knowMaybe = MkBijection knowToMaybe maybeToKnow
 catKnowns :: Filterable f => f (Know a) -> f a
 catKnowns = catMaybes . fmap knowToMaybe
 
-uiUnknownValue :: Eq a => a -> UISpec seledit (WholeEdit a) -> UISpec seledit (WholeEdit (Know a))
+uiUnknownValue :: Eq a => a -> UISpec sel (WholeEdit a) -> UISpec sel (WholeEdit (Know a))
 uiUnknownValue def ui = uiLens (bijectionWholeEditLens knowMaybe) $ uiNothingValue def ui

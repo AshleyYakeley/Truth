@@ -39,9 +39,9 @@ prefix = pack $ "let\n" ++ intercalate ";\n" defs ++ "\nin\n"
 
 scriptTest :: Text -> Text -> TestTree
 scriptTest name text =
-    testCase (unpack name) $ do
-        (pc, _getTableState) <- makeTestPinaforeContext
-        action <- pinaforeInterpretFile pc "<test>" text
+    testCase (unpack name) $
+    withTestPinaforeContext $ \_getTableState -> do
+        action <- pinaforeInterpretFile "<test>" text
         action
 
 pointTest :: Text -> TestTree
@@ -56,15 +56,14 @@ assertThrows ma = do
 
 badParseText :: Text -> TestTree
 badParseText text =
-    testCase (unpack text) $ do
-        (pc, _getTableState) <- makeTestPinaforeContext
-        assertThrows $ pinaforeInterpretFile pc "<test>" $ prefix <> text
+    testCase (unpack text) $
+    withTestPinaforeContext $ \_getTableState -> do assertThrows $ pinaforeInterpretFile "<test>" $ prefix <> text
 
 exceptionTest :: Text -> TestTree
 exceptionTest text =
-    testCase (unpack text) $ do
-        (pc, _getTableState) <- makeTestPinaforeContext
-        action <- pinaforeInterpretFile pc "<test>" $ prefix <> text
+    testCase (unpack text) $
+    withTestPinaforeContext $ \_getTableState -> do
+        action <- pinaforeInterpretFile "<test>" $ prefix <> text
         assertThrows action
 
 testEntity :: TestTree

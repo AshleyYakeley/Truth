@@ -31,20 +31,24 @@ import Shapes
 import System.IO.Error
 
 runPinaforeScoped ::
-       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit) => PinaforeScoped baseedit a -> Result Text a
+       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
+    => PinaforeScoped baseedit a
+    -> Result Text a
 runPinaforeScoped scp =
     runScoped $
     withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
 
 parseExpression ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit.
+       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
     => SourcePos
     -> Text
     -> Result Text (QExpr baseedit)
 parseExpression spos text = runPinaforeScoped $ runSourcePos spos $ parseTopExpression @baseedit text
 
 parseValue ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit.
+       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
     => SourcePos
     -> Text
     -> Result Text (QValue baseedit)
@@ -55,7 +59,12 @@ parseValue spos text =
         qEvalExpr rexpr
 
 parseValueAtType ::
-       forall baseedit t. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, FromPinaforeType baseedit t)
+       forall baseedit t.
+       ( HasPinaforeEntityEdit baseedit
+       , HasPinaforeFileEdit baseedit
+       , FromPinaforeType baseedit t
+       , ?pinafore :: PinaforeContext baseedit
+       )
     => SourcePos
     -> Text
     -> Result Text t
@@ -123,13 +132,13 @@ interactParse ::
 interactParse t = remonad resultTextToM $ parseInteractiveCommand @baseedit t
 
 interactLoop ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit.
+       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
     => Handle
     -> Handle
     -> Bool
-    -> UnliftIO (PinaforeActionM baseedit)
     -> Interact baseedit ()
-interactLoop inh outh echo runAction = do
+interactLoop inh outh echo = do
     liftIO $ hPutStr outh "pinafore> "
     eof <- liftIO $ hIsEOF inh
     if eof
@@ -152,22 +161,22 @@ interactLoop inh outh echo runAction = do
                                      updateRS bind
                              ExpressionInteractiveCommand texpr -> do
                                  val <- interactEvalExpression spos texpr
-                                 lift $ lift $ runTransform runAction $ runValue outh spos val
+                                 lift $ lift $ runPinaforeAction $ runValue outh spos val
                              ShowTypeInteractiveCommand texpr -> do
                                  MkAnyValue t _ <- interactEvalExpression spos texpr
                                  lift $ lift $ hPutStrLn outh $ ":: " <> show t
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err) $ \err ->
                     hPutStrLn outh $ "error: " <> ioeGetErrorString err
-            interactLoop inh outh echo runAction
+            interactLoop inh outh echo
 
 interact ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit.
+       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
     => Handle
     -> Handle
     -> Bool
-    -> UnliftIO (PinaforeActionM baseedit)
     -> IO ()
-interact inh outh echo runAction = do
+interact inh outh echo = do
     hSetBuffering outh NoBuffering
-    evalReaderStateT (evalStateT (interactLoop inh outh echo runAction) (initialPos "<input>")) $
+    evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $
         resultTextToM . runPinaforeScoped

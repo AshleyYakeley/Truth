@@ -4,37 +4,33 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Types
 
-data UISpec (seledit :: Type) (edit :: Type) where
+data UISpec (sel :: Type) (edit :: Type) where
     MkUISpec
-        :: forall (t :: Type -> Type -> Type) (seledit :: Type) (edit :: Type). (Show (t seledit edit), UIType t)
-        => t seledit edit
-        -> UISpec seledit edit
+        :: forall (t :: Type -> Type -> Type) (sel :: Type) (edit :: Type). (Show (t sel edit), UIType t)
+        => t sel edit
+        -> UISpec sel edit
 
-instance Show (UISpec seledit edit) where
+instance Show (UISpec sel edit) where
     show (MkUISpec tedit) = show tedit
 
 class UIType (t :: Type -> Type -> Type) where
     uiWitness :: IOWitness t
 
 isUISpec ::
-       forall t seledit edit. UIType t
-    => UISpec seledit edit
-    -> Maybe (t seledit edit)
-isUISpec (MkUISpec (tedit :: t' seledit edit)) = do
+       forall t sel edit. UIType t
+    => UISpec sel edit
+    -> Maybe (t sel edit)
+isUISpec (MkUISpec (tedit :: t' sel edit)) = do
     Refl <- testEquality (uiWitness @t) (uiWitness @t')
     return tedit
 
-data UIWindow edit = forall seledit. MkUIWindow
+data UIWindow edit = forall sel. MkUIWindow
     { uiTitle :: EditFunction edit (WholeEdit Text)
-    , uiContent :: UISpec seledit edit
+    , uiContent :: UISpec sel edit
+    , uiAction :: sel -> IO ()
     }
 
-data UIAspect seledit edit = MkUIAspect
-    { uiaWindow :: UIWindow edit
-    , uiaLens :: EditLens edit seledit
-    }
+type Aspect sel = IO (Maybe sel)
 
-type Aspect seledit edit = IO (Maybe (UIAspect seledit edit))
-
-noAspect :: Aspect seledit edit
+noAspect :: Aspect sel
 noAspect = return Nothing

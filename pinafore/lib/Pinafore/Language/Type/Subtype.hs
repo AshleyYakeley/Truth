@@ -85,8 +85,8 @@ subtypeGroundTypes ::
 subtypeGroundTypes _ ActionPinaforeGroundType NilDolanArguments ActionPinaforeGroundType NilDolanArguments = pure id
 subtypeGroundTypes sc OrderPinaforeGroundType argsa OrderPinaforeGroundType argsb =
     subtypeArguments sc OrderPinaforeGroundType argsa argsb
-subtypeGroundTypes _ UserInterfacePinaforeGroundType NilDolanArguments UserInterfacePinaforeGroundType NilDolanArguments =
-    pure id
+subtypeGroundTypes sc UserInterfacePinaforeGroundType argsa UserInterfacePinaforeGroundType argsb =
+    subtypeArguments sc UserInterfacePinaforeGroundType argsa argsb
 subtypeGroundTypes sc (SimpleEntityPinaforeGroundType t1) NilDolanArguments (SimpleEntityPinaforeGroundType t2) NilDolanArguments =
     subtypeLift sc $ getSubtype t1 t2
 subtypeGroundTypes sc MaybePinaforeGroundType (ConsDolanArguments t NilDolanArguments) (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments =

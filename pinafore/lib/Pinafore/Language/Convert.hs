@@ -9,15 +9,6 @@ import Pinafore.Base
 import Pinafore.Language.Convert.Base
 import Pinafore.Language.Type
 import Shapes
-import Truth.Core
-
--- UIWindow
-instance baseedit ~ edit => FromTypeF (PinaforeType baseedit 'Negative) (UIWindow edit) where
-    fromTypeF =
-        fmap
-            (\(title, content :: UISpec (ConstEdit Entity) edit) ->
-                 MkUIWindow (funcEditFunction @(WholeEdit (Know Text)) (fromKnow "") . title) content)
-            fromTypeF
 
 -- Literal types
 $(literalInstances [t|Literal|])

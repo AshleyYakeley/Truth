@@ -8,14 +8,32 @@ import Pinafore.Language.Order
 import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Pinafore.Language.SimpleEntityType
+import Pinafore.Language.UI
 import Shapes
-import Truth.Core
 
+{-
 -- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
+
+data DolanType (gt :: Polarity -> forall (dk :: DolanVariance) -> DolanVarianceKind dk -> Type) (polarity :: Polarity) (t :: Type) where
+    NilDolanType :: DolanType gt polarity (LimitType polarity)
+    ConsDolanType
+        :: DolanSingularType gt polarity t
+        -> DolanType gt polarity tr
+        -> DolanType gt polarity (JoinMeetType polarity t tr)
+
+data DolanSingularType (gt :: Polarity -> forall (dk :: DolanVariance) -> DolanVarianceKind dk -> Type) (polarity :: Polarity) (t :: Type) where
+    GroundDolanSingularType
+        :: gt polarity dv t
+        -> DolanArguments dv (DolanType gt) t polarity ta
+        -> DolanSingularType gt polarity ta
+    VarDolanSingularType :: SymbolType name -> DolanSingularType gt polarity (UVar name)
+
+-- PinaforeGroundType baseedit :: Polarity -> forall (dk :: DolanVariance) -> DolanVarianceKind dk -> Type
+-}
 data PinaforeGroundType baseedit (polarity :: Polarity) (dk :: DolanVariance) (t :: DolanVarianceKind dk) where
     ActionPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (PinaforeAction baseedit)
     OrderPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance] (PinaforeOrder baseedit)
-    UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (UISpec (ConstEdit Entity) baseedit)
+    UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] (PinaforeUI baseedit)
     SimpleEntityPinaforeGroundType :: SimpleEntityType t -> PinaforeGroundType baseedit polarity '[] t
     FuncPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance, 'Covariance] (->)
     MaybePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] Maybe

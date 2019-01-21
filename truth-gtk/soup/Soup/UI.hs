@@ -8,6 +8,7 @@ import Soup.Edit
 import Soup.Note
 import System.FilePath hiding ((<.>))
 import Truth.Core
+import Truth.UI.GTK
 import Truth.World.FileSystem
 
 fromResult :: Result Text Text -> (Text, TableCellProps)
@@ -22,7 +23,7 @@ pastResult (FailureResult s) = ("<" <> s <> ">", tableCellPlain {tcItalic = True
 
 type PossibleNoteEdit = OneWholeEdit (Result Text) NoteEdit
 
-soupEditSpec :: UISpec (ConstEdit UUID) (SoupEdit PossibleNoteEdit)
+soupEditSpec :: UISpec UUID (SoupEdit PossibleNoteEdit)
 soupEditSpec = let
     nameColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
     nameColumn =
@@ -42,11 +43,7 @@ soupEditSpec = let
                     oneWholeLiftEditLens (tupleEditLens NotePast) .
                     mustExistOneEditLens "past" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . lens
             return $ funcEditFunction pastResult . editLensFunction valLens
-    getaspect :: UIWindow (MaybeEdit (UUIDElementEdit PossibleNoteEdit))
-    getaspect =
-        MkUIWindow (constEditFunction "item") $
-        uiLens (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $ uiOneWhole $ uiOneWhole noteEditSpec
-    in uiSimpleTable [nameColumn, pastColumn] getaspect
+    in uiSimpleTable [nameColumn, pastColumn]
 
 soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)
 soupObject dirpath = let
@@ -65,11 +62,21 @@ soupObject dirpath = let
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: FilePath -> IO (UserInterface UIWindow ())
-soupWindow dirpath = do
+soupWindow :: (UserInterface UIWindow -> IO ()) -> FilePath -> IO ()
+soupWindow createWindow dirpath = do
+    sub <- makeObjectSubscriber $ soupObject dirpath
     let
         uiTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
         uiContent = soupEditSpec
+        uiAction :: UUID -> IO ()
+        uiAction key = do
+            lens <- getKeyElementEditLens key
+            createWindow $
+                MkUserInterface (mapSubscriber lens sub) $
+                MkUIWindow
+                    (constEditFunction "item")
+                    (uiLens (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $ uiOneWhole $ uiOneWhole noteEditSpec) $ \_ ->
+                    return ()
         userinterfaceSpecifier = MkUIWindow {..}
-    userinterfaceSubscriber <- makeObjectSubscriber $ soupObject dirpath
-    return $ MkUserInterface {..}
+        userinterfaceSubscriber = sub
+    createWindow $ MkUserInterface {..}

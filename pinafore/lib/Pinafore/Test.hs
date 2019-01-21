@@ -14,6 +14,7 @@ module Pinafore.Test
     , module Pinafore.Test
     ) where
 
+import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Read
@@ -26,9 +27,10 @@ import Shapes
 import Truth.Core
 import Truth.World.ObjectStore
 
-makeTestPinaforeContext :: IO (PinaforeContext, IO (EditSubject PinaforeTableEdit))
+makeTestPinaforeContext :: LifeCycle (PinaforeContext PinaforeEdit, IO (EditSubject PinaforeTableEdit))
 makeTestPinaforeContext = do
-    tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <- freeIOObject ([], []) $ \_ -> True
+    tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
+        liftIO $ freeIOObject ([], []) $ \_ -> True
     let
         pinaforeObject :: Object PinaforeEdit
         pinaforeObject =
@@ -39,3 +41,15 @@ makeTestPinaforeContext = do
         getTableState = getObjectSubject tableStateObject
     pc <- makePinaforeContext pinaforeObject $ \_ -> return ()
     return (pc, getTableState)
+
+withTestPinaforeContext ::
+       ((?pinafore :: PinaforeContext PinaforeEdit) => IO (EditSubject PinaforeTableEdit) -> IO r) -> IO r
+withTestPinaforeContext f =
+    withLifeCycle makeTestPinaforeContext $ \(pc, getTableState) -> let
+        ?pinafore = pc
+        in f getTableState
+
+withNullPinaforeContext :: ((?pinafore :: PinaforeContext baseedit) => r) -> r
+withNullPinaforeContext f = let
+    ?pinafore = MkPinaforeContext $ MkTransform $ \_ -> fail "null Pinafore context"
+    in f

@@ -9,11 +9,11 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-createWidget :: EditFunction edit (WholeEdit Text) -> View seledit edit () -> CreateView seledit edit Widget
+createWidget :: EditFunction edit (WholeEdit Text) -> IO () -> CreateView sel edit Widget
 createWidget label action = do
     widget <- new Button []
     cvBindEditFunction label $ \val -> set widget [#label := val]
-    _ <- cvLiftView $ viewOn widget #clicked action
+    _ <- cvLiftView $ viewOn widget #clicked $ liftIO action
     toWidget widget
 
 buttonGetView :: GetGView

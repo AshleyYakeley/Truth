@@ -23,6 +23,7 @@ library:
       - memory
       - cryptonite
       - truth-core
+      - truth-gtk
     exposed-modules:
       - Language.Expression.Polarity
       - Language.Expression.TypeF
@@ -76,6 +77,7 @@ library:
       - Pinafore.Language.If
       - Pinafore.Language.Show
       - Pinafore.Language.Order
+      - Pinafore.Language.UI
       - Pinafore.Language.GroundType
       - Pinafore.Language.Scope
       - Pinafore.Language.Convert.Base
@@ -111,6 +113,10 @@ library:
       - Pinafore.Language.Expression
       - Pinafore.Language.Convert
       - Pinafore.Language.Doc
+      - Pinafore.Language.Predefined.Defs
+      - Pinafore.Language.Predefined.Base
+      - Pinafore.Language.Predefined.UI
+      - Pinafore.Language.Predefined.File
       - Pinafore.Language.Predefined
       - Pinafore.Storage.Table
       - Pinafore.Storage.Database

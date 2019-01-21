@@ -19,6 +19,7 @@ import Pinafore.Storage.Table
 import Shapes
 import System.FilePath
 import Truth.Core
+import Truth.UI.GTK
 
 type FilePinaforeType = PinaforeAction PinaforeEdit
 
@@ -34,37 +35,22 @@ sqlitePinaforeObject dirpath = do
             PinaforeSelectPoint -> pinaforeTableEntityObject tableObject
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
 
-getPinaforeRunAction ::
-       forall baseedit.
-       Object baseedit
-    -> (UserInterface UIWindow () -> IO ())
-    -> IO (UnliftIO (PinaforeActionM baseedit))
-getPinaforeRunAction pinaforeObject createWindow = do
-    sub <- liftIO $ makeObjectSubscriber pinaforeObject
-    return $
-        MkTransform $ \(MkComposeM action :: PinaforeActionM baseedit a) -> do
-            let
-                createView :: IO () -> CreateView (ConstEdit Entity) baseedit (() -> LifeCycle (Result Text a))
-                createView _ = do
-                    a <- cvLiftView action
-                    return $ \() -> return a
-            result <- subscribeView createView sub (\win -> createWindow $ MkUserInterface sub win) $ \_ -> Nothing
-            case result of
-                SuccessResult t -> return t
-                FailureResult msg -> fail $ unpack msg
-
-newtype PinaforeContext =
-    MkPinaforeContext (UnliftIO (PinaforeActionM PinaforeEdit))
-
-makePinaforeContext :: Object PinaforeEdit -> (UserInterface UIWindow () -> IO ()) -> IO PinaforeContext
+makePinaforeContext ::
+       forall baseedit. Object baseedit -> (UserInterface UIWindow -> IO ()) -> LifeCycle (PinaforeContext baseedit)
 makePinaforeContext pinaforeObject createWindow = do
-    runAction <- liftIO $ getPinaforeRunAction pinaforeObject createWindow
-    return $ MkPinaforeContext runAction
+    sub <- liftIO $ makeObjectSubscriber pinaforeObject
+    (_, obj, _) <- subscribe sub (\_ -> return ()) (\_ _ _ -> return ())
+    return $
+        MkPinaforeContext $
+        MkTransform $ \(action :: PinaforeActionM baseedit a) -> let
+            openwin :: UIWindow baseedit -> IO ()
+            openwin uiw = createWindow $ MkUserInterface sub uiw
+            in runReaderT action (openwin, obj)
 
-sqlitePinaforeContext :: FilePath -> (UserInterface UIWindow () -> IO ()) -> LifeCycle PinaforeContext
+sqlitePinaforeContext :: FilePath -> (UserInterface UIWindow -> IO ()) -> LifeCycle (PinaforeContext PinaforeEdit)
 sqlitePinaforeContext dirpath createWindow = do
     pinaforeObject <- sqlitePinaforeObject dirpath
-    liftIO $ makePinaforeContext pinaforeObject createWindow
+    makePinaforeContext pinaforeObject createWindow
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
@@ -83,13 +69,13 @@ sqlitePinaforeDumpTable dirpath = do
                 Nothing -> show v
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
-pinaforeInterpretFile :: PinaforeContext -> FilePath -> Text -> IO (IO ())
-pinaforeInterpretFile (MkPinaforeContext runAction) puipath puitext = do
+pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeEdit) => FilePath -> Text -> IO (IO ())
+pinaforeInterpretFile puipath puitext = do
     action :: FilePinaforeType <- resultTextToM $ parseValueAtType @PinaforeEdit (initialPos puipath) puitext
-    return $ runTransform runAction action
+    return $ runPinaforeAction action
 
-pinaforeInteractHandles :: Handle -> Handle -> Bool -> PinaforeContext -> IO ()
-pinaforeInteractHandles inh outh echo (MkPinaforeContext runAction) = interact inh outh echo runAction
+pinaforeInteractHandles :: (?pinafore :: PinaforeContext PinaforeEdit) => Handle -> Handle -> Bool -> IO ()
+pinaforeInteractHandles inh outh echo = interact inh outh echo
 
-pinaforeInteract :: PinaforeContext -> IO ()
+pinaforeInteract :: (?pinafore :: PinaforeContext PinaforeEdit) => IO ()
 pinaforeInteract = pinaforeInteractHandles stdin stdout False

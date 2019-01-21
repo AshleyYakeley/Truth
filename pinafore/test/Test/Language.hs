@@ -6,6 +6,7 @@ module Test.Language
 
 import Data.Ratio
 import Pinafore
+import Pinafore.Test
 import Prelude (read)
 import Shapes
 import Test.Tasty
@@ -118,7 +119,7 @@ testQueryValues = testGroup "query values" []
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
     testCase (unpack query) $
-    case (expected, parseValue @PinaforeEdit (initialPos "<input>") query) of
+    case (expected, withNullPinaforeContext $ parseValue @PinaforeEdit (initialPos "<input>") query) of
         (Nothing, FailureResult _) -> return ()
         (Nothing, SuccessResult (MkAnyValue t v)) ->
             assertFailure $ "expected failure, found success: " ++ showPinaforeValue t v

@@ -7,8 +7,8 @@ import Truth.Core.UI.Specifier.SelectionLens
 import Truth.Core.UI.Specifier.Specifier
 
 newtype GetView w = MkGetView
-    { getUIView :: forall seledit edit.
-                           (forall seledit' edit'. UISpec seledit' edit' -> CreateView seledit' edit' w) -> UISpec seledit edit -> Maybe (CreateView seledit edit w)
+    { getUIView :: forall sel edit.
+                           (forall sel' edit'. UISpec sel' edit' -> CreateView sel' edit' w) -> UISpec sel edit -> Maybe (CreateView sel edit w)
     }
 
 instance Semigroup (GetView w) where
@@ -29,8 +29,8 @@ lensGetView =
              MkUILens lens specb <- isUISpec speca
              return $ cvMapEdit lens $ getview specb) <|>
         (do
-             MkUISetSelectionLens lens specb <- isUISpec speca
+             MkUISetSelectionMap lens specb <- isUISpec speca
              return $ cvMapSetSelectionEdit lens $ getview specb) <|>
         (do
-             MkUINoSelectionLens specb <- isUISpec speca
+             MkUINoSelection specb <- isUISpec speca
              return $ cvNoAspect $ getview specb)

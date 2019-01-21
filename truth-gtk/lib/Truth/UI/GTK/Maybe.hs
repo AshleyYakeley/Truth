@@ -9,10 +9,10 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
 createButton ::
-       forall seledit edit. FullEdit edit
+       forall sel edit. FullEdit edit
     => EditSubject edit
     -> Object edit
-    -> CreateView seledit edit Button
+    -> CreateView sel edit Button
 createButton subj MkObject {..} =
     cvMakeButton "Create" $
     liftIO $
@@ -20,32 +20,32 @@ createButton subj MkObject {..} =
         edits <- getReplaceEditsFromSubject subj
         pushEdit $ objEdit edits
 
-data OneWholeViews seledit f edit
+data OneWholeViews sel f edit
     = MissingOVS (Limit f)
-                 (ViewState seledit (OneWholeEdit f edit) ())
-    | PresentOVS (ViewState seledit (OneWholeEdit f edit) ())
+                 (ViewState sel (OneWholeEdit f edit) ())
+    | PresentOVS (ViewState sel (OneWholeEdit f edit) ())
 
-instance DynamicViewState (OneWholeViews seledit f edit) where
-    type DynamicViewEdit (OneWholeViews seledit f edit) = OneWholeEdit f edit
-    type DynamicViewSelEdit (OneWholeViews seledit f edit) = seledit
+instance DynamicViewState (OneWholeViews sel f edit) where
+    type DynamicViewEdit (OneWholeViews sel f edit) = OneWholeEdit f edit
+    type DynamicViewSelEdit (OneWholeViews sel f edit) = sel
     dynamicViewStates (MissingOVS _ vs) = [vs]
     dynamicViewStates (PresentOVS vs) = [vs]
     dynamicViewFocus (MissingOVS _ vs) = vs
     dynamicViewFocus (PresentOVS vs) = vs
 
 oneWholeView ::
-       forall seledit f edit wd. (MonadOne f, FullEdit edit, IsWidget wd)
+       forall sel f edit wd. (MonadOne f, FullEdit edit, IsWidget wd)
     => Maybe (Limit f)
-    -> (Object (OneWholeEdit f edit) -> CreateView seledit (OneWholeEdit f edit) wd)
-    -> GCreateView seledit edit
-    -> GCreateView seledit (OneWholeEdit f edit)
+    -> (Object (OneWholeEdit f edit) -> CreateView sel (OneWholeEdit f edit) wd)
+    -> GCreateView sel edit
+    -> GCreateView sel (OneWholeEdit f edit)
 oneWholeView mDeleteValue makeEmptywidget baseView = do
     box <- new Box [#orientation := OrientationVertical]
     mDeleteButton <-
         for mDeleteValue $ \(MkLimit deleteValue) -> do
             cvMakeButton "Delete" $ viewObjectPushEdit $ \_ push -> push [SumEditLeft $ MkWholeEdit deleteValue]
     let
-        getWidgets :: f () -> View seledit (OneWholeEdit f edit) (OneWholeViews seledit f edit)
+        getWidgets :: f () -> View sel (OneWholeEdit f edit) (OneWholeViews sel f edit)
         getWidgets fu =
             case retrieveOne fu of
                 FailureResult lfx -> do
@@ -83,7 +83,7 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
                 put newdvs
     toWidget box
 
-placeholderLabel :: CreateView seledit edit Label
+placeholderLabel :: CreateView sel edit Label
 placeholderLabel = new Label [#label := "Placeholder"]
 
 oneGetView :: GetGView

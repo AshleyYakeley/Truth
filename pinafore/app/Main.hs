@@ -87,25 +87,27 @@ main =
             RunOption fInteract fNoRun mdirpath fpaths -> do
                 dirpath <- getDirPath mdirpath
                 context <- sqlitePinaforeContext dirpath createWindow
-                liftIO $
-                    case fpaths of
-                        [] -> do
-                            isterm <- hIsTerminalDevice stdin
-                            if isterm || fInteract
-                                then pinaforeInteract context
-                                else do
-                                    ptext <- getContents
-                                    action <- pinaforeInterpretFile context "<stdin>" $ decodeUtf8 $ toStrict ptext
-                                    if fNoRun
-                                        then return ()
-                                        else action
-                        _ -> do
-                            for_ fpaths $ \fpath -> do
-                                ptext <- readFile fpath
-                                action <- pinaforeInterpretFile context fpath $ decodeUtf8 $ toStrict ptext
-                                if fNoRun
-                                    then return ()
-                                    else action
-                            if fInteract
-                                then pinaforeInteract context
-                                else return ()
+                let
+                    ?pinafore = context
+                    in liftIO $
+                       case fpaths of
+                           [] -> do
+                               isterm <- hIsTerminalDevice stdin
+                               if isterm || fInteract
+                                   then pinaforeInteract
+                                   else do
+                                       ptext <- getContents
+                                       action <- pinaforeInterpretFile "<stdin>" $ decodeUtf8 $ toStrict ptext
+                                       if fNoRun
+                                           then return ()
+                                           else action
+                           _ -> do
+                               for_ fpaths $ \fpath -> do
+                                   ptext <- readFile fpath
+                                   action <- pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
+                                   if fNoRun
+                                       then return ()
+                                       else action
+                               if fInteract
+                                   then pinaforeInteract
+                                   else return ()

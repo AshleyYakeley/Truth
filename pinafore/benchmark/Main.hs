@@ -23,13 +23,16 @@ benchHashes =
 
 benchScript :: Text -> Benchmark
 benchScript text =
-    env (fmap const makeTestPinaforeContext) $ \tpc -> let
-        (pc, _) = tpc ()
-        in bgroup
-               (show $ unpack text)
-               [ bench "check" $ nfIO $ pinaforeInterpretFile pc "<test>" text >> return ()
-               , env (fmap const $ pinaforeInterpretFile pc "<test>" text) $ \action -> bench "run" $ nfIO (action ())
-               ]
+    env (fmap const (runLifeCycle makeTestPinaforeContext)) $ \tpc -> let
+        ((pc, _), _) = tpc ()
+        in let
+               ?pinafore = pc
+               in bgroup
+                      (show $ unpack text)
+                      [ bench "check" $ nfIO $ pinaforeInterpretFile "<test>" text >> return ()
+                      , env (fmap const $ pinaforeInterpretFile "<test>" text) $ \action ->
+                            bench "run" $ nfIO (action ())
+                      ]
 
 benchScripts :: Benchmark
 benchScripts =

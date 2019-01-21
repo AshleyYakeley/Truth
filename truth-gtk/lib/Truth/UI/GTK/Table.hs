@@ -44,7 +44,7 @@ addColumn ::
        TreeView
     -> SeqStore (key, StoreEntry tedit rowtext rowprops)
     -> Column tedit (rowtext, rowprops)
-    -> CreateView (ConstEdit key) tedit ()
+    -> CreateView key tedit ()
 addColumn tview store col = do
     renderer <- new CellRendererText []
     column <- new TreeViewColumn []
@@ -81,11 +81,10 @@ keyContainerView ::
        forall cont tedit iedit.
        (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => KeyColumns tedit (ContainerKey cont)
-    -> (ContainerKey cont -> IO (UIWindow tedit))
     -> EditLens tedit (KeyEdit cont iedit)
-    -> GCreateView (ConstEdit (ContainerKey cont)) tedit
+    -> GCreateView (ContainerKey cont) tedit
 keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens tedit (WholeEdit rowtext)
-                                                                   , EditFunction tedit (WholeEdit rowprops))) cols) getuiwindow tableLens = do
+                                                                   , EditFunction tedit (WholeEdit rowprops))) cols) tableLens = do
     let
         getStoreItem ::
                MonadUnliftIO m
@@ -97,12 +96,12 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
             entryRowText <- editFunctionRead (editLensFunction entryTextLens) mr ReadWhole
             entryRowProps <- editFunctionRead entryPropFunc mr ReadWhole
             return (key, MkStoreEntry {..})
-    initalRows <-
+    initialRows <-
         cvLiftView $
         viewObjectRead $ \_ mr -> do
             MkFiniteSet initialKeys <- editFunctionRead (editLensFunction tableLens) mr KeyReadKeys
             for initialKeys $ getStoreItem mr
-    store <- seqStoreNew initalRows
+    store <- seqStoreNew initialRows
     tview <- treeViewNewWithModel store
     for_ cols $ addColumn tview store
     let
@@ -167,7 +166,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                         return True
                     _ -> return False
     let
-        aspect :: Aspect (ConstEdit (ContainerKey cont)) tedit
+        aspect :: Aspect (ContainerKey cont)
         aspect = do
             tsel <- #getSelection tview
             (ltpath, _) <- #getSelectedRows tsel
@@ -177,8 +176,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                     case ii of
                         Just [i] -> do
                             (key, _) <- seqStoreGetValue store i
-                            uiw <- getuiwindow key
-                            return $ Just $ MkUIAspect uiw $ constEditLens key
+                            return $ Just key
                         _ -> return Nothing
                 _ -> return Nothing
     cvAddAspect aspect
@@ -194,5 +192,5 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
 tableGetView :: GetGView
 tableGetView =
     MkGetView $ \_getview uispec -> do
-        MkUITable cols getuiwindow lens <- isUISpec uispec
-        return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) getuiwindow lens
+        MkUITable cols lens <- isUISpec uispec
+        return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) lens

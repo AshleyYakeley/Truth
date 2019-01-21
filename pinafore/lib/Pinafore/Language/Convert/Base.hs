@@ -18,6 +18,7 @@ import Pinafore.Language.Order
 import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Pinafore.Language.Type
+import Pinafore.Language.UI
 import Shapes
 import Truth.Core
 
@@ -199,20 +200,6 @@ instance baseedit ~ edit => FromTypeF (PinaforeSingularType baseedit 'Negative) 
 instance baseedit ~ edit => FromTypeF (PinaforeType baseedit 'Negative) (PinaforeAction edit) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
--- View
-instance (baseedit ~ edit, seledit ~ ConstEdit Entity) =>
-             ToTypeF (PinaforeType baseedit 'Positive) (View seledit edit ()) where
-    toTypeF = contramap pinaforeLiftView toTypeF
-
-instance (baseedit ~ edit, seledit ~ ConstEdit Entity) =>
-             FromTypeF (PinaforeType baseedit 'Negative) (View seledit edit ()) where
-    fromTypeF =
-        fmap
-            (\(MkComposeM v :: PinaforeAction edit) -> do
-                 _ <- v -- ignore failure
-                 return ())
-            fromTypeF
-
 -- PinaforeOrder
 instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
              ToTypeF (PinaforeSingularType baseedit 'Positive) (PinaforeOrder edit a) where
@@ -236,22 +223,39 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType edit 'Positive) a) =>
              FromTypeF (PinaforeType baseedit 'Negative) (PinaforeOrder edit a) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
--- UISpec
-instance (baseedit ~ edit, seledit ~ ConstEdit Entity) =>
-             ToTypeF (PinaforeSingularType baseedit 'Positive) (UISpec seledit edit) where
-    toTypeF = mkPTypeF $ GroundPinaforeSingularType UserInterfacePinaforeGroundType NilDolanArguments
+-- PinaforeUI
+instance (baseedit ~ edit, ToTypeF (PinaforeType edit 'Positive) a) =>
+             ToTypeF (PinaforeSingularType baseedit 'Positive) (PinaforeUI edit a) where
+    toTypeF =
+        unTypeF toTypeF $ \ta conv ->
+            contramap (fmap conv) $
+            mkPTypeF $
+            GroundPinaforeSingularType UserInterfacePinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance (baseedit ~ edit, seledit ~ ConstEdit Entity) =>
-             ToTypeF (PinaforeType baseedit 'Positive) (UISpec seledit edit) where
+instance (baseedit ~ edit, ToTypeF (PinaforeType edit 'Positive) a) =>
+             ToTypeF (PinaforeType baseedit 'Positive) (PinaforeUI edit a) where
     toTypeF = singlePinaforeTypeF toTypeF
 
-instance (baseedit ~ edit, seledit ~ ConstEdit Entity) =>
-             FromTypeF (PinaforeSingularType baseedit 'Negative) (UISpec seledit edit) where
-    fromTypeF = mkPTypeF $ GroundPinaforeSingularType UserInterfacePinaforeGroundType NilDolanArguments
+instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
+             FromTypeF (PinaforeSingularType baseedit 'Negative) (PinaforeUI edit a) where
+    fromTypeF =
+        unTypeF fromTypeF $ \ta conv ->
+            fmap (fmap conv) $
+            mkPTypeF $
+            GroundPinaforeSingularType UserInterfacePinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance (baseedit ~ edit, seledit ~ ConstEdit Entity) =>
-             FromTypeF (PinaforeType baseedit 'Negative) (UISpec seledit edit) where
+instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
+             FromTypeF (PinaforeType baseedit 'Negative) (PinaforeUI edit a) where
     fromTypeF = singlePinaforeTypeF fromTypeF
+
+-- UISpec
+instance (baseedit ~ edit, ToTypeF (PinaforeType edit 'Positive) a) =>
+             ToTypeF (PinaforeType baseedit 'Positive) (UISpec a edit) where
+    toTypeF = contramap MkPinaforeUI toTypeF
+
+instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
+             FromTypeF (PinaforeType baseedit 'Negative) (UISpec a edit) where
+    fromTypeF = fmap unPinaforeUI fromTypeF
 
 -- PinaforeReference
 instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit 'Negative) p, ToTypeF (PinaforeType baseedit 'Positive) q) =>
@@ -303,15 +307,6 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType edit 'Positive) t) =>
              ToTypeF (PinaforeType baseedit 'Positive) (PinaforeFunctionValue edit (Know t)) where
     toTypeF = contramap pinaforeFunctionToReference toTypeF
 
---    LiteralPinaforeReference :: Range t pq -> PinaforeLensValue baseedit (WholeEdit (Maybe t)) -> PinaforeReference baseedit pq
-{-
-instance baseedit ~ edit => ToTypeF (PinaforeType baseedit 'Positive) (PinaforeLensValue baseedit (WholeEdit Entity)) where
-    toTypeF = contramap entityLensValuePinaforeReference toTypeF
--}
-{-
-literalLensValuePinaforeReference :: AsLiteral t => PinaforeLensValue baseedit (WholeEdit (Maybe t)) -> PinaforeReference baseedit '( t,t)
-entityLensValuePinaforeReference :: PinaforeLensValue baseedit (WholeEdit Entity) -> PinaforeReference baseedit '( NamedEntity name,NamedEntity name)
--}
 -- PinaforeSet
 instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit 'Negative) p, ToTypeF (PinaforeType baseedit 'Positive) q) =>
              ToTypeF (PinaforeSingularType baseedit 'Positive) (PinaforeSet edit '( p, q)) where

@@ -31,6 +31,18 @@ main =
                     bsObj = fileObject path
                     wholeTextObj :: Object (WholeEdit ((Result Text) Text))
                     wholeTextObj = cacheWholeObject $ mapObject textLens bsObj
+                    makeWindow ::
+                           WindowButtons actions
+                        => Text
+                        -> Subscriber (OneWholeEdit (Result Text) (StringEdit Text)) actions
+                        -> IO ()
+                    makeWindow title sub =
+                        createWindow $
+                        MkUserInterface sub $
+                        MkUIWindow
+                            (constEditFunction title)
+                            (uiOneWhole uiText)
+                            (\lens -> makeWindow "section" $ mapSubscriber (oneWholeLiftEditLens lens) sub)
                 action <-
                     if saveOpt
                         then do
@@ -44,19 +56,13 @@ main =
                                                                                                  , UndoActions)
                                 undoBufferSub = undoQueueSubscriber bufferSub
                             textSub <- makeSharedSubscriber undoBufferSub
-                            return $
-                                createWindow $
-                                MkUserInterface textSub $
-                                MkUIWindow (constEditFunction $ fromString $ takeFileName path) (uiOneWhole uiText)
+                            return $ makeWindow (fromString $ takeFileName path) textSub
                         else do
                             let
                                 textObj :: Object (OneWholeEdit (Result Text) (StringEdit Text))
                                 textObj = convertObject wholeTextObj
                             textSub <- makeObjectSubscriber textObj
-                            return $
-                                createWindow $
-                                MkUserInterface textSub $
-                                MkUIWindow (constEditFunction $ fromString $ takeFileName path) (uiOneWhole uiText)
+                            return $ makeWindow (fromString $ takeFileName path) textSub
                 action
                 if double
                     then action
