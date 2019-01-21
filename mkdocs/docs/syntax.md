@@ -155,7 +155,7 @@ In interactive mode, each line has syntax `<interactive>`.
 4 | | `&&` |
 3 | | `||` |
 2 | | | `:=` `+=` `-=`
-1 | `>>` | |
+1 | `>>` `>>=` | |
 0 | | `$` |
 
 ## Lexical

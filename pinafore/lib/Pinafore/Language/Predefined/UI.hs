@@ -84,16 +84,15 @@ ui_dynamic :: forall baseedit. PinaforeImmutableReference baseedit (UISpec A bas
 ui_dynamic uiref = uiSwitch $ pinaforeImmutableReferenceValue uiNull uiref
 
 openwindow ::
-       PinaforeImmutableReference baseedit Text
+       (?pinafore :: PinaforeContext baseedit)
+    => PinaforeImmutableReference baseedit Text
     -> UISpec A baseedit
     -> (A -> PinaforeAction baseedit ())
     -> PinaforeAction baseedit ()
-openwindow title uiContent action = do
-    unlift <- askUnliftIO
-    let
-        uiTitle = clearText . immutableReferenceToFunction title
-        uiAction sel = runTransform unlift $ action sel
-    pinaforeNewWindow MkUIWindow {..}
+openwindow title uiContent action = let
+    uiTitle = clearText . immutableReferenceToFunction title
+    uiAction sel = runPinaforeAction $ action sel
+    in pinaforeNewWindow MkUIWindow {..}
 
 {-
 withSelection :: (NewEntity -> PinaforeAction baseedit ()) -> PinaforeAction baseedit ()

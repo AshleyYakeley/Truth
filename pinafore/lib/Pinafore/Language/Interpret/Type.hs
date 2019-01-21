@@ -118,6 +118,15 @@ interpretTypeM (PairSyntaxType st1 st2) = do
                  ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments)
             at1
             at2
+interpretTypeM (ActionSyntaxType st1) = do
+    at1 <- interpretTypeM st1
+    return $
+        toMPolar
+            (\(MkAnyW t1) ->
+                 MkAnyW $
+                 singlePinaforeType $
+                 GroundPinaforeSingularType ActionPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
+            at1
 interpretTypeM (UISyntaxType st1) = do
     at1 <- interpretTypeM st1
     return $
@@ -221,9 +230,6 @@ interpretTypeConst "NewEntity" =
     MkAnyW $
     singlePinaforeType $
     GroundPinaforeSingularType (SimpleEntityPinaforeGroundType NewSimpleEntityType) NilDolanArguments
-interpretTypeConst "Action" =
-    return $
-    toMPolar $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType ActionPinaforeGroundType NilDolanArguments
 interpretTypeConst n
     | Just (MkAnyW lt) <- nameToLiteralType n = return $ toMPolar $ MkAnyW $ literalPinaforeType lt
 interpretTypeConst n = do

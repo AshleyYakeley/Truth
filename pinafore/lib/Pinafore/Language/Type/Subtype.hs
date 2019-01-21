@@ -82,7 +82,8 @@ subtypeGroundTypes ::
     -> PinaforeGroundType baseedit polb dvb gtb
     -> DolanArguments dvb (PinaforeType baseedit) gtb polb b
     -> m (a -> b)
-subtypeGroundTypes _ ActionPinaforeGroundType NilDolanArguments ActionPinaforeGroundType NilDolanArguments = pure id
+subtypeGroundTypes sc ActionPinaforeGroundType argsa ActionPinaforeGroundType argsb =
+    subtypeArguments sc ActionPinaforeGroundType argsa argsb
 subtypeGroundTypes sc OrderPinaforeGroundType argsa OrderPinaforeGroundType argsb =
     subtypeArguments sc OrderPinaforeGroundType argsa argsb
 subtypeGroundTypes sc UserInterfacePinaforeGroundType argsa UserInterfacePinaforeGroundType argsb =

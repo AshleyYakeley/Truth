@@ -60,6 +60,10 @@ readType2 =
          t1 <- readType3
          return $ SetSyntaxType t1) <|>
     (do
+         readExactlyThis TokUName "Action"
+         t1 <- readType3
+         return $ ActionSyntaxType t1) <|>
+    (do
          readExactlyThis TokUName "Order"
          t1 <- readType3
          return $ OrderSyntaxType t1) <|>

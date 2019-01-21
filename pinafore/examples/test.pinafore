@@ -5,8 +5,8 @@ let
 ### Useful
 ui_page n ui = (ui_label n,ui);
 ui_labelled n ui = ui_horizontal [(ui_label n,False),(ui,True)];
-simplewindow :: Ref +Text -> UI Any -> Action;
-simplewindow title ui = openwindow title ui $ \_ -> pass;
+simplewindow :: Ref +Text -> UI Any -> Action ();
+simplewindow title ui = openwindow title ui $ \_ -> return ();
 
 ### People
 
@@ -50,7 +50,7 @@ married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
 ui_people :: Set Person -> UI Person;
 ui_people pp = ui_vertical
 [
-    (ui_button {"New Person"} $ newentity pp window_person,False),
+    (ui_button {"New Person"} $ newentity pp >>= window_person,False),
     (ui_button {"View Person"} $ openselection,False),
     (ui_button {"Remove Person"} $ withselection $ \p -> pp -= p,False),
     (ui_table [({"Name"},\p -> name !$ {p})] pp,True)
@@ -92,15 +92,15 @@ ui_person p = ui_ignore $ ui_vertical
     ],True)
 ];
 
-window_person :: Person -> Action;
+window_person :: Person -> Action ();
 window_person p = simplewindow (name !$ {p}) (ui_person {p});
 
-window_people :: Action;
+window_people :: Action ();
 window_people = openwindow {"People"} (ui_people people) window_person;
 
 ### Calculator
 
-window_calc :: Action;
+window_calc :: Action ();
 window_calc = let
 opentype P;
 pvalue = property @P @Number !"pvalue";
@@ -115,7 +115,7 @@ in simplewindow {"Calc"} $ ui_vertical
 
 ### Switching Value
 
-window_switch :: Action;
+window_switch :: Action ();
 window_switch = let
 opentype P;
 pbool = property @P @Boolean !"pbool";
@@ -132,7 +132,7 @@ in simplewindow {"Switch"} $ ui_vertical
 
 ### Imported Files
 
-window_files :: Action;
+window_files :: Action ();
 window_files = let
 #Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
 #caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
@@ -148,7 +148,7 @@ in simplewindow {"Files"} $ ui_vertical
 
 ### Constant Edit
 
-window_constant :: Action;
+window_constant :: Action ();
 window_constant = simplewindow {"Constant"} $ ui_vertical
 [
     (ui_booleancheckbox {"off"} {False},False),
@@ -159,7 +159,7 @@ window_constant = simplewindow {"Constant"} $ ui_vertical
 
 ### Start Window
 
-window_start :: Action;
+window_start :: Action ();
 window_start = simplewindow {"Pinafore"} $ ui_vertical
 [
     (ui_button {"People"} window_people,False),

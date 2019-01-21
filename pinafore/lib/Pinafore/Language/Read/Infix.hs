@@ -50,6 +50,7 @@ operatorFixity "||" = MkFixity AssocRight 3
 operatorFixity ":=" = MkFixity AssocNone 2
 operatorFixity "+=" = MkFixity AssocNone 2
 operatorFixity "-=" = MkFixity AssocNone 2
+operatorFixity ">>=" = MkFixity AssocLeft 1
 operatorFixity ">>" = MkFixity AssocLeft 1
 operatorFixity "$" = MkFixity AssocRight 0
 operatorFixity _ = MkFixity AssocLeft 9

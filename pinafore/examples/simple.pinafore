@@ -14,8 +14,8 @@ me = entity @Person !4527c8ac-580d-443c-8496-2b5a93021f98;
 ui_person :: Person -> UI None;
 ui_person p = ui_textentry $ name !$ {p};
 
-window_person :: Person -> Action;
-window_person p = openwindow {"Name"} (ui_person p) (\_ -> pass);
+window_person :: Person -> Action ();
+window_person p = openwindow {"Name"} (ui_person p) (\_ -> return ());
 
 in
 window_person me >> window_person me

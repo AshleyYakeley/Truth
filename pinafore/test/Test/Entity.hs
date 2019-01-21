@@ -11,7 +11,8 @@ import Test.Tasty.HUnit
 
 defs :: [String]
 defs =
-    [ "runreforfail r = runref (r ?? {fail \"unknown ref\"})"
+    [ "pass = return ()"
+    , "runreforfail r = runref (r ?? {fail \"unknown ref\"})"
     , "testeq expected found = runreforfail {if is %expected %found then pass else fail \"not equal\"}"
     , "testneq expected found = runreforfail {if not $ is %expected %found then pass else fail \"equal\"}"
     , "testisknown t = runref {if %(known t) then pass else fail \"known\"}"
@@ -245,7 +246,7 @@ testEntity =
               , pointTest "eea !$ {e2} := e1 >> testeq {1} (count (eea !@ {e1}))"
               , pointTest $
                 "let counter = ena !$ {e1};someset = nea !@ {e1} in " <>
-                "counter := 0 >> someset += 1 >> someset += 1 >> (get (members (orders []) someset) $ \\pp -> for pp $ \\p -> runref {counter := %counter + 1}) >> testeq {1} counter"
+                "counter := 0 >> someset += 1 >> someset += 1 >> (get (members (orders []) someset) >>= \\pp -> for pp $ \\p -> runref {counter := %counter + 1}) >> testeq {1} counter"
               ]
         , testGroup
               "types"

@@ -188,16 +188,26 @@ instance (FromTypeF (PinaforeType baseedit 'Negative) a) => FromTypeF (PinaforeT
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- PinaforeAction
-instance baseedit ~ edit => ToTypeF (PinaforeSingularType baseedit 'Positive) (PinaforeAction edit ()) where
-    toTypeF = mkPTypeF $ GroundPinaforeSingularType ActionPinaforeGroundType NilDolanArguments
+instance (baseedit ~ edit, ToTypeF (PinaforeType edit 'Positive) a) =>
+             ToTypeF (PinaforeSingularType baseedit 'Positive) (PinaforeAction edit a) where
+    toTypeF =
+        unTypeF toTypeF $ \ta conv ->
+            contramap (fmap conv) $
+            mkPTypeF $ GroundPinaforeSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance baseedit ~ edit => ToTypeF (PinaforeType baseedit 'Positive) (PinaforeAction edit ()) where
+instance (baseedit ~ edit, ToTypeF (PinaforeType edit 'Positive) a) =>
+             ToTypeF (PinaforeType baseedit 'Positive) (PinaforeAction edit a) where
     toTypeF = singlePinaforeTypeF toTypeF
 
-instance baseedit ~ edit => FromTypeF (PinaforeSingularType baseedit 'Negative) (PinaforeAction edit ()) where
-    fromTypeF = mkPTypeF $ GroundPinaforeSingularType ActionPinaforeGroundType NilDolanArguments
+instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
+             FromTypeF (PinaforeSingularType baseedit 'Negative) (PinaforeAction edit a) where
+    fromTypeF =
+        unTypeF fromTypeF $ \ta conv ->
+            fmap (fmap conv) $
+            mkPTypeF $ GroundPinaforeSingularType ActionPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
-instance baseedit ~ edit => FromTypeF (PinaforeType baseedit 'Negative) (PinaforeAction edit ()) where
+instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
+             FromTypeF (PinaforeType baseedit 'Negative) (PinaforeAction edit a) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- PinaforeOrder

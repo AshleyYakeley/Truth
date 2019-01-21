@@ -135,7 +135,8 @@ exprShowPrecGroundType ::
     => PinaforeGroundType baseedit polarity dv t
     -> DolanArguments dv (PinaforeType baseedit) t polarity ta
     -> (Text, Int)
-exprShowPrecGroundType ActionPinaforeGroundType NilDolanArguments = ("Action", 0)
+exprShowPrecGroundType ActionPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+    ("Action " <> exprPrecShow 0 ta, 2)
 exprShowPrecGroundType OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)
 exprShowPrecGroundType UserInterfacePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =

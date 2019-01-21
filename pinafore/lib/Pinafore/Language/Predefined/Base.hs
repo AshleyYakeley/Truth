@@ -6,7 +6,6 @@ module Pinafore.Language.Predefined.Base
 import Pinafore.Base
 import Pinafore.Language.Doc
 import Pinafore.Language.Morphism
-import Pinafore.Language.NamedEntity
 import Pinafore.Language.Order
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Reference
@@ -22,26 +21,24 @@ output text = liftIO $ putStr $ unpack text
 outputln :: forall baseedit. Text -> PinaforeAction baseedit ()
 outputln text = liftIO $ putStrLn $ unpack text
 
-newentity ::
-       forall baseedit.
-       PinaforeSet baseedit '( NewEntity, TopType)
-    -> (NewEntity -> PinaforeAction baseedit ())
-    -> PinaforeAction baseedit ()
-newentity set continue = do
-    e <- pinaforeSetAddNew set
-    continue e
-
 setentity :: forall baseedit. PinaforeReference baseedit '( A, TopType) -> A -> PinaforeAction baseedit ()
-setentity ref val = setPinaforeReference ref (Known val)
+setentity ref val = pinaforeReferenceSet ref (Known val)
 
 deleteentity :: forall baseedit. PinaforeReference baseedit '( BottomType, TopType) -> PinaforeAction baseedit ()
-deleteentity ref = setPinaforeReference ref Unknown
+deleteentity ref = pinaforeReferenceSet ref Unknown
 
-qfail :: forall baseedit. Text -> PinaforeAction baseedit ()
-qfail t = liftIO $ fail $ unpack t
+qfail :: forall baseedit. Text -> PinaforeAction baseedit BottomType
+qfail t = fail $ unpack t
 
 entityuuid :: Entity -> Text
 entityuuid p = pack $ show p
+
+onstop :: forall baseedit. PinaforeAction baseedit A -> PinaforeAction baseedit A -> PinaforeAction baseedit A
+onstop p q = do
+    ka <- knowPinaforeAction q
+    case ka of
+        Known a -> return a
+        Unknown -> p
 
 base_predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
@@ -150,6 +147,30 @@ base_predefinitions =
           , mkValEntry "error" "Error." $ ((\t -> error (unpack t)) :: Text -> BottomType)
           ]
     , docTreeEntry
+          "Actions"
+          ""
+          [ mkValEntry "return" "A value as an Action." $ return @(PinaforeAction baseedit) @A
+          , mkValEntry ">>=" "Bind the result of an Action to an Action." $ (>>=) @(PinaforeAction baseedit) @A @B
+          , mkValEntry ">>" "Do actions in sequence." $ (>>) @(PinaforeAction baseedit) @TopType @A
+          , mkValEntry "afix" "The fixed point of an Action." $ mfix @(PinaforeAction baseedit) @A
+          , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
+          , mkValEntry
+                "stop"
+                "Stop. This is similar to an exception that can be caught with `onstop`. The default handler (for the main program, button presses, etc.), is to ignore it." $
+            pinaforeActionKnow @baseedit @BottomType Unknown
+          , mkValEntry "onstop" "`onstop p q` is `q` if it is stopped, else `p`" $ onstop @baseedit
+          , mkValEntry
+                "for_"
+                "Perform an action on each value of a list."
+                (for_ :: [A] -> (A -> PinaforeAction baseedit ()) -> PinaforeAction baseedit ())
+          , mkValEntry
+                "for"
+                "Perform an action on each value of a list, returning a list."
+                (for :: [A] -> (A -> PinaforeAction baseedit B) -> PinaforeAction baseedit [B])
+          , mkValEntry "output" "Output text to standard output." $ output @baseedit
+          , mkValEntry "outputln" "Output text and a newline to standard output." $ outputln @baseedit
+          ]
+    , docTreeEntry
           "References"
           "A reference of type `Ref {-p,+q}` has a setting type of `p` and a getting type of `q`. References keep track of updates, and will update user interfaces constructed from them when their value changes."
           [ mkValEntry
@@ -178,6 +199,11 @@ base_predefinitions =
                 "??"
                 "`p ?? q` = `p` if it is known, else `q`."
                 ((<|>) :: PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A)
+          , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $
+            pinaforeReferenceGet @baseedit @A
+          , mkValEntry "runref" "Run an action from a reference." $ runPinaforeReference @baseedit
+          , mkValEntry ":=" "Set a reference to a value." $ setentity @baseedit
+          , mkValEntry "delete" "Delete an entity reference." $ deleteentity @baseedit
           ]
     , docTreeEntry
           "Sets"
@@ -202,6 +228,19 @@ base_predefinitions =
           , mkValEntry "sum" "Sum of numbers in a set." $ pinaforeSetFunc @baseedit @Number @Number sum
           , mkValEntry "mean" "Mean of numbers in a set." $
             pinaforeSetFunc @baseedit @Number @Number $ \s -> sum s / fromIntegral (olength s)
+          , mkValEntry "newentity" "Create a new entity in a set and act on it." $ pinaforeSetAddNew @baseedit
+          , mkValEntry
+                "+="
+                "Add an entity to a set."
+                (pinaforeSetAdd :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
+          , mkValEntry
+                "-="
+                "Remove an entity from a set."
+                (pinaforeSetRemove :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
+          , mkValEntry
+                "removeall"
+                "Remove all entities from a set."
+                (pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit ())
           ]
     , docTreeEntry
           "Morphisms"
@@ -232,36 +271,5 @@ base_predefinitions =
           , mkValEntry "orderLE" "Less than or equal to by an order." $ pinaforeOrderCompare @baseedit @A $ (/=) GT
           , mkValEntry "orderGT" "Greater than by an order." $ pinaforeOrderCompare @baseedit @A $ (==) GT
           , mkValEntry "orderGE" "Greater than or equal to by an order." $ pinaforeOrderCompare @baseedit @A $ (/=) LT
-          ]
-    , docTreeEntry
-          "Actions"
-          ""
-          [ mkValEntry "pass" "Do nothing." (return () :: PinaforeAction baseedit ())
-          , mkValEntry ">>" "Do actions in sequence." $
-            ((>>) :: PinaforeAction baseedit () -> PinaforeAction baseedit () -> PinaforeAction baseedit ())
-          , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
-          , mkValEntry "get" "Get a reference and perform an action on it." $ pinaforeReferenceWith @baseedit @A
-          , mkValEntry "runref" "Run an action from a reference." $ runPinaforeReference @baseedit
-          , mkValEntry
-                "for"
-                "Perform an action on each value of a list."
-                (for_ :: [A] -> (A -> PinaforeAction baseedit ()) -> PinaforeAction baseedit ())
-          , mkValEntry "output" "Output text to standard output." $ output @baseedit
-          , mkValEntry "outputln" "Output text and a newline to standard output." $ outputln @baseedit
-          , mkValEntry ":=" "Set a reference to a value." $ setentity @baseedit
-          , mkValEntry "delete" "Delete an entity reference." $ deleteentity @baseedit
-          , mkValEntry "newentity" "Create a new entity in a set and act on it." $ newentity @baseedit
-          , mkValEntry
-                "+="
-                "Add an entity to a set."
-                (pinaforeSetAdd :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
-          , mkValEntry
-                "-="
-                "Remove an entity from a set."
-                (pinaforeSetRemove :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
-          , mkValEntry
-                "removeall"
-                "Remove all entities from a set."
-                (pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit ())
           ]
     ]

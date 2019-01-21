@@ -39,6 +39,7 @@ data SyntaxType
     = ConstSyntaxType Name
     | VarSyntaxType Name
     | UnitSyntaxType
+    | ActionSyntaxType SyntaxType
     | OrderSyntaxType SyntaxType
     | RefSyntaxType SyntaxType
     | UISyntaxType SyntaxType
