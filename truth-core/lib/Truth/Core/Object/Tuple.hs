@@ -1,5 +1,6 @@
 module Truth.Core.Object.Tuple
     ( tupleObject
+    , pairObjects
     ) where
 
 import Truth.Core.Import
@@ -7,25 +8,6 @@ import Truth.Core.Object.Object
 import Truth.Core.Read
 import Truth.Core.Types
 
-{-
-pairObjects :: forall edita editb. Object edita -> Object editb -> Object (PairEdit edita editb)
-pairObjects (MkObject (runA :: UnliftIO ma) readA editA) (MkObject (runB :: UnliftIO mb) readB editB) =
-    case isCombineMonadIO @ma @mb of
-        Dict -> let
-            runAB :: UnliftIO (CombineMonadIO ma mb)
-            runAB = combineUnliftIOs runA runB
-            readAB :: MutableRead (CombineMonadIO ma mb) (PairEditReader edita editb)
-            readAB (MkTupleEditReader SelectFirst r) = combineLiftFst @ma @mb $ readA r
-            readAB (MkTupleEditReader SelectSecond r) = combineLiftSnd @ma @mb $ readB r
-            editAB :: [PairEdit edita editb] -> CombineMonadIO ma mb (Maybe (CombineMonadIO ma mb ()))
-            editAB edits = let
-                (eas, ebs) = partitionPairEdits edits
-                in liftA2
-                       (liftA2 $ \mau mbu -> (>>) (combineLiftFst @ma @mb mau) (combineLiftSnd @ma @mb mbu))
-                       (combineLiftFst @ma @mb $ editA eas)
-                       (combineLiftSnd @ma @mb $ editB ebs)
-            in MkObject runAB readAB editAB
--}
 noneTupleObject :: Object (TupleEdit (ListElementType '[]))
 noneTupleObject = let
     objRun = id
@@ -92,3 +74,9 @@ tupleObject ::
     => (forall edit. sel edit -> Object edit)
     -> Object (TupleEdit sel)
 tupleObject pickObject = mapObject (tupleIsoLens fromLTW toLTW) $ tupleListObject $ \sel -> pickObject $ fromLTW sel
+
+pairObjects :: forall edita editb. Object edita -> Object editb -> Object (PairEdit edita editb)
+pairObjects obja objb =
+    tupleObject $ \case
+        SelectFirst -> obja
+        SelectSecond -> objb
