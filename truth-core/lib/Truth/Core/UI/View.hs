@@ -6,7 +6,6 @@ module Truth.Core.UI.View
     , viewObjectMaybeEdit
     , viewObjectPushEdit
     , viewSetSelection
-    , viewOpenSelection
     , viewRequest
     , viewMapEdit
     , viewMapSetSelectionEdit
@@ -54,11 +53,6 @@ viewSetSelection aspect = do
     setSelect <- MkView $ asks vcSetSelection
     liftIO $ setSelect aspect
 
-viewOpenSelection :: View sel edit ()
-viewOpenSelection = do
-    openSelection <- MkView $ asks vcOpenSelection
-    liftIO openSelection
-
 viewRequest :: IOWitness t -> View sel edit (Maybe t)
 viewRequest wit = MkView $ asks (\vc -> vcRequest vc wit)
 
@@ -74,7 +68,7 @@ viewMapSetSelectionEdit ::
     => (sela -> selb)
     -> View sela edit a
     -> View selb edit a
-viewMapSetSelectionEdit f (MkView view) = MkView $ withReaderT (vcMapSetSelection f) view
+viewMapSetSelectionEdit f (MkView view) = MkView $ withReaderT (vcMapSelection f) view
 
 viewNoAspect :: View sela edit a -> View selb edit a
 viewNoAspect (MkView view) = MkView $ withReaderT vcNoAspect view

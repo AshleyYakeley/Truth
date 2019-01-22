@@ -31,18 +31,28 @@ main =
                     bsObj = fileObject path
                     wholeTextObj :: Object (WholeEdit ((Result Text) Text))
                     wholeTextObj = cacheWholeObject $ mapObject textLens bsObj
+                    ui :: (WindowButtons actions)
+                       => Subscriber (OneWholeEdit (Result Text) (StringEdit Text)) actions
+                       -> UISpec (EditLens (StringEdit Text) (StringEdit Text)) (OneWholeEdit (Result Text) (StringEdit Text))
+                    ui sub =
+                        uiWithAspect $ \aspect -> let
+                            openSelection :: IO ()
+                            openSelection = do
+                                mlens <- aspect
+                                case mlens of
+                                    Nothing -> return ()
+                                    Just lens -> makeWindow "section" $ mapSubscriber (oneWholeLiftEditLens lens) sub
+                            in uiVertical
+                                   [ (uiButton (constEditFunction "View") openSelection, False)
+                                   , (uiOneWhole uiText, True)
+                                   ]
                     makeWindow ::
                            WindowButtons actions
                         => Text
                         -> Subscriber (OneWholeEdit (Result Text) (StringEdit Text)) actions
                         -> IO ()
                     makeWindow title sub =
-                        createWindow $
-                        MkUserInterface sub $
-                        MkUIWindow
-                            (constEditFunction title)
-                            (uiOneWhole uiText)
-                            (\lens -> makeWindow "section" $ mapSubscriber (oneWholeLiftEditLens lens) sub)
+                        createWindow $ MkUserInterface sub $ MkUIWindow (constEditFunction title) (ui sub)
                 action <-
                     if saveOpt
                         then do

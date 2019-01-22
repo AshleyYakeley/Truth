@@ -38,47 +38,49 @@ benchScripts :: Benchmark
 benchScripts =
     bgroup
         "script"
-        [ benchScript "runref {pass}"
-        , benchScript "runref $ pureref pass"
-        , benchScript "get {pass} $ \\v -> v"
-        , benchScript "get {False} $ \\v -> pass"
-        , benchScript "get (pureref False) $ \\v -> pass"
-        , benchScript "let p = 3 in for [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ \\v -> pass"
-        , benchScript "let a=b; b=c; c=d; d=e; e=f; f=g; g=pass in a"
-        , benchScript "id $ id $ id $ id $ id $ id $ id $ id pass"
+        [ benchScript "runref {return ()}"
+        , benchScript "runref $ pureref $ return ()"
+        , benchScript "get {return ()} >>= \\v -> v"
+        , benchScript "get {False} >>= \\v -> return ()"
+        , benchScript "get (pureref False) >>= \\v -> return ()"
+        , benchScript "let p = 3 in for_ [p,p,p,p, p,p,p,p, p,p,p,p, p,p,p,p ] $ \\v -> return ()"
+        , benchScript "let a=b; b=c; c=d; d=e; e=f; f=g; g=return () in a"
+        , benchScript "id $ id $ id $ id $ id $ id $ id $ id $ return ()"
         , benchScript
-              "let const a b = a; ui_labelled n ui = ui_horizontal [(ui_label n,False),(ui,True)] in const pass $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} ui_blank"
-        , benchScript "let const a b = a; r = 3:r in const pass r"
+              "let const a b = a; ui_labelled n ui = ui_horizontal [(ui_label n,False),(ui,True)] in const (return ()) $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} $ ui_labelled {\"Address: \"} ui_blank"
+        , benchScript "let const a b = a; r = 3:r in const (return ()) r"
         , benchScript
-              "let cpass x = pass; a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"
+              "let cpass x = return (); a = 3; b = [a,a,a,a,a,a,a,a]; c = [b,b,b,b,b,b,b,b]; d = [c,c,c,c,c,c,c,c] in cpass d"
         , benchScript
-              "let cpass x = pass; d = [c,c,c,c,c,c,c,c]; c = [b,b,b,b,b,b,b,b]; b = [a,a,a,a,a,a,a,a]; a = 3 in cpass d"
+              "let cpass x = return (); d = [c,c,c,c,c,c,c,c]; c = [b,b,b,b,b,b,b,b]; b = [a,a,a,a,a,a,a,a]; a = 3 in cpass d"
         , benchScript
-              "let cpass x = pass in let a = 3 in let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in cpass d"
+              "let cpass x = return () in let a = 3 in let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in cpass d"
         , benchScript
-              "let cpass x = pass in let f = \\a -> let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in d in cpass (f 3)"
+              "let cpass x = return () in let f = \\a -> let b = [a,a,a,a,a,a,a,a] in let c = [b,b,b,b,b,b,b,b] in let d = [c,c,c,c,c,c,c,c] in d in cpass (f 3)"
         , benchScript $
           pack $
-          "let g r = get r $ \\x -> pass; q = [" <> intercalate "," (replicate 50 "g (pureref 1)") <> "] in for q id"
+          "let g r = get r >>= \\x -> return (); q = [" <>
+          intercalate "," (replicate 50 "g (pureref 1)") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g1 r = get r $ \\x -> pass; g2 r = get r $ \\x -> pass; q = [" <>
-          intercalate "," (replicate 25 "g1 (pureref 1)" <> replicate 25 "g2 (pureref 1)") <> "] in for q id"
+          "let g1 r = get r >>= \\x -> return (); g2 r = get r >>= \\x -> return (); q = [" <>
+          intercalate "," (replicate 25 "g1 (pureref 1)" <> replicate 25 "g2 (pureref 1)") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g r = get r $ \\x -> pass in let q = [" <>
-          intercalate "," (replicate 50 "g (pureref 1)") <> "] in for q id"
+          "let g r = get r >>= \\x -> return () in let q = [" <>
+          intercalate "," (replicate 50 "g (pureref 1)") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g r = get r $ \\x -> pass in let q = [" <>
-          intercalate "," (fmap (\(i :: Int) -> "g (pureref " <> show i <> ")") [1 .. 50]) <> "] in for q id"
+          "let g r = get r >>= \\x -> return () in let q = [" <>
+          intercalate "," (fmap (\(i :: Int) -> "g (pureref " <> show i <> ")") [1 .. 50]) <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g r = get r $ \\x -> pass; q = [" <>
-          intercalate "," (replicate 50 "get (pureref 1) $ \\x -> pass") <> "] in for q id"
+          "let g r = get r >>= \\x -> return (); q = [" <>
+          intercalate "," (replicate 50 "get (pureref 1) >>= \\x -> return ()") <> "] in for_ q id"
         , benchScript $
           pack $
-          "let g r = list pass (\\x y -> pass) r; q = [" <> intercalate "," (replicate 50 "g [1]") <> "] in for q id"
+          "let g r = list (return ()) (\\x y -> return ()) r; q = [" <>
+          intercalate "," (replicate 50 "g [1]") <> "] in for_ q id"
         ]
 
 main :: IO ()

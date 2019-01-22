@@ -43,7 +43,7 @@ soupEditSpec = let
                     oneWholeLiftEditLens (tupleEditLens NotePast) .
                     mustExistOneEditLens "past" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . lens
             return $ funcEditFunction pastResult . editLensFunction valLens
-    in uiSimpleTable [nameColumn, pastColumn]
+    in uiSimpleTable [nameColumn, pastColumn] $ \_ -> return ()
 
 soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)
 soupObject dirpath = let
@@ -67,16 +67,22 @@ soupWindow createWindow dirpath = do
     sub <- makeObjectSubscriber $ soupObject dirpath
     let
         uiTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
-        uiContent = soupEditSpec
-        uiAction :: UUID -> IO ()
-        uiAction key = do
-            lens <- getKeyElementEditLens key
-            createWindow $
-                MkUserInterface (mapSubscriber lens sub) $
-                MkUIWindow
-                    (constEditFunction "item")
-                    (uiLens (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $ uiOneWhole $ uiOneWhole noteEditSpec) $ \_ ->
-                    return ()
+        openItem :: Aspect UUID -> IO ()
+        openItem aspkey = do
+            mkey <- aspkey
+            case mkey of
+                Just key -> do
+                    lens <- getKeyElementEditLens key
+                    createWindow $
+                        MkUserInterface (mapSubscriber lens sub) $
+                        MkUIWindow
+                            (constEditFunction "item")
+                            (uiLens (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
+                             uiOneWhole $ uiOneWhole noteEditSpec)
+                Nothing -> return ()
+        uiContent =
+            uiWithAspect $ \aspect ->
+                uiVertical [(uiButton (constEditFunction "View") (openItem aspect), False), (soupEditSpec, True)]
         userinterfaceSpecifier = MkUIWindow {..}
         userinterfaceSubscriber = sub
     createWindow $ MkUserInterface {..}

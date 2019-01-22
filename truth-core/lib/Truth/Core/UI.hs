@@ -4,6 +4,7 @@ module Truth.Core.UI
     , module Truth.Core.UI.Specifier.Null
     , module Truth.Core.UI.Specifier.Lens
     , module Truth.Core.UI.Specifier.SelectionLens
+    , module Truth.Core.UI.Specifier.WithAspect
     , module Truth.Core.UI.Specifier.CSS
     , module Truth.Core.UI.Specifier.Button
     , module Truth.Core.UI.Specifier.One
@@ -46,4 +47,5 @@ import Truth.Core.UI.Specifier.Switch
 import Truth.Core.UI.Specifier.Table
 import Truth.Core.UI.Specifier.TextEditor
 import Truth.Core.UI.Specifier.TextEntry
+import Truth.Core.UI.Specifier.WithAspect
 import Truth.Core.UI.View

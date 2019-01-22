@@ -123,7 +123,7 @@ testType =
               , exprTypeTest "apply nb number" (return "{} -> Boolean") $ apExpr nbFuncExpr numExpr
               , exprTypeTest
                     "apply nb boolean"
-                    (fail "\"<input>\" (line 1, column 1): cannot convert Boolean to Number") $
+                    (fail "\"<input>\" (line 1, column 1): cannot convert \"Boolean\" to \"Number\"") $
                 apExpr nbFuncExpr boolExpr
               , exprTypeTest "apply id var" (return "{v :: c} -> c") $ apExpr idExpr varExpr
               , exprTypeTest "apply nb var" (return "{v :: Number} -> Boolean") $ apExpr nbFuncExpr varExpr

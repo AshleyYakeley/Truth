@@ -6,7 +6,7 @@ let
 ui_page n ui = (ui_label n,ui);
 ui_labelled n ui = ui_horizontal [(ui_label n,False),(ui,True)];
 simplewindow :: Ref +Text -> UI Any -> Action ();
-simplewindow title ui = openwindow title ui $ \_ -> return ();
+simplewindow title ui = openwindow title ui;
 
 ### People
 
@@ -48,16 +48,16 @@ married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
 
 # UI
 ui_people :: Set Person -> UI Person;
-ui_people pp = ui_vertical
+ui_people pp = ui_withselection $ \getperson -> ui_vertical
 [
     (ui_button {"New Person"} $ newentity pp >>= window_person,False),
-    (ui_button {"View Person"} $ openselection,False),
-    (ui_button {"Remove Person"} $ withselection $ \p -> pp -= p,False),
-    (ui_table [({"Name"},\p -> name !$ {p})] pp,True)
+    (ui_button {"View Person"} $ getperson >>= window_person,False),
+    (ui_button {"Remove Person"} $ getperson >>= \p -> pp -= p,False),
+    (ui_table [({"Name"},\p -> name !$ {p})] pp $ window_person,True)
 ];
 
 ui_person :: Ref Person -> UI None;
-ui_person p = ui_ignore $ ui_vertical
+ui_person p = ui_ignore $ui_vertical
 [
     (ui_labelled {"Name: "} $ ui_textentry $ name !$ p,False),
     (ui_pages
@@ -96,7 +96,7 @@ window_person :: Person -> Action ();
 window_person p = simplewindow (name !$ {p}) (ui_person {p});
 
 window_people :: Action ();
-window_people = openwindow {"People"} (ui_people people) window_person;
+window_people = openwindow {"People"} (ui_people people);
 
 ### Calculator
 

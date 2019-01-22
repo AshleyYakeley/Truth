@@ -91,7 +91,7 @@ instance MonadFail (SourceScoped expr patc) where
             lift $ fail $ show spos <> ": " <> s
 
 convertFailure :: String -> String -> SourceScoped expr patc a
-convertFailure sa sb = fail $ "cannot convert " <> sa <> " to " <> sb
+convertFailure sa sb = fail $ "cannot convert " <> show sa <> " to " <> show sb
 
 lookupBinding :: Name -> SourceScoped expr patc (Maybe expr)
 lookupBinding name = do

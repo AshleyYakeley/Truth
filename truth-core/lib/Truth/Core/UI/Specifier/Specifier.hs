@@ -27,7 +27,6 @@ isUISpec (MkUISpec (tedit :: t' sel edit)) = do
 data UIWindow edit = forall sel. MkUIWindow
     { uiTitle :: EditFunction edit (WholeEdit Text)
     , uiContent :: UISpec sel edit
-    , uiAction :: sel -> IO ()
     }
 
 type Aspect sel = IO (Maybe sel)

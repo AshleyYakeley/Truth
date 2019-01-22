@@ -149,10 +149,10 @@ createWindowAndChild ::
        WindowButtons actions
     => UIWindow edit
     -> IO Bool
-    -> (forall sel. (sel -> IO ()) -> (Aspect sel -> CreateView sel edit (actions -> LifeCycle ())) -> r)
+    -> (forall sel. CreateView sel edit (actions -> LifeCycle ()) -> r)
     -> r
 createWindowAndChild MkUIWindow {..} closeRequest cont =
-    cont uiAction $ \_getAspect -> do
+    cont $ do
         window <-
             lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
         cvBindEditFunction uiTitle $ \title -> set window [#title := title]
@@ -194,11 +194,7 @@ data UserInterface specifier = forall edit actions. WindowButtons actions =>
 
 makeViewWindow :: IO () -> UserInterface UIWindow -> IO ()
 makeViewWindow tellclose (MkUserInterface (sub :: Subscriber edit actions) (window :: UIWindow edit)) = let
-    createView ::
-           forall r.
-           IO ()
-        -> (forall sel. (sel -> IO ()) -> (Aspect sel -> CreateView sel edit (actions -> LifeCycle ())) -> r)
-        -> r
+    createView :: forall r. IO () -> (forall sel. CreateView sel edit (actions -> LifeCycle ()) -> r) -> r
     createView closer =
         createWindowAndChild window $ do
             closer
@@ -207,9 +203,9 @@ makeViewWindow tellclose (MkUserInterface (sub :: Subscriber edit actions) (wind
     in do
            rec
                ((), closer) <-
-                   createView closer $ \onSelection cv ->
+                   createView closer $ \cv ->
                        runLifeCycle $ do
-                           (followUp, action) <- subscribeView' cv sub onSelection getRequest
+                           (followUp, action) <- subscribeView' cv sub getRequest
                            followUp action
            return ()
 

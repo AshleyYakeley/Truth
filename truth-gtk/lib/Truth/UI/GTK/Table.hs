@@ -82,9 +82,10 @@ keyContainerView ::
        (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => KeyColumns tedit (ContainerKey cont)
     -> EditLens tedit (KeyEdit cont iedit)
+    -> (ContainerKey cont -> IO ())
     -> GCreateView (ContainerKey cont) tedit
 keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens tedit (WholeEdit rowtext)
-                                                                   , EditFunction tedit (WholeEdit rowprops))) cols) tableLens = do
+                                                                   , EditFunction tedit (WholeEdit rowprops))) cols) tableLens onDoubleClick = do
     let
         getStoreItem ::
                MonadUnliftIO m
@@ -155,16 +156,6 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                              newprops <-
                                  mutableReadToSubject $ applyEdits edits' $ subjectToMutableRead $ entryRowProps oldcol
                              return $ Just (key, oldcol {entryRowProps = newprops}))
-    _ <-
-        cvLiftView $
-        liftIOView $ \unlift ->
-            on tview #buttonPressEvent $ \event -> do
-                click <- Gtk.get event #type
-                case click of
-                    EventType2buttonPress -> do
-                        liftIO $ unlift viewOpenSelection
-                        return True
-                    _ -> return False
     let
         aspect :: Aspect (ContainerKey cont)
         aspect = do
@@ -187,10 +178,24 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                 unlift $ do
                     viewSetSelection aspect
                     return True
+    _ <-
+        cvLiftView $
+        liftIO $
+        on tview #buttonPressEvent $ \event -> do
+            click <- Gtk.get event #type
+            case click of
+                EventType2buttonPress -> do
+                    liftIO $ do
+                        mkey <- aspect
+                        case mkey of
+                            Just key -> onDoubleClick key
+                            Nothing -> return ()
+                    return True
+                _ -> return False
     toWidget tview
 
 tableGetView :: GetGView
 tableGetView =
     MkGetView $ \_getview uispec -> do
-        MkUITable cols lens <- isUISpec uispec
-        return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) lens
+        MkUITable cols lens onDoubleClick <- isUISpec uispec
+        return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) lens onDoubleClick

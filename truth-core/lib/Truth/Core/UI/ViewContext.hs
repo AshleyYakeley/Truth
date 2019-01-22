@@ -9,7 +9,6 @@ import Truth.Core.UI.Specifier.Specifier
 data ViewContext sel edit = MkViewContext
     { vcObject :: Object edit
     , vcSetSelection :: Aspect sel -> IO ()
-    , vcOpenSelection :: IO ()
     , vcRequest :: forall t. IOWitness t -> Maybe t
     }
 
@@ -18,15 +17,17 @@ vcMapEdit ::
     => EditLens edita editb
     -> ViewContext sel edita
     -> ViewContext sel editb
-vcMapEdit lens (MkViewContext objectA setSelect os oG) = let
+vcMapEdit lens (MkViewContext objectA setSelect oG) = let
     objectB :: Object editb
     objectB = lensObject True lens objectA
-    in MkViewContext objectB setSelect os oG
+    in MkViewContext objectB setSelect oG
 
-vcMapSetSelection :: (sela -> selb) -> ViewContext selb edit -> ViewContext sela edit
-vcMapSetSelection f (MkViewContext object setSelectA os oG) = let
-    setSelectB selB = setSelectA $ aspectMapSelection f selB
-    in MkViewContext object setSelectB os oG
+vcMapSetSelection ::
+       ((Aspect sela -> IO ()) -> (Aspect selb -> IO ())) -> ViewContext sela edit -> ViewContext selb edit
+vcMapSetSelection f (MkViewContext object setSelectA oG) = MkViewContext object (f setSelectA) oG
+
+vcMapSelection :: (sela -> selb) -> ViewContext selb edit -> ViewContext sela edit
+vcMapSelection f = vcMapSetSelection $ \ss aspa -> ss $ aspectMapSelection f aspa
 
 vcNoAspect :: ViewContext selb edit -> ViewContext sela edit
-vcNoAspect (MkViewContext object _ os oG) = MkViewContext object (\_ -> return ()) os oG
+vcNoAspect (MkViewContext object _ oG) = MkViewContext object (\_ -> return ()) oG

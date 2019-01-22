@@ -37,6 +37,7 @@ data UITable sel tedit where
            (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
         => [KeyColumn tedit (ContainerKey cont)]
         -> EditLens tedit (KeyEdit cont iedit)
+        -> (ContainerKey cont -> IO ())
         -> UITable (ContainerKey cont) tedit
 
 uiTable ::
@@ -44,8 +45,9 @@ uiTable ::
        (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => [KeyColumn tedit (ContainerKey cont)]
     -> EditLens tedit (KeyEdit cont iedit)
+    -> (ContainerKey cont -> IO ())
     -> UISpec (ContainerKey cont) tedit
-uiTable cols lens = MkUISpec $ MkUITable cols lens
+uiTable cols lens onDoubleClick = MkUISpec $ MkUITable cols lens onDoubleClick
 
 uiSimpleTable ::
        forall cont iedit.
@@ -55,11 +57,12 @@ uiSimpleTable ::
        , HasKeyReader cont (EditReader iedit)
        )
     => [KeyColumn (KeyEdit cont iedit) (ContainerKey cont)]
+    -> (ContainerKey cont -> IO ())
     -> UISpec (ContainerKey cont) (KeyEdit cont iedit)
-uiSimpleTable cols = uiTable cols id
+uiSimpleTable cols onDoubleClick = uiTable cols id onDoubleClick
 
 instance Show (UITable sel edit) where
-    show (MkUITable _ _) = "table"
+    show (MkUITable _ _ _) = "table"
 
 instance UIType UITable where
     uiWitness = $(iowitness [t|UITable|])

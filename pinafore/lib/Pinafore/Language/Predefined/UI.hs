@@ -25,11 +25,12 @@ ui_map :: forall baseedit. (A -> B) -> PinaforeUI baseedit A -> PinaforeUI basee
 ui_map = fmap
 
 ui_table ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
+       forall baseedit. (?pinafore :: PinaforeContext baseedit, HasPinaforeEntityEdit baseedit)
     => [(PinaforeReference baseedit '( BottomType, Text), A -> PinaforeReference baseedit '( BottomType, Text))]
     -> PinaforeSet baseedit '( A, MeetType Entity A)
+    -> (A -> PinaforeAction baseedit ())
     -> UISpec A baseedit
-ui_table cols val = let
+ui_table cols val onDoubleClick = let
     showCell :: Know Text -> (Text, TableCellProps)
     showCell (Known s) = (s, tableCellPlain)
     showCell Unknown = ("unknown", tableCellPlain {tcItalic = True})
@@ -41,7 +42,11 @@ ui_table cols val = let
     getColumn (name, f) =
         readOnlyKeyColumn (clearText . pinaforeReferenceToFunction name) $ \p ->
             return $ mapLens $ pinaforeReferenceToFunction $ f $ meet2 p
-    in uiSetSelectionMap meet2 $ uiTable (fmap getColumn cols) $ unPinaforeSet $ contraMapRange meet2 val
+    in uiSetSelectionMap meet2 $
+       uiTable
+           (fmap getColumn cols)
+           (unPinaforeSet $ contraMapRange meet2 val)
+           (\a -> runPinaforeAction $ onDoubleClick $ meet2 a)
 
 type PickerType = Know (MeetType Entity A)
 
@@ -87,23 +92,18 @@ openwindow ::
        (?pinafore :: PinaforeContext baseedit)
     => PinaforeImmutableReference baseedit Text
     -> UISpec A baseedit
-    -> (A -> PinaforeAction baseedit ())
     -> PinaforeAction baseedit ()
-openwindow title uiContent action = let
+openwindow title uiContent = let
     uiTitle = clearText . immutableReferenceToFunction title
-    uiAction sel = runPinaforeAction $ action sel
     in pinaforeNewWindow MkUIWindow {..}
 
-{-
-withSelection :: (NewEntity -> PinaforeAction baseedit ()) -> PinaforeAction baseedit ()
-withSelection cont = do
-    maspect <- pinaforeGetSelectionAspect
-    case maspect of
-        Nothing -> return ()
-        Just aspect -> do
-            e <- pinaforeLiftView $ viewObjectRead $ \_ mr -> editFunctionRead (editLensFunction (uiaLens aspect)) mr ReadWhole
-            cont $ MkNewEntity e
--}
+ui_withselection :: (PinaforeAction baseedit A -> UISpec A baseedit) -> UISpec A baseedit
+ui_withselection f =
+    uiWithAspect $ \aspect ->
+        f $ do
+            ma <- liftIO aspect
+            pinaforeActionKnow $ maybeToKnow ma
+
 ui_textarea :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec BottomType baseedit
 ui_textarea = valSpecText $ uiUnknownValue mempty $ uiNoSelectionLens $ uiConvert uiText
 
@@ -115,11 +115,7 @@ ui_predefinitions =
         "UI"
         "A user interface is something that goes inside a window."
         [ mkValEntry "openwindow" "Open a new window with this title and UI." openwindow
-              -- NYI , mkValEntry "openselection" "Open the item selected in the UI of this window." viewOpenSelection
-              {-
-              , mkValEntry "withselection" "Act with the item selected in the UI of this window." $
-                withSelection @baseedit
-              -}
+        , mkValEntry "ui_withselection" "User interface with selection." $ ui_withselection @baseedit
         , mkValEntry "ui_map" "Map user interface selection" $ ui_map @baseedit
         , mkValEntry "ui_ignore" "Ignore user interface selection" $ uiNoSelectionLens @baseedit @TopType @BottomType
         , mkValEntry "ui_blank" "Blank user-interface" $ uiNull @baseedit @BottomType

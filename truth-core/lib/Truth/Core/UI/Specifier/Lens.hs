@@ -24,8 +24,7 @@ uiConvert ::
 uiConvert = uiLens convertEditLens
 
 uiWindowMapEdit :: EditLens edita editb -> UIWindow editb -> UIWindow edita
-uiWindowMapEdit lens (MkUIWindow title content action) =
-    MkUIWindow (title . editLensFunction lens) (uiLens lens content) action
+uiWindowMapEdit lens (MkUIWindow title content) = MkUIWindow (title . editLensFunction lens) (uiLens lens content)
 
 tupleEditUISpecs ::
        (TupleWitness FullEdit s, FiniteTupleSelector s)
