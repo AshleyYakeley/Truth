@@ -39,7 +39,7 @@ getArgsTypeVars (ConsListType tv targs) (ConsDolanArguments arg args) =
 getTypeVars :: PinaforeType baseedit polarity t -> [String]
 getTypeVars NilPinaforeType = mempty
 getTypeVars (ConsPinaforeType (GroundPinaforeSingularType gt args) tr) =
-    getArgsTypeVars (pinaforeGroundTypeKind gt) args <> getTypeVars tr
+    getArgsTypeVars (pinaforeGroundTypeVarianceType gt) args <> getTypeVars tr
 getTypeVars (ConsPinaforeType (VarPinaforeSingularType swit) tr) = fromSymbolWitness swit : getTypeVars tr
 
 data BisubstitutionWitness baseedit t where
@@ -150,7 +150,7 @@ occursInSingularType :: SymbolType n -> PinaforeSingularType baseedit polarity a
 occursInSingularType n (VarPinaforeSingularType nt)
     | Just Refl <- testEquality n nt = True
 occursInSingularType _ (VarPinaforeSingularType _) = False
-occursInSingularType n (GroundPinaforeSingularType gt args) = occursInArgs (pinaforeGroundTypeKind gt) n args
+occursInSingularType n (GroundPinaforeSingularType gt args) = occursInArgs (pinaforeGroundTypeVarianceType gt) n args
 
 occursInType :: SymbolType n -> PinaforeType baseedit polarity a -> Bool
 occursInType _ NilPinaforeType = False

@@ -45,6 +45,8 @@ invertPolarity v =
     case isInvertPolarity @polarity of
         Dict -> v
 
-type family ConvertType polarity (a :: k) (b :: k) :: Type where
-    ConvertType 'Positive (a :: k) (b :: k) = KindFunction k a b
-    ConvertType 'Negative (a :: k) (b :: k) = KindFunction k b a
+type family PolarMapType (cat :: k -> k -> Type) polarity (a :: k) (b :: k) :: Type where
+    PolarMapType (cat :: k -> k -> Type) 'Positive (a :: k) (b :: k) = cat a b
+    PolarMapType (cat :: k -> k -> Type) 'Negative (a :: k) (b :: k) = cat b a
+
+type ConvertType polarity (a :: k) (b :: k) = PolarMapType (KindMorphism k (->)) polarity a b

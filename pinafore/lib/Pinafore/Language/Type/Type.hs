@@ -12,7 +12,6 @@ import Pinafore.Language.Literal
 import Pinafore.Language.Name
 import Pinafore.Language.Scope
 import Pinafore.Language.Show
-import Pinafore.Language.SimpleEntityType
 import Shapes
 
 type PinaforeRangeType baseedit = RangeType (PinaforeType baseedit)
@@ -51,7 +50,7 @@ singlePinaforeType st = ConsPinaforeType st NilPinaforeType
 literalPinaforeType :: LiteralType t -> PinaforeType baseedit polarity (JoinMeetType polarity t (LimitType polarity))
 literalPinaforeType t =
     singlePinaforeType $
-    GroundPinaforeSingularType (SimpleEntityPinaforeGroundType $ LiteralSimpleEntityType t) NilDolanArguments
+    GroundPinaforeSingularType (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType t) NilDolanArguments
 
 joinPinaforeTypes ::
        forall baseedit (a :: Type) (b :: Type) r.
@@ -112,7 +111,7 @@ instance Is PolarityType polarity => Monoid (AnyInKind (RangeType (PinaforeType 
 
 instance Is PolarityType polarity => ExprShow (PinaforeSingularType baseedit polarity t) where
     exprShowPrec (VarPinaforeSingularType namewit) = (pack $ show namewit, 0)
-    exprShowPrec (GroundPinaforeSingularType gt args) = exprShowPrecGroundType gt args
+    exprShowPrec (GroundPinaforeSingularType gt args) = pinaforeGroundTypeShowPrec gt args
 
 instance Is PolarityType polarity => ExprShow (PinaforeType baseedit polarity t) where
     exprShowPrec NilPinaforeType =
@@ -129,33 +128,6 @@ instance Is PolarityType polarity => ExprShow (PinaforeType baseedit polarity t)
 
 instance Is PolarityType polarity => Show (PinaforeType baseedit polarity t) where
     show v = unpack $ exprShow v
-
-exprShowPrecGroundType ::
-       forall baseedit polarity dv t ta. Is PolarityType polarity
-    => PinaforeGroundType baseedit polarity dv t
-    -> DolanArguments dv (PinaforeType baseedit) t polarity ta
-    -> (Text, Int)
-exprShowPrecGroundType ActionPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("Action " <> exprPrecShow 0 ta, 2)
-exprShowPrecGroundType OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)
-exprShowPrecGroundType UserInterfacePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("UI " <> exprShow ta, 2)
-exprShowPrecGroundType (SimpleEntityPinaforeGroundType t) NilDolanArguments = exprShowPrec t
-exprShowPrecGroundType FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
-    invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
-exprShowPrecGroundType MaybePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) = ("Maybe " <> exprShow ta, 2)
-exprShowPrecGroundType ListPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) = ("[" <> exprShow ta <> "]", 0)
-exprShowPrecGroundType PairPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
-    ("(" <> exprShow ta <> ", " <> exprShow tb <> ")", 0)
-exprShowPrecGroundType EitherPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
-    ("Either " <> exprShow ta <> " " <> exprShow tb, 2)
-exprShowPrecGroundType ReferencePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("Ref " <> exprPrecShow 0 ta, 2)
-exprShowPrecGroundType SetPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("Set " <> exprPrecShow 0 ta, 2)
-exprShowPrecGroundType MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
-    invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
 
 instance Is PolarityType polarity => ExprShow (PinaforeRangeType baseedit polarity a) where
     exprShowPrec (MkRangeType t1 t2) = let
@@ -178,6 +150,58 @@ instance Is PolarityType polarity => ExprShow (PinaforeRangeType baseedit polari
                 [t] -> t
                 _ -> "{" <> ointercalate "," pieces <> "}"
         in (text, 0)
+
+pinaforeToEntityArgs ::
+       forall baseedit dv f polarity t. Is PolarityType polarity
+    => CovaryType dv
+    -> CovaryMap Bijection f
+    -> DolanArguments dv (PinaforeType baseedit) f polarity t
+    -> Maybe (GenTypeF Bijection (Arguments EntityType f) polarity t)
+pinaforeToEntityArgs = dolanArgumentsToArgumentsM pinaforeToEntityType
+
+pinaforeEntityToEntityType ::
+       forall baseedit dv f polarity a. Is PolarityType polarity
+    => CovaryType dv
+    -> EntityGroundType f
+    -> DolanArguments dv (PinaforeType baseedit) f polarity a
+    -> Maybe (GenTypeF Bijection EntityType polarity a)
+pinaforeEntityToEntityType lc gt args = do
+    MkTypeF eargs conv <- pinaforeToEntityArgs lc (bijectCovaryMap $ entityGroundTypeCovaryMap gt) args
+    return $ MkTypeF (MkEntityType gt eargs) conv
+
+pinaforeToEntityType ::
+       forall baseedit polarity a. Is PolarityType polarity
+    => PinaforeType baseedit polarity a
+    -> Maybe (GenTypeF Bijection EntityType polarity a)
+pinaforeToEntityType (ConsPinaforeType (GroundPinaforeSingularType (EntityPinaforeGroundType lc gt) args) NilPinaforeType) = do
+    MkTypeF et conv <- pinaforeEntityToEntityType lc gt args
+    return $
+        MkTypeF et $
+        case representative @_ @_ @polarity of
+            PositiveType -> conv . bijoin1
+            NegativeType -> bimeet1 . conv
+pinaforeToEntityType NilPinaforeType
+    | PositiveType <- representative @_ @_ @polarity = Just $ MkTypeF NoneEntityType id
+pinaforeToEntityType _ = Nothing
+
+entityToNegativePinaforeType ::
+       forall baseedit m t. MonadFail m
+    => EntityType t
+    -> m (PinaforeTypeF baseedit 'Negative t)
+entityToNegativePinaforeType (MkEntityType gt args) =
+    entityGroundTypeCovaryType gt $ \ct -> do
+        MkTypeF dargs conv <-
+            argumentsToDolanArgumentsM entityToNegativePinaforeType ct (entityGroundTypeCovaryMap gt) args
+        return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
+entityToNegativePinaforeType NoneEntityType = fail "None is not a negative entity type"
+
+entityToPositivePinaforeType :: forall baseedit t. EntityType t -> PinaforeTypeF baseedit 'Positive t
+entityToPositivePinaforeType (MkEntityType gt args) =
+    entityGroundTypeCovaryType gt $ \ct ->
+        case argumentsToDolanArguments entityToPositivePinaforeType ct (entityGroundTypeCovaryMap gt) args of
+            MkTypeF dargs conv ->
+                singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
+entityToPositivePinaforeType NoneEntityType = mkTypeF NilPinaforeType
 
 type PinaforeExpression baseedit
      = SealedExpression Name (PinaforeType baseedit 'Negative) (PinaforeType baseedit 'Positive)

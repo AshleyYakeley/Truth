@@ -40,7 +40,7 @@ instance MonoApplicative (SealedExpression name vw ((:~:) val)) where
     osequenceA conv exprs =
         MkSealedExpression Refl $ fmap conv $ sequenceA $ fmap (\(MkSealedExpression Refl expr) -> expr) exprs
 
-instance TypeMappable poswit negwit (SealedExpression name negwit poswit) where
+instance TypeMappable (->) poswit negwit (SealedExpression name negwit poswit) where
     mapTypesM mapPos mapNeg (MkSealedExpression tt expr) = do
         MkTypeF tt' conv <- mapPos tt
         expr' <- mapTypesM mapPos mapNeg expr
@@ -50,7 +50,7 @@ data SealedPattern name vw tw =
     forall t. MkSealedPattern (tw t)
                               (NamedPattern name vw t ())
 
-instance TypeMappable poswit negwit (SealedPattern name poswit negwit) where
+instance TypeMappable (->) poswit negwit (SealedPattern name poswit negwit) where
     mapTypesM mapPos mapNeg (MkSealedPattern tt pat) = do
         MkTypeF tt' conv <- mapNeg tt
         pat' <- mapTypesM mapPos mapNeg pat
@@ -85,12 +85,12 @@ toPatternConstructor f =
         (MkTypeF nwt conv, MkTypeF (MkHListWit tlt) lconv) ->
             MkPatternConstructor nwt tlt $ ClosedPattern $ fmap lconv . f . conv
 
-instance TypeMappable (poswit :: Type -> Type) (negwit :: Type -> Type) (PatternConstructor name poswit negwit) where
+instance TypeMappable (->) (poswit :: Type -> Type) (negwit :: Type -> Type) (PatternConstructor name poswit negwit) where
     mapTypesM mapPos mapNeg (MkPatternConstructor (tt :: negwit t) lvw pat) = do
         MkTypeF tt' conv <- mapNeg tt
-        pat' <- mapTypesM @poswit @negwit mapPos mapNeg pat
+        pat' <- mapTypesM @(->) @poswit @negwit mapPos mapNeg pat
         MkTypeF (MkHListWit lvw') lconv <-
-            mapTypesM (liftHListPolwit mapPos) mapNeg $ mkTypeF @'Positive $ MkHListWit lvw
+            mapTypesM @(->) (liftHListPolwit mapPos) mapNeg $ mkGenTypeF @Type @(->) @'Positive $ MkHListWit lvw
         return $ MkPatternConstructor tt' lvw' $ fmap lconv $ pat' . arr conv
 
 sealedPatternConstructor :: MonadFail m => PatternConstructor name vw tw -> m (SealedPattern name vw tw)

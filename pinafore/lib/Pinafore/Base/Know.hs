@@ -45,7 +45,7 @@ instance Show a => Show (Know a) where
     show (Known a) = "Known " <> show a
 
 instance HasDolanVary '[ 'Covariance] Know where
-    dolanVary = ConsDolanKindVary fmap $ NilDolanKindVary
+    dolanVary = ConsDolanVarianceMap fmap $ NilDolanVarianceMap
 
 fromKnow :: a -> Know a -> a
 fromKnow _ (Known v) = v

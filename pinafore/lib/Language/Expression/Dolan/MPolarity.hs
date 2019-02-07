@@ -52,6 +52,17 @@ data MPolarW w mpolarity where
     SingleMPolarW :: Is PolarityType polarity => AnyW (w polarity) -> MPolarW w ('Just polarity)
     BothMPolarW :: (forall polarity. Is PolarityType polarity => AnyW (w polarity)) -> MPolarW w 'Nothing
 
+bothMPolarW :: forall w. AnyW (w 'Positive) -> AnyW (w 'Negative) -> MPolarW w 'Nothing
+bothMPolarW posw negw = let
+    bothw ::
+           forall polarity. Is PolarityType polarity
+        => AnyW (w polarity)
+    bothw =
+        case representative @_ @_ @polarity of
+            PositiveType -> posw
+            NegativeType -> negw
+    in BothMPolarW bothw
+
 type family ConvertMPolarity t :: Maybe Polarity
 
 class ToMPolar t where

@@ -17,7 +17,7 @@ instance MapRange (PinaforeReference baseedit) where
     mapRange (MkWithRange _ f) (ImmutPinaforeReference ir) = ImmutPinaforeReference $ fmap f ir
 
 instance HasDolanVary '[ 'Rangevariance] (PinaforeReference baseedit) where
-    dolanVary = ConsDolanKindVary mapRange $ NilDolanKindVary
+    dolanVary = ConsDolanVarianceMap mapRange $ NilDolanVarianceMap
 
 pinaforeReferenceToFunction :: PinaforeReference baseedit '( BottomType, a) -> PinaforeFunctionValue baseedit (Know a)
 pinaforeReferenceToFunction ref =

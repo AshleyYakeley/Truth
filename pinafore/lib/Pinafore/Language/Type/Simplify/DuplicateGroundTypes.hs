@@ -22,7 +22,11 @@ mergeInSingularType ::
     => PinaforeSingularType baseedit polarity t
     -> PTypeF (PinaforeSingularType baseedit) polarity t
 mergeInSingularType (GroundPinaforeSingularType gt args) =
-    case mapDolanArguments mergeDuplicateGroundTypesInType (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args of
+    case mapDolanArguments
+             mergeDuplicateGroundTypesInType
+             (pinaforeGroundTypeVarianceType gt)
+             (pinaforeGroundTypeVarianceMap gt)
+             args of
         MkTypeF args' conv -> MkTypeF (GroundPinaforeSingularType gt args') conv
 mergeInSingularType t = mkPTypeF t
 
@@ -42,8 +46,13 @@ mergeInPositiveSingularType ::
     -> PinaforeTypeF baseedit 'Positive (JoinType t1 tr)
 mergeInPositiveSingularType ts NilPinaforeType = mkPTypeF $ ConsPinaforeType ts NilPinaforeType
 mergeInPositiveSingularType (GroundPinaforeSingularType gt1 args1) (ConsPinaforeType (GroundPinaforeSingularType gt2 args2) tr)
-    | Just (Refl, HRefl) <- testPinaforeGroundTypeEquality gt1 gt2 =
-        case mergeDolanArguments mergeInTypes (pinaforeGroundTypeKind gt1) (pinaforeGroundTypeVary gt1) args1 args2 of
+    | Just (Refl, HRefl) <- pinaforeGroundTypeTestEquality gt1 gt2 =
+        case mergeDolanArguments
+                 mergeInTypes
+                 (pinaforeGroundTypeVarianceType gt1)
+                 (pinaforeGroundTypeVarianceMap gt1)
+                 args1
+                 args2 of
             MkTypeF args' convargs ->
                 contramap (joinBimap convargs id . swapJoinRight) $
                 mergeInPositiveSingularType (GroundPinaforeSingularType gt1 args') tr
@@ -61,8 +70,13 @@ mergeInNegativeSingularType ::
     -> PinaforeTypeF baseedit 'Negative (MeetType t1 tr)
 mergeInNegativeSingularType ts NilPinaforeType = mkPTypeF $ ConsPinaforeType ts NilPinaforeType
 mergeInNegativeSingularType (GroundPinaforeSingularType gt1 args1) (ConsPinaforeType (GroundPinaforeSingularType gt2 args2) tr)
-    | Just (Refl, HRefl) <- testPinaforeGroundTypeEquality gt1 gt2 =
-        case mergeDolanArguments mergeInTypes (pinaforeGroundTypeKind gt1) (pinaforeGroundTypeVary gt1) args1 args2 of
+    | Just (Refl, HRefl) <- pinaforeGroundTypeTestEquality gt1 gt2 =
+        case mergeDolanArguments
+                 mergeInTypes
+                 (pinaforeGroundTypeVarianceType gt1)
+                 (pinaforeGroundTypeVarianceMap gt1)
+                 args1
+                 args2 of
             MkTypeF args' convargs ->
                 fmap (swapMeetRight . meetBimap convargs id) $
                 mergeInNegativeSingularType (GroundPinaforeSingularType gt1 args') tr
@@ -87,7 +101,7 @@ mergeDuplicateGroundTypesInType (ConsPinaforeType t1 tr) =
                         NegativeType -> fmap (meetBimap conv1 convr) $ mergeInNegativeSingularType t1' tr'
 
 mergeDuplicateGroundTypes ::
-       forall baseedit a. PTypeMappable (PinaforeType baseedit) a
+       forall baseedit a. PTypeMappable (->) (PinaforeType baseedit) a
     => a
     -> a
 mergeDuplicateGroundTypes =

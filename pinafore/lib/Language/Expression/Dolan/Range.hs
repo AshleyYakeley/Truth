@@ -5,8 +5,10 @@ import Language.Expression.Polarity
 import Shapes
 
 -- | For dealing with non-co/contravariance, see Dolan sec. 9.1
-data Range t pq where
-    MkRange :: (p -> t) -> (t -> q) -> Range t '( p, q)
+data GenRange cat t pq where
+    MkRange :: cat p t -> cat t q -> GenRange cat t '( p, q)
+
+type Range = GenRange (->)
 
 rangeCo :: Range t '( p, q) -> t -> q
 rangeCo (MkRange _ tq) = tq
@@ -54,7 +56,7 @@ unUnifyRange2 pq (MkRange qt tq) = MkRange (qt . pq) tq
 unjoinRange :: Range t '( JoinType p1 p2, q) -> (Range t '( p1, q), Range t '( p2, q))
 unjoinRange tr = (contraMapRange join1 tr, contraMapRange join2 tr)
 
-data WithRange cat pq1 pq2 where
+data WithRange (cat :: k -> k -> Type) (pq1 :: (k, k)) (pq2 :: (k, k)) where
     MkWithRange :: cat p2 p1 -> cat q1 q2 -> WithRange cat '( p1, q1) '( p2, q2)
 
 coWithRange :: Category cat => cat q1 q2 -> WithRange cat '( p, q1) '( p, q2)

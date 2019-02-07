@@ -24,9 +24,13 @@ minimalPositiveSupertypeSingular ::
 minimalPositiveSupertypeSingular (VarPinaforeSingularType v) =
     Just $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType v
 minimalPositiveSupertypeSingular (GroundPinaforeSingularType gt args) = do
-    gt' <- invertGroundTypePolarity gt
+    gt' <- pinaforeGroundTypeInvertPolarity gt
     MkTypeF args' conv <-
-        mapInvertDolanArgumentsM limitInvertType (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args
+        mapInvertDolanArgumentsM
+            limitInvertType
+            (pinaforeGroundTypeVarianceType gt)
+            (pinaforeGroundTypeVarianceMap gt)
+            args
     return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt' args') conv
 
 minimalPositiveSupertype :: PinaforeType baseedit 'Negative a -> Maybe (PinaforeTypeF baseedit 'Positive a)
@@ -40,9 +44,13 @@ maximalNegativeSubtypeSingular ::
 maximalNegativeSubtypeSingular (VarPinaforeSingularType v) =
     Just $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType v
 maximalNegativeSubtypeSingular (GroundPinaforeSingularType gt args) = do
-    gt' <- invertGroundTypePolarity gt
+    gt' <- pinaforeGroundTypeInvertPolarity gt
     MkTypeF args' conv <-
-        mapInvertDolanArgumentsM limitInvertType (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args
+        mapInvertDolanArgumentsM
+            limitInvertType
+            (pinaforeGroundTypeVarianceType gt)
+            (pinaforeGroundTypeVarianceMap gt)
+            args
     return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt' args') conv
 
 maximalNegativeSubtype :: PinaforeType baseedit 'Positive a -> Maybe (PinaforeTypeF baseedit 'Negative a)

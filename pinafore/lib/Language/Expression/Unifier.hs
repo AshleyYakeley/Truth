@@ -39,7 +39,7 @@ class (Monad (UnifierMonad unifier), Applicative unifier, Eq (UnifierName unifie
         => a
         -> UnifierMonad unifier a
 
-type UnifierMappable unifier = TypeMappable (UnifierPosWitness unifier) (UnifierNegWitness unifier)
+type UnifierMappable unifier = TypeMappable (->) (UnifierPosWitness unifier) (UnifierNegWitness unifier)
 
 type UnifierOpenExpression unifier = NamedExpression (UnifierName unifier) (UnifierNegWitness unifier)
 

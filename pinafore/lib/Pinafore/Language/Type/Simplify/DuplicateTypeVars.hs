@@ -21,7 +21,11 @@ mergeInSingularType ::
     => PinaforeSingularType baseedit polarity t
     -> PTypeF (PinaforeSingularType baseedit) polarity t
 mergeInSingularType (GroundPinaforeSingularType gt args) =
-    case mapDolanArguments mergeDuplicateTypeVarsInType (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args of
+    case mapDolanArguments
+             mergeDuplicateTypeVarsInType
+             (pinaforeGroundTypeVarianceType gt)
+             (pinaforeGroundTypeVarianceMap gt)
+             args of
         MkTypeF args' conv -> MkTypeF (GroundPinaforeSingularType gt args') conv
 mergeInSingularType t = mkPTypeF t
 
@@ -69,7 +73,7 @@ mergeDuplicateTypeVarsInType (ConsPinaforeType t1 tr) =
                         NegativeType -> fmap (meetBimap conv1 convr) $ mergeInNegativeSingularType t1' tr'
 
 mergeDuplicateTypeVars ::
-       forall baseedit a. PTypeMappable (PinaforeType baseedit) a
+       forall baseedit a. PTypeMappable (->) (PinaforeType baseedit) a
     => a
     -> a
 mergeDuplicateTypeVars = mapPTypes @(PinaforeType baseedit) mergeDuplicateTypeVarsInType mergeDuplicateTypeVarsInType

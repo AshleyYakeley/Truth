@@ -31,6 +31,17 @@ For any open entity type `T`, `NewEntity <= T` and `T <= Entity`.
 `Just :: a -> Maybe a`  
 `Nothing :: Maybe None`
 
+## Lists
+
+`[a]`  
+(`a` is covariant)
+
+`a <= Entity` implies `[a] <= Entity`.
+
+#### Constructors & Functions
+`[] :: [None]`  
+`\x y -> x:y :: a -> [a] -> [a]`
+
 ## Pairs
 
 `(a,b)`  
@@ -55,15 +66,6 @@ There are no higher-arity tuples than pair.
 #### Constructors & Functions
 `Left :: a -> Either a None`  
 `Right :: b -> Either None b`
-
-## Lists
-
-`[a]`  
-(`a` is covariant)
-
-#### Constructors & Functions
-`[] :: [None]`  
-`\x y -> x:y :: a -> [a] -> [a]`
 
 ## Functions
 

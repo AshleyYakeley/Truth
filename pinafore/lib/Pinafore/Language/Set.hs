@@ -21,8 +21,8 @@ instance MapRange (PinaforeSet baseedit) where
 
 instance HasDolanVary '[ 'Rangevariance] (PinaforeSet baseedit) where
     dolanVary =
-        ConsDolanKindVary (mkRangevary $ \mapr (MkPinaforeSet range lval) -> MkPinaforeSet (mapr range) lval) $
-        NilDolanKindVary
+        ConsDolanVarianceMap (mkRangevary $ \mapr (MkPinaforeSet range lval) -> MkPinaforeSet (mapr range) lval) $
+        NilDolanVarianceMap
 
 pinaforeSetValue :: PinaforeSet baseedit '( q, q) -> PinaforeLensValue baseedit (FiniteSetEdit q)
 pinaforeSetValue (MkPinaforeSet tr lv) = bijectionFiniteSetEditLens (rangeBijection tr) . lv

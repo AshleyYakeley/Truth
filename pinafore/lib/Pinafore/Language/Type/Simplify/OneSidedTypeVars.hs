@@ -9,7 +9,7 @@ import Pinafore.Language.Type.Type
 import Shapes
 
 getEliminateBisubs ::
-       forall baseedit t. (PTypeMappable (PinaforeType baseedit) t)
+       forall baseedit t. (PTypeMappable (->) (PinaforeType baseedit) t)
     => t
     -> [PinaforeBisubstitutionM Identity baseedit]
 getEliminateBisubs expr = let
@@ -27,7 +27,7 @@ getEliminateBisubs expr = let
     in toList $ fmap mkbisub $ posonlyvars <> negonlyvars
 
 eliminateOneSidedTypeVars ::
-       forall baseedit a. PTypeMappable (PinaforeType baseedit) a
+       forall baseedit a. PTypeMappable (->) (PinaforeType baseedit) a
     => a
     -> a
 eliminateOneSidedTypeVars expr = runIdentity $ bisubstitutes @baseedit (getEliminateBisubs expr) expr

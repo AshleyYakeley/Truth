@@ -64,6 +64,7 @@ library:
       - Pinafore.Base.Morphism
       - Pinafore.Base.Entity
       - Pinafore.Base.Edit
+      - Pinafore.Base.EntityAdapter
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
       - Pinafore.Base.ImmutableReference

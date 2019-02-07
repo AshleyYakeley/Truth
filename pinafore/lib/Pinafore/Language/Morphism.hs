@@ -26,11 +26,11 @@ instance MapRange' (PinaforeMorphism baseedit) where
 
 instance HasDolanVary '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit) where
     dolanVary =
-        ConsDolanKindVary
+        ConsDolanVarianceMap
             (mkRangevary $ \mapr ->
                  MkNestedMorphism $ \(MkPinaforeMorphism ra rb lm) -> MkPinaforeMorphism (mapr ra) rb lm) $
-        ConsDolanKindVary (mkRangevary $ \mapr (MkPinaforeMorphism ra rb lm) -> MkPinaforeMorphism ra (mapr rb) lm) $
-        NilDolanKindVary
+        ConsDolanVarianceMap (mkRangevary $ \mapr (MkPinaforeMorphism ra rb lm) -> MkPinaforeMorphism ra (mapr rb) lm) $
+        NilDolanVarianceMap
 
 pinaforeMorphismLens :: PinaforeMorphism baseedit '( a, a) '( b, b) -> PinaforeLensMorphism baseedit a b
 pinaforeMorphismLens (MkPinaforeMorphism tra trb lm) =

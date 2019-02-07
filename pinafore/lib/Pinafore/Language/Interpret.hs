@@ -4,9 +4,9 @@ module Pinafore.Language.Interpret
     ) where
 
 import Data.Graph
+import Language.Expression.Dolan
 import Language.Expression.Sealed
 import Pinafore.Base
-import Pinafore.Language.EntityType
 import Pinafore.Language.Expression
 import Pinafore.Language.If
 import Pinafore.Language.Interpret.Type
@@ -171,9 +171,11 @@ interpretExpression' spos (SEProperty sta stb anchor) =
     liftRefNotation $ do
         MkAnyW eta <- runSourcePos spos $ interpretEntityType sta
         MkAnyW etb <- runSourcePos spos $ interpretEntityType stb
+        etan <- entityToNegativePinaforeType eta
+        etbn <- entityToNegativePinaforeType etb
         let
-            bta = biTypeF (entityTypeToType eta, entityTypeToType eta)
-            btb = biTypeF (entityTypeToType etb, entityTypeToType etb)
+            bta = biTypeF (etan, entityToPositivePinaforeType eta)
+            btb = biTypeF (etbn, entityToPositivePinaforeType etb)
             in case (bta, btb, entityTypeEq eta, entityTypeEq etb) of
                    (MkAnyF rta pra, MkAnyF rtb prb, Dict, Dict) ->
                        withSubrepresentative rangeTypeInKind rta $
@@ -192,14 +194,14 @@ interpretExpression' spos (SEEntity st anchor) =
         MkAnyW tp <- runSourcePos spos $ interpretEntityType st
         pt <- makeEntity tp $ MkEntity anchor
         let
-            typef = entityTypeToType tp
+            typef = entityToPositivePinaforeType tp
             anyval = toTypeFAnyValue typef pt
         return $ qConstExprAny anyval
 
 makeEntity :: MonadFail m => EntityType t -> Entity -> m t
-makeEntity (SimpleEntityType TopSimpleEntityType) p = return p
-makeEntity (SimpleEntityType NewSimpleEntityType) p = return $ MkNewEntity p
-makeEntity (SimpleEntityType (NamedSimpleEntityType _)) p = return $ MkNamedEntity p
+makeEntity (MkEntityType TopEntityGroundType NilArguments) p = return p
+makeEntity (MkEntityType NewEntityGroundType NilArguments) p = return $ MkNewEntity p
+makeEntity (MkEntityType (NamedEntityGroundType _) NilArguments) p = return $ MkNamedEntity p
 makeEntity t _ = fail $ "not an open entity type: " <> show t
 
 interpretTypeSignature ::

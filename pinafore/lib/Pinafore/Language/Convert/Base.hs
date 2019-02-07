@@ -69,7 +69,8 @@ instance (ToTypeF (PinaforeType baseedit 'Positive) a, ToTypeF (PinaforeType bas
             unTypeF toTypeF $ \tb convb ->
                 contramap (\(a, b) -> (conva a, convb b)) $
                 mkPTypeF $
-                GroundPinaforeSingularType PairPinaforeGroundType $
+                GroundPinaforeSingularType
+                    (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType) $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
 instance (ToTypeF (PinaforeType baseedit 'Positive) a, ToTypeF (PinaforeType baseedit 'Positive) b) =>
@@ -83,7 +84,8 @@ instance (FromTypeF (PinaforeType baseedit 'Negative) a, FromTypeF (PinaforeType
             unTypeF fromTypeF $ \tb convb ->
                 fmap (\(a, b) -> (conva a, convb b)) $
                 mkPTypeF $
-                GroundPinaforeSingularType PairPinaforeGroundType $
+                GroundPinaforeSingularType
+                    (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType) $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
 instance (FromTypeF (PinaforeType baseedit 'Negative) a, FromTypeF (PinaforeType baseedit 'Negative) b) =>
@@ -98,7 +100,8 @@ instance (ToTypeF (PinaforeType baseedit 'Positive) a, ToTypeF (PinaforeType bas
             unTypeF toTypeF $ \tb convb ->
                 contramap (either (Left . conva) (Right . convb)) $
                 mkPTypeF $
-                GroundPinaforeSingularType EitherPinaforeGroundType $
+                GroundPinaforeSingularType
+                    (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType) $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
 instance (ToTypeF (PinaforeType baseedit 'Positive) a, ToTypeF (PinaforeType baseedit 'Positive) b) =>
@@ -112,7 +115,8 @@ instance (FromTypeF (PinaforeType baseedit 'Negative) a, FromTypeF (PinaforeType
             unTypeF fromTypeF $ \tb convb ->
                 fmap (either (Left . conva) (Right . convb)) $
                 mkPTypeF $
-                GroundPinaforeSingularType EitherPinaforeGroundType $
+                GroundPinaforeSingularType
+                    (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType) $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
 
 instance (FromTypeF (PinaforeType baseedit 'Negative) a, FromTypeF (PinaforeType baseedit 'Negative) b) =>
@@ -153,7 +157,9 @@ instance (ToTypeF (PinaforeType baseedit 'Positive) a) => ToTypeF (PinaforeSingu
     toTypeF =
         unTypeF toTypeF $ \ta conva ->
             contramap (fmap conva) $
-            mkPTypeF $ GroundPinaforeSingularType MaybePinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkPTypeF $
+            GroundPinaforeSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType) $
+            ConsDolanArguments ta NilDolanArguments
 
 instance (ToTypeF (PinaforeType baseedit 'Positive) a) => ToTypeF (PinaforeType baseedit 'Positive) (Maybe a) where
     toTypeF = singlePinaforeTypeF toTypeF
@@ -163,7 +169,9 @@ instance (FromTypeF (PinaforeType baseedit 'Negative) a) =>
     fromTypeF =
         unTypeF fromTypeF $ \ta conva ->
             fmap (fmap conva) $
-            mkPTypeF $ GroundPinaforeSingularType MaybePinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkPTypeF $
+            GroundPinaforeSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType) $
+            ConsDolanArguments ta NilDolanArguments
 
 instance (FromTypeF (PinaforeType baseedit 'Negative) a) => FromTypeF (PinaforeType baseedit 'Negative) (Maybe a) where
     fromTypeF = singlePinaforeTypeF fromTypeF
@@ -173,7 +181,9 @@ instance (ToTypeF (PinaforeType baseedit 'Positive) a) => ToTypeF (PinaforeSingu
     toTypeF =
         unTypeF toTypeF $ \ta conva ->
             contramap (fmap conva) $
-            mkPTypeF $ GroundPinaforeSingularType ListPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkPTypeF $
+            GroundPinaforeSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType) $
+            ConsDolanArguments ta NilDolanArguments
 
 instance (ToTypeF (PinaforeType baseedit 'Positive) a) => ToTypeF (PinaforeType baseedit 'Positive) [a] where
     toTypeF = singlePinaforeTypeF toTypeF
@@ -182,7 +192,9 @@ instance (FromTypeF (PinaforeType baseedit 'Negative) a) => FromTypeF (PinaforeS
     fromTypeF =
         unTypeF fromTypeF $ \ta conva ->
             fmap (fmap conva) $
-            mkPTypeF $ GroundPinaforeSingularType ListPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
+            mkPTypeF $
+            GroundPinaforeSingularType (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType) $
+            ConsDolanArguments ta NilDolanArguments
 
 instance (FromTypeF (PinaforeType baseedit 'Negative) a) => FromTypeF (PinaforeType baseedit 'Negative) [a] where
     fromTypeF = singlePinaforeTypeF fromTypeF
@@ -400,14 +412,16 @@ instance ( baseedit ~ edit
 -- Entity
 instance ToTypeF (PinaforeSingularType baseedit 'Positive) Entity where
     toTypeF =
-        mkPTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments
+        mkPTypeF $
+        GroundPinaforeSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments
 
 instance ToTypeF (PinaforeType baseedit 'Positive) Entity where
     toTypeF = singlePinaforeTypeF toTypeF
 
 instance FromTypeF (PinaforeSingularType baseedit 'Negative) Entity where
     fromTypeF =
-        mkPTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments
+        mkPTypeF $
+        GroundPinaforeSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments
 
 instance FromTypeF (PinaforeType baseedit 'Negative) Entity where
     fromTypeF = singlePinaforeTypeF fromTypeF
@@ -417,7 +431,7 @@ instance KnownSymbol name => ToTypeF (PinaforeSingularType baseedit 'Positive) (
     toTypeF =
         mkPTypeF $
         GroundPinaforeSingularType
-            (SimpleEntityPinaforeGroundType $ NamedSimpleEntityType MkSymbolType)
+            (EntityPinaforeGroundType NilListType $ NamedEntityGroundType MkSymbolType)
             NilDolanArguments
 
 instance KnownSymbol name => ToTypeF (PinaforeType baseedit 'Positive) (NamedEntity name) where
@@ -427,7 +441,7 @@ instance KnownSymbol name => FromTypeF (PinaforeSingularType baseedit 'Negative)
     fromTypeF =
         mkPTypeF $
         GroundPinaforeSingularType
-            (SimpleEntityPinaforeGroundType $ NamedSimpleEntityType MkSymbolType)
+            (EntityPinaforeGroundType NilListType $ NamedEntityGroundType MkSymbolType)
             NilDolanArguments
 
 instance KnownSymbol name => FromTypeF (PinaforeType baseedit 'Negative) (NamedEntity name) where
@@ -436,14 +450,16 @@ instance KnownSymbol name => FromTypeF (PinaforeType baseedit 'Negative) (NamedE
 -- NewEntity
 instance ToTypeF (PinaforeSingularType baseedit 'Positive) NewEntity where
     toTypeF =
-        mkPTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType NewSimpleEntityType) NilDolanArguments
+        mkPTypeF $
+        GroundPinaforeSingularType (EntityPinaforeGroundType NilListType NewEntityGroundType) NilDolanArguments
 
 instance ToTypeF (PinaforeType baseedit 'Positive) NewEntity where
     toTypeF = singlePinaforeTypeF toTypeF
 
 instance FromTypeF (PinaforeSingularType baseedit 'Negative) NewEntity where
     fromTypeF =
-        mkPTypeF $ GroundPinaforeSingularType (SimpleEntityPinaforeGroundType NewSimpleEntityType) NilDolanArguments
+        mkPTypeF $
+        GroundPinaforeSingularType (EntityPinaforeGroundType NilListType NewEntityGroundType) NilDolanArguments
 
 instance FromTypeF (PinaforeType baseedit 'Negative) NewEntity where
     fromTypeF = singlePinaforeTypeF fromTypeF
@@ -458,8 +474,8 @@ literalInstances t =
           toTypeF
             = mkPTypeF $
                 GroundPinaforeSingularType
-                  (SimpleEntityPinaforeGroundType $
-                     LiteralSimpleEntityType representative)
+                  (EntityPinaforeGroundType NilListType $
+                     LiteralEntityGroundType representative)
                   NilDolanArguments
   
   instance ToTypeF (PinaforeType baseedit 'Positive) $( t ) where
@@ -470,8 +486,8 @@ literalInstances t =
           fromTypeF
             = mkPTypeF $
                 GroundPinaforeSingularType
-                  (SimpleEntityPinaforeGroundType $
-                     LiteralSimpleEntityType representative)
+                  (EntityPinaforeGroundType NilListType $
+                     LiteralEntityGroundType representative)
                   NilDolanArguments
   
   instance FromTypeF (PinaforeType baseedit 'Negative) $( t ) where

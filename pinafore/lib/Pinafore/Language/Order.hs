@@ -28,7 +28,7 @@ instance Contravariant (PinaforeOrder baseedit) where
     contramap ba (MkPinaforeOrder ef o) = MkPinaforeOrder (ef . (arr $ fmap ba)) o
 
 instance HasDolanVary '[ 'Contravariance] (PinaforeOrder baseedit) where
-    dolanVary = ConsDolanKindVary (\(MkCatDual ba) -> contramap ba) $ NilDolanKindVary
+    dolanVary = ConsDolanVarianceMap (\(MkCatDual ba) -> contramap ba) $ NilDolanVarianceMap
 
 alphabetical :: PinaforeOrder baseedit Text
 alphabetical = MkPinaforeOrder id compare

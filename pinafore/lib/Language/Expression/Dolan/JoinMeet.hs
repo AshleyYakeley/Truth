@@ -52,6 +52,9 @@ joinBimap :: (a1 -> a2) -> (b1 -> b2) -> JoinType a1 b1 -> JoinType a2 b2
 joinBimap f _ (LeftJoinType v) = LeftJoinType $ f v
 joinBimap _ f (RightJoinType v) = RightJoinType $ f v
 
+bijoin1 :: Bijection (JoinType a BottomType) a
+bijoin1 = MkBijection unjoin1 join1
+
 biJoinBimap :: Bijection a1 a2 -> Bijection b1 b2 -> Bijection (JoinType a1 b1) (JoinType a2 b2)
 biJoinBimap (MkBijection a1a2 a2a1) (MkBijection b1b2 b2b1) = MkBijection (joinBimap a1a2 b1b2) (joinBimap a2a1 b2b1)
 
@@ -75,6 +78,9 @@ meetf f1 f2 v = MkMeetType (f1 v, f2 v)
 
 meetBimap :: (a1 -> a2) -> (b1 -> b2) -> MeetType a1 b1 -> MeetType a2 b2
 meetBimap aa bb (MkMeetType (a, b)) = MkMeetType (aa a, bb b)
+
+bimeet1 :: Bijection a (MeetType a TopType)
+bimeet1 = MkBijection unmeet1 meet1
 
 biMeetBimap :: Bijection a1 a2 -> Bijection b1 b2 -> Bijection (MeetType a1 b1) (MeetType a2 b2)
 biMeetBimap (MkBijection a1a2 a2a1) (MkBijection b1b2 b2b1) = MkBijection (meetBimap a1a2 b1b2) (meetBimap a2a1 b2b1)

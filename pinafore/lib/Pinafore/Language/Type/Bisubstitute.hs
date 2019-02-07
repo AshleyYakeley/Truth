@@ -21,9 +21,9 @@ bisubstitutePositiveSingularType (MkBisubstitution n tp _) (VarPinaforeSingularT
     | Just Refl <- testEquality n n' = tp
 bisubstitutePositiveSingularType _ t@(VarPinaforeSingularType _) = return $ singlePinaforeTypeF $ mkPTypeF t
 bisubstitutePositiveSingularType bisub (GroundPinaforeSingularType gt args) = let
-    dvt = pinaforeGroundTypeKind gt
+    dvt = pinaforeGroundTypeVarianceType gt
     in do
-           MkTypeF args' conv <- mapDolanArgumentsM (bisubstituteType bisub) dvt (pinaforeGroundTypeVary gt) args
+           MkTypeF args' conv <- mapDolanArgumentsM (bisubstituteType bisub) dvt (pinaforeGroundTypeVarianceMap gt) args
            return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt args') conv
 
 bisubstituteNegativeSingularType ::
@@ -35,9 +35,9 @@ bisubstituteNegativeSingularType (MkBisubstitution n _ tq) (VarPinaforeSingularT
     | Just Refl <- testEquality n n' = tq
 bisubstituteNegativeSingularType _ t@(VarPinaforeSingularType _) = return $ singlePinaforeTypeF $ mkPTypeF t
 bisubstituteNegativeSingularType bisub (GroundPinaforeSingularType gt args) = let
-    dvt = pinaforeGroundTypeKind gt
+    dvt = pinaforeGroundTypeVarianceType gt
     in do
-           MkTypeF args' conv <- mapDolanArgumentsM (bisubstituteType bisub) dvt (pinaforeGroundTypeVary gt) args
+           MkTypeF args' conv <- mapDolanArgumentsM (bisubstituteType bisub) dvt (pinaforeGroundTypeVarianceMap gt) args
            return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt args') conv
 
 bisubstitutePositiveType ::
@@ -83,7 +83,7 @@ bisubstitutesType (sub:subs) t = do
     chainTypeFM (bisubstitutesType subs) tf
 
 bisubstitutes ::
-       forall baseedit m a. (Monad m, PTypeMappable (PinaforeType baseedit) a)
+       forall baseedit m a. (Monad m, PTypeMappable (->) (PinaforeType baseedit) a)
     => [PinaforeBisubstitutionM m baseedit]
     -> a
     -> m a

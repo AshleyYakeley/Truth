@@ -3,7 +3,6 @@ module Pinafore.Language.Interpret.Type
     , interpretEntityType
     ) where
 
-import Pinafore.Language.EntityType
 import Pinafore.Language.Literal
 import Pinafore.Language.Name
 import Pinafore.Language.Syntax
@@ -27,8 +26,8 @@ interpretEntityType st = do
     BothMPolarW atm <- interpretTypeM @_ @'Nothing st
     case atm @'Positive of
         MkAnyW tm ->
-            case typeToEntityType tm of
-                Just t -> return t
+            case pinaforeToEntityType tm of
+                Just (MkTypeF t _) -> return $ MkAnyW t
                 Nothing -> fail $ show tm <> " is not an Entity type"
 
 interpretTypeM ::
@@ -92,7 +91,20 @@ interpretTypeM (MaybeSyntaxType st1) = do
             (\(MkAnyW t1) ->
                  MkAnyW $
                  singlePinaforeType $
-                 GroundPinaforeSingularType MaybePinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
+                 GroundPinaforeSingularType
+                     (EntityPinaforeGroundType (ConsListType Refl NilListType) MaybeEntityGroundType) $
+                 ConsDolanArguments t1 NilDolanArguments)
+            at1
+interpretTypeM (ListSyntaxType st1) = do
+    at1 <- interpretTypeM st1
+    return $
+        toMPolar
+            (\(MkAnyW t1) ->
+                 MkAnyW $
+                 singlePinaforeType $
+                 GroundPinaforeSingularType
+                     (EntityPinaforeGroundType (ConsListType Refl NilListType) ListEntityGroundType) $
+                 ConsDolanArguments t1 NilDolanArguments)
             at1
 interpretTypeM (EitherSyntaxType st1 st2) = do
     at1 <- interpretTypeM st1
@@ -102,7 +114,10 @@ interpretTypeM (EitherSyntaxType st1 st2) = do
             (\(MkAnyW t1) (MkAnyW t2) ->
                  MkAnyW $
                  singlePinaforeType $
-                 GroundPinaforeSingularType EitherPinaforeGroundType $
+                 GroundPinaforeSingularType
+                     (EntityPinaforeGroundType
+                          (ConsListType Refl $ ConsListType Refl NilListType)
+                          EitherEntityGroundType) $
                  ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments)
             at1
             at2
@@ -114,7 +129,8 @@ interpretTypeM (PairSyntaxType st1 st2) = do
             (\(MkAnyW t1) (MkAnyW t2) ->
                  MkAnyW $
                  singlePinaforeType $
-                 GroundPinaforeSingularType PairPinaforeGroundType $
+                 GroundPinaforeSingularType
+                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType) $
                  ConsDolanArguments t1 $ ConsDolanArguments t2 NilDolanArguments)
             at1
             at2
@@ -163,15 +179,6 @@ interpretTypeM (OrderSyntaxType st1) = do
                  singlePinaforeType $
                  GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
             (MkInvertMPolarW at1)
-interpretTypeM (ListSyntaxType st1) = do
-    at1 <- interpretTypeM st1
-    return $
-        toMPolar
-            (\(MkAnyW t1) ->
-                 MkAnyW $
-                 singlePinaforeType $
-                 GroundPinaforeSingularType ListPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
-            at1
 interpretTypeM (VarSyntaxType name) =
     toSymbolWitness (unpack name) $ \t -> return $ toMPolar $ MkAnyW $ singlePinaforeType $ VarPinaforeSingularType t
 interpretTypeM UnitSyntaxType = return $ toMPolar $ MkAnyW $ literalPinaforeType UnitLiteralType
@@ -223,13 +230,13 @@ interpretTypeConst "Entity" =
     toMPolar $
     MkAnyW $
     singlePinaforeType $
-    GroundPinaforeSingularType (SimpleEntityPinaforeGroundType TopSimpleEntityType) NilDolanArguments
+    GroundPinaforeSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments
 interpretTypeConst "NewEntity" =
     return $
     toMPolar $
     MkAnyW $
     singlePinaforeType $
-    GroundPinaforeSingularType (SimpleEntityPinaforeGroundType NewSimpleEntityType) NilDolanArguments
+    GroundPinaforeSingularType (EntityPinaforeGroundType NilListType NewEntityGroundType) NilDolanArguments
 interpretTypeConst n
     | Just (MkAnyW lt) <- nameToLiteralType n = return $ toMPolar $ MkAnyW $ literalPinaforeType lt
 interpretTypeConst n = do
@@ -240,7 +247,9 @@ interpretTypeConst n = do
             toMPolar $
             MkAnyW $
             singlePinaforeType $
-            GroundPinaforeSingularType (SimpleEntityPinaforeGroundType $ NamedSimpleEntityType sw) NilDolanArguments
+            GroundPinaforeSingularType
+                (EntityPinaforeGroundType NilListType $ NamedEntityGroundType sw)
+                NilDolanArguments
 
 nameToLiteralType :: Name -> Maybe (AnyW LiteralType)
 nameToLiteralType "Literal" = Just $ MkAnyW LiteralLiteralType

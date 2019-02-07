@@ -18,7 +18,7 @@ type LiftBijection (f :: kp -> kq) = forall (a :: kp) (b :: kp). KindBijection k
 vcBijection ::
        forall (v :: SingleVariance) k (f :: SingleVarianceKind v -> k). HasKindMorphism k
     => SingleVarianceType v
-    -> SingleVarianceMap v f
+    -> SingleVarianceMap (->) v f
     -> LiftBijection f
 vcBijection CovarianceType conv (MkBijection ab ba) = mkKindBijection (conv ab) (conv ba)
 vcBijection ContravarianceType conv (MkBijection ba ab) = mkKindBijection (conv $ MkCatDual ab) (conv $ MkCatDual ba)
@@ -54,10 +54,10 @@ renameTypeArgs ::
        forall baseedit (polarity :: Polarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv).
        Is PolarityType polarity
     => DolanVarianceType dv
-    -> DolanKindVary dv t
+    -> DolanVarianceMap (->) dv t
     -> PinaforeTypeNamespace baseedit (DolanArguments dv (PinaforeType baseedit) t polarity)
-renameTypeArgs NilListType NilDolanKindVary NilDolanArguments cont = cont NilDolanArguments id
-renameTypeArgs (ConsListType svt dvt) (ConsDolanKindVary svm dvm) (ConsDolanArguments arg args) cont =
+renameTypeArgs NilListType NilDolanVarianceMap NilDolanArguments cont = cont NilDolanArguments id
+renameTypeArgs (ConsListType svt dvt) (ConsDolanVarianceMap svm dvm) (ConsDolanArguments arg args) cont =
     renameTypeArg @baseedit @polarity svt arg $ \arg' bijarg ->
         case dolanVarianceHasKM dvt of
             Dict ->
@@ -69,7 +69,7 @@ renamePinaforeSingularTypeVars ::
        forall baseedit polarity. Is PolarityType polarity
     => PinaforeTypeNamespace baseedit (PinaforeSingularType baseedit polarity)
 renamePinaforeSingularTypeVars (GroundPinaforeSingularType gt args) cont =
-    renameTypeArgs @baseedit @polarity (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args $ \args' bij ->
+    renameTypeArgs @baseedit @polarity (pinaforeGroundTypeVarianceType gt) (pinaforeGroundTypeVarianceMap gt) args $ \args' bij ->
         cont (GroundPinaforeSingularType gt args') bij
 renamePinaforeSingularTypeVars (VarPinaforeSingularType namewit1) cont =
     renameUVar varNamespaceRename namewit1 $ \namewit2 bij -> cont (VarPinaforeSingularType namewit2) bij

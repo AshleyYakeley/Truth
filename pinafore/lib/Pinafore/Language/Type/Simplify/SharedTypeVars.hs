@@ -26,7 +26,7 @@ findShare uses = let
     in find goodpair pairs
 
 mergeSharedTypeVars ::
-       forall baseedit a. PTypeMappable (PinaforeType baseedit) a
+       forall baseedit a. PTypeMappable (->) (PinaforeType baseedit) a
     => a
     -> a
 mergeSharedTypeVars expr = let

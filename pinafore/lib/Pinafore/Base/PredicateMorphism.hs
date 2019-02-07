@@ -1,12 +1,10 @@
 module Pinafore.Base.PredicateMorphism
-    ( EntityAdapter(..)
-    , bijectionEntityAdapter
-    , HasPinaforeEntityEdit(..)
+    ( HasPinaforeEntityEdit(..)
     , propertyMorphism
     ) where
 
 import Pinafore.Base.Edit
-import Pinafore.Base.Entity
+import Pinafore.Base.EntityAdapter
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
@@ -17,24 +15,6 @@ class HasPinaforeEntityEdit baseedit where
 
 instance HasPinaforeEntityEdit PinaforeEntityEdit where
     pinaforeEntityLens = id
-
-data EntityAdapter t = MkEntityAdapter
-    { entityAdapterConvert :: t -> Entity
-    , entityAdapterGet :: forall m. MonadIO m => Entity -> MutableRead m PinaforeEntityRead -> m (Know t)
-    , entityAdapterPut :: forall m. MonadIO m => t -> MutableRead m PinaforeEntityRead -> m [PinaforeEntityEdit]
-    }
-
-bijectionEntityAdapter :: forall t. (Entity -> t) -> (t -> Entity) -> EntityAdapter t
-bijectionEntityAdapter pt te = let
-    entityAdapterConvert = te
-    entityAdapterGet ::
-           forall m. MonadIO m
-        => Entity
-        -> MutableRead m PinaforeEntityRead
-        -> m (Know t)
-    entityAdapterGet p _ = return $ Known $ pt p
-    entityAdapterPut _ _ = return []
-    in MkEntityAdapter {..}
 
 predicatePinaforeMap ::
        forall a b.

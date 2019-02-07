@@ -30,8 +30,8 @@ instance MonadTransConstraint Monad (UnitypeRenamer val) where
 instance Renamer (UnitypeRenamer val) where
     type RenamerNegWitness (UnitypeRenamer val) = ((:~:) val)
     type RenamerPosWitness (UnitypeRenamer val) = ((:~:) val)
-    renameTSNegWitness Refl = return $ mkTypeF Refl
-    renameTSPosWitness Refl = return $ mkTypeF Refl
+    renameTSNegWitness Refl = return $ mkGenTypeF Refl
+    renameTSPosWitness Refl = return $ mkGenTypeF Refl
     type RenamerNamespace (UnitypeRenamer val) = UnitypeNamespace val
     renameNewVar = return $ MkNewVar Refl Refl id
     namespace (MkUnitypeNamespace ia) = ia
@@ -51,8 +51,8 @@ instance (Monad m, Eq name) => Unifier (UnitypeUnifier m name val) where
     unifyPosWitnesses Refl Refl cont = cont Refl $ pure (id, id)
     unifyPosNegWitnesses Refl Refl = return $ pure id
     solveUnifier (MkUnitypeUnifier ia) = pure $ (runIdentity ia, ())
-    unifierPosSubstitute () Refl = return $ mkTypeF Refl
-    unifierNegSubstitute () Refl = return $ mkTypeF Refl
+    unifierPosSubstitute () Refl = return $ mkGenTypeF Refl
+    unifierNegSubstitute () Refl = return $ mkGenTypeF Refl
     simplify = return
 
 newtype UnitypeSubsumer (m :: Type -> Type) (val :: Type) a =
@@ -65,7 +65,7 @@ instance Monad m => Subsumer (UnitypeSubsumer m val) where
     type SubsumerPosWitness (UnitypeSubsumer m val) = ((:~:) val)
     type SubsumerSubstitutions (UnitypeSubsumer m val) = ()
     solveSubsumer (MkUnitypeSubsumer ia) = pure $ (runIdentity ia, ())
-    subsumerNegSubstitute () Refl = return $ mkTypeF Refl
+    subsumerNegSubstitute () Refl = return $ mkGenTypeF Refl
     subsumePosWitnesses Refl Refl = return $ pure id
     simplifyPosType = id
 

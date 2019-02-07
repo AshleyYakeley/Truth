@@ -3,7 +3,6 @@
 module Pinafore.Language.Type
     ( module Pinafore.Language.Type.Type
     , module Pinafore.Language.GroundType
-    , module Pinafore.Language.SimpleEntityType
     , module Language.Expression.Polarity
     , module Language.Expression.TypeF
     , module Language.Expression.UVar
@@ -21,7 +20,6 @@ import Language.Expression.Unifier
 import Pinafore.Language.GroundType
 import Pinafore.Language.Name
 import Pinafore.Language.Scope
-import Pinafore.Language.SimpleEntityType
 import Pinafore.Language.Type.Bisubstitute
 import Pinafore.Language.Type.Rename ()
 import Pinafore.Language.Type.Simplify

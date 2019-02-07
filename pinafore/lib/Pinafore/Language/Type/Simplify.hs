@@ -25,7 +25,7 @@ import Shapes
 -- 4. merge duplicate type vars in join/meet (on each type)
 -- e.g. "a|a" => "a"
 pinaforeSimplifyTypes ::
-       forall baseedit a. PTypeMappable (PinaforeType baseedit) a
+       forall baseedit a. PTypeMappable (->) (PinaforeType baseedit) a
     => a
     -> a
 pinaforeSimplifyTypes =

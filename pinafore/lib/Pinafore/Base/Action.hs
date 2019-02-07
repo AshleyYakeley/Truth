@@ -27,7 +27,7 @@ instance MonadFail (PinaforeAction baseedit) where
     fail s = liftIO $ fail s
 
 instance HasDolanVary '[ 'Covariance] (PinaforeAction baseedit) where
-    dolanVary = ConsDolanKindVary fmap $ NilDolanKindVary
+    dolanVary = ConsDolanVarianceMap fmap $ NilDolanVarianceMap
 
 resultTextToM :: MonadFail m => Result Text a -> m a
 resultTextToM = resultToM . mapResultFailure unpack

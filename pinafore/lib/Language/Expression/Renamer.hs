@@ -34,7 +34,7 @@ class (MonadTransConstraint Monad rn, MonadTransConstraint Monad (RenamerNamespa
     runRenamer :: Monad m => rn m r -> m r
 
 rename ::
-       forall rn m a. (Renamer rn, Monad m, TypeMappable (RenamerPosWitness rn) (RenamerNegWitness rn) a)
+       forall rn m a. (Renamer rn, Monad m, TypeMappable (->) (RenamerPosWitness rn) (RenamerNegWitness rn) a)
     => a
     -> rn m a
 rename a =
