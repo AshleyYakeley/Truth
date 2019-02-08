@@ -2,6 +2,7 @@
 
 module Pinafore.Language.Type
     ( module Pinafore.Language.Type.Type
+    , module Pinafore.Language.EntityType
     , module Pinafore.Language.GroundType
     , module Language.Expression.Polarity
     , module Language.Expression.TypeF
@@ -17,6 +18,7 @@ import Language.Expression.TypeF
 import Language.Expression.TypeSystem
 import Language.Expression.UVar
 import Language.Expression.Unifier
+import Pinafore.Language.EntityType
 import Pinafore.Language.GroundType
 import Pinafore.Language.Name
 import Pinafore.Language.Scope

@@ -9,6 +9,7 @@ import Language.Expression.Dolan
 import Language.Expression.Polarity
 import Language.Expression.TypeF
 import Pinafore.Base
+import Pinafore.Language.EntityType
 import Pinafore.Language.GroundType
 import Pinafore.Language.Literal
 import Pinafore.Language.NamedEntity

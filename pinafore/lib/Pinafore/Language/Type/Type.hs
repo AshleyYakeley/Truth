@@ -7,6 +7,7 @@ import Language.Expression.Renamer
 import Language.Expression.Sealed
 import Language.Expression.TypeF
 import Language.Expression.UVar
+import Pinafore.Language.EntityType
 import Pinafore.Language.GroundType
 import Pinafore.Language.Literal
 import Pinafore.Language.Name
