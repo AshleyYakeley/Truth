@@ -180,7 +180,7 @@ interpretTypeM (OrderSyntaxType st1) = do
                  GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
             (MkInvertMPolarW at1)
 interpretTypeM (VarSyntaxType name) =
-    toSymbolWitness (unpack name) $ \t -> return $ toMPolar $ MkAnyW $ singlePinaforeType $ VarPinaforeSingularType t
+    nameToSymbolWitness name $ \t -> return $ toMPolar $ MkAnyW $ singlePinaforeType $ VarPinaforeSingularType t
 interpretTypeM UnitSyntaxType = return $ toMPolar $ MkAnyW $ literalPinaforeType UnitLiteralType
 interpretTypeM (ConstSyntaxType name) = interpretTypeConst name
 interpretTypeM (RangeSyntaxType _) = fail "range not allowed in type"
@@ -242,7 +242,7 @@ interpretTypeConst n
 interpretTypeConst n = do
     nt <- lookupNamedType n
     case nt of
-        EntityNamedType (MkAnyW sw) ->
+        OpenEntityNamedType (MkAnyW sw) ->
             return $
             toMPolar $
             MkAnyW $
@@ -250,6 +250,15 @@ interpretTypeConst n = do
             GroundPinaforeSingularType
                 (EntityPinaforeGroundType NilListType $ NamedEntityGroundType sw)
                 NilDolanArguments
+        ClosedEntityNamedType (MkAnyW ct) ->
+            nameToSymbolWitness n $ \sw ->
+                return $
+                toMPolar $
+                MkAnyW $
+                singlePinaforeType $
+                GroundPinaforeSingularType
+                    (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType sw ct)
+                    NilDolanArguments
 
 nameToLiteralType :: Name -> Maybe (AnyW LiteralType)
 nameToLiteralType "Literal" = Just $ MkAnyW LiteralLiteralType

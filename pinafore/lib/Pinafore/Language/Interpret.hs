@@ -77,7 +77,7 @@ interpretLetBindingsClump ::
 interpretLetBindingsClump spos sbinds ra = do
     bl <- interpretBindings sbinds
     remonadRefNotation
-        (\se -> do
+        (MkTransform $ \se -> do
              bmap <- runSourcePos spos $ qUncheckedBindingsComponentLetExpr bl
              withNewBindings bmap se) $
         ra

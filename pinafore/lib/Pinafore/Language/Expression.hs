@@ -92,6 +92,22 @@ qCase ::
     -> PinaforeSourceScoped baseedit (QExpr baseedit)
 qCase = tsCase @(PinaforeTypeSystem baseedit)
 
+qFunctionPosWitness ::
+       forall baseedit a b.
+       PinaforeTypeF baseedit 'Negative a
+    -> PinaforeTypeF baseedit 'Positive b
+    -> PinaforeTypeF baseedit 'Positive (a -> b)
+qFunctionPosWitness (MkTypeF ta conva) (MkTypeF tb convb) =
+    tsFunctionPosWitness @(PinaforeTypeSystem baseedit) ta tb $ \tf abf -> MkTypeF tf $ abf . \ab -> convb . ab . conva
+
+qFunctionPosWitnesses ::
+       ListType (PinaforeTypeF baseedit 'Negative) a
+    -> PinaforeTypeF baseedit 'Positive b
+    -> PinaforeTypeF baseedit 'Positive (HList a -> b)
+qFunctionPosWitnesses NilListType tb = contramap (\ub -> ub ()) tb
+qFunctionPosWitnesses (ConsListType ta la) tb =
+    contramap (\f a l -> f (a, l)) $ qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
+
 qCaseAbstract ::
        forall baseedit. [(QPattern baseedit, QExpr baseedit)] -> PinaforeSourceScoped baseedit (QExpr baseedit)
 qCaseAbstract = tsCaseAbstract @(PinaforeTypeSystem baseedit)

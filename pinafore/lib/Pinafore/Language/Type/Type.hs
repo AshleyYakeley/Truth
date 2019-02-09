@@ -214,8 +214,10 @@ type PinaforePattern baseedit = SealedPattern Name (PinaforeType baseedit 'Posit
 
 data PinaforeTypeSystem (baseedit :: Type)
 
-type PinaforeScoped baseedit = Scoped (PinaforeExpression baseedit) (PinaforePatternConstructor baseedit)
+type PinaforeScoped baseedit
+     = Scoped (PinaforeExpression baseedit) (PinaforePatternConstructor baseedit) (AnyW ClosedEntityType)
 
-type PinaforeSourceScoped baseedit = SourceScoped (PinaforeExpression baseedit) (PinaforePatternConstructor baseedit)
+type PinaforeSourceScoped baseedit
+     = SourceScoped (PinaforeExpression baseedit) (PinaforePatternConstructor baseedit) (AnyW ClosedEntityType)
 
 type PinaforeTypeCheck baseedit = VarRenamer (PinaforeTypeSystem baseedit) (PinaforeSourceScoped baseedit)

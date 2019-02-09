@@ -18,6 +18,36 @@ data EntityGroundType (t :: k) where
     ListEntityGroundType :: EntityGroundType []
     PairEntityGroundType :: EntityGroundType (,)
     EitherEntityGroundType :: EntityGroundType Either
+    ClosedEntityGroundType :: SymbolType s -> ClosedEntityType t -> EntityGroundType (ClosedEntity s t)
+
+newtype ClosedEntity (s :: Symbol) (t :: Type) = MkClosedEntity
+    { unClosedEntity :: t
+    } deriving (Eq)
+
+data ClosedEntityType (t :: Type) where
+    NilClosedEntityType :: ClosedEntityType None
+    ConsClosedEntityType
+        :: Anchor -> ListType EntityType tl -> ClosedEntityType tt -> ClosedEntityType (Either (HList tl) tt)
+
+instance TestEquality ClosedEntityType where
+    testEquality NilClosedEntityType NilClosedEntityType = Just Refl
+    testEquality (ConsClosedEntityType a1 l1 t1) (ConsClosedEntityType a2 l2 t2)
+        | a1 == a2 = do
+            Refl <- testEquality l1 l2
+            Refl <- testEquality t1 t2
+            Just Refl
+    testEquality _ _ = Nothing
+
+closedEntityTypeEq :: ClosedEntityType t -> Dict (Eq t)
+closedEntityTypeEq NilClosedEntityType = Dict
+closedEntityTypeEq (ConsClosedEntityType _ t1 tr) =
+    case (hListEq entityTypeEq t1, closedEntityTypeEq tr) of
+        (Dict, Dict) -> Dict
+
+closedEntityTypeAdapter :: ClosedEntityType t -> EntityAdapter t
+closedEntityTypeAdapter NilClosedEntityType = pNone
+closedEntityTypeAdapter (ConsClosedEntityType a cc rest) =
+    constructorEntityAdapter a (mapListType entityAdapter cc) <+++> closedEntityTypeAdapter rest
 
 entityTypeEq :: EntityType t -> Dict (Eq t)
 entityTypeEq (MkEntityType TopEntityGroundType NilArguments) = Dict
@@ -38,6 +68,9 @@ entityTypeEq (MkEntityType PairEntityGroundType (ConsArguments ta (ConsArguments
 entityTypeEq (MkEntityType EitherEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments))) =
     case (entityTypeEq ta, entityTypeEq tb) of
         (Dict, Dict) -> Dict
+entityTypeEq (MkEntityType (ClosedEntityGroundType _ t) NilArguments) =
+    case closedEntityTypeEq t of
+        Dict -> Dict
 entityTypeEq NoneEntityType = Dict
 
 entityGroundTypeTestEquality :: EntityGroundType ta -> EntityGroundType tb -> Maybe (ta :~~: tb)
@@ -53,11 +86,23 @@ entityGroundTypeTestEquality MaybeEntityGroundType MaybeEntityGroundType = Just 
 entityGroundTypeTestEquality PairEntityGroundType PairEntityGroundType = Just HRefl
 entityGroundTypeTestEquality ListEntityGroundType ListEntityGroundType = Just HRefl
 entityGroundTypeTestEquality EitherEntityGroundType EitherEntityGroundType = Just HRefl
+entityGroundTypeTestEquality (ClosedEntityGroundType sa ta) (ClosedEntityGroundType sb tb) = do
+    Refl <- testEquality sa sb
+    Refl <- testEquality ta tb
+    Just HRefl
 entityGroundTypeTestEquality _ _ = Nothing
 
 data EntityType (t :: Type) where
     MkEntityType :: EntityGroundType f -> Arguments EntityType f t -> EntityType t
     NoneEntityType :: EntityType BottomType
+
+instance TestEquality EntityType where
+    testEquality (MkEntityType gt1 args1) (MkEntityType gt2 args2) = do
+        HRefl <- entityGroundTypeTestEquality gt1 gt2
+        Refl <- testEquality args1 args2
+        return Refl
+    testEquality NoneEntityType NoneEntityType = Just Refl
+    testEquality _ _ = Nothing
 
 entityGroundTypeCovaryType ::
        forall (k :: Type) (t :: k) r.
@@ -72,6 +117,7 @@ entityGroundTypeCovaryType MaybeEntityGroundType cont = cont $ ConsListType Refl
 entityGroundTypeCovaryType ListEntityGroundType cont = cont $ ConsListType Refl NilListType
 entityGroundTypeCovaryType PairEntityGroundType cont = cont $ ConsListType Refl $ ConsListType Refl NilListType
 entityGroundTypeCovaryType EitherEntityGroundType cont = cont $ ConsListType Refl $ ConsListType Refl NilListType
+entityGroundTypeCovaryType (ClosedEntityGroundType _ _) cont = cont NilListType
 
 entityGroundTypeCovaryMap :: EntityGroundType f -> CovaryMap (->) f
 entityGroundTypeCovaryMap TopEntityGroundType = covarymap
@@ -82,6 +128,7 @@ entityGroundTypeCovaryMap MaybeEntityGroundType = covarymap
 entityGroundTypeCovaryMap ListEntityGroundType = covarymap
 entityGroundTypeCovaryMap PairEntityGroundType = covarymap
 entityGroundTypeCovaryMap EitherEntityGroundType = covarymap
+entityGroundTypeCovaryMap (ClosedEntityGroundType _ _) = covarymap
 
 entityGroundTypeShowPrec ::
        forall w f t. (forall a. w a -> (Text, Int)) -> EntityGroundType f -> Arguments w f t -> (Text, Int)
@@ -95,6 +142,7 @@ entityGroundTypeShowPrec es PairEntityGroundType (ConsArguments ta (ConsArgument
     ("(" <> fst (es ta) <> ", " <> fst (es tb) <> ")", 0)
 entityGroundTypeShowPrec es EitherEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments)) =
     ("Either " <> fst (es ta) <> " " <> fst (es tb), 2)
+entityGroundTypeShowPrec _ (ClosedEntityGroundType n _) NilArguments = (pack $ show n, 0)
 
 instance ExprShow (EntityType t) where
     exprShowPrec (MkEntityType gt args) = entityGroundTypeShowPrec exprShowPrec gt args
@@ -172,6 +220,8 @@ entityGroundTypeAdapter ListEntityGroundType (ConsArguments t NilArguments) = le
     to [] = Left ()
     to (a:aa) = Right (a, (aa, ()))
     in listAdapter
+entityGroundTypeAdapter (ClosedEntityGroundType _ ct) NilArguments =
+    isoMap MkClosedEntity unClosedEntity $ closedEntityTypeAdapter ct
 
 entityAdapter :: forall t. EntityType t -> EntityAdapter t
 entityAdapter (MkEntityType gt args) = entityGroundTypeAdapter gt args

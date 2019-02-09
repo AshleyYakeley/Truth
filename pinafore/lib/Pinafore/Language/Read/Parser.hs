@@ -62,16 +62,19 @@ readParen = readBracketed TokOpenParen TokCloseParen
 readBracket :: Parser t -> Parser t
 readBracket = readBracketed TokOpenBracket TokCloseBracket
 
-readCommaList1 :: Semigroup t => Parser t -> Parser t
-readCommaList1 p = do
+readSeparated1 :: Semigroup t => Parser () -> Parser t -> Parser t
+readSeparated1 sep p = do
     v1 <- p
     mv2 <-
         optional $ do
-            readThis TokComma
-            readCommaList1 p
+            sep
+            readSeparated1 sep p
     case mv2 of
         Just v2 -> return $ v1 <> v2
         Nothing -> return v1
 
+readSeparated :: Monoid t => Parser () -> Parser t -> Parser t
+readSeparated sep p = readSeparated1 sep p <|> return mempty
+
 readCommaList :: Monoid t => Parser t -> Parser t
-readCommaList p = readCommaList1 p <|> return mempty
+readCommaList = readSeparated $ readThis TokComma

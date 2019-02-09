@@ -118,6 +118,9 @@ entityGroundSubtype sc cta PairEntityGroundType argsa ctb PairEntityGroundType a
     | Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta PairEntityGroundType argsa argsb
 entityGroundSubtype sc cta EitherEntityGroundType argsa ctb EitherEntityGroundType argsb
     | Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta EitherEntityGroundType argsa argsb
+entityGroundSubtype _ NilListType (ClosedEntityGroundType sa ta) NilDolanArguments NilListType (ClosedEntityGroundType sb tb) NilDolanArguments
+    | Just Refl <- testEquality sa sb
+    , Just Refl <- testEquality ta tb = pure id
 entityGroundSubtype sc cta ga argsa ctb gb argsb =
     subtypeLift sc $
     convertFailure

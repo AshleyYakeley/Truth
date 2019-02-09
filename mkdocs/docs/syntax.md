@@ -126,7 +126,18 @@ In interactive mode, each line has syntax `<interactive>`.
 <declaration> ::=
     "opentype" <type-const> |
     "subtype" <type-const> "<=" <type-const> |
+    "closedtype" <type-const> <closedtype-body>
     lname <patterns> "=" <expression>
+
+<closedtype-body> ::=  | "=" <closedtype-constructors>
+
+<closedtype-constructors> ::=
+    <closedtype-constructor> |
+    <closedtype-constructor> "|" <closedtype-constructors>
+
+<closedtype-constructor> ::= uname <types> anchor
+
+<types> ::=  | <type-3> <types>
 
 <patterns> ::=  | <pattern-2> <patterns>
 

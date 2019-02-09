@@ -13,3 +13,6 @@ instance IsString Name where
     fromString s = MkName $ fromString s
 
 type instance Element Name = Char
+
+nameToSymbolWitness :: Name -> (forall (symbol :: Symbol). SymbolType symbol -> r) -> r
+nameToSymbolWitness n = toSymbolWitness $ unpack n
