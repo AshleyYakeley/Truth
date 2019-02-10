@@ -10,6 +10,7 @@ Instead, declarations within a `let` block, lines within a `do` statement, and c
 Also, `case` and `do` statements are terminated with `end`.
 * There's no "top level" for declarations.
 All declarations, including type declarations, are local to a `let` block.
+* Only one equation is allowed for a function definition. Use `case` to match argument patterns.
 
 A file passed to `pinafore` has syntax `<file>`.
 In interactive mode, each line has syntax `<interactive>`.

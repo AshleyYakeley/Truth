@@ -159,7 +159,7 @@ base_predefinitions =
                 "stop"
                 "Stop. This is similar to an exception that can be caught with `onstop`. The default handler (for the main program, button presses, etc.), is to ignore it." $
             pinaforeActionKnow @baseedit @BottomType Unknown
-          , mkValEntry "onstop" "`onstop p q` is `q` if it is stopped, else `p`" $ onstop @baseedit
+          , mkValEntry "onstop" "`onstop p q` does `q` first, and if it stops, then does `p`." $ onstop @baseedit
           , mkValEntry
                 "for_"
                 "Perform an action on each value of a list."
