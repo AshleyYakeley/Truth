@@ -3,6 +3,7 @@ module Pinafore.Language.Predefined.Base
     , outputln
     ) where
 
+import Data.Fixed (div', mod')
 import Pinafore.Base
 import Pinafore.Language.Doc
 import Pinafore.Language.If
@@ -14,6 +15,7 @@ import Pinafore.Language.Set
 import Pinafore.Language.Type
 import Pinafore.Storage.File
 import Shapes
+import Shapes.Numeric
 import Truth.Core
 
 output :: forall baseedit. Text -> PinaforeAction baseedit ()
@@ -73,23 +75,98 @@ base_predefinitions =
           , docTreeEntry
                 "Numeric"
                 ""
-                [ mkValEntry "+" "Numeric add." $ (+) @Number
-                , mkValEntry "-" "Numeric Subtract." $ (-) @Number
-                , mkValEntry "*" "Numeric Multiply." $ (*) @Number
-                , mkValEntry "/" "Numeric Divide." $ (/) @Number
-                , mkValEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
+                [ mkValEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
                 , mkValEntry "~/=" "Numeric non-equality." $ (/=) @Number
                 , mkValEntry "<" "Numeric strictly less." $ (<) @Number
                 , mkValEntry "<=" "Numeric less or equal." $ (<=) @Number
                 , mkValEntry ">" "Numeric strictly greater." $ (>) @Number
                 , mkValEntry ">=" "Numeric greater or equal." $ (>=) @Number
-                , mkValEntry "abs" "Numeric absolute value." $ abs @Number
-                , mkValEntry "signum" "Numeric sign." $ signum @Number
-                , mkValEntry "inexact" "Convert a number to inexact." numberToDouble
-                , mkValEntry
-                      "approximate"
-                      "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`."
-                      approximate
+                , docTreeEntry
+                      "Integer"
+                      ""
+                      [ mkValEntry "+" "Add." $ (+) @Integer
+                      , mkValEntry "-" "Subtract." $ (-) @Integer
+                      , mkValEntry "*" "Multiply." $ (*) @Integer
+                      , mkValEntry "negate" "Negate." $ negate @Integer
+                      , mkValEntry "abs" "Absolute value." $ abs @Integer
+                      , mkValEntry "signum" "Sign." $ signum @Integer
+                      , mkValEntry "mod" "Modulus, leftover from `div`" $ mod' @Integer
+                      , mkValEntry "even" "Is even?" $ even @Integer
+                      , mkValEntry "odd" "Is odd?" $ odd @Integer
+                      , mkValEntry "gcd" "Greatest common divisor." $ gcd @Integer
+                      , mkValEntry "lcm" "Least common multiple." $ lcm @Integer
+                      , mkValEntry "^" "Raise to non-negative power." $ (^) @Integer @Integer
+                      ]
+                , docTreeEntry
+                      "Rational"
+                      ""
+                      [ mkValEntry ".+" "Add." $ (+) @Rational
+                      , mkValEntry ".-" "Subtract." $ (-) @Rational
+                      , mkValEntry ".*" "Multiply." $ (*) @Rational
+                      , mkValEntry "/" "Divide." $ (/) @Rational
+                      , mkValEntry "rnegate" "Negate." $ negate @Rational
+                      , mkValEntry "recip" "Reciprocal." $ recip @Rational
+                      , mkValEntry "rabs" "Absolute value." $ abs @Rational
+                      , mkValEntry "rsignum" "Sign." $ signum @Rational
+                      , mkValEntry "rmod" "Modulus, leftover from `div`" $ mod' @Rational
+                      , mkValEntry "^^" "Raise to Integer power." $ ((^^) :: Rational -> Integer -> Rational)
+                      ]
+                , docTreeEntry
+                      "Number"
+                      ""
+                      [ mkValEntry "~+" "Add." $ (+) @Number
+                      , mkValEntry "~-" "Subtract." $ (-) @Number
+                      , mkValEntry "~*" "Multiply." $ (*) @Number
+                      , mkValEntry "~/" "Divide." $ (/) @Number
+                      , mkValEntry "nnegate" "Negate." $ negate @Number
+                      , mkValEntry "nrecip" "Reciprocal." $ recip @Number
+                      , mkValEntry "pi" "Half the radians in a circle." $ pi @Number
+                      , mkValEntry "exp" "Exponent" $ exp @Number
+                      , mkValEntry "log" "Natural logarithm" $ log @Number
+                      , mkValEntry "sqrt" "Square root." $ sqrt @Number
+                      , mkValEntry "(**)" "Raise to power." $ (**) @Number
+                      , mkValEntry "logBase" "" $ logBase @Number
+                      , mkValEntry "sin" "Sine of an angle in radians." $ sin @Number
+                      , mkValEntry "cos" "Cosine of an angle in radians." $ cos @Number
+                      , mkValEntry "tan" "Tangent of an angle in radians." $ tan @Number
+                      , mkValEntry "asin" "Radian angle of a sine." $ asin @Number
+                      , mkValEntry "acos" "Radian angle of a cosine." $ acos @Number
+                      , mkValEntry "atan" "Radian angle of a tangent." $ atan @Number
+                      , mkValEntry "sinh" "Hyperbolic sine." $ sinh @Number
+                      , mkValEntry "cosh" "Hyperbolic cosine." $ cosh @Number
+                      , mkValEntry "tanh" "Hyperbolic tangent." $ tanh @Number
+                      , mkValEntry "asinh" "Inverse hyperbolic sine." $ asinh @Number
+                      , mkValEntry "acosh" "Inverse hyperbolic cosine." $ acosh @Number
+                      , mkValEntry "atanh" "Inverse hyperbolic tangent." $ atanh @Number
+                      , mkValEntry "nabs" "Absolute value." $ abs @Number
+                      , mkValEntry "nsignum" "Sign. Note this will be the same exact or inexact as the number." $
+                        signum @Number
+                      , mkValEntry "floor" "Integer towards negative infinity." (floor :: Number -> Integer)
+                      , mkValEntry "ceiling" "Integer towards positive infinity." (ceiling :: Number -> Integer)
+                      , mkValEntry "round" "Closest Integer." (round :: Number -> Integer)
+                      , mkValEntry "inexact" "Convert a number to inexact." numberToDouble
+                      , mkValEntry
+                            "approximate"
+                            "`approximate d x` gives the exact number that's a multiple of `d` that's closest to `x`."
+                            approximate
+                      , mkValEntry
+                            "div"
+                            "Division to Integer, towards negative infinity."
+                            (div' :: Number -> Number -> Integer)
+                      , mkValEntry "nmod" "Modulus, leftover from `div`" $ mod' @Number
+                      , mkValEntry "isNaN" "Is not a number?" numberIsNaN
+                      , mkValEntry "isInfinite" "Is infinite?" numberIsInfinite
+                      , mkValEntry "isNegativeZero" "Is negative zero?" numberIsNegativeZero
+                      , mkValEntry "isExact" "Is exact?" numberIsExact
+                      , mkValEntry
+                            "checkExactRational"
+                            "Get the exact value of a Number, if it is one."
+                            checkExactRational
+                      , mkValEntry
+                            "checkExactInteger"
+                            "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $ \n ->
+                            checkExactRational n >>= rationalInteger
+                      ]
                 ]
           ]
     , docTreeEntry
@@ -138,6 +215,7 @@ base_predefinitions =
                 case l of
                     [] -> fnil
                     (a:aa) -> fcons a aa
+          , mkValEntry "length" "Number of items in a list" $ (length :: [TopType] -> Int)
           ]
     , docTreeEntry
           "Functions"

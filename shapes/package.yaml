@@ -51,6 +51,7 @@ library:
       - Control.Monad.Compose
       - Control.LifeCycle
       - Shapes
+      - Shapes.Numeric
     other-modules:
       - Shapes.Import
 

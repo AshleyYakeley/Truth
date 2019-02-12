@@ -264,5 +264,7 @@ nameToLiteralType :: Name -> Maybe (AnyW LiteralType)
 nameToLiteralType "Literal" = Just $ MkAnyW LiteralLiteralType
 nameToLiteralType "Text" = Just $ MkAnyW TextLiteralType
 nameToLiteralType "Number" = Just $ MkAnyW NumberLiteralType
+nameToLiteralType "Rational" = Just $ MkAnyW RationalLiteralType
+nameToLiteralType "Integer" = Just $ MkAnyW IntegerLiteralType
 nameToLiteralType "Boolean" = Just $ MkAnyW BooleanLiteralType
 nameToLiteralType _ = Nothing

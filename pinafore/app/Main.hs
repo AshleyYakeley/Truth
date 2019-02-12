@@ -79,7 +79,7 @@ main =
         options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
         case options of
             ExprDocOption ->
-                liftIO $ do runDocTree showDefTitle showDefDesc showDefEntry 2 $ predefinedDoc @PinaforeEdit
+                liftIO $ do runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
                     -- putMarkdown "<file>" (unpack filePinaforeType) "a script file passed to pinafore"
             DumpTableOption mdirpath -> do
                 dirpath <- getDirPath mdirpath

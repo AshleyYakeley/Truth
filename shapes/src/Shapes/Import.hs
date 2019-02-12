@@ -34,18 +34,22 @@ import Data.Traversable as I
 import Data.Tuple as I
 import Data.Word as I
 import Prelude as I
-    ( Double
-    , Enum(..)
-    , Fractional(..)
+    ( Enum(..)
     , Integer
     , Integral(..)
     , Num(..)
     , Real(..)
     , ($)
+    , (^)
+    , (^^)
     , const
     , error
+    , even
     , fromInteger
     , fromIntegral
+    , gcd
+    , lcm
+    , odd
     , seq
     , toInteger
     , undefined

@@ -6,9 +6,8 @@ module Pinafore.Language.Read.Token
 import Data.UUID
 import Pinafore.Base
 import Pinafore.Language.Name
-
---import Pinafore.Storage.Table
 import Shapes hiding (try)
+import Shapes.Numeric
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.String
 
@@ -199,7 +198,7 @@ readNumber =
          return $ InexactNumber $ -1 / 0) <|>
     (try $ do
          text <- many1 $ satisfy $ \c -> elem c ("0123456789-.e_~" :: String)
-         case readMaybe text of
+         case readNumberLiteral text of
              Just n -> return $ n
              Nothing -> empty)
 

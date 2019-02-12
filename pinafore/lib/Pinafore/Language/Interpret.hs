@@ -118,7 +118,14 @@ interpretNamedConstructor spos n = do
         Nothing -> fail $ "unknown constructor: " <> show n
 
 interpretConstructor :: SourcePos -> SyntaxConstructor -> RefExpression baseedit
-interpretConstructor _ (SLNumber v) = return $ qConstExprAny $ toValue v
+interpretConstructor _ (SLNumber n) =
+    return $
+    case checkExactRational n of
+        Just r ->
+            case rationalInteger r of
+                Just i -> qConstExprAny $ toValue i
+                Nothing -> qConstExprAny $ toValue r
+        Nothing -> qConstExprAny $ toValue n
 interpretConstructor _ (SLString v) = return $ qConstExprAny $ toValue v
 interpretConstructor spos (SLNamedConstructor v) = interpretNamedConstructor spos v
 interpretConstructor _ SLPair = return $ qConstExprAny $ toValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))

@@ -25,7 +25,7 @@ predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => DocTree (BindDoc baseedit)
 predefinitions =
-    MkDocTree "Predefined" "" $
+    MkDocTree "" "" $
     base_predefinitions <> [TreeDocTreeEntry $ ui_predefinitions, TreeDocTreeEntry file_predefinitions]
 
 predefinedDoc ::

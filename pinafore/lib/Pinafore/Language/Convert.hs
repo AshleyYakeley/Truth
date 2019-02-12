@@ -9,6 +9,7 @@ import Pinafore.Base
 import Pinafore.Language.Convert.Base
 import Pinafore.Language.Type
 import Shapes
+import Shapes.Numeric
 
 -- Literal types
 $(literalInstances [t|Literal|])
@@ -16,6 +17,10 @@ $(literalInstances [t|Literal|])
 $(literalInstances [t|Text|])
 
 $(literalInstances [t|Number|])
+
+$(literalInstances [t|Rational|])
+
+$(literalInstances [t|Integer|])
 
 $(literalInstances [t|Bool|])
 
@@ -25,14 +30,6 @@ $(literalInstances [t|()|])
 instance ToTypeF (PinaforeType baseedit 'Positive) Double where
     toTypeF = contramap InexactNumber toTypeF
 
--- Rational
-instance ToTypeF (PinaforeType baseedit 'Positive) Rational where
-    toTypeF = contramap ExactNumber toTypeF
-
--- Integer
-instance ToTypeF (PinaforeType baseedit 'Positive) Integer where
-    toTypeF = contramap (ExactNumber . toRational) toTypeF
-
 -- Int
 instance ToTypeF (PinaforeType baseedit 'Positive) Int where
-    toTypeF = contramap (ExactNumber . toRational) toTypeF
+    toTypeF = contramap toInteger toTypeF
