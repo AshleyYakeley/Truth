@@ -16,4 +16,4 @@ root = entity @Root !78baed51-cb05-46b5-bcb4-49031532b890;
 people = property @Person @Root !f06efa5e-190f-4e5d-8633-495c5683c124 !@ {root};
 
 in
-get (members (rev alphabetical) (name !$$ people)) $ \l -> for l outputln
+get (members (rev alphabetical) (name !$$ people)) >>= \l -> for_ l outputln

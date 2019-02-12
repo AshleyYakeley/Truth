@@ -146,8 +146,8 @@ convertEditLens = let
     in MkCloseUnlift identityUnlift MkAnEditLens {..}
 
 class IsEditLens lens where
-    type LensDomain lens :: *
-    type LensRange lens :: *
+    type LensDomain lens :: Type
+    type LensRange lens :: Type
     toEditLens :: lens -> EditLens (LensDomain lens) (LensRange lens)
 
 instance IsEditLens (EditLens edita editb) where

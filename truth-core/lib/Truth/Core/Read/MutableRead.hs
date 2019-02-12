@@ -2,7 +2,7 @@ module Truth.Core.Read.MutableRead where
 
 import Truth.Core.Import
 
-type MutableRead m reader = forall (t :: *). reader t -> m t
+type MutableRead m reader = forall (t :: Type). reader t -> m t
 
 remonadMutableRead :: (forall a. m1 a -> m2 a) -> MutableRead m1 reader -> MutableRead m2 reader
 remonadMutableRead mf mr rt = mf (mr rt)

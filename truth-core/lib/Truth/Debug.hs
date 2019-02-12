@@ -73,12 +73,12 @@ type ShowableEdit edit
 
 class TraceAThing f where
     traceAThing ::
-           forall (t :: (* -> *) -> (* -> *)) (edita :: *) (editb :: *). MonadTransUnlift t
+           forall (t :: (Type -> Type) -> (Type -> Type)) (edita :: Type) (editb :: Type). MonadTransUnlift t
         => String
         -> f t edita editb
         -> f t edita editb
     traceArgAThing ::
-           forall (t :: (* -> *) -> (* -> *)) (edita :: *) (editb :: *).
+           forall (t :: (Type -> Type) -> (Type -> Type)) (edita :: Type) (editb :: Type).
            (MonadTransUnlift t, ShowableEdit edita, ShowableEdit editb)
         => String
         -> f t edita editb

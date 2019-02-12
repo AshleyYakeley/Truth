@@ -6,9 +6,11 @@ These are the main differences:
 * Line comments start with `#`, not `--`.
 There are no block comments.
 * Layout is not significant.
-Instead, declarations within a `let` block are separated by `;`.
+Instead, declarations within a `let` block, lines within a `do` statement, and cases within a `case` statement, are separated by `;`.
+Also, `case` and `do` statements are terminated with `end`.
 * There's no "top level" for declarations.
-All declarations are local to a `let` block.
+All declarations, including type declarations, are local to a `let` block.
+* Only one equation is allowed for a function definition. Use `case` to match argument patterns.
 
 A file passed to `pinafore` has syntax `<file>`.
 In interactive mode, each line has syntax `<interactive>`.
@@ -35,6 +37,7 @@ In interactive mode, each line has syntax `<interactive>`.
     <type-2>
 
 <type-2> ::=
+    "Maybe" <type-3> |
     "Either" <type-3> <type-3> |
     "Order" <type-3> |
     "Ref" <type-range-3> |
@@ -63,9 +66,9 @@ In interactive mode, each line has syntax `<interactive>`.
     "-" <type> |
     "+" <type>
 
-<type-var> ::= symbol -- lowercase first letter
+<type-var> ::= lname
 
-<type-const> ::= symbol -- upper first letter
+<type-const> ::= uname
 
 <expression> ::= <expression-infix[0]>
 
@@ -81,6 +84,8 @@ In interactive mode, each line has syntax `<interactive>`.
     "\" <patterns> "->" <expression> |
     <let-declarations> "in" <expression> |
     "if" <expression> "then" <expression> "else" <expression> |
+    "case" <expression> "of" <cases> "end" |
+    "do" <do-lines> <expression> "end" |
     <expression-2>
 
 <expression-2> ::= <expression-3> | <expression-2> <expression-3>
@@ -90,19 +95,30 @@ In interactive mode, each line has syntax `<interactive>`.
     "entity" "@"<type-3> anchor |
     "{" <expression> "}" |
     "%" <expression-3> |
-    symbol |
+    lname |
+    uname |
     literal-boolean |
     literal-number |
     literal-text |
-    "[" <comma-separated-expressions> "]" |
+    "[" <comma-separated(<expression>)> "]" |
+    "(" ")" |
+    "(" <expression> "," <expression> ")" |
     "(" <expression> ")" |
     "(" <infix-operator[n]> ")"
 
-<comma-separated-expressions> ::=  | <comma-separated-expressions-1>
+<comma-separated(n)> ::=  | <comma-separated-1(n)>
 
-<comma-separated-expressions-1> ::=
-    <expression> |
-    <comma-separated-expressions-1> "," <expression>
+<comma-separated-1(n)> ::=
+    n |
+    <comma-separated-1(n)> "," n
+
+<cases> ::=  | <case> ";" <cases>
+
+<case> ::= <pattern-1> "->" <expression>
+
+<do-lines> =  | <do-line> ";" <do-lines>
+
+<do-line> = <expression> | <pattern> "<-" <expression>
 
 <let-declarations> ::= "let" <declarations>
 
@@ -111,11 +127,37 @@ In interactive mode, each line has syntax `<interactive>`.
 <declaration> ::=
     "opentype" <type-const> |
     "subtype" <type-const> "<=" <type-const> |
-    symbol <patterns> "=" <expression>
+    "closedtype" <type-const> <closedtype-body>
+    lname <patterns> "=" <expression>
 
-<patterns> ::=  | <pattern> <patterns>
+<closedtype-body> ::=  | "=" <closedtype-constructors>
 
-<pattern> ::= symbol
+<closedtype-constructors> ::=
+    <closedtype-constructor> |
+    <closedtype-constructor> "|" <closedtype-constructors>
+
+<closedtype-constructor> ::= uname <types> anchor
+
+<types> ::=  | <type-3> <types>
+
+<patterns> ::=  | <pattern-2> <patterns>
+
+<pattern-1> ::= <pattern-2> <patterns>
+
+<pattern-2> ::= <pattern-3> | <pattern-3> ":" <pattern-2>
+
+<pattern-3> ::= <pattern-4> | <pattern-4> "@" <pattern-3>
+
+<pattern-4> ::=
+    uname |
+    literal-number |
+    literal-text |
+    lname |
+    "_" |
+    "[" <comma-separated(<pattern>)> "]" |
+    "(" ")" |
+    "(" <pattern-1> "," <pattern-1> ")" |
+    "(" <pattern-1> ")"
 ```
 
 ## Infix Operators
@@ -130,15 +172,17 @@ In interactive mode, each line has syntax `<interactive>`.
 4 | | `&&` |
 3 | | `||` |
 2 | | | `:=` `+=` `-=`
-1 | `>>` | |
+1 | `>>` `>>=` | |
 0 | | `$` |
 
 ## Lexical
 
 ```no-highlight
-symbol = [[:alpha:]][-_[:alnum:]]*
+uname = [[:upper:]][-_[:alnum:]]*
 
-literal-boolean = (true)|(false)
+lname = [_[:lower:]][-_[:alnum:]]*
+
+literal-boolean = (True)|(False)
 
 literal-number = (-?[0-9]+(.[0-9]*(_[0-9]*)?)?)|(~-?[0-9]+(.[0-9]*)?(e-?[0-9]+)?)|(NaN)
 

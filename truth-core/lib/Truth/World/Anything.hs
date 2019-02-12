@@ -4,10 +4,10 @@ import Truth.Core
 import Truth.Core.Import
 
 data Anything where
-    MkAnything :: forall (edit :: *). IOWitness edit -> EditSubject edit -> Anything
+    MkAnything :: forall (edit :: Type). IOWitness edit -> EditSubject edit -> Anything
 
 data AnyTypes where
-    MkAnyTypes :: forall (edit :: *). IOWitness edit -> AnyTypes
+    MkAnyTypes :: forall (edit :: Type). IOWitness edit -> AnyTypes
 
 data AnyReader t where
     ReadAnyTypes :: AnyReader AnyTypes

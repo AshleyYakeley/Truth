@@ -1,2 +1,3 @@
 #!/bin/bash -e
+docker build -t local-build docker
 stack exec --cwd mkdocs -- mkdocs serve

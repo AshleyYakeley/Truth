@@ -12,34 +12,32 @@ module Truth.Core.UI.CreateView
     , cvBindEditFunction
     , cvAddAspect
     , cvMapEdit
-    , cvMapSetSelectionEdit
+    , cvMapSelection
     , cvNoAspect
-    , cvMapAspect
+    , cvAccessAspect
     , subscribeView
     , subscribeView'
     , tupleCreateView
     ) where
 
-import Data.IORef
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Read
 import Truth.Core.Types
-import Truth.Core.UI.Specifier.Lens
 import Truth.Core.UI.Specifier.SelectionLens
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.View
 import Truth.Core.UI.ViewContext
 import Truth.Debug.Object
 
-data ViewOutput seledit edit = MkViewOutput
+data ViewOutput sel edit = MkViewOutput
     { voUpdate :: Object edit -> [edit] -> IO ()
-    , voFirstAspect :: Aspect seledit edit
+    , voFirstAspect :: Aspect sel
     }
 
-instance Semigroup (ViewOutput seledit edit) where
+instance Semigroup (ViewOutput sel edit) where
     (MkViewOutput update1 fss1) <> (MkViewOutput update2 fss2) = let
         voUpdate :: Object edit -> [edit] -> IO ()
         voUpdate obj edits = do
@@ -52,14 +50,14 @@ instance Semigroup (ViewOutput seledit edit) where
                 Nothing -> fss2
         in MkViewOutput {..}
 
-instance Monoid (ViewOutput seledit edit) where
+instance Monoid (ViewOutput sel edit) where
     mempty = let
         voUpdate _ _ = return ()
         voFirstAspect = return Nothing
         in MkViewOutput {..}
     mappend = (<>)
 
-voMapEdit :: forall seledit edita editb. EditLens edita editb -> ViewOutput seledit editb -> ViewOutput seledit edita
+voMapEdit :: forall sel edita editb. EditLens edita editb -> ViewOutput sel editb -> ViewOutput sel edita
 voMapEdit lens@(MkCloseUnlift unlift flens) (MkViewOutput updateB a) = let
     MkAnEditLens {..} = flens
     MkAnEditFunction {..} = elFunction
@@ -69,59 +67,57 @@ voMapEdit lens@(MkCloseUnlift unlift flens) (MkViewOutput updateB a) = let
             runTransform (composeUnliftTransform unlift ou) $
             withTransConstraintTM @MonadUnliftIO $ efUpdates elFunction editsA omr
         updateB (mapObject lens objA) editsB
-    a' = aspectMapEdit lens a
-    in (MkViewOutput updateA a')
+    in (MkViewOutput updateA a)
 
-voMapSetSelectionEdit ::
-       forall seledita seleditb edit. EditLens seledita seleditb -> ViewOutput seledita edit -> ViewOutput seleditb edit
-voMapSetSelectionEdit lens (MkViewOutput upd asp) = MkViewOutput upd $ aspectMapSelectionEdit lens asp
+voMapSelection :: forall sela selb edit. (sela -> selb) -> ViewOutput sela edit -> ViewOutput selb edit
+voMapSelection f (MkViewOutput upd asp) = MkViewOutput upd $ aspectMapSelection f asp
 
-voNoAspect :: ViewOutput seledita edit -> ViewOutput seleditb edit
+voNoAspect :: ViewOutput sela edit -> ViewOutput selb edit
 voNoAspect (MkViewOutput upd _) = MkViewOutput upd noAspect
 
-type ViewResult seledit edit a = (ViewOutput seledit edit, a)
+type ViewResult sel edit a = (ViewOutput sel edit, a)
 
-vrMapEdit :: EditLens edita editb -> ViewResult seledit editb a -> ViewResult seledit edita a
+vrMapEdit :: EditLens edita editb -> ViewResult sel editb a -> ViewResult sel edita a
 vrMapEdit lens (vo, a) = (voMapEdit lens vo, a)
 
-newtype CreateView seledit edit a =
-    MkCreateView (ReaderT (ViewContext seledit edit) (WriterT (ViewOutput seledit edit) LifeCycle) a)
+newtype CreateView sel edit a =
+    MkCreateView (ReaderT (ViewContext sel edit) (WriterT (ViewOutput sel edit) LifeCycle) a)
     deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO)
 
-type ViewState seledit edit a = LifeState (ViewResult seledit edit a)
+type ViewState sel edit a = LifeState (ViewResult sel edit a)
 
-vsUpdate :: ViewState seledit edit a -> Object edit -> [edit] -> IO ()
+vsUpdate :: ViewState sel edit a -> Object edit -> [edit] -> IO ()
 vsUpdate ((vo, _), _) = voUpdate vo
 
-vsFirstAspect :: ViewState seledit edit a -> Aspect seledit edit
+vsFirstAspect :: ViewState sel edit a -> Aspect sel
 vsFirstAspect ((vo, _), _) = voFirstAspect vo
 
-viewCreateView :: CreateView seledit edit a -> View seledit edit (ViewState seledit edit a)
+viewCreateView :: CreateView sel edit a -> View sel edit (ViewState sel edit a)
 viewCreateView (MkCreateView (ReaderT wff)) = MkView $ ReaderT $ \vc -> runLifeCycle $ fmap swap $ runWriterT $ wff vc
 
-cvLiftView :: View seledit edit a -> CreateView seledit edit a
+cvLiftView :: View sel edit a -> CreateView sel edit a
 cvLiftView (MkView (ReaderT va)) = MkCreateView $ ReaderT $ \vc -> liftIO $ va vc
 
-cvLiftViewResult :: ViewResult seledit edit a -> CreateView seledit edit a
+cvLiftViewResult :: ViewResult sel edit a -> CreateView sel edit a
 cvLiftViewResult (vo, a) = MkCreateView $ lift $ WriterT $ return (a, vo)
 
-instance MonadLifeCycle (CreateView seledit edit) where
+instance MonadLifeCycle (CreateView sel edit) where
     liftLifeCycle lc = MkCreateView $ lift $ lift lc
 
-cvReceiveIOUpdates :: (Object edit -> [edit] -> IO ()) -> CreateView seledit edit ()
+cvReceiveIOUpdates :: (Object edit -> [edit] -> IO ()) -> CreateView sel edit ()
 cvReceiveIOUpdates recv = do cvLiftViewResult $ (mempty {voUpdate = recv}, ())
 
-cvReceiveUpdates :: (UnliftIO (View seledit edit) -> ReceiveUpdates edit) -> CreateView seledit edit ()
+cvReceiveUpdates :: (UnliftIO (View sel edit) -> ReceiveUpdates edit) -> CreateView sel edit ()
 cvReceiveUpdates recv = do
     unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkTransform unlift
     cvReceiveIOUpdates $ \(MkObject unliftObj mr _) edits -> runTransform unliftObj $ recv unliftIO mr edits
 
 cvReceiveUpdate ::
-       (UnliftIO (View seledit edit) -> forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> edit -> m ())
-    -> CreateView seledit edit ()
+       (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> edit -> m ())
+    -> CreateView sel edit ()
 cvReceiveUpdate recv = cvReceiveUpdates $ \unlift mr edits -> for_ edits (recv unlift mr)
 
-cvBindEditFunction :: EditFunction edit (WholeEdit t) -> (t -> View seledit edit ()) -> CreateView seledit edit ()
+cvBindEditFunction :: EditFunction edit (WholeEdit t) -> (t -> View sel edit ()) -> CreateView sel edit ()
 cvBindEditFunction ef setf = do
     initial <- traceBracket "cvBindEditFunction:initial" $ cvLiftView $ viewObjectRead $ \_ mr -> traceBracket "cvBindEditFunction:editFunctionRead" $ editFunctionRead ef mr ReadWhole
     cvLiftView $ setf initial
@@ -131,7 +127,7 @@ cvBindEditFunction ef setf = do
                 Just newval -> liftIO $ unlift $ setf newval
                 Nothing -> return ()
 
-cvAddAspect :: Aspect seledit edit -> CreateView seledit edit ()
+cvAddAspect :: Aspect sel -> CreateView sel edit ()
 cvAddAspect aspect = cvLiftViewResult $ (mempty {voFirstAspect = aspect}, ())
 
 mapReaderContext :: (r2 -> r1) -> ReaderT r1 m a -> ReaderT r2 m a
@@ -141,83 +137,67 @@ mapWriterOutput :: Functor m => (w1 -> w2) -> WriterT w1 m a -> WriterT w2 m a
 mapWriterOutput f (WriterT maw) = WriterT $ fmap (\(a, w) -> (a, f w)) maw
 
 cvMapEdit ::
-       forall seledit edita editb a. ()
+       forall sel edita editb a. ()
     => EditLens edita editb
-    -> CreateView seledit editb a
-    -> CreateView seledit edita a
+    -> CreateView sel editb a
+    -> CreateView sel edita a
 cvMapEdit lens (MkCreateView ma) =
     MkCreateView $ mapReaderContext (vcMapEdit lens) $ remonad (mapWriterOutput $ voMapEdit lens) ma
 
-cvMapSetSelectionEdit ::
-       forall seledita seleditb edit a. ()
-    => EditLens seledita seleditb
-    -> CreateView seledita edit a
-    -> CreateView seleditb edit a
-cvMapSetSelectionEdit lens (MkCreateView ma) =
-    MkCreateView $
-    mapReaderContext (vcMapSetSelectionEdit lens) $ remonad (mapWriterOutput $ voMapSetSelectionEdit lens) ma
+cvAccessAspect ::
+       ((Aspect sel -> IO ()) -> (Aspect sel -> IO ())) -> CreateView sel edit a -> CreateView sel edit (Aspect sel, a)
+cvAccessAspect f (MkCreateView (ReaderT ma)) = do
+    (a, vo) <- MkCreateView $ mapReaderContext (vcMapSetSelection f) $ ReaderT $ fmap listen ma
+    return (voFirstAspect vo, a)
 
-cvNoAspect :: CreateView seledita edit a -> CreateView seleditb edit a
+cvMapSelection ::
+       forall sela selb edit a. ()
+    => (sela -> selb)
+    -> CreateView sela edit a
+    -> CreateView selb edit a
+cvMapSelection f (MkCreateView ma) =
+    MkCreateView $ mapReaderContext (vcMapSelection f) $ remonad (mapWriterOutput $ voMapSelection f) ma
+
+cvNoAspect :: CreateView sela edit a -> CreateView selb edit a
 cvNoAspect (MkCreateView ma) = MkCreateView $ mapReaderContext vcNoAspect $ remonad (mapWriterOutput voNoAspect) ma
 
-cvMapAspect :: (Aspect seledit edit -> Aspect seledit edit) -> CreateView seledit edit w -> CreateView seledit edit w
-cvMapAspect f (MkCreateView mw) =
-    MkCreateView $ remonad (mapWriterOutput (\(MkViewOutput v ag) -> MkViewOutput v $ f ag)) mw
-
 subscribeView' ::
-       forall seledit edit w action.
-       CreateView seledit edit w
+       forall sel edit w action.
+       CreateView sel edit w
     -> Subscriber edit action
-    -> (UIWindow edit -> IO ())
     -> (forall t. IOWitness t -> Maybe t)
     -> LifeCycle (w, action)
-subscribeView' (MkCreateView (ReaderT (view :: ViewContext seledit edit -> WriterT (ViewOutput seledit edit) LifeCycle w))) sub vcOpenWindow vcRequest = do
+subscribeView' (MkCreateView (ReaderT view)) sub vcRequest = do
     let
-        initialise :: Object edit -> LifeCycle (ViewResult seledit edit w)
+        vcSetSelection :: Aspect sel -> IO ()
+        vcSetSelection _ = return ()
+        initialise :: Object edit -> LifeCycle (ViewResult sel edit w)
         initialise vcObject = do
-            rec
-                let
-                    vcSetSelection :: Aspect seledit edit -> IO ()
-                    vcSetSelection ss = liftIO $ writeIORef selref ss
-                    vcGetSelection :: IO (Maybe (Object seledit))
-                    vcGetSelection = do
-                        asp <- readIORef selref
-                        muasp <- asp
-                        for muasp $ \uasp -> return $ mapObject (uiaLens uasp) vcObject
-                    vcOpenSelection :: IO ()
-                    vcOpenSelection = traceBracket "Selection button" $ do
-                        asp <- readIORef selref
-                        muasp <- asp
-                        case muasp of
-                            Just (neww :: UIAspect seledit edit) -> vcOpenWindow $ uiaWindow neww
-                            Nothing -> return ()
-                (w, vo) <- runWriterT $ view MkViewContext {..}
-                selref :: IORef (Aspect seledit edit) <- liftIO $ newIORef $ voFirstAspect vo
+            (w, vo) <- runWriterT $ view MkViewContext {..}
             return (vo, w)
-        receive :: (ViewResult seledit edit w) -> Object edit -> [edit] -> IO ()
+        receive :: (ViewResult sel edit w) -> Object edit -> [edit] -> IO ()
         receive (vo, _) = voUpdate vo
     ((_, w), _, action) <- subscribeLifeCycle sub initialise receive
     return (w, action)
 
 subscribeView ::
-       forall seledit edit w action.
-       (IO () -> CreateView seledit edit (action -> LifeCycle w))
+       forall sel edit w action.
+       (IO () -> CreateView sel edit (action -> LifeCycle w))
     -> Subscriber edit action
-    -> (UIWindow edit -> IO ())
     -> (forall t. IOWitness t -> Maybe t)
     -> IO w
-subscribeView createView sub openWindow getRequest = do
+subscribeView createView sub getRequest = do
     rec
         (w, closer) <-
             runLifeCycle $ do
-                (followUp, action) <- subscribeView' (createView closer) sub openWindow getRequest
+                (followUp, action) <- subscribeView' (createView closer) sub getRequest
                 followUp action
     return w
 
 tupleCreateView ::
-       (Applicative m, FiniteTupleSelector sel, TupleWitness ApplicableEdit sel)
-    => (forall edit. sel edit -> m (CreateView seledit edit w))
-    -> m (CreateView seledit (TupleEdit sel) [w])
+       (Applicative m, FiniteTupleSelector s, TupleWitness ApplicableEdit s)
+    => (forall edit. s edit -> m (CreateView sel edit w))
+    -> m (CreateView sel (TupleEdit s) [w])
 tupleCreateView pickview =
     fmap sequence $
     for tupleAllSelectors $ \(MkAnyW sel) ->

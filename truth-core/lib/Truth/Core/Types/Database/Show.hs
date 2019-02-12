@@ -6,7 +6,7 @@ import Truth.Core.Import
 import Truth.Core.Types.Database
 
 class (Database dbType tablesel, AllWitnessConstraint Show tablesel) =>
-          ShowableDatabase (dbType :: *) (tablesel :: * -> *) where
+          ShowableDatabase (dbType :: Type) (tablesel :: Type -> Type) where
     type ShowableRow dbType tablesel row :: Constraint
     showableRow :: ShowableRow dbType tablesel row => Dict (Show row)
     showableTable :: forall row. tablesel row -> Dict (ShowableRow dbType tablesel row)

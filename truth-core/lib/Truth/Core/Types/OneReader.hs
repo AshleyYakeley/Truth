@@ -3,7 +3,7 @@ module Truth.Core.Types.OneReader where
 import Truth.Core.Import
 import Truth.Core.Read
 
-data OneReader (f :: * -> *) (reader :: * -> *) (t :: *) where
+data OneReader (f :: Type -> Type) (reader :: Type -> Type) (t :: Type) where
     ReadHasOne :: forall f reader. OneReader f reader (f ())
     ReadOne :: forall f reader t. reader t -> OneReader f reader (f t)
 

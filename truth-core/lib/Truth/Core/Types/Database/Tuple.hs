@@ -6,15 +6,15 @@ import Truth.Core.Types.Database
 data TupleTableSel tablesel row where
     MkTupleTableSel :: tablesel colsel -> TupleTableSel tablesel (AllValue colsel)
 
-class TupleDatabaseType (dbType :: *) where
-    type TupleDatabaseTypeRowWitness dbType :: (* -> *) -> Constraint
-    type TupleExpr dbType (colsel :: * -> *) :: * -> *
+class TupleDatabaseType (dbType :: Type) where
+    type TupleDatabaseTypeRowWitness dbType :: (Type -> Type) -> Constraint
+    type TupleExpr dbType (colsel :: Type -> Type) :: Type -> Type
     evalTupleExpr :: Applicative m => TupleExpr dbType colsel t -> AllF colsel m -> m t
     constBoolExpr :: Bool -> TupleExpr dbType colsel Bool
     columnExpr :: colsel t -> TupleExpr dbType colsel t
 
-class TupleDatabaseType dbType => TupleDatabase dbType (tablesel :: (* -> *) -> *) where
-    type TupleDatabaseRowWitness dbType (tablesel :: (* -> *) -> *) :: (* -> *) -> Constraint
+class TupleDatabaseType dbType => TupleDatabase dbType (tablesel :: (Type -> Type) -> Type) where
+    type TupleDatabaseRowWitness dbType (tablesel :: (Type -> Type) -> Type) :: (Type -> Type) -> Constraint
 
 evalTupleExprIdentity ::
        forall dbType colsel t. TupleDatabaseType dbType
@@ -39,7 +39,7 @@ data TupleUpdateClause dbType row where
 
 data TupleJoinClause rowa rowb rowc where
     OuterTupleJoinClause
-        :: TupleJoinClause (AllValue colsel1) (AllValue colsel2) (AllValue (EitherWitness colsel1 colsel2))
+        :: TupleJoinClause (AllValue colsel1) (AllValue colsel2) (AllValue (EitherType colsel1 colsel2))
 
 instance TestEquality tablesel => TestEquality (TupleTableSel tablesel) where
     testEquality (MkTupleTableSel selTable1) (MkTupleTableSel selTable2) = do

@@ -8,7 +8,7 @@ _common: !include "../common.yaml"
 library:
     source-dirs: src
     dependencies:
-      - base >= 4.9 && < 5
+      - base >= 4.12
       - stm
       - constraints
       - mono-traversable
@@ -51,6 +51,7 @@ library:
       - Control.Monad.Compose
       - Control.LifeCycle
       - Shapes
+      - Shapes.Numeric
     other-modules:
       - Shapes.Import
 
@@ -58,7 +59,7 @@ tests:
     test:
         source-dirs: test
         dependencies:
-          - base >= 4.9 && < 5
+          - base >= 4.12
           - shapes
           - tasty
           - tasty-hunit

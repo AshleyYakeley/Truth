@@ -1,13 +1,20 @@
-{-# LANGUAGE ApplicativeDo #-}
-
 module Language.Expression.Abstract where
 
 import Language.Expression.Expression
 import Language.Expression.Named
+import Language.Expression.Pattern
 import Language.Expression.Renamer
 import Language.Expression.Sealed
 import Language.Expression.Unifier
 import Shapes
+
+type UnifierRenamerConstraint unifier renamer m
+     = ( Renamer renamer
+       , Monad m
+       , Unifier unifier
+       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
+       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
+       , UnifierMonad unifier ~ renamer m)
 
 abstractNamedExpressionUnifier ::
        forall unifier t a r. Unifier unifier
@@ -37,32 +44,94 @@ data AbstractResult unifier a =
     forall t. MkAbstractResult (UnifierNegWitness unifier t)
                                (UnifyExpression unifier (t -> a))
 
+instance Functor (AbstractResult unifier) where
+    fmap ab (MkAbstractResult vwt uexpr) = MkAbstractResult vwt $ fmap (fmap ab) uexpr
+
 abstractNamedExpression ::
-       forall unifier renamer m a.
-       ( Renamer renamer
-       , Monad m
-       , Unifier unifier
-       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
-       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
-       , UnifierMonad unifier ~ renamer m
-       )
+       forall unifier renamer m a. UnifierRenamerConstraint unifier renamer m
     => UnifierName unifier
     -> UnifierOpenExpression unifier a
     -> UnifierMonad unifier (AbstractResult unifier a)
-abstractNamedExpression name expr =
-    renameNewVar $ \vwt0 _ _ ->
-        abstractNamedExpressionUnifier @unifier name vwt0 expr $ \vwt uconv expr' ->
-            return $ MkAbstractResult vwt $ MkUnifyExpression uconv $ fmap (\tua t'ttu -> tua . snd . t'ttu) expr'
+abstractNamedExpression name expr = do
+    MkNewVar vwt0 _ _ <- renameNewVar
+    abstractNamedExpressionUnifier @unifier name vwt0 expr $ \vwt uconv expr' ->
+        return $ MkAbstractResult vwt $ MkUnifyExpression uconv $ fmap (\tua t'ttu -> tua . snd . t'ttu) expr'
+
+abstractUnifyExpression ::
+       forall unifier renamer m a. UnifierRenamerConstraint unifier renamer m
+    => UnifierName unifier
+    -> UnifyExpression unifier a
+    -> UnifierMonad unifier (AbstractResult unifier a)
+abstractUnifyExpression name (MkUnifyExpression uconv expr) = do
+    MkAbstractResult vwt (MkUnifyExpression uabsconv expr') <- abstractNamedExpression @unifier name expr
+    return $
+        MkAbstractResult vwt $
+        MkUnifyExpression ((,) <$> uabsconv <*> uconv) $ fmap (\f (absconv, conv) t -> f absconv t conv) expr'
+
+patternAbstractUnifyExpression ::
+       forall unifier renamer m q a t. UnifierRenamerConstraint unifier renamer m
+    => UnifierOpenPattern unifier q t
+    -> UnifyExpression unifier a
+    -> UnifierMonad unifier (UnifyExpression unifier (q -> Maybe (a, t)))
+patternAbstractUnifyExpression (ClosedPattern qmt) expr = return $ fmap (\a q -> qmt q >>= \t -> Just (a, t)) expr
+patternAbstractUnifyExpression (OpenPattern (MkNameWitness name vwt) pat) expr = do
+    MkAbstractResult absvwt absexpr <- abstractUnifyExpression @unifier name expr
+    uabsconv <- unifyPosNegWitnesses vwt absvwt
+    MkUnifyExpression uconv rexpr <- patternAbstractUnifyExpression @unifier pat absexpr
+    return $
+        MkUnifyExpression ((,) <$> uabsconv <*> uconv) $
+        fmap (\f (absconv, conv) q -> fmap (\(t2a, (t1, t)) -> (t2a $ absconv t1, t)) $ f conv q) rexpr
+
+data PatternResult unifier f =
+    forall t a. MkPatternResult (UnifierNegWitness unifier t)
+                                (UnifierPosWitness unifier a)
+                                (UnifyExpression unifier (t -> f a))
+
+joinPatternResult ::
+       forall unifier. Unifier unifier
+    => PatternResult unifier Maybe
+    -> PatternResult unifier Identity
+    -> UnifierMonad unifier (PatternResult unifier Identity)
+joinPatternResult (MkPatternResult vwtp twtp exprp) (MkPatternResult vwtc twtc exprc) =
+    unifyNegWitnesses @unifier vwtp vwtc $ \vwtpc uvwt ->
+        unifyPosWitnesses @unifier twtp twtc $ \twtpc utwt -> let
+            ff :: (ab -> t, ab -> t1)
+               -> (a -> ab1, a1 -> ab1)
+               -> (t -> Maybe a)
+               -> (t1 -> Identity a1)
+               -> ab
+               -> Identity ab1
+            ff (abt, abt1) (aab1, a1ab1) tma t1a1 ab =
+                case tma $ abt ab of
+                    Just a -> Identity $ aab1 a
+                    Nothing -> fmap a1ab1 $ t1a1 $ abt1 ab
+            in return $
+               MkPatternResult vwtpc twtpc $
+               ff <$> unifierUnifyExpression uvwt <*> unifierUnifyExpression utwt <*> exprp <*> exprc
+
+joinPatternResults ::
+       UnifierRenamerConstraint unifier renamer m
+    => [PatternResult unifier Maybe]
+    -> UnifierMonad unifier (PatternResult unifier Identity)
+joinPatternResults [] = do
+    MkNewVar tt _ _ <- renameNewVar
+    MkNewVar _ ta _ <- renameNewVar
+    return $ MkPatternResult tt ta $ pure $ \_ -> Identity $ error "missing case"
+joinPatternResults (p:pp) = do
+    c <- joinPatternResults pp
+    joinPatternResult p c
+
+patternAbstractSealedExpression ::
+       forall unifier renamer m. UnifierRenamerConstraint unifier renamer m
+    => UnifierSealedPattern unifier
+    -> UnifierSealedExpression unifier
+    -> UnifierMonad unifier (PatternResult unifier Maybe)
+patternAbstractSealedExpression (MkSealedPattern vwt pat) (MkSealedExpression twt expr) = do
+    uexpr' <- patternAbstractUnifyExpression @unifier pat $ exprUnifyExpression expr
+    return $ MkPatternResult vwt twt $ fmap (fmap (fmap fst)) uexpr'
 
 letBindNamedExpression ::
-       forall unifier renamer m a.
-       ( Renamer renamer
-       , Monad m
-       , Unifier unifier
-       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
-       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
-       , UnifierMonad unifier ~ renamer m
-       )
+       forall unifier renamer m a. UnifierRenamerConstraint unifier renamer m
     => (UnifierName unifier -> Maybe (UnifierSealedExpression unifier))
     -> UnifierOpenExpression unifier a
     -> UnifierMonad unifier (UnifyExpression unifier a)
@@ -71,7 +140,7 @@ letBindNamedExpression bindmap (OpenExpression (MkNameWitness name vwt) expr) = 
     uerest <- letBindNamedExpression @unifier bindmap expr
     case bindmap name of
         Just bindexpr -> do
-            MkSealedExpression twt bindexpr' <- renameSealedExpression bindexpr
+            MkSealedExpression twt bindexpr' <- rename bindexpr
             ubindconv <- unifyPosNegWitnesses @unifier twt vwt
             let uebind = MkUnifyExpression ubindconv $ fmap (\t1 tt -> tt t1) bindexpr'
             return $ uerest <*> uebind
@@ -86,14 +155,7 @@ type FunctionPosWitness vw tw = forall r a b. vw a -> tw b -> (forall f. tw f ->
 type FunctionNegWitness vw tw = forall r a b. tw a -> vw b -> (forall f. vw f -> (f -> (a -> b)) -> r) -> r
 
 abstractSealedExpression ::
-       forall renamer unifier m.
-       ( Monad m
-       , Renamer renamer
-       , Unifier unifier
-       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
-       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
-       , UnifierMonad unifier ~ renamer m
-       )
+       forall renamer unifier m. UnifierRenamerConstraint unifier renamer m
     => FunctionPosWitness (RenamerNegWitness renamer) (RenamerPosWitness renamer)
     -> UnifierName unifier
     -> UnifierSealedExpression unifier
@@ -101,20 +163,13 @@ abstractSealedExpression ::
 abstractSealedExpression absw name sexpr =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
-        MkSealedExpression twt expr <- renameSealedExpression sexpr
+        MkSealedExpression twt expr <- rename sexpr
         MkAbstractResult vwt (unifierExpression -> uexpr') <- abstractNamedExpression @unifier name expr
-        (expr', subs) <- solveUnifier @unifier uexpr'
-        absw vwt twt $ \twf abconv -> unifierExpressionSubstituteAndSimplify @unifier subs twf $ fmap abconv expr'
+        absw vwt twt $ \twf abconv -> do
+            unifierSolve @unifier $ fmap (\expr' -> MkSealedExpression twf $ fmap abconv expr') uexpr'
 
 applySealedExpression ::
-       forall renamer unifier m.
-       ( Monad m
-       , Renamer renamer
-       , Unifier unifier
-       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
-       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
-       , UnifierMonad unifier ~ renamer m
-       )
+       forall renamer unifier m. UnifierRenamerConstraint unifier renamer m
     => FunctionNegWitness (RenamerNegWitness renamer) (RenamerPosWitness renamer)
     -> UnifierSealedExpression unifier
     -> UnifierSealedExpression unifier
@@ -122,25 +177,19 @@ applySealedExpression ::
 applySealedExpression appw sexprf sexpra =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
-        MkSealedExpression tf exprf <- renameSealedExpression sexprf
-        MkSealedExpression ta expra <- renameSealedExpression sexpra
-        renameNewVar $ \vx tx convvar ->
-            appw ta vx $ \vax convf -> do
-                uconv <- unifyPosNegWitnesses tf vax
-                (convu, subs) <- solveUnifier @unifier uconv
-                unifierExpressionSubstituteAndSimplify @unifier subs tx $
-                    (\t t1 -> convvar $ convf (convu t) t1) <$> exprf <*> expra
+        MkSealedExpression tf exprf <- rename sexprf
+        MkSealedExpression ta expra <- rename sexpra
+        MkNewVar vx tx convvar <- renameNewVar
+        appw ta vx $ \vax convf -> do
+            uconv <- unifyPosNegWitnesses @unifier tf vax
+            unifierSolve @unifier $
+                fmap
+                    (\convu -> MkSealedExpression tx $ (\t t1 -> convvar $ convf (convu t) t1) <$> exprf <*> expra)
+                    uconv
 
 -- | not recursive
 letSealedExpression ::
-       forall renamer unifier m.
-       ( Monad m
-       , Renamer renamer
-       , Unifier unifier
-       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
-       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
-       , UnifierMonad unifier ~ renamer m
-       )
+       forall renamer unifier m. UnifierRenamerConstraint unifier renamer m
     => UnifierName unifier
     -> UnifierSealedExpression unifier
     -> UnifierSealedExpression unifier
@@ -148,10 +197,94 @@ letSealedExpression ::
 letSealedExpression name sexpre sexprb =
     runRenamer @renamer $
     withTransConstraintTM @Monad $ do
-        MkSealedExpression te expre <- renameSealedExpression sexpre
-        MkSealedExpression tb exprb <- renameSealedExpression sexprb
+        MkSealedExpression te expre <- rename sexpre
+        MkSealedExpression tb exprb <- rename sexprb
         MkAbstractResult vt (unifierExpression -> uexprf) <- abstractNamedExpression @unifier name exprb
-        uconvet <- unifyPosNegWitnesses te vt
-        (exprf', subs) <-
-            solveUnifier @unifier $ (\exprf convet -> fmap (\tt2 -> tt2 . convet) exprf) <$> uexprf <*> uconvet
-        unifierExpressionSubstituteAndSimplify @unifier subs tb $ exprf' <*> expre
+        uconvet <- unifyPosNegWitnesses @unifier te vt
+        unifierSolve @unifier $
+            (\exprf convet -> MkSealedExpression tb $ fmap (\tt2 -> tt2 . convet) exprf <*> expre) <$> uexprf <*>
+            uconvet
+
+bothSealedPattern ::
+       forall renamer unifier m. UnifierRenamerConstraint unifier renamer m
+    => UnifierSealedPattern unifier
+    -> UnifierSealedPattern unifier
+    -> m (UnifierSealedPattern unifier)
+bothSealedPattern spat1 spat2 =
+    runRenamer @renamer $
+    withTransConstraintTM @Monad $ do
+        MkSealedPattern tw1 pat1 <- rename spat1
+        MkSealedPattern tw2 pat2 <- rename spat2
+        unifyNegWitnesses @unifier tw1 tw2 $ \twr uconv -> do
+            unifierSolve @unifier $
+                fmap
+                    (\(abt1, abt2) ->
+                         MkSealedPattern twr $
+                         proc ab -> do
+                             pat1 -< abt1 ab
+                             pat2 -< abt2 ab)
+                    uconv
+
+caseSealedExpression ::
+       forall renamer unifier m. UnifierRenamerConstraint unifier renamer m
+    => UnifierSealedExpression unifier
+    -> [(UnifierSealedPattern unifier, UnifierSealedExpression unifier)]
+    -> m (UnifierSealedExpression unifier)
+caseSealedExpression sbexpr rawcases =
+    runRenamer @renamer $
+    withTransConstraintTM @Monad $ do
+        patrs <-
+            for rawcases $ \(rawpat, rawexpr) -> do
+                pat <- rename rawpat
+                expr <- rename rawexpr
+                patternAbstractSealedExpression @unifier pat expr
+        MkPatternResult rvwt rtwt ruexpr <- joinPatternResults patrs
+        MkSealedExpression btwt bexpr <- rename sbexpr
+        uconv <- unifyPosNegWitnesses @unifier btwt rvwt
+        unifierSolve $
+            (\conv rexpr -> MkSealedExpression rtwt $ (\t1a t -> runIdentity $ t1a $ conv t) <$> rexpr <*> bexpr) <$>
+            uconv <*>
+            unifierExpression ruexpr
+
+caseAbstractSealedExpression ::
+       forall renamer unifier m. UnifierRenamerConstraint unifier renamer m
+    => FunctionPosWitness (RenamerNegWitness renamer) (RenamerPosWitness renamer)
+    -> [(UnifierSealedPattern unifier, UnifierSealedExpression unifier)]
+    -> m (UnifierSealedExpression unifier)
+caseAbstractSealedExpression absw rawcases =
+    runRenamer @renamer $
+    withTransConstraintTM @Monad $ do
+        patrs <-
+            for rawcases $ \(rawpat, rawexpr) -> do
+                pat <- rename rawpat
+                expr <- rename rawexpr
+                patternAbstractSealedExpression @unifier pat expr
+        MkPatternResult rvwt rtwt ruexpr <- joinPatternResults patrs
+        absw rvwt rtwt $ \rfwt fconv ->
+            unifierSolve $
+            (\rexpr -> MkSealedExpression rfwt $ fmap (\tia -> fconv $ \t -> runIdentity $ tia t) rexpr) <$>
+            unifierExpression ruexpr
+
+applyPatternConstructor ::
+       forall renamer unifier m. (UnifierRenamerConstraint unifier renamer m, MonadFail m)
+    => UnifierPatternConstructor unifier
+    -> UnifierSealedPattern unifier
+    -> m (UnifierPatternConstructor unifier)
+applyPatternConstructor patcon patarg =
+    runRenamer @renamer $
+    withTransConstraintTM @Monad $ do
+        MkPatternConstructor pct pclt pcpat <- rename patcon
+        case pclt of
+            NilListType -> lift $ fail "Too many arguments to constructor in pattern"
+            ConsListType pca pcla -> do
+                MkSealedPattern ta pata <- rename patarg
+                uconv <- unifyPosNegWitnesses @unifier pca ta
+                unifierSolve @unifier $
+                    fmap
+                        (\conv ->
+                             MkPatternConstructor pct pcla $
+                             proc t -> do
+                                 (a, l) <- pcpat -< t
+                                 pata -< conv a
+                                 returnA -< l)
+                        uconv

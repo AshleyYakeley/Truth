@@ -11,10 +11,10 @@ import Test.Tasty.HUnit
 -- Just check, don't run
 testExample :: String -> TestTree
 testExample fpath =
-    testCase fpath $ do
-        (context, _getTableState) <- makeTestPinaforeContext
+    testCase fpath $
+    withTestPinaforeContext $ \_getTableState -> do
         ptext <- readFile $ "examples/" <> fpath
-        _ <- pinaforeInterpretFile context fpath $ decodeUtf8 $ toStrict ptext
+        _ <- pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
         return ()
 
 testExamples :: TestTree

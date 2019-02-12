@@ -28,9 +28,9 @@ liftRefNotation :: PinaforeScoped baseedit a -> RefNotation baseedit a
 liftRefNotation = lift . lift
 
 remonadRefNotation ::
-       (forall a. PinaforeScoped baseedit a -> PinaforeScoped baseedit a)
+       Transform (PinaforeScoped baseedit) (PinaforeScoped baseedit)
     -> (forall a. RefNotation baseedit a -> RefNotation baseedit a)
-remonadRefNotation mm = remonad $ remonad mm
+remonadRefNotation (MkTransform mm) = remonad $ remonad mm
 
 runRefNotation :: RefNotation baseedit a -> PinaforeScoped baseedit a
 runRefNotation rexpr = evalStateT (runRefWriterT rexpr) 0

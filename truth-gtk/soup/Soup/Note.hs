@@ -88,7 +88,7 @@ instance HasNewValue (Tuple NoteSel) where
 
 type NoteEdit = TupleEdit NoteSel
 
-noteEditSpec :: UISpec (StringEdit Text) NoteEdit
+noteEditSpec :: UISpec (EditLens (StringEdit Text) (StringEdit Text)) NoteEdit
 noteEditSpec =
     uiVertical $
     tupleEditUISpecs $ \case

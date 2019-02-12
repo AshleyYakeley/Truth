@@ -1,12 +1,10 @@
 module Pinafore.Base.PredicateMorphism
-    ( EntityAdapter(..)
-    , bijectionEntityAdapter
-    , HasPinaforeEntityEdit(..)
+    ( HasPinaforeEntityEdit(..)
     , propertyMorphism
     ) where
 
 import Pinafore.Base.Edit
-import Pinafore.Base.Entity
+import Pinafore.Base.EntityAdapter
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
@@ -18,24 +16,6 @@ class HasPinaforeEntityEdit baseedit where
 
 instance HasPinaforeEntityEdit PinaforeEntityEdit where
     pinaforeEntityLens = id
-
-data EntityAdapter t = MkEntityAdapter
-    { entityAdapterConvert :: t -> Entity
-    , entityAdapterGet :: forall m. MonadIO m => Entity -> MutableRead m PinaforeEntityRead -> m (Know t)
-    , entityAdapterPut :: forall m. MonadIO m => t -> MutableRead m PinaforeEntityRead -> m [PinaforeEntityEdit]
-    }
-
-bijectionEntityAdapter :: forall t. (Entity -> t) -> (t -> Entity) -> EntityAdapter t
-bijectionEntityAdapter pt te = let
-    entityAdapterConvert = te
-    entityAdapterGet ::
-           forall m. MonadIO m
-        => Entity
-        -> MutableRead m PinaforeEntityRead
-        -> m (Know t)
-    entityAdapterGet p _ = return $ Known $ pt p
-    entityAdapterPut _ _ = return []
-    in MkEntityAdapter {..}
 
 predicatePinaforeMap ::
        forall a b.
@@ -120,17 +100,17 @@ predicateInverseFunction ::
        EntityAdapter a
     -> EntityAdapter b
     -> Predicate
-    -> APinaforeFunctionMorphism PinaforeEntityEdit IdentityT b (FiniteSet a)
+    -> APinaforeFunctionMorphism PinaforeEntityEdit IdentityT b [a]
 predicateInverseFunction (MkEntityAdapter _ aget _) (MkEntityAdapter bp _ _) prd = let
     pfFuncRead ::
            forall m. MonadIO m
         => MutableRead m PinaforeEntityRead
         -> b
-        -> IdentityT m (FiniteSet a)
+        -> IdentityT m [a]
     pfFuncRead mr valb = traceBracket "predicateInverseFunction.pfFuncRead" $
         lift $ do
             setp <- mr $ PinaforeEntityReadLookupPredicate prd $ bp valb
-            setka <- for setp $ \p -> aget p mr
+            setka <- for (setToList setp) $ \p -> aget p mr
             return $ catKnowns setka
     pfUpdate ::
            forall m. MonadIO m

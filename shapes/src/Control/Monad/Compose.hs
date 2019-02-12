@@ -34,6 +34,16 @@ instance (MonadOne inner, Monad outer) => Monad (ComposeM inner outer) where
                     return $ ia >> ib
                 FailureResult (MkLimit ix) -> return ix
 
+instance (MonadOne inner, MonadFix outer) => MonadFix (ComposeM inner outer) where
+    mfix ama =
+        MkComposeM $
+        mfix $ \ia ->
+            getComposeM $
+            ama $
+            case retrieveOne ia of
+                SuccessResult a -> a
+                FailureResult _ -> error "bad ComposeM mfix"
+
 liftOuter :: (Functor outer, Applicative inner) => outer a -> ComposeM inner outer a
 liftOuter ma = MkComposeM $ fmap pure ma
 

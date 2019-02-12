@@ -1,5 +1,7 @@
 module Language.Expression.Renamer
     ( Renamer(..)
+    , rename
+    , NewVar(..)
     , VarNamespace
     , runVarNamespace
     , varNamespaceRename
@@ -9,28 +11,35 @@ module Language.Expression.Renamer
     , varRenamerGenerateSuggested
     ) where
 
+import Language.Expression.Polarity
+import Language.Expression.TypeF
+import Language.Expression.TypeMappable
 import Shapes
+
+data NewVar rn =
+    forall p q. MkNewVar (RenamerNegWitness rn q)
+                         (RenamerPosWitness rn p)
+                         (q -> p)
 
 class (MonadTransConstraint Monad rn, MonadTransConstraint Monad (RenamerNamespace rn)) => Renamer rn where
     type RenamerNegWitness rn :: Type -> Type
     type RenamerPosWitness rn :: Type -> Type
     type RenamerNamespace rn :: (Type -> Type) -> (Type -> Type)
     renameTSNegWitness ::
-           Monad m
-        => RenamerNegWitness rn t
-        -> (forall t'. RenamerNegWitness rn t' -> Bijection t t' -> RenamerNamespace rn (rn m) r)
-        -> RenamerNamespace rn (rn m) r
+           Monad m => RenamerNegWitness rn t -> RenamerNamespace rn (rn m) (TypeF (RenamerNegWitness rn) 'Negative t)
     renameTSPosWitness ::
-           Monad m
-        => RenamerPosWitness rn t
-        -> (forall t'. RenamerPosWitness rn t' -> Bijection t t' -> RenamerNamespace rn (rn m) r)
-        -> RenamerNamespace rn (rn m) r
-    renameNewVar ::
-           Monad m
-        => (forall tp tq. RenamerNegWitness rn tq -> RenamerPosWitness rn tp -> (tq -> tp) -> rn m r)
-        -> rn m r
+           Monad m => RenamerPosWitness rn t -> RenamerNamespace rn (rn m) (TypeF (RenamerPosWitness rn) 'Positive t)
+    renameNewVar :: Monad m => rn m (NewVar rn)
     namespace :: Monad m => RenamerNamespace rn (rn m) r -> rn m r
     runRenamer :: Monad m => rn m r -> m r
+
+rename ::
+       forall rn m a. (Renamer rn, Monad m, TypeMappable (->) (RenamerPosWitness rn) (RenamerNegWitness rn) a)
+    => a
+    -> rn m a
+rename a =
+    withTransConstraintTM @Monad $
+    namespace $ withTransConstraintTM @Monad $ mapTypesM (renameTSPosWitness @rn) (renameTSNegWitness @rn) a
 
 newtype VarNamespace (ts :: Type) m a =
     MkVarNamespace (StateT [(String, String)] m a)

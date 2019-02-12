@@ -1,40 +1,80 @@
-module Pinafore.Base.Action where
+module Pinafore.Base.Action
+    ( resultTextToM
+    , PinaforeAction
+    , pinaforeActionKnow
+    , knowPinaforeAction
+    , pinaforeFunctionValueGet
+    , pinaforeLensPush
+    , pinaforeNewWindow
+    , PinaforeContext
+    , runPinaforeAction
+    , makePinaforeContext
+    , nullPinaforeContext
+    ) where
 
-import Pinafore.Base.Entity
+import Language.Expression.Dolan
+import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
+import Truth.UI.GTK
 
-type PinaforeActionM baseedit = ComposeM (Result Text) (View (ConstEdit Entity) baseedit)
+newtype PinaforeAction baseedit a =
+    MkPinaforeAction (ReaderT (UIWindow baseedit -> IO (), Object baseedit) (ComposeM Know IO) a)
+    deriving (Functor, Applicative, Monad, MonadFix, MonadIO)
+
+instance MonadFail (PinaforeAction baseedit) where
+    fail s = liftIO $ fail s
+
+instance HasDolanVary '[ 'Covariance] (PinaforeAction baseedit) where
+    dolanVary = ConsDolanVarianceMap fmap $ NilDolanVarianceMap
 
 resultTextToM :: MonadFail m => Result Text a -> m a
 resultTextToM = resultToM . mapResultFailure unpack
 
-pinaforeLiftView :: View (ConstEdit Entity) baseedit a -> PinaforeActionM baseedit a
-pinaforeLiftView = liftOuter
+pinaforeFunctionValueGet :: PinaforeFunctionValue baseedit t -> PinaforeAction baseedit t
+pinaforeFunctionValueGet fval = do
+    (_, MkObject {..}) <- MkPinaforeAction ask
+    liftIO $ runTransform objRun $ editFunctionRead fval objRead ReadWhole
 
-pinaforeLiftResult :: Result Text a -> PinaforeActionM baseedit a
-pinaforeLiftResult = liftInner
+pinaforeLensPush :: PinaforeLensValue baseedit edit -> [edit] -> PinaforeAction baseedit ()
+pinaforeLensPush lens edits = do
+    (_, object) <- MkPinaforeAction ask
+    case lensObject True lens object of
+        MkObject {..} -> liftIO $ runTransform objRun $ pushEdit $ objEdit edits
 
-pinaforeFunctionValueGet :: PinaforeFunctionValue baseedit t -> PinaforeActionM baseedit t
-pinaforeFunctionValueGet fval = pinaforeLiftView $ viewObjectRead $ \_ mr -> editFunctionRead fval mr ReadWhole
+pinaforeNewWindow :: UIWindow baseedit -> PinaforeAction baseedit ()
+pinaforeNewWindow uiw = do
+    (neww, _) <- MkPinaforeAction ask
+    liftIO $ neww uiw
 
-pinaforeLensValueSet :: PinaforeLensValue baseedit (WholeEdit t) -> t -> PinaforeAction baseedit
-pinaforeLensValueSet lens v = pinaforeLiftView $ viewMapEdit lens $ viewObjectPushEdit $ \_ push -> push [MkWholeEdit v]
+pinaforeActionKnow :: forall baseedit a. Know a -> PinaforeAction baseedit a
+pinaforeActionKnow ka = MkPinaforeAction $ lift $ liftInner ka
 
-pinaforeActionRequest :: IOWitness t -> PinaforeActionM baseedit t
-pinaforeActionRequest wit =
-    MkComposeM $ do
-        mt <- viewRequest wit
-        return $
-            case mt of
-                Just t -> SuccessResult t
-                Nothing -> FailureResult $ "failed request"
+knowPinaforeAction :: forall baseedit a. PinaforeAction baseedit a -> PinaforeAction baseedit (Know a)
+knowPinaforeAction (MkPinaforeAction (ReaderT rka)) =
+    MkPinaforeAction $ ReaderT $ \r -> MkComposeM $ fmap Known $ getComposeM $ rka r
 
-type PinaforeAction baseedit = PinaforeActionM baseedit ()
+newtype PinaforeContext baseedit =
+    MkPinaforeContext (PinaforeAction baseedit () -> IO ())
 
-pinaforeNewEntity :: PinaforeActionM baseedit Entity
-pinaforeNewEntity = liftIO $ newKeyContainerItem @(FiniteSet Entity)
+runPinaforeAction :: (?pinafore :: PinaforeContext baseedit) => PinaforeAction baseedit () -> IO ()
+runPinaforeAction =
+    case ?pinafore of
+        MkPinaforeContext unlift -> unlift
 
-pinaforeListFor :: [a] -> (a -> PinaforeAction baseedit) -> PinaforeAction baseedit
-pinaforeListFor = for_
+makePinaforeContext ::
+       forall baseedit. Object baseedit -> (UserInterface UIWindow -> IO ()) -> LifeCycle (PinaforeContext baseedit)
+makePinaforeContext pinaforeObject createWindow = do
+    sub <- liftIO $ makeObjectSubscriber pinaforeObject
+    (_, obj, _) <- subscribe sub (\_ -> return ()) (\_ _ _ -> return ())
+    return $
+        MkPinaforeContext $ \(MkPinaforeAction action) -> let
+            openwin :: UIWindow baseedit -> IO ()
+            openwin uiw = createWindow $ MkUserInterface sub uiw
+            in do
+                   _ <- getComposeM $ runReaderT action (openwin, obj)
+                   return ()
+
+nullPinaforeContext :: PinaforeContext baseedit
+nullPinaforeContext = MkPinaforeContext $ \_ -> fail "null Pinafore context"

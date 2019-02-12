@@ -8,7 +8,7 @@ _common: !include "../common.yaml"
 library:
     source-dirs: lib
     dependencies:
-      - base >= 4.9 && < 5
+      - base >= 4.12
       - time
       - deepseq
       - containers
@@ -23,14 +23,20 @@ library:
       - memory
       - cryptonite
       - truth-core
+      - truth-gtk
     exposed-modules:
+      - Language.Expression.Polarity
+      - Language.Expression.TypeF
+      - Language.Expression.TypeMappable
       - Language.Expression.Witness
       - Language.Expression.Expression
+      - Language.Expression.Pattern
       - Language.Expression.NameWit
       - Language.Expression.Named
       - Language.Expression.Sealed
       - Language.Expression.Renamer
       - Language.Expression.Unifier
+      - Language.Expression.Subsumer
       - Language.Expression.Abstract
       - Language.Expression.Bindings
       - Language.Expression.TypeSystem
@@ -45,11 +51,11 @@ library:
       - Pinafore.Test
     other-modules:
       - Language.Expression.UVar
+      - Language.Expression.Dolan.PType
       - Language.Expression.Dolan.Range
-      - Language.Expression.Dolan.Polarity
+      - Language.Expression.Dolan.JoinMeet
       - Language.Expression.Dolan.Variance
       - Language.Expression.Dolan.Arguments
-      - Language.Expression.Dolan.TypeF
       - Language.Expression.Dolan.MPolarity
       - Language.Expression.Dolan.RangeF
       - Pinafore.Base.Know
@@ -58,46 +64,59 @@ library:
       - Pinafore.Base.Morphism
       - Pinafore.Base.Entity
       - Pinafore.Base.Edit
+      - Pinafore.Base.EntityAdapter
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
       - Pinafore.Base.ImmutableReference
       - Pinafore.Language.Name
       - Pinafore.Language.Literal
       - Pinafore.Language.NamedEntity
-      - Pinafore.Language.SimpleEntityType
       - Pinafore.Language.Reference
       - Pinafore.Language.Set
       - Pinafore.Language.Morphism
       - Pinafore.Language.If
       - Pinafore.Language.Show
       - Pinafore.Language.Order
+      - Pinafore.Language.UI
       - Pinafore.Language.GroundType
       - Pinafore.Language.Scope
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.Type.Type
       - Pinafore.Language.Type.Subtype
       - Pinafore.Language.Type.Rename
+      - Pinafore.Language.Type.Bisubstitute
+      - Pinafore.Language.Type.Simplify.VarUses
       - Pinafore.Language.Type.Simplify.OneSidedTypeVars
       - Pinafore.Language.Type.Simplify.DuplicateGroundTypes
       - Pinafore.Language.Type.Simplify.SharedTypeVars
       - Pinafore.Language.Type.Simplify.DuplicateTypeVars
       - Pinafore.Language.Type.Simplify
       - Pinafore.Language.Type.Unify
+      - Pinafore.Language.Type.Inverted
+      - Pinafore.Language.Type.Subsume
       - Pinafore.Language.Type
       - Pinafore.Language.EntityType
+      - Pinafore.Language.Syntax
       - Pinafore.Language.Read.Token
       - Pinafore.Language.Read.RefNotation
       - Pinafore.Language.Read.Parser
       - Pinafore.Language.Read.Type
       - Pinafore.Language.Read.TypeDecls
-      - Pinafore.Language.Read.Property
       - Pinafore.Language.Read.Infix
+      - Pinafore.Language.Read.Constructor
+      - Pinafore.Language.Read.Pattern
       - Pinafore.Language.Read.Expression
       - Pinafore.Language.Read.Interactive
       - Pinafore.Language.Read
+      - Pinafore.Language.Interpret.Type
+      - Pinafore.Language.Interpret
       - Pinafore.Language.Expression
       - Pinafore.Language.Convert
       - Pinafore.Language.Doc
+      - Pinafore.Language.Predefined.Defs
+      - Pinafore.Language.Predefined.Base
+      - Pinafore.Language.Predefined.UI
+      - Pinafore.Language.Predefined.File
       - Pinafore.Language.Predefined
       - Pinafore.Storage.Table
       - Pinafore.Storage.Database
@@ -110,7 +129,7 @@ tests:
     test:
         source-dirs: test
         dependencies:
-          - base >= 4.9 && < 5
+          - base >= 4.12
           - bytestring
           - containers
           - countable
@@ -142,7 +161,7 @@ benchmarks:
     benchmark:
         source-dirs: benchmark
         dependencies:
-          - base >= 4.9 && < 5
+          - base >= 4.12
           - criterion
           - shapes
           - pinafore
@@ -152,7 +171,7 @@ executables:
     pinafore:
         source-dirs: app
         dependencies:
-          - base >= 4.9 && < 5
+          - base >= 4.12
           - filepath
           - bytestring
           - shapes

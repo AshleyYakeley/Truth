@@ -18,7 +18,7 @@ optionGetView =
 listStoreView ::
        (FullSubjectReader (EditReader edit), ApplicableEdit edit)
     => UnliftIO IO
-    -> CreateView seledit (ListEdit [EditSubject edit] edit) (SeqStore (EditSubject edit))
+    -> CreateView sel (ListEdit [EditSubject edit] edit) (SeqStore (EditSubject edit))
 listStoreView (MkTransform blockSignal) = do
     subjectList <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     store <- seqStoreNew subjectList
@@ -35,9 +35,9 @@ listStoreView (MkTransform blockSignal) = do
     return store
 
 optionFromStore ::
-       forall seledit t. Eq t
+       forall sel t. Eq t
     => SeqStore (t, Text)
-    -> CreateView seledit (WholeEdit t) (UnliftIO IO, Widget)
+    -> CreateView sel (WholeEdit t) (UnliftIO IO, Widget)
 optionFromStore store = do
     widget <- comboBoxNewWithModel store
     renderer <- new CellRendererText []
@@ -79,10 +79,10 @@ optionFromStore store = do
     return (MkTransform blockSignal, w)
 
 optionView ::
-       forall t tedit seledit. (Eq t)
+       forall t tedit sel. (Eq t)
     => EditFunction tedit (ListEdit [(t, Text)] (WholeEdit (t, Text)))
     -> EditLens tedit (WholeEdit t)
-    -> GCreateView seledit tedit
+    -> GCreateView sel tedit
 optionView itemsFunction whichLens = do
     rec
         store <- cvMapEdit (readOnlyEditLens itemsFunction) $ listStoreView blockSignal

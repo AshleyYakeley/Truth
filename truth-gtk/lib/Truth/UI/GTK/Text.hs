@@ -31,7 +31,7 @@ getSequenceRun iter1 iter2 = do
     p2 <- getSequencePoint iter2
     return $ startEndRun p1 p2
 
-textView :: GCreateView (StringEdit Text) (StringEdit Text)
+textView :: GCreateView (EditLens (StringEdit Text) (StringEdit Text)) (StringEdit Text)
 textView = do
     buffer <- new TextBuffer []
     initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
@@ -63,13 +63,13 @@ textView = do
             StringReplaceWhole text -> #setText buffer text (-1)
             StringReplaceSection bounds text -> replaceText buffer bounds text
     let
-        aspect :: Aspect (StringEdit Text) (StringEdit Text)
+        aspect :: Aspect (EditLens (StringEdit Text) (StringEdit Text))
         aspect = do
             (_, iter1, iter2) <- #getSelectionBounds buffer
             run <- getSequenceRun iter1 iter2
             -- get selection...
             lens <- stringSectionLens run
-            return $ Just $ MkUIAspect (MkUIWindow (constEditFunction "section") $ uiLens lens $ MkUISpec MkUIText) lens
+            return $ Just lens
     cvAddAspect aspect
     _ <-
         cvLiftView $

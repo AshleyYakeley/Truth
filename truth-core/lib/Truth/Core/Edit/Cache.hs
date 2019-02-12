@@ -4,7 +4,7 @@ import Truth.Core.Edit.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 
-class IsCache (cache :: (* -> *) -> *) where
+class IsCache (cache :: (Type -> Type) -> Type) where
     cacheEmpty :: cache k
     cacheLookup :: TestEquality k => k t -> cache k -> Maybe t
     cacheTraverse :: Applicative m => (forall t. k t -> t -> m (Maybe t)) -> StateT (cache k) m ()
@@ -48,8 +48,8 @@ instance IsCache ListCache where
             go (v:vv) = fmap (fmap (\(MkListCache vv') -> MkListCache $ v : vv')) $ go vv
             in go cc
 
-class CacheableEdit (edit :: *) where
-    type EditCacheKey (cache :: (* -> *) -> *) edit :: * -> *
+class CacheableEdit (edit :: Type) where
+    type EditCacheKey (cache :: (Type -> Type) -> Type) edit :: Type -> Type
     editCacheAdd ::
            forall cache m t. (IsCache cache, Applicative m)
         => EditReader edit t

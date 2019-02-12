@@ -1,6 +1,4 @@
 let
-# Useful
-window n s = (n,s);
 
 # Ontology
 # Define a type of entity for people
@@ -13,8 +11,11 @@ name = property @Person @Text !498260df-6a8a-44f0-b285-68a63565a33b;
 me = entity @Person !4527c8ac-580d-443c-8496-2b5a93021f98;
 
 # UI
+ui_person :: Person -> UI None;
 ui_person p = ui_textentry $ name !$ {p};
-window_person p = window {"Name"} $ ui_person p;
+
+window_person :: Person -> Action ();
+window_person p = openwindow {"Name"} (ui_person p);
 
 in
-(openwindow $ window_person me) >> (openwindow $ window_person me)
+window_person me >> window_person me

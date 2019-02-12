@@ -16,9 +16,9 @@ import Data.Constraint
 import Data.Kind
 import Data.Monoid
 
-class MonadTrans t => MonadTransConstraint (c :: (* -> *) -> Constraint) t where
+class MonadTrans t => MonadTransConstraint (c :: (Type -> Type) -> Constraint) t where
     hasTransConstraint ::
-           forall (m :: * -> *). c m
+           forall (m :: Type -> Type). c m
         => Dict (c (t m))
 
 withTransConstraintTM ::

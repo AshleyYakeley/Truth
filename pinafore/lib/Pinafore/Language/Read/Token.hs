@@ -6,15 +6,15 @@ module Pinafore.Language.Read.Token
 import Data.UUID
 import Pinafore.Base
 import Pinafore.Language.Name
-
---import Pinafore.Storage.Table
 import Shapes hiding (try)
+import Shapes.Numeric
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.String
 
 data Token t where
     TokSemicolon :: Token ()
     TokComma :: Token ()
+    TokTypeJudge :: Token ()
     TokOpenParen :: Token ()
     TokCloseParen :: Token ()
     TokOpenBracket :: Token ()
@@ -25,16 +25,23 @@ data Token t where
     TokUnref :: Token ()
     TokLet :: Token ()
     TokIn :: Token ()
+    TokDo :: Token ()
+    TokCase :: Token ()
+    TokOf :: Token ()
+    TokEnd :: Token ()
     TokIf :: Token ()
     TokThen :: Token ()
     TokElse :: Token ()
     TokOpenType :: Token ()
     TokSubtype :: Token ()
-    TokBool :: Token Bool
-    TokName :: Token Name
+    TokClosedType :: Token ()
+    TokUName :: Token Name
+    TokLName :: Token Name
+    TokUnderscore :: Token ()
     TokLambda :: Token ()
     TokAssign :: Token ()
     TokMap :: Token ()
+    TokBackMap :: Token ()
     TokPropMap :: Token ()
     TokProperty :: Token ()
     TokEntity :: Token ()
@@ -46,6 +53,7 @@ data Token t where
 instance TestEquality Token where
     testEquality TokSemicolon TokSemicolon = Just Refl
     testEquality TokComma TokComma = Just Refl
+    testEquality TokTypeJudge TokTypeJudge = Just Refl
     testEquality TokOpenParen TokOpenParen = Just Refl
     testEquality TokCloseParen TokCloseParen = Just Refl
     testEquality TokOpenBracket TokOpenBracket = Just Refl
@@ -56,16 +64,23 @@ instance TestEquality Token where
     testEquality TokUnref TokUnref = Just Refl
     testEquality TokLet TokLet = Just Refl
     testEquality TokIn TokIn = Just Refl
+    testEquality TokDo TokDo = Just Refl
+    testEquality TokCase TokCase = Just Refl
+    testEquality TokOf TokOf = Just Refl
+    testEquality TokEnd TokEnd = Just Refl
     testEquality TokIf TokIf = Just Refl
     testEquality TokThen TokThen = Just Refl
     testEquality TokElse TokElse = Just Refl
     testEquality TokOpenType TokOpenType = Just Refl
     testEquality TokSubtype TokSubtype = Just Refl
-    testEquality TokBool TokBool = Just Refl
-    testEquality TokName TokName = Just Refl
+    testEquality TokClosedType TokClosedType = Just Refl
+    testEquality TokUName TokUName = Just Refl
+    testEquality TokLName TokLName = Just Refl
+    testEquality TokUnderscore TokUnderscore = Just Refl
     testEquality TokLambda TokLambda = Just Refl
     testEquality TokAssign TokAssign = Just Refl
     testEquality TokMap TokMap = Just Refl
+    testEquality TokBackMap TokBackMap = Just Refl
     testEquality TokPropMap TokPropMap = Just Refl
     testEquality TokProperty TokProperty = Just Refl
     testEquality TokEntity TokEntity = Just Refl
@@ -76,33 +91,41 @@ instance TestEquality Token where
     testEquality _ _ = Nothing
 
 instance Show (Token t) where
-    show TokSemicolon = ";"
-    show TokComma = ","
-    show TokOpenParen = "("
-    show TokCloseParen = ")"
-    show TokOpenBracket = "["
-    show TokCloseBracket = "]"
-    show TokOpenBrace = "{"
-    show TokCloseBrace = "}"
+    show TokSemicolon = show (";" :: String)
+    show TokComma = show ("," :: String)
+    show TokTypeJudge = show ("::" :: String)
+    show TokOpenParen = show ("(" :: String)
+    show TokCloseParen = show (")" :: String)
+    show TokOpenBracket = show ("[" :: String)
+    show TokCloseBracket = show ("]" :: String)
+    show TokOpenBrace = show ("{" :: String)
+    show TokCloseBrace = show ("}" :: String)
     show TokString = "quoted string"
     show TokUnref = "unreference"
     show TokLet = show ("let" :: String)
     show TokIn = show ("in" :: String)
+    show TokDo = show ("do" :: String)
+    show TokCase = show ("case" :: String)
+    show TokOf = show ("of" :: String)
+    show TokEnd = show ("end" :: String)
     show TokIf = show ("if" :: String)
     show TokThen = show ("then" :: String)
     show TokElse = show ("else" :: String)
     show TokOpenType = show ("opentype" :: String)
     show TokSubtype = show ("subtype" :: String)
-    show TokBool = "boolean"
-    show TokName = "name"
-    show TokLambda = "\\"
-    show TokAssign = "="
-    show TokMap = "->"
-    show TokPropMap = "~>"
+    show TokClosedType = show ("closedtype" :: String)
+    show TokUName = "uname"
+    show TokLName = "lname"
+    show TokUnderscore = show ("_" :: String)
+    show TokLambda = show ("\\" :: String)
+    show TokAssign = show ("=" :: String)
+    show TokMap = show ("->" :: String)
+    show TokBackMap = show ("<-" :: String)
+    show TokPropMap = show ("~>" :: String)
     show TokProperty = show ("property" :: String)
     show TokEntity = show ("entity" :: String)
     show TokAnchor = "anchor"
-    show TokAt = "@"
+    show TokAt = show ("@" :: String)
     show TokOperator = "infix"
     show TokNumber = "number"
 
@@ -152,6 +175,10 @@ readQuotedString = do
     readQuotedChar :: Parser Char
     readQuotedChar = readEscapedChar <|> (satisfy ('"' /=))
 
+identifierFirstChar :: Char -> Bool
+identifierFirstChar '_' = True
+identifierFirstChar c = isAlpha c
+
 identifierChar :: Char -> Bool
 identifierChar '-' = True
 identifierChar '_' = True
@@ -171,18 +198,23 @@ readNumber =
          return $ InexactNumber $ -1 / 0) <|>
     (try $ do
          text <- many1 $ satisfy $ \c -> elem c ("0123456789-.e_~" :: String)
-         case readMaybe text of
+         case readNumberLiteral text of
              Just n -> return $ n
              Nothing -> empty)
 
 readTextToken :: Parser (AnyValue Token)
 readTextToken = do
-    firstC <- satisfy isAlpha
+    firstC <- satisfy identifierFirstChar
     rest <- many $ satisfy identifierChar
     case firstC : rest of
         -- keywords
+        "_" -> return $ MkAnyValue TokUnderscore ()
         "let" -> return $ MkAnyValue TokLet ()
         "in" -> return $ MkAnyValue TokIn ()
+        "do" -> return $ MkAnyValue TokDo ()
+        "case" -> return $ MkAnyValue TokCase ()
+        "of" -> return $ MkAnyValue TokOf ()
+        "end" -> return $ MkAnyValue TokEnd ()
         "property" -> return $ MkAnyValue TokProperty ()
         "entity" -> return $ MkAnyValue TokEntity ()
         "if" -> return $ MkAnyValue TokIf ()
@@ -190,9 +222,10 @@ readTextToken = do
         "else" -> return $ MkAnyValue TokElse ()
         "opentype" -> return $ MkAnyValue TokOpenType ()
         "subtype" -> return $ MkAnyValue TokSubtype ()
-        "true" -> return $ MkAnyValue TokBool True
-        "false" -> return $ MkAnyValue TokBool False
-        name -> return $ MkAnyValue TokName $ MkName $ pack name
+        "closedtype" -> return $ MkAnyValue TokClosedType ()
+        name
+            | isUpper firstC -> return $ MkAnyValue TokUName $ MkName $ pack name
+        name -> return $ MkAnyValue TokLName $ MkName $ pack name
 
 uuidChar :: Char -> Bool
 uuidChar '-' = True
@@ -214,9 +247,11 @@ readOpToken = do
         satisfy $ \c ->
             elem c ("!$%&*+./<=>?@\\^|-~:" :: String) || (not (isAscii c) && (isSymbol c || isPunctuation c))
     case name of
+        "::" -> return $ MkAnyValue TokTypeJudge ()
         "\\" -> return $ MkAnyValue TokLambda ()
         "=" -> return $ MkAnyValue TokAssign ()
         "->" -> return $ MkAnyValue TokMap ()
+        "<-" -> return $ MkAnyValue TokBackMap ()
         "~>" -> return $ MkAnyValue TokPropMap ()
         "%" -> return $ MkAnyValue TokUnref ()
         "!" ->

@@ -4,6 +4,8 @@ import Language.Expression.Abstract
 import Language.Expression.Bindings
 import Language.Expression.Renamer
 import Language.Expression.Sealed
+import Language.Expression.Subsumer
+import Language.Expression.TypeF
 import Language.Expression.Unifier
 import Shapes
 
@@ -12,10 +14,15 @@ class ( Monad (TSScoped ts)
       , Unifier (TSUnifier ts)
       , RenamerNegWitness (TSRenamer ts) ~ UnifierNegWitness (TSUnifier ts)
       , RenamerPosWitness (TSRenamer ts) ~ UnifierPosWitness (TSUnifier ts)
+      , Subsumer (TSSubsumer ts)
+      , SubsumerNegWitness (TSSubsumer ts) ~ UnifierNegWitness (TSUnifier ts)
+      , SubsumerPosWitness (TSSubsumer ts) ~ UnifierPosWitness (TSUnifier ts)
       , TSRenamer ts (TSScoped ts) ~ UnifierMonad (TSUnifier ts)
+      , TSRenamer ts (TSScoped ts) ~ SubsumerMonad (TSSubsumer ts)
       ) => TypeSystem (ts :: Type) where
     type TSRenamer ts :: (Type -> Type) -> (Type -> Type)
     type TSUnifier ts :: Type -> Type
+    type TSSubsumer ts :: Type -> Type
     type TSScoped ts :: Type -> Type
     tsFunctionPosWitness :: FunctionPosWitness (TSNegWitness ts) (TSPosWitness ts)
     tsFunctionNegWitness :: FunctionNegWitness (TSNegWitness ts) (TSPosWitness ts)
@@ -30,7 +37,9 @@ type TSValue ts = AnyValue (TSPosWitness ts)
 
 type TSSealedExpression ts = UnifierSealedExpression (TSUnifier ts)
 
-type TSMonad ts = TSRenamer ts (TSScoped ts)
+type TSSealedPattern ts = UnifierSealedPattern (TSUnifier ts)
+
+type TSPatternConstructor ts = UnifierPatternConstructor (TSUnifier ts)
 
 tsUnify ::
        forall ts a b. TypeSystem ts
@@ -77,6 +86,19 @@ tsAbstract ::
     -> TSScoped ts (TSSealedExpression ts)
 tsAbstract n expr = abstractSealedExpression @(TSRenamer ts) @(TSUnifier ts) (tsFunctionPosWitness @ts) n expr
 
+tsCase ::
+       forall ts. TypeSystem ts
+    => TSSealedExpression ts
+    -> [(TSSealedPattern ts, TSSealedExpression ts)]
+    -> TSScoped ts (TSSealedExpression ts)
+tsCase expr cases = caseSealedExpression @(TSRenamer ts) @(TSUnifier ts) expr cases
+
+tsCaseAbstract ::
+       forall ts. TypeSystem ts
+    => [(TSSealedPattern ts, TSSealedExpression ts)]
+    -> TSScoped ts (TSSealedExpression ts)
+tsCaseAbstract cases = caseAbstractSealedExpression @(TSRenamer ts) @(TSUnifier ts) (tsFunctionPosWitness @ts) cases
+
 tsVar ::
        forall ts. TypeSystem ts
     => TSName ts
@@ -84,7 +106,9 @@ tsVar ::
 tsVar name =
     runIdentity $
     runRenamer @(TSRenamer ts) $
-    renameNewVar $ \vwt twt conv -> withTransConstraintTM @Monad $ return $ varSealedExpression name vwt twt conv
+    withTransConstraintTM @Monad $ do
+        MkNewVar vwt twt conv <- renameNewVar
+        return $ varSealedExpression name vwt twt conv
 
 tsConst :: forall ts. TSValue ts -> TSSealedExpression ts
 tsConst = constSealedExpression
@@ -106,11 +130,11 @@ tsSingleBinding ::
     -> TSBindings ts
 tsSingleBinding = singleBinding
 
-tsUncheckedLet ::
+tsUncheckedComponentLet ::
        forall ts. (Ord (TSName ts), TypeSystem ts)
     => TSBindings ts
     -> TSScoped ts (StrictMap (TSName ts) (TSSealedExpression ts))
-tsUncheckedLet = bindingsLetSealedExpression @(TSRenamer ts) @(TSUnifier ts)
+tsUncheckedComponentLet = bindingsComponentLetSealedExpression @(TSRenamer ts) @(TSUnifier ts)
 
 tsValuesLet ::
        forall ts. (Ord (TSName ts), TypeSystem ts)
@@ -118,8 +142,58 @@ tsValuesLet ::
     -> StrictMap (TSName ts) (TSSealedExpression ts)
 tsValuesLet = valuesLetSealedExpression @(TSUnifier ts)
 
-tsBindingsCheckDuplicates ::
-       forall ts m. (Show (TSName ts), TypeSystem ts, MonadFail m)
-    => TSBindings ts
-    -> m ()
-tsBindingsCheckDuplicates = bindingsCheckDuplicates
+tsSubsume ::
+       forall ts. TypeSystem ts
+    => AnyW (TSPosWitness ts)
+    -> TSSealedExpression ts
+    -> TSScoped ts (TSSealedExpression ts)
+tsSubsume (MkAnyW t) expr =
+    runRenamer @(TSRenamer ts) $ do
+        at' <-
+            namespace $
+            withTransConstraintTM @Monad $ do
+                MkTypeF t' _ <- renameTSPosWitness t
+                return $ MkAnyW t'
+        expr' <- rename expr
+        subsumeExpression @(TSSubsumer ts) at' expr'
+
+tsVarPattern ::
+       forall ts. TypeSystem ts
+    => TSName ts
+    -> TSSealedPattern ts
+tsVarPattern name =
+    runIdentity $
+    runRenamer @(TSRenamer ts) $
+    withTransConstraintTM @Monad $ do
+        MkNewVar vwt twt conv <- renameNewVar
+        return $ varSealedPattern name vwt twt conv
+
+tsAnyPattern ::
+       forall ts. TypeSystem ts
+    => TSSealedPattern ts
+tsAnyPattern =
+    runIdentity $
+    runRenamer @(TSRenamer ts) $
+    withTransConstraintTM @Monad $ do
+        MkNewVar twt _ _ <- renameNewVar
+        return $ anySealedPattern twt
+
+tsBothPattern ::
+       forall ts. TypeSystem ts
+    => TSSealedPattern ts
+    -> TSSealedPattern ts
+    -> TSScoped ts (TSSealedPattern ts)
+tsBothPattern = bothSealedPattern @(TSRenamer ts) @(TSUnifier ts)
+
+tsSealPatternConstructor ::
+       forall ts m. MonadFail m
+    => TSPatternConstructor ts
+    -> m (TSSealedPattern ts)
+tsSealPatternConstructor = sealedPatternConstructor
+
+tsApplyPatternConstructor ::
+       forall ts. (TypeSystem ts, MonadFail (TSScoped ts))
+    => TSPatternConstructor ts
+    -> TSSealedPattern ts
+    -> TSScoped ts (TSPatternConstructor ts)
+tsApplyPatternConstructor = applyPatternConstructor @(TSRenamer ts) @(TSUnifier ts)

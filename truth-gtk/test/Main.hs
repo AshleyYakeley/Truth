@@ -9,8 +9,8 @@ import Truth.Core
 import Truth.UI.GTK
 
 testGView ::
-       forall edit seledit. ApplicableEdit edit
-    => UISpec seledit edit
+       forall edit sel. ApplicableEdit edit
+    => UISpec sel edit
     -> TestTree
 testGView uispec =
     testCase (show uispec) $
@@ -18,10 +18,10 @@ testGView uispec =
         Just _ -> return ()
         Nothing -> assertFailure "not matched"
 
-data UIUnknown seledit edit where
-    MkUIUnknown :: UIUnknown seledit edit
+data UIUnknown sel edit where
+    MkUIUnknown :: UIUnknown sel edit
 
-instance Show (UIUnknown seledit edit) where
+instance Show (UIUnknown sel edit) where
     show MkUIUnknown = "unknown"
 
 instance UIType UIUnknown where

@@ -38,7 +38,7 @@ getDirPath mdirpath = do
     return dirpath
 
 showDefEntry :: Int -> DefDoc -> IO ()
-showDefEntry _ (MkDefDoc name tp desc) = let
+showDefEntry _ MkDefDoc {..} = let
     badchars :: String
     badchars = "+-*>\\"
     escapeChar :: Char -> String
@@ -49,10 +49,19 @@ showDefEntry _ (MkDefDoc name tp desc) = let
     escapeMarkdown :: String -> String
     escapeMarkdown s = mconcat $ fmap escapeChar s
     in do
-           putStrLn $ "**`" ++ show name ++ "`** :: `" ++ unpack tp ++ "`  "
-           if desc == ""
+           putStrLn $
+               "**`" ++
+               show docName ++
+               "`** :: `" ++
+               unpack docValueType ++
+               "`" <>
+               (if docIsPattern
+                    then " (also pattern)"
+                    else "") <>
+               "  "
+           if docDescription == ""
                then return ()
-               else putStrLn $ escapeMarkdown $ unpack desc
+               else putStrLn $ escapeMarkdown $ unpack docDescription
            putStrLn ""
 
 showDefTitle :: Int -> Text -> IO ()
@@ -70,7 +79,7 @@ main =
         options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
         case options of
             ExprDocOption ->
-                liftIO $ do runDocTree showDefTitle showDefDesc showDefEntry 2 $ predefinedDoc @PinaforeEdit
+                liftIO $ do runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
                     -- putMarkdown "<file>" (unpack filePinaforeType) "a script file passed to pinafore"
             DumpTableOption mdirpath -> do
                 dirpath <- getDirPath mdirpath
@@ -78,25 +87,27 @@ main =
             RunOption fInteract fNoRun mdirpath fpaths -> do
                 dirpath <- getDirPath mdirpath
                 context <- sqlitePinaforeContext dirpath createWindow
-                liftIO $
-                    case fpaths of
-                        [] -> do
-                            isterm <- hIsTerminalDevice stdin
-                            if isterm || fInteract
-                                then pinaforeInteract context
-                                else do
-                                    ptext <- getContents
-                                    action <- pinaforeInterpretFile context "<stdin>" $ decodeUtf8 $ toStrict ptext
-                                    if fNoRun
-                                        then return ()
-                                        else action
-                        _ -> do
-                            for_ fpaths $ \fpath -> do
-                                ptext <- readFile fpath
-                                action <- pinaforeInterpretFile context fpath $ decodeUtf8 $ toStrict ptext
-                                if fNoRun
-                                    then return ()
-                                    else action
-                            if fInteract
-                                then pinaforeInteract context
-                                else return ()
+                let
+                    ?pinafore = context
+                    in liftIO $
+                       case fpaths of
+                           [] -> do
+                               isterm <- hIsTerminalDevice stdin
+                               if isterm || fInteract
+                                   then pinaforeInteract
+                                   else do
+                                       ptext <- getContents
+                                       action <- pinaforeInterpretFile "<stdin>" $ decodeUtf8 $ toStrict ptext
+                                       if fNoRun
+                                           then return ()
+                                           else action
+                           _ -> do
+                               for_ fpaths $ \fpath -> do
+                                   ptext <- readFile fpath
+                                   action <- pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
+                                   if fNoRun
+                                       then return ()
+                                       else action
+                               if fInteract
+                                   then pinaforeInteract
+                                   else return ()

@@ -5,15 +5,15 @@ import Truth.Core.Object
 import Truth.Core.UI.CreateView
 import Truth.Core.UI.View
 
-class DynamicViewState (dvs :: *) where
-    type DynamicViewSelEdit dvs :: *
-    type DynamicViewEdit dvs :: *
+class DynamicViewState (dvs :: Type) where
+    type DynamicViewSelEdit dvs :: Type
+    type DynamicViewEdit dvs :: Type
     dynamicViewStates :: dvs -> [ViewState (DynamicViewSelEdit dvs) (DynamicViewEdit dvs) ()]
     dynamicViewFocus :: dvs -> ViewState (DynamicViewSelEdit dvs) (DynamicViewEdit dvs) ()
 
-instance DynamicViewState (ViewState seledit edit ()) where
-    type DynamicViewSelEdit (ViewState seledit edit ()) = seledit
-    type DynamicViewEdit (ViewState seledit edit ()) = edit
+instance DynamicViewState (ViewState sel edit ()) where
+    type DynamicViewSelEdit (ViewState sel edit ()) = sel
+    type DynamicViewEdit (ViewState sel edit ()) = edit
     dynamicViewStates dvs = [dvs]
     dynamicViewFocus dvs = dvs
 
@@ -21,10 +21,10 @@ closeDynamicView :: DynamicViewState dvs => dvs -> IO ()
 closeDynamicView dvs = for_ (dynamicViewStates dvs) closeLifeState
 
 cvDynamic ::
-       forall dvs seledit edit. (DynamicViewState dvs, seledit ~ DynamicViewSelEdit dvs, edit ~ DynamicViewEdit dvs)
+       forall dvs sel edit. (DynamicViewState dvs, sel ~ DynamicViewSelEdit dvs, edit ~ DynamicViewEdit dvs)
     => dvs
     -> (Object edit -> [edit] -> StateT dvs IO ())
-    -> CreateView seledit edit ()
+    -> CreateView sel edit ()
 cvDynamic firstdvs updateCV = do
     stateVar :: MVar dvs <- liftIO $ newMVar firstdvs
     liftLifeCycle $

@@ -6,7 +6,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 
-data WholeReader (a :: *) (t :: *) where
+data WholeReader (a :: Type) (t :: Type) where
     ReadWhole :: forall t. WholeReader t t
 
 instance TestEquality (WholeReader a) where
@@ -31,7 +31,7 @@ instance FullSubjectReader (WholeReader a) where
 wholeMutableRead :: m a -> MutableRead m (WholeReader a)
 wholeMutableRead ma ReadWhole = ma
 
-newtype WholeReaderEdit (reader :: * -> *) =
+newtype WholeReaderEdit (reader :: Type -> Type) =
     MkWholeEdit (ReaderSubject reader)
 
 instance Show (ReaderSubject reader) => Show (WholeReaderEdit reader) where

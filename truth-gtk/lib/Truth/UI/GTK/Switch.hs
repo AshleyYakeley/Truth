@@ -10,14 +10,14 @@ import Truth.UI.GTK.Useful
 import Truth.Debug.Object
 
 switchView ::
-       forall seledit edit.
-       (UISpec seledit edit -> GCreateView seledit edit)
-    -> EditFunction edit (WholeEdit (UISpec seledit edit))
-    -> GCreateView seledit edit
+       forall sel edit.
+       (UISpec sel edit -> GCreateView sel edit)
+    -> EditFunction edit (WholeEdit (UISpec sel edit))
+    -> GCreateView sel edit
 switchView getview specfunc = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
-        getViewState :: UISpec seledit edit -> View seledit edit (ViewState seledit edit ())
+        getViewState :: UISpec sel edit -> View sel edit (ViewState sel edit ())
         getViewState spec =
             viewCreateView $ do
                 widget <- traceBracket "GTK.Switch:getViewState.getview" $ getview spec
@@ -28,7 +28,7 @@ switchView getview specfunc = do
             firstspec <- viewMapEdit (readOnlyEditLens specfunc) $ viewObjectRead $ \_ mr -> mr ReadWhole
             getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
-    cvDynamic @(ViewState seledit edit ()) firstvs $ \object edits -> traceBracket "GTK.Switch:update" $ do
+    cvDynamic @(ViewState sel edit ()) firstvs $ \object edits -> traceBracket "GTK.Switch:update" $ do
         whedits <- liftIO $ objectMapUpdates specfunc object edits
         case lastWholeEdit whedits of
             Nothing -> return ()

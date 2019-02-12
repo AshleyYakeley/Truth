@@ -4,8 +4,8 @@ import Truth.Core.Import
 import Truth.Core.Read.MutableRead
 
 -- | The values of the reader type are MutableEdit calls that read parts of something of type (ReaderSubject reader).
-class SubjectReader (reader :: * -> *) where
-    type ReaderSubject reader :: *
+class SubjectReader (reader :: Type -> Type) where
+    type ReaderSubject reader :: Type
     -- | Make MutableEdit calls when you've actually got the subject
     mSubjectToMutableRead ::
            forall m. Monad m

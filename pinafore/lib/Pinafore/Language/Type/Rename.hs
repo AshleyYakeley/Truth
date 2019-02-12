@@ -5,7 +5,9 @@ module Pinafore.Language.Type.Rename
     ) where
 
 import Language.Expression.Dolan
+import Language.Expression.Polarity
 import Language.Expression.Renamer
+import Language.Expression.TypeF
 import Language.Expression.UVar
 import Pinafore.Language.GroundType
 import Pinafore.Language.Type.Type
@@ -16,7 +18,7 @@ type LiftBijection (f :: kp -> kq) = forall (a :: kp) (b :: kp). KindBijection k
 vcBijection ::
        forall (v :: SingleVariance) k (f :: SingleVarianceKind v -> k). HasKindMorphism k
     => SingleVarianceType v
-    -> SingleVarianceMap v f
+    -> SingleVarianceMap (->) v f
     -> LiftBijection f
 vcBijection CovarianceType conv (MkBijection ab ba) = mkKindBijection (conv ab) (conv ba)
 vcBijection ContravarianceType conv (MkBijection ba ab) = mkKindBijection (conv $ MkCatDual ab) (conv $ MkCatDual ba)
@@ -31,7 +33,7 @@ type TypeNamespace (ts :: Type) (w :: k -> Type)
 type PinaforeTypeNamespace baseedit w = TypeNamespace (PinaforeTypeSystem baseedit) w
 
 renamePinaforeRangeTypeVars ::
-       forall baseedit polarity. IsTypePolarity polarity
+       forall baseedit polarity. Is PolarityType polarity
     => PinaforeTypeNamespace baseedit (PinaforeRangeType baseedit polarity)
 renamePinaforeRangeTypeVars (MkRangeType ta tb) cont =
     invertPolarity @polarity $
@@ -39,7 +41,7 @@ renamePinaforeRangeTypeVars (MkRangeType ta tb) cont =
         renamePinaforeTypeVars tb $ \tb' bijb -> cont (MkRangeType ta' tb') $ MkPairMorphism bija bijb
 
 renameTypeArg ::
-       forall baseedit polarity v. IsTypePolarity polarity
+       forall baseedit polarity v. Is PolarityType polarity
     => SingleVarianceType v
     -> PinaforeTypeNamespace baseedit (SingleArgument v (PinaforeType baseedit) polarity)
 renameTypeArg CovarianceType = renamePinaforeTypeVars
@@ -49,13 +51,13 @@ renameTypeArg ContravarianceType =
 renameTypeArg RangevarianceType = renamePinaforeRangeTypeVars
 
 renameTypeArgs ::
-       forall baseedit (polarity :: TypePolarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv).
-       IsTypePolarity polarity
+       forall baseedit (polarity :: Polarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv).
+       Is PolarityType polarity
     => DolanVarianceType dv
-    -> DolanKindVary dv t
+    -> DolanVarianceMap (->) dv t
     -> PinaforeTypeNamespace baseedit (DolanArguments dv (PinaforeType baseedit) t polarity)
-renameTypeArgs NilListType NilDolanKindVary NilDolanArguments cont = cont NilDolanArguments id
-renameTypeArgs (ConsListType svt dvt) (ConsDolanKindVary svm dvm) (ConsDolanArguments arg args) cont =
+renameTypeArgs NilListType NilDolanVarianceMap NilDolanArguments cont = cont NilDolanArguments id
+renameTypeArgs (ConsListType svt dvt) (ConsDolanVarianceMap svm dvm) (ConsDolanArguments arg args) cont =
     renameTypeArg @baseedit @polarity svt arg $ \arg' bijarg ->
         case dolanVarianceHasKM dvt of
             Dict ->
@@ -63,33 +65,40 @@ renameTypeArgs (ConsListType svt dvt) (ConsDolanKindVary svm dvm) (ConsDolanArgu
                     renameTypeArgs dvt dvm args' $ \args'' bijargs' ->
                         cont (ConsDolanArguments arg' args'') $ bijargs' . bijargs
 
-renamePinaforeSinglularTypeVars ::
-       forall baseedit polarity. IsTypePolarity polarity
+renamePinaforeSingularTypeVars ::
+       forall baseedit polarity. Is PolarityType polarity
     => PinaforeTypeNamespace baseedit (PinaforeSingularType baseedit polarity)
-renamePinaforeSinglularTypeVars (GroundPinaforeSingularType gt args) cont =
-    renameTypeArgs @baseedit @polarity (pinaforeGroundTypeKind gt) (pinaforeGroundTypeVary gt) args $ \args' bij ->
+renamePinaforeSingularTypeVars (GroundPinaforeSingularType gt args) cont =
+    renameTypeArgs @baseedit @polarity (pinaforeGroundTypeVarianceType gt) (pinaforeGroundTypeVarianceMap gt) args $ \args' bij ->
         cont (GroundPinaforeSingularType gt args') bij
-renamePinaforeSinglularTypeVars (VarPinaforeSingularType namewit1) cont =
+renamePinaforeSingularTypeVars (VarPinaforeSingularType namewit1) cont =
     renameUVar varNamespaceRename namewit1 $ \namewit2 bij -> cont (VarPinaforeSingularType namewit2) bij
 
 renamePinaforeTypeVars ::
-       forall baseedit polarity. IsTypePolarity polarity
+       forall baseedit polarity. Is PolarityType polarity
     => PinaforeTypeNamespace baseedit (PinaforeType baseedit polarity)
 renamePinaforeTypeVars NilPinaforeType cont = cont NilPinaforeType id
 renamePinaforeTypeVars (ConsPinaforeType ta tb) cont =
-    renamePinaforeSinglularTypeVars ta $ \ta' bija ->
-        renamePinaforeTypeVars tb $ \tb' bijb -> cont (ConsPinaforeType ta' tb') $ jmBiMap @polarity bija bijb
+    renamePinaforeSingularTypeVars ta $ \ta' bija ->
+        renamePinaforeTypeVars tb $ \tb' bijb ->
+            cont (ConsPinaforeType ta' tb') $
+            case representative @_ @_ @polarity of
+                PositiveType -> biJoinBimap bija bijb
+                NegativeType -> biMeetBimap bija bijb
 
 instance Renamer (VarRenamer (PinaforeTypeSystem baseedit)) where
     type RenamerNamespace (VarRenamer (PinaforeTypeSystem baseedit)) = VarNamespace (PinaforeTypeSystem baseedit)
-    type RenamerNegWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'NegativePolarity
-    type RenamerPosWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'PositivePolarity
-    renameTSNegWitness = renamePinaforeTypeVars
-    renameTSPosWitness = renamePinaforeTypeVars
-    renameNewVar cont = do
+    type RenamerNegWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'Negative
+    type RenamerPosWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'Positive
+    renameTSNegWitness t = renamePinaforeTypeVars t $ \t' bij -> return $ MkTypeF t' $ biBackwards bij
+    renameTSPosWitness t = renamePinaforeTypeVars t $ \t' bij -> return $ MkTypeF t' $ biForwards bij
+    renameNewVar = do
         n <- varRenamerGenerate
         toSymbolWitness n $ \wit ->
-            cont (singlePinaforeType $ VarPinaforeSingularType wit) (singlePinaforeType $ VarPinaforeSingularType wit) $
+            return $
+            MkNewVar
+                (singlePinaforeType $ VarPinaforeSingularType wit)
+                (singlePinaforeType $ VarPinaforeSingularType wit) $
             join1 . meet1
     namespace = runVarNamespace
     runRenamer = runVarRenamer

@@ -11,9 +11,14 @@ import Language.Expression.TypeSystem
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Type
+import Pinafore.Language.Type.Subsume ()
 import Shapes
 
 type QExpr baseedit = TSSealedExpression (PinaforeTypeSystem baseedit)
+
+type QPattern baseedit = TSSealedPattern (PinaforeTypeSystem baseedit)
+
+type QPatternConstructor baseedit = TSPatternConstructor (PinaforeTypeSystem baseedit)
 
 type QValue baseedit = TSValue (PinaforeTypeSystem baseedit)
 
@@ -37,6 +42,75 @@ qAbstractsExpr [] e = return e
 qAbstractsExpr (n:nn) e = do
     e' <- qAbstractsExpr nn e
     qAbstractExpr n e'
+
+qVarPattern :: forall baseedit. Name -> QPattern baseedit
+qVarPattern = tsVarPattern @(PinaforeTypeSystem baseedit)
+
+qAnyPattern :: forall baseedit. QPattern baseedit
+qAnyPattern = tsAnyPattern @(PinaforeTypeSystem baseedit)
+
+qBothPattern ::
+       forall baseedit. QPattern baseedit -> QPattern baseedit -> PinaforeSourceScoped baseedit (QPattern baseedit)
+qBothPattern = tsBothPattern @(PinaforeTypeSystem baseedit)
+
+qApplyPatternConstructor ::
+       forall baseedit.
+       QPatternConstructor baseedit
+    -> QPattern baseedit
+    -> PinaforeSourceScoped baseedit (QPatternConstructor baseedit)
+qApplyPatternConstructor = tsApplyPatternConstructor @(PinaforeTypeSystem baseedit)
+
+qSealPatternConstructor ::
+       forall baseedit m. MonadFail m
+    => QPatternConstructor baseedit
+    -> m (QPattern baseedit)
+qSealPatternConstructor = tsSealPatternConstructor @(PinaforeTypeSystem baseedit)
+
+qApplyAllPatternConstructor ::
+       forall baseedit.
+       QPatternConstructor baseedit
+    -> [QPattern baseedit]
+    -> PinaforeSourceScoped baseedit (QPatternConstructor baseedit)
+qApplyAllPatternConstructor pc [] = return pc
+qApplyAllPatternConstructor pc (pat:pats) = do
+    pc' <- qApplyPatternConstructor pc pat
+    qApplyAllPatternConstructor pc' pats
+
+qConstructPattern ::
+       forall baseedit.
+       QPatternConstructor baseedit
+    -> [QPattern baseedit]
+    -> PinaforeSourceScoped baseedit (QPattern baseedit)
+qConstructPattern pc pats = do
+    pc' <- qApplyAllPatternConstructor pc pats
+    qSealPatternConstructor pc'
+
+qCase ::
+       forall baseedit.
+       QExpr baseedit
+    -> [(QPattern baseedit, QExpr baseedit)]
+    -> PinaforeSourceScoped baseedit (QExpr baseedit)
+qCase = tsCase @(PinaforeTypeSystem baseedit)
+
+qFunctionPosWitness ::
+       forall baseedit a b.
+       PinaforeTypeF baseedit 'Negative a
+    -> PinaforeTypeF baseedit 'Positive b
+    -> PinaforeTypeF baseedit 'Positive (a -> b)
+qFunctionPosWitness (MkTypeF ta conva) (MkTypeF tb convb) =
+    tsFunctionPosWitness @(PinaforeTypeSystem baseedit) ta tb $ \tf abf -> MkTypeF tf $ abf . \ab -> convb . ab . conva
+
+qFunctionPosWitnesses ::
+       ListType (PinaforeTypeF baseedit 'Negative) a
+    -> PinaforeTypeF baseedit 'Positive b
+    -> PinaforeTypeF baseedit 'Positive (HList a -> b)
+qFunctionPosWitnesses NilListType tb = contramap (\ub -> ub ()) tb
+qFunctionPosWitnesses (ConsListType ta la) tb =
+    contramap (\f a l -> f (a, l)) $ qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
+
+qCaseAbstract ::
+       forall baseedit. [(QPattern baseedit, QExpr baseedit)] -> PinaforeSourceScoped baseedit (QExpr baseedit)
+qCaseAbstract = tsCaseAbstract @(PinaforeTypeSystem baseedit)
 
 qApplyExpr :: forall baseedit. QExpr baseedit -> QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit)
 qApplyExpr exprf expra = tsApply @(PinaforeTypeSystem baseedit) exprf expra
@@ -70,17 +144,9 @@ qBindVal name val = qBindExpr name $ qConstExpr val
 qLetExpr :: forall baseedit. Name -> QExpr baseedit -> QExpr baseedit -> PinaforeSourceScoped baseedit (QExpr baseedit)
 qLetExpr name exp body = tsLet @(PinaforeTypeSystem baseedit) name exp body
 
-qBindingsLetExpr ::
-       forall baseedit m. MonadFail m
-    => QBindings baseedit
-    -> m (PinaforeSourceScoped baseedit (StrictMap Name (QExpr baseedit)))
-qBindingsLetExpr b = do
-    tsBindingsCheckDuplicates @(PinaforeTypeSystem baseedit) b
-    return $ qUncheckedBindingsLetExpr b
-
-qUncheckedBindingsLetExpr ::
+qUncheckedBindingsComponentLetExpr ::
        forall baseedit. QBindings baseedit -> PinaforeSourceScoped baseedit (StrictMap Name (QExpr baseedit))
-qUncheckedBindingsLetExpr = tsUncheckedLet @(PinaforeTypeSystem baseedit)
+qUncheckedBindingsComponentLetExpr = tsUncheckedComponentLet @(PinaforeTypeSystem baseedit)
 
 qValuesLetExpr :: forall baseedit. StrictMap Name (QValue baseedit) -> StrictMap Name (QExpr baseedit)
 qValuesLetExpr = tsValuesLet @(PinaforeTypeSystem baseedit)
@@ -99,3 +165,10 @@ typedAnyToPinaforeVal ::
 typedAnyToPinaforeVal spos aval =
     case fromTypeF of
         MkTypeF wit conv -> runSourceScoped spos $ fmap conv $ tsAnyToVal @(PinaforeTypeSystem baseedit) wit aval
+
+qSubsumeExpr ::
+       forall baseedit.
+       AnyW (PinaforeType baseedit 'Positive)
+    -> PinaforeExpression baseedit
+    -> PinaforeSourceScoped baseedit (PinaforeExpression baseedit)
+qSubsumeExpr t expr = tsSubsume @(PinaforeTypeSystem baseedit) t expr

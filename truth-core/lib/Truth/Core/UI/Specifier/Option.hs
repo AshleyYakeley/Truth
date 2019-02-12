@@ -5,25 +5,25 @@ import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data UIOption seledit edit where
+data UIOption sel edit where
     MkUIOption
         :: Eq t
         => EditFunction tedit (ListEdit [(t, Text)] (WholeEdit (t, Text)))
         -> EditLens tedit (WholeEdit t)
-        -> UIOption seledit tedit
+        -> UIOption sel tedit
 
-instance Show (UIOption seledit edit) where
+instance Show (UIOption sel edit) where
     show _ = "option"
 
 instance UIType UIOption where
     uiWitness = $(iowitness [t|UIOption|])
 
 uiOption ::
-       forall tedit t seledit. Eq t
+       forall tedit t sel. Eq t
     => EditFunction tedit (ListEdit [(t, Text)] (WholeEdit (t, Text)))
     -> EditLens tedit (WholeEdit t)
-    -> UISpec seledit tedit
+    -> UISpec sel tedit
 uiOption optlens sellens = MkUISpec $ MkUIOption optlens sellens
 
-uiSimpleOption :: Eq t => [(t, Text)] -> UISpec seledit (WholeEdit t)
+uiSimpleOption :: Eq t => [(t, Text)] -> UISpec sel (WholeEdit t)
 uiSimpleOption opts = uiOption (constEditFunction opts) id

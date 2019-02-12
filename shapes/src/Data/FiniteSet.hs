@@ -9,13 +9,17 @@ newtype FiniteSet a = MkFiniteSet
     { unFiniteSet :: [a]
     } deriving ( Foldable
                , Functor -- Applicative,Monad,Alternative,MonadPlus,
-               , Semigroup
-               , Monoid
                , MonoFunctor
                , MonoFoldable
                , GrowingAppend
                , Filterable
                )
+
+instance Eq a => Semigroup (FiniteSet a) where
+    (<>) = union
+
+instance Eq a => Monoid (FiniteSet a) where
+    mempty = MkFiniteSet mempty
 
 instance Show a => Show (FiniteSet a) where
     show (MkFiniteSet aa) = show aa

@@ -5,7 +5,7 @@ import Truth.Core.Import
 import Truth.Core.Read
 import Truth.Core.Types.Tuple
 
-data PairSelector ea eb (et :: *) where
+data PairSelector ea eb (et :: Type) where
     SelectFirst :: PairSelector ea eb ea
     SelectSecond :: PairSelector ea eb eb
 
@@ -55,11 +55,11 @@ instance (c ea, c eb) => TupleWitness c (PairSelector ea eb) where
 
 instance IsFiniteConsWitness (PairSelector ea eb) where
     type FiniteConsWitness (PairSelector ea eb) = '[ ea, eb]
-    toLTW SelectFirst = FirstListElementWitness
-    toLTW SelectSecond = RestListElementWitness FirstListElementWitness
-    fromLTW FirstListElementWitness = SelectFirst
-    fromLTW (RestListElementWitness FirstListElementWitness) = SelectSecond
-    fromLTW (RestListElementWitness (RestListElementWitness lt)) = never lt
+    toLTW SelectFirst = FirstElementType
+    toLTW SelectSecond = RestElementType FirstElementType
+    fromLTW FirstElementType = SelectFirst
+    fromLTW (RestElementType FirstElementType) = SelectSecond
+    fromLTW (RestElementType (RestElementType lt)) = never lt
 
 partitionPairEdits :: forall ea eb. [PairEdit ea eb] -> ([ea], [eb])
 partitionPairEdits pes = let

@@ -1,48 +1,39 @@
 module Truth.Core.UI.Specifier.SelectionLens where
 
-import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.UI.Specifier.Specifier
 
-data UISetSelectionLens seledit edit where
-    MkUISetSelectionLens
-        :: forall seledita seleditb edit.
-           EditLens seledita seleditb
-        -> UISpec seledita edit
-        -> UISetSelectionLens seleditb edit
+data UISetSelectionMap sel edit where
+    MkUISetSelectionMap :: forall sela selb edit. (sela -> selb) -> UISpec sela edit -> UISetSelectionMap selb edit
 
-instance Show (UISetSelectionLens seledit edit) where
-    show (MkUISetSelectionLens _ uispec) = "selection-lens " ++ show uispec
+instance Show (UISetSelectionMap sel edit) where
+    show (MkUISetSelectionMap _ uispec) = "selection-lens " ++ show uispec
 
-instance UIType UISetSelectionLens where
-    uiWitness = $(iowitness [t|UISetSelectionLens|])
+instance UIType UISetSelectionMap where
+    uiWitness = $(iowitness [t|UISetSelectionMap|])
 
-uiSetSelectionLens ::
-       forall seledita seleditb edit. EditLens seledita seleditb -> UISpec seledita edit -> UISpec seleditb edit
-uiSetSelectionLens lens spec = MkUISpec $ MkUISetSelectionLens lens spec
+uiSetSelectionMap :: forall sela selb edit. (sela -> selb) -> UISpec sela edit -> UISpec selb edit
+uiSetSelectionMap f spec = MkUISpec $ MkUISetSelectionMap f spec
 
-uiAspectMapSelectionEdit :: EditLens seledita seleditb -> UIAspect seledita edit -> UIAspect seleditb edit
-uiAspectMapSelectionEdit lens (MkUIAspect window asplens) = MkUIAspect window (lens . asplens)
-
-aspectIOMapSelectionEdit :: IO (EditLens seledita seleditb) -> Aspect seledita edit -> Aspect seleditb edit
-aspectIOMapSelectionEdit iolens aspect = do
-    lens <- iolens
-    mwin <- aspect
+aspectIOMapSelection :: IO (sela -> selb) -> Aspect sela -> Aspect selb
+aspectIOMapSelection iof aspect = do
+    f <- iof
+    msel <- aspect
     return $ do
-        win <- mwin
-        return $ uiAspectMapSelectionEdit lens win
+        sel <- msel
+        return $ f sel
 
-aspectMapSelectionEdit :: EditLens seledita seleditb -> Aspect seledita edit -> Aspect seleditb edit
-aspectMapSelectionEdit lens = aspectIOMapSelectionEdit $ return lens
+aspectMapSelection :: (sela -> selb) -> Aspect sela -> Aspect selb
+aspectMapSelection f = aspectIOMapSelection $ return f
 
-data UINoSelectionLens seledit edit where
-    MkUINoSelectionLens :: UISpec seledita edit -> UINoSelectionLens seleditb edit
+data UINoSelection sel edit where
+    MkUINoSelection :: UISpec sela edit -> UINoSelection selb edit
 
-instance Show (UINoSelectionLens seledit edit) where
-    show (MkUINoSelectionLens uispec) = "no-selection-lens " ++ show uispec
+instance Show (UINoSelection sel edit) where
+    show (MkUINoSelection uispec) = "no-selection-lens " ++ show uispec
 
-instance UIType UINoSelectionLens where
-    uiWitness = $(iowitness [t|UINoSelectionLens|])
+instance UIType UINoSelection where
+    uiWitness = $(iowitness [t|UINoSelection|])
 
-uiNoSelectionLens :: UISpec seledita edit -> UISpec seleditb edit
-uiNoSelectionLens spec = MkUISpec $ MkUINoSelectionLens spec
+uiNoSelectionLens :: forall edit sela selb. UISpec sela edit -> UISpec selb edit
+uiNoSelectionLens spec = MkUISpec $ MkUINoSelection spec

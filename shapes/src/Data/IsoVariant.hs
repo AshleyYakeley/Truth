@@ -31,3 +31,22 @@ instance IsoVariant (Either a)
 instance IsoVariant' Either where
     isoMap' ab _ (Left a) = Left $ ab a
     isoMap' _ _ (Right t) = Right t
+
+enumMap :: (IsoVariant f, Enum a) => f Int -> f a
+enumMap = isoMap toEnum fromEnum
+
+infixr 3 <***>, ***>, <***
+
+class IsoVariant f => Productish f where
+    pUnit :: f ()
+    (<***>) :: f a -> f b -> f (a, b)
+    (***>) :: f () -> f a -> f a
+    fu ***> fa = isoMap (\((), a) -> a) (\a -> ((), a)) $ fu <***> fa
+    (<***) :: f a -> f () -> f a
+    fa <*** fu = isoMap (\(a, ()) -> a) (\a -> (a, ())) $ fa <***> fu
+
+infixr 2 <+++>
+
+class IsoVariant f => Summish f where
+    pNone :: f None
+    (<+++>) :: f a -> f b -> f (Either a b)

@@ -1,8 +1,10 @@
 module Language.Expression.Unifier where
 
-import Language.Expression.Expression
 import Language.Expression.Named
+import Language.Expression.Polarity
 import Language.Expression.Sealed
+import Language.Expression.TypeF
+import Language.Expression.TypeMappable
 import Shapes
 
 class (Monad (UnifierMonad unifier), Applicative unifier, Eq (UnifierName unifier)) => Unifier unifier where
@@ -27,19 +29,30 @@ class (Monad (UnifierMonad unifier), Applicative unifier, Eq (UnifierName unifie
     unifierPosSubstitute ::
            UnifierSubstitutions unifier
         -> UnifierPosWitness unifier t
-        -> (forall t'. UnifierPosWitness unifier t' -> (t -> t') -> r)
-        -> r
+        -> UnifierMonad unifier (TypeF (UnifierPosWitness unifier) 'Positive t)
     unifierNegSubstitute ::
            UnifierSubstitutions unifier
         -> UnifierNegWitness unifier t
-        -> (forall t'. UnifierNegWitness unifier t' -> (t' -> t) -> r)
-        -> r
-    simplifyExpressionType :: UnifierSealedExpression unifier -> UnifierMonad unifier (UnifierSealedExpression unifier)
+        -> UnifierMonad unifier (TypeF (UnifierNegWitness unifier) 'Negative t)
+    simplify ::
+           forall a. UnifierMappable unifier a
+        => a
+        -> UnifierMonad unifier a
+
+type UnifierMappable unifier = TypeMappable (->) (UnifierPosWitness unifier) (UnifierNegWitness unifier)
 
 type UnifierOpenExpression unifier = NamedExpression (UnifierName unifier) (UnifierNegWitness unifier)
 
 type UnifierSealedExpression unifier
      = SealedExpression (UnifierName unifier) (UnifierNegWitness unifier) (UnifierPosWitness unifier)
+
+type UnifierOpenPattern unifier = NamedPattern (UnifierName unifier) (UnifierPosWitness unifier)
+
+type UnifierSealedPattern unifier
+     = SealedPattern (UnifierName unifier) (UnifierPosWitness unifier) (UnifierNegWitness unifier)
+
+type UnifierPatternConstructor unifier
+     = PatternConstructor (UnifierName unifier) (UnifierPosWitness unifier) (UnifierNegWitness unifier)
 
 liftUnifier :: Monad (UnifierMonad unifier) => unifier a -> Compose (UnifierMonad unifier) unifier a
 liftUnifier ua = Compose $ return ua
@@ -54,27 +67,29 @@ solveUnifyPosNegWitnesses wa wb = do
     (ab, _) <- solveUnifier uab
     return ab
 
-unifierExpressionSubstitute ::
-       forall unifier a. Unifier unifier
+unifierSubstitute ::
+       forall unifier a. (Unifier unifier, UnifierMappable unifier a)
     => UnifierSubstitutions unifier
-    -> UnifierOpenExpression unifier a
-    -> UnifierOpenExpression unifier a
-unifierExpressionSubstitute _ (ClosedExpression a) = ClosedExpression a
-unifierExpressionSubstitute subs (OpenExpression (MkNameWitness name tw) expr) =
-    unifierNegSubstitute @unifier subs tw $ \tw' conv ->
-        OpenExpression (MkNameWitness name tw') $
-        fmap (\ta -> ta . conv) $ unifierExpressionSubstitute @unifier subs expr
+    -> a
+    -> UnifierMonad unifier a
+unifierSubstitute subs = mapTypesM (unifierPosSubstitute @unifier subs) (unifierNegSubstitute @unifier subs)
 
-unifierExpressionSubstituteAndSimplify ::
-       forall unifier a. Unifier unifier
+unifierSubstituteAndSimplify ::
+       forall unifier a. (Unifier unifier, UnifierMappable unifier a)
     => UnifierSubstitutions unifier
-    -> UnifierPosWitness unifier a
-    -> UnifierOpenExpression unifier a
-    -> UnifierMonad unifier (UnifierSealedExpression unifier)
-unifierExpressionSubstituteAndSimplify subs twt expr =
-    simplifyExpressionType @unifier $
-    unifierPosSubstitute @unifier subs twt $ \twt' tconv ->
-        MkSealedExpression twt' $ unifierExpressionSubstitute @unifier subs $ fmap tconv expr
+    -> a
+    -> UnifierMonad unifier a
+unifierSubstituteAndSimplify subs a = do
+    a' <- unifierSubstitute @unifier subs a
+    simplify @unifier a'
+
+unifierSolve ::
+       forall unifier a. (Unifier unifier, UnifierMappable unifier a)
+    => unifier a
+    -> UnifierMonad unifier a
+unifierSolve ua = do
+    (a, subs) <- solveUnifier @unifier ua
+    unifierSubstituteAndSimplify @unifier subs a
 
 data UnifyExpression unifier a =
     forall conv. MkUnifyExpression (unifier conv)
@@ -88,8 +103,11 @@ instance Applicative unifier => Applicative (UnifyExpression unifier) where
     liftA2 abc (MkUnifyExpression uconva expra) (MkUnifyExpression uconvb exprb) =
         MkUnifyExpression (liftA2 (,) uconva uconvb) $ liftA2 (\caa cbb (ca, cb) -> abc (caa ca) (cbb cb)) expra exprb
 
-unifyExpression :: Applicative unifier => UnifierOpenExpression unifier a -> UnifyExpression unifier a
-unifyExpression expr = MkUnifyExpression (pure ()) $ fmap (\a _ -> a) expr
+exprUnifyExpression :: Applicative unifier => UnifierOpenExpression unifier a -> UnifyExpression unifier a
+exprUnifyExpression expr = MkUnifyExpression (pure ()) $ fmap (\a _ -> a) expr
+
+unifierUnifyExpression :: Applicative unifier => unifier a -> UnifyExpression unifier a
+unifierUnifyExpression ua = MkUnifyExpression ua $ pure id
 
 unifierExpression :: Functor unifier => UnifyExpression unifier a -> unifier (UnifierOpenExpression unifier a)
 unifierExpression (MkUnifyExpression uconv expr) = fmap (\conv -> fmap (\conva -> conva conv) expr) uconv

@@ -3,19 +3,19 @@ module Truth.Core.UI.Specifier.Layout where
 import Truth.Core.Import
 import Truth.Core.UI.Specifier.Specifier
 
-data UILayout seledit edit where
-    MkUIHorizontal :: [(UISpec seledit edit, Bool)] -> UILayout seledit edit
-    MkUIVertical :: [(UISpec seledit edit, Bool)] -> UILayout seledit edit
+data UILayout sel edit where
+    MkUIHorizontal :: [(UISpec sel edit, Bool)] -> UILayout sel edit
+    MkUIVertical :: [(UISpec sel edit, Bool)] -> UILayout sel edit
 
-instance Show (UILayout seledit edit) where
+instance Show (UILayout sel edit) where
     show (MkUIHorizontal specs) = "horizontal (" ++ intercalate ", " (fmap (show . fst) specs) ++ ")"
     show (MkUIVertical specs) = "vertical (" ++ intercalate ", " (fmap (show . fst) specs) ++ ")"
 
 instance UIType UILayout where
     uiWitness = $(iowitness [t|UILayout|])
 
-uiHorizontal :: [(UISpec seledit edit, Bool)] -> UISpec seledit edit
+uiHorizontal :: forall edit sel. [(UISpec sel edit, Bool)] -> UISpec sel edit
 uiHorizontal specs = MkUISpec $ MkUIHorizontal specs
 
-uiVertical :: [(UISpec seledit edit, Bool)] -> UISpec seledit edit
+uiVertical :: forall edit sel. [(UISpec sel edit, Bool)] -> UISpec sel edit
 uiVertical specs = MkUISpec $ MkUIVertical specs

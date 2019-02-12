@@ -7,7 +7,7 @@ data CloseUnlift f (a :: k) (b :: k) =
                   MkCloseUnlift (Unlift t)
                                 (f t a b)
 
-class UnliftCategory (f :: ((* -> *) -> (* -> *)) -> k -> k -> *) where
+class UnliftCategory (f :: ((Type -> Type) -> (Type -> Type)) -> k -> k -> Type) where
     ucId :: forall a. f IdentityT a a
     ucCompose ::
            forall tab tbc a b c. (MonadTransUnlift tab, MonadTransUnlift tbc)
@@ -20,7 +20,7 @@ instance UnliftCategory f => Category (CloseUnlift f) where
     (MkCloseUnlift unliftBC fBC) . (MkCloseUnlift unliftAB fAB) =
         MkCloseUnlift (composeUnlift unliftBC unliftAB) (ucCompose fBC fAB)
 
-type TransLift t1 t2 = forall m (a :: *). Monad m => t1 m a -> t2 m a
+type TransLift t1 t2 = forall m (a :: Type). Monad m => t1 m a -> t2 m a
 
 joinUnlifts ::
        (forall t1 t2.
@@ -31,11 +31,11 @@ joinUnlifts ::
 joinUnlifts call (MkCloseUnlift unlift1 open1) (MkCloseUnlift unlift2 open2) =
     MkCloseUnlift (composeUnlift unlift1 unlift2) $ call open1 open2
 
-data PairUnlift f1 f2 (t :: (* -> *) -> (* -> *)) (a :: k) (b :: k) =
+data PairUnlift f1 f2 (t :: (Type -> Type) -> (Type -> Type)) (a :: k) (b :: k) =
     MkPairUnlift (f1 t a b)
                  (f2 t a b)
 
-class Unliftable (f :: ((* -> *) -> (* -> *)) -> k -> k -> *) where
+class Unliftable (f :: ((Type -> Type) -> (Type -> Type)) -> k -> k -> Type) where
     fmapUnliftable :: forall a b t1 t2. TransLift t1 t2 -> f t1 a b -> f t2 a b
 
 joinUnliftables ::

@@ -9,7 +9,7 @@ import Truth.Core.Types.Sum
 import Truth.Core.Types.SumWhole
 import Truth.Core.Types.Whole
 
-type OneWholeEdit (f :: * -> *) edit = SumWholeEdit (OneEdit f edit)
+type OneWholeEdit (f :: Type -> Type) edit = SumWholeEdit (OneEdit f edit)
 
 type MaybeEdit edit = OneWholeEdit Maybe edit
 

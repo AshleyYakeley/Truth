@@ -8,7 +8,7 @@ _common: !include "../common.yaml"
 library:
     source-dirs: lib
     dependencies:
-      - base >= 4.9 && < 5
+      - base >= 4.12
       - time
       - stm
       - containers
@@ -94,6 +94,7 @@ library:
       - Truth.Core.UI.Specifier.Null
       - Truth.Core.UI.Specifier.Lens
       - Truth.Core.UI.Specifier.SelectionLens
+      - Truth.Core.UI.Specifier.WithAspect
       - Truth.Core.UI.Specifier.CSS
       - Truth.Core.UI.Specifier.Button
       - Truth.Core.UI.Specifier.One
@@ -119,7 +120,7 @@ tests:
   test:
     source-dirs: test
     dependencies:
-      - base >= 4.9 && < 5
+      - base >= 4.12
       - bytestring
       - containers
       - countable

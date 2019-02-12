@@ -34,18 +34,22 @@ import Data.Traversable as I
 import Data.Tuple as I
 import Data.Word as I
 import Prelude as I
-    ( Double
-    , Enum(..)
-    , Fractional(..)
+    ( Enum(..)
     , Integer
     , Integral(..)
     , Num(..)
     , Real(..)
     , ($)
+    , (^)
+    , (^^)
     , const
     , error
+    , even
     , fromInteger
     , fromIntegral
+    , gcd
+    , lcm
+    , odd
     , seq
     , toInteger
     , undefined
@@ -82,7 +86,7 @@ import Control.Monad.Trans.Identity as I (IdentityT(..))
 import Control.Monad.Trans.Maybe as I (MaybeT(..))
 import Control.Monad.Trans.Reader as I (ReaderT(..), ask, asks, local, withReaderT)
 import Control.Monad.Trans.State as I (State, StateT(..), evalState, evalStateT, get, modify, put, runState)
-import Control.Monad.Trans.Writer as I (Writer, WriterT(..), execWriterT, runWriter, tell)
+import Control.Monad.Trans.Writer as I (Writer, WriterT(..), execWriter, execWriterT, listen, runWriter, tell)
 
 -- transformers-extra
 import Control.Monad.Trans.AskUnlift as I
@@ -146,3 +150,15 @@ lastM :: [t] -> Maybe t
 lastM [] = Nothing
 lastM [t] = Just t
 lastM (_:tt) = lastM tt
+
+eitherLeft :: Either a b -> Maybe a
+eitherLeft (Left x) = Just x
+eitherLeft (Right _) = Nothing
+
+eitherRight :: Either a b -> Maybe b
+eitherRight (Left _) = Nothing
+eitherRight (Right x) = Just x
+
+compAll :: Category cat => [cat a a] -> cat a a
+compAll [] = id
+compAll (c:cc) = c . compAll cc

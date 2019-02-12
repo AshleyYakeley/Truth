@@ -17,10 +17,10 @@ testFile inpath = let
     outpath = rootpath <.> "out"
     in goldenVsFile testname refpath outpath $
        withBinaryFile outpath WriteMode $ \outh ->
-           withBinaryFile inpath ReadMode $ \inh -> do
-               (pc, _) <- makeTestPinaforeContext
-               pinaforeInteractHandles inh outh True pc
-               hPutStrLn outh "<END>"
+           withBinaryFile inpath ReadMode $ \inh ->
+               withTestPinaforeContext $ \_ -> do
+                   pinaforeInteractHandles inh outh True
+                   hPutStrLn outh "<END>"
 
 getTestInteractive :: IO TestTree
 getTestInteractive = do

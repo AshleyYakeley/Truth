@@ -1,5 +1,5 @@
-pinafore> false
-false
+pinafore> False
+False
 pinafore> 3
 3
 pinafore> 4 * 2

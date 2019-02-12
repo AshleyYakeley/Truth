@@ -8,7 +8,7 @@ _common: !include "../common.yaml"
 library:
     source-dirs: src
     dependencies:
-      - base >= 4.9 && < 5
+      - base >= 4.12
       - constraints
       - transformers
     exposed-modules:

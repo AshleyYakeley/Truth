@@ -40,6 +40,10 @@ newEntity = liftIO randomIO
 hashToEntity :: (forall r. (forall t. Serialize t => t -> r) -> [r]) -> Entity
 hashToEntity f = MkEntity $ hashToAnchor f
 
+maybeToEntity :: Maybe Entity -> Entity
+maybeToEntity (Just a) = hashToEntity $ \call -> [call @Text "Just:", call a]
+maybeToEntity Nothing = hashToEntity $ \call -> [call @Text "Nothing:"]
+
 pairToEntity :: (Entity, Entity) -> Entity
 pairToEntity (a, b) = hashToEntity $ \call -> [call @Text "pair:", call a, call b]
 

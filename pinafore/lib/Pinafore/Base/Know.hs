@@ -18,7 +18,7 @@ import Truth.Core
 
 newtype Know a =
     MkKnow (Maybe a)
-    deriving (Eq, Functor, Foldable, Applicative, Alternative, Monad, MonadPlus, MonadOne)
+    deriving (Eq, Functor, Foldable, Applicative, Alternative, Monad, MonadFix, MonadPlus, MonadOne)
 
 pattern Known :: a -> Know a
 
@@ -45,7 +45,7 @@ instance Show a => Show (Know a) where
     show (Known a) = "Known " <> show a
 
 instance HasDolanVary '[ 'Covariance] Know where
-    dolanVary = ConsDolanKindVary fmap $ NilDolanKindVary
+    dolanVary = ConsDolanVarianceMap fmap $ NilDolanVarianceMap
 
 fromKnow :: a -> Know a -> a
 fromKnow _ (Known v) = v
@@ -74,5 +74,5 @@ knowMaybe = MkBijection knowToMaybe maybeToKnow
 catKnowns :: Filterable f => f (Know a) -> f a
 catKnowns = catMaybes . fmap knowToMaybe
 
-uiUnknownValue :: Eq a => a -> UISpec seledit (WholeEdit a) -> UISpec seledit (WholeEdit (Know a))
+uiUnknownValue :: Eq a => a -> UISpec sel (WholeEdit a) -> UISpec sel (WholeEdit (Know a))
 uiUnknownValue def ui = uiLens (bijectionWholeEditLens knowMaybe) $ uiNothingValue def ui

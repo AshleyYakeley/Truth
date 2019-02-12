@@ -1,6 +1,5 @@
 module Pinafore.Language.Doc where
 
-import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Shapes
 
@@ -39,15 +38,9 @@ runDocTree showTitle showDesc showEntry level (MkDocTree title desc entries) = d
         TreeDocTreeEntry tree -> runDocTree showTitle showDesc showEntry (level + 1) tree
         EntryDocTreeEntry a -> showEntry level a
 
-data DefDoc =
-    MkDefDoc Name
-             Text
-             Text
-
-mkDefDoc ::
-       forall baseedit t. HasQTypeDescription baseedit t
-    => Name
-    -> Text
-    -> t
-    -> DefDoc
-mkDefDoc name desc _ = MkDefDoc name (qTypeDescription @baseedit @t) desc
+data DefDoc = MkDefDoc
+    { docName :: Name
+    , docValueType :: Text
+    , docIsPattern :: Bool
+    , docDescription :: Text
+    }

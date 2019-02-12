@@ -4,7 +4,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 
-newtype NoReader (a :: *) (t :: *) =
+newtype NoReader (a :: Type) (t :: Type) =
     MkNoReader None
     deriving (Eq, Countable, Searchable)
 
@@ -25,7 +25,7 @@ instance FullSubjectReader (NoReader ()) where
     mutableReadToSubject _ = return ()
 
 -- | Can't touch this.
-newtype NoEdit (reader :: * -> *) =
+newtype NoEdit (reader :: Type -> Type) =
     MkNoEdit None
     deriving (Eq, Countable, Searchable)
 

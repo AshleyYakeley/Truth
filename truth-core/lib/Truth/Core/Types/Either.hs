@@ -4,7 +4,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 
-data EitherReader (ra :: * -> *) (rb :: * -> *) (t :: *) where
+data EitherReader (ra :: Type -> Type) (rb :: Type -> Type) (t :: Type) where
     EitherReadIsRight :: EitherReader ra rb Bool
     EitherReadLeft :: ra t -> EitherReader ra rb (Maybe t)
     EitherReadRight :: rb t -> EitherReader ra rb (Maybe t)
