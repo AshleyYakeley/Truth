@@ -4,7 +4,6 @@ module Test.Language
     ( testLanguage
     ) where
 
-import Data.Ratio
 import Pinafore
 import Pinafore.Test
 import Prelude (read)
@@ -276,10 +275,10 @@ testQueries =
               , testQuery "7 +8" $ Just "15"
               , testQuery "7+ 8" $ Just "15"
               , testQuery "7 + 8" $ Just "15"
-              , testQuery "\"abc\"++\"def\"" $ Just "abcdef"
-              , testQuery "\"abc\" ++\"def\"" $ Just "abcdef"
-              , testQuery "\"abc\"++ \"def\"" $ Just "abcdef"
-              , testQuery "\"abc\" ++ \"def\"" $ Just "abcdef"
+              , testQuery "\"abc\"<>\"def\"" $ Just "abcdef"
+              , testQuery "\"abc\" <>\"def\"" $ Just "abcdef"
+              , testQuery "\"abc\"<> \"def\"" $ Just "abcdef"
+              , testQuery "\"abc\" <> \"def\"" $ Just "abcdef"
               , testQuery "let f x = x + 2 in f -1" $ Just "1"
               , testQuery "let f = 2 in f - 1" $ Just "1"
               ]

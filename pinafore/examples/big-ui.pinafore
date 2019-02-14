@@ -53,7 +53,7 @@ act = do
     tstart <- gettimems;
     prop0 !$ {me} := "Example";
     tend <- gettimems;
-    outputln $ "Time: " ++ totext (tend - tstart);
+    outputln $ "Time: " <> totext (tend - tstart);
     end
 
 in do

@@ -77,7 +77,7 @@ base_predefinitions =
                 , mkValEntry "||" "Boolean OR." (||)
                 , mkValEntry "not" "Boolean NOT." not
                 ]
-          , docTreeEntry "Text" "" [mkValEntry "++" "Concatenate text." $ (<>) @Text]
+          , docTreeEntry "Text" "" [mkValEntry "<>" "Concatenate text." $ (<>) @Text]
           , docTreeEntry
                 "Numeric"
                 ""
@@ -182,7 +182,7 @@ base_predefinitions =
                 case v of
                     Just a -> Just (a, ())
                     _ -> Nothing
-          , mkValPatEntry "Nothing" "Construct a Maybe without a value." (Nothing @A) $ \(v :: Maybe A) ->
+          , mkValPatEntry "Nothing" "Construct a Maybe without a value." (Nothing @BottomType) $ \(v :: Maybe A) ->
                 case v of
                     Nothing -> Just ()
                     _ -> Nothing
@@ -209,7 +209,7 @@ base_predefinitions =
     , docTreeEntry
           "Lists"
           ""
-          [ mkPatEntry "[]" "Empty list" "[a]" $ \(v :: [A]) ->
+          [ mkPatEntry "[]" "Empty list" "[None]" $ \(v :: [A]) ->
                 case v of
                     [] -> Just ()
                     _ -> Nothing
@@ -221,7 +221,14 @@ base_predefinitions =
                 case l of
                     [] -> fnil
                     (a:aa) -> fcons a aa
-          , mkValEntry "length" "Number of items in a list" $ (length :: [TopType] -> Int)
+          , mkValEntry "length" "Number of items in a list" (length :: [TopType] -> Int)
+          , mkValEntry "maplist" "Map the items of a list." (fmap :: (A -> B) -> [A] -> [B])
+          , mkValEntry "++" "Concatentate lists." ((++) :: [A] -> [A] -> [A])
+          , mkValEntry "filter" "Filter a list." (filter :: (A -> Bool) -> [A] -> [A])
+          , mkValEntry "mapMaybe" "Map and filter a list." (mapMaybe :: (A -> Maybe B) -> [A] -> [B])
+          , mkValEntry "take" "Take the first n elements." (take :: Int -> [A] -> [A])
+          , mkValEntry "drop" "Drop the first n elements." (drop :: Int -> [A] -> [A])
+          , mkValEntry "zip" "Zip two lists." $ zip @A @B
           ]
     , docTreeEntry
           "Functions"

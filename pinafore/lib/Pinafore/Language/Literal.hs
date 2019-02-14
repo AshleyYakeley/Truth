@@ -1,9 +1,9 @@
 module Pinafore.Language.Literal where
 
-import Data.Ratio
 import Pinafore.Base
 import Pinafore.Language.Show
 import Shapes
+import Shapes.Numeric
 
 class IsSubtype w where
     isSubtype :: w a -> w b -> Maybe (a -> b)
