@@ -4,7 +4,6 @@ module Pinafore.Language.Convert
     ( module Pinafore.Language.Convert.Base
     ) where
 
-import Data.Ratio
 import Pinafore.Base
 import Pinafore.Language.Convert.Base
 import Pinafore.Language.Type
@@ -33,3 +32,6 @@ instance ToTypeF (PinaforeType baseedit 'Positive) Double where
 -- Int
 instance ToTypeF (PinaforeType baseedit 'Positive) Int where
     toTypeF = contramap toInteger toTypeF
+
+instance FromTypeF (PinaforeType baseedit 'Negative) Int where
+    fromTypeF = fmap fromInteger fromTypeF

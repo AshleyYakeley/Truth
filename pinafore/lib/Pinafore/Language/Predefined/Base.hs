@@ -3,8 +3,8 @@ module Pinafore.Language.Predefined.Base
     , outputln
     ) where
 
-import Data.Time.Clock.System
 import Data.Fixed (div', mod')
+import Data.Time.Clock.System
 import Pinafore.Base
 import Pinafore.Language.Doc
 import Pinafore.Language.If
@@ -21,8 +21,8 @@ import Truth.Core
 
 gettimems :: IO Integer
 gettimems = do
-      MkSystemTime s ns <- getSystemTime
-      return $ (toInteger s) * 1000 + div (toInteger ns) 1000000
+    MkSystemTime s ns <- getSystemTime
+    return $ (toInteger s) * 1000 + div (toInteger ns) 1000000
 
 output :: forall baseedit. Text -> PinaforeAction baseedit ()
 output text = liftIO $ putStr $ unpack text
@@ -77,7 +77,7 @@ base_predefinitions =
                 , mkValEntry "||" "Boolean OR." (||)
                 , mkValEntry "not" "Boolean NOT." not
                 ]
-          , docTreeEntry "Text" "" [mkValEntry "++" "Concatenate text." $ (<>) @Text]
+          , docTreeEntry "Text" "" [mkValEntry "<>" "Concatenate text." $ (<>) @Text]
           , docTreeEntry
                 "Numeric"
                 ""
@@ -182,7 +182,7 @@ base_predefinitions =
                 case v of
                     Just a -> Just (a, ())
                     _ -> Nothing
-          , mkValPatEntry "Nothing" "Construct a Maybe without a value." (Nothing @A) $ \(v :: Maybe A) ->
+          , mkValPatEntry "Nothing" "Construct a Maybe without a value." (Nothing @BottomType) $ \(v :: Maybe A) ->
                 case v of
                     Nothing -> Just ()
                     _ -> Nothing
@@ -209,7 +209,7 @@ base_predefinitions =
     , docTreeEntry
           "Lists"
           ""
-          [ mkPatEntry "[]" "Empty list" "[a]" $ \(v :: [A]) ->
+          [ mkPatEntry "[]" "Empty list" "[None]" $ \(v :: [A]) ->
                 case v of
                     [] -> Just ()
                     _ -> Nothing
@@ -221,7 +221,14 @@ base_predefinitions =
                 case l of
                     [] -> fnil
                     (a:aa) -> fcons a aa
-          , mkValEntry "length" "Number of items in a list" $ (length :: [TopType] -> Int)
+          , mkValEntry "length" "Number of items in a list" (length :: [TopType] -> Int)
+          , mkValEntry "maplist" "Map the items of a list." (fmap :: (A -> B) -> [A] -> [B])
+          , mkValEntry "++" "Concatentate lists." ((++) :: [A] -> [A] -> [A])
+          , mkValEntry "filter" "Filter a list." (filter :: (A -> Bool) -> [A] -> [A])
+          , mkValEntry "mapMaybe" "Map and filter a list." (mapMaybe :: (A -> Maybe B) -> [A] -> [B])
+          , mkValEntry "take" "Take the first n elements." (take :: Int -> [A] -> [A])
+          , mkValEntry "drop" "Drop the first n elements." (drop :: Int -> [A] -> [A])
+          , mkValEntry "zip" "Zip two lists." $ zip @A @B
           ]
     , docTreeEntry
           "Functions"
@@ -254,7 +261,10 @@ base_predefinitions =
                 (for :: [A] -> (A -> PinaforeAction baseedit B) -> PinaforeAction baseedit [B])
           , mkValEntry "output" "Output text to standard output." $ output @baseedit
           , mkValEntry "outputln" "Output text and a newline to standard output." $ outputln @baseedit
-          , mkValEntry "withtimems" "Get the time as a whole number of milliseconds" ((\cont -> liftIO gettimems >>= cont) :: (Integer -> PinaforeAction baseedit ()) -> PinaforeAction baseedit ())
+          , mkValEntry
+                "gettimems"
+                "Get the time as a whole number of milliseconds."
+                (liftIO gettimems :: PinaforeAction baseedit Integer)
           ]
     , docTreeEntry
           "References"

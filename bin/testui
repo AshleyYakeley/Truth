@@ -1,0 +1,3 @@
+#!/bin/sh -e
+stack --no-docker install pinafore
+`stack --no-docker path --local-bin`/pinafore --data test/pinafore pinafore/examples/big-ui.pinafore

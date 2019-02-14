@@ -13,7 +13,6 @@ module Pinafore.Base.Number
     ) where
 
 import Data.List (head, iterate)
-import Data.Ratio
 import Shapes hiding ((+++), option)
 import Shapes.Numeric
 import Text.ParserCombinators.ReadP hiding (many)

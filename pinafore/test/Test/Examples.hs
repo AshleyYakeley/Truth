@@ -25,4 +25,5 @@ testExamples =
         , testExample "simple.pinafore"
         , testExample "testquery.pinafore"
         , testExample "test.pinafore"
+        , testExample "big-ui.pinafore"
         ]
