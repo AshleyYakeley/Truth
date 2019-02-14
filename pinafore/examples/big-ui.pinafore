@@ -1,0 +1,65 @@
+let
+opentype T;
+me = entity @T !4527c8ac-580d-443c-8496-2b5a93021f98;
+
+ui_labelled n ui = ui_horizontal [(ui_label n,False),(ui,True)];
+
+labelta_entry :: (T ~> Text) -> (UI None,Boolean);
+labelta_entry prop = (ui_labelled (pureref "Property:") $ ui_textentry $ prop !$ {me},False);
+plabelta_entry prop = (ui_labelled (prop !$ {me}) $ ui_textentry $ prop !$ {me},False);
+ta_entry prop = (ui_textentry $ prop !$ {me},False);
+label_entry _ = (ui_label $ pureref "Property:",False);
+
+properties entry = ui_ignore $ ui_vertical
+    [
+        entry $ property @T @Text !"001",
+        entry $ property @T @Text !"002",
+        entry $ property @T @Text !"003",
+        entry $ property @T @Text !"004",
+        entry $ property @T @Text !"005",
+        entry $ property @T @Text !"006",
+        entry $ property @T @Text !"007",
+        entry $ property @T @Text !"008",
+        entry $ property @T @Text !"009",
+        entry $ property @T @Text !"010",
+        entry $ property @T @Text !"011",
+        entry $ property @T @Text !"012",
+        entry $ property @T @Text !"013",
+        entry $ property @T @Text !"014",
+        entry $ property @T @Text !"015",
+        entry $ property @T @Text !"016",
+        entry $ property @T @Text !"017",
+        entry $ property @T @Text !"018",
+        entry $ property @T @Text !"019",
+        entry $ property @T @Text !"020",
+        (ui_blank,True)
+    ];
+
+prop0 = property @T @Text !"000";
+
+w :: Action ();
+w = openwindow {"Test"} $ ui_ignore $ ui_vertical
+    [
+        ta_entry prop0,
+        #(properties plabelta_entry, False),
+        (properties labelta_entry, False),
+        #(properties ta_entry, False),
+        #(properties label_entry, False),
+        (ui_blank,True)
+    ];
+
+act :: Action ();
+act = do
+    tstart <- gettimems;
+    prop0 !$ {me} := "Example";
+    tend <- gettimems;
+    outputln $ "Time: " ++ totext (tend - tstart);
+    end
+
+in do
+    w;
+    w;
+    w;
+    w;
+    act;
+    end

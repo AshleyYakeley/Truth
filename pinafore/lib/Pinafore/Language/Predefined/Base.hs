@@ -4,6 +4,7 @@ module Pinafore.Language.Predefined.Base
     ) where
 
 import Data.Fixed (div', mod')
+import Data.Time.Clock.System
 import Pinafore.Base
 import Pinafore.Language.Doc
 import Pinafore.Language.If
@@ -17,6 +18,11 @@ import Pinafore.Storage.File
 import Shapes
 import Shapes.Numeric
 import Truth.Core
+
+gettimems :: IO Integer
+gettimems = do
+    MkSystemTime s ns <- getSystemTime
+    return $ (toInteger s) * 1000 + div (toInteger ns) 1000000
 
 output :: forall baseedit. Text -> PinaforeAction baseedit ()
 output text = liftIO $ putStr $ unpack text
@@ -248,6 +254,10 @@ base_predefinitions =
                 (for :: [A] -> (A -> PinaforeAction baseedit B) -> PinaforeAction baseedit [B])
           , mkValEntry "output" "Output text to standard output." $ output @baseedit
           , mkValEntry "outputln" "Output text and a newline to standard output." $ outputln @baseedit
+          , mkValEntry
+                "gettimems"
+                "Get the time as a whole number of milliseconds."
+                (liftIO gettimems :: PinaforeAction baseedit Integer)
           ]
     , docTreeEntry
           "References"
