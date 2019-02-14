@@ -5,14 +5,14 @@ import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data UISwitch sel edit where
-    MkUISwitch :: EditFunction edit (WholeEdit (UISpec sel edit)) -> UISwitch sel edit
+data SwitchUISpec sel edit where
+    MkSwitchUISpec :: EditFunction edit (WholeEdit (UISpec sel edit)) -> SwitchUISpec sel edit
 
-instance Show (UISwitch sel edit) where
+instance Show (SwitchUISpec sel edit) where
     show _ = "switch"
 
-instance UIType UISwitch where
-    uiWitness = $(iowitness [t|UISwitch|])
+instance UIType SwitchUISpec where
+    uiWitness = $(iowitness [t|SwitchUISpec|])
 
-uiSwitch :: EditFunction edit (WholeEdit (UISpec sel edit)) -> UISpec sel edit
-uiSwitch func = MkUISpec $ MkUISwitch func
+switchUISpec :: EditFunction edit (WholeEdit (UISpec sel edit)) -> UISpec sel edit
+switchUISpec func = MkUISpec $ MkSwitchUISpec func

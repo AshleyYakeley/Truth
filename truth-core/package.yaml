@@ -92,8 +92,8 @@ library:
       - Truth.Core.UI.Request
       - Truth.Core.UI.Specifier.Specifier
       - Truth.Core.UI.Specifier.Null
-      - Truth.Core.UI.Specifier.Lens
-      - Truth.Core.UI.Specifier.SelectionLens
+      - Truth.Core.UI.Specifier.Map
+      - Truth.Core.UI.Specifier.Selection
       - Truth.Core.UI.Specifier.WithAspect
       - Truth.Core.UI.Specifier.CSS
       - Truth.Core.UI.Specifier.Button
@@ -111,6 +111,7 @@ library:
       - Truth.Core.UI.Specifier.Drag
       - Truth.Core.UI.ViewContext
       - Truth.Core.UI.View
+      - Truth.Core.UI.Window
       - Truth.Core.UI.CreateView
       - Truth.Core.UI.DynamicView
       - Truth.Core.UI.GetView

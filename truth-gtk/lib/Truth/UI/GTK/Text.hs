@@ -81,4 +81,4 @@ textView = do
     toWidget widget
 
 textAreaGetView :: GetGView
-textAreaGetView = MkGetView $ \_ uispec -> fmap (\MkUIText -> textView) $ isUISpec uispec
+textAreaGetView = MkGetView $ \_ uispec -> fmap (\MkTextAreaUISpec -> textView) $ isUISpec uispec

@@ -9,7 +9,7 @@ import Control.Arrow as I hiding ((<<<), (>>>), (|||))
 import Control.Category as I
 import Control.Concurrent as I
 import Control.Exception as I hiding (catch)
-import Control.Monad as I (Functor(..), Monad((>>), (>>=), return), MonadPlus(..))
+import Control.Monad as I (Functor(..), Monad((>>), (>>=), return), MonadPlus(..), forever, void)
 import Control.Monad.Fail as I
 import Control.Monad.Fix as I
 import Control.Monad.IO.Class as I

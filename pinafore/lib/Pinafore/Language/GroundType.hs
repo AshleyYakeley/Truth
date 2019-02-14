@@ -12,6 +12,7 @@ import Pinafore.Language.Set
 import Pinafore.Language.Show
 import Pinafore.Language.UI
 import Shapes
+import Truth.Core
 
 {-
 -- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
@@ -20,6 +21,7 @@ data PinaforeGroundType baseedit (polarity :: Polarity) (dv :: DolanVariance) (t
     ActionPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] (PinaforeAction baseedit)
     OrderPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance] (PinaforeOrder baseedit)
     UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] (PinaforeUI baseedit)
+    WindowPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] UIWindow
     FuncPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance, 'Covariance] (->)
     EntityPinaforeGroundType :: CovaryType dv -> EntityGroundType t -> PinaforeGroundType baseedit polarity dv t
     ReferencePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeReference baseedit)
@@ -34,6 +36,7 @@ pinaforeGroundTypeTestEquality ::
 pinaforeGroundTypeTestEquality ActionPinaforeGroundType ActionPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality OrderPinaforeGroundType OrderPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality UserInterfacePinaforeGroundType UserInterfacePinaforeGroundType = Just (Refl, HRefl)
+pinaforeGroundTypeTestEquality WindowPinaforeGroundType WindowPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality (EntityPinaforeGroundType la gta) (EntityPinaforeGroundType lb gtb) = do
     Refl <- testEquality la lb
     HRefl <- entityGroundTypeTestEquality gta gtb
@@ -51,6 +54,7 @@ pinaforeGroundTypeVarianceMap ::
 pinaforeGroundTypeVarianceMap ActionPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap OrderPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap UserInterfacePinaforeGroundType = dolanVary @dv
+pinaforeGroundTypeVarianceMap WindowPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap (EntityPinaforeGroundType dvcovary gt) =
     covaryToDolanVarianceMap dvcovary $ entityGroundTypeCovaryMap gt
 pinaforeGroundTypeVarianceMap FuncPinaforeGroundType = dolanVary @dv
@@ -62,6 +66,7 @@ pinaforeGroundTypeVarianceType :: PinaforeGroundType baseedit polarity dv t -> D
 pinaforeGroundTypeVarianceType ActionPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType OrderPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType UserInterfacePinaforeGroundType = representative
+pinaforeGroundTypeVarianceType WindowPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType (EntityPinaforeGroundType lt _) = mapListType (\Refl -> CovarianceType) lt
 pinaforeGroundTypeVarianceType FuncPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType ReferencePinaforeGroundType = representative
@@ -73,6 +78,7 @@ pinaforeGroundTypeInvertPolarity ::
 pinaforeGroundTypeInvertPolarity ActionPinaforeGroundType = Just ActionPinaforeGroundType
 pinaforeGroundTypeInvertPolarity OrderPinaforeGroundType = Just OrderPinaforeGroundType
 pinaforeGroundTypeInvertPolarity UserInterfacePinaforeGroundType = Just UserInterfacePinaforeGroundType
+pinaforeGroundTypeInvertPolarity WindowPinaforeGroundType = Just WindowPinaforeGroundType
 pinaforeGroundTypeInvertPolarity (EntityPinaforeGroundType lc t) = Just $ EntityPinaforeGroundType lc t
 pinaforeGroundTypeInvertPolarity FuncPinaforeGroundType = Just FuncPinaforeGroundType
 pinaforeGroundTypeInvertPolarity ReferencePinaforeGroundType = Just ReferencePinaforeGroundType
@@ -94,6 +100,7 @@ pinaforeGroundTypeShowPrec OrderPinaforeGroundType (ConsDolanArguments ta NilDol
     invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec UserInterfacePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     ("UI " <> exprShow ta, 2)
+pinaforeGroundTypeShowPrec WindowPinaforeGroundType NilDolanArguments = ("Window", 0)
 pinaforeGroundTypeShowPrec (EntityPinaforeGroundType lt gt) dargs =
     case dolanArgumentsToArguments mkGenPTypeF lt (entityGroundTypeCovaryMap gt) dargs of
         MkTypeF args _ -> entityGroundTypeShowPrec exprShowPrec gt args

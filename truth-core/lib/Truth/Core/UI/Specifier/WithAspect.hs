@@ -3,14 +3,14 @@ module Truth.Core.UI.Specifier.WithAspect where
 import Truth.Core.Import
 import Truth.Core.UI.Specifier.Specifier
 
-data UIWithAspect sel edit where
-    MkUIWithAspect :: (Aspect sel -> UISpec sel edit) -> UIWithAspect sel edit
+data WithAspectUISpec sel edit where
+    MkWithAspectUISpec :: (Aspect sel -> UISpec sel edit) -> WithAspectUISpec sel edit
 
-instance Show (UIWithAspect sel edit) where
-    show (MkUIWithAspect _) = "with-aspect"
+instance Show (WithAspectUISpec sel edit) where
+    show (MkWithAspectUISpec _) = "with-aspect"
 
-instance UIType UIWithAspect where
-    uiWitness = $(iowitness [t|UIWithAspect|])
+instance UIType WithAspectUISpec where
+    uiWitness = $(iowitness [t|WithAspectUISpec|])
 
-uiWithAspect :: (Aspect sel -> UISpec sel edit) -> UISpec sel edit
-uiWithAspect f = MkUISpec $ MkUIWithAspect f
+withAspectUISpec :: (Aspect sel -> UISpec sel edit) -> UISpec sel edit
+withAspectUISpec f = MkUISpec $ MkWithAspectUISpec f

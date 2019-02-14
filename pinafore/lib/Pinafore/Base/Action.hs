@@ -20,7 +20,7 @@ import Truth.Core
 import Truth.UI.GTK
 
 newtype PinaforeAction baseedit a =
-    MkPinaforeAction (ReaderT (UIWindow baseedit -> IO (), Object baseedit) (ComposeM Know IO) a)
+    MkPinaforeAction (ReaderT (WindowSpec baseedit -> IO UIWindow, Object baseedit) (ComposeM Know IO) a)
     deriving (Functor, Applicative, Monad, MonadFix, MonadIO)
 
 instance MonadFail (PinaforeAction baseedit) where
@@ -43,7 +43,7 @@ pinaforeLensPush lens edits = do
     case lensObject True lens object of
         MkObject {..} -> liftIO $ runTransform objRun $ pushEdit $ objEdit edits
 
-pinaforeNewWindow :: UIWindow baseedit -> PinaforeAction baseedit ()
+pinaforeNewWindow :: WindowSpec baseedit -> PinaforeAction baseedit UIWindow
 pinaforeNewWindow uiw = do
     (neww, _) <- MkPinaforeAction ask
     liftIO $ neww uiw
@@ -64,13 +64,16 @@ runPinaforeAction =
         MkPinaforeContext unlift -> unlift
 
 makePinaforeContext ::
-       forall baseedit. Object baseedit -> (UserInterface UIWindow -> IO ()) -> LifeCycle (PinaforeContext baseedit)
+       forall baseedit.
+       Object baseedit
+    -> (UserInterface WindowSpec -> IO UIWindow)
+    -> LifeCycle (PinaforeContext baseedit)
 makePinaforeContext pinaforeObject createWindow = do
     sub <- liftIO $ makeObjectSubscriber pinaforeObject
     (_, obj, _) <- subscribe sub (\_ -> return ()) (\_ _ _ -> return ())
     return $
         MkPinaforeContext $ \(MkPinaforeAction action) -> let
-            openwin :: UIWindow baseedit -> IO ()
+            openwin :: WindowSpec baseedit -> IO UIWindow
             openwin uiw = createWindow $ MkUserInterface sub uiw
             in do
                    _ <- getComposeM $ runReaderT action (openwin, obj)

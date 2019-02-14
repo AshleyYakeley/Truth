@@ -152,6 +152,9 @@ interpretTypeM (UISyntaxType st1) = do
                  singlePinaforeType $
                  GroundPinaforeSingularType UserInterfacePinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
             at1
+interpretTypeM WindowSyntaxType =
+    return $
+    toMPolar $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments
 interpretTypeM (RefSyntaxType st1) = do
     at1 <- interpretTypeRange st1
     return $

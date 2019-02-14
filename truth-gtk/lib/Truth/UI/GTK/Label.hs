@@ -8,8 +8,8 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.Debug.Object
 
-createWidget :: UILabel sel edit -> CreateView sel edit Widget
-createWidget MkUILabel = traceBracket "GTK.Label:create" $ do
+createWidget :: LabelUISpec sel edit -> CreateView sel edit Widget
+createWidget MkLabelUISpec = traceBracket "GTK.Label:create" $ do
     widget <- new Label []
     traceBracket "GTK.Label:create.bind" $ cvBindEditFunction id $ \label -> traceBracket "GTK.Label:set" $ set widget [#label := label]
     toWidget widget

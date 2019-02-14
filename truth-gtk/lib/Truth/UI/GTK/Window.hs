@@ -36,7 +36,7 @@ lastResortView spec = do
 nullGetView :: GetGView
 nullGetView =
     MkGetView $ \_ uispec -> do
-        MkUINull <- isUISpec uispec
+        MkNullUISpec <- isUISpec uispec
         return $ do
             w <- new DrawingArea []
             toWidget w
@@ -148,27 +148,25 @@ menuItemAction item action = do
 
 createWindowAndChild ::
        WindowButtons actions
-    => UIWindow edit
-    -> IO Bool
-    -> (forall sel. CreateView sel edit (actions -> LifeCycle ()) -> r)
+    => WindowSpec edit
+    -> IO ()
+    -> (forall sel. CreateView sel edit (actions -> LifeCycle UIWindow) -> r)
     -> r
-createWindowAndChild MkUIWindow {..} closeRequest cont =
+createWindowAndChild MkWindowSpec {..} closeWindow cont =
     cont $ do
         window <-
             lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
-        cvBindEditFunction uiTitle $ \title -> set window [#title := title]
-        content <- getTheView uiContent
-        _ <- on window #deleteEvent $ \_ -> traceBracket "GTK.Window:close" $ liftIO closeRequest
+        cvBindEditFunction wsTitle $ \title -> set window [#title := title]
+        content <- getTheView wsContent
+        _ <-
+            on window #deleteEvent $ \_ -> traceBracket "GTK.Window:close" $ do
+                liftIO closeWindow
+                return True -- don't run existing handler that closes the window
         menubar <- menuBarNew
         fileMI <- liftIO $ attachMenuItem menubar "File"
         fileMenu <- liftIO $ attachSubmenu fileMI
         closeMI <- liftIO $ attachMenuItem fileMenu "Close"
-        liftIO $
-            menuItemAction closeMI $ traceBracket "GTK.Window:menu.close" $ do
-                ok <- closeRequest
-                if ok
-                    then return ()
-                    else widgetDestroy window
+        liftIO $ menuItemAction closeMI $ traceBracket "GTK.Window:menu.close" closeWindow
         return $ \actions -> traceBracket "GTK.Window:create" $ do
             box <- new Box [#orientation := OrientationVertical]
             #packStart box menubar False False 0
@@ -186,6 +184,8 @@ createWindowAndChild MkUIWindow {..} closeRequest cont =
             #add window box
             #show content
             #showAll window
+            let uiWindowClose = closeWindow
+            return $ MkUIWindow {..}
 
 data UserInterface specifier = forall edit actions. WindowButtons actions =>
                                                         MkUserInterface
@@ -193,29 +193,22 @@ data UserInterface specifier = forall edit actions. WindowButtons actions =>
     , userinterfaceSpecifier :: specifier edit
     }
 
-makeViewWindow :: IO () -> UserInterface UIWindow -> IO ()
-makeViewWindow tellclose (MkUserInterface (sub :: Subscriber edit actions) (window :: UIWindow edit)) = let
-    createView :: forall r. IO () -> (forall sel. CreateView sel edit (actions -> LifeCycle ()) -> r) -> r
-    createView closer =
-        createWindowAndChild window $ do
-            closer
-            tellclose
-            return True -- don't run existing handler that closes the window
-    in do
-           rec
-               ((), closer) <-
-                   createView closer $ \cv ->
-                       runLifeCycle $ do
-                           (followUp, action) <- subscribeView' cv sub getRequest
-                           followUp action
-           return ()
+makeViewWindow :: IO () -> UserInterface WindowSpec -> IO UIWindow
+makeViewWindow tellclose (MkUserInterface (sub :: Subscriber edit actions) (window :: WindowSpec edit)) = do
+    rec
+        (uiwindow, closer) <-
+            createWindowAndChild window (closer >> tellclose) $ \cv ->
+                runLifeCycle $ do
+                    (followUp, action) <- subscribeView' cv sub getRequest
+                    followUp action
+    return uiwindow
 
 data ProgramContext = MkProgramContext
     { pcMainLoop :: MainLoop
     , pcWindowCount :: MVar Int
     }
 
-makeWindowCountRef :: ProgramContext -> UserInterface UIWindow -> IO ()
+makeWindowCountRef :: ProgramContext -> UserInterface WindowSpec -> IO UIWindow
 makeWindowCountRef MkProgramContext {..} ui = let
     closer =
         mvarRun pcWindowCount $ do
@@ -225,11 +218,12 @@ makeWindowCountRef MkProgramContext {..} ui = let
                 then #quit pcMainLoop
                 else return ()
     in mvarRun pcWindowCount $ do
-           lift $ makeViewWindow closer ui
+           twindow <- lift $ makeViewWindow closer ui
            i <- Shapes.get
            Shapes.put $ i + 1
+           return twindow
 
-truthMain :: ([String] -> (UserInterface UIWindow -> IO ()) -> LifeCycle ()) -> IO ()
+truthMain :: ([String] -> (UserInterface WindowSpec -> IO UIWindow) -> LifeCycle ()) -> IO ()
 truthMain appMain = do
     args <- getArgs
     _ <- GI.init Nothing

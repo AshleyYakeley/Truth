@@ -5,14 +5,14 @@ import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data UIText sel edit where
-    MkUIText :: UIText (EditLens (StringEdit Text) (StringEdit Text)) (StringEdit Text)
+data TextAreaUISpec sel edit where
+    MkTextAreaUISpec :: TextAreaUISpec (EditLens (StringEdit Text) (StringEdit Text)) (StringEdit Text)
 
-instance Show (UIText sel edit) where
-    show MkUIText = "text"
+instance Show (TextAreaUISpec sel edit) where
+    show MkTextAreaUISpec = "text-area"
 
-instance UIType UIText where
-    uiWitness = $(iowitness [t|UIText|])
+instance UIType TextAreaUISpec where
+    uiWitness = $(iowitness [t|TextAreaUISpec|])
 
-uiText :: UISpec (EditLens (StringEdit Text) (StringEdit Text)) (StringEdit Text)
-uiText = MkUISpec MkUIText
+textAreaUISpec :: UISpec (EditLens (StringEdit Text) (StringEdit Text)) (StringEdit Text)
+textAreaUISpec = MkUISpec MkTextAreaUISpec

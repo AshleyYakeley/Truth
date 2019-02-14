@@ -44,7 +44,7 @@ soupEditSpec = let
                     oneWholeLiftEditLens (tupleEditLens NotePast) .
                     mustExistOneEditLens "past" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . lens
             return $ funcEditFunction pastResult . editLensFunction valLens
-    in uiSimpleTable [nameColumn, pastColumn] $ \_ -> return ()
+    in simpleTableUISpec [nameColumn, pastColumn] $ \_ -> return ()
 
 soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)
 soupObject dirpath = let
@@ -63,11 +63,11 @@ soupObject dirpath = let
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: (UserInterface UIWindow -> IO ()) -> FilePath -> IO ()
+soupWindow :: (UserInterface WindowSpec -> IO ()) -> FilePath -> IO ()
 soupWindow createWindow dirpath = do
     sub <- makeObjectSubscriber $ traceArgThing "soup" $ soupObject dirpath
     let
-        uiTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
+        wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
         openItem :: Aspect UUID -> IO ()
         openItem aspkey = do
             mkey <- aspkey
@@ -76,14 +76,15 @@ soupWindow createWindow dirpath = do
                     lens <- getKeyElementEditLens key
                     createWindow $
                         MkUserInterface (mapSubscriber lens sub) $
-                        MkUIWindow
+                        MkWindowSpec
                             (constEditFunction "item")
-                            (uiLens (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
-                             uiOneWhole $ uiOneWhole noteEditSpec)
+                            (mapUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
+                             oneWholeUISpec $ oneWholeUISpec noteEditSpec)
                 Nothing -> return ()
-        uiContent =
-            uiWithAspect $ \aspect ->
-                uiVertical [(uiButton (constEditFunction "View") (openItem aspect), False), (soupEditSpec, True)]
-        userinterfaceSpecifier = MkUIWindow {..}
+        wsContent =
+            withAspectUISpec $ \aspect ->
+                verticalUISpec
+                    [(buttonUISpec (constEditFunction "View") (openItem aspect), False), (soupEditSpec, True)]
+        userinterfaceSpecifier = MkWindowSpec {..}
         userinterfaceSubscriber = sub
     createWindow $ MkUserInterface {..}

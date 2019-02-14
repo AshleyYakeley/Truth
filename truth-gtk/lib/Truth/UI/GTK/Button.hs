@@ -20,5 +20,5 @@ createWidget label action = do
 buttonGetView :: GetGView
 buttonGetView =
     MkGetView $ \_ uispec -> do
-        MkUIButton label action <- isUISpec uispec
+        MkButtonUISpec label action <- isUISpec uispec
         return $ createWidget label action

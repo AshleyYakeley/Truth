@@ -5,14 +5,14 @@ import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data UIButton sel edit where
-    MkUIButton :: EditFunction edit (WholeEdit Text) -> IO () -> UIButton sel edit
+data ButtonUISpec sel edit where
+    MkButtonUISpec :: EditFunction edit (WholeEdit Text) -> IO () -> ButtonUISpec sel edit
 
-instance Show (UIButton sel edit) where
-    show (MkUIButton _ _) = "button"
+instance Show (ButtonUISpec sel edit) where
+    show (MkButtonUISpec _ _) = "button"
 
-instance UIType UIButton where
-    uiWitness = $(iowitness [t|UIButton|])
+instance UIType ButtonUISpec where
+    uiWitness = $(iowitness [t|ButtonUISpec|])
 
-uiButton :: EditFunction edit (WholeEdit Text) -> IO () -> UISpec sel edit
-uiButton label action = MkUISpec $ MkUIButton label action
+buttonUISpec :: EditFunction edit (WholeEdit Text) -> IO () -> UISpec sel edit
+buttonUISpec label action = MkUISpec $ MkButtonUISpec label action

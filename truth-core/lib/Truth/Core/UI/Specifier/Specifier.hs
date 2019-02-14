@@ -24,9 +24,9 @@ isUISpec (MkUISpec (tedit :: t' sel edit)) = do
     Refl <- testEquality (uiWitness @t) (uiWitness @t')
     return tedit
 
-data UIWindow edit = forall sel. MkUIWindow
-    { uiTitle :: EditFunction edit (WholeEdit Text)
-    , uiContent :: UISpec sel edit
+data WindowSpec edit = forall sel. MkWindowSpec
+    { wsTitle :: EditFunction edit (WholeEdit Text)
+    , wsContent :: UISpec sel edit
     }
 
 type Aspect sel = IO (Maybe sel)

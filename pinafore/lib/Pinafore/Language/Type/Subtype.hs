@@ -141,6 +141,8 @@ subtypeGroundTypes sc OrderPinaforeGroundType argsa OrderPinaforeGroundType args
     pinaforeSubtypeArguments sc OrderPinaforeGroundType argsa argsb
 subtypeGroundTypes sc UserInterfacePinaforeGroundType argsa UserInterfacePinaforeGroundType argsb =
     pinaforeSubtypeArguments sc UserInterfacePinaforeGroundType argsa argsb
+subtypeGroundTypes sc WindowPinaforeGroundType argsa WindowPinaforeGroundType argsb =
+    pinaforeSubtypeArguments sc WindowPinaforeGroundType argsa argsb
 subtypeGroundTypes sc (EntityPinaforeGroundType cta ga) argsa (EntityPinaforeGroundType ctb gb) argsb =
     entityGroundSubtype sc cta ga argsa ctb gb argsb
 subtypeGroundTypes sc FuncPinaforeGroundType argsa FuncPinaforeGroundType argsb =

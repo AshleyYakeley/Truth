@@ -3,14 +3,14 @@ module Truth.Core.UI.Specifier.Null where
 import Truth.Core.Import
 import Truth.Core.UI.Specifier.Specifier
 
-data UINull sel edit where
-    MkUINull :: UINull sel edit
+data NullUISpec sel edit where
+    MkNullUISpec :: NullUISpec sel edit
 
-instance Show (UINull sel edit) where
-    show MkUINull = "null"
+instance Show (NullUISpec sel edit) where
+    show MkNullUISpec = "null"
 
-instance UIType UINull where
-    uiWitness = $(iowitness [t|UINull|])
+instance UIType NullUISpec where
+    uiWitness = $(iowitness [t|NullUISpec|])
 
-uiNull :: forall edit sel. UISpec sel edit
-uiNull = MkUISpec MkUINull
+nullUISpec :: forall edit sel. UISpec sel edit
+nullUISpec = MkUISpec MkNullUISpec

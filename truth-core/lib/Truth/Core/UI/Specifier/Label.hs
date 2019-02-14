@@ -4,14 +4,14 @@ import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data UILabel sel edit where
-    MkUILabel :: UILabel sel (WholeEdit Text)
+data LabelUISpec sel edit where
+    MkLabelUISpec :: LabelUISpec sel (WholeEdit Text)
 
-instance Show (UILabel sel edit) where
-    show MkUILabel = "label"
+instance Show (LabelUISpec sel edit) where
+    show MkLabelUISpec = "label"
 
-instance UIType UILabel where
-    uiWitness = $(iowitness [t|UILabel|])
+instance UIType LabelUISpec where
+    uiWitness = $(iowitness [t|LabelUISpec|])
 
-uiLabel :: UISpec sel (WholeEdit Text)
-uiLabel = MkUISpec MkUILabel
+labelUISpec :: UISpec sel (WholeEdit Text)
+labelUISpec = MkUISpec MkLabelUISpec

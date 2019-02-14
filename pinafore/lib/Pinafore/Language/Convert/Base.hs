@@ -222,6 +222,10 @@ instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
              FromTypeF (PinaforeType baseedit 'Negative) (PinaforeAction edit a) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
+-- IO
+instance (ToTypeF (PinaforeType baseedit 'Positive) a) => ToTypeF (PinaforeType baseedit 'Positive) (IO a) where
+    toTypeF = contramap (liftIO :: IO a -> PinaforeAction baseedit a) toTypeF
+
 -- PinaforeOrder
 instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
              ToTypeF (PinaforeSingularType baseedit 'Positive) (PinaforeOrder edit a) where
@@ -268,6 +272,19 @@ instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
 
 instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
              FromTypeF (PinaforeType baseedit 'Negative) (PinaforeUI edit a) where
+    fromTypeF = singlePinaforeTypeF fromTypeF
+
+-- UIWindow
+instance ToTypeF (PinaforeSingularType baseedit 'Positive) UIWindow where
+    toTypeF = mkPTypeF $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments
+
+instance ToTypeF (PinaforeType baseedit 'Positive) UIWindow where
+    toTypeF = singlePinaforeTypeF toTypeF
+
+instance FromTypeF (PinaforeSingularType baseedit 'Negative) UIWindow where
+    fromTypeF = mkPTypeF $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments
+
+instance FromTypeF (PinaforeType baseedit 'Negative) UIWindow where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- UISpec

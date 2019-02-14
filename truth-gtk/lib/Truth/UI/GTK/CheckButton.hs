@@ -9,8 +9,8 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-createWidget :: UICheckbox sel edit -> CreateView sel edit Widget
-createWidget (MkUICheckbox label lens) = do
+createWidget :: CheckboxUISpec sel edit -> CreateView sel edit Widget
+createWidget (MkCheckboxUISpec label lens) = do
     initial <- cvLiftView $ viewMapEdit lens $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial]
     cvBindEditFunction label $ \val -> set widget [#label := val]
@@ -23,7 +23,7 @@ createWidget (MkUICheckbox label lens) = do
                 push [MkWholeEdit st]
         cvBindEditFunction id $ \st -> liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
-createWidget (MkUIMaybeCheckbox label lens) = do
+createWidget (MkMaybeCheckboxUISpec label lens) = do
     initial <- cvLiftView $ viewMapEdit lens $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
     cvBindEditFunction label $ \val -> set widget [#label := val]

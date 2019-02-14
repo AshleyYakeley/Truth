@@ -37,7 +37,7 @@ properties entry = ui_ignore $ ui_vertical
 
 prop0 = property @T @Text !"000";
 
-w :: Action ();
+w :: Action Window;
 w = openwindow {"Test"} $ ui_ignore $ ui_vertical
     [
         ta_entry prop0,
@@ -57,9 +57,13 @@ act = do
     end
 
 in do
-    w;
-    w;
-    w;
-    w;
+    w1 <- w;
+    w2 <- w;
+    w3 <- w;
+    w4 <- w;
     act;
+    closewindow w4;
+    closewindow w3;
+    closewindow w2;
+    closewindow w1;
     end

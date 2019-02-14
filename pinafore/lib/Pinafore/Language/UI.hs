@@ -9,7 +9,7 @@ newtype PinaforeUI baseedit a = MkPinaforeUI
     }
 
 instance Functor (PinaforeUI baseedit) where
-    fmap ab (MkPinaforeUI spec) = MkPinaforeUI $ uiSetSelectionMap ab spec
+    fmap ab (MkPinaforeUI spec) = MkPinaforeUI $ mapSelectionUISpec ab spec
 
 instance HasDolanVary '[ 'Covariance] (PinaforeUI baseedit) where
     dolanVary = ConsDolanVarianceMap fmap $ NilDolanVarianceMap

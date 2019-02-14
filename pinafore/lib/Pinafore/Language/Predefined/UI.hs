@@ -16,7 +16,7 @@ import Truth.Core
 
 valSpecText ::
        UISpec sel (WholeEdit (Know Text)) -> PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec sel baseedit
-valSpecText spec val = uiLens val spec
+valSpecText spec val = mapUISpec val spec
 
 clearText :: EditFunction (WholeEdit (Know Text)) (WholeEdit Text)
 clearText = funcEditFunction (fromKnow mempty)
@@ -28,7 +28,7 @@ ui_table ::
        forall baseedit. (?pinafore :: PinaforeContext baseedit, HasPinaforeEntityEdit baseedit)
     => [(PinaforeReference baseedit '( BottomType, Text), A -> PinaforeReference baseedit '( BottomType, Text))]
     -> PinaforeSet baseedit '( A, MeetType Entity A)
-    -> (A -> PinaforeAction baseedit ())
+    -> (A -> PinaforeAction baseedit TopType)
     -> UISpec A baseedit
 ui_table cols val onDoubleClick = let
     showCell :: Know Text -> (Text, TableCellProps)
@@ -42,11 +42,11 @@ ui_table cols val onDoubleClick = let
     getColumn (name, f) =
         readOnlyKeyColumn (clearText . pinaforeReferenceToFunction name) $ \p ->
             return $ mapLens $ pinaforeReferenceToFunction $ f $ meet2 p
-    in uiSetSelectionMap meet2 $
-       uiTable
+    in mapSelectionUISpec meet2 $
+       tableUISpec
            (fmap getColumn cols)
            (unPinaforeSet $ contraMapRange meet2 val)
-           (\a -> runPinaforeAction $ onDoubleClick $ meet2 a)
+           (\a -> runPinaforeAction $ void $ onDoubleClick $ meet2 a)
 
 type PickerType = Know (MeetType Entity A)
 
@@ -73,76 +73,85 @@ ui_pick nameMorphism fset ref = let
     opts =
         (orderedKeyList @(FiniteSet PickerPairType) $ \(_, a) (_, b) -> compare a b) .
         convertEditFunction . applyPinaforeFunction getNames (pinaforeSetFunctionValue fset)
-    in uiOption @baseedit @PickerType opts $ pinaforeReferenceToLens $ contraMapRange meet2 ref
+    in optionUISpec @baseedit @PickerType opts $ pinaforeReferenceToLens $ contraMapRange meet2 ref
 
 ui_button ::
        (?pinafore :: PinaforeContext baseedit)
     => PinaforeImmutableReference baseedit Text
-    -> PinaforeAction baseedit ()
+    -> PinaforeAction baseedit TopType
     -> UISpec BottomType baseedit
-ui_button text action = uiButton (clearText . immutableReferenceToFunction text) (runPinaforeAction action)
+ui_button text action =
+    buttonUISpec (clearText . immutableReferenceToFunction text) (runPinaforeAction (action >> return ()))
 
 ui_label :: forall baseedit. PinaforeImmutableReference baseedit Text -> UISpec BottomType baseedit
-ui_label text = uiLens (immutableReferenceToLens text) $ uiUnknownValue mempty $ uiLabel
+ui_label text = mapUISpec (immutableReferenceToLens text) $ uiUnknownValue mempty $ labelUISpec
 
 ui_dynamic :: forall baseedit. PinaforeImmutableReference baseedit (UISpec A baseedit) -> UISpec A baseedit
-ui_dynamic uiref = uiSwitch $ pinaforeImmutableReferenceValue uiNull uiref
+ui_dynamic uiref = switchUISpec $ pinaforeImmutableReferenceValue nullUISpec uiref
 
 openwindow ::
        (?pinafore :: PinaforeContext baseedit)
     => PinaforeImmutableReference baseedit Text
     -> UISpec A baseedit
-    -> PinaforeAction baseedit ()
-openwindow title uiContent = let
-    uiTitle = clearText . immutableReferenceToFunction title
-    in pinaforeNewWindow MkUIWindow {..}
+    -> PinaforeAction baseedit UIWindow
+openwindow title wsContent = let
+    wsTitle = clearText . immutableReferenceToFunction title
+    in pinaforeNewWindow MkWindowSpec {..}
 
 ui_withselection :: (PinaforeAction baseedit A -> UISpec A baseedit) -> UISpec A baseedit
 ui_withselection f =
-    uiWithAspect $ \aspect ->
+    withAspectUISpec $ \aspect ->
         f $ do
             ma <- liftIO aspect
             pinaforeActionKnow $ maybeToKnow ma
 
 ui_textarea :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec BottomType baseedit
-ui_textarea = valSpecText $ uiUnknownValue mempty $ uiNoSelectionLens $ uiConvert uiText
+ui_textarea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertUISpec textAreaUISpec
 
 ui_predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
-    => DocTree (BindDoc baseedit)
+    => [DocTreeEntry (BindDoc baseedit)]
 ui_predefinitions =
-    MkDocTree
-        "UI"
-        "A user interface is something that goes inside a window."
-        [ mkValEntry "openwindow" "Open a new window with this title and UI." openwindow
-        , mkValEntry "ui_withselection" "User interface with selection." $ ui_withselection @baseedit
-        , mkValEntry "ui_map" "Map user interface selection" $ ui_map @baseedit
-        , mkValEntry "ui_ignore" "Ignore user interface selection" $ uiNoSelectionLens @baseedit @TopType @BottomType
-        , mkValEntry "ui_blank" "Blank user-interface" $ uiNull @baseedit @BottomType
-        , mkValEntry "ui_unitcheckbox" "(TBD)" $ \name val ->
-              uiCheckbox @baseedit @BottomType (clearText . name) $ toEditLens knowBool . val
-        , mkValEntry "ui_booleancheckbox" "Checkbox. Use shift-click to set to unknown." $ \name val ->
-              uiMaybeCheckbox @baseedit @BottomType (clearText . name) $ (bijectionWholeEditLens knowMaybe) . val
-        , mkValEntry "ui_textentry" "Text entry, empty text is unknown." $
-          valSpecText $ uiUnknownValue mempty $ uiTextEntry @BottomType
-        , mkValEntry "ui_textarea" "Text area, empty text is unknown." $ ui_textarea @baseedit
-        , mkValEntry "ui_label" "Label." $ ui_label @baseedit
-        , mkValEntry "ui_horizontal" "Items arranged horizontally, each flag is whether to expand into remaining space." $
-          uiHorizontal @baseedit @A
-        , mkValEntry "ui_vertical" "Items arranged vertically, each flag is whether to expand into remaining space." $
-          uiVertical @baseedit @A
-        , mkValEntry
-              "ui_pages"
-              "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content." $
-          uiPages @baseedit @A @TopType
+    [ docTreeEntry
+          "UI"
+          "A user interface is something that goes inside a window."
+          [ mkValEntry "ui_withselection" "User interface with selection." $ ui_withselection @baseedit
+          , mkValEntry "ui_map" "Map user interface selection" $ ui_map @baseedit
+          , mkValEntry "ui_ignore" "Ignore user interface selection" $ noSelectionUISpec @baseedit @TopType @BottomType
+          , mkValEntry "ui_blank" "Blank user-interface" $ nullUISpec @baseedit @BottomType
+          , mkValEntry "ui_unitcheckbox" "(TBD)" $ \name val ->
+                checkboxUISpec @baseedit @BottomType (clearText . name) $ toEditLens knowBool . val
+          , mkValEntry "ui_booleancheckbox" "Checkbox. Use shift-click to set to unknown." $ \name val ->
+                maybeCheckboxUISpec @baseedit @BottomType (clearText . name) $ (bijectionWholeEditLens knowMaybe) . val
+          , mkValEntry "ui_textentry" "Text entry, empty text is unknown." $
+            valSpecText $ uiUnknownValue mempty $ textAreaUISpecEntry @BottomType
+          , mkValEntry "ui_textarea" "Text area, empty text is unknown." $ ui_textarea @baseedit
+          , mkValEntry "ui_label" "Label." $ ui_label @baseedit
+          , mkValEntry
+                "ui_horizontal"
+                "Items arranged horizontally, each flag is whether to expand into remaining space." $
+            horizontalUISpec @baseedit @A
+          , mkValEntry "ui_vertical" "Items arranged vertically, each flag is whether to expand into remaining space." $
+            verticalUISpec @baseedit @A
+          , mkValEntry
+                "ui_pages"
+                "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content." $
+            pagesUISpec @baseedit @A @TopType
                 -- CSS
                 -- drag
                 -- icon
-        , mkValEntry "ui_button" "A button with this text that does this action." $ ui_button
-        , mkValEntry "ui_pick" "A drop-down menu." $ ui_pick @baseedit
-        , mkValEntry
-              "ui_table"
-              "A list table. First arg is columns (name, property), second is the window to open for a selection, third is the set of items." $
-          ui_table @baseedit
-        , mkValEntry "ui_dynamic" "A UI that can be updated to different UIs." $ ui_dynamic @baseedit
-        ]
+          , mkValEntry "ui_button" "A button with this text that does this action." $ ui_button
+          , mkValEntry "ui_pick" "A drop-down menu." $ ui_pick @baseedit
+          , mkValEntry
+                "ui_table"
+                "A list table. First arg is columns (name, property), second is the window to open for a selection, third is the set of items." $
+            ui_table @baseedit
+          , mkValEntry "ui_dynamic" "A UI that can be updated to different UIs." $ ui_dynamic @baseedit
+          ]
+    , docTreeEntry
+          "Window"
+          "User interface windows."
+          [ mkValEntry "openwindow" "Open a new window with this title and UI." openwindow
+          , mkValEntry "closewindow" "Close a window." uiWindowClose
+          ]
+    ]

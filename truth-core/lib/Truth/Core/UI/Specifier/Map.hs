@@ -1,30 +1,30 @@
-module Truth.Core.UI.Specifier.Lens where
+module Truth.Core.UI.Specifier.Map where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data UILens sel edit where
-    MkUILens :: forall sel edita editb. EditLens edita editb -> UISpec sel editb -> UILens sel edita
+data MapUISpec sel edit where
+    MkMapUISpec :: forall sel edita editb. EditLens edita editb -> UISpec sel editb -> MapUISpec sel edita
 
-instance Show (UILens sel edit) where
-    show (MkUILens _ uispec) = "lens " ++ show uispec
+instance Show (MapUISpec sel edit) where
+    show (MkMapUISpec _ uispec) = "lens " ++ show uispec
 
-instance UIType UILens where
-    uiWitness = $(iowitness [t|UILens|])
+instance UIType MapUISpec where
+    uiWitness = $(iowitness [t|MapUISpec|])
 
-uiLens :: forall sel edita editb. EditLens edita editb -> UISpec sel editb -> UISpec sel edita
-uiLens lens spec = MkUISpec $ MkUILens lens spec
+mapUISpec :: forall sel edita editb. EditLens edita editb -> UISpec sel editb -> UISpec sel edita
+mapUISpec lens spec = MkUISpec $ MkMapUISpec lens spec
 
-uiConvert ::
+convertUISpec ::
        forall sel edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb)
     => UISpec sel editb
     -> UISpec sel edita
-uiConvert = uiLens convertEditLens
+convertUISpec = mapUISpec convertEditLens
 
-uiWindowMapEdit :: EditLens edita editb -> UIWindow editb -> UIWindow edita
-uiWindowMapEdit lens (MkUIWindow title content) = MkUIWindow (title . editLensFunction lens) (uiLens lens content)
+mapWindowSpec :: EditLens edita editb -> WindowSpec editb -> WindowSpec edita
+mapWindowSpec lens (MkWindowSpec title content) = MkWindowSpec (title . editLensFunction lens) (mapUISpec lens content)
 
 tupleEditUISpecs ::
        (TupleWitness FullEdit s, FiniteTupleSelector s)
@@ -36,7 +36,7 @@ tupleEditUISpecs getSpec =
              case tupleWitness @FullEdit se of
                  Dict ->
                      case getSpec se of
-                         (spec, t) -> (MkUISpec $ MkUILens (tupleEditLens se) spec, t))
+                         (spec, t) -> (MkUISpec $ MkMapUISpec (tupleEditLens se) spec, t))
         tupleAllSelectors
 
 -- | not really a bijection
@@ -52,5 +52,5 @@ maybeNothingValueBijection def = let
 maybeNothingEditLens :: Eq a => a -> EditLens (WholeEdit (Maybe a)) (WholeEdit a)
 maybeNothingEditLens def = toEditLens $ maybeNothingValueBijection def
 
-uiNothingValue :: Eq a => a -> UISpec sel (WholeEdit a) -> UISpec sel (WholeEdit (Maybe a))
-uiNothingValue def = uiLens $ maybeNothingEditLens def
+mapMaybeNothingUISpec :: Eq a => a -> UISpec sel (WholeEdit a) -> UISpec sel (WholeEdit (Maybe a))
+mapMaybeNothingUISpec def = mapUISpec $ maybeNothingEditLens def

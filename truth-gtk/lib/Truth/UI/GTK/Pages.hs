@@ -10,7 +10,7 @@ import Truth.UI.GTK.GView
 pagesGetView :: GetGView
 pagesGetView =
     MkGetView $ \getview uispec -> do
-        MkUIPages pagespecs <- isUISpec uispec
+        MkPagesUISpec pagespecs <- isUISpec uispec
         return $ do
             pages <-
                 for pagespecs $ \(headspec, bodyspec) -> do
