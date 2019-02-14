@@ -11,7 +11,7 @@ import Truth.UI.GTK.Useful
 optionGetView :: GetGView
 optionGetView =
     MkGetView $ \_ uispec -> do
-        MkUIOption itemsFunction whichLens <- isUISpec uispec
+        MkOptionUISpec itemsFunction whichLens <- isUISpec uispec
         return $ optionView itemsFunction whichLens
 
 listStoreView ::

@@ -90,11 +90,11 @@ type NoteEdit = TupleEdit NoteSel
 
 noteEditSpec :: UISpec (EditLens (StringEdit Text) (StringEdit Text)) NoteEdit
 noteEditSpec =
-    uiVertical $
+    verticalUISpec $
     tupleEditUISpecs $ \case
-        NoteTitle -> (uiTextEntry, False)
-        NotePast -> (uiCheckbox (constEditFunction "past") id, False)
-        NoteText -> (uiText, True)
+        NoteTitle -> (textAreaUISpecEntry, False)
+        NotePast -> (checkboxUISpec (constEditFunction "past") id, False)
+        NoteText -> (textAreaUISpec, True)
 
 type Note = Tuple NoteSel
 

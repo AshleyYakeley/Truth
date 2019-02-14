@@ -7,8 +7,8 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 
-createWidget :: UILabel sel edit -> CreateView sel edit Widget
-createWidget MkUILabel = do
+createWidget :: LabelUISpec sel edit -> CreateView sel edit Widget
+createWidget MkLabelUISpec = do
     widget <- new Label []
     cvBindEditFunction id $ \label -> set widget [#label := label]
     toWidget widget

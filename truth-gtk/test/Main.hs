@@ -31,8 +31,8 @@ testGViews :: TestTree
 testGViews =
     testGroup
         "GView"
-        [ testGView $ (uiNull :: UISpec UnitEdit (WholeEdit String))
-        , testGView $ uiVertical [(MkUISpec MkUIUnknown :: UISpec UnitEdit (WholeEdit String), False)]
+        [ testGView $ (nullUISpec :: UISpec UnitEdit (WholeEdit String))
+        , testGView $ verticalUISpec [(MkUISpec MkUIUnknown :: UISpec UnitEdit (WholeEdit String), False)]
         ]
 
 tests :: TestTree

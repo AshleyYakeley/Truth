@@ -92,6 +92,6 @@ oneGetView =
         uit <- isUISpec uispec
         return $
             case uit of
-                MkUIMaybe mnewval itemspec ->
+                MaybeUISpec mnewval itemspec ->
                     oneWholeView (Just $ MkLimit Nothing) (createButton mnewval) $ getview itemspec
-                MkUIOneWhole itemspec -> oneWholeView Nothing (\_ -> placeholderLabel) $ getview itemspec
+                OneWholeUISpec itemspec -> oneWholeView Nothing (\_ -> placeholderLabel) $ getview itemspec

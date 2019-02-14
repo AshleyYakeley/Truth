@@ -12,7 +12,7 @@ textEntryGetView :: GetGView
 textEntryGetView =
     MkGetView $ \_ uispec ->
         fmap
-            (\MkUITextEntry -> do
+            (\MkTextAreaUISpecEntry -> do
                  initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
                  widget <- new Entry [#text := initial]
                  changedSignal <-

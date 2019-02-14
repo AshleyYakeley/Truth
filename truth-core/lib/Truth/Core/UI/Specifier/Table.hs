@@ -31,25 +31,25 @@ readOnlyKeyColumn kcName getter = let
         return (readOnlyEditLens $ funcEditFunction fst . func, funcEditFunction snd . func)
     in MkKeyColumn {..}
 
-data UITable sel tedit where
-    MkUITable
+data TableUISpec sel tedit where
+    MkTableUISpec
         :: forall cont tedit iedit.
            (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
         => [KeyColumn tedit (ContainerKey cont)]
         -> EditLens tedit (KeyEdit cont iedit)
         -> (ContainerKey cont -> IO ())
-        -> UITable (ContainerKey cont) tedit
+        -> TableUISpec (ContainerKey cont) tedit
 
-uiTable ::
+tableUISpec ::
        forall cont tedit iedit.
        (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => [KeyColumn tedit (ContainerKey cont)]
     -> EditLens tedit (KeyEdit cont iedit)
     -> (ContainerKey cont -> IO ())
     -> UISpec (ContainerKey cont) tedit
-uiTable cols lens onDoubleClick = MkUISpec $ MkUITable cols lens onDoubleClick
+tableUISpec cols lens onDoubleClick = MkUISpec $ MkTableUISpec cols lens onDoubleClick
 
-uiSimpleTable ::
+simpleTableUISpec ::
        forall cont iedit.
        ( KeyContainer cont
        , FullSubjectReader (EditReader iedit)
@@ -59,13 +59,13 @@ uiSimpleTable ::
     => [KeyColumn (KeyEdit cont iedit) (ContainerKey cont)]
     -> (ContainerKey cont -> IO ())
     -> UISpec (ContainerKey cont) (KeyEdit cont iedit)
-uiSimpleTable cols onDoubleClick = uiTable cols id onDoubleClick
+simpleTableUISpec cols onDoubleClick = tableUISpec cols id onDoubleClick
 
-instance Show (UITable sel edit) where
-    show (MkUITable _ _ _) = "table"
+instance Show (TableUISpec sel edit) where
+    show (MkTableUISpec _ _ _) = "table"
 
-instance UIType UITable where
-    uiWitness = $(iowitness [t|UITable|])
+instance UIType TableUISpec where
+    uiWitness = $(iowitness [t|TableUISpec|])
 
 tableNewItem ::
        forall tedit cont iedit sel. IONewItemKeyContainer cont

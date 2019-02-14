@@ -38,7 +38,7 @@ makeTestPinaforeContext = do
                 PinaforeSelectFile -> readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getObjectSubject tableStateObject
-    pc <- makePinaforeContext pinaforeObject $ \_ -> return ()
+    pc <- makePinaforeContext pinaforeObject $ \_ -> return nullUIWindow
     return (pc, getTableState)
 
 withTestPinaforeContext ::

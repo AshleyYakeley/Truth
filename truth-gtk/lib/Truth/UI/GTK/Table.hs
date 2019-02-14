@@ -197,5 +197,5 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
 tableGetView :: GetGView
 tableGetView =
     MkGetView $ \_getview uispec -> do
-        MkUITable cols lens onDoubleClick <- isUISpec uispec
+        MkTableUISpec cols lens onDoubleClick <- isUISpec uispec
         return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) lens onDoubleClick

@@ -5,36 +5,36 @@ import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data UIOne sel edit where
+data OneUISpec sel edit where
     -- view can create object
-    MkUIMaybe
+    MaybeUISpec
         :: forall sel edit. (FullEdit edit)
         => Maybe (EditSubject edit)
         -> UISpec sel edit
-        -> UIOne sel (MaybeEdit edit)
-    MkUIOneWhole
+        -> OneUISpec sel (MaybeEdit edit)
+    OneWholeUISpec
         :: forall sel f edit. (MonadOne f, FullEdit edit)
         => UISpec sel edit
-        -> UIOne sel (OneWholeEdit f edit)
-    --MkUIOne :: forall f edit. (MonadOne f,ApplicableEdit edit) => UISpec edit -> UIOne (OneEdit f edit);
+        -> OneUISpec sel (OneWholeEdit f edit)
+    --MkOneUISpec :: forall f edit. (MonadOne f,ApplicableEdit edit) => UISpec edit -> OneUISpec (OneEdit f edit);
 
-instance Show (UIOne sel edit) where
-    show (MkUIMaybe _ uispec) = "maybe " ++ show uispec
-    show (MkUIOneWhole uispec) = "one+whole " ++ show uispec
-    --show (MkUIOne uispec) = "one " ++ show uispec;
+instance Show (OneUISpec sel edit) where
+    show (MaybeUISpec _ uispec) = "maybe " ++ show uispec
+    show (OneWholeUISpec uispec) = "one+whole " ++ show uispec
+    --show (MkOneUISpec uispec) = "one " ++ show uispec;
 
-instance UIType UIOne where
-    uiWitness = $(iowitness [t|UIOne|])
+instance UIType OneUISpec where
+    uiWitness = $(iowitness [t|OneUISpec|])
 
-uiMaybe ::
+maybeUISpec ::
        forall sel edit. (FullEdit edit)
     => Maybe (EditSubject edit)
     -> UISpec sel edit
     -> UISpec sel (MaybeEdit edit)
-uiMaybe msubj spec = MkUISpec $ MkUIMaybe msubj spec
+maybeUISpec msubj spec = MkUISpec $ MaybeUISpec msubj spec
 
-uiOneWhole ::
+oneWholeUISpec ::
        forall sel f edit. (MonadOne f, FullEdit edit)
     => UISpec sel edit
     -> UISpec sel (OneWholeEdit f edit)
-uiOneWhole spec = MkUISpec $ MkUIOneWhole spec
+oneWholeUISpec spec = MkUISpec $ OneWholeUISpec spec

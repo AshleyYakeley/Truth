@@ -35,24 +35,25 @@ main =
                        => Subscriber (OneWholeEdit (Result Text) (StringEdit Text)) actions
                        -> UISpec (EditLens (StringEdit Text) (StringEdit Text)) (OneWholeEdit (Result Text) (StringEdit Text))
                     ui sub =
-                        uiWithAspect $ \aspect -> let
+                        withAspectUISpec $ \aspect -> let
                             openSelection :: IO ()
                             openSelection = do
                                 mlens <- aspect
                                 case mlens of
                                     Nothing -> return ()
                                     Just lens -> makeWindow "section" $ mapSubscriber (oneWholeLiftEditLens lens) sub
-                            in uiVertical
-                                   [ (uiButton (constEditFunction "View") openSelection, False)
-                                   , (uiOneWhole uiText, True)
+                            in verticalUISpec
+                                   [ (buttonUISpec (constEditFunction "View") openSelection, False)
+                                   , (oneWholeUISpec textAreaUISpec, True)
                                    ]
                     makeWindow ::
                            WindowButtons actions
                         => Text
                         -> Subscriber (OneWholeEdit (Result Text) (StringEdit Text)) actions
                         -> IO ()
-                    makeWindow title sub =
-                        createWindow $ MkUserInterface sub $ MkUIWindow (constEditFunction title) (ui sub)
+                    makeWindow title sub = do
+                        _ <- createWindow $ MkUserInterface sub $ MkWindowSpec (constEditFunction title) (ui sub)
+                        return ()
                 action <-
                     if saveOpt
                         then do

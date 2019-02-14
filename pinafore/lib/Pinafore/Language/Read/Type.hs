@@ -125,6 +125,7 @@ readTypeConst = do
     case name of
         "Any" -> return TopSyntaxType
         "None" -> return BottomSyntaxType
+        "Window" -> return WindowSyntaxType
         _ -> return $ ConstSyntaxType name
 
 readTypeName :: Parser Name

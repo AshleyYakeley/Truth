@@ -3,8 +3,8 @@ module Truth.Core.UI.GetView where
 import Data.IORef
 import Truth.Core.Import
 import Truth.Core.UI.CreateView
-import Truth.Core.UI.Specifier.Lens
-import Truth.Core.UI.Specifier.SelectionLens
+import Truth.Core.UI.Specifier.Map
+import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.Specifier.WithAspect
 
@@ -28,16 +28,16 @@ lensGetView :: GetView w
 lensGetView =
     MkGetView $ \getview speca ->
         (do
-             MkUILens lens specb <- isUISpec speca
+             MkMapUISpec lens specb <- isUISpec speca
              return $ cvMapEdit lens $ getview specb) <|>
         (do
-             MkUISetSelectionMap lens specb <- isUISpec speca
+             MkMapSelectionUISpec lens specb <- isUISpec speca
              return $ cvMapSelection lens $ getview specb) <|>
         (do
-             MkUINoSelection specb <- isUISpec speca
+             MkNoSelectionUISpec specb <- isUISpec speca
              return $ cvNoAspect $ getview specb) <|>
         (do
-             MkUIWithAspect specf <- isUISpec speca
+             MkWithAspectUISpec specf <- isUISpec speca
              return $ do
                  selref <- liftIO $ newIORef $ return Nothing
                  let

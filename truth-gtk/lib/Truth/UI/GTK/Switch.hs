@@ -44,4 +44,4 @@ switchGetView =
         spec <- isUISpec uispec
         return $
             case spec of
-                MkUISwitch specfunc -> switchView getview specfunc
+                MkSwitchUISpec specfunc -> switchView getview specfunc

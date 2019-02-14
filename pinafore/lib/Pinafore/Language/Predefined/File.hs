@@ -42,13 +42,14 @@ file_size MkObject {..} = runTransform objRun $ objRead ReadByteStringLength
 -}
 file_predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
-    => DocTree (BindDoc baseedit)
+    => [DocTreeEntry (BindDoc baseedit)]
 file_predefinitions =
-    MkDocTree
-        "Files"
-        "NYI"
+    [ docTreeEntry
+          "Files"
+          "NYI"
                   {-
                   mkValEntry "file_import" "Import a file into a set." $ file_import @baseedit
               , mkValEntry "file_size" "The size of a file." file_size
               -}
-        []
+          []
+    ]

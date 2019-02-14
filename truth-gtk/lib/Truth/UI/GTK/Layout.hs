@@ -14,8 +14,8 @@ layoutGetView =
         (aspects, orientation) <-
             return $
             case uilayout of
-                MkUIHorizontal aspects -> (aspects, OrientationHorizontal)
-                MkUIVertical aspects -> (aspects, OrientationVertical)
+                HorizontalUISpec aspects -> (aspects, OrientationHorizontal)
+                VerticalUISpec aspects -> (aspects, OrientationVertical)
         return $ do
             widgets <-
                 for aspects $ \(item, grow) -> do

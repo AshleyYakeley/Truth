@@ -3,7 +3,7 @@ module Truth.Core.UI.ViewContext where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.Object
-import Truth.Core.UI.Specifier.SelectionLens
+import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 
 data ViewContext sel edit = MkViewContext
@@ -27,7 +27,7 @@ vcMapSetSelection ::
 vcMapSetSelection f (MkViewContext object setSelectA oG) = MkViewContext object (f setSelectA) oG
 
 vcMapSelection :: (sela -> selb) -> ViewContext selb edit -> ViewContext sela edit
-vcMapSelection f = vcMapSetSelection $ \ss aspa -> ss $ aspectMapSelection f aspa
+vcMapSelection f = vcMapSetSelection $ \ss aspa -> ss $ mapSelectionAspect f aspa
 
 vcNoAspect :: ViewContext selb edit -> ViewContext sela edit
 vcNoAspect (MkViewContext object _ oG) = MkViewContext object (\_ -> return ()) oG

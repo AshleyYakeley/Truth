@@ -26,7 +26,7 @@ import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Read
 import Truth.Core.Types
-import Truth.Core.UI.Specifier.SelectionLens
+import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.View
 import Truth.Core.UI.ViewContext
@@ -69,7 +69,7 @@ voMapEdit lens@(MkCloseUnlift unlift flens) (MkViewOutput updateB a) = let
     in (MkViewOutput updateA a)
 
 voMapSelection :: forall sela selb edit. (sela -> selb) -> ViewOutput sela edit -> ViewOutput selb edit
-voMapSelection f (MkViewOutput upd asp) = MkViewOutput upd $ aspectMapSelection f asp
+voMapSelection f (MkViewOutput upd asp) = MkViewOutput upd $ mapSelectionAspect f asp
 
 voNoAspect :: ViewOutput sela edit -> ViewOutput selb edit
 voNoAspect (MkViewOutput upd _) = MkViewOutput upd noAspect

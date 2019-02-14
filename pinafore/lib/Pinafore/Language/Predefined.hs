@@ -24,9 +24,7 @@ import Shapes
 predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => DocTree (BindDoc baseedit)
-predefinitions =
-    MkDocTree "" "" $
-    base_predefinitions <> [TreeDocTreeEntry $ ui_predefinitions, TreeDocTreeEntry file_predefinitions]
+predefinitions = MkDocTree "" "" $ base_predefinitions <> ui_predefinitions <> file_predefinitions
 
 predefinedDoc ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)

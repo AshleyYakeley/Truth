@@ -14,7 +14,7 @@ whichSize (SizeCustom i) = AnotherIconSize i
 iconGetView :: GetGView
 iconGetView =
     MkGetView $ \_ uispec -> do
-        MkUIIcon icon size <- isUISpec uispec
+        MkIconUISpec icon size <- isUISpec uispec
         return $ do
             image <- imageNewFromIconName (Just icon) (fromIntegral $ fromEnum $ whichSize size)
             toWidget image
