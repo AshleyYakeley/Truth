@@ -3,7 +3,7 @@ module Pinafore.Language.Predefined.File
     ) where
 
 import Pinafore.Base
-import Pinafore.Language.Doc
+import Pinafore.Language.DocTree
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Storage.File
 

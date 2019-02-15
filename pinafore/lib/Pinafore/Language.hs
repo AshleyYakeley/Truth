@@ -8,10 +8,6 @@ module Pinafore.Language
     , parseValueAtType
     , interact
     , initialPos
-    , DefDoc(..)
-    , DocTree
-    , runDocTree
-    , predefinedDoc
     , Entity
     , showPinaforeValue
     ) where

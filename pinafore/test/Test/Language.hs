@@ -5,12 +5,28 @@ module Test.Language
     ) where
 
 import Pinafore
+import Pinafore.Language.Documentation
 import Pinafore.Test
 import Prelude (read)
 import Shapes
 import Shapes.Numeric
 import Test.Tasty
 import Test.Tasty.HUnit
+
+testOp :: Name -> TestTree
+testOp n =
+    testCase (unpack n) $ do
+        case unpack n of
+            '(':_ -> assertFailure "parenthesis"
+            _ -> return ()
+        case operatorFixity n of
+            MkFixity AssocLeft 10 -> assertFailure "unassigned fixity"
+            _ -> return ()
+
+testInfix :: TestTree
+testInfix = let
+    names = filter nameIsInfix $ fmap docName $ toList $ predefinedDoc @PinaforeEdit
+    in testGroup "infix" $ fmap testOp names
 
 newtype PreciseEq t =
     MkPreciseEq t
@@ -404,4 +420,5 @@ testQueries =
         ]
 
 testLanguage :: TestTree
-testLanguage = localOption (mkTimeout 2000000) $ testGroup "language" [testNumbers, testQueryValues, testQueries]
+testLanguage =
+    localOption (mkTimeout 2000000) $ testGroup "language" [testInfix, testNumbers, testQueryValues, testQueries]

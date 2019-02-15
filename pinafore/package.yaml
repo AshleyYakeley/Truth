@@ -45,6 +45,7 @@ library:
       - Pinafore.Base
       - Pinafore.Storage
       - Pinafore.Language
+      - Pinafore.Language.Documentation
       - Pinafore.Main
       - Pinafore.Pinafore
       - Pinafore
@@ -112,7 +113,7 @@ library:
       - Pinafore.Language.Interpret
       - Pinafore.Language.Expression
       - Pinafore.Language.Convert
-      - Pinafore.Language.Doc
+      - Pinafore.Language.DocTree
       - Pinafore.Language.Predefined.Defs
       - Pinafore.Language.Predefined.Base
       - Pinafore.Language.Predefined.UI

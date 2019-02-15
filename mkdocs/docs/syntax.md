@@ -76,7 +76,7 @@ In interactive mode, each line has syntax `<interactive>`.
     <expression-infix[n+1]> |
     <expression-infix[n]> <infix-operator[n]> <expression-infix[n+1]>
 
-<expression-infix[10]> ::= <expression-1>
+<expression-infix[11]> ::= <expression-1>
 
 <infix-operator[n]> ::= -- see table
 
@@ -162,18 +162,7 @@ In interactive mode, each line has syntax `<interactive>`.
 
 ## Infix Operators
 
-| [n] | (A x B) x C | A x (B x C) | A x B only |
-| --- | --- | --- | --- |
-9 | others | `.` `<.>` |
-8 | `*` `/` `/\` | `!$` `!$$` `!@` `!@@` |
-7 | `+` `-` `\/` `??` | |
-6 | | `:` `++` |
-5 | | | `==` `/=` `~==` `~/=` `<=` `<` `>=` `>`
-4 | | `&&` |
-3 | | `||` |
-2 | | | `:=` `+=` `-=`
-1 | `>>` `>>=` | |
-0 | | `$` |
+{!infix.md!}
 
 ## Lexical
 

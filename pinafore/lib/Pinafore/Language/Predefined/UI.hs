@@ -3,7 +3,7 @@ module Pinafore.Language.Predefined.UI
     ) where
 
 import Pinafore.Base
-import Pinafore.Language.Doc
+import Pinafore.Language.DocTree
 import Pinafore.Language.Morphism
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Reference

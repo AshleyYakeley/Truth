@@ -1,5 +1,8 @@
 module Pinafore.Language.Read.Infix
     ( readExpressionInfixed
+    , operatorFixity
+    , Fixity(..)
+    , FixAssoc(..)
     ) where
 
 import Pinafore.Base
@@ -18,25 +21,37 @@ data FixAssoc
 data Fixity =
     MkFixity FixAssoc
              Int
+    deriving (Eq)
 
 -- following Haskell
 -- https://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061
 operatorFixity :: Name -> Fixity
-operatorFixity "." = MkFixity AssocRight 9
-operatorFixity "<.>" = MkFixity AssocRight 9
+operatorFixity "." = MkFixity AssocRight 10
+operatorFixity "!." = MkFixity AssocRight 10
+operatorFixity "^" = MkFixity AssocRight 9
+operatorFixity "^^" = MkFixity AssocRight 9
+operatorFixity "**" = MkFixity AssocRight 9
 operatorFixity "*" = MkFixity AssocLeft 8
+operatorFixity ".*" = MkFixity AssocLeft 8
+operatorFixity "~*" = MkFixity AssocLeft 8
 operatorFixity "/" = MkFixity AssocLeft 8
+operatorFixity "~/" = MkFixity AssocLeft 8
 operatorFixity "/\\" = MkFixity AssocLeft 8
 operatorFixity "!$" = MkFixity AssocRight 8
 operatorFixity "!$$" = MkFixity AssocRight 8
 operatorFixity "!@" = MkFixity AssocRight 8
 operatorFixity "!@@" = MkFixity AssocRight 8
 operatorFixity "+" = MkFixity AssocLeft 7
+operatorFixity ".+" = MkFixity AssocLeft 7
+operatorFixity "~+" = MkFixity AssocLeft 7
 operatorFixity "-" = MkFixity AssocLeft 7
+operatorFixity ".-" = MkFixity AssocLeft 7
+operatorFixity "~-" = MkFixity AssocLeft 7
 operatorFixity "\\/" = MkFixity AssocLeft 7
 operatorFixity "??" = MkFixity AssocLeft 7
 operatorFixity ":" = MkFixity AssocRight 6
 operatorFixity "++" = MkFixity AssocRight 6
+operatorFixity "<>" = MkFixity AssocRight 6
 operatorFixity "==" = MkFixity AssocNone 5
 operatorFixity "/=" = MkFixity AssocNone 5
 operatorFixity "~==" = MkFixity AssocNone 5
@@ -53,7 +68,7 @@ operatorFixity "-=" = MkFixity AssocNone 2
 operatorFixity ">>=" = MkFixity AssocLeft 1
 operatorFixity ">>" = MkFixity AssocLeft 1
 operatorFixity "$" = MkFixity AssocRight 0
-operatorFixity _ = MkFixity AssocLeft 9
+operatorFixity _ = MkFixity AssocLeft 10
 
 readInfix :: Int -> Parser (Name, FixAssoc, SyntaxExpression baseedit)
 readInfix prec =
@@ -86,7 +101,7 @@ readInfixedExpression ::
     => Parser (SyntaxExpression baseedit)
     -> Int
     -> Parser (SyntaxExpression baseedit)
-readInfixedExpression pe 10 = pe
+readInfixedExpression pe 11 = pe
 readInfixedExpression pe prec = do
     spos <- getPosition
     se1 <- readInfixedExpression pe (succ prec)
