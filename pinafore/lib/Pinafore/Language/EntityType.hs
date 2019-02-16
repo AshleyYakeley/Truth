@@ -3,7 +3,8 @@ module Pinafore.Language.EntityType where
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Literal
-import Pinafore.Language.NamedEntity
+import Pinafore.Language.Name
+import Pinafore.Language.OpenEntity
 import Pinafore.Language.Show
 import Shapes
 import Text.Read (read)
@@ -12,15 +13,15 @@ import Truth.Core
 data EntityGroundType (t :: k) where
     TopEntityGroundType :: EntityGroundType Entity
     NewEntityGroundType :: EntityGroundType NewEntity
-    NamedEntityGroundType :: SymbolType name -> EntityGroundType (NamedEntity name)
+    OpenEntityGroundType :: Name -> SymbolType tid -> EntityGroundType (OpenEntity tid)
     LiteralEntityGroundType :: LiteralType t -> EntityGroundType t
     MaybeEntityGroundType :: EntityGroundType Maybe
     ListEntityGroundType :: EntityGroundType []
     PairEntityGroundType :: EntityGroundType (,)
     EitherEntityGroundType :: EntityGroundType Either
-    ClosedEntityGroundType :: SymbolType s -> ClosedEntityType t -> EntityGroundType (ClosedEntity s t)
+    ClosedEntityGroundType :: Name -> SymbolType tid -> ClosedEntityType t -> EntityGroundType (ClosedEntity tid t)
 
-newtype ClosedEntity (s :: Symbol) (t :: Type) = MkClosedEntity
+newtype ClosedEntity (tid :: Symbol) (t :: Type) = MkClosedEntity
     { unClosedEntity :: t
     } deriving (Eq)
 
@@ -52,7 +53,7 @@ closedEntityTypeAdapter (ConsClosedEntityType a cc rest) =
 entityTypeEq :: EntityType t -> Dict (Eq t)
 entityTypeEq (MkEntityType TopEntityGroundType NilArguments) = Dict
 entityTypeEq (MkEntityType NewEntityGroundType NilArguments) = Dict
-entityTypeEq (MkEntityType (NamedEntityGroundType _) NilArguments) = Dict
+entityTypeEq (MkEntityType (OpenEntityGroundType _ _) NilArguments) = Dict
 entityTypeEq (MkEntityType (LiteralEntityGroundType t) NilArguments) =
     case literalTypeAsLiteral t of
         Dict -> Dict
@@ -68,7 +69,7 @@ entityTypeEq (MkEntityType PairEntityGroundType (ConsArguments ta (ConsArguments
 entityTypeEq (MkEntityType EitherEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments))) =
     case (entityTypeEq ta, entityTypeEq tb) of
         (Dict, Dict) -> Dict
-entityTypeEq (MkEntityType (ClosedEntityGroundType _ t) NilArguments) =
+entityTypeEq (MkEntityType (ClosedEntityGroundType _ _ t) NilArguments) =
     case closedEntityTypeEq t of
         Dict -> Dict
 entityTypeEq NoneEntityType = Dict
@@ -76,7 +77,7 @@ entityTypeEq NoneEntityType = Dict
 entityGroundTypeTestEquality :: EntityGroundType ta -> EntityGroundType tb -> Maybe (ta :~~: tb)
 entityGroundTypeTestEquality TopEntityGroundType TopEntityGroundType = Just HRefl
 entityGroundTypeTestEquality NewEntityGroundType NewEntityGroundType = Just HRefl
-entityGroundTypeTestEquality (NamedEntityGroundType n1) (NamedEntityGroundType n2) = do
+entityGroundTypeTestEquality (OpenEntityGroundType _ n1) (OpenEntityGroundType _ n2) = do
     Refl <- testEquality n1 n2
     Just HRefl
 entityGroundTypeTestEquality (LiteralEntityGroundType t1) (LiteralEntityGroundType t2) = do
@@ -86,7 +87,7 @@ entityGroundTypeTestEquality MaybeEntityGroundType MaybeEntityGroundType = Just 
 entityGroundTypeTestEquality PairEntityGroundType PairEntityGroundType = Just HRefl
 entityGroundTypeTestEquality ListEntityGroundType ListEntityGroundType = Just HRefl
 entityGroundTypeTestEquality EitherEntityGroundType EitherEntityGroundType = Just HRefl
-entityGroundTypeTestEquality (ClosedEntityGroundType sa ta) (ClosedEntityGroundType sb tb) = do
+entityGroundTypeTestEquality (ClosedEntityGroundType _ sa ta) (ClosedEntityGroundType _ sb tb) = do
     Refl <- testEquality sa sb
     Refl <- testEquality ta tb
     Just HRefl
@@ -111,30 +112,30 @@ entityGroundTypeCovaryType ::
     -> r
 entityGroundTypeCovaryType TopEntityGroundType cont = cont NilListType
 entityGroundTypeCovaryType NewEntityGroundType cont = cont NilListType
-entityGroundTypeCovaryType (NamedEntityGroundType _) cont = cont NilListType
+entityGroundTypeCovaryType (OpenEntityGroundType _ _) cont = cont NilListType
 entityGroundTypeCovaryType (LiteralEntityGroundType _) cont = cont NilListType
 entityGroundTypeCovaryType MaybeEntityGroundType cont = cont $ ConsListType Refl NilListType
 entityGroundTypeCovaryType ListEntityGroundType cont = cont $ ConsListType Refl NilListType
 entityGroundTypeCovaryType PairEntityGroundType cont = cont $ ConsListType Refl $ ConsListType Refl NilListType
 entityGroundTypeCovaryType EitherEntityGroundType cont = cont $ ConsListType Refl $ ConsListType Refl NilListType
-entityGroundTypeCovaryType (ClosedEntityGroundType _ _) cont = cont NilListType
+entityGroundTypeCovaryType (ClosedEntityGroundType _ _ _) cont = cont NilListType
 
 entityGroundTypeCovaryMap :: EntityGroundType f -> CovaryMap (->) f
 entityGroundTypeCovaryMap TopEntityGroundType = covarymap
 entityGroundTypeCovaryMap NewEntityGroundType = covarymap
-entityGroundTypeCovaryMap (NamedEntityGroundType _) = covarymap
+entityGroundTypeCovaryMap (OpenEntityGroundType _ _) = covarymap
 entityGroundTypeCovaryMap (LiteralEntityGroundType _) = covarymap
 entityGroundTypeCovaryMap MaybeEntityGroundType = covarymap
 entityGroundTypeCovaryMap ListEntityGroundType = covarymap
 entityGroundTypeCovaryMap PairEntityGroundType = covarymap
 entityGroundTypeCovaryMap EitherEntityGroundType = covarymap
-entityGroundTypeCovaryMap (ClosedEntityGroundType _ _) = covarymap
+entityGroundTypeCovaryMap (ClosedEntityGroundType _ _ _) = covarymap
 
 entityGroundTypeShowPrec ::
        forall w f t. (forall a. w a -> (Text, Int)) -> EntityGroundType f -> Arguments w f t -> (Text, Int)
 entityGroundTypeShowPrec _ TopEntityGroundType NilArguments = ("Entity", 0)
 entityGroundTypeShowPrec _ NewEntityGroundType NilArguments = ("NewEntity", 0)
-entityGroundTypeShowPrec _ (NamedEntityGroundType n) NilArguments = (pack $ show n, 0)
+entityGroundTypeShowPrec _ (OpenEntityGroundType n _) NilArguments = (pack $ show n, 0)
 entityGroundTypeShowPrec _ (LiteralEntityGroundType t) NilArguments = exprShowPrec t
 entityGroundTypeShowPrec es MaybeEntityGroundType (ConsArguments ta NilArguments) = ("Maybe " <> fst (es ta), 2)
 entityGroundTypeShowPrec es ListEntityGroundType (ConsArguments ta NilArguments) = ("[" <> fst (es ta) <> "]", 0)
@@ -142,7 +143,7 @@ entityGroundTypeShowPrec es PairEntityGroundType (ConsArguments ta (ConsArgument
     ("(" <> fst (es ta) <> ", " <> fst (es tb) <> ")", 0)
 entityGroundTypeShowPrec es EitherEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments)) =
     ("Either " <> fst (es ta) <> " " <> fst (es tb), 2)
-entityGroundTypeShowPrec _ (ClosedEntityGroundType n _) NilArguments = (pack $ show n, 0)
+entityGroundTypeShowPrec _ (ClosedEntityGroundType n _ _) NilArguments = (pack $ show n, 0)
 
 instance ExprShow (EntityType t) where
     exprShowPrec (MkEntityType gt args) = entityGroundTypeShowPrec exprShowPrec gt args
@@ -154,7 +155,7 @@ instance Show (EntityType t) where
 entityGroundTypeAdapter :: forall f t. EntityGroundType f -> Arguments EntityType f t -> EntityAdapter t
 entityGroundTypeAdapter TopEntityGroundType NilArguments = entityEntityAdapter
 entityGroundTypeAdapter NewEntityGroundType NilArguments = isoMap MkNewEntity unNewEntity entityEntityAdapter
-entityGroundTypeAdapter (NamedEntityGroundType _) NilArguments = isoMap MkNamedEntity unNamedEntity entityEntityAdapter
+entityGroundTypeAdapter (OpenEntityGroundType _ _) NilArguments = isoMap MkOpenEntity unNamedEntity entityEntityAdapter
 entityGroundTypeAdapter (LiteralEntityGroundType tl) NilArguments =
     case literalTypeAsLiteral tl of
         Dict -> let
@@ -220,7 +221,7 @@ entityGroundTypeAdapter ListEntityGroundType (ConsArguments t NilArguments) = le
     to [] = Left ()
     to (a:aa) = Right (a, (aa, ()))
     in listAdapter
-entityGroundTypeAdapter (ClosedEntityGroundType _ ct) NilArguments =
+entityGroundTypeAdapter (ClosedEntityGroundType _ _ ct) NilArguments =
     isoMap MkClosedEntity unClosedEntity $ closedEntityTypeAdapter ct
 
 entityAdapter :: forall t. EntityType t -> EntityAdapter t

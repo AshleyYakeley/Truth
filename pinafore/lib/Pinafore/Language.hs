@@ -3,13 +3,13 @@ module Pinafore.Language
     , qTypeDescription
     , ToPinaforeType
     , resultTextToM
-    , parseExpression
+    , parseTopExpression
     , parseValue
     , parseValueAtType
     , interact
-    , initialPos
     , Entity
     , showPinaforeValue
+    , runPinaforeSourceScoped
     ) where
 
 import Control.Exception
@@ -33,25 +33,21 @@ runPinaforeScoped scp =
     runScoped $
     withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
 
-parseExpression ::
-       forall baseedit.
+runPinaforeSourceScoped ::
        (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
-    => SourcePos
-    -> Text
-    -> Result Text (QExpr baseedit)
-parseExpression spos text = runPinaforeScoped $ runSourcePos spos $ parseTopExpression @baseedit text
+    => FilePath
+    -> PinaforeSourceScoped baseedit a
+    -> Result Text a
+runPinaforeSourceScoped fpath scp = runPinaforeScoped $ runSourcePos (initialPos fpath) scp
 
 parseValue ::
        forall baseedit.
        (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
-    => SourcePos
-    -> Text
-    -> Result Text (QValue baseedit)
-parseValue spos text =
-    runPinaforeScoped $
-    runSourcePos spos $ do
-        rexpr <- parseTopExpression @baseedit text
-        qEvalExpr rexpr
+    => Text
+    -> PinaforeSourceScoped baseedit (QValue baseedit)
+parseValue text = do
+    rexpr <- parseTopExpression @baseedit text
+    qEvalExpr rexpr
 
 parseValueAtType ::
        forall baseedit t.
@@ -60,12 +56,11 @@ parseValueAtType ::
        , FromPinaforeType baseedit t
        , ?pinafore :: PinaforeContext baseedit
        )
-    => SourcePos
-    -> Text
-    -> Result Text t
-parseValueAtType spos text = do
-    val <- parseValue @baseedit spos text
-    typedAnyToPinaforeVal @baseedit spos val
+    => Text
+    -> PinaforeSourceScoped baseedit t
+parseValueAtType text = do
+    val <- parseValue @baseedit text
+    typedAnyToPinaforeVal @baseedit val
 
 showEntityGroundValue ::
        CovaryType dv
@@ -109,27 +104,26 @@ showPinaforeValue (ConsPinaforeType ts tt) v = joinf (showPinaforeSingularValue 
 
 type Interact baseedit = StateT SourcePos (ReaderStateT (PinaforeScoped baseedit) IO)
 
+interactRunSourceScoped :: PinaforeSourceScoped baseedit a -> Interact baseedit a
+interactRunSourceScoped sa = do
+    spos <- get
+    lift $ liftRS $ runSourcePos spos sa
+
 interactEvalExpression ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
-    => SourcePos
-    -> PinaforeScoped baseedit (QExpr baseedit)
+    => PinaforeScoped baseedit (QExpr baseedit)
     -> Interact baseedit (QValue baseedit)
-interactEvalExpression spos texpr =
-    lift $
-    liftRS $ do
-        expr <- texpr
-        runSourcePos spos $ qEvalExpr expr
+interactEvalExpression texpr =
+    interactRunSourceScoped $ do
+        expr <- liftSourcePos texpr
+        qEvalExpr expr
 
-runValue :: Handle -> SourcePos -> QValue baseedit -> PinaforeAction baseedit ()
-runValue outh spos val =
-    case typedAnyToPinaforeVal spos val of
-        SuccessResult action -> action
-        _ ->
-            case typedAnyToPinaforeVal spos val of
-                SuccessResult v -> outputln v
-                _ ->
-                    case val of
-                        MkAnyValue t v -> liftIO $ hPutStrLn outh $ showPinaforeValue t v
+runValue :: Handle -> QValue baseedit -> Interact baseedit (PinaforeAction baseedit ())
+runValue outh val =
+    interactRunSourceScoped $
+    (typedAnyToPinaforeVal val) <|> (fmap outputln $ typedAnyToPinaforeVal val) <|>
+    (case val of
+         MkAnyValue t v -> return $ liftIO $ hPutStrLn outh $ showPinaforeValue t v)
 
 interactParse ::
        forall baseedit. HasPinaforeEntityEdit baseedit
@@ -158,7 +152,6 @@ interactLoop inh outh echo = do
             liftIOWithUnlift $ \unlift ->
                 catch
                     (runTransform unlift $ do
-                         spos <- get
                          p <- interactParse $ pack inputstr
                          case p of
                              LetInteractiveCommand fbind ->
@@ -166,11 +159,12 @@ interactLoop inh outh echo = do
                                      MkTransform bind <- liftRS fbind
                                      updateRS bind
                              ExpressionInteractiveCommand texpr -> do
-                                 val <- interactEvalExpression spos texpr
-                                 lift $ lift $ runPinaforeAction $ runValue outh spos val
+                                 val <- interactEvalExpression texpr
+                                 action <- runValue outh val
+                                 lift $ lift $ runPinaforeAction action
                              ShowTypeInteractiveCommand texpr -> do
-                                 MkAnyValue t _ <- interactEvalExpression spos texpr
-                                 lift $ lift $ hPutStrLn outh $ ":: " <> show t
+                                 MkAnyValue t _ <- interactEvalExpression texpr
+                                 liftIO $ hPutStrLn outh $ ":: " <> show t
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err) $ \err ->
                     hPutStrLn outh $ "error: " <> ioeGetErrorString err
             interactLoop inh outh echo

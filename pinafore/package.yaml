@@ -71,7 +71,7 @@ library:
       - Pinafore.Base.ImmutableReference
       - Pinafore.Language.Name
       - Pinafore.Language.Literal
-      - Pinafore.Language.NamedEntity
+      - Pinafore.Language.OpenEntity
       - Pinafore.Language.Reference
       - Pinafore.Language.Set
       - Pinafore.Language.Morphism
@@ -80,6 +80,7 @@ library:
       - Pinafore.Language.Order
       - Pinafore.Language.UI
       - Pinafore.Language.GroundType
+      - Pinafore.Language.TypeID
       - Pinafore.Language.Scope
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.Type.Type

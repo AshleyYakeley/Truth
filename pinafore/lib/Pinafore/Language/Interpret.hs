@@ -12,7 +12,7 @@ import Pinafore.Language.If
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Morphism
 import Pinafore.Language.Name
-import Pinafore.Language.NamedEntity
+import Pinafore.Language.OpenEntity
 import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
@@ -208,7 +208,7 @@ interpretExpression' spos (SEEntity st anchor) =
 makeEntity :: MonadFail m => EntityType t -> Entity -> m t
 makeEntity (MkEntityType TopEntityGroundType NilArguments) p = return p
 makeEntity (MkEntityType NewEntityGroundType NilArguments) p = return $ MkNewEntity p
-makeEntity (MkEntityType (NamedEntityGroundType _) NilArguments) p = return $ MkNamedEntity p
+makeEntity (MkEntityType (OpenEntityGroundType _ _) NilArguments) p = return $ MkOpenEntity p
 makeEntity t _ = fail $ "not an open entity type: " <> show t
 
 interpretTypeSignature ::

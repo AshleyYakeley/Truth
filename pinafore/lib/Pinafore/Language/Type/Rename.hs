@@ -94,7 +94,7 @@ instance Renamer (VarRenamer (PinaforeTypeSystem baseedit)) where
     renameTSPosWitness t = renamePinaforeTypeVars t $ \t' bij -> return $ MkTypeF t' $ biForwards bij
     renameNewVar = do
         n <- varRenamerGenerate
-        toSymbolWitness n $ \wit ->
+        toSymbolType n $ \wit ->
             return $
             MkNewVar
                 (singlePinaforeType $ VarPinaforeSingularType wit)

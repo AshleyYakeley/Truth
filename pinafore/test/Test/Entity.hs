@@ -40,8 +40,8 @@ assertThrows ma = do
         then assertFailure "no exception"
         else return ()
 
-badParseText :: Text -> ContextTestTree
-badParseText text c =
+badInterpretTest :: Text -> ContextTestTree
+badInterpretTest text c =
     testCase (unpack text) $
     withTestPinaforeContext $ \_getTableState -> do assertThrows $ pinaforeInterpretFile "<test>" $ prefix c <> text
 
@@ -78,16 +78,16 @@ testEntity =
               ]
         , tgroup
               "bad parse"
-              [ badParseText ""
-              , badParseText "x"
-              , badParseText "("
-              , badParseText ")"
-              , badParseText "pass x"
-              , badParseText "pass pass"
-              , badParseText "pass in"
-              , badParseText "pass ("
-              , badParseText "pass )"
-              , badParseText "pass let"
+              [ badInterpretTest ""
+              , badInterpretTest "x"
+              , badInterpretTest "("
+              , badInterpretTest ")"
+              , badInterpretTest "pass x"
+              , badInterpretTest "pass pass"
+              , badInterpretTest "pass in"
+              , badInterpretTest "pass ("
+              , badInterpretTest "pass )"
+              , badInterpretTest "pass let"
               ]
         , tgroup
               "fail"
@@ -388,5 +388,16 @@ testEntity =
                     "let closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\" in case T1 \"hello\" 3 of T1 \"hello\" 3 -> pass end"
               , pointTest
                     "let closedtype T = T1 Text Number !\"T.T1\" | T2 !\"T.T2\" | T3 Boolean !\"T.T3\" in case T1 \"hello\" 3 of T2 -> fail \"T2\"; T1 \"hello\" 2 -> fail \"T1 2\"; T1 \"hell\" 3 -> fail \"T1 hell\"; T1 \"hello\" 3 -> pass end"
+              ]
+        , tgroup
+              "type escape"
+              [ pointTest
+                    "let opentype T; t = let in entity @T !\"t\"; f = let f :: T -> Action (); f _ = pass in f; in f t"
+              , badInterpretTest
+                    "let opentype T1; opentype T2; t = let in entity @T1 !\"t\"; f = let f :: T2 -> Action (); f _ = pass in f; in f t"
+              , badInterpretTest
+                    "let t = let opentype T in entity @T !\"t\"; f = let opentype T; f :: T -> Action (); f _ = pass in f; in f t"
+              , badInterpretTest
+                    "let t = let opentype T1 in entity @T1 !\"t\"; f = let opentype T2; f :: T2 -> Action (); f _ = pass in f; in f t"
               ]
         ]

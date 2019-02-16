@@ -2,7 +2,7 @@ module Pinafore.Language.Morphism where
 
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.NamedEntity
+import Pinafore.Language.OpenEntity
 import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Shapes

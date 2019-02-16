@@ -31,7 +31,7 @@ exprTypeTest :: String -> Result Text String -> PinaforeSourceScoped PinaforeEdi
 exprTypeTest name expected mexpr =
     testCase name $
     assertEqual "" expected $ do
-        expr <- runSourceScoped (initialPos "<input>") mexpr
+        expr <- runTestPinaforeSourceScoped mexpr
         return $ showTypes expr
 
 apExpr :: PExpression -> PExpression -> PinaforeSourceScoped PinaforeEdit PExpression
@@ -94,7 +94,9 @@ joinExpr exp1 exp2 = do
 textTypeTest :: Text -> String -> TestTree
 textTypeTest text r =
     testCase (unpack text) $ do
-        expr <- resultTextToM $ withNullPinaforeContext $ parseExpression @PinaforeEdit (initialPos "<input>") text
+        expr <-
+            resultTextToM $
+            withNullPinaforeContext $ runTestPinaforeSourceScoped $ parseTopExpression @PinaforeEdit text
         assertEqual "" r $ showTypes expr
 
 simplifyTypeTest :: Text -> String -> TestTree
@@ -102,7 +104,7 @@ simplifyTypeTest text e =
     testCase (unpack text) $ do
         simpexpr <-
             resultTextToM $ do
-                MkAnyW t <- runSourceScoped (initialPos "<input>") $ parseType @PinaforeEdit @'Positive text
+                MkAnyW t <- runTestPinaforeSourceScoped $ parseType @PinaforeEdit @'Positive text
                 return $
                     pinaforeSimplifyTypes @PinaforeEdit @PExpression $ MkSealedExpression t $ ClosedExpression undefined
         case simpexpr of

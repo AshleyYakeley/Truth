@@ -40,7 +40,7 @@ getTypeVars :: PinaforeType baseedit polarity t -> [String]
 getTypeVars NilPinaforeType = mempty
 getTypeVars (ConsPinaforeType (GroundPinaforeSingularType gt args) tr) =
     getArgsTypeVars (pinaforeGroundTypeVarianceType gt) args <> getTypeVars tr
-getTypeVars (ConsPinaforeType (VarPinaforeSingularType swit) tr) = fromSymbolWitness swit : getTypeVars tr
+getTypeVars (ConsPinaforeType (VarPinaforeSingularType swit) tr) = fromSymbolType swit : getTypeVars tr
 
 data BisubstitutionWitness baseedit t where
     PositiveBisubstitutionWitness
