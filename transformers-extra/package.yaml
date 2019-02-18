@@ -20,4 +20,5 @@ library:
       - Control.Monad.Trans.Compose
       - Control.Monad.Trans.Free
       - Control.Monad.Trans.StackIO
+      - Control.Monad.Trans.ContExtra
       - Control.Monad.Trans.ReaderState

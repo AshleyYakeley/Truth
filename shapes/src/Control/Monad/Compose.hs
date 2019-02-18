@@ -44,6 +44,8 @@ instance (MonadOne inner, MonadFix outer) => MonadFix (ComposeM inner outer) whe
                 SuccessResult a -> a
                 FailureResult _ -> error "bad ComposeM mfix"
 
+instance (MonadOne inner, Monad outer, Alternative inner) => MonadPlus (ComposeM inner outer)
+
 liftOuter :: (Functor outer, Applicative inner) => outer a -> ComposeM inner outer a
 liftOuter ma = MkComposeM $ fmap pure ma
 
