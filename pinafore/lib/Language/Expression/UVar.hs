@@ -2,8 +2,8 @@ module Language.Expression.UVar
     ( UVar
     , unsafeUVarBijection
     , renameUVar
-    , varRenamerGenerateSymbol
-    , varRenamerGenerateSuggestedSymbol
+    , varRenamerTGenerateSymbol
+    , varRenamerTGenerateSuggestedSymbol
     ) where
 
 import GHC.Exts (Any)
@@ -36,14 +36,14 @@ renameUVar sf namewit1 cont = do
     newname <- sf $ fromSymbolType namewit1
     toSymbolType newname $ \namewit2 -> cont namewit2 (MkBijection unsafeRenameAnybox unsafeRenameAnybox)
 
-varRenamerGenerateSymbol ::
-       Monad m => (forall (name :: Symbol). SymbolType name -> VarRenamer ts m a) -> VarRenamer ts m a
-varRenamerGenerateSymbol cont = do
-    s <- varRenamerGenerate
+varRenamerTGenerateSymbol ::
+       Monad m => (forall (name :: Symbol). SymbolType name -> VarRenamerT ts m a) -> VarRenamerT ts m a
+varRenamerTGenerateSymbol cont = do
+    s <- varRenamerTGenerate
     toSymbolType s cont
 
-varRenamerGenerateSuggestedSymbol ::
-       Monad m => String -> (forall (name :: Symbol). SymbolType name -> VarRenamer ts m a) -> VarRenamer ts m a
-varRenamerGenerateSuggestedSymbol name cont = do
-    name' <- varRenamerGenerateSuggested name
+varRenamerTGenerateSuggestedSymbol ::
+       Monad m => String -> (forall (name :: Symbol). SymbolType name -> VarRenamerT ts m a) -> VarRenamerT ts m a
+varRenamerTGenerateSuggestedSymbol name cont = do
+    name' <- varRenamerTGenerateSuggested name
     toSymbolType name' cont

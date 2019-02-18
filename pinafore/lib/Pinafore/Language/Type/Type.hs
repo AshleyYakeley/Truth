@@ -220,4 +220,4 @@ type PinaforeScoped baseedit
 type PinaforeSourceScoped baseedit
      = SourceScoped (PinaforeExpression baseedit) (PinaforePatternConstructor baseedit) (AnyW ClosedEntityType)
 
-type PinaforeTypeCheck baseedit = VarRenamer (PinaforeTypeSystem baseedit) (PinaforeSourceScoped baseedit)
+type PinaforeTypeCheck baseedit = VarRenamerT (PinaforeTypeSystem baseedit) (PinaforeSourceScoped baseedit)

@@ -45,7 +45,7 @@ instance Unifier (PinaforeUnifier baseedit) where
     simplify = return . pinaforeSimplifyTypes @baseedit
 
 instance TypeSystem (PinaforeTypeSystem baseedit) where
-    type TSRenamer (PinaforeTypeSystem baseedit) = VarRenamer (PinaforeTypeSystem baseedit)
+    type TSRenamer (PinaforeTypeSystem baseedit) = VarRenamerT (PinaforeTypeSystem baseedit)
     type TSUnifier (PinaforeTypeSystem baseedit) = PinaforeUnifier baseedit
     type TSScoped (PinaforeTypeSystem baseedit) = PinaforeSourceScoped baseedit
     type TSSubsumer (PinaforeTypeSystem baseedit) = PinaforeSubsumer baseedit

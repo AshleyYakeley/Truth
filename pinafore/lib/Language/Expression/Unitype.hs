@@ -7,35 +7,35 @@ import Language.Expression.TypeSystem
 import Language.Expression.Unifier
 import Shapes
 
-newtype UnitypeNamespace (val :: Type) m a =
-    MkUnitypeNamespace (m a)
+newtype UnitypeNamespaceT (val :: Type) m a =
+    MkUnitypeNamespaceT (m a)
     deriving (Functor, Applicative, Monad)
 
-instance MonadTrans (UnitypeNamespace val) where
-    lift = MkUnitypeNamespace
+instance MonadTrans (UnitypeNamespaceT val) where
+    lift = MkUnitypeNamespaceT
 
-instance MonadTransConstraint Monad (UnitypeNamespace val) where
+instance MonadTransConstraint Monad (UnitypeNamespaceT val) where
     hasTransConstraint = Dict
 
-newtype UnitypeRenamer (val :: Type) m a =
-    MkUnitypeRenamer (m a)
+newtype UnitypeRenamerT (val :: Type) m a =
+    MkUnitypeRenamerT (m a)
     deriving (Functor, Applicative, Monad)
 
-instance MonadTrans (UnitypeRenamer val) where
-    lift = MkUnitypeRenamer
+instance MonadTrans (UnitypeRenamerT val) where
+    lift = MkUnitypeRenamerT
 
-instance MonadTransConstraint Monad (UnitypeRenamer val) where
+instance MonadTransConstraint Monad (UnitypeRenamerT val) where
     hasTransConstraint = Dict
 
-instance Renamer (UnitypeRenamer val) where
-    type RenamerNegWitness (UnitypeRenamer val) = ((:~:) val)
-    type RenamerPosWitness (UnitypeRenamer val) = ((:~:) val)
+instance Renamer (UnitypeRenamerT val) where
+    type RenamerNegWitness (UnitypeRenamerT val) = ((:~:) val)
+    type RenamerPosWitness (UnitypeRenamerT val) = ((:~:) val)
     renameTSNegWitness Refl = return $ mkGenTypeF Refl
     renameTSPosWitness Refl = return $ mkGenTypeF Refl
-    type RenamerNamespace (UnitypeRenamer val) = UnitypeNamespace val
+    type RenamerNamespaceT (UnitypeRenamerT val) = UnitypeNamespaceT val
     renameNewVar = return $ MkNewVar Refl Refl id
-    namespace (MkUnitypeNamespace ia) = ia
-    runRenamer (MkUnitypeRenamer ia) = ia
+    namespace (MkUnitypeNamespaceT ia) = ia
+    runRenamer (MkUnitypeRenamerT ia) = ia
 
 newtype UnitypeUnifier (m :: Type -> Type) (name :: Type) (val :: Type) a =
     MkUnitypeUnifier (Identity a)
@@ -76,9 +76,9 @@ class UnitypeValue val where
 data Unitype (m :: Type -> Type) (name :: Type) (val :: Type)
 
 instance (Monad m, Eq name, UnitypeValue val) => TypeSystem (Unitype m name val) where
-    type TSRenamer (Unitype m name val) = UnitypeRenamer val
-    type TSUnifier (Unitype m name val) = UnitypeUnifier (UnitypeRenamer val m) name val
-    type TSSubsumer (Unitype m name val) = UnitypeSubsumer (UnitypeRenamer val m) val
+    type TSRenamer (Unitype m name val) = UnitypeRenamerT val
+    type TSUnifier (Unitype m name val) = UnitypeUnifier (UnitypeRenamerT val m) name val
+    type TSSubsumer (Unitype m name val) = UnitypeSubsumer (UnitypeRenamerT val m) val
     type TSScoped (Unitype m name val) = m
     tsFunctionPosWitness Refl Refl cont = cont Refl abstractValue
     tsFunctionNegWitness Refl Refl cont = cont Refl applyValue
