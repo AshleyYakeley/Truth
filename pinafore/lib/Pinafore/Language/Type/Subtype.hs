@@ -108,8 +108,8 @@ entityGroundSubtype _ NilListType NewEntityGroundType NilDolanArguments NilListT
     pure id
 entityGroundSubtype _ NilListType NewEntityGroundType NilDolanArguments NilListType (OpenEntityGroundType _ _) NilDolanArguments =
     pure $ MkOpenEntity . unNewEntity
-entityGroundSubtype sc NilListType (OpenEntityGroundType _ t1) NilDolanArguments NilListType (OpenEntityGroundType _ t2) NilDolanArguments =
-    subtypeLift sc $ getEntitySubtype t1 t2
+entityGroundSubtype sc NilListType (OpenEntityGroundType n1 t1) NilDolanArguments NilListType (OpenEntityGroundType n2 t2) NilDolanArguments =
+    subtypeLift sc $ getEntitySubtype n1 t1 n2 t2
 entityGroundSubtype sc cta MaybeEntityGroundType argsa ctb MaybeEntityGroundType argsb
     | Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta MaybeEntityGroundType argsa argsb
 entityGroundSubtype sc cta ListEntityGroundType argsa ctb ListEntityGroundType argsb

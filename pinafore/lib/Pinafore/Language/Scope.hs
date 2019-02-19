@@ -37,7 +37,7 @@ data Scope expr patc ct = MkScope
     { scopeBindings :: StrictMap Name expr
     , scopePatternConstructors :: StrictMap Name patc
     , scopeTypes :: StrictMap Name (TypeID, NamedType ct)
-    , scopeEntitySubtypes :: [(Name, Name)]
+    , scopeEntitySubtypes :: [(TypeID, TypeID)]
     }
 
 newtype Scoped expr patc ct a =
@@ -178,21 +178,30 @@ withNewPatternConstructor name pc = do
 withNewPatternConstructors :: StrictMap Name patc -> Scoped expr patc ct a -> Scoped expr patc ct a
 withNewPatternConstructors pp = pLocalScope (\tc -> tc {scopePatternConstructors = pp <> scopePatternConstructors tc})
 
-withEntitySubtype :: (Name, Name) -> SourceScoped expr patc ct (Transform (Scoped expr patc ct) (Scoped expr patc ct))
-withEntitySubtype rel@(a, b) = do
-    _ <- lookupNamedType a
-    _ <- lookupNamedType b
-    return $ MkTransform $ pLocalScope (\tc -> tc {scopeEntitySubtypes = rel : (scopeEntitySubtypes tc)})
+lookupOpenType :: Name -> SourceScoped expr patc ct TypeID
+lookupOpenType n = do
+    (tid, nt) <- lookupNamedType n
+    case nt of
+        OpenEntityNamedType -> return tid
+        _ -> fail $ show n <> " is not an open entity type"
 
-getEntitySubtype :: SymbolType na -> SymbolType nb -> SourceScoped expr patc ct (OpenEntity na -> OpenEntity nb)
-getEntitySubtype wa wb = let
-    sa = fromSymbolType wa
-    sb = fromSymbolType wb
-    in do
-           (scopeEntitySubtypes -> subtypes) <- spScope
-           if isSupertype subtypes [fromString sa] (fromString sb)
-               then return castNamedEntity
-               else convertFailure sa sb
+withEntitySubtype :: (Name, Name) -> SourceScoped expr patc ct (Transform (Scoped expr patc ct) (Scoped expr patc ct))
+withEntitySubtype (a, b) = do
+    ta <- lookupOpenType a
+    tb <- lookupOpenType b
+    return $ MkTransform $ pLocalScope (\tc -> tc {scopeEntitySubtypes = (ta, tb) : (scopeEntitySubtypes tc)})
+
+getEntitySubtype ::
+       Name
+    -> TypeIDType tida
+    -> Name
+    -> TypeIDType tidb
+    -> SourceScoped expr patc ct (OpenEntity tida -> OpenEntity tidb)
+getEntitySubtype na wa nb wb = do
+    (scopeEntitySubtypes -> subtypes) <- spScope
+    if isSupertype subtypes [witnessToValue wa] (witnessToValue wb)
+        then return castNamedEntity
+        else convertFailure (show na) (show nb)
 
 class TypeCheckSubtype w where
     getSubtype :: forall expr patc ct a b. w a -> w b -> SourceScoped expr patc ct (a -> b)

@@ -7,7 +7,6 @@ import Pinafore.Language.Literal
 import Pinafore.Language.Name
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
-import Pinafore.Language.TypeID
 import Shapes
 
 type PinaforeTypeM baseedit = MPolarW (PinaforeType baseedit)
@@ -247,7 +246,7 @@ interpretTypeConst n = do
     (tid, nt) <- lookupNamedType n
     case nt of
         OpenEntityNamedType ->
-            typeIdToSymbolType tid $ \sw ->
+            valueToWitness tid $ \sw ->
                 return $
                 toMPolar $
                 MkAnyW $
@@ -256,7 +255,7 @@ interpretTypeConst n = do
                     (EntityPinaforeGroundType NilListType $ OpenEntityGroundType n sw)
                     NilDolanArguments
         ClosedEntityNamedType (MkAnyW ct) ->
-            typeIdToSymbolType tid $ \sw ->
+            valueToWitness tid $ \sw ->
                 return $
                 toMPolar $
                 MkAnyW $

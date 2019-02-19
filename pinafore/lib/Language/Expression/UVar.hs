@@ -33,17 +33,17 @@ renameUVar ::
     -> (forall (name2 :: Symbol). SymbolType name2 -> Bijection (UVar name1) (UVar name2) -> m r)
     -> m r
 renameUVar sf namewit1 cont = do
-    newname <- sf $ fromSymbolType namewit1
-    toSymbolType newname $ \namewit2 -> cont namewit2 (MkBijection unsafeRenameAnybox unsafeRenameAnybox)
+    newname <- sf $ witnessToValue namewit1
+    valueToWitness newname $ \namewit2 -> cont namewit2 (MkBijection unsafeRenameAnybox unsafeRenameAnybox)
 
 varRenamerTGenerateSymbol ::
        Monad m => (forall (name :: Symbol). SymbolType name -> VarRenamerT ts m a) -> VarRenamerT ts m a
 varRenamerTGenerateSymbol cont = do
     s <- varRenamerTGenerate
-    toSymbolType s cont
+    valueToWitness s cont
 
 varRenamerTGenerateSuggestedSymbol ::
        Monad m => String -> (forall (name :: Symbol). SymbolType name -> VarRenamerT ts m a) -> VarRenamerT ts m a
 varRenamerTGenerateSuggestedSymbol name cont = do
     name' <- varRenamerTGenerateSuggested name
-    toSymbolType name' cont
+    valueToWitness name' cont

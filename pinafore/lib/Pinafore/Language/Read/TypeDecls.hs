@@ -15,7 +15,6 @@ import Pinafore.Language.Read.Type
 import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
-import Pinafore.Language.TypeID
 import Shapes hiding (try)
 
 readOpenTypeDeclaration :: Parser (PinaforeScoped baseedit (TypeDecls baseedit))
@@ -107,7 +106,7 @@ readClosedTypeDeclaration = do
         MkBox ct conss <- return $ assembleClosedEntityType sconss
         runSourcePos spos $ do
             (tid, withnt) <- withNewTypeName n $ ClosedEntityNamedType (MkAnyW ct)
-            typeIdToSymbolType tid $ \tidsym -> do
+            valueToWitness tid $ \tidsym -> do
                 let
                     ctf :: forall polarity. Is PolarityType polarity
                         => PinaforeTypeF baseedit polarity (ClosedEntity _ _)

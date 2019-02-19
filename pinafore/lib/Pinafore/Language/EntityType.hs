@@ -6,6 +6,7 @@ import Pinafore.Language.Literal
 import Pinafore.Language.Name
 import Pinafore.Language.OpenEntity
 import Pinafore.Language.Show
+import Pinafore.Language.TypeID
 import Shapes
 import Text.Read (read)
 import Truth.Core
@@ -13,15 +14,15 @@ import Truth.Core
 data EntityGroundType (t :: k) where
     TopEntityGroundType :: EntityGroundType Entity
     NewEntityGroundType :: EntityGroundType NewEntity
-    OpenEntityGroundType :: Name -> SymbolType tid -> EntityGroundType (OpenEntity tid)
+    OpenEntityGroundType :: Name -> TypeIDType tid -> EntityGroundType (OpenEntity tid)
     LiteralEntityGroundType :: LiteralType t -> EntityGroundType t
     MaybeEntityGroundType :: EntityGroundType Maybe
     ListEntityGroundType :: EntityGroundType []
     PairEntityGroundType :: EntityGroundType (,)
     EitherEntityGroundType :: EntityGroundType Either
-    ClosedEntityGroundType :: Name -> SymbolType tid -> ClosedEntityType t -> EntityGroundType (ClosedEntity tid t)
+    ClosedEntityGroundType :: Name -> TypeIDType tid -> ClosedEntityType t -> EntityGroundType (ClosedEntity tid t)
 
-newtype ClosedEntity (tid :: Symbol) (t :: Type) = MkClosedEntity
+newtype ClosedEntity (tid :: BigNat) (t :: Type) = MkClosedEntity
     { unClosedEntity :: t
     } deriving (Eq)
 
