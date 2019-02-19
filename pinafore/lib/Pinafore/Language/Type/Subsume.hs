@@ -34,10 +34,10 @@ minimalPositiveSupertypeSingular (GroundPinaforeSingularType gt args) = do
     return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt' args') conv
 
 minimalPositiveSupertype :: PinaforeType baseedit 'Negative a -> Maybe (PinaforeTypeF baseedit 'Positive a)
-minimalPositiveSupertype NilPinaforeType = Nothing
-minimalPositiveSupertype (ConsPinaforeType t _) = do
+minimalPositiveSupertype (ConsPinaforeType t NilPinaforeType) = do
     tf <- minimalPositiveSupertypeSingular t
     return $ contramap meet1 tf
+minimalPositiveSupertype _ = Nothing
 
 maximalNegativeSubtypeSingular ::
        forall baseedit a. PinaforeSingularType baseedit 'Positive a -> Maybe (PinaforeTypeF baseedit 'Negative a)
@@ -54,10 +54,10 @@ maximalNegativeSubtypeSingular (GroundPinaforeSingularType gt args) = do
     return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt' args') conv
 
 maximalNegativeSubtype :: PinaforeType baseedit 'Positive a -> Maybe (PinaforeTypeF baseedit 'Negative a)
-maximalNegativeSubtype NilPinaforeType = Nothing
-maximalNegativeSubtype (ConsPinaforeType t _) = do
+maximalNegativeSubtype (ConsPinaforeType t NilPinaforeType) = do
     tf <- maximalNegativeSubtypeSingular t
     return $ fmap join1 tf
+maximalNegativeSubtype _ = Nothing
 
 limitInvertType ::
        forall baseedit polarity a. Is PolarityType polarity

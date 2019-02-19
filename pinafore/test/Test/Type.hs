@@ -94,10 +94,15 @@ joinExpr exp1 exp2 = do
 textTypeTest :: Text -> String -> TestTree
 textTypeTest text r =
     testCase (unpack text) $ do
-        expr <-
-            resultTextToM $
-            withNullPinaforeContext $ runTestPinaforeSourceScoped $ parseTopExpression @PinaforeEdit text
+        expr <- resultTextToM $ runTestPinaforeSourceScoped $ parseTopExpression @PinaforeEdit text
         assertEqual "" r $ showTypes expr
+
+badInterpretTest :: Text -> TestTree
+badInterpretTest text =
+    testCase (unpack text) $
+    case runTestPinaforeSourceScoped $ parseTopExpression @PinaforeEdit text of
+        FailureResult _ -> return ()
+        SuccessResult _ -> assertFailure "no exception"
 
 simplifyTypeTest :: Text -> String -> TestTree
 simplifyTypeTest text e =
@@ -217,13 +222,9 @@ testType =
               , textTypeTest
                     "\\v1 v2 v3 -> (([v1,v2],[v2,v3]),[v3,v1])"
                     "{} -> (a & a') -> (a'' & a') -> (a & a'') -> (([a'], [a'']), [a])"
-              , textTypeTest "\\x -> let y :: Boolean | Number; y = x in y" "{} -> Boolean -> Boolean | Number"
-              , textTypeTest
-                    "\\x -> let y :: (a -> a, Boolean | Number); y = x in y"
-                    "{} -> (a -> a, Boolean) -> (a -> a, Boolean | Number)"
-              , textTypeTest
-                    "\\x -> let y :: (b -> b, Boolean | Number); y = x in y"
-                    "{} -> (b -> b, Boolean) -> (b -> b, Boolean | Number)"
+              , badInterpretTest "\\x -> let y :: Boolean | Number; y = x in y"
+              , badInterpretTest "\\x -> let y :: (a -> a, Boolean | Number); y = x in y"
+              , badInterpretTest "\\x -> let y :: (b -> b, Boolean | Number); y = x in y"
               , textTypeTest
                     "\\x -> let y :: (Boolean, Number); y = (x,x) in y"
                     "{} -> (Number & Boolean) -> (Boolean, Number)"
