@@ -33,17 +33,16 @@ saveBufferSubscriber subA =
                     firstBuf <- readA ReadWhole
                     mvarRun sbVar $ put $ MkSaveBuffer firstBuf False
                     let
-                        runB :: UnliftIO (StateT (SaveBuffer (EditSubject edit)) (DeferActionT ma))
-                        runB =
-                            composeUnliftTransform (mvarUnlift sbVar) $ composeUnliftTransform runDeferActionT unliftA
+                        runB :: UnliftIO (StateT (SaveBuffer (EditSubject edit)) (DeferActionT IO))
+                        runB = composeUnliftTransform (mvarUnlift sbVar) $ composeUnliftTransform runDeferActionT id
                         readB ::
-                               MutableRead (StateT (SaveBuffer (EditSubject edit)) (DeferActionT ma)) (EditReader edit)
+                               MutableRead (StateT (SaveBuffer (EditSubject edit)) (DeferActionT IO)) (EditReader edit)
                         readB = mSubjectToMutableRead $ fmap saveBuffer get
                     rec
                         let
                             pushB ::
                                    [edit]
-                                -> StateT (SaveBuffer (EditSubject edit)) (DeferActionT ma) (Maybe (StateT (SaveBuffer (EditSubject edit)) (DeferActionT ma) ()))
+                                -> StateT (SaveBuffer (EditSubject edit)) (DeferActionT IO) (Maybe (StateT (SaveBuffer (EditSubject edit)) (DeferActionT IO) ()))
                             pushB edits =
                                 return $
                                 Just $ do
