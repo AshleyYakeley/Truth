@@ -53,8 +53,8 @@ instance MonadTransUnlift DeferActionT where
             MkUnlift du <- getDiscardingUnlift
             return $ MkUnlift $ \(MkDeferActionT wma) -> du wma
 
-deferActionT :: Monad m => IO () -> DeferActionT m ()
-deferActionT action = MkDeferActionT $ tell [action]
+deferActionT :: MonadIO m => IO () -> DeferActionT m ()
+deferActionT action = traceBracket "deferActionT" $ MkDeferActionT $ tell [action]
 
 runDeferActionT :: Unlift DeferActionT
 runDeferActionT = traceThing "runDeferActionT" $

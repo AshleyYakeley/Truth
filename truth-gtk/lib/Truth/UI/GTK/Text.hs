@@ -7,6 +7,7 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
+import Truth.Debug.Object
 
 replaceText :: Index s ~ Int => TextBuffer -> SequenceRun s -> Text -> IO ()
 replaceText buffer (MkSequenceRun (MkSequencePoint start) (MkSequencePoint len)) text = do
@@ -43,6 +44,7 @@ textView = do
             on buffer #insertText $ \iter text _ ->
                 ifMVar mv $
                 unlift $
+                traceBracket "GTK.Text:insert" $
                 viewObjectPushEdit $ \_ push -> do
                     p <- getSequencePoint iter
                     push $ pure $ StringReplaceSection (MkSequenceRun p 0) text
@@ -52,6 +54,7 @@ textView = do
             on buffer #deleteRange $ \iter1 iter2 ->
                 ifMVar mv $
                 unlift $
+                traceBracket "GTK.Text:delete" $
                 viewObjectPushEdit $ \_ push -> do
                     run <- getSequenceRun iter1 iter2
                     push $ pure $ StringReplaceSection run mempty
