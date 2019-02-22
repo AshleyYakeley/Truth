@@ -1,0 +1,21 @@
+module Control.Monad.Trans.ContExtra where
+
+import Control.Category
+import Control.Monad
+import Control.Monad.Trans.Cont
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.State
+import Prelude hiding ((.), id)
+
+updateContT :: (m r -> m r) -> ContT r m ()
+updateContT m = ContT $ \umr -> m $ umr ()
+
+stateToReaderContT :: Monad m => StateT s m a -> ContT r (ReaderT s m) a
+stateToReaderContT (StateT sma) =
+    ContT $ \c ->
+        ReaderT $ \olds -> do
+            (a, news) <- sma olds
+            runReaderT (c a) news
+
+remonadContT :: (m1 r1 -> m2 r2) -> (m2 r2 -> m1 r1) -> ContT r1 m1 a -> ContT r2 m2 a
+remonadContT m12 m21 (ContT amrmr) = ContT $ \c -> m12 $ amrmr (m21 . c)

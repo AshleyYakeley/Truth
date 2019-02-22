@@ -159,12 +159,11 @@ qEvalExpr expr = tsEval @(PinaforeTypeSystem baseedit) expr
 
 typedAnyToPinaforeVal ::
        forall baseedit t. FromPinaforeType baseedit t
-    => SourcePos
-    -> QValue baseedit
-    -> Result Text t
-typedAnyToPinaforeVal spos aval =
+    => QValue baseedit
+    -> PinaforeSourceScoped baseedit t
+typedAnyToPinaforeVal aval =
     case fromTypeF of
-        MkTypeF wit conv -> runSourceScoped spos $ fmap conv $ tsAnyToVal @(PinaforeTypeSystem baseedit) wit aval
+        MkTypeF wit conv -> fmap conv $ tsAnyToVal @(PinaforeTypeSystem baseedit) wit aval
 
 qSubsumeExpr ::
        forall baseedit.

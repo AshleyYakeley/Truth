@@ -6,7 +6,7 @@ module Pinafore.Language.Predefined.Base
 import Data.Fixed (div', mod')
 import Data.Time.Clock.System
 import Pinafore.Base
-import Pinafore.Language.Doc
+import Pinafore.Language.DocTree
 import Pinafore.Language.If
 import Pinafore.Language.Morphism
 import Pinafore.Language.Order
@@ -130,7 +130,7 @@ base_predefinitions =
                       , mkValEntry "exp" "Exponent" $ exp @Number
                       , mkValEntry "log" "Natural logarithm" $ log @Number
                       , mkValEntry "sqrt" "Square root." $ sqrt @Number
-                      , mkValEntry "(**)" "Raise to power." $ (**) @Number
+                      , mkValEntry "**" "Raise to power." $ (**) @Number
                       , mkValEntry "logBase" "" $ logBase @Number
                       , mkValEntry "sin" "Sine of an angle in radians." $ sin @Number
                       , mkValEntry "cos" "Cosine of an angle in radians." $ cos @Number

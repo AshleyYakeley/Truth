@@ -1,4 +1,7 @@
 site_name: Pinafore
+markdown_extensions:
+  - markdown_include.include:
+      base_path: generated
 repo_url: https://github.com/AshleyYakeley/Truth
 theme: readthedocs
 extra_css: [extra.css]

@@ -13,7 +13,7 @@ module Pinafore.Language.Convert.Base
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Morphism
-import Pinafore.Language.NamedEntity
+import Pinafore.Language.OpenEntity
 import Pinafore.Language.Order
 import Pinafore.Language.Reference
 import Pinafore.Language.Set
@@ -443,27 +443,28 @@ instance FromTypeF (PinaforeSingularType baseedit 'Negative) Entity where
 instance FromTypeF (PinaforeType baseedit 'Negative) Entity where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
--- NamedEntity
-instance KnownSymbol name => ToTypeF (PinaforeSingularType baseedit 'Positive) (NamedEntity name) where
+{-
+-- OpenEntity
+instance KnownSymbol name => ToTypeF (PinaforeSingularType baseedit 'Positive) (OpenEntity name) where
     toTypeF =
         mkPTypeF $
         GroundPinaforeSingularType
-            (EntityPinaforeGroundType NilListType $ NamedEntityGroundType MkSymbolType)
+            (EntityPinaforeGroundType NilListType $ OpenEntityGroundType MkSymbolType)
             NilDolanArguments
 
-instance KnownSymbol name => ToTypeF (PinaforeType baseedit 'Positive) (NamedEntity name) where
+instance KnownSymbol name => ToTypeF (PinaforeType baseedit 'Positive) (OpenEntity name) where
     toTypeF = singlePinaforeTypeF toTypeF
 
-instance KnownSymbol name => FromTypeF (PinaforeSingularType baseedit 'Negative) (NamedEntity name) where
+instance KnownSymbol name => FromTypeF (PinaforeSingularType baseedit 'Negative) (OpenEntity name) where
     fromTypeF =
         mkPTypeF $
         GroundPinaforeSingularType
-            (EntityPinaforeGroundType NilListType $ NamedEntityGroundType MkSymbolType)
+            (EntityPinaforeGroundType NilListType $ OpenEntityGroundType MkSymbolType)
             NilDolanArguments
 
-instance KnownSymbol name => FromTypeF (PinaforeType baseedit 'Negative) (NamedEntity name) where
+instance KnownSymbol name => FromTypeF (PinaforeType baseedit 'Negative) (OpenEntity name) where
     fromTypeF = singlePinaforeTypeF fromTypeF
-
+-}
 -- NewEntity
 instance ToTypeF (PinaforeSingularType baseedit 'Positive) NewEntity where
     toTypeF =

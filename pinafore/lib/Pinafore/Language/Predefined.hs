@@ -10,7 +10,7 @@ module Pinafore.Language.Predefined
     ) where
 
 import Pinafore.Base
-import Pinafore.Language.Doc
+import Pinafore.Language.DocTree
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
 import Pinafore.Language.Predefined.Base

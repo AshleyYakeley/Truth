@@ -12,7 +12,7 @@ import Pinafore.Base
 import Pinafore.Language.EntityType
 import Pinafore.Language.GroundType
 import Pinafore.Language.Literal
-import Pinafore.Language.NamedEntity
+import Pinafore.Language.OpenEntity
 import Pinafore.Language.Scope
 import Pinafore.Language.Show
 import Pinafore.Language.Type.Type
@@ -106,10 +106,10 @@ entityGroundSubtype _ NilListType (LiteralEntityGroundType t1) NilDolanArguments
     | Just conv <- isSubtype t1 t2 = pure conv
 entityGroundSubtype _ NilListType NewEntityGroundType NilDolanArguments NilListType NewEntityGroundType NilDolanArguments =
     pure id
-entityGroundSubtype _ NilListType NewEntityGroundType NilDolanArguments NilListType (NamedEntityGroundType _) NilDolanArguments =
-    pure $ MkNamedEntity . unNewEntity
-entityGroundSubtype sc NilListType (NamedEntityGroundType t1) NilDolanArguments NilListType (NamedEntityGroundType t2) NilDolanArguments =
-    subtypeLift sc $ getEntitySubtype t1 t2
+entityGroundSubtype _ NilListType NewEntityGroundType NilDolanArguments NilListType (OpenEntityGroundType _ _) NilDolanArguments =
+    pure $ MkOpenEntity . unNewEntity
+entityGroundSubtype sc NilListType (OpenEntityGroundType n1 t1) NilDolanArguments NilListType (OpenEntityGroundType n2 t2) NilDolanArguments =
+    subtypeLift sc $ getEntitySubtype n1 t1 n2 t2
 entityGroundSubtype sc cta MaybeEntityGroundType argsa ctb MaybeEntityGroundType argsb
     | Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta MaybeEntityGroundType argsa argsb
 entityGroundSubtype sc cta ListEntityGroundType argsa ctb ListEntityGroundType argsb
@@ -118,7 +118,7 @@ entityGroundSubtype sc cta PairEntityGroundType argsa ctb PairEntityGroundType a
     | Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta PairEntityGroundType argsa argsb
 entityGroundSubtype sc cta EitherEntityGroundType argsa ctb EitherEntityGroundType argsb
     | Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta EitherEntityGroundType argsa argsb
-entityGroundSubtype _ NilListType (ClosedEntityGroundType sa ta) NilDolanArguments NilListType (ClosedEntityGroundType sb tb) NilDolanArguments
+entityGroundSubtype _ NilListType (ClosedEntityGroundType _ sa ta) NilDolanArguments NilListType (ClosedEntityGroundType _ sb tb) NilDolanArguments
     | Just Refl <- testEquality sa sb
     , Just Refl <- testEquality ta tb = pure id
 entityGroundSubtype sc cta ga argsa ctb gb argsb =

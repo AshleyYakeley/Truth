@@ -5,12 +5,28 @@ module Test.Language
     ) where
 
 import Pinafore
+import Pinafore.Language.Documentation
 import Pinafore.Test
 import Prelude (read)
 import Shapes
 import Shapes.Numeric
 import Test.Tasty
 import Test.Tasty.HUnit
+
+testOp :: Name -> TestTree
+testOp n =
+    testCase (unpack n) $ do
+        case unpack n of
+            '(':_ -> assertFailure "parenthesis"
+            _ -> return ()
+        case operatorFixity n of
+            MkFixity AssocLeft 10 -> assertFailure "unassigned fixity"
+            _ -> return ()
+
+testInfix :: TestTree
+testInfix = let
+    names = filter nameIsInfix $ fmap docName $ toList $ predefinedDoc @PinaforeEdit
+    in testGroup "infix" $ fmap testOp names
 
 newtype PreciseEq t =
     MkPreciseEq t
@@ -110,7 +126,7 @@ testQueryValues = testGroup "query values" []
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
     testCase (unpack query) $
-    case (expected, withNullPinaforeContext $ parseValue @PinaforeEdit (initialPos "<input>") query) of
+    case (expected, withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeEdit query) of
         (Nothing, FailureResult _) -> return ()
         (Nothing, SuccessResult (MkAnyValue t v)) ->
             assertFailure $ "expected failure, found success: " ++ showPinaforeValue t v
@@ -404,4 +420,5 @@ testQueries =
         ]
 
 testLanguage :: TestTree
-testLanguage = localOption (mkTimeout 2000000) $ testGroup "language" [testNumbers, testQueryValues, testQueries]
+testLanguage =
+    localOption (mkTimeout 2000000) $ testGroup "language" [testInfix, testNumbers, testQueryValues, testQueries]

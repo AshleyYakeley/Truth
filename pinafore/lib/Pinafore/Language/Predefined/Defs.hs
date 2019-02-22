@@ -3,7 +3,7 @@ module Pinafore.Language.Predefined.Defs where
 import Language.Expression.Sealed
 import Pinafore.Base
 import Pinafore.Language.Convert
-import Pinafore.Language.Doc
+import Pinafore.Language.DocTree
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
 import Pinafore.Language.Type

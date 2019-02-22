@@ -28,7 +28,8 @@ vcBijection RangevarianceType conv (MkPairMorphism (MkBijection papb pbpa) (MkBi
 type TypeNamespace (ts :: Type) (w :: k -> Type)
      = forall t1 m r.
            Monad m =>
-                   w t1 -> (forall t2. InKind t2 => w t2 -> KindBijection k t1 t2 -> VarNamespace ts (VarRenamer ts m) r) -> VarNamespace ts (VarRenamer ts m) r
+                   w t1 -> (forall t2.
+                                InKind t2 => w t2 -> KindBijection k t1 t2 -> VarNamespaceT ts (VarRenamerT ts m) r) -> VarNamespaceT ts (VarRenamerT ts m) r
 
 type PinaforeTypeNamespace baseedit w = TypeNamespace (PinaforeTypeSystem baseedit) w
 
@@ -72,7 +73,7 @@ renamePinaforeSingularTypeVars (GroundPinaforeSingularType gt args) cont =
     renameTypeArgs @baseedit @polarity (pinaforeGroundTypeVarianceType gt) (pinaforeGroundTypeVarianceMap gt) args $ \args' bij ->
         cont (GroundPinaforeSingularType gt args') bij
 renamePinaforeSingularTypeVars (VarPinaforeSingularType namewit1) cont =
-    renameUVar varNamespaceRename namewit1 $ \namewit2 bij -> cont (VarPinaforeSingularType namewit2) bij
+    renameUVar varNamespaceTRename namewit1 $ \namewit2 bij -> cont (VarPinaforeSingularType namewit2) bij
 
 renamePinaforeTypeVars ::
        forall baseedit polarity. Is PolarityType polarity
@@ -86,19 +87,19 @@ renamePinaforeTypeVars (ConsPinaforeType ta tb) cont =
                 PositiveType -> biJoinBimap bija bijb
                 NegativeType -> biMeetBimap bija bijb
 
-instance Renamer (VarRenamer (PinaforeTypeSystem baseedit)) where
-    type RenamerNamespace (VarRenamer (PinaforeTypeSystem baseedit)) = VarNamespace (PinaforeTypeSystem baseedit)
-    type RenamerNegWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'Negative
-    type RenamerPosWitness (VarRenamer (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'Positive
+instance Renamer (VarRenamerT (PinaforeTypeSystem baseedit)) where
+    type RenamerNamespaceT (VarRenamerT (PinaforeTypeSystem baseedit)) = VarNamespaceT (PinaforeTypeSystem baseedit)
+    type RenamerNegWitness (VarRenamerT (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'Negative
+    type RenamerPosWitness (VarRenamerT (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'Positive
     renameTSNegWitness t = renamePinaforeTypeVars t $ \t' bij -> return $ MkTypeF t' $ biBackwards bij
     renameTSPosWitness t = renamePinaforeTypeVars t $ \t' bij -> return $ MkTypeF t' $ biForwards bij
     renameNewVar = do
-        n <- varRenamerGenerate
-        toSymbolWitness n $ \wit ->
+        n <- varRenamerTGenerate
+        valueToWitness n $ \wit ->
             return $
             MkNewVar
                 (singlePinaforeType $ VarPinaforeSingularType wit)
                 (singlePinaforeType $ VarPinaforeSingularType wit) $
             join1 . meet1
-    namespace = runVarNamespace
-    runRenamer = runVarRenamer
+    namespace = runVarNamespaceT
+    runRenamer = runVarRenamerT

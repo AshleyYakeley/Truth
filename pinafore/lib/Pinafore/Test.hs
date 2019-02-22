@@ -15,6 +15,7 @@ module Pinafore.Test
     ) where
 
 import Pinafore.Base
+import Pinafore.Language
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Read
@@ -22,6 +23,7 @@ import Pinafore.Language.Type
 import Pinafore.Language.Type.Simplify
 import Pinafore.Pinafore
 import Pinafore.Storage
+import Pinafore.Storage.File
 import Shapes
 import Truth.Core
 import Truth.World.ObjectStore
@@ -54,3 +56,9 @@ withNullPinaforeContext :: ((?pinafore :: PinaforeContext baseedit) => r) -> r
 withNullPinaforeContext f = let
     ?pinafore = nullPinaforeContext
     in f
+
+runTestPinaforeSourceScoped ::
+       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+    => PinaforeSourceScoped baseedit a
+    -> Result Text a
+runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScoped "<input>" sa

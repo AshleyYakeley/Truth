@@ -2,12 +2,12 @@ module Pinafore.Language.Name where
 
 import Shapes
 
-newtype Name =
-    MkName Text
-    deriving (Eq, Ord, MonoFoldable)
+newtype Name = MkName
+    { unName :: Text
+    } deriving (Eq, Ord, MonoFoldable)
 
 instance Show Name where
-    show (MkName t) = unpack t
+    show = unpack
 
 instance IsString Name where
     fromString s = MkName $ fromString s
@@ -15,4 +15,4 @@ instance IsString Name where
 type instance Element Name = Char
 
 nameToSymbolWitness :: Name -> (forall (symbol :: Symbol). SymbolType symbol -> r) -> r
-nameToSymbolWitness n = toSymbolWitness $ unpack n
+nameToSymbolWitness n = valueToWitness $ unpack n

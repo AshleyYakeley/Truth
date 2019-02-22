@@ -24,7 +24,7 @@ readOpenTypeDeclaration = do
     n <- readTypeName
     return $
         runSourcePos spos $ do
-            withnt <- withNewTypeName n $ OpenEntityNamedType $ nameToSymbolWitness n MkAnyW
+            (_, withnt) <- withNewTypeName n $ OpenEntityNamedType
             return $ MkTypeDecls $ remonadRefNotation withnt
 
 readSubtypeDeclaration :: Parser (PinaforeScoped baseedit (TypeDecls baseedit))
@@ -105,26 +105,26 @@ readClosedTypeDeclaration = do
         sconss <- sequence $ fromMaybe mempty mcons
         MkBox ct conss <- return $ assembleClosedEntityType sconss
         runSourcePos spos $ do
-            withnt <- withNewTypeName n $ ClosedEntityNamedType (MkAnyW ct)
-            MkAnyW nsym <- return $ nameToSymbolWitness n MkAnyW
-            let
-                ctf :: forall polarity. Is PolarityType polarity
-                    => PinaforeTypeF baseedit polarity (ClosedEntity _ _)
-                ctf =
-                    singlePinaforeTypeF $
-                    mkTypeF $
-                    GroundPinaforeSingularType
-                        (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType nsym ct)
-                        NilDolanArguments
-            patts <-
-                for conss $ \(MkConstructor cname lt at tma) -> do
-                    patt <- withNewPatternConstructor cname $ makeConstructorPattern ctf lt tma
-                    valt <- makeConstructorValue ctf lt
-                    bind <-
-                        return $
-                        MkTransform $ withNewBindings $ singletonMap cname $ qConstExprAny $ toTypeFAnyValue valt at
-                    return $ patt . bind
-            return $ MkTypeDecls $ remonadRefNotation $ withnt . compAll patts
+            (tid, withnt) <- withNewTypeName n $ ClosedEntityNamedType (MkAnyW ct)
+            valueToWitness tid $ \tidsym -> do
+                let
+                    ctf :: forall polarity. Is PolarityType polarity
+                        => PinaforeTypeF baseedit polarity (ClosedEntity _ _)
+                    ctf =
+                        singlePinaforeTypeF $
+                        mkTypeF $
+                        GroundPinaforeSingularType
+                            (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n tidsym ct)
+                            NilDolanArguments
+                patts <-
+                    for conss $ \(MkConstructor cname lt at tma) -> do
+                        patt <- withNewPatternConstructor cname $ makeConstructorPattern ctf lt tma
+                        valt <- makeConstructorValue ctf lt
+                        bind <-
+                            return $
+                            MkTransform $ withNewBindings $ singletonMap cname $ qConstExprAny $ toTypeFAnyValue valt at
+                        return $ patt . bind
+                return $ MkTypeDecls $ remonadRefNotation $ withnt . compAll patts
 
 readTypeDeclaration :: Parser (PinaforeScoped baseedit (TypeDecls baseedit))
 readTypeDeclaration = readOpenTypeDeclaration <|> readSubtypeDeclaration <|> readClosedTypeDeclaration

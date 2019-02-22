@@ -4,4 +4,5 @@ module Shapes.Numeric
 
 import Data.Fixed as I (div', mod')
 import Data.Ratio as I
+import Numeric.Natural as I
 import Prelude as I (Double, Floating(..), Fractional(..), RealFloat(..), RealFrac(..))

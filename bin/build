@@ -5,6 +5,8 @@ fi
 docker build -t local-build docker
 stack install --test --bench --haddock
 install -m 755 --strip "$BINPATH/pinafore" "${XDG_DATA_HOME:-$HOME/.local/share}/../bin/"
-$BINPATH/pinafore --doc > mkdocs/docs/predefined.md
+mkdir -p mkdocs/generated
+$BINPATH/pinafore --doc-predefined > mkdocs/generated/predefined.md
+$BINPATH/pinafore --doc-infix > mkdocs/generated/infix.md
 stack exec --cwd mkdocs -- mkdocs build
 echo OK

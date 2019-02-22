@@ -4,13 +4,15 @@ module Main
 
 import qualified Options.Applicative as O
 import Pinafore
+import Pinafore.Language.Documentation
 import Shapes
 import System.Directory
 import System.Environment.XDG.BaseDir
 import Truth.UI.GTK
 
 data Options
-    = ExprDocOption
+    = PredefinedDocOption
+    | InfixDocOption
     | DumpTableOption (Maybe FilePath)
     | RunOption Bool
                 Bool
@@ -25,7 +27,8 @@ optParser =
     (RunOption <$> (O.switch $ O.long "interactive" <> O.short 'i') <*> (O.switch $ O.long "no-run" <> O.short 'n') <*>
      optDataFlag <*>
      (O.many $ O.strArgument $ O.metavar "SCRIPT")) <|>
-    (O.flag' ExprDocOption $ O.long "doc") <|>
+    (O.flag' PredefinedDocOption $ O.long "doc-predefined") <|>
+    (O.flag' InfixDocOption $ O.long "doc-infix") <|>
     ((O.flag' DumpTableOption $ O.long "dump-table") <*> optDataFlag)
 
 getDirPath :: MonadIO m => Maybe FilePath -> m FilePath
@@ -37,8 +40,8 @@ getDirPath mdirpath = do
     liftIO $ createDirectoryIfMissing True dirpath
     return dirpath
 
-showDefEntry :: Int -> DefDoc -> IO ()
-showDefEntry _ MkDefDoc {..} = let
+escapeMarkdown :: String -> String
+escapeMarkdown s = let
     badchars :: String
     badchars = "+-*>\\"
     escapeChar :: Char -> String
@@ -46,23 +49,24 @@ showDefEntry _ MkDefDoc {..} = let
         if elem c badchars
             then ['\\', c]
             else [c]
-    escapeMarkdown :: String -> String
-    escapeMarkdown s = mconcat $ fmap escapeChar s
-    in do
-           putStrLn $
-               "**`" ++
-               show docName ++
-               "`** :: `" ++
-               unpack docValueType ++
-               "`" <>
-               (if docIsPattern
-                    then " (also pattern)"
-                    else "") <>
-               "  "
-           if docDescription == ""
-               then return ()
-               else putStrLn $ escapeMarkdown $ unpack docDescription
-           putStrLn ""
+    in mconcat $ fmap escapeChar s
+
+showDefEntry :: Int -> DefDoc -> IO ()
+showDefEntry _ MkDefDoc {..} = do
+    putStrLn $
+        "**`" ++
+        show docName ++
+        "`** :: `" ++
+        unpack docValueType ++
+        "`" <>
+        (if docIsPattern
+             then " (also pattern)"
+             else "") <>
+        "  "
+    if docDescription == ""
+        then return ()
+        else putStrLn $ escapeMarkdown $ unpack docDescription
+    putStrLn ""
 
 showDefTitle :: Int -> Text -> IO ()
 showDefTitle level title = putStrLn $ replicate level '#' ++ " " ++ unpack title
@@ -73,14 +77,30 @@ showDefDesc _ desc = do
     putStrLn $ unpack desc
     putStrLn ""
 
+printInfixOperatorTable :: IO ()
+printInfixOperatorTable = do
+    let names = filter nameIsInfix $ fmap docName $ toList $ predefinedDoc @PinaforeEdit
+    putStrLn "| [n] | (A x B) x C | A x (B x C) | A x B only |"
+    putStrLn "| --- | --- | --- | --- |"
+    for_ [10,9 .. 0] $ \level -> do
+        putStr $ show level
+        for_ [AssocLeft, AssocRight, AssocNone] $ \assc -> do
+            putStr " |"
+            let
+                fixity = MkFixity assc level
+                mnames = filter (\n -> operatorFixity n == fixity) names
+            for_ mnames $ \n -> putStr $ " `" <> show n <> "`"
+        putStrLn ""
+
 main :: IO ()
 main =
     truthMain $ \args createWindow -> do
         options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
         case options of
-            ExprDocOption ->
-                liftIO $ do runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
-                    -- putMarkdown "<file>" (unpack filePinaforeType) "a script file passed to pinafore"
+            PredefinedDocOption ->
+                liftIO $ runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
+            InfixDocOption ->
+                liftIO printInfixOperatorTable -- runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
             DumpTableOption mdirpath -> do
                 dirpath <- getDirPath mdirpath
                 liftIO $ sqlitePinaforeDumpTable dirpath

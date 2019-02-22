@@ -1,4 +1,4 @@
-module Pinafore.Language.Doc where
+module Pinafore.Language.DocTree where
 
 import Pinafore.Language.Name
 import Shapes

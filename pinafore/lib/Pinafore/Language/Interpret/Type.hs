@@ -243,24 +243,25 @@ interpretTypeConst "NewEntity" =
 interpretTypeConst n
     | Just (MkAnyW lt) <- nameToLiteralType n = return $ toMPolar $ MkAnyW $ literalPinaforeType lt
 interpretTypeConst n = do
-    nt <- lookupNamedType n
+    (tid, nt) <- lookupNamedType n
     case nt of
-        OpenEntityNamedType (MkAnyW sw) ->
-            return $
-            toMPolar $
-            MkAnyW $
-            singlePinaforeType $
-            GroundPinaforeSingularType
-                (EntityPinaforeGroundType NilListType $ NamedEntityGroundType sw)
-                NilDolanArguments
-        ClosedEntityNamedType (MkAnyW ct) ->
-            nameToSymbolWitness n $ \sw ->
+        OpenEntityNamedType ->
+            valueToWitness tid $ \sw ->
                 return $
                 toMPolar $
                 MkAnyW $
                 singlePinaforeType $
                 GroundPinaforeSingularType
-                    (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType sw ct)
+                    (EntityPinaforeGroundType NilListType $ OpenEntityGroundType n sw)
+                    NilDolanArguments
+        ClosedEntityNamedType (MkAnyW ct) ->
+            valueToWitness tid $ \sw ->
+                return $
+                toMPolar $
+                MkAnyW $
+                singlePinaforeType $
+                GroundPinaforeSingularType
+                    (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n sw ct)
                     NilDolanArguments
 
 nameToLiteralType :: Name -> Maybe (AnyW LiteralType)

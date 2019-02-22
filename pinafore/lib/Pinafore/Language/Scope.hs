@@ -24,23 +24,24 @@ module Pinafore.Language.Scope
     ) where
 
 import Pinafore.Language.Name
-import Pinafore.Language.NamedEntity
+import Pinafore.Language.OpenEntity
+import Pinafore.Language.TypeID
 import Shapes
 import Text.Parsec (SourcePos)
 
 data NamedType ct
-    = OpenEntityNamedType (AnyW SymbolType)
+    = OpenEntityNamedType
     | ClosedEntityNamedType ct
 
 data Scope expr patc ct = MkScope
     { scopeBindings :: StrictMap Name expr
     , scopePatternConstructors :: StrictMap Name patc
-    , scopeTypes :: StrictMap Name (NamedType ct)
-    , scopeEntitySubtypes :: [(Name, Name)]
+    , scopeTypes :: StrictMap Name (TypeID, NamedType ct)
+    , scopeEntitySubtypes :: [(TypeID, TypeID)]
     }
 
 newtype Scoped expr patc ct a =
-    MkScoped (ReaderT (Scope expr patc ct) (Result Text) a)
+    MkScoped (ReaderT (Scope expr patc ct) (StateT TypeID (Result Text)) a)
     deriving (Functor, Applicative, Alternative, Monad, MonadPlus, MonadFail)
 
 instance Semigroup a => Semigroup (Scoped expr patc ct a) where
@@ -51,10 +52,10 @@ instance Monoid a => Monoid (Scoped expr patc ct a) where
     mempty = pure mempty
 
 runScoped :: Scoped expr patc ct a -> Result Text a
-runScoped (MkScoped qa) = runReaderT qa $ MkScope mempty mempty mempty mempty
+runScoped (MkScoped qa) = evalStateT (runReaderT qa $ MkScope mempty mempty mempty mempty) zeroTypeID
 
 liftScoped :: Result Text a -> Scoped expr patc ct a
-liftScoped ra = MkScoped $ lift ra
+liftScoped ra = MkScoped $ lift $ lift ra
 
 pScope :: Scoped expr patc ct (Scope expr patc ct)
 pScope = MkScoped ask
@@ -105,12 +106,12 @@ lookupBinding name = do
 withNewBindings :: StrictMap Name expr -> Scoped expr patc ct a -> Scoped expr patc ct a
 withNewBindings bb ma = pLocalScope (\tc -> tc {scopeBindings = bb <> (scopeBindings tc)}) ma
 
-lookupNamedTypeM :: Name -> SourceScoped expr patc ct (Maybe (NamedType ct))
+lookupNamedTypeM :: Name -> SourceScoped expr patc ct (Maybe (TypeID, NamedType ct))
 lookupNamedTypeM name = do
     (scopeTypes -> names) <- spScope
     return $ lookup name names
 
-lookupNamedType :: Name -> SourceScoped expr patc ct (NamedType ct)
+lookupNamedType :: Name -> SourceScoped expr patc ct (TypeID, NamedType ct)
 lookupNamedType name = do
     mnt <- lookupNamedTypeM name
     case mnt of
@@ -144,16 +145,24 @@ isSupertype st aa a = let
            then isSupertype st aa' a
            else False
 
-castNamedEntity :: NamedEntity na -> NamedEntity nb
-castNamedEntity (MkNamedEntity p) = MkNamedEntity p
+castNamedEntity :: OpenEntity na -> OpenEntity nb
+castNamedEntity (MkOpenEntity p) = MkOpenEntity p
 
 withNewTypeName ::
-       Name -> NamedType ct -> SourceScoped expr patc ct (Transform (Scoped expr patc ct) (Scoped expr patc ct))
+       Name -> NamedType ct -> SourceScoped expr patc ct (TypeID, Transform (Scoped expr patc ct) (Scoped expr patc ct))
 withNewTypeName name t = do
     mnt <- lookupNamedTypeM name
     case mnt of
         Just _ -> fail $ "duplicate type declaration: " <> unpack name
-        Nothing -> return $ MkTransform $ pLocalScope (\tc -> tc {scopeTypes = insertMap name t (scopeTypes tc)})
+        Nothing -> do
+            tid <-
+                liftSourcePos $
+                MkScoped $
+                lift $ do
+                    tid <- get
+                    put $ succTypeID tid
+                    return tid
+            return $ (tid, MkTransform $ pLocalScope (\tc -> tc {scopeTypes = insertMap name (tid, t) (scopeTypes tc)}))
 
 withNewPatternConstructor ::
        Name -> patc -> SourceScoped expr patc ct (Transform (Scoped expr patc ct) (Scoped expr patc ct))
@@ -169,21 +178,30 @@ withNewPatternConstructor name pc = do
 withNewPatternConstructors :: StrictMap Name patc -> Scoped expr patc ct a -> Scoped expr patc ct a
 withNewPatternConstructors pp = pLocalScope (\tc -> tc {scopePatternConstructors = pp <> scopePatternConstructors tc})
 
-withEntitySubtype :: (Name, Name) -> SourceScoped expr patc ct (Transform (Scoped expr patc ct) (Scoped expr patc ct))
-withEntitySubtype rel@(a, b) = do
-    _ <- lookupNamedType a
-    _ <- lookupNamedType b
-    return $ MkTransform $ pLocalScope (\tc -> tc {scopeEntitySubtypes = rel : (scopeEntitySubtypes tc)})
+lookupOpenType :: Name -> SourceScoped expr patc ct TypeID
+lookupOpenType n = do
+    (tid, nt) <- lookupNamedType n
+    case nt of
+        OpenEntityNamedType -> return tid
+        _ -> fail $ show n <> " is not an open entity type"
 
-getEntitySubtype :: SymbolType na -> SymbolType nb -> SourceScoped expr patc ct (NamedEntity na -> NamedEntity nb)
-getEntitySubtype wa wb = let
-    sa = fromSymbolWitness wa
-    sb = fromSymbolWitness wb
-    in do
-           (scopeEntitySubtypes -> subtypes) <- spScope
-           if isSupertype subtypes [fromString sa] (fromString sb)
-               then return castNamedEntity
-               else convertFailure sa sb
+withEntitySubtype :: (Name, Name) -> SourceScoped expr patc ct (Transform (Scoped expr patc ct) (Scoped expr patc ct))
+withEntitySubtype (a, b) = do
+    ta <- lookupOpenType a
+    tb <- lookupOpenType b
+    return $ MkTransform $ pLocalScope (\tc -> tc {scopeEntitySubtypes = (ta, tb) : (scopeEntitySubtypes tc)})
+
+getEntitySubtype ::
+       Name
+    -> TypeIDType tida
+    -> Name
+    -> TypeIDType tidb
+    -> SourceScoped expr patc ct (OpenEntity tida -> OpenEntity tidb)
+getEntitySubtype na wa nb wb = do
+    (scopeEntitySubtypes -> subtypes) <- spScope
+    if isSupertype subtypes [witnessToValue wa] (witnessToValue wb)
+        then return castNamedEntity
+        else convertFailure (show na) (show nb)
 
 class TypeCheckSubtype w where
     getSubtype :: forall expr patc ct a b. w a -> w b -> SourceScoped expr patc ct (a -> b)

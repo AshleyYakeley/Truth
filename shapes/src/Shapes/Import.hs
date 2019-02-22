@@ -80,7 +80,7 @@ import Algebra.Lattice as I
 
 -- transformers
 import Control.Monad.Trans.Class as I
-import Control.Monad.Trans.Cont as I (ContT(..))
+import Control.Monad.Trans.Cont as I (ContT(..), evalContT, mapContT)
 import Control.Monad.Trans.Except as I (ExceptT(..), runExceptT)
 import Control.Monad.Trans.Identity as I (IdentityT(..))
 import Control.Monad.Trans.Maybe as I (MaybeT(..))
@@ -92,6 +92,7 @@ import Control.Monad.Trans.Writer as I (Writer, WriterT(..), execWriter, execWri
 import Control.Monad.Trans.AskUnlift as I
 import Control.Monad.Trans.Compose as I
 import Control.Monad.Trans.Constraint as I
+import Control.Monad.Trans.ContExtra as I
 import Control.Monad.Trans.ReaderState as I
 import Control.Monad.Trans.StackIO as I
 import Control.Monad.Trans.Transform as I
