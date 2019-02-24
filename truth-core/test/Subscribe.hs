@@ -168,9 +168,9 @@ testString2 =
             subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy", StringReplaceSection (startEndRun 2 4) "1"]]
             ?showVar
 
-testSharedString :: TestTree
-testSharedString =
-    testSubscription "SharedString" "ABCDE" $ \sub -> do
+testSharedString1 :: TestTree
+testSharedString1 =
+    testSubscription "SharedString1" "ABCDE" $ \sub -> do
         testLens <- stringSectionLens (startEndRun 1 4)
         subscribeEditor sub $
             testOutputEditor "main" $ \MkSubscribeContext {..} ->
@@ -184,5 +184,44 @@ testSharedString =
                     subDoEdits [[StringReplaceSection (startEndRun 2 4) "1"]]
                     ?showVar
 
+testSharedString2 :: TestTree
+testSharedString2 =
+    testSubscription "SharedString2" "ABC" $ \sub -> do
+        testLens <- stringSectionLens (startEndRun 1 2)
+        subscribeEditor sub $
+            testOutputEditor "main" $ \_ ->
+                subscribeEditor (mapSubscriber testLens sub) $
+                testOutputEditor "lens" $ \MkSubscribeContext {..} -> do
+                    ?showVar
+                    subDoEdits [[StringReplaceSection (startEndRun 0 0) "P"]]
+                    ?showVar
+                    subDoEdits [[StringReplaceSection (startEndRun 0 0) "Q"]]
+                    ?showVar
+
+testSharedString3 :: TestTree
+testSharedString3 =
+    testSubscription "SharedString3" "ABC" $ \sub -> do
+        testLens <- stringSectionLens (startEndRun 1 2)
+        subscribeEditor sub $
+            testOutputEditor "main" $ \MkSubscribeContext {..} ->
+                subscribeEditor (mapSubscriber testLens sub) $
+                testOutputEditor "lens" $ \_ -> do
+                    ?showVar
+                    subDoEdits [[StringReplaceSection (startEndRun 1 1) "P"]]
+                    ?showVar
+                    subDoEdits [[StringReplaceSection (startEndRun 2 2) "Q"]]
+                    ?showVar
+
 testSubscribe :: TestTree
-testSubscribe = testGroup "subscribe" [testSavable, testPair, testString, testString1, testString2, testSharedString]
+testSubscribe =
+    testGroup
+        "subscribe"
+        [ testSavable
+        , testPair
+        , testString
+        , testString1
+        , testString2
+        , testSharedString1
+        , testSharedString2
+        , testSharedString3
+        ]
