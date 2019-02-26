@@ -9,6 +9,7 @@ import Control.Category.Dual as I
 -- shapes
 import Control.LifeCycle as I
 import Control.Monad.Compose as I
+import Control.Monad.Coroutine as I
 import Data.Bijection as I
 import Data.CatFunctor as I
 import Data.Codec as I
