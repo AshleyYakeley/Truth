@@ -11,6 +11,7 @@ module Control.LifeCycle
     , deferrer
     ) where
 
+import Control.Monad.Coroutine
 import Shapes.Import
 
 type LifeState t = (t, IO ())
@@ -91,22 +92,17 @@ withLifeCycle (MkLifeCycle oc) run = do
 lifeCycleWith :: With t -> LifeCycle t
 lifeCycleWith withX =
     MkLifeCycle $ do
-        tVar <- newEmptyMVar
-        closerVar <- newEmptyMVar
-        doneVar <- newEmptyMVar
-        _ <-
-            forkIO $ do
-                withX $ \t -> do
-                    putMVar tVar t
-                    takeMVar closerVar
-                putMVar doneVar ()
-        t <- takeMVar tVar
-        let
-            close :: IO ()
-            close = do
-                putMVar closerVar ()
-                takeMVar doneVar
-        return (t, close)
+        e1 <- resume $ suspend withX
+        case e1 of
+            Left _ -> fail "lifeCycleWith: not called"
+            Right (t, as) ->
+                return
+                    ( t
+                    , do
+                          e2 <- resume $ as ()
+                          case e2 of
+                              Left () -> return ()
+                              Right _ -> fail "lifeCycleWith: called twice")
 
 class MonadIO m => MonadLifeCycle m where
     liftLifeCycle :: forall a. LifeCycle a -> m a
