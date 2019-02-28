@@ -62,28 +62,40 @@ soupObject dirpath = let
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: (UserInterface WindowSpec -> IO ()) -> FilePath -> IO ()
+soupWindow :: (forall actions. UserInterface WindowSpec actions -> IO (UIWindow, actions)) -> FilePath -> IO ()
 soupWindow createWindow dirpath = do
     sub <- makeObjectSubscriber $ soupObject dirpath
-    let
-        wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
-        openItem :: Aspect UUID -> IO ()
-        openItem aspkey = do
-            mkey <- aspkey
-            case mkey of
-                Just key -> do
-                    lens <- getKeyElementEditLens key
-                    createWindow $
-                        MkUserInterface (mapSubscriber lens sub) $
-                        MkWindowSpec
-                            (constEditFunction "item")
-                            (mapUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
-                             oneWholeUISpec $ oneWholeUISpec noteEditSpec)
-                Nothing -> return ()
-        wsContent =
-            withAspectUISpec $ \aspect ->
-                verticalUISpec
-                    [(buttonUISpec (constEditFunction "View") (openItem aspect), False), (soupEditSpec, True)]
-        userinterfaceSpecifier = MkWindowSpec {..}
-        userinterfaceSubscriber = sub
-    createWindow $ MkUserInterface {..}
+    rec
+        let
+            mbar w = menuBarUISpec [SubMenuEntry "File" [ActionMenuEntry "Close" Nothing $ uiWindowClose w]]
+            wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
+            openItem :: Aspect UUID -> IO ()
+            openItem aspkey = do
+                mkey <- aspkey
+                case mkey of
+                    Just key -> do
+                        lens <- getKeyElementEditLens key
+                        rec
+                            (subwin, ()) <-
+                                createWindow $
+                                MkUserInterface (mapSubscriber lens sub) $
+                                MkWindowSpec (constEditFunction "item") $
+                                verticalUISpec
+                                    [ (mbar subwin, False)
+                                    , ( mapUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
+                                        oneWholeUISpec $ oneWholeUISpec noteEditSpec
+                                      , True)
+                                    ]
+                        return ()
+                    Nothing -> return ()
+            wsContent =
+                withAspectUISpec $ \aspect ->
+                    verticalUISpec
+                        [ (mbar window, False)
+                        , (buttonUISpec (constEditFunction "View") (openItem aspect), False)
+                        , (soupEditSpec, True)
+                        ]
+            userinterfaceSpecifier = MkWindowSpec {..}
+            userinterfaceSubscriber = sub
+        (window, ()) <- createWindow $ MkUserInterface {..}
+    return ()

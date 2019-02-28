@@ -110,17 +110,12 @@ entityGroundSubtype _ NilListType NewEntityGroundType NilDolanArguments NilListT
     pure $ MkOpenEntity . unNewEntity
 entityGroundSubtype sc NilListType (OpenEntityGroundType n1 t1) NilDolanArguments NilListType (OpenEntityGroundType n2 t2) NilDolanArguments =
     subtypeLift sc $ getEntitySubtype n1 t1 n2 t2
-entityGroundSubtype sc cta MaybeEntityGroundType argsa ctb MaybeEntityGroundType argsb
-    | Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta MaybeEntityGroundType argsa argsb
-entityGroundSubtype sc cta ListEntityGroundType argsa ctb ListEntityGroundType argsb
-    | Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta ListEntityGroundType argsa argsb
-entityGroundSubtype sc cta PairEntityGroundType argsa ctb PairEntityGroundType argsb
-    | Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta PairEntityGroundType argsa argsb
-entityGroundSubtype sc cta EitherEntityGroundType argsa ctb EitherEntityGroundType argsb
-    | Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta EitherEntityGroundType argsa argsb
 entityGroundSubtype _ NilListType (ClosedEntityGroundType _ sa ta) NilDolanArguments NilListType (ClosedEntityGroundType _ sb tb) NilDolanArguments
     | Just Refl <- testEquality sa sb
     , Just Refl <- testEquality ta tb = pure id
+entityGroundSubtype sc cta ga argsa ctb gb argsb
+    | Just HRefl <- entityGroundTypeTestEquality ga gb
+    , Just Refl <- testEquality cta ctb = entitySubtypeArguments sc cta ga argsa argsb
 entityGroundSubtype sc cta ga argsa ctb gb argsb =
     subtypeLift sc $
     convertFailure
@@ -135,24 +130,10 @@ subtypeGroundTypes ::
     -> PinaforeGroundType baseedit polb dvb gtb
     -> DolanArguments dvb (PinaforeType baseedit) gtb polb b
     -> m (a -> b)
-subtypeGroundTypes sc ActionPinaforeGroundType argsa ActionPinaforeGroundType argsb =
-    pinaforeSubtypeArguments sc ActionPinaforeGroundType argsa argsb
-subtypeGroundTypes sc OrderPinaforeGroundType argsa OrderPinaforeGroundType argsb =
-    pinaforeSubtypeArguments sc OrderPinaforeGroundType argsa argsb
-subtypeGroundTypes sc UserInterfacePinaforeGroundType argsa UserInterfacePinaforeGroundType argsb =
-    pinaforeSubtypeArguments sc UserInterfacePinaforeGroundType argsa argsb
-subtypeGroundTypes sc WindowPinaforeGroundType argsa WindowPinaforeGroundType argsb =
-    pinaforeSubtypeArguments sc WindowPinaforeGroundType argsa argsb
 subtypeGroundTypes sc (EntityPinaforeGroundType cta ga) argsa (EntityPinaforeGroundType ctb gb) argsb =
     entityGroundSubtype sc cta ga argsa ctb gb argsb
-subtypeGroundTypes sc FuncPinaforeGroundType argsa FuncPinaforeGroundType argsb =
-    pinaforeSubtypeArguments sc FuncPinaforeGroundType argsa argsb
-subtypeGroundTypes sc ReferencePinaforeGroundType argsa ReferencePinaforeGroundType argsb =
-    pinaforeSubtypeArguments sc ReferencePinaforeGroundType argsa argsb
-subtypeGroundTypes sc SetPinaforeGroundType argsa SetPinaforeGroundType argsb =
-    pinaforeSubtypeArguments sc SetPinaforeGroundType argsa argsb
-subtypeGroundTypes sc MorphismPinaforeGroundType argsa MorphismPinaforeGroundType argsb =
-    pinaforeSubtypeArguments sc MorphismPinaforeGroundType argsa argsb
+subtypeGroundTypes sc ga argsa gb argsb
+    | Just (Refl, HRefl) <- pinaforeGroundTypeTestEquality ga gb = pinaforeSubtypeArguments sc ga argsa argsb
 subtypeGroundTypes sc ga argsa gb argsb =
     subtypeLift sc $
     convertFailure

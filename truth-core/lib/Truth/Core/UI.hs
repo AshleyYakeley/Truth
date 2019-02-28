@@ -14,10 +14,12 @@ import Truth.Core.UI.Specifier.Icon as I
 import Truth.Core.UI.Specifier.Label as I
 import Truth.Core.UI.Specifier.Layout as I
 import Truth.Core.UI.Specifier.Map as I
+import Truth.Core.UI.Specifier.MenuBar as I
 import Truth.Core.UI.Specifier.Null as I
 import Truth.Core.UI.Specifier.One as I
 import Truth.Core.UI.Specifier.Option as I
 import Truth.Core.UI.Specifier.Pages as I
+import Truth.Core.UI.Specifier.Scrolled as I
 import Truth.Core.UI.Specifier.Selection as I
 import Truth.Core.UI.Specifier.Specifier as I
 import Truth.Core.UI.Specifier.Switch as I

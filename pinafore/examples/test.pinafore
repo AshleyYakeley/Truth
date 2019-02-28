@@ -6,6 +6,22 @@ let
 ui_page n ui = (ui_label n,ui);
 ui_labelled n ui = ui_horizontal [(ui_label n,False),(ui,True)];
 
+openmywindow :: Ref +Text -> UI a -> Action Window;
+openmywindow title contents = afix $ \window -> let
+    menus :: [MenuItem];
+    menus =
+        [
+            menu_submenu "File"
+            [
+                menu_action "Close" $ closewindow window
+            ]
+        ]
+    in openwindow title $ ui_vertical
+    [
+        (ui_menubar menus,False),
+        (ui_scrolled contents,True)
+    ];
+
 ### People
 
 # Ontology
@@ -91,10 +107,10 @@ ui_person p = ui_ignore $ui_vertical
 ];
 
 window_person :: Person -> Action Window;
-window_person p = openwindow (name !$ {p}) (ui_person {p});
+window_person p = openmywindow (name !$ {p}) (ui_person {p});
 
 window_people :: Action Window;
-window_people = openwindow {"People"} (ui_people people);
+window_people = openmywindow {"People"} (ui_people people);
 
 ### Calculator
 
@@ -104,7 +120,7 @@ opentype P;
 pvalue = property @P @Number !"pvalue";
 aval = pvalue !$ {entity @P !a4706230-2c61-44b1-b600-516e7a54c607};
 bval = pvalue !$ {entity @P !9d284ad2-e141-4114-ae50-8829a6db710f};
-in openwindow {"Calc"} $ ui_vertical
+in openmywindow {"Calc"} $ ui_vertical
 [
     #(ui_textentry aval,False),
     #(ui_textentry bval,False),
@@ -121,7 +137,7 @@ ptext = property @P @Text !"ptext";
 sw_pick = pbool !$ {entity @P !59eb2d87-f815-47ef-b7dc-8fe434151bb6};
 sw_val1 = ptext !$ {entity @P !6d9f7afa-1091-49cc-8646-8e613bb75ee5};
 sw_val2 = ptext !$ {entity @P !934712ae-73a7-4084-8a43-d618c737fd56};
-in openwindow {"Switch"} $ ui_vertical
+in openmywindow {"Switch"} $ ui_vertical
 [
     #(ui_textentry sw_pick,False),
     (ui_booleancheckbox {"pick"} sw_pick,False),
@@ -134,20 +150,20 @@ window_files :: Action Window;
 window_files = let
 #Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
 #caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
-window_file f = openwindow {"File"} $ ui_vertical
+window_file f = openmywindow {"File"} $ ui_vertical
 [
     #(ui_textentry $ caption f,False)
 ];
-in openwindow {"Files"} $ ui_vertical
+in openmywindow {"Files"} $ ui_vertical
 [
-    #(ui_button "Import" $ file_import Files $ \f -> openwindow $ window_file f,False),
+    #(ui_button "Import" $ file_import Files $ \f -> openmywindow $ window_file f,False),
     #(ui_table [column "Caption" caption, column "Size" file_size] window_file Files,True)
 ];
 
 ### Constant Edit
 
 window_constant :: Action Window;
-window_constant = openwindow {"Constant"} $ ui_vertical
+window_constant = openmywindow {"Constant"} $ ui_vertical
 [
     (ui_booleancheckbox {"off"} {False},False),
     (ui_booleancheckbox {"on"} {True},False),
@@ -158,7 +174,7 @@ window_constant = openwindow {"Constant"} $ ui_vertical
 ### Start Window
 
 window_start :: Action Window;
-window_start = openwindow {"Pinafore"} $ ui_vertical
+window_start = openmywindow {"Pinafore"} $ ui_vertical
 [
     (ui_button {"People"} window_people,False),
     (ui_button {"Calculated Form"} window_calc,False),

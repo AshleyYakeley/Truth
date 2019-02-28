@@ -108,6 +108,19 @@ ui_withselection f =
 ui_textarea :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec BottomType baseedit
 ui_textarea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertUISpec textAreaUISpec
 
+menu_action ::
+       forall baseedit. (?pinafore :: PinaforeContext baseedit)
+    => Text
+    -> PinaforeAction baseedit TopType
+    -> MenuEntry
+menu_action t action = ActionMenuEntry t Nothing $ runPinaforeAction $ action >> return ()
+
+ui_menubar :: forall baseedit. [MenuEntry] -> UISpec BottomType baseedit
+ui_menubar = menuBarUISpec
+
+ui_scrolled :: forall baseedit. UISpec A baseedit -> UISpec A baseedit
+ui_scrolled = scrolledUISpec
+
 ui_predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
     => [DocTreeEntry (BindDoc baseedit)]
@@ -146,7 +159,16 @@ ui_predefinitions =
                 "ui_table"
                 "A list table. First arg is columns (name, property), second is the window to open for a selection, third is the set of items." $
             ui_table @baseedit
+          , mkValEntry "ui_scrolled" "A scrollable container." $ ui_scrolled @baseedit
           , mkValEntry "ui_dynamic" "A UI that can be updated to different UIs." $ ui_dynamic @baseedit
+          ]
+    , docTreeEntry
+          "Menu"
+          "Menu items."
+          [ mkValEntry "menu_separator" "Separator menu item." SeparatorMenuEntry
+          , mkValEntry "menu_submenu" "Submenu menu item." SubMenuEntry
+          , mkValEntry "menu_action" "Action menu item." $ menu_action @baseedit
+          , mkValEntry "ui_menubar" "Menu bar." $ ui_menubar @baseedit
           ]
     , docTreeEntry
           "Window"

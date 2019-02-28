@@ -43,7 +43,6 @@ data SyntaxType
     | OrderSyntaxType SyntaxType
     | RefSyntaxType SyntaxType
     | UISyntaxType SyntaxType
-    | WindowSyntaxType
     | SetSyntaxType SyntaxType
     | ListSyntaxType SyntaxType
     | MorphismSyntaxType SyntaxType

@@ -296,6 +296,19 @@ instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
              FromTypeF (PinaforeType baseedit 'Negative) (UISpec a edit) where
     fromTypeF = fmap unPinaforeUI fromTypeF
 
+-- MenuEntry
+instance ToTypeF (PinaforeSingularType baseedit 'Positive) MenuEntry where
+    toTypeF = mkPTypeF $ GroundPinaforeSingularType MenuItemPinaforeGroundType NilDolanArguments
+
+instance ToTypeF (PinaforeType baseedit 'Positive) MenuEntry where
+    toTypeF = singlePinaforeTypeF toTypeF
+
+instance FromTypeF (PinaforeSingularType baseedit 'Negative) MenuEntry where
+    fromTypeF = mkPTypeF $ GroundPinaforeSingularType MenuItemPinaforeGroundType NilDolanArguments
+
+instance FromTypeF (PinaforeType baseedit 'Negative) MenuEntry where
+    fromTypeF = singlePinaforeTypeF fromTypeF
+
 -- PinaforeReference
 instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit 'Negative) p, ToTypeF (PinaforeType baseedit 'Positive) q) =>
              ToTypeF (PinaforeSingularType baseedit 'Positive) (PinaforeReference edit '( p, q)) where
@@ -443,28 +456,6 @@ instance FromTypeF (PinaforeSingularType baseedit 'Negative) Entity where
 instance FromTypeF (PinaforeType baseedit 'Negative) Entity where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
-{-
--- OpenEntity
-instance KnownSymbol name => ToTypeF (PinaforeSingularType baseedit 'Positive) (OpenEntity name) where
-    toTypeF =
-        mkPTypeF $
-        GroundPinaforeSingularType
-            (EntityPinaforeGroundType NilListType $ OpenEntityGroundType MkSymbolType)
-            NilDolanArguments
-
-instance KnownSymbol name => ToTypeF (PinaforeType baseedit 'Positive) (OpenEntity name) where
-    toTypeF = singlePinaforeTypeF toTypeF
-
-instance KnownSymbol name => FromTypeF (PinaforeSingularType baseedit 'Negative) (OpenEntity name) where
-    fromTypeF =
-        mkPTypeF $
-        GroundPinaforeSingularType
-            (EntityPinaforeGroundType NilListType $ OpenEntityGroundType MkSymbolType)
-            NilDolanArguments
-
-instance KnownSymbol name => FromTypeF (PinaforeType baseedit 'Negative) (OpenEntity name) where
-    fromTypeF = singlePinaforeTypeF fromTypeF
--}
 -- NewEntity
 instance ToTypeF (PinaforeSingularType baseedit 'Positive) NewEntity where
     toTypeF =

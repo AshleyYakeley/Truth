@@ -66,7 +66,7 @@ runPinaforeAction =
 makePinaforeContext ::
        forall baseedit.
        Object baseedit
-    -> (UserInterface WindowSpec -> IO UIWindow)
+    -> (forall actions. UserInterface WindowSpec actions -> IO (UIWindow, actions))
     -> LifeCycle (PinaforeContext baseedit)
 makePinaforeContext pinaforeObject createWindow = do
     sub <- liftIO $ makeObjectSubscriber pinaforeObject
@@ -74,7 +74,9 @@ makePinaforeContext pinaforeObject createWindow = do
     return $
         MkPinaforeContext $ \(MkPinaforeAction action) -> let
             openwin :: WindowSpec baseedit -> IO UIWindow
-            openwin uiw = createWindow $ MkUserInterface sub uiw
+            openwin uiw = do
+                (window, ()) <- createWindow $ MkUserInterface sub uiw
+                return window
             in do
                    _ <- getComposeM $ runReaderT action (openwin, obj)
                    return ()

@@ -152,9 +152,6 @@ interpretTypeM (UISyntaxType st1) = do
                  singlePinaforeType $
                  GroundPinaforeSingularType UserInterfacePinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
             at1
-interpretTypeM WindowSyntaxType =
-    return $
-    toMPolar $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments
 interpretTypeM (RefSyntaxType st1) = do
     at1 <- interpretTypeRange st1
     return $
@@ -228,6 +225,12 @@ interpretTypeConst ::
        forall baseedit mpolarity. Is MPolarityType mpolarity
     => Name
     -> PinaforeSourceScoped baseedit (PinaforeTypeM baseedit mpolarity)
+interpretTypeConst "Window" =
+    return $
+    toMPolar $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments
+interpretTypeConst "MenuItem" =
+    return $
+    toMPolar $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType MenuItemPinaforeGroundType NilDolanArguments
 interpretTypeConst "Entity" =
     return $
     toMPolar $
