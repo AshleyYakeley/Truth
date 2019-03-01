@@ -70,7 +70,7 @@ instance IsSequence seq => Floating (StringEdit seq) (SequencePoint seq) where
 instance IsSequence seq => Floating (StringEdit seq) (SequenceRun seq) where
     floatingUpdate edit (MkSequenceRun ostart olen) = let
         oend = ostart + olen
-        in startEndRun (floatingUpdateRight edit ostart) (floatingUpdateLeft edit oend)
+        in startEndRun (floatingUpdateLeft edit ostart) (floatingUpdateRight edit oend)
 
 instance IsSequence seq => Floating (StringEdit seq) (StringEdit seq) where
     floatingUpdate _ (StringReplaceWhole s) = StringReplaceWhole s

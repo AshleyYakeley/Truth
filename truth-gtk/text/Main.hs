@@ -31,29 +31,69 @@ main =
                     bsObj = fileObject path
                     wholeTextObj :: Object (WholeEdit ((Result Text) Text))
                     wholeTextObj = cacheWholeObject $ mapObject textLens bsObj
-                    ui :: (WindowButtons actions)
-                       => Subscriber (OneWholeEdit (Result Text) (StringEdit Text)) actions
+                    ui :: Subscriber (OneWholeEdit (Result Text) (StringEdit Text)) actions
+                       -> (forall sel edit. (UIWindow, actions) -> UISpec sel edit -> UISpec sel edit)
                        -> UISpec (EditLens (StringEdit Text) (StringEdit Text)) (OneWholeEdit (Result Text) (StringEdit Text))
-                    ui sub =
+                    ui sub extraui =
                         withAspectUISpec $ \aspect -> let
                             openSelection :: IO ()
                             openSelection = do
                                 mlens <- aspect
                                 case mlens of
                                     Nothing -> return ()
-                                    Just lens -> makeWindow "section" $ mapSubscriber (oneWholeLiftEditLens lens) sub
+                                    Just lens ->
+                                        makeWindow "section" (mapSubscriber (oneWholeLiftEditLens lens) sub) extraui
                             in verticalUISpec
                                    [ (buttonUISpec (constEditFunction "View") openSelection, False)
-                                   , (oneWholeUISpec textAreaUISpec, True)
+                                   , (scrolledUISpec $ oneWholeUISpec textAreaUISpec, True)
                                    ]
                     makeWindow ::
-                           WindowButtons actions
-                        => Text
+                           forall actions.
+                           Text
                         -> Subscriber (OneWholeEdit (Result Text) (StringEdit Text)) actions
+                        -> (forall sel edit. (UIWindow, actions) -> UISpec sel edit -> UISpec sel edit)
                         -> IO ()
-                    makeWindow title sub = do
-                        _ <- createWindow $ MkUserInterface sub $ MkWindowSpec (constEditFunction title) (ui sub)
+                    makeWindow title sub extraui = do
+                        rec
+                            r <-
+                                createWindow $
+                                MkUserInterface sub $
+                                MkWindowSpec (constEditFunction title) (extraui r $ ui sub extraui)
                         return ()
+                    simpleUI :: (UIWindow, ()) -> UISpec sel edit -> UISpec sel edit
+                    simpleUI ~(MkUIWindow {..}, _) spec = let
+                        mbar :: [MenuEntry]
+                        mbar = [SubMenuEntry "File" [ActionMenuEntry "Close" Nothing uiWindowClose]]
+                        in verticalUISpec [(menuBarUISpec mbar, False), (spec, True)]
+                    extraUI :: (UIWindow, (((), SaveActions), UndoActions)) -> UISpec sel edit -> UISpec sel edit
+                    extraUI ~(MkUIWindow {..}, ((_, MkSaveActions saveActions), MkUndoActions undo redo)) spec = let
+                        saveAction = do
+                            mactions <- saveActions
+                            _ <-
+                                case mactions of
+                                    Just (action, _) -> action
+                                    _ -> return False
+                            return ()
+                        revertAction = do
+                            mactions <- saveActions
+                            _ <-
+                                case mactions of
+                                    Just (_, action) -> action
+                                    _ -> return False
+                            return ()
+                        mbar :: [MenuEntry]
+                        mbar =
+                            [ SubMenuEntry
+                                  "File"
+                                  [ ActionMenuEntry "Save" Nothing saveAction
+                                  , ActionMenuEntry "Revert" Nothing revertAction
+                                  , ActionMenuEntry "Close" Nothing uiWindowClose
+                                  ]
+                            , SubMenuEntry
+                                  "Edit"
+                                  [ActionMenuEntry "Undo" Nothing undo, ActionMenuEntry "Redo" Nothing redo]
+                            ]
+                        in verticalUISpec [(menuBarUISpec mbar, False), (spec, True)]
                 action <-
                     if saveOpt
                         then do
@@ -67,13 +107,13 @@ main =
                                                                                                  , UndoActions)
                                 undoBufferSub = undoQueueSubscriber bufferSub
                             textSub <- makeSharedSubscriber undoBufferSub
-                            return $ makeWindow (fromString $ takeFileName path) textSub
+                            return $ makeWindow (fromString $ takeFileName path) textSub extraUI
                         else do
                             let
                                 textObj :: Object (OneWholeEdit (Result Text) (StringEdit Text))
                                 textObj = convertObject wholeTextObj
                             textSub <- makeObjectSubscriber textObj
-                            return $ makeWindow (fromString $ takeFileName path) textSub
+                            return $ makeWindow (fromString $ takeFileName path) textSub simpleUI
                 action
                 if double
                     then action

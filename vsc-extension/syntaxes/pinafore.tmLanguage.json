@@ -9,6 +9,9 @@
 			"include": "#keywords"
 		},
 		{
+			"include": "#types"
+		},
+		{
 			"include": "#strings"
 		},
 		{
@@ -26,6 +29,12 @@
 			"patterns": [{
 				"name": "keyword.control.pinafore",
 				"match": "\\b(if|then|else|let|in|do|case|of|end|opentype|subtype|closedtype|property|entity)\\b"
+			}]
+		},
+		"types": {
+			"patterns": [{
+				"name": "storage.type.predefined.pinafore",
+				"match": "\\b(Any|None|Literal|Text|Number|Rational|Integer|Boolean|Entity|NewEntity|Maybe|Either|Order|Action|Ref|Set|UI|Window|MenuItem)\\b"
 			}]
 		},
 		"strings": {

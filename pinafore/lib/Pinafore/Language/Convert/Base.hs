@@ -19,6 +19,7 @@ import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Pinafore.Language.Type
 import Pinafore.Language.UI
+import Pinafore.Language.Window
 import Shapes
 import Truth.Core
 
@@ -274,17 +275,17 @@ instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
              FromTypeF (PinaforeType baseedit 'Negative) (PinaforeUI edit a) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
--- UIWindow
-instance ToTypeF (PinaforeSingularType baseedit 'Positive) UIWindow where
+-- PinaforeWindow
+instance ToTypeF (PinaforeSingularType baseedit 'Positive) PinaforeWindow where
     toTypeF = mkPTypeF $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments
 
-instance ToTypeF (PinaforeType baseedit 'Positive) UIWindow where
+instance ToTypeF (PinaforeType baseedit 'Positive) PinaforeWindow where
     toTypeF = singlePinaforeTypeF toTypeF
 
-instance FromTypeF (PinaforeSingularType baseedit 'Negative) UIWindow where
+instance FromTypeF (PinaforeSingularType baseedit 'Negative) PinaforeWindow where
     fromTypeF = mkPTypeF $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments
 
-instance FromTypeF (PinaforeType baseedit 'Negative) UIWindow where
+instance FromTypeF (PinaforeType baseedit 'Negative) PinaforeWindow where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- UISpec
@@ -295,6 +296,19 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType edit 'Positive) a) =>
 instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
              FromTypeF (PinaforeType baseedit 'Negative) (UISpec a edit) where
     fromTypeF = fmap unPinaforeUI fromTypeF
+
+-- MenuEntry
+instance ToTypeF (PinaforeSingularType baseedit 'Positive) MenuEntry where
+    toTypeF = mkPTypeF $ GroundPinaforeSingularType MenuItemPinaforeGroundType NilDolanArguments
+
+instance ToTypeF (PinaforeType baseedit 'Positive) MenuEntry where
+    toTypeF = singlePinaforeTypeF toTypeF
+
+instance FromTypeF (PinaforeSingularType baseedit 'Negative) MenuEntry where
+    fromTypeF = mkPTypeF $ GroundPinaforeSingularType MenuItemPinaforeGroundType NilDolanArguments
+
+instance FromTypeF (PinaforeType baseedit 'Negative) MenuEntry where
+    fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- PinaforeReference
 instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit 'Negative) p, ToTypeF (PinaforeType baseedit 'Positive) q) =>
@@ -443,28 +457,6 @@ instance FromTypeF (PinaforeSingularType baseedit 'Negative) Entity where
 instance FromTypeF (PinaforeType baseedit 'Negative) Entity where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
-{-
--- OpenEntity
-instance KnownSymbol name => ToTypeF (PinaforeSingularType baseedit 'Positive) (OpenEntity name) where
-    toTypeF =
-        mkPTypeF $
-        GroundPinaforeSingularType
-            (EntityPinaforeGroundType NilListType $ OpenEntityGroundType MkSymbolType)
-            NilDolanArguments
-
-instance KnownSymbol name => ToTypeF (PinaforeType baseedit 'Positive) (OpenEntity name) where
-    toTypeF = singlePinaforeTypeF toTypeF
-
-instance KnownSymbol name => FromTypeF (PinaforeSingularType baseedit 'Negative) (OpenEntity name) where
-    fromTypeF =
-        mkPTypeF $
-        GroundPinaforeSingularType
-            (EntityPinaforeGroundType NilListType $ OpenEntityGroundType MkSymbolType)
-            NilDolanArguments
-
-instance KnownSymbol name => FromTypeF (PinaforeType baseedit 'Negative) (OpenEntity name) where
-    fromTypeF = singlePinaforeTypeF fromTypeF
--}
 -- NewEntity
 instance ToTypeF (PinaforeSingularType baseedit 'Positive) NewEntity where
     toTypeF =

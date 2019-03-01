@@ -1,10 +1,12 @@
 module Truth.Core.Object.Tuple
     ( tupleObject
     , pairObjects
+    , pairSubscribers
     ) where
 
 import Truth.Core.Import
 import Truth.Core.Object.Object
+import Truth.Core.Object.Subscriber
 import Truth.Core.Read
 import Truth.Core.Types
 
@@ -51,32 +53,55 @@ consTupleObjects (MkObject (runA :: UnliftIO ma) readA editA) (MkObject (runB ::
                        (combineLiftSnd @ma @mb $ editB ebs)
             in MkObject runAB readAB editAB
 
-tupleListObject_ ::
+tupleListObject ::
        forall edits.
        ListType Proxy edits
     -> (forall edit. ListElementType edits edit -> Object edit)
     -> Object (TupleEdit (ListElementType edits))
-tupleListObject_ lt getObject =
+tupleListObject lt getObject =
     case lt of
         NilListType -> noneTupleObject
         ConsListType Proxy lt' ->
             consTupleObjects (getObject FirstElementType) $
-            tupleListObject_ lt' $ \sel -> getObject $ RestElementType sel
-
-tupleListObject ::
-       forall edits. Is (ListType Proxy) edits
-    => (forall edit. ListElementType edits edit -> Object edit)
-    -> Object (TupleEdit (ListElementType edits))
-tupleListObject = tupleListObject_ representative
+            tupleListObject lt' $ \sel -> getObject $ RestElementType sel
 
 tupleObject ::
        forall sel. IsFiniteConsWitness sel
     => (forall edit. sel edit -> Object edit)
     -> Object (TupleEdit sel)
-tupleObject pickObject = mapObject (tupleIsoLens fromLTW toLTW) $ tupleListObject $ \sel -> pickObject $ fromLTW sel
+tupleObject pickObject =
+    mapObject (tupleIsoLens fromLTW toLTW) $ tupleListObject representative $ \sel -> pickObject $ fromLTW sel
 
 pairObjects :: forall edita editb. Object edita -> Object editb -> Object (PairEdit edita editb)
 pairObjects obja objb =
     tupleObject $ \case
         SelectFirst -> obja
         SelectSecond -> objb
+
+pairSubscribers ::
+       forall edita editb actionsa actionsb.
+       Subscriber edita actionsa
+    -> Subscriber editb actionsb
+    -> Subscriber (PairEdit edita editb) (actionsa, actionsb)
+pairSubscribers (MkSubscriber suba) (MkSubscriber subb) =
+    MkSubscriber $ \initab recvab -> let
+        recva (eab, objab) _ editsa = recvab eab objab (fmap (MkTupleEdit SelectFirst) editsa)
+        recvb (eab, objab) _ editsa = recvab eab objab (fmap (MkTupleEdit SelectSecond) editsa)
+        in liftIOWithUnlift $ \unlift -> do
+               (((eab, objab), acta), actb) <-
+                   coroutine
+                       (\co -> do
+                            (eabobjab, obja, acta) <- runTransform unlift $ suba co recva
+                            return (obja, (eabobjab, acta)))
+                       (\obja co -> do
+                            (eabobjab, _, actb) <-
+                                runTransform unlift $
+                                subb
+                                    (\objb -> do
+                                         let objab = pairObjects obja objb
+                                         eab <- initab objab
+                                         _ <- co (eab, objab)
+                                         return (eab, objab))
+                                    recvb
+                            return (eabobjab, actb))
+               return (eab, objab, (acta, actb))

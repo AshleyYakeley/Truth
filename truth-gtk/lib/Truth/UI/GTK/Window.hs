@@ -1,6 +1,5 @@
 module Truth.UI.GTK.Window
-    ( WindowButtons(..)
-    , UserInterface(..)
+    ( UserInterface(..)
     , truthMain
     , getMaybeView
     ) where
@@ -20,8 +19,10 @@ import Truth.UI.GTK.Icon
 import Truth.UI.GTK.Label
 import Truth.UI.GTK.Layout
 import Truth.UI.GTK.Maybe
+import Truth.UI.GTK.MenuBar
 import Truth.UI.GTK.Option
 import Truth.UI.GTK.Pages
+import Truth.UI.GTK.Scrolled
 import Truth.UI.GTK.Switch
 import Truth.UI.GTK.Table
 import Truth.UI.GTK.Text
@@ -60,6 +61,8 @@ allGetView =
         , layoutGetView
         , pagesGetView
         , dragGetView
+        , menuBarGetView
+        , scrolledGetView
         ]
 
 getRequest :: forall t. IOWitness t -> Maybe t
@@ -86,72 +89,7 @@ getTheView spec =
         Just view -> view
         Nothing -> lastResortView spec
 
-class WindowButtons actions where
-    addButtons :: Box -> actions -> LifeCycle ()
-
-instance WindowButtons () where
-    addButtons _ () = return ()
-
-instance (WindowButtons a, WindowButtons b) => WindowButtons (a, b) where
-    addButtons vbox (a, b) = do
-        addButtons vbox a
-        addButtons vbox b
-
-instance WindowButtons SaveActions where
-    addButtons vbox (MkSaveActions saveactions) = do
-        hbox <- new Box [#orientation := OrientationHorizontal]
-        saveButton <-
-            makeButton "Save" $ do
-                mactions <- saveactions
-                _ <-
-                    case mactions of
-                        Just (action, _) -> action
-                        _ -> return False
-                return ()
-        revertButton <-
-            makeButton "Revert" $ do
-                mactions <- saveactions
-                _ <-
-                    case mactions of
-                        Just (_, action) -> action
-                        _ -> return False
-                return ()
-        #packStart hbox saveButton False False 0
-        #packStart hbox revertButton False False 0
-        #packStart vbox hbox False False 0
-
-instance WindowButtons UndoActions where
-    addButtons vbox MkUndoActions {..} = do
-        hbox <- new Box [#orientation := OrientationHorizontal]
-        undoButton <- makeButton "Undo" uaUndo
-        redoButton <- makeButton "Redo" uaRedo
-        #packStart hbox undoButton False False 0
-        #packStart hbox redoButton False False 0
-        #packStart vbox hbox False False 0
-
-attachMenuItem :: IsMenuShell menushell => menushell -> Text -> IO MenuItem
-attachMenuItem menu name = do
-    item <- menuItemNewWithLabel name
-    menuShellAppend menu item
-    return item
-
-attachSubmenu :: MenuItem -> IO Menu
-attachSubmenu item = do
-    menu <- menuNew
-    menuItemSetSubmenu item $ Just menu
-    return menu
-
-menuItemAction :: MenuItem -> IO () -> IO ()
-menuItemAction item action = do
-    _ <- on item #activate action
-    return ()
-
-createWindowAndChild ::
-       WindowButtons actions
-    => WindowSpec edit
-    -> IO ()
-    -> (forall sel. CreateView sel edit (actions -> LifeCycle UIWindow) -> r)
-    -> r
+createWindowAndChild :: WindowSpec edit -> IO () -> (forall sel. CreateView sel edit (LifeCycle UIWindow) -> r) -> r
 createWindowAndChild MkWindowSpec {..} closeWindow cont =
     cont $ do
         window <-
@@ -162,53 +100,35 @@ createWindowAndChild MkWindowSpec {..} closeWindow cont =
             on window #deleteEvent $ \_ -> traceBracket "GTK.Window:close" $ do
                 liftIO closeWindow
                 return True -- don't run existing handler that closes the window
-        menubar <- menuBarNew
-        fileMI <- liftIO $ attachMenuItem menubar "File"
-        fileMenu <- liftIO $ attachSubmenu fileMI
-        closeMI <- liftIO $ attachMenuItem fileMenu "Close"
-        liftIO $ menuItemAction closeMI $ traceBracket "GTK.Window:menu.close" closeWindow
-        return $ \actions -> traceBracket "GTK.Window:create" $ do
-            box <- new Box [#orientation := OrientationVertical]
-            #packStart box menubar False False 0
-            addButtons box actions
-            -- this is only correct if content has native scroll support, such as TextView
-            sw <- new ScrolledWindow []
-            scrollable <- liftIO $ isScrollable content
-            if scrollable
-                then #add sw content
-                else do
-                    viewport <- new Viewport []
-                    #add viewport content
-                    #add sw viewport
-            #packStart box sw True True 0
-            #add window box
+        return $ do
+            #add window content
             #show content
             #showAll window
             let uiWindowClose = closeWindow
             return $ MkUIWindow {..}
 
-data UserInterface specifier = forall edit actions. WindowButtons actions =>
-                                                        MkUserInterface
+data UserInterface specifier actions = forall edit. MkUserInterface
     { userinterfaceSubscriber :: Subscriber edit actions
     , userinterfaceSpecifier :: specifier edit
     }
 
-makeViewWindow :: IO () -> UserInterface WindowSpec -> IO UIWindow
+makeViewWindow :: IO () -> UserInterface WindowSpec actions -> IO (UIWindow, actions)
 makeViewWindow tellclose (MkUserInterface (sub :: Subscriber edit actions) (window :: WindowSpec edit)) = do
     rec
-        (uiwindow, closer) <-
+        (r, closer) <-
             createWindowAndChild window (closer >> tellclose) $ \cv ->
                 runLifeCycle $ do
-                    (followUp, action) <- subscribeView' cv sub getRequest
-                    followUp action
-    return uiwindow
+                    (followUp, actions) <- subscribeView' cv sub getRequest
+                    uiw <- followUp
+                    return (uiw, actions)
+    return r
 
 data ProgramContext = MkProgramContext
     { pcMainLoop :: MainLoop
     , pcWindowCount :: MVar Int
     }
 
-makeWindowCountRef :: ProgramContext -> UserInterface WindowSpec -> IO UIWindow
+makeWindowCountRef :: ProgramContext -> UserInterface WindowSpec actions -> IO (UIWindow, actions)
 makeWindowCountRef MkProgramContext {..} ui = let
     closer =
         mvarRun pcWindowCount $ do
@@ -223,7 +143,9 @@ makeWindowCountRef MkProgramContext {..} ui = let
            Shapes.put $ i + 1
            return twindow
 
-truthMain :: ([String] -> (UserInterface WindowSpec -> IO UIWindow) -> LifeCycle ()) -> IO ()
+truthMain ::
+       ([String] -> (forall actions. UserInterface WindowSpec actions -> IO (UIWindow, actions)) -> LifeCycle ())
+    -> IO ()
 truthMain appMain = do
     args <- getArgs
     _ <- GI.init Nothing

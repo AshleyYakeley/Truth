@@ -10,6 +10,7 @@ import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Pinafore.Language.Type
 import Pinafore.Language.UI
+import Pinafore.Language.Window
 import Pinafore.Storage.File
 import Shapes
 import Truth.Core
@@ -93,10 +94,12 @@ openwindow ::
        (?pinafore :: PinaforeContext baseedit)
     => PinaforeImmutableReference baseedit Text
     -> UISpec A baseedit
-    -> PinaforeAction baseedit UIWindow
+    -> PinaforeAction baseedit PinaforeWindow
 openwindow title wsContent = let
     wsTitle = clearText . immutableReferenceToFunction title
-    in pinaforeNewWindow MkWindowSpec {..}
+    in do
+           (window, uactions) <- pinaforeNewWindow MkWindowSpec {..}
+           return $ MkPinaforeWindow window uactions
 
 ui_withselection :: (PinaforeAction baseedit A -> UISpec A baseedit) -> UISpec A baseedit
 ui_withselection f =
@@ -107,6 +110,19 @@ ui_withselection f =
 
 ui_textarea :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec BottomType baseedit
 ui_textarea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertUISpec textAreaUISpec
+
+menu_action ::
+       forall baseedit. (?pinafore :: PinaforeContext baseedit)
+    => Text
+    -> PinaforeAction baseedit TopType
+    -> MenuEntry
+menu_action t action = ActionMenuEntry t Nothing $ runPinaforeAction $ action >> return ()
+
+ui_menubar :: forall baseedit. [MenuEntry] -> UISpec BottomType baseedit
+ui_menubar = menuBarUISpec
+
+ui_scrolled :: forall baseedit. UISpec A baseedit -> UISpec A baseedit
+ui_scrolled = scrolledUISpec
 
 ui_predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
@@ -146,12 +162,23 @@ ui_predefinitions =
                 "ui_table"
                 "A list table. First arg is columns (name, property), second is the window to open for a selection, third is the set of items." $
             ui_table @baseedit
+          , mkValEntry "ui_scrolled" "A scrollable container." $ ui_scrolled @baseedit
           , mkValEntry "ui_dynamic" "A UI that can be updated to different UIs." $ ui_dynamic @baseedit
+          ]
+    , docTreeEntry
+          "Menu"
+          "Menu items."
+          [ mkValEntry "menu_separator" "Separator menu item." SeparatorMenuEntry
+          , mkValEntry "menu_submenu" "Submenu menu item." SubMenuEntry
+          , mkValEntry "menu_action" "Action menu item." $ menu_action @baseedit
+          , mkValEntry "ui_menubar" "Menu bar." $ ui_menubar @baseedit
           ]
     , docTreeEntry
           "Window"
           "User interface windows."
           [ mkValEntry "openwindow" "Open a new window with this title and UI." openwindow
-          , mkValEntry "closewindow" "Close a window." uiWindowClose
+          , mkValEntry "closewindow" "Close a window." $ uiWindowClose . pwWindow
+          , mkValEntry "window_undo" "Undo an action." $ uaUndo . pwUndoActions
+          , mkValEntry "window_redo" "Redo an action." $ uaRedo . pwUndoActions
           ]
     ]

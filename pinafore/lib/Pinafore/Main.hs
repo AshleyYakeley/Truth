@@ -36,7 +36,9 @@ sqlitePinaforeObject dirpath = do
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
 
 sqlitePinaforeContext ::
-       FilePath -> (UserInterface WindowSpec -> IO UIWindow) -> LifeCycle (PinaforeContext PinaforeEdit)
+       FilePath
+    -> (forall actions. UserInterface WindowSpec actions -> IO (UIWindow, actions))
+    -> LifeCycle (PinaforeContext PinaforeEdit)
 sqlitePinaforeContext dirpath createWindow = do
     pinaforeObject <- sqlitePinaforeObject dirpath
     makePinaforeContext pinaforeObject createWindow

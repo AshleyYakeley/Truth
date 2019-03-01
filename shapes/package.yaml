@@ -49,6 +49,7 @@ library:
       - Data.KindMorphism
       - Control.Category.Dual
       - Control.Monad.Compose
+      - Control.Monad.Coroutine
       - Control.LifeCycle
       - Shapes
       - Shapes.Numeric

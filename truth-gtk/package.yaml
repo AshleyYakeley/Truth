@@ -51,6 +51,8 @@ library:
       - Truth.UI.GTK.Pages
       - Truth.UI.GTK.Table
       - Truth.UI.GTK.Drag
+      - Truth.UI.GTK.MenuBar
+      - Truth.UI.GTK.Scrolled
 
 tests:
     test:

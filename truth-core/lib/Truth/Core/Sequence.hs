@@ -100,6 +100,6 @@ seqIntersect a b = let
 seqIntersectInside :: Integral (Index seq) => SequenceRun seq -> SequenceRun seq -> Maybe (SequenceRun seq)
 seqIntersectInside a b = let
     ab = seqIntersect a b
-    in if runStart a < runEnd b && runStart b < runEnd a
+    in if runStart a <= runEnd b && runStart b <= runEnd a
            then ab
            else Nothing
