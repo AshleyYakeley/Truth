@@ -19,6 +19,7 @@ import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Pinafore.Language.Type
 import Pinafore.Language.UI
+import Pinafore.Language.Window
 import Shapes
 import Truth.Core
 
@@ -274,17 +275,17 @@ instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
              FromTypeF (PinaforeType baseedit 'Negative) (PinaforeUI edit a) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
--- UIWindow
-instance ToTypeF (PinaforeSingularType baseedit 'Positive) UIWindow where
+-- PinaforeWindow
+instance ToTypeF (PinaforeSingularType baseedit 'Positive) PinaforeWindow where
     toTypeF = mkPTypeF $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments
 
-instance ToTypeF (PinaforeType baseedit 'Positive) UIWindow where
+instance ToTypeF (PinaforeType baseedit 'Positive) PinaforeWindow where
     toTypeF = singlePinaforeTypeF toTypeF
 
-instance FromTypeF (PinaforeSingularType baseedit 'Negative) UIWindow where
+instance FromTypeF (PinaforeSingularType baseedit 'Negative) PinaforeWindow where
     fromTypeF = mkPTypeF $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments
 
-instance FromTypeF (PinaforeType baseedit 'Negative) UIWindow where
+instance FromTypeF (PinaforeType baseedit 'Negative) PinaforeWindow where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- UISpec

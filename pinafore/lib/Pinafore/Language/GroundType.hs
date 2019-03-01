@@ -11,6 +11,7 @@ import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Pinafore.Language.Show
 import Pinafore.Language.UI
+import Pinafore.Language.Window
 import Shapes
 import Truth.Core
 
@@ -29,7 +30,7 @@ data PinaforeGroundType baseedit (polarity :: Polarity) (dv :: DolanVariance) (t
         :: PinaforeGroundType baseedit polarity '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit)
     -- UI
     UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] (PinaforeUI baseedit)
-    WindowPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] UIWindow
+    WindowPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] PinaforeWindow
     MenuItemPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] MenuEntry
 
 pinaforeGroundTypeTestEquality ::

@@ -79,6 +79,7 @@ library:
       - Pinafore.Language.Show
       - Pinafore.Language.Order
       - Pinafore.Language.UI
+      - Pinafore.Language.Window
       - Pinafore.Language.GroundType
       - Pinafore.Language.TypeID
       - Pinafore.Language.Scope

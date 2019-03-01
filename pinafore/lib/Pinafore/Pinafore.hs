@@ -23,6 +23,10 @@ instance IsFiniteConsWitness PinaforeSelector where
     fromLTW (RestElementType FirstElementType) = PinaforeSelectFile
     fromLTW (RestElementType (RestElementType lt)) = never lt
 
+instance TupleWitness InvertibleEdit PinaforeSelector where
+    tupleWitness PinaforeSelectPoint = Dict
+    tupleWitness PinaforeSelectFile = Dict
+
 type PinaforeEdit = TupleEdit PinaforeSelector
 
 type PinaforeRead = EditReader PinaforeEdit

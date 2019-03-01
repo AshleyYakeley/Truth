@@ -20,7 +20,7 @@ import Truth.Core
 import Truth.UI.GTK
 
 newtype PinaforeAction baseedit a =
-    MkPinaforeAction (ReaderT (WindowSpec baseedit -> IO UIWindow, Object baseedit) (ComposeM Know IO) a)
+    MkPinaforeAction (ReaderT (WindowSpec baseedit -> IO (UIWindow, UndoActions), Object baseedit) (ComposeM Know IO) a)
     deriving (Functor, Applicative, Monad, MonadFix, MonadIO)
 
 instance MonadFail (PinaforeAction baseedit) where
@@ -43,7 +43,7 @@ pinaforeLensPush lens edits = do
     case lensObject True lens object of
         MkObject {..} -> liftIO $ runTransform objRun $ pushEdit $ objEdit edits
 
-pinaforeNewWindow :: WindowSpec baseedit -> PinaforeAction baseedit UIWindow
+pinaforeNewWindow :: WindowSpec baseedit -> PinaforeAction baseedit (UIWindow, UndoActions)
 pinaforeNewWindow uiw = do
     (neww, _) <- MkPinaforeAction ask
     liftIO $ neww uiw
@@ -64,19 +64,20 @@ runPinaforeAction =
         MkPinaforeContext unlift -> unlift
 
 makePinaforeContext ::
-       forall baseedit.
-       Object baseedit
+       forall baseedit. InvertibleEdit baseedit
+    => Object baseedit
     -> (forall actions. UserInterface WindowSpec actions -> IO (UIWindow, actions))
     -> LifeCycle (PinaforeContext baseedit)
 makePinaforeContext pinaforeObject createWindow = do
-    sub <- liftIO $ makeObjectSubscriber pinaforeObject
+    rsub <- liftIO $ makeObjectSubscriber pinaforeObject
+    let sub = undoQueueSubscriber rsub
     (_, obj, _) <- subscribe sub (\_ -> return ()) (\_ _ _ -> return ())
     return $
         MkPinaforeContext $ \(MkPinaforeAction action) -> let
-            openwin :: WindowSpec baseedit -> IO UIWindow
+            openwin :: WindowSpec baseedit -> IO (UIWindow, UndoActions)
             openwin uiw = do
-                (window, ()) <- createWindow $ MkUserInterface sub uiw
-                return window
+                (window, ((), uactions)) <- createWindow $ MkUserInterface sub uiw
+                return (window, uactions)
             in do
                    _ <- getComposeM $ runReaderT action (openwin, obj)
                    return ()
