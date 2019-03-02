@@ -7,12 +7,13 @@ import GI.Gtk as Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
+import Truth.Debug.Object
 
 attachMenuEntry :: IsMenuShell menushell => menushell -> MenuEntry -> IO ()
 attachMenuEntry ms (ActionMenuEntry name mchar action) = do
     item <- menuItemNewWithLabel name
     menuShellAppend ms item
-    _ <- on item #activate action
+    _ <- on item #activate $ traceBracket ("GTK.MenuBar:activate " <> unpack name) action
     case mchar of
         Nothing -> return ()
         Just _ -> fail "GTK menu accel not supported"

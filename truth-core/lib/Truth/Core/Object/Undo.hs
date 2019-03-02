@@ -9,6 +9,7 @@ import Truth.Core.Import
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Read
+import Truth.Debug.Object
 
 type UndoEntry edit = ([edit], [edit])
 
@@ -26,11 +27,11 @@ data UndoQueue edit = MkUndoQueue
 
 updateUndoQueue ::
        (MonadIO m, InvertibleEdit edit) => MutableRead m (EditReader edit) -> [edit] -> StateT (UndoQueue edit) m ()
-updateUndoQueue mr edits = do
+updateUndoQueue mr edits = traceBracket "updateUndoQueue" $ do
     mue <- lift $ makeUndoEntry mr edits
     case mue of
-        Nothing -> return ()
-        Just ue -> do
+        Nothing -> traceBracket "updateUndoQueue: not undoable" $ return ()
+        Just ue -> traceBracket "updateUndoQueue: undoable" $ do
             MkUndoQueue uq _ <- get
             put $ MkUndoQueue (ue : uq) []
 
@@ -53,11 +54,11 @@ undoQueueSubscriber sub =
                 let
                     uaUndo :: IO ()
                     uaUndo =
-                        mvarRun queueVar $ do
+                        traceBracket "undoQueueSubscriber.uaUndo:outside" $ mvarRun queueVar $ traceBracket "undoQueueSubscriber.uaUndo:inside" $ do
                             MkUndoQueue ues res <- get
                             case ues of
-                                [] -> return () -- nothing to undo
-                                (entry:ee) -> do
+                                [] -> traceBracket "undoQueueSubscriber.uaUndo: no undoable" $ return () -- nothing to undo
+                                (entry:ee) -> traceBracket "undoQueueSubscriber.uaUndo: undoable" $ do
                                     did <-
                                         lift $
                                         runA $ do
@@ -91,7 +92,7 @@ undoQueueSubscriber sub =
                                         else return ()
                 return (editor, MkUndoActions {..})
             update' :: (editor, UndoActions) -> Object edit -> [edit] -> IO ()
-            update' (editor, _) object@MkObject {..} edits = do
+            update' (editor, _) object@MkObject {..} edits = traceBracket "undoQueueSubscriber.update" $ do
                 update editor object edits
                 _ <- do
                     MkUnlift du <- mvarRun queueVar $ getDiscardingUnlift
