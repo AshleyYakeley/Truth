@@ -44,7 +44,7 @@ main =
                                     Just lens ->
                                         makeWindow "section" (mapSubscriber (oneWholeLiftEditLens lens) sub) extraui
                             in verticalUISpec
-                                   [ (buttonUISpec (constEditFunction "View") openSelection, False)
+                                   [ (simpleButtonUISpec (constEditFunction "View") openSelection, False)
                                    , (scrolledUISpec $ oneWholeUISpec textAreaUISpec, True)
                                    ]
                     makeWindow ::
@@ -60,12 +60,16 @@ main =
                                 MkUserInterface sub $
                                 MkWindowSpec (constEditFunction title) (extraui r $ ui sub extraui)
                         return ()
-                    simpleUI :: (UIWindow, ()) -> UISpec sel edit -> UISpec sel edit
+                    simpleUI :: forall sel edit. (UIWindow, ()) -> UISpec sel edit -> UISpec sel edit
                     simpleUI ~(MkUIWindow {..}, _) spec = let
-                        mbar :: [MenuEntry]
-                        mbar = [SubMenuEntry "File" [ActionMenuEntry "Close" Nothing uiWindowClose]]
+                        mbar :: [MenuEntry edit]
+                        mbar = [SubMenuEntry "File" [simpleActionMenuItem "Close" Nothing uiWindowClose]]
                         in verticalUISpec [(menuBarUISpec mbar, False), (spec, True)]
-                    extraUI :: (UIWindow, (((), SaveActions), UndoActions)) -> UISpec sel edit -> UISpec sel edit
+                    extraUI ::
+                           forall sel edit.
+                           (UIWindow, (((), SaveActions), UndoActions))
+                        -> UISpec sel edit
+                        -> UISpec sel edit
                     extraUI ~(MkUIWindow {..}, ((_, MkSaveActions saveActions), MkUndoActions undo redo)) spec = let
                         saveAction = do
                             mactions <- saveActions
@@ -81,17 +85,17 @@ main =
                                     Just (_, action) -> action
                                     _ -> return False
                             return ()
-                        mbar :: [MenuEntry]
+                        mbar :: [MenuEntry edit]
                         mbar =
                             [ SubMenuEntry
                                   "File"
-                                  [ ActionMenuEntry "Save" Nothing saveAction
-                                  , ActionMenuEntry "Revert" Nothing revertAction
-                                  , ActionMenuEntry "Close" Nothing uiWindowClose
+                                  [ simpleActionMenuItem "Save" Nothing saveAction
+                                  , simpleActionMenuItem "Revert" Nothing revertAction
+                                  , simpleActionMenuItem "Close" Nothing uiWindowClose
                                   ]
                             , SubMenuEntry
                                   "Edit"
-                                  [ActionMenuEntry "Undo" Nothing undo, ActionMenuEntry "Redo" Nothing redo]
+                                  [simpleActionMenuItem "Undo" Nothing undo, simpleActionMenuItem "Redo" Nothing redo]
                             ]
                         in verticalUISpec [(menuBarUISpec mbar, False), (spec, True)]
                 action <-

@@ -138,12 +138,12 @@ entityGroundTypeShowPrec _ TopEntityGroundType NilArguments = ("Entity", 0)
 entityGroundTypeShowPrec _ NewEntityGroundType NilArguments = ("NewEntity", 0)
 entityGroundTypeShowPrec _ (OpenEntityGroundType n _) NilArguments = (pack $ show n, 0)
 entityGroundTypeShowPrec _ (LiteralEntityGroundType t) NilArguments = exprShowPrec t
-entityGroundTypeShowPrec es MaybeEntityGroundType (ConsArguments ta NilArguments) = ("Maybe " <> fst (es ta), 2)
+entityGroundTypeShowPrec es MaybeEntityGroundType (ConsArguments ta NilArguments) = ("Maybe " <> precShow 0 (es ta), 2)
 entityGroundTypeShowPrec es ListEntityGroundType (ConsArguments ta NilArguments) = ("[" <> fst (es ta) <> "]", 0)
 entityGroundTypeShowPrec es PairEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments)) =
     ("(" <> fst (es ta) <> ", " <> fst (es tb) <> ")", 0)
 entityGroundTypeShowPrec es EitherEntityGroundType (ConsArguments ta (ConsArguments tb NilArguments)) =
-    ("Either " <> fst (es ta) <> " " <> fst (es tb), 2)
+    ("Either " <> precShow 0 (es ta) <> " " <> precShow 0 (es tb), 2)
 entityGroundTypeShowPrec _ (ClosedEntityGroundType n _ _) NilArguments = (pack $ show n, 0)
 
 instance ExprShow (EntityType t) where

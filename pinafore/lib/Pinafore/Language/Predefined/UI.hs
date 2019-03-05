@@ -76,13 +76,20 @@ ui_pick nameMorphism fset ref = let
         convertEditFunction . applyPinaforeFunction getNames (pinaforeSetFunctionValue fset)
     in optionUISpec @baseedit @PickerType opts $ pinaforeReferenceToLens $ contraMapRange meet2 ref
 
+actionReference ::
+       (?pinafore :: PinaforeContext baseedit)
+    => PinaforeImmutableReference baseedit (PinaforeAction baseedit TopType)
+    -> EditFunction baseedit (WholeEdit (Maybe (IO ())))
+actionReference raction =
+    funcEditFunction (fmap (\action -> runPinaforeAction (action >> return ())) . knowToMaybe) .
+    immutableReferenceToFunction raction
+
 ui_button ::
        (?pinafore :: PinaforeContext baseedit)
     => PinaforeImmutableReference baseedit Text
-    -> PinaforeAction baseedit TopType
+    -> PinaforeImmutableReference baseedit (PinaforeAction baseedit TopType)
     -> UISpec BottomType baseedit
-ui_button text action =
-    buttonUISpec (clearText . immutableReferenceToFunction text) (runPinaforeAction (action >> return ()))
+ui_button text raction = buttonUISpec (clearText . immutableReferenceToFunction text) $ actionReference raction
 
 ui_label :: forall baseedit. PinaforeImmutableReference baseedit Text -> UISpec BottomType baseedit
 ui_label text = mapUISpec (immutableReferenceToLens text) $ uiUnknownValue mempty $ labelUISpec
@@ -113,12 +120,14 @@ ui_textarea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertU
 
 menu_action ::
        forall baseedit. (?pinafore :: PinaforeContext baseedit)
-    => Text
-    -> PinaforeAction baseedit TopType
-    -> MenuEntry
-menu_action t action = ActionMenuEntry t Nothing $ runPinaforeAction $ action >> return ()
+    => PinaforeImmutableReference baseedit Text
+    -> PinaforeImmutableReference baseedit (PinaforeAction baseedit TopType)
+    -> MenuEntry baseedit
+menu_action rlabel raction =
+    ActionMenuEntry (funcEditFunction (\kt -> (fromKnow "" kt, Nothing)) . immutableReferenceToFunction rlabel) $
+    actionReference raction
 
-ui_menubar :: forall baseedit. [MenuEntry] -> UISpec BottomType baseedit
+ui_menubar :: forall baseedit. [MenuEntry baseedit] -> UISpec BottomType baseedit
 ui_menubar = menuBarUISpec
 
 ui_scrolled :: forall baseedit. UISpec A baseedit -> UISpec A baseedit
@@ -156,7 +165,10 @@ ui_predefinitions =
                 -- CSS
                 -- drag
                 -- icon
-          , mkValEntry "ui_button" "A button with this text that does this action." $ ui_button
+          , mkValEntry
+                "ui_button"
+                "A button with this text that does this action. Button will be disabled if the action reference is unknown." $
+            ui_button
           , mkValEntry "ui_pick" "A drop-down menu." $ ui_pick @baseedit
           , mkValEntry
                 "ui_table"
@@ -170,7 +182,8 @@ ui_predefinitions =
           "Menu items."
           [ mkValEntry "menu_separator" "Separator menu item." SeparatorMenuEntry
           , mkValEntry "menu_submenu" "Submenu menu item." SubMenuEntry
-          , mkValEntry "menu_action" "Action menu item." $ menu_action @baseedit
+          , mkValEntry "menu_action" "Action menu item. Item will be disabled if the action reference is unknown." $
+            menu_action @baseedit
           , mkValEntry "ui_menubar" "Menu bar." $ ui_menubar @baseedit
           ]
     , docTreeEntry

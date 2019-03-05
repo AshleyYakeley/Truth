@@ -2,6 +2,7 @@ module Truth.UI.GTK.Button
     ( buttonGetView
     ) where
 
+import Data.IORef
 import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes
@@ -9,15 +10,28 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-createWidget :: EditFunction edit (WholeEdit Text) -> IO () -> CreateView sel edit Widget
-createWidget label action = do
+createWidget ::
+       EditFunction edit (WholeEdit Text) -> EditFunction edit (WholeEdit (Maybe (IO ()))) -> CreateView sel edit Widget
+createWidget rlabel raction = do
+    aref <- liftIO $ newIORef Nothing
     widget <- new Button []
-    cvBindEditFunction label $ \val -> set widget [#label := val]
-    _ <- cvLiftView $ viewOn widget #clicked $ liftIO action
+    cvBindEditFunction rlabel $ \label -> set widget [#label := label]
+    cvBindEditFunction raction $ \maction ->
+        liftIO $ do
+            writeIORef aref maction
+            set widget [#sensitive := isJust maction]
+    _ <-
+        cvLiftView $
+        viewOn widget #clicked $
+        liftIO $ do
+            maction <- readIORef aref
+            case maction of
+                Nothing -> return ()
+                Just action -> action
     toWidget widget
 
 buttonGetView :: GetGView
 buttonGetView =
     MkGetView $ \_ uispec -> do
-        MkButtonUISpec label action <- isUISpec uispec
-        return $ createWidget label action
+        MkButtonUISpec rlabel raction <- isUISpec uispec
+        return $ createWidget rlabel raction

@@ -298,16 +298,16 @@ instance (baseedit ~ edit, FromTypeF (PinaforeType edit 'Negative) a) =>
     fromTypeF = fmap unPinaforeUI fromTypeF
 
 -- MenuEntry
-instance ToTypeF (PinaforeSingularType baseedit 'Positive) MenuEntry where
+instance (baseedit ~ edit) => ToTypeF (PinaforeSingularType baseedit 'Positive) (MenuEntry edit) where
     toTypeF = mkPTypeF $ GroundPinaforeSingularType MenuItemPinaforeGroundType NilDolanArguments
 
-instance ToTypeF (PinaforeType baseedit 'Positive) MenuEntry where
+instance (baseedit ~ edit) => ToTypeF (PinaforeType baseedit 'Positive) (MenuEntry edit) where
     toTypeF = singlePinaforeTypeF toTypeF
 
-instance FromTypeF (PinaforeSingularType baseedit 'Negative) MenuEntry where
+instance (baseedit ~ edit) => FromTypeF (PinaforeSingularType baseedit 'Negative) (MenuEntry edit) where
     fromTypeF = mkPTypeF $ GroundPinaforeSingularType MenuItemPinaforeGroundType NilDolanArguments
 
-instance FromTypeF (PinaforeType baseedit 'Negative) MenuEntry where
+instance (baseedit ~ edit) => FromTypeF (PinaforeType baseedit 'Negative) (MenuEntry edit) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- PinaforeReference

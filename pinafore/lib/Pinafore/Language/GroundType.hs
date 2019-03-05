@@ -31,7 +31,7 @@ data PinaforeGroundType baseedit (polarity :: Polarity) (dv :: DolanVariance) (t
     -- UI
     UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] (PinaforeUI baseedit)
     WindowPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] PinaforeWindow
-    MenuItemPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] MenuEntry
+    MenuItemPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (MenuEntry baseedit)
 
 pinaforeGroundTypeTestEquality ::
        PinaforeGroundType baseedit pola dka ta

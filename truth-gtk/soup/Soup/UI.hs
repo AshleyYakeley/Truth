@@ -67,7 +67,7 @@ soupWindow createWindow dirpath = do
     sub <- makeObjectSubscriber $ soupObject dirpath
     rec
         let
-            mbar w = menuBarUISpec [SubMenuEntry "File" [ActionMenuEntry "Close" Nothing $ uiWindowClose w]]
+            mbar w = menuBarUISpec [SubMenuEntry "File" [simpleActionMenuItem "Close" Nothing $ uiWindowClose w]]
             wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
             openItem :: Aspect UUID -> IO ()
             openItem aspkey = do
@@ -92,7 +92,7 @@ soupWindow createWindow dirpath = do
                 withAspectUISpec $ \aspect ->
                     verticalUISpec
                         [ (mbar window, False)
-                        , (buttonUISpec (constEditFunction "View") (openItem aspect), False)
+                        , (simpleButtonUISpec (constEditFunction "View") (openItem aspect), False)
                         , (soupEditSpec, True)
                         ]
             userinterfaceSpecifier = MkWindowSpec {..}
