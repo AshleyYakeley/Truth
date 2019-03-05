@@ -100,7 +100,7 @@ ui_dynamic uiref = switchUISpec $ pinaforeImmutableReferenceValue nullUISpec uir
 openwindow ::
        (?pinafore :: PinaforeContext baseedit)
     => PinaforeImmutableReference baseedit Text
-    -> UISpec A baseedit
+    -> UISpec TopType baseedit
     -> PinaforeAction baseedit PinaforeWindow
 openwindow title wsContent = let
     wsTitle = clearText . immutableReferenceToFunction title
