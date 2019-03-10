@@ -10,7 +10,6 @@ import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Pinafore.Language.Type
 import Pinafore.Language.UI
-import Pinafore.Language.Window
 import Pinafore.Storage.File
 import Shapes
 import Truth.Core
@@ -76,13 +75,20 @@ ui_pick nameMorphism fset ref = let
         convertEditFunction . applyPinaforeFunction getNames (pinaforeSetFunctionValue fset)
     in optionUISpec @baseedit @PickerType opts $ pinaforeReferenceToLens $ contraMapRange meet2 ref
 
+actionReference ::
+       (?pinafore :: PinaforeContext baseedit)
+    => PinaforeImmutableReference baseedit (PinaforeAction baseedit TopType)
+    -> EditFunction baseedit (WholeEdit (Maybe (IO ())))
+actionReference raction =
+    funcEditFunction (fmap (\action -> runPinaforeAction (action >> return ())) . knowToMaybe) .
+    immutableReferenceToFunction raction
+
 ui_button ::
        (?pinafore :: PinaforeContext baseedit)
     => PinaforeImmutableReference baseedit Text
-    -> PinaforeAction baseedit TopType
+    -> PinaforeImmutableReference baseedit (PinaforeAction baseedit TopType)
     -> UISpec BottomType baseedit
-ui_button text action =
-    buttonUISpec (clearText . immutableReferenceToFunction text) (runPinaforeAction (action >> return ()))
+ui_button text raction = buttonUISpec (clearText . immutableReferenceToFunction text) $ actionReference raction
 
 ui_label :: forall baseedit. PinaforeImmutableReference baseedit Text -> UISpec BottomType baseedit
 ui_label text = mapUISpec (immutableReferenceToLens text) $ uiUnknownValue mempty $ labelUISpec
@@ -93,13 +99,11 @@ ui_dynamic uiref = switchUISpec $ pinaforeImmutableReferenceValue nullUISpec uir
 openwindow ::
        (?pinafore :: PinaforeContext baseedit)
     => PinaforeImmutableReference baseedit Text
-    -> UISpec A baseedit
+    -> UISpec TopType baseedit
     -> PinaforeAction baseedit PinaforeWindow
 openwindow title wsContent = let
     wsTitle = clearText . immutableReferenceToFunction title
-    in do
-           (window, uactions) <- pinaforeNewWindow MkWindowSpec {..}
-           return $ MkPinaforeWindow window uactions
+    in pinaforeNewWindow MkWindowSpec {..}
 
 ui_withselection :: (PinaforeAction baseedit A -> UISpec A baseedit) -> UISpec A baseedit
 ui_withselection f =
@@ -113,12 +117,14 @@ ui_textarea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertU
 
 menu_action ::
        forall baseedit. (?pinafore :: PinaforeContext baseedit)
-    => Text
-    -> PinaforeAction baseedit TopType
-    -> MenuEntry
-menu_action t action = ActionMenuEntry t Nothing $ runPinaforeAction $ action >> return ()
+    => PinaforeImmutableReference baseedit Text
+    -> PinaforeImmutableReference baseedit (PinaforeAction baseedit TopType)
+    -> MenuEntry baseedit
+menu_action rlabel raction =
+    ActionMenuEntry (funcEditFunction (\kt -> (fromKnow "" kt, Nothing)) . immutableReferenceToFunction rlabel) $
+    actionReference raction
 
-ui_menubar :: forall baseedit. [MenuEntry] -> UISpec BottomType baseedit
+ui_menubar :: forall baseedit. [MenuEntry baseedit] -> UISpec BottomType baseedit
 ui_menubar = menuBarUISpec
 
 ui_scrolled :: forall baseedit. UISpec A baseedit -> UISpec A baseedit
@@ -156,7 +162,10 @@ ui_predefinitions =
                 -- CSS
                 -- drag
                 -- icon
-          , mkValEntry "ui_button" "A button with this text that does this action." $ ui_button
+          , mkValEntry
+                "ui_button"
+                "A button with this text that does this action. Button will be disabled if the action reference is unknown." $
+            ui_button
           , mkValEntry "ui_pick" "A drop-down menu." $ ui_pick @baseedit
           , mkValEntry
                 "ui_table"
@@ -170,7 +179,8 @@ ui_predefinitions =
           "Menu items."
           [ mkValEntry "menu_separator" "Separator menu item." SeparatorMenuEntry
           , mkValEntry "menu_submenu" "Submenu menu item." SubMenuEntry
-          , mkValEntry "menu_action" "Action menu item." $ menu_action @baseedit
+          , mkValEntry "menu_action" "Action menu item. Item will be disabled if the action reference is unknown." $
+            menu_action @baseedit
           , mkValEntry "ui_menubar" "Menu bar." $ ui_menubar @baseedit
           ]
     , docTreeEntry
@@ -178,7 +188,7 @@ ui_predefinitions =
           "User interface windows."
           [ mkValEntry "openwindow" "Open a new window with this title and UI." openwindow
           , mkValEntry "closewindow" "Close a window." $ uiWindowClose . pwWindow
-          , mkValEntry "window_undo" "Undo an action." $ uaUndo . pwUndoActions
-          , mkValEntry "window_redo" "Redo an action." $ uaRedo . pwUndoActions
+          , mkValEntry "window_undo" "Undo an action." $ uaUndo $ pinaforeUndoActions
+          , mkValEntry "window_redo" "Redo an action." $ uaRedo $ pinaforeUndoActions
           ]
     ]

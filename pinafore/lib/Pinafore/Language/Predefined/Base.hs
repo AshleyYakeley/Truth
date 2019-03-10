@@ -289,7 +289,7 @@ base_predefinitions =
                 "unknown"
                 "The unknown reference, representing missing information."
                 (empty :: PinaforeImmutableReference baseedit BottomType)
-          , mkValEntry "known" "True if the literal is known." $ \(val :: PinaforeFunctionValue baseedit (Know Literal)) ->
+          , mkValEntry "known" "True if the reference is known." $ \(val :: PinaforeFunctionValue baseedit (Know TopType)) ->
                 (funcEditFunction (Known . isKnown) . val :: PinaforeFunctionValue baseedit (Know Bool))
           , mkValEntry
                 "??"

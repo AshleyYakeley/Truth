@@ -163,3 +163,6 @@ eitherRight (Right x) = Just x
 compAll :: Category cat => [cat a a] -> cat a a
 compAll [] = id
 compAll (c:cc) = c . compAll cc
+
+exec :: Monad m => m (m a) -> m a
+exec mma = mma >>= id

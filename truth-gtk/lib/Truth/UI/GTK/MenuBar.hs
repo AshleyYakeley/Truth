@@ -2,6 +2,7 @@ module Truth.UI.GTK.MenuBar
     ( menuBarGetView
     ) where
 
+import Data.IORef
 import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes
@@ -9,14 +10,22 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.Debug.Object
 
-attachMenuEntry :: IsMenuShell menushell => menushell -> MenuEntry -> IO ()
-attachMenuEntry ms (ActionMenuEntry name mchar action) = do
-    item <- menuItemNewWithLabel name
+attachMenuEntry :: IsMenuShell menushell => menushell -> MenuEntry edit -> CreateView sel edit ()
+attachMenuEntry ms (ActionMenuEntry rlabel raction) = do
+    aref <- liftIO $ newIORef Nothing
+    item <- menuItemNew
     menuShellAppend ms item
-    _ <- on item #activate $ traceBracket ("GTK.MenuBar:activate " <> unpack name) action
-    case mchar of
-        Nothing -> return ()
-        Just _ -> fail "GTK menu accel not supported"
+    cvBindEditFunction rlabel $ \(label, _maccel) -> set item [#label := label]
+    cvBindEditFunction raction $ \maction ->
+        liftIO $ do
+            writeIORef aref maction
+            set item [#sensitive := isJust maction]
+    _ <-
+        on item #activate $ traceBracket "GTK.MenuBar:activate" $ do
+            maction <- readIORef aref
+            case maction of
+                Nothing -> return ()
+                Just action -> action
     return ()
 attachMenuEntry ms (SubMenuEntry name entries) = do
     item <- menuItemNewWithLabel name
@@ -28,13 +37,13 @@ attachMenuEntry ms SeparatorMenuEntry = do
     item <- new SeparatorMenuItem []
     menuShellAppend ms item
 
-attachMenuEntries :: IsMenuShell menushell => menushell -> [MenuEntry] -> IO ()
+attachMenuEntries :: IsMenuShell menushell => menushell -> [MenuEntry edit] -> CreateView sel edit ()
 attachMenuEntries menu mm = for_ mm $ attachMenuEntry menu
 
-createWidget :: [MenuEntry] -> CreateView sel edit Widget
+createWidget :: [MenuEntry edit] -> CreateView sel edit Widget
 createWidget menu = do
     widget <- menuBarNew
-    liftIO $ attachMenuEntries widget menu
+    attachMenuEntries widget menu
     toWidget widget
 
 menuBarGetView :: GetGView

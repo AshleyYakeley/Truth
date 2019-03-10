@@ -78,30 +78,13 @@ pairObjects obja objb =
         SelectFirst -> obja
         SelectSecond -> objb
 
-pairSubscribers ::
-       forall edita editb actionsa actionsb.
-       Subscriber edita actionsa
-    -> Subscriber editb actionsb
-    -> Subscriber (PairEdit edita editb) (actionsa, actionsb)
-pairSubscribers (MkSubscriber suba) (MkSubscriber subb) =
-    MkSubscriber $ \initab recvab -> let
-        recva (eab, objab) _ editsa = recvab eab objab (fmap (MkTupleEdit SelectFirst) editsa)
-        recvb (eab, objab) _ editsa = recvab eab objab (fmap (MkTupleEdit SelectSecond) editsa)
-        in liftIOWithUnlift $ \unlift -> do
-               (((eab, objab), acta), actb) <-
-                   coroutine
-                       (\co -> do
-                            (eabobjab, obja, acta) <- runTransform unlift $ suba co recva
-                            return (obja, (eabobjab, acta)))
-                       (\obja co -> do
-                            (eabobjab, _, actb) <-
-                                runTransform unlift $
-                                subb
-                                    (\objb -> do
-                                         let objab = pairObjects obja objb
-                                         eab <- initab objab
-                                         _ <- co (eab, objab)
-                                         return (eab, objab))
-                                    recvb
-                            return (eabobjab, actb))
-               return (eab, objab, (acta, actb))
+pairSubscribers :: forall edita editb. Subscriber edita -> Subscriber editb -> Subscriber (PairEdit edita editb)
+pairSubscribers (MkSubscriber obja suba) (MkSubscriber objb subb) = let
+    objab = pairObjects obja objb
+    subab recvab = let
+        recva edits = recvab $ fmap (MkTupleEdit SelectFirst) edits
+        recvb edits = recvab $ fmap (MkTupleEdit SelectSecond) edits
+        in do
+               suba recva
+               subb recvb
+    in MkSubscriber objab subab

@@ -1,26 +1,13 @@
-module Pinafore.Base.Action
-    ( resultTextToM
-    , PinaforeAction
-    , pinaforeActionKnow
-    , knowPinaforeAction
-    , pinaforeFunctionValueGet
-    , pinaforeLensPush
-    , pinaforeNewWindow
-    , PinaforeContext
-    , runPinaforeAction
-    , makePinaforeContext
-    , nullPinaforeContext
-    ) where
+module Pinafore.Base.Action where
 
 import Language.Expression.Dolan
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
-import Truth.UI.GTK
 
 newtype PinaforeAction baseedit a =
-    MkPinaforeAction (ReaderT (WindowSpec baseedit -> IO (UIWindow, UndoActions), Object baseedit) (ComposeM Know IO) a)
+    MkPinaforeAction (ReaderT (WindowSpec baseedit -> IO UIWindow, Object baseedit) (ComposeM Know IO) a)
     deriving (Functor, Applicative, Monad, MonadFix, MonadIO)
 
 instance MonadFail (PinaforeAction baseedit) where
@@ -43,10 +30,15 @@ pinaforeLensPush lens edits = do
     case lensObject True lens object of
         MkObject {..} -> liftIO $ runTransform objRun $ pushEdit $ objEdit edits
 
-pinaforeNewWindow :: WindowSpec baseedit -> PinaforeAction baseedit (UIWindow, UndoActions)
+data PinaforeWindow = MkPinaforeWindow
+    { pwWindow :: UIWindow
+    }
+
+pinaforeNewWindow :: WindowSpec baseedit -> PinaforeAction baseedit PinaforeWindow
 pinaforeNewWindow uiw = do
     (neww, _) <- MkPinaforeAction ask
-    liftIO $ neww uiw
+    w <- liftIO $ neww uiw
+    return $ MkPinaforeWindow w
 
 pinaforeActionKnow :: forall baseedit a. Know a -> PinaforeAction baseedit a
 pinaforeActionKnow ka = MkPinaforeAction $ lift $ liftInner ka
@@ -54,33 +46,3 @@ pinaforeActionKnow ka = MkPinaforeAction $ lift $ liftInner ka
 knowPinaforeAction :: forall baseedit a. PinaforeAction baseedit a -> PinaforeAction baseedit (Know a)
 knowPinaforeAction (MkPinaforeAction (ReaderT rka)) =
     MkPinaforeAction $ ReaderT $ \r -> MkComposeM $ fmap Known $ getComposeM $ rka r
-
-newtype PinaforeContext baseedit =
-    MkPinaforeContext (PinaforeAction baseedit () -> IO ())
-
-runPinaforeAction :: (?pinafore :: PinaforeContext baseedit) => PinaforeAction baseedit () -> IO ()
-runPinaforeAction =
-    case ?pinafore of
-        MkPinaforeContext unlift -> unlift
-
-makePinaforeContext ::
-       forall baseedit. InvertibleEdit baseedit
-    => Object baseedit
-    -> (forall actions. UserInterface WindowSpec actions -> IO (UIWindow, actions))
-    -> LifeCycle (PinaforeContext baseedit)
-makePinaforeContext pinaforeObject createWindow = do
-    rsub <- liftIO $ makeObjectSubscriber pinaforeObject
-    let sub = undoQueueSubscriber rsub
-    (_, obj, _) <- subscribe sub (\_ -> return ()) (\_ _ _ -> return ())
-    return $
-        MkPinaforeContext $ \(MkPinaforeAction action) -> let
-            openwin :: WindowSpec baseedit -> IO (UIWindow, UndoActions)
-            openwin uiw = do
-                (window, ((), uactions)) <- createWindow $ MkUserInterface sub uiw
-                return (window, uactions)
-            in do
-                   _ <- getComposeM $ runReaderT action (openwin, obj)
-                   return ()
-
-nullPinaforeContext :: PinaforeContext baseedit
-nullPinaforeContext = MkPinaforeContext $ \_ -> fail "null Pinafore context"

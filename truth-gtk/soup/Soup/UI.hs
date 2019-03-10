@@ -63,12 +63,12 @@ soupObject dirpath = let
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: (forall actions. UserInterface WindowSpec actions -> IO (UIWindow, actions)) -> FilePath -> IO ()
+soupWindow :: (UserInterface WindowSpec -> IO UIWindow) -> FilePath -> IO ()
 soupWindow createWindow dirpath = do
     sub <- makeObjectSubscriber $ traceArgThing "soup" $ soupObject dirpath
     rec
         let
-            mbar w = menuBarUISpec [SubMenuEntry "File" [ActionMenuEntry "Close" Nothing $ uiWindowClose w]]
+            mbar w = menuBarUISpec [SubMenuEntry "File" [simpleActionMenuItem "Close" Nothing $ uiWindowClose w]]
             wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
             openItem :: Aspect UUID -> IO ()
             openItem aspkey = do
@@ -77,7 +77,7 @@ soupWindow createWindow dirpath = do
                     Just key -> do
                         lens <- getKeyElementEditLens key
                         rec
-                            (subwin, ()) <-
+                            subwin <-
                                 createWindow $
                                 MkUserInterface (mapSubscriber lens sub) $
                                 MkWindowSpec (constEditFunction "item") $
@@ -93,10 +93,10 @@ soupWindow createWindow dirpath = do
                 withAspectUISpec $ \aspect ->
                     verticalUISpec
                         [ (mbar window, False)
-                        , (buttonUISpec (constEditFunction "View") (openItem aspect), False)
+                        , (simpleButtonUISpec (constEditFunction "View") (openItem aspect), False)
                         , (soupEditSpec, True)
                         ]
             userinterfaceSpecifier = MkWindowSpec {..}
             userinterfaceSubscriber = sub
-        (window, ()) <- createWindow $ MkUserInterface {..}
+        window <- createWindow $ MkUserInterface {..}
     return ()
