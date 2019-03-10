@@ -161,36 +161,27 @@ cvNoAspect :: CreateView sela edit a -> CreateView selb edit a
 cvNoAspect (MkCreateView ma) = MkCreateView $ mapReaderContext vcNoAspect $ remonad (mapWriterOutput voNoAspect) ma
 
 subscribeView' ::
-       forall sel edit w action.
-       CreateView sel edit w
-    -> Subscriber edit action
-    -> (forall t. IOWitness t -> Maybe t)
-    -> LifeCycle (w, action)
-subscribeView' (MkCreateView (ReaderT view)) sub vcRequest = do
+       forall sel edit w. CreateView sel edit w -> Subscriber edit -> (forall t. IOWitness t -> Maybe t) -> LifeCycle w
+subscribeView' (MkCreateView (ReaderT view)) (MkSubscriber vcObject sub) vcRequest = do
     let
         vcSetSelection :: Aspect sel -> IO ()
         vcSetSelection _ = return ()
-        initialise :: Object edit -> LifeCycle (ViewResult sel edit w)
-        initialise vcObject = do
-            (w, vo) <- runWriterT $ view MkViewContext {..}
-            return (vo, w)
-        receive :: (ViewResult sel edit w) -> Object edit -> [edit] -> IO ()
-        receive (vo, _) = voUpdate vo
-    ((_, w), _, action) <- subscribeLifeCycle sub initialise receive
-    return (w, action)
+    (w, vo) <- runWriterT $ view MkViewContext {..}
+    sub $ voUpdate vo vcObject
+    return w
 
 subscribeView ::
-       forall sel edit w action.
-       (IO () -> CreateView sel edit (action -> LifeCycle w))
-    -> Subscriber edit action
+       forall sel edit w.
+       (IO () -> CreateView sel edit (LifeCycle w))
+    -> Subscriber edit
     -> (forall t. IOWitness t -> Maybe t)
     -> IO w
 subscribeView createView sub getRequest = do
     rec
         (w, closer) <-
             runLifeCycle $ do
-                (followUp, action) <- subscribeView' (createView closer) sub getRequest
-                followUp action
+                r <- subscribeView' (createView closer) sub getRequest
+                r
     return w
 
 tupleCreateView ::

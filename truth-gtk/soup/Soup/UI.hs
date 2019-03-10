@@ -62,7 +62,7 @@ soupObject dirpath = let
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: (forall actions. UserInterface WindowSpec actions -> IO (UIWindow, actions)) -> FilePath -> IO ()
+soupWindow :: (UserInterface WindowSpec -> IO UIWindow) -> FilePath -> IO ()
 soupWindow createWindow dirpath = do
     sub <- makeObjectSubscriber $ soupObject dirpath
     rec
@@ -76,7 +76,7 @@ soupWindow createWindow dirpath = do
                     Just key -> do
                         lens <- getKeyElementEditLens key
                         rec
-                            (subwin, ()) <-
+                            subwin <-
                                 createWindow $
                                 MkUserInterface (mapSubscriber lens sub) $
                                 MkWindowSpec (constEditFunction "item") $
@@ -97,5 +97,5 @@ soupWindow createWindow dirpath = do
                         ]
             userinterfaceSpecifier = MkWindowSpec {..}
             userinterfaceSubscriber = sub
-        (window, ()) <- createWindow $ MkUserInterface {..}
+        window <- createWindow $ MkUserInterface {..}
     return ()

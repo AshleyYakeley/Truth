@@ -106,20 +106,19 @@ createWindowAndChild MkWindowSpec {..} closeWindow cont =
             let uiWindowClose = closeWindow
             return $ MkUIWindow {..}
 
-data UserInterface specifier actions = forall edit. MkUserInterface
-    { userinterfaceSubscriber :: Subscriber edit actions
+data UserInterface specifier = forall edit. MkUserInterface
+    { userinterfaceSubscriber :: Subscriber edit
     , userinterfaceSpecifier :: specifier edit
     }
 
-makeViewWindow :: IO () -> UserInterface WindowSpec actions -> IO (UIWindow, actions)
-makeViewWindow tellclose (MkUserInterface (sub :: Subscriber edit actions) (window :: WindowSpec edit)) = do
+makeViewWindow :: IO () -> UserInterface WindowSpec -> IO UIWindow
+makeViewWindow tellclose (MkUserInterface (sub :: Subscriber edit) (window :: WindowSpec edit)) = do
     rec
         (r, closer) <-
             createWindowAndChild window (closer >> tellclose) $ \cv ->
                 runLifeCycle $ do
-                    (followUp, actions) <- subscribeView' cv sub getRequest
-                    uiw <- followUp
-                    return (uiw, actions)
+                    followUp <- subscribeView' cv sub getRequest
+                    followUp
     return r
 
 data ProgramContext = MkProgramContext
@@ -127,7 +126,7 @@ data ProgramContext = MkProgramContext
     , pcWindowCount :: MVar Int
     }
 
-makeWindowCountRef :: ProgramContext -> UserInterface WindowSpec actions -> IO (UIWindow, actions)
+makeWindowCountRef :: ProgramContext -> UserInterface WindowSpec -> IO UIWindow
 makeWindowCountRef MkProgramContext {..} ui = let
     closer =
         mvarRun pcWindowCount $ do
@@ -142,9 +141,7 @@ makeWindowCountRef MkProgramContext {..} ui = let
            Shapes.put $ i + 1
            return twindow
 
-truthMain ::
-       ([String] -> (forall actions. UserInterface WindowSpec actions -> IO (UIWindow, actions)) -> LifeCycle ())
-    -> IO ()
+truthMain :: ([String] -> (UserInterface WindowSpec -> IO UIWindow) -> LifeCycle ()) -> IO ()
 truthMain appMain = do
     args <- getArgs
     _ <- GI.init Nothing

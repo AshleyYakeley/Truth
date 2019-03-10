@@ -6,10 +6,10 @@ module Truth.Core.Object.Subscriber
     , mapReceiveUpdates
     , mapReceiveUpdatesT
     , Subscriber(..)
-    , subscribeLifeCycle
     , makeObjectSubscriber
     , liftIO
-    , objectSubscriber
+    , UpdatingObject
+    , updatingObject
     , makeSharedSubscriber
     ) where
 
@@ -20,28 +20,10 @@ import Truth.Core.Object.Object
 import Truth.Core.Object.Update
 import Truth.Core.Read
 
-newtype Subscriber edit actions = MkSubscriber
-    { subscribe :: forall editor.
-                           (Object edit -> IO editor) -- initialise: provides read MutableEdit, initial allowed, write MutableEdit
-                            -> (editor -> Object edit -> [edit] -> IO ()) -- receive: get updates (both others and from your mutableEdit calls)
-                                -> LifeCycle (editor, Object edit, actions)
+data Subscriber edit = MkSubscriber
+    { subObject :: Object edit
+    , subscribe :: ([edit] -> IO ()) -> LifeCycle ()
     }
-
-subscribeLifeCycle ::
-       Subscriber edit actions
-    -> (Object edit -> LifeCycle editor)
-    -> (editor -> Object edit -> [edit] -> IO ())
-    -> LifeCycle (editor, Object edit, actions)
-subscribeLifeCycle sub init receive = do
-    ((editor, closer), object, actions) <- subscribe sub (runLifeCycle . init) (\(editor, _) -> receive editor)
-    lifeCycleClose closer
-    return (editor, object, actions)
-
-instance Functor (Subscriber edit) where
-    fmap ab (MkSubscriber sub) =
-        MkSubscriber $ \initialise receive -> do
-            (editor, object, a) <- sub initialise receive
-            return (editor, object, ab a)
 
 type UpdateStoreEntry edit = [edit] -> IO ()
 
@@ -55,57 +37,55 @@ runUpdateStoreEntry edits = do
 updateStore :: [edit] -> StateT (UpdateStore edit) IO ()
 updateStore edits = traverseStoreStateT $ \_ -> runUpdateStoreEntry edits
 
-makeSharedSubscriber :: forall edit actions. Subscriber edit actions -> IO (Subscriber edit actions)
-makeSharedSubscriber parent = do
+type UpdatingObject edit a = ([edit] -> IO ()) -> LifeCycle (Object edit, a)
+
+makeSharedSubscriber :: forall edit a. UpdatingObject edit a -> IO (Subscriber edit, a)
+makeSharedSubscriber uobj = do
     var :: MVar (UpdateStore edit) <- newMVar emptyStore
     let
-        initP :: Object edit -> IO ()
-        initP _ = return ()
-        updateP :: () -> Object edit -> [edit] -> IO ()
-        updateP () _ edits = mvarRun var $ updateStore edits
-    (((), objectC@(MkObject (MkTransform runC) _ _), actions), closerP) <- runLifeCycle $ subscribe parent initP updateP
+        updateP :: [edit] -> IO ()
+        updateP edits = mvarRun var $ updateStore edits
+    ((objectC, a), closerP) <- runLifeCycle $ uobj updateP
     let
-        child :: Subscriber edit actions
+        child :: Subscriber edit
         child =
-            MkSubscriber $ \initC updateC ->
-                MkLifeCycle $ do
-                    editorC <- initC objectC
-                    key <- runC $ mvarRun var $ addStoreStateT $ updateC editorC objectC
-                    let
-                        closerC =
-                            runC $
-                            mvarRun var $ do
-                                deleteStoreStateT key
-                                newstore <- get
-                                if isEmptyStore newstore
-                                    then liftIO closerP
-                                    else return ()
-                    return ((editorC, objectC, actions), closerC)
-    return child
+            MkSubscriber objectC $ \updateC ->
+                case objectC of
+                    MkObject runC _ _ ->
+                        MkLifeCycle $ do
+                            key <- runTransform runC $ mvarRun var $ addStoreStateT updateC
+                            let
+                                closerC =
+                                    runTransform runC $
+                                    mvarRun var $ do
+                                        deleteStoreStateT key
+                                        newstore <- get
+                                        if isEmptyStore newstore
+                                            then liftIO closerP
+                                            else return ()
+                            return ((), closerC)
+    return (child, a)
 
-objectSubscriber :: forall edit. LifeCycle (Object edit) -> Subscriber edit ()
-objectSubscriber ocObject =
-    MkSubscriber $ \initr update -> do
-        MkObject (run :: UnliftIO m) r e <- ocObject
-        rec
-            let
-                run' :: UnliftIO (DeferActionT m)
-                run' = composeUnliftTransformCommute runDeferActionT run
-                r' :: MutableRead (DeferActionT m) (EditReader edit)
-                r' = liftMutableRead r
-                e' :: [edit] -> DeferActionT m (Maybe (DeferActionT m ()))
-                e' edits = do
-                    maction <- lift $ e edits
-                    case maction of
-                        Nothing -> return Nothing
-                        Just action ->
-                            return $
-                            Just $ do
-                                lift action
-                                deferActionT $ update editor objectC edits
-                objectC = MkObject run' r' e'
-            editor <- liftIO $ initr $ objectC
-        return (editor, objectC, ())
+updatingObject :: forall edit. Object edit -> UpdatingObject edit ()
+updatingObject (MkObject (run :: UnliftIO m) r e) update =
+    return $ let
+        run' :: UnliftIO (DeferActionT m)
+        run' = composeUnliftTransformCommute runDeferActionT run
+        r' :: MutableRead (DeferActionT m) (EditReader edit)
+        r' = liftMutableRead r
+        e' :: [edit] -> DeferActionT m (Maybe (DeferActionT m ()))
+        e' edits = do
+            maction <- lift $ e edits
+            case maction of
+                Nothing -> return Nothing
+                Just action ->
+                    return $
+                    Just $ do
+                        lift action
+                        deferActionT $ update edits
+        in (MkObject run' r' e', ())
 
-makeObjectSubscriber :: Object edit -> IO (Subscriber edit ())
-makeObjectSubscriber object = makeSharedSubscriber $ objectSubscriber $ pure object
+makeObjectSubscriber :: Object edit -> IO (Subscriber edit)
+makeObjectSubscriber object = do
+    (sub, ()) <- makeSharedSubscriber $ updatingObject object
+    return sub

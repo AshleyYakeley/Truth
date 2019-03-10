@@ -46,17 +46,16 @@ testSavable = testCase "Savable" $ do return ()
         found <- subscribeEditor cleanSaveSub testEditor
         assertEqual "value" False found
 -}
-data SubscribeContext edit actions = MkSubscribeContext
+data SubscribeContext edit = MkSubscribeContext
     { subDoEdits :: [[edit]] -> IO ()
     , subDontEdits :: [[edit]] -> IO ()
-    , subActions :: actions
     }
 
 testOutputEditor ::
-       forall edit actions. (Show edit, Show (EditSubject edit), FullSubjectReader (EditReader edit), ?handle :: Handle)
+       forall edit. (Show edit, Show (EditSubject edit), FullSubjectReader (EditReader edit), ?handle :: Handle)
     => String
-    -> (SubscribeContext edit actions -> IO ())
-    -> Editor edit actions ()
+    -> (SubscribeContext edit -> IO ())
+    -> Editor edit ()
 testOutputEditor name call = let
     outputLn :: MonadIO m => String -> m ()
     outputLn s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s
@@ -70,8 +69,8 @@ testOutputEditor name call = let
         outputLn $ "receive " ++ show edits
         val <- run $ mutableReadToSubject mr
         outputLn $ "receive " ++ show val
-    editorDo :: () -> Object edit -> actions -> IO ()
-    editorDo () (MkObject (MkTransform run) _ push) subActions = let
+    editorDo :: () -> Object edit -> IO ()
+    editorDo () (MkObject (MkTransform run) _ push) = let
         subDontEdits :: [[edit]] -> IO ()
         subDontEdits editss = do
             outputLn "runObject"
@@ -101,7 +100,7 @@ testSubscription ::
        forall edit. (FullEdit edit, Show (EditSubject edit))
     => TestName
     -> EditSubject edit
-    -> ((?handle :: Handle, ?showVar :: IO (), ?showExpected :: [edit] -> IO ()) => Subscriber edit () -> IO ())
+    -> ((?handle :: Handle, ?showVar :: IO (), ?showExpected :: [edit] -> IO ()) => Subscriber edit -> IO ())
     -> TestTree
 testSubscription name initial call =
     goldenTest' name $ do

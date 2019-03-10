@@ -7,28 +7,22 @@ import Truth.Core.Object.Subscriber
 import Truth.Core.Object.Update
 
 mapSubscriber ::
-       forall edita editb action. (ApplicableEdit edita)
+       forall edita editb. (ApplicableEdit edita)
     => EditLens edita editb
-    -> Subscriber edita action
-    -> Subscriber editb action
-mapSubscriber lens sub =
-    MkSubscriber $ \(initialB :: Object editb -> IO editor) updateB -> let
-        getObjectB :: Object edita -> Object editb
-        getObjectB = lensObject True lens
-        initialA :: Object edita -> IO editor
-        initialA objectA = do
-            editor <- initialB $ getObjectB objectA
-            return editor
-        updateA :: editor -> Object edita -> [edita] -> IO ()
-        updateA editor objectA editAs = do
-            editBs <- objectMapUpdates (editLensFunction lens) objectA editAs
-            updateB editor (getObjectB objectA) editBs
-        in do
-               (editor, objectA, actions) <- subscribe sub initialA updateA
-               return (editor, getObjectB objectA, actions)
+    -> Subscriber edita
+    -> Subscriber editb
+mapSubscriber lens (MkSubscriber objectA subA) = let
+    objectB :: Object editb
+    objectB = lensObject True lens objectA
+    in MkSubscriber objectB $ \updateB -> let
+           updateA :: [edita] -> IO ()
+           updateA editAs = do
+               editBs <- objectMapUpdates (editLensFunction lens) objectA editAs
+               updateB editBs
+           in subA updateA
 
 convertSubscriber ::
-       forall edita editb actions. (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb)
-    => Subscriber edita actions
-    -> Subscriber editb actions
+       forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb)
+    => Subscriber edita
+    -> Subscriber editb
 convertSubscriber = mapSubscriber convertEditLens

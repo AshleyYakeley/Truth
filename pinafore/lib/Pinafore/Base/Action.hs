@@ -66,20 +66,19 @@ runPinaforeAction =
 makePinaforeContext ::
        forall baseedit. InvertibleEdit baseedit
     => Object baseedit
-    -> (forall actions. UserInterface WindowSpec actions -> IO (UIWindow, actions))
+    -> (UserInterface WindowSpec -> IO UIWindow)
     -> LifeCycle (PinaforeContext baseedit)
 makePinaforeContext pinaforeObject createWindow = do
     rsub <- liftIO $ makeObjectSubscriber pinaforeObject
-    let sub = undoQueueSubscriber rsub
-    (_, obj, _) <- subscribe sub (\_ -> return ()) (\_ _ _ -> return ())
+    (sub, uactions) <- liftIO $ undoQueueSubscriber rsub
     return $
         MkPinaforeContext $ \(MkPinaforeAction action) -> let
             openwin :: WindowSpec baseedit -> IO (UIWindow, UndoActions)
             openwin uiw = do
-                (window, ((), uactions)) <- createWindow $ MkUserInterface sub uiw
+                window <- createWindow $ MkUserInterface sub uiw
                 return (window, uactions)
             in do
-                   _ <- getComposeM $ runReaderT action (openwin, obj)
+                   _ <- getComposeM $ runReaderT action (openwin, subObject sub)
                    return ()
 
 nullPinaforeContext :: PinaforeContext baseedit
