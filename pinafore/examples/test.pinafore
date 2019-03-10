@@ -17,8 +17,8 @@ openmywindow title contents = afix $ \window -> let
             ],
             menu_submenu "Edit"
             [
-                menu_action {"Undo"} {window_undo},
-                menu_action {"Redo"} {window_undo}
+                menu_action {"Undo"} {queue_undo},
+                menu_action {"Redo"} {queue_undo}
             ]
         ]
     in openwindow title $ ui_vertical

@@ -400,4 +400,13 @@ testEntity =
               , badInterpretTest
                     "let t = let opentype T1 in entity @T1 !\"t\"; f = let opentype T2; f :: T2 -> Action (); f _ = pass in f; in f t"
               ]
+        , context ["opentype E", "eta = property @E @Text !\"eta\"", "e1 = entity @E !\"e1\"", "rt1 = eta !$ {e1}"] $
+          tgroup
+              "undo"
+              [ pointTest "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; end"
+              , pointTest
+                    "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; queue_undo; testeq {\"A\"} rt1; end"
+              , pointTest
+                    "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; queue_undo; testeq {\"A\"} rt1; queue_redo; testeq {\"B\"} rt1; end"
+              ]
         ]
