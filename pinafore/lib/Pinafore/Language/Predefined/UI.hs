@@ -10,7 +10,6 @@ import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Pinafore.Language.Type
 import Pinafore.Language.UI
-import Pinafore.Language.Window
 import Pinafore.Storage.File
 import Shapes
 import Truth.Core
@@ -104,9 +103,7 @@ openwindow ::
     -> PinaforeAction baseedit PinaforeWindow
 openwindow title wsContent = let
     wsTitle = clearText . immutableReferenceToFunction title
-    in do
-           (window, uactions) <- pinaforeNewWindow MkWindowSpec {..}
-           return $ MkPinaforeWindow window uactions
+    in pinaforeNewWindow MkWindowSpec {..}
 
 ui_withselection :: (PinaforeAction baseedit A -> UISpec A baseedit) -> UISpec A baseedit
 ui_withselection f =
@@ -191,7 +188,7 @@ ui_predefinitions =
           "User interface windows."
           [ mkValEntry "openwindow" "Open a new window with this title and UI." openwindow
           , mkValEntry "closewindow" "Close a window." $ uiWindowClose . pwWindow
-          , mkValEntry "window_undo" "Undo an action." $ uaUndo . pwUndoActions
-          , mkValEntry "window_redo" "Redo an action." $ uaRedo . pwUndoActions
+          , mkValEntry "window_undo" "Undo an action." $ uaUndo $ pinaforeUndoActions
+          , mkValEntry "window_redo" "Redo an action." $ uaRedo $ pinaforeUndoActions
           ]
     ]

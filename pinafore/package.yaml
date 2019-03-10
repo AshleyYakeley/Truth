@@ -68,6 +68,7 @@ library:
       - Pinafore.Base.EntityAdapter
       - Pinafore.Base.PredicateMorphism
       - Pinafore.Base.Action
+      - Pinafore.Base.Context
       - Pinafore.Base.ImmutableReference
       - Pinafore.Language.Name
       - Pinafore.Language.Literal
@@ -79,7 +80,6 @@ library:
       - Pinafore.Language.Show
       - Pinafore.Language.Order
       - Pinafore.Language.UI
-      - Pinafore.Language.Window
       - Pinafore.Language.GroundType
       - Pinafore.Language.TypeID
       - Pinafore.Language.Scope

@@ -11,7 +11,6 @@ import Pinafore.Language.Reference
 import Pinafore.Language.Set
 import Pinafore.Language.Show
 import Pinafore.Language.UI
-import Pinafore.Language.Window
 import Shapes
 import Truth.Core
 
