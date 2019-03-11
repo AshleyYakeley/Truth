@@ -61,10 +61,10 @@ undoQueueSubscriber sub = do
                                 runTransform runP $ do
                                     maction <- pushP (snd entry)
                                     case maction of
-                                        Just action -> do
+                                        Just action -> traceBracket "undoQueueSubscriber.uaUndo: action" $ do
                                             action
                                             return True
-                                        Nothing -> return False
+                                        Nothing -> traceBracket "undoQueueSubscriber.uaUndo: no action" $ return False
                             if did
                                 then put $ MkUndoQueue ee (entry : res)
                                 else return ()
