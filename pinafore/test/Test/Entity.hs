@@ -66,7 +66,8 @@ testEntity =
         ] $
     tgroup
         "entity"
-        [ tgroup
+        [ context [] $
+          tgroup
               "current" -- stack test pinafore --test-arguments "--pattern entity.current"
               []
         , tgroup

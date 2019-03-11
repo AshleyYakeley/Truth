@@ -10,6 +10,7 @@ import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Read
 
+-- fst is original edits, snd is undoing edits
 type UndoEntry edit = ([edit], [edit])
 
 makeUndoEntry ::
@@ -96,8 +97,8 @@ undoQueueSubscriber sub = do
             return $
                 fmap
                     (\action -> do
-                         action
-                         mvarRun queueVar $ updateUndoQueue readP edits)
+                         mvarRun queueVar $ updateUndoQueue readP edits
+                         action)
                     maction
         objC = MkObject runP readP pushC
         subC = MkSubscriber objC $ subscribe sub
