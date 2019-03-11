@@ -188,7 +188,5 @@ ui_predefinitions =
           "User interface windows."
           [ mkValEntry "openwindow" "Open a new window with this title and UI." openwindow
           , mkValEntry "closewindow" "Close a window." $ uiWindowClose . pwWindow
-          , mkValEntry "window_undo" "Undo an action." $ uaUndo $ pinaforeUndoActions
-          , mkValEntry "window_redo" "Redo an action." $ uaRedo $ pinaforeUndoActions
           ]
     ]

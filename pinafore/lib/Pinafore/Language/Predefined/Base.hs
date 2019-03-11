@@ -267,6 +267,12 @@ base_predefinitions =
                 (liftIO gettimems :: PinaforeAction baseedit Integer)
           ]
     , docTreeEntry
+          "Undo"
+          "Undo and redo changes."
+          [ mkValEntry "queue_undo" "Undo an action." $ uaUndo $ pinaforeUndoActions
+          , mkValEntry "queue_redo" "Redo an action." $ uaRedo $ pinaforeUndoActions
+          ]
+    , docTreeEntry
           "References"
           "A reference of type `Ref {-p,+q}` has a setting type of `p` and a getting type of `q`. References keep track of updates, and will update user interfaces constructed from them when their value changes."
           [ mkValEntry
