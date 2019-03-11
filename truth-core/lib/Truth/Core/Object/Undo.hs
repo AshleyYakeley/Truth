@@ -36,8 +36,8 @@ updateUndoQueue mr edits = traceBracket "updateUndoQueue" $ do
             put $ MkUndoQueue (ue : uq) []
 
 data UndoActions = MkUndoActions
-    { uaUndo :: IO ()
-    , uaRedo :: IO ()
+    { uaUndo :: IO Bool
+    , uaRedo :: IO Bool
     }
 
 undoQueueSubscriber ::
@@ -49,12 +49,12 @@ undoQueueSubscriber sub = do
     MkObject (runP :: UnliftIO ma) readP pushP <- return $ subObject sub
     let
         undoActions = let
-            uaUndo :: IO ()
+            uaUndo :: IO Bool
             uaUndo =
                 traceBracket "undoQueueSubscriber.uaUndo:outside" $ mvarRun queueVar $ traceBracket "undoQueueSubscriber.uaUndo:inside" $ do
                     MkUndoQueue ues res <- get
                     case ues of
-                        [] -> traceBracket "undoQueueSubscriber.uaUndo: no undoable" $ return () -- nothing to undo
+                        [] -> traceBracket "undoQueueSubscriber.uaUndo: no undoable" $ return False -- nothing to undo
                         (entry:ee) -> traceBracket "undoQueueSubscriber.uaUndo: undoable" $ do
                             did <-
                                 lift $
@@ -66,14 +66,16 @@ undoQueueSubscriber sub = do
                                             return True
                                         Nothing -> traceBracket "undoQueueSubscriber.uaUndo: no action" $ return False
                             if did
-                                then put $ MkUndoQueue ee (entry : res)
-                                else return ()
-            uaRedo :: IO ()
+                                then do
+                                    put $ MkUndoQueue ee (entry : res)
+                                    return True
+                                else return False
+            uaRedo :: IO Bool
             uaRedo =
                 mvarRun queueVar $ do
                     MkUndoQueue ues res <- get
                     case res of
-                        [] -> return () -- nothing to redo
+                        [] -> return False -- nothing to redo
                         (entry:ee) -> do
                             did <-
                                 lift $
@@ -85,8 +87,10 @@ undoQueueSubscriber sub = do
                                             return True
                                         Nothing -> return False
                             if did
-                                then put $ MkUndoQueue (entry : ues) ee
-                                else return ()
+                                then do
+                                    put $ MkUndoQueue (entry : ues) ee
+                                    return True
+                                else return False
             in MkUndoActions {..}
         pushC edits = do
             maction <- pushP edits
