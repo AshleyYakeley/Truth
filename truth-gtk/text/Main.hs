@@ -91,7 +91,9 @@ main =
                                   ]
                             , SubMenuEntry
                                   "Edit"
-                                  [simpleActionMenuItem "Undo" Nothing undo, simpleActionMenuItem "Redo" Nothing redo]
+                                  [ simpleActionMenuItem "Undo" Nothing $ undo >> return ()
+                                  , simpleActionMenuItem "Redo" Nothing $ redo >> return ()
+                                  ]
                             ]
                         in verticalUISpec [(menuBarUISpec mbar, False), (spec, True)]
                 action <-

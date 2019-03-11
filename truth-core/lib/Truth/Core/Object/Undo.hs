@@ -35,8 +35,8 @@ updateUndoQueue mr edits = do
             put $ MkUndoQueue (ue : uq) []
 
 data UndoActions = MkUndoActions
-    { uaUndo :: IO ()
-    , uaRedo :: IO ()
+    { uaUndo :: IO Bool
+    , uaRedo :: IO Bool
     }
 
 undoQueueSubscriber ::
@@ -48,12 +48,12 @@ undoQueueSubscriber sub = do
     MkObject (runP :: UnliftIO ma) readP pushP <- return $ subObject sub
     let
         undoActions = let
-            uaUndo :: IO ()
+            uaUndo :: IO Bool
             uaUndo =
                 mvarRun queueVar $ do
                     MkUndoQueue ues res <- get
                     case ues of
-                        [] -> return () -- nothing to undo
+                        [] -> return False -- nothing to undo
                         (entry:ee) -> do
                             did <-
                                 lift $
@@ -65,14 +65,16 @@ undoQueueSubscriber sub = do
                                             return True
                                         Nothing -> return False
                             if did
-                                then put $ MkUndoQueue ee (entry : res)
-                                else return ()
-            uaRedo :: IO ()
+                                then do
+                                    put $ MkUndoQueue ee (entry : res)
+                                    return True
+                                else return False
+            uaRedo :: IO Bool
             uaRedo =
                 mvarRun queueVar $ do
                     MkUndoQueue ues res <- get
                     case res of
-                        [] -> return () -- nothing to redo
+                        [] -> return False -- nothing to redo
                         (entry:ee) -> do
                             did <-
                                 lift $
@@ -84,8 +86,10 @@ undoQueueSubscriber sub = do
                                             return True
                                         Nothing -> return False
                             if did
-                                then put $ MkUndoQueue (entry : ues) ee
-                                else return ()
+                                then do
+                                    put $ MkUndoQueue (entry : ues) ee
+                                    return True
+                                else return False
             in MkUndoActions {..}
         pushC edits = do
             maction <- pushP edits
