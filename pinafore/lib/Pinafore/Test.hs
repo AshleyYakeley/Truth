@@ -36,10 +36,10 @@ makeTestPinaforeContext = do
     let
         pinaforeObject :: Object PinaforeEdit
         pinaforeObject =
-            traceThing "testObject.tupleObject" $
+            traceThing "testObject" $
             tupleObject $ \case
-                PinaforeSelectPoint -> pinaforeTableEntityObject $ convertObject tableStateObject
-                PinaforeSelectFile -> readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
+                PinaforeSelectPoint -> traceThing "testObject.PinaforeSelectPoint" $ pinaforeTableEntityObject $ convertObject $ traceThing "testObject.Table" tableStateObject
+                PinaforeSelectFile -> traceThing "testObject.PinaforeSelectFile" $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getObjectSubject tableStateObject
     pc <- makePinaforeContext pinaforeObject $ \_ -> return nullUIWindow

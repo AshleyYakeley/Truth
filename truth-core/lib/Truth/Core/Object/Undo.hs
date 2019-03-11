@@ -32,6 +32,7 @@ updateUndoQueue mr edits = traceBracket "updateUndoQueue" $ do
     case mue of
         Nothing -> traceBracket "updateUndoQueue: not undoable" $ return ()
         Just ue -> traceBracket "updateUndoQueue: undoable" $ do
+            traceIOM $ "updateUndoQueue: edit count: " <> show (length $ fst ue, length $ snd ue)
             MkUndoQueue uq _ <- get
             put $ MkUndoQueue (ue : uq) []
 
