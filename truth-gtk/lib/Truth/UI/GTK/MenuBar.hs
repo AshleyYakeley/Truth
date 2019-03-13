@@ -10,12 +10,27 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.Debug.Object
 
+toModifierType :: KeyboardModifier -> ModifierType
+toModifierType KMShift = ModifierTypeShiftMask
+toModifierType KMCtrl = ModifierTypeControlMask
+toModifierType KMAlt = ModifierTypeMod1Mask
+
 attachMenuEntry :: IsMenuShell menushell => menushell -> MenuEntry edit -> CreateView sel edit ()
 attachMenuEntry ms (ActionMenuEntry rlabel raction) = do
     aref <- liftIO $ newIORef Nothing
     item <- menuItemNew
     menuShellAppend ms item
-    cvBindEditFunction rlabel $ \(label, _maccel) -> set item [#label := label]
+    cvBindEditFunction rlabel $ \(label, maccel) ->
+        liftIO $ do
+            mc <- binGetChild item
+            for_ mc $ \c -> do
+                ml <- castTo AccelLabel c
+                for_ ml $ \l -> do
+                    set l [#label := label]
+                    case maccel of
+                        Nothing -> accelLabelSetAccel l 0 []
+                        Just (MkMenuAccelerator mods key) ->
+                            accelLabelSetAccel l (fromIntegral $ ord key) $ fmap toModifierType mods
     cvBindEditFunction raction $ \maction ->
         liftIO $ do
             writeIORef aref maction

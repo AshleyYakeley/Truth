@@ -115,13 +115,31 @@ ui_withselection f =
 ui_textarea :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec BottomType baseedit
 ui_textarea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertUISpec textAreaUISpec
 
+interpretAccelerator :: String -> Maybe MenuAccelerator
+interpretAccelerator [c] = Just $ MkMenuAccelerator [] c
+interpretAccelerator ('C':'t':'r':'l':'+':s) = do
+    MkMenuAccelerator mods c <- interpretAccelerator s
+    return $ MkMenuAccelerator (KMCtrl : mods) c
+interpretAccelerator ('S':'h':'i':'f':'t':'+':s) = do
+    MkMenuAccelerator mods c <- interpretAccelerator s
+    return $ MkMenuAccelerator (KMShift : mods) c
+interpretAccelerator ('A':'l':'t':'+':s) = do
+    MkMenuAccelerator mods c <- interpretAccelerator s
+    return $ MkMenuAccelerator (KMAlt : mods) c
+interpretAccelerator _ = Nothing
+
 menu_action ::
        forall baseedit. (?pinafore :: PinaforeContext baseedit)
-    => PinaforeImmutableReference baseedit Text
+    => PinaforeImmutableReference baseedit (Text, Maybe Text)
     -> PinaforeImmutableReference baseedit (PinaforeAction baseedit TopType)
     -> MenuEntry baseedit
 menu_action rlabel raction =
-    ActionMenuEntry (funcEditFunction (\kt -> (fromKnow "" kt, Nothing)) . immutableReferenceToFunction rlabel) $
+    ActionMenuEntry
+        (funcEditFunction
+             (\kta -> let
+                  (t, a) = fromKnow ("", Nothing) kta
+                  in (t, a >>= interpretAccelerator . unpack)) .
+         immutableReferenceToFunction rlabel) $
     actionReference raction
 
 ui_menubar :: forall baseedit. [MenuEntry baseedit] -> UISpec BottomType baseedit
