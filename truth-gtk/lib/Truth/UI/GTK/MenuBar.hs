@@ -21,16 +21,17 @@ attachMenuEntry ms (ActionMenuEntry rlabel raction) = do
     item <- menuItemNew
     menuShellAppend ms item
     cvBindEditFunction rlabel $ \(label, maccel) ->
+        traceBracket "GTK.MenuBar:label" $
         liftIO $ do
+            set item [#label := label] -- creates child if not present
             mc <- binGetChild item
             for_ mc $ \c -> do
                 ml <- castTo AccelLabel c
                 for_ ml $ \l -> do
-                    set l [#label := label]
                     case maccel of
-                        Nothing -> accelLabelSetAccel l 0 []
+                        Nothing -> traceBracket "GTK.MenuBar:accel:empty" $ accelLabelSetAccel l 0 []
                         Just (MkMenuAccelerator mods key) ->
-                            accelLabelSetAccel l (fromIntegral $ ord key) $ fmap toModifierType mods
+                            traceBracket "GTK.MenuBar:accel:key" $ accelLabelSetAccel l (fromIntegral $ ord key) $ fmap toModifierType mods
     cvBindEditFunction raction $ \maction ->
         liftIO $ do
             writeIORef aref maction
