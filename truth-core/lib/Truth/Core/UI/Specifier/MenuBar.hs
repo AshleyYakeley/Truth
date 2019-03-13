@@ -5,7 +5,16 @@ import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-type MenuAccelerator = Char
+data KeyboardModifier
+    = KMShift
+    | KMCtrl
+    | KMAlt
+
+type KeyboardKey = Char
+
+data MenuAccelerator =
+    MkMenuAccelerator [KeyboardModifier]
+                      KeyboardKey
 
 data MenuEntry edit
     = SeparatorMenuEntry

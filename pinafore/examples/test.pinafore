@@ -13,12 +13,12 @@ openmywindow title contents = afix $ \window -> let
         [
             menu_submenu "File"
             [
-                menu_action {"Close"} {closewindow window}
+                menu_action {("Close", Just "Ctrl+W")} {closewindow window}
             ],
             menu_submenu "Edit"
             [
-                menu_action {"Undo"} {queue_undo},
-                menu_action {"Redo"} {queue_undo}
+                menu_action {("Undo", Just "Ctrl+Z")} {queue_undo},
+                menu_action {("Redo", Just "Ctrl+Y")} {queue_undo}
             ]
         ]
     in openwindow title $ ui_vertical
