@@ -7,7 +7,7 @@ packages:
 - truth-gtk
 - pinafore
 
-resolver: lts-13.6
+resolver: lts-13.12
 
 extra-deps:
 - mime-0.4.0.2
