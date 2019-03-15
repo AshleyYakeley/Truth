@@ -21,11 +21,11 @@ attachMenuEntry ms (ActionMenuEntry rlabel raction) = do
     menuShellAppend ms item
     cvBindEditFunction rlabel $ \(label, maccel) ->
         liftIO $ do
+            set item [#label := label] -- creates child if not present
             mc <- binGetChild item
             for_ mc $ \c -> do
                 ml <- castTo AccelLabel c
                 for_ ml $ \l -> do
-                    set l [#label := label]
                     case maccel of
                         Nothing -> accelLabelSetAccel l 0 []
                         Just (MkMenuAccelerator mods key) ->
