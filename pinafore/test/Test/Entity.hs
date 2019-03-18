@@ -101,6 +101,26 @@ testEntity =
               , exceptionTest "let opentype T in fail \"text\""
               ]
         , tgroup
+              "do"
+              [ pointTest "do return () end"
+              , pointTest "do return (); end"
+              , pointTest "do testeqval 3 3 end"
+              , pointTest "do a <- return 3; testeqval 3 a end"
+              , pointTest "do a <- return 3; b <- return $ a + a; testeqval 6 b end"
+              ]
+        , tgroup
+              "stop"
+              [ pointTest "return ()"
+              , badPointTest "fail \"failure\""
+              , pointTest "stop"
+              , pointTest "do stop; fail \"unstopped\"; end"
+              , pointTest "do a <- onstop (return 1) (return 2); testeqval 2 a; end"
+              , pointTest "do a <- onstop stop (return 2); testeqval 2 a; end"
+              , badPointTest "do a <- onstop stop (return 2); fail \"unstopped\"; end"
+              , pointTest "do a <- onstop (return 1) stop; testeqval 1 a; end"
+              , badPointTest "do a <- onstop (return 1) stop; fail \"unstopped\"; end"
+              ]
+        , tgroup
               "equality"
               [ pointTest "testeqval 1 1"
               , pointTest "testeqval 1 \"1\""
@@ -117,6 +137,13 @@ testEntity =
               , pointTest "let rp = {pass} in runreforfail {%rp}"
               , pointTest "runreforfail {let rp = {pass} in %rp}"
               , pointTest "let rp = {pass} in runreforfail {let p= %rp in p}"
+              ]
+        , tgroup
+              "reference stop"
+              [ pointTest "do stop; fail \"unstopped\"; end"
+              , pointTest "do a <- get unknown; fail \"unstopped\"; end"
+              , pointTest "do {1} := 1; fail \"unstopped\"; end"
+              , pointTest "do delete {1}; fail \"unstopped\"; end"
               ]
         , context
               [ "convr :: Rational -> Rational;convr = id"
@@ -372,26 +399,6 @@ testEntity =
                     , pointTest
                           "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testeq {Right \"abc\"} $ enta !$ {e1})"
                     ]
-              ]
-        , tgroup
-              "do"
-              [ pointTest "do return () end"
-              , pointTest "do return (); end"
-              , pointTest "do testeqval 3 3 end"
-              , pointTest "do a <- return 3; testeqval 3 a end"
-              , pointTest "do a <- return 3; b <- return $ a + a; testeqval 6 b end"
-              ]
-        , tgroup
-              "stop"
-              [ pointTest "return ()"
-              , badPointTest "fail \"failure\""
-              , pointTest "stop"
-              , pointTest "do stop; fail \"unstopped\"; end"
-              , pointTest "do a <- onstop (return 1) (return 2); testeqval 2 a; end"
-              , pointTest "do a <- onstop stop (return 2); testeqval 2 a; end"
-              , badPointTest "do a <- onstop stop (return 2); fail \"unstopped\"; end"
-              , pointTest "do a <- onstop (return 1) stop; testeqval 1 a; end"
-              , badPointTest "do a <- onstop (return 1) stop; fail \"unstopped\"; end"
               ]
         , tgroup
               "closedtype"

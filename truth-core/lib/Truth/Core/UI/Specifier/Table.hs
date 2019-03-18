@@ -70,7 +70,7 @@ instance UIType TableUISpec where
 tableNewItem ::
        forall tedit cont iedit sel. IONewItemKeyContainer cont
     => EditLens tedit (KeyEdit cont iedit)
-    -> View sel tedit ()
+    -> View sel tedit Bool
 tableNewItem tableLens =
     viewMapEdit tableLens $
     viewObjectPushEdit $ \_ push -> do

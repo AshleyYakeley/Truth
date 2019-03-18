@@ -51,7 +51,8 @@ optionFromStore store = do
                 (True, iter) -> do
                     i <- seqStoreIterToIndex iter
                     (t, _) <- seqStoreGetValue store i
-                    push [MkWholeEdit t]
+                    _ <- push [MkWholeEdit t]
+                    return ()
                 (False, _) -> return ()
     let
         blockSignal :: forall a. IO a -> IO a

@@ -244,7 +244,7 @@ base_predefinitions =
           , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
           , mkValEntry
                 "stop"
-                "Stop. This is similar to an exception that can be caught with `onstop`. The default handler (for the main program, button presses, etc.), is to ignore it."
+                "Stop. This is similar to an exception that can be caught with `onstop`. The default handler (for the main program, button presses, etc.), is to catch and ignore it."
                 (empty :: PinaforeAction baseedit BottomType)
           , mkValEntry "onstop" "`onstop p q` does `q` first, and if it stops, then does `p`." $ onstop @baseedit
           , mkValEntry
@@ -300,8 +300,8 @@ base_predefinitions =
           , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $
             pinaforeReferenceGet @baseedit @A
           , mkValEntry "runref" "Run an action from a reference." $ runPinaforeReference @baseedit
-          , mkValEntry ":=" "Set a reference to a value." $ setentity @baseedit
-          , mkValEntry "delete" "Delete an entity reference." $ deleteentity @baseedit
+          , mkValEntry ":=" "Set a reference to a value. Stop if failed." $ setentity @baseedit
+          , mkValEntry "delete" "Delete an entity reference. Stop if failed." $ deleteentity @baseedit
           ]
     , docTreeEntry
           "Sets"

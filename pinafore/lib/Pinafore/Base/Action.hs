@@ -28,7 +28,11 @@ pinaforeLensPush :: PinaforeLensValue baseedit edit -> [edit] -> PinaforeAction 
 pinaforeLensPush lens edits = do
     (_, object) <- MkPinaforeAction ask
     case lensObject True lens object of
-        MkObject {..} -> liftIO $ runTransform objRun $ pushEdit $ objEdit edits
+        MkObject {..} -> do
+            ok <- liftIO $ runTransform objRun $ pushEdit $ objEdit edits
+            if ok
+                then return ()
+                else empty
 
 data PinaforeWindow = MkPinaforeWindow
     { pwWindow :: UIWindow

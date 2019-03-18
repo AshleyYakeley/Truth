@@ -47,12 +47,14 @@ freeIOObject firsta allowed = do
     var <- newMVar firsta
     return $ mvarObject var allowed
 
-pushEdit :: Monad m => m (Maybe (m ())) -> m ()
+pushEdit :: Monad m => m (Maybe (m ())) -> m Bool
 pushEdit mmmu = do
     mmu <- mmmu
     case mmu of
-        Just mu -> mu
-        Nothing -> return ()
+        Just mu -> do
+            mu
+            return True
+        Nothing -> return False
 
 pushOrFail :: MonadFail m => String -> m (Maybe (m ())) -> m ()
 pushOrFail s mmmu = do

@@ -45,7 +45,7 @@ viewObjectMaybeEdit call = do
     liftIO $ runTransform objRun $ call unliftIO $ objEdit
 
 viewObjectPushEdit ::
-       (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => ([edit] -> m ()) -> m r) -> View sel edit r
+       (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => ([edit] -> m Bool) -> m r) -> View sel edit r
 viewObjectPushEdit call = viewObjectMaybeEdit $ \unlift push -> call unlift $ \edits -> pushEdit $ push edits
 
 viewSetSelection :: Aspect sel -> View sel edit ()

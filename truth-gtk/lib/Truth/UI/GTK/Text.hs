@@ -45,7 +45,8 @@ textView = do
                 unlift $
                 viewObjectPushEdit $ \_ push -> do
                     p <- getSequencePoint iter
-                    push $ pure $ StringReplaceSection (MkSequenceRun p 0) text
+                    _ <- push $ pure $ StringReplaceSection (MkSequenceRun p 0) text
+                    return ()
     _ <-
         cvLiftView $
         liftIOView $ \unlift ->
@@ -54,7 +55,8 @@ textView = do
                 unlift $
                 viewObjectPushEdit $ \_ push -> do
                     run <- getSequenceRun iter1 iter2
-                    push $ pure $ StringReplaceSection run mempty
+                    _ <- push $ pure $ StringReplaceSection run mempty
+                    return ()
     widget <- new TextView [#buffer := buffer]
     cvReceiveUpdate $ \_ _ edit ->
         liftIO $

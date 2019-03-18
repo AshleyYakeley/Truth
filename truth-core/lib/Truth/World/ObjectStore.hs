@@ -102,15 +102,20 @@ directoryObjectStore (MkObject (objRun :: UnliftIO m) rd push) nameStr = let
                         case mitem of
                             Just (FSFileItem _) -> do
                                 code <- findUndoCode name 0
-                                pushEdit $ push [FSEditRenameItem name (undoName name code)]
+                                pushOrFail ("couldn't rename FS item " <> show name) $
+                                    push [FSEditRenameItem name (undoName name code)]
                             _ -> return ()
                     SingleObjectDeleteCreate -> do
                         mitem <- rd $ FSReadItem name
                         case mitem of
                             Just (FSFileItem _) -> do
                                 code <- findUndoCode name 0
-                                pushEdit $
+                                pushOrFail ("couldn't rename FS item " <> show name) $
                                     push [FSEditRenameItem name (undoName name code), FSEditCreateFile name mempty]
-                            _ -> pushEdit $ push [FSEditCreateFile name mempty]
-                    SingleObjectRecover code -> pushEdit $ push [FSEditRenameItem (undoName name code) name]
+                            _ ->
+                                pushOrFail ("couldn't create FS item " <> show name) $
+                                push [FSEditCreateFile name mempty]
+                    SingleObjectRecover code ->
+                        pushOrFail ("couldn't rename FS item " <> show name) $
+                        push [FSEditRenameItem (undoName name code) name]
     in MkObject {..}

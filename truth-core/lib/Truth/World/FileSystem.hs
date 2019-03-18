@@ -133,7 +133,7 @@ subdirectoryObject create dir (MkObject (MkTransform run :: UnliftIO m) rd push)
         MkTransform $ \ma ->
             run $ do
                 if create
-                    then pushEdit $ push [FSEditCreateDirectory dir]
+                    then pushOrFail ("couldn't create directory " <> show dir) $ push [FSEditCreateDirectory dir]
                     else return ()
                 ma
     insideToOutside :: FilePath -> FilePath

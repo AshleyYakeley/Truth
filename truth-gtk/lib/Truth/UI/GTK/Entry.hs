@@ -20,7 +20,8 @@ textEntryGetView =
                      viewOn widget #changed $
                      viewObjectPushEdit $ \_ push -> do
                          st <- get widget #text
-                         push [MkWholeEdit st]
+                         _ <- push [MkWholeEdit st]
+                         return ()
                  cvReceiveUpdate $ \_ _ (MkWholeEdit st) ->
                      liftIO $ withSignalBlocked widget changedSignal $ set widget [#text := st]
                  toWidget widget) $
