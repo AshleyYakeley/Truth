@@ -23,15 +23,15 @@ runContext tree = tree mempty
 prefix :: [String] -> Text
 prefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"
 
-scriptTest :: Text -> Text -> ContextTestTree
-scriptTest name text c =
+scriptTest :: Text -> Text -> (IO () -> IO ()) -> ContextTestTree
+scriptTest name text checker c =
     testCase (unpack name) $
     withTestPinaforeContext $ \_getTableState -> do
         action <- pinaforeInterpretFile "<test>" $ prefix c <> text
-        action
+        checker action
 
 pointTest :: Text -> ContextTestTree
-pointTest text = scriptTest text text
+pointTest text = scriptTest text text id
 
 assertThrows :: IO a -> IO ()
 assertThrows ma = do
@@ -39,6 +39,9 @@ assertThrows ma = do
     if t
         then assertFailure "no exception"
         else return ()
+
+badPointTest :: Text -> ContextTestTree
+badPointTest text = scriptTest text text assertThrows
 
 badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
@@ -377,6 +380,18 @@ testEntity =
               , pointTest "do testeqval 3 3 end"
               , pointTest "do a <- return 3; testeqval 3 a end"
               , pointTest "do a <- return 3; b <- return $ a + a; testeqval 6 b end"
+              ]
+        , tgroup
+              "stop"
+              [ pointTest "return ()"
+              , badPointTest "fail \"failure\""
+              , pointTest "stop"
+              , pointTest "do stop; fail \"unstopped\"; end"
+              , pointTest "do a <- onstop (return 1) (return 2); testeqval 2 a; end"
+              , pointTest "do a <- onstop stop (return 2); testeqval 2 a; end"
+              , badPointTest "do a <- onstop stop (return 2); fail \"unstopped\"; end"
+              , pointTest "do a <- onstop (return 1) stop; testeqval 1 a; end"
+              , badPointTest "do a <- onstop (return 1) stop; fail \"unstopped\"; end"
               ]
         , tgroup
               "closedtype"
