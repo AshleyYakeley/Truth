@@ -8,7 +8,7 @@ import Truth.Core
 
 newtype PinaforeAction baseedit a =
     MkPinaforeAction (ReaderT (WindowSpec baseedit -> IO UIWindow, Object baseedit) (ComposeM Know IO) a)
-    deriving (Functor, Applicative, Monad, MonadFix, MonadIO)
+    deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFix, MonadIO)
 
 instance MonadFail (PinaforeAction baseedit) where
     fail s = liftIO $ fail s
@@ -41,7 +41,8 @@ pinaforeNewWindow uiw = do
     return $ MkPinaforeWindow w
 
 pinaforeActionKnow :: forall baseedit a. Know a -> PinaforeAction baseedit a
-pinaforeActionKnow ka = MkPinaforeAction $ lift $ liftInner ka
+pinaforeActionKnow (Known a) = pure a
+pinaforeActionKnow Unknown = empty
 
 knowPinaforeAction :: forall baseedit a. PinaforeAction baseedit a -> PinaforeAction baseedit (Know a)
 knowPinaforeAction (MkPinaforeAction (ReaderT rka)) =

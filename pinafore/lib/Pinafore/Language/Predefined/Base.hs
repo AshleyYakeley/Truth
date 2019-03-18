@@ -43,11 +43,7 @@ entityuuid :: Entity -> Text
 entityuuid p = pack $ show p
 
 onstop :: forall baseedit. PinaforeAction baseedit A -> PinaforeAction baseedit A -> PinaforeAction baseedit A
-onstop p q = do
-    ka <- knowPinaforeAction q
-    case ka of
-        Known a -> return a
-        Unknown -> p
+onstop p q = q <|> p
 
 base_predefinitions ::
        forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
@@ -248,8 +244,8 @@ base_predefinitions =
           , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
           , mkValEntry
                 "stop"
-                "Stop. This is similar to an exception that can be caught with `onstop`. The default handler (for the main program, button presses, etc.), is to ignore it." $
-            pinaforeActionKnow @baseedit @BottomType Unknown
+                "Stop. This is similar to an exception that can be caught with `onstop`. The default handler (for the main program, button presses, etc.), is to ignore it."
+                (empty :: PinaforeAction baseedit BottomType)
           , mkValEntry "onstop" "`onstop p q` does `q` first, and if it stops, then does `p`." $ onstop @baseedit
           , mkValEntry
                 "for_"
