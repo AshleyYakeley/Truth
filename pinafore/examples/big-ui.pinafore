@@ -38,7 +38,7 @@ properties entry = ui_ignore $ ui_vertical
 prop0 = property @T @Text !"000";
 
 w :: Action Window;
-w = openwindow {"Test"} $ ui_ignore $ ui_vertical
+w = openwindow {"Test"} {[]} $ ui_ignore $ ui_vertical
     [
         ta_entry prop0,
         #(properties plabelta_entry, False),

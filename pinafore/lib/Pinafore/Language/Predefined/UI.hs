@@ -99,10 +99,12 @@ ui_dynamic uiref = switchUISpec $ pinaforeImmutableReferenceValue nullUISpec uir
 openwindow ::
        (?pinafore :: PinaforeContext baseedit)
     => PinaforeImmutableReference baseedit Text
+    -> PinaforeImmutableReference baseedit (MenuBar baseedit)
     -> UISpec TopType baseedit
     -> PinaforeAction baseedit PinaforeWindow
-openwindow title wsContent = let
+openwindow title mbar wsContent = let
     wsTitle = clearText . immutableReferenceToFunction title
+    wsMenuBar = Just $ funcEditFunction (fromKnow mempty) . immutableReferenceToFunction mbar
     in pinaforeNewWindow MkWindowSpec {..}
 
 ui_withselection :: (PinaforeAction baseedit A -> UISpec A baseedit) -> UISpec A baseedit
@@ -141,9 +143,6 @@ menu_action rlabel raction =
                   in (t, a >>= interpretAccelerator . unpack)) .
          immutableReferenceToFunction rlabel) $
     actionReference raction
-
-ui_menubar :: forall baseedit. [MenuEntry baseedit] -> UISpec BottomType baseedit
-ui_menubar = menuBarUISpec
 
 ui_scrolled :: forall baseedit. UISpec A baseedit -> UISpec A baseedit
 ui_scrolled = scrolledUISpec
@@ -199,7 +198,6 @@ ui_predefinitions =
           , mkValEntry "menu_submenu" "Submenu menu item." SubMenuEntry
           , mkValEntry "menu_action" "Action menu item. Item will be disabled if the action reference is unknown." $
             menu_action @baseedit
-          , mkValEntry "ui_menubar" "Menu bar." $ ui_menubar @baseedit
           ]
     , docTreeEntry
           "Window"

@@ -67,7 +67,10 @@ soupWindow createWindow dirpath = do
     sub <- makeObjectSubscriber $ soupObject dirpath
     rec
         let
-            mbar w = menuBarUISpec [SubMenuEntry "File" [simpleActionMenuItem "Close" Nothing $ uiWindowClose w]]
+            mbar :: UIWindow -> Maybe (EditFunction edit (WholeEdit [MenuEntry edit]))
+            mbar w =
+                Just $
+                constEditFunction $ [SubMenuEntry "File" [simpleActionMenuItem "Close" Nothing $ uiWindowClose w]]
             wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
             openItem :: Aspect UUID -> IO ()
             openItem aspkey = do
@@ -79,22 +82,16 @@ soupWindow createWindow dirpath = do
                             subwin <-
                                 createWindow $
                                 MkUserInterface (mapSubscriber lens sub) $
-                                MkWindowSpec (constEditFunction "item") $
-                                verticalUISpec
-                                    [ (mbar subwin, False)
-                                    , ( mapUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
-                                        oneWholeUISpec $ oneWholeUISpec noteEditSpec
-                                      , True)
-                                    ]
+                                MkWindowSpec (constEditFunction "item") (mbar subwin) $
+                                mapUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
+                                oneWholeUISpec $ oneWholeUISpec noteEditSpec
                         return ()
                     Nothing -> return ()
+            wsMenuBar = mbar window
             wsContent =
                 withAspectUISpec $ \aspect ->
                     verticalUISpec
-                        [ (mbar window, False)
-                        , (simpleButtonUISpec (constEditFunction "View") (openItem aspect), False)
-                        , (soupEditSpec, True)
-                        ]
+                        [(simpleButtonUISpec (constEditFunction "View") (openItem aspect), False), (soupEditSpec, True)]
             userinterfaceSpecifier = MkWindowSpec {..}
             userinterfaceSubscriber = sub
         window <- createWindow $ MkUserInterface {..}

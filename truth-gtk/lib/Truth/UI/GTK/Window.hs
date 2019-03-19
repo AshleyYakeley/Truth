@@ -60,7 +60,6 @@ allGetView =
         , layoutGetView
         , pagesGetView
         , dragGetView
-        , menuBarGetView
         , scrolledGetView
         ]
 
@@ -99,9 +98,18 @@ createWindowAndChild MkWindowSpec {..} closeWindow cont =
             on window #deleteEvent $ \_ -> do
                 liftIO closeWindow
                 return True -- don't run existing handler that closes the window
+        ui <-
+            case wsMenuBar of
+                Nothing -> return content
+                Just efmbar -> do
+                    mb <- switchView $ funcEditFunction (\mbar -> createMenuBar mbar >>= toWidget) . efmbar
+                    vbox <- new Box [#orientation := OrientationVertical]
+                    #packStart vbox mb False False 0
+                    #packStart vbox content True True 0
+                    toWidget vbox
         return $ do
-            #add window content
-            #show content
+            #add window ui
+            #show ui
             #showAll window
             let uiWindowClose = closeWindow
             return $ MkUIWindow {..}

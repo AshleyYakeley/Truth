@@ -1,5 +1,5 @@
 module Truth.UI.GTK.MenuBar
-    ( menuBarGetView
+    ( createMenuBar
     ) where
 
 import Data.IORef
@@ -7,7 +7,6 @@ import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.GView
 
 toModifierType :: KeyboardModifier -> ModifierType
 toModifierType KMShift = ModifierTypeShiftMask
@@ -54,14 +53,8 @@ attachMenuEntry ms SeparatorMenuEntry = do
 attachMenuEntries :: IsMenuShell menushell => menushell -> [MenuEntry edit] -> CreateView sel edit ()
 attachMenuEntries menu mm = for_ mm $ attachMenuEntry menu
 
-createWidget :: [MenuEntry edit] -> CreateView sel edit Widget
-createWidget menu = do
-    widget <- menuBarNew
-    attachMenuEntries widget menu
-    toWidget widget
-
-menuBarGetView :: GetGView
-menuBarGetView =
-    MkGetView $ \_ uispec -> do
-        MkMenuBarUISpec menu <- isUISpec uispec
-        return $ createWidget menu
+createMenuBar :: Truth.Core.MenuBar edit -> CreateView sel edit Gtk.MenuBar
+createMenuBar menu = do
+    mbar <- menuBarNew
+    attachMenuEntries mbar menu
+    return mbar

@@ -32,7 +32,7 @@ main =
                     wholeTextObj :: Object (WholeEdit ((Result Text) Text))
                     wholeTextObj = cacheWholeObject $ mapObject textLens bsObj
                     ui :: Subscriber (OneWholeEdit (Result Text) (StringEdit Text))
-                       -> (forall sel edit. UIWindow -> UISpec sel edit -> UISpec sel edit)
+                       -> (forall sel edit. UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit))
                        -> UISpec (EditLens (StringEdit Text) (StringEdit Text)) (OneWholeEdit (Result Text) (StringEdit Text))
                     ui sub extraui =
                         withAspectUISpec $ \aspect -> let
@@ -50,22 +50,28 @@ main =
                     makeWindow ::
                            Text
                         -> Subscriber (OneWholeEdit (Result Text) (StringEdit Text))
-                        -> (forall sel edit. UIWindow -> UISpec sel edit -> UISpec sel edit)
+                        -> (forall sel edit. UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit))
                         -> IO ()
                     makeWindow title sub extraui = do
                         rec
+                            let (mbar, uic) = extraui r $ ui sub extraui
                             r <-
                                 createWindow $
                                 MkUserInterface sub $
-                                MkWindowSpec (constEditFunction title) (extraui r $ ui sub extraui)
+                                MkWindowSpec (constEditFunction title) (Just $ constEditFunction mbar) uic
                         return ()
-                    simpleUI :: forall sel edit. UIWindow -> UISpec sel edit -> UISpec sel edit
+                    simpleUI :: forall sel edit. UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit)
                     simpleUI ~MkUIWindow {..} spec = let
-                        mbar :: [MenuEntry edit]
+                        mbar :: MenuBar edit
                         mbar = [SubMenuEntry "File" [simpleActionMenuItem "Close" Nothing uiWindowClose]]
-                        in verticalUISpec [(menuBarUISpec mbar, False), (spec, True)]
+                        in (mbar, spec)
                     extraUI ::
-                           forall sel edit. SaveActions -> UndoActions -> UIWindow -> UISpec sel edit -> UISpec sel edit
+                           forall sel edit.
+                           SaveActions
+                        -> UndoActions
+                        -> UIWindow
+                        -> UISpec sel edit
+                        -> (MenuBar edit, UISpec sel edit)
                     extraUI (MkSaveActions saveActions) (MkUndoActions undo redo) ~MkUIWindow {..} spec = let
                         saveAction = do
                             mactions <- saveActions
@@ -95,7 +101,7 @@ main =
                                   , simpleActionMenuItem "Redo" Nothing $ redo >> return ()
                                   ]
                             ]
-                        in verticalUISpec [(menuBarUISpec mbar, False), (spec, True)]
+                        in (mbar, spec)
                 action <-
                     if saveOpt
                         then do

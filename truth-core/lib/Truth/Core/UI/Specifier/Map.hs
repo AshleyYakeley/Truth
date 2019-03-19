@@ -23,9 +23,6 @@ convertUISpec ::
     -> UISpec sel edita
 convertUISpec = mapUISpec convertEditLens
 
-mapWindowSpec :: EditLens edita editb -> WindowSpec editb -> WindowSpec edita
-mapWindowSpec lens (MkWindowSpec title content) = MkWindowSpec (title . editLensFunction lens) (mapUISpec lens content)
-
 tupleEditUISpecs ::
        (TupleWitness FullEdit s, FiniteTupleSelector s)
     => (forall edit. FullEdit edit => s edit -> (UISpec sel edit, t))
