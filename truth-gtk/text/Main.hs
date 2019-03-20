@@ -21,10 +21,10 @@ optParser = (,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') 
 
 main :: IO ()
 main =
-    truthMain $ \args createWindow ->
+    truthMain $ \MkTruthContext {..} ->
         liftIO $ do
             (paths, double, saveOpt) <-
-                O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
+                O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
             for_ paths $ \path -> do
                 let
                     bsObj :: Object ByteStringEdit
@@ -56,7 +56,7 @@ main =
                         rec
                             let (mbar, uic) = extraui r $ ui sub extraui
                             r <-
-                                createWindow $
+                                tcCreateWindow $
                                 MkUserInterface sub $
                                 MkWindowSpec (constEditFunction title) (Just $ constEditFunction mbar) uic
                         return ()

@@ -1,5 +1,6 @@
 module Truth.UI.GTK.Window
     ( UserInterface(..)
+    , TruthContext(..)
     , truthMain
     , getMaybeView
     ) where
@@ -151,14 +152,20 @@ makeWindowCountRef MkProgramContext {..} ui = let
            Shapes.put $ i + 1
            return twindow
 
-truthMain :: ([String] -> (UserInterface WindowSpec -> IO UIWindow) -> LifeCycle ()) -> IO ()
+data TruthContext = MkTruthContext
+    { tcArguments :: [String]
+    , tcCreateWindow :: UserInterface WindowSpec -> IO UIWindow
+    }
+
+truthMain :: (TruthContext -> LifeCycle ()) -> IO ()
 truthMain appMain = do
-    args <- getArgs
+    tcArguments <- getArgs
     _ <- GI.init Nothing
     pcMainLoop <- mainLoopNew Nothing False
     -- _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50
     pcWindowCount <- newMVar 0
-    withLifeCycle (appMain args (\uiw -> makeWindowCountRef MkProgramContext {..} uiw)) $ \() -> do
+    let tcCreateWindow uiw = makeWindowCountRef MkProgramContext {..} uiw
+    withLifeCycle (appMain MkTruthContext {..}) $ \() -> do
         c <- mvarRun pcWindowCount $ Shapes.get
         if c == 0
             then return ()
