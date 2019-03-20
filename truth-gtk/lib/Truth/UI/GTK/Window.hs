@@ -102,7 +102,9 @@ createWindowAndChild MkWindowSpec {..} closeWindow cont =
             case wsMenuBar of
                 Nothing -> return content
                 Just efmbar -> do
-                    mb <- switchView $ funcEditFunction (\mbar -> createMenuBar mbar >>= toWidget) . efmbar
+                    ag <- new AccelGroup []
+                    #addAccelGroup window ag
+                    mb <- switchView $ funcEditFunction (\mbar -> createMenuBar ag mbar >>= toWidget) . efmbar
                     vbox <- new Box [#orientation := OrientationVertical]
                     #packStart vbox mb False False 0
                     #packStart vbox content True True 0

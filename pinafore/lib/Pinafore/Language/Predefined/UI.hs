@@ -132,16 +132,16 @@ interpretAccelerator _ = Nothing
 
 menu_action ::
        forall baseedit. (?pinafore :: PinaforeContext baseedit)
-    => PinaforeImmutableReference baseedit (Text, Maybe Text)
+    => Text
+    -> Maybe Text
     -> PinaforeImmutableReference baseedit (PinaforeAction baseedit TopType)
     -> MenuEntry baseedit
-menu_action rlabel raction =
+menu_action label maccel raction =
     ActionMenuEntry
-        (funcEditFunction
-             (\kta -> let
-                  (t, a) = fromKnow ("", Nothing) kta
-                  in (t, a >>= interpretAccelerator . unpack)) .
-         immutableReferenceToFunction rlabel) $
+        label
+        (do
+             accel <- maccel
+             interpretAccelerator $ unpack accel) $
     actionReference raction
 
 ui_scrolled :: forall baseedit. UISpec A baseedit -> UISpec A baseedit

@@ -17,7 +17,8 @@ data MenuAccelerator =
 
 data MenuEntry edit
     = SeparatorMenuEntry
-    | ActionMenuEntry (EditFunction edit (WholeEdit (Text, Maybe MenuAccelerator)))
+    | ActionMenuEntry Text
+                      (Maybe MenuAccelerator)
                       (EditFunction edit (WholeEdit (Maybe (IO ()))))
     | SubMenuEntry Text
                    [MenuEntry edit]
@@ -26,8 +27,8 @@ type MenuBar edit = [MenuEntry edit]
 
 mapMenuEntry :: EditFunction editb edita -> MenuEntry edita -> MenuEntry editb
 mapMenuEntry _ SeparatorMenuEntry = SeparatorMenuEntry
-mapMenuEntry ef (ActionMenuEntry eflabel efaction) = ActionMenuEntry (eflabel . ef) (efaction . ef)
+mapMenuEntry ef (ActionMenuEntry label maccel efaction) = ActionMenuEntry label maccel (efaction . ef)
 mapMenuEntry ef (SubMenuEntry name entries) = SubMenuEntry name $ fmap (mapMenuEntry ef) entries
 
 simpleActionMenuItem :: Text -> Maybe MenuAccelerator -> IO () -> MenuEntry edit
-simpleActionMenuItem t ma action = ActionMenuEntry (constEditFunction (t, ma)) $ constEditFunction $ Just action
+simpleActionMenuItem label maccel action = ActionMenuEntry label maccel $ constEditFunction $ Just action
