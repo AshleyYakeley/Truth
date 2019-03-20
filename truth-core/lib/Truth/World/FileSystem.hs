@@ -108,18 +108,23 @@ fileSystemObject = let
         if isSymLink
             then fmap Just $ getSymbolicLinkTarget path
             else return Nothing
-    ifMissing :: FilePath -> IO () -> IO (Maybe (IO ()))
-    ifMissing path action = testEditAction (fmap not $ doesPathExist path) action
     objEdit :: [FSEdit] -> IO (Maybe (IO ()))
     objEdit =
         singleEdit $ \edit ->
             case edit of
-                FSEditCreateDirectory path -> ifMissing path $ createDirectory path
-                FSEditCreateFile path bs -> ifMissing path $ createFile path bs
-                FSEditCreateSymbolicLink path target -> ifMissing path $ createFileLink target path
-                FSEditDeleteNonDirectory path ->
-                    testEditAction ((&&) <$> doesPathExist path <*> fmap not (doesDirectoryExist path)) $
-                    removeFile path
+                FSEditCreateDirectory path -> do
+                    isDir <- doesDirectoryExist path
+                    if isDir
+                        then return $ Just $ return ()
+                        else do
+                            exists <- doesPathExist path
+                            if exists
+                                then return Nothing
+                                else return $ Just $ createDirectory path
+                FSEditCreateFile path bs -> testEditAction (fmap not $ doesDirectoryExist path) $ createFile path bs
+                FSEditCreateSymbolicLink path target ->
+                    testEditAction (fmap not $ doesDirectoryExist path) $ createFileLink target path
+                FSEditDeleteNonDirectory path -> testEditAction (fmap not $ doesDirectoryExist path) $ removeFile path
                 FSEditDeleteEmptyDirectory path -> testEditAction (doesDirectoryExist path) $ removeDirectory path
                 FSEditRenameItem fromPath toPath ->
                     testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $
