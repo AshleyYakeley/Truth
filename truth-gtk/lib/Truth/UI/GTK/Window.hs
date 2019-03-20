@@ -134,27 +134,31 @@ makeViewWindow tellclose (MkUserInterface (sub :: Subscriber edit) (window :: Wi
 
 data ProgramContext = MkProgramContext
     { pcMainLoop :: MainLoop
-    , pcWindowCount :: MVar Int
+    , pcWindowClosers :: MVar (Store (IO ()))
     }
 
 makeWindowCountRef :: ProgramContext -> UserInterface WindowSpec -> IO UIWindow
 makeWindowCountRef MkProgramContext {..} ui = let
-    closer =
-        mvarRun pcWindowCount $ do
-            i <- Shapes.get
-            Shapes.put $ i - 1
-            if i == 1
+    closer key =
+        mvarRun pcWindowClosers $ do
+            oldstore <- Shapes.get
+            let newstore = deleteStore key oldstore
+            Shapes.put newstore
+            if isEmptyStore newstore
                 then #quit pcMainLoop
                 else return ()
-    in mvarRun pcWindowCount $ do
-           twindow <- lift $ makeViewWindow closer ui
-           i <- Shapes.get
-           Shapes.put $ i + 1
+    in mvarRun pcWindowClosers $ do
+           oldstore <- Shapes.get
+           rec
+               twindow <- lift $ makeViewWindow (closer key) ui
+               let (key, newstore) = addStore (uiWindowClose twindow) oldstore
+           Shapes.put newstore
            return twindow
 
 data TruthContext = MkTruthContext
     { tcArguments :: [String]
     , tcCreateWindow :: UserInterface WindowSpec -> IO UIWindow
+    , tcCloseAllWindows :: IO ()
     }
 
 truthMain :: (TruthContext -> LifeCycle ()) -> IO ()
@@ -163,10 +167,14 @@ truthMain appMain = do
     _ <- GI.init Nothing
     pcMainLoop <- mainLoopNew Nothing False
     -- _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50
-    pcWindowCount <- newMVar 0
-    let tcCreateWindow uiw = makeWindowCountRef MkProgramContext {..} uiw
+    pcWindowClosers <- newMVar emptyStore
+    let
+        tcCreateWindow uiw = makeWindowCountRef MkProgramContext {..} uiw
+        tcCloseAllWindows = do
+            store <- mvarRun pcWindowClosers $ Shapes.get
+            for_ store $ \cw -> cw
     withLifeCycle (appMain MkTruthContext {..}) $ \() -> do
-        c <- mvarRun pcWindowCount $ Shapes.get
-        if c == 0
+        store <- mvarRun pcWindowClosers $ Shapes.get
+        if isEmptyStore store
             then return ()
             else #run pcMainLoop

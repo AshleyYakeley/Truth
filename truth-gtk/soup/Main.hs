@@ -17,7 +17,7 @@ main =
             (dirpaths, double) <-
                 O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
             for_ dirpaths $ \dirpath -> do
-                let action = soupWindow tcCreateWindow dirpath
+                let action = soupWindow tcCreateWindow tcCloseAllWindows dirpath
                 action
                 if double
                     then action

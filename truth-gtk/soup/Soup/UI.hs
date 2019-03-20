@@ -62,15 +62,21 @@ soupObject dirpath = let
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: (UserInterface WindowSpec -> IO UIWindow) -> FilePath -> IO ()
-soupWindow createWindow dirpath = do
+soupWindow :: (UserInterface WindowSpec -> IO UIWindow) -> IO () -> FilePath -> IO ()
+soupWindow createWindow closeAllWindows dirpath = do
     sub <- makeObjectSubscriber $ soupObject dirpath
     rec
         let
             mbar :: UIWindow -> Maybe (EditFunction edit (WholeEdit [MenuEntry edit]))
             mbar w =
                 Just $
-                constEditFunction $ [SubMenuEntry "File" [simpleActionMenuItem "Close" Nothing $ uiWindowClose w]]
+                constEditFunction $
+                [ SubMenuEntry
+                      "File"
+                      [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ uiWindowClose w
+                      , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') closeAllWindows
+                      ]
+                ]
             wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
             openItem :: Aspect UUID -> IO ()
             openItem aspkey = do

@@ -36,10 +36,10 @@ sqlitePinaforeObject dirpath = do
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
 
 sqlitePinaforeContext ::
-       FilePath -> (UserInterface WindowSpec -> IO UIWindow) -> LifeCycle (PinaforeContext PinaforeEdit)
-sqlitePinaforeContext dirpath createWindow = do
+       FilePath -> (UserInterface WindowSpec -> IO UIWindow) -> IO () -> LifeCycle (PinaforeContext PinaforeEdit)
+sqlitePinaforeContext dirpath createWindow closeAllWindows = do
     pinaforeObject <- sqlitePinaforeObject dirpath
-    makePinaforeContext pinaforeObject createWindow
+    makePinaforeContext pinaforeObject createWindow closeAllWindows
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

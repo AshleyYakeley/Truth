@@ -106,7 +106,7 @@ main =
                 liftIO $ sqlitePinaforeDumpTable dirpath
             RunOption fInteract fNoRun mdirpath fpaths -> do
                 dirpath <- getDirPath mdirpath
-                context <- sqlitePinaforeContext dirpath tcCreateWindow
+                context <- sqlitePinaforeContext dirpath tcCreateWindow tcCloseAllWindows
                 let
                     ?pinafore = context
                     in liftIO $

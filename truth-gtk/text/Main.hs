@@ -63,7 +63,17 @@ main =
                     simpleUI :: forall sel edit. UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit)
                     simpleUI ~MkUIWindow {..} spec = let
                         mbar :: MenuBar edit
-                        mbar = [SubMenuEntry "File" [simpleActionMenuItem "Close" Nothing uiWindowClose]]
+                        mbar =
+                            [ SubMenuEntry
+                                  "File"
+                                  [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') uiWindowClose
+                                  , SeparatorMenuEntry
+                                  , simpleActionMenuItem
+                                        "Exit"
+                                        (Just $ MkMenuAccelerator [KMCtrl] 'Q')
+                                        tcCloseAllWindows
+                                  ]
+                            ]
                         in (mbar, spec)
                     extraUI ::
                            forall sel edit.
@@ -91,14 +101,21 @@ main =
                         mbar =
                             [ SubMenuEntry
                                   "File"
-                                  [ simpleActionMenuItem "Save" Nothing saveAction
+                                  [ simpleActionMenuItem "Save" (Just $ MkMenuAccelerator [KMCtrl] 'S') saveAction
                                   , simpleActionMenuItem "Revert" Nothing revertAction
-                                  , simpleActionMenuItem "Close" Nothing uiWindowClose
+                                  , simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') uiWindowClose
+                                  , SeparatorMenuEntry
+                                  , simpleActionMenuItem
+                                        "Exit"
+                                        (Just $ MkMenuAccelerator [KMCtrl] 'Q')
+                                        tcCloseAllWindows
                                   ]
                             , SubMenuEntry
                                   "Edit"
-                                  [ simpleActionMenuItem "Undo" Nothing $ undo >> return ()
-                                  , simpleActionMenuItem "Redo" Nothing $ redo >> return ()
+                                  [ simpleActionMenuItem "Undo" (Just $ MkMenuAccelerator [KMCtrl] 'Z') $
+                                    undo >> return ()
+                                  , simpleActionMenuItem "Redo" (Just $ MkMenuAccelerator [KMCtrl] 'Y') $
+                                    redo >> return ()
                                   ]
                             ]
                         in (mbar, spec)
