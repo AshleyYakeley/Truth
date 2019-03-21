@@ -30,10 +30,12 @@ sqlitePinaforeObject :: FilePath -> LifeCycle (Object PinaforeEdit)
 sqlitePinaforeObject dirpath = do
     tableObject1 <- lifeCycleWith $ exclusiveObject $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
+    memoryObject <- liftIO makeMemoryCellObject
     return $
         tupleObject $ \case
             PinaforeSelectPoint -> pinaforeTableEntityObject tableObject
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
+            PinaforeSelectMemory -> memoryObject
 
 sqlitePinaforeContext ::
        FilePath -> (UserInterface WindowSpec -> IO UIWindow) -> IO () -> LifeCycle (PinaforeContext PinaforeEdit)

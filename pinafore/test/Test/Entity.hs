@@ -145,6 +145,12 @@ testEntity =
               , pointTest "do {1} := 1; fail \"unstopped\"; end"
               , pointTest "do delete {1}; fail \"unstopped\"; end"
               ]
+        , tgroup
+              "memory references"
+              [ pointTest "do r <- newmemref; a <- get r; fail \"unstopped\"; end"
+              , pointTest "do r <- newmemref; r := 45; a <- get r; testeqval 45 a; end"
+              , pointTest "do r <- newmemref; r := 3; r := 4; a <- get r; testeqval 4 a; end"
+              ]
         , context
               [ "convr :: Rational -> Rational;convr = id"
               , "convn :: Number -> Number;convn = id"

@@ -23,7 +23,6 @@ import Pinafore.Language.Type
 import Pinafore.Language.Type.Simplify
 import Pinafore.Pinafore
 import Pinafore.Storage
-import Pinafore.Storage.File
 import Shapes
 import Truth.Core
 import Truth.World.ObjectStore
@@ -32,12 +31,14 @@ makeTestPinaforeContext :: LifeCycle (PinaforeContext PinaforeEdit, IO (EditSubj
 makeTestPinaforeContext = do
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
         liftIO $ freeIOObject ([], []) $ \_ -> True
+    memoryObject <- liftIO makeMemoryCellObject
     let
         pinaforeObject :: Object PinaforeEdit
         pinaforeObject =
             tupleObject $ \case
                 PinaforeSelectPoint -> pinaforeTableEntityObject $ convertObject tableStateObject
                 PinaforeSelectFile -> readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
+                PinaforeSelectMemory -> memoryObject
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getObjectSubject tableStateObject
     pc <- makePinaforeContext pinaforeObject (\_ -> return nullUIWindow) (return ())
@@ -55,8 +56,5 @@ withNullPinaforeContext f = let
     ?pinafore = nullPinaforeContext
     in f
 
-runTestPinaforeSourceScoped ::
-       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
-    => PinaforeSourceScoped baseedit a
-    -> Result Text a
+runTestPinaforeSourceScoped :: PinaforePredefinitions baseedit => PinaforeSourceScoped baseedit a -> Result Text a
 runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScoped "<input>" sa

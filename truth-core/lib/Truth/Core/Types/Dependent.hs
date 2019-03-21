@@ -2,9 +2,7 @@ module Truth.Core.Types.Dependent where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-
---import Truth.Core.Read
---import Truth.Core.Types.Pair
+import Truth.Core.Read
 import Truth.Core.Types.Tuple
 import Truth.Core.Types.Whole
 
@@ -16,23 +14,29 @@ instance TestEquality wit => TestEquality (DependentSelector wit) where
         Refl <- testEquality a1 a2
         return Refl
 
-{-
-instance (Finite a, SubjectReader (EditReader edit)) => SubjectTupleSelector (FunctionSelector a edit) where
-    type TupleSubject (FunctionSelector a edit) = a -> EditSubject edit
-    tupleReadFromSubject (MkFunctionSelector a) ab = ab a
-    tupleWriteToSubject (MkFunctionSelector a) b _ a'
-        | a == a' = b
-    tupleWriteToSubject _ _ ab a' = ab a'
+instance TestEquality wit => SubjectTupleSelector (DependentSelector wit) where
+    type TupleSubject (DependentSelector wit) = AllValue wit
+    tupleReadFromSubject (MkDependentSelector wa) av = getAllValue av wa
+    tupleWriteToSubject (MkDependentSelector wa) a = setAllValue wa a
 
-instance Finite a => FiniteTupleSelector (FunctionSelector a edit) where
-    tupleConstruct f = assemble (\a -> f (MkFunctionSelector a))
+instance (TestEquality wit, FiniteWitness wit) => FiniteTupleSelector (DependentSelector wit) where
+    tupleConstruct f = assembleWitness $ \wt -> f $ MkDependentSelector wt
 
-instance (c (EditReader edit)) => TupleReaderWitness c (FunctionSelector a edit) where
-    tupleReaderWitness (MkFunctionSelector _) = Dict
+instance TupleReaderWitness SubjectReader (DependentSelector wit) where
+    tupleReaderWitness (MkDependentSelector _) = Dict
 
-instance (c edit) => TupleWitness c (FunctionSelector a edit) where
-    tupleWitness (MkFunctionSelector _) = Dict
--}
+instance TupleReaderWitness FullSubjectReader (DependentSelector wit) where
+    tupleReaderWitness (MkDependentSelector _) = Dict
+
+instance TupleWitness ApplicableEdit (DependentSelector wit) where
+    tupleWitness (MkDependentSelector _) = Dict
+
+instance TupleWitness InvertibleEdit (DependentSelector wit) where
+    tupleWitness (MkDependentSelector _) = Dict
+
+instance TupleWitness SubjectMapEdit (DependentSelector wit) where
+    tupleWitness (MkDependentSelector _) = Dict
+
 type DependentEdit wit = TupleEdit (DependentSelector wit)
 
 dependentEditLens :: TestEquality wit => wit a -> EditLens (DependentEdit wit) (WholeEdit a)

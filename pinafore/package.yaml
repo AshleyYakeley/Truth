@@ -64,6 +64,7 @@ library:
       - Pinafore.Base.Literal
       - Pinafore.Base.Morphism
       - Pinafore.Base.Entity
+      - Pinafore.Base.Lens
       - Pinafore.Base.Edit
       - Pinafore.Base.EntityAdapter
       - Pinafore.Base.PredicateMorphism

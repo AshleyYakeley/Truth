@@ -45,8 +45,16 @@ entityuuid p = pack $ show p
 onstop :: forall baseedit. PinaforeAction baseedit A -> PinaforeAction baseedit A -> PinaforeAction baseedit A
 onstop p q = q <|> p
 
+newmemref ::
+       forall baseedit. BaseEditLens MemoryCellEdit baseedit
+    => IO (PinaforeReference baseedit '( A, A))
+newmemref = do
+    lens <- makeMemoryCellEditLens Unknown
+    return $ pinaforeLensToReference $ lens . baseEditLens
+
 base_predefinitions ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit.
+       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, BaseEditLens MemoryCellEdit baseedit)
     => [DocTreeEntry (BindDoc baseedit)]
 base_predefinitions =
     [ docTreeEntry
@@ -302,6 +310,7 @@ base_predefinitions =
           , mkValEntry "runref" "Run an action from a reference." $ runPinaforeReference @baseedit
           , mkValEntry ":=" "Set a reference to a value. Stop if failed." $ setentity @baseedit
           , mkValEntry "delete" "Delete an entity reference. Stop if failed." $ deleteentity @baseedit
+          , mkValEntry "newmemref" "Create a new reference to memory, initially unknown." $ newmemref @baseedit
           ]
     , docTreeEntry
           "Sets"

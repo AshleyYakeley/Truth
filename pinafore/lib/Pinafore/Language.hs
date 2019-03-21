@@ -1,5 +1,6 @@
 module Pinafore.Language
-    ( PinaforeAction
+    ( PinaforePredefinitions
+    , PinaforeAction
     , qTypeDescription
     , ToPinaforeType
     , resultTextToM
@@ -21,12 +22,11 @@ import Pinafore.Language.Predefined
 import Pinafore.Language.Read
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Type
-import Pinafore.Storage.File
 import Shapes
 import System.IO.Error
 
 runPinaforeScoped ::
-       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
+       (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
     => PinaforeScoped baseedit a
     -> Result Text a
 runPinaforeScoped scp =
@@ -34,15 +34,14 @@ runPinaforeScoped scp =
     withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
 
 runPinaforeSourceScoped ::
-       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
+       (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
     => FilePath
     -> PinaforeSourceScoped baseedit a
     -> Result Text a
 runPinaforeSourceScoped fpath scp = runPinaforeScoped $ runSourcePos (initialPos fpath) scp
 
 parseValue ::
-       forall baseedit.
-       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
+       forall baseedit. (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
     => Text
     -> PinaforeSourceScoped baseedit (QValue baseedit)
 parseValue text = do
@@ -51,11 +50,7 @@ parseValue text = do
 
 parseValueAtType ::
        forall baseedit t.
-       ( HasPinaforeEntityEdit baseedit
-       , HasPinaforeFileEdit baseedit
-       , FromPinaforeType baseedit t
-       , ?pinafore :: PinaforeContext baseedit
-       )
+       (PinaforePredefinitions baseedit, FromPinaforeType baseedit t, ?pinafore :: PinaforeContext baseedit)
     => Text
     -> PinaforeSourceScoped baseedit t
 parseValueAtType text = do
@@ -110,7 +105,7 @@ interactRunSourceScoped sa = do
     lift $ liftRS $ runSourcePos spos sa
 
 interactEvalExpression ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. (PinaforePredefinitions baseedit)
     => PinaforeScoped baseedit (QExpr baseedit)
     -> Interact baseedit (QValue baseedit)
 interactEvalExpression texpr =
@@ -132,8 +127,7 @@ interactParse ::
 interactParse t = remonad resultTextToM $ parseInteractiveCommand @baseedit t
 
 interactLoop ::
-       forall baseedit.
-       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
+       forall baseedit. (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
     => Handle
     -> Handle
     -> Bool
@@ -170,8 +164,7 @@ interactLoop inh outh echo = do
             interactLoop inh outh echo
 
 interact ::
-       forall baseedit.
-       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
+       forall baseedit. (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
     => Handle
     -> Handle
     -> Bool

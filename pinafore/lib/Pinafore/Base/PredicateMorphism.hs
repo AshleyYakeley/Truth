@@ -1,20 +1,15 @@
 module Pinafore.Base.PredicateMorphism
-    ( HasPinaforeEntityEdit(..)
+    ( HasPinaforeEntityEdit
     , propertyMorphism
     ) where
 
 import Pinafore.Base.Edit
 import Pinafore.Base.EntityAdapter
 import Pinafore.Base.Know
+import Pinafore.Base.Lens
 import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
-
-class HasPinaforeEntityEdit baseedit where
-    pinaforeEntityLens :: EditLens baseedit PinaforeEntityEdit
-
-instance HasPinaforeEntityEdit PinaforeEntityEdit where
-    pinaforeEntityLens = id
 
 predicatePinaforeMap ::
        forall a b.
@@ -134,4 +129,4 @@ propertyMorphism ::
     -> Predicate
     -> PinaforeLensMorphism baseedit a b
 propertyMorphism pa pb prd =
-    mapPinaforeLensMorphismBase pinaforeEntityLens $ predicatePinaforeTableLensMorphism pa pb prd
+    mapPinaforeLensMorphismBase (baseEditLens @PinaforeEntityEdit) $ predicatePinaforeTableLensMorphism pa pb prd

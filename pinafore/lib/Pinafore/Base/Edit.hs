@@ -2,11 +2,13 @@ module Pinafore.Base.Edit
     ( Predicate(..)
     , PinaforeEntityRead(..)
     , PinaforeEntityEdit(..)
+    , HasPinaforeEntityEdit
     ) where
 
 import Data.Aeson (FromJSON)
 import Pinafore.Base.Entity
 import Pinafore.Base.Know
+import Pinafore.Base.Lens
 import Pinafore.Base.Literal
 import Shapes
 import Truth.Core
@@ -85,3 +87,8 @@ type instance EditReader PinaforeEntityEdit = PinaforeEntityRead
 instance Show PinaforeEntityEdit where
     show (PinaforeEntityEditSetPredicate p s kv) = "set " ++ show p ++ " of " ++ show s ++ " to " ++ show kv
     show (PinaforeEntityEditSetLiteral p kl) = "set " ++ show p ++ " to " ++ show kl
+
+type HasPinaforeEntityEdit = BaseEditLens PinaforeEntityEdit
+
+instance BaseEditLens PinaforeEntityEdit PinaforeEntityEdit where
+    baseEditLens = id

@@ -1,6 +1,8 @@
+{-# OPTIONS -fno-warn-orphans #-}
+
 module Pinafore.Storage.File where
 
-import Pinafore.Storage.Table
+import Pinafore.Base
 import Shapes
 import Truth.Core
 import Truth.World.FileSystem
@@ -8,14 +10,13 @@ import Truth.World.ObjectStore
 
 type PinaforeFileEdit = ObjectStoreEdit Entity ByteStringEdit
 
-class HasPinaforeFileEdit baseedit where
-    pinaforeFileLens :: EditLens baseedit PinaforeFileEdit
+type HasPinaforeFileEdit = BaseEditLens PinaforeFileEdit
 
-instance HasPinaforeFileEdit PinaforeFileEdit where
-    pinaforeFileLens = id
+instance BaseEditLens PinaforeFileEdit PinaforeFileEdit where
+    baseEditLens = id
 
 pinaforeFileItemLens :: HasPinaforeFileEdit baseedit => Entity -> EditLens baseedit (SingleObjectEdit ByteStringEdit)
-pinaforeFileItemLens entity = tupleEditLens (MkFunctionSelector entity) . pinaforeFileLens
+pinaforeFileItemLens entity = tupleEditLens (MkFunctionSelector entity) . baseEditLens
 
 directoryPinaforeFileObject :: FilePath -> Object PinaforeFileEdit
 directoryPinaforeFileObject path =
