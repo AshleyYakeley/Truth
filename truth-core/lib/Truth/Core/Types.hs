@@ -16,6 +16,7 @@ module Truth.Core.Types
     , module Truth.Core.Types.Pair
     , module Truth.Core.Types.Lattice
     , module Truth.Core.Types.Function
+    , module Truth.Core.Types.Dependent
     , module Truth.Core.Types.Context
     , module Truth.Core.Types.List
     , module Truth.Core.Types.String
@@ -36,6 +37,7 @@ import Truth.Core.Types.Database
 import Truth.Core.Types.Database.Show
 import Truth.Core.Types.Database.Tuple
 import Truth.Core.Types.Database.Tuple.Show
+import Truth.Core.Types.Dependent
 import Truth.Core.Types.Either
 import Truth.Core.Types.EitherTuple
 import Truth.Core.Types.FiniteSet

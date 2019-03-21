@@ -3,6 +3,7 @@ module Shapes
     ) where
 
 import Shapes.Import as I
+import Shapes.Instances ()
 
 import Control.Category.Dual as I
 

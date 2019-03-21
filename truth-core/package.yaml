@@ -64,6 +64,7 @@ library:
       - Truth.Core.Types.Pair
       - Truth.Core.Types.Lattice
       - Truth.Core.Types.Function
+      - Truth.Core.Types.Dependent
       - Truth.Core.Types.Context
       - Truth.Core.Types.List
       - Truth.Core.Types.String
@@ -83,6 +84,7 @@ library:
       - Truth.Core.Object.Subscriber
       - Truth.Core.Object.Lens
       - Truth.Core.Object.Tuple
+      - Truth.Core.Object.MemoryCell
       - Truth.Core.Object.Editor
       - Truth.Core.Object.AsyncPush
       - Truth.Core.Object.Cache
