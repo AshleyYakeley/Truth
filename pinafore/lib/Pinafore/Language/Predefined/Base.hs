@@ -52,6 +52,13 @@ newmemref = do
     lens <- makeMemoryCellEditLens Unknown
     return $ pinaforeLensToReference $ lens . baseEditLens
 
+newmemset ::
+       forall baseedit. BaseEditLens MemoryCellEdit baseedit
+    => IO (PinaforeSet baseedit '( MeetType Entity A, A))
+newmemset = do
+    lens <- makeMemoryCellEditLens mempty
+    return $ meetValuePinaforeSet $ convertEditLens . lens . baseEditLens
+
 base_predefinitions ::
        forall baseedit.
        (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, BaseEditLens MemoryCellEdit baseedit)
@@ -348,6 +355,7 @@ base_predefinitions =
                 "removeall"
                 "Remove all entities from a set."
                 (pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit ())
+          , mkValEntry "newmemset" "Create a new set reference to memory, initially empty." $ newmemset @baseedit
           ]
     , docTreeEntry
           "Morphisms"

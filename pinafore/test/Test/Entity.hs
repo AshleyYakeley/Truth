@@ -150,6 +150,14 @@ testEntity =
               [ pointTest "do r <- newmemref; a <- get r; fail \"unstopped\"; end"
               , pointTest "do r <- newmemref; r := 45; a <- get r; testeqval 45 a; end"
               , pointTest "do r <- newmemref; r := 3; r := 4; a <- get r; testeqval 4 a; end"
+              , pointTest "do s <- newmemset; n <- get $ count s; testeqval 0 n; end"
+              , pointTest "do s <- newmemset; s += 57; n <- get $ count s; testeqval 1 n; end"
+              , pointTest "do s <- newmemset; s -= 57; n <- get $ count s; testeqval 0 n; end"
+              , pointTest "do s <- newmemset; s += 57; s -= 57; n <- get $ count s; testeqval 0 n; end"
+              , pointTest
+                    "do s <- newmemset; s += 57; m <- get $ membership s; testeqval False (m 54); testeqval True (m 57); end"
+              , pointTest "do s <- newmemset; s -= 57; m <- get $ membership s; testeqval False (m 57); end"
+              , pointTest "do s <- newmemset; s += 57; s -= 57; m <- get $ membership s; testeqval False (m 57); end"
               ]
         , context
               [ "convr :: Rational -> Rational;convr = id"
