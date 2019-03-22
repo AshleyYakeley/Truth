@@ -48,7 +48,7 @@ pinaforeReferenceGet ref = (getImmutableReference $ pinaforeReferenceToImmutable
 pinaforeReferenceSet ::
        forall baseedit p. PinaforeReference baseedit '( p, TopType) -> Know p -> PinaforeAction baseedit ()
 pinaforeReferenceSet (LensPinaforeReference (MkRange pt _) lens) mp = pinaforeLensPush lens [MkWholeEdit $ fmap pt mp]
-pinaforeReferenceSet (ImmutPinaforeReference _) _ = return ()
+pinaforeReferenceSet (ImmutPinaforeReference _) _ = empty
 
 runPinaforeReference ::
        PinaforeReference baseedit '( BottomType, PinaforeAction baseedit ()) -> PinaforeAction baseedit ()

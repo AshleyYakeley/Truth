@@ -1,5 +1,6 @@
 module Pinafore.Language.Predefined
-    ( PinaforeContext
+    ( PinaforePredefinitions
+    , PinaforeContext
     , DefDoc(..)
     , DocTree(..)
     , runDocTree
@@ -20,20 +21,23 @@ import Pinafore.Language.Predefined.UI
 import Pinafore.Language.Type
 import Pinafore.Storage.File
 import Shapes
+import Truth.Core
+
+type PinaforePredefinitions baseedit
+     = (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, BaseEditLens MemoryCellEdit baseedit)
 
 predefinitions ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. PinaforePredefinitions baseedit
     => DocTree (BindDoc baseedit)
 predefinitions = MkDocTree "" "" $ base_predefinitions <> ui_predefinitions <> file_predefinitions
 
 predefinedDoc ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. PinaforePredefinitions baseedit
     => DocTree DefDoc
 predefinedDoc = fmap bdDoc $ predefinitions @baseedit
 
 predefinedBindings ::
-       forall baseedit.
-       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, ?pinafore :: PinaforeContext baseedit)
+       forall baseedit. (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
     => StrictMap Name (QValue baseedit)
 predefinedBindings =
     mapFromList $
@@ -46,7 +50,7 @@ predefinedBindings =
     predefinitions @baseedit
 
 predefinedPatternConstructors ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit. PinaforePredefinitions baseedit
     => StrictMap Name (PinaforePatternConstructor baseedit)
 predefinedPatternConstructors =
     mapFromList $

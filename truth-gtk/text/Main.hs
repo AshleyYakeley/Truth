@@ -21,10 +21,10 @@ optParser = (,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') 
 
 main :: IO ()
 main =
-    truthMain $ \args createWindow ->
+    truthMain $ \MkTruthContext {..} ->
         liftIO $ do
             (paths, double, saveOpt) <-
-                O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
+                O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
             for_ paths $ \path -> do
                 let
                     bsObj :: Object ByteStringEdit
@@ -32,7 +32,7 @@ main =
                     wholeTextObj :: Object (WholeEdit ((Result Text) Text))
                     wholeTextObj = cacheWholeObject $ mapObject textLens bsObj
                     ui :: Subscriber (OneWholeEdit (Result Text) (StringEdit Text))
-                       -> (forall sel edit. UIWindow -> UISpec sel edit -> UISpec sel edit)
+                       -> (forall sel edit. UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit))
                        -> UISpec (EditLens (StringEdit Text) (StringEdit Text)) (OneWholeEdit (Result Text) (StringEdit Text))
                     ui sub extraui =
                         withAspectUISpec $ \aspect -> let
@@ -50,22 +50,38 @@ main =
                     makeWindow ::
                            Text
                         -> Subscriber (OneWholeEdit (Result Text) (StringEdit Text))
-                        -> (forall sel edit. UIWindow -> UISpec sel edit -> UISpec sel edit)
+                        -> (forall sel edit. UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit))
                         -> IO ()
                     makeWindow title sub extraui = do
                         rec
+                            let (mbar, uic) = extraui r $ ui sub extraui
                             r <-
-                                createWindow $
+                                tcCreateWindow $
                                 MkUserInterface sub $
-                                MkWindowSpec (constEditFunction title) (extraui r $ ui sub extraui)
+                                MkWindowSpec (constEditFunction title) (Just $ constEditFunction mbar) uic
                         return ()
-                    simpleUI :: forall sel edit. UIWindow -> UISpec sel edit -> UISpec sel edit
+                    simpleUI :: forall sel edit. UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit)
                     simpleUI ~MkUIWindow {..} spec = let
-                        mbar :: [MenuEntry edit]
-                        mbar = [SubMenuEntry "File" [simpleActionMenuItem "Close" Nothing uiWindowClose]]
-                        in verticalUISpec [(menuBarUISpec mbar, False), (spec, True)]
+                        mbar :: MenuBar edit
+                        mbar =
+                            [ SubMenuEntry
+                                  "File"
+                                  [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') uiWindowClose
+                                  , SeparatorMenuEntry
+                                  , simpleActionMenuItem
+                                        "Exit"
+                                        (Just $ MkMenuAccelerator [KMCtrl] 'Q')
+                                        tcCloseAllWindows
+                                  ]
+                            ]
+                        in (mbar, spec)
                     extraUI ::
-                           forall sel edit. SaveActions -> UndoActions -> UIWindow -> UISpec sel edit -> UISpec sel edit
+                           forall sel edit.
+                           SaveActions
+                        -> UndoActions
+                        -> UIWindow
+                        -> UISpec sel edit
+                        -> (MenuBar edit, UISpec sel edit)
                     extraUI (MkSaveActions saveActions) (MkUndoActions undo redo) ~MkUIWindow {..} spec = let
                         saveAction = do
                             mactions <- saveActions
@@ -85,17 +101,24 @@ main =
                         mbar =
                             [ SubMenuEntry
                                   "File"
-                                  [ simpleActionMenuItem "Save" Nothing saveAction
+                                  [ simpleActionMenuItem "Save" (Just $ MkMenuAccelerator [KMCtrl] 'S') saveAction
                                   , simpleActionMenuItem "Revert" Nothing revertAction
-                                  , simpleActionMenuItem "Close" Nothing uiWindowClose
+                                  , simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') uiWindowClose
+                                  , SeparatorMenuEntry
+                                  , simpleActionMenuItem
+                                        "Exit"
+                                        (Just $ MkMenuAccelerator [KMCtrl] 'Q')
+                                        tcCloseAllWindows
                                   ]
                             , SubMenuEntry
                                   "Edit"
-                                  [ simpleActionMenuItem "Undo" Nothing $ undo >> return ()
-                                  , simpleActionMenuItem "Redo" Nothing $ redo >> return ()
+                                  [ simpleActionMenuItem "Undo" (Just $ MkMenuAccelerator [KMCtrl] 'Z') $
+                                    undo >> return ()
+                                  , simpleActionMenuItem "Redo" (Just $ MkMenuAccelerator [KMCtrl] 'Y') $
+                                    redo >> return ()
                                   ]
                             ]
-                        in verticalUISpec [(menuBarUISpec mbar, False), (spec, True)]
+                        in (mbar, spec)
                 action <-
                     if saveOpt
                         then do

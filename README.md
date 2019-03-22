@@ -11,12 +11,11 @@ Pinafore is a triple-store database for storing knowledge, and a language ([exam
 It is built on Truth.
 It is currently focused on personal information management, such as contact, calendar, to-do, photo collection, etc.
 
-## Running
+## Building
 
 You will need Docker installed.
 
 ```shell
 sudo apt-get install -y haskell-stack
-stack build pinafore
-./testpinafore
+bin/build
 ```

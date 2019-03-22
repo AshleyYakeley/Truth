@@ -1,8 +1,6 @@
 module Truth.Core.UI.Specifier.Specifier where
 
-import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Types
 
 data UISpec (sel :: Type) (edit :: Type) where
     MkUISpec
@@ -23,11 +21,6 @@ isUISpec ::
 isUISpec (MkUISpec (tedit :: t' sel edit)) = do
     Refl <- testEquality (uiWitness @t) (uiWitness @t')
     return tedit
-
-data WindowSpec edit = forall sel. MkWindowSpec
-    { wsTitle :: EditFunction edit (WholeEdit Text)
-    , wsContent :: UISpec sel edit
-    }
 
 type Aspect sel = IO (Maybe sel)
 

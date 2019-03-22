@@ -8,6 +8,7 @@ module Truth.Core.Object
     , module Truth.Core.Object.Lens
     , module Truth.Core.Object.Editor
     , module Truth.Core.Object.Tuple
+    , module Truth.Core.Object.MemoryCell
     , module Truth.Core.Object.AsyncPush
     , module Truth.Core.Object.Cache
     , module Truth.Core.Object.Savable
@@ -20,6 +21,7 @@ import Truth.Core.Object.Cache
 import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.Editor
 import Truth.Core.Object.Lens
+import Truth.Core.Object.MemoryCell
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectEdit
 import Truth.Core.Object.Savable

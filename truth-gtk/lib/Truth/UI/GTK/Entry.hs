@@ -22,7 +22,8 @@ textEntryGetView =
                      traceBracket "GTK.TextEntry:changed" $
                      viewObjectPushEdit $ \_ push -> do
                          st <- get widget #text
-                         traceBracketArgs "GTK.TextEntry:push" (show st) show $ push [MkWholeEdit st]
+                         _ <- traceBracketArgs "GTK.TextEntry:push" (show st) show $ push [MkWholeEdit st]
+                         return ()
                  cvReceiveUpdate $ \_ _ (MkWholeEdit st) -> traceBracketArgs "GTK.TextEntry:update" (show st) show $
                      liftIO $ withSignalBlocked widget changedSignal $ set widget [#text := st]
                  toWidget widget) $

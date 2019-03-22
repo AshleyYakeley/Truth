@@ -94,8 +94,8 @@ printInfixOperatorTable = do
 
 main :: IO ()
 main =
-    truthMain $ \args createWindow -> do
-        options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
+    truthMain $ \MkTruthContext {..} -> do
+        options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
         case options of
             PredefinedDocOption ->
                 liftIO $ runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
@@ -106,7 +106,7 @@ main =
                 liftIO $ sqlitePinaforeDumpTable dirpath
             RunOption fInteract fNoRun mdirpath fpaths -> do
                 dirpath <- getDirPath mdirpath
-                context <- sqlitePinaforeContext dirpath createWindow
+                context <- sqlitePinaforeContext dirpath tcCreateWindow tcCloseAllWindows
                 let
                     ?pinafore = context
                     in liftIO $

@@ -2,6 +2,7 @@ module Pinafore.Base.Context
     ( PinaforeContext
     , runPinaforeAction
     , pinaforeUndoActions
+    , pinaforeCloseAllWindows
     , makePinaforeContext
     , nullPinaforeContext
     ) where
@@ -14,23 +15,30 @@ import Truth.UI.GTK
 data PinaforeContext baseedit =
     MkPinaforeContext (PinaforeAction baseedit () -> IO ())
                       UndoActions
+                      (IO ())
 
 runPinaforeAction :: (?pinafore :: PinaforeContext baseedit) => PinaforeAction baseedit () -> IO ()
 runPinaforeAction =
     case ?pinafore of
-        MkPinaforeContext unlift _ -> unlift
+        MkPinaforeContext unlift _ _ -> unlift
 
 pinaforeUndoActions :: (?pinafore :: PinaforeContext baseedit) => UndoActions
 pinaforeUndoActions =
     case ?pinafore of
-        MkPinaforeContext _ uactions -> uactions
+        MkPinaforeContext _ uactions _ -> uactions
+
+pinaforeCloseAllWindows :: (?pinafore :: PinaforeContext baseedit) => IO ()
+pinaforeCloseAllWindows =
+    case ?pinafore of
+        MkPinaforeContext _ _ caw -> caw
 
 makePinaforeContext ::
        forall baseedit. InvertibleEdit baseedit
     => Object baseedit
     -> (UserInterface WindowSpec -> IO UIWindow)
+    -> IO ()
     -> LifeCycle (PinaforeContext baseedit)
-makePinaforeContext pinaforeObject createWindow = do
+makePinaforeContext pinaforeObject createWindow closeAllWindows = do
     rsub <- liftIO $ makeObjectSubscriber pinaforeObject
     (sub, uactions) <- liftIO $ undoQueueSubscriber rsub
     let
@@ -40,10 +48,10 @@ makePinaforeContext pinaforeObject createWindow = do
             in do
                    _ <- getComposeM $ runReaderT action (openwin, subObject sub)
                    return ()
-    return $ MkPinaforeContext unlift uactions
+    return $ MkPinaforeContext unlift uactions closeAllWindows
 
 nullPinaforeContext :: PinaforeContext baseedit
-nullPinaforeContext =
-    MkPinaforeContext
-        (\_ -> fail "null Pinafore context")
-        (MkUndoActions (fail "null Pinafore context") (fail "null Pinafore context"))
+nullPinaforeContext = let
+    nope :: IO a
+    nope = fail "null Pinafore context"
+    in MkPinaforeContext (\_ -> nope) (MkUndoActions nope nope) nope

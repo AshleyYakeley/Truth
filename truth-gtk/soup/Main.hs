@@ -12,11 +12,12 @@ optParser = (,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2')
 
 main :: IO ()
 main =
-    truthMain $ \args createWindow ->
+    truthMain $ \MkTruthContext {..} ->
         liftIO $ do
-            (dirpaths, double) <- O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) args
+            (dirpaths, double) <-
+                O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
             for_ dirpaths $ \dirpath -> do
-                let action = soupWindow createWindow dirpath
+                let action = soupWindow tcCreateWindow tcCloseAllWindows dirpath
                 action
                 if double
                     then action

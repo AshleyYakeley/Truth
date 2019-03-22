@@ -2,15 +2,16 @@ let
 opentype T;
 me = entity @T !4527c8ac-580d-443c-8496-2b5a93021f98;
 
-ui_labelled n ui = ui_horizontal [(ui_label n,False),(ui,True)];
+ui_labelled3 n ui = ui_horizontal [(ui_label n,False),(ui,True)];
+ui_labelled2 n ui = ui_labelled3 n ui;
+ui_labelled1 n ui = ui_labelled2 n ui;
+ui_labelled n ui = ui_labelled1 n ui;
 
-labelta_entry :: (T ~> Text) -> (UI None,Boolean);
-labelta_entry prop = (ui_labelled (pureref "Property:") $ ui_textentry $ prop !$ {me},False);
-plabelta_entry prop = (ui_labelled (prop !$ {me}) $ ui_textentry $ prop !$ {me},False);
-ta_entry prop = (ui_textentry $ prop !$ {me},False);
-label_entry _ = (ui_label $ pureref "Property:",False);
+entry :: (T ~> Text) -> (UI None,Boolean);
+entry prop = (ui_labelled (pureref "Text") ui_blank,False);
 
-properties entry = ui_ignore $ ui_vertical
+w :: Action Window;
+w = openwindow {"Test"} {[]} $ ui_ignore $ ui_ignore $ ui_vertical
     [
         entry $ property @T @Text !"001",
         entry $ property @T @Text !"002",
@@ -37,17 +38,6 @@ properties entry = ui_ignore $ ui_vertical
 
 prop0 = property @T @Text !"000";
 
-w :: Action Window;
-w = openwindow {"Test"} $ ui_ignore $ ui_vertical
-    [
-        ta_entry prop0,
-        #(properties plabelta_entry, False),
-        (properties labelta_entry, False),
-        #(properties ta_entry, False),
-        #(properties label_entry, False),
-        (ui_blank,True)
-    ];
-
 act :: Action ();
 act = do
     tstart <- gettimems;
@@ -61,6 +51,7 @@ in do
     w2 <- w;
     w3 <- w;
     w4 <- w;
+    act;
     act;
     closewindow w4;
     closewindow w3;

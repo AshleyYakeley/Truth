@@ -43,14 +43,25 @@ entityuuid :: Entity -> Text
 entityuuid p = pack $ show p
 
 onstop :: forall baseedit. PinaforeAction baseedit A -> PinaforeAction baseedit A -> PinaforeAction baseedit A
-onstop p q = do
-    ka <- knowPinaforeAction q
-    case ka of
-        Known a -> return a
-        Unknown -> p
+onstop p q = q <|> p
+
+newmemref ::
+       forall baseedit. BaseEditLens MemoryCellEdit baseedit
+    => IO (PinaforeReference baseedit '( A, A))
+newmemref = do
+    lens <- makeMemoryCellEditLens Unknown
+    return $ pinaforeLensToReference $ lens . baseEditLens
+
+newmemset ::
+       forall baseedit. BaseEditLens MemoryCellEdit baseedit
+    => IO (PinaforeSet baseedit '( MeetType Entity A, A))
+newmemset = do
+    lens <- makeMemoryCellEditLens mempty
+    return $ meetValuePinaforeSet $ convertEditLens . lens . baseEditLens
 
 base_predefinitions ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
+       forall baseedit.
+       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, BaseEditLens MemoryCellEdit baseedit)
     => [DocTreeEntry (BindDoc baseedit)]
 base_predefinitions =
     [ docTreeEntry
@@ -248,8 +259,8 @@ base_predefinitions =
           , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
           , mkValEntry
                 "stop"
-                "Stop. This is similar to an exception that can be caught with `onstop`. The default handler (for the main program, button presses, etc.), is to ignore it." $
-            pinaforeActionKnow @baseedit @BottomType Unknown
+                "Stop. This is similar to an exception that can be caught with `onstop`. The default handler (for the main program, button presses, etc.), is to catch and ignore it."
+                (empty :: PinaforeAction baseedit BottomType)
           , mkValEntry "onstop" "`onstop p q` does `q` first, and if it stops, then does `p`." $ onstop @baseedit
           , mkValEntry
                 "for_"
@@ -304,8 +315,9 @@ base_predefinitions =
           , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $
             pinaforeReferenceGet @baseedit @A
           , mkValEntry "runref" "Run an action from a reference." $ runPinaforeReference @baseedit
-          , mkValEntry ":=" "Set a reference to a value." $ setentity @baseedit
-          , mkValEntry "delete" "Delete an entity reference." $ deleteentity @baseedit
+          , mkValEntry ":=" "Set a reference to a value. Stop if failed." $ setentity @baseedit
+          , mkValEntry "delete" "Delete an entity reference. Stop if failed." $ deleteentity @baseedit
+          , mkValEntry "newmemref" "Create a new reference to memory, initially unknown." $ newmemref @baseedit
           ]
     , docTreeEntry
           "Sets"
@@ -343,6 +355,7 @@ base_predefinitions =
                 "removeall"
                 "Remove all entities from a set."
                 (pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit ())
+          , mkValEntry "newmemset" "Create a new set reference to memory, initially empty." $ newmemset @baseedit
           ]
     , docTreeEntry
           "Morphisms"

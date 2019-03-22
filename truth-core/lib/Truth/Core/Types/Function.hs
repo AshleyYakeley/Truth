@@ -35,6 +35,9 @@ type FunctionEditReader a edit = TupleEditReader (FunctionSelector a edit)
 
 type FunctionEdit a edit = TupleEdit (FunctionSelector a edit)
 
+functionEditLens :: Eq a => a -> EditLens (FunctionEdit a edit) edit
+functionEditLens a = tupleEditLens $ MkFunctionSelector a
+
 constFunctionReadFunction :: ReadFunction (EditReader edit) (FunctionEditReader a edit)
 constFunctionReadFunction mr (MkTupleEditReader (MkFunctionSelector _) rt) = mr rt
 

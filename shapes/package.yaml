@@ -55,6 +55,7 @@ library:
       - Shapes.Numeric
     other-modules:
       - Shapes.Import
+      - Shapes.Instances
 
 tests:
     test:

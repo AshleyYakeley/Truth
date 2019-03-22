@@ -22,7 +22,7 @@ expressionFreeWitnesses wr (OpenExpression wt expr) = (wr wt) : expressionFreeWi
 
 evalExpression :: (MonadFail m, AllWitnessConstraint Show w) => Expression w a -> m a
 evalExpression (ClosedExpression a) = return a
-evalExpression expr = fail $ "undefined: " <> intercalate ", " (expressionFreeWitnesses showAllWitness expr)
+evalExpression expr = fail $ "undefined: " <> intercalate ", " (nub $ expressionFreeWitnesses showAllWitness expr)
 
 varExpression :: w t -> Expression w t
 varExpression wt = OpenExpression wt $ ClosedExpression id

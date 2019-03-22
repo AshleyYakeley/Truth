@@ -1,5 +1,6 @@
 module Truth.UI.GTK.Switch
-    ( switchGetView
+    ( switchView
+    , switchGetView
     ) where
 
 import GI.Gtk hiding (get)
@@ -9,18 +10,14 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 import Truth.Debug.Object
 
-switchView ::
-       forall sel edit.
-       (UISpec sel edit -> GCreateView sel edit)
-    -> EditFunction edit (WholeEdit (UISpec sel edit))
-    -> GCreateView sel edit
-switchView getview specfunc = do
+switchView :: forall sel edit. EditFunction edit (WholeEdit (GCreateView sel edit)) -> GCreateView sel edit
+switchView specfunc = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
-        getViewState :: UISpec sel edit -> View sel edit (ViewState sel edit ())
-        getViewState spec =
+        getViewState :: GCreateView sel edit -> View sel edit (ViewState sel edit ())
+        getViewState gview =
             viewCreateView $ do
-                widget <- traceBracket "GTK.Switch:getViewState.getview" $ getview spec
+                widget <- traceBracket "GTK.Switch:getViewState.gview" $ gview
                 lcContainPackStart True box widget
                 #show widget
     firstvs <-
@@ -45,4 +42,4 @@ switchGetView =
         spec <- isUISpec uispec
         return $
             case spec of
-                MkSwitchUISpec specfunc -> switchView getview specfunc
+                MkSwitchUISpec specfunc -> switchView $ funcEditFunction getview . specfunc

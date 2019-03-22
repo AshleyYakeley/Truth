@@ -48,12 +48,14 @@ freeIOObject firsta allowed = do
     var <- newMVar firsta
     return $ mvarObject var allowed
 
-pushEdit :: MonadIO m => m (Maybe (m ())) -> m ()
+pushEdit :: MonadIO m => m (Maybe (m ())) -> m Bool
 pushEdit mmmu = traceBracket "pushEdit.examine" $ do
     mmu <- mmmu
     case mmu of
-        Just mu -> traceBracket "pushEdit.do" $ mu
-        Nothing -> traceBracket "pushEdit.ignore" $ return ()
+        Just mu -> traceBracket "pushEdit.do" $ do
+            mu
+            return True
+        Nothing -> traceBracket "pushEdit.ignore" $ return False
 
 pushOrFail :: (MonadIO m, MonadFail m) => String -> m (Maybe (m ())) -> m ()
 pushOrFail s mmmu = traceBracket "pushOrFail.examine" $ do

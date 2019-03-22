@@ -23,15 +23,15 @@ runContext tree = tree mempty
 prefix :: [String] -> Text
 prefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"
 
-scriptTest :: Text -> Text -> ContextTestTree
-scriptTest name text c =
+scriptTest :: Text -> Text -> (IO () -> IO ()) -> ContextTestTree
+scriptTest name text checker c =
     testCase (unpack name) $
     withTestPinaforeContext $ \_getTableState -> do
         action <- pinaforeInterpretFile "<test>" $ prefix c <> text
-        action
+        checker action
 
 pointTest :: Text -> ContextTestTree
-pointTest text = scriptTest text text
+pointTest text = scriptTest text text id
 
 assertThrows :: IO a -> IO ()
 assertThrows ma = do
@@ -39,6 +39,9 @@ assertThrows ma = do
     if t
         then assertFailure "no exception"
         else return ()
+
+badPointTest :: Text -> ContextTestTree
+badPointTest text = scriptTest text text assertThrows
 
 badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
@@ -98,6 +101,26 @@ testEntity =
               , exceptionTest "let opentype T in fail \"text\""
               ]
         , tgroup
+              "do"
+              [ pointTest "do return () end"
+              , pointTest "do return (); end"
+              , pointTest "do testeqval 3 3 end"
+              , pointTest "do a <- return 3; testeqval 3 a end"
+              , pointTest "do a <- return 3; b <- return $ a + a; testeqval 6 b end"
+              ]
+        , tgroup
+              "stop"
+              [ pointTest "return ()"
+              , badPointTest "fail \"failure\""
+              , pointTest "stop"
+              , pointTest "do stop; fail \"unstopped\"; end"
+              , pointTest "do a <- onstop (return 1) (return 2); testeqval 2 a; end"
+              , pointTest "do a <- onstop stop (return 2); testeqval 2 a; end"
+              , badPointTest "do a <- onstop stop (return 2); fail \"unstopped\"; end"
+              , pointTest "do a <- onstop (return 1) stop; testeqval 1 a; end"
+              , badPointTest "do a <- onstop (return 1) stop; fail \"unstopped\"; end"
+              ]
+        , tgroup
               "equality"
               [ pointTest "testeqval 1 1"
               , pointTest "testeqval 1 \"1\""
@@ -114,6 +137,27 @@ testEntity =
               , pointTest "let rp = {pass} in runreforfail {%rp}"
               , pointTest "runreforfail {let rp = {pass} in %rp}"
               , pointTest "let rp = {pass} in runreforfail {let p= %rp in p}"
+              ]
+        , tgroup
+              "reference stop"
+              [ pointTest "do stop; fail \"unstopped\"; end"
+              , pointTest "do a <- get unknown; fail \"unstopped\"; end"
+              , pointTest "do {1} := 1; fail \"unstopped\"; end"
+              , pointTest "do delete {1}; fail \"unstopped\"; end"
+              ]
+        , tgroup
+              "memory references"
+              [ pointTest "do r <- newmemref; a <- get r; fail \"unstopped\"; end"
+              , pointTest "do r <- newmemref; r := 45; a <- get r; testeqval 45 a; end"
+              , pointTest "do r <- newmemref; r := 3; r := 4; a <- get r; testeqval 4 a; end"
+              , pointTest "do s <- newmemset; n <- get $ count s; testeqval 0 n; end"
+              , pointTest "do s <- newmemset; s += 57; n <- get $ count s; testeqval 1 n; end"
+              , pointTest "do s <- newmemset; s -= 57; n <- get $ count s; testeqval 0 n; end"
+              , pointTest "do s <- newmemset; s += 57; s -= 57; n <- get $ count s; testeqval 0 n; end"
+              , pointTest
+                    "do s <- newmemset; s += 57; m <- get $ membership s; testeqval False (m 54); testeqval True (m 57); end"
+              , pointTest "do s <- newmemset; s -= 57; m <- get $ membership s; testeqval False (m 57); end"
+              , pointTest "do s <- newmemset; s += 57; s -= 57; m <- get $ membership s; testeqval False (m 57); end"
               ]
         , context
               [ "convr :: Rational -> Rational;convr = id"
@@ -369,14 +413,6 @@ testEntity =
                     , pointTest
                           "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testeq {Right \"abc\"} $ enta !$ {e1})"
                     ]
-              ]
-        , tgroup
-              "do"
-              [ pointTest "do return () end"
-              , pointTest "do return (); end"
-              , pointTest "do testeqval 3 3 end"
-              , pointTest "do a <- return 3; testeqval 3 a end"
-              , pointTest "do a <- return 3; b <- return $ a + a; testeqval 6 b end"
               ]
         , tgroup
               "closedtype"
