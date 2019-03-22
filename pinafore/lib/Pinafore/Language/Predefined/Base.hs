@@ -18,6 +18,7 @@ import Pinafore.Storage.File
 import Shapes
 import Shapes.Numeric
 import Truth.Core
+import Truth.Debug
 
 gettimems :: IO Integer
 gettimems = do
@@ -276,6 +277,7 @@ base_predefinitions =
                 "gettimems"
                 "Get the time as a whole number of milliseconds."
                 (liftIO gettimems :: PinaforeAction baseedit Integer)
+          , mkValEntry "debugmsg" "Debug message (debug only)." (traceIOM . unpack :: Text -> PinaforeAction baseedit ())
           ]
     , docTreeEntry
           "Undo"

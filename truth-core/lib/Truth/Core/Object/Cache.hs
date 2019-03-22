@@ -29,8 +29,9 @@ cacheObject mus (MkObject unlift read push) = do
                     editCacheAdd @edit rt t
                     return t
         objEdit edits =
+            traceBracket "cache update request" $
             return $
-            Just $ traceBracket "cache update" $ do
+            Just $ traceBracket "cache update action" $ do
                 editCacheUpdates edits
                 liftIO $ runAction $ Just edits
         in MkObject {..}

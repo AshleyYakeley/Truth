@@ -85,7 +85,7 @@ lensObject discard (MkCloseUnlift (lensRun :: Unlift tl) MkAnEditLens {..}) (MkO
                 then objRunBDiscard
                 else objRunBFull
         objReadB :: MutableRead (tl mr) (EditReader editb)
-        objReadB = efGet objReadA
+        objReadB = traceThing "lensObject.run.read" $ efGet objReadA
         objEditB :: [editb] -> tl mr (Maybe (tl mr ()))
         objEditB editbs = traceBracket "lensObject.edit" $ do
             meditas <- traceBracket "lensObject.edit lens" $ elPutEdits editbs objReadA
