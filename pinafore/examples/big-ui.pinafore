@@ -2,7 +2,24 @@ let
 opentype T;
 me = entity @T !4527c8ac-580d-443c-8496-2b5a93021f98;
 
-ui_labelled3 n ui = ui_horizontal [(ui_label n,False),(ui,True)];
+ui_labelled20 n ui = ui_horizontal [(ui_label n,False),(ui,True)];
+ui_labelled19 n ui = ui_labelled20 n ui;
+ui_labelled18 n ui = ui_labelled19 n ui;
+ui_labelled17 n ui = ui_labelled18 n ui;
+ui_labelled16 n ui = ui_labelled17 n ui;
+ui_labelled15 n ui = ui_labelled16 n ui;
+ui_labelled14 n ui = ui_labelled15 n ui;
+ui_labelled13 n ui = ui_labelled14 n ui;
+ui_labelled12 n ui = ui_labelled13 n ui;
+ui_labelled11 n ui = ui_labelled12 n ui;
+ui_labelled10 n ui = ui_labelled11 n ui;
+ui_labelled9 n ui = ui_labelled10 n ui;
+ui_labelled8 n ui = ui_labelled9 n ui;
+ui_labelled7 n ui = ui_labelled8 n ui;
+ui_labelled6 n ui = ui_labelled7 n ui;
+ui_labelled5 n ui = ui_labelled6 n ui;
+ui_labelled4 n ui = ui_labelled5 n ui;
+ui_labelled3 n ui = ui_labelled4 n ui;
 ui_labelled2 n ui = ui_labelled3 n ui;
 ui_labelled1 n ui = ui_labelled2 n ui;
 ui_labelled n ui = ui_labelled1 n ui;
@@ -14,25 +31,6 @@ w :: Action Window;
 w = openwindow {"Test"} {[]} $ ui_ignore $ ui_ignore $ ui_vertical
     [
         entry $ property @T @Text !"001",
-        entry $ property @T @Text !"002",
-        entry $ property @T @Text !"003",
-        entry $ property @T @Text !"004",
-        entry $ property @T @Text !"005",
-        entry $ property @T @Text !"006",
-        entry $ property @T @Text !"007",
-        entry $ property @T @Text !"008",
-        entry $ property @T @Text !"009",
-        entry $ property @T @Text !"010",
-        entry $ property @T @Text !"011",
-        entry $ property @T @Text !"012",
-        entry $ property @T @Text !"013",
-        entry $ property @T @Text !"014",
-        entry $ property @T @Text !"015",
-        entry $ property @T @Text !"016",
-        entry $ property @T @Text !"017",
-        entry $ property @T @Text !"018",
-        entry $ property @T @Text !"019",
-        entry $ property @T @Text !"020",
         (ui_blank,True)
     ];
 
@@ -40,21 +38,17 @@ prop0 = property @T @Text !"000";
 
 act :: Action ();
 act = do
+    #debugmsg "ACTION: start";
     tstart <- gettimems;
     prop0 !$ {me} := "Example";
     tend <- gettimems;
     outputln $ "Time: " <> totext (tend - tstart);
+    #debugmsg "ACTION: end";
     end
 
 in do
     w1 <- w;
-    w2 <- w;
-    w3 <- w;
-    w4 <- w;
     act;
     act;
-    closewindow w4;
-    closewindow w3;
-    closewindow w2;
     closewindow w1;
     end

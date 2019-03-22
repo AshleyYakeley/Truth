@@ -127,7 +127,7 @@ library:
       - Pinafore.Storage.Database.SQLite
       - Pinafore.Storage.File
 
-extra-source-files: examples/*
+extra-doc-files: examples/*
 
 tests:
     test:
