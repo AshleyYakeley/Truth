@@ -102,4 +102,4 @@ And also,
 `T +A` = `T {+A}`  
 `T -A` = `T {-A}`  
 
-It's important to remember that `-` and `+` indicated contravariance and covariance, not negative and positive polarity.
+It's important to remember that `-` and `+` indicate contravariance and covariance, not negative and positive polarity.

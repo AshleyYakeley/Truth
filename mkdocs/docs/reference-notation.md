@@ -13,4 +13,4 @@ If `expr :: T`, then `{expr} :: Ref +T`.
 If `ref :: Ref {-P,+Q}`, then `%(ref) :: Q` within reference notation.
 
 Reference notation works only with the getting of references, and ignores setting.
-Using `:=` or `delete` with references created this way is allowed but does nothing.
+Using `:=` or `delete` with references created this way will stop (see `stop` for what stopping means).
