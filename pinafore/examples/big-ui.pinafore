@@ -38,12 +38,12 @@ prop0 = property @T @Text !"000";
 
 act :: Action ();
 act = do
-    #debugmsg "ACTION: start";
+    debugmsg "ACTION: start";
     tstart <- gettimems;
     prop0 !$ {me} := "Example";
     tend <- gettimems;
     outputln $ "Time: " <> totext (tend - tstart);
-    #debugmsg "ACTION: end";
+    debugmsg "ACTION: end";
     end
 
 in do

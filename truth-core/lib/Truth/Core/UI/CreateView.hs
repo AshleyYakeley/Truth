@@ -105,7 +105,7 @@ instance MonadLifeCycle (CreateView sel edit) where
     liftLifeCycle lc = MkCreateView $ lift $ lift lc
 
 cvReceiveIOUpdates :: (Object edit -> [edit] -> IO ()) -> CreateView sel edit ()
-cvReceiveIOUpdates recv = do cvLiftViewResult $ (mempty {voUpdate = recv}, ())
+cvReceiveIOUpdates recv = cvLiftViewResult $ (mempty {voUpdate = \o ee -> traceBracket "cvReceiveIOUpdates:update" $ recv o ee}, ())
 
 cvReceiveUpdates :: (UnliftIO (View sel edit) -> ReceiveUpdates edit) -> CreateView sel edit ()
 cvReceiveUpdates recv = do
@@ -124,8 +124,8 @@ cvBindEditFunction ef setf = do
     cvReceiveUpdates $ \(MkTransform unlift) ->
         mapReceiveUpdates ef $ \_ wedits ->
             case lastWholeEdit wedits of
-                Just newval -> liftIO $ unlift $ setf newval
-                Nothing -> return ()
+                Just newval -> traceBracket "cvBindEditFunction:receive:val" $ liftIO $ unlift $ setf newval
+                Nothing -> traceBracket "cvBindEditFunction:receive:nothing" $ return ()
 
 cvAddAspect :: Aspect sel -> CreateView sel edit ()
 cvAddAspect aspect = cvLiftViewResult $ (mempty {voFirstAspect = aspect}, ())
