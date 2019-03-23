@@ -5,6 +5,7 @@ import Truth.Core.Edit.FullEdit
 import Truth.Core.Edit.Unlift
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Debug
 
 data AnEditFunction t edita editb = MkAnEditFunction
     { efGet :: ReadFunctionT t (EditReader edita) (EditReader editb)
@@ -44,6 +45,7 @@ instance UnliftCategory AnEditFunction where
                 Dict ->
                     case hasTransConstraint @MonadIO @tbc @(tab m) of
                         Dict ->
+                            traceBracket "AnEditFunction.ucCompose.efUpdate" $
                             MkComposeT $ do
                                 editbs <- lift $ uAB editA mrA
                                 editcss <- for editbs $ \editb -> uBC editb $ gAB mrA
