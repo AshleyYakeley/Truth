@@ -2,37 +2,30 @@ let
 opentype T;
 me = entity @T !4527c8ac-580d-443c-8496-2b5a93021f98;
 
-ui_labelled20 n ui = ui_horizontal [(ui_label n,False),(ui,True)];
-ui_labelled19 n ui = ui_labelled20 n ui;
-ui_labelled18 n ui = ui_labelled19 n ui;
-ui_labelled17 n ui = ui_labelled18 n ui;
-ui_labelled16 n ui = ui_labelled17 n ui;
-ui_labelled15 n ui = ui_labelled16 n ui;
-ui_labelled14 n ui = ui_labelled15 n ui;
-ui_labelled13 n ui = ui_labelled14 n ui;
-ui_labelled12 n ui = ui_labelled13 n ui;
-ui_labelled11 n ui = ui_labelled12 n ui;
-ui_labelled10 n ui = ui_labelled11 n ui;
-ui_labelled9 n ui = ui_labelled10 n ui;
-ui_labelled8 n ui = ui_labelled9 n ui;
-ui_labelled7 n ui = ui_labelled8 n ui;
-ui_labelled6 n ui = ui_labelled7 n ui;
-ui_labelled5 n ui = ui_labelled6 n ui;
-ui_labelled4 n ui = ui_labelled5 n ui;
-ui_labelled3 n ui = ui_labelled4 n ui;
-ui_labelled2 n ui = ui_labelled3 n ui;
-ui_labelled1 n ui = ui_labelled2 n ui;
-ui_labelled n ui = ui_labelled1 n ui;
-
-entry :: (T ~> Text) -> (UI None,Boolean);
-entry prop = (ui_labelled (pureref "Text") ui_blank,False);
+func20 n a = ui_label n;
+func19 n a = func20 n a;
+func18 n a = func19 n a;
+func17 n a = func18 n a;
+func16 n a = func17 n a;
+func15 n a = func16 n a;
+func14 n a = func15 n a;
+func13 n a = func14 n a;
+func12 n a = func13 n a;
+func11 n a = func12 n a;
+func10 n a = func11 n a;
+func9 n a = func10 n a;
+func8 n a = func9 n a;
+func7 n a = func8 n a;
+func6 n a = func7 n a;
+func5 n a = func6 n a;
+func4 n a = func5 n a;
+func3 n a = func4 n a;
+func2 n a = func3 n a;
+func1 n a = func2 n a;
+func n a = func1 n a;
 
 w :: Action Window;
-w = openwindow {"Test"} {[]} $ ui_ignore $ ui_ignore $ ui_vertical
-    [
-        entry $ property @T @Text !"001",
-        (ui_blank,True)
-    ];
+w = openwindow {"Test"} {[]} $ func (pureref "Text") False;
 
 prop0 = property @T @Text !"000";
 
