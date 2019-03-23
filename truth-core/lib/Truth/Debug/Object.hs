@@ -2,6 +2,7 @@
 
 module Truth.Debug.Object
     ( module Truth.Debug
+    , module Truth.Debug.Edit
     , module Truth.Debug.Object
     ) where
 
@@ -10,6 +11,7 @@ import Truth.Core.Import
 import Truth.Core.Object.Object
 import Truth.Core.Read
 import Truth.Debug
+import Truth.Debug.Edit
 
 data EditShower edit = MkEditShower
     { showRead :: forall t. EditReader edit t -> String
