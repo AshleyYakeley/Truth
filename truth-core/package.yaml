@@ -22,6 +22,9 @@ library:
       - shapes
     exposed-modules:
       - Truth.Core
+      - Truth.Debug
+      - Truth.Debug.Edit
+      - Truth.Debug.Object
       - Truth.World.Anything
       - Truth.World.File
       - Truth.World.FileSystem
