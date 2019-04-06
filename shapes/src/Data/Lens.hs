@@ -49,7 +49,7 @@ instance MonadOne m => Category (Lens' m) where
                           FailureResult (MkLimit ff) -> ff
             }
 
-instance (Traversable f, Applicative f, Applicative m) => CatFunctor (Lens' m) f where
+instance (Traversable f, Applicative f, Applicative m) => CatFunctor (Lens' m) (Lens' m) f where
     cfmap lens =
         MkLens {lensGet = fmap (lensGet lens), lensPutback = \fb fa -> sequenceA (liftA2 (lensPutback lens) fb fa)}
 
@@ -82,7 +82,7 @@ defaultLens :: a -> Lens' Identity (Maybe a) a
 defaultLens def = MkLens (fromMaybe def) $ \a _ -> Identity $ Just a
 
 bijectionLens :: Bijection a b -> Lens' Identity a b
-bijectionLens (MkBijection ab ba) = MkLens ab (\b _ -> return (ba b))
+bijectionLens (MkIsomorphism ab ba) = MkLens ab (\b _ -> return (ba b))
 
 injectionLens :: Injection' m a b -> Lens' m a b
 injectionLens lens = MkLens {lensGet = injForwards lens, lensPutback = \b -> pure (injBackwards lens b)}

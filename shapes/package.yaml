@@ -29,9 +29,11 @@ library:
       - witness
       - open-witness
     exposed-modules:
+      - Control.Category.Groupoid
       - Data.Filterable
       - Data.MonoApplicative
       - Data.CatFunctor
+      - Data.Coercion
       - Data.Result
       - Data.SameItem
       - Data.MonadOne
@@ -42,6 +44,7 @@ library:
       - Data.Lens
       - Data.Store
       - Data.ConstFunction
+      - Data.CoerceFunction
       - Data.Codec
       - Data.Compose
       - Data.KeyContainer

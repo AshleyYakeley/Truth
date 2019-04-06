@@ -51,6 +51,6 @@ applicativeGetPure = ConstConstFunction pure
 instance FunctorGetPure ((->) p) where
     getPure = applicativeGetPure
 
-instance (FunctorGetPure f) => CatFunctor ConstFunction f where
+instance (FunctorGetPure f) => CatFunctor ConstFunction ConstFunction f where
     cfmap (ConstConstFunction b) = fmap (\bfb -> bfb b) getPure
     cfmap (FunctionConstFunction ab) = FunctionConstFunction (fmap ab)

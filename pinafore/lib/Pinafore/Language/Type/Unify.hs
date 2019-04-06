@@ -223,15 +223,15 @@ runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name
         MkBisubstitution
             vn
             (return $
-             contramap (biBackwards varBij) $
+             contramap (isoBackwards varBij) $
              joinPinaforeTypeF
                  (singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
                  (singlePinaforeTypeF $ mkPTypeF tp))
-            (return $ fmap (biForwards varBij . join1) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
+            (return $ fmap (isoForwards varBij . join1) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
     in do
            expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'
-           return (ca $ biForwards varBij . join2, bisub : subs)
+           return (ca $ isoForwards varBij . join2, bisub : subs)
 runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolType name) (tq :: PinaforeSingularType baseedit 'Negative vw)) expr) = let
     varBij :: Bijection (MeetType (UVar name) vw) (UVar name)
     varBij = unsafeUVarBijection
@@ -239,13 +239,13 @@ runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolType name
         MkBisubstitution
             vn
             (return $
-             contramap (meet1 . biBackwards varBij) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
+             contramap (meet1 . isoBackwards varBij) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
             (return $
-             fmap (biForwards varBij) $
+             fmap (isoForwards varBij) $
              meetPinaforeTypeF
                  (singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
                  (singlePinaforeTypeF $ mkPTypeF tq))
     in do
            expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'
-           return (ca $ meet2 . biBackwards varBij, bisub : subs)
+           return (ca $ meet2 . isoBackwards varBij, bisub : subs)

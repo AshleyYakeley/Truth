@@ -43,9 +43,9 @@ instance (Monad m) => Category (Codec' m) where
     (MkCodec bmc cb) . (MkCodec amb ba) = MkCodec (\a -> (amb a) >>= bmc) (ba . cb)
 
 bijectionCodec :: Applicative m => Bijection a b -> Codec' m a b
-bijectionCodec (MkBijection p q) = MkCodec (pure . p) q
+bijectionCodec (MkIsomorphism p q) = MkCodec (pure . p) q
 
-instance (Traversable f, Applicative m) => CatFunctor (Codec' m) f where
+instance (Traversable f, Applicative m) => CatFunctor (Codec' m) (Codec' m) f where
     cfmap codec = MkCodec {decode = traverse (decode codec), encode = fmap (encode codec)}
 
 serializeCodec :: Serialize t => Codec' (Result String) LazyByteString t

@@ -24,7 +24,7 @@ unsafeFromUVar :: UVar name -> a
 unsafeFromUVar (MkUVar a) = unsafeCoerce a
 
 unsafeUVarBijection :: Bijection a (UVar name)
-unsafeUVarBijection = MkBijection unsafeToUVar unsafeFromUVar
+unsafeUVarBijection = MkIsomorphism unsafeToUVar unsafeFromUVar
 
 renameUVar ::
        Monad m
@@ -34,7 +34,7 @@ renameUVar ::
     -> m r
 renameUVar sf namewit1 cont = do
     newname <- sf $ witnessToValue namewit1
-    valueToWitness newname $ \namewit2 -> cont namewit2 (MkBijection unsafeRenameAnybox unsafeRenameAnybox)
+    valueToWitness newname $ \namewit2 -> cont namewit2 (MkIsomorphism unsafeRenameAnybox unsafeRenameAnybox)
 
 varRenamerTGenerateSymbol ::
        Monad m => (forall (name :: Symbol). SymbolType name -> VarRenamerT ts m a) -> VarRenamerT ts m a

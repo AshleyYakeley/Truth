@@ -200,7 +200,7 @@ instance Eq subj => MeetSemiLatticeEdit (FiniteSetEdit subj) where
         in MkCloseUnlift identityUnlift MkAnEditFunction {..}
 
 bijectionFiniteSetEditLens :: forall a b. Bijection a b -> EditLens (FiniteSetEdit a) (FiniteSetEdit b)
-bijectionFiniteSetEditLens (MkBijection ab ba) = let
+bijectionFiniteSetEditLens (MkIsomorphism ab ba) = let
     mapFiniteSetEdit :: forall p q. (p -> q) -> FiniteSetEdit p -> FiniteSetEdit q
     mapFiniteSetEdit _ (KeyEditItem _ edit) = never edit
     mapFiniteSetEdit pq (KeyDeleteItem p) = KeyDeleteItem $ pq p

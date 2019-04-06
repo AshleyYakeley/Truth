@@ -39,7 +39,7 @@ mergeSharedTypeVars expr = let
                    MkBisubstitution
                        vb
                        (return $
-                        contramap (biBackwards varBij) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType va)
-                       (return $ fmap (biForwards varBij) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType va)
+                        contramap (isoBackwards varBij) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType va)
+                       (return $ fmap (isoForwards varBij) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType va)
                in mergeSharedTypeVars @baseedit $ runIdentity $ bisubstitutes @baseedit [bisub] expr
            Nothing -> expr

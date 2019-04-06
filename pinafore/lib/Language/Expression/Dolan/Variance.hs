@@ -7,7 +7,7 @@ data CovaryMap (cat :: Type -> Type -> Type) (f :: k) where
     NilCovaryMap :: forall (cat :: Type -> Type -> Type) (f :: Type). CovaryMap cat f
     ConsCovaryMap
         :: forall (cat :: Type -> Type -> Type) (k :: Type) (f :: Type -> k).
-           (forall (a :: Type) (b :: Type). cat a b -> KindMorphism k cat (f a) (f b))
+           (forall (a :: Type) (b :: Type). cat a b -> KindMorphism cat (f a) (f b))
         -> (forall (a :: Type). CovaryMap cat (f a))
         -> CovaryMap cat f
 
@@ -21,7 +21,7 @@ bijectCovaryMap :: forall k (f :: k). CovaryMap (->) f -> CovaryMap Bijection f
 bijectCovaryMap NilCovaryMap = NilCovaryMap
 bijectCovaryMap (ConsCovaryMap f cv) =
     case covaryMapHasKM cv of
-        Dict -> ConsCovaryMap (\(MkBijection ab ba) -> mkKindBijection (f ab) (f ba)) $ bijectCovaryMap cv
+        Dict -> ConsCovaryMap (\(MkIsomorphism ab ba) -> mkKindBijection @_ @(->) (f ab) (f ba)) $ bijectCovaryMap cv
 
 class HasCovaryMap (f :: k) where
     covarymap :: CovaryMap (->) f
@@ -94,7 +94,7 @@ type DolanVarianceType = ListType SingleVarianceType
 dolanVarianceKMCategory ::
        forall cat dv. Category cat
     => DolanVarianceType dv
-    -> Dict (Category (KindMorphism (DolanVarianceKind dv) cat))
+    -> Dict (Category (KindMorphism cat :: DolanVarianceKind dv -> DolanVarianceKind dv -> Type))
 dolanVarianceKMCategory NilListType = Dict
 dolanVarianceKMCategory (ConsListType _ lt) =
     case dolanVarianceKMCategory @cat lt of
@@ -108,11 +108,11 @@ dolanVarianceHasKM (ConsListType _ lt) =
 
 type SingleVarianceMap (cat :: Type -> Type -> Type) (v :: SingleVariance) (gt :: SingleVarianceKind v -> k)
      = forall (a :: SingleVarianceKind v) (b :: SingleVarianceKind v).
-               SingleVarianceFunc cat v a b -> KindMorphism k cat (gt a) (gt b)
+               SingleVarianceFunc cat v a b -> KindMorphism cat (gt a) (gt b)
 
 mkRangevary ::
        forall k (cat :: Type -> Type -> Type) (f :: (Type, Type) -> k). Category cat
-    => (forall a b. (forall t. GenRange cat t a -> GenRange cat t b) -> KindMorphism k cat (f a) (f b))
+    => (forall a b. (forall t. GenRange cat t a -> GenRange cat t b) -> KindMorphism cat (f a) (f b))
     -> SingleVarianceMap cat 'Rangevariance f
 mkRangevary f (MkWithRange pbpa qaqb) = f $ \(MkRange pt tq) -> MkRange (pt . pbpa) (qaqb . tq)
 
@@ -129,11 +129,11 @@ bijectSingleVarianceMap ::
     => SingleVarianceType sv
     -> SingleVarianceMap (->) sv f
     -> SingleVarianceMap Bijection sv f
-bijectSingleVarianceMap CovarianceType svm (MkBijection ab ba) = mkKindBijection (svm ab) (svm ba)
-bijectSingleVarianceMap ContravarianceType svm (MkCatDual (MkBijection ab ba)) =
-    mkKindBijection (svm $ MkCatDual ab) (svm $ MkCatDual ba)
-bijectSingleVarianceMap RangevarianceType svm (MkWithRange (MkBijection pab pba) (MkBijection qab qba)) =
-    mkKindBijection (svm $ MkWithRange pab qab) (svm $ MkWithRange pba qba)
+bijectSingleVarianceMap CovarianceType svm (MkIsomorphism ab ba) = mkKindBijection @_ @(->) (svm ab) (svm ba)
+bijectSingleVarianceMap ContravarianceType svm (MkCatDual (MkIsomorphism ab ba)) =
+    mkKindBijection @_ @(->) (svm $ MkCatDual ab) (svm $ MkCatDual ba)
+bijectSingleVarianceMap RangevarianceType svm (MkWithRange (MkIsomorphism pab pba) (MkIsomorphism qab qba)) =
+    mkKindBijection @_ @(->) (svm $ MkWithRange pab qab) (svm $ MkWithRange pba qba)
 
 bijectDolanVarianceMap ::
        forall dv f. DolanVarianceType dv -> DolanVarianceMap (->) dv f -> DolanVarianceMap Bijection dv f
@@ -199,5 +199,5 @@ covaryToDolanVarianceMap (ConsListType Refl ml) (ConsCovaryMap v1 vr) =
 covaryKMCategory ::
        forall cat dv. Category cat
     => CovaryType dv
-    -> Dict (Category (KindMorphism (DolanVarianceKind dv) cat))
+    -> Dict (Category (KindMorphism cat :: DolanVarianceKind dv -> DolanVarianceKind dv -> Type))
 covaryKMCategory lc = dolanVarianceKMCategory @cat (mapListType (\Refl -> CovarianceType) lc)

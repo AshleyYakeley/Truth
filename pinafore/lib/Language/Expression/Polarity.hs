@@ -49,4 +49,4 @@ type family PolarMapType (cat :: k -> k -> Type) polarity (a :: k) (b :: k) :: T
     PolarMapType (cat :: k -> k -> Type) 'Positive (a :: k) (b :: k) = cat a b
     PolarMapType (cat :: k -> k -> Type) 'Negative (a :: k) (b :: k) = cat b a
 
-type ConvertType polarity (a :: k) (b :: k) = PolarMapType (KindMorphism k (->)) polarity a b
+type ConvertType polarity (a :: k) (b :: k) = PolarMapType KindFunction polarity a b

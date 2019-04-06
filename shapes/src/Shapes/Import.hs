@@ -16,6 +16,7 @@ import Control.Monad.IO.Class as I
 import Data.Bits as I
 import Data.Bool as I
 import Data.Char as I hiding (toLower, toUpper)
+import Data.Coerce as I
 import Data.Either as I
 import Data.Eq as I
 import Data.Foldable as I hiding (find)
@@ -133,6 +134,7 @@ import Data.Empty as I
 import Data.Searchable as I
 
 -- witness
+import Control.Category.Tensor as I
 import Data.Witness as I
 
 -- open-witness

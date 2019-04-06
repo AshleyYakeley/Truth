@@ -5,15 +5,17 @@ module Shapes
 import Shapes.Import as I
 import Shapes.Instances ()
 
-import Control.Category.Dual as I
-
 -- shapes
+import Control.Category.Dual as I
+import Control.Category.Groupoid as I
 import Control.LifeCycle as I
 import Control.Monad.Compose as I
 import Control.Monad.Coroutine as I
 import Data.Bijection as I
 import Data.CatFunctor as I
 import Data.Codec as I
+import Data.CoerceFunction as I
+import Data.Coercion as I
 import Data.Compose as I ()
 import Data.Filterable as I
 import Data.FiniteSet as I
