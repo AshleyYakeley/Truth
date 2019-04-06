@@ -110,7 +110,7 @@ testSubscription name initial call =
             varObj = mvarObject var $ \_ -> True
             editObj :: Object edit
             editObj = convertObject varObj
-        sub <- makeObjectSubscriber editObj
+        sub <- makeObjectSubscriber False editObj
         let
             ?showVar = withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
             ?showExpected = \edits ->

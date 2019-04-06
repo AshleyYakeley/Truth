@@ -64,7 +64,7 @@ soupObject dirpath = let
 
 soupWindow :: (UserInterface WindowSpec -> IO UIWindow) -> IO () -> FilePath -> IO ()
 soupWindow createWindow closeAllWindows dirpath = do
-    sub <- makeObjectSubscriber $ soupObject dirpath
+    sub <- makeObjectSubscriber False $ soupObject dirpath
     rec
         let
             mbar :: UIWindow -> Maybe (EditFunction edit (WholeEdit [MenuEntry edit]))

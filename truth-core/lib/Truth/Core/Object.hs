@@ -9,13 +9,11 @@ module Truth.Core.Object
     , module Truth.Core.Object.Editor
     , module Truth.Core.Object.Tuple
     , module Truth.Core.Object.MemoryCell
-    , module Truth.Core.Object.AsyncPush
     , module Truth.Core.Object.Cache
     , module Truth.Core.Object.Savable
     , module Truth.Core.Object.Undo
     ) where
 
-import Truth.Core.Object.AsyncPush
 import Truth.Core.Object.AutoClose
 import Truth.Core.Object.Cache
 import Truth.Core.Object.DeferActionT

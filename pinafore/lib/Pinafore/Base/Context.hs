@@ -39,7 +39,7 @@ makePinaforeContext ::
     -> IO ()
     -> LifeCycle (PinaforeContext baseedit)
 makePinaforeContext pinaforeObject createWindow closeAllWindows = do
-    rsub <- liftIO $ makeObjectSubscriber pinaforeObject
+    rsub <- liftIO $ makeObjectSubscriber False pinaforeObject
     (sub, uactions) <- liftIO $ undoQueueSubscriber rsub
     let
         unlift (MkPinaforeAction action) = let

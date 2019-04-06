@@ -22,7 +22,12 @@ textEntryGetView =
                          st <- get widget #text
                          _ <- push [MkWholeEdit st]
                          return ()
-                 cvReceiveUpdate $ \_ _ (MkWholeEdit st) ->
-                     liftIO $ withSignalBlocked widget changedSignal $ set widget [#text := st]
+                 cvReceiveUpdate $ \_ _ (MkWholeEdit newtext) ->
+                     liftIO $
+                     withSignalBlocked widget changedSignal $ do
+                         oldtext <- get widget #text
+                         if oldtext == newtext
+                             then return ()
+                             else set widget [#text := newtext]
                  toWidget widget) $
         isUISpec uispec

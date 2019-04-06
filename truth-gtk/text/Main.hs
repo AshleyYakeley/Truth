@@ -130,7 +130,7 @@ main =
                             let
                                 textObj :: Object (OneWholeEdit (Result Text) (StringEdit Text))
                                 textObj = convertObject wholeTextObj
-                            textSub <- makeObjectSubscriber textObj
+                            textSub <- makeObjectSubscriber False textObj
                             return $ makeWindow (fromString $ takeFileName path) textSub simpleUI
                 action
                 if double

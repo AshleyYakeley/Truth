@@ -84,7 +84,6 @@ library:
       - Truth.Core.Object.Tuple
       - Truth.Core.Object.MemoryCell
       - Truth.Core.Object.Editor
-      - Truth.Core.Object.AsyncPush
       - Truth.Core.Object.Cache
       - Truth.Core.Object.Savable
       - Truth.Core.Object.Undo
