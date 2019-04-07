@@ -63,9 +63,9 @@ soupObject dirpath = let
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: (UserInterface WindowSpec -> IO UIWindow) -> IO () -> FilePath -> IO ()
-soupWindow createWindow closeAllWindows dirpath = do
-    sub <- makeObjectSubscriber $ traceArgThing "soup" $ soupObject dirpath
+soupWindow :: Bool -> (UserInterface WindowSpec -> IO UIWindow) -> IO () -> FilePath -> IO ()
+soupWindow async createWindow closeAllWindows dirpath = do
+    sub <- makeObjectSubscriber async $ traceArgThing "soup" $ soupObject dirpath
     rec
         let
             mbar :: UIWindow -> Maybe (EditFunction edit (WholeEdit [MenuEntry edit]))

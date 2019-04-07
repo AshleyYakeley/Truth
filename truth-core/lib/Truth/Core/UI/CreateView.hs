@@ -15,8 +15,8 @@ module Truth.Core.UI.CreateView
     , cvMapSelection
     , cvNoAspect
     , cvAccessAspect
+    , AnyCreateView(..)
     , subscribeView
-    , subscribeView'
     , tupleCreateView
     ) where
 
@@ -105,7 +105,9 @@ instance MonadLifeCycle (CreateView sel edit) where
     liftLifeCycle lc = MkCreateView $ lift $ lift lc
 
 cvReceiveIOUpdates :: (Object edit -> [edit] -> IO ()) -> CreateView sel edit ()
-cvReceiveIOUpdates recv = cvLiftViewResult $ (mempty {voUpdate = \o ee -> traceBracket "cvReceiveIOUpdates:update" $ recv o ee}, ())
+cvReceiveIOUpdates recv = do
+    tb <- MkCreateView $ asks vcThreadBarrier
+    cvLiftViewResult $ (mempty {voUpdate = \obj edits -> traceBracket "cvReceiveIOUpdates:update:outside" $ tb $ traceBracket "cvReceiveIOUpdates:update:inside" $ recv obj edits}, ())
 
 cvReceiveUpdates :: (UnliftIO (View sel edit) -> ReceiveUpdates edit) -> CreateView sel edit ()
 cvReceiveUpdates recv = do
@@ -161,9 +163,17 @@ cvMapSelection f (MkCreateView ma) =
 cvNoAspect :: CreateView sela edit a -> CreateView selb edit a
 cvNoAspect (MkCreateView ma) = MkCreateView $ mapReaderContext vcNoAspect $ remonad (mapWriterOutput voNoAspect) ma
 
+data AnyCreateView edit w =
+    forall sel. MkAnyCreateView (CreateView sel edit w)
+
 subscribeView' ::
-       forall sel edit w. CreateView sel edit w -> Subscriber edit -> (forall t. IOWitness t -> Maybe t) -> LifeCycle w
-subscribeView' (MkCreateView (ReaderT view)) (MkSubscriber vcObject sub) vcRequest = do
+       forall edit w.
+       (IO () -> IO ())
+    -> AnyCreateView edit w
+    -> Subscriber edit
+    -> (forall t. IOWitness t -> Maybe t)
+    -> LifeCycle w
+subscribeView' vcThreadBarrier (MkAnyCreateView (MkCreateView (ReaderT view))) (MkSubscriber vcObject sub) vcRequest = do
     let
         vcSetSelection :: Aspect sel -> IO ()
         vcSetSelection _ = return ()
@@ -172,16 +182,17 @@ subscribeView' (MkCreateView (ReaderT view)) (MkSubscriber vcObject sub) vcReque
     return w
 
 subscribeView ::
-       forall sel edit w.
-       (IO () -> CreateView sel edit (LifeCycle w))
+       forall edit w.
+       (IO () -> IO ())
+    -> (IO () -> AnyCreateView edit (LifeCycle w))
     -> Subscriber edit
     -> (forall t. IOWitness t -> Maybe t)
     -> IO w
-subscribeView createView sub getRequest = do
+subscribeView threadBarrier createView sub getRequest = do
     rec
         (w, closer) <-
             runLifeCycle $ do
-                r <- subscribeView' (createView closer) sub getRequest
+                r <- subscribeView' threadBarrier (createView closer) sub getRequest
                 r
     return w
 

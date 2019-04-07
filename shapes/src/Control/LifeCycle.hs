@@ -7,8 +7,9 @@ module Control.LifeCycle
     , withLifeCycle
     , lifeCycleWith
     , MonadLifeCycle(..)
-    , listDeferrer
-    , deferrer
+    , asyncWaitRunner
+    , asyncRunner
+    , asyncIORunner
     ) where
 
 import Control.Monad.Coroutine
@@ -123,12 +124,16 @@ instance (MonadTrans t, MonadTransConstraint MonadIO t) => MonadTransConstraint 
 
 data VarState t
     = VSEmpty
-    | VSDo (NonEmpty t)
+    | VSDo t
            Bool
     | VSDone
 
-listDeferrer :: forall t. Int -> (NonEmpty t -> IO ()) -> LifeCycle (Maybe t -> IO ())
-listDeferrer mus doit = do
+asyncWaitRunner ::
+       forall t. Semigroup t
+    => Int
+    -> (t -> IO ())
+    -> LifeCycle (Maybe t -> IO ())
+asyncWaitRunner mus doit = do
     bufferVar :: TVar (VarState t) <- liftIO $ newTVarIO $ VSEmpty
     let
         threadDo :: IO ()
@@ -165,8 +170,8 @@ listDeferrer mus doit = do
                 vs <- readTVar bufferVar
                 case vs of
                     VSDone -> return ()
-                    VSEmpty -> writeTVar bufferVar $ VSDo (opoint val) True
-                    VSDo oldval _ -> writeTVar bufferVar $ VSDo (oldval <> opoint val) True
+                    VSEmpty -> writeTVar bufferVar $ VSDo val True
+                    VSDo oldval _ -> writeTVar bufferVar $ VSDo (oldval <> val) True
         pushVal Nothing =
             atomically $ do
                 vs <- readTVar bufferVar
@@ -181,5 +186,11 @@ listDeferrer mus doit = do
         atomically waitForEmpty
     return pushVal
 
-deferrer :: LifeCycle (IO () -> IO ())
-deferrer = fmap (\pushVal -> pushVal . Just) $ listDeferrer 0 sequence_
+asyncRunner ::
+       forall t. Semigroup t
+    => (t -> IO ())
+    -> LifeCycle (t -> IO ())
+asyncRunner doit = fmap (\push -> push . Just) $ asyncWaitRunner 0 doit
+
+asyncIORunner :: LifeCycle (IO () -> IO ())
+asyncIORunner = fmap (\pushVal io -> pushVal [io]) $ asyncRunner sequence_

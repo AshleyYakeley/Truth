@@ -24,7 +24,12 @@ textEntryGetView =
                          st <- get widget #text
                          _ <- traceBracketArgs "GTK.TextEntry:push" (show st) show $ push [MkWholeEdit st]
                          return ()
-                 cvReceiveUpdate $ \_ _ (MkWholeEdit st) -> traceBracketArgs "GTK.TextEntry:update" (show st) show $
-                     liftIO $ withSignalBlocked widget changedSignal $ set widget [#text := st]
+                 cvReceiveUpdate $ \_ _ (MkWholeEdit newtext) -> traceBracketArgs "GTK.TextEntry:update" (show newtext) show $
+                     liftIO $
+                     withSignalBlocked widget changedSignal $ do
+                         oldtext <- get widget #text
+                         if oldtext == newtext
+                             then return ()
+                             else set widget [#text := newtext]
                  toWidget widget) $
         isUISpec uispec

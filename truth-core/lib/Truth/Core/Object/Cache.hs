@@ -12,7 +12,7 @@ cacheObject ::
     -> Object edit
     -> LifeCycle (Object edit)
 cacheObject mus (MkObject unlift read push) = do
-    runAction <- listDeferrer mus $ \editsnl -> traceBracket "cache update" $ runTransform (traceThing "cacheObject:back.update" unlift) $ pushOrFail "cached object" $ push $ concat editsnl
+    runAction <- asyncWaitRunner mus $ \editsnl -> traceBracket "cache update" $ runTransform (traceThing "cacheObject:back.update" unlift) $ pushOrFail "cached object" $ push editsnl
     cacheVar <- liftIO $ newMVar $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
     return $ let
         objRun = traceThing "cacheObject:front" $ mvarUnliftIO cacheVar

@@ -17,10 +17,10 @@ deferToIdle action = do
     unlift <- askUnliftIO
     _ <-
         liftIO $
-        threadsAddIdle PRIORITY_DEFAULT $
+        threadsAddIdle PRIORITY_DEFAULT_IDLE $
         runTransform unlift $ do
             action
-            return False
+            return SOURCE_REMOVE
     return ()
 
 containerGetAllChildren :: Container -> IO [Widget]

@@ -38,10 +38,14 @@ sqlitePinaforeObject dirpath = do
             PinaforeSelectMemory -> memoryObject
 
 sqlitePinaforeContext ::
-       FilePath -> (UserInterface WindowSpec -> IO UIWindow) -> IO () -> LifeCycle (PinaforeContext PinaforeEdit)
-sqlitePinaforeContext dirpath createWindow closeAllWindows = do
+       Bool
+    -> FilePath
+    -> (UserInterface WindowSpec -> IO UIWindow)
+    -> IO ()
+    -> LifeCycle (PinaforeContext PinaforeEdit)
+sqlitePinaforeContext async dirpath createWindow closeAllWindows = do
     pinaforeObject <- sqlitePinaforeObject dirpath
-    makePinaforeContext pinaforeObject createWindow closeAllWindows
+    makePinaforeContext async pinaforeObject createWindow closeAllWindows
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

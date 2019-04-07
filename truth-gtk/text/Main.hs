@@ -19,9 +19,12 @@ textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCod
 optParser :: O.Parser ([FilePath], Bool, Bool)
 optParser = (,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') <*> O.switch (O.long "save")
 
+async :: Bool
+async = False
+
 main :: IO ()
 main =
-    truthMain $ \MkTruthContext {..} ->
+    truthMain async $ \MkTruthContext {..} ->
         liftIO $ do
             (paths, double, saveOpt) <-
                 O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
@@ -130,7 +133,7 @@ main =
                             let
                                 textObj :: Object (OneWholeEdit (Result Text) (StringEdit Text))
                                 textObj = convertObject wholeTextObj
-                            textSub <- makeObjectSubscriber textObj
+                            textSub <- makeObjectSubscriber async textObj
                             return $ makeWindow (fromString $ takeFileName path) textSub simpleUI
                 action
                 if double

@@ -67,8 +67,12 @@ makeSharedSubscriber uobj = do
                             return ((), closerC)
     return (child, a)
 
-updatingObject :: forall edit. Object edit -> UpdatingObject edit ()
-updatingObject (MkObject (run :: UnliftIO m) r e) update =
+updatingObject :: forall edit. Bool -> Object edit -> UpdatingObject edit ()
+updatingObject async (MkObject (run :: UnliftIO m) r e) update = do
+    runAsync <-
+        if async
+            then asyncRunner update
+            else return update
     return $ let
         run' :: UnliftIO (DeferActionT m)
         run' = composeUnliftTransformCommute runDeferActionT run
@@ -83,10 +87,10 @@ updatingObject (MkObject (run :: UnliftIO m) r e) update =
                     return $
                     Just $ do
                         traceBracket "objectSubscriber: action" $ lift action
-                        deferActionT $ traceBracket "objectSubscriber: deferred: update" $ update edits
+                        deferActionT $ traceBracket "objectSubscriber: deferred: update" $ runAsync edits
         in (MkObject run' r' e', ())
 
-makeObjectSubscriber :: Object edit -> IO (Subscriber edit)
-makeObjectSubscriber object = do
-    (sub, ()) <- makeSharedSubscriber $ updatingObject object
+makeObjectSubscriber :: Bool -> Object edit -> IO (Subscriber edit)
+makeObjectSubscriber async object = do
+    (sub, ()) <- makeSharedSubscriber $ updatingObject async object
     return sub
