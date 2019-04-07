@@ -16,7 +16,7 @@ textEntryGetView =
                  esrc <- newEditSource
                  initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
                  widget <- new Entry [#text := initial]
-                 _ <-
+                 changedSignal <-
                      cvLiftView $
                      viewOn widget #changed $
                      viewObjectPushEdit $ \_ push -> do
@@ -24,7 +24,8 @@ textEntryGetView =
                          _ <- push esrc [MkWholeEdit st]
                          return ()
                  cvReceiveUpdate (Just esrc) $ \_ _ (MkWholeEdit newtext) ->
-                     liftIO $ do
+                     liftIO $
+                     withSignalBlocked widget changedSignal $ do
                          oldtext <- get widget #text
                          if oldtext == newtext
                              then return ()
