@@ -34,12 +34,13 @@ pinaforeCloseAllWindows =
 
 makePinaforeContext ::
        forall baseedit. InvertibleEdit baseedit
-    => Object baseedit
+    => Bool
+    -> Object baseedit
     -> (UserInterface WindowSpec -> IO UIWindow)
     -> IO ()
     -> LifeCycle (PinaforeContext baseedit)
-makePinaforeContext pinaforeObject createWindow closeAllWindows = do
-    rsub <- liftIO $ makeObjectSubscriber False pinaforeObject
+makePinaforeContext async pinaforeObject createWindow closeAllWindows = do
+    rsub <- liftIO $ makeObjectSubscriber async pinaforeObject
     (sub, uactions) <- liftIO $ undoQueueSubscriber rsub
     let
         unlift (MkPinaforeAction action) = let

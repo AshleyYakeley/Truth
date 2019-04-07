@@ -10,14 +10,17 @@ import Truth.UI.GTK
 optParser :: O.Parser ([FilePath], Bool)
 optParser = (,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2')
 
+async :: Bool
+async = False
+
 main :: IO ()
 main =
-    truthMain $ \MkTruthContext {..} ->
+    truthMain async $ \MkTruthContext {..} ->
         liftIO $ do
             (dirpaths, double) <-
                 O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
             for_ dirpaths $ \dirpath -> do
-                let action = soupWindow tcCreateWindow tcCloseAllWindows dirpath
+                let action = soupWindow async tcCreateWindow tcCloseAllWindows dirpath
                 action
                 if double
                     then action

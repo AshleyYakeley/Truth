@@ -92,9 +92,12 @@ printInfixOperatorTable = do
             for_ mnames $ \n -> putStr $ " `" <> show n <> "`"
         putStrLn ""
 
+async :: Bool
+async = True
+
 main :: IO ()
 main =
-    truthMain $ \MkTruthContext {..} -> do
+    truthMain async $ \MkTruthContext {..} -> do
         options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
         case options of
             PredefinedDocOption ->
@@ -106,7 +109,7 @@ main =
                 liftIO $ sqlitePinaforeDumpTable dirpath
             RunOption fInteract fNoRun mdirpath fpaths -> do
                 dirpath <- getDirPath mdirpath
-                context <- sqlitePinaforeContext dirpath tcCreateWindow tcCloseAllWindows
+                context <- sqlitePinaforeContext async dirpath tcCreateWindow tcCloseAllWindows
                 let
                     ?pinafore = context
                     in liftIO $

@@ -88,9 +88,9 @@ getTheView spec =
         Just view -> view
         Nothing -> lastResortView spec
 
-createWindowAndChild :: WindowSpec edit -> IO () -> (forall sel. CreateView sel edit (LifeCycle UIWindow) -> r) -> r
-createWindowAndChild MkWindowSpec {..} closeWindow cont =
-    cont $ do
+createWindowAndChild :: WindowSpec edit -> IO () -> AnyCreateView edit (LifeCycle UIWindow)
+createWindowAndChild MkWindowSpec {..} closeWindow =
+    MkAnyCreateView $ do
         window <-
             lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
         cvBindEditFunction wsTitle $ \title -> set window [#title := title]
@@ -122,18 +122,17 @@ data UserInterface specifier = forall edit. MkUserInterface
     , userinterfaceSpecifier :: specifier edit
     }
 
-makeViewWindow :: IO () -> UserInterface WindowSpec -> IO UIWindow
-makeViewWindow tellclose (MkUserInterface (sub :: Subscriber edit) (window :: WindowSpec edit)) = do
-    rec
-        (r, closer) <-
-            createWindowAndChild window (closer >> tellclose) $ \cv ->
-                runLifeCycle $ do
-                    followUp <- subscribeView' cv sub getRequest
-                    followUp
-    return r
+threadBarrier :: Bool -> IO () -> IO ()
+threadBarrier False = id
+threadBarrier True = deferToIdle
+
+makeViewWindow :: Bool -> IO () -> UserInterface WindowSpec -> IO UIWindow
+makeViewWindow async tellclose (MkUserInterface (sub :: Subscriber edit) (window :: WindowSpec edit)) =
+    subscribeView (threadBarrier async) (\closer -> createWindowAndChild window (closer >> tellclose)) sub getRequest
 
 data ProgramContext = MkProgramContext
     { pcMainLoop :: MainLoop
+    , pcAsync :: Bool
     , pcWindowClosers :: MVar (Store (IO ()))
     }
 
@@ -150,7 +149,7 @@ makeWindowCountRef MkProgramContext {..} ui = let
     in mvarRun pcWindowClosers $ do
            oldstore <- Shapes.get
            rec
-               twindow <- lift $ makeViewWindow (closer key) ui
+               twindow <- lift $ makeViewWindow pcAsync (closer key) ui
                let (key, newstore) = addStore (uiWindowClose twindow) oldstore
            Shapes.put newstore
            return twindow
@@ -161,8 +160,8 @@ data TruthContext = MkTruthContext
     , tcCloseAllWindows :: IO ()
     }
 
-truthMain :: (TruthContext -> LifeCycle ()) -> IO ()
-truthMain appMain = do
+truthMain :: Bool -> (TruthContext -> LifeCycle ()) -> IO ()
+truthMain pcAsync appMain = do
     tcArguments <- getArgs
     _ <- GI.init Nothing
     pcMainLoop <- mainLoopNew Nothing False
