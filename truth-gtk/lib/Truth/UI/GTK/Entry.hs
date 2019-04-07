@@ -14,19 +14,19 @@ textEntryGetView =
     MkGetView $ \_ uispec ->
         fmap
             (\MkTextAreaUISpecEntry -> do
+                 esrc <- newEditSource
                  initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
                  widget <- new Entry [#text := initial]
-                 changedSignal <-
+                 _ <-
                      cvLiftView $
                      viewOn widget #changed $
                      traceBracket "GTK.TextEntry:changed" $
                      viewObjectPushEdit $ \_ push -> do
                          st <- get widget #text
-                         _ <- traceBracketArgs "GTK.TextEntry:push" (show st) show $ push [MkWholeEdit st]
+                         _ <- traceBracketArgs "GTK.TextEntry:push" (show st) show $ push esrc [MkWholeEdit st]
                          return ()
-                 cvReceiveUpdate $ \_ _ (MkWholeEdit newtext) -> traceBracketArgs "GTK.TextEntry:update" (show newtext) show $
-                     liftIO $
-                     withSignalBlocked widget changedSignal $ do
+                 cvReceiveUpdate (Just esrc) $ \_ _ (MkWholeEdit newtext) -> traceBracketArgs "GTK.TextEntry:update" (show newtext) show $
+                     liftIO $ do
                          oldtext <- get widget #text
                          if oldtext == newtext
                              then return ()

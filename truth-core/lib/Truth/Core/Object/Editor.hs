@@ -6,7 +6,7 @@ import Truth.Core.Object.Subscriber
 
 data Editor (edit :: Type) r = forall editor. MkEditor
     { editorInit :: Object edit -> IO editor
-    , editorUpdate :: editor -> Object edit -> [edit] -> IO ()
+    , editorUpdate :: editor -> Object edit -> [edit] -> EditSource -> IO ()
     , editorDo :: editor -> Object edit -> IO r
     }
 
@@ -16,7 +16,7 @@ instance Functor (Editor edit) where
 instance Applicative (Editor edit) where
     pure a = let
         editorInit _ = return ()
-        editorUpdate () _ _ = return ()
+        editorUpdate () _ _ _ = return ()
         editorDo () _ = return a
         in MkEditor {..}
     (MkEditor (ei1 :: Object edit -> IO editor1) eu1 ed1) <*> (MkEditor (ei2 :: Object edit -> IO editor2) eu2 ed2) = let
@@ -25,10 +25,10 @@ instance Applicative (Editor edit) where
             e1 <- ei1 object
             e2 <- ei2 object
             return (e1, e2)
-        editorUpdate :: (editor1, editor2) -> Object edit -> [edit] -> IO ()
-        editorUpdate (e1, e2) obj edits = do
-            eu1 e1 obj edits
-            eu2 e2 obj edits
+        editorUpdate :: (editor1, editor2) -> Object edit -> [edit] -> EditSource -> IO ()
+        editorUpdate (e1, e2) obj edits esrc = do
+            eu1 e1 obj edits esrc
+            eu2 e2 obj edits esrc
         editorDo (e1, e2) obj = do
             ab <- ed1 e1 obj
             a <- ed2 e2 obj

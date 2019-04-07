@@ -29,7 +29,7 @@ pinaforeLensPush lens edits = do
     (_, object) <- MkPinaforeAction ask
     case lensObject True lens object of
         MkObject {..} -> do
-            ok <- liftIO $ runTransform objRun $ pushEdit $ objEdit edits
+            ok <- liftIO $ runTransform objRun $ pushEdit noEditSource $ objEdit edits
             if ok
                 then return ()
                 else empty

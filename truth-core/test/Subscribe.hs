@@ -64,8 +64,8 @@ testOutputEditor name call = let
         val <- run $ mutableReadToSubject r
         outputLn $ "init: " ++ show val
         return ()
-    editorUpdate :: () -> Object edit -> [edit] -> IO ()
-    editorUpdate () (MkObject (MkTransform run) mr _) edits = do
+    editorUpdate :: () -> Object edit -> [edit] -> EditSource -> IO ()
+    editorUpdate () (MkObject (MkTransform run) mr _) edits _ = do
         outputLn $ "receive " ++ show edits
         val <- run $ mutableReadToSubject mr
         outputLn $ "receive " ++ show val
@@ -91,7 +91,7 @@ testOutputEditor name call = let
                     case maction of
                         Nothing -> outputLn "push disallowed"
                         Just action -> do
-                            action
+                            action noEditSource
                             outputLn $ "push succeeded"
         in call MkSubscribeContext {..}
     in MkEditor {..}

@@ -6,7 +6,6 @@ import GI.Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
-import Truth.UI.GTK.Useful
 import Truth.Debug.Object
 
 replaceText :: Index s ~ Int => TextBuffer -> SequenceRun s -> Text -> IO ()
@@ -34,36 +33,33 @@ getSequenceRun iter1 iter2 = do
 
 textView :: GCreateView (EditLens (StringEdit Text) (StringEdit Text)) (StringEdit Text)
 textView = do
+    esrc <- newEditSource
     buffer <- new TextBuffer []
     initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     #setText buffer initial (-1)
-    mv <- liftIO $ newMVar ()
     _ <-
         cvLiftView $
         liftIOView $ \unlift ->
             on buffer #insertText $ \iter text _ ->
-                ifMVar mv $
                 unlift $
                 traceBracket "GTK.Text:insert" $
                 viewObjectPushEdit $ \_ push -> do
                     p <- getSequencePoint iter
-                    _ <- push $ pure $ StringReplaceSection (MkSequenceRun p 0) text
+                    _ <- push esrc $ pure $ StringReplaceSection (MkSequenceRun p 0) text
                     return ()
     _ <-
         cvLiftView $
         liftIOView $ \unlift ->
             on buffer #deleteRange $ \iter1 iter2 ->
-                ifMVar mv $
                 unlift $
                 traceBracket "GTK.Text:delete" $
                 viewObjectPushEdit $ \_ push -> do
                     run <- getSequenceRun iter1 iter2
-                    _ <- push $ pure $ StringReplaceSection run mempty
+                    _ <- push esrc $ pure $ StringReplaceSection run mempty
                     return ()
     widget <- new TextView [#buffer := buffer]
-    cvReceiveUpdate $ \_ _ edit ->
+    cvReceiveUpdate (Just esrc) $ \_ _ edit ->
         liftIO $
-        ifMVar mv $
         case edit of
             StringReplaceWhole text -> #setText buffer text (-1)
             StringReplaceSection bounds text -> replaceText buffer bounds text

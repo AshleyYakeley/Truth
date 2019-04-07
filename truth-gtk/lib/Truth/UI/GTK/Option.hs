@@ -17,33 +17,33 @@ optionGetView =
 
 listStoreView ::
        (FullSubjectReader (EditReader edit), ApplicableEdit edit)
-    => UnliftIO IO
+    => EditSource
     -> CreateView sel (ListEdit [EditSubject edit] edit) (SeqStore (EditSubject edit))
-listStoreView (MkTransform blockSignal) = do
+listStoreView esrc = do
     subjectList <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     store <- seqStoreNew subjectList
-    cvReceiveUpdate $ \_ _mr e -> traceBracket "GTK.Option:ListStore:receiveUpdate" $
+    cvReceiveUpdate (Just esrc) $ \_ _mr e -> traceBracket "GTK.Option:ListStore:receiveUpdate" $
         case e of
             ListEditItem (MkSequencePoint (fromIntegral -> i)) edit -> do
                 oldval <- seqStoreGetValue store i
                 newval <- mutableReadToSubject $ applyEdit edit $ subjectToMutableRead oldval
-                liftIO $ blockSignal $ seqStoreSetValue store i newval
-            ListDeleteItem (MkSequencePoint (fromIntegral -> i)) -> liftIO $ blockSignal $ seqStoreRemove store i
-            ListInsertItem (MkSequencePoint (fromIntegral -> i)) item ->
-                liftIO $ blockSignal $ seqStoreInsert store i item
-            ListClear -> liftIO $ blockSignal $ seqStoreClear store
+                seqStoreSetValue store i newval
+            ListDeleteItem (MkSequencePoint (fromIntegral -> i)) -> seqStoreRemove store i
+            ListInsertItem (MkSequencePoint (fromIntegral -> i)) item -> seqStoreInsert store i item
+            ListClear -> seqStoreClear store
     return store
 
 optionFromStore ::
        forall sel t. Eq t
-    => SeqStore (t, Text)
-    -> CreateView sel (WholeEdit t) (UnliftIO IO, Widget)
-optionFromStore store = do
+    => EditSource
+    -> SeqStore (t, Text)
+    -> CreateView sel (WholeEdit t) Widget
+optionFromStore esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- new CellRendererText []
     #packStart widget renderer False
     cellLayoutSetAttributes widget renderer store $ \(_, row) -> [#text := row]
-    changedSignal <-
+    _ <-
         cvLiftView $
         viewOn widget #changed $
         traceBracket "GTK.Option:changed" $
@@ -53,12 +53,10 @@ optionFromStore store = do
                 (True, iter) -> do
                     i <- seqStoreIterToIndex iter
                     (t, _) <- seqStoreGetValue store i
-                    _ <- push [MkWholeEdit t]
+                    _ <- push esrc [MkWholeEdit t]
                     return ()
                 (False, _) -> return ()
     let
-        blockSignal :: forall a. IO a -> IO a
-        blockSignal = withSignalBlocked widget changedSignal
         update :: MonadIO m => t -> m ()
         update t =
             liftIO $ do
@@ -68,16 +66,15 @@ optionFromStore store = do
                         tp <- treePathNewFromIndices [fromIntegral i]
                         mti <- treeModelGetIter store tp
                         case mti of
-                            Just ti -> blockSignal $ #setActiveIter widget $ Just ti
+                            Just ti -> #setActiveIter widget $ Just ti
                             Nothing -> return ()
                     Nothing -> return ()
     cvLiftView $
         viewObjectRead $ \_ mr -> do
             t <- mr ReadWhole
             update t
-    cvReceiveUpdate $ \_ _mr (MkWholeEdit t) -> traceBracket "GTK.Option:receiveUpdate" $ update t
-    w <- toWidget widget
-    return (MkTransform blockSignal, w)
+    cvReceiveUpdate (Just esrc) $ \_ _mr (MkWholeEdit t) -> traceBracket "GTK.Option:receiveUpdate" $ update t
+    toWidget widget
 
 optionView ::
        forall t tedit sel. (Eq t)
@@ -85,7 +82,6 @@ optionView ::
     -> EditLens tedit (WholeEdit t)
     -> GCreateView sel tedit
 optionView itemsFunction whichLens = do
-    rec
-        store <- cvMapEdit (readOnlyEditLens itemsFunction) $ listStoreView blockSignal
-        (blockSignal, w) <- cvMapEdit whichLens $ optionFromStore store
-    return w
+    esrc <- newEditSource
+    store <- cvMapEdit (readOnlyEditLens itemsFunction) $ listStoreView esrc
+    cvMapEdit whichLens $ optionFromStore esrc store

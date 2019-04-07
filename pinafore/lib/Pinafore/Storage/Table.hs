@@ -180,8 +180,8 @@ instance CacheableEdit PinaforeTableEdit where
 
 pinaforeTableEntityObject :: Object PinaforeTableEdit -> Object PinaforeEntityEdit
 pinaforeTableEntityObject (MkObject objRun (tableRead :: MutableRead m PinaforeTableRead) tableMPush) = let
-    tablePush :: [PinaforeTableEdit] -> m ()
-    tablePush edits = traceBracket "pinaforeTablePointObject.tablePush" $ pushOrFail "can't push table edit" $ tableMPush edits
+    tablePush :: [PinaforeTableEdit] -> EditSource -> m ()
+    tablePush edits esrc = traceBracket "pinaforeTablePointObject.tablePush" $ pushOrFail "can't push table edit" esrc $ tableMPush edits
     objRead :: MutableRead m PinaforeEntityRead
     objRead (PinaforeEntityReadGetPredicate prd subj) =
         fmap maybeToKnow $ tableRead $ PinaforeTableReadGetPredicate prd subj
@@ -191,15 +191,15 @@ pinaforeTableEntityObject (MkObject objRun (tableRead :: MutableRead m PinaforeT
             Just val -> return val
             Nothing -> do
                 val <- newEntity
-                tablePush [PinaforeTableEditSetPredicate prd subj $ Just val]
+                tablePush [PinaforeTableEditSetPredicate prd subj $ Just val] noEditSource
                 return val
     objRead (PinaforeEntityReadLookupPredicate prd val) = tableRead $ PinaforeTableReadLookupPredicate prd val
     objRead (PinaforeEntityReadToLiteral p) = do
         ml <- tableRead $ PinaforeTableReadGetLiteral p
         return $ maybeToKnow ml
-    objEdit :: [PinaforeEntityEdit] -> m (Maybe (m ()))
+    objEdit :: [PinaforeEntityEdit] -> m (Maybe (EditSource -> m ()))
     objEdit edits = traceBracket "pinaforeTablePointObject.objEdit.examine" $
-        (singleAlwaysEdit $ \case
-            PinaforeEntityEditSetPredicate p s kv -> traceBracket "pinaforeTablePointObject.objEdit.predicate" $ tablePush [PinaforeTableEditSetPredicate p s $ knowToMaybe kv]
-            PinaforeEntityEditSetLiteral p kl -> traceBracket "pinaforeTablePointObject.objEdit.literal" $ tablePush [PinaforeTableEditSetLiteral p $ knowToMaybe kl]) edits
+        singleAlwaysEdit (\case
+            PinaforeEntityEditSetPredicate p s kv -> \esrc -> traceBracket "pinaforeTablePointObject.objEdit.predicate" $ tablePush [PinaforeTableEditSetPredicate p s $ knowToMaybe kv] esrc
+            PinaforeEntityEditSetLiteral p kl -> \esrc -> traceBracket "pinaforeTablePointObject.objEdit.literal" $ tablePush [PinaforeTableEditSetLiteral p $ knowToMaybe kl] esrc) edits
     in MkObject {..}

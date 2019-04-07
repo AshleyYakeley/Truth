@@ -55,4 +55,4 @@ nullPinaforeContext :: PinaforeContext baseedit
 nullPinaforeContext = let
     nope :: IO a
     nope = fail "null Pinafore context"
-    in MkPinaforeContext (\_ -> nope) (MkUndoActions nope nope) nope
+    in MkPinaforeContext (\_ -> nope) (MkUndoActions (\_ -> nope) (\_ -> nope)) nope

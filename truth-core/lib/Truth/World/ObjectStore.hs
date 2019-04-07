@@ -89,33 +89,33 @@ directoryObjectStore (MkObject (objRun :: UnliftIO m) rd push) nameStr = let
                         code <- findUndoCode name 0
                         return $ Just code
                     _ -> return $ Nothing
-    objEdit :: [ObjectStoreEdit name ByteStringEdit] -> m (Maybe (m ()))
+    objEdit :: [ObjectStoreEdit name ByteStringEdit] -> m (Maybe (EditSource -> m ()))
     objEdit edits =
         return $
-        Just $
-        case lastM edits of
-            Nothing -> return ()
-            Just (MkTupleEdit (MkFunctionSelector (nameStr -> name)) edit) ->
-                case edit of
-                    SingleObjectDelete -> do
-                        mitem <- rd $ FSReadItem name
-                        case mitem of
-                            Just (FSFileItem _) -> do
-                                code <- findUndoCode name 0
-                                pushOrFail ("couldn't rename FS item " <> show name) $
-                                    push [FSEditRenameItem name (undoName name code)]
-                            _ -> return ()
-                    SingleObjectDeleteCreate -> do
-                        mitem <- rd $ FSReadItem name
-                        case mitem of
-                            Just (FSFileItem _) -> do
-                                code <- findUndoCode name 0
-                                pushOrFail ("couldn't rename FS item " <> show name) $
-                                    push [FSEditRenameItem name (undoName name code), FSEditCreateFile name mempty]
-                            _ ->
-                                pushOrFail ("couldn't create FS item " <> show name) $
-                                push [FSEditCreateFile name mempty]
-                    SingleObjectRecover code ->
-                        pushOrFail ("couldn't rename FS item " <> show name) $
-                        push [FSEditRenameItem (undoName name code) name]
+        Just $ \esrc ->
+            case lastM edits of
+                Nothing -> return ()
+                Just (MkTupleEdit (MkFunctionSelector (nameStr -> name)) edit) ->
+                    case edit of
+                        SingleObjectDelete -> do
+                            mitem <- rd $ FSReadItem name
+                            case mitem of
+                                Just (FSFileItem _) -> do
+                                    code <- findUndoCode name 0
+                                    pushOrFail ("couldn't rename FS item " <> show name) esrc $
+                                        push [FSEditRenameItem name (undoName name code)]
+                                _ -> return ()
+                        SingleObjectDeleteCreate -> do
+                            mitem <- rd $ FSReadItem name
+                            case mitem of
+                                Just (FSFileItem _) -> do
+                                    code <- findUndoCode name 0
+                                    pushOrFail ("couldn't rename FS item " <> show name) esrc $
+                                        push [FSEditRenameItem name (undoName name code), FSEditCreateFile name mempty]
+                                _ ->
+                                    pushOrFail ("couldn't create FS item " <> show name) esrc $
+                                    push [FSEditCreateFile name mempty]
+                        SingleObjectRecover code ->
+                            pushOrFail ("couldn't rename FS item " <> show name) esrc $
+                            push [FSEditRenameItem (undoName name code) name]
     in MkObject {..}

@@ -33,16 +33,16 @@ import Truth.Core.UI.ViewContext
 import Truth.Debug.Object
 
 data ViewOutput sel edit = MkViewOutput
-    { voUpdate :: Object edit -> [edit] -> IO ()
+    { voUpdate :: Object edit -> [edit] -> EditSource -> IO ()
     , voFirstAspect :: Aspect sel
     }
 
 instance Semigroup (ViewOutput sel edit) where
     (MkViewOutput update1 fss1) <> (MkViewOutput update2 fss2) = let
-        voUpdate :: Object edit -> [edit] -> IO ()
-        voUpdate obj edits = do
-            update1 obj edits
-            update2 obj edits
+        voUpdate :: Object edit -> [edit] -> EditSource -> IO ()
+        voUpdate obj edits esrc = do
+            update1 obj edits esrc
+            update2 obj edits esrc
         voFirstAspect = do
             ma1 <- fss1
             case ma1 of
@@ -52,7 +52,7 @@ instance Semigroup (ViewOutput sel edit) where
 
 instance Monoid (ViewOutput sel edit) where
     mempty = let
-        voUpdate _ _ = return ()
+        voUpdate _ _ _ = return ()
         voFirstAspect = return Nothing
         in MkViewOutput {..}
     mappend = (<>)
@@ -61,12 +61,12 @@ voMapEdit :: forall sel edita editb. EditLens edita editb -> ViewOutput sel edit
 voMapEdit lens@(MkCloseUnlift unlift flens) (MkViewOutput updateB a) = let
     MkAnEditLens {..} = flens
     MkAnEditFunction {..} = elFunction
-    updateA :: Object edita -> [edita] -> IO ()
-    updateA objA@(MkObject ou omr _) editsA = do
+    updateA :: Object edita -> [edita] -> EditSource -> IO ()
+    updateA objA@(MkObject ou omr _) editsA esrc = do
         editsB <-
             runTransform (composeUnliftTransform unlift ou) $
             withTransConstraintTM @MonadUnliftIO $ efUpdates elFunction editsA omr
-        updateB (mapObject lens objA) editsB
+        updateB (mapObject lens objA) editsB esrc
     in (MkViewOutput updateA a)
 
 voMapSelection :: forall sela selb edit. (sela -> selb) -> ViewOutput sela edit -> ViewOutput selb edit
@@ -86,7 +86,7 @@ newtype CreateView sel edit a =
 
 type ViewState sel edit a = LifeState (ViewResult sel edit a)
 
-vsUpdate :: ViewState sel edit a -> Object edit -> [edit] -> IO ()
+vsUpdate :: ViewState sel edit a -> Object edit -> [edit] -> EditSource -> IO ()
 vsUpdate ((vo, _), _) = voUpdate vo
 
 vsFirstAspect :: ViewState sel edit a -> Aspect sel
@@ -104,26 +104,31 @@ cvLiftViewResult (vo, a) = MkCreateView $ lift $ WriterT $ return (a, vo)
 instance MonadLifeCycle (CreateView sel edit) where
     liftLifeCycle lc = MkCreateView $ lift $ lift lc
 
-cvReceiveIOUpdates :: (Object edit -> [edit] -> IO ()) -> CreateView sel edit ()
+cvReceiveIOUpdates :: (Object edit -> [edit] -> EditSource -> IO ()) -> CreateView sel edit ()
 cvReceiveIOUpdates recv = do
     tb <- MkCreateView $ asks vcThreadBarrier
-    cvLiftViewResult $ (mempty {voUpdate = \obj edits -> traceBracket "cvReceiveIOUpdates:update:outside" $ tb $ traceBracket "cvReceiveIOUpdates:update:inside" $ recv obj edits}, ())
+    cvLiftViewResult $ (mempty {voUpdate = \obj edits esrc -> traceBracket "cvReceiveIOUpdates:update:outside" $ tb $ traceBracket "cvReceiveIOUpdates:update:inside" $ recv obj edits esrc}, ())
 
-cvReceiveUpdates :: (UnliftIO (View sel edit) -> ReceiveUpdates edit) -> CreateView sel edit ()
-cvReceiveUpdates recv = do
+cvReceiveUpdates :: Maybe EditSource -> (UnliftIO (View sel edit) -> ReceiveUpdates edit) -> CreateView sel edit ()
+cvReceiveUpdates mesrc recv = do
     unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkTransform unlift
-    cvReceiveIOUpdates $ \(MkObject unliftObj mr _) edits -> runTransform unliftObj $ recv unliftIO mr edits
+    cvReceiveIOUpdates $ \(MkObject unliftObj mr _) edits esrc ->
+        if mesrc == Just esrc
+            then return ()
+            else runTransform unliftObj $ recv unliftIO mr edits
 
 cvReceiveUpdate ::
-       (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> edit -> m ())
+       Maybe EditSource
+    -> (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> edit -> m ())
     -> CreateView sel edit ()
-cvReceiveUpdate recv = cvReceiveUpdates $ \unlift mr edits -> for_ edits (recv unlift mr)
+cvReceiveUpdate mesrc recv = cvReceiveUpdates mesrc $ \unlift mr edits -> for_ edits (recv unlift mr)
 
-cvBindEditFunction :: EditFunction edit (WholeEdit t) -> (t -> View sel edit ()) -> CreateView sel edit ()
-cvBindEditFunction ef setf = do
+cvBindEditFunction ::
+       Maybe EditSource -> EditFunction edit (WholeEdit t) -> (t -> View sel edit ()) -> CreateView sel edit ()
+cvBindEditFunction mesrc ef setf = do
     initial <- traceBracket "cvBindEditFunction:initial" $ cvLiftView $ viewObjectRead $ \_ mr -> traceBracket "cvBindEditFunction:editFunctionRead" $ editFunctionRead ef mr ReadWhole
     cvLiftView $ setf initial
-    cvReceiveUpdates $ \(MkTransform unlift) ->
+    cvReceiveUpdates mesrc $ \(MkTransform unlift) ->
         mapReceiveUpdates ef $ \_ wedits ->
             case lastWholeEdit wedits of
                 Just newval -> traceBracket "cvBindEditFunction:receive:val" $ liftIO $ unlift $ setf newval

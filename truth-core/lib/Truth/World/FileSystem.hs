@@ -108,27 +108,29 @@ fileSystemObject = let
         if isSymLink
             then fmap Just $ getSymbolicLinkTarget path
             else return Nothing
-    objEdit :: [FSEdit] -> IO (Maybe (IO ()))
+    objEdit :: [FSEdit] -> IO (Maybe (EditSource -> IO ()))
     objEdit =
         singleEdit $ \edit ->
             case edit of
                 FSEditCreateDirectory path -> do
                     isDir <- doesDirectoryExist path
                     if isDir
-                        then return $ Just $ return ()
+                        then return $ Just $ \_ -> return ()
                         else do
                             exists <- doesPathExist path
                             if exists
                                 then return Nothing
-                                else return $ Just $ createDirectory path
-                FSEditCreateFile path bs -> testEditAction (fmap not $ doesDirectoryExist path) $ createFile path bs
+                                else return $ Just $ \_ -> createDirectory path
+                FSEditCreateFile path bs ->
+                    testEditAction (fmap not $ doesDirectoryExist path) $ \_ -> createFile path bs
                 FSEditCreateSymbolicLink path target ->
-                    testEditAction (fmap not $ doesDirectoryExist path) $ createFileLink target path
-                FSEditDeleteNonDirectory path -> testEditAction (fmap not $ doesDirectoryExist path) $ removeFile path
-                FSEditDeleteEmptyDirectory path -> testEditAction (doesDirectoryExist path) $ removeDirectory path
+                    testEditAction (fmap not $ doesDirectoryExist path) $ \_ -> createFileLink target path
+                FSEditDeleteNonDirectory path ->
+                    testEditAction (fmap not $ doesDirectoryExist path) $ \_ -> removeFile path
+                FSEditDeleteEmptyDirectory path -> testEditAction (doesDirectoryExist path) $ \_ -> removeDirectory path
                 FSEditRenameItem fromPath toPath ->
-                    testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $
-                    renamePath fromPath toPath
+                    testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $ \_ ->
+                        renamePath fromPath toPath
     in MkObject {..}
 
 subdirectoryObject :: Bool -> FilePath -> Object FSEdit -> Object FSEdit
@@ -138,7 +140,8 @@ subdirectoryObject create dir (MkObject (MkTransform run :: UnliftIO m) rd push)
         MkTransform $ \ma ->
             run $ do
                 if create
-                    then pushOrFail ("couldn't create directory " <> show dir) $ push [FSEditCreateDirectory dir]
+                    then pushOrFail ("couldn't create directory " <> show dir) noEditSource $
+                         push [FSEditCreateDirectory dir]
                     else return ()
                 ma
     insideToOutside :: FilePath -> FilePath
@@ -172,6 +175,6 @@ subdirectoryObject create dir (MkObject (MkTransform run :: UnliftIO m) rd push)
     mapPath (FSEditDeleteNonDirectory path) = FSEditDeleteNonDirectory $ insideToOutside path
     mapPath (FSEditDeleteEmptyDirectory path) = FSEditDeleteEmptyDirectory $ insideToOutside path
     mapPath (FSEditRenameItem path1 path2) = FSEditRenameItem (insideToOutside path1) (insideToOutside path2)
-    push' :: [FSEdit] -> m (Maybe (m ()))
+    push' :: [FSEdit] -> m (Maybe (EditSource -> m ()))
     push' edits = push $ fmap mapPath edits
     in MkObject run' rd' push'

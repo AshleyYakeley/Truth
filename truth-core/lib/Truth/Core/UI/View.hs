@@ -39,15 +39,17 @@ viewObjectRead call = do
     liftIO $ runTransform (traceThing "viewObjectRead:run" objRun) $ call unliftIO $ objRead
 
 viewObjectMaybeEdit ::
-       (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => ([edit] -> m (Maybe (m ()))) -> m r) -> View sel edit r
+       (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => ([edit] -> m (Maybe (EditSource -> m ()))) -> m r)
+    -> View sel edit r
 viewObjectMaybeEdit call = traceBracket "viewObjectPush" $ do
     unliftIO <- askUnliftIO
     MkObject {..} <- viewObject
     liftIO $ runTransform objRun $ call unliftIO $ objEdit
 
 viewObjectPushEdit ::
-       (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => ([edit] -> m Bool) -> m r) -> View sel edit r
-viewObjectPushEdit call = viewObjectMaybeEdit $ \unlift push -> call unlift $ \edits -> pushEdit $ push edits
+       (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => (EditSource -> [edit] -> m Bool) -> m r)
+    -> View sel edit r
+viewObjectPushEdit call = viewObjectMaybeEdit $ \unlift push -> call unlift $ \esrc edits -> pushEdit esrc $ push edits
 
 viewSetSelection :: Aspect sel -> View sel edit ()
 viewSetSelection aspect = do

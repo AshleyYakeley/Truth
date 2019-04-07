@@ -94,7 +94,7 @@ createWindowAndChild MkWindowSpec {..} closeWindow =
     MkAnyCreateView $ do
         window <-
             lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
-        cvBindEditFunction wsTitle $ \title -> set window [#title := title]
+        cvBindEditFunction Nothing wsTitle $ \title -> set window [#title := title]
         content <- getTheView wsContent
         _ <-
             on window #deleteEvent $ \_ -> traceBracket "GTK.Window:close" $ do

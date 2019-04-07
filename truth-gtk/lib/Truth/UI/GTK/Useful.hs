@@ -56,21 +56,6 @@ viewOn ::
     -> View sel edit SignalHandlerId
 viewOn widget signal v = liftIOView $ \unlift -> on widget signal $ unlift v
 
-tryWithMVar :: MVar a -> (Maybe a -> IO b) -> IO b
-tryWithMVar mv f = do
-    ma <- tryTakeMVar mv
-    finally (f ma) $
-        case ma of
-            Just a -> putMVar mv a
-            Nothing -> return ()
-
-ifMVar :: MVar () -> IO () -> IO ()
-ifMVar mv f =
-    tryWithMVar mv $ \ma ->
-        case ma of
-            Just _ -> f
-            _ -> return ()
-
 joinTraverse :: Monad m => (a -> m (Maybe a)) -> (a -> m (Maybe a)) -> a -> m (Maybe a)
 joinTraverse t1 t2 a0 = do
     ma1 <- t1 a0

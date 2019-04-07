@@ -28,7 +28,7 @@ traceObject prefix MkEditShower {..} (MkObject (run :: UnliftIO m) r e) = let
     run' = traceThing (contextStr prefix "run") run
     r' :: MutableRead m (EditReader edit)
     r' rt = traceBracketArgs (contextStr prefix "read") (showRead rt) (showReadResult rt) $ r rt
-    e' :: [edit] -> m (Maybe (m ()))
+    e' :: [edit] -> m (Maybe (EditSource -> m ()))
     e' edits =
         traceBracketArgs
             (contextStr prefix "edit.examine")
@@ -38,6 +38,7 @@ traceObject prefix MkEditShower {..} (MkObject (run :: UnliftIO m) r e) = let
                      then "action"
                      else "no action") $
         (fmap $
+         fmap $
          fmap $
          traceBracketArgs (contextStr prefix "edit.do") ("[" ++ intercalate "," (fmap showEdit edits) ++ "]") (\_ -> "")) $
         e edits
@@ -99,7 +100,7 @@ slowObject mus (MkObject run rd push) = let
             case maction of
                 Nothing -> Nothing
                 Just action ->
-                    Just $ do
+                    Just $ \esrc -> do
                         traceBracket "slow: delay" $ liftIO $ threadDelay mus
-                        traceBracket "slow: action" $ action
+                        traceBracket "slow: action" $ action esrc
     in MkObject run rd push'

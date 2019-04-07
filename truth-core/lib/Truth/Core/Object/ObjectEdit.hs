@@ -61,7 +61,7 @@ objectEditLens = let
             run $ do
                 maction <- e edits
                 case maction of
-                    Just action -> action
+                    Just action -> action noEditSource
                     Nothing -> liftIO $ fail "objectEditLens: failed"
         return $ Just []
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}

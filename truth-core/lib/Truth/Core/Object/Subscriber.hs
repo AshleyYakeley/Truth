@@ -23,29 +23,29 @@ import Truth.Debug
 
 data Subscriber edit = MkSubscriber
     { subObject :: Object edit
-    , subscribe :: ([edit] -> IO ()) -> LifeCycle ()
+    , subscribe :: ([edit] -> EditSource -> IO ()) -> LifeCycle ()
     }
 
-type UpdateStoreEntry edit = [edit] -> IO ()
+type UpdateStoreEntry edit = [edit] -> EditSource -> IO ()
 
 type UpdateStore edit = Store (UpdateStoreEntry edit)
 
-runUpdateStoreEntry :: [edit] -> StateT (UpdateStoreEntry edit) IO ()
-runUpdateStoreEntry edits = do
+runUpdateStoreEntry :: [edit] -> EditSource -> StateT (UpdateStoreEntry edit) IO ()
+runUpdateStoreEntry edits esrc = do
     update <- get
-    lift $ update edits
+    lift $ update edits esrc
 
-updateStore :: [edit] -> StateT (UpdateStore edit) IO ()
-updateStore edits = traverseStoreStateT $ \_ -> runUpdateStoreEntry edits
+updateStore :: [edit] -> EditSource -> StateT (UpdateStore edit) IO ()
+updateStore edits esrc = traverseStoreStateT $ \_ -> runUpdateStoreEntry edits esrc
 
-type UpdatingObject edit a = ([edit] -> IO ()) -> LifeCycle (Object edit, a)
+type UpdatingObject edit a = ([edit] -> EditSource -> IO ()) -> LifeCycle (Object edit, a)
 
 makeSharedSubscriber :: forall edit a. UpdatingObject edit a -> IO (Subscriber edit, a)
 makeSharedSubscriber uobj = do
     var :: MVar (UpdateStore edit) <- newMVar emptyStore
     let
-        updateP :: [edit] -> IO ()
-        updateP edits = mvarRun var $ updateStore edits
+        updateP :: [edit] -> EditSource -> IO ()
+        updateP edits esrc = mvarRun var $ updateStore edits esrc
     ((objectC, a), closerP) <- runLifeCycle $ uobj updateP
     let
         child :: Subscriber edit
@@ -71,23 +71,23 @@ updatingObject :: forall edit. Bool -> Object edit -> UpdatingObject edit ()
 updatingObject async (MkObject (run :: UnliftIO m) r e) update = do
     runAsync <-
         if async
-            then asyncRunner update
-            else return update
+            then asyncIORunner
+            else return id
     return $ let
         run' :: UnliftIO (DeferActionT m)
         run' = composeUnliftTransformCommute runDeferActionT run
         r' :: MutableRead (DeferActionT m) (EditReader edit)
         r' = liftMutableRead r
-        e' :: [edit] -> DeferActionT m (Maybe (DeferActionT m ()))
+        e' :: [edit] -> DeferActionT m (Maybe (EditSource -> DeferActionT m ()))
         e' edits = do
             maction <- lift $ e edits
             case maction of
                 Nothing -> return Nothing
                 Just action ->
                     return $
-                    Just $ do
-                        traceBracket "objectSubscriber: action" $ lift action
-                        deferActionT $ traceBracket "objectSubscriber: deferred: update" $ runAsync edits
+                    Just $ \esrc -> do
+                        traceBracket "objectSubscriber: action" $ lift $ action esrc
+                        deferActionT $ traceBracket "objectSubscriber: deferred: update" $ runAsync $ update edits esrc
         in (MkObject run' r' e', ())
 
 makeObjectSubscriber :: Bool -> Object edit -> IO (Subscriber edit)

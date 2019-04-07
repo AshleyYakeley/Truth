@@ -72,10 +72,10 @@ directorySoup (MkObject (runFS :: UnliftIO m) readFS pushFS) dirpath =
                     _ -> return Nothing
             pushSoup ::
                    [SoupEdit (ObjectEdit ByteStringEdit)]
-                -> MonadStackTrans m (AutoClose FilePath (Object ByteStringEdit)) (Maybe (MonadStackTrans m (AutoClose FilePath (Object ByteStringEdit)) ()))
+                -> MonadStackTrans m (AutoClose FilePath (Object ByteStringEdit)) (Maybe (EditSource -> MonadStackTrans m (AutoClose FilePath (Object ByteStringEdit)) ()))
             pushSoup =
                 singleEdit $ \edit ->
-                    fmap (fmap combineLiftFst) $
+                    fmap (fmap (fmap combineLiftFst)) $
                     combineLiftFst $
                     case edit of
                         KeyEditItem _uuid (MkTupleEdit SelectFirst iedit) -> never iedit
@@ -87,8 +87,8 @@ directorySoup (MkObject (runFS :: UnliftIO m) readFS pushFS) dirpath =
                             return $
                                 case mnames of
                                     Just names ->
-                                        Just $
-                                        for_ names $ \name -> pushFS [FSEditDeleteNonDirectory $ dirpath </> name]
+                                        Just $ \_ ->
+                                            for_ names $ \name -> pushFS [FSEditDeleteNonDirectory $ dirpath </> name]
                                     Nothing -> Nothing
             in case dictWorkaround @m of
                    Dict -> MkObject runSoup readSoup pushSoup

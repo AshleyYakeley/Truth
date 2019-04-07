@@ -250,9 +250,9 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
             MkQueryString s v -> do
                 conn <- ask
                 lift $ query conn s v
-    objEdit :: [SQLiteEdit tablesel] -> ReaderT Connection IO (Maybe (ReaderT Connection IO ()))
+    objEdit :: [SQLiteEdit tablesel] -> ReaderT Connection IO (Maybe (EditSource -> ReaderT Connection IO ()))
     objEdit =
-        singleAlwaysEdit $ \edit ->
+        singleAlwaysEdit $ \edit _ ->
             case sqliteEditQuery edit of
                 MkQueryString s v -> do
                     conn <- ask

@@ -16,9 +16,10 @@ makeMemoryCellObject = do
         objRun = mvarUnliftIO var
         objRead :: MutableRead (StateT () IO) (EditReader MemoryCellEdit)
         objRead (MkTupleEditReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef ioref
-        objEdit :: [MemoryCellEdit] -> StateT () IO (Maybe (StateT () IO ()))
+        objEdit :: [MemoryCellEdit] -> StateT () IO (Maybe (EditSource -> StateT () IO ()))
         objEdit =
-            singleAlwaysEdit $ \(MkTupleEdit (MkDependentSelector ioref) (MkWholeEdit a)) -> liftIO $ writeIORef ioref a
+            singleAlwaysEdit $ \(MkTupleEdit (MkDependentSelector ioref) (MkWholeEdit a)) _ ->
+                liftIO $ writeIORef ioref a
     return MkObject {..}
 
 makeMemoryCellEditLens :: a -> IO (EditLens MemoryCellEdit (WholeEdit a))
