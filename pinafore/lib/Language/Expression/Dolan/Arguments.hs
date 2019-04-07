@@ -48,7 +48,7 @@ data DolanArguments (dv :: DolanVariance) (ft :: Polarity -> Type -> Type) (gt :
 
 bijectTypeArguments ::
        forall ft dv polarity ta t t' r.
-       KindBijection (DolanVarianceKind dv) t t'
+       KindBijection t t'
     -> DolanArguments dv ft t polarity ta
     -> (forall ta'. DolanArguments dv ft t' polarity ta' -> Bijection ta ta' -> r)
     -> r
@@ -107,7 +107,7 @@ mapArgsTypeF ::
     -> DolanVarianceType dv
     -> DolanVarianceMap cat dv gt
     -> DolanArguments dv fta gt polarity t
-    -> PolarMapType (KindMorphism (DolanVarianceKind dv) cat) polarity gt gt'
+    -> PolarMapType (KindMorphism cat) polarity gt gt'
     -> m (GenPTypeF cat (DolanArguments dv ftb gt') polarity t)
 mapArgsTypeF _ NilListType NilDolanVarianceMap NilDolanArguments conv = return $ MkTypeF NilDolanArguments conv
 mapArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap svm dvm) (ConsDolanArguments sta dta) conv = do
@@ -190,7 +190,7 @@ mapInvertArgsTypeF ::
     -> DolanVarianceType dv
     -> DolanVarianceMap cat dv gt
     -> DolanArguments dv fta gt polarity t
-    -> PolarMapType (KindMorphism (DolanVarianceKind dv) cat) (InvertPolarity polarity) gt gt'
+    -> PolarMapType (KindMorphism cat) (InvertPolarity polarity) gt gt'
     -> m (GenPTypeF cat (DolanArguments dv ftb gt') (InvertPolarity polarity) t)
 mapInvertArgsTypeF _ NilListType NilDolanVarianceMap NilDolanArguments conv = return $ MkTypeF NilDolanArguments conv
 mapInvertArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap svm dvm) (ConsDolanArguments sta dta) conv = do
@@ -286,7 +286,7 @@ psvf1 =
                 RangevarianceType ->
                     \(MkWithRange convp convq) ->
                         case (inKind @_ @a, inKind @_ @b) of
-                            (MkPairWitness _ _, MkPairWitness _ _) -> MkWithRange (meet1 . convp) (convq . join1)
+                            (MkPairWitness, MkPairWitness) -> MkWithRange (meet1 . convp) (convq . join1)
         NegativeType ->
             \case
                 CovarianceType -> \conv -> meet1 . conv
@@ -294,7 +294,7 @@ psvf1 =
                 RangevarianceType ->
                     \(MkWithRange convp convq) ->
                         case (inKind @_ @a, inKind @_ @b) of
-                            (MkPairWitness _ _, MkPairWitness _ _) -> MkWithRange (convp . join1) (meet1 . convq)
+                            (MkPairWitness, MkPairWitness) -> MkWithRange (convp . join1) (meet1 . convq)
 
 psvf2 ::
        forall polarity sv a b c. (Is PolarityType polarity, InVarianceKind sv a, InVarianceKind sv b)
@@ -310,7 +310,7 @@ psvf2 =
                 RangevarianceType ->
                     \(MkWithRange convp convq) ->
                         case (inKind @_ @a, inKind @_ @b) of
-                            (MkPairWitness _ _, MkPairWitness _ _) -> MkWithRange (meet2 . convp) (convq . join2)
+                            (MkPairWitness, MkPairWitness) -> MkWithRange (meet2 . convp) (convq . join2)
         NegativeType ->
             \case
                 CovarianceType -> \conv -> meet2 . conv
@@ -318,7 +318,7 @@ psvf2 =
                 RangevarianceType ->
                     \(MkWithRange convp convq) ->
                         case (inKind @_ @a, inKind @_ @b) of
-                            (MkPairWitness _ _, MkPairWitness _ _) -> MkWithRange (convp . join2) (meet2 . convq)
+                            (MkPairWitness, MkPairWitness) -> MkWithRange (convp . join2) (meet2 . convq)
 
 mergeArgsTypeF ::
        forall fta ftb ftab dv polarity gta gtb gtab ta tb. Is PolarityType polarity
@@ -330,8 +330,8 @@ mergeArgsTypeF ::
     -> DolanVarianceMap (->) dv gtb
     -> DolanArguments dv fta gta polarity ta
     -> DolanArguments dv ftb gtb polarity tb
-    -> PolarMapType (KindMorphism (DolanVarianceKind dv) (->)) polarity gta gtab
-    -> PolarMapType (KindMorphism (DolanVarianceKind dv) (->)) polarity gtb gtab
+    -> PolarMapType (KindMorphism (->)) polarity gta gtab
+    -> PolarMapType (KindMorphism (->)) polarity gtb gtab
     -> PTypeF (DolanArguments dv ftab gtab) polarity (JoinMeetType polarity ta tb)
 mergeArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments NilDolanArguments conva convb =
     MkTypeF NilDolanArguments $
@@ -403,7 +403,7 @@ dolanArgumentsToArgumentsM' ::
     => (forall t'. wa polarity t' -> m (GenTypeF cat wb polarity t'))
     -> CovaryType dv
     -> DolanVarianceMap cat dv fa
-    -> PolarMapType (KindMorphism (DolanVarianceKind dv) cat) polarity fa fb
+    -> PolarMapType (KindMorphism cat) polarity fa fb
     -> DolanArguments dv wa fa polarity t
     -> m (GenTypeF cat (Arguments wb fb) polarity t)
 dolanArgumentsToArgumentsM' _ NilListType NilDolanVarianceMap conv NilDolanArguments =
@@ -461,7 +461,7 @@ argumentsToDolanArgumentsM' ::
     => (forall t'. wa t' -> m (GenPTypeF cat wb polarity t'))
     -> CovaryType dv
     -> CovaryMap cat fa
-    -> PolarMapType (KindMorphism (DolanVarianceKind dv) cat) polarity fa fb
+    -> PolarMapType (KindMorphism cat) polarity fa fb
     -> Arguments wa fa t
     -> m (GenPTypeF cat (DolanArguments dv wb fb) polarity t)
 argumentsToDolanArgumentsM' _ NilListType NilCovaryMap conv NilArguments = return $ MkTypeF NilDolanArguments conv

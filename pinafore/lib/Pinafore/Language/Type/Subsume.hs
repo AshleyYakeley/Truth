@@ -215,7 +215,7 @@ invertSubstitute bisub@(NegInvertSubstitution bn n' _ bij) (OpenExpression (Nega
             expr' <- getCompose $ invertSubstitute bisub expr
             return $
                 OpenExpression (NegativeSubsumeWitness n' vtp) $
-                fmap (\fa conv -> fa $ biForwards bij . join1 . conv) expr'
+                fmap (\fa conv -> fa $ isoForwards bij . join1 . conv) expr'
 invertSubstitute bisub@(NegInvertSubstitution bn n' tp bij) (OpenExpression (PositiveSubsumeWitness vn vtq) expr)
     | Just Refl <- testEquality bn vn =
         Compose $ do
@@ -223,7 +223,7 @@ invertSubstitute bisub@(NegInvertSubstitution bn n' tp bij) (OpenExpression (Pos
             expr' <- getCompose $ invertSubstitute bisub expr
             return $
                 OpenExpression (PositiveSubsumeWitness n' vtq) $
-                fmap (\fa conv -> fa $ joinf conv convm . biBackwards bij) expr'
+                fmap (\fa conv -> fa $ joinf conv convm . isoBackwards bij) expr'
 invertSubstitute bisub@(PosInvertSubstitution bn n' tq bij) (OpenExpression (NegativeSubsumeWitness vn vtp) expr)
     | Just Refl <- testEquality bn vn =
         Compose $ do
@@ -231,14 +231,14 @@ invertSubstitute bisub@(PosInvertSubstitution bn n' tq bij) (OpenExpression (Neg
             expr' <- getCompose $ invertSubstitute bisub expr
             return $
                 OpenExpression (NegativeSubsumeWitness n' vtp) $
-                fmap (\fa conv -> fa $ biForwards bij . meetf conv convm) expr'
+                fmap (\fa conv -> fa $ isoForwards bij . meetf conv convm) expr'
 invertSubstitute bisub@(PosInvertSubstitution bn n' _ bij) (OpenExpression (PositiveSubsumeWitness vn vtq) expr)
     | Just Refl <- testEquality bn vn =
         Compose $ do
             expr' <- getCompose $ invertSubstitute bisub expr
             return $
                 OpenExpression (PositiveSubsumeWitness n' vtq) $
-                fmap (\fa conv -> fa $ conv . meet1 . biBackwards bij) expr'
+                fmap (\fa conv -> fa $ conv . meet1 . isoBackwards bij) expr'
 invertSubstitute bisub (OpenExpression subwit expr) =
     Compose $ do
         expr' <- getCompose $ invertSubstitute bisub expr
@@ -261,12 +261,12 @@ instance Subsumer (PinaforeSubsumer baseedit) where
                     (do
                          tq <- limitInvertType' tp
                          return $
-                             contramap (biBackwards varBij) $
+                             contramap (isoBackwards varBij) $
                              joinPinaforeTypeF (singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn) tq)
                     (return $
-                     fmap (biForwards varBij . join1) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
+                     fmap (isoForwards varBij . join1) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
         expr' <- getCompose $ invertSubstitute (NegInvertSubstitution vn vn tp varBij) expr
-        (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ biForwards varBij . join2) expr'
+        (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ isoForwards varBij . join2) expr'
         return (expr'', bisub : bisubs)
     solveSubsumer (OpenExpression (PositiveSubsumeWitness (vn :: SymbolType name) (tp :: PinaforeType baseedit 'Positive t)) expr) = do
         let
@@ -277,15 +277,15 @@ instance Subsumer (PinaforeSubsumer baseedit) where
                 MkBisubstitution
                     vn
                     (return $
-                     contramap (meet1 . biBackwards varBij) $
+                     contramap (meet1 . isoBackwards varBij) $
                      singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
                     (do
                          tq <- limitInvertType' tp
                          return $
-                             fmap (biForwards varBij) $
+                             fmap (isoForwards varBij) $
                              meetPinaforeTypeF (singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn) tq)
         expr' <- getCompose $ invertSubstitute (PosInvertSubstitution vn vn tp varBij) expr
-        (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ meet2 . biBackwards varBij) expr'
+        (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ meet2 . isoBackwards varBij) expr'
         return (expr'', bisub : bisubs)
     subsumerNegSubstitute = bisubstitutesType
     subsumePosWitnesses tinf tdecl = getCompose $ subsumePositiveType tinf tdecl

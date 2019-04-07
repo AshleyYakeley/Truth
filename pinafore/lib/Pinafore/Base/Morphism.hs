@@ -107,7 +107,7 @@ instance ArrowChoice (PinaforeFunctionMorphism baseedit) where
                      Right b -> fmap Right (pfr mr b))
             pfu
 
-instance Traversable f => CatFunctor (PinaforeFunctionMorphism baseedit) f where
+instance Traversable f => CatFunctor (PinaforeFunctionMorphism baseedit) (PinaforeFunctionMorphism baseedit) f where
     cfmap (MkCloseUnlift unlift (MkAPinaforeFunctionMorphism f u)) =
         MkCloseUnlift unlift $ MkAPinaforeFunctionMorphism (\mr fa -> withTransConstraintTM @MonadIO $ for fa $ f mr) u
 
@@ -408,14 +408,14 @@ nullPinaforeLensMorphism :: forall baseedit a b. PinaforeLensMorphism baseedit a
 nullPinaforeLensMorphism = funcPinaforeLensMorphism (\_ -> Unknown) (\_ -> mempty) (\_ -> Nothing)
 
 bijectionPinaforeLensMorphism :: Bijection a b -> PinaforeLensMorphism baseedit a b
-bijectionPinaforeLensMorphism (MkBijection ab ba) =
+bijectionPinaforeLensMorphism (MkIsomorphism ab ba) =
     funcPinaforeLensMorphism (fmap ab) (\b -> opoint $ ba b) (\kb -> Just $ fmap ba kb)
 
 instance IsoVariant (PinaforeLensMorphism baseedit t) where
-    isoMap ab ba m = bijectionPinaforeLensMorphism (MkBijection ab ba) . m
+    isoMap ab ba m = bijectionPinaforeLensMorphism (MkIsomorphism ab ba) . m
 
 instance IsoVariant' (PinaforeLensMorphism baseedit) where
-    isoMap' ab ba m = m . bijectionPinaforeLensMorphism (MkBijection ba ab)
+    isoMap' ab ba m = m . bijectionPinaforeLensMorphism (MkIsomorphism ba ab)
 
 applyPinaforeLens ::
        PinaforeLensMorphism baseedit a b

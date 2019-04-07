@@ -39,12 +39,12 @@ tupleEditUISpecs getSpec =
 -- | not really a bijection
 maybeNothingValueBijection :: Eq a => a -> Bijection (Maybe a) a
 maybeNothingValueBijection def = let
-    biForwards (Just a) = a
-    biForwards Nothing = def
-    biBackwards a
+    isoForwards (Just a) = a
+    isoForwards Nothing = def
+    isoBackwards a
         | a == def = Nothing
-    biBackwards a = Just a
-    in MkBijection {..}
+    isoBackwards a = Just a
+    in MkIsomorphism {..}
 
 maybeNothingEditLens :: Eq a => a -> EditLens (WholeEdit (Maybe a)) (WholeEdit a)
 maybeNothingEditLens def = toEditLens $ maybeNothingValueBijection def

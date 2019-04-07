@@ -57,7 +57,7 @@ isKnown Unknown = False
 
 knowBool :: Bijection (Know ()) Bool
 knowBool =
-    MkBijection isKnown $ \b ->
+    MkIsomorphism isKnown $ \b ->
         if b
             then Known ()
             else Unknown
@@ -69,7 +69,7 @@ knowToMaybe :: Know a -> Maybe a
 knowToMaybe (MkKnow ma) = ma
 
 knowMaybe :: Bijection (Know a) (Maybe a)
-knowMaybe = MkBijection knowToMaybe maybeToKnow
+knowMaybe = MkIsomorphism knowToMaybe maybeToKnow
 
 catKnowns :: Filterable f => f (Know a) -> f a
 catKnowns = catMaybes . fmap knowToMaybe

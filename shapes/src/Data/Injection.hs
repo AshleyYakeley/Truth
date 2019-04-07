@@ -27,7 +27,7 @@ instance Category Injection where
                       injBackwards ab b
             }
 
-instance (Traversable f) => CatFunctor Injection f where
+instance (Traversable f) => CatFunctor Injection Injection f where
     cfmap lens = MkInjection {injForwards = fmap (injForwards lens), injBackwards = traverse (injBackwards lens)}
 
 remonadInjection :: (forall t. m1 t -> m2 t) -> Injection' m1 a b -> Injection' m2 a b
@@ -40,4 +40,4 @@ codecInjection :: (Functor m) => Codec' m a b -> Injection' m a (m b)
 codecInjection codec = MkInjection {injForwards = decode codec, injBackwards = fmap (encode codec)}
 
 bijectionInjection :: Bijection a b -> Injection' Identity a b
-bijectionInjection bi = MkInjection {injForwards = biForwards bi, injBackwards = Identity . (biBackwards bi)}
+bijectionInjection bi = MkInjection {injForwards = isoForwards bi, injBackwards = Identity . (isoBackwards bi)}

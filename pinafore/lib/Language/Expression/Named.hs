@@ -58,7 +58,7 @@ substituteExpression _ (ClosedExpression a) = ClosedExpression a
 substituteExpression witmap@(MkWitnessMap wm) (OpenExpression (MkNameWitness name wt) expr) =
     wm wt $ \wt' bij ->
         OpenExpression (MkNameWitness name wt') $
-        fmap (\ta t2 -> ta $ biBackwards bij t2) $ substituteExpression witmap expr
+        fmap (\ta t2 -> ta $ isoBackwards bij t2) $ substituteExpression witmap expr
 
 varNamedExpression :: name -> vw t -> NamedExpression name vw t
 varNamedExpression n t = varNameTypeExpression (MkUnitType n) (MkUnitType' t)
@@ -69,7 +69,7 @@ substitutePattern :: WitnessSubstitution Type vw1 vw2 -> NamedPattern name vw1 q
 substitutePattern _ (ClosedPattern a) = ClosedPattern a
 substitutePattern witmap@(MkWitnessMap wm) (OpenPattern (MkNameWitness name wt) pat) =
     wm wt $ \wt' bij ->
-        OpenPattern (MkNameWitness name wt') $ fmap (\(t, a) -> (biForwards bij t, a)) $ substitutePattern witmap pat
+        OpenPattern (MkNameWitness name wt') $ fmap (\(t, a) -> (isoForwards bij t, a)) $ substitutePattern witmap pat
 
 varNamedPattern :: name -> vw t -> NamedPattern name vw t ()
 varNamedPattern n t = varNameTypePattern (MkUnitType n) (MkUnitType' t)

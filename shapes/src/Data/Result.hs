@@ -76,7 +76,7 @@ instance (Show e, Show a) => Show (Result e a) where
     show (FailureResult e) = "failure: " ++ show e
 
 mapResult :: Bijection (Result e2 (Result e1 a)) (Result (Either e2 e1) a)
-mapResult = MkBijection forwards backwards
+mapResult = MkIsomorphism forwards backwards
   where
     forwards (SuccessResult (SuccessResult a)) = SuccessResult a
     forwards (SuccessResult (FailureResult e1)) = FailureResult (Right e1)

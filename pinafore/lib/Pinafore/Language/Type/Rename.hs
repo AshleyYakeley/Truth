@@ -13,23 +13,23 @@ import Pinafore.Language.GroundType
 import Pinafore.Language.Type.Type
 import Shapes
 
-type LiftBijection (f :: kp -> kq) = forall (a :: kp) (b :: kp). KindBijection kp a b -> KindBijection kq (f a) (f b)
+type LiftBijection (f :: kp -> kq) = forall (a :: kp) (b :: kp). KindBijection a b -> KindBijection (f a) (f b)
 
 vcBijection ::
        forall (v :: SingleVariance) k (f :: SingleVarianceKind v -> k). HasKindMorphism k
     => SingleVarianceType v
     -> SingleVarianceMap (->) v f
     -> LiftBijection f
-vcBijection CovarianceType conv (MkBijection ab ba) = mkKindBijection (conv ab) (conv ba)
-vcBijection ContravarianceType conv (MkBijection ba ab) = mkKindBijection (conv $ MkCatDual ab) (conv $ MkCatDual ba)
-vcBijection RangevarianceType conv (MkPairMorphism (MkBijection papb pbpa) (MkBijection qaqb qbqa)) =
-    mkKindBijection (conv $ MkWithRange pbpa qaqb) (conv $ MkWithRange papb qbqa)
+vcBijection CovarianceType conv (MkIsomorphism ab ba) = mkKindBijection @_ @(->) (conv ab) (conv ba)
+vcBijection ContravarianceType conv (MkIsomorphism ba ab) =
+    mkKindBijection @_ @(->) (conv $ MkCatDual ab) (conv $ MkCatDual ba)
+vcBijection RangevarianceType conv (MkPairMorphism (MkIsomorphism papb pbpa) (MkIsomorphism qaqb qbqa)) =
+    mkKindBijection @_ @(->) (conv $ MkWithRange pbpa qaqb) (conv $ MkWithRange papb qbqa)
 
 type TypeNamespace (ts :: Type) (w :: k -> Type)
      = forall t1 m r.
            Monad m =>
-                   w t1 -> (forall t2.
-                                InKind t2 => w t2 -> KindBijection k t1 t2 -> VarNamespaceT ts (VarRenamerT ts m) r) -> VarNamespaceT ts (VarRenamerT ts m) r
+                   w t1 -> (forall t2. InKind t2 => w t2 -> KindBijection t1 t2 -> VarNamespaceT ts (VarRenamerT ts m) r) -> VarNamespaceT ts (VarRenamerT ts m) r
 
 type PinaforeTypeNamespace baseedit w = TypeNamespace (PinaforeTypeSystem baseedit) w
 
@@ -91,8 +91,8 @@ instance Renamer (VarRenamerT (PinaforeTypeSystem baseedit)) where
     type RenamerNamespaceT (VarRenamerT (PinaforeTypeSystem baseedit)) = VarNamespaceT (PinaforeTypeSystem baseedit)
     type RenamerNegWitness (VarRenamerT (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'Negative
     type RenamerPosWitness (VarRenamerT (PinaforeTypeSystem baseedit)) = PinaforeType baseedit 'Positive
-    renameTSNegWitness t = renamePinaforeTypeVars t $ \t' bij -> return $ MkTypeF t' $ biBackwards bij
-    renameTSPosWitness t = renamePinaforeTypeVars t $ \t' bij -> return $ MkTypeF t' $ biForwards bij
+    renameTSNegWitness t = renamePinaforeTypeVars t $ \t' bij -> return $ MkTypeF t' $ isoBackwards bij
+    renameTSPosWitness t = renamePinaforeTypeVars t $ \t' bij -> return $ MkTypeF t' $ isoForwards bij
     renameNewVar = do
         n <- varRenamerTGenerate
         valueToWitness n $ \wit ->

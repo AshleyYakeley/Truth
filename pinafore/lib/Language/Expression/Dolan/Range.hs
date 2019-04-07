@@ -33,13 +33,13 @@ contraRange :: (p -> t) -> Range t '( p, TopType)
 contraRange pt = MkRange pt alwaysTop
 
 rangeBijection :: Range a '( b, b) -> Bijection a b
-rangeBijection (MkRange ba ab) = MkBijection ab ba
+rangeBijection (MkRange ba ab) = MkIsomorphism ab ba
 
 bijectionRange :: Bijection a b -> Range a '( b, b)
-bijectionRange (MkBijection ab ba) = MkRange ba ab
+bijectionRange (MkIsomorphism ab ba) = MkRange ba ab
 
 bijectRanges :: Range a '( p, q) -> Range b '( q, p) -> Bijection a b
-bijectRanges (MkRange pa aq) (MkRange qb bp) = MkBijection (qb . aq) (pa . bp)
+bijectRanges (MkRange pa aq) (MkRange qb bp) = MkIsomorphism (qb . aq) (pa . bp)
 
 unifyRange1 :: (q -> p) -> Range t '( p, q) -> Range t '( p, p)
 unifyRange1 qp (MkRange pt tq) = MkRange pt (qp . tq)
@@ -72,10 +72,10 @@ invertWithRange (MkWithRange p q) = MkWithRange (invert p) (invert q)
 class IsoMapRange f where
     isoMapRange :: WithRange Bijection a b -> f a -> f b
     default isoMapRange :: MapRange f => WithRange Bijection a b -> f a -> f b
-    isoMapRange (MkWithRange a b) = mapRange $ MkWithRange (biForwards a) (biForwards b)
+    isoMapRange (MkWithRange a b) = mapRange $ MkWithRange (isoForwards a) (isoForwards b)
 
 isoBiRange :: IsoMapRange f => WithRange Bijection a b -> Bijection (f a) (f b)
-isoBiRange rbij = MkBijection (isoMapRange rbij) (isoMapRange $ invertWithRange rbij)
+isoBiRange rbij = MkIsomorphism (isoMapRange rbij) (isoMapRange $ invertWithRange rbij)
 
 class IsoMapRange f => MapRange f where
     mapRange :: WithRange (->) a b -> f a -> f b
@@ -94,10 +94,10 @@ instance MapRange (Range t) where
 class IsoMapRange' f where
     isoMapRange' :: WithRange Bijection a b -> f a t -> f b t
     default isoMapRange' :: MapRange' f => WithRange Bijection a b -> f a t -> f b t
-    isoMapRange' (MkWithRange a b) = mapRange' $ MkWithRange (biForwards a) (biForwards b)
+    isoMapRange' (MkWithRange a b) = mapRange' $ MkWithRange (isoForwards a) (isoForwards b)
 
 isoBiRange' :: IsoMapRange' f => WithRange Bijection a b -> Bijection (f a t) (f b t)
-isoBiRange' rbij = MkBijection (isoMapRange' rbij) (isoMapRange' $ invertWithRange rbij)
+isoBiRange' rbij = MkIsomorphism (isoMapRange' rbij) (isoMapRange' $ invertWithRange rbij)
 
 class IsoMapRange' f => MapRange' f where
     mapRange' :: WithRange (->) a b -> f a t -> f b t

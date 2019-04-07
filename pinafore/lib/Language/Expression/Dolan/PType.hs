@@ -17,7 +17,7 @@ mkGenPTypeF ::
 mkGenPTypeF = mkGenTypeF
 
 mkPTypeF ::
-       forall polarity (k :: Type) wit (t :: k). (Category (KindMorphism k (->)), Is PolarityType polarity)
+       forall polarity (k :: Type) wit (t :: k). (Category (KindFunction :: k -> k -> Type), Is PolarityType polarity)
     => wit polarity t
     -> PTypeF wit polarity t
 mkPTypeF = mkTypeF

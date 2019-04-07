@@ -77,7 +77,7 @@ instance MonadOne (Result e) where
     retrieveOne (FailureResult e) = FailureResult (MkLimit (FailureResult e))
     getMaybeOne = resultToMaybe
 
-constFunctionAp :: (MonadOne f, Applicative (t (f a)), CatFunctor t f) => f (t a b) -> t (f a) (f b)
+constFunctionAp :: (MonadOne f, Applicative (t (f a)), CatFunctor t t f) => f (t a b) -> t (f a) (f b)
 constFunctionAp fcab =
     case retrieveOne fcab of
         FailureResult (MkLimit fx) -> pure fx

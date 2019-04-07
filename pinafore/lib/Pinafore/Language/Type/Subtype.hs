@@ -47,7 +47,7 @@ subtypeArguments ::
     -> DolanVarianceMap (->) dv gta
     -> DolanArguments dv (PinaforeType baseedit) gta pola ta
     -> DolanArguments dv (PinaforeType baseedit) gtb polb tb
-    -> m (KindFunction (DolanVarianceKind dv) gta gtb -> ta -> tb)
+    -> m (KindFunction gta gtb -> ta -> tb)
 subtypeArguments _ NilListType NilDolanVarianceMap NilDolanArguments NilDolanArguments = pure id
 subtypeArguments sc (ConsListType (svt :: SingleVarianceType sv) (dvt :: DolanVarianceType dv')) (ConsDolanVarianceMap svm dvm) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) = do
     sfunc <- subtypeVariance sc svt sta stb
@@ -100,8 +100,8 @@ entityGroundSubtype _ ct gt args NilListType TopEntityGroundType NilDolanArgumen
                 pure $
                 entityAdapterConvert (entityAdapter et) .
                 case representative @_ @_ @pola of
-                    PositiveType -> biForwards conv
-                    NegativeType -> biBackwards conv
+                    PositiveType -> isoForwards conv
+                    NegativeType -> isoBackwards conv
 entityGroundSubtype _ NilListType (LiteralEntityGroundType t1) NilDolanArguments NilListType (LiteralEntityGroundType t2) NilDolanArguments
     | Just conv <- isSubtype t1 t2 = pure conv
 entityGroundSubtype _ NilListType NewEntityGroundType NilDolanArguments NilListType NewEntityGroundType NilDolanArguments =

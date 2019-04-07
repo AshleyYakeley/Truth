@@ -10,8 +10,8 @@ data GenTypeF (cat :: k -> k -> Type) (wit :: k -> Type) (polarity :: Polarity) 
         -> PolarMapType cat polarity t t'
         -> GenTypeF cat wit polarity t
 
---type ConvertType polarity (a :: k) (b :: k) = PolarMapType (KindMorphism k (->)) polarity a b
-type TypeF (wit :: k -> Type) = GenTypeF (KindMorphism k (->)) wit
+--type ConvertType polarity (a :: k) (b :: k) = PolarMapType KindFunction polarity a b
+type TypeF (wit :: k -> Type) = GenTypeF KindFunction wit
 
 mkGenTypeF ::
        forall (k :: Type) (cat :: k -> k -> Type) polarity wit (t :: k). (Category cat, Is PolarityType polarity)
@@ -23,7 +23,7 @@ mkGenTypeF t =
         NegativeType -> MkTypeF t id
 
 mkTypeF ::
-       forall (k :: Type) polarity wit (t :: k). (Category (KindMorphism k (->)), Is PolarityType polarity)
+       forall (k :: Type) polarity wit (t :: k). (Category (KindFunction :: k -> k -> Type), Is PolarityType polarity)
     => wit t
     -> TypeF wit polarity t
 mkTypeF = mkGenTypeF

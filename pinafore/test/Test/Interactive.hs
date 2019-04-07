@@ -4,7 +4,7 @@ module Test.Interactive
 
 import Pinafore
 import Pinafore.Test
-import Shapes
+import Shapes hiding ((<.>))
 import System.FilePath
 import Test.Tasty
 import Test.Tasty.Golden
