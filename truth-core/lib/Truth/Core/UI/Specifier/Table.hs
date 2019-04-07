@@ -2,6 +2,7 @@ module Truth.Core.UI.Specifier.Table where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Object
 import Truth.Core.Read
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
@@ -69,10 +70,11 @@ instance UIType TableUISpec where
 
 tableNewItem ::
        forall tedit cont iedit sel. IONewItemKeyContainer cont
-    => EditLens tedit (KeyEdit cont iedit)
+    => EditSource
+    -> EditLens tedit (KeyEdit cont iedit)
     -> View sel tedit Bool
-tableNewItem tableLens =
+tableNewItem esrc tableLens =
     viewMapEdit tableLens $
     viewObjectPushEdit $ \_ push -> do
         item <- liftIO $ newKeyContainerItem @cont
-        push [KeyInsertReplaceItem item]
+        push esrc [KeyInsertReplaceItem item]

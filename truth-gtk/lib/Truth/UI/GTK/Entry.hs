@@ -13,18 +13,18 @@ textEntryGetView =
     MkGetView $ \_ uispec ->
         fmap
             (\MkTextAreaUISpecEntry -> do
+                 esrc <- newEditSource
                  initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
                  widget <- new Entry [#text := initial]
-                 changedSignal <-
+                 _ <-
                      cvLiftView $
                      viewOn widget #changed $
                      viewObjectPushEdit $ \_ push -> do
                          st <- get widget #text
-                         _ <- push [MkWholeEdit st]
+                         _ <- push esrc [MkWholeEdit st]
                          return ()
-                 cvReceiveUpdate $ \_ _ (MkWholeEdit newtext) ->
-                     liftIO $
-                     withSignalBlocked widget changedSignal $ do
+                 cvReceiveUpdate (Just esrc) $ \_ _ (MkWholeEdit newtext) ->
+                     liftIO $ do
                          oldtext <- get widget #text
                          if oldtext == newtext
                              then return ()

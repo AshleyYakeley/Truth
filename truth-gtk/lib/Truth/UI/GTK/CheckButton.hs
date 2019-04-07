@@ -11,23 +11,24 @@ import Truth.UI.GTK.Useful
 
 createWidget :: CheckboxUISpec sel edit -> CreateView sel edit Widget
 createWidget (MkCheckboxUISpec label lens) = do
+    esrc <- newEditSource
     initial <- cvLiftView $ viewMapEdit lens $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial]
-    cvBindEditFunction label $ \val -> set widget [#label := val]
+    cvBindEditFunction Nothing label $ \val -> set widget [#label := val]
     cvMapEdit lens $ do
-        changedSignal <-
+        _ <-
             cvLiftView $
             viewOn widget #clicked $
             viewObjectPushEdit $ \_ push -> do
                 st <- Gtk.get widget #active
-                _ <- push [MkWholeEdit st]
+                _ <- push noEditSource [MkWholeEdit st]
                 return ()
-        cvBindEditFunction id $ \st -> liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
+        cvBindEditFunction (Just esrc) id $ \st -> liftIO $ set widget [#active := st]
     toWidget widget
 createWidget (MkMaybeCheckboxUISpec label lens) = do
     initial <- cvLiftView $ viewMapEdit lens $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
-    cvBindEditFunction label $ \val -> set widget [#label := val]
+    cvBindEditFunction Nothing label $ \val -> set widget [#label := val]
     cvMapEdit lens $ do
         let
             getWidgetState ::
@@ -61,10 +62,10 @@ createWidget (MkMaybeCheckboxUISpec label lens) = do
                                         if elem ModifierTypeShiftMask modifiers
                                             then Nothing
                                             else Just (oldst /= Just True)
-                                _ <- push [MkWholeEdit newst]
+                                _ <- push noEditSource [MkWholeEdit newst]
                                 return True
                             _ -> return False
-        cvBindEditFunction id setWidgetState
+        cvBindEditFunction Nothing id setWidgetState
     toWidget widget
 
 checkButtonGetView :: GetGView

@@ -15,8 +15,8 @@ createWidget ::
 createWidget rlabel raction = do
     aref <- liftIO $ newIORef Nothing
     widget <- new Button []
-    cvBindEditFunction rlabel $ \label -> set widget [#label := label]
-    cvBindEditFunction raction $ \maction ->
+    cvBindEditFunction Nothing rlabel $ \label -> set widget [#label := label]
+    cvBindEditFunction Nothing raction $ \maction ->
         liftIO $ do
             writeIORef aref maction
             set widget [#sensitive := isJust maction]

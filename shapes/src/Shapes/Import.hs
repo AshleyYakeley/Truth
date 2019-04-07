@@ -33,6 +33,7 @@ import Data.Semigroup as I hiding (All(..), Any(..))
 import Data.String as I hiding (lines, unlines, unwords, words)
 import Data.Traversable as I
 import Data.Tuple as I
+import Data.Unique as I
 import Data.Word as I
 import Prelude as I
     ( Enum(..)

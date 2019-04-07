@@ -48,7 +48,7 @@ addColumn ::
 addColumn tview store col = do
     renderer <- new CellRendererText []
     column <- new TreeViewColumn []
-    cvBindEditFunction (colName col) $ #setTitle column
+    cvBindEditFunction Nothing (colName col) $ #setTitle column
     #packStart column renderer False
     cellLayoutSetAttributes column renderer store $ \(_, entry) -> cellAttributes col entry
     _ <- #appendColumn tview column
@@ -113,7 +113,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
         findInStore key = do
             kk <- seqStoreToList store
             return $ lookup @[(ContainerKey cont, Int)] key $ zip (fmap fst kk) [0 ..]
-    cvReceiveUpdates $ \_ mr edits ->
+    cvReceiveUpdates Nothing $ \_ mr edits ->
         mapUpdates (editLensFunction tableLens) mr edits $ \_ edits' ->
             withTransConstraintTM @MonadIO $
             for_ edits' $ \case
@@ -135,7 +135,7 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                 KeyClear -> seqStoreClear store
                 KeyEditItem _ _ -> return () -- no change to the table structure
     -- do updates to the cells
-    cvReceiveUpdates $ \_ mr tedits ->
+    cvReceiveUpdates Nothing $ \_ mr tedits ->
         seqStoreTraverse_ store $
         joinTraverse
             (\(key, oldcol) ->

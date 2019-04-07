@@ -90,14 +90,14 @@ main =
                             mactions <- saveActions
                             _ <-
                                 case mactions of
-                                    Just (action, _) -> action
+                                    Just (action, _) -> action noEditSource
                                     _ -> return False
                             return ()
                         revertAction = do
                             mactions <- saveActions
                             _ <-
                                 case mactions of
-                                    Just (_, action) -> action
+                                    Just (_, action) -> action noEditSource
                                     _ -> return False
                             return ()
                         mbar :: [MenuEntry edit]
@@ -116,9 +116,9 @@ main =
                             , SubMenuEntry
                                   "Edit"
                                   [ simpleActionMenuItem "Undo" (Just $ MkMenuAccelerator [KMCtrl] 'Z') $
-                                    undo >> return ()
+                                    undo noEditSource >> return ()
                                   , simpleActionMenuItem "Redo" (Just $ MkMenuAccelerator [KMCtrl] 'Y') $
-                                    redo >> return ()
+                                    redo noEditSource >> return ()
                                   ]
                             ]
                         in (mbar, spec)

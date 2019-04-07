@@ -15,10 +15,10 @@ mapSubscriber lens (MkSubscriber objectA subA) = let
     objectB :: Object editb
     objectB = lensObject True lens objectA
     in MkSubscriber objectB $ \updateB -> let
-           updateA :: [edita] -> IO ()
-           updateA editAs = do
+           updateA :: [edita] -> EditSource -> IO ()
+           updateA editAs esrc = do
                editBs <- objectMapUpdates (editLensFunction lens) objectA editAs
-               updateB editBs
+               updateB editBs esrc
            in subA updateA
 
 convertSubscriber ::

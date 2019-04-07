@@ -179,8 +179,8 @@ instance CacheableEdit PinaforeTableEdit where
 
 pinaforeTableEntityObject :: Object PinaforeTableEdit -> Object PinaforeEntityEdit
 pinaforeTableEntityObject (MkObject objRun (tableRead :: MutableRead m PinaforeTableRead) tableMPush) = let
-    tablePush :: [PinaforeTableEdit] -> m ()
-    tablePush edits = pushOrFail "can't push table edit" $ tableMPush edits
+    tablePush :: [PinaforeTableEdit] -> EditSource -> m ()
+    tablePush edits esrc = pushOrFail "can't push table edit" esrc $ tableMPush edits
     objRead :: MutableRead m PinaforeEntityRead
     objRead (PinaforeEntityReadGetPredicate prd subj) =
         fmap maybeToKnow $ tableRead $ PinaforeTableReadGetPredicate prd subj
@@ -190,13 +190,13 @@ pinaforeTableEntityObject (MkObject objRun (tableRead :: MutableRead m PinaforeT
             Just val -> return val
             Nothing -> do
                 val <- newEntity
-                tablePush [PinaforeTableEditSetPredicate prd subj $ Just val]
+                tablePush [PinaforeTableEditSetPredicate prd subj $ Just val] noEditSource
                 return val
     objRead (PinaforeEntityReadLookupPredicate prd val) = tableRead $ PinaforeTableReadLookupPredicate prd val
     objRead (PinaforeEntityReadToLiteral p) = do
         ml <- tableRead $ PinaforeTableReadGetLiteral p
         return $ maybeToKnow ml
-    objEdit :: [PinaforeEntityEdit] -> m (Maybe (m ()))
+    objEdit :: [PinaforeEntityEdit] -> m (Maybe (EditSource -> m ()))
     objEdit =
         singleAlwaysEdit $ \case
             PinaforeEntityEditSetPredicate p s kv -> tablePush [PinaforeTableEditSetPredicate p s $ knowToMaybe kv]

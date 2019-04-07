@@ -36,8 +36,8 @@ updateUndoQueue mr edits = do
             put $ MkUndoQueue (ue : uq) []
 
 data UndoActions = MkUndoActions
-    { uaUndo :: IO Bool
-    , uaRedo :: IO Bool
+    { uaUndo :: EditSource -> IO Bool
+    , uaRedo :: EditSource -> IO Bool
     }
 
 undoQueueSubscriber ::
@@ -49,8 +49,8 @@ undoQueueSubscriber sub = do
     MkObject (runP :: UnliftIO ma) readP pushP <- return $ subObject sub
     let
         undoActions = let
-            uaUndo :: IO Bool
-            uaUndo =
+            uaUndo :: EditSource -> IO Bool
+            uaUndo esrc =
                 mvarRun queueVar $ do
                     MkUndoQueue ues res <- get
                     case ues of
@@ -62,7 +62,7 @@ undoQueueSubscriber sub = do
                                     maction <- pushP (snd entry)
                                     case maction of
                                         Just action -> do
-                                            action
+                                            action esrc
                                             return True
                                         Nothing -> return False
                             if did
@@ -70,8 +70,8 @@ undoQueueSubscriber sub = do
                                     put $ MkUndoQueue ee (entry : res)
                                     return True
                                 else return False
-            uaRedo :: IO Bool
-            uaRedo =
+            uaRedo :: EditSource -> IO Bool
+            uaRedo esrc =
                 mvarRun queueVar $ do
                     MkUndoQueue ues res <- get
                     case res of
@@ -83,7 +83,7 @@ undoQueueSubscriber sub = do
                                     maction <- pushP (fst entry)
                                     case maction of
                                         Just action -> do
-                                            action
+                                            action esrc
                                             return True
                                         Nothing -> return False
                             if did
@@ -95,11 +95,12 @@ undoQueueSubscriber sub = do
         pushC edits = do
             maction <- pushP edits
             return $
-                fmap
-                    (\action -> do
-                         mvarRun queueVar $ updateUndoQueue readP edits
-                         action)
-                    maction
+                case maction of
+                    Just action ->
+                        Just $ \esrc -> do
+                            mvarRun queueVar $ updateUndoQueue readP edits
+                            action esrc
+                    Nothing -> Nothing
         objC = MkObject runP readP pushC
         subC = MkSubscriber objC $ subscribe sub
     return (subC, undoActions)

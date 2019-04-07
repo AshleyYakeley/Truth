@@ -15,8 +15,8 @@ noneTupleObject = let
     objRun = id
     objRead :: forall t. TupleEditReader (ListElementType '[]) t -> IO t
     objRead (MkTupleEditReader sel _) = case sel of {}
-    objEdit :: [TupleEdit (ListElementType '[])] -> IO (Maybe (IO ()))
-    objEdit [] = return $ Just $ return ()
+    objEdit :: [TupleEdit (ListElementType '[])] -> IO (Maybe (EditSource -> IO ()))
+    objEdit [] = return $ Just $ \_ -> return ()
     objEdit (MkTupleEdit sel _:_) = case sel of {}
     in MkObject {..}
 
@@ -44,11 +44,11 @@ consTupleObjects (MkObject (runA :: UnliftIO ma) readA editA) (MkObject (runB ::
                 combineLiftSnd @ma @mb $ readB $ MkTupleEditReader sel r
             editAB ::
                    [TupleEdit (ListElementType (edit : edits))]
-                -> CombineMonadIO ma mb (Maybe (CombineMonadIO ma mb ()))
+                -> CombineMonadIO ma mb (Maybe (EditSource -> CombineMonadIO ma mb ()))
             editAB edits = let
                 (eas, ebs) = partitionListTupleEdits edits
                 in liftA2
-                       (liftA2 $ \mau mbu -> (>>) (combineLiftFst @ma @mb mau) (combineLiftSnd @ma @mb mbu))
+                       (liftA2 $ liftA2 $ \mau mbu -> (>>) (combineLiftFst @ma @mb mau) (combineLiftSnd @ma @mb mbu))
                        (combineLiftFst @ma @mb $ editA eas)
                        (combineLiftSnd @ma @mb $ editB ebs)
             in MkObject runAB readAB editAB
