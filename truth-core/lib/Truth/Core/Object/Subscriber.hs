@@ -16,6 +16,7 @@ module Truth.Core.Object.Subscriber
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.DeferActionT
+import Truth.Core.Object.EditSource
 import Truth.Core.Object.Object
 import Truth.Core.Object.Update
 import Truth.Core.Read

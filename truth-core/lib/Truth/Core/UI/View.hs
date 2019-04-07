@@ -14,7 +14,7 @@ module Truth.Core.UI.View
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.Object
+import Truth.Core.Object
 import Truth.Core.Read
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.ViewContext

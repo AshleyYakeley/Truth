@@ -1,6 +1,7 @@
 module Truth.Core.Object.Editor where
 
 import Truth.Core.Import
+import Truth.Core.Object.EditSource
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 

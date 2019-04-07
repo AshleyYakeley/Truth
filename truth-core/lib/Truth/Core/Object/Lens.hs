@@ -2,6 +2,7 @@ module Truth.Core.Object.Lens where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Object.EditSource
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Object.Update

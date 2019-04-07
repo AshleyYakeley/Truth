@@ -22,8 +22,7 @@ module Truth.Core.UI.CreateView
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.Object
-import Truth.Core.Object.Subscriber
+import Truth.Core.Object
 import Truth.Core.Read
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Selection
