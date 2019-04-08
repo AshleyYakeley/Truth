@@ -125,7 +125,7 @@ main =
                 action <-
                     if saveOpt
                         then do
-                            (bufferSub, saveActions) <- makeSharedSubscriber $ saveBufferObject wholeTextObj
+                            (bufferSub, saveActions) <- makeSharedSubscriber async $ saveBufferObject wholeTextObj
                             (textSub, undoActions) <- undoQueueSubscriber bufferSub
                             return $
                                 makeWindow (fromString $ takeFileName path) textSub $ extraUI saveActions undoActions

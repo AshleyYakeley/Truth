@@ -2,7 +2,7 @@ module Truth.Core.Object.Object where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.EditSource
+import Truth.Core.Object.EditContext
 import Truth.Core.Read
 import Truth.Core.Types.None
 import Truth.Core.Types.Whole

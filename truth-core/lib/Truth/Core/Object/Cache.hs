@@ -2,7 +2,7 @@ module Truth.Core.Object.Cache where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.EditSource
+import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Read
 

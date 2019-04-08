@@ -64,7 +64,7 @@ testOutputEditor name call = let
         val <- run $ mutableReadToSubject r
         outputLn $ "init: " ++ show val
         return ()
-    editorUpdate :: () -> Object edit -> [edit] -> EditSource -> IO ()
+    editorUpdate :: () -> Object edit -> [edit] -> EditContext -> IO ()
     editorUpdate () (MkObject (MkTransform run) mr _) edits _ = do
         outputLn $ "receive " ++ show edits
         val <- run $ mutableReadToSubject mr

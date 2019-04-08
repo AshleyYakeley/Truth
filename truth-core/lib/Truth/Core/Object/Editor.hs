@@ -1,13 +1,13 @@
 module Truth.Core.Object.Editor where
 
 import Truth.Core.Import
-import Truth.Core.Object.EditSource
+import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 
 data Editor (edit :: Type) r = forall editor. MkEditor
     { editorInit :: Object edit -> IO editor
-    , editorUpdate :: editor -> Object edit -> [edit] -> EditSource -> IO ()
+    , editorUpdate :: editor -> Object edit -> [edit] -> EditContext -> IO ()
     , editorDo :: editor -> Object edit -> IO r
     }
 
@@ -26,10 +26,10 @@ instance Applicative (Editor edit) where
             e1 <- ei1 object
             e2 <- ei2 object
             return (e1, e2)
-        editorUpdate :: (editor1, editor2) -> Object edit -> [edit] -> EditSource -> IO ()
-        editorUpdate (e1, e2) obj edits esrc = do
-            eu1 e1 obj edits esrc
-            eu2 e2 obj edits esrc
+        editorUpdate :: (editor1, editor2) -> Object edit -> [edit] -> EditContext -> IO ()
+        editorUpdate (e1, e2) obj edits ectxt = do
+            eu1 e1 obj edits ectxt
+            eu2 e2 obj edits ectxt
         editorDo (e1, e2) obj = do
             ab <- ed1 e1 obj
             a <- ed2 e2 obj

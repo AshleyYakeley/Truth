@@ -2,7 +2,7 @@ module Truth.Core.Object.Lens where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.EditSource
+import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Object.Update
@@ -16,10 +16,10 @@ mapSubscriber lens (MkSubscriber objectA subA) = let
     objectB :: Object editb
     objectB = lensObject True lens objectA
     in MkSubscriber objectB $ \updateB -> let
-           updateA :: [edita] -> EditSource -> IO ()
-           updateA editAs esrc = do
+           updateA :: [edita] -> EditContext -> IO ()
+           updateA editAs ectxt = do
                editBs <- objectMapUpdates (editLensFunction lens) objectA editAs
-               updateB editBs esrc
+               updateB editBs ectxt
            in subA updateA
 
 convertSubscriber ::

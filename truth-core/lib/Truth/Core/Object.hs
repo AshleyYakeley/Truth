@@ -5,7 +5,7 @@ module Truth.Core.Object
 import Truth.Core.Object.AutoClose as I
 import Truth.Core.Object.Cache as I
 import Truth.Core.Object.DeferActionT as I
-import Truth.Core.Object.EditSource as I
+import Truth.Core.Object.EditContext as I
 import Truth.Core.Object.Editor as I
 import Truth.Core.Object.Lens as I
 import Truth.Core.Object.MemoryCell as I

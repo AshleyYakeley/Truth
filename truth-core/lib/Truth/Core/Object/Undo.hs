@@ -6,7 +6,7 @@ module Truth.Core.Object.Undo
 import Truth.Core.Edit
 import Truth.Core.Import
 
-import Truth.Core.Object.EditSource
+import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Read
