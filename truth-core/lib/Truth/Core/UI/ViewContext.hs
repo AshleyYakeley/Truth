@@ -2,7 +2,7 @@ module Truth.Core.UI.ViewContext where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.Object
+import Truth.Core.Object
 import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 
@@ -10,7 +10,7 @@ data ViewContext sel edit = MkViewContext
     { vcObject :: Object edit
     , vcSetSelection :: Aspect sel -> IO ()
     , vcRequest :: forall t. IOWitness t -> Maybe t
-    , vcThreadBarrier :: IO () -> IO ()
+    , vcThreadBarrier :: Bool -> IO () -> IO ()
     }
 
 vcMapEdit ::

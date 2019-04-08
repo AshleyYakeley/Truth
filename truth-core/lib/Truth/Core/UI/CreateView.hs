@@ -22,8 +22,7 @@ module Truth.Core.UI.CreateView
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.Object
-import Truth.Core.Object.Subscriber
+import Truth.Core.Object
 import Truth.Core.Read
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Selection
@@ -33,16 +32,16 @@ import Truth.Core.UI.ViewContext
 import Truth.Debug.Object
 
 data ViewOutput sel edit = MkViewOutput
-    { voUpdate :: Object edit -> [edit] -> EditSource -> IO ()
+    { voUpdate :: Object edit -> [edit] -> EditContext -> IO ()
     , voFirstAspect :: Aspect sel
     }
 
 instance Semigroup (ViewOutput sel edit) where
     (MkViewOutput update1 fss1) <> (MkViewOutput update2 fss2) = let
-        voUpdate :: Object edit -> [edit] -> EditSource -> IO ()
-        voUpdate obj edits esrc = do
-            update1 obj edits esrc
-            update2 obj edits esrc
+        voUpdate :: Object edit -> [edit] -> EditContext -> IO ()
+        voUpdate obj edits ectxt = do
+            update1 obj edits ectxt
+            update2 obj edits ectxt
         voFirstAspect = do
             ma1 <- fss1
             case ma1 of
@@ -61,12 +60,12 @@ voMapEdit :: forall sel edita editb. EditLens edita editb -> ViewOutput sel edit
 voMapEdit lens@(MkCloseUnlift unlift flens) (MkViewOutput updateB a) = let
     MkAnEditLens {..} = flens
     MkAnEditFunction {..} = elFunction
-    updateA :: Object edita -> [edita] -> EditSource -> IO ()
-    updateA objA@(MkObject ou omr _) editsA esrc = do
+    updateA :: Object edita -> [edita] -> EditContext -> IO ()
+    updateA objA@(MkObject ou omr _) editsA ectxt = do
         editsB <-
             runTransform (composeUnliftTransform unlift ou) $
             withTransConstraintTM @MonadUnliftIO $ efUpdates elFunction editsA omr
-        updateB (mapObject lens objA) editsB esrc
+        updateB (mapObject lens objA) editsB ectxt
     in (MkViewOutput updateA a)
 
 voMapSelection :: forall sela selb edit. (sela -> selb) -> ViewOutput sela edit -> ViewOutput selb edit
@@ -86,7 +85,7 @@ newtype CreateView sel edit a =
 
 type ViewState sel edit a = LifeState (ViewResult sel edit a)
 
-vsUpdate :: ViewState sel edit a -> Object edit -> [edit] -> EditSource -> IO ()
+vsUpdate :: ViewState sel edit a -> Object edit -> [edit] -> EditContext -> IO ()
 vsUpdate ((vo, _), _) = voUpdate vo
 
 vsFirstAspect :: ViewState sel edit a -> Aspect sel
@@ -107,7 +106,9 @@ instance MonadLifeCycle (CreateView sel edit) where
 cvReceiveIOUpdates :: (Object edit -> [edit] -> EditSource -> IO ()) -> CreateView sel edit ()
 cvReceiveIOUpdates recv = do
     tb <- MkCreateView $ asks vcThreadBarrier
-    cvLiftViewResult $ (mempty {voUpdate = \obj edits esrc -> traceBracket "cvReceiveIOUpdates:update:outside" $ tb $ traceBracket "cvReceiveIOUpdates:update:inside" $ recv obj edits esrc}, ())
+    cvLiftViewResult $
+        ( mempty {voUpdate = \obj edits MkEditContext {..} -> traceBracket "cvReceiveIOUpdates:update:outside" $ tb editContextAsync $ traceBracket "cvReceiveIOUpdates:update:inside" $ recv obj edits editContextSource}
+        , ())
 
 cvReceiveUpdates :: Maybe EditSource -> (UnliftIO (View sel edit) -> ReceiveUpdates edit) -> CreateView sel edit ()
 cvReceiveUpdates mesrc recv = do
@@ -173,7 +174,7 @@ data AnyCreateView edit w =
 
 subscribeView' ::
        forall edit w.
-       (IO () -> IO ())
+       (Bool -> IO () -> IO ())
     -> AnyCreateView edit w
     -> Subscriber edit
     -> (forall t. IOWitness t -> Maybe t)
@@ -188,7 +189,7 @@ subscribeView' vcThreadBarrier (MkAnyCreateView (MkCreateView (ReaderT view))) (
 
 subscribeView ::
        forall edit w.
-       (IO () -> IO ())
+       (Bool -> IO () -> IO ())
     -> (IO () -> AnyCreateView edit (LifeCycle w))
     -> Subscriber edit
     -> (forall t. IOWitness t -> Maybe t)

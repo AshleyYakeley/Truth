@@ -12,6 +12,7 @@ import Shapes
 import Truth.Core
 import Truth.Debug.Object
 
+-- | Returns immediately.
 deferToIdle :: MonadAskUnliftIO m => m () -> m ()
 deferToIdle action = do
     unlift <- askUnliftIO
@@ -22,6 +23,15 @@ deferToIdle action = do
             action
             return SOURCE_REMOVE
     return ()
+
+-- | Waits for the task to be done.
+runInIdle :: MonadAskUnliftIO m => m () -> m ()
+runInIdle action = do
+    var <- liftIO newEmptyMVar
+    deferToIdle $ do
+        action
+        liftIO $ putMVar var ()
+    liftIO $ takeMVar var
 
 containerGetAllChildren :: Container -> IO [Widget]
 containerGetAllChildren cont = do

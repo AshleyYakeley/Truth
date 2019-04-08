@@ -16,6 +16,7 @@ module Truth.Core.Object.Subscriber
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.DeferActionT
+import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.Update
 import Truth.Core.Read
@@ -23,30 +24,39 @@ import Truth.Debug
 
 data Subscriber edit = MkSubscriber
     { subObject :: Object edit
-    , subscribe :: ([edit] -> EditSource -> IO ()) -> LifeCycle ()
+    , subscribe :: ([edit] -> EditContext -> IO ()) -> LifeCycle ()
     }
 
-type UpdateStoreEntry edit = [edit] -> EditSource -> IO ()
+type UpdateStoreEntry edit = [edit] -> EditContext -> IO ()
 
 type UpdateStore edit = Store (UpdateStoreEntry edit)
 
-runUpdateStoreEntry :: [edit] -> EditSource -> StateT (UpdateStoreEntry edit) IO ()
-runUpdateStoreEntry edits esrc = do
+runUpdateStoreEntry :: [edit] -> EditContext -> StateT (UpdateStoreEntry edit) IO ()
+runUpdateStoreEntry edits ectxt = do
     update <- get
-    lift $ update edits esrc
+    lift $ update edits ectxt
 
-updateStore :: [edit] -> EditSource -> StateT (UpdateStore edit) IO ()
-updateStore edits esrc = traverseStoreStateT $ \_ -> runUpdateStoreEntry edits esrc
+updateStore :: [edit] -> EditContext -> StateT (UpdateStore edit) IO ()
+updateStore edits ectxt = traverseStoreStateT $ \_ -> runUpdateStoreEntry edits ectxt
 
 type UpdatingObject edit a = ([edit] -> EditSource -> IO ()) -> LifeCycle (Object edit, a)
 
-makeSharedSubscriber :: forall edit a. UpdatingObject edit a -> IO (Subscriber edit, a)
-makeSharedSubscriber uobj = do
+getRunner :: Bool -> LifeCycle ((EditContext -> IO ()) -> EditSource -> IO ())
+getRunner False = return $ \action editContextSource -> action $ MkEditContext {editContextAsync = False, ..}
+getRunner True = do
+    runAsync <- asyncIORunner
+    return $ \action editContextSource -> runAsync $ action $ MkEditContext {editContextAsync = True, ..}
+
+makeSharedSubscriber :: forall edit a. Bool -> UpdatingObject edit a -> IO (Subscriber edit, a)
+makeSharedSubscriber async uobj = do
     var :: MVar (UpdateStore edit) <- newMVar emptyStore
     let
-        updateP :: [edit] -> EditSource -> IO ()
-        updateP edits esrc = mvarRun var $ updateStore edits esrc
-    ((objectC, a), closerP) <- runLifeCycle $ uobj updateP
+        updateP :: [edit] -> EditContext -> IO ()
+        updateP edits ectxt = mvarRun var $ updateStore edits ectxt
+    ((objectC, a), closerP) <-
+        runLifeCycle $ do
+            runAsync <- getRunner async
+            uobj $ \edits -> runAsync $ updateP edits
     let
         child :: Subscriber edit
         child =
@@ -67,12 +77,8 @@ makeSharedSubscriber uobj = do
                             return ((), closerC)
     return (child, a)
 
-updatingObject :: forall edit. Bool -> Object edit -> UpdatingObject edit ()
-updatingObject async (MkObject (run :: UnliftIO m) r e) update = do
-    runAsync <-
-        if async
-            then asyncIORunner
-            else return id
+updatingObject :: forall edit. Object edit -> UpdatingObject edit ()
+updatingObject (MkObject (run :: UnliftIO m) r e) update =
     return $ let
         run' :: UnliftIO (DeferActionT m)
         run' = composeUnliftTransformCommute runDeferActionT run
@@ -87,10 +93,10 @@ updatingObject async (MkObject (run :: UnliftIO m) r e) update = do
                     return $
                     Just $ \esrc -> do
                         traceBracket "objectSubscriber: action" $ lift $ action esrc
-                        deferActionT $ traceBracket "objectSubscriber: deferred: update" $ runAsync $ update edits esrc
+                        deferActionT $ traceBracket "objectSubscriber: deferred: update" $ update edits esrc
         in (MkObject run' r' e', ())
 
 makeObjectSubscriber :: Bool -> Object edit -> IO (Subscriber edit)
 makeObjectSubscriber async object = do
-    (sub, ()) <- makeSharedSubscriber $ updatingObject async object
+    (sub, ()) <- makeSharedSubscriber async $ updatingObject object
     return sub

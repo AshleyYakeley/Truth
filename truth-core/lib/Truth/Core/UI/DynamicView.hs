@@ -37,7 +37,7 @@ cvDynamic firstdvs updateCV = do
             mvarRun stateVar $ do
                 updateCV obj edits
                 newdvs <- get
-                lift $ for_ (dynamicViewStates newdvs) $ \state -> vsUpdate state obj edits esrc
+                lift $ for_ (dynamicViewStates newdvs) $ \state -> vsUpdate state obj edits $ MkEditContext esrc False
     cvAddAspect $
         mvarRun stateVar $ do
             dvs <- get

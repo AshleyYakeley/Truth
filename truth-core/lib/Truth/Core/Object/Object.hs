@@ -2,22 +2,11 @@ module Truth.Core.Object.Object where
 
 import Truth.Core.Edit
 import Truth.Core.Import
+import Truth.Core.Object.EditContext
 import Truth.Core.Read
 import Truth.Core.Types.None
 import Truth.Core.Types.Whole
 import Truth.Debug
-
-newtype EditSource =
-    MkEditSource (Maybe Unique)
-    deriving (Eq)
-
-noEditSource :: EditSource
-noEditSource = MkEditSource Nothing
-
-newEditSource :: MonadIO m => m EditSource
-newEditSource = do
-    u <- liftIO newUnique
-    return $ MkEditSource $ Just u
 
 data Object edit = forall m. MonadStackIO m =>
                                  MkObject

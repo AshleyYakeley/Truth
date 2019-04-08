@@ -123,22 +123,28 @@ data UserInterface specifier = forall edit. MkUserInterface
     , userinterfaceSpecifier :: specifier edit
     }
 
-threadBarrier :: Bool -> IO () -> IO ()
-threadBarrier False = id
-threadBarrier True = deferToIdle
-
-makeViewWindow :: Bool -> IO () -> UserInterface WindowSpec -> IO UIWindow
-makeViewWindow async tellclose (MkUserInterface (sub :: Subscriber edit) (window :: WindowSpec edit)) =
-    subscribeView (threadBarrier async) (\closer -> createWindowAndChild window (closer >> tellclose)) sub getRequest
-
 data ProgramContext = MkProgramContext
     { pcMainLoop :: MainLoop
     , pcAsync :: Bool
     , pcWindowClosers :: MVar (Store (IO ()))
     }
 
+threadBarrier :: ProgramContext -> Bool -> IO () -> IO ()
+threadBarrier MkProgramContext {..} ecasync action =
+    case pcAsync && ecasync of
+        False -> action
+        True -> do
+            running <- #isRunning pcMainLoop
+            if running
+                then runInIdle action
+                else action
+
+makeViewWindow :: ProgramContext -> IO () -> UserInterface WindowSpec -> IO UIWindow
+makeViewWindow pc tellclose (MkUserInterface (sub :: Subscriber edit) (window :: WindowSpec edit)) =
+    subscribeView (threadBarrier pc) (\closer -> createWindowAndChild window (closer >> tellclose)) sub getRequest
+
 makeWindowCountRef :: ProgramContext -> UserInterface WindowSpec -> IO UIWindow
-makeWindowCountRef MkProgramContext {..} ui = let
+makeWindowCountRef pc@MkProgramContext {..} ui = let
     closer key =
         mvarRun pcWindowClosers $ do
             oldstore <- Shapes.get
@@ -150,7 +156,7 @@ makeWindowCountRef MkProgramContext {..} ui = let
     in mvarRun pcWindowClosers $ do
            oldstore <- Shapes.get
            rec
-               twindow <- lift $ makeViewWindow pcAsync (closer key) ui
+               twindow <- lift $ makeViewWindow pc (closer key) ui
                let (key, newstore) = addStore (uiWindowClose twindow) oldstore
            Shapes.put newstore
            return twindow
@@ -177,4 +183,5 @@ truthMain pcAsync appMain = do
         store <- mvarRun pcWindowClosers $ Shapes.get
         if isEmptyStore store
             then return ()
-            else #run pcMainLoop
+            else do
+                #run pcMainLoop

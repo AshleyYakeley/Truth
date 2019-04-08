@@ -6,6 +6,7 @@ import GI.Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
+import Truth.UI.GTK.Useful
 import Truth.Debug.Object
 
 replaceText :: Index s ~ Int => TextBuffer -> SequenceRun s -> Text -> IO ()
@@ -37,7 +38,7 @@ textView = do
     buffer <- new TextBuffer []
     initial <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     #setText buffer initial (-1)
-    _ <-
+    insertSignal <-
         cvLiftView $
         liftIOView $ \unlift ->
             on buffer #insertText $ \iter text _ ->
@@ -47,7 +48,7 @@ textView = do
                     p <- getSequencePoint iter
                     _ <- push esrc $ pure $ StringReplaceSection (MkSequenceRun p 0) text
                     return ()
-    _ <-
+    deleteSignal <-
         cvLiftView $
         liftIOView $ \unlift ->
             on buffer #deleteRange $ \iter1 iter2 ->
@@ -60,6 +61,8 @@ textView = do
     widget <- new TextView [#buffer := buffer]
     cvReceiveUpdate (Just esrc) $ \_ _ edit ->
         liftIO $
+        withSignalBlocked buffer insertSignal $
+        withSignalBlocked buffer deleteSignal $
         case edit of
             StringReplaceWhole text -> #setText buffer text (-1)
             StringReplaceSection bounds text -> replaceText buffer bounds text
