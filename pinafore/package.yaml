@@ -158,7 +158,7 @@ tests:
           - Test.Entity
           - Test.Type
           - Test.ReadType
-          - Test.Examples
+          - Test.Scripts
           - Test.Interactive
 
 benchmarks:

@@ -6,10 +6,10 @@ module Main
 
 import Shapes
 import Test.Entity
-import Test.Examples
 import Test.Interactive
 import Test.Language
 import Test.ReadType
+import Test.Scripts
 import Test.Tasty
 import Test.Type
 
@@ -18,5 +18,5 @@ main = do
     testInteractive <- getTestInteractive
     let
         tests :: TestTree
-        tests = testGroup "pinafore" [testType, testLanguage, testReadTypes, testEntity, testExamples, testInteractive]
+        tests = testGroup "pinafore" [testType, testLanguage, testReadTypes, testEntity, testScripts, testInteractive]
     defaultMain tests
