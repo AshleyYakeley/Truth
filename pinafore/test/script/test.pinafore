@@ -23,7 +23,7 @@ openmywindow title contents = afix $ \window -> let
                 menu_action "Redo" (Just "Ctrl+Y") {queue_redo}
             ]
         ]
-    in openwindow title {menus} $ ui_scrolled contents;
+    in openwindow title (\_ -> {menus}) $ ui_scrolled contents;
 
 ### People
 

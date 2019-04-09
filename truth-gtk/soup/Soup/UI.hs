@@ -67,16 +67,16 @@ soupWindow async createWindow closeAllWindows dirpath = do
     sub <- makeObjectSubscriber async $ soupObject dirpath
     rec
         let
-            mbar :: UIWindow -> Maybe (EditFunction edit (WholeEdit [MenuEntry edit]))
+            mbar :: UIWindow -> Maybe (Aspect sel -> EditFunction edit (WholeEdit [MenuEntry edit]))
             mbar w =
-                Just $
-                constEditFunction $
-                [ SubMenuEntry
-                      "File"
-                      [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ uiWindowClose w
-                      , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') closeAllWindows
-                      ]
-                ]
+                Just $ \_ ->
+                    constEditFunction $
+                    [ SubMenuEntry
+                          "File"
+                          [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ uiWindowClose w
+                          , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') closeAllWindows
+                          ]
+                    ]
             wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
             openItem :: Aspect UUID -> IO ()
             openItem aspkey = do

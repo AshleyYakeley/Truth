@@ -96,23 +96,27 @@ ui_label text = mapUISpec (immutableReferenceToLens text) $ uiUnknownValue mempt
 ui_dynamic :: forall baseedit. PinaforeImmutableReference baseedit (UISpec A baseedit) -> UISpec A baseedit
 ui_dynamic uiref = switchUISpec $ pinaforeImmutableReferenceValue nullUISpec uiref
 
+aspectToAction :: Aspect a -> PinaforeAction baseedit a
+aspectToAction aspect = do
+    ma <- liftIO aspect
+    pinaforeActionKnow $ maybeToKnow ma
+
 openwindow ::
-       (?pinafore :: PinaforeContext baseedit)
+       forall baseedit. (?pinafore :: PinaforeContext baseedit)
     => PinaforeImmutableReference baseedit Text
-    -> PinaforeImmutableReference baseedit (MenuBar baseedit)
-    -> UISpec TopType baseedit
+    -> (PinaforeAction baseedit A -> PinaforeImmutableReference baseedit (MenuBar baseedit))
+    -> UISpec A baseedit
     -> PinaforeAction baseedit PinaforeWindow
-openwindow title mbar wsContent = let
+openwindow title getmbar wsContent = let
     wsTitle = clearText . immutableReferenceToFunction title
-    wsMenuBar = Just $ funcEditFunction (fromKnow mempty) . immutableReferenceToFunction mbar
+    wsMenuBar :: Maybe (Aspect A -> EditFunction baseedit (WholeEdit (MenuBar baseedit)))
+    wsMenuBar =
+        Just $ \aspect ->
+            funcEditFunction (fromKnow mempty) . immutableReferenceToFunction (getmbar $ aspectToAction aspect)
     in pinaforeNewWindow MkWindowSpec {..}
 
 ui_withselection :: (PinaforeAction baseedit A -> UISpec A baseedit) -> UISpec A baseedit
-ui_withselection f =
-    withAspectUISpec $ \aspect ->
-        f $ do
-            ma <- liftIO aspect
-            pinaforeActionKnow $ maybeToKnow ma
+ui_withselection f = withAspectUISpec $ \aspect -> f $ aspectToAction aspect
 
 ui_textarea :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec BottomType baseedit
 ui_textarea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertUISpec textAreaUISpec

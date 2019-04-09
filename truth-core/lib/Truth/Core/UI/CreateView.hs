@@ -15,11 +15,13 @@ module Truth.Core.UI.CreateView
     , cvMapSelection
     , cvNoAspect
     , cvAccessAspect
+    , cvWithAspect
     , AnyCreateView(..)
     , subscribeView
     , tupleCreateView
     ) where
 
+import Data.IORef
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object
@@ -167,6 +169,22 @@ cvMapSelection f (MkCreateView ma) =
 
 cvNoAspect :: CreateView sela edit a -> CreateView selb edit a
 cvNoAspect (MkCreateView ma) = MkCreateView $ mapReaderContext vcNoAspect $ remonad (mapWriterOutput voNoAspect) ma
+
+cvWithAspect :: (Aspect sel -> CreateView sel edit a) -> CreateView sel edit a
+cvWithAspect f = do
+    selref <- liftIO $ newIORef $ return Nothing
+    let
+        getsel :: Aspect _
+        getsel = do
+            asp <- readIORef selref
+            asp
+        updatesetsel :: (Aspect _ -> IO ()) -> (Aspect _ -> IO ())
+        updatesetsel setsel asp = do
+            writeIORef selref asp
+            setsel asp
+    (firstAspect, w) <- cvAccessAspect updatesetsel $ f getsel
+    liftIO $ writeIORef selref firstAspect
+    return w
 
 data AnyCreateView edit w =
     forall sel. MkAnyCreateView (CreateView sel edit w)

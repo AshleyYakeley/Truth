@@ -15,7 +15,7 @@ ui_person :: Person -> UI None;
 ui_person p = ui_textentry $ name !$ {p};
 
 window_person :: Person -> Action Window;
-window_person p = openwindow {"Name"} {[]} (ui_person p);
+window_person p = openwindow {"Name"} (\_ -> {[]}) (ui_person p);
 
 in do
     window_person me;

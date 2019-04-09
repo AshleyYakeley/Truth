@@ -61,7 +61,7 @@ main =
                             r <-
                                 tcCreateWindow $
                                 MkUserInterface sub $
-                                MkWindowSpec (constEditFunction title) (Just $ constEditFunction mbar) uic
+                                MkWindowSpec (constEditFunction title) (Just $ \_ -> constEditFunction mbar) uic
                         return ()
                     simpleUI :: forall sel edit. UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit)
                     simpleUI ~MkUIWindow {..} spec = let

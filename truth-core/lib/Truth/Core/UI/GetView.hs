@@ -1,6 +1,5 @@
 module Truth.Core.UI.GetView where
 
-import Data.IORef
 import Truth.Core.Import
 import Truth.Core.UI.CreateView
 import Truth.Core.UI.Specifier.Map
@@ -38,17 +37,4 @@ lensGetView =
              return $ cvNoAspect $ getview specb) <|>
         (do
              MkWithAspectUISpec specf <- isUISpec speca
-             return $ do
-                 selref <- liftIO $ newIORef $ return Nothing
-                 let
-                     getsel :: Aspect _
-                     getsel = do
-                         asp <- readIORef selref
-                         asp
-                     updatesetsel :: (Aspect _ -> IO ()) -> (Aspect _ -> IO ())
-                     updatesetsel setsel asp = do
-                         writeIORef selref asp
-                         setsel asp
-                 (firstAspect, w) <- cvAccessAspect updatesetsel $ getview $ specf getsel
-                 liftIO $ writeIORef selref firstAspect
-                 return w)
+             return $ cvWithAspect (getview . specf))

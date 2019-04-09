@@ -90,7 +90,8 @@ getTheView spec =
 
 createWindowAndChild :: WindowSpec edit -> IO () -> AnyCreateView edit (LifeCycle UIWindow)
 createWindowAndChild MkWindowSpec {..} closeWindow =
-    MkAnyCreateView $ do
+    MkAnyCreateView $
+    cvWithAspect $ \aspect -> do
         window <-
             lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
         cvBindEditFunction Nothing wsTitle $ \title -> set window [#title := title]
@@ -105,7 +106,7 @@ createWindowAndChild MkWindowSpec {..} closeWindow =
                 Just efmbar -> do
                     ag <- new AccelGroup []
                     #addAccelGroup window ag
-                    mb <- switchView $ funcEditFunction (\mbar -> createMenuBar ag mbar >>= toWidget) . efmbar
+                    mb <- switchView $ funcEditFunction (\mbar -> createMenuBar ag mbar >>= toWidget) . efmbar aspect
                     vbox <- new Box [#orientation := OrientationVertical]
                     #packStart vbox mb False False 0
                     #packStart vbox content True True 0
