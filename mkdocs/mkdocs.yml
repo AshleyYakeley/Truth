@@ -12,3 +12,5 @@ nav:
 - Types: 'types.md'
 - Reference Notation: 'reference-notation.md'
 - Predefined Bindings: 'predefined.md'
+- Examples:
+  - People: 'examples/people.md'

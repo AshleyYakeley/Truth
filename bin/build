@@ -9,5 +9,7 @@ install -m 755 --strip "$BINPATH/pinafore" "${XDG_DATA_HOME:-$HOME/.local/share}
 mkdir -p mkdocs/generated
 $BINPATH/pinafore --doc-predefined > mkdocs/generated/predefined.md
 $BINPATH/pinafore --doc-infix > mkdocs/generated/infix.md
+mkdir -p mkdocs/generated/examples
+cp pinafore/examples/* mkdocs/generated/examples/
 stack exec --cwd mkdocs -- mkdocs build
 echo OK
