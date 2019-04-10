@@ -75,7 +75,7 @@ ui_people people = ui_withselection $ \getperson -> ui_vertical
 ];
 
 ui_person :: Ref Person -> UI None;
-ui_person p = ui_ignore $ui_vertical
+ui_person p = ui_ignore $ ui_vertical
 [
     (ui_labelled {"Name: "} $ ui_textentry $ name !$ p,False),
     (ui_pages
