@@ -280,8 +280,12 @@ base_predefinitions =
     , docTreeEntry
           "Undo"
           "Undo and redo changes."
-          [ mkValEntry "queue_undo" "Undo an action." $ uaUndo pinaforeUndoActions noEditSource
-          , mkValEntry "queue_redo" "Redo an action." $ uaRedo pinaforeUndoActions noEditSource
+          [ mkValEntry "queue_undo" "Undo an action." $ do
+                ua <- pinaforeUndoActions
+                liftIO $ uaUndo ua noEditSource
+          , mkValEntry "queue_redo" "Redo an action." $ do
+                ua <- pinaforeUndoActions
+                liftIO $ uaRedo ua noEditSource
           ]
     , docTreeEntry
           "References"

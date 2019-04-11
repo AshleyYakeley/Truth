@@ -7,6 +7,7 @@ module Pinafore.Base.Action
     , PinaforeWindow(..)
     , pinaforeNewWindow
     , pinaforeCloseAllWindows
+    , pinaforeUndoActions
     , pinaforeActionKnow
     , knowPinaforeAction
     ) where
@@ -18,8 +19,9 @@ import Shapes
 import Truth.Core
 
 data ActionContext baseedit = MkActionContext
-    { acSubscriber :: Subscriber baseedit
-    , acUIToolkit :: UIToolkit
+    { acUIToolkit :: UIToolkit
+    , acSubscriber :: Subscriber baseedit
+    , acUndoActions :: UndoActions
     }
 
 newtype PinaforeAction baseedit a =
@@ -37,8 +39,9 @@ pinaforeActionSubscriber = do
     ac <- MkPinaforeAction ask
     return $ acSubscriber ac
 
-unPinaforeAction :: forall baseedit a. UIToolkit -> Subscriber baseedit -> PinaforeAction baseedit a -> IO (Know a)
-unPinaforeAction acUIToolkit acSubscriber (MkPinaforeAction action) =
+unPinaforeAction ::
+       forall baseedit a. UIToolkit -> Subscriber baseedit -> UndoActions -> PinaforeAction baseedit a -> IO (Know a)
+unPinaforeAction acUIToolkit acSubscriber acUndoActions (MkPinaforeAction action) =
     getComposeM $ runReaderT action MkActionContext {..}
 
 pinaforeFunctionValueGet :: PinaforeFunctionValue baseedit t -> PinaforeAction baseedit t
@@ -72,6 +75,11 @@ pinaforeCloseAllWindows = do
     MkActionContext {..} <- MkPinaforeAction ask
     let MkUIToolkit {..} = acUIToolkit
     liftIO $ uitCloseAllWindows
+
+pinaforeUndoActions :: PinaforeAction baseedit UndoActions
+pinaforeUndoActions = do
+    MkActionContext {..} <- MkPinaforeAction ask
+    return acUndoActions
 
 pinaforeActionKnow :: forall baseedit a. Know a -> PinaforeAction baseedit a
 pinaforeActionKnow (Known a) = pure a
