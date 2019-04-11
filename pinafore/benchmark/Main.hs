@@ -6,6 +6,7 @@ import Criterion.Main
 import Pinafore
 import Pinafore.Test
 import Shapes
+import Truth.Core
 
 benchHash :: Text -> Benchmark
 benchHash text = bench (show $ unpack text) $ nf literalToEntity text
@@ -83,5 +84,59 @@ benchScripts =
           intercalate "," (replicate 50 "g [1]") <> "] in for_ q id"
         ]
 
+unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext baseedit) => PinaforeAction baseedit a -> IO a
+unliftPinaforeActionOrFail action = do
+    ka <- unliftPinaforeAction action
+    case ka of
+        Known a -> return a
+        Unknown -> fail "action stopped"
+
+checkUpdateEditor ::
+       forall a. Eq a
+    => a
+    -> IO ()
+    -> Editor (WholeEdit a) ()
+checkUpdateEditor val push = let
+    editorInit :: Object (WholeEdit a) -> IO (MVar [WholeEdit a])
+    editorInit _ = newEmptyMVar
+    editorUpdate :: MVar [WholeEdit a] -> Object (WholeEdit a) -> [WholeEdit a] -> EditContext -> IO ()
+    editorUpdate var _ edits _ = do putMVar var edits
+    editorDo :: MVar [WholeEdit a] -> Object (WholeEdit a) -> IO ()
+    editorDo var _ = do
+        push
+        edits <- takeMVar var
+        case edits of
+            [MkWholeEdit v]
+                | v == val -> return ()
+            _ -> fail "unexpected push"
+    in MkEditor {..}
+
+interpretUpdater :: (?pinafore :: PinaforeContext PinaforeEdit) => Text -> IO ()
+interpretUpdater text = do
+    action <- pinaforeInterpretFileAtType "<test>" text
+    sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
+    (sendUpdate, ref) <- unliftPinaforeActionOrFail action
+    subscribeEditor (mapSubscriber (immutableReferenceToLens ref) sub) $
+        checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
+
+benchUpdate :: Text -> Benchmark
+benchUpdate text =
+    env (fmap const (runLifeCycle makeTestPinaforeContext)) $ \tpc -> let
+        ((pc, _), _) = tpc ()
+        in let
+               ?pinafore = pc
+               in bench (show $ unpack text) $ nfIO $ interpretUpdater text
+
+benchUpdates :: Benchmark
+benchUpdates =
+    bgroup
+        "update"
+        [ benchUpdate "do ref <- newmemref; return (ref := 1, ref) end"
+        , benchUpdate
+              "let id x = x in do ref <- newmemref; return (ref := 1, id (id (id (id (id (id (id (id (id (id (ref))))))))))) end"
+        , benchUpdate
+              "let id x = x in do ref <- newmemref; return (ref := 1, id $ id $ id $ id $ id $ id $ id $ id $ id $ id $ ref) end"
+        ]
+
 main :: IO ()
-main = defaultMain [benchHashes, benchScripts]
+main = defaultMain [benchHashes, benchScripts, benchUpdates]

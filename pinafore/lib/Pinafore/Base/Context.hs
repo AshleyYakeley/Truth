@@ -1,5 +1,6 @@
 module Pinafore.Base.Context
     ( PinaforeContext
+    , unliftPinaforeAction
     , runPinaforeAction
     , pinaforeUndoActions
     , pinaforeCloseAllWindows
@@ -8,19 +9,23 @@ module Pinafore.Base.Context
     ) where
 
 import Pinafore.Base.Action
+import Pinafore.Base.Know
 import Shapes
 import Truth.Core
 import Truth.UI.GTK
 
 data PinaforeContext baseedit =
-    MkPinaforeContext (PinaforeAction baseedit () -> IO ())
+    MkPinaforeContext (forall a. PinaforeAction baseedit a -> IO (Know a))
                       UndoActions
                       (IO ())
 
-runPinaforeAction :: (?pinafore :: PinaforeContext baseedit) => PinaforeAction baseedit () -> IO ()
-runPinaforeAction =
+unliftPinaforeAction :: (?pinafore :: PinaforeContext baseedit) => PinaforeAction baseedit a -> IO (Know a)
+unliftPinaforeAction =
     case ?pinafore of
         MkPinaforeContext unlift _ _ -> unlift
+
+runPinaforeAction :: (?pinafore :: PinaforeContext baseedit) => PinaforeAction baseedit () -> IO ()
+runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
 
 pinaforeUndoActions :: (?pinafore :: PinaforeContext baseedit) => UndoActions
 pinaforeUndoActions =
@@ -42,14 +47,7 @@ makePinaforeContext ::
 makePinaforeContext async pinaforeObject createWindow closeAllWindows = do
     rsub <- liftIO $ makeObjectSubscriber async pinaforeObject
     (sub, uactions) <- liftIO $ undoQueueSubscriber rsub
-    let
-        unlift (MkPinaforeAction action) = let
-            openwin :: WindowSpec baseedit -> IO UIWindow
-            openwin uiw = createWindow $ MkUserInterface sub uiw
-            in do
-                   _ <- getComposeM $ runReaderT action (openwin, subObject sub)
-                   return ()
-    return $ MkPinaforeContext unlift uactions closeAllWindows
+    return $ MkPinaforeContext (unPinaforeAction createWindow sub) uactions closeAllWindows
 
 nullPinaforeContext :: PinaforeContext baseedit
 nullPinaforeContext = let

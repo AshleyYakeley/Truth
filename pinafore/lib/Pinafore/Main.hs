@@ -4,6 +4,7 @@ module Pinafore.Main
     , makePinaforeContext
     , sqlitePinaforeContext
     , sqlitePinaforeDumpTable
+    , pinaforeInterpretFileAtType
     , pinaforeInterpretFile
     , pinaforeInteractHandles
     , pinaforeInteract
@@ -64,10 +65,17 @@ sqlitePinaforeDumpTable dirpath = do
                 Nothing -> show v
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
+pinaforeInterpretFileAtType ::
+       (?pinafore :: PinaforeContext PinaforeEdit, FromPinaforeType PinaforeEdit t, MonadFail m)
+    => FilePath
+    -> Text
+    -> m t
+pinaforeInterpretFileAtType puipath puitext =
+    resultTextToM $ runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeEdit puitext
+
 pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeEdit) => FilePath -> Text -> IO (IO ())
 pinaforeInterpretFile puipath puitext = do
-    action :: FilePinaforeType <-
-        resultTextToM $ runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeEdit puitext
+    action :: FilePinaforeType <- pinaforeInterpretFileAtType puipath puitext
     return $ runPinaforeAction action
 
 pinaforeInteractHandles :: (?pinafore :: PinaforeContext PinaforeEdit) => Handle -> Handle -> Bool -> IO ()

@@ -2,8 +2,8 @@ module Pinafore.Language
     ( PinaforePredefinitions
     , PinaforeAction
     , qTypeDescription
+    , FromPinaforeType
     , ToPinaforeType
-    , resultTextToM
     , parseTopExpression
     , parseValue
     , parseValueAtType

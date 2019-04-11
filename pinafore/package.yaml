@@ -168,6 +168,7 @@ benchmarks:
           - base >= 4.12
           - criterion
           - shapes
+          - truth-core
           - pinafore
         main: Main.hs
 
