@@ -12,4 +12,4 @@ mkdir -p mkdocs/generated/examples
 cp pinafore/examples/* mkdocs/generated/examples/
 stack exec -- pip3 install --user file://`pwd`/support/pygments-lexer/
 stack exec --cwd mkdocs -- mkdocs build
-echo OK
+echo "Build done."
