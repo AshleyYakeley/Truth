@@ -20,7 +20,6 @@ import Pinafore.Storage.Table
 import Shapes
 import System.FilePath
 import Truth.Core
-import Truth.UI.GTK
 
 type FilePinaforeType = PinaforeAction PinaforeEdit ()
 
@@ -38,15 +37,10 @@ sqlitePinaforeObject dirpath = do
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
             PinaforeSelectMemory -> memoryObject
 
-sqlitePinaforeContext ::
-       Bool
-    -> FilePath
-    -> (UserInterface WindowSpec -> IO UIWindow)
-    -> IO ()
-    -> LifeCycle (PinaforeContext PinaforeEdit)
-sqlitePinaforeContext async dirpath createWindow closeAllWindows = do
+sqlitePinaforeContext :: Bool -> FilePath -> UIToolkit -> LifeCycle (PinaforeContext PinaforeEdit)
+sqlitePinaforeContext async dirpath toolkit = do
     pinaforeObject <- sqlitePinaforeObject dirpath
-    makePinaforeContext async pinaforeObject createWindow closeAllWindows
+    makePinaforeContext async pinaforeObject toolkit
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

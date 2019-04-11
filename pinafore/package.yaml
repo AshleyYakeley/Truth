@@ -23,7 +23,6 @@ library:
       - memory
       - cryptonite
       - truth-core
-      - truth-gtk
     exposed-modules:
       - Language.Expression.Polarity
       - Language.Expression.TypeF

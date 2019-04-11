@@ -8,6 +8,7 @@ import Pinafore.Language.Documentation
 import Shapes
 import System.Directory
 import System.Environment.XDG.BaseDir
+import Truth.Core
 import Truth.UI.GTK
 
 data Options
@@ -97,7 +98,7 @@ async = True
 
 main :: IO ()
 main =
-    truthMain async $ \MkTruthContext {..} -> do
+    truthMainGTK async $ \MkTruthContext {..} -> do
         options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
         case options of
             PredefinedDocOption ->
@@ -109,7 +110,7 @@ main =
                 liftIO $ sqlitePinaforeDumpTable dirpath
             RunOption fInteract fNoRun mdirpath fpaths -> do
                 dirpath <- getDirPath mdirpath
-                context <- sqlitePinaforeContext async dirpath tcCreateWindow tcCloseAllWindows
+                context <- sqlitePinaforeContext async dirpath tcUIToolkit
                 let
                     ?pinafore = context
                     in liftIO $

@@ -24,7 +24,7 @@ async = False
 
 main :: IO ()
 main =
-    truthMain async $ \MkTruthContext {..} ->
+    truthMainGTK async $ \MkTruthContext {..} ->
         liftIO $ do
             (paths, double, saveOpt) <-
                 O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
@@ -50,6 +50,7 @@ main =
                                    [ (simpleButtonUISpec (constEditFunction "View") openSelection, False)
                                    , (scrolledUISpec $ oneWholeUISpec textAreaUISpec, True)
                                    ]
+                    MkUIToolkit {..} = tcUIToolkit
                     makeWindow ::
                            Text
                         -> Subscriber (OneWholeEdit (Result Text) (StringEdit Text))
@@ -59,8 +60,7 @@ main =
                         rec
                             let (mbar, uic) = extraui r $ ui sub extraui
                             r <-
-                                tcCreateWindow $
-                                MkUserInterface sub $
+                                uitCreateWindow sub $
                                 MkWindowSpec (constEditFunction title) (Just $ \_ -> constEditFunction mbar) uic
                         return ()
                     simpleUI :: forall sel edit. UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit)
@@ -74,7 +74,7 @@ main =
                                   , simpleActionMenuItem
                                         "Exit"
                                         (Just $ MkMenuAccelerator [KMCtrl] 'Q')
-                                        tcCloseAllWindows
+                                        uitCloseAllWindows
                                   ]
                             ]
                         in (mbar, spec)
@@ -111,7 +111,7 @@ main =
                                   , simpleActionMenuItem
                                         "Exit"
                                         (Just $ MkMenuAccelerator [KMCtrl] 'Q')
-                                        tcCloseAllWindows
+                                        uitCloseAllWindows
                                   ]
                             , SubMenuEntry
                                   "Edit"

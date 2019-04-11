@@ -6,6 +6,7 @@ module Pinafore.Base.Action
     , pinaforeLensPush
     , PinaforeWindow(..)
     , pinaforeNewWindow
+    , pinaforeCloseAllWindows
     , pinaforeActionKnow
     , knowPinaforeAction
     ) where
@@ -15,11 +16,10 @@ import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
-import Truth.UI.GTK
 
 data ActionContext baseedit = MkActionContext
     { acSubscriber :: Subscriber baseedit
-    , acCreateWindow :: UserInterface WindowSpec -> IO UIWindow
+    , acUIToolkit :: UIToolkit
     }
 
 newtype PinaforeAction baseedit a =
@@ -37,13 +37,8 @@ pinaforeActionSubscriber = do
     ac <- MkPinaforeAction ask
     return $ acSubscriber ac
 
-unPinaforeAction ::
-       forall baseedit a.
-       (UserInterface WindowSpec -> IO UIWindow)
-    -> Subscriber baseedit
-    -> PinaforeAction baseedit a
-    -> IO (Know a)
-unPinaforeAction acCreateWindow acSubscriber (MkPinaforeAction action) =
+unPinaforeAction :: forall baseedit a. UIToolkit -> Subscriber baseedit -> PinaforeAction baseedit a -> IO (Know a)
+unPinaforeAction acUIToolkit acSubscriber (MkPinaforeAction action) =
     getComposeM $ runReaderT action MkActionContext {..}
 
 pinaforeFunctionValueGet :: PinaforeFunctionValue baseedit t -> PinaforeAction baseedit t
@@ -68,8 +63,15 @@ data PinaforeWindow = MkPinaforeWindow
 pinaforeNewWindow :: WindowSpec baseedit -> PinaforeAction baseedit PinaforeWindow
 pinaforeNewWindow uiw = do
     MkActionContext {..} <- MkPinaforeAction ask
-    w <- liftIO $ acCreateWindow $ MkUserInterface acSubscriber uiw
+    let MkUIToolkit {..} = acUIToolkit
+    w <- liftIO $ uitCreateWindow acSubscriber uiw
     return $ MkPinaforeWindow w
+
+pinaforeCloseAllWindows :: PinaforeAction baseedit ()
+pinaforeCloseAllWindows = do
+    MkActionContext {..} <- MkPinaforeAction ask
+    let MkUIToolkit {..} = acUIToolkit
+    liftIO $ uitCloseAllWindows
 
 pinaforeActionKnow :: forall baseedit a. Know a -> PinaforeAction baseedit a
 pinaforeActionKnow (Known a) = pure a
