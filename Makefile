@@ -76,7 +76,7 @@ fullbuild: format build docs
 .PHONY: install
 
 install:
-	install -m 755 --strip ${BINPATH}/pinafore /usr/local/bin/pinafore
+	sudo install -m 755 --strip ${BINPATH}/pinafore /usr/local/bin/pinafore
 
 .PHONY: install-vsc-extension
 
