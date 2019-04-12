@@ -8,6 +8,8 @@ theme: readthedocs
 extra_css: [extra.css]
 nav:
 - Home: 'index.md'
+- Getting Started: 'getting-started.md'
+- Invocation: 'invocation.md'
 - Syntax: 'syntax.md'
 - Type System: 'type-system.md'
 - Types: 'types.md'
