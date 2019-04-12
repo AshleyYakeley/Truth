@@ -18,6 +18,20 @@ pre, code, .rst-content tt {
     margin: 0;
 }
 
+.rst-content .section ol {
+    line-height: normal;
+    margin-bottom: 0;
+}
+
+.rst-content .section ol li {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+footer {
+    margin-top: 24px;
+}
+
 code {
     background: white;
     border: solid 1px lightgrey;
