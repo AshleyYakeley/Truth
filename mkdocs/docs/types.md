@@ -75,7 +75,7 @@ The declaration specifies the constructors of the type.
 
 Each constructor has a name, a list of zero or more types (each a subtype of `Entity`), and an anchor.
 
-```no-highlight
+```pinafore
 closedtype Patient =
     LivingPatient Person Date !82572d41-1b36-477e-9252-41610df9d77b |
     DeadPatient Person Date Date !2b678551-2e9d-403a-993e-b61804504809;
@@ -96,7 +96,7 @@ Constructors can be added or removed from a closed type without affecting the an
 An open entity type is a type to which new entities can be added at run-time.
 These types can be declared using `opentype`, and subtype relations between them can be declared using `subtype`:
 
-```no-highlight
+```pinafore
 opentype Animal;
 opentype Person;
 opentype Cat;

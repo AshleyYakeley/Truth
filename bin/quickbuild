@@ -1,6 +1,0 @@
-#!/bin/bash -e
-stack --no-docker install --test --no-run-tests --bench --no-run-benchmarks
-mkdir -p mkdocs/generated
-`stack --no-docker path --local-bin`/pinafore --doc-predefined > mkdocs/generated/predefined.md
-`stack --no-docker path --local-bin`/pinafore --doc-infix > mkdocs/generated/infix.md
-echo OK

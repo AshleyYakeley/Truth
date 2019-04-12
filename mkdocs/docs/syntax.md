@@ -17,7 +17,7 @@ In interactive mode, each line has syntax `<interactive>`.
 
 ## Grammar
 
-```no-highlight
+```text
 <file> ::= <expression>
 
 <interactive> ::= <expression> | <let-declarations> | ":" <interactive-command>
@@ -166,7 +166,7 @@ In interactive mode, each line has syntax `<interactive>`.
 
 ## Lexical
 
-```no-highlight
+```text
 uname = [[:upper:]][-_[:alnum:]]*
 
 lname = [_[:lower:]][-_[:alnum:]]*

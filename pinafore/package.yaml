@@ -23,7 +23,6 @@ library:
       - memory
       - cryptonite
       - truth-core
-      - truth-gtk
     exposed-modules:
       - Language.Expression.Polarity
       - Language.Expression.TypeF
@@ -158,7 +157,7 @@ tests:
           - Test.Entity
           - Test.Type
           - Test.ReadType
-          - Test.Examples
+          - Test.Scripts
           - Test.Interactive
 
 benchmarks:
@@ -168,6 +167,7 @@ benchmarks:
           - base >= 4.12
           - criterion
           - shapes
+          - truth-core
           - pinafore
         main: Main.hs
 

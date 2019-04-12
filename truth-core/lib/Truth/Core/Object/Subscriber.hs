@@ -41,11 +41,33 @@ updateStore edits ectxt = traverseStoreStateT $ \_ -> runUpdateStoreEntry edits 
 
 type UpdatingObject edit a = ([edit] -> EditSource -> IO ()) -> LifeCycle (Object edit, a)
 
-getRunner :: Bool -> LifeCycle ((EditContext -> IO ()) -> EditSource -> IO ())
-getRunner False = return $ \action editContextSource -> action $ MkEditContext {editContextAsync = False, ..}
-getRunner True = do
-    runAsync <- asyncIORunner
-    return $ \action editContextSource -> runAsync $ action $ MkEditContext {editContextAsync = True, ..}
+newtype EditQueue edit =
+    MkEditQueue [(EditSource, [edit])]
+
+collapse1 :: (EditSource, [edit]) -> [(EditSource, [edit])] -> [(EditSource, [edit])]
+collapse1 (esa, ea) ((esb, eb):bb)
+    | esa == esb = (esb, ea <> eb) : bb
+collapse1 a bb = a : bb
+
+collapse :: [(EditSource, [edit])] -> [(EditSource, [edit])] -> [(EditSource, [edit])]
+collapse [] bb = bb
+collapse [a] bb = collapse1 a bb
+collapse (a:aa) bb = a : collapse aa bb
+
+instance Semigroup (EditQueue edit) where
+    MkEditQueue aa <> MkEditQueue bb = MkEditQueue $ collapse aa bb
+
+singleEditQueue :: [edit] -> EditSource -> EditQueue edit
+singleEditQueue edits esrc = MkEditQueue $ pure (esrc, edits)
+
+getRunner :: Bool -> ([edit] -> EditContext -> IO ()) -> LifeCycle ([edit] -> EditSource -> IO ())
+getRunner False handler =
+    return $ \edits editContextSource -> handler edits $ MkEditContext {editContextAsync = False, ..}
+getRunner True handler = do
+    runAsync <-
+        asyncRunner $ \(MkEditQueue sourcededits) ->
+            for_ sourcededits $ \(editContextSource, edits) -> handler edits MkEditContext {editContextAsync = True, ..}
+    return $ \edits esrc -> runAsync $ singleEditQueue edits esrc
 
 makeSharedSubscriber :: forall edit a. Bool -> UpdatingObject edit a -> IO (Subscriber edit, a)
 makeSharedSubscriber async uobj = do
@@ -55,8 +77,8 @@ makeSharedSubscriber async uobj = do
         updateP edits ectxt = mvarRun var $ updateStore edits ectxt
     ((objectC, a), closerP) <-
         runLifeCycle $ do
-            runAsync <- getRunner async
-            uobj $ \edits -> runAsync $ updateP edits
+            runAsync <- getRunner async updateP
+            uobj runAsync
     let
         child :: Subscriber edit
         child =

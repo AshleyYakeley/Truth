@@ -43,7 +43,7 @@ makeTestPinaforeContext = do
                 PinaforeSelectMemory -> traceThing "testObject.PinaforeSelectMemory" $ memoryObject
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getObjectSubject tableStateObject
-    pc <- makePinaforeContext False pinaforeObject (\_ -> return nullUIWindow) (return ())
+    pc <- makePinaforeContext False pinaforeObject nullUIToolkit
     return (pc, getTableState)
 
 withTestPinaforeContext ::

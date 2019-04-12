@@ -4,6 +4,7 @@ module Pinafore.Main
     , makePinaforeContext
     , sqlitePinaforeContext
     , sqlitePinaforeDumpTable
+    , pinaforeInterpretFileAtType
     , pinaforeInterpretFile
     , pinaforeInteractHandles
     , pinaforeInteract
@@ -19,7 +20,6 @@ import Pinafore.Storage.Table
 import Shapes
 import System.FilePath
 import Truth.Core
-import Truth.UI.GTK
 
 type FilePinaforeType = PinaforeAction PinaforeEdit ()
 
@@ -37,15 +37,10 @@ sqlitePinaforeObject dirpath = do
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
             PinaforeSelectMemory -> memoryObject
 
-sqlitePinaforeContext ::
-       Bool
-    -> FilePath
-    -> (UserInterface WindowSpec -> IO UIWindow)
-    -> IO ()
-    -> LifeCycle (PinaforeContext PinaforeEdit)
-sqlitePinaforeContext async dirpath createWindow closeAllWindows = do
+sqlitePinaforeContext :: Bool -> FilePath -> UIToolkit -> LifeCycle (PinaforeContext PinaforeEdit)
+sqlitePinaforeContext async dirpath toolkit = do
     pinaforeObject <- sqlitePinaforeObject dirpath
-    makePinaforeContext async pinaforeObject createWindow closeAllWindows
+    makePinaforeContext async pinaforeObject toolkit
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do
@@ -64,10 +59,17 @@ sqlitePinaforeDumpTable dirpath = do
                 Nothing -> show v
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
+pinaforeInterpretFileAtType ::
+       (?pinafore :: PinaforeContext PinaforeEdit, FromPinaforeType PinaforeEdit t, MonadFail m)
+    => FilePath
+    -> Text
+    -> m t
+pinaforeInterpretFileAtType puipath puitext =
+    resultTextToM $ runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeEdit puitext
+
 pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeEdit) => FilePath -> Text -> IO (IO ())
 pinaforeInterpretFile puipath puitext = do
-    action :: FilePinaforeType <-
-        resultTextToM $ runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeEdit puitext
+    action :: FilePinaforeType <- pinaforeInterpretFileAtType puipath puitext
     return $ runPinaforeAction action
 
 pinaforeInteractHandles :: (?pinafore :: PinaforeContext PinaforeEdit) => Handle -> Handle -> Bool -> IO ()

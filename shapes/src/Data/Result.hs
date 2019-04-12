@@ -88,3 +88,6 @@ mapResult = MkIsomorphism forwards backwards
 mapResultFailure :: (e1 -> e2) -> Result e1 a -> Result e2 a
 mapResultFailure _ (SuccessResult a) = SuccessResult a
 mapResultFailure e1e2 (FailureResult e1) = FailureResult (e1e2 e1)
+
+resultTextToM :: MonadFail m => Result Text a -> m a
+resultTextToM = resultToM . mapResultFailure unpack

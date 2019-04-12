@@ -9,7 +9,7 @@
       "group": "build",
       "label": "Format",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && hindent-all && echo OK",
+      "command": "cd ${workspaceRoot} && make format && echo OK",
       "problemMatcher": [
         {
           "owner": "hindent",
@@ -30,7 +30,7 @@
       "group": "build",
       "label": "Full Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && build",
+      "command": "cd ${workspaceRoot} && make haddock=1 test=1 bench=1 fullbuild && echo OK",
       "problemMatcher": [
         {
           "owner": "stack",
@@ -71,7 +71,7 @@
       },
       "label": "Quick Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && quickbuild",
+      "command": "cd ${workspaceRoot} && make nodocker=1 build && echo OK",
       "problemMatcher": [
         {
           "owner": "stack",
@@ -94,9 +94,9 @@
     },
     {
       "group": "test",
-      "label": "Quick Test",
+      "label": "Format & Quick Test",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && stack --no-docker build --test && echo OK",
+      "command": "cd ${workspaceRoot} && make nodocker=1 test=1 format build && echo OK",
       "problemMatcher": [
         {
           "owner": "stack",
@@ -112,69 +112,6 @@
             {
               "regexp": "^\\s+(.*)$",
               "message": 1
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "group": "test",
-      "label": "Quick Benchmark",
-      "type": "shell",
-      "command": "cd ${workspaceRoot} && stack --no-docker build --bench && echo OK",
-      "problemMatcher": [
-        {
-          "owner": "stack",
-          "fileLocation": "absolute",
-          "pattern": [
-            {
-              "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "severity": 4
-            },
-            {
-              "regexp": "^\\s+(.*)$",
-              "message": 1
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "group": "build",
-      "label": "Clean & Full Build",
-      "type": "shell",
-      "command": "cd ${workspaceRoot} && stack clean && build",
-      "problemMatcher": [
-        {
-          "owner": "stack",
-          "fileLocation": "absolute",
-          "pattern": [
-            {
-              "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "severity": 4
-            },
-            {
-              "regexp": "^\\s+(.*)$",
-              "message": 1
-            }
-          ]
-        },
-        {
-          "owner": "hindent",
-          "fileLocation": "relative",
-          "pattern": [
-            {
-              "regexp": "^hindent: (.*):(\\d+):(\\d+):\\s+(.*)",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "message": 4
             }
           ]
         }

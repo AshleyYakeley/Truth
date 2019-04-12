@@ -9,7 +9,7 @@ import Truth.Core.UI.Specifier.Specifier
 
 data WindowSpec edit = forall sel. MkWindowSpec
     { wsTitle :: EditFunction edit (WholeEdit Text)
-    , wsMenuBar :: Maybe (EditFunction edit (WholeEdit (MenuBar edit)))
+    , wsMenuBar :: Maybe (Aspect sel -> EditFunction edit (WholeEdit (MenuBar edit)))
     , wsContent :: UISpec sel edit
     }
 
@@ -18,7 +18,7 @@ mapWindowSpec lens (MkWindowSpec title mmbar content) = let
     ef = editLensFunction lens
     in MkWindowSpec
            (title . ef)
-           (fmap (\efmar -> funcEditFunction (fmap $ mapMenuEntry ef) . efmar . ef) mmbar)
+           ((fmap $ fmap $ \efmar -> funcEditFunction (fmap $ mapMenuEntry ef) . efmar . ef) mmbar)
            (mapUISpec lens content)
 
 data UIWindow = MkUIWindow

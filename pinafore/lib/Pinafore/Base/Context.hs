@@ -1,58 +1,37 @@
 module Pinafore.Base.Context
     ( PinaforeContext
+    , unliftPinaforeAction
     , runPinaforeAction
-    , pinaforeUndoActions
-    , pinaforeCloseAllWindows
     , makePinaforeContext
     , nullPinaforeContext
     ) where
 
 import Pinafore.Base.Action
+import Pinafore.Base.Know
 import Shapes
 import Truth.Core
-import Truth.UI.GTK
 
-data PinaforeContext baseedit =
-    MkPinaforeContext (PinaforeAction baseedit () -> IO ())
-                      UndoActions
-                      (IO ())
+newtype PinaforeContext baseedit =
+    MkPinaforeContext (forall a. PinaforeAction baseedit a -> IO (Know a))
+
+unliftPinaforeAction :: (?pinafore :: PinaforeContext baseedit) => PinaforeAction baseedit a -> IO (Know a)
+unliftPinaforeAction =
+    case ?pinafore of
+        MkPinaforeContext unlift -> unlift
 
 runPinaforeAction :: (?pinafore :: PinaforeContext baseedit) => PinaforeAction baseedit () -> IO ()
-runPinaforeAction =
-    case ?pinafore of
-        MkPinaforeContext unlift _ _ -> unlift
-
-pinaforeUndoActions :: (?pinafore :: PinaforeContext baseedit) => UndoActions
-pinaforeUndoActions =
-    case ?pinafore of
-        MkPinaforeContext _ uactions _ -> uactions
-
-pinaforeCloseAllWindows :: (?pinafore :: PinaforeContext baseedit) => IO ()
-pinaforeCloseAllWindows =
-    case ?pinafore of
-        MkPinaforeContext _ _ caw -> caw
+runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
 
 makePinaforeContext ::
        forall baseedit. InvertibleEdit baseedit
     => Bool
     -> Object baseedit
-    -> (UserInterface WindowSpec -> IO UIWindow)
-    -> IO ()
+    -> UIToolkit
     -> LifeCycle (PinaforeContext baseedit)
-makePinaforeContext async pinaforeObject createWindow closeAllWindows = do
+makePinaforeContext async pinaforeObject toolkit = do
     rsub <- liftIO $ makeObjectSubscriber async pinaforeObject
     (sub, uactions) <- liftIO $ undoQueueSubscriber rsub
-    let
-        unlift (MkPinaforeAction action) = let
-            openwin :: WindowSpec baseedit -> IO UIWindow
-            openwin uiw = createWindow $ MkUserInterface sub uiw
-            in do
-                   _ <- getComposeM $ runReaderT action (openwin, subObject sub)
-                   return ()
-    return $ MkPinaforeContext unlift uactions closeAllWindows
+    return $ MkPinaforeContext $ unPinaforeAction toolkit sub uactions
 
 nullPinaforeContext :: PinaforeContext baseedit
-nullPinaforeContext = let
-    nope :: IO a
-    nope = fail "null Pinafore context"
-    in MkPinaforeContext (\_ -> nope) (MkUndoActions (\_ -> nope) (\_ -> nope)) nope
+nullPinaforeContext = MkPinaforeContext $ \_ -> fail "null Pinafore context"

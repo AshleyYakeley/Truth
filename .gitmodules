@@ -1,6 +1,6 @@
 [submodule "witness"]
 	path = witness
-	url = git@github.com:AshleyYakeley/witness.git
+	url = ../witness.git
 [submodule "open-witness"]
 	path = open-witness
-	url = git@github.com:AshleyYakeley/open-witness.git
+	url = ../open-witness.git

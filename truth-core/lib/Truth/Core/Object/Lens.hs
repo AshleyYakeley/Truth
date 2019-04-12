@@ -7,11 +7,7 @@ import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Object.Update
 
-mapSubscriber ::
-       forall edita editb. (ApplicableEdit edita)
-    => EditLens edita editb
-    -> Subscriber edita
-    -> Subscriber editb
+mapSubscriber :: forall edita editb. EditLens edita editb -> Subscriber edita -> Subscriber editb
 mapSubscriber lens (MkSubscriber objectA subA) = let
     objectB :: Object editb
     objectB = lensObject True lens objectA

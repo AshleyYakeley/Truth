@@ -8,7 +8,6 @@ import Soup.Edit
 import Soup.Note
 import System.FilePath hiding ((<.>))
 import Truth.Core
-import Truth.UI.GTK
 import Truth.World.FileSystem
 import Truth.Debug.Object
 
@@ -63,21 +62,21 @@ soupObject dirpath = let
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: Bool -> (UserInterface WindowSpec -> IO UIWindow) -> IO () -> FilePath -> IO ()
-soupWindow async createWindow closeAllWindows dirpath = do
+soupWindow :: Bool -> UIToolkit -> FilePath -> IO ()
+soupWindow async MkUIToolkit {..} dirpath = do
     sub <- makeObjectSubscriber async $ traceArgThing "soup" $ soupObject dirpath
     rec
         let
-            mbar :: UIWindow -> Maybe (EditFunction edit (WholeEdit [MenuEntry edit]))
+            mbar :: UIWindow -> Maybe (Aspect sel -> EditFunction edit (WholeEdit [MenuEntry edit]))
             mbar w =
-                Just $
-                constEditFunction $
-                [ SubMenuEntry
-                      "File"
-                      [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ uiWindowClose w
-                      , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') closeAllWindows
-                      ]
-                ]
+                Just $ \_ ->
+                    constEditFunction $
+                    [ SubMenuEntry
+                          "File"
+                          [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ uiWindowClose w
+                          , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitCloseAllWindows
+                          ]
+                    ]
             wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
             openItem :: Aspect UUID -> IO ()
             openItem aspkey = do
@@ -87,8 +86,7 @@ soupWindow async createWindow closeAllWindows dirpath = do
                         lens <- getKeyElementEditLens key
                         rec
                             subwin <-
-                                createWindow $
-                                MkUserInterface (mapSubscriber lens sub) $
+                                uitCreateWindow (mapSubscriber lens sub) $
                                 MkWindowSpec (constEditFunction "item") (mbar subwin) $
                                 mapUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
                                 oneWholeUISpec $ oneWholeUISpec noteEditSpec
@@ -99,7 +97,5 @@ soupWindow async createWindow closeAllWindows dirpath = do
                 withAspectUISpec $ \aspect ->
                     verticalUISpec
                         [(simpleButtonUISpec (constEditFunction "View") (openItem aspect), False), (soupEditSpec, True)]
-            userinterfaceSpecifier = MkWindowSpec {..}
-            userinterfaceSubscriber = sub
-        window <- createWindow $ MkUserInterface {..}
+        window <- uitCreateWindow sub MkWindowSpec {..}
     return ()

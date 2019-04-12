@@ -1,5 +1,6 @@
 site_name: Pinafore
 markdown_extensions:
+  - codehilite
   - markdown_include.include:
       base_path: generated
 repo_url: https://github.com/AshleyYakeley/Truth
@@ -12,3 +13,5 @@ nav:
 - Types: 'types.md'
 - Reference Notation: 'reference-notation.md'
 - Predefined Bindings: 'predefined.md'
+- Examples:
+  - People: 'examples/people.md'

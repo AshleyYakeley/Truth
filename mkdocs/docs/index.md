@@ -9,7 +9,7 @@ You can't, it's not ready yet.
 ## Invocation
 
 Usage:
-```no-highlight
+```text
 pinafore [-i|--interactive] [-n|--no-run] [--data PATH] [SCRIPT]
 ```
 

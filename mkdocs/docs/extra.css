@@ -1,7 +1,82 @@
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 20px;
+    margin-bottom: 0;
+}
+
+p {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
 ul.subnav ul {
     padding-left: 15px;
 }
 
-code, .rst-content tt {
+pre, code, .rst-content tt {
     color: black;
+    font-size: 75%;
+    margin: 0;
+}
+
+.rst-content .section ol {
+    line-height: normal;
+    margin-bottom: 0;
+}
+
+.rst-content .section ol li {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+footer {
+    margin-top: 24px;
+}
+
+code {
+    background: white;
+    border: solid 1px lightgrey;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    padding-left: 3px;
+    padding-right: 3px;
+}
+
+.codehilite {
+    background: white;
+    border: solid 1px lightgrey;
+    padding: 10px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.codehilite .c1 {
+    font-style: normal;
+    color: grey;
+}
+
+.codehilite .k {
+    font-weight: normal;
+    color: blue;
+}
+
+.codehilite .kd {
+    font-weight: normal;
+    color: blue;
+}
+
+.codehilite .kt {
+    font-weight: normal;
+    color: darkred;
+}
+
+.codehilite .s {
+    color: darkblue;
+}
+
+.codehilite .l-Anchor {
+    color: green;
+}
+
+.codehilite .o {
+    font-weight: normal;
 }

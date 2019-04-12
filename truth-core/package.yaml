@@ -117,6 +117,7 @@ library:
       - Truth.Core.UI.ViewContext
       - Truth.Core.UI.View
       - Truth.Core.UI.Window
+      - Truth.Core.UI.Toolkit
       - Truth.Core.UI.CreateView
       - Truth.Core.UI.DynamicView
       - Truth.Core.UI.GetView

@@ -1,7 +1,5 @@
 module Truth.UI.GTK.Window
-    ( UserInterface(..)
-    , TruthContext(..)
-    , truthMain
+    ( truthMainGTK
     , getMaybeView
     ) where
 
@@ -91,7 +89,8 @@ getTheView spec =
 
 createWindowAndChild :: WindowSpec edit -> IO () -> AnyCreateView edit (LifeCycle UIWindow)
 createWindowAndChild MkWindowSpec {..} closeWindow =
-    MkAnyCreateView $ do
+    MkAnyCreateView $
+    cvWithAspect $ \aspect -> do
         window <-
             lcNewDestroy Window [#windowPosition := WindowPositionCenter, #defaultWidth := 300, #defaultHeight := 400]
         cvBindEditFunction Nothing wsTitle $ \title -> set window [#title := title]
@@ -106,7 +105,7 @@ createWindowAndChild MkWindowSpec {..} closeWindow =
                 Just efmbar -> do
                     ag <- new AccelGroup []
                     #addAccelGroup window ag
-                    mb <- switchView $ funcEditFunction (\mbar -> createMenuBar ag mbar >>= toWidget) . efmbar
+                    mb <- switchView $ funcEditFunction (\mbar -> createMenuBar ag mbar >>= toWidget) . efmbar aspect
                     vbox <- new Box [#orientation := OrientationVertical]
                     #packStart vbox mb False False 0
                     #packStart vbox content True True 0
@@ -117,11 +116,6 @@ createWindowAndChild MkWindowSpec {..} closeWindow =
             #showAll window
             let uiWindowClose = closeWindow
             return $ MkUIWindow {..}
-
-data UserInterface specifier = forall edit. MkUserInterface
-    { userinterfaceSubscriber :: Subscriber edit
-    , userinterfaceSpecifier :: specifier edit
-    }
 
 data ProgramContext = MkProgramContext
     { pcMainLoop :: MainLoop
@@ -139,12 +133,12 @@ threadBarrier MkProgramContext {..} ecasync action =
                 then runInIdle action
                 else action
 
-makeViewWindow :: ProgramContext -> IO () -> UserInterface WindowSpec -> IO UIWindow
-makeViewWindow pc tellclose (MkUserInterface (sub :: Subscriber edit) (window :: WindowSpec edit)) =
+makeViewWindow :: ProgramContext -> IO () -> Subscriber edit -> WindowSpec edit -> IO UIWindow
+makeViewWindow pc tellclose sub window =
     subscribeView (threadBarrier pc) (\closer -> createWindowAndChild window (closer >> tellclose)) sub getRequest
 
-makeWindowCountRef :: ProgramContext -> UserInterface WindowSpec -> IO UIWindow
-makeWindowCountRef pc@MkProgramContext {..} ui = let
+makeWindowCountRef :: ProgramContext -> Subscriber edit -> WindowSpec edit -> IO UIWindow
+makeWindowCountRef pc@MkProgramContext {..} sub window = let
     closer key =
         mvarRun pcWindowClosers $ do
             oldstore <- Shapes.get
@@ -156,29 +150,25 @@ makeWindowCountRef pc@MkProgramContext {..} ui = let
     in mvarRun pcWindowClosers $ do
            oldstore <- Shapes.get
            rec
-               twindow <- lift $ makeViewWindow pc (closer key) ui
+               twindow <- lift $ makeViewWindow pc (closer key) sub window
                let (key, newstore) = addStore (uiWindowClose twindow) oldstore
            Shapes.put newstore
            return twindow
 
-data TruthContext = MkTruthContext
-    { tcArguments :: [String]
-    , tcCreateWindow :: UserInterface WindowSpec -> IO UIWindow
-    , tcCloseAllWindows :: IO ()
-    }
-
-truthMain :: Bool -> (TruthContext -> LifeCycle ()) -> IO ()
-truthMain pcAsync appMain = do
+truthMainGTK :: Bool -> TruthMain
+truthMainGTK pcAsync appMain = do
     tcArguments <- getArgs
     _ <- GI.init Nothing
     pcMainLoop <- mainLoopNew Nothing False
     -- _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50
     pcWindowClosers <- newMVar emptyStore
     let
-        tcCreateWindow uiw = makeWindowCountRef MkProgramContext {..} uiw
-        tcCloseAllWindows = do
+        uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> IO UIWindow
+        uitCreateWindow = makeWindowCountRef MkProgramContext {..}
+        uitCloseAllWindows = do
             store <- mvarRun pcWindowClosers $ Shapes.get
             for_ store $ \cw -> cw
+        tcUIToolkit = MkUIToolkit {..}
     withLifeCycle (appMain MkTruthContext {..}) $ \() -> do
         store <- mvarRun pcWindowClosers $ Shapes.get
         if isEmptyStore store
