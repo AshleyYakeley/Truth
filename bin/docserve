@@ -1,5 +1,3 @@
 #!/bin/bash -e
-docker build -t local-build docker
-cp pinafore/examples/* mkdocs/generated/examples/
-stack exec -- pip3 install --user file://`pwd`/support/pygments-lexer/
+make docs
 stack exec --cwd mkdocs -- mkdocs serve

@@ -1,7 +1,0 @@
-#!/bin/bash -e
-if [ -z "${BINPATH}" ]; then
-    export BINPATH=`stack path --local-bin`
-fi
-bin/build
-sudo install -m 755 --strip "${BINPATH}/pinafore" /usr/local/bin/
-echo "Install done."
