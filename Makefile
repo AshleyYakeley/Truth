@@ -1,4 +1,4 @@
-default: build docs
+default: build
 
 ifeq ($(nodocker),1)
 STACKFLAGS := --no-docker
