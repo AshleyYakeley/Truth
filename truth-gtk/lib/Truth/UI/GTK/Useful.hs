@@ -19,6 +19,7 @@ deferToIdle action = do
     _ <-
         liftIO $
         threadsAddIdle PRIORITY_DEFAULT_IDLE $
+        traceBracket "deferToIdle: action" $
         runTransform unlift $ do
             action
             return SOURCE_REMOVE
@@ -30,8 +31,8 @@ runInIdle action = do
     var <- liftIO newEmptyMVar
     deferToIdle $ do
         action
-        liftIO $ putMVar var ()
-    liftIO $ takeMVar var
+        traceBracket "runInIdle: done MVar" $ liftIO $ putMVar var ()
+    traceBracket "runInIdle: waiting for MVar" $ liftIO $ takeMVar var
 
 containerGetAllChildren :: Container -> IO [Widget]
 containerGetAllChildren cont = do

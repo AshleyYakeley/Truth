@@ -11,6 +11,7 @@ library:
       - base >= 4.12
       - constraints
       - transformers
+      - thread-trace
     exposed-modules:
       - Control.Monad.Trans.Constraint
       - Control.Monad.Trans.Tunnel

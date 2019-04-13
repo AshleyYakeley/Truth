@@ -66,6 +66,7 @@ getRunner False handler =
 getRunner True handler = do
     runAsync <-
         asyncRunner $ \(MkEditQueue sourcededits) ->
+            traceBracket "getRunner:action" $
             for_ sourcededits $ \(editContextSource, edits) -> handler edits MkEditContext {editContextAsync = True, ..}
     return $ \edits esrc -> runAsync $ singleEditQueue edits esrc
 

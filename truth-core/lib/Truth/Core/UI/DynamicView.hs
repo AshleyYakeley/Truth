@@ -4,6 +4,7 @@ import Truth.Core.Import
 import Truth.Core.Object
 import Truth.Core.UI.CreateView
 import Truth.Core.UI.View
+import Truth.Debug
 
 class DynamicViewState (dvs :: Type) where
     type DynamicViewSelEdit dvs :: Type
@@ -34,7 +35,8 @@ cvDynamic firstdvs updateCV = do
     let
         update :: Object edit -> [edit] -> EditSource -> IO ()
         update obj edits esrc =
-            mvarRun stateVar $ do
+            traceBracket "cvDynamic:update:outside" $
+            mvarRun stateVar $ traceBracket "cvDynamic:update:inside" $ do
                 updateCV obj edits
                 newdvs <- get
                 lift $ for_ (dynamicViewStates newdvs) $ \state -> vsUpdate state obj edits $ MkEditContext esrc False

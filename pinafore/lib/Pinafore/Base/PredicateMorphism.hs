@@ -96,13 +96,13 @@ predicateInverseFunction ::
     -> EntityAdapter b
     -> Predicate
     -> APinaforeFunctionMorphism PinaforeEntityEdit IdentityT b [a]
-predicateInverseFunction (MkEntityAdapter _ aget _) (MkEntityAdapter bp _ _) prd = let
+predicateInverseFunction (MkEntityAdapter ap aget _) (MkEntityAdapter bp _ _) prd = let
     pfFuncRead ::
            forall m. MonadIO m
         => MutableRead m PinaforeEntityRead
         -> b
         -> IdentityT m [a]
-    pfFuncRead mr valb = traceBracket "predicateInverseFunction.pfFuncRead" $
+    pfFuncRead mr valb = traceBracketArgs "predicateInverseFunction.pfFuncRead" (show (prd,bp valb)) (show . fmap ap) $
         lift $ do
             setp <- mr $ PinaforeEntityReadLookupPredicate prd $ bp valb
             setka <- for (setToList setp) $ \p -> aget p mr
