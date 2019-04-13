@@ -20,6 +20,7 @@ library:
       - sqlite-simple
       - mime
       - shapes
+      - thread-trace
     exposed-modules:
       - Truth.Core
       - Truth.Debug

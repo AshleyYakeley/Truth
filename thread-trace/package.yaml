@@ -1,0 +1,14 @@
+name: thread-trace
+version: "0.1"
+_common: !include "../common.yaml"
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: src
+    dependencies:
+      - base >= 4.12
+      - time
+    exposed-modules:
+      - Debug.ThreadTrace
