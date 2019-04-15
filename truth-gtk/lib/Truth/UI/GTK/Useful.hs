@@ -24,12 +24,12 @@ deferToIdle action = do
     return ()
 
 -- | Waits for the task to be done.
-runInIdle :: MonadAskUnliftIO m => m () -> m ()
+runInIdle :: MonadAskUnliftIO m => m a -> m a
 runInIdle action = do
     var <- liftIO newEmptyMVar
     deferToIdle $ do
-        action
-        liftIO $ putMVar var ()
+        a <- action
+        liftIO $ putMVar var a
     liftIO $ takeMVar var
 
 containerGetAllChildren :: Container -> IO [Widget]

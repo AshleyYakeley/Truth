@@ -67,7 +67,7 @@ pinaforeInterpretFileAtType ::
 pinaforeInterpretFileAtType puipath puitext =
     resultTextToM $ runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeEdit puitext
 
-pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeEdit) => FilePath -> Text -> IO (IO ())
+pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeEdit, MonadFail m) => FilePath -> Text -> m (IO ())
 pinaforeInterpretFile puipath puitext = do
     action :: FilePinaforeType <- pinaforeInterpretFileAtType puipath puitext
     return $ runPinaforeAction action

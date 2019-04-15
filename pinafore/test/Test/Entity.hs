@@ -6,29 +6,17 @@ import Control.Exception
 import Pinafore
 import Pinafore.Test
 import Shapes
+import Test.Context
 import Test.Tasty
 import Test.Tasty.HUnit
-
-type ContextTestTree = [String] -> TestTree
-
-context :: [String] -> ContextTestTree -> ContextTestTree
-context defs tree c = tree $ defs <> c
-
-tgroup :: String -> [ContextTestTree] -> ContextTestTree
-tgroup name tests c = testGroup name $ fmap (\test -> test c) tests
-
-runContext :: ContextTestTree -> TestTree
-runContext tree = tree mempty
-
-prefix :: [String] -> Text
-prefix c = pack $ "let\n" ++ intercalate ";\n" c ++ "\nin\n"
+import Truth.Core
 
 scriptTest :: Text -> Text -> (IO () -> IO ()) -> ContextTestTree
-scriptTest name text checker c =
-    testCase (unpack name) $
-    withTestPinaforeContext $ \_getTableState -> do
-        action <- pinaforeInterpretFile "<test>" $ prefix c <> text
-        checker action
+scriptTest name text checker =
+    contextTestCase name text $ \t ->
+        withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
+            action <- pinaforeInterpretFile "<test>" t
+            checker action
 
 pointTest :: Text -> ContextTestTree
 pointTest text = scriptTest text text id
@@ -46,12 +34,13 @@ badPointTest text = scriptTest text text assertThrows
 badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
     testCase (unpack text) $
-    withTestPinaforeContext $ \_getTableState -> do assertThrows $ pinaforeInterpretFile "<test>" $ prefix c <> text
+    withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
+        assertThrows $ pinaforeInterpretFile "<test>" $ prefix c <> text
 
 exceptionTest :: Text -> ContextTestTree
 exceptionTest text c =
     testCase (unpack text) $
-    withTestPinaforeContext $ \_getTableState -> do
+    withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
         action <- pinaforeInterpretFile "<test>" $ prefix c <> text
         assertThrows action
 

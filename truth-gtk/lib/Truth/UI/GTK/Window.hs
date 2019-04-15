@@ -162,15 +162,18 @@ truthMainGTK pcAsync appMain = do
     -- _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50
     pcWindowClosers <- newMVar emptyStore
     let
+        uitCallFromOtherThread :: forall a. IO a -> IO a
+        uitCallFromOtherThread = runInIdle
         uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> IO UIWindow
         uitCreateWindow = makeWindowCountRef MkProgramContext {..}
         uitCloseAllWindows = do
             store <- mvarRun pcWindowClosers $ Shapes.get
             for_ store $ \cw -> cw
         tcUIToolkit = MkUIToolkit {..}
-    withLifeCycle (appMain MkTruthContext {..}) $ \() -> do
+    withLifeCycle (appMain MkTruthContext {..}) $ \a -> do
         store <- mvarRun pcWindowClosers $ Shapes.get
         if isEmptyStore store
             then return ()
             else do
                 #run pcMainLoop
+        return a

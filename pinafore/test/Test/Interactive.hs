@@ -8,6 +8,7 @@ import Shapes hiding ((<.>))
 import System.FilePath
 import Test.Tasty
 import Test.Tasty.Golden
+import Truth.Core
 
 testFile :: FilePath -> TestTree
 testFile inpath = let
@@ -18,7 +19,7 @@ testFile inpath = let
     in goldenVsFile testname refpath outpath $
        withBinaryFile outpath WriteMode $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
-               withTestPinaforeContext $ \_ -> do
+               withTestPinaforeContext nullUIToolkit $ \_ -> do
                    pinaforeInteractHandles inh outh True
                    hPutStrLn outh "<END>"
 

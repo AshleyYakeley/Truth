@@ -12,11 +12,15 @@ import Test.ReadType
 import Test.Scripts
 import Test.Tasty
 import Test.Type
+import Test.UI
 
 main :: IO ()
 main = do
     testInteractive <- getTestInteractive
     let
         tests :: TestTree
-        tests = testGroup "pinafore" [testType, testLanguage, testReadTypes, testEntity, testScripts, testInteractive]
+        tests =
+            testGroup
+                "pinafore"
+                [testType, testLanguage, testReadTypes, testEntity, testScripts, testInteractive, testUI]
     defaultMain tests

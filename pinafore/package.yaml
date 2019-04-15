@@ -144,6 +144,11 @@ tests:
           - mono-traversable
           - shapes
           - truth-core
+          - gi-gobject
+          - haskell-gi-base
+          - gi-gdk
+          - gi-gtk
+          - truth-gtk
           - pinafore
           - filepath
           - QuickCheck
@@ -153,12 +158,15 @@ tests:
           - tasty-golden
         main: Main.hs
         other-modules:
+          - Test.Context
           - Test.Language
           - Test.Entity
           - Test.Type
           - Test.ReadType
           - Test.Scripts
           - Test.Interactive
+          - Test.UI
+        ghc-options: -threaded
 
 benchmarks:
     benchmark:
@@ -170,6 +178,7 @@ benchmarks:
           - truth-core
           - pinafore
         main: Main.hs
+        ghc-options: -threaded
 
 executables:
     pinafore:
