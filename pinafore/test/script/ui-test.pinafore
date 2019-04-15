@@ -1,0 +1,15 @@
+let
+
+emptywindow :: Action ();
+emptywindow = do
+    openwindow {"Empty"} (\_ -> {[]}) ui_blank;
+    return ();
+    end;
+
+newpoint :: Action ();
+newpoint = do s <- newmemset; newentity s; return (); end;
+
+in do
+    openwindow {"Test"} (\_ -> {[]}) $ ui_button {"Button"} {newpoint >> emptywindow};
+    return ();
+    end
