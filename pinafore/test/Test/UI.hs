@@ -13,6 +13,7 @@ import Test.Context
 import Test.Tasty
 import Truth.Core
 import Truth.UI.GTK
+import Truth.Debug
 
 catchActionResult :: IO a -> IO (Result SomeException a)
 catchActionResult ioa = catch (fmap SuccessResult ioa) (return . FailureResult)
@@ -23,7 +24,7 @@ throwActionResult (FailureResult e) = throw e
 
 testUIAction :: Text -> (UIToolkit -> IO ()) -> ContextTestTree
 testUIAction text testaction =
-    contextTestCase text text $ \t -> do
+    contextTestCase text text $ \t -> traceBracket ("TEST: " <> unpack text) $ do
         donevar <- newEmptyMVar
         truthMainGTK True $ \MkTruthContext {..} -> do
             (pc, _) <- makeTestPinaforeContext True tcUIToolkit
