@@ -26,7 +26,7 @@ testUIAction text testaction =
     contextTestCase text text $ \t -> do
         donevar <- newEmptyMVar
         truthMainGTK True $ \MkTruthContext {..} -> do
-            (pc, _) <- makeTestPinaforeContext tcUIToolkit
+            (pc, _) <- makeTestPinaforeContext True tcUIToolkit
             scriptaction <- let
                 ?pinafore = pc
                 in pinaforeInterpretFile "<test>" t
@@ -89,7 +89,6 @@ testUI =
         "UI"
         [ testUIAction "emptywindow" $ \MkUIToolkit {..} -> uitCloseAllWindows
         , testClickButton "buttonwindow $ return ()"
-        , testClickButton "buttonwindow $ outputln \"Script\""
         , testClickButton "buttonwindow newpoint"
         , testClickButton "buttonwindow $ emptywindow"
         , testClickButton "buttonwindow $ newpoint >> newpoint"

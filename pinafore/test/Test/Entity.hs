@@ -14,7 +14,7 @@ import Truth.Core
 scriptTest :: Text -> Text -> (IO () -> IO ()) -> ContextTestTree
 scriptTest name text checker =
     contextTestCase name text $ \t ->
-        withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
+        withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
             action <- pinaforeInterpretFile "<test>" t
             checker action
 
@@ -34,13 +34,13 @@ badPointTest text = scriptTest text text assertThrows
 badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
     testCase (unpack text) $
-    withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
+    withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
         assertThrows $ pinaforeInterpretFile "<test>" $ prefix c <> text
 
 exceptionTest :: Text -> ContextTestTree
 exceptionTest text c =
     testCase (unpack text) $
-    withTestPinaforeContext nullUIToolkit $ \_getTableState -> do
+    withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
         action <- pinaforeInterpretFile "<test>" $ prefix c <> text
         assertThrows action
 

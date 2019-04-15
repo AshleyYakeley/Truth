@@ -27,8 +27,9 @@ import Shapes
 import Truth.Core
 import Truth.World.ObjectStore
 
-makeTestPinaforeContext :: UIToolkit -> LifeCycle (PinaforeContext PinaforeEdit, IO (EditSubject PinaforeTableEdit))
-makeTestPinaforeContext uitoolkit = do
+makeTestPinaforeContext ::
+       Bool -> UIToolkit -> LifeCycle (PinaforeContext PinaforeEdit, IO (EditSubject PinaforeTableEdit))
+makeTestPinaforeContext async uitoolkit = do
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
         liftIO $ freeIOObject ([], []) $ \_ -> True
     memoryObject <- liftIO makeMemoryCellObject
@@ -41,13 +42,16 @@ makeTestPinaforeContext uitoolkit = do
                 PinaforeSelectMemory -> memoryObject
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getObjectSubject tableStateObject
-    pc <- makePinaforeContext False pinaforeObject uitoolkit
+    pc <- makePinaforeContext async pinaforeObject uitoolkit
     return (pc, getTableState)
 
 withTestPinaforeContext ::
-       UIToolkit -> ((?pinafore :: PinaforeContext PinaforeEdit) => IO (EditSubject PinaforeTableEdit) -> IO r) -> IO r
-withTestPinaforeContext uitoolkit f =
-    withLifeCycle (makeTestPinaforeContext uitoolkit) $ \(pc, getTableState) -> let
+       Bool
+    -> UIToolkit
+    -> ((?pinafore :: PinaforeContext PinaforeEdit) => IO (EditSubject PinaforeTableEdit) -> IO r)
+    -> IO r
+withTestPinaforeContext async uitoolkit f =
+    withLifeCycle (makeTestPinaforeContext async uitoolkit) $ \(pc, getTableState) -> let
         ?pinafore = pc
         in f getTableState
 
