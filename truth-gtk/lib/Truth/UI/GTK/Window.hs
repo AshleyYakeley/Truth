@@ -156,7 +156,7 @@ makeWindowCountRef pc@MkProgramContext {..} sub window = let
            return twindow
 
 truthMainGTK :: Bool -> TruthMain
-truthMainGTK pcAsync appMain = do
+truthMainGTK pcAsync appMain = traceBracket "truthMainGTK" $ do
     tcArguments <- getArgs
     _ <- GI.init Nothing
     pcMainLoop <- mainLoopNew Nothing False
@@ -176,5 +176,5 @@ truthMainGTK pcAsync appMain = do
         if isEmptyStore store
             then return ()
             else do
-                #run pcMainLoop
+                traceBracket "truthMainGTK: pcMainLoop" $ #run pcMainLoop
         return a
