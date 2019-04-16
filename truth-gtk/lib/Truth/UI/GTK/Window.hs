@@ -122,7 +122,7 @@ data ProgramContext = MkProgramContext
     , pcWindowClosers :: MVar (Store (IO ()))
     }
 
-threadBarrier :: ProgramContext -> Bool -> IO () -> IO ()
+threadBarrier :: ProgramContext -> Bool -> IO a -> IO a
 threadBarrier MkProgramContext {..} ecasync action =
     case pcAsync && ecasync of
         False -> action
@@ -159,13 +159,13 @@ truthMainGTK pcAsync appMain = do
     tcArguments <- getArgs
     _ <- GI.init Nothing
     pcMainLoop <- mainLoopNew Nothing False
-    -- _ <- timeoutAddFull (yield >> return True) priorityDefaultIdle 50
     pcWindowClosers <- newMVar emptyStore
     let
+        pc = MkProgramContext {..}
         uitCallFromOtherThread :: forall a. IO a -> IO a
-        uitCallFromOtherThread = runInIdle
+        uitCallFromOtherThread = threadBarrier pc True
         uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> IO UIWindow
-        uitCreateWindow = makeWindowCountRef MkProgramContext {..}
+        uitCreateWindow = makeWindowCountRef pc
         uitCloseAllWindows = do
             store <- mvarRun pcWindowClosers $ Shapes.get
             for_ store $ \cw -> cw

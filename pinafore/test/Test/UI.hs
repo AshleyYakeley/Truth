@@ -87,7 +87,8 @@ testUI =
         ] $
     tgroup
         "UI"
-        [ testUIAction "newpoint" $ \MkUIToolkit {..} -> uitCloseAllWindows
+        [ testUIAction "return ()" $ \MkUIToolkit {..} -> uitCloseAllWindows
+        , testUIAction "newpoint" $ \MkUIToolkit {..} -> uitCloseAllWindows
         , testUIAction "emptywindow" $ \MkUIToolkit {..} -> uitCloseAllWindows
         , testClickButton "buttonwindow $ return ()"
         , testClickButton "buttonwindow newpoint"
