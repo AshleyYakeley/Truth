@@ -3,8 +3,7 @@ module Truth.UI.GTK.Button
     ) where
 
 import Data.IORef
-import GI.Gdk
-import GI.Gtk as Gtk
+import GI.Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
