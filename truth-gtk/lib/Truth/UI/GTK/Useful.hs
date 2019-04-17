@@ -5,34 +5,10 @@ import Data.GI.Base.Constructible
 import Data.GI.Base.Signals
 import Data.GI.Gtk
 import Data.IORef
-import GI.GLib
 import GI.GObject
-import GI.Gdk
 import Shapes
 import Truth.Core
 import Truth.Debug.Object
-
--- | Returns immediately.
-deferToIdle :: MonadAskUnliftIO m => m () -> m ()
-deferToIdle action = do
-    unlift <- askUnliftIO
-    _ <-
-        liftIO $
-        threadsAddIdle PRIORITY_DEFAULT_IDLE $
-        traceBracket "deferToIdle: action" $
-        runTransform unlift $ do
-            action
-            return SOURCE_REMOVE
-    return ()
-
--- | Waits for the task to be done.
-runInIdle :: MonadAskUnliftIO m => m a -> m a
-runInIdle action = do
-    var <- liftIO newEmptyMVar
-    deferToIdle $ do
-        a <- action
-        traceBracket "runInIdle: done MVar" $ liftIO $ putMVar var a
-    traceBracket "runInIdle: waiting for MVar" $ liftIO $ takeMVar var
 
 containerGetAllChildren :: Container -> IO [Widget]
 containerGetAllChildren cont = do

@@ -3,7 +3,8 @@ module Truth.UI.GTK.Window
     , getMaybeView
     ) where
 
-import GI.GLib hiding (String)
+import GI.GLib as GI hiding (String)
+import GI.Gdk as GI (threadsAddIdle)
 import GI.Gtk as GI
 import Shapes
 import System.Environment
@@ -119,19 +120,13 @@ createWindowAndChild MkWindowSpec {..} closeWindow =
 
 data ProgramContext = MkProgramContext
     { pcMainLoop :: MainLoop
-    , pcAsync :: Bool
+    , pcCallFromOtherThread :: forall a. IO a -> IO a
     , pcWindowClosers :: MVar (Store (IO ()))
     }
 
 threadBarrier :: ProgramContext -> Bool -> IO a -> IO a
-threadBarrier MkProgramContext {..} ecasync action =
-    case pcAsync && ecasync of
-        False -> action
-        True -> do
-            running <- #isRunning pcMainLoop
-            if running
-                then runInIdle action
-                else action
+threadBarrier MkProgramContext {..} True = pcCallFromOtherThread
+threadBarrier MkProgramContext {..} False = id
 
 makeViewWindow :: ProgramContext -> IO () -> Subscriber edit -> WindowSpec edit -> IO UIWindow
 makeViewWindow pc tellclose sub window =
@@ -155,16 +150,48 @@ makeWindowCountRef pc@MkProgramContext {..} sub window = let
            Shapes.put newstore
            return twindow
 
+{-
+forkTask :: IO a -> IO (IO a)
+forkTask action = do
+    var <- newEmptyMVar
+    _ <- forkIO $ do
+        a <- action
+        putMVar var a
+    return $ takeMVar var
+-}
+data RunState
+    = Running
+    | Stopped
+
 truthMainGTK :: Bool -> TruthMain
-truthMainGTK pcAsync appMain = traceBracket "truthMainGTK" $ do
+truthMainGTK _pcAsync appMain = traceBracket "truthMainGTK" $ do
     tcArguments <- getArgs
     _ <- GI.init Nothing
     pcMainLoop <- mainLoopNew Nothing False
     pcWindowClosers <- newMVar emptyStore
+    --tasksVar <- newMVar $ return ()
+    rsVar <- newMVar Running
     let
+        pcCallFromOtherThread :: forall a. IO a -> IO a
+        pcCallFromOtherThread action = mvarRun rsVar $ liftIO action
         pc = MkProgramContext {..}
-        uitCallFromOtherThread :: forall a. IO a -> IO a
-        uitCallFromOtherThread = threadBarrier pc True
+        {-
+        uitForkTask :: IO () -> IO ()
+        uitForkTask action = do
+            waitFinish <- forkTask action
+            mvarRun tasksVar $ do
+                finishers <- Shapes.get
+                put $ finishers >> waitFinish
+        uitFinishTasks :: IO ()
+        uitFinishTasks = do
+            finishers <- mvarRun tasksVar $ do
+                f <- Shapes.get
+                put $ return ()
+                return f
+            finishers
+        -}
+        uitWithLock :: forall a. IO a -> IO a
+        uitWithLock = threadBarrier pc True
         uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> IO UIWindow
         uitCreateWindow = makeWindowCountRef pc
         uitCloseAllWindows = do
@@ -176,5 +203,19 @@ truthMainGTK pcAsync appMain = traceBracket "truthMainGTK" $ do
         if isEmptyStore store
             then return ()
             else do
-                traceBracket "truthMainGTK: pcMainLoop" $ #run pcMainLoop
+                _ <-
+                    threadsAddIdle PRIORITY_DEFAULT_IDLE $ do
+                        running <- #isRunning pcMainLoop
+                        putMVar rsVar $
+                            if running
+                                then Running
+                                else Stopped
+                        yield
+                        rs <- takeMVar rsVar
+                        return $
+                            case rs of
+                                Running -> SOURCE_CONTINUE
+                                Stopped -> SOURCE_REMOVE
+                mvarRun rsVar $ liftIO $ traceBracket "truthMainGTK: pcMainLoop" $ #run pcMainLoop
+        --uitFinishTasks
         return a

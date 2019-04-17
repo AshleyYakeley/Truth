@@ -32,12 +32,16 @@ testUIAction text testaction =
                 ?pinafore = pc
                 in pinaforeInterpretFile "<test>" t
             liftIO scriptaction
+            ar <- liftIO $ catchActionResult $ testaction tcUIToolkit
+            liftIO $ putMVar donevar ar
+            {-
             _ <-
                 liftIO $
                 forkIO $ traceBracket "test thread" $ do
                     let ui@MkUIToolkit {..} = tcUIToolkit
-                    ar <- uitCallFromOtherThread $ traceBracket "test idle thread" $ catchActionResult $ testaction ui
+                    ar <- uitWithLock $ traceBracket "test idle thread" $ catchActionResult $ testaction ui
                     putMVar donevar ar
+            -}
             return ()
         ar <- takeMVar donevar
         throwActionResult ar

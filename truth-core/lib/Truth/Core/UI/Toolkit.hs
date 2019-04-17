@@ -5,14 +5,14 @@ import Truth.Core.Object
 import Truth.Core.UI.Window
 
 data UIToolkit = MkUIToolkit
-    { uitCallFromOtherThread :: forall a. IO a -> IO a
+    { uitWithLock :: forall a. IO a -> IO a
     , uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> IO UIWindow
     , uitCloseAllWindows :: IO ()
     }
 
 nullUIToolkit :: UIToolkit
 nullUIToolkit = let
-    uitCallFromOtherThread action = action
+    uitWithLock action = action
     uitCreateWindow _ _ = return nullUIWindow
     uitCloseAllWindows = return ()
     in MkUIToolkit {..}
