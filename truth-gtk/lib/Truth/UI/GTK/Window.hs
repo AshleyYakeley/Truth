@@ -130,23 +130,27 @@ threadBarrier MkProgramContext {..} False = id
 
 makeViewWindow :: ProgramContext -> IO () -> Subscriber edit -> WindowSpec edit -> IO UIWindow
 makeViewWindow pc tellclose sub window =
-    subscribeView (threadBarrier pc) (\closer -> createWindowAndChild window (closer >> tellclose)) sub getRequest
+    subscribeView (threadBarrier pc) (\closer -> createWindowAndChild window $ do
+        traceBracket "makeViewWindow: closer" $ closer
+        traceBracket "makeViewWindow: tellclose" $ tellclose
+        ) sub getRequest
 
 makeWindowCountRef :: ProgramContext -> Subscriber edit -> WindowSpec edit -> IO UIWindow
 makeWindowCountRef pc@MkProgramContext {..} sub window = let
     closer key =
-        mvarRun pcWindowClosers $ do
+        traceBracket "closed window remove: outside" $
+        mvarRun pcWindowClosers $ traceBracket "closed window remove: inside" $ do
             oldstore <- Shapes.get
             let newstore = deleteStore key oldstore
             Shapes.put newstore
             if isEmptyStore newstore
-                then #quit pcMainLoop
+                then traceBracket "closed window remove: quit" $ #quit pcMainLoop
                 else return ()
     in mvarRun pcWindowClosers $ do
            oldstore <- Shapes.get
            rec
                twindow <- lift $ makeViewWindow pc (closer key) sub window
-               let (key, newstore) = addStore (uiWindowClose twindow) oldstore
+               let (key, newstore) = addStore (traceBracket "close window: uiWindowClose" $ uiWindowClose twindow) oldstore
            Shapes.put newstore
            return twindow
 
@@ -194,9 +198,9 @@ truthMainGTK _pcAsync appMain = traceBracket "truthMainGTK" $ do
         uitWithLock = threadBarrier pc True
         uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> IO UIWindow
         uitCreateWindow = makeWindowCountRef pc
-        uitCloseAllWindows = do
+        uitCloseAllWindows = traceBracket "truthMainGTK: uitCloseAllWindows" $ do
             store <- mvarRun pcWindowClosers $ Shapes.get
-            for_ store $ \cw -> cw
+            for_ store $ \cw -> traceBracket "truthMainGTK: uitCloseAllWindows: close window" $ cw
         tcUIToolkit = MkUIToolkit {..}
     withLifeCycle (appMain MkTruthContext {..}) $ \a -> do
         store <- mvarRun pcWindowClosers $ Shapes.get

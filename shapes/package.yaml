@@ -28,6 +28,7 @@ library:
       - countable
       - witness
       - open-witness
+      - thread-trace
     exposed-modules:
       - Control.Category.Groupoid
       - Data.Filterable

@@ -32,7 +32,7 @@ testUIAction text testaction =
                 ?pinafore = pc
                 in pinaforeInterpretFile "<test>" t
             liftIO scriptaction
-            ar <- liftIO $ catchActionResult $ testaction tcUIToolkit
+            ar <- liftIO $ traceBracket "testaction" $ catchActionResult $ testaction tcUIToolkit
             liftIO $ putMVar donevar ar
             {-
             _ <-
@@ -62,7 +62,7 @@ gobjectEmitClicked obj = do
     (_, signalId, detail) <- signalParseName "clicked" gtype False
     withManagedPtr obj $ \entryPtr -> do
         gvalObj <- buildGValue gtype set_object entryPtr
-        _ <- signalEmitv [gvalObj] signalId detail
+        _ <- traceBracket "signalEmitv" $ signalEmitv [gvalObj] signalId detail
         return ()
 
 testClickButton :: Text -> ContextTestTree
@@ -77,7 +77,7 @@ testClickButton text =
                     [b] -> gobjectEmitClicked b
                     _ -> fail "no single Button"
             _ -> fail "no single window"
-        uitCloseAllWindows
+        traceBracket "close all windows" $ uitCloseAllWindows
 
 testUI :: TestTree
 testUI =

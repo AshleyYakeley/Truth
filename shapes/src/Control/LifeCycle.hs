@@ -14,6 +14,7 @@ module Control.LifeCycle
 
 import Control.Monad.Coroutine
 import Shapes.Import
+import Debug.ThreadTrace
 
 type LifeState t = (t, IO ())
 
@@ -155,7 +156,7 @@ asyncWaitRunner mus doit = do
                             return $ Just $ doit vals
             case maction of
                 Just action -> do
-                    action
+                    traceBracket "asyncWaitRunner: do" action
                     threadDo
                 Nothing -> return ()
         waitForEmpty :: STM ()
@@ -166,6 +167,7 @@ asyncWaitRunner mus doit = do
                 _ -> mzero
         pushVal :: Maybe t -> IO ()
         pushVal (Just val) =
+            traceBracket "asyncWaitRunner: push val" $
             atomically $ do
                 vs <- readTVar bufferVar
                 case vs of
