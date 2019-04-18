@@ -25,7 +25,7 @@ testUIAction :: Text -> (UIToolkit -> IO ()) -> ContextTestTree
 testUIAction text testaction =
     contextTestCase text text $ \t -> do
         donevar <- newEmptyMVar
-        truthMainGTK True $ \MkTruthContext {..} -> do
+        truthMainGTK $ \MkTruthContext {..} -> do
             (pc, _) <- makeTestPinaforeContext True tcUIToolkit
             scriptaction <- let
                 ?pinafore = pc
@@ -76,7 +76,7 @@ testClickButton text =
                     [b] -> gobjectEmitClicked b
                     _ -> fail "no single Button"
             _ -> fail "no single window"
-        uitCloseAllWindows
+        uitQuit
 
 testUI :: TestTree
 testUI =
@@ -91,9 +91,9 @@ testUI =
         ] $
     tgroup
         "UI"
-        [ testUIAction "return ()" $ \MkUIToolkit {..} -> uitCloseAllWindows
-        , testUIAction "newpoint" $ \MkUIToolkit {..} -> uitCloseAllWindows
-        , testUIAction "emptywindow" $ \MkUIToolkit {..} -> uitCloseAllWindows
+        [ testUIAction "return ()" $ \MkUIToolkit {..} -> uitQuit
+        , testUIAction "newpoint" $ \MkUIToolkit {..} -> uitQuit
+        , testUIAction "emptywindow" $ \MkUIToolkit {..} -> uitQuit
         , testClickButton "buttonwindow $ return ()"
         , testClickButton "buttonwindow newpoint"
         , testClickButton "buttonwindow $ emptywindow"

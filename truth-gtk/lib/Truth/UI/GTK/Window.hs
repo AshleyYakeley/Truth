@@ -87,8 +87,8 @@ getTheView spec =
         Just view -> view
         Nothing -> lastResortView spec
 
-createWindowAndChild :: WindowSpec edit -> IO () -> AnyCreateView edit (LifeCycle UIWindow)
-createWindowAndChild MkWindowSpec {..} closeWindow =
+createWindowAndChild :: WindowSpec edit -> AnyCreateView edit UIWindow
+createWindowAndChild MkWindowSpec {..} =
     MkAnyCreateView $
     cvWithAspect $ \aspect -> do
         window <-
@@ -97,7 +97,7 @@ createWindowAndChild MkWindowSpec {..} closeWindow =
         content <- getTheView wsContent
         _ <-
             on window #deleteEvent $ \_ -> do
-                liftIO closeWindow
+                liftIO wsCloseBoxAction
                 return True -- don't run existing handler that closes the window
         ui <-
             case wsMenuBar of
@@ -110,44 +110,21 @@ createWindowAndChild MkWindowSpec {..} closeWindow =
                     #packStart vbox mb False False 0
                     #packStart vbox content True True 0
                     toWidget vbox
-        return $ do
-            #add window ui
-            #show ui
-            #showAll window
-            let uiWindowClose = closeWindow
-            return $ MkUIWindow {..}
+        #add window ui
+        #show ui
+        #showAll window
+        let
+            uiWindowHide = #hide window
+            uiWindowShow = #show window
+        return $ MkUIWindow {..}
 
 data ProgramContext = MkProgramContext
-    { pcMainLoop :: MainLoop
-    , pcCallFromOtherThread :: forall a. IO a -> IO a
-    , pcWindowClosers :: MVar (Store (IO ()))
+    { pcCallFromOtherThread :: forall a. IO a -> IO a
     }
 
 threadBarrier :: ProgramContext -> Bool -> IO a -> IO a
 threadBarrier MkProgramContext {..} True = pcCallFromOtherThread
 threadBarrier MkProgramContext {..} False = id
-
-makeViewWindow :: ProgramContext -> IO () -> Subscriber edit -> WindowSpec edit -> IO UIWindow
-makeViewWindow pc tellclose sub window =
-    subscribeView (threadBarrier pc) (\closer -> createWindowAndChild window (closer >> tellclose)) sub getRequest
-
-makeWindowCountRef :: ProgramContext -> Subscriber edit -> WindowSpec edit -> IO UIWindow
-makeWindowCountRef pc@MkProgramContext {..} sub window = let
-    closer key =
-        mvarRun pcWindowClosers $ do
-            oldstore <- Shapes.get
-            let newstore = deleteStore key oldstore
-            Shapes.put newstore
-            if isEmptyStore newstore
-                then #quit pcMainLoop
-                else return ()
-    in mvarRun pcWindowClosers $ do
-           oldstore <- Shapes.get
-           rec
-               twindow <- lift $ makeViewWindow pc (closer key) sub window
-               let (key, newstore) = addStore (uiWindowClose twindow) oldstore
-           Shapes.put newstore
-           return twindow
 
 {-
 forkTask :: IO a -> IO (IO a)
@@ -162,18 +139,18 @@ data RunState
     = Running
     | Stopped
 
-truthMainGTK :: Bool -> TruthMain
-truthMainGTK _pcAsync appMain = do
-    tcArguments <- getArgs
-    _ <- GI.init Nothing
-    pcMainLoop <- mainLoopNew Nothing False
-    pcWindowClosers <- newMVar emptyStore
-    --tasksVar <- newMVar $ return ()
-    rsVar <- newMVar Running
-    let
-        pcCallFromOtherThread :: forall a. IO a -> IO a
-        pcCallFromOtherThread action = mvarRun rsVar $ liftIO action
-        pc = MkProgramContext {..}
+truthMainGTK :: TruthMain
+truthMainGTK appMain =
+    runLifeCycle $
+    liftIOWithUnlift $ \(MkTransform unlift) -> do
+        tcArguments <- getArgs
+        _ <- GI.init Nothing
+        gtkLockVar <- newMVar ()
+        runVar <- newMVar Running
+        let
+            pcCallFromOtherThread :: forall a. IO a -> IO a
+            pcCallFromOtherThread action = mvarRun gtkLockVar $ liftIO action
+            pc = MkProgramContext {..}
         {-
         uitForkTask :: IO () -> IO ()
         uitForkTask action = do
@@ -189,32 +166,31 @@ truthMainGTK _pcAsync appMain = do
                 return f
             finishers
         -}
-        uitWithLock :: forall a. IO a -> IO a
-        uitWithLock = threadBarrier pc True
-        uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> IO UIWindow
-        uitCreateWindow = makeWindowCountRef pc
-        uitCloseAllWindows = do
-            store <- mvarRun pcWindowClosers $ Shapes.get
-            for_ store $ \cw -> cw
-        tcUIToolkit = MkUIToolkit {..}
-    withLifeCycle (appMain MkTruthContext {..}) $ \a -> do
-        store <- mvarRun pcWindowClosers $ Shapes.get
-        if isEmptyStore store
-            then return ()
-            else do
+            uitWithLock :: forall a. IO a -> IO a
+            uitWithLock = threadBarrier pc True
+            uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycle UIWindow
+            uitCreateWindow sub wspec = subscribeView (threadBarrier pc) (createWindowAndChild wspec) sub getRequest
+            uitQuit :: IO ()
+            uitQuit = mvarRun runVar $ put Stopped
+            uitUnliftLifeCycle :: forall a. LifeCycle a -> IO a
+            uitUnliftLifeCycle = unlift
+            tcUIToolkit = MkUIToolkit {..}
+        a <- unlift $ appMain MkTruthContext {..}
+        shouldRun <- liftIO $ mvarRun runVar Shapes.get
+        case shouldRun of
+            Stopped -> return ()
+            Running -> do
+                mloop <- mainLoopNew Nothing False
                 _ <-
                     threadsAddIdle PRIORITY_DEFAULT_IDLE $ do
-                        running <- #isRunning pcMainLoop
-                        putMVar rsVar $
-                            if running
-                                then Running
-                                else Stopped
+                        putMVar gtkLockVar ()
                         yield
-                        rs <- takeMVar rsVar
-                        return $
-                            case rs of
-                                Running -> SOURCE_CONTINUE
-                                Stopped -> SOURCE_REMOVE
-                mvarRun rsVar $ liftIO $ #run pcMainLoop
-        --uitFinishTasks
+                        takeMVar gtkLockVar
+                        sr <- mvarRun runVar Shapes.get
+                        case sr of
+                            Running -> return SOURCE_CONTINUE
+                            Stopped -> do
+                                #quit mloop
+                                return SOURCE_REMOVE
+                mvarRun gtkLockVar $ liftIO $ #run mloop
         return a

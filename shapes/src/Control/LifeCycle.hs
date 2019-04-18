@@ -3,9 +3,12 @@ module Control.LifeCycle
     , closeLifeState
     , LifeCycle(..)
     , lifeCycleClose
+    , runLifeCycle
     , With
     , withLifeCycle
     , lifeCycleWith
+    , lifeCycleEarlyCloser
+    , lifeCycleOnAllDone
     , MonadLifeCycle(..)
     , asyncWaitRunner
     , asyncRunner
@@ -18,7 +21,7 @@ import Shapes.Import
 type LifeState t = (t, IO ())
 
 newtype LifeCycle t = MkLifeCycle
-    { runLifeCycle :: IO (LifeState t)
+    { getLifeState :: IO (LifeState t)
     }
 
 closeLifeState :: LifeState t -> IO ()
@@ -43,14 +46,14 @@ instance Monad LifeCycle where
     (MkLifeCycle ioac) >>= f =
         MkLifeCycle $ do
             (a, c1) <- ioac
-            (b, c2) <- runLifeCycle $ f a
+            (b, c2) <- getLifeState $ f a
             return (b, c2 >> c1)
 
 instance MonadFail LifeCycle where
     fail s = MkLifeCycle $ fail s
 
 instance MonadFix LifeCycle where
-    mfix f = MkLifeCycle $ mfix $ \ ~(t, _) -> runLifeCycle $ f t
+    mfix f = MkLifeCycle $ mfix $ \ ~(t, _) -> getLifeState $ f t
 
 instance MonadIO LifeCycle where
     liftIO ma =
@@ -59,7 +62,7 @@ instance MonadIO LifeCycle where
             return (a, return ())
 
 instance MonadTunnelIO LifeCycle where
-    tunnelIO call = MkLifeCycle $ call runLifeCycle
+    tunnelIO call = MkLifeCycle $ call getLifeState
 
 instance MonadUnliftIO LifeCycle where
     liftIOWithUnlift call = do
@@ -77,7 +80,7 @@ instance MonadUnliftIO LifeCycle where
     getDiscardingUnliftIO =
         return $
         MkTransform $ \mr -> do
-            (r, _discarded) <- runLifeCycle mr
+            (r, _discarded) <- getLifeState mr
             return r
 
 lifeCycleClose :: IO () -> LifeCycle ()
@@ -89,6 +92,9 @@ withLifeCycle :: LifeCycle t -> With t
 withLifeCycle (MkLifeCycle oc) run = do
     (t, closer) <- oc
     finally (run t) closer
+
+runLifeCycle :: LifeCycle t -> IO t
+runLifeCycle lc = withLifeCycle lc return
 
 lifeCycleWith :: With t -> LifeCycle t
 lifeCycleWith withX =
@@ -104,6 +110,42 @@ lifeCycleWith withX =
                           case e2 of
                               Left () -> return ()
                               Right _ -> fail "lifeCycleWith: called twice")
+
+-- | Runs the given lifecycle, returning an early closer.
+-- The early closer is an idempotent action that will close the lifecycle only if it hasn't already been closed.
+-- The early closer will also be run as the closer of the resulting lifecycle.
+lifeCycleEarlyCloser :: LifeCycle a -> LifeCycle (a, IO ())
+lifeCycleEarlyCloser (MkLifeCycle lc) =
+    MkLifeCycle $ do
+        (a, closer) <- lc
+        var <- newMVar ()
+        let
+            earlycloser :: IO ()
+            earlycloser = do
+                mu <- tryTakeMVar var
+                case mu of
+                    Just () -> closer
+                    Nothing -> return ()
+        return ((a, earlycloser), earlycloser)
+
+lifeCycleOnAllDone :: IO () -> IO (LifeCycle ())
+lifeCycleOnAllDone onzero = do
+    var <- newMVar (0 :: Int)
+    return $ do
+        liftIO $
+            mvarRun var $ do
+                olda <- get
+                put $ succ olda
+        lifeCycleClose $ do
+            iszero <-
+                mvarRun var $ do
+                    olda <- get
+                    let newa = pred olda
+                    put newa
+                    return $ newa == 0
+            if iszero
+                then onzero
+                else return ()
 
 class MonadIO m => MonadLifeCycle m where
     liftLifeCycle :: forall a. LifeCycle a -> m a

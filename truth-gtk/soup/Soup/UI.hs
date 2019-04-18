@@ -61,19 +61,19 @@ soupObject dirpath = let
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: Bool -> UIToolkit -> FilePath -> IO ()
+soupWindow :: Bool -> UIToolkit -> FilePath -> LifeCycle ()
 soupWindow async MkUIToolkit {..} dirpath = do
     sub <- makeObjectSubscriber async $ soupObject dirpath
     rec
         let
-            mbar :: UIWindow -> Maybe (Aspect sel -> EditFunction edit (WholeEdit [MenuEntry edit]))
-            mbar w =
+            mbar :: IO () -> UIWindow -> Maybe (Aspect sel -> EditFunction edit (WholeEdit [MenuEntry edit]))
+            mbar cc _ =
                 Just $ \_ ->
                     constEditFunction $
                     [ SubMenuEntry
                           "File"
-                          [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ uiWindowClose w
-                          , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitCloseAllWindows
+                          [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ cc
+                          , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitQuit
                           ]
                     ]
             wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
@@ -83,18 +83,21 @@ soupWindow async MkUIToolkit {..} dirpath = do
                 case mkey of
                     Just key -> do
                         lens <- getKeyElementEditLens key
-                        rec
-                            subwin <-
-                                uitCreateWindow (mapSubscriber lens sub) $
-                                MkWindowSpec (constEditFunction "item") (mbar subwin) $
-                                mapUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
-                                oneWholeUISpec $ oneWholeUISpec noteEditSpec
-                        return ()
+                        uitUnliftLifeCycle $ do
+                            rec
+                                ~(subwin, subcloser) <-
+                                    lifeCycleEarlyCloser $
+                                    uitCreateWindow (mapSubscriber lens sub) $
+                                    MkWindowSpec subcloser (constEditFunction "item") (mbar subcloser subwin) $
+                                    mapUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
+                                    oneWholeUISpec $ oneWholeUISpec noteEditSpec
+                            return ()
                     Nothing -> return ()
-            wsMenuBar = mbar window
+            wsMenuBar = mbar closer window
             wsContent =
                 withAspectUISpec $ \aspect ->
                     verticalUISpec
                         [(simpleButtonUISpec (constEditFunction "View") (openItem aspect), False), (soupEditSpec, True)]
-        window <- uitCreateWindow sub MkWindowSpec {..}
+            wsCloseBoxAction = closer
+        (window, closer) <- lifeCycleEarlyCloser $ uitCreateWindow sub MkWindowSpec {..}
     return ()

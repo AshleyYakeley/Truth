@@ -50,7 +50,7 @@ testLifeCycle =
                 lifeCycleClose $ appendStr "B"
                 liftIO $ appendStr "C"
                 lifeCycleClose $ appendStr "D"
-        withLifeCycle lc return
+        runLifeCycle lc
 
 tests :: TestTree
 tests = testGroup "shapes" [testCoroutine, testLifeCycle]

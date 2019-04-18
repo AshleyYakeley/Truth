@@ -68,34 +68,22 @@ getRunner True handler = do
             for_ sourcededits $ \(editContextSource, edits) -> handler edits MkEditContext {editContextAsync = True, ..}
     return $ \edits esrc -> runAsync $ singleEditQueue edits esrc
 
-makeSharedSubscriber :: forall edit a. Bool -> UpdatingObject edit a -> IO (Subscriber edit, a)
+makeSharedSubscriber :: forall edit a. Bool -> UpdatingObject edit a -> LifeCycle (Subscriber edit, a)
 makeSharedSubscriber async uobj = do
-    var :: MVar (UpdateStore edit) <- newMVar emptyStore
+    var :: MVar (UpdateStore edit) <- liftIO $ newMVar emptyStore
     let
         updateP :: [edit] -> EditContext -> IO ()
         updateP edits ectxt = mvarRun var $ updateStore edits ectxt
-    ((objectC, a), closerP) <-
-        runLifeCycle $ do
-            runAsync <- getRunner async updateP
-            uobj runAsync
+    runAsync <- getRunner async updateP
+    (objectC, a) <- uobj runAsync
     let
         child :: Subscriber edit
         child =
             MkSubscriber objectC $ \updateC ->
                 case objectC of
-                    MkObject runC _ _ ->
-                        MkLifeCycle $ do
-                            key <- runTransform runC $ mvarRun var $ addStoreStateT updateC
-                            let
-                                closerC =
-                                    runTransform runC $
-                                    mvarRun var $ do
-                                        deleteStoreStateT key
-                                        newstore <- get
-                                        if isEmptyStore newstore
-                                            then liftIO closerP
-                                            else return ()
-                            return ((), closerC)
+                    MkObject runC _ _ -> do
+                        key <- liftIO $ runTransform runC $ mvarRun var $ addStoreStateT updateC
+                        lifeCycleClose $ runTransform runC $ mvarRun var $ deleteStoreStateT key
     return (child, a)
 
 updatingObject :: forall edit. Object edit -> UpdatingObject edit ()
@@ -117,7 +105,7 @@ updatingObject (MkObject (run :: UnliftIO m) r e) update =
                         deferActionT $ update edits esrc
         in (MkObject run' r' e', ())
 
-makeObjectSubscriber :: Bool -> Object edit -> IO (Subscriber edit)
+makeObjectSubscriber :: Bool -> Object edit -> LifeCycle (Subscriber edit)
 makeObjectSubscriber async object = do
     (sub, ()) <- makeSharedSubscriber async $ updatingObject object
     return sub

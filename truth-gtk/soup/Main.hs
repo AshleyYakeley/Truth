@@ -16,13 +16,13 @@ async = False
 
 main :: IO ()
 main =
-    truthMainGTK async $ \MkTruthContext {..} ->
-        liftIO $ do
-            (dirpaths, double) <-
-                O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
-            for_ dirpaths $ \dirpath -> do
-                let action = soupWindow async tcUIToolkit dirpath
-                action
-                if double
-                    then action
-                    else return ()
+    truthMainGTK $ \MkTruthContext {..} -> do
+        (dirpaths, double) <-
+            liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
+        toolkit <- liftIO $ quitOnWindowsClosed tcUIToolkit
+        for_ dirpaths $ \dirpath -> do
+            let action = soupWindow async toolkit dirpath
+            action
+            if double
+                then action
+                else return ()
