@@ -118,14 +118,6 @@ createWindowAndChild MkWindowSpec {..} =
             uiWindowShow = #show window
         return $ MkUIWindow {..}
 
-data ProgramContext = MkProgramContext
-    { pcCallFromOtherThread :: forall a. IO a -> IO a
-    }
-
-threadBarrier :: ProgramContext -> Bool -> IO a -> IO a
-threadBarrier MkProgramContext {..} True = pcCallFromOtherThread
-threadBarrier MkProgramContext {..} False = id
-
 {-
 forkTask :: IO a -> IO (IO a)
 forkTask action = do
@@ -148,28 +140,28 @@ truthMainGTK appMain =
         gtkLockVar <- newMVar ()
         runVar <- newMVar Running
         let
-            pcCallFromOtherThread :: forall a. IO a -> IO a
-            pcCallFromOtherThread action = mvarRun gtkLockVar $ liftIO action
-            pc = MkProgramContext {..}
-        {-
-        uitForkTask :: IO () -> IO ()
-        uitForkTask action = do
-            waitFinish <- forkTask action
-            mvarRun tasksVar $ do
-                finishers <- Shapes.get
-                put $ finishers >> waitFinish
-        uitFinishTasks :: IO ()
-        uitFinishTasks = do
-            finishers <- mvarRun tasksVar $ do
-                f <- Shapes.get
-                put $ return ()
-                return f
-            finishers
-        -}
+            {-
+            uitForkTask :: IO () -> IO ()
+            uitForkTask action = do
+                waitFinish <- forkTask action
+                mvarRun tasksVar $ do
+                    finishers <- Shapes.get
+                    put $ finishers >> waitFinish
+            uitFinishTasks :: IO ()
+            uitFinishTasks = do
+                finishers <- mvarRun tasksVar $ do
+                    f <- Shapes.get
+                    put $ return ()
+                    return f
+                finishers
+            -}
             uitWithLock :: forall a. IO a -> IO a
-            uitWithLock = threadBarrier pc True
+            uitWithLock action = mvarRun gtkLockVar $ liftIO action
+            threadBarrier :: Bool -> IO a -> IO a
+            threadBarrier True = uitWithLock
+            threadBarrier False = id
             uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycle UIWindow
-            uitCreateWindow sub wspec = subscribeView (threadBarrier pc) (createWindowAndChild wspec) sub getRequest
+            uitCreateWindow sub wspec = subscribeView threadBarrier (createWindowAndChild wspec) sub getRequest
             uitQuit :: IO ()
             uitQuit = mvarRun runVar $ put Stopped
             uitUnliftLifeCycle :: forall a. LifeCycle a -> IO a
