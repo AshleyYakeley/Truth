@@ -21,8 +21,8 @@ throwActionResult :: Result SomeException a -> IO a
 throwActionResult (SuccessResult a) = return a
 throwActionResult (FailureResult e) = throw e
 
-testUIAction :: Text -> (UIToolkit -> IO ()) -> ContextTestTree
-testUIAction text testaction =
+testUIAction :: Bool -> Text -> (UIToolkit -> IO ()) -> ContextTestTree
+testUIAction waitClick text testaction =
     contextTestCase text text $ \t -> do
         donevar <- newEmptyMVar
         truthMainGTK $ \MkTruthContext {..} -> do
@@ -31,17 +31,19 @@ testUIAction text testaction =
                 ?pinafore = pc
                 in pinaforeInterpretFile "<test>" t
             liftIO scriptaction
-            ar <- liftIO $ catchActionResult $ testaction tcUIToolkit
-            liftIO $ putMVar donevar ar
-            {-
-            _ <-
-                liftIO $
-                forkIO $ do
-                    let ui@MkUIToolkit {..} = tcUIToolkit
-                    ar <- uitWithLock $ catchActionResult $ testaction ui
-                    putMVar donevar ar
-            -}
-            return ()
+            liftIO $
+                case waitClick of
+                    False -> do
+                        ar <- catchActionResult $ testaction tcUIToolkit
+                        putMVar donevar ar
+                    True -> do
+                        _ <-
+                            forkIO $ do
+                                let ui@MkUIToolkit {..} = tcUIToolkit
+                                threadDelay 500000 -- .5s delay
+                                ar <- uitWithLock $ catchActionResult $ testaction ui
+                                putMVar donevar ar
+                        return ()
         ar <- takeMVar donevar
         throwActionResult ar
 
@@ -64,9 +66,9 @@ gobjectEmitClicked obj = do
         _ <- signalEmitv [gvalObj] signalId detail
         return ()
 
-testClickButton :: Text -> ContextTestTree
-testClickButton text =
-    testUIAction text $ \MkUIToolkit {..} -> do
+testClickButton :: Bool -> Text -> ContextTestTree
+testClickButton waitClick text =
+    testUIAction waitClick text $ \MkUIToolkit {..} -> do
         ww <- windowListToplevels
         case ww of
             [w] -> do
@@ -77,6 +79,20 @@ testClickButton text =
                     _ -> fail "no single Button"
             _ -> fail "no single window"
         uitQuit
+
+testActions :: Bool -> [ContextTestTree]
+testActions waitClick =
+    [ testUIAction waitClick "return ()" $ \MkUIToolkit {..} -> uitQuit
+    , testUIAction waitClick "newpoint" $ \MkUIToolkit {..} -> uitQuit
+    , testUIAction waitClick "emptywindow" $ \MkUIToolkit {..} -> uitQuit
+    , testClickButton waitClick "buttonwindow $ return ()"
+    , testClickButton waitClick "buttonwindow newpoint"
+    , testClickButton waitClick "buttonwindow $ emptywindow"
+    , testClickButton waitClick "buttonwindow $ newpoint >> newpoint"
+    , testClickButton waitClick "buttonwindow $ emptywindow >> emptywindow"
+    , testClickButton waitClick "buttonwindow $ newpoint >> emptywindow"
+    , testClickButton waitClick "buttonwindow $ emptywindow >> newpoint"
+    ]
 
 testUI :: TestTree
 testUI =
@@ -89,16 +105,4 @@ testUI =
         , "buttonwindow :: Action () -> Action ()"
         , "buttonwindow action = do openwindow {\"Test\"} (\\_ -> {[]}) (ui_button {\"Button\"} {action}); return (); end"
         ] $
-    tgroup
-        "UI"
-        [ testUIAction "return ()" $ \MkUIToolkit {..} -> uitQuit
-        , testUIAction "newpoint" $ \MkUIToolkit {..} -> uitQuit
-        , testUIAction "emptywindow" $ \MkUIToolkit {..} -> uitQuit
-        , testClickButton "buttonwindow $ return ()"
-        , testClickButton "buttonwindow newpoint"
-        , testClickButton "buttonwindow $ emptywindow"
-        , testClickButton "buttonwindow $ newpoint >> newpoint"
-        , testClickButton "buttonwindow $ emptywindow >> emptywindow"
-        , testClickButton "buttonwindow $ newpoint >> emptywindow"
-        , testClickButton "buttonwindow $ emptywindow >> newpoint"
-        ]
+    tgroup "UI" [tgroup "immediate" $ testActions False, tgroup "wait" $ testActions True]
