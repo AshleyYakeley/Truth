@@ -107,13 +107,15 @@ openwindow ::
     -> (PinaforeAction baseedit A -> PinaforeImmutableReference baseedit (MenuBar baseedit))
     -> UISpec A baseedit
     -> PinaforeAction baseedit PinaforeWindow
-openwindow title getmbar wsContent = let
-    wsTitle = clearText . immutableReferenceToFunction title
-    wsMenuBar :: Maybe (Aspect A -> EditFunction baseedit (WholeEdit (MenuBar baseedit)))
-    wsMenuBar =
-        Just $ \aspect ->
-            funcEditFunction (fromKnow mempty) . immutableReferenceToFunction (getmbar $ aspectToAction aspect)
-    in pinaforeNewWindow MkWindowSpec {..}
+openwindow title getmbar wsContent =
+    mfix $ \w -> let
+        wsCloseBoxAction = pwClose w
+        wsTitle = clearText . immutableReferenceToFunction title
+        wsMenuBar :: Maybe (Aspect A -> EditFunction baseedit (WholeEdit (MenuBar baseedit)))
+        wsMenuBar =
+            Just $ \aspect ->
+                funcEditFunction (fromKnow mempty) . immutableReferenceToFunction (getmbar $ aspectToAction aspect)
+        in pinaforeNewWindow MkWindowSpec {..}
 
 ui_withselection :: (PinaforeAction baseedit A -> UISpec A baseedit) -> UISpec A baseedit
 ui_withselection f = withAspectUISpec $ \aspect -> f $ aspectToAction aspect
@@ -207,7 +209,7 @@ ui_predefinitions =
           "Window"
           "User interface windows."
           [ mkValEntry "openwindow" "Open a new window with this title and UI." openwindow
-          , mkValEntry "closewindow" "Close a window." $ uiWindowClose . pwWindow
+          , mkValEntry "closewindow" "Close a window." pwClose
           , mkValEntry "closeallwindows" "Close all windows." pinaforeCloseAllWindows
           ]
     ]

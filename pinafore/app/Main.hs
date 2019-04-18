@@ -98,7 +98,7 @@ async = True
 
 main :: IO ()
 main =
-    truthMainGTK async $ \MkTruthContext {..} -> do
+    truthMainGTK $ \MkTruthContext {..} -> do
         options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
         case options of
             PredefinedDocOption ->
@@ -110,7 +110,8 @@ main =
                 liftIO $ sqlitePinaforeDumpTable dirpath
             RunOption fInteract fNoRun mdirpath fpaths -> do
                 dirpath <- getDirPath mdirpath
-                context <- sqlitePinaforeContext async dirpath tcUIToolkit
+                toolkit <- liftIO $ quitOnWindowsClosed tcUIToolkit
+                context <- sqlitePinaforeContext async dirpath toolkit
                 let
                     ?pinafore = context
                     in liftIO $

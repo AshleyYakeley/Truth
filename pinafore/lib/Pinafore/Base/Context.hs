@@ -29,7 +29,7 @@ makePinaforeContext ::
     -> UIToolkit
     -> LifeCycle (PinaforeContext baseedit)
 makePinaforeContext async pinaforeObject toolkit = do
-    rsub <- liftIO $ makeObjectSubscriber async pinaforeObject
+    rsub <- makeObjectSubscriber async pinaforeObject
     (sub, uactions) <- liftIO $ undoQueueSubscriber rsub
     return $ MkPinaforeContext $ unPinaforeAction toolkit sub uactions
 

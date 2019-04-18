@@ -5,12 +5,7 @@ module Subscribe
     ( testSubscribe
     ) where
 
-import Control.Concurrent.MVar
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Transform
-import Data.Foldable
-import Prelude
-import System.IO
+import Shapes
 import Test.Tasty
 import Test.Tasty.Golden
 import Test.Tasty.HUnit
@@ -103,8 +98,9 @@ testSubscription ::
     -> ((?handle :: Handle, ?showVar :: IO (), ?showExpected :: [edit] -> IO ()) => Subscriber edit -> IO ())
     -> TestTree
 testSubscription name initial call =
-    goldenTest' name $ do
-        var <- newMVar initial
+    goldenTest' name $
+    runLifeCycle $ do
+        var <- liftIO $ newMVar initial
         let
             varObj :: Object (WholeEdit (EditSubject edit))
             varObj = mvarObject var $ \_ -> True
@@ -117,7 +113,7 @@ testSubscription name initial call =
                 withMVar var $ \s -> do
                     news <- mutableReadToSubject $ applyEdits edits $ subjectToMutableRead s
                     hPutStrLn ?handle $ "expected: " ++ show news
-        call sub
+        liftIO $ call sub
 
 testPair :: TestTree
 testPair =

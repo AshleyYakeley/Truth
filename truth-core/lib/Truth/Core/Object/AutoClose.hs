@@ -18,6 +18,6 @@ acOpenObject key withX = do
     case lookup key oldmap of
         Just mutedcloser -> return $ fst mutedcloser
         Nothing -> do
-            mutedcloser <- lift $ runLifeCycle $ lifeCycleWith withX
+            mutedcloser <- lift $ getLifeState $ lifeCycleWith withX
             put $ insert key mutedcloser oldmap
             return $ fst mutedcloser

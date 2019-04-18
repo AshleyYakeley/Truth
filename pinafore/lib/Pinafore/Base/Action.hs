@@ -60,21 +60,22 @@ pinaforeLensPush lens edits = do
                 else empty
 
 data PinaforeWindow = MkPinaforeWindow
-    { pwWindow :: UIWindow
+    { pwClose :: IO ()
+    , pwWindow :: UIWindow
     }
 
 pinaforeNewWindow :: WindowSpec baseedit -> PinaforeAction baseedit PinaforeWindow
 pinaforeNewWindow uiw = do
     MkActionContext {..} <- MkPinaforeAction ask
     let MkUIToolkit {..} = acUIToolkit
-    w <- liftIO $ uitCreateWindow acSubscriber uiw
-    return $ MkPinaforeWindow w
+    (pwWindow, pwClose) <- liftIO $ uitUnliftLifeCycle $ lifeCycleEarlyCloser $ uitCreateWindow acSubscriber uiw
+    return $ MkPinaforeWindow {..}
 
 pinaforeCloseAllWindows :: PinaforeAction baseedit ()
 pinaforeCloseAllWindows = do
     MkActionContext {..} <- MkPinaforeAction ask
     let MkUIToolkit {..} = acUIToolkit
-    liftIO $ uitCloseAllWindows
+    liftIO $ uitQuit
 
 pinaforeUndoActions :: PinaforeAction baseedit UndoActions
 pinaforeUndoActions = do

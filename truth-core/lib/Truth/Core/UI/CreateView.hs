@@ -94,7 +94,7 @@ vsFirstAspect :: ViewState sel edit a -> Aspect sel
 vsFirstAspect ((vo, _), _) = voFirstAspect vo
 
 viewCreateView :: CreateView sel edit a -> View sel edit (ViewState sel edit a)
-viewCreateView (MkCreateView (ReaderT wff)) = MkView $ ReaderT $ \vc -> runLifeCycle $ fmap swap $ runWriterT $ wff vc
+viewCreateView (MkCreateView (ReaderT wff)) = MkView $ ReaderT $ \vc -> getLifeState $ fmap swap $ runWriterT $ wff vc
 
 cvLiftView :: View sel edit a -> CreateView sel edit a
 cvLiftView (MkView (ReaderT va)) = MkCreateView $ ReaderT $ \vc -> liftIO $ va vc
@@ -190,34 +190,19 @@ cvWithAspect f = do
 data AnyCreateView edit w =
     forall sel. MkAnyCreateView (CreateView sel edit w)
 
-subscribeView' ::
+subscribeView ::
        forall edit w.
        (Bool -> IO () -> IO ())
     -> AnyCreateView edit w
     -> Subscriber edit
     -> (forall t. IOWitness t -> Maybe t)
     -> LifeCycle w
-subscribeView' vcThreadBarrier (MkAnyCreateView (MkCreateView (ReaderT view))) (MkSubscriber vcObject sub) vcRequest = do
+subscribeView vcThreadBarrier (MkAnyCreateView (MkCreateView (ReaderT view))) (MkSubscriber vcObject sub) vcRequest = do
     let
         vcSetSelection :: Aspect sel -> IO ()
         vcSetSelection _ = return ()
     (w, vo) <- runWriterT $ view MkViewContext {..}
     sub $ voUpdate vo vcObject
-    return w
-
-subscribeView ::
-       forall edit w.
-       (Bool -> IO () -> IO ())
-    -> (IO () -> AnyCreateView edit (LifeCycle w))
-    -> Subscriber edit
-    -> (forall t. IOWitness t -> Maybe t)
-    -> IO w
-subscribeView threadBarrier createView sub getRequest = do
-    rec
-        (w, closer) <-
-            runLifeCycle $ do
-                r <- subscribeView' threadBarrier (createView closer) sub getRequest
-                r
     return w
 
 tupleCreateView ::
