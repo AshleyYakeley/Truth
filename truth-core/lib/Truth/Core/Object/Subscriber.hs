@@ -75,7 +75,7 @@ makeSharedSubscriber async uobj = do
     var :: MVar (UpdateStore edit) <- liftIO $ newMVar emptyStore
     let
         updateP :: [edit] -> EditContext -> IO ()
-        updateP edits ectxt = mvarRun var $ updateStore edits ectxt
+        updateP edits ectxt = traceBarrier "makeSharedSubscriber:updateP" (mvarRun var) $ updateStore edits ectxt
     runAsync <- getRunner async updateP
     (objectC, a) <- uobj runAsync
     let
@@ -84,8 +84,8 @@ makeSharedSubscriber async uobj = do
             MkSubscriber objectC $ \updateC ->
                 case objectC of
                     MkObject runC _ _ -> do
-                        key <- liftIO $ runTransform runC $ mvarRun var $ addStoreStateT updateC
-                        lifeCycleClose $ runTransform runC $ mvarRun var $ deleteStoreStateT key
+                        key <- liftIO $ runTransform runC $ traceBarrier "makeSharedSubscriber:child.addStoreState" (mvarRun var) $ addStoreStateT updateC
+                        lifeCycleClose $ runTransform runC $ traceBarrier "makeSharedSubscriber:child.deleteStoreStateT" (mvarRun var) $ deleteStoreStateT key
     return (child, a)
 
 updatingObject :: forall edit. Object edit -> UpdatingObject edit ()

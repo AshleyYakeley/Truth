@@ -35,8 +35,7 @@ cvDynamic firstdvs updateCV = do
     let
         update :: Object edit -> [edit] -> EditSource -> IO ()
         update obj edits esrc =
-            traceBracket "cvDynamic:update:outside" $
-            mvarRun stateVar $ traceBracket "cvDynamic:update:inside" $ do
+            traceBarrier "cvDynamic:update:outside" (mvarRun stateVar) $ do
                 updateCV obj edits
                 newdvs <- get
                 lift $ for_ (dynamicViewStates newdvs) $ \state -> vsUpdate state obj edits $ MkEditContext esrc False

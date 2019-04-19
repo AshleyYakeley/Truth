@@ -109,7 +109,7 @@ cvReceiveIOUpdates :: (Object edit -> [edit] -> EditSource -> IO ()) -> CreateVi
 cvReceiveIOUpdates recv = do
     tb <- MkCreateView $ asks vcThreadBarrier
     cvLiftViewResult $
-        ( mempty {voUpdate = \obj edits MkEditContext {..} -> traceBracket "cvReceiveIOUpdates:update:outside" $ tb editContextAsync $ traceBracket "cvReceiveIOUpdates:update:inside" $ recv obj edits editContextSource}
+        ( mempty {voUpdate = \obj edits MkEditContext {..} -> traceBarrier "cvReceiveIOUpdates:update" (tb editContextAsync) $ recv obj edits editContextSource}
         , ())
 
 cvReceiveUpdates :: Maybe EditSource -> (UnliftIO (View sel edit) -> ReceiveUpdates edit) -> CreateView sel edit ()

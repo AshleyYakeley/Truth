@@ -11,6 +11,7 @@ import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Read
 import Truth.Core.Types.Whole
+import Truth.Debug
 
 data SaveBuffer a = MkSaveBuffer
     { saveBuffer :: a
@@ -24,7 +25,7 @@ saveBufferObject ::
        forall edit. FullEdit edit
     => Object (WholeEdit (EditSubject edit))
     -> UpdatingObject edit SaveActions
-saveBufferObject (MkObject (unliftP :: UnliftIO mp) readP pushP) update = do
+saveBufferObject (MkObject (unliftP :: UnliftIO mp) readP pushP) update = traceThing "saveBufferObject" $ do
     firstVal <- liftIO $ runTransform unliftP $ readP ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
     let

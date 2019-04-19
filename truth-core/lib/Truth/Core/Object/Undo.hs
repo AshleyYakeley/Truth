@@ -54,7 +54,7 @@ undoQueueSubscriber sub = do
         undoActions = let
             uaUndo :: EditSource -> IO Bool
             uaUndo esrc =
-                traceBracket "undoQueueSubscriber.uaUndo:outside" $ mvarRun queueVar $ traceBracket "undoQueueSubscriber.uaUndo:inside" $ do
+                traceBarrier "undoQueueSubscriber.uaUndo" (mvarRun queueVar) $ do
                     MkUndoQueue ues res <- get
                     case ues of
                         [] -> traceBracket "undoQueueSubscriber.uaUndo: no undoable" $ return False -- nothing to undo

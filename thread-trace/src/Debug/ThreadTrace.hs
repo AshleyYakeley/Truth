@@ -44,8 +44,20 @@ traceBracketArgs s args showr ma = do
 traceBracket :: MonadIO m => String -> m r -> m r
 traceBracket s = traceBracketArgs s "" (\_ -> "")
 
+traceBarrier :: (MonadIO m1,MonadIO m2) => String -> (m1 a -> m2 b) -> m1 a -> m2 b
+traceBarrier s tr ma = traceBracket (contextStr s "outside") $ tr $ traceBracket (contextStr s  "inside") ma
+
 tracePure :: String -> a -> a
 tracePure s = seq (unsafePerformIO (traceIOM s))
 
 tracePureBracket :: Monad m => String -> m a -> m a
 tracePureBracket s ma = (tracePure (s ++ " [") ma) >>= (\a -> return $ tracePure (s ++ " ]") a)
+
+class TraceThing t where
+    traceThing :: String -> t -> t
+
+instance {-# OVERLAPPABLE #-} MonadIO m => TraceThing (m a) where
+    traceThing s ma = traceBracket s ma
+
+instance TraceThing t => TraceThing (a -> t) where
+    traceThing s at a = traceThing s $ at a

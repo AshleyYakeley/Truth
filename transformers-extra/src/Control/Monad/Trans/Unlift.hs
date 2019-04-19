@@ -17,7 +17,6 @@ import Data.Constraint
 import Data.Kind
 import Data.Tuple
 import Prelude
-import Debug.ThreadTrace
 
 newtype Unlift (t :: (Type -> Type) -> Type -> Type) = MkUnlift
     { runUnlift :: forall (m :: Type -> Type) (r :: Type). MonadUnliftIO m => t m r -> m r
@@ -28,7 +27,7 @@ identityUnlift = MkUnlift runIdentityT
 
 mvarRun :: MonadUnliftIO m => MVar s -> StateT s m r -> m r
 mvarRun var (StateT smr) =
-    liftIOWithUnlift $ \(MkTransform unlift) -> traceBracket "mvarRun: outside" $ modifyMVar var $ \olds -> traceBracket "mvarRun: inside" $ unlift $ fmap swap $ smr olds
+    liftIOWithUnlift $ \(MkTransform unlift) -> modifyMVar var $ \olds -> unlift $ fmap swap $ smr olds
 
 mvarUnlift :: MVar s -> Unlift (StateT s)
 mvarUnlift var = MkUnlift $ mvarRun var

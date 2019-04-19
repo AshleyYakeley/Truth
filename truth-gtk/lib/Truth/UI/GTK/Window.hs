@@ -157,14 +157,14 @@ truthMainGTK appMain =
                 finishers
             -}
             uitWithLock :: forall a. IO a -> IO a
-            uitWithLock action = mvarRun gtkLockVar $ liftIO action
+            uitWithLock action = traceBarrier "uitWithLock" (mvarRun gtkLockVar) $ liftIO action
             threadBarrier :: Bool -> IO a -> IO a
             threadBarrier True = uitWithLock
             threadBarrier False = id
             uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycle UIWindow
             uitCreateWindow sub wspec = subscribeView threadBarrier (createWindowAndChild wspec) sub getRequest
             uitQuit :: IO ()
-            uitQuit = traceBracket "truthMainGTK: uitQuit" $ mvarRun runVar $ put Stopped
+            uitQuit = traceBarrier "truthMainGTK: uitQuit" (mvarRun runVar) $ put Stopped
             uitUnliftLifeCycle :: forall a. LifeCycle a -> IO a
             uitUnliftLifeCycle = unlift
             tcUIToolkit = MkUIToolkit {..}
@@ -185,5 +185,5 @@ truthMainGTK appMain =
                             Stopped -> do
                                 #quit mloop
                                 return SOURCE_REMOVE
-                mvarRun gtkLockVar $ liftIO $ traceBracket "truthMainGTK: pcMainLoop" $ #run mloop
+                traceBarrier "truthMainGTK: pcMainLoop" (mvarRun gtkLockVar) $ liftIO $ #run mloop
         return a
