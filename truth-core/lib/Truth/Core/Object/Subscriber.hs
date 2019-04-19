@@ -31,14 +31,6 @@ type UpdateStoreEntry edit = [edit] -> EditContext -> IO ()
 
 type UpdateStore edit = Store (UpdateStoreEntry edit)
 
-runUpdateStoreEntry :: [edit] -> EditContext -> StateT (UpdateStoreEntry edit) IO ()
-runUpdateStoreEntry edits ectxt = do
-    update <- get
-    lift $ update edits ectxt
-
-updateStore :: [edit] -> EditContext -> StateT (UpdateStore edit) IO ()
-updateStore edits ectxt = traverseStoreStateT $ \_ -> runUpdateStoreEntry edits ectxt
-
 type UpdatingObject edit a = ([edit] -> EditSource -> IO ()) -> LifeCycle (Object edit, a)
 
 newtype EditQueue edit =
@@ -75,7 +67,9 @@ makeSharedSubscriber async uobj = do
     var :: MVar (UpdateStore edit) <- liftIO $ newMVar emptyStore
     let
         updateP :: [edit] -> EditContext -> IO ()
-        updateP edits ectxt = traceBarrier "makeSharedSubscriber:updateP" (mvarRun var) $ updateStore edits ectxt
+        updateP edits ectxt = do
+            store <- traceBarrier "makeSharedSubscriber:updateP" (mvarRun var) get
+            for_ store $ \entry -> entry edits ectxt
     runAsync <- getRunner async updateP
     (objectC, a) <- uobj runAsync
     let
