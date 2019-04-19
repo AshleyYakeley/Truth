@@ -30,17 +30,17 @@ cvDynamic firstdvs updateCV = do
     stateVar :: MVar dvs <- liftIO $ newMVar firstdvs
     liftLifeCycle $
         lifeCycleClose $ do
-            lastdvs <- takeMVar stateVar
+            lastdvs <- traceBracket "cvDynamic:close" $ takeMVar stateVar
             closeDynamicView lastdvs
     let
         update :: Object edit -> [edit] -> EditSource -> IO ()
         update obj edits esrc =
-            traceBarrier "cvDynamic:update:outside" (mvarRun stateVar) $ do
+            traceBarrier "cvDynamic:update" (mvarRun stateVar) $ do
                 updateCV obj edits
                 newdvs <- get
                 lift $ for_ (dynamicViewStates newdvs) $ \state -> vsUpdate state obj edits $ MkEditContext esrc False
     cvAddAspect $
-        mvarRun stateVar $ do
+        traceBarrier "cvDynamic:addAspect" (mvarRun stateVar) $ do
             dvs <- get
             liftIO $ vsFirstAspect $ dynamicViewFocus dvs
     cvReceiveIOUpdates update
