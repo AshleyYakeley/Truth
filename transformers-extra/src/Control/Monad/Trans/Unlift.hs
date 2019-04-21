@@ -32,6 +32,9 @@ mvarRun var (StateT smr) =
 mvarUnlift :: MVar s -> Unlift (StateT s)
 mvarUnlift var = MkUnlift $ mvarRun var
 
+liftStateT :: (Traversable f, Applicative m) => StateT s m a -> StateT (f s) m (f a)
+liftStateT (StateT smas) = StateT $ \fs -> fmap (\fas -> (fmap fst fas, fmap snd fas)) $ traverse smas fs
+
 liftWithMVarStateT :: MonadIO m => (MVar s -> m a) -> StateT s m a
 liftWithMVarStateT vma = do
     initialstate <- get

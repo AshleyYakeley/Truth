@@ -1,6 +1,5 @@
 module Truth.Core.UI.CreateView
-    ( vrMapEdit
-    , CreateView
+    ( CreateView
     , ViewState
     , vsUpdate
     , vsFirstAspect
@@ -75,31 +74,26 @@ voMapSelection f (MkViewOutput upd asp) = MkViewOutput upd $ mapSelectionAspect 
 voNoAspect :: ViewOutput sela edit -> ViewOutput selb edit
 voNoAspect (MkViewOutput upd _) = MkViewOutput upd noAspect
 
-type ViewResult sel edit a = (ViewOutput sel edit, a)
-
-vrMapEdit :: EditLens edita editb -> ViewResult sel editb a -> ViewResult sel edita a
-vrMapEdit lens (vo, a) = (voMapEdit lens vo, a)
-
 newtype CreateView sel edit a =
     MkCreateView (ReaderT (ViewContext sel edit) (WriterT (ViewOutput sel edit) LifeCycle) a)
     deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO)
 
-type ViewState sel edit a = LifeState (ViewResult sel edit a)
+type ViewState sel edit = LifeState (ViewOutput sel edit)
 
-vsUpdate :: ViewState sel edit a -> Object edit -> [edit] -> EditContext -> IO ()
-vsUpdate ((vo, _), _) = voUpdate vo
+vsUpdate :: ViewState sel edit -> Object edit -> [edit] -> EditContext -> IO ()
+vsUpdate (vo, _) = voUpdate vo
 
-vsFirstAspect :: ViewState sel edit a -> Aspect sel
-vsFirstAspect ((vo, _), _) = voFirstAspect vo
+vsFirstAspect :: ViewState sel edit -> Aspect sel
+vsFirstAspect (vo, _) = voFirstAspect vo
 
-viewCreateView :: CreateView sel edit a -> View sel edit (ViewState sel edit a)
-viewCreateView (MkCreateView (ReaderT wff)) = MkView $ ReaderT $ \vc -> getLifeState $ fmap swap $ runWriterT $ wff vc
+viewCreateView :: CreateView sel edit () -> View sel edit (ViewState sel edit)
+viewCreateView (MkCreateView (ReaderT wff)) = MkView $ ReaderT $ \vc -> getLifeState $ fmap snd $ runWriterT $ wff vc
 
 cvLiftView :: View sel edit a -> CreateView sel edit a
 cvLiftView (MkView (ReaderT va)) = MkCreateView $ ReaderT $ \vc -> liftIO $ va vc
 
-cvLiftViewResult :: ViewResult sel edit a -> CreateView sel edit a
-cvLiftViewResult (vo, a) = MkCreateView $ lift $ WriterT $ return (a, vo)
+cvViewOutput :: ViewOutput sel edit -> CreateView sel edit ()
+cvViewOutput vo = MkCreateView $ lift $ tell vo
 
 instance MonadLifeCycle (CreateView sel edit) where
     liftLifeCycle lc = MkCreateView $ lift $ lift lc
@@ -107,9 +101,8 @@ instance MonadLifeCycle (CreateView sel edit) where
 cvReceiveIOUpdates :: (Object edit -> [edit] -> EditSource -> IO ()) -> CreateView sel edit ()
 cvReceiveIOUpdates recv = do
     tb <- MkCreateView $ asks vcThreadBarrier
-    cvLiftViewResult $
-        ( mempty {voUpdate = \obj edits MkEditContext {..} -> tb editContextAsync $ recv obj edits editContextSource}
-        , ())
+    cvViewOutput $
+        mempty {voUpdate = \obj edits MkEditContext {..} -> tb editContextAsync $ recv obj edits editContextSource}
 
 cvReceiveUpdates :: Maybe EditSource -> (UnliftIO (View sel edit) -> ReceiveUpdates edit) -> CreateView sel edit ()
 cvReceiveUpdates mesrc recv = do
@@ -137,7 +130,7 @@ cvBindEditFunction mesrc ef setf = do
                 Nothing -> return ()
 
 cvAddAspect :: Aspect sel -> CreateView sel edit ()
-cvAddAspect aspect = cvLiftViewResult $ (mempty {voFirstAspect = aspect}, ())
+cvAddAspect aspect = cvViewOutput $ mempty {voFirstAspect = aspect}
 
 mapReaderContext :: (r2 -> r1) -> ReaderT r1 m a -> ReaderT r2 m a
 mapReaderContext f (ReaderT rma) = ReaderT $ \r2 -> rma $ f r2

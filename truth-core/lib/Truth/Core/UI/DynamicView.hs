@@ -8,12 +8,12 @@ import Truth.Core.UI.View
 class DynamicViewState (dvs :: Type) where
     type DynamicViewSelEdit dvs :: Type
     type DynamicViewEdit dvs :: Type
-    dynamicViewStates :: dvs -> [ViewState (DynamicViewSelEdit dvs) (DynamicViewEdit dvs) ()]
-    dynamicViewFocus :: dvs -> ViewState (DynamicViewSelEdit dvs) (DynamicViewEdit dvs) ()
+    dynamicViewStates :: dvs -> [ViewState (DynamicViewSelEdit dvs) (DynamicViewEdit dvs)]
+    dynamicViewFocus :: dvs -> ViewState (DynamicViewSelEdit dvs) (DynamicViewEdit dvs)
 
-instance DynamicViewState (ViewState sel edit ()) where
-    type DynamicViewSelEdit (ViewState sel edit ()) = sel
-    type DynamicViewEdit (ViewState sel edit ()) = edit
+instance DynamicViewState (ViewState sel edit) where
+    type DynamicViewSelEdit (ViewState sel edit) = sel
+    type DynamicViewEdit (ViewState sel edit) = edit
     dynamicViewStates dvs = [dvs]
     dynamicViewFocus dvs = dvs
 

@@ -23,8 +23,8 @@ createButton subj MkObject {..} =
 
 data OneWholeViews sel f edit
     = MissingOVS (Limit f)
-                 (ViewState sel (OneWholeEdit f edit) ())
-    | PresentOVS (ViewState sel (OneWholeEdit f edit) ())
+                 (ViewState sel (OneWholeEdit f edit))
+    | PresentOVS (ViewState sel (OneWholeEdit f edit))
 
 instance DynamicViewState (OneWholeViews sel f edit) where
     type DynamicViewEdit (OneWholeViews sel f edit) = OneWholeEdit f edit
