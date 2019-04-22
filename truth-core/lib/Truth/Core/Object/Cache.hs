@@ -10,7 +10,7 @@ cacheObject ::
        forall edit. CacheableEdit edit
     => Int
     -> Object edit
-    -> LifeCycle (Object edit)
+    -> LifeCycleIO (Object edit)
 cacheObject mus (MkObject unlift read push) = do
     runAction <-
         asyncWaitRunner mus $ \editsnl -> runTransform unlift $ pushOrFail "cached object" noEditSource $ push editsnl

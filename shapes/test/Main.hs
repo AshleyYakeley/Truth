@@ -44,7 +44,7 @@ testLifeCycle =
     testCase "lifecycle" $
     compareTest "ACDB" $ \appendStr -> do
         let
-            lc :: LifeCycle ()
+            lc :: LifeCycleIO ()
             lc = do
                 liftIO $ appendStr "A"
                 lifeCycleClose $ appendStr "B"

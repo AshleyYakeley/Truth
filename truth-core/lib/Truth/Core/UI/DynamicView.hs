@@ -27,7 +27,7 @@ cvDynamic ::
     -> CreateView sel edit ()
 cvDynamic firstdvs updateCV = do
     stateVar :: MVar dvs <- liftIO $ newMVar firstdvs
-    liftLifeCycle $
+    liftLifeCycleIO $
         lifeCycleClose $ do
             lastdvs <- takeMVar stateVar
             closeDynamicView lastdvs

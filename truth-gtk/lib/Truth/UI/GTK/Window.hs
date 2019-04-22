@@ -160,11 +160,11 @@ truthMainGTK appMain =
             threadBarrier :: Bool -> IO a -> IO a
             threadBarrier True = uitWithLock
             threadBarrier False = id
-            uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycle UIWindow
+            uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycleIO UIWindow
             uitCreateWindow sub wspec = subscribeView threadBarrier (createWindowAndChild wspec) sub getRequest
             uitQuit :: IO ()
             uitQuit = mvarRun runVar $ put Stopped
-            uitUnliftLifeCycle :: forall a. LifeCycle a -> IO a
+            uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a
             uitUnliftLifeCycle = unlift
             tcUIToolkit = MkUIToolkit {..}
         a <- unlift $ appMain MkTruthContext {..}

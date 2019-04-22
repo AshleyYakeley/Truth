@@ -1,7 +1,6 @@
-module Control.LifeCycle
+module Control.Monad.Trans.LifeCycle
     ( LifeState
     , closeLifeState
-    , LifeCycle
     , LifeCycleT(..)
     , lifeCycleClose
     , runLifeCycle
@@ -10,10 +9,6 @@ module Control.LifeCycle
     , lifeCycleWith
     , lifeCycleEarlyCloser
     , lifeCycleOnAllDone
-    , MonadLifeCycle(..)
-    , asyncWaitRunner
-    , asyncRunner
-    , asyncIORunner
     ) where
 
 import Control.Monad.Coroutine
@@ -21,7 +16,7 @@ import Shapes.Import
 
 type LifeState m t = (t, m ())
 
-newtype LifeCycleT m t = MkLifeCycle
+newtype LifeCycleT m t = MkLifeCycleT
     { getLifeState :: m (LifeState m t)
     }
 
@@ -29,33 +24,33 @@ closeLifeState :: LifeState m t -> m ()
 closeLifeState = snd
 
 instance Functor m => Functor (LifeCycleT m) where
-    fmap ab (MkLifeCycle oc) = MkLifeCycle $ fmap (\(a, cl) -> (ab a, cl)) oc
+    fmap ab (MkLifeCycleT oc) = MkLifeCycleT $ fmap (\(a, cl) -> (ab a, cl)) oc
 
 instance Monad m => Applicative (LifeCycleT m) where
-    pure t = MkLifeCycle $ return (t, return ())
-    (MkLifeCycle ocab) <*> (MkLifeCycle oca) =
-        MkLifeCycle $ do
+    pure t = MkLifeCycleT $ return (t, return ())
+    (MkLifeCycleT ocab) <*> (MkLifeCycleT oca) =
+        MkLifeCycleT $ do
             (ab, clab) <- ocab
             (a, cla) <- oca
             return (ab a, cla >> clab)
 
 instance Monad m => Monad (LifeCycleT m) where
     return = pure
-    (MkLifeCycle ioac) >>= f =
-        MkLifeCycle $ do
+    (MkLifeCycleT ioac) >>= f =
+        MkLifeCycleT $ do
             (a, c1) <- ioac
             (b, c2) <- getLifeState $ f a
             return (b, c2 >> c1)
 
 instance MonadFail m => MonadFail (LifeCycleT m) where
-    fail s = MkLifeCycle $ fail s
+    fail s = MkLifeCycleT $ fail s
 
 instance MonadFix m => MonadFix (LifeCycleT m) where
-    mfix f = MkLifeCycle $ mfix $ \ ~(t, _) -> getLifeState $ f t
+    mfix f = MkLifeCycleT $ mfix $ \ ~(t, _) -> getLifeState $ f t
 
 instance MonadIO m => MonadIO (LifeCycleT m) where
     liftIO ma =
-        MkLifeCycle $ do
+        MkLifeCycleT $ do
             a <- liftIO ma
             return (a, return ())
 
@@ -72,10 +67,10 @@ instance MonadTransConstraint MonadFix LifeCycleT where
     hasTransConstraint = Dict
 
 instance MonadTrans LifeCycleT where
-    lift ma = MkLifeCycle $ fmap (\a -> (a, return ())) ma
+    lift ma = MkLifeCycleT $ fmap (\a -> (a, return ())) ma
 
 instance MonadTransSemiTunnel LifeCycleT where
-    semitunnel call = MkLifeCycle $ call $ \(MkLifeCycle m1r) -> fmap (fmap $ \m1u -> call $ \_ -> m1u) m1r
+    semitunnel call = MkLifeCycleT $ call $ \(MkLifeCycleT m1r) -> fmap (fmap $ \m1u -> call $ \_ -> m1u) m1r
 
 instance MonadTransSemiUnlift LifeCycleT where
     liftWithSemiUnlift call = do
@@ -83,7 +78,7 @@ instance MonadTransSemiUnlift LifeCycleT where
         r <-
             lift $
             call $
-            MkTransform $ \(MkLifeCycle ma) -> do
+            MkTransform $ \(MkLifeCycleT ma) -> do
                 (a, closer) <- ma
                 liftIO $ modifyMVar_ var $ \oldcloser -> return $ closer >> oldcloser
                 return a
@@ -93,15 +88,15 @@ instance MonadTransSemiUnlift LifeCycleT where
     getDiscardingSemiUnlift ::
            forall m. MonadUnliftIO m
         => LifeCycleT m (Transform (LifeCycleT m) m)
-    getDiscardingSemiUnlift = return $ MkTransform $ \(MkLifeCycle ms) -> fmap fst ms
+    getDiscardingSemiUnlift = return $ MkTransform $ \(MkLifeCycleT ms) -> fmap fst ms
 
 lifeCycleClose :: Monad m => m () -> LifeCycleT m ()
-lifeCycleClose closer = MkLifeCycle $ return ((), closer)
+lifeCycleClose closer = MkLifeCycleT $ return ((), closer)
 
 type With m t = forall r. (t -> m r) -> m r
 
 withLifeCycle :: MonadUnliftIO m => LifeCycleT m t -> With m t
-withLifeCycle (MkLifeCycle oc) run = do
+withLifeCycle (MkLifeCycleT oc) run = do
     (t, closer) <- oc
     liftIOWithUnlift $ \(MkTransform unlift) -> finally (unlift $ run t) (unlift closer)
 
@@ -110,7 +105,7 @@ runLifeCycle lc = withLifeCycle lc return
 
 lifeCycleWith :: (MonadCoroutine m, MonadFail m) => With m t -> LifeCycleT m t
 lifeCycleWith withX =
-    MkLifeCycle $ do
+    MkLifeCycleT $ do
         e1 <- resume $ suspend withX
         case e1 of
             Left _ -> fail "lifeCycleWith: not called"
@@ -130,8 +125,8 @@ lifeCycleEarlyCloser ::
        forall m a. MonadIO m
     => LifeCycleT m a
     -> LifeCycleT m (a, m ())
-lifeCycleEarlyCloser (MkLifeCycle lc) =
-    MkLifeCycle $ do
+lifeCycleEarlyCloser (MkLifeCycleT lc) =
+    MkLifeCycleT $ do
         (a, closer) <- lc
         var <- liftIO $ newMVar ()
         let
@@ -161,95 +156,3 @@ lifeCycleOnAllDone onzero = do
             if iszero
                 then onzero
                 else return ()
-
-type LifeCycle = LifeCycleT IO
-
-class MonadIO m => MonadLifeCycle m where
-    liftLifeCycle :: forall a. LifeCycle a -> m a
-
-instance MonadLifeCycle LifeCycle where
-    liftLifeCycle lc = lc
-
-instance (MonadTrans t, MonadIO (t m), MonadLifeCycle m) => MonadLifeCycle (t m) where
-    liftLifeCycle lc = lift $ liftLifeCycle lc
-
-instance (MonadTrans t, MonadTransConstraint MonadIO t) => MonadTransConstraint MonadLifeCycle t where
-    hasTransConstraint ::
-           forall m. MonadLifeCycle m
-        => Dict (MonadLifeCycle (t m))
-    hasTransConstraint =
-        case hasTransConstraint @MonadIO @t @m of
-            Dict -> Dict
-
-data VarState t
-    = VSEmpty
-    | VSDo t
-           Bool
-    | VSDone
-
-asyncWaitRunner ::
-       forall t. Semigroup t
-    => Int
-    -> (t -> IO ())
-    -> LifeCycleT IO (Maybe t -> IO ())
-asyncWaitRunner mus doit = do
-    bufferVar :: TVar (VarState t) <- liftIO $ newTVarIO $ VSEmpty
-    let
-        threadDo :: IO ()
-        threadDo = do
-            maction <-
-                atomically $ do
-                    vs <- readTVar bufferVar
-                    case vs of
-                        VSDone -> do
-                            writeTVar bufferVar $ VSEmpty
-                            return Nothing
-                        VSEmpty -> mzero
-                        VSDo vals True
-                            | mus > 0 -> do
-                                writeTVar bufferVar $ VSDo vals False
-                                return $ Just $ threadDelay mus
-                        VSDo vals _ -> do
-                            writeTVar bufferVar $ VSEmpty
-                            return $ Just $ doit vals
-            case maction of
-                Just action -> do
-                    action
-                    threadDo
-                Nothing -> return ()
-        waitForEmpty :: STM ()
-        waitForEmpty = do
-            vs <- readTVar bufferVar
-            case vs of
-                VSEmpty -> return ()
-                _ -> mzero
-        pushVal :: Maybe t -> IO ()
-        pushVal (Just val) =
-            atomically $ do
-                vs <- readTVar bufferVar
-                case vs of
-                    VSDone -> return ()
-                    VSEmpty -> writeTVar bufferVar $ VSDo val True
-                    VSDo oldval _ -> writeTVar bufferVar $ VSDo (oldval <> val) True
-        pushVal Nothing =
-            atomically $ do
-                vs <- readTVar bufferVar
-                case vs of
-                    VSDo oldval False -> writeTVar bufferVar $ VSDo oldval True
-                    _ -> return ()
-    _ <- liftIO $ forkIO threadDo
-    lifeCycleClose $ do
-        atomically $ do
-            waitForEmpty
-            writeTVar bufferVar $ VSDone
-        atomically waitForEmpty
-    return pushVal
-
-asyncRunner ::
-       forall t. Semigroup t
-    => (t -> IO ())
-    -> LifeCycleT IO (t -> IO ())
-asyncRunner doit = fmap (\push -> push . Just) $ asyncWaitRunner 0 doit
-
-asyncIORunner :: LifeCycleT IO (IO () -> IO ())
-asyncIORunner = fmap (\pushVal io -> pushVal [io]) $ asyncRunner sequence_

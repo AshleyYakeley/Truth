@@ -75,7 +75,7 @@ voNoAspect :: ViewOutput sela edit -> ViewOutput selb edit
 voNoAspect (MkViewOutput upd _) = MkViewOutput upd noAspect
 
 newtype CreateView sel edit a =
-    MkCreateView (ReaderT (ViewContext sel edit) (WriterT (ViewOutput sel edit) LifeCycle) a)
+    MkCreateView (ReaderT (ViewContext sel edit) (WriterT (ViewOutput sel edit) LifeCycleIO) a)
     deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO)
 
 type ViewState sel edit = LifeState IO (ViewOutput sel edit)
@@ -95,8 +95,8 @@ cvLiftView (MkView (ReaderT va)) = MkCreateView $ ReaderT $ \vc -> liftIO $ va v
 cvViewOutput :: ViewOutput sel edit -> CreateView sel edit ()
 cvViewOutput vo = MkCreateView $ lift $ tell vo
 
-instance MonadLifeCycle (CreateView sel edit) where
-    liftLifeCycle lc = MkCreateView $ lift $ lift lc
+instance MonadLifeCycleIO (CreateView sel edit) where
+    liftLifeCycleIO lc = MkCreateView $ lift $ lift lc
 
 cvReceiveIOUpdates :: (Object edit -> [edit] -> EditSource -> IO ()) -> CreateView sel edit ()
 cvReceiveIOUpdates recv = do
@@ -188,7 +188,7 @@ subscribeView ::
     -> AnyCreateView edit w
     -> Subscriber edit
     -> (forall t. IOWitness t -> Maybe t)
-    -> LifeCycle w
+    -> LifeCycleIO w
 subscribeView vcThreadBarrier (MkAnyCreateView (MkCreateView (ReaderT view))) (MkSubscriber vcObject sub) vcRequest = do
     let
         vcSetSelection :: Aspect sel -> IO ()

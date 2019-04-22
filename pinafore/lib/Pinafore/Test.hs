@@ -28,7 +28,7 @@ import Truth.Core
 import Truth.World.ObjectStore
 
 makeTestPinaforeContext ::
-       Bool -> UIToolkit -> LifeCycle (PinaforeContext PinaforeEdit, IO (EditSubject PinaforeTableEdit))
+       Bool -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeEdit, IO (EditSubject PinaforeTableEdit))
 makeTestPinaforeContext async uitoolkit = do
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
         liftIO $ freeIOObject ([], []) $ \_ -> True

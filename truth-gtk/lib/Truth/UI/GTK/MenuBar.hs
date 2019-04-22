@@ -14,7 +14,7 @@ toModifierType KMShift = ModifierTypeShiftMask
 toModifierType KMCtrl = ModifierTypeControlMask
 toModifierType KMAlt = ModifierTypeMod1Mask
 
-accelGroupConnection :: IsAccelGroup ag => ag -> Word32 -> [ModifierType] -> [AccelFlags] -> IO () -> LifeCycle ()
+accelGroupConnection :: IsAccelGroup ag => ag -> Word32 -> [ModifierType] -> [AccelFlags] -> IO () -> LifeCycleIO ()
 accelGroupConnection ag key mods flags action = do
     closure <- makeClosure action
     accelGroupConnect ag key mods flags closure
@@ -48,7 +48,7 @@ attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
                         gmods :: [ModifierType]
                         gmods = fmap toModifierType mods
                     accelLabelSetAccel l keyw gmods
-                    liftLifeCycle $ accelGroupConnection ag keyw gmods [AccelFlagsVisible] meaction
+                    liftLifeCycleIO $ accelGroupConnection ag keyw gmods [AccelFlagsVisible] meaction
     cvBindEditFunction Nothing raction $ \maction ->
         liftIO $ do
             writeIORef aref maction

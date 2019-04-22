@@ -75,33 +75,33 @@ isScrollable widget = do
             _ -> True
 
 -- | Probably only use this for top-level widgets
-lcNewDestroy :: (MonadLifeCycle m, Constructible a tag, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> m a
+lcNewDestroy :: (MonadLifeCycleIO m, Constructible a tag, IsWidget a) => (ManagedPtr a -> a) -> [AttrOp a tag] -> m a
 lcNewDestroy cc attrs =
-    liftLifeCycle $ do
+    liftLifeCycleIO $ do
         a <- liftIO $ new cc attrs
         lifeCycleClose $ widgetDestroy a
         return a
 
 lcSetClear ::
-       (MonadLifeCycle m, AttrClearC info obj attr, AttrSetC info obj attr value)
+       (MonadLifeCycleIO m, AttrClearC info obj attr, AttrSetC info obj attr value)
     => obj
     -> AttrLabelProxy attr
     -> value
     -> m ()
 lcSetClear obj prop val =
-    liftLifeCycle $ do
+    liftLifeCycleIO $ do
         set obj [prop := val]
         lifeCycleClose $ clear obj prop
 
-lcContain :: (MonadLifeCycle m, IsContainer c, IsWidget w) => c -> w -> m ()
+lcContain :: (MonadLifeCycleIO m, IsContainer c, IsWidget w) => c -> w -> m ()
 lcContain c w =
-    liftLifeCycle $ do
+    liftLifeCycleIO $ do
         containerAdd c w
         lifeCycleClose $ containerRemove c w
 
-lcContainPackStart :: (MonadLifeCycle m, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> m ()
+lcContainPackStart :: (MonadLifeCycleIO m, IsContainer box, IsBox box, IsWidget w) => Bool -> box -> w -> m ()
 lcContainPackStart grow box w =
-    liftLifeCycle $ do
+    liftLifeCycleIO $ do
         boxPackStart box w grow grow 0
         lifeCycleClose $ containerRemove box w
 

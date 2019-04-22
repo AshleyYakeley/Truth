@@ -23,14 +23,14 @@ import Truth.Core.Read
 
 data Subscriber edit = MkSubscriber
     { subObject :: Object edit
-    , subscribe :: ([edit] -> EditContext -> IO ()) -> LifeCycle ()
+    , subscribe :: ([edit] -> EditContext -> IO ()) -> LifeCycleIO ()
     }
 
 type UpdateStoreEntry edit = [edit] -> EditContext -> IO ()
 
 type UpdateStore edit = Store (UpdateStoreEntry edit)
 
-type UpdatingObject edit a = ([edit] -> EditSource -> IO ()) -> LifeCycle (Object edit, a)
+type UpdatingObject edit a = ([edit] -> EditSource -> IO ()) -> LifeCycleIO (Object edit, a)
 
 newtype EditQueue edit =
     MkEditQueue [(EditSource, [edit])]
@@ -51,7 +51,7 @@ instance Semigroup (EditQueue edit) where
 singleEditQueue :: [edit] -> EditSource -> EditQueue edit
 singleEditQueue edits esrc = MkEditQueue $ pure (esrc, edits)
 
-getRunner :: Bool -> ([edit] -> EditContext -> IO ()) -> LifeCycle ([edit] -> EditSource -> IO ())
+getRunner :: Bool -> ([edit] -> EditContext -> IO ()) -> LifeCycleIO ([edit] -> EditSource -> IO ())
 getRunner False handler =
     return $ \edits editContextSource -> handler edits $ MkEditContext {editContextAsync = False, ..}
 getRunner True handler = do
@@ -60,7 +60,7 @@ getRunner True handler = do
             for_ sourcededits $ \(editContextSource, edits) -> handler edits MkEditContext {editContextAsync = True, ..}
     return $ \edits esrc -> runAsync $ singleEditQueue edits esrc
 
-makeSharedSubscriber :: forall edit a. Bool -> UpdatingObject edit a -> LifeCycle (Subscriber edit, a)
+makeSharedSubscriber :: forall edit a. Bool -> UpdatingObject edit a -> LifeCycleIO (Subscriber edit, a)
 makeSharedSubscriber async uobj = do
     var :: MVar (UpdateStore edit) <- liftIO $ newMVar emptyStore
     let
@@ -99,7 +99,7 @@ updatingObject (MkObject (run :: UnliftIO m) r e) update =
                         deferActionT $ update edits esrc
         in (MkObject run' r' e', ())
 
-makeObjectSubscriber :: Bool -> Object edit -> LifeCycle (Subscriber edit)
+makeObjectSubscriber :: Bool -> Object edit -> LifeCycleIO (Subscriber edit)
 makeObjectSubscriber async object = do
     (sub, ()) <- makeSharedSubscriber async $ updatingObject object
     return sub
