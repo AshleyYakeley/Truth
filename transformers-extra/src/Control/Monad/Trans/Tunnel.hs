@@ -12,29 +12,54 @@ import Control.Monad.Trans.Transform
 import Control.Monad.Trans.Writer
 import Prelude
 
-class (MonadTrans t, MonadTransConstraint Monad t) => MonadTransTunnel t where
+class (MonadTrans t, MonadTransConstraint Monad t) => MonadTransSemiTunnel t where
+    semitunnel ::
+           forall m1 m2 r. (Monad m1, Monad m2)
+        => (forall a. (t m1 r -> m1 a) -> m2 a)
+        -> t m2 r
+    default semitunnel :: MonadTransTunnel t => forall m1 m2 r. (forall a. (t m1 r -> m1 a) -> m2 a) -> t m2 r
+    semitunnel = tunnel
+
+remonad ::
+       forall t m1 m2 r. (MonadTransSemiTunnel t, Monad m1, Monad m2)
+    => (forall a. m1 a -> m2 a)
+    -> t m1 r
+    -> t m2 r
+remonad mma sm1 = semitunnel $ \tun -> mma $ tun sm1
+
+remonadTransform ::
+       (MonadTransSemiTunnel t, Monad m1, Monad m2)
+    => (forall a. m1 a -> m2 a)
+    -> Transform (t m2) n
+    -> Transform (t m1) n
+remonadTransform ff (MkTransform r2) = MkTransform $ \m1a -> r2 $ remonad ff m1a
+
+liftTransform :: (MonadTransSemiTunnel t, Monad m1, Monad m2) => Transform m1 m2 -> Transform (t m1) (t m2)
+liftTransform (MkTransform mm) = MkTransform $ remonad mm
+
+class MonadTransSemiTunnel t => MonadTransTunnel t where
     tunnel :: forall m2 r. (forall a. (forall m1. t m1 r -> m1 a) -> m2 a) -> t m2 r
     transExcept ::
            forall m e a. Monad m
         => t (ExceptT e m) a
         -> t m (Either e a)
 
-remonad :: MonadTransTunnel t => (forall a. m1 a -> m2 a) -> t m1 r -> t m2 r
-remonad mma sm1 = tunnel $ \tun -> mma $ tun sm1
+remonad' :: MonadTransTunnel t => forall m1 m2 r. (forall a. m1 a -> m2 a) -> t m1 r -> t m2 r
+remonad' mma sm1 = tunnel $ \tun -> mma $ tun sm1
 
-remonadTransform :: MonadTransTunnel t => (forall a. m1 a -> m2 a) -> Transform (t m2) n -> Transform (t m1) n
-remonadTransform ff (MkTransform r2) = MkTransform $ \m1a -> r2 $ remonad ff m1a
-
-liftTransform :: MonadTransTunnel t => Transform m1 m2 -> Transform (t m1) (t m2)
-liftTransform (MkTransform mm) = MkTransform $ remonad mm
+instance MonadTransSemiTunnel IdentityT
 
 instance MonadTransTunnel IdentityT where
     tunnel call = IdentityT $ call $ runIdentityT
     transExcept (IdentityT ma) = IdentityT $ runExceptT ma
 
+instance MonadTransSemiTunnel (ReaderT s)
+
 instance MonadTransTunnel (ReaderT s) where
     tunnel call = ReaderT $ \s -> call $ \(ReaderT smr) -> smr s
     transExcept (ReaderT ma) = ReaderT $ \s -> runExceptT $ ma s
+
+instance Monoid s => MonadTransSemiTunnel (WriterT s)
 
 instance Monoid s => MonadTransTunnel (WriterT s) where
     tunnel call = WriterT $ call $ \(WriterT mrs) -> mrs
@@ -46,6 +71,8 @@ instance Monoid s => MonadTransTunnel (WriterT s) where
                  Right (a, s) -> (Right a, s)) $
         runExceptT ma
 
+instance MonadTransSemiTunnel (StateT s)
+
 instance MonadTransTunnel (StateT s) where
     tunnel call = StateT $ \olds -> call $ \(StateT smrs) -> smrs olds
     transExcept (StateT ma) =
@@ -55,6 +82,8 @@ instance MonadTransTunnel (StateT s) where
                      Left e -> (Left e, olds)
                      Right (a, news) -> (Right a, news)) $
             runExceptT $ ma olds
+
+instance MonadTransSemiTunnel MaybeT
 
 instance MonadTransTunnel MaybeT where
     tunnel call = MaybeT $ call $ runMaybeT
@@ -66,6 +95,8 @@ instance MonadTransTunnel MaybeT where
                  Right (Just a) -> Just $ Right a
                  Right Nothing -> Nothing) $
         runExceptT ma
+
+instance MonadTransSemiTunnel (ExceptT e)
 
 instance MonadTransTunnel (ExceptT e) where
     tunnel call = ExceptT $ call $ runExceptT
@@ -87,5 +118,5 @@ remonadIO mma sm1 = tunnelIO $ \tun -> mma $ tun sm1
 instance MonadTunnelIO IO where
     tunnelIO call = call id
 
-instance (MonadTransTunnel t, MonadTunnelIO m, MonadIO (t m)) => MonadTunnelIO (t m) where
-    tunnelIO call = tunnel $ \tun -> tunnelIO $ \maiob -> call $ \tmr -> maiob $ tun tmr
+instance (MonadTransSemiTunnel t, MonadTunnelIO m, MonadIO (t m)) => MonadTunnelIO (t m) where
+    tunnelIO call = semitunnel $ \tun -> tunnelIO $ \maiob -> call $ \tmr -> maiob $ tun tmr

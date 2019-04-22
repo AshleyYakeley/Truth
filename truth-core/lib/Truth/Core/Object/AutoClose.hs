@@ -12,7 +12,7 @@ runAutoClose =
         for_ (elems mp) snd
         return a
 
-acOpenObject :: Ord key => key -> With t -> AutoClose key t t
+acOpenObject :: Ord key => key -> With IO t -> AutoClose key t t
 acOpenObject key withX = do
     oldmap <- get
     case lookup key oldmap of

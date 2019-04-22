@@ -64,6 +64,8 @@ instance MonadOne inner => MonadTransConstraint Monad (ComposeM inner) where
 instance MonadOne inner => MonadTransConstraint MonadIO (ComposeM inner) where
     hasTransConstraint = Dict
 
+instance MonadOne inner => MonadTransSemiTunnel (ComposeM inner)
+
 instance MonadOne inner => MonadTransTunnel (ComposeM inner) where
     tunnel call = MkComposeM $ call getComposeM
     transExcept (MkComposeM (ExceptT iema)) = MkComposeM $ fmap sequence iema

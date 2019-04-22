@@ -78,7 +78,7 @@ newtype CreateView sel edit a =
     MkCreateView (ReaderT (ViewContext sel edit) (WriterT (ViewOutput sel edit) LifeCycle) a)
     deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO)
 
-type ViewState sel edit = LifeState (ViewOutput sel edit)
+type ViewState sel edit = LifeState IO (ViewOutput sel edit)
 
 vsUpdate :: ViewState sel edit -> Object edit -> [edit] -> EditContext -> IO ()
 vsUpdate (vo, _) = voUpdate vo

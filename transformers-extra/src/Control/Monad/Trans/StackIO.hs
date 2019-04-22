@@ -24,8 +24,8 @@ instance MonadStackIO IO where
 
 instance (MonadTransUnlift t, MonadStackIO m, MonadUnliftIO (t m)) => MonadStackIO (t m) where
     type MonadStackTrans (t m) = ComposeT t (MonadStackTrans m)
-    toMonadStack tma = MkComposeT $ remonad toMonadStack tma
-    fromMonadStack (MkComposeT tt) = remonad fromMonadStack tt
+    toMonadStack tma = MkComposeT $ remonad' toMonadStack tma
+    fromMonadStack (MkComposeT tt) = remonad' fromMonadStack tt
 
 instance MonadTransUnlift t => MonadTransConstraint MonadStackIO t where
     hasTransConstraint ::
@@ -58,4 +58,4 @@ combineLiftSnd = lift
 
 combineUnliftIOs :: MonadStackIO ma => UnliftIO ma -> UnliftIO mb -> UnliftIO (CombineMonadIO ma mb)
 combineUnliftIOs (MkTransform unlifta) (MkTransform unliftb) =
-    MkTransform $ \cmr -> unlifta $ fromMonadStack $ remonad unliftb cmr
+    MkTransform $ \cmr -> unlifta $ fromMonadStack $ remonad' unliftb cmr

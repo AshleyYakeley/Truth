@@ -183,7 +183,7 @@ copyObject esrc (MkObject (runSrc :: UnliftIO ms) readSrc _) (MkObject (runDest 
             replaceEdit (remonadMutableRead (combineLiftFst @ms @md) readSrc) $ \edit ->
                 combineLiftSnd @ms @md $ pushOrFail "failed to copy object" esrc $ pushDest [edit]
 
-exclusiveObject :: forall edit. Object edit -> With (Object edit)
+exclusiveObject :: forall edit. Object edit -> With IO (Object edit)
 exclusiveObject (MkObject (run :: UnliftIO m) rd push) call =
     runTransform run $ liftIOWithUnlift $ \unlift -> call $ MkObject unlift rd push
 
