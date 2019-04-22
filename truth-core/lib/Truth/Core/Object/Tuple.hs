@@ -13,13 +13,12 @@ import Truth.Core.Types
 
 noneTupleObject :: Object (TupleEdit (ListElementType '[]))
 noneTupleObject = let
-    objRun = id
     objRead :: forall t. TupleEditReader (ListElementType '[]) t -> IO t
     objRead (MkTupleEditReader sel _) = case sel of {}
     objEdit :: [TupleEdit (ListElementType '[])] -> IO (Maybe (EditSource -> IO ()))
     objEdit [] = return $ Just $ \_ -> return ()
     objEdit (MkTupleEdit sel _:_) = case sel of {}
-    in MkObject {..}
+    in MkCloseUnliftIO id MkAnObject {..}
 
 partitionListTupleEdits ::
        forall edit edits. [TupleEdit (ListElementType (edit : edits))] -> ([edit], [TupleEdit (ListElementType edits)])
@@ -34,7 +33,7 @@ consTupleObjects ::
        Object edit
     -> Object (TupleEdit (ListElementType edits))
     -> Object (TupleEdit (ListElementType (edit : edits)))
-consTupleObjects (MkObject (runA :: UnliftIO ma) readA editA) (MkObject (runB :: UnliftIO mb) readB editB) =
+consTupleObjects (MkCloseUnliftIO (runA :: UnliftIO ma) (MkAnObject readA editA)) (MkCloseUnliftIO (runB :: UnliftIO mb) (MkAnObject readB editB)) =
     case isCombineMonadIO @ma @mb of
         Dict -> let
             runAB :: UnliftIO (CombineMonadIO ma mb)
@@ -52,7 +51,7 @@ consTupleObjects (MkObject (runA :: UnliftIO ma) readA editA) (MkObject (runB ::
                        (liftA2 $ liftA2 $ \mau mbu -> (>>) (combineLiftFst @ma @mb mau) (combineLiftSnd @ma @mb mbu))
                        (combineLiftFst @ma @mb $ editA eas)
                        (combineLiftSnd @ma @mb $ editB ebs)
-            in MkObject runAB readAB editAB
+            in MkCloseUnliftIO runAB $ MkAnObject readAB editAB
 
 tupleListObject ::
        forall edits.

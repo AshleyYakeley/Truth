@@ -34,7 +34,7 @@ viewObjectRead ::
     -> View sel edit r
 viewObjectRead call = do
     unliftIO <- askUnliftIO
-    MkObject {..} <- viewObject
+    MkCloseUnliftIO objRun MkAnObject {..} <- viewObject
     liftIO $ runTransform objRun $ call unliftIO $ objRead
 
 viewObjectMaybeEdit ::
@@ -42,7 +42,7 @@ viewObjectMaybeEdit ::
     -> View sel edit r
 viewObjectMaybeEdit call = do
     unliftIO <- askUnliftIO
-    MkObject {..} <- viewObject
+    MkCloseUnliftIO objRun MkAnObject {..} <- viewObject
     liftIO $ runTransform objRun $ call unliftIO $ objEdit
 
 viewObjectPushEdit ::

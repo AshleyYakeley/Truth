@@ -75,13 +75,13 @@ makeSharedSubscriber async uobj = do
         child =
             MkSubscriber objectC $ \updateC ->
                 case objectC of
-                    MkObject runC _ _ -> do
+                    MkCloseUnliftIO runC _ -> do
                         key <- liftIO $ runTransform runC $ mvarRun var $ addStoreStateT updateC
                         lifeCycleClose $ runTransform runC $ mvarRun var $ deleteStoreStateT key
     return (child, a)
 
 updatingObject :: forall edit. Object edit -> UpdatingObject edit ()
-updatingObject (MkObject (run :: UnliftIO m) r e) update =
+updatingObject (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) update =
     return $ let
         run' :: UnliftIO (DeferActionT m)
         run' = composeUnliftTransformCommute runDeferActionT run
@@ -97,7 +97,7 @@ updatingObject (MkObject (run :: UnliftIO m) r e) update =
                     Just $ \esrc -> do
                         lift $ action esrc
                         deferActionT $ update edits esrc
-        in (MkObject run' r' e', ())
+        in (MkCloseUnliftIO run' $ MkAnObject r' e', ())
 
 makeObjectSubscriber :: Bool -> Object edit -> LifeCycleIO (Subscriber edit)
 makeObjectSubscriber async object = do

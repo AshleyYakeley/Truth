@@ -256,4 +256,4 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
                 MkQueryString s v -> do
                     conn <- ask
                     lift $ execute conn s v
-    in MkObject {..}
+    in MkCloseUnliftIO objRun MkAnObject {..}

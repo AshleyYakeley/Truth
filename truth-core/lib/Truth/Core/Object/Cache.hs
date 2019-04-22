@@ -11,7 +11,7 @@ cacheObject ::
     => Int
     -> Object edit
     -> LifeCycleIO (Object edit)
-cacheObject mus (MkObject unlift read push) = do
+cacheObject mus (MkCloseUnliftIO unlift (MkAnObject read push)) = do
     runAction <-
         asyncWaitRunner mus $ \editsnl -> runTransform unlift $ pushOrFail "cached object" noEditSource $ push editsnl
     cacheVar <- liftIO $ newMVar $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
@@ -32,4 +32,4 @@ cacheObject mus (MkObject unlift read push) = do
             Just $ \_ -> do
                 editCacheUpdates edits
                 liftIO $ runAction $ Just edits
-        in MkObject {..}
+        in MkCloseUnliftIO objRun MkAnObject {..}

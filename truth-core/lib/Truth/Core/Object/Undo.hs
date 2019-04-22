@@ -47,7 +47,7 @@ undoQueueSubscriber ::
     -> IO (Subscriber edit, UndoActions)
 undoQueueSubscriber sub = do
     queueVar <- newMVar $ MkUndoQueue [] []
-    MkObject (runP :: UnliftIO ma) readP pushP <- return $ subObject sub
+    MkCloseUnliftIO (runP :: UnliftIO ma) (MkAnObject readP pushP) <- return $ subObject sub
     let
         undoActions = let
             uaUndo :: EditSource -> IO Bool
@@ -102,6 +102,6 @@ undoQueueSubscriber sub = do
                             mvarRun queueVar $ updateUndoQueue readP edits
                             action esrc
                     Nothing -> Nothing
-        objC = MkObject runP readP pushC
+        objC = MkCloseUnliftIO runP $ MkAnObject readP pushC
         subC = MkSubscriber objC $ subscribe sub
     return (subC, undoActions)

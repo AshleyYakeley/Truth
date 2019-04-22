@@ -46,14 +46,14 @@ unPinaforeAction acUIToolkit acSubscriber acUndoActions (MkPinaforeAction action
 
 pinaforeFunctionValueGet :: PinaforeFunctionValue baseedit t -> PinaforeAction baseedit t
 pinaforeFunctionValueGet fval = do
-    (subObject -> MkObject {..}) <- pinaforeActionSubscriber
+    (subObject -> MkCloseUnliftIO objRun MkAnObject {..}) <- pinaforeActionSubscriber
     liftIO $ runTransform objRun $ editFunctionRead fval objRead ReadWhole
 
 pinaforeLensPush :: PinaforeLensValue baseedit edit -> [edit] -> PinaforeAction baseedit ()
 pinaforeLensPush lens edits = do
     sub <- pinaforeActionSubscriber
     case lensObject True lens $ subObject sub of
-        MkObject {..} -> do
+        MkCloseUnliftIO objRun MkAnObject {..} -> do
             ok <- liftIO $ runTransform objRun $ pushEdit noEditSource $ objEdit edits
             if ok
                 then return ()

@@ -178,7 +178,7 @@ instance CacheableEdit PinaforeTableEdit where
                         vv'
 
 pinaforeTableEntityObject :: Object PinaforeTableEdit -> Object PinaforeEntityEdit
-pinaforeTableEntityObject (MkObject objRun (tableRead :: MutableRead m PinaforeTableRead) tableMPush) = let
+pinaforeTableEntityObject (MkCloseUnliftIO objRun (MkAnObject (tableRead :: MutableRead m PinaforeTableRead) tableMPush)) = let
     tablePush :: [PinaforeTableEdit] -> EditSource -> m ()
     tablePush edits esrc = pushOrFail "can't push table edit" esrc $ tableMPush edits
     objRead :: MutableRead m PinaforeEntityRead
@@ -201,4 +201,4 @@ pinaforeTableEntityObject (MkObject objRun (tableRead :: MutableRead m PinaforeT
         singleAlwaysEdit $ \case
             PinaforeEntityEditSetPredicate p s kv -> tablePush [PinaforeTableEditSetPredicate p s $ knowToMaybe kv]
             PinaforeEntityEditSetLiteral p kl -> tablePush [PinaforeTableEditSetLiteral p $ knowToMaybe kl]
-    in MkObject {..}
+    in MkCloseUnliftIO objRun MkAnObject {..}

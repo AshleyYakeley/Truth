@@ -6,7 +6,7 @@ import Truth.Core.Object.Object
 import Truth.Core.Read
 
 objectMapUpdates :: EditFunction edita editb -> Object edita -> [edita] -> IO [editb]
-objectMapUpdates (MkCloseUnlift unlift ef) MkObject {..} editAs =
+objectMapUpdates (MkCloseUnlift unlift ef) (MkCloseUnliftIO objRun MkAnObject {..}) editAs =
     runTransform objRun $ runUnlift unlift $ withTransConstraintTM @MonadUnliftIO $ efUpdates ef editAs objRead
 
 mapUpdates ::

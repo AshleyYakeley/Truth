@@ -13,7 +13,7 @@ createButton ::
     => EditSubject edit
     -> Object edit
     -> CreateView sel edit Button
-createButton subj MkObject {..} =
+createButton subj (MkCloseUnliftIO objRun MkAnObject {..}) =
     cvMakeButton "Create" $
     liftIO $
     runTransform objRun $ do
@@ -75,7 +75,7 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
             firstfu <- viewObjectRead $ \_ mr -> mr ReadHasOne
             getWidgets firstfu
     unliftView <- cvLiftView askUnliftIO
-    cvDynamic firstdvs $ \(MkObject unliftIO mr _) _ -> do
+    cvDynamic firstdvs $ \(MkCloseUnliftIO unliftIO (MkAnObject mr _)) _ -> do
         olddvs <- get
         newfu <- lift $ runTransform unliftIO $ mr ReadHasOne
         case (olddvs, retrieveOne newfu) of

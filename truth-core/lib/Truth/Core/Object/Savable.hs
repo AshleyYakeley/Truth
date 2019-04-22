@@ -24,7 +24,7 @@ saveBufferObject ::
        forall edit. FullEdit edit
     => Object (WholeEdit (EditSubject edit))
     -> UpdatingObject edit SaveActions
-saveBufferObject (MkObject (unliftP :: UnliftIO mp) readP pushP) update = do
+saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pushP)) update = do
     firstVal <- liftIO $ runTransform unliftP $ readP ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
     let
@@ -47,7 +47,7 @@ saveBufferObject (MkObject (unliftP :: UnliftIO mp) readP pushP) update = do
                             return oldbuf
                     put (MkSaveBuffer newbuf True)
                     lift $ deferActionT $ update edits esrc
-            in MkObject runC readC pushC
+            in MkCloseUnliftIO runC $ MkAnObject readC pushC
         saveAction :: EditSource -> IO Bool
         saveAction esrc =
             runTransform unliftP $ do

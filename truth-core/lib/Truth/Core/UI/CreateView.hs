@@ -61,7 +61,7 @@ voMapEdit lens@(MkCloseUnlift unlift flens) (MkViewOutput updateB a) = let
     MkAnEditLens {..} = flens
     MkAnEditFunction {..} = elFunction
     updateA :: Object edita -> [edita] -> EditContext -> IO ()
-    updateA objA@(MkObject ou omr _) editsA ectxt = do
+    updateA objA@(MkCloseUnliftIO ou (MkAnObject omr _)) editsA ectxt = do
         editsB <-
             runTransform (composeUnliftTransform unlift ou) $
             withTransConstraintTM @MonadUnliftIO $ efUpdates elFunction editsA omr
@@ -107,7 +107,7 @@ cvReceiveIOUpdates recv = do
 cvReceiveUpdates :: Maybe EditSource -> (UnliftIO (View sel edit) -> ReceiveUpdates edit) -> CreateView sel edit ()
 cvReceiveUpdates mesrc recv = do
     unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkTransform unlift
-    cvReceiveIOUpdates $ \(MkObject unliftObj mr _) edits esrc ->
+    cvReceiveIOUpdates $ \(MkCloseUnliftIO unliftObj (MkAnObject mr _)) edits esrc ->
         if mesrc == Just esrc
             then return ()
             else runTransform unliftObj $ recv unliftIO mr edits

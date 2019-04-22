@@ -21,7 +21,7 @@ makeMemoryCellObject = do
         objEdit =
             singleAlwaysEdit $ \(MkTupleEdit (MkDependentSelector ioref) (MkWholeEdit a)) _ ->
                 liftIO $ writeIORef ioref a
-    return MkObject {..}
+    return $ MkCloseUnliftIO objRun $ MkAnObject {..}
 
 makeMemoryCellEditLens :: a -> IO (EditLens MemoryCellEdit (WholeEdit a))
 makeMemoryCellEditLens a = do
