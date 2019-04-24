@@ -7,11 +7,13 @@ module Control.Monad.Trans.LifeCycle
     , With
     , withLifeCycle
     , lifeCycleWith
+    , lifeCycleMonitor
     , lifeCycleEarlyCloser
     , lifeCycleOnAllDone
     ) where
 
 import Control.Monad.Coroutine
+import Data.IORef
 import Shapes.Import
 
 type LifeState m t = (t, m ())
@@ -117,6 +119,13 @@ lifeCycleWith withX =
                           case e2 of
                               Left () -> return ()
                               Right _ -> fail "lifeCycleWith: called twice")
+
+-- | Returned action returns True if still alive, False if closed.
+lifeCycleMonitor :: MonadIO m => LifeCycleT m (IO Bool)
+lifeCycleMonitor = do
+    ref <- liftIO $ newIORef True
+    lifeCycleClose $ liftIO $ writeIORef ref False
+    return $ readIORef ref
 
 -- | Runs the given lifecycle, returning an early closer.
 -- The early closer is an idempotent action that will close the lifecycle only if it hasn't already been closed.

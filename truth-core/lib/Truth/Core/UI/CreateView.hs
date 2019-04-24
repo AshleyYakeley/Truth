@@ -100,17 +100,23 @@ instance MonadLifeCycleIO (CreateView sel edit) where
 
 cvReceiveIOUpdates :: (Object edit -> [edit] -> EditSource -> IO ()) -> CreateView sel edit ()
 cvReceiveIOUpdates recv = do
-    tb <- MkCreateView $ asks vcThreadBarrier
+    withUILock <- MkCreateView $ asks vcWithUILock
     cvViewOutput $
-        mempty {voUpdate = \obj edits MkEditContext {..} -> tb editContextAsync $ recv obj edits editContextSource}
+        mempty
+            {voUpdate = \obj edits MkEditContext {..} -> withUILock editContextAsync $ recv obj edits editContextSource}
 
 cvReceiveUpdates :: Maybe EditSource -> (UnliftIO (View sel edit) -> ReceiveUpdates edit) -> CreateView sel edit ()
 cvReceiveUpdates mesrc recv = do
+    monitor <- liftLifeCycleIO lifeCycleMonitor
     unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkTransform unlift
     cvReceiveIOUpdates $ \(MkCloseUnliftIO unliftObj (MkAnObject mr _)) edits esrc ->
         if mesrc == Just esrc
             then return ()
-            else runTransform unliftObj $ recv unliftIO mr edits
+            else do
+                alive <- monitor
+                if alive
+                    then runTransform unliftObj $ recv unliftIO mr edits
+                    else return ()
 
 cvReceiveUpdate ::
        Maybe EditSource
@@ -189,7 +195,7 @@ subscribeView ::
     -> Subscriber edit
     -> (forall t. IOWitness t -> Maybe t)
     -> LifeCycleIO w
-subscribeView vcThreadBarrier (MkAnyCreateView (MkCreateView (ReaderT view))) (MkCloseUnliftIO run (MkASubscriber obj sub)) vcRequest = do
+subscribeView vcWithUILock (MkAnyCreateView (MkCreateView (ReaderT view))) (MkCloseUnliftIO run (MkASubscriber obj sub)) vcRequest = do
     let
         vcSetSelection :: Aspect sel -> IO ()
         vcSetSelection _ = return ()

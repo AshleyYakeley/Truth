@@ -128,8 +128,8 @@ forkTask action = do
     return $ takeMVar var
 -}
 data RunState
-    = Running
-    | Stopped
+    = RSRun
+    | RSStop
 
 truthMainGTK :: TruthMain
 truthMainGTK appMain =
@@ -137,8 +137,8 @@ truthMainGTK appMain =
     liftIOWithUnlift $ \(MkTransform unlift) -> do
         tcArguments <- getArgs
         _ <- GI.init Nothing
-        gtkLockVar <- newMVar ()
-        runVar <- newMVar Running
+        uiLockVar <- newMVar ()
+        runVar <- newMVar RSRun
         let
             {-
             uitForkTask :: IO () -> IO ()
@@ -156,33 +156,33 @@ truthMainGTK appMain =
                 finishers
             -}
             uitWithLock :: forall a. IO a -> IO a
-            uitWithLock action = mvarRun gtkLockVar $ liftIO action
-            threadBarrier :: Bool -> IO a -> IO a
-            threadBarrier True = uitWithLock
-            threadBarrier False = id
+            uitWithLock action = mvarRun uiLockVar $ liftIO action
+            withUILock :: Bool -> IO a -> IO a
+            withUILock True = uitWithLock
+            withUILock False = id
             uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycleIO UIWindow
-            uitCreateWindow sub wspec = subscribeView threadBarrier (createWindowAndChild wspec) sub getRequest
+            uitCreateWindow sub wspec = subscribeView withUILock (createWindowAndChild wspec) sub getRequest
             uitQuit :: IO ()
-            uitQuit = mvarRun runVar $ put Stopped
+            uitQuit = mvarRun runVar $ put RSStop
             uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a
             uitUnliftLifeCycle = unlift
             tcUIToolkit = MkUIToolkit {..}
         a <- unlift $ appMain MkTruthContext {..}
         shouldRun <- liftIO $ mvarRun runVar Shapes.get
         case shouldRun of
-            Stopped -> return ()
-            Running -> do
+            RSStop -> return ()
+            RSRun -> do
                 mloop <- mainLoopNew Nothing False
                 _ <-
                     threadsAddIdle PRIORITY_DEFAULT_IDLE $ do
-                        putMVar gtkLockVar ()
+                        putMVar uiLockVar ()
                         yield
-                        takeMVar gtkLockVar
+                        takeMVar uiLockVar
                         sr <- mvarRun runVar Shapes.get
                         case sr of
-                            Running -> return SOURCE_CONTINUE
-                            Stopped -> do
+                            RSRun -> return SOURCE_CONTINUE
+                            RSStop -> do
                                 #quit mloop
                                 return SOURCE_REMOVE
-                mvarRun gtkLockVar $ liftIO $ #run mloop
+                mvarRun uiLockVar $ liftIO $ #run mloop
         return a
