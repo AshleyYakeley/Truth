@@ -49,7 +49,7 @@ format: ${BINPATH}/hindent
 	for f in `find -name '*.hs' -not -path '*.stack-work/*' | grep -xvf .hindent.ignore`; do ${BINPATH}/hindent $$f; done
 
 ${BINPATH}/pinafore: docker-image
-	stack $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
+	stack --docker-env DISPLAY $(STACKFLAGS) install --test --bench $(TESTFLAGS) $(BENCHFLAGS) $(HADDOCKFLAGS)
 
 .PHONY: build
 
