@@ -9,12 +9,12 @@ import Truth.Debug
 class DynamicViewState (dvs :: Type) where
     type DynamicViewSelEdit dvs :: Type
     type DynamicViewEdit dvs :: Type
-    dynamicViewStates :: dvs -> [ViewState (DynamicViewSelEdit dvs) (DynamicViewEdit dvs) ()]
-    dynamicViewFocus :: dvs -> ViewState (DynamicViewSelEdit dvs) (DynamicViewEdit dvs) ()
+    dynamicViewStates :: dvs -> [ViewState (DynamicViewSelEdit dvs) (DynamicViewEdit dvs)]
+    dynamicViewFocus :: dvs -> ViewState (DynamicViewSelEdit dvs) (DynamicViewEdit dvs)
 
-instance DynamicViewState (ViewState sel edit ()) where
-    type DynamicViewSelEdit (ViewState sel edit ()) = sel
-    type DynamicViewEdit (ViewState sel edit ()) = edit
+instance DynamicViewState (ViewState sel edit) where
+    type DynamicViewSelEdit (ViewState sel edit) = sel
+    type DynamicViewEdit (ViewState sel edit) = edit
     dynamicViewStates dvs = [dvs]
     dynamicViewFocus dvs = dvs
 
@@ -28,7 +28,7 @@ cvDynamic ::
     -> CreateView sel edit ()
 cvDynamic firstdvs updateCV = do
     stateVar :: MVar dvs <- liftIO $ newMVar firstdvs
-    liftLifeCycle $
+    liftLifeCycleIO $
         lifeCycleClose $ do
             lastdvs <- traceBracket "cvDynamic:close" $ takeMVar stateVar
             closeDynamicView lastdvs

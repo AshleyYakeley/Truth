@@ -14,7 +14,7 @@ switchView :: forall sel edit. EditFunction edit (WholeEdit (GCreateView sel edi
 switchView specfunc = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
-        getViewState :: GCreateView sel edit -> View sel edit (ViewState sel edit ())
+        getViewState :: GCreateView sel edit -> View sel edit (ViewState sel edit)
         getViewState gview =
             viewCreateView $ do
                 widget <- traceBracket "GTK.Switch:getViewState.gview" $ gview
@@ -25,7 +25,7 @@ switchView specfunc = do
             firstspec <- viewMapEdit (readOnlyEditLens specfunc) $ viewObjectRead $ \_ mr -> mr ReadWhole
             getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
-    cvDynamic @(ViewState sel edit ()) firstvs $ \object edits -> traceBracket "GTK.Switch:update" $ do
+    cvDynamic @(ViewState sel edit) firstvs $ \object edits -> traceBracket "GTK.Switch:update" $ do
         whedits <- liftIO $ objectMapUpdates specfunc object edits
         case lastWholeEdit whedits of
             Nothing -> return ()

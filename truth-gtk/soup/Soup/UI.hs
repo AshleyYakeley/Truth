@@ -62,7 +62,7 @@ soupObject dirpath = let
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: Bool -> UIToolkit -> FilePath -> LifeCycle ()
+soupWindow :: Bool -> UIToolkit -> FilePath -> LifeCycleIO ()
 soupWindow async MkUIToolkit {..} dirpath = do
     sub <- makeObjectSubscriber async $ traceArgThing "soup" $ soupObject dirpath
     rec

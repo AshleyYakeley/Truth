@@ -80,6 +80,7 @@ library:
       - Truth.Core.Types
       - Truth.Core.Object.DeferActionT
       - Truth.Core.Object.EditContext
+      - Truth.Core.Object.UnliftIO
       - Truth.Core.Object.Object
       - Truth.Core.Object.AutoClose
       - Truth.Core.Object.ObjectEdit

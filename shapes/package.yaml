@@ -54,7 +54,9 @@ library:
       - Control.Category.Dual
       - Control.Monad.Compose
       - Control.Monad.Coroutine
-      - Control.LifeCycle
+      - Control.Monad.Trans.LifeCycle
+      - Control.Monad.LifeCycleIO
+      - Control.AsyncRunner
       - Shapes
       - Shapes.Numeric
     other-modules:

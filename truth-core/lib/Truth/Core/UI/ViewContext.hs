@@ -10,7 +10,7 @@ data ViewContext sel edit = MkViewContext
     { vcObject :: Object edit
     , vcSetSelection :: Aspect sel -> IO ()
     , vcRequest :: forall t. IOWitness t -> Maybe t
-    , vcThreadBarrier :: Bool -> IO () -> IO ()
+    , vcWithUILock :: Bool -> IO () -> IO ()
     }
 
 vcMapEdit ::

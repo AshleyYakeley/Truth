@@ -5,6 +5,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
+import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
 import Truth.Core.Types
 
@@ -21,7 +22,7 @@ makeMemoryCellObject = do
         objEdit =
             singleAlwaysEdit $ \(MkTupleEdit (MkDependentSelector ioref) (MkWholeEdit a)) _ ->
                 liftIO $ writeIORef ioref a
-    return MkObject {..}
+    return $ MkCloseUnliftIO objRun $ MkAnObject {..}
 
 makeMemoryCellEditLens :: a -> IO (EditLens MemoryCellEdit (WholeEdit a))
 makeMemoryCellEditLens a = do

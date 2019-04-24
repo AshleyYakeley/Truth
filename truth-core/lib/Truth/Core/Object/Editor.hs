@@ -4,6 +4,7 @@ import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
+import Truth.Core.Object.UnliftIO
 
 data Editor (edit :: Type) r = forall editor. MkEditor
     { editorInit :: Object edit -> IO editor
@@ -37,8 +38,9 @@ instance Applicative (Editor edit) where
         in MkEditor {..}
 
 subscribeEditor :: Subscriber edit -> Editor edit r -> IO r
-subscribeEditor (MkSubscriber object sub) editor = do
-    case editor of
-        MkEditor initr update f -> do
-            e <- initr object
-            withLifeCycle (sub $ update e object) $ \() -> f e object
+subscribeEditor (MkCloseUnliftIO run (MkASubscriber anobject sub)) editor = let
+    object = MkCloseUnliftIO run anobject
+    in case editor of
+           MkEditor initr update f -> do
+               e <- initr object
+               runTransform run $ withLifeCycle (sub $ update e object) $ \() -> liftIO $ f e object

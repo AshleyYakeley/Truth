@@ -10,6 +10,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
+import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
 import Truth.Debug
 import Truth.Debug.Edit
@@ -24,7 +25,7 @@ blankEditShower :: EditShower edit
 blankEditShower = MkEditShower {showRead = \_ -> "", showReadResult = \_ _ -> "", showEdit = \_ -> "edit"}
 
 traceObject :: forall edit. String -> EditShower edit -> Object edit -> Object edit
-traceObject prefix MkEditShower {..} (MkObject (run :: UnliftIO m) r e) = let
+traceObject prefix MkEditShower {..} (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) = let
     run' :: UnliftIO m
     run' = traceThing (contextStr prefix "run") run
     r' :: MutableRead m (EditReader edit)
@@ -43,7 +44,7 @@ traceObject prefix MkEditShower {..} (MkObject (run :: UnliftIO m) r e) = let
          fmap $
          traceBracketArgs (contextStr prefix "edit.do") ("[" ++ intercalate "," (fmap showEdit edits) ++ "]") (\_ -> "")) $
         e edits
-    in MkObject run' r' e'
+    in MkCloseUnliftIO run' $ MkAnObject r' e'
 
 showEditShower ::
        forall edit. ShowableEdit edit
@@ -86,15 +87,15 @@ instance TraceThing (Object edit) where
 instance ShowableEdit edit => TraceArgThing (Object edit) where
     traceArgThing prefix = traceObject prefix showEditShower
 
-instance TraceThing (LifeCycle t) where
-    traceThing prefix (MkLifeCycle oc) =
-        MkLifeCycle $
+instance MonadIO m => TraceThing (LifeCycleT m a) where
+    traceThing prefix (MkLifeCycleT oc) =
+        MkLifeCycleT $
         traceBracket (contextStr prefix "open") $ do
             (t, closer) <- oc
             return (t, traceBracket (contextStr prefix "close") closer)
 
 slowObject :: Int -> Object edit -> Object edit
-slowObject mus (MkObject run rd push) = let
+slowObject mus (MkCloseUnliftIO run (MkAnObject rd push)) = let
     push' edits = do
         maction <- push edits
         return $
@@ -104,4 +105,4 @@ slowObject mus (MkObject run rd push) = let
                     Just $ \esrc -> do
                         traceBracket "slow: delay" $ liftIO $ threadDelay mus
                         traceBracket "slow: action" $ action esrc
-    in MkObject run rd push'
+    in MkCloseUnliftIO run $ MkAnObject rd push'

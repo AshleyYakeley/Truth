@@ -62,9 +62,13 @@ instance MonadTransConstraint MonadFix FreeT where
 instance MonadTransConstraint MonadPlus FreeT where
     hasTransConstraint = Dict
 
+instance MonadTransSemiTunnel FreeT
+
 instance MonadTransTunnel FreeT where
     tunnel call = FreeT $ tunnel $ \tun -> call $ \(FreeT tm1r) -> tun tm1r
     transExcept (FreeT txa) = FreeT $ transExcept txa
+
+instance MonadTransSemiUnlift FreeT
 
 instance MonadTransUnlift FreeT where
     liftWithUnlift call = FreeT $ liftWithUnlift $ \(MkUnlift unlift) -> call $ MkUnlift $ \(FreeT tma) -> unlift tma

@@ -9,6 +9,7 @@ import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
+import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
 import Truth.Core.Types.Whole
 import Truth.Debug
@@ -25,7 +26,7 @@ saveBufferObject ::
        forall edit. FullEdit edit
     => Object (WholeEdit (EditSubject edit))
     -> UpdatingObject edit SaveActions
-saveBufferObject (MkObject (unliftP :: UnliftIO mp) readP pushP) update = traceThing "saveBufferObject" $ do
+saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pushP)) update = traceThing "saveBufferObject" $ do
     firstVal <- liftIO $ runTransform unliftP $ readP ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
     let
@@ -48,7 +49,7 @@ saveBufferObject (MkObject (unliftP :: UnliftIO mp) readP pushP) update = traceT
                             return oldbuf
                     put (MkSaveBuffer newbuf True)
                     lift $ deferActionT $ update edits esrc
-            in MkObject runC readC pushC
+            in MkCloseUnliftIO runC $ MkAnObject readC pushC
         saveAction :: EditSource -> IO Bool
         saveAction esrc =
             runTransform unliftP $ do

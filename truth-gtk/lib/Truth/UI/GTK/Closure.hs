@@ -8,13 +8,13 @@ import Shapes
 
 foreign import ccall "wrapper" ioGenFunPtr :: IO () -> IO (FunPtr (IO ()))
 
-makeFunPtr :: IO () -> LifeCycle (FunPtr (IO ()))
+makeFunPtr :: IO () -> LifeCycleIO (FunPtr (IO ()))
 makeFunPtr action = do
     fp <- liftIO $ ioGenFunPtr action
     lifeCycleClose $ freeHaskellFunPtr fp
     return fp
 
-makeClosure :: IO () -> LifeCycle Closure
+makeClosure :: IO () -> LifeCycleIO Closure
 makeClosure action = do
     fp <- makeFunPtr action
     liftIO $ newCClosure fp

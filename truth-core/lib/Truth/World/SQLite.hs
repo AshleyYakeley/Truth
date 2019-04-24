@@ -257,7 +257,7 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
                 MkQueryString s v -> do
                     conn <- ask
                     lift $ execute conn s v
-    in MkObject {..}
+    in MkCloseUnliftIO objRun MkAnObject {..}
 
 sqliteObject' ::
        forall tablesel. (WitnessConstraint IsSQLiteTable tablesel, ShowableTupleDatabase SQLiteDatabase tablesel)

@@ -129,8 +129,8 @@ forkTask action = do
     return $ takeMVar var
 -}
 data RunState
-    = Running
-    | Stopped
+    = RSRun
+    | RSStop
 
 truthMainGTK :: TruthMain
 truthMainGTK appMain =
@@ -138,8 +138,8 @@ truthMainGTK appMain =
     liftIOWithUnlift $ \(MkTransform unlift) -> traceBracket "truthMainGTK" $ do
         tcArguments <- getArgs
         _ <- GI.init Nothing
-        gtkLockVar <- newMVar ()
-        runVar <- newMVar Running
+        uiLockVar <- newMVar ()
+        runVar <- newMVar RSRun
         let
             {-
             uitForkTask :: IO () -> IO ()
@@ -157,33 +157,33 @@ truthMainGTK appMain =
                 finishers
             -}
             uitWithLock :: forall a. IO a -> IO a
-            uitWithLock action = traceBarrier "uitWithLock" (mvarRun gtkLockVar) $ liftIO action
-            threadBarrier :: Bool -> IO a -> IO a
-            threadBarrier True = uitWithLock
-            threadBarrier False = id
-            uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycle UIWindow
-            uitCreateWindow sub wspec = subscribeView threadBarrier (createWindowAndChild wspec) sub getRequest
+            uitWithLock action = traceBarrier "uitWithLock" (mvarRun uiLockVar) $ liftIO action
+            withUILock :: Bool -> IO a -> IO a
+            withUILock True = uitWithLock
+            withUILock False = id
+            uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycleIO UIWindow
+            uitCreateWindow sub wspec = subscribeView withUILock (createWindowAndChild wspec) sub getRequest
             uitQuit :: IO ()
-            uitQuit = traceBarrier "truthMainGTK: uitQuit" (mvarRun runVar) $ put Stopped
-            uitUnliftLifeCycle :: forall a. LifeCycle a -> IO a
+            uitQuit = traceBarrier "truthMainGTK: uitQuit" (mvarRun runVar) $ put RSStop
+            uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a
             uitUnliftLifeCycle = unlift
             tcUIToolkit = MkUIToolkit {..}
         a <- unlift $ appMain MkTruthContext {..}
         shouldRun <- liftIO $ mvarRun runVar Shapes.get
         case shouldRun of
-            Stopped -> return ()
-            Running -> do
+            RSStop -> return ()
+            RSRun -> do
                 mloop <- mainLoopNew Nothing False
                 _ <-
                     threadsAddIdle PRIORITY_DEFAULT_IDLE $ do
-                        putMVar gtkLockVar ()
+                        putMVar uiLockVar ()
                         yield
-                        takeMVar gtkLockVar
+                        takeMVar uiLockVar
                         sr <- mvarRun runVar Shapes.get
                         case sr of
-                            Running -> return SOURCE_CONTINUE
-                            Stopped -> do
+                            RSRun -> return SOURCE_CONTINUE
+                            RSStop -> do
                                 #quit mloop
                                 return SOURCE_REMOVE
-                traceBarrier "truthMainGTK: pcMainLoop" (mvarRun gtkLockVar) $ liftIO $ #run mloop
+                traceBarrier "truthMainGTK: pcMainLoop" (mvarRun uiLockVar) $ liftIO $ #run mloop
         return a

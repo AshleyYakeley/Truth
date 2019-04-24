@@ -18,9 +18,34 @@ import Data.Kind
 import Data.Tuple
 import Prelude
 
+class ( MonadTransConstraint MonadFail t
+      , MonadTransConstraint MonadIO t
+      , MonadTransConstraint MonadFix t
+      , MonadTransSemiTunnel t
+      ) => MonadTransSemiUnlift t where
+    liftWithSemiUnlift ::
+           forall m r. MonadUnliftIO m
+        => (Transform (t m) m -> m r)
+        -> t m r
+    -- ^ lift with a 'Transform' that accounts for the transformer's effects (using MVars where necessary)
+    default liftWithSemiUnlift ::
+        MonadTransUnlift t => forall m r. MonadUnliftIO m => (Transform (t m) m -> m r) -> t m r
+    liftWithSemiUnlift call = liftWithUnlift $ \unlift -> call $ unliftTransform unlift
+    getDiscardingSemiUnlift ::
+           forall m. MonadUnliftIO m
+        => t m (Transform (t m) m)
+    -- ^ return a 'Transform' that discards the transformer's effects (such as state change or output)
+    default getDiscardingSemiUnlift :: forall m. (MonadTransUnlift t, MonadUnliftIO m) => t m (Transform (t m) m)
+    getDiscardingSemiUnlift =
+        case hasTransConstraint @Monad @t @m of
+            Dict -> fmap unliftTransform getDiscardingUnlift
+
 newtype Unlift (t :: (Type -> Type) -> Type -> Type) = MkUnlift
     { runUnlift :: forall (m :: Type -> Type) (r :: Type). MonadUnliftIO m => t m r -> m r
     }
+
+unliftTransform :: MonadUnliftIO m => Unlift t -> Transform (t m) m
+unliftTransform (MkUnlift unlift) = MkTransform unlift
 
 identityUnlift :: Unlift IdentityT
 identityUnlift = MkUnlift runIdentityT
@@ -31,6 +56,9 @@ mvarRun var (StateT smr) =
 
 mvarUnlift :: MVar s -> Unlift (StateT s)
 mvarUnlift var = MkUnlift $ mvarRun var
+
+liftStateT :: (Traversable f, Applicative m) => StateT s m a -> StateT (f s) m (f a)
+liftStateT (StateT smas) = StateT $ \fs -> fmap (\fas -> (fmap fst fas, fmap snd fas)) $ traverse smas fs
 
 liftWithMVarStateT :: MonadIO m => (MVar s -> m a) -> StateT s m a
 liftWithMVarStateT vma = do
@@ -49,12 +77,7 @@ tToReaderTUnlift tma = do
     MkUnlift unlift <- ask
     lift $ unlift tma
 
-class ( MonadTransConstraint MonadFail t
-      , MonadTransConstraint MonadIO t
-      , MonadTransConstraint MonadFix t
-      , MonadTransConstraint MonadPlus t
-      , MonadTransTunnel t
-      ) => MonadTransUnlift t where
+class (MonadTransConstraint MonadPlus t, MonadTransTunnel t, MonadTransSemiUnlift t) => MonadTransUnlift t where
     liftWithUnlift ::
            forall m r. MonadUnliftIO m
         => (Unlift t -> m r)
@@ -72,7 +95,7 @@ commuteT ::
     -> tb (ta m) r
 commuteT tatbmr =
     case hasTransConstraint @MonadUnliftIO @ta @m of
-        Dict -> liftWithUnlift $ \(MkUnlift unlift) -> remonad unlift tatbmr
+        Dict -> liftWithUnlift $ \(MkUnlift unlift) -> remonad' unlift tatbmr
 
 type UnliftIO m = Transform m IO
 
@@ -96,28 +119,35 @@ instance MonadUnliftIO IO where
     liftIOWithUnlift call = call $ MkTransform id
     getDiscardingUnliftIO = return $ MkTransform id
 
-instance (MonadTransUnlift t, MonadUnliftIO m, MonadFail (t m), MonadIO (t m), MonadFix (t m)) => MonadUnliftIO (t m) where
+instance (MonadTransSemiUnlift t, MonadUnliftIO m, MonadFail (t m), MonadIO (t m), MonadFix (t m)) =>
+             MonadUnliftIO (t m) where
     liftIOWithUnlift call =
-        liftWithUnlift $ \(MkUnlift tmama) ->
+        liftWithSemiUnlift $ \(MkTransform tmama) ->
             liftIOWithUnlift $ \(MkTransform maioa) -> call $ MkTransform $ maioa . tmama
     getDiscardingUnliftIO = do
-        MkUnlift unlift <- getDiscardingUnlift
+        MkTransform unlift <- getDiscardingSemiUnlift
         MkTransform unliftIO <- lift getDiscardingUnliftIO
         return $ MkTransform $ unliftIO . unlift
 
-instance MonadTransUnlift t => MonadTransConstraint MonadUnliftIO t where
+instance MonadTransSemiUnlift t => MonadTransConstraint MonadUnliftIO t where
     hasTransConstraint =
         withTransConstraintDict @MonadFail $ withTransConstraintDict @MonadIO $ withTransConstraintDict @MonadFix $ Dict
+
+instance MonadTransSemiUnlift IdentityT
 
 instance MonadTransUnlift IdentityT where
     liftWithUnlift call = IdentityT $ call identityUnlift
     getDiscardingUnlift = return identityUnlift
+
+instance MonadTransSemiUnlift (ReaderT s)
 
 instance MonadTransUnlift (ReaderT s) where
     liftWithUnlift call = ReaderT $ \s -> call $ MkUnlift $ \(ReaderT smr) -> smr s
     getDiscardingUnlift = do
         s <- ask
         return $ MkUnlift $ \mr -> runReaderT mr s
+
+instance Monoid s => MonadTransSemiUnlift (WriterT s)
 
 instance Monoid s => MonadTransUnlift (WriterT s) where
     liftWithUnlift call = do
@@ -137,6 +167,8 @@ instance Monoid s => MonadTransUnlift (WriterT s) where
         MkUnlift $ \mr -> do
             (r, _discarded) <- runWriterT mr
             return r
+
+instance MonadTransSemiUnlift (StateT s)
 
 instance MonadTransUnlift (StateT s) where
     liftWithUnlift call = liftWithMVarStateT (\var -> call $ mvarUnlift var)

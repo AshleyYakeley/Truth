@@ -3,11 +3,20 @@ module Truth.Core.Object.Update where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.Object
+import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
 
+anObjectMapUpdates ::
+       (MonadTransUnlift t, MonadUnliftIO m)
+    => AnEditFunction t edita editb
+    -> AnObject m edita
+    -> [edita]
+    -> t m [editb]
+anObjectMapUpdates ef MkAnObject {..} editAs = withTransConstraintTM @MonadUnliftIO $ efUpdates ef editAs objRead
+
 objectMapUpdates :: EditFunction edita editb -> Object edita -> [edita] -> IO [editb]
-objectMapUpdates (MkCloseUnlift unlift ef) MkObject {..} editAs =
-    runTransform objRun $ runUnlift unlift $ withTransConstraintTM @MonadUnliftIO $ efUpdates ef editAs objRead
+objectMapUpdates (MkCloseUnlift unlift ef) (MkCloseUnliftIO objRun obj) editAs =
+    runTransform objRun $ runUnlift unlift $ anObjectMapUpdates ef obj editAs
 
 mapUpdates ::
        forall edita editb m a. MonadUnliftIO m

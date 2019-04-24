@@ -27,7 +27,7 @@ makePinaforeContext ::
     => Bool
     -> Object baseedit
     -> UIToolkit
-    -> LifeCycle (PinaforeContext baseedit)
+    -> LifeCycleIO (PinaforeContext baseedit)
 makePinaforeContext async pinaforeObject toolkit = do
     rsub <- makeObjectSubscriber async pinaforeObject
     (sub, uactions) <- liftIO $ undoQueueSubscriber rsub

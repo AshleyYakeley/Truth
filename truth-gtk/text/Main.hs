@@ -55,7 +55,7 @@ main =
                        Text
                     -> Subscriber (OneWholeEdit (Result Text) (StringEdit Text))
                     -> (forall sel edit. IO () -> UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit))
-                    -> LifeCycle ()
+                    -> LifeCycleIO ()
                 makeWindow title sub extraui = do
                     rec
                         let (mbar, uic) = extraui closer r $ ui sub extraui

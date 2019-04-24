@@ -26,7 +26,7 @@ type FilePinaforeType = PinaforeAction PinaforeEdit ()
 filePinaforeType :: Text
 filePinaforeType = qTypeDescription @PinaforeEdit @FilePinaforeType
 
-sqlitePinaforeObject :: FilePath -> LifeCycle (Object PinaforeEdit)
+sqlitePinaforeObject :: FilePath -> LifeCycleIO (Object PinaforeEdit)
 sqlitePinaforeObject dirpath = do
     tableObject1 <- lifeCycleWith $ exclusiveObject $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
@@ -37,7 +37,7 @@ sqlitePinaforeObject dirpath = do
             PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
             PinaforeSelectMemory -> memoryObject
 
-sqlitePinaforeContext :: Bool -> FilePath -> UIToolkit -> LifeCycle (PinaforeContext PinaforeEdit)
+sqlitePinaforeContext :: Bool -> FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeEdit)
 sqlitePinaforeContext async dirpath toolkit = do
     pinaforeObject <- sqlitePinaforeObject dirpath
     makePinaforeContext async pinaforeObject toolkit

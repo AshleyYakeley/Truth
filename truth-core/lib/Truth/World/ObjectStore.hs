@@ -64,7 +64,7 @@ singleObjectEditFunction =
         in MkAnEditFunction {..}
 
 directoryObjectStore :: forall name. Object FSEdit -> (name -> String) -> Object (ObjectStoreEdit name ByteStringEdit)
-directoryObjectStore (MkObject (objRun :: UnliftIO m) rd push) nameStr = let
+directoryObjectStore (MkCloseUnliftIO (objRun :: UnliftIO m) (MkAnObject rd push)) nameStr = let
     undoName :: String -> Int -> FilePath
     undoName name i = "undo/" ++ name ++ show i
     findUndoCode :: String -> Int -> m Int
@@ -118,4 +118,4 @@ directoryObjectStore (MkObject (objRun :: UnliftIO m) rd push) nameStr = let
                         SingleObjectRecover code ->
                             pushOrFail ("couldn't rename FS item " <> show name) esrc $
                             push [FSEditRenameItem (undoName name code) name]
-    in MkObject {..}
+    in MkCloseUnliftIO objRun MkAnObject {..}
