@@ -100,23 +100,27 @@ instance MonadLifeCycleIO (CreateView sel edit) where
 
 cvReceiveIOUpdates :: (Object edit -> [edit] -> EditSource -> IO ()) -> CreateView sel edit ()
 cvReceiveIOUpdates recv = do
+    -- monitor makes sure updates are ignored after the view has been closed
+    monitor <- liftLifeCycleIO lifeCycleMonitor
     withUILock <- MkCreateView $ asks vcWithUILock
     cvViewOutput $
         mempty
-            {voUpdate = \obj edits MkEditContext {..} -> withUILock editContextAsync $ recv obj edits editContextSource}
+            { voUpdate =
+                  \obj edits MkEditContext {..} ->
+                      withUILock editContextAsync $ do
+                          alive <- monitor
+                          if alive
+                              then recv obj edits editContextSource
+                              else return ()
+            }
 
 cvReceiveUpdates :: Maybe EditSource -> (UnliftIO (View sel edit) -> ReceiveUpdates edit) -> CreateView sel edit ()
 cvReceiveUpdates mesrc recv = do
-    monitor <- liftLifeCycleIO lifeCycleMonitor
     unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkTransform unlift
     cvReceiveIOUpdates $ \(MkCloseUnliftIO unliftObj (MkAnObject mr _)) edits esrc ->
         if mesrc == Just esrc
             then return ()
-            else do
-                alive <- monitor
-                if alive
-                    then runTransform unliftObj $ recv unliftIO mr edits
-                    else return ()
+            else runTransform unliftObj $ recv unliftIO mr edits
 
 cvReceiveUpdate ::
        Maybe EditSource
