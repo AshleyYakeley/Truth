@@ -74,7 +74,7 @@ library:
       - Pinafore.Language.Literal
       - Pinafore.Language.OpenEntity
       - Pinafore.Language.Reference
-      - Pinafore.Language.Set
+      - Pinafore.Language.SetRef
       - Pinafore.Language.Morphism
       - Pinafore.Language.If
       - Pinafore.Language.Show

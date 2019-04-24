@@ -41,7 +41,7 @@ In interactive mode, each line has syntax `<interactive>`.
     "Either" <type-3> <type-3> |
     "Order" <type-3> |
     "Ref" <type-range-3> |
-    "Set" <type-range-3> |
+    "SetRef" <type-range-3> |
     <type-3>
 
 <type-3> ::=

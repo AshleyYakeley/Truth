@@ -7,7 +7,7 @@ import Pinafore.Language.DocTree
 import Pinafore.Language.Morphism
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Reference
-import Pinafore.Language.Set
+import Pinafore.Language.SetRef
 import Pinafore.Language.Type
 import Pinafore.Language.UI
 import Pinafore.Storage.File
@@ -27,7 +27,7 @@ ui_map = fmap
 ui_table ::
        forall baseedit. (?pinafore :: PinaforeContext baseedit, HasPinaforeEntityEdit baseedit)
     => [(PinaforeReference baseedit '( BottomType, Text), A -> PinaforeReference baseedit '( BottomType, Text))]
-    -> PinaforeSet baseedit '( A, MeetType Entity A)
+    -> PinaforeSetRef baseedit '( A, MeetType Entity A)
     -> (A -> PinaforeAction baseedit TopType)
     -> UISpec A baseedit
 ui_table cols val onDoubleClick = let
@@ -45,7 +45,7 @@ ui_table cols val onDoubleClick = let
     in mapSelectionUISpec meet2 $
        tableUISpec
            (fmap getColumn cols)
-           (unPinaforeSet $ contraMapRange meet2 val)
+           (unPinaforeSetRef $ contraMapRange meet2 val)
            (\a -> runPinaforeAction $ void $ onDoubleClick $ meet2 a)
 
 type PickerType = Know (MeetType Entity A)
@@ -55,7 +55,7 @@ type PickerPairType = (PickerType, Text)
 ui_pick ::
        forall baseedit.
        PinaforeMorphism baseedit '( A, TopType) '( BottomType, Text)
-    -> PinaforeSet baseedit '( A, MeetType Entity A)
+    -> PinaforeSetRef baseedit '( A, MeetType Entity A)
     -> PinaforeReference baseedit '( A, MeetType Entity A)
     -> UISpec BottomType baseedit
 ui_pick nameMorphism fset ref = let
@@ -72,7 +72,7 @@ ui_pick nameMorphism fset ref = let
     opts :: EditFunction baseedit (ListEdit [PickerPairType] (WholeEdit PickerPairType))
     opts =
         (orderedKeyList @(FiniteSet PickerPairType) $ \(_, a) (_, b) -> compare a b) .
-        convertEditFunction . applyPinaforeFunction getNames (pinaforeSetFunctionValue fset)
+        convertEditFunction . applyPinaforeFunction getNames (pinaforeSetRefFunctionValue fset)
     in optionUISpec @baseedit @PickerType opts $ pinaforeReferenceToLens $ contraMapRange meet2 ref
 
 actionReference ::

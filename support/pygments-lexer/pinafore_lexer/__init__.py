@@ -23,7 +23,7 @@ class PinaforeLexer(RegexLexer):
             (words(('if', 'then', 'else', 'let', 'in', 'do', 'case', 'of', 'end'), suffix=r'\b'), Keyword),
             (words((
                 'Any', 'None', 'Literal', 'Text', 'Number', 'Rational', 'Integer', 'Boolean', 'Entity', 'NewEntity',
-                'Maybe', 'Either', 'Order', 'Action', 'Ref', 'Set', 'UI', 'Window', 'MenuItem'
+                'Maybe', 'Either', 'Order', 'Action', 'Ref', 'SetRef', 'UI', 'Window', 'MenuItem'
                 ), suffix=r'\b'), Keyword.Type),
             (r'![-0-9A-Fa-f]+', Literal.Anchor),
             (r'!"(\\\\|\\"|[^"])*"', Literal.Anchor),

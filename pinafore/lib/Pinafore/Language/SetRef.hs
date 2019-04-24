@@ -1,4 +1,4 @@
-module Pinafore.Language.Set where
+module Pinafore.Language.SetRef where
 
 import Language.Expression.Dolan
 import Pinafore.Base
@@ -8,82 +8,86 @@ import Pinafore.Storage.Table (Entity)
 import Shapes
 import Truth.Core
 
-data PinaforeSet baseedit pq where
-    MkPinaforeSet :: Eq t => Range t pq -> PinaforeLensValue baseedit (FiniteSetEdit t) -> PinaforeSet baseedit pq
+data PinaforeSetRef baseedit pq where
+    MkPinaforeSetRef :: Eq t => Range t pq -> PinaforeLensValue baseedit (FiniteSetEdit t) -> PinaforeSetRef baseedit pq
 
-unPinaforeSet :: PinaforeSet baseedit '( p, p) -> PinaforeLensValue baseedit (FiniteSetEdit p)
-unPinaforeSet (MkPinaforeSet tr lv) = (bijectionFiniteSetEditLens $ rangeBijection tr) . lv
+unPinaforeSetRef :: PinaforeSetRef baseedit '( p, p) -> PinaforeLensValue baseedit (FiniteSetEdit p)
+unPinaforeSetRef (MkPinaforeSetRef tr lv) = (bijectionFiniteSetEditLens $ rangeBijection tr) . lv
 
-instance IsoMapRange (PinaforeSet baseedit)
+instance IsoMapRange (PinaforeSetRef baseedit)
 
-instance MapRange (PinaforeSet baseedit) where
-    mapRange f (MkPinaforeSet r s) = MkPinaforeSet (mapRange f r) s
+instance MapRange (PinaforeSetRef baseedit) where
+    mapRange f (MkPinaforeSetRef r s) = MkPinaforeSetRef (mapRange f r) s
 
-instance HasDolanVary '[ 'Rangevariance] (PinaforeSet baseedit) where
+instance HasDolanVary '[ 'Rangevariance] (PinaforeSetRef baseedit) where
     dolanVary =
-        ConsDolanVarianceMap (mkRangevary $ \mapr (MkPinaforeSet range lval) -> MkPinaforeSet (mapr range) lval) $
+        ConsDolanVarianceMap (mkRangevary $ \mapr (MkPinaforeSetRef range lval) -> MkPinaforeSetRef (mapr range) lval) $
         NilDolanVarianceMap
 
-pinaforeSetValue :: PinaforeSet baseedit '( q, q) -> PinaforeLensValue baseedit (FiniteSetEdit q)
-pinaforeSetValue (MkPinaforeSet tr lv) = bijectionFiniteSetEditLens (rangeBijection tr) . lv
+pinaforeSetRefValue :: PinaforeSetRef baseedit '( q, q) -> PinaforeLensValue baseedit (FiniteSetEdit q)
+pinaforeSetRefValue (MkPinaforeSetRef tr lv) = bijectionFiniteSetEditLens (rangeBijection tr) . lv
 
-valuePinaforeSet :: Eq q => PinaforeLensValue baseedit (FiniteSetEdit q) -> PinaforeSet baseedit '( q, q)
-valuePinaforeSet lv = MkPinaforeSet identityRange lv
+valuePinaforeSetRef :: Eq q => PinaforeLensValue baseedit (FiniteSetEdit q) -> PinaforeSetRef baseedit '( q, q)
+valuePinaforeSetRef lv = MkPinaforeSetRef identityRange lv
 
-pinaforeSetMeetValue ::
-       PinaforeSet baseedit '( t, MeetType Entity t) -> PinaforeLensValue baseedit (FiniteSetEdit (MeetType Entity t))
-pinaforeSetMeetValue (MkPinaforeSet tr lv) = pinaforeSetValue $ MkPinaforeSet (unifyRange2 meet2 tr) lv
+pinaforeSetRefMeetValue ::
+       PinaforeSetRef baseedit '( t, MeetType Entity t)
+    -> PinaforeLensValue baseedit (FiniteSetEdit (MeetType Entity t))
+pinaforeSetRefMeetValue (MkPinaforeSetRef tr lv) = pinaforeSetRefValue $ MkPinaforeSetRef (unifyRange2 meet2 tr) lv
 
-meetValuePinaforeSet ::
-       PinaforeLensValue baseedit (FiniteSetEdit (MeetType Entity t)) -> PinaforeSet baseedit '( MeetType Entity t, t)
-meetValuePinaforeSet lv = MkPinaforeSet (unUnifyRange1 meet2 identityRange) lv
+meetValuePinaforeSetRef ::
+       PinaforeLensValue baseedit (FiniteSetEdit (MeetType Entity t))
+    -> PinaforeSetRef baseedit '( MeetType Entity t, t)
+meetValuePinaforeSetRef lv = MkPinaforeSetRef (unUnifyRange1 meet2 identityRange) lv
 
-pinaforeSetMeet ::
+pinaforeSetRefMeet ::
        forall baseedit t.
-       PinaforeSet baseedit '( t, MeetType Entity t)
-    -> PinaforeSet baseedit '( t, MeetType Entity t)
-    -> PinaforeSet baseedit '( MeetType Entity t, t)
-pinaforeSetMeet seta setb =
-    meetValuePinaforeSet $
-    readOnlyEditLens meetEditFunction . pairCombineEditLenses (pinaforeSetMeetValue seta) (pinaforeSetMeetValue setb)
+       PinaforeSetRef baseedit '( t, MeetType Entity t)
+    -> PinaforeSetRef baseedit '( t, MeetType Entity t)
+    -> PinaforeSetRef baseedit '( MeetType Entity t, t)
+pinaforeSetRefMeet seta setb =
+    meetValuePinaforeSetRef $
+    readOnlyEditLens meetEditFunction .
+    pairCombineEditLenses (pinaforeSetRefMeetValue seta) (pinaforeSetRefMeetValue setb)
 
-pinaforeSetJoin ::
+pinaforeSetRefJoin ::
        forall baseedit t.
-       PinaforeSet baseedit '( t, MeetType Entity t)
-    -> PinaforeSet baseedit '( t, MeetType Entity t)
-    -> PinaforeSet baseedit '( MeetType Entity t, t)
-pinaforeSetJoin seta setb =
-    meetValuePinaforeSet $
-    readOnlyEditLens joinEditFunction . pairCombineEditLenses (pinaforeSetMeetValue seta) (pinaforeSetMeetValue setb)
+       PinaforeSetRef baseedit '( t, MeetType Entity t)
+    -> PinaforeSetRef baseedit '( t, MeetType Entity t)
+    -> PinaforeSetRef baseedit '( MeetType Entity t, t)
+pinaforeSetRefJoin seta setb =
+    meetValuePinaforeSetRef $
+    readOnlyEditLens joinEditFunction .
+    pairCombineEditLenses (pinaforeSetRefMeetValue seta) (pinaforeSetRefMeetValue setb)
 
-pinaforeSetAdd :: PinaforeSet baseedit '( p, q) -> p -> PinaforeAction baseedit ()
-pinaforeSetAdd (MkPinaforeSet tr set) p = pinaforeLensPush set [KeyInsertReplaceItem $ rangeContra tr p]
+pinaforeSetRefAdd :: PinaforeSetRef baseedit '( p, q) -> p -> PinaforeAction baseedit ()
+pinaforeSetRefAdd (MkPinaforeSetRef tr set) p = pinaforeLensPush set [KeyInsertReplaceItem $ rangeContra tr p]
 
-pinaforeSetAddNew :: PinaforeSet baseedit '( NewEntity, TopType) -> PinaforeAction baseedit NewEntity
-pinaforeSetAddNew set = do
+pinaforeSetRefAddNew :: PinaforeSetRef baseedit '( NewEntity, TopType) -> PinaforeAction baseedit NewEntity
+pinaforeSetRefAddNew set = do
     (MkNewEntity -> e) <- liftIO $ newKeyContainerItem @(FiniteSet Entity)
-    pinaforeSetAdd set e
+    pinaforeSetRefAdd set e
     return e
 
-pinaforeSetRemove :: PinaforeSet baseedit '( p, q) -> p -> PinaforeAction baseedit ()
-pinaforeSetRemove (MkPinaforeSet tr set) p = pinaforeLensPush set [KeyDeleteItem $ rangeContra tr p]
+pinaforeSetRefRemove :: PinaforeSetRef baseedit '( p, q) -> p -> PinaforeAction baseedit ()
+pinaforeSetRefRemove (MkPinaforeSetRef tr set) p = pinaforeLensPush set [KeyDeleteItem $ rangeContra tr p]
 
-pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit ()
-pinaforeSetRemoveAll (MkPinaforeSet _ set) = pinaforeLensPush set [KeyClear]
+pinaforeSetRefRemoveAll :: PinaforeSetRef baseedit '( BottomType, TopType) -> PinaforeAction baseedit ()
+pinaforeSetRefRemoveAll (MkPinaforeSetRef _ set) = pinaforeLensPush set [KeyClear]
 
-pinaforeSetFunctionValue :: PinaforeSet baseedit '( t, a) -> PinaforeFunctionValue baseedit (FiniteSet a)
-pinaforeSetFunctionValue (MkPinaforeSet tr set) = funcEditFunction (fmap $ rangeCo tr) . lensFunctionValue set
+pinaforeSetRefFunctionValue :: PinaforeSetRef baseedit '( t, a) -> PinaforeFunctionValue baseedit (FiniteSet a)
+pinaforeSetRefFunctionValue (MkPinaforeSetRef tr set) = funcEditFunction (fmap $ rangeCo tr) . lensFunctionValue set
 
-pinaforeSetMembership ::
-       PinaforeSet baseedit '( BottomType, Entity) -> PinaforeReference baseedit '( TopType, Entity -> Bool)
-pinaforeSetMembership set =
-    pinaforeFunctionToReference $ funcEditFunction (\s -> Known $ \p -> member p s) . pinaforeSetFunctionValue set
+pinaforeSetRefMembership ::
+       PinaforeSetRef baseedit '( BottomType, Entity) -> PinaforeReference baseedit '( TopType, Entity -> Bool)
+pinaforeSetRefMembership set =
+    pinaforeFunctionToReference $ funcEditFunction (\s -> Known $ \p -> member p s) . pinaforeSetRefFunctionValue set
 
-pinaforeSetContains ::
-       PinaforeSet baseedit '( a, TopType)
+pinaforeSetRefContains ::
+       PinaforeSetRef baseedit '( a, TopType)
     -> PinaforeReference baseedit '( BottomType, a)
     -> PinaforeReference baseedit '( TopType, Bool)
-pinaforeSetContains (MkPinaforeSet (rangeContra -> conv) (editLensFunction -> setf)) (pinaforeReferenceToFunction -> fva) = let
+pinaforeSetRefContains (MkPinaforeSetRef (rangeContra -> conv) (editLensFunction -> setf)) (pinaforeReferenceToFunction -> fva) = let
     containsEditFunction ::
            forall a b. Eq b
         => (a -> b)
@@ -137,19 +141,20 @@ pinaforeSetContains (MkPinaforeSet (rangeContra -> conv) (editLensFunction -> se
         in MkCloseUnlift identityUnlift MkAnEditFunction {..}
     in pinaforeFunctionToReference $ containsEditFunction conv . pairCombineEditFunctions setf fva
 
-pinaforeSetSingle ::
+pinaforeSetRefSingle ::
        forall baseedit a.
-       PinaforeSet baseedit '( BottomType, MeetType Entity a)
+       PinaforeSetRef baseedit '( BottomType, MeetType Entity a)
     -> PinaforeReference baseedit '( TopType, a)
-pinaforeSetSingle set =
-    pinaforeFunctionToReference $ funcEditFunction (fmap meet2 . maybeToKnow . getSingle) . pinaforeSetFunctionValue set
+pinaforeSetRefSingle set =
+    pinaforeFunctionToReference $
+    funcEditFunction (fmap meet2 . maybeToKnow . getSingle) . pinaforeSetRefFunctionValue set
 
-pinaforeSetFunc ::
+pinaforeSetRefFunc ::
        forall baseedit a b.
        (FiniteSet a -> b)
-    -> PinaforeSet baseedit '( BottomType, a)
+    -> PinaforeSetRef baseedit '( BottomType, a)
     -> PinaforeReference baseedit '( TopType, b)
-pinaforeSetFunc f set = pinaforeFunctionToReference $ funcEditFunction (Known . f) . pinaforeSetFunctionValue set
+pinaforeSetRefFunc f set = pinaforeFunctionToReference $ funcEditFunction (Known . f) . pinaforeSetRefFunctionValue set
 
 setSumLens ::
        forall a b. (Eq a, Eq b)
@@ -205,22 +210,22 @@ setSumLens = let
             KeyClear -> return $ Just $ [MkTupleEdit SelectFirst KeyClear, MkTupleEdit SelectSecond KeyClear]
     in MkCloseUnlift identityUnlift MkAnEditLens {..}
 
-pinaforeSetSum ::
+pinaforeSetRefSum ::
        forall baseedit ap aq bp bq.
-       PinaforeSet baseedit '( ap, aq)
-    -> PinaforeSet baseedit '( bp, bq)
-    -> PinaforeSet baseedit '( Either ap bp, Either aq bq)
-pinaforeSetSum (MkPinaforeSet tra vala) (MkPinaforeSet trb valb) =
-    MkPinaforeSet (eitherRange tra trb) $ setSumLens . pairCombineEditLenses vala valb
+       PinaforeSetRef baseedit '( ap, aq)
+    -> PinaforeSetRef baseedit '( bp, bq)
+    -> PinaforeSetRef baseedit '( Either ap bp, Either aq bq)
+pinaforeSetRefSum (MkPinaforeSetRef tra vala) (MkPinaforeSetRef trb valb) =
+    MkPinaforeSetRef (eitherRange tra trb) $ setSumLens . pairCombineEditLenses vala valb
 {-
 setProductFunction :: forall a b. EditFunction (PairEdit (FiniteSetEdit a) (FiniteSetEdit b)) (FiniteSetEdit (a,b))
 setProductFunction = let
     in MkCloseUnlift identityUnlift MkAnEditFunction{..}
 -}
 {-
-pinaforeSetProduct :: forall baseedit ap aq bp bq.
-       PinaforeSet baseedit '( ap,aq) -> PinaforeSet baseedit '( bp, bq) -> PinaforeSet baseedit '(  (ap, bp), (aq, bq))
-pinaforeSetProduct (MkPinaforeSet tra vala) (MkPinaforeSet trb valb) = MkPinaforeSet (pairRange tra trb) $ setProductLens . pairCombineEditLenses vala valb
+pinaforeSetRefProduct :: forall baseedit ap aq bp bq.
+       PinaforeSetRef baseedit '( ap,aq) -> PinaforeSetRef baseedit '( bp, bq) -> PinaforeSetRef baseedit '(  (ap, bp), (aq, bq))
+pinaforeSetRefProduct (MkPinaforeSetRef tra vala) (MkPinaforeSetRef trb valb) = MkPinaforeSetRef (pairRange tra trb) $ setProductLens . pairCombineEditLenses vala valb
 -}
 {- equivalent to:
 data FiniteSetEdit subj where

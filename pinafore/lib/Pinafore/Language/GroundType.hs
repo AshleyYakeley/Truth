@@ -8,7 +8,7 @@ import Pinafore.Language.EntityType
 import Pinafore.Language.Morphism
 import Pinafore.Language.Order
 import Pinafore.Language.Reference
-import Pinafore.Language.Set
+import Pinafore.Language.SetRef
 import Pinafore.Language.Show
 import Pinafore.Language.UI
 import Shapes
@@ -24,7 +24,7 @@ data PinaforeGroundType baseedit (polarity :: Polarity) (dv :: DolanVariance) (t
     ActionPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] (PinaforeAction baseedit)
     -- Reference
     ReferencePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeReference baseedit)
-    SetPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeSet baseedit)
+    SetPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeSetRef baseedit)
     MorphismPinaforeGroundType
         :: PinaforeGroundType baseedit polarity '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit)
     -- UI
@@ -113,7 +113,7 @@ pinaforeGroundTypeShowPrec ActionPinaforeGroundType (ConsDolanArguments ta NilDo
 pinaforeGroundTypeShowPrec ReferencePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     ("Ref " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec SetPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("Set " <> exprPrecShow 0 ta, 2)
+    ("SetRef " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
 pinaforeGroundTypeShowPrec UserInterfacePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =

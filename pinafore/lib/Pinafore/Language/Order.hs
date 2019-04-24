@@ -5,7 +5,7 @@ import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Morphism
 import Pinafore.Language.Reference
-import Pinafore.Language.Set
+import Pinafore.Language.SetRef
 import Shapes
 import Truth.Core
 
@@ -85,6 +85,6 @@ pinaforeOrderCompare ob (MkPinaforeOrder ef o) fv1 fv2 =
 pinaforeSetGetOrdered ::
        forall baseedit a.
        PinaforeOrder baseedit a
-    -> PinaforeSet baseedit '( BottomType, a)
+    -> PinaforeSetRef baseedit '( BottomType, a)
     -> PinaforeReference baseedit '( TopType, [a])
-pinaforeSetGetOrdered order set = pinaforeFunctionToReference $ qOrderSet order $ pinaforeSetFunctionValue set
+pinaforeSetGetOrdered order set = pinaforeFunctionToReference $ qOrderSet order $ pinaforeSetRefFunctionValue set

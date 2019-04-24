@@ -142,7 +142,7 @@ The type parameter is the type of the selection.
 
 ## Sets
 
-`Set {-p,+q}`
+`SetRef {-p,+q}`
 
 ## Morphisms
 

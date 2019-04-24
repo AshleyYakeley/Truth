@@ -16,7 +16,7 @@ import Pinafore.Language.Morphism
 import Pinafore.Language.OpenEntity
 import Pinafore.Language.Order
 import Pinafore.Language.Reference
-import Pinafore.Language.Set
+import Pinafore.Language.SetRef
 import Pinafore.Language.Type
 import Pinafore.Language.UI
 import Shapes
@@ -359,40 +359,40 @@ instance (baseedit ~ edit, ToTypeF (PinaforeType edit 'Positive) t) =>
              ToTypeF (PinaforeType baseedit 'Positive) (PinaforeFunctionValue edit (Know t)) where
     toTypeF = contramap pinaforeFunctionToReference toTypeF
 
--- PinaforeSet
+-- PinaforeSetRef
 instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit 'Negative) p, ToTypeF (PinaforeType baseedit 'Positive) q) =>
-             ToTypeF (PinaforeSingularType baseedit 'Positive) (PinaforeSet edit '( p, q)) where
+             ToTypeF (PinaforeSingularType baseedit 'Positive) (PinaforeSetRef edit '( p, q)) where
     toTypeF =
         unToWithTypeF $ \tpq conv ->
             contramap (mapRange conv) $
             mkPTypeF $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance (baseedit ~ edit, FromTypeF (PinaforeType baseedit 'Negative) p, ToTypeF (PinaforeType baseedit 'Positive) q) =>
-             ToTypeF (PinaforeType baseedit 'Positive) (PinaforeSet edit '( p, q)) where
+             ToTypeF (PinaforeType baseedit 'Positive) (PinaforeSetRef edit '( p, q)) where
     toTypeF = singlePinaforeTypeF toTypeF
 
 instance (baseedit ~ edit, ToTypeF (PinaforeType baseedit 'Positive) p, FromTypeF (PinaforeType baseedit 'Negative) q) =>
-             FromTypeF (PinaforeSingularType baseedit 'Negative) (PinaforeSet edit '( p, q)) where
+             FromTypeF (PinaforeSingularType baseedit 'Negative) (PinaforeSetRef edit '( p, q)) where
     fromTypeF =
         unFromWithTypeF $ \tpq conv ->
             fmap (mapRange conv) $
             mkPTypeF $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance (baseedit ~ edit, ToTypeF (PinaforeType baseedit 'Positive) p, FromTypeF (PinaforeType baseedit 'Negative) q) =>
-             FromTypeF (PinaforeType baseedit 'Negative) (PinaforeSet edit '( p, q)) where
+             FromTypeF (PinaforeType baseedit 'Negative) (PinaforeSetRef edit '( p, q)) where
     fromTypeF = singlePinaforeTypeF fromTypeF
 
 -- PinaforeLensValue FiniteSetEdit
 instance (baseedit ~ edit, ToTypeF (PinaforeType edit 'Positive) t, FromTypeF (PinaforeType baseedit 'Negative) t) =>
              FromTypeF (PinaforeType baseedit 'Negative) (PinaforeLensValue edit (FiniteSetEdit t)) where
-    fromTypeF = fmap unPinaforeSet fromTypeF
+    fromTypeF = fmap unPinaforeSetRef fromTypeF
 
 instance ( baseedit ~ edit
          , Eq t
          , ToTypeF (PinaforeType baseedit 'Positive) t
          , FromTypeF (PinaforeType baseedit 'Negative) t
          ) => ToTypeF (PinaforeType baseedit 'Positive) (PinaforeLensValue edit (FiniteSetEdit t)) where
-    toTypeF = contramap (MkPinaforeSet identityRange) toTypeF
+    toTypeF = contramap (MkPinaforeSetRef identityRange) toTypeF
 
 -- PinaforeMorphism
 instance ( baseedit ~ edit

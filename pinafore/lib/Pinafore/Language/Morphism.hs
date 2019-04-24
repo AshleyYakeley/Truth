@@ -4,7 +4,7 @@ import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.OpenEntity
 import Pinafore.Language.Reference
-import Pinafore.Language.Set
+import Pinafore.Language.SetRef
 import Shapes
 import Truth.Core
 
@@ -72,32 +72,32 @@ pinaforeApplyMorphismRef (MkPinaforeMorphism (MkRange fa _) trb m) (ImmutPinafor
 pinaforeApplyMorphismSet ::
        forall baseedit a bp bq.
        PinaforeMorphism baseedit '( a, TopType) '( bp, bq)
-    -> PinaforeSet baseedit '( BottomType, a)
-    -> PinaforeSet baseedit '( bp, bq)
-pinaforeApplyMorphismSet (MkPinaforeMorphism tra trb m) (MkPinaforeSet tra' ss) = let
+    -> PinaforeSetRef baseedit '( BottomType, a)
+    -> PinaforeSetRef baseedit '( bp, bq)
+pinaforeApplyMorphismSet (MkPinaforeMorphism tra trb m) (MkPinaforeSetRef tra' ss) = let
     setm =
         proc st -> do
             skb <- cfmap $ lensFunctionMorphism m -< fmap (Known . rangeContra tra . rangeCo tra') st
             returnA -< mapMaybe knowToMaybe skb
-    in MkPinaforeSet trb $ readOnlyEditLens $ convertEditFunction . applyPinaforeFunction setm (lensFunctionValue ss)
+    in MkPinaforeSetRef trb $ readOnlyEditLens $ convertEditFunction . applyPinaforeFunction setm (lensFunctionValue ss)
 
 pinaforeApplyInverseMorphismRef ::
        forall baseedit ap aq bp bq.
        PinaforeMorphism baseedit '( bp, bq) '( aq, ap)
     -> PinaforeReference baseedit '( ap, aq)
-    -> PinaforeSet baseedit '( bp, bq)
+    -> PinaforeSetRef baseedit '( bp, bq)
 pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb tra m) (LensPinaforeReference tra' lv) =
-    MkPinaforeSet trb $ applyInversePinaforeLens m $ bijectionWholeEditLens (cfmap $ bijectRanges tra' tra) . lv
+    MkPinaforeSetRef trb $ applyInversePinaforeLens m $ bijectionWholeEditLens (cfmap $ bijectRanges tra' tra) . lv
 pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb (MkRange fa _) m) (ImmutPinaforeReference fv) =
-    MkPinaforeSet trb $ applyInversePinaforeLens m $ immutableReferenceToLens $ fmap fa fv
+    MkPinaforeSetRef trb $ applyInversePinaforeLens m $ immutableReferenceToLens $ fmap fa fv
 
 pinaforeApplyInverseMorphismSet ::
        forall baseedit ap aq bp bq.
        PinaforeMorphism baseedit '( bp, bq) '( JoinType NewEntity aq, ap)
-    -> PinaforeSet baseedit '( ap, aq)
-    -> PinaforeSet baseedit '( bp, bq)
-pinaforeApplyInverseMorphismSet (MkPinaforeMorphism trb trpa m) (MkPinaforeSet tra' set) = let
+    -> PinaforeSetRef baseedit '( ap, aq)
+    -> PinaforeSetRef baseedit '( bp, bq)
+pinaforeApplyInverseMorphismSet (MkPinaforeMorphism trb trpa m) (MkPinaforeSetRef tra' set) = let
     (trp, tra) = unjoinRange trpa
-    in MkPinaforeSet trb $
+    in MkPinaforeSetRef trb $
        applyInversePinaforeLensSet (fmap (rangeContra trp . MkNewEntity) newEntity) m $
        (bijectionFiniteSetEditLens $ bijectRanges tra' tra) . set

@@ -12,7 +12,7 @@ import Pinafore.Language.Morphism
 import Pinafore.Language.Order
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Reference
-import Pinafore.Language.Set
+import Pinafore.Language.SetRef
 import Pinafore.Language.Type
 import Pinafore.Storage.File
 import Shapes
@@ -54,10 +54,10 @@ newmemref = do
 
 newmemset ::
        forall baseedit. BaseEditLens MemoryCellEdit baseedit
-    => IO (PinaforeSet baseedit '( MeetType Entity A, A))
+    => IO (PinaforeSetRef baseedit '( MeetType Entity A, A))
 newmemset = do
     lens <- makeMemoryCellEditLens mempty
-    return $ meetValuePinaforeSet $ convertEditLens . lens . baseEditLens
+    return $ meetValuePinaforeSetRef $ convertEditLens . lens . baseEditLens
 
 base_predefinitions ::
        forall baseedit.
@@ -329,36 +329,36 @@ base_predefinitions =
           [ mkValEntry
                 "comapset"
                 "Map a function on getting from a set."
-                (coMapRange :: (A -> B) -> PinaforeSet baseedit '( C, A) -> PinaforeSet baseedit '( C, B))
+                (coMapRange :: (A -> B) -> PinaforeSetRef baseedit '( C, A) -> PinaforeSetRef baseedit '( C, B))
           , mkValEntry
                 "contramapset"
                 "Map a function on setting to a set."
-                (contraMapRange :: (B -> A) -> PinaforeSet baseedit '( A, C) -> PinaforeSet baseedit '( B, C))
+                (contraMapRange :: (B -> A) -> PinaforeSetRef baseedit '( A, C) -> PinaforeSetRef baseedit '( B, C))
           , mkValEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
-            pinaforeSetMeet @baseedit @A
+            pinaforeSetRefMeet @baseedit @A
           , mkValEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
-            pinaforeSetJoin @baseedit @A
-          , mkValEntry "setsum" "Sum of sets." $ pinaforeSetSum @baseedit @AP @AQ @BP @BQ
+            pinaforeSetRefJoin @baseedit @A
+          , mkValEntry "setsum" "Sum of sets." $ pinaforeSetRefSum @baseedit @AP @AQ @BP @BQ
           , mkValEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
-          , mkValEntry "membership" "Get the membership of a set." $ pinaforeSetMembership @baseedit
-          , mkValEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetSingle @baseedit @A
-          , mkValEntry "count" "Count of members in a set." $ pinaforeSetFunc @baseedit @TopType @Int olength
-          , mkValEntry "sum" "Sum of numbers in a set." $ pinaforeSetFunc @baseedit @Number @Number sum
+          , mkValEntry "membership" "Get the membership of a set." $ pinaforeSetRefMembership @baseedit
+          , mkValEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetRefSingle @baseedit @A
+          , mkValEntry "count" "Count of members in a set." $ pinaforeSetRefFunc @baseedit @TopType @Int olength
+          , mkValEntry "sum" "Sum of numbers in a set." $ pinaforeSetRefFunc @baseedit @Number @Number sum
           , mkValEntry "mean" "Mean of numbers in a set." $
-            pinaforeSetFunc @baseedit @Number @Number $ \s -> sum s / fromIntegral (olength s)
-          , mkValEntry "newentity" "Create a new entity in a set and act on it." $ pinaforeSetAddNew @baseedit
+            pinaforeSetRefFunc @baseedit @Number @Number $ \s -> sum s / fromIntegral (olength s)
+          , mkValEntry "newentity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew @baseedit
           , mkValEntry
                 "+="
                 "Add an entity to a set."
-                (pinaforeSetAdd :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
+                (pinaforeSetRefAdd :: PinaforeSetRef baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
           , mkValEntry
                 "-="
                 "Remove an entity from a set."
-                (pinaforeSetRemove :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
+                (pinaforeSetRefRemove :: PinaforeSetRef baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
           , mkValEntry
                 "removeall"
                 "Remove all entities from a set."
-                (pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit ())
+                (pinaforeSetRefRemoveAll :: PinaforeSetRef baseedit '( BottomType, TopType) -> PinaforeAction baseedit ())
           , mkValEntry "newmemset" "Create a new set reference to memory, initially empty." $ newmemset @baseedit
           ]
     , docTreeEntry
