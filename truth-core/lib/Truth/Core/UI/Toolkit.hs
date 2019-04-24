@@ -30,8 +30,7 @@ quitOnWindowsClosed uit = do
     return uit {uitCreateWindow = newCreateWindow}
 
 data TruthContext = MkTruthContext
-    { tcArguments :: [String]
-    , tcUIToolkit :: UIToolkit
+    { tcUIToolkit :: UIToolkit
     }
 
 type TruthMain = forall a. (TruthContext -> LifeCycleIO a) -> IO a

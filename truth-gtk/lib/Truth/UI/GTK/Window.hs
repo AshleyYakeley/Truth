@@ -7,7 +7,6 @@ import GI.GLib as GI hiding (String)
 import GI.Gdk as GI (threadsAddIdle)
 import GI.Gtk as GI
 import Shapes
-import System.Environment
 import Truth.Core
 import Truth.UI.GTK.Button
 import Truth.UI.GTK.CSS
@@ -135,7 +134,6 @@ truthMainGTK :: TruthMain
 truthMainGTK appMain =
     runLifeCycle $
     liftIOWithUnlift $ \(MkTransform unlift) -> do
-        tcArguments <- getArgs
         _ <- GI.init Nothing
         uiLockVar <- newMVar ()
         runVar <- newMVar RSRun

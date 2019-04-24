@@ -97,19 +97,17 @@ async :: Bool
 async = True
 
 main :: IO ()
-main =
-    truthMainGTK $ \MkTruthContext {..} -> do
-        options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
-        case options of
-            PredefinedDocOption ->
-                liftIO $ runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
-            InfixDocOption ->
-                liftIO printInfixOperatorTable -- runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
-            DumpTableOption mdirpath -> do
-                dirpath <- getDirPath mdirpath
-                liftIO $ sqlitePinaforeDumpTable dirpath
-            RunOption fInteract fNoRun mdirpath fpaths -> do
-                dirpath <- getDirPath mdirpath
+main = do
+    options <- O.execParser (O.info optParser mempty)
+    case options of
+        PredefinedDocOption -> runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
+        InfixDocOption -> printInfixOperatorTable
+        DumpTableOption mdirpath -> do
+            dirpath <- getDirPath mdirpath
+            sqlitePinaforeDumpTable dirpath
+        RunOption fInteract fNoRun mdirpath fpaths -> do
+            dirpath <- getDirPath mdirpath
+            truthMainGTK $ \MkTruthContext {..} -> do
                 toolkit <- liftIO $ quitOnWindowsClosed tcUIToolkit
                 context <- sqlitePinaforeContext async dirpath toolkit
                 let

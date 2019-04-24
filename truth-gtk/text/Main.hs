@@ -23,10 +23,9 @@ async :: Bool
 async = False
 
 main :: IO ()
-main =
+main = do
+    (paths, double, saveOpt) <- O.execParser (O.info optParser mempty)
     truthMainGTK $ \MkTruthContext {..} -> do
-        (paths, double, saveOpt) <-
-            liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
         MkUIToolkit {..} <- liftIO $ quitOnWindowsClosed tcUIToolkit
         for_ paths $ \path -> do
             let
