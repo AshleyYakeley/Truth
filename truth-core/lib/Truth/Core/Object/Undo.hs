@@ -9,6 +9,7 @@ import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
+import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
 
 -- fst is original edits, snd is undoing edits
@@ -47,7 +48,7 @@ undoQueueSubscriber ::
     -> IO (Subscriber edit, UndoActions)
 undoQueueSubscriber sub = do
     queueVar <- newMVar $ MkUndoQueue [] []
-    MkCloseUnliftIO (runP :: UnliftIO ma) (MkAnObject readP pushP) <- return $ subObject sub
+    MkCloseUnliftIO (runP :: UnliftIO ma) (MkASubscriber (MkAnObject readP pushP) subscribeP) <- return sub
     let
         undoActions = let
             uaUndo :: EditSource -> IO Bool
@@ -102,6 +103,5 @@ undoQueueSubscriber sub = do
                             mvarRun queueVar $ updateUndoQueue readP edits
                             action esrc
                     Nothing -> Nothing
-        objC = MkCloseUnliftIO runP $ MkAnObject readP pushC
-        subC = MkSubscriber objC $ subscribe sub
+        subC = MkCloseUnliftIO runP $ MkASubscriber (MkAnObject readP pushC) subscribeP
     return (subC, undoActions)

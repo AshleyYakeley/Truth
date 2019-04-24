@@ -5,7 +5,8 @@ module Truth.Core.Object.Subscriber
     , ReceiveUpdatesT
     , mapReceiveUpdates
     , mapReceiveUpdatesT
-    , Subscriber(..)
+    , ASubscriber(..)
+    , Subscriber
     , makeObjectSubscriber
     , liftIO
     , UpdatingObject
@@ -18,13 +19,16 @@ import Truth.Core.Import
 import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
+import Truth.Core.Object.UnliftIO
 import Truth.Core.Object.Update
 import Truth.Core.Read
 
-data Subscriber edit = MkSubscriber
-    { subObject :: Object edit
-    , subscribe :: ([edit] -> EditContext -> IO ()) -> LifeCycleIO ()
+data ASubscriber m edit = MkASubscriber
+    { subAnObject :: AnObject m edit
+    , subscribe :: ([edit] -> EditContext -> IO ()) -> LifeCycleT m ()
     }
+
+type Subscriber = CloseUnliftIO ASubscriber
 
 type UpdateStoreEntry edit = [edit] -> EditContext -> IO ()
 
@@ -69,15 +73,14 @@ makeSharedSubscriber async uobj = do
             store <- mvarRun var get
             for_ store $ \entry -> entry edits ectxt
     runAsync <- getRunner async updateP
-    (objectC, a) <- uobj runAsync
+    (MkCloseUnliftIO unliftC anObjectC, a) <- uobj runAsync
     let
         child :: Subscriber edit
         child =
-            MkSubscriber objectC $ \updateC ->
-                case objectC of
-                    MkCloseUnliftIO runC _ -> do
-                        key <- liftIO $ runTransform runC $ mvarRun var $ addStoreStateT updateC
-                        lifeCycleClose $ runTransform runC $ mvarRun var $ deleteStoreStateT key
+            MkCloseUnliftIO unliftC $
+            MkASubscriber anObjectC $ \updateC -> do
+                key <- liftIO $ mvarRun var $ addStoreStateT updateC
+                lifeCycleClose $ mvarRun var $ deleteStoreStateT key
     return (child, a)
 
 updatingObject :: forall edit. Object edit -> UpdatingObject edit ()

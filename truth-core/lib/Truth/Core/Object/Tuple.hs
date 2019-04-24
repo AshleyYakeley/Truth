@@ -1,24 +1,45 @@
 module Truth.Core.Object.Tuple
     ( tupleObject
+    , tupleSubscribers
     , pairObjects
     , pairSubscribers
     ) where
 
+import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
+import Truth.Core.Object.Lens
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
+import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
 import Truth.Core.Types
 
-noneTupleObject :: Object (TupleEdit (ListElementType '[]))
-noneTupleObject = let
-    objRead :: forall t. TupleEditReader (ListElementType '[]) t -> IO t
-    objRead (MkTupleEditReader sel _) = case sel of {}
-    objEdit :: [TupleEdit (ListElementType '[])] -> IO (Maybe (EditSource -> IO ()))
-    objEdit [] = return $ Just $ \_ -> return ()
-    objEdit (MkTupleEdit sel _:_) = case sel of {}
-    in MkCloseUnliftIO id MkAnObject {..}
+class ObjectOrSubscriber (f :: (Type -> Type) -> Type -> Type) where
+    mapThing :: EditLens edita editb -> CloseUnliftIO f edita -> CloseUnliftIO f editb
+    noneTupleAThing :: f IO (TupleEdit (ListElementType '[]))
+    consTupleAThings ::
+           forall ma mb edit edits. (MonadStackIO ma, MonadStackIO mb)
+        => f ma edit
+        -> f mb (TupleEdit (ListElementType edits))
+        -> f (CombineMonadIO ma mb) (TupleEdit (ListElementType (edit : edits)))
+
+noneTupleThing ::
+       forall f. ObjectOrSubscriber f
+    => CloseUnliftIO f (TupleEdit (ListElementType '[]))
+noneTupleThing = MkCloseUnliftIO id noneTupleAThing
+
+consTupleThings ::
+       forall f edit edits. ObjectOrSubscriber f
+    => CloseUnliftIO f edit
+    -> CloseUnliftIO f (TupleEdit (ListElementType edits))
+    -> CloseUnliftIO f (TupleEdit (ListElementType (edit : edits)))
+consTupleThings (MkCloseUnliftIO (runA :: UnliftIO ma) anobjA) (MkCloseUnliftIO (runB :: UnliftIO mb) anobjB) =
+    case isCombineMonadIO @ma @mb of
+        Dict -> let
+            runAB :: UnliftIO (CombineMonadIO ma mb)
+            runAB = combineUnliftIOs runA runB
+            in MkCloseUnliftIO runAB $ consTupleAThings anobjA anobjB
 
 partitionListTupleEdits ::
        forall edit edits. [TupleEdit (ListElementType (edit : edits))] -> ([edit], [TupleEdit (ListElementType edits)])
@@ -28,63 +49,105 @@ partitionListTupleEdits pes = let
     toEither (MkTupleEdit (RestElementType sel) eb) = Right $ MkTupleEdit sel eb
     in partitionEithers $ fmap toEither pes
 
-consTupleObjects ::
-       forall edit edits.
-       Object edit
-    -> Object (TupleEdit (ListElementType edits))
-    -> Object (TupleEdit (ListElementType (edit : edits)))
-consTupleObjects (MkCloseUnliftIO (runA :: UnliftIO ma) (MkAnObject readA editA)) (MkCloseUnliftIO (runB :: UnliftIO mb) (MkAnObject readB editB)) =
-    case isCombineMonadIO @ma @mb of
-        Dict -> let
-            runAB :: UnliftIO (CombineMonadIO ma mb)
-            runAB = combineUnliftIOs runA runB
-            readAB :: MutableRead (CombineMonadIO ma mb) (TupleEditReader (ListElementType (edit : edits)))
-            readAB (MkTupleEditReader FirstElementType r) = combineLiftFst @ma @mb $ readA r
-            readAB (MkTupleEditReader (RestElementType sel) r) =
-                combineLiftSnd @ma @mb $ readB $ MkTupleEditReader sel r
-            editAB ::
-                   [TupleEdit (ListElementType (edit : edits))]
-                -> CombineMonadIO ma mb (Maybe (EditSource -> CombineMonadIO ma mb ()))
-            editAB edits = let
-                (eas, ebs) = partitionListTupleEdits edits
-                in liftA2
-                       (liftA2 $ liftA2 $ \mau mbu -> (>>) (combineLiftFst @ma @mb mau) (combineLiftSnd @ma @mb mbu))
-                       (combineLiftFst @ma @mb $ editA eas)
-                       (combineLiftSnd @ma @mb $ editB ebs)
-            in MkCloseUnliftIO runAB $ MkAnObject readAB editAB
+instance ObjectOrSubscriber AnObject where
+    mapThing = mapObject
+    noneTupleAThing :: AnObject IO (TupleEdit (ListElementType '[]))
+    noneTupleAThing = let
+        objRead :: forall t. TupleEditReader (ListElementType '[]) t -> IO t
+        objRead (MkTupleEditReader sel _) = case sel of {}
+        objEdit :: [TupleEdit (ListElementType '[])] -> IO (Maybe (EditSource -> IO ()))
+        objEdit [] = return $ Just $ \_ -> return ()
+        objEdit (MkTupleEdit sel _:_) = case sel of {}
+        in MkAnObject {..}
+    consTupleAThings ::
+           forall ma mb edit edits. (MonadStackIO ma, MonadStackIO mb)
+        => AnObject ma edit
+        -> AnObject mb (TupleEdit (ListElementType edits))
+        -> AnObject (CombineMonadIO ma mb) (TupleEdit (ListElementType (edit : edits)))
+    consTupleAThings (MkAnObject readA editA) (MkAnObject readB editB) =
+        case isCombineMonadIO @ma @mb of
+            Dict -> let
+                readAB :: MutableRead (CombineMonadIO ma mb) (TupleEditReader (ListElementType (edit : edits)))
+                readAB (MkTupleEditReader FirstElementType r) = combineLiftFst @ma @mb $ readA r
+                readAB (MkTupleEditReader (RestElementType sel) r) =
+                    combineLiftSnd @ma @mb $ readB $ MkTupleEditReader sel r
+                editAB ::
+                       [TupleEdit (ListElementType (edit : edits))]
+                    -> CombineMonadIO ma mb (Maybe (EditSource -> CombineMonadIO ma mb ()))
+                editAB edits = let
+                    (eas, ebs) = partitionListTupleEdits edits
+                    in liftA2
+                           (liftA2 $ liftA2 $ \mau mbu -> (>>) (combineLiftFst @ma @mb mau) (combineLiftSnd @ma @mb mbu))
+                           (combineLiftFst @ma @mb $ editA eas)
+                           (combineLiftSnd @ma @mb $ editB ebs)
+                in MkAnObject readAB editAB
 
-tupleListObject ::
-       forall edits.
-       ListType Proxy edits
-    -> (forall edit. ListElementType edits edit -> Object edit)
-    -> Object (TupleEdit (ListElementType edits))
-tupleListObject lt getObject =
+instance ObjectOrSubscriber ASubscriber where
+    mapThing = mapSubscriber
+    noneTupleAThing :: ASubscriber IO (TupleEdit (ListElementType '[]))
+    noneTupleAThing = MkASubscriber noneTupleAThing $ \_ -> return ()
+    consTupleAThings ::
+           forall ma mb edit edits. (MonadStackIO ma, MonadStackIO mb)
+        => ASubscriber ma edit
+        -> ASubscriber mb (TupleEdit (ListElementType edits))
+        -> ASubscriber (CombineMonadIO ma mb) (TupleEdit (ListElementType (edit : edits)))
+    consTupleAThings (MkASubscriber aobjA subA) (MkASubscriber aobjB subB) =
+        case isCombineMonadIO @ma @mb of
+            Dict -> let
+                aobjAB :: AnObject (CombineMonadIO ma mb) (TupleEdit (ListElementType (edit : edits)))
+                aobjAB = consTupleAThings aobjA aobjB
+                subAB ::
+                       ([TupleEdit (ListElementType (edit : edits))] -> EditContext -> IO ())
+                    -> LifeCycleT (MonadStackTrans ma mb) ()
+                subAB update = do
+                    remonad (combineLiftFst @ma @mb) $
+                        subA $ \ee ec -> update (fmap (MkTupleEdit FirstElementType) ee) ec
+                    remonad (combineLiftSnd @ma @mb) $
+                        subB $ \ee ec ->
+                            update (fmap (\(MkTupleEdit sel e) -> MkTupleEdit (RestElementType sel) e) ee) ec
+                in MkASubscriber aobjAB subAB
+
+tupleListThing ::
+       forall f edits. ObjectOrSubscriber f
+    => ListType Proxy edits
+    -> (forall edit. ListElementType edits edit -> CloseUnliftIO f edit)
+    -> CloseUnliftIO f (TupleEdit (ListElementType edits))
+tupleListThing lt getObject =
     case lt of
-        NilListType -> noneTupleObject
+        NilListType -> noneTupleThing
         ConsListType Proxy lt' ->
-            consTupleObjects (getObject FirstElementType) $
-            tupleListObject lt' $ \sel -> getObject $ RestElementType sel
+            consTupleThings (getObject FirstElementType) $ tupleListThing lt' $ \sel -> getObject $ RestElementType sel
+
+tupleThing ::
+       forall f sel. (ObjectOrSubscriber f, IsFiniteConsWitness sel)
+    => (forall edit. sel edit -> CloseUnliftIO f edit)
+    -> CloseUnliftIO f (TupleEdit sel)
+tupleThing pick = mapThing (tupleIsoLens fromLTW toLTW) $ tupleListThing representative $ \sel -> pick $ fromLTW sel
 
 tupleObject ::
        forall sel. IsFiniteConsWitness sel
     => (forall edit. sel edit -> Object edit)
     -> Object (TupleEdit sel)
-tupleObject pickObject =
-    mapObject (tupleIsoLens fromLTW toLTW) $ tupleListObject representative $ \sel -> pickObject $ fromLTW sel
+tupleObject = tupleThing
 
-pairObjects :: forall edita editb. Object edita -> Object editb -> Object (PairEdit edita editb)
-pairObjects obja objb =
-    tupleObject $ \case
+tupleSubscribers ::
+       forall sel. IsFiniteConsWitness sel
+    => (forall edit. sel edit -> Subscriber edit)
+    -> Subscriber (TupleEdit sel)
+tupleSubscribers = tupleThing
+
+pairThings ::
+       forall f edita editb. ObjectOrSubscriber f
+    => CloseUnliftIO f edita
+    -> CloseUnliftIO f editb
+    -> CloseUnliftIO f (PairEdit edita editb)
+pairThings obja objb =
+    tupleThing $ \case
         SelectFirst -> obja
         SelectSecond -> objb
 
+pairObjects :: forall edita editb. Object edita -> Object editb -> Object (PairEdit edita editb)
+pairObjects = pairThings
+
 pairSubscribers :: forall edita editb. Subscriber edita -> Subscriber editb -> Subscriber (PairEdit edita editb)
-pairSubscribers (MkSubscriber obja suba) (MkSubscriber objb subb) = let
-    objab = pairObjects obja objb
-    subab recvab = let
-        recva edits = recvab $ fmap (MkTupleEdit SelectFirst) edits
-        recvb edits = recvab $ fmap (MkTupleEdit SelectSecond) edits
-        in do
-               suba recva
-               subb recvb
-    in MkSubscriber objab subab
+pairSubscribers = pairThings

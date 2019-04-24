@@ -3,14 +3,10 @@ module Truth.Core.Object.Object where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
+import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
 import Truth.Core.Types.None
 import Truth.Core.Types.Whole
-
-data CloseUnliftIO f (a :: k) =
-    forall m. MonadStackIO m =>
-                  MkCloseUnliftIO (UnliftIO m)
-                                  (f m a)
 
 data AnObject m edit = MkAnObject
     { objRead :: MutableRead m (EditReader edit)
@@ -90,21 +86,9 @@ lensAnObject MkAnEditLens {..} (MkAnObject objReadA objEditA) = let
     in MkAnObject objReadB objEditB
 
 lensObject :: forall edita editb. Bool -> EditLens edita editb -> Object edita -> Object editb
-lensObject discard (MkCloseUnlift (MkUnlift lensRun :: Unlift t) alens) (MkCloseUnliftIO (MkTransform objRunA :: UnliftIO m) aobj)
+lensObject discard (MkCloseUnlift (lensUnlift :: Unlift t) alens) (MkCloseUnliftIO (objUnlift :: UnliftIO m) aobj)
     | Dict <- hasTransConstraint @MonadUnliftIO @t @m = let
-        objRunBFull :: UnliftIO (t m)
-        objRunBFull = MkTransform $ \tmr -> objRunA $ lensRun $ liftWithUnlift $ \(MkUnlift unlift) -> unlift tmr
-        objRunBDiscard :: UnliftIO (t m)
-        objRunBDiscard =
-            MkTransform $ \tmr ->
-                objRunA $ do
-                    MkUnlift du <- lensRun $ getDiscardingUnlift
-                    du tmr -- discard lens effects: all these effects will be replayed by the update
-        objRunB :: UnliftIO (t m)
-        objRunB =
-            if discard
-                then objRunBDiscard
-                else objRunBFull
+        objRunB = lensObjectUnlift discard lensUnlift objUnlift
         in MkCloseUnliftIO objRunB $ lensAnObject alens aobj
 
 readConstantObject :: MutableRead IO (EditReader edit) -> Object edit

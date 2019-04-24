@@ -189,12 +189,13 @@ subscribeView ::
     -> Subscriber edit
     -> (forall t. IOWitness t -> Maybe t)
     -> LifeCycleIO w
-subscribeView vcThreadBarrier (MkAnyCreateView (MkCreateView (ReaderT view))) (MkSubscriber vcObject sub) vcRequest = do
+subscribeView vcThreadBarrier (MkAnyCreateView (MkCreateView (ReaderT view))) (MkCloseUnliftIO run (MkASubscriber obj sub)) vcRequest = do
     let
         vcSetSelection :: Aspect sel -> IO ()
         vcSetSelection _ = return ()
+        vcObject = MkCloseUnliftIO run obj
     (w, vo) <- runWriterT $ view MkViewContext {..}
-    sub $ voUpdate vo vcObject
+    remonad (runTransform run) $ sub $ voUpdate vo vcObject
     return w
 
 tupleCreateView ::
