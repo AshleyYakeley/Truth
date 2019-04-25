@@ -1,7 +1,7 @@
 module Main where
 
 import Data.IORef
-import Data.Time.Clock
+import Data.Time
 import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -53,15 +53,19 @@ testLifeCycle =
                 lifeCycleClose $ appendStr "D"
         runLifeCycle lc
 
+baseTime :: UTCTime
+baseTime = UTCTime (ModifiedJulianDay 0) 0
+
 testFastClock :: TestTree
 testFastClock =
     testCase "fast" $ do
         ref <- newIORef False
         runLifeCycle $ do
-            clock 0.1 $ \_ -> do
-                writeIORef ref True
-                threadDelay 1000000
-                writeIORef ref False
+            _ <-
+                clock baseTime 0.1 $ \_ -> do
+                    writeIORef ref True
+                    threadDelay 1000000
+                    writeIORef ref False
             liftIO $ threadDelay 500000
         bad <- readIORef ref
         if bad
@@ -69,7 +73,11 @@ testFastClock =
             else return ()
 
 testSlowClock :: TestTree
-testSlowClock = testCase "slow" $ runLifeCycle $ clock (5000 * nominalDay) $ \_ -> return ()
+testSlowClock =
+    testCase "slow" $
+    runLifeCycle $ do
+        _ <- clock baseTime (5000 * nominalDay) $ \_ -> return ()
+        return ()
 
 testClock :: TestTree
 testClock = testGroup "clock" [testFastClock, testSlowClock]

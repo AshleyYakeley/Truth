@@ -1,9 +1,11 @@
-module Control.Clock where
+module Control.Clock
+    ( clock
+    ) where
 
 import Control.Monad.LifeCycleIO
 import Control.Monad.Trans.LifeCycle
+import Data.Fixed
 import Data.Time.Clock
-import Data.Time.Clock.System
 import Shapes.Import
 
 data Cancelled =
@@ -12,34 +14,32 @@ data Cancelled =
 
 instance Exception Cancelled
 
-clock :: NominalDiffTime -> (UTCTime -> IO ()) -> LifeCycleIO ()
-clock ndtInterval call = do
+clock :: UTCTime -> NominalDiffTime -> (UTCTime -> IO ()) -> LifeCycleIO UTCTime
+clock utcBase ndtInterval call = do
     let
-        musInterval :: Integer
-        musInterval = truncate $ nominalDiffTimeToSeconds ndtInterval * 1000000
+        getDiffTimes :: IO (NominalDiffTime, NominalDiffTime)
+        getDiffTimes = do
+            utcCurrent <- getCurrentTime
+            let
+                ndtTime = diffUTCTime utcCurrent utcBase
+                ndtOffset = mod' ndtTime ndtInterval
+            return (ndtTime, ndtOffset)
     var <- liftIO newEmptyMVar
     thread <-
         liftIO $
         forkIO $
         handle (\MkCancelled -> return ()) $
         forever $ do
-            MkSystemTime s ns <- getSystemTime
+            (ndtTime, ndtOffset) <- getDiffTimes
             let
-                musTime :: Integer
-                musTime = (toInteger s) * 1000000 + div (toInteger ns) 1000
-                musRemaining :: Integer
-                musRemaining = musInterval - (mod musTime musInterval)
-                musNext :: Integer
-                musNext = musTime + musRemaining
-                sysTimeNext :: SystemTime
-                sysTimeNext =
-                    MkSystemTime (fromInteger $ div musNext 1000000) $ fromInteger $ (mod musNext 1000000) * 1000
-                utcTimeNext :: UTCTime
-                utcTimeNext = systemToUTCTime sysTimeNext
+                ndtRemaining = ndtInterval - ndtOffset
+                ndtNext = ndtTime + ndtRemaining
             putMVar var ()
-            threadDelay $ fromInteger musRemaining
+            threadDelay $ truncate $ (nominalDiffTimeToSeconds ndtRemaining) * 1E6
             takeMVar var
-            call utcTimeNext
+            call $ addUTCTime ndtNext utcBase
+    (ndtTime, ndtOffset) <- liftIO getDiffTimes
     lifeCycleClose $ do
         takeMVar var
         throwTo thread MkCancelled
+    return $ addUTCTime (ndtTime - ndtOffset) utcBase
