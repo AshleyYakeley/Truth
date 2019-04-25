@@ -73,6 +73,7 @@ tests:
           - tasty
           - tasty-hunit
         main: Main.hs
+        ghc-options: -threaded
 
 executables:
     truth-text:
@@ -91,6 +92,7 @@ executables:
           - truth-gtk
           - optparse-applicative
         main: Main.hs
+        ghc-options: -threaded
     truth-soup:
         when:
           - condition: "!flag(build-examples)"
@@ -112,3 +114,4 @@ executables:
           - Soup.Note
           - Soup.Edit
           - Soup.UI
+        ghc-options: -threaded

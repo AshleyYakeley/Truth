@@ -9,6 +9,7 @@ library:
     source-dirs: src
     dependencies:
       - base >= 4.12
+      - time
       - stm
       - constraints
       - mono-traversable
@@ -55,6 +56,7 @@ library:
       - Control.Monad.Coroutine
       - Control.Monad.Trans.LifeCycle
       - Control.Monad.LifeCycleIO
+      - Control.Clock
       - Control.AsyncRunner
       - Shapes
       - Shapes.Numeric
@@ -67,7 +69,9 @@ tests:
         source-dirs: test
         dependencies:
           - base >= 4.12
+          - time
           - shapes
           - tasty
           - tasty-hunit
         main: Main.hs
+        ghc-options: -threaded

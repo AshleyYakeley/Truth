@@ -146,3 +146,4 @@ tests:
     main: Main.hs
     other-modules:
       - Subscribe
+    ghc-options: -threaded

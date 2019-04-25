@@ -1,6 +1,7 @@
 module Main where
 
 import Data.IORef
+import Data.Time.Clock
 import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -52,8 +53,29 @@ testLifeCycle =
                 lifeCycleClose $ appendStr "D"
         runLifeCycle lc
 
+testFastClock :: TestTree
+testFastClock =
+    testCase "fast" $ do
+        ref <- newIORef False
+        runLifeCycle $ do
+            clock 0.1 $ \_ -> do
+                writeIORef ref True
+                threadDelay 1000000
+                writeIORef ref False
+            liftIO $ threadDelay 500000
+        bad <- readIORef ref
+        if bad
+            then assertFailure "bad async exception"
+            else return ()
+
+testSlowClock :: TestTree
+testSlowClock = testCase "slow" $ runLifeCycle $ clock (5000 * nominalDay) $ \_ -> return ()
+
+testClock :: TestTree
+testClock = testGroup "clock" [testFastClock, testSlowClock]
+
 tests :: TestTree
-tests = testGroup "shapes" [testCoroutine, testLifeCycle]
+tests = testGroup "shapes" [testCoroutine, testLifeCycle, testClock]
 
 main :: IO ()
 main = defaultMain tests
