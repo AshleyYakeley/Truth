@@ -22,6 +22,7 @@ library:
       - shapes
     exposed-modules:
       - Truth.Core
+      - Truth.World.Clock
       - Truth.World.Anything
       - Truth.World.File
       - Truth.World.FileSystem
@@ -81,6 +82,7 @@ library:
       - Truth.Core.Object.AutoClose
       - Truth.Core.Object.ObjectEdit
       - Truth.Core.Object.Update
+      - Truth.Core.Object.UpdatingObject
       - Truth.Core.Object.Subscriber
       - Truth.Core.Object.Lens
       - Truth.Core.Object.Tuple
