@@ -174,7 +174,7 @@ truthMainGTK appMain =
                 _ <-
                     threadsAddIdle PRIORITY_DEFAULT_IDLE $ do
                         putMVar uiLockVar ()
-                        yield
+                        threadDelay 5000 -- 5ms delay
                         takeMVar uiLockVar
                         sr <- mvarRun runVar Shapes.get
                         case sr of
