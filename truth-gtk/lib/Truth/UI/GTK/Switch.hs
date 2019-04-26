@@ -13,7 +13,7 @@ switchView :: forall sel edit. EditFunction edit (WholeEdit (GCreateView sel edi
 switchView specfunc = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
-        getViewState :: GCreateView sel edit -> View sel edit (ViewState sel edit)
+        getViewState :: GCreateView sel edit -> View sel edit (ViewState sel)
         getViewState gview =
             viewCreateView $ do
                 widget <- gview
@@ -24,7 +24,7 @@ switchView specfunc = do
             firstspec <- viewMapEdit (readOnlyEditLens specfunc) $ viewObjectRead $ \_ mr -> mr ReadWhole
             getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
-    cvDynamic @(ViewState sel edit) firstvs $ \object edits -> do
+    cvDynamic @(ViewState sel) firstvs $ \object edits -> do
         whedits <- liftIO $ objectMapUpdates specfunc object edits
         case lastWholeEdit whedits of
             Nothing -> return ()

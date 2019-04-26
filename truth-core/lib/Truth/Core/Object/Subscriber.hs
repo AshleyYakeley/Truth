@@ -7,6 +7,7 @@ module Truth.Core.Object.Subscriber
     , mapReceiveUpdatesT
     , ASubscriber(..)
     , Subscriber
+    , subscriberObject
     , makeObjectSubscriber
     , liftIO
     , makeSharedSubscriber
@@ -25,6 +26,9 @@ data ASubscriber m edit = MkASubscriber
     }
 
 type Subscriber = CloseUnliftIO ASubscriber
+
+subscriberObject :: Subscriber edit -> Object edit
+subscriberObject (MkCloseUnliftIO run sub) = MkCloseUnliftIO run $ subAnObject sub
 
 type UpdateStoreEntry edit = [edit] -> EditContext -> IO ()
 
