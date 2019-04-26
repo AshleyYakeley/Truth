@@ -61,11 +61,14 @@ voMapEdit lens@(MkCloseUnlift unlift flens) (MkViewOutput updateB a) = let
     MkAnEditLens {..} = flens
     MkAnEditFunction {..} = elFunction
     updateA :: Object edita -> [edita] -> EditContext -> IO ()
+    updateA _ [] _ = return ()
     updateA objA@(MkCloseUnliftIO ou (MkAnObject omr _)) editsA ectxt = do
         editsB <-
             runTransform (composeUnliftTransform unlift ou) $
             withTransConstraintTM @MonadUnliftIO $ efUpdates elFunction editsA omr
-        updateB (mapObject lens objA) editsB ectxt
+        case editsB of
+            [] -> return ()
+            _ -> updateB (mapObject lens objA) editsB ectxt
     in (MkViewOutput updateA a)
 
 voMapSelection :: forall sela selb edit. (sela -> selb) -> ViewOutput sela edit -> ViewOutput selb edit

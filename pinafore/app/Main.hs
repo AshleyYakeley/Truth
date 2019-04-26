@@ -17,6 +17,7 @@ data Options
     | DumpTableOption (Maybe FilePath)
     | RunOption Bool
                 Bool
+                Bool
                 (Maybe FilePath)
                 [FilePath]
 
@@ -25,7 +26,8 @@ optDataFlag = O.optional $ O.strOption $ O.long "data" <> O.metavar "PATH"
 
 optParser :: O.Parser Options
 optParser =
-    (RunOption <$> (O.switch $ O.long "interactive" <> O.short 'i') <*> (O.switch $ O.long "no-run" <> O.short 'n') <*>
+    (RunOption <$> (O.switch $ O.long "sync") <*> (O.switch $ O.long "interactive" <> O.short 'i') <*>
+     (O.switch $ O.long "no-run" <> O.short 'n') <*>
      optDataFlag <*>
      (O.many $ O.strArgument $ O.metavar "SCRIPT")) <|>
     (O.flag' PredefinedDocOption $ O.long "doc-predefined") <|>
@@ -93,9 +95,6 @@ printInfixOperatorTable = do
             for_ mnames $ \n -> putStr $ " `" <> show n <> "`"
         putStrLn ""
 
-async :: Bool
-async = True
-
 main :: IO ()
 main = do
     options <- O.execParser (O.info optParser mempty)
@@ -105,11 +104,11 @@ main = do
         DumpTableOption mdirpath -> do
             dirpath <- getDirPath mdirpath
             sqlitePinaforeDumpTable dirpath
-        RunOption fInteract fNoRun mdirpath fpaths -> do
+        RunOption fSync fInteract fNoRun mdirpath fpaths -> do
             dirpath <- getDirPath mdirpath
             truthMainGTK $ \MkTruthContext {..} -> do
                 toolkit <- liftIO $ quitOnWindowsClosed tcUIToolkit
-                context <- sqlitePinaforeContext async dirpath toolkit
+                context <- sqlitePinaforeContext (not fSync) dirpath toolkit
                 let
                     ?pinafore = context
                     in liftIO $
