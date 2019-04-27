@@ -107,8 +107,8 @@ interpretDeclarations ::
     -> SyntaxDeclarations baseedit
     -> PinaforeScoped baseedit (Transform (RefNotation baseedit) (RefNotation baseedit))
 interpretDeclarations spos (MkSyntaxDeclarations stypedecls sbinds) = do
-    MkTypeDecls td <- stypedecls
-    return $ MkTransform $ \ra -> td $ interpretLetBindings spos sbinds $ td ra
+    MkTypeDecls td tr <- stypedecls
+    return $ MkTransform $ \ra -> td $ tr $ interpretLetBindings spos sbinds ra
 
 interpretNamedConstructor :: SourcePos -> Name -> RefExpression baseedit
 interpretNamedConstructor spos n = do

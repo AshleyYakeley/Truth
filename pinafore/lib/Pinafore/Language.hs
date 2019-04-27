@@ -151,6 +151,7 @@ interactLoop inh outh echo = do
                              LetInteractiveCommand fbind ->
                                  lift $ do
                                      MkTransform bind <- liftRS fbind
+                                     liftRS $ bind $ return () -- check errors
                                      updateRS bind
                              ExpressionInteractiveCommand texpr -> do
                                  val <- interactEvalExpression texpr

@@ -7,14 +7,16 @@ import Pinafore.Language.Read.RefNotation
 import Pinafore.Language.Type
 import Shapes
 
-newtype TypeDecls baseedit =
-    MkTypeDecls (forall a. RefNotation baseedit a -> RefNotation baseedit a)
+data TypeDecls baseedit = MkTypeDecls
+    { tdTypes :: forall a. RefNotation baseedit a -> RefNotation baseedit a
+    , tdRelations :: forall a. RefNotation baseedit a -> RefNotation baseedit a
+    }
 
 instance Semigroup (TypeDecls baseedit) where
-    (MkTypeDecls a) <> (MkTypeDecls b) = MkTypeDecls (a . b)
+    (MkTypeDecls at ar) <> (MkTypeDecls bt br) = MkTypeDecls (at . bt) (ar . br)
 
 instance Monoid (TypeDecls baseedit) where
-    mempty = MkTypeDecls id
+    mempty = MkTypeDecls id id
     mappend = (<>)
 
 data SyntaxDeclarations baseedit =

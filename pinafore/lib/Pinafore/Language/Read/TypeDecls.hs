@@ -17,27 +17,35 @@ import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes hiding (try)
 
-readOpenTypeDeclaration :: Parser (PinaforeScoped baseedit (TypeDecls baseedit))
+readOpenTypeDeclaration :: forall baseedit. Parser (TypeDecls baseedit)
 readOpenTypeDeclaration = do
     spos <- getPosition
     readThis TokOpenType
     n <- readTypeName
-    return $
-        runSourcePos spos $ do
-            (_, withnt) <- withNewTypeName n $ OpenEntityNamedType
-            return $ MkTypeDecls $ remonadRefNotation withnt
+    let
+        tdTypes :: forall a. RefNotation baseedit a -> RefNotation baseedit a
+        tdTypes rn = do
+            (_, withnt) <- liftRefNotation $ runSourcePos spos $ withNewTypeName n $ OpenEntityNamedType
+            remonadRefNotation withnt rn
+        tdRelations :: forall a. RefNotation baseedit a -> RefNotation baseedit a
+        tdRelations = id
+    return MkTypeDecls {..}
 
-readSubtypeDeclaration :: Parser (PinaforeScoped baseedit (TypeDecls baseedit))
+readSubtypeDeclaration :: forall baseedit. Parser (TypeDecls baseedit)
 readSubtypeDeclaration = do
     spos <- getPosition
     readThis TokSubtype
     na <- readTypeName
     readExactlyThis TokOperator "<="
     nb <- readTypeName
-    return $
-        runSourcePos spos $ do
-            smap <- withEntitySubtype (na, nb)
-            return $ MkTypeDecls $ remonadRefNotation smap
+    let
+        tdTypes :: forall a. RefNotation baseedit a -> RefNotation baseedit a
+        tdTypes = id
+        tdRelations :: forall a. RefNotation baseedit a -> RefNotation baseedit a
+        tdRelations rn = do
+            smap <- liftRefNotation $ runSourcePos spos $ withEntitySubtype (na, nb)
+            remonadRefNotation smap rn
+    return MkTypeDecls {..}
 
 readClosedTypeConstructor :: Parser (PinaforeScoped baseedit (Name, Anchor, AnyW (ListType EntityType)))
 readClosedTypeConstructor = do
@@ -124,7 +132,12 @@ readClosedTypeDeclaration = do
                             return $
                             MkTransform $ withNewBindings $ singletonMap cname $ qConstExprAny $ toTypeFAnyValue valt at
                         return $ patt . bind
-                return $ MkTypeDecls $ remonadRefNotation $ withnt . compAll patts
+                let
+                    tdTypes :: forall a. RefNotation baseedit a -> RefNotation baseedit a
+                    tdTypes = remonadRefNotation $ withnt . compAll patts
+                    tdRelations :: forall a. RefNotation baseedit a -> RefNotation baseedit a
+                    tdRelations = id
+                return $ MkTypeDecls {..}
 
 readTypeDeclaration :: Parser (PinaforeScoped baseedit (TypeDecls baseedit))
-readTypeDeclaration = readOpenTypeDeclaration <|> readSubtypeDeclaration <|> readClosedTypeDeclaration
+readTypeDeclaration = (fmap return $ readOpenTypeDeclaration <|> readSubtypeDeclaration) <|> readClosedTypeDeclaration
