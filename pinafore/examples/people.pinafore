@@ -28,28 +28,28 @@ openmywindow title moremenus contents = afix $ \window -> let
 
 # Ontology
 
-opentype Type;
+opentype LegalEntity;
+name = property @LegalEntity @Text !498260df-6a8a-44f0-b285-68a63565a33b;
+email = property @LegalEntity @Text !8649b74c-123e-4ece-be3b-b734b0db3ea7;
+phone = property @LegalEntity @Text !83dfc88b-7b5b-4262-a548-0af84d5e3b63;
+
 opentype Person;
+people :: SetRef Person;
+people = property @Person @() !d52b4d16-babc-4c9b-9588-c66439ada088 !@ {()};
+subtype Person <= LegalEntity;
 
-type = property @Person @Type !f06efa5e-190f-4e5d-8633-495c5683c124;
-name = property @Person @Text !498260df-6a8a-44f0-b285-68a63565a33b;
-
-people = type !@ {entity @Type !78baed51-cb05-46b5-bcb4-49031532b890};
+birthdate = property @Person @Text !b711b9b3-b43c-4ff6-be12-3291cc6b050a;
+deathdate = property @Person @Text !805a9e65-d69a-4261-9c94-a3249885b6bb;
 
 mother = property @Person @Person !3afce58f-b7eb-4b11-8a75-2d66afd4d085;
 father = property @Person @Person !c005705f-9259-4d24-9713-db28a6e4f7d5;
-
 children :: Ref Person -> SetRef Person;
 children p = mother !@ p \/ father !@ p;
+married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
 
-employer = property @Person @Person !72f612af-ae47-4c18-b3df-6932ae914f62;
-
-email = property @Person @Text !8649b74c-123e-4ece-be3b-b734b0db3ea7;
-
-phone = property @Person @Text !83dfc88b-7b5b-4262-a548-0af84d5e3b63;
+employer = property @Person @LegalEntity !72f612af-ae47-4c18-b3df-6932ae914f62;
 
 opentype Location;
-home = property @Person @Location !b4f7736e-2db4-486c-aae5-b6a9b1035fd0;
 address = property @Location @Text !fd83bef7-145c-4e40-a2d6-938bb5fb6da1;
 locphone = property @Location @Text !83dfc88b-7b5b-4262-a548-0af84d5e3b63;
 city = property @Location @Text !55c84133-64f2-47a6-8b3c-e01256ec9779;
@@ -57,11 +57,28 @@ postcode = property @Location @Text !80f99100-407b-4a6b-a4f0-a025c94132b3;
 province = property @Location @Text !dffae424-28d5-4543-b1b2-b8a744bbc0cd;
 country = property @Location @Text !1257c340-0ec1-4ff7-9fd8-d2eaa7822463;
 
-birthdate = property @Person @Text !b711b9b3-b43c-4ff6-be12-3291cc6b050a;
-deathdate = property @Person @Text !805a9e65-d69a-4261-9c94-a3249885b6bb;
-married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
+home = property @LegalEntity @Location !b1ff2354-13e5-4def-b5d0-fdf29c2274ff;
+
+opentype Organisation;
+organisations :: SetRef Organisation;
+organisations = property @Organisation @() !b655e2db-cf45-4696-8b89-8812406ba71b !@ {()};
+subtype Organisation <= LegalEntity;
+
+legalentities :: SetRef (Either Person Organisation);
+legalentities = setsum people organisations;
 
 # UI
+table_entities :: UI (Either Person Organisation);
+table_entities = let
+    nameColumn :: (Ref +Text, Either Person Organisation -> Ref Text);
+    nameColumn = ({"Name"},\i -> name !$ {either i});
+    openItem :: Either Person Organisation -> Action Window;
+    openItem i = case i of
+        Left p -> window_person p;
+        Right o -> window_org o;
+        end;
+    in ui_table [nameColumn] legalentities openItem;
+
 table_people :: SetRef Person -> UI Person;
 table_people people = ui_table [({"Name"},\p -> name !$ {p})] people window_person;
 
@@ -74,7 +91,7 @@ ui_people people = ui_withselection $ \getperson -> ui_vertical
     (table_people people,True)
 ];
 
-ui_person :: Ref Person -> UI None;
+ui_person :: Ref {-LegalEntity,+Person} -> UI None;
 ui_person p = ui_ignore $ ui_vertical
 [
     (ui_labelled {"Name: "} $ ui_textentry $ name !$ p,False),
@@ -113,6 +130,9 @@ ui_person p = ui_ignore $ ui_vertical
 window_person :: Person -> Action Window;
 window_person p = openmywindow (name !$ {p}) (\_ -> []) (ui_person {p});
 
+window_org :: Organisation -> Action Window;
+window_org o = openmywindow (name !$ {o}) (\_ -> []) (ui_blank);
+
 window_people :: Action Window;
 window_people = let
     moremenus :: Action Person -> [MenuItem];
@@ -121,8 +141,8 @@ window_people = let
             menu_submenu "Selection"
             [
                 menu_action "New Person" (Just "Ctrl+K") {newentity people >>= window_person},
-                menu_action "View Person" Nothing {getperson >>= window_person},
-                menu_action "Remove Person" Nothing {getperson >>= \p -> people -= p}
+                menu_action "View" Nothing {getperson >>= window_person},
+                menu_action "Delete" Nothing {getperson >>= \p -> people -= p}
             ]
         ];
     in openmywindow {"People"} moremenus (table_people people);
