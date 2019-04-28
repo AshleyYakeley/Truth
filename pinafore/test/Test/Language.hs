@@ -329,8 +329,8 @@ testQueries =
         , testGroup "pairs" [testQuery "fst (7,9)" $ Just "7", testQuery "snd (7,9)" $ Just "9"]
         , testGroup
               "either"
-              [ testQuery "either (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Left \"x\"" $ Just "(Left, x)"
-              , testQuery "either (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Right \"x\"" $ Just "(Right, x)"
+              [ testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Left \"x\"" $ Just "(Left, x)"
+              , testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Right \"x\"" $ Just "(Right, x)"
               ]
         , testGroup
               "type signature"

@@ -203,6 +203,8 @@ base_predefinitions =
           ""
           [ mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
           , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
+          , mkValEntry "toPair" "Construct a pair." $ (,) @A @B
+          , mkValEntry "pair" "Construct a pair." $ \(a :: A) -> (a, a)
           ]
     , docTreeEntry
           "Either"
@@ -215,7 +217,11 @@ base_predefinitions =
                 case v of
                     Right a -> Just (a, ())
                     _ -> Nothing
-          , mkValEntry "either" "Eliminate an Either" $ either @A @C @B
+          , mkValEntry "fromEither" "Eliminate an Either" $ either @A @C @B
+          , mkValEntry "either" "Eliminate an Either" $ \(v :: Either A A) ->
+                case v of
+                    Left a -> a
+                    Right a -> a
           ]
     , docTreeEntry
           "Lists"
