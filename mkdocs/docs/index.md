@@ -22,5 +22,4 @@ To just parse and type-check a file without running it, use `-n` or `--no-run`.
 
 ### Interactive Mode
 
-If `pinafore` is invoked without any scripts and standard input is a terminal, then it will run in interactive mode.
-Interactive mode can also be forced using `-i` or `--interactive`.
+If `pinafore` is invoked with `-i` or `--interactive`, it will run in interactive mode.

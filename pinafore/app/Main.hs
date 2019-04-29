@@ -15,21 +15,21 @@ data Options
     = PredefinedDocOption
     | InfixDocOption
     | DumpTableOption (Maybe FilePath)
-    | RunOption Bool
-                Bool
-                Bool
-                (Maybe FilePath)
-                [FilePath]
+    | RunFileOption Bool
+                    Bool
+                    (Maybe FilePath)
+                    [FilePath]
+    | RunInteractiveOption Bool
+                           (Maybe FilePath)
 
 optDataFlag :: O.Parser (Maybe FilePath)
 optDataFlag = O.optional $ O.strOption $ O.long "data" <> O.metavar "PATH"
 
 optParser :: O.Parser Options
 optParser =
-    (RunOption <$> (O.switch $ O.long "sync") <*> (O.switch $ O.long "interactive" <> O.short 'i') <*>
-     (O.switch $ O.long "no-run" <> O.short 'n') <*>
-     optDataFlag <*>
+    (RunFileOption <$> (O.switch $ O.long "sync") <*> (O.switch $ O.long "no-run" <> O.short 'n') <*> optDataFlag <*>
      (O.many $ O.strArgument $ O.metavar "SCRIPT")) <|>
+    ((O.flag' RunInteractiveOption $ O.long "interactive" <> O.short 'i') <*> (O.switch $ O.long "sync") <*> optDataFlag) <|>
     (O.flag' PredefinedDocOption $ O.long "doc-predefined") <|>
     (O.flag' InfixDocOption $ O.long "doc-infix") <|>
     ((O.flag' DumpTableOption $ O.long "dump-table") <*> optDataFlag)
@@ -104,35 +104,34 @@ main = do
         DumpTableOption mdirpath -> do
             dirpath <- getDirPath mdirpath
             sqlitePinaforeDumpTable dirpath
-        RunOption fSync fInteract fNoRun mdirpath fpaths -> do
+        RunFileOption fSync fNoRun mdirpath fpaths -> do
+            dirpath <- getDirPath mdirpath
+            truthMainGTK $ \MkTruthContext {..} -> do
+                toolkit <- liftIO $ quitOnWindowsClosed tcUIToolkit
+                context <- sqlitePinaforeContext (not fSync) dirpath toolkit
+                let
+                    runText fpath ptext = do
+                        action <-
+                            ioRunInterpretResult $ let
+                                ?pinafore = context
+                                in pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
+                        if fNoRun
+                            then return ()
+                            else action
+                liftIO $
+                    case fpaths of
+                        [] -> do
+                            ptext <- getContents
+                            runText "<stdin>" ptext
+                        _ -> do
+                            for_ fpaths $ \fpath -> do
+                                ptext <- readFile fpath
+                                runText fpath ptext
+        RunInteractiveOption fSync mdirpath -> do
             dirpath <- getDirPath mdirpath
             truthMainGTK $ \MkTruthContext {..} -> do
                 toolkit <- liftIO $ quitOnWindowsClosed tcUIToolkit
                 context <- sqlitePinaforeContext (not fSync) dirpath toolkit
                 let
                     ?pinafore = context
-                    in liftIO $
-                       case fpaths of
-                           [] -> do
-                               isterm <- hIsTerminalDevice stdin
-                               if isterm || fInteract
-                                   then pinaforeInteract
-                                   else do
-                                       ptext <- getContents
-                                       action <-
-                                           ioRunInterpretResult $
-                                           pinaforeInterpretFile "<stdin>" $ decodeUtf8 $ toStrict ptext
-                                       if fNoRun
-                                           then return ()
-                                           else action
-                           _ -> do
-                               for_ fpaths $ \fpath -> do
-                                   ptext <- readFile fpath
-                                   action <-
-                                       ioRunInterpretResult $ pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
-                                   if fNoRun
-                                       then return ()
-                                       else action
-                               if fInteract
-                                   then pinaforeInteract
-                                   else return ()
+                    in liftIO pinaforeInteract
