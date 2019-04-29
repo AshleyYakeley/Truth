@@ -7,6 +7,7 @@ module Pinafore.Language.Expression
 
 import Language.Expression.Bindings
 import Language.Expression.Dolan
+import Language.Expression.Error
 import Language.Expression.TypeSystem
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
@@ -61,7 +62,7 @@ qApplyPatternConstructor ::
 qApplyPatternConstructor = tsApplyPatternConstructor @(PinaforeTypeSystem baseedit)
 
 qSealPatternConstructor ::
-       forall baseedit m. MonadFail m
+       forall baseedit m. MonadError ExpressionError m
     => QPatternConstructor baseedit
     -> m (QPattern baseedit)
 qSealPatternConstructor = tsSealPatternConstructor @(PinaforeTypeSystem baseedit)
@@ -152,7 +153,7 @@ qValuesLetExpr :: forall baseedit. StrictMap Name (QValue baseedit) -> StrictMap
 qValuesLetExpr = tsValuesLet @(PinaforeTypeSystem baseedit)
 
 qEvalExpr ::
-       forall baseedit m. MonadFail m
+       forall baseedit m. MonadError ExpressionError m
     => QExpr baseedit
     -> m (QValue baseedit)
 qEvalExpr expr = tsEval @(PinaforeTypeSystem baseedit) expr

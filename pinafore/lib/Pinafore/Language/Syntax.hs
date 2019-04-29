@@ -1,6 +1,7 @@
 module Pinafore.Language.Syntax where
 
 import Pinafore.Base
+import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
 import Pinafore.Language.Read.RefNotation
@@ -213,7 +214,10 @@ instance SyntaxBindingVariables (SyntaxDeclarations baseedit) where
 instance SyntaxBindingVariables (SyntaxBinding baseedit) where
     syntaxBindingVariables (MkSyntaxBinding _ _ name _) = singletonSet name
 
-checkSyntaxBindingsDuplicates :: MonadFail m => [SyntaxBinding baseedit] -> m ()
+checkSyntaxBindingsDuplicates ::
+       forall baseedit m. MonadError ErrorType m
+    => [SyntaxBinding baseedit]
+    -> m ()
 checkSyntaxBindingsDuplicates = let
     duplicates ::
            forall a. Eq a
@@ -223,12 +227,9 @@ checkSyntaxBindingsDuplicates = let
     duplicates (a:aa)
         | elem a aa = a : duplicates aa
     duplicates (_:aa) = duplicates aa
-    checkDuplicates ::
-           forall m name. (Show name, Eq name, MonadFail m)
-        => [name]
-        -> m ()
+    checkDuplicates :: [Name] -> m ()
     checkDuplicates nn =
         case nub $ duplicates nn of
             [] -> return ()
-            b -> fail $ "duplicate bindings: " <> (intercalate ", " $ fmap show b)
+            b -> throwError $ InterpretBindingsDuplicateError b
     in checkDuplicates . fmap (\(MkSyntaxBinding _ _ name _) -> name)

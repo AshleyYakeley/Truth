@@ -2,6 +2,7 @@ module Language.Expression.TypeSystem where
 
 import Language.Expression.Abstract
 import Language.Expression.Bindings
+import Language.Expression.Error
 import Language.Expression.Renamer
 import Language.Expression.Sealed
 import Language.Expression.Subsumer
@@ -49,7 +50,7 @@ tsUnify ::
 tsUnify wa wb = runRenamer @(TSRenamer ts) $ solveUnifyPosNegWitnesses @(TSUnifier ts) wa wb
 
 tsEval ::
-       forall ts m. (MonadFail m, Show (TSName ts))
+       forall ts m. (MonadError ExpressionError m, Show (TSName ts))
     => TSSealedExpression ts
     -> m (TSValue ts)
 tsEval = evalSealedExpression
@@ -64,7 +65,7 @@ tsAnyToVal witn (MkAnyValue witp val) = do
     return $ conv val
 
 tsEvalToType ::
-       forall ts t. (TypeSystem ts, MonadFail (TSScoped ts), Show (TSName ts))
+       forall ts t. (TypeSystem ts, MonadError ExpressionError (TSScoped ts), Show (TSName ts))
     => TSNegWitness ts t
     -> TSSealedExpression ts
     -> TSScoped ts t
@@ -186,13 +187,13 @@ tsBothPattern ::
 tsBothPattern = bothSealedPattern @(TSRenamer ts) @(TSUnifier ts)
 
 tsSealPatternConstructor ::
-       forall ts m. MonadFail m
+       forall ts m. MonadError ExpressionError m
     => TSPatternConstructor ts
     -> m (TSSealedPattern ts)
 tsSealPatternConstructor = sealedPatternConstructor
 
 tsApplyPatternConstructor ::
-       forall ts. (TypeSystem ts, MonadFail (TSScoped ts))
+       forall ts. (TypeSystem ts, MonadError ExpressionError (TSScoped ts))
     => TSPatternConstructor ts
     -> TSSealedPattern ts
     -> TSScoped ts (TSPatternConstructor ts)

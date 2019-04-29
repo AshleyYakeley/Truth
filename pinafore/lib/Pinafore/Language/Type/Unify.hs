@@ -8,7 +8,9 @@ import Language.Expression.Polarity
 import Language.Expression.TypeF
 import Language.Expression.UVar
 import Language.Expression.Unifier
+import Pinafore.Language.Error
 import Pinafore.Language.GroundType
+import Pinafore.Language.Name
 import Pinafore.Language.Show
 import Pinafore.Language.Type.Bisubstitute
 import Pinafore.Language.Type.Subtype
@@ -213,9 +215,9 @@ runUnifier ::
     -> PinaforeTypeCheck baseedit (a, [PinaforeBisubstitution baseedit])
 runUnifier (ClosedExpression a) = return (a, [])
 runUnifier (OpenExpression (PositiveBisubstitutionWitness vn tp) _)
-    | occursInSingularType vn tp = fail $ "can't construct recursive type " <> show vn <> " = " <> unpack (exprShow tp)
+    | occursInSingularType vn tp = throwError $ TypeRecursiveError (symbolTypeToName vn) (exprShow tp)
 runUnifier (OpenExpression (NegativeBisubstitutionWitness vn tp) _)
-    | occursInSingularType vn tp = fail $ "can't construct recursive type " <> show vn <> " = " <> unpack (exprShow tp)
+    | occursInSingularType vn tp = throwError $ TypeRecursiveError (symbolTypeToName vn) (exprShow tp)
 runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name) (tp :: PinaforeSingularType baseedit 'Positive vw)) expr) = let
     varBij :: Bijection (JoinType (UVar name) vw) (UVar name)
     varBij = unsafeUVarBijection

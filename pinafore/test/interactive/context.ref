@@ -8,7 +8,7 @@ pinafore> let fq :: Q -> Boolean; fq _ = True
 pinafore> fp p
 True
 pinafore> fp q
-error: "<input>" (line 1, column 1): cannot convert "Q" to "P"
+<input>:1:1: cannot convert "Q" <= "P"
 pinafore> fq p
 True
 pinafore> fq q

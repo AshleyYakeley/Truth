@@ -4,6 +4,7 @@ module Pinafore.Language.Read.Interactive
     ) where
 
 import Pinafore.Base
+import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret
 import Pinafore.Language.Name
@@ -45,5 +46,5 @@ readInteractiveCommand =
          return $ LetInteractiveCommand $ interpretTopDeclarations stdecls)
 
 parseInteractiveCommand ::
-       HasPinaforeEntityEdit baseedit => Text -> StateT SourcePos (Result Text) (InteractiveCommand baseedit)
+       HasPinaforeEntityEdit baseedit => Text -> StateT SourcePos InterpretResult (InteractiveCommand baseedit)
 parseInteractiveCommand = parseReader readInteractiveCommand

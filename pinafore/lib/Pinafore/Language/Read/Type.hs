@@ -120,7 +120,6 @@ readTypeVar = readThis TokLName
 
 readTypeConst :: Parser SyntaxType
 readTypeConst = do
-    --spos <- getPosition
     name <- readTypeName
     case name of
         "Any" -> return TopSyntaxType

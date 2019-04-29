@@ -7,6 +7,7 @@ import Data.Graph
 import Language.Expression.Dolan
 import Language.Expression.Sealed
 import Pinafore.Base
+import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.If
 import Pinafore.Language.Interpret.Type
@@ -14,6 +15,7 @@ import Pinafore.Language.Morphism
 import Pinafore.Language.Name
 import Pinafore.Language.OpenEntity
 import Pinafore.Language.Read.RefNotation
+import Pinafore.Language.Show
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes
@@ -98,7 +100,7 @@ interpretLetBindings ::
     -> RefNotation baseedit a
     -> RefNotation baseedit a
 interpretLetBindings spos sbinds ra = do
-    checkSyntaxBindingsDuplicates sbinds
+    liftRefNotation $ runSourcePos spos $ checkSyntaxBindingsDuplicates sbinds
     interpretLetBindingss spos (clumpBindings sbinds) ra
 
 interpretDeclarations ::
@@ -115,7 +117,7 @@ interpretNamedConstructor spos n = do
     me <- liftRefNotation $ runSourcePos spos $ lookupBinding n
     case me of
         Just e -> return e
-        Nothing -> fail $ "unknown constructor: " <> show n
+        Nothing -> throwError $ MkErrorMessage spos $ InterpretConstructorUnknownError n
 
 interpretConstructor :: SourcePos -> SyntaxConstructor -> RefExpression baseedit
 interpretConstructor _ (SLNumber n) =
@@ -170,46 +172,51 @@ interpretExpression' spos (SEApply sf sarg) = do
 interpretExpression' spos (SEConst c) = interpretConstant spos c
 interpretExpression' spos (SEVar name) = varRefExpr spos name
 interpretExpression' spos (SERef sexpr) = refNotationQuote spos $ interpretExpression sexpr
-interpretExpression' _ (SEUnref sexpr) = refNotationUnquote $ interpretExpression sexpr
+interpretExpression' spos (SEUnref sexpr) = refNotationUnquote spos $ interpretExpression sexpr
 interpretExpression' spos (SEList sexprs) = do
     exprs <- for sexprs interpretExpression
     liftRefNotation $ runSourcePos spos $ qSequenceExpr exprs
 interpretExpression' spos (SEProperty sta stb anchor) =
     liftRefNotation $ do
-        MkAnyW eta <- runSourcePos spos $ interpretEntityType sta
-        MkAnyW etb <- runSourcePos spos $ interpretEntityType stb
-        etan <- entityToNegativePinaforeType eta
-        etbn <- entityToNegativePinaforeType etb
-        let
-            bta = biTypeF (etan, entityToPositivePinaforeType eta)
-            btb = biTypeF (etbn, entityToPositivePinaforeType etb)
-            in case (bta, btb, entityTypeEq eta, entityTypeEq etb) of
-                   (MkAnyF rta pra, MkAnyF rtb prb, Dict, Dict) ->
-                       withSubrepresentative rangeTypeInKind rta $
-                       withSubrepresentative rangeTypeInKind rtb $ let
-                           typef =
-                               singlePinaforeTypeF $
-                               mkPTypeF $
-                               GroundPinaforeSingularType MorphismPinaforeGroundType $
-                               ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
-                           morphism = propertyMorphism (entityAdapter eta) (entityAdapter etb) (MkPredicate anchor)
-                           pinamorphism = MkPinaforeMorphism pra prb morphism
-                           anyval = toTypeFAnyValue typef pinamorphism
-                           in return $ qConstExprAny anyval
+        meta <- runSourcePos spos $ interpretEntityType sta
+        metb <- runSourcePos spos $ interpretEntityType stb
+        case (meta, metb) of
+            (MkAnyW eta, MkAnyW etb) -> do
+                etan <- runSourcePos spos $ entityToNegativePinaforeType eta
+                etbn <- runSourcePos spos $ entityToNegativePinaforeType etb
+                let
+                    bta = biTypeF (etan, entityToPositivePinaforeType eta)
+                    btb = biTypeF (etbn, entityToPositivePinaforeType etb)
+                    in case (bta, btb, entityTypeEq eta, entityTypeEq etb) of
+                           (MkAnyF rta pra, MkAnyF rtb prb, Dict, Dict) ->
+                               withSubrepresentative rangeTypeInKind rta $
+                               withSubrepresentative rangeTypeInKind rtb $ let
+                                   typef =
+                                       singlePinaforeTypeF $
+                                       mkPTypeF $
+                                       GroundPinaforeSingularType MorphismPinaforeGroundType $
+                                       ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
+                                   morphism =
+                                       propertyMorphism (entityAdapter eta) (entityAdapter etb) (MkPredicate anchor)
+                                   pinamorphism = MkPinaforeMorphism pra prb morphism
+                                   anyval = toTypeFAnyValue typef pinamorphism
+                                   in return $ qConstExprAny anyval
 interpretExpression' spos (SEEntity st anchor) =
     liftRefNotation $ do
-        MkAnyW tp <- runSourcePos spos $ interpretEntityType st
-        pt <- makeEntity tp $ MkEntity anchor
-        let
-            typef = entityToPositivePinaforeType tp
-            anyval = toTypeFAnyValue typef pt
-        return $ qConstExprAny anyval
+        mtp <- runSourcePos spos $ interpretEntityType st
+        case mtp of
+            MkAnyW tp -> do
+                pt <- runSourcePos spos $ makeEntity tp $ MkEntity anchor
+                let
+                    typef = entityToPositivePinaforeType tp
+                    anyval = toTypeFAnyValue typef pt
+                return $ qConstExprAny anyval
 
-makeEntity :: MonadFail m => EntityType t -> Entity -> m t
+makeEntity :: MonadError ErrorType m => EntityType t -> Entity -> m t
 makeEntity (MkEntityType TopEntityGroundType NilArguments) p = return p
 makeEntity (MkEntityType NewEntityGroundType NilArguments) p = return $ MkNewEntity p
 makeEntity (MkEntityType (OpenEntityGroundType _ _) NilArguments) p = return $ MkOpenEntity p
-makeEntity t _ = fail $ "not an open entity type: " <> show t
+makeEntity t _ = throwError $ InterpretTypeNotOpenEntityError $ exprShow t
 
 interpretTypeSignature ::
        Maybe SyntaxType -> PinaforeExpression baseedit -> PinaforeSourceScoped baseedit (PinaforeExpression baseedit)
@@ -237,8 +244,8 @@ interpretTopDeclarations ::
     -> PinaforeScoped baseedit (Transform (PinaforeScoped baseedit) (PinaforeScoped baseedit))
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) = do
     MkTransform f <- interpretDeclarations spos sdecls
-    return $ MkTransform $ \a -> runRefNotation $ f $ liftRefNotation a
+    return $ MkTransform $ \a -> runRefNotation spos $ f $ liftRefNotation a
 
 interpretTopExpression ::
        HasPinaforeEntityEdit baseedit => SyntaxExpression baseedit -> PinaforeScoped baseedit (QExpr baseedit)
-interpretTopExpression sexpr = runRefNotation $ interpretExpression sexpr
+interpretTopExpression sexpr@(MkSyntaxExpression spos _) = runRefNotation spos $ interpretExpression sexpr

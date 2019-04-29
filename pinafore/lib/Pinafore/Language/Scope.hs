@@ -6,6 +6,7 @@ module Pinafore.Language.Scope
     , SourcePos
     , SourceScoped
     , askSourcePos
+    , remonadSourcePos
     , runSourcePos
     , liftSourcePos
     , mapSourcePos
@@ -23,6 +24,8 @@ module Pinafore.Language.Scope
     , TypeCheckSubtype(..)
     ) where
 
+import Language.Expression.Error
+import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Pinafore.Language.OpenEntity
 import Pinafore.Language.TypeID
@@ -41,8 +44,14 @@ data Scope expr patc ct = MkScope
     }
 
 newtype Scoped expr patc ct a =
-    MkScoped (ReaderT (Scope expr patc ct) (StateT TypeID (Result Text)) a)
-    deriving (Functor, Applicative, Alternative, Monad, MonadPlus, MonadFail)
+    MkScoped (ReaderT (Scope expr patc ct) (StateT TypeID InterpretResult) a)
+    deriving (Functor, Applicative, Alternative, Monad, MonadPlus)
+
+instance MonadError [ErrorMessage] (Scoped expr patc ct) where
+    throwError err = MkScoped $ throwError err
+
+instance MonadError ErrorMessage (Scoped expr patc ct) where
+    throwError err = throwError [err]
 
 instance Semigroup a => Semigroup (Scoped expr patc ct a) where
     (<>) = liftA2 (<>)
@@ -51,10 +60,10 @@ instance Monoid a => Monoid (Scoped expr patc ct a) where
     mappend = (<>)
     mempty = pure mempty
 
-runScoped :: Scoped expr patc ct a -> Result Text a
+runScoped :: Scoped expr patc ct a -> InterpretResult a
 runScoped (MkScoped qa) = evalStateT (runReaderT qa $ MkScope mempty mempty mempty mempty) zeroTypeID
 
-liftScoped :: Result Text a -> Scoped expr patc ct a
+liftScoped :: InterpretResult a -> Scoped expr patc ct a
 liftScoped ra = MkScoped $ lift $ lift ra
 
 pScope :: Scoped expr patc ct (Scope expr patc ct)
@@ -76,6 +85,12 @@ runSourcePos spos (MkSourceScoped ma) = runReaderT ma spos
 liftSourcePos :: Scoped expr patc ct a -> SourceScoped expr patc ct a
 liftSourcePos ma = MkSourceScoped $ lift ma
 
+remonadSourcePos ::
+       (forall a. Scoped expr1 patc1 ct1 a -> Scoped expr2 patc2 ct2 a)
+    -> SourceScoped expr1 patc1 ct1 b
+    -> SourceScoped expr2 patc2 ct2 b
+remonadSourcePos mm (MkSourceScoped mb) = MkSourceScoped $ remonad mm mb
+
 mapSourcePos ::
        SourcePos
     -> (SourceScoped expr patc ct a -> SourceScoped expr patc ct b)
@@ -83,20 +98,29 @@ mapSourcePos ::
     -> Scoped expr patc ct b
 mapSourcePos spos f ca = runSourcePos spos $ f $ liftSourcePos ca
 
-runSourceScoped :: SourcePos -> SourceScoped expr patc ct a -> Result Text a
+runSourceScoped :: SourcePos -> SourceScoped expr patc ct a -> InterpretResult a
 runSourceScoped spos spa = runScoped $ runSourcePos spos spa
 
 spScope :: SourceScoped expr patc ct (Scope expr patc ct)
 spScope = MkSourceScoped $ lift pScope
 
-instance MonadFail (SourceScoped expr patc ct) where
-    fail s =
+instance MonadError ExpressionError (SourceScoped expr patc ct) where
+    throwError err = throwError $ ExpressionErrorError err
+
+instance MonadError [ErrorMessage] (SourceScoped expr patc ct) where
+    throwError err = MkSourceScoped $ throwError err
+
+instance MonadError ErrorMessage (SourceScoped expr patc ct) where
+    throwError err = MkSourceScoped $ throwError err
+
+instance MonadError ErrorType (SourceScoped expr patc ct) where
+    throwError err =
         MkSourceScoped $ do
             spos <- ask
-            lift $ fail $ show spos <> ": " <> s
+            throwError $ MkErrorMessage spos err
 
 convertFailure :: String -> String -> SourceScoped expr patc ct a
-convertFailure sa sb = fail $ "cannot convert " <> show sa <> " to " <> show sb
+convertFailure sa sb = throwError $ TypeConvertError (pack $ show sa) (pack $ show sb)
 
 lookupBinding :: Name -> SourceScoped expr patc ct (Maybe expr)
 lookupBinding name = do
@@ -116,7 +140,7 @@ lookupNamedType name = do
     mnt <- lookupNamedTypeM name
     case mnt of
         Just nt -> return nt
-        Nothing -> fail $ "unknown type: " <> unpack name
+        Nothing -> throwError $ LookupTypeUnknownError name
 
 lookupPatternConstructorM :: Name -> SourceScoped expr patc ct (Maybe patc)
 lookupPatternConstructorM name = do
@@ -128,7 +152,7 @@ lookupPatternConstructor name = do
     ma <- lookupPatternConstructorM name
     case ma of
         Just a -> return a
-        Nothing -> fail $ "unknown constructor: " <> unpack name
+        Nothing -> throwError $ LookupConstructorUnknownError name
 
 getImmediateSupertypes :: Eq a => [(a, b)] -> a -> [b]
 getImmediateSupertypes st a0 = [(b) | (a, b) <- st, a == a0]
@@ -153,7 +177,7 @@ withNewTypeName ::
 withNewTypeName name t = do
     mnt <- lookupNamedTypeM name
     case mnt of
-        Just _ -> fail $ "duplicate type declaration: " <> unpack name
+        Just _ -> throwError $ DeclareTypeDuplicateError name
         Nothing -> do
             tid <-
                 liftSourcePos $
@@ -169,7 +193,7 @@ withNewPatternConstructor ::
 withNewPatternConstructor name pc = do
     ma <- lookupPatternConstructorM name
     case ma of
-        Just _ -> fail $ "duplicate constructor: " <> unpack name
+        Just _ -> throwError $ DeclareConstructorDuplicateError name
         Nothing ->
             return $
             MkTransform $
@@ -183,7 +207,7 @@ lookupOpenType n = do
     (tid, nt) <- lookupNamedType n
     case nt of
         OpenEntityNamedType -> return tid
-        _ -> fail $ show n <> " is not an open entity type"
+        _ -> throwError $ LookupTypeNotOpenError n
 
 withEntitySubtype :: (Name, Name) -> SourceScoped expr patc ct (Transform (Scoped expr patc ct) (Scoped expr patc ct))
 withEntitySubtype (a, b) = do

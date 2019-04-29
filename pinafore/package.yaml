@@ -50,6 +50,7 @@ library:
       - Pinafore
       - Pinafore.Test
     other-modules:
+      - Language.Expression.Error
       - Language.Expression.UVar
       - Language.Expression.Dolan.PType
       - Language.Expression.Dolan.Range
@@ -82,6 +83,7 @@ library:
       - Pinafore.Language.UI
       - Pinafore.Language.GroundType
       - Pinafore.Language.TypeID
+      - Pinafore.Language.Error
       - Pinafore.Language.Scope
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.Type.Type

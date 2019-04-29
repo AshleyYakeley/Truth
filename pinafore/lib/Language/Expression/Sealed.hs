@@ -1,5 +1,6 @@
 module Language.Expression.Sealed where
 
+import Language.Expression.Error
 import Language.Expression.Expression
 import Language.Expression.Named
 import Language.Expression.Pattern
@@ -15,7 +16,7 @@ data SealedExpression name vw tw =
 constSealedExpression :: AnyValue tw -> SealedExpression name vw tw
 constSealedExpression (MkAnyValue twt t) = MkSealedExpression twt $ pure t
 
-evalSealedExpression :: (MonadFail m, Show name) => SealedExpression name vw tw -> m (AnyValue tw)
+evalSealedExpression :: (MonadError ExpressionError m, Show name) => SealedExpression name vw tw -> m (AnyValue tw)
 evalSealedExpression (MkSealedExpression twa expr) = do
     a <- evalExpression expr
     return $ MkAnyValue twa a
@@ -93,6 +94,7 @@ instance TypeMappable (->) (poswit :: Type -> Type) (negwit :: Type -> Type) (Pa
             mapTypesM @(->) (liftHListPolwit mapPos) mapNeg $ mkGenTypeF @Type @(->) @'Positive $ MkHListWit lvw
         return $ MkPatternConstructor tt' lvw' $ fmap lconv $ pat' . arr conv
 
-sealedPatternConstructor :: MonadFail m => PatternConstructor name vw tw -> m (SealedPattern name vw tw)
+sealedPatternConstructor ::
+       MonadError ExpressionError m => PatternConstructor name vw tw -> m (SealedPattern name vw tw)
 sealedPatternConstructor (MkPatternConstructor twt NilListType pat) = return $ MkSealedPattern twt pat
-sealedPatternConstructor _ = fail "Not enough arguments to constructor in pattern"
+sealedPatternConstructor _ = throwError PatternTooFewConsArgsError

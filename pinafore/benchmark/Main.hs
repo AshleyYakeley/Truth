@@ -30,8 +30,8 @@ benchScript text =
                ?pinafore = pc
                in bgroup
                       (show $ unpack text)
-                      [ bench "check" $ nfIO $ pinaforeInterpretFile "<test>" text >> return ()
-                      , env (fmap const $ pinaforeInterpretFile "<test>" text) $ \action ->
+                      [ bench "check" $ nfIO $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" text >> return ()
+                      , env (fmap const $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" text) $ \action ->
                             bench "run" $ nfIO (action ())
                       ]
 
@@ -114,7 +114,7 @@ checkUpdateEditor val push = let
 
 interpretUpdater :: (?pinafore :: PinaforeContext PinaforeEdit) => Text -> IO ()
 interpretUpdater text = do
-    action <- pinaforeInterpretFileAtType "<test>" text
+    action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" text
     sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
     (sendUpdate, ref) <- unliftPinaforeActionOrFail action
     runLifeCycle $

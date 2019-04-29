@@ -119,14 +119,17 @@ main = do
                                    then pinaforeInteract
                                    else do
                                        ptext <- getContents
-                                       action <- pinaforeInterpretFile "<stdin>" $ decodeUtf8 $ toStrict ptext
+                                       action <-
+                                           ioRunInterpretResult $
+                                           pinaforeInterpretFile "<stdin>" $ decodeUtf8 $ toStrict ptext
                                        if fNoRun
                                            then return ()
                                            else action
                            _ -> do
                                for_ fpaths $ \fpath -> do
                                    ptext <- readFile fpath
-                                   action <- pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
+                                   action <-
+                                       ioRunInterpretResult $ pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
                                    if fNoRun
                                        then return ()
                                        else action

@@ -5,6 +5,7 @@ module Pinafore.Language.Read.Token
 
 import Data.UUID
 import Pinafore.Base
+import Pinafore.Language.Error
 import Pinafore.Language.Name
 import Shapes hiding (try)
 import Shapes.Numeric
@@ -294,11 +295,11 @@ readTokens oldpos = do
     newpos <- getPosition
     return (newpos, toks)
 
-parseTokens :: Text -> StateT SourcePos (Result Text) [(SourcePos, AnyValue Token)]
+parseTokens :: Text -> StateT SourcePos InterpretResult [(SourcePos, AnyValue Token)]
 parseTokens text = do
     oldpos <- get
     case parse (readTokens oldpos) (sourceName oldpos) (unpack text) of
         Right (newpos, a) -> do
             put newpos
             return a
-        Left e -> fail $ show e
+        Left e -> throwError [parseErrorMessage e]

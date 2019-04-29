@@ -12,7 +12,7 @@ import Test.Tasty.HUnit
 testReadType :: Text -> TestTree
 testReadType text =
     testCase (unpack text) $
-    resultTextToM $ do
+    ioRunInterpretResult $ do
         _ <- runTestPinaforeSourceScoped $ parseType @PinaforeEdit @'Positive text
         return ()
 

@@ -15,7 +15,7 @@ scriptTest :: Text -> Text -> (IO () -> IO ()) -> ContextTestTree
 scriptTest name text checker =
     contextTestCase name text $ \t ->
         withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
-            action <- pinaforeInterpretFile "<test>" t
+            action <- ioRunInterpretResult $ pinaforeInterpretFile "<test>" t
             checker action
 
 pointTest :: Text -> ContextTestTree
@@ -35,13 +35,13 @@ badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
     testCase (unpack text) $
     withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
-        assertThrows $ pinaforeInterpretFile "<test>" $ prefix c <> text
+        assertThrows $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
 
 exceptionTest :: Text -> ContextTestTree
 exceptionTest text c =
     testCase (unpack text) $
     withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
-        action <- pinaforeInterpretFile "<test>" $ prefix c <> text
+        action <- ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
         assertThrows action
 
 testEntity :: TestTree

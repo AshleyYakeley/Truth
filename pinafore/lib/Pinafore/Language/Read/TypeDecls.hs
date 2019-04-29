@@ -5,6 +5,7 @@ module Pinafore.Language.Read.TypeDecls
 import Language.Expression.Pattern
 import Language.Expression.Sealed
 import Pinafore.Base
+import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Interpret.Type
 import Pinafore.Language.Name
@@ -92,7 +93,7 @@ makeConstructorPattern (MkTypeF pct conv) lt tma =
             MkPatternConstructor pct lt' $ ClosedPattern $ fmap conv' . tma . unClosedEntity . conv
 
 makeConstructorValue ::
-       forall baseedit m s t a. MonadFail m
+       forall baseedit m s t a. MonadError ErrorType m
     => PinaforeTypeF baseedit 'Positive (ClosedEntity s t)
     -> ListType EntityType a
     -> m (PinaforeTypeF baseedit 'Positive (HList a -> t))

@@ -1,5 +1,8 @@
 module Pinafore.Language
     ( PinaforePredefinitions
+    , PinaforeError
+    , InterpretResult
+    , ioRunInterpretResult
     , PinaforeAction
     , qTypeDescription
     , FromPinaforeType
@@ -16,6 +19,7 @@ module Pinafore.Language
 import Control.Exception
 import Pinafore.Base
 import Pinafore.Language.Convert
+import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Literal
 import Pinafore.Language.Predefined
@@ -28,7 +32,7 @@ import System.IO.Error
 runPinaforeScoped ::
        (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
     => PinaforeScoped baseedit a
-    -> Result Text a
+    -> InterpretResult a
 runPinaforeScoped scp =
     runScoped $
     withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
@@ -37,7 +41,7 @@ runPinaforeSourceScoped ::
        (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
     => FilePath
     -> PinaforeSourceScoped baseedit a
-    -> Result Text a
+    -> InterpretResult a
 runPinaforeSourceScoped fpath scp = runPinaforeScoped $ runSourcePos (initialPos fpath) scp
 
 parseValue ::
@@ -124,7 +128,7 @@ interactParse ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Text
     -> Interact baseedit (InteractiveCommand baseedit)
-interactParse t = remonad resultTextToM $ parseInteractiveCommand @baseedit t
+interactParse t = remonad ioRunInterpretResult $ parseInteractiveCommand @baseedit t
 
 interactLoop ::
        forall baseedit. (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
@@ -144,7 +148,7 @@ interactLoop inh outh echo = do
                 then liftIO $ hPutStr outh inputstr
                 else return ()
             liftIOWithUnlift $ \unlift ->
-                catch
+                catches
                     (runTransform unlift $ do
                          p <- interactParse $ pack inputstr
                          case p of
@@ -160,8 +164,10 @@ interactLoop inh outh echo = do
                              ShowTypeInteractiveCommand texpr -> do
                                  MkAnyValue t _ <- interactEvalExpression texpr
                                  liftIO $ hPutStrLn outh $ ":: " <> show t
-                             ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err) $ \err ->
-                    hPutStrLn outh $ "error: " <> ioeGetErrorString err
+                             ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)
+                    [ Handler $ \(err :: PinaforeError) -> hPutStrLn outh $ show err
+                    , Handler $ \err -> hPutStrLn outh $ "error: " <> ioeGetErrorString err
+                    ]
             interactLoop inh outh echo
 
 interact ::
@@ -173,4 +179,4 @@ interact ::
 interact inh outh echo = do
     hSetBuffering outh NoBuffering
     evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $
-        resultTextToM . runPinaforeScoped
+        ioRunInterpretResult . runPinaforeScoped

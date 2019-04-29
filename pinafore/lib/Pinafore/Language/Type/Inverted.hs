@@ -4,6 +4,8 @@ module Pinafore.Language.Type.Inverted
 
 import Language.Expression.Dolan
 import Language.Expression.Polarity
+import Pinafore.Language.Error
+import Pinafore.Language.Show
 import Pinafore.Language.Type.Subtype
 import Pinafore.Language.Type.Type
 import Shapes
@@ -37,4 +39,4 @@ subtypeTT (ConsPinaforeType sp tp) tq =
 
 invertedSubtype ::
        PinaforeType baseedit 'Negative p -> PinaforeType baseedit 'Positive q -> PinaforeTypeCheck baseedit (p -> q)
-invertedSubtype tp tq = subtypeTT tp tq <|> fail ("cannot inverse match " <> show tp <> " to " <> show tq)
+invertedSubtype tp tq = subtypeTT tp tq <|> throwError (TypeConvertInverseError (exprShow tp) (exprShow tq))

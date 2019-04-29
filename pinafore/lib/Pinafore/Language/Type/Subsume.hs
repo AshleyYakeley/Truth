@@ -10,6 +10,7 @@ import Language.Expression.Polarity
 import Language.Expression.Subsumer
 import Language.Expression.TypeF
 import Language.Expression.UVar
+import Pinafore.Language.Error
 import Pinafore.Language.GroundType
 import Pinafore.Language.Show
 import Pinafore.Language.Type.Bisubstitute
@@ -75,7 +76,7 @@ limitInvertType' ::
 limitInvertType' t =
     case limitInvertType t of
         Just r -> return r
-        Nothing -> fail $ "no inverse limit for " <> show t
+        Nothing -> throwError $ TypeNoInverseLimitError $ exprShow t
 
 -- Kind of the dual of 'BisubstitutionWitness'.
 data SubsumeWitness baseedit t where
@@ -131,7 +132,7 @@ subsumePositiveType1 (VarPinaforeSingularType vinf) tdecl =
     liftSubsumer $ varExpression $ PositiveSubsumeWitness vinf tdecl
 subsumePositiveType1 tinf@(GroundPinaforeSingularType ginf argsinf) tdecl =
     subsumePositiveGroundType ginf argsinf tdecl <|>
-    (subsumerLiftTypeCheck $ fail $ "cannot subsume " <> (unpack $ exprShow tinf) <> " to " <> (unpack $ exprShow tdecl))
+    (subsumerLiftTypeCheck $ throwError $ TypeSubsumeError Positive (exprShow tinf) (exprShow tdecl))
 
 subsumePositiveType ::
        SubsumerConstraint baseedit
@@ -179,8 +180,7 @@ subsumeNegativeType1 tdecl (VarPinaforeSingularType vinf) =
     liftSubsumer $ varExpression $ NegativeSubsumeWitness vinf tdecl
 subsumeNegativeType1 tdecl tinf@(GroundPinaforeSingularType ginf argsinf) =
     subsumeNegativeGroundType tdecl ginf argsinf <|>
-    (subsumerLiftTypeCheck $
-     fail $ "cannot subsume " <> (unpack $ exprShow tinf) <> " to >= " <> (unpack $ exprShow tdecl))
+    (subsumerLiftTypeCheck $ throwError $ TypeSubsumeError Negative (exprShow tinf) (exprShow tdecl))
 
 subsumeNegativeType ::
        SubsumerConstraint baseedit

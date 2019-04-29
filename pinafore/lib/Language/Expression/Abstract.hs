@@ -1,5 +1,6 @@
 module Language.Expression.Abstract where
 
+import Language.Expression.Error
 import Language.Expression.Expression
 import Language.Expression.Named
 import Language.Expression.Pattern
@@ -266,7 +267,7 @@ caseAbstractSealedExpression absw rawcases =
             unifierExpression ruexpr
 
 applyPatternConstructor ::
-       forall renamer unifier m. (UnifierRenamerConstraint unifier renamer m, MonadFail m)
+       forall renamer unifier m. (UnifierRenamerConstraint unifier renamer m, MonadError ExpressionError m)
     => UnifierPatternConstructor unifier
     -> UnifierSealedPattern unifier
     -> m (UnifierPatternConstructor unifier)
@@ -275,7 +276,7 @@ applyPatternConstructor patcon patarg =
     withTransConstraintTM @Monad $ do
         MkPatternConstructor pct pclt pcpat <- rename patcon
         case pclt of
-            NilListType -> lift $ fail "Too many arguments to constructor in pattern"
+            NilListType -> lift $ throwError PatternTooManyConsArgsError
             ConsListType pca pcla -> do
                 MkSealedPattern ta pata <- rename patarg
                 uconv <- unifyPosNegWitnesses @unifier pca ta

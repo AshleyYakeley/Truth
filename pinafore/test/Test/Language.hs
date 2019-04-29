@@ -130,7 +130,7 @@ testQuery query expected =
         (Nothing, FailureResult _) -> return ()
         (Nothing, SuccessResult (MkAnyValue t v)) ->
             assertFailure $ "expected failure, found success: " ++ showPinaforeValue t v
-        (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ unpack e
+        (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ show e
         (Just s, SuccessResult (MkAnyValue t v)) -> assertEqual "result" s (showPinaforeValue t v)
 
 testQueries :: TestTree

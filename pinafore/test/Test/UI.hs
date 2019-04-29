@@ -29,7 +29,7 @@ testUIAction waitClick text testaction =
             (pc, _) <- makeTestPinaforeContext True tcUIToolkit
             scriptaction <- let
                 ?pinafore = pc
-                in pinaforeInterpretFile "<test>" t
+                in ioRunInterpretResult $ pinaforeInterpretFile "<test>" t
             liftIO scriptaction
             liftIO $
                 case waitClick of

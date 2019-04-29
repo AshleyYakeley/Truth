@@ -8,6 +8,7 @@ import Language.Expression.Sealed
 import Language.Expression.TypeF
 import Language.Expression.UVar
 import Pinafore.Language.EntityType
+import Pinafore.Language.Error
 import Pinafore.Language.GroundType
 import Pinafore.Language.Literal
 import Pinafore.Language.Name
@@ -186,7 +187,7 @@ pinaforeToEntityType NilPinaforeType
 pinaforeToEntityType _ = Nothing
 
 entityToNegativePinaforeType ::
-       forall baseedit m t. MonadFail m
+       forall baseedit m t. MonadError ErrorType m
     => EntityType t
     -> m (PinaforeTypeF baseedit 'Negative t)
 entityToNegativePinaforeType (MkEntityType gt args) =
@@ -194,7 +195,7 @@ entityToNegativePinaforeType (MkEntityType gt args) =
         MkTypeF dargs conv <-
             argumentsToDolanArgumentsM entityToNegativePinaforeType ct (entityGroundTypeCovaryMap gt) args
         return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
-entityToNegativePinaforeType NoneEntityType = fail "None is not a negative entity type"
+entityToNegativePinaforeType NoneEntityType = throwError InterpretTypeNoneNotNegativeEntityError
 
 entityToPositivePinaforeType :: forall baseedit t. EntityType t -> PinaforeTypeF baseedit 'Positive t
 entityToPositivePinaforeType (MkEntityType gt args) =
