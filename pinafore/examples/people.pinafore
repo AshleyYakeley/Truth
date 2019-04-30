@@ -13,7 +13,7 @@ openmywindow title moremenus contents = afix $ \window -> let
             [
                 menu_action "Close" (Just "Ctrl+W") {closewindow window},
                 menu_separator,
-                menu_action "Exit" (Just "Ctrl+Q") {closeallwindows}
+                menu_action "Exit" (Just "Ctrl+Q") {exit_ui}
             ],
             menu_submenu "Edit"
             [

@@ -107,7 +107,8 @@ main = do
         RunFileOption fSync fNoRun mdirpath fpaths -> do
             dirpath <- getDirPath mdirpath
             truthMainGTK $ \MkTruthContext {..} -> do
-                toolkit <- liftIO $ quitOnWindowsClosed tcUIToolkit
+                (toolkit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
+                lifeCycleClose $ putStrLn "Closer"
                 context <- sqlitePinaforeContext (not fSync) dirpath toolkit
                 let
                     runText fpath ptext = do
@@ -127,11 +128,12 @@ main = do
                             for_ fpaths $ \fpath -> do
                                 ptext <- readFile fpath
                                 runText fpath ptext
+                liftIO checkdone
         RunInteractiveOption fSync mdirpath -> do
             dirpath <- getDirPath mdirpath
             truthMainGTK $ \MkTruthContext {..} -> do
-                toolkit <- liftIO $ quitOnWindowsClosed tcUIToolkit
-                context <- sqlitePinaforeContext (not fSync) dirpath toolkit
+                context <- sqlitePinaforeContext (not fSync) dirpath tcUIToolkit
                 let
                     ?pinafore = context
                     in liftIO pinaforeInteract
+                liftIO $ uitExit tcUIToolkit

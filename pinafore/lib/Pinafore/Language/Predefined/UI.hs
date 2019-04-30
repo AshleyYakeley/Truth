@@ -210,6 +210,6 @@ ui_predefinitions =
           "User interface windows."
           [ mkValEntry "openwindow" "Open a new window with this title and UI." openwindow
           , mkValEntry "closewindow" "Close a window." pwClose
-          , mkValEntry "closeallwindows" "Close all windows." pinaforeCloseAllWindows
+          , mkValEntry "exit_ui" "Exit the user interface." pinaforeExit
           ]
     ]

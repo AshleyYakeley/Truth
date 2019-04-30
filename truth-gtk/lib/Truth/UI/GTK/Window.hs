@@ -160,8 +160,8 @@ truthMainGTK appMain =
             withUILock False = id
             uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycleIO UIWindow
             uitCreateWindow sub wspec = subscribeView withUILock (createWindowAndChild wspec) sub getRequest
-            uitQuit :: IO ()
-            uitQuit = mvarRun runVar $ put RSStop
+            uitExit :: IO ()
+            uitExit = mvarRun runVar $ put RSStop
             uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a
             uitUnliftLifeCycle = unlift
             tcUIToolkit = MkUIToolkit {..}

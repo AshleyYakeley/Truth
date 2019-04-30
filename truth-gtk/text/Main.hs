@@ -26,7 +26,7 @@ main :: IO ()
 main = do
     (paths, double, saveOpt) <- O.execParser (O.info optParser mempty)
     truthMainGTK $ \MkTruthContext {..} -> do
-        MkUIToolkit {..} <- liftIO $ quitOnWindowsClosed tcUIToolkit
+        (MkUIToolkit {..}, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
         for_ paths $ \path -> do
             let
                 bsObj :: Object ByteStringEdit
@@ -71,7 +71,7 @@ main = do
                               "File"
                               [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') closer
                               , SeparatorMenuEntry
-                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitQuit
+                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitExit
                               ]
                         ]
                     in (mbar, spec)
@@ -106,7 +106,7 @@ main = do
                               , simpleActionMenuItem "Revert" Nothing revertAction
                               , simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') closer
                               , SeparatorMenuEntry
-                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitQuit
+                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitExit
                               ]
                         , SubMenuEntry
                               "Edit"
@@ -133,3 +133,4 @@ main = do
             if double
                 then action
                 else return ()
+            liftIO checkdone

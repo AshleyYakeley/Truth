@@ -73,7 +73,7 @@ soupWindow async MkUIToolkit {..} dirpath = do
                     [ SubMenuEntry
                           "File"
                           [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ cc
-                          , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitQuit
+                          , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitExit
                           ]
                     ]
             wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath

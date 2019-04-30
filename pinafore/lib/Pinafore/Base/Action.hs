@@ -6,7 +6,7 @@ module Pinafore.Base.Action
     , pinaforeLensPush
     , PinaforeWindow(..)
     , pinaforeNewWindow
-    , pinaforeCloseAllWindows
+    , pinaforeExit
     , pinaforeUndoActions
     , pinaforeActionKnow
     , knowPinaforeAction
@@ -71,11 +71,11 @@ pinaforeNewWindow uiw = do
     (pwWindow, pwClose) <- liftIO $ uitUnliftLifeCycle $ lifeCycleEarlyCloser $ uitCreateWindow acSubscriber uiw
     return $ MkPinaforeWindow {..}
 
-pinaforeCloseAllWindows :: PinaforeAction baseedit ()
-pinaforeCloseAllWindows = do
+pinaforeExit :: PinaforeAction baseedit ()
+pinaforeExit = do
     MkActionContext {..} <- MkPinaforeAction ask
     let MkUIToolkit {..} = acUIToolkit
-    liftIO $ uitQuit
+    liftIO uitExit
 
 pinaforeUndoActions :: PinaforeAction baseedit UndoActions
 pinaforeUndoActions = do
