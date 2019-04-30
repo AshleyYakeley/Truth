@@ -110,8 +110,9 @@ main = do
                 (toolkit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
                 lifeCycleClose $ putStrLn "Closer"
                 context <- sqlitePinaforeContext (not fSync) dirpath toolkit
-                let
-                    runText fpath ptext = do
+                for_ fpaths $ \fpath ->
+                    liftIO $ do
+                        ptext <- readFile fpath
                         action <-
                             ioRunInterpretResult $ let
                                 ?pinafore = context
@@ -119,15 +120,6 @@ main = do
                         if fNoRun
                             then return ()
                             else action
-                liftIO $
-                    case fpaths of
-                        [] -> do
-                            ptext <- getContents
-                            runText "<stdin>" ptext
-                        _ -> do
-                            for_ fpaths $ \fpath -> do
-                                ptext <- readFile fpath
-                                runText fpath ptext
                 liftIO checkdone
         RunInteractiveOption fSync mdirpath -> do
             dirpath <- getDirPath mdirpath
