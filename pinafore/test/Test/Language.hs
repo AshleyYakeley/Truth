@@ -312,6 +312,12 @@ testQueries =
               , testQuery "not False" $ Just "True"
               ]
         , testGroup
+              "text"
+              [ testQuery "\"pqrs\"" $ Just "pqrs"
+              , testQuery "textlength \"abd\"" $ Just "3"
+              , testQuery "textsection 4 3 \"ABCDEFGHIJKLMN\"" $ Just "EFG"
+              ]
+        , testGroup
               "operator precedence"
               [ testQuery "1 + 2 * 3" $ Just "7"
               , testQuery "3 * 2 + 1" $ Just "7"

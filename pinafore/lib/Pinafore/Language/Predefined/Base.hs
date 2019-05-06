@@ -88,7 +88,16 @@ base_predefinitions =
                 , mkValEntry "||" "Boolean OR." (||)
                 , mkValEntry "not" "Boolean NOT." not
                 ]
-          , docTreeEntry "Text" "" [mkValEntry "<>" "Concatenate text." $ (<>) @Text]
+          , docTreeEntry
+                "Text"
+                ""
+                [ mkValEntry "<>" "Concatenate text." $ (<>) @Text
+                , mkValEntry "textlength" "The length of a piece of text." $ olength @Text
+                , mkValEntry
+                      "textsection"
+                      "`textsection start len text` is the section of `text` beginning at `start` of length `len`." $ \start len (text :: Text) ->
+                      take len $ drop start text
+                ]
           , docTreeEntry
                 "Numeric"
                 ""
