@@ -2,7 +2,9 @@
 
 ## Installation
 
-1. Install Docker (if you haven't already)
+You will need a 64-bit Linux machine.
+
+1. Install Docker (if you haven't already).
    
         :::text
         sudo apt install docker.io  
@@ -10,7 +12,7 @@
 
     You will have to log out of your desktop session for `adduser` to take effect.
 
-1. Install Stack
+1. Install Stack.
 
     If you don't already have stack, install it like this:
 
@@ -22,13 +24,13 @@
         :::text
         stack upgrade
 
-1. Fetch the code
+1. Fetch the code.
 
         :::text
         git clone --recurse-submodules https://github.com/AshleyYakeley/Truth.git
         cd Truth
 
-1. Build
+1. Build. This will take about an hour or so.
 
         :::text
         make
@@ -44,3 +46,8 @@ Try running one of the example files:
 
     :::text
     pinafore pinafore/examples/people.pinafore
+
+Alternatively, if you're curious about the type system, try running in [interactive mode](invocation.md#interactive-mode).
+
+    :::text
+    pinafore -i
