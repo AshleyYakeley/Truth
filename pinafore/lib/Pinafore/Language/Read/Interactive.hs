@@ -26,6 +26,11 @@ showTypeInteractiveCommand = do
     expr <- readTopExpression
     return $ ShowTypeInteractiveCommand $ interpretTopExpression expr
 
+readSpecialCommand :: HasPinaforeEntityEdit baseedit => Text -> Parser (InteractiveCommand baseedit)
+readSpecialCommand "t" = showTypeInteractiveCommand
+readSpecialCommand "type" = showTypeInteractiveCommand
+readSpecialCommand cmd = return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd
+
 readInteractiveCommand ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Parser (InteractiveCommand baseedit)
@@ -33,10 +38,7 @@ readInteractiveCommand =
     (do
          readExactlyThis TokOperator ":"
          MkName cmd <- readThis TokLName
-         case cmd of
-             "t" -> showTypeInteractiveCommand
-             "type" -> showTypeInteractiveCommand
-             _ -> return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd) <|>
+         readSpecialCommand cmd) <|>
     (parseEnd >> return (LetInteractiveCommand $ return id)) <|>
     (try $ do
          sexpr <- readTopExpression

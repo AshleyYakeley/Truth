@@ -71,6 +71,7 @@ readTopDeclarations :: HasPinaforeEntityEdit baseedit => Parser (SyntaxTopDeclar
 readTopDeclarations = do
     spos <- getPosition
     sdecls <- readLetBindings
+    parseEnd
     return $ MkSyntaxTopDeclarations spos sdecls
 
 readSourcePos :: Parser (SyntaxExpression' baseedit) -> Parser (SyntaxExpression baseedit)

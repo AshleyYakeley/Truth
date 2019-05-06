@@ -228,8 +228,8 @@ interpretTypeSignature (Just st) expr = do
 interpretBinding ::
        HasPinaforeEntityEdit baseedit => SyntaxBinding baseedit -> RefNotation baseedit (QBindings baseedit)
 interpretBinding (MkSyntaxBinding spos mtype name sexpr) = do
-    val <- interpretExpression sexpr
-    expr <- liftRefNotation $ runSourcePos spos $ interpretTypeSignature mtype val
+    rexpr <- interpretExpression sexpr
+    expr <- liftRefNotation $ runSourcePos spos $ interpretTypeSignature mtype rexpr
     return $ qBindExpr name expr
 
 interpretBindings ::
