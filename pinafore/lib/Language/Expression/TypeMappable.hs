@@ -42,3 +42,13 @@ instance Category cat => TypeMappable cat (poswit :: k -> Type) negwit (GenTypeF
 
 instance Category cat => TypeMappable cat poswit (negwit :: k -> Type) (GenTypeF cat negwit 'Negative t) where
     mapTypesM _ mapNeg = chainTypeFM mapNeg
+
+instance TypeMappable cat poswit negwit (AnyW poswit) where
+    mapTypesM mapPos _ (MkAnyW pa) = do
+        MkTypeF t _ <- mapPos pa
+        return $ MkAnyW t
+
+instance TypeMappable cat poswit negwit (AnyW negwit) where
+    mapTypesM _ mapNeg (MkAnyW pa) = do
+        MkTypeF t _ <- mapNeg pa
+        return $ MkAnyW t

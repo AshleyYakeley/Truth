@@ -1,0 +1,21 @@
+pinafore> :simplify+ Integer
+Integer
+pinafore> :simplify- Integer
+Integer
+pinafore> :simplify+ Integer | Literal
+Integer | Literal
+pinafore> :simplify- Integer & Literal
+Integer & Literal
+pinafore> :simplify+ Maybe Integer | Maybe Literal
+Maybe (Integer | Literal)
+pinafore> :simplify- Maybe Integer & Maybe Literal
+Maybe (Integer & Literal)
+pinafore> :simplify+ a
+None
+pinafore> :simplify- a
+Any
+pinafore> :simplify+ a -> (a | a)
+a -> a
+pinafore> :simplify- a -> (a & Any)
+a -> a
+pinafore> <END>

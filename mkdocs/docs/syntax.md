@@ -23,8 +23,9 @@ In interactive mode, each line has syntax `<interactive>`.
 <interactive> ::= <expression> | <let-declarations> | ":" <interactive-command>
 
 <interactive-command> ::=
-    "t" <expression> |
-    "type" <expression>
+    "type" <expression> |
+    "simplify" "+" <expression> |
+    "simplify" "-" <expression>
 
 <type> :: =
     <type-1> "|" <type> |

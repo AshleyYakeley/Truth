@@ -131,6 +131,9 @@ instance Is PolarityType polarity => ExprShow (PinaforeType baseedit polarity t)
 instance Is PolarityType polarity => Show (PinaforeType baseedit polarity t) where
     show v = unpack $ exprShow v
 
+instance Is PolarityType polarity => AllWitnessConstraint Show (PinaforeType baseedit polarity) where
+    allWitnessConstraint = Dict
+
 instance Is PolarityType polarity => ExprShow (PinaforeRangeType baseedit polarity a) where
     exprShowPrec (MkRangeType t1 t2) = let
         getpieces ::

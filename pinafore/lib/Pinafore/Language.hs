@@ -26,6 +26,7 @@ import Pinafore.Language.Predefined
 import Pinafore.Language.Read
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Type
+import Pinafore.Language.Type.Simplify
 import Shapes
 import System.IO.Error
 
@@ -164,6 +165,13 @@ interactLoop inh outh echo = do
                              ShowTypeInteractiveCommand texpr -> do
                                  MkAnyValue t _ <- interactEvalExpression texpr
                                  liftIO $ hPutStrLn outh $ ":: " <> show t
+                             SimplifyTypeInteractiveCommand polarity ttype -> do
+                                 t <- lift $ liftRS ttype
+                                 liftIO $
+                                     hPutStrLn outh $
+                                     case polarity of
+                                         PositiveType -> show $ pinaforeSimplifyTypes @baseedit t
+                                         NegativeType -> show $ pinaforeSimplifyTypes @baseedit t
                              ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)
                     [ Handler $ \(err :: PinaforeError) -> hPutStrLn outh $ show err
                     , Handler $ \err -> hPutStrLn outh $ "error: " <> ioeGetErrorString err

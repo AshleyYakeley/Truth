@@ -1,0 +1,10 @@
+:simplify+ Integer
+:simplify- Integer
+:simplify+ Integer | Literal
+:simplify- Integer & Literal
+:simplify+ Maybe Integer | Maybe Literal
+:simplify- Maybe Integer & Maybe Literal
+:simplify+ a
+:simplify- a
+:simplify+ a -> (a | a)
+:simplify- a -> (a & Any)
