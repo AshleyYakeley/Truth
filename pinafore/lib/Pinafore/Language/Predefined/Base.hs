@@ -310,6 +310,10 @@ base_predefinitions =
                 "A constant reference for a value."
                 (pure :: A -> PinaforeImmutableReference baseedit A)
           , mkValEntry
+                "immutref"
+                "Convert a reference to immutable.\n`immutref r = {%r}`"
+                (id :: PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A)
+          , mkValEntry
                 "comapref"
                 "Map a function on getting a reference."
                 (coMapRange :: (A -> B) -> PinaforeReference baseedit '( C, A) -> PinaforeReference baseedit '( C, B))

@@ -147,6 +147,7 @@ testEntity =
                     "do s <- newmemset; s += 57; m <- get $ membership s; testeqval False (m 54); testeqval True (m 57); end"
               , pointTest "do s <- newmemset; s -= 57; m <- get $ membership s; testeqval False (m 57); end"
               , pointTest "do s <- newmemset; s += 57; s -= 57; m <- get $ membership s; testeqval False (m 57); end"
+              , pointTest "do r <- newmemref; immutref r := 5; fail \"unstopped\"; end"
               ]
         , context
               [ "convr :: Rational -> Rational;convr = id"
