@@ -108,7 +108,6 @@ main = do
             dirpath <- getDirPath mdirpath
             truthMainGTK $ \MkTruthContext {..} -> do
                 (toolkit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
-                lifeCycleClose $ putStrLn "Closer"
                 context <- sqlitePinaforeContext (not fSync) dirpath toolkit
                 for_ fpaths $ \fpath ->
                     liftIO $ do
