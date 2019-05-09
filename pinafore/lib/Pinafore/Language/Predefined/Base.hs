@@ -362,9 +362,6 @@ base_predefinitions =
           , mkValEntry "member" "A reference to the membership of a value in a set." $ pinaforeSetRefMember @baseedit @A
           , mkValEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetRefSingle @baseedit @A
           , mkValEntry "count" "Count of members in a set." $ pinaforeSetRefFunc @baseedit @TopType @Int olength
-          , mkValEntry "sum" "Sum of numbers in a set." $ pinaforeSetRefFunc @baseedit @Number @Number sum
-          , mkValEntry "mean" "Mean of numbers in a set." $
-            pinaforeSetRefFunc @baseedit @Number @Number $ \s -> sum s / fromIntegral (olength s)
           , mkValEntry "newentity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew @baseedit
           , mkValEntry
                 "+="
