@@ -8,6 +8,7 @@ module Pinafore.Base.Know
     , maybeToKnow
     , knowToMaybe
     , knowMaybe
+    , knowMaybeLens
     , catKnowns
     , uiUnknownValue
     ) where
@@ -70,6 +71,9 @@ knowToMaybe (MkKnow ma) = ma
 
 knowMaybe :: Bijection (Know a) (Maybe a)
 knowMaybe = MkIsomorphism knowToMaybe maybeToKnow
+
+knowMaybeLens :: Lens' Maybe a (Know a)
+knowMaybeLens = MkLens Known $ \ka _ -> knowToMaybe ka
 
 catKnowns :: Filterable f => f (Know a) -> f a
 catKnowns = catMaybes . fmap knowToMaybe

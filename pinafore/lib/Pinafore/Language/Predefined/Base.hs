@@ -359,7 +359,7 @@ base_predefinitions =
             pinaforeSetRefJoin @baseedit @A
           , mkValEntry "setsum" "Sum of sets." $ pinaforeSetRefSum @baseedit @AP @AQ @BP @BQ
           , mkValEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
-          , mkValEntry "membership" "Get the membership of a set." $ pinaforeSetRefMembership @baseedit
+          , mkValEntry "member" "A reference to the membership of a value in a set." $ pinaforeSetRefMember @baseedit @A
           , mkValEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetRefSingle @baseedit @A
           , mkValEntry "count" "Count of members in a set." $ pinaforeSetRefFunc @baseedit @TopType @Int olength
           , mkValEntry "sum" "Sum of numbers in a set." $ pinaforeSetRefFunc @baseedit @Number @Number sum

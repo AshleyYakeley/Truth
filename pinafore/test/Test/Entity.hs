@@ -144,9 +144,14 @@ testEntity =
               , pointTest "do s <- newmemset; s -= 57; n <- get $ count s; testeqval 0 n; end"
               , pointTest "do s <- newmemset; s += 57; s -= 57; n <- get $ count s; testeqval 0 n; end"
               , pointTest
-                    "do s <- newmemset; s += 57; m <- get $ membership s; testeqval False (m 54); testeqval True (m 57); end"
-              , pointTest "do s <- newmemset; s -= 57; m <- get $ membership s; testeqval False (m 57); end"
-              , pointTest "do s <- newmemset; s += 57; s -= 57; m <- get $ membership s; testeqval False (m 57); end"
+                    "do s <- newmemset; s += 57; m54 <- get $ member s 54; m57 <- get $ member s 57; testeqval False m54; testeqval True m57; end"
+              , pointTest "do s <- newmemset; s -= 57; m57 <- get $ member s 57; testeqval False m57; end"
+              , pointTest "do s <- newmemset; s += 57; s -= 57; m57 <- get $ member s 57; testeqval False m57; end"
+              , pointTest
+                    "do s <- newmemset; member s 57 := True; m54 <- get $ member s 54; m57 <- get $ member s 57; testeqval False m54; testeqval True m57; end"
+              , pointTest "do s <- newmemset; member s 57 := False; m57 <- get $ member s 57; testeqval False m57; end"
+              , pointTest
+                    "do s <- newmemset; member s 57 := True; member s 57 := False; m57 <- get $ member s 57; testeqval False m57; end"
               , pointTest "do r <- newmemref; immutref r := 5; fail \"unstopped\"; end"
               ]
         , context
