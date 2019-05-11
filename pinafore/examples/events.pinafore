@@ -1,0 +1,25 @@
+let
+
+opentype Event;
+
+closedtype EventTime
+    = EventTimeDay Day !"EventTimeDay" # all-day event
+    | EventTimeTime LocalTime !"EventTimeTime"; # event at a time
+
+eventTimeDay :: EventTime -> Day;
+eventTimeDay et = case et of
+    EventTimeDay d -> d;
+    EventTimeTime (LocalTime d _) -> d
+    end;
+
+# for sorting
+eventTimeTime :: EventTime -> LocalTime;
+eventTimeTime et = case et of
+    EventTimeDay d -> LocalTime d midnight;
+    EventTimeTime t -> t
+    end;
+
+eventName = property @Event @Text !"eventName";
+eventTime = property @Event @EventTime !"eventTime";
+
+in return ()

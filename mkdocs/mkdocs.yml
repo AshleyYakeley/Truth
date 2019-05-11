@@ -17,4 +17,5 @@ nav:
 - Predefined Bindings: 'predefined.md'
 - Examples:
   - People: 'examples/people.md'
+  - Events: 'examples/events.md'
 - Future Plans: 'future-plans.md'
