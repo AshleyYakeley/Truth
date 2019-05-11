@@ -2,7 +2,7 @@ module Shapes.Numeric
     ( module I
     ) where
 
-import Data.Fixed as I (div', mod')
+import Data.Fixed as I
 import Data.Ratio as I
 import Numeric.Natural as I
-import Prelude as I (Double, Floating(..), Fractional(..), RealFloat(..), RealFrac(..))
+import Prelude as I (Double, Floating(..), Fractional(..), RealFloat(..), RealFrac(..), realToFrac)

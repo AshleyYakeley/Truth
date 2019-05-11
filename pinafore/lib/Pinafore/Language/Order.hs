@@ -1,6 +1,5 @@
 module Pinafore.Language.Order where
 
-import Data.Time
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Morphism
@@ -30,14 +29,10 @@ instance Contravariant (PinaforeOrder baseedit) where
 instance HasDolanVary '[ 'Contravariance] (PinaforeOrder baseedit) where
     dolanVary = ConsDolanVarianceMap (\(MkCatDual ba) -> contramap ba) $ NilDolanVarianceMap
 
-alphabetical :: PinaforeOrder baseedit Text
-alphabetical = MkPinaforeOrder id compare
-
-numerical :: PinaforeOrder baseedit Number
-numerical = MkPinaforeOrder id compare
-
-chronological :: PinaforeOrder baseedit UTCTime
-chronological = MkPinaforeOrder id compare
+ordOrder ::
+       forall baseedit a. Ord a
+    => PinaforeOrder baseedit a
+ordOrder = MkPinaforeOrder id compare
 
 orderon ::
        forall baseedit a b.

@@ -1,6 +1,8 @@
 module Pinafore.Language.Literal where
 
+import Data.Time
 import Pinafore.Base
+import Pinafore.Language.Name
 import Pinafore.Language.Show
 import Shapes
 import Shapes.Numeric
@@ -16,6 +18,12 @@ data LiteralType (t :: Type) where
     RationalLiteralType :: LiteralType Rational
     IntegerLiteralType :: LiteralType Integer
     BooleanLiteralType :: LiteralType Bool
+    -- time
+    TimeLiteralType :: LiteralType UTCTime
+    DurationLiteralType :: LiteralType NominalDiffTime
+    DayLiteralType :: LiteralType Day
+    TimeOfDayLiteralType :: LiteralType TimeOfDay
+    LocalTimeLiteralType :: LiteralType LocalTime
 
 instance TestEquality LiteralType where
     testEquality LiteralLiteralType LiteralLiteralType = Just Refl
@@ -25,6 +33,11 @@ instance TestEquality LiteralType where
     testEquality RationalLiteralType RationalLiteralType = Just Refl
     testEquality IntegerLiteralType IntegerLiteralType = Just Refl
     testEquality BooleanLiteralType BooleanLiteralType = Just Refl
+    testEquality TimeLiteralType TimeLiteralType = Just Refl
+    testEquality DurationLiteralType DurationLiteralType = Just Refl
+    testEquality DayLiteralType DayLiteralType = Just Refl
+    testEquality TimeOfDayLiteralType TimeOfDayLiteralType = Just Refl
+    testEquality LocalTimeLiteralType LocalTimeLiteralType = Just Refl
     testEquality _ _ = Nothing
 
 instance ExprShow (LiteralType t) where
@@ -35,24 +48,34 @@ instance ExprShow (LiteralType t) where
     exprShowPrec RationalLiteralType = ("Rational", 0)
     exprShowPrec IntegerLiteralType = ("Integer", 0)
     exprShowPrec BooleanLiteralType = ("Boolean", 0)
+    exprShowPrec TimeLiteralType = ("Time", 0)
+    exprShowPrec DurationLiteralType = ("Duration", 0)
+    exprShowPrec DayLiteralType = ("Day", 0)
+    exprShowPrec TimeOfDayLiteralType = ("TimeOfDay", 0)
+    exprShowPrec LocalTimeLiteralType = ("LocalTime", 0)
+
+nameToLiteralType :: Name -> Maybe (AnyW LiteralType)
+nameToLiteralType "Literal" = Just $ MkAnyW LiteralLiteralType
+nameToLiteralType "Text" = Just $ MkAnyW TextLiteralType
+nameToLiteralType "Number" = Just $ MkAnyW NumberLiteralType
+nameToLiteralType "Rational" = Just $ MkAnyW RationalLiteralType
+nameToLiteralType "Integer" = Just $ MkAnyW IntegerLiteralType
+nameToLiteralType "Boolean" = Just $ MkAnyW BooleanLiteralType
+nameToLiteralType "Time" = Just $ MkAnyW TimeLiteralType
+nameToLiteralType "Duration" = Just $ MkAnyW DurationLiteralType
+nameToLiteralType "Day" = Just $ MkAnyW DayLiteralType
+nameToLiteralType "TimeOfDay" = Just $ MkAnyW TimeOfDayLiteralType
+nameToLiteralType "LocalTime" = Just $ MkAnyW LocalTimeLiteralType
+nameToLiteralType _ = Nothing
 
 instance IsSubtype LiteralType where
-    isSubtype LiteralLiteralType LiteralLiteralType = return id
-    isSubtype TextLiteralType LiteralLiteralType = return toLiteral
-    isSubtype NumberLiteralType LiteralLiteralType = return toLiteral
-    isSubtype RationalLiteralType LiteralLiteralType = return toLiteral
-    isSubtype IntegerLiteralType LiteralLiteralType = return toLiteral
-    isSubtype BooleanLiteralType LiteralLiteralType = return toLiteral
-    isSubtype UnitLiteralType LiteralLiteralType = return toLiteral
-    isSubtype TextLiteralType TextLiteralType = return id
-    isSubtype NumberLiteralType NumberLiteralType = return id
-    isSubtype RationalLiteralType RationalLiteralType = return id
-    isSubtype IntegerLiteralType IntegerLiteralType = return id
+    isSubtype ta tb
+        | Just Refl <- testEquality ta tb = return id
+    isSubtype t LiteralLiteralType
+        | Dict <- literalTypeAsLiteral t = return toLiteral
     isSubtype RationalLiteralType NumberLiteralType = return ExactNumber
     isSubtype IntegerLiteralType NumberLiteralType = return $ ExactNumber . toRational
     isSubtype IntegerLiteralType RationalLiteralType = return toRational
-    isSubtype BooleanLiteralType BooleanLiteralType = return id
-    isSubtype UnitLiteralType UnitLiteralType = return id
     isSubtype _ _ = Nothing
 
 literalTypeAsLiteral :: LiteralType t -> Dict (AsLiteral t)
@@ -63,6 +86,11 @@ literalTypeAsLiteral NumberLiteralType = Dict
 literalTypeAsLiteral RationalLiteralType = Dict
 literalTypeAsLiteral IntegerLiteralType = Dict
 literalTypeAsLiteral BooleanLiteralType = Dict
+literalTypeAsLiteral TimeLiteralType = Dict
+literalTypeAsLiteral DurationLiteralType = Dict
+literalTypeAsLiteral DayLiteralType = Dict
+literalTypeAsLiteral TimeOfDayLiteralType = Dict
+literalTypeAsLiteral LocalTimeLiteralType = Dict
 
 instance Representative LiteralType where
     getRepWitness LiteralLiteralType = Dict
@@ -72,6 +100,11 @@ instance Representative LiteralType where
     getRepWitness RationalLiteralType = Dict
     getRepWitness IntegerLiteralType = Dict
     getRepWitness BooleanLiteralType = Dict
+    getRepWitness TimeLiteralType = Dict
+    getRepWitness DurationLiteralType = Dict
+    getRepWitness DayLiteralType = Dict
+    getRepWitness TimeOfDayLiteralType = Dict
+    getRepWitness LocalTimeLiteralType = Dict
 
 instance Is LiteralType Literal where
     representative = LiteralLiteralType
@@ -93,3 +126,18 @@ instance Is LiteralType Integer where
 
 instance Is LiteralType Bool where
     representative = BooleanLiteralType
+
+instance Is LiteralType UTCTime where
+    representative = TimeLiteralType
+
+instance Is LiteralType NominalDiffTime where
+    representative = DurationLiteralType
+
+instance Is LiteralType Day where
+    representative = DayLiteralType
+
+instance Is LiteralType TimeOfDay where
+    representative = TimeOfDayLiteralType
+
+instance Is LiteralType LocalTime where
+    representative = LocalTimeLiteralType

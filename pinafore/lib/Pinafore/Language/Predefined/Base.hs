@@ -4,6 +4,7 @@ module Pinafore.Language.Predefined.Base
     ) where
 
 import Data.Fixed (div', mod')
+import Data.Time
 import Data.Time.Clock.System
 import Pinafore.Base
 import Pinafore.Language.DocTree
@@ -192,6 +193,61 @@ base_predefinitions =
                             "checkExactInteger"
                             "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $ \n ->
                             checkExactRational n >>= rationalInteger
+                      ]
+                ]
+          , docTreeEntry
+                "Date & Time"
+                ""
+                [ docTreeEntry
+                      "Time & Duration"
+                      ""
+                      [ mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
+                      , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
+                      , mkValEntry "durationToSeconds" "Convert duration to seconds." nominalDiffTimeToSeconds
+                      , mkValEntry "dayDuration" "One day duration." nominalDay
+                      , mkValEntry "addDuration" "Add durations." $ (+) @NominalDiffTime
+                      , mkValEntry "subtractDuration" "Subtract durations." $ (-) @NominalDiffTime
+                      , mkValEntry "negateDuration" "Negate duration." $ negate @NominalDiffTime
+                      , mkValEntry "multiplyDuration" "Multiply a duration by a number." $ \(n :: Number) (d :: NominalDiffTime) ->
+                            (realToFrac n) * d
+                      , mkValEntry "divideDuration" "Divide durations." $ \(a :: NominalDiffTime) (b :: NominalDiffTime) ->
+                            (realToFrac (a / b) :: Number)
+                      , mkValEntry "addTime" "Add duration to time." addUTCTime
+                      , mkValEntry "diffTime" "Difference of times." diffUTCTime
+                      , mkValEntry "getCurrentTime" "Get the current time." getCurrentTime
+                      ]
+                , docTreeEntry
+                      "Calendar"
+                      ""
+                      [ mkValPatEntry "Day" "Construct a Day from year, month, day." fromGregorian $ \day -> let
+                            (y, m, d) = toGregorian day
+                            in Just (y, (m, (d, ())))
+                      , mkValEntry "dayToModifiedJulian" "Convert to MJD." toModifiedJulianDay
+                      , mkValEntry "modifiedJulianToDay" "Convert from MJD." ModifiedJulianDay
+                      , mkValEntry "addDays" "Add count to days." addDays
+                      , mkValEntry "diffDays" "Difference of days." diffDays
+                      ]
+                , docTreeEntry
+                      "Time of Day"
+                      ""
+                      [ mkValPatEntry "TimeOfDay" "Construct a TimeOfDay from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
+                            Just (todHour, (todMin, (todSec, ())))
+                      , mkValEntry "midnight" "Midnight." midnight
+                      , mkValEntry "midday" "Midday." midday
+                      ]
+                , docTreeEntry
+                      "Local Time"
+                      ""
+                      [ mkValPatEntry "LocalTime" "Construct a LocalTime from day and time of day." LocalTime $ \LocalTime {..} ->
+                            Just (localDay, (localTimeOfDay, ()))
+                      , mkValEntry "timeToLocal" "Convert a time to local time, given a time zone offset in minutes" $ \i ->
+                            utcToLocalTime $ minutesToTimeZone i
+                      , mkValEntry "localToTime" "Convert a local time to time, given a time zone offset in minutes" $ \i ->
+                            localTimeToUTC $ minutesToTimeZone i
+                      , mkValEntry "getTimeZone" "Get the offset for a time in the current time zone." $ \t ->
+                            fmap timeZoneMinutes $ getTimeZone t
+                      , mkValEntry "getCurrentTimeZone" "Get the current time zone offset." $
+                        fmap timeZoneMinutes getCurrentTimeZone
                       ]
                 ]
           ]
@@ -391,9 +447,13 @@ base_predefinitions =
     , docTreeEntry
           "Orders"
           ""
-          [ mkValEntry "alphabetical" "Alphabetical order." $ alphabetical @baseedit
-          , mkValEntry "numerical" "Numercal order." $ numerical @baseedit
-              --, mkValEntry "chronological" "Chronological order." $ chronological @baseedit
+          [ mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @baseedit @Text
+          , mkValEntry "numerical" "Numercal order." $ ordOrder @baseedit @Number
+          , mkValEntry "chronological" "Chronological order." $ ordOrder @baseedit @UTCTime
+          , mkValEntry "durational" "Durational order." $ ordOrder @baseedit @NominalDiffTime
+          , mkValEntry "calendrical" "Day order." $ ordOrder @baseedit @Day
+          , mkValEntry "horological" "Time of day order." $ ordOrder @baseedit @TimeOfDay
+          , mkValEntry "localchronological" "Local time order." $ ordOrder @baseedit @LocalTime
           , mkValEntry "orders" "Join orders by priority." $ orders @baseedit @A
           , mkValEntry
                 "maporder"
