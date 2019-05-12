@@ -1,7 +1,5 @@
 let
 
-opentype Event;
-
 closedtype EventTime
     = EventTimeDay Day !"EventTimeDay" # all-day event
     | EventTimeTime LocalTime !"EventTimeTime"; # event at a time
@@ -12,14 +10,42 @@ eventTimeDay et = case et of
     EventTimeTime (LocalTime d _) -> d
     end;
 
-# for sorting
+# for ordering
 eventTimeTime :: EventTime -> LocalTime;
 eventTimeTime et = case et of
     EventTimeDay d -> LocalTime d midnight;
     EventTimeTime t -> t
     end;
 
+eventTimeOrder :: Order EventTime;
+eventTimeOrder = maporder eventTimeTime localchronological;
+
+opentype Event;
+events :: SetRef Event;
+events = property @Event @() !"Events" !@ {()};
+
 eventName = property @Event @Text !"eventName";
 eventTime = property @Event @EventTime !"eventTime";
 
-in return ()
+eventData :: SetRef (EventTime,Text);
+eventData = (eventTime !** eventName) !$$ events;
+
+eventDataOrder :: Order (EventTime,Text);
+eventDataOrder = maporder fst eventTimeOrder;
+
+eventList :: Ref +[(EventTime,Text)];
+eventList = members eventDataOrder eventData;
+
+overviewRef :: Ref +Text;
+overviewRef = {textconcat $ maplist (\(t,n) -> n) %eventList};
+
+overviewPage :: (UI None,UI None);
+overviewPage = (ui_label {"Overview"},ui_label overviewRef);
+
+eventsWindow :: Action Window;
+eventsWindow = openwindow {"Events"} (\_ -> {[]}) $ ui_pages [overviewPage];
+
+in do
+    _ <- eventsWindow;
+    return ();
+    end

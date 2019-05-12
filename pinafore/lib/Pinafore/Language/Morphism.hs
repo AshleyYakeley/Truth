@@ -59,6 +59,17 @@ composePinaforeMorphism ::
 composePinaforeMorphism (MkPinaforeMorphism tb1 tc1 m1) (MkPinaforeMorphism ta2 tb2 m2) =
     MkPinaforeMorphism ta2 tc1 $ m1 . bijectionPinaforeLensMorphism (bijectRanges tb2 tb1) . m2
 
+pairPinaforeMorphism ::
+       forall baseedit a bp bq cp cq.
+       PinaforeMorphism baseedit '( a, a) '( bp, bq)
+    -> PinaforeMorphism baseedit '( a, a) '( cp, cq)
+    -> PinaforeMorphism baseedit '( a, a) '( (bp, cp), (bq, cq))
+pairPinaforeMorphism (MkPinaforeMorphism ta1 tb1 m1) (MkPinaforeMorphism ta2 tc2 m2) =
+    MkPinaforeMorphism ta2 (pairRange tb1 tc2) $
+    pairPinaforeLensMorphism
+        (m1 . bijectionPinaforeLensMorphism ((invert $ rangeBijection ta1) . rangeBijection ta2))
+        m2
+
 pinaforeApplyMorphismRef ::
        forall baseedit ap aq bp bq.
        PinaforeMorphism baseedit '( aq, ap) '( bp, bq)

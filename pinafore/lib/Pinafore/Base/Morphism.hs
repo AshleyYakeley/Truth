@@ -12,6 +12,7 @@ module Pinafore.Base.Morphism
     , funcPinaforeLensMorphism
     , nullPinaforeLensMorphism
     , bijectionPinaforeLensMorphism
+    , pairPinaforeLensMorphism
     , applyPinaforeLens
     , applyInversePinaforeLens
     , applyInversePinaforeLensSet
@@ -200,6 +201,91 @@ mkComposeT =
     case hasTransConstraint @MonadIO @t2 @m of
         Dict -> MkComposeT
 
+pairPinaforeLensMorphism ::
+       forall baseedit a b c.
+       PinaforeLensMorphism baseedit a b
+    -> PinaforeLensMorphism baseedit a c
+    -> PinaforeLensMorphism baseedit a (b, c)
+pairPinaforeLensMorphism = let
+    call ::
+           forall t1 t2. (MonadTransUnlift t1, MonadTransUnlift t2)
+        => APinaforeLensMorphism baseedit t1 a b
+        -> APinaforeLensMorphism baseedit t2 a c
+        -> APinaforeLensMorphism baseedit (ComposeT t1 t2) a (b, c)
+    call (MkAPinaforeLensMorphism (MkAnEditLens (MkAnEditFunction getB updateB) putEditsB) (MkAPinaforeFunctionMorphism frB updB)) (MkAPinaforeLensMorphism (MkAnEditLens (MkAnEditFunction getC updateC) putEditsC) (MkAPinaforeFunctionMorphism frC updC)) = let
+        getBC ::
+               ReadFunctionT (ComposeT t1 t2) (ContextEditReader baseedit (WholeEdit (Know a))) (WholeReader (Know ( b
+                                                                                                                   , c)))
+        getBC mr ReadWhole =
+            withTransConstraintTM @MonadIO $ do
+                kb <- lift1ComposeT $ getB mr ReadWhole
+                case kb of
+                    Unknown -> return Unknown
+                    Known b -> do
+                        kc <- lift2ComposeT' $ getC mr ReadWhole
+                        return $ fmap (\c -> (b, c)) kc
+        updateBC ::
+               forall m. MonadIO m
+            => ContextEdit baseedit (WholeEdit (Know a))
+            -> MutableRead m (EditReader (ContextEdit baseedit (WholeEdit (Know a))))
+            -> ComposeT t1 t2 m [WholeEdit (Know (b, c))]
+        updateBC edit mr =
+            withTransConstraintTM @MonadIO $ do
+                ebs <- lift1ComposeT $ updateB edit mr
+                ecs <- lift2ComposeT' $ updateC edit mr
+                case (lastM ebs, lastM ecs) of
+                    (Nothing, Nothing) -> return []
+                    (Just (MkWholeEdit Unknown), _) -> return [MkWholeEdit Unknown]
+                    (_, Just (MkWholeEdit Unknown)) -> return [MkWholeEdit Unknown]
+                    (Just (MkWholeEdit (Known b)), Just (MkWholeEdit (Known c))) -> return [MkWholeEdit $ Known (b, c)]
+                    (Just (MkWholeEdit (Known b)), Nothing) -> do
+                        kc <- lift2ComposeT' $ getC mr ReadWhole
+                        return [MkWholeEdit $ fmap (\c -> (b, c)) kc]
+                    (Nothing, Just (MkWholeEdit (Known c))) -> do
+                        kb <- lift1ComposeT $ getB mr ReadWhole
+                        return [MkWholeEdit $ fmap (\b -> (b, c)) kb]
+        putEditsBC ::
+               forall m. MonadIO m
+            => [WholeEdit (Know (b, c))]
+            -> MutableRead m (EditReader (ContextEdit baseedit (WholeEdit (Know a))))
+            -> ComposeT t1 t2 m (Maybe [ContextEdit baseedit (WholeEdit (Know a))])
+        putEditsBC edits mr =
+            withTransConstraintTM @MonadIO $
+            case lastM edits of
+                Nothing -> return $ Just []
+                Just (MkWholeEdit Unknown) -> return Nothing -- can't delete
+                Just (MkWholeEdit (Known (b, c))) ->
+                    getComposeM $ do
+                        aa1 <- MkComposeM $ lift1ComposeT $ putEditsB [MkWholeEdit $ Known b] mr
+                        aa2 <- MkComposeM $ lift2ComposeT' $ putEditsC [MkWholeEdit $ Known c] mr
+                        return $ aa1 ++ aa2
+        frBC ::
+               forall m. MonadIO m
+            => MutableRead m (EditReader baseedit)
+            -> (b, c)
+            -> ComposeT t1 t2 m [a]
+        frBC mr (b, c) =
+            withTransConstraintTM @MonadIO $ do
+                aa1 <- lift1ComposeT $ frB mr b
+                aa2 <- lift2ComposeT' $ frC mr c
+                return $ aa1 ++ aa2
+        updBC ::
+               forall m. MonadIO m
+            => baseedit
+            -> MutableRead m (EditReader baseedit)
+            -> ComposeT t1 t2 m Bool
+        updBC edit mr =
+            withTransConstraintTM @MonadIO $ do
+                eb <- lift1ComposeT $ updB edit mr
+                case eb of
+                    True -> return True
+                    False -> lift2ComposeT' $ updC edit mr
+        in MkAPinaforeLensMorphism
+               (MkAnEditLens (MkAnEditFunction getBC updateBC) putEditsBC)
+               (MkAPinaforeFunctionMorphism frBC updBC)
+    in joinUnlifts call
+
+--eitherPinaforeLensMorphism ::
 mapPinaforeLensMorphismBase ::
        forall baseA baseB a b. EditLens baseB baseA -> PinaforeLensMorphism baseA a b -> PinaforeLensMorphism baseB a b
 mapPinaforeLensMorphismBase lens morph = let

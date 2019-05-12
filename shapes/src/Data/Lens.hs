@@ -4,6 +4,7 @@ import Data.Bijection
 import Data.CatFunctor
 import Data.Codec
 import Data.Injection
+import Data.IsoVariant
 import Data.MonadOne
 import Data.Result
 import Shapes.Import
@@ -12,6 +13,26 @@ data Lens' m a b = MkLens
     { lensGet :: a -> b
     , lensPutback :: b -> a -> m a
     }
+
+instance IsoVariant (Lens' m a) where
+    isoMap pq qp (MkLens ap pama) = MkLens (pq . ap) (pama . qp)
+
+instance Monad m => Productish (Lens' m a) where
+    pUnit = MkLens (\_ -> ()) (\() -> pure)
+    MkLens ap pama <***> MkLens aq qama =
+        MkLens (\a -> (ap a, aq a)) $ \(p, q) a -> do
+            a' <- pama p a
+            qama q a'
+
+lensNone :: Lens' m None b
+lensNone = MkLens never $ \_ -> never
+
+lensSum :: Functor m => Lens' m p b -> Lens' m q b -> Lens' m (Either p q) b
+lensSum (MkLens pb bpmp) (MkLens qb bqmq) =
+    MkLens (either pb qb) $ \b pq ->
+        case pq of
+            Left p -> fmap Left $ bpmp b p
+            Right q -> fmap Right $ bqmq b q
 
 lensModify :: Lens' m a b -> (b -> b) -> a -> m a
 lensModify lens bb a = lensPutback lens (bb (lensGet lens a)) a
