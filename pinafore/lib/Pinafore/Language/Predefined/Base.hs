@@ -98,6 +98,7 @@ base_predefinitions =
                       "textsection"
                       "`textsection start len text` is the section of `text` beginning at `start` of length `len`." $ \start len (text :: Text) ->
                       take len $ drop start text
+                , mkValEntry "textconcat" "Concatenate texts." $ mconcat @Text
                 ]
           , docTreeEntry
                 "Numeric"
