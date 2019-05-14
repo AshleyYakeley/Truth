@@ -10,9 +10,12 @@ import System.Directory
 import System.Environment.XDG.BaseDir
 import Truth.Core
 import Truth.UI.GTK
+import GitHash
+import Data.Time
 
 data Options
-    = PredefinedDocOption
+    = ShowVersionOption
+    | PredefinedDocOption
     | InfixDocOption
     | DumpTableOption (Maybe FilePath)
     | RunFileOption Bool
@@ -27,6 +30,7 @@ optDataFlag = O.optional $ O.strOption $ O.long "data" <> O.metavar "PATH"
 
 optParser :: O.Parser Options
 optParser =
+    (O.flag' ShowVersionOption $ O.long "version" <> O.short 'v') <|>
     (RunFileOption <$> (O.switch $ O.long "sync") <*> (O.switch $ O.long "no-run" <> O.short 'n') <*> optDataFlag <*>
      (O.many $ O.strArgument $ O.metavar "SCRIPT")) <|>
     ((O.flag' RunInteractiveOption $ O.long "interactive" <> O.short 'i') <*> (O.switch $ O.long "sync") <*> optDataFlag) <|>
@@ -95,10 +99,20 @@ printInfixOperatorTable = do
             for_ mnames $ \n -> putStr $ " `" <> show n <> "`"
         putStrLn ""
 
+pinaforeVersion :: String
+pinaforeVersion = "0.1"
+
 main :: IO ()
 main = do
     options <- O.execParser (O.info optParser mempty)
     case options of
+        ShowVersionOption -> let
+            gi = $$tGitInfoCwd
+            commitZonedTime :: ZonedTime
+            commitZonedTime = parseTimeOrError True defaultTimeLocale "%a %b %-e %T %Y %z" (giCommitDate gi)
+            commitTimeString :: String
+            commitTimeString = formatTime defaultTimeLocale "%FT%TZ" $ zonedTimeToUTC commitZonedTime
+            in putStrLn $ "Pinafore version " <> pinaforeVersion <> " (" <> commitTimeString <> " " <> giHash gi <> ")" <> if giDirty gi then "+" else ""
         PredefinedDocOption -> runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
         InfixDocOption -> printInfixOperatorTable
         DumpTableOption mdirpath -> do

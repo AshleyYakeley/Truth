@@ -196,5 +196,7 @@ executables:
           - directory
           - optparse-applicative
           - xdg-basedir
+          - time
+          - githash
         main: Main.hs
         ghc-options: -threaded
