@@ -102,6 +102,12 @@ instance AsLiteral UTCTime where
     toLiteral = MkLiteral . pack . show
     fromLiteral = readFromLiteral
 
+nominalDiffTimeToSeconds :: NominalDiffTime -> Pico
+nominalDiffTimeToSeconds = realToFrac
+
+secondsToNominalDiffTime :: Pico -> NominalDiffTime
+secondsToNominalDiffTime = realToFrac
+
 instance AsLiteral NominalDiffTime where
     toLiteral = toLiteral . nominalDiffTimeToSeconds
     fromLiteral = fmap secondsToNominalDiffTime . fromLiteral
