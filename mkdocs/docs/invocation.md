@@ -30,7 +30,7 @@ See the `<interactive>` element in the [grammar](syntax.md#grammar).
 
 Here's an example:
 
-```
+```text
 pinafore> 3 + 4
 7
 pinafore> let p = [5,6,7] ++ [1,1,1]
