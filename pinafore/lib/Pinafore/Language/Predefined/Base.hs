@@ -415,6 +415,8 @@ base_predefinitions =
           , mkValEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
             pinaforeSetRefJoin @baseedit @A
           , mkValEntry "setsum" "Sum of sets." $ pinaforeSetRefSum @baseedit @AP @AQ @BP @BQ
+          , mkValEntry "setproduct" "Product of sets. The resulting set will be read-only." $
+            pinaforeSetRefProduct @baseedit @AP @AQ @BP @BQ
           , mkValEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
           , mkValEntry "member" "A reference to the membership of a value in a set." $ pinaforeSetRefMember @baseedit @A
           , mkValEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetRefSingle @baseedit @A

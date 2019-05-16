@@ -160,20 +160,52 @@ pinaforeSetRefSum ::
     -> PinaforeSetRef baseedit '( Either ap bp, Either aq bq)
 pinaforeSetRefSum (MkPinaforeSetRef tra vala) (MkPinaforeSetRef trb valb) =
     MkPinaforeSetRef (eitherRange tra trb) $ setSumLens . pairCombineEditLenses vala valb
-{-
-setProductFunction :: forall a b. EditFunction (PairEdit (FiniteSetEdit a) (FiniteSetEdit b)) (FiniteSetEdit (a,b))
+
+setProductFunction :: forall a b. EditFunction (PairEdit (FiniteSetEdit a) (FiniteSetEdit b)) (FiniteSetEdit (a, b))
 setProductFunction = let
-    in MkCloseUnlift identityUnlift MkAnEditFunction{..}
--}
-{-
-pinaforeSetRefProduct :: forall baseedit ap aq bp bq.
-       PinaforeSetRef baseedit '( ap,aq) -> PinaforeSetRef baseedit '( bp, bq) -> PinaforeSetRef baseedit '(  (ap, bp), (aq, bq))
-pinaforeSetRefProduct (MkPinaforeSetRef tra vala) (MkPinaforeSetRef trb valb) = MkPinaforeSetRef (pairRange tra trb) $ setProductLens . pairCombineEditLenses vala valb
--}
-{- equivalent to:
-data FiniteSetEdit subj where
-    KeyEditItem :: subj -> ConstEdit subj -> FiniteSetEdit subj
-    KeyDeleteItem :: subj -> FiniteSetEdit subj
-    KeyInsertReplaceItem :: subj -> FiniteSetEdit subj
-    KeyClear :: FiniteSetEdit subj
--}
+    efGet :: ReadFunctionT IdentityT (PairEditReader (FiniteSetEdit a) (FiniteSetEdit b)) (FiniteSetReader (a, b))
+    efGet mr KeyReadKeys =
+        lift $ do
+            aa <- mr $ MkTupleEditReader SelectFirst KeyReadKeys
+            bb <- mr $ MkTupleEditReader SelectSecond KeyReadKeys
+            return $ liftA2 (,) aa bb
+    efGet mr (KeyReadItem (a, b) ReadWhole) =
+        lift $
+        getComposeM $ do
+            a' <- MkComposeM $ mr $ MkTupleEditReader SelectFirst $ KeyReadItem a ReadWhole
+            b' <- MkComposeM $ mr $ MkTupleEditReader SelectSecond $ KeyReadItem b ReadWhole
+            return (a', b')
+    efUpdate ::
+           forall m. MonadIO m
+        => PairEdit (FiniteSetEdit a) (FiniteSetEdit b)
+        -> MutableRead m (PairEditReader (FiniteSetEdit a) (FiniteSetEdit b))
+        -> IdentityT m [FiniteSetEdit (a, b)]
+    efUpdate (MkTupleEdit SelectFirst KeyClear) _ = return [KeyClear]
+    efUpdate (MkTupleEdit SelectSecond KeyClear) _ = return [KeyClear]
+    efUpdate (MkTupleEdit SelectFirst (KeyEditItem _ edit)) _ = never edit
+    efUpdate (MkTupleEdit SelectSecond (KeyEditItem _ edit)) _ = never edit
+    efUpdate (MkTupleEdit SelectFirst (KeyDeleteItem a)) mr =
+        lift $ do
+            bb <- mr $ MkTupleEditReader SelectSecond KeyReadKeys
+            return $ fmap (\b -> KeyDeleteItem (a, b)) $ toList bb
+    efUpdate (MkTupleEdit SelectSecond (KeyDeleteItem b)) mr =
+        lift $ do
+            aa <- mr $ MkTupleEditReader SelectFirst KeyReadKeys
+            return $ fmap (\a -> KeyDeleteItem (a, b)) $ toList aa
+    efUpdate (MkTupleEdit SelectFirst (KeyInsertReplaceItem a)) mr =
+        lift $ do
+            bb <- mr $ MkTupleEditReader SelectSecond KeyReadKeys
+            return $ fmap (\b -> KeyInsertReplaceItem (a, b)) $ toList bb
+    efUpdate (MkTupleEdit SelectSecond (KeyInsertReplaceItem b)) mr =
+        lift $ do
+            aa <- mr $ MkTupleEditReader SelectFirst KeyReadKeys
+            return $ fmap (\a -> KeyInsertReplaceItem (a, b)) $ toList aa
+    in MkCloseUnlift identityUnlift MkAnEditFunction {..}
+
+pinaforeSetRefProduct ::
+       forall baseedit ap aq bp bq.
+       PinaforeSetRef baseedit '( ap, aq)
+    -> PinaforeSetRef baseedit '( bp, bq)
+    -> PinaforeSetRef baseedit '( (ap, bp), (aq, bq))
+pinaforeSetRefProduct (MkPinaforeSetRef tra vala) (MkPinaforeSetRef trb valb) =
+    MkPinaforeSetRef (pairRange tra trb) $ readOnlyEditLens setProductFunction . pairCombineEditLenses vala valb

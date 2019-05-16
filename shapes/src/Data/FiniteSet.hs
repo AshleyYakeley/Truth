@@ -8,7 +8,8 @@ import Shapes.Import
 newtype FiniteSet a = MkFiniteSet
     { unFiniteSet :: [a]
     } deriving ( Foldable
-               , Functor -- Applicative,Monad,Alternative,MonadPlus,
+               , Functor
+               , Applicative -- ,Monad,Alternative,MonadPlus,
                , MonoFunctor
                , MonoFoldable
                , GrowingAppend
