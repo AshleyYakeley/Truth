@@ -2,6 +2,8 @@ module Main
     ( main
     ) where
 
+import Data.Time
+import GitHash
 import qualified Options.Applicative as O
 import Pinafore
 import Pinafore.Language.Documentation
@@ -10,8 +12,6 @@ import System.Directory
 import System.Environment.XDG.BaseDir
 import Truth.Core
 import Truth.UI.GTK
-import GitHash
-import Data.Time
 
 data Options
     = ShowVersionOption
@@ -107,12 +107,22 @@ main = do
     options <- O.execParser (O.info optParser mempty)
     case options of
         ShowVersionOption -> let
-            gi = $$tGitInfoCwd
+            gi = $$(tGitInfoCwd)
             commitZonedTime :: ZonedTime
             commitZonedTime = parseTimeOrError True defaultTimeLocale "%a %b %-e %T %Y %z" (giCommitDate gi)
             commitTimeString :: String
             commitTimeString = formatTime defaultTimeLocale "%FT%TZ" $ zonedTimeToUTC commitZonedTime
-            in putStrLn $ "Pinafore version " <> pinaforeVersion <> " (" <> commitTimeString <> " " <> giHash gi <> ")" <> if giDirty gi then "+" else ""
+            in putStrLn $
+               "Pinafore version " <>
+               pinaforeVersion <>
+               " (" <>
+               commitTimeString <>
+               " " <>
+               giHash gi <>
+               ")" <>
+               if giDirty gi
+                   then "+"
+                   else ""
         PredefinedDocOption -> runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
         InfixDocOption -> printInfixOperatorTable
         DumpTableOption mdirpath -> do
