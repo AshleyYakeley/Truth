@@ -107,7 +107,7 @@ main = do
     options <- O.execParser (O.info optParser mempty)
     case options of
         ShowVersionOption -> let
-            gi = $$(tGitInfoCwd)
+            gi = $$tGitInfoCwd
             commitZonedTime :: ZonedTime
             commitZonedTime = parseTimeOrError True defaultTimeLocale "%a %b %-e %T %Y %z" (giCommitDate gi)
             commitTimeString :: String
