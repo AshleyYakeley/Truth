@@ -246,6 +246,15 @@ testType =
               , textTypeTest
                     "\\x1 -> \\x2 -> let y :: (c -> d, d -> c); y = (x1,x2) in y"
                     "{} -> (c -> d) -> (d -> c) -> (c -> d, d -> c)"
+              , textTypeTest "let f :: Entity; f = Nothing in f" "{} -> Entity"
+              , textTypeTest "let f :: Entity -> Entity; f = Just in f" "{} -> Entity -> Entity"
+              , textTypeTest "let f :: Entity; f = [] in f" "{} -> Entity"
+              , textTypeTest "let f :: Entity -> Entity; f x = [x] in f" "{} -> Entity -> Entity"
+              , textTypeTest
+                    "let f :: Entity -> Entity -> Entity; f a b = (a,b) in f"
+                    "{} -> Entity -> Entity -> Entity"
+              , textTypeTest "let f :: Entity -> Entity; f = Left in f" "{} -> Entity -> Entity"
+              , textTypeTest "let f :: Entity -> Entity; f = Right in f" "{} -> Entity -> Entity"
               ]
         , testGroup
               "simplify"

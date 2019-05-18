@@ -83,6 +83,21 @@ entitySubtypeArguments sc ct gt argsa argsb = let
                fmap (\f -> f id) $
                subtypeArguments sc dvt (covaryToDolanVarianceMap ct $ entityGroundTypeCovaryMap gt) argsa argsb
 
+topEntityType :: forall baseedit pol. PinaforeType baseedit pol (JoinMeetType pol Entity (LimitType pol))
+topEntityType =
+    ConsPinaforeType
+        (GroundPinaforeSingularType (EntityPinaforeGroundType NilListType TopEntityGroundType) NilDolanArguments)
+        NilPinaforeType
+
+jml1 ::
+       forall pol t. Is PolarityType pol
+    => JoinMeetType pol t (LimitType pol)
+    -> t
+jml1 =
+    case representative @_ @_ @pol of
+        PositiveType -> unjoin1
+        NegativeType -> meet1
+
 entityGroundSubtype ::
        forall baseedit m pola polb dva fa a dvb fb b. (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext baseedit m pola polb
@@ -93,6 +108,46 @@ entityGroundSubtype ::
     -> EntityGroundType fb
     -> DolanArguments dvb (PinaforeType baseedit) fb polb b
     -> m (a -> b)
+entityGroundSubtype _ NilListType TopEntityGroundType NilDolanArguments NilListType TopEntityGroundType NilDolanArguments =
+    pure id
+entityGroundSubtype sc (ConsListType Refl NilListType) MaybeEntityGroundType (ConsDolanArguments t NilDolanArguments) NilListType TopEntityGroundType NilDolanArguments = do
+    let
+        convE =
+            entityAdapterConvert $
+            entityGroundTypeAdapter MaybeEntityGroundType $
+            ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
+    conv <- subtypeTypes sc t $ topEntityType @baseedit @polb
+    pure $ convE . fmap (jml1 @polb . conv)
+entityGroundSubtype sc (ConsListType Refl NilListType) ListEntityGroundType (ConsDolanArguments t NilDolanArguments) NilListType TopEntityGroundType NilDolanArguments = do
+    let
+        convE =
+            entityAdapterConvert $
+            entityGroundTypeAdapter ListEntityGroundType $
+            ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
+    conv <- subtypeTypes sc t $ topEntityType @baseedit @polb
+    pure $ convE . fmap (jml1 @polb . conv)
+entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
+    let
+        convE =
+            entityAdapterConvert $
+            entityGroundTypeAdapter PairEntityGroundType $
+            ConsArguments (MkEntityType TopEntityGroundType NilArguments) $
+            ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
+    convA <- subtypeTypes sc ta $ topEntityType @baseedit @polb
+    convB <- subtypeTypes sc tb $ topEntityType @baseedit @polb
+    pure $ \(a, b) -> convE $ (jml1 @polb $ convA a, jml1 @polb $ convB b)
+entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
+    let
+        convE =
+            entityAdapterConvert $
+            entityGroundTypeAdapter EitherEntityGroundType $
+            ConsArguments (MkEntityType TopEntityGroundType NilArguments) $
+            ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
+    convA <- subtypeTypes sc ta $ topEntityType @baseedit @polb
+    convB <- subtypeTypes sc tb $ topEntityType @baseedit @polb
+    pure $ \case
+        Left a -> convE $ Left $ jml1 @polb $ convA a
+        Right b -> convE $ Right $ jml1 @polb $ convB b
 entityGroundSubtype _ ct gt args NilListType TopEntityGroundType NilDolanArguments
     | Just ebij <- pinaforeEntityToEntityType ct gt args =
         case ebij of
