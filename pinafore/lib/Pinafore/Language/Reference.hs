@@ -53,3 +53,19 @@ pinaforeReferenceSet (ImmutPinaforeReference _) _ = empty
 runPinaforeReference ::
        PinaforeReference baseedit '( BottomType, PinaforeAction baseedit ()) -> PinaforeAction baseedit ()
 runPinaforeReference ref = pinaforeReferenceGet ref >>= id
+
+pinaforeFLensReference ::
+       forall baseedit ap aq b.
+       (aq -> b)
+    -> (b -> aq -> ap)
+    -> PinaforeReference baseedit '( ap, aq)
+    -> PinaforeReference baseedit '( b, b)
+pinaforeFLensReference g pb (LensPinaforeReference tr lv) = let
+    lensG = fmap $ g . rangeCo tr
+    lensPB kb ka =
+        Identity $ do
+            b <- kb
+            a <- ka
+            return $ rangeContra tr $ pb b (rangeCo tr a)
+    in LensPinaforeReference identityRange $ wholeEditLens (MkLens lensG lensPB) . lv
+pinaforeFLensReference g _ (ImmutPinaforeReference ir) = ImmutPinaforeReference $ fmap g ir

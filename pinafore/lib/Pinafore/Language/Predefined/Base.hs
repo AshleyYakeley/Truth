@@ -378,6 +378,8 @@ base_predefinitions =
                 "contramapref"
                 "Map a function on setting a reference."
                 (contraMapRange :: (B -> A) -> PinaforeReference baseedit '( A, C) -> PinaforeReference baseedit '( B, C))
+          , mkValEntry "lensmapref" "Map getter & pushback functions on a reference." $
+            pinaforeFLensReference @baseedit @AP @AQ @B
           , mkValEntry
                 "applyref"
                 "Combine references."

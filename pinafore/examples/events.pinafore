@@ -49,6 +49,18 @@ eventTimeDay et = case et of
     EventTimeTime (LocalTime d _) -> d
     end;
 
+setEventTimeDay :: Day -> EventTime -> EventTime;
+setEventTimeDay d et = case et of
+    EventTimeDay _ -> EventTimeDay d;
+    EventTimeTime (LocalTime _ t) -> EventTimeTime (LocalTime d t)
+    end;
+
+ui_eventTime :: Ref EventTime -> UI None;
+ui_eventTime r = ui_calendar $ lensmapref eventTimeDay setEventTimeDay r;
+
+ui_calendar :: Ref Day -> UI None;
+ui_calendar _ = ui_blank;
+
 # for ordering
 eventTimeTime :: EventTime -> LocalTime;
 eventTimeTime et = case et of
@@ -93,11 +105,14 @@ tablePage = let
         nameColumn :: (Ref +Text, Event -> Ref Text);
         nameColumn = ({"Name"},\e -> eventName !$ {e});
         in [timeColumn,nameColumn];
-
     in (ui_label {"Events"},ui_ignore $ ui_table columns eventOrder events eventWindow);
 
 eventWindow :: Event -> Action Window;
-eventWindow evt = std_window (eventName !$ {evt}) (\_ -> []) ui_blank;
+eventWindow evt = std_window (eventName !$ {evt}) (\_ -> []) $ ui_vertical
+    [
+        (ui_eventTime $ eventTime !$ {evt},False),
+        (ui_textentry $ eventName !$ {evt},True)
+    ];
 
 eventsWindow :: Action Window;
 eventsWindow = selection_window ("Event","Events") events eventWindow $ \_ -> ui_pages [overviewPage, tablePage];
