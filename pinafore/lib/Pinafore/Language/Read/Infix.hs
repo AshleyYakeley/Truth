@@ -32,6 +32,7 @@ operatorFixity "^" = MkFixity AssocRight 9
 operatorFixity "^^" = MkFixity AssocRight 9
 operatorFixity "**" = MkFixity AssocRight 9
 operatorFixity "!**" = MkFixity AssocLeft 9
+operatorFixity "!++" = MkFixity AssocLeft 9
 operatorFixity "*" = MkFixity AssocLeft 8
 operatorFixity ".*" = MkFixity AssocLeft 8
 operatorFixity "~*" = MkFixity AssocLeft 8

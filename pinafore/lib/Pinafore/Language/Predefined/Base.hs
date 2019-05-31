@@ -442,7 +442,9 @@ base_predefinitions =
           [ mkValEntry "identity" "The identity morphism." $ identityPinaforeMorphism @baseedit @A
           , mkValEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
           , mkValEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
-            pairPinaforeMorphism @baseedit @A @BP @BQ @CP @CQ
+            pairPinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
+          , mkValEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
+            eitherPinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
           , mkValEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseedit @AP @AQ @BP @BQ
           , mkValEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseedit @A @BP @BQ
           , mkValEntry "!@" "Co-apply a morphism to a reference." $
