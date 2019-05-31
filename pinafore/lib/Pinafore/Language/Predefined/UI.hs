@@ -5,6 +5,7 @@ module Pinafore.Language.Predefined.UI
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Morphism
+import Pinafore.Language.Order
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Reference
 import Pinafore.Language.SetRef
@@ -27,10 +28,11 @@ ui_map = fmap
 ui_table ::
        forall baseedit. (?pinafore :: PinaforeContext baseedit, HasPinaforeEntityEdit baseedit)
     => [(PinaforeReference baseedit '( BottomType, Text), A -> PinaforeReference baseedit '( BottomType, Text))]
+    -> PinaforeOrder baseedit A
     -> PinaforeSetRef baseedit '( A, MeetType Entity A)
     -> (A -> PinaforeAction baseedit TopType)
     -> UISpec A baseedit
-ui_table cols val onDoubleClick = let
+ui_table cols (MkPinaforeOrder geto order) val onDoubleClick = let
     showCell :: Know Text -> (Text, TableCellProps)
     showCell (Known s) = (s, tableCellPlain)
     showCell Unknown = ("unknown", tableCellPlain {tcItalic = True})
@@ -45,6 +47,8 @@ ui_table cols val onDoubleClick = let
     in mapSelectionUISpec meet2 $
        tableUISpec
            (fmap getColumn cols)
+           order
+           (\mea -> applyPinaforeFunction geto $ constEditFunction $ Known $ meet2 mea)
            (unPinaforeSetRef $ contraMapRange meet2 val)
            (\a -> runPinaforeAction $ void $ onDoubleClick $ meet2 a)
 
@@ -192,7 +196,7 @@ ui_predefinitions =
           , mkValEntry "ui_pick" "A drop-down menu." $ ui_pick @baseedit
           , mkValEntry
                 "ui_table"
-                "A list table. First arg is columns (name, property), second is the window to open for a selection, third is the set of items." $
+                "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection." $
             ui_table @baseedit
           , mkValEntry "ui_scrolled" "A scrollable container." $ ui_scrolled @baseedit
           , mkValEntry "ui_dynamic" "A UI that can be updated to different UIs." $ ui_dynamic @baseedit

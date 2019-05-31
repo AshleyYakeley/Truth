@@ -21,15 +21,16 @@ data Column tedit row = MkColumn
 mapColumn :: (r2 -> r1) -> Column tedit r1 -> Column tedit r2
 mapColumn f (MkColumn n t p) = MkColumn n (t . f) (p . f)
 
-data StoreEntry tedit rowtext rowprops = MkStoreEntry
-    { entryTextLens :: EditLens tedit (WholeEdit rowtext)
+data StoreEntry tedit o rowtext rowprops = MkStoreEntry
+    { entryOrderFunction :: EditFunction tedit (WholeEdit o)
+    , entryTextLens :: EditLens tedit (WholeEdit rowtext)
     , entryPropFunc :: EditFunction tedit (WholeEdit rowprops)
     , entryRowText :: rowtext
     , entryRowProps :: rowprops
     }
 
 cellAttributes ::
-       Column tedit (rowtext, rowprops) -> StoreEntry tedit rowtext rowprops -> [AttrOp CellRendererText 'AttrSet]
+       Column tedit (rowtext, rowprops) -> StoreEntry tedit o rowtext rowprops -> [AttrOp CellRendererText 'AttrSet]
 cellAttributes MkColumn {..} MkStoreEntry {..} = let
     entryRow = (entryRowText, entryRowProps)
     MkTableCellProps {..} = colProps entryRow
@@ -42,7 +43,7 @@ cellAttributes MkColumn {..} MkStoreEntry {..} = let
 
 addColumn ::
        TreeView
-    -> SeqStore (key, StoreEntry tedit rowtext rowprops)
+    -> SeqStore (key, StoreEntry tedit o rowtext rowprops)
     -> Column tedit (rowtext, rowprops)
     -> CreateView key tedit ()
 addColumn tview store col = do
@@ -78,30 +79,38 @@ instance Monoid (KeyColumns tedit key) where
     mappend = (<>)
 
 keyContainerView ::
-       forall cont tedit iedit.
+       forall cont o tedit iedit.
        (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => KeyColumns tedit (ContainerKey cont)
+    -> (o -> o -> Ordering)
+    -> (ContainerKey cont -> EditFunction tedit (WholeEdit o))
     -> EditLens tedit (KeyEdit cont iedit)
     -> (ContainerKey cont -> IO ())
     -> GCreateView (ContainerKey cont) tedit
 keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens tedit (WholeEdit rowtext)
-                                                                   , EditFunction tedit (WholeEdit rowprops))) cols) tableLens onDoubleClick = do
+                                                                   , EditFunction tedit (WholeEdit rowprops))) cols) order geto tableLens onDoubleClick = do
     let
         getStoreItem ::
                MonadUnliftIO m
             => MutableRead m (EditReader tedit)
             -> ContainerKey cont
-            -> m (ContainerKey cont, StoreEntry tedit rowtext rowprops)
+            -> m (ContainerKey cont, StoreEntry tedit o rowtext rowprops)
         getStoreItem mr key = do
+            let entryOrderFunction = geto key
             (entryTextLens, entryPropFunc) <- liftIO $ colfunc key
             entryRowText <- editFunctionRead (editLensFunction entryTextLens) mr ReadWhole
             entryRowProps <- editFunctionRead entryPropFunc mr ReadWhole
             return (key, MkStoreEntry {..})
     initialRows <-
-        cvLiftView $
-        viewObjectRead $ \_ mr -> do
-            MkFiniteSet initialKeys <- editFunctionRead (editLensFunction tableLens) mr KeyReadKeys
-            for initialKeys $ getStoreItem mr
+        cvLiftView $ do
+            viewObjectRead $ \_ mr -> do
+                MkFiniteSet initialKeys <- editFunctionRead (editLensFunction tableLens) mr KeyReadKeys
+                ords <-
+                    for initialKeys $ \key -> do
+                        o <- editFunctionRead (geto key) mr ReadWhole
+                        return (key, o)
+                let initialKeys' = fmap fst $ sortBy (\(_, a) (_, b) -> order a b) ords
+                for initialKeys' $ getStoreItem mr
     store <- seqStoreNew initialRows
     tview <- treeViewNewWithModel store
     for_ cols $ addColumn tview store
@@ -135,27 +144,30 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
                 KeyClear -> seqStoreClear store
                 KeyEditItem _ _ -> return () -- no change to the table structure
     -- do updates to the cells
-    cvReceiveUpdates Nothing $ \_ mr tedits ->
-        seqStoreTraverse_ store $
-        joinTraverse
-            (\(key, oldcol) ->
-                 mapUpdates (editLensFunction $ entryTextLens oldcol) mr tedits $ \_ edits' ->
-                     withTransConstraintTM @MonadIO $
-                     case edits' of
-                         [] -> return Nothing
-                         _ -> do
-                             newrow <-
-                                 mutableReadToSubject $ applyEdits edits' $ subjectToMutableRead $ entryRowText oldcol
-                             return $ Just (key, oldcol {entryRowText = newrow}))
-            (\(key, oldcol) ->
-                 mapUpdates (entryPropFunc oldcol) mr tedits $ \_ edits' ->
-                     withTransConstraintTM @MonadIO $
-                     case edits' of
-                         [] -> return Nothing
-                         _ -> do
-                             newprops <-
-                                 mutableReadToSubject $ applyEdits edits' $ subjectToMutableRead $ entryRowProps oldcol
-                             return $ Just (key, oldcol {entryRowProps = newprops}))
+    cvReceiveUpdates Nothing $ \_ (mr :: MutableRead m _) tedits -> let
+        changeText :: Change m (ContainerKey cont, StoreEntry tedit o rowtext rowprops)
+        changeText =
+            MkChange $ \(key, oldcol) ->
+                mapUpdates (editLensFunction $ entryTextLens oldcol) mr tedits $ \_ edits' ->
+                    withTransConstraintTM @MonadIO $
+                    case edits' of
+                        [] -> return Nothing
+                        _ -> do
+                            newrow <-
+                                mutableReadToSubject $ applyEdits edits' $ subjectToMutableRead $ entryRowText oldcol
+                            return $ Just (key, oldcol {entryRowText = newrow})
+        changeProp :: Change m (ContainerKey cont, StoreEntry tedit o rowtext rowprops)
+        changeProp =
+            MkChange $ \(key, oldcol) ->
+                mapUpdates (entryPropFunc oldcol) mr tedits $ \_ edits' ->
+                    withTransConstraintTM @MonadIO $
+                    case edits' of
+                        [] -> return Nothing
+                        _ -> do
+                            newprops <-
+                                mutableReadToSubject $ applyEdits edits' $ subjectToMutableRead $ entryRowProps oldcol
+                            return $ Just (key, oldcol {entryRowProps = newprops})
+        in seqStoreTraverse_ store $ changeText <> changeProp
     let
         aspect :: Aspect (ContainerKey cont)
         aspect = do
@@ -197,5 +209,5 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
 tableGetView :: GetGView
 tableGetView =
     MkGetView $ \_getview uispec -> do
-        MkTableUISpec cols lens onDoubleClick <- isUISpec uispec
-        return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) lens onDoubleClick
+        MkTableUISpec cols order geto lens onDoubleClick <- isUISpec uispec
+        return $ keyContainerView (mconcat $ fmap oneKeyColumn cols) order geto lens onDoubleClick

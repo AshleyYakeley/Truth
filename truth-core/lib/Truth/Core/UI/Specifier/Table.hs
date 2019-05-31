@@ -34,36 +34,28 @@ readOnlyKeyColumn kcName getter = let
 
 data TableUISpec sel tedit where
     MkTableUISpec
-        :: forall cont tedit iedit.
+        :: forall cont o tedit iedit.
            (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
         => [KeyColumn tedit (ContainerKey cont)]
+        -> (o -> o -> Ordering)
+        -> (ContainerKey cont -> EditFunction tedit (WholeEdit o))
         -> EditLens tedit (KeyEdit cont iedit)
         -> (ContainerKey cont -> IO ())
         -> TableUISpec (ContainerKey cont) tedit
 
 tableUISpec ::
-       forall cont tedit iedit.
+       forall cont o tedit iedit.
        (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => [KeyColumn tedit (ContainerKey cont)]
+    -> (o -> o -> Ordering)
+    -> (ContainerKey cont -> EditFunction tedit (WholeEdit o))
     -> EditLens tedit (KeyEdit cont iedit)
     -> (ContainerKey cont -> IO ())
     -> UISpec (ContainerKey cont) tedit
-tableUISpec cols lens onDoubleClick = MkUISpec $ MkTableUISpec cols lens onDoubleClick
-
-simpleTableUISpec ::
-       forall cont iedit.
-       ( KeyContainer cont
-       , FullSubjectReader (EditReader iedit)
-       , ApplicableEdit iedit
-       , HasKeyReader cont (EditReader iedit)
-       )
-    => [KeyColumn (KeyEdit cont iedit) (ContainerKey cont)]
-    -> (ContainerKey cont -> IO ())
-    -> UISpec (ContainerKey cont) (KeyEdit cont iedit)
-simpleTableUISpec cols onDoubleClick = tableUISpec cols id onDoubleClick
+tableUISpec cols order geto lens onDoubleClick = MkUISpec $ MkTableUISpec cols order geto lens onDoubleClick
 
 instance Show (TableUISpec sel edit) where
-    show (MkTableUISpec _ _ _) = "table"
+    show (MkTableUISpec _ _ _ _ _) = "table"
 
 instance UIType TableUISpec where
     uiWitness = $(iowitness [t|TableUISpec|])
