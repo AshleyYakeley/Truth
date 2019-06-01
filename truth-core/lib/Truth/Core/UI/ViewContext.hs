@@ -3,8 +3,18 @@ module Truth.Core.UI.ViewContext where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object
-import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
+
+ioMapSelectionAspect :: IO (sela -> selb) -> Aspect sela -> Aspect selb
+ioMapSelectionAspect iof aspect = do
+    f <- iof
+    msel <- aspect
+    return $ do
+        sel <- msel
+        return $ f sel
+
+mapSelectionAspect :: (sela -> selb) -> Aspect sela -> Aspect selb
+mapSelectionAspect f = ioMapSelectionAspect $ return f
 
 data ViewContext sel edit = MkViewContext
     { vcSubscriber :: Subscriber edit

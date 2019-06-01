@@ -25,7 +25,6 @@ import Truth.Core.Import
 import Truth.Core.Object
 import Truth.Core.Read
 import Truth.Core.Types
-import Truth.Core.UI.Specifier.Selection
 import Truth.Core.UI.Specifier.Specifier
 import Truth.Core.UI.View
 import Truth.Core.UI.ViewContext

@@ -18,7 +18,7 @@ import Truth.Core
 
 valSpecText ::
        UISpec sel (WholeEdit (Know Text)) -> PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec sel baseedit
-valSpecText spec val = mapUISpec val spec
+valSpecText spec val = mapEditUISpec val spec
 
 clearText :: EditFunction (WholeEdit (Know Text)) (WholeEdit Text)
 clearText = funcEditFunction (fromKnow mempty)
@@ -96,7 +96,7 @@ ui_button ::
 ui_button text raction = buttonUISpec (clearText . immutableReferenceToFunction text) $ actionReference raction
 
 ui_label :: forall baseedit. PinaforeImmutableReference baseedit Text -> UISpec BottomType baseedit
-ui_label text = mapUISpec (immutableReferenceToLens text) $ uiUnknownValue mempty $ labelUISpec
+ui_label text = mapEditUISpec (immutableReferenceToLens text) $ uiUnknownValue mempty $ labelUISpec
 
 ui_dynamic :: forall baseedit. PinaforeImmutableReference baseedit (UISpec A baseedit) -> UISpec A baseedit
 ui_dynamic uiref = switchUISpec $ pinaforeImmutableReferenceValue nullUISpec uiref
@@ -126,10 +126,10 @@ ui_withselection :: (PinaforeAction baseedit A -> UISpec A baseedit) -> UISpec A
 ui_withselection f = withAspectUISpec $ \aspect -> f $ aspectToAction aspect
 
 ui_textarea :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec BottomType baseedit
-ui_textarea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertUISpec textAreaUISpec
+ui_textarea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertEditUISpec textAreaUISpec
 
 ui_calendar :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Day)) -> UISpec BottomType baseedit
-ui_calendar day = mapUISpec day $ uiUnknownValue (fromGregorian 1970 01 01) calendarUISpec
+ui_calendar day = mapEditUISpec day $ uiUnknownValue (fromGregorian 1970 01 01) calendarUISpec
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c

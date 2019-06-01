@@ -96,7 +96,7 @@ soupWindow async MkUIToolkit {..} dirpath = do
                                     lifeCycleEarlyCloser $
                                     uitCreateWindow (mapSubscriber lens sub) $
                                     MkWindowSpec subcloser (constEditFunction "item") (mbar subcloser subwin) $
-                                    mapUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
+                                    mapEditUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
                                     oneWholeUISpec $ oneWholeUISpec noteEditSpec
                             return ()
                     Nothing -> return ()
