@@ -10,6 +10,7 @@ import Shapes
 import Truth.Core
 import Truth.UI.GTK.Button
 import Truth.UI.GTK.CSS
+import Truth.UI.GTK.Calendar
 import Truth.UI.GTK.CheckButton
 import Truth.UI.GTK.Drag
 import Truth.UI.GTK.Entry
@@ -60,6 +61,7 @@ allGetView =
         , pagesGetView
         , dragGetView
         , scrolledGetView
+        , calendarGetView
         ]
 
 getRequest :: forall t. IOWitness t -> Maybe t

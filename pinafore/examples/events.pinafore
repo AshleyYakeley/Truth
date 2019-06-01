@@ -20,13 +20,13 @@ std_window title moremenus contents = afix $ \window -> let
     menus getsel = {basemenus ++ moremenus getsel};
     in openwindow title menus $ ui_scrolled contents;
 
-selection_window :: (Text, Text) -> (set & SetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> (set -> UI item) -> Action Window;
-selection_window (inames,inamep) iset iopen iui = let
+selection_window :: (Text, Text) -> (set & SetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> ((item | NewEntity) -> Action Any) -> (set -> UI item) -> Action Window;
+selection_window (inames,inamep) iset iopen inew iui = let
     moremenus getsel =
         [
             menu_submenu "Selection"
             [
-                menu_action ("New " <> inames) (Just "Ctrl+K") {newentity iset >>= iopen},
+                menu_action ("New " <> inames) (Just "Ctrl+K") {do i <- newentity iset; inew i; iopen i; end},
                 menu_action "View" Nothing {getsel >>= iopen},
                 menu_action "Delete" Nothing {getsel >>= \p -> iset -= p}
             ]
@@ -57,9 +57,6 @@ setEventTimeDay d et = case et of
 
 ui_eventTime :: Ref EventTime -> UI None;
 ui_eventTime r = ui_calendar $ lensmapref eventTimeDay setEventTimeDay r;
-
-ui_calendar :: Ref Day -> UI None;
-ui_calendar _ = ui_blank;
 
 # for ordering
 eventTimeTime :: EventTime -> LocalTime;
@@ -114,8 +111,21 @@ eventWindow evt = std_window (eventName !$ {evt}) (\_ -> []) $ ui_vertical
         (ui_textentry $ eventName !$ {evt},True)
     ];
 
+getLocalTime :: Action LocalTime;
+getLocalTime = do
+    t <- getCurrentTime;
+    tz <- getTimeZone t;
+    return $ timeToLocal tz t;
+    end;
+
+getCurrentDay :: Action Day;
+getCurrentDay = do
+    LocalTime d _ <- getLocalTime;
+    return d;
+    end;
+
 eventsWindow :: Action Window;
-eventsWindow = selection_window ("Event","Events") events eventWindow $ \_ -> ui_pages [overviewPage, tablePage];
+eventsWindow = selection_window ("Event","Events") events eventWindow (\i -> do day <- getCurrentDay; eventTime !$ {i} := EventTimeDay day; end) $ \_ -> ui_pages [overviewPage, tablePage];
 
 in do
     _ <- eventsWindow;

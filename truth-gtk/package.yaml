@@ -17,6 +17,7 @@ library:
       - base >= 4.12
       - bytestring
       - text
+      - time
       - transformers
       - mono-traversable
       - countable
@@ -54,6 +55,7 @@ library:
       - Truth.UI.GTK.Drag
       - Truth.UI.GTK.MenuBar
       - Truth.UI.GTK.Scrolled
+      - Truth.UI.GTK.Calendar
 
 tests:
     test:

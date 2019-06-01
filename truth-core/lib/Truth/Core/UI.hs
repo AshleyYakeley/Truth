@@ -8,6 +8,7 @@ import Truth.Core.UI.GetView as I
 import Truth.Core.UI.Request as I
 import Truth.Core.UI.Specifier.Button as I
 import Truth.Core.UI.Specifier.CSS as I
+import Truth.Core.UI.Specifier.Calendar as I
 import Truth.Core.UI.Specifier.Checkbox as I
 import Truth.Core.UI.Specifier.Drag as I
 import Truth.Core.UI.Specifier.Icon as I

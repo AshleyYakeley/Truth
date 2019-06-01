@@ -114,6 +114,7 @@ library:
       - Truth.Core.UI.Specifier.Drag
       - Truth.Core.UI.Specifier.MenuBar
       - Truth.Core.UI.Specifier.Scrolled
+      - Truth.Core.UI.Specifier.Calendar
       - Truth.Core.UI.ViewContext
       - Truth.Core.UI.View
       - Truth.Core.UI.Window

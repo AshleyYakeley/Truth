@@ -27,6 +27,7 @@ testScripts =
         , testExample "test/script/testquery.pinafore"
         , testExample "test/script/test.pinafore"
         , testExample "test/script/big-ui.pinafore"
+        , testExample "test/script/calendar.pinafore"
         , testExample "examples/people.pinafore"
         , testExample "examples/events.pinafore"
         ]

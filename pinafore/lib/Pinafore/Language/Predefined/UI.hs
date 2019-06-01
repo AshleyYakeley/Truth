@@ -2,6 +2,7 @@ module Pinafore.Language.Predefined.UI
     ( ui_predefinitions
     ) where
 
+import Data.Time
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Morphism
@@ -127,6 +128,9 @@ ui_withselection f = withAspectUISpec $ \aspect -> f $ aspectToAction aspect
 ui_textarea :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec BottomType baseedit
 ui_textarea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertUISpec textAreaUISpec
 
+ui_calendar :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Day)) -> UISpec BottomType baseedit
+ui_calendar day = mapUISpec day $ uiUnknownValue (fromGregorian 1970 01 01) calendarUISpec
+
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c
 interpretAccelerator ('C':'t':'r':'l':'+':s) = do
@@ -198,6 +202,7 @@ ui_predefinitions =
                 "ui_table"
                 "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection." $
             ui_table @baseedit
+          , mkValEntry "ui_calendar" "A calendar." $ ui_calendar @baseedit
           , mkValEntry "ui_scrolled" "A scrollable container." $ ui_scrolled @baseedit
           , mkValEntry "ui_dynamic" "A UI that can be updated to different UIs." $ ui_dynamic @baseedit
           ]

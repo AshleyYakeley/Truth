@@ -1,0 +1,7 @@
+let
+pday = property @() @Day !"calendar-test";
+rday = pday !$ {()};
+in do
+    openwindow {"Test Calendar"} (\_ -> {[]}) $ ui_vertical [(ui_calendar rday,False),(ui_label {totext %rday},True)];
+    return ();
+    end
