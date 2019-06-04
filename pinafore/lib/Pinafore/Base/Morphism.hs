@@ -142,7 +142,9 @@ applyPinaforeFunction =
                     then do
                         b <- getB mr
                         return [MkWholeEdit b]
-                    else return []
+                    else do
+                        edits <- efUpdate pinedit mr
+                        for edits $ \(MkWholeEdit a) -> fmap MkWholeEdit $ pfFuncRead mr a
         in MkAnEditFunction g u
 
 mapPinaforeFunctionMorphismBase ::
