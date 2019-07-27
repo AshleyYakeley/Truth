@@ -33,9 +33,6 @@ instance Unifier unifier => JoinMeetCategory (UUShim unifier) where
 uuLiftShim :: Unifier unifier => UnifierShim unifier a b -> UUShim unifier a b
 uuLiftShim conv = MkUUShim $ pure conv
 
-uuSlowMap :: Unifier unifier => ((a -> b) -> c -> d) -> UUShim unifier a b -> UUShim unifier c d
-uuSlowMap f (MkUUShim uconv) = MkUUShim $ fmap (toEnhanced . f . fromEnhanced) uconv
-
 type UUNegShimWit unifier = ShimWit (UUShim unifier) (UnifierNegWitness unifier) 'Negative
 
 type UUPosShimWit unifier = ShimWit (UUShim unifier) (UnifierPosWitness unifier) 'Positive

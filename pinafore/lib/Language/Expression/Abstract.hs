@@ -114,6 +114,9 @@ joinPatternResults (p:pp) = do
     c <- joinPatternResults pp
     joinPatternResult p c
 
+knot :: Unifier unifier => UUShim unifier (MeetType (a -> t) a) t
+knot = MkUUShim $ pure $ toEnhanced $ \(MkMeetType (at, a)) -> at a
+
 patternAbstractSealedExpression ::
        forall unifier renamer m. UnifierRenamerConstraint unifier renamer m
     => UnifierSealedPattern unifier
@@ -122,41 +125,9 @@ patternAbstractSealedExpression ::
 patternAbstractSealedExpression (MkSealedPattern vwt pat) (MkSealedExpression twt expr) =
     patternAbstractUnifyExpression @unifier pat expr $ \uconv uexpr' ->
         return $
-        MkPatternResult (mapShimWit (uuSlowMap (\pp (pbt, pa) -> pbt $ pp pa) uconv) $ uuLiftPosShimWit twt) $
-        fmap (fmap (\(pbt, (pa, ())) -> (pbt, pa))) $ MkAbstractResult (uuLiftNegShimWit vwt) uexpr'
+        MkPatternResult (mapShimWit (knot <.> meetBimap cid uconv) $ uuLiftPosShimWit twt) $
+        fmap (fmap (\(pbt, (pa, ())) -> MkMeetType (pbt, pa))) $ MkAbstractResult (uuLiftNegShimWit vwt) uexpr'
 
-{-
-patternAbstractSealedExpression (MkSealedPattern pwt (OpenPattern (MkNameWitness name vwt) pat)) (MkSealedExpression twt expr) = do
-    MkAbstractResult absvwt absexpr <- abstractNamedExpression @unifier name expr
-    uabsconv <- unifyUUPosNegShimWit @unifier (uuLiftPosShimWit vwt) absvwt
-    patternAbstractSealedExpression @unifier (MkSealedPattern (mapShimWit (foo1 uabsconv) pwt) $ fmap foo pat) (MkSealedExpression (mapShimWit (ff1 uabsconv) twt) $ fmap id absexpr)
--}
-{-
-     pat absexpr $ \uuconv rexpr -> let
-        remap (pba,(pa0,(pa1,t))) = (\(MkMeetType (pb0,pb1)) -> pba pb0 pb1, (MkMeetType (pa0,pa1),t) )
-        in cont (meetBimap uuconv uabsconv) $ fmap (fmap (fmap remap)) rexpr
--}
-{-
-letBindNamedExpression ::
-       forall unifier renamer m a. UnifierRenamerConstraint unifier renamer m
-    => (UnifierName unifier -> Maybe (UnifierSealedExpression unifier))
-    -> UnifierOpenExpression unifier a
-    -> UnifierMonad unifier (UnifyExpression unifier a)
-letBindNamedExpression _ (ClosedExpression a) = return $ pure a
-letBindNamedExpression bindmap (OpenExpression (MkNameWitness name vwt) expr) = do
-    uerest <- letBindNamedExpression @unifier bindmap expr
-    case bindmap name of
-        Just bindexpr -> do
-            MkSealedExpression twt econv bindexpr' <- rename bindexpr
-            ubindconv <- unifyPosNegWitnesses @unifier twt vwt
-            let uebind = MkUnifyExpression ubindconv $ fmap (\t1 tt -> tt t1) bindexpr'
-            return $ uerest <*> uebind
-        Nothing ->
-            return $
-            case uerest of
-                MkUnifyExpression uconv expr' ->
-                    MkUnifyExpression uconv $ OpenExpression (MkNameWitness name vwt) (fmap (\cta t c -> cta c t) expr')
--}
 type FunctionWitness vw tw = forall a b. vw a -> tw b -> tw (a -> b)
 
 type UnifierFunctionPosWitness unifier = FunctionWitness (UnifierNegShimWit unifier) (UnifierPosShimWit unifier)
