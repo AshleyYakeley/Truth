@@ -164,9 +164,15 @@ interactLoop inh outh echo = do
                                  val <- interactEvalExpression texpr
                                  action <- runValue outh val
                                  lift $ lift $ runPinaforeAction action
-                             ShowTypeInteractiveCommand texpr -> do
-                                 MkAnyValue (MkShimWit t _) _ <- interactEvalExpression texpr
-                                 liftIO $ hPutStrLn outh $ ":: " <> show t
+                             ShowTypeInteractiveCommand showinfo texpr -> do
+                                 MkAnyValue (MkShimWit t shim) _ <- interactEvalExpression texpr
+                                 liftIO $
+                                     hPutStrLn outh $
+                                     ":: " <>
+                                     show t <>
+                                     if showinfo
+                                         then " # " <> show shim
+                                         else ""
                              SimplifyTypeInteractiveCommand polarity ttype -> do
                                  MkAnyW t <- lift $ liftRS ttype
                                  liftIO $

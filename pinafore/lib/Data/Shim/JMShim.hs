@@ -10,14 +10,12 @@ module Data.Shim.JMShim
 import Data.Shim.JoinMeet
 import Data.Shim.PolyShim
 import Data.Shim.Range
-
---import Data.Shim.MapRange
 import Shapes
 
 data JMShim (a :: k) (b :: k) where
-    FuncJMShim :: KindFunction a b -> JMShim a b
+    FuncJMShim :: String -> KindFunction a b -> JMShim a b
     IdentityJMShim :: JMShim t t
-    CoerceJMShim :: Coercion a b -> JMShim a b
+    CoerceJMShim :: String -> Coercion a b -> JMShim a b
     InitFJMShim :: JMShim BottomType t
     TermFJMShim :: JMShim t TopType
     Join1JMShim :: JMShim t a -> JMShim t (JoinType a b)
@@ -65,6 +63,23 @@ data JMShim (a :: k) (b :: k) where
         -> JMShim f g
         -> JMShim (f a) (g a) -- probably ruins everything
 
+instance Show (JMShim a b) where
+    show (FuncJMShim t _) = "[func " <> t <> "]"
+    show IdentityJMShim = "id"
+    show (CoerceJMShim t _) = "[coerce " <> t <> "]"
+    show InitFJMShim = "initf"
+    show TermFJMShim = "termf"
+    show (Join1JMShim s) = "(join1 " <> show s <> ")"
+    show (Join2JMShim s) = "(join2 " <> show s <> ")"
+    show (JoinFJMShim s1 s2) = "(joinf " <> show s1 <> " " <> show s2 <> ")"
+    show (Meet1JMShim s) = "(meet1 " <> show s <> ")"
+    show (Meet2JMShim s) = "(meet2 " <> show s <> ")"
+    show (MeetFJMShim s1 s2) = "(meetf " <> show s1 <> " " <> show s2 <> ")"
+    show (CoJMShim _ _ s1 s2) = "(co " <> show s1 <> " " <> show s2 <> ")"
+    show (ContraJMShim _ _ s1 s2) = "(contra " <> show s1 <> " " <> show s2 <> ")"
+    show (RangeJMShim _ _ s1 (MkCatRange s2a s2b)) = "(range " <> show s1 <> " (" <> show s2a <> "," <> show s2b <> "))"
+    show (LiftJMShim _ _ s) = "(lift " <> show s <> ")"
+
 instance CoercibleKind k => InCategory (JMShim :: k -> k -> Type) where
     cid = IdentityJMShim
     (<.>) ::
@@ -81,7 +96,7 @@ instance CoercibleKind k => InCategory (JMShim :: k -> k -> Type) where
     RangeJMShim _ mrrp pf pa <.> RangeJMShim mrrq _ qf qa = RangeJMShim mrrq mrrp (pf <.> qf) (pa <.> qa)
     p <.> q
         | Just pc <- enhancedCoercion p
-        , Just qc <- enhancedCoercion q = CoerceJMShim $ pc <.> qc
+        , Just qc <- enhancedCoercion q = CoerceJMShim (show p <> " . " <> show q) $ pc <.> qc
     Join1JMShim p <.> q = Join1JMShim $ p <.> q
     Join2JMShim p <.> q = Join2JMShim $ p <.> q
     p <.> JoinFJMShim ta tb = JoinFJMShim (p <.> ta) (p <.> tb)
@@ -92,7 +107,9 @@ instance CoercibleKind k => InCategory (JMShim :: k -> k -> Type) where
     MeetFJMShim ta tb <.> q = MeetFJMShim (ta <.> q) (tb <.> q)
     Meet1JMShim aq <.> MeetFJMShim pa _ = aq <.> pa
     Meet2JMShim bq <.> MeetFJMShim _ pb = bq <.> pb
-    p <.> q = FuncJMShim $ fromEnhanced p <.> fromEnhanced q
+    p@(FuncJMShim t _) <.> q = FuncJMShim t $ fromEnhanced p <.> fromEnhanced q
+    p <.> q@(FuncJMShim t _) = FuncJMShim t $ fromEnhanced p <.> fromEnhanced q
+    p <.> q = FuncJMShim (show p <> " . " <> show q) $ fromEnhanced p <.> fromEnhanced q
 
 instance Category (JMShim :: Type -> Type -> Type) where
     id = cid
@@ -193,9 +210,9 @@ instance CoercibleKind k => EnhancedFunction (JMShim :: k -> k -> Type) where
         -> KindFunction a b
     fromEnhanced f
         | Just c <- enhancedCoercion f = coercionToFunction c
-    fromEnhanced (FuncJMShim f) = f
+    fromEnhanced (FuncJMShim _ f) = f
     fromEnhanced IdentityJMShim = cid
-    fromEnhanced (CoerceJMShim c) = coercionToFunction c
+    fromEnhanced (CoerceJMShim _ c) = coercionToFunction c
     fromEnhanced InitFJMShim = initf
     fromEnhanced TermFJMShim = termf
     fromEnhanced (Join1JMShim ta) = join1 <.> fromEnhanced ta
@@ -224,7 +241,7 @@ instance CoercibleKind k => EnhancedFunction (JMShim :: k -> k -> Type) where
             MkNestedMorphism ff -> ff
     coercionEnhanced = CoerceJMShim
     enhancedCoercion IdentityJMShim = Just cid
-    enhancedCoercion (CoerceJMShim c) = Just c
+    enhancedCoercion (CoerceJMShim _ c) = Just c
     enhancedCoercion (CoJMShim (Just Dict) _ f a) = do
         cf <- enhancedCoercion f
         ca <- enhancedCoercion a

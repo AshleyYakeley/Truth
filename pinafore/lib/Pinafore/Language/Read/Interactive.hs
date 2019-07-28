@@ -20,17 +20,19 @@ import Shapes hiding (try)
 data InteractiveCommand baseedit
     = LetInteractiveCommand (PinaforeScoped baseedit (Transform (PinaforeScoped baseedit) (PinaforeScoped baseedit)))
     | ExpressionInteractiveCommand (PinaforeScoped baseedit (QExpr baseedit))
-    | ShowTypeInteractiveCommand (PinaforeScoped baseedit (QExpr baseedit))
+    | ShowTypeInteractiveCommand Bool
+                                 (PinaforeScoped baseedit (QExpr baseedit))
     | forall polarity. SimplifyTypeInteractiveCommand (PolarityType polarity)
                                                       (PinaforeScoped baseedit (AnyW (PinaforeType baseedit polarity)))
     | ErrorInteractiveCommand Text
 
 showTypeInteractiveCommand ::
        forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (InteractiveCommand baseedit)
-showTypeInteractiveCommand = do
+    => Bool
+    -> Parser (InteractiveCommand baseedit)
+showTypeInteractiveCommand showinfo = do
     expr <- readTopExpression
-    return $ ShowTypeInteractiveCommand $ interpretTopExpression expr
+    return $ ShowTypeInteractiveCommand showinfo $ interpretTopExpression expr
 
 simplifyPolarTypeInteractiveCommand ::
        forall baseedit polarity. HasPinaforeEntityEdit baseedit
@@ -53,8 +55,9 @@ simplifyTypeInteractiveCommand ::
 simplifyTypeInteractiveCommand = readPolarity simplifyPolarTypeInteractiveCommand
 
 readSpecialCommand :: HasPinaforeEntityEdit baseedit => Text -> Parser (InteractiveCommand baseedit)
-readSpecialCommand "t" = showTypeInteractiveCommand
-readSpecialCommand "type" = showTypeInteractiveCommand
+readSpecialCommand "t" = showTypeInteractiveCommand False
+readSpecialCommand "type" = showTypeInteractiveCommand False
+readSpecialCommand "info" = showTypeInteractiveCommand True
 readSpecialCommand "simplify" = simplifyTypeInteractiveCommand
 readSpecialCommand "simplify-" = simplifyPolarTypeInteractiveCommand NegativeType
 readSpecialCommand cmd = return $ ErrorInteractiveCommand $ "unknown interactive command: " <> cmd

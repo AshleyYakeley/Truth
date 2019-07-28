@@ -38,18 +38,18 @@ $(literalInstances [t|()|])
 
 -- Double
 instance ToShimWit JMShim (PinaforeType baseedit 'Positive) Double where
-    toShimWit = mapShimWit (toEnhanced InexactNumber) toJMShimWit
+    toShimWit = mapShimWit (toEnhanced "subtype" InexactNumber) toJMShimWit
 
 -- Int
 instance ToShimWit JMShim (PinaforeType baseedit 'Positive) Int where
-    toShimWit = mapShimWit (toEnhanced toInteger) toJMShimWit
+    toShimWit = mapShimWit (toEnhanced "subtype" toInteger) toJMShimWit
 
 instance FromShimWit JMShim (PinaforeType baseedit 'Negative) Int where
-    fromShimWit = mapShimWit (toEnhanced fromInteger) fromJMShimWit
+    fromShimWit = mapShimWit (toEnhanced "subtype" fromInteger) fromJMShimWit
 
 -- Fixed
 instance HasResolution r => ToShimWit JMShim (PinaforeType baseedit 'Positive) (Fixed r) where
-    toShimWit = mapShimWit (toEnhanced toRational) toJMShimWit
+    toShimWit = mapShimWit (toEnhanced "subtype" toRational) toJMShimWit
 
 instance HasResolution r => FromShimWit JMShim (PinaforeType baseedit 'Negative) (Fixed r) where
-    fromShimWit = mapShimWit (toEnhanced fromRational) fromJMShimWit
+    fromShimWit = mapShimWit (toEnhanced "subtype" fromRational) fromJMShimWit

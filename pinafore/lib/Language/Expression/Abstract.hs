@@ -115,7 +115,7 @@ joinPatternResults (p:pp) = do
     joinPatternResult p c
 
 knot :: Unifier unifier => UUShim unifier (MeetType (a -> t) a) t
-knot = MkUUShim $ pure $ toEnhanced $ \(MkMeetType (at, a)) -> at a
+knot = MkUUShim $ pure $ toEnhanced "knot" $ \(MkMeetType (at, a)) -> at a
 
 patternAbstractSealedExpression ::
        forall unifier renamer m. UnifierRenamerConstraint unifier renamer m

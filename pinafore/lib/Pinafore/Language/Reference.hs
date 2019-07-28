@@ -14,7 +14,7 @@ instance IsoMapRange JMShim (PinaforeReference baseedit)
 
 instance MapRange JMShim (PinaforeReference baseedit) where
     mapRange f =
-        toEnhanced $ \case
+        toEnhanced "reference" $ \case
             LensPinaforeReference r s -> LensPinaforeReference (mapWithRange f r) s
             ImmutPinaforeReference ir ->
                 case f of

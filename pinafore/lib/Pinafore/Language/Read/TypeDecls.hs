@@ -97,7 +97,7 @@ makeConstructorValue ::
     -> m (PinaforeShimWit baseedit 'Positive (HList a -> t))
 makeConstructorValue ctf lt = do
     lt' <- mapMListType entityToNegativePinaforeType lt
-    return $ qFunctionPosWitnesses lt' (mapShimWit coerceEnhanced ctf)
+    return $ qFunctionPosWitnesses lt' (mapShimWit (coerceEnhanced "consval") ctf)
 
 readClosedTypeDeclaration :: forall baseedit. Parser (PinaforeScoped baseedit (TypeDecls baseedit))
 readClosedTypeDeclaration = do

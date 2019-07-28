@@ -73,10 +73,10 @@ instance IsSubtype LiteralType where
     isSubtype ta tb
         | Just Refl <- testEquality ta tb = return id
     isSubtype t LiteralLiteralType
-        | Dict <- literalTypeAsLiteral t = return $ toEnhanced toLiteral
-    isSubtype RationalLiteralType NumberLiteralType = return $ toEnhanced ExactNumber
-    isSubtype IntegerLiteralType NumberLiteralType = return $ toEnhanced $ ExactNumber . toRational
-    isSubtype IntegerLiteralType RationalLiteralType = return $ toEnhanced toRational
+        | Dict <- literalTypeAsLiteral t = return $ toEnhanced "subtype" toLiteral
+    isSubtype RationalLiteralType NumberLiteralType = return $ toEnhanced "subtype" ExactNumber
+    isSubtype IntegerLiteralType NumberLiteralType = return $ toEnhanced "subtype" $ ExactNumber . toRational
+    isSubtype IntegerLiteralType RationalLiteralType = return $ toEnhanced "subtype" toRational
     isSubtype _ _ = Nothing
 
 literalTypeAsLiteral :: LiteralType t -> Dict (AsLiteral t)

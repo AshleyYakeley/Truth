@@ -114,9 +114,9 @@ qFunctionPosWitnesses ::
        ListType (PinaforeShimWit baseedit 'Negative) a
     -> PinaforeShimWit baseedit 'Positive b
     -> PinaforeShimWit baseedit 'Positive (HList a -> b)
-qFunctionPosWitnesses NilListType tb = mapShimWit (toEnhanced $ \ub -> ub ()) tb
+qFunctionPosWitnesses NilListType tb = mapShimWit (toEnhanced "poswitness" $ \ub -> ub ()) tb
 qFunctionPosWitnesses (ConsListType ta la) tb =
-    mapShimWit (toEnhanced $ \f a l -> f (a, l)) $ qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
+    mapShimWit (toEnhanced "poswitness" $ \f a l -> f (a, l)) $ qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
 
 qCaseAbstract ::
        forall baseedit. [(QPattern baseedit, QExpr baseedit)] -> PinaforeSourceScoped baseedit (QExpr baseedit)

@@ -17,13 +17,14 @@ data PinaforeMorphism baseedit (pqa :: (Type, Type)) (pqb :: (Type, Type)) =
 instance IsoMapRange JMShim (PinaforeMorphism baseedit pqa)
 
 instance MapRange JMShim (PinaforeMorphism baseedit pqa) where
-    mapRange f = toEnhanced $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism ra (mapWithRange f rb) m
+    mapRange f = toEnhanced "morphism" $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism ra (mapWithRange f rb) m
 
 instance IsoMapRange JMShim (PinaforeMorphism baseedit)
 
 instance MapRange JMShim (PinaforeMorphism baseedit) where
     mapRange f =
-        toEnhanced $ MkNestedMorphism $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism (mapWithRange f ra) rb m
+        toEnhanced "morphism" $
+        MkNestedMorphism $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism (mapWithRange f ra) rb m
 
 instance HasDolanVary '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit) where
     dolanVary = ConsDolanVarianceMap Nothing mapRange $ ConsDolanVarianceMap Nothing mapRange $ NilDolanVarianceMap

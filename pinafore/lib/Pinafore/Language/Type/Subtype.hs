@@ -129,7 +129,7 @@ entityGroundSubtype sc (ConsListType Refl NilListType) MaybeEntityGroundType (Co
             entityGroundTypeAdapter MaybeEntityGroundType $
             ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
     conv <- subtypeTypes sc t $ topEntityType @baseedit @polb
-    pure $ toEnhanced convE . cfmap (jml1 @polb . conv)
+    pure $ toEnhanced "subtype" convE . cfmap (jml1 @polb . conv)
 entityGroundSubtype sc (ConsListType Refl NilListType) ListEntityGroundType (ConsDolanArguments t NilDolanArguments) NilListType TopEntityGroundType NilDolanArguments = do
     let
         convE =
@@ -137,7 +137,7 @@ entityGroundSubtype sc (ConsListType Refl NilListType) ListEntityGroundType (Con
             entityGroundTypeAdapter ListEntityGroundType $
             ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
     conv <- subtypeTypes sc t $ topEntityType @baseedit @polb
-    pure $ toEnhanced convE . cfmap (jml1 @polb . conv)
+    pure $ toEnhanced "subtype" convE . cfmap (jml1 @polb . conv)
 entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
     let
         convE =
@@ -147,7 +147,7 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) PairE
             ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @baseedit @polb
     convB <- subtypeTypes sc tb $ topEntityType @baseedit @polb
-    pure $ toEnhanced convE . coShimFuncR (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
+    pure $ toEnhanced "subtype" convE . coShimFuncR (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
 entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
     let
         convE =
@@ -157,13 +157,13 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) Eithe
             ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @baseedit @polb
     convB <- subtypeTypes sc tb $ topEntityType @baseedit @polb
-    pure $ toEnhanced convE . coShimFuncR (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
+    pure $ toEnhanced "subtype" convE . coShimFuncR (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
 entityGroundSubtype _ ct gt args NilListType TopEntityGroundType NilDolanArguments
     | Just ebij <- pinaforeEntityToEntityType ct gt args =
         case ebij of
             MkShimWit et conv ->
                 pure $
-                toEnhanced (entityAdapterConvert (entityAdapter et)) <.>
+                toEnhanced "subtype" (entityAdapterConvert (entityAdapter et)) <.>
                 case representative @_ @_ @pola of
                     PositiveType -> isoForwards (unJMIsoShim conv)
                     NegativeType -> isoBackwards (unJMIsoShim conv)
@@ -172,9 +172,9 @@ entityGroundSubtype _ NilListType (LiteralEntityGroundType t1) NilDolanArguments
 entityGroundSubtype _ NilListType NewEntityGroundType NilDolanArguments NilListType NewEntityGroundType NilDolanArguments =
     pure id
 entityGroundSubtype _ NilListType NewEntityGroundType NilDolanArguments NilListType (OpenEntityGroundType _ _) NilDolanArguments =
-    pure coerceEnhanced
+    pure $ coerceEnhanced "subtype"
 entityGroundSubtype sc NilListType (OpenEntityGroundType n1 t1) NilDolanArguments NilListType (OpenEntityGroundType n2 t2) NilDolanArguments =
-    subtypeLift sc $ fmap coercionEnhanced $ getEntitySubtype n1 t1 n2 t2
+    subtypeLift sc $ fmap (coercionEnhanced "subtype") $ getEntitySubtype n1 t1 n2 t2
 entityGroundSubtype _ NilListType (ClosedEntityGroundType _ sa ta) NilDolanArguments NilListType (ClosedEntityGroundType _ sb tb) NilDolanArguments
     | Just Refl <- testEquality sa sb
     , Just Refl <- testEquality ta tb = pure id

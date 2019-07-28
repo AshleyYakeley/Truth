@@ -19,7 +19,7 @@ unPinaforeSetRef (MkPinaforeSetRef tr lv) =
 instance IsoMapRange JMShim (PinaforeSetRef baseedit)
 
 instance MapRange JMShim (PinaforeSetRef baseedit) where
-    mapRange f = toEnhanced $ \(MkPinaforeSetRef r s) -> MkPinaforeSetRef (mapWithRange f r) s
+    mapRange f = toEnhanced "setref" $ \(MkPinaforeSetRef r s) -> MkPinaforeSetRef (mapWithRange f r) s
 
 instance HasDolanVary '[ 'Rangevariance] (PinaforeSetRef baseedit) where
     dolanVary = ConsDolanVarianceMap Nothing mapRange NilDolanVarianceMap

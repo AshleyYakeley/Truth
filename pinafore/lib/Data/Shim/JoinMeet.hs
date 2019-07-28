@@ -98,18 +98,18 @@ instance JoinMeetCategory (->) where
     meetf f1 f2 v = MkMeetType (f1 v, f2 v)
 
 class (CoercibleKind k, InCategory cat) => EnhancedFunction (cat :: k -> k -> Type) where
-    toEnhanced :: (InKind a, InKind b) => KindFunction a b -> cat a b
+    toEnhanced :: (InKind a, InKind b) => String -> KindFunction a b -> cat a b
     fromEnhanced :: (InKind a, InKind b) => cat a b -> KindFunction a b
-    coercionEnhanced :: (InKind a, InKind b) => Coercion a b -> cat a b
+    coercionEnhanced :: (InKind a, InKind b) => String -> Coercion a b -> cat a b
     enhancedCoercion :: (InKind a, InKind b) => cat a b -> Maybe (Coercion a b)
 
-coerceEnhanced :: (EnhancedFunction cat, InKind a, InKind b, Coercible a b) => cat a b
-coerceEnhanced = coercionEnhanced MkCoercion
+coerceEnhanced :: (EnhancedFunction cat, InKind a, InKind b, Coercible a b) => String -> cat a b
+coerceEnhanced t = coercionEnhanced t MkCoercion
 
 instance EnhancedFunction (->) where
-    toEnhanced = id
+    toEnhanced _ = id
     fromEnhanced = id
-    coercionEnhanced MkCoercion = coerce
+    coercionEnhanced _ MkCoercion = coerce
     enhancedCoercion _ = Nothing
 
 instance Eq a => Eq (MeetType a b) where

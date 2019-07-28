@@ -235,7 +235,7 @@ instance (baseedit ~ edit, FromShimWit JMShim (PinaforeType edit 'Negative) a) =
 -- IO
 instance (ToShimWit JMShim (PinaforeType baseedit 'Positive) a) =>
              ToShimWit JMShim (PinaforeType baseedit 'Positive) (IO a) where
-    toShimWit = mapShimWit (toEnhanced (liftIO :: IO a -> PinaforeAction baseedit a)) toJMShimWit
+    toShimWit = mapShimWit (toEnhanced "subtype" (liftIO :: IO a -> PinaforeAction baseedit a)) toJMShimWit
 
 -- PinaforeOrder
 instance (baseedit ~ edit, FromShimWit JMShim (PinaforeType edit 'Negative) a) =>
@@ -301,12 +301,17 @@ instance FromShimWit JMShim (PinaforeType baseedit 'Negative) PinaforeWindow whe
 -- UISpec
 instance (baseedit ~ edit, ToShimWit JMShim (PinaforeType edit 'Positive) a) =>
              ToShimWit JMShim (PinaforeType baseedit 'Positive) (UISpec a edit) where
-    toShimWit = mapShimWit coerceEnhanced (toJMShimWit :: PinaforeShimWit baseedit 'Positive (PinaforeUI baseedit a))
+    toShimWit =
+        mapShimWit
+            (coerceEnhanced "subtype")
+            (toJMShimWit :: PinaforeShimWit baseedit 'Positive (PinaforeUI baseedit a))
 
 instance (baseedit ~ edit, FromShimWit JMShim (PinaforeType edit 'Negative) a) =>
              FromShimWit JMShim (PinaforeType baseedit 'Negative) (UISpec a edit) where
     fromShimWit =
-        mapShimWit coerceEnhanced (fromJMShimWit :: PinaforeShimWit baseedit 'Negative (PinaforeUI baseedit a))
+        mapShimWit
+            (coerceEnhanced "subtype")
+            (fromJMShimWit :: PinaforeShimWit baseedit 'Negative (PinaforeUI baseedit a))
 
 -- MenuEntry
 instance (baseedit ~ edit) => ToShimWit JMShim (PinaforeSingularType baseedit 'Positive) (MenuEntry edit) where
@@ -359,31 +364,31 @@ instance ( baseedit ~ edit
          , FromShimWit JMShim (PinaforeType edit 'Negative) t
          , ToShimWit JMShim (PinaforeType edit 'Positive) t
          ) => ToShimWit JMShim (PinaforeType baseedit 'Positive) (PinaforeLensValue edit (WholeEdit (Know t))) where
-    toShimWit = mapShimWit (toEnhanced pinaforeLensToReference) toJMShimWit
+    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeLensToReference) toJMShimWit
 
 instance ( baseedit ~ edit
          , FromShimWit JMShim (PinaforeType edit 'Negative) t
          , ToShimWit JMShim (PinaforeType edit 'Positive) t
          ) => FromShimWit JMShim (PinaforeType baseedit 'Negative) (PinaforeLensValue edit (WholeEdit (Know t))) where
-    fromShimWit = mapShimWit (toEnhanced pinaforeReferenceToLens) fromJMShimWit
+    fromShimWit = mapShimWit (toEnhanced "subtype" pinaforeReferenceToLens) fromJMShimWit
 
 -- PinaforeImmutableReference
 instance (baseedit ~ edit, FromShimWit JMShim (PinaforeType edit 'Negative) a) =>
              FromShimWit JMShim (PinaforeType baseedit 'Negative) (PinaforeImmutableReference baseedit a) where
-    fromShimWit = mapShimWit (toEnhanced pinaforeReferenceToImmutable) fromJMShimWit
+    fromShimWit = mapShimWit (toEnhanced "subtype" pinaforeReferenceToImmutable) fromJMShimWit
 
 instance (baseedit ~ edit, ToShimWit JMShim (PinaforeType edit 'Positive) a) =>
              ToShimWit JMShim (PinaforeType baseedit 'Positive) (PinaforeImmutableReference baseedit a) where
-    toShimWit = mapShimWit (toEnhanced pinaforeImmutableToReference) toJMShimWit
+    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeImmutableToReference) toJMShimWit
 
 -- PinaforeFunctionValue
 instance (baseedit ~ edit, FromShimWit JMShim (PinaforeType edit 'Negative) t) =>
              FromShimWit JMShim (PinaforeType baseedit 'Negative) (PinaforeFunctionValue edit (Know t)) where
-    fromShimWit = mapShimWit (toEnhanced pinaforeReferenceToFunction) fromJMShimWit
+    fromShimWit = mapShimWit (toEnhanced "subtype" pinaforeReferenceToFunction) fromJMShimWit
 
 instance (baseedit ~ edit, ToShimWit JMShim (PinaforeType edit 'Positive) t) =>
              ToShimWit JMShim (PinaforeType baseedit 'Positive) (PinaforeFunctionValue edit (Know t)) where
-    toShimWit = mapShimWit (toEnhanced pinaforeFunctionToReference) toJMShimWit
+    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeFunctionToReference) toJMShimWit
 
 -- PinaforeSetRef
 instance ( baseedit ~ edit
@@ -421,14 +426,14 @@ instance ( baseedit ~ edit
          , ToShimWit JMShim (PinaforeType edit 'Positive) t
          , FromShimWit JMShim (PinaforeType baseedit 'Negative) t
          ) => FromShimWit JMShim (PinaforeType baseedit 'Negative) (PinaforeLensValue edit (FiniteSetEdit t)) where
-    fromShimWit = mapShimWit (toEnhanced unPinaforeSetRef) fromJMShimWit
+    fromShimWit = mapShimWit (toEnhanced "subtype" unPinaforeSetRef) fromJMShimWit
 
 instance ( baseedit ~ edit
          , Eq t
          , ToShimWit JMShim (PinaforeType baseedit 'Positive) t
          , FromShimWit JMShim (PinaforeType baseedit 'Negative) t
          ) => ToShimWit JMShim (PinaforeType baseedit 'Positive) (PinaforeLensValue edit (FiniteSetEdit t)) where
-    toShimWit = mapShimWit (toEnhanced $ MkPinaforeSetRef identityRange) toJMShimWit
+    toShimWit = mapShimWit (toEnhanced "subtype" $ MkPinaforeSetRef identityRange) toJMShimWit
 
 -- PinaforeMorphism
 instance ( baseedit ~ edit

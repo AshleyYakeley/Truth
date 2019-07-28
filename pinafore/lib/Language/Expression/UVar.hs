@@ -36,10 +36,10 @@ unsafeToUVar :: (Category cat, EnhancedFunction cat) => cat a (UVar name)
 unsafeToUVar =
     case MkUVar -- hack for unused name warning
           of
-        _ -> coerceEnhanced . unsafeCat2
+        _ -> coerceEnhanced "to-uvar" . unsafeCat2
 
 unsafeFromUVar :: (Category cat, EnhancedFunction cat) => cat (UVar name) a
-unsafeFromUVar = unsafeCat1 . coerceEnhanced
+unsafeFromUVar = unsafeCat1 . coerceEnhanced "from-uvar"
 
 unsafeUVarIsomorphism :: (Category cat, EnhancedFunction cat) => Isomorphism cat a (UVar name)
 unsafeUVarIsomorphism = MkIsomorphism unsafeToUVar unsafeFromUVar
@@ -52,7 +52,8 @@ renameUVar ::
     -> m r
 renameUVar sf namewit1 cont = do
     newname <- sf $ witnessToValue namewit1
-    valueToWitness newname $ \namewit2 -> cont namewit2 (MkIsomorphism coerceEnhanced coerceEnhanced)
+    valueToWitness newname $ \namewit2 ->
+        cont namewit2 (MkIsomorphism (coerceEnhanced "rename-uvar") (coerceEnhanced "rename-uvar"))
 
 varRenamerTGenerateSymbol ::
        Monad m => (forall (name :: Symbol). SymbolType name -> VarRenamerT ts m a) -> VarRenamerT ts m a

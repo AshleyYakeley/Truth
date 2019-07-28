@@ -41,9 +41,9 @@ contraMapRange pp = mapRange $ contraCatRange pp
 coMapRangeF ::
        forall (shim :: forall k. k -> k -> Type) (f :: (Type, Type) -> Type) p q1 q2. PolyShim shim
     => MapRange shim f => (q1 -> q2) -> f '( p, q1) -> f '( p, q2)
-coMapRangeF f = fromEnhanced $ coMapRange @shim $ toEnhanced f
+coMapRangeF f = fromEnhanced $ coMapRange @shim $ toEnhanced "coMapRangeF" f
 
 contraMapRangeF ::
        forall (shim :: forall k. k -> k -> Type) (f :: (Type, Type) -> Type) p1 p2 q. PolyShim shim
     => MapRange shim f => (p2 -> p1) -> f '( p1, q) -> f '( p2, q)
-contraMapRangeF f = fromEnhanced $ contraMapRange @shim $ toEnhanced f
+contraMapRangeF f = fromEnhanced $ contraMapRange @shim $ toEnhanced "contraMapRangeF" f
