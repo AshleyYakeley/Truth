@@ -21,17 +21,20 @@ type PinaforeRangeType baseedit = RangeType (PinaforeType baseedit)
 data PinaforeType (baseedit :: Type) (polarity :: Polarity) (t :: Type) where
     NilPinaforeType :: PinaforeType baseedit polarity (LimitType polarity)
     ConsPinaforeType
-        :: PinaforeSingularType baseedit polarity t
+        :: PinaforeSingularType baseedit '[] polarity t
         -> PinaforeType baseedit polarity tr
         -> PinaforeType baseedit polarity (JoinMeetType polarity t tr)
 
 -- | This is \"soft\" typing: it mostly represents types, but relies on unsafe coercing to and from a raw type ('UVar') for type variables.
-data PinaforeSingularType (baseedit :: Type) (polarity :: Polarity) (t :: Type) where
+data PinaforeSingularType (baseedit :: Type) (dv :: DolanVariance) (polarity :: Polarity) (t :: DolanVarianceKind dv) where
+    VarPinaforeSingularType :: SymbolType name -> PinaforeSingularType baseedit '[] polarity (UVar name)
     GroundPinaforeSingularType
         :: PinaforeGroundType baseedit polarity dv t
-        -> DolanArguments dv (PinaforeType baseedit) t polarity ta
-        -> PinaforeSingularType baseedit polarity ta
-    VarPinaforeSingularType :: SymbolType name -> PinaforeSingularType baseedit polarity (UVar name)
+        -> PinaforeSingularType baseedit dv polarity t
+    ApplyPinaforeSingularType
+        :: PinaforeSingularType baseedit (sv ': dv) polarity f
+        -> SingleArgument sv (PinaforeType baseedit) polarity a
+        -> PinaforeSingularType baseedit dv polarity (f a)
 
 type PinaforeShim = JMShim
 
@@ -39,7 +42,7 @@ type PinaforeShimWit (baseedit :: Type) polarity = PJMShimWit (PinaforeType base
 
 singlePinaforeShimWit ::
        forall baseedit polarity t. Is PolarityType polarity
-    => PJMShimWit (PinaforeSingularType baseedit) polarity t
+    => PJMShimWit (PinaforeSingularType baseedit '[]) polarity t
     -> PinaforeShimWit baseedit polarity t
 singlePinaforeShimWit (MkShimWit st conv) =
     case representative @_ @_ @polarity of
@@ -47,14 +50,14 @@ singlePinaforeShimWit (MkShimWit st conv) =
         NegativeType -> cfmap conv $ MkShimWit (singlePinaforeType st) meet1
 
 singlePinaforeType ::
-       PinaforeSingularType baseedit polarity t
+       PinaforeSingularType baseedit '[] polarity t
     -> PinaforeType baseedit polarity (JoinMeetType polarity t (LimitType polarity))
 singlePinaforeType st = ConsPinaforeType st NilPinaforeType
 
 literalPinaforeType :: LiteralType t -> PinaforeType baseedit polarity (JoinMeetType polarity t (LimitType polarity))
 literalPinaforeType t =
     singlePinaforeType $
-    GroundPinaforeSingularType (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType t) NilDolanArguments
+    GroundPinaforeSingularType (EntityPinaforeGroundType NilListType $ LiteralEntityGroundType t)
 
 joinPinaforeTypes ::
        forall baseedit (a :: Type) (b :: Type) r.
@@ -113,7 +116,7 @@ instance Is PolarityType polarity => Monoid (AnyInKind (RangeType (PinaforeType 
     mappend = (<>)
     mempty = MkAnyInKind (MkRangeType NilPinaforeType NilPinaforeType)
 
-instance Is PolarityType polarity => ExprShow (PinaforeSingularType baseedit polarity t) where
+instance Is PolarityType polarity => ExprShow (PinaforeSingularType baseedit dv polarity t) where
     exprShowPrec (VarPinaforeSingularType namewit) = (pack $ show namewit, 0)
     exprShowPrec (GroundPinaforeSingularType gt args) = pinaforeGroundTypeShowPrec gt args
 
