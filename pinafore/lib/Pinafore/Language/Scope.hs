@@ -169,8 +169,8 @@ isSupertype st aa a = let
            then isSupertype st aa' a
            else False
 
-castNamedEntity :: OpenEntity na -> OpenEntity nb
-castNamedEntity (MkOpenEntity p) = MkOpenEntity p
+castNamedEntity :: Coercion (OpenEntity na) (OpenEntity nb)
+castNamedEntity = MkCoercion
 
 withNewTypeName ::
        Name -> NamedType ct -> SourceScoped expr patc ct (TypeID, Transform (Scoped expr patc ct) (Scoped expr patc ct))
@@ -220,7 +220,7 @@ getEntitySubtype ::
     -> TypeIDType tida
     -> Name
     -> TypeIDType tidb
-    -> SourceScoped expr patc ct (OpenEntity tida -> OpenEntity tidb)
+    -> SourceScoped expr patc ct (Coercion (OpenEntity tida) (OpenEntity tidb))
 getEntitySubtype na wa nb wb = do
     (scopeEntitySubtypes -> subtypes) <- spScope
     if isSupertype subtypes [witnessToValue wa] (witnessToValue wb)

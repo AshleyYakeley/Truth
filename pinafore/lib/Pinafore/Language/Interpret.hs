@@ -5,7 +5,6 @@ module Pinafore.Language.Interpret
 
 import Data.Graph
 import Language.Expression.Dolan
-import Language.Expression.Sealed
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
@@ -28,18 +27,18 @@ interpretPatternConstructor :: SyntaxConstructor -> PinaforeSourceScoped baseedi
 interpretPatternConstructor (SLNamedConstructor name) = lookupPatternConstructor name
 interpretPatternConstructor (SLNumber v) =
     return $
-    toPatternConstructor $ \v' ->
+    qToPatternConstructor $ \v' ->
         if v == v'
             then Just ()
             else Nothing
 interpretPatternConstructor (SLString v) =
     return $
-    toPatternConstructor $ \v' ->
+    qToPatternConstructor $ \v' ->
         if v == v'
             then Just ()
             else Nothing
-interpretPatternConstructor SLUnit = return $ toPatternConstructor $ \() -> Just ()
-interpretPatternConstructor SLPair = return $ toPatternConstructor $ \(a :: A, b :: B) -> Just $ (a, (b, ()))
+interpretPatternConstructor SLUnit = return $ qToPatternConstructor $ \() -> Just ()
+interpretPatternConstructor SLPair = return $ qToPatternConstructor $ \(a :: A, b :: B) -> Just $ (a, (b, ()))
 
 interpretPattern :: SyntaxPattern -> RefNotation baseedit (QPattern baseedit)
 interpretPattern (MkSyntaxPattern _ AnySyntaxPattern) = return qAnyPattern
@@ -125,18 +124,18 @@ interpretConstructor _ (SLNumber n) =
     case checkExactRational n of
         Just r ->
             case rationalInteger r of
-                Just i -> qConstExprAny $ toValue i
-                Nothing -> qConstExprAny $ toValue r
-        Nothing -> qConstExprAny $ toValue n
-interpretConstructor _ (SLString v) = return $ qConstExprAny $ toValue v
+                Just i -> qConstExprAny $ jmToValue i
+                Nothing -> qConstExprAny $ jmToValue r
+        Nothing -> qConstExprAny $ jmToValue n
+interpretConstructor _ (SLString v) = return $ qConstExprAny $ jmToValue v
 interpretConstructor spos (SLNamedConstructor v) = interpretNamedConstructor spos v
-interpretConstructor _ SLPair = return $ qConstExprAny $ toValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
-interpretConstructor _ SLUnit = return $ qConstExprAny $ toValue ()
+interpretConstructor _ SLPair = return $ qConstExprAny $ jmToValue ((,) :: UVar "a" -> UVar "b" -> (UVar "a", UVar "b"))
+interpretConstructor _ SLUnit = return $ qConstExprAny $ jmToValue ()
 
 interpretConstant :: SourcePos -> SyntaxConstant -> RefExpression baseedit
-interpretConstant _ SCIfThenElse = return $ qConstExprAny $ toValue qifthenelse
-interpretConstant _ SCBind = return $ qConstExprAny $ toValue qbind
-interpretConstant _ SCBind_ = return $ qConstExprAny $ toValue qbind_
+interpretConstant _ SCIfThenElse = return $ qConstExprAny $ jmToValue qifthenelse
+interpretConstant _ SCBind = return $ qConstExprAny $ jmToValue qbind
+interpretConstant _ SCBind_ = return $ qConstExprAny $ jmToValue qbind_
 interpretConstant spos (SCConstructor lit) = interpretConstructor spos lit
 
 interpretCase ::
@@ -185,21 +184,21 @@ interpretExpression' spos (SEProperty sta stb anchor) =
                 etan <- runSourcePos spos $ entityToNegativePinaforeType eta
                 etbn <- runSourcePos spos $ entityToNegativePinaforeType etb
                 let
-                    bta = biTypeF (etan, entityToPositivePinaforeType eta)
-                    btb = biTypeF (etbn, entityToPositivePinaforeType etb)
+                    bta = biRangeAnyF (etan, entityToPositivePinaforeType eta)
+                    btb = biRangeAnyF (etbn, entityToPositivePinaforeType etb)
                     in case (bta, btb, entityTypeEq eta, entityTypeEq etb) of
                            (MkAnyF rta pra, MkAnyF rtb prb, Dict, Dict) ->
                                withSubrepresentative rangeTypeInKind rta $
                                withSubrepresentative rangeTypeInKind rtb $ let
                                    typef =
-                                       singlePinaforeTypeF $
-                                       mkPTypeF $
+                                       singlePinaforeShimWit $
+                                       mkPJMShimWit $
                                        GroundPinaforeSingularType MorphismPinaforeGroundType $
                                        ConsDolanArguments rta $ ConsDolanArguments rtb NilDolanArguments
                                    morphism =
                                        propertyMorphism (entityAdapter eta) (entityAdapter etb) (MkPredicate anchor)
                                    pinamorphism = MkPinaforeMorphism pra prb morphism
-                                   anyval = toTypeFAnyValue typef pinamorphism
+                                   anyval = MkAnyValue typef pinamorphism
                                    in return $ qConstExprAny anyval
 interpretExpression' spos (SEEntity st anchor) =
     liftRefNotation $ do
@@ -209,7 +208,7 @@ interpretExpression' spos (SEEntity st anchor) =
                 pt <- runSourcePos spos $ makeEntity tp $ MkEntity anchor
                 let
                     typef = entityToPositivePinaforeType tp
-                    anyval = toTypeFAnyValue typef pt
+                    anyval = MkAnyValue typef pt
                 return $ qConstExprAny anyval
 
 makeEntity :: MonadError ErrorType m => EntityType t -> Entity -> m t
@@ -223,7 +222,7 @@ interpretTypeSignature ::
 interpretTypeSignature Nothing expr = return expr
 interpretTypeSignature (Just st) expr = do
     at <- interpretType st
-    qSubsumeExpr at expr
+    qSubsumeExpr (mapAnyW mkShimWit at) expr
 
 interpretBinding ::
        HasPinaforeEntityEdit baseedit => SyntaxBinding baseedit -> RefNotation baseedit (QBindings baseedit)

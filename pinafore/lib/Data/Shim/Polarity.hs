@@ -1,4 +1,4 @@
-module Language.Expression.Polarity where
+module Data.Shim.Polarity where
 
 import Shapes
 

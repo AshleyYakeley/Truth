@@ -2,7 +2,6 @@ module Pinafore.Language.Read.TypeDecls
     ( readTypeDeclaration
     ) where
 
-import Language.Expression.Pattern
 import Language.Expression.Sealed
 import Pinafore.Base
 import Pinafore.Language.Error
@@ -82,24 +81,23 @@ assembleClosedEntityType ((n, a, MkAnyW el):cc) =
             MkBox (ConsClosedEntityType a el ct) $ (MkConstructor n el Left eitherLeft) : fmap extendConstructor conss
 
 makeConstructorPattern ::
-       forall baseedit s t a.
-       PinaforeTypeF baseedit 'Negative (ClosedEntity s t)
-    -> ListType EntityType a
-    -> (t -> Maybe (HList a))
+       forall baseedit s t lt.
+       PinaforeShimWit baseedit 'Negative (ClosedEntity s t)
+    -> ListType EntityType lt
+    -> (t -> Maybe (HList lt))
     -> PinaforePatternConstructor baseedit
-makeConstructorPattern (MkTypeF pct conv) lt tma =
-    case hlistTypeF $ mapListType (entityToPositivePinaforeType @baseedit) lt of
-        MkTypeF (MkHListWit lt') conv' ->
-            MkPatternConstructor pct lt' $ ClosedPattern $ fmap conv' . tma . unClosedEntity . conv
+makeConstructorPattern pct lt tma =
+    case mapListType (entityToPositivePinaforeType @baseedit) lt of
+        lt' -> toPatternConstructor pct lt' $ tma . unClosedEntity
 
 makeConstructorValue ::
        forall baseedit m s t a. MonadError ErrorType m
-    => PinaforeTypeF baseedit 'Positive (ClosedEntity s t)
+    => PinaforeShimWit baseedit 'Positive (ClosedEntity s t)
     -> ListType EntityType a
-    -> m (PinaforeTypeF baseedit 'Positive (HList a -> t))
+    -> m (PinaforeShimWit baseedit 'Positive (HList a -> t))
 makeConstructorValue ctf lt = do
     lt' <- mapMListType entityToNegativePinaforeType lt
-    return $ qFunctionPosWitnesses lt' (contramap MkClosedEntity ctf)
+    return $ qFunctionPosWitnesses lt' (mapShimWit coerceEnhanced ctf)
 
 readClosedTypeDeclaration :: forall baseedit. Parser (PinaforeScoped baseedit (TypeDecls baseedit))
 readClosedTypeDeclaration = do
@@ -118,10 +116,10 @@ readClosedTypeDeclaration = do
             valueToWitness tid $ \tidsym -> do
                 let
                     ctf :: forall polarity. Is PolarityType polarity
-                        => PinaforeTypeF baseedit polarity (ClosedEntity _ _)
+                        => PinaforeShimWit baseedit polarity (ClosedEntity _ _)
                     ctf =
-                        singlePinaforeTypeF $
-                        mkTypeF $
+                        singlePinaforeShimWit $
+                        mkJMShimWit $
                         GroundPinaforeSingularType
                             (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n tidsym ct)
                             NilDolanArguments
@@ -131,7 +129,7 @@ readClosedTypeDeclaration = do
                         valt <- makeConstructorValue ctf lt
                         bind <-
                             return $
-                            MkTransform $ withNewBindings $ singletonMap cname $ qConstExprAny $ toTypeFAnyValue valt at
+                            MkTransform $ withNewBindings $ singletonMap cname $ qConstExprAny $ MkAnyValue valt at
                         return $ patt . bind
                 let
                     tdTypes :: forall a. RefNotation baseedit a -> RefNotation baseedit a

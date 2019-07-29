@@ -121,7 +121,7 @@ entityGroundTypeCovaryType PairEntityGroundType cont = cont $ ConsListType Refl 
 entityGroundTypeCovaryType EitherEntityGroundType cont = cont $ ConsListType Refl $ ConsListType Refl NilListType
 entityGroundTypeCovaryType (ClosedEntityGroundType _ _ _) cont = cont NilListType
 
-entityGroundTypeCovaryMap :: EntityGroundType f -> CovaryMap (->) f
+entityGroundTypeCovaryMap :: EntityGroundType f -> CovaryMap JMShim f
 entityGroundTypeCovaryMap TopEntityGroundType = covarymap
 entityGroundTypeCovaryMap NewEntityGroundType = covarymap
 entityGroundTypeCovaryMap (OpenEntityGroundType _ _) = covarymap

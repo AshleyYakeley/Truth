@@ -37,19 +37,19 @@ $(literalInstances [t|LocalTime|])
 $(literalInstances [t|()|])
 
 -- Double
-instance ToTypeF (PinaforeType baseedit 'Positive) Double where
-    toTypeF = contramap InexactNumber toTypeF
+instance ToShimWit JMShim (PinaforeType baseedit 'Positive) Double where
+    toShimWit = mapShimWit (toEnhanced InexactNumber) toJMShimWit
 
 -- Int
-instance ToTypeF (PinaforeType baseedit 'Positive) Int where
-    toTypeF = contramap toInteger toTypeF
+instance ToShimWit JMShim (PinaforeType baseedit 'Positive) Int where
+    toShimWit = mapShimWit (toEnhanced toInteger) toJMShimWit
 
-instance FromTypeF (PinaforeType baseedit 'Negative) Int where
-    fromTypeF = fmap fromInteger fromTypeF
+instance FromShimWit JMShim (PinaforeType baseedit 'Negative) Int where
+    fromShimWit = mapShimWit (toEnhanced fromInteger) fromJMShimWit
 
 -- Fixed
-instance HasResolution r => ToTypeF (PinaforeType baseedit 'Positive) (Fixed r) where
-    toTypeF = contramap toRational toTypeF
+instance HasResolution r => ToShimWit JMShim (PinaforeType baseedit 'Positive) (Fixed r) where
+    toShimWit = mapShimWit (toEnhanced toRational) toJMShimWit
 
-instance HasResolution r => FromTypeF (PinaforeType baseedit 'Negative) (Fixed r) where
-    fromTypeF = fmap fromRational fromTypeF
+instance HasResolution r => FromShimWit JMShim (PinaforeType baseedit 'Negative) (Fixed r) where
+    fromShimWit = mapShimWit (toEnhanced fromRational) fromJMShimWit

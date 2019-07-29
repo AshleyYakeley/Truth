@@ -24,9 +24,8 @@ library:
       - cryptonite
       - truth-core
     exposed-modules:
-      - Language.Expression.Polarity
-      - Language.Expression.TypeF
-      - Language.Expression.TypeMappable
+      - Data.Shim
+      - Language.Expression.WitnessMappable
       - Language.Expression.Witness
       - Language.Expression.Expression
       - Language.Expression.Pattern
@@ -50,11 +49,17 @@ library:
       - Pinafore
       - Pinafore.Test
     other-modules:
+      - Data.Shim.Polarity
+      - Data.Shim.ShimWit
+      - Data.Shim.Range
+      - Data.Shim.JoinMeet
+      - Data.Shim.PolyShim
+      - Data.Shim.MapRange
+      - Data.Shim.JMShim
+      - Data.Shim.JMShimWit
       - Language.Expression.Error
       - Language.Expression.UVar
-      - Language.Expression.Dolan.PType
-      - Language.Expression.Dolan.Range
-      - Language.Expression.Dolan.JoinMeet
+      - Language.Expression.Dolan.PShimWit
       - Language.Expression.Dolan.Variance
       - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.MPolarity

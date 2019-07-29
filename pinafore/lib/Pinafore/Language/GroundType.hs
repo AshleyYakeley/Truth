@@ -1,8 +1,8 @@
 module Pinafore.Language.GroundType where
 
+import Data.Shim.Polarity
+import Data.Shim.ShimWit
 import Language.Expression.Dolan
-import Language.Expression.Polarity
-import Language.Expression.TypeF
 import Pinafore.Base
 import Pinafore.Language.EntityType
 import Pinafore.Language.Morphism
@@ -54,7 +54,7 @@ pinaforeGroundTypeTestEquality _ _ = Nothing
 pinaforeGroundTypeVarianceMap ::
        forall baseedit polarity (dv :: DolanVariance) (f :: DolanVarianceKind dv).
        PinaforeGroundType baseedit polarity dv f
-    -> DolanVarianceMap (->) dv f
+    -> DolanVarianceMap JMShim dv f
 pinaforeGroundTypeVarianceMap FuncPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap (EntityPinaforeGroundType dvcovary gt) =
     covaryToDolanVarianceMap dvcovary $ entityGroundTypeCovaryMap gt
@@ -104,8 +104,8 @@ pinaforeGroundTypeShowPrec ::
 pinaforeGroundTypeShowPrec FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
 pinaforeGroundTypeShowPrec (EntityPinaforeGroundType lt gt) dargs =
-    case dolanArgumentsToArguments mkGenPTypeF lt (entityGroundTypeCovaryMap gt) dargs of
-        MkTypeF args _ -> entityGroundTypeShowPrec exprShowPrec gt args
+    case dolanArgumentsToArguments mkPShimWit lt (entityGroundTypeCovaryMap gt) dargs of
+        MkShimWit args _ -> entityGroundTypeShowPrec exprShowPrec gt args
 pinaforeGroundTypeShowPrec OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec ActionPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =

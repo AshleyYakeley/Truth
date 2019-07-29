@@ -45,8 +45,11 @@ instance Show a => Show (Know a) where
     show Unknown = "Unknown"
     show (Known a) = "Known " <> show a
 
+instance RepresentationalRole Know where
+    representationalCoercion MkCoercion = MkCoercion
+
 instance HasDolanVary '[ 'Covariance] Know where
-    dolanVary = ConsDolanVarianceMap fmap $ NilDolanVarianceMap
+    dolanVary = ConsDolanVarianceMap (Just Dict) cfmap $ NilDolanVarianceMap
 
 fromKnow :: a -> Know a -> a
 fromKnow _ (Known v) = v

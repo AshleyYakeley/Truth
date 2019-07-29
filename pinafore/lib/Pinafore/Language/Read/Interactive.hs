@@ -3,7 +3,7 @@ module Pinafore.Language.Read.Interactive
     , parseInteractiveCommand
     ) where
 
-import Language.Expression.Polarity
+import Data.Shim.Polarity
 import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression

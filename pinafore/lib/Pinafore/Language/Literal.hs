@@ -1,6 +1,7 @@
 module Pinafore.Language.Literal where
 
 import Data.Time
+import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Name
 import Pinafore.Language.Show
@@ -8,7 +9,7 @@ import Shapes
 import Shapes.Numeric
 
 class IsSubtype w where
-    isSubtype :: w a -> w b -> Maybe (a -> b)
+    isSubtype :: w a -> w b -> Maybe (JMShim a b)
 
 data LiteralType (t :: Type) where
     LiteralLiteralType :: LiteralType Literal
@@ -72,10 +73,10 @@ instance IsSubtype LiteralType where
     isSubtype ta tb
         | Just Refl <- testEquality ta tb = return id
     isSubtype t LiteralLiteralType
-        | Dict <- literalTypeAsLiteral t = return toLiteral
-    isSubtype RationalLiteralType NumberLiteralType = return ExactNumber
-    isSubtype IntegerLiteralType NumberLiteralType = return $ ExactNumber . toRational
-    isSubtype IntegerLiteralType RationalLiteralType = return toRational
+        | Dict <- literalTypeAsLiteral t = return $ toEnhanced toLiteral
+    isSubtype RationalLiteralType NumberLiteralType = return $ toEnhanced ExactNumber
+    isSubtype IntegerLiteralType NumberLiteralType = return $ toEnhanced $ ExactNumber . toRational
+    isSubtype IntegerLiteralType RationalLiteralType = return $ toEnhanced toRational
     isSubtype _ _ = Nothing
 
 literalTypeAsLiteral :: LiteralType t -> Dict (AsLiteral t)

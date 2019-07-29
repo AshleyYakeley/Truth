@@ -9,23 +9,24 @@ import Shapes
 import Truth.Core
 
 data PinaforeSetRef baseedit pq where
-    MkPinaforeSetRef :: Eq t => Range t pq -> PinaforeLensValue baseedit (FiniteSetEdit t) -> PinaforeSetRef baseedit pq
+    MkPinaforeSetRef
+        :: Eq t => JMRange t pq -> PinaforeLensValue baseedit (FiniteSetEdit t) -> PinaforeSetRef baseedit pq
 
 unPinaforeSetRef :: PinaforeSetRef baseedit '( p, p) -> PinaforeLensValue baseedit (FiniteSetEdit p)
-unPinaforeSetRef (MkPinaforeSetRef tr lv) = (bijectionFiniteSetEditLens $ rangeBijection tr) . lv
+unPinaforeSetRef (MkPinaforeSetRef tr lv) =
+    (bijectionFiniteSetEditLens $ isoMapCat fromEnhanced $ rangeBijection tr) . lv
 
-instance IsoMapRange (PinaforeSetRef baseedit)
+instance IsoMapRange JMShim (PinaforeSetRef baseedit)
 
-instance MapRange (PinaforeSetRef baseedit) where
-    mapRange f (MkPinaforeSetRef r s) = MkPinaforeSetRef (mapRange f r) s
+instance MapRange JMShim (PinaforeSetRef baseedit) where
+    mapRange f = toEnhanced $ \(MkPinaforeSetRef r s) -> MkPinaforeSetRef (mapWithRange f r) s
 
 instance HasDolanVary '[ 'Rangevariance] (PinaforeSetRef baseedit) where
-    dolanVary =
-        ConsDolanVarianceMap (mkRangevary $ \mapr (MkPinaforeSetRef range lval) -> MkPinaforeSetRef (mapr range) lval) $
-        NilDolanVarianceMap
+    dolanVary = ConsDolanVarianceMap Nothing mapRange NilDolanVarianceMap
 
 pinaforeSetRefValue :: PinaforeSetRef baseedit '( q, q) -> PinaforeLensValue baseedit (FiniteSetEdit q)
-pinaforeSetRefValue (MkPinaforeSetRef tr lv) = bijectionFiniteSetEditLens (rangeBijection tr) . lv
+pinaforeSetRefValue (MkPinaforeSetRef tr lv) =
+    bijectionFiniteSetEditLens (isoMapCat fromEnhanced $ rangeBijection tr) . lv
 
 valuePinaforeSetRef :: Eq q => PinaforeLensValue baseedit (FiniteSetEdit q) -> PinaforeSetRef baseedit '( q, q)
 valuePinaforeSetRef lv = MkPinaforeSetRef identityRange lv
@@ -61,7 +62,8 @@ pinaforeSetRefJoin seta setb =
     pairCombineEditLenses (pinaforeSetRefMeetValue seta) (pinaforeSetRefMeetValue setb)
 
 pinaforeSetRefAdd :: PinaforeSetRef baseedit '( p, q) -> p -> PinaforeAction baseedit ()
-pinaforeSetRefAdd (MkPinaforeSetRef tr set) p = pinaforeLensPush set [KeyInsertReplaceItem $ rangeContra tr p]
+pinaforeSetRefAdd (MkPinaforeSetRef tr set) p =
+    pinaforeLensPush set [KeyInsertReplaceItem $ fromEnhanced (rangeContra tr) p]
 
 pinaforeSetRefAddNew :: PinaforeSetRef baseedit '( NewEntity, TopType) -> PinaforeAction baseedit NewEntity
 pinaforeSetRefAddNew set = do
@@ -70,18 +72,20 @@ pinaforeSetRefAddNew set = do
     return e
 
 pinaforeSetRefRemove :: PinaforeSetRef baseedit '( p, q) -> p -> PinaforeAction baseedit ()
-pinaforeSetRefRemove (MkPinaforeSetRef tr set) p = pinaforeLensPush set [KeyDeleteItem $ rangeContra tr p]
+pinaforeSetRefRemove (MkPinaforeSetRef tr set) p =
+    pinaforeLensPush set [KeyDeleteItem $ fromEnhanced (rangeContra tr) p]
 
 pinaforeSetRefRemoveAll :: PinaforeSetRef baseedit '( BottomType, TopType) -> PinaforeAction baseedit ()
 pinaforeSetRefRemoveAll (MkPinaforeSetRef _ set) = pinaforeLensPush set [KeyClear]
 
 pinaforeSetRefFunctionValue :: PinaforeSetRef baseedit '( t, a) -> PinaforeFunctionValue baseedit (FiniteSet a)
-pinaforeSetRefFunctionValue (MkPinaforeSetRef tr set) = funcEditFunction (fmap $ rangeCo tr) . lensFunctionValue set
+pinaforeSetRefFunctionValue (MkPinaforeSetRef tr set) =
+    funcEditFunction (fmap $ fromEnhanced $ rangeCo tr) . lensFunctionValue set
 
 pinaforeSetRefMember ::
        forall baseedit a. PinaforeSetRef baseedit '( a, TopType) -> a -> PinaforeReference baseedit '( Bool, Bool)
 pinaforeSetRefMember (MkPinaforeSetRef tr set) val = let
-    tval = rangeContra tr val
+    tval = fromEnhanced (rangeContra tr) val
     in LensPinaforeReference identityRange $ wholeEditLens knowMaybeLens . finiteSetEditLens tval . set
 
 pinaforeSetRefSingle ::

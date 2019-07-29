@@ -2,10 +2,9 @@ module Test.Type
     ( testType
     ) where
 
-import Language.Expression.Dolan
+import Data.Shim
 import Language.Expression.Expression
 import Language.Expression.Named
-import Language.Expression.Polarity
 import Language.Expression.Renamer
 import Language.Expression.Sealed
 import Language.Expression.TypeSystem
@@ -20,12 +19,12 @@ type TS = PinaforeTypeSystem PinaforeEdit
 
 type PExpression = TSSealedExpression TS
 
-showVars :: NamedExpression Name (PinaforeType PinaforeEdit 'Negative) t -> [String]
+showVars :: NamedExpression Name (PinaforeShimWit PinaforeEdit 'Negative) t -> [String]
 showVars (ClosedExpression _) = []
-showVars (OpenExpression (MkNameWitness name t) expr) = (show name <> " :: " <> show t) : showVars expr
+showVars (OpenExpression (MkNameWitness name (MkShimWit t _)) expr) = (show name <> " :: " <> show t) : showVars expr
 
 showTypes :: PExpression -> String
-showTypes (MkSealedExpression t expr) = "{" <> intercalate ", " (showVars expr) <> "} -> " <> show t
+showTypes (MkSealedExpression (MkShimWit t _) expr) = "{" <> intercalate ", " (showVars expr) <> "} -> " <> show t
 
 exprTypeTest :: String -> Maybe String -> PinaforeSourceScoped PinaforeEdit PExpression -> TestTree
 exprTypeTest name expected mexpr =
@@ -38,52 +37,52 @@ apExpr :: PExpression -> PExpression -> PinaforeSourceScoped PinaforeEdit PExpre
 apExpr = tsApply @TS
 
 idExpr :: PExpression
-idExpr = typeFConstExpression toTypeF $ \(v :: UVar "x") -> v
+idExpr = typeFConstExpression toJMShimWit $ \(v :: UVar "x") -> v
 
 nbFuncExpr :: PExpression
-nbFuncExpr = typeFConstExpression toTypeF $ \(_ :: Number) -> False
+nbFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: Number) -> False
 
 numExpr :: PExpression
-numExpr = typeFConstExpression toTypeF $ (3 :: Number)
+numExpr = typeFConstExpression toJMShimWit $ (3 :: Number)
 
 boolExpr :: PExpression
-boolExpr = typeFConstExpression toTypeF False
+boolExpr = typeFConstExpression toJMShimWit False
 
 varExpr :: PExpression
 varExpr = tsVar @TS "v"
 
 ifelseExpr :: PExpression
 ifelseExpr =
-    typeFConstExpression toTypeF $ \test (tb :: UVar "a") (eb :: UVar "a") ->
+    typeFConstExpression toJMShimWit $ \test (tb :: UVar "a") (eb :: UVar "a") ->
         if test
             then tb
             else eb
 
 list1Expr :: PExpression
-list1Expr = typeFConstExpression toTypeF $ \(a :: UVar "a") -> [a]
+list1Expr = typeFConstExpression toJMShimWit $ \(a :: UVar "a") -> [a]
 
 sndExpr :: PExpression
-sndExpr = typeFConstExpression toTypeF $ \(MkTopType, a :: UVar "a") -> a
+sndExpr = typeFConstExpression toJMShimWit $ \(MkTopType, a :: UVar "a") -> a
 
 twiceExpr :: PExpression
-twiceExpr = typeFConstExpression toTypeF $ \(a :: UVar "a") -> (a, a)
+twiceExpr = typeFConstExpression toJMShimWit $ \(a :: UVar "a") -> (a, a)
 
 thingExpr :: PExpression
 thingExpr =
-    typeFConstExpression toTypeF $ \(a :: UVar "a", b :: UVar "b") ->
+    typeFConstExpression toJMShimWit $ \(a :: UVar "a", b :: UVar "b") ->
         ( a
         , if False
               then MkJoinType $ Left a
               else MkJoinType $ Right b)
 
 dotExpr :: PExpression
-dotExpr = typeFConstExpression toTypeF $ \(f :: UVar "b" -> UVar "c") (g :: UVar "a" -> UVar "b") -> f . g
+dotExpr = typeFConstExpression toJMShimWit $ \(f :: UVar "b" -> UVar "c") (g :: UVar "a" -> UVar "b") -> f . g
 
 listNumBoolFuncExpr :: PExpression
-listNumBoolFuncExpr = typeFConstExpression toTypeF $ \(_ :: [Number]) -> [True]
+listNumBoolFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Number]) -> [True]
 
 listBoolNumFuncExpr :: PExpression
-listBoolNumFuncExpr = typeFConstExpression toTypeF $ \(_ :: [Bool]) -> [2 :: Number]
+listBoolNumFuncExpr = typeFConstExpression toJMShimWit $ \(_ :: [Bool]) -> [2 :: Number]
 
 joinExpr :: PExpression -> PExpression -> PinaforeSourceScoped PinaforeEdit PExpression
 joinExpr exp1 exp2 = do
@@ -114,9 +113,9 @@ simplifyTypeTest text e =
                     MkAnyW t ->
                         return $
                         pinaforeSimplifyTypes @PinaforeEdit @PExpression $
-                        MkSealedExpression t $ ClosedExpression undefined
+                        MkSealedExpression (mkShimWit t) $ ClosedExpression undefined
         case simpexpr of
-            MkSealedExpression t' _ -> assertEqual "" e $ show t'
+            MkSealedExpression (MkShimWit t' _) _ -> assertEqual "" e $ show t'
 
 testType :: TestTree
 testType =
@@ -174,29 +173,32 @@ testType =
                     runRenamer @(TSRenamer TS) $ simplify @(TSUnifier TS) r
               , exprTypeTest "simplify duplicate" (return "{} -> Number") $
                 runRenamer @(TSRenamer TS) $
-                simplify @(TSUnifier TS) $ typeFConstExpression toTypeF (MkJoinType (Right 3) :: JoinType Number Number)
+                simplify @(TSUnifier TS) $
+                typeFConstExpression toJMShimWit (MkJoinType (Right 3) :: JoinType Number Number)
               , exprTypeTest "simplify duplicate list" (return "{} -> [Number]") $
                 runRenamer @(TSRenamer TS) $
                 simplify @(TSUnifier TS) $
-                typeFConstExpression toTypeF (MkJoinType (Right [3]) :: JoinType [Number] [Number])
+                typeFConstExpression toJMShimWit (MkJoinType (Right [3]) :: JoinType [Number] [Number])
               , exprTypeTest "simplify duplicate pair" (return "{} -> (Number, Number)") $
                 runRenamer @(TSRenamer TS) $
                 simplify @(TSUnifier TS) $
-                typeFConstExpression toTypeF (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
+                typeFConstExpression
+                    toJMShimWit
+                    (MkJoinType (Right (3, 3)) :: JoinType (Number, Number) (Number, Number))
               , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
                 runRenamer @(TSRenamer TS) $
                 simplify @(TSUnifier TS) $
-                typeFConstExpression toTypeF ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
+                typeFConstExpression toJMShimWit ((3, MkJoinType (Right 3)) :: (Number, JoinType Number Number))
               , exprTypeTest "simplify duplicate in pair" (return "{} -> (Number, Number)") $
                 runRenamer @(TSRenamer TS) $
                 simplify @(TSUnifier TS) $
                 typeFConstExpression
-                    toTypeF
+                    toJMShimWit
                     ((MkJoinType (Right 3), MkJoinType (Right 3)) :: (JoinType Number Number, JoinType Number Number))
               , exprTypeTest "simplify duplicate in list" (return "{} -> [Number]") $
                 runRenamer @(TSRenamer TS) $
                 simplify @(TSUnifier TS) $
-                typeFConstExpression toTypeF ([MkJoinType (Right 3)] :: [JoinType Number Number])
+                typeFConstExpression toJMShimWit ([MkJoinType (Right 3)] :: [JoinType Number Number])
               ]
         , testGroup
               "read"

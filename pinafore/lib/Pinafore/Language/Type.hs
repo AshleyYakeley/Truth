@@ -4,17 +4,17 @@ module Pinafore.Language.Type
     ( module Pinafore.Language.Type.Type
     , module Pinafore.Language.EntityType
     , module Pinafore.Language.GroundType
-    , module Language.Expression.Polarity
-    , module Language.Expression.TypeF
+    , module Data.Shim.Polarity
+    , module Data.Shim.ShimWit
     , module Language.Expression.UVar
     , module Language.Expression.Dolan
     , module Pinafore.Language.Scope
     ) where
 
+import Data.Shim.Polarity
+import Data.Shim.ShimWit
 import Language.Expression.Dolan
-import Language.Expression.Polarity
 import Language.Expression.Renamer
-import Language.Expression.TypeF
 import Language.Expression.TypeSystem
 import Language.Expression.UVar
 import Language.Expression.Unifier
@@ -36,9 +36,10 @@ instance Unifier (PinaforeUnifier baseedit) where
     type UnifierNegWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'Negative
     type UnifierPosWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'Positive
     type UnifierSubstitutions (PinaforeUnifier baseedit) = [PinaforeBisubstitution baseedit]
-    unifyNegWitnesses ta tb cont = meetPinaforeTypes ta tb $ \tab conva convb -> cont tab $ pure (conva, convb)
-    unifyPosWitnesses ta tb cont = joinPinaforeTypes ta tb $ \tab conva convb -> cont tab $ pure (conva, convb)
-    unifyPosNegWitnesses tq tp = getCompose $ unifyPosNegPinaforeTypes tq tp
+    type UnifierShim (PinaforeUnifier baseedit) = PinaforeShim
+    unifyNegWitnesses ta tb = return $ uuLiftNegShimWit $ meetPinaforeShimWit (mkShimWit ta) (mkShimWit tb)
+    unifyPosWitnesses ta tb = return $ uuLiftPosShimWit $ joinPinaforeShimWit (mkShimWit ta) (mkShimWit tb)
+    unifyPosNegWitnesses tq tp = fmap MkUUShim $ getCompose $ unifyPosNegPinaforeTypes tq tp
     solveUnifier = runUnifier
     unifierPosSubstitute = bisubstitutesType
     unifierNegSubstitute = bisubstitutesType
@@ -50,14 +51,12 @@ instance TypeSystem (PinaforeTypeSystem baseedit) where
     type TSScoped (PinaforeTypeSystem baseedit) = PinaforeSourceScoped baseedit
     type TSSubsumer (PinaforeTypeSystem baseedit) = PinaforeSubsumer baseedit
     tsFunctionPosWitness ta tb =
-        unTypeF $
-        singlePinaforeTypeF $
-        mkPTypeF $
+        singlePinaforeShimWit $
+        mkPJMShimWit $
         GroundPinaforeSingularType FuncPinaforeGroundType $
         ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
     tsFunctionNegWitness ta tb =
-        unTypeF $
-        singlePinaforeTypeF $
-        mkPTypeF $
+        singlePinaforeShimWit $
+        mkPJMShimWit $
         GroundPinaforeSingularType FuncPinaforeGroundType $
         ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments

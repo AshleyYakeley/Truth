@@ -4,11 +4,11 @@ module Pinafore.Language.Type.Subsume
     ( PinaforeSubsumer
     ) where
 
+import Data.Shim.Polarity
+import Data.Shim.ShimWit
 import Language.Expression.Dolan
 import Language.Expression.Expression
-import Language.Expression.Polarity
 import Language.Expression.Subsumer
-import Language.Expression.TypeF
 import Language.Expression.UVar
 import Pinafore.Language.Error
 import Pinafore.Language.GroundType
@@ -21,49 +21,49 @@ import Pinafore.Language.Type.Type
 import Shapes
 
 minimalPositiveSupertypeSingular ::
-       forall baseedit a. PinaforeSingularType baseedit 'Negative a -> Maybe (PinaforeTypeF baseedit 'Positive a)
+       forall baseedit a. PinaforeSingularType baseedit 'Negative a -> Maybe (PinaforeShimWit baseedit 'Positive a)
 minimalPositiveSupertypeSingular (VarPinaforeSingularType v) =
-    Just $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType v
+    Just $ singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType v
 minimalPositiveSupertypeSingular (GroundPinaforeSingularType gt args) = do
     gt' <- pinaforeGroundTypeInvertPolarity gt
-    MkTypeF args' conv <-
+    MkShimWit args' conv <-
         mapInvertDolanArgumentsM
             limitInvertType
             (pinaforeGroundTypeVarianceType gt)
             (pinaforeGroundTypeVarianceMap gt)
             args
-    return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt' args') conv
+    return $ singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType gt' args') conv
 
-minimalPositiveSupertype :: PinaforeType baseedit 'Negative a -> Maybe (PinaforeTypeF baseedit 'Positive a)
+minimalPositiveSupertype :: PinaforeType baseedit 'Negative a -> Maybe (PinaforeShimWit baseedit 'Positive a)
 minimalPositiveSupertype (ConsPinaforeType t NilPinaforeType) = do
     tf <- minimalPositiveSupertypeSingular t
-    return $ contramap meet1 tf
+    return $ ccontramap @_ @_ @JMShim meet1 tf
 minimalPositiveSupertype _ = Nothing
 
 maximalNegativeSubtypeSingular ::
-       forall baseedit a. PinaforeSingularType baseedit 'Positive a -> Maybe (PinaforeTypeF baseedit 'Negative a)
+       forall baseedit a. PinaforeSingularType baseedit 'Positive a -> Maybe (PinaforeShimWit baseedit 'Negative a)
 maximalNegativeSubtypeSingular (VarPinaforeSingularType v) =
-    Just $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType v
+    Just $ singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType v
 maximalNegativeSubtypeSingular (GroundPinaforeSingularType gt args) = do
     gt' <- pinaforeGroundTypeInvertPolarity gt
-    MkTypeF args' conv <-
+    MkShimWit args' conv <-
         mapInvertDolanArgumentsM
             limitInvertType
             (pinaforeGroundTypeVarianceType gt)
             (pinaforeGroundTypeVarianceMap gt)
             args
-    return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType gt' args') conv
+    return $ singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType gt' args') conv
 
-maximalNegativeSubtype :: PinaforeType baseedit 'Positive a -> Maybe (PinaforeTypeF baseedit 'Negative a)
+maximalNegativeSubtype :: PinaforeType baseedit 'Positive a -> Maybe (PinaforeShimWit baseedit 'Negative a)
 maximalNegativeSubtype (ConsPinaforeType t NilPinaforeType) = do
     tf <- maximalNegativeSubtypeSingular t
-    return $ fmap join1 tf
+    return $ cfmap @_ @_ @JMShim join1 tf
 maximalNegativeSubtype _ = Nothing
 
 limitInvertType ::
        forall baseedit polarity a. Is PolarityType polarity
     => PinaforeType baseedit polarity a
-    -> Maybe (PinaforeTypeF baseedit (InvertPolarity polarity) a)
+    -> Maybe (PinaforeShimWit baseedit (InvertPolarity polarity) a)
 limitInvertType =
     case representative @_ @_ @polarity of
         PositiveType -> maximalNegativeSubtype
@@ -72,7 +72,7 @@ limitInvertType =
 limitInvertType' ::
        forall baseedit polarity a. Is PolarityType polarity
     => PinaforeType baseedit polarity a
-    -> PinaforeTypeCheck baseedit (PinaforeTypeF baseedit (InvertPolarity polarity) a)
+    -> PinaforeTypeCheck baseedit (PinaforeShimWit baseedit (InvertPolarity polarity) a)
 limitInvertType' t =
     case limitInvertType t of
         Just r -> return r
@@ -81,9 +81,9 @@ limitInvertType' t =
 -- Kind of the dual of 'BisubstitutionWitness'.
 data SubsumeWitness baseedit t where
     PositiveSubsumeWitness
-        :: SymbolType name -> PinaforeType baseedit 'Positive p -> SubsumeWitness baseedit (UVar name -> p)
+        :: SymbolType name -> PinaforeType baseedit 'Positive p -> SubsumeWitness baseedit (JMShim (UVar name) p)
     NegativeSubsumeWitness
-        :: SymbolType name -> PinaforeType baseedit 'Negative q -> SubsumeWitness baseedit (q -> UVar name)
+        :: SymbolType name -> PinaforeType baseedit 'Negative q -> SubsumeWitness baseedit (JMShim q (UVar name))
 
 type PinaforeSubsumer baseedit = Expression (SubsumeWitness baseedit)
 
@@ -107,7 +107,7 @@ subsumePositiveGroundSingularType ::
     => PinaforeGroundType baseedit 'Positive dv ginf
     -> DolanArguments dv (PinaforeType baseedit) ginf 'Positive inf
     -> PinaforeSingularType baseedit 'Positive decl
-    -> PinaforeFullSubsumer baseedit (inf -> decl)
+    -> PinaforeFullSubsumer baseedit (JMShim inf decl)
 subsumePositiveGroundSingularType _gtinf _targsinf (VarPinaforeSingularType _vdecl) = empty
 subsumePositiveGroundSingularType gtinf targsinf (GroundPinaforeSingularType gtdecl targsdecl) =
     subtypeGroundTypes subsumePositiveContext gtinf targsinf gtdecl targsdecl
@@ -117,7 +117,7 @@ subsumePositiveGroundType ::
     => PinaforeGroundType baseedit 'Positive dv ginf
     -> DolanArguments dv (PinaforeType baseedit) ginf 'Positive inf
     -> PinaforeType baseedit 'Positive decl
-    -> PinaforeFullSubsumer baseedit (inf -> decl)
+    -> PinaforeFullSubsumer baseedit (JMShim inf decl)
 subsumePositiveGroundType _gtinf _targsinf NilPinaforeType = empty
 subsumePositiveGroundType gtinf targsinf (ConsPinaforeType t1 tr) =
     (fmap (\conv -> join1 . conv) $ subsumePositiveGroundSingularType gtinf targsinf t1) <|>
@@ -127,7 +127,7 @@ subsumePositiveType1 ::
        SubsumerConstraint baseedit
     => PinaforeSingularType baseedit 'Positive inf
     -> PinaforeType baseedit 'Positive decl
-    -> PinaforeFullSubsumer baseedit (inf -> decl)
+    -> PinaforeFullSubsumer baseedit (JMShim inf decl)
 subsumePositiveType1 (VarPinaforeSingularType vinf) tdecl =
     liftSubsumer $ varExpression $ PositiveSubsumeWitness vinf tdecl
 subsumePositiveType1 tinf@(GroundPinaforeSingularType ginf argsinf) tdecl =
@@ -138,8 +138,8 @@ subsumePositiveType ::
        SubsumerConstraint baseedit
     => PinaforeType baseedit 'Positive inf
     -> PinaforeType baseedit 'Positive decl
-    -> PinaforeFullSubsumer baseedit (inf -> decl)
-subsumePositiveType NilPinaforeType _ = pure never
+    -> PinaforeFullSubsumer baseedit (JMShim inf decl)
+subsumePositiveType NilPinaforeType _ = pure initf
 subsumePositiveType (ConsPinaforeType t1 tr) tb = liftA2 joinf (subsumePositiveType1 t1 tb) (subsumePositiveType tr tb)
 
 subsumeNegativeContext ::
@@ -155,7 +155,7 @@ subsumeNegativeGroundSingularType ::
     => PinaforeSingularType baseedit 'Negative decl
     -> PinaforeGroundType baseedit 'Negative dv ginf
     -> DolanArguments dv (PinaforeType baseedit) ginf 'Negative inf
-    -> PinaforeFullSubsumer baseedit (decl -> inf)
+    -> PinaforeFullSubsumer baseedit (JMShim decl inf)
 subsumeNegativeGroundSingularType (VarPinaforeSingularType _vdecl) _gtinf _targsinf = empty
 subsumeNegativeGroundSingularType (GroundPinaforeSingularType gtdecl targsdecl) gtinf targsinf =
     subtypeGroundTypes subsumeNegativeContext gtdecl targsdecl gtinf targsinf
@@ -165,7 +165,7 @@ subsumeNegativeGroundType ::
     => PinaforeType baseedit 'Negative decl
     -> PinaforeGroundType baseedit 'Negative dv ginf
     -> DolanArguments dv (PinaforeType baseedit) ginf 'Negative inf
-    -> PinaforeFullSubsumer baseedit (decl -> inf)
+    -> PinaforeFullSubsumer baseedit (JMShim decl inf)
 subsumeNegativeGroundType NilPinaforeType _gtinf _targsinf = empty
 subsumeNegativeGroundType (ConsPinaforeType t1 tr) gtinf targsinf =
     (fmap (\conv -> conv . meet1) $ subsumeNegativeGroundSingularType t1 gtinf targsinf) <|>
@@ -175,7 +175,7 @@ subsumeNegativeType1 ::
        SubsumerConstraint baseedit
     => PinaforeType baseedit 'Negative decl
     -> PinaforeSingularType baseedit 'Negative inf
-    -> PinaforeFullSubsumer baseedit (decl -> inf)
+    -> PinaforeFullSubsumer baseedit (JMShim decl inf)
 subsumeNegativeType1 tdecl (VarPinaforeSingularType vinf) =
     liftSubsumer $ varExpression $ NegativeSubsumeWitness vinf tdecl
 subsumeNegativeType1 tdecl tinf@(GroundPinaforeSingularType ginf argsinf) =
@@ -186,8 +186,8 @@ subsumeNegativeType ::
        SubsumerConstraint baseedit
     => PinaforeType baseedit 'Negative decl
     -> PinaforeType baseedit 'Negative inf
-    -> PinaforeFullSubsumer baseedit (decl -> inf)
-subsumeNegativeType _ NilPinaforeType = pure alwaysTop
+    -> PinaforeFullSubsumer baseedit (JMShim decl inf)
+subsumeNegativeType _ NilPinaforeType = pure termf
 subsumeNegativeType ta (ConsPinaforeType t1 tr) = liftA2 meetf (subsumeNegativeType1 ta t1) (subsumeNegativeType ta tr)
 
 data InvertSubstitution (wit :: Polarity -> Type -> Type) where
@@ -195,13 +195,13 @@ data InvertSubstitution (wit :: Polarity -> Type -> Type) where
         :: SymbolType name
         -> SymbolType name'
         -> wit 'Negative t
-        -> Bijection (JoinType (UVar name') t) (UVar name)
+        -> Isomorphism JMShim (JoinType (UVar name') t) (UVar name)
         -> InvertSubstitution wit
     PosInvertSubstitution
         :: SymbolType name
         -> SymbolType name'
         -> wit 'Positive t
-        -> Bijection (MeetType (UVar name') t) (UVar name)
+        -> Isomorphism JMShim (MeetType (UVar name') t) (UVar name)
         -> InvertSubstitution wit
 
 type PinaforeInvertSubstitution baseedit = InvertSubstitution (PinaforeType baseedit)
@@ -249,11 +249,12 @@ instance Subsumer (PinaforeSubsumer baseedit) where
     type SubsumerNegWitness (PinaforeSubsumer baseedit) = PinaforeType baseedit 'Negative
     type SubsumerPosWitness (PinaforeSubsumer baseedit) = PinaforeType baseedit 'Positive
     type SubsumerSubstitutions (PinaforeSubsumer baseedit) = [PinaforeBisubstitution baseedit]
+    type SubsumerShim (PinaforeSubsumer baseedit) = JMShim
     solveSubsumer (ClosedExpression a) = return (a, [])
     solveSubsumer (OpenExpression (NegativeSubsumeWitness (vn :: SymbolType name) (tp :: PinaforeType baseedit 'Negative t)) expr) = do
         let
-            varBij :: Bijection (JoinType (UVar name) t) (UVar name)
-            varBij = unsafeUVarBijection
+            varBij :: Isomorphism JMShim (JoinType (UVar name) t) (UVar name)
+            varBij = unsafeUVarIsomorphism
             bisub :: PinaforeBisubstitution baseedit
             bisub =
                 MkBisubstitution
@@ -261,34 +262,35 @@ instance Subsumer (PinaforeSubsumer baseedit) where
                     (do
                          tq <- limitInvertType' tp
                          return $
-                             contramap (isoBackwards varBij) $
-                             joinPinaforeTypeF (singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn) tq)
+                             ccontramap (isoBackwards varBij) $
+                             joinPinaforeShimWit (singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn) tq)
                     (return $
-                     fmap (isoForwards varBij . join1) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
+                     cfmap (isoForwards varBij . join1) $
+                     singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn)
         expr' <- getCompose $ invertSubstitute (NegInvertSubstitution vn vn tp varBij) expr
         (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ isoForwards varBij . join2) expr'
         return (expr'', bisub : bisubs)
     solveSubsumer (OpenExpression (PositiveSubsumeWitness (vn :: SymbolType name) (tp :: PinaforeType baseedit 'Positive t)) expr) = do
         let
-            varBij :: Bijection (MeetType (UVar name) t) (UVar name)
-            varBij = unsafeUVarBijection
+            varBij :: Isomorphism JMShim (MeetType (UVar name) t) (UVar name)
+            varBij = unsafeUVarIsomorphism
             bisub :: PinaforeBisubstitution baseedit
             bisub =
                 MkBisubstitution
                     vn
                     (return $
-                     contramap (meet1 . isoBackwards varBij) $
-                     singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
+                     ccontramap (meet1 . isoBackwards varBij) $
+                     singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn)
                     (do
                          tq <- limitInvertType' tp
                          return $
-                             fmap (isoForwards varBij) $
-                             meetPinaforeTypeF (singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn) tq)
+                             cfmap (isoForwards varBij) $
+                             meetPinaforeShimWit (singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn) tq)
         expr' <- getCompose $ invertSubstitute (PosInvertSubstitution vn vn tp varBij) expr
         (expr'', bisubs) <- solveSubsumer $ fmap (\fa -> fa $ meet2 . isoBackwards varBij) expr'
         return (expr'', bisub : bisubs)
     subsumerNegSubstitute = bisubstitutesType
     subsumePosWitnesses tinf tdecl = getCompose $ subsumePositiveType tinf tdecl
     simplifyPosType (MkAnyW t) =
-        case pinaforeSimplifyTypes @baseedit $ mkPTypeF t of
-            MkTypeF t' _ -> MkAnyW t'
+        case pinaforeSimplifyTypes @baseedit $ mkPJMShimWit t of
+            MkShimWit t' _ -> MkAnyW t'

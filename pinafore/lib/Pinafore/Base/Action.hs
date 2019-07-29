@@ -31,8 +31,11 @@ newtype PinaforeAction baseedit a =
 instance MonadFail (PinaforeAction baseedit) where
     fail s = liftIO $ fail s
 
+instance RepresentationalRole (PinaforeAction baseedit) where
+    representationalCoercion MkCoercion = MkCoercion
+
 instance HasDolanVary '[ 'Covariance] (PinaforeAction baseedit) where
-    dolanVary = ConsDolanVarianceMap fmap $ NilDolanVarianceMap
+    dolanVary = ConsDolanVarianceMap (Just Dict) cfmap $ NilDolanVarianceMap
 
 pinaforeActionSubscriber :: PinaforeAction baseedit (Subscriber baseedit)
 pinaforeActionSubscriber = do

@@ -7,16 +7,16 @@ module Pinafore.Test
     , Name
     , UVar
     , PinaforeType
+    , PinaforeShimWit
     , PinaforeScoped
     , PinaforeSourceScoped
     , pinaforeSimplifyTypes
-    , toTypeF
+    , toJMShimWit
     , module Pinafore.Test
     ) where
 
 import Pinafore.Base
 import Pinafore.Language
-import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Read
 import Pinafore.Language.Type

@@ -32,7 +32,7 @@ interpretEntityType st = do
             case atm @'Positive of
                 MkAnyW tm ->
                     case pinaforeToEntityType tm of
-                        Just (MkTypeF t _) -> return $ MkAnyW t
+                        Just (MkShimWit t _) -> return $ MkAnyW t
                         Nothing -> throwError $ InterpretTypeNotEntityError $ exprShow tm
 
 interpretTypeM ::

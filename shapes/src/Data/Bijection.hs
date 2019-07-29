@@ -20,6 +20,9 @@ instance InCategory cat => InCategory (Isomorphism cat) where
     cid = MkIsomorphism cid cid
     (MkIsomorphism p1 q1) <.> (MkIsomorphism p2 q2) = MkIsomorphism (p1 <.> p2) (q2 <.> q1)
 
+instance InCategory cat => InGroupoid (Isomorphism cat) where
+    cinvert (MkIsomorphism ab ba) = MkIsomorphism ba ab
+
 instance Category cat => Category (Isomorphism cat) where
     id = MkIsomorphism id id
     (MkIsomorphism p1 q1) . (MkIsomorphism p2 q2) = MkIsomorphism (p1 . p2) (q2 . q1)
@@ -34,6 +37,13 @@ instance CatFunctor (CatDual catp) catq f =>
              CatFunctor (CatDual (Isomorphism catp)) (Isomorphism catq) (f :: Type -> Type) where
     cfmap (MkCatDual bi) =
         MkIsomorphism {isoForwards = ccontramap (isoForwards bi), isoBackwards = ccontramap (isoBackwards bi)}
+
+isoMapCat ::
+       forall k (cat1 :: k -> k -> Type) (cat2 :: k -> k -> Type) (p :: k) (q :: k).
+       (forall (a :: k) (b :: k). cat1 a b -> cat2 a b)
+    -> Isomorphism cat1 p q
+    -> Isomorphism cat2 p q
+isoMapCat m (MkIsomorphism f b) = MkIsomorphism (m f) (m b)
 
 biIsoMap :: IsoVariant f => Bijection a b -> f a -> f b
 biIsoMap (MkIsomorphism ab ba) = isoMap ab ba

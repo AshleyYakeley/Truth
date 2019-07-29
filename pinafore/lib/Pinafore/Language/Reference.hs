@@ -7,17 +7,21 @@ import Truth.Core
 
 data PinaforeReference (baseedit :: Type) (pq :: (Type, Type)) where
     LensPinaforeReference
-        :: Range t pq -> PinaforeLensValue baseedit (WholeEdit (Know t)) -> PinaforeReference baseedit pq
+        :: JMRange t pq -> PinaforeLensValue baseedit (WholeEdit (Know t)) -> PinaforeReference baseedit pq
     ImmutPinaforeReference :: PinaforeImmutableReference baseedit q -> PinaforeReference baseedit '( p, q)
 
-instance IsoMapRange (PinaforeReference baseedit)
+instance IsoMapRange JMShim (PinaforeReference baseedit)
 
-instance MapRange (PinaforeReference baseedit) where
-    mapRange f (LensPinaforeReference r s) = LensPinaforeReference (mapRange f r) s
-    mapRange (MkWithRange _ f) (ImmutPinaforeReference ir) = ImmutPinaforeReference $ fmap f ir
+instance MapRange JMShim (PinaforeReference baseedit) where
+    mapRange f =
+        toEnhanced $ \case
+            LensPinaforeReference r s -> LensPinaforeReference (mapWithRange f r) s
+            ImmutPinaforeReference ir ->
+                case f of
+                    MkCatRange _ f' -> ImmutPinaforeReference $ fmap (fromEnhanced f') ir
 
 instance HasDolanVary '[ 'Rangevariance] (PinaforeReference baseedit) where
-    dolanVary = ConsDolanVarianceMap mapRange $ NilDolanVarianceMap
+    dolanVary = ConsDolanVarianceMap Nothing mapRange $ NilDolanVarianceMap
 
 pinaforeReferenceToFunction :: PinaforeReference baseedit '( BottomType, a) -> PinaforeFunctionValue baseedit (Know a)
 pinaforeReferenceToFunction ref =
@@ -29,14 +33,15 @@ pinaforeFunctionToReference ef = ImmutPinaforeReference $ MkPinaforeImmutableRef
 
 pinaforeReferenceToImmutable :: PinaforeReference baseedit '( BottomType, a) -> PinaforeImmutableReference baseedit a
 pinaforeReferenceToImmutable (LensPinaforeReference (MkRange _ tq) lens) =
-    MkPinaforeImmutableReference $ funcEditFunction (fmap tq) . editLensFunction lens
+    MkPinaforeImmutableReference $ funcEditFunction (fmap $ fromEnhanced tq) . editLensFunction lens
 pinaforeReferenceToImmutable (ImmutPinaforeReference ir) = ir
 
 pinaforeImmutableToReference :: PinaforeImmutableReference baseedit a -> PinaforeReference baseedit '( TopType, a)
 pinaforeImmutableToReference = ImmutPinaforeReference
 
 pinaforeReferenceToLens :: PinaforeReference baseedit '( p, p) -> PinaforeLensValue baseedit (WholeEdit (Know p))
-pinaforeReferenceToLens (LensPinaforeReference tr lv) = (bijectionWholeEditLens $ cfmap $ rangeBijection tr) . lv
+pinaforeReferenceToLens (LensPinaforeReference tr lv) =
+    (bijectionWholeEditLens $ isoMapCat (fromEnhanced @_ @JMShim) $ cfmap $ rangeBijection tr) . lv
 pinaforeReferenceToLens (ImmutPinaforeReference ir) = immutableReferenceToLens ir
 
 pinaforeLensToReference :: PinaforeLensValue baseedit (WholeEdit (Know a)) -> PinaforeReference baseedit '( a, a)
@@ -47,7 +52,8 @@ pinaforeReferenceGet ref = (getImmutableReference $ pinaforeReferenceToImmutable
 
 pinaforeReferenceSet ::
        forall baseedit p. PinaforeReference baseedit '( p, TopType) -> Know p -> PinaforeAction baseedit ()
-pinaforeReferenceSet (LensPinaforeReference (MkRange pt _) lens) mp = pinaforeLensPush lens [MkWholeEdit $ fmap pt mp]
+pinaforeReferenceSet (LensPinaforeReference (MkRange pt _) lens) mp =
+    pinaforeLensPush lens [MkWholeEdit $ fmap (fromEnhanced pt) mp]
 pinaforeReferenceSet (ImmutPinaforeReference _) _ = empty
 
 runPinaforeReference ::
@@ -61,11 +67,13 @@ pinaforeFLensReference ::
     -> PinaforeReference baseedit '( ap, aq)
     -> PinaforeReference baseedit '( b, b)
 pinaforeFLensReference g pb (LensPinaforeReference tr lv) = let
-    lensG = fmap $ g . rangeCo tr
+    trco = fromEnhanced $ rangeCo tr
+    trcontra = fromEnhanced $ rangeContra tr
+    lensG = fmap $ g . trco
     lensPB kb ka =
         Identity $ do
             b <- kb
             a <- ka
-            return $ rangeContra tr $ pb b (rangeCo tr a)
+            return $ trcontra $ pb b (trco a)
     in LensPinaforeReference identityRange $ wholeEditLens (MkLens lensG lensPB) . lv
 pinaforeFLensReference g _ (ImmutPinaforeReference ir) = ImmutPinaforeReference $ fmap g ir

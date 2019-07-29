@@ -2,7 +2,7 @@ module Test.ReadType
     ( testReadTypes
     ) where
 
-import Language.Expression.Polarity
+import Data.Shim
 import Pinafore
 import Pinafore.Test
 import Shapes

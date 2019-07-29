@@ -2,10 +2,10 @@
 
 module Pinafore.Language.Type.Unify where
 
+import Data.Shim.Polarity
+import Data.Shim.ShimWit
 import Language.Expression.Dolan
 import Language.Expression.Expression
-import Language.Expression.Polarity
-import Language.Expression.TypeF
 import Language.Expression.UVar
 import Language.Expression.Unifier
 import Pinafore.Language.Error
@@ -48,11 +48,11 @@ data BisubstitutionWitness baseedit t where
     PositiveBisubstitutionWitness
         :: SymbolType name
         -> PinaforeSingularType baseedit 'Positive p
-        -> BisubstitutionWitness baseedit (p -> UVar name)
+        -> BisubstitutionWitness baseedit (JMShim p (UVar name))
     NegativeBisubstitutionWitness
         :: SymbolType name
         -> PinaforeSingularType baseedit 'Negative q
-        -> BisubstitutionWitness baseedit (UVar name -> q)
+        -> BisubstitutionWitness baseedit (JMShim (UVar name) q)
 
 type PinaforeUnifier baseedit = Expression (BisubstitutionWitness baseedit)
 
@@ -80,14 +80,14 @@ unifyPosNegGroundTypes ::
     -> DolanArguments dva (PinaforeType baseedit) gta 'Positive ta
     -> PinaforeGroundType baseedit 'Negative dvb gtb
     -> DolanArguments dvb (PinaforeType baseedit) gtb 'Negative tb
-    -> PinaforeFullUnifier baseedit (ta -> tb)
+    -> PinaforeFullUnifier baseedit (JMShim ta tb)
 unifyPosNegGroundTypes = subtypeGroundTypes unifySubtypeContext
 
 unifyPosNegPinaforeSingularTypes ::
        UnifierConstraint baseedit
     => PinaforeSingularType baseedit 'Positive a
     -> PinaforeSingularType baseedit 'Negative b
-    -> PinaforeFullUnifier baseedit (a -> b)
+    -> PinaforeFullUnifier baseedit (JMShim a b)
 unifyPosNegPinaforeSingularTypes (VarPinaforeSingularType na) (VarPinaforeSingularType nb)
     | Just Refl <- testEquality na nb = pure id
 unifyPosNegPinaforeSingularTypes (VarPinaforeSingularType na) tb =
@@ -101,8 +101,8 @@ unifyPosNegPinaforeTypes1 ::
        UnifierConstraint baseedit
     => PinaforeSingularType baseedit 'Positive a
     -> PinaforeType baseedit 'Negative b
-    -> PinaforeFullUnifier baseedit (a -> b)
-unifyPosNegPinaforeTypes1 _ NilPinaforeType = pure alwaysTop
+    -> PinaforeFullUnifier baseedit (JMShim a b)
+unifyPosNegPinaforeTypes1 _ NilPinaforeType = pure termf
 unifyPosNegPinaforeTypes1 ta (ConsPinaforeType t1 t2) = do
     f1 <- unifyPosNegPinaforeSingularTypes ta t1
     f2 <- unifyPosNegPinaforeTypes1 ta t2
@@ -112,19 +112,19 @@ unifyPosNegPinaforeTypes ::
        UnifierConstraint baseedit
     => PinaforeType baseedit 'Positive a
     -> PinaforeType baseedit 'Negative b
-    -> PinaforeFullUnifier baseedit (a -> b)
-unifyPosNegPinaforeTypes NilPinaforeType _ = pure never
+    -> PinaforeFullUnifier baseedit (JMShim a b)
+unifyPosNegPinaforeTypes NilPinaforeType _ = pure initf
 unifyPosNegPinaforeTypes (ConsPinaforeType ta1 tar) tb = do
     f1 <- unifyPosNegPinaforeTypes1 ta1 tb
     f2 <- unifyPosNegPinaforeTypes tar tb
     return $ joinf f1 f2
 
-unifyPosNegPinaforeTypeF ::
+unifyPosNegPinaforeShimWit ::
        UnifierConstraint baseedit
-    => PinaforeTypeF baseedit 'Positive a
-    -> PinaforeTypeF baseedit 'Negative b
-    -> PinaforeFullUnifier baseedit (a -> b)
-unifyPosNegPinaforeTypeF (MkTypeF ta conva) (MkTypeF tb convb) = do
+    => PinaforeShimWit baseedit 'Positive a
+    -> PinaforeShimWit baseedit 'Negative b
+    -> PinaforeFullUnifier baseedit (JMShim a b)
+unifyPosNegPinaforeShimWit (MkShimWit ta conva) (MkShimWit tb convb) = do
     conv <- unifyPosNegPinaforeTypes ta tb
     return $ convb . conv . conva
 
@@ -159,14 +159,14 @@ occursInType _ NilPinaforeType = False
 occursInType n (ConsPinaforeType t1 t2) = occursInSingularType n t1 || occursInType n t2
 
 bisubstitutePositiveVar ::
-       SymbolType name -> PinaforeType baseedit 'Positive t -> PinaforeUnifier baseedit (t -> UVar name)
-bisubstitutePositiveVar _ NilPinaforeType = pure never
+       SymbolType name -> PinaforeType baseedit 'Positive t -> PinaforeUnifier baseedit (JMShim t (UVar name))
+bisubstitutePositiveVar _ NilPinaforeType = pure initf
 bisubstitutePositiveVar vn (ConsPinaforeType t1 tr) =
     OpenExpression (PositiveBisubstitutionWitness vn t1) $ fmap (\fr f1 -> joinf f1 fr) $ bisubstitutePositiveVar vn tr
 
 bisubstituteNegativeVar ::
-       SymbolType name -> PinaforeType baseedit 'Negative t -> PinaforeUnifier baseedit (UVar name -> t)
-bisubstituteNegativeVar _ NilPinaforeType = pure alwaysTop
+       SymbolType name -> PinaforeType baseedit 'Negative t -> PinaforeUnifier baseedit (JMShim (UVar name) t)
+bisubstituteNegativeVar _ NilPinaforeType = pure termf
 bisubstituteNegativeVar vn (ConsPinaforeType t1 tr) =
     OpenExpression (NegativeBisubstitutionWitness vn t1) $ fmap (\fr f1 -> meetf f1 fr) $ bisubstituteNegativeVar vn tr
 
@@ -181,7 +181,7 @@ bisubstituteUnifier bisub@(MkBisubstitution bn _ mtq) (OpenExpression (PositiveB
         conv <-
             Compose $ do
                 tq <- mtq
-                getCompose $ unifyPosNegPinaforeTypeF (singlePinaforeTypeF $ mkPTypeF tp) tq
+                getCompose $ unifyPosNegPinaforeShimWit (singlePinaforeShimWit $ mkPJMShimWit tp) tq
         val' <- bisubstituteUnifier bisub uval
         pure $ val' conv
 bisubstituteUnifier bisub@(MkBisubstitution bn mtp _) (OpenExpression (NegativeBisubstitutionWitness vn tq) uval)
@@ -189,12 +189,12 @@ bisubstituteUnifier bisub@(MkBisubstitution bn mtp _) (OpenExpression (NegativeB
         conv <-
             Compose $ do
                 tp <- mtp
-                getCompose $ unifyPosNegPinaforeTypeF tp (singlePinaforeTypeF $ mkPTypeF tq)
+                getCompose $ unifyPosNegPinaforeShimWit tp (singlePinaforeShimWit $ mkPJMShimWit tq)
         val' <- bisubstituteUnifier bisub uval
         pure $ val' conv
 bisubstituteUnifier bisub (OpenExpression (PositiveBisubstitutionWitness vn tp) uval) =
     Compose $ do
-        MkTypeF tp' conv <- bisubstitutePositiveSingularType bisub tp
+        MkShimWit tp' conv <- bisubstitutePositiveSingularType bisub tp
         uval' <- getCompose $ bisubstituteUnifier bisub uval
         return $ do
             val' <- uval'
@@ -202,7 +202,7 @@ bisubstituteUnifier bisub (OpenExpression (PositiveBisubstitutionWitness vn tp) 
             pure $ val' $ pv . conv
 bisubstituteUnifier bisub (OpenExpression (NegativeBisubstitutionWitness vn tp) uval) =
     Compose $ do
-        MkTypeF tp' conv <- bisubstituteNegativeSingularType bisub tp
+        MkShimWit tp' conv <- bisubstituteNegativeSingularType bisub tp
         uval' <- getCompose $ bisubstituteUnifier bisub uval
         return $ do
             val' <- uval'
@@ -219,34 +219,36 @@ runUnifier (OpenExpression (PositiveBisubstitutionWitness vn tp) _)
 runUnifier (OpenExpression (NegativeBisubstitutionWitness vn tp) _)
     | occursInSingularType vn tp = throwError $ TypeRecursiveError (symbolTypeToName vn) (exprShow tp)
 runUnifier (OpenExpression (PositiveBisubstitutionWitness (vn :: SymbolType name) (tp :: PinaforeSingularType baseedit 'Positive vw)) expr) = let
-    varBij :: Bijection (JoinType (UVar name) vw) (UVar name)
-    varBij = unsafeUVarBijection
+    varBij :: Isomorphism JMShim (JoinType (UVar name) vw) (UVar name)
+    varBij = unsafeUVarIsomorphism
     bisub =
         MkBisubstitution
             vn
             (return $
-             contramap (isoBackwards varBij) $
-             joinPinaforeTypeF
-                 (singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
-                 (singlePinaforeTypeF $ mkPTypeF tp))
-            (return $ fmap (isoForwards varBij . join1) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
+             ccontramap (isoBackwards varBij) $
+             joinPinaforeShimWit
+                 (singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn)
+                 (singlePinaforeShimWit $ mkPJMShimWit tp))
+            (return $
+             cfmap (isoForwards varBij . join1) $ singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn)
     in do
            expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'
            return (ca $ isoForwards varBij . join2, bisub : subs)
 runUnifier (OpenExpression (NegativeBisubstitutionWitness (vn :: SymbolType name) (tq :: PinaforeSingularType baseedit 'Negative vw)) expr) = let
-    varBij :: Bijection (MeetType (UVar name) vw) (UVar name)
-    varBij = unsafeUVarBijection
+    varBij :: Isomorphism JMShim (MeetType (UVar name) vw) (UVar name)
+    varBij = unsafeUVarIsomorphism
     bisub =
         MkBisubstitution
             vn
             (return $
-             contramap (meet1 . isoBackwards varBij) $ singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
+             ccontramap (meet1 . isoBackwards varBij) $
+             singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn)
             (return $
-             fmap (isoForwards varBij) $
-             meetPinaforeTypeF
-                 (singlePinaforeTypeF $ mkPTypeF $ VarPinaforeSingularType vn)
-                 (singlePinaforeTypeF $ mkPTypeF tq))
+             cfmap (isoForwards varBij) $
+             meetPinaforeShimWit
+                 (singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType vn)
+                 (singlePinaforeShimWit $ mkPJMShimWit tq))
     in do
            expr' <- getCompose $ bisubstituteUnifier bisub expr
            (ca, subs) <- runUnifier expr'
