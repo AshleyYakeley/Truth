@@ -5,6 +5,7 @@ module Language.Expression.Dolan
 
 import Data.Shim as I
 import Language.Expression.Dolan.Arguments as I
+import Language.Expression.Dolan.Covariance as I
 import Language.Expression.Dolan.MPolarity as I
 import Language.Expression.Dolan.PShimWit as I
 import Language.Expression.Dolan.RangeF as I

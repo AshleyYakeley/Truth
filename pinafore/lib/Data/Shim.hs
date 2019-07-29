@@ -10,3 +10,4 @@ import Data.Shim.Polarity as I
 import Data.Shim.PolyShim as I
 import Data.Shim.Range as I
 import Data.Shim.ShimWit as I
+import Data.Shim.Variance as I

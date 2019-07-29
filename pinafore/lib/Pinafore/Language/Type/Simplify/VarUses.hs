@@ -23,7 +23,7 @@ instance GetVarUses wit => GetVarUses (ShimWit cat wit polarity) where
 
 getArgExpressionVarUses ::
        forall baseedit polarity sv a. Is PolarityType polarity
-    => SingleVarianceType sv
+    => VarianceType sv
     -> SingleArgument sv (PinaforeType baseedit) polarity a
     -> ([[AnyW SymbolType]], [[AnyW SymbolType]])
 getArgExpressionVarUses CovarianceType t = getVarUses t
@@ -89,7 +89,7 @@ instance Is PolarityType polarity => GetExpressionVars (RangeType (PinaforeType 
 
 getArgExpressionVars ::
        forall baseedit polarity sv a. Is PolarityType polarity
-    => SingleVarianceType sv
+    => VarianceType sv
     -> SingleArgument sv (PinaforeType baseedit) polarity a
     -> ([AnyW SymbolType], [AnyW SymbolType])
 getArgExpressionVars CovarianceType t = getExpressionVars t

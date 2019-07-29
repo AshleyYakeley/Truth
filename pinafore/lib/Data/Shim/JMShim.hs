@@ -26,7 +26,14 @@ data JMShim (a :: k) (b :: k) where
     MeetFJMShim :: JMShim t a -> JMShim t b -> JMShim t (MeetType a b)
     CoJMShim
         :: forall kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
-           (CoercibleKind kp, InKind f, InKind g, InKind a, InKind b, CatFunctor KindFunction KindFunction g)
+           ( CoercibleKind kp
+           , InKind f
+           , InKind g
+           , InKind a
+           , InKind b
+           , CatFunctor KindFunction KindFunction f
+           , CatFunctor KindFunction KindFunction g
+           )
         => Maybe (Dict (RepresentationalRole f))
         -> Maybe (Dict (RepresentationalRole g))
         -> JMShim f g
@@ -34,7 +41,14 @@ data JMShim (a :: k) (b :: k) where
         -> JMShim (f a) (g b)
     ContraJMShim
         :: forall kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
-           (CoercibleKind kp, InKind f, InKind g, InKind a, InKind b, CatFunctor (CatDual KindFunction) KindFunction g)
+           ( CoercibleKind kp
+           , InKind f
+           , InKind g
+           , InKind a
+           , InKind b
+           , CatFunctor (CatDual KindFunction) KindFunction f
+           , CatFunctor (CatDual KindFunction) KindFunction g
+           )
         => Maybe (Dict (RepresentationalRole f))
         -> Maybe (Dict (RepresentationalRole g))
         -> JMShim f g
@@ -49,6 +63,7 @@ data JMShim (a :: k) (b :: k) where
            , InKind pb
            , InKind qa
            , InKind qb
+           , CatFunctor (CatRange KindFunction) KindFunction f
            , CatFunctor (CatRange KindFunction) KindFunction g
            )
         => Maybe (Dict (RepresentationalRole f))
@@ -120,6 +135,9 @@ type JMRange = Range JMShim
 instance LiftPolyCategory JMShim where
     coLift _ _ IdentityJMShim = IdentityJMShim
     coLift mrrf mrrg jmf = LiftJMShim mrrf mrrg jmf
+    coShimFunc = CoJMShim
+    contraShimFunc = ContraJMShim
+    rangeShimFunc = RangeJMShim
 
 newtype JMIsoShim (a :: k) (b :: k) = MkJMIsoShim
     { unJMIsoShim :: Isomorphism JMShim a b
@@ -136,6 +154,15 @@ instance Category (JMIsoShim :: Type -> Type -> Type) where
 instance LiftPolyCategory JMIsoShim where
     coLift mrrp mrrq (MkJMIsoShim (MkIsomorphism ab ba)) =
         MkJMIsoShim $ MkIsomorphism (coLift mrrp mrrq ab) (coLift mrrq mrrp ba)
+    coShimFunc mrrp mrrq (MkJMIsoShim (MkIsomorphism fab fba)) (MkJMIsoShim (MkIsomorphism xab xba)) =
+        MkJMIsoShim $ MkIsomorphism (coShimFunc mrrp mrrq fab xab) (coShimFunc mrrq mrrp fba xba)
+    contraShimFunc mrrp mrrq (MkJMIsoShim (MkIsomorphism fab fba)) (MkJMIsoShim (MkIsomorphism xab xba)) =
+        MkJMIsoShim $ MkIsomorphism (contraShimFunc mrrp mrrq fab xab) (contraShimFunc mrrq mrrp fba xba)
+    rangeShimFunc mrrp mrrq (MkJMIsoShim (MkIsomorphism fab fba)) (MkCatRange (MkJMIsoShim (MkIsomorphism xab1 xba1)) (MkJMIsoShim (MkIsomorphism xab2 xba2))) =
+        MkJMIsoShim $
+        MkIsomorphism
+            (rangeShimFunc mrrp mrrq fab (MkCatRange xab1 xab2))
+            (rangeShimFunc mrrq mrrp fba (MkCatRange xba1 xba2))
 
 instance forall kp kq (f :: kp -> kq). ( CoercibleKind kp
          , InKind f
@@ -266,10 +293,7 @@ instance CoercibleKind k => EnhancedFunction (JMShim :: k -> k -> Type) where
         return $ applyCoercion2 cf id
     enhancedCoercion _ = Nothing
 
-instance PolyShim JMShim where
-    coShimFunc = CoJMShim
-    contraShimFunc = ContraJMShim
-    rangeShimFunc = RangeJMShim
+instance PolyShim JMShim
 
 instance Shim JMShim where
     funcShim ab pq = coShimFuncR (contraShimFuncR cid ab) pq

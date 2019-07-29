@@ -21,10 +21,7 @@ getRangeTypeVars :: PinaforeRangeType baseedit polarity t -> [String]
 getRangeTypeVars (MkRangeType tp tq) = getTypeVars tp <> getTypeVars tq
 
 getArgTypeVars ::
-       forall baseedit polarity v a.
-       SingleVarianceType v
-    -> SingleArgument v (PinaforeType baseedit) polarity a
-    -> [String]
+       forall baseedit polarity v a. VarianceType v -> SingleArgument v (PinaforeType baseedit) polarity a -> [String]
 getArgTypeVars CovarianceType ft = getTypeVars ft
 getArgTypeVars ContravarianceType ft = getTypeVars ft
 getArgTypeVars RangevarianceType (MkRangeType ta tb) = getTypeVars ta <> getTypeVars tb
@@ -130,7 +127,7 @@ unifyPosNegPinaforeShimWit (MkShimWit ta conva) (MkShimWit tb convb) = do
 
 occursInArg ::
        forall baseedit polarity n sv a.
-       SingleVarianceType sv
+       VarianceType sv
     -> SymbolType n
     -> SingleArgument sv (PinaforeType baseedit) polarity a
     -> Bool

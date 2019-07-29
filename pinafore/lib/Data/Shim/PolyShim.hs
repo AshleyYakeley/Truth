@@ -11,15 +11,16 @@ class LiftPolyCategory (shim :: forall kc. kc -> kc -> Type) where
         -> Maybe (Dict (RepresentationalRole g))
         -> shim f g
         -> shim (f a) (g a)
-
-class ( forall k. CoercibleKind k => EnhancedFunction (shim :: k -> k -> Type)
-      , forall k. CoercibleKind k => InCategory (shim :: k -> k -> Type)
-      , Shim (shim :: Type -> Type -> Type)
-      , LiftPolyCategory shim
-      ) => PolyShim (shim :: forall k. k -> k -> Type) where
     coShimFunc ::
            forall kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
-           (CoercibleKind kp, InKind f, InKind g, InKind a, InKind b, CatFunctor KindFunction KindFunction g)
+           ( CoercibleKind kp
+           , InKind f
+           , InKind g
+           , InKind a
+           , InKind b
+           , CatFunctor KindFunction KindFunction f
+           , CatFunctor KindFunction KindFunction g
+           )
         => Maybe (Dict (RepresentationalRole f))
         -> Maybe (Dict (RepresentationalRole g))
         -> shim f g
@@ -27,7 +28,14 @@ class ( forall k. CoercibleKind k => EnhancedFunction (shim :: k -> k -> Type)
         -> shim (f a) (g b)
     contraShimFunc ::
            forall kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
-           (CoercibleKind kp, InKind f, InKind g, InKind a, InKind b, CatFunctor (CatDual KindFunction) KindFunction g)
+           ( CoercibleKind kp
+           , InKind f
+           , InKind g
+           , InKind a
+           , InKind b
+           , CatFunctor (CatDual KindFunction) KindFunction f
+           , CatFunctor (CatDual KindFunction) KindFunction g
+           )
         => Maybe (Dict (RepresentationalRole f))
         -> Maybe (Dict (RepresentationalRole g))
         -> shim f g
@@ -43,6 +51,7 @@ class ( forall k. CoercibleKind k => EnhancedFunction (shim :: k -> k -> Type)
            , InKind pb
            , InKind qa
            , InKind qb
+           , CatFunctor (CatRange KindFunction) KindFunction f
            , CatFunctor (CatRange KindFunction) KindFunction g
            )
         => Maybe (Dict (RepresentationalRole f))
@@ -50,6 +59,12 @@ class ( forall k. CoercibleKind k => EnhancedFunction (shim :: k -> k -> Type)
         -> shim f g
         -> CatRange shim '( pa, qa) '( pb, qb)
         -> shim (f '( pa, qa)) (g '( pb, qb))
+
+class ( forall k. CoercibleKind k => EnhancedFunction (shim :: k -> k -> Type)
+      , forall k. CoercibleKind k => InCategory (shim :: k -> k -> Type)
+      , Shim (shim :: Type -> Type -> Type)
+      , LiftPolyCategory shim
+      ) => PolyShim (shim :: forall k. k -> k -> Type)
 
 coShimFuncR ::
        forall (shim :: forall k. k -> k -> Type) kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
@@ -59,6 +74,7 @@ coShimFuncR ::
        , InKind g
        , InKind a
        , InKind b
+       , CatFunctor KindFunction KindFunction f
        , CatFunctor KindFunction KindFunction g
        , RepresentationalRole f
        , RepresentationalRole g
@@ -76,6 +92,7 @@ contraShimFuncR ::
        , InKind g
        , InKind a
        , InKind b
+       , CatFunctor (CatDual KindFunction) KindFunction f
        , CatFunctor (CatDual KindFunction) KindFunction g
        , RepresentationalRole f
        , RepresentationalRole g
@@ -98,6 +115,7 @@ rangeShimFuncR ::
        , InKind pb
        , InKind qa
        , InKind qb
+       , CatFunctor (CatRange KindFunction) KindFunction f
        , CatFunctor (CatRange KindFunction) KindFunction g
        )
     => shim f g

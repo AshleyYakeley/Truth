@@ -13,6 +13,7 @@ module Language.Expression.Dolan.Arguments
     ) where
 
 import Data.Shim
+import Language.Expression.Dolan.Covariance
 import Language.Expression.Dolan.PShimWit
 import Language.Expression.Dolan.Variance
 import Shapes
@@ -29,7 +30,7 @@ instance TestEquality w => TestEquality (Arguments w f) where
         Just Refl
 
 ---
-type family SingleArgument (sv :: SingleVariance) (ft :: Polarity -> Type -> Type) (polarity :: Polarity) :: SingleVarianceKind sv -> Type where
+type family SingleArgument (sv :: Variance) (ft :: Polarity -> Type -> Type) (polarity :: Polarity) :: VarianceKind sv -> Type where
     SingleArgument 'Covariance ft polarity = ft polarity
     SingleArgument 'Contravariance ft polarity = ft (InvertPolarity polarity)
     SingleArgument 'Rangevariance ft polarity = RangeType ft polarity
@@ -42,11 +43,11 @@ data DolanArguments (dv :: DolanVariance) (ft :: Polarity -> Type -> Type) (gt :
         -> DolanArguments dv ft (gt a) polarity ta
         -> DolanArguments (sv ': dv) ft gt polarity ta
 
-type family PolarSingleVarianceFunc (cat :: Type -> Type -> Type) (polarity :: Polarity) (sv :: SingleVariance) (a :: SingleVarianceKind sv) (b :: SingleVarianceKind sv) :: Type where
-    PolarSingleVarianceFunc cat 'Positive sv a b = SingleVarianceFunc cat sv a b
-    PolarSingleVarianceFunc cat 'Negative sv a b = SingleVarianceFunc cat sv b a
+type family PolarSingleVarianceFunc (cat :: Type -> Type -> Type) (polarity :: Polarity) (sv :: Variance) (a :: VarianceKind sv) (b :: VarianceKind sv) :: Type where
+    PolarSingleVarianceFunc cat 'Positive sv a b = VarianceCategory cat sv a b
+    PolarSingleVarianceFunc cat 'Negative sv a b = VarianceCategory cat sv b a
 
-data ArgTypeF (cat :: Type -> Type -> Type) (sv :: SingleVariance) (ft :: Polarity -> Type -> Type) (polarity :: Polarity) (t :: SingleVarianceKind sv) :: Type where
+data ArgTypeF (cat :: Type -> Type -> Type) (sv :: Variance) (ft :: Polarity -> Type -> Type) (polarity :: Polarity) (t :: VarianceKind sv) :: Type where
     MkArgTypeF
         :: InVarianceKind sv t'
         => SingleArgument sv ft polarity t'
@@ -56,7 +57,7 @@ data ArgTypeF (cat :: Type -> Type -> Type) (sv :: SingleVariance) (ft :: Polari
 mapArgTypeF ::
        forall m (cat :: Type -> Type -> Type) (fta :: Polarity -> Type -> Type) (ftb :: Polarity -> Type -> Type) sv polarity t.
        (Monad m, Is PolarityType polarity)
-    => SingleVarianceType sv
+    => VarianceType sv
     -> (forall polarity' t'. Is PolarityType polarity' => fta polarity' t' -> m (PShimWit cat ftb polarity' t'))
     -> SingleArgument sv fta polarity t
     -> m (ArgTypeF cat sv ftb polarity t)
@@ -143,7 +144,7 @@ mapDolanArguments f dvt kv args = runIdentity $ mapDolanArgumentsM (\t -> return
 
 mapInvertArgTypeF ::
        forall m cat fta ftb sv polarity t. (Monad m, Is PolarityType polarity)
-    => SingleVarianceType sv
+    => VarianceType sv
     -> (forall polarity' t'.
             Is PolarityType polarity' => fta polarity' t' -> m (PShimWit cat ftb (InvertPolarity polarity') t'))
     -> SingleArgument sv fta polarity t
@@ -221,23 +222,23 @@ mapInvertDolanArgumentsM f dvt dvm args =
                         PositiveType -> mapInvertArgsTypeF f dvt dvm dvm args cid
                         NegativeType -> mapInvertArgsTypeF f dvt dvm dvm args cid
 
-type family PositiveSVJoinMeetType (sv :: SingleVariance) (a :: SingleVarianceKind sv) (b :: SingleVarianceKind sv) = (r :: SingleVarianceKind sv) | r -> sv a b where
+type family PositiveSVJoinMeetType (sv :: Variance) (a :: VarianceKind sv) (b :: VarianceKind sv) = (r :: VarianceKind sv) | r -> sv a b where
     PositiveSVJoinMeetType 'Covariance a b = JoinType a b
     PositiveSVJoinMeetType 'Contravariance a b = MeetType a b
     PositiveSVJoinMeetType 'Rangevariance ('( pa, qa)) ('( pb, qb)) = '( MeetType pa pb, JoinType qa qb)
 
-type family NegativeSVJoinMeetType (sv :: SingleVariance) (a :: SingleVarianceKind sv) (b :: SingleVarianceKind sv) = (r :: SingleVarianceKind sv) | r -> sv a b where
+type family NegativeSVJoinMeetType (sv :: Variance) (a :: VarianceKind sv) (b :: VarianceKind sv) = (r :: VarianceKind sv) | r -> sv a b where
     NegativeSVJoinMeetType 'Covariance a b = MeetType a b
     NegativeSVJoinMeetType 'Contravariance a b = JoinType a b
     NegativeSVJoinMeetType 'Rangevariance ('( pa, qa)) ('( pb, qb)) = '( JoinType pa pb, MeetType qa qb)
 
-type family SVJoinMeetType (sv :: SingleVariance) (polarity :: Polarity) (a :: SingleVarianceKind sv) (b :: SingleVarianceKind sv) = (r :: SingleVarianceKind sv) where
+type family SVJoinMeetType (sv :: Variance) (polarity :: Polarity) (a :: VarianceKind sv) (b :: VarianceKind sv) = (r :: VarianceKind sv) where
     SVJoinMeetType sv 'Positive a b = PositiveSVJoinMeetType sv a b
     SVJoinMeetType sv 'Negative a b = NegativeSVJoinMeetType sv a b
 
 mergeArgTypeF ::
        forall fta ftb ftab sv polarity ta tb. Is PolarityType polarity
-    => SingleVarianceType sv
+    => VarianceType sv
     -> (forall polarity' ta' tb'.
             Is PolarityType polarity' =>
                     fta polarity' ta' -> ftb polarity' tb' -> PJMShimWit ftab polarity' (JoinMeetType polarity' ta' tb'))
@@ -269,7 +270,7 @@ mergeArgTypeF RangevarianceType f (MkRangeType tpa tqa) (MkRangeType tpb tqb) =
 
 psvf1 ::
        forall polarity sv a b c. (Is PolarityType polarity, InVarianceKind sv a, InVarianceKind sv b)
-    => SingleVarianceType sv
+    => VarianceType sv
     -> PolarSingleVarianceFunc JMShim polarity sv (SVJoinMeetType sv polarity a b) c
     -> PolarSingleVarianceFunc JMShim polarity sv a c
 psvf1 =
@@ -293,7 +294,7 @@ psvf1 =
 
 psvf2 ::
        forall polarity sv a b c. (Is PolarityType polarity, InVarianceKind sv a, InVarianceKind sv b)
-    => SingleVarianceType sv
+    => VarianceType sv
     -> PolarSingleVarianceFunc JMShim polarity sv (SVJoinMeetType sv polarity a b) c
     -> PolarSingleVarianceFunc JMShim polarity sv b c
 psvf2 =

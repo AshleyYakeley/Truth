@@ -27,10 +27,10 @@ data SubtypeContext baseedit m pola polb = MkSubtypeContext
 subtypeVariance ::
        (Applicative m, Is PolarityType pola, Is PolarityType polb)
     => SubtypeContext baseedit m pola polb
-    -> SingleVarianceType sv
+    -> VarianceType sv
     -> SingleArgument sv (PinaforeType baseedit) pola a
     -> SingleArgument sv (PinaforeType baseedit) polb b
-    -> m (SingleVarianceFunc JMShim sv a b)
+    -> m (VarianceCategory JMShim sv a b)
 subtypeVariance sc CovarianceType ta tb = subtypeTypes sc ta tb
 subtypeVariance sc ContravarianceType ta tb = do
     ba <- subtypeTypes (subtypeInverted sc) tb ta

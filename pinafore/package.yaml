@@ -50,6 +50,7 @@ library:
       - Pinafore.Test
     other-modules:
       - Data.Shim.Polarity
+      - Data.Shim.Variance
       - Data.Shim.ShimWit
       - Data.Shim.Range
       - Data.Shim.JoinMeet
@@ -60,6 +61,7 @@ library:
       - Language.Expression.Error
       - Language.Expression.UVar
       - Language.Expression.Dolan.PShimWit
+      - Language.Expression.Dolan.Covariance
       - Language.Expression.Dolan.Variance
       - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.MPolarity
