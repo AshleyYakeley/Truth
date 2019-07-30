@@ -65,6 +65,9 @@ data CatRange (shim :: k -> k -> Type) (pq1 :: (k, k)) (pq2 :: (k, k)) where
         -> shim q1 q2
         -> CatRange shim '( p1, q1) '( p2, q2)
 
+instance (forall a b. Show (shim a b)) => Show (CatRange shim a' b') where
+    show (MkCatRange p q) = "(" <> show p <> "," <> show q <> ")"
+
 coCatRange :: (InCategory shim, InKind p, InKind q1, InKind q2) => shim q1 q2 -> CatRange shim '( p, q1) '( p, q2)
 coCatRange qq = MkCatRange cid qq
 

@@ -2,6 +2,7 @@ module Data.Shim.PolyShim where
 
 import Data.Shim.JoinMeet
 import Data.Shim.Range
+import Data.Shim.Variance
 import Shapes
 
 class LiftPolyCategory (shim :: forall kc. kc -> kc -> Type) where
@@ -11,54 +12,21 @@ class LiftPolyCategory (shim :: forall kc. kc -> kc -> Type) where
         -> Maybe (Dict (RepresentationalRole g))
         -> shim f g
         -> shim (f a) (g a)
-    coShimFunc ::
-           forall kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
-           ( CoercibleKind kp
-           , InKind f
+    apShimFunc ::
+           forall (var :: Variance) kq (f :: VarianceKind var -> kq) (g :: VarianceKind var -> kq) (a :: VarianceKind var) (b :: VarianceKind var).
+           ( InKind f
            , InKind g
            , InKind a
            , InKind b
-           , CatFunctor KindFunction KindFunction f
-           , CatFunctor KindFunction KindFunction g
+           , CatFunctor (VarianceCategory KindFunction var) KindFunction f
+           , CatFunctor (VarianceCategory KindFunction var) KindFunction g
            )
-        => Maybe (Dict (RepresentationalRole f))
+        => VarianceType var
+        -> Maybe (Dict (RepresentationalRole f))
         -> Maybe (Dict (RepresentationalRole g))
         -> shim f g
-        -> shim a b
+        -> VarianceCategory shim var a b
         -> shim (f a) (g b)
-    contraShimFunc ::
-           forall kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
-           ( CoercibleKind kp
-           , InKind f
-           , InKind g
-           , InKind a
-           , InKind b
-           , CatFunctor (CatDual KindFunction) KindFunction f
-           , CatFunctor (CatDual KindFunction) KindFunction g
-           )
-        => Maybe (Dict (RepresentationalRole f))
-        -> Maybe (Dict (RepresentationalRole g))
-        -> shim f g
-        -> shim b a
-        -> shim (f a) (g b)
-    rangeShimFunc ::
-           forall kp kq (f :: (kp, kp) -> kq) (g :: (kp, kp) -> kq) (pa :: kp) (pb :: kp) (qa :: kp) (qb :: kp).
-           ( kp ~ Type
-           , CoercibleKind kp
-           , InKind f
-           , InKind g
-           , InKind pa
-           , InKind pb
-           , InKind qa
-           , InKind qb
-           , CatFunctor (CatRange KindFunction) KindFunction f
-           , CatFunctor (CatRange KindFunction) KindFunction g
-           )
-        => Maybe (Dict (RepresentationalRole f))
-        -> Maybe (Dict (RepresentationalRole g))
-        -> shim f g
-        -> CatRange shim '( pa, qa) '( pb, qb)
-        -> shim (f '( pa, qa)) (g '( pb, qb))
 
 class ( forall k. CoercibleKind k => EnhancedFunction (shim :: k -> k -> Type)
       , forall k. CoercibleKind k => InCategory (shim :: k -> k -> Type)
@@ -67,9 +35,8 @@ class ( forall k. CoercibleKind k => EnhancedFunction (shim :: k -> k -> Type)
       ) => PolyShim (shim :: forall k. k -> k -> Type)
 
 coShimFuncR ::
-       forall (shim :: forall k. k -> k -> Type) kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
+       forall (shim :: forall k. k -> k -> Type) kq (f :: Type -> kq) (g :: Type -> kq) (a :: Type) (b :: Type).
        ( PolyShim shim
-       , CoercibleKind kp
        , InKind f
        , InKind g
        , InKind a
@@ -82,12 +49,11 @@ coShimFuncR ::
     => shim f g
     -> shim a b
     -> shim (f a) (g b)
-coShimFuncR = coShimFunc (Just Dict) (Just Dict)
+coShimFuncR = apShimFunc CovarianceType (Just Dict) (Just Dict)
 
 contraShimFuncR ::
-       forall (shim :: forall k. k -> k -> Type) kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
+       forall (shim :: forall k. k -> k -> Type) kq (f :: Type -> kq) (g :: Type -> kq) (a :: Type) (b :: Type).
        ( PolyShim shim
-       , CoercibleKind kp
        , InKind f
        , InKind g
        , InKind a
@@ -98,27 +64,25 @@ contraShimFuncR ::
        , RepresentationalRole g
        )
     => shim f g
-    -> shim b a
+    -> CatDual shim a b
     -> shim (f a) (g b)
-contraShimFuncR = contraShimFunc (Just Dict) (Just Dict)
+contraShimFuncR = apShimFunc ContravarianceType (Just Dict) (Just Dict)
 
 rangeShimFuncR ::
-       forall (shim :: forall k. k -> k -> Type) kp kq (f :: (kp, kp) -> kq) (g :: (kp, kp) -> kq) (pa :: kp) (pb :: kp) (qa :: kp) (qb :: kp).
+       forall (shim :: forall k. k -> k -> Type) kq (f :: (Type, Type) -> kq) (g :: (Type, Type) -> kq) (a :: ( Type
+                                                                                                              , Type)) (b :: ( Type
+                                                                                                                             , Type)).
        ( PolyShim shim
-       , kp ~ Type
-       , CoercibleKind kp
        , InKind f
        , RepresentationalRole f
        , InKind g
        , RepresentationalRole g
-       , InKind pa
-       , InKind pb
-       , InKind qa
-       , InKind qb
+       , InKind a
+       , InKind b
        , CatFunctor (CatRange KindFunction) KindFunction f
        , CatFunctor (CatRange KindFunction) KindFunction g
        )
     => shim f g
-    -> CatRange shim '( pa, qa) '( pb, qb)
-    -> shim (f '( pa, qa)) (g '( pb, qb))
-rangeShimFuncR = rangeShimFunc (Just Dict) (Just Dict)
+    -> CatRange shim a b
+    -> shim (f a) (g b)
+rangeShimFuncR = apShimFunc RangevarianceType (Just Dict) (Just Dict)

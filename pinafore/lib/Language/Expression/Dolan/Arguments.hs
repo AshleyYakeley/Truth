@@ -100,7 +100,7 @@ mapArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanArgum
     return $ MkShimWit NilDolanArguments conv
 mapArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap mrr svm dvm) (ConsDolanVarianceMap mrr' _ dvm') (ConsDolanArguments sta dta) conv = do
     MkArgTypeF sta' svf <- mapArgTypeF @m @cat @fta @ftb @_ @polarity svt f sta
-    Dict <- return $ singleVarianceCoercibleKind svt
+    Dict <- return $ varianceCoercibleKind svt
     Dict <- return $ dolanVarianceInCategory @cat dvt
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt) sta
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt) sta'
@@ -189,7 +189,7 @@ mapInvertArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDola
     return $ MkShimWit NilDolanArguments conv
 mapInvertArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap mrr svm dvm) (ConsDolanVarianceMap mrr' _ dvm') (ConsDolanArguments sta dta) conv = do
     MkArgTypeF sta' svf <- mapInvertArgTypeF @m @cat @fta @ftb @_ @polarity svt f sta
-    Dict <- return $ singleVarianceCoercibleKind svt
+    Dict <- return $ varianceCoercibleKind svt
     Dict <- return $ dolanVarianceInCategory @cat dvt
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt) sta
     Dict <- return $ applyFunctionKindWitness (inKind @_ @gt) sta'
@@ -337,7 +337,7 @@ mergeArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanVar
         PositiveType -> joinf conva convb
         NegativeType -> meetf conva convb
 mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap mrra svma dvma) (ConsDolanVarianceMap mrrb svmb dvmb) (ConsDolanVarianceMap mrrab _ dvmab) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) conva convb =
-    case singleVarianceCoercibleKind svt of
+    case varianceCoercibleKind svt of
         Dict ->
             case mergeArgTypeF @fta @ftb @ftab @_ @polarity svt f sta stb of
                 MkArgTypeF stab svf ->

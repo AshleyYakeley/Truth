@@ -18,6 +18,17 @@ data VarianceType (t :: Variance) where
     ContravarianceType :: VarianceType 'Contravariance
     RangevarianceType :: VarianceType 'Rangevariance
 
+instance TestEquality VarianceType where
+    testEquality CovarianceType CovarianceType = Just Refl
+    testEquality ContravarianceType ContravarianceType = Just Refl
+    testEquality RangevarianceType RangevarianceType = Just Refl
+    testEquality _ _ = Nothing
+
+instance Show (VarianceType t) where
+    show CovarianceType = "co"
+    show ContravarianceType = "contra"
+    show RangevarianceType = "range"
+
 instance Representative VarianceType where
     getRepWitness CovarianceType = Dict
     getRepWitness ContravarianceType = Dict
@@ -32,24 +43,35 @@ instance Is VarianceType 'Contravariance where
 instance Is VarianceType 'Rangevariance where
     representative = RangevarianceType
 
-singleVarianceCoercibleKind :: forall (v :: Variance). VarianceType v -> Dict (CoercibleKind (VarianceKind v))
-singleVarianceCoercibleKind CovarianceType = Dict
-singleVarianceCoercibleKind ContravarianceType = Dict
-singleVarianceCoercibleKind RangevarianceType = Dict
+varianceCoercibleKind :: forall (v :: Variance). VarianceType v -> Dict (CoercibleKind (VarianceKind v))
+varianceCoercibleKind CovarianceType = Dict
+varianceCoercibleKind ContravarianceType = Dict
+varianceCoercibleKind RangevarianceType = Dict
 
 type family VarianceCategory (cat :: Type -> Type -> Type) (v :: Variance) :: VarianceKind v -> VarianceKind v -> Type where
     VarianceCategory cat 'Covariance = cat
     VarianceCategory cat 'Contravariance = CatDual cat
     VarianceCategory cat 'Rangevariance = CatRange cat
 
+varianceInCategory ::
+       forall cat (v :: Variance). InCategory cat
+    => VarianceType v
+    -> Dict (InCategory (VarianceCategory cat v))
+varianceInCategory CovarianceType = Dict
+varianceInCategory ContravarianceType = Dict
+varianceInCategory RangevarianceType = Dict
+
+varianceCategoryShow ::
+       forall cat (v :: Variance) a b. (forall p q. Show (cat p q))
+    => VarianceType v
+    -> VarianceCategory cat v a b
+    -> String
+varianceCategoryShow CovarianceType = show
+varianceCategoryShow ContravarianceType = show
+varianceCategoryShow RangevarianceType = show
+
 type VarianceMap (cat :: forall kc. kc -> kc -> Type) (v :: Variance) (gt :: VarianceKind v -> k)
      = forall (a :: VarianceKind v) (b :: VarianceKind v).
            (InKind a, InKind b) => VarianceCategory cat v a b -> cat (gt a) (gt b)
-
-mkRangevary ::
-       forall k (cat :: forall kc. kc -> kc -> Type) (f :: (Type, Type) -> k). Category (cat :: Type -> Type -> Type)
-    => (forall a b. (forall t. Range cat t a -> Range cat t b) -> cat (f a) (f b))
-    -> VarianceMap cat 'Rangevariance f
-mkRangevary f (MkCatRange pbpa qaqb) = f $ \(MkRange pt tq) -> MkRange (pt . pbpa) (qaqb . tq)
 
 type InVarianceKind sv (a :: VarianceKind sv) = InKind a

@@ -10,6 +10,7 @@ module Data.Shim.JMShim
 import Data.Shim.JoinMeet
 import Data.Shim.PolyShim
 import Data.Shim.Range
+import Data.Shim.Variance
 import Shapes
 
 data JMShim (a :: k) (b :: k) where
@@ -24,53 +25,21 @@ data JMShim (a :: k) (b :: k) where
     Meet1JMShim :: JMShim a t -> JMShim (MeetType a b) t
     Meet2JMShim :: JMShim b t -> JMShim (MeetType a b) t
     MeetFJMShim :: JMShim t a -> JMShim t b -> JMShim t (MeetType a b)
-    CoJMShim
-        :: forall kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
-           ( CoercibleKind kp
-           , InKind f
+    ApJMShim
+        :: forall (var :: Variance) k (f :: VarianceKind var -> k) (g :: VarianceKind var -> k) (a :: VarianceKind var) (b :: VarianceKind var).
+           ( InKind f
            , InKind g
            , InKind a
            , InKind b
-           , CatFunctor KindFunction KindFunction f
-           , CatFunctor KindFunction KindFunction g
+           , CatFunctor (VarianceCategory KindFunction var) KindFunction f
+           , CatFunctor (VarianceCategory KindFunction var) KindFunction g
            )
-        => Maybe (Dict (RepresentationalRole f))
+        => VarianceType var
+        -> Maybe (Dict (RepresentationalRole f))
         -> Maybe (Dict (RepresentationalRole g))
         -> JMShim f g
-        -> JMShim a b
+        -> VarianceCategory JMShim var a b
         -> JMShim (f a) (g b)
-    ContraJMShim
-        :: forall kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp) (b :: kp).
-           ( CoercibleKind kp
-           , InKind f
-           , InKind g
-           , InKind a
-           , InKind b
-           , CatFunctor (CatDual KindFunction) KindFunction f
-           , CatFunctor (CatDual KindFunction) KindFunction g
-           )
-        => Maybe (Dict (RepresentationalRole f))
-        -> Maybe (Dict (RepresentationalRole g))
-        -> JMShim f g
-        -> JMShim b a
-        -> JMShim (f a) (g b)
-    RangeJMShim
-        :: forall kp kq (f :: (kp, kp) -> kq) (g :: (kp, kp) -> kq) (pa :: kp) (pb :: kp) (qa :: kp) (qb :: kp).
-           ( CoercibleKind kp
-           , InKind f
-           , InKind g
-           , InKind pa
-           , InKind pb
-           , InKind qa
-           , InKind qb
-           , CatFunctor (CatRange KindFunction) KindFunction f
-           , CatFunctor (CatRange KindFunction) KindFunction g
-           )
-        => Maybe (Dict (RepresentationalRole f))
-        -> Maybe (Dict (RepresentationalRole g))
-        -> JMShim f g
-        -> CatRange JMShim '( pa, qa) '( pb, qb)
-        -> JMShim (f '( pa, qa)) (g '( pb, qb))
     LiftJMShim -- TODO: remove?
         :: forall kp kq (f :: kp -> kq) (g :: kp -> kq) (a :: kp). (CoercibleKind kp, InKind f, InKind g, InKind a)
         => Maybe (Dict (RepresentationalRole f))
@@ -90,9 +59,7 @@ instance Show (JMShim a b) where
     show (Meet1JMShim s) = "(meet1 " <> show s <> ")"
     show (Meet2JMShim s) = "(meet2 " <> show s <> ")"
     show (MeetFJMShim s1 s2) = "(meetf " <> show s1 <> " " <> show s2 <> ")"
-    show (CoJMShim _ _ s1 s2) = "(co " <> show s1 <> " " <> show s2 <> ")"
-    show (ContraJMShim _ _ s1 s2) = "(contra " <> show s1 <> " " <> show s2 <> ")"
-    show (RangeJMShim _ _ s1 (MkCatRange s2a s2b)) = "(range " <> show s1 <> " (" <> show s2a <> "," <> show s2b <> "))"
+    show (ApJMShim vt _ _ s1 s2) = "(" <> show vt <> " " <> show s1 <> " " <> varianceCategoryShow @JMShim vt s2 <> ")"
     show (LiftJMShim _ _ s) = "(lift " <> show s <> ")"
 
 instance CoercibleKind k => InCategory (JMShim :: k -> k -> Type) where
@@ -106,9 +73,10 @@ instance CoercibleKind k => InCategory (JMShim :: k -> k -> Type) where
     IdentityJMShim <.> q = q
     _ <.> InitFJMShim = InitFJMShim
     TermFJMShim <.> _ = TermFJMShim
-    CoJMShim _ mrrp pf pa <.> CoJMShim mrrq _ qf qa = CoJMShim mrrq mrrp (pf <.> qf) (pa <.> qa)
-    ContraJMShim _ mrrp pf pa <.> ContraJMShim mrrq _ qf qa = ContraJMShim mrrq mrrp (pf <.> qf) (qa <.> pa)
-    RangeJMShim _ mrrp pf pa <.> RangeJMShim mrrq _ qf qa = RangeJMShim mrrq mrrp (pf <.> qf) (pa <.> qa)
+    ApJMShim pvt _ mrrp pf pa <.> ApJMShim qvt mrrq _ qf qa
+        | Just Refl <- testEquality pvt qvt =
+            case varianceInCategory @JMShim pvt of
+                Dict -> ApJMShim pvt mrrq mrrp (pf <.> qf) (pa <.> qa)
     p <.> q
         | Just pc <- enhancedCoercion p
         , Just qc <- enhancedCoercion q = CoerceJMShim (show p <> " . " <> show q) $ pc <.> qc
@@ -135,9 +103,7 @@ type JMRange = Range JMShim
 instance LiftPolyCategory JMShim where
     coLift _ _ IdentityJMShim = IdentityJMShim
     coLift mrrf mrrg jmf = LiftJMShim mrrf mrrg jmf
-    coShimFunc = CoJMShim
-    contraShimFunc = ContraJMShim
-    rangeShimFunc = RangeJMShim
+    apShimFunc = ApJMShim
 
 newtype JMIsoShim (a :: k) (b :: k) = MkJMIsoShim
     { unJMIsoShim :: Isomorphism JMShim a b
@@ -154,62 +120,58 @@ instance Category (JMIsoShim :: Type -> Type -> Type) where
 instance LiftPolyCategory JMIsoShim where
     coLift mrrp mrrq (MkJMIsoShim (MkIsomorphism ab ba)) =
         MkJMIsoShim $ MkIsomorphism (coLift mrrp mrrq ab) (coLift mrrq mrrp ba)
-    coShimFunc mrrp mrrq (MkJMIsoShim (MkIsomorphism fab fba)) (MkJMIsoShim (MkIsomorphism xab xba)) =
-        MkJMIsoShim $ MkIsomorphism (coShimFunc mrrp mrrq fab xab) (coShimFunc mrrq mrrp fba xba)
-    contraShimFunc mrrp mrrq (MkJMIsoShim (MkIsomorphism fab fba)) (MkJMIsoShim (MkIsomorphism xab xba)) =
-        MkJMIsoShim $ MkIsomorphism (contraShimFunc mrrp mrrq fab xab) (contraShimFunc mrrq mrrp fba xba)
-    rangeShimFunc mrrp mrrq (MkJMIsoShim (MkIsomorphism fab fba)) (MkCatRange (MkJMIsoShim (MkIsomorphism xab1 xba1)) (MkJMIsoShim (MkIsomorphism xab2 xba2))) =
+    apShimFunc CovarianceType mrrp mrrq (MkJMIsoShim (MkIsomorphism fab fba)) (MkJMIsoShim (MkIsomorphism xab xba)) =
+        MkJMIsoShim $
+        MkIsomorphism (apShimFunc CovarianceType mrrp mrrq fab xab) (apShimFunc CovarianceType mrrq mrrp fba xba)
+    apShimFunc ContravarianceType mrrp mrrq (MkJMIsoShim (MkIsomorphism fab fba)) (MkCatDual (MkJMIsoShim (MkIsomorphism xab xba))) =
         MkJMIsoShim $
         MkIsomorphism
-            (rangeShimFunc mrrp mrrq fab (MkCatRange xab1 xab2))
-            (rangeShimFunc mrrq mrrp fba (MkCatRange xba1 xba2))
+            (apShimFunc ContravarianceType mrrp mrrq fab $ MkCatDual xab)
+            (apShimFunc ContravarianceType mrrq mrrp fba $ MkCatDual xba)
+    apShimFunc RangevarianceType mrrp mrrq (MkJMIsoShim (MkIsomorphism fab fba)) (MkCatRange (MkJMIsoShim (MkIsomorphism xab1 xba1)) (MkJMIsoShim (MkIsomorphism xab2 xba2))) =
+        MkJMIsoShim $
+        MkIsomorphism
+            (apShimFunc RangevarianceType mrrp mrrq fab (MkCatRange xab1 xab2))
+            (apShimFunc RangevarianceType mrrq mrrp fba (MkCatRange xba1 xba2))
 
-instance forall kp kq (f :: kp -> kq). ( CoercibleKind kp
-         , InKind f
-         , CatFunctor KindFunction KindFunction f
-         , RepresentationalRole f
-         ) => CatFunctor JMShim JMShim f where
+instance forall kq (f :: Type -> kq). (InKind f, CatFunctor KindFunction KindFunction f, RepresentationalRole f) =>
+             CatFunctor JMShim JMShim f where
     cfmap IdentityJMShim = IdentityJMShim
-    cfmap f = CoJMShim (Just Dict) (Just Dict) IdentityJMShim f
+    cfmap f = ApJMShim CovarianceType (Just Dict) (Just Dict) IdentityJMShim f
 
 cfmapNR ::
-       forall kp kq (f :: kp -> kq) (a :: kp) (b :: kp).
-       (CoercibleKind kp, InKind f, CatFunctor KindFunction KindFunction f, InKind a, InKind b)
+       forall kq (f :: Type -> kq) (a :: Type) (b :: Type).
+       (InKind f, CatFunctor KindFunction KindFunction f, InKind a, InKind b)
     => JMShim a b
     -> JMShim (f a) (f b)
 cfmapNR IdentityJMShim = IdentityJMShim
-cfmapNR f = CoJMShim Nothing Nothing IdentityJMShim f
+cfmapNR f = ApJMShim CovarianceType Nothing Nothing IdentityJMShim f
 
 ccontramapNR ::
-       forall kp kq (f :: kp -> kq) (a :: kp) (b :: kp).
-       (CoercibleKind kp, InKind f, CatFunctor (CatDual KindFunction) KindFunction f, InKind a, InKind b)
+       forall kq (f :: Type -> kq) (a :: Type) (b :: Type).
+       (InKind f, CatFunctor (CatDual KindFunction) KindFunction f, InKind a, InKind b)
     => CatDual JMShim a b
     -> JMShim (f a) (f b)
 ccontramapNR (MkCatDual IdentityJMShim) = IdentityJMShim
-ccontramapNR (MkCatDual f) = ContraJMShim Nothing Nothing IdentityJMShim f
+ccontramapNR f = ApJMShim ContravarianceType Nothing Nothing IdentityJMShim f
 
 crangemapNR ::
-       forall kp kq (f :: (kp, kp) -> kq) (a :: (kp, kp)) (b :: (kp, kp)).
-       (CoercibleKind kp, InKind f, CatFunctor (CatRange KindFunction) KindFunction f)
+       forall kq (f :: (Type, Type) -> kq) (a :: (Type, Type)) (b :: (Type, Type)).
+       (InKind f, CatFunctor (CatRange KindFunction) KindFunction f)
     => CatRange JMShim a b
     -> JMShim (f a) (f b)
 crangemapNR (MkCatRange IdentityJMShim IdentityJMShim) = IdentityJMShim
-crangemapNR f@(MkCatRange _ _) = RangeJMShim Nothing Nothing IdentityJMShim f
+crangemapNR f@(MkCatRange _ _) = ApJMShim RangevarianceType Nothing Nothing IdentityJMShim f
 
-instance forall kp kq (f :: kp -> kq). ( CoercibleKind kp
-         , InKind f
+instance forall kq (f :: Type -> kq). ( InKind f
          , CatFunctor (CatDual KindFunction) KindFunction f
          , RepresentationalRole f
          ) => CatFunctor (CatDual JMShim) JMShim f where
     cfmap (MkCatDual IdentityJMShim) = IdentityJMShim
-    cfmap (MkCatDual jmfa) = ContraJMShim (Just Dict) (Just Dict) IdentityJMShim jmfa
+    cfmap jmfa = ApJMShim ContravarianceType (Just Dict) (Just Dict) IdentityJMShim jmfa
 
-instance ( kp ~ Type
-         , CoercibleKind kp
-         , InKind f
-         , CatFunctor (CatRange KindFunction) KindFunction f
-         , RepresentationalRole f
-         ) => CatFunctor (CatRange JMShim) JMShim (f :: (kp, kp) -> kq) where
+instance (InKind f, CatFunctor (CatRange KindFunction) KindFunction f, RepresentationalRole f) =>
+             CatFunctor (CatRange JMShim) JMShim (f :: (Type, Type) -> kq) where
     cfmap ::
            forall a b. (InKind a, InKind b)
         => CatRange JMShim a b
@@ -217,7 +179,7 @@ instance ( kp ~ Type
     cfmap (MkCatRange IdentityJMShim IdentityJMShim) = IdentityJMShim
     cfmap jmf =
         case (inKind @_ @a, inKind @_ @b) of
-            (MkPairWitness, MkPairWitness) -> RangeJMShim (Just Dict) (Just Dict) IdentityJMShim jmf
+            (MkPairWitness, MkPairWitness) -> ApJMShim RangevarianceType (Just Dict) (Just Dict) IdentityJMShim jmf
 
 instance JoinMeetCategory JMShim where
     initf = InitFJMShim
@@ -248,40 +210,61 @@ instance CoercibleKind k => EnhancedFunction (JMShim :: k -> k -> Type) where
     fromEnhanced (Meet1JMShim ta) = fromEnhanced ta <.> meet1
     fromEnhanced (Meet2JMShim tb) = fromEnhanced tb <.> meet2
     fromEnhanced (MeetFJMShim pa pb) = meetf (fromEnhanced pa) (fromEnhanced pb)
-    fromEnhanced (CoJMShim _ _ (jmf :: JMShim f g) jma) =
-        case inKind @_ @g of
-            MkFunctionKindWitness ->
-                case fromEnhanced jmf of
-                    MkNestedMorphism ff -> cfmap (fromEnhanced jma) <.> ff
-    fromEnhanced (ContraJMShim _ _ (jmf :: JMShim f g) jma) =
-        case inKind @_ @g of
-            MkFunctionKindWitness ->
-                case fromEnhanced jmf of
-                    MkNestedMorphism ff -> ccontramap (fromEnhanced jma) <.> ff
-    fromEnhanced (RangeJMShim _ _ (jmf :: JMShim f g) (MkCatRange jmp jmq)) =
-        case inKind @_ @g of
-            MkFunctionKindWitness ->
-                case fromEnhanced jmf of
-                    MkNestedMorphism ff -> cfmap (MkCatRange (fromEnhanced jmp) (fromEnhanced jmq)) <.> ff
+    fromEnhanced (ApJMShim vt _ _ jmf jma) = let
+        fromAp ::
+               forall (var :: Variance) (f :: VarianceKind var -> k) (g :: VarianceKind var -> k) (a' :: VarianceKind var) (b' :: VarianceKind var).
+               ( InKind f
+               , InKind g
+               , InKind a'
+               , InKind b'
+               , CatFunctor (VarianceCategory KindFunction var) KindFunction f
+               , CatFunctor (VarianceCategory KindFunction var) KindFunction g
+               )
+            => VarianceType var
+            -> JMShim f g
+            -> VarianceCategory JMShim var a' b'
+            -> KindFunction (f a') (g b')
+        fromAp CovarianceType jmf' jma' =
+            case inKind @_ @f of
+                MkFunctionKindWitness ->
+                    case inKind @_ @g of
+                        MkFunctionKindWitness ->
+                            case fromEnhanced jmf' of
+                                MkNestedMorphism ff -> cfmap (fromEnhanced jma') <.> ff
+        fromAp ContravarianceType jmf' (MkCatDual jma') =
+            case inKind @_ @f of
+                MkFunctionKindWitness ->
+                    case inKind @_ @g of
+                        MkFunctionKindWitness ->
+                            case fromEnhanced jmf' of
+                                MkNestedMorphism ff -> cfmap (MkCatDual (fromEnhanced jma')) <.> ff
+        fromAp RangevarianceType jmf' (MkCatRange jma1 jma2) =
+            case inKind @_ @f of
+                MkFunctionKindWitness ->
+                    case inKind @_ @g of
+                        MkFunctionKindWitness ->
+                            case fromEnhanced jmf' of
+                                MkNestedMorphism ff -> cfmap (MkCatRange (fromEnhanced jma1) (fromEnhanced jma2)) <.> ff
+        in fromAp vt jmf jma
     fromEnhanced (LiftJMShim _ _ fg) =
         case fromEnhanced fg of
             MkNestedMorphism ff -> ff
     coercionEnhanced = CoerceJMShim
     enhancedCoercion IdentityJMShim = Just cid
     enhancedCoercion (CoerceJMShim _ c) = Just c
-    enhancedCoercion (CoJMShim (Just Dict) _ f a) = do
+    enhancedCoercion (ApJMShim CovarianceType (Just Dict) _ f a) = do
         cf <- enhancedCoercion f
         ca <- enhancedCoercion a
         return $ applyCoercion1 cf ca
-    enhancedCoercion (CoJMShim _ (Just Dict) f a) = do
+    enhancedCoercion (ApJMShim CovarianceType _ (Just Dict) f a) = do
         cf <- enhancedCoercion f
         ca <- enhancedCoercion a
         return $ applyCoercion2 cf ca
-    enhancedCoercion (ContraJMShim (Just Dict) _ f a) = do
+    enhancedCoercion (ApJMShim ContravarianceType (Just Dict) _ f (MkCatDual a)) = do
         cf <- enhancedCoercion f
         ca <- enhancedCoercion a
         return $ applyCoercion1 cf $ invert ca
-    enhancedCoercion (ContraJMShim _ (Just Dict) f a) = do
+    enhancedCoercion (ApJMShim ContravarianceType _ (Just Dict) f (MkCatDual a)) = do
         cf <- enhancedCoercion f
         ca <- enhancedCoercion a
         return $ applyCoercion2 cf $ invert ca
@@ -296,6 +279,6 @@ instance CoercibleKind k => EnhancedFunction (JMShim :: k -> k -> Type) where
 instance PolyShim JMShim
 
 instance Shim JMShim where
-    funcShim ab pq = coShimFuncR (contraShimFuncR cid ab) pq
+    funcShim ab pq = coShimFuncR (contraShimFuncR cid (MkCatDual ab)) pq
     pairShim ab pq = coShimFuncR (coShimFuncR cid ab) pq
     eitherShim ab pq = coShimFuncR (coShimFuncR cid ab) pq

@@ -57,7 +57,7 @@ subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap mrra svma dvma)
                 Dict ->
                     case applyFunctionKindWitness (inKind @_ @gta) stb of
                         Dict ->
-                            case singleVarianceCoercibleKind svt of
+                            case varianceCoercibleKind svt of
                                 Dict ->
                                     case dolanVarianceInCategory @JMShim dvt of
                                         Dict -> do

@@ -1,5 +1,6 @@
 module Data.KindMorphism where
 
+import Control.Category.Dual
 import Control.Category.Groupoid
 import Data.Witness.Kind
 import Shapes.Import
@@ -80,6 +81,10 @@ instance InCategory (KindMorphism cat :: kq -> kq -> Type) =>
     (MkNestedMorphism f) <.> (MkNestedMorphism g) =
         case (inKind @_ @a, inKind @_ @b, inKind @_ @c) of
             (MkFunctionKindWitness, MkFunctionKindWitness, MkFunctionKindWitness) -> MkNestedMorphism $ f <.> g
+
+instance InCategory cat => InCategory (CatDual cat) where
+    cid = MkCatDual cid
+    MkCatDual cb <.> MkCatDual ba = MkCatDual $ ba <.> cb
 
 class InCategory cat => InGroupoid (cat :: k -> k -> Type) where
     cinvert ::
