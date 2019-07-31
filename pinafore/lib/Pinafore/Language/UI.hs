@@ -12,4 +12,4 @@ instance Functor (PinaforeUI baseedit) where
     fmap ab (MkPinaforeUI spec) = MkPinaforeUI $ mapSelectionUISpec ab spec
 
 instance HasDolanVary '[ 'Covariance] (PinaforeUI baseedit) where
-    dolanVary = ConsDolanVarianceMap Nothing cfmapNR $ NilDolanVarianceMap
+    dolanVary = ConsDolanVarianceMap Nothing (apShimFuncNR CovarianceType cid) $ NilDolanVarianceMap

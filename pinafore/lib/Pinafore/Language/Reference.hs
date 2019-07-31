@@ -7,21 +7,19 @@ import Truth.Core
 
 data PinaforeReference (baseedit :: Type) (pq :: (Type, Type)) where
     LensPinaforeReference
-        :: JMRange t pq -> PinaforeLensValue baseedit (WholeEdit (Know t)) -> PinaforeReference baseedit pq
+        :: Range JMShim t pq -> PinaforeLensValue baseedit (WholeEdit (Know t)) -> PinaforeReference baseedit pq
     ImmutPinaforeReference :: PinaforeImmutableReference baseedit q -> PinaforeReference baseedit '( p, q)
 
-instance IsoMapRange JMShim (PinaforeReference baseedit)
-
-instance MapRange JMShim (PinaforeReference baseedit) where
-    mapRange f =
+instance RangeLiftShim JMShim (PinaforeReference baseedit) where
+    rangeLiftShim f =
         toEnhanced "reference" $ \case
-            LensPinaforeReference r s -> LensPinaforeReference (mapWithRange f r) s
+            LensPinaforeReference r s -> LensPinaforeReference (catRangeMap f r) s
             ImmutPinaforeReference ir ->
                 case f of
                     MkCatRange _ f' -> ImmutPinaforeReference $ fmap (fromEnhanced f') ir
 
 instance HasDolanVary '[ 'Rangevariance] (PinaforeReference baseedit) where
-    dolanVary = ConsDolanVarianceMap Nothing mapRange $ NilDolanVarianceMap
+    dolanVary = ConsDolanVarianceMap Nothing rangeLiftShim $ NilDolanVarianceMap
 
 pinaforeReferenceToFunction :: PinaforeReference baseedit '( BottomType, a) -> PinaforeFunctionValue baseedit (Know a)
 pinaforeReferenceToFunction ref =

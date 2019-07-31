@@ -10,24 +10,24 @@ import Truth.Core
 
 data PinaforeMorphism baseedit (pqa :: (Type, Type)) (pqb :: (Type, Type)) =
     forall a b. (Eq a, Eq b) =>
-                    MkPinaforeMorphism (JMRange a pqa)
-                                       (JMRange b pqb)
+                    MkPinaforeMorphism (Range JMShim a pqa)
+                                       (Range JMShim b pqb)
                                        (PinaforeLensMorphism baseedit a b)
 
-instance IsoMapRange JMShim (PinaforeMorphism baseedit pqa)
+instance RangeLiftShim JMShim (PinaforeMorphism baseedit pqa) where
+    rangeLiftShim f =
+        toEnhanced "morphism" $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism ra (catRangeMap f rb) m
 
-instance MapRange JMShim (PinaforeMorphism baseedit pqa) where
-    mapRange f = toEnhanced "morphism" $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism ra (mapWithRange f rb) m
-
-instance IsoMapRange JMShim (PinaforeMorphism baseedit)
-
-instance MapRange JMShim (PinaforeMorphism baseedit) where
-    mapRange f =
+instance RangeLiftShim JMShim (PinaforeMorphism baseedit) where
+    rangeLiftShim f =
         toEnhanced "morphism" $
-        MkNestedMorphism $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism (mapWithRange f ra) rb m
+        MkNestedMorphism $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism (catRangeMap f ra) rb m
 
+--instance CatFunctor (CatRange (->)) (->) (PinaforeMorphism edit '(pa, qa)) where
+--    cfmap f = rangeLiftShim @_ @_ @JMShim $ foo f
 instance HasDolanVary '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit) where
-    dolanVary = ConsDolanVarianceMap Nothing mapRange $ ConsDolanVarianceMap Nothing mapRange $ NilDolanVarianceMap
+    dolanVary =
+        ConsDolanVarianceMap Nothing rangeLiftShim $ ConsDolanVarianceMap Nothing rangeLiftShim $ NilDolanVarianceMap
 
 pinaforeMorphismLens :: PinaforeMorphism baseedit '( a, a) '( b, b) -> PinaforeLensMorphism baseedit a b
 pinaforeMorphismLens (MkPinaforeMorphism tra trb lm) =
@@ -47,8 +47,8 @@ pinaforeMorphismFunction (MkPinaforeMorphism tra trb pm) =
 identityPinaforeMorphism ::
        forall baseedit t. PinaforeMorphism baseedit '( MeetType Entity t, t) '( MeetType Entity t, t)
 identityPinaforeMorphism =
-    unNestedMorphism (fromEnhanced @_ @JMShim $ coMapRange meet2) $
-    fromEnhanced @_ @JMShim (coMapRange meet2) $ pinaforeLensMorphism id
+    unNestedMorphism (fromEnhanced @_ @JMShim $ coRangeLiftShim meet2) $
+    fromEnhanced @_ @JMShim (coRangeLiftShim meet2) $ pinaforeLensMorphism id
 
 composePinaforeMorphism ::
        forall baseedit ap aq bp bq cp cq.
@@ -118,7 +118,8 @@ pinaforeApplyInverseMorphismSet ::
     -> PinaforeSetRef baseedit '( ap, aq)
     -> PinaforeSetRef baseedit '( bp, bq)
 pinaforeApplyInverseMorphismSet (MkPinaforeMorphism trb trpa m) (MkPinaforeSetRef tra' set) = let
-    (trp, tra) = unjoinRange trpa
+    trp = contraMapRange join1 trpa
+    tra = contraMapRange join2 trpa
     in MkPinaforeSetRef trb $
        applyInversePinaforeLensSet (fmap (fromEnhanced (rangeContra trp) . MkNewEntity) newEntity) m $
        (bijectionFiniteSetEditLens $ isoMapCat fromEnhanced $ bijectRanges tra' tra) . set

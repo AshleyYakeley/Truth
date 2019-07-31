@@ -53,9 +53,10 @@ library:
       - Data.Shim.Variance
       - Data.Shim.ShimWit
       - Data.Shim.Range
+      - Data.Shim.CatRange
       - Data.Shim.JoinMeet
       - Data.Shim.PolyShim
-      - Data.Shim.MapRange
+      - Data.Shim.RangeLift
       - Data.Shim.JMShim
       - Data.Shim.JMShimWit
       - Language.Expression.Error

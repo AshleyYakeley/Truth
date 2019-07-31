@@ -373,11 +373,11 @@ base_predefinitions =
           , mkValEntry
                 "comapref"
                 "Map a function on getting a reference."
-                (coMapRangeF @JMShim :: (A -> B) -> PinaforeReference baseedit '( C, A) -> PinaforeReference baseedit '( C, B))
+                (coRangeLift @JMShim :: (A -> B) -> PinaforeReference baseedit '( C, A) -> PinaforeReference baseedit '( C, B))
           , mkValEntry
                 "contramapref"
                 "Map a function on setting a reference."
-                (contraMapRangeF @JMShim :: (B -> A) -> PinaforeReference baseedit '( A, C) -> PinaforeReference baseedit '( B, C))
+                (contraRangeLift @JMShim :: (B -> A) -> PinaforeReference baseedit '( A, C) -> PinaforeReference baseedit '( B, C))
           , mkValEntry "lensmapref" "Map getter & pushback functions on a reference." $
             pinaforeFLensReference @baseedit @AP @AQ @B
           , mkValEntry
@@ -407,11 +407,11 @@ base_predefinitions =
           [ mkValEntry
                 "comapset"
                 "Map a function on getting from a set."
-                (coMapRangeF @JMShim :: (A -> B) -> PinaforeSetRef baseedit '( C, A) -> PinaforeSetRef baseedit '( C, B))
+                (coRangeLift @JMShim :: (A -> B) -> PinaforeSetRef baseedit '( C, A) -> PinaforeSetRef baseedit '( C, B))
           , mkValEntry
                 "contramapset"
                 "Map a function on setting to a set."
-                (contraMapRangeF @JMShim :: (B -> A) -> PinaforeSetRef baseedit '( A, C) -> PinaforeSetRef baseedit '( B, C))
+                (contraRangeLift @JMShim :: (B -> A) -> PinaforeSetRef baseedit '( A, C) -> PinaforeSetRef baseedit '( B, C))
           , mkValEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
             pinaforeSetRefMeet @baseedit @A
           , mkValEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $

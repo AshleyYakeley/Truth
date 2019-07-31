@@ -1,5 +1,6 @@
 module Language.Expression.Dolan.RangeF where
 
+import Data.Shim.CatRange
 import Data.Shim.JMShim
 import Data.Shim.JMShimWit
 import Data.Shim.Polarity

@@ -1,6 +1,6 @@
 module Data.Shim.Variance where
 
-import Data.Shim.Range
+import Data.Shim.CatRange
 import Shapes
 
 data Variance

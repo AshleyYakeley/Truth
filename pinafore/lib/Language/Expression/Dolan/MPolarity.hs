@@ -1,7 +1,7 @@
 module Language.Expression.Dolan.MPolarity where
 
+import Data.Shim.CatRange
 import Data.Shim.Polarity
-import Data.Shim.Range
 import Shapes
 
 -- The only purpose of this module is for parsing types simultaneously as positive and negative.

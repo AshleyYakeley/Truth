@@ -66,7 +66,7 @@ instance (ToShimWit JMShim (PinaforeType baseedit 'Positive) a, ToShimWit JMShim
     toShimWit =
         unShimWit toJMShimWit $ \ta conva ->
             unShimWit toJMShimWit $ \tb convb ->
-                mapShimWit (coShimFuncR (cfmap conva) convb) $
+                mapShimWit (apShimFuncR CovarianceType (cfmap conva) convb) $
                 mkPJMShimWit $
                 GroundPinaforeSingularType
                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType) $
@@ -82,7 +82,7 @@ instance ( FromShimWit JMShim (PinaforeType baseedit 'Negative) a
     fromShimWit =
         unShimWit fromJMShimWit $ \ta conva ->
             unShimWit fromJMShimWit $ \tb convb ->
-                mapShimWit (coShimFuncR (cfmap conva) convb) $
+                mapShimWit (apShimFuncR CovarianceType (cfmap conva) convb) $
                 mkPJMShimWit $
                 GroundPinaforeSingularType
                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) PairEntityGroundType) $
@@ -99,7 +99,7 @@ instance (ToShimWit JMShim (PinaforeType baseedit 'Positive) a, ToShimWit JMShim
     toShimWit =
         unShimWit toJMShimWit $ \ta conva ->
             unShimWit toJMShimWit $ \tb convb ->
-                mapShimWit (coShimFuncR (cfmap conva) convb) $
+                mapShimWit (apShimFuncR CovarianceType (cfmap conva) convb) $
                 mkPJMShimWit $
                 GroundPinaforeSingularType
                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType) $
@@ -115,7 +115,7 @@ instance ( FromShimWit JMShim (PinaforeType baseedit 'Negative) a
     fromShimWit =
         unShimWit fromJMShimWit $ \ta conva ->
             unShimWit fromJMShimWit $ \tb convb ->
-                mapShimWit (coShimFuncR (cfmap conva) convb) $
+                mapShimWit (apShimFuncR CovarianceType (cfmap conva) convb) $
                 mkPJMShimWit $
                 GroundPinaforeSingularType
                     (EntityPinaforeGroundType (ConsListType Refl $ ConsListType Refl NilListType) EitherEntityGroundType) $
@@ -132,7 +132,7 @@ instance (FromShimWit JMShim (PinaforeType baseedit 'Negative) a, ToShimWit JMSh
     toShimWit =
         unShimWit fromJMShimWit $ \ta conva ->
             unShimWit toJMShimWit $ \tb convb ->
-                mapShimWit (coShimFuncR (ccontramap conva) convb) $
+                mapShimWit (apShimFuncR CovarianceType (ccontramap conva) convb) $
                 mkPJMShimWit $
                 GroundPinaforeSingularType FuncPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
@@ -146,7 +146,7 @@ instance (ToShimWit JMShim (PinaforeType baseedit 'Positive) a, FromShimWit JMSh
     fromShimWit =
         unShimWit toJMShimWit $ \ta conva ->
             unShimWit fromJMShimWit $ \tb convb ->
-                mapShimWit (coShimFuncR (ccontramap conva) convb) $
+                mapShimWit (apShimFuncR CovarianceType (ccontramap conva) convb) $
                 mkPJMShimWit $
                 GroundPinaforeSingularType FuncPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
@@ -242,7 +242,7 @@ instance (baseedit ~ edit, FromShimWit JMShim (PinaforeType edit 'Negative) a) =
              ToShimWit JMShim (PinaforeSingularType baseedit 'Positive) (PinaforeOrder edit a) where
     toShimWit =
         unShimWit fromJMShimWit $ \ta conva ->
-            mapShimWit (ccontramapNR $ MkCatDual conva) $
+            mapShimWit (apShimFuncNR ContravarianceType cid $ MkCatDual conva) $
             mkPJMShimWit $ GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (baseedit ~ edit, FromShimWit JMShim (PinaforeType edit 'Negative) a) =>
@@ -253,7 +253,7 @@ instance (baseedit ~ edit, ToShimWit JMShim (PinaforeType edit 'Positive) a) =>
              FromShimWit JMShim (PinaforeSingularType baseedit 'Negative) (PinaforeOrder edit a) where
     fromShimWit =
         unShimWit toJMShimWit $ \ta conva ->
-            mapShimWit (ccontramapNR $ MkCatDual conva) $
+            mapShimWit (apShimFuncNR ContravarianceType cid $ MkCatDual conva) $
             mkPJMShimWit $ GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
 instance (baseedit ~ edit, ToShimWit JMShim (PinaforeType edit 'Positive) a) =>
@@ -265,7 +265,7 @@ instance (baseedit ~ edit, ToShimWit JMShim (PinaforeType edit 'Positive) a) =>
              ToShimWit JMShim (PinaforeSingularType baseedit 'Positive) (PinaforeUI edit a) where
     toShimWit =
         unShimWit toJMShimWit $ \ta conva ->
-            mapShimWit (cfmapNR conva) $
+            mapShimWit (apShimFuncNR CovarianceType cid conva) $
             mkPJMShimWit $
             GroundPinaforeSingularType UserInterfacePinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
@@ -277,7 +277,7 @@ instance (baseedit ~ edit, FromShimWit JMShim (PinaforeType edit 'Negative) a) =
              FromShimWit JMShim (PinaforeSingularType baseedit 'Negative) (PinaforeUI edit a) where
     fromShimWit =
         unShimWit fromJMShimWit $ \ta conva ->
-            mapShimWit (cfmapNR conva) $
+            mapShimWit (apShimFuncNR CovarianceType cid conva) $
             mkPJMShimWit $
             GroundPinaforeSingularType UserInterfacePinaforeGroundType $ ConsDolanArguments ta NilDolanArguments
 
@@ -333,7 +333,7 @@ instance ( baseedit ~ edit
          ) => ToShimWit JMShim (PinaforeSingularType baseedit 'Positive) (PinaforeReference edit '( p, q)) where
     toShimWit =
         unToRangeShimWit $ \tpq conv ->
-            mapShimWit (mapRange conv) $
+            mapShimWit (rangeLiftShim conv) $
             mkPJMShimWit $
             GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
@@ -349,7 +349,7 @@ instance ( baseedit ~ edit
          ) => FromShimWit JMShim (PinaforeSingularType baseedit 'Negative) (PinaforeReference edit '( p, q)) where
     fromShimWit =
         unFromRangeShimWit $ \tpq conv ->
-            mapShimWit (mapRange conv) $
+            mapShimWit (rangeLiftShim conv) $
             mkPJMShimWit $
             GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
@@ -397,7 +397,7 @@ instance ( baseedit ~ edit
          ) => ToShimWit JMShim (PinaforeSingularType baseedit 'Positive) (PinaforeSetRef edit '( p, q)) where
     toShimWit =
         unToRangeShimWit $ \tpq conv ->
-            mapShimWit (mapRange conv) $
+            mapShimWit (rangeLiftShim conv) $
             mkPJMShimWit $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( baseedit ~ edit
@@ -412,7 +412,7 @@ instance ( baseedit ~ edit
          ) => FromShimWit JMShim (PinaforeSingularType baseedit 'Negative) (PinaforeSetRef edit '( p, q)) where
     fromShimWit =
         unFromRangeShimWit $ \tpq conv ->
-            mapShimWit (mapRange conv) $
+            mapShimWit (rangeLiftShim conv) $
             mkPJMShimWit $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( baseedit ~ edit
@@ -445,7 +445,7 @@ instance ( baseedit ~ edit
     toShimWit =
         unToRangeShimWit @_ @pa @qa $ \ta conva ->
             unToRangeShimWit @_ @pb @qb $ \tb convb ->
-                mapShimWit ((coLift Nothing Nothing $ mapRange conva) <.> (mapRange convb)) $
+                mapShimWit ((coLift Nothing Nothing $ rangeLiftShim conva) <.> (rangeLiftShim convb)) $
                 mkPJMShimWit $
                 GroundPinaforeSingularType MorphismPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
@@ -467,7 +467,7 @@ instance ( baseedit ~ edit
     fromShimWit =
         unFromRangeShimWit $ \ta conva ->
             unFromRangeShimWit $ \tb convb ->
-                mapShimWit ((coLift Nothing Nothing $ mapRange conva) <.> (mapRange convb)) $
+                mapShimWit ((coLift Nothing Nothing $ rangeLiftShim conva) <.> (rangeLiftShim convb)) $
                 mkPJMShimWit $
                 GroundPinaforeSingularType MorphismPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments

@@ -147,7 +147,7 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) PairE
             ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @baseedit @polb
     convB <- subtypeTypes sc tb $ topEntityType @baseedit @polb
-    pure $ toEnhanced "subtype" convE . coShimFuncR (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
+    pure $ toEnhanced "subtype" convE . apShimFuncR CovarianceType (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
 entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) NilListType TopEntityGroundType NilDolanArguments = do
     let
         convE =
@@ -157,7 +157,7 @@ entityGroundSubtype sc (ConsListType Refl (ConsListType Refl NilListType)) Eithe
             ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
     convA <- subtypeTypes sc ta $ topEntityType @baseedit @polb
     convB <- subtypeTypes sc tb $ topEntityType @baseedit @polb
-    pure $ toEnhanced "subtype" convE . coShimFuncR (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
+    pure $ toEnhanced "subtype" convE . apShimFuncR CovarianceType (cfmap (jml1 @polb . convA)) (jml1 @polb . convB)
 entityGroundSubtype _ ct gt args NilListType TopEntityGroundType NilDolanArguments
     | Just ebij <- pinaforeEntityToEntityType ct gt args =
         case ebij of

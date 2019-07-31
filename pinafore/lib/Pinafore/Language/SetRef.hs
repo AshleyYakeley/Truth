@@ -10,19 +10,17 @@ import Truth.Core
 
 data PinaforeSetRef baseedit pq where
     MkPinaforeSetRef
-        :: Eq t => JMRange t pq -> PinaforeLensValue baseedit (FiniteSetEdit t) -> PinaforeSetRef baseedit pq
+        :: Eq t => Range JMShim t pq -> PinaforeLensValue baseedit (FiniteSetEdit t) -> PinaforeSetRef baseedit pq
 
 unPinaforeSetRef :: PinaforeSetRef baseedit '( p, p) -> PinaforeLensValue baseedit (FiniteSetEdit p)
 unPinaforeSetRef (MkPinaforeSetRef tr lv) =
     (bijectionFiniteSetEditLens $ isoMapCat fromEnhanced $ rangeBijection tr) . lv
 
-instance IsoMapRange JMShim (PinaforeSetRef baseedit)
-
-instance MapRange JMShim (PinaforeSetRef baseedit) where
-    mapRange f = toEnhanced "setref" $ \(MkPinaforeSetRef r s) -> MkPinaforeSetRef (mapWithRange f r) s
+instance RangeLiftShim JMShim (PinaforeSetRef baseedit) where
+    rangeLiftShim f = toEnhanced "setref" $ \(MkPinaforeSetRef r s) -> MkPinaforeSetRef (catRangeMap f r) s
 
 instance HasDolanVary '[ 'Rangevariance] (PinaforeSetRef baseedit) where
-    dolanVary = ConsDolanVarianceMap Nothing mapRange NilDolanVarianceMap
+    dolanVary = ConsDolanVarianceMap Nothing rangeLiftShim NilDolanVarianceMap
 
 pinaforeSetRefValue :: PinaforeSetRef baseedit '( q, q) -> PinaforeLensValue baseedit (FiniteSetEdit q)
 pinaforeSetRefValue (MkPinaforeSetRef tr lv) =
@@ -34,12 +32,12 @@ valuePinaforeSetRef lv = MkPinaforeSetRef identityRange lv
 pinaforeSetRefMeetValue ::
        PinaforeSetRef baseedit '( t, MeetType Entity t)
     -> PinaforeLensValue baseedit (FiniteSetEdit (MeetType Entity t))
-pinaforeSetRefMeetValue (MkPinaforeSetRef tr lv) = pinaforeSetRefValue $ MkPinaforeSetRef (unifyRange2 meet2 tr) lv
+pinaforeSetRefMeetValue (MkPinaforeSetRef tr lv) = pinaforeSetRefValue $ MkPinaforeSetRef (contraMapRange meet2 tr) lv
 
 meetValuePinaforeSetRef ::
        PinaforeLensValue baseedit (FiniteSetEdit (MeetType Entity t))
     -> PinaforeSetRef baseedit '( MeetType Entity t, t)
-meetValuePinaforeSetRef lv = MkPinaforeSetRef (unUnifyRange1 meet2 identityRange) lv
+meetValuePinaforeSetRef lv = MkPinaforeSetRef (coMapRange meet2 identityRange) lv
 
 pinaforeSetRefMeet ::
        forall baseedit t.
