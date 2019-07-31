@@ -1,8 +1,7 @@
 module Pinafore.Language.Type.Type where
 
 import qualified Data.List as List
-import Data.Shim.Polarity
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Dolan
 import Language.Expression.Renamer
 import Language.Expression.Sealed

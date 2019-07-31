@@ -1,6 +1,6 @@
 module Pinafore.Language.SetRef where
 
-import Language.Expression.Dolan
+import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.OpenEntity
 import Pinafore.Language.Reference
@@ -19,8 +19,8 @@ unPinaforeSetRef (MkPinaforeSetRef tr lv) =
 instance CatFunctor (CatRange (->)) (->) (PinaforeSetRef baseedit) where
     cfmap f (MkPinaforeSetRef r v) = MkPinaforeSetRef (cfmap f r) v
 
-instance HasDolanVary '[ 'Rangevariance] (PinaforeSetRef baseedit) where
-    dolanVary = ConsDolanVarianceMap Nothing (apShimFuncNR RangevarianceType cid) NilDolanVarianceMap
+instance HasVariance 'Rangevariance (PinaforeSetRef baseedit) where
+    varianceRepresentational = Nothing
 
 pinaforeSetRefValue :: PinaforeSetRef baseedit '( q, q) -> PinaforeLensValue baseedit (FiniteSetEdit q)
 pinaforeSetRefValue (MkPinaforeSetRef tr lv) =

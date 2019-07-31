@@ -4,6 +4,7 @@ module Pinafore.Language.Predefined.Base
     ) where
 
 import Data.Fixed (div', mod')
+import Data.Shim
 import Data.Time
 import Data.Time.Clock.System
 import Pinafore.Base
@@ -14,7 +15,6 @@ import Pinafore.Language.Order
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Reference
 import Pinafore.Language.SetRef
-import Pinafore.Language.Type
 import Pinafore.Storage.File
 import Shapes
 import Shapes.Numeric

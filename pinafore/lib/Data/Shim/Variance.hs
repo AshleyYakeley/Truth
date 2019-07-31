@@ -70,8 +70,35 @@ varianceCategoryShow CovarianceType = show
 varianceCategoryShow ContravarianceType = show
 varianceCategoryShow RangevarianceType = show
 
-type VarianceMap (cat :: forall kc. kc -> kc -> Type) (v :: Variance) (gt :: VarianceKind v -> k)
+type VarianceMap (cat :: forall kc. kc -> kc -> Type) (v :: Variance) (f :: VarianceKind v -> k)
      = forall (a :: VarianceKind v) (b :: VarianceKind v).
-           (InKind a, InKind b) => VarianceCategory cat v a b -> cat (gt a) (gt b)
+           (InKind a, InKind b) => VarianceCategory cat v a b -> cat (f a) (f b)
+
+class (InKind f, Is VarianceType v, CatFunctor (VarianceCategory KindFunction v) KindFunction f) =>
+          HasVariance (v :: Variance) (f :: VarianceKind v -> k)
+    | f -> v
+    where
+    varianceRepresentational :: Maybe (Dict (RepresentationalRole f))
+
+instance HasVariance 'Covariance Maybe where
+    varianceRepresentational = Just Dict
+
+instance HasVariance 'Covariance [] where
+    varianceRepresentational = Just Dict
+
+instance HasVariance 'Covariance ((->) a) where
+    varianceRepresentational = Just Dict
+
+instance HasVariance 'Covariance ((,) a) where
+    varianceRepresentational = Just Dict
+
+instance HasVariance 'Contravariance (->) where
+    varianceRepresentational = Just Dict
+
+instance HasVariance 'Covariance (,) where
+    varianceRepresentational = Just Dict
+
+instance HasVariance 'Covariance Either where
+    varianceRepresentational = Just Dict
 
 type InVarianceKind sv (a :: VarianceKind sv) = InKind a

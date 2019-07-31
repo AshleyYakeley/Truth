@@ -2,8 +2,7 @@ module Pinafore.Language.Type.Inverted
     ( invertedSubtype
     ) where
 
-import Data.Shim.Polarity
-import Language.Expression.Dolan
+import Data.Shim
 import Pinafore.Language.Error
 import Pinafore.Language.Show
 import Pinafore.Language.Type.Subtype

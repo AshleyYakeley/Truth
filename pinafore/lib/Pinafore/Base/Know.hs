@@ -13,7 +13,7 @@ module Pinafore.Base.Know
     , uiUnknownValue
     ) where
 
-import Language.Expression.Dolan
+import Data.Shim
 import Shapes
 import Truth.Core
 
@@ -48,8 +48,8 @@ instance Show a => Show (Know a) where
 instance RepresentationalRole Know where
     representationalCoercion MkCoercion = MkCoercion
 
-instance HasDolanVary '[ 'Covariance] Know where
-    dolanVary = ConsDolanVarianceMap (Just Dict) cfmap $ NilDolanVarianceMap
+instance HasVariance 'Covariance Know where
+    varianceRepresentational = Just Dict
 
 fromKnow :: a -> Know a -> a
 fromKnow _ (Known v) = v

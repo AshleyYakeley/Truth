@@ -5,8 +5,8 @@ module Pinafore.Language.Expression
     , PinaforeScoped
     ) where
 
+import Data.Shim
 import Language.Expression.Bindings
-import Language.Expression.Dolan
 import Language.Expression.Error
 import Language.Expression.Sealed
 import Language.Expression.TypeSystem

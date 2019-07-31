@@ -17,6 +17,7 @@ module Pinafore.Language
     ) where
 
 import Control.Exception
+import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.Error

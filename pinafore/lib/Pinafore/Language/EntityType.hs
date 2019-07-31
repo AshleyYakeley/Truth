@@ -1,5 +1,6 @@
 module Pinafore.Language.EntityType where
 
+import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Literal

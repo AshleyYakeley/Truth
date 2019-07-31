@@ -1,6 +1,6 @@
 module Pinafore.Language.Morphism where
 
-import Language.Expression.Dolan
+import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.OpenEntity
 import Pinafore.Language.Reference
@@ -20,10 +20,11 @@ instance CatFunctor (CatRange (->)) (->) (PinaforeMorphism edit a) where
 instance CatFunctor (CatRange (->)) (NestedMorphism (->)) (PinaforeMorphism edit) where
     cfmap f = MkNestedMorphism $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism (cfmap f ra) rb m
 
-instance HasDolanVary '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit) where
-    dolanVary =
-        ConsDolanVarianceMap Nothing (apShimFuncNR RangevarianceType cid) $
-        ConsDolanVarianceMap Nothing (apShimFuncNR RangevarianceType cid) $ NilDolanVarianceMap
+instance HasVariance 'Rangevariance (PinaforeMorphism baseedit) where
+    varianceRepresentational = Nothing
+
+instance HasVariance 'Rangevariance (PinaforeMorphism baseedit a) where
+    varianceRepresentational = Nothing
 
 pinaforeMorphismLens :: PinaforeMorphism baseedit '( a, a) '( b, b) -> PinaforeLensMorphism baseedit a b
 pinaforeMorphismLens (MkPinaforeMorphism tra trb lm) =

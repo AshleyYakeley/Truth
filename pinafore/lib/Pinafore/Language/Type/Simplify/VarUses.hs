@@ -3,8 +3,7 @@ module Pinafore.Language.Type.Simplify.VarUses
     , mappableGetVars
     ) where
 
-import Data.Shim.Polarity
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Dolan
 import Language.Expression.WitnessMappable
 import Pinafore.Language.GroundType

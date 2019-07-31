@@ -1,6 +1,6 @@
 module Pinafore.Language.Reference where
 
-import Language.Expression.Dolan
+import Data.Shim
 import Pinafore.Base
 import Shapes
 import Truth.Core
@@ -14,8 +14,8 @@ instance CatFunctor (CatRange (->)) (->) (PinaforeReference baseedit) where
     cfmap f (LensPinaforeReference r v) = LensPinaforeReference (cfmap f r) v
     cfmap (MkCatRange _ f) (ImmutPinaforeReference v) = ImmutPinaforeReference $ fmap f v
 
-instance HasDolanVary '[ 'Rangevariance] (PinaforeReference baseedit) where
-    dolanVary = ConsDolanVarianceMap Nothing (apShimFuncNR RangevarianceType cid) $ NilDolanVarianceMap
+instance HasVariance 'Rangevariance (PinaforeReference baseedit) where
+    varianceRepresentational = Nothing
 
 pinaforeReferenceToFunction :: PinaforeReference baseedit '( BottomType, a) -> PinaforeFunctionValue baseedit (Know a)
 pinaforeReferenceToFunction ref =

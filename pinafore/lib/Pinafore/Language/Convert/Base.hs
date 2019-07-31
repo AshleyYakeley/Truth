@@ -8,6 +8,7 @@ module Pinafore.Language.Convert.Base
     , literalInstances
     ) where
 
+import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Morphism

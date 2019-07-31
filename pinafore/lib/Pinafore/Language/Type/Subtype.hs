@@ -5,8 +5,7 @@ module Pinafore.Language.Type.Subtype
     , subtypeGroundTypes
     ) where
 
-import Data.Shim.Polarity
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.EntityType

@@ -15,6 +15,7 @@ module Pinafore.Test
     , module Pinafore.Test
     ) where
 
+import Data.Shim
 import Pinafore.Base
 import Pinafore.Language
 import Pinafore.Language.Name

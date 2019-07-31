@@ -2,6 +2,7 @@ module Pinafore.Language.Type.Simplify.SharedTypeVars
     ( mergeSharedTypeVars
     ) where
 
+import Data.Shim
 import Language.Expression.Dolan
 import Language.Expression.UVar
 import Pinafore.Language.Type.Bisubstitute

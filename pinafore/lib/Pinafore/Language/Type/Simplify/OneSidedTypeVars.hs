@@ -2,6 +2,7 @@ module Pinafore.Language.Type.Simplify.OneSidedTypeVars
     ( eliminateOneSidedTypeVars
     ) where
 
+import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Language.Type.Bisubstitute
 import Pinafore.Language.Type.Simplify.VarUses

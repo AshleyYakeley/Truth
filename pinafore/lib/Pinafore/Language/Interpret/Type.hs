@@ -3,6 +3,7 @@ module Pinafore.Language.Interpret.Type
     , interpretEntityType
     ) where
 
+import Data.Shim
 import Pinafore.Language.Error
 import Pinafore.Language.Literal
 import Pinafore.Language.Name

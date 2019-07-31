@@ -72,29 +72,11 @@ bijectDolanVarianceMap (ConsListType svt dvt) (ConsDolanVarianceMap mrr svm dvm)
 class HasDolanVary (dv :: DolanVariance) (f :: DolanVarianceKind dv) | f -> dv where
     dolanVary :: DolanVarianceMap JMShim dv f
 
-instance HasDolanVary '[] f where
+instance HasDolanVary '[] (f :: Type) where
     dolanVary = NilDolanVarianceMap
 
-instance HasDolanVary '[ 'Covariance] Maybe where
-    dolanVary = ConsDolanVarianceMap (Just Dict) cfmap $ NilDolanVarianceMap
-
-instance HasDolanVary '[ 'Covariance] [] where
-    dolanVary = ConsDolanVarianceMap (Just Dict) cfmap $ NilDolanVarianceMap
-
-instance HasDolanVary '[ 'Covariance] ((->) a) where
-    dolanVary = ConsDolanVarianceMap (Just Dict) cfmap $ NilDolanVarianceMap
-
-instance HasDolanVary '[ 'Covariance] ((,) a) where
-    dolanVary = ConsDolanVarianceMap (Just Dict) cfmap $ NilDolanVarianceMap
-
-instance HasDolanVary '[ 'Covariance] (Either a) where
-    dolanVary = ConsDolanVarianceMap (Just Dict) cfmap $ NilDolanVarianceMap
-
-instance HasDolanVary '[ 'Contravariance, 'Covariance] (->) where
-    dolanVary = ConsDolanVarianceMap (Just Dict) cfmap $ dolanVary @('[ 'Covariance])
-
-instance HasDolanVary '[ 'Covariance, 'Covariance] (,) where
-    dolanVary = ConsDolanVarianceMap (Just Dict) cfmap $ dolanVary @('[ 'Covariance])
-
-instance HasDolanVary '[ 'Covariance, 'Covariance] Either where
-    dolanVary = ConsDolanVarianceMap (Just Dict) cfmap $ dolanVary @('[ 'Covariance])
+instance (HasVariance v f, forall a. HasDolanVary vv (f a), CoercibleKind (DolanVarianceKind vv)) =>
+             HasDolanVary (v ': vv) (f :: VarianceKind v -> DolanVarianceKind vv) where
+    dolanVary = let
+        mr = varianceRepresentational @_ @v @f
+        in ConsDolanVarianceMap mr (apShimFunc (representative @_ @_ @v) mr mr cid) $ dolanVary

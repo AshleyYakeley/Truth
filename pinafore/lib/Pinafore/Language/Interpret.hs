@@ -4,6 +4,7 @@ module Pinafore.Language.Interpret
     ) where
 
 import Data.Graph
+import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Error

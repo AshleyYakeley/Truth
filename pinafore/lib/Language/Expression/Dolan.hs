@@ -3,7 +3,7 @@ module Language.Expression.Dolan
     , module Language.Expression.Dolan
     ) where
 
-import Data.Shim as I
+import Data.Shim
 import Language.Expression.Dolan.Arguments as I
 import Language.Expression.Dolan.Covariance as I
 import Language.Expression.Dolan.MPolarity as I

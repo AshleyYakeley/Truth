@@ -1,7 +1,7 @@
 module Pinafore.Language.Literal where
 
+import Data.Shim
 import Data.Time
-import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.Name
 import Pinafore.Language.Show

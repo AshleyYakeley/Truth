@@ -1,6 +1,6 @@
 module Pinafore.Language.Order where
 
-import Language.Expression.Dolan
+import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Morphism
 import Pinafore.Language.Reference
@@ -26,8 +26,8 @@ instance Monoid (PinaforeOrder baseedit a) where
 instance Contravariant (PinaforeOrder baseedit) where
     contramap ba (MkPinaforeOrder ef o) = MkPinaforeOrder (ef . (arr $ fmap ba)) o
 
-instance HasDolanVary '[ 'Contravariance] (PinaforeOrder baseedit) where
-    dolanVary = ConsDolanVarianceMap Nothing (apShimFuncNR ContravarianceType cid) $ NilDolanVarianceMap
+instance HasVariance 'Contravariance (PinaforeOrder baseedit) where
+    varianceRepresentational = Nothing
 
 ordOrder ::
        forall baseedit a. Ord a

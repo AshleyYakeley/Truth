@@ -4,6 +4,7 @@ module Pinafore.Language.If
     , qbind_
     ) where
 
+import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Type
 import Shapes

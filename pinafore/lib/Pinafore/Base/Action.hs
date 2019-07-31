@@ -12,7 +12,7 @@ module Pinafore.Base.Action
     , knowPinaforeAction
     ) where
 
-import Language.Expression.Dolan
+import Data.Shim
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
@@ -34,8 +34,8 @@ instance MonadFail (PinaforeAction baseedit) where
 instance RepresentationalRole (PinaforeAction baseedit) where
     representationalCoercion MkCoercion = MkCoercion
 
-instance HasDolanVary '[ 'Covariance] (PinaforeAction baseedit) where
-    dolanVary = ConsDolanVarianceMap (Just Dict) cfmap $ NilDolanVarianceMap
+instance HasVariance 'Covariance (PinaforeAction baseedit) where
+    varianceRepresentational = Just Dict
 
 pinaforeActionSubscriber :: PinaforeAction baseedit (Subscriber baseedit)
 pinaforeActionSubscriber = do

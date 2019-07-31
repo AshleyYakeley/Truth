@@ -4,8 +4,7 @@ module Pinafore.Language.Type.Subsume
     ( PinaforeSubsumer
     ) where
 
-import Data.Shim.Polarity
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Dolan
 import Language.Expression.Expression
 import Language.Expression.Subsumer

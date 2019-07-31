@@ -2,6 +2,7 @@ module Pinafore.Language.Predefined.UI
     ( ui_predefinitions
     ) where
 
+import Data.Shim
 import Data.Time
 import Pinafore.Base
 import Pinafore.Language.DocTree
@@ -10,7 +11,6 @@ import Pinafore.Language.Order
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Reference
 import Pinafore.Language.SetRef
-import Pinafore.Language.Type
 import Pinafore.Language.UI
 import Pinafore.Storage.File
 import Shapes

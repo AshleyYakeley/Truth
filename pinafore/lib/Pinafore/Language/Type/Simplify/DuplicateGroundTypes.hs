@@ -2,8 +2,7 @@ module Pinafore.Language.Type.Simplify.DuplicateGroundTypes
     ( mergeDuplicateGroundTypes
     ) where
 
-import Data.Shim.Polarity
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Language.GroundType
 import Pinafore.Language.Type.Type

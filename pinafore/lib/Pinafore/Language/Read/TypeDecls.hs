@@ -2,6 +2,7 @@ module Pinafore.Language.Read.TypeDecls
     ( readTypeDeclaration
     ) where
 
+import Data.Shim
 import Language.Expression.Sealed
 import Pinafore.Base
 import Pinafore.Language.Error
