@@ -79,4 +79,4 @@ instance (HasVariance v f, forall a. HasDolanVary vv (f a), CoercibleKind (Dolan
              HasDolanVary (v ': vv) (f :: VarianceKind v -> DolanVarianceKind vv) where
     dolanVary = let
         mr = varianceRepresentational @_ @v @f
-        in ConsDolanVarianceMap mr (apShimFunc (representative @_ @_ @v) mr mr cid) $ dolanVary
+        in ConsDolanVarianceMap mr (apShimFunc (representative @_ @_ @v) cid) $ dolanVary

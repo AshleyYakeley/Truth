@@ -92,6 +92,9 @@ instance HasVariance 'Covariance ((->) a) where
 instance HasVariance 'Covariance ((,) a) where
     varianceRepresentational = Just Dict
 
+instance HasVariance 'Covariance (Either a) where
+    varianceRepresentational = Just Dict
+
 instance HasVariance 'Contravariance (->) where
     varianceRepresentational = Just Dict
 
