@@ -98,7 +98,7 @@ mapArgsTypeF ::
     -> m (PShimWit cat (DolanArguments dv ftb gt') polarity t)
 mapArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments conv =
     return $ MkShimWit NilDolanArguments conv
-mapArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap mrr svm dvm) (ConsDolanVarianceMap mrr' _ dvm') (ConsDolanArguments sta dta) conv = do
+mapArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvm) (ConsDolanVarianceMap dvm') (ConsDolanArguments sta dta) conv = do
     MkArgTypeF sta' svf <- mapArgTypeF @m @cat @fta @ftb @_ @polarity svt f sta
     Dict <- return $ varianceCoercibleKind svt
     Dict <- return $ dolanVarianceInCategory @cat dvt
@@ -108,11 +108,11 @@ mapArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap mrr svm dvm) (ConsDo
     case representative @_ @_ @polarity of
         PositiveType -> do
             MkShimWit dta' conv' <-
-                mapArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (coLift mrr mrr' conv <.> svm svf)
+                mapArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (apShimFunc svt conv svf)
             return $ MkShimWit (ConsDolanArguments sta' dta') conv'
         NegativeType -> do
             MkShimWit dta' conv' <-
-                mapArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (svm svf <.> coLift mrr' mrr conv)
+                mapArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (apShimFunc svt conv svf)
             return $ MkShimWit (ConsDolanArguments sta' dta') conv'
 
 mapDolanArgumentsM ::
@@ -187,7 +187,7 @@ mapInvertArgsTypeF ::
     -> m (PShimWit cat (DolanArguments dv ftb gt') (InvertPolarity polarity) t)
 mapInvertArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments conv =
     return $ MkShimWit NilDolanArguments conv
-mapInvertArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap mrr svm dvm) (ConsDolanVarianceMap mrr' _ dvm') (ConsDolanArguments sta dta) conv = do
+mapInvertArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvm) (ConsDolanVarianceMap dvm') (ConsDolanArguments sta dta) conv = do
     MkArgTypeF sta' svf <- mapInvertArgTypeF @m @cat @fta @ftb @_ @polarity svt f sta
     Dict <- return $ varianceCoercibleKind svt
     Dict <- return $ dolanVarianceInCategory @cat dvt
@@ -197,11 +197,11 @@ mapInvertArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap mrr svm dvm) (
     case representative @_ @_ @polarity of
         PositiveType -> do
             MkShimWit dta' conv' <-
-                mapInvertArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (svm svf <.> coLift mrr' mrr conv)
+                mapInvertArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (apShimFunc svt conv svf)
             return $ MkShimWit (ConsDolanArguments sta' dta') conv'
         NegativeType -> do
             MkShimWit dta' conv' <-
-                mapInvertArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (coLift mrr mrr' conv <.> svm svf)
+                mapInvertArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (apShimFunc svt conv svf)
             return $ MkShimWit (ConsDolanArguments sta' dta') conv'
 
 mapInvertDolanArgumentsM ::
@@ -336,7 +336,7 @@ mergeArgsTypeF _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanVar
     case representative @_ @_ @polarity of
         PositiveType -> joinf conva convb
         NegativeType -> meetf conva convb
-mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap mrra svma dvma) (ConsDolanVarianceMap mrrb svmb dvmb) (ConsDolanVarianceMap mrrab _ dvmab) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) conva convb =
+mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDolanVarianceMap dvmb) (ConsDolanVarianceMap dvmab) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) conva convb =
     case varianceCoercibleKind svt of
         Dict ->
             case mergeArgTypeF @fta @ftb @ftab @_ @polarity svt f sta stb of
@@ -368,10 +368,10 @@ mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap mrra svma dvma) (C
                                                                                      dvmab
                                                                                      dta
                                                                                      dtb
-                                                                                     (coLift mrra mrrab conva <.>
-                                                                                      svma (psvf1 @polarity svt svf))
-                                                                                     (coLift mrrb mrrab convb <.>
-                                                                                      svmb (psvf2 @polarity svt svf)) of
+                                                                                     (apShimFunc svt conva $
+                                                                                      psvf1 @polarity svt svf)
+                                                                                     (apShimFunc svt convb $
+                                                                                      psvf2 @polarity svt svf) of
                                                                                 MkShimWit dtab convab ->
                                                                                     MkShimWit
                                                                                         (ConsDolanArguments stab dtab)
@@ -390,10 +390,10 @@ mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap mrra svma dvma) (C
                                                                                      dvmab
                                                                                      dta
                                                                                      dtb
-                                                                                     (svma (psvf1 @polarity svt svf) <.>
-                                                                                      coLift mrrab mrra conva)
-                                                                                     (svmb (psvf2 @polarity svt svf) <.>
-                                                                                      coLift mrrab mrrb convb) of
+                                                                                     (apShimFunc svt conva $
+                                                                                      psvf1 @polarity svt svf)
+                                                                                     (apShimFunc svt convb $
+                                                                                      psvf2 @polarity svt svf) of
                                                                                 MkShimWit dtab convab ->
                                                                                     MkShimWit
                                                                                         (ConsDolanArguments stab dtab)
@@ -430,7 +430,7 @@ dolanArgumentsToArgumentsM' ::
     -> m (ShimWit cat (Arguments wb fb) polarity t)
 dolanArgumentsToArgumentsM' _ NilListType NilDolanVarianceMap NilDolanVarianceMap conv NilDolanArguments =
     return $ MkShimWit NilArguments conv
-dolanArgumentsToArgumentsM' f (ConsListType Refl lc) (ConsDolanVarianceMap mrra svma dvma) (ConsDolanVarianceMap mrrb _ dvmb) conv (ConsDolanArguments sta dta) = do
+dolanArgumentsToArgumentsM' f (ConsListType Refl lc) (ConsDolanVarianceMap dvma) (ConsDolanVarianceMap dvmb) conv (ConsDolanArguments sta dta) = do
     Dict <- return $ covaryKMCategory @cat lc
     Dict <- return $ applyFunctionKindWitness (inKind @_ @fa) sta
     MkShimWit ta conva <- f sta
@@ -443,8 +443,8 @@ dolanArgumentsToArgumentsM' f (ConsListType Refl lc) (ConsDolanVarianceMap mrra 
             dvma
             dvmb
             (case representative @_ @_ @polarity of
-                 PositiveType -> coLift mrra mrrb conv <.> svma conva
-                 NegativeType -> svma conva <.> coLift mrrb mrra conv)
+                 PositiveType -> apShimFunc CovarianceType conv conva
+                 NegativeType -> apShimFunc CovarianceType conv conva)
             dta
     return $ MkShimWit (ConsArguments ta tfa) convfa
 
@@ -491,7 +491,7 @@ argumentsToDolanArgumentsM' ::
     -> m (PShimWit cat (DolanArguments dv wb fb) polarity t)
 argumentsToDolanArgumentsM' _ NilListType NilCovaryMap NilCovaryMap conv NilArguments =
     return $ MkShimWit NilDolanArguments conv
-argumentsToDolanArgumentsM' f (ConsListType Refl ct) (ConsCovaryMap mrra ma mma) (ConsCovaryMap mrrb _ mmb) conv (ConsArguments arg args) = do
+argumentsToDolanArgumentsM' f (ConsListType Refl ct) (ConsCovaryMap mma) (ConsCovaryMap mmb) conv (ConsArguments arg args) = do
     Dict <- return $ covaryKMCategory @cat ct
     Dict <- return $ applyFunctionKindWitness (inKind @_ @fa) arg
     MkShimWit ta conva <- f arg
@@ -504,8 +504,8 @@ argumentsToDolanArgumentsM' f (ConsListType Refl ct) (ConsCovaryMap mrra ma mma)
             mma
             mmb
             (case representative @_ @_ @polarity of
-                 PositiveType -> coLift mrra mrrb conv <.> ma conva
-                 NegativeType -> ma conva <.> coLift mrrb mrra conv)
+                 PositiveType -> apShimFunc CovarianceType conv conva
+                 NegativeType -> apShimFunc CovarianceType conv conva)
             args
     return $ MkShimWit (ConsDolanArguments ta tfa) convfa
 

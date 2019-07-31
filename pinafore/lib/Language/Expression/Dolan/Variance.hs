@@ -41,10 +41,8 @@ data DolanVarianceMap (cat :: forall kc. kc -> kc -> Type) (dv :: DolanVariance)
     NilDolanVarianceMap :: forall (cat :: forall kc. kc -> kc -> Type) (gt :: Type). DolanVarianceMap cat '[] gt
     ConsDolanVarianceMap
         :: forall (cat :: forall kc. kc -> kc -> Type) (sv :: Variance) (dv :: DolanVariance) (gt :: VarianceKind sv -> DolanVarianceKind dv).
-           InKind gt
-        => Maybe (Dict (RepresentationalRole gt))
-        -> VarianceMap cat sv gt
-        -> (forall a. DolanVarianceMap cat dv (gt a))
+           HasVariance sv gt
+        => (forall a. DolanVarianceMap cat dv (gt a))
         -> DolanVarianceMap cat (sv ': dv) gt
 
 dolanVarianceMapInKind ::
@@ -52,7 +50,7 @@ dolanVarianceMapInKind ::
        DolanVarianceMap cat dv gt
     -> Dict (InKind gt)
 dolanVarianceMapInKind NilDolanVarianceMap = Dict
-dolanVarianceMapInKind (ConsDolanVarianceMap _ _ dvm) =
+dolanVarianceMapInKind (ConsDolanVarianceMap dvm) =
     case dolanVarianceMapInKind @cat dvm of
         Dict -> Dict
 
@@ -64,10 +62,9 @@ bijectSingleVarianceMap ContravarianceType svm (MkCatDual (MkJMIsoShim (MkIsomor
 bijectSingleVarianceMap RangevarianceType svm (MkCatRange (MkJMIsoShim (MkIsomorphism pab pba)) (MkJMIsoShim (MkIsomorphism qab qba))) =
     MkJMIsoShim $ MkIsomorphism (svm $ MkCatRange pab qab) (svm $ MkCatRange pba qba)
 
-bijectDolanVarianceMap :: DolanVarianceType dv -> DolanVarianceMap JMShim dv gt -> DolanVarianceMap JMIsoShim dv gt
-bijectDolanVarianceMap NilListType NilDolanVarianceMap = NilDolanVarianceMap
-bijectDolanVarianceMap (ConsListType svt dvt) (ConsDolanVarianceMap mrr svm dvm) =
-    ConsDolanVarianceMap mrr (bijectSingleVarianceMap svt svm) $ bijectDolanVarianceMap dvt dvm
+bijectDolanVarianceMap :: DolanVarianceMap JMShim dv gt -> DolanVarianceMap JMIsoShim dv gt
+bijectDolanVarianceMap NilDolanVarianceMap = NilDolanVarianceMap
+bijectDolanVarianceMap (ConsDolanVarianceMap dvm) = ConsDolanVarianceMap $ bijectDolanVarianceMap dvm
 
 class HasDolanVary (dv :: DolanVariance) (f :: DolanVarianceKind dv) | f -> dv where
     dolanVary :: DolanVarianceMap JMShim dv f
@@ -77,6 +74,4 @@ instance HasDolanVary '[] (f :: Type) where
 
 instance (HasVariance v f, forall a. HasDolanVary vv (f a), CoercibleKind (DolanVarianceKind vv)) =>
              HasDolanVary (v ': vv) (f :: VarianceKind v -> DolanVarianceKind vv) where
-    dolanVary = let
-        mr = varianceRepresentational @_ @v @f
-        in ConsDolanVarianceMap mr (apShimFunc (representative @_ @_ @v) cid) $ dolanVary
+    dolanVary = ConsDolanVarianceMap dolanVary

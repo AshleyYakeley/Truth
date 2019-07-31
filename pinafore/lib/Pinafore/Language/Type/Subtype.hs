@@ -49,7 +49,7 @@ subtypeArguments ::
     -> DolanArguments dv (PinaforeType baseedit) gtb polb tb
     -> m (JMShim gta gtb -> JMShim ta tb)
 subtypeArguments _ NilListType NilDolanVarianceMap NilDolanVarianceMap NilDolanArguments NilDolanArguments = pure id
-subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap mrra svma dvma) (ConsDolanVarianceMap mrrb _ dvmb) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) =
+subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDolanVarianceMap dvmb) (ConsDolanArguments sta dta) (ConsDolanArguments stb dtb) =
     case applyFunctionKindWitness (inKind @_ @gta) sta of
         Dict ->
             case applyFunctionKindWitness (inKind @_ @gtb) stb of
@@ -62,7 +62,7 @@ subtypeArguments sc (ConsListType svt dvt) (ConsDolanVarianceMap mrra svma dvma)
                                         Dict -> do
                                             sfunc <- subtypeVariance sc svt sta stb
                                             f <- subtypeArguments sc dvt dvma dvmb dta dtb
-                                            pure $ \conv -> f (coLift mrra mrrb conv <.> svma sfunc)
+                                            pure $ \conv -> f (apShimFunc svt conv sfunc)
 
 pinaforeSubtypeArguments ::
        forall baseedit m pola polb pol dv gt argsa argsb. (Applicative m, Is PolarityType pola, Is PolarityType polb)

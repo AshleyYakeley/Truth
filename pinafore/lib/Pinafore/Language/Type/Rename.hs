@@ -23,7 +23,7 @@ renameTypeArgs ::
     => DolanVarianceType dv
     -> DolanVarianceMap JMShim dv gt
     -> PinaforeTypeNamespace baseedit (DolanArguments dv (PinaforeType baseedit) gt) polarity
-renameTypeArgs dvt dvm args = mapDolanArgumentsM renamePinaforeTypeVars dvt (bijectDolanVarianceMap dvt dvm) args
+renameTypeArgs dvt dvm args = mapDolanArgumentsM renamePinaforeTypeVars dvt (bijectDolanVarianceMap dvm) args
 
 renamePinaforeSingularTypeVars ::
        forall baseedit polarity. Is PolarityType polarity
