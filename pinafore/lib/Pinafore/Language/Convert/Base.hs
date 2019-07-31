@@ -333,7 +333,7 @@ instance ( baseedit ~ edit
          ) => ToShimWit JMShim (PinaforeSingularType baseedit 'Positive) (PinaforeReference edit '( p, q)) where
     toShimWit =
         unToRangeShimWit $ \tpq conv ->
-            mapShimWit (rangeLiftShim conv) $
+            mapShimWit (apShimFuncNR RangevarianceType cid conv) $
             mkPJMShimWit $
             GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
@@ -349,7 +349,7 @@ instance ( baseedit ~ edit
          ) => FromShimWit JMShim (PinaforeSingularType baseedit 'Negative) (PinaforeReference edit '( p, q)) where
     fromShimWit =
         unFromRangeShimWit $ \tpq conv ->
-            mapShimWit (rangeLiftShim conv) $
+            mapShimWit (apShimFuncNR RangevarianceType cid conv) $
             mkPJMShimWit $
             GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
@@ -397,7 +397,7 @@ instance ( baseedit ~ edit
          ) => ToShimWit JMShim (PinaforeSingularType baseedit 'Positive) (PinaforeSetRef edit '( p, q)) where
     toShimWit =
         unToRangeShimWit $ \tpq conv ->
-            mapShimWit (rangeLiftShim conv) $
+            mapShimWit (apShimFuncNR RangevarianceType cid conv) $
             mkPJMShimWit $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( baseedit ~ edit
@@ -412,7 +412,7 @@ instance ( baseedit ~ edit
          ) => FromShimWit JMShim (PinaforeSingularType baseedit 'Negative) (PinaforeSetRef edit '( p, q)) where
     fromShimWit =
         unFromRangeShimWit $ \tpq conv ->
-            mapShimWit (rangeLiftShim conv) $
+            mapShimWit (apShimFuncNR RangevarianceType cid conv) $
             mkPJMShimWit $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( baseedit ~ edit
@@ -445,7 +445,7 @@ instance ( baseedit ~ edit
     toShimWit =
         unToRangeShimWit @_ @pa @qa $ \ta conva ->
             unToRangeShimWit @_ @pb @qb $ \tb convb ->
-                mapShimWit ((coLift Nothing Nothing $ rangeLiftShim conva) <.> (rangeLiftShim convb)) $
+                mapShimWit (apShimFuncNR RangevarianceType (apShimFuncNR RangevarianceType cid conva) convb) $
                 mkPJMShimWit $
                 GroundPinaforeSingularType MorphismPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments
@@ -467,7 +467,7 @@ instance ( baseedit ~ edit
     fromShimWit =
         unFromRangeShimWit $ \ta conva ->
             unFromRangeShimWit $ \tb convb ->
-                mapShimWit ((coLift Nothing Nothing $ rangeLiftShim conva) <.> (rangeLiftShim convb)) $
+                mapShimWit (apShimFuncNR RangevarianceType (apShimFuncNR RangevarianceType cid conva) convb) $
                 mkPJMShimWit $
                 GroundPinaforeSingularType MorphismPinaforeGroundType $
                 ConsDolanArguments ta $ ConsDolanArguments tb NilDolanArguments

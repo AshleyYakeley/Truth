@@ -14,20 +14,16 @@ data PinaforeMorphism baseedit (pqa :: (Type, Type)) (pqb :: (Type, Type)) =
                                        (Range JMShim b pqb)
                                        (PinaforeLensMorphism baseedit a b)
 
-instance RangeLiftShim JMShim (PinaforeMorphism baseedit pqa) where
-    rangeLiftShim f =
-        toEnhanced "morphism" $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism ra (catRangeMap f rb) m
+instance CatFunctor (CatRange (->)) (->) (PinaforeMorphism edit a) where
+    cfmap f (MkPinaforeMorphism ra rb m) = MkPinaforeMorphism ra (cfmap f rb) m
 
-instance RangeLiftShim JMShim (PinaforeMorphism baseedit) where
-    rangeLiftShim f =
-        toEnhanced "morphism" $
-        MkNestedMorphism $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism (catRangeMap f ra) rb m
+instance CatFunctor (CatRange (->)) (NestedMorphism (->)) (PinaforeMorphism edit) where
+    cfmap f = MkNestedMorphism $ \(MkPinaforeMorphism ra rb m) -> MkPinaforeMorphism (cfmap f ra) rb m
 
---instance CatFunctor (CatRange (->)) (->) (PinaforeMorphism edit '(pa, qa)) where
---    cfmap f = rangeLiftShim @_ @_ @JMShim $ foo f
 instance HasDolanVary '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit) where
     dolanVary =
-        ConsDolanVarianceMap Nothing rangeLiftShim $ ConsDolanVarianceMap Nothing rangeLiftShim $ NilDolanVarianceMap
+        ConsDolanVarianceMap Nothing (apShimFuncNR RangevarianceType cid) $
+        ConsDolanVarianceMap Nothing (apShimFuncNR RangevarianceType cid) $ NilDolanVarianceMap
 
 pinaforeMorphismLens :: PinaforeMorphism baseedit '( a, a) '( b, b) -> PinaforeLensMorphism baseedit a b
 pinaforeMorphismLens (MkPinaforeMorphism tra trb lm) =
@@ -46,9 +42,7 @@ pinaforeMorphismFunction (MkPinaforeMorphism tra trb pm) =
 
 identityPinaforeMorphism ::
        forall baseedit t. PinaforeMorphism baseedit '( MeetType Entity t, t) '( MeetType Entity t, t)
-identityPinaforeMorphism =
-    unNestedMorphism (fromEnhanced @_ @JMShim $ coRangeLiftShim meet2) $
-    fromEnhanced @_ @JMShim (coRangeLiftShim meet2) $ pinaforeLensMorphism id
+identityPinaforeMorphism = MkPinaforeMorphism (coRange meet2) (coRange meet2) id
 
 composePinaforeMorphism ::
        forall baseedit ap aq bp bq cp cq.

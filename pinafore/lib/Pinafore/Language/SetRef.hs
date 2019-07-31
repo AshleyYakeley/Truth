@@ -16,11 +16,11 @@ unPinaforeSetRef :: PinaforeSetRef baseedit '( p, p) -> PinaforeLensValue baseed
 unPinaforeSetRef (MkPinaforeSetRef tr lv) =
     (bijectionFiniteSetEditLens $ isoMapCat fromEnhanced $ rangeBijection tr) . lv
 
-instance RangeLiftShim JMShim (PinaforeSetRef baseedit) where
-    rangeLiftShim f = toEnhanced "setref" $ \(MkPinaforeSetRef r s) -> MkPinaforeSetRef (catRangeMap f r) s
+instance CatFunctor (CatRange (->)) (->) (PinaforeSetRef baseedit) where
+    cfmap f (MkPinaforeSetRef r v) = MkPinaforeSetRef (cfmap f r) v
 
 instance HasDolanVary '[ 'Rangevariance] (PinaforeSetRef baseedit) where
-    dolanVary = ConsDolanVarianceMap Nothing rangeLiftShim NilDolanVarianceMap
+    dolanVary = ConsDolanVarianceMap Nothing (apShimFuncNR RangevarianceType cid) NilDolanVarianceMap
 
 pinaforeSetRefValue :: PinaforeSetRef baseedit '( q, q) -> PinaforeLensValue baseedit (FiniteSetEdit q)
 pinaforeSetRefValue (MkPinaforeSetRef tr lv) =

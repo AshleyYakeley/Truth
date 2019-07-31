@@ -56,7 +56,6 @@ library:
       - Data.Shim.CatRange
       - Data.Shim.JoinMeet
       - Data.Shim.PolyShim
-      - Data.Shim.RangeLift
       - Data.Shim.JMShim
       - Data.Shim.JMShimWit
       - Language.Expression.Error

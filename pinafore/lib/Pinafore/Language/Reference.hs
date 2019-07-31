@@ -10,16 +10,12 @@ data PinaforeReference (baseedit :: Type) (pq :: (Type, Type)) where
         :: Range JMShim t pq -> PinaforeLensValue baseedit (WholeEdit (Know t)) -> PinaforeReference baseedit pq
     ImmutPinaforeReference :: PinaforeImmutableReference baseedit q -> PinaforeReference baseedit '( p, q)
 
-instance RangeLiftShim JMShim (PinaforeReference baseedit) where
-    rangeLiftShim f =
-        toEnhanced "reference" $ \case
-            LensPinaforeReference r s -> LensPinaforeReference (catRangeMap f r) s
-            ImmutPinaforeReference ir ->
-                case f of
-                    MkCatRange _ f' -> ImmutPinaforeReference $ fmap (fromEnhanced f') ir
+instance CatFunctor (CatRange (->)) (->) (PinaforeReference baseedit) where
+    cfmap f (LensPinaforeReference r v) = LensPinaforeReference (cfmap f r) v
+    cfmap (MkCatRange _ f) (ImmutPinaforeReference v) = ImmutPinaforeReference $ fmap f v
 
 instance HasDolanVary '[ 'Rangevariance] (PinaforeReference baseedit) where
-    dolanVary = ConsDolanVarianceMap Nothing rangeLiftShim $ NilDolanVarianceMap
+    dolanVary = ConsDolanVarianceMap Nothing (apShimFuncNR RangevarianceType cid) $ NilDolanVarianceMap
 
 pinaforeReferenceToFunction :: PinaforeReference baseedit '( BottomType, a) -> PinaforeFunctionValue baseedit (Know a)
 pinaforeReferenceToFunction ref =

@@ -50,7 +50,7 @@ ui_table cols (MkPinaforeOrder geto order) val onDoubleClick = let
            (fmap getColumn cols)
            order
            (\mea -> applyPinaforeFunction geto $ constEditFunction $ Known $ meet2 mea)
-           (unPinaforeSetRef $ contraRangeLift @JMShim meet2 val)
+           (unPinaforeSetRef $ contraRangeLift meet2 val)
            (\a -> runPinaforeAction $ void $ onDoubleClick $ meet2 a)
 
 type PickerType = Know (MeetType Entity A)
@@ -78,7 +78,7 @@ ui_pick nameMorphism fset ref = let
     opts =
         (orderedKeyList @(FiniteSet PickerPairType) $ \(_, a) (_, b) -> compare a b) .
         convertEditFunction . applyPinaforeFunction getNames (pinaforeSetRefFunctionValue fset)
-    in optionUISpec @baseedit @PickerType opts $ pinaforeReferenceToLens $ contraRangeLift @JMShim meet2 ref
+    in optionUISpec @baseedit @PickerType opts $ pinaforeReferenceToLens $ contraRangeLift meet2 ref
 
 actionReference ::
        (?pinafore :: PinaforeContext baseedit)

@@ -32,11 +32,11 @@ eitherRange ::
     -> Range shim (Either a b) '( Either ap bp, Either aq bq)
 eitherRange (MkRange pa aq) (MkRange pb bq) = MkRange (eitherShim pa pb) (eitherShim aq bq)
 
-coRange :: JoinMeetCategory shim => shim t q -> Range shim t '( BottomType, q)
-coRange tq = MkRange initf tq
+coRange :: JoinMeetCategory shim => shim t q -> Range shim t '( t, q)
+coRange tq = MkRange cid tq
 
-contraRange :: JoinMeetCategory shim => shim p t -> Range shim t '( p, TopType)
-contraRange pt = MkRange pt termf
+contraRange :: JoinMeetCategory shim => shim p t -> Range shim t '( p, t)
+contraRange pt = MkRange pt cid
 
 rangeBijection :: Range shim a '( b, b) -> Isomorphism shim a b
 rangeBijection (MkRange ba ab) = MkIsomorphism ab ba
