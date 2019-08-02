@@ -206,7 +206,23 @@ instance CoercibleKind k => EnhancedFunction (JMShim :: k -> k -> Type) where
                             case fromEnhanced jmf' of
                                 MkNestedMorphism ff -> cfmap (MkCatRange (fromEnhanced jma1) (fromEnhanced jma2)) <.> ff
         in fromAp vt jmf jma
-    coercionEnhanced = CoerceJMShim
+    coercionEnhanced "from-uvar" c
+        | False =
+            case coercionUnsafeCoerce c of
+                Refl -> IdentityJMShim
+    coercionEnhanced "to-uvar" c
+        | False =
+            case coercionUnsafeCoerce c of
+                Refl -> IdentityJMShim
+    coercionEnhanced "rename-uvar" c
+        | True =
+            case coercionUnsafeCoerce c of
+                Refl -> IdentityJMShim
+    coercionEnhanced "subtype" c
+        | False =
+            case coercionUnsafeCoerce c of
+                Refl -> IdentityJMShim
+    coercionEnhanced s c = CoerceJMShim s c
     enhancedCoercion IdentityJMShim = Just cid
     enhancedCoercion (CoerceJMShim _ c) = Just c
     enhancedCoercion (ApJMShim CovarianceType f a)

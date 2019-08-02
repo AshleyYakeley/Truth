@@ -10,6 +10,9 @@ import Pinafore.Language.Type.Simplify.SharedTypeVars
 import Pinafore.Language.Type.Type
 import Shapes
 
+simplify :: Bool
+simplify = True
+
 -- Simplification:
 -- 1. merge duplicate ground types in join/meet (on each type)
 -- e.g. "[a]|[b]" => "[a|b]"
@@ -29,5 +32,7 @@ pinaforeSimplifyTypes ::
     => a
     -> a
 pinaforeSimplifyTypes =
-    mergeDuplicateTypeVars @baseedit .
-    mergeSharedTypeVars @baseedit . eliminateOneSidedTypeVars @baseedit . mergeDuplicateGroundTypes @baseedit
+    if simplify
+        then mergeDuplicateTypeVars @baseedit .
+             mergeSharedTypeVars @baseedit . eliminateOneSidedTypeVars @baseedit . mergeDuplicateGroundTypes @baseedit
+        else id

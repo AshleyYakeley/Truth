@@ -6,6 +6,7 @@ import Data.Bijection
 import Data.CatFunctor
 import Data.KindMorphism
 import Shapes.Import
+import Unsafe.Coerce
 
 data Coercion (a :: k) (b :: k) where
     MkCoercion
@@ -20,6 +21,8 @@ instance InCategory Coercion
 
 instance Groupoid Coercion where
     invert MkCoercion = MkCoercion
+
+instance InGroupoid Coercion
 
 class (HasKindMorphism k, InCategory (KindFunction :: k -> k -> Type)) => CoercibleKind k where
     coercionToKindMorphism ::
@@ -55,6 +58,12 @@ coerce' ::
        forall k (a :: k) (b :: k). (CoercibleKind k, InKind a, InKind b)
     => Coercible a b => KindFunction a b
 coerce' = coercionToFunction MkCoercion
+
+coerceUnsafeCoerce :: Coercible a b => a :~: b
+coerceUnsafeCoerce = unsafeCoerce Refl
+
+coercionUnsafeCoerce :: Coercion a b -> a :~: b
+coercionUnsafeCoerce MkCoercion = coerceUnsafeCoerce
 
 instance CoercibleKind Type where
     coercionToKindMorphism c = c
