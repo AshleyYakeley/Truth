@@ -108,11 +108,11 @@ mapArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvm) (ConsDolanVaria
     case representative @_ @_ @polarity of
         PositiveType -> do
             MkShimWit dta' conv' <-
-                mapArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (apShimFunc svt conv svf)
+                mapArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (consShimFunc svt conv svf)
             return $ MkShimWit (ConsDolanArguments sta' dta') conv'
         NegativeType -> do
             MkShimWit dta' conv' <-
-                mapArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (apShimFunc svt conv svf)
+                mapArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (consShimFunc svt conv svf)
             return $ MkShimWit (ConsDolanArguments sta' dta') conv'
 
 mapDolanArgumentsM ::
@@ -197,11 +197,11 @@ mapInvertArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvm) (ConsDola
     case representative @_ @_ @polarity of
         PositiveType -> do
             MkShimWit dta' conv' <-
-                mapInvertArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (apShimFunc svt conv svf)
+                mapInvertArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (consShimFunc svt conv svf)
             return $ MkShimWit (ConsDolanArguments sta' dta') conv'
         NegativeType -> do
             MkShimWit dta' conv' <-
-                mapInvertArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (apShimFunc svt conv svf)
+                mapInvertArgsTypeF @m @cat @fta @ftb @_ @polarity f dvt dvm dvm' dta (consShimFunc svt conv svf)
             return $ MkShimWit (ConsDolanArguments sta' dta') conv'
 
 mapInvertDolanArgumentsM ::
@@ -368,9 +368,9 @@ mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDolanVa
                                                                                      dvmab
                                                                                      dta
                                                                                      dtb
-                                                                                     (apShimFunc svt conva $
+                                                                                     (consShimFunc svt conva $
                                                                                       psvf1 @polarity svt svf)
-                                                                                     (apShimFunc svt convb $
+                                                                                     (consShimFunc svt convb $
                                                                                       psvf2 @polarity svt svf) of
                                                                                 MkShimWit dtab convab ->
                                                                                     MkShimWit
@@ -390,9 +390,9 @@ mergeArgsTypeF f (ConsListType svt dvt) (ConsDolanVarianceMap dvma) (ConsDolanVa
                                                                                      dvmab
                                                                                      dta
                                                                                      dtb
-                                                                                     (apShimFunc svt conva $
+                                                                                     (consShimFunc svt conva $
                                                                                       psvf1 @polarity svt svf)
-                                                                                     (apShimFunc svt convb $
+                                                                                     (consShimFunc svt convb $
                                                                                       psvf2 @polarity svt svf) of
                                                                                 MkShimWit dtab convab ->
                                                                                     MkShimWit
@@ -443,8 +443,8 @@ dolanArgumentsToArgumentsM' f (ConsListType Refl lc) (ConsDolanVarianceMap dvma)
             dvma
             dvmb
             (case representative @_ @_ @polarity of
-                 PositiveType -> apShimFunc CovarianceType conv conva
-                 NegativeType -> apShimFunc CovarianceType conv conva)
+                 PositiveType -> consShimFunc CovarianceType conv conva
+                 NegativeType -> consShimFunc CovarianceType conv conva)
             dta
     return $ MkShimWit (ConsArguments ta tfa) convfa
 
@@ -504,8 +504,8 @@ argumentsToDolanArgumentsM' f (ConsListType Refl ct) (ConsCovaryMap mma) (ConsCo
             mma
             mmb
             (case representative @_ @_ @polarity of
-                 PositiveType -> apShimFunc CovarianceType conv conva
-                 NegativeType -> apShimFunc CovarianceType conv conva)
+                 PositiveType -> consShimFunc CovarianceType conv conva
+                 NegativeType -> consShimFunc CovarianceType conv conva)
             args
     return $ MkShimWit (ConsDolanArguments ta tfa) convfa
 

@@ -71,17 +71,14 @@ patternAbstractUnifyExpression ::
        forall unifier renamer m q a t r. UnifierRenamerConstraint unifier renamer m
     => UnifierOpenPattern unifier q t
     -> UnifierOpenExpression unifier a
-    -> (forall pa pb.
-                UUShim unifier pa pb -> UnifierOpenExpression unifier (q -> Maybe (pb -> a, (pa, t))) -> UnifierMonad unifier r)
+    -> (forall pa. UUShim unifier pa a -> UnifierOpenExpression unifier (q -> Maybe (pa, t)) -> UnifierMonad unifier r)
     -> UnifierMonad unifier r
-patternAbstractUnifyExpression (ClosedPattern qmt) expr cont =
-    cont id $ fmap (\a q -> qmt q >>= \t -> Just (\() -> a, ((), t))) expr --return $ fmap (\a q -> qmt q >>= \t -> Just (a, t)) expr
+patternAbstractUnifyExpression (ClosedPattern qmt) expr cont = cont id $ fmap (\a q -> fmap (\t -> (a, t)) $ qmt q) expr
 patternAbstractUnifyExpression (OpenPattern (MkNameWitness name vwt) pat) expr cont = do
     MkAbstractResult absvwt absexpr <- abstractNamedExpression @unifier name expr
     uabsconv <- unifyUUPosNegShimWit @unifier (uuLiftPosShimWit vwt) absvwt
-    patternAbstractUnifyExpression @unifier pat absexpr $ \uuconv rexpr -> let
-        remap (pba, (pa0, (pa1, t))) = (\(MkMeetType (pb0, pb1)) -> pba pb0 pb1, (MkMeetType (pa0, pa1), t))
-        in cont (meetBimap uuconv uabsconv) $ fmap (fmap (fmap remap)) rexpr
+    patternAbstractUnifyExpression @unifier pat absexpr $ \uuconv rexpr ->
+        cont (applf uuconv uabsconv) $ fmap (fmap (fmap $ \(pa, (t1, t)) -> (MkMeetType (pa, t1), t))) rexpr
 
 data PatternResult unifier f =
     forall a. MkPatternResult (UUPosShimWit unifier a)
@@ -114,9 +111,6 @@ joinPatternResults (p:pp) = do
     c <- joinPatternResults pp
     joinPatternResult p c
 
-knot :: Unifier unifier => UUShim unifier (MeetType (a -> t) a) t
-knot = MkUUShim $ pure $ toEnhanced "knot" $ \(MkMeetType (at, a)) -> at a
-
 patternAbstractSealedExpression ::
        forall unifier renamer m. UnifierRenamerConstraint unifier renamer m
     => UnifierSealedPattern unifier
@@ -125,8 +119,8 @@ patternAbstractSealedExpression ::
 patternAbstractSealedExpression (MkSealedPattern vwt pat) (MkSealedExpression twt expr) =
     patternAbstractUnifyExpression @unifier pat expr $ \uconv uexpr' ->
         return $
-        MkPatternResult (mapShimWit (knot <.> meetBimap cid uconv) $ uuLiftPosShimWit twt) $
-        fmap (fmap (\(pbt, (pa, ())) -> MkMeetType (pbt, pa))) $ MkAbstractResult (uuLiftNegShimWit vwt) uexpr'
+        MkPatternResult (mapShimWit (applf cid uconv) $ uuLiftPosShimWit twt) $
+        (fmap $ fmap $ \(pa, ()) -> MkMeetType (id, pa)) $ MkAbstractResult (uuLiftNegShimWit vwt) uexpr'
 
 type FunctionWitness vw tw = forall a b. vw a -> tw b -> tw (a -> b)
 
@@ -165,7 +159,9 @@ applySealedExpression appw sexprf sexpra =
         uconv <- unifyUUPosNegShimWit @unifier (uuLiftPosShimWit tf) (uuLiftNegShimWit vax)
         unifierSolve @unifier $ do
             conv <- uuGetShim uconv
-            pure $ MkSealedExpression tx $ fromEnhanced conv <$> exprf <*> expra
+            pure $
+                shimExtractFunction conv $ \fconv tconv ->
+                    MkSealedExpression (mapShimWit tconv tx) $ fromEnhanced fconv <$> exprf <*> expra
 
 -- | not recursive
 letSealedExpression ::

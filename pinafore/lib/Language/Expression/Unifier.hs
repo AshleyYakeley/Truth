@@ -29,6 +29,7 @@ instance Unifier unifier => JoinMeetCategory (UUShim unifier) where
     meet1 = MkUUShim $ pure meet1
     meet2 = MkUUShim $ pure meet2
     meetf (MkUUShim uar) (MkUUShim ubr) = MkUUShim $ liftA2 meetf uar ubr
+    applf (MkUUShim uar) (MkUUShim ubr) = MkUUShim $ liftA2 applf uar ubr
 
 uuLiftShim :: Unifier unifier => UnifierShim unifier a b -> UUShim unifier a b
 uuLiftShim conv = MkUUShim $ pure conv

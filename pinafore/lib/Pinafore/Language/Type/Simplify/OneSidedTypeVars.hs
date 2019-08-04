@@ -24,10 +24,11 @@ getEliminateBisubs expr = let
         MkBisubstitution
             vn
             (return $
-             ccontramap (toEnhanced @_ @JMShim "error" $ \_ -> error "bad bisubstitution") $
+             ccontramap (toEnhanced @_ @JMShim "eliminated" $ \_ -> error "bad bisubstitution") $
              mkPJMShimWit NilPinaforeType)
             (return $
-             cfmap (toEnhanced @_ @JMShim "error" $ \_ -> error "bad bisubstitution") $ mkPJMShimWit NilPinaforeType)
+             cfmap (toEnhanced @_ @JMShim "eliminated" $ \_ -> error "bad bisubstitution") $
+             mkPJMShimWit NilPinaforeType)
     in toList $ fmap mkbisub $ posonlyvars <> negonlyvars
 
 eliminateOneSidedTypeVars ::

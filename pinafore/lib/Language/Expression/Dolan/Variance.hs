@@ -12,7 +12,7 @@ type family DolanVarianceKind (dv :: DolanVariance) :: Type where
 
 type DolanVarianceType = ListType VarianceType
 
-class ApPolyShim cat => DolanVarianceInCategory (cat :: forall k. k -> k -> Type) where
+class ConPolyShim cat => DolanVarianceInCategory (cat :: forall k. k -> k -> Type) where
     dolanVarianceInCategory ::
            forall dv.
            DolanVarianceType dv

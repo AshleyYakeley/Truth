@@ -6,7 +6,6 @@ module Language.Expression.UVar
     , varRenamerTGenerateSuggestedSymbol
     ) where
 
-import Data.Shim.JoinMeet
 import GHC.Exts (Any)
 import Language.Expression.Renamer
 import Shapes
@@ -15,45 +14,37 @@ import Unsafe.Coerce
 newtype UVar (name :: Symbol) =
     MkUVar GHC.Exts.Any
 
-unsafeAnyEq :: forall a. GHC.Exts.Any :~: a
-unsafeAnyEq = unsafeCoerce Refl
+unsafeRefl :: forall a b. a :~: b
+unsafeRefl = unsafeCoerce Refl
 
-unsafeCat1 ::
-       forall cat a. Category cat
-    => cat GHC.Exts.Any a
-unsafeCat1 =
-    case unsafeAnyEq @a of
+unsafeCat ::
+       forall cat a b. Category cat
+    => cat a b
+unsafeCat =
+    case unsafeRefl @a @b of
         Refl -> id
 
-unsafeCat2 ::
-       forall cat a. Category cat
-    => cat a GHC.Exts.Any
-unsafeCat2 =
-    case unsafeAnyEq @a of
-        Refl -> id
-
-unsafeToUVar :: (Category cat, EnhancedFunction cat) => cat a (UVar name)
+unsafeToUVar :: Category cat => cat a (UVar name)
 unsafeToUVar =
     case MkUVar -- hack for unused name warning
           of
-        _ -> coerceEnhanced "to-uvar" . unsafeCat2
+        _ -> unsafeCat
 
-unsafeFromUVar :: (Category cat, EnhancedFunction cat) => cat (UVar name) a
-unsafeFromUVar = unsafeCat1 . coerceEnhanced "from-uvar"
+unsafeFromUVar :: Category cat => cat (UVar name) a
+unsafeFromUVar = unsafeCat
 
-unsafeUVarIsomorphism :: (Category cat, EnhancedFunction cat) => Isomorphism cat a (UVar name)
+unsafeUVarIsomorphism :: Category cat => Isomorphism cat a (UVar name)
 unsafeUVarIsomorphism = MkIsomorphism unsafeToUVar unsafeFromUVar
 
 renameUVar ::
-       forall m cat name1 r. (Monad m, EnhancedFunction cat)
+       forall m cat name1 r. (Monad m, Category cat)
     => (String -> m String)
     -> SymbolType name1
     -> (forall (name2 :: Symbol). SymbolType name2 -> Isomorphism cat (UVar name1) (UVar name2) -> m r)
     -> m r
 renameUVar sf namewit1 cont = do
     newname <- sf $ witnessToValue namewit1
-    valueToWitness newname $ \namewit2 ->
-        cont namewit2 (MkIsomorphism (coerceEnhanced "rename-uvar") (coerceEnhanced "rename-uvar"))
+    valueToWitness newname $ \namewit2 -> cont namewit2 (MkIsomorphism unsafeCat unsafeCat)
 
 varRenamerTGenerateSymbol ::
        Monad m => (forall (name :: Symbol). SymbolType name -> VarRenamerT ts m a) -> VarRenamerT ts m a

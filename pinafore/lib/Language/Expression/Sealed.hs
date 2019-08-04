@@ -1,4 +1,3 @@
---{-# LANGUAGE IncoherentInstances #-} -- GHC bug workaround
 module Language.Expression.Sealed where
 
 import Language.Expression.Error

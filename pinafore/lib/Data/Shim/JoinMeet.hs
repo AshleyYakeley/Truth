@@ -39,6 +39,7 @@ class InCategory cat => JoinMeetCategory cat where
     meet1 :: cat (MeetType a b) a
     meet2 :: cat (MeetType a b) b
     meetf :: cat r a -> cat r b -> cat r (MeetType a b)
+    applf :: cat r1 (a -> b) -> cat r2 a -> cat (MeetType r1 r2) b
 
 unjoin1 :: JoinMeetCategory cat => cat (JoinType a BottomType) a
 unjoin1 = joinf cid initf
@@ -96,6 +97,7 @@ instance JoinMeetCategory (->) where
     meet1 (MkMeetType (v, _)) = v
     meet2 (MkMeetType (_, v)) = v
     meetf f1 f2 v = MkMeetType (f1 v, f2 v)
+    applf rab ra (MkMeetType (r1, r2)) = rab r1 (ra r2)
 
 class (CoercibleKind k, InCategory cat) => EnhancedFunction (cat :: k -> k -> Type) where
     toEnhanced :: (InKind a, InKind b) => String -> KindFunction a b -> cat a b
@@ -127,6 +129,8 @@ class (InCategory shim, JoinMeetCategory shim, EnhancedFunction shim) => Shim (s
     funcShim :: forall a b p q. shim a b -> shim p q -> shim (b -> p) (a -> q)
     pairShim :: forall a b p q. shim a b -> shim p q -> shim (a, p) (b, q)
     eitherShim :: forall a b p q. shim a b -> shim p q -> shim (Either a p) (Either b q)
+    shimExtractFunction :: shim a (b -> c) -> (forall c'. shim a (b -> c') -> shim c' c -> r) -> r
+    shimExtractFunction abc call = call abc cid
 
 instance Shim (->) where
     funcShim ab pq bp = pq . bp . ab
