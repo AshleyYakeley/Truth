@@ -162,6 +162,7 @@ tests:
           - filepath
           - QuickCheck
           - tasty
+          - tasty-expected-failure
           - tasty-hunit
           - tasty-quickcheck
           - tasty-golden

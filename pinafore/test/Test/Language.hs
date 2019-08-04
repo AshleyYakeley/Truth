@@ -12,6 +12,7 @@ import Prelude (read)
 import Shapes
 import Shapes.Numeric
 import Test.Tasty
+import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit
 
 testOp :: Name -> TestTree
@@ -442,11 +443,13 @@ testShims =
         "shims"
         [ testShim "3" "Integer" "(join1 id)"
         , testShim "negate" "Integer -> Integer" "(join1 (co (contra id (meet1 id)) (join1 id)))"
-        , testShim "id" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
-        --, testShim "\\x -> x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
         , testShim "negate 3" "Integer" "(join1 id)"
-        --, testShim "id 3" "Integer" "(join1 id)"
-        --, testShim "(\\x -> x) 3" "Integer" "(join1 id)"
+        , testShim "id" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
+        , expectFail $ testShim "id 3" "Integer" "(join1 id)"
+        , expectFail $ testShim "\\x -> x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
+        , expectFail $ testShim "(\\x -> x) 3" "Integer" "(join1 id)"
+        , testShim "\\x -> 4" "Any -> Integer" "(join1 (co (contra id termf) (join1 id)))"
+        , testShim "(\\x -> 4) 3" "Integer" "(join1 id)"
         ]
 
 testLanguage :: TestTree
