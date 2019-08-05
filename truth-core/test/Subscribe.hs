@@ -21,14 +21,6 @@ goldenTest name refPath outPath call =
 goldenTest' :: TestName -> ((?handle :: Handle) => IO ()) -> TestTree
 goldenTest' name call = goldenTest name ("test/golden/" ++ name ++ ".ref") ("test/golden/" ++ name ++ ".out") call
 
-{-
-testEditor :: Editor (WholeEdit a) () a
-testEditor = let
-    editorInit (MkObject run r _) = run $ r ReadWhole
-    editorUpdate _ _ _ = return ()
-    editorDo editor _ = return editor
-    in MkEditor {..}
--}
 testSavable :: TestTree
 testSavable = testCase "Savable" $ do return ()
 
@@ -42,52 +34,55 @@ testSavable = testCase "Savable" $ do return ()
         assertEqual "value" False found
 -}
 data SubscribeContext edit = MkSubscribeContext
-    { subDoEdits :: [[edit]] -> IO ()
-    , subDontEdits :: [[edit]] -> IO ()
+    { subDoEdits :: [[edit]] -> LifeCycleIO ()
+    , subDontEdits :: [[edit]] -> LifeCycleIO ()
     }
 
 testOutputEditor ::
        forall edit. (Show edit, Show (EditSubject edit), FullSubjectReader (EditReader edit), ?handle :: Handle)
     => String
-    -> (SubscribeContext edit -> IO ())
+    -> (SubscribeContext edit -> LifeCycleIO ())
     -> Editor edit ()
 testOutputEditor name call = let
     outputLn :: MonadIO m => String -> m ()
     outputLn s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s
-    editorInit :: Object edit -> IO ()
-    editorInit (MkCloseUnliftIO (MkTransform run) (MkAnObject r _)) = do
-        val <- run $ mutableReadToSubject r
-        outputLn $ "init: " ++ show val
-        return ()
+    editorInit :: Object edit -> LifeCycleIO ()
+    editorInit (MkCloseUnliftIO (MkTransform run) (MkAnObject r _)) =
+        liftIO $ do
+            val <- run $ mutableReadToSubject r
+            outputLn $ "init: " ++ show val
+            return ()
     editorUpdate :: () -> Object edit -> [edit] -> EditContext -> IO ()
     editorUpdate () (MkCloseUnliftIO (MkTransform run) (MkAnObject mr _)) edits _ = do
         outputLn $ "receive " ++ show edits
         val <- run $ mutableReadToSubject mr
         outputLn $ "receive " ++ show val
-    editorDo :: () -> Object edit -> IO ()
+    editorDo :: () -> Object edit -> LifeCycleIO ()
     editorDo () (MkCloseUnliftIO (MkTransform run) (MkAnObject _ push)) = let
-        subDontEdits :: [[edit]] -> IO ()
-        subDontEdits editss = do
-            outputLn "runObject"
-            run $
-                for_ editss $ \edits -> do
-                    outputLn $ "push " ++ show edits
-                    maction <- push edits
-                    case maction of
-                        Nothing -> outputLn "push disallowed"
-                        Just _action -> outputLn "push ignored"
-        subDoEdits :: [[edit]] -> IO ()
-        subDoEdits editss = do
-            outputLn "runObject"
-            run $
-                for_ editss $ \edits -> do
-                    outputLn $ "push " ++ show edits
-                    maction <- push edits
-                    case maction of
-                        Nothing -> outputLn "push disallowed"
-                        Just action -> do
-                            action noEditSource
-                            outputLn $ "push succeeded"
+        subDontEdits :: [[edit]] -> LifeCycleIO ()
+        subDontEdits editss =
+            liftIO $ do
+                outputLn "runObject"
+                run $
+                    for_ editss $ \edits -> do
+                        outputLn $ "push " ++ show edits
+                        maction <- push edits
+                        case maction of
+                            Nothing -> outputLn "push disallowed"
+                            Just _action -> outputLn "push ignored"
+        subDoEdits :: [[edit]] -> LifeCycleIO ()
+        subDoEdits editss =
+            liftIO $ do
+                outputLn "runObject"
+                run $
+                    for_ editss $ \edits -> do
+                        outputLn $ "push " ++ show edits
+                        maction <- push edits
+                        case maction of
+                            Nothing -> outputLn "push disallowed"
+                            Just action -> do
+                                action noEditSource
+                                outputLn $ "push succeeded"
         in call MkSubscribeContext {..}
     in MkEditor {..}
 
@@ -95,7 +90,8 @@ testSubscription ::
        forall edit. (FullEdit edit, Show (EditSubject edit))
     => TestName
     -> EditSubject edit
-    -> ((?handle :: Handle, ?showVar :: IO (), ?showExpected :: [edit] -> IO ()) => Subscriber edit -> IO ())
+    -> ((?handle :: Handle, ?showVar :: LifeCycleIO (), ?showExpected :: [edit] -> LifeCycleIO ()) =>
+                Subscriber edit -> LifeCycleIO ())
     -> TestTree
 testSubscription name initial call =
     goldenTest' name $
@@ -108,12 +104,13 @@ testSubscription name initial call =
             editObj = convertObject varObj
         sub <- makeObjectSubscriber False editObj
         let
-            ?showVar = withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
+            ?showVar = liftIO $ withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
             ?showExpected = \edits ->
+                liftIO $
                 withMVar var $ \s -> do
                     news <- mutableReadToSubject $ applyEdits edits $ subjectToMutableRead s
                     hPutStrLn ?handle $ "expected: " ++ show news
-        liftIO $ call sub
+        call sub
 
 testPair :: TestTree
 testPair =
@@ -166,7 +163,7 @@ testString2 =
 testSharedString1 :: TestTree
 testSharedString1 =
     testSubscription "SharedString1" "ABCDE" $ \sub -> do
-        testLens <- stringSectionLens (startEndRun 1 4)
+        testLens <- liftIO $ stringSectionLens (startEndRun 1 4)
         subscribeEditor sub $
             testOutputEditor "main" $ \MkSubscribeContext {..} ->
                 subscribeEditor (mapSubscriber testLens sub) $
@@ -182,7 +179,7 @@ testSharedString1 =
 testSharedString2 :: TestTree
 testSharedString2 =
     testSubscription "SharedString2" "ABC" $ \sub -> do
-        testLens <- stringSectionLens (startEndRun 1 2)
+        testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
         subscribeEditor sub $
             testOutputEditor "main" $ \_ ->
                 subscribeEditor (mapSubscriber testLens sub) $
@@ -196,7 +193,7 @@ testSharedString2 =
 testSharedString3 :: TestTree
 testSharedString3 =
     testSubscription "SharedString3" "ABC" $ \sub -> do
-        testLens <- stringSectionLens (startEndRun 1 2)
+        testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
         subscribeEditor sub $
             testOutputEditor "main" $ \MkSubscribeContext {..} ->
                 subscribeEditor (mapSubscriber testLens sub) $

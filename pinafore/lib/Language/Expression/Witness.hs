@@ -10,4 +10,4 @@ instance Category cat => Category (WitnessMap cat) where
     (MkWitnessMap m2) . (MkWitnessMap m1) =
         MkWitnessMap $ \wt0 cont -> m1 wt0 $ \wt1 c1 -> m2 wt1 $ \wt2 c2 -> cont wt2 $ c2 . c1
 
-type WitnessSubstitution k (a :: k -> Type) (b :: k -> Type) = WitnessMap (KindMorphism Bijection) a b
+type WitnessSubstitution k (a :: k -> Type) (b :: k -> Type) = WitnessMap KindBijection a b

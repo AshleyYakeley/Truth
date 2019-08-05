@@ -17,6 +17,7 @@ library:
       - base >= 4.12
       - bytestring
       - text
+      - time
       - transformers
       - mono-traversable
       - countable
@@ -54,6 +55,7 @@ library:
       - Truth.UI.GTK.Drag
       - Truth.UI.GTK.MenuBar
       - Truth.UI.GTK.Scrolled
+      - Truth.UI.GTK.Calendar
 
 tests:
     test:
@@ -73,6 +75,7 @@ tests:
           - tasty
           - tasty-hunit
         main: Main.hs
+        ghc-options: -threaded
 
 executables:
     truth-text:
@@ -91,6 +94,7 @@ executables:
           - truth-gtk
           - optparse-applicative
         main: Main.hs
+        ghc-options: -threaded
     truth-soup:
         when:
           - condition: "!flag(build-examples)"
@@ -112,3 +116,4 @@ executables:
           - Soup.Note
           - Soup.Edit
           - Soup.UI
+        ghc-options: -threaded

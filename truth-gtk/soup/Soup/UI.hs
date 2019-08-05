@@ -25,6 +25,12 @@ type PossibleNoteEdit = OneWholeEdit (Result Text) NoteEdit
 
 soupEditSpec :: UISpec UUID (SoupEdit PossibleNoteEdit)
 soupEditSpec = let
+    nameFunction :: UUID -> EditFunction (SoupEdit PossibleNoteEdit) (WholeEdit (Result Text Text))
+    nameFunction key =
+        convertEditFunction .
+        (editLensFunction $
+         oneWholeLiftEditLens (tupleEditLens NoteTitle) .
+         mustExistOneEditLens "name" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . stableKeyElementEditLens key)
     nameColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
     nameColumn =
         readOnlyKeyColumn (constEditFunction "Name") $ \key -> do
@@ -43,7 +49,8 @@ soupEditSpec = let
                     oneWholeLiftEditLens (tupleEditLens NotePast) .
                     mustExistOneEditLens "past" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . lens
             return $ funcEditFunction pastResult . editLensFunction valLens
-    in simpleTableUISpec [nameColumn, pastColumn] $ \_ -> return ()
+    in tableUISpec [nameColumn, pastColumn] (\a b -> compare (resultToMaybe a) (resultToMaybe b)) nameFunction id $ \_ ->
+           return ()
 
 soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)
 soupObject dirpath = let
@@ -74,7 +81,7 @@ soupWindow async MkUIToolkit {..} dirpath = do
                     [ SubMenuEntry
                           "File"
                           [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') $ cc
-                          , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitQuit
+                          , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitExit
                           ]
                     ]
             wsTitle = constEditFunction $ fromString $ takeFileName $ dropTrailingPathSeparator dirpath
@@ -90,7 +97,7 @@ soupWindow async MkUIToolkit {..} dirpath = do
                                     lifeCycleEarlyCloser $
                                     uitCreateWindow (mapSubscriber lens sub) $
                                     MkWindowSpec subcloser (constEditFunction "item") (mbar subcloser subwin) $
-                                    mapUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
+                                    mapEditUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
                                     oneWholeUISpec $ oneWholeUISpec noteEditSpec
                             return ()
                     Nothing -> return ()

@@ -12,6 +12,8 @@ module Pinafore.Base.Morphism
     , funcPinaforeLensMorphism
     , nullPinaforeLensMorphism
     , bijectionPinaforeLensMorphism
+    , pairPinaforeLensMorphism
+    , eitherPinaforeLensMorphism
     , applyPinaforeLens
     , applyInversePinaforeLens
     , applyInversePinaforeLensSet
@@ -141,7 +143,9 @@ applyPinaforeFunction =
                     then do
                         b <- getB mr
                         return [MkWholeEdit b]
-                    else return []
+                    else do
+                        edits <- efUpdate pinedit mr
+                        for edits $ \(MkWholeEdit a) -> fmap MkWholeEdit $ pfFuncRead mr a
         in MkAnEditFunction g u
 
 mapPinaforeFunctionMorphismBase ::
@@ -200,6 +204,186 @@ mkComposeT ::
 mkComposeT =
     case hasTransConstraint @MonadIO @t2 @m of
         Dict -> MkComposeT
+
+pairPinaforeLensMorphism ::
+       forall baseedit a b c.
+       PinaforeLensMorphism baseedit a b
+    -> PinaforeLensMorphism baseedit a c
+    -> PinaforeLensMorphism baseedit a (b, c)
+pairPinaforeLensMorphism = let
+    call ::
+           forall t1 t2. (MonadTransUnlift t1, MonadTransUnlift t2)
+        => APinaforeLensMorphism baseedit t1 a b
+        -> APinaforeLensMorphism baseedit t2 a c
+        -> APinaforeLensMorphism baseedit (ComposeT t1 t2) a (b, c)
+    call (MkAPinaforeLensMorphism (MkAnEditLens (MkAnEditFunction getB updateB) putEditsB) (MkAPinaforeFunctionMorphism frB updB)) (MkAPinaforeLensMorphism (MkAnEditLens (MkAnEditFunction getC updateC) putEditsC) (MkAPinaforeFunctionMorphism frC updC)) = let
+        getBC ::
+               ReadFunctionT (ComposeT t1 t2) (ContextEditReader baseedit (WholeEdit (Know a))) (WholeReader (Know ( b
+                                                                                                                   , c)))
+        getBC mr ReadWhole =
+            withTransConstraintTM @MonadIO $ do
+                kb <- lift1ComposeT $ getB mr ReadWhole
+                case kb of
+                    Unknown -> return Unknown
+                    Known b -> do
+                        kc <- lift2ComposeT' $ getC mr ReadWhole
+                        return $ fmap (\c -> (b, c)) kc
+        updateBC ::
+               forall m. MonadIO m
+            => ContextEdit baseedit (WholeEdit (Know a))
+            -> MutableRead m (EditReader (ContextEdit baseedit (WholeEdit (Know a))))
+            -> ComposeT t1 t2 m [WholeEdit (Know (b, c))]
+        updateBC edit mr =
+            withTransConstraintTM @MonadIO $ do
+                ebs <- lift1ComposeT $ updateB edit mr
+                ecs <- lift2ComposeT' $ updateC edit mr
+                case (lastM ebs, lastM ecs) of
+                    (Nothing, Nothing) -> return []
+                    (Just (MkWholeEdit Unknown), _) -> return [MkWholeEdit Unknown]
+                    (_, Just (MkWholeEdit Unknown)) -> return [MkWholeEdit Unknown]
+                    (Just (MkWholeEdit (Known b)), Just (MkWholeEdit (Known c))) -> return [MkWholeEdit $ Known (b, c)]
+                    (Just (MkWholeEdit (Known b)), Nothing) -> do
+                        kc <- lift2ComposeT' $ getC mr ReadWhole
+                        return [MkWholeEdit $ fmap (\c -> (b, c)) kc]
+                    (Nothing, Just (MkWholeEdit (Known c))) -> do
+                        kb <- lift1ComposeT $ getB mr ReadWhole
+                        return [MkWholeEdit $ fmap (\b -> (b, c)) kb]
+        putEditsBC ::
+               forall m. MonadIO m
+            => (Know (b, c))
+            -> MutableRead m (EditReader (ContextEdit baseedit (WholeEdit (Know a))))
+            -> ComposeT t1 t2 m (Maybe [ContextEdit baseedit (WholeEdit (Know a))])
+        putEditsBC kbc mr =
+            withTransConstraintTM @MonadIO $
+            case kbc of
+                Unknown -> return Nothing -- can't delete
+                (Known (b, c)) ->
+                    getComposeM $ do
+                        aa1 <- MkComposeM $ lift1ComposeT $ putEditsB [MkWholeEdit $ Known b] mr
+                        aa2 <- MkComposeM $ lift2ComposeT' $ putEditsC [MkWholeEdit $ Known c] mr
+                        return $ aa1 ++ aa2
+        frBC ::
+               forall m. MonadIO m
+            => MutableRead m (EditReader baseedit)
+            -> (b, c)
+            -> ComposeT t1 t2 m [a]
+        frBC mr (b, c) =
+            withTransConstraintTM @MonadIO $ do
+                aa1 <- lift1ComposeT $ frB mr b
+                aa2 <- lift2ComposeT' $ frC mr c
+                return $ aa1 ++ aa2
+        updBC ::
+               forall m. MonadIO m
+            => baseedit
+            -> MutableRead m (EditReader baseedit)
+            -> ComposeT t1 t2 m Bool
+        updBC edit mr =
+            withTransConstraintTM @MonadIO $ do
+                eb <- lift1ComposeT $ updB edit mr
+                case eb of
+                    True -> return True
+                    False -> lift2ComposeT' $ updC edit mr
+        in MkAPinaforeLensMorphism
+               (MkAnEditLens (MkAnEditFunction getBC updateBC) $ wholePutEdits putEditsBC)
+               (MkAPinaforeFunctionMorphism frBC updBC)
+    in joinUnlifts call
+
+eitherPinaforeLensMorphism ::
+       forall baseedit a b c.
+       PinaforeLensMorphism baseedit a c
+    -> PinaforeLensMorphism baseedit b c
+    -> PinaforeLensMorphism baseedit (Either a b) c
+eitherPinaforeLensMorphism = let
+    call ::
+           forall t. MonadTransUnlift t
+        => APinaforeLensMorphism baseedit t a c
+        -> APinaforeLensMorphism baseedit t b c
+        -> APinaforeLensMorphism baseedit t (Either a b) c
+    call (MkAPinaforeLensMorphism (MkAnEditLens (MkAnEditFunction getA updateA) putEditsA) (MkAPinaforeFunctionMorphism frA updA)) (MkAPinaforeLensMorphism (MkAnEditLens (MkAnEditFunction getB updateB) putEditsB) (MkAPinaforeFunctionMorphism frB updB)) = let
+        getMRA ::
+               forall m. MonadIO m
+            => MutableRead m (ContextEditReader baseedit (WholeEdit (Know (Either a b))))
+            -> a
+            -> MutableRead m (ContextEditReader baseedit (WholeEdit (Know a)))
+        getMRA mr _ (MkTupleEditReader SelectContext r) = mr $ MkTupleEditReader SelectContext r
+        getMRA _ a (MkTupleEditReader SelectContent ReadWhole) = return $ Known a
+        getMRB ::
+               forall m. MonadIO m
+            => MutableRead m (ContextEditReader baseedit (WholeEdit (Know (Either a b))))
+            -> b
+            -> MutableRead m (ContextEditReader baseedit (WholeEdit (Know b)))
+        getMRB mr _ (MkTupleEditReader SelectContext r) = mr $ MkTupleEditReader SelectContext r
+        getMRB _ b (MkTupleEditReader SelectContent ReadWhole) = return $ Known b
+        getAB :: ReadFunctionT t (ContextEditReader baseedit (WholeEdit (Know (Either a b)))) (WholeReader (Know c))
+        getAB (mr :: MutableRead m _) ReadWhole =
+            withTransConstraintTM @MonadIO $ do
+                keab <- lift $ mr $ MkTupleEditReader SelectContent ReadWhole
+                case keab of
+                    Unknown -> return Unknown
+                    Known (Left a) -> getA (getMRA mr a) ReadWhole
+                    Known (Right b) -> getB (getMRB mr b) ReadWhole
+        updateAB ::
+               forall m. MonadIO m
+            => ContextEdit baseedit (WholeEdit (Know (Either a b)))
+            -> MutableRead m (ContextEditReader baseedit (WholeEdit (Know (Either a b))))
+            -> t m [WholeEdit (Know c)]
+        updateAB (MkTupleEdit SelectContext edit) mr =
+            withTransConstraintTM @MonadIO $ do
+                keab <- lift $ mr $ MkTupleEditReader SelectContent ReadWhole
+                case keab of
+                    Unknown -> return [MkWholeEdit Unknown]
+                    Known (Left a) -> updateA (MkTupleEdit SelectContext edit) (getMRA mr a)
+                    Known (Right b) -> updateB (MkTupleEdit SelectContext edit) (getMRB mr b)
+        updateAB (MkTupleEdit SelectContent (MkWholeEdit keab)) mr =
+            withTransConstraintTM @MonadIO $
+            case keab of
+                Unknown -> return [MkWholeEdit Unknown]
+                Known (Left a) -> updateA (MkTupleEdit SelectContent $ MkWholeEdit $ Known a) (getMRA mr a)
+                Known (Right b) -> updateB (MkTupleEdit SelectContent $ MkWholeEdit $ Known b) (getMRB mr b)
+        putEditsAB ::
+               forall m. MonadIO m
+            => Know c
+            -> MutableRead m (ContextEditReader baseedit (WholeEdit (Know (Either a b))))
+            -> t m (Maybe [ContextEdit baseedit (WholeEdit (Know (Either a b)))])
+        putEditsAB kc mr =
+            withTransConstraintTM @MonadIO $ do
+                keab <- lift $ mr $ MkTupleEditReader SelectContent ReadWhole
+                case keab of
+                    Unknown ->
+                        case kc of
+                            Unknown -> return $ Just []
+                            Known _ -> return Nothing
+                    Known (Left a) -> do
+                        mea <- putEditsA [MkWholeEdit kc] (getMRA mr a)
+                        return $ (fmap $ fmap $ mapContextEdit $ mapWholeEdit $ fmap Left) mea
+                    Known (Right b) -> do
+                        meb <- putEditsB [MkWholeEdit kc] (getMRB mr b)
+                        return $ (fmap $ fmap $ mapContextEdit $ mapWholeEdit $ fmap Right) meb
+        frAB ::
+               forall m. MonadIO m
+            => MutableRead m (EditReader baseedit)
+            -> c
+            -> t m [Either a b]
+        frAB mr c =
+            withTransConstraintTM @MonadIO $ do
+                aa <- frA mr c
+                bb <- frB mr c
+                return $ fmap Left aa <> fmap Right bb
+        updAB ::
+               forall m. MonadIO m
+            => baseedit
+            -> MutableRead m (EditReader baseedit)
+            -> t m Bool
+        updAB edit mr =
+            withTransConstraintTM @MonadIO $ do
+                u <- updA edit mr
+                case u of
+                    True -> return True
+                    False -> updB edit mr
+        in MkAPinaforeLensMorphism
+               (MkAnEditLens (MkAnEditFunction getAB updateAB) $ wholePutEdits putEditsAB)
+               (MkAPinaforeFunctionMorphism frAB updAB)
+    in joinUnliftables call
 
 mapPinaforeLensMorphismBase ::
        forall baseA baseB a b. EditLens baseB baseA -> PinaforeLensMorphism baseA a b -> PinaforeLensMorphism baseB a b

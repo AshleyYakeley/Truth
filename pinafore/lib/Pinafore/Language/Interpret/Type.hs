@@ -3,8 +3,11 @@ module Pinafore.Language.Interpret.Type
     , interpretEntityType
     ) where
 
+import Data.Shim
+import Pinafore.Language.Error
 import Pinafore.Language.Literal
 import Pinafore.Language.Name
+import Pinafore.Language.Show
 import Pinafore.Language.Syntax
 import Pinafore.Language.Type
 import Shapes
@@ -18,17 +21,20 @@ interpretType ::
     => SyntaxType
     -> PinaforeSourceScoped baseedit (AnyW (PinaforeType baseedit polarity))
 interpretType st = do
-    SingleMPolarW atw <- isMPolarity @polarity $ interpretTypeM @baseedit @('Just polarity) st
-    return atw
+    mpol <- isMPolarity @polarity $ interpretTypeM @baseedit @('Just polarity) st
+    case mpol of
+        SingleMPolarW atw -> return atw
 
 interpretEntityType :: SyntaxType -> PinaforeSourceScoped baseedit (AnyW EntityType)
 interpretEntityType st = do
-    BothMPolarW atm <- interpretTypeM @_ @'Nothing st
-    case atm @'Positive of
-        MkAnyW tm ->
-            case pinaforeToEntityType tm of
-                Just (MkTypeF t _) -> return $ MkAnyW t
-                Nothing -> fail $ show tm <> " is not an Entity type"
+    mpol <- interpretTypeM @_ @'Nothing st
+    case mpol of
+        BothMPolarW atm ->
+            case atm @'Positive of
+                MkAnyW tm ->
+                    case pinaforeToEntityType tm of
+                        Just (MkShimWit t _) -> return $ MkAnyW t
+                        Nothing -> throwError $ InterpretTypeNotEntityError $ exprShow tm
 
 interpretTypeM ::
        forall baseedit mpolarity. Is MPolarityType mpolarity
@@ -37,29 +43,29 @@ interpretTypeM ::
 interpretTypeM BottomSyntaxType =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> return $ toMPolar mempty
-        MNegativeType -> fail $ "\"None\" not allowed in negative types"
-        MBothType -> fail $ "\"None\" not allowed in negative types"
+        MNegativeType -> throwError $ InterpretTypeExprBadLimitError Negative
+        MBothType -> throwError $ InterpretTypeExprBadLimitError Negative
 interpretTypeM TopSyntaxType =
     case representative @_ @MPolarityType @mpolarity of
-        MPositiveType -> fail $ "\"Any\" not allowed in positive types"
+        MPositiveType -> throwError $ InterpretTypeExprBadLimitError Positive
         MNegativeType -> return $ toMPolar mempty
-        MBothType -> fail $ "\"Any\" not allowed in positive types"
+        MBothType -> throwError $ InterpretTypeExprBadLimitError Positive
 interpretTypeM (OrSyntaxType st1 st2) =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> do
             t1 <- interpretTypeM st1
             t2 <- interpretTypeM st2
             return $ toMPolar (<>) t1 t2
-        MNegativeType -> fail $ "\"|\" not allowed in negative types"
-        MBothType -> fail $ "\"|\" not allowed in negative types"
+        MNegativeType -> throwError $ InterpretTypeExprBadJoinMeetError Negative
+        MBothType -> throwError $ InterpretTypeExprBadJoinMeetError Negative
 interpretTypeM (AndSyntaxType st1 st2) =
     case representative @_ @MPolarityType @mpolarity of
-        MPositiveType -> fail $ "\"&\" not allowed in positive types"
+        MPositiveType -> throwError $ InterpretTypeExprBadJoinMeetError Positive
         MNegativeType -> do
             t1 <- interpretTypeM st1
             t2 <- interpretTypeM st2
             return $ toMPolar (<>) t1 t2
-        MBothType -> fail $ "\"&\" not allowed in positive types"
+        MBothType -> throwError $ InterpretTypeExprBadJoinMeetError Positive
 interpretTypeM (MorphismSyntaxType st1 st2) = do
     at1 <- interpretTypeRange st1
     at2 <- interpretTypeRange st2
@@ -180,10 +186,10 @@ interpretTypeM (OrderSyntaxType st1) = do
                  GroundPinaforeSingularType OrderPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
             (MkInvertMPolarW at1)
 interpretTypeM (VarSyntaxType name) =
-    nameToSymbolWitness name $ \t -> return $ toMPolar $ MkAnyW $ singlePinaforeType $ VarPinaforeSingularType t
+    nameToSymbolType name $ \t -> return $ toMPolar $ MkAnyW $ singlePinaforeType $ VarPinaforeSingularType t
 interpretTypeM UnitSyntaxType = return $ toMPolar $ MkAnyW $ literalPinaforeType UnitLiteralType
 interpretTypeM (ConstSyntaxType name) = interpretTypeConst name
-interpretTypeM (RangeSyntaxType _) = fail "range not allowed in type"
+interpretTypeM (RangeSyntaxType _) = throwError InterpretTypeRangeInTypeError
 
 interpretTypeRangeFromType ::
        forall baseedit mpolarity. Is MPolarityType mpolarity
@@ -266,12 +272,3 @@ interpretTypeConst n = do
                 GroundPinaforeSingularType
                     (EntityPinaforeGroundType NilListType $ ClosedEntityGroundType n sw ct)
                     NilDolanArguments
-
-nameToLiteralType :: Name -> Maybe (AnyW LiteralType)
-nameToLiteralType "Literal" = Just $ MkAnyW LiteralLiteralType
-nameToLiteralType "Text" = Just $ MkAnyW TextLiteralType
-nameToLiteralType "Number" = Just $ MkAnyW NumberLiteralType
-nameToLiteralType "Rational" = Just $ MkAnyW RationalLiteralType
-nameToLiteralType "Integer" = Just $ MkAnyW IntegerLiteralType
-nameToLiteralType "Boolean" = Just $ MkAnyW BooleanLiteralType
-nameToLiteralType _ = Nothing

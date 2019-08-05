@@ -7,6 +7,7 @@ module Pinafore.Language.Read.Parser
     , (<?>)
     ) where
 
+import Pinafore.Language.Error
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Scope
 import Pinafore.Language.Type
@@ -19,20 +20,20 @@ type Parser = Parsec [(SourcePos, AnyValue Token)] ()
 parseEnd :: Parser ()
 parseEnd = eof
 
-parseReader :: Parser a -> Text -> StateT SourcePos (Result Text) a
+parseReader :: Parser a -> Text -> StateT SourcePos InterpretResult a
 parseReader parser text = do
     spos <- get
     toks <- parseTokens text
     case parse parser (sourceName spos) toks of
         Right a -> return a
-        Left e -> fail $ show e
+        Left e -> throwError [parseErrorMessage e]
 
 parseScopedReader :: Parser (PinaforeScoped baseedit t) -> Text -> PinaforeSourceScoped baseedit t
 parseScopedReader parser text = do
     spos <- askSourcePos
     case evalStateT (parseReader parser text) spos of
         SuccessResult a -> liftSourcePos a
-        FailureResult e -> fail $ unpack e
+        FailureResult e -> throwError e
 
 readThis :: Token t -> Parser t
 readThis tok =

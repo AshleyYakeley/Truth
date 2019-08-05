@@ -1,6 +1,5 @@
 module Pinafore.Language.Predefined.Defs where
 
-import Language.Expression.Sealed
 import Pinafore.Base
 import Pinafore.Language.Convert
 import Pinafore.Language.DocTree
@@ -45,7 +44,7 @@ mkValEntry name docDescription val = let
     bdValue =
         Just $ \bc -> let
             ?pinafore = bc
-            in toValue val
+            in jmToValue val
     bdPattern = Nothing
     docName = name
     docValueType = qTypeDescription @baseedit @t
@@ -58,7 +57,7 @@ mkValPatEntry ::
        ( HasPinaforeEntityEdit baseedit
        , ToPinaforeType baseedit t
        , FromPinaforeType baseedit v
-       , ToTypeF (HListWit (PinaforeType baseedit 'Positive)) (HList lt)
+       , ToListShimWit PinaforeShim (PinaforeType baseedit 'Positive) lt
        )
     => Name
     -> Text
@@ -70,8 +69,8 @@ mkValPatEntry name docDescription val pat = let
     bdValue =
         Just $ \bc -> let
             ?pinafore = bc
-            in toValue val
-    bdPattern = Just $ toPatternConstructor pat
+            in jmToValue val
+    bdPattern = Just $ qToPatternConstructor pat
     docName = name
     docValueType = qTypeDescription @baseedit @t
     docIsPattern = True
@@ -82,7 +81,7 @@ mkPatEntry ::
        forall baseedit v lt.
        ( HasPinaforeEntityEdit baseedit
        , FromPinaforeType baseedit v
-       , ToTypeF (HListWit (PinaforeType baseedit 'Positive)) (HList lt)
+       , ToListShimWit PinaforeShim (PinaforeType baseedit 'Positive) lt
        )
     => Name
     -> Text
@@ -92,7 +91,7 @@ mkPatEntry ::
 mkPatEntry name docDescription docValueType pat = let
     bdName = name
     bdValue = Nothing
-    bdPattern = Just $ toPatternConstructor pat
+    bdPattern = Just $ qToPatternConstructor pat
     docName = name
     docIsPattern = True
     bdDoc = MkDefDoc {..}

@@ -9,8 +9,10 @@ import Shapes.Instances ()
 import Control.AsyncRunner as I
 import Control.Category.Dual as I
 import Control.Category.Groupoid as I
+import Control.Clock as I
 import Control.Monad.Compose as I
 import Control.Monad.Coroutine as I
+import Control.Monad.Error as I
 import Control.Monad.LifeCycleIO as I
 import Control.Monad.Trans.LifeCycle as I
 import Data.Bijection as I

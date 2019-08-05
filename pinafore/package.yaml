@@ -24,9 +24,8 @@ library:
       - cryptonite
       - truth-core
     exposed-modules:
-      - Language.Expression.Polarity
-      - Language.Expression.TypeF
-      - Language.Expression.TypeMappable
+      - Data.Shim
+      - Language.Expression.WitnessMappable
       - Language.Expression.Witness
       - Language.Expression.Expression
       - Language.Expression.Pattern
@@ -50,10 +49,19 @@ library:
       - Pinafore
       - Pinafore.Test
     other-modules:
+      - Data.Shim.Polarity
+      - Data.Shim.Variance
+      - Data.Shim.ShimWit
+      - Data.Shim.Range
+      - Data.Shim.CatRange
+      - Data.Shim.JoinMeet
+      - Data.Shim.PolyShim
+      - Data.Shim.JMShim
+      - Data.Shim.JMShimWit
+      - Language.Expression.Error
       - Language.Expression.UVar
-      - Language.Expression.Dolan.PType
-      - Language.Expression.Dolan.Range
-      - Language.Expression.Dolan.JoinMeet
+      - Language.Expression.Dolan.PShimWit
+      - Language.Expression.Dolan.Covariance
       - Language.Expression.Dolan.Variance
       - Language.Expression.Dolan.Arguments
       - Language.Expression.Dolan.MPolarity
@@ -74,7 +82,7 @@ library:
       - Pinafore.Language.Literal
       - Pinafore.Language.OpenEntity
       - Pinafore.Language.Reference
-      - Pinafore.Language.Set
+      - Pinafore.Language.SetRef
       - Pinafore.Language.Morphism
       - Pinafore.Language.If
       - Pinafore.Language.Show
@@ -82,6 +90,7 @@ library:
       - Pinafore.Language.UI
       - Pinafore.Language.GroundType
       - Pinafore.Language.TypeID
+      - Pinafore.Language.Error
       - Pinafore.Language.Scope
       - Pinafore.Language.Convert.Base
       - Pinafore.Language.Type.Type
@@ -153,6 +162,7 @@ tests:
           - filepath
           - QuickCheck
           - tasty
+          - tasty-expected-failure
           - tasty-hunit
           - tasty-quickcheck
           - tasty-golden
@@ -194,5 +204,7 @@ executables:
           - directory
           - optparse-applicative
           - xdg-basedir
+          - time
+          - githash
         main: Main.hs
         ghc-options: -threaded

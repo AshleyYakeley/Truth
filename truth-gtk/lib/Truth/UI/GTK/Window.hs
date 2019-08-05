@@ -7,10 +7,10 @@ import GI.GLib as GI hiding (String)
 import GI.Gdk as GI (threadsAddIdle)
 import GI.Gtk as GI
 import Shapes
-import System.Environment
 import Truth.Core
 import Truth.UI.GTK.Button
 import Truth.UI.GTK.CSS
+import Truth.UI.GTK.Calendar
 import Truth.UI.GTK.CheckButton
 import Truth.UI.GTK.Drag
 import Truth.UI.GTK.Entry
@@ -62,6 +62,7 @@ allGetView =
         , pagesGetView
         , dragGetView
         , scrolledGetView
+        , calendarGetView
         ]
 
 getRequest :: forall t. IOWitness t -> Maybe t
@@ -136,7 +137,6 @@ truthMainGTK :: TruthMain
 truthMainGTK appMain =
     runLifeCycle $
     liftIOWithUnlift $ \(MkTransform unlift) -> traceBracket "truthMainGTK" $ do
-        tcArguments <- getArgs
         _ <- GI.init Nothing
         uiLockVar <- newMVar ()
         runVar <- newMVar RSRun
@@ -163,8 +163,8 @@ truthMainGTK appMain =
             withUILock False = id
             uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycleIO UIWindow
             uitCreateWindow sub wspec = subscribeView withUILock (createWindowAndChild wspec) sub getRequest
-            uitQuit :: IO ()
-            uitQuit = traceBarrier "truthMainGTK: uitQuit" (mvarRun runVar) $ put RSStop
+            uitExit :: IO ()
+            uitExit = traceBarrier "truthMainGTK: uitQuit" (mvarRun runVar) $ put RSStop
             uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a
             uitUnliftLifeCycle = unlift
             tcUIToolkit = MkUIToolkit {..}
@@ -177,7 +177,7 @@ truthMainGTK appMain =
                 _ <-
                     threadsAddIdle PRIORITY_DEFAULT_IDLE $ do
                         putMVar uiLockVar ()
-                        yield
+                        threadDelay 5000 -- 5ms delay
                         takeMVar uiLockVar
                         sr <- mvarRun runVar Shapes.get
                         case sr of

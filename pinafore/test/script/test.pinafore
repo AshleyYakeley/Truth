@@ -6,8 +6,8 @@ let
 ui_page n ui = (ui_label n,ui);
 ui_labelled n ui = ui_horizontal [(ui_label n,False),(ui,True)];
 
-openmywindow :: Ref +Text -> UI a -> Action Window;
-openmywindow title contents = afix $ \window -> let
+std_window :: Ref +Text -> UI a -> Action Window;
+std_window title contents = afix $ \window -> let
     menus :: [MenuItem];
     menus =
         [
@@ -15,7 +15,7 @@ openmywindow title contents = afix $ \window -> let
             [
                 menu_action "Close" (Just "Ctrl+W") {closewindow window},
                 menu_separator,
-                menu_action "Exit" (Just "Ctrl+Q") {closeallwindows}
+                menu_action "Exit" (Just "Ctrl+Q") {exit_ui}
             ],
             menu_submenu "Edit"
             [
@@ -39,9 +39,9 @@ people = type !@ {entity @Type !78baed51-cb05-46b5-bcb4-49031532b890};
 
 mother = property @Person @Person !3afce58f-b7eb-4b11-8a75-2d66afd4d085;
 father = property @Person @Person !c005705f-9259-4d24-9713-db28a6e4f7d5;
-# parents :: Ref Person -> Set Person;
+# parents :: Ref Person -> SetRef Person;
 # parents p = (mother !$ p) \/ (father !$ p);
-children :: Ref Person -> Set Person;
+children :: Ref Person -> SetRef Person;
 children p = mother !@ p \/ father !@ p;
 
 employer = property @Person @Person !72f612af-ae47-4c18-b3df-6932ae914f62;
@@ -64,13 +64,13 @@ deathdate = property @Person @Text !805a9e65-d69a-4261-9c94-a3249885b6bb;
 married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
 
 # UI
-ui_people :: Set Person -> UI Person;
+ui_people :: SetRef Person -> UI Person;
 ui_people pp = ui_withselection $ \getperson -> ui_vertical
 [
     (ui_button {"New Person"} {newentity pp >>= window_person},False),
     (ui_button {"View Person"} {getperson >>= window_person},False),
     (ui_button {"Remove Person"} {getperson >>= \p -> pp -= p},False),
-    (ui_table [({"Name"},\p -> name !$ {p})] pp $ window_person,True)
+    (ui_table [({"Name"},\p -> name !$ {p})] (orders []) pp $ window_person,True)
 ];
 
 ui_person :: Ref Person -> UI None;
@@ -110,10 +110,10 @@ ui_person p = ui_ignore $ui_vertical
 ];
 
 window_person :: Person -> Action Window;
-window_person p = openmywindow (name !$ {p}) (ui_person {p});
+window_person p = std_window (name !$ {p}) (ui_person {p});
 
 window_people :: Action Window;
-window_people = openmywindow {"People"} (ui_people people);
+window_people = std_window {"People"} (ui_people people);
 
 ### Calculator
 
@@ -123,7 +123,7 @@ opentype P;
 pvalue = property @P @Number !"pvalue";
 aval = pvalue !$ {entity @P !a4706230-2c61-44b1-b600-516e7a54c607};
 bval = pvalue !$ {entity @P !9d284ad2-e141-4114-ae50-8829a6db710f};
-in openmywindow {"Calc"} $ ui_vertical
+in std_window {"Calc"} $ ui_vertical
 [
     #(ui_textentry aval,False),
     #(ui_textentry bval,False),
@@ -140,7 +140,7 @@ ptext = property @P @Text !"ptext";
 sw_pick = pbool !$ {entity @P !59eb2d87-f815-47ef-b7dc-8fe434151bb6};
 sw_val1 = ptext !$ {entity @P !6d9f7afa-1091-49cc-8646-8e613bb75ee5};
 sw_val2 = ptext !$ {entity @P !934712ae-73a7-4084-8a43-d618c737fd56};
-in openmywindow {"Switch"} $ ui_vertical
+in std_window {"Switch"} $ ui_vertical
 [
     #(ui_textentry sw_pick,False),
     (ui_booleancheckbox {"pick"} sw_pick,False),
@@ -153,20 +153,20 @@ window_files :: Action Window;
 window_files = let
 #Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
 #caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
-window_file f = openmywindow {"File"} $ ui_vertical
+window_file f = std_window {"File"} $ ui_vertical
 [
     #(ui_textentry $ caption f,False)
 ];
-in openmywindow {"Files"} $ ui_vertical
+in std_window {"Files"} $ ui_vertical
 [
-    #(ui_button "Import" {file_import Files $ \f -> openmywindow $ window_file f},False),
+    #(ui_button "Import" {file_import Files $ \f -> std_window $ window_file f},False),
     #(ui_table [column "Caption" caption, column "Size" file_size] window_file Files,True)
 ];
 
 ### Constant Edit
 
 window_constant :: Action Window;
-window_constant = openmywindow {"Constant"} $ ui_vertical
+window_constant = std_window {"Constant"} $ ui_vertical
 [
     (ui_booleancheckbox {"off"} {False},False),
     (ui_booleancheckbox {"on"} {True},False),
@@ -177,7 +177,7 @@ window_constant = openmywindow {"Constant"} $ ui_vertical
 ### Start Window
 
 window_start :: Action Window;
-window_start = openmywindow {"Pinafore"} $ ui_vertical
+window_start = std_window {"Pinafore"} $ ui_vertical
 [
     (ui_button {"People"} {window_people},False),
     (ui_button {"Calculated Form"} {window_calc},False),

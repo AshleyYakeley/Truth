@@ -1,27 +1,26 @@
 module Language.Expression.Sealed where
 
+import Language.Expression.Error
 import Language.Expression.Expression
 import Language.Expression.Named
 import Language.Expression.Pattern
-import Language.Expression.Polarity
-import Language.Expression.TypeF
-import Language.Expression.TypeMappable
+import Language.Expression.WitnessMappable
 import Shapes
 
-data SealedExpression name vw tw =
+data SealedExpression (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
     forall t. MkSealedExpression (tw t)
                                  (NamedExpression name vw t)
 
 constSealedExpression :: AnyValue tw -> SealedExpression name vw tw
 constSealedExpression (MkAnyValue twt t) = MkSealedExpression twt $ pure t
 
-evalSealedExpression :: (MonadFail m, Show name) => SealedExpression name vw tw -> m (AnyValue tw)
+evalSealedExpression :: (MonadError ExpressionError m, Show name) => SealedExpression name vw tw -> m (AnyValue tw)
 evalSealedExpression (MkSealedExpression twa expr) = do
     a <- evalExpression expr
     return $ MkAnyValue twa a
 
-varSealedExpression :: name -> vw tv -> tw tt -> (tv -> tt) -> SealedExpression name vw tw
-varSealedExpression n vwt twt conv = MkSealedExpression twt $ fmap conv $ varNamedExpression n vwt
+varSealedExpression :: name -> vw t -> tw t -> SealedExpression name vw tw
+varSealedExpression n vwt twt = MkSealedExpression twt $ varNamedExpression n vwt
 
 sealedExpressionFreeNames :: SealedExpression name vw tw -> [name]
 sealedExpressionFreeNames (MkSealedExpression _ expr) = namedExpressionFreeNames expr
@@ -40,59 +39,59 @@ instance MonoApplicative (SealedExpression name vw ((:~:) val)) where
     osequenceA conv exprs =
         MkSealedExpression Refl $ fmap conv $ sequenceA $ fmap (\(MkSealedExpression Refl expr) -> expr) exprs
 
-instance TypeMappable (->) poswit negwit (SealedExpression name negwit poswit) where
-    mapTypesM mapPos mapNeg (MkSealedExpression tt expr) = do
-        MkTypeF tt' conv <- mapPos tt
-        expr' <- mapTypesM mapPos mapNeg expr
-        return $ MkSealedExpression tt' $ fmap conv expr'
+instance WitnessMappable poswit negwit (SealedExpression name negwit poswit) where
+    mapWitnessesM mapPos mapNeg (MkSealedExpression tt expr) = do
+        tt' <- mapPos tt
+        expr' <- mapWitnessesM mapPos mapNeg expr
+        return $ MkSealedExpression tt' expr'
 
-data SealedPattern name vw tw =
+data SealedPattern (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
     forall t. MkSealedPattern (tw t)
                               (NamedPattern name vw t ())
 
-instance TypeMappable (->) poswit negwit (SealedPattern name poswit negwit) where
-    mapTypesM mapPos mapNeg (MkSealedPattern tt pat) = do
-        MkTypeF tt' conv <- mapNeg tt
-        pat' <- mapTypesM mapPos mapNeg pat
-        return $ MkSealedPattern tt' $ pat' . arr conv
+instance WitnessMappable poswit negwit (SealedPattern name poswit negwit) where
+    mapWitnessesM mapPos mapNeg (MkSealedPattern tt pat) = do
+        tt' <- mapNeg tt
+        pat' <- mapWitnessesM mapPos mapNeg pat
+        return $ MkSealedPattern tt' $ pat'
 
-typeFConstExpression :: TypeF poswit 'Positive t -> t -> SealedExpression name negwit poswit
-typeFConstExpression (MkTypeF tt conv) t = MkSealedExpression tt $ pure $ conv t
+typeFConstExpression :: poswit t -> t -> SealedExpression name negwit poswit
+typeFConstExpression tt t = MkSealedExpression tt $ pure t
 
-varSealedPattern :: name -> tw t -> vw v -> (t -> v) -> SealedPattern name vw tw
-varSealedPattern n twt vwt conv = MkSealedPattern twt $ varNamedPattern n vwt . arr conv
+varSealedPattern :: name -> tw t -> vw t -> SealedPattern name vw tw
+varSealedPattern n twt vwt = MkSealedPattern twt $ varNamedPattern n vwt
 
 anySealedPattern :: tw t -> SealedPattern name vw tw
 anySealedPattern twt = MkSealedPattern twt $ pure ()
 
 data PatternConstructor (name :: Type) (vw :: Type -> Type) (tw :: Type -> Type) =
-    forall t lt. MkPatternConstructor (tw t)
-                                      (ListType vw lt)
-                                      (NamedPattern name vw t (HList lt))
-
-liftHListPolwit ::
-       forall m wit polarity. (Is PolarityType polarity, Applicative m)
-    => (forall t. wit t -> m (TypeF wit polarity t))
-    -> forall t'. HListWit wit t' -> m (TypeF (HListWit wit) polarity t')
-liftHListPolwit ff (MkHListWit lwt) = fmap hlistTypeF $ mapMListType ff lwt
+    forall (t :: Type) (lt :: [Type]). MkPatternConstructor (tw t)
+                                                            (ListType vw lt)
+                                                            (NamedPattern name vw t (HList lt))
 
 toPatternConstructor ::
-       forall name poswit negwit t lt. (FromTypeF negwit t, ToTypeF (HListWit poswit) (HList lt))
-    => (t -> Maybe (HList lt))
+       forall name poswit negwit t lt.
+       negwit t
+    -> ListType poswit lt
+    -> (t -> Maybe (HList lt))
     -> PatternConstructor name poswit negwit
-toPatternConstructor f =
-    case (fromTypeF @negwit @t, toTypeF @(HListWit poswit) @(HList lt)) of
-        (MkTypeF nwt conv, MkTypeF (MkHListWit tlt) lconv) ->
-            MkPatternConstructor nwt tlt $ ClosedPattern $ fmap lconv . f . conv
+toPatternConstructor nwt tlt f = MkPatternConstructor nwt tlt $ ClosedPattern f
 
-instance TypeMappable (->) (poswit :: Type -> Type) (negwit :: Type -> Type) (PatternConstructor name poswit negwit) where
-    mapTypesM mapPos mapNeg (MkPatternConstructor (tt :: negwit t) lvw pat) = do
-        MkTypeF tt' conv <- mapNeg tt
-        pat' <- mapTypesM @(->) @poswit @negwit mapPos mapNeg pat
-        MkTypeF (MkHListWit lvw') lconv <-
-            mapTypesM @(->) (liftHListPolwit mapPos) mapNeg $ mkGenTypeF @Type @(->) @'Positive $ MkHListWit lvw
-        return $ MkPatternConstructor tt' lvw' $ fmap lconv $ pat' . arr conv
+liftHListPolwit ::
+       forall m wit. Applicative m
+    => (forall t. wit t -> m (wit t))
+    -> forall t'. HListWit wit t' -> m (HListWit wit t')
+liftHListPolwit ff (MkHListWit lwt) = fmap MkHListWit $ mapMListType ff lwt
 
-sealedPatternConstructor :: MonadFail m => PatternConstructor name vw tw -> m (SealedPattern name vw tw)
+instance WitnessMappable (poswit :: Type -> Type) (negwit :: Type -> Type) (PatternConstructor name poswit negwit) where
+    mapWitnessesM mapPos mapNeg (MkPatternConstructor (tt :: negwit t) (lvw :: ListType wit lt) pat) = do
+        tt' <- mapNeg tt
+        pat' <- mapWitnessesM @Type @poswit @negwit mapPos mapNeg pat
+        MkHListWit (lvw' :: ListType wit lt') <- mapWitnessesM @Type (liftHListPolwit mapPos) mapNeg $ MkHListWit lvw
+        Refl <- return $ injectiveHList @lt @lt'
+        return $ MkPatternConstructor tt' lvw' pat'
+
+sealedPatternConstructor ::
+       MonadError ExpressionError m => PatternConstructor name vw tw -> m (SealedPattern name vw tw)
 sealedPatternConstructor (MkPatternConstructor twt NilListType pat) = return $ MkSealedPattern twt pat
-sealedPatternConstructor _ = fail "Not enough arguments to constructor in pattern"
+sealedPatternConstructor _ = throwError PatternTooFewConsArgsError

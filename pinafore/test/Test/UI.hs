@@ -30,7 +30,7 @@ testUIAction waitClick text testaction =
             (pc, _) <- makeTestPinaforeContext True tcUIToolkit
             scriptaction <- let
                 ?pinafore = pc
-                in pinaforeInterpretFile "<test>" t
+                in ioRunInterpretResult $ pinaforeInterpretFile "<test>" t
             liftIO scriptaction
             liftIO $
                 case waitClick of
@@ -79,13 +79,13 @@ testClickButton waitClick text =
                     [b] -> gobjectEmitClicked b
                     _ -> fail "no single Button"
             _ -> fail "no single window"
-        traceBracket "close all windows" $ uitQuit
+        traceBracket "close all windows" $ uitExit
 
 testActions :: Bool -> [ContextTestTree]
 testActions waitClick =
-    [ testUIAction waitClick "return ()" $ \MkUIToolkit {..} -> uitQuit
-    , testUIAction waitClick "newpoint" $ \MkUIToolkit {..} -> uitQuit
-    , testUIAction waitClick "emptywindow" $ \MkUIToolkit {..} -> uitQuit
+    [ testUIAction waitClick "return ()" $ \MkUIToolkit {..} -> uitExit
+    , testUIAction waitClick "newpoint" $ \MkUIToolkit {..} -> uitExit
+    , testUIAction waitClick "emptywindow" $ \MkUIToolkit {..} -> uitExit
     , testClickButton waitClick "buttonwindow $ return ()"
     , testClickButton waitClick "buttonwindow newpoint"
     , testClickButton waitClick "buttonwindow $ emptywindow"

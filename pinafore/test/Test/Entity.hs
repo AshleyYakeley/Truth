@@ -15,7 +15,7 @@ scriptTest :: Text -> Text -> (IO () -> IO ()) -> ContextTestTree
 scriptTest name text checker =
     contextTestCase name text $ \t ->
         withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
-            action <- pinaforeInterpretFile "<test>" t
+            action <- ioRunInterpretResult $ pinaforeInterpretFile "<test>" t
             checker action
 
 pointTest :: Text -> ContextTestTree
@@ -35,13 +35,13 @@ badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
     testCase (unpack text) $
     withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
-        assertThrows $ pinaforeInterpretFile "<test>" $ prefix c <> text
+        assertThrows $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
 
 exceptionTest :: Text -> ContextTestTree
 exceptionTest text c =
     testCase (unpack text) $
     withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
-        action <- pinaforeInterpretFile "<test>" $ prefix c <> text
+        action <- ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
         assertThrows action
 
 testEntity :: TestTree
@@ -144,9 +144,15 @@ testEntity =
               , pointTest "do s <- newmemset; s -= 57; n <- get $ count s; testeqval 0 n; end"
               , pointTest "do s <- newmemset; s += 57; s -= 57; n <- get $ count s; testeqval 0 n; end"
               , pointTest
-                    "do s <- newmemset; s += 57; m <- get $ membership s; testeqval False (m 54); testeqval True (m 57); end"
-              , pointTest "do s <- newmemset; s -= 57; m <- get $ membership s; testeqval False (m 57); end"
-              , pointTest "do s <- newmemset; s += 57; s -= 57; m <- get $ membership s; testeqval False (m 57); end"
+                    "do s <- newmemset; s += 57; m54 <- get $ member s 54; m57 <- get $ member s 57; testeqval False m54; testeqval True m57; end"
+              , pointTest "do s <- newmemset; s -= 57; m57 <- get $ member s 57; testeqval False m57; end"
+              , pointTest "do s <- newmemset; s += 57; s -= 57; m57 <- get $ member s 57; testeqval False m57; end"
+              , pointTest
+                    "do s <- newmemset; member s 57 := True; m54 <- get $ member s 54; m57 <- get $ member s 57; testeqval False m54; testeqval True m57; end"
+              , pointTest "do s <- newmemset; member s 57 := False; m57 <- get $ member s 57; testeqval False m57; end"
+              , pointTest
+                    "do s <- newmemset; member s 57 := True; member s 57 := False; m57 <- get $ member s 57; testeqval False m57; end"
+              , pointTest "do r <- newmemref; immutref r := 5; fail \"unstopped\"; end"
               ]
         , context
               [ "convr :: Rational -> Rational;convr = id"
@@ -372,6 +378,8 @@ testEntity =
                     , pointTest "let opentype T1; opentype T2 in let p = property @T1 @T2 !\"p\" in pass"
                     , pointTest "let opentype T1 in let opentype T2; p = property @T1 @T2 !\"p\" in pass"
                     , pointTest "let opentype T1 in let opentype T2 in let p = property @T1 @T2 !\"p\" in pass"
+                    , badInterpretTest "let opentype T1 in let opentype T1 in pass"
+                    , badInterpretTest "let opentype T1; opentype T1 in pass"
                     ]
               , tgroup
                     "Maybe"
@@ -401,6 +409,51 @@ testEntity =
                           "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testneq {Right \"adbc\"} $ enta !$ {e1})"
                     , pointTest
                           "let enta = property @E @(Either Number Text) !\"enta\" in enta !$ {e1} := Right \"abc\" >> (testeq {Right \"abc\"} $ enta !$ {e1})"
+                    ]
+              ]
+        , tgroup
+              "subtype"
+              [ context ["opentype P", "opentype Q", "subtype P <= Q"] $
+                tgroup
+                    "1"
+                    [ pointTest "pass"
+                    , pointTest "let f :: P -> Q; f x = x in pass"
+                    , badInterpretTest "let f :: Q -> P; f x = x in pass"
+                    ]
+              , context ["opentype P", "subtype P <= Q", "opentype Q"] $
+                tgroup
+                    "2"
+                    [ pointTest "pass"
+                    , pointTest "let f :: P -> Q; f x = x in pass"
+                    , badInterpretTest "let f :: Q -> P; f x = x in pass"
+                    ]
+              , context ["subtype P <= Q", "opentype P", "opentype Q"] $
+                tgroup
+                    "3"
+                    [ pointTest "pass"
+                    , pointTest "let f :: P -> Q; f x = x in pass"
+                    , badInterpretTest "let f :: Q -> P; f x = x in pass"
+                    ]
+              , context ["opentype P", "opentype Q"] $
+                tgroup
+                    "local 1"
+                    [ pointTest "let subtype P <= Q in pass"
+                    , pointTest "let subtype P <= Q; f :: P -> Q; f x = x in pass"
+                    , badInterpretTest "let subtype P <= Q; f :: Q -> P; f x = x in pass"
+                    ]
+              , context ["opentype P"] $
+                tgroup
+                    "local 2"
+                    [ pointTest "let opentype Q; subtype P <= Q in pass"
+                    , pointTest "let opentype Q; subtype P <= Q; f :: P -> Q; f x = x in pass"
+                    , badInterpretTest "let opentype Q; subtype P <= Q; f :: Q -> P; f x = x in pass"
+                    ]
+              , context ["opentype Q"] $
+                tgroup
+                    "local 3"
+                    [ pointTest "let opentype P; subtype P <= Q in pass"
+                    , pointTest "let opentype P; subtype P <= Q; f :: P -> Q; f x = x in pass"
+                    , badInterpretTest "let opentype P; subtype P <= Q; f :: Q -> P; f x = x in pass"
                     ]
               ]
         , tgroup

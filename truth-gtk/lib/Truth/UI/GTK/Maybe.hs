@@ -21,14 +21,13 @@ createButton subj (MkCloseUnliftIO objRun MkAnObject {..}) =
         _ <- pushEdit noEditSource $ objEdit edits
         return ()
 
-data OneWholeViews sel f edit
+data OneWholeViews sel f
     = MissingOVS (Limit f)
-                 (ViewState sel (OneWholeEdit f edit))
-    | PresentOVS (ViewState sel (OneWholeEdit f edit))
+                 (ViewState sel)
+    | PresentOVS (ViewState sel)
 
-instance DynamicViewState (OneWholeViews sel f edit) where
-    type DynamicViewEdit (OneWholeViews sel f edit) = OneWholeEdit f edit
-    type DynamicViewSelEdit (OneWholeViews sel f edit) = sel
+instance DynamicViewState (OneWholeViews sel f) where
+    type DynamicViewSelEdit (OneWholeViews sel f) = sel
     dynamicViewStates (MissingOVS _ vs) = [vs]
     dynamicViewStates (PresentOVS vs) = [vs]
     dynamicViewFocus (MissingOVS _ vs) = vs
@@ -49,7 +48,7 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
                     _ <- push noEditSource [SumEditLeft $ MkWholeEdit deleteValue]
                     return ()
     let
-        getWidgets :: f () -> View sel (OneWholeEdit f edit) (OneWholeViews sel f edit)
+        getWidgets :: f () -> View sel (OneWholeEdit f edit) (OneWholeViews sel f)
         getWidgets fu =
             case retrieveOne fu of
                 FailureResult lfx -> do

@@ -7,9 +7,9 @@ import Truth.Core.Object.Subscriber
 import Truth.Core.Object.UnliftIO
 
 data Editor (edit :: Type) r = forall editor. MkEditor
-    { editorInit :: Object edit -> IO editor
+    { editorInit :: Object edit -> LifeCycleIO editor
     , editorUpdate :: editor -> Object edit -> [edit] -> EditContext -> IO ()
-    , editorDo :: editor -> Object edit -> IO r
+    , editorDo :: editor -> Object edit -> LifeCycleIO r
     }
 
 instance Functor (Editor edit) where
@@ -21,8 +21,8 @@ instance Applicative (Editor edit) where
         editorUpdate () _ _ _ = return ()
         editorDo () _ = return a
         in MkEditor {..}
-    (MkEditor (ei1 :: Object edit -> IO editor1) eu1 ed1) <*> (MkEditor (ei2 :: Object edit -> IO editor2) eu2 ed2) = let
-        editorInit :: Object edit -> IO (editor1, editor2)
+    (MkEditor (ei1 :: Object edit -> LifeCycleIO editor1) eu1 ed1) <*> (MkEditor (ei2 :: Object edit -> LifeCycleIO editor2) eu2 ed2) = let
+        editorInit :: Object edit -> LifeCycleIO (editor1, editor2)
         editorInit object = do
             e1 <- ei1 object
             e2 <- ei2 object
@@ -37,10 +37,11 @@ instance Applicative (Editor edit) where
             return $ ab a
         in MkEditor {..}
 
-subscribeEditor :: Subscriber edit -> Editor edit r -> IO r
+subscribeEditor :: Subscriber edit -> Editor edit r -> LifeCycleIO r
 subscribeEditor (MkCloseUnliftIO run (MkASubscriber anobject sub)) editor = let
     object = MkCloseUnliftIO run anobject
     in case editor of
            MkEditor initr update f -> do
                e <- initr object
-               runTransform run $ withLifeCycle (sub $ update e object) $ \() -> liftIO $ f e object
+               remonad (runTransform run) $ sub $ update e object
+               f e object

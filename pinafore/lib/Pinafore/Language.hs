@@ -1,5 +1,8 @@
 module Pinafore.Language
     ( PinaforePredefinitions
+    , PinaforeError
+    , InterpretResult
+    , ioRunInterpretResult
     , PinaforeAction
     , qTypeDescription
     , FromPinaforeType
@@ -14,21 +17,24 @@ module Pinafore.Language
     ) where
 
 import Control.Exception
+import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Convert
+import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Literal
 import Pinafore.Language.Predefined
 import Pinafore.Language.Read
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Type
+import Pinafore.Language.Type.Simplify
 import Shapes
 import System.IO.Error
 
 runPinaforeScoped ::
        (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
     => PinaforeScoped baseedit a
-    -> Result Text a
+    -> InterpretResult a
 runPinaforeScoped scp =
     runScoped $
     withNewPatternConstructors predefinedPatternConstructors $ withNewBindings (qValuesLetExpr predefinedBindings) scp
@@ -37,7 +43,7 @@ runPinaforeSourceScoped ::
        (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
     => FilePath
     -> PinaforeSourceScoped baseedit a
-    -> Result Text a
+    -> InterpretResult a
 runPinaforeSourceScoped fpath scp = runPinaforeScoped $ runSourcePos (initialPos fpath) scp
 
 parseValue ::
@@ -57,45 +63,48 @@ parseValueAtType text = do
     val <- parseValue @baseedit text
     typedAnyToPinaforeVal @baseedit val
 
-showEntityGroundValue ::
+entityTypedShowValue ::
        CovaryType dv
     -> EntityGroundType f
     -> DolanArguments dv (PinaforeType baseedit) f 'Positive t
     -> t
     -> Maybe String
-showEntityGroundValue NilListType (LiteralEntityGroundType t) NilDolanArguments v =
+entityTypedShowValue NilListType (LiteralEntityGroundType t) NilDolanArguments v =
     case literalTypeAsLiteral t of
         Dict -> Just $ unpack $ unLiteral $ toLiteral v
-showEntityGroundValue (ConsListType Refl NilListType) MaybeEntityGroundType (ConsDolanArguments t NilDolanArguments) (Just x) =
-    Just $ "Just " <> showPinaforeValue t x
-showEntityGroundValue (ConsListType Refl NilListType) MaybeEntityGroundType (ConsDolanArguments _t NilDolanArguments) Nothing =
+entityTypedShowValue (ConsListType Refl NilListType) MaybeEntityGroundType (ConsDolanArguments t NilDolanArguments) (Just x) =
+    Just $ "Just " <> typedShowValue t x
+entityTypedShowValue (ConsListType Refl NilListType) MaybeEntityGroundType (ConsDolanArguments _t NilDolanArguments) Nothing =
     Just "Nothing"
-showEntityGroundValue (ConsListType Refl NilListType) ListEntityGroundType (ConsDolanArguments t NilDolanArguments) v =
-    Just $ "[" <> intercalate ", " (fmap (showPinaforeValue t) v) <> "]"
-showEntityGroundValue (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) (a, b) =
-    Just $ "(" <> showPinaforeValue ta a <> ", " <> showPinaforeValue tb b <> ")"
-showEntityGroundValue (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments ta (ConsDolanArguments _tb NilDolanArguments)) (Left x) =
-    Just $ "Left " <> showPinaforeValue ta x
-showEntityGroundValue (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments _ta (ConsDolanArguments tb NilDolanArguments)) (Right x) =
-    Just $ "Right " <> showPinaforeValue tb x
-showEntityGroundValue _ _ _ _ = Nothing
+entityTypedShowValue (ConsListType Refl NilListType) ListEntityGroundType (ConsDolanArguments t NilDolanArguments) v =
+    Just $ "[" <> intercalate ", " (fmap (typedShowValue t) v) <> "]"
+entityTypedShowValue (ConsListType Refl (ConsListType Refl NilListType)) PairEntityGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) (a, b) =
+    Just $ "(" <> typedShowValue ta a <> ", " <> typedShowValue tb b <> ")"
+entityTypedShowValue (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments ta (ConsDolanArguments _tb NilDolanArguments)) (Left x) =
+    Just $ "Left " <> typedShowValue ta x
+entityTypedShowValue (ConsListType Refl (ConsListType Refl NilListType)) EitherEntityGroundType (ConsDolanArguments _ta (ConsDolanArguments tb NilDolanArguments)) (Right x) =
+    Just $ "Right " <> typedShowValue tb x
+entityTypedShowValue _ _ _ _ = Nothing
 
-showPinaforeGroundValue ::
+groundTypedShowValue ::
        PinaforeGroundType baseedit 'Positive dv t
     -> DolanArguments dv (PinaforeType baseedit) t 'Positive ta
     -> ta
     -> String
-showPinaforeGroundValue (EntityPinaforeGroundType ct t) args v
-    | Just str <- showEntityGroundValue ct t args v = str
-showPinaforeGroundValue _ _ _ = "<?>"
+groundTypedShowValue (EntityPinaforeGroundType ct t) args v
+    | Just str <- entityTypedShowValue ct t args v = str
+groundTypedShowValue _ _ _ = "<?>"
 
-showPinaforeSingularValue :: PinaforeSingularType baseedit 'Positive t -> t -> String
-showPinaforeSingularValue (VarPinaforeSingularType _) _ = "<?>"
-showPinaforeSingularValue (GroundPinaforeSingularType gt args) v = showPinaforeGroundValue gt args v
+singularTypedShowValue :: PinaforeSingularType baseedit 'Positive t -> t -> String
+singularTypedShowValue (VarPinaforeSingularType _) _ = "<?>"
+singularTypedShowValue (GroundPinaforeSingularType gt args) v = groundTypedShowValue gt args v
 
-showPinaforeValue :: PinaforeType baseedit 'Positive t -> t -> String
-showPinaforeValue NilPinaforeType v = never v
-showPinaforeValue (ConsPinaforeType ts tt) v = joinf (showPinaforeSingularValue ts) (showPinaforeValue tt) v
+typedShowValue :: PinaforeType baseedit 'Positive t -> t -> String
+typedShowValue NilPinaforeType v = never v
+typedShowValue (ConsPinaforeType ts tt) v = joinf (singularTypedShowValue ts) (typedShowValue tt) v
+
+showPinaforeValue :: QValue baseedit -> String
+showPinaforeValue (MkAnyValue (MkShimWit t conv) v) = typedShowValue t (fromEnhanced conv v)
 
 type Interact baseedit = StateT SourcePos (ReaderStateT (PinaforeScoped baseedit) IO)
 
@@ -117,14 +126,13 @@ runValue :: Handle -> QValue baseedit -> Interact baseedit (PinaforeAction basee
 runValue outh val =
     interactRunSourceScoped $
     (typedAnyToPinaforeVal val) <|> (fmap outputln $ typedAnyToPinaforeVal val) <|>
-    (case val of
-         MkAnyValue t v -> return $ liftIO $ hPutStrLn outh $ showPinaforeValue t v)
+    (return $ liftIO $ hPutStrLn outh $ showPinaforeValue val)
 
 interactParse ::
        forall baseedit. HasPinaforeEntityEdit baseedit
     => Text
     -> Interact baseedit (InteractiveCommand baseedit)
-interactParse t = remonad resultTextToM $ parseInteractiveCommand @baseedit t
+interactParse t = remonad ioRunInterpretResult $ parseInteractiveCommand @baseedit t
 
 interactLoop ::
        forall baseedit. (PinaforePredefinitions baseedit, ?pinafore :: PinaforeContext baseedit)
@@ -144,23 +152,39 @@ interactLoop inh outh echo = do
                 then liftIO $ hPutStr outh inputstr
                 else return ()
             liftIOWithUnlift $ \unlift ->
-                catch
+                catches
                     (runTransform unlift $ do
                          p <- interactParse $ pack inputstr
                          case p of
                              LetInteractiveCommand fbind ->
                                  lift $ do
                                      MkTransform bind <- liftRS fbind
+                                     liftRS $ bind $ return () -- check errors
                                      updateRS bind
                              ExpressionInteractiveCommand texpr -> do
                                  val <- interactEvalExpression texpr
                                  action <- runValue outh val
                                  lift $ lift $ runPinaforeAction action
-                             ShowTypeInteractiveCommand texpr -> do
-                                 MkAnyValue t _ <- interactEvalExpression texpr
-                                 liftIO $ hPutStrLn outh $ ":: " <> show t
-                             ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err) $ \err ->
-                    hPutStrLn outh $ "error: " <> ioeGetErrorString err
+                             ShowTypeInteractiveCommand showinfo texpr -> do
+                                 MkAnyValue (MkShimWit t shim) _ <- interactEvalExpression texpr
+                                 liftIO $
+                                     hPutStrLn outh $
+                                     ":: " <>
+                                     show t <>
+                                     if showinfo
+                                         then " # " <> show shim
+                                         else ""
+                             SimplifyTypeInteractiveCommand polarity ttype -> do
+                                 MkAnyW t <- lift $ liftRS ttype
+                                 liftIO $
+                                     hPutStrLn outh $
+                                     case polarity of
+                                         PositiveType -> show $ pinaforeSimplifyTypes @baseedit $ MkAnyInKind t
+                                         NegativeType -> show $ pinaforeSimplifyTypes @baseedit $ MkAnyInKind t
+                             ErrorInteractiveCommand err -> liftIO $ hPutStrLn outh $ unpack err)
+                    [ Handler $ \(err :: PinaforeError) -> hPutStrLn outh $ show err
+                    , Handler $ \err -> hPutStrLn outh $ "error: " <> ioeGetErrorString err
+                    ]
             interactLoop inh outh echo
 
 interact ::
@@ -172,4 +196,4 @@ interact ::
 interact inh outh echo = do
     hSetBuffering outh NoBuffering
     evalReaderStateT (evalStateT (interactLoop inh outh echo) (initialPos "<input>")) $
-        resultTextToM . runPinaforeScoped
+        ioRunInterpretResult . runPinaforeScoped

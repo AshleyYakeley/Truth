@@ -2,7 +2,7 @@ module Test.ReadType
     ( testReadTypes
     ) where
 
-import Language.Expression.Polarity
+import Data.Shim
 import Pinafore
 import Pinafore.Test
 import Shapes
@@ -12,7 +12,7 @@ import Test.Tasty.HUnit
 testReadType :: Text -> TestTree
 testReadType text =
     testCase (unpack text) $
-    resultTextToM $ do
+    ioRunInterpretResult $ do
         _ <- runTestPinaforeSourceScoped $ parseType @PinaforeEdit @'Positive text
         return ()
 
@@ -36,7 +36,7 @@ testReadTypes =
         , testReadType "Ref a"
         , testReadType "Ref +a"
         , testReadType "Ref {+a,b,-NewEntity}"
-        , testReadType "Set a"
-        , testReadType "Set +a"
-        , testReadType "Set {+a,b,-NewEntity}"
+        , testReadType "SetRef a"
+        , testReadType "SetRef +a"
+        , testReadType "SetRef {+a,b,-NewEntity}"
         ]

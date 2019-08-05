@@ -1,0 +1,6 @@
+3 + 4
+let p = [5,6,7] ++ [1,1,1]
+let f x = x ++ x
+:type f
+f p
+:simplify+ (a -> Literal) | ((Text & b) -> a)

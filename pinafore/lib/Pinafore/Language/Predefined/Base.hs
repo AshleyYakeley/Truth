@@ -4,6 +4,8 @@ module Pinafore.Language.Predefined.Base
     ) where
 
 import Data.Fixed (div', mod')
+import Data.Shim
+import Data.Time
 import Data.Time.Clock.System
 import Pinafore.Base
 import Pinafore.Language.DocTree
@@ -12,8 +14,7 @@ import Pinafore.Language.Morphism
 import Pinafore.Language.Order
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Reference
-import Pinafore.Language.Set
-import Pinafore.Language.Type
+import Pinafore.Language.SetRef
 import Pinafore.Storage.File
 import Shapes
 import Shapes.Numeric
@@ -55,10 +56,10 @@ newmemref = do
 
 newmemset ::
        forall baseedit. BaseEditLens MemoryCellEdit baseedit
-    => IO (PinaforeSet baseedit '( MeetType Entity A, A))
+    => IO (PinaforeSetRef baseedit '( MeetType Entity A, A))
 newmemset = do
     lens <- makeMemoryCellEditLens mempty
-    return $ meetValuePinaforeSet $ convertEditLens . lens . baseEditLens
+    return $ meetValuePinaforeSetRef $ convertEditLens . lens . baseEditLens
 
 base_predefinitions ::
        forall baseedit.
@@ -89,7 +90,17 @@ base_predefinitions =
                 , mkValEntry "||" "Boolean OR." (||)
                 , mkValEntry "not" "Boolean NOT." not
                 ]
-          , docTreeEntry "Text" "" [mkValEntry "<>" "Concatenate text." $ (<>) @Text]
+          , docTreeEntry
+                "Text"
+                ""
+                [ mkValEntry "<>" "Concatenate text." $ (<>) @Text
+                , mkValEntry "textlength" "The length of a piece of text." $ olength @Text
+                , mkValEntry
+                      "textsection"
+                      "`textsection start len text` is the section of `text` beginning at `start` of length `len`." $ \start len (text :: Text) ->
+                      take len $ drop start text
+                , mkValEntry "textconcat" "Concatenate texts." $ mconcat @Text
+                ]
           , docTreeEntry
                 "Numeric"
                 ""
@@ -186,6 +197,61 @@ base_predefinitions =
                             checkExactRational n >>= rationalInteger
                       ]
                 ]
+          , docTreeEntry
+                "Date & Time"
+                ""
+                [ docTreeEntry
+                      "Time & Duration"
+                      ""
+                      [ mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
+                      , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
+                      , mkValEntry "durationToSeconds" "Convert duration to seconds." nominalDiffTimeToSeconds
+                      , mkValEntry "dayDuration" "One day duration." nominalDay
+                      , mkValEntry "addDuration" "Add durations." $ (+) @NominalDiffTime
+                      , mkValEntry "subtractDuration" "Subtract durations." $ (-) @NominalDiffTime
+                      , mkValEntry "negateDuration" "Negate duration." $ negate @NominalDiffTime
+                      , mkValEntry "multiplyDuration" "Multiply a duration by a number." $ \(n :: Number) (d :: NominalDiffTime) ->
+                            (realToFrac n) * d
+                      , mkValEntry "divideDuration" "Divide durations." $ \(a :: NominalDiffTime) (b :: NominalDiffTime) ->
+                            (realToFrac (a / b) :: Number)
+                      , mkValEntry "addTime" "Add duration to time." addUTCTime
+                      , mkValEntry "diffTime" "Difference of times." diffUTCTime
+                      , mkValEntry "getCurrentTime" "Get the current time." getCurrentTime
+                      ]
+                , docTreeEntry
+                      "Calendar"
+                      ""
+                      [ mkValPatEntry "Day" "Construct a Day from year, month, day." fromGregorian $ \day -> let
+                            (y, m, d) = toGregorian day
+                            in Just (y, (m, (d, ())))
+                      , mkValEntry "dayToModifiedJulian" "Convert to MJD." toModifiedJulianDay
+                      , mkValEntry "modifiedJulianToDay" "Convert from MJD." ModifiedJulianDay
+                      , mkValEntry "addDays" "Add count to days." addDays
+                      , mkValEntry "diffDays" "Difference of days." diffDays
+                      ]
+                , docTreeEntry
+                      "Time of Day"
+                      ""
+                      [ mkValPatEntry "TimeOfDay" "Construct a TimeOfDay from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
+                            Just (todHour, (todMin, (todSec, ())))
+                      , mkValEntry "midnight" "Midnight." midnight
+                      , mkValEntry "midday" "Midday." midday
+                      ]
+                , docTreeEntry
+                      "Local Time"
+                      ""
+                      [ mkValPatEntry "LocalTime" "Construct a LocalTime from day and time of day." LocalTime $ \LocalTime {..} ->
+                            Just (localDay, (localTimeOfDay, ()))
+                      , mkValEntry "timeToLocal" "Convert a time to local time, given a time zone offset in minutes" $ \i ->
+                            utcToLocalTime $ minutesToTimeZone i
+                      , mkValEntry "localToTime" "Convert a local time to time, given a time zone offset in minutes" $ \i ->
+                            localTimeToUTC $ minutesToTimeZone i
+                      , mkValEntry "getTimeZone" "Get the offset for a time in the current time zone." $ \t ->
+                            fmap timeZoneMinutes $ getTimeZone t
+                      , mkValEntry "getCurrentTimeZone" "Get the current time zone offset." $
+                        fmap timeZoneMinutes getCurrentTimeZone
+                      ]
+                ]
           ]
     , docTreeEntry
           "Maybe"
@@ -204,6 +270,8 @@ base_predefinitions =
           ""
           [ mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
           , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
+          , mkValEntry "toPair" "Construct a pair." $ (,) @A @B
+          , mkValEntry "pair" "Construct a pair." $ \(a :: A) -> (a, a)
           ]
     , docTreeEntry
           "Either"
@@ -216,7 +284,11 @@ base_predefinitions =
                 case v of
                     Right a -> Just (a, ())
                     _ -> Nothing
-          , mkValEntry "either" "Eliminate an Either" $ either @A @C @B
+          , mkValEntry "fromEither" "Eliminate an Either" $ either @A @C @B
+          , mkValEntry "either" "Eliminate an Either" $ \(v :: Either A A) ->
+                case v of
+                    Left a -> a
+                    Right a -> a
           ]
     , docTreeEntry
           "Lists"
@@ -297,13 +369,19 @@ base_predefinitions =
                 "A constant reference for a value."
                 (pure :: A -> PinaforeImmutableReference baseedit A)
           , mkValEntry
+                "immutref"
+                "Convert a reference to immutable.\n`immutref r = {%r}`"
+                (id :: PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A)
+          , mkValEntry
                 "comapref"
                 "Map a function on getting a reference."
-                (coMapRange :: (A -> B) -> PinaforeReference baseedit '( C, A) -> PinaforeReference baseedit '( C, B))
+                (coRangeLift :: (A -> B) -> PinaforeReference baseedit '( C, A) -> PinaforeReference baseedit '( C, B))
           , mkValEntry
                 "contramapref"
                 "Map a function on setting a reference."
-                (contraMapRange :: (B -> A) -> PinaforeReference baseedit '( A, C) -> PinaforeReference baseedit '( B, C))
+                (contraRangeLift :: (B -> A) -> PinaforeReference baseedit '( A, C) -> PinaforeReference baseedit '( B, C))
+          , mkValEntry "lensmapref" "Map getter & pushback functions on a reference." $
+            pinaforeFLensReference @baseedit @AP @AQ @B
           , mkValEntry
                 "applyref"
                 "Combine references."
@@ -331,36 +409,35 @@ base_predefinitions =
           [ mkValEntry
                 "comapset"
                 "Map a function on getting from a set."
-                (coMapRange :: (A -> B) -> PinaforeSet baseedit '( C, A) -> PinaforeSet baseedit '( C, B))
+                (coRangeLift :: (A -> B) -> PinaforeSetRef baseedit '( C, A) -> PinaforeSetRef baseedit '( C, B))
           , mkValEntry
                 "contramapset"
                 "Map a function on setting to a set."
-                (contraMapRange :: (B -> A) -> PinaforeSet baseedit '( A, C) -> PinaforeSet baseedit '( B, C))
+                (contraRangeLift :: (B -> A) -> PinaforeSetRef baseedit '( A, C) -> PinaforeSetRef baseedit '( B, C))
           , mkValEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
-            pinaforeSetMeet @baseedit @A
+            pinaforeSetRefMeet @baseedit @A
           , mkValEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
-            pinaforeSetJoin @baseedit @A
-          , mkValEntry "setsum" "Sum of sets." $ pinaforeSetSum @baseedit @AP @AQ @BP @BQ
+            pinaforeSetRefJoin @baseedit @A
+          , mkValEntry "setsum" "Sum of sets." $ pinaforeSetRefSum @baseedit @AP @AQ @BP @BQ
+          , mkValEntry "setproduct" "Product of sets. The resulting set will be read-only." $
+            pinaforeSetRefProduct @baseedit @AP @AQ @BP @BQ
           , mkValEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
-          , mkValEntry "membership" "Get the membership of a set." $ pinaforeSetMembership @baseedit
-          , mkValEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetSingle @baseedit @A
-          , mkValEntry "count" "Count of members in a set." $ pinaforeSetFunc @baseedit @TopType @Int olength
-          , mkValEntry "sum" "Sum of numbers in a set." $ pinaforeSetFunc @baseedit @Number @Number sum
-          , mkValEntry "mean" "Mean of numbers in a set." $
-            pinaforeSetFunc @baseedit @Number @Number $ \s -> sum s / fromIntegral (olength s)
-          , mkValEntry "newentity" "Create a new entity in a set and act on it." $ pinaforeSetAddNew @baseedit
+          , mkValEntry "member" "A reference to the membership of a value in a set." $ pinaforeSetRefMember @baseedit @A
+          , mkValEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetRefSingle @baseedit @A
+          , mkValEntry "count" "Count of members in a set." $ pinaforeSetRefFunc @baseedit @TopType @Int olength
+          , mkValEntry "newentity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew @baseedit
           , mkValEntry
                 "+="
                 "Add an entity to a set."
-                (pinaforeSetAdd :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
+                (pinaforeSetRefAdd :: PinaforeSetRef baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
           , mkValEntry
                 "-="
                 "Remove an entity from a set."
-                (pinaforeSetRemove :: PinaforeSet baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
+                (pinaforeSetRefRemove :: PinaforeSetRef baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
           , mkValEntry
                 "removeall"
                 "Remove all entities from a set."
-                (pinaforeSetRemoveAll :: PinaforeSet baseedit '( BottomType, TopType) -> PinaforeAction baseedit ())
+                (pinaforeSetRefRemoveAll :: PinaforeSetRef baseedit '( BottomType, TopType) -> PinaforeAction baseedit ())
           , mkValEntry "newmemset" "Create a new set reference to memory, initially empty." $ newmemset @baseedit
           ]
     , docTreeEntry
@@ -368,6 +445,10 @@ base_predefinitions =
           "Morphisms relate entities."
           [ mkValEntry "identity" "The identity morphism." $ identityPinaforeMorphism @baseedit @A
           , mkValEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
+          , mkValEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
+            pairPinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
+          , mkValEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
+            eitherPinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
           , mkValEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseedit @AP @AQ @BP @BQ
           , mkValEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseedit @A @BP @BQ
           , mkValEntry "!@" "Co-apply a morphism to a reference." $
@@ -377,9 +458,13 @@ base_predefinitions =
     , docTreeEntry
           "Orders"
           ""
-          [ mkValEntry "alphabetical" "Alphabetical order." $ alphabetical @baseedit
-          , mkValEntry "numerical" "Numercal order." $ numerical @baseedit
-              --, mkValEntry "chronological" "Chronological order." $ chronological @baseedit
+          [ mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @baseedit @Text
+          , mkValEntry "numerical" "Numercal order." $ ordOrder @baseedit @Number
+          , mkValEntry "chronological" "Chronological order." $ ordOrder @baseedit @UTCTime
+          , mkValEntry "durational" "Durational order." $ ordOrder @baseedit @NominalDiffTime
+          , mkValEntry "calendrical" "Day order." $ ordOrder @baseedit @Day
+          , mkValEntry "horological" "Time of day order." $ ordOrder @baseedit @TimeOfDay
+          , mkValEntry "localchronological" "Local time order." $ ordOrder @baseedit @LocalTime
           , mkValEntry "orders" "Join orders by priority." $ orders @baseedit @A
           , mkValEntry
                 "maporder"

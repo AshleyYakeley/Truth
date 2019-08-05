@@ -2,25 +2,5 @@
 
 Pinafore is a language that allows you to structure information and create user interfaces for it.
 
-## Installation
-
-You can't, it's not ready yet.
-
-## Invocation
-
-Usage:
-```text
-pinafore [-i|--interactive] [-n|--no-run] [--data PATH] [SCRIPT]
-```
-
-Call `pinafore` with one or more scripts containing actions to run those actions.
-
-By default, pinafore will store local information in the directory `$XDG_DATA_HOME/pinafore` (or else `$HOME/.local/share/pinafore`).
-Use `--data` to specify a different directory.
-
-To just parse and type-check a file without running it, use `-n` or `--no-run`.
-
-### Interactive Mode
-
-If `pinafore` is invoked without any scripts and standard input is a terminal, then it will run in interactive mode.
-Interactive mode can also be forced using `-i` or `--interactive`.
+Currently it's at the "proof of concept" stage.
+You can build it from source and run it.

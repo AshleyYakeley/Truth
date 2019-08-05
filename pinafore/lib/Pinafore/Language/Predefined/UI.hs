@@ -2,13 +2,15 @@ module Pinafore.Language.Predefined.UI
     ( ui_predefinitions
     ) where
 
+import Data.Shim
+import Data.Time
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Morphism
+import Pinafore.Language.Order
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Reference
-import Pinafore.Language.Set
-import Pinafore.Language.Type
+import Pinafore.Language.SetRef
 import Pinafore.Language.UI
 import Pinafore.Storage.File
 import Shapes
@@ -16,7 +18,7 @@ import Truth.Core
 
 valSpecText ::
        UISpec sel (WholeEdit (Know Text)) -> PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec sel baseedit
-valSpecText spec val = mapUISpec val spec
+valSpecText spec val = mapEditUISpec val spec
 
 clearText :: EditFunction (WholeEdit (Know Text)) (WholeEdit Text)
 clearText = funcEditFunction (fromKnow mempty)
@@ -27,10 +29,11 @@ ui_map = fmap
 ui_table ::
        forall baseedit. (?pinafore :: PinaforeContext baseedit, HasPinaforeEntityEdit baseedit)
     => [(PinaforeReference baseedit '( BottomType, Text), A -> PinaforeReference baseedit '( BottomType, Text))]
-    -> PinaforeSet baseedit '( A, MeetType Entity A)
+    -> PinaforeOrder baseedit A
+    -> PinaforeSetRef baseedit '( A, MeetType Entity A)
     -> (A -> PinaforeAction baseedit TopType)
     -> UISpec A baseedit
-ui_table cols val onDoubleClick = let
+ui_table cols (MkPinaforeOrder geto order) val onDoubleClick = let
     showCell :: Know Text -> (Text, TableCellProps)
     showCell (Known s) = (s, tableCellPlain)
     showCell Unknown = ("unknown", tableCellPlain {tcItalic = True})
@@ -45,7 +48,9 @@ ui_table cols val onDoubleClick = let
     in mapSelectionUISpec meet2 $
        tableUISpec
            (fmap getColumn cols)
-           (unPinaforeSet $ contraMapRange meet2 val)
+           order
+           (\mea -> applyPinaforeFunction geto $ constEditFunction $ Known $ meet2 mea)
+           (unPinaforeSetRef $ contraRangeLift meet2 val)
            (\a -> runPinaforeAction $ void $ onDoubleClick $ meet2 a)
 
 type PickerType = Know (MeetType Entity A)
@@ -55,7 +60,7 @@ type PickerPairType = (PickerType, Text)
 ui_pick ::
        forall baseedit.
        PinaforeMorphism baseedit '( A, TopType) '( BottomType, Text)
-    -> PinaforeSet baseedit '( A, MeetType Entity A)
+    -> PinaforeSetRef baseedit '( A, MeetType Entity A)
     -> PinaforeReference baseedit '( A, MeetType Entity A)
     -> UISpec BottomType baseedit
 ui_pick nameMorphism fset ref = let
@@ -72,8 +77,8 @@ ui_pick nameMorphism fset ref = let
     opts :: EditFunction baseedit (ListEdit [PickerPairType] (WholeEdit PickerPairType))
     opts =
         (orderedKeyList @(FiniteSet PickerPairType) $ \(_, a) (_, b) -> compare a b) .
-        convertEditFunction . applyPinaforeFunction getNames (pinaforeSetFunctionValue fset)
-    in optionUISpec @baseedit @PickerType opts $ pinaforeReferenceToLens $ contraMapRange meet2 ref
+        convertEditFunction . applyPinaforeFunction getNames (pinaforeSetRefFunctionValue fset)
+    in optionUISpec @baseedit @PickerType opts $ pinaforeReferenceToLens $ contraRangeLift meet2 ref
 
 actionReference ::
        (?pinafore :: PinaforeContext baseedit)
@@ -91,7 +96,7 @@ ui_button ::
 ui_button text raction = buttonUISpec (clearText . immutableReferenceToFunction text) $ actionReference raction
 
 ui_label :: forall baseedit. PinaforeImmutableReference baseedit Text -> UISpec BottomType baseedit
-ui_label text = mapUISpec (immutableReferenceToLens text) $ uiUnknownValue mempty $ labelUISpec
+ui_label text = mapEditUISpec (immutableReferenceToLens text) $ uiUnknownValue mempty $ labelUISpec
 
 ui_dynamic :: forall baseedit. PinaforeImmutableReference baseedit (UISpec A baseedit) -> UISpec A baseedit
 ui_dynamic uiref = switchUISpec $ pinaforeImmutableReferenceValue nullUISpec uiref
@@ -121,7 +126,10 @@ ui_withselection :: (PinaforeAction baseedit A -> UISpec A baseedit) -> UISpec A
 ui_withselection f = withAspectUISpec $ \aspect -> f $ aspectToAction aspect
 
 ui_textarea :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec BottomType baseedit
-ui_textarea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertUISpec textAreaUISpec
+ui_textarea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertEditUISpec textAreaUISpec
+
+ui_calendar :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Day)) -> UISpec BottomType baseedit
+ui_calendar day = mapEditUISpec day $ uiUnknownValue (fromGregorian 1970 01 01) calendarUISpec
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c
@@ -192,8 +200,9 @@ ui_predefinitions =
           , mkValEntry "ui_pick" "A drop-down menu." $ ui_pick @baseedit
           , mkValEntry
                 "ui_table"
-                "A list table. First arg is columns (name, property), second is the window to open for a selection, third is the set of items." $
+                "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection." $
             ui_table @baseedit
+          , mkValEntry "ui_calendar" "A calendar." $ ui_calendar @baseedit
           , mkValEntry "ui_scrolled" "A scrollable container." $ ui_scrolled @baseedit
           , mkValEntry "ui_dynamic" "A UI that can be updated to different UIs." $ ui_dynamic @baseedit
           ]
@@ -210,6 +219,6 @@ ui_predefinitions =
           "User interface windows."
           [ mkValEntry "openwindow" "Open a new window with this title and UI." openwindow
           , mkValEntry "closewindow" "Close a window." pwClose
-          , mkValEntry "closeallwindows" "Close all windows." pinaforeCloseAllWindows
+          , mkValEntry "exit_ui" "Exit the user interface." pinaforeExit
           ]
     ]

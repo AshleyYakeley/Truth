@@ -1,0 +1,133 @@
+let
+
+std_window :: Ref +Text -> (Action a -> [MenuItem]) -> UI a -> Action Window;
+std_window title moremenus contents = afix $ \window -> let
+    basemenus :: [MenuItem];
+    basemenus =
+        [
+            menu_submenu "File"
+            [
+                menu_action "Close" (Just "Ctrl+W") {closewindow window},
+                menu_separator,
+                menu_action "Exit" (Just "Ctrl+Q") {exit_ui}
+            ],
+            menu_submenu "Edit"
+            [
+                menu_action "Undo" (Just "Ctrl+Z") {queue_undo},
+                menu_action "Redo" (Just "Ctrl+Y") {queue_redo}
+            ]
+        ];
+    menus getsel = {basemenus ++ moremenus getsel};
+    in openwindow title menus $ ui_scrolled contents;
+
+selection_window :: (Text, Text) -> (set & SetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> ((item | NewEntity) -> Action Any) -> (set -> UI item) -> Action Window;
+selection_window (inames,inamep) iset iopen inew iui = let
+    moremenus getsel =
+        [
+            menu_submenu "Selection"
+            [
+                menu_action ("New " <> inames) (Just "Ctrl+K") {do i <- newentity iset; inew i; iopen i; end},
+                menu_action "View" Nothing {getsel >>= iopen},
+                menu_action "Delete" Nothing {getsel >>= \p -> iset -= p}
+            ]
+        ];
+    in std_window {inamep} moremenus (iui iset);
+
+closedtype EventTime
+    = EventTimeDay Day !"EventTimeDay" # all-day event
+    | EventTimeTime LocalTime !"EventTimeTime"; # event at a time
+
+showEventTime :: EventTime -> Text;
+showEventTime et = case et of
+    EventTimeDay d -> totext d;
+    EventTimeTime t -> totext t;
+    end;
+
+eventTimeDay :: EventTime -> Day;
+eventTimeDay et = case et of
+    EventTimeDay d -> d;
+    EventTimeTime (LocalTime d _) -> d
+    end;
+
+setEventTimeDay :: Day -> EventTime -> EventTime;
+setEventTimeDay d et = case et of
+    EventTimeDay _ -> EventTimeDay d;
+    EventTimeTime (LocalTime _ t) -> EventTimeTime (LocalTime d t)
+    end;
+
+ui_eventTime :: Ref EventTime -> UI None;
+ui_eventTime r = ui_calendar $ lensmapref eventTimeDay setEventTimeDay r;
+
+# for ordering
+eventTimeTime :: EventTime -> LocalTime;
+eventTimeTime et = case et of
+    EventTimeDay d -> LocalTime d midnight;
+    EventTimeTime t -> t
+    end;
+
+eventTimeOrder :: Order EventTime;
+eventTimeOrder = maporder eventTimeTime localchronological;
+
+opentype Event;
+events :: SetRef Event;
+events = property @Event @() !"Events" !@ {()};
+
+eventName = property @Event @Text !"eventName";
+eventTime = property @Event @EventTime !"eventTime";
+
+eventOrder :: Order Event;
+eventOrder = orderon eventTime eventTimeOrder;
+
+eventData :: SetRef (EventTime,Text);
+eventData = (eventTime !** eventName) !$$ events;
+
+eventDataOrder :: Order (EventTime,Text);
+eventDataOrder = maporder fst eventTimeOrder;
+
+eventList :: Ref +[(EventTime,Text)];
+eventList = members eventDataOrder eventData;
+
+overviewRef :: Ref +Text;
+overviewRef = {textconcat $ maplist (\(t,n) -> showEventTime t <> ": " <> n <> "\n") %eventList};
+
+overviewPage :: (UI None,UI None);
+overviewPage = (ui_label {"Overview"},ui_label overviewRef);
+
+tablePage :: (UI None,UI None);
+tablePage = let
+    columns :: [(Ref +Text, Event -> Ref Text)];
+    columns = let
+        timeColumn :: (Ref +Text, Event -> Ref Text);
+        timeColumn = ({"Time"},\e -> {showEventTime $ %(eventTime !$ {e})});
+        nameColumn :: (Ref +Text, Event -> Ref Text);
+        nameColumn = ({"Name"},\e -> eventName !$ {e});
+        in [timeColumn,nameColumn];
+    in (ui_label {"Events"},ui_ignore $ ui_table columns eventOrder events eventWindow);
+
+eventWindow :: Event -> Action Window;
+eventWindow evt = std_window (eventName !$ {evt}) (\_ -> []) $ ui_vertical
+    [
+        (ui_eventTime $ eventTime !$ {evt},False),
+        (ui_textentry $ eventName !$ {evt},True)
+    ];
+
+getLocalTime :: Action LocalTime;
+getLocalTime = do
+    t <- getCurrentTime;
+    tz <- getTimeZone t;
+    return $ timeToLocal tz t;
+    end;
+
+getCurrentDay :: Action Day;
+getCurrentDay = do
+    LocalTime d _ <- getLocalTime;
+    return d;
+    end;
+
+eventsWindow :: Action Window;
+eventsWindow = selection_window ("Event","Events") events eventWindow (\i -> do day <- getCurrentDay; eventTime !$ {i} := EventTimeDay day; end) $ \_ -> ui_pages [overviewPage, tablePage];
+
+in do
+    _ <- eventsWindow;
+    return ();
+    end

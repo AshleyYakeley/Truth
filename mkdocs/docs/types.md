@@ -21,6 +21,16 @@ Closed entity types include lists, maybes, pairs, and eithers of entities, as we
 
 `Text <= Literal`
 
+`Time <= Literal`
+
+`Duration <= Literal`
+
+`Day <= Literal`
+
+`TimeOfDay <= Literal`
+
+`LocalTime <= Literal`
+
 ### Maybe
 
 `Maybe a`  
@@ -142,7 +152,7 @@ The type parameter is the type of the selection.
 
 ## Sets
 
-`Set {-p,+q}`
+`SetRef {-p,+q}`
 
 ## Morphisms
 

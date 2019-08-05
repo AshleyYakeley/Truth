@@ -1,8 +1,10 @@
 module Language.Expression.Unitype where
 
+import Data.Shim.JoinMeet
+import Data.Shim.Polarity
+import Data.Shim.ShimWit
 import Language.Expression.Renamer
 import Language.Expression.Subsumer
-import Language.Expression.TypeF
 import Language.Expression.TypeSystem
 import Language.Expression.Unifier
 import Shapes
@@ -27,13 +29,19 @@ instance MonadTrans (UnitypeRenamerT val) where
 instance MonadTransConstraint Monad (UnitypeRenamerT val) where
     hasTransConstraint = Dict
 
+unitypeShimWit ::
+       forall polarity (val :: Type). Is PolarityType polarity
+    => ShimWit (->) ((:~:) val) polarity val
+unitypeShimWit = mkShimWit Refl
+
 instance Renamer (UnitypeRenamerT val) where
     type RenamerNegWitness (UnitypeRenamerT val) = ((:~:) val)
     type RenamerPosWitness (UnitypeRenamerT val) = ((:~:) val)
-    renameTSNegWitness Refl = return $ mkGenTypeF Refl
-    renameTSPosWitness Refl = return $ mkGenTypeF Refl
+    type RenamerShim (UnitypeRenamerT val) = (->)
+    renameNegWitness Refl = return unitypeShimWit
+    renamePosWitness Refl = return unitypeShimWit
     type RenamerNamespaceT (UnitypeRenamerT val) = UnitypeNamespaceT val
-    renameNewVar = return $ MkNewVar Refl Refl id
+    renameNewVar = return $ MkNewVar unitypeShimWit unitypeShimWit
     namespace (MkUnitypeNamespaceT ia) = ia
     runRenamer (MkUnitypeRenamerT ia) = ia
 
@@ -46,13 +54,14 @@ instance (Monad m, Eq name) => Unifier (UnitypeUnifier m name val) where
     type UnifierMonad (UnitypeUnifier m name val) = m
     type UnifierNegWitness (UnitypeUnifier m name val) = ((:~:) val)
     type UnifierPosWitness (UnitypeUnifier m name val) = ((:~:) val)
+    type UnifierShim (UnitypeUnifier m name val) = (->)
     type UnifierSubstitutions (UnitypeUnifier m name val) = ()
-    unifyNegWitnesses Refl Refl cont = cont Refl $ pure (id, id)
-    unifyPosWitnesses Refl Refl cont = cont Refl $ pure (id, id)
-    unifyPosNegWitnesses Refl Refl = return $ pure id
+    unifyNegWitnesses Refl Refl = return $ uuLiftNegShimWit $ MkShimWit Refl $ meetf id id
+    unifyPosWitnesses Refl Refl = return $ uuLiftPosShimWit $ MkShimWit Refl $ joinf id id
+    unifyPosNegWitnesses Refl Refl = return id
     solveUnifier (MkUnitypeUnifier ia) = pure $ (runIdentity ia, ())
-    unifierPosSubstitute () Refl = return $ mkGenTypeF Refl
-    unifierNegSubstitute () Refl = return $ mkGenTypeF Refl
+    unifierPosSubstitute () Refl = return unitypeShimWit
+    unifierNegSubstitute () Refl = return unitypeShimWit
     simplify = return
 
 newtype UnitypeSubsumer (m :: Type -> Type) (val :: Type) a =
@@ -63,9 +72,10 @@ instance Monad m => Subsumer (UnitypeSubsumer m val) where
     type SubsumerMonad (UnitypeSubsumer m val) = m
     type SubsumerNegWitness (UnitypeSubsumer m val) = ((:~:) val)
     type SubsumerPosWitness (UnitypeSubsumer m val) = ((:~:) val)
+    type SubsumerShim (UnitypeSubsumer m val) = (->)
     type SubsumerSubstitutions (UnitypeSubsumer m val) = ()
     solveSubsumer (MkUnitypeSubsumer ia) = pure $ (runIdentity ia, ())
-    subsumerNegSubstitute () Refl = return $ mkGenTypeF Refl
+    subsumerNegSubstitute () Refl = return $ unitypeShimWit
     subsumePosWitnesses Refl Refl = return $ pure id
     simplifyPosType = id
 
@@ -80,5 +90,5 @@ instance (Monad m, Eq name, UnitypeValue val) => TypeSystem (Unitype m name val)
     type TSUnifier (Unitype m name val) = UnitypeUnifier (UnitypeRenamerT val m) name val
     type TSSubsumer (Unitype m name val) = UnitypeSubsumer (UnitypeRenamerT val m) val
     type TSScoped (Unitype m name val) = m
-    tsFunctionPosWitness Refl Refl cont = cont Refl abstractValue
-    tsFunctionNegWitness Refl Refl cont = cont Refl applyValue
+    tsFunctionPosWitness Refl Refl = MkShimWit Refl abstractValue
+    tsFunctionNegWitness Refl Refl = MkShimWit Refl applyValue

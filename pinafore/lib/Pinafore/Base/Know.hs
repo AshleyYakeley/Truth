@@ -8,11 +8,12 @@ module Pinafore.Base.Know
     , maybeToKnow
     , knowToMaybe
     , knowMaybe
+    , knowMaybeLens
     , catKnowns
     , uiUnknownValue
     ) where
 
-import Language.Expression.Dolan
+import Data.Shim
 import Shapes
 import Truth.Core
 
@@ -44,8 +45,11 @@ instance Show a => Show (Know a) where
     show Unknown = "Unknown"
     show (Known a) = "Known " <> show a
 
-instance HasDolanVary '[ 'Covariance] Know where
-    dolanVary = ConsDolanVarianceMap fmap $ NilDolanVarianceMap
+instance RepresentationalRole Know where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance HasVariance 'Covariance Know where
+    varianceRepresentational = Just Dict
 
 fromKnow :: a -> Know a -> a
 fromKnow _ (Known v) = v
@@ -71,8 +75,11 @@ knowToMaybe (MkKnow ma) = ma
 knowMaybe :: Bijection (Know a) (Maybe a)
 knowMaybe = MkIsomorphism knowToMaybe maybeToKnow
 
+knowMaybeLens :: Lens' Maybe a (Know a)
+knowMaybeLens = MkLens Known $ \ka _ -> knowToMaybe ka
+
 catKnowns :: Filterable f => f (Know a) -> f a
 catKnowns = catMaybes . fmap knowToMaybe
 
 uiUnknownValue :: Eq a => a -> UISpec sel (WholeEdit a) -> UISpec sel (WholeEdit (Know a))
-uiUnknownValue def ui = mapUISpec (bijectionWholeEditLens knowMaybe) $ mapMaybeNothingUISpec def ui
+uiUnknownValue def ui = mapEditUISpec (bijectionWholeEditLens knowMaybe) $ mapMaybeNothingUISpec def ui

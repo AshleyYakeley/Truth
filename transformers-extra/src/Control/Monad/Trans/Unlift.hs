@@ -149,6 +149,12 @@ instance MonadTransUnlift (ReaderT s) where
 
 instance Monoid s => MonadTransSemiUnlift (WriterT s)
 
+writerDiscardingUnlift :: Unlift (WriterT s)
+writerDiscardingUnlift =
+    MkUnlift $ \mr -> do
+        (r, _discarded) <- runWriterT mr
+        return r
+
 instance Monoid s => MonadTransUnlift (WriterT s) where
     liftWithUnlift call = do
         var <- liftIO $ newMVar mempty
@@ -162,19 +168,18 @@ instance Monoid s => MonadTransUnlift (WriterT s) where
         totaloutput <- liftIO $ takeMVar var
         tell totaloutput
         return r
-    getDiscardingUnlift =
-        return $
-        MkUnlift $ \mr -> do
-            (r, _discarded) <- runWriterT mr
-            return r
+    getDiscardingUnlift = return writerDiscardingUnlift
 
 instance MonadTransSemiUnlift (StateT s)
+
+stateDiscardingUnlift :: s -> Unlift (StateT s)
+stateDiscardingUnlift s =
+    MkUnlift $ \mr -> do
+        (r, _discarded) <- runStateT mr s
+        return r
 
 instance MonadTransUnlift (StateT s) where
     liftWithUnlift call = liftWithMVarStateT (\var -> call $ mvarUnlift var)
     getDiscardingUnlift = do
         s <- get
-        return $
-            MkUnlift $ \mr -> do
-                (r, _discarded) <- runStateT mr s
-                return r
+        return $ stateDiscardingUnlift s

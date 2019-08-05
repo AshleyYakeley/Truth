@@ -187,6 +187,84 @@ instance ( KeyContainer cont
             item <- mutableReadToSubject $ knownKeyItemReadFunction key mr
             write $ KeyInsertReplaceItem item
 
+unliftKeyElementEditLens ::
+       forall cont edit.
+       ( KeyContainer cont
+       , HasKeyReader cont (EditReader edit)
+       , ApplicableEdit edit
+       , FullSubjectReader (EditReader edit)
+       )
+    => Unlift (StateT (ContainerKey cont))
+    -> EditLens (KeyEdit cont edit) (MaybeEdit edit)
+unliftKeyElementEditLens unlift = let
+    efGet ::
+           ReadFunctionT (StateT (ContainerKey cont)) (KeyReader cont (EditReader edit)) (OneReader Maybe (EditReader edit))
+    efGet mr ReadHasOne = do
+        kk <- lift $ mr KeyReadKeys
+        key <- get
+        return $
+            if elem key kk
+                then Just ()
+                else Nothing
+    efGet mr (ReadOne rt) = do
+        key <- get
+        lift $ mr $ KeyReadItem key rt
+    efUpdate ::
+           forall m. MonadIO m
+        => KeyEdit cont edit
+        -> MutableRead m (EditReader (KeyEdit cont edit))
+        -> StateT (ContainerKey cont) m [MaybeEdit edit]
+    efUpdate KeyClear _ = return [SumEditLeft (MkWholeEdit Nothing)]
+    efUpdate (KeyDeleteItem k) _ = do
+        key <- get
+        return $
+            if k == key
+                then [SumEditLeft (MkWholeEdit Nothing)]
+                else []
+    efUpdate (KeyEditItem k edit) mr = do
+        oldkey <- get
+        if k == oldkey
+            then do
+                mnewkey <- lift $ getComposeM $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr
+                case mnewkey of
+                    Just newkey -> do
+                        put newkey
+                        return [SumEditRight (MkOneEdit edit)]
+                    Nothing -> return []
+            else return []
+    efUpdate (KeyInsertReplaceItem item) _ = do
+        key <- get
+        return $
+            if elementKey @cont item == key
+                then [SumEditLeft (MkWholeEdit (Just item))]
+                else []
+    elFunction :: AnEditFunction (StateT (ContainerKey cont)) (KeyEdit cont edit) (MaybeEdit edit)
+    elFunction = MkAnEditFunction {..}
+    elPutEdit ::
+           forall m. MonadIO m
+        => MaybeEdit edit
+        -> MutableRead m (EditReader (KeyEdit cont edit))
+        -> StateT (ContainerKey cont) m (Maybe [KeyEdit cont edit])
+    elPutEdit (SumEditLeft (MkWholeEdit (Just subj))) _ = return $ Just [KeyInsertReplaceItem subj]
+    elPutEdit (SumEditLeft (MkWholeEdit Nothing)) _ = do
+        key <- get
+        return $ Just [KeyDeleteItem key]
+    elPutEdit (SumEditRight (MkOneEdit edit)) mr = do
+        oldkey <- get
+        mnewkey <- lift $ getComposeM $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr
+        case mnewkey of
+            Just newkey -> do
+                put newkey
+                return $ Just [KeyEditItem oldkey edit]
+            Nothing -> return $ Just []
+    elPutEdits ::
+           forall m. MonadIO m
+        => [MaybeEdit edit]
+        -> MutableRead m (EditReader (KeyEdit cont edit))
+        -> StateT (ContainerKey cont) m (Maybe [KeyEdit cont edit])
+    elPutEdits = elPutEditsFromPutEdit elPutEdit
+    in MkCloseUnlift unlift MkAnEditLens {..}
+
 getKeyElementEditLens ::
        forall cont edit.
        ( KeyContainer cont
@@ -196,77 +274,20 @@ getKeyElementEditLens ::
        )
     => ContainerKey cont
     -> IO (EditLens (KeyEdit cont edit) (MaybeEdit edit))
-getKeyElementEditLens initial =
-    newMVar initial >>= \var -> let
-        unlift :: Unlift (StateT (ContainerKey cont))
-        unlift = mvarUnlift var
-        efGet ::
-               ReadFunctionT (StateT (ContainerKey cont)) (KeyReader cont (EditReader edit)) (OneReader Maybe (EditReader edit))
-        efGet mr ReadHasOne = do
-            kk <- lift $ mr KeyReadKeys
-            key <- get
-            return $
-                if elem key kk
-                    then Just ()
-                    else Nothing
-        efGet mr (ReadOne rt) = do
-            key <- get
-            lift $ mr $ KeyReadItem key rt
-        efUpdate ::
-               forall m. MonadIO m
-            => KeyEdit cont edit
-            -> MutableRead m (EditReader (KeyEdit cont edit))
-            -> StateT (ContainerKey cont) m [MaybeEdit edit]
-        efUpdate KeyClear _ = return [SumEditLeft (MkWholeEdit Nothing)]
-        efUpdate (KeyDeleteItem k) _ = do
-            key <- get
-            return $
-                if k == key
-                    then [SumEditLeft (MkWholeEdit Nothing)]
-                    else []
-        efUpdate (KeyEditItem k edit) mr = do
-            oldkey <- get
-            if k == oldkey
-                then do
-                    mnewkey <- lift $ getComposeM $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr
-                    case mnewkey of
-                        Just newkey -> do
-                            put newkey
-                            return [SumEditRight (MkOneEdit edit)]
-                        Nothing -> return []
-                else return []
-        efUpdate (KeyInsertReplaceItem item) _ = do
-            key <- get
-            return $
-                if elementKey @cont item == key
-                    then [SumEditLeft (MkWholeEdit (Just item))]
-                    else []
-        elFunction :: AnEditFunction (StateT (ContainerKey cont)) (KeyEdit cont edit) (MaybeEdit edit)
-        elFunction = MkAnEditFunction {..}
-        elPutEdit ::
-               forall m. MonadIO m
-            => MaybeEdit edit
-            -> MutableRead m (EditReader (KeyEdit cont edit))
-            -> StateT (ContainerKey cont) m (Maybe [KeyEdit cont edit])
-        elPutEdit (SumEditLeft (MkWholeEdit (Just subj))) _ = return $ Just [KeyInsertReplaceItem subj]
-        elPutEdit (SumEditLeft (MkWholeEdit Nothing)) _ = do
-            key <- get
-            return $ Just [KeyDeleteItem key]
-        elPutEdit (SumEditRight (MkOneEdit edit)) mr = do
-            oldkey <- get
-            mnewkey <- lift $ getComposeM $ readKey @cont $ applyEdit edit $ keyItemReadFunction oldkey mr
-            case mnewkey of
-                Just newkey -> do
-                    put newkey
-                    return $ Just [KeyEditItem oldkey edit]
-                Nothing -> return $ Just []
-        elPutEdits ::
-               forall m. MonadIO m
-            => [MaybeEdit edit]
-            -> MutableRead m (EditReader (KeyEdit cont edit))
-            -> StateT (ContainerKey cont) m (Maybe [KeyEdit cont edit])
-        elPutEdits = elPutEditsFromPutEdit elPutEdit
-        in return $ MkCloseUnlift unlift MkAnEditLens {..}
+getKeyElementEditLens initial = do
+    var <- newMVar initial
+    return $ unliftKeyElementEditLens $ mvarUnlift var
+
+stableKeyElementEditLens ::
+       forall cont edit.
+       ( KeyContainer cont
+       , HasKeyReader cont (EditReader edit)
+       , ApplicableEdit edit
+       , FullSubjectReader (EditReader edit)
+       )
+    => ContainerKey cont
+    -> EditLens (KeyEdit cont edit) (MaybeEdit edit)
+stableKeyElementEditLens key = unliftKeyElementEditLens $ stateDiscardingUnlift key
 
 getKeyValueEditLens ::
        forall cont keyedit valueedit.

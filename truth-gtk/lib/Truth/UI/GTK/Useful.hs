@@ -43,21 +43,28 @@ viewOn ::
     -> View sel edit SignalHandlerId
 viewOn widget signal v = liftIOView $ \unlift -> on widget signal $ unlift v
 
-joinTraverse :: Monad m => (a -> m (Maybe a)) -> (a -> m (Maybe a)) -> a -> m (Maybe a)
-joinTraverse t1 t2 a0 = do
-    ma1 <- t1 a0
-    case ma1 of
-        Just a1 -> do
-            ma2 <- t2 a1
-            return $
-                Just $
-                case ma2 of
-                    Just a2 -> a2
-                    Nothing -> a1
-        Nothing -> t2 a0
+newtype Change m a =
+    MkChange (a -> m (Maybe a))
 
-seqStoreTraverse_ :: MonadIO m => SeqStore a -> (a -> m (Maybe a)) -> m ()
-seqStoreTraverse_ store f = do
+instance Monad m => Semigroup (Change m a) where
+    MkChange t1 <> MkChange t2 =
+        MkChange $ \a0 -> do
+            ma1 <- t1 a0
+            case ma1 of
+                Just a1 -> do
+                    ma2 <- t2 a1
+                    return $
+                        Just $
+                        case ma2 of
+                            Just a2 -> a2
+                            Nothing -> a1
+                Nothing -> t2 a0
+
+instance Monad m => Monoid (Change m a) where
+    mempty = MkChange $ \_ -> return Nothing
+
+seqStoreTraverse_ :: MonadIO m => SeqStore a -> Change m a -> m ()
+seqStoreTraverse_ store (MkChange f) = do
     n <- seqStoreGetSize store
     for_ [0 .. (n - 1)] $ \i -> do
         oldval <- seqStoreGetValue store i

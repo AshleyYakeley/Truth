@@ -7,21 +7,18 @@ module Truth.Core.Object.Subscriber
     , mapReceiveUpdatesT
     , ASubscriber(..)
     , Subscriber
+    , subscriberObject
     , makeObjectSubscriber
     , liftIO
-    , UpdatingObject
-    , updatingObject
     , makeSharedSubscriber
     ) where
 
-import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.UnliftIO
 import Truth.Core.Object.Update
-import Truth.Core.Read
+import Truth.Core.Object.UpdatingObject
 import Truth.Debug
 
 data ASubscriber m edit = MkASubscriber
@@ -31,11 +28,12 @@ data ASubscriber m edit = MkASubscriber
 
 type Subscriber = CloseUnliftIO ASubscriber
 
+subscriberObject :: Subscriber edit -> Object edit
+subscriberObject (MkCloseUnliftIO run sub) = MkCloseUnliftIO run $ subAnObject sub
+
 type UpdateStoreEntry edit = [edit] -> EditContext -> IO ()
 
 type UpdateStore edit = Store (UpdateStoreEntry edit)
-
-type UpdatingObject edit a = ([edit] -> EditSource -> IO ()) -> LifeCycleIO (Object edit, a)
 
 newtype EditQueue edit =
     MkEditQueue [(EditSource, [edit])]
@@ -84,25 +82,6 @@ makeSharedSubscriber async uobj = do
                 key <- liftIO $ traceBarrier "makeSharedSubscriber:child.addStoreState" (mvarRun var) $ addStoreStateT updateC
                 lifeCycleClose $ traceBarrier "makeSharedSubscriber:child.deleteStoreStateT" (mvarRun var) $ deleteStoreStateT key
     return (child, a)
-
-updatingObject :: forall edit. Object edit -> UpdatingObject edit ()
-updatingObject (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) update =
-    return $ let
-        run' :: UnliftIO (DeferActionT m)
-        run' = composeUnliftTransformCommute runDeferActionT run
-        r' :: MutableRead (DeferActionT m) (EditReader edit)
-        r' = liftMutableRead r
-        e' :: [edit] -> DeferActionT m (Maybe (EditSource -> DeferActionT m ()))
-        e' edits = do
-            maction <- lift $ e edits
-            case maction of
-                Nothing -> return Nothing
-                Just action ->
-                    return $
-                    Just $ \esrc -> do
-                        traceBracket "objectSubscriber: action" $ lift $ action esrc
-                        deferActionT $ traceBracket "objectSubscriber: deferred: update" $ update edits esrc
-        in (MkCloseUnliftIO run' $ MkAnObject r' e', ())
 
 makeObjectSubscriber :: Bool -> Object edit -> LifeCycleIO (Subscriber edit)
 makeObjectSubscriber async object = do

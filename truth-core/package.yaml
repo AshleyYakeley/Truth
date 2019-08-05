@@ -26,6 +26,7 @@ library:
       - Truth.Debug
       - Truth.Debug.Edit
       - Truth.Debug.Object
+      - Truth.World.Clock
       - Truth.World.Anything
       - Truth.World.File
       - Truth.World.FileSystem
@@ -85,6 +86,7 @@ library:
       - Truth.Core.Object.AutoClose
       - Truth.Core.Object.ObjectEdit
       - Truth.Core.Object.Update
+      - Truth.Core.Object.UpdatingObject
       - Truth.Core.Object.Subscriber
       - Truth.Core.Object.Lens
       - Truth.Core.Object.Tuple
@@ -116,6 +118,7 @@ library:
       - Truth.Core.UI.Specifier.Drag
       - Truth.Core.UI.Specifier.MenuBar
       - Truth.Core.UI.Specifier.Scrolled
+      - Truth.Core.UI.Specifier.Calendar
       - Truth.Core.UI.ViewContext
       - Truth.Core.UI.View
       - Truth.Core.UI.Window
@@ -150,3 +153,4 @@ tests:
     main: Main.hs
     other-modules:
       - Subscribe
+    ghc-options: -threaded

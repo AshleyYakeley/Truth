@@ -94,14 +94,16 @@ lensObject discard (MkCloseUnlift (lensUnlift :: Unlift t) alens) (MkCloseUnlift
         objRunB = lensObjectUnlift discard lensUnlift objUnlift
         in MkCloseUnliftIO objRunB $ lensAnObject alens aobj
 
-readConstantObject :: MutableRead IO (EditReader edit) -> Object edit
-readConstantObject mr =
-    MkCloseUnliftIO (MkTransform id) $
+immutableAnObject :: Monad m => MutableRead m (EditReader edit) -> AnObject m edit
+immutableAnObject mr =
     MkAnObject mr $
     -- must allow empty edit list
     \case
         [] -> return $ Just $ \_ -> return ()
         _ -> return Nothing
+
+readConstantObject :: MutableRead IO (EditReader edit) -> Object edit
+readConstantObject mr = MkCloseUnliftIO (MkTransform id) $ immutableAnObject mr
 
 constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit
 constantObject subj = readConstantObject $ subjectToMutableRead subj

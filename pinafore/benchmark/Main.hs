@@ -30,8 +30,8 @@ benchScript text =
                ?pinafore = pc
                in bgroup
                       (show $ unpack text)
-                      [ bench "check" $ nfIO $ pinaforeInterpretFile "<test>" text >> return ()
-                      , env (fmap const $ pinaforeInterpretFile "<test>" text) $ \action ->
+                      [ bench "check" $ nfIO $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" text >> return ()
+                      , env (fmap const $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" text) $ \action ->
                             bench "run" $ nfIO (action ())
                       ]
 
@@ -97,26 +97,28 @@ checkUpdateEditor ::
     -> IO ()
     -> Editor (WholeEdit a) ()
 checkUpdateEditor val push = let
-    editorInit :: Object (WholeEdit a) -> IO (MVar [WholeEdit a])
-    editorInit _ = newEmptyMVar
+    editorInit :: Object (WholeEdit a) -> LifeCycleIO (MVar [WholeEdit a])
+    editorInit _ = liftIO newEmptyMVar
     editorUpdate :: MVar [WholeEdit a] -> Object (WholeEdit a) -> [WholeEdit a] -> EditContext -> IO ()
     editorUpdate var _ edits _ = do putMVar var edits
-    editorDo :: MVar [WholeEdit a] -> Object (WholeEdit a) -> IO ()
-    editorDo var _ = do
-        push
-        edits <- takeMVar var
-        case edits of
-            [MkWholeEdit v]
-                | v == val -> return ()
-            _ -> fail "unexpected push"
+    editorDo :: MVar [WholeEdit a] -> Object (WholeEdit a) -> LifeCycleIO ()
+    editorDo var _ =
+        liftIO $ do
+            push
+            edits <- takeMVar var
+            case edits of
+                [MkWholeEdit v]
+                    | v == val -> return ()
+                _ -> fail "unexpected push"
     in MkEditor {..}
 
 interpretUpdater :: (?pinafore :: PinaforeContext PinaforeEdit) => Text -> IO ()
 interpretUpdater text = do
-    action <- pinaforeInterpretFileAtType "<test>" text
+    action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" text
     sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
     (sendUpdate, ref) <- unliftPinaforeActionOrFail action
-    subscribeEditor (mapSubscriber (immutableReferenceToLens ref) sub) $
+    runLifeCycle $
+        subscribeEditor (mapSubscriber (immutableReferenceToLens ref) sub) $
         checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark

@@ -7,16 +7,17 @@ module Pinafore.Test
     , Name
     , UVar
     , PinaforeType
+    , PinaforeShimWit
     , PinaforeScoped
     , PinaforeSourceScoped
     , pinaforeSimplifyTypes
-    , toTypeF
+    , toJMShimWit
     , module Pinafore.Test
     ) where
 
+import Data.Shim
 import Pinafore.Base
 import Pinafore.Language
-import Pinafore.Language.Convert
 import Pinafore.Language.Name
 import Pinafore.Language.Read
 import Pinafore.Language.Type
@@ -62,5 +63,5 @@ withNullPinaforeContext f = let
     ?pinafore = nullPinaforeContext
     in f
 
-runTestPinaforeSourceScoped :: PinaforePredefinitions baseedit => PinaforeSourceScoped baseedit a -> Result Text a
+runTestPinaforeSourceScoped :: PinaforePredefinitions baseedit => PinaforeSourceScoped baseedit a -> InterpretResult a
 runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScoped "<input>" sa

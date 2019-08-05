@@ -1,3 +1,5 @@
+{-# LANGUAGE ApplicativeDo #-}
+
 module Language.Expression.Bindings
     ( Bindings
     , singleBinding
@@ -6,6 +8,7 @@ module Language.Expression.Bindings
     , valuesLetSealedExpression
     ) where
 
+import Data.Shim.JoinMeet
 import Language.Expression.Abstract
 import Language.Expression.Renamer
 import Language.Expression.Sealed
@@ -28,6 +31,16 @@ bindingsMap ::
     -> StrictMap (UnifierName unifier) (UnifierSealedExpression unifier)
 bindingsMap (MkBindings bb) = mapFromList $ fmap (\(MkBinding n e) -> (n, e)) bb
 
+data UnifyExpression unifier a =
+    forall t. MkUnifyExpression (unifier t)
+                                (UnifierOpenExpression unifier (t -> a))
+
+exprUnifyExpression :: Unifier unifier => UnifierOpenExpression unifier a -> UnifyExpression unifier a
+exprUnifyExpression expr = MkUnifyExpression (pure ()) $ fmap (\a _ -> a) expr
+
+unifierExpression :: Functor unifier => UnifyExpression unifier a -> unifier (UnifierOpenExpression unifier a)
+unifierExpression (MkUnifyExpression uconv expr) = fmap (\conv -> fmap (\conva -> conva conv) expr) uconv
+
 data Bound unifier =
     forall vals. MkBound (forall a.
                                   UnifierOpenExpression unifier a -> UnifierMonad unifier (UnifyExpression unifier (vals -> a)))
@@ -35,14 +48,7 @@ data Bound unifier =
                          (UnifierSubstitutions unifier -> UnifierOpenExpression unifier vals -> UnifierMonad unifier (Bindings unifier))
 
 mkBound ::
-       forall renamer unifier m.
-       ( Monad m
-       , Renamer renamer
-       , Unifier unifier
-       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
-       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
-       , UnifierMonad unifier ~ renamer m
-       )
+       forall renamer unifier m. UnifierRenamerConstraint unifier renamer m
     => [Binding unifier]
     -> renamer m (Bound unifier)
 mkBound [] =
@@ -57,12 +63,16 @@ mkBound ((MkBinding name sexpr):bb) =
                    forall a. UnifierOpenExpression unifier a -> UnifierMonad unifier (UnifyExpression unifier (_ -> a))
             abstractNames' e = do
                 MkUnifyExpression uconvRest e' <- abstractNames e
-                MkAbstractResult vwt (MkUnifyExpression uconvFirst e'') <- abstractNamedExpression @unifier name e'
-                uconvVar <- unifyPosNegWitnesses @unifier twt vwt
-                let uresult = (,,) <$> uconvFirst <*> uconvRest <*> uconvVar
+                MkAbstractResult vwt e'' <- abstractNamedExpression @unifier name e'
+                uconvFirst <- unifyUUPosNegShimWit @unifier (uuLiftPosShimWit twt) vwt
+                let
+                    uresult = do
+                        convFirst <- uuGetShim uconvFirst
+                        convRest <- uconvRest
+                        pure (convFirst, convRest)
                 return $
                     MkUnifyExpression uresult $
-                    fmap (\ff (convFirst, convRest, convVar) ~(t, vals) -> ff convFirst (convVar t) convRest vals) e''
+                    fmap (\ff (convFirst, convRest) ~(t, vals) -> ff (fromEnhanced convFirst t) convRest vals) e''
             exprs' = (,) <$> expr <*> exprs
             getbinds' ::
                    UnifierSubstitutions unifier
@@ -85,15 +95,7 @@ boundToBindings (MkBound abstractNames exprs getbinds) = do
 
 -- for a recursive component
 bindingsComponentLetSealedExpression ::
-       forall renamer unifier m.
-       ( Monad m
-       , Ord (UnifierName unifier)
-       , Renamer renamer
-       , Unifier unifier
-       , RenamerNegWitness renamer ~ UnifierNegWitness unifier
-       , RenamerPosWitness renamer ~ UnifierPosWitness unifier
-       , UnifierMonad unifier ~ renamer m
-       )
+       forall renamer unifier m. (Ord (UnifierName unifier), UnifierRenamerConstraint unifier renamer m)
     => Bindings unifier
     -> m (StrictMap (UnifierName unifier) (UnifierSealedExpression unifier))
 bindingsComponentLetSealedExpression (MkBindings bindings) =
@@ -104,8 +106,8 @@ bindingsComponentLetSealedExpression (MkBindings bindings) =
         return $ bindingsMap bindings'
 
 valuesLetSealedExpression ::
-       forall unifier.
-       StrictMap (UnifierName unifier) (AnyValue (UnifierPosWitness unifier))
+       forall unifier. Unifier unifier
+    => StrictMap (UnifierName unifier) (AnyValue (UnifierPosShimWit unifier))
     -> StrictMap (UnifierName unifier) (UnifierSealedExpression unifier)
 valuesLetSealedExpression = fmap constSealedExpression
 

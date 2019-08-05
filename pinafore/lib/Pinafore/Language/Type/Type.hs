@@ -1,13 +1,13 @@
 module Pinafore.Language.Type.Type where
 
 import qualified Data.List as List
+import Data.Shim
 import Language.Expression.Dolan
-import Language.Expression.Polarity
 import Language.Expression.Renamer
 import Language.Expression.Sealed
-import Language.Expression.TypeF
 import Language.Expression.UVar
 import Pinafore.Language.EntityType
+import Pinafore.Language.Error
 import Pinafore.Language.GroundType
 import Pinafore.Language.Literal
 import Pinafore.Language.Name
@@ -32,16 +32,18 @@ data PinaforeSingularType (baseedit :: Type) (polarity :: Polarity) (t :: Type) 
         -> PinaforeSingularType baseedit polarity ta
     VarPinaforeSingularType :: SymbolType name -> PinaforeSingularType baseedit polarity (UVar name)
 
-type PinaforeTypeF (baseedit :: Type) polarity = PTypeF (PinaforeType baseedit) polarity
+type PinaforeShim = JMShim
 
-singlePinaforeTypeF ::
+type PinaforeShimWit (baseedit :: Type) polarity = PJMShimWit (PinaforeType baseedit) polarity
+
+singlePinaforeShimWit ::
        forall baseedit polarity t. Is PolarityType polarity
-    => PTypeF (PinaforeSingularType baseedit) polarity t
-    -> PinaforeTypeF baseedit polarity t
-singlePinaforeTypeF (MkTypeF st conv) =
+    => PJMShimWit (PinaforeSingularType baseedit) polarity t
+    -> PinaforeShimWit baseedit polarity t
+singlePinaforeShimWit (MkShimWit st conv) =
     case representative @_ @_ @polarity of
-        PositiveType -> contramap conv $ MkTypeF (singlePinaforeType st) join1
-        NegativeType -> fmap conv $ MkTypeF (singlePinaforeType st) meet1
+        PositiveType -> ccontramap conv $ MkShimWit (singlePinaforeType st) join1
+        NegativeType -> cfmap conv $ MkShimWit (singlePinaforeType st) meet1
 
 singlePinaforeType ::
        PinaforeSingularType baseedit polarity t
@@ -57,38 +59,38 @@ joinPinaforeTypes ::
        forall baseedit (a :: Type) (b :: Type) r.
        PinaforeType baseedit 'Positive a
     -> PinaforeType baseedit 'Positive b
-    -> (forall ab. PinaforeType baseedit 'Positive ab -> (a -> ab) -> (b -> ab) -> r)
+    -> (forall ab. PinaforeType baseedit 'Positive ab -> JMShim a ab -> JMShim b ab -> r)
     -> r
-joinPinaforeTypes NilPinaforeType tb cont = cont tb never id
+joinPinaforeTypes NilPinaforeType tb cont = cont tb initf id
 joinPinaforeTypes (ConsPinaforeType ta tr) tb cont =
     joinPinaforeTypes tr tb $ \trb conva convb -> cont (ConsPinaforeType ta trb) (joinBimap id conva) (join2 . convb)
 
-joinPinaforeTypeF ::
+joinPinaforeShimWit ::
        forall baseedit (a :: Type) (b :: Type).
-       PinaforeTypeF baseedit 'Positive a
-    -> PinaforeTypeF baseedit 'Positive b
-    -> PinaforeTypeF baseedit 'Positive (JoinType a b)
-joinPinaforeTypeF (MkTypeF ta conva) (MkTypeF tb convb) =
-    contramap (joinBimap conva convb) $
-    joinPinaforeTypes ta tb $ \tab conva' convb' -> MkTypeF tab $ joinf conva' convb'
+       PinaforeShimWit baseedit 'Positive a
+    -> PinaforeShimWit baseedit 'Positive b
+    -> PinaforeShimWit baseedit 'Positive (JoinType a b)
+joinPinaforeShimWit (MkShimWit ta conva) (MkShimWit tb convb) =
+    ccontramap (joinBimap conva convb) $
+    joinPinaforeTypes ta tb $ \tab conva' convb' -> MkShimWit tab $ joinf conva' convb'
 
 meetPinaforeTypes ::
        forall baseedit (a :: Type) (b :: Type) r.
        PinaforeType baseedit 'Negative a
     -> PinaforeType baseedit 'Negative b
-    -> (forall ab. PinaforeType baseedit 'Negative ab -> (ab -> a) -> (ab -> b) -> r)
+    -> (forall ab. PinaforeType baseedit 'Negative ab -> JMShim ab a -> JMShim ab b -> r)
     -> r
-meetPinaforeTypes NilPinaforeType tb cont = cont tb alwaysTop id
+meetPinaforeTypes NilPinaforeType tb cont = cont tb termf id
 meetPinaforeTypes (ConsPinaforeType ta tr) tb cont =
     meetPinaforeTypes tr tb $ \trb conva convb -> cont (ConsPinaforeType ta trb) (meetBimap id conva) (convb . meet2)
 
-meetPinaforeTypeF ::
+meetPinaforeShimWit ::
        forall baseedit (a :: Type) (b :: Type).
-       PinaforeTypeF baseedit 'Negative a
-    -> PinaforeTypeF baseedit 'Negative b
-    -> PinaforeTypeF baseedit 'Negative (MeetType a b)
-meetPinaforeTypeF (MkTypeF ta conva) (MkTypeF tb convb) =
-    fmap (meetBimap conva convb) $ meetPinaforeTypes ta tb $ \tab conva' convb' -> MkTypeF tab $ meetf conva' convb'
+       PinaforeShimWit baseedit 'Negative a
+    -> PinaforeShimWit baseedit 'Negative b
+    -> PinaforeShimWit baseedit 'Negative (MeetType a b)
+meetPinaforeShimWit (MkShimWit ta conva) (MkShimWit tb convb) =
+    cfmap (meetBimap conva convb) $ meetPinaforeTypes ta tb $ \tab conva' convb' -> MkShimWit tab $ meetf conva' convb'
 
 instance Is PolarityType polarity => Semigroup (AnyW (PinaforeType baseedit polarity)) where
     MkAnyW ta <> MkAnyW tb =
@@ -130,6 +132,9 @@ instance Is PolarityType polarity => ExprShow (PinaforeType baseedit polarity t)
 instance Is PolarityType polarity => Show (PinaforeType baseedit polarity t) where
     show v = unpack $ exprShow v
 
+instance Is PolarityType polarity => AllWitnessConstraint Show (PinaforeType baseedit polarity) where
+    allWitnessConstraint = Dict
+
 instance Is PolarityType polarity => ExprShow (PinaforeRangeType baseedit polarity a) where
     exprShowPrec (MkRangeType t1 t2) = let
         getpieces ::
@@ -155,9 +160,9 @@ instance Is PolarityType polarity => ExprShow (PinaforeRangeType baseedit polari
 pinaforeToEntityArgs ::
        forall baseedit dv f polarity t. Is PolarityType polarity
     => CovaryType dv
-    -> CovaryMap Bijection f
+    -> CovaryMap JMIsoShim f
     -> DolanArguments dv (PinaforeType baseedit) f polarity t
-    -> Maybe (GenTypeF Bijection (Arguments EntityType f) polarity t)
+    -> Maybe (ShimWit JMIsoShim (Arguments EntityType f) polarity t)
 pinaforeToEntityArgs = dolanArgumentsToArgumentsM pinaforeToEntityType
 
 pinaforeEntityToEntityType ::
@@ -165,52 +170,55 @@ pinaforeEntityToEntityType ::
     => CovaryType dv
     -> EntityGroundType f
     -> DolanArguments dv (PinaforeType baseedit) f polarity a
-    -> Maybe (GenTypeF Bijection EntityType polarity a)
+    -> Maybe (ShimWit JMIsoShim EntityType polarity a)
 pinaforeEntityToEntityType lc gt args = do
-    MkTypeF eargs conv <- pinaforeToEntityArgs lc (bijectCovaryMap $ entityGroundTypeCovaryMap gt) args
-    return $ MkTypeF (MkEntityType gt eargs) conv
+    MkShimWit eargs conv <- pinaforeToEntityArgs lc (bijectCovaryMap $ entityGroundTypeCovaryMap gt) args
+    return $ MkShimWit (MkEntityType gt eargs) conv
 
 pinaforeToEntityType ::
        forall baseedit polarity a. Is PolarityType polarity
     => PinaforeType baseedit polarity a
-    -> Maybe (GenTypeF Bijection EntityType polarity a)
+    -> Maybe (ShimWit JMIsoShim EntityType polarity a)
 pinaforeToEntityType (ConsPinaforeType (GroundPinaforeSingularType (EntityPinaforeGroundType lc gt) args) NilPinaforeType) = do
-    MkTypeF et conv <- pinaforeEntityToEntityType lc gt args
+    MkShimWit et conv <- pinaforeEntityToEntityType lc gt args
     return $
-        MkTypeF et $
+        MkShimWit et $
         case representative @_ @_ @polarity of
-            PositiveType -> conv . bijoin1
-            NegativeType -> bimeet1 . conv
+            PositiveType -> conv <.> MkJMIsoShim bijoin1
+            NegativeType -> MkJMIsoShim bimeet1 <.> conv
 pinaforeToEntityType NilPinaforeType
-    | PositiveType <- representative @_ @_ @polarity = Just $ MkTypeF NoneEntityType id
+    | PositiveType <- representative @_ @_ @polarity = Just $ MkShimWit NoneEntityType id
 pinaforeToEntityType _ = Nothing
 
 entityToNegativePinaforeType ::
-       forall baseedit m t. MonadFail m
+       forall baseedit m t. MonadError ErrorType m
     => EntityType t
-    -> m (PinaforeTypeF baseedit 'Negative t)
+    -> m (PinaforeShimWit baseedit 'Negative t)
 entityToNegativePinaforeType (MkEntityType gt args) =
     entityGroundTypeCovaryType gt $ \ct -> do
-        MkTypeF dargs conv <-
+        MkShimWit dargs conv <-
             argumentsToDolanArgumentsM entityToNegativePinaforeType ct (entityGroundTypeCovaryMap gt) args
-        return $ singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
-entityToNegativePinaforeType NoneEntityType = fail "None is not a negative entity type"
+        return $
+            singlePinaforeShimWit $ MkShimWit (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
+entityToNegativePinaforeType NoneEntityType = throwError InterpretTypeNoneNotNegativeEntityError
 
-entityToPositivePinaforeType :: forall baseedit t. EntityType t -> PinaforeTypeF baseedit 'Positive t
+entityToPositivePinaforeType :: forall baseedit t. EntityType t -> PinaforeShimWit baseedit 'Positive t
 entityToPositivePinaforeType (MkEntityType gt args) =
     entityGroundTypeCovaryType gt $ \ct ->
         case argumentsToDolanArguments entityToPositivePinaforeType ct (entityGroundTypeCovaryMap gt) args of
-            MkTypeF dargs conv ->
-                singlePinaforeTypeF $ MkTypeF (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
-entityToPositivePinaforeType NoneEntityType = mkTypeF NilPinaforeType
+            MkShimWit dargs conv ->
+                singlePinaforeShimWit $
+                MkShimWit (GroundPinaforeSingularType (EntityPinaforeGroundType ct gt) dargs) conv
+entityToPositivePinaforeType NoneEntityType = mkShimWit NilPinaforeType
 
 type PinaforeExpression baseedit
-     = SealedExpression Name (PinaforeType baseedit 'Negative) (PinaforeType baseedit 'Positive)
+     = SealedExpression Name (PinaforeShimWit baseedit 'Negative) (PinaforeShimWit baseedit 'Positive)
 
 type PinaforePatternConstructor baseedit
-     = PatternConstructor Name (PinaforeType baseedit 'Positive) (PinaforeType baseedit 'Negative)
+     = PatternConstructor Name (PinaforeShimWit baseedit 'Positive) (PinaforeShimWit baseedit 'Negative)
 
-type PinaforePattern baseedit = SealedPattern Name (PinaforeType baseedit 'Positive) (PinaforeType baseedit 'Negative)
+type PinaforePattern baseedit
+     = SealedPattern Name (PinaforeShimWit baseedit 'Positive) (PinaforeShimWit baseedit 'Negative)
 
 data PinaforeTypeSystem (baseedit :: Type)
 

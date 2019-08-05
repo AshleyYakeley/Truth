@@ -60,14 +60,13 @@ sqlitePinaforeDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 pinaforeInterpretFileAtType ::
-       (?pinafore :: PinaforeContext PinaforeEdit, FromPinaforeType PinaforeEdit t, MonadFail m)
+       (?pinafore :: PinaforeContext PinaforeEdit, FromPinaforeType PinaforeEdit t)
     => FilePath
     -> Text
-    -> m t
-pinaforeInterpretFileAtType puipath puitext =
-    resultTextToM $ runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeEdit puitext
+    -> InterpretResult t
+pinaforeInterpretFileAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeEdit puitext
 
-pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeEdit, MonadFail m) => FilePath -> Text -> m (IO ())
+pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeEdit) => FilePath -> Text -> InterpretResult (IO ())
 pinaforeInterpretFile puipath puitext = do
     action :: FilePinaforeType <- pinaforeInterpretFileAtType puipath puitext
     return $ runPinaforeAction action

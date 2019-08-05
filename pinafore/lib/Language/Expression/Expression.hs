@@ -1,5 +1,6 @@
 module Language.Expression.Expression where
 
+import Language.Expression.Error
 import Shapes
 
 data Expression w a
@@ -20,9 +21,9 @@ expressionFreeWitnesses :: (forall t. w t -> r) -> Expression w a -> [r]
 expressionFreeWitnesses _wr (ClosedExpression _) = []
 expressionFreeWitnesses wr (OpenExpression wt expr) = (wr wt) : expressionFreeWitnesses wr expr
 
-evalExpression :: (MonadFail m, AllWitnessConstraint Show w) => Expression w a -> m a
+evalExpression :: (MonadError ExpressionError m, AllWitnessConstraint Show w) => Expression w a -> m a
 evalExpression (ClosedExpression a) = return a
-evalExpression expr = fail $ "undefined: " <> intercalate ", " (nub $ expressionFreeWitnesses showAllWitness expr)
+evalExpression expr = throwError $ UndefinedBindingsError $ nub $ expressionFreeWitnesses showAllWitness expr
 
 varExpression :: w t -> Expression w t
 varExpression wt = OpenExpression wt $ ClosedExpression id

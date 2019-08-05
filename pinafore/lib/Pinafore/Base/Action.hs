@@ -6,13 +6,13 @@ module Pinafore.Base.Action
     , pinaforeLensPush
     , PinaforeWindow(..)
     , pinaforeNewWindow
-    , pinaforeCloseAllWindows
+    , pinaforeExit
     , pinaforeUndoActions
     , pinaforeActionKnow
     , knowPinaforeAction
     ) where
 
-import Language.Expression.Dolan
+import Data.Shim
 import Pinafore.Base.Know
 import Pinafore.Base.Morphism
 import Shapes
@@ -31,8 +31,11 @@ newtype PinaforeAction baseedit a =
 instance MonadFail (PinaforeAction baseedit) where
     fail s = liftIO $ fail s
 
-instance HasDolanVary '[ 'Covariance] (PinaforeAction baseedit) where
-    dolanVary = ConsDolanVarianceMap fmap $ NilDolanVarianceMap
+instance RepresentationalRole (PinaforeAction baseedit) where
+    representationalCoercion MkCoercion = MkCoercion
+
+instance HasVariance 'Covariance (PinaforeAction baseedit) where
+    varianceRepresentational = Just Dict
 
 pinaforeActionSubscriber :: PinaforeAction baseedit (Subscriber baseedit)
 pinaforeActionSubscriber = do
@@ -71,11 +74,11 @@ pinaforeNewWindow uiw = do
     (pwWindow, pwClose) <- liftIO $ uitUnliftLifeCycle $ lifeCycleEarlyCloser $ uitCreateWindow acSubscriber uiw
     return $ MkPinaforeWindow {..}
 
-pinaforeCloseAllWindows :: PinaforeAction baseedit ()
-pinaforeCloseAllWindows = do
+pinaforeExit :: PinaforeAction baseedit ()
+pinaforeExit = do
     MkActionContext {..} <- MkPinaforeAction ask
     let MkUIToolkit {..} = acUIToolkit
-    liftIO $ uitQuit
+    liftIO uitExit
 
 pinaforeUndoActions :: PinaforeAction baseedit UndoActions
 pinaforeUndoActions = do

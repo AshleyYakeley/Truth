@@ -1,6 +1,6 @@
 module Language.Expression.UVar
     ( UVar
-    , unsafeUVarBijection
+    , unsafeUVarIsomorphism
     , renameUVar
     , varRenamerTGenerateSymbol
     , varRenamerTGenerateSuggestedSymbol
@@ -14,27 +14,37 @@ import Unsafe.Coerce
 newtype UVar (name :: Symbol) =
     MkUVar GHC.Exts.Any
 
-unsafeRenameAnybox :: UVar name1 -> UVar name2
-unsafeRenameAnybox (MkUVar a) = MkUVar a
+unsafeRefl :: forall a b. a :~: b
+unsafeRefl = unsafeCoerce Refl
 
-unsafeToUVar :: a -> UVar name
-unsafeToUVar a = MkUVar $ unsafeCoerce a
+unsafeCat ::
+       forall cat a b. Category cat
+    => cat a b
+unsafeCat =
+    case unsafeRefl @a @b of
+        Refl -> id
 
-unsafeFromUVar :: UVar name -> a
-unsafeFromUVar (MkUVar a) = unsafeCoerce a
+unsafeToUVar :: Category cat => cat a (UVar name)
+unsafeToUVar =
+    case MkUVar -- hack for unused name warning
+          of
+        _ -> unsafeCat
 
-unsafeUVarBijection :: Bijection a (UVar name)
-unsafeUVarBijection = MkIsomorphism unsafeToUVar unsafeFromUVar
+unsafeFromUVar :: Category cat => cat (UVar name) a
+unsafeFromUVar = unsafeCat
+
+unsafeUVarIsomorphism :: Category cat => Isomorphism cat a (UVar name)
+unsafeUVarIsomorphism = MkIsomorphism unsafeToUVar unsafeFromUVar
 
 renameUVar ::
-       Monad m
+       forall m cat name1 r. (Monad m, Category cat)
     => (String -> m String)
     -> SymbolType name1
-    -> (forall (name2 :: Symbol). SymbolType name2 -> Bijection (UVar name1) (UVar name2) -> m r)
+    -> (forall (name2 :: Symbol). SymbolType name2 -> Isomorphism cat (UVar name1) (UVar name2) -> m r)
     -> m r
 renameUVar sf namewit1 cont = do
     newname <- sf $ witnessToValue namewit1
-    valueToWitness newname $ \namewit2 -> cont namewit2 (MkIsomorphism unsafeRenameAnybox unsafeRenameAnybox)
+    valueToWitness newname $ \namewit2 -> cont namewit2 (MkIsomorphism unsafeCat unsafeCat)
 
 varRenamerTGenerateSymbol ::
        Monad m => (forall (name :: Symbol). SymbolType name -> VarRenamerT ts m a) -> VarRenamerT ts m a

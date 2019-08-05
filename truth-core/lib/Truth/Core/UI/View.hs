@@ -28,7 +28,7 @@ liftIOView :: forall sel edit a. ((forall r. View sel edit r -> IO r) -> IO a) -
 liftIOView call = liftIOWithUnlift $ \(MkTransform unlift) -> call unlift
 
 viewObject :: View sel edit (Object edit)
-viewObject = MkView $ asks vcObject
+viewObject = MkView $ asks $ subscriberObject . vcSubscriber
 
 viewObjectRead ::
        (UnliftIO (View sel edit) -> forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> m r)

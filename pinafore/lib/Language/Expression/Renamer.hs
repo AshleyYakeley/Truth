@@ -1,5 +1,7 @@
 module Language.Expression.Renamer
     ( Renamer(..)
+    , renameNegShimWit
+    , renamePosShimWit
     , rename
     , NewVar(..)
     , VarNamespaceT
@@ -11,35 +13,58 @@ module Language.Expression.Renamer
     , varRenamerTGenerateSuggested
     ) where
 
-import Language.Expression.Polarity
-import Language.Expression.TypeF
-import Language.Expression.TypeMappable
+import Data.Shim.Polarity
+import Data.Shim.ShimWit
+import Language.Expression.WitnessMappable
 import Shapes
 
 data NewVar rn =
-    forall p q. MkNewVar (RenamerNegWitness rn q)
-                         (RenamerPosWitness rn p)
-                         (q -> p)
+    forall t. MkNewVar (RenamerNegShimWit rn t)
+                       (RenamerPosShimWit rn t)
 
-class (MonadTransConstraint Monad rn, MonadTransConstraint Monad (RenamerNamespaceT rn)) => Renamer rn where
+class (MonadTransConstraint Monad rn, MonadTransConstraint Monad (RenamerNamespaceT rn), InCategory (RenamerShim rn)) =>
+          Renamer rn where
     type RenamerNegWitness rn :: Type -> Type
     type RenamerPosWitness rn :: Type -> Type
     type RenamerNamespaceT rn :: (Type -> Type) -> (Type -> Type)
-    renameTSNegWitness ::
-           Monad m => RenamerNegWitness rn t -> RenamerNamespaceT rn (rn m) (TypeF (RenamerNegWitness rn) 'Negative t)
-    renameTSPosWitness ::
-           Monad m => RenamerPosWitness rn t -> RenamerNamespaceT rn (rn m) (TypeF (RenamerPosWitness rn) 'Positive t)
+    type RenamerShim rn :: Type -> Type -> Type
+    renameNegWitness :: Monad m => RenamerNegWitness rn t -> RenamerNamespaceT rn (rn m) (RenamerNegShimWit rn t)
+    renamePosWitness :: Monad m => RenamerPosWitness rn t -> RenamerNamespaceT rn (rn m) (RenamerPosShimWit rn t)
     renameNewVar :: Monad m => rn m (NewVar rn)
     namespace :: Monad m => RenamerNamespaceT rn (rn m) r -> rn m r
     runRenamer :: Monad m => rn m r -> m r
 
+type RenamerNegShimWit rn = ShimWit (RenamerShim rn) (RenamerNegWitness rn) 'Negative
+
+type RenamerPosShimWit rn = ShimWit (RenamerShim rn) (RenamerPosWitness rn) 'Positive
+
+renameNegShimWit ::
+       forall rn m t. (Renamer rn, Monad m)
+    => RenamerNegShimWit rn t
+    -> RenamerNamespaceT rn (rn m) (RenamerNegShimWit rn t)
+renameNegShimWit =
+    case hasTransConstraint @Monad @rn @m of
+        Dict ->
+            case hasTransConstraint @Monad @(RenamerNamespaceT rn) @(rn m) of
+                Dict -> chainShimWitM $ renameNegWitness @rn
+
+renamePosShimWit ::
+       forall rn m t. (Renamer rn, Monad m)
+    => RenamerPosShimWit rn t
+    -> RenamerNamespaceT rn (rn m) (RenamerPosShimWit rn t)
+renamePosShimWit =
+    case hasTransConstraint @Monad @rn @m of
+        Dict ->
+            case hasTransConstraint @Monad @(RenamerNamespaceT rn) @(rn m) of
+                Dict -> chainShimWitM $ renamePosWitness @rn
+
 rename ::
-       forall rn m a. (Renamer rn, Monad m, TypeMappable (->) (RenamerPosWitness rn) (RenamerNegWitness rn) a)
+       forall rn m a. (Renamer rn, Monad m, WitnessMappable (RenamerPosShimWit rn) (RenamerNegShimWit rn) a)
     => a
     -> rn m a
 rename a =
     withTransConstraintTM @Monad $
-    namespace $ withTransConstraintTM @Monad $ mapTypesM (renameTSPosWitness @rn) (renameTSNegWitness @rn) a
+    namespace $ withTransConstraintTM @Monad $ mapWitnessesM renamePosShimWit renameNegShimWit a
 
 newtype VarNamespaceT (ts :: Type) m a =
     MkVarNamespaceT (StateT [(String, String)] m a)

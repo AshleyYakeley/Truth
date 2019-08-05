@@ -2,6 +2,8 @@ module Main
     ( main
     ) where
 
+import Data.Time
+import GitHash
 import qualified Options.Applicative as O
 import Pinafore
 import Pinafore.Language.Documentation
@@ -12,22 +14,26 @@ import Truth.Core
 import Truth.UI.GTK
 
 data Options
-    = PredefinedDocOption
+    = ShowVersionOption
+    | PredefinedDocOption
     | InfixDocOption
     | DumpTableOption (Maybe FilePath)
-    | RunOption Bool
-                Bool
-                (Maybe FilePath)
-                [FilePath]
+    | RunFileOption Bool
+                    Bool
+                    (Maybe FilePath)
+                    [FilePath]
+    | RunInteractiveOption Bool
+                           (Maybe FilePath)
 
 optDataFlag :: O.Parser (Maybe FilePath)
 optDataFlag = O.optional $ O.strOption $ O.long "data" <> O.metavar "PATH"
 
 optParser :: O.Parser Options
 optParser =
-    (RunOption <$> (O.switch $ O.long "interactive" <> O.short 'i') <*> (O.switch $ O.long "no-run" <> O.short 'n') <*>
-     optDataFlag <*>
+    (O.flag' ShowVersionOption $ O.long "version" <> O.short 'v') <|>
+    (RunFileOption <$> (O.switch $ O.long "sync") <*> (O.switch $ O.long "no-run" <> O.short 'n') <*> optDataFlag <*>
      (O.many $ O.strArgument $ O.metavar "SCRIPT")) <|>
+    ((O.flag' RunInteractiveOption $ O.long "interactive" <> O.short 'i') <*> (O.switch $ O.long "sync") <*> optDataFlag) <|>
     (O.flag' PredefinedDocOption $ O.long "doc-predefined") <|>
     (O.flag' InfixDocOption $ O.long "doc-infix") <|>
     ((O.flag' DumpTableOption $ O.long "dump-table") <*> optDataFlag)
@@ -93,46 +99,56 @@ printInfixOperatorTable = do
             for_ mnames $ \n -> putStr $ " `" <> show n <> "`"
         putStrLn ""
 
-async :: Bool
-async = True
+pinaforeVersion :: String
+pinaforeVersion = "0.1"
 
 main :: IO ()
-main =
-    truthMainGTK $ \MkTruthContext {..} -> do
-        options <- liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
-        case options of
-            PredefinedDocOption ->
-                liftIO $ runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
-            InfixDocOption ->
-                liftIO printInfixOperatorTable -- runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
-            DumpTableOption mdirpath -> do
-                dirpath <- getDirPath mdirpath
-                liftIO $ sqlitePinaforeDumpTable dirpath
-            RunOption fInteract fNoRun mdirpath fpaths -> do
-                dirpath <- getDirPath mdirpath
-                toolkit <- liftIO $ quitOnWindowsClosed tcUIToolkit
-                context <- sqlitePinaforeContext async dirpath toolkit
+main = do
+    options <- O.execParser (O.info optParser mempty)
+    case options of
+        ShowVersionOption -> let
+            gi = $$tGitInfoCwd
+            commitZonedTime :: ZonedTime
+            commitZonedTime = parseTimeOrError True defaultTimeLocale "%a %b %-e %T %Y %z" (giCommitDate gi)
+            commitTimeString :: String
+            commitTimeString = formatTime defaultTimeLocale "%FT%TZ" $ zonedTimeToUTC commitZonedTime
+            in putStrLn $
+               "Pinafore version " <>
+               pinaforeVersion <>
+               " (" <>
+               commitTimeString <>
+               " " <>
+               giHash gi <>
+               ")" <>
+               if giDirty gi
+                   then "+"
+                   else ""
+        PredefinedDocOption -> runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
+        InfixDocOption -> printInfixOperatorTable
+        DumpTableOption mdirpath -> do
+            dirpath <- getDirPath mdirpath
+            sqlitePinaforeDumpTable dirpath
+        RunFileOption fSync fNoRun mdirpath fpaths -> do
+            dirpath <- getDirPath mdirpath
+            truthMainGTK $ \MkTruthContext {..} -> do
+                (toolkit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
+                context <- sqlitePinaforeContext (not fSync) dirpath toolkit
+                for_ fpaths $ \fpath ->
+                    liftIO $ do
+                        ptext <- readFile fpath
+                        action <-
+                            ioRunInterpretResult $ let
+                                ?pinafore = context
+                                in pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
+                        if fNoRun
+                            then return ()
+                            else action
+                liftIO checkdone
+        RunInteractiveOption fSync mdirpath -> do
+            dirpath <- getDirPath mdirpath
+            truthMainGTK $ \MkTruthContext {..} -> do
+                context <- sqlitePinaforeContext (not fSync) dirpath tcUIToolkit
                 let
                     ?pinafore = context
-                    in liftIO $
-                       case fpaths of
-                           [] -> do
-                               isterm <- hIsTerminalDevice stdin
-                               if isterm || fInteract
-                                   then pinaforeInteract
-                                   else do
-                                       ptext <- getContents
-                                       action <- pinaforeInterpretFile "<stdin>" $ decodeUtf8 $ toStrict ptext
-                                       if fNoRun
-                                           then return ()
-                                           else action
-                           _ -> do
-                               for_ fpaths $ \fpath -> do
-                                   ptext <- readFile fpath
-                                   action <- pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
-                                   if fNoRun
-                                       then return ()
-                                       else action
-                               if fInteract
-                                   then pinaforeInteract
-                                   else return ()
+                    in liftIO pinaforeInteract
+                liftIO $ uitExit tcUIToolkit

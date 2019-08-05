@@ -1,6 +1,6 @@
 module Pinafore.Language.UI where
 
-import Language.Expression.Dolan
+import Data.Shim
 import Shapes
 import Truth.Core
 
@@ -11,5 +11,5 @@ newtype PinaforeUI baseedit a = MkPinaforeUI
 instance Functor (PinaforeUI baseedit) where
     fmap ab (MkPinaforeUI spec) = MkPinaforeUI $ mapSelectionUISpec ab spec
 
-instance HasDolanVary '[ 'Covariance] (PinaforeUI baseedit) where
-    dolanVary = ConsDolanVarianceMap fmap $ NilDolanVarianceMap
+instance HasVariance 'Covariance (PinaforeUI baseedit) where
+    varianceRepresentational = Nothing

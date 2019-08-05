@@ -41,6 +41,7 @@ import Prelude as I
     , Integral(..)
     , Num(..)
     , Real(..)
+    , RealFrac(..)
     , ($)
     , (^)
     , (^^)

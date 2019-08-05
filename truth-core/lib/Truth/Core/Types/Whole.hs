@@ -58,10 +58,24 @@ instance (FullSubjectReader reader) => FullEdit (WholeReaderEdit reader) where
 
 instance (FullSubjectReader reader, TestEquality reader) => CacheableEdit (WholeReaderEdit reader)
 
+mapWholeEdit :: (ReaderSubject ra -> ReaderSubject rb) -> WholeReaderEdit ra -> WholeReaderEdit rb
+mapWholeEdit = coerce
+
 lastWholeEdit :: [WholeReaderEdit reader] -> Maybe (ReaderSubject reader)
 lastWholeEdit edits = do
     MkWholeEdit subj <- lastM edits
     return subj
+
+wholePutEdits ::
+       (MonadTrans t, Monad m)
+    => (ReaderSubject reader -> MutableRead m (EditReader edita) -> t m (Maybe [edita]))
+    -> [WholeReaderEdit reader]
+    -> MutableRead m (EditReader edita)
+    -> t m (Maybe [edita])
+wholePutEdits pe edits mr =
+    case lastWholeEdit edits of
+        Nothing -> lift $ return $ Just []
+        (Just subj) -> pe subj mr
 
 type WholeEdit a = WholeReaderEdit (WholeReader a)
 

@@ -5,8 +5,10 @@ module Pinafore.Language.Expression
     , PinaforeScoped
     ) where
 
+import Data.Shim
 import Language.Expression.Bindings
-import Language.Expression.Dolan
+import Language.Expression.Error
+import Language.Expression.Sealed
 import Language.Expression.TypeSystem
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
@@ -29,7 +31,7 @@ qConstExpr ::
        forall baseedit a. ToPinaforeType baseedit a
     => a
     -> QExpr baseedit
-qConstExpr a = qConstExprAny $ toValue a
+qConstExpr a = qConstExprAny $ jmToValue a
 
 qVarExpr :: forall baseedit. Name -> QExpr baseedit
 qVarExpr name = tsVar @(PinaforeTypeSystem baseedit) name
@@ -53,6 +55,15 @@ qBothPattern ::
        forall baseedit. QPattern baseedit -> QPattern baseedit -> PinaforeSourceScoped baseedit (QPattern baseedit)
 qBothPattern = tsBothPattern @(PinaforeTypeSystem baseedit)
 
+qToPatternConstructor ::
+       forall baseedit t lt.
+       ( ToListShimWit PinaforeShim (PinaforeType baseedit 'Positive) lt
+       , FromShimWit JMShim (PinaforeType baseedit 'Negative) t
+       )
+    => (t -> Maybe (HList lt))
+    -> QPatternConstructor baseedit
+qToPatternConstructor = toPatternConstructor (fromJMShimWit @(PinaforeType baseedit 'Negative)) toListShimWit
+
 qApplyPatternConstructor ::
        forall baseedit.
        QPatternConstructor baseedit
@@ -61,7 +72,7 @@ qApplyPatternConstructor ::
 qApplyPatternConstructor = tsApplyPatternConstructor @(PinaforeTypeSystem baseedit)
 
 qSealPatternConstructor ::
-       forall baseedit m. MonadFail m
+       forall baseedit m. MonadError ExpressionError m
     => QPatternConstructor baseedit
     -> m (QPattern baseedit)
 qSealPatternConstructor = tsSealPatternConstructor @(PinaforeTypeSystem baseedit)
@@ -94,19 +105,18 @@ qCase = tsCase @(PinaforeTypeSystem baseedit)
 
 qFunctionPosWitness ::
        forall baseedit a b.
-       PinaforeTypeF baseedit 'Negative a
-    -> PinaforeTypeF baseedit 'Positive b
-    -> PinaforeTypeF baseedit 'Positive (a -> b)
-qFunctionPosWitness (MkTypeF ta conva) (MkTypeF tb convb) =
-    tsFunctionPosWitness @(PinaforeTypeSystem baseedit) ta tb $ \tf abf -> MkTypeF tf $ abf . \ab -> convb . ab . conva
+       PinaforeShimWit baseedit 'Negative a
+    -> PinaforeShimWit baseedit 'Positive b
+    -> PinaforeShimWit baseedit 'Positive (a -> b)
+qFunctionPosWitness = tsFunctionPosShimWit @(PinaforeTypeSystem baseedit)
 
 qFunctionPosWitnesses ::
-       ListType (PinaforeTypeF baseedit 'Negative) a
-    -> PinaforeTypeF baseedit 'Positive b
-    -> PinaforeTypeF baseedit 'Positive (HList a -> b)
-qFunctionPosWitnesses NilListType tb = contramap (\ub -> ub ()) tb
+       ListType (PinaforeShimWit baseedit 'Negative) a
+    -> PinaforeShimWit baseedit 'Positive b
+    -> PinaforeShimWit baseedit 'Positive (HList a -> b)
+qFunctionPosWitnesses NilListType tb = mapShimWit (toEnhanced "poswitness" $ \ub -> ub ()) tb
 qFunctionPosWitnesses (ConsListType ta la) tb =
-    contramap (\f a l -> f (a, l)) $ qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
+    mapShimWit (toEnhanced "poswitness" $ \f a l -> f (a, l)) $ qFunctionPosWitness ta $ qFunctionPosWitnesses la tb
 
 qCaseAbstract ::
        forall baseedit. [(QPattern baseedit, QExpr baseedit)] -> PinaforeSourceScoped baseedit (QExpr baseedit)
@@ -152,7 +162,7 @@ qValuesLetExpr :: forall baseedit. StrictMap Name (QValue baseedit) -> StrictMap
 qValuesLetExpr = tsValuesLet @(PinaforeTypeSystem baseedit)
 
 qEvalExpr ::
-       forall baseedit m. MonadFail m
+       forall baseedit m. MonadError ExpressionError m
     => QExpr baseedit
     -> m (QValue baseedit)
 qEvalExpr expr = tsEval @(PinaforeTypeSystem baseedit) expr
@@ -161,13 +171,11 @@ typedAnyToPinaforeVal ::
        forall baseedit t. FromPinaforeType baseedit t
     => QValue baseedit
     -> PinaforeSourceScoped baseedit t
-typedAnyToPinaforeVal aval =
-    case fromTypeF of
-        MkTypeF wit conv -> fmap conv $ tsAnyToVal @(PinaforeTypeSystem baseedit) wit aval
+typedAnyToPinaforeVal = tsAnyToVal @(PinaforeTypeSystem baseedit) fromJMShimWit
 
 qSubsumeExpr ::
        forall baseedit.
-       AnyW (PinaforeType baseedit 'Positive)
+       AnyW (PinaforeShimWit baseedit 'Positive)
     -> PinaforeExpression baseedit
     -> PinaforeSourceScoped baseedit (PinaforeExpression baseedit)
 qSubsumeExpr t expr = tsSubsume @(PinaforeTypeSystem baseedit) t expr

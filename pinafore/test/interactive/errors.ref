@@ -1,29 +1,24 @@
 pinafore> )
-error: "<input>" (line 1, column 1):
-unexpected ("<input>" (line 1, column 1),")")
-expecting end of input or expression
+<input>:1:1: unexpected: ")"; expecting: end of input, expression
 pinafore> (
-error: "<input>" (line 1, column 1):
-unexpected ("<input>" (line 1, column 1),"(")
-expecting end of input or expression
+<input>:1:1: unexpected: "("; expecting: end of input, expression
 pinafore> in
-error: "<input>" (line 1, column 1):
-unexpected ("<input>" (line 1, column 1),"in")
-expecting end of input or expression
+<input>:1:1: unexpected: "in"; expecting: end of input, expression
 pinafore> a
-error: "<input>" (line 2, column 1): undefined: a
+<input>:2:1: undefined: a
 pinafore> a
-error: "<input>" (line 2, column 1): undefined: a
+<input>:2:1: undefined: a
 pinafore> let p = q
 pinafore> p
-error: "<input>" (line 3, column 1): undefined: q
+<input>:3:1: undefined: q
 pinafore> a
-error: "<input>" (line 3, column 1): undefined: a
+<input>:3:1: undefined: a
 pinafore> p
-error: "<input>" (line 3, column 1): undefined: q
+<input>:3:1: undefined: q
 pinafore> entity @X !"x"
-error: "<input>" (line 1, column 1): unknown type: X
+<input>:1:1: unknown type: X
 pinafore> let y = entity @Y !"y"
+<input>:2:9: unknown type: Y
 pinafore> 35
-error: "<input>" (line 2, column 9): unknown type: Y
+35
 pinafore> <END>

@@ -1,24 +1,29 @@
 module Language.Expression.Dolan.RangeF where
 
-import Language.Expression.Dolan.PType
-import Language.Expression.Dolan.Range
-import Language.Expression.Polarity
-import Language.Expression.TypeF
+import Data.Shim.CatRange
+import Data.Shim.JMShim
+import Data.Shim.JMShimWit
+import Data.Shim.Polarity
+import Data.Shim.Range
+import Data.Shim.ShimWit
+import Language.Expression.Dolan.PShimWit
 import Shapes
 
-unToWithTypeF ::
-       (FromTypeF (tw 'Negative) pa, ToTypeF (tw 'Positive) qa)
-    => (forall pt qt. RangeType tw 'Positive '( pt, qt) -> WithRange (->) '( pa, qa) '( pt, qt) -> r)
+unToRangeShimWit ::
+       forall tw pa qa r. (FromShimWit JMShim (tw 'Negative) pa, ToShimWit JMShim (tw 'Positive) qa)
+    => (forall pt qt. RangeType tw 'Positive '( pt, qt) -> CatRange JMShim '( pa, qa) '( pt, qt) -> r)
     -> r
-unToWithTypeF cont =
-    unTypeF fromTypeF $ \tp convp -> unTypeF toTypeF $ \tq convq -> cont (MkRangeType tp tq) (MkWithRange convp convq)
+unToRangeShimWit cont =
+    unShimWit fromJMShimWit $ \tp convp ->
+        unShimWit toJMShimWit $ \tq convq -> cont (MkRangeType tp tq) (MkCatRange convp convq)
 
-unFromWithTypeF ::
-       (ToTypeF (tw 'Positive) pa, FromTypeF (tw 'Negative) qa)
-    => (forall pt qt. RangeType tw 'Negative '( pt, qt) -> WithRange (->) '( pt, qt) '( pa, qa) -> r)
+unFromRangeShimWit ::
+       forall tw pa qa r. (ToShimWit JMShim (tw 'Positive) pa, FromShimWit JMShim (tw 'Negative) qa)
+    => (forall pt qt. RangeType tw 'Negative '( pt, qt) -> CatRange JMShim '( pt, qt) '( pa, qa) -> r)
     -> r
-unFromWithTypeF cont =
-    unTypeF toTypeF $ \tp convp -> unTypeF fromTypeF $ \tq convq -> cont (MkRangeType tp tq) (MkWithRange convp convq)
+unFromRangeShimWit cont =
+    unShimWit toJMShimWit $ \tp convp ->
+        unShimWit fromJMShimWit $ \tq convq -> cont (MkRangeType tp tq) (MkCatRange convp convq)
 
-biTypeF :: (PTypeF tw 'Negative t, PTypeF tw 'Positive t) -> AnyF (RangeType tw 'Positive) (Range t)
-biTypeF (MkTypeF tp convp, MkTypeF tq convq) = MkAnyF (MkRangeType tp tq) (MkRange convp convq)
+biRangeAnyF :: (PJMShimWit tw 'Negative t, PJMShimWit tw 'Positive t) -> AnyF (RangeType tw 'Positive) (Range JMShim t)
+biRangeAnyF (MkShimWit tp convp, MkShimWit tq convq) = MkAnyF (MkRangeType tp tq) (MkRange convp convq)

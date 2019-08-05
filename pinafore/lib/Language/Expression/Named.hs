@@ -3,9 +3,8 @@ module Language.Expression.Named where
 import Language.Expression.Expression
 import Language.Expression.NameWit
 import Language.Expression.Pattern
-import Language.Expression.TypeF
-import Language.Expression.TypeMappable
 import Language.Expression.Witness
+import Language.Expression.WitnessMappable
 import Shapes
 
 data UnitType a b where
@@ -36,19 +35,19 @@ pattern MkNameWitness name wit =
 
 type NamedExpression name w = NameTypeExpression (UnitType name) (UnitType' w)
 
-instance TypeMappable (->) poswit negwit (NamedExpression name negwit a) where
-    mapTypesM _ _ (ClosedExpression a) = return $ ClosedExpression a
-    mapTypesM mapPos mapNeg (OpenExpression (MkNameWitness name tt) expr) = do
-        MkTypeF tt' conv <- mapNeg tt
-        expr' <- mapTypesM mapPos mapNeg expr
-        return $ OpenExpression (MkNameWitness name tt') $ fmap (\ta -> ta . conv) expr'
+instance WitnessMappable poswit negwit (NamedExpression name negwit a) where
+    mapWitnessesM _ _ (ClosedExpression a) = return $ ClosedExpression a
+    mapWitnessesM mapPos mapNeg (OpenExpression (MkNameWitness name tt) expr) = do
+        tt' <- mapNeg tt
+        expr' <- mapWitnessesM mapPos mapNeg expr
+        return $ OpenExpression (MkNameWitness name tt') expr'
 
-instance TypeMappable (->) poswit negwit (NamedPattern name poswit a b) where
-    mapTypesM _ _ (ClosedPattern a) = return $ ClosedPattern a
-    mapTypesM mapPos mapNeg (OpenPattern (MkNameWitness name tt) pat) = do
-        MkTypeF tt' conv <- mapPos tt
-        pat' <- mapTypesM mapPos mapNeg pat
-        return $ OpenPattern (MkNameWitness name tt') $ fmap (\(t, b) -> (conv t, b)) pat'
+instance WitnessMappable poswit negwit (NamedPattern name poswit a b) where
+    mapWitnessesM _ _ (ClosedPattern a) = return $ ClosedPattern a
+    mapWitnessesM mapPos mapNeg (OpenPattern (MkNameWitness name tt) pat) = do
+        tt' <- mapPos tt
+        pat' <- mapWitnessesM mapPos mapNeg pat
+        return $ OpenPattern (MkNameWitness name tt') pat'
 
 namedExpressionFreeNames :: NamedExpression name vw a -> [name]
 namedExpressionFreeNames expr = expressionFreeWitnesses (\(MkNameWitness n _) -> n) expr

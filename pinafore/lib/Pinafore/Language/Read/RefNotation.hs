@@ -10,6 +10,7 @@ module Pinafore.Language.Read.RefNotation
     ) where
 
 import Pinafore.Base
+import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
 import Pinafore.Language.Type
@@ -17,12 +18,12 @@ import Shapes
 
 type RefNotation baseedit = WriterT [(Name, QExpr baseedit)] (StateT Int (PinaforeScoped baseedit))
 
-runRefWriterT :: MonadFail m => WriterT [(Name, QExpr baseedit)] m a -> m a
-runRefWriterT wma = do
+runRefWriterT :: MonadError ErrorMessage m => SourcePos -> WriterT [(Name, QExpr baseedit)] m a -> m a
+runRefWriterT spos wma = do
     (a, w) <- runWriterT wma
     case w of
         [] -> return a
-        _ -> fail "unquote outside Ref quote"
+        _ -> throwError $ MkErrorMessage spos NotationBareUnquoteError
 
 liftRefNotation :: PinaforeScoped baseedit a -> RefNotation baseedit a
 liftRefNotation = lift . lift
@@ -32,8 +33,8 @@ remonadRefNotation ::
     -> (forall a. RefNotation baseedit a -> RefNotation baseedit a)
 remonadRefNotation (MkTransform mm) = remonad $ remonad mm
 
-runRefNotation :: RefNotation baseedit a -> PinaforeScoped baseedit a
-runRefNotation rexpr = evalStateT (runRefWriterT rexpr) 0
+runRefNotation :: SourcePos -> RefNotation baseedit a -> PinaforeScoped baseedit a
+runRefNotation spos rexpr = evalStateT (runRefWriterT spos rexpr) 0
 
 type RefExpression baseedit = RefNotation baseedit (QExpr baseedit)
 
@@ -45,12 +46,12 @@ varRefExpr spos name =
             Just expr -> return expr
             Nothing -> return $ qVarExpr name
 
-refNotationUnquote :: RefExpression baseedit -> RefExpression baseedit
-refNotationUnquote rexpr = do
+refNotationUnquote :: SourcePos -> RefExpression baseedit -> RefExpression baseedit
+refNotationUnquote spos rexpr = do
     i <- lift get
     lift $ put $ i + 1
     let varname = fromString $ "%ref" <> show i
-    expr <- lift $ runRefWriterT rexpr
+    expr <- lift $ runRefWriterT spos rexpr
     tell $ pure (varname, expr)
     return $ qVarExpr varname
 

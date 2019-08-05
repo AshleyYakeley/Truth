@@ -66,6 +66,10 @@ instance AsLiteral Integer where
     toLiteral = MkLiteral . pack . show
     fromLiteral = readFromLiteral
 
+instance HasResolution r => AsLiteral (Fixed r) where
+    toLiteral = MkLiteral . pack . show
+    fromLiteral = readFromLiteral
+
 instance AsLiteral Rational where
     toLiteral = toLiteral . ExactNumber
     fromLiteral t = do
@@ -86,6 +90,24 @@ instance AsLiteral Day where
     toLiteral = MkLiteral . pack . show
     fromLiteral = readFromLiteral
 
+instance AsLiteral TimeOfDay where
+    toLiteral = MkLiteral . pack . show
+    fromLiteral = readFromLiteral
+
+instance AsLiteral LocalTime where
+    toLiteral = MkLiteral . pack . show
+    fromLiteral = readFromLiteral
+
 instance AsLiteral UTCTime where
     toLiteral = MkLiteral . pack . show
     fromLiteral = readFromLiteral
+
+nominalDiffTimeToSeconds :: NominalDiffTime -> Pico
+nominalDiffTimeToSeconds = realToFrac
+
+secondsToNominalDiffTime :: Pico -> NominalDiffTime
+secondsToNominalDiffTime = realToFrac
+
+instance AsLiteral NominalDiffTime where
+    toLiteral = toLiteral . nominalDiffTimeToSeconds
+    fromLiteral = fmap secondsToNominalDiffTime . fromLiteral

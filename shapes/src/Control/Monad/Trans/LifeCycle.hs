@@ -147,21 +147,31 @@ lifeCycleEarlyCloser (MkLifeCycleT lc) =
                     Nothing -> return ()
         return ((a, earlycloser), earlycloser)
 
-lifeCycleOnAllDone :: MonadUnliftIO m => m () -> m (LifeCycleT m ())
+lifeCycleOnAllDone :: MonadUnliftIO m => m () -> m (LifeCycleT m (), m ())
 lifeCycleOnAllDone onzero = do
     var <- liftIO $ newMVar (0 :: Int)
-    return $ do
-        liftIO $
-            mvarRun var $ do
-                olda <- get
-                put $ succ olda
-        lifeCycleClose $ do
-            iszero <-
+    let
+        ondone = do
+            liftIO $
                 mvarRun var $ do
                     olda <- get
-                    let newa = pred olda
-                    put newa
-                    return $ newa == 0
+                    put $ succ olda
+            lifeCycleClose $ do
+                iszero <-
+                    mvarRun var $ do
+                        olda <- get
+                        let newa = pred olda
+                        put newa
+                        return $ newa == 0
+                if iszero
+                    then onzero
+                    else return ()
+        checkdone = do
+            iszero <-
+                mvarRun var $ do
+                    a <- get
+                    return $ a == 0
             if iszero
                 then onzero
                 else return ()
+    return (ondone, checkdone)

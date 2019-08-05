@@ -1,11 +1,10 @@
 module Pinafore.Language.Order where
 
-import Data.Time
-import Language.Expression.Dolan
+import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Morphism
 import Pinafore.Language.Reference
-import Pinafore.Language.Set
+import Pinafore.Language.SetRef
 import Shapes
 import Truth.Core
 
@@ -27,17 +26,13 @@ instance Monoid (PinaforeOrder baseedit a) where
 instance Contravariant (PinaforeOrder baseedit) where
     contramap ba (MkPinaforeOrder ef o) = MkPinaforeOrder (ef . (arr $ fmap ba)) o
 
-instance HasDolanVary '[ 'Contravariance] (PinaforeOrder baseedit) where
-    dolanVary = ConsDolanVarianceMap (\(MkCatDual ba) -> contramap ba) $ NilDolanVarianceMap
+instance HasVariance 'Contravariance (PinaforeOrder baseedit) where
+    varianceRepresentational = Nothing
 
-alphabetical :: PinaforeOrder baseedit Text
-alphabetical = MkPinaforeOrder id compare
-
-numerical :: PinaforeOrder baseedit Number
-numerical = MkPinaforeOrder id compare
-
-chronological :: PinaforeOrder baseedit UTCTime
-chronological = MkPinaforeOrder id compare
+ordOrder ::
+       forall baseedit a. Ord a
+    => PinaforeOrder baseedit a
+ordOrder = MkPinaforeOrder id compare
 
 orderon ::
        forall baseedit a b.
@@ -85,6 +80,6 @@ pinaforeOrderCompare ob (MkPinaforeOrder ef o) fv1 fv2 =
 pinaforeSetGetOrdered ::
        forall baseedit a.
        PinaforeOrder baseedit a
-    -> PinaforeSet baseedit '( BottomType, a)
+    -> PinaforeSetRef baseedit '( BottomType, a)
     -> PinaforeReference baseedit '( TopType, [a])
-pinaforeSetGetOrdered order set = pinaforeFunctionToReference $ qOrderSet order $ pinaforeSetFunctionValue set
+pinaforeSetGetOrdered order set = pinaforeFunctionToReference $ qOrderSet order $ pinaforeSetRefFunctionValue set

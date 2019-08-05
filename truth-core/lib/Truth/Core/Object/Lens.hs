@@ -20,9 +20,12 @@ mapASubscriber unlift alens (MkASubscriber objectA subA)
         objectB = lensAnObject alens objectA
         in MkASubscriber objectB $ \updateB -> let
                updateA :: [edita] -> EditContext -> IO ()
+               updateA [] _ectxt = return ()
                updateA editAs ectxt = do
                    editBs <- runTransform unlift $ anObjectMapUpdates (elFunction alens) objectA editAs
-                   updateB editBs ectxt
+                   case editBs of
+                       [] -> return ()
+                       _ -> updateB editBs ectxt
                in remonad lift $ subA updateA
 
 mapSubscriber :: forall edita editb. EditLens edita editb -> Subscriber edita -> Subscriber editb

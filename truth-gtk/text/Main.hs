@@ -23,11 +23,10 @@ async :: Bool
 async = False
 
 main :: IO ()
-main =
+main = do
+    (paths, double, saveOpt) <- O.execParser (O.info optParser mempty)
     truthMainGTK $ \MkTruthContext {..} -> do
-        (paths, double, saveOpt) <-
-            liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
-        MkUIToolkit {..} <- liftIO $ quitOnWindowsClosed tcUIToolkit
+        (MkUIToolkit {..}, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
         for_ paths $ \path -> do
             let
                 bsObj :: Object ByteStringEdit
@@ -72,7 +71,7 @@ main =
                               "File"
                               [ simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') closer
                               , SeparatorMenuEntry
-                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitQuit
+                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitExit
                               ]
                         ]
                     in (mbar, spec)
@@ -107,7 +106,7 @@ main =
                               , simpleActionMenuItem "Revert" Nothing revertAction
                               , simpleActionMenuItem "Close" (Just $ MkMenuAccelerator [KMCtrl] 'W') closer
                               , SeparatorMenuEntry
-                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitQuit
+                              , simpleActionMenuItem "Exit" (Just $ MkMenuAccelerator [KMCtrl] 'Q') uitExit
                               ]
                         , SubMenuEntry
                               "Edit"
@@ -134,3 +133,4 @@ main =
             if double
                 then action
                 else return ()
+            liftIO checkdone

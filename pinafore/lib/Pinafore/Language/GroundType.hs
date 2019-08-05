@@ -1,22 +1,19 @@
 module Pinafore.Language.GroundType where
 
+import Data.Shim
 import Language.Expression.Dolan
-import Language.Expression.Polarity
-import Language.Expression.TypeF
 import Pinafore.Base
 import Pinafore.Language.EntityType
 import Pinafore.Language.Morphism
 import Pinafore.Language.Order
 import Pinafore.Language.Reference
-import Pinafore.Language.Set
+import Pinafore.Language.SetRef
 import Pinafore.Language.Show
 import Pinafore.Language.UI
 import Shapes
 import Truth.Core
 
-{-
 -- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
--}
 data PinaforeGroundType baseedit (polarity :: Polarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv) where
     FuncPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance, 'Covariance] (->)
     EntityPinaforeGroundType :: CovaryType dv -> EntityGroundType t -> PinaforeGroundType baseedit polarity dv t
@@ -24,7 +21,7 @@ data PinaforeGroundType baseedit (polarity :: Polarity) (dv :: DolanVariance) (t
     ActionPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] (PinaforeAction baseedit)
     -- Reference
     ReferencePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeReference baseedit)
-    SetPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeSet baseedit)
+    SetPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeSetRef baseedit)
     MorphismPinaforeGroundType
         :: PinaforeGroundType baseedit polarity '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit)
     -- UI
@@ -54,7 +51,7 @@ pinaforeGroundTypeTestEquality _ _ = Nothing
 pinaforeGroundTypeVarianceMap ::
        forall baseedit polarity (dv :: DolanVariance) (f :: DolanVarianceKind dv).
        PinaforeGroundType baseedit polarity dv f
-    -> DolanVarianceMap (->) dv f
+    -> DolanVarianceMap JMShim dv f
 pinaforeGroundTypeVarianceMap FuncPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap (EntityPinaforeGroundType dvcovary gt) =
     covaryToDolanVarianceMap dvcovary $ entityGroundTypeCovaryMap gt
@@ -104,8 +101,8 @@ pinaforeGroundTypeShowPrec ::
 pinaforeGroundTypeShowPrec FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " -> " <> exprPrecShow 3 tb, 3)
 pinaforeGroundTypeShowPrec (EntityPinaforeGroundType lt gt) dargs =
-    case dolanArgumentsToArguments mkGenPTypeF lt (entityGroundTypeCovaryMap gt) dargs of
-        MkTypeF args _ -> entityGroundTypeShowPrec exprShowPrec gt args
+    case dolanArgumentsToArguments mkPShimWit lt (entityGroundTypeCovaryMap gt) dargs of
+        MkShimWit args _ -> entityGroundTypeShowPrec exprShowPrec gt args
 pinaforeGroundTypeShowPrec OrderPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec ActionPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
@@ -113,7 +110,7 @@ pinaforeGroundTypeShowPrec ActionPinaforeGroundType (ConsDolanArguments ta NilDo
 pinaforeGroundTypeShowPrec ReferencePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     ("Ref " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec SetPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("Set " <> exprPrecShow 0 ta, 2)
+    ("SetRef " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
 pinaforeGroundTypeShowPrec UserInterfacePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =

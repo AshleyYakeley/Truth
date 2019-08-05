@@ -4,6 +4,7 @@ module Test.Language
     ( testLanguage
     ) where
 
+import Data.Shim
 import Pinafore
 import Pinafore.Language.Documentation
 import Pinafore.Test
@@ -11,6 +12,7 @@ import Prelude (read)
 import Shapes
 import Shapes.Numeric
 import Test.Tasty
+import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit
 
 testOp :: Name -> TestTree
@@ -128,10 +130,9 @@ testQuery query expected =
     testCase (unpack query) $
     case (expected, withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeEdit query) of
         (Nothing, FailureResult _) -> return ()
-        (Nothing, SuccessResult (MkAnyValue t v)) ->
-            assertFailure $ "expected failure, found success: " ++ showPinaforeValue t v
-        (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ unpack e
-        (Just s, SuccessResult (MkAnyValue t v)) -> assertEqual "result" s (showPinaforeValue t v)
+        (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ showPinaforeValue v
+        (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ show e
+        (Just s, SuccessResult v) -> assertEqual "result" s (showPinaforeValue v)
 
 testQueries :: TestTree
 testQueries =
@@ -235,6 +236,8 @@ testQueries =
               , testQuery "let a x = b; b = b in a" $ Just "<?>"
               , testQuery "let a x = 1; b = b in a b" $ Just "1"
               , testQuery "let a x = 1; b = a b in b" $ Just "1"
+              , testQuery "let a x = 1 in let b = a b in b" $ Just "1"
+              , testQuery "let b = (\\x -> 1) b in b" $ Just "1"
               , testQuery "let b = a b; a x = 1 in b" $ Just "1"
               , testQuery "let a x = 1; b = a c; c=b in b" $ Just "1"
               ]
@@ -312,6 +315,12 @@ testQueries =
               , testQuery "not False" $ Just "True"
               ]
         , testGroup
+              "text"
+              [ testQuery "\"pqrs\"" $ Just "pqrs"
+              , testQuery "textlength \"abd\"" $ Just "3"
+              , testQuery "textsection 4 3 \"ABCDEFGHIJKLMN\"" $ Just "EFG"
+              ]
+        , testGroup
               "operator precedence"
               [ testQuery "1 + 2 * 3" $ Just "7"
               , testQuery "3 * 2 + 1" $ Just "7"
@@ -329,8 +338,8 @@ testQueries =
         , testGroup "pairs" [testQuery "fst (7,9)" $ Just "7", testQuery "snd (7,9)" $ Just "9"]
         , testGroup
               "either"
-              [ testQuery "either (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Left \"x\"" $ Just "(Left, x)"
-              , testQuery "either (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Right \"x\"" $ Just "(Right, x)"
+              [ testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Left \"x\"" $ Just "(Left, x)"
+              , testQuery "fromEither (\\a -> (\"Left\",a)) (\\a -> (\"Right\",a)) $ Right \"x\"" $ Just "(Right, x)"
               ]
         , testGroup
               "type signature"
@@ -419,6 +428,31 @@ testQueries =
               ]
         ]
 
+testShim :: Text -> String -> String -> TestTree
+testShim query expectedType expectedShim =
+    testCase (unpack query) $
+    case withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeEdit query of
+        FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
+        SuccessResult (MkAnyValue (MkShimWit t shim) _) -> do
+            assertEqual "type" expectedType $ show t
+            assertEqual "shim" expectedShim $ show shim
+
+testShims :: TestTree
+testShims =
+    testGroup
+        "shims"
+        [ testShim "3" "Integer" "(join1 id)"
+        , testShim "negate" "Integer -> Integer" "(join1 (co (contra id (meet1 id)) (join1 id)))"
+        , testShim "negate 3" "Integer" "(join1 id)"
+        , testShim "id" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
+        , expectFail $ testShim "id 3" "Integer" "(join1 id)"
+        , expectFail $ testShim "\\x -> x" "a -> a" "(join1 (co (contra id (meet1 id)) (join1 id)))"
+        , expectFail $ testShim "(\\x -> x) 3" "Integer" "(join1 id)"
+        , testShim "\\x -> 4" "Any -> Integer" "(join1 (co (contra id termf) (join1 id)))"
+        , testShim "(\\x -> 4) 3" "Integer" "(join1 id)"
+        ]
+
 testLanguage :: TestTree
 testLanguage =
-    localOption (mkTimeout 2000000) $ testGroup "language" [testInfix, testNumbers, testQueryValues, testQueries]
+    localOption (mkTimeout 2000000) $
+    testGroup "language" [testInfix, testNumbers, testShims, testQueryValues, testQueries]

@@ -4,6 +4,7 @@ module Control.AsyncRunner
     , asyncIORunner
     ) where
 
+import Control.Monad.LifeCycleIO
 import Control.Monad.Trans.LifeCycle
 import Shapes.Import
 
@@ -17,7 +18,7 @@ asyncWaitRunner ::
        forall t. Semigroup t
     => Int
     -> (t -> IO ())
-    -> LifeCycleT IO (Maybe t -> IO ())
+    -> LifeCycleIO (Maybe t -> IO ())
 asyncWaitRunner mus doit = do
     bufferVar :: TVar (VarState t) <- liftIO $ newTVarIO $ VSEmpty
     let
@@ -74,8 +75,8 @@ asyncWaitRunner mus doit = do
 asyncRunner ::
        forall t. Semigroup t
     => (t -> IO ())
-    -> LifeCycleT IO (t -> IO ())
+    -> LifeCycleIO (t -> IO ())
 asyncRunner doit = fmap (\push -> push . Just) $ asyncWaitRunner 0 doit
 
-asyncIORunner :: LifeCycleT IO (IO () -> IO ())
+asyncIORunner :: LifeCycleIO (IO () -> IO ())
 asyncIORunner = fmap (\pushVal io -> pushVal [io]) $ asyncRunner sequence_

@@ -14,5 +14,8 @@ instance IsString Name where
 
 type instance Element Name = Char
 
-nameToSymbolWitness :: Name -> (forall (symbol :: Symbol). SymbolType symbol -> r) -> r
-nameToSymbolWitness n = valueToWitness $ unpack n
+nameToSymbolType :: Name -> (forall (symbol :: Symbol). SymbolType symbol -> r) -> r
+nameToSymbolType n = valueToWitness $ unpack n
+
+symbolTypeToName :: SymbolType symbol -> Name
+symbolTypeToName = MkName . pack . witnessToValue

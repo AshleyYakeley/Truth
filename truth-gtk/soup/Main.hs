@@ -15,14 +15,14 @@ async :: Bool
 async = False
 
 main :: IO ()
-main =
+main = do
+    (dirpaths, double) <- O.execParser (O.info optParser mempty)
     truthMainGTK $ \MkTruthContext {..} -> do
-        (dirpaths, double) <-
-            liftIO $ O.handleParseResult $ O.execParserPure O.defaultPrefs (O.info optParser mempty) tcArguments
-        toolkit <- liftIO $ quitOnWindowsClosed tcUIToolkit
+        (toolkit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
         for_ dirpaths $ \dirpath -> do
             let action = soupWindow async toolkit dirpath
             action
             if double
                 then action
                 else return ()
+        liftIO checkdone
