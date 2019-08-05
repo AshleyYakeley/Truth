@@ -179,6 +179,7 @@ window_constant = std_window {"Constant"} $ ui_vertical
 window_start :: Action Window;
 window_start = std_window {"Pinafore"} $ ui_vertical
 [
+    (ui_label {"Time: " <> totext %now},False),
     (ui_button {"People"} {window_people},False),
     (ui_button {"Calculated Form"} {window_calc},False),
     (ui_button {"Switch"} {window_switch},False),

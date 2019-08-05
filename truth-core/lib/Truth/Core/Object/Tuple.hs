@@ -1,5 +1,6 @@
 module Truth.Core.Object.Tuple
     ( tupleObject
+    , tupleUpdatingObject
     , tupleSubscribers
     , pairObjects
     , pairSubscribers
@@ -12,6 +13,7 @@ import Truth.Core.Object.Lens
 import Truth.Core.Object.Object
 import Truth.Core.Object.Subscriber
 import Truth.Core.Object.UnliftIO
+import Truth.Core.Object.UpdatingObject
 import Truth.Core.Read
 import Truth.Core.Types
 
@@ -107,28 +109,44 @@ instance ObjectOrSubscriber ASubscriber where
                             update (fmap (\(MkTupleEdit sel e) -> MkTupleEdit (RestElementType sel) e) ee) ec
                 in MkASubscriber aobjAB subAB
 
-tupleListThing ::
-       forall f edits. ObjectOrSubscriber f
+tupleListThingM ::
+       forall m f edits. (Applicative m, ObjectOrSubscriber f)
     => ListType Proxy edits
-    -> (forall edit. ListElementType edits edit -> CloseUnliftIO f edit)
-    -> CloseUnliftIO f (TupleEdit (ListElementType edits))
-tupleListThing lt getObject =
+    -> (forall edit. ListElementType edits edit -> m (CloseUnliftIO f edit))
+    -> m (CloseUnliftIO f (TupleEdit (ListElementType edits)))
+tupleListThingM lt getObject =
     case lt of
-        NilListType -> noneTupleThing
+        NilListType -> pure noneTupleThing
         ConsListType Proxy lt' ->
-            consTupleThings (getObject FirstElementType) $ tupleListThing lt' $ \sel -> getObject $ RestElementType sel
+            consTupleThings <$> (getObject FirstElementType) <*>
+            (tupleListThingM lt' $ \sel -> getObject $ RestElementType sel)
+
+tupleThingM ::
+       forall m f sel. (ObjectOrSubscriber f, IsFiniteConsWitness sel, Applicative m)
+    => (forall edit. sel edit -> m (CloseUnliftIO f edit))
+    -> m (CloseUnliftIO f (TupleEdit sel))
+tupleThingM pick =
+    fmap (mapThing (tupleIsoLens fromLTW toLTW)) $ tupleListThingM representative $ \sel -> pick $ fromLTW sel
 
 tupleThing ::
        forall f sel. (ObjectOrSubscriber f, IsFiniteConsWitness sel)
     => (forall edit. sel edit -> CloseUnliftIO f edit)
     -> CloseUnliftIO f (TupleEdit sel)
-tupleThing pick = mapThing (tupleIsoLens fromLTW toLTW) $ tupleListThing representative $ \sel -> pick $ fromLTW sel
+tupleThing pick = runIdentity $ tupleThingM $ \sel -> Identity $ pick sel
 
 tupleObject ::
        forall sel. IsFiniteConsWitness sel
     => (forall edit. sel edit -> Object edit)
     -> Object (TupleEdit sel)
 tupleObject = tupleThing
+
+tupleUpdatingObject ::
+       forall sel. IsFiniteConsWitness sel
+    => (forall edit. sel edit -> UpdatingObject edit ())
+    -> UpdatingObject (TupleEdit sel) ()
+tupleUpdatingObject pick update = do
+    obj <- tupleThingM $ \sel -> fmap fst $ pick sel (\edits -> update $ fmap (MkTupleEdit sel) edits)
+    return (obj, ())
 
 tupleSubscribers ::
        forall sel. IsFiniteConsWitness sel

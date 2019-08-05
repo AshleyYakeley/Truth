@@ -10,6 +10,7 @@ module Pinafore.Main
     , pinaforeInteract
     ) where
 
+import Data.Time
 import Pinafore.Base
 import Pinafore.Language
 import Pinafore.Pinafore
@@ -20,27 +21,31 @@ import Pinafore.Storage.Table
 import Shapes
 import System.FilePath
 import Truth.Core
+import Truth.World.Clock
 
 type FilePinaforeType = PinaforeAction PinaforeEdit ()
 
 filePinaforeType :: Text
 filePinaforeType = qTypeDescription @PinaforeEdit @FilePinaforeType
 
-sqlitePinaforeObject :: FilePath -> LifeCycleIO (Object PinaforeEdit)
-sqlitePinaforeObject dirpath = do
+sqlitePinaforeObject :: FilePath -> UpdatingObject PinaforeEdit ()
+sqlitePinaforeObject dirpath update = do
     tableObject1 <- lifeCycleWith $ exclusiveObject $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
     memoryObject <- liftIO makeMemoryCellObject
-    return $
-        tupleObject $ \case
-            PinaforeSelectPoint -> pinaforeTableEntityObject tableObject
-            PinaforeSelectFile -> directoryPinaforeFileObject $ dirpath </> "files"
-            PinaforeSelectMemory -> memoryObject
+    let
+        picker :: forall edit. PinaforeSelector edit -> UpdatingObject edit ()
+        picker =
+            \case
+                PinaforeSelectPoint -> updatingObject $ pinaforeTableEntityObject tableObject
+                PinaforeSelectFile -> updatingObject $ directoryPinaforeFileObject $ dirpath </> "files"
+                PinaforeSelectMemory -> updatingObject memoryObject
+                PinaforeSelectClock ->
+                    clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
+    tupleUpdatingObject picker update
 
 sqlitePinaforeContext :: Bool -> FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeEdit)
-sqlitePinaforeContext async dirpath toolkit = do
-    pinaforeObject <- sqlitePinaforeObject dirpath
-    makePinaforeContext async pinaforeObject toolkit
+sqlitePinaforeContext async dirpath toolkit = makePinaforeContext async (sqlitePinaforeObject dirpath) toolkit
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

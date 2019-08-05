@@ -62,7 +62,11 @@ newmemset = do
 
 base_predefinitions ::
        forall baseedit.
-       (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit, BaseEditLens MemoryCellEdit baseedit)
+       ( HasPinaforeEntityEdit baseedit
+       , HasPinaforeFileEdit baseedit
+       , BaseEditLens MemoryCellEdit baseedit
+       , BaseEditLens (WholeEdit UTCTime) baseedit
+       )
     => [DocTreeEntry (BindDoc baseedit)]
 base_predefinitions =
     [ docTreeEntry
@@ -216,6 +220,8 @@ base_predefinitions =
                       , mkValEntry "addTime" "Add duration to time." addUTCTime
                       , mkValEntry "diffTime" "Difference of times." diffUTCTime
                       , mkValEntry "getCurrentTime" "Get the current time." getCurrentTime
+                      , mkValEntry "now" "The current time." $
+                        functionImmutableReference $ editLensFunction $ baseEditLens @(WholeEdit UTCTime) @baseedit
                       ]
                 , docTreeEntry
                       "Calendar"
