@@ -13,9 +13,7 @@ import Pinafore.Language.UI
 import Shapes
 import Truth.Core
 
-{-
 -- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
--}
 data PinaforeGroundType baseedit (polarity :: Polarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv) where
     FuncPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance, 'Covariance] (->)
     EntityPinaforeGroundType :: CovaryType dv -> EntityGroundType t -> PinaforeGroundType baseedit polarity dv t

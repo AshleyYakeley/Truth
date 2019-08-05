@@ -167,29 +167,3 @@ unifierSolve ::
 unifierSolve ua = do
     (a, subs) <- solveUnifier @unifier ua
     unifierSubstituteAndSimplify @unifier subs a
-{-
-data UnifyExpression unifier t a =
-    forall t'. MkUnifyExpression (unifier (UnifierShim unifier t t'))
-                                   (UnifierOpenExpression unifier (t' -> a))
-
-instance Functor (UnifyExpression unifier t) where
-    fmap ab (MkUnifyExpression uconv expr) = MkUnifyExpression uconv $ fmap (fmap ab) expr
-
-instance Unifier unifier => Applicative (UnifyExpression unifier t) where
-    pure a = MkUnifyExpression (pure termf) $ pure $ \_ -> a
-    liftA2 abc (MkUnifyExpression uconva expra) (MkUnifyExpression uconvb exprb) =
-        MkUnifyExpression (liftA2 meetf uconva uconvb) $ liftA2 (\caa cbb (MkMeetType (ca, cb)) -> abc (caa ca) (cbb cb)) expra exprb
-
-mapUnifyExpression :: Unifier unifier => unifier (UnifierShim unifier q p) -> UnifyExpression unifier p a -> UnifyExpression unifier q a
-mapUnifyExpression uconv (MkUnifyExpression uc expr) = MkUnifyExpression ((.) <$> uc <*> uconv) expr
-
-exprUnifyExpression :: Unifier unifier => UnifierOpenExpression unifier (t -> a) -> UnifyExpression unifier t a
-exprUnifyExpression expr = MkUnifyExpression (pure id) expr
-
-unifierUnifyExpression :: Unifier unifier => unifier (UnifierShim unifier t a) -> UnifyExpression unifier t a
-unifierUnifyExpression ua = MkUnifyExpression ua $ pure id
-{-
-unifierExpression :: Functor unifier => UnifyExpression unifier t a -> unifier (UnifierOpenExpression unifier a)
-unifierExpression (MkUnifyExpression uconv expr) = fmap (\conv -> fmap (\conva -> conva conv) expr) uconv
--}
--}

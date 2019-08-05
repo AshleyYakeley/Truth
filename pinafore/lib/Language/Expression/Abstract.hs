@@ -36,7 +36,7 @@ abstractNamedExpressionUnifier name vwt (OpenExpression (MkNameWitness name' vwt
     | name == name' =
         abstractNamedExpressionUnifier @unifier name vwt expr $ \vwt1 expr' -> do
             vwtt <- unifyUUNegShimWit @unifier vwt1 (uuLiftNegShimWit vwt')
-            cont (mapShimWit swapMeetRight vwtt) $ fmap (\tta (MkMeetType (ta, tb)) -> tta ta tb) expr'
+            cont (mapShimWit swapMeetRight vwtt) $ fmap (\tta (BothMeetType ta tb) -> tta ta tb) expr'
 abstractNamedExpressionUnifier name vwt (OpenExpression (MkNameWitness name' vwt') expr) cont =
     abstractNamedExpressionUnifier @unifier name vwt expr $ \vwt1 expr' ->
         cont vwt1 $ OpenExpression (MkNameWitness name' vwt') $ fmap (\vva v1 v2 -> vva v2 v1) expr'
@@ -49,13 +49,14 @@ instance Functor (AbstractResult unifier) where
     fmap ab (MkAbstractResult vwt uexpr) = MkAbstractResult vwt $ fmap (fmap ab) uexpr
 
 joinAbstractResult ::
-       forall unifier a b. Unifier unifier
-    => AbstractResult unifier a
+       forall unifier a b c. Unifier unifier
+    => (a -> b -> c)
+    -> AbstractResult unifier a
     -> AbstractResult unifier b
-    -> UnifierMonad unifier (AbstractResult unifier (a, b))
-joinAbstractResult (MkAbstractResult wa expra) (MkAbstractResult wb exprb) = do
+    -> UnifierMonad unifier (AbstractResult unifier c)
+joinAbstractResult abc (MkAbstractResult wa expra) (MkAbstractResult wb exprb) = do
     wab <- unifyUUNegShimWit @unifier wa wb
-    return $ MkAbstractResult wab $ (\aa bb (MkMeetType (a, b)) -> (aa a, bb b)) <$> expra <*> exprb
+    return $ MkAbstractResult wab $ (\aa bb (BothMeetType a b) -> abc (aa a) (bb b)) <$> expra <*> exprb
 
 abstractNamedExpression ::
        forall unifier renamer m a. UnifierRenamerConstraint unifier renamer m
@@ -78,7 +79,7 @@ patternAbstractUnifyExpression (OpenPattern (MkNameWitness name vwt) pat) expr c
     MkAbstractResult absvwt absexpr <- abstractNamedExpression @unifier name expr
     uabsconv <- unifyUUPosNegShimWit @unifier (uuLiftPosShimWit vwt) absvwt
     patternAbstractUnifyExpression @unifier pat absexpr $ \uuconv rexpr ->
-        cont (applf uuconv uabsconv) $ fmap (fmap (fmap $ \(pa, (t1, t)) -> (MkMeetType (pa, t1), t))) rexpr
+        cont (applf uuconv uabsconv) $ fmap (fmap (fmap $ \(pa, (t1, t)) -> (BothMeetType pa t1, t))) rexpr
 
 data PatternResult unifier f =
     forall a. MkPatternResult (UUPosShimWit unifier a)
@@ -91,11 +92,11 @@ joinPatternResult ::
     -> UnifierMonad unifier (PatternResult unifier Identity)
 joinPatternResult (MkPatternResult wa expra) (MkPatternResult wb exprb) = do
     wab <- unifyUUPosShimWit @unifier wa wb
-    exprab <- joinAbstractResult expra exprb
     let
-        pickpat (Just a, _) = Identity $ join1 a -- pattern matched
-        pickpat (Nothing, Identity b) = Identity $ join2 b -- pattern didn't match, try the rest of the patterns
-    return $ MkPatternResult wab $ fmap pickpat exprab
+        pickpat (Just a) _ = Identity $ join1 a -- pattern matched
+        pickpat Nothing (Identity b) = Identity $ join2 b -- pattern didn't match, try the rest of the patterns
+    exprab <- joinAbstractResult pickpat expra exprb
+    return $ MkPatternResult wab exprab
 
 joinPatternResults ::
        UnifierRenamerConstraint unifier renamer m
@@ -120,7 +121,7 @@ patternAbstractSealedExpression (MkSealedPattern vwt pat) (MkSealedExpression tw
     patternAbstractUnifyExpression @unifier pat expr $ \uconv uexpr' ->
         return $
         MkPatternResult (mapShimWit (applf cid uconv) $ uuLiftPosShimWit twt) $
-        (fmap $ fmap $ \(pa, ()) -> MkMeetType (id, pa)) $ MkAbstractResult (uuLiftNegShimWit vwt) uexpr'
+        (fmap $ fmap $ \(pa, ()) -> BothMeetType id pa) $ MkAbstractResult (uuLiftNegShimWit vwt) uexpr'
 
 type FunctionWitness vw tw = forall a b. vw a -> tw b -> tw (a -> b)
 

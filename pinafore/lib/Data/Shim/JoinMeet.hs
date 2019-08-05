@@ -30,6 +30,12 @@ pattern RightJoinType v = MkJoinType (Right v)
 newtype MeetType a b =
     MkMeetType (a, b)
 
+pattern BothMeetType :: a -> b -> MeetType a b
+
+pattern BothMeetType a b = MkMeetType (a, b)
+
+{-# COMPLETE BothMeetType #-}
+
 class InCategory cat => JoinMeetCategory cat where
     initf :: cat BottomType a
     termf :: cat a TopType
@@ -94,10 +100,10 @@ instance JoinMeetCategory (->) where
     join2 = RightJoinType
     joinf f _ (LeftJoinType v) = f v
     joinf _ f (RightJoinType v) = f v
-    meet1 (MkMeetType (v, _)) = v
-    meet2 (MkMeetType (_, v)) = v
-    meetf f1 f2 v = MkMeetType (f1 v, f2 v)
-    applf rab ra (MkMeetType (r1, r2)) = rab r1 (ra r2)
+    meet1 (BothMeetType v _) = v
+    meet2 (BothMeetType _ v) = v
+    meetf f1 f2 v = BothMeetType (f1 v) (f2 v)
+    applf rab ra (BothMeetType r1 r2) = rab r1 (ra r2)
 
 class (CoercibleKind k, InCategory cat) => EnhancedFunction (cat :: k -> k -> Type) where
     toEnhanced :: (InKind a, InKind b) => String -> KindFunction a b -> cat a b
@@ -115,7 +121,7 @@ instance EnhancedFunction (->) where
     enhancedCoercion _ = Nothing
 
 instance Eq a => Eq (MeetType a b) where
-    (MkMeetType (a1, _)) == (MkMeetType (a2, _)) = a1 == a2
+    BothMeetType a1 _ == BothMeetType a2 _ = a1 == a2
 
 type family LimitType polarity :: Type where
     LimitType 'Positive = BottomType
