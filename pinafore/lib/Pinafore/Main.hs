@@ -2,7 +2,7 @@ module Pinafore.Main
     ( filePinaforeType
     , PinaforeContext
     , makePinaforeContext
-    , sqlitePinaforeContext
+    , standardPinaforeContext
     , sqlitePinaforeDumpTable
     , pinaforeInterpretFileAtType
     , pinaforeInterpretFile
@@ -28,24 +28,29 @@ type FilePinaforeType = PinaforeAction PinaforeEdit ()
 filePinaforeType :: Text
 filePinaforeType = qTypeDescription @PinaforeEdit @FilePinaforeType
 
-sqlitePinaforeObject :: FilePath -> UpdatingObject PinaforeEdit ()
-sqlitePinaforeObject dirpath update = do
+standardPinaforeSubscriber :: Bool -> FilePath -> LifeCycleIO (Subscriber PinaforeEdit)
+standardPinaforeSubscriber async dirpath = do
     tableObject1 <- lifeCycleWith $ exclusiveObject $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
     memoryObject <- liftIO makeMemoryCellObject
+    subTable <- makeObjectSubscriber async $ pinaforeTableEntityObject tableObject
+    subFile <- makeObjectSubscriber async $ directoryPinaforeFileObject $ dirpath </> "files"
+    subMemory <- makeObjectSubscriber False memoryObject
+    (subClock, ()) <-
+        makeSharedSubscriber False $
+        clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     let
-        picker :: forall edit. PinaforeSelector edit -> UpdatingObject edit ()
-        picker =
-            \case
-                PinaforeSelectPoint -> updatingObject $ pinaforeTableEntityObject tableObject
-                PinaforeSelectFile -> updatingObject $ directoryPinaforeFileObject $ dirpath </> "files"
-                PinaforeSelectMemory -> updatingObject memoryObject
-                PinaforeSelectClock ->
-                    clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
-    tupleUpdatingObject picker update
+        picker :: forall edit. PinaforeSelector edit -> Subscriber edit
+        picker PinaforeSelectPoint = subTable
+        picker PinaforeSelectFile = subFile
+        picker PinaforeSelectMemory = subMemory
+        picker PinaforeSelectClock = subClock
+    return $ tupleSubscribers picker
 
-sqlitePinaforeContext :: Bool -> FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeEdit)
-sqlitePinaforeContext async dirpath toolkit = makePinaforeContext async (sqlitePinaforeObject dirpath) toolkit
+standardPinaforeContext :: Bool -> FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeEdit)
+standardPinaforeContext async dirpath toolkit = do
+    sub <- standardPinaforeSubscriber async dirpath
+    makePinaforeContext sub toolkit
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

@@ -24,10 +24,8 @@ data EditShower edit = MkEditShower
 blankEditShower :: EditShower edit
 blankEditShower = MkEditShower {showRead = \_ -> "", showReadResult = \_ _ -> "", showEdit = \_ -> "edit"}
 
-traceObject :: forall edit. String -> EditShower edit -> Object edit -> Object edit
-traceObject prefix MkEditShower {..} (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) = let
-    run' :: UnliftIO m
-    run' = traceThing (contextStr prefix "run") run
+traceAnObject :: forall m edit. MonadIO m => String -> EditShower edit -> AnObject m edit -> AnObject m edit
+traceAnObject prefix MkEditShower {..} (MkAnObject r e) = let
     r' :: MutableRead m (EditReader edit)
     r' rt = traceBracketArgs (contextStr prefix "read") (showRead rt) (showReadResult rt) $ r rt
     e' :: [edit] -> m (Maybe (EditSource -> m ()))
@@ -44,7 +42,11 @@ traceObject prefix MkEditShower {..} (MkCloseUnliftIO (run :: UnliftIO m) (MkAnO
          fmap $
          traceBracketArgs (contextStr prefix "edit.do") ("[" ++ intercalate "," (fmap showEdit edits) ++ "]") (\_ -> "")) $
         e edits
-    in MkCloseUnliftIO run' $ MkAnObject r' e'
+    in MkAnObject r' e'
+
+traceObject :: forall edit. String -> EditShower edit -> Object edit -> Object edit
+traceObject prefix shower (MkCloseUnliftIO (run :: UnliftIO m) anobj) =
+    MkCloseUnliftIO (traceThing (contextStr prefix "run") run) $ traceAnObject prefix shower anobj
 
 showEditShower ::
        forall edit. ShowableEdit edit

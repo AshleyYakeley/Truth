@@ -24,12 +24,10 @@ runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
 
 makePinaforeContext ::
        forall baseedit. InvertibleEdit baseedit
-    => Bool
-    -> UpdatingObject baseedit ()
+    => Subscriber baseedit
     -> UIToolkit
     -> LifeCycleIO (PinaforeContext baseedit)
-makePinaforeContext async pinaforeUObject toolkit = do
-    (rsub, ()) <- makeSharedSubscriber async pinaforeUObject
+makePinaforeContext rsub toolkit = do
     (sub, uactions) <- liftIO $ undoQueueSubscriber rsub
     return $ MkPinaforeContext $ unPinaforeAction toolkit sub uactions
 

@@ -26,6 +26,7 @@ library:
       - Truth.Debug
       - Truth.Debug.Edit
       - Truth.Debug.Object
+      - Truth.Debug.Subscriber
       - Truth.World.Clock
       - Truth.World.Anything
       - Truth.World.File

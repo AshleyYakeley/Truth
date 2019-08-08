@@ -25,11 +25,12 @@ import Pinafore.Language.Type
 import Pinafore.Language.Type.Simplify
 import Pinafore.Pinafore
 import Pinafore.Storage
+import Pinafore.Storage.File
 import Shapes
 import Truth.Core
 import Truth.World.Clock
 import Truth.World.ObjectStore
-import Truth.Debug.Object
+import Truth.Debug.Subscriber
 
 makeTestPinaforeContext ::
        Bool -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeEdit, IO (EditSubject PinaforeTableEdit))
@@ -37,19 +38,22 @@ makeTestPinaforeContext async uitoolkit = do
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
         liftIO $ freeIOObject ([], []) $ \_ -> True
     memoryObject <- liftIO makeMemoryCellObject
+    subTable <- makeObjectSubscriber async $ pinaforeTableEntityObject $ convertObject tableStateObject
+    subFile :: Subscriber PinaforeFileEdit <-
+        makeObjectSubscriber False $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
+    subMemory <- makeObjectSubscriber False memoryObject
+    (subClock, ()) <-
+        makeSharedSubscriber False $
+        clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     let
-        pinaforeObject :: UpdatingObject PinaforeEdit ()
-        pinaforeObject =
-            tupleUpdatingObject $ \case
-                PinaforeSelectPoint -> updatingObject $ traceThing "testObject.PinaforeSelectPoint" $ pinaforeTableEntityObject $ convertObject tableStateObject
-                PinaforeSelectFile ->
-                    updatingObject $ traceThing "testObject.PinaforeSelectFile" $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
-                PinaforeSelectMemory -> updatingObject $ traceThing "testObject.PinaforeSelectMemory" $ memoryObject
-                PinaforeSelectClock ->
-                    clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
+        picker :: forall edit. PinaforeSelector edit -> Subscriber edit
+        picker PinaforeSelectPoint = traceThing "testObject.PinaforeSelectPoint" $ subTable
+        picker PinaforeSelectFile = traceThing "testObject.PinaforeSelectFile" $ subFile
+        picker PinaforeSelectMemory = traceThing "testObject.PinaforeSelectMemory" $ subMemory
+        picker PinaforeSelectClock = traceThing "testObject.PinaforeSelectClock" $ subClock
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getObjectSubject tableStateObject
-    pc <- makePinaforeContext async pinaforeObject uitoolkit
+    pc <- makePinaforeContext (tupleSubscribers picker) uitoolkit
     return (pc, getTableState)
 
 withTestPinaforeContext ::

@@ -102,6 +102,36 @@ ioWholeEditFunction aiob =
                   return [MkWholeEdit b]
         }
 
+changeOnlyEditFunction ::
+       forall a. Eq a
+    => IO (EditFunction (WholeEdit a) (WholeEdit a))
+changeOnlyEditFunction = do
+    var <- newMVar Nothing
+    let
+        efGet :: ReadFunctionT (StateT (Maybe a)) (WholeReader a) (WholeReader a)
+        efGet mr ReadWhole = do
+            ma <- get
+            case ma of
+                Just a -> return a
+                Nothing -> do
+                    a <- lift $ mr ReadWhole
+                    put $ Just a
+                    return a
+        efUpdate ::
+               forall m. MonadIO m
+            => WholeEdit a
+            -> MutableRead m (EditReader (WholeEdit a))
+            -> StateT (Maybe a) m [WholeEdit a]
+        efUpdate (MkWholeEdit newa) _ = do
+            molda <- get
+            case molda of
+                Just olda
+                    | olda == newa -> return []
+                _ -> do
+                    put $ Just newa
+                    return [MkWholeEdit newa]
+    return $ MkCloseUnlift (mvarUnlift var) $ MkAnEditFunction {..}
+
 wholeEditLens ::
        forall mf a b. (MonadOne mf)
     => Lens' mf a b
