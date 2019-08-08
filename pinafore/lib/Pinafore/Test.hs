@@ -16,6 +16,7 @@ module Pinafore.Test
     ) where
 
 import Data.Shim
+import Data.Time
 import Pinafore.Base
 import Pinafore.Language
 import Pinafore.Language.Name
@@ -26,6 +27,7 @@ import Pinafore.Pinafore
 import Pinafore.Storage
 import Shapes
 import Truth.Core
+import Truth.World.Clock
 import Truth.World.ObjectStore
 import Truth.Debug.Object
 
@@ -36,13 +38,15 @@ makeTestPinaforeContext async uitoolkit = do
         liftIO $ freeIOObject ([], []) $ \_ -> True
     memoryObject <- liftIO makeMemoryCellObject
     let
-        pinaforeObject :: Object PinaforeEdit
+        pinaforeObject :: UpdatingObject PinaforeEdit ()
         pinaforeObject =
-            traceThing "testObject" $
-            tupleObject $ \case
-                PinaforeSelectPoint -> traceThing "testObject.PinaforeSelectPoint" $ pinaforeTableEntityObject $ convertObject $ traceThing "testObject.Table" tableStateObject
-                PinaforeSelectFile -> traceThing "testObject.PinaforeSelectFile" $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
-                PinaforeSelectMemory -> traceThing "testObject.PinaforeSelectMemory" $ memoryObject
+            tupleUpdatingObject $ \case
+                PinaforeSelectPoint -> updatingObject $ traceThing "testObject.PinaforeSelectPoint" $ pinaforeTableEntityObject $ convertObject tableStateObject
+                PinaforeSelectFile ->
+                    updatingObject $ traceThing "testObject.PinaforeSelectFile" $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
+                PinaforeSelectMemory -> updatingObject $ traceThing "testObject.PinaforeSelectMemory" $ memoryObject
+                PinaforeSelectClock ->
+                    clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getObjectSubject tableStateObject
     pc <- makePinaforeContext async pinaforeObject uitoolkit

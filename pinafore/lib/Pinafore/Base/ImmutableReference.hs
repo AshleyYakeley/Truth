@@ -31,6 +31,9 @@ immutableReferenceToLens ref = readOnlyEditLens $ immutableReferenceToFunction r
 getImmutableReference :: PinaforeImmutableReference baseedit a -> PinaforeAction baseedit (Know a)
 getImmutableReference ref = pinaforeFunctionValueGet $ immutableReferenceToFunction ref
 
+functionImmutableReference :: PinaforeFunctionValue baseedit a -> PinaforeImmutableReference baseedit a
+functionImmutableReference fv = MkPinaforeImmutableReference $ funcEditFunction Known . fv
+
 pinaforeImmutableReferenceValue :: a -> PinaforeImmutableReference baseedit a -> PinaforeFunctionValue baseedit a
 pinaforeImmutableReferenceValue def ref = funcEditFunction (fromKnow def) . immutableReferenceToFunction ref
 
