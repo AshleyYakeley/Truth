@@ -60,6 +60,10 @@ newmemset = do
     lens <- makeMemoryCellEditLens mempty
     return $ meetValuePinaforeSetRef $ convertEditLens . lens . baseEditLens
 
+now :: forall baseedit. (BaseEditLens (WholeEdit UTCTime) baseedit)
+    => PinaforeImmutableReference baseedit UTCTime
+now = functionImmutableReference $ editLensFunction $ baseEditLens @(WholeEdit UTCTime) @baseedit
+
 base_predefinitions ::
        forall baseedit.
        ( HasPinaforeEntityEdit baseedit
@@ -219,9 +223,7 @@ base_predefinitions =
                             (realToFrac (a / b) :: Number)
                       , mkValEntry "addTime" "Add duration to time." addUTCTime
                       , mkValEntry "diffTime" "Difference of times." diffUTCTime
-                      , mkValEntry "getCurrentTime" "Get the current time." getCurrentTime
-                      , mkValEntry "now" "The current time." $
-                        functionImmutableReference $ editLensFunction $ baseEditLens @(WholeEdit UTCTime) @baseedit
+                      , mkValEntry "now" "The current time truncated to the second." $ now @baseedit
                       ]
                 , docTreeEntry
                       "Calendar"
@@ -233,6 +235,7 @@ base_predefinitions =
                       , mkValEntry "modifiedJulianToDay" "Convert from MJD." ModifiedJulianDay
                       , mkValEntry "addDays" "Add count to days." addDays
                       , mkValEntry "diffDays" "Difference of days." diffDays
+                      , mkValEntry "utcDay" "The current UTC day." $ fmap utctDay $ now @baseedit
                       ]
                 , docTreeEntry
                       "Time of Day"

@@ -25,6 +25,7 @@ import Pinafore.Language.Type
 import Pinafore.Language.Type.Simplify
 import Pinafore.Pinafore
 import Pinafore.Storage
+import Pinafore.Storage.File
 import Shapes
 import Truth.Core
 import Truth.World.Clock
@@ -36,19 +37,22 @@ makeTestPinaforeContext async uitoolkit = do
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
         liftIO $ freeIOObject ([], []) $ \_ -> True
     memoryObject <- liftIO makeMemoryCellObject
+    subTable <- makeObjectSubscriber async $ pinaforeTableEntityObject $ convertObject tableStateObject
+    subFile :: Subscriber PinaforeFileEdit <-
+        makeObjectSubscriber False $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
+    subMemory <- makeObjectSubscriber False memoryObject
+    (subClock, ()) <-
+        makeSharedSubscriber False $
+        clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     let
-        pinaforeObject :: UpdatingObject PinaforeEdit ()
-        pinaforeObject =
-            tupleUpdatingObject $ \case
-                PinaforeSelectPoint -> updatingObject $ pinaforeTableEntityObject $ convertObject tableStateObject
-                PinaforeSelectFile ->
-                    updatingObject $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
-                PinaforeSelectMemory -> updatingObject $ memoryObject
-                PinaforeSelectClock ->
-                    clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
+        picker :: forall edit. PinaforeSelector edit -> Subscriber edit
+        picker PinaforeSelectPoint = subTable
+        picker PinaforeSelectFile = subFile
+        picker PinaforeSelectMemory = subMemory
+        picker PinaforeSelectClock = subClock
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getObjectSubject tableStateObject
-    pc <- makePinaforeContext async pinaforeObject uitoolkit
+    pc <- makePinaforeContext (tupleSubscribers picker) uitoolkit
     return (pc, getTableState)
 
 withTestPinaforeContext ::

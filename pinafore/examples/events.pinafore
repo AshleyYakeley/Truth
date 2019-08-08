@@ -113,7 +113,7 @@ eventWindow evt = std_window (eventName !$ {evt}) (\_ -> []) $ ui_vertical
 
 getLocalTime :: Action LocalTime;
 getLocalTime = do
-    t <- getCurrentTime;
+    t <- get now;
     tz <- getTimeZone t;
     return $ timeToLocal tz t;
     end;

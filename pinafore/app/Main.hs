@@ -132,7 +132,7 @@ main = do
             dirpath <- getDirPath mdirpath
             truthMainGTK $ \MkTruthContext {..} -> do
                 (toolkit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
-                context <- sqlitePinaforeContext (not fSync) dirpath toolkit
+                context <- standardPinaforeContext (not fSync) dirpath toolkit
                 for_ fpaths $ \fpath ->
                     liftIO $ do
                         ptext <- readFile fpath
@@ -147,7 +147,7 @@ main = do
         RunInteractiveOption fSync mdirpath -> do
             dirpath <- getDirPath mdirpath
             truthMainGTK $ \MkTruthContext {..} -> do
-                context <- sqlitePinaforeContext (not fSync) dirpath tcUIToolkit
+                context <- standardPinaforeContext (not fSync) dirpath tcUIToolkit
                 let
                     ?pinafore = context
                     in liftIO pinaforeInteract
