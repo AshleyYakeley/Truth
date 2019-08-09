@@ -62,7 +62,7 @@ getRunner True handler = do
         asyncRunner $ \(MkEditQueue sourcededits) ->
             traceBracket "getRunner:action" $
             for_ sourcededits $ \(editContextSource, edits) -> handler edits MkEditContext {editContextAsync = True, ..}
-    return $ \edits esrc -> runAsync $ singleEditQueue edits esrc
+    return $ \edits esrc -> traceBracket "getRunner:runAsync" $ runAsync $ singleEditQueue edits esrc
 
 makeSharedSubscriber :: forall edit a. Bool -> UpdatingObject edit a -> LifeCycleIO (Subscriber edit, a)
 makeSharedSubscriber async uobj = do
@@ -70,8 +70,8 @@ makeSharedSubscriber async uobj = do
     let
         updateP :: [edit] -> EditContext -> IO ()
         updateP edits ectxt = do
-            store <- traceBarrier "makeSharedSubscriber:updateP" (mvarRun var) get
-            for_ store $ \entry -> entry edits ectxt
+            store <- traceBarrier "makeSharedSubscriber:updateP.get" (mvarRun var) get
+            for_ store $ \entry -> traceBracket "makeSharedSubscriber:updateP.entry" $ entry edits ectxt
     runAsync <- getRunner async updateP
     (MkCloseUnliftIO unliftC anObjectC, a) <- uobj runAsync
     let

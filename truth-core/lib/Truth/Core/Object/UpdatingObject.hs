@@ -7,6 +7,7 @@ import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
+import Truth.Debug.Object
 
 type UpdatingObject edit a = ([edit] -> EditSource -> IO ()) -> LifeCycleIO (Object edit, a)
 
@@ -25,6 +26,6 @@ updatingObject (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) update =
                 Just action ->
                     return $
                     Just $ \esrc -> do
-                        lift $ action esrc
-                        deferActionT $ update edits esrc
-        in (MkCloseUnliftIO run' $ MkAnObject r' e', ())
+                        lift $ traceBracket "updatingObject: push" $ action esrc
+                        deferActionT $ traceBracket "updatingObject: reflecting update" $ update edits esrc
+        in (traceThing "updatingObject" $ MkCloseUnliftIO run' $ MkAnObject r' e', ())

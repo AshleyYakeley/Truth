@@ -63,6 +63,6 @@ deferActionT action = traceBracket "deferActionT" $ MkDeferActionT $ tell [actio
 runDeferActionT :: Unlift DeferActionT
 runDeferActionT = traceThing "runDeferActionT" $
     MkUnlift $ \(MkDeferActionT (WriterT wma)) -> do
-        (a, actions) <- wma
-        traceBracket "runDeferActionT: actions" $ for_ actions liftIO
+        (a, actions) <- traceBracket "runDeferActionT: main" $ wma
+        traceBracket "runDeferActionT: deferred actions" $ for_ actions liftIO
         return a
