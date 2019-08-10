@@ -65,12 +65,28 @@ now :: forall baseedit. (BaseEditLens (WholeEdit UTCTime) baseedit)
     => PinaforeImmutableReference baseedit UTCTime
 now = functionImmutableReference $ editLensFunction $ baseEditLens @(WholeEdit UTCTime) @baseedit
 
+timeZone ::
+       forall baseedit. (BaseEditLens (WholeEdit TimeZone) baseedit)
+    => PinaforeImmutableReference baseedit TimeZone
+timeZone = functionImmutableReference $ editLensFunction $ baseEditLens @(WholeEdit TimeZone) @baseedit
+
+localNow ::
+       forall baseedit. (BaseEditLens (WholeEdit UTCTime) baseedit, BaseEditLens (WholeEdit TimeZone) baseedit)
+    => PinaforeImmutableReference baseedit LocalTime
+localNow = utcToLocalTime <$> timeZone <*> now
+
+today ::
+       forall baseedit. (BaseEditLens (WholeEdit UTCTime) baseedit, BaseEditLens (WholeEdit TimeZone) baseedit)
+    => PinaforeImmutableReference baseedit Day
+today = localDay <$> localNow
+
 base_predefinitions ::
        forall baseedit.
        ( HasPinaforeEntityEdit baseedit
        , HasPinaforeFileEdit baseedit
        , BaseEditLens MemoryCellEdit baseedit
        , BaseEditLens (WholeEdit UTCTime) baseedit
+       , BaseEditLens (WholeEdit TimeZone) baseedit
        )
     => [DocTreeEntry (BindDoc baseedit)]
 base_predefinitions =
@@ -237,6 +253,7 @@ base_predefinitions =
                       , mkValEntry "addDays" "Add count to days." addDays
                       , mkValEntry "diffDays" "Difference of days." diffDays
                       , mkValEntry "utcDay" "The current UTC day." $ fmap utctDay $ now @baseedit
+                      , mkValEntry "today" "The current local day." $ today @baseedit
                       ]
                 , docTreeEntry
                       "Time of Day"
@@ -257,8 +274,9 @@ base_predefinitions =
                             localTimeToUTC $ minutesToTimeZone i
                       , mkValEntry "getTimeZone" "Get the offset for a time in the current time zone." $ \t ->
                             fmap timeZoneMinutes $ getTimeZone t
-                      , mkValEntry "getCurrentTimeZone" "Get the current time zone offset." $
-                        fmap timeZoneMinutes getCurrentTimeZone
+                      , mkValEntry "timeZone" "The current time zone offset in minutes." $
+                        fmap timeZoneMinutes $ timeZone @baseedit
+                      , mkValEntry "localNow" "The current local time." $ localNow @baseedit
                       ]
                 ]
           ]
