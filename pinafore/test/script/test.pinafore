@@ -179,7 +179,11 @@ window_constant = std_window {"Constant"} $ ui_vertical
 window_start :: Action Window;
 window_start = std_window {"Pinafore"} $ ui_vertical
 [
-    (ui_label {"Time: " <> totext %now},False),
+    (ui_label {"UTC time: " <> totext %now},False),
+    (ui_label {"UTC day: " <> totext %utcDay},False),
+    (ui_label {"Local time: " <> totext %localNow},False),
+    (ui_label {"Local day: " <> totext %today},False),
+    (ui_label {"Time zone offset minutes: " <> totext %timeZone},False),
     (ui_button {"People"} {window_people},False),
     (ui_button {"Calculated Form"} {window_calc},False),
     (ui_button {"Switch"} {window_switch},False),

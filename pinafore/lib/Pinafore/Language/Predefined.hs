@@ -10,7 +10,7 @@ module Pinafore.Language.Predefined
     , outputln
     ) where
 
-import Data.Time.Clock
+import Data.Time
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Expression
@@ -28,7 +28,8 @@ type PinaforePredefinitions baseedit
      = ( HasPinaforeEntityEdit baseedit
        , HasPinaforeFileEdit baseedit
        , BaseEditLens MemoryCellEdit baseedit
-       , BaseEditLens (WholeEdit UTCTime) baseedit)
+       , BaseEditLens (WholeEdit UTCTime) baseedit
+       , BaseEditLens (WholeEdit TimeZone) baseedit)
 
 predefinitions ::
        forall baseedit. PinaforePredefinitions baseedit
