@@ -1,7 +1,8 @@
 module Truth.World.Clock where
 
+import Data.Fixed
 import Data.IORef
-import Data.Time.Clock
+import Data.Time
 import Truth.Core
 import Truth.Core.Import
 
@@ -22,3 +23,12 @@ clockUpdatingObject basetime interval update = do
                 runReaderT rt t
         object = MkCloseUnliftIO run $ immutableAnObject $ \ReadWhole -> ask
     return (object, ())
+
+makeClockTimeZoneEF :: IO (EditFunction (WholeEdit UTCTime) (WholeEdit TimeZone))
+makeClockTimeZoneEF = do
+    minuteChanges <- changeOnlyEditFunction @UTCTime
+    tzChanges <- changeOnlyEditFunction @TimeZone
+    let
+        wholeMinute :: UTCTime -> UTCTime
+        wholeMinute (UTCTime d t) = UTCTime d $ secondsToDiffTime $ (div' t 60) * 60
+    return $ tzChanges . ioFuncEditFunction getTimeZone . minuteChanges . funcEditFunction wholeMinute

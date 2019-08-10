@@ -28,30 +28,24 @@ type FilePinaforeType = PinaforeAction PinaforeEdit ()
 filePinaforeType :: Text
 filePinaforeType = qTypeDescription @PinaforeEdit @FilePinaforeType
 
-standardPinaforeUpdatingObject :: FilePath -> LifeCycleIO (UpdatingObject PinaforeEdit ())
-standardPinaforeUpdatingObject dirpath = do
+standardPinaforeContext :: Bool -> FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeEdit)
+standardPinaforeContext async dirpath uitoolkit = do
     tableObject1 <- lifeCycleWith $ exclusiveObject $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
     memoryObject <- liftIO makeMemoryCellObject
+    clockUO <-
+        shareUpdatingObject async $
+        clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
+    clockTimeEF <- liftIO makeClockTimeZoneEF
     let
         picker :: forall edit. PinaforeSelector edit -> UpdatingObject edit ()
         picker PinaforeSelectPoint = updatingObject $ pinaforeTableEntityObject tableObject
         picker PinaforeSelectFile = updatingObject $ directoryPinaforeFileObject $ dirpath </> "files"
         picker PinaforeSelectMemory = updatingObject memoryObject
-        picker PinaforeSelectClock =
-            clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
-    return $ tupleUpdatingObject picker
-
-standardPinaforeSubscriber :: Bool -> FilePath -> LifeCycleIO (Subscriber PinaforeEdit)
-standardPinaforeSubscriber async dirpath = do
-    uobj <- standardPinaforeUpdatingObject dirpath
-    (sub, ()) <- makeSharedSubscriber async uobj
-    return sub
-
-standardPinaforeContext :: Bool -> FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeEdit)
-standardPinaforeContext async dirpath toolkit = do
-    sub <- standardPinaforeSubscriber async dirpath
-    makePinaforeContext sub toolkit
+        picker PinaforeSelectClock = clockUO
+        picker PinaforeSelectTimeZone = lensUpdatingObject (readOnlyEditLens clockTimeEF) clockUO
+    (sub, ()) <- makeSharedSubscriber async $ tupleUpdatingObject picker
+    makePinaforeContext sub uitoolkit
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()
 sqlitePinaforeDumpTable dirpath = do

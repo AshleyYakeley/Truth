@@ -25,7 +25,6 @@ import Pinafore.Language.Type
 import Pinafore.Language.Type.Simplify
 import Pinafore.Pinafore
 import Pinafore.Storage
-import Pinafore.Storage.File
 import Shapes
 import Truth.Core
 import Truth.World.Clock
@@ -36,23 +35,26 @@ makeTestPinaforeContext ::
 makeTestPinaforeContext async uitoolkit = do
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
         liftIO $ freeIOObject ([], []) $ \_ -> True
-    memoryObject <- liftIO makeMemoryCellObject
-    subTable <- makeObjectSubscriber async $ pinaforeTableEntityObject $ convertObject tableStateObject
-    subFile :: Subscriber PinaforeFileEdit <-
-        makeObjectSubscriber False $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
-    subMemory <- makeObjectSubscriber False memoryObject
-    (subClock, ()) <-
-        makeSharedSubscriber False $
-        clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     let
-        picker :: forall edit. PinaforeSelector edit -> Subscriber edit
-        picker PinaforeSelectPoint = subTable
-        picker PinaforeSelectFile = subFile
-        picker PinaforeSelectMemory = subMemory
-        picker PinaforeSelectClock = subClock
+        tableObject :: Object PinaforeTableEdit
+        tableObject = convertObject tableStateObject
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getObjectSubject tableStateObject
-    pc <- makePinaforeContext (tupleSubscribers picker) uitoolkit
+    memoryObject <- liftIO makeMemoryCellObject
+    clockUO <-
+        shareUpdatingObject async $
+        clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
+    clockTimeEF <- liftIO makeClockTimeZoneEF
+    let
+        picker :: forall edit. PinaforeSelector edit -> UpdatingObject edit ()
+        picker PinaforeSelectPoint = updatingObject $ pinaforeTableEntityObject tableObject
+        picker PinaforeSelectFile =
+            updatingObject $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
+        picker PinaforeSelectMemory = updatingObject memoryObject
+        picker PinaforeSelectClock = clockUO
+        picker PinaforeSelectTimeZone = lensUpdatingObject (readOnlyEditLens clockTimeEF) clockUO
+    (sub, ()) <- makeSharedSubscriber async $ tupleUpdatingObject picker
+    pc <- makePinaforeContext sub uitoolkit
     return (pc, getTableState)
 
 withTestPinaforeContext ::
