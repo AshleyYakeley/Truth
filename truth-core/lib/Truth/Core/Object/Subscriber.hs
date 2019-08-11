@@ -1,15 +1,8 @@
 module Truth.Core.Object.Subscriber
-    ( mapUpdates
-    , ReceiveUpdatesM
-    , ReceiveUpdates
-    , ReceiveUpdatesT
-    , mapReceiveUpdates
-    , mapReceiveUpdatesT
-    , ASubscriber(..)
+    ( ASubscriber(..)
     , Subscriber
     , subscriberObject
     , makeObjectSubscriber
-    , liftIO
     , makeSharedSubscriber
     ) where
 
@@ -17,7 +10,6 @@ import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.UnliftIO
-import Truth.Core.Object.Update
 import Truth.Core.Object.UpdatingObject
 
 data ASubscriber m edit = MkASubscriber
