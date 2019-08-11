@@ -85,12 +85,12 @@ checkUpdateEditor val push = let
     editorInit :: Object (WholeEdit a) -> LifeCycleIO (MVar [WholeEdit a])
     editorInit _ = liftIO newEmptyMVar
     editorUpdate :: MVar [WholeEdit a] -> Object (WholeEdit a) -> [WholeEdit a] -> EditContext -> IO ()
-    editorUpdate var _ edits _ = do putMVar var edits
+    editorUpdate var _ edits _ = do traceBracket "checkUpdateEditor.putMVar" $ putMVar var edits
     editorDo :: MVar [WholeEdit a] -> Object (WholeEdit a) -> LifeCycleIO ()
     editorDo var _ =
-        liftIO $ do
-            push
-            edits <- takeMVar var
+        traceBracket "checkUpdateEditor.do" $ liftIO $ do
+            traceBracket "checkUpdateEditor.push" $ push
+            edits <- traceBracket "checkUpdateEditor.takeMVar" $ takeMVar var
             case edits of
                 [MkWholeEdit v]
                     | v == val -> return ()
