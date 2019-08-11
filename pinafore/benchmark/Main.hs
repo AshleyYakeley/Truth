@@ -84,34 +84,6 @@ benchScripts =
           intercalate "," (replicate 50 "g [1]") <> "] in for_ q id"
         ]
 
-unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext baseedit) => PinaforeAction baseedit a -> IO a
-unliftPinaforeActionOrFail action = do
-    ka <- unliftPinaforeAction action
-    case ka of
-        Known a -> return a
-        Unknown -> fail "action stopped"
-
-checkUpdateEditor ::
-       forall a. Eq a
-    => a
-    -> IO ()
-    -> Editor (WholeEdit a) ()
-checkUpdateEditor val push = let
-    editorInit :: Object (WholeEdit a) -> LifeCycleIO (MVar [WholeEdit a])
-    editorInit _ = liftIO newEmptyMVar
-    editorUpdate :: MVar [WholeEdit a] -> Object (WholeEdit a) -> [WholeEdit a] -> EditContext -> IO ()
-    editorUpdate var _ edits _ = do putMVar var edits
-    editorDo :: MVar [WholeEdit a] -> Object (WholeEdit a) -> LifeCycleIO ()
-    editorDo var _ =
-        liftIO $ do
-            push
-            edits <- takeMVar var
-            case edits of
-                [MkWholeEdit v]
-                    | v == val -> return ()
-                _ -> fail "unexpected push"
-    in MkEditor {..}
-
 interpretUpdater :: (?pinafore :: PinaforeContext PinaforeEdit) => Text -> IO ()
 interpretUpdater text = do
     action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" text

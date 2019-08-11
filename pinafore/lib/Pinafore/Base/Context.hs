@@ -1,6 +1,7 @@
 module Pinafore.Base.Context
     ( PinaforeContext
     , unliftPinaforeAction
+    , unliftPinaforeActionOrFail
     , runPinaforeAction
     , makePinaforeContext
     , nullPinaforeContext
@@ -18,6 +19,13 @@ unliftPinaforeAction :: (?pinafore :: PinaforeContext baseedit) => PinaforeActio
 unliftPinaforeAction =
     case ?pinafore of
         MkPinaforeContext unlift -> unlift
+
+unliftPinaforeActionOrFail :: (?pinafore :: PinaforeContext baseedit) => PinaforeAction baseedit a -> IO a
+unliftPinaforeActionOrFail action = do
+    ka <- unliftPinaforeAction action
+    case ka of
+        Known a -> return a
+        Unknown -> fail "action stopped"
 
 runPinaforeAction :: (?pinafore :: PinaforeContext baseedit) => PinaforeAction baseedit () -> IO ()
 runPinaforeAction action = fmap (\_ -> ()) $ unliftPinaforeAction action
