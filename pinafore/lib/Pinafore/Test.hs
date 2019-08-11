@@ -75,3 +75,24 @@ withNullPinaforeContext f = let
 
 runTestPinaforeSourceScoped :: PinaforePredefinitions baseedit => PinaforeSourceScoped baseedit a -> InterpretResult a
 runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScoped "<input>" sa
+
+checkUpdateEditor ::
+       forall a. Eq a
+    => a
+    -> IO ()
+    -> Editor (WholeEdit a) ()
+checkUpdateEditor val push = let
+    editorInit :: Object (WholeEdit a) -> LifeCycleIO (MVar [WholeEdit a])
+    editorInit _ = liftIO newEmptyMVar
+    editorUpdate :: MVar [WholeEdit a] -> Object (WholeEdit a) -> [WholeEdit a] -> EditContext -> IO ()
+    editorUpdate var _ edits _ = do putMVar var edits
+    editorDo :: MVar [WholeEdit a] -> Object (WholeEdit a) -> LifeCycleIO ()
+    editorDo var _ =
+        liftIO $ do
+            push
+            edits <- takeMVar var
+            case edits of
+                [MkWholeEdit v]
+                    | v == val -> return ()
+                _ -> fail "unexpected push"
+    in MkEditor {..}

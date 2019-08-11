@@ -1,5 +1,6 @@
 module Test.Entity
     ( testEntity
+    , testUpdates
     ) where
 
 import Control.Exception
@@ -11,15 +12,20 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import Truth.Core
 
-scriptTest :: Text -> Text -> (IO () -> IO ()) -> ContextTestTree
+scriptTest ::
+       FromPinaforeType PinaforeEdit a
+    => Text
+    -> Text
+    -> ((?pinafore :: PinaforeContext PinaforeEdit) => a -> IO ())
+    -> ContextTestTree
 scriptTest name text checker =
     contextTestCase name text $ \t ->
         withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
-            action <- ioRunInterpretResult $ pinaforeInterpretFile "<test>" t
+            action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" t
             checker action
 
 pointTest :: Text -> ContextTestTree
-pointTest text = scriptTest text text id
+pointTest text = scriptTest text text runPinaforeAction
 
 assertThrows :: IO a -> IO ()
 assertThrows ma = do
@@ -29,7 +35,7 @@ assertThrows ma = do
         else return ()
 
 badPointTest :: Text -> ContextTestTree
-badPointTest text = scriptTest text text assertThrows
+badPointTest text = scriptTest text text $ assertThrows . runPinaforeAction
 
 badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
@@ -43,6 +49,18 @@ exceptionTest text c =
     withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
         action <- ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
         assertThrows action
+
+updateTest :: Text -> ContextTestTree
+updateTest text =
+    scriptTest text text $ \action -> do
+        sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
+        (sendUpdate, ref) <- unliftPinaforeActionOrFail action
+        runLifeCycle $
+            subscribeEditor (mapSubscriber (immutableReferenceToLens ref) sub) $
+            checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
+
+testUpdates :: TestTree
+testUpdates = runContext $ tgroup "update" [updateTest "do ref <- newmemref; return (ref := 1, ref) end"]
 
 testEntity :: TestTree
 testEntity =

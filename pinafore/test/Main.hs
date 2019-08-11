@@ -22,5 +22,5 @@ main = do
         tests =
             testGroup
                 "pinafore"
-                [testType, testLanguage, testReadTypes, testEntity, testScripts, testInteractive, testUI]
+                [testType, testLanguage, testReadTypes, testEntity, testUpdates, testScripts, testInteractive, testUI]
     defaultMain tests
