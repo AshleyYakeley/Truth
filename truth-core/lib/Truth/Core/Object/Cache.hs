@@ -18,7 +18,7 @@ cacheObject mus (MkCloseUnliftIO unlift (MkAnObject read push)) = do
         asyncWaitRunner mus $ \editsnl -> traceBracket "cache update" $ runTransform (traceThing "cacheObject:back.update" unlift) $ pushOrFail "cached object" noEditSource $ push editsnl
     cacheVar <- liftIO $ newMVar $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
     return $ let
-        objRun = traceThing "cacheObject:front" $ mvarUnliftIO cacheVar
+        objRun = traceThing "cacheObject:front.mvarUnliftIO" $ mvarUnliftIO cacheVar
         objRead :: MutableRead (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
         objRead rt = traceBracket "cache read" $ do
             oldcache <- get

@@ -39,7 +39,7 @@ mvarObject var allowed = let
             if allowed na
                 then Just $ \_ -> put na
                 else Nothing
-    in MkCloseUnliftIO (mvarUnliftIO var) $ MkAnObject {..}
+    in MkCloseUnliftIO (traceThing "mvarObject.mvarUnliftIO" $ mvarUnliftIO var) $ MkAnObject {..}
 
 freeIOObject :: forall a. a -> (a -> Bool) -> IO (Object (WholeEdit a))
 freeIOObject firsta allowed = do

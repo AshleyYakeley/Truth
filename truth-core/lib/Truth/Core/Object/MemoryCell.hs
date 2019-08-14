@@ -8,6 +8,7 @@ import Truth.Core.Object.Object
 import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
 import Truth.Core.Types
+import Truth.Debug
 
 type MemoryCellEdit = DependentEdit IORef
 
@@ -15,7 +16,7 @@ makeMemoryCellObject :: IO (Object MemoryCellEdit)
 makeMemoryCellObject = do
     var <- newMVar ()
     let
-        objRun = mvarUnliftIO var
+        objRun = traceThing "makeMemoryCellObject.mvarUnliftIO" $ mvarUnliftIO var
         objRead :: MutableRead (StateT () IO) (EditReader MemoryCellEdit)
         objRead (MkTupleEditReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef ioref
         objEdit :: [MemoryCellEdit] -> StateT () IO (Maybe (EditSource -> StateT () IO ()))

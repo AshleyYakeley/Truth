@@ -5,6 +5,7 @@ module Truth.Core.Types.Whole where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Debug
 
 data WholeReader (a :: Type) (t :: Type) where
     ReadWhole :: forall t. WholeReader t t
@@ -130,7 +131,7 @@ changeOnlyEditFunction = do
                 _ -> do
                     put $ Just newa
                     return [MkWholeEdit newa]
-    return $ MkCloseUnlift (mvarUnlift var) $ MkAnEditFunction {..}
+    return $ MkCloseUnlift (traceThing "changeOnlyEditFunction.mvarUnlift" $ mvarUnlift var) $ MkAnEditFunction {..}
 
 wholeEditLens ::
        forall mf a b. (MonadOne mf)

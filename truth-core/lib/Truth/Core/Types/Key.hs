@@ -14,6 +14,7 @@ import Truth.Core.Types.Pair
 import Truth.Core.Types.Sum
 import Truth.Core.Types.Tuple
 import Truth.Core.Types.Whole
+import Truth.Debug
 
 data KeyReader cont reader t where
     KeyReadKeys :: KeyReader cont reader (FiniteSet (ContainerKey cont))
@@ -276,7 +277,7 @@ getKeyElementEditLens ::
     -> IO (EditLens (KeyEdit cont edit) (MaybeEdit edit))
 getKeyElementEditLens initial = do
     var <- newMVar initial
-    return $ unliftKeyElementEditLens $ mvarUnlift var
+    return $ unliftKeyElementEditLens $ traceThing "getKeyElementEditLens.mvarUnlift" $ mvarUnlift var
 
 stableKeyElementEditLens ::
        forall cont edit.

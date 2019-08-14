@@ -10,6 +10,7 @@ import Test.Tasty
 import Test.Tasty.Golden
 import Test.Tasty.HUnit
 import Truth.Core
+import Truth.Debug
 
 goldenTest :: TestName -> FilePath -> FilePath -> ((?handle :: Handle) => IO ()) -> TestTree
 goldenTest name refPath outPath call =
@@ -99,7 +100,7 @@ testSubscription name initial call =
         var <- liftIO $ newMVar initial
         let
             varObj :: Object (WholeEdit (EditSubject edit))
-            varObj = mvarObject var $ \_ -> True
+            varObj = traceThing "testSubscription.varObj" $ mvarObject var $ \_ -> True
             editObj :: Object edit
             editObj = convertObject varObj
         sub <- makeObjectSubscriber False editObj

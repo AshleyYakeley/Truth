@@ -32,7 +32,7 @@ saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pus
     let
         objC = let
             runC :: UnliftIO (StateT (SaveBuffer (EditSubject edit)) (DeferActionT IO))
-            runC = composeUnliftTransform (mvarUnlift sbVar) $ composeUnliftTransform runDeferActionT id
+            runC = composeUnliftTransform (traceThing "saveBufferObject.mvarUnlift" $ mvarUnlift sbVar) $ composeUnliftTransform runDeferActionT id
             readC :: MutableRead (StateT (SaveBuffer (EditSubject edit)) (DeferActionT IO)) (EditReader edit)
             readC = mSubjectToMutableRead $ fmap saveBuffer get
             pushC ::
