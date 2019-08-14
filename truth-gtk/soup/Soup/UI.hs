@@ -68,9 +68,9 @@ soupObject dirpath = let
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
-soupWindow :: Bool -> UIToolkit -> FilePath -> LifeCycleIO ()
-soupWindow async MkUIToolkit {..} dirpath = do
-    sub <- makeObjectSubscriber async $ soupObject dirpath
+soupWindow :: UpdateTiming -> UIToolkit -> FilePath -> LifeCycleIO ()
+soupWindow ut MkUIToolkit {..} dirpath = do
+    sub <- makeObjectSubscriber ut $ soupObject dirpath
     rec
         let
             mbar :: IO () -> UIWindow -> Maybe (Aspect sel -> EditFunction edit (WholeEdit [MenuEntry edit]))

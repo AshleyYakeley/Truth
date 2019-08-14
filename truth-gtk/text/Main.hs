@@ -19,8 +19,8 @@ textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCod
 optParser :: O.Parser ([FilePath], Bool, Bool)
 optParser = (,,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2') <*> O.switch (O.long "save")
 
-async :: Bool
-async = False
+ut :: UpdateTiming
+ut = SynchronousUpdateTiming
 
 main :: IO ()
 main = do
@@ -120,14 +120,14 @@ main = do
             action <-
                 if saveOpt
                     then do
-                        (bufferSub, saveActions) <- makeSharedSubscriber async $ saveBufferObject wholeTextObj
+                        (bufferSub, saveActions) <- makeSharedSubscriber ut $ saveBufferObject wholeTextObj
                         (textSub, undoActions) <- liftIO $ undoQueueSubscriber bufferSub
                         return $ makeWindow (fromString $ takeFileName path) textSub $ extraUI saveActions undoActions
                     else do
                         let
                             textObj :: Object (OneWholeEdit (Result Text) (StringEdit Text))
                             textObj = convertObject wholeTextObj
-                        textSub <- makeObjectSubscriber async textObj
+                        textSub <- makeObjectSubscriber ut textObj
                         return $ makeWindow (fromString $ takeFileName path) textSub simpleUI
             action
             if double

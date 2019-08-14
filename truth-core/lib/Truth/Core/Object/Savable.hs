@@ -47,7 +47,7 @@ saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pus
                             MkSaveBuffer oldbuf _ <- get
                             return oldbuf
                     put (MkSaveBuffer newbuf True)
-                    lift $ deferActionT $ update edits esrc
+                    lift $ deferAction $ update edits esrc
             in MkCloseUnliftIO runC $ MkAnObject readC pushC
         saveAction :: EditSource -> IO Bool
         saveAction esrc =

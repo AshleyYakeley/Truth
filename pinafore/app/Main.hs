@@ -18,22 +18,31 @@ data Options
     | PredefinedDocOption
     | InfixDocOption
     | DumpTableOption (Maybe FilePath)
-    | RunFileOption Bool
+    | RunFileOption UpdateTiming
                     Bool
                     (Maybe FilePath)
                     [FilePath]
-    | RunInteractiveOption Bool
+    | RunInteractiveOption UpdateTiming
                            (Maybe FilePath)
 
 optDataFlag :: O.Parser (Maybe FilePath)
 optDataFlag = O.optional $ O.strOption $ O.long "data" <> O.metavar "PATH"
 
+optSyncFlag :: O.Parser UpdateTiming
+optSyncFlag =
+    fmap
+        (\f ->
+             if f
+                 then SynchronousUpdateTiming
+                 else AsynchronousUpdateTiming) $
+    O.switch $ O.long "sync"
+
 optParser :: O.Parser Options
 optParser =
     (O.flag' ShowVersionOption $ O.long "version" <> O.short 'v') <|>
-    (RunFileOption <$> (O.switch $ O.long "sync") <*> (O.switch $ O.long "no-run" <> O.short 'n') <*> optDataFlag <*>
+    (RunFileOption <$> optSyncFlag <*> (O.switch $ O.long "no-run" <> O.short 'n') <*> optDataFlag <*>
      (O.many $ O.strArgument $ O.metavar "SCRIPT")) <|>
-    ((O.flag' RunInteractiveOption $ O.long "interactive" <> O.short 'i') <*> (O.switch $ O.long "sync") <*> optDataFlag) <|>
+    ((O.flag' RunInteractiveOption $ O.long "interactive" <> O.short 'i') <*> optSyncFlag <*> optDataFlag) <|>
     (O.flag' PredefinedDocOption $ O.long "doc-predefined") <|>
     (O.flag' InfixDocOption $ O.long "doc-infix") <|>
     ((O.flag' DumpTableOption $ O.long "dump-table") <*> optDataFlag)
@@ -128,11 +137,11 @@ main = do
         DumpTableOption mdirpath -> do
             dirpath <- getDirPath mdirpath
             sqlitePinaforeDumpTable dirpath
-        RunFileOption fSync fNoRun mdirpath fpaths -> do
+        RunFileOption ut fNoRun mdirpath fpaths -> do
             dirpath <- getDirPath mdirpath
             truthMainGTK $ \MkTruthContext {..} -> do
                 (toolkit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
-                context <- standardPinaforeContext (not fSync) dirpath toolkit
+                context <- standardPinaforeContext ut dirpath toolkit
                 for_ fpaths $ \fpath ->
                     liftIO $ do
                         ptext <- readFile fpath
@@ -144,10 +153,10 @@ main = do
                             then return ()
                             else action
                 liftIO checkdone
-        RunInteractiveOption fSync mdirpath -> do
+        RunInteractiveOption ut mdirpath -> do
             dirpath <- getDirPath mdirpath
             truthMainGTK $ \MkTruthContext {..} -> do
-                context <- standardPinaforeContext (not fSync) dirpath tcUIToolkit
+                context <- standardPinaforeContext ut dirpath tcUIToolkit
                 let
                     ?pinafore = context
                     in liftIO pinaforeInteract

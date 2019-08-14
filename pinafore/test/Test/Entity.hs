@@ -9,24 +9,25 @@ import Pinafore.Test
 import Shapes
 import Test.Context
 import Test.Tasty
+import Test.Tasty.ExpectedFailure
 import Test.Tasty.HUnit
 import Truth.Core
 
 scriptTest ::
        FromPinaforeType PinaforeEdit a
-    => Bool
+    => UpdateTiming
     -> Text
     -> Text
     -> ((?pinafore :: PinaforeContext PinaforeEdit) => a -> IO ())
     -> ContextTestTree
-scriptTest async name text checker =
+scriptTest ut name text checker =
     contextTestCase name text $ \t ->
-        withTestPinaforeContext async nullUIToolkit $ \_getTableState -> do
+        withTestPinaforeContext ut nullUIToolkit $ \_getTableState -> do
             action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" t
             checker action
 
 pointTest :: Text -> ContextTestTree
-pointTest text = scriptTest False text text runPinaforeAction
+pointTest text = scriptTest SynchronousUpdateTiming text text runPinaforeAction
 
 assertThrows :: IO a -> IO ()
 assertThrows ma = do
@@ -36,24 +37,24 @@ assertThrows ma = do
         else return ()
 
 badPointTest :: Text -> ContextTestTree
-badPointTest text = scriptTest False text text $ assertThrows . runPinaforeAction
+badPointTest text = scriptTest SynchronousUpdateTiming text text $ assertThrows . runPinaforeAction
 
 badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
     testCase (unpack text) $
-    withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
+    withTestPinaforeContext SynchronousUpdateTiming nullUIToolkit $ \_getTableState -> do
         assertThrows $ ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
 
 exceptionTest :: Text -> ContextTestTree
 exceptionTest text c =
     testCase (unpack text) $
-    withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
+    withTestPinaforeContext SynchronousUpdateTiming nullUIToolkit $ \_getTableState -> do
         action <- ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
         assertThrows action
 
-updateTest :: Bool -> Text -> ContextTestTree
-updateTest async text =
-    scriptTest async text text $ \action -> do
+updateTest :: UpdateTiming -> Text -> ContextTestTree
+updateTest ut text =
+    scriptTest ut text text $ \action -> do
         sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
         (sendUpdate, ref) <- unliftPinaforeActionOrFail action
         runLifeCycle $
@@ -61,10 +62,11 @@ updateTest async text =
             checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
-testUpdates = runContext $ tgroup "update" [tgroup "async" $ tests True, tgroup "sync" $ tests False]
+testUpdates =
+    runContext $ tgroup "update" [tests AsynchronousUpdateTiming, fmap ignoreTest $ tests SynchronousUpdateTiming]
   where
-    tests :: Bool -> [ContextTestTree]
-    tests async = [updateTest async "do ref <- newmemref; return (ref := 1, ref) end"]
+    tests :: UpdateTiming -> ContextTestTree
+    tests ut = tgroup (show ut) $ [updateTest ut "do ref <- newmemref; return (ref := 1, ref) end"]
 
 testEntity :: TestTree
 testEntity =

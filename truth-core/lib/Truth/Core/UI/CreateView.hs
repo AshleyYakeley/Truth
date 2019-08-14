@@ -84,7 +84,7 @@ cvReceiveIOUpdates recv = do
     liftLifeCycleIO $
         remonad (runTransform run) $
         subscribe asub $ \edits MkEditContext {..} ->
-            withUILock editContextAsync $ do
+            withUILock editContextTiming $ do
                 alive <- monitor
                 if alive
                     then recv (MkCloseUnliftIO run $ subAnObject asub) edits editContextSource
@@ -169,7 +169,7 @@ data AnyCreateView edit w =
 
 subscribeView ::
        forall edit w.
-       (Bool -> IO () -> IO ())
+       (UpdateTiming -> IO () -> IO ())
     -> AnyCreateView edit w
     -> Subscriber edit
     -> (forall t. IOWitness t -> Maybe t)

@@ -31,7 +31,7 @@ updatingObject (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) update =
                     return $
                     Just $ \esrc -> do
                         lift $ action esrc
-                        deferActionT $ update edits esrc
+                        deferAction $ update edits esrc
         in (MkCloseUnliftIO run' $ MkAnObject r' e', ())
 
 type UpdateStoreEntry edit = [edit] -> EditSource -> IO ()

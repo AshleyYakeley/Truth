@@ -140,26 +140,11 @@ truthMainGTK appMain =
         uiLockVar <- newMVar ()
         runVar <- newMVar RSRun
         let
-            {-
-            uitForkTask :: IO () -> IO ()
-            uitForkTask action = do
-                waitFinish <- forkTask action
-                mvarRun tasksVar $ do
-                    finishers <- Shapes.get
-                    put $ finishers >> waitFinish
-            uitFinishTasks :: IO ()
-            uitFinishTasks = do
-                finishers <- mvarRun tasksVar $ do
-                    f <- Shapes.get
-                    put $ return ()
-                    return f
-                finishers
-            -}
             uitWithLock :: forall a. IO a -> IO a
             uitWithLock action = mvarRun uiLockVar $ liftIO action
-            withUILock :: Bool -> IO a -> IO a
-            withUILock True = uitWithLock
-            withUILock False = id
+            withUILock :: UpdateTiming -> IO a -> IO a
+            withUILock AsynchronousUpdateTiming = uitWithLock
+            withUILock SynchronousUpdateTiming = id
             uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycleIO UIWindow
             uitCreateWindow sub wspec = subscribeView withUILock (createWindowAndChild wspec) sub getRequest
             uitExit :: IO ()

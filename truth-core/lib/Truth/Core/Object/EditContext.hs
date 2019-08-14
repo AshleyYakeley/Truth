@@ -1,11 +1,21 @@
 module Truth.Core.Object.EditContext
-    ( EditSource
+    ( UpdateTiming(..)
+    , EditSource
     , noEditSource
     , newEditSource
     , EditContext(..)
     ) where
 
 import Truth.Core.Import
+
+data UpdateTiming
+    = SynchronousUpdateTiming
+    | AsynchronousUpdateTiming
+    deriving (Eq)
+
+instance Show UpdateTiming where
+    show SynchronousUpdateTiming = "sync"
+    show AsynchronousUpdateTiming = "async"
 
 newtype EditSource =
     MkEditSource (Maybe Unique)
@@ -21,5 +31,5 @@ newEditSource = do
 
 data EditContext = MkEditContext
     { editContextSource :: EditSource
-    , editContextAsync :: Bool
+    , editContextTiming :: UpdateTiming
     }

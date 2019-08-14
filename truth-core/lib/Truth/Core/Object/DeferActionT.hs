@@ -1,6 +1,6 @@
 module Truth.Core.Object.DeferActionT
     ( DeferActionT
-    , deferActionT
+    , deferAction
     , runDeferActionT
     ) where
 
@@ -56,8 +56,8 @@ instance MonadTransUnlift DeferActionT where
             MkUnlift du <- getDiscardingUnlift
             return $ MkUnlift $ \(MkDeferActionT wma) -> du wma
 
-deferActionT :: Monad m => IO () -> DeferActionT m ()
-deferActionT action = MkDeferActionT $ tell [action]
+deferAction :: Monad m => IO () -> DeferActionT m ()
+deferAction action = MkDeferActionT $ tell [action]
 
 runDeferActionT :: Unlift DeferActionT
 runDeferActionT =

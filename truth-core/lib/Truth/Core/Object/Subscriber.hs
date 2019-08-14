@@ -45,24 +45,25 @@ instance Semigroup (EditQueue edit) where
 singleEditQueue :: [edit] -> EditSource -> EditQueue edit
 singleEditQueue edits esrc = MkEditQueue $ pure (esrc, edits)
 
-getRunner :: Bool -> ([edit] -> EditContext -> IO ()) -> LifeCycleIO ([edit] -> EditSource -> IO ())
-getRunner False handler =
-    return $ \edits editContextSource -> handler edits $ MkEditContext {editContextAsync = False, ..}
-getRunner True handler = do
+getRunner :: UpdateTiming -> ([edit] -> EditContext -> IO ()) -> LifeCycleIO ([edit] -> EditSource -> IO ())
+getRunner SynchronousUpdateTiming handler =
+    return $ \edits editContextSource -> handler edits $ MkEditContext {editContextTiming = SynchronousUpdateTiming, ..}
+getRunner AsynchronousUpdateTiming handler = do
     runAsync <-
         asyncRunner $ \(MkEditQueue sourcededits) ->
-            for_ sourcededits $ \(editContextSource, edits) -> handler edits MkEditContext {editContextAsync = True, ..}
+            for_ sourcededits $ \(editContextSource, edits) ->
+                handler edits MkEditContext {editContextTiming = AsynchronousUpdateTiming, ..}
     return $ \edits esrc -> runAsync $ singleEditQueue edits esrc
 
-makeSharedSubscriber :: forall edit a. Bool -> UpdatingObject edit a -> LifeCycleIO (Subscriber edit, a)
-makeSharedSubscriber async uobj = do
+makeSharedSubscriber :: forall edit a. UpdateTiming -> UpdatingObject edit a -> LifeCycleIO (Subscriber edit, a)
+makeSharedSubscriber ut uobj = do
     var :: MVar (UpdateStore edit) <- liftIO $ newMVar emptyStore
     let
         updateP :: [edit] -> EditContext -> IO ()
         updateP edits ectxt = do
             store <- mvarRun var get
             for_ store $ \entry -> entry edits ectxt
-    runAsync <- getRunner async updateP
+    runAsync <- getRunner ut updateP
     (MkCloseUnliftIO unliftC anObjectC, a) <- uobj runAsync
     let
         child :: Subscriber edit
@@ -73,7 +74,7 @@ makeSharedSubscriber async uobj = do
                 lifeCycleClose $ mvarRun var $ deleteStoreStateT key
     return (child, a)
 
-makeObjectSubscriber :: Bool -> Object edit -> LifeCycleIO (Subscriber edit)
-makeObjectSubscriber async object = do
-    (sub, ()) <- makeSharedSubscriber async $ updatingObject object
+makeObjectSubscriber :: UpdateTiming -> Object edit -> LifeCycleIO (Subscriber edit)
+makeObjectSubscriber ut object = do
+    (sub, ()) <- makeSharedSubscriber ut $ updatingObject object
     return sub
