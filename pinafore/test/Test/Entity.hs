@@ -14,18 +14,19 @@ import Truth.Core
 
 scriptTest ::
        FromPinaforeType PinaforeEdit a
-    => Text
+    => Bool
+    -> Text
     -> Text
     -> ((?pinafore :: PinaforeContext PinaforeEdit) => a -> IO ())
     -> ContextTestTree
-scriptTest name text checker =
+scriptTest async name text checker =
     contextTestCase name text $ \t ->
-        withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
+        withTestPinaforeContext async nullUIToolkit $ \_getTableState -> do
             action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" t
             checker action
 
 pointTest :: Text -> ContextTestTree
-pointTest text = scriptTest text text runPinaforeAction
+pointTest text = scriptTest False text text runPinaforeAction
 
 assertThrows :: IO a -> IO ()
 assertThrows ma = do
@@ -35,7 +36,7 @@ assertThrows ma = do
         else return ()
 
 badPointTest :: Text -> ContextTestTree
-badPointTest text = scriptTest text text $ assertThrows . runPinaforeAction
+badPointTest text = scriptTest False text text $ assertThrows . runPinaforeAction
 
 badInterpretTest :: Text -> ContextTestTree
 badInterpretTest text c =
@@ -50,9 +51,9 @@ exceptionTest text c =
         action <- ioRunInterpretResult $ pinaforeInterpretFile "<test>" $ prefix c <> text
         assertThrows action
 
-updateTest :: Text -> ContextTestTree
-updateTest text =
-    scriptTest text text $ \action -> do
+updateTest :: Bool -> Text -> ContextTestTree
+updateTest async text =
+    scriptTest async text text $ \action -> do
         sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
         (sendUpdate, ref) <- unliftPinaforeActionOrFail action
         runLifeCycle $
@@ -60,7 +61,10 @@ updateTest text =
             checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
-testUpdates = runContext $ tgroup "update" [updateTest "do ref <- newmemref; return (ref := 1, ref) end"]
+testUpdates = runContext $ tgroup "update" [tgroup "async" $ tests True, tgroup "sync" $ tests False]
+  where
+    tests :: Bool -> [ContextTestTree]
+    tests async = [updateTest async "do ref <- newmemref; return (ref := 1, ref) end"]
 
 testEntity :: TestTree
 testEntity =
