@@ -61,8 +61,8 @@ makeSharedSubscriber async uobj = do
     var :: MVar (UpdateStore edit) <- liftIO $ newMVar emptyStore
     let
         updateP :: [edit] -> EditContext -> IO ()
-        updateP edits ectxt = do
-            store <- traceBarrier "makeSharedSubscriber:updateP.get" (mvarRun var) get
+        updateP edits ectxt = traceBracket ("makeSharedSubscriber:updateP (" ++ if async then "async" else "sync" ++ ")") $ do
+            store <- traceBarrier "makeSharedSubscriber:updateP.get.mvarRun" (mvarRun var) get
             for_ store $ \entry -> traceBracket "makeSharedSubscriber:updateP.entry" $ entry edits ectxt
     runAsync <- getRunner async updateP
     (MkCloseUnliftIO unliftC anObjectC, a) <- uobj runAsync

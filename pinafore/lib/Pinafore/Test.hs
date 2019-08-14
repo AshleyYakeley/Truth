@@ -35,6 +35,7 @@ makeTestPinaforeContext ::
        Bool -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeEdit, IO (EditSubject PinaforeTableEdit))
 makeTestPinaforeContext async uitoolkit = do
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
+        fmap (traceThing "makeTestPinaforeContext.tableStateObject") $
         liftIO $ freeIOObject ([], []) $ \_ -> True
     let
         tableObject :: Object PinaforeTableEdit
