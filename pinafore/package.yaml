@@ -22,24 +22,9 @@ library:
       - parsec
       - memory
       - cryptonite
+      - typed-expression
       - truth-core
     exposed-modules:
-      - Data.Shim
-      - Language.Expression.WitnessMappable
-      - Language.Expression.Witness
-      - Language.Expression.Expression
-      - Language.Expression.Pattern
-      - Language.Expression.NameWit
-      - Language.Expression.Named
-      - Language.Expression.Sealed
-      - Language.Expression.Renamer
-      - Language.Expression.Unifier
-      - Language.Expression.Subsumer
-      - Language.Expression.Abstract
-      - Language.Expression.Bindings
-      - Language.Expression.TypeSystem
-      - Language.Expression.Unitype
-      - Language.Expression.Dolan
       - Pinafore.Base
       - Pinafore.Storage
       - Pinafore.Language
@@ -49,23 +34,6 @@ library:
       - Pinafore
       - Pinafore.Test
     other-modules:
-      - Data.Shim.Polarity
-      - Data.Shim.Variance
-      - Data.Shim.ShimWit
-      - Data.Shim.Range
-      - Data.Shim.CatRange
-      - Data.Shim.JoinMeet
-      - Data.Shim.PolyShim
-      - Data.Shim.JMShim
-      - Data.Shim.JMShimWit
-      - Language.Expression.Error
-      - Language.Expression.UVar
-      - Language.Expression.Dolan.PShimWit
-      - Language.Expression.Dolan.Covariance
-      - Language.Expression.Dolan.Variance
-      - Language.Expression.Dolan.Arguments
-      - Language.Expression.Dolan.MPolarity
-      - Language.Expression.Dolan.RangeF
       - Pinafore.Base.Know
       - Pinafore.Base.Number
       - Pinafore.Base.Literal
@@ -152,6 +120,7 @@ tests:
           - comonad
           - mono-traversable
           - shapes
+          - typed-expression
           - truth-core
           - gi-gobject
           - haskell-gi-base

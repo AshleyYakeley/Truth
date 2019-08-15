@@ -1,0 +1,47 @@
+name: typed-expression
+version: "0.1"
+_common: !include "../common.yaml"
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.12
+      - shapes
+    exposed-modules:
+      - Data.Shim
+      - Language.Expression.Error
+      - Language.Expression.UVar
+      - Language.Expression.WitnessMappable
+      - Language.Expression.Witness
+      - Language.Expression.Expression
+      - Language.Expression.Pattern
+      - Language.Expression.NameWit
+      - Language.Expression.Named
+      - Language.Expression.Sealed
+      - Language.Expression.Renamer
+      - Language.Expression.Unifier
+      - Language.Expression.Subsumer
+      - Language.Expression.Abstract
+      - Language.Expression.Bindings
+      - Language.Expression.TypeSystem
+      - Language.Expression.Unitype
+      - Language.Expression.Dolan
+    other-modules:
+      - Data.Shim.Polarity
+      - Data.Shim.Variance
+      - Data.Shim.ShimWit
+      - Data.Shim.Range
+      - Data.Shim.CatRange
+      - Data.Shim.JoinMeet
+      - Data.Shim.PolyShim
+      - Data.Shim.JMShim
+      - Data.Shim.JMShimWit
+      - Language.Expression.Dolan.PShimWit
+      - Language.Expression.Dolan.Covariance
+      - Language.Expression.Dolan.Variance
+      - Language.Expression.Dolan.Arguments
+      - Language.Expression.Dolan.MPolarity
+      - Language.Expression.Dolan.RangeF

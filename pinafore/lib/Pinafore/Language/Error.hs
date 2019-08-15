@@ -1,6 +1,6 @@
 module Pinafore.Language.Error where
 
-import Data.Shim.Polarity
+import Data.Shim
 import Language.Expression.Error
 import Pinafore.Language.Name
 import Shapes
