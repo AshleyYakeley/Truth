@@ -47,14 +47,13 @@ instance Semigroup (EditQueue edit) where
 singleEditQueue :: [edit] -> EditSource -> EditQueue edit
 singleEditQueue edits esrc = MkEditQueue $ pure (esrc, edits)
 
-getRunner :: UpdateTiming -> ([edit] -> EditContext -> IO ()) -> LifeCycleIO ([edit] -> EditSource -> IO ())
-getRunner SynchronousUpdateTiming handler =
-    return $ \edits editContextSource -> handler edits $ MkEditContext {editContextTiming = SynchronousUpdateTiming, ..}
-getRunner AsynchronousUpdateTiming handler = do
-    runAsync <-
-        asyncRunner $ \(MkEditQueue sourcededits) ->
-            for_ sourcededits $ \(editContextSource, edits) ->
-                handler edits MkEditContext {editContextTiming = AsynchronousUpdateTiming, ..}
+utReceiveUpdates :: UpdateTiming -> ([edit] -> EditContext -> IO ()) -> [edit] -> EditSource -> IO ()
+utReceiveUpdates editContextTiming recv edits editContextSource = recv edits $ MkEditContext {..}
+
+getRunner :: UpdateTiming -> ([edit] -> EditSource -> IO ()) -> LifeCycleIO ([edit] -> EditSource -> IO ())
+getRunner SynchronousUpdateTiming recv = return recv
+getRunner AsynchronousUpdateTiming recv = do
+    runAsync <- asyncRunner $ \(MkEditQueue sourcededits) -> for_ sourcededits $ \(esrc, edits) -> recv edits esrc
     return $ \edits esrc -> runAsync $ singleEditQueue edits esrc
 
 subscriberUpdatingObject :: Subscriber edit -> a -> UpdatingObject edit a
@@ -70,7 +69,7 @@ makeSharedSubscriber ut uobj = do
         updateP edits ectxt = do
             store <- mvarRun var get
             for_ store $ \entry -> entry edits ectxt
-    runAsync <- getRunner ut updateP
+    runAsync <- getRunner ut $ utReceiveUpdates ut updateP
     (MkCloseUnliftIO unliftC anObjectC, a) <- uobj runAsync
     let
         child :: Subscriber edit
