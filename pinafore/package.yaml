@@ -25,6 +25,7 @@ library:
       - Pinafore
       - Pinafore.Test
     other-modules:
+      - Pinafore.Language.Instances
       - Pinafore.Language.Name
       - Pinafore.Language.Literal
       - Pinafore.Language.OpenEntity
