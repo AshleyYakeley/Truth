@@ -20,7 +20,7 @@ import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Predefined.File
 import Pinafore.Language.Predefined.UI
 import Pinafore.Language.Type
-import Pinafore.Storage.File
+import Pinafore.Storage
 import Shapes
 import Truth.Core
 

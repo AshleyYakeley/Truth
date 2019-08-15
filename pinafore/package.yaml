@@ -24,28 +24,14 @@ library:
       - cryptonite
       - typed-expression
       - truth-core
+      - pinafore-base
     exposed-modules:
-      - Pinafore.Base
-      - Pinafore.Storage
       - Pinafore.Language
       - Pinafore.Language.Documentation
       - Pinafore.Main
-      - Pinafore.Pinafore
       - Pinafore
       - Pinafore.Test
     other-modules:
-      - Pinafore.Base.Know
-      - Pinafore.Base.Number
-      - Pinafore.Base.Literal
-      - Pinafore.Base.Morphism
-      - Pinafore.Base.Entity
-      - Pinafore.Base.Lens
-      - Pinafore.Base.Edit
-      - Pinafore.Base.EntityAdapter
-      - Pinafore.Base.PredicateMorphism
-      - Pinafore.Base.Action
-      - Pinafore.Base.Context
-      - Pinafore.Base.ImmutableReference
       - Pinafore.Language.Name
       - Pinafore.Language.Literal
       - Pinafore.Language.OpenEntity
@@ -98,10 +84,6 @@ library:
       - Pinafore.Language.Predefined.UI
       - Pinafore.Language.Predefined.File
       - Pinafore.Language.Predefined
-      - Pinafore.Storage.Table
-      - Pinafore.Storage.Database
-      - Pinafore.Storage.Database.SQLite
-      - Pinafore.Storage.File
 
 extra-doc-files: examples/*
 

@@ -4,7 +4,7 @@ import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.OpenEntity
 import Pinafore.Language.Reference
-import Pinafore.Storage.Table (Entity)
+import Pinafore.Storage (Entity)
 import Shapes
 import Truth.Core
 
