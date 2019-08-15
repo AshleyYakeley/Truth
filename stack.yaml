@@ -3,6 +3,7 @@ packages:
 - open-witness
 - transformers-extra
 - shapes
+- typed-expression
 - truth-core
 - truth-gtk
 - pinafore

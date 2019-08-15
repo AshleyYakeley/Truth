@@ -4,15 +4,13 @@ module Pinafore.Language.Type
     ( module Pinafore.Language.Type.Type
     , module Pinafore.Language.EntityType
     , module Pinafore.Language.GroundType
-    , module Data.Shim.Polarity
-    , module Data.Shim.ShimWit
+    , module Data.Shim
     , module Language.Expression.UVar
     , module Language.Expression.Dolan
     , module Pinafore.Language.Scope
     ) where
 
-import Data.Shim.Polarity
-import Data.Shim.ShimWit
+import Data.Shim
 import Language.Expression.Dolan
 import Language.Expression.Renamer
 import Language.Expression.TypeSystem
