@@ -1,0 +1,42 @@
+name: pinafore-base
+version: "0.1"
+_common: !include "../common.yaml"
+<<: *author
+
+<<: *language
+
+library:
+    source-dirs: lib
+    dependencies:
+      - base >= 4.12
+      - shapes
+      - deepseq
+      - time
+      - cereal
+      - aeson
+      - memory
+      - cryptonite
+      - uuid
+      - truth-core
+      - typed-expression
+    exposed-modules:
+      - Pinafore.Base
+      - Pinafore.Storage
+      - Pinafore.Pinafore
+    other-modules:
+      - Pinafore.Base.Know
+      - Pinafore.Base.Number
+      - Pinafore.Base.Literal
+      - Pinafore.Base.Morphism
+      - Pinafore.Base.Entity
+      - Pinafore.Base.Lens
+      - Pinafore.Base.Edit
+      - Pinafore.Base.EntityAdapter
+      - Pinafore.Base.PredicateMorphism
+      - Pinafore.Base.Action
+      - Pinafore.Base.Context
+      - Pinafore.Base.ImmutableReference
+      - Pinafore.Storage.Table
+      - Pinafore.Storage.Database
+      - Pinafore.Storage.Database.SQLite
+      - Pinafore.Storage.File

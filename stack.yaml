@@ -6,6 +6,7 @@ packages:
 - typed-expression
 - truth-core
 - truth-gtk
+- pinafore-base
 - pinafore
 
 resolver: lts-13.25

@@ -12,7 +12,7 @@ import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Reference
 import Pinafore.Language.SetRef
 import Pinafore.Language.UI
-import Pinafore.Storage.File
+import Pinafore.Storage
 import Shapes
 import Truth.Core
 

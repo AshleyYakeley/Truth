@@ -5,7 +5,7 @@ module Pinafore.Language.Predefined.File
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.Predefined.Defs
-import Pinafore.Storage.File
+import Pinafore.Storage
 
 --import Truth.World.File
 {-
