@@ -27,7 +27,7 @@ testUIAction waitClick text testaction =
     contextTestCase text text $ \t -> traceBracket ("TEST: " <> unpack text) $ do
         donevar <- newEmptyMVar
         truthMainGTK $ \MkTruthContext {..} -> do
-            (pc, _) <- makeTestPinaforeContext True tcUIToolkit
+            (pc, _) <- makeTestPinaforeContext AsynchronousUpdateTiming tcUIToolkit
             scriptaction <- let
                 ?pinafore = pc
                 in ioRunInterpretResult $ pinaforeInterpretFile "<test>" t

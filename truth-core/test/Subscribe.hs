@@ -103,7 +103,7 @@ testSubscription name initial call =
             varObj = traceThing "testSubscription.varObj" $ mvarObject var $ \_ -> True
             editObj :: Object edit
             editObj = convertObject varObj
-        sub <- makeObjectSubscriber False editObj
+        sub <- makeObjectSubscriber SynchronousUpdateTiming editObj
         let
             ?showVar = liftIO $ withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
             ?showExpected = \edits ->

@@ -4,6 +4,8 @@ module Truth.Core.Object.Subscriber
     , subscriberObject
     , makeObjectSubscriber
     , makeSharedSubscriber
+    , subscriberUpdatingObject
+    , shareUpdatingObject
     ) where
 
 import Truth.Core.Import
@@ -46,25 +48,29 @@ instance Semigroup (EditQueue edit) where
 singleEditQueue :: [edit] -> EditSource -> EditQueue edit
 singleEditQueue edits esrc = MkEditQueue $ pure (esrc, edits)
 
-getRunner :: Bool -> ([edit] -> EditContext -> IO ()) -> LifeCycleIO ([edit] -> EditSource -> IO ())
-getRunner False handler =
-    return $ \edits editContextSource -> handler edits $ MkEditContext {editContextAsync = False, ..}
-getRunner True handler = do
-    runAsync <-
-        asyncRunner $ \(MkEditQueue sourcededits) ->
-            traceBracket "getRunner:action" $
-            for_ sourcededits $ \(editContextSource, edits) -> handler edits MkEditContext {editContextAsync = True, ..}
+utReceiveUpdates :: UpdateTiming -> ([edit] -> EditContext -> IO ()) -> [edit] -> EditSource -> IO ()
+utReceiveUpdates editContextTiming recv edits editContextSource = recv edits $ MkEditContext {..}
+
+getRunner :: UpdateTiming -> ([edit] -> EditSource -> IO ()) -> LifeCycleIO ([edit] -> EditSource -> IO ())
+getRunner SynchronousUpdateTiming recv = return recv
+getRunner AsynchronousUpdateTiming recv = do
+    runAsync <- asyncRunner $ \(MkEditQueue sourcededits) -> traceBracket "getRunner:action" $ for_ sourcededits $ \(esrc, edits) -> recv edits esrc
     return $ \edits esrc -> traceBracket "getRunner:runAsync" $ runAsync $ singleEditQueue edits esrc
 
-makeSharedSubscriber :: forall edit a. Bool -> UpdatingObject edit a -> LifeCycleIO (Subscriber edit, a)
-makeSharedSubscriber async uobj = do
+subscriberUpdatingObject :: Subscriber edit -> a -> UpdatingObject edit a
+subscriberUpdatingObject (MkCloseUnliftIO run MkASubscriber {..}) a update = do
+    remonad (runTransform run) $ subscribe $ \edits ec -> update edits $ editContextSource ec
+    return (MkCloseUnliftIO run subAnObject, a)
+
+makeSharedSubscriber :: forall edit a. UpdateTiming -> UpdatingObject edit a -> LifeCycleIO (Subscriber edit, a)
+makeSharedSubscriber ut uobj = do
     var :: MVar (UpdateStore edit) <- liftIO $ newMVar emptyStore
     let
         updateP :: [edit] -> EditContext -> IO ()
-        updateP edits ectxt = traceBracket ("makeSharedSubscriber:updateP (" ++ if async then "async" else "sync" ++ ")") $ do
+        updateP edits ectxt = traceBracket ("makeSharedSubscriber:updateP (" ++ show ut ++ ")") $ do
             store <- traceBarrier "makeSharedSubscriber:updateP.get.mvarRun" (mvarRun var) get
             for_ store $ \entry -> traceBracket "makeSharedSubscriber:updateP.entry" $ entry edits ectxt
-    runAsync <- getRunner async updateP
+    runAsync <- getRunner ut $ utReceiveUpdates ut updateP
     (MkCloseUnliftIO unliftC anObjectC, a) <- uobj runAsync
     let
         child :: Subscriber edit
@@ -75,7 +81,12 @@ makeSharedSubscriber async uobj = do
                 lifeCycleClose $ traceBarrier "makeSharedSubscriber:child.deleteStoreStateT" (mvarRun var) $ deleteStoreStateT key
     return (child, a)
 
-makeObjectSubscriber :: Bool -> Object edit -> LifeCycleIO (Subscriber edit)
-makeObjectSubscriber async object = do
-    (sub, ()) <- makeSharedSubscriber async $ updatingObject object
+shareUpdatingObject :: forall edit a. UpdateTiming -> UpdatingObject edit a -> LifeCycleIO (UpdatingObject edit a)
+shareUpdatingObject ut uobj = do
+    (sub, a) <- makeSharedSubscriber ut uobj
+    return $ subscriberUpdatingObject sub a
+
+makeObjectSubscriber :: UpdateTiming -> Object edit -> LifeCycleIO (Subscriber edit)
+makeObjectSubscriber ut object = do
+    (sub, ()) <- makeSharedSubscriber ut $ updatingObject object
     return sub

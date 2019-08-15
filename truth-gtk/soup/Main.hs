@@ -11,8 +11,8 @@ import Truth.UI.GTK
 optParser :: O.Parser ([FilePath], Bool)
 optParser = (,) <$> (O.many $ O.strArgument mempty) <*> O.switch (O.short '2')
 
-async :: Bool
-async = False
+ut :: UpdateTiming
+ut = SynchronousUpdateTiming
 
 main :: IO ()
 main = do
@@ -20,7 +20,7 @@ main = do
     truthMainGTK $ \MkTruthContext {..} -> do
         (toolkit, checkdone) <- liftIO $ quitOnWindowsClosed tcUIToolkit
         for_ dirpaths $ \dirpath -> do
-            let action = soupWindow async toolkit dirpath
+            let action = soupWindow ut toolkit dirpath
             action
             if double
                 then action

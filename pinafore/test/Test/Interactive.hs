@@ -19,7 +19,7 @@ testFile inpath = let
     in goldenVsFile testname refpath outpath $
        withBinaryFile outpath WriteMode $ \outh ->
            withBinaryFile inpath ReadMode $ \inh ->
-               withTestPinaforeContext False nullUIToolkit $ \_ -> do
+               withTestPinaforeContext SynchronousUpdateTiming nullUIToolkit $ \_ -> do
                    pinaforeInteractHandles inh outh True
                    hPutStrLn outh "<END>"
 

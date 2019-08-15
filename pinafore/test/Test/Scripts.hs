@@ -13,7 +13,7 @@ import Truth.Core
 testExample :: String -> TestTree
 testExample fpath =
     testCase fpath $
-    withTestPinaforeContext False nullUIToolkit $ \_getTableState -> do
+    withTestPinaforeContext SynchronousUpdateTiming nullUIToolkit $ \_getTableState -> do
         ptext <- readFile fpath
         _ <- ioRunInterpretResult $ pinaforeInterpretFile fpath $ decodeUtf8 $ toStrict ptext
         return ()
