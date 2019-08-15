@@ -34,7 +34,7 @@ standardPinaforeContext ut dirpath uitoolkit = do
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
     memoryObject <- liftIO makeMemoryCellObject
     clockUO <-
-        shareUpdatingObject False $
+        shareUpdatingObject SynchronousUpdateTiming $
         clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     clockTimeEF <- liftIO makeClockTimeZoneEF
     let

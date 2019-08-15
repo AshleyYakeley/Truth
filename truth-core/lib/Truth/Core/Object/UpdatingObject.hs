@@ -1,7 +1,6 @@
 module Truth.Core.Object.UpdatingObject
     ( UpdatingObject
     , updatingObject
-    , shareUpdatingObject
     , lensUpdatingObject
     ) where
 
@@ -33,53 +32,6 @@ updatingObject (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) update =
                         lift $ action esrc
                         deferAction $ update edits esrc
         in (MkCloseUnliftIO run' $ MkAnObject r' e', ())
-
-type UpdateStoreEntry edit = [edit] -> EditSource -> IO ()
-
-type UpdateStore edit = Store (UpdateStoreEntry edit)
-
-newtype EditQueue edit =
-    MkEditQueue [(EditSource, [edit])]
-
-collapse1 :: (EditSource, [edit]) -> [(EditSource, [edit])] -> [(EditSource, [edit])]
-collapse1 (esa, ea) ((esb, eb):bb)
-    | esa == esb = (esb, ea <> eb) : bb
-collapse1 a bb = a : bb
-
-collapse :: [(EditSource, [edit])] -> [(EditSource, [edit])] -> [(EditSource, [edit])]
-collapse [] bb = bb
-collapse [a] bb = collapse1 a bb
-collapse (a:aa) bb = a : collapse aa bb
-
-instance Semigroup (EditQueue edit) where
-    MkEditQueue aa <> MkEditQueue bb = MkEditQueue $ collapse aa bb
-
-singleEditQueue :: [edit] -> EditSource -> EditQueue edit
-singleEditQueue edits esrc = MkEditQueue $ pure (esrc, edits)
-
-getRunner :: Bool -> ([edit] -> EditSource -> IO ()) -> LifeCycleIO ([edit] -> EditSource -> IO ())
-getRunner False handler = return handler
-getRunner True handler = do
-    runAsync <- asyncRunner $ \(MkEditQueue sourcededits) -> for_ sourcededits $ \(esrc, edits) -> handler edits esrc
-    return $ \edits esrc -> runAsync $ singleEditQueue edits esrc
-
-shareUpdatingObject :: forall edit a. Bool -> UpdatingObject edit a -> LifeCycleIO (UpdatingObject edit a)
-shareUpdatingObject async uobj = do
-    var :: MVar (UpdateStore edit) <- liftIO $ newMVar emptyStore
-    let
-        updateP :: [edit] -> EditSource -> IO ()
-        updateP edits ectxt = do
-            store <- mvarRun var get
-            for_ store $ \entry -> entry edits ectxt
-    runAsync <- getRunner async updateP
-    (objectC, a) <- uobj runAsync
-    let
-        child :: UpdatingObject edit a
-        child updateC = do
-            key <- liftIO $ mvarRun var $ addStoreStateT updateC
-            lifeCycleClose $ mvarRun var $ deleteStoreStateT key
-            return (objectC, a)
-    return child
 
 mapUpdates :: forall edita editb. EditLens edita editb -> Object edita -> [edita] -> IO [editb]
 mapUpdates (MkCloseUnlift unlift (MkAnEditLens (MkAnEditFunction _ update) _)) (MkCloseUnliftIO unliftIO (MkAnObject mr _)) eas =

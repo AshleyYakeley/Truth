@@ -42,7 +42,7 @@ makeTestPinaforeContext ut uitoolkit = do
         getTableState = getObjectSubject tableStateObject
     memoryObject <- liftIO makeMemoryCellObject
     clockUO <-
-        shareUpdatingObject False $
+        shareUpdatingObject SynchronousUpdateTiming $
         clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     clockTimeEF <- liftIO makeClockTimeZoneEF
     let

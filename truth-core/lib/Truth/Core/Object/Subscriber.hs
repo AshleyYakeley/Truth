@@ -4,6 +4,8 @@ module Truth.Core.Object.Subscriber
     , subscriberObject
     , makeObjectSubscriber
     , makeSharedSubscriber
+    , subscriberUpdatingObject
+    , shareUpdatingObject
     ) where
 
 import Truth.Core.Import
@@ -55,6 +57,11 @@ getRunner AsynchronousUpdateTiming handler = do
                 handler edits MkEditContext {editContextTiming = AsynchronousUpdateTiming, ..}
     return $ \edits esrc -> runAsync $ singleEditQueue edits esrc
 
+subscriberUpdatingObject :: Subscriber edit -> a -> UpdatingObject edit a
+subscriberUpdatingObject (MkCloseUnliftIO run MkASubscriber {..}) a update = do
+    remonad (runTransform run) $ subscribe $ \edits ec -> update edits $ editContextSource ec
+    return (MkCloseUnliftIO run subAnObject, a)
+
 makeSharedSubscriber :: forall edit a. UpdateTiming -> UpdatingObject edit a -> LifeCycleIO (Subscriber edit, a)
 makeSharedSubscriber ut uobj = do
     var :: MVar (UpdateStore edit) <- liftIO $ newMVar emptyStore
@@ -73,6 +80,11 @@ makeSharedSubscriber ut uobj = do
                 key <- liftIO $ mvarRun var $ addStoreStateT updateC
                 lifeCycleClose $ mvarRun var $ deleteStoreStateT key
     return (child, a)
+
+shareUpdatingObject :: forall edit a. UpdateTiming -> UpdatingObject edit a -> LifeCycleIO (UpdatingObject edit a)
+shareUpdatingObject ut uobj = do
+    (sub, a) <- makeSharedSubscriber ut uobj
+    return $ subscriberUpdatingObject sub a
 
 makeObjectSubscriber :: UpdateTiming -> Object edit -> LifeCycleIO (Subscriber edit)
 makeObjectSubscriber ut object = do
