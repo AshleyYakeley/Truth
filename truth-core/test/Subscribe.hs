@@ -8,7 +8,6 @@ module Subscribe
 import Shapes
 import Test.Tasty
 import Test.Tasty.Golden
-import Test.Tasty.HUnit
 import Truth.Core
 
 goldenTest :: TestName -> FilePath -> FilePath -> ((?handle :: Handle) => IO ()) -> TestTree
@@ -21,18 +20,6 @@ goldenTest name refPath outPath call =
 goldenTest' :: TestName -> ((?handle :: Handle) => IO ()) -> TestTree
 goldenTest' name call = goldenTest name ("test/golden/" ++ name ++ ".ref") ("test/golden/" ++ name ++ ".out") call
 
-testSavable :: TestTree
-testSavable = testCase "Savable" $ do return ()
-
-{-
-        object <- freeIOObject False (\_ -> True)
-        sub <- makeObjectSubscriber object
-        let
-            saveSub = saveBufferSubscriber sub
-            cleanSaveSub = fmap fst saveSub
-        found <- subscribeEditor cleanSaveSub testEditor
-        assertEqual "value" False found
--}
 data SubscribeContext edit = MkSubscribeContext
     { subDoEdits :: [[edit]] -> LifeCycleIO ()
     , subDontEdits :: [[edit]] -> LifeCycleIO ()
@@ -204,16 +191,30 @@ testSharedString3 =
                     subDoEdits [[StringReplaceSection (startEndRun 2 2) "Q"]]
                     ?showVar
 
+testSharedString4 :: TestTree
+testSharedString4 =
+    testSubscription "SharedString4" "ABC" $ \sub -> do
+        testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
+        subscribeEditor sub $
+            testOutputEditor "main" $ \main ->
+                subscribeEditor (mapSubscriber testLens sub) $
+                testOutputEditor "lens" $ \sect -> do
+                    ?showVar
+                    subDoEdits main [[StringReplaceSection (startEndRun 0 0) "P"]]
+                    ?showVar
+                    subDoEdits sect [[StringReplaceSection (startEndRun 0 0) "Q"]]
+                    ?showVar
+
 testSubscribe :: TestTree
 testSubscribe =
     testGroup
         "subscribe"
-        [ testSavable
-        , testPair
+        [ testPair
         , testString
         , testString1
         , testString2
         , testSharedString1
         , testSharedString2
         , testSharedString3
+        , testSharedString4
         ]
