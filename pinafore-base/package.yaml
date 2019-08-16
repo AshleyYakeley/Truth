@@ -35,6 +35,7 @@ library:
       - Pinafore.Base.Action
       - Pinafore.Base.Context
       - Pinafore.Base.ImmutableReference
+      - Pinafore.Base.File
       - Pinafore.Storage.Table
       - Pinafore.Storage.Database
       - Pinafore.Storage.Database.SQLite
