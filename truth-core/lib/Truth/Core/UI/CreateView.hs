@@ -92,7 +92,7 @@ cvReceiveIOUpdates recv = do
                     else return ()
 
 cvReceiveUpdates :: Maybe EditSource -> (UnliftIO (View sel edit) -> ReceiveUpdates edit) -> CreateView sel edit ()
-cvReceiveUpdates mesrc recv = do
+cvReceiveUpdates mesrc recv = traceBracket "cvReceiveUpdates" $ do
     unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkTransform unlift
     cvReceiveIOUpdates $ \(MkCloseUnliftIO unliftObj (MkAnObject mr _)) edits esrc ->
         if mesrc == Just esrc
@@ -108,8 +108,8 @@ cvReceiveUpdate mesrc recv = cvReceiveUpdates mesrc $ \unlift mr edits -> for_ e
 cvBindEditFunction ::
        Maybe EditSource -> EditFunction edit (WholeEdit t) -> (t -> View sel edit ()) -> CreateView sel edit ()
 cvBindEditFunction mesrc ef setf = do
-    initial <- traceBracket "cvBindEditFunction:initial" $ cvLiftView $ viewObjectRead $ \_ mr -> traceBracket "cvBindEditFunction:editFunctionRead" $ editFunctionRead ef mr ReadWhole
-    cvLiftView $ setf initial
+    initial <- traceBracket "cvBindEditFunction:initial:get" $ cvLiftView $ viewObjectRead $ \_ mr -> traceBracket "cvBindEditFunction:editFunctionRead" $ editFunctionRead ef mr ReadWhole
+    traceBracket "cvBindEditFunction:initial:set" $ cvLiftView $ setf initial
     cvReceiveUpdates mesrc $ \(MkTransform unlift) ->
         mapReceiveUpdates ef $ \_ wedits ->
             case lastWholeEdit wedits of

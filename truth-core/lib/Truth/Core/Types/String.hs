@@ -129,7 +129,7 @@ stringSectionLens ::
        forall seq. IsSequence seq
     => SequenceRun seq
     -> IO (EditLens (StringEdit seq) (StringEdit seq))
-stringSectionLens initial =
+stringSectionLens initial = traceBracket ("stringSectionLens.create: " <> show initial) $
     newMVar initial >>= \var ->
         return $ traceThing "stringSectionLens" $ let
             getState ::
@@ -155,7 +155,7 @@ stringSectionLens initial =
             efUpdate edita mr = do
                 oldstate <- getState mr
                 let newstate = floatingUpdate edita oldstate
-                put newstate
+                traceBracket ("stringSectionLens.efUpdate state change: " <> show (oldstate,newstate)) $ put newstate
                 case edita of
                     StringReplaceWhole s -> return $ return $ StringReplaceWhole $ seqSection newstate s
                     StringReplaceSection rawruna sa -> do
@@ -187,7 +187,8 @@ stringSectionLens initial =
                         let
                             newlength = runLength oldstate + seqLength sb - runLength runb
                             runa = relativeRun (negate $ runStart oldstate) runb
-                        put oldstate {runLength = newlength}
+                        let newstate = oldstate {runLength = newlength}
+                        traceBracket ("stringSectionLens.elPutEdit state change: " <> show (oldstate,newstate)) $ put newstate
                         return $ Just [StringReplaceSection runa sb]
             elPutEdits ::
                    forall m. MonadIO m

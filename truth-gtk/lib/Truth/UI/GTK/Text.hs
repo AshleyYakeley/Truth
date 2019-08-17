@@ -46,7 +46,8 @@ textView = do
                 traceBracket "GTK.Text:insert" $
                 viewObjectPushEdit $ \_ push -> do
                     p <- getSequencePoint iter
-                    _ <- push esrc $ pure $ StringReplaceSection (MkSequenceRun p 0) text
+                    let edit = StringReplaceSection (MkSequenceRun p 0) text
+                    _ <- traceBracket ("GTK.Text.insert: push " <> show edit) $ push esrc $ pure edit
                     return ()
     deleteSignal <-
         cvLiftView $
@@ -56,13 +57,15 @@ textView = do
                 traceBracket "GTK.Text:delete" $
                 viewObjectPushEdit $ \_ push -> do
                     run <- getSequenceRun iter1 iter2
-                    _ <- push esrc $ pure $ StringReplaceSection run mempty
+                    let edit = StringReplaceSection run mempty
+                    _ <- traceBracket ("GTK.Text.delete: push " <> show edit) $ push esrc $ pure edit
                     return ()
     widget <- new TextView [#buffer := buffer]
     cvReceiveUpdate (Just esrc) $ \_ _ edit ->
         liftIO $
         withSignalBlocked buffer insertSignal $
         withSignalBlocked buffer deleteSignal $
+        traceBracket ("GTK.Text.receive: " <> show edit) $
         case edit of
             StringReplaceWhole text -> #setText buffer text (-1)
             StringReplaceSection bounds text -> replaceText buffer bounds text

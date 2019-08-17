@@ -63,7 +63,7 @@ subscriberUpdatingObject (MkCloseUnliftIO run MkASubscriber {..}) a update = do
     return (MkCloseUnliftIO run subAnObject, a)
 
 makeSharedSubscriber :: forall edit a. UpdateTiming -> UpdatingObject edit a -> LifeCycleIO (Subscriber edit, a)
-makeSharedSubscriber ut uobj = do
+makeSharedSubscriber ut uobj = traceBracket "makeSharedSubscriber:run" $ do
     var :: MVar (UpdateStore edit) <- liftIO $ newMVar emptyStore
     let
         updateP :: [edit] -> EditContext -> IO ()
