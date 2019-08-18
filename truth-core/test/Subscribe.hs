@@ -211,6 +211,19 @@ testSharedString4 =
                         subDoEdits sect [[StringReplaceSection (startEndRun 0 0) "Q"]]
                         ?showVar
 
+testSharedString5 :: TestTree
+testSharedString5 =
+    testSubscription "SharedString5" "ABCD" $ \mainSub -> do
+        testLens <- liftIO $ stringSectionLens (startEndRun 1 3)
+        subscribeEditor mainSub $
+            testOutputEditor "main" $ \main -> do
+                lensSub <- mapSubscriber testLens mainSub
+                subscribeEditor lensSub $
+                    testOutputEditor "lens" $ \_sect -> do
+                        ?showVar
+                        subDoEdits main [[StringReplaceSection (startEndRun 2 4) ""]]
+                        ?showVar
+
 testSubscribe :: TestTree
 testSubscribe =
     testGroup
@@ -223,4 +236,5 @@ testSubscribe =
         , testSharedString2
         , testSharedString3
         , testSharedString4
+        , testSharedString5
         ]

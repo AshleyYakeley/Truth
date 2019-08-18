@@ -1,0 +1,11 @@
+main: init: "ABCD"
+lens: init: "BC"
+var: "ABCD"
+main: runObject
+main: push [section 2+2 ""]
+main: push succeeded
+main: receive [section 2+2 ""]
+main: receive "AB"
+lens: receive [section 1+1 ""]
+lens: receive "B"
+var: "AB"
