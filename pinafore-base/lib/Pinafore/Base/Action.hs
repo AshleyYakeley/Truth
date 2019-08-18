@@ -2,6 +2,7 @@ module Pinafore.Base.Action
     ( PinaforeAction
     , unPinaforeAction
     , pinaforeActionSubscriber
+    , pinaforeActionObject
     , pinaforeFunctionValueGet
     , pinaforeLensPush
     , PinaforeWindow(..)
@@ -34,9 +35,12 @@ instance RepresentationalRole (PinaforeAction baseedit) where
     representationalCoercion MkCoercion = MkCoercion
 
 pinaforeActionSubscriber :: PinaforeAction baseedit (Subscriber baseedit)
-pinaforeActionSubscriber = do
-    ac <- MkPinaforeAction ask
-    return $ acSubscriber ac
+pinaforeActionSubscriber = MkPinaforeAction $ asks acSubscriber
+
+pinaforeActionObject :: PinaforeAction baseedit (Object baseedit)
+pinaforeActionObject = do
+    sub <- pinaforeActionSubscriber
+    return $ subscriberObject sub
 
 unPinaforeAction ::
        forall baseedit a. UIToolkit -> Subscriber baseedit -> UndoActions -> PinaforeAction baseedit a -> IO (Know a)
@@ -45,14 +49,14 @@ unPinaforeAction acUIToolkit acSubscriber acUndoActions (MkPinaforeAction action
 
 pinaforeFunctionValueGet :: PinaforeFunctionValue baseedit t -> PinaforeAction baseedit t
 pinaforeFunctionValueGet fval = do
-    MkCloseUnliftIO objRun (MkASubscriber MkAnObject {..} _) <- pinaforeActionSubscriber
+    MkCloseUnliftIO objRun MkAnObject {..} <- pinaforeActionObject
     liftIO $ runTransform objRun $ editFunctionRead fval objRead ReadWhole
 
 pinaforeLensPush :: PinaforeLensValue baseedit edit -> [edit] -> PinaforeAction baseedit ()
 pinaforeLensPush lens edits = do
-    sub <- pinaforeActionSubscriber
-    case mapSubscriber lens sub of
-        MkCloseUnliftIO objRun (MkASubscriber MkAnObject {..} _) -> do
+    obj <- pinaforeActionObject
+    case mapObject lens obj of
+        MkCloseUnliftIO objRun MkAnObject {..} -> do
             ok <- liftIO $ runTransform objRun $ pushEdit noEditSource $ objEdit edits
             if ok
                 then return ()

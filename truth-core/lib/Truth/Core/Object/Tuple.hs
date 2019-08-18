@@ -1,17 +1,13 @@
 module Truth.Core.Object.Tuple
     ( tupleObject
     , tupleUpdatingObject
-    , tupleSubscribers
     , pairObjects
-    , pairSubscribers
     ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
-import Truth.Core.Object.Lens
 import Truth.Core.Object.Object
-import Truth.Core.Object.Subscriber
 import Truth.Core.Object.UnliftIO
 import Truth.Core.Object.UpdatingObject
 import Truth.Core.Read
@@ -84,6 +80,7 @@ instance ObjectOrSubscriber AnObject where
                            (combineLiftSnd @ma @mb $ editB ebs)
                 in MkAnObject readAB editAB
 
+{-
 instance ObjectOrSubscriber ASubscriber where
     mapThing = mapSubscriber
     noneTupleAThing :: ASubscriber IO (TupleEdit (ListElementType '[]))
@@ -108,7 +105,7 @@ instance ObjectOrSubscriber ASubscriber where
                         subB $ \ee ec ->
                             update (fmap (\(MkTupleEdit sel e) -> MkTupleEdit (RestElementType sel) e) ee) ec
                 in MkASubscriber aobjAB subAB
-
+-}
 tupleListThingM ::
        forall m f edits. (Applicative m, ObjectOrSubscriber f)
     => ListType Proxy edits
@@ -148,12 +145,6 @@ tupleUpdatingObject pick update = do
     obj <- tupleThingM $ \sel -> fmap fst $ pick sel (\edits -> update $ fmap (MkTupleEdit sel) edits)
     return (obj, ())
 
-tupleSubscribers ::
-       forall sel. IsFiniteConsWitness sel
-    => (forall edit. sel edit -> Subscriber edit)
-    -> Subscriber (TupleEdit sel)
-tupleSubscribers = tupleThing
-
 pairThings ::
        forall f edita editb. ObjectOrSubscriber f
     => CloseUnliftIO f edita
@@ -166,6 +157,3 @@ pairThings obja objb =
 
 pairObjects :: forall edita editb. Object edita -> Object editb -> Object (PairEdit edita editb)
 pairObjects = pairThings
-
-pairSubscribers :: forall edita editb. Subscriber edita -> Subscriber editb -> Subscriber (PairEdit edita editb)
-pairSubscribers = pairThings

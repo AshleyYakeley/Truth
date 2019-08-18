@@ -47,7 +47,7 @@ saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pus
                             MkSaveBuffer oldbuf _ <- get
                             return oldbuf
                     put (MkSaveBuffer newbuf True)
-                    lift $ deferAction $ update edits esrc
+                    lift $ deferAction $ update edits $ editSourceContext esrc
             in MkCloseUnliftIO runC $ MkAnObject readC pushC
         saveAction :: EditSource -> IO Bool
         saveAction esrc =
@@ -67,7 +67,7 @@ saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pus
                     buf <- readP ReadWhole
                     mvarRun sbVar $ put $ MkSaveBuffer buf False
                     getReplaceEditsFromSubject buf
-            liftIO $ update edits esrc
+            liftIO $ update edits $ editSourceContext esrc
             return False
         saveActions :: SaveActions
         saveActions =

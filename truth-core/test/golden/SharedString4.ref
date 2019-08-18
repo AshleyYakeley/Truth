@@ -6,6 +6,8 @@ main: push [section 0+0 "P"]
 main: push succeeded
 main: receive [section 0+0 "P"]
 main: receive "PABC"
+lens: receive []
+lens: receive "B"
 var: "PABC"
 lens: runObject
 lens: push [section 0+0 "Q"]

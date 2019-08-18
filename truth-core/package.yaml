@@ -84,7 +84,6 @@ library:
       - Truth.Core.Object.Update
       - Truth.Core.Object.UpdatingObject
       - Truth.Core.Object.Subscriber
-      - Truth.Core.Object.Lens
       - Truth.Core.Object.Tuple
       - Truth.Core.Object.MemoryCell
       - Truth.Core.Object.Editor

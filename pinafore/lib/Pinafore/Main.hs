@@ -40,7 +40,7 @@ standardPinaforeContext ut dirpath uitoolkit = do
         picker PinaforeSelectFile = updatingObject $ directoryPinaforeFileObject $ dirpath </> "files"
         picker PinaforeSelectMemory = updatingObject memoryObject
         picker PinaforeSelectClock = clockUO
-        picker PinaforeSelectTimeZone = lensUpdatingObject (readOnlyEditLens clockTimeEF) clockUO
+        picker PinaforeSelectTimeZone = mapUpdatingObject (readOnlyEditLens clockTimeEF) clockUO
     (sub, ()) <- makeSharedSubscriber ut $ tupleUpdatingObject picker
     makePinaforeContext sub uitoolkit
 

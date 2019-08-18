@@ -52,7 +52,7 @@ makeTestPinaforeContext ut uitoolkit = do
             updatingObject $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
         picker PinaforeSelectMemory = updatingObject memoryObject
         picker PinaforeSelectClock = clockUO
-        picker PinaforeSelectTimeZone = lensUpdatingObject (readOnlyEditLens clockTimeEF) clockUO
+        picker PinaforeSelectTimeZone = mapUpdatingObject (readOnlyEditLens clockTimeEF) clockUO
     (sub, ()) <- makeSharedSubscriber ut $ tupleUpdatingObject picker
     pc <- makePinaforeContext sub uitoolkit
     return (pc, getTableState)

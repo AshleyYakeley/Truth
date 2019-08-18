@@ -44,8 +44,9 @@ main = do
                             case mlens of
                                 Nothing -> return ()
                                 Just lens ->
-                                    uitUnliftLifeCycle $
-                                    makeWindow "section" (mapSubscriber (oneWholeLiftEditLens lens) sub) extraui
+                                    uitUnliftLifeCycle $ do
+                                        subLens <- mapSubscriber (oneWholeLiftEditLens lens) sub
+                                        makeWindow "section" subLens extraui
                         in verticalUISpec
                                [ (simpleButtonUISpec (constEditFunction "View") openSelection, False)
                                , (scrolledUISpec $ oneWholeUISpec textAreaUISpec, True)

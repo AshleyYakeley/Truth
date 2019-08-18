@@ -6,8 +6,10 @@ module Truth.Core.Object.Subscriber
     , makeSharedSubscriber
     , subscriberUpdatingObject
     , shareUpdatingObject
+    , mapSubscriber
     ) where
 
+import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
@@ -29,14 +31,14 @@ type UpdateStoreEntry edit = [edit] -> EditContext -> IO ()
 type UpdateStore edit = Store (UpdateStoreEntry edit)
 
 newtype EditQueue edit =
-    MkEditQueue [(EditSource, [edit])]
+    MkEditQueue [(EditContext, [edit])]
 
-collapse1 :: (EditSource, [edit]) -> [(EditSource, [edit])] -> [(EditSource, [edit])]
+collapse1 :: (EditContext, [edit]) -> [(EditContext, [edit])] -> [(EditContext, [edit])]
 collapse1 (esa, ea) ((esb, eb):bb)
     | esa == esb = (esb, ea <> eb) : bb
 collapse1 a bb = a : bb
 
-collapse :: [(EditSource, [edit])] -> [(EditSource, [edit])] -> [(EditSource, [edit])]
+collapse :: [(EditContext, [edit])] -> [(EditContext, [edit])] -> [(EditContext, [edit])]
 collapse [] bb = bb
 collapse [a] bb = collapse1 a bb
 collapse (a:aa) bb = a : collapse aa bb
@@ -44,21 +46,21 @@ collapse (a:aa) bb = a : collapse aa bb
 instance Semigroup (EditQueue edit) where
     MkEditQueue aa <> MkEditQueue bb = MkEditQueue $ collapse aa bb
 
-singleEditQueue :: [edit] -> EditSource -> EditQueue edit
-singleEditQueue edits esrc = MkEditQueue $ pure (esrc, edits)
+singleEditQueue :: [edit] -> EditContext -> EditQueue edit
+singleEditQueue edits ec = MkEditQueue $ pure (ec, edits)
 
-utReceiveUpdates :: UpdateTiming -> ([edit] -> EditContext -> IO ()) -> [edit] -> EditSource -> IO ()
-utReceiveUpdates editContextTiming recv edits editContextSource = recv edits $ MkEditContext {..}
+utReceiveUpdates :: UpdateTiming -> ([edit] -> EditContext -> IO ()) -> [edit] -> EditContext -> IO ()
+utReceiveUpdates ut recv edits ec = recv edits $ timingEditContext ut ec
 
-getRunner :: UpdateTiming -> ([edit] -> EditSource -> IO ()) -> LifeCycleIO ([edit] -> EditSource -> IO ())
+getRunner :: UpdateTiming -> ([edit] -> EditContext -> IO ()) -> LifeCycleIO ([edit] -> EditContext -> IO ())
 getRunner SynchronousUpdateTiming recv = return recv
 getRunner AsynchronousUpdateTiming recv = do
-    runAsync <- asyncRunner $ \(MkEditQueue sourcededits) -> for_ sourcededits $ \(esrc, edits) -> recv edits esrc
-    return $ \edits esrc -> runAsync $ singleEditQueue edits esrc
+    runAsync <- asyncRunner $ \(MkEditQueue sourcededits) -> for_ sourcededits $ \(ec, edits) -> recv edits ec
+    return $ \edits ec -> runAsync $ singleEditQueue edits ec
 
 subscriberUpdatingObject :: Subscriber edit -> a -> UpdatingObject edit a
 subscriberUpdatingObject (MkCloseUnliftIO run MkASubscriber {..}) a update = do
-    remonad (runTransform run) $ subscribe $ \edits ec -> update edits $ editContextSource ec
+    remonad (runTransform run) $ subscribe update
     return (MkCloseUnliftIO run subAnObject, a)
 
 makeSharedSubscriber :: forall edit a. UpdateTiming -> UpdatingObject edit a -> LifeCycleIO (Subscriber edit, a)
@@ -89,3 +91,8 @@ makeObjectSubscriber :: UpdateTiming -> Object edit -> LifeCycleIO (Subscriber e
 makeObjectSubscriber ut object = do
     (sub, ()) <- makeSharedSubscriber ut $ updatingObject object
     return sub
+
+mapSubscriber :: forall edita editb. EditLens edita editb -> Subscriber edita -> LifeCycleIO (Subscriber editb)
+mapSubscriber lens subA = do
+    (subB, ()) <- makeSharedSubscriber mempty $ mapUpdatingObject lens $ subscriberUpdatingObject subA ()
+    return subB

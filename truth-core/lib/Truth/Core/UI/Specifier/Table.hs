@@ -2,11 +2,9 @@ module Truth.Core.UI.Specifier.Table where
 
 import Truth.Core.Edit
 import Truth.Core.Import
-import Truth.Core.Object
 import Truth.Core.Read
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
-import Truth.Core.UI.View
 
 data TableCellProps = MkTableCellProps
     { tcItalic :: Bool
@@ -59,14 +57,3 @@ instance Show (TableUISpec sel edit) where
 
 instance UIType TableUISpec where
     uiWitness = $(iowitness [t|TableUISpec|])
-
-tableNewItem ::
-       forall tedit cont iedit sel. IONewItemKeyContainer cont
-    => EditSource
-    -> EditLens tedit (KeyEdit cont iedit)
-    -> View sel tedit Bool
-tableNewItem esrc tableLens =
-    viewMapEdit tableLens $
-    viewObjectPushEdit $ \_ push -> do
-        item <- liftIO $ newKeyContainerItem @cont
-        push esrc [KeyInsertReplaceItem item]

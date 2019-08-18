@@ -19,20 +19,17 @@ switchView specfunc = do
                 widget <- gview
                 lcContainPackStart True box widget
                 #show widget
-    firstvs <-
-        cvLiftView $ do
-            firstspec <- viewMapEdit (readOnlyEditLens specfunc) $ viewObjectRead $ \_ mr -> mr ReadWhole
-            getViewState firstspec
+    firstvs <- do
+        firstspec <- cvMapEdit (readOnlyEditLens specfunc) $ cvLiftView $ viewObjectRead $ \_ mr -> mr ReadWhole
+        cvLiftView $ getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
     cvDynamic @(ViewState sel) firstvs $ \object edits -> do
         whedits <- liftIO $ objectMapUpdates specfunc object edits
-        case lastWholeEdit whedits of
-            Nothing -> return ()
-            Just spec -> do
-                oldvs <- get
-                liftIO $ closeDynamicView oldvs
-                newvs <- liftIO $ runTransform unliftView $ getViewState spec
-                put newvs
+        for_ (lastWholeEdit whedits) $ \spec -> do
+            oldvs <- get
+            liftIO $ closeDynamicView oldvs
+            newvs <- liftIO $ runTransform unliftView $ getViewState spec
+            put newvs
     toWidget box
 
 switchGetView :: GetGView

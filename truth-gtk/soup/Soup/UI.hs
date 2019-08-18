@@ -93,11 +93,12 @@ soupWindow ut MkUIToolkit {..} dirpath = do
                         uitUnliftLifeCycle $ do
                             rec
                                 ~(subwin, subcloser) <-
-                                    lifeCycleEarlyCloser $
-                                    uitCreateWindow (mapSubscriber lens sub) $
-                                    MkWindowSpec subcloser (constEditFunction "item") (mbar subcloser subwin) $
-                                    mapEditUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
-                                    oneWholeUISpec $ oneWholeUISpec noteEditSpec
+                                    lifeCycleEarlyCloser $ do
+                                        subLens <- mapSubscriber lens sub
+                                        uitCreateWindow subLens $
+                                            MkWindowSpec subcloser (constEditFunction "item") (mbar subcloser subwin) $
+                                            mapEditUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
+                                            oneWholeUISpec $ oneWholeUISpec noteEditSpec
                             return ()
                     Nothing -> return ()
             wsMenuBar = mbar closer window

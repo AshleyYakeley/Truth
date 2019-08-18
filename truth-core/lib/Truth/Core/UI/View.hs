@@ -7,7 +7,6 @@ module Truth.Core.UI.View
     , viewObjectPushEdit
     , viewSetSelection
     , viewRequest
-    , viewMapEdit
     , viewMapSetSelectionEdit
     , viewNoAspect
     ) where
@@ -57,13 +56,6 @@ viewSetSelection aspect = do
 
 viewRequest :: IOWitness t -> View sel edit (Maybe t)
 viewRequest wit = MkView $ asks (\vc -> vcRequest vc wit)
-
-viewMapEdit ::
-       forall sel edita editb a. ()
-    => EditLens edita editb
-    -> View sel editb a
-    -> View sel edita a
-viewMapEdit lens (MkView viewB) = MkView $ withReaderT (vcMapEdit lens) viewB
 
 viewMapSetSelectionEdit ::
        forall sela selb edit a. ()

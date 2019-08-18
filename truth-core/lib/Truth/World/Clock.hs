@@ -13,7 +13,7 @@ clockUpdatingObject basetime interval update = do
         first <-
             clock basetime interval $ \t -> do
                 writeIORef ref t
-                update [MkWholeEdit t] noEditSource
+                update [MkWholeEdit t] noEditContext
     let
         object :: Object (WholeEdit UTCTime)
         run :: UnliftIO (ReaderT UTCTime IO)

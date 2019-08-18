@@ -79,8 +79,8 @@ cvReceiveIOUpdates :: (Object edit -> [edit] -> EditSource -> IO ()) -> CreateVi
 cvReceiveIOUpdates recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- liftLifeCycleIO lifeCycleMonitor
-    withUILock <- MkCreateView $ asks $ vcWithUILock
-    MkCloseUnliftIO run asub <- MkCreateView $ asks $ vcSubscriber
+    withUILock <- MkCreateView $ asks vcWithUILock
+    MkCloseUnliftIO run asub <- MkCreateView $ asks vcSubscriber
     liftLifeCycleIO $
         remonad (runTransform run) $
         subscribe asub $ \edits MkEditContext {..} ->
@@ -129,7 +129,11 @@ cvMapEdit ::
     => EditLens edita editb
     -> CreateView sel editb a
     -> CreateView sel edita a
-cvMapEdit lens (MkCreateView ma) = MkCreateView $ mapReaderContext (vcMapEdit lens) ma
+cvMapEdit lens (MkCreateView (ReaderT ma)) =
+    MkCreateView $
+    ReaderT $ \vca -> do
+        vcb <- lift $ vcMapEdit lens vca
+        ma vcb
 
 cvAccessAspect ::
        ((Aspect sel -> IO ()) -> (Aspect sel -> IO ())) -> CreateView sel edit a -> CreateView sel edit (Aspect sel, a)
