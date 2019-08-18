@@ -70,7 +70,7 @@ soupObject dirpath = let
 
 soupWindow :: UpdateTiming -> UIToolkit -> FilePath -> LifeCycleIO ()
 soupWindow ut MkUIToolkit {..} dirpath = do
-    sub <- makeObjectSubscriber ut $ soupObject dirpath
+    sub <- makeReflectingSubscriber ut $ soupObject dirpath
     rec
         let
             mbar :: IO () -> UIWindow -> Maybe (Aspect sel -> EditFunction edit (WholeEdit [MenuEntry edit]))

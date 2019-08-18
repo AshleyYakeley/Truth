@@ -8,8 +8,8 @@ import Truth.Core.Import
 import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
+import Truth.Core.Object.ObjectMaker
 import Truth.Core.Object.UnliftIO
-import Truth.Core.Object.UpdatingObject
 import Truth.Core.Read
 import Truth.Core.Types.Whole
 
@@ -24,7 +24,7 @@ newtype SaveActions =
 saveBufferObject ::
        forall edit. FullEdit edit
     => Object (WholeEdit (EditSubject edit))
-    -> UpdatingObject edit SaveActions
+    -> ObjectMaker edit SaveActions
 saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pushP)) update = do
     firstVal <- liftIO $ runTransform unliftP $ readP ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False

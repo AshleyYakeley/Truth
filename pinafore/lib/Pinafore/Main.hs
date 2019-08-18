@@ -30,18 +30,16 @@ standardPinaforeContext ut dirpath uitoolkit = do
     tableObject1 <- lifeCycleWith $ exclusiveObject $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
     memoryObject <- liftIO makeMemoryCellObject
-    clockUO <-
-        shareUpdatingObject SynchronousUpdateTiming $
-        clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
+    clockOM <- shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     clockTimeEF <- liftIO makeClockTimeZoneEF
     let
-        picker :: forall edit. PinaforeSelector edit -> UpdatingObject edit ()
-        picker PinaforeSelectPoint = updatingObject $ pinaforeTableEntityObject tableObject
-        picker PinaforeSelectFile = updatingObject $ directoryPinaforeFileObject $ dirpath </> "files"
-        picker PinaforeSelectMemory = updatingObject memoryObject
-        picker PinaforeSelectClock = clockUO
-        picker PinaforeSelectTimeZone = mapUpdatingObject (readOnlyEditLens clockTimeEF) clockUO
-    (sub, ()) <- makeSharedSubscriber ut $ tupleUpdatingObject picker
+        picker :: forall edit. PinaforeSelector edit -> ObjectMaker edit ()
+        picker PinaforeSelectPoint = reflectingObjectMaker $ pinaforeTableEntityObject tableObject
+        picker PinaforeSelectFile = reflectingObjectMaker $ directoryPinaforeFileObject $ dirpath </> "files"
+        picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
+        picker PinaforeSelectClock = clockOM
+        picker PinaforeSelectTimeZone = mapObjectMaker (readOnlyEditLens clockTimeEF) clockOM
+    (sub, ()) <- makeSharedSubscriber ut $ tupleObjectMaker picker
     makePinaforeContext sub uitoolkit
 
 sqlitePinaforeDumpTable :: FilePath -> IO ()

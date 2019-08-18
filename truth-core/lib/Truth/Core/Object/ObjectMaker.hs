@@ -1,7 +1,7 @@
-module Truth.Core.Object.UpdatingObject
-    ( UpdatingObject
-    , updatingObject
-    , mapUpdatingObject
+module Truth.Core.Object.ObjectMaker
+    ( ObjectMaker
+    , reflectingObjectMaker
+    , mapObjectMaker
     ) where
 
 import Truth.Core.Edit
@@ -12,10 +12,10 @@ import Truth.Core.Object.Object
 import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
 
-type UpdatingObject edit a = ([edit] -> EditContext -> IO ()) -> LifeCycleIO (Object edit, a)
+type ObjectMaker edit a = ([edit] -> EditContext -> IO ()) -> LifeCycleIO (Object edit, a)
 
-updatingObject :: forall edit. Object edit -> UpdatingObject edit ()
-updatingObject (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) update =
+reflectingObjectMaker :: forall edit. Object edit -> ObjectMaker edit ()
+reflectingObjectMaker (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) update =
     return $ let
         run' :: UnliftIO (DeferActionT m)
         run' = composeUnliftTransformCommute runDeferActionT run
@@ -38,8 +38,8 @@ mapUpdates (MkCloseUnlift unlift (MkAnEditLens (MkAnEditFunction _ update) _)) (
     runTransform unliftIO $
     runUnlift unlift $ withTransConstraintTM @MonadIO $ fmap mconcat $ for eas $ \ea -> update ea mr
 
-mapUpdatingObject :: EditLens edita editb -> UpdatingObject edita a -> UpdatingObject editb a
-mapUpdatingObject lens uobja recvb = do
+mapObjectMaker :: EditLens edita editb -> ObjectMaker edita a -> ObjectMaker editb a
+mapObjectMaker lens uobja recvb = do
     rec
         let
             recva [] _esrc = return ()

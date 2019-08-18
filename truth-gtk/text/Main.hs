@@ -128,7 +128,7 @@ main = do
                         let
                             textObj :: Object (OneWholeEdit (Result Text) (StringEdit Text))
                             textObj = convertObject wholeTextObj
-                        textSub <- makeObjectSubscriber ut textObj
+                        textSub <- makeReflectingSubscriber ut textObj
                         return $ makeWindow (fromString $ takeFileName path) textSub simpleUI
             action
             if double

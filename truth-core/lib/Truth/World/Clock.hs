@@ -6,8 +6,8 @@ import Data.Time
 import Truth.Core
 import Truth.Core.Import
 
-clockUpdatingObject :: UTCTime -> NominalDiffTime -> UpdatingObject (WholeEdit UTCTime) ()
-clockUpdatingObject basetime interval update = do
+clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (WholeEdit UTCTime) ()
+clockObjectMaker basetime interval update = do
     rec
         ref <- liftIO $ newIORef first
         first <-
