@@ -181,14 +181,15 @@ stringSectionLens initial = traceBracket ("stringSectionLens.create: " <> show i
                 oldstate <- getState mr
                 case editb of
                     StringReplaceWhole sb -> do
-                        put oldstate {runLength = seqLength sb}
+                        let newstate = oldstate {runLength = seqLength sb}
+                        traceBracket ("stringSectionLens.elPutEdit:whole state change: " <> show (oldstate,newstate)) $ put newstate
                         return $ Just [StringReplaceSection oldstate sb]
                     StringReplaceSection runb sb -> do
                         let
                             newlength = runLength oldstate + seqLength sb - runLength runb
                             runa = relativeRun (negate $ runStart oldstate) runb
                         let newstate = oldstate {runLength = newlength}
-                        traceBracket ("stringSectionLens.elPutEdit state change: " <> show (oldstate,newstate)) $ put newstate
+                        traceBracket ("stringSectionLens.elPutEdit:section state change: " <> show (oldstate,newstate)) $ put newstate
                         return $ Just [StringReplaceSection runa sb]
             elPutEdits ::
                    forall m. MonadIO m
