@@ -218,9 +218,19 @@ testStringSectionLens =
           ]
         ]
 
+testSequence :: TestTree
+testSequence =
+    testGroup
+        "sequence"
+        [ testCase "intersectInside" $
+          assertEqual "" (Just $ startEndRun @[()] 2 3) $ seqIntersectInside (startEndRun 1 3) (startEndRun 2 4)
+        ]
+
 tests :: TestTree
 tests =
-    testGroup "truth-core" [testApplyEditsPar, testApplyEditsSeq, testStringEdit, testStringSectionLens, testSubscribe]
+    testGroup
+        "truth-core"
+        [testApplyEditsPar, testApplyEditsSeq, testSequence, testStringEdit, testStringSectionLens, testSubscribe]
 
 main :: IO ()
 main = defaultMain tests
