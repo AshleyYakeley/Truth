@@ -12,7 +12,7 @@ import Truth.UI.GTK.Useful
 createWidget :: CheckboxUISpec sel edit -> CreateView sel edit Widget
 createWidget (MkCheckboxUISpec label lens) = do
     esrc <- newEditSource
-    initial <- cvLiftView $ viewMapEdit lens $ viewObjectRead $ \_ -> mutableReadToSubject
+    initial <- cvMapEdit lens $ cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial]
     cvBindEditFunction Nothing label $ \val -> set widget [#label := val]
     cvMapEdit lens $ do
@@ -27,7 +27,7 @@ createWidget (MkCheckboxUISpec label lens) = do
             liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
 createWidget (MkMaybeCheckboxUISpec label lens) = do
-    initial <- cvLiftView $ viewMapEdit lens $ viewObjectRead $ \_ -> mutableReadToSubject
+    initial <- cvMapEdit lens $ cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
     cvBindEditFunction Nothing label $ \val -> set widget [#label := val]
     cvMapEdit lens $ do

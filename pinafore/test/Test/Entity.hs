@@ -57,9 +57,9 @@ updateTest ut text =
     scriptTest ut text text $ \action -> do
         sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
         (sendUpdate, ref) <- unliftPinaforeActionOrFail action
-        runLifeCycle $
-            subscribeEditor (mapSubscriber (immutableReferenceToLens ref) sub) $
-            checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
+        runLifeCycle $ do
+            lensSub <- mapSubscriber (immutableReferenceToLens ref) sub
+            subscribeEditor lensSub $ checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 
 testUpdates :: TestTree
 testUpdates =

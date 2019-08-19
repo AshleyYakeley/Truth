@@ -8,7 +8,6 @@ module Subscribe
 import Shapes
 import Test.Tasty
 import Test.Tasty.Golden
-import Test.Tasty.HUnit
 import Truth.Core
 import Truth.Debug
 
@@ -22,18 +21,6 @@ goldenTest name refPath outPath call =
 goldenTest' :: TestName -> ((?handle :: Handle) => IO ()) -> TestTree
 goldenTest' name call = goldenTest name ("test/golden/" ++ name ++ ".ref") ("test/golden/" ++ name ++ ".out") call
 
-testSavable :: TestTree
-testSavable = testCase "Savable" $ do return ()
-
-{-
-        object <- freeIOObject False (\_ -> True)
-        sub <- makeObjectSubscriber object
-        let
-            saveSub = saveBufferSubscriber sub
-            cleanSaveSub = fmap fst saveSub
-        found <- subscribeEditor cleanSaveSub testEditor
-        assertEqual "value" False found
--}
 data SubscribeContext edit = MkSubscribeContext
     { subDoEdits :: [[edit]] -> LifeCycleIO ()
     , subDontEdits :: [[edit]] -> LifeCycleIO ()
@@ -103,7 +90,7 @@ testSubscription name initial call =
             varObj = traceThing "testSubscription.varObj" $ mvarObject var $ \_ -> True
             editObj :: Object edit
             editObj = convertObject varObj
-        sub <- makeObjectSubscriber SynchronousUpdateTiming editObj
+        sub <- makeReflectingSubscriber SynchronousUpdateTiming editObj
         let
             ?showVar = liftIO $ withMVar var $ \s -> hPutStrLn ?handle $ "var: " ++ show s
             ?showExpected = \edits ->
@@ -163,58 +150,120 @@ testString2 =
 
 testSharedString1 :: TestTree
 testSharedString1 =
-    testSubscription "SharedString1" "ABCDE" $ \sub -> do
+    testSubscription "SharedString1" "ABCDE" $ \mainSub -> do
         testLens <- liftIO $ stringSectionLens (startEndRun 1 4)
-        subscribeEditor sub $
-            testOutputEditor "main" $ \MkSubscribeContext {..} ->
-                subscribeEditor (mapSubscriber testLens sub) $
-                testOutputEditor "lens" $ \_ -> do
-                    ?showVar
-                    subDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]]
-                    ?showVar
-                    subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy"]]
-                    ?showVar
-                    subDoEdits [[StringReplaceSection (startEndRun 2 4) "1"]]
-                    ?showVar
+        subscribeEditor mainSub $
+            testOutputEditor "main" $ \MkSubscribeContext {..} -> do
+                lensSub <- mapSubscriber testLens mainSub
+                subscribeEditor lensSub $
+                    testOutputEditor "lens" $ \_ -> do
+                        ?showVar
+                        subDontEdits [[StringReplaceSection (startEndRun 3 5) "PQR"]]
+                        ?showVar
+                        subDoEdits [[StringReplaceSection (startEndRun 1 2) "xy"]]
+                        ?showVar
+                        subDoEdits [[StringReplaceSection (startEndRun 2 4) "1"]]
+                        ?showVar
 
 testSharedString2 :: TestTree
 testSharedString2 =
-    testSubscription "SharedString2" "ABC" $ \sub -> do
+    testSubscription "SharedString2" "ABC" $ \mainSub -> do
         testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
-        subscribeEditor sub $
-            testOutputEditor "main" $ \_ ->
-                subscribeEditor (mapSubscriber testLens sub) $
-                testOutputEditor "lens" $ \MkSubscribeContext {..} -> do
-                    ?showVar
-                    subDoEdits [[StringReplaceSection (startEndRun 0 0) "P"]]
-                    ?showVar
-                    subDoEdits [[StringReplaceSection (startEndRun 0 0) "Q"]]
-                    ?showVar
+        subscribeEditor mainSub $
+            testOutputEditor "main" $ \_ -> do
+                lensSub <- mapSubscriber testLens mainSub
+                subscribeEditor lensSub $
+                    testOutputEditor "lens" $ \MkSubscribeContext {..} -> do
+                        ?showVar
+                        subDoEdits [[StringReplaceSection (startEndRun 0 0) "P"]]
+                        ?showVar
+                        subDoEdits [[StringReplaceSection (startEndRun 0 0) "Q"]]
+                        ?showVar
 
 testSharedString3 :: TestTree
 testSharedString3 =
-    testSubscription "SharedString3" "ABC" $ \sub -> do
+    testSubscription "SharedString3" "ABC" $ \mainSub -> do
         testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
-        subscribeEditor sub $
-            testOutputEditor "main" $ \MkSubscribeContext {..} ->
-                subscribeEditor (mapSubscriber testLens sub) $
-                testOutputEditor "lens" $ \_ -> do
-                    ?showVar
-                    subDoEdits [[StringReplaceSection (startEndRun 1 1) "P"]]
-                    ?showVar
-                    subDoEdits [[StringReplaceSection (startEndRun 2 2) "Q"]]
-                    ?showVar
+        subscribeEditor mainSub $
+            testOutputEditor "main" $ \MkSubscribeContext {..} -> do
+                lensSub <- mapSubscriber testLens mainSub
+                subscribeEditor lensSub $ pure ()
+                subscribeEditor lensSub $
+                    testOutputEditor "lens" $ \_ -> do
+                        ?showVar
+                        subDoEdits [[StringReplaceSection (startEndRun 1 1) "P"]]
+                        ?showVar
+                        subDoEdits [[StringReplaceSection (startEndRun 2 2) "Q"]]
+                        ?showVar
+
+testSharedString4 :: TestTree
+testSharedString4 =
+    testSubscription "SharedString4" "ABC" $ \mainSub -> do
+        testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
+        subscribeEditor mainSub $
+            testOutputEditor "main" $ \main -> do
+                lensSub <- mapSubscriber testLens mainSub
+                subscribeEditor lensSub $ pure ()
+                subscribeEditor lensSub $
+                    testOutputEditor "lens" $ \sect -> do
+                        ?showVar
+                        subDoEdits main [[StringReplaceSection (startEndRun 0 0) "P"]]
+                        ?showVar
+                        subDoEdits sect [[StringReplaceSection (startEndRun 0 0) "Q"]]
+                        ?showVar
+
+testSharedString5 :: TestTree
+testSharedString5 =
+    testSubscription "SharedString5" "ABCD" $ \mainSub -> do
+        testLens <- liftIO $ stringSectionLens (startEndRun 1 3)
+        subscribeEditor mainSub $
+            testOutputEditor "main" $ \main -> do
+                lensSub <- mapSubscriber testLens mainSub
+                subscribeEditor lensSub $
+                    testOutputEditor "lens" $ \_sect -> do
+                        ?showVar
+                        subDoEdits main [[StringReplaceSection (startEndRun 2 4) ""]]
+                        ?showVar
+
+testSharedString6 :: TestTree
+testSharedString6 =
+    testSubscription "SharedString6" "ABCD" $ \mainSub -> do
+        testLens <- liftIO $ stringSectionLens (startEndRun 1 3)
+        subscribeEditor mainSub $
+            testOutputEditor "main" $ \main -> do
+                lensSub <- mapSubscriber testLens mainSub
+                subscribeEditor lensSub $
+                    testOutputEditor "lens" $ \_sect -> do
+                        ?showVar
+                        subDoEdits main [[StringReplaceSection (startEndRun 3 4) ""]]
+                        ?showVar
+
+testSharedString7 :: TestTree
+testSharedString7 =
+    testSubscription "SharedString7" "ABCD" $ \mainSub -> do
+        testLens <- liftIO $ stringSectionLens (startEndRun 1 3)
+        subscribeEditor mainSub $
+            testOutputEditor "main" $ \main -> do
+                lensSub <- mapSubscriber testLens mainSub
+                subscribeEditor lensSub $
+                    testOutputEditor "lens" $ \_sect -> do
+                        ?showVar
+                        subDoEdits main [[StringReplaceSection (startEndRun 2 4) "PQR"]]
+                        ?showVar
 
 testSubscribe :: TestTree
 testSubscribe =
     testGroup
         "subscribe"
-        [ testSavable
-        , testPair
+        [ testPair
         , testString
         , testString1
         , testString2
         , testSharedString1
         , testSharedString2
         , testSharedString3
+        , testSharedString4
+        , testSharedString5
+        , testSharedString6
+        , testSharedString7
         ]

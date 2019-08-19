@@ -44,8 +44,9 @@ main = do
                             case mlens of
                                 Nothing -> return ()
                                 Just lens ->
-                                    uitUnliftLifeCycle $
-                                    makeWindow "section" (mapSubscriber (oneWholeLiftEditLens lens) sub) extraui
+                                    uitUnliftLifeCycle $ do
+                                        subLens <- mapSubscriber (oneWholeLiftEditLens lens) sub
+                                        makeWindow "section" subLens extraui
                         in verticalUISpec
                                [ (simpleButtonUISpec (constEditFunction "View") openSelection, False)
                                , (scrolledUISpec $ oneWholeUISpec textAreaUISpec, True)
@@ -127,7 +128,7 @@ main = do
                         let
                             textObj :: Object (OneWholeEdit (Result Text) (StringEdit Text))
                             textObj = convertObject wholeTextObj
-                        textSub <- makeObjectSubscriber ut textObj
+                        textSub <- makeReflectingSubscriber ut textObj
                         return $ makeWindow (fromString $ takeFileName path) textSub simpleUI
             action
             if double

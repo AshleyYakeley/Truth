@@ -2,6 +2,7 @@ module Pinafore.Language.Reference where
 
 import Data.Shim
 import Pinafore.Base
+import Pinafore.Language.Instances ()
 import Shapes
 import Truth.Core
 

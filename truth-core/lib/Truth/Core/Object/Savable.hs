@@ -8,8 +8,8 @@ import Truth.Core.Import
 import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
+import Truth.Core.Object.ObjectMaker
 import Truth.Core.Object.UnliftIO
-import Truth.Core.Object.UpdatingObject
 import Truth.Core.Read
 import Truth.Core.Types.Whole
 import Truth.Debug
@@ -25,7 +25,7 @@ newtype SaveActions =
 saveBufferObject ::
        forall edit. FullEdit edit
     => Object (WholeEdit (EditSubject edit))
-    -> UpdatingObject edit SaveActions
+    -> ObjectMaker edit SaveActions
 saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pushP)) update = traceThing "saveBufferObject" $ do
     firstVal <- liftIO $ runTransform unliftP $ readP ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
@@ -48,7 +48,7 @@ saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pus
                             MkSaveBuffer oldbuf _ <- get
                             return oldbuf
                     put (MkSaveBuffer newbuf True)
-                    lift $ deferAction $ update edits esrc
+                    lift $ deferAction $ update edits $ editSourceContext esrc
             in MkCloseUnliftIO runC $ MkAnObject readC pushC
         saveAction :: EditSource -> IO Bool
         saveAction esrc =
@@ -68,7 +68,7 @@ saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pus
                     buf <- readP ReadWhole
                     mvarRun sbVar $ put $ MkSaveBuffer buf False
                     getReplaceEditsFromSubject buf
-            liftIO $ update edits esrc
+            liftIO $ update edits $ editSourceContext esrc
             return False
         saveActions :: SaveActions
         saveActions =

@@ -43,19 +43,17 @@ makeTestPinaforeContext ut uitoolkit = do
         getTableState :: IO (EditSubject PinaforeTableEdit)
         getTableState = getObjectSubject tableStateObject
     memoryObject <- liftIO makeMemoryCellObject
-    clockUO <-
-        shareUpdatingObject SynchronousUpdateTiming $
-        clockUpdatingObject (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
+    clockOM <- shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     clockTimeEF <- liftIO makeClockTimeZoneEF
     let
-        picker :: forall edit. PinaforeSelector edit -> UpdatingObject edit ()
-        picker PinaforeSelectPoint = traceThing "testObject.PinaforeSelectPoint" $ updatingObject $ pinaforeTableEntityObject tableObject
+        picker :: forall edit. PinaforeSelector edit -> ObjectMaker edit ()
+        picker PinaforeSelectPoint = traceThing "testObject.PinaforeSelectPoint" $ reflectingObjectMaker $ pinaforeTableEntityObject tableObject
         picker PinaforeSelectFile = traceThing "testObject.PinaforeSelectFile" $
-            updatingObject $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
-        picker PinaforeSelectMemory = traceThing "testObject.PinaforeSelectMemory" $ updatingObject memoryObject
-        picker PinaforeSelectClock = traceThing "testObject.PinaforeSelectClock" $ clockUO
-        picker PinaforeSelectTimeZone = traceThing "testObject.PinaforeSelectTimeZone" $ lensUpdatingObject (readOnlyEditLens clockTimeEF) clockUO
-    (sub, ()) <- makeSharedSubscriber ut $ tupleUpdatingObject picker
+            reflectingObjectMaker $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
+        picker PinaforeSelectMemory = traceThing "testObject.PinaforeSelectMemory" $ reflectingObjectMaker memoryObject
+        picker PinaforeSelectClock = traceThing "testObject.PinaforeSelectClock" $ clockOM
+        picker PinaforeSelectTimeZone = traceThing "testObject.PinaforeSelectTimeZone" $ mapObjectMaker (readOnlyEditLens clockTimeEF) clockOM
+    (sub, ()) <- makeSharedSubscriber ut $ tupleObjectMaker picker
     pc <- makePinaforeContext sub uitoolkit
     return (pc, getTableState)
 

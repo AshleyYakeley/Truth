@@ -1,7 +1,7 @@
-module Truth.Core.Object.UpdatingObject
-    ( UpdatingObject
-    , updatingObject
-    , lensUpdatingObject
+module Truth.Core.Object.ObjectMaker
+    ( ObjectMaker
+    , reflectingObjectMaker
+    , mapObjectMaker
     ) where
 
 import Truth.Core.Edit
@@ -13,10 +13,10 @@ import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
 import Truth.Debug.Object
 
-type UpdatingObject edit a = ([edit] -> EditSource -> IO ()) -> LifeCycleIO (Object edit, a)
+type ObjectMaker edit a = ([edit] -> EditContext -> IO ()) -> LifeCycleIO (Object edit, a)
 
-updatingObject :: forall edit. Object edit -> UpdatingObject edit ()
-updatingObject (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) update =
+reflectingObjectMaker :: forall edit. Object edit -> ObjectMaker edit ()
+reflectingObjectMaker (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) update =
     return $ let
         run' :: UnliftIO (DeferActionT m)
         run' = composeUnliftTransformCommute runDeferActionT run
@@ -30,17 +30,17 @@ updatingObject (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) update =
                 Just action ->
                     return $
                     Just $ \esrc -> do
-                        lift $ traceBracket "updatingObject: push" $ action esrc
-                        deferAction $ traceBracket "updatingObject: reflecting update" $ update edits esrc
-        in (traceThing "updatingObject" $ MkCloseUnliftIO run' $ MkAnObject r' e', ())
+                        lift $ traceBracket "reflectingObjectMaker: push" $ action esrc
+                        deferAction $ traceBracket "reflectingObjectMaker: reflecting update" $ update edits $ editSourceContext esrc
+        in (traceThing "reflectingObjectMaker" $ MkCloseUnliftIO run' $ MkAnObject r' e', ())
 
 mapUpdates :: forall edita editb. EditLens edita editb -> Object edita -> [edita] -> IO [editb]
 mapUpdates (MkCloseUnlift unlift (MkAnEditLens (MkAnEditFunction _ update) _)) (MkCloseUnliftIO unliftIO (MkAnObject mr _)) eas =
     runTransform unliftIO $
     runUnlift unlift $ withTransConstraintTM @MonadIO $ fmap mconcat $ for eas $ \ea -> update ea mr
 
-lensUpdatingObject :: EditLens edita editb -> UpdatingObject edita a -> UpdatingObject editb a
-lensUpdatingObject lens uobja recvb = do
+mapObjectMaker :: EditLens edita editb -> ObjectMaker edita a -> ObjectMaker editb a
+mapObjectMaker lens uobja recvb = do
     rec
         let
             recva [] _esrc = return ()

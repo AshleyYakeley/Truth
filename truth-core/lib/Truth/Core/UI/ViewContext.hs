@@ -27,11 +27,10 @@ vcMapEdit ::
        forall sel edita editb. ()
     => EditLens edita editb
     -> ViewContext sel edita
-    -> ViewContext sel editb
-vcMapEdit lens (MkViewContext subA setSelect oG tb) = let
-    subB :: Subscriber editb
-    subB = mapSubscriber lens subA
-    in MkViewContext subB setSelect oG tb
+    -> LifeCycleIO (ViewContext sel editb)
+vcMapEdit lens (MkViewContext subA setSelect oG tb) = do
+    subB <- mapSubscriber lens subA
+    return $ MkViewContext subB setSelect oG tb
 
 vcMapSetSelection ::
        ((Aspect sela -> IO ()) -> (Aspect selb -> IO ())) -> ViewContext sela edit -> ViewContext selb edit

@@ -1,0 +1,19 @@
+main: init: "ABC"
+lens: init: "B"
+var: "ABC"
+main: runObject
+main: push [section 0+0 "P"]
+main: push succeeded
+main: receive [section 0+0 "P"]
+main: receive "PABC"
+lens: receive []
+lens: receive "B"
+var: "PABC"
+lens: runObject
+lens: push [section 0+0 "Q"]
+lens: push succeeded
+main: receive [section 2+0 "Q"]
+main: receive "PAQBC"
+lens: receive [section 0+0 "Q"]
+lens: receive "QB"
+var: "PAQBC"

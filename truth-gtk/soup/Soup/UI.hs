@@ -71,7 +71,7 @@ soupObject dirpath = let
 
 soupWindow :: UpdateTiming -> UIToolkit -> FilePath -> LifeCycleIO ()
 soupWindow ut MkUIToolkit {..} dirpath = do
-    sub <- makeObjectSubscriber ut $ traceArgThing "soup" $ soupObject dirpath
+    sub <- makeReflectingSubscriber ut $ traceArgThing "soup" $ soupObject dirpath
     rec
         let
             mbar :: IO () -> UIWindow -> Maybe (Aspect sel -> EditFunction edit (WholeEdit [MenuEntry edit]))
@@ -94,11 +94,12 @@ soupWindow ut MkUIToolkit {..} dirpath = do
                         uitUnliftLifeCycle $ do
                             rec
                                 ~(subwin, subcloser) <-
-                                    lifeCycleEarlyCloser $
-                                    uitCreateWindow (mapSubscriber lens sub) $
-                                    MkWindowSpec subcloser (constEditFunction "item") (mbar subcloser subwin) $
-                                    mapEditUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
-                                    oneWholeUISpec $ oneWholeUISpec noteEditSpec
+                                    lifeCycleEarlyCloser $ do
+                                        subLens <- mapSubscriber lens sub
+                                        uitCreateWindow subLens $
+                                            MkWindowSpec subcloser (constEditFunction "item") (mbar subcloser subwin) $
+                                            mapEditUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
+                                            oneWholeUISpec $ oneWholeUISpec noteEditSpec
                             return ()
                     Nothing -> return ()
             wsMenuBar = mbar closer window

@@ -8,16 +8,19 @@ import Truth.Core
 import Truth.World.FileSystem
 import Truth.World.ObjectStore
 
-type PinaforeFileEdit = ObjectStoreEdit Entity ByteStringEdit
+type PinaforeFileEdit = ObjectStoreEdit FileEntity ByteStringEdit
 
 type HasPinaforeFileEdit = BaseEditLens PinaforeFileEdit
 
 instance BaseEditLens PinaforeFileEdit PinaforeFileEdit where
     baseEditLens = id
 
-pinaforeFileItemLens :: HasPinaforeFileEdit baseedit => Entity -> EditLens baseedit (SingleObjectEdit ByteStringEdit)
+pinaforeFileItemLens ::
+       HasPinaforeFileEdit baseedit => FileEntity -> EditLens baseedit (SingleObjectEdit ByteStringEdit)
 pinaforeFileItemLens entity = tupleEditLens (MkFunctionSelector entity) . baseEditLens
 
 directoryPinaforeFileObject :: FilePath -> Object PinaforeFileEdit
 directoryPinaforeFileObject path =
-    directoryObjectStore (subdirectoryObject True path fileSystemObject) (\(MkEntity (MkAnchor uuid)) -> show uuid)
+    directoryObjectStore
+        (subdirectoryObject True path fileSystemObject)
+        (\(MkFileEntity (MkEntity (MkAnchor uuid))) -> show uuid)

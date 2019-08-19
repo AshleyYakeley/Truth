@@ -89,9 +89,9 @@ interpretUpdater text = do
     action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" text
     sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber
     (sendUpdate, ref) <- unliftPinaforeActionOrFail action
-    runLifeCycle $
-        subscribeEditor (mapSubscriber (immutableReferenceToLens ref) sub) $
-        checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
+    runLifeCycle $ do
+        lensSub <- mapSubscriber (immutableReferenceToLens ref) sub
+        subscribeEditor lensSub $ checkUpdateEditor (Known (1 :: Integer)) $ unliftPinaforeActionOrFail sendUpdate
 
 benchUpdate :: Text -> Benchmark
 benchUpdate text =

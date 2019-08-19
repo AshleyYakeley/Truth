@@ -9,19 +9,12 @@ library:
     source-dirs: lib
     dependencies:
       - base >= 4.12
-      - time
-      - deepseq
-      - containers
-      - filepath
-      - directory
-      - cereal
-      - uuid
-      - aeson
-      - sqlite-simple
       - shapes
+      - time
+      - filepath
       - parsec
-      - memory
-      - cryptonite
+      - containers
+      - uuid
       - typed-expression
       - truth-core
       - pinafore-base
@@ -32,6 +25,7 @@ library:
       - Pinafore
       - Pinafore.Test
     other-modules:
+      - Pinafore.Language.Instances
       - Pinafore.Language.Name
       - Pinafore.Language.Literal
       - Pinafore.Language.OpenEntity
@@ -92,30 +86,18 @@ tests:
         source-dirs: test
         dependencies:
           - base >= 4.12
-          - bytestring
-          - containers
-          - countable
-          - open-witness
-          - template-haskell
-          - transformers
-          - witness
-          - comonad
-          - mono-traversable
           - shapes
-          - typed-expression
-          - truth-core
+          - filepath
+          - gi-gtk
           - gi-gobject
           - haskell-gi-base
-          - gi-gdk
-          - gi-gtk
+          - typed-expression
+          - truth-core
           - truth-gtk
           - pinafore
-          - filepath
-          - QuickCheck
           - tasty
           - tasty-expected-failure
           - tasty-hunit
-          - tasty-quickcheck
           - tasty-golden
         main: Main.hs
         other-modules:
@@ -134,10 +116,10 @@ benchmarks:
         source-dirs: benchmark
         dependencies:
           - base >= 4.12
-          - criterion
           - shapes
           - truth-core
           - pinafore
+          - criterion
         main: Main.hs
         ghc-options: -threaded
 
@@ -146,16 +128,14 @@ executables:
         source-dirs: app
         dependencies:
           - base >= 4.12
-          - filepath
-          - bytestring
           - shapes
-          - truth-core
-          - truth-gtk
-          - pinafore
+          - time
           - directory
           - optparse-applicative
           - xdg-basedir
-          - time
+          - truth-core
+          - truth-gtk
+          - pinafore
           - githash
         main: Main.hs
         ghc-options: -threaded
