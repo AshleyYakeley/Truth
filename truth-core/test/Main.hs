@@ -12,40 +12,12 @@ import Data.Sequences
 import Data.Type.Equality
 import Prelude
 import Subscribe
+import Test.SimpleString
 import Test.Tasty
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck
 import Truth.Core
 import Unsafe.Coerce
-
-newtype SimpleString = MkSimpleString
-    { getSimpleString :: String
-    } deriving (Eq)
-
-instance Show SimpleString where
-    show (MkSimpleString s) = show s
-
-simplifyChar :: Char -> [Char]
-simplifyChar 'A' = []
-simplifyChar t
-    | t < 'A' = ['A', succ t]
-simplifyChar t = ['A', pred t]
-
-simplifyChars :: String -> [String]
-simplifyChars [] = []
-simplifyChars (c:cc) = let
-    rest :: [String]
-    rest = fmap ((:) c) $ simplifyChars cc
-    changes :: [String]
-    changes = fmap (\c' -> c' : cc) $ simplifyChar c
-    in changes <> rest
-
-instance Arbitrary SimpleString where
-    arbitrary = MkSimpleString . getPrintableString <$> arbitrary
-    shrink (MkSimpleString []) = []
-    shrink (MkSimpleString s@(_:cc)) = MkSimpleString <$> (cc : simplifyChars s)
-      where
-
 
 instance (Arbitrary (Index seq), Integral (Index seq)) => Arbitrary (SequencePoint seq) where
     arbitrary = MkSequencePoint <$> (getSmall . getNonNegative <$> arbitrary)

@@ -147,5 +147,6 @@ tests:
       - tasty-golden
     main: Main.hs
     other-modules:
+      - Test.SimpleString
       - Subscribe
     ghc-options: -threaded
