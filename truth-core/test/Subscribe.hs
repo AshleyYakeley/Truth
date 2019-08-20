@@ -25,6 +25,44 @@ data SubscribeContext edit = MkSubscribeContext
     , subDontEdits :: [[edit]] -> LifeCycleIO ()
     }
 
+testEditFunction ::
+       forall a. (?handle :: Handle, Show a)
+    => EditFunction (WholeEdit a) (WholeEdit a)
+testEditFunction = let
+    efGet :: ReadFunctionT IdentityT (WholeReader a) (WholeReader a)
+    efGet mr ReadWhole = lift $ mr ReadWhole
+    efUpdate ::
+           forall m. MonadIO m
+        => WholeEdit a
+        -> MutableRead m (WholeReader a)
+        -> IdentityT m [WholeEdit a]
+    efUpdate (MkWholeEdit s) mr = do
+        s' <- lift $ mr ReadWhole
+        liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s
+        liftIO $ hPutStrLn ?handle $ "lens update MR: " <> show s'
+        return [MkWholeEdit s]
+    in MkCloseUnlift identityUnlift MkAnEditFunction {..}
+
+testUpdateObject :: TestTree
+testUpdateObject =
+    goldenTest' "updateObject" $ do
+        obj <- freeIOObject "old" $ \_ -> True
+        let
+            om :: ObjectMaker (WholeEdit String) ()
+            om = reflectingObjectMaker obj
+            lens :: EditLens (WholeEdit String) (WholeEdit String)
+            lens = readOnlyEditLens testEditFunction
+            recv :: [WholeEdit String] -> EditContext -> IO ()
+            recv ee _ = for_ ee $ \(MkWholeEdit s) -> hPutStrLn ?handle $ "recv update edit: " <> show s
+            recv' :: [WholeEdit String] -> EditContext -> IO ()
+            recv' ee _ = for_ ee $ \(MkWholeEdit s) -> hPutStrLn ?handle $ "recv' update edit: " <> show s
+        runLifeCycle $ do
+            om' <- shareObjectMaker om
+            (MkCloseUnliftIO run MkAnObject {..}, ()) <- om' recv
+            (_obj', ()) <- mapObjectMaker lens om' recv'
+            liftIO $ runTransform run $ do pushOrFail "failed" noEditSource $ objEdit [MkWholeEdit "new"]
+            return ()
+
 testOutputEditor ::
        forall edit. (Show edit, Show (EditSubject edit), FullSubjectReader (EditReader edit), ?handle :: Handle)
     => String
@@ -254,7 +292,8 @@ testSubscribe :: TestTree
 testSubscribe =
     testGroup
         "subscribe"
-        [ testPair
+        [ testUpdateObject
+        , testPair
         , testString
         , testString1
         , testString2

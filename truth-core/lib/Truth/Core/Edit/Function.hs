@@ -9,6 +9,7 @@ import Truth.Core.Read
 data AnEditFunction t edita editb = MkAnEditFunction
     { efGet :: ReadFunctionT t (EditReader edita) (EditReader editb)
     , efUpdate :: forall m. MonadIO m => edita -> MutableRead m (EditReader edita) -> t m [editb]
+    -- ^ the MutableRead argument will reflect the new value
     }
 
 type EditFunction = CloseUnlift AnEditFunction

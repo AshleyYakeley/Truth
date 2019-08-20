@@ -18,14 +18,60 @@ import Test.Tasty.QuickCheck
 import Truth.Core
 import Unsafe.Coerce
 
+newtype SimpleString = MkSimpleString
+    { getSimpleString :: String
+    } deriving (Eq)
+
+instance Show SimpleString where
+    show (MkSimpleString s) = show s
+
+simplifyChar :: Char -> [Char]
+simplifyChar 'A' = []
+simplifyChar t
+    | t < 'A' = ['A', succ t]
+simplifyChar t = ['A', pred t]
+
+simplifyChars :: String -> [String]
+simplifyChars [] = []
+simplifyChars (c:cc) = let
+    rest :: [String]
+    rest = fmap ((:) c) $ simplifyChars cc
+    changes :: [String]
+    changes = fmap (\c' -> c' : cc) $ simplifyChar c
+    in changes <> rest
+
+instance Arbitrary SimpleString where
+    arbitrary = MkSimpleString . getPrintableString <$> arbitrary
+    shrink (MkSimpleString []) = []
+    shrink (MkSimpleString s@(_:cc)) = MkSimpleString <$> (cc : simplifyChars s)
+      where
+
+
 instance (Arbitrary (Index seq), Integral (Index seq)) => Arbitrary (SequencePoint seq) where
-    arbitrary = MkSequencePoint <$> (getNonNegative <$> arbitrary)
+    arbitrary = MkSequencePoint <$> (getSmall . getNonNegative <$> arbitrary)
+    shrink 0 = []
+    shrink 1 = [0]
+    shrink n = [0, pred n]
 
 instance (Arbitrary (Index seq), Integral (Index seq)) => Arbitrary (SequenceRun seq) where
     arbitrary = MkSequenceRun <$> arbitrary <*> arbitrary
+    shrink (MkSequenceRun s l) = [MkSequenceRun s' l' | (s', l') <- shrink (s, l)]
 
 instance (Arbitrary seq, Arbitrary (Index seq), Integral (Index seq)) => Arbitrary (StringEdit seq) where
     arbitrary = oneof [StringReplaceWhole <$> arbitrary, StringReplaceSection <$> arbitrary <*> arbitrary]
+    shrink (StringReplaceWhole s) = StringReplaceWhole <$> shrink s
+    shrink (StringReplaceSection r s) =
+        (StringReplaceWhole s) : [StringReplaceSection r' s' | (r', s') <- shrink (r, s)]
+
+instance {-# OVERLAPPING #-} Arbitrary (StringEdit String) where
+    arbitrary =
+        oneof
+            [ StringReplaceWhole <$> (getSimpleString <$> arbitrary)
+            , StringReplaceSection <$> arbitrary <*> (getSimpleString <$> arbitrary)
+            ]
+    shrink (StringReplaceWhole s) = StringReplaceWhole <$> (getSimpleString <$> shrink (MkSimpleString s))
+    shrink (StringReplaceSection r s) =
+        (StringReplaceWhole s) : [StringReplaceSection r' s' | (r', MkSimpleString s') <- shrink (r, MkSimpleString s)]
 
 testApplyEditsPar :: TestTree
 testApplyEditsPar =
@@ -166,7 +212,7 @@ lensUpdateGetProperty getlens oldA editA =
                     editFirst <- get
                     newA <- mutableReadToSubject $ applyEdit editA $ subjectToMutableRead oldA
                     oldB <- mutableReadToSubject $ efGet $ subjectToMutableRead oldA
-                    editBs <- efUpdate editA $ subjectToMutableRead oldA
+                    editBs <- efUpdate editA $ subjectToMutableRead newA
                     newState <- get
                     newB1 <- mutableReadToSubject $ applyEdits editBs $ subjectToMutableRead oldB
                     newB2 <- mutableReadToSubject $ efGet $ subjectToMutableRead newA
@@ -186,7 +232,7 @@ lensUpdateGetProperty getlens oldA editA =
 
 testLensUpdate :: TestTree
 testLensUpdate =
-    testProperty "update" $ \run (base :: String) edit ->
+    testProperty "update" $ \run (MkSimpleString base) edit ->
         lensUpdateGetProperty @(SequenceRun String) (stringSectionLens run) base edit
 
 testStringSectionLens :: TestTree
@@ -215,6 +261,12 @@ testStringSectionLens =
                 (stringSectionLens $ seqRun 0 5)
                 "ABCDE"
                 (StringReplaceSection (seqRun 4 2) "pqrstu")
+          , testProperty "SharedString5" $
+            lensUpdateGetProperty
+                @(SequenceRun String)
+                (stringSectionLens $ startEndRun @String 1 3)
+                "ABCD"
+                (StringReplaceSection (startEndRun 2 4) "")
           ]
         ]
 
