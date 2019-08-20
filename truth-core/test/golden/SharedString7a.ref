@@ -1,0 +1,11 @@
+main: init: "AB"
+lens: init: "B"
+var: "AB"
+main: runObject
+main: push [section 2+0 "PQR"]
+main: push succeeded
+main: receive [section 2+0 "PQR"]
+main: receive "ABPQR"
+lens: receive [section 1+0 "PQR"]
+lens: receive "BPQR"
+var: "ABPQR"

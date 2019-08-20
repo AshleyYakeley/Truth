@@ -166,7 +166,9 @@ stringSectionLens initial =
                                         seqSection
                                             (clipRunBounds (seqLength sa) $ relativeRun (runStart runa) newstate)
                                             sa
-                                return $ StringReplaceSection runb sb
+                                case (runLength runb, onull sb) of
+                                    (0, True) -> Nothing
+                                    _ -> return $ StringReplaceSection runb sb
             elFunction :: AnEditFunction (StateT (SequenceRun seq)) (StringEdit seq) (StringEdit seq)
             elFunction = MkAnEditFunction {..}
             elPutEdit ::
