@@ -81,5 +81,5 @@ pinaforeSetGetOrdered ::
        forall baseedit a.
        PinaforeOrder baseedit a
     -> PinaforeSetRef baseedit '( BottomType, a)
-    -> PinaforeReference baseedit '( TopType, [a])
-pinaforeSetGetOrdered order set = pinaforeFunctionToReference $ qOrderSet order $ pinaforeSetRefFunctionValue set
+    -> PinaforeRef baseedit '( TopType, [a])
+pinaforeSetGetOrdered order set = pinaforeFunctionToRef $ qOrderSet order $ pinaforeSetRefFunctionValue set

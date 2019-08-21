@@ -327,37 +327,35 @@ instance (baseedit ~ edit) => FromShimWit JMShim (PinaforeSingularType baseedit 
 instance (baseedit ~ edit) => FromShimWit JMShim (PinaforeType baseedit 'Negative) (MenuEntry edit) where
     fromShimWit = singlePinaforeShimWit fromJMShimWit
 
--- PinaforeReference
+-- PinaforeRef
 instance ( baseedit ~ edit
          , FromShimWit JMShim (PinaforeType baseedit 'Negative) p
          , ToShimWit JMShim (PinaforeType baseedit 'Positive) q
-         ) => ToShimWit JMShim (PinaforeSingularType baseedit 'Positive) (PinaforeReference edit '( p, q)) where
+         ) => ToShimWit JMShim (PinaforeSingularType baseedit 'Positive) (PinaforeRef edit '( p, q)) where
     toShimWit =
         unToRangeShimWit $ \tpq conv ->
             mapShimWit (consShimFunc RangevarianceType cid conv) $
-            mkPJMShimWit $
-            GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkPJMShimWit $ GroundPinaforeSingularType RefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( baseedit ~ edit
          , FromShimWit JMShim (PinaforeType baseedit 'Negative) p
          , ToShimWit JMShim (PinaforeType baseedit 'Positive) q
-         ) => ToShimWit JMShim (PinaforeType baseedit 'Positive) (PinaforeReference edit '( p, q)) where
+         ) => ToShimWit JMShim (PinaforeType baseedit 'Positive) (PinaforeRef edit '( p, q)) where
     toShimWit = singlePinaforeShimWit toJMShimWit
 
 instance ( baseedit ~ edit
          , ToShimWit JMShim (PinaforeType baseedit 'Positive) p
          , FromShimWit JMShim (PinaforeType baseedit 'Negative) q
-         ) => FromShimWit JMShim (PinaforeSingularType baseedit 'Negative) (PinaforeReference edit '( p, q)) where
+         ) => FromShimWit JMShim (PinaforeSingularType baseedit 'Negative) (PinaforeRef edit '( p, q)) where
     fromShimWit =
         unFromRangeShimWit $ \tpq conv ->
             mapShimWit (consShimFunc RangevarianceType cid conv) $
-            mkPJMShimWit $
-            GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkPJMShimWit $ GroundPinaforeSingularType RefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( baseedit ~ edit
          , ToShimWit JMShim (PinaforeType baseedit 'Positive) p
          , FromShimWit JMShim (PinaforeType baseedit 'Negative) q
-         ) => FromShimWit JMShim (PinaforeType baseedit 'Negative) (PinaforeReference edit '( p, q)) where
+         ) => FromShimWit JMShim (PinaforeType baseedit 'Negative) (PinaforeRef edit '( p, q)) where
     fromShimWit = singlePinaforeShimWit fromJMShimWit
 
 -- PinaforeLensValue
@@ -365,31 +363,31 @@ instance ( baseedit ~ edit
          , FromShimWit JMShim (PinaforeType edit 'Negative) t
          , ToShimWit JMShim (PinaforeType edit 'Positive) t
          ) => ToShimWit JMShim (PinaforeType baseedit 'Positive) (PinaforeLensValue edit (WholeEdit (Know t))) where
-    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeLensToReference) toJMShimWit
+    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeLensToRef) toJMShimWit
 
 instance ( baseedit ~ edit
          , FromShimWit JMShim (PinaforeType edit 'Negative) t
          , ToShimWit JMShim (PinaforeType edit 'Positive) t
          ) => FromShimWit JMShim (PinaforeType baseedit 'Negative) (PinaforeLensValue edit (WholeEdit (Know t))) where
-    fromShimWit = mapShimWit (toEnhanced "subtype" pinaforeReferenceToLens) fromJMShimWit
+    fromShimWit = mapShimWit (toEnhanced "subtype" pinaforeRefToLens) fromJMShimWit
 
 -- PinaforeImmutableReference
 instance (baseedit ~ edit, FromShimWit JMShim (PinaforeType edit 'Negative) a) =>
              FromShimWit JMShim (PinaforeType baseedit 'Negative) (PinaforeImmutableReference baseedit a) where
-    fromShimWit = mapShimWit (toEnhanced "subtype" pinaforeReferenceToImmutable) fromJMShimWit
+    fromShimWit = mapShimWit (toEnhanced "subtype" pinaforeRefToImmutable) fromJMShimWit
 
 instance (baseedit ~ edit, ToShimWit JMShim (PinaforeType edit 'Positive) a) =>
              ToShimWit JMShim (PinaforeType baseedit 'Positive) (PinaforeImmutableReference baseedit a) where
-    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeImmutableToReference) toJMShimWit
+    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeImmutableToRef) toJMShimWit
 
 -- PinaforeFunctionValue
 instance (baseedit ~ edit, FromShimWit JMShim (PinaforeType edit 'Negative) t) =>
              FromShimWit JMShim (PinaforeType baseedit 'Negative) (PinaforeFunctionValue edit (Know t)) where
-    fromShimWit = mapShimWit (toEnhanced "subtype" pinaforeReferenceToFunction) fromJMShimWit
+    fromShimWit = mapShimWit (toEnhanced "subtype" pinaforeRefToFunction) fromJMShimWit
 
 instance (baseedit ~ edit, ToShimWit JMShim (PinaforeType edit 'Positive) t) =>
              ToShimWit JMShim (PinaforeType baseedit 'Positive) (PinaforeFunctionValue edit (Know t)) where
-    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeFunctionToReference) toJMShimWit
+    toShimWit = mapShimWit (toEnhanced "subtype" pinaforeFunctionToRef) toJMShimWit
 
 -- PinaforeSetRef
 instance ( baseedit ~ edit
@@ -399,7 +397,8 @@ instance ( baseedit ~ edit
     toShimWit =
         unToRangeShimWit $ \tpq conv ->
             mapShimWit (consShimFunc RangevarianceType cid conv) $
-            mkPJMShimWit $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkPJMShimWit $
+            GroundPinaforeSingularType SetRefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( baseedit ~ edit
          , FromShimWit JMShim (PinaforeType baseedit 'Negative) p
@@ -414,7 +413,8 @@ instance ( baseedit ~ edit
     fromShimWit =
         unFromRangeShimWit $ \tpq conv ->
             mapShimWit (consShimFunc RangevarianceType cid conv) $
-            mkPJMShimWit $ GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            mkPJMShimWit $
+            GroundPinaforeSingularType SetRefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( baseedit ~ edit
          , ToShimWit JMShim (PinaforeType baseedit 'Positive) p

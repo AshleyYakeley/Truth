@@ -13,6 +13,18 @@ import Pinafore.Language.UI
 import Shapes
 import Truth.Core
 
+type PinaforeTextRef baseedit = PinaforeLensValue baseedit (StringEdit Text)
+
+data PinaforeListRef (baseedit :: Type) (pq :: (Type, Type)) where
+    MkPinaforeListRef
+        :: Range JMShim t pq -> PinaforeLensValue baseedit (ListEdit [t] (WholeEdit t)) -> PinaforeListRef baseedit pq
+
+instance CatFunctor (CatRange (->)) (->) (PinaforeListRef baseedit) where
+    cfmap f (MkPinaforeListRef r v) = MkPinaforeListRef (cfmap f r) v
+
+instance HasVariance 'Rangevariance (PinaforeListRef baseedit) where
+    varianceRepresentational = Nothing
+
 -- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
 data PinaforeGroundType baseedit (polarity :: Polarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv) where
     FuncPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance, 'Covariance] (->)
@@ -20,8 +32,10 @@ data PinaforeGroundType baseedit (polarity :: Polarity) (dv :: DolanVariance) (t
     OrderPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance] (PinaforeOrder baseedit)
     ActionPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] (PinaforeAction baseedit)
     -- Reference
-    ReferencePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeReference baseedit)
-    SetPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeSetRef baseedit)
+    RefPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeRef baseedit)
+    ListRefPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeListRef baseedit)
+    TextRefPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (PinaforeTextRef baseedit)
+    SetRefPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeSetRef baseedit)
     MorphismPinaforeGroundType
         :: PinaforeGroundType baseedit polarity '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit)
     -- UI
@@ -40,8 +54,10 @@ pinaforeGroundTypeTestEquality (EntityPinaforeGroundType la gta) (EntityPinafore
     Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality OrderPinaforeGroundType OrderPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality ActionPinaforeGroundType ActionPinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality ReferencePinaforeGroundType ReferencePinaforeGroundType = Just (Refl, HRefl)
-pinaforeGroundTypeTestEquality SetPinaforeGroundType SetPinaforeGroundType = Just (Refl, HRefl)
+pinaforeGroundTypeTestEquality RefPinaforeGroundType RefPinaforeGroundType = Just (Refl, HRefl)
+pinaforeGroundTypeTestEquality ListRefPinaforeGroundType ListRefPinaforeGroundType = Just (Refl, HRefl)
+pinaforeGroundTypeTestEquality TextRefPinaforeGroundType TextRefPinaforeGroundType = Just (Refl, HRefl)
+pinaforeGroundTypeTestEquality SetRefPinaforeGroundType SetRefPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality MorphismPinaforeGroundType MorphismPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality UserInterfacePinaforeGroundType UserInterfacePinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality WindowPinaforeGroundType WindowPinaforeGroundType = Just (Refl, HRefl)
@@ -57,8 +73,10 @@ pinaforeGroundTypeVarianceMap (EntityPinaforeGroundType dvcovary gt) =
     covaryToDolanVarianceMap dvcovary $ entityGroundTypeCovaryMap gt
 pinaforeGroundTypeVarianceMap OrderPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap ActionPinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap ReferencePinaforeGroundType = dolanVary @dv
-pinaforeGroundTypeVarianceMap SetPinaforeGroundType = dolanVary @dv
+pinaforeGroundTypeVarianceMap RefPinaforeGroundType = dolanVary @dv
+pinaforeGroundTypeVarianceMap ListRefPinaforeGroundType = dolanVary @dv
+pinaforeGroundTypeVarianceMap TextRefPinaforeGroundType = dolanVary @dv
+pinaforeGroundTypeVarianceMap SetRefPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap MorphismPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap UserInterfacePinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap WindowPinaforeGroundType = dolanVary @dv
@@ -69,8 +87,10 @@ pinaforeGroundTypeVarianceType FuncPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType (EntityPinaforeGroundType lt _) = mapListType (\Refl -> CovarianceType) lt
 pinaforeGroundTypeVarianceType OrderPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType ActionPinaforeGroundType = representative
-pinaforeGroundTypeVarianceType ReferencePinaforeGroundType = representative
-pinaforeGroundTypeVarianceType SetPinaforeGroundType = representative
+pinaforeGroundTypeVarianceType RefPinaforeGroundType = representative
+pinaforeGroundTypeVarianceType ListRefPinaforeGroundType = representative
+pinaforeGroundTypeVarianceType TextRefPinaforeGroundType = representative
+pinaforeGroundTypeVarianceType SetRefPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType MorphismPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType UserInterfacePinaforeGroundType = representative
 pinaforeGroundTypeVarianceType WindowPinaforeGroundType = representative
@@ -82,8 +102,10 @@ pinaforeGroundTypeInvertPolarity FuncPinaforeGroundType = Just FuncPinaforeGroun
 pinaforeGroundTypeInvertPolarity (EntityPinaforeGroundType lc t) = Just $ EntityPinaforeGroundType lc t
 pinaforeGroundTypeInvertPolarity OrderPinaforeGroundType = Just OrderPinaforeGroundType
 pinaforeGroundTypeInvertPolarity ActionPinaforeGroundType = Just ActionPinaforeGroundType
-pinaforeGroundTypeInvertPolarity ReferencePinaforeGroundType = Just ReferencePinaforeGroundType
-pinaforeGroundTypeInvertPolarity SetPinaforeGroundType = Just SetPinaforeGroundType
+pinaforeGroundTypeInvertPolarity RefPinaforeGroundType = Just RefPinaforeGroundType
+pinaforeGroundTypeInvertPolarity ListRefPinaforeGroundType = Just ListRefPinaforeGroundType
+pinaforeGroundTypeInvertPolarity TextRefPinaforeGroundType = Just TextRefPinaforeGroundType
+pinaforeGroundTypeInvertPolarity SetRefPinaforeGroundType = Just SetRefPinaforeGroundType
 pinaforeGroundTypeInvertPolarity MorphismPinaforeGroundType = Just MorphismPinaforeGroundType
 pinaforeGroundTypeInvertPolarity UserInterfacePinaforeGroundType = Just UserInterfacePinaforeGroundType
 pinaforeGroundTypeInvertPolarity WindowPinaforeGroundType = Just WindowPinaforeGroundType
@@ -107,9 +129,12 @@ pinaforeGroundTypeShowPrec OrderPinaforeGroundType (ConsDolanArguments ta NilDol
     invertPolarity @polarity ("Order " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec ActionPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     ("Action " <> exprPrecShow 0 ta, 2)
-pinaforeGroundTypeShowPrec ReferencePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+pinaforeGroundTypeShowPrec RefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     ("Ref " <> exprPrecShow 0 ta, 2)
-pinaforeGroundTypeShowPrec SetPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+pinaforeGroundTypeShowPrec ListRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+    ("ListRef " <> exprPrecShow 0 ta, 2)
+pinaforeGroundTypeShowPrec TextRefPinaforeGroundType NilDolanArguments = ("TextRef", 0)
+pinaforeGroundTypeShowPrec SetRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     ("SetRef " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)

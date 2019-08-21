@@ -165,7 +165,7 @@ interpretTypeM (RefSyntaxType st1) = do
             (\(MkAnyInKind t1) ->
                  MkAnyW $
                  singlePinaforeType $
-                 GroundPinaforeSingularType ReferencePinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
+                 GroundPinaforeSingularType RefPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
             at1
 interpretTypeM (SetSyntaxType st1) = do
     at1 <- interpretTypeRange st1
@@ -174,7 +174,7 @@ interpretTypeM (SetSyntaxType st1) = do
             (\(MkAnyInKind t1) ->
                  MkAnyW $
                  singlePinaforeType $
-                 GroundPinaforeSingularType SetPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
+                 GroundPinaforeSingularType SetRefPinaforeGroundType $ ConsDolanArguments t1 NilDolanArguments)
             at1
 interpretTypeM (OrderSyntaxType st1) = do
     at1 <- invertMPolarity @mpolarity $ interpretTypeM st1

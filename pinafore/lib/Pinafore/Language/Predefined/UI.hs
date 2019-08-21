@@ -28,7 +28,7 @@ ui_map = fmap
 
 ui_table ::
        forall baseedit. (?pinafore :: PinaforeContext baseedit, HasPinaforeEntityEdit baseedit)
-    => [(PinaforeReference baseedit '( BottomType, Text), A -> PinaforeReference baseedit '( BottomType, Text))]
+    => [(PinaforeRef baseedit '( BottomType, Text), A -> PinaforeRef baseedit '( BottomType, Text))]
     -> PinaforeOrder baseedit A
     -> PinaforeSetRef baseedit '( A, MeetType Entity A)
     -> (A -> PinaforeAction baseedit TopType)
@@ -40,11 +40,11 @@ ui_table cols (MkPinaforeOrder geto order) val onDoubleClick = let
     mapLens :: PinaforeFunctionValue baseedit (Know Text) -> PinaforeFunctionValue baseedit (Text, TableCellProps)
     mapLens ff = funcEditFunction showCell . ff
     getColumn ::
-           (PinaforeReference baseedit '( BottomType, Text), A -> PinaforeReference baseedit '( BottomType, Text))
+           (PinaforeRef baseedit '( BottomType, Text), A -> PinaforeRef baseedit '( BottomType, Text))
         -> KeyColumn baseedit (MeetType Entity A)
     getColumn (name, f) =
-        readOnlyKeyColumn (clearText . pinaforeReferenceToFunction name) $ \p ->
-            return $ mapLens $ pinaforeReferenceToFunction $ f $ meet2 p
+        readOnlyKeyColumn (clearText . pinaforeRefToFunction name) $ \p ->
+            return $ mapLens $ pinaforeRefToFunction $ f $ meet2 p
     in mapSelectionUISpec meet2 $
        tableUISpec
            (fmap getColumn cols)
@@ -61,7 +61,7 @@ ui_pick ::
        forall baseedit.
        PinaforeMorphism baseedit '( A, TopType) '( BottomType, Text)
     -> PinaforeSetRef baseedit '( A, MeetType Entity A)
-    -> PinaforeReference baseedit '( A, MeetType Entity A)
+    -> PinaforeRef baseedit '( A, MeetType Entity A)
     -> UISpec BottomType baseedit
 ui_pick nameMorphism fset ref = let
     getName :: PinaforeFunctionMorphism baseedit (MeetType Entity A) PickerPairType
@@ -78,7 +78,7 @@ ui_pick nameMorphism fset ref = let
     opts =
         (orderedKeyList @(FiniteSet PickerPairType) $ \(_, a) (_, b) -> compare a b) .
         convertEditFunction . applyPinaforeFunction getNames (pinaforeSetRefFunctionValue fset)
-    in optionUISpec @baseedit @PickerType opts $ pinaforeReferenceToLens $ contraRangeLift meet2 ref
+    in optionUISpec @baseedit @PickerType opts $ pinaforeRefToLens $ contraRangeLift meet2 ref
 
 actionReference ::
        (?pinafore :: PinaforeContext baseedit)

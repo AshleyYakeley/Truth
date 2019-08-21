@@ -74,13 +74,13 @@ eitherPinaforeMorphism (MkPinaforeMorphism ta1 tc1 m1) (MkPinaforeMorphism tb2 t
 pinaforeApplyMorphismRef ::
        forall baseedit ap aq bp bq.
        PinaforeMorphism baseedit '( aq, ap) '( bp, bq)
-    -> PinaforeReference baseedit '( ap, aq)
-    -> PinaforeReference baseedit '( bp, bq)
-pinaforeApplyMorphismRef (MkPinaforeMorphism tra trb m) (LensPinaforeReference tra' lv) =
-    LensPinaforeReference trb $
+    -> PinaforeRef baseedit '( ap, aq)
+    -> PinaforeRef baseedit '( bp, bq)
+pinaforeApplyMorphismRef (MkPinaforeMorphism tra trb m) (LensPinaforeRef tra' lv) =
+    LensPinaforeRef trb $
     applyPinaforeLens m $ bijectionWholeEditLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra) . lv
-pinaforeApplyMorphismRef (MkPinaforeMorphism (MkRange fa _) trb m) (ImmutPinaforeReference fv) =
-    LensPinaforeReference trb $ applyPinaforeLens m $ immutableReferenceToLens $ fmap (fromEnhanced fa) fv
+pinaforeApplyMorphismRef (MkPinaforeMorphism (MkRange fa _) trb m) (ImmutPinaforeRef fv) =
+    LensPinaforeRef trb $ applyPinaforeLens m $ immutableReferenceToLens $ fmap (fromEnhanced fa) fv
 
 pinaforeApplyMorphismSet ::
        forall baseedit a bp bq.
@@ -99,12 +99,12 @@ pinaforeApplyMorphismSet (MkPinaforeMorphism tra trb m) (MkPinaforeSetRef tra' s
 pinaforeApplyInverseMorphismRef ::
        forall baseedit ap aq bp bq.
        PinaforeMorphism baseedit '( bp, bq) '( aq, ap)
-    -> PinaforeReference baseedit '( ap, aq)
+    -> PinaforeRef baseedit '( ap, aq)
     -> PinaforeSetRef baseedit '( bp, bq)
-pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb tra m) (LensPinaforeReference tra' lv) =
+pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb tra m) (LensPinaforeRef tra' lv) =
     MkPinaforeSetRef trb $
     applyInversePinaforeLens m $ bijectionWholeEditLens (cfmap $ isoMapCat fromEnhanced $ bijectRanges tra' tra) . lv
-pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb (MkRange fa _) m) (ImmutPinaforeReference fv) =
+pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb (MkRange fa _) m) (ImmutPinaforeRef fv) =
     MkPinaforeSetRef trb $ applyInversePinaforeLens m $ immutableReferenceToLens $ fmap (fromEnhanced fa) fv
 
 pinaforeApplyInverseMorphismSet ::

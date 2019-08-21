@@ -81,25 +81,24 @@ pinaforeSetRefFunctionValue (MkPinaforeSetRef tr set) =
     funcEditFunction (fmap $ fromEnhanced $ rangeCo tr) . lensFunctionValue set
 
 pinaforeSetRefMember ::
-       forall baseedit a. PinaforeSetRef baseedit '( a, TopType) -> a -> PinaforeReference baseedit '( Bool, Bool)
+       forall baseedit a. PinaforeSetRef baseedit '( a, TopType) -> a -> PinaforeRef baseedit '( Bool, Bool)
 pinaforeSetRefMember (MkPinaforeSetRef tr set) val = let
     tval = fromEnhanced (rangeContra tr) val
-    in LensPinaforeReference identityRange $ wholeEditLens knowMaybeLens . finiteSetEditLens tval . set
+    in LensPinaforeRef identityRange $ wholeEditLens knowMaybeLens . finiteSetEditLens tval . set
 
 pinaforeSetRefSingle ::
        forall baseedit a.
        PinaforeSetRef baseedit '( BottomType, MeetType Entity a)
-    -> PinaforeReference baseedit '( TopType, a)
+    -> PinaforeRef baseedit '( TopType, a)
 pinaforeSetRefSingle set =
-    pinaforeFunctionToReference $
-    funcEditFunction (fmap meet2 . maybeToKnow . getSingle) . pinaforeSetRefFunctionValue set
+    pinaforeFunctionToRef $ funcEditFunction (fmap meet2 . maybeToKnow . getSingle) . pinaforeSetRefFunctionValue set
 
 pinaforeSetRefFunc ::
        forall baseedit a b.
        (FiniteSet a -> b)
     -> PinaforeSetRef baseedit '( BottomType, a)
-    -> PinaforeReference baseedit '( TopType, b)
-pinaforeSetRefFunc f set = pinaforeFunctionToReference $ funcEditFunction (Known . f) . pinaforeSetRefFunctionValue set
+    -> PinaforeRef baseedit '( TopType, b)
+pinaforeSetRefFunc f set = pinaforeFunctionToRef $ funcEditFunction (Known . f) . pinaforeSetRefFunctionValue set
 
 setSumLens ::
        forall a b. (Eq a, Eq b)

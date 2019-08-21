@@ -31,11 +31,11 @@ output text = liftIO $ putStr $ unpack text
 outputln :: forall baseedit. Text -> PinaforeAction baseedit ()
 outputln text = liftIO $ putStrLn $ unpack text
 
-setentity :: forall baseedit. PinaforeReference baseedit '( A, TopType) -> A -> PinaforeAction baseedit ()
-setentity ref val = pinaforeReferenceSet ref (Known val)
+setentity :: forall baseedit. PinaforeRef baseedit '( A, TopType) -> A -> PinaforeAction baseedit ()
+setentity ref val = pinaforeRefSet ref (Known val)
 
-deleteentity :: forall baseedit. PinaforeReference baseedit '( BottomType, TopType) -> PinaforeAction baseedit ()
-deleteentity ref = pinaforeReferenceSet ref Unknown
+deleteentity :: forall baseedit. PinaforeRef baseedit '( BottomType, TopType) -> PinaforeAction baseedit ()
+deleteentity ref = pinaforeRefSet ref Unknown
 
 qfail :: forall baseedit. Text -> PinaforeAction baseedit BottomType
 qfail t = fail $ unpack t
@@ -48,10 +48,10 @@ onstop p q = q <|> p
 
 newmemref ::
        forall baseedit. BaseEditLens MemoryCellEdit baseedit
-    => IO (PinaforeReference baseedit '( A, A))
+    => IO (PinaforeRef baseedit '( A, A))
 newmemref = do
     lens <- makeMemoryCellEditLens Unknown
-    return $ pinaforeLensToReference $ lens . baseEditLens
+    return $ pinaforeLensToRef $ lens . baseEditLens
 
 newmemset ::
        forall baseedit. BaseEditLens MemoryCellEdit baseedit
@@ -400,13 +400,13 @@ base_predefinitions =
           , mkValEntry
                 "comapref"
                 "Map a function on getting a reference."
-                (coRangeLift :: (A -> B) -> PinaforeReference baseedit '( C, A) -> PinaforeReference baseedit '( C, B))
+                (coRangeLift :: (A -> B) -> PinaforeRef baseedit '( C, A) -> PinaforeRef baseedit '( C, B))
           , mkValEntry
                 "contramapref"
                 "Map a function on setting a reference."
-                (contraRangeLift :: (B -> A) -> PinaforeReference baseedit '( A, C) -> PinaforeReference baseedit '( B, C))
+                (contraRangeLift :: (B -> A) -> PinaforeRef baseedit '( A, C) -> PinaforeRef baseedit '( B, C))
           , mkValEntry "lensmapref" "Map getter & pushback functions on a reference." $
-            pinaforeFLensReference @baseedit @AP @AQ @B
+            pinaforeFLensRef @baseedit @AP @AQ @B
           , mkValEntry
                 "applyref"
                 "Combine references."
@@ -421,9 +421,8 @@ base_predefinitions =
                 "??"
                 "`p ?? q` = `p` if it is known, else `q`."
                 ((<|>) :: PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A)
-          , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $
-            pinaforeReferenceGet @baseedit @A
-          , mkValEntry "runref" "Run an action from a reference." $ runPinaforeReference @baseedit
+          , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $ pinaforeRefGet @baseedit @A
+          , mkValEntry "runref" "Run an action from a reference." $ runPinaforeRef @baseedit
           , mkValEntry ":=" "Set a reference to a value. Stop if failed." $ setentity @baseedit
           , mkValEntry "delete" "Delete an entity reference. Stop if failed." $ deleteentity @baseedit
           , mkValEntry "newmemref" "Create a new reference to memory, initially unknown." $ newmemref @baseedit
