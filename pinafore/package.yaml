@@ -29,6 +29,8 @@ library:
       - Pinafore.Language.Value.OpenEntity
       - Pinafore.Language.Value.Reference
       - Pinafore.Language.Value.SetRef
+      - Pinafore.Language.Value.ListRef
+      - Pinafore.Language.Value.TextRef
       - Pinafore.Language.Value.Morphism
       - Pinafore.Language.Value.Order
       - Pinafore.Language.Value.UI

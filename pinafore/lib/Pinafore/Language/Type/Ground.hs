@@ -9,18 +9,6 @@ import Pinafore.Language.Value
 import Shapes
 import Truth.Core
 
-type PinaforeTextRef baseedit = PinaforeLensValue baseedit (StringEdit Text)
-
-data PinaforeListRef (baseedit :: Type) (pq :: (Type, Type)) where
-    MkPinaforeListRef
-        :: Range JMShim t pq -> PinaforeLensValue baseedit (ListEdit [t] (WholeEdit t)) -> PinaforeListRef baseedit pq
-
-instance CatFunctor (CatRange (->)) (->) (PinaforeListRef baseedit) where
-    cfmap f (MkPinaforeListRef r v) = MkPinaforeListRef (cfmap f r) v
-
-instance HasVariance 'Rangevariance (PinaforeListRef baseedit) where
-    varianceRepresentational = Nothing
-
 -- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
 data PinaforeGroundType baseedit (polarity :: Polarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv) where
     FuncPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance, 'Covariance] (->)
