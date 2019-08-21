@@ -11,13 +11,12 @@ import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.If
 import Pinafore.Language.Interpret.Type
-import Pinafore.Language.Morphism
 import Pinafore.Language.Name
-import Pinafore.Language.OpenEntity
 import Pinafore.Language.Read.RefNotation
-import Pinafore.Language.Show
 import Pinafore.Language.Syntax
-import Pinafore.Language.Type
+import Pinafore.Language.TypeSystem
+import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Value
 import Shapes
 
 type A = UVar "a"

@@ -10,7 +10,7 @@ module Pinafore.Language.Read.Parser
 import Pinafore.Language.Error
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Scope
-import Pinafore.Language.Type
+import Pinafore.Language.TypeSystem
 import Shapes hiding (try)
 import Text.Parsec hiding ((<|>), many, optional)
 import Text.Parsec.Pos (initialPos)

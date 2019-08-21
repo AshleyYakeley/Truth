@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Type.Rename
+module Pinafore.Language.TypeSystem.Rename
     ( PinaforeTypeSystem
     ) where
 
@@ -8,8 +8,8 @@ import Data.Shim
 import Language.Expression.Dolan
 import Language.Expression.Renamer
 import Language.Expression.UVar
-import Pinafore.Language.GroundType
-import Pinafore.Language.Type.Type
+import Pinafore.Language.Type.Ground
+import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 type TypeNamespace (cat :: forall kc. kc -> kc -> Type) (ts :: Type) (w :: Polarity -> k -> Type) (polarity :: Polarity)

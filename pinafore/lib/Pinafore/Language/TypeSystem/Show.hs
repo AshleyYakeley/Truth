@@ -1,4 +1,4 @@
-module Pinafore.Language.Show where
+module Pinafore.Language.TypeSystem.Show where
 
 import Prelude (Bounded(..))
 import Shapes

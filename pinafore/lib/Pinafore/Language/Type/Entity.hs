@@ -1,13 +1,13 @@
-module Pinafore.Language.EntityType where
+module Pinafore.Language.Type.Entity where
 
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.Literal
 import Pinafore.Language.Name
-import Pinafore.Language.OpenEntity
-import Pinafore.Language.Show
-import Pinafore.Language.TypeID
+import Pinafore.Language.Type.Literal
+import Pinafore.Language.Type.TypeID
+import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Value
 import Shapes
 import Text.Read (read)
 import Truth.Core

@@ -14,7 +14,7 @@ import Pinafore.Language.Read.Expression
 import Pinafore.Language.Read.Parser
 import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
-import Pinafore.Language.Type
+import Pinafore.Language.TypeSystem
 import Shapes hiding (try)
 
 data InteractiveCommand baseedit

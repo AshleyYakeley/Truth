@@ -5,7 +5,7 @@ import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
 import Pinafore.Language.Read.RefNotation
-import Pinafore.Language.Type
+import Pinafore.Language.TypeSystem
 import Shapes
 
 data TypeDecls baseedit = MkTypeDecls

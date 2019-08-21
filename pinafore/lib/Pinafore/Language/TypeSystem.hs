@@ -1,9 +1,9 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Type
-    ( module Pinafore.Language.Type.Type
-    , module Pinafore.Language.EntityType
-    , module Pinafore.Language.GroundType
+module Pinafore.Language.TypeSystem
+    ( module Pinafore.Language.TypeSystem.Type
+    , module Pinafore.Language.Type.Entity
+    , module Pinafore.Language.Type.Ground
     , module Data.Shim
     , module Language.Expression.UVar
     , module Language.Expression.Dolan
@@ -16,16 +16,16 @@ import Language.Expression.Renamer
 import Language.Expression.TypeSystem
 import Language.Expression.UVar
 import Language.Expression.Unifier
-import Pinafore.Language.EntityType
-import Pinafore.Language.GroundType
 import Pinafore.Language.Name
 import Pinafore.Language.Scope
-import Pinafore.Language.Type.Bisubstitute
-import Pinafore.Language.Type.Rename ()
-import Pinafore.Language.Type.Simplify
-import Pinafore.Language.Type.Subsume
-import Pinafore.Language.Type.Type
-import Pinafore.Language.Type.Unify
+import Pinafore.Language.Type.Entity
+import Pinafore.Language.Type.Ground
+import Pinafore.Language.TypeSystem.Bisubstitute
+import Pinafore.Language.TypeSystem.Rename ()
+import Pinafore.Language.TypeSystem.Simplify
+import Pinafore.Language.TypeSystem.Subsume
+import Pinafore.Language.TypeSystem.Type
+import Pinafore.Language.TypeSystem.Unify
 import Shapes
 
 instance Unifier (PinaforeUnifier baseedit) where

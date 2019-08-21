@@ -1,6 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Pinafore.Language.Type.Unify where
+module Pinafore.Language.TypeSystem.Unify where
 
 import Data.Shim
 import Language.Expression.Dolan
@@ -8,12 +8,12 @@ import Language.Expression.Expression
 import Language.Expression.UVar
 import Language.Expression.Unifier
 import Pinafore.Language.Error
-import Pinafore.Language.GroundType
 import Pinafore.Language.Name
-import Pinafore.Language.Show
-import Pinafore.Language.Type.Bisubstitute
-import Pinafore.Language.Type.Subtype
-import Pinafore.Language.Type.Type
+import Pinafore.Language.Type.Ground
+import Pinafore.Language.TypeSystem.Bisubstitute
+import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.TypeSystem.Subtype
+import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 getRangeTypeVars :: PinaforeRangeType baseedit polarity t -> [String]

@@ -1,15 +1,11 @@
-module Pinafore.Language.GroundType where
+module Pinafore.Language.Type.Ground where
 
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.EntityType
-import Pinafore.Language.Morphism
-import Pinafore.Language.Order
-import Pinafore.Language.Reference
-import Pinafore.Language.SetRef
-import Pinafore.Language.Show
-import Pinafore.Language.UI
+import Pinafore.Language.Type.Entity
+import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.Value
 import Shapes
 import Truth.Core
 

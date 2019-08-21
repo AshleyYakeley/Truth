@@ -1,4 +1,4 @@
-module Pinafore.Language.TypeID
+module Pinafore.Language.Type.TypeID
     ( TypeID
     , zeroTypeID
     , succTypeID

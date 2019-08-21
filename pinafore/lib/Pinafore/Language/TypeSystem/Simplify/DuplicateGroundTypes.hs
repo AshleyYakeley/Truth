@@ -1,11 +1,11 @@
-module Pinafore.Language.Type.Simplify.DuplicateGroundTypes
+module Pinafore.Language.TypeSystem.Simplify.DuplicateGroundTypes
     ( mergeDuplicateGroundTypes
     ) where
 
 import Data.Shim
 import Language.Expression.Dolan
-import Pinafore.Language.GroundType
-import Pinafore.Language.Type.Type
+import Pinafore.Language.Type.Ground
+import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 mergeInSingularType ::

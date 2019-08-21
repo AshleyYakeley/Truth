@@ -1,6 +1,6 @@
 {-# LANGUAGE ApplicativeDo #-}
 
-module Pinafore.Language.Type.Subtype
+module Pinafore.Language.TypeSystem.Subtype
     ( SubtypeContext(..)
     , subtypeGroundTypes
     ) where
@@ -8,13 +8,13 @@ module Pinafore.Language.Type.Subtype
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.EntityType
-import Pinafore.Language.GroundType
-import Pinafore.Language.Literal
-import Pinafore.Language.OpenEntity
 import Pinafore.Language.Scope
-import Pinafore.Language.Show
-import Pinafore.Language.Type.Type
+import Pinafore.Language.Type.Entity
+import Pinafore.Language.Type.Ground
+import Pinafore.Language.Type.Literal
+import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.TypeSystem.Type
+import Pinafore.Language.Value
 import Shapes
 
 data SubtypeContext baseedit m pola polb = MkSubtypeContext

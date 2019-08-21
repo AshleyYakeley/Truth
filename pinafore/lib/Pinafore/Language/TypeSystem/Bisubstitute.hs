@@ -1,9 +1,9 @@
-module Pinafore.Language.Type.Bisubstitute where
+module Pinafore.Language.TypeSystem.Bisubstitute where
 
 import Data.Shim
 import Language.Expression.Dolan
-import Pinafore.Language.GroundType
-import Pinafore.Language.Type.Type
+import Pinafore.Language.Type.Ground
+import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 type PinaforeBisubstitutionM m baseedit = Bisubstitution m (PinaforeType baseedit)

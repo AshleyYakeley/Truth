@@ -1,10 +1,10 @@
-module Pinafore.Language.Morphism where
+module Pinafore.Language.Value.Morphism where
 
 import Data.Shim
 import Pinafore.Base
-import Pinafore.Language.OpenEntity
-import Pinafore.Language.Reference
-import Pinafore.Language.SetRef
+import Pinafore.Language.Value.OpenEntity
+import Pinafore.Language.Value.Reference
+import Pinafore.Language.Value.SetRef
 import Shapes
 import Truth.Core
 

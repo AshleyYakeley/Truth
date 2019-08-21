@@ -15,7 +15,7 @@ import Pinafore.Language.Read.Token
 import Pinafore.Language.Read.Type
 import Pinafore.Language.Scope
 import Pinafore.Language.Syntax
-import Pinafore.Language.Type
+import Pinafore.Language.TypeSystem
 import Shapes hiding (try)
 
 readOpenTypeDeclaration :: forall baseedit. Parser (TypeDecls baseedit)

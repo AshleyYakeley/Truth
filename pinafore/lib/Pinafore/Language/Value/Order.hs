@@ -1,10 +1,10 @@
-module Pinafore.Language.Order where
+module Pinafore.Language.Value.Order where
 
 import Data.Shim
 import Pinafore.Base
-import Pinafore.Language.Morphism
-import Pinafore.Language.Reference
-import Pinafore.Language.SetRef
+import Pinafore.Language.Value.Morphism
+import Pinafore.Language.Value.Reference
+import Pinafore.Language.Value.SetRef
 import Shapes
 import Truth.Core
 

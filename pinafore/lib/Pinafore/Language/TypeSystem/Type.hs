@@ -1,4 +1,4 @@
-module Pinafore.Language.Type.Type where
+module Pinafore.Language.TypeSystem.Type where
 
 import qualified Data.List as List
 import Data.Shim
@@ -6,13 +6,13 @@ import Language.Expression.Dolan
 import Language.Expression.Renamer
 import Language.Expression.Sealed
 import Language.Expression.UVar
-import Pinafore.Language.EntityType
 import Pinafore.Language.Error
-import Pinafore.Language.GroundType
-import Pinafore.Language.Literal
 import Pinafore.Language.Name
 import Pinafore.Language.Scope
-import Pinafore.Language.Show
+import Pinafore.Language.Type.Entity
+import Pinafore.Language.Type.Ground
+import Pinafore.Language.Type.Literal
+import Pinafore.Language.TypeSystem.Show
 import Shapes
 
 type PinaforeRangeType baseedit = RangeType (PinaforeType baseedit)

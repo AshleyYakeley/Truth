@@ -6,12 +6,8 @@ import Data.Shim
 import Data.Time
 import Pinafore.Base
 import Pinafore.Language.DocTree
-import Pinafore.Language.Morphism
-import Pinafore.Language.Order
 import Pinafore.Language.Predefined.Defs
-import Pinafore.Language.Reference
-import Pinafore.Language.SetRef
-import Pinafore.Language.UI
+import Pinafore.Language.Value
 import Pinafore.Storage
 import Shapes
 import Truth.Core

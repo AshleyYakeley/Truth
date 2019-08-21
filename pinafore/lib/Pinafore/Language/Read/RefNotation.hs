@@ -13,7 +13,7 @@ import Pinafore.Base
 import Pinafore.Language.Error
 import Pinafore.Language.Expression
 import Pinafore.Language.Name
-import Pinafore.Language.Type
+import Pinafore.Language.TypeSystem
 import Shapes
 
 type RefNotation baseedit = WriterT [(Name, QExpr baseedit)] (StateT Int (PinaforeScoped baseedit))

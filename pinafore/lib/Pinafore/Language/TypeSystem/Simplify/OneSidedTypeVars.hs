@@ -1,12 +1,12 @@
-module Pinafore.Language.Type.Simplify.OneSidedTypeVars
+module Pinafore.Language.TypeSystem.Simplify.OneSidedTypeVars
     ( eliminateOneSidedTypeVars
     ) where
 
 import Data.Shim
 import Language.Expression.Dolan
-import Pinafore.Language.Type.Bisubstitute
-import Pinafore.Language.Type.Simplify.VarUses
-import Pinafore.Language.Type.Type
+import Pinafore.Language.TypeSystem.Bisubstitute
+import Pinafore.Language.TypeSystem.Simplify.VarUses
+import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 getEliminateBisubs ::

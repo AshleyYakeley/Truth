@@ -1,8 +1,8 @@
-module Pinafore.Language.Reference where
+module Pinafore.Language.Value.Reference where
 
 import Data.Shim
 import Pinafore.Base
-import Pinafore.Language.Instances ()
+import Pinafore.Language.Value.Instances ()
 import Shapes
 import Truth.Core
 

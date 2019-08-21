@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Type.Subsume
+module Pinafore.Language.TypeSystem.Subsume
     ( PinaforeSubsumer
     ) where
 
@@ -10,13 +10,13 @@ import Language.Expression.Expression
 import Language.Expression.Subsumer
 import Language.Expression.UVar
 import Pinafore.Language.Error
-import Pinafore.Language.GroundType
-import Pinafore.Language.Show
-import Pinafore.Language.Type.Bisubstitute
-import Pinafore.Language.Type.Inverted
-import Pinafore.Language.Type.Simplify
-import Pinafore.Language.Type.Subtype
-import Pinafore.Language.Type.Type
+import Pinafore.Language.Type.Ground
+import Pinafore.Language.TypeSystem.Bisubstitute
+import Pinafore.Language.TypeSystem.Inverted
+import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.TypeSystem.Simplify
+import Pinafore.Language.TypeSystem.Subtype
+import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 minimalPositiveSupertypeSingular ::

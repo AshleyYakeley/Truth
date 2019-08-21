@@ -6,7 +6,7 @@ module Pinafore.Language.If
 
 import Data.Shim
 import Pinafore.Base
-import Pinafore.Language.Type
+import Pinafore.Language.TypeSystem
 import Shapes
 
 type A = UVar "a"

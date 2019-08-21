@@ -27,8 +27,8 @@ module Pinafore.Language.Scope
 import Language.Expression.Error
 import Pinafore.Language.Error
 import Pinafore.Language.Name
-import Pinafore.Language.OpenEntity
-import Pinafore.Language.TypeID
+import Pinafore.Language.Type.TypeID
+import Pinafore.Language.Value
 import Shapes
 import Text.Parsec (SourcePos)
 

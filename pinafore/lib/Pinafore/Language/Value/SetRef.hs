@@ -1,9 +1,9 @@
-module Pinafore.Language.SetRef where
+module Pinafore.Language.Value.SetRef where
 
 import Data.Shim
 import Pinafore.Base
-import Pinafore.Language.OpenEntity
-import Pinafore.Language.Reference
+import Pinafore.Language.Value.OpenEntity
+import Pinafore.Language.Value.Reference
 import Pinafore.Storage (Entity)
 import Shapes
 import Truth.Core

@@ -1,6 +1,6 @@
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Pinafore.Language.Instances where
+module Pinafore.Language.Value.Instances where
 
 import Data.Shim
 import Pinafore.Base

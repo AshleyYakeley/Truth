@@ -8,7 +8,7 @@ import Data.Shim
 import Data.Time
 import Pinafore.Base
 import Pinafore.Language.Convert.Base
-import Pinafore.Language.Type
+import Pinafore.Language.TypeSystem
 import Shapes
 import Shapes.Numeric
 

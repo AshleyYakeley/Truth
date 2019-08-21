@@ -1,10 +1,10 @@
-module Pinafore.Language.Literal where
+module Pinafore.Language.Type.Literal where
 
 import Data.Shim
 import Data.Time
 import Pinafore.Base
 import Pinafore.Language.Name
-import Pinafore.Language.Show
+import Pinafore.Language.TypeSystem.Show
 import Shapes
 import Shapes.Numeric
 

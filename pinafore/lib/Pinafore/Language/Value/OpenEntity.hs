@@ -1,4 +1,4 @@
-module Pinafore.Language.OpenEntity where
+module Pinafore.Language.Value.OpenEntity where
 
 import Pinafore.Base
 import Shapes

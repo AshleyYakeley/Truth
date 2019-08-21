@@ -1,4 +1,4 @@
-module Pinafore.Language.Type.Simplify.VarUses
+module Pinafore.Language.TypeSystem.Simplify.VarUses
     ( mappableGetVarUses
     , mappableGetVars
     ) where
@@ -6,8 +6,8 @@ module Pinafore.Language.Type.Simplify.VarUses
 import Data.Shim
 import Language.Expression.Dolan
 import Language.Expression.WitnessMappable
-import Pinafore.Language.GroundType
-import Pinafore.Language.Type.Type
+import Pinafore.Language.Type.Ground
+import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 class GetVarUses f where

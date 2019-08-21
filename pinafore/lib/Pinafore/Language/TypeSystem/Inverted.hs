@@ -1,12 +1,12 @@
-module Pinafore.Language.Type.Inverted
+module Pinafore.Language.TypeSystem.Inverted
     ( invertedSubtype
     ) where
 
 import Data.Shim
 import Pinafore.Language.Error
-import Pinafore.Language.Show
-import Pinafore.Language.Type.Subtype
-import Pinafore.Language.Type.Type
+import Pinafore.Language.TypeSystem.Show
+import Pinafore.Language.TypeSystem.Subtype
+import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 invertedContext :: SubtypeContext baseedit (PinaforeTypeCheck baseedit) 'Negative 'Positive

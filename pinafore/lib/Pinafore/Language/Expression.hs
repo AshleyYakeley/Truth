@@ -12,8 +12,8 @@ import Language.Expression.Sealed
 import Language.Expression.TypeSystem
 import Pinafore.Language.Convert
 import Pinafore.Language.Name
-import Pinafore.Language.Type
-import Pinafore.Language.Type.Subsume ()
+import Pinafore.Language.TypeSystem
+import Pinafore.Language.TypeSystem.Subsume ()
 import Shapes
 
 type QExpr baseedit = TSSealedExpression (PinaforeTypeSystem baseedit)

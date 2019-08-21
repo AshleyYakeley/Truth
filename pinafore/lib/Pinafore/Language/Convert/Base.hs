@@ -11,13 +11,8 @@ module Pinafore.Language.Convert.Base
 import Data.Shim
 import Language.Expression.Dolan
 import Pinafore.Base
-import Pinafore.Language.Morphism
-import Pinafore.Language.OpenEntity
-import Pinafore.Language.Order
-import Pinafore.Language.Reference
-import Pinafore.Language.SetRef
-import Pinafore.Language.Type
-import Pinafore.Language.UI
+import Pinafore.Language.TypeSystem
+import Pinafore.Language.Value
 import Shapes
 import Truth.Core
 

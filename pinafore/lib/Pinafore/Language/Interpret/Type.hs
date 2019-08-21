@@ -5,11 +5,11 @@ module Pinafore.Language.Interpret.Type
 
 import Data.Shim
 import Pinafore.Language.Error
-import Pinafore.Language.Literal
 import Pinafore.Language.Name
-import Pinafore.Language.Show
 import Pinafore.Language.Syntax
-import Pinafore.Language.Type
+import Pinafore.Language.Type.Literal
+import Pinafore.Language.TypeSystem
+import Pinafore.Language.TypeSystem.Show
 import Shapes
 
 type PinaforeTypeM baseedit = MPolarW (PinaforeType baseedit)

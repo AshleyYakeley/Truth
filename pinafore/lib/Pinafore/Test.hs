@@ -21,8 +21,8 @@ import Pinafore.Base
 import Pinafore.Language
 import Pinafore.Language.Name
 import Pinafore.Language.Read
-import Pinafore.Language.Type
-import Pinafore.Language.Type.Simplify
+import Pinafore.Language.TypeSystem
+import Pinafore.Language.TypeSystem.Simplify
 import Pinafore.Pinafore
 import Pinafore.Storage
 import Shapes

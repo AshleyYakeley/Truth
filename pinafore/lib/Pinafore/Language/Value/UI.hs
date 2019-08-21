@@ -1,4 +1,4 @@
-module Pinafore.Language.UI where
+module Pinafore.Language.Value.UI where
 
 import Data.Shim
 import Shapes

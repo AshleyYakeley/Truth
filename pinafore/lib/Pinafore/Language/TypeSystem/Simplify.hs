@@ -1,13 +1,13 @@
-module Pinafore.Language.Type.Simplify
+module Pinafore.Language.TypeSystem.Simplify
     ( pinaforeSimplifyTypes
     ) where
 
 import Language.Expression.Dolan
-import Pinafore.Language.Type.Simplify.DuplicateGroundTypes
-import Pinafore.Language.Type.Simplify.DuplicateTypeVars
-import Pinafore.Language.Type.Simplify.OneSidedTypeVars
-import Pinafore.Language.Type.Simplify.SharedTypeVars
-import Pinafore.Language.Type.Type
+import Pinafore.Language.TypeSystem.Simplify.DuplicateGroundTypes
+import Pinafore.Language.TypeSystem.Simplify.DuplicateTypeVars
+import Pinafore.Language.TypeSystem.Simplify.OneSidedTypeVars
+import Pinafore.Language.TypeSystem.Simplify.SharedTypeVars
+import Pinafore.Language.TypeSystem.Type
 import Shapes
 
 simplify :: Bool
