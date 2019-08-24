@@ -3,7 +3,7 @@ module Pinafore.Language.Value.Order where
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Value.Morphism
-import Pinafore.Language.Value.Reference
+import Pinafore.Language.Value.Ref
 import Pinafore.Language.Value.SetRef
 import Shapes
 import Truth.Core

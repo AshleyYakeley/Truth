@@ -7,7 +7,7 @@ import Pinafore.Language.Value.ListRef as I
 import Pinafore.Language.Value.Morphism as I
 import Pinafore.Language.Value.OpenEntity as I
 import Pinafore.Language.Value.Order as I
-import Pinafore.Language.Value.Reference as I
+import Pinafore.Language.Value.Ref as I
 import Pinafore.Language.Value.SetRef as I
 import Pinafore.Language.Value.TextRef as I
 import Pinafore.Language.Value.UI as I

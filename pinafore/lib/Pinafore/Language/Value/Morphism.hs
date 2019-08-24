@@ -3,7 +3,7 @@ module Pinafore.Language.Value.Morphism where
 import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Value.OpenEntity
-import Pinafore.Language.Value.Reference
+import Pinafore.Language.Value.Ref
 import Pinafore.Language.Value.SetRef
 import Shapes
 import Truth.Core

@@ -27,7 +27,7 @@ library:
     other-modules:
       - Pinafore.Language.Value.Instances
       - Pinafore.Language.Value.OpenEntity
-      - Pinafore.Language.Value.Reference
+      - Pinafore.Language.Value.Ref
       - Pinafore.Language.Value.SetRef
       - Pinafore.Language.Value.ListRef
       - Pinafore.Language.Value.TextRef

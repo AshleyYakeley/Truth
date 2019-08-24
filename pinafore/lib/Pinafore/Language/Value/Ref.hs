@@ -1,4 +1,4 @@
-module Pinafore.Language.Value.Reference where
+module Pinafore.Language.Value.Ref where
 
 import Data.Shim
 import Pinafore.Base
