@@ -21,7 +21,7 @@ file_import set continue = do
         Nothing -> return ()
         Just path -> do
             let sourceobject = fileObject path
-            newentity set $ \entity -> do
+            newEntity set $ \entity -> do
                 mdestobject <-
                     pinaforeLiftView $
                     viewMapEdit (pinaforeFileItemLens entity) $ do

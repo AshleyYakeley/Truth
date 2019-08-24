@@ -125,7 +125,7 @@ interactEvalExpression texpr =
 runValue :: Handle -> QValue baseedit -> Interact baseedit (PinaforeAction baseedit ())
 runValue outh val =
     interactRunSourceScoped $
-    (typedAnyToPinaforeVal val) <|> (fmap outputln $ typedAnyToPinaforeVal val) <|>
+    (typedAnyToPinaforeVal val) <|> (fmap outputLn $ typedAnyToPinaforeVal val) <|>
     (return $ liftIO $ hPutStrLn outh $ showPinaforeValue val)
 
 interactParse ::

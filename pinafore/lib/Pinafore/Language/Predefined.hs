@@ -7,7 +7,7 @@ module Pinafore.Language.Predefined
     , predefinedBindings
     , predefinedPatternConstructors
     , predefinedDoc
-    , outputln
+    , outputLn
     ) where
 
 import Data.Time

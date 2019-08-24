@@ -66,18 +66,18 @@ testUpdates =
     runContext $ tgroup "update" [tests AsynchronousUpdateTiming, fmap ignoreTest $ tests SynchronousUpdateTiming]
   where
     tests :: UpdateTiming -> ContextTestTree
-    tests ut = tgroup (show ut) $ [updateTest ut "do ref <- newmemref; return (ref := 1, ref) end"]
+    tests ut = tgroup (show ut) $ [updateTest ut "do ref <- newMemRef; return (ref := 1, ref) end"]
 
 testEntity :: TestTree
 testEntity =
     runContext $
     context
         [ "pass = return ()"
-        , "runreforfail r = runref (r ?? {fail \"unknown ref\"})"
+        , "runreforfail r = runRef (r ?? {fail \"unknown ref\"})"
         , "testeq expected found = runreforfail {if is %expected %found then pass else fail \"not equal\"}"
         , "testneq expected found = runreforfail {if not $ is %expected %found then pass else fail \"equal\"}"
-        , "testisknown t = runref {if %(known t) then pass else fail \"known\"}"
-        , "testisunknown t = runref {if %(known t) then fail \"known\" else pass}"
+        , "testisknown t = runRef {if %(known t) then pass else fail \"known\"}"
+        , "testisunknown t = runRef {if %(known t) then fail \"known\" else pass}"
         , "testeqval e f = testeq {e} {f}"
         ] $
     tgroup
@@ -127,11 +127,11 @@ testEntity =
               , badPointTest "fail \"failure\""
               , pointTest "stop"
               , pointTest "do stop; fail \"unstopped\"; end"
-              , pointTest "do a <- onstop (return 1) (return 2); testeqval 2 a; end"
-              , pointTest "do a <- onstop stop (return 2); testeqval 2 a; end"
-              , badPointTest "do a <- onstop stop (return 2); fail \"unstopped\"; end"
-              , pointTest "do a <- onstop (return 1) stop; testeqval 1 a; end"
-              , badPointTest "do a <- onstop (return 1) stop; fail \"unstopped\"; end"
+              , pointTest "do a <- onStop (return 1) (return 2); testeqval 2 a; end"
+              , pointTest "do a <- onStop stop (return 2); testeqval 2 a; end"
+              , badPointTest "do a <- onStop stop (return 2); fail \"unstopped\"; end"
+              , pointTest "do a <- onStop (return 1) stop; testeqval 1 a; end"
+              , badPointTest "do a <- onStop (return 1) stop; fail \"unstopped\"; end"
               ]
         , tgroup
               "equality"
@@ -160,23 +160,23 @@ testEntity =
               ]
         , tgroup
               "memory references"
-              [ pointTest "do r <- newmemref; a <- get r; fail \"unstopped\"; end"
-              , pointTest "do r <- newmemref; r := 45; a <- get r; testeqval 45 a; end"
-              , pointTest "do r <- newmemref; r := 3; r := 4; a <- get r; testeqval 4 a; end"
-              , pointTest "do s <- newmemset; n <- get $ count s; testeqval 0 n; end"
-              , pointTest "do s <- newmemset; s += 57; n <- get $ count s; testeqval 1 n; end"
-              , pointTest "do s <- newmemset; s -= 57; n <- get $ count s; testeqval 0 n; end"
-              , pointTest "do s <- newmemset; s += 57; s -= 57; n <- get $ count s; testeqval 0 n; end"
+              [ pointTest "do r <- newMemRef; a <- get r; fail \"unstopped\"; end"
+              , pointTest "do r <- newMemRef; r := 45; a <- get r; testeqval 45 a; end"
+              , pointTest "do r <- newMemRef; r := 3; r := 4; a <- get r; testeqval 4 a; end"
+              , pointTest "do s <- newMemSet; n <- get $ count s; testeqval 0 n; end"
+              , pointTest "do s <- newMemSet; s += 57; n <- get $ count s; testeqval 1 n; end"
+              , pointTest "do s <- newMemSet; s -= 57; n <- get $ count s; testeqval 0 n; end"
+              , pointTest "do s <- newMemSet; s += 57; s -= 57; n <- get $ count s; testeqval 0 n; end"
               , pointTest
-                    "do s <- newmemset; s += 57; m54 <- get $ member s 54; m57 <- get $ member s 57; testeqval False m54; testeqval True m57; end"
-              , pointTest "do s <- newmemset; s -= 57; m57 <- get $ member s 57; testeqval False m57; end"
-              , pointTest "do s <- newmemset; s += 57; s -= 57; m57 <- get $ member s 57; testeqval False m57; end"
+                    "do s <- newMemSet; s += 57; m54 <- get $ member s 54; m57 <- get $ member s 57; testeqval False m54; testeqval True m57; end"
+              , pointTest "do s <- newMemSet; s -= 57; m57 <- get $ member s 57; testeqval False m57; end"
+              , pointTest "do s <- newMemSet; s += 57; s -= 57; m57 <- get $ member s 57; testeqval False m57; end"
               , pointTest
-                    "do s <- newmemset; member s 57 := True; m54 <- get $ member s 54; m57 <- get $ member s 57; testeqval False m54; testeqval True m57; end"
-              , pointTest "do s <- newmemset; member s 57 := False; m57 <- get $ member s 57; testeqval False m57; end"
+                    "do s <- newMemSet; member s 57 := True; m54 <- get $ member s 54; m57 <- get $ member s 57; testeqval False m54; testeqval True m57; end"
+              , pointTest "do s <- newMemSet; member s 57 := False; m57 <- get $ member s 57; testeqval False m57; end"
               , pointTest
-                    "do s <- newmemset; member s 57 := True; member s 57 := False; m57 <- get $ member s 57; testeqval False m57; end"
-              , pointTest "do r <- newmemref; immutref r := 5; fail \"unstopped\"; end"
+                    "do s <- newMemSet; member s 57 := True; member s 57 := False; m57 <- get $ member s 57; testeqval False m57; end"
+              , pointTest "do r <- newMemRef; immutRef r := 5; fail \"unstopped\"; end"
               ]
         , context
               [ "convr :: Rational -> Rational;convr = id"
@@ -191,8 +191,8 @@ testEntity =
                     [ pointTest "testconvr 1"
                     , pointTest "testconvr 2.5"
                     , pointTest "testeq {convl 31.5} {convl $ convn 31.5}"
-                    , pointTest "testeq {\"63/2\"} {totext 31.5}"
-                    , pointTest "testeq {\"63/2\"} {totext $ convn 31.5}"
+                    , pointTest "testeq {\"63/2\"} {toText 31.5}"
+                    , pointTest "testeq {\"63/2\"} {toText $ convn 31.5}"
                     ]
               ]
         , context
@@ -239,7 +239,7 @@ testEntity =
                     , pointTest "eea !$ {e1} := e2 >> testeq {e2} (eea !$ {e1})"
                     , pointTest "eta !$ {e1} := \"hello\" >> testeq {\"hello\"} (eta !$ {e1})"
                     , pointTest "tea !$ {\"hello\"} := e1 >> testeq {e1} (tea !$ {\"hello\"})"
-                    , pointTest "tea !$ {\"hello\"} := e1 >> runref {outputln (totext $ %(count (tea !@ {e1})))}"
+                    , pointTest "tea !$ {\"hello\"} := e1 >> runRef {outputLn (toText $ %(count (tea !@ {e1})))}"
                     , pointTest "tea !$ {\"hello\"} := e1 >> testeq {1} (count (tea !@ {e1}))"
                     ]
               , tgroup
@@ -252,9 +252,9 @@ testEntity =
                     "-="
                     [pointTest "eta !@ {\"hello\"} += e1 >> eta !@ {\"hello\"} -= e1 >> testisunknown (eta !$ {e1})"]
               , tgroup
-                    "removeall"
+                    "removeAll"
                     [ pointTest
-                          "eta !@ {\"hello\"} += e1 >> removeall (eta !@ {\"hello\"}) >> testisunknown (eta !$ {e1})"
+                          "eta !@ {\"hello\"} += e1 >> removeAll (eta !@ {\"hello\"}) >> testisunknown (eta !$ {e1})"
                     ]
               , tgroup
                     "literal storage"
@@ -360,13 +360,13 @@ testEntity =
                     , pointTest
                           "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> (eeb !@@ eta !@ {\"hello\"}) -= e1 >> testeq {\"hello\"} (eta !$ {e2})"
                     , pointTest
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeall ((eta !. eeb) !@ {\"hello\"}) >> testeq {e2} (eeb !$ {e1})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeAll ((eta !. eeb) !@ {\"hello\"}) >> testeq {e2} (eeb !$ {e1})"
                     , pointTest
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeall ((eta !. eeb) !@ {\"hello\"}) >> testisunknown (eta !$ {e2})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeAll ((eta !. eeb) !@ {\"hello\"}) >> testisunknown (eta !$ {e2})"
                     , pointTest
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeall (eeb !@@ eta !@ {\"hello\"}) >> testneq {e2} (eeb !$ {e1})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeAll (eeb !@@ eta !@ {\"hello\"}) >> testneq {e2} (eeb !$ {e1})"
                     , pointTest
-                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeall (eeb !@@ eta !@ {\"hello\"}) >> testeq {\"hello\"} (eta !$ {e2})"
+                          "eeb !$ {e1} := e2 >> eta !$ {e2} := \"hello\" >> removeAll (eeb !@@ eta !@ {\"hello\"}) >> testeq {\"hello\"} (eta !$ {e2})"
                     ]
               , tgroup
                     "single"
@@ -392,7 +392,7 @@ testEntity =
                     , pointTest "eea !$ {e2} := e1 >> testeq {1} (count (eea !@ {e1}))"
                     , pointTest $
                       "let counter = eia !$ {e1};someset = nea !@ {e1} in " <>
-                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (members (orders []) someset) >>= \\pp -> for pp $ \\p -> runref {counter := %counter + 1}) >> testeq {1} counter"
+                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (members (orders []) someset) >>= \\pp -> for pp $ \\p -> runRef {counter := %counter + 1}) >> testeq {1} counter"
                     ]
               , tgroup
                     "types"
@@ -508,8 +508,8 @@ testEntity =
               "undo"
               [ pointTest "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; end"
               , pointTest
-                    "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; queue_undo; testeq {\"A\"} rt1; end"
+                    "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; queueUndo; testeq {\"A\"} rt1; end"
               , pointTest
-                    "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; queue_undo; testeq {\"A\"} rt1; queue_redo; testeq {\"B\"} rt1; end"
+                    "do rt1 := \"A\"; testeq {\"A\"} rt1; rt1 := \"B\"; testeq {\"B\"} rt1; queueUndo; testeq {\"A\"} rt1; queueRedo; testeq {\"B\"} rt1; end"
               ]
         ]

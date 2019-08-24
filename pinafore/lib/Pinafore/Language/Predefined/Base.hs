@@ -1,6 +1,6 @@
 module Pinafore.Language.Predefined.Base
     ( base_predefinitions
-    , outputln
+    , outputLn
     ) where
 
 import Data.Fixed (div', mod')
@@ -17,16 +17,16 @@ import Shapes
 import Shapes.Numeric
 import Truth.Core
 
-gettimems :: IO Integer
-gettimems = do
+getTimeMS :: IO Integer
+getTimeMS = do
     MkSystemTime s ns <- getSystemTime
     return $ (toInteger s) * 1000 + div (toInteger ns) 1000000
 
 output :: forall baseedit. Text -> PinaforeAction baseedit ()
 output text = liftIO $ putStr $ unpack text
 
-outputln :: forall baseedit. Text -> PinaforeAction baseedit ()
-outputln text = liftIO $ putStrLn $ unpack text
+outputLn :: forall baseedit. Text -> PinaforeAction baseedit ()
+outputLn text = liftIO $ putStrLn $ unpack text
 
 setentity :: forall baseedit. PinaforeRef baseedit '( A, TopType) -> A -> PinaforeAction baseedit ()
 setentity ref val = pinaforeRefSet ref (Known val)
@@ -37,23 +37,23 @@ deleteentity ref = pinaforeRefSet ref Unknown
 qfail :: forall baseedit. Text -> PinaforeAction baseedit BottomType
 qfail t = fail $ unpack t
 
-entityuuid :: Entity -> Text
-entityuuid p = pack $ show p
+entityUUID :: Entity -> Text
+entityUUID p = pack $ show p
 
-onstop :: forall baseedit. PinaforeAction baseedit A -> PinaforeAction baseedit A -> PinaforeAction baseedit A
-onstop p q = q <|> p
+onStop :: forall baseedit. PinaforeAction baseedit A -> PinaforeAction baseedit A -> PinaforeAction baseedit A
+onStop p q = q <|> p
 
-newmemref ::
+newMemRef ::
        forall baseedit. BaseEditLens MemoryCellEdit baseedit
     => IO (PinaforeRef baseedit '( A, A))
-newmemref = do
+newMemRef = do
     lens <- makeMemoryCellEditLens Unknown
     return $ pinaforeLensToRef $ lens . baseEditLens
 
-newmemset ::
+newMemSet ::
        forall baseedit. BaseEditLens MemoryCellEdit baseedit
     => IO (PinaforeSetRef baseedit '( MeetType Entity A, A))
-newmemset = do
+newMemSet = do
     lens <- makeMemoryCellEditLens mempty
     return $ meetValuePinaforeSetRef $ convertEditLens . lens . baseEditLens
 
@@ -93,8 +93,8 @@ base_predefinitions =
           , mkValEntry "==" "Literal equality. Same as Entity equality restricted to Literal, but faster." $
             (==) @Literal
           , mkValEntry "/=" "Literal non-equality." $ (/=) @Literal
-          , mkValEntry "entityuuid" "UUID of an entity." entityuuid
-          , mkValEntry "totext" "The text of a literal." unLiteral
+          , mkValEntry "entityUUID" "UUID of an entity." entityUUID
+          , mkValEntry "toText" "The text of a literal." unLiteral
           , docTreeEntry
                 "Boolean"
                 ""
@@ -114,12 +114,12 @@ base_predefinitions =
                 "Text"
                 ""
                 [ mkValEntry "<>" "Concatenate text." $ (<>) @Text
-                , mkValEntry "textlength" "The length of a piece of text." $ olength @Text
+                , mkValEntry "textLength" "The length of a piece of text." $ olength @Text
                 , mkValEntry
-                      "textsection"
-                      "`textsection start len text` is the section of `text` beginning at `start` of length `len`." $ \start len (text :: Text) ->
+                      "textSection"
+                      "`textSection start len text` is the section of `text` beginning at `start` of length `len`." $ \start len (text :: Text) ->
                       take len $ drop start text
-                , mkValEntry "textconcat" "Concatenate texts." $ mconcat @Text
+                , mkValEntry "textConcat" "Concatenate texts." $ mconcat @Text
                 ]
           , docTreeEntry
                 "Numeric"
@@ -153,11 +153,11 @@ base_predefinitions =
                       , mkValEntry ".-" "Subtract." $ (-) @Rational
                       , mkValEntry ".*" "Multiply." $ (*) @Rational
                       , mkValEntry "/" "Divide." $ (/) @Rational
-                      , mkValEntry "rnegate" "Negate." $ negate @Rational
+                      , mkValEntry "negateR" "Negate." $ negate @Rational
                       , mkValEntry "recip" "Reciprocal." $ recip @Rational
-                      , mkValEntry "rabs" "Absolute value." $ abs @Rational
-                      , mkValEntry "rsignum" "Sign." $ signum @Rational
-                      , mkValEntry "rmod" "Modulus, leftover from `div`" $ mod' @Rational
+                      , mkValEntry "absR" "Absolute value." $ abs @Rational
+                      , mkValEntry "signumR" "Sign." $ signum @Rational
+                      , mkValEntry "modR" "Modulus, leftover from `div`" $ mod' @Rational
                       , mkValEntry "^^" "Raise to Integer power." $ ((^^) :: Rational -> Integer -> Rational)
                       ]
                 , docTreeEntry
@@ -167,8 +167,8 @@ base_predefinitions =
                       , mkValEntry "~-" "Subtract." $ (-) @Number
                       , mkValEntry "~*" "Multiply." $ (*) @Number
                       , mkValEntry "~/" "Divide." $ (/) @Number
-                      , mkValEntry "nnegate" "Negate." $ negate @Number
-                      , mkValEntry "nrecip" "Reciprocal." $ recip @Number
+                      , mkValEntry "negateN" "Negate." $ negate @Number
+                      , mkValEntry "recipN" "Reciprocal." $ recip @Number
                       , mkValEntry "pi" "Half the radians in a circle." $ pi @Number
                       , mkValEntry "exp" "Exponent" $ exp @Number
                       , mkValEntry "log" "Natural logarithm" $ log @Number
@@ -188,7 +188,7 @@ base_predefinitions =
                       , mkValEntry "acosh" "Inverse hyperbolic cosine." $ acosh @Number
                       , mkValEntry "atanh" "Inverse hyperbolic tangent." $ atanh @Number
                       , mkValEntry "nabs" "Absolute value." $ abs @Number
-                      , mkValEntry "nsignum" "Sign. Note this will be the same exact or inexact as the number." $
+                      , mkValEntry "signumN" "Sign. Note this will be the same exact or inexact as the number." $
                         signum @Number
                       , mkValEntry "floor" "Integer towards negative infinity." (floor :: Number -> Integer)
                       , mkValEntry "ceiling" "Integer towards positive infinity." (ceiling :: Number -> Integer)
@@ -202,7 +202,7 @@ base_predefinitions =
                             "div"
                             "Division to Integer, towards negative infinity."
                             (div' :: Number -> Number -> Integer)
-                      , mkValEntry "nmod" "Modulus, leftover from `div`" $ mod' @Number
+                      , mkValEntry "modN" "Modulus, leftover from `div`" $ mod' @Number
                       , mkValEntry "isNaN" "Is not a number?" numberIsNaN
                       , mkValEntry "isInfinite" "Is infinite?" numberIsInfinite
                       , mkValEntry "isNegativeZero" "Is negative zero?" numberIsNegativeZero
@@ -329,10 +329,10 @@ base_predefinitions =
                     [] -> fnil
                     (a:aa) -> fcons a aa
           , mkValEntry "length" "Number of items in a list" (length :: [TopType] -> Int)
-          , mkValEntry "maplist" "Map the items of a list." (fmap :: (A -> B) -> [A] -> [B])
+          , mkValEntry "mapList" "Map the items of a list." (fmap :: (A -> B) -> [A] -> [B])
           , mkValEntry "++" "Concatentate lists." ((++) :: [A] -> [A] -> [A])
           , mkValEntry "filter" "Filter a list." (filter :: (A -> Bool) -> [A] -> [A])
-          , mkValEntry "mapMaybe" "Map and filter a list." (mapMaybe :: (A -> Maybe B) -> [A] -> [B])
+          , mkValEntry "maybeMapList" "Map and filter a list." (mapMaybe :: (A -> Maybe B) -> [A] -> [B])
           , mkValEntry "take" "Take the first n elements." (take :: Int -> [A] -> [A])
           , mkValEntry "drop" "Drop the first n elements." (drop :: Int -> [A] -> [A])
           , mkValEntry "zip" "Zip two lists." $ zip @A @B
@@ -351,13 +351,13 @@ base_predefinitions =
           [ mkValEntry "return" "A value as an Action." $ return @(PinaforeAction baseedit) @A
           , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind @baseedit
           , mkValEntry ">>" "Do actions in sequence." $ qbind_ @baseedit
-          , mkValEntry "afix" "The fixed point of an Action." $ mfix @(PinaforeAction baseedit) @A
+          , mkValEntry "fixAction" "The fixed point of an Action." $ mfix @(PinaforeAction baseedit) @A
           , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
           , mkValEntry
                 "stop"
-                "Stop. This is similar to an exception that can be caught with `onstop`. The default handler (for the main program, button presses, etc.), is to catch and ignore it."
+                "Stop. This is similar to an exception that can be caught with `onStop`. The default handler (for the main program, button presses, etc.), is to catch and ignore it."
                 (empty :: PinaforeAction baseedit BottomType)
-          , mkValEntry "onstop" "`onstop p q` does `q` first, and if it stops, then does `p`." $ onstop @baseedit
+          , mkValEntry "onStop" "`onStop p q` does `q` first, and if it stops, then does `p`." $ onStop @baseedit
           , mkValEntry
                 "for_"
                 "Perform an action on each value of a list."
@@ -367,19 +367,19 @@ base_predefinitions =
                 "Perform an action on each value of a list, returning a list."
                 (for :: [A] -> (A -> PinaforeAction baseedit B) -> PinaforeAction baseedit [B])
           , mkValEntry "output" "Output text to standard output." $ output @baseedit
-          , mkValEntry "outputln" "Output text and a newline to standard output." $ outputln @baseedit
+          , mkValEntry "outputLn" "Output text and a newline to standard output." $ outputLn @baseedit
           , mkValEntry
-                "gettimems"
+                "getTimeMS"
                 "Get the time as a whole number of milliseconds."
-                (liftIO gettimems :: PinaforeAction baseedit Integer)
+                (liftIO getTimeMS :: PinaforeAction baseedit Integer)
           ]
     , docTreeEntry
           "Undo"
           "Undo and redo changes."
-          [ mkValEntry "queue_undo" "Undo an action." $ do
+          [ mkValEntry "queueUndo" "Undo an action." $ do
                 ua <- pinaforeUndoActions
                 liftIO $ uaUndo ua noEditSource
-          , mkValEntry "queue_redo" "Redo an action." $ do
+          , mkValEntry "queueRedo" "Redo an action." $ do
                 ua <- pinaforeUndoActions
                 liftIO $ uaRedo ua noEditSource
           ]
@@ -387,25 +387,25 @@ base_predefinitions =
           "References"
           "A reference of type `Ref {-p,+q}` has a setting type of `p` and a getting type of `q`. References keep track of updates, and will update user interfaces constructed from them when their value changes."
           [ mkValEntry
-                "pureref"
+                "pureRef"
                 "A constant reference for a value."
                 (pure :: A -> PinaforeImmutableReference baseedit A)
           , mkValEntry
-                "immutref"
-                "Convert a reference to immutable.\n`immutref r = {%r}`"
+                "immutRef"
+                "Convert a reference to immutable.\n`immutRef r = {%r}`"
                 (id :: PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A)
           , mkValEntry
-                "comapref"
+                "coMapRef"
                 "Map a function on getting a reference."
                 (coRangeLift :: (A -> B) -> PinaforeRef baseedit '( C, A) -> PinaforeRef baseedit '( C, B))
           , mkValEntry
-                "contramapref"
+                "contraMapRef"
                 "Map a function on setting a reference."
                 (contraRangeLift :: (B -> A) -> PinaforeRef baseedit '( A, C) -> PinaforeRef baseedit '( B, C))
-          , mkValEntry "lensmapref" "Map getter & pushback functions on a reference." $
+          , mkValEntry "lensMapRef" "Map getter & pushback functions on a reference." $
             pinaforeFLensRef @baseedit @AP @AQ @B
           , mkValEntry
-                "applyref"
+                "applyRef"
                 "Combine references."
                 ((<*>) :: PinaforeImmutableReference baseedit (A -> B) -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit B)
           , mkValEntry
@@ -419,34 +419,34 @@ base_predefinitions =
                 "`p ?? q` = `p` if it is known, else `q`."
                 ((<|>) :: PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A)
           , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $ pinaforeRefGet @baseedit @A
-          , mkValEntry "runref" "Run an action from a reference." $ runPinaforeRef @baseedit
+          , mkValEntry "runRef" "Run an action from a reference." $ runPinaforeRef @baseedit
           , mkValEntry ":=" "Set a reference to a value. Stop if failed." $ setentity @baseedit
           , mkValEntry "delete" "Delete an entity reference. Stop if failed." $ deleteentity @baseedit
-          , mkValEntry "newmemref" "Create a new reference to memory, initially unknown." $ newmemref @baseedit
+          , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." $ newMemRef @baseedit
           ]
     , docTreeEntry
           "Sets"
           ""
           [ mkValEntry
-                "comapset"
+                "coMapSet"
                 "Map a function on getting from a set."
                 (coRangeLift :: (A -> B) -> PinaforeSetRef baseedit '( C, A) -> PinaforeSetRef baseedit '( C, B))
           , mkValEntry
-                "contramapset"
+                "contraMapSet"
                 "Map a function on setting to a set."
                 (contraRangeLift :: (B -> A) -> PinaforeSetRef baseedit '( A, C) -> PinaforeSetRef baseedit '( B, C))
           , mkValEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
             pinaforeSetRefMeet @baseedit @A
           , mkValEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
             pinaforeSetRefJoin @baseedit @A
-          , mkValEntry "setsum" "Sum of sets." $ pinaforeSetRefSum @baseedit @AP @AQ @BP @BQ
-          , mkValEntry "setproduct" "Product of sets. The resulting set will be read-only." $
+          , mkValEntry "setSum" "Sum of sets." $ pinaforeSetRefSum @baseedit @AP @AQ @BP @BQ
+          , mkValEntry "setProduct" "Product of sets. The resulting set will be read-only." $
             pinaforeSetRefProduct @baseedit @AP @AQ @BP @BQ
           , mkValEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
           , mkValEntry "member" "A reference to the membership of a value in a set." $ pinaforeSetRefMember @baseedit @A
           , mkValEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetRefSingle @baseedit @A
           , mkValEntry "count" "Count of members in a set." $ pinaforeSetRefFunc @baseedit @TopType @Int olength
-          , mkValEntry "newentity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew @baseedit
+          , mkValEntry "newEntity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew @baseedit
           , mkValEntry
                 "+="
                 "Add an entity to a set."
@@ -456,10 +456,10 @@ base_predefinitions =
                 "Remove an entity from a set."
                 (pinaforeSetRefRemove :: PinaforeSetRef baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
           , mkValEntry
-                "removeall"
+                "removeAll"
                 "Remove all entities from a set."
                 (pinaforeSetRefRemoveAll :: PinaforeSetRef baseedit '( BottomType, TopType) -> PinaforeAction baseedit ())
-          , mkValEntry "newmemset" "Create a new set reference to memory, initially empty." $ newmemset @baseedit
+          , mkValEntry "newMemSet" "Create a new set reference to memory, initially empty." $ newMemSet @baseedit
           ]
     , docTreeEntry
           "Morphisms"
@@ -485,13 +485,13 @@ base_predefinitions =
           , mkValEntry "durational" "Durational order." $ ordOrder @baseedit @NominalDiffTime
           , mkValEntry "calendrical" "Day order." $ ordOrder @baseedit @Day
           , mkValEntry "horological" "Time of day order." $ ordOrder @baseedit @TimeOfDay
-          , mkValEntry "localchronological" "Local time order." $ ordOrder @baseedit @LocalTime
+          , mkValEntry "localChronological" "Local time order." $ ordOrder @baseedit @LocalTime
           , mkValEntry "orders" "Join orders by priority." $ orders @baseedit @A
           , mkValEntry
-                "maporder"
+                "mapOrder"
                 "Map a function on an order."
                 (contramap :: (B -> A) -> PinaforeOrder baseedit A -> PinaforeOrder baseedit B)
-          , mkValEntry "orderon" "Order by an order on a particular morphism." $ orderon @baseedit @B @A
+          , mkValEntry "orderOn" "Order by an order on a particular morphism." $ orderOn @baseedit @B @A
           , mkValEntry "rev" "Reverse an order." $ rev @baseedit @A
           , mkValEntry "orderEQ" "Equal by an order." $ pinaforeOrderCompare @baseedit @A $ (==) EQ
           , mkValEntry "orderLT" "Less than by an order." $ pinaforeOrderCompare @baseedit @A $ (==) LT

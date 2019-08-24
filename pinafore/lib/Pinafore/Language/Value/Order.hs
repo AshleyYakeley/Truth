@@ -34,12 +34,12 @@ ordOrder ::
     => PinaforeOrder baseedit a
 ordOrder = MkPinaforeOrder id compare
 
-orderon ::
+orderOn ::
        forall baseedit a b.
        PinaforeMorphism baseedit '( a, TopType) '( BottomType, b)
     -> PinaforeOrder baseedit b
     -> PinaforeOrder baseedit a
-orderon f (MkPinaforeOrder ef o) = MkPinaforeOrder (ef . pinaforeMorphismFunction f) o
+orderOn f (MkPinaforeOrder ef o) = MkPinaforeOrder (ef . pinaforeMorphismFunction f) o
 
 orders :: forall baseedit a. [PinaforeOrder baseedit a] -> PinaforeOrder baseedit a
 orders = mconcat

@@ -167,7 +167,7 @@ testQueries =
               , testQuery "True" $ Just "True"
               , testQuery "False" $ Just "False"
               , testQuery "\"1\"" $ Just "1"
-              , testQuery "ui_table" $ Just "<?>"
+              , testQuery "uiTable" $ Just "<?>"
               ]
         , testGroup
               "list construction"
@@ -317,8 +317,8 @@ testQueries =
         , testGroup
               "text"
               [ testQuery "\"pqrs\"" $ Just "pqrs"
-              , testQuery "textlength \"abd\"" $ Just "3"
-              , testQuery "textsection 4 3 \"ABCDEFGHIJKLMN\"" $ Just "EFG"
+              , testQuery "textLength \"abd\"" $ Just "3"
+              , testQuery "textSection 4 3 \"ABCDEFGHIJKLMN\"" $ Just "EFG"
               ]
         , testGroup
               "operator precedence"

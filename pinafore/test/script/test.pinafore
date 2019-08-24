@@ -3,27 +3,27 @@
 let
 
 ### Useful
-ui_page n ui = (ui_label n,ui);
-ui_labelled n ui = ui_horizontal [(ui_label n,False),(ui,True)];
+ui_page n ui = (uiLabel n,ui);
+ui_labelled n ui = uiHorizontal [(uiLabel n,False),(ui,True)];
 
 std_window :: Ref +Text -> UI a -> Action Window;
-std_window title contents = afix $ \window -> let
+std_window title contents = fixAction $ \window -> let
     menus :: [MenuItem];
     menus =
         [
-            menu_submenu "File"
+            menuSubmenu "File"
             [
-                menu_action "Close" (Just "Ctrl+W") {closewindow window},
-                menu_separator,
-                menu_action "Exit" (Just "Ctrl+Q") {exit_ui}
+                menuAction "Close" (Just "Ctrl+W") {closeWindow window},
+                menuSeparator,
+                menuAction "Exit" (Just "Ctrl+Q") {exitUI}
             ],
-            menu_submenu "Edit"
+            menuSubmenu "Edit"
             [
-                menu_action "Undo" (Just "Ctrl+Z") {queue_undo},
-                menu_action "Redo" (Just "Ctrl+Y") {queue_redo}
+                menuAction "Undo" (Just "Ctrl+Z") {queueUndo},
+                menuAction "Redo" (Just "Ctrl+Y") {queueRedo}
             ]
         ]
-    in openwindow title (\_ -> {menus}) $ ui_scrolled contents;
+    in openWindow title (\_ -> {menus}) $ uiScrolled contents;
 
 ### People
 
@@ -65,45 +65,45 @@ married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
 
 # UI
 ui_people :: SetRef Person -> UI Person;
-ui_people pp = ui_withselection $ \getperson -> ui_vertical
+ui_people pp = uiWithSelection $ \getperson -> uiVertical
 [
-    (ui_button {"New Person"} {newentity pp >>= window_person},False),
-    (ui_button {"View Person"} {getperson >>= window_person},False),
-    (ui_button {"Remove Person"} {getperson >>= \p -> pp -= p},False),
-    (ui_table [({"Name"},\p -> name !$ {p})] (orders []) pp $ window_person,True)
+    (uiButton {"New Person"} {newEntity pp >>= window_person},False),
+    (uiButton {"View Person"} {getperson >>= window_person},False),
+    (uiButton {"Remove Person"} {getperson >>= \p -> pp -= p},False),
+    (uiTable [({"Name"},\p -> name !$ {p})] (orders []) pp $ window_person,True)
 ];
 
 ui_person :: Ref Person -> UI None;
-ui_person p = ui_ignore $ui_vertical
+ui_person p = uiIgnore $uiVertical
 [
-    (ui_labelled {"Name: "} $ ui_textentry $ name !$ p,False),
-    (ui_pages
+    (ui_labelled {"Name: "} $ uiTextEntry $ name !$ p,False),
+    (uiPages
     [
-        ui_page {"Social"} $ ui_vertical
+        ui_page {"Social"} $ uiVertical
         [
-            (ui_labelled {"Email: "} $ ui_textentry $ email !$ p,False),
-            (ui_labelled {"Phone: "} $ ui_textentry $ phone !$ p,False)
+            (ui_labelled {"Email: "} $ uiTextEntry $ email !$ p,False),
+            (ui_labelled {"Phone: "} $ uiTextEntry $ phone !$ p,False)
         ],
-        ui_page {"Home"} $ let homep = home !$ p in ui_vertical
+        ui_page {"Home"} $ let homep = home !$ p in uiVertical
         [
-            (ui_labelled {"Address: "} $ ui_textarea $ address !$ homep,False),
-            (ui_labelled {"City: "} $ ui_textentry $ city !$ homep,False),
-            (ui_labelled {"Postcode/ZIP: "} $ ui_textentry $ postcode !$ homep,False),
-            (ui_labelled {"State/Province: "} $ ui_textentry $ province !$ homep,False),
-            (ui_labelled {"Country: "} $ ui_textentry $ country !$ homep,False),
-            (ui_labelled {"Phone: "} $ ui_textentry $ locphone !$ homep,False)
+            (ui_labelled {"Address: "} $ uiTextArea $ address !$ homep,False),
+            (ui_labelled {"City: "} $ uiTextEntry $ city !$ homep,False),
+            (ui_labelled {"Postcode/ZIP: "} $ uiTextEntry $ postcode !$ homep,False),
+            (ui_labelled {"State/Province: "} $ uiTextEntry $ province !$ homep,False),
+            (ui_labelled {"Country: "} $ uiTextEntry $ country !$ homep,False),
+            (ui_labelled {"Phone: "} $ uiTextEntry $ locphone !$ homep,False)
         ],
-        ui_page {"Work"} $ ui_vertical
+        ui_page {"Work"} $ uiVertical
         [
-            (ui_labelled {"Employer: "} $ ui_textentry $ (name !. employer) !$ p,False)
+            (ui_labelled {"Employer: "} $ uiTextEntry $ (name !. employer) !$ p,False)
         ],
-        ui_page {"Family"} $ ui_vertical
+        ui_page {"Family"} $ uiVertical
         [
-            (ui_labelled {"Birth: "} $ ui_textentry $ birthdate !$ p,False),
-            (ui_labelled {"Death: "} $ ui_textentry $ deathdate !$ p,False),
-            (ui_booleancheckbox {"Married"} $ married !$ p,False),
-            (ui_labelled {"Mother: "} $ ui_pick name people $ mother !$ p,False),
-            (ui_labelled {"Father: "} $ ui_pick name people $ father !$ p,False),
+            (ui_labelled {"Birth: "} $ uiTextEntry $ birthdate !$ p,False),
+            (ui_labelled {"Death: "} $ uiTextEntry $ deathdate !$ p,False),
+            (uiCheckBox {"Married"} $ married !$ p,False),
+            (ui_labelled {"Mother: "} $ uiPick name people $ mother !$ p,False),
+            (ui_labelled {"Father: "} $ uiPick name people $ father !$ p,False),
             (ui_people $ children p,True)
         ]
     ],True)
@@ -123,11 +123,11 @@ opentype P;
 pvalue = property @P @Number !"pvalue";
 aval = pvalue !$ {entity @P !a4706230-2c61-44b1-b600-516e7a54c607};
 bval = pvalue !$ {entity @P !9d284ad2-e141-4114-ae50-8829a6db710f};
-in std_window {"Calc"} $ ui_vertical
+in std_window {"Calc"} $ uiVertical
 [
-    #(ui_textentry aval,False),
-    #(ui_textentry bval,False),
-    #(ui_label $ aval / bval,False)
+    #(uiTextEntry aval,False),
+    #(uiTextEntry bval,False),
+    #(uiLabel $ aval / bval,False)
 ];
 
 ### Switching Value
@@ -140,11 +140,11 @@ ptext = property @P @Text !"ptext";
 sw_pick = pbool !$ {entity @P !59eb2d87-f815-47ef-b7dc-8fe434151bb6};
 sw_val1 = ptext !$ {entity @P !6d9f7afa-1091-49cc-8646-8e613bb75ee5};
 sw_val2 = ptext !$ {entity @P !934712ae-73a7-4084-8a43-d618c737fd56};
-in std_window {"Switch"} $ ui_vertical
+in std_window {"Switch"} $ uiVertical
 [
-    #(ui_textentry sw_pick,False),
-    (ui_booleancheckbox {"pick"} sw_pick,False),
-    (ui_dynamic {if %sw_pick then ui_textarea sw_val1 else ui_textarea sw_val2},True)
+    #(uiTextEntry sw_pick,False),
+    (uiCheckBox {"pick"} sw_pick,False),
+    (uiDynamic {if %sw_pick then uiTextArea sw_val1 else uiTextArea sw_val2},True)
 ];
 
 ### Imported Files
@@ -153,44 +153,44 @@ window_files :: Action Window;
 window_files = let
 #Files = @type !f649e7d7-7e98-4c86-919c-34f52ac12c7a;
 #caption = %4a8ca041-a67d-4a1e-b212-9243fca635b0;
-window_file f = std_window {"File"} $ ui_vertical
+window_file f = std_window {"File"} $ uiVertical
 [
-    #(ui_textentry $ caption f,False)
+    #(uiTextEntry $ caption f,False)
 ];
-in std_window {"Files"} $ ui_vertical
+in std_window {"Files"} $ uiVertical
 [
-    #(ui_button "Import" {file_import Files $ \f -> std_window $ window_file f},False),
-    #(ui_table [column "Caption" caption, column "Size" file_size] window_file Files,True)
+    #(uiButton "Import" {file_import Files $ \f -> std_window $ window_file f},False),
+    #(uiTable [column "Caption" caption, column "Size" file_size] window_file Files,True)
 ];
 
 ### Constant Edit
 
 window_constant :: Action Window;
-window_constant = std_window {"Constant"} $ ui_vertical
+window_constant = std_window {"Constant"} $ uiVertical
 [
-    (ui_booleancheckbox {"off"} {False},False),
-    (ui_booleancheckbox {"on"} {True},False),
-    (ui_textentry {"constant"},False),
-    (ui_textarea {"constant"},True)
+    (uiCheckBox {"off"} {False},False),
+    (uiCheckBox {"on"} {True},False),
+    (uiTextEntry {"constant"},False),
+    (uiTextArea {"constant"},True)
 ];
 
 ### Start Window
 
 window_start :: Action Window;
-window_start = std_window {"Pinafore"} $ ui_vertical
+window_start = std_window {"Pinafore"} $ uiVertical
 [
-    (ui_label {"UTC time: " <> totext %now},False),
-    (ui_label {"UTC day: " <> totext %utcDay},False),
-    (ui_label {"Local time: " <> totext %localNow},False),
-    (ui_label {"Local day: " <> totext %today},False),
-    (ui_label {"Time zone offset minutes: " <> totext %timeZone},False),
-    (ui_button {"People"} {window_people},False),
-    (ui_button {"Calculated Form"} {window_calc},False),
-    (ui_button {"Switch"} {window_switch},False),
-    (ui_button {"Files"} {window_files},False),
-    (ui_button {"Constant"} {window_constant},False),
-    (ui_button {"Disabled"} unknown,False),
-    (ui_blank,True)
+    (uiLabel {"UTC time: " <> toText %now},False),
+    (uiLabel {"UTC day: " <> toText %utcDay},False),
+    (uiLabel {"Local time: " <> toText %localNow},False),
+    (uiLabel {"Local day: " <> toText %today},False),
+    (uiLabel {"Time zone offset minutes: " <> toText %timeZone},False),
+    (uiButton {"People"} {window_people},False),
+    (uiButton {"Calculated Form"} {window_calc},False),
+    (uiButton {"Switch"} {window_switch},False),
+    (uiButton {"Files"} {window_files},False),
+    (uiButton {"Constant"} {window_constant},False),
+    (uiButton {"Disabled"} unknown,False),
+    (uiBlank,True)
 ];
 
 in do
