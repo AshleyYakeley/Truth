@@ -9,7 +9,7 @@ import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
 import Truth.Core.Types
 
-type MemoryCellEdit = DependentEdit IORef
+type MemoryCellEdit = DependentEdit WitnessedIORef
 
 makeMemoryCellObject :: IO (Object MemoryCellEdit)
 makeMemoryCellObject = do
@@ -17,14 +17,14 @@ makeMemoryCellObject = do
     let
         objRun = mvarUnliftIO var
         objRead :: MutableRead (StateT () IO) (EditReader MemoryCellEdit)
-        objRead (MkTupleEditReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef ioref
+        objRead (MkTupleEditReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef $ unWitnessed ioref
         objEdit :: [MemoryCellEdit] -> StateT () IO (Maybe (EditSource -> StateT () IO ()))
         objEdit =
             singleAlwaysEdit $ \(MkTupleEdit (MkDependentSelector ioref) (MkWholeEdit a)) _ ->
-                liftIO $ writeIORef ioref a
+                liftIO $ writeIORef (unWitnessed ioref) a
     return $ MkCloseUnliftIO objRun $ MkAnObject {..}
 
 makeMemoryCellEditLens :: a -> IO (EditLens MemoryCellEdit (WholeEdit a))
 makeMemoryCellEditLens a = do
-    tvar <- newIORef a
+    tvar <- newWitnessedIORef a
     return $ dependentEditLens tvar
