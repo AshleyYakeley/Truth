@@ -17,3 +17,6 @@ instance Applicative (WholeEditFunction edit) where
         MkWholeEditFunction $ funcEditFunction (\(ab, a) -> ab a) . pairWholeEditFunction fab fa
 
 instance IsoVariant (WholeEditFunction edit)
+
+wholeEditFunctionReadOnlyEditLens :: WholeEditFunction edit a -> EditLens edit (WholeEdit a)
+wholeEditFunctionReadOnlyEditLens (MkWholeEditFunction ef) = readOnlyEditLens ef

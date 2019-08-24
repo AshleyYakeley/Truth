@@ -132,24 +132,36 @@ changeOnlyEditFunction = do
                     return [MkWholeEdit newa]
     return $ MkCloseUnlift (mvarUnlift var) $ MkAnEditFunction {..}
 
-wholeEditLens ::
-       forall mf a b. (MonadOne mf)
-    => Lens' mf a b
-    -> EditLens (WholeEdit a) (WholeEdit b)
-wholeEditLens lens =
+ioWholeEditLens :: forall a b. (a -> IO b) -> (b -> a -> IO (Maybe a)) -> EditLens (WholeEdit a) (WholeEdit b)
+ioWholeEditLens ioget ioput =
     MkCloseUnlift identityUnlift $
     MkAnEditLens
         { elFunction =
               MkAnEditFunction
-                  { efGet = \mr ReadWhole -> lift $ fmap (lensGet lens) $ mr ReadWhole
-                  , efUpdate = \(MkWholeEdit a) _ -> return [MkWholeEdit $ lensGet lens a]
+                  { efGet =
+                        \mr ReadWhole ->
+                            lift $ do
+                                a <- mr ReadWhole
+                                liftIO $ ioget a
+                  , efUpdate =
+                        \(MkWholeEdit a) _ -> do
+                            b <- liftIO $ ioget a
+                            return [MkWholeEdit b]
                   }
         , elPutEdits =
               elPutEditsFromPutEdit $ \(MkWholeEdit b) mr ->
                   lift $ do
                       olda <- mr ReadWhole
-                      return $ fmap (\newa -> [MkWholeEdit newa]) $ getMaybeOne $ lensPutback lens b olda
+                      mnewa <- liftIO $ ioput b olda
+                      return $ fmap (\newa -> [MkWholeEdit newa]) mnewa
         }
+
+wholeEditLens ::
+       forall mf a b. (MonadOne mf)
+    => Lens' mf a b
+    -> EditLens (WholeEdit a) (WholeEdit b)
+wholeEditLens lens =
+    ioWholeEditLens (\a -> return $ lensGet lens a) (\b olda -> return $ getMaybeOne $ lensPutback lens b olda)
 
 bijectionWholeEditLens :: Bijection a b -> EditLens (WholeEdit a) (WholeEdit b)
 bijectionWholeEditLens = wholeEditLens . bijectionLens
