@@ -34,7 +34,7 @@ reflectingObjectMaker (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) upd
         in (MkCloseUnliftIO run' $ MkAnObject r' e', ())
 
 mapUpdates :: forall edita editb. EditLens edita editb -> Object edita -> [edita] -> IO [editb]
-mapUpdates (MkCloseUnlift unlift (MkAnEditLens (MkAnEditFunction _ update) _)) (MkCloseUnliftIO unliftIO (MkAnObject mr _)) eas =
+mapUpdates (MkCloseUnlift unlift (MkAnEditLens (MkAnUpdateFunction _ update) _)) (MkCloseUnliftIO unliftIO (MkAnObject mr _)) eas =
     runTransform unliftIO $
     runUnlift unlift $ withTransConstraintTM @MonadIO $ fmap mconcat $ for eas $ \ea -> update ea mr
 

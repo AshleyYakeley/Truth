@@ -13,7 +13,7 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
 data Column tedit row = MkColumn
-    { colName :: EditFunction tedit (WholeEdit Text)
+    { colName :: UpdateFunction tedit (WholeEdit Text)
     , colText :: row -> Text
     , colProps :: row -> TableCellProps
     }
@@ -22,9 +22,9 @@ mapColumn :: (r2 -> r1) -> Column tedit r1 -> Column tedit r2
 mapColumn f (MkColumn n t p) = MkColumn n (t . f) (p . f)
 
 data StoreEntry tedit o rowtext rowprops = MkStoreEntry
-    { entryOrderFunction :: EditFunction tedit (WholeEdit o)
+    { entryOrderFunction :: UpdateFunction tedit (WholeEdit o)
     , entryTextLens :: EditLens tedit (WholeEdit rowtext)
-    , entryPropFunc :: EditFunction tedit (WholeEdit rowprops)
+    , entryPropFunc :: UpdateFunction tedit (WholeEdit rowprops)
     , entryRowText :: rowtext
     , entryRowProps :: rowprops
     }
@@ -49,7 +49,7 @@ addColumn ::
 addColumn tview store col = do
     renderer <- new CellRendererText []
     column <- new TreeViewColumn []
-    cvBindEditFunction Nothing (colName col) $ #setTitle column
+    cvBindUpdateFunction Nothing (colName col) $ #setTitle column
     #packStart column renderer False
     cellLayoutSetAttributes column renderer store $ \(_, entry) -> cellAttributes col entry
     _ <- #appendColumn tview column
@@ -57,7 +57,7 @@ addColumn tview store col = do
 
 data KeyColumns tedit key =
     forall rowprops rowtext. MkKeyColumns (key -> IO ( EditLens tedit (WholeEdit rowtext)
-                                                     , EditFunction tedit (WholeEdit rowprops)))
+                                                     , UpdateFunction tedit (WholeEdit rowprops)))
                                           [Column tedit (rowtext, rowprops)]
 
 oneKeyColumn :: KeyColumn tedit key -> KeyColumns tedit key
@@ -71,11 +71,11 @@ instance Semigroup (KeyColumns tedit key) where
                  (lens2, func2) <- f2 k
                  return $
                      ( convertEditLens . pairCombineEditLenses lens1 lens2
-                     , convertEditFunction . pairCombineEditFunctions func1 func2)) $
+                     , convertUpdateFunction . pairCombineUpdateFunctions func1 func2)) $
         fmap (mapColumn $ \(x, y) -> (fst x, fst y)) c1 <> fmap (mapColumn $ \(x, y) -> (snd x, snd y)) c2
 
 instance Monoid (KeyColumns tedit key) where
-    mempty = MkKeyColumns (\_ -> return (constEditLens (), constEditFunction ())) []
+    mempty = MkKeyColumns (\_ -> return (constEditLens (), constUpdateFunction ())) []
     mappend = (<>)
 
 keyContainerView ::
@@ -83,12 +83,12 @@ keyContainerView ::
        (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => KeyColumns tedit (ContainerKey cont)
     -> (o -> o -> Ordering)
-    -> (ContainerKey cont -> EditFunction tedit (WholeEdit o))
+    -> (ContainerKey cont -> UpdateFunction tedit (WholeEdit o))
     -> EditLens tedit (KeyEdit cont iedit)
     -> (ContainerKey cont -> IO ())
     -> GCreateView (ContainerKey cont) tedit
 keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens tedit (WholeEdit rowtext)
-                                                                   , EditFunction tedit (WholeEdit rowprops))) cols) order geto tableLens onDoubleClick = do
+                                                                   , UpdateFunction tedit (WholeEdit rowprops))) cols) order geto tableLens onDoubleClick = do
     let
         getStoreItem ::
                MonadUnliftIO m
@@ -98,16 +98,16 @@ keyContainerView (MkKeyColumns (colfunc :: ContainerKey cont -> IO ( EditLens te
         getStoreItem mr key = do
             let entryOrderFunction = geto key
             (entryTextLens, entryPropFunc) <- liftIO $ colfunc key
-            entryRowText <- editFunctionRead (editLensFunction entryTextLens) mr ReadWhole
-            entryRowProps <- editFunctionRead entryPropFunc mr ReadWhole
+            entryRowText <- updateFunctionRead (editLensFunction entryTextLens) mr ReadWhole
+            entryRowProps <- updateFunctionRead entryPropFunc mr ReadWhole
             return (key, MkStoreEntry {..})
     initialRows <-
         cvLiftView $ do
             viewObjectRead $ \_ mr -> do
-                MkFiniteSet initialKeys <- editFunctionRead (editLensFunction tableLens) mr KeyReadKeys
+                MkFiniteSet initialKeys <- updateFunctionRead (editLensFunction tableLens) mr KeyReadKeys
                 ords <-
                     for initialKeys $ \key -> do
-                        o <- editFunctionRead (geto key) mr ReadWhole
+                        o <- updateFunctionRead (geto key) mr ReadWhole
                         return (key, o)
                 let initialKeys' = fmap fst $ sortBy (\(_, a) (_, b) -> order a b) ords
                 for initialKeys' $ getStoreItem mr

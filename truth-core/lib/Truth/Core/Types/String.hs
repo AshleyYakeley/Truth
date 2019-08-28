@@ -153,19 +153,19 @@ stringSectionLens initial =
                 len <- lift $ mr StringReadLength
                 stateRaw <- get
                 return $ clipRunBounds len stateRaw
-            efGet :: ReadFunctionT (StateT (SequenceRun seq)) (StringRead seq) (StringRead seq)
-            efGet mr rt = do
+            ufGet :: ReadFunctionT (StateT (SequenceRun seq)) (StringRead seq) (StringRead seq)
+            ufGet mr rt = do
                 st <- getState mr
                 case rt of
                     StringReadLength -> return $ runLength st
                     StringReadSection run ->
                         lift $ mr $ StringReadSection $ clipWithin st $ relativeRun (negate $ runStart st) run
-            efUpdate ::
+            ufUpdate ::
                    forall m. MonadIO m
                 => StringEdit seq
                 -> MutableRead m (EditReader (StringEdit seq))
                 -> StateT (SequenceRun seq) m [StringEdit seq]
-            efUpdate edita mr = do
+            ufUpdate edita mr = do
                 oldstate <- get
                 newlen <- lift $ mr StringReadLength
                 let
@@ -192,8 +192,8 @@ stringSectionLens initial =
                                         case (runLength runb, onull sb) of
                                             (0, True) -> Nothing
                                             _ -> return $ StringReplaceSection runb sb
-            elFunction :: AnEditFunction (StateT (SequenceRun seq)) (StringEdit seq) (StringEdit seq)
-            elFunction = MkAnEditFunction {..}
+            elFunction :: AnUpdateFunction (StateT (SequenceRun seq)) (StringEdit seq) (StringEdit seq)
+            elFunction = MkAnUpdateFunction {..}
             elPutEdit ::
                    forall m. MonadIO m
                 => StringEdit seq

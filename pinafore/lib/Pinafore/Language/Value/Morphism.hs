@@ -94,7 +94,8 @@ pinaforeApplyMorphismSet (MkPinaforeMorphism tra trb m) (MkPinaforeSetRef tra' s
                 cfmap $ lensFunctionMorphism m -<
                     fmap (Known . fromEnhanced (rangeContra tra) . fromEnhanced (rangeCo tra')) st
             returnA -< mapMaybe knowToMaybe skb
-    in MkPinaforeSetRef trb $ readOnlyEditLens $ convertEditFunction . applyPinaforeFunction setm (lensFunctionValue ss)
+    in MkPinaforeSetRef trb $
+       readOnlyEditLens $ convertUpdateFunction . applyPinaforeFunction setm (lensFunctionValue ss)
 
 pinaforeApplyInverseMorphismRef ::
        forall baseedit ap aq bp bq.

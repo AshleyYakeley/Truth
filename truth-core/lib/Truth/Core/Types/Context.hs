@@ -87,11 +87,11 @@ mapContextEdit :: (edita -> editb) -> ContextEdit editx edita -> ContextEdit edi
 mapContextEdit _ (MkTupleEdit SelectContext edit) = MkTupleEdit SelectContext edit
 mapContextEdit f (MkTupleEdit SelectContent edit) = MkTupleEdit SelectContent $ f edit
 
-contextualiseAnEditFunction ::
+contextualiseAnUpdateFunction ::
        forall t edita editb. MonadTransUnlift t
-    => AnEditFunction t edita editb
-    -> AnEditFunction t edita (ContextEdit edita editb)
-contextualiseAnEditFunction (MkAnEditFunction g u) = let
+    => AnUpdateFunction t edita editb
+    -> AnUpdateFunction t edita (ContextEdit edita editb)
+contextualiseAnUpdateFunction (MkAnUpdateFunction g u) = let
     g' :: ReadFunctionT t (EditReader edita) (ContextEditReader edita editb)
     g' mr (MkTupleEditReader SelectContext rt) = lift $ mr rt
     g' mr (MkTupleEditReader SelectContent rt) = g mr rt
@@ -103,10 +103,10 @@ contextualiseAnEditFunction (MkAnEditFunction g u) = let
         withTransConstraintTM @MonadIO $ do
             ebs <- u ea mr
             return $ (MkTupleEdit SelectContext ea) : (fmap (MkTupleEdit SelectContent) ebs)
-    in MkAnEditFunction g' u'
+    in MkAnUpdateFunction g' u'
 
-contextualiseEditFunction :: EditFunction edita editb -> EditFunction edita (ContextEdit edita editb)
-contextualiseEditFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ contextualiseAnEditFunction f
+contextualiseUpdateFunction :: UpdateFunction edita editb -> UpdateFunction edita (ContextEdit edita editb)
+contextualiseUpdateFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ contextualiseAnUpdateFunction f
 
 partitionContextEdits :: forall ea eb. [ContextEdit ea eb] -> ([ea], [eb])
 partitionContextEdits pes = let
@@ -120,7 +120,7 @@ contextualiseAnEditLens ::
     => AnEditLens t edita editb
     -> AnEditLens t edita (ContextEdit edita editb)
 contextualiseAnEditLens (MkAnEditLens f pe) = let
-    f' = contextualiseAnEditFunction f
+    f' = contextualiseAnUpdateFunction f
     pe' :: forall m. MonadIO m
         => [ContextEdit edita editb]
         -> MutableRead m (EditReader edita)
@@ -137,11 +137,11 @@ contextualiseAnEditLens (MkAnEditLens f pe) = let
 contextualiseEditLens :: EditLens edita editb -> EditLens edita (ContextEdit edita editb)
 contextualiseEditLens (MkCloseUnlift unlift lens) = MkCloseUnlift unlift $ contextualiseAnEditLens lens
 
-liftContentAnEditFunction ::
+liftContentAnUpdateFunction ::
        forall t edita editb editn. MonadTransUnlift t
-    => AnEditFunction t edita editb
-    -> AnEditFunction t (ContextEdit edita editn) (ContextEdit editb editn)
-liftContentAnEditFunction (MkAnEditFunction g u) = let
+    => AnUpdateFunction t edita editb
+    -> AnUpdateFunction t (ContextEdit edita editn) (ContextEdit editb editn)
+liftContentAnUpdateFunction (MkAnUpdateFunction g u) = let
     g' :: ReadFunctionT t (ContextEditReader edita editn) (ContextEditReader editb editn)
     g' mr (MkTupleEditReader SelectContent rt) = lift $ mr $ MkTupleEditReader SelectContent rt
     g' mr (MkTupleEditReader SelectContext rt) = g (mr . MkTupleEditReader SelectContext) rt
@@ -154,25 +154,26 @@ liftContentAnEditFunction (MkAnEditFunction g u) = let
         withTransConstraintTM @MonadIO $ do
             edits <- u edit (mr . MkTupleEditReader SelectContext)
             return $ fmap (MkTupleEdit SelectContext) edits
-    in MkAnEditFunction g' u'
+    in MkAnUpdateFunction g' u'
 
-liftContentEditFunction ::
+liftContentUpdateFunction ::
        forall edita editb editn.
-       EditFunction edita editb
-    -> EditFunction (ContextEdit edita editn) (ContextEdit editb editn)
-liftContentEditFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ liftContentAnEditFunction f
+       UpdateFunction edita editb
+    -> UpdateFunction (ContextEdit edita editn) (ContextEdit editb editn)
+liftContentUpdateFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ liftContentAnUpdateFunction f
 
-carryContextEditFunction ::
-       EditFunction (ContextEdit editx edita) editb -> EditFunction (ContextEdit editx edita) (ContextEdit editx editb)
-carryContextEditFunction func =
-    liftContentEditFunction (editLensFunction $ tupleEditLens SelectContext) . contextualiseEditFunction func
+carryContextUpdateFunction ::
+       UpdateFunction (ContextEdit editx edita) editb
+    -> UpdateFunction (ContextEdit editx edita) (ContextEdit editx editb)
+carryContextUpdateFunction func =
+    liftContentUpdateFunction (editLensFunction $ tupleEditLens SelectContext) . contextualiseUpdateFunction func
 
 liftContentAnEditLens ::
        forall t edita editb editn. MonadTransUnlift t
     => AnEditLens t edita editb
     -> AnEditLens t (ContextEdit edita editn) (ContextEdit editb editn)
 liftContentAnEditLens (MkAnEditLens f pe) = let
-    f' = liftContentAnEditFunction f
+    f' = liftContentAnUpdateFunction f
     pe' :: forall m. MonadIO m
         => [ContextEdit editb editn]
         -> MutableRead m (EditReader (ContextEdit edita editn))

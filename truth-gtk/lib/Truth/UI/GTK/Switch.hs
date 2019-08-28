@@ -9,7 +9,7 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-switchView :: forall sel edit. EditFunction edit (WholeEdit (GCreateView sel edit)) -> GCreateView sel edit
+switchView :: forall sel edit. UpdateFunction edit (WholeEdit (GCreateView sel edit)) -> GCreateView sel edit
 switchView specfunc = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
@@ -38,4 +38,4 @@ switchGetView =
         spec <- isUISpec uispec
         return $
             case spec of
-                MkSwitchUISpec specfunc -> switchView $ funcEditFunction getview . specfunc
+                MkSwitchUISpec specfunc -> switchView $ funcUpdateFunction getview . specfunc

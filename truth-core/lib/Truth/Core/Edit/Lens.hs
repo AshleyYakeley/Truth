@@ -8,7 +8,7 @@ import Truth.Core.Import
 import Truth.Core.Read
 
 data AnEditLens t edita editb = MkAnEditLens
-    { elFunction :: AnEditFunction t edita editb
+    { elFunction :: AnUpdateFunction t edita editb
     , elPutEdits :: forall m. MonadIO m => [editb] -> MutableRead m (EditReader edita) -> t m (Maybe [edita])
     }
 
@@ -42,7 +42,7 @@ instance UnliftCategory AnEditLens where
                     case hasTransConstraint @MonadIO @tbc @(tab m) of
                         Dict ->
                             getComposeM $ do
-                                ebs <- MkComposeM $ MkComposeT $ peBC ec $ efGet efAB mra
+                                ebs <- MkComposeM $ MkComposeT $ peBC ec $ ufGet efAB mra
                                 MkComposeM $ lift2ComposeT $ elPutEdits lensAB ebs mra
         efAC = ucCompose efBC efAB
         in MkAnEditLens efAC peAC
@@ -73,10 +73,10 @@ elPutEditsFromSimplePutEdit putEdit editBs _ =
         editAss <- for editBs $ \edit -> MkComposeM $ putEdit edit
         return $ mconcat editAss
 
-editLensFunction :: EditLens edita editb -> EditFunction edita editb
+editLensFunction :: EditLens edita editb -> UpdateFunction edita editb
 editLensFunction (MkCloseUnlift unlift (MkAnEditLens func _)) = MkCloseUnlift unlift func
 
-readOnlyEditLens :: EditFunction edita editb -> EditLens edita editb
+readOnlyEditLens :: UpdateFunction edita editb -> EditLens edita editb
 readOnlyEditLens (MkCloseUnlift unlift elFunction) = let
     elPutEdits [] _ = withTransConstraintTM @MonadIO $ return $ Just []
     -- must allow empty edit-lists so that composition works correctly
@@ -87,51 +87,51 @@ funcEditLens ::
        forall edita editb. (FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
     => (EditSubject edita -> EditSubject editb)
     -> EditLens edita editb
-funcEditLens f = readOnlyEditLens $ funcEditFunction f
+funcEditLens f = readOnlyEditLens $ funcUpdateFunction f
 
 constEditLens ::
        forall edita editb. SubjectReader (EditReader editb)
     => EditSubject editb
     -> EditLens edita editb
-constEditLens b = readOnlyEditLens $ constEditFunction b
+constEditLens b = readOnlyEditLens $ constUpdateFunction b
 
-convertAnEditFunction ::
+convertAnUpdateFunction ::
        forall edita editb.
        ( EditSubject edita ~ EditSubject editb
        , FullSubjectReader (EditReader edita)
        , ApplicableEdit edita
        , FullEdit editb
        )
-    => AnEditFunction IdentityT edita editb
-convertAnEditFunction = let
-    efGet :: ReadFunctionT IdentityT (EditReader edita) (EditReader editb)
-    efGet mr = mSubjectToMutableRead $ lift $ mutableReadToSubject mr
-    efUpdate ::
+    => AnUpdateFunction IdentityT edita editb
+convertAnUpdateFunction = let
+    ufGet :: ReadFunctionT IdentityT (EditReader edita) (EditReader editb)
+    ufGet mr = mSubjectToMutableRead $ lift $ mutableReadToSubject mr
+    ufUpdate ::
            forall m. MonadIO m
         => edita
         -> MutableRead m (EditReader edita)
         -> IdentityT m [editb]
-    efUpdate edita mr = do
+    ufUpdate edita mr = do
         newa <- lift $ mutableReadToSubject $ applyEdit edita mr
         getReplaceEditsFromSubject newa
-    in MkAnEditFunction {..}
+    in MkAnUpdateFunction {..}
 
-convertEditFunction ::
+convertUpdateFunction ::
        forall edita editb.
        ( EditSubject edita ~ EditSubject editb
        , FullSubjectReader (EditReader edita)
        , ApplicableEdit edita
        , FullEdit editb
        )
-    => EditFunction edita editb
-convertEditFunction = MkCloseUnlift identityUnlift convertAnEditFunction
+    => UpdateFunction edita editb
+convertUpdateFunction = MkCloseUnlift identityUnlift convertAnUpdateFunction
 
 convertEditLens ::
        forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb)
     => EditLens edita editb
 convertEditLens = let
-    elFunction :: AnEditFunction IdentityT edita editb
-    elFunction = convertAnEditFunction
+    elFunction :: AnUpdateFunction IdentityT edita editb
+    elFunction = convertAnUpdateFunction
     elPutEdits ::
            forall m. MonadIO m
         => [editb]

@@ -16,18 +16,18 @@ tableCellPlain = let
     in MkTableCellProps {..}
 
 data KeyColumn tedit key = MkKeyColumn
-    { kcName :: EditFunction tedit (WholeEdit Text)
-    , kcContents :: key -> IO (EditLens tedit (WholeEdit Text), EditFunction tedit (WholeEdit TableCellProps))
+    { kcName :: UpdateFunction tedit (WholeEdit Text)
+    , kcContents :: key -> IO (EditLens tedit (WholeEdit Text), UpdateFunction tedit (WholeEdit TableCellProps))
     }
 
 readOnlyKeyColumn ::
-       EditFunction tedit (WholeEdit Text)
-    -> (key -> IO (EditFunction tedit (WholeEdit (Text, TableCellProps))))
+       UpdateFunction tedit (WholeEdit Text)
+    -> (key -> IO (UpdateFunction tedit (WholeEdit (Text, TableCellProps))))
     -> KeyColumn tedit key
 readOnlyKeyColumn kcName getter = let
     kcContents key = do
         func <- getter key
-        return (readOnlyEditLens $ funcEditFunction fst . func, funcEditFunction snd . func)
+        return (readOnlyEditLens $ funcUpdateFunction fst . func, funcUpdateFunction snd . func)
     in MkKeyColumn {..}
 
 data TableUISpec sel tedit where
@@ -36,7 +36,7 @@ data TableUISpec sel tedit where
            (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
         => [KeyColumn tedit (ContainerKey cont)]
         -> (o -> o -> Ordering)
-        -> (ContainerKey cont -> EditFunction tedit (WholeEdit o))
+        -> (ContainerKey cont -> UpdateFunction tedit (WholeEdit o))
         -> EditLens tedit (KeyEdit cont iedit)
         -> (ContainerKey cont -> IO ())
         -> TableUISpec (ContainerKey cont) tedit
@@ -46,7 +46,7 @@ tableUISpec ::
        (KeyContainer cont, FullSubjectReader (EditReader iedit), HasKeyReader cont (EditReader iedit))
     => [KeyColumn tedit (ContainerKey cont)]
     -> (o -> o -> Ordering)
-    -> (ContainerKey cont -> EditFunction tedit (WholeEdit o))
+    -> (ContainerKey cont -> UpdateFunction tedit (WholeEdit o))
     -> EditLens tedit (KeyEdit cont iedit)
     -> (ContainerKey cont -> IO ())
     -> UISpec (ContainerKey cont) tedit

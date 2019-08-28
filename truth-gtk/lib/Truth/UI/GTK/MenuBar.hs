@@ -49,7 +49,7 @@ attachMenuEntry ag ms (ActionMenuEntry label maccel raction) = do
                         gmods = fmap toModifierType mods
                     accelLabelSetAccel l keyw gmods
                     liftLifeCycleIO $ accelGroupConnection ag keyw gmods [AccelFlagsVisible] meaction
-    cvBindEditFunction Nothing raction $ \maction ->
+    cvBindUpdateFunction Nothing raction $ \maction ->
         liftIO $ do
             writeIORef aref maction
             set item [#sensitive := isJust maction]

@@ -81,7 +81,7 @@ optionFromStore esrc store = do
 
 optionView ::
        forall t tedit sel. (Eq t)
-    => EditFunction tedit (ListEdit [(t, Text)] (WholeEdit (t, Text)))
+    => UpdateFunction tedit (ListEdit [(t, Text)] (WholeEdit (t, Text)))
     -> EditLens tedit (WholeEdit t)
     -> GCreateView sel tedit
 optionView itemsFunction whichLens = do

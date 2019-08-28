@@ -23,15 +23,15 @@ emptyTuple = MkTuple never
 
 emptyTupleLens :: forall edita. EditLens edita (TupleEdit EmptyType)
 emptyTupleLens = let
-    efGet :: ReadFunctionT IdentityT (EditReader edita) (TupleEditReader EmptyType)
-    efGet _ (MkTupleEditReader sel _) = never sel
-    efUpdate ::
+    ufGet :: ReadFunctionT IdentityT (EditReader edita) (TupleEditReader EmptyType)
+    ufGet _ (MkTupleEditReader sel _) = never sel
+    ufUpdate ::
            forall m. MonadIO m
         => edita
         -> MutableRead m (EditReader edita)
         -> IdentityT m [TupleEdit EmptyType]
-    efUpdate _ _ = return []
-    elFunction = MkAnEditFunction {..}
+    ufUpdate _ _ = return []
+    elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [TupleEdit EmptyType]
@@ -64,17 +64,17 @@ instance (FiniteTupleSelector r, TupleSubject r ~ Tuple r) => FiniteTupleSelecto
 
 firstEditLens :: forall sel edit1. EditLens (TupleEdit (ConsType edit1 sel)) edit1
 firstEditLens = let
-    efGet :: ReadFunctionT IdentityT (TupleEditReader (ConsType edit1 sel)) (EditReader edit1)
-    efGet mr rt = lift $ mr $ MkTupleEditReader FirstType rt
-    efUpdate ::
+    ufGet :: ReadFunctionT IdentityT (TupleEditReader (ConsType edit1 sel)) (EditReader edit1)
+    ufGet mr rt = lift $ mr $ MkTupleEditReader FirstType rt
+    ufUpdate ::
            forall m. MonadIO m
         => TupleEdit (ConsType edit1 sel)
         -> MutableRead m (TupleEditReader (ConsType edit1 sel))
         -> IdentityT m [edit1]
-    efUpdate (MkTupleEdit FirstType edit) _ = return [edit]
-    efUpdate (MkTupleEdit (RestType _) _) _ = return []
-    elFunction :: AnEditFunction IdentityT (TupleEdit (ConsType edit1 sel)) edit1
-    elFunction = MkAnEditFunction {..}
+    ufUpdate (MkTupleEdit FirstType edit) _ = return [edit]
+    ufUpdate (MkTupleEdit (RestType _) _) _ = return []
+    elFunction :: AnUpdateFunction IdentityT (TupleEdit (ConsType edit1 sel)) edit1
+    elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [edit1]
@@ -85,17 +85,17 @@ firstEditLens = let
 
 restEditLens :: forall sel edit1. EditLens (TupleEdit (ConsType edit1 sel)) (TupleEdit sel)
 restEditLens = let
-    efGet :: ReadFunctionT IdentityT (TupleEditReader (ConsType edit1 sel)) (TupleEditReader sel)
-    efGet mr (MkTupleEditReader sel rt) = lift $ mr $ MkTupleEditReader (RestType sel) rt
-    efUpdate ::
+    ufGet :: ReadFunctionT IdentityT (TupleEditReader (ConsType edit1 sel)) (TupleEditReader sel)
+    ufGet mr (MkTupleEditReader sel rt) = lift $ mr $ MkTupleEditReader (RestType sel) rt
+    ufUpdate ::
            forall m. MonadIO m
         => TupleEdit (ConsType edit1 sel)
         -> MutableRead m (EditReader (TupleEdit (ConsType edit1 sel)))
         -> IdentityT m [TupleEdit sel]
-    efUpdate (MkTupleEdit FirstType _) _ = return []
-    efUpdate (MkTupleEdit (RestType sel) edit) _ = return [MkTupleEdit sel edit]
-    elFunction :: AnEditFunction IdentityT (TupleEdit (ConsType edit1 sel)) (TupleEdit sel)
-    elFunction = MkAnEditFunction {..}
+    ufUpdate (MkTupleEdit FirstType _) _ = return []
+    ufUpdate (MkTupleEdit (RestType sel) edit) _ = return [MkTupleEdit sel edit]
+    elFunction :: AnUpdateFunction IdentityT (TupleEdit (ConsType edit1 sel)) (TupleEdit sel)
+    elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [TupleEdit sel]
@@ -111,13 +111,13 @@ consTuple a (MkTuple tup) =
             FirstType -> a
             RestType sel -> tup sel
 {-
-consTupleEditFunction ::
+consTupleUpdateFunction ::
        forall s1 s2 edita editb sel.
-       EditFunction s1 edita editb
-    -> EditFunction s2 edita (TupleEdit sel)
-    -> EditFunction (s1, s2) edita (TupleEdit (ConsType editb sel))
-consTupleEditFunction f1 fr =
-    MkEditFunction
+       UpdateFunction s1 edita editb
+    -> UpdateFunction s2 edita (TupleEdit sel)
+    -> UpdateFunction (s1, s2) edita (TupleEdit (ConsType editb sel))
+consTupleUpdateFunction f1 fr =
+    MkUpdateFunction
     { editAccess = pairStateAccess (editAccess f1) (editAccess fr)
     , editGet =
           \(cur1, curr) ->
@@ -141,7 +141,7 @@ consTupleEditLens ::
     -> EditLens (s1, s2) edita (TupleEdit (ConsType editb sel))
 consTupleEditLens lens1 lensr =
     MkEditLens
-    { editLensFunction = consTupleEditFunction (editLensFunction lens1) (editLensFunction lensr)
+    { editLensFunction = consTupleUpdateFunction (editLensFunction lens1) (editLensFunction lensr)
     , editLensPutEdit =
           \(old1, oldr) ->
               \case

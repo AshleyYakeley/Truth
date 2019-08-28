@@ -25,23 +25,23 @@ data SubscribeContext edit = MkSubscribeContext
     , subDontEdits :: [[edit]] -> LifeCycleIO ()
     }
 
-testEditFunction ::
+testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)
-    => EditFunction (WholeEdit a) (WholeEdit a)
-testEditFunction = let
-    efGet :: ReadFunctionT IdentityT (WholeReader a) (WholeReader a)
-    efGet mr ReadWhole = lift $ mr ReadWhole
-    efUpdate ::
+    => UpdateFunction (WholeEdit a) (WholeEdit a)
+testUpdateFunction = let
+    ufGet :: ReadFunctionT IdentityT (WholeReader a) (WholeReader a)
+    ufGet mr ReadWhole = lift $ mr ReadWhole
+    ufUpdate ::
            forall m. MonadIO m
         => WholeEdit a
         -> MutableRead m (WholeReader a)
         -> IdentityT m [WholeEdit a]
-    efUpdate (MkWholeEdit s) mr = do
+    ufUpdate (MkWholeEdit s) mr = do
         s' <- lift $ mr ReadWhole
         liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s
         liftIO $ hPutStrLn ?handle $ "lens update MR: " <> show s'
         return [MkWholeEdit s]
-    in MkCloseUnlift identityUnlift MkAnEditFunction {..}
+    in MkCloseUnlift identityUnlift MkAnUpdateFunction {..}
 
 testUpdateObject :: TestTree
 testUpdateObject =
@@ -51,7 +51,7 @@ testUpdateObject =
             om :: ObjectMaker (WholeEdit String) ()
             om = reflectingObjectMaker obj
             lens :: EditLens (WholeEdit String) (WholeEdit String)
-            lens = readOnlyEditLens testEditFunction
+            lens = readOnlyEditLens testUpdateFunction
             recv :: [WholeEdit String] -> EditContext -> IO ()
             recv ee _ = for_ ee $ \(MkWholeEdit s) -> hPutStrLn ?handle $ "recv update edit: " <> show s
             recv' :: [WholeEdit String] -> EditContext -> IO ()

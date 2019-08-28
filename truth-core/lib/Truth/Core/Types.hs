@@ -29,4 +29,4 @@ import Truth.Core.Types.SumWhole as I
 import Truth.Core.Types.Tuple as I
 import Truth.Core.Types.Unit as I
 import Truth.Core.Types.Whole as I
-import Truth.Core.Types.WholeEditFunction as I
+import Truth.Core.Types.WholeUpdateFunction as I

@@ -33,18 +33,18 @@ instance InvertibleEdit edit => InvertibleEdit (ComonadEdit w edit) where
 comonadEditLens :: forall w edit. EditLens (ComonadEdit w edit) edit
 comonadEditLens =
     MkCloseUnlift identityUnlift $ let
-        efGet ::
+        ufGet ::
                forall m. MonadIO m
             => MutableRead m (ComonadReader w (EditReader edit))
             -> MutableRead (IdentityT m) (EditReader edit)
-        efGet mr = remonadMutableRead IdentityT $ comonadReadFunction mr
-        efUpdate ::
+        ufGet mr = remonadMutableRead IdentityT $ comonadReadFunction mr
+        ufUpdate ::
                forall m. MonadIO m
             => ComonadEdit w edit
             -> MutableRead m (EditReader (ComonadEdit w edit))
             -> IdentityT m [edit]
-        efUpdate (MkComonadEdit edit) _ = return [edit]
-        elFunction = MkAnEditFunction {..}
+        ufUpdate (MkComonadEdit edit) _ = return [edit]
+        elFunction = MkAnUpdateFunction {..}
         elPutEdits ::
                forall m. MonadIO m
             => [edit]
@@ -58,7 +58,7 @@ comonadLiftReadFunction rf mr (ReadExtract rbt) = rf (comonadReadFunction mr) rb
 
 comonadLiftEditLens ::
        forall w edita editb. EditLens edita editb -> EditLens (ComonadEdit w edita) (ComonadEdit w editb)
-comonadLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditFunction g u) pe)) = let
+comonadLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
     g' :: ReadFunctionT t (ComonadReader w (EditReader edita)) (ComonadReader w (EditReader editb))
     g' mr (ReadExtract rt) = g (comonadReadFunction mr) rt
     u' :: forall m. MonadIO m
@@ -77,4 +77,4 @@ comonadLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnEditF
             Dict ->
                 fmap (fmap $ fmap MkComonadEdit) $
                 pe (fmap (\(MkComonadEdit editb) -> editb) editbs) $ comonadReadFunction mr
-    in MkCloseUnlift unlift $ MkAnEditLens (MkAnEditFunction g' u') pe'
+    in MkCloseUnlift unlift $ MkAnEditLens (MkAnUpdateFunction g' u') pe'

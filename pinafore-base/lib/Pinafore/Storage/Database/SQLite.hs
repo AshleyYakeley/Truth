@@ -114,8 +114,8 @@ instance TupleDatabase SQLiteDatabase PinaforeSchema where
 
 sqlitePinaforeLens :: EditLens (SQLiteEdit PinaforeSchema) PinaforeTableEdit
 sqlitePinaforeLens = let
-    efGet :: ReadFunctionT IdentityT (SQLiteRead PinaforeSchema) PinaforeTableRead
-    efGet mr (PinaforeTableReadGetPredicate p s) =
+    ufGet :: ReadFunctionT IdentityT (SQLiteRead PinaforeSchema) PinaforeTableRead
+    ufGet mr (PinaforeTableReadGetPredicate p s) =
         lift $ do
             row <-
                 mr $
@@ -126,7 +126,7 @@ sqlitePinaforeLens = let
                     mempty
                     (MkTupleSelectClause $ \Refl -> ColumnExpr TripleValue)
             return $ fmap getSingleAll $ listToMaybe row
-    efGet mr (PinaforeTableReadLookupPredicate p v) =
+    ufGet mr (PinaforeTableReadLookupPredicate p v) =
         lift $ do
             row <-
                 mr $
@@ -137,7 +137,7 @@ sqlitePinaforeLens = let
                     mempty
                     (MkTupleSelectClause $ \Refl -> ColumnExpr TripleSubject)
             return $ MkFiniteSet $ fmap getSingleAll row
-    efGet mr (PinaforeTableReadGetLiteral v) =
+    ufGet mr (PinaforeTableReadGetLiteral v) =
         lift $ do
             (row :: [AllValue ((:~:) Literal)]) <-
                 mr $
@@ -149,14 +149,14 @@ sqlitePinaforeLens = let
             return $ do
                 sa <- listToMaybe row
                 return $ getSingleAll sa
-    efUpdate ::
+    ufUpdate ::
            forall m. MonadIO m
         => SQLiteEdit PinaforeSchema
         -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
         -> IdentityT m [PinaforeTableEdit]
-    efUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
-    elFunction :: AnEditFunction IdentityT (SQLiteEdit PinaforeSchema) PinaforeTableEdit
-    elFunction = MkAnEditFunction {..}
+    ufUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
+    elFunction :: AnUpdateFunction IdentityT (SQLiteEdit PinaforeSchema) PinaforeTableEdit
+    elFunction = MkAnUpdateFunction {..}
     elPutEdit ::
            forall m. MonadIO m
         => PinaforeTableEdit

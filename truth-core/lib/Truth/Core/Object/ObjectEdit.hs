@@ -38,18 +38,18 @@ type ObjectEdit edit = NoEdit (ObjectReader edit)
 
 objectEditLens :: forall edit. EditLens (ObjectEdit edit) edit
 objectEditLens = let
-    efGet :: ReadFunctionT IdentityT (ObjectReader edit) (EditReader edit)
-    efGet mr rt = do
+    ufGet :: ReadFunctionT IdentityT (ObjectReader edit) (EditReader edit)
+    ufGet mr rt = do
         (MkCloseUnliftIO (MkTransform run) (MkAnObject r _)) <- lift $ mr ReadObject
         liftIO $ run $ r rt
-    efUpdate ::
+    ufUpdate ::
            forall m. MonadIO m
         => ObjectEdit edit
         -> MutableRead m (ObjectReader edit)
         -> IdentityT m [edit]
-    efUpdate edit _ = never edit
-    elFunction :: AnEditFunction IdentityT (ObjectEdit edit) edit
-    elFunction = MkAnEditFunction {..}
+    ufUpdate edit _ = never edit
+    elFunction :: AnUpdateFunction IdentityT (ObjectEdit edit) edit
+    elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [edit]
@@ -71,18 +71,18 @@ objectLiftEditLens ::
     => EditLens edita editb
     -> EditLens (ObjectEdit edita) (ObjectEdit editb)
 objectLiftEditLens lens = let
-    efGet :: ReadFunctionT IdentityT (ObjectReader edita) (ObjectReader editb)
-    efGet mr ReadObject = do
+    ufGet :: ReadFunctionT IdentityT (ObjectReader edita) (ObjectReader editb)
+    ufGet mr ReadObject = do
         object <- lift $ mr ReadObject
         return $ mapObject lens object
-    efUpdate ::
+    ufUpdate ::
            forall m. MonadIO m
         => ObjectEdit edita
         -> MutableRead m (ObjectReader edita)
         -> IdentityT m [ObjectEdit editb]
-    efUpdate edit _ = never edit
-    elFunction :: AnEditFunction IdentityT (ObjectEdit edita) (ObjectEdit editb)
-    elFunction = MkAnEditFunction {..}
+    ufUpdate edit _ = never edit
+    elFunction :: AnUpdateFunction IdentityT (ObjectEdit edita) (ObjectEdit editb)
+    elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [ObjectEdit editb]

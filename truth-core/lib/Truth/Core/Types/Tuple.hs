@@ -191,18 +191,18 @@ tupleEditLens ::
     => sel edit
     -> EditLens (TupleEdit sel) edit
 tupleEditLens sel = let
-    efGet :: ReadFunctionT IdentityT (TupleEditReader sel) (EditReader edit)
-    efGet mr = remonadMutableRead IdentityT $ tupleReadFunction sel mr
-    efUpdate ::
+    ufGet :: ReadFunctionT IdentityT (TupleEditReader sel) (EditReader edit)
+    ufGet mr = remonadMutableRead IdentityT $ tupleReadFunction sel mr
+    ufUpdate ::
            forall m. MonadIO m
         => TupleEdit sel
         -> MutableRead m (EditReader (TupleEdit sel))
         -> IdentityT m [edit]
-    efUpdate (MkTupleEdit sel' edit) _ =
+    ufUpdate (MkTupleEdit sel' edit) _ =
         case testEquality sel sel' of
             Just Refl -> return [edit]
             Nothing -> return []
-    elFunction = MkAnEditFunction {..}
+    elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [edit]
@@ -217,16 +217,16 @@ tupleIsoLens ::
     -> (forall edit. selb edit -> sela edit)
     -> EditLens (TupleEdit sela) (TupleEdit selb)
 tupleIsoLens ab ba = let
-    efGet :: ReadFunctionT IdentityT (TupleEditReader sela) (TupleEditReader selb)
-    efGet mr (MkTupleEditReader sel rt) = lift $ mr $ MkTupleEditReader (ba sel) rt
-    efUpdate ::
+    ufGet :: ReadFunctionT IdentityT (TupleEditReader sela) (TupleEditReader selb)
+    ufGet mr (MkTupleEditReader sel rt) = lift $ mr $ MkTupleEditReader (ba sel) rt
+    ufUpdate ::
            forall m. MonadIO m
         => TupleEdit sela
         -> MutableRead m (EditReader (TupleEdit sela))
         -> IdentityT m [TupleEdit selb]
-    efUpdate (MkTupleEdit sel edit) _ = return [MkTupleEdit (ab sel) edit]
-    elFunction :: AnEditFunction IdentityT (TupleEdit sela) (TupleEdit selb)
-    elFunction = MkAnEditFunction {..}
+    ufUpdate (MkTupleEdit sel edit) _ = return [MkTupleEdit (ab sel) edit]
+    elFunction :: AnUpdateFunction IdentityT (TupleEdit sela) (TupleEdit selb)
+    elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [TupleEdit selb]

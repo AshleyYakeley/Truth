@@ -20,8 +20,8 @@ predicatePinaforeMap ::
 predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) prd = let
     rfp :: ReadFunction (ContextEditReader PinaforeEntityEdit (WholeEdit (Know a))) PinaforeEntityRead
     rfp = tupleReadFunction SelectContext
-    efGet :: ReadFunctionT IdentityT (ContextEditReader PinaforeEntityEdit (WholeEdit (Know a))) (WholeReader (Know b))
-    efGet mra ReadWhole =
+    ufGet :: ReadFunctionT IdentityT (ContextEditReader PinaforeEntityEdit (WholeEdit (Know a))) (WholeReader (Know b))
+    ufGet mra ReadWhole =
         lift $ do
             ksubja <- mra $ MkTupleEditReader SelectContent ReadWhole
             case ksubja of
@@ -29,12 +29,12 @@ predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) 
                     valp <- mra $ MkTupleEditReader SelectContext $ PinaforeEntityReadGetProperty prd $ ap subja
                     bget valp $ rfp mra
                 Unknown -> return Unknown
-    efUpdate ::
+    ufUpdate ::
            forall m. MonadIO m
         => ContextEdit PinaforeEntityEdit (WholeEdit (Know a))
         -> MutableRead m (ContextEditReader PinaforeEntityEdit (WholeEdit (Know a)))
         -> IdentityT m [WholeEdit (Know b)]
-    efUpdate (MkTupleEdit SelectContext (PinaforeEntityEditSetPredicate p s kvalp)) mra
+    ufUpdate (MkTupleEdit SelectContext (PinaforeEntityEditSetPredicate p s kvalp)) mra
         | p == prd =
             lift $ do
                 ksubja <- mra $ MkTupleEditReader SelectContent ReadWhole
@@ -46,8 +46,8 @@ predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) 
                                 return [MkWholeEdit kvalb]
                             Unknown -> return [MkWholeEdit Unknown]
                     else return []
-    efUpdate (MkTupleEdit SelectContext _) _ = return []
-    efUpdate (MkTupleEdit SelectContent (MkWholeEdit ksubja)) mra =
+    ufUpdate (MkTupleEdit SelectContext _) _ = return []
+    ufUpdate (MkTupleEdit SelectContent (MkWholeEdit ksubja)) mra =
         lift $
         case ksubja of
             Known subja -> do
@@ -55,8 +55,8 @@ predicatePinaforeMap (MkEntityAdapter ap _ aput) (MkEntityAdapter bp bget bput) 
                 kb <- bget valp $ rfp mra
                 return [MkWholeEdit kb]
             Unknown -> return [MkWholeEdit Unknown]
-    elFunction :: AnEditFunction IdentityT (ContextEdit PinaforeEntityEdit (WholeEdit (Know a))) (WholeEdit (Know b))
-    elFunction = MkAnEditFunction {..}
+    elFunction :: AnUpdateFunction IdentityT (ContextEdit PinaforeEntityEdit (WholeEdit (Know a))) (WholeEdit (Know b))
+    elFunction = MkAnUpdateFunction {..}
     elPutEdit ::
            forall m. MonadIO m
         => WholeEdit (Know b)

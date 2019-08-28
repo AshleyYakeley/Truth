@@ -6,7 +6,7 @@ import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
 data SwitchUISpec sel edit where
-    MkSwitchUISpec :: EditFunction edit (WholeEdit (UISpec sel edit)) -> SwitchUISpec sel edit
+    MkSwitchUISpec :: UpdateFunction edit (WholeEdit (UISpec sel edit)) -> SwitchUISpec sel edit
 
 instance Show (SwitchUISpec sel edit) where
     show _ = "switch"
@@ -14,5 +14,5 @@ instance Show (SwitchUISpec sel edit) where
 instance UIType SwitchUISpec where
     uiWitness = $(iowitness [t|SwitchUISpec|])
 
-switchUISpec :: EditFunction edit (WholeEdit (UISpec sel edit)) -> UISpec sel edit
+switchUISpec :: UpdateFunction edit (WholeEdit (UISpec sel edit)) -> UISpec sel edit
 switchUISpec func = MkUISpec $ MkSwitchUISpec func

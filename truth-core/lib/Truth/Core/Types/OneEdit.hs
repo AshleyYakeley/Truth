@@ -29,35 +29,35 @@ instance (MonadOne f, InvertibleEdit edit) => InvertibleEdit (OneEdit f edit) wh
                  Just edits -> fmap MkOneEdit edits
                  _ -> [])
 
-oneLiftAnEditFunction ::
+oneLiftAnUpdateFunction ::
        forall t f edita editb. (MonadTransTunnel t, MonadOne f)
-    => AnEditFunction t edita editb
-    -> AnEditFunction t (OneEdit f edita) (OneEdit f editb)
-oneLiftAnEditFunction (MkAnEditFunction g u) = let
-    efGet :: ReadFunctionT t (EditReader (OneEdit f edita)) (EditReader (OneEdit f editb))
-    efGet = liftMaybeReadFunction g
-    efUpdate ::
+    => AnUpdateFunction t edita editb
+    -> AnUpdateFunction t (OneEdit f edita) (OneEdit f editb)
+oneLiftAnUpdateFunction (MkAnUpdateFunction g u) = let
+    ufGet :: ReadFunctionT t (EditReader (OneEdit f edita)) (EditReader (OneEdit f editb))
+    ufGet = liftMaybeReadFunction g
+    ufUpdate ::
            forall m. MonadIO m
         => OneEdit f edita
         -> MutableRead m (EditReader (OneEdit f edita))
         -> t m [OneEdit f editb]
-    efUpdate (MkOneEdit ea) mr =
+    ufUpdate (MkOneEdit ea) mr =
         withTransConstraintTM @Monad $
         fmap (fmap MkOneEdit . fromMaybe [] . getMaybeOne) $ transComposeOne $ u ea $ oneReadFunctionF mr
-    in MkAnEditFunction {..}
+    in MkAnUpdateFunction {..}
 
-oneLiftEditFunction ::
+oneLiftUpdateFunction ::
        forall f edita editb. MonadOne f
-    => EditFunction edita editb
-    -> EditFunction (OneEdit f edita) (OneEdit f editb)
-oneLiftEditFunction (MkCloseUnlift unlift ef) = MkCloseUnlift unlift $ oneLiftAnEditFunction ef
+    => UpdateFunction edita editb
+    -> UpdateFunction (OneEdit f edita) (OneEdit f editb)
+oneLiftUpdateFunction (MkCloseUnlift unlift ef) = MkCloseUnlift unlift $ oneLiftAnUpdateFunction ef
 
 oneLiftAnEditLens ::
        forall t f edita editb. (MonadOne f, MonadTransTunnel t)
     => AnEditLens t edita editb
     -> AnEditLens t (OneEdit f edita) (OneEdit f editb)
 oneLiftAnEditLens (MkAnEditLens ef pe) = let
-    elFunction = oneLiftAnEditFunction ef
+    elFunction = oneLiftAnUpdateFunction ef
     elPutEdits ::
            forall m. MonadIO m
         => [OneEdit f editb]

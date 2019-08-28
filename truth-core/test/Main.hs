@@ -138,13 +138,13 @@ testLensGet =
     testProperty "get" $ \run (base :: String) ->
         ioProperty $ do
             MkCloseUnlift (MkUnlift unlift) MkAnEditLens {..} <- stringSectionLens run
-            let MkAnEditFunction {..} = elFunction
+            let MkAnUpdateFunction {..} = elFunction
             unlift $
                 withTransConstraintTM @MonadIO $ do
                     let
                         expected :: String
                         expected = subjectToRead base $ StringReadSection run
-                    found <- mutableReadToSubject $ efGet $ subjectToMutableRead base
+                    found <- mutableReadToSubject $ ufGet $ subjectToMutableRead base
                     return $ found === expected
 
 showVar :: Show a => String -> a -> String
@@ -180,14 +180,14 @@ lensUpdateGetProperty getlens oldA editA =
         case unsafeRefl @t @(StateT state) of
             Refl ->
                 unlift $ do
-                    let MkAnEditFunction {..} = elFunction
+                    let MkAnUpdateFunction {..} = elFunction
                     editFirst <- get
                     newA <- mutableReadToSubject $ applyEdit editA $ subjectToMutableRead oldA
-                    oldB <- mutableReadToSubject $ efGet $ subjectToMutableRead oldA
-                    editBs <- efUpdate editA $ subjectToMutableRead newA
+                    oldB <- mutableReadToSubject $ ufGet $ subjectToMutableRead oldA
+                    editBs <- ufUpdate editA $ subjectToMutableRead newA
                     newState <- get
                     newB1 <- mutableReadToSubject $ applyEdits editBs $ subjectToMutableRead oldB
-                    newB2 <- mutableReadToSubject $ efGet $ subjectToMutableRead newA
+                    newB2 <- mutableReadToSubject $ ufGet $ subjectToMutableRead newA
                     let
                         vars =
                             [ showVar "oldA" oldA

@@ -10,31 +10,31 @@ type SumWholeReaderEdit reader edit = SumEdit (WholeReaderEdit reader) edit
 
 type SumWholeEdit edit = SumWholeReaderEdit (EditReader edit) edit
 
-sumWholeLiftAnEditFunction ::
+sumWholeLiftAnUpdateFunction ::
        forall t edita editb.
        (MonadTransConstraint MonadIO t, SubjectReader (EditReader edita), FullSubjectReader (EditReader editb))
-    => AnEditFunction t edita editb
-    -> AnEditFunction t (SumWholeEdit edita) (SumWholeEdit editb)
-sumWholeLiftAnEditFunction fef =
-    MkAnEditFunction
-        { efGet = efGet fef
-        , efUpdate =
+    => AnUpdateFunction t edita editb
+    -> AnUpdateFunction t (SumWholeEdit edita) (SumWholeEdit editb)
+sumWholeLiftAnUpdateFunction fef =
+    MkAnUpdateFunction
+        { ufGet = ufGet fef
+        , ufUpdate =
               \pedita mr ->
                   withTransConstraintTM @MonadIO $
                   case pedita of
                       SumEditLeft (MkWholeEdit a) -> do
-                          b <- mutableReadToSubject $ efGet fef $ subjectToMutableRead a
+                          b <- mutableReadToSubject $ ufGet fef $ subjectToMutableRead a
                           return [SumEditLeft $ MkWholeEdit b]
                       SumEditRight edita -> do
-                          editbs <- efUpdate fef edita mr
+                          editbs <- ufUpdate fef edita mr
                           return $ fmap SumEditRight editbs
         }
 
-sumWholeLiftEditFunction ::
+sumWholeLiftUpdateFunction ::
        forall edita editb. (SubjectReader (EditReader edita), FullSubjectReader (EditReader editb))
-    => EditFunction edita editb
-    -> EditFunction (SumWholeEdit edita) (SumWholeEdit editb)
-sumWholeLiftEditFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ sumWholeLiftAnEditFunction f
+    => UpdateFunction edita editb
+    -> UpdateFunction (SumWholeEdit edita) (SumWholeEdit editb)
+sumWholeLiftUpdateFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ sumWholeLiftAnUpdateFunction f
 
 sumWholeLiftAnEditLens ::
        forall t edita editb.
@@ -62,4 +62,4 @@ sumWholeLiftAnEditLens pushback lens = let
                 mstateedita <- elPutEdits lens [editb] mr
                 return $ fmap (fmap SumEditRight) mstateedita
     in MkAnEditLens
-           {elFunction = sumWholeLiftAnEditFunction (elFunction lens), elPutEdits = elPutEditsFromPutEdit elPutEdit}
+           {elFunction = sumWholeLiftAnUpdateFunction (elFunction lens), elPutEdits = elPutEditsFromPutEdit elPutEdit}

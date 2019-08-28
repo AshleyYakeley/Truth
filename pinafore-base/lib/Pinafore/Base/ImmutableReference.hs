@@ -10,17 +10,17 @@ newtype PinaforeImmutableReference baseedit a =
     MkPinaforeImmutableReference (PinaforeFunctionValue baseedit (Know a))
 
 instance Functor (PinaforeImmutableReference baseedit) where
-    fmap ab (MkPinaforeImmutableReference a) = MkPinaforeImmutableReference $ funcEditFunction (fmap ab) . a
+    fmap ab (MkPinaforeImmutableReference a) = MkPinaforeImmutableReference $ funcUpdateFunction (fmap ab) . a
 
 instance Applicative (PinaforeImmutableReference baseedit) where
-    pure a = MkPinaforeImmutableReference $ constEditFunction $ Known a
+    pure a = MkPinaforeImmutableReference $ constUpdateFunction $ Known a
     (MkPinaforeImmutableReference fab) <*> (MkPinaforeImmutableReference fa) =
-        MkPinaforeImmutableReference $ funcEditFunction (\(mab, ma) -> mab <*> ma) . pairWholeEditFunction fab fa
+        MkPinaforeImmutableReference $ funcUpdateFunction (\(mab, ma) -> mab <*> ma) . pairWholeUpdateFunction fab fa
 
 instance Alternative (PinaforeImmutableReference baseedit) where
-    empty = MkPinaforeImmutableReference $ constEditFunction Unknown
+    empty = MkPinaforeImmutableReference $ constUpdateFunction Unknown
     (MkPinaforeImmutableReference fa) <|> (MkPinaforeImmutableReference fb) =
-        MkPinaforeImmutableReference $ funcEditFunction (\(ma, mb) -> ma <|> mb) . pairWholeEditFunction fa fb
+        MkPinaforeImmutableReference $ funcUpdateFunction (\(ma, mb) -> ma <|> mb) . pairWholeUpdateFunction fa fb
 
 immutableReferenceToFunction :: PinaforeImmutableReference baseedit a -> PinaforeFunctionValue baseedit (Know a)
 immutableReferenceToFunction (MkPinaforeImmutableReference fv) = fv
@@ -32,10 +32,10 @@ getImmutableReference :: PinaforeImmutableReference baseedit a -> PinaforeAction
 getImmutableReference ref = pinaforeFunctionValueGet $ immutableReferenceToFunction ref
 
 functionImmutableReference :: PinaforeFunctionValue baseedit a -> PinaforeImmutableReference baseedit a
-functionImmutableReference fv = MkPinaforeImmutableReference $ funcEditFunction Known . fv
+functionImmutableReference fv = MkPinaforeImmutableReference $ funcUpdateFunction Known . fv
 
 pinaforeImmutableReferenceValue :: a -> PinaforeImmutableReference baseedit a -> PinaforeFunctionValue baseedit a
-pinaforeImmutableReferenceValue def ref = funcEditFunction (fromKnow def) . immutableReferenceToFunction ref
+pinaforeImmutableReferenceValue def ref = funcUpdateFunction (fromKnow def) . immutableReferenceToFunction ref
 
 applyImmutableReference ::
        PinaforeFunctionMorphism baseedit (Know a) (Know b)

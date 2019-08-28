@@ -27,7 +27,7 @@ pinaforeFunctionToRef ef = ImmutPinaforeRef $ MkPinaforeImmutableReference ef
 
 pinaforeRefToImmutable :: PinaforeRef baseedit '( BottomType, a) -> PinaforeImmutableReference baseedit a
 pinaforeRefToImmutable (LensPinaforeRef (MkRange _ tq) lens) =
-    MkPinaforeImmutableReference $ funcEditFunction (fmap $ fromEnhanced tq) . editLensFunction lens
+    MkPinaforeImmutableReference $ funcUpdateFunction (fmap $ fromEnhanced tq) . editLensFunction lens
 pinaforeRefToImmutable (ImmutPinaforeRef ir) = ir
 
 pinaforeImmutableToRef :: PinaforeImmutableReference baseedit a -> PinaforeRef baseedit '( TopType, a)

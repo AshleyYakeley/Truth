@@ -16,8 +16,8 @@ valSpecText ::
        UISpec sel (WholeEdit (Know Text)) -> PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec sel baseedit
 valSpecText spec val = mapEditUISpec val spec
 
-clearText :: EditFunction (WholeEdit (Know Text)) (WholeEdit Text)
-clearText = funcEditFunction (fromKnow mempty)
+clearText :: UpdateFunction (WholeEdit (Know Text)) (WholeEdit Text)
+clearText = funcUpdateFunction (fromKnow mempty)
 
 uiMap :: forall baseedit. (A -> B) -> PinaforeUI baseedit A -> PinaforeUI baseedit B
 uiMap = fmap
@@ -34,7 +34,7 @@ uiTable cols (MkPinaforeOrder geto order) val onDoubleClick = let
     showCell (Known s) = (s, tableCellPlain)
     showCell Unknown = ("unknown", tableCellPlain {tcItalic = True})
     mapLens :: PinaforeFunctionValue baseedit (Know Text) -> PinaforeFunctionValue baseedit (Text, TableCellProps)
-    mapLens ff = funcEditFunction showCell . ff
+    mapLens ff = funcUpdateFunction showCell . ff
     getColumn ::
            (PinaforeRef baseedit '( BottomType, Text), A -> PinaforeRef baseedit '( BottomType, Text))
         -> KeyColumn baseedit (MeetType Entity A)
@@ -45,7 +45,7 @@ uiTable cols (MkPinaforeOrder geto order) val onDoubleClick = let
        tableUISpec
            (fmap getColumn cols)
            order
-           (\mea -> applyPinaforeFunction geto $ constEditFunction $ Known $ meet2 mea)
+           (\mea -> applyPinaforeFunction geto $ constUpdateFunction $ Known $ meet2 mea)
            (unPinaforeSetRef $ contraRangeLift meet2 val)
            (\a -> runPinaforeAction $ void $ onDoubleClick $ meet2 a)
 
@@ -70,18 +70,18 @@ uiPick nameMorphism fset ref = let
         proc fsp -> do
             pairs <- cfmap getName -< fsp
             returnA -< insertSet (Unknown, "") pairs
-    opts :: EditFunction baseedit (ListEdit [PickerPairType] (WholeEdit PickerPairType))
+    opts :: UpdateFunction baseedit (ListEdit [PickerPairType] (WholeEdit PickerPairType))
     opts =
         (orderedKeyList @(FiniteSet PickerPairType) $ \(_, a) (_, b) -> compare a b) .
-        convertEditFunction . applyPinaforeFunction getNames (pinaforeSetRefFunctionValue fset)
+        convertUpdateFunction . applyPinaforeFunction getNames (pinaforeSetRefFunctionValue fset)
     in optionUISpec @baseedit @PickerType opts $ pinaforeRefToLens $ contraRangeLift meet2 ref
 
 actionReference ::
        (?pinafore :: PinaforeContext baseedit)
     => PinaforeImmutableReference baseedit (PinaforeAction baseedit TopType)
-    -> EditFunction baseedit (WholeEdit (Maybe (IO ())))
+    -> UpdateFunction baseedit (WholeEdit (Maybe (IO ())))
 actionReference raction =
-    funcEditFunction (fmap (\action -> runPinaforeAction (action >> return ())) . knowToMaybe) .
+    funcUpdateFunction (fmap (\action -> runPinaforeAction (action >> return ())) . knowToMaybe) .
     immutableReferenceToFunction raction
 
 uiButton ::
@@ -112,10 +112,10 @@ openWindow title getmbar wsContent =
     mfix $ \w -> let
         wsCloseBoxAction = pwClose w
         wsTitle = clearText . immutableReferenceToFunction title
-        wsMenuBar :: Maybe (Aspect A -> EditFunction baseedit (WholeEdit (MenuBar baseedit)))
+        wsMenuBar :: Maybe (Aspect A -> UpdateFunction baseedit (WholeEdit (MenuBar baseedit)))
         wsMenuBar =
             Just $ \aspect ->
-                funcEditFunction (fromKnow mempty) . immutableReferenceToFunction (getmbar $ aspectToAction aspect)
+                funcUpdateFunction (fromKnow mempty) . immutableReferenceToFunction (getmbar $ aspectToAction aspect)
         in pinaforeNewWindow MkWindowSpec {..}
 
 uiWithSelection :: (PinaforeAction baseedit A -> UISpec A baseedit) -> UISpec A baseedit

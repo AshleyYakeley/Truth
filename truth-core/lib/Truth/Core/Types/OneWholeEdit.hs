@@ -13,11 +13,11 @@ type OneWholeEdit (f :: Type -> Type) edit = SumWholeEdit (OneEdit f edit)
 
 type MaybeEdit edit = OneWholeEdit Maybe edit
 
-oneWholeLiftEditFunction ::
+oneWholeLiftUpdateFunction ::
        forall f edita editb. (MonadOne f, SubjectReader (EditReader edita), FullSubjectReader (EditReader editb))
-    => EditFunction edita editb
-    -> EditFunction (OneWholeEdit f edita) (OneWholeEdit f editb)
-oneWholeLiftEditFunction = sumWholeLiftEditFunction . oneLiftEditFunction
+    => UpdateFunction edita editb
+    -> UpdateFunction (OneWholeEdit f edita) (OneWholeEdit f editb)
+oneWholeLiftUpdateFunction = sumWholeLiftUpdateFunction . oneLiftUpdateFunction
 
 -- | suitable for Results; trying to put a failure code will be rejected
 oneWholeLiftAnEditLens ::
@@ -62,24 +62,24 @@ mustExistOneEditLens ::
     => String
     -> EditLens (OneWholeEdit f edit) edit
 mustExistOneEditLens err = let
-    efGet :: ReadFunctionT IdentityT (OneReader f (EditReader edit)) (EditReader edit)
-    efGet mr rt = do
+    ufGet :: ReadFunctionT IdentityT (OneReader f (EditReader edit)) (EditReader edit)
+    ufGet mr rt = do
         ft <- lift $ mr $ ReadOne rt
         case retrieveOne ft of
             SuccessResult t -> return t
             FailureResult _ -> liftIO $ fail $ err ++ ": not found"
-    efUpdate ::
+    ufUpdate ::
            forall m. MonadIO m
         => OneWholeEdit f edit
         -> MutableRead m (OneReader f (EditReader edit))
         -> IdentityT m [edit]
-    efUpdate (SumEditLeft (MkWholeEdit ft)) _ =
+    ufUpdate (SumEditLeft (MkWholeEdit ft)) _ =
         case retrieveOne ft of
             SuccessResult t -> getReplaceEditsFromSubject t
             FailureResult _ -> liftIO $ fail $ err ++ ": deleted"
-    efUpdate (SumEditRight (MkOneEdit edit)) _ = return [edit]
-    elFunction :: AnEditFunction IdentityT (OneWholeEdit f edit) edit
-    elFunction = MkAnEditFunction {..}
+    ufUpdate (SumEditRight (MkOneEdit edit)) _ = return [edit]
+    elFunction :: AnUpdateFunction IdentityT (OneWholeEdit f edit) edit
+    elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
         => [edit]

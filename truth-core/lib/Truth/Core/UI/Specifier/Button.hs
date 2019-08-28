@@ -7,7 +7,9 @@ import Truth.Core.UI.Specifier.Specifier
 
 data ButtonUISpec sel edit where
     MkButtonUISpec
-        :: EditFunction edit (WholeEdit Text) -> EditFunction edit (WholeEdit (Maybe (IO ()))) -> ButtonUISpec sel edit
+        :: UpdateFunction edit (WholeEdit Text)
+        -> UpdateFunction edit (WholeEdit (Maybe (IO ())))
+        -> ButtonUISpec sel edit
 
 instance Show (ButtonUISpec sel edit) where
     show (MkButtonUISpec _ _) = "button"
@@ -15,8 +17,9 @@ instance Show (ButtonUISpec sel edit) where
 instance UIType ButtonUISpec where
     uiWitness = $(iowitness [t|ButtonUISpec|])
 
-buttonUISpec :: EditFunction edit (WholeEdit Text) -> EditFunction edit (WholeEdit (Maybe (IO ()))) -> UISpec sel edit
+buttonUISpec ::
+       UpdateFunction edit (WholeEdit Text) -> UpdateFunction edit (WholeEdit (Maybe (IO ()))) -> UISpec sel edit
 buttonUISpec label action = MkUISpec $ MkButtonUISpec label action
 
-simpleButtonUISpec :: EditFunction edit (WholeEdit Text) -> IO () -> UISpec sel edit
-simpleButtonUISpec label action = buttonUISpec label $ constEditFunction $ Just action
+simpleButtonUISpec :: UpdateFunction edit (WholeEdit Text) -> IO () -> UISpec sel edit
+simpleButtonUISpec label action = buttonUISpec label $ constUpdateFunction $ Just action

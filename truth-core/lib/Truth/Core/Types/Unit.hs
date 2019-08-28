@@ -10,8 +10,8 @@ type UnitReader = WholeReader ()
 
 type UnitEdit = ConstEdit ()
 
-unitEditFunction :: EditFunction edit UnitEdit
-unitEditFunction = constEditFunction ()
+unitUpdateFunction :: UpdateFunction edit UnitEdit
+unitUpdateFunction = constUpdateFunction ()
 
 unitLens :: EditLens edit UnitEdit
-unitLens = readOnlyEditLens unitEditFunction
+unitLens = readOnlyEditLens unitUpdateFunction

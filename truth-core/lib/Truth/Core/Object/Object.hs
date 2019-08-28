@@ -70,9 +70,9 @@ lensAnObject ::
     -> AnObject m edita
     -> AnObject (t m) editb
 lensAnObject MkAnEditLens {..} (MkAnObject objReadA objEditA) = let
-    MkAnEditFunction {..} = elFunction
+    MkAnUpdateFunction {..} = elFunction
     objReadB :: MutableRead (t m) (EditReader editb)
-    objReadB = efGet objReadA
+    objReadB = ufGet objReadA
     objEditB :: [editb] -> t m (Maybe (EditSource -> t m ()))
     objEditB editbs = do
         meditas <- elPutEdits editbs objReadA

@@ -6,28 +6,29 @@ import Truth.Core.Edit.Unlift
 import Truth.Core.Import
 import Truth.Core.Read
 
-data AnEditFunction t edita editb = MkAnEditFunction
-    { efGet :: ReadFunctionT t (EditReader edita) (EditReader editb)
-    , efUpdate :: forall m. MonadIO m => edita -> MutableRead m (EditReader edita) -> t m [editb]
+data AnUpdateFunction t edita editb = MkAnUpdateFunction
+    { ufGet :: ReadFunctionT t (EditReader edita) (EditReader editb)
+    , ufUpdate :: forall m. MonadIO m => edita -> MutableRead m (EditReader edita) -> t m [editb]
     -- ^ the MutableRead argument will reflect the new value
     }
 
-type EditFunction = CloseUnlift AnEditFunction
+type UpdateFunction = CloseUnlift AnUpdateFunction
 
-instance Unliftable AnEditFunction where
-    fmapUnliftable t1t2 (MkAnEditFunction g u) = MkAnEditFunction (\mr rt -> t1t2 $ g mr rt) (\ea mr -> t1t2 $ u ea mr)
+instance Unliftable AnUpdateFunction where
+    fmapUnliftable t1t2 (MkAnUpdateFunction g u) =
+        MkAnUpdateFunction (\mr rt -> t1t2 $ g mr rt) (\ea mr -> t1t2 $ u ea mr)
 
-instance UnliftCategory AnEditFunction where
+instance UnliftCategory AnUpdateFunction where
     ucId = let
-        efGet = remonadMutableRead IdentityT
-        efUpdate edit _ = IdentityT $ return [edit]
-        in MkAnEditFunction {..}
+        ufGet = remonadMutableRead IdentityT
+        ufUpdate edit _ = IdentityT $ return [edit]
+        in MkAnUpdateFunction {..}
     ucCompose ::
            forall tab tbc edita editb editc. (MonadTransConstraint MonadIO tab, MonadTransConstraint MonadIO tbc)
-        => AnEditFunction tbc editb editc
-        -> AnEditFunction tab edita editb
-        -> AnEditFunction (ComposeT tbc tab) edita editc
-    ucCompose (MkAnEditFunction gBC uBC) (MkAnEditFunction gAB uAB) = let
+        => AnUpdateFunction tbc editb editc
+        -> AnUpdateFunction tab edita editb
+        -> AnUpdateFunction (ComposeT tbc tab) edita editc
+    ucCompose (MkAnUpdateFunction gBC uBC) (MkAnUpdateFunction gAB uAB) = let
         gAC :: forall m. MonadIO m
             => MutableRead m (EditReader edita)
             -> MutableRead (ComposeT tbc tab m) (EditReader editc)
@@ -49,56 +50,56 @@ instance UnliftCategory AnEditFunction where
                                 editbs <- lift $ uAB editA mrA
                                 editcss <- for editbs $ \editb -> uBC editb $ gAB mrA
                                 return $ mconcat editcss
-        in MkAnEditFunction gAC uAC
+        in MkAnUpdateFunction gAC uAC
 
-efUpdates ::
+ufUpdates ::
        (MonadIO m, Monad (t m))
-    => AnEditFunction t edita editb
+    => AnUpdateFunction t edita editb
     -> [edita]
     -> MutableRead m (EditReader edita)
     -> t m [editb]
-efUpdates _ [] _ = return []
-efUpdates sef (ea:eas) mr = do
-    eb <- efUpdate sef ea mr
-    ebs <- efUpdates sef eas mr
+ufUpdates _ [] _ = return []
+ufUpdates sef (ea:eas) mr = do
+    eb <- ufUpdate sef ea mr
+    ebs <- ufUpdates sef eas mr
     return $ eb ++ ebs
 
-ioFuncEditFunction ::
+ioFuncUpdateFunction ::
        forall edita editb. (FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
     => (EditSubject edita -> IO (EditSubject editb))
-    -> EditFunction edita editb
-ioFuncEditFunction amb = let
-    efGet :: ReadFunctionT IdentityT (EditReader edita) (EditReader editb)
-    efGet mra rt = lift $ (mSubjectToMutableRead $ mutableReadToSubject mra >>= \a -> liftIO (amb a)) rt
-    efUpdate ::
+    -> UpdateFunction edita editb
+ioFuncUpdateFunction amb = let
+    ufGet :: ReadFunctionT IdentityT (EditReader edita) (EditReader editb)
+    ufGet mra rt = lift $ (mSubjectToMutableRead $ mutableReadToSubject mra >>= \a -> liftIO (amb a)) rt
+    ufUpdate ::
            forall m. MonadIO m
         => edita
         -> MutableRead m (EditReader edita)
         -> IdentityT m [editb]
-    efUpdate edita mra =
+    ufUpdate edita mra =
         lift $
         getReplaceEdits $ mSubjectToMutableRead $ (mutableReadToSubject $ applyEdit edita mra) >>= \a -> liftIO (amb a)
-    in MkCloseUnlift identityUnlift MkAnEditFunction {..}
+    in MkCloseUnlift identityUnlift MkAnUpdateFunction {..}
 
-funcEditFunction ::
+funcUpdateFunction ::
        forall edita editb. (FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
     => (EditSubject edita -> EditSubject editb)
-    -> EditFunction edita editb
-funcEditFunction ab = ioFuncEditFunction $ \a -> return $ ab a
+    -> UpdateFunction edita editb
+funcUpdateFunction ab = ioFuncUpdateFunction $ \a -> return $ ab a
 
-immutableEditFunction :: (forall m. MonadIO m => MutableRead m (EditReader editb)) -> EditFunction edita editb
-immutableEditFunction mr =
-    MkCloseUnlift identityUnlift $ MkAnEditFunction {efGet = \_ -> mr, efUpdate = \_ _ -> return []}
+immutableUpdateFunction :: (forall m. MonadIO m => MutableRead m (EditReader editb)) -> UpdateFunction edita editb
+immutableUpdateFunction mr =
+    MkCloseUnlift identityUnlift $ MkAnUpdateFunction {ufGet = \_ -> mr, ufUpdate = \_ _ -> return []}
 
-ioConstEditFunction :: SubjectReader (EditReader editb) => IO (EditSubject editb) -> EditFunction edita editb
-ioConstEditFunction iob = immutableEditFunction $ mSubjectToMutableRead $ liftIO iob
+ioConstUpdateFunction :: SubjectReader (EditReader editb) => IO (EditSubject editb) -> UpdateFunction edita editb
+ioConstUpdateFunction iob = immutableUpdateFunction $ mSubjectToMutableRead $ liftIO iob
 
-constEditFunction :: SubjectReader (EditReader editb) => EditSubject editb -> EditFunction edita editb
-constEditFunction b = ioConstEditFunction $ return b
+constUpdateFunction :: SubjectReader (EditReader editb) => EditSubject editb -> UpdateFunction edita editb
+constUpdateFunction b = ioConstUpdateFunction $ return b
 
-editFunctionRead ::
+updateFunctionRead ::
        forall m edita editb. MonadUnliftIO m
-    => EditFunction edita editb
+    => UpdateFunction edita editb
     -> MutableRead m (EditReader edita)
     -> MutableRead m (EditReader editb)
-editFunctionRead (MkCloseUnlift unlift (MkAnEditFunction g _)) mr rt = runUnlift unlift $ g mr rt
+updateFunctionRead (MkCloseUnlift unlift (MkAnUpdateFunction g _)) mr rt = runUnlift unlift $ g mr rt

@@ -197,31 +197,31 @@ unliftKeyElementEditLens ::
     => Unlift (StateT (ContainerKey cont))
     -> EditLens (KeyEdit cont edit) (MaybeEdit edit)
 unliftKeyElementEditLens unlift = let
-    efGet ::
+    ufGet ::
            ReadFunctionT (StateT (ContainerKey cont)) (KeyReader cont (EditReader edit)) (OneReader Maybe (EditReader edit))
-    efGet mr ReadHasOne = do
+    ufGet mr ReadHasOne = do
         kk <- lift $ mr KeyReadKeys
         key <- get
         return $
             if elem key kk
                 then Just ()
                 else Nothing
-    efGet mr (ReadOne rt) = do
+    ufGet mr (ReadOne rt) = do
         key <- get
         lift $ mr $ KeyReadItem key rt
-    efUpdate ::
+    ufUpdate ::
            forall m. MonadIO m
         => KeyEdit cont edit
         -> MutableRead m (EditReader (KeyEdit cont edit))
         -> StateT (ContainerKey cont) m [MaybeEdit edit]
-    efUpdate KeyClear _ = return [SumEditLeft (MkWholeEdit Nothing)]
-    efUpdate (KeyDeleteItem k) _ = do
+    ufUpdate KeyClear _ = return [SumEditLeft (MkWholeEdit Nothing)]
+    ufUpdate (KeyDeleteItem k) _ = do
         key <- get
         return $
             if k == key
                 then [SumEditLeft (MkWholeEdit Nothing)]
                 else []
-    efUpdate (KeyEditItem k edit) mr = do
+    ufUpdate (KeyEditItem k edit) mr = do
         oldkey <- get
         if k == oldkey
             then do
@@ -232,14 +232,14 @@ unliftKeyElementEditLens unlift = let
                         return [SumEditRight (MkOneEdit edit)]
                     Nothing -> return []
             else return []
-    efUpdate (KeyInsertReplaceItem item) _ = do
+    ufUpdate (KeyInsertReplaceItem item) _ = do
         key <- get
         return $
             if elementKey @cont item == key
                 then [SumEditLeft (MkWholeEdit (Just item))]
                 else []
-    elFunction :: AnEditFunction (StateT (ContainerKey cont)) (KeyEdit cont edit) (MaybeEdit edit)
-    elFunction = MkAnEditFunction {..}
+    elFunction :: AnUpdateFunction (StateT (ContainerKey cont)) (KeyEdit cont edit) (MaybeEdit edit)
+    elFunction = MkAnUpdateFunction {..}
     elPutEdit ::
            forall m. MonadIO m
         => MaybeEdit edit
@@ -303,7 +303,7 @@ getKeyValueEditLens key = do
     lens <- getKeyElementEditLens key
     return $ (oneWholeLiftEditLens $ tupleEditLens SelectSecond) . lens
 
-liftKeyElementAnEditFunction ::
+liftKeyElementAnUpdateFunction ::
        forall t conta contb edita editb.
        ( MonadTransUnlift t
        , ContainerKey conta ~ ContainerKey contb
@@ -312,32 +312,32 @@ liftKeyElementAnEditFunction ::
        , SubjectReader (EditReader edita)
        , FullSubjectReader (EditReader editb)
        )
-    => AnEditFunction t edita editb
-    -> AnEditFunction t (KeyEdit conta edita) (KeyEdit contb editb)
-liftKeyElementAnEditFunction (MkAnEditFunction g u) = let
-    efGet :: ReadFunctionT t (KeyReader conta (EditReader edita)) (KeyReader contb (EditReader editb))
-    efGet mr KeyReadKeys = lift $ mr KeyReadKeys
-    efGet mr (KeyReadItem key rt) = transComposeOne $ g (keyItemReadFunction key mr) rt
-    efUpdate ::
+    => AnUpdateFunction t edita editb
+    -> AnUpdateFunction t (KeyEdit conta edita) (KeyEdit contb editb)
+liftKeyElementAnUpdateFunction (MkAnUpdateFunction g u) = let
+    ufGet :: ReadFunctionT t (KeyReader conta (EditReader edita)) (KeyReader contb (EditReader editb))
+    ufGet mr KeyReadKeys = lift $ mr KeyReadKeys
+    ufGet mr (KeyReadItem key rt) = transComposeOne $ g (keyItemReadFunction key mr) rt
+    ufUpdate ::
            forall m. MonadIO m
         => KeyEdit conta edita
         -> MutableRead m (EditReader (KeyEdit conta edita))
         -> t m [KeyEdit contb editb]
-    efUpdate KeyClear _ = lift $ return [KeyClear]
-    efUpdate (KeyInsertReplaceItem itema) _ =
+    ufUpdate KeyClear _ = lift $ return [KeyClear]
+    ufUpdate (KeyInsertReplaceItem itema) _ =
         withTransConstraintTM @MonadIO $ do
             itemb <- mutableReadToSubject $ g $ subjectToMutableRead itema
             return [KeyInsertReplaceItem itemb]
-    efUpdate (KeyDeleteItem key) _ = lift $ return [KeyDeleteItem key]
-    efUpdate (KeyEditItem key ea) mr =
+    ufUpdate (KeyDeleteItem key) _ = lift $ return [KeyDeleteItem key]
+    ufUpdate (KeyEditItem key ea) mr =
         withTransConstraintTM @MonadIO $ do
             mresult <- transComposeOne $ u ea (keyItemReadFunction @conta key mr)
             case mresult of
                 Just ebs -> return $ fmap (KeyEditItem key) ebs
                 Nothing -> return []
-    in MkAnEditFunction {..}
+    in MkAnUpdateFunction {..}
 
-liftKeyElementEditFunction ::
+liftKeyElementUpdateFunction ::
        forall conta contb edita editb.
        ( ContainerKey conta ~ ContainerKey contb
        , EditSubject edita ~ Element conta
@@ -345,9 +345,9 @@ liftKeyElementEditFunction ::
        , SubjectReader (EditReader edita)
        , FullSubjectReader (EditReader editb)
        )
-    => EditFunction edita editb
-    -> EditFunction (KeyEdit conta edita) (KeyEdit contb editb)
-liftKeyElementEditFunction (MkCloseUnlift unlift ef) = MkCloseUnlift unlift $ liftKeyElementAnEditFunction ef
+    => UpdateFunction edita editb
+    -> UpdateFunction (KeyEdit conta edita) (KeyEdit contb editb)
+liftKeyElementUpdateFunction (MkCloseUnlift unlift ef) = MkCloseUnlift unlift $ liftKeyElementAnUpdateFunction ef
 
 liftKeyElementEditLens ::
        forall conta contb edita editb.
@@ -364,7 +364,7 @@ liftKeyElementEditLens ::
     -> EditLens edita editb
     -> EditLens (KeyEdit conta edita) (KeyEdit contb editb)
 liftKeyElementEditLens bma (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens ef pe)) = let
-    elFunction = liftKeyElementAnEditFunction ef
+    elFunction = liftKeyElementAnUpdateFunction ef
     elPutEdit ::
            forall m. MonadIO m
         => KeyEdit contb editb
@@ -418,7 +418,7 @@ contextKeyEditLens = let
     editUpdate (MkTupleEdit SelectContent (KeyDeleteItem key)) () = return $ pure [KeyDeleteItem key]
     editUpdate (MkTupleEdit SelectContent (KeyInsertReplaceItem el)) () = return $ pure [KeyInsertReplaceItem el]
     editUpdate (MkTupleEdit SelectContent KeyClear) () = return $ pure [KeyClear]
-    editLensFunction = MkEditFunction {..}
+    editLensFunction = MkUpdateFunction {..}
     editLensPutEdit ::
            ()
         -> KeyEdit cont (ContextEdit editx edit)
@@ -444,7 +444,7 @@ findBy cmp items x = let
 orderedKeyList ::
        forall cont seq edit. (Index seq ~ Int, Element cont ~ EditSubject edit, KeyContainer cont, FullEdit edit)
     => (EditSubject edit -> EditSubject edit -> Ordering)
-    -> EditFunction (KeyEdit cont edit) (ListEdit seq edit)
+    -> UpdateFunction (KeyEdit cont edit) (ListEdit seq edit)
 orderedKeyList cmp = let
     getUnsortedPairs ::
            forall m. MonadIO m
@@ -471,38 +471,38 @@ orderedKeyList cmp = let
         pairs <- getUnsortedPairs mr
         skey <- mutableReadToSubject $ knownKeyItemReadFunction key mr
         return $ (\(i, found) -> (MkSequencePoint i, found)) $ findBy cmp (fmap snd pairs) skey
-    efGet :: ReadFunctionT IdentityT (EditReader (KeyEdit cont edit)) (EditReader (ListEdit seq edit))
-    efGet mr ListReadLength = do
+    ufGet :: ReadFunctionT IdentityT (EditReader (KeyEdit cont edit)) (EditReader (ListEdit seq edit))
+    ufGet mr ListReadLength = do
         keyset <- lift $ mr KeyReadKeys
         return $ MkSequencePoint $ length keyset
-    efGet mr (ListReadItem (MkSequencePoint i) reader) = do
+    ufGet mr (ListReadItem (MkSequencePoint i) reader) = do
         keylist <- lift $ getSortedKeys mr
         case index keylist i of
             Just key -> lift $ mr $ KeyReadItem key reader
             Nothing -> return Nothing
-    efUpdate ::
+    ufUpdate ::
            forall m. MonadIO m
         => KeyEdit cont edit
         -> MutableRead m (EditReader (KeyEdit cont edit))
         -> IdentityT m [ListEdit seq edit]
-    efUpdate (KeyEditItem key edit) mr = do
+    ufUpdate (KeyEditItem key edit) mr = do
         (i, found) <- lift $ findKey key mr
         return $
             if found
                 then [ListEditItem i edit]
                 else []
-    efUpdate (KeyDeleteItem key) mr = do
+    ufUpdate (KeyDeleteItem key) mr = do
         (i, found) <- lift $ findKey key mr
         return $
             if found
                 then [ListDeleteItem i]
                 else []
-    efUpdate (KeyInsertReplaceItem item) mr = do
+    ufUpdate (KeyInsertReplaceItem item) mr = do
         (i, found) <- lift $ findKey (elementKey @cont item) mr
         if found
             then return [ListInsertItem i item]
             else do
                 edits <- getReplaceEditsFromSubject item
                 return $ fmap (ListEditItem i) edits
-    efUpdate KeyClear _ = return [ListClear]
-    in MkCloseUnlift identityUnlift MkAnEditFunction {..}
+    ufUpdate KeyClear _ = return [ListClear]
+    in MkCloseUnlift identityUnlift MkAnUpdateFunction {..}

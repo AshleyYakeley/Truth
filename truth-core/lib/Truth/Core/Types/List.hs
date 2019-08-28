@@ -157,12 +157,12 @@ listItemLens ::
     => Unlift (StateT (SequencePoint seq))
     -> EditLens (ListEdit seq edit) (MaybeEdit edit)
 listItemLens unlift = let
-    efGet ::
+    ufGet ::
            ReadFunctionT (StateT (SequencePoint seq)) (ListReader seq (EditReader edit)) (OneReader Maybe (EditReader edit))
-    efGet mr (ReadOne rt) = do
+    ufGet mr (ReadOne rt) = do
         i <- get
         lift $ mr $ ListReadItem i rt
-    efGet mr ReadHasOne = do
+    ufGet mr ReadHasOne = do
         i <- get
         if i < 0
             then return Nothing
@@ -172,18 +172,18 @@ listItemLens unlift = let
                     if i >= len
                         then Nothing
                         else Just ()
-    efUpdate ::
+    ufUpdate ::
            forall m. MonadIO m
         => ListEdit seq edit
         -> MutableRead m (EditReader (ListEdit seq edit))
         -> StateT (SequencePoint seq) m [MaybeEdit edit]
-    efUpdate (ListEditItem ie edit) _ = do
+    ufUpdate (ListEditItem ie edit) _ = do
         i <- get
         return $
             if i == ie
                 then [SumEditRight $ MkOneEdit edit]
                 else []
-    efUpdate (ListDeleteItem ie) _ = do
+    ufUpdate (ListDeleteItem ie) _ = do
         i <- get
         case compare ie i of
             LT -> do
@@ -191,17 +191,17 @@ listItemLens unlift = let
                 return []
             EQ -> return [SumEditLeft $ MkWholeEdit Nothing]
             GT -> return []
-    efUpdate (ListInsertItem ie _) _ = do
+    ufUpdate (ListInsertItem ie _) _ = do
         i <- get
         if ie <= i
             then put $ i + 1
             else return ()
         return []
-    efUpdate ListClear _ = do
+    ufUpdate ListClear _ = do
         put 0
         return [SumEditLeft $ MkWholeEdit Nothing]
-    elFunction :: AnEditFunction (StateT (SequencePoint seq)) (ListEdit seq edit) (MaybeEdit edit)
-    elFunction = MkAnEditFunction {..}
+    elFunction :: AnUpdateFunction (StateT (SequencePoint seq)) (ListEdit seq edit) (MaybeEdit edit)
+    elFunction = MkAnUpdateFunction {..}
     elPutEdit ::
            forall m. MonadIO m
         => MaybeEdit edit

@@ -48,7 +48,7 @@ main = do
                                         subLens <- mapSubscriber (oneWholeLiftEditLens lens) sub
                                         makeWindow "section" subLens extraui
                         in verticalUISpec
-                               [ (simpleButtonUISpec (constEditFunction "View") openSelection, False)
+                               [ (simpleButtonUISpec (constUpdateFunction "View") openSelection, False)
                                , (scrolledUISpec $ oneWholeUISpec textAreaUISpec, True)
                                ]
                 makeWindow ::
@@ -62,7 +62,7 @@ main = do
                         (r, closer) <-
                             lifeCycleEarlyCloser $
                             uitCreateWindow sub $
-                            MkWindowSpec closer (constEditFunction title) (Just $ \_ -> constEditFunction mbar) uic
+                            MkWindowSpec closer (constUpdateFunction title) (Just $ \_ -> constUpdateFunction mbar) uic
                     return ()
                 simpleUI :: forall sel edit. IO () -> UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit)
                 simpleUI closer _ spec = let

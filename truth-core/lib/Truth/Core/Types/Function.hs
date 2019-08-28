@@ -41,79 +41,79 @@ functionEditLens a = tupleEditLens $ MkFunctionSelector a
 constFunctionReadFunction :: ReadFunction (EditReader edit) (FunctionEditReader a edit)
 constFunctionReadFunction mr (MkTupleEditReader (MkFunctionSelector _) rt) = mr rt
 
-functionLiftEditFunction ::
-       forall a edita editb. EditFunction edita editb -> EditFunction (FunctionEdit a edita) (FunctionEdit a editb)
-functionLiftEditFunction (MkCloseUnlift (unlift :: Unlift t) (MkAnEditFunction g u)) =
+functionLiftUpdateFunction ::
+       forall a edita editb. UpdateFunction edita editb -> UpdateFunction (FunctionEdit a edita) (FunctionEdit a editb)
+functionLiftUpdateFunction (MkCloseUnlift (unlift :: Unlift t) (MkAnUpdateFunction g u)) =
     MkCloseUnlift unlift $ let
         toMR :: a -> MutableRead m (FunctionEditReader a edita) -> MutableRead m (EditReader edita)
         toMR a mr rat = mr $ MkTupleEditReader (MkFunctionSelector a) rat
-        efGet :: ReadFunctionT t (FunctionEditReader a edita) (FunctionEditReader a editb)
-        efGet mr (MkTupleEditReader (MkFunctionSelector a) rbt) = g (toMR a mr) rbt
-        efUpdate ::
+        ufGet :: ReadFunctionT t (FunctionEditReader a edita) (FunctionEditReader a editb)
+        ufGet mr (MkTupleEditReader (MkFunctionSelector a) rbt) = g (toMR a mr) rbt
+        ufUpdate ::
                forall m. MonadIO m
             => FunctionEdit a edita
             -> MutableRead m (FunctionEditReader a edita)
             -> t m [FunctionEdit a editb]
-        efUpdate (MkTupleEdit (MkFunctionSelector a) edit) mr =
+        ufUpdate (MkTupleEdit (MkFunctionSelector a) edit) mr =
             withTransConstraintTM @MonadIO $ do
                 ebs <- u edit (toMR a mr)
                 return $ fmap (\eb -> MkTupleEdit (MkFunctionSelector a) eb) ebs
-        in MkAnEditFunction {..}
+        in MkAnUpdateFunction {..}
 
-applyFunctionEditFunction ::
+applyFunctionUpdateFunction ::
        forall a edit. (Eq a, FullEdit edit)
-    => EditFunction (PairEdit (FunctionEdit a edit) (WholeEdit a)) edit
-applyFunctionEditFunction =
+    => UpdateFunction (PairEdit (FunctionEdit a edit) (WholeEdit a)) edit
+applyFunctionUpdateFunction =
     MkCloseUnlift identityUnlift $ let
-        efGet :: ReadFunctionT IdentityT (PairEditReader (FunctionEdit a edit) (WholeEdit a)) (EditReader edit)
-        efGet mr rt =
+        ufGet :: ReadFunctionT IdentityT (PairEditReader (FunctionEdit a edit) (WholeEdit a)) (EditReader edit)
+        ufGet mr rt =
             lift $ do
                 a <- mr $ MkTupleEditReader SelectSecond ReadWhole
                 mr $ MkTupleEditReader SelectFirst $ MkTupleEditReader (MkFunctionSelector a) rt
-        efUpdate ::
+        ufUpdate ::
                forall m. MonadIO m
             => PairEdit (FunctionEdit a edit) (WholeEdit a)
             -> MutableRead m (PairEditReader (FunctionEdit a edit) (WholeEdit a))
             -> IdentityT m [edit]
-        efUpdate (MkTupleEdit SelectFirst (MkTupleEdit (MkFunctionSelector ae) edit)) mr =
+        ufUpdate (MkTupleEdit SelectFirst (MkTupleEdit (MkFunctionSelector ae) edit)) mr =
             lift $ do
                 a <- mr $ MkTupleEditReader SelectSecond ReadWhole
                 return $
                     if a == ae
                         then [edit]
                         else []
-        efUpdate (MkTupleEdit SelectSecond (MkWholeEdit a)) mr =
+        ufUpdate (MkTupleEdit SelectSecond (MkWholeEdit a)) mr =
             lift $
             getReplaceEdits $ \rt -> mr $ MkTupleEditReader SelectFirst $ MkTupleEditReader (MkFunctionSelector a) rt
-        in MkAnEditFunction {..}
+        in MkAnUpdateFunction {..}
 
 functionEditApply ::
        (Eq p, FullEdit editb)
-    => EditFunction edita (FunctionEdit p editb)
-    -> EditFunction edita (WholeEdit p)
-    -> EditFunction edita editb
-functionEditApply eff efwp = applyFunctionEditFunction . pairCombineEditFunctions eff efwp
+    => UpdateFunction edita (FunctionEdit p editb)
+    -> UpdateFunction edita (WholeEdit p)
+    -> UpdateFunction edita editb
+functionEditApply eff efwp = applyFunctionUpdateFunction . pairCombineUpdateFunctions eff efwp
 
-maybeFunctionEditFunction ::
-       forall a edit. EditFunction (PairEdit edit (FunctionEdit a edit)) (FunctionEdit (Maybe a) edit)
-maybeFunctionEditFunction =
+maybeFunctionUpdateFunction ::
+       forall a edit. UpdateFunction (PairEdit edit (FunctionEdit a edit)) (FunctionEdit (Maybe a) edit)
+maybeFunctionUpdateFunction =
     MkCloseUnlift identityUnlift $ let
-        efGet :: ReadFunctionT IdentityT (PairEditReader edit (FunctionEdit a edit)) (FunctionEditReader (Maybe a) edit)
-        efGet mr (MkTupleEditReader (MkFunctionSelector Nothing) rt) = lift $ mr $ MkTupleEditReader SelectFirst rt
-        efGet mr (MkTupleEditReader (MkFunctionSelector (Just a)) rt) =
+        ufGet :: ReadFunctionT IdentityT (PairEditReader edit (FunctionEdit a edit)) (FunctionEditReader (Maybe a) edit)
+        ufGet mr (MkTupleEditReader (MkFunctionSelector Nothing) rt) = lift $ mr $ MkTupleEditReader SelectFirst rt
+        ufGet mr (MkTupleEditReader (MkFunctionSelector (Just a)) rt) =
             lift $ mr $ MkTupleEditReader SelectSecond $ MkTupleEditReader (MkFunctionSelector a) rt
-        efUpdate ::
+        ufUpdate ::
                forall m. MonadIO m
             => PairEdit edit (FunctionEdit a edit)
             -> MutableRead m (PairEditReader edit (FunctionEdit a edit))
             -> IdentityT m [FunctionEdit (Maybe a) edit]
-        efUpdate (MkTupleEdit SelectFirst edit) _ = lift $ return [MkTupleEdit (MkFunctionSelector Nothing) edit]
-        efUpdate (MkTupleEdit SelectSecond (MkTupleEdit (MkFunctionSelector a) edit)) _ =
+        ufUpdate (MkTupleEdit SelectFirst edit) _ = lift $ return [MkTupleEdit (MkFunctionSelector Nothing) edit]
+        ufUpdate (MkTupleEdit SelectSecond (MkTupleEdit (MkFunctionSelector a) edit)) _ =
             lift $ return [MkTupleEdit (MkFunctionSelector $ Just a) edit]
-        in MkAnEditFunction {..}
+        in MkAnUpdateFunction {..}
 
 functionEditMaybe ::
-       EditFunction edita editb
-    -> EditFunction edita (FunctionEdit p editb)
-    -> EditFunction edita (FunctionEdit (Maybe p) editb)
-functionEditMaybe efn eff = maybeFunctionEditFunction . pairCombineEditFunctions efn eff
+       UpdateFunction edita editb
+    -> UpdateFunction edita (FunctionEdit p editb)
+    -> UpdateFunction edita (FunctionEdit (Maybe p) editb)
+functionEditMaybe efn eff = maybeFunctionUpdateFunction . pairCombineUpdateFunctions efn eff

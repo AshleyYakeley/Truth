@@ -10,12 +10,14 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
 createWidget ::
-       EditFunction edit (WholeEdit Text) -> EditFunction edit (WholeEdit (Maybe (IO ()))) -> CreateView sel edit Widget
+       UpdateFunction edit (WholeEdit Text)
+    -> UpdateFunction edit (WholeEdit (Maybe (IO ())))
+    -> CreateView sel edit Widget
 createWidget rlabel raction = do
     aref <- liftIO $ newIORef Nothing
     widget <- new Button []
-    cvBindEditFunction Nothing rlabel $ \label -> set widget [#label := label]
-    cvBindEditFunction Nothing raction $ \maction ->
+    cvBindUpdateFunction Nothing rlabel $ \label -> set widget [#label := label]
+    cvBindUpdateFunction Nothing raction $ \maction ->
         liftIO $ do
             writeIORef aref maction
             set widget [#sensitive := isJust maction]

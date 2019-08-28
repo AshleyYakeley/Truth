@@ -7,7 +7,7 @@ module Truth.Core.UI.CreateView
     , cvReceiveIOUpdates
     , cvReceiveUpdates
     , cvReceiveUpdate
-    , cvBindEditFunction
+    , cvBindUpdateFunction
     , cvAddAspect
     , cvMapEdit
     , cvMapSelection
@@ -104,10 +104,10 @@ cvReceiveUpdate ::
     -> CreateView sel edit ()
 cvReceiveUpdate mesrc recv = cvReceiveUpdates mesrc $ \unlift mr edits -> for_ edits (recv unlift mr)
 
-cvBindEditFunction ::
-       Maybe EditSource -> EditFunction edit (WholeEdit t) -> (t -> View sel edit ()) -> CreateView sel edit ()
-cvBindEditFunction mesrc ef setf = do
-    initial <- cvLiftView $ viewObjectRead $ \_ mr -> editFunctionRead ef mr ReadWhole
+cvBindUpdateFunction ::
+       Maybe EditSource -> UpdateFunction edit (WholeEdit t) -> (t -> View sel edit ()) -> CreateView sel edit ()
+cvBindUpdateFunction mesrc ef setf = do
+    initial <- cvLiftView $ viewObjectRead $ \_ mr -> updateFunctionRead ef mr ReadWhole
     cvLiftView $ setf initial
     cvReceiveUpdates mesrc $ \(MkTransform unlift) ->
         mapReceiveUpdates ef $ \_ wedits ->

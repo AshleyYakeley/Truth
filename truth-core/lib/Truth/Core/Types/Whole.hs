@@ -79,37 +79,37 @@ wholePutEdits pe edits mr =
 
 type WholeEdit a = WholeReaderEdit (WholeReader a)
 
-wholeEditFunction :: forall a b. (a -> b) -> EditFunction (WholeEdit a) (WholeEdit b)
-wholeEditFunction ab =
+wholeUpdateFunction :: forall a b. (a -> b) -> UpdateFunction (WholeEdit a) (WholeEdit b)
+wholeUpdateFunction ab =
     MkCloseUnlift identityUnlift $
-    MkAnEditFunction
-        { efGet = \mr ReadWhole -> lift $ fmap ab $ mr ReadWhole
-        , efUpdate = \(MkWholeEdit a) _ -> return [MkWholeEdit $ ab a]
+    MkAnUpdateFunction
+        { ufGet = \mr ReadWhole -> lift $ fmap ab $ mr ReadWhole
+        , ufUpdate = \(MkWholeEdit a) _ -> return [MkWholeEdit $ ab a]
         }
 
-ioWholeEditFunction :: forall a b. (a -> IO b) -> EditFunction (WholeEdit a) (WholeEdit b)
-ioWholeEditFunction aiob =
+ioWholeUpdateFunction :: forall a b. (a -> IO b) -> UpdateFunction (WholeEdit a) (WholeEdit b)
+ioWholeUpdateFunction aiob =
     MkCloseUnlift identityUnlift $
-    MkAnEditFunction
-        { efGet =
+    MkAnUpdateFunction
+        { ufGet =
               \mr ReadWhole ->
                   lift $ do
                       a <- mr ReadWhole
                       liftIO $ aiob a
-        , efUpdate =
+        , ufUpdate =
               \(MkWholeEdit a) _ -> do
                   b <- liftIO $ aiob a
                   return [MkWholeEdit b]
         }
 
-changeOnlyEditFunction ::
+changeOnlyUpdateFunction ::
        forall a. Eq a
-    => IO (EditFunction (WholeEdit a) (WholeEdit a))
-changeOnlyEditFunction = do
+    => IO (UpdateFunction (WholeEdit a) (WholeEdit a))
+changeOnlyUpdateFunction = do
     var <- newMVar Nothing
     let
-        efGet :: ReadFunctionT (StateT (Maybe a)) (WholeReader a) (WholeReader a)
-        efGet mr ReadWhole = do
+        ufGet :: ReadFunctionT (StateT (Maybe a)) (WholeReader a) (WholeReader a)
+        ufGet mr ReadWhole = do
             ma <- get
             case ma of
                 Just a -> return a
@@ -117,12 +117,12 @@ changeOnlyEditFunction = do
                     a <- lift $ mr ReadWhole
                     put $ Just a
                     return a
-        efUpdate ::
+        ufUpdate ::
                forall m. MonadIO m
             => WholeEdit a
             -> MutableRead m (EditReader (WholeEdit a))
             -> StateT (Maybe a) m [WholeEdit a]
-        efUpdate (MkWholeEdit newa) _ = do
+        ufUpdate (MkWholeEdit newa) _ = do
             molda <- get
             case molda of
                 Just olda
@@ -130,20 +130,20 @@ changeOnlyEditFunction = do
                 _ -> do
                     put $ Just newa
                     return [MkWholeEdit newa]
-    return $ MkCloseUnlift (mvarUnlift var) $ MkAnEditFunction {..}
+    return $ MkCloseUnlift (mvarUnlift var) $ MkAnUpdateFunction {..}
 
 ioWholeEditLens :: forall a b. (a -> IO b) -> (b -> a -> IO (Maybe a)) -> EditLens (WholeEdit a) (WholeEdit b)
 ioWholeEditLens ioget ioput =
     MkCloseUnlift identityUnlift $
     MkAnEditLens
         { elFunction =
-              MkAnEditFunction
-                  { efGet =
+              MkAnUpdateFunction
+                  { ufGet =
                         \mr ReadWhole ->
                             lift $ do
                                 a <- mr ReadWhole
                                 liftIO $ ioget a
-                  , efUpdate =
+                  , ufUpdate =
                         \(MkWholeEdit a) _ -> do
                             b <- liftIO $ ioget a
                             return [MkWholeEdit b]
@@ -186,15 +186,15 @@ instance IsEditLens (Codec a b) where
     type LensRange (Codec a b) = WholeEdit (Maybe b)
     toEditLens = toEditLens . codecInjection
 
-unitWholeEditFunction :: EditFunction edit (WholeEdit ())
-unitWholeEditFunction = constEditFunction ()
+unitWholeUpdateFunction :: UpdateFunction edit (WholeEdit ())
+unitWholeUpdateFunction = constUpdateFunction ()
 
-pairWholeEditFunction ::
+pairWholeUpdateFunction ::
        forall edit a b.
-       EditFunction edit (WholeEdit a)
-    -> EditFunction edit (WholeEdit b)
-    -> EditFunction edit (WholeEdit (a, b))
-pairWholeEditFunction (MkCloseUnlift (ula :: Unlift ta) (MkAnEditFunction ga ua)) (MkCloseUnlift (ulb :: Unlift tb) (MkAnEditFunction gb ub)) = let
+       UpdateFunction edit (WholeEdit a)
+    -> UpdateFunction edit (WholeEdit b)
+    -> UpdateFunction edit (WholeEdit (a, b))
+pairWholeUpdateFunction (MkCloseUnlift (ula :: Unlift ta) (MkAnUpdateFunction ga ua)) (MkCloseUnlift (ulb :: Unlift tb) (MkAnUpdateFunction gb ub)) = let
     gab :: ReadFunctionT (ComposeT ta tb) (EditReader edit) (WholeReader (a, b))
     gab mr ReadWhole =
         withTransConstraintTM @MonadIO $ do
@@ -224,4 +224,4 @@ pairWholeEditFunction (MkCloseUnlift (ula :: Unlift ta) (MkAnEditFunction ga ua)
                                         Just b -> return b
                                         Nothing -> lift2ComposeT $ gb mr ReadWhole
                                 return [MkWholeEdit (a, b)]
-    in MkCloseUnlift (composeUnlift ula ulb) $ MkAnEditFunction gab uab
+    in MkCloseUnlift (composeUnlift ula ulb) $ MkAnUpdateFunction gab uab

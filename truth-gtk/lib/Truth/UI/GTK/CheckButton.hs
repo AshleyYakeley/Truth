@@ -14,7 +14,7 @@ createWidget (MkCheckboxUISpec label lens) = do
     esrc <- newEditSource
     initial <- cvMapEdit lens $ cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial]
-    cvBindEditFunction Nothing label $ \val -> set widget [#label := val]
+    cvBindUpdateFunction Nothing label $ \val -> set widget [#label := val]
     cvMapEdit lens $ do
         changedSignal <-
             cvLiftView $
@@ -23,13 +23,13 @@ createWidget (MkCheckboxUISpec label lens) = do
                 st <- Gtk.get widget #active
                 _ <- push noEditSource [MkWholeEdit st]
                 return ()
-        cvBindEditFunction (Just esrc) id $ \st ->
+        cvBindUpdateFunction (Just esrc) id $ \st ->
             liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
     toWidget widget
 createWidget (MkMaybeCheckboxUISpec label lens) = do
     initial <- cvMapEdit lens $ cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     widget <- new CheckButton [#active := initial == Just True, #inconsistent := initial == Nothing]
-    cvBindEditFunction Nothing label $ \val -> set widget [#label := val]
+    cvBindUpdateFunction Nothing label $ \val -> set widget [#label := val]
     cvMapEdit lens $ do
         let
             getWidgetState ::
@@ -66,7 +66,7 @@ createWidget (MkMaybeCheckboxUISpec label lens) = do
                                 _ <- push noEditSource [MkWholeEdit newst]
                                 return True
                             _ -> return False
-        cvBindEditFunction Nothing id setWidgetState
+        cvBindUpdateFunction Nothing id setWidgetState
     toWidget widget
 
 checkButtonGetView :: GetGView

@@ -34,16 +34,16 @@ instance (FullSubjectReader (EditReader ea), ApplicableEdit ea, ApplicableEdit e
 instance (FullEdit ea, ApplicableEdit eb, EditReader ea ~ EditReader eb) => FullEdit (SumEdit ea eb) where
     replaceEdit mr write = replaceEdit mr (\edit -> write $ SumEditLeft edit)
 
-sumRightEditFunction ::
+sumRightUpdateFunction ::
        forall editl editr. (EditReader editl ~ EditReader editr)
-    => EditFunction editr (SumEdit editl editr)
-sumRightEditFunction = let
-    efGet :: ReadFunctionT IdentityT (EditReader editr) (EditReader editr)
-    efGet mr = remonadMutableRead lift mr
-    efUpdate ::
+    => UpdateFunction editr (SumEdit editl editr)
+sumRightUpdateFunction = let
+    ufGet :: ReadFunctionT IdentityT (EditReader editr) (EditReader editr)
+    ufGet mr = remonadMutableRead lift mr
+    ufUpdate ::
            forall m. MonadIO m
         => editr
         -> MutableRead m (EditReader editr)
         -> IdentityT m [SumEdit editl editr]
-    efUpdate er _ = return [SumEditRight er]
-    in MkCloseUnlift identityUnlift MkAnEditFunction {..}
+    ufUpdate er _ = return [SumEditRight er]
+    in MkCloseUnlift identityUnlift MkAnUpdateFunction {..}
