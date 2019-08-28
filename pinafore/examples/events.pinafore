@@ -1,3 +1,5 @@
+#!/usr/bin/env pinafore
+
 let
 
 std_window :: Ref +Text -> (Action a -> [MenuItem]) -> UI a -> Action Window;
