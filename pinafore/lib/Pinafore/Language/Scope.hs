@@ -120,7 +120,7 @@ instance MonadError ErrorType (SourceScoped expr patc ct) where
             throwError $ MkErrorMessage spos err
 
 convertFailure :: String -> String -> SourceScoped expr patc ct a
-convertFailure sa sb = throwError $ TypeConvertError (pack $ show sa) (pack $ show sb)
+convertFailure sa sb = throwError $ TypeConvertError (pack sa) (pack sb)
 
 lookupBinding :: Name -> SourceScoped expr patc ct (Maybe expr)
 lookupBinding name = do

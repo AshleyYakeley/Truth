@@ -1,59 +1,32 @@
 module Truth.Core.Types
-    ( module Truth.Core.Types.None
-    , module Truth.Core.Types.Whole
-    , module Truth.Core.Types.WholeEditFunction
-    , module Truth.Core.Types.Unit
-    , module Truth.Core.Types.Sum
-    , module Truth.Core.Types.SumWhole
-    , module Truth.Core.Types.OneReader
-    , module Truth.Core.Types.OneEdit
-    , module Truth.Core.Types.OneWholeEdit
-    , module Truth.Core.Types.Either
-    , module Truth.Core.Types.Comonad
-    , module Truth.Core.Types.Tuple
-    , module Truth.Core.Types.ConsTuple
-    , module Truth.Core.Types.EitherTuple
-    , module Truth.Core.Types.Pair
-    , module Truth.Core.Types.Lattice
-    , module Truth.Core.Types.Function
-    , module Truth.Core.Types.Dependent
-    , module Truth.Core.Types.Context
-    , module Truth.Core.Types.List
-    , module Truth.Core.Types.String
-    , module Truth.Core.Types.ByteString
-    , module Truth.Core.Types.Key
-    , module Truth.Core.Types.FiniteSet
-    , module Truth.Core.Types.Database
-    , module Truth.Core.Types.Database.Show
-    , module Truth.Core.Types.Database.Tuple
-    , module Truth.Core.Types.Database.Tuple.Show
+    ( module I
     ) where
 
-import Truth.Core.Types.ByteString
-import Truth.Core.Types.Comonad
-import Truth.Core.Types.ConsTuple
-import Truth.Core.Types.Context
-import Truth.Core.Types.Database
-import Truth.Core.Types.Database.Show
-import Truth.Core.Types.Database.Tuple
-import Truth.Core.Types.Database.Tuple.Show
-import Truth.Core.Types.Dependent
-import Truth.Core.Types.Either
-import Truth.Core.Types.EitherTuple
-import Truth.Core.Types.FiniteSet
-import Truth.Core.Types.Function
-import Truth.Core.Types.Key
-import Truth.Core.Types.Lattice
-import Truth.Core.Types.List
-import Truth.Core.Types.None
-import Truth.Core.Types.OneEdit
-import Truth.Core.Types.OneReader
-import Truth.Core.Types.OneWholeEdit
-import Truth.Core.Types.Pair
-import Truth.Core.Types.String
-import Truth.Core.Types.Sum
-import Truth.Core.Types.SumWhole
-import Truth.Core.Types.Tuple
-import Truth.Core.Types.Unit
-import Truth.Core.Types.Whole
-import Truth.Core.Types.WholeEditFunction
+import Truth.Core.Types.ByteString as I
+import Truth.Core.Types.Comonad as I
+import Truth.Core.Types.ConsTuple as I
+import Truth.Core.Types.Context as I
+import Truth.Core.Types.Database as I
+import Truth.Core.Types.Database.Show as I
+import Truth.Core.Types.Database.Tuple as I
+import Truth.Core.Types.Database.Tuple.Show as I
+import Truth.Core.Types.Dependent as I
+import Truth.Core.Types.Either as I
+import Truth.Core.Types.EitherTuple as I
+import Truth.Core.Types.FiniteSet as I
+import Truth.Core.Types.Function as I
+import Truth.Core.Types.Key as I
+import Truth.Core.Types.Lattice as I
+import Truth.Core.Types.List as I
+import Truth.Core.Types.None as I
+import Truth.Core.Types.OneEdit as I
+import Truth.Core.Types.OneReader as I
+import Truth.Core.Types.OneWholeEdit as I
+import Truth.Core.Types.Pair as I
+import Truth.Core.Types.String as I
+import Truth.Core.Types.Sum as I
+import Truth.Core.Types.SumWhole as I
+import Truth.Core.Types.Tuple as I
+import Truth.Core.Types.Unit as I
+import Truth.Core.Types.Whole as I
+import Truth.Core.Types.WholeEditFunction as I

@@ -38,7 +38,6 @@ operatorFixity ".*" = MkFixity AssocLeft 8
 operatorFixity "~*" = MkFixity AssocLeft 8
 operatorFixity "/" = MkFixity AssocLeft 8
 operatorFixity "~/" = MkFixity AssocLeft 8
-operatorFixity "/\\" = MkFixity AssocLeft 8
 operatorFixity "!$" = MkFixity AssocRight 8
 operatorFixity "!$$" = MkFixity AssocRight 8
 operatorFixity "!@" = MkFixity AssocRight 8
@@ -49,7 +48,6 @@ operatorFixity "~+" = MkFixity AssocLeft 7
 operatorFixity "-" = MkFixity AssocLeft 7
 operatorFixity ".-" = MkFixity AssocLeft 7
 operatorFixity "~-" = MkFixity AssocLeft 7
-operatorFixity "\\/" = MkFixity AssocLeft 7
 operatorFixity "??" = MkFixity AssocLeft 7
 operatorFixity ":" = MkFixity AssocRight 6
 operatorFixity "++" = MkFixity AssocRight 6
@@ -62,7 +60,9 @@ operatorFixity "<=" = MkFixity AssocNone 5
 operatorFixity "<" = MkFixity AssocNone 5
 operatorFixity ">=" = MkFixity AssocNone 5
 operatorFixity ">" = MkFixity AssocNone 5
+operatorFixity "/\\" = MkFixity AssocLeft 4
 operatorFixity "&&" = MkFixity AssocRight 4
+operatorFixity "\\/" = MkFixity AssocLeft 3
 operatorFixity "||" = MkFixity AssocRight 3
 operatorFixity ":=" = MkFixity AssocNone 2
 operatorFixity "+=" = MkFixity AssocNone 2
