@@ -4,4 +4,4 @@ import Pinafore.Base
 import Shapes
 import Truth.Core
 
-type PinaforeTextRef baseedit = PinaforeLensValue baseedit (StringEdit Text)
+type PinaforeTextRef baseupdate = PinaforeLensValue baseupdate (StringEdit Text)

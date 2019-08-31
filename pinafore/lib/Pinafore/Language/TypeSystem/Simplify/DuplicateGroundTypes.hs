@@ -10,8 +10,8 @@ import Shapes
 
 mergeInSingularType ::
        Is PolarityType polarity
-    => PinaforeSingularType baseedit polarity t
-    -> PJMShimWit (PinaforeSingularType baseedit) polarity t
+    => PinaforeSingularType baseupdate polarity t
+    -> PJMShimWit (PinaforeSingularType baseupdate) polarity t
 mergeInSingularType (GroundPinaforeSingularType gt args) =
     case mapDolanArguments
              mergeDuplicateGroundTypesInType
@@ -22,10 +22,10 @@ mergeInSingularType (GroundPinaforeSingularType gt args) =
 mergeInSingularType t = mkPJMShimWit t
 
 mergeInTypes ::
-       forall baseedit polarity ta tb. Is PolarityType polarity
-    => PinaforeType baseedit polarity ta
-    -> PinaforeType baseedit polarity tb
-    -> PinaforeShimWit baseedit polarity (JoinMeetType polarity ta tb)
+       forall baseupdate polarity ta tb. Is PolarityType polarity
+    => PinaforeType baseupdate polarity ta
+    -> PinaforeType baseupdate polarity tb
+    -> PinaforeShimWit baseupdate polarity (JoinMeetType polarity ta tb)
 mergeInTypes ta tb =
     case representative @_ @_ @polarity of
         PositiveType ->
@@ -34,9 +34,9 @@ mergeInTypes ta tb =
             chainShimWit mergeDuplicateGroundTypesInType $ meetPinaforeShimWit (mkPJMShimWit ta) (mkPJMShimWit tb)
 
 mergeInPositiveSingularType ::
-       PinaforeSingularType baseedit 'Positive t1
-    -> PinaforeType baseedit 'Positive tr
-    -> PinaforeShimWit baseedit 'Positive (JoinType t1 tr)
+       PinaforeSingularType baseupdate 'Positive t1
+    -> PinaforeType baseupdate 'Positive tr
+    -> PinaforeShimWit baseupdate 'Positive (JoinType t1 tr)
 mergeInPositiveSingularType ts NilPinaforeType = mkPJMShimWit $ ConsPinaforeType ts NilPinaforeType
 mergeInPositiveSingularType (GroundPinaforeSingularType gt1 args1) (ConsPinaforeType (GroundPinaforeSingularType gt2 args2) tr)
     | Just (Refl, HRefl) <- pinaforeGroundTypeTestEquality gt1 gt2 =
@@ -55,9 +55,9 @@ mergeInPositiveSingularType ts (ConsPinaforeType t1 tr) =
             MkShimWit (ConsPinaforeType t1 tsr) $ joinf (join2 . conv . join1) (joinBimap id $ conv . join2)
 
 mergeInNegativeSingularType ::
-       PinaforeSingularType baseedit 'Negative t1
-    -> PinaforeType baseedit 'Negative tr
-    -> PinaforeShimWit baseedit 'Negative (MeetType t1 tr)
+       PinaforeSingularType baseupdate 'Negative t1
+    -> PinaforeType baseupdate 'Negative tr
+    -> PinaforeShimWit baseupdate 'Negative (MeetType t1 tr)
 mergeInNegativeSingularType ts NilPinaforeType = mkPJMShimWit $ ConsPinaforeType ts NilPinaforeType
 mergeInNegativeSingularType (GroundPinaforeSingularType gt1 args1) (ConsPinaforeType (GroundPinaforeSingularType gt2 args2) tr)
     | Just (Refl, HRefl) <- pinaforeGroundTypeTestEquality gt1 gt2 =
@@ -76,9 +76,9 @@ mergeInNegativeSingularType ts (ConsPinaforeType t1 tr) =
             MkShimWit (ConsPinaforeType t1 tsr) $ meetf (meet1 . conv . meet2) (meetBimap id $ meet2 . conv)
 
 mergeDuplicateGroundTypesInType ::
-       forall baseedit polarity t. Is PolarityType polarity
-    => PinaforeType baseedit polarity t
-    -> PinaforeShimWit baseedit polarity t
+       forall baseupdate polarity t. Is PolarityType polarity
+    => PinaforeType baseupdate polarity t
+    -> PinaforeShimWit baseupdate polarity t
 mergeDuplicateGroundTypesInType NilPinaforeType = mkPJMShimWit NilPinaforeType
 mergeDuplicateGroundTypesInType (ConsPinaforeType t1 tr) =
     case mergeInSingularType t1 of
@@ -90,8 +90,8 @@ mergeDuplicateGroundTypesInType (ConsPinaforeType t1 tr) =
                         NegativeType -> cfmap (meetBimap conv1 convr) $ mergeInNegativeSingularType t1' tr'
 
 mergeDuplicateGroundTypes ::
-       forall baseedit a. PShimWitMappable PinaforeShim (PinaforeType baseedit) a
+       forall baseupdate a. PShimWitMappable PinaforeShim (PinaforeType baseupdate) a
     => a
     -> a
 mergeDuplicateGroundTypes =
-    mapPShimWits @_ @(PinaforeType baseedit) mergeDuplicateGroundTypesInType mergeDuplicateGroundTypesInType
+    mapPShimWits @_ @(PinaforeType baseupdate) mergeDuplicateGroundTypesInType mergeDuplicateGroundTypesInType

@@ -19,14 +19,14 @@ readTypeSignature = do
     readThis TokTypeJudge
     readType
 
-readBindingRest :: HasPinaforeEntityEdit baseedit => Parser ([SyntaxPattern], SyntaxExpression baseedit)
+readBindingRest :: HasPinaforeEntityUpdate baseupdate => Parser ([SyntaxPattern], SyntaxExpression baseupdate)
 readBindingRest = do
     args <- readPatterns
     readThis TokAssign
     rval <- readExpression
     return (args, rval)
 
-readBinding :: HasPinaforeEntityEdit baseedit => Parser (SyntaxBinding baseedit)
+readBinding :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxBinding baseupdate)
 readBinding = do
     spos <- getPosition
     name <- readThis TokLName
@@ -53,41 +53,41 @@ readLines p =
          return $ a : fromMaybe [] ma) <|>
     (return [])
 
-readDeclaration :: HasPinaforeEntityEdit baseedit => Parser (SyntaxDeclarations baseedit)
+readDeclaration :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxDeclarations baseupdate)
 readDeclaration =
     fmap typeSyntaxDeclarations readTypeDeclaration <|> fmap (MkSyntaxDeclarations mempty . pure) readBinding
 
-readDeclarations :: HasPinaforeEntityEdit baseedit => Parser (SyntaxDeclarations baseedit)
+readDeclarations :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxDeclarations baseupdate)
 readDeclarations = do
     decls <- readLines readDeclaration
     return $ mconcat decls
 
-readLetBindings :: HasPinaforeEntityEdit baseedit => Parser (SyntaxDeclarations baseedit)
+readLetBindings :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxDeclarations baseupdate)
 readLetBindings = do
     readThis TokLet
     readDeclarations
 
-readTopDeclarations :: HasPinaforeEntityEdit baseedit => Parser (SyntaxTopDeclarations baseedit)
+readTopDeclarations :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxTopDeclarations baseupdate)
 readTopDeclarations = do
     spos <- getPosition
     sdecls <- readLetBindings
     parseEnd
     return $ MkSyntaxTopDeclarations spos sdecls
 
-readSourcePos :: Parser (SyntaxExpression' baseedit) -> Parser (SyntaxExpression baseedit)
+readSourcePos :: Parser (SyntaxExpression' baseupdate) -> Parser (SyntaxExpression baseupdate)
 readSourcePos p = do
     spos <- getPosition
     expr' <- p
     return $ MkSyntaxExpression spos expr'
 
 readExpression ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (SyntaxExpression baseedit)
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+    => Parser (SyntaxExpression baseupdate)
 readExpression = readExpressionInfixed readExpression1
 
 readCase ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (SyntaxCase baseedit)
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+    => Parser (SyntaxCase baseupdate)
 readCase = do
     pat <- readPattern1
     readThis TokMap
@@ -95,18 +95,18 @@ readCase = do
     return $ MkSyntaxCase pat e
 
 readCases ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser [SyntaxCase baseedit]
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+    => Parser [SyntaxCase baseupdate]
 readCases = readLines readCase
 
-data DoLine baseedit
-    = ExpressionDoLine (SyntaxExpression baseedit)
+data DoLine baseupdate
+    = ExpressionDoLine (SyntaxExpression baseupdate)
     | BindDoLine SyntaxPattern
-                 (SyntaxExpression baseedit)
+                 (SyntaxExpression baseupdate)
 
 readDoLine ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (DoLine baseedit)
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+    => Parser (DoLine baseupdate)
 readDoLine =
     (try $ do
          pat <- readPattern1
@@ -118,10 +118,10 @@ readDoLine =
          return $ ExpressionDoLine expr)
 
 doLines ::
-       forall baseedit m. MonadFail m
-    => DoLine baseedit
-    -> [DoLine baseedit]
-    -> m (SyntaxExpression baseedit)
+       forall baseupdate m. MonadFail m
+    => DoLine baseupdate
+    -> [DoLine baseupdate]
+    -> m (SyntaxExpression baseupdate)
 doLines (ExpressionDoLine expr) [] = return expr
 doLines (BindDoLine _ _) [] = fail "last line of do block not expression"
 doLines (ExpressionDoLine expra) (l:ll) = do
@@ -136,8 +136,8 @@ doLines (BindDoLine pat expra) (l:ll) = do
             [expra, seAbstract (getSourcePos pat) pat exprb]
 
 readExpression1 ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (SyntaxExpression baseedit)
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+    => Parser (SyntaxExpression baseupdate)
 readExpression1 =
     (do
          spos <- getPosition
@@ -178,7 +178,7 @@ readExpression1 =
          return $ seApplys spos (seConst spos SCIfThenElse) [metest, methen, meelse]) <|>
     readExpression2
 
-readExpression2 :: HasPinaforeEntityEdit baseedit => Parser (SyntaxExpression baseedit)
+readExpression2 :: HasPinaforeEntityUpdate baseupdate => Parser (SyntaxExpression baseupdate)
 readExpression2 = do
     spos <- getPosition
     sfunc <- readExpression3
@@ -186,8 +186,8 @@ readExpression2 = do
     return $ seApplys spos sfunc sargs
 
 readExpression3 ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (SyntaxExpression baseedit)
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+    => Parser (SyntaxExpression baseupdate)
 readExpression3 =
     readSourcePos
         (do
@@ -256,8 +256,8 @@ readExpression3 =
     "expression"
 
 readTopExpression ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (SyntaxExpression baseedit)
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+    => Parser (SyntaxExpression baseupdate)
 readTopExpression = do
     sexpr <- readExpression
     parseEnd

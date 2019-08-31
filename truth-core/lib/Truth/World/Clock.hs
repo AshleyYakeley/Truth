@@ -6,14 +6,14 @@ import Data.Time
 import Truth.Core
 import Truth.Core.Import
 
-clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (WholeEdit UTCTime) ()
+clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (WholeUpdate UTCTime) ()
 clockObjectMaker basetime interval update = do
     rec
         ref <- liftIO $ newIORef first
         first <-
             clock basetime interval $ \t -> do
                 writeIORef ref t
-                update [MkWholeEdit t] noEditContext
+                update [MkWholeReaderUpdate t] noEditContext
     let
         object :: Object (WholeEdit UTCTime)
         run :: UnliftIO (ReaderT UTCTime IO)
@@ -24,7 +24,7 @@ clockObjectMaker basetime interval update = do
         object = MkCloseUnliftIO run $ immutableAnObject $ \ReadWhole -> ask
     return (object, ())
 
-makeClockTimeZoneEF :: IO (UpdateFunction (WholeEdit UTCTime) (WholeEdit TimeZone))
+makeClockTimeZoneEF :: IO (UpdateFunction (WholeUpdate UTCTime) (WholeUpdate TimeZone))
 makeClockTimeZoneEF = do
     minuteChanges <- changeOnlyUpdateFunction @UTCTime
     tzChanges <- changeOnlyUpdateFunction @TimeZone

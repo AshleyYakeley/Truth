@@ -14,11 +14,11 @@ import Test.Tasty.HUnit
 import Truth.Core
 
 scriptTest ::
-       FromPinaforeType PinaforeEdit a
+       FromPinaforeType PinaforeUpdate a
     => UpdateTiming
     -> Text
     -> Text
-    -> ((?pinafore :: PinaforeContext PinaforeEdit) => a -> IO ())
+    -> ((?pinafore :: PinaforeContext PinaforeUpdate) => a -> IO ())
     -> ContextTestTree
 scriptTest ut name text checker =
     contextTestCase name text $ \t ->

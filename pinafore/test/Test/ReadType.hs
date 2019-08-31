@@ -13,7 +13,7 @@ testReadType :: Text -> TestTree
 testReadType text =
     testCase (unpack text) $
     ioRunInterpretResult $ do
-        _ <- runTestPinaforeSourceScoped $ parseType @PinaforeEdit @'Positive text
+        _ <- runTestPinaforeSourceScoped $ parseType @PinaforeUpdate @'Positive text
         return ()
 
 testReadTypes :: TestTree

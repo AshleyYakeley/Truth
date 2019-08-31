@@ -21,7 +21,7 @@ import Truth.Core.Types.List as I
 import Truth.Core.Types.None as I
 import Truth.Core.Types.OneEdit as I
 import Truth.Core.Types.OneReader as I
-import Truth.Core.Types.OneWholeEdit as I
+import Truth.Core.Types.OneWhole as I
 import Truth.Core.Types.Pair as I
 import Truth.Core.Types.String as I
 import Truth.Core.Types.Sum as I

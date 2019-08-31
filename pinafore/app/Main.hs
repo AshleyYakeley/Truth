@@ -95,7 +95,7 @@ showDefDesc _ desc = do
 
 printInfixOperatorTable :: IO ()
 printInfixOperatorTable = do
-    let names = filter nameIsInfix $ fmap docName $ toList $ predefinedDoc @PinaforeEdit
+    let names = filter nameIsInfix $ fmap docName $ toList $ predefinedDoc @PinaforeUpdate
     putStrLn "| [n] | (A x B) x C | A x (B x C) | A x B only |"
     putStrLn "| --- | --- | --- | --- |"
     for_ [10,9 .. 0] $ \level -> do
@@ -132,7 +132,7 @@ main = do
                if giDirty gi
                    then "+"
                    else ""
-        PredefinedDocOption -> runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeEdit
+        PredefinedDocOption -> runDocTree showDefTitle showDefDesc showDefEntry 1 $ predefinedDoc @PinaforeUpdate
         InfixDocOption -> printInfixOperatorTable
         DumpTableOption mdirpath -> do
             dirpath <- getDirPath mdirpath

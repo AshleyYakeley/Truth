@@ -4,19 +4,19 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Types.Whole
 
-newtype WholeUpdateFunction edit a = MkWholeUpdateFunction
-    { unWholeUpdateFunction :: UpdateFunction edit (WholeEdit a)
+newtype WholeUpdateFunction update a = MkWholeUpdateFunction
+    { unWholeUpdateFunction :: UpdateFunction update (WholeUpdate a)
     }
 
-instance Functor (WholeUpdateFunction edit) where
+instance Functor (WholeUpdateFunction update) where
     fmap ab (MkWholeUpdateFunction efa) = MkWholeUpdateFunction $ funcUpdateFunction ab . efa
 
-instance Applicative (WholeUpdateFunction edit) where
+instance Applicative (WholeUpdateFunction update) where
     pure a = MkWholeUpdateFunction $ constUpdateFunction a
     MkWholeUpdateFunction fab <*> MkWholeUpdateFunction fa =
         MkWholeUpdateFunction $ funcUpdateFunction (\(ab, a) -> ab a) . pairWholeUpdateFunction fab fa
 
-instance IsoVariant (WholeUpdateFunction edit)
+instance IsoVariant (WholeUpdateFunction update)
 
-wholeUpdateFunctionReadOnlyEditLens :: WholeUpdateFunction edit a -> EditLens edit (WholeEdit a)
+wholeUpdateFunctionReadOnlyEditLens :: WholeUpdateFunction update a -> EditLens update (WholeUpdate a)
 wholeUpdateFunctionReadOnlyEditLens (MkWholeUpdateFunction ef) = readOnlyEditLens ef

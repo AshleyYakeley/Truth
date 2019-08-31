@@ -1,5 +1,5 @@
 module Soup.UI
-    ( PossibleNoteEdit
+    ( PossibleNoteUpdate
     , soupWindow
     ) where
 
@@ -20,17 +20,17 @@ pastResult (SuccessResult False) = ("current", tableCellPlain)
 pastResult (SuccessResult True) = ("past", tableCellPlain)
 pastResult (FailureResult s) = ("<" <> s <> ">", tableCellPlain {tcItalic = True})
 
-type PossibleNoteEdit = OneWholeEdit (Result Text) NoteEdit
+type PossibleNoteUpdate = OneWholeUpdate (Result Text) NoteUpdate
 
-soupEditSpec :: UISpec UUID (SoupEdit PossibleNoteEdit)
+soupEditSpec :: UISpec UUID (SoupUpdate PossibleNoteUpdate)
 soupEditSpec = let
-    nameFunction :: UUID -> UpdateFunction (SoupEdit PossibleNoteEdit) (WholeEdit (Result Text Text))
+    nameFunction :: UUID -> UpdateFunction (SoupUpdate PossibleNoteUpdate) (WholeUpdate (Result Text Text))
     nameFunction key =
         convertUpdateFunction .
         (editLensFunction $
          oneWholeLiftEditLens (tupleEditLens NoteTitle) .
          mustExistOneEditLens "name" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . stableKeyElementEditLens key)
-    nameColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
+    nameColumn :: KeyColumn (SoupUpdate PossibleNoteUpdate) UUID
     nameColumn =
         readOnlyKeyColumn (constUpdateFunction "Name") $ \key -> do
             lens <- getKeyElementEditLens key
@@ -39,7 +39,7 @@ soupEditSpec = let
                     oneWholeLiftEditLens (tupleEditLens NoteTitle) .
                     mustExistOneEditLens "name" . oneWholeLiftEditLens (tupleEditLens SelectSecond) . lens
             return $ funcUpdateFunction fromResult . editLensFunction valLens
-    pastColumn :: KeyColumn (SoupEdit PossibleNoteEdit) UUID
+    pastColumn :: KeyColumn (SoupUpdate PossibleNoteUpdate) UUID
     pastColumn =
         readOnlyKeyColumn (constUpdateFunction "Past") $ \key -> do
             lens <- getKeyElementEditLens key
@@ -51,20 +51,20 @@ soupEditSpec = let
     in tableUISpec [nameColumn, pastColumn] (\a b -> compare (resultToMaybe a) (resultToMaybe b)) nameFunction id $ \_ ->
            return ()
 
-soupObject :: FilePath -> Object (SoupEdit PossibleNoteEdit)
+soupObject :: FilePath -> Object (UpdateEdit (SoupUpdate PossibleNoteUpdate))
 soupObject dirpath = let
-    rawSoupObject :: Object (SoupEdit (ObjectEdit ByteStringEdit))
+    rawSoupObject :: Object (UpdateEdit ObjectSoupUpdate)
     rawSoupObject = directorySoup fileSystemObject dirpath
-    soupItemInjection :: Injection' (Result Text) LazyByteString (EditSubject PossibleNoteEdit)
+    soupItemInjection :: Injection' (Result Text) LazyByteString (UpdateSubject PossibleNoteUpdate)
     soupItemInjection = codecInjection noteCodec
     paste ::
            forall m. MonadIO m
-        => EditSubject PossibleNoteEdit
+        => UpdateSubject PossibleNoteUpdate
         -> m (Maybe LazyByteString)
     paste s = return $ getMaybeOne $ injBackwards soupItemInjection s
-    soupItemLens :: EditLens ByteStringEdit PossibleNoteEdit
+    soupItemLens :: EditLens ByteStringUpdate PossibleNoteUpdate
     soupItemLens = convertEditLens . (wholeEditLens $ injectionLens soupItemInjection) . convertEditLens
-    lens :: EditLens (SoupEdit (ObjectEdit ByteStringEdit)) (SoupEdit PossibleNoteEdit)
+    lens :: EditLens ObjectSoupUpdate (SoupUpdate PossibleNoteUpdate)
     lens = liftSoupLens paste $ soupItemLens . objectEditLens
     in mapObject lens rawSoupObject
 
@@ -73,7 +73,7 @@ soupWindow ut MkUIToolkit {..} dirpath = do
     sub <- makeReflectingSubscriber ut $ soupObject dirpath
     rec
         let
-            mbar :: IO () -> UIWindow -> Maybe (Aspect sel -> UpdateFunction edit (WholeEdit [MenuEntry edit]))
+            mbar :: IO () -> UIWindow -> Maybe (Aspect sel -> UpdateFunction edit (WholeUpdate [MenuEntry edit]))
             mbar cc _ =
                 Just $ \_ ->
                     constUpdateFunction $
@@ -97,7 +97,7 @@ soupWindow ut MkUIToolkit {..} dirpath = do
                                         subLens <- mapSubscriber lens sub
                                         uitCreateWindow subLens $
                                             MkWindowSpec subcloser (constUpdateFunction "item") (mbar subcloser subwin) $
-                                            mapEditUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
+                                            mapUpdateUISpec (oneWholeLiftEditLens $ tupleEditLens SelectSecond) $
                                             oneWholeUISpec $ oneWholeUISpec noteEditSpec
                             return ()
                     Nothing -> return ()

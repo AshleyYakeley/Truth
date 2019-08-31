@@ -27,7 +27,7 @@ testOp n =
 
 testInfix :: TestTree
 testInfix = let
-    names = filter nameIsInfix $ fmap docName $ toList $ predefinedDoc @PinaforeEdit
+    names = filter nameIsInfix $ fmap docName $ toList $ predefinedDoc @PinaforeUpdate
     in testGroup "infix" $ fmap testOp names
 
 newtype PreciseEq t =
@@ -128,7 +128,7 @@ testQueryValues = testGroup "query values" []
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
     testCase (unpack query) $
-    case (expected, withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeEdit query) of
+    case (expected, withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeUpdate query) of
         (Nothing, FailureResult _) -> return ()
         (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ showPinaforeValue v
         (Just _, FailureResult e) -> assertFailure $ "expected success, found failure: " ++ show e
@@ -431,7 +431,7 @@ testQueries =
 testShim :: Text -> String -> String -> TestTree
 testShim query expectedType expectedShim =
     testCase (unpack query) $
-    case withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeEdit query of
+    case withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeUpdate query of
         FailureResult e -> assertFailure $ "expected success, found failure: " ++ show e
         SuccessResult (MkAnyValue (MkShimWit t shim) _) -> do
             assertEqual "type" expectedType $ show t

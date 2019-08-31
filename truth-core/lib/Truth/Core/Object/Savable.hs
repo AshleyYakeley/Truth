@@ -22,21 +22,21 @@ newtype SaveActions =
     MkSaveActions (IO (Maybe (EditSource -> IO Bool, EditSource -> IO Bool)))
 
 saveBufferObject ::
-       forall edit. FullEdit edit
-    => Object (WholeEdit (EditSubject edit))
-    -> ObjectMaker edit SaveActions
+       forall update. (IsUpdate update, FullEdit (UpdateEdit update))
+    => Object (WholeEdit (UpdateSubject update))
+    -> ObjectMaker update SaveActions
 saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pushP)) update = do
     firstVal <- liftIO $ runTransform unliftP $ readP ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
     let
         objC = let
-            runC :: UnliftIO (StateT (SaveBuffer (EditSubject edit)) (DeferActionT IO))
+            runC :: UnliftIO (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO))
             runC = composeUnliftTransform (mvarUnlift sbVar) $ composeUnliftTransform runDeferActionT id
-            readC :: MutableRead (StateT (SaveBuffer (EditSubject edit)) (DeferActionT IO)) (EditReader edit)
+            readC :: MutableRead (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
             readC = mSubjectToMutableRead $ fmap saveBuffer get
             pushC ::
-                   [edit]
-                -> StateT (SaveBuffer (EditSubject edit)) (DeferActionT IO) (Maybe (EditSource -> StateT (SaveBuffer (EditSubject edit)) (DeferActionT IO) ()))
+                   [UpdateEdit update]
+                -> StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO) (Maybe (EditSource -> StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO) ()))
             pushC edits =
                 return $
                 Just $ \esrc -> do
@@ -47,13 +47,13 @@ saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pus
                             MkSaveBuffer oldbuf _ <- get
                             return oldbuf
                     put (MkSaveBuffer newbuf True)
-                    lift $ deferAction $ update edits $ editSourceContext esrc
+                    lift $ deferAction $ update (fmap editUpdate edits) $ editSourceContext esrc
             in MkCloseUnliftIO runC $ MkAnObject readC pushC
         saveAction :: EditSource -> IO Bool
         saveAction esrc =
             runTransform unliftP $ do
                 MkSaveBuffer buf _ <- mvarRun sbVar get
-                maction <- pushP [MkWholeEdit buf]
+                maction <- pushP [MkWholeReaderEdit buf]
                 case maction of
                     Nothing -> return False
                     Just action -> do
@@ -67,7 +67,7 @@ saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pus
                     buf <- readP ReadWhole
                     mvarRun sbVar $ put $ MkSaveBuffer buf False
                     getReplaceEditsFromSubject buf
-            liftIO $ update edits $ editSourceContext esrc
+            liftIO $ update (fmap editUpdate edits) $ editSourceContext esrc
             return False
         saveActions :: SaveActions
         saveActions =

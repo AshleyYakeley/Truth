@@ -4,6 +4,7 @@ module Pinafore.Storage.Table
     , Entity(..)
     , PinaforeTableRead(..)
     , PinaforeTableEdit(..)
+    , PinaforeTableUpdate
     , pinaforeTableEntityObject
     ) where
 
@@ -202,3 +203,5 @@ pinaforeTableEntityObject (MkCloseUnliftIO objRun (MkAnObject (tableRead :: Muta
             PinaforeEntityEditSetPredicate p s kv -> tablePush [PinaforeTableEditSetPredicate p s $ knowToMaybe kv]
             PinaforeEntityEditSetLiteral p kl -> tablePush [PinaforeTableEditSetLiteral p $ knowToMaybe kl]
     in MkCloseUnliftIO objRun MkAnObject {..}
+
+type PinaforeTableUpdate = EditUpdate PinaforeTableEdit

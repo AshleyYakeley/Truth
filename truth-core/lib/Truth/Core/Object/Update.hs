@@ -7,55 +7,61 @@ import Truth.Core.Object.UnliftIO
 import Truth.Core.Read
 
 anObjectMapUpdates ::
-       (MonadTransUnlift t, MonadUnliftIO m)
-    => AnUpdateFunction t edita editb
-    -> AnObject m edita
-    -> [edita]
-    -> t m [editb]
+       forall updateA updateB t m. (MonadTransUnlift t, MonadUnliftIO m)
+    => AnUpdateFunction t updateA updateB
+    -> AnObject m (UpdateEdit updateA)
+    -> [updateA]
+    -> t m [updateB]
 anObjectMapUpdates ef MkAnObject {..} editAs = withTransConstraintTM @MonadUnliftIO $ ufUpdates ef editAs objRead
 
-objectMapUpdates :: UpdateFunction edita editb -> Object edita -> [edita] -> IO [editb]
+objectMapUpdates ::
+       forall updateA updateB.
+       UpdateFunction updateA updateB
+    -> Object (UpdateEdit updateA)
+    -> [updateA]
+    -> IO [updateB]
 objectMapUpdates (MkCloseUnlift unlift ef) (MkCloseUnliftIO objRun obj) editAs =
     runTransform objRun $ runUnlift unlift $ anObjectMapUpdates ef obj editAs
 
 mapUpdates ::
-       forall edita editb m a. MonadUnliftIO m
-    => UpdateFunction edita editb
-    -> MutableRead m (EditReader edita)
-    -> [edita]
-    -> (forall t. MonadTransUnlift t => MutableRead (t m) (EditReader editb) -> [editb] -> t m a)
+       forall updateA updateB m a. MonadUnliftIO m
+    => UpdateFunction updateA updateB
+    -> MutableRead m (UpdateReader updateA)
+    -> [updateA]
+    -> (forall t. MonadTransUnlift t => MutableRead (t m) (UpdateReader updateB) -> [updateB] -> t m a)
     -> m a
-mapUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnUpdateFunction {..}) (mrA :: MutableRead m (EditReader edita)) editsA call =
+mapUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnUpdateFunction {..}) (mrA :: MutableRead m (UpdateReader updateA)) editsA call =
     runUnlift unlift $
     withTransConstraintTM @MonadUnliftIO $ do
         editsB <- ufUpdates ef editsA mrA
         let
-            mrB :: MutableRead (t m) (EditReader editb)
+            mrB :: MutableRead (t m) (UpdateReader updateB)
             mrB = ufGet mrA
         call mrB editsB
 
-type ReceiveUpdatesM m edit = MutableRead m (EditReader edit) -> [edit] -> m ()
+type ReceiveUpdatesM m update = MutableRead m (UpdateReader update) -> [update] -> m ()
 
-type ReceiveUpdates edit = forall m. MonadUnliftIO m => ReceiveUpdatesM m edit
+type ReceiveUpdates update = forall m. MonadUnliftIO m => ReceiveUpdatesM m update
 
-type ReceiveUpdatesT t edit = forall m. MonadUnliftIO m => MutableRead m (EditReader edit) -> [edit] -> t m ()
+type ReceiveUpdatesT t update = forall m. MonadUnliftIO m => MutableRead m (UpdateReader update) -> [update] -> t m ()
 
-mapReceiveUpdates :: forall edita editb. UpdateFunction edita editb -> ReceiveUpdates editb -> ReceiveUpdates edita
-mapReceiveUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (EditReader edita)) editsA =
+mapReceiveUpdates ::
+       forall updateA updateB. UpdateFunction updateA updateB -> ReceiveUpdates updateB -> ReceiveUpdates updateA
+mapReceiveUpdates (MkCloseUnlift (unlift :: Unlift t) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (UpdateReader updateA)) editsA =
     runUnlift unlift $
     withTransConstraintTM @MonadUnliftIO $ do
         editsB <- ufUpdates ef editsA mrA
         let
-            mrB :: MutableRead (t m) (EditReader editb)
+            mrB :: MutableRead (t m) (UpdateReader updateB)
             mrB = ufGet mrA
         call mrB editsB
 
 mapReceiveUpdatesT ::
-       forall t edita editb. MonadTransUnlift t
-    => UpdateFunction edita editb
-    -> ReceiveUpdatesT t editb
-    -> ReceiveUpdatesT t edita
-mapReceiveUpdatesT (MkCloseUnlift (unlift :: Unlift tlens) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (EditReader edita)) editsA =
+       forall t updateA updateB. MonadTransUnlift t
+    => UpdateFunction updateA updateB
+    -> ReceiveUpdatesT t updateB
+    -> ReceiveUpdatesT t updateA
+mapReceiveUpdatesT (MkCloseUnlift (unlift :: Unlift tlens) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (UpdateReader updateA)) editsA =
     withTransConstraintTM @MonadUnliftIO $
     runUnlift unlift $
     withTransConstraintTM @MonadUnliftIO $
@@ -63,6 +69,6 @@ mapReceiveUpdatesT (MkCloseUnlift (unlift :: Unlift tlens) ef@MkAnUpdateFunction
         Dict -> do
             editsB <- remonad lift $ ufUpdates ef editsA mrA
             let
-                mrB :: MutableRead (tlens m) (EditReader editb)
+                mrB :: MutableRead (tlens m) (UpdateReader updateB)
                 mrB = ufGet mrA
             commuteT $ call mrB editsB

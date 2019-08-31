@@ -72,7 +72,7 @@ operatorFixity ">>" = MkFixity AssocLeft 1
 operatorFixity "$" = MkFixity AssocRight 0
 operatorFixity _ = MkFixity AssocLeft 10
 
-readInfix :: Int -> Parser (Name, FixAssoc, SyntaxExpression baseedit)
+readInfix :: Int -> Parser (Name, FixAssoc, SyntaxExpression baseupdate)
 readInfix prec =
     try $ do
         spos <- getPosition
@@ -83,26 +83,26 @@ readInfix prec =
             else empty
 
 leftApply ::
-       HasPinaforeEntityEdit baseedit
-    => SyntaxExpression baseedit
-    -> [(SourcePos, SyntaxExpression baseedit, SyntaxExpression baseedit)]
-    -> SyntaxExpression baseedit
+       HasPinaforeEntityUpdate baseupdate
+    => SyntaxExpression baseupdate
+    -> [(SourcePos, SyntaxExpression baseupdate, SyntaxExpression baseupdate)]
+    -> SyntaxExpression baseupdate
 leftApply e1 [] = e1
 leftApply e1 ((spos, f, e2):rest) = leftApply (seApplys spos f [e1, e2]) rest
 
 rightApply ::
-       HasPinaforeEntityEdit baseedit
-    => SyntaxExpression baseedit
-    -> [(SourcePos, SyntaxExpression baseedit, SyntaxExpression baseedit)]
-    -> SyntaxExpression baseedit
+       HasPinaforeEntityUpdate baseupdate
+    => SyntaxExpression baseupdate
+    -> [(SourcePos, SyntaxExpression baseupdate, SyntaxExpression baseupdate)]
+    -> SyntaxExpression baseupdate
 rightApply e1 [] = e1
 rightApply e1 ((spos, f, e2):rest) = seApplys spos f [e1, rightApply e2 rest]
 
 readInfixedExpression ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (SyntaxExpression baseedit)
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+    => Parser (SyntaxExpression baseupdate)
     -> Int
-    -> Parser (SyntaxExpression baseedit)
+    -> Parser (SyntaxExpression baseupdate)
 readInfixedExpression pe 11 = pe
 readInfixedExpression pe prec = do
     spos <- getPosition
@@ -124,7 +124,7 @@ readInfixedExpression pe prec = do
         _ -> fail $ "incompatible infix operators: " ++ intercalate " " (fmap (\(name, _, _, _) -> show name) rest)
 
 readExpressionInfixed ::
-       forall baseedit. HasPinaforeEntityEdit baseedit
-    => Parser (SyntaxExpression baseedit)
-    -> Parser (SyntaxExpression baseedit)
+       forall baseupdate. HasPinaforeEntityUpdate baseupdate
+    => Parser (SyntaxExpression baseupdate)
+    -> Parser (SyntaxExpression baseupdate)
 readExpressionInfixed pe = readInfixedExpression pe 0

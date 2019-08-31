@@ -16,65 +16,65 @@ import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
 import Truth.Core.Object.UnliftIO
 
-data ASubscriber m edit = MkASubscriber
-    { subAnObject :: AnObject m edit
-    , subscribe :: ([edit] -> EditContext -> IO ()) -> LifeCycleT m ()
+data ASubscriber m update = MkASubscriber
+    { subAnObject :: AnObject m (UpdateEdit update)
+    , subscribe :: ([update] -> EditContext -> IO ()) -> LifeCycleT m ()
     }
 
 type Subscriber = CloseUnliftIO ASubscriber
 
-subscriberObject :: Subscriber edit -> Object edit
+subscriberObject :: Subscriber update -> Object (UpdateEdit update)
 subscriberObject (MkCloseUnliftIO run sub) = MkCloseUnliftIO run $ subAnObject sub
 
-type UpdateStoreEntry edit = [edit] -> EditContext -> IO ()
+type UpdateStoreEntry update = [update] -> EditContext -> IO ()
 
-type UpdateStore edit = Store (UpdateStoreEntry edit)
+type UpdateStore update = Store (UpdateStoreEntry update)
 
-newtype EditQueue edit =
-    MkEditQueue [(EditContext, [edit])]
+newtype UpdateQueue update =
+    MkUpdateQueue [(EditContext, [update])]
 
-collapse1 :: (EditContext, [edit]) -> [(EditContext, [edit])] -> [(EditContext, [edit])]
+collapse1 :: (EditContext, [update]) -> [(EditContext, [update])] -> [(EditContext, [update])]
 collapse1 (esa, ea) ((esb, eb):bb)
     | esa == esb = (esb, ea <> eb) : bb
 collapse1 a bb = a : bb
 
-collapse :: [(EditContext, [edit])] -> [(EditContext, [edit])] -> [(EditContext, [edit])]
+collapse :: [(EditContext, [update])] -> [(EditContext, [update])] -> [(EditContext, [update])]
 collapse [] bb = bb
 collapse [a] bb = collapse1 a bb
 collapse (a:aa) bb = a : collapse aa bb
 
-instance Semigroup (EditQueue edit) where
-    MkEditQueue aa <> MkEditQueue bb = MkEditQueue $ collapse aa bb
+instance Semigroup (UpdateQueue update) where
+    MkUpdateQueue aa <> MkUpdateQueue bb = MkUpdateQueue $ collapse aa bb
 
-singleEditQueue :: [edit] -> EditContext -> EditQueue edit
-singleEditQueue edits ec = MkEditQueue $ pure (ec, edits)
+singleUpdateQueue :: [update] -> EditContext -> UpdateQueue update
+singleUpdateQueue edits ec = MkUpdateQueue $ pure (ec, edits)
 
-utReceiveUpdates :: UpdateTiming -> ([edit] -> EditContext -> IO ()) -> [edit] -> EditContext -> IO ()
+utReceiveUpdates :: UpdateTiming -> ([update] -> EditContext -> IO ()) -> [update] -> EditContext -> IO ()
 utReceiveUpdates ut recv edits ec = recv edits $ timingEditContext ut ec
 
-getRunner :: UpdateTiming -> ([edit] -> EditContext -> IO ()) -> LifeCycleIO ([edit] -> EditContext -> IO ())
+getRunner :: UpdateTiming -> ([update] -> EditContext -> IO ()) -> LifeCycleIO ([update] -> EditContext -> IO ())
 getRunner SynchronousUpdateTiming recv = return recv
 getRunner AsynchronousUpdateTiming recv = do
-    runAsync <- asyncRunner $ \(MkEditQueue sourcededits) -> for_ sourcededits $ \(ec, edits) -> recv edits ec
-    return $ \edits ec -> runAsync $ singleEditQueue edits ec
+    runAsync <- asyncRunner $ \(MkUpdateQueue sourcededits) -> for_ sourcededits $ \(ec, edits) -> recv edits ec
+    return $ \edits ec -> runAsync $ singleUpdateQueue edits ec
 
-subscriberObjectMaker :: Subscriber edit -> a -> ObjectMaker edit a
+subscriberObjectMaker :: Subscriber update -> a -> ObjectMaker update a
 subscriberObjectMaker (MkCloseUnliftIO run MkASubscriber {..}) a update = do
     remonad (runTransform run) $ subscribe update
     return (MkCloseUnliftIO run subAnObject, a)
 
-makeSharedSubscriber :: forall edit a. UpdateTiming -> ObjectMaker edit a -> LifeCycleIO (Subscriber edit, a)
+makeSharedSubscriber :: forall update a. UpdateTiming -> ObjectMaker update a -> LifeCycleIO (Subscriber update, a)
 makeSharedSubscriber ut uobj = do
-    var :: MVar (UpdateStore edit) <- liftIO $ newMVar emptyStore
+    var :: MVar (UpdateStore update) <- liftIO $ newMVar emptyStore
     let
-        updateP :: [edit] -> EditContext -> IO ()
+        updateP :: [update] -> EditContext -> IO ()
         updateP edits ectxt = do
             store <- mvarRun var get
             for_ store $ \entry -> entry edits ectxt
     runAsync <- getRunner ut $ utReceiveUpdates ut updateP
     (MkCloseUnliftIO unliftC anObjectC, a) <- uobj runAsync
     let
-        child :: Subscriber edit
+        child :: Subscriber update
         child =
             MkCloseUnliftIO unliftC $
             MkASubscriber anObjectC $ \updateC -> do
@@ -82,17 +82,19 @@ makeSharedSubscriber ut uobj = do
                 lifeCycleClose $ mvarRun var $ deleteStoreStateT key
     return (child, a)
 
-shareObjectMaker :: forall edit a. ObjectMaker edit a -> LifeCycleIO (ObjectMaker edit a)
+shareObjectMaker :: forall update a. ObjectMaker update a -> LifeCycleIO (ObjectMaker update a)
 shareObjectMaker uobj = do
     (sub, a) <- makeSharedSubscriber mempty uobj
     return $ subscriberObjectMaker sub a
 
-makeReflectingSubscriber :: UpdateTiming -> Object edit -> LifeCycleIO (Subscriber edit)
+makeReflectingSubscriber ::
+       IsUpdate update => UpdateTiming -> Object (UpdateEdit update) -> LifeCycleIO (Subscriber update)
 makeReflectingSubscriber ut object = do
     (sub, ()) <- makeSharedSubscriber ut $ reflectingObjectMaker object
     return sub
 
-mapSubscriber :: forall edita editb. EditLens edita editb -> Subscriber edita -> LifeCycleIO (Subscriber editb)
+mapSubscriber ::
+       forall updateA updateB. EditLens updateA updateB -> Subscriber updateA -> LifeCycleIO (Subscriber updateB)
 mapSubscriber lens subA = do
     (subB, ()) <- makeSharedSubscriber mempty $ mapObjectMaker lens $ subscriberObjectMaker subA ()
     return subB

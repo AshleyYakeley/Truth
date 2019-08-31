@@ -18,41 +18,46 @@ import Pinafore.Base.Morphism
 import Shapes
 import Truth.Core
 
-data ActionContext baseedit = MkActionContext
+data ActionContext baseupdate = MkActionContext
     { acUIToolkit :: UIToolkit
-    , acSubscriber :: Subscriber baseedit
+    , acSubscriber :: Subscriber baseupdate
     , acUndoActions :: UndoActions
     }
 
-newtype PinaforeAction baseedit a =
-    MkPinaforeAction (ReaderT (ActionContext baseedit) (ComposeM Know IO) a)
+newtype PinaforeAction baseupdate a =
+    MkPinaforeAction (ReaderT (ActionContext baseupdate) (ComposeM Know IO) a)
     deriving (Functor, Applicative, Monad, Alternative, MonadPlus, MonadFix, MonadIO)
 
-instance MonadFail (PinaforeAction baseedit) where
+instance MonadFail (PinaforeAction baseupdate) where
     fail s = liftIO $ fail s
 
-instance RepresentationalRole (PinaforeAction baseedit) where
+instance RepresentationalRole (PinaforeAction baseupdate) where
     representationalCoercion MkCoercion = MkCoercion
 
-pinaforeActionSubscriber :: PinaforeAction baseedit (Subscriber baseedit)
+pinaforeActionSubscriber :: PinaforeAction baseupdate (Subscriber baseupdate)
 pinaforeActionSubscriber = MkPinaforeAction $ asks acSubscriber
 
-pinaforeActionObject :: PinaforeAction baseedit (Object baseedit)
+pinaforeActionObject :: PinaforeAction baseupdate (Object (UpdateEdit baseupdate))
 pinaforeActionObject = do
     sub <- pinaforeActionSubscriber
     return $ subscriberObject sub
 
 unPinaforeAction ::
-       forall baseedit a. UIToolkit -> Subscriber baseedit -> UndoActions -> PinaforeAction baseedit a -> IO (Know a)
+       forall baseupdate a.
+       UIToolkit
+    -> Subscriber baseupdate
+    -> UndoActions
+    -> PinaforeAction baseupdate a
+    -> IO (Know a)
 unPinaforeAction acUIToolkit acSubscriber acUndoActions (MkPinaforeAction action) =
     getComposeM $ runReaderT action MkActionContext {..}
 
-pinaforeFunctionValueGet :: PinaforeFunctionValue baseedit t -> PinaforeAction baseedit t
+pinaforeFunctionValueGet :: PinaforeFunctionValue baseupdate t -> PinaforeAction baseupdate t
 pinaforeFunctionValueGet fval = do
     MkCloseUnliftIO objRun MkAnObject {..} <- pinaforeActionObject
     liftIO $ runTransform objRun $ updateFunctionRead fval objRead ReadWhole
 
-pinaforeLensPush :: PinaforeLensValue baseedit edit -> [edit] -> PinaforeAction baseedit ()
+pinaforeLensPush :: PinaforeLensValue baseupdate update -> [UpdateEdit update] -> PinaforeAction baseupdate ()
 pinaforeLensPush lens edits = do
     obj <- pinaforeActionObject
     case mapObject lens obj of
@@ -67,28 +72,28 @@ data PinaforeWindow = MkPinaforeWindow
     , pwWindow :: UIWindow
     }
 
-pinaforeNewWindow :: WindowSpec baseedit -> PinaforeAction baseedit PinaforeWindow
+pinaforeNewWindow :: WindowSpec baseupdate -> PinaforeAction baseupdate PinaforeWindow
 pinaforeNewWindow uiw = do
     MkActionContext {..} <- MkPinaforeAction ask
     let MkUIToolkit {..} = acUIToolkit
     (pwWindow, pwClose) <- liftIO $ uitUnliftLifeCycle $ lifeCycleEarlyCloser $ uitCreateWindow acSubscriber uiw
     return $ MkPinaforeWindow {..}
 
-pinaforeExit :: PinaforeAction baseedit ()
+pinaforeExit :: PinaforeAction baseupdate ()
 pinaforeExit = do
     MkActionContext {..} <- MkPinaforeAction ask
     let MkUIToolkit {..} = acUIToolkit
     liftIO uitExit
 
-pinaforeUndoActions :: PinaforeAction baseedit UndoActions
+pinaforeUndoActions :: PinaforeAction baseupdate UndoActions
 pinaforeUndoActions = do
     MkActionContext {..} <- MkPinaforeAction ask
     return acUndoActions
 
-pinaforeActionKnow :: forall baseedit a. Know a -> PinaforeAction baseedit a
+pinaforeActionKnow :: forall baseupdate a. Know a -> PinaforeAction baseupdate a
 pinaforeActionKnow (Known a) = pure a
 pinaforeActionKnow Unknown = empty
 
-knowPinaforeAction :: forall baseedit a. PinaforeAction baseedit a -> PinaforeAction baseedit (Know a)
+knowPinaforeAction :: forall baseupdate a. PinaforeAction baseupdate a -> PinaforeAction baseupdate (Know a)
 knowPinaforeAction (MkPinaforeAction (ReaderT rka)) =
     MkPinaforeAction $ ReaderT $ \r -> MkComposeM $ fmap Known $ getComposeM $ rka r

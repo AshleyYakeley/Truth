@@ -1,6 +1,7 @@
 module Truth.Core.Object.ObjectEdit
     ( ObjectReader(..)
     , ObjectEdit
+    , ObjectUpdate
     , objectEditLens
     , objectLiftEditLens
     ) where
@@ -36,25 +37,27 @@ instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader 
 
 type ObjectEdit edit = NoEdit (ObjectReader edit)
 
-objectEditLens :: forall edit. EditLens (ObjectEdit edit) edit
+type ObjectUpdate update = EditUpdate (ObjectEdit (UpdateEdit update))
+
+objectEditLens :: forall update. EditLens (ObjectUpdate update) update
 objectEditLens = let
-    ufGet :: ReadFunctionT IdentityT (ObjectReader edit) (EditReader edit)
+    ufGet :: ReadFunctionT IdentityT (ObjectReader (UpdateEdit update)) (UpdateReader update)
     ufGet mr rt = do
         (MkCloseUnliftIO (MkTransform run) (MkAnObject r _)) <- lift $ mr ReadObject
         liftIO $ run $ r rt
     ufUpdate ::
            forall m. MonadIO m
-        => ObjectEdit edit
-        -> MutableRead m (ObjectReader edit)
-        -> IdentityT m [edit]
-    ufUpdate edit _ = never edit
-    elFunction :: AnUpdateFunction IdentityT (ObjectEdit edit) edit
+        => ObjectUpdate update
+        -> MutableRead m (ObjectReader (UpdateEdit update))
+        -> IdentityT m [update]
+    ufUpdate update _ = never update
+    elFunction :: AnUpdateFunction IdentityT (ObjectUpdate update) update
     elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
-        => [edit]
-        -> MutableRead m (EditReader (ObjectEdit edit))
-        -> IdentityT m (Maybe [ObjectEdit edit])
+        => [UpdateEdit update]
+        -> MutableRead m (EditReader (ObjectEdit (UpdateEdit update)))
+        -> IdentityT m (Maybe [ObjectEdit (UpdateEdit update)])
     elPutEdits edits mr = do
         (MkCloseUnliftIO (MkTransform run) (MkAnObject _ e)) <- lift $ mr ReadObject
         liftIO $
@@ -67,27 +70,27 @@ objectEditLens = let
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
 
 objectLiftEditLens ::
-       forall edita editb. ApplicableEdit edita
-    => EditLens edita editb
-    -> EditLens (ObjectEdit edita) (ObjectEdit editb)
+       forall updateA updateB. ApplicableEdit (UpdateEdit updateA)
+    => EditLens updateA updateB
+    -> EditLens (ObjectUpdate updateA) (ObjectUpdate updateB)
 objectLiftEditLens lens = let
-    ufGet :: ReadFunctionT IdentityT (ObjectReader edita) (ObjectReader editb)
+    ufGet :: ReadFunctionT IdentityT (ObjectReader (UpdateEdit updateA)) (ObjectReader (UpdateEdit updateB))
     ufGet mr ReadObject = do
         object <- lift $ mr ReadObject
         return $ mapObject lens object
     ufUpdate ::
            forall m. MonadIO m
-        => ObjectEdit edita
-        -> MutableRead m (ObjectReader edita)
-        -> IdentityT m [ObjectEdit editb]
+        => ObjectUpdate updateA
+        -> MutableRead m (ObjectReader (UpdateEdit updateA))
+        -> IdentityT m [ObjectUpdate updateB]
     ufUpdate edit _ = never edit
-    elFunction :: AnUpdateFunction IdentityT (ObjectEdit edita) (ObjectEdit editb)
+    elFunction :: AnUpdateFunction IdentityT (ObjectUpdate updateA) (ObjectUpdate updateB)
     elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
-        => [ObjectEdit editb]
-        -> MutableRead m (ObjectReader edita)
-        -> IdentityT m (Maybe [ObjectEdit edita])
+        => [ObjectEdit (UpdateEdit updateB)]
+        -> MutableRead m (ObjectReader (UpdateEdit updateA))
+        -> IdentityT m (Maybe [ObjectEdit (UpdateEdit updateA)])
     elPutEdits [] _ = return $ Just []
     elPutEdits (edit:_) _ = never edit
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}

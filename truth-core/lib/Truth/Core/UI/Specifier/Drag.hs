@@ -5,28 +5,33 @@ import Truth.Core.Import
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
 
-data DragSourceUISpec sel edit where
+data DragSourceUISpec sel update where
     MkDragSourceUISpec
-        :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec sel edit -> DragSourceUISpec sel edit
+        :: Serialize t => String -> EditLens update (WholeUpdate t) -> UISpec sel update -> DragSourceUISpec sel update
 
-instance Show (DragSourceUISpec sel edit) where
+instance Show (DragSourceUISpec sel update) where
     show (MkDragSourceUISpec typename _ spec) = "drag-source " ++ typename ++ " " ++ show spec
 
 instance UIType DragSourceUISpec where
     uiWitness = $(iowitness [t|DragSourceUISpec|])
 
-dragSourceUISpec :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec sel edit -> UISpec sel edit
+dragSourceUISpec :: Serialize t => String -> EditLens update (WholeUpdate t) -> UISpec sel update -> UISpec sel update
 dragSourceUISpec datatype lens spec = MkUISpec $ MkDragSourceUISpec datatype lens spec
 
-data DragDestinationUISpec sel edit where
+data DragDestinationUISpec sel update where
     MkDragDestinationUISpec
-        :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec sel edit -> DragDestinationUISpec sel edit
+        :: Serialize t
+        => String
+        -> EditLens update (WholeUpdate t)
+        -> UISpec sel update
+        -> DragDestinationUISpec sel update
 
-instance Show (DragDestinationUISpec sel edit) where
+instance Show (DragDestinationUISpec sel update) where
     show (MkDragDestinationUISpec typename _ spec) = "drag-destination " ++ typename ++ " " ++ show spec
 
 instance UIType DragDestinationUISpec where
     uiWitness = $(iowitness [t|DragDestinationUISpec|])
 
-dragDestinationUISpec :: Serialize t => String -> EditLens edit (WholeEdit t) -> UISpec sel edit -> UISpec sel edit
+dragDestinationUISpec ::
+       Serialize t => String -> EditLens update (WholeUpdate t) -> UISpec sel update -> UISpec sel update
 dragDestinationUISpec datatype lens spec = MkUISpec $ MkDragDestinationUISpec datatype lens spec

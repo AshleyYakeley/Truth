@@ -22,69 +22,71 @@ getTimeMS = do
     MkSystemTime s ns <- getSystemTime
     return $ (toInteger s) * 1000 + div (toInteger ns) 1000000
 
-output :: forall baseedit. Text -> PinaforeAction baseedit ()
+output :: forall baseupdate. Text -> PinaforeAction baseupdate ()
 output text = liftIO $ putStr $ unpack text
 
-outputLn :: forall baseedit. Text -> PinaforeAction baseedit ()
+outputLn :: forall baseupdate. Text -> PinaforeAction baseupdate ()
 outputLn text = liftIO $ putStrLn $ unpack text
 
-setentity :: forall baseedit. PinaforeRef baseedit '( A, TopType) -> A -> PinaforeAction baseedit ()
+setentity :: forall baseupdate. PinaforeRef baseupdate '( A, TopType) -> A -> PinaforeAction baseupdate ()
 setentity ref val = pinaforeRefSet ref (Known val)
 
-deleteentity :: forall baseedit. PinaforeRef baseedit '( BottomType, TopType) -> PinaforeAction baseedit ()
+deleteentity :: forall baseupdate. PinaforeRef baseupdate '( BottomType, TopType) -> PinaforeAction baseupdate ()
 deleteentity ref = pinaforeRefSet ref Unknown
 
-qfail :: forall baseedit. Text -> PinaforeAction baseedit BottomType
+qfail :: forall baseupdate. Text -> PinaforeAction baseupdate BottomType
 qfail t = fail $ unpack t
 
 entityUUID :: Entity -> Text
 entityUUID p = pack $ show p
 
-onStop :: forall baseedit. PinaforeAction baseedit A -> PinaforeAction baseedit A -> PinaforeAction baseedit A
+onStop :: forall baseupdate. PinaforeAction baseupdate A -> PinaforeAction baseupdate A -> PinaforeAction baseupdate A
 onStop p q = q <|> p
 
 newMemRef ::
-       forall baseedit. BaseEditLens MemoryCellEdit baseedit
-    => IO (PinaforeRef baseedit '( A, A))
+       forall baseupdate. BaseEditLens MemoryCellUpdate baseupdate
+    => IO (PinaforeRef baseupdate '( A, A))
 newMemRef = do
     lens <- makeMemoryCellEditLens Unknown
     return $ pinaforeLensToRef $ lens . baseEditLens
 
 newMemSet ::
-       forall baseedit. BaseEditLens MemoryCellEdit baseedit
-    => IO (PinaforeSetRef baseedit '( MeetType Entity A, A))
+       forall baseupdate. BaseEditLens MemoryCellUpdate baseupdate
+    => IO (PinaforeSetRef baseupdate '( MeetType Entity A, A))
 newMemSet = do
     lens <- makeMemoryCellEditLens mempty
     return $ meetValuePinaforeSetRef $ convertEditLens . lens . baseEditLens
 
-now :: forall baseedit. (BaseEditLens (WholeEdit UTCTime) baseedit)
-    => PinaforeImmutableReference baseedit UTCTime
-now = functionImmutableReference $ editLensFunction $ baseEditLens @(WholeEdit UTCTime) @baseedit
+now :: forall baseupdate. (BaseEditLens (WholeUpdate UTCTime) baseupdate)
+    => PinaforeImmutableReference baseupdate UTCTime
+now = functionImmutableReference $ editLensFunction $ baseEditLens @(WholeUpdate UTCTime) @baseupdate
 
 timeZone ::
-       forall baseedit. (BaseEditLens (WholeEdit TimeZone) baseedit)
-    => PinaforeImmutableReference baseedit TimeZone
-timeZone = functionImmutableReference $ editLensFunction $ baseEditLens @(WholeEdit TimeZone) @baseedit
+       forall baseupdate. (BaseEditLens (WholeUpdate TimeZone) baseupdate)
+    => PinaforeImmutableReference baseupdate TimeZone
+timeZone = functionImmutableReference $ editLensFunction $ baseEditLens @(WholeUpdate TimeZone) @baseupdate
 
 localNow ::
-       forall baseedit. (BaseEditLens (WholeEdit UTCTime) baseedit, BaseEditLens (WholeEdit TimeZone) baseedit)
-    => PinaforeImmutableReference baseedit LocalTime
+       forall baseupdate.
+       (BaseEditLens (WholeUpdate UTCTime) baseupdate, BaseEditLens (WholeUpdate TimeZone) baseupdate)
+    => PinaforeImmutableReference baseupdate LocalTime
 localNow = utcToLocalTime <$> timeZone <*> now
 
 today ::
-       forall baseedit. (BaseEditLens (WholeEdit UTCTime) baseedit, BaseEditLens (WholeEdit TimeZone) baseedit)
-    => PinaforeImmutableReference baseedit Day
+       forall baseupdate.
+       (BaseEditLens (WholeUpdate UTCTime) baseupdate, BaseEditLens (WholeUpdate TimeZone) baseupdate)
+    => PinaforeImmutableReference baseupdate Day
 today = localDay <$> localNow
 
 base_predefinitions ::
-       forall baseedit.
-       ( HasPinaforeEntityEdit baseedit
-       , HasPinaforeFileEdit baseedit
-       , BaseEditLens MemoryCellEdit baseedit
-       , BaseEditLens (WholeEdit UTCTime) baseedit
-       , BaseEditLens (WholeEdit TimeZone) baseedit
+       forall baseupdate.
+       ( HasPinaforeEntityUpdate baseupdate
+       , HasPinaforeFileUpdate baseupdate
+       , BaseEditLens MemoryCellUpdate baseupdate
+       , BaseEditLens (WholeUpdate UTCTime) baseupdate
+       , BaseEditLens (WholeUpdate TimeZone) baseupdate
        )
-    => [DocTreeEntry (BindDoc baseedit)]
+    => [DocTreeEntry (BindDoc baseupdate)]
 base_predefinitions =
     [ docTreeEntry
           "Literals & Entities"
@@ -236,7 +238,7 @@ base_predefinitions =
                             (realToFrac (a / b) :: Number)
                       , mkValEntry "addTime" "Add duration to time." addUTCTime
                       , mkValEntry "diffTime" "Difference of times." diffUTCTime
-                      , mkValEntry "now" "The current time truncated to the second." $ now @baseedit
+                      , mkValEntry "now" "The current time truncated to the second." $ now @baseupdate
                       ]
                 , docTreeEntry
                       "Calendar"
@@ -248,8 +250,8 @@ base_predefinitions =
                       , mkValEntry "modifiedJulianToDay" "Convert from MJD." ModifiedJulianDay
                       , mkValEntry "addDays" "Add count to days." addDays
                       , mkValEntry "diffDays" "Difference of days." diffDays
-                      , mkValEntry "utcDay" "The current UTC day." $ fmap utctDay $ now @baseedit
-                      , mkValEntry "today" "The current local day." $ today @baseedit
+                      , mkValEntry "utcDay" "The current UTC day." $ fmap utctDay $ now @baseupdate
+                      , mkValEntry "today" "The current local day." $ today @baseupdate
                       ]
                 , docTreeEntry
                       "Time of Day"
@@ -271,8 +273,8 @@ base_predefinitions =
                       , mkValEntry "getTimeZone" "Get the offset for a time in the current time zone." $ \t ->
                             fmap timeZoneMinutes $ getTimeZone t
                       , mkValEntry "timeZone" "The current time zone offset in minutes." $
-                        fmap timeZoneMinutes $ timeZone @baseedit
-                      , mkValEntry "localNow" "The current local time." $ localNow @baseedit
+                        fmap timeZoneMinutes $ timeZone @baseupdate
+                      , mkValEntry "localNow" "The current local time." $ localNow @baseupdate
                       ]
                 ]
           ]
@@ -348,30 +350,30 @@ base_predefinitions =
     , docTreeEntry
           "Actions"
           ""
-          [ mkValEntry "return" "A value as an Action." $ return @(PinaforeAction baseedit) @A
-          , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind @baseedit
-          , mkValEntry ">>" "Do actions in sequence." $ qbind_ @baseedit
-          , mkValEntry "fixAction" "The fixed point of an Action." $ mfix @(PinaforeAction baseedit) @A
-          , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseedit
+          [ mkValEntry "return" "A value as an Action." $ return @(PinaforeAction baseupdate) @A
+          , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind @baseupdate
+          , mkValEntry ">>" "Do actions in sequence." $ qbind_ @baseupdate
+          , mkValEntry "fixAction" "The fixed point of an Action." $ mfix @(PinaforeAction baseupdate) @A
+          , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseupdate
           , mkValEntry
                 "stop"
                 "Stop. This is similar to an exception that can be caught with `onStop`. The default handler (for the main program, button presses, etc.), is to catch and ignore it."
-                (empty :: PinaforeAction baseedit BottomType)
-          , mkValEntry "onStop" "`onStop p q` does `q` first, and if it stops, then does `p`." $ onStop @baseedit
+                (empty :: PinaforeAction baseupdate BottomType)
+          , mkValEntry "onStop" "`onStop p q` does `q` first, and if it stops, then does `p`." $ onStop @baseupdate
           , mkValEntry
                 "for_"
                 "Perform an action on each value of a list."
-                (for_ :: [A] -> (A -> PinaforeAction baseedit ()) -> PinaforeAction baseedit ())
+                (for_ :: [A] -> (A -> PinaforeAction baseupdate ()) -> PinaforeAction baseupdate ())
           , mkValEntry
                 "for"
                 "Perform an action on each value of a list, returning a list."
-                (for :: [A] -> (A -> PinaforeAction baseedit B) -> PinaforeAction baseedit [B])
-          , mkValEntry "output" "Output text to standard output." $ output @baseedit
-          , mkValEntry "outputLn" "Output text and a newline to standard output." $ outputLn @baseedit
+                (for :: [A] -> (A -> PinaforeAction baseupdate B) -> PinaforeAction baseupdate [B])
+          , mkValEntry "output" "Output text to standard output." $ output @baseupdate
+          , mkValEntry "outputLn" "Output text and a newline to standard output." $ outputLn @baseupdate
           , mkValEntry
                 "getTimeMS"
                 "Get the time as a whole number of milliseconds."
-                (liftIO getTimeMS :: PinaforeAction baseedit Integer)
+                (liftIO getTimeMS :: PinaforeAction baseupdate Integer)
           ]
     , docTreeEntry
           "Undo"
@@ -389,40 +391,40 @@ base_predefinitions =
           [ mkValEntry
                 "pureRef"
                 "A constant reference for a value."
-                (pure :: A -> PinaforeImmutableReference baseedit A)
+                (pure :: A -> PinaforeImmutableReference baseupdate A)
           , mkValEntry
                 "immutRef"
                 "Convert a reference to immutable.\n`immutRef r = {%r}`"
-                (id :: PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A)
+                (id :: PinaforeImmutableReference baseupdate A -> PinaforeImmutableReference baseupdate A)
           , mkValEntry
                 "coMapRef"
                 "Map a function on getting a reference."
-                (coRangeLift :: (A -> B) -> PinaforeRef baseedit '( C, A) -> PinaforeRef baseedit '( C, B))
+                (coRangeLift :: (A -> B) -> PinaforeRef baseupdate '( C, A) -> PinaforeRef baseupdate '( C, B))
           , mkValEntry
                 "contraMapRef"
                 "Map a function on setting a reference."
-                (contraRangeLift :: (B -> A) -> PinaforeRef baseedit '( A, C) -> PinaforeRef baseedit '( B, C))
+                (contraRangeLift :: (B -> A) -> PinaforeRef baseupdate '( A, C) -> PinaforeRef baseupdate '( B, C))
           , mkValEntry "lensMapRef" "Map getter & pushback functions on a reference." $
-            pinaforeFLensRef @baseedit @AP @AQ @B
+            pinaforeFLensRef @baseupdate @AP @AQ @B
           , mkValEntry
                 "applyRef"
                 "Combine references."
-                ((<*>) :: PinaforeImmutableReference baseedit (A -> B) -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit B)
+                ((<*>) :: PinaforeImmutableReference baseupdate (A -> B) -> PinaforeImmutableReference baseupdate A -> PinaforeImmutableReference baseupdate B)
           , mkValEntry
                 "unknown"
                 "The unknown reference, representing missing information."
-                (empty :: PinaforeImmutableReference baseedit BottomType)
-          , mkValEntry "known" "True if the reference is known." $ \(val :: PinaforeFunctionValue baseedit (Know TopType)) ->
-                (funcUpdateFunction (Known . isKnown) . val :: PinaforeFunctionValue baseedit (Know Bool))
+                (empty :: PinaforeImmutableReference baseupdate BottomType)
+          , mkValEntry "known" "True if the reference is known." $ \(val :: PinaforeFunctionValue baseupdate (Know TopType)) ->
+                (funcUpdateFunction (Known . isKnown) . val :: PinaforeFunctionValue baseupdate (Know Bool))
           , mkValEntry
                 "??"
                 "`p ?? q` = `p` if it is known, else `q`."
-                ((<|>) :: PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A -> PinaforeImmutableReference baseedit A)
-          , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $ pinaforeRefGet @baseedit @A
-          , mkValEntry "runRef" "Run an action from a reference." $ runPinaforeRef @baseedit
-          , mkValEntry ":=" "Set a reference to a value. Stop if failed." $ setentity @baseedit
-          , mkValEntry "delete" "Delete an entity reference. Stop if failed." $ deleteentity @baseedit
-          , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." $ newMemRef @baseedit
+                ((<|>) :: PinaforeImmutableReference baseupdate A -> PinaforeImmutableReference baseupdate A -> PinaforeImmutableReference baseupdate A)
+          , mkValEntry "get" "Get a reference, or `stop` if the reference is unknown." $ pinaforeRefGet @baseupdate @A
+          , mkValEntry "runRef" "Run an action from a reference." $ runPinaforeRef @baseupdate
+          , mkValEntry ":=" "Set a reference to a value. Stop if failed." $ setentity @baseupdate
+          , mkValEntry "delete" "Delete an entity reference. Stop if failed." $ deleteentity @baseupdate
+          , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." $ newMemRef @baseupdate
           ]
     , docTreeEntry
           "Sets"
@@ -430,73 +432,75 @@ base_predefinitions =
           [ mkValEntry
                 "coMapSet"
                 "Map a function on getting from a set."
-                (coRangeLift :: (A -> B) -> PinaforeSetRef baseedit '( C, A) -> PinaforeSetRef baseedit '( C, B))
+                (coRangeLift :: (A -> B) -> PinaforeSetRef baseupdate '( C, A) -> PinaforeSetRef baseupdate '( C, B))
           , mkValEntry
                 "contraMapSet"
                 "Map a function on setting to a set."
-                (contraRangeLift :: (B -> A) -> PinaforeSetRef baseedit '( A, C) -> PinaforeSetRef baseedit '( B, C))
+                (contraRangeLift :: (B -> A) -> PinaforeSetRef baseupdate '( A, C) -> PinaforeSetRef baseupdate '( B, C))
           , mkValEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
-            pinaforeSetRefMeet @baseedit @A
+            pinaforeSetRefMeet @baseupdate @A
           , mkValEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
-            pinaforeSetRefJoin @baseedit @A
-          , mkValEntry "setSum" "Sum of sets." $ pinaforeSetRefSum @baseedit @AP @AQ @BP @BQ
+            pinaforeSetRefJoin @baseupdate @A
+          , mkValEntry "setSum" "Sum of sets." $ pinaforeSetRefSum @baseupdate @AP @AQ @BP @BQ
           , mkValEntry "setProduct" "Product of sets. The resulting set will be read-only." $
-            pinaforeSetRefProduct @baseedit @AP @AQ @BP @BQ
-          , mkValEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseedit @A
-          , mkValEntry "member" "A reference to the membership of a value in a set." $ pinaforeSetRefMember @baseedit @A
-          , mkValEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetRefSingle @baseedit @A
-          , mkValEntry "count" "Count of members in a set." $ pinaforeSetRefFunc @baseedit @TopType @Int olength
-          , mkValEntry "newEntity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew @baseedit
+            pinaforeSetRefProduct @baseupdate @AP @AQ @BP @BQ
+          , mkValEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseupdate @A
+          , mkValEntry "member" "A reference to the membership of a value in a set." $
+            pinaforeSetRefMember @baseupdate @A
+          , mkValEntry "single" "The member of a single-member set, or unknown." $ pinaforeSetRefSingle @baseupdate @A
+          , mkValEntry "count" "Count of members in a set." $ pinaforeSetRefFunc @baseupdate @TopType @Int olength
+          , mkValEntry "newEntity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew @baseupdate
           , mkValEntry
                 "+="
                 "Add an entity to a set."
-                (pinaforeSetRefAdd :: PinaforeSetRef baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
+                (pinaforeSetRefAdd :: PinaforeSetRef baseupdate '( A, TopType) -> A -> PinaforeAction baseupdate ())
           , mkValEntry
                 "-="
                 "Remove an entity from a set."
-                (pinaforeSetRefRemove :: PinaforeSetRef baseedit '( A, TopType) -> A -> PinaforeAction baseedit ())
+                (pinaforeSetRefRemove :: PinaforeSetRef baseupdate '( A, TopType) -> A -> PinaforeAction baseupdate ())
           , mkValEntry
                 "removeAll"
                 "Remove all entities from a set."
-                (pinaforeSetRefRemoveAll :: PinaforeSetRef baseedit '( BottomType, TopType) -> PinaforeAction baseedit ())
-          , mkValEntry "newMemSet" "Create a new set reference to memory, initially empty." $ newMemSet @baseedit
+                (pinaforeSetRefRemoveAll :: PinaforeSetRef baseupdate '( BottomType, TopType) -> PinaforeAction baseupdate ())
+          , mkValEntry "newMemSet" "Create a new set reference to memory, initially empty." $ newMemSet @baseupdate
           ]
     , docTreeEntry
           "Morphisms"
           "Morphisms relate entities."
-          [ mkValEntry "identity" "The identity morphism." $ identityPinaforeMorphism @baseedit @A
-          , mkValEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
+          [ mkValEntry "identity" "The identity morphism." $ identityPinaforeMorphism @baseupdate @A
+          , mkValEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
           , mkValEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
-            pairPinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
+            pairPinaforeMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
           , mkValEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
-            eitherPinaforeMorphism @baseedit @AP @AQ @BP @BQ @CP @CQ
-          , mkValEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseedit @AP @AQ @BP @BQ
-          , mkValEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseedit @A @BP @BQ
+            eitherPinaforeMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+          , mkValEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseupdate @AP @AQ @BP @BQ
+          , mkValEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseupdate @A @BP @BQ
           , mkValEntry "!@" "Co-apply a morphism to a reference." $
-            pinaforeApplyInverseMorphismRef @baseedit @AP @AQ @BP @BQ
-          , mkValEntry "!@@" "Co-apply a morphism to a set." $ pinaforeApplyInverseMorphismSet @baseedit @AP @AQ @BP @BQ
+            pinaforeApplyInverseMorphismRef @baseupdate @AP @AQ @BP @BQ
+          , mkValEntry "!@@" "Co-apply a morphism to a set." $
+            pinaforeApplyInverseMorphismSet @baseupdate @AP @AQ @BP @BQ
           ]
     , docTreeEntry
           "Orders"
           ""
-          [ mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @baseedit @Text
-          , mkValEntry "numerical" "Numercal order." $ ordOrder @baseedit @Number
-          , mkValEntry "chronological" "Chronological order." $ ordOrder @baseedit @UTCTime
-          , mkValEntry "durational" "Durational order." $ ordOrder @baseedit @NominalDiffTime
-          , mkValEntry "calendrical" "Day order." $ ordOrder @baseedit @Day
-          , mkValEntry "horological" "Time of day order." $ ordOrder @baseedit @TimeOfDay
-          , mkValEntry "localChronological" "Local time order." $ ordOrder @baseedit @LocalTime
-          , mkValEntry "orders" "Join orders by priority." $ orders @baseedit @A
+          [ mkValEntry "alphabetical" "Alphabetical order." $ ordOrder @baseupdate @Text
+          , mkValEntry "numerical" "Numercal order." $ ordOrder @baseupdate @Number
+          , mkValEntry "chronological" "Chronological order." $ ordOrder @baseupdate @UTCTime
+          , mkValEntry "durational" "Durational order." $ ordOrder @baseupdate @NominalDiffTime
+          , mkValEntry "calendrical" "Day order." $ ordOrder @baseupdate @Day
+          , mkValEntry "horological" "Time of day order." $ ordOrder @baseupdate @TimeOfDay
+          , mkValEntry "localChronological" "Local time order." $ ordOrder @baseupdate @LocalTime
+          , mkValEntry "orders" "Join orders by priority." $ orders @baseupdate @A
           , mkValEntry
                 "mapOrder"
                 "Map a function on an order."
-                (contramap :: (B -> A) -> PinaforeOrder baseedit A -> PinaforeOrder baseedit B)
-          , mkValEntry "orderOn" "Order by an order on a particular morphism." $ orderOn @baseedit @B @A
-          , mkValEntry "rev" "Reverse an order." $ rev @baseedit @A
-          , mkValEntry "orderEQ" "Equal by an order." $ pinaforeOrderCompare @baseedit @A $ (==) EQ
-          , mkValEntry "orderLT" "Less than by an order." $ pinaforeOrderCompare @baseedit @A $ (==) LT
-          , mkValEntry "orderLE" "Less than or equal to by an order." $ pinaforeOrderCompare @baseedit @A $ (/=) GT
-          , mkValEntry "orderGT" "Greater than by an order." $ pinaforeOrderCompare @baseedit @A $ (==) GT
-          , mkValEntry "orderGE" "Greater than or equal to by an order." $ pinaforeOrderCompare @baseedit @A $ (/=) LT
+                (contramap :: (B -> A) -> PinaforeOrder baseupdate A -> PinaforeOrder baseupdate B)
+          , mkValEntry "orderOn" "Order by an order on a particular morphism." $ orderOn @baseupdate @B @A
+          , mkValEntry "rev" "Reverse an order." $ rev @baseupdate @A
+          , mkValEntry "orderEQ" "Equal by an order." $ pinaforeOrderCompare @baseupdate @A $ (==) EQ
+          , mkValEntry "orderLT" "Less than by an order." $ pinaforeOrderCompare @baseupdate @A $ (==) LT
+          , mkValEntry "orderLE" "Less than or equal to by an order." $ pinaforeOrderCompare @baseupdate @A $ (/=) GT
+          , mkValEntry "orderGT" "Greater than by an order." $ pinaforeOrderCompare @baseupdate @A $ (==) GT
+          , mkValEntry "orderGE" "Greater than or equal to by an order." $ pinaforeOrderCompare @baseupdate @A $ (/=) LT
           ]
     ]

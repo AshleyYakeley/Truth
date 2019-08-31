@@ -84,7 +84,7 @@ benchScripts =
           intercalate "," (replicate 50 "g [1]") <> "] in for_ q id"
         ]
 
-interpretUpdater :: (?pinafore :: PinaforeContext PinaforeEdit) => Text -> IO ()
+interpretUpdater :: (?pinafore :: PinaforeContext PinaforeUpdate) => Text -> IO ()
 interpretUpdater text = do
     action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" text
     sub <- unliftPinaforeActionOrFail pinaforeActionSubscriber

@@ -2,7 +2,8 @@ module Pinafore.Base.Edit
     ( Predicate(..)
     , PinaforeEntityRead(..)
     , PinaforeEntityEdit(..)
-    , HasPinaforeEntityEdit
+    , PinaforeEntityUpdate
+    , HasPinaforeEntityUpdate
     ) where
 
 import Data.Aeson (FromJSON)
@@ -88,7 +89,9 @@ instance Show PinaforeEntityEdit where
     show (PinaforeEntityEditSetPredicate p s kv) = "set " ++ show p ++ " of " ++ show s ++ " to " ++ show kv
     show (PinaforeEntityEditSetLiteral p kl) = "set " ++ show p ++ " to " ++ show kl
 
-type HasPinaforeEntityEdit = BaseEditLens PinaforeEntityEdit
+type PinaforeEntityUpdate = EditUpdate PinaforeEntityEdit
 
-instance BaseEditLens PinaforeEntityEdit PinaforeEntityEdit where
+type HasPinaforeEntityUpdate = BaseEditLens PinaforeEntityUpdate
+
+instance BaseEditLens PinaforeEntityUpdate PinaforeEntityUpdate where
     baseEditLens = id

@@ -34,16 +34,29 @@ instance (FullSubjectReader (EditReader ea), ApplicableEdit ea, ApplicableEdit e
 instance (FullEdit ea, ApplicableEdit eb, EditReader ea ~ EditReader eb) => FullEdit (SumEdit ea eb) where
     replaceEdit mr write = replaceEdit mr (\edit -> write $ SumEditLeft edit)
 
+data SumUpdate updateA updateB
+    = SumUpdateLeft updateA
+    | SumUpdateRight updateB
+
+instance (IsUpdate updateA, IsUpdate updateB) => IsUpdate (SumUpdate updateA updateB) where
+    type UpdateEdit (SumUpdate updateA updateB) = SumEdit (UpdateEdit updateA) (UpdateEdit updateB)
+    editUpdate (SumEditLeft edit) = SumUpdateLeft $ editUpdate edit
+    editUpdate (SumEditRight edit) = SumUpdateRight $ editUpdate edit
+
+instance (IsEditUpdate updateA, IsEditUpdate updateB) => IsEditUpdate (SumUpdate updateA updateB) where
+    updateEdit (SumUpdateLeft update) = SumEditLeft $ updateEdit update
+    updateEdit (SumUpdateRight update) = SumEditRight $ updateEdit update
+
 sumRightUpdateFunction ::
-       forall editl editr. (EditReader editl ~ EditReader editr)
-    => UpdateFunction editr (SumEdit editl editr)
+       forall updateA updateB. (UpdateReader updateA ~ UpdateReader updateB)
+    => UpdateFunction updateB (SumUpdate updateA updateB)
 sumRightUpdateFunction = let
-    ufGet :: ReadFunctionT IdentityT (EditReader editr) (EditReader editr)
+    ufGet :: ReadFunctionT IdentityT (UpdateReader updateB) (UpdateReader updateB)
     ufGet mr = remonadMutableRead lift mr
     ufUpdate ::
            forall m. MonadIO m
-        => editr
-        -> MutableRead m (EditReader editr)
-        -> IdentityT m [SumEdit editl editr]
-    ufUpdate er _ = return [SumEditRight er]
+        => updateB
+        -> MutableRead m (UpdateReader updateB)
+        -> IdentityT m [SumUpdate updateA updateB]
+    ufUpdate update _ = return [SumUpdateRight update]
     in MkCloseUnlift identityUnlift MkAnUpdateFunction {..}

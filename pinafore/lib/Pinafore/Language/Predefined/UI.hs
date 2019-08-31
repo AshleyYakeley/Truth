@@ -13,31 +13,33 @@ import Shapes
 import Truth.Core
 
 valSpecText ::
-       UISpec sel (WholeEdit (Know Text)) -> PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec sel baseedit
-valSpecText spec val = mapEditUISpec val spec
+       UISpec sel (WholeUpdate (Know Text))
+    -> PinaforeLensValue baseupdate (WholeUpdate (Know Text))
+    -> UISpec sel baseupdate
+valSpecText spec val = mapUpdateUISpec val spec
 
-clearText :: UpdateFunction (WholeEdit (Know Text)) (WholeEdit Text)
+clearText :: UpdateFunction (WholeUpdate (Know Text)) (WholeUpdate Text)
 clearText = funcUpdateFunction (fromKnow mempty)
 
-uiMap :: forall baseedit. (A -> B) -> PinaforeUI baseedit A -> PinaforeUI baseedit B
+uiMap :: forall baseupdate. (A -> B) -> PinaforeUI baseupdate A -> PinaforeUI baseupdate B
 uiMap = fmap
 
 uiTable ::
-       forall baseedit. (?pinafore :: PinaforeContext baseedit, HasPinaforeEntityEdit baseedit)
-    => [(PinaforeRef baseedit '( BottomType, Text), A -> PinaforeRef baseedit '( BottomType, Text))]
-    -> PinaforeOrder baseedit A
-    -> PinaforeSetRef baseedit '( A, MeetType Entity A)
-    -> (A -> PinaforeAction baseedit TopType)
-    -> UISpec A baseedit
+       forall baseupdate. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
+    => [(PinaforeRef baseupdate '( BottomType, Text), A -> PinaforeRef baseupdate '( BottomType, Text))]
+    -> PinaforeOrder baseupdate A
+    -> PinaforeSetRef baseupdate '( A, MeetType Entity A)
+    -> (A -> PinaforeAction baseupdate TopType)
+    -> UISpec A baseupdate
 uiTable cols (MkPinaforeOrder geto order) val onDoubleClick = let
     showCell :: Know Text -> (Text, TableCellProps)
     showCell (Known s) = (s, tableCellPlain)
     showCell Unknown = ("unknown", tableCellPlain {tcItalic = True})
-    mapLens :: PinaforeFunctionValue baseedit (Know Text) -> PinaforeFunctionValue baseedit (Text, TableCellProps)
+    mapLens :: PinaforeFunctionValue baseupdate (Know Text) -> PinaforeFunctionValue baseupdate (Text, TableCellProps)
     mapLens ff = funcUpdateFunction showCell . ff
     getColumn ::
-           (PinaforeRef baseedit '( BottomType, Text), A -> PinaforeRef baseedit '( BottomType, Text))
-        -> KeyColumn baseedit (MeetType Entity A)
+           (PinaforeRef baseupdate '( BottomType, Text), A -> PinaforeRef baseupdate '( BottomType, Text))
+        -> KeyColumn baseupdate (MeetType Entity A)
     getColumn (name, f) =
         readOnlyKeyColumn (clearText . pinaforeRefToFunction name) $ \p ->
             return $ mapLens $ pinaforeRefToFunction $ f $ meet2 p
@@ -54,78 +56,78 @@ type PickerType = Know (MeetType Entity A)
 type PickerPairType = (PickerType, Text)
 
 uiPick ::
-       forall baseedit.
-       PinaforeMorphism baseedit '( A, TopType) '( BottomType, Text)
-    -> PinaforeSetRef baseedit '( A, MeetType Entity A)
-    -> PinaforeRef baseedit '( A, MeetType Entity A)
-    -> UISpec BottomType baseedit
+       forall baseupdate.
+       PinaforeMorphism baseupdate '( A, TopType) '( BottomType, Text)
+    -> PinaforeSetRef baseupdate '( A, MeetType Entity A)
+    -> PinaforeRef baseupdate '( A, MeetType Entity A)
+    -> UISpec BottomType baseupdate
 uiPick nameMorphism fset ref = let
-    getName :: PinaforeFunctionMorphism baseedit (MeetType Entity A) PickerPairType
+    getName :: PinaforeFunctionMorphism baseupdate (MeetType Entity A) PickerPairType
     getName =
         proc p -> do
             n <- pinaforeMorphismFunction nameMorphism -< Known $ meet2 p
             returnA -< (Known p, fromKnow "" n)
-    getNames :: PinaforeFunctionMorphism baseedit (FiniteSet (MeetType Entity A)) (FiniteSet PickerPairType)
+    getNames :: PinaforeFunctionMorphism baseupdate (FiniteSet (MeetType Entity A)) (FiniteSet PickerPairType)
     getNames =
         proc fsp -> do
             pairs <- cfmap getName -< fsp
             returnA -< insertSet (Unknown, "") pairs
-    opts :: UpdateFunction baseedit (ListEdit [PickerPairType] (WholeEdit PickerPairType))
+    opts :: UpdateFunction baseupdate (ListUpdate [PickerPairType] (WholeUpdate PickerPairType))
     opts =
         (orderedKeyList @(FiniteSet PickerPairType) $ \(_, a) (_, b) -> compare a b) .
         convertUpdateFunction . applyPinaforeFunction getNames (pinaforeSetRefFunctionValue fset)
-    in optionUISpec @baseedit @PickerType opts $ pinaforeRefToLens $ contraRangeLift meet2 ref
+    in optionUISpec @baseupdate @PickerType opts $ pinaforeRefToLens $ contraRangeLift meet2 ref
 
 actionReference ::
-       (?pinafore :: PinaforeContext baseedit)
-    => PinaforeImmutableReference baseedit (PinaforeAction baseedit TopType)
-    -> UpdateFunction baseedit (WholeEdit (Maybe (IO ())))
+       (?pinafore :: PinaforeContext baseupdate)
+    => PinaforeImmutableReference baseupdate (PinaforeAction baseupdate TopType)
+    -> UpdateFunction baseupdate (WholeUpdate (Maybe (IO ())))
 actionReference raction =
     funcUpdateFunction (fmap (\action -> runPinaforeAction (action >> return ())) . knowToMaybe) .
     immutableReferenceToFunction raction
 
 uiButton ::
-       (?pinafore :: PinaforeContext baseedit)
-    => PinaforeImmutableReference baseedit Text
-    -> PinaforeImmutableReference baseedit (PinaforeAction baseedit TopType)
-    -> UISpec BottomType baseedit
+       (?pinafore :: PinaforeContext baseupdate)
+    => PinaforeImmutableReference baseupdate Text
+    -> PinaforeImmutableReference baseupdate (PinaforeAction baseupdate TopType)
+    -> UISpec BottomType baseupdate
 uiButton text raction = buttonUISpec (clearText . immutableReferenceToFunction text) $ actionReference raction
 
-uiLabel :: forall baseedit. PinaforeImmutableReference baseedit Text -> UISpec BottomType baseedit
-uiLabel text = mapEditUISpec (immutableReferenceToLens text) $ uiUnknownValue mempty $ labelUISpec
+uiLabel :: forall baseupdate. PinaforeImmutableReference baseupdate Text -> UISpec BottomType baseupdate
+uiLabel text = mapUpdateUISpec (immutableReferenceToLens text) $ uiUnknownValue mempty $ labelUISpec
 
-uiDynamic :: forall baseedit. PinaforeImmutableReference baseedit (UISpec A baseedit) -> UISpec A baseedit
+uiDynamic :: forall baseupdate. PinaforeImmutableReference baseupdate (UISpec A baseupdate) -> UISpec A baseupdate
 uiDynamic uiref = switchUISpec $ pinaforeImmutableReferenceValue nullUISpec uiref
 
-aspectToAction :: Aspect a -> PinaforeAction baseedit a
+aspectToAction :: Aspect a -> PinaforeAction baseupdate a
 aspectToAction aspect = do
     ma <- liftIO aspect
     pinaforeActionKnow $ maybeToKnow ma
 
 openWindow ::
-       forall baseedit. (?pinafore :: PinaforeContext baseedit)
-    => PinaforeImmutableReference baseedit Text
-    -> (PinaforeAction baseedit A -> PinaforeImmutableReference baseedit (MenuBar baseedit))
-    -> UISpec A baseedit
-    -> PinaforeAction baseedit PinaforeWindow
+       forall baseupdate. (?pinafore :: PinaforeContext baseupdate)
+    => PinaforeImmutableReference baseupdate Text
+    -> (PinaforeAction baseupdate A -> PinaforeImmutableReference baseupdate (MenuBar baseupdate))
+    -> UISpec A baseupdate
+    -> PinaforeAction baseupdate PinaforeWindow
 openWindow title getmbar wsContent =
     mfix $ \w -> let
         wsCloseBoxAction = pwClose w
         wsTitle = clearText . immutableReferenceToFunction title
-        wsMenuBar :: Maybe (Aspect A -> UpdateFunction baseedit (WholeEdit (MenuBar baseedit)))
+        wsMenuBar :: Maybe (Aspect A -> UpdateFunction baseupdate (WholeUpdate (MenuBar baseupdate)))
         wsMenuBar =
             Just $ \aspect ->
                 funcUpdateFunction (fromKnow mempty) . immutableReferenceToFunction (getmbar $ aspectToAction aspect)
         in pinaforeNewWindow MkWindowSpec {..}
 
-uiWithSelection :: (PinaforeAction baseedit A -> UISpec A baseedit) -> UISpec A baseedit
+uiWithSelection :: (PinaforeAction baseupdate A -> UISpec A baseupdate) -> UISpec A baseupdate
 uiWithSelection f = withAspectUISpec $ \aspect -> f $ aspectToAction aspect
 
-uiTextArea :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Text)) -> UISpec BottomType baseedit
+uiTextArea :: forall baseupdate. PinaforeLensValue baseupdate (WholeUpdate (Know Text)) -> UISpec BottomType baseupdate
 uiTextArea = valSpecText $ uiUnknownValue mempty $ noSelectionUISpec $ convertEditUISpec textAreaUISpec
 
-uiCalendar :: forall baseedit. PinaforeLensValue baseedit (WholeEdit (Know Day)) -> UISpec BottomType baseedit
-uiCalendar day = mapEditUISpec day $ uiUnknownValue (fromGregorian 1970 01 01) calendarUISpec
+uiCalendar :: forall baseupdate. PinaforeLensValue baseupdate (WholeUpdate (Know Day)) -> UISpec BottomType baseupdate
+uiCalendar day = mapUpdateUISpec day $ uiUnknownValue (fromGregorian 1970 01 01) calendarUISpec
 
 interpretAccelerator :: String -> Maybe MenuAccelerator
 interpretAccelerator [c] = Just $ MkMenuAccelerator [] c
@@ -141,11 +143,11 @@ interpretAccelerator ('A':'l':'t':'+':s) = do
 interpretAccelerator _ = Nothing
 
 menuAction ::
-       forall baseedit. (?pinafore :: PinaforeContext baseedit)
+       forall baseupdate. (?pinafore :: PinaforeContext baseupdate)
     => Text
     -> Maybe Text
-    -> PinaforeImmutableReference baseedit (PinaforeAction baseedit TopType)
-    -> MenuEntry baseedit
+    -> PinaforeImmutableReference baseupdate (PinaforeAction baseupdate TopType)
+    -> MenuEntry baseupdate
 menuAction label maccel raction =
     ActionMenuEntry
         label
@@ -154,38 +156,39 @@ menuAction label maccel raction =
              interpretAccelerator $ unpack accel) $
     actionReference raction
 
-uiScrolled :: forall baseedit. UISpec A baseedit -> UISpec A baseedit
+uiScrolled :: forall baseupdate. UISpec A baseupdate -> UISpec A baseupdate
 uiScrolled = scrolledUISpec
 
 ui_predefinitions ::
-       forall baseedit. (HasPinaforeEntityEdit baseedit, HasPinaforeFileEdit baseedit)
-    => [DocTreeEntry (BindDoc baseedit)]
+       forall baseupdate. (HasPinaforeEntityUpdate baseupdate, HasPinaforeFileUpdate baseupdate)
+    => [DocTreeEntry (BindDoc baseupdate)]
 ui_predefinitions =
     [ docTreeEntry
           "UI"
           "A user interface is something that goes inside a window."
-          [ mkValEntry "uiWithSelection" "User interface with selection." $ uiWithSelection @baseedit
-          , mkValEntry "uiMap" "Map user interface selection" $ uiMap @baseedit
-          , mkValEntry "uiIgnore" "Ignore user interface selection" $ noSelectionUISpec @baseedit @TopType @BottomType
-          , mkValEntry "uiBlank" "Blank user-interface" $ nullUISpec @baseedit @BottomType
+          [ mkValEntry "uiWithSelection" "User interface with selection." $ uiWithSelection @baseupdate
+          , mkValEntry "uiMap" "Map user interface selection" $ uiMap @baseupdate
+          , mkValEntry "uiIgnore" "Ignore user interface selection" $ noSelectionUISpec @baseupdate @TopType @BottomType
+          , mkValEntry "uiBlank" "Blank user-interface" $ nullUISpec @baseupdate @BottomType
           , mkValEntry "uiUnitCheckBox" "(TBD)" $ \name val ->
-                checkboxUISpec @baseedit @BottomType (clearText . name) $ toEditLens knowBool . val
+                checkboxUISpec @baseupdate @BottomType (clearText . name) $ toEditLens knowBool . val
           , mkValEntry "uiCheckBox" "Checkbox. Use shift-click to set to unknown." $ \name val ->
-                maybeCheckboxUISpec @baseedit @BottomType (clearText . name) $ (bijectionWholeEditLens knowMaybe) . val
+                maybeCheckboxUISpec @baseupdate @BottomType (clearText . name) $
+                (bijectionWholeEditLens knowMaybe) . val
           , mkValEntry "uiTextEntry" "Text entry, empty text is unknown." $
             valSpecText $ uiUnknownValue mempty $ textAreaUISpecEntry @BottomType
-          , mkValEntry "uiTextArea" "Text area, empty text is unknown." $ uiTextArea @baseedit
-          , mkValEntry "uiLabel" "Label." $ uiLabel @baseedit
+          , mkValEntry "uiTextArea" "Text area, empty text is unknown." $ uiTextArea @baseupdate
+          , mkValEntry "uiLabel" "Label." $ uiLabel @baseupdate
           , mkValEntry
                 "uiHorizontal"
                 "Items arranged horizontally, each flag is whether to expand into remaining space." $
-            horizontalUISpec @baseedit @A
+            horizontalUISpec @baseupdate @A
           , mkValEntry "uiVertical" "Items arranged vertically, each flag is whether to expand into remaining space." $
-            verticalUISpec @baseedit @A
+            verticalUISpec @baseupdate @A
           , mkValEntry
                 "uiPages"
                 "A notebook of pages. First of each pair is for the page tab (typically a label), second is the content." $
-            pagesUISpec @baseedit @A @TopType
+            pagesUISpec @baseupdate @A @TopType
                 -- CSS
                 -- drag
                 -- icon
@@ -193,14 +196,14 @@ ui_predefinitions =
                 "uiButton"
                 "A button with this text that does this action. Button will be disabled if the action reference is unknown." $
             uiButton
-          , mkValEntry "uiPick" "A drop-down menu." $ uiPick @baseedit
+          , mkValEntry "uiPick" "A drop-down menu." $ uiPick @baseupdate
           , mkValEntry
                 "uiTable"
                 "A list table. First arg is columns (name, property), second is order, third is the set of items, fourth is the window to open for a selection." $
-            uiTable @baseedit
-          , mkValEntry "uiCalendar" "A calendar." $ uiCalendar @baseedit
-          , mkValEntry "uiScrolled" "A scrollable container." $ uiScrolled @baseedit
-          , mkValEntry "uiDynamic" "A UI that can be updated to different UIs." $ uiDynamic @baseedit
+            uiTable @baseupdate
+          , mkValEntry "uiCalendar" "A calendar." $ uiCalendar @baseupdate
+          , mkValEntry "uiScrolled" "A scrollable container." $ uiScrolled @baseupdate
+          , mkValEntry "uiDynamic" "A UI that can be updated to different UIs." $ uiDynamic @baseupdate
           ]
     , docTreeEntry
           "Menu"
@@ -208,7 +211,7 @@ ui_predefinitions =
           [ mkValEntry "menuSeparator" "Separator menu item." SeparatorMenuEntry
           , mkValEntry "menuSubmenu" "Submenu menu item." SubMenuEntry
           , mkValEntry "menuAction" "Action menu item. Item will be disabled if the action reference is unknown." $
-            menuAction @baseedit
+            menuAction @baseupdate
           ]
     , docTreeEntry
           "Window"

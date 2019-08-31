@@ -38,19 +38,19 @@ $(literalInstances [t|LocalTime|])
 $(literalInstances [t|()|])
 
 -- Double
-instance ToShimWit JMShim (PinaforeType baseedit 'Positive) Double where
+instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) Double where
     toShimWit = mapShimWit (toEnhanced "subtype" InexactNumber) toJMShimWit
 
 -- Int
-instance ToShimWit JMShim (PinaforeType baseedit 'Positive) Int where
+instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) Int where
     toShimWit = mapShimWit (toEnhanced "subtype" toInteger) toJMShimWit
 
-instance FromShimWit JMShim (PinaforeType baseedit 'Negative) Int where
+instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) Int where
     fromShimWit = mapShimWit (toEnhanced "subtype" fromInteger) fromJMShimWit
 
 -- Fixed
-instance HasResolution r => ToShimWit JMShim (PinaforeType baseedit 'Positive) (Fixed r) where
+instance HasResolution r => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (Fixed r) where
     toShimWit = mapShimWit (toEnhanced "subtype" toRational) toJMShimWit
 
-instance HasResolution r => FromShimWit JMShim (PinaforeType baseedit 'Negative) (Fixed r) where
+instance HasResolution r => FromShimWit JMShim (PinaforeType baseupdate 'Negative) (Fixed r) where
     fromShimWit = mapShimWit (toEnhanced "subtype" fromRational) fromJMShimWit

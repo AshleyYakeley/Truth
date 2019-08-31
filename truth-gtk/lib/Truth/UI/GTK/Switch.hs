@@ -9,7 +9,7 @@ import Truth.Core
 import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
-switchView :: forall sel edit. UpdateFunction edit (WholeEdit (GCreateView sel edit)) -> GCreateView sel edit
+switchView :: forall sel edit. UpdateFunction edit (WholeUpdate (GCreateView sel edit)) -> GCreateView sel edit
 switchView specfunc = do
     box <- liftIO $ boxNew OrientationVertical 0
     let
@@ -24,8 +24,8 @@ switchView specfunc = do
         cvLiftView $ getViewState firstspec
     unliftView <- cvLiftView askUnliftIO
     cvDynamic @(ViewState sel) firstvs $ \object edits -> do
-        whedits <- liftIO $ objectMapUpdates specfunc object edits
-        for_ (lastWholeEdit whedits) $ \spec -> do
+        whupdates <- liftIO $ objectMapUpdates specfunc object edits
+        for_ (lastWholeUpdate whupdates) $ \spec -> do
             oldvs <- get
             liftIO $ closeDynamicView oldvs
             newvs <- liftIO $ runTransform unliftView $ getViewState spec

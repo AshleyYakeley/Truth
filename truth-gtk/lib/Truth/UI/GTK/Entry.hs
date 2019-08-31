@@ -21,9 +21,9 @@ textEntryGetView =
                      viewOn widget #changed $
                      viewObjectPushEdit $ \_ push -> do
                          st <- get widget #text
-                         _ <- push esrc [MkWholeEdit st]
+                         _ <- push esrc [MkWholeReaderEdit st]
                          return ()
-                 cvReceiveUpdate (Just esrc) $ \_ _ (MkWholeEdit newtext) ->
+                 cvReceiveUpdate (Just esrc) $ \_ _ (MkWholeReaderUpdate newtext) ->
                      liftIO $
                      withSignalBlocked widget changedSignal $ do
                          oldtext <- get widget #text

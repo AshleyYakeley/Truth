@@ -27,11 +27,11 @@ findShare uses = let
     in find goodpair pairs
 
 mergeSharedTypeVars ::
-       forall baseedit a. PShimWitMappable PinaforeShim (PinaforeType baseedit) a
+       forall baseupdate a. PShimWitMappable PinaforeShim (PinaforeType baseupdate) a
     => a
     -> a
 mergeSharedTypeVars expr = let
-    (posuses, neguses) = mappableGetVarUses @baseedit expr
+    (posuses, neguses) = mappableGetVarUses @baseupdate expr
     in case findShare posuses <|> findShare neguses of
            Just (MkAnyW (va :: SymbolType na), MkAnyW (vb :: SymbolType nb)) -> let
                varBij :: Isomorphism JMShim (UVar na) (UVar nb)
@@ -44,5 +44,5 @@ mergeSharedTypeVars expr = let
                         singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType va)
                        (return $
                         cfmap (isoForwards varBij) $ singlePinaforeShimWit $ mkPJMShimWit $ VarPinaforeSingularType va)
-               in mergeSharedTypeVars @baseedit $ runIdentity $ bisubstitutes @baseedit [bisub] expr
+               in mergeSharedTypeVars @baseupdate $ runIdentity $ bisubstitutes @baseupdate [bisub] expr
            Nothing -> expr

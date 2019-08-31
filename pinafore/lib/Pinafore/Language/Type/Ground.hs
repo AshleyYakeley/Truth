@@ -10,26 +10,26 @@ import Shapes
 import Truth.Core
 
 -- could really use https://github.com/ghc-proposals/ghc-proposals/pull/81
-data PinaforeGroundType baseedit (polarity :: Polarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv) where
-    FuncPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance, 'Covariance] (->)
-    EntityPinaforeGroundType :: CovaryType dv -> EntityGroundType t -> PinaforeGroundType baseedit polarity dv t
-    OrderPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Contravariance] (PinaforeOrder baseedit)
-    ActionPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] (PinaforeAction baseedit)
+data PinaforeGroundType baseupdate (polarity :: Polarity) (dv :: DolanVariance) (t :: DolanVarianceKind dv) where
+    FuncPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Contravariance, 'Covariance] (->)
+    EntityPinaforeGroundType :: CovaryType dv -> EntityGroundType t -> PinaforeGroundType baseupdate polarity dv t
+    OrderPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Contravariance] (PinaforeOrder baseupdate)
+    ActionPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Covariance] (PinaforeAction baseupdate)
     -- Reference
-    RefPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeRef baseedit)
-    ListRefPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeListRef baseedit)
-    TextRefPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (PinaforeTextRef baseedit)
-    SetRefPinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Rangevariance] (PinaforeSetRef baseedit)
+    RefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] (PinaforeRef baseupdate)
+    ListRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] (PinaforeListRef baseupdate)
+    TextRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[] (PinaforeTextRef baseupdate)
+    SetRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] (PinaforeSetRef baseupdate)
     MorphismPinaforeGroundType
-        :: PinaforeGroundType baseedit polarity '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseedit)
+        :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseupdate)
     -- UI
-    UserInterfacePinaforeGroundType :: PinaforeGroundType baseedit polarity '[ 'Covariance] (PinaforeUI baseedit)
-    WindowPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] PinaforeWindow
-    MenuItemPinaforeGroundType :: PinaforeGroundType baseedit polarity '[] (MenuEntry baseedit)
+    UserInterfacePinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Covariance] (PinaforeUI baseupdate)
+    WindowPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[] PinaforeWindow
+    MenuItemPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[] (MenuEntry baseupdate)
 
 pinaforeGroundTypeTestEquality ::
-       PinaforeGroundType baseedit pola dka ta
-    -> PinaforeGroundType baseedit polb dkb tb
+       PinaforeGroundType baseupdate pola dka ta
+    -> PinaforeGroundType baseupdate polb dkb tb
     -> Maybe (dka :~: dkb, ta :~~: tb)
 pinaforeGroundTypeTestEquality FuncPinaforeGroundType FuncPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality (EntityPinaforeGroundType la gta) (EntityPinaforeGroundType lb gtb) = do
@@ -49,8 +49,8 @@ pinaforeGroundTypeTestEquality MenuItemPinaforeGroundType MenuItemPinaforeGround
 pinaforeGroundTypeTestEquality _ _ = Nothing
 
 pinaforeGroundTypeVarianceMap ::
-       forall baseedit polarity (dv :: DolanVariance) (f :: DolanVarianceKind dv).
-       PinaforeGroundType baseedit polarity dv f
+       forall baseupdate polarity (dv :: DolanVariance) (f :: DolanVarianceKind dv).
+       PinaforeGroundType baseupdate polarity dv f
     -> DolanVarianceMap JMShim dv f
 pinaforeGroundTypeVarianceMap FuncPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap (EntityPinaforeGroundType dvcovary gt) =
@@ -66,7 +66,7 @@ pinaforeGroundTypeVarianceMap UserInterfacePinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap WindowPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap MenuItemPinaforeGroundType = dolanVary @dv
 
-pinaforeGroundTypeVarianceType :: PinaforeGroundType baseedit polarity dv t -> DolanVarianceType dv
+pinaforeGroundTypeVarianceType :: PinaforeGroundType baseupdate polarity dv t -> DolanVarianceType dv
 pinaforeGroundTypeVarianceType FuncPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType (EntityPinaforeGroundType lt _) = mapListType (\Refl -> CovarianceType) lt
 pinaforeGroundTypeVarianceType OrderPinaforeGroundType = representative
@@ -81,7 +81,8 @@ pinaforeGroundTypeVarianceType WindowPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType MenuItemPinaforeGroundType = representative
 
 pinaforeGroundTypeInvertPolarity ::
-       PinaforeGroundType baseedit polarity dv t -> Maybe (PinaforeGroundType baseedit (InvertPolarity polarity) dv t)
+       PinaforeGroundType baseupdate polarity dv t
+    -> Maybe (PinaforeGroundType baseupdate (InvertPolarity polarity) dv t)
 pinaforeGroundTypeInvertPolarity FuncPinaforeGroundType = Just FuncPinaforeGroundType
 pinaforeGroundTypeInvertPolarity (EntityPinaforeGroundType lc t) = Just $ EntityPinaforeGroundType lc t
 pinaforeGroundTypeInvertPolarity OrderPinaforeGroundType = Just OrderPinaforeGroundType
@@ -96,12 +97,12 @@ pinaforeGroundTypeInvertPolarity WindowPinaforeGroundType = Just WindowPinaforeG
 pinaforeGroundTypeInvertPolarity MenuItemPinaforeGroundType = Just MenuItemPinaforeGroundType
 
 pinaforeGroundTypeShowPrec ::
-       forall baseedit w polarity dv f t.
+       forall baseupdate w polarity dv f t.
        ( Is PolarityType polarity
        , forall a polarity'. Is PolarityType polarity' => ExprShow (w polarity' a)
        , forall a. ExprShow (RangeType w polarity a)
        )
-    => PinaforeGroundType baseedit polarity dv f
+    => PinaforeGroundType baseupdate polarity dv f
     -> DolanArguments dv w f polarity t
     -> (Text, Int)
 pinaforeGroundTypeShowPrec FuncPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =

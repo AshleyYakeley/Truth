@@ -10,8 +10,8 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
 createWidget ::
-       UpdateFunction edit (WholeEdit Text)
-    -> UpdateFunction edit (WholeEdit (Maybe (IO ())))
+       UpdateFunction edit (WholeUpdate Text)
+    -> UpdateFunction edit (WholeUpdate (Maybe (IO ())))
     -> CreateView sel edit Widget
 createWidget rlabel raction = do
     aref <- liftIO $ newIORef Nothing

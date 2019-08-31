@@ -28,26 +28,26 @@ import Pinafore.Language.TypeSystem.Type
 import Pinafore.Language.TypeSystem.Unify
 import Shapes
 
-instance Unifier (PinaforeUnifier baseedit) where
-    type UnifierName (PinaforeUnifier baseedit) = Name
-    type UnifierMonad (PinaforeUnifier baseedit) = PinaforeTypeCheck baseedit
-    type UnifierNegWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'Negative
-    type UnifierPosWitness (PinaforeUnifier baseedit) = PinaforeType baseedit 'Positive
-    type UnifierSubstitutions (PinaforeUnifier baseedit) = [PinaforeBisubstitution baseedit]
-    type UnifierShim (PinaforeUnifier baseedit) = PinaforeShim
+instance Unifier (PinaforeUnifier baseupdate) where
+    type UnifierName (PinaforeUnifier baseupdate) = Name
+    type UnifierMonad (PinaforeUnifier baseupdate) = PinaforeTypeCheck baseupdate
+    type UnifierNegWitness (PinaforeUnifier baseupdate) = PinaforeType baseupdate 'Negative
+    type UnifierPosWitness (PinaforeUnifier baseupdate) = PinaforeType baseupdate 'Positive
+    type UnifierSubstitutions (PinaforeUnifier baseupdate) = [PinaforeBisubstitution baseupdate]
+    type UnifierShim (PinaforeUnifier baseupdate) = PinaforeShim
     unifyNegWitnesses ta tb = return $ uuLiftNegShimWit $ meetPinaforeShimWit (mkShimWit ta) (mkShimWit tb)
     unifyPosWitnesses ta tb = return $ uuLiftPosShimWit $ joinPinaforeShimWit (mkShimWit ta) (mkShimWit tb)
     unifyPosNegWitnesses tq tp = fmap MkUUShim $ getCompose $ unifyPosNegPinaforeTypes tq tp
     solveUnifier = runUnifier
     unifierPosSubstitute = bisubstitutesType
     unifierNegSubstitute = bisubstitutesType
-    simplify = return . pinaforeSimplifyTypes @baseedit
+    simplify = return . pinaforeSimplifyTypes @baseupdate
 
-instance TypeSystem (PinaforeTypeSystem baseedit) where
-    type TSRenamer (PinaforeTypeSystem baseedit) = VarRenamerT (PinaforeTypeSystem baseedit)
-    type TSUnifier (PinaforeTypeSystem baseedit) = PinaforeUnifier baseedit
-    type TSScoped (PinaforeTypeSystem baseedit) = PinaforeSourceScoped baseedit
-    type TSSubsumer (PinaforeTypeSystem baseedit) = PinaforeSubsumer baseedit
+instance TypeSystem (PinaforeTypeSystem baseupdate) where
+    type TSRenamer (PinaforeTypeSystem baseupdate) = VarRenamerT (PinaforeTypeSystem baseupdate)
+    type TSUnifier (PinaforeTypeSystem baseupdate) = PinaforeUnifier baseupdate
+    type TSScoped (PinaforeTypeSystem baseupdate) = PinaforeSourceScoped baseupdate
+    type TSSubsumer (PinaforeTypeSystem baseupdate) = PinaforeSubsumer baseupdate
     tsFunctionPosWitness ta tb =
         singlePinaforeShimWit $
         mkPJMShimWit $

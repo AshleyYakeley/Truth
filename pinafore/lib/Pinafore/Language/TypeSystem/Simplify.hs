@@ -28,11 +28,12 @@ simplify = True
 -- 4. merge duplicate type vars in join/meet (on each type)
 -- e.g. "a|a" => "a"
 pinaforeSimplifyTypes ::
-       forall baseedit a. PShimWitMappable PinaforeShim (PinaforeType baseedit) a
+       forall baseupdate a. PShimWitMappable PinaforeShim (PinaforeType baseupdate) a
     => a
     -> a
 pinaforeSimplifyTypes =
     if simplify
-        then mergeDuplicateTypeVars @baseedit .
-             mergeSharedTypeVars @baseedit . eliminateOneSidedTypeVars @baseedit . mergeDuplicateGroundTypes @baseedit
+        then mergeDuplicateTypeVars @baseupdate .
+             mergeSharedTypeVars @baseupdate .
+             eliminateOneSidedTypeVars @baseupdate . mergeDuplicateGroundTypes @baseupdate
         else id

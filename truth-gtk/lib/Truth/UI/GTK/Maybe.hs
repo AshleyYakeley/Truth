@@ -9,10 +9,10 @@ import Truth.UI.GTK.GView
 import Truth.UI.GTK.Useful
 
 createButton ::
-       forall sel edit. FullEdit edit
-    => EditSubject edit
-    -> Object edit
-    -> CreateView sel edit Button
+       forall sel update. FullEdit (UpdateEdit update)
+    => UpdateSubject update
+    -> Object (UpdateEdit update)
+    -> CreateView sel update Button
 createButton subj (MkCloseUnliftIO objRun MkAnObject {..}) =
     cvMakeButton "Create" $
     liftIO $
@@ -34,21 +34,21 @@ instance DynamicViewState (OneWholeViews sel f) where
     dynamicViewFocus (PresentOVS vs) = vs
 
 oneWholeView ::
-       forall sel f edit wd. (MonadOne f, FullEdit edit, IsWidget wd)
+       forall sel f update wd. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update), IsWidget wd)
     => Maybe (Limit f)
-    -> (Object (OneWholeEdit f edit) -> CreateView sel (OneWholeEdit f edit) wd)
-    -> GCreateView sel edit
-    -> GCreateView sel (OneWholeEdit f edit)
+    -> (Object (OneWholeEdit f (UpdateEdit update)) -> CreateView sel (OneWholeUpdate f update) wd)
+    -> GCreateView sel update
+    -> GCreateView sel (OneWholeUpdate f update)
 oneWholeView mDeleteValue makeEmptywidget baseView = do
     box <- new Box [#orientation := OrientationVertical]
     mDeleteButton <-
         for mDeleteValue $ \(MkLimit deleteValue) -> do
             cvMakeButton "Delete" $
                 viewObjectPushEdit $ \_ push -> do
-                    _ <- push noEditSource [SumEditLeft $ MkWholeEdit deleteValue]
+                    _ <- push noEditSource [SumEditLeft $ MkWholeReaderEdit deleteValue]
                     return ()
     let
-        getWidgets :: f () -> View sel (OneWholeEdit f edit) (OneWholeViews sel f)
+        getWidgets :: f () -> View sel (OneWholeUpdate f update) (OneWholeViews sel f)
         getWidgets fu =
             case retrieveOne fu of
                 FailureResult lfx -> do
@@ -86,7 +86,7 @@ oneWholeView mDeleteValue makeEmptywidget baseView = do
                 put newdvs
     toWidget box
 
-placeholderLabel :: CreateView sel edit Label
+placeholderLabel :: CreateView sel update Label
 placeholderLabel = new Label [#label := "Placeholder"]
 
 oneGetView :: GetGView

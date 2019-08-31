@@ -4,11 +4,20 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
 
-class TupleWitness (c :: Type -> Constraint) (sel :: Type -> Type) where
-    tupleWitness :: forall edit. sel edit -> Dict (c edit)
+class TupleUpdateWitness (c :: Type -> Constraint) (sel :: Type -> Type) where
+    tupleUpdateWitness :: forall update. sel update -> Dict (c update)
+
+class TupleEditWitness (c :: Type -> Constraint) (sel :: Type -> Type) where
+    tupleEditWitness :: forall update. sel update -> Dict (c (UpdateEdit update))
+
+class TupleReaderWitness (c :: (Type -> Type) -> Constraint) (sel :: Type -> Type) where
+    tupleReaderWitness :: forall update. sel update -> Dict (c (UpdateReader update))
+
+class TupleSubjectWitness (c :: Type -> Constraint) (sel :: Type -> Type) where
+    tupleSubjectWitness :: forall update. sel update -> Dict (c (UpdateSubject update))
 
 newtype Tuple sel =
-    MkTuple (forall edit. sel edit -> EditSubject edit)
+    MkTuple (forall update. sel update -> UpdateSubject update)
 
 instance (TupleSubjectWitness Show sel, FiniteWitness sel) => Show (Tuple sel) where
     show (MkTuple f) = let
@@ -21,115 +30,127 @@ instance (TupleSubjectWitness Show sel, FiniteWitness sel) => Show (Tuple sel) w
 class (TestEquality sel, TupleReaderWitness SubjectReader sel) => SubjectTupleSelector (sel :: Type -> Type) where
     type TupleSubject sel :: Type
     type TupleSubject sel = Tuple sel
-    tupleReadFromSubject :: forall edit. sel edit -> TupleSubject sel -> EditSubject edit
+    tupleReadFromSubject :: forall update. sel update -> TupleSubject sel -> UpdateSubject update
     default tupleReadFromSubject ::
-        forall edit. (TupleSubject sel ~ Tuple sel) => sel edit -> TupleSubject sel -> EditSubject edit
+        forall update. (TupleSubject sel ~ Tuple sel) => sel update -> TupleSubject sel -> UpdateSubject update
     tupleReadFromSubject sel (MkTuple tuple) = tuple sel
-    tupleWriteToSubject :: forall edit. sel edit -> EditSubject edit -> TupleSubject sel -> TupleSubject sel
+    tupleWriteToSubject :: forall update. sel update -> UpdateSubject update -> TupleSubject sel -> TupleSubject sel
     default tupleWriteToSubject ::
-        forall edit.
-            (TupleSubject sel ~ Tuple sel) => sel edit -> EditSubject edit -> TupleSubject sel -> TupleSubject sel
+        forall update.
+            (TupleSubject sel ~ Tuple sel) => sel update -> UpdateSubject update -> TupleSubject sel -> TupleSubject sel
     tupleWriteToSubject sel element (MkTuple tuple) =
         MkTuple $ \sel' ->
             case testEquality sel sel' of
                 Just Refl -> element
                 Nothing -> tuple sel'
 
-data TupleEditReader sel t where
-    MkTupleEditReader :: sel edit -> EditReader edit t -> TupleEditReader sel t
+data TupleUpdateReader sel t where
+    MkTupleUpdateReader :: sel update -> UpdateReader update t -> TupleUpdateReader sel t
 
-instance TupleReaderWitness (WitnessConstraint c) sel => WitnessConstraint c (TupleEditReader sel) where
-    witnessConstraint (MkTupleEditReader (se :: sel edit) (rt :: EditReader edit t)) =
+instance TupleReaderWitness (WitnessConstraint c) sel => WitnessConstraint c (TupleUpdateReader sel) where
+    witnessConstraint (MkTupleUpdateReader (se :: sel update) (rt :: UpdateReader update t)) =
         case tupleReaderWitness @(WitnessConstraint c) se of
             Dict ->
                 case witnessConstraint @_ @c rt of
                     Dict -> Dict
 
 instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstraint Show) sel) =>
-             Show (TupleEditReader sel t) where
-    show (MkTupleEditReader (se :: sel edit) (rt :: EditReader edit t)) =
+             Show (TupleUpdateReader sel t) where
+    show (MkTupleUpdateReader (se :: sel update) (rt :: UpdateReader update t)) =
         showAllWitness se ++
         " " ++
         case tupleReaderWitness @(AllWitnessConstraint Show) se of
             Dict -> showAllWitness rt
 
 instance (AllWitnessConstraint Show sel, TupleReaderWitness (AllWitnessConstraint Show) sel) =>
-             AllWitnessConstraint Show (TupleEditReader sel) where
+             AllWitnessConstraint Show (TupleUpdateReader sel) where
     allWitnessConstraint = Dict
 
-tupleReadFunction :: sel edit -> ReadFunction (TupleEditReader sel) (EditReader edit)
-tupleReadFunction sel mr rt = mr $ MkTupleEditReader sel rt
+tupleReadFunction :: sel update -> ReadFunction (TupleUpdateReader sel) (UpdateReader update)
+tupleReadFunction sel mr rt = mr $ MkTupleUpdateReader sel rt
 
-instance (SubjectTupleSelector sel) => SubjectReader (TupleEditReader sel) where
-    type ReaderSubject (TupleEditReader sel) = TupleSubject sel
-    subjectToRead a (MkTupleEditReader sel reader) =
+instance (SubjectTupleSelector sel) => SubjectReader (TupleUpdateReader sel) where
+    type ReaderSubject (TupleUpdateReader sel) = TupleSubject sel
+    subjectToRead a (MkTupleUpdateReader sel reader) =
         case tupleReaderWitness @SubjectReader sel of
             Dict -> subjectToRead (tupleReadFromSubject sel a) reader
-
-class TupleReaderWitness (c :: (Type -> Type) -> Constraint) (sel :: Type -> Type) where
-    tupleReaderWitness :: forall edit. sel edit -> Dict (c (EditReader edit))
-
-class TupleSubjectWitness (c :: Type -> Constraint) (sel :: Type -> Type) where
-    tupleSubjectWitness :: forall edit. sel edit -> Dict (c (EditSubject edit))
 
 class TestEquality sel => FiniteTupleSelector (sel :: Type -> Type) where
     tupleConstruct ::
            forall m. Applicative m
-        => (forall edit. sel edit -> m (EditSubject edit))
+        => (forall update. sel update -> m (UpdateSubject update))
         -> m (TupleSubject sel)
 
 tupleAllSelectors :: FiniteTupleSelector sel => [AnyW sel]
 tupleAllSelectors = getConst $ tupleConstruct $ \sel -> Const [MkAnyW sel]
 
 instance (SubjectTupleSelector sel, FiniteTupleSelector sel, TupleReaderWitness FullSubjectReader sel) =>
-             FullSubjectReader (TupleEditReader sel) where
+             FullSubjectReader (TupleUpdateReader sel) where
     mutableReadToSubject mr =
-        tupleConstruct $ \(sel :: sel edit) ->
+        tupleConstruct $ \(sel :: sel update) ->
             case tupleReaderWitness @FullSubjectReader sel of
-                Dict -> mutableReadToSubject $ mr . MkTupleEditReader sel
+                Dict -> mutableReadToSubject $ mr . MkTupleUpdateReader sel
 
-data TupleEdit sel where
-    MkTupleEdit :: sel edit -> edit -> TupleEdit sel
+data TupleUpdateEdit sel where
+    MkTupleUpdateEdit :: sel update -> UpdateEdit update -> TupleUpdateEdit sel
 
-instance (TestEquality sel, TupleWitness ApplicableEdit sel) => Floating (TupleEdit sel) (TupleEdit sel) where
-    floatingUpdate (MkTupleEdit s1 e1) edit@(MkTupleEdit s2 e2) =
+data TupleUpdate sel where
+    MkTupleUpdate :: sel update -> update -> TupleUpdate sel
+
+instance TupleUpdateWitness IsUpdate sel => IsUpdate (TupleUpdate sel) where
+    type UpdateEdit (TupleUpdate sel) = TupleUpdateEdit sel
+    editUpdate (MkTupleUpdateEdit sel edit) =
+        case tupleUpdateWitness @IsUpdate sel of
+            Dict -> MkTupleUpdate sel $ editUpdate edit
+
+instance (TupleUpdateWitness IsUpdate sel, TupleUpdateWitness IsEditUpdate sel) => IsEditUpdate (TupleUpdate sel) where
+    updateEdit (MkTupleUpdate sel update) =
+        case tupleUpdateWitness @IsEditUpdate sel of
+            Dict -> MkTupleUpdateEdit sel $ updateEdit update
+
+instance (TestEquality sel, TupleEditWitness ApplicableEdit sel) => Floating (TupleUpdateEdit sel) (TupleUpdateEdit sel) where
+    floatingUpdate (MkTupleUpdateEdit s1 e1) edit@(MkTupleUpdateEdit s2 e2) =
         case testEquality s1 s2 of
             Just Refl ->
-                case tupleWitness @ApplicableEdit s2 of
-                    Dict -> MkTupleEdit s2 $ floatingUpdate e1 e2
+                case tupleEditWitness @ApplicableEdit s2 of
+                    Dict -> MkTupleUpdateEdit s2 $ floatingUpdate e1 e2
             Nothing -> edit
 
-type instance EditReader (TupleEdit sel) = TupleEditReader sel
+type instance EditReader (TupleUpdateEdit sel) =
+     TupleUpdateReader sel
 
-instance (TestEquality sel, TupleWitness ApplicableEdit sel) => ApplicableEdit (TupleEdit sel) where
-    applyEdit (MkTupleEdit aggedite edit) mr aggreader@(MkTupleEditReader aggeditr reader) =
-        case (tupleWitness @ApplicableEdit aggedite, testEquality aggedite aggeditr) of
-            (Dict, Just Refl) -> applyEdit edit (mr . MkTupleEditReader aggedite) reader
+instance (TestEquality sel, TupleEditWitness ApplicableEdit sel) => ApplicableEdit (TupleUpdateEdit sel) where
+    applyEdit (MkTupleUpdateEdit aggedite edit) mr aggreader@(MkTupleUpdateReader aggeditr reader) =
+        case (tupleEditWitness @ApplicableEdit aggedite, testEquality aggedite aggeditr) of
+            (Dict, Just Refl) -> applyEdit edit (mr . MkTupleUpdateReader aggedite) reader
             _ -> mr aggreader
 
-appendAssortedEdit :: TestEquality sel => TupleEdit sel -> [AnyF sel []] -> [AnyF sel []]
-appendAssortedEdit (MkTupleEdit sel edit) [] = [MkAnyF sel [edit]]
-appendAssortedEdit tedit@(MkTupleEdit sel edit) (MkAnyF sel' edits:rest) =
-    case testEquality sel sel' of
-        Just Refl -> (MkAnyF sel' (edit : edits)) : rest
-        Nothing -> (MkAnyF sel' edits) : (appendAssortedEdit tedit rest)
+data TupleUpdateEditList sel where
+    MkTupleUpdateEditList :: sel update -> [UpdateEdit update] -> TupleUpdateEditList sel
 
-assortEdits :: TestEquality sel => [TupleEdit sel] -> [AnyF sel []]
+appendAssortedEdit :: TestEquality sel => TupleUpdateEdit sel -> [TupleUpdateEditList sel] -> [TupleUpdateEditList sel]
+appendAssortedEdit (MkTupleUpdateEdit sel edit) [] = [MkTupleUpdateEditList sel [edit]]
+appendAssortedEdit tedit@(MkTupleUpdateEdit sel edit) (MkTupleUpdateEditList sel' edits:rest) =
+    case testEquality sel sel' of
+        Just Refl -> (MkTupleUpdateEditList sel' (edit : edits)) : rest
+        Nothing -> (MkTupleUpdateEditList sel' edits) : (appendAssortedEdit tedit rest)
+
+assortEdits :: TestEquality sel => [TupleUpdateEdit sel] -> [TupleUpdateEditList sel]
 assortEdits [] = []
 assortEdits (edit:edits) = appendAssortedEdit edit $ assortEdits edits
 
-instance (TestEquality sel, TupleWitness InvertibleEdit sel) => InvertibleEdit (TupleEdit sel) where
+instance (TestEquality sel, TupleEditWitness InvertibleEdit sel) => InvertibleEdit (TupleUpdateEdit sel) where
     invertEdits tedits mr = do
         invedits <-
-            for (assortEdits tedits) $ \(MkAnyF sel edits) ->
-                case tupleWitness @InvertibleEdit sel of
-                    Dict -> fmap (fmap (MkTupleEdit sel)) $ invertEdits edits $ mr . MkTupleEditReader sel
+            for (assortEdits tedits) $ \(MkTupleUpdateEditList sel edits) ->
+                case tupleEditWitness @InvertibleEdit sel of
+                    Dict -> fmap (fmap (MkTupleUpdateEdit sel)) $ invertEdits edits $ mr . MkTupleUpdateReader sel
         return $ mconcat invedits
 
-instance (SubjectTupleSelector sel, TupleWitness SubjectMapEdit sel) => SubjectMapEdit (TupleEdit sel) where
+instance (SubjectTupleSelector sel, TupleEditWitness SubjectMapEdit sel) => SubjectMapEdit (TupleUpdateEdit sel) where
     mapSubjectEdits =
-        mapEditToMapEdits $ \(MkTupleEdit sel edit) subj ->
-            case tupleWitness @SubjectMapEdit sel of
+        mapEditToMapEdits $ \(MkTupleUpdateEdit sel edit) subj ->
+            case tupleEditWitness @SubjectMapEdit sel of
                 Dict -> do
                     newelement <- mapSubjectEdits [edit] $ tupleReadFromSubject sel subj
                     return $ tupleWriteToSubject sel newelement subj
@@ -137,100 +158,101 @@ instance (SubjectTupleSelector sel, TupleWitness SubjectMapEdit sel) => SubjectM
 instance ( SubjectTupleSelector sel
          , FiniteTupleSelector sel
          , TupleReaderWitness FullSubjectReader sel
-         , TupleWitness ApplicableEdit sel
-         , TupleWitness SubjectMapEdit sel
-         , TupleWitness FullEdit sel
-         ) => FullEdit (TupleEdit sel) where
+         , TupleEditWitness ApplicableEdit sel
+         , TupleEditWitness SubjectMapEdit sel
+         , TupleEditWitness FullEdit sel
+         ) => FullEdit (TupleUpdateEdit sel) where
     replaceEdit mr writeEdit = do
         editss <-
             for tupleAllSelectors $ \(MkAnyW sel) ->
-                case tupleWitness @FullEdit sel of
-                    Dict -> replaceEdit (tupleReadFunction sel mr) $ writeEdit . MkTupleEdit sel
+                case tupleEditWitness @FullEdit sel of
+                    Dict -> replaceEdit (tupleReadFunction sel mr) $ writeEdit . MkTupleUpdateEdit sel
         return $ mconcat editss
 
-data TupleEditCacheKey cache sel ct where
-    MkTupleEditCacheKey :: sel edit -> TupleEditCacheKey cache sel (cache (EditCacheKey cache edit))
+data TupleUpdateEditCacheKey cache sel ct where
+    MkTupleUpdateEditCacheKey
+        :: sel update -> TupleUpdateEditCacheKey cache sel (cache (EditCacheKey cache (UpdateEdit update)))
 
-instance TestEquality sel => TestEquality (TupleEditCacheKey cache sel) where
-    testEquality (MkTupleEditCacheKey se1) (MkTupleEditCacheKey se2) = do
+instance TestEquality sel => TestEquality (TupleUpdateEditCacheKey cache sel) where
+    testEquality (MkTupleUpdateEditCacheKey se1) (MkTupleUpdateEditCacheKey se2) = do
         Refl <- testEquality se1 se2
         return Refl
 
-instance (TestEquality sel, TupleWitness CacheableEdit sel) => CacheableEdit (TupleEdit sel) where
-    type EditCacheKey cache (TupleEdit sel) = TupleEditCacheKey cache sel
-    editCacheAdd (MkTupleEditReader (sel :: sel edit) rt) t =
-        case tupleWitness @CacheableEdit sel of
-            Dict -> subcacheModify (MkTupleEditCacheKey sel) $ editCacheAdd @edit rt t
-    editCacheLookup (MkTupleEditReader (sel :: sel edit) rt) cache =
-        case tupleWitness @CacheableEdit sel of
+instance (TestEquality sel, TupleEditWitness CacheableEdit sel) => CacheableEdit (TupleUpdateEdit sel) where
+    type EditCacheKey cache (TupleUpdateEdit sel) = TupleUpdateEditCacheKey cache sel
+    editCacheAdd (MkTupleUpdateReader (sel :: sel update) rt) t =
+        case tupleEditWitness @CacheableEdit sel of
+            Dict -> subcacheModify (MkTupleUpdateEditCacheKey sel) $ editCacheAdd @(UpdateEdit update) rt t
+    editCacheLookup (MkTupleUpdateReader (sel :: sel update) rt) cache =
+        case tupleEditWitness @CacheableEdit sel of
             Dict -> do
-                subcache <- cacheLookup (MkTupleEditCacheKey sel) cache
-                editCacheLookup @edit rt subcache
-    editCacheUpdate (MkTupleEdit (sel :: sel edit) edit) =
-        case tupleWitness @CacheableEdit sel of
-            Dict -> subcacheModify (MkTupleEditCacheKey sel) $ editCacheUpdate @edit edit
+                subcache <- cacheLookup (MkTupleUpdateEditCacheKey sel) cache
+                editCacheLookup @(UpdateEdit update) rt subcache
+    editCacheUpdate (MkTupleUpdateEdit (sel :: sel update) edit) =
+        case tupleEditWitness @CacheableEdit sel of
+            Dict -> subcacheModify (MkTupleUpdateEditCacheKey sel) $ editCacheUpdate @(UpdateEdit update) edit
 
-instance (WitnessConstraint Show sel, AllWitnessConstraint Show sel) => Show (TupleEdit sel) where
-    show (MkTupleEdit sel edit) =
+instance (TupleEditWitness Show sel, AllWitnessConstraint Show sel) => Show (TupleUpdateEdit sel) where
+    show (MkTupleUpdateEdit sel edit) =
         "tuple " ++
         showAllWitness sel ++
         " " ++
-        case witnessConstraint @_ @Show sel of
+        case tupleEditWitness @Show sel of
             Dict -> show edit
 
-splitTupleEditList :: TestEquality w => [TupleEdit w] -> AllF w []
-splitTupleEditList [] = MkAllF $ \_ -> []
-splitTupleEditList ((MkTupleEdit wt t):rr) =
-    MkAllF $ \wt' ->
-        case testEquality wt wt' of
-            Just Refl -> t : (getAllF (splitTupleEditList rr) wt')
-            Nothing -> getAllF (splitTupleEditList rr) wt'
+instance (TupleUpdateWitness Show sel, AllWitnessConstraint Show sel) => Show (TupleUpdate sel) where
+    show (MkTupleUpdate sel update) =
+        "tuple " ++
+        showAllWitness sel ++
+        " " ++
+        case tupleUpdateWitness @Show sel of
+            Dict -> show update
 
 tupleEditLens ::
-       forall sel edit. (TestEquality sel)
-    => sel edit
-    -> EditLens (TupleEdit sel) edit
+       forall sel update. (TestEquality sel)
+    => sel update
+    -> EditLens (TupleUpdate sel) update
 tupleEditLens sel = let
-    ufGet :: ReadFunctionT IdentityT (TupleEditReader sel) (EditReader edit)
+    ufGet :: ReadFunctionT IdentityT (TupleUpdateReader sel) (UpdateReader update)
     ufGet mr = remonadMutableRead IdentityT $ tupleReadFunction sel mr
     ufUpdate ::
            forall m. MonadIO m
-        => TupleEdit sel
-        -> MutableRead m (EditReader (TupleEdit sel))
-        -> IdentityT m [edit]
-    ufUpdate (MkTupleEdit sel' edit) _ =
+        => TupleUpdate sel
+        -> MutableRead m (TupleUpdateReader sel)
+        -> IdentityT m [update]
+    ufUpdate (MkTupleUpdate sel' update) _ =
         case testEquality sel sel' of
-            Just Refl -> return [edit]
+            Just Refl -> return [update]
             Nothing -> return []
     elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
-        => [edit]
-        -> MutableRead m (EditReader (TupleEdit sel))
-        -> IdentityT m (Maybe [TupleEdit sel])
-    elPutEdits edits _ = return $ Just $ fmap (MkTupleEdit sel) edits
+        => [UpdateEdit update]
+        -> MutableRead m (TupleUpdateReader sel)
+        -> IdentityT m (Maybe [TupleUpdateEdit sel])
+    elPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit sel) edits
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
 
 tupleIsoLens ::
        forall sela selb.
-       (forall edit. sela edit -> selb edit)
-    -> (forall edit. selb edit -> sela edit)
-    -> EditLens (TupleEdit sela) (TupleEdit selb)
+       (forall update. sela update -> selb update)
+    -> (forall update. selb update -> sela update)
+    -> EditLens (TupleUpdate sela) (TupleUpdate selb)
 tupleIsoLens ab ba = let
-    ufGet :: ReadFunctionT IdentityT (TupleEditReader sela) (TupleEditReader selb)
-    ufGet mr (MkTupleEditReader sel rt) = lift $ mr $ MkTupleEditReader (ba sel) rt
+    ufGet :: ReadFunctionT IdentityT (TupleUpdateReader sela) (TupleUpdateReader selb)
+    ufGet mr (MkTupleUpdateReader sel rt) = lift $ mr $ MkTupleUpdateReader (ba sel) rt
     ufUpdate ::
            forall m. MonadIO m
-        => TupleEdit sela
-        -> MutableRead m (EditReader (TupleEdit sela))
-        -> IdentityT m [TupleEdit selb]
-    ufUpdate (MkTupleEdit sel edit) _ = return [MkTupleEdit (ab sel) edit]
-    elFunction :: AnUpdateFunction IdentityT (TupleEdit sela) (TupleEdit selb)
+        => TupleUpdate sela
+        -> MutableRead m (TupleUpdateReader sela)
+        -> IdentityT m [TupleUpdate selb]
+    ufUpdate (MkTupleUpdate sel update) _ = return [MkTupleUpdate (ab sel) update]
+    elFunction :: AnUpdateFunction IdentityT (TupleUpdate sela) (TupleUpdate selb)
     elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
-        => [TupleEdit selb]
-        -> MutableRead m (EditReader (TupleEdit sela))
-        -> IdentityT m (Maybe [TupleEdit sela])
-    elPutEdits edits _ = return $ Just $ fmap (\(MkTupleEdit sel edit) -> MkTupleEdit (ba sel) edit) edits
+        => [TupleUpdateEdit selb]
+        -> MutableRead m (TupleUpdateReader sela)
+        -> IdentityT m (Maybe [TupleUpdateEdit sela])
+    elPutEdits edits _ = return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (ba sel) edit) edits
     in MkCloseUnlift identityUnlift MkAnEditLens {..}

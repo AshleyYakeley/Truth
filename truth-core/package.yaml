@@ -54,7 +54,7 @@ library:
       - Truth.Core.Types.SumWhole
       - Truth.Core.Types.OneReader
       - Truth.Core.Types.OneEdit
-      - Truth.Core.Types.OneWholeEdit
+      - Truth.Core.Types.OneWhole
       - Truth.Core.Types.Either
       - Truth.Core.Types.Comonad
       - Truth.Core.Types.Tuple

@@ -6,12 +6,16 @@ import Truth.Core.Types.Whole
 
 type ConstEdit a = NoEdit (WholeReader a)
 
+type ConstUpdate a = NoUpdate (WholeReader a)
+
 type UnitReader = WholeReader ()
 
 type UnitEdit = ConstEdit ()
 
-unitUpdateFunction :: UpdateFunction edit UnitEdit
+type UnitUpdate = ConstUpdate ()
+
+unitUpdateFunction :: UpdateFunction edit UnitUpdate
 unitUpdateFunction = constUpdateFunction ()
 
-unitLens :: EditLens edit UnitEdit
+unitLens :: EditLens edit UnitUpdate
 unitLens = readOnlyEditLens unitUpdateFunction

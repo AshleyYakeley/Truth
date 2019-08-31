@@ -28,7 +28,7 @@ parseReader parser text = do
         Right a -> return a
         Left e -> throwError [parseErrorMessage e]
 
-parseScopedReader :: Parser (PinaforeScoped baseedit t) -> Text -> PinaforeSourceScoped baseedit t
+parseScopedReader :: Parser (PinaforeScoped baseupdate t) -> Text -> PinaforeSourceScoped baseupdate t
 parseScopedReader parser text = do
     spos <- askSourcePos
     case evalStateT (parseReader parser text) spos of

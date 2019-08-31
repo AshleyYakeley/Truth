@@ -1,5 +1,6 @@
 module Truth.Core.Types.String
-    ( StringRead(..)
+    ( StringUpdate
+    , StringRead(..)
     , StringEdit(..)
     , stringSectionLens
     ) where
@@ -138,16 +139,18 @@ instance IsSequence seq => FullEdit (StringEdit seq) where
         a <- mutableReadToSubject mr
         writeEdit $ StringReplaceWhole a
 
+type StringUpdate seq = EditUpdate (StringEdit seq)
+
 stringSectionLens ::
        forall seq. IsSequence seq
     => SequenceRun seq
-    -> IO (EditLens (StringEdit seq) (StringEdit seq))
+    -> IO (EditLens (StringUpdate seq) (StringUpdate seq))
 stringSectionLens initial =
     newMVar initial >>= \var ->
         return $ let
             getState ::
                    forall m. MonadIO m
-                => MutableRead m (EditReader (StringEdit seq))
+                => MutableRead m (StringRead seq)
                 -> StateT (SequenceRun seq) m (SequenceRun seq)
             getState mr = do
                 len <- lift $ mr StringReadLength
@@ -162,10 +165,10 @@ stringSectionLens initial =
                         lift $ mr $ StringReadSection $ clipWithin st $ relativeRun (negate $ runStart st) run
             ufUpdate ::
                    forall m. MonadIO m
-                => StringEdit seq
-                -> MutableRead m (EditReader (StringEdit seq))
-                -> StateT (SequenceRun seq) m [StringEdit seq]
-            ufUpdate edita mr = do
+                => StringUpdate seq
+                -> MutableRead m (StringRead seq)
+                -> StateT (SequenceRun seq) m [StringUpdate seq]
+            ufUpdate (MkEditUpdate edita) mr = do
                 oldstate <- get
                 newlen <- lift $ mr StringReadLength
                 let
@@ -174,7 +177,7 @@ stringSectionLens initial =
                 case edita of
                     StringReplaceWhole s -> do
                         put newstate
-                        return $ return $ StringReplaceWhole $ seqSection newstate s
+                        return $ return $ MkEditUpdate $ StringReplaceWhole $ seqSection newstate s
                     StringReplaceSection runa sa ->
                         case goodRun runa of
                             False -> return []
@@ -191,13 +194,13 @@ stringSectionLens initial =
                                                     sa
                                         case (runLength runb, onull sb) of
                                             (0, True) -> Nothing
-                                            _ -> return $ StringReplaceSection runb sb
-            elFunction :: AnUpdateFunction (StateT (SequenceRun seq)) (StringEdit seq) (StringEdit seq)
+                                            _ -> return $ MkEditUpdate $ StringReplaceSection runb sb
+            elFunction :: AnUpdateFunction (StateT (SequenceRun seq)) (StringUpdate seq) (StringUpdate seq)
             elFunction = MkAnUpdateFunction {..}
             elPutEdit ::
                    forall m. MonadIO m
                 => StringEdit seq
-                -> MutableRead m (EditReader (StringEdit seq))
+                -> MutableRead m (StringRead seq)
                 -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
             elPutEdit editb mr = do
                 oldstate <- getState mr
@@ -214,7 +217,7 @@ stringSectionLens initial =
             elPutEdits ::
                    forall m. MonadIO m
                 => [StringEdit seq]
-                -> MutableRead m (EditReader (StringEdit seq))
+                -> MutableRead m (StringRead seq)
                 -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
             elPutEdits = elPutEditsFromPutEdit elPutEdit
             in MkCloseUnlift (mvarUnlift var) MkAnEditLens {..}

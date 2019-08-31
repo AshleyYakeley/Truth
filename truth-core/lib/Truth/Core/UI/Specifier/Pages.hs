@@ -3,14 +3,14 @@ module Truth.Core.UI.Specifier.Pages where
 import Truth.Core.Import
 import Truth.Core.UI.Specifier.Specifier
 
-data PagesUISpec sel edit where
-    MkPagesUISpec :: [(UISpec sel' edit, UISpec sel edit)] -> PagesUISpec sel edit
+data PagesUISpec sel update where
+    MkPagesUISpec :: [(UISpec sel' update, UISpec sel update)] -> PagesUISpec sel update
 
-instance Show (PagesUISpec sel edit) where
+instance Show (PagesUISpec sel update) where
     show (MkPagesUISpec specs) = "pages (" ++ intercalate ", " (fmap show specs) ++ ")"
 
 instance UIType PagesUISpec where
     uiWitness = $(iowitness [t|PagesUISpec|])
 
-pagesUISpec :: forall edit sel sel'. [(UISpec sel' edit, UISpec sel edit)] -> UISpec sel edit
+pagesUISpec :: forall update sel sel'. [(UISpec sel' update, UISpec sel update)] -> UISpec sel update
 pagesUISpec pages = MkUISpec $ MkPagesUISpec pages

@@ -112,9 +112,9 @@ instance (FiniteWitness colsel, WitnessConstraint Show colsel, AllWitnessConstra
 instance TupleDatabase SQLiteDatabase PinaforeSchema where
     type TupleDatabaseRowWitness SQLiteDatabase PinaforeSchema = IsPinaforeRow
 
-sqlitePinaforeLens :: EditLens (SQLiteEdit PinaforeSchema) PinaforeTableEdit
+sqlitePinaforeLens :: EditLens (SQLiteUpdate PinaforeSchema) PinaforeTableUpdate
 sqlitePinaforeLens = let
-    ufGet :: ReadFunctionT IdentityT (SQLiteRead PinaforeSchema) PinaforeTableRead
+    ufGet :: ReadFunctionT IdentityT (SQLiteReader PinaforeSchema) PinaforeTableRead
     ufGet mr (PinaforeTableReadGetPredicate p s) =
         lift $ do
             row <-
@@ -151,11 +151,11 @@ sqlitePinaforeLens = let
                 return $ getSingleAll sa
     ufUpdate ::
            forall m. MonadIO m
-        => SQLiteEdit PinaforeSchema
+        => SQLiteUpdate PinaforeSchema
         -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
-        -> IdentityT m [PinaforeTableEdit]
+        -> IdentityT m [PinaforeTableUpdate]
     ufUpdate _ _ = return $ error "sqlitePinaforeLens.editUpdate"
-    elFunction :: AnUpdateFunction IdentityT (SQLiteEdit PinaforeSchema) PinaforeTableEdit
+    elFunction :: AnUpdateFunction IdentityT (SQLiteUpdate PinaforeSchema) PinaforeTableUpdate
     elFunction = MkAnUpdateFunction {..}
     elPutEdit ::
            forall m. MonadIO m
@@ -196,7 +196,7 @@ sqlitePinaforeLens = let
     elPutEdits ::
            forall m. MonadIO m
         => [PinaforeTableEdit]
-        -> MutableRead m (EditReader (SQLiteEdit PinaforeSchema))
+        -> MutableRead m (SQLiteReader PinaforeSchema)
         -> IdentityT m (Maybe [SQLiteEdit PinaforeSchema])
     elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}

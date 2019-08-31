@@ -6,58 +6,59 @@ import Pinafore.Language.Value.Instances ()
 import Shapes
 import Truth.Core
 
-data PinaforeRef (baseedit :: Type) (pq :: (Type, Type)) where
-    LensPinaforeRef :: Range JMShim t pq -> PinaforeLensValue baseedit (WholeEdit (Know t)) -> PinaforeRef baseedit pq
-    ImmutPinaforeRef :: PinaforeImmutableReference baseedit q -> PinaforeRef baseedit '( p, q)
+data PinaforeRef (baseupdate :: Type) (pq :: (Type, Type)) where
+    LensPinaforeRef
+        :: Range JMShim t pq -> PinaforeLensValue baseupdate (WholeUpdate (Know t)) -> PinaforeRef baseupdate pq
+    ImmutPinaforeRef :: PinaforeImmutableReference baseupdate q -> PinaforeRef baseupdate '( p, q)
 
-instance CatFunctor (CatRange (->)) (->) (PinaforeRef baseedit) where
+instance CatFunctor (CatRange (->)) (->) (PinaforeRef baseupdate) where
     cfmap f (LensPinaforeRef r v) = LensPinaforeRef (cfmap f r) v
     cfmap (MkCatRange _ f) (ImmutPinaforeRef v) = ImmutPinaforeRef $ fmap f v
 
-instance HasVariance 'Rangevariance (PinaforeRef baseedit) where
+instance HasVariance 'Rangevariance (PinaforeRef baseupdate) where
     varianceRepresentational = Nothing
 
-pinaforeRefToFunction :: PinaforeRef baseedit '( BottomType, a) -> PinaforeFunctionValue baseedit (Know a)
+pinaforeRefToFunction :: PinaforeRef baseupdate '( BottomType, a) -> PinaforeFunctionValue baseupdate (Know a)
 pinaforeRefToFunction ref =
     case pinaforeRefToImmutable ref of
         (MkPinaforeImmutableReference fv) -> fv
 
-pinaforeFunctionToRef :: PinaforeFunctionValue baseedit (Know a) -> PinaforeRef baseedit '( TopType, a)
+pinaforeFunctionToRef :: PinaforeFunctionValue baseupdate (Know a) -> PinaforeRef baseupdate '( TopType, a)
 pinaforeFunctionToRef ef = ImmutPinaforeRef $ MkPinaforeImmutableReference ef
 
-pinaforeRefToImmutable :: PinaforeRef baseedit '( BottomType, a) -> PinaforeImmutableReference baseedit a
+pinaforeRefToImmutable :: PinaforeRef baseupdate '( BottomType, a) -> PinaforeImmutableReference baseupdate a
 pinaforeRefToImmutable (LensPinaforeRef (MkRange _ tq) lens) =
     MkPinaforeImmutableReference $ funcUpdateFunction (fmap $ fromEnhanced tq) . editLensFunction lens
 pinaforeRefToImmutable (ImmutPinaforeRef ir) = ir
 
-pinaforeImmutableToRef :: PinaforeImmutableReference baseedit a -> PinaforeRef baseedit '( TopType, a)
+pinaforeImmutableToRef :: PinaforeImmutableReference baseupdate a -> PinaforeRef baseupdate '( TopType, a)
 pinaforeImmutableToRef = ImmutPinaforeRef
 
-pinaforeRefToLens :: PinaforeRef baseedit '( p, p) -> PinaforeLensValue baseedit (WholeEdit (Know p))
+pinaforeRefToLens :: PinaforeRef baseupdate '( p, p) -> PinaforeLensValue baseupdate (WholeUpdate (Know p))
 pinaforeRefToLens (LensPinaforeRef tr lv) =
     (bijectionWholeEditLens $ isoMapCat (fromEnhanced @_ @JMShim) $ cfmap $ rangeBijection tr) . lv
 pinaforeRefToLens (ImmutPinaforeRef ir) = immutableReferenceToLens ir
 
-pinaforeLensToRef :: PinaforeLensValue baseedit (WholeEdit (Know a)) -> PinaforeRef baseedit '( a, a)
+pinaforeLensToRef :: PinaforeLensValue baseupdate (WholeUpdate (Know a)) -> PinaforeRef baseupdate '( a, a)
 pinaforeLensToRef lens = LensPinaforeRef identityRange lens
 
-pinaforeRefGet :: forall baseedit q. PinaforeRef baseedit '( BottomType, q) -> PinaforeAction baseedit q
+pinaforeRefGet :: forall baseupdate q. PinaforeRef baseupdate '( BottomType, q) -> PinaforeAction baseupdate q
 pinaforeRefGet ref = (getImmutableReference $ pinaforeRefToImmutable ref) >>= pinaforeActionKnow
 
-pinaforeRefSet :: forall baseedit p. PinaforeRef baseedit '( p, TopType) -> Know p -> PinaforeAction baseedit ()
+pinaforeRefSet :: forall baseupdate p. PinaforeRef baseupdate '( p, TopType) -> Know p -> PinaforeAction baseupdate ()
 pinaforeRefSet (LensPinaforeRef (MkRange pt _) lens) mp =
-    pinaforeLensPush lens [MkWholeEdit $ fmap (fromEnhanced pt) mp]
+    pinaforeLensPush lens [MkWholeReaderEdit $ fmap (fromEnhanced pt) mp]
 pinaforeRefSet (ImmutPinaforeRef _) _ = empty
 
-runPinaforeRef :: PinaforeRef baseedit '( BottomType, PinaforeAction baseedit ()) -> PinaforeAction baseedit ()
+runPinaforeRef :: PinaforeRef baseupdate '( BottomType, PinaforeAction baseupdate ()) -> PinaforeAction baseupdate ()
 runPinaforeRef ref = pinaforeRefGet ref >>= id
 
 pinaforeFLensRef ::
-       forall baseedit ap aq b.
+       forall baseupdate ap aq b.
        (aq -> b)
     -> (b -> aq -> ap)
-    -> PinaforeRef baseedit '( ap, aq)
-    -> PinaforeRef baseedit '( b, b)
+    -> PinaforeRef baseupdate '( ap, aq)
+    -> PinaforeRef baseupdate '( b, b)
 pinaforeFLensRef g pb (LensPinaforeRef tr lv) = let
     trco = fromEnhanced $ rangeCo tr
     trcontra = fromEnhanced $ rangeContra tr

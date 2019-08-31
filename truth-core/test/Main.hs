@@ -49,10 +49,13 @@ testApplyEditsPar :: TestTree
 testApplyEditsPar =
     testCase "apply edits parallel" $ let
         start = (False, False)
-        edits :: [PairEdit (WholeEdit Bool) (WholeEdit Bool)]
-        edits = [MkTupleEdit SelectFirst $ MkWholeEdit True, MkTupleEdit SelectSecond $ MkWholeEdit True]
+        edits :: [PairUpdateEdit (WholeUpdate Bool) (WholeUpdate Bool)]
+        edits =
+            [ MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True
+            , MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True
+            ]
         expected = (True, True)
-        rf :: ReadFunction (TupleEditReader (PairSelector (WholeEdit Bool) (WholeEdit Bool))) (TupleEditReader (PairSelector (WholeEdit Bool) (WholeEdit Bool)))
+        rf :: ReadFunction (TupleUpdateReader (PairSelector (WholeUpdate Bool) (WholeUpdate Bool))) (TupleUpdateReader (PairSelector (WholeUpdate Bool) (WholeUpdate Bool)))
         rf = applyEdits edits
         in do
                found <- mutableReadToSubject $ rf $ subjectToMutableRead start
@@ -63,7 +66,7 @@ testApplyEditsSeq =
     testCase "apply edits sequence" $ let
         start = 0
         edits :: [WholeEdit Int]
-        edits = [MkWholeEdit 1, MkWholeEdit 2]
+        edits = [MkWholeReaderEdit 1, MkWholeReaderEdit 2]
         expected = 2
         rf :: ReadFunction (WholeReader Int) (WholeReader Int)
         rf = applyEdits edits
@@ -158,21 +161,23 @@ unsafeRefl :: forall a b. a :~: b
 unsafeRefl = unsafeCoerce Refl
 
 lensUpdateGetProperty ::
-       forall state edita editb.
-       ( Show edita
-       , ApplicableEdit edita
-       , FullSubjectReader (EditReader edita)
-       , Show (EditSubject edita)
-       , Show editb
-       , ApplicableEdit editb
-       , FullSubjectReader (EditReader editb)
-       , Eq (EditSubject editb)
-       , Show (EditSubject editb)
+       forall state updateA updateB.
+       ( IsUpdate updateA
+       , Show (UpdateEdit updateA)
+       , ApplicableEdit (UpdateEdit updateA)
+       , FullSubjectReader (UpdateReader updateA)
+       , Show (UpdateSubject updateA)
+       , IsEditUpdate updateB
+       , Show updateB
+       , ApplicableEdit (UpdateEdit updateB)
+       , FullSubjectReader (UpdateReader updateB)
+       , Eq (UpdateSubject updateB)
+       , Show (UpdateSubject updateB)
        , Show state
        )
-    => IO (EditLens edita editb)
-    -> EditSubject edita
-    -> edita
+    => IO (EditLens updateA updateB)
+    -> UpdateSubject updateA
+    -> UpdateEdit updateA
     -> Property
 lensUpdateGetProperty getlens oldA editA =
     ioProperty @Property $ do
@@ -184,9 +189,9 @@ lensUpdateGetProperty getlens oldA editA =
                     editFirst <- get
                     newA <- mutableReadToSubject $ applyEdit editA $ subjectToMutableRead oldA
                     oldB <- mutableReadToSubject $ ufGet $ subjectToMutableRead oldA
-                    editBs <- ufUpdate editA $ subjectToMutableRead newA
+                    updateBs <- ufUpdate (editUpdate editA) $ subjectToMutableRead newA
                     newState <- get
-                    newB1 <- mutableReadToSubject $ applyEdits editBs $ subjectToMutableRead oldB
+                    newB1 <- mutableReadToSubject $ applyEdits (fmap updateEdit updateBs) $ subjectToMutableRead oldB
                     newB2 <- mutableReadToSubject $ ufGet $ subjectToMutableRead newA
                     let
                         vars =
@@ -194,7 +199,7 @@ lensUpdateGetProperty getlens oldA editA =
                             , showVar "oldState" editFirst
                             , showVar "oldB" oldB
                             , showVar "editA" editA
-                            , showVar "editBs" editBs
+                            , showVar "updateBs" updateBs
                             , showVar "newA" newA
                             , showVar "newState" newState
                             , showVar "newB (edits)" newB1

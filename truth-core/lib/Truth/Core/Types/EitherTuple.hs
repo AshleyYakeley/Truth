@@ -6,9 +6,9 @@ import Truth.Core.Import
 import Truth.Core.Read
 import Truth.Core.Types.Tuple
 
-instance (TupleWitness c p, TupleWitness c q) => TupleWitness c (EitherType p q) where
-    tupleWitness (LeftType sel) = tupleWitness sel
-    tupleWitness (RightType sel) = tupleWitness sel
+instance (TupleUpdateWitness c p, TupleUpdateWitness c q) => TupleUpdateWitness c (EitherType p q) where
+    tupleUpdateWitness (LeftType sel) = tupleUpdateWitness sel
+    tupleUpdateWitness (RightType sel) = tupleUpdateWitness sel
 
 instance (TestEquality p, TupleReaderWitness SubjectReader p, TestEquality q, TupleReaderWitness SubjectReader q) =>
              SubjectTupleSelector (EitherType p q)

@@ -27,20 +27,20 @@ data SubscribeContext edit = MkSubscribeContext
 
 testUpdateFunction ::
        forall a. (?handle :: Handle, Show a)
-    => UpdateFunction (WholeEdit a) (WholeEdit a)
+    => UpdateFunction (WholeUpdate a) (WholeUpdate a)
 testUpdateFunction = let
     ufGet :: ReadFunctionT IdentityT (WholeReader a) (WholeReader a)
     ufGet mr ReadWhole = lift $ mr ReadWhole
     ufUpdate ::
            forall m. MonadIO m
-        => WholeEdit a
+        => WholeUpdate a
         -> MutableRead m (WholeReader a)
-        -> IdentityT m [WholeEdit a]
-    ufUpdate (MkWholeEdit s) mr = do
+        -> IdentityT m [WholeUpdate a]
+    ufUpdate (MkWholeReaderUpdate s) mr = do
         s' <- lift $ mr ReadWhole
         liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s
         liftIO $ hPutStrLn ?handle $ "lens update MR: " <> show s'
-        return [MkWholeEdit s]
+        return [MkWholeReaderUpdate s]
     in MkCloseUnlift identityUnlift MkAnUpdateFunction {..}
 
 testUpdateObject :: TestTree
@@ -48,43 +48,49 @@ testUpdateObject =
     goldenTest' "updateObject" $ do
         obj <- freeIOObject "old" $ \_ -> True
         let
-            om :: ObjectMaker (WholeEdit String) ()
+            om :: ObjectMaker (WholeUpdate String) ()
             om = reflectingObjectMaker obj
-            lens :: EditLens (WholeEdit String) (WholeEdit String)
+            lens :: EditLens (WholeUpdate String) (WholeUpdate String)
             lens = readOnlyEditLens testUpdateFunction
-            recv :: [WholeEdit String] -> EditContext -> IO ()
-            recv ee _ = for_ ee $ \(MkWholeEdit s) -> hPutStrLn ?handle $ "recv update edit: " <> show s
-            recv' :: [WholeEdit String] -> EditContext -> IO ()
-            recv' ee _ = for_ ee $ \(MkWholeEdit s) -> hPutStrLn ?handle $ "recv' update edit: " <> show s
+            recv :: [WholeUpdate String] -> EditContext -> IO ()
+            recv ee _ = for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv update edit: " <> show s
+            recv' :: [WholeUpdate String] -> EditContext -> IO ()
+            recv' ee _ = for_ ee $ \(MkWholeReaderUpdate s) -> hPutStrLn ?handle $ "recv' update edit: " <> show s
         runLifeCycle $ do
             om' <- shareObjectMaker om
             (MkCloseUnliftIO run MkAnObject {..}, ()) <- om' recv
             (_obj', ()) <- mapObjectMaker lens om' recv'
-            liftIO $ runTransform run $ do pushOrFail "failed" noEditSource $ objEdit [MkWholeEdit "new"]
+            liftIO $ runTransform run $ do pushOrFail "failed" noEditSource $ objEdit [MkWholeReaderEdit "new"]
             return ()
 
 testOutputEditor ::
-       forall edit. (Show edit, Show (EditSubject edit), FullSubjectReader (EditReader edit), ?handle :: Handle)
+       forall update.
+       ( Show update
+       , Show (UpdateEdit update)
+       , Show (UpdateSubject update)
+       , FullSubjectReader (UpdateReader update)
+       , ?handle :: Handle
+       )
     => String
-    -> (SubscribeContext edit -> LifeCycleIO ())
-    -> Editor edit ()
+    -> (SubscribeContext (UpdateEdit update) -> LifeCycleIO ())
+    -> Editor update ()
 testOutputEditor name call = let
     outputLn :: MonadIO m => String -> m ()
     outputLn s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s
-    editorInit :: Object edit -> LifeCycleIO ()
+    editorInit :: Object (UpdateEdit update) -> LifeCycleIO ()
     editorInit (MkCloseUnliftIO (MkTransform run) (MkAnObject r _)) =
         liftIO $ do
             val <- run $ mutableReadToSubject r
             outputLn $ "init: " ++ show val
             return ()
-    editorUpdate :: () -> Object edit -> [edit] -> EditContext -> IO ()
+    editorUpdate :: () -> Object (UpdateEdit update) -> [update] -> EditContext -> IO ()
     editorUpdate () (MkCloseUnliftIO (MkTransform run) (MkAnObject mr _)) edits _ = do
         outputLn $ "receive " ++ show edits
         val <- run $ mutableReadToSubject mr
         outputLn $ "receive " ++ show val
-    editorDo :: () -> Object edit -> LifeCycleIO ()
+    editorDo :: () -> Object (UpdateEdit update) -> LifeCycleIO ()
     editorDo () (MkCloseUnliftIO (MkTransform run) (MkAnObject _ push)) = let
-        subDontEdits :: [[edit]] -> LifeCycleIO ()
+        subDontEdits :: [[UpdateEdit update]] -> LifeCycleIO ()
         subDontEdits editss =
             liftIO $ do
                 outputLn "runObject"
@@ -95,7 +101,7 @@ testOutputEditor name call = let
                         case maction of
                             Nothing -> outputLn "push disallowed"
                             Just _action -> outputLn "push ignored"
-        subDoEdits :: [[edit]] -> LifeCycleIO ()
+        subDoEdits :: [[UpdateEdit update]] -> LifeCycleIO ()
         subDoEdits editss =
             liftIO $ do
                 outputLn "runObject"
@@ -112,20 +118,20 @@ testOutputEditor name call = let
     in MkEditor {..}
 
 testSubscription ::
-       forall edit. (FullEdit edit, Show (EditSubject edit))
+       forall update. (IsUpdate update, FullEdit (UpdateEdit update), Show (UpdateSubject update))
     => TestName
-    -> EditSubject edit
-    -> ((?handle :: Handle, ?showVar :: LifeCycleIO (), ?showExpected :: [edit] -> LifeCycleIO ()) =>
-                Subscriber edit -> LifeCycleIO ())
+    -> UpdateSubject update
+    -> ((?handle :: Handle, ?showVar :: LifeCycleIO (), ?showExpected :: [UpdateEdit update] -> LifeCycleIO ()) =>
+                Subscriber update -> LifeCycleIO ())
     -> TestTree
 testSubscription name initial call =
     goldenTest' name $
     runLifeCycle $ do
         var <- liftIO $ newMVar initial
         let
-            varObj :: Object (WholeEdit (EditSubject edit))
+            varObj :: Object (WholeEdit (UpdateSubject update))
             varObj = mvarObject var $ \_ -> True
-            editObj :: Object edit
+            editObj :: Object (UpdateEdit update)
             editObj = convertObject varObj
         sub <- makeReflectingSubscriber SynchronousUpdateTiming editObj
         let
@@ -139,17 +145,24 @@ testSubscription name initial call =
 
 testPair :: TestTree
 testPair =
-    testSubscription @(PairEdit (WholeEdit Bool) (WholeEdit Bool)) "Pair" (False, False) $ \sub ->
+    testSubscription @(PairUpdate (WholeUpdate Bool) (WholeUpdate Bool)) "Pair" (False, False) $ \sub ->
         subscribeEditor sub $
         testOutputEditor "main" $ \MkSubscribeContext {..} -> do
             ?showVar
-            ?showExpected [MkTupleEdit SelectFirst $ MkWholeEdit True, MkTupleEdit SelectSecond $ MkWholeEdit True]
-            subDoEdits [[MkTupleEdit SelectFirst $ MkWholeEdit True, MkTupleEdit SelectSecond $ MkWholeEdit True]]
+            ?showExpected
+                [ MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True
+                , MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True
+                ]
+            subDoEdits
+                [ [ MkTupleUpdateEdit SelectFirst $ MkWholeReaderEdit True
+                  , MkTupleUpdateEdit SelectSecond $ MkWholeReaderEdit True
+                  ]
+                ]
             ?showVar
 
 testString :: TestTree
 testString =
-    testSubscription "String" "ABCDE" $ \sub ->
+    testSubscription @(StringUpdate String) "String" "ABCDE" $ \sub ->
         subscribeEditor sub $
         testOutputEditor "main" $ \MkSubscribeContext {..} -> do
             ?showVar
@@ -164,7 +177,7 @@ testString =
 
 testString1 :: TestTree
 testString1 =
-    testSubscription "String1" "ABCDE" $ \sub ->
+    testSubscription @(StringUpdate String) "String1" "ABCDE" $ \sub ->
         subscribeEditor sub $
         testOutputEditor "main" $ \MkSubscribeContext {..} -> do
             ?showVar
@@ -175,7 +188,7 @@ testString1 =
 
 testString2 :: TestTree
 testString2 =
-    testSubscription "String2" "ABCDE" $ \sub ->
+    testSubscription @(StringUpdate String) "String2" "ABCDE" $ \sub ->
         subscribeEditor sub $
         testOutputEditor "main" $ \MkSubscribeContext {..} -> do
             ?showVar
@@ -187,7 +200,7 @@ testString2 =
 
 testSharedString1 :: TestTree
 testSharedString1 =
-    testSubscription "SharedString1" "ABCDE" $ \mainSub -> do
+    testSubscription @(StringUpdate String) "SharedString1" "ABCDE" $ \mainSub -> do
         testLens <- liftIO $ stringSectionLens (startEndRun 1 4)
         subscribeEditor mainSub $
             testOutputEditor "main" $ \MkSubscribeContext {..} -> do
@@ -204,7 +217,7 @@ testSharedString1 =
 
 testSharedString2 :: TestTree
 testSharedString2 =
-    testSubscription "SharedString2" "ABC" $ \mainSub -> do
+    testSubscription @(StringUpdate String) "SharedString2" "ABC" $ \mainSub -> do
         testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
         subscribeEditor mainSub $
             testOutputEditor "main" $ \_ -> do
@@ -219,7 +232,7 @@ testSharedString2 =
 
 testSharedString3 :: TestTree
 testSharedString3 =
-    testSubscription "SharedString3" "ABC" $ \mainSub -> do
+    testSubscription @(StringUpdate String) "SharedString3" "ABC" $ \mainSub -> do
         testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
         subscribeEditor mainSub $
             testOutputEditor "main" $ \MkSubscribeContext {..} -> do
@@ -235,7 +248,7 @@ testSharedString3 =
 
 testSharedString4 :: TestTree
 testSharedString4 =
-    testSubscription "SharedString4" "ABC" $ \mainSub -> do
+    testSubscription @(StringUpdate String) "SharedString4" "ABC" $ \mainSub -> do
         testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
         subscribeEditor mainSub $
             testOutputEditor "main" $ \main -> do
@@ -251,7 +264,7 @@ testSharedString4 =
 
 testSharedString5 :: TestTree
 testSharedString5 =
-    testSubscription "SharedString5" "ABCD" $ \mainSub -> do
+    testSubscription @(StringUpdate String) "SharedString5" "ABCD" $ \mainSub -> do
         testLens <- liftIO $ stringSectionLens (startEndRun 1 3)
         subscribeEditor mainSub $
             testOutputEditor "main" $ \main -> do
@@ -264,7 +277,7 @@ testSharedString5 =
 
 testSharedString6 :: TestTree
 testSharedString6 =
-    testSubscription "SharedString6" "ABCD" $ \mainSub -> do
+    testSubscription @(StringUpdate String) "SharedString6" "ABCD" $ \mainSub -> do
         testLens <- liftIO $ stringSectionLens (startEndRun 1 3)
         subscribeEditor mainSub $
             testOutputEditor "main" $ \main -> do
@@ -277,7 +290,7 @@ testSharedString6 =
 
 testSharedString7 :: TestTree
 testSharedString7 =
-    testSubscription "SharedString7" "ABCD" $ \mainSub -> do
+    testSubscription @(StringUpdate String) "SharedString7" "ABCD" $ \mainSub -> do
         testLens <- liftIO $ stringSectionLens (startEndRun 1 3)
         subscribeEditor mainSub $
             testOutputEditor "main" $ \main -> do
@@ -290,7 +303,7 @@ testSharedString7 =
 
 testSharedString7a :: TestTree
 testSharedString7a =
-    testSubscription "SharedString7a" "AB" $ \mainSub -> do
+    testSubscription @(StringUpdate String) "SharedString7a" "AB" $ \mainSub -> do
         testLens <- liftIO $ stringSectionLens (startEndRun 1 2)
         subscribeEditor mainSub $
             testOutputEditor "main" $ \main -> do

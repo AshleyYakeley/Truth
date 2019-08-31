@@ -1,4 +1,4 @@
-module Truth.Core.Types.OneWholeEdit where
+module Truth.Core.Types.OneWhole where
 
 import Truth.Core.Edit
 import Truth.Core.Import
@@ -9,22 +9,32 @@ import Truth.Core.Types.Sum
 import Truth.Core.Types.SumWhole
 import Truth.Core.Types.Whole
 
+type OneWholeUpdate (f :: Type -> Type) update = SumWholeUpdate (OneUpdate f update)
+
 type OneWholeEdit (f :: Type -> Type) edit = SumWholeEdit (OneEdit f edit)
 
 type MaybeEdit edit = OneWholeEdit Maybe edit
 
+type MaybeUpdate update = OneWholeUpdate Maybe update
+
 oneWholeLiftUpdateFunction ::
-       forall f edita editb. (MonadOne f, SubjectReader (EditReader edita), FullSubjectReader (EditReader editb))
-    => UpdateFunction edita editb
-    -> UpdateFunction (OneWholeEdit f edita) (OneWholeEdit f editb)
+       forall f updateA updateB.
+       (MonadOne f, SubjectReader (UpdateReader updateA), FullSubjectReader (UpdateReader updateB))
+    => UpdateFunction updateA updateB
+    -> UpdateFunction (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
 oneWholeLiftUpdateFunction = sumWholeLiftUpdateFunction . oneLiftUpdateFunction
 
 -- | suitable for Results; trying to put a failure code will be rejected
 oneWholeLiftAnEditLens ::
-       forall t f edita editb.
-       (MonadTransUnlift t, MonadOne f, FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
-    => AnEditLens t edita editb
-    -> AnEditLens t (OneWholeEdit f edita) (OneWholeEdit f editb)
+       forall t f updateA updateB.
+       ( MonadTransUnlift t
+       , MonadOne f
+       , FullSubjectReader (UpdateReader updateA)
+       , ApplicableEdit (UpdateEdit updateA)
+       , FullEdit (UpdateEdit updateB)
+       )
+    => AnEditLens t updateA updateB
+    -> AnEditLens t (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
 oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLens alens
   where
     reshuffle :: forall a. f (Maybe a) -> Maybe (f a)
@@ -35,9 +45,9 @@ oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLe
             FailureResult (MkLimit fx) -> Just fx
     pushback ::
            forall m. MonadIO m
-        => f (EditSubject editb)
-        -> MutableRead m (OneReader f (EditReader edita))
-        -> t m (Maybe (f (EditSubject edita)))
+        => f (UpdateSubject updateB)
+        -> MutableRead m (OneReader f (UpdateReader updateA))
+        -> t m (Maybe (f (UpdateSubject updateA)))
     pushback fb mr =
         withTransConstraintTM @MonadIO $
         case retrieveOne fb of
@@ -52,17 +62,22 @@ oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLe
 
 -- | suitable for Results; trying to put a failure code will be rejected
 oneWholeLiftEditLens ::
-       forall f edita editb. (MonadOne f, FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
-    => EditLens edita editb
-    -> EditLens (OneWholeEdit f edita) (OneWholeEdit f editb)
+       forall f updateA updateB.
+       ( MonadOne f
+       , FullSubjectReader (UpdateReader updateA)
+       , ApplicableEdit (UpdateEdit updateA)
+       , FullEdit (UpdateEdit updateB)
+       )
+    => EditLens updateA updateB
+    -> EditLens (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
 oneWholeLiftEditLens (MkCloseUnlift unlift lens) = MkCloseUnlift unlift $ oneWholeLiftAnEditLens lens
 
 mustExistOneEditLens ::
-       forall f edit. (MonadOne f, FullEdit edit)
+       forall f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))
     => String
-    -> EditLens (OneWholeEdit f edit) edit
+    -> EditLens (OneWholeUpdate f update) update
 mustExistOneEditLens err = let
-    ufGet :: ReadFunctionT IdentityT (OneReader f (EditReader edit)) (EditReader edit)
+    ufGet :: ReadFunctionT IdentityT (OneReader f (UpdateReader update)) (UpdateReader update)
     ufGet mr rt = do
         ft <- lift $ mr $ ReadOne rt
         case retrieveOne ft of
@@ -70,20 +85,22 @@ mustExistOneEditLens err = let
             FailureResult _ -> liftIO $ fail $ err ++ ": not found"
     ufUpdate ::
            forall m. MonadIO m
-        => OneWholeEdit f edit
-        -> MutableRead m (OneReader f (EditReader edit))
-        -> IdentityT m [edit]
-    ufUpdate (SumEditLeft (MkWholeEdit ft)) _ =
+        => OneWholeUpdate f update
+        -> MutableRead m (OneReader f (UpdateReader update))
+        -> IdentityT m [update]
+    ufUpdate (SumUpdateLeft (MkWholeReaderUpdate ft)) _ =
         case retrieveOne ft of
-            SuccessResult t -> getReplaceEditsFromSubject t
+            SuccessResult t -> do
+                edits <- getReplaceEditsFromSubject t
+                return $ fmap editUpdate edits
             FailureResult _ -> liftIO $ fail $ err ++ ": deleted"
-    ufUpdate (SumEditRight (MkOneEdit edit)) _ = return [edit]
-    elFunction :: AnUpdateFunction IdentityT (OneWholeEdit f edit) edit
+    ufUpdate (SumUpdateRight (MkOneUpdate update)) _ = return [update]
+    elFunction :: AnUpdateFunction IdentityT (OneWholeUpdate f update) update
     elFunction = MkAnUpdateFunction {..}
     elPutEdits ::
            forall m. MonadIO m
-        => [edit]
-        -> MutableRead m (EditReader (OneWholeEdit f edit))
-        -> IdentityT m (Maybe [OneWholeEdit f edit])
+        => [UpdateEdit update]
+        -> MutableRead m (OneReader f (UpdateReader update))
+        -> IdentityT m (Maybe [OneWholeEdit f (UpdateEdit update)])
     elPutEdits edits _ = return $ Just $ fmap (SumEditRight . MkOneEdit) edits
     in MkCloseUnlift identityUnlift MkAnEditLens {..}

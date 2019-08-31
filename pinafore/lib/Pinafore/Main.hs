@@ -20,12 +20,12 @@ import System.FilePath
 import Truth.Core
 import Truth.World.Clock
 
-type FilePinaforeType = PinaforeAction PinaforeEdit ()
+type FilePinaforeType = PinaforeAction PinaforeUpdate ()
 
 filePinaforeType :: Text
-filePinaforeType = qTypeDescription @PinaforeEdit @FilePinaforeType
+filePinaforeType = qTypeDescription @PinaforeUpdate @FilePinaforeType
 
-standardPinaforeContext :: UpdateTiming -> FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeEdit)
+standardPinaforeContext :: UpdateTiming -> FilePath -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate)
 standardPinaforeContext ut dirpath uitoolkit = do
     tableObject1 <- lifeCycleWith $ exclusiveObject $ sqlitePinaforeTableObject $ dirpath </> "tables.sqlite3"
     tableObject <- cacheObject 500000 tableObject1 -- half-second delay before writing
@@ -33,7 +33,7 @@ standardPinaforeContext ut dirpath uitoolkit = do
     clockOM <- shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     clockTimeEF <- liftIO makeClockTimeZoneEF
     let
-        picker :: forall edit. PinaforeSelector edit -> ObjectMaker edit ()
+        picker :: forall update. PinaforeSelector update -> ObjectMaker update ()
         picker PinaforeSelectPoint = reflectingObjectMaker $ pinaforeTableEntityObject tableObject
         picker PinaforeSelectFile = reflectingObjectMaker $ directoryPinaforeFileObject $ dirpath </> "files"
         picker PinaforeSelectMemory = reflectingObjectMaker memoryObject
@@ -60,19 +60,19 @@ sqlitePinaforeDumpTable dirpath = do
         in putStrLn $ show p ++ " " ++ show s ++ " = " ++ lv
 
 pinaforeInterpretFileAtType ::
-       (?pinafore :: PinaforeContext PinaforeEdit, FromPinaforeType PinaforeEdit t)
+       (?pinafore :: PinaforeContext PinaforeUpdate, FromPinaforeType PinaforeUpdate t)
     => FilePath
     -> Text
     -> InterpretResult t
-pinaforeInterpretFileAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeEdit puitext
+pinaforeInterpretFileAtType puipath puitext = runPinaforeSourceScoped puipath $ parseValueAtType @PinaforeUpdate puitext
 
-pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeEdit) => FilePath -> Text -> InterpretResult (IO ())
+pinaforeInterpretFile :: (?pinafore :: PinaforeContext PinaforeUpdate) => FilePath -> Text -> InterpretResult (IO ())
 pinaforeInterpretFile puipath puitext = do
     action :: FilePinaforeType <- pinaforeInterpretFileAtType puipath puitext
     return $ runPinaforeAction action
 
-pinaforeInteractHandles :: (?pinafore :: PinaforeContext PinaforeEdit) => Handle -> Handle -> Bool -> IO ()
+pinaforeInteractHandles :: (?pinafore :: PinaforeContext PinaforeUpdate) => Handle -> Handle -> Bool -> IO ()
 pinaforeInteractHandles inh outh echo = interact inh outh echo
 
-pinaforeInteract :: (?pinafore :: PinaforeContext PinaforeEdit) => IO ()
+pinaforeInteract :: (?pinafore :: PinaforeContext PinaforeUpdate) => IO ()
 pinaforeInteract = pinaforeInteractHandles stdin stdout False

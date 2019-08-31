@@ -30,26 +30,36 @@ instance InvertibleEdit edit => InvertibleEdit (ComonadEdit w edit) where
     invertEdits edits mr =
         fmap (fmap MkComonadEdit) $ invertEdits (fmap (\(MkComonadEdit edit) -> edit) edits) $ comonadReadFunction mr
 
-comonadEditLens :: forall w edit. EditLens (ComonadEdit w edit) edit
+newtype ComonadUpdate (w :: Type -> Type) (update :: Type) =
+    MkComonadUpdate update
+
+instance IsUpdate update => IsUpdate (ComonadUpdate w update) where
+    type UpdateEdit (ComonadUpdate w update) = ComonadEdit w (UpdateEdit update)
+    editUpdate (MkComonadEdit edit) = MkComonadUpdate $ editUpdate edit
+
+instance IsEditUpdate update => IsEditUpdate (ComonadUpdate w update) where
+    updateEdit (MkComonadUpdate update) = MkComonadEdit $ updateEdit update
+
+comonadEditLens :: forall w update. EditLens (ComonadUpdate w update) update
 comonadEditLens =
     MkCloseUnlift identityUnlift $ let
         ufGet ::
                forall m. MonadIO m
-            => MutableRead m (ComonadReader w (EditReader edit))
-            -> MutableRead (IdentityT m) (EditReader edit)
+            => MutableRead m (ComonadReader w (UpdateReader update))
+            -> MutableRead (IdentityT m) (UpdateReader update)
         ufGet mr = remonadMutableRead IdentityT $ comonadReadFunction mr
         ufUpdate ::
                forall m. MonadIO m
-            => ComonadEdit w edit
-            -> MutableRead m (EditReader (ComonadEdit w edit))
-            -> IdentityT m [edit]
-        ufUpdate (MkComonadEdit edit) _ = return [edit]
+            => ComonadUpdate w update
+            -> MutableRead m (ComonadReader w (UpdateReader update))
+            -> IdentityT m [update]
+        ufUpdate (MkComonadUpdate update) _ = return [update]
         elFunction = MkAnUpdateFunction {..}
         elPutEdits ::
                forall m. MonadIO m
-            => [edit]
-            -> MutableRead m (EditReader (ComonadEdit w edit))
-            -> IdentityT m (Maybe [ComonadEdit w edit])
+            => [UpdateEdit update]
+            -> MutableRead m (ComonadReader w (UpdateReader update))
+            -> IdentityT m (Maybe [ComonadEdit w (UpdateEdit update)])
         elPutEdits edits _ = return $ Just $ fmap MkComonadEdit edits
         in MkAnEditLens {..}
 
@@ -57,21 +67,23 @@ comonadLiftReadFunction :: ReadFunction ra rb -> ReadFunction (ComonadReader w r
 comonadLiftReadFunction rf mr (ReadExtract rbt) = rf (comonadReadFunction mr) rbt
 
 comonadLiftEditLens ::
-       forall w edita editb. EditLens edita editb -> EditLens (ComonadEdit w edita) (ComonadEdit w editb)
+       forall w updateA updateB.
+       EditLens updateA updateB
+    -> EditLens (ComonadUpdate w updateA) (ComonadUpdate w updateB)
 comonadLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
-    g' :: ReadFunctionT t (ComonadReader w (EditReader edita)) (ComonadReader w (EditReader editb))
+    g' :: ReadFunctionT t (ComonadReader w (UpdateReader updateA)) (ComonadReader w (UpdateReader updateB))
     g' mr (ReadExtract rt) = g (comonadReadFunction mr) rt
     u' :: forall m. MonadIO m
-       => ComonadEdit w edita
-       -> MutableRead m (EditReader (ComonadEdit w edita))
-       -> t m [ComonadEdit w editb]
-    u' (MkComonadEdit edita) mr =
+       => ComonadUpdate w updateA
+       -> MutableRead m (ComonadReader w (UpdateReader updateA))
+       -> t m [ComonadUpdate w updateB]
+    u' (MkComonadUpdate edita) mr =
         case hasTransConstraint @MonadIO @t @m of
-            Dict -> fmap (fmap MkComonadEdit) $ u edita $ comonadReadFunction mr
+            Dict -> fmap (fmap MkComonadUpdate) $ u edita $ comonadReadFunction mr
     pe' :: forall m. MonadIO m
-        => [ComonadEdit w editb]
-        -> MutableRead m (EditReader (ComonadEdit w edita))
-        -> t m (Maybe [ComonadEdit w edita])
+        => [ComonadEdit w (UpdateEdit updateB)]
+        -> MutableRead m (ComonadReader w (UpdateReader updateA))
+        -> t m (Maybe [ComonadEdit w (UpdateEdit updateA)])
     pe' editbs mr =
         case hasTransConstraint @MonadIO @t @m of
             Dict ->

@@ -13,7 +13,7 @@ import Truth.World.File
 textCodec :: ReasonCodec LazyByteString Text
 textCodec = bijectionCodec packBijection . utf8Codec . bijectionCodec unpackBijection
 
-textLens :: EditLens ByteStringEdit (WholeEdit ((Result Text) Text))
+textLens :: EditLens ByteStringUpdate (WholeUpdate ((Result Text) Text))
 textLens = (wholeEditLens $ injectionLens $ toInjection $ codecInjection textCodec) . convertEditLens
 
 optParser :: O.Parser ([FilePath], Bool, Bool)
@@ -33,9 +33,9 @@ main = do
                 bsObj = fileObject path
                 wholeTextObj :: Object (WholeEdit ((Result Text) Text))
                 wholeTextObj = cacheWholeObject $ mapObject textLens bsObj
-                ui :: Subscriber (OneWholeEdit (Result Text) (StringEdit Text))
-                   -> (forall sel edit. IO () -> UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit))
-                   -> UISpec (EditLens (StringEdit Text) (StringEdit Text)) (OneWholeEdit (Result Text) (StringEdit Text))
+                ui :: Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text))
+                   -> (forall sel update. IO () -> UIWindow -> UISpec sel update -> (MenuBar update, UISpec sel update))
+                   -> UISpec (EditLens (StringUpdate Text) (StringUpdate Text)) (OneWholeUpdate (Result Text) (StringUpdate Text))
                 ui sub extraui =
                     withAspectUISpec $ \aspect -> let
                         openSelection :: IO ()
@@ -53,8 +53,8 @@ main = do
                                ]
                 makeWindow ::
                        Text
-                    -> Subscriber (OneWholeEdit (Result Text) (StringEdit Text))
-                    -> (forall sel edit. IO () -> UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit))
+                    -> Subscriber (OneWholeUpdate (Result Text) (StringUpdate Text))
+                    -> (forall sel update. IO () -> UIWindow -> UISpec sel update -> (MenuBar update, UISpec sel update))
                     -> LifeCycleIO ()
                 makeWindow title sub extraui = do
                     rec
@@ -64,9 +64,10 @@ main = do
                             uitCreateWindow sub $
                             MkWindowSpec closer (constUpdateFunction title) (Just $ \_ -> constUpdateFunction mbar) uic
                     return ()
-                simpleUI :: forall sel edit. IO () -> UIWindow -> UISpec sel edit -> (MenuBar edit, UISpec sel edit)
+                simpleUI ::
+                       forall sel update. IO () -> UIWindow -> UISpec sel update -> (MenuBar update, UISpec sel update)
                 simpleUI closer _ spec = let
-                    mbar :: MenuBar edit
+                    mbar :: MenuBar update
                     mbar =
                         [ SubMenuEntry
                               "File"
@@ -77,13 +78,13 @@ main = do
                         ]
                     in (mbar, spec)
                 extraUI ::
-                       forall sel edit.
+                       forall sel update.
                        SaveActions
                     -> UndoActions
                     -> IO ()
                     -> UIWindow
-                    -> UISpec sel edit
-                    -> (MenuBar edit, UISpec sel edit)
+                    -> UISpec sel update
+                    -> (MenuBar update, UISpec sel update)
                 extraUI (MkSaveActions saveActions) (MkUndoActions undo redo) closer _ spec = let
                     saveAction = do
                         mactions <- saveActions

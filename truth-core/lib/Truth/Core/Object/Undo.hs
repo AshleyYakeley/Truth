@@ -43,9 +43,9 @@ data UndoActions = MkUndoActions
     }
 
 undoQueueSubscriber ::
-       forall edit. InvertibleEdit edit
-    => Subscriber edit
-    -> IO (Subscriber edit, UndoActions)
+       forall update. InvertibleEdit (UpdateEdit update)
+    => Subscriber update
+    -> IO (Subscriber update, UndoActions)
 undoQueueSubscriber sub = do
     queueVar <- newMVar $ MkUndoQueue [] []
     MkCloseUnliftIO (runP :: UnliftIO ma) (MkASubscriber (MkAnObject readP pushP) subscribeP) <- return sub

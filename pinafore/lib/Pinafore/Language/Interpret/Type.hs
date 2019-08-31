@@ -12,20 +12,20 @@ import Pinafore.Language.TypeSystem
 import Pinafore.Language.TypeSystem.Show
 import Shapes
 
-type PinaforeTypeM baseedit = MPolarW (PinaforeType baseedit)
+type PinaforeTypeM baseupdate = MPolarW (PinaforeType baseupdate)
 
-type PinaforeRangeType3 baseedit = MPolarRangeType (PinaforeType baseedit)
+type PinaforeRangeType3 baseupdate = MPolarRangeType (PinaforeType baseupdate)
 
 interpretType ::
-       forall baseedit polarity. Is PolarityType polarity
+       forall baseupdate polarity. Is PolarityType polarity
     => SyntaxType
-    -> PinaforeSourceScoped baseedit (AnyW (PinaforeType baseedit polarity))
+    -> PinaforeSourceScoped baseupdate (AnyW (PinaforeType baseupdate polarity))
 interpretType st = do
-    mpol <- isMPolarity @polarity $ interpretTypeM @baseedit @('Just polarity) st
+    mpol <- isMPolarity @polarity $ interpretTypeM @baseupdate @('Just polarity) st
     case mpol of
         SingleMPolarW atw -> return atw
 
-interpretEntityType :: SyntaxType -> PinaforeSourceScoped baseedit (AnyW EntityType)
+interpretEntityType :: SyntaxType -> PinaforeSourceScoped baseupdate (AnyW EntityType)
 interpretEntityType st = do
     mpol <- interpretTypeM @_ @'Nothing st
     case mpol of
@@ -37,9 +37,9 @@ interpretEntityType st = do
                         Nothing -> throwError $ InterpretTypeNotEntityError $ exprShow tm
 
 interpretTypeM ::
-       forall baseedit mpolarity. Is MPolarityType mpolarity
+       forall baseupdate mpolarity. Is MPolarityType mpolarity
     => SyntaxType
-    -> PinaforeSourceScoped baseedit (PinaforeTypeM baseedit mpolarity)
+    -> PinaforeSourceScoped baseupdate (PinaforeTypeM baseupdate mpolarity)
 interpretTypeM BottomSyntaxType =
     case representative @_ @MPolarityType @mpolarity of
         MPositiveType -> return $ toMPolar mempty
@@ -192,33 +192,33 @@ interpretTypeM (ConstSyntaxType name) = interpretTypeConst name
 interpretTypeM (RangeSyntaxType _) = throwError InterpretTypeRangeInTypeError
 
 interpretTypeRangeFromType ::
-       forall baseedit mpolarity. Is MPolarityType mpolarity
+       forall baseupdate mpolarity. Is MPolarityType mpolarity
     => SyntaxType
-    -> PinaforeSourceScoped baseedit (PinaforeRangeType3 baseedit mpolarity)
+    -> PinaforeSourceScoped baseupdate (PinaforeRangeType3 baseupdate mpolarity)
 interpretTypeRangeFromType st = do
-    t <- interpretTypeM @baseedit @'Nothing st
+    t <- interpretTypeM @baseupdate @'Nothing st
     let
         ff :: forall polarity. Is PolarityType polarity
-           => PinaforeTypeM baseedit 'Nothing
-           -> AnyInKind (RangeType (PinaforeType baseedit) polarity)
+           => PinaforeTypeM baseupdate 'Nothing
+           -> AnyInKind (RangeType (PinaforeType baseupdate) polarity)
         ff (BothMPolarW atw) =
             case (invertPolarity @polarity $ atw @(InvertPolarity polarity), atw @polarity) of
                 (MkAnyW tp, MkAnyW tq) -> MkAnyInKind $ MkRangeType tp tq
     return $ toMPolar $ ff t
 
 interpretTypeRange ::
-       forall baseedit mpolarity. Is MPolarityType mpolarity
+       forall baseupdate mpolarity. Is MPolarityType mpolarity
     => SyntaxType
-    -> PinaforeSourceScoped baseedit (PinaforeRangeType3 baseedit mpolarity)
+    -> PinaforeSourceScoped baseupdate (PinaforeRangeType3 baseupdate mpolarity)
 interpretTypeRange (RangeSyntaxType ss) = do
     tt <- for ss interpretTypeRangeItem
     return $ mconcat tt
 interpretTypeRange st = interpretTypeRangeFromType st
 
 interpretTypeRangeItem ::
-       forall baseedit mpolarity. Is MPolarityType mpolarity
+       forall baseupdate mpolarity. Is MPolarityType mpolarity
     => (Maybe SyntaxVariance, SyntaxType)
-    -> PinaforeSourceScoped baseedit (PinaforeRangeType3 baseedit mpolarity)
+    -> PinaforeSourceScoped baseupdate (PinaforeRangeType3 baseupdate mpolarity)
 interpretTypeRangeItem (Just CoSyntaxVariance, st) = do
     atq <- interpretTypeM st
     return $ toMPolar (\(MkAnyW tq) -> MkAnyInKind $ MkRangeType NilPinaforeType tq) atq
@@ -228,9 +228,9 @@ interpretTypeRangeItem (Just ContraSyntaxVariance, st) = do
 interpretTypeRangeItem (Nothing, st) = interpretTypeRangeFromType st
 
 interpretTypeConst ::
-       forall baseedit mpolarity. Is MPolarityType mpolarity
+       forall baseupdate mpolarity. Is MPolarityType mpolarity
     => Name
-    -> PinaforeSourceScoped baseedit (PinaforeTypeM baseedit mpolarity)
+    -> PinaforeSourceScoped baseupdate (PinaforeTypeM baseupdate mpolarity)
 interpretTypeConst "Window" =
     return $
     toMPolar $ MkAnyW $ singlePinaforeType $ GroundPinaforeSingularType WindowPinaforeGroundType NilDolanArguments

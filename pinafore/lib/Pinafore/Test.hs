@@ -31,7 +31,7 @@ import Truth.World.Clock
 import Truth.World.ObjectStore
 
 makeTestPinaforeContext ::
-       UpdateTiming -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeEdit, IO (EditSubject PinaforeTableEdit))
+       UpdateTiming -> UIToolkit -> LifeCycleIO (PinaforeContext PinaforeUpdate, IO (EditSubject PinaforeTableEdit))
 makeTestPinaforeContext ut uitoolkit = do
     tableStateObject :: Object (WholeEdit (EditSubject PinaforeTableEdit)) <-
         liftIO $ freeIOObject ([], []) $ \_ -> True
@@ -44,7 +44,7 @@ makeTestPinaforeContext ut uitoolkit = do
     clockOM <- shareObjectMaker $ clockObjectMaker (UTCTime (fromGregorian 2000 1 1) 0) (secondsToNominalDiffTime 1)
     clockTimeEF <- liftIO makeClockTimeZoneEF
     let
-        picker :: forall edit. PinaforeSelector edit -> ObjectMaker edit ()
+        picker :: forall update. PinaforeSelector update -> ObjectMaker update ()
         picker PinaforeSelectPoint = reflectingObjectMaker $ pinaforeTableEntityObject tableObject
         picker PinaforeSelectFile =
             reflectingObjectMaker $ readConstantObject $ constFunctionReadFunction nullSingleObjectMutableRead
@@ -58,38 +58,39 @@ makeTestPinaforeContext ut uitoolkit = do
 withTestPinaforeContext ::
        UpdateTiming
     -> UIToolkit
-    -> ((?pinafore :: PinaforeContext PinaforeEdit) => IO (EditSubject PinaforeTableEdit) -> IO r)
+    -> ((?pinafore :: PinaforeContext PinaforeUpdate) => IO (EditSubject PinaforeTableEdit) -> IO r)
     -> IO r
 withTestPinaforeContext ut uitoolkit f =
     withLifeCycle (makeTestPinaforeContext ut uitoolkit) $ \(pc, getTableState) -> let
         ?pinafore = pc
         in f getTableState
 
-withNullPinaforeContext :: ((?pinafore :: PinaforeContext baseedit) => r) -> r
+withNullPinaforeContext :: ((?pinafore :: PinaforeContext baseupdate) => r) -> r
 withNullPinaforeContext f = let
     ?pinafore = nullPinaforeContext
     in f
 
-runTestPinaforeSourceScoped :: PinaforePredefinitions baseedit => PinaforeSourceScoped baseedit a -> InterpretResult a
+runTestPinaforeSourceScoped ::
+       PinaforePredefinitions baseupdate => PinaforeSourceScoped baseupdate a -> InterpretResult a
 runTestPinaforeSourceScoped sa = withNullPinaforeContext $ runPinaforeSourceScoped "<input>" sa
 
 checkUpdateEditor ::
        forall a. Eq a
     => a
     -> IO ()
-    -> Editor (WholeEdit a) ()
+    -> Editor (WholeUpdate a) ()
 checkUpdateEditor val push = let
-    editorInit :: Object (WholeEdit a) -> LifeCycleIO (MVar [WholeEdit a])
+    editorInit :: Object (WholeEdit a) -> LifeCycleIO (MVar [WholeUpdate a])
     editorInit _ = liftIO newEmptyMVar
-    editorUpdate :: MVar [WholeEdit a] -> Object (WholeEdit a) -> [WholeEdit a] -> EditContext -> IO ()
+    editorUpdate :: MVar [WholeUpdate a] -> Object (WholeEdit a) -> [WholeUpdate a] -> EditContext -> IO ()
     editorUpdate var _ edits _ = do putMVar var edits
-    editorDo :: MVar [WholeEdit a] -> Object (WholeEdit a) -> LifeCycleIO ()
+    editorDo :: MVar [WholeUpdate a] -> Object (WholeEdit a) -> LifeCycleIO ()
     editorDo var _ =
         liftIO $ do
             push
             edits <- takeMVar var
             case edits of
-                [MkWholeEdit v]
+                [MkWholeReaderUpdate v]
                     | v == val -> return ()
                 _ -> fail "unexpected push"
     in MkEditor {..}

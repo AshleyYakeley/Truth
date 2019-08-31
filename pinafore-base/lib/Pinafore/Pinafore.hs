@@ -7,11 +7,11 @@ import Shapes
 import Truth.Core
 
 data PinaforeSelector t where
-    PinaforeSelectPoint :: PinaforeSelector PinaforeEntityEdit
-    PinaforeSelectFile :: PinaforeSelector PinaforeFileEdit
-    PinaforeSelectMemory :: PinaforeSelector MemoryCellEdit
-    PinaforeSelectClock :: PinaforeSelector (WholeEdit UTCTime)
-    PinaforeSelectTimeZone :: PinaforeSelector (WholeEdit TimeZone)
+    PinaforeSelectPoint :: PinaforeSelector PinaforeEntityUpdate
+    PinaforeSelectFile :: PinaforeSelector PinaforeFileUpdate
+    PinaforeSelectMemory :: PinaforeSelector MemoryCellUpdate
+    PinaforeSelectClock :: PinaforeSelector (WholeUpdate UTCTime)
+    PinaforeSelectTimeZone :: PinaforeSelector (WholeUpdate TimeZone)
 
 instance TestEquality PinaforeSelector where
     testEquality PinaforeSelectPoint PinaforeSelectPoint = Just Refl
@@ -22,7 +22,7 @@ instance TestEquality PinaforeSelector where
     testEquality _ _ = Nothing
 
 instance IsFiniteConsWitness PinaforeSelector where
-    type FiniteConsWitness PinaforeSelector = '[ PinaforeEntityEdit, PinaforeFileEdit, MemoryCellEdit, WholeEdit UTCTime, WholeEdit TimeZone]
+    type FiniteConsWitness PinaforeSelector = '[ PinaforeEntityUpdate, PinaforeFileUpdate, MemoryCellUpdate, WholeUpdate UTCTime, WholeUpdate TimeZone]
     toLTW PinaforeSelectPoint = FirstElementType
     toLTW PinaforeSelectFile = RestElementType FirstElementType
     toLTW PinaforeSelectMemory = RestElementType $ RestElementType FirstElementType
@@ -37,28 +37,26 @@ instance IsFiniteConsWitness PinaforeSelector where
         PinaforeSelectTimeZone
     fromLTW (RestElementType (RestElementType (RestElementType (RestElementType (RestElementType lt))))) = never lt
 
-instance TupleWitness InvertibleEdit PinaforeSelector where
-    tupleWitness PinaforeSelectPoint = Dict
-    tupleWitness PinaforeSelectFile = Dict
-    tupleWitness PinaforeSelectMemory = Dict
-    tupleWitness PinaforeSelectClock = Dict
-    tupleWitness PinaforeSelectTimeZone = Dict
+instance TupleEditWitness InvertibleEdit PinaforeSelector where
+    tupleEditWitness PinaforeSelectPoint = Dict
+    tupleEditWitness PinaforeSelectFile = Dict
+    tupleEditWitness PinaforeSelectMemory = Dict
+    tupleEditWitness PinaforeSelectClock = Dict
+    tupleEditWitness PinaforeSelectTimeZone = Dict
 
-type PinaforeEdit = TupleEdit PinaforeSelector
+type PinaforeUpdate = TupleUpdate PinaforeSelector
 
-type PinaforeRead = EditReader PinaforeEdit
-
-instance BaseEditLens PinaforeEntityEdit PinaforeEdit where
+instance BaseEditLens PinaforeEntityUpdate PinaforeUpdate where
     baseEditLens = tupleEditLens PinaforeSelectPoint
 
-instance BaseEditLens PinaforeFileEdit PinaforeEdit where
+instance BaseEditLens PinaforeFileUpdate PinaforeUpdate where
     baseEditLens = tupleEditLens PinaforeSelectFile
 
-instance BaseEditLens MemoryCellEdit PinaforeEdit where
+instance BaseEditLens MemoryCellUpdate PinaforeUpdate where
     baseEditLens = tupleEditLens PinaforeSelectMemory
 
-instance BaseEditLens (WholeEdit UTCTime) PinaforeEdit where
+instance BaseEditLens (WholeUpdate UTCTime) PinaforeUpdate where
     baseEditLens = tupleEditLens PinaforeSelectClock
 
-instance BaseEditLens (WholeEdit TimeZone) PinaforeEdit where
+instance BaseEditLens (WholeUpdate TimeZone) PinaforeUpdate where
     baseEditLens = tupleEditLens PinaforeSelectTimeZone

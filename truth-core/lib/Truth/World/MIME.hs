@@ -16,7 +16,7 @@ type MIMEContent = WithContext MIMEContentType [Word8]
 
 type MIMETuple edit = WithContextSelector (WholeEdit MIMEContentType) edit
 
-type MIMEContentEdit edit = TupleEdit (MIMETuple edit)
+type MIMEContentEdit edit = TupleUpdateEdit (MIMETuple edit)
 
 data AnyCodec where
     MkAnyCodec :: forall (edit :: Type). IOWitness edit -> Codec [Word8] (EditSubject edit) -> AnyCodec

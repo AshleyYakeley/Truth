@@ -61,19 +61,20 @@ pushOrFail s esrc mmmu = do
         Just mu -> mu esrc
         Nothing -> fail s
 
-mapObject :: forall edita editb. EditLens edita editb -> Object edita -> Object editb
+mapObject ::
+       forall updateA updateB. EditLens updateA updateB -> Object (UpdateEdit updateA) -> Object (UpdateEdit updateB)
 mapObject = lensObject False
 
 lensAnObject ::
-       forall t m edita editb. (MonadTrans t, Monad (t m), MonadIO m)
-    => AnEditLens t edita editb
-    -> AnObject m edita
-    -> AnObject (t m) editb
+       forall t m updateA updateB. (MonadTrans t, Monad (t m), MonadIO m)
+    => AnEditLens t updateA updateB
+    -> AnObject m (UpdateEdit updateA)
+    -> AnObject (t m) (UpdateEdit updateB)
 lensAnObject MkAnEditLens {..} (MkAnObject objReadA objEditA) = let
     MkAnUpdateFunction {..} = elFunction
-    objReadB :: MutableRead (t m) (EditReader editb)
+    objReadB :: MutableRead (t m) (UpdateReader updateB)
     objReadB = ufGet objReadA
-    objEditB :: [editb] -> t m (Maybe (EditSource -> t m ()))
+    objEditB :: [UpdateEdit updateB] -> t m (Maybe (EditSource -> t m ()))
     objEditB editbs = do
         meditas <- elPutEdits editbs objReadA
         case meditas of
@@ -85,7 +86,12 @@ lensAnObject MkAnEditLens {..} (MkAnObject objReadA objEditA) = let
                     Just mu -> return $ Just $ \esrc -> lift $ mu esrc
     in MkAnObject objReadB objEditB
 
-lensObject :: forall edita editb. Bool -> EditLens edita editb -> Object edita -> Object editb
+lensObject ::
+       forall updateA updateB.
+       Bool
+    -> EditLens updateA updateB
+    -> Object (UpdateEdit updateA)
+    -> Object (UpdateEdit updateB)
 lensObject discard (MkCloseUnlift (lensUnlift :: Unlift t) alens) (MkCloseUnliftIO (objUnlift :: UnliftIO m) aobj)
     | Dict <- hasTransConstraint @MonadUnliftIO @t @m = let
         objRunB = lensObjectUnlift discard lensUnlift objUnlift
@@ -157,7 +163,7 @@ cacheWholeObject (MkCloseUnliftIO (MkTransform run :: UnliftIO m) (MkAnObject rd
                         if oldval == newval
                             then return ()
                             else do
-                                maction <- push [MkWholeEdit newval]
+                                maction <- push [MkWholeReaderEdit newval]
                                 case maction of
                                     Just action -> action esrc
                                     Nothing -> liftIO $ fail "disallowed cached edit"
@@ -168,7 +174,7 @@ cacheWholeObject (MkCloseUnliftIO (MkTransform run :: UnliftIO m) (MkAnObject rd
         (t, _) <- get
         return t
     push' :: [WholeEdit t] -> StateT (t, Maybe EditSource) m (Maybe (EditSource -> StateT (t, Maybe EditSource) m ()))
-    push' = singleAlwaysEdit $ \(MkWholeEdit t) esrc -> put (t, Just esrc)
+    push' = singleAlwaysEdit $ \(MkWholeReaderEdit t) esrc -> put (t, Just esrc)
     in MkCloseUnliftIO run' $ MkAnObject rd' push'
 
 copyObject :: FullEdit edit => EditSource -> Object edit -> Object edit -> IO ()

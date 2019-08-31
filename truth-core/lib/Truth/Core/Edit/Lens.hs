@@ -7,9 +7,11 @@ import Truth.Core.Edit.Unlift
 import Truth.Core.Import
 import Truth.Core.Read
 
-data AnEditLens t edita editb = MkAnEditLens
-    { elFunction :: AnUpdateFunction t edita editb
-    , elPutEdits :: forall m. MonadIO m => [editb] -> MutableRead m (EditReader edita) -> t m (Maybe [edita])
+data AnEditLens t updateA updateB = MkAnEditLens
+    { elFunction :: AnUpdateFunction t updateA updateB
+    , elPutEdits :: forall m.
+                        MonadIO m =>
+                                [UpdateEdit updateB] -> MutableRead m (UpdateReader updateA) -> t m (Maybe [UpdateEdit updateA])
     }
 
 type EditLens = CloseUnlift AnEditLens
@@ -18,24 +20,25 @@ instance Unliftable AnEditLens where
     fmapUnliftable t1t2 (MkAnEditLens f pe) = MkAnEditLens (fmapUnliftable t1t2 f) (\eb mr -> t1t2 $ pe eb mr)
 
 instance UnliftCategory AnEditLens where
+    ucId :: forall update. AnEditLens IdentityT update update
     ucId = let
-        pe :: forall m edit. MonadIO m
-           => [edit]
-           -> MutableRead m (EditReader edit)
-           -> IdentityT m (Maybe [edit])
+        pe :: forall m. MonadIO m
+           => [UpdateEdit update]
+           -> MutableRead m (UpdateReader update)
+           -> IdentityT m (Maybe [UpdateEdit update])
         pe edits _ = return $ Just edits
         in MkAnEditLens ucId pe
     ucCompose ::
-           forall tab tbc edita editb editc. (MonadTransUnlift tab, MonadTransUnlift tbc)
-        => AnEditLens tbc editb editc
-        -> AnEditLens tab edita editb
-        -> AnEditLens (ComposeT tbc tab) edita editc
+           forall tab tbc updateA updateB editc. (MonadTransUnlift tab, MonadTransUnlift tbc)
+        => AnEditLens tbc updateB editc
+        -> AnEditLens tab updateA updateB
+        -> AnEditLens (ComposeT tbc tab) updateA editc
     ucCompose (MkAnEditLens efBC peBC) lensAB@(MkAnEditLens efAB _) = let
         peAC ::
                forall m. MonadIO m
-            => [editc]
-            -> MutableRead m (EditReader edita)
-            -> ComposeT tbc tab m (Maybe [edita])
+            => [UpdateEdit editc]
+            -> MutableRead m (UpdateReader updateA)
+            -> ComposeT tbc tab m (Maybe [UpdateEdit updateA])
         peAC ec mra =
             case hasTransConstraint @MonadIO @tab @m of
                 Dict ->
@@ -48,7 +51,7 @@ instance UnliftCategory AnEditLens where
         in MkAnEditLens efAC peAC
 
 elPutEditsFromPutEdit ::
-       (MonadTransConstraint MonadIO t, MonadIO m, ApplicableEdit edita)
+       forall t edita editb m. (MonadTransConstraint MonadIO t, MonadIO m, ApplicableEdit edita)
     => (editb -> MutableRead m (EditReader edita) -> t m (Maybe [edita]))
     -> [editb]
     -> MutableRead m (EditReader edita)
@@ -63,80 +66,97 @@ elPutEditsFromPutEdit elPutEdit (e:ee) mr =
 
 elPutEditsFromSimplePutEdit ::
        (MonadTransConstraint MonadIO t, MonadIO m)
-    => (editb -> t m (Maybe [edita]))
-    -> [editb]
-    -> MutableRead m (EditReader edita)
-    -> t m (Maybe [edita])
+    => (editB -> t m (Maybe [editA]))
+    -> [editB]
+    -> MutableRead m (EditReader editA)
+    -> t m (Maybe [editA])
 elPutEditsFromSimplePutEdit putEdit editBs _ =
     withTransConstraintTM @MonadIO $
     getComposeM $ do
-        editAss <- for editBs $ \edit -> MkComposeM $ putEdit edit
+        editAss <- for editBs $ \update -> MkComposeM $ putEdit update
         return $ mconcat editAss
 
-editLensFunction :: EditLens edita editb -> UpdateFunction edita editb
+editLensFunction :: EditLens updateA updateB -> UpdateFunction updateA updateB
 editLensFunction (MkCloseUnlift unlift (MkAnEditLens func _)) = MkCloseUnlift unlift func
 
-readOnlyEditLens :: UpdateFunction edita editb -> EditLens edita editb
+readOnlyEditLens :: UpdateFunction updateA updateB -> EditLens updateA updateB
 readOnlyEditLens (MkCloseUnlift unlift elFunction) = let
     elPutEdits [] _ = withTransConstraintTM @MonadIO $ return $ Just []
-    -- must allow empty edit-lists so that composition works correctly
+    -- must allow empty update-lists so that composition works correctly
     elPutEdits (_:_) _ = withTransConstraintTM @MonadIO $ return Nothing
     in MkCloseUnlift unlift $ MkAnEditLens {..}
 
 funcEditLens ::
-       forall edita editb. (FullSubjectReader (EditReader edita), ApplicableEdit edita, FullEdit editb)
-    => (EditSubject edita -> EditSubject editb)
-    -> EditLens edita editb
+       forall updateA updateB.
+       ( IsEditUpdate updateA
+       , IsUpdate updateB
+       , FullSubjectReader (UpdateReader updateA)
+       , ApplicableEdit (UpdateEdit updateA)
+       , FullEdit (UpdateEdit updateB)
+       )
+    => (UpdateSubject updateA -> UpdateSubject updateB)
+    -> EditLens updateA updateB
 funcEditLens f = readOnlyEditLens $ funcUpdateFunction f
 
 constEditLens ::
-       forall edita editb. SubjectReader (EditReader editb)
-    => EditSubject editb
-    -> EditLens edita editb
+       forall updateA updateB. SubjectReader (UpdateReader updateB)
+    => UpdateSubject updateB
+    -> EditLens updateA updateB
 constEditLens b = readOnlyEditLens $ constUpdateFunction b
 
 convertAnUpdateFunction ::
-       forall edita editb.
-       ( EditSubject edita ~ EditSubject editb
-       , FullSubjectReader (EditReader edita)
-       , ApplicableEdit edita
-       , FullEdit editb
+       forall updateA updateB.
+       ( IsEditUpdate updateA
+       , IsUpdate updateB
+       , UpdateSubject updateA ~ UpdateSubject updateB
+       , FullSubjectReader (UpdateReader updateA)
+       , ApplicableEdit (UpdateEdit updateA)
+       , FullEdit (UpdateEdit updateB)
        )
-    => AnUpdateFunction IdentityT edita editb
+    => AnUpdateFunction IdentityT updateA updateB
 convertAnUpdateFunction = let
-    ufGet :: ReadFunctionT IdentityT (EditReader edita) (EditReader editb)
+    ufGet :: ReadFunctionT IdentityT (UpdateReader updateA) (UpdateReader updateB)
     ufGet mr = mSubjectToMutableRead $ lift $ mutableReadToSubject mr
     ufUpdate ::
            forall m. MonadIO m
-        => edita
-        -> MutableRead m (EditReader edita)
-        -> IdentityT m [editb]
-    ufUpdate edita mr = do
-        newa <- lift $ mutableReadToSubject $ applyEdit edita mr
-        getReplaceEditsFromSubject newa
+        => updateA
+        -> MutableRead m (UpdateReader updateA)
+        -> IdentityT m [updateB]
+    ufUpdate updateA mr = do
+        newa <- lift $ mutableReadToSubject $ applyEdit (updateEdit updateA) mr
+        edits <- getReplaceEditsFromSubject newa
+        return $ fmap editUpdate edits
     in MkAnUpdateFunction {..}
 
 convertUpdateFunction ::
-       forall edita editb.
-       ( EditSubject edita ~ EditSubject editb
-       , FullSubjectReader (EditReader edita)
-       , ApplicableEdit edita
-       , FullEdit editb
+       forall updateA updateB.
+       ( IsEditUpdate updateA
+       , IsUpdate updateB
+       , UpdateSubject updateA ~ UpdateSubject updateB
+       , FullSubjectReader (UpdateReader updateA)
+       , ApplicableEdit (UpdateEdit updateA)
+       , FullEdit (UpdateEdit updateB)
        )
-    => UpdateFunction edita editb
+    => UpdateFunction updateA updateB
 convertUpdateFunction = MkCloseUnlift identityUnlift convertAnUpdateFunction
 
 convertEditLens ::
-       forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, FullEdit editb)
-    => EditLens edita editb
+       forall updateA updateB.
+       ( IsEditUpdate updateA
+       , IsUpdate updateB
+       , UpdateSubject updateA ~ UpdateSubject updateB
+       , FullEdit (UpdateEdit updateA)
+       , FullEdit (UpdateEdit updateB)
+       )
+    => EditLens updateA updateB
 convertEditLens = let
-    elFunction :: AnUpdateFunction IdentityT edita editb
+    elFunction :: AnUpdateFunction IdentityT updateA updateB
     elFunction = convertAnUpdateFunction
     elPutEdits ::
            forall m. MonadIO m
-        => [editb]
-        -> MutableRead m (EditReader edita)
-        -> IdentityT m (Maybe [edita])
+        => [UpdateEdit updateB]
+        -> MutableRead m (UpdateReader updateA)
+        -> IdentityT m (Maybe [UpdateEdit updateA])
     elPutEdits editbs mr = do
         newsubject <- lift $ mutableReadToSubject $ applyEdits editbs $ mSubjectToMutableRead $ mutableReadToSubject mr
         editas <- getReplaceEditsFromSubject newsubject
@@ -148,7 +168,7 @@ class IsEditLens lens where
     type LensRange lens :: Type
     toEditLens :: lens -> EditLens (LensDomain lens) (LensRange lens)
 
-instance IsEditLens (EditLens edita editb) where
-    type LensDomain (EditLens edita editb) = edita
-    type LensRange (EditLens edita editb) = editb
+instance IsEditLens (EditLens updateA updateB) where
+    type LensDomain (EditLens updateA updateB) = updateA
+    type LensRange (EditLens updateA updateB) = updateB
     toEditLens = id

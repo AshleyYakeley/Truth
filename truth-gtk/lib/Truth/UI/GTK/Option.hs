@@ -15,30 +15,31 @@ optionGetView =
         return $ optionView itemsFunction whichLens
 
 listStoreView ::
-       (FullSubjectReader (EditReader edit), ApplicableEdit edit)
+       forall sel update.
+       (IsEditUpdate update, FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
     => UnliftIO IO
     -> EditSource
-    -> CreateView sel (ListEdit [EditSubject edit] edit) (SeqStore (EditSubject edit))
+    -> CreateView sel (ListUpdate [UpdateSubject update] update) (SeqStore (UpdateSubject update))
 listStoreView (MkTransform blockSignal) esrc = do
     subjectList <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     store <- seqStoreNew subjectList
     cvReceiveUpdate (Just esrc) $ \_ _mr ->
         \case
-            ListEditItem (MkSequencePoint (fromIntegral -> i)) edit -> do
+            ListUpdateItem (MkSequencePoint (fromIntegral -> i)) update -> do
                 oldval <- seqStoreGetValue store i
-                newval <- mutableReadToSubject $ applyEdit edit $ subjectToMutableRead oldval
+                newval <- mutableReadToSubject $ applyEdit (updateEdit update) $ subjectToMutableRead oldval
                 liftIO $ blockSignal $ seqStoreSetValue store i newval
-            ListDeleteItem (MkSequencePoint (fromIntegral -> i)) -> liftIO $ blockSignal $ seqStoreRemove store i
-            ListInsertItem (MkSequencePoint (fromIntegral -> i)) item ->
+            ListUpdateDelete (MkSequencePoint (fromIntegral -> i)) -> liftIO $ blockSignal $ seqStoreRemove store i
+            ListUpdateInsert (MkSequencePoint (fromIntegral -> i)) item ->
                 liftIO $ blockSignal $ seqStoreInsert store i item
-            ListClear -> liftIO $ blockSignal $ seqStoreClear store
+            ListUpdateClear -> liftIO $ blockSignal $ seqStoreClear store
     return store
 
 optionFromStore ::
        forall sel t. Eq t
     => EditSource
     -> SeqStore (t, Text)
-    -> CreateView sel (WholeEdit t) (UnliftIO IO, Widget)
+    -> CreateView sel (WholeUpdate t) (UnliftIO IO, Widget)
 optionFromStore esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- new CellRendererText []
@@ -53,7 +54,7 @@ optionFromStore esrc store = do
                 (True, iter) -> do
                     i <- seqStoreIterToIndex iter
                     (t, _) <- seqStoreGetValue store i
-                    _ <- push esrc [MkWholeEdit t]
+                    _ <- push esrc [MkWholeReaderEdit t]
                     return ()
                 (False, _) -> return ()
     let
@@ -75,14 +76,14 @@ optionFromStore esrc store = do
         viewObjectRead $ \_ mr -> do
             t <- mr ReadWhole
             update t
-    cvReceiveUpdate (Just esrc) $ \_ _mr (MkWholeEdit t) -> update t
+    cvReceiveUpdate (Just esrc) $ \_ _mr (MkWholeReaderUpdate t) -> update t
     w <- toWidget widget
     return (MkTransform blockSignal, w)
 
 optionView ::
        forall t tedit sel. (Eq t)
-    => UpdateFunction tedit (ListEdit [(t, Text)] (WholeEdit (t, Text)))
-    -> EditLens tedit (WholeEdit t)
+    => UpdateFunction tedit (ListUpdate [(t, Text)] (WholeUpdate (t, Text)))
+    -> EditLens tedit (WholeUpdate t)
     -> GCreateView sel tedit
 optionView itemsFunction whichLens = do
     esrc <- newEditSource

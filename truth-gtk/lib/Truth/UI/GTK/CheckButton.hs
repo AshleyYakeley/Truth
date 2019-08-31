@@ -21,7 +21,7 @@ createWidget (MkCheckboxUISpec label lens) = do
             viewOn widget #clicked $
             viewObjectPushEdit $ \_ push -> do
                 st <- Gtk.get widget #active
-                _ <- push noEditSource [MkWholeEdit st]
+                _ <- push noEditSource [MkWholeReaderEdit st]
                 return ()
         cvBindUpdateFunction (Just esrc) id $ \st ->
             liftIO $ withSignalBlocked widget changedSignal $ set widget [#active := st]
@@ -63,7 +63,7 @@ createWidget (MkMaybeCheckboxUISpec label lens) = do
                                         if elem ModifierTypeShiftMask modifiers
                                             then Nothing
                                             else Just (oldst /= Just True)
-                                _ <- push noEditSource [MkWholeEdit newst]
+                                _ <- push noEditSource [MkWholeReaderEdit newst]
                                 return True
                             _ -> return False
         cvBindUpdateFunction Nothing id setWidgetState

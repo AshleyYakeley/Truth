@@ -6,8 +6,8 @@ import Truth.Core.Read
 import Truth.Core.Types.Tuple
 import Truth.Core.Types.Whole
 
-data DependentSelector (wit :: Type -> Type) (edit :: Type) where
-    MkDependentSelector :: wit a -> DependentSelector wit (WholeEdit a)
+data DependentSelector (wit :: Type -> Type) (update :: Type) where
+    MkDependentSelector :: wit a -> DependentSelector wit (WholeUpdate a)
 
 instance TestEquality wit => TestEquality (DependentSelector wit) where
     testEquality (MkDependentSelector a1) (MkDependentSelector a2) = do
@@ -28,16 +28,22 @@ instance TupleReaderWitness SubjectReader (DependentSelector wit) where
 instance TupleReaderWitness FullSubjectReader (DependentSelector wit) where
     tupleReaderWitness (MkDependentSelector _) = Dict
 
-instance TupleWitness ApplicableEdit (DependentSelector wit) where
-    tupleWitness (MkDependentSelector _) = Dict
+instance TupleEditWitness ApplicableEdit (DependentSelector wit) where
+    tupleEditWitness (MkDependentSelector _) = Dict
 
-instance TupleWitness InvertibleEdit (DependentSelector wit) where
-    tupleWitness (MkDependentSelector _) = Dict
+instance TupleEditWitness InvertibleEdit (DependentSelector wit) where
+    tupleEditWitness (MkDependentSelector _) = Dict
 
-instance TupleWitness SubjectMapEdit (DependentSelector wit) where
-    tupleWitness (MkDependentSelector _) = Dict
+instance TupleEditWitness SubjectMapEdit (DependentSelector wit) where
+    tupleEditWitness (MkDependentSelector _) = Dict
 
-type DependentEdit wit = TupleEdit (DependentSelector wit)
+instance TupleUpdateWitness IsUpdate (DependentSelector wit) where
+    tupleUpdateWitness (MkDependentSelector _) = Dict
 
-dependentEditLens :: TestEquality wit => wit a -> EditLens (DependentEdit wit) (WholeEdit a)
+instance TupleUpdateWitness IsEditUpdate (DependentSelector wit) where
+    tupleUpdateWitness (MkDependentSelector _) = Dict
+
+type DependentUpdate wit = TupleUpdate (DependentSelector wit)
+
+dependentEditLens :: TestEquality wit => wit a -> EditLens (DependentUpdate wit) (WholeUpdate a)
 dependentEditLens a = tupleEditLens $ MkDependentSelector a

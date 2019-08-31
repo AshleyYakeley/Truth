@@ -49,9 +49,11 @@ maybeToOk Nothing = Errors []
 
 data SQLiteDatabase
 
-type SQLiteRead tablesel = TupleDatabaseRead SQLiteDatabase tablesel
+type SQLiteReader tablesel = TupleDatabaseReader SQLiteDatabase tablesel
 
 type SQLiteEdit tablesel = TupleDatabaseEdit SQLiteDatabase tablesel
+
+type SQLiteUpdate tablesel = EditUpdate (SQLiteEdit tablesel)
 
 type family RowColSel (row :: Type) :: Type -> Type
 
@@ -195,7 +197,7 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
         case wc of
             MkTupleWhereClause (ConstExpr True) -> ""
             _ -> " WHERE " <> schemaString rowSchema wc
-    sqliteReadQuery :: SQLiteRead tablesel [AllValue colsel] -> QueryString
+    sqliteReadQuery :: SQLiteReader tablesel [AllValue colsel] -> QueryString
     sqliteReadQuery (DatabaseSelect jc wc oc sc) =
         case evalState (joinTableSchema databaseTables jc) 1 of
             (tabRefs, rowSchema) -> let
@@ -243,7 +245,7 @@ sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
         in "UPDATE " <>
            fromString tableName <>
            " SET " <> intercalate' "," (fmap (assignmentPart tableColumnRefs) uis) <> wherePart tableColumnRefs wc
-    objRead :: MutableRead (ReaderT Connection IO) (SQLiteRead tablesel)
+    objRead :: MutableRead (ReaderT Connection IO) (SQLiteReader tablesel)
     objRead r@(DatabaseSelect _ _ _ (MkTupleSelectClause _)) =
         case sqliteReadQuery r of
             MkQueryString s v -> do

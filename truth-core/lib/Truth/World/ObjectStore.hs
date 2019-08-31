@@ -45,25 +45,28 @@ instance InvertibleEdit (SingleObjectEdit edit) where
                             | code == newcode -> []
                         Just code -> [SingleObjectRecover code]
 
-type ObjectStoreEdit name edit = FunctionEdit name (SingleObjectEdit edit)
+type SingleObjectUpdate edit = EditUpdate (SingleObjectEdit edit)
 
-singleObjectUpdateFunction :: forall edit. UpdateFunction (SingleObjectEdit edit) (WholeEdit (Maybe (Object edit)))
+type ObjectStoreUpdate name edit = FunctionUpdate name (SingleObjectUpdate edit)
+
+singleObjectUpdateFunction :: forall edit. UpdateFunction (SingleObjectUpdate edit) (WholeUpdate (Maybe (Object edit)))
 singleObjectUpdateFunction =
     MkCloseUnlift identityUnlift $ let
         ufGet :: ReadFunctionT IdentityT (SingleObjectReader edit) (WholeReader (Maybe (Object edit)))
         ufGet mr ReadWhole = lift $ mr ReadSingleObjectStore
         ufUpdate ::
                forall m. MonadIO m
-            => SingleObjectEdit edit
+            => SingleObjectUpdate edit
             -> MutableRead m (SingleObjectReader edit)
-            -> IdentityT m [WholeEdit (Maybe (Object edit))]
-        ufUpdate SingleObjectDelete _ = return [MkWholeEdit Nothing]
+            -> IdentityT m [WholeUpdate (Maybe (Object edit))]
+        ufUpdate (MkEditUpdate SingleObjectDelete) _ = return [MkWholeReaderUpdate Nothing]
         ufUpdate _ mr = do
             mo <- lift $ mr ReadSingleObjectStore
-            return [MkWholeEdit mo]
+            return [MkWholeReaderUpdate mo]
         in MkAnUpdateFunction {..}
 
-directoryObjectStore :: forall name. Object FSEdit -> (name -> String) -> Object (ObjectStoreEdit name ByteStringEdit)
+directoryObjectStore ::
+       forall name. Object FSEdit -> (name -> String) -> Object (UpdateEdit (ObjectStoreUpdate name ByteStringEdit))
 directoryObjectStore (MkCloseUnliftIO (objRun :: UnliftIO m) (MkAnObject rd push)) nameStr = let
     undoName :: String -> Int -> FilePath
     undoName name i = "undo/" ++ name ++ show i
@@ -73,8 +76,8 @@ directoryObjectStore (MkCloseUnliftIO (objRun :: UnliftIO m) (MkAnObject rd push
         case mitem of
             Nothing -> return i
             Just _ -> findUndoCode name $ i + 1
-    objRead :: MutableRead m (EditReader (ObjectStoreEdit name ByteStringEdit))
-    objRead (MkTupleEditReader (MkFunctionSelector (nameStr -> name)) edit) =
+    objRead :: MutableRead m (UpdateReader (ObjectStoreUpdate name ByteStringEdit))
+    objRead (MkTupleUpdateReader (MkFunctionSelector (nameStr -> name)) edit) =
         case edit of
             ReadSingleObjectStore -> do
                 mitem <- rd $ FSReadItem name
@@ -89,13 +92,13 @@ directoryObjectStore (MkCloseUnliftIO (objRun :: UnliftIO m) (MkAnObject rd push
                         code <- findUndoCode name 0
                         return $ Just code
                     _ -> return $ Nothing
-    objEdit :: [ObjectStoreEdit name ByteStringEdit] -> m (Maybe (EditSource -> m ()))
+    objEdit :: [UpdateEdit (ObjectStoreUpdate name ByteStringEdit)] -> m (Maybe (EditSource -> m ()))
     objEdit edits =
         return $
         Just $ \esrc ->
             case lastM edits of
                 Nothing -> return ()
-                Just (MkTupleEdit (MkFunctionSelector (nameStr -> name)) edit) ->
+                Just (MkTupleUpdateEdit (MkFunctionSelector (nameStr -> name)) edit) ->
                     case edit of
                         SingleObjectDelete -> do
                             mitem <- rd $ FSReadItem name
