@@ -1,15 +1,11 @@
 module Truth.Core.Edit
-    ( module Truth.Core.Edit.Edit
-    , module Truth.Core.Edit.FullEdit
-    , module Truth.Core.Edit.Cache
-    , module Truth.Core.Edit.Unlift
-    , module Truth.Core.Edit.Function
-    , module Truth.Core.Edit.Lens
+    ( module I
     ) where
 
-import Truth.Core.Edit.Cache
-import Truth.Core.Edit.Edit
-import Truth.Core.Edit.FullEdit
-import Truth.Core.Edit.Function
-import Truth.Core.Edit.Lens
-import Truth.Core.Edit.Unlift
+import Truth.Core.Edit.Cache as I
+import Truth.Core.Edit.Edit as I
+import Truth.Core.Edit.FullEdit as I
+import Truth.Core.Edit.Function as I
+import Truth.Core.Edit.Lens as I
+import Truth.Core.Edit.Unlift as I
+import Truth.Core.Edit.Update as I

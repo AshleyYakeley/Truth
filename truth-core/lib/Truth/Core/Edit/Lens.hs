@@ -4,6 +4,7 @@ import Truth.Core.Edit.Edit
 import Truth.Core.Edit.FullEdit
 import Truth.Core.Edit.Function
 import Truth.Core.Edit.Unlift
+import Truth.Core.Edit.Update
 import Truth.Core.Import
 import Truth.Core.Read
 

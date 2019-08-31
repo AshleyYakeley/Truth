@@ -13,40 +13,10 @@ instance Floating edit t => Floating [edit] t where
 
 type family EditReader (edit :: Type) :: Type -> Type
 
-class IsUpdate (update :: Type) where
-    type UpdateEdit update :: Type
-    editUpdate :: UpdateEdit update -> update
-
-type UpdateReader update = EditReader (UpdateEdit update)
-
-class IsUpdate update => IsEditUpdate update where
-    updateEdit :: update -> UpdateEdit update
-
-newtype EditUpdate edit =
-    MkEditUpdate edit
-    deriving (Eq, Countable, Searchable)
-
-instance Finite edit => Finite (EditUpdate edit) where
-    allValues = fmap MkEditUpdate allValues
-
-deriving instance Empty edit => Empty (EditUpdate edit)
-
-instance Show edit => Show (EditUpdate edit) where
-    show (MkEditUpdate edit) = show edit
-
-instance IsUpdate (EditUpdate edit) where
-    type UpdateEdit (EditUpdate edit) = edit
-    editUpdate = MkEditUpdate
-
-instance IsEditUpdate (EditUpdate edit) where
-    updateEdit (MkEditUpdate edit) = edit
-
 class Floating edit edit => ApplicableEdit (edit :: Type) where
     applyEdit :: edit -> ReadFunction (EditReader edit) (EditReader edit)
 
 type EditSubject edit = ReaderSubject (EditReader edit)
-
-type UpdateSubject update = ReaderSubject (UpdateReader update)
 
 applyEdits :: ApplicableEdit edit => [edit] -> ReadFunction (EditReader edit) (EditReader edit)
 applyEdits [] mr = mr
