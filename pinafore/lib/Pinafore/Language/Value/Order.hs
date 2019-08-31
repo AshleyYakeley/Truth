@@ -2,9 +2,9 @@ module Pinafore.Language.Value.Order where
 
 import Data.Shim
 import Pinafore.Base
+import Pinafore.Language.Value.FiniteSetRef
 import Pinafore.Language.Value.Morphism
 import Pinafore.Language.Value.Ref
-import Pinafore.Language.Value.SetRef
 import Shapes
 import Truth.Core
 
@@ -80,6 +80,6 @@ pinaforeOrderCompare ob (MkPinaforeOrder ef o) fv1 fv2 =
 pinaforeSetGetOrdered ::
        forall baseupdate a.
        PinaforeOrder baseupdate a
-    -> PinaforeSetRef baseupdate '( BottomType, a)
+    -> PinaforeFiniteSetRef baseupdate '( BottomType, a)
     -> PinaforeRef baseupdate '( TopType, [a])
-pinaforeSetGetOrdered order set = pinaforeFunctionToRef $ qOrderSet order $ pinaforeSetRefFunctionValue set
+pinaforeSetGetOrdered order set = pinaforeFunctionToRef $ qOrderSet order $ pinaforeFiniteSetRefFunctionValue set

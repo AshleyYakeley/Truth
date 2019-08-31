@@ -19,7 +19,8 @@ data PinaforeGroundType baseupdate (polarity :: Polarity) (dv :: DolanVariance) 
     RefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] (PinaforeRef baseupdate)
     ListRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] (PinaforeListRef baseupdate)
     TextRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[] (PinaforeTextRef baseupdate)
-    SetRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] (PinaforeSetRef baseupdate)
+    SetRefPinaforeGroundType
+        :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] (PinaforeFiniteSetRef baseupdate)
     MorphismPinaforeGroundType
         :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseupdate)
     -- UI
@@ -120,7 +121,7 @@ pinaforeGroundTypeShowPrec ListRefPinaforeGroundType (ConsDolanArguments ta NilD
     ("ListRef " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec TextRefPinaforeGroundType NilDolanArguments = ("TextRef", 0)
 pinaforeGroundTypeShowPrec SetRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
-    ("SetRef " <> exprPrecShow 0 ta, 2)
+    ("FiniteSetRef " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)
 pinaforeGroundTypeShowPrec UserInterfacePinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =

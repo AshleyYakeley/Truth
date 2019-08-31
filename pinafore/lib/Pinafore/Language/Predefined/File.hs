@@ -11,7 +11,7 @@ import Pinafore.Storage
 {-
 file_import ::
        forall baseupdate. HasPinaforeFileUpdate baseupdate
-    => PinaforeSetRef baseupdate '( A, A)
+    => PinaforeFiniteSetRef baseupdate '( A, A)
     -> (A -> PinaforeAction baseupdate ())
     -> PinaforeAction baseupdate ()
 file_import set continue = do

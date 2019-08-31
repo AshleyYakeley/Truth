@@ -26,7 +26,7 @@ std_window title moremenus contents = fixAction $ \window -> let
     menus getsel = {basemenus ++ moremenus getsel};
     in openWindow title menus $ uiScrolled contents;
 
-selection_window :: (Text, Text) -> (set & SetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> (set -> UI item) -> Action Window;
+selection_window :: (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> (set -> UI item) -> Action Window;
 selection_window (inames,inamep) iset iopen iui = let
     moremenus getsel =
         [
@@ -49,7 +49,7 @@ email = property @LegalEntity @Text !8649b74c-123e-4ece-be3b-b734b0db3ea7;
 phone = property @LegalEntity @Text !83dfc88b-7b5b-4262-a548-0af84d5e3b63;
 
 opentype Person;
-people :: SetRef Person;
+people :: FiniteSetRef Person;
 people = property @Person @() !d52b4d16-babc-4c9b-9588-c66439ada088 !@ {()};
 subtype Person <= LegalEntity;
 
@@ -58,7 +58,7 @@ deathdate = property @Person @Text !805a9e65-d69a-4261-9c94-a3249885b6bb;
 
 mother = property @Person @Person !3afce58f-b7eb-4b11-8a75-2d66afd4d085;
 father = property @Person @Person !c005705f-9259-4d24-9713-db28a6e4f7d5;
-children :: Ref Person -> SetRef Person;
+children :: Ref Person -> FiniteSetRef Person;
 children p = mother !@ p \/ father !@ p;
 married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
 
@@ -75,11 +75,11 @@ country = property @Location @Text !1257c340-0ec1-4ff7-9fd8-d2eaa7822463;
 home = property @LegalEntity @Location !b1ff2354-13e5-4def-b5d0-fdf29c2274ff;
 
 opentype Organisation;
-organisations :: SetRef Organisation;
+organisations :: FiniteSetRef Organisation;
 organisations = property @Organisation @() !b655e2db-cf45-4696-8b89-8812406ba71b !@ {()};
 subtype Organisation <= LegalEntity;
 
-legalentities :: SetRef (Either Person Organisation);
+legalentities :: FiniteSetRef (Either Person Organisation);
 legalentities = setSum people organisations;
 
 # UI
@@ -94,10 +94,10 @@ table_entities = let
         end;
     in uiTable [nameColumn] (orderOn (name !++ name) alphabetical) legalentities openItem;
 
-table_people :: SetRef Person -> UI Person;
+table_people :: FiniteSetRef Person -> UI Person;
 table_people people = uiTable [({"Name"},\p -> name !$ {p})] (orderOn name alphabetical) people window_person;
 
-ui_people :: SetRef Person -> UI Person;
+ui_people :: FiniteSetRef Person -> UI Person;
 ui_people people = uiWithSelection $ \getperson -> uiVertical
 [
     (uiButton {"New Person"} {newEntity people >>= window_person},False),

@@ -22,7 +22,7 @@ std_window title moremenus contents = fixAction $ \window -> let
     menus getsel = {basemenus ++ moremenus getsel};
     in openWindow title menus $ uiScrolled contents;
 
-selection_window :: (Text, Text) -> (set & SetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> ((item | NewEntity) -> Action Any) -> (set -> UI item) -> Action Window;
+selection_window :: (Text, Text) -> (set & FiniteSetRef {-item,-NewEntity}) -> ((item | NewEntity) -> Action Any) -> ((item | NewEntity) -> Action Any) -> (set -> UI item) -> Action Window;
 selection_window (inames,inamep) iset iopen inew iui = let
     moremenus getsel =
         [
@@ -71,7 +71,7 @@ eventTimeOrder :: Order EventTime;
 eventTimeOrder = mapOrder eventTimeTime localChronological;
 
 opentype Event;
-events :: SetRef Event;
+events :: FiniteSetRef Event;
 events = property @Event @() !"Events" !@ {()};
 
 eventName = property @Event @Text !"eventName";
@@ -80,7 +80,7 @@ eventTime = property @Event @EventTime !"eventTime";
 eventOrder :: Order Event;
 eventOrder = orderOn eventTime eventTimeOrder;
 
-eventData :: SetRef (EventTime,Text);
+eventData :: FiniteSetRef (EventTime,Text);
 eventData = (eventTime !** eventName) !$$ events;
 
 eventDataOrder :: Order (EventTime,Text);

@@ -150,9 +150,9 @@ The type parameter is the type of the selection.
 
 `Ref {-p,+q}`
 
-## Sets
+## Finite Sets
 
-`SetRef {-p,+q}`
+`FiniteSetRef {-p,+q}`
 
 ## Morphisms
 

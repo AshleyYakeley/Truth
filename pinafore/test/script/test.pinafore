@@ -39,9 +39,9 @@ people = type !@ {entity @Type !78baed51-cb05-46b5-bcb4-49031532b890};
 
 mother = property @Person @Person !3afce58f-b7eb-4b11-8a75-2d66afd4d085;
 father = property @Person @Person !c005705f-9259-4d24-9713-db28a6e4f7d5;
-# parents :: Ref Person -> SetRef Person;
+# parents :: Ref Person -> FiniteSetRef Person;
 # parents p = (mother !$ p) \/ (father !$ p);
-children :: Ref Person -> SetRef Person;
+children :: Ref Person -> FiniteSetRef Person;
 children p = mother !@ p \/ father !@ p;
 
 employer = property @Person @Person !72f612af-ae47-4c18-b3df-6932ae914f62;
@@ -64,7 +64,7 @@ deathdate = property @Person @Text !805a9e65-d69a-4261-9c94-a3249885b6bb;
 married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
 
 # UI
-ui_people :: SetRef Person -> UI Person;
+ui_people :: FiniteSetRef Person -> UI Person;
 ui_people pp = uiWithSelection $ \getperson -> uiVertical
 [
     (uiButton {"New Person"} {newEntity pp >>= window_person},False),

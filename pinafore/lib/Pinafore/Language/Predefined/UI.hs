@@ -28,7 +28,7 @@ uiTable ::
        forall baseupdate. (?pinafore :: PinaforeContext baseupdate, HasPinaforeEntityUpdate baseupdate)
     => [(PinaforeRef baseupdate '( BottomType, Text), A -> PinaforeRef baseupdate '( BottomType, Text))]
     -> PinaforeOrder baseupdate A
-    -> PinaforeSetRef baseupdate '( A, MeetType Entity A)
+    -> PinaforeFiniteSetRef baseupdate '( A, MeetType Entity A)
     -> (A -> PinaforeAction baseupdate TopType)
     -> UISpec A baseupdate
 uiTable cols (MkPinaforeOrder geto order) val onDoubleClick = let
@@ -48,7 +48,7 @@ uiTable cols (MkPinaforeOrder geto order) val onDoubleClick = let
            (fmap getColumn cols)
            order
            (\mea -> applyPinaforeFunction geto $ constUpdateFunction $ Known $ meet2 mea)
-           (unPinaforeSetRef $ contraRangeLift meet2 val)
+           (unPinaforeFiniteSetRef $ contraRangeLift meet2 val)
            (\a -> runPinaforeAction $ void $ onDoubleClick $ meet2 a)
 
 type PickerType = Know (MeetType Entity A)
@@ -58,7 +58,7 @@ type PickerPairType = (PickerType, Text)
 uiPick ::
        forall baseupdate.
        PinaforeMorphism baseupdate '( A, TopType) '( BottomType, Text)
-    -> PinaforeSetRef baseupdate '( A, MeetType Entity A)
+    -> PinaforeFiniteSetRef baseupdate '( A, MeetType Entity A)
     -> PinaforeRef baseupdate '( A, MeetType Entity A)
     -> UISpec BottomType baseupdate
 uiPick nameMorphism fset ref = let
@@ -75,7 +75,7 @@ uiPick nameMorphism fset ref = let
     opts :: UpdateFunction baseupdate (ListUpdate [PickerPairType] (WholeUpdate PickerPairType))
     opts =
         (orderedKeyList @(FiniteSet PickerPairType) $ \(_, a) (_, b) -> compare a b) .
-        convertUpdateFunction . applyPinaforeFunction getNames (pinaforeSetRefFunctionValue fset)
+        convertUpdateFunction . applyPinaforeFunction getNames (pinaforeFiniteSetRefFunctionValue fset)
     in optionUISpec @baseupdate @PickerType opts $ pinaforeRefToLens $ contraRangeLift meet2 ref
 
 actionReference ::
