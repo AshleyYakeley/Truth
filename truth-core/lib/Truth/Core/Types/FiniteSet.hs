@@ -5,6 +5,7 @@ module Truth.Core.Types.FiniteSet where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Read
+import Truth.Core.Types.Function
 import Truth.Core.Types.Key
 import Truth.Core.Types.Lattice
 import Truth.Core.Types.Pair
@@ -241,4 +242,48 @@ bijectionFiniteSetEditLens (MkIsomorphism ab ba) = let
         -> MutableRead m (FiniteSetReader a)
         -> IdentityT m (Maybe [FiniteSetEdit a])
     elPutEdits ebs _ = return $ Just $ fmap (mapFiniteSetEdit ba) ebs
+    in MkCloseUnlift identityUnlift MkAnEditLens {..}
+
+finiteSetFunctionEditLens ::
+       forall a. EditLens (FiniteSetUpdate a) (PartialUpdate (FunctionUpdate a (WholeUpdate Bool)))
+finiteSetFunctionEditLens = let
+    ufGet ::
+           forall m t. MonadIO m
+        => MutableRead m (FiniteSetReader a)
+        -> FunctionUpdateReader a (WholeUpdate Bool) t
+        -> IdentityT m t
+    ufGet mr (MkTupleUpdateReader (MkFunctionSelector a) ReadWhole) =
+        lift $ do
+            mu <- mr $ KeyReadItem a ReadWhole
+            return $ isJust mu
+    ufUpdate ::
+           forall m. MonadIO m
+        => FiniteSetUpdate a
+        -> MutableRead m (FiniteSetReader a)
+        -> IdentityT m [PartialUpdate (FunctionUpdate a (WholeUpdate Bool))]
+    ufUpdate (KeyUpdateItem _ update) _ = never update
+    ufUpdate (KeyUpdateDelete p) _ =
+        return [KnownPartialUpdate $ MkTupleUpdate (MkFunctionSelector p) (MkWholeReaderUpdate False)]
+    ufUpdate (KeyUpdateInsertReplace p) _ =
+        return [KnownPartialUpdate $ MkTupleUpdate (MkFunctionSelector p) (MkWholeReaderUpdate True)]
+    ufUpdate KeyUpdateClear _ = return [UnknownPartialUpdate]
+    elFunction :: AnUpdateFunction IdentityT (FiniteSetUpdate a) (PartialUpdate (FunctionUpdate a (WholeUpdate Bool)))
+    elFunction = MkAnUpdateFunction {..}
+    elPutEdit ::
+           forall m. MonadIO m
+        => FunctionUpdateEdit a (WholeUpdate Bool)
+        -> IdentityT m (Maybe [FiniteSetEdit a])
+    elPutEdit (MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit b)) =
+        return $
+        Just
+            [ if b
+                  then KeyEditInsertReplace a
+                  else KeyEditDelete a
+            ]
+    elPutEdits ::
+           forall m. MonadIO m
+        => [FunctionUpdateEdit a (WholeUpdate Bool)]
+        -> MutableRead m (FiniteSetReader a)
+        -> IdentityT m (Maybe [FiniteSetEdit a])
+    elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
     in MkCloseUnlift identityUnlift MkAnEditLens {..}

@@ -46,6 +46,7 @@ library:
       - Truth.Core.Edit.Unlift
       - Truth.Core.Edit.Function
       - Truth.Core.Edit.Lens
+      - Truth.Core.Edit.Partial
       - Truth.Core.Edit
       - Truth.Core.Types.None
       - Truth.Core.Types.Whole

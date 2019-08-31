@@ -33,11 +33,3 @@ instance IsUpdate (EditUpdate edit) where
 
 instance IsEditUpdate (EditUpdate edit) where
     updateEdit (MkEditUpdate edit) = edit
-
-data PartialUpdate update
-    = KnownPartialUpdate update
-    | UnknownPartialUpdate
-
-instance IsUpdate update => IsUpdate (PartialUpdate update) where
-    type UpdateEdit (PartialUpdate update) = UpdateEdit update
-    editUpdate edit = KnownPartialUpdate $ editUpdate edit
