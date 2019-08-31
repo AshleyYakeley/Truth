@@ -45,3 +45,17 @@ partialFullEditLens = let
         -> IdentityT m (Maybe [UpdateEdit update])
     elPutEdits edits _ = return $ Just edits
     in MkCloseUnlift identityUnlift MkAnEditLens {..}
+
+partialiseEditLens ::
+       forall updateA updateB. EditLens updateA updateB -> EditLens (PartialUpdate updateA) (PartialUpdate updateB)
+partialiseEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnUpdateFunction g u) p)) = let
+    u' :: forall m. MonadIO m
+       => PartialUpdate updateA
+       -> MutableRead m (UpdateReader updateA)
+       -> t m [PartialUpdate updateB]
+    u' UnknownPartialUpdate _ = lift $ return [UnknownPartialUpdate]
+    u' (KnownPartialUpdate update) mr =
+        withTransConstraintTM @MonadIO $ do
+            updates <- u update mr
+            return $ fmap KnownPartialUpdate updates
+    in MkCloseUnlift unlift $ MkAnEditLens (MkAnUpdateFunction g u') p
