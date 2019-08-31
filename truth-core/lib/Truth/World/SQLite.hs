@@ -68,18 +68,24 @@ data Expr colsel t where
     ColumnExpr :: colsel t -> Expr colsel t
     EqualsExpr :: Eq t => Expr colsel t -> Expr colsel t -> Expr colsel Bool
     AndExpr :: Expr colsel Bool -> Expr colsel Bool -> Expr colsel Bool
+    OrExpr :: Expr colsel Bool -> Expr colsel Bool -> Expr colsel Bool
 
 instance AllWitnessConstraint Show colsel => Show (Expr colsel t) where
     show (ConstExpr t) = show $ toField t
     show (ColumnExpr col) = showAllWitness col
     show (EqualsExpr ea eb) = "(" ++ show ea ++ "=" ++ show eb ++ ")"
     show (AndExpr ea eb) = "(" ++ show ea ++ " & " ++ show eb ++ ")"
+    show (OrExpr ea eb) = "(" ++ show ea ++ " & " ++ show eb ++ ")"
 
-instance MeetSemiLattice (Expr colsel Bool) where
+instance Lattice (Expr colsel Bool) where
     (/\) = AndExpr
+    (\/) = OrExpr
 
 instance BoundedMeetSemiLattice (Expr colsel Bool) where
     top = ConstExpr True
+
+instance BoundedJoinSemiLattice (Expr colsel Bool) where
+    bottom = ConstExpr False
 
 class ExprEquals expr where
     (===) :: Eq t => expr t -> expr t -> expr Bool
@@ -92,6 +98,7 @@ evalExpr (ConstExpr v) _ = pure v
 evalExpr (ColumnExpr sel) tuple = tuple sel
 evalExpr (EqualsExpr e1 e2) tuple = (==) <$> evalExpr e1 tuple <*> evalExpr e2 tuple
 evalExpr (AndExpr e1 e2) tuple = (&&) <$> evalExpr e1 tuple <*> evalExpr e2 tuple
+evalExpr (OrExpr e1 e2) tuple = (||) <$> evalExpr e1 tuple <*> evalExpr e2 tuple
 
 data ColumnRefSchema t = MkColumnRefSchema
     { columnRefName :: String
@@ -104,6 +111,7 @@ instance HasSchema (Expr colsel t) where
     schemaString csch (ColumnExpr col) = fromString $ columnRefName $ subWitnessMap csch col
     schemaString csch (EqualsExpr e1 e2) = "(" <> schemaString csch e1 <> "=" <> schemaString csch e2 <> ")"
     schemaString csch (AndExpr e1 e2) = "(" <> schemaString csch e1 <> " AND " <> schemaString csch e2 <> ")"
+    schemaString csch (OrExpr e1 e2) = "(" <> schemaString csch e1 <> " OR " <> schemaString csch e2 <> ")"
 
 class (FiniteWitness colsel, WitnessConstraint FromField colsel, WitnessConstraint ToField colsel) =>
           IsSQLiteTable colsel

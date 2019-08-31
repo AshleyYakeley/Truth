@@ -57,9 +57,12 @@ getAllWidgets w = do
             ww <- for cc getAllWidgets
             return $ w : mconcat ww
 
-gobjectEmitClicked :: GObject t => t -> IO ()
+gobjectEmitClicked ::
+       forall t. GObject t
+    => t
+    -> IO ()
 gobjectEmitClicked obj = do
-    gtype <- gobjectType obj
+    gtype <- gobjectType @t
     (_, signalId, detail) <- signalParseName "clicked" gtype False
     withManagedPtr obj $ \entryPtr -> do
         gvalObj <- buildGValue gtype set_object entryPtr
