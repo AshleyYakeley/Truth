@@ -7,7 +7,6 @@ import GI.Gdk
 import GI.Gtk as Gtk
 import Shapes
 import Truth.Core
-import Truth.UI.GTK.Closure
 
 toModifierType :: KeyboardModifier -> ModifierType
 toModifierType KMShift = ModifierTypeShiftMask
@@ -16,7 +15,10 @@ toModifierType KMAlt = ModifierTypeMod1Mask
 
 accelGroupConnection :: IsAccelGroup ag => ag -> Word32 -> [ModifierType] -> [AccelFlags] -> IO () -> LifeCycleIO ()
 accelGroupConnection ag key mods flags action = do
-    closure <- makeClosure action
+    closure <-
+        genClosure_AccelGroupActivate $ \_ _ _ _ -> do
+            action
+            return True
     accelGroupConnect ag key mods flags closure
     lifeCycleClose $ do
         _ <- accelGroupDisconnect ag $ Just closure

@@ -9,7 +9,7 @@ packages:
 - pinafore-base
 - pinafore
 
-resolver: lts-13.25
+resolver: lts-14.3
 
 allow-newer: true
 

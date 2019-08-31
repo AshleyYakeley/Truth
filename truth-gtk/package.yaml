@@ -36,7 +36,6 @@ library:
       - Truth.UI.GTK
     other-modules:
       - Truth.UI.GTK.Useful
-      - Truth.UI.GTK.Closure
       - Truth.UI.GTK.GView
       - Truth.UI.GTK.Window
       - Truth.UI.GTK.CSS
