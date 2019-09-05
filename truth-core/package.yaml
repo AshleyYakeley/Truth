@@ -47,6 +47,7 @@ library:
       - Truth.Core.Edit.Function
       - Truth.Core.Edit.Lens
       - Truth.Core.Edit.Partial
+      - Truth.Core.Edit.Opaque
       - Truth.Core.Edit
       - Truth.Core.Types.None
       - Truth.Core.Types.Whole
@@ -65,6 +66,8 @@ library:
       - Truth.Core.Types.Pair
       - Truth.Core.Types.Lattice
       - Truth.Core.Types.Function
+      - Truth.Core.Types.WholeFunction
+      - Truth.Core.Types.Set
       - Truth.Core.Types.Dependent
       - Truth.Core.Types.Context
       - Truth.Core.Types.List

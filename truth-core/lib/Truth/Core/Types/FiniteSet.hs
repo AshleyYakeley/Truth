@@ -9,6 +9,7 @@ import Truth.Core.Types.Function
 import Truth.Core.Types.Key
 import Truth.Core.Types.Lattice
 import Truth.Core.Types.Pair
+import Truth.Core.Types.Set
 import Truth.Core.Types.Tuple
 import Truth.Core.Types.Unit
 import Truth.Core.Types.Whole
@@ -347,8 +348,7 @@ finiteSetCartesianProductUpdateFunction = let
             return $ fmap (\a -> KeyUpdateInsertReplace (a, b)) $ toList aa
     in MkCloseUnlift identityUnlift MkAnUpdateFunction {..}
 
-finiteSetFunctionEditLens ::
-       forall a. EditLens (FiniteSetUpdate a) (PartialUpdate (FunctionUpdate a (WholeUpdate Bool)))
+finiteSetFunctionEditLens :: forall a. EditLens (FiniteSetUpdate a) (PartialSetUpdate a)
 finiteSetFunctionEditLens = let
     ufGet ::
            forall m t. MonadIO m
@@ -369,7 +369,7 @@ finiteSetFunctionEditLens = let
         return [KnownPartialUpdate $ MkTupleUpdate (MkFunctionSelector p) (MkWholeReaderUpdate False)]
     ufUpdate (KeyUpdateInsertReplace p) _ =
         return [KnownPartialUpdate $ MkTupleUpdate (MkFunctionSelector p) (MkWholeReaderUpdate True)]
-    ufUpdate KeyUpdateClear _ = return [UnknownPartialUpdate]
+    ufUpdate KeyUpdateClear _ = return [UnknownPartialUpdate $ \_ -> True]
     elFunction :: AnUpdateFunction IdentityT (FiniteSetUpdate a) (PartialUpdate (FunctionUpdate a (WholeUpdate Bool)))
     elFunction = MkAnUpdateFunction {..}
     elPutEdit ::

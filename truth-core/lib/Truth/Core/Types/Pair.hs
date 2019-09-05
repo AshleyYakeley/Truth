@@ -206,3 +206,51 @@ pairCombineEditLenses =
                         ea2 <- MkComposeM $ pe2 eb2 mr
                         return $ ea1 ++ ea2
         in MkAnEditLens af12 pe12
+
+partialPairEditLens ::
+       forall updateA updateB.
+       EditLens (PairUpdate (PartialUpdate updateA) (PartialUpdate updateB)) (PartialUpdate (PairUpdate updateA updateB))
+partialPairEditLens = let
+    ufGet ::
+           forall m t. MonadIO m
+        => MutableRead m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
+        -> PairUpdateReader updateA updateB t
+        -> IdentityT m t
+    ufGet mr (MkTupleUpdateReader SelectFirst rt) = lift $ mr $ MkTupleUpdateReader SelectFirst rt
+    ufGet mr (MkTupleUpdateReader SelectSecond rt) = lift $ mr $ MkTupleUpdateReader SelectSecond rt
+    ufUpdate ::
+           forall m. MonadIO m
+        => PairUpdate (PartialUpdate updateA) (PartialUpdate updateB)
+        -> MutableRead m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
+        -> IdentityT m [PartialUpdate (PairUpdate updateA updateB)]
+    ufUpdate (MkTupleUpdate SelectFirst (KnownPartialUpdate update)) _ =
+        return [KnownPartialUpdate $ MkTupleUpdate SelectFirst update]
+    ufUpdate (MkTupleUpdate SelectFirst (UnknownPartialUpdate selset)) _ =
+        return $
+        pure $
+        UnknownPartialUpdate $ \(MkTupleUpdateReader sel rt) ->
+            case sel of
+                SelectFirst -> selset rt
+                SelectSecond -> False
+    ufUpdate (MkTupleUpdate SelectSecond (KnownPartialUpdate update)) _ =
+        return [KnownPartialUpdate $ MkTupleUpdate SelectSecond update]
+    ufUpdate (MkTupleUpdate SelectSecond (UnknownPartialUpdate selset)) _ =
+        return $
+        pure $
+        UnknownPartialUpdate $ \(MkTupleUpdateReader sel rt) ->
+            case sel of
+                SelectFirst -> False
+                SelectSecond -> selset rt
+    elFunction ::
+           AnUpdateFunction IdentityT (PairUpdate (PartialUpdate updateA) (PartialUpdate updateB)) (PartialUpdate (PairUpdate updateA updateB))
+    elFunction = MkAnUpdateFunction {..}
+    elPutEdits ::
+           forall m. MonadIO m
+        => [PairUpdateEdit updateA updateB]
+        -> MutableRead m (PairUpdateReader (PartialUpdate updateA) (PartialUpdate updateB))
+        -> IdentityT m (Maybe [PairUpdateEdit (PartialUpdate updateA) (PartialUpdate updateB)])
+    elPutEdits =
+        elPutEditsFromSimplePutEdit $ \case
+            MkTupleUpdateEdit SelectFirst edit -> return $ Just [MkTupleUpdateEdit SelectFirst edit]
+            MkTupleUpdateEdit SelectSecond edit -> return $ Just [MkTupleUpdateEdit SelectSecond edit]
+    in MkCloseUnlift identityUnlift MkAnEditLens {..}

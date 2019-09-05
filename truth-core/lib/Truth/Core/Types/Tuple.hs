@@ -208,11 +208,9 @@ instance (TupleUpdateWitness Show sel, AllWitnessConstraint Show sel) => Show (T
         case tupleUpdateWitness @Show sel of
             Dict -> show update
 
-tupleEditLens ::
-       forall sel update. (TestEquality sel)
-    => sel update
-    -> EditLens (TupleUpdate sel) update
-tupleEditLens sel = let
+tupleEditLens_ ::
+       forall sel update. (forall a. sel a -> Maybe (update :~: a)) -> sel update -> EditLens (TupleUpdate sel) update
+tupleEditLens_ tester sel = let
     ufGet :: ReadFunctionT IdentityT (TupleUpdateReader sel) (UpdateReader update)
     ufGet mr = remonadMutableRead IdentityT $ tupleReadFunction sel mr
     ufUpdate ::
@@ -221,7 +219,7 @@ tupleEditLens sel = let
         -> MutableRead m (TupleUpdateReader sel)
         -> IdentityT m [update]
     ufUpdate (MkTupleUpdate sel' update) _ =
-        case testEquality sel sel' of
+        case tester sel' of
             Just Refl -> return [update]
             Nothing -> return []
     elFunction = MkAnUpdateFunction {..}
@@ -232,6 +230,12 @@ tupleEditLens sel = let
         -> IdentityT m (Maybe [TupleUpdateEdit sel])
     elPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit sel) edits
     in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
+
+tupleEditLens ::
+       forall sel update. (TestEquality sel)
+    => sel update
+    -> EditLens (TupleUpdate sel) update
+tupleEditLens sel = tupleEditLens_ (testEquality sel) sel
 
 tupleIsoLens ::
        forall sela selb.

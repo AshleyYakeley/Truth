@@ -1,4 +1,19 @@
-module Truth.Core.Types.Function where
+module Truth.Core.Types.Function
+    ( FunctionSelector(..)
+    , FunctionUpdateReader
+    , FunctionUpdateEdit
+    , FunctionUpdate
+    , functionEditLens
+    , constFunctionReadFunction
+    , functionLiftUpdateFunction
+    , functionLiftEditLens
+    , contramapPartialFunctionEditLens
+    , applyFunctionUpdateFunction
+    , functionEditApply
+    , maybeFunctionUpdateFunction
+    , functionEditMaybe
+    , functionEitherPairEditLens
+    ) where
 
 import Truth.Core.Edit
 import Truth.Core.Import
@@ -46,26 +61,114 @@ functionEditLens a = tupleEditLens $ MkFunctionSelector a
 constFunctionReadFunction :: ReadFunction (UpdateReader update) (FunctionUpdateReader a update)
 constFunctionReadFunction mr (MkTupleUpdateReader (MkFunctionSelector _) rt) = mr rt
 
+functionUnliftMutableRead :: a -> MutableRead m (FunctionUpdateReader a update) -> MutableRead m (UpdateReader update)
+functionUnliftMutableRead a mr rt = mr $ MkTupleUpdateReader (MkFunctionSelector a) rt
+
+functionLiftAnUpdateFunction ::
+       forall t a updateA updateB. MonadTransConstraint MonadIO t
+    => AnUpdateFunction t updateA updateB
+    -> AnUpdateFunction t (FunctionUpdate a updateA) (FunctionUpdate a updateB)
+functionLiftAnUpdateFunction (MkAnUpdateFunction g u) = let
+    ufGet :: ReadFunctionT t (FunctionUpdateReader a updateA) (FunctionUpdateReader a updateB)
+    ufGet mr (MkTupleUpdateReader (MkFunctionSelector a) rbt) = g (functionUnliftMutableRead a mr) rbt
+    ufUpdate ::
+           forall m. MonadIO m
+        => FunctionUpdate a updateA
+        -> MutableRead m (FunctionUpdateReader a updateA)
+        -> t m [FunctionUpdate a updateB]
+    ufUpdate (MkTupleUpdate (MkFunctionSelector a) update) mr =
+        withTransConstraintTM @MonadIO $ do
+            ebs <- u update (functionUnliftMutableRead a mr)
+            return $ fmap (\eb -> MkTupleUpdate (MkFunctionSelector a) eb) ebs
+    in MkAnUpdateFunction {..}
+
 functionLiftUpdateFunction ::
        forall a updateA updateB.
        UpdateFunction updateA updateB
     -> UpdateFunction (FunctionUpdate a updateA) (FunctionUpdate a updateB)
-functionLiftUpdateFunction (MkCloseUnlift (unlift :: Unlift t) (MkAnUpdateFunction g u)) =
-    MkCloseUnlift unlift $ let
-        toMR :: a -> MutableRead m (FunctionUpdateReader a updateA) -> MutableRead m (UpdateReader updateA)
-        toMR a mr rat = mr $ MkTupleUpdateReader (MkFunctionSelector a) rat
-        ufGet :: ReadFunctionT t (FunctionUpdateReader a updateA) (FunctionUpdateReader a updateB)
-        ufGet mr (MkTupleUpdateReader (MkFunctionSelector a) rbt) = g (toMR a mr) rbt
-        ufUpdate ::
-               forall m. MonadIO m
-            => FunctionUpdate a updateA
-            -> MutableRead m (FunctionUpdateReader a updateA)
-            -> t m [FunctionUpdate a updateB]
-        ufUpdate (MkTupleUpdate (MkFunctionSelector a) update) mr =
+functionLiftUpdateFunction (MkCloseUnlift unlift auf) = MkCloseUnlift unlift $ functionLiftAnUpdateFunction auf
+
+functionLiftEditLens ::
+       forall a updateA updateB. (Eq a, ApplicableEdit (UpdateEdit updateA))
+    => EditLens updateA updateB
+    -> EditLens (FunctionUpdate a updateA) (FunctionUpdate a updateB)
+functionLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens auf pe)) = let
+    auf' = functionLiftAnUpdateFunction auf
+    pe' :: forall m. MonadIO m
+        => [FunctionUpdateEdit a updateB]
+        -> MutableRead m (FunctionUpdateReader a updateA)
+        -> t m (Maybe [FunctionUpdateEdit a updateA])
+    pe' =
+        elPutEditsFromPutEdit $ \(MkTupleUpdateEdit (MkFunctionSelector a) editb) mr ->
             withTransConstraintTM @MonadIO $ do
-                ebs <- u update (toMR a mr)
-                return $ fmap (\eb -> MkTupleUpdate (MkFunctionSelector a) eb) ebs
-        in MkAnUpdateFunction {..}
+                meditas <- pe [editb] $ functionUnliftMutableRead a mr
+                return $ (fmap $ fmap $ MkTupleUpdateEdit (MkFunctionSelector a)) meditas
+    in MkCloseUnlift unlift $ MkAnEditLens auf' pe'
+
+functionEitherPairEditLens ::
+       forall a b update.
+       EditLens (PairUpdate (FunctionUpdate a update) (FunctionUpdate b update)) (FunctionUpdate (Either a b) update)
+functionEitherPairEditLens = let
+    ufGet ::
+           ReadFunctionT IdentityT (PairUpdateReader (FunctionUpdate a update) (FunctionUpdate b update)) (FunctionUpdateReader (Either a b) update)
+    ufGet mr (MkTupleUpdateReader (MkFunctionSelector (Left a)) rt) =
+        lift $ mr $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) rt
+    ufGet mr (MkTupleUpdateReader (MkFunctionSelector (Right b)) rt) =
+        lift $ mr $ MkTupleUpdateReader SelectSecond $ MkTupleUpdateReader (MkFunctionSelector b) rt
+    ufUpdate ::
+           forall m. MonadIO m
+        => PairUpdate (FunctionUpdate a update) (FunctionUpdate b update)
+        -> MutableRead m (PairUpdateReader (FunctionUpdate a update) (FunctionUpdate b update))
+        -> IdentityT m [FunctionUpdate (Either a b) update]
+    ufUpdate (MkTupleUpdate SelectFirst (MkTupleUpdate (MkFunctionSelector a) update)) _ =
+        return [MkTupleUpdate (MkFunctionSelector $ Left a) update]
+    ufUpdate (MkTupleUpdate SelectSecond (MkTupleUpdate (MkFunctionSelector b) update)) _ =
+        return [MkTupleUpdate (MkFunctionSelector $ Right b) update]
+    elFunction ::
+           AnUpdateFunction IdentityT (PairUpdate (FunctionUpdate a update) (FunctionUpdate b update)) (FunctionUpdate (Either a b) update)
+    elFunction = MkAnUpdateFunction {..}
+    elPutEdits ::
+           forall m. MonadIO m
+        => [FunctionUpdateEdit (Either a b) update]
+        -> MutableRead m (PairUpdateReader (FunctionUpdate a update) (FunctionUpdate b update))
+        -> IdentityT m (Maybe [PairUpdateEdit (FunctionUpdate a update) (FunctionUpdate b update)])
+    elPutEdits =
+        elPutEditsFromSimplePutEdit $ \(MkTupleUpdateEdit (MkFunctionSelector eab) edit) ->
+            return $
+            Just $
+            pure $
+            case eab of
+                Left a -> MkTupleUpdateEdit SelectFirst $ MkTupleUpdateEdit (MkFunctionSelector a) edit
+                Right b -> MkTupleUpdateEdit SelectSecond $ MkTupleUpdateEdit (MkFunctionSelector b) edit
+    in MkCloseUnlift identityUnlift MkAnEditLens {..}
+
+contramapPartialFunctionEditLens ::
+       forall update a b.
+       (b -> a)
+    -> (a -> b -> Bool)
+    -> EditLens (FunctionUpdate a update) (PartialUpdate (FunctionUpdate b update))
+contramapPartialFunctionEditLens ba matchab = let
+    ufGet :: ReadFunctionT IdentityT (FunctionUpdateReader a update) (FunctionUpdateReader b update)
+    ufGet mr (MkTupleUpdateReader (MkFunctionSelector b) rt) =
+        lift $ mr $ MkTupleUpdateReader (MkFunctionSelector $ ba b) rt
+    ufUpdate ::
+           forall m. MonadIO m
+        => FunctionUpdate a update
+        -> MutableRead m (FunctionUpdateReader a update)
+        -> IdentityT m [PartialUpdate (FunctionUpdate b update)]
+    ufUpdate (MkTupleUpdate (MkFunctionSelector a) _) _ =
+        return [UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector b) _) -> matchab a b]
+    elFunction :: AnUpdateFunction IdentityT (FunctionUpdate a update) (PartialUpdate (FunctionUpdate b update))
+    elFunction = MkAnUpdateFunction {..}
+    elPutEdits ::
+           forall m. MonadIO m
+        => [FunctionUpdateEdit b update]
+        -> MutableRead m (FunctionUpdateReader a update)
+        -> IdentityT m (Maybe [FunctionUpdateEdit a update])
+    elPutEdits =
+        elPutEditsFromSimplePutEdit $ \(MkTupleUpdateEdit (MkFunctionSelector b) edit) ->
+            return $ Just $ [MkTupleUpdateEdit (MkFunctionSelector $ ba b) edit]
+    in MkCloseUnlift identityUnlift MkAnEditLens {..}
 
 applyFunctionUpdateFunction ::
        forall a update. (Eq a, IsUpdate update, FullEdit (UpdateEdit update))
