@@ -80,7 +80,7 @@ organisations = property @Organisation @() !b655e2db-cf45-4696-8b89-8812406ba71b
 subtype Organisation <= LegalEntity;
 
 legalentities :: FiniteSetRef (Either Person Organisation);
-legalentities = setSum people organisations;
+legalentities = sumFiniteSet people organisations;
 
 # UI
 table_entities :: UI (Either Person Organisation);

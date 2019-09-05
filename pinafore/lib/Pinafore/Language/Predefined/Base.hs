@@ -430,36 +430,49 @@ base_predefinitions =
           "Sets"
           ""
           [ mkValEntry
-                "coMapSet"
-                "Map a function on getting from a set."
+                "mapSet"
+                "Map a function on a set."
+                (contramap :: (A -> B) -> PinaforeSetRef baseupdate B -> PinaforeSetRef baseupdate A)
+          , mkValEntry "+=" "Add an entity to a set." $ pinaforeSetRefAdd @baseupdate @A
+          , mkValEntry "-=" "Remove an entity from a set." $ pinaforeSetRefRemove @baseupdate @A
+          , mkValEntry "newEntity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew @baseupdate
+          , mkValEntry "member" "A reference to the membership of a value in a set." $
+            pinaforeSetRefMember @baseupdate @A
+          , mkValEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
+            pinaforeSetRefIntersect @baseupdate @A
+          , mkValEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
+            pinaforeSetRefUnion @baseupdate @A
+          , mkValEntry "sumSet" "Cartesian sum of sets." $ pinaforeSetRefCartesianSum @baseupdate @A @B
+          , mkValEntry "productSet" "Cartesian product of sets. The resulting set will be read-only." $
+            pinaforeSetRefCartesianProduct @baseupdate @A @B
+          ]
+    , docTreeEntry
+          "Finite Sets"
+          ""
+          [ mkValEntry
+                "coMapFiniteSet"
+                "Map a function on getting from a finite set."
                 (coRangeLift :: (A -> B) -> PinaforeFiniteSetRef baseupdate '( C, A) -> PinaforeFiniteSetRef baseupdate '( C, B))
           , mkValEntry
-                "contraMapSet"
-                "Map a function on setting to a set."
+                "contraMapFiniteSet"
+                "Map a function on setting to and testing a finite set."
                 (contraRangeLift :: (B -> A) -> PinaforeFiniteSetRef baseupdate '( A, C) -> PinaforeFiniteSetRef baseupdate '( B, C))
-          , mkValEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
+          , mkValEntry
+                "intersectFiniteSet"
+                "Intersection of sets. The resulting set can be added to, but not deleted from." $
             pinaforeFiniteSetRefMeet @baseupdate @A
-          , mkValEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
+          , mkValEntry "unionFiniteSet" "Union of sets. The resulting set can be deleted from, but not added to." $
             pinaforeFiniteSetRefJoin @baseupdate @A
-          , mkValEntry "setSum" "Sum of sets." $ pinaforeFiniteSetRefCartesianSum @baseupdate @AP @AQ @BP @BQ
-          , mkValEntry "setProduct" "Product of sets. The resulting set will be read-only." $
+          , mkValEntry "sumFiniteSet" "Cartesian sum of finite sets." $
+            pinaforeFiniteSetRefCartesianSum @baseupdate @AP @AQ @BP @BQ
+          , mkValEntry
+                "productFiniteSet"
+                "Cartesian product of finite sets. The resulting finite set will be read-only." $
             pinaforeFiniteSetRefCartesianProduct @baseupdate @AP @AQ @BP @BQ
           , mkValEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseupdate @A
-          , mkValEntry "member" "A reference to the membership of a value in a set." $
-            pinaforeFiniteSetRefMember @baseupdate @A
           , mkValEntry "single" "The member of a single-member set, or unknown." $
             pinaforeFiniteSetRefSingle @baseupdate @A
           , mkValEntry "count" "Count of members in a set." $ pinaforeFiniteSetRefFunc @baseupdate @TopType @Int olength
-          , mkValEntry "newEntity" "Create a new entity in a set and act on it." $
-            pinaforeFiniteSetRefAddNew @baseupdate
-          , mkValEntry
-                "+="
-                "Add an entity to a set."
-                (pinaforeFiniteSetRefAdd :: PinaforeFiniteSetRef baseupdate '( A, TopType) -> A -> PinaforeAction baseupdate ())
-          , mkValEntry
-                "-="
-                "Remove an entity from a set."
-                (pinaforeFiniteSetRefRemove :: PinaforeFiniteSetRef baseupdate '( A, TopType) -> A -> PinaforeAction baseupdate ())
           , mkValEntry
                 "removeAll"
                 "Remove all entities from a set."

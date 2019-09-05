@@ -4,6 +4,7 @@ import Data.Shim
 import Pinafore.Base
 import Pinafore.Language.Value.OpenEntity
 import Pinafore.Language.Value.Ref
+import Pinafore.Language.Value.SetRef
 import Shapes
 import Truth.Core
 
@@ -125,3 +126,8 @@ pinaforeFiniteSetRefCartesianProduct ::
 pinaforeFiniteSetRefCartesianProduct (MkPinaforeFiniteSetRef tra vala) (MkPinaforeFiniteSetRef trb valb) =
     MkPinaforeFiniteSetRef (pairRange tra trb) $
     readOnlyEditLens finiteSetCartesianProductUpdateFunction . pairCombineEditLenses vala valb
+
+pinaforeFiniteSetRefToSetRef ::
+       forall baseupdate p q. PinaforeFiniteSetRef baseupdate '( p, q) -> PinaforeSetRef baseupdate p
+pinaforeFiniteSetRefToSetRef (MkPinaforeFiniteSetRef tr lens) =
+    contramap (fromEnhanced $ rangeContra tr) $ MkPinaforeSetRef (==) $ finiteSetFunctionEditLens . lens
