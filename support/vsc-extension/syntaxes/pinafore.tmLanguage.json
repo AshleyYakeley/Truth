@@ -34,7 +34,7 @@
 		"types": {
 			"patterns": [{
 				"name": "storage.type.predefined.pinafore",
-				"match": "\\b(Any|None|Literal|Text|Number|Rational|Integer|Boolean|Entity|NewEntity|Maybe|Either|Order|Action|Ref|FiniteSetRef|UI|Window|MenuItem)\\b"
+				"match": "\\b(Any|None|Literal|Text|Number|Rational|Integer|Boolean|Entity|NewEntity|Maybe|Either|Order|Action|Ref|SetRef|FiniteSetRef|UI|Window|MenuItem)\\b"
 			}]
 		},
 		"strings": {

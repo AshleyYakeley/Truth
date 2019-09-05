@@ -19,7 +19,8 @@ data PinaforeGroundType baseupdate (polarity :: Polarity) (dv :: DolanVariance) 
     RefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] (PinaforeRef baseupdate)
     ListRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] (PinaforeListRef baseupdate)
     TextRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[] (PinaforeTextRef baseupdate)
-    SetRefPinaforeGroundType
+    SetRefPinaforeGroundType :: PinaforeGroundType baseupdate polarity '[ 'Contravariance] (PinaforeSetRef baseupdate)
+    FiniteSetRefPinaforeGroundType
         :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance] (PinaforeFiniteSetRef baseupdate)
     MorphismPinaforeGroundType
         :: PinaforeGroundType baseupdate polarity '[ 'Rangevariance, 'Rangevariance] (PinaforeMorphism baseupdate)
@@ -43,6 +44,7 @@ pinaforeGroundTypeTestEquality RefPinaforeGroundType RefPinaforeGroundType = Jus
 pinaforeGroundTypeTestEquality ListRefPinaforeGroundType ListRefPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality TextRefPinaforeGroundType TextRefPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality SetRefPinaforeGroundType SetRefPinaforeGroundType = Just (Refl, HRefl)
+pinaforeGroundTypeTestEquality FiniteSetRefPinaforeGroundType FiniteSetRefPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality MorphismPinaforeGroundType MorphismPinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality UserInterfacePinaforeGroundType UserInterfacePinaforeGroundType = Just (Refl, HRefl)
 pinaforeGroundTypeTestEquality WindowPinaforeGroundType WindowPinaforeGroundType = Just (Refl, HRefl)
@@ -62,6 +64,7 @@ pinaforeGroundTypeVarianceMap RefPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap ListRefPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap TextRefPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap SetRefPinaforeGroundType = dolanVary @dv
+pinaforeGroundTypeVarianceMap FiniteSetRefPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap MorphismPinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap UserInterfacePinaforeGroundType = dolanVary @dv
 pinaforeGroundTypeVarianceMap WindowPinaforeGroundType = dolanVary @dv
@@ -76,6 +79,7 @@ pinaforeGroundTypeVarianceType RefPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType ListRefPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType TextRefPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType SetRefPinaforeGroundType = representative
+pinaforeGroundTypeVarianceType FiniteSetRefPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType MorphismPinaforeGroundType = representative
 pinaforeGroundTypeVarianceType UserInterfacePinaforeGroundType = representative
 pinaforeGroundTypeVarianceType WindowPinaforeGroundType = representative
@@ -92,6 +96,7 @@ pinaforeGroundTypeInvertPolarity RefPinaforeGroundType = Just RefPinaforeGroundT
 pinaforeGroundTypeInvertPolarity ListRefPinaforeGroundType = Just ListRefPinaforeGroundType
 pinaforeGroundTypeInvertPolarity TextRefPinaforeGroundType = Just TextRefPinaforeGroundType
 pinaforeGroundTypeInvertPolarity SetRefPinaforeGroundType = Just SetRefPinaforeGroundType
+pinaforeGroundTypeInvertPolarity FiniteSetRefPinaforeGroundType = Just FiniteSetRefPinaforeGroundType
 pinaforeGroundTypeInvertPolarity MorphismPinaforeGroundType = Just MorphismPinaforeGroundType
 pinaforeGroundTypeInvertPolarity UserInterfacePinaforeGroundType = Just UserInterfacePinaforeGroundType
 pinaforeGroundTypeInvertPolarity WindowPinaforeGroundType = Just WindowPinaforeGroundType
@@ -121,6 +126,8 @@ pinaforeGroundTypeShowPrec ListRefPinaforeGroundType (ConsDolanArguments ta NilD
     ("ListRef " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec TextRefPinaforeGroundType NilDolanArguments = ("TextRef", 0)
 pinaforeGroundTypeShowPrec SetRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
+    invertPolarity @polarity ("SetRef " <> exprPrecShow 0 ta, 2)
+pinaforeGroundTypeShowPrec FiniteSetRefPinaforeGroundType (ConsDolanArguments ta NilDolanArguments) =
     ("FiniteSetRef " <> exprPrecShow 0 ta, 2)
 pinaforeGroundTypeShowPrec MorphismPinaforeGroundType (ConsDolanArguments ta (ConsDolanArguments tb NilDolanArguments)) =
     invertPolarity @polarity (exprPrecShow 2 ta <> " ~> " <> exprPrecShow 3 tb, 3)

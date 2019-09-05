@@ -46,7 +46,8 @@ data SyntaxType
     | OrderSyntaxType SyntaxType
     | RefSyntaxType SyntaxType
     | UISyntaxType SyntaxType
-    | SetSyntaxType SyntaxType
+    | SetRefSyntaxType SyntaxType
+    | FiniteSetRefSyntaxType SyntaxType
     | ListSyntaxType SyntaxType
     | MorphismSyntaxType SyntaxType
                          SyntaxType

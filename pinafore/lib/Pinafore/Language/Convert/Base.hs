@@ -402,7 +402,7 @@ instance ( baseupdate ~ update
         unToRangeShimWit $ \tpq conv ->
             mapShimWit (consShimFunc RangevarianceType cid conv) $
             mkPJMShimWit $
-            GroundPinaforeSingularType SetRefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            GroundPinaforeSingularType FiniteSetRefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( baseupdate ~ update
          , FromShimWit JMShim (PinaforeType baseupdate 'Negative) p
@@ -418,7 +418,7 @@ instance ( baseupdate ~ update
         unFromRangeShimWit $ \tpq conv ->
             mapShimWit (consShimFunc RangevarianceType cid conv) $
             mkPJMShimWit $
-            GroundPinaforeSingularType SetRefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
+            GroundPinaforeSingularType FiniteSetRefPinaforeGroundType $ ConsDolanArguments tpq NilDolanArguments
 
 instance ( baseupdate ~ update
          , ToShimWit JMShim (PinaforeType baseupdate 'Positive) p

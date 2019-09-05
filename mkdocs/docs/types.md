@@ -150,6 +150,12 @@ The type parameter is the type of the selection.
 
 `Ref {-p,+q}`
 
+## Sets
+
+`SetRef a`
+
+(`a` is contravariant)
+
 ## Finite Sets
 
 `FiniteSetRef {-p,+q}`

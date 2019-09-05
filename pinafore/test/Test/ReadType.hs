@@ -36,6 +36,7 @@ testReadTypes =
         , testReadType "Ref a"
         , testReadType "Ref +a"
         , testReadType "Ref {+a,b,-NewEntity}"
+        , testReadType "SetRef a"
         , testReadType "FiniteSetRef a"
         , testReadType "FiniteSetRef +a"
         , testReadType "FiniteSetRef {+a,b,-NewEntity}"
