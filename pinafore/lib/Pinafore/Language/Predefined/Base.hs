@@ -458,6 +458,10 @@ base_predefinitions =
                 "Map a function on setting to and testing a finite set."
                 (contraRangeLift :: (B -> A) -> PinaforeFiniteSetRef baseupdate '( A, C) -> PinaforeFiniteSetRef baseupdate '( B, C))
           , mkValEntry
+                "filterFiniteSet"
+                "Intersect a finite set with any set. The resulting finite set will be read-only." $
+            pinaforeFiniteSetRefFilter @baseupdate @A @B
+          , mkValEntry
                 "intersectFiniteSet"
                 "Intersection of sets. The resulting set can be added to, but not deleted from." $
             pinaforeFiniteSetRefMeet @baseupdate @A

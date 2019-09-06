@@ -131,3 +131,15 @@ pinaforeFiniteSetRefToSetRef ::
        forall baseupdate p q. PinaforeFiniteSetRef baseupdate '( p, q) -> PinaforeSetRef baseupdate p
 pinaforeFiniteSetRefToSetRef (MkPinaforeFiniteSetRef tr lens) =
     contramap (fromEnhanced $ rangeContra tr) $ MkPinaforeSetRef (==) $ finiteSetFunctionEditLens . lens
+
+pinaforeFiniteSetRefFilter ::
+       forall baseupdate p q.
+       PinaforeFiniteSetRef baseupdate '( p, q)
+    -> PinaforeSetRef baseupdate q
+    -> PinaforeFiniteSetRef baseupdate '( p, q)
+pinaforeFiniteSetRefFilter (MkPinaforeFiniteSetRef tr fsetlens) fsetref = let
+    MkPinaforeSetRef _ setlens = contramap (fromEnhanced $ rangeCo tr) fsetref
+    fsetfunc = editLensFunction fsetlens
+    setfunc = editLensFunction setlens
+    in MkPinaforeFiniteSetRef tr $
+       readOnlyEditLens $ filterFiniteSetUpdateFunction . pairCombineUpdateFunctions fsetfunc setfunc
