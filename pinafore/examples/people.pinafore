@@ -59,7 +59,7 @@ deathdate = property @Person @Text !805a9e65-d69a-4261-9c94-a3249885b6bb;
 mother = property @Person @Person !3afce58f-b7eb-4b11-8a75-2d66afd4d085;
 father = property @Person @Person !c005705f-9259-4d24-9713-db28a6e4f7d5;
 children :: Ref Person -> FiniteSetRef Person;
-children p = mother !@ p \/ father !@ p;
+children p = mother !@ p <:|:> father !@ p;
 married = property @Person @Boolean !380ac576-9252-4783-b2d8-db222c683a22;
 
 employer = property @Person @LegalEntity !72f612af-ae47-4c18-b3df-6932ae914f62;
@@ -80,7 +80,7 @@ organisations = property @Organisation @() !b655e2db-cf45-4696-8b89-8812406ba71b
 subtype Organisation <= LegalEntity;
 
 legalentities :: FiniteSetRef (Either Person Organisation);
-legalentities = sumFiniteSet people organisations;
+legalentities = people <:+:> organisations;
 
 # UI
 table_entities :: UI (Either Person Organisation);

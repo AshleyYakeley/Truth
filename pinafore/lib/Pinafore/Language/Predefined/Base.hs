@@ -438,12 +438,12 @@ base_predefinitions =
           , mkValEntry "newEntity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew @baseupdate
           , mkValEntry "member" "A reference to the membership of a value in a set." $
             pinaforeSetRefMember @baseupdate @A
-          , mkValEntry "/\\" "Intersection of sets. The resulting set can be added to, but not deleted from." $
+          , mkValEntry "<&>" "Intersection of sets. The resulting set can be added to, but not deleted from." $
             pinaforeSetRefIntersect @baseupdate @A
-          , mkValEntry "\\/" "Union of sets. The resulting set can be deleted from, but not added to." $
+          , mkValEntry "<|>" "Union of sets. The resulting set can be deleted from, but not added to." $
             pinaforeSetRefUnion @baseupdate @A
-          , mkValEntry "sumSet" "Cartesian sum of sets." $ pinaforeSetRefCartesianSum @baseupdate @A @B
-          , mkValEntry "productSet" "Cartesian product of sets. The resulting set will be read-only." $
+          , mkValEntry "<+>" "Cartesian sum of sets." $ pinaforeSetRefCartesianSum @baseupdate @A @B
+          , mkValEntry "<*>" "Cartesian product of sets. The resulting set will be read-only." $
             pinaforeSetRefCartesianProduct @baseupdate @A @B
           ]
     , docTreeEntry
@@ -457,21 +457,17 @@ base_predefinitions =
                 "contraMapFiniteSet"
                 "Map a function on setting to and testing a finite set."
                 (contraRangeLift :: (B -> A) -> PinaforeFiniteSetRef baseupdate '( A, C) -> PinaforeFiniteSetRef baseupdate '( B, C))
-          , mkValEntry
-                "filterFiniteSet"
-                "Intersect a finite set with any set. The resulting finite set will be read-only." $
+          , mkValEntry "<:&>" "Intersect a finite set with any set. The resulting finite set will be read-only." $
             pinaforeFiniteSetRefFilter @baseupdate @A @B
           , mkValEntry
-                "intersectFiniteSet"
-                "Intersection of sets. The resulting set can be added to, but not deleted from." $
+                "<:&:>"
+                "Intersection of finite sets. The resulting finite set can be added to, but not deleted from." $
             pinaforeFiniteSetRefMeet @baseupdate @A
-          , mkValEntry "unionFiniteSet" "Union of sets. The resulting set can be deleted from, but not added to." $
+          , mkValEntry "<:|:>" "Union of finite sets. The resulting finite set can be deleted from, but not added to." $
             pinaforeFiniteSetRefJoin @baseupdate @A
-          , mkValEntry "sumFiniteSet" "Cartesian sum of finite sets." $
+          , mkValEntry "<:+:>" "Cartesian sum of finite sets." $
             pinaforeFiniteSetRefCartesianSum @baseupdate @AP @AQ @BP @BQ
-          , mkValEntry
-                "productFiniteSet"
-                "Cartesian product of finite sets. The resulting finite set will be read-only." $
+          , mkValEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
             pinaforeFiniteSetRefCartesianProduct @baseupdate @AP @AQ @BP @BQ
           , mkValEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseupdate @A
           , mkValEntry "single" "The member of a single-member set, or unknown." $
