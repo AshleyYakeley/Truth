@@ -89,7 +89,7 @@ testActions waitClick =
     , testUIAction waitClick "newpoint" $ \MkUIToolkit {..} -> uitExit
     , testUIAction waitClick "emptywindow" $ \MkUIToolkit {..} -> uitExit
     , testClickButton waitClick "buttonwindow $ return ()"
-    , testClickButton waitClick "buttonwindow $ newMemSet"
+    , testClickButton waitClick "buttonwindow $ newMemFiniteSet"
     , testClickButton waitClick "buttonwindow $ newpoint"
     , testClickButton waitClick "buttonwindow $ emptywindow"
     , testClickButton waitClick "buttonwindow $ newpoint >> newpoint"
@@ -105,7 +105,7 @@ testUI =
         [ "emptywindow :: Action ()"
         , "emptywindow = do openWindow {\"Empty\"} (\\_ -> {[]}) uiBlank ;return (); end"
         , "newpoint :: Action ()"
-        , "newpoint = do s <- newMemSet; newEntity s; return (); end"
+        , "newpoint = do s <- newMemFiniteSet; newEntity s; return (); end"
         , "buttonwindow :: Action Any -> Action ()"
         , "buttonwindow action = do openWindow {\"Test\"} (\\_ -> {[]}) (uiButton {\"Button\"} {action}); return (); end"
         ] $

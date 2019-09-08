@@ -163,19 +163,21 @@ testEntity =
               [ pointTest "do r <- newMemRef; a <- get r; fail \"unstopped\"; end"
               , pointTest "do r <- newMemRef; r := 45; a <- get r; testeqval 45 a; end"
               , pointTest "do r <- newMemRef; r := 3; r := 4; a <- get r; testeqval 4 a; end"
-              , pointTest "do s <- newMemSet; n <- get $ count s; testeqval 0 n; end"
-              , pointTest "do s <- newMemSet; s += 57; n <- get $ count s; testeqval 1 n; end"
-              , pointTest "do s <- newMemSet; s -= 57; n <- get $ count s; testeqval 0 n; end"
-              , pointTest "do s <- newMemSet; s += 57; s -= 57; n <- get $ count s; testeqval 0 n; end"
+              , pointTest "do s <- newMemFiniteSet; n <- get $ count s; testeqval 0 n; end"
+              , pointTest "do s <- newMemFiniteSet; s += 57; n <- get $ count s; testeqval 1 n; end"
+              , pointTest "do s <- newMemFiniteSet; s -= 57; n <- get $ count s; testeqval 0 n; end"
+              , pointTest "do s <- newMemFiniteSet; s += 57; s -= 57; n <- get $ count s; testeqval 0 n; end"
               , pointTest
-                    "do s <- newMemSet; s += 57; m54 <- get $ member s 54; m57 <- get $ member s 57; testeqval False m54; testeqval True m57; end"
-              , pointTest "do s <- newMemSet; s -= 57; m57 <- get $ member s 57; testeqval False m57; end"
-              , pointTest "do s <- newMemSet; s += 57; s -= 57; m57 <- get $ member s 57; testeqval False m57; end"
+                    "do s <- newMemFiniteSet; s += 57; m54 <- get $ member s 54; m57 <- get $ member s 57; testeqval False m54; testeqval True m57; end"
+              , pointTest "do s <- newMemFiniteSet; s -= 57; m57 <- get $ member s 57; testeqval False m57; end"
               , pointTest
-                    "do s <- newMemSet; member s 57 := True; m54 <- get $ member s 54; m57 <- get $ member s 57; testeqval False m54; testeqval True m57; end"
-              , pointTest "do s <- newMemSet; member s 57 := False; m57 <- get $ member s 57; testeqval False m57; end"
+                    "do s <- newMemFiniteSet; s += 57; s -= 57; m57 <- get $ member s 57; testeqval False m57; end"
               , pointTest
-                    "do s <- newMemSet; member s 57 := True; member s 57 := False; m57 <- get $ member s 57; testeqval False m57; end"
+                    "do s <- newMemFiniteSet; member s 57 := True; m54 <- get $ member s 54; m57 <- get $ member s 57; testeqval False m54; testeqval True m57; end"
+              , pointTest
+                    "do s <- newMemFiniteSet; member s 57 := False; m57 <- get $ member s 57; testeqval False m57; end"
+              , pointTest
+                    "do s <- newMemFiniteSet; member s 57 := True; member s 57 := False; m57 <- get $ member s 57; testeqval False m57; end"
               , pointTest "do r <- newMemRef; immutRef r := 5; fail \"unstopped\"; end"
               ]
         , context

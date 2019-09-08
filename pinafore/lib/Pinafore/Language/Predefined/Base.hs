@@ -50,10 +50,10 @@ newMemRef = do
     lens <- makeMemoryCellEditLens Unknown
     return $ pinaforeLensToRef $ lens . baseEditLens
 
-newMemSet ::
+newMemFiniteSet ::
        forall baseupdate. BaseEditLens MemoryCellUpdate baseupdate
     => IO (PinaforeFiniteSetRef baseupdate '( MeetType Entity A, A))
-newMemSet = do
+newMemFiniteSet = do
     lens <- makeMemoryCellEditLens mempty
     return $ meetValuePinaforeFiniteSetRef $ convertEditLens . lens . baseEditLens
 
@@ -433,15 +433,32 @@ base_predefinitions =
                 "mapSet"
                 "Map a function on a set."
                 (contramap :: (A -> B) -> PinaforeSetRef baseupdate B -> PinaforeSetRef baseupdate A)
+          , mkValEntry "immutSet" "Convert a set to immutable." $ pinaforeSetRefImmutable @baseupdate @A
           , mkValEntry "+=" "Add an entity to a set." $ pinaforeSetRefAdd @baseupdate @A
           , mkValEntry "-=" "Remove an entity from a set." $ pinaforeSetRefRemove @baseupdate @A
           , mkValEntry "newEntity" "Create a new entity in a set and act on it." $ pinaforeSetRefAddNew @baseupdate
           , mkValEntry "member" "A reference to the membership of a value in a set." $
             pinaforeSetRefMember @baseupdate @A
-          , mkValEntry "<&>" "Intersection of sets. The resulting set can be added to, but not deleted from." $
+          , mkValEntry
+                "notSet"
+                "Complement of a set. The resulting set can be added to (deleting from the original set) and deleted from (adding to the original set)." $
+            pinaforeSetRefComplement @baseupdate @A
+          , mkValEntry
+                "<&>"
+                "Intersection of sets. The resulting set can be added to (adding to both sets), but not deleted from." $
             pinaforeSetRefIntersect @baseupdate @A
-          , mkValEntry "<|>" "Union of sets. The resulting set can be deleted from, but not added to." $
+          , mkValEntry
+                "<|>"
+                "Union of sets. The resulting set can be deleted from (deleting from both sets), but not added to." $
             pinaforeSetRefUnion @baseupdate @A
+          , mkValEntry
+                "<\\>"
+                "Difference of sets, everything in the first set but not the second. The resulting set can be added to (adding to the first and deleting from the second), but not deleted from." $
+            pinaforeSetRefDifference @baseupdate @A
+          , mkValEntry
+                "<^>"
+                "Symmetric difference of sets, everything in exactly one of the sets. The resulting set will be read-only." $
+            pinaforeSetRefSymmetricDifference @baseupdate @A
           , mkValEntry "<+>" "Cartesian sum of sets." $ pinaforeSetRefCartesianSum @baseupdate @A @B
           , mkValEntry "<*>" "Cartesian product of sets. The resulting set will be read-only." $
             pinaforeSetRefCartesianProduct @baseupdate @A @B
@@ -458,7 +475,9 @@ base_predefinitions =
                 "Map a function on setting to and testing a finite set."
                 (contraRangeLift :: (B -> A) -> PinaforeFiniteSetRef baseupdate '( A, C) -> PinaforeFiniteSetRef baseupdate '( B, C))
           , mkValEntry "<:&>" "Intersect a finite set with any set. The resulting finite set will be read-only." $
-            pinaforeFiniteSetRefFilter @baseupdate @A @B
+            pinaforeFiniteSetRefSetIntersect @baseupdate @A @B
+          , mkValEntry "<:\\>" "Difference of a finite set and any set. The resulting finite set will be read-only." $
+            pinaforeFiniteSetRefSetDifference @baseupdate @A @B
           , mkValEntry
                 "<:&:>"
                 "Intersection of finite sets. The resulting finite set can be added to, but not deleted from." $
@@ -469,15 +488,17 @@ base_predefinitions =
             pinaforeFiniteSetRefCartesianSum @baseupdate @AP @AQ @BP @BQ
           , mkValEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
             pinaforeFiniteSetRefCartesianProduct @baseupdate @AP @AQ @BP @BQ
-          , mkValEntry "members" "Get all members of a set, by an order." $ pinaforeSetGetOrdered @baseupdate @A
-          , mkValEntry "single" "The member of a single-member set, or unknown." $
+          , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @baseupdate @A
+          , mkValEntry "single" "The member of a single-member finite set, or unknown." $
             pinaforeFiniteSetRefSingle @baseupdate @A
-          , mkValEntry "count" "Count of members in a set." $ pinaforeFiniteSetRefFunc @baseupdate @TopType @Int olength
+          , mkValEntry "count" "Count of members in a finite set." $
+            pinaforeFiniteSetRefFunc @baseupdate @TopType @Int olength
           , mkValEntry
                 "removeAll"
-                "Remove all entities from a set."
+                "Remove all entities from a finite set."
                 (pinaforeFiniteSetRefRemoveAll :: PinaforeFiniteSetRef baseupdate '( BottomType, TopType) -> PinaforeAction baseupdate ())
-          , mkValEntry "newMemSet" "Create a new set reference to memory, initially empty." $ newMemSet @baseupdate
+          , mkValEntry "newMemFiniteSet" "Create a new finite set reference to memory, initially empty." $
+            newMemFiniteSet @baseupdate
           ]
     , docTreeEntry
           "Morphisms"
