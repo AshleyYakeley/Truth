@@ -25,12 +25,12 @@ import Truth.Core.Types.Whole
 data FunctionSelector a (eb :: Type) (et :: Type) where
     MkFunctionSelector :: a -> FunctionSelector a update update
 
-instance (Eq a) => TestEquality (FunctionSelector a updateB) where
+instance Eq a => TestEquality (FunctionSelector a updateB) where
     testEquality (MkFunctionSelector a1) (MkFunctionSelector a2)
         | a1 == a2 = Just Refl
     testEquality _ _ = Nothing
 
-instance (Finite a, SubjectReader (UpdateReader update)) => SubjectTupleSelector (FunctionSelector a update) where
+instance (Eq a, SubjectReader (UpdateReader update)) => SubjectTupleSelector (FunctionSelector a update) where
     type TupleSubject (FunctionSelector a update) = a -> UpdateSubject update
     tupleReadFromSubject (MkFunctionSelector a) ab = ab a
     tupleWriteToSubject (MkFunctionSelector a) b _ a'
@@ -40,13 +40,13 @@ instance (Finite a, SubjectReader (UpdateReader update)) => SubjectTupleSelector
 instance Finite a => FiniteTupleSelector (FunctionSelector a update) where
     tupleConstruct f = assemble (\a -> f (MkFunctionSelector a))
 
-instance (c (UpdateReader update)) => TupleReaderWitness c (FunctionSelector a update) where
+instance c (UpdateReader update) => TupleReaderWitness c (FunctionSelector a update) where
     tupleReaderWitness (MkFunctionSelector _) = Dict
 
-instance (c (UpdateEdit update)) => TupleEditWitness c (FunctionSelector a update) where
+instance c (UpdateEdit update) => TupleEditWitness c (FunctionSelector a update) where
     tupleEditWitness (MkFunctionSelector _) = Dict
 
-instance (c update) => TupleUpdateWitness c (FunctionSelector a update) where
+instance c update => TupleUpdateWitness c (FunctionSelector a update) where
     tupleUpdateWitness (MkFunctionSelector _) = Dict
 
 type FunctionUpdateReader a update = TupleUpdateReader (FunctionSelector a update)

@@ -52,19 +52,3 @@ tupleEditUISpecs getSpec =
                      case getSpec se of
                          (spec, t) -> (mapUpdateUISpec (tupleEditLens se) spec, t))
         tupleAllSelectors
-
--- | not really a bijection
-maybeNothingValueBijection :: Eq a => a -> Bijection (Maybe a) a
-maybeNothingValueBijection def = let
-    isoForwards (Just a) = a
-    isoForwards Nothing = def
-    isoBackwards a
-        | a == def = Nothing
-    isoBackwards a = Just a
-    in MkIsomorphism {..}
-
-maybeNothingEditLens :: Eq a => a -> EditLens (WholeUpdate (Maybe a)) (WholeUpdate a)
-maybeNothingEditLens def = toEditLens $ maybeNothingValueBijection def
-
-mapMaybeNothingUISpec :: Eq a => a -> UISpec sel (WholeUpdate a) -> UISpec sel (WholeUpdate (Maybe a))
-mapMaybeNothingUISpec def = mapUpdateUISpec $ maybeNothingEditLens def

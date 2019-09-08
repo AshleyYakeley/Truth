@@ -175,9 +175,14 @@ ui_predefinitions =
           , mkValEntry "uiCheckBox" "Checkbox. Use shift-click to set to unknown." $ \name val ->
                 maybeCheckboxUISpec @baseupdate @BottomType (clearText . name) $
                 (bijectionWholeEditLens knowMaybe) . val
-          , mkValEntry "uiTextEntry" "Text entry, empty text is unknown." $
+          , mkValEntry
+                "uiTextEntry"
+                "Text entry, unknown reference will be interpreted as empty text, but the UI will not delete the reference." $
             valSpecText $ uiUnknownValue mempty $ textAreaUISpecEntry @BottomType
-          , mkValEntry "uiTextArea" "Text area, empty text is unknown." $ uiTextArea @baseupdate
+          , mkValEntry
+                "uiTextArea"
+                "Text area, unknown reference will be interpreted as empty text, but the UI will not delete the reference." $
+            uiTextArea @baseupdate
           , mkValEntry "uiLabel" "Label." $ uiLabel @baseupdate
           , mkValEntry
                 "uiHorizontal"

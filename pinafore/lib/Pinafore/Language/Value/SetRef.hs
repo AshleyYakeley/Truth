@@ -126,3 +126,14 @@ pinaforeSetRefMember (MkPinaforeSetRef eq lens) a = let
                      else Nothing) $
         MkFunctionSelector a) .
        lens
+
+pinaforePredicateToSetRef :: forall baseupdate a. (a -> Bool) -> PinaforeSetRef baseupdate (MeetType Entity a)
+pinaforePredicateToSetRef p = MkPinaforeSetRef (==) $ constEditLens $ \mea -> p $ meet2 mea
+
+pinaforePredicateRefToSetRef ::
+       forall baseupdate a.
+       PinaforeRef baseupdate '( MeetType Entity a -> Bool, a -> Bool)
+    -> PinaforeSetRef baseupdate (MeetType Entity a)
+pinaforePredicateRefToSetRef ref = let
+    lens = pinaforeRefToLens $ coRangeLift (\s ma -> s $ meet2 ma) ref
+    in MkPinaforeSetRef (==) $ partialConvertEditLens . unknownValueEditLens (\_ -> False) . lens

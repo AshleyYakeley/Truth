@@ -433,6 +433,8 @@ base_predefinitions =
                 "mapSet"
                 "Map a function on a set."
                 (contramap :: (A -> B) -> PinaforeSetRef baseupdate B -> PinaforeSetRef baseupdate A)
+          , mkValEntry "pureSet" "Convert a predicate to a set." $ pinaforePredicateToSetRef @baseupdate @A
+          , mkValEntry "refSet" "Convert a predicate reference to a set." $ pinaforePredicateRefToSetRef @baseupdate @A
           , mkValEntry "immutSet" "Convert a set to immutable." $ pinaforeSetRefImmutable @baseupdate @A
           , mkValEntry "+=" "Add an entity to a set." $ pinaforeSetRefAdd @baseupdate @A
           , mkValEntry "-=" "Remove an entity from a set." $ pinaforeSetRefRemove @baseupdate @A

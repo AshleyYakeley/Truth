@@ -1,5 +1,18 @@
-module Truth.Core.Edit.Partial where
+module Truth.Core.Edit.Partial
+    ( ReaderSet
+    , PartialUpdate(..)
+    , partialFullEditLens
+    , convertUpdateEditLens
+    , comapUpdateUpdateFunction
+    , comapUpdateEditLens
+    , partialiseUpdateFunction
+    , partialiseEditLens
+    , liftPartialEditLens
+    , partialConvertUpdateFunction
+    , partialConvertEditLens
+    ) where
 
+import Truth.Core.Edit.Edit
 import Truth.Core.Edit.FullEdit
 import Truth.Core.Edit.Function
 import Truth.Core.Edit.Lens
@@ -133,3 +146,60 @@ liftPartialEditLens ::
     -> EditLens updateA updateB
     -> EditLens (PartialUpdate updateA) (PartialUpdate updateB)
 liftPartialEditLens maprs lens = partialiseEditLens maprs $ partialEditLens . lens
+
+partialConvertAnUpdateFunction ::
+       forall updateA updateB.
+       ( IsEditUpdate updateA
+       , IsUpdate updateB
+       , UpdateSubject updateA ~ UpdateSubject updateB
+       , FullSubjectReader (UpdateReader updateA)
+       , ApplicableEdit (UpdateEdit updateA)
+       , SubjectReader (UpdateReader updateB)
+       )
+    => AnUpdateFunction IdentityT updateA (PartialUpdate updateB)
+partialConvertAnUpdateFunction = let
+    ufGet :: ReadFunctionT IdentityT (UpdateReader updateA) (UpdateReader updateB)
+    ufGet mr = mSubjectToMutableRead $ lift $ mutableReadToSubject mr
+    ufUpdate ::
+           forall m. MonadIO m
+        => updateA
+        -> MutableRead m (UpdateReader updateA)
+        -> IdentityT m [PartialUpdate updateB]
+    ufUpdate _ _ = return [UnknownPartialUpdate $ \_ -> True]
+    in MkAnUpdateFunction {..}
+
+partialConvertUpdateFunction ::
+       forall updateA updateB.
+       ( IsEditUpdate updateA
+       , IsUpdate updateB
+       , UpdateSubject updateA ~ UpdateSubject updateB
+       , FullSubjectReader (UpdateReader updateA)
+       , ApplicableEdit (UpdateEdit updateA)
+       , SubjectReader (UpdateReader updateB)
+       )
+    => UpdateFunction updateA (PartialUpdate updateB)
+partialConvertUpdateFunction = MkCloseUnlift identityUnlift partialConvertAnUpdateFunction
+
+partialConvertEditLens ::
+       forall updateA updateB.
+       ( IsEditUpdate updateA
+       , IsUpdate updateB
+       , UpdateSubject updateA ~ UpdateSubject updateB
+       , FullEdit (UpdateEdit updateA)
+       , SubjectMapEdit (UpdateEdit updateB)
+       )
+    => EditLens updateA (PartialUpdate updateB)
+partialConvertEditLens = let
+    elFunction :: AnUpdateFunction IdentityT updateA (PartialUpdate updateB)
+    elFunction = partialConvertAnUpdateFunction
+    elPutEdits ::
+           forall m. MonadIO m
+        => [UpdateEdit updateB]
+        -> MutableRead m (UpdateReader updateA)
+        -> IdentityT m (Maybe [UpdateEdit updateA])
+    elPutEdits editbs mr = do
+        oldsubject <- lift $ mutableReadToSubject mr
+        newsubject <- mapSubjectEdits editbs oldsubject
+        editas <- getReplaceEditsFromSubject newsubject
+        return $ Just editas
+    in MkCloseUnlift identityUnlift MkAnEditLens {..}

@@ -107,8 +107,7 @@ constEditLens b = readOnlyEditLens $ constUpdateFunction b
 
 convertAnUpdateFunction ::
        forall updateA updateB.
-       ( IsEditUpdate updateA
-       , IsUpdate updateB
+       ( IsUpdate updateB
        , UpdateSubject updateA ~ UpdateSubject updateB
        , FullSubjectReader (UpdateReader updateA)
        , ApplicableEdit (UpdateEdit updateA)
@@ -123,16 +122,15 @@ convertAnUpdateFunction = let
         => updateA
         -> MutableRead m (UpdateReader updateA)
         -> IdentityT m [updateB]
-    ufUpdate updateA mr = do
-        newa <- lift $ mutableReadToSubject $ applyEdit (updateEdit updateA) mr
+    ufUpdate _updateA mr = do
+        newa <- lift $ mutableReadToSubject mr
         edits <- getReplaceEditsFromSubject newa
         return $ fmap editUpdate edits
     in MkAnUpdateFunction {..}
 
 convertUpdateFunction ::
        forall updateA updateB.
-       ( IsEditUpdate updateA
-       , IsUpdate updateB
+       ( IsUpdate updateB
        , UpdateSubject updateA ~ UpdateSubject updateB
        , FullSubjectReader (UpdateReader updateA)
        , ApplicableEdit (UpdateEdit updateA)
@@ -143,8 +141,7 @@ convertUpdateFunction = MkCloseUnlift identityUnlift convertAnUpdateFunction
 
 convertEditLens ::
        forall updateA updateB.
-       ( IsEditUpdate updateA
-       , IsUpdate updateB
+       ( IsUpdate updateB
        , UpdateSubject updateA ~ UpdateSubject updateB
        , FullEdit (UpdateEdit updateA)
        , FullEdit (UpdateEdit updateB)

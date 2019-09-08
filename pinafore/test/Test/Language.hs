@@ -426,6 +426,13 @@ testQueries =
                     , testQuery "case [3,4] of [a,b] -> (a,b) end" $ Just "(3, 4)"
                     ]
               ]
+        , testGroup
+              "subtype"
+              [ testQuery "let i :: Integer -> Number; i x = x in i 3" $ Just "3"
+              , testQuery "let a :: Integer; a = 3; b :: Number; b = a in b" $ Just "3"
+              , testQuery "let i :: FiniteSetRef -a -> SetRef a; i x = x in 3" $ Just "3"
+              , testQuery "let i :: FiniteSetRef {-a,+Integer} -> SetRef a; i x = x in 3" $ Just "3"
+              ]
         ]
 
 testShim :: Text -> String -> String -> TestTree
