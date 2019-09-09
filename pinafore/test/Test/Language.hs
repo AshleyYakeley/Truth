@@ -17,7 +17,7 @@ import Test.Tasty.HUnit
 
 testOp :: Name -> TestTree
 testOp n =
-    testCase (unpack n) $ do
+    testCase (show $ unpack n) $ do
         case unpack n of
             '(':_ -> assertFailure "parenthesis"
             _ -> return ()
@@ -127,7 +127,7 @@ testQueryValues = testGroup "query values" []
 
 testQuery :: Text -> Maybe String -> TestTree
 testQuery query expected =
-    testCase (unpack query) $
+    testCase (show $ unpack query) $
     case (expected, withNullPinaforeContext $ runPinaforeSourceScoped "<input>" $ parseValue @PinaforeUpdate query) of
         (Nothing, FailureResult _) -> return ()
         (Nothing, SuccessResult v) -> assertFailure $ "expected failure, found success: " ++ showPinaforeValue v
@@ -139,6 +139,18 @@ testQueries =
     testGroup
         "queries"
         [ testGroup "trivial" [testQuery "" $ Nothing, testQuery "x" $ Nothing]
+        , testGroup
+              "comments"
+              [ testQuery "# comment\n1" $ Just "1"
+              , testQuery "1# comment\n" $ Just "1"
+              , testQuery "1 # comment\n" $ Just "1"
+              , testQuery "{# comment #} 1" $ Just "1"
+              , testQuery "{# comment #}\n1" $ Just "1"
+              , testQuery "{# comment\ncomment #}\n1" $ Just "1"
+              , testQuery "{# comment\ncomment\n#}\n1" $ Just "1"
+              , testQuery "{# A {# B #} C #} 1" $ Just "1"
+              , testQuery "{#\nA\n{#\nB\n#}\nC\n#}\n1" $ Just "1"
+              ]
         , testGroup
               "constants"
               [ testGroup

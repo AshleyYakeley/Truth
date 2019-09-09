@@ -139,21 +139,44 @@ readWS = do
     _ <-
         optional
             (do
-                 readComment
+                 comment
                  readWS)
     return ()
     <?> "white space"
   where
+    char1 :: Char -> Parser ()
+    char1 c = do
+        _ <- char c
+        return ()
     isLineBreak :: Char -> Bool
     isLineBreak '\n' = True
     isLineBreak '\r' = True
     isLineBreak _ = False
-    readComment :: Parser ()
-    readComment = do
-        _ <- char '#'
+    blockCommentOpen :: Parser ()
+    blockCommentOpen =
+        try $ do
+            char1 '{'
+            char1 '#'
+    blockCommentClose :: Parser ()
+    blockCommentClose =
+        try $ do
+            char1 '#'
+            char1 '}'
+    lineComment :: Parser ()
+    lineComment = do
+        char1 '#'
         _ <- many (satisfy (\c -> not (isLineBreak c)))
         _ <- satisfy isLineBreak
         return ()
+    blockCommentContentsClose :: Parser ()
+    blockCommentContentsClose =
+        blockCommentClose <|> (blockComment >> blockCommentContentsClose) <|> (anyToken >> blockCommentContentsClose)
+    blockComment :: Parser ()
+    blockComment = do
+        blockCommentOpen
+        blockCommentContentsClose
+    comment :: Parser ()
+    comment = blockComment <|> lineComment
 
 readEscapedChar :: Parser Char
 readEscapedChar = do

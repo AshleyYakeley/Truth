@@ -3,6 +3,9 @@
 	"name": "Pinafore",
 	"patterns": [
 		{
+			"include": "#block_comment"
+		},
+		{
 			"include": "#comments"
 		},
 		{
@@ -19,6 +22,22 @@
 		}
 	],
 	"repository": {
+		"block_comment": {
+			"applyEndPatternLast": 1,
+			"begin": "{#",
+			"captures": {
+				"0": {
+					"name": "punctuation.definition.comment.pinafore"
+				}
+			},
+			"end": "#}",
+			"name": "comment.block.pinafore",
+			"patterns": [
+				{
+					"include": "#block_comment"
+				}
+			]
+		},
 		"comments": {
 			"name": "comment.line.pinafore",
 			"begin": "#",
@@ -26,16 +45,20 @@
 			"patterns": []
 		},
 		"keywords": {
-			"patterns": [{
-				"name": "keyword.control.pinafore",
-				"match": "\\b(if|then|else|let|in|do|case|of|end|opentype|subtype|closedtype|property|entity)\\b"
-			}]
+			"patterns": [
+				{
+					"name": "keyword.control.pinafore",
+					"match": "\\b(if|then|else|let|in|do|case|of|end|opentype|subtype|closedtype|property|entity)\\b"
+				}
+			]
 		},
 		"types": {
-			"patterns": [{
-				"name": "storage.type.predefined.pinafore",
-				"match": "\\b(Any|None|Literal|Text|Number|Rational|Integer|Boolean|Entity|NewEntity|Maybe|Either|Order|Action|Ref|SetRef|FiniteSetRef|UI|Window|MenuItem)\\b"
-			}]
+			"patterns": [
+				{
+					"name": "storage.type.predefined.pinafore",
+					"match": "\\b(Any|None|Literal|Text|Number|Rational|Integer|Boolean|Entity|NewEntity|Maybe|Either|Order|Action|Ref|SetRef|FiniteSetRef|UI|Window|MenuItem)\\b"
+				}
+			]
 		},
 		"strings": {
 			"name": "string.quoted.double.pinafore",

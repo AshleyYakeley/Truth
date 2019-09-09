@@ -18,6 +18,7 @@ class PinaforeLexer(RegexLexer):
             (r'\n', Text),
             (r'\s+', Text),
             (r'\#(.*?)\n', Comment.Single),
+            (r'{\#', Comment.Multiline, 'comment'),
             (r'"(\\\\|\\"|[^"])*"', String),
             (r'(opentype|subtype|closedtype|property|entity)\b', Keyword.Declaration),
             (words(('if', 'then', 'else', 'let', 'in', 'do', 'case', 'of', 'end'), suffix=r'\b'), Keyword),
@@ -31,5 +32,11 @@ class PinaforeLexer(RegexLexer):
             (r'[^\W\d]\w*', Name.Other),
             (r'(=|;|\(|\)|\[|\]|\@|::|->|,|{|}|\\)', Punctuation),
             (r'[!@$%^&*-_+\\/|\.<>?]+', Operator),
+        ],
+        'comment': [
+            (r'[^#{]', Comment.Multiline),
+            (r'{\#', Comment.Multiline, '#push'),
+            (r'\#}', Comment.Multiline, '#pop'),
+            (r'[#{]', Comment.Multiline)
         ]
     }
