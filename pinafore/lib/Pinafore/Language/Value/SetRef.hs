@@ -111,21 +111,88 @@ pinaforeSetRefRemove :: forall baseupdate a. PinaforeSetRef baseupdate a -> a ->
 pinaforeSetRefRemove (MkPinaforeSetRef _eq lens) a =
     pinaforeLensPush lens $ pure $ MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit False
 
-pinaforeSetRefMember :: forall baseupdate a. PinaforeSetRef baseupdate a -> a -> PinaforeRef baseupdate '( Bool, Bool)
-pinaforeSetRefMember (MkPinaforeSetRef eq lens) a = let
-    mapset :: ReaderSet (SetReader a) -> ReaderSet (WholeReader Bool)
-    mapset _rset ReadWhole = True
-    in pinaforeLensToRef $
-       wholeEditLens knowMaybeLens .
-       partialFullEditLens .
-       (liftPartialEditLens mapset $
-        tupleEditLens_
-            (\(MkFunctionSelector a') ->
-                 if eq a a'
-                     then Just Refl
-                     else Nothing) $
-        MkFunctionSelector a) .
-       lens
+pinaforeSetRefMember ::
+       forall baseupdate a.
+       PinaforeSetRef baseupdate a
+    -> PinaforeRef baseupdate '( BottomType, a)
+    -> PinaforeRef baseupdate '( Bool, Bool)
+pinaforeSetRefMember (MkPinaforeSetRef eq lens) aref = let
+    afval = pinaforeRefToFunction aref
+    knowApplySetLens :: EditLens (PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))) (WholeUpdate (Know Bool))
+    knowApplySetLens = let
+        getFunc ::
+               forall m. MonadIO m
+            => MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
+            -> a
+            -> m Bool
+        getFunc mr a = mr $ MkTupleUpdateReader SelectFirst $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole
+        getArg ::
+               forall m. MonadIO m
+            => MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
+            -> m (Know a)
+        getArg mr = mr $ MkTupleUpdateReader SelectSecond ReadWhole
+        elFunction ::
+               AnUpdateFunction IdentityT (PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))) (WholeUpdate (Know Bool))
+        ufGet ::
+               forall m. MonadIO m
+            => MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
+            -> MutableRead (IdentityT m) (WholeReader (Know Bool))
+        ufGet mr ReadWhole =
+            lift $ do
+                ka <- getArg mr
+                for ka $ getFunc mr
+        ufUpdate ::
+               forall m. MonadIO m
+            => PairUpdate (PartialSetUpdate a) (WholeUpdate (Know a))
+            -> MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
+            -> IdentityT m [WholeUpdate (Know Bool)]
+        ufUpdate (MkTupleUpdate SelectFirst (KnownPartialUpdate (MkTupleUpdate (MkFunctionSelector a) (MkWholeUpdate b)))) mr =
+            lift $ do
+                ka <- getArg mr
+                return $
+                    case ka of
+                        Known a'
+                            | eq a a' -> pure $ MkWholeUpdate $ Known b
+                        _ -> []
+        ufUpdate (MkTupleUpdate SelectFirst (UnknownPartialUpdate rset)) mr =
+            lift $ do
+                ka <- getArg mr
+                case ka of
+                    Known a
+                        | rset $ MkTupleUpdateReader (MkFunctionSelector a) ReadWhole -> do
+                            b <- getFunc mr a
+                            return $ pure $ MkWholeUpdate $ Known b
+                    _ -> return []
+        ufUpdate (MkTupleUpdate SelectSecond (MkWholeUpdate ka)) mr =
+            lift $ do
+                case ka of
+                    Known a -> do
+                        b <- getFunc mr a
+                        return $ pure $ MkWholeUpdate $ Known b
+                    Unknown -> return $ pure $ MkWholeUpdate Unknown
+        elFunction = MkAnUpdateFunction {..}
+        elPutEdits ::
+               forall m. MonadIO m
+            => [WholeEdit (Know Bool)]
+            -> MutableRead m (PairUpdateReader (PartialSetUpdate a) (WholeUpdate (Know a)))
+            -> IdentityT m (Maybe [PairUpdateEdit (PartialSetUpdate a) (WholeUpdate (Know a))])
+        elPutEdits edits mr =
+            case lastWholeEdit edits of
+                Nothing -> return $ Just []
+                Just kb ->
+                    lift $ do
+                        ka <- getArg mr
+                        return $
+                            case (ka, kb) of
+                                (Unknown, Unknown) -> Just []
+                                (Known a, Known b) ->
+                                    Just $
+                                    pure $
+                                    MkTupleUpdateEdit SelectFirst $
+                                    MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit b
+                                _ -> Nothing
+        in MkCloseUnlift identityUnlift MkAnEditLens {..}
+    in pinaforeLensToRef $ knowApplySetLens . pairCombineEditLenses lens (readOnlyEditLens afval)
 
 pinaforePredicateToSetRef :: forall baseupdate a. (a -> Bool) -> PinaforeSetRef baseupdate (MeetType Entity a)
 pinaforePredicateToSetRef p = MkPinaforeSetRef (==) $ constEditLens $ \mea -> p $ meet2 mea

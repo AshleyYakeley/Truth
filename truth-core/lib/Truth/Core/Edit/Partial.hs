@@ -3,6 +3,7 @@ module Truth.Core.Edit.Partial
     , PartialUpdate(..)
     , partialFullEditLens
     , convertUpdateEditLens
+    , partialEditLens
     , comapUpdateUpdateFunction
     , comapUpdateEditLens
     , partialiseUpdateFunction
