@@ -427,7 +427,7 @@ base_predefinitions =
           , mkValEntry "newMemRef" "Create a new reference to memory, initially unknown." $ newMemRef @baseupdate
           ]
     , docTreeEntry
-          "Sets"
+          "Set References"
           ""
           [ mkValEntry
                 "mapSet"
@@ -466,7 +466,7 @@ base_predefinitions =
             pinaforeSetRefCartesianProduct @baseupdate @A @B
           ]
     , docTreeEntry
-          "Finite Sets"
+          "Finite Set References"
           ""
           [ mkValEntry
                 "coMapFiniteSet"

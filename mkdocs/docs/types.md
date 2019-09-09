@@ -131,6 +131,9 @@ If there is a loop of subtype relations, it will simply make those types equival
 
 Roughly equivalent to the Haskell `IO a`.
 
+Actions can _stop_ (using `stop`), which is a kind of exception. Stops can be caught with `onstop`.
+Runners of an action that stops, such as the main program, or the handler of a button press, will silently catch the stop.
+
 ## Orders
 
 `Order a`  
@@ -150,15 +153,29 @@ The type parameter is the type of the selection.
 
 `Ref {-p,+q}`
 
-## Sets
+A reference a mutable value, that is, something that can be fetched, set, and deleted, either by functions (`get`, `:=`, `delete`), or by a user interface.
+
+References keep track of updates, and will update user interfaces constructed from them when their value changes.
+
+References may be "unknown"
+
+## Set References
 
 `SetRef a`
 
 (`a` is contravariant)
 
-## Finite Sets
+A set reference is a mutable predicate, like a test on values. Values can be added to it or deleted from it.
+
+## Finite Set References
 
 `FiniteSetRef {-p,+q}`
+
+Finite set references are set references:
+
+`FiniteSetRef -a <= SetRef a`
+
+Finite set references contain a finite number of members, which can be retrieved.
 
 ## Morphisms
 
