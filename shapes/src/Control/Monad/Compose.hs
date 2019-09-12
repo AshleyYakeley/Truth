@@ -21,7 +21,14 @@ instance (MonadOne inner, Monad outer) => Applicative (ComposeM inner outer) whe
 
 instance (MonadOne inner, Monad outer, Alternative inner) => Alternative (ComposeM inner outer) where
     empty = MkComposeM $ pure empty
-    (MkComposeM oia) <|> (MkComposeM oib) = MkComposeM $ liftA2 (<|>) oia oib
+    (MkComposeM oia) <|> cb = do
+        ma <-
+            MkComposeM $ do
+                ia <- oia
+                return $ (fmap Just ia) <|> return Nothing
+        case ma of
+            Just a -> return a
+            Nothing -> cb
 
 instance (MonadOne inner, Monad outer) => Monad (ComposeM inner outer) where
     return = pure

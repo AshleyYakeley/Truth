@@ -23,7 +23,8 @@ scriptTest ::
 scriptTest ut name text checker =
     contextTestCase name text $ \t ->
         withTestPinaforeContext ut nullUIToolkit $ \_getTableState -> do
-            action <- ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" t
+            action <-
+                ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" $ "onStop (fail \"stopped\") (" <> t <> ")"
             checker action
 
 pointTest :: Text -> ContextTestTree
@@ -79,6 +80,7 @@ testEntity =
         , "testisknown t = runRef {if %(known t) then pass else fail \"known\"}"
         , "testisunknown t = runRef {if %(known t) then fail \"known\" else pass}"
         , "testeqval e f = testeq {e} {f}"
+        , "expectStop p = onStop pass $ (p >> fail \"no stop\")"
         ] $
     tgroup
         "entity"
@@ -121,17 +123,22 @@ testEntity =
               , pointTest "do a <- return 3; testeqval 3 a end"
               , pointTest "do a <- return 3; b <- return $ a + a; testeqval 6 b end"
               ]
-        , tgroup
+        , context ["flagRef = do r <- newMemRef; r := False; return r; end"] $
+          tgroup
               "stop"
               [ pointTest "return ()"
               , badPointTest "fail \"failure\""
-              , pointTest "stop"
-              , pointTest "do stop; fail \"unstopped\"; end"
+              , pointTest "expectStop stop"
+              , pointTest "expectStop $ do stop; fail \"unstopped\"; end"
               , pointTest "do a <- onStop (return 1) (return 2); testeqval 2 a; end"
               , pointTest "do a <- onStop stop (return 2); testeqval 2 a; end"
               , badPointTest "do a <- onStop stop (return 2); fail \"unstopped\"; end"
               , pointTest "do a <- onStop (return 1) stop; testeqval 1 a; end"
               , badPointTest "do a <- onStop (return 1) stop; fail \"unstopped\"; end"
+              , pointTest
+                    "do r1 <- flagRef; r2 <- flagRef; onStop (r1 := True) (r2 := True); testeq {False} r1; testeq {True} r2; end"
+              , pointTest
+                    "do r1 <- flagRef; r2 <- flagRef; onStop (r1 := True) (do r2 := True; stop; end); testeq {True} r1; testeq {True} r2; end"
               ]
         , tgroup
               "equality"
@@ -153,14 +160,14 @@ testEntity =
               ]
         , tgroup
               "reference stop"
-              [ pointTest "do stop; fail \"unstopped\"; end"
-              , pointTest "do a <- get unknown; fail \"unstopped\"; end"
-              , pointTest "do {1} := 1; fail \"unstopped\"; end"
-              , pointTest "do delete {1}; fail \"unstopped\"; end"
+              [ pointTest "expectStop $ stop"
+              , pointTest "expectStop $ get unknown"
+              , pointTest "expectStop $ {1} := 1"
+              , pointTest "expectStop $ delete {1}"
               ]
         , tgroup
               "memory references"
-              [ pointTest "do r <- newMemRef; a <- get r; fail \"unstopped\"; end"
+              [ pointTest "expectStop $ do r <- newMemRef; get r; end"
               , pointTest "do r <- newMemRef; r := 45; a <- get r; testeqval 45 a; end"
               , pointTest "do r <- newMemRef; r := 3; r := 4; a <- get r; testeqval 4 a; end"
               , pointTest "do s <- newMemFiniteSet; n <- get $ count s; testeqval 0 n; end"
@@ -178,7 +185,7 @@ testEntity =
                     "do s <- newMemFiniteSet; member s {57} := False; m57 <- get $ member s {57}; testeqval False m57; end"
               , pointTest
                     "do s <- newMemFiniteSet; member s {57} := True; member s {57} := False; m57 <- get $ member s {57}; testeqval False m57; end"
-              , pointTest "do r <- newMemRef; immutRef r := 5; fail \"unstopped\"; end"
+              , pointTest "expectStop $ do r <- newMemRef; immutRef r := 5; end"
               ]
         , context
               [ "convr :: Rational -> Rational;convr = id"
@@ -243,6 +250,12 @@ testEntity =
                     , pointTest "tea !$ {\"hello\"} := e1 >> testeq {e1} (tea !$ {\"hello\"})"
                     , pointTest "tea !$ {\"hello\"} := e1 >> runRef {outputLn (toText $ %(count (tea !@ {e1})))}"
                     , pointTest "tea !$ {\"hello\"} := e1 >> testeq {1} (count (tea !@ {e1}))"
+                    , pointTest "(eea !. eea) !$ {e1} := e2"
+                    , pointTest
+                          "do (eea !. eea) !$ {e1} := e2; testeq {e2} ((eea !. eea) !$ {e1}); testeq {e2} (eea !$ (eea !$ {e1})); end"
+                    , pointTest
+                          "do eea !$ (eea !$ {e1}) := e2; testeq {e2} ((eea !. eea) !$ {e1}); testeq {e2} (eea !$ (eea !$ {e1})); end"
+                    , pointTest "expectStop $ do r <- newMemRef; eia !$ r := 4; end"
                     ]
               , tgroup
                     "+="

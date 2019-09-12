@@ -6,6 +6,22 @@ import Shapes
 import Test.Tasty
 import Test.Tasty.HUnit
 
+testComposeM :: TestTree
+testComposeM =
+    testCase "composeM" $ do
+        r1 <- newIORef False
+        r2 <- newIORef False
+        let
+            c1 :: ComposeM Maybe IO ()
+            c1 = lift $ writeIORef r1 True
+            c2 :: ComposeM Maybe IO ()
+            c2 = lift $ writeIORef r2 True
+        _ <- getComposeM $ c1 <|> c2
+        v1 <- readIORef r1
+        v2 <- readIORef r2
+        assertEqual "v1" True v1
+        assertEqual "v2" False v2
+
 compareTest :: String -> ((String -> IO ()) -> IO r) -> IO r
 compareTest expected action = do
     resultsRef <- newIORef ""
@@ -83,7 +99,7 @@ testClock :: TestTree
 testClock = testGroup "clock" [testFastClock, testSlowClock]
 
 tests :: TestTree
-tests = testGroup "shapes" [testCoroutine, testLifeCycle, testClock]
+tests = testGroup "shapes" [testComposeM, testCoroutine, testLifeCycle, testClock]
 
 main :: IO ()
 main = defaultMain tests
