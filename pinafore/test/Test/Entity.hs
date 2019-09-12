@@ -394,7 +394,7 @@ testEntity =
                     , pointTest "eea !$ {e2} := e1 >> testeq {1} (count (eea !@ {e1}))"
                     , pointTest $
                       "let counter = eia !$ {e1};someset = nea !@ {e1} in " <>
-                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (members (orders []) someset) >>= \\pp -> for pp $ \\p -> runRef {counter := %counter + 1}) >> testeq {1} counter"
+                      "counter := 0 >> someset += 1 >> someset += 1 >> (get (members noOrder someset) >>= \\pp -> for pp $ \\p -> runRef {counter := %counter + 1}) >> testeq {1} counter"
                     ]
               , tgroup
                     "types"

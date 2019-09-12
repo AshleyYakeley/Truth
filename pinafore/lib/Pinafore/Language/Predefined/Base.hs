@@ -528,6 +528,7 @@ base_predefinitions =
           , mkValEntry "calendrical" "Day order." $ ordOrder @baseupdate @Day
           , mkValEntry "horological" "Time of day order." $ ordOrder @baseupdate @TimeOfDay
           , mkValEntry "localChronological" "Local time order." $ ordOrder @baseupdate @LocalTime
+          , mkValEntry "noOrder" "No order, same as `orders []`." $ noOrder @baseupdate
           , mkValEntry "orders" "Join orders by priority." $ orders @baseupdate @A
           , mkValEntry
                 "mapOrder"

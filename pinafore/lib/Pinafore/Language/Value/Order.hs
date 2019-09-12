@@ -41,6 +41,9 @@ orderOn ::
     -> PinaforeOrder baseupdate a
 orderOn f (MkPinaforeOrder ef o) = MkPinaforeOrder (ef . pinaforeMorphismFunction f) o
 
+noOrder :: forall baseupdate. PinaforeOrder baseupdate TopType
+noOrder = mempty
+
 orders :: forall baseupdate a. [PinaforeOrder baseupdate a] -> PinaforeOrder baseupdate a
 orders = mconcat
 

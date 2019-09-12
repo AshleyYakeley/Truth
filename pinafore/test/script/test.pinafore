@@ -70,7 +70,7 @@ ui_people pp = uiWithSelection $ \getperson -> uiVertical
     (uiButton {"New Person"} {newEntity pp >>= window_person},False),
     (uiButton {"View Person"} {getperson >>= window_person},False),
     (uiButton {"Remove Person"} {getperson >>= \p -> pp -= p},False),
-    (uiTable [({"Name"},\p -> name !$ {p})] (orders []) pp $ window_person,True)
+    (uiTable [({"Name"},\p -> name !$ {p})] noOrder pp $ window_person,True)
 ];
 
 ui_person :: Ref Person -> UI None;
