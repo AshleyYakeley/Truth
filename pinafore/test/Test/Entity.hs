@@ -24,7 +24,7 @@ scriptTest ut name text checker =
     contextTestCase name text $ \t ->
         withTestPinaforeContext ut nullUIToolkit $ \_getTableState -> do
             action <-
-                ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" $ "onStop (fail \"stopped\") (" <> t <> ")"
+                ioRunInterpretResult $ pinaforeInterpretFileAtType "<test>" $ "onStop (" <> t <> ") (fail \"stopped\")"
             checker action
 
 pointTest :: Text -> ContextTestTree
@@ -80,7 +80,7 @@ testEntity =
         , "testisknown t = runRef {if %(known t) then pass else fail \"known\"}"
         , "testisunknown t = runRef {if %(known t) then fail \"known\" else pass}"
         , "testeqval e f = testeq {e} {f}"
-        , "expectStop p = onStop pass $ (p >> fail \"no stop\")"
+        , "expectStop p = onStop (p >> fail \"no stop\") pass"
         ] $
     tgroup
         "entity"
@@ -130,15 +130,17 @@ testEntity =
               , badPointTest "fail \"failure\""
               , pointTest "expectStop stop"
               , pointTest "expectStop $ do stop; fail \"unstopped\"; end"
-              , pointTest "do a <- onStop (return 1) (return 2); testeqval 2 a; end"
-              , pointTest "do a <- onStop stop (return 2); testeqval 2 a; end"
-              , badPointTest "do a <- onStop stop (return 2); fail \"unstopped\"; end"
+              , pointTest "do a <- onStop (return 1) (return 2); testeqval 1 a; end"
               , pointTest "do a <- onStop (return 1) stop; testeqval 1 a; end"
               , badPointTest "do a <- onStop (return 1) stop; fail \"unstopped\"; end"
+              , pointTest "do a <- onStop stop (return 2); testeqval 2 a; end"
+              , badPointTest "do a <- onStop stop (return 2); fail \"unstopped\"; end"
               , pointTest
-                    "do r1 <- flagRef; r2 <- flagRef; onStop (r1 := True) (r2 := True); testeq {False} r1; testeq {True} r2; end"
+                    "do r1 <- flagRef; r2 <- flagRef; onStop (r1 := True) (r2 := True); testeq {True} r1; testeq {False} r2; end"
               , pointTest
-                    "do r1 <- flagRef; r2 <- flagRef; onStop (r1 := True) (do r2 := True; stop; end); testeq {True} r1; testeq {True} r2; end"
+                    "do r1 <- flagRef; r2 <- flagRef; onStop (do r1 := True; stop; end) (r2 := True); testeq {True} r1; testeq {True} r2; end"
+              , pointTest
+                    "do r1 <- flagRef; r2 <- flagRef; onStop (do stop; r1 := True; end) (r2 := True); testeq {False} r1; testeq {True} r2; end"
               ]
         , tgroup
               "equality"

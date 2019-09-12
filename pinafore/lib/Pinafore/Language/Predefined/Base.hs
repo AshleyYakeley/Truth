@@ -41,7 +41,7 @@ entityUUID :: Entity -> Text
 entityUUID p = pack $ show p
 
 onStop :: forall baseupdate. PinaforeAction baseupdate A -> PinaforeAction baseupdate A -> PinaforeAction baseupdate A
-onStop p q = q <|> p
+onStop p q = p <|> q
 
 newMemRef ::
        forall baseupdate. BaseEditLens MemoryCellUpdate baseupdate
@@ -359,7 +359,7 @@ base_predefinitions =
                 "stop"
                 "Stop. This is similar to an exception that can be caught with `onStop`. The default handler (for the main program, button presses, etc.), is to catch and ignore it."
                 (empty :: PinaforeAction baseupdate BottomType)
-          , mkValEntry "onStop" "`onStop p q` does `q` first, and if it stops, then does `p`." $ onStop @baseupdate
+          , mkValEntry "onStop" "`onStop p q` does `p` first, and if it stops, then does `q`." $ onStop @baseupdate
           , mkValEntry
                 "for_"
                 "Perform an action on each value of a list."
