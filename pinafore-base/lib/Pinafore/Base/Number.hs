@@ -206,7 +206,7 @@ readNumberLiteral = let
     readP = readS_to_P $ readsPrec 0
     readInexact :: ReadP Double
     readInexact = do
-        _ <- char '~'
+        void $ char '~'
         readP
     assembleDigits :: (Integer, Integer) -> String -> (Integer, Integer)
     assembleDigits it [] = it
@@ -225,11 +225,11 @@ readNumberLiteral = let
         (intPart, _) <- readDigits1
         decPart <-
             option' 0 $ do
-                _ <- char '.'
+                void $ char '.'
                 (fixN, fixD) <- readDigits
                 repR <-
                     option' 0 $ do
-                        _ <- char '_'
+                        void $ char '_'
                         (repN, repD) <- readDigits
                         return $
                             if repD == 1
@@ -239,7 +239,7 @@ readNumberLiteral = let
         return $ sign $ toRational intPart + decPart
     readNaN :: ReadP Number
     readNaN = do
-        _ <- string "NaN"
+        void $ string "NaN"
         return $ InexactNumber $ 0 / 0
     readNumber :: ReadP Number
     readNumber = fmap InexactNumber readInexact <++ fmap ExactNumber readExact <++ readNaN
@@ -259,7 +259,7 @@ instance Read Number where
         readP = readS_to_P $ readsPrec prec
         readInexact :: ReadP Double
         readInexact = do
-            _ <- char '~'
+            void $ char '~'
             readP
         assembleDigits :: Integer -> String -> Integer
         assembleDigits i [] = i
@@ -274,12 +274,12 @@ instance Read Number where
             n <- readDigits1
             d <-
                 option' 1 $ do
-                    _ <- char '/'
+                    void $ char '/'
                     readDigits1
             return $ sign $ n % d
         readNaN :: ReadP Number
         readNaN = do
-            _ <- string "NaN"
+            void $ string "NaN"
             return $ InexactNumber $ 0 / 0
         readNumber :: ReadP Number
         readNumber = do
