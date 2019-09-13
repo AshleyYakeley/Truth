@@ -69,14 +69,21 @@ nameToLiteralType "TimeOfDay" = Just $ MkAnyW TimeOfDayLiteralType
 nameToLiteralType "LocalTime" = Just $ MkAnyW LocalTimeLiteralType
 nameToLiteralType _ = Nothing
 
+integerToRational :: Integer -> Rational
+integerToRational = toRational
+
+rationalToNumber :: Rational -> Number
+rationalToNumber = ExactNumber
+
 instance IsSubtype LiteralType where
     isSubtype ta tb
         | Just Refl <- testEquality ta tb = return id
     isSubtype t LiteralLiteralType
         | Dict <- literalTypeAsLiteral t = return $ toEnhanced "subtype" toLiteral
-    isSubtype RationalLiteralType NumberLiteralType = return $ toEnhanced "subtype" ExactNumber
-    isSubtype IntegerLiteralType NumberLiteralType = return $ toEnhanced "subtype" $ ExactNumber . toRational
-    isSubtype IntegerLiteralType RationalLiteralType = return $ toEnhanced "subtype" toRational
+    isSubtype RationalLiteralType NumberLiteralType = return $ toEnhanced "subtype" rationalToNumber
+    isSubtype IntegerLiteralType NumberLiteralType =
+        return $ toEnhanced "subtype" $ rationalToNumber . integerToRational
+    isSubtype IntegerLiteralType RationalLiteralType = return $ toEnhanced "subtype" integerToRational
     isSubtype _ _ = Nothing
 
 literalTypeAsLiteral :: LiteralType t -> Dict (AsLiteral t)

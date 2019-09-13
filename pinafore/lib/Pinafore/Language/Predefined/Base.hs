@@ -7,10 +7,13 @@ import Data.Fixed (div', mod')
 import Data.Shim
 import Data.Time
 import Data.Time.Clock.System
+import Language.Expression.Dolan
 import Pinafore.Base
 import Pinafore.Language.DocTree
 import Pinafore.Language.If
 import Pinafore.Language.Predefined.Defs
+import Pinafore.Language.Type.Entity
+import Pinafore.Language.Type.Literal
 import Pinafore.Language.Value
 import Pinafore.Storage
 import Shapes
@@ -96,11 +99,13 @@ base_predefinitions =
             (==) @Literal
           , mkValEntry "/=" "Literal non-equality." $ (/=) @Literal
           , mkValEntry "entityUUID" "UUID of an entity." entityUUID
+          , mkSupertypeEntry "id" "Every literal is an entity." $ literalToEntity @Literal
           , mkValEntry "toText" "The text of a literal." unLiteral
           , docTreeEntry
                 "Boolean"
                 ""
-                [ mkValPatEntry "True" "Boolean TRUE." True $ \v ->
+                [ mkSupertypeEntry "id" "Every boolean is a literal." $ toLiteral @Bool
+                , mkValPatEntry "True" "Boolean TRUE." True $ \v ->
                       if v
                           then Just ()
                           else Nothing
@@ -115,7 +120,8 @@ base_predefinitions =
           , docTreeEntry
                 "Text"
                 ""
-                [ mkValEntry "<>" "Concatenate text." $ (<>) @Text
+                [ mkSupertypeEntry "id" "Every text is a literal." $ toLiteral @Text
+                , mkValEntry "<>" "Concatenate text." $ (<>) @Text
                 , mkValEntry "textLength" "The length of a piece of text." $ olength @Text
                 , mkValEntry
                       "textSection"
@@ -126,7 +132,8 @@ base_predefinitions =
           , docTreeEntry
                 "Numeric"
                 ""
-                [ mkValEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
+                [ mkSupertypeEntry "id" "Every number is a literal." $ toLiteral @Number
+                , mkValEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
                 , mkValEntry "~/=" "Numeric non-equality." $ (/=) @Number
                 , mkValEntry "<" "Numeric strictly less." $ (<) @Number
                 , mkValEntry "<=" "Numeric less or equal." $ (<=) @Number
@@ -135,7 +142,8 @@ base_predefinitions =
                 , docTreeEntry
                       "Integer"
                       ""
-                      [ mkValEntry "+" "Add." $ (+) @Integer
+                      [ mkSupertypeEntry "id" "Every integer is a rational." integerToRational
+                      , mkValEntry "+" "Add." $ (+) @Integer
                       , mkValEntry "-" "Subtract." $ (-) @Integer
                       , mkValEntry "*" "Multiply." $ (*) @Integer
                       , mkValEntry "negate" "Negate." $ negate @Integer
@@ -151,7 +159,8 @@ base_predefinitions =
                 , docTreeEntry
                       "Rational"
                       ""
-                      [ mkValEntry ".+" "Add." $ (+) @Rational
+                      [ mkSupertypeEntry "id" "Every rational is a number." rationalToNumber
+                      , mkValEntry ".+" "Add." $ (+) @Rational
                       , mkValEntry ".-" "Subtract." $ (-) @Rational
                       , mkValEntry ".*" "Multiply." $ (*) @Rational
                       , mkValEntry "/" "Divide." $ (/) @Rational
@@ -225,7 +234,8 @@ base_predefinitions =
                 [ docTreeEntry
                       "Time & Duration"
                       ""
-                      [ mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
+                      [ mkSupertypeEntry "id" "Every duration is a literal." $ toLiteral @NominalDiffTime
+                      , mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
                       , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
                       , mkValEntry "durationToSeconds" "Convert duration to seconds." nominalDiffTimeToSeconds
                       , mkValEntry "dayDuration" "One day duration." nominalDay
@@ -246,6 +256,7 @@ base_predefinitions =
                       [ mkValPatEntry "Day" "Construct a Day from year, month, day." fromGregorian $ \day -> let
                             (y, m, d) = toGregorian day
                             in Just (y, (m, (d, ())))
+                      , mkSupertypeEntry "id" "Every day is a literal." $ toLiteral @Day
                       , mkValEntry "dayToModifiedJulian" "Convert to MJD." toModifiedJulianDay
                       , mkValEntry "modifiedJulianToDay" "Convert from MJD." ModifiedJulianDay
                       , mkValEntry "addDays" "Add count to days." addDays
@@ -258,6 +269,7 @@ base_predefinitions =
                       ""
                       [ mkValPatEntry "TimeOfDay" "Construct a TimeOfDay from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
                             Just (todHour, (todMin, (todSec, ())))
+                      , mkSupertypeEntry "id" "Every time of day is a literal." $ toLiteral @TimeOfDay
                       , mkValEntry "midnight" "Midnight." midnight
                       , mkValEntry "midday" "Midday." midday
                       ]
@@ -266,6 +278,7 @@ base_predefinitions =
                       ""
                       [ mkValPatEntry "LocalTime" "Construct a LocalTime from day and time of day." LocalTime $ \LocalTime {..} ->
                             Just (localDay, (localTimeOfDay, ()))
+                      , mkSupertypeEntry "id" "Every local time is a literal." $ toLiteral @LocalTime
                       , mkValEntry "timeToLocal" "Convert a time to local time, given a time zone offset in minutes" $ \i ->
                             utcToLocalTime $ minutesToTimeZone i
                       , mkValEntry "localToTime" "Convert a local time to time, given a time zone offset in minutes" $ \i ->
@@ -289,11 +302,22 @@ base_predefinitions =
                 case v of
                     Nothing -> Just ()
                     _ -> Nothing
+          , mkSupertypeEntry "id" "Entity conversion." $
+            entityAdapterConvert $
+            entityAdapter $
+            MkEntityType MaybeEntityGroundType $
+            ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
           ]
     , docTreeEntry
           "Pairs"
           ""
-          [ mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
+          [ mkSupertypeEntry "id" "Entity conversion." $
+            entityAdapterConvert $
+            entityAdapter $
+            MkEntityType PairEntityGroundType $
+            ConsArguments (MkEntityType TopEntityGroundType NilArguments) $
+            ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
+          , mkValEntry "fst" "Get the first member of a pair." $ fst @A @B
           , mkValEntry "snd" "Get the second member of a pair." $ snd @A @B
           , mkValEntry "toPair" "Construct a pair." $ (,) @A @B
           , mkValEntry "pair" "Construct a pair." $ \(a :: A) -> (a, a)
@@ -309,6 +333,12 @@ base_predefinitions =
                 case v of
                     Right a -> Just (a, ())
                     _ -> Nothing
+          , mkSupertypeEntry "id" "Entity conversion." $
+            entityAdapterConvert $
+            entityAdapter $
+            MkEntityType EitherEntityGroundType $
+            ConsArguments (MkEntityType TopEntityGroundType NilArguments) $
+            ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
           , mkValEntry "fromEither" "Eliminate an Either" $ either @A @C @B
           , mkValEntry "either" "Eliminate an Either" $ \(v :: Either A A) ->
                 case v of
@@ -326,6 +356,11 @@ base_predefinitions =
                 case v of
                     a:b -> Just (a, (b, ()))
                     _ -> Nothing
+          , mkSupertypeEntry "id" "Entity conversion." $
+            entityAdapterConvert $
+            entityAdapter $
+            MkEntityType ListEntityGroundType $
+            ConsArguments (MkEntityType TopEntityGroundType NilArguments) NilArguments
           , mkValEntry "list" "Eliminate a list" $ \(fnil :: B) fcons (l :: [A]) ->
                 case l of
                     [] -> fnil
@@ -468,7 +503,8 @@ base_predefinitions =
     , docTreeEntry
           "Finite Set References"
           ""
-          [ mkValEntry
+          [ mkSupertypeEntry "id" "Every finite set is a set." $ pinaforeFiniteSetRefToSetRef @baseupdate @A @TopType
+          , mkValEntry
                 "coMapFiniteSet"
                 "Map a function on getting from a finite set."
                 (coRangeLift :: (A -> B) -> PinaforeFiniteSetRef baseupdate '( C, A) -> PinaforeFiniteSetRef baseupdate '( C, B))
@@ -488,8 +524,12 @@ base_predefinitions =
             pinaforeFiniteSetRefJoin @baseupdate @A
           , mkValEntry "<:+:>" "Cartesian sum of finite sets." $
             pinaforeFiniteSetRefCartesianSum @baseupdate @AP @AQ @BP @BQ
+          , mkSupertypeEntry "<:+:>" "Cartesian sum of finite sets." $
+            pinaforeFiniteSetRefCartesianSum @baseupdate @A @A @B @B
           , mkValEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
             pinaforeFiniteSetRefCartesianProduct @baseupdate @AP @AQ @BP @BQ
+          , mkSupertypeEntry "<:*:>" "Cartesian product of finite sets. The resulting finite set will be read-only." $
+            pinaforeFiniteSetRefCartesianProduct @baseupdate @A @A @B @B
           , mkValEntry "members" "Get all members of a finite set, by an order." $ pinaforeSetGetOrdered @baseupdate @A
           , mkValEntry "single" "The member of a single-member finite set, or unknown." $
             pinaforeFiniteSetRefSingle @baseupdate @A
@@ -507,16 +547,27 @@ base_predefinitions =
           "Morphisms relate entities."
           [ mkValEntry "identity" "The identity morphism." $ identityPinaforeMorphism @baseupdate @A
           , mkValEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+          , mkSupertypeEntry "!." "Compose morphisms." $ composePinaforeMorphism @baseupdate @A @A @B @B @C @C
           , mkValEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
             pairPinaforeMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+          , mkSupertypeEntry "!**" "Pair morphisms. References from these morphisms are undeleteable." $
+            pairPinaforeMorphism @baseupdate @A @A @B @B @C @C
           , mkValEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
             eitherPinaforeMorphism @baseupdate @AP @AQ @BP @BQ @CP @CQ
+          , mkSupertypeEntry "!++" "Either morphisms. References from these morphisms are undeleteable." $
+            eitherPinaforeMorphism @baseupdate @A @A @B @B @C @C
           , mkValEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseupdate @AP @AQ @BP @BQ
+          , mkSupertypeEntry "!$" "Apply a morphism to a reference." $ pinaforeApplyMorphismRef @baseupdate @A @A @B @B
           , mkValEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseupdate @A @BP @BQ
+          , mkSupertypeEntry "!$$" "Apply a morphism to a set." $ pinaforeApplyMorphismSet @baseupdate @A @B @B
           , mkValEntry "!@" "Co-apply a morphism to a reference." $
             pinaforeApplyInverseMorphismRef @baseupdate @AP @AQ @BP @BQ
+          , mkSupertypeEntry "!@" "Co-apply a morphism to a reference." $
+            pinaforeApplyInverseMorphismRef @baseupdate @A @A @B @B
           , mkValEntry "!@@" "Co-apply a morphism to a set." $
             pinaforeApplyInverseMorphismSet @baseupdate @AP @AQ @BP @BQ
+          , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $
+            pinaforeApplyInverseMorphismSet @baseupdate @A @A @B @B
           ]
     , docTreeEntry
           "Orders"

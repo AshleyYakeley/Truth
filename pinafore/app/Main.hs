@@ -69,16 +69,16 @@ escapeMarkdown s = let
 
 showDefEntry :: Int -> DefDoc -> IO ()
 showDefEntry _ MkDefDoc {..} = do
-    putStrLn $
-        "**`" ++
-        show docName ++
-        "`** :: `" ++
-        unpack docValueType ++
-        "`" <>
-        (if docIsPattern
-             then " (also pattern)"
-             else "") <>
-        "  "
+    let
+        nameType = "**`" ++ show docName ++ "`** :: `" ++ unpack docValueType ++ "`"
+        title =
+            (if docIsSupertype
+                 then "_" <> nameType <> "_"
+                 else nameType) <>
+            (if docIsPattern
+                 then " (also pattern)"
+                 else "")
+    putStrLn $ title <> "  "
     if docDescription == ""
         then return ()
         else putStrLn $ escapeMarkdown $ unpack docDescription

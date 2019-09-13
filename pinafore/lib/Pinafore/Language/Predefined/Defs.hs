@@ -48,6 +48,24 @@ mkValEntry name docDescription val = let
     bdPattern = Nothing
     docName = name
     docValueType = qTypeDescription @baseupdate @t
+    docIsSupertype = False
+    docIsPattern = False
+    bdDoc = MkDefDoc {..}
+    in EntryDocTreeEntry MkBindDoc {..}
+
+mkSupertypeEntry ::
+       forall baseupdate t. (HasPinaforeEntityUpdate baseupdate, ToPinaforeType baseupdate t)
+    => Name
+    -> Text
+    -> ((?pinafore :: PinaforeContext baseupdate) => t)
+    -> DocTreeEntry (BindDoc baseupdate)
+mkSupertypeEntry name docDescription _val = let
+    bdName = name
+    bdValue = Nothing
+    bdPattern = Nothing
+    docName = name
+    docValueType = qTypeDescription @baseupdate @t
+    docIsSupertype = True
     docIsPattern = False
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
@@ -73,6 +91,7 @@ mkValPatEntry name docDescription val pat = let
     bdPattern = Just $ qToPatternConstructor pat
     docName = name
     docValueType = qTypeDescription @baseupdate @t
+    docIsSupertype = False
     docIsPattern = True
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
@@ -93,6 +112,7 @@ mkPatEntry name docDescription docValueType pat = let
     bdValue = Nothing
     bdPattern = Just $ qToPatternConstructor pat
     docName = name
+    docIsSupertype = False
     docIsPattern = True
     bdDoc = MkDefDoc {..}
     in EntryDocTreeEntry MkBindDoc {..}
