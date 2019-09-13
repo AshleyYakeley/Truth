@@ -94,10 +94,8 @@ base_predefinitions =
     [ docTreeEntry
           "Literals & Entities"
           ""
-          [ mkValEntry "is" "Entity equality." $ (==) @Entity
-          , mkValEntry "==" "Literal equality. Same as Entity equality restricted to Literal, but faster." $
-            (==) @Literal
-          , mkValEntry "/=" "Literal non-equality." $ (/=) @Literal
+          [ mkValEntry "==" "Entity equality." $ (==) @Entity
+          , mkValEntry "/=" "Entity non-equality." $ (/=) @Entity
           , mkValEntry "entityUUID" "UUID of an entity." entityUUID
           , mkSupertypeEntry "id" "Every literal is an entity." $ literalToEntity @Literal
           , mkValEntry "toText" "The text of a literal." unLiteral

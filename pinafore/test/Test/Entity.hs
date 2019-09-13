@@ -75,8 +75,8 @@ testEntity =
     context
         [ "pass = return ()"
         , "runreforfail r = runRef (r ?? {fail \"unknown ref\"})"
-        , "testeq expected found = runreforfail {if is %expected %found then pass else fail \"not equal\"}"
-        , "testneq expected found = runreforfail {if not $ is %expected %found then pass else fail \"equal\"}"
+        , "testeq expected found = runreforfail {if %expected == %found then pass else fail \"not equal\"}"
+        , "testneq expected found = runreforfail {if %expected /= %found then pass else fail \"equal\"}"
         , "testisknown t = runRef {if %(known t) then pass else fail \"known\"}"
         , "testisunknown t = runRef {if %(known t) then fail \"known\" else pass}"
         , "testeqval e f = testeq {e} {f}"
