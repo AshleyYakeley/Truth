@@ -164,6 +164,8 @@ base_predefinitions =
                       , mkValEntry "gcd" "Greatest common divisor." $ gcd @Integer
                       , mkValEntry "lcm" "Least common multiple." $ lcm @Integer
                       , mkValEntry "^" "Raise to non-negative power." $ (^) @Integer @Integer
+                      , mkValEntry "sum" "Sum." $ sum @[] @Integer
+                      , mkValEntry "product" "Product." $ product @[] @Integer
                       ]
                 , docTreeEntry
                       "Rational"
@@ -182,6 +184,9 @@ base_predefinitions =
                       , mkValEntry "signumR" "Sign." $ signum @Rational
                       , mkValEntry "modR" "Modulus, leftover from `div`" $ mod' @Rational
                       , mkValEntry "^^" "Raise to Integer power." $ ((^^) :: Rational -> Integer -> Rational)
+                      , mkValEntry "sumR" "Sum." $ sum @[] @Rational
+                      , mkValEntry "meanR" "Mean." $ \(vv :: [Rational]) -> sum vv / toRational (length vv)
+                      , mkValEntry "productR" "Product." $ product @[] @Rational
                       ]
                 , docTreeEntry
                       "Number"
@@ -234,6 +239,10 @@ base_predefinitions =
                       , mkValEntry "isInfinite" "Is infinite?" numberIsInfinite
                       , mkValEntry "isNegativeZero" "Is negative zero?" numberIsNegativeZero
                       , mkValEntry "isExact" "Is exact?" numberIsExact
+                      , mkValEntry "sumN" "Sum." $ sum @[] @Number
+                      , mkValEntry "meanN" "Mean." $ \(vv :: [Number]) ->
+                            sum vv / (ExactNumber $ toRational $ length vv)
+                      , mkValEntry "productN" "Product." $ product @[] @Number
                       , mkValEntry
                             "checkExactRational"
                             "Get the exact value of a Number, if it is one."
