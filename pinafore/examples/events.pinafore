@@ -51,8 +51,8 @@ eventTimeDay et = case et of
     EventTimeTime (LocalTime d _) -> d
     end;
 
-setEventTimeDay :: Day -> EventTime -> EventTime;
-setEventTimeDay d et = case et of
+setEventTimeDay :: Day -> EventTime -> Maybe EventTime;
+setEventTimeDay d et = Just $ case et of
     EventTimeDay _ -> EventTimeDay d;
     EventTimeTime (LocalTime _ t) -> EventTimeTime (LocalTime d t)
     end;

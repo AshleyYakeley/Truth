@@ -81,6 +81,15 @@ today ::
     => PinaforeImmutableReference baseupdate Day
 today = localDay <$> localNow
 
+interpretAsText ::
+       forall baseupdate a. AsLiteral a
+    => PinaforeRef baseupdate '( a, a)
+    -> PinaforeRef baseupdate '( Text, Text)
+interpretAsText = pinaforeFLensRef (unLiteral . toLiteral) (\t _ -> parseLiteral t)
+
+parseLiteral :: AsLiteral t => Text -> Maybe t
+parseLiteral = knowToMaybe . fromLiteral . MkLiteral
+
 base_predefinitions ::
        forall baseupdate.
        ( HasPinaforeEntityUpdate baseupdate
@@ -130,8 +139,7 @@ base_predefinitions =
           , docTreeEntry
                 "Numeric"
                 ""
-                [ mkSupertypeEntry "id" "Every number is a literal." $ toLiteral @Number
-                , mkValEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
+                [ mkValEntry "~==" "Numeric equality, folding exact and inexact numbers." $ (==) @Number
                 , mkValEntry "~/=" "Numeric non-equality." $ (/=) @Number
                 , mkValEntry "<" "Numeric strictly less." $ (<) @Number
                 , mkValEntry "<=" "Numeric less or equal." $ (<=) @Number
@@ -141,6 +149,9 @@ base_predefinitions =
                       "Integer"
                       ""
                       [ mkSupertypeEntry "id" "Every integer is a rational." integerToRational
+                      , mkValEntry "parseInteger" "Parse text as an integer." $ parseLiteral @Integer
+                      , mkValEntry "interpretIntegerAsText" "Interpret an integer reference as text." $
+                        interpretAsText @baseupdate @Integer
                       , mkValEntry "+" "Add." $ (+) @Integer
                       , mkValEntry "-" "Subtract." $ (-) @Integer
                       , mkValEntry "*" "Multiply." $ (*) @Integer
@@ -158,6 +169,9 @@ base_predefinitions =
                       "Rational"
                       ""
                       [ mkSupertypeEntry "id" "Every rational is a number." rationalToNumber
+                      , mkValEntry "parseRational" "Parse text as a rational." $ parseLiteral @Rational
+                      , mkValEntry "interpretRationalAsText" "Interpret a rational reference as text." $
+                        interpretAsText @baseupdate @Rational
                       , mkValEntry ".+" "Add." $ (+) @Rational
                       , mkValEntry ".-" "Subtract." $ (-) @Rational
                       , mkValEntry ".*" "Multiply." $ (*) @Rational
@@ -172,7 +186,11 @@ base_predefinitions =
                 , docTreeEntry
                       "Number"
                       ""
-                      [ mkValEntry "~+" "Add." $ (+) @Number
+                      [ mkSupertypeEntry "id" "Every number is a literal." $ toLiteral @Number
+                      , mkValEntry "parseNumber" "Parse text as a number." $ parseLiteral @Number
+                      , mkValEntry "interpretNumberAsText" "Interpret a number reference as text." $
+                        interpretAsText @baseupdate @Number
+                      , mkValEntry "~+" "Add." $ (+) @Number
                       , mkValEntry "~-" "Subtract." $ (-) @Number
                       , mkValEntry "~*" "Multiply." $ (*) @Number
                       , mkValEntry "~/" "Divide." $ (/) @Number
@@ -230,9 +248,12 @@ base_predefinitions =
                 "Date & Time"
                 ""
                 [ docTreeEntry
-                      "Time & Duration"
+                      "Duration"
                       ""
                       [ mkSupertypeEntry "id" "Every duration is a literal." $ toLiteral @NominalDiffTime
+                      , mkValEntry "parseDuration" "Parse text as a duration." $ parseLiteral @NominalDiffTime
+                      , mkValEntry "interpretDurationAsText" "Interpret a duration reference as text." $
+                        interpretAsText @baseupdate @NominalDiffTime
                       , mkValEntry "zeroDuration" "No duration." $ (0 :: NominalDiffTime)
                       , mkValEntry "secondsToDuration" "Convert seconds to duration." secondsToNominalDiffTime
                       , mkValEntry "durationToSeconds" "Convert duration to seconds." nominalDiffTimeToSeconds
@@ -244,6 +265,14 @@ base_predefinitions =
                             (realToFrac n) * d
                       , mkValEntry "divideDuration" "Divide durations." $ \(a :: NominalDiffTime) (b :: NominalDiffTime) ->
                             (realToFrac (a / b) :: Number)
+                      ]
+                , docTreeEntry
+                      "Time"
+                      "Absolute time as measured by UTC."
+                      [ mkSupertypeEntry "id" "Every time is a literal." $ toLiteral @UTCTime
+                      , mkValEntry "parseTime" "Parse text as a time." $ parseLiteral @UTCTime
+                      , mkValEntry "interpretTimeAsText" "Interpret a time reference as text." $
+                        interpretAsText @baseupdate @UTCTime
                       , mkValEntry "addTime" "Add duration to time." addUTCTime
                       , mkValEntry "diffTime" "Difference of times." diffUTCTime
                       , mkValEntry "now" "The current time truncated to the second." $ now @baseupdate
@@ -255,6 +284,9 @@ base_predefinitions =
                             (y, m, d) = toGregorian day
                             in Just (y, (m, (d, ())))
                       , mkSupertypeEntry "id" "Every day is a literal." $ toLiteral @Day
+                      , mkValEntry "parseDay" "Parse text as a day." $ parseLiteral @Day
+                      , mkValEntry "interpretDayAsText" "Interpret a day reference as text." $
+                        interpretAsText @baseupdate @Day
                       , mkValEntry "dayToModifiedJulian" "Convert to MJD." toModifiedJulianDay
                       , mkValEntry "modifiedJulianToDay" "Convert from MJD." ModifiedJulianDay
                       , mkValEntry "addDays" "Add count to days." addDays
@@ -268,6 +300,9 @@ base_predefinitions =
                       [ mkValPatEntry "TimeOfDay" "Construct a TimeOfDay from hour, minute, second." TimeOfDay $ \TimeOfDay {..} ->
                             Just (todHour, (todMin, (todSec, ())))
                       , mkSupertypeEntry "id" "Every time of day is a literal." $ toLiteral @TimeOfDay
+                      , mkValEntry "parseTimeOfDay" "Parse text as a time of day." $ parseLiteral @TimeOfDay
+                      , mkValEntry "interpretTimeOfDayAsText" "Interpret a time of day reference as text." $
+                        interpretAsText @baseupdate @TimeOfDay
                       , mkValEntry "midnight" "Midnight." midnight
                       , mkValEntry "midday" "Midday." midday
                       ]
@@ -277,6 +312,9 @@ base_predefinitions =
                       [ mkValPatEntry "LocalTime" "Construct a LocalTime from day and time of day." LocalTime $ \LocalTime {..} ->
                             Just (localDay, (localTimeOfDay, ()))
                       , mkSupertypeEntry "id" "Every local time is a literal." $ toLiteral @LocalTime
+                      , mkValEntry "parseLocalTime" "Parse text as a local time." $ parseLiteral @LocalTime
+                      , mkValEntry "interpretLocalTimeAsText" "Interpret a local time reference as text." $
+                        interpretAsText @baseupdate @LocalTime
                       , mkValEntry "timeToLocal" "Convert a time to local time, given a time zone offset in minutes" $ \i ->
                             utcToLocalTime $ minutesToTimeZone i
                       , mkValEntry "localToTime" "Convert a local time to time, given a time zone offset in minutes" $ \i ->
