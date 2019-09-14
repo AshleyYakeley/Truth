@@ -84,6 +84,13 @@ pinaforeApplyMorphismRef (MkPinaforeMorphism tra trb m) (LensPinaforeRef tra' lv
 pinaforeApplyMorphismRef (MkPinaforeMorphism (MkRange fa _) trb m) (ImmutPinaforeRef fv) =
     LensPinaforeRef trb $ applyPinaforeLens m $ immutableReferenceToLens $ fmap (fromEnhanced fa) fv
 
+pinaforeApplyMorphismImmutRef ::
+       forall baseupdate a bp bq.
+       PinaforeMorphism baseupdate '( a, TopType) '( bp, bq)
+    -> PinaforeImmutableReference baseupdate a
+    -> PinaforeRef baseupdate '( bp, bq)
+pinaforeApplyMorphismImmutRef m r = pinaforeApplyMorphismRef m $ pinaforeImmutableToRef r
+
 pinaforeApplyMorphismSet ::
        forall baseupdate a bp bq.
        PinaforeMorphism baseupdate '( a, TopType) '( bp, bq)

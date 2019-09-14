@@ -41,6 +41,7 @@ operatorFixity "~/" = MkFixity AssocLeft 8
 operatorFixity "<*>" = MkFixity AssocLeft 8
 operatorFixity "<:*:>" = MkFixity AssocLeft 8
 operatorFixity "!$" = MkFixity AssocRight 8
+operatorFixity "!$%" = MkFixity AssocRight 8
 operatorFixity "!$$" = MkFixity AssocRight 8
 operatorFixity "!@" = MkFixity AssocRight 8
 operatorFixity "!@@" = MkFixity AssocRight 8
