@@ -613,6 +613,10 @@ base_predefinitions =
             pinaforeApplyInverseMorphismRef @baseupdate @AP @AQ @BP @BQ
           , mkSupertypeEntry "!@" "Co-apply a morphism to a reference." $
             pinaforeApplyInverseMorphismRef @baseupdate @A @A @B @B
+          , mkValEntry "!@%" "Co-apply a morphism to an immutable reference. `m !@% r = m !@ immutRef r`" $
+            pinaforeApplyInverseMorphismImmutRef @baseupdate @A @BP @BQ
+          , mkSupertypeEntry "!@%" "Co-apply a morphism to a reference. `m !@% r = m !@ immutRef r`" $
+            pinaforeApplyInverseMorphismImmutRef @baseupdate @A @B @B
           , mkValEntry "!@@" "Co-apply a morphism to a set." $
             pinaforeApplyInverseMorphismSet @baseupdate @AP @AQ @BP @BQ
           , mkSupertypeEntry "!@@" "Co-apply a morphism to a set." $

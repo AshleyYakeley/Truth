@@ -117,6 +117,13 @@ pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb tra m) (LensPinaforeRef 
 pinaforeApplyInverseMorphismRef (MkPinaforeMorphism trb (MkRange fa _) m) (ImmutPinaforeRef fv) =
     MkPinaforeFiniteSetRef trb $ applyInversePinaforeLens m $ immutableReferenceToLens $ fmap (fromEnhanced fa) fv
 
+pinaforeApplyInverseMorphismImmutRef ::
+       forall baseupdate a bp bq.
+       PinaforeMorphism baseupdate '( bp, bq) '( a, TopType)
+    -> PinaforeImmutableReference baseupdate a
+    -> PinaforeFiniteSetRef baseupdate '( bp, bq)
+pinaforeApplyInverseMorphismImmutRef m r = pinaforeApplyInverseMorphismRef m $ pinaforeImmutableToRef r
+
 pinaforeApplyInverseMorphismSet ::
        forall baseupdate ap aq bp bq.
        PinaforeMorphism baseupdate '( bp, bq) '( JoinType NewEntity aq, ap)
