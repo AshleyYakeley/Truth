@@ -143,5 +143,8 @@ executables:
           - githash
         main: Main.hs
         other-modules:
+          - Options
+          - Version
+          - Run
           - Documentation
         ghc-options: -threaded
