@@ -142,4 +142,6 @@ executables:
           - pinafore
           - githash
         main: Main.hs
+        other-modules:
+          - Documentation
         ghc-options: -threaded
