@@ -1,2 +1,5 @@
+local/
 .stack-work
 *.cabal
+*.prof
+*.prof.html
