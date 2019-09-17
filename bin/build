@@ -5,7 +5,7 @@ fi
 docker build -t local-build docker
 bin/hindent-all
 stack install --test
-install -m 755 --strip "$BINPATH/pinafore" "${XDG_DATA_HOME:-$HOME/.local/share}/../bin/"
-$BINPATH/pinafore --doc > mkdocs/docs/predefined.md
+install -m 755 --strip "$BINPATH/pinafore-untyped" "${XDG_DATA_HOME:-$HOME/.local/share}/../bin/"
+$BINPATH/pinafore-untyped --doc > mkdocs/docs/predefined.md
 stack exec --cwd mkdocs -- mkdocs build
 echo OK

@@ -3,4 +3,4 @@ if [ -z "${BINPATH}" ]; then
     export BINPATH=`stack path --local-bin`
 fi
 stack install pinafore
-$BINPATH/pinafore --data test/pinafore
+$BINPATH/pinafore-untyped --data test/pinafore

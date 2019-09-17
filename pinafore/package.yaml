@@ -76,7 +76,7 @@ tests:
           - Test.Entity
 
 executables:
-    pinafore:
+    pinafore-untyped:
         source-dirs: app
         dependencies:
           - base >= 4.9 && < 5
