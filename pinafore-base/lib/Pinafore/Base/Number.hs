@@ -2,8 +2,9 @@ module Pinafore.Base.Number
     ( Number(..)
     , showDecimalRational
     , numberToDouble
-    , checkExactRational
-    , rationalInteger
+    , safeRationalToNumber
+    , checkExactSafeRational
+    , safeRationalInteger
     , approximate
     , numberIsNaN
     , numberIsInfinite
@@ -13,6 +14,7 @@ module Pinafore.Base.Number
     ) where
 
 import Data.List (head, iterate)
+import Pinafore.Base.SafeRational
 import Shapes hiding ((+++), option)
 import Shapes.Numeric
 import Text.ParserCombinators.ReadP hiding (many)
@@ -41,14 +43,20 @@ numberIsExact :: Number -> Bool
 numberIsExact (ExactNumber _) = True
 numberIsExact _ = False
 
-checkExactRational :: Number -> Maybe Rational
-checkExactRational (ExactNumber n) = Just n
-checkExactRational _ = Nothing
+safeRationalToNumber :: SafeRational -> Number
+safeRationalToNumber (SRNumber n) = ExactNumber n
+safeRationalToNumber SRNaN = InexactNumber $ 0 / 0
 
-rationalInteger :: Rational -> Maybe Integer
-rationalInteger r
+checkExactSafeRational :: Number -> Maybe SafeRational
+checkExactSafeRational (ExactNumber n) = Just $ SRNumber n
+checkExactSafeRational (InexactNumber n)
+    | isNaN n = Just $ SRNaN
+checkExactSafeRational _ = Nothing
+
+safeRationalInteger :: SafeRational -> Maybe Integer
+safeRationalInteger (SRNumber r)
     | denominator r == 1 = Just $ numerator r
-rationalInteger _ = Nothing
+safeRationalInteger _ = Nothing
 
 approximate :: Rational -> Number -> Rational
 approximate res n = res * toRational (round (n / fromRational res) :: Integer)

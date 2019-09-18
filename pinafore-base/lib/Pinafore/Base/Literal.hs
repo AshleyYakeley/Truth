@@ -4,6 +4,7 @@ import Data.Time
 import Pinafore.Base.Entity
 import Pinafore.Base.Know
 import Pinafore.Base.Number
+import Pinafore.Base.SafeRational
 import Shapes
 import Shapes.Numeric
 
@@ -71,11 +72,19 @@ instance HasResolution r => AsLiteral (Fixed r) where
     fromLiteral = readFromLiteral
 
 instance AsLiteral Rational where
-    toLiteral = toLiteral . ExactNumber
+    toLiteral = toLiteral . SRNumber
     fromLiteral t = do
         n <- fromLiteral t
         case n of
-            ExactNumber x -> return x
+            SRNumber x -> return x
+            _ -> Unknown
+
+instance AsLiteral SafeRational where
+    toLiteral = toLiteral . safeRationalToNumber
+    fromLiteral t = do
+        n <- fromLiteral t
+        case checkExactSafeRational n of
+            Just x -> return x
             _ -> Unknown
 
 instance AsLiteral Double where

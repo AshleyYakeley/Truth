@@ -1,5 +1,7 @@
 module Pinafore.Base.SafeRational
     ( SafeRational(..)
+    , toSafeRational
+    , integerToSafeRational
     ) where
 
 import Shapes
@@ -13,6 +15,10 @@ data SafeRational
 instance Eq SafeRational where
     SRNumber a == SRNumber b = a == b
     _ == _ = False
+
+instance Show SafeRational where
+    show (SRNumber a) = show a
+    show SRNaN = "NaN"
 
 liftOp1R :: (Rational -> Rational) -> SafeRational -> SafeRational
 liftOp1R f (SRNumber n) = SRNumber $ f n
@@ -60,3 +66,9 @@ instance RealFrac SafeRational where
         (n, f) = properFraction x
         in (n, SRNumber f)
     properFraction SRNaN = (0, SRNaN)
+
+toSafeRational :: Real a => a -> SafeRational
+toSafeRational = SRNumber . toRational
+
+integerToSafeRational :: Integer -> SafeRational
+integerToSafeRational = toSafeRational

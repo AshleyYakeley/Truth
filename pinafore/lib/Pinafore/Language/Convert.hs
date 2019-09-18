@@ -19,7 +19,7 @@ $(literalInstances [t|Text|])
 
 $(literalInstances [t|Number|])
 
-$(literalInstances [t|Rational|])
+$(literalInstances [t|SafeRational|])
 
 $(literalInstances [t|Integer|])
 
@@ -47,6 +47,13 @@ instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) Int where
 
 instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) Int where
     fromShimWit = mapShimWit (toEnhanced "subtype" fromInteger) fromJMShimWit
+
+-- Rational
+instance ToShimWit JMShim (PinaforeType baseupdate 'Positive) Rational where
+    toShimWit = mapShimWit (toEnhanced "subtype" $ fromRational @SafeRational) toJMShimWit
+
+instance FromShimWit JMShim (PinaforeType baseupdate 'Negative) Rational where
+    fromShimWit = mapShimWit (toEnhanced "subtype" $ toRational @SafeRational) fromJMShimWit
 
 -- Fixed
 instance HasResolution r => ToShimWit JMShim (PinaforeType baseupdate 'Positive) (Fixed r) where

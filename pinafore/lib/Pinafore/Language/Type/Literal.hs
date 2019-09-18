@@ -6,7 +6,6 @@ import Pinafore.Base
 import Pinafore.Language.Name
 import Pinafore.Language.TypeSystem.Show
 import Shapes
-import Shapes.Numeric
 
 class IsSubtype w where
     isSubtype :: w a -> w b -> Maybe (JMShim a b)
@@ -16,7 +15,7 @@ data LiteralType (t :: Type) where
     UnitLiteralType :: LiteralType ()
     TextLiteralType :: LiteralType Text
     NumberLiteralType :: LiteralType Number
-    RationalLiteralType :: LiteralType Rational
+    RationalLiteralType :: LiteralType SafeRational
     IntegerLiteralType :: LiteralType Integer
     BooleanLiteralType :: LiteralType Bool
     -- time
@@ -69,21 +68,15 @@ nameToLiteralType "TimeOfDay" = Just $ MkAnyW TimeOfDayLiteralType
 nameToLiteralType "LocalTime" = Just $ MkAnyW LocalTimeLiteralType
 nameToLiteralType _ = Nothing
 
-integerToRational :: Integer -> Rational
-integerToRational = toRational
-
-rationalToNumber :: Rational -> Number
-rationalToNumber = ExactNumber
-
 instance IsSubtype LiteralType where
     isSubtype ta tb
         | Just Refl <- testEquality ta tb = return id
     isSubtype t LiteralLiteralType
         | Dict <- literalTypeAsLiteral t = return $ toEnhanced "subtype" toLiteral
-    isSubtype RationalLiteralType NumberLiteralType = return $ toEnhanced "subtype" rationalToNumber
+    isSubtype RationalLiteralType NumberLiteralType = return $ toEnhanced "subtype" safeRationalToNumber
     isSubtype IntegerLiteralType NumberLiteralType =
-        return $ toEnhanced "subtype" $ rationalToNumber . integerToRational
-    isSubtype IntegerLiteralType RationalLiteralType = return $ toEnhanced "subtype" integerToRational
+        return $ toEnhanced "subtype" $ safeRationalToNumber . integerToSafeRational
+    isSubtype IntegerLiteralType RationalLiteralType = return $ toEnhanced "subtype" integerToSafeRational
     isSubtype _ _ = Nothing
 
 literalTypeAsLiteral :: LiteralType t -> Dict (AsLiteral t)
@@ -126,7 +119,7 @@ instance Is LiteralType Text where
 instance Is LiteralType Number where
     representative = NumberLiteralType
 
-instance Is LiteralType Rational where
+instance Is LiteralType SafeRational where
     representative = RationalLiteralType
 
 instance Is LiteralType Integer where

@@ -13,7 +13,6 @@ import Pinafore.Language.DocTree
 import Pinafore.Language.If
 import Pinafore.Language.Predefined.Defs
 import Pinafore.Language.Type.Entity
-import Pinafore.Language.Type.Literal
 import Pinafore.Language.Value
 import Pinafore.Storage
 import Shapes
@@ -148,7 +147,7 @@ base_predefinitions =
                 , docTreeEntry
                       "Integer"
                       ""
-                      [ mkSupertypeEntry "id" "Every integer is a rational." integerToRational
+                      [ mkSupertypeEntry "id" "Every integer is a rational." integerToSafeRational
                       , mkValEntry "parseInteger" "Parse text as an integer." $ parseLiteral @Integer
                       , mkValEntry "interpretIntegerAsText" "Interpret an integer reference as text." $
                         interpretAsText @baseupdate @Integer
@@ -170,23 +169,23 @@ base_predefinitions =
                 , docTreeEntry
                       "Rational"
                       ""
-                      [ mkSupertypeEntry "id" "Every rational is a number." rationalToNumber
-                      , mkValEntry "parseRational" "Parse text as a rational." $ parseLiteral @Rational
+                      [ mkSupertypeEntry "id" "Every rational is a number." safeRationalToNumber
+                      , mkValEntry "parseRational" "Parse text as a rational." $ parseLiteral @SafeRational
                       , mkValEntry "interpretRationalAsText" "Interpret a rational reference as text." $
-                        interpretAsText @baseupdate @Rational
-                      , mkValEntry ".+" "Add." $ (+) @Rational
-                      , mkValEntry ".-" "Subtract." $ (-) @Rational
-                      , mkValEntry ".*" "Multiply." $ (*) @Rational
-                      , mkValEntry "/" "Divide." $ (/) @Rational
-                      , mkValEntry "negateR" "Negate." $ negate @Rational
-                      , mkValEntry "recip" "Reciprocal." $ recip @Rational
-                      , mkValEntry "absR" "Absolute value." $ abs @Rational
-                      , mkValEntry "signumR" "Sign." $ signum @Rational
-                      , mkValEntry "modR" "Modulus, leftover from `div`" $ mod' @Rational
-                      , mkValEntry "^^" "Raise to Integer power." $ ((^^) :: Rational -> Integer -> Rational)
-                      , mkValEntry "sumR" "Sum." $ sum @[] @Rational
-                      , mkValEntry "meanR" "Mean." $ \(vv :: [Rational]) -> sum vv / toRational (length vv)
-                      , mkValEntry "productR" "Product." $ product @[] @Rational
+                        interpretAsText @baseupdate @SafeRational
+                      , mkValEntry ".+" "Add." $ (+) @SafeRational
+                      , mkValEntry ".-" "Subtract." $ (-) @SafeRational
+                      , mkValEntry ".*" "Multiply." $ (*) @SafeRational
+                      , mkValEntry "/" "Divide." $ (/) @SafeRational
+                      , mkValEntry "negateR" "Negate." $ negate @SafeRational
+                      , mkValEntry "recip" "Reciprocal." $ recip @SafeRational
+                      , mkValEntry "absR" "Absolute value." $ abs @SafeRational
+                      , mkValEntry "signumR" "Sign." $ signum @SafeRational
+                      , mkValEntry "modR" "Modulus, leftover from `div`" $ mod' @SafeRational
+                      , mkValEntry "^^" "Raise to Integer power." $ ((^^) :: SafeRational -> Integer -> SafeRational)
+                      , mkValEntry "sumR" "Sum." $ sum @[] @SafeRational
+                      , mkValEntry "meanR" "Mean." $ \(vv :: [SafeRational]) -> sum vv / toSafeRational (length vv)
+                      , mkValEntry "productR" "Product." $ product @[] @SafeRational
                       ]
                 , docTreeEntry
                       "Number"
@@ -244,13 +243,13 @@ base_predefinitions =
                             sum vv / (ExactNumber $ toRational $ length vv)
                       , mkValEntry "productN" "Product." $ product @[] @Number
                       , mkValEntry
-                            "checkExactRational"
+                            "checkExactSafeRational"
                             "Get the exact value of a Number, if it is one."
-                            checkExactRational
+                            checkExactSafeRational
                       , mkValEntry
                             "checkExactInteger"
                             "Get the exact Integer value of a Number, if it is one. Works as expected on Rationals." $ \n ->
-                            checkExactRational n >>= rationalInteger
+                            checkExactSafeRational n >>= safeRationalInteger
                       ]
                 ]
           , docTreeEntry
