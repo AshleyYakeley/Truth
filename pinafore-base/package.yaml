@@ -24,6 +24,7 @@ library:
       - Pinafore.Pinafore
     other-modules:
       - Pinafore.Base.Know
+      - Pinafore.Base.SafeRational
       - Pinafore.Base.Number
       - Pinafore.Base.Literal
       - Pinafore.Base.Morphism
@@ -40,3 +41,17 @@ library:
       - Pinafore.Storage.Database
       - Pinafore.Storage.Database.SQLite
       - Pinafore.Storage.File
+
+tests:
+    test:
+        source-dirs: test
+        dependencies:
+          - base >= 4.12
+          - shapes
+          - pinafore-base
+          - tasty
+          - tasty-hunit
+        main: Main.hs
+        other-modules:
+          - Test.Numeric
+        ghc-options: -threaded

@@ -53,38 +53,50 @@ rationalInteger _ = Nothing
 approximate :: Rational -> Number -> Rational
 approximate res n = res * toRational (round (n / fromRational res) :: Integer)
 
-arity1op ::
+liftOp1R ::
        forall c. (c Rational, c Double)
     => (forall t. c t => t -> t)
     -> Number
     -> Number
-arity1op f (ExactNumber n) = ExactNumber $ f n
-arity1op f (InexactNumber n) = InexactNumber $ f n
+liftOp1R f (ExactNumber n) = ExactNumber $ f n
+liftOp1R f (InexactNumber n) = InexactNumber $ f n
 
-arity2op ::
+liftOp2 ::
+       forall c r. (c Rational, c Double)
+    => (forall t. c t => t -> t -> r)
+    -> Number
+    -> Number
+    -> r
+liftOp2 f (ExactNumber a) (ExactNumber b) = f a b
+liftOp2 f a b = f (numberToDouble a) (numberToDouble b)
+
+liftOp2R ::
        forall c. (c Rational, c Double)
     => (forall t. c t => t -> t -> t)
     -> Number
     -> Number
     -> Number
-arity2op f (ExactNumber a) (ExactNumber b) = ExactNumber $ f a b
-arity2op f a b = InexactNumber $ f (numberToDouble a) (numberToDouble b)
+liftOp2R f (ExactNumber a) (ExactNumber b) = ExactNumber $ f a b
+liftOp2R f a b = InexactNumber $ f (numberToDouble a) (numberToDouble b)
 
 instance Eq Number where
     (ExactNumber a) == (ExactNumber b) = a == b
     a == b = (numberToDouble a) == (numberToDouble b)
 
 instance Ord Number where
-    compare (ExactNumber a) (ExactNumber b) = compare a b
-    compare a b = compare (numberToDouble a) (numberToDouble b)
+    (>) = liftOp2 @Ord (>)
+    (<) = liftOp2 @Ord (<)
+    (>=) = liftOp2 @Ord (>=)
+    (<=) = liftOp2 @Ord (<=)
+    compare = liftOp2 @Ord compare
 
 instance Num Number where
-    (+) = arity2op @Num (+)
-    (-) = arity2op @Num (-)
-    (*) = arity2op @Num (*)
-    abs = arity1op @Num abs
-    signum = arity1op @Num signum
-    negate = arity1op @Num negate
+    (+) = liftOp2R @Num (+)
+    (-) = liftOp2R @Num (-)
+    (*) = liftOp2R @Num (*)
+    abs = liftOp1R @Num abs
+    signum = liftOp1R @Num signum
+    negate = liftOp1R @Num negate
     fromInteger = ExactNumber . fromInteger
 
 instance Fractional Number where
@@ -94,8 +106,8 @@ instance Fractional Number where
             GT -> 1 / 0
             EQ -> 0 / 0
             LT -> -1 / 0
-    (/) p q = arity2op @Fractional (/) p q
-    recip = arity1op @Fractional recip
+    (/) p q = liftOp2R @Fractional (/) p q
+    recip = liftOp1R @Fractional recip
     fromRational = ExactNumber
 
 instance Real Number where
@@ -110,31 +122,31 @@ instance RealFrac Number where
         (n, f) = properFraction x
         in (n, InexactNumber f)
 
-arity1DoubleOp :: (Double -> Double) -> Number -> Number
-arity1DoubleOp f x = InexactNumber $ f $ numberToDouble x
+liftDoubleOp1R :: (Double -> Double) -> Number -> Number
+liftDoubleOp1R f x = InexactNumber $ f $ numberToDouble x
 
-arity2DoubleOp :: (Double -> Double -> Double) -> Number -> Number -> Number
-arity2DoubleOp f a b = InexactNumber $ f (numberToDouble a) (numberToDouble b)
+liftDoubleOp2R :: (Double -> Double -> Double) -> Number -> Number -> Number
+liftDoubleOp2R f a b = InexactNumber $ f (numberToDouble a) (numberToDouble b)
 
 instance Floating Number where
     pi = InexactNumber pi
-    exp = arity1DoubleOp exp
-    log = arity1DoubleOp log
-    sqrt = arity1DoubleOp sqrt
-    (**) = arity2DoubleOp (**)
-    logBase = arity2DoubleOp logBase
-    sin = arity1DoubleOp sin
-    cos = arity1DoubleOp cos
-    tan = arity1DoubleOp tan
-    asin = arity1DoubleOp asin
-    acos = arity1DoubleOp acos
-    atan = arity1DoubleOp atan
-    sinh = arity1DoubleOp sinh
-    cosh = arity1DoubleOp cosh
-    tanh = arity1DoubleOp tanh
-    asinh = arity1DoubleOp asinh
-    acosh = arity1DoubleOp acosh
-    atanh = arity1DoubleOp atanh
+    exp = liftDoubleOp1R exp
+    log = liftDoubleOp1R log
+    sqrt = liftDoubleOp1R sqrt
+    (**) = liftDoubleOp2R (**)
+    logBase = liftDoubleOp2R logBase
+    sin = liftDoubleOp1R sin
+    cos = liftDoubleOp1R cos
+    tan = liftDoubleOp1R tan
+    asin = liftDoubleOp1R asin
+    acos = liftDoubleOp1R acos
+    atan = liftDoubleOp1R atan
+    sinh = liftDoubleOp1R sinh
+    cosh = liftDoubleOp1R cosh
+    tanh = liftDoubleOp1R tanh
+    asinh = liftDoubleOp1R asinh
+    acosh = liftDoubleOp1R acosh
+    atanh = liftDoubleOp1R atanh
 
 showDecimalRational :: Int -> Rational -> Text
 showDecimalRational maxDigits r = let
