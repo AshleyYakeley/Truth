@@ -432,6 +432,10 @@ base_predefinitions =
           [ mkValEntry "return" "A value as an Action." $ return @(PinaforeAction baseupdate) @A
           , mkValEntry ">>=" "Bind the result of an Action to an Action." $ qbind @baseupdate
           , mkValEntry ">>" "Do actions in sequence." $ qbind_ @baseupdate
+          , mkValEntry
+                "mapAction"
+                "Map a function on an action."
+                (fmap :: (A -> B) -> PinaforeAction baseupdate A -> PinaforeAction baseupdate B)
           , mkValEntry "fixAction" "The fixed point of an Action." $ mfix @(PinaforeAction baseupdate) @A
           , mkValEntry "fail" "Fail, causing the program to terminate with error." $ qfail @baseupdate
           , mkValEntry
