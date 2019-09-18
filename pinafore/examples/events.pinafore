@@ -51,10 +51,10 @@ eventTimeDay et = case et of
     EventTimeTime (LocalTime d _) -> d
     end;
 
-setEventTimeDay :: Day -> EventTime -> Maybe EventTime;
+setEventTimeDay :: Day -> Maybe EventTime -> Maybe EventTime;
 setEventTimeDay d et = Just $ case et of
-    EventTimeDay _ -> EventTimeDay d;
-    EventTimeTime (LocalTime _ t) -> EventTimeTime (LocalTime d t)
+    Just (EventTimeTime (LocalTime _ t)) -> EventTimeTime (LocalTime d t);
+    _ -> EventTimeDay d;
     end;
 
 ui_eventTime :: Ref EventTime -> UI None;

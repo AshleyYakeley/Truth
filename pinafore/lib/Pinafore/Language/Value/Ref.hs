@@ -56,18 +56,18 @@ runPinaforeRef ref = pinaforeRefGet ref >>= id
 pinaforeFLensRef ::
        forall baseupdate ap aq b.
        (aq -> b)
-    -> (b -> aq -> Maybe ap)
+    -> (b -> Maybe aq -> Maybe ap)
     -> PinaforeRef baseupdate '( ap, aq)
     -> PinaforeRef baseupdate '( b, b)
-pinaforeFLensRef g pb (LensPinaforeRef tr lv) = let
+pinaforeFLensRef g pb (LensPinaforeRef (tr :: Range JMShim a _) lv) = let
     trco = fromEnhanced $ rangeCo tr
     trcontra = fromEnhanced $ rangeContra tr
     lensG = fmap $ g . trco
+    lensPB :: Know b -> Know a -> Maybe (Know a)
     lensPB kb ka =
         getComposeM $ do
             b <- liftInner kb
-            a <- liftInner ka
-            a' <- liftOuter $ pb b (trco a)
+            a' <- liftOuter $ pb b $ knowToMaybe $ fmap trco ka
             return $ trcontra a'
     in LensPinaforeRef identityRange $ wholeEditLens (MkLens lensG lensPB) . lv
 pinaforeFLensRef g _ (ImmutPinaforeRef ir) = ImmutPinaforeRef $ fmap g ir
