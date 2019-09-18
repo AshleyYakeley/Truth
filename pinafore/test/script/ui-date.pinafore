@@ -1,0 +1,15 @@
+do
+dref <- newMemRef;
+tref <- newMemRef;
+iref <- newMemRef;
+openWindow {"Date"} (\_ -> {[]}) $ uiVertical
+    [
+        (uiTextEntry tref, False),
+        (uiTextEntry tref, False),
+        (uiTextEntry $ interpretDayAsText dref, False),
+        (uiTextEntry $ interpretDayAsText dref, False),
+        (uiTextEntry $ interpretIntegerAsText iref, False),
+        (uiTextEntry $ interpretIntegerAsText iref, False)
+    ];
+return ();
+end
