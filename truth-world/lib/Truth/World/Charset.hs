@@ -1,7 +1,7 @@
 module Truth.World.Charset where
 
+import Shapes
 import Truth.Core
-import Truth.Core.Import
 
 utf8Codec :: ReasonCodec [Word8] String
 utf8Codec = MkCodec decodeUTF8 encodeUTF8

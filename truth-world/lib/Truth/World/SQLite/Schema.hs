@@ -4,8 +4,8 @@ module Truth.World.SQLite.Schema where
 
 import Data.Time
 import Database.SQLite.Simple hiding (columnName)
+import Shapes
 import Shapes.Numeric
-import Truth.Core.Import
 
 class FieldType t where
     fieldTypeName :: String

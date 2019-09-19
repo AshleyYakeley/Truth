@@ -18,6 +18,7 @@ library:
       - cryptonite
       - uuid
       - truth-core
+      - truth-world
     exposed-modules:
       - Pinafore.Base
       - Pinafore.Storage

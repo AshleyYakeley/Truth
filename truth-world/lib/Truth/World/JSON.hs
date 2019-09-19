@@ -1,8 +1,8 @@
 module Truth.World.JSON where
 
 import qualified Data.Aeson as JSON
+import Shapes
 import Truth.Core
-import Truth.Core.Import
 
 jsonCodec :: ReasonCodec LazyByteString JSON.Value
 jsonCodec = MkCodec (resultFromMaybe (fromString "fail to decode to JSON") . JSON.decode) JSON.encode

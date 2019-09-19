@@ -1,9 +1,9 @@
 module Truth.World.FileSystem where
 
+import Shapes
 import System.Directory
 import System.FilePath
 import Truth.Core
-import Truth.Core.Import
 import Truth.World.File
 
 -- | an entire file system in memory

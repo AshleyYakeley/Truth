@@ -5,6 +5,7 @@ packages:
 - shapes
 - typed-expression
 - truth-core
+- truth-world
 - truth-gtk
 - pinafore-base
 - pinafore

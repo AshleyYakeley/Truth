@@ -17,6 +17,7 @@ library:
       - uuid
       - typed-expression
       - truth-core
+      - truth-world
       - pinafore-base
     exposed-modules:
       - Pinafore.Language

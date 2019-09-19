@@ -12,9 +12,9 @@ import Database.SQLite.Simple.FromField
 import Database.SQLite.Simple.Internal
 import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField
+import Shapes
 import System.Directory
 import Truth.Core
-import Truth.Core.Import
 import qualified Truth.World.SQLite.Schema as SQLite
 
 data QueryString =

@@ -8,30 +8,11 @@ _common: !include "../common.yaml"
 library:
     source-dirs: lib
     dependencies:
+      - shapes
       - base >= 4.12
       - time
-      - stm
-      - containers
-      - filepath
-      - directory
-      - cereal
-      - uuid
-      - aeson
-      - sqlite-simple
-      - mime
-      - shapes
     exposed-modules:
       - Truth.Core
-      - Truth.World.Clock
-      - Truth.World.Anything
-      - Truth.World.File
-      - Truth.World.FileSystem
-      - Truth.World.ObjectStore
-      - Truth.World.Charset
-      - Truth.World.MIME
-      - Truth.World.JSON
-      - Truth.World.SQLite
-      - Truth.World.SQLite.Schema
     other-modules:
       - Truth.Core.Import
       - Truth.Core.Sequence

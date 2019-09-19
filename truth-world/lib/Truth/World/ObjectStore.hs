@@ -1,7 +1,7 @@
 module Truth.World.ObjectStore where
 
+import Shapes
 import Truth.Core
-import Truth.Core.Import
 import Truth.World.FileSystem
 
 data SingleObjectReader edit t where

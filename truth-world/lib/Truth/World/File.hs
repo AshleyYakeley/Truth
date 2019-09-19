@@ -1,7 +1,7 @@
 module Truth.World.File where
 
+import Shapes
 import Truth.Core
-import Truth.Core.Import
 
 fileObject :: FilePath -> Object ByteStringEdit
 fileObject path = let

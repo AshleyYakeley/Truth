@@ -1,15 +1,14 @@
 module Truth.Core.Object.AutoClose where
 
-import Data.Map.Strict hiding (lookup)
 import Truth.Core.Import
 
-type AutoClose key t = StateT (Map key (t, IO ())) IO
+type AutoClose key t = StateT (StrictMap key (t, IO ())) IO
 
 runAutoClose :: Ord key => UnliftIO (AutoClose key t)
 runAutoClose =
     MkTransform $ \ac -> do
         (a, mp) <- runStateT ac mempty
-        for_ (elems mp) snd
+        for_ (toList mp) snd
         return a
 
 acOpenObject :: Ord key => key -> With IO t -> AutoClose key t t
@@ -19,5 +18,5 @@ acOpenObject key withX = do
         Just mutedcloser -> return $ fst mutedcloser
         Nothing -> do
             mutedcloser <- lift $ getLifeState $ lifeCycleWith withX
-            put $ insert key mutedcloser oldmap
+            put $ insertMap key mutedcloser oldmap
             return $ fst mutedcloser

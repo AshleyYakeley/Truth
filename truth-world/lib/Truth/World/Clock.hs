@@ -3,8 +3,8 @@ module Truth.World.Clock where
 import Data.Fixed
 import Data.IORef
 import Data.Time
+import Shapes
 import Truth.Core
-import Truth.Core.Import
 
 clockObjectMaker :: UTCTime -> NominalDiffTime -> ObjectMaker (WholeUpdate UTCTime) ()
 clockObjectMaker basetime interval update = do

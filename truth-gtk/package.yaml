@@ -91,6 +91,7 @@ executables:
           - shapes
           - truth-core
           - truth-gtk
+          - truth-world
           - optparse-applicative
         main: Main.hs
         ghc-options: -threaded
@@ -108,6 +109,7 @@ executables:
           - shapes
           - truth-core
           - truth-gtk
+          - truth-world
           - optparse-applicative
         main: Main.hs
         other-modules:

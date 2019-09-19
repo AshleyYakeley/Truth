@@ -3,8 +3,8 @@
 module Truth.World.MIME where
 
 import qualified Codec.MIME.Type
+import Shapes
 import Truth.Core
-import Truth.Core.Import
 import Truth.World.Anything
 
 type MIMEContentType = Codec.MIME.Type.Type
