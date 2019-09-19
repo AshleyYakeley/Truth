@@ -2,10 +2,12 @@ module Truth.UI.GTK.Option
     ( optionGetView
     ) where
 
+import Data.GI.Base.Attributes
 import Data.GI.Gtk
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
+import Truth.UI.GTK.TextStyle
 import Truth.UI.GTK.Useful
 
 optionGetView :: GetGView
@@ -35,16 +37,19 @@ listStoreView (MkTransform blockSignal) esrc = do
             ListUpdateClear -> liftIO $ blockSignal $ seqStoreClear store
     return store
 
+optionUICellAttributes :: OptionUICell -> [AttrOp CellRendererText 'AttrSet]
+optionUICellAttributes MkOptionUICell {..} = textCellAttributes optionCellText optionCellStyle
+
 optionFromStore ::
        forall sel t. Eq t
     => EditSource
-    -> SeqStore (t, Text)
+    -> SeqStore (t, OptionUICell)
     -> CreateView sel (WholeUpdate t) (UnliftIO IO, Widget)
 optionFromStore esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- new CellRendererText []
     #packStart widget renderer False
-    cellLayoutSetAttributes widget renderer store $ \(_, row) -> [#text := row]
+    cellLayoutSetAttributes widget renderer store $ \(_, cell) -> optionUICellAttributes cell
     changedSignal <-
         cvLiftView $
         viewOn widget #changed $
@@ -82,7 +87,7 @@ optionFromStore esrc store = do
 
 optionView ::
        forall t tedit sel. (Eq t)
-    => UpdateFunction tedit (ListUpdate [(t, Text)] (WholeUpdate (t, Text)))
+    => UpdateFunction tedit (ListUpdate [(t, OptionUICell)] (WholeUpdate (t, OptionUICell)))
     -> EditLens tedit (WholeUpdate t)
     -> GCreateView sel tedit
 optionView itemsFunction whichLens = do

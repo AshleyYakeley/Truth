@@ -33,8 +33,8 @@ uiTable ::
     -> UISpec A baseupdate
 uiTable cols (MkPinaforeOrder geto order) val onDoubleClick = let
     showCell :: Know Text -> (Text, TableCellProps)
-    showCell (Known s) = (s, tableCellPlain)
-    showCell Unknown = ("unknown", tableCellPlain {tcItalic = True})
+    showCell (Known s) = (s, plainTableCellProps)
+    showCell Unknown = ("unknown", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
     mapLens :: PinaforeFunctionValue baseupdate (Know Text) -> PinaforeFunctionValue baseupdate (Text, TableCellProps)
     mapLens ff = funcUpdateFunction showCell . ff
     getColumn ::
@@ -53,7 +53,11 @@ uiTable cols (MkPinaforeOrder geto order) val onDoubleClick = let
 
 type PickerType = Know (MeetType Entity A)
 
-type PickerPairType = (PickerType, Text)
+type PickerPairType = (PickerType, OptionUICell)
+
+makeCell :: Know Text -> OptionUICell
+makeCell Unknown = (plainOptionUICell "unknown") {optionCellStyle = plainTextStyle {tsItalic = True}}
+makeCell (Known t) = plainOptionUICell t
 
 uiPick ::
        forall baseupdate.
@@ -66,15 +70,15 @@ uiPick nameMorphism fset ref = let
     getName =
         proc p -> do
             n <- pinaforeMorphismFunction nameMorphism -< Known $ meet2 p
-            returnA -< (Known p, fromKnow "" n)
+            returnA -< (Known p, makeCell n)
     getNames :: PinaforeFunctionMorphism baseupdate (FiniteSet (MeetType Entity A)) (FiniteSet PickerPairType)
     getNames =
         proc fsp -> do
             pairs <- cfmap getName -< fsp
-            returnA -< insertSet (Unknown, "") pairs
+            returnA -< insertSet (Unknown, makeCell Unknown) pairs
     opts :: UpdateFunction baseupdate (ListUpdate [PickerPairType] (WholeUpdate PickerPairType))
     opts =
-        (orderedKeyList @(FiniteSet PickerPairType) $ \(_, a) (_, b) -> compare a b) .
+        (orderedKeyList @(FiniteSet PickerPairType) $ comparing $ optionCellText . snd) .
         convertUpdateFunction . applyPinaforeFunction getNames (pinaforeFiniteSetRefFunctionValue fset)
     in optionUISpec @baseupdate @PickerType opts $ pinaforeRefToLens $ contraRangeLift meet2 ref
 

@@ -78,6 +78,7 @@ library:
       - Truth.Core.Object.Undo
       - Truth.Core.Object
       - Truth.Core.UI.Request
+      - Truth.Core.UI.TextStyle
       - Truth.Core.UI.Specifier.Specifier
       - Truth.Core.UI.Specifier.Null
       - Truth.Core.UI.Specifier.Map

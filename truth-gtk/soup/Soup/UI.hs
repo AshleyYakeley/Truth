@@ -11,14 +11,14 @@ import Truth.Core
 import Truth.World.FileSystem
 
 fromResult :: Result Text Text -> (Text, TableCellProps)
-fromResult (SuccessResult "") = ("unnamed", tableCellPlain {tcItalic = True})
-fromResult (SuccessResult s) = (s, tableCellPlain)
-fromResult (FailureResult s) = ("<" <> s <> ">", tableCellPlain {tcItalic = True})
+fromResult (SuccessResult "") = ("unnamed", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
+fromResult (SuccessResult s) = (s, plainTableCellProps)
+fromResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
 
 pastResult :: Result Text Bool -> (Text, TableCellProps)
-pastResult (SuccessResult False) = ("current", tableCellPlain)
-pastResult (SuccessResult True) = ("past", tableCellPlain)
-pastResult (FailureResult s) = ("<" <> s <> ">", tableCellPlain {tcItalic = True})
+pastResult (SuccessResult False) = ("current", plainTableCellProps)
+pastResult (SuccessResult True) = ("past", plainTableCellProps)
+pastResult (FailureResult s) = ("<" <> s <> ">", plainTableCellProps {tcStyle = plainTextStyle {tsItalic = True}})
 
 type PossibleNoteUpdate = OneWholeUpdate (Result Text) NoteUpdate
 

@@ -5,14 +5,15 @@ import Truth.Core.Import
 import Truth.Core.Read
 import Truth.Core.Types
 import Truth.Core.UI.Specifier.Specifier
+import Truth.Core.UI.TextStyle
 
 data TableCellProps = MkTableCellProps
-    { tcItalic :: Bool
+    { tcStyle :: TextStyle
     }
 
-tableCellPlain :: TableCellProps
-tableCellPlain = let
-    tcItalic = False
+plainTableCellProps :: TableCellProps
+plainTableCellProps = let
+    tcStyle = plainTextStyle
     in MkTableCellProps {..}
 
 data KeyColumn updateT key = MkKeyColumn

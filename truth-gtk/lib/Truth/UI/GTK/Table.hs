@@ -6,10 +6,10 @@ import Data.GI.Base.Attributes
 import Data.GI.Gtk
 import GI.Gdk
 import GI.Gtk as Gtk
-import GI.Pango
 import Shapes
 import Truth.Core
 import Truth.UI.GTK.GView
+import Truth.UI.GTK.TextStyle
 import Truth.UI.GTK.Useful
 
 data Column updateT row = MkColumn
@@ -34,12 +34,7 @@ cellAttributes ::
 cellAttributes MkColumn {..} MkStoreEntry {..} = let
     entryRow = (entryRowText, entryRowProps)
     MkTableCellProps {..} = colProps entryRow
-    in [ #text := colText entryRow
-       , #style :=
-         if tcItalic
-             then StyleItalic
-             else StyleNormal
-       ]
+    in textCellAttributes (colText entryRow) tcStyle
 
 addColumn ::
        TreeView
