@@ -30,7 +30,7 @@ instance UnliftCategory AnEditLens where
         pe edits _ = return $ Just edits
         in MkAnEditLens ucId pe
     ucCompose ::
-           forall tab tbc updateA updateB editc. (MonadTransUnlift tab, MonadTransUnlift tbc)
+           forall tab tbc updateA updateB editc. (MonadTransUntrans tab, MonadTransUntrans tbc)
         => AnEditLens tbc updateB editc
         -> AnEditLens tab updateA updateB
         -> AnEditLens (ComposeT tbc tab) updateA editc
@@ -137,7 +137,7 @@ convertUpdateFunction ::
        , FullEdit (UpdateEdit updateB)
        )
     => UpdateFunction updateA updateB
-convertUpdateFunction = MkCloseUnlift identityUnlift convertAnUpdateFunction
+convertUpdateFunction = MkCloseUnlift wUnIdentityT convertAnUpdateFunction
 
 convertEditLens ::
        forall updateA updateB.
@@ -159,7 +159,7 @@ convertEditLens = let
         newsubject <- lift $ mutableReadToSubject $ applyEdits editbs $ mSubjectToMutableRead $ mutableReadToSubject mr
         editas <- getReplaceEditsFromSubject newsubject
         return $ Just editas
-    in MkCloseUnlift identityUnlift MkAnEditLens {..}
+    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
 
 class IsEditLens lens where
     type LensDomain lens :: Type

@@ -23,31 +23,32 @@ newtype View sel update a =
     deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO, MonadAskUnliftIO)
 
 liftIOView :: forall sel update a. ((forall r. View sel update r -> IO r) -> IO a) -> View sel update a
-liftIOView call = liftIOWithUnlift $ \(MkTransform unlift) -> call unlift
+liftIOView call = liftIOWithUnlift $ \(MkWMFunction unlift) -> call unlift
 
 viewObject :: View sel update (Object (UpdateEdit update))
 viewObject = MkView $ asks $ subscriberObject . vcSubscriber
 
 viewObjectRead ::
-       (UnliftIO (View sel update) -> forall m. MonadUnliftIO m => MutableRead m (UpdateReader update) -> m r)
+       (WIOFunction (View sel update) -> forall m. MonadUnliftIO m => MutableRead m (UpdateReader update) -> m r)
     -> View sel update r
 viewObjectRead call = do
     unliftIO <- askUnliftIO
     MkCloseUnliftIO objRun MkAnObject {..} <- viewObject
-    liftIO $ runTransform objRun $ call unliftIO $ objRead
+    liftIO $ runWMFunction objRun $ call unliftIO $ objRead
 
 viewObjectMaybeEdit ::
-       (UnliftIO (View sel update) -> forall m.
-                                          MonadUnliftIO m =>
-                                                  ([UpdateEdit update] -> m (Maybe (EditSource -> m ()))) -> m r)
+       (WIOFunction (View sel update) -> forall m.
+                                             MonadUnliftIO m =>
+                                                     ([UpdateEdit update] -> m (Maybe (EditSource -> m ()))) -> m r)
     -> View sel update r
 viewObjectMaybeEdit call = do
     unliftIO <- askUnliftIO
     MkCloseUnliftIO objRun MkAnObject {..} <- viewObject
-    liftIO $ runTransform objRun $ call unliftIO $ objEdit
+    liftIO $ runWMFunction objRun $ call unliftIO $ objEdit
 
 viewObjectPushEdit ::
-       (UnliftIO (View sel update) -> forall m. MonadUnliftIO m => (EditSource -> [UpdateEdit update] -> m Bool) -> m r)
+       (WIOFunction (View sel update) -> forall m.
+                                             MonadUnliftIO m => (EditSource -> [UpdateEdit update] -> m Bool) -> m r)
     -> View sel update r
 viewObjectPushEdit call = viewObjectMaybeEdit $ \unlift push -> call unlift $ \esrc edits -> pushEdit esrc $ push edits
 

@@ -60,7 +60,7 @@ getRunner AsynchronousUpdateTiming recv = do
 
 subscriberObjectMaker :: Subscriber update -> a -> ObjectMaker update a
 subscriberObjectMaker (MkCloseUnliftIO run MkASubscriber {..}) a update = do
-    remonad (runTransform run) $ subscribe update
+    remonad (runWMFunction run) $ subscribe update
     return (MkCloseUnliftIO run subAnObject, a)
 
 makeSharedSubscriber :: forall update a. UpdateTiming -> ObjectMaker update a -> LifeCycleIO (Subscriber update, a)
@@ -69,7 +69,7 @@ makeSharedSubscriber ut uobj = do
     let
         updateP :: [update] -> EditContext -> IO ()
         updateP edits ectxt = do
-            store <- mvarRun var get
+            store <- mVarRun var get
             for_ store $ \entry -> entry edits ectxt
     runAsync <- getRunner ut $ utReceiveUpdates ut updateP
     (MkCloseUnliftIO unliftC anObjectC, a) <- uobj runAsync
@@ -78,8 +78,8 @@ makeSharedSubscriber ut uobj = do
         child =
             MkCloseUnliftIO unliftC $
             MkASubscriber anObjectC $ \updateC -> do
-                key <- liftIO $ mvarRun var $ addStoreStateT updateC
-                lifeCycleClose $ mvarRun var $ deleteStoreStateT key
+                key <- liftIO $ mVarRun var $ addStoreStateT updateC
+                lifeCycleClose $ mVarRun var $ deleteStoreStateT key
     return (child, a)
 
 shareObjectMaker :: forall update a. ObjectMaker update a -> LifeCycleIO (ObjectMaker update a)

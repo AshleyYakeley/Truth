@@ -32,9 +32,9 @@ cvDynamic firstdvs updateCV = do
             closeDynamicView lastdvs
     let
         update :: Object (UpdateEdit update) -> [update] -> EditSource -> IO ()
-        update obj edits _esrc = mvarRun stateVar $ updateCV obj edits
+        update obj edits _esrc = mVarRun stateVar $ updateCV obj edits
     cvAddAspect $
-        mvarRun stateVar $ do
+        mVarRun stateVar $ do
             dvs <- get
             liftIO $ vsFirstAspect $ dynamicViewFocus dvs
     cvReceiveIOUpdates update

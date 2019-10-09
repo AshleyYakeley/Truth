@@ -220,4 +220,4 @@ stringSectionLens initial =
                 -> MutableRead m (StringRead seq)
                 -> StateT (SequenceRun seq) m (Maybe [StringEdit seq])
             elPutEdits = elPutEditsFromPutEdit elPutEdit
-            in MkCloseUnlift (mvarUnlift var) MkAnEditLens {..}
+            in MkCloseUnlift (wMVarRun var) MkAnEditLens {..}

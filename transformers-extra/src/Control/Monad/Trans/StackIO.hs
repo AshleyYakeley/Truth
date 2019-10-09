@@ -4,30 +4,30 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Compose
 import Control.Monad.Trans.Constraint
+import Control.Monad.Trans.Function
 import Control.Monad.Trans.Identity
-import Control.Monad.Trans.Transform
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift
 import Data.Constraint
 import Data.Kind
 import Prelude
 
-class (MonadTransUnlift (MonadStackTrans m), MonadUnliftIO m) => MonadStackIO m where
-    type MonadStackTrans m :: (Type -> Type) -> (Type -> Type)
-    toMonadStack :: forall a. m a -> MonadStackTrans m IO a
-    fromMonadStack :: forall a. MonadStackTrans m IO a -> m a
+class (MonadTransUntrans (CombineMonadIO m), MonadUnliftIO m) => MonadStackIO m where
+    type CombineMonadIO m :: (Type -> Type) -> (Type -> Type)
+    toMonadStack :: forall a. m a -> CombineMonadIO m IO a
+    fromMonadStack :: forall a. CombineMonadIO m IO a -> m a
 
 instance MonadStackIO IO where
-    type MonadStackTrans IO = IdentityT
+    type CombineMonadIO IO = IdentityT
     toMonadStack = IdentityT
     fromMonadStack = runIdentityT
 
-instance (MonadTransUnlift t, MonadStackIO m, MonadUnliftIO (t m)) => MonadStackIO (t m) where
-    type MonadStackTrans (t m) = ComposeT t (MonadStackTrans m)
+instance (MonadTransUntrans t, MonadStackIO m, MonadUnliftIO (t m)) => MonadStackIO (t m) where
+    type CombineMonadIO (t m) = ComposeT t (CombineMonadIO m)
     toMonadStack tma = MkComposeT $ remonad' toMonadStack tma
     fromMonadStack (MkComposeT tt) = remonad' fromMonadStack tt
 
-instance MonadTransUnlift t => MonadTransConstraint MonadStackIO t where
+instance MonadTransUntrans t => MonadTransConstraint MonadStackIO t where
     hasTransConstraint ::
            forall m. MonadStackIO m
         => Dict (MonadStackIO (t m))
@@ -39,23 +39,19 @@ isCombineMonadIO ::
        forall ma mb. (MonadStackIO ma, MonadStackIO mb)
     => Dict (MonadStackIO (CombineMonadIO ma mb))
 isCombineMonadIO =
-    case hasTransConstraint @MonadUnliftIO @(MonadStackTrans ma) @mb of
+    case hasTransConstraint @MonadUnliftIO @(CombineMonadIO ma) @mb of
         Dict -> Dict
 
-type CombineMonadIO ma mb = MonadStackTrans ma mb
+combineFstMFunction ::
+       forall ma mb. (MonadStackIO ma, MonadIO mb)
+    => MFunction ma (CombineMonadIO ma mb)
+combineFstMFunction mar = remonad liftIO $ toMonadStack mar
 
-combineLiftFst ::
-       forall ma mb r. (MonadStackIO ma, MonadIO mb)
-    => ma r
-    -> CombineMonadIO ma mb r
-combineLiftFst mar = remonad liftIO $ toMonadStack mar
+combineSndMFunction ::
+       forall ma mb. (MonadStackIO ma, Monad mb)
+    => MFunction mb (CombineMonadIO ma mb)
+combineSndMFunction = lift
 
-combineLiftSnd ::
-       forall ma mb r. (MonadStackIO ma, Monad mb)
-    => mb r
-    -> CombineMonadIO ma mb r
-combineLiftSnd = lift
-
-combineUnliftIOs :: MonadStackIO ma => UnliftIO ma -> UnliftIO mb -> UnliftIO (CombineMonadIO ma mb)
-combineUnliftIOs (MkTransform unlifta) (MkTransform unliftb) =
-    MkTransform $ \cmr -> unlifta $ fromMonadStack $ remonad' unliftb cmr
+combineUnliftIOs :: MonadStackIO ma => WIOFunction ma -> WIOFunction mb -> WIOFunction (CombineMonadIO ma mb)
+combineUnliftIOs (MkWMFunction unlifta) (MkWMFunction unliftb) =
+    MkWMFunction $ \cmr -> unlifta $ fromMonadStack $ remonad' unliftb cmr

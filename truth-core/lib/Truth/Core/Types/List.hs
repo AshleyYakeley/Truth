@@ -177,7 +177,7 @@ listItemLens ::
        , ApplicableEdit (UpdateEdit update)
        , UpdateSubject update ~ Element seq
        )
-    => Unlift (StateT (SequencePoint seq))
+    => WUntransFunction (StateT (SequencePoint seq))
     -> EditLens (ListUpdate seq update) (MaybeUpdate update)
 listItemLens unlift = let
     ufGet ::

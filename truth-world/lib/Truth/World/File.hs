@@ -5,9 +5,9 @@ import Truth.Core
 
 fileObject :: FilePath -> Object ByteStringEdit
 fileObject path = let
-    objRun :: UnliftIO (ReaderT Handle IO)
+    objRun :: WIOFunction (ReaderT Handle IO)
     objRun =
-        MkTransform $ \rt -> do
+        MkWMFunction $ \rt -> do
             h <- openBinaryFile path ReadWriteMode
             r <- runReaderT rt h
             hClose h

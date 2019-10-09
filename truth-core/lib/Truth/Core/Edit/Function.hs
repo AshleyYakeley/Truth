@@ -90,7 +90,7 @@ ioFuncUpdateFunction amb = let
         mSubjectToMutableRead $ do
             a <- mutableReadToSubject $ applyEdit (updateEdit updateA) mra
             liftIO $ amb a
-    in MkCloseUnlift identityUnlift MkAnUpdateFunction {..}
+    in MkCloseUnlift wUnIdentityT MkAnUpdateFunction {..}
 
 funcUpdateFunction ::
        forall updateA updateB.
@@ -107,7 +107,7 @@ funcUpdateFunction ab = ioFuncUpdateFunction $ \a -> return $ ab a
 immutableUpdateFunction ::
        (forall m. MonadIO m => MutableRead m (UpdateReader updateB)) -> UpdateFunction updateA updateB
 immutableUpdateFunction mr =
-    MkCloseUnlift identityUnlift $ MkAnUpdateFunction {ufGet = \_ -> mr, ufUpdate = \_ _ -> return []}
+    MkCloseUnlift wUnIdentityT $ MkAnUpdateFunction {ufGet = \_ -> mr, ufUpdate = \_ _ -> return []}
 
 ioConstUpdateFunction ::
        SubjectReader (UpdateReader updateB) => IO (UpdateSubject updateB) -> UpdateFunction updateA updateB
@@ -121,4 +121,4 @@ updateFunctionRead ::
     => UpdateFunction updateA updateB
     -> MutableRead m (UpdateReader updateA)
     -> MutableRead m (UpdateReader updateB)
-updateFunctionRead (MkCloseUnlift unlift (MkAnUpdateFunction g _)) mr rt = runUnlift unlift $ g mr rt
+updateFunctionRead (MkCloseUnlift unlift (MkAnUpdateFunction g _)) mr rt = runWUntransFunction unlift $ g mr rt

@@ -191,9 +191,9 @@ sqliteObject ::
     -> SQLite.DatabaseSchema tablesel
     -> Object (SQLiteEdit tablesel)
 sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
-    objRun :: UnliftIO (ReaderT Connection IO)
+    objRun :: WIOFunction (ReaderT Connection IO)
     objRun =
-        MkTransform $ \call -> do
+        MkWMFunction $ \call -> do
             exists <- doesFileExist path
             withConnection path $ \conn -> do
                 if exists

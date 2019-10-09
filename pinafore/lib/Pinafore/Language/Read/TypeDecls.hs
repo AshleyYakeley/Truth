@@ -130,7 +130,7 @@ readClosedTypeDeclaration = do
                         valt <- makeConstructorValue ctf lt
                         bind <-
                             return $
-                            MkTransform $ withNewBindings $ singletonMap cname $ qConstExprAny $ MkAnyValue valt at
+                            MkWMFunction $ withNewBindings $ singletonMap cname $ qConstExprAny $ MkAnyValue valt at
                         return $ patt . bind
                 let
                     tdTypes :: forall a. RefNotation baseupdate a -> RefNotation baseupdate a

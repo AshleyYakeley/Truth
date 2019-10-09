@@ -93,7 +93,7 @@ fstLiftEditLens ::
        forall updateX updateA updateB.
        EditLens updateA updateB
     -> EditLens (PairUpdate updateA updateX) (PairUpdate updateB updateX)
-fstLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
+fstLiftEditLens (MkCloseUnlift (unlift :: WUntransFunction t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
     ufGet :: ReadFunctionT t (PairUpdateReader updateA updateX) (PairUpdateReader updateB updateX)
     ufGet mr (MkTupleUpdateReader SelectFirst rt) = g (firstReadFunction mr) rt
     ufGet mr (MkTupleUpdateReader SelectSecond rt) = lift $ mr (MkTupleUpdateReader SelectSecond rt)
@@ -127,7 +127,7 @@ sndLiftEditLens ::
        forall updateX updateA updateB.
        EditLens updateA updateB
     -> EditLens (PairUpdate updateX updateA) (PairUpdate updateX updateB)
-sndLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
+sndLiftEditLens (MkCloseUnlift (unlift :: WUntransFunction t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
     ufGet :: ReadFunctionT t (PairUpdateReader updateX updateA) (PairUpdateReader updateX updateB)
     ufGet mr (MkTupleUpdateReader SelectFirst rt) = lift $ mr (MkTupleUpdateReader SelectFirst rt)
     ufGet mr (MkTupleUpdateReader SelectSecond rt) = g (secondReadFunction mr) rt
@@ -158,7 +158,7 @@ sndLiftEditLens (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens (MkAnUpdateFun
     in MkCloseUnlift unlift $ MkAnEditLens {..}
 
 pairCombineAnUpdateFunctions ::
-       forall t updateA updateB1 updateB2. MonadTransUnlift t
+       forall t updateA updateB1 updateB2. MonadTransUntrans t
     => AnUpdateFunction t updateA updateB1
     -> AnUpdateFunction t updateA updateB2
     -> AnUpdateFunction t updateA (PairUpdate updateB1 updateB2)
@@ -253,4 +253,4 @@ partialPairEditLens = let
         elPutEditsFromSimplePutEdit $ \case
             MkTupleUpdateEdit SelectFirst edit -> return $ Just [MkTupleUpdateEdit SelectFirst edit]
             MkTupleUpdateEdit SelectSecond edit -> return $ Just [MkTupleUpdateEdit SelectSecond edit]
-    in MkCloseUnlift identityUnlift MkAnEditLens {..}
+    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}

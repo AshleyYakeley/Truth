@@ -94,7 +94,7 @@ mapContextEdit _ (MkTupleUpdateEdit SelectContext edit) = MkTupleUpdateEdit Sele
 mapContextEdit f (MkTupleUpdateEdit SelectContent edit) = MkTupleUpdateEdit SelectContent $ f edit
 
 contextualiseAnUpdateFunction ::
-       forall t updateX updateN. MonadTransUnlift t
+       forall t updateX updateN. MonadTransUntrans t
     => AnUpdateFunction t updateX updateN
     -> AnUpdateFunction t updateX (ContextUpdate updateX updateN)
 contextualiseAnUpdateFunction (MkAnUpdateFunction g u) = let
@@ -123,7 +123,7 @@ partitionContextEdits pes = let
     in partitionEithers $ fmap toEither pes
 
 contextualiseAnEditLens ::
-       forall t updateX updateN. MonadTransUnlift t
+       forall t updateX updateN. MonadTransUntrans t
     => AnEditLens t updateX updateN
     -> AnEditLens t updateX (ContextUpdate updateX updateN)
 contextualiseAnEditLens (MkAnEditLens f pe) = let
@@ -145,7 +145,7 @@ contextualiseEditLens :: EditLens updateX updateN -> EditLens updateX (ContextUp
 contextualiseEditLens (MkCloseUnlift unlift lens) = MkCloseUnlift unlift $ contextualiseAnEditLens lens
 
 liftContentAnUpdateFunction ::
-       forall t updateA updateB updateN. MonadTransUnlift t
+       forall t updateA updateB updateN. MonadTransUntrans t
     => AnUpdateFunction t updateA updateB
     -> AnUpdateFunction t (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
 liftContentAnUpdateFunction (MkAnUpdateFunction g u) = let
@@ -177,7 +177,7 @@ carryContextUpdateFunction func =
     liftContentUpdateFunction (editLensFunction $ tupleEditLens SelectContext) . contextualiseUpdateFunction func
 
 liftContentAnEditLens ::
-       forall t updateA updateB updateN. MonadTransUnlift t
+       forall t updateA updateB updateN. MonadTransUntrans t
     => AnEditLens t updateA updateB
     -> AnEditLens t (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
 liftContentAnEditLens (MkAnEditLens f pe) = let

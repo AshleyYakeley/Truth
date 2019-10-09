@@ -229,7 +229,7 @@ unliftKeyElementEditLens ::
        , FullSubjectReader (UpdateReader update)
        )
     => NewKeyGetter cont update
-    -> Unlift (StateT (ContainerKey cont))
+    -> WUntransFunction (StateT (ContainerKey cont))
     -> EditLens (KeyUpdate cont update) (MaybeUpdate update)
 unliftKeyElementEditLens newKeyGetter unlift = let
     ufGet ::
@@ -312,7 +312,7 @@ getKeyElementEditLens ::
     -> IO (EditLens (KeyUpdate cont update) (MaybeUpdate update))
 getKeyElementEditLens initial = do
     var <- newMVar initial
-    return $ unliftKeyElementEditLens updateKey $ mvarUnlift var
+    return $ unliftKeyElementEditLens updateKey $ wMVarRun var
 
 stableKeyElementEditLens ::
        forall cont update.
@@ -323,7 +323,7 @@ stableKeyElementEditLens ::
        )
     => ContainerKey cont
     -> EditLens (KeyUpdate cont update) (MaybeUpdate update)
-stableKeyElementEditLens key = unliftKeyElementEditLens useOldKey $ stateDiscardingUnlift key
+stableKeyElementEditLens key = unliftKeyElementEditLens useOldKey $ stateDiscardingUntrans key
 
 getKeyValueEditLens ::
        forall cont keyupdate valueupdate.
@@ -343,7 +343,7 @@ getKeyValueEditLens key = do
 
 liftKeyElementAnUpdateFunction ::
        forall t conta contb updateA updateB.
-       ( MonadTransUnlift t
+       ( MonadTransUntrans t
        , ContainerKey conta ~ ContainerKey contb
        , UpdateSubject updateA ~ Element conta
        , UpdateSubject updateB ~ Element contb
@@ -401,7 +401,7 @@ liftKeyElementEditLens ::
     => (forall m. MonadIO m => UpdateSubject updateB -> m (Maybe (UpdateSubject updateA)))
     -> EditLens updateA updateB
     -> EditLens (KeyUpdate conta updateA) (KeyUpdate contb updateB)
-liftKeyElementEditLens bma (MkCloseUnlift (unlift :: Unlift t) (MkAnEditLens ef pe)) = let
+liftKeyElementEditLens bma (MkCloseUnlift (unlift :: WUntransFunction t) (MkAnEditLens ef pe)) = let
     elFunction = liftKeyElementAnUpdateFunction ef
     elPutEdit ::
            forall m. MonadIO m
@@ -503,4 +503,4 @@ orderedKeyList cmp = let
                 edits <- getReplaceEditsFromSubject item
                 return $ fmap (\edit -> ListUpdateItem i $ editUpdate edit) edits
     ufUpdate KeyUpdateClear _ = return [ListUpdateClear]
-    in MkCloseUnlift identityUnlift MkAnUpdateFunction {..}
+    in MkCloseUnlift wUnIdentityT MkAnUpdateFunction {..}

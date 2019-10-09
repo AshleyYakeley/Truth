@@ -13,7 +13,7 @@ import Data.Constraint
 import Prelude hiding (fail)
 
 newtype FreeT m a = FreeT
-    { runFreeT :: forall t. MonadTransUnlift t => t m a
+    { runFreeT :: forall t. MonadTransUntrans t => t m a
     }
 
 instance Monad m => Functor (FreeT m) where
@@ -68,15 +68,16 @@ instance MonadTransTunnel FreeT where
     tunnel call = FreeT $ tunnel $ \tun -> call $ \(FreeT tm1r) -> tun tm1r
     transExcept (FreeT txa) = FreeT $ transExcept txa
 
-instance MonadTransSemiUnlift FreeT
+instance MonadTransUnlift FreeT
 
-instance MonadTransUnlift FreeT where
-    liftWithUnlift call = FreeT $ liftWithUnlift $ \(MkUnlift unlift) -> call $ MkUnlift $ \(FreeT tma) -> unlift tma
-    getDiscardingUnlift =
+instance MonadTransUntrans FreeT where
+    liftWithUntrans call =
+        FreeT $ liftWithUntrans $ \(MkWUntransFunction unlift) -> call $ MkWUntransFunction $ \(FreeT tma) -> unlift tma
+    getDiscardingUntrans =
         FreeT $
         withTransConstraintTM @Monad $ do
-            MkUnlift unlift <- getDiscardingUnlift
-            return $ MkUnlift $ \(FreeT tma) -> unlift tma
+            MkWUntransFunction unlift <- getDiscardingUntrans
+            return $ MkWUntransFunction $ \(FreeT tma) -> unlift tma
 
-unliftFreeT :: Unlift FreeT
-unliftFreeT = MkUnlift $ \ft -> runUnlift identityUnlift $ runFreeT ft
+unliftFreeT :: WUntransFunction FreeT
+unliftFreeT = MkWUntransFunction $ \ft -> runWUntransFunction wUnIdentityT $ runFreeT ft

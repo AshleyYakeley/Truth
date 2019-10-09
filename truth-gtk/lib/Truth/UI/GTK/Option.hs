@@ -19,10 +19,10 @@ optionGetView =
 listStoreView ::
        forall sel update.
        (IsEditUpdate update, FullSubjectReader (UpdateReader update), ApplicableEdit (UpdateEdit update))
-    => UnliftIO IO
+    => WIOFunction IO
     -> EditSource
     -> CreateView sel (ListUpdate [UpdateSubject update] update) (SeqStore (UpdateSubject update))
-listStoreView (MkTransform blockSignal) esrc = do
+listStoreView (MkWMFunction blockSignal) esrc = do
     subjectList <- cvLiftView $ viewObjectRead $ \_ -> mutableReadToSubject
     store <- seqStoreNew subjectList
     cvReceiveUpdate (Just esrc) $ \_ _mr ->
@@ -44,7 +44,7 @@ optionFromStore ::
        forall sel t. Eq t
     => EditSource
     -> SeqStore (t, OptionUICell)
-    -> CreateView sel (WholeUpdate t) (UnliftIO IO, Widget)
+    -> CreateView sel (WholeUpdate t) (WIOFunction IO, Widget)
 optionFromStore esrc store = do
     widget <- comboBoxNewWithModel store
     renderer <- new CellRendererText []
@@ -83,7 +83,7 @@ optionFromStore esrc store = do
             update t
     cvReceiveUpdate (Just esrc) $ \_ _mr (MkWholeReaderUpdate t) -> update t
     w <- toWidget widget
-    return (MkTransform blockSignal, w)
+    return (MkWMFunction blockSignal, w)
 
 optionView ::
        forall t tedit sel. (Eq t)

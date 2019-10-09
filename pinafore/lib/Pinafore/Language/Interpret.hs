@@ -78,7 +78,7 @@ interpretLetBindingsClump ::
 interpretLetBindingsClump spos sbinds ra = do
     bl <- interpretBindings sbinds
     remonadRefNotation
-        (MkTransform $ \se -> do
+        (MkWMFunction $ \se -> do
              bmap <- runSourcePos spos $ qUncheckedBindingsComponentLetExpr bl
              withNewBindings bmap se) $
         ra
@@ -106,10 +106,10 @@ interpretDeclarations ::
        HasPinaforeEntityUpdate baseupdate
     => SourcePos
     -> SyntaxDeclarations baseupdate
-    -> PinaforeScoped baseupdate (Transform (RefNotation baseupdate) (RefNotation baseupdate))
+    -> PinaforeScoped baseupdate (WMFunction (RefNotation baseupdate) (RefNotation baseupdate))
 interpretDeclarations spos (MkSyntaxDeclarations stypedecls sbinds) = do
     MkTypeDecls td tr <- stypedecls
-    return $ MkTransform $ \ra -> td $ tr $ interpretLetBindings spos sbinds ra
+    return $ MkWMFunction $ \ra -> td $ tr $ interpretLetBindings spos sbinds ra
 
 interpretNamedConstructor :: SourcePos -> Name -> RefExpression baseupdate
 interpretNamedConstructor spos n = do
@@ -160,7 +160,7 @@ interpretExpression' spos (SEAbstract spat sbody) = do
             pat <- mpat
             liftRefNotation $ runSourcePos spos $ qCaseAbstract [(pat, val)]
 interpretExpression' spos (SELet decls sbody) = do
-    MkTransform bmap <- liftRefNotation $ interpretDeclarations spos decls
+    MkWMFunction bmap <- liftRefNotation $ interpretDeclarations spos decls
     bmap $ interpretExpression sbody
 interpretExpression' spos (SECase sbody scases) = do
     body <- interpretExpression sbody
@@ -244,10 +244,10 @@ interpretBindings sbinds = do
 interpretTopDeclarations ::
        HasPinaforeEntityUpdate baseupdate
     => SyntaxTopDeclarations baseupdate
-    -> PinaforeScoped baseupdate (Transform (PinaforeScoped baseupdate) (PinaforeScoped baseupdate))
+    -> PinaforeScoped baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate))
 interpretTopDeclarations (MkSyntaxTopDeclarations spos sdecls) = do
-    MkTransform f <- interpretDeclarations spos sdecls
-    return $ MkTransform $ \a -> runRefNotation spos $ f $ liftRefNotation a
+    MkWMFunction f <- interpretDeclarations spos sdecls
+    return $ MkWMFunction $ \a -> runRefNotation spos $ f $ liftRefNotation a
 
 interpretTopExpression ::
        HasPinaforeEntityUpdate baseupdate => SyntaxExpression baseupdate -> PinaforeScoped baseupdate (QExpr baseupdate)

@@ -27,7 +27,7 @@ oneWholeLiftUpdateFunction = sumWholeLiftUpdateFunction . oneLiftUpdateFunction
 -- | suitable for Results; trying to put a failure code will be rejected
 oneWholeLiftAnEditLens ::
        forall t f updateA updateB.
-       ( MonadTransUnlift t
+       ( MonadTransUntrans t
        , MonadOne f
        , FullSubjectReader (UpdateReader updateA)
        , ApplicableEdit (UpdateEdit updateA)
@@ -103,4 +103,4 @@ mustExistOneEditLens err = let
         -> MutableRead m (OneReader f (UpdateReader update))
         -> IdentityT m (Maybe [OneWholeEdit f (UpdateEdit update)])
     elPutEdits edits _ = return $ Just $ fmap (SumEditRight . MkOneEdit) edits
-    in MkCloseUnlift identityUnlift MkAnEditLens {..}
+    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}

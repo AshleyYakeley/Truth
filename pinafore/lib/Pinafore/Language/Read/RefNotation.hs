@@ -29,9 +29,9 @@ liftRefNotation :: PinaforeScoped baseupdate a -> RefNotation baseupdate a
 liftRefNotation = lift . lift
 
 remonadRefNotation ::
-       Transform (PinaforeScoped baseupdate) (PinaforeScoped baseupdate)
+       WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate)
     -> (forall a. RefNotation baseupdate a -> RefNotation baseupdate a)
-remonadRefNotation (MkTransform mm) = remonad $ remonad mm
+remonadRefNotation (MkWMFunction mm) = remonad $ remonad mm
 
 runRefNotation :: SourcePos -> RefNotation baseupdate a -> PinaforeScoped baseupdate a
 runRefNotation spos rexpr = evalStateT (runRefWriterT spos rexpr) 0

@@ -44,5 +44,5 @@ subscribeEditor (MkCloseUnliftIO run (MkASubscriber anobject sub)) editor = let
     in case editor of
            MkEditor initr update f -> do
                e <- initr object
-               remonad (runTransform run) $ sub $ update e object
+               remonad (runWMFunction run) $ sub $ update e object
                f e object

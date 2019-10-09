@@ -25,13 +25,13 @@ saveBufferObject ::
        forall update. (IsUpdate update, FullEdit (UpdateEdit update))
     => Object (WholeEdit (UpdateSubject update))
     -> ObjectMaker update SaveActions
-saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pushP)) update = do
-    firstVal <- liftIO $ runTransform unliftP $ readP ReadWhole
+saveBufferObject (MkCloseUnliftIO (unliftP :: WIOFunction mp) (MkAnObject readP pushP)) update = do
+    firstVal <- liftIO $ runWMFunction unliftP $ readP ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
     let
         objC = let
-            runC :: UnliftIO (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO))
-            runC = composeUnliftTransform (mvarUnlift sbVar) $ composeUnliftTransform runDeferActionT id
+            runC :: WIOFunction (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO))
+            runC = composeUntransFunction (wMVarRun sbVar) $ composeUntransFunction runDeferActionT id
             readC :: MutableRead (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
             readC = mSubjectToMutableRead $ fmap saveBuffer get
             pushC ::
@@ -51,29 +51,29 @@ saveBufferObject (MkCloseUnliftIO (unliftP :: UnliftIO mp) (MkAnObject readP pus
             in MkCloseUnliftIO runC $ MkAnObject readC pushC
         saveAction :: EditSource -> IO Bool
         saveAction esrc =
-            runTransform unliftP $ do
-                MkSaveBuffer buf _ <- mvarRun sbVar get
+            runWMFunction unliftP $ do
+                MkSaveBuffer buf _ <- mVarRun sbVar get
                 maction <- pushP [MkWholeReaderEdit buf]
                 case maction of
                     Nothing -> return False
                     Just action -> do
                         action esrc
-                        mvarRun sbVar $ put $ MkSaveBuffer buf False
+                        mVarRun sbVar $ put $ MkSaveBuffer buf False
                         return True
         revertAction :: EditSource -> IO Bool
         revertAction esrc = do
             edits <-
-                runTransform unliftP $ do
+                runWMFunction unliftP $ do
                     buf <- readP ReadWhole
-                    mvarRun sbVar $ put $ MkSaveBuffer buf False
+                    mVarRun sbVar $ put $ MkSaveBuffer buf False
                     getReplaceEditsFromSubject buf
             liftIO $ update (fmap editUpdate edits) $ editSourceContext esrc
             return False
         saveActions :: SaveActions
         saveActions =
             MkSaveActions $
-            runTransform unliftP $ do
-                MkSaveBuffer _ changed <- mvarRun sbVar get
+            runWMFunction unliftP $ do
+                MkSaveBuffer _ changed <- mVarRun sbVar get
                 return $
                     if changed
                         then Just (saveAction, revertAction)

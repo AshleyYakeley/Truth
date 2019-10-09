@@ -135,25 +135,25 @@ data RunState
 truthMainGTK :: TruthMain
 truthMainGTK appMain =
     runLifeCycle $
-    liftIOWithUnlift $ \(MkTransform unlift) -> do
+    liftIOWithUnlift $ \(MkWMFunction unlift) -> do
         _ <- GI.init Nothing
         uiLockVar <- newMVar ()
         runVar <- newMVar RSRun
         let
             uitWithLock :: forall a. IO a -> IO a
-            uitWithLock action = mvarRun uiLockVar $ liftIO action
+            uitWithLock action = mVarRun uiLockVar $ liftIO action
             withUILock :: UpdateTiming -> IO a -> IO a
             withUILock AsynchronousUpdateTiming = uitWithLock
             withUILock SynchronousUpdateTiming = id
             uitCreateWindow :: forall edit. Subscriber edit -> WindowSpec edit -> LifeCycleIO UIWindow
             uitCreateWindow sub wspec = subscribeView withUILock (createWindowAndChild wspec) sub getRequest
             uitExit :: IO ()
-            uitExit = mvarRun runVar $ put RSStop
+            uitExit = mVarRun runVar $ put RSStop
             uitUnliftLifeCycle :: forall a. LifeCycleIO a -> IO a
             uitUnliftLifeCycle = unlift
             tcUIToolkit = MkUIToolkit {..}
         a <- unlift $ appMain MkTruthContext {..}
-        shouldRun <- liftIO $ mvarRun runVar Shapes.get
+        shouldRun <- liftIO $ mVarRun runVar Shapes.get
         case shouldRun of
             RSStop -> return ()
             RSRun -> do
@@ -163,11 +163,11 @@ truthMainGTK appMain =
                         putMVar uiLockVar ()
                         threadDelay 5000 -- 5ms delay
                         takeMVar uiLockVar
-                        sr <- mvarRun runVar Shapes.get
+                        sr <- mVarRun runVar Shapes.get
                         case sr of
                             RSRun -> return SOURCE_CONTINUE
                             RSStop -> do
                                 #quit mloop
                                 return SOURCE_REMOVE
-                mvarRun uiLockVar $ liftIO $ #run mloop
+                mVarRun uiLockVar $ liftIO $ #run mloop
         return a

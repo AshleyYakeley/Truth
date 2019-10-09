@@ -21,10 +21,10 @@ consTupleObjects ::
        Object (UpdateEdit update)
     -> Object (TupleUpdateEdit (ListElementType updates))
     -> Object (TupleUpdateEdit (ListElementType (update : updates)))
-consTupleObjects (MkCloseUnliftIO (runA :: UnliftIO ma) anobjA) (MkCloseUnliftIO (runB :: UnliftIO mb) anobjB) =
+consTupleObjects (MkCloseUnliftIO (runA :: WIOFunction ma) anobjA) (MkCloseUnliftIO (runB :: WIOFunction mb) anobjB) =
     case isCombineMonadIO @ma @mb of
         Dict -> let
-            runAB :: UnliftIO (CombineMonadIO ma mb)
+            runAB :: WIOFunction (CombineMonadIO ma mb)
             runAB = combineUnliftIOs runA runB
             in MkCloseUnliftIO runAB $ consTupleAObjects anobjA anobjB
 
@@ -58,18 +58,19 @@ consTupleAObjects (MkAnObject readA editA) (MkAnObject readB editB) =
     case isCombineMonadIO @ma @mb of
         Dict -> let
             readAB :: MutableRead (CombineMonadIO ma mb) (TupleUpdateReader (ListElementType (update : updates)))
-            readAB (MkTupleUpdateReader FirstElementType r) = combineLiftFst @ma @mb $ readA r
+            readAB (MkTupleUpdateReader FirstElementType r) = combineFstMFunction @ma @mb $ readA r
             readAB (MkTupleUpdateReader (RestElementType sel) r) =
-                combineLiftSnd @ma @mb $ readB $ MkTupleUpdateReader sel r
+                combineSndMFunction @ma @mb $ readB $ MkTupleUpdateReader sel r
             editAB ::
                    [TupleUpdateEdit (ListElementType (update : updates))]
                 -> CombineMonadIO ma mb (Maybe (EditSource -> CombineMonadIO ma mb ()))
             editAB edits = let
                 (eas, ebs) = partitionListTupleUpdateEdits edits
                 in liftA2
-                       (liftA2 $ liftA2 $ \mau mbu -> (>>) (combineLiftFst @ma @mb mau) (combineLiftSnd @ma @mb mbu))
-                       (combineLiftFst @ma @mb $ editA eas)
-                       (combineLiftSnd @ma @mb $ editB ebs)
+                       (liftA2 $
+                        liftA2 $ \mau mbu -> (>>) (combineFstMFunction @ma @mb mau) (combineSndMFunction @ma @mb mbu))
+                       (combineFstMFunction @ma @mb $ editA eas)
+                       (combineSndMFunction @ma @mb $ editB ebs)
             in MkAnObject readAB editAB
 
 tupleListObjectM ::

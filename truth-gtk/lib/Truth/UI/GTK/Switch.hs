@@ -28,7 +28,7 @@ switchView specfunc = do
         for_ (lastWholeUpdate whupdates) $ \spec -> do
             oldvs <- get
             liftIO $ closeDynamicView oldvs
-            newvs <- liftIO $ runTransform unliftView $ getViewState spec
+            newvs <- liftIO $ runWMFunction unliftView $ getViewState spec
             put newvs
     toWidget box
 

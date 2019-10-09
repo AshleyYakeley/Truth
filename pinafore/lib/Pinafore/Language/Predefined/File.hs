@@ -27,7 +27,7 @@ file_import set continue = do
                     viewMapEdit (pinaforeFileItemLens entity) $ do
                         MkObject {..} <- viewObject
                         liftIO $
-                            runTransform objRun $ do
+                            runWMFunction objRun $ do
                                 pushEdit $ objEdit [SingleObjectDeleteCreate]
                                 objRead ReadSingleObjectStore
                 destobject <-
@@ -38,7 +38,7 @@ file_import set continue = do
                 continue entity
 
 file_size :: Object ByteStringEdit -> IO Int64
-file_size MkObject {..} = runTransform objRun $ objRead ReadByteStringLength
+file_size MkObject {..} = runWMFunction objRun $ objRead ReadByteStringLength
 -}
 file_predefinitions ::
        forall baseupdate. (HasPinaforeEntityUpdate baseupdate, HasPinaforeFileUpdate baseupdate)

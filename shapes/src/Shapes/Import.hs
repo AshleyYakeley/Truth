@@ -96,9 +96,9 @@ import Control.Monad.Trans.AskUnlift as I
 import Control.Monad.Trans.Compose as I
 import Control.Monad.Trans.Constraint as I
 import Control.Monad.Trans.ContExtra as I
+import Control.Monad.Trans.Function as I
 import Control.Monad.Trans.ReaderState as I
 import Control.Monad.Trans.StackIO as I
-import Control.Monad.Trans.Transform as I
 import Control.Monad.Trans.Tunnel as I
 import Control.Monad.Trans.Unlift as I
 

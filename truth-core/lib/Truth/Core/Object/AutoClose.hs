@@ -4,9 +4,9 @@ import Truth.Core.Import
 
 type AutoClose key t = StateT (StrictMap key (t, IO ())) IO
 
-runAutoClose :: Ord key => UnliftIO (AutoClose key t)
+runAutoClose :: Ord key => WIOFunction (AutoClose key t)
 runAutoClose =
-    MkTransform $ \ac -> do
+    MkWMFunction $ \ac -> do
         (a, mp) <- runStateT ac mempty
         for_ (toList mp) snd
         return a

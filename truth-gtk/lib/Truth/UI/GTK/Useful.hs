@@ -121,4 +121,4 @@ makeButton name action = do
 cvMakeButton :: Text -> View sel edit () -> CreateView sel edit Button
 cvMakeButton name action = do
     unlift <- cvLiftView $ askUnliftIO
-    makeButton name $ runTransform unlift action
+    makeButton name $ runWMFunction unlift action

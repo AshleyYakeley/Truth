@@ -229,7 +229,7 @@ tupleEditLens_ tester sel = let
         -> MutableRead m (TupleUpdateReader sel)
         -> IdentityT m (Maybe [TupleUpdateEdit sel])
     elPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit sel) edits
-    in MkCloseUnlift identityUnlift $ MkAnEditLens {..}
+    in MkCloseUnlift wUnIdentityT $ MkAnEditLens {..}
 
 tupleEditLens ::
        forall sel update. (TestEquality sel)
@@ -259,4 +259,4 @@ tupleIsoLens ab ba = let
         -> MutableRead m (TupleUpdateReader sela)
         -> IdentityT m (Maybe [TupleUpdateEdit sela])
     elPutEdits edits _ = return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (ba sel) edit) edits
-    in MkCloseUnlift identityUnlift MkAnEditLens {..}
+    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}

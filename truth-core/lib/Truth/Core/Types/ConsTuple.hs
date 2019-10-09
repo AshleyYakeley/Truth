@@ -39,7 +39,7 @@ emptyTupleLens = let
         -> IdentityT m (Maybe [UpdateEdit updateA])
     elPutEdits [] _ = return $ Just []
     elPutEdits ((MkTupleUpdateEdit sel _):_) _ = never sel
-    in MkCloseUnlift identityUnlift MkAnEditLens {..}
+    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
 
 instance (c a, TupleUpdateWitness c r) => TupleUpdateWitness c (ConsType a r) where
     tupleUpdateWitness FirstType = Dict
@@ -81,7 +81,7 @@ firstEditLens = let
         -> MutableRead m (TupleUpdateReader (ConsType update1 sel))
         -> IdentityT m (Maybe [TupleUpdateEdit (ConsType update1 sel)])
     elPutEdits edits _ = return $ Just $ fmap (MkTupleUpdateEdit FirstType) edits
-    in MkCloseUnlift identityUnlift MkAnEditLens {..}
+    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
 
 restEditLens :: forall sel update1. EditLens (TupleUpdate (ConsType update1 sel)) (TupleUpdate sel)
 restEditLens = let
@@ -103,7 +103,7 @@ restEditLens = let
         -> IdentityT m (Maybe [TupleUpdateEdit (ConsType update1 sel)])
     elPutEdits edits _ =
         return $ Just $ fmap (\(MkTupleUpdateEdit sel edit) -> MkTupleUpdateEdit (RestType sel) edit) edits
-    in MkCloseUnlift identityUnlift MkAnEditLens {..}
+    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
 
 consTuple :: UpdateSubject a -> Tuple r -> Tuple (ConsType a r)
 consTuple a (MkTuple tup) =

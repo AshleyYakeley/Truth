@@ -46,22 +46,24 @@ instance MonadTransSemiTunnel DeferActionT
 
 deriving instance MonadTransTunnel DeferActionT
 
-instance MonadTransSemiUnlift DeferActionT
+instance MonadTransUnlift DeferActionT
 
-instance MonadTransUnlift DeferActionT where
-    liftWithUnlift utmr =
-        MkDeferActionT $ liftWithUnlift $ \(MkUnlift unlift) -> utmr $ MkUnlift $ \(MkDeferActionT wma) -> unlift wma
-    getDiscardingUnlift =
+instance MonadTransUntrans DeferActionT where
+    liftWithUntrans utmr =
+        MkDeferActionT $
+        liftWithUntrans $ \(MkWUntransFunction unlift) ->
+            utmr $ MkWUntransFunction $ \(MkDeferActionT wma) -> unlift wma
+    getDiscardingUntrans =
         MkDeferActionT $ do
-            MkUnlift du <- getDiscardingUnlift
-            return $ MkUnlift $ \(MkDeferActionT wma) -> du wma
+            MkWUntransFunction du <- getDiscardingUntrans
+            return $ MkWUntransFunction $ \(MkDeferActionT wma) -> du wma
 
 deferAction :: Monad m => IO () -> DeferActionT m ()
 deferAction action = MkDeferActionT $ tell [action]
 
-runDeferActionT :: Unlift DeferActionT
+runDeferActionT :: WUntransFunction DeferActionT
 runDeferActionT =
-    MkUnlift $ \(MkDeferActionT (WriterT wma)) -> do
+    MkWUntransFunction $ \(MkDeferActionT (WriterT wma)) -> do
         (a, actions) <- wma
         for_ actions liftIO
         return a

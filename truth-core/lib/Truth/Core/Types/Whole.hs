@@ -104,7 +104,7 @@ pattern MkWholeUpdate a = MkWholeReaderUpdate a
 
 wholeUpdateFunction :: forall a b. (a -> b) -> UpdateFunction (WholeUpdate a) (WholeUpdate b)
 wholeUpdateFunction ab =
-    MkCloseUnlift identityUnlift $
+    MkCloseUnlift wUnIdentityT $
     MkAnUpdateFunction
         { ufGet = \mr ReadWhole -> lift $ fmap ab $ mr ReadWhole
         , ufUpdate = \(MkWholeUpdate a) _ -> return [MkWholeUpdate $ ab a]
@@ -112,7 +112,7 @@ wholeUpdateFunction ab =
 
 ioWholeUpdateFunction :: forall a b. (a -> IO b) -> UpdateFunction (WholeUpdate a) (WholeUpdate b)
 ioWholeUpdateFunction aiob =
-    MkCloseUnlift identityUnlift $
+    MkCloseUnlift wUnIdentityT $
     MkAnUpdateFunction
         { ufGet =
               \mr ReadWhole ->
@@ -153,11 +153,11 @@ changeOnlyUpdateFunction = do
                 _ -> do
                     put $ Just newa
                     return [MkWholeUpdate newa]
-    return $ MkCloseUnlift (mvarUnlift var) $ MkAnUpdateFunction {..}
+    return $ MkCloseUnlift (wMVarRun var) $ MkAnUpdateFunction {..}
 
 ioWholeEditLens :: forall a b. (a -> IO b) -> (b -> a -> IO (Maybe a)) -> EditLens (WholeUpdate a) (WholeUpdate b)
 ioWholeEditLens ioget ioput =
-    MkCloseUnlift identityUnlift $
+    MkCloseUnlift wUnIdentityT $
     MkAnEditLens
         { elFunction =
               MkAnUpdateFunction
@@ -217,7 +217,7 @@ pairWholeUpdateFunction ::
        UpdateFunction update (WholeUpdate a)
     -> UpdateFunction update (WholeUpdate b)
     -> UpdateFunction update (WholeUpdate (a, b))
-pairWholeUpdateFunction (MkCloseUnlift (ula :: Unlift ta) (MkAnUpdateFunction ga ua)) (MkCloseUnlift (ulb :: Unlift tb) (MkAnUpdateFunction gb ub)) = let
+pairWholeUpdateFunction (MkCloseUnlift (ula :: WUntransFunction ta) (MkAnUpdateFunction ga ua)) (MkCloseUnlift (ulb :: WUntransFunction tb) (MkAnUpdateFunction gb ub)) = let
     gab :: ReadFunctionT (ComposeT ta tb) (UpdateReader update) (WholeReader (a, b))
     gab mr ReadWhole =
         withTransConstraintTM @MonadIO $ do

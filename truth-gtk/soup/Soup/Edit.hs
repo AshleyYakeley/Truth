@@ -41,45 +41,45 @@ uuidToName = Data.UUID.toString
 
 dictWorkaround ::
        forall m. MonadStackIO m
-    => Dict (MonadTransUnlift (MonadStackTrans m))
+    => Dict (MonadTransUntrans (CombineMonadIO m))
 dictWorkaround = Dict
 
 type ObjectSoupUpdate = SoupUpdate (ObjectUpdate ByteStringUpdate)
 
 directorySoup :: Object FSEdit -> FilePath -> Object (UpdateEdit ObjectSoupUpdate)
-directorySoup (MkCloseUnliftIO (runFS :: UnliftIO m) (MkAnObject readFS pushFS)) dirpath =
-    case hasTransConstraint @MonadUnliftIO @(MonadStackTrans m) @(AutoClose FilePath (Object ByteStringEdit)) of
+directorySoup (MkCloseUnliftIO (runFS :: WIOFunction m) (MkAnObject readFS pushFS)) dirpath =
+    case hasTransConstraint @MonadUnliftIO @(CombineMonadIO m) @(AutoClose FilePath (Object ByteStringEdit)) of
         Dict -> let
-            runSoup :: UnliftIO (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)))
+            runSoup :: WIOFunction (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)))
             runSoup = combineUnliftIOs runFS runAutoClose
             readSoup ::
                    MutableRead (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit))) (UpdateReader ObjectSoupUpdate)
             readSoup KeyReadKeys = do
-                mnames <- combineLiftFst $ readFS $ FSReadDirectory dirpath
+                mnames <- combineFstMFunction $ readFS $ FSReadDirectory dirpath
                 return $
                     case mnames of
                         Just names -> mapMaybe nameToUUID $ MkFiniteSet names
                         Nothing -> mempty
             readSoup (KeyReadItem uuid (MkTupleUpdateReader SelectFirst ReadWhole)) = do
-                mitem <- combineLiftFst $ readFS $ FSReadItem $ dirpath </> uuidToName uuid
+                mitem <- combineFstMFunction $ readFS $ FSReadItem $ dirpath </> uuidToName uuid
                 case mitem of
                     Just (FSFileItem _) -> return $ Just uuid
                     _ -> return Nothing
             readSoup (KeyReadItem uuid (MkTupleUpdateReader SelectSecond ReadObject)) = do
                 let path = dirpath </> uuidToName uuid
-                mitem <- combineLiftFst $ readFS $ FSReadItem path
+                mitem <- combineFstMFunction $ readFS $ FSReadItem path
                 case mitem of
                     Just (FSFileItem object) -> do
-                        muted <- combineLiftSnd @m $ acOpenObject path $ \call -> call object -- pointless
+                        muted <- combineSndMFunction @m $ acOpenObject path $ \call -> call object -- pointless
                         return $ Just muted
                     _ -> return Nothing
             pushSoup ::
                    [UpdateEdit ObjectSoupUpdate]
-                -> MonadStackTrans m (AutoClose FilePath (Object ByteStringEdit)) (Maybe (EditSource -> MonadStackTrans m (AutoClose FilePath (Object ByteStringEdit)) ()))
+                -> CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)) (Maybe (EditSource -> CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)) ()))
             pushSoup =
                 singleEdit $ \edit ->
-                    fmap (fmap (fmap combineLiftFst)) $
-                    combineLiftFst $
+                    fmap (fmap (fmap combineFstMFunction)) $
+                    combineFstMFunction $
                     case edit of
                         KeyEditItem _uuid (MkTupleUpdateEdit SelectFirst iedit) -> never iedit
                         KeyEditItem _uuid (MkTupleUpdateEdit SelectSecond iedit) -> never iedit

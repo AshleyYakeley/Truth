@@ -82,7 +82,7 @@ cvReceiveIOUpdates recv = do
     withUILock <- MkCreateView $ asks vcWithUILock
     MkCloseUnliftIO run asub <- MkCreateView $ asks vcSubscriber
     liftLifeCycleIO $
-        remonad (runTransform run) $
+        remonad (runWMFunction run) $
         subscribe asub $ \edits MkEditContext {..} ->
             withUILock editContextTiming $ do
                 alive <- monitor
@@ -91,17 +91,18 @@ cvReceiveIOUpdates recv = do
                     else return ()
 
 cvReceiveUpdates ::
-       Maybe EditSource -> (UnliftIO (View sel update) -> ReceiveUpdates update) -> CreateView sel update ()
+       Maybe EditSource -> (WIOFunction (View sel update) -> ReceiveUpdates update) -> CreateView sel update ()
 cvReceiveUpdates mesrc recv = do
-    unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkTransform unlift
+    unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkWMFunction unlift
     cvReceiveIOUpdates $ \(MkCloseUnliftIO unliftObj (MkAnObject mr _)) edits esrc ->
         if mesrc == Just esrc
             then return ()
-            else runTransform unliftObj $ recv unliftIO mr edits
+            else runWMFunction unliftObj $ recv unliftIO mr edits
 
 cvReceiveUpdate ::
        Maybe EditSource
-    -> (UnliftIO (View sel update) -> forall m. MonadUnliftIO m => MutableRead m (UpdateReader update) -> update -> m ())
+    -> (WIOFunction (View sel update) -> forall m.
+                                             MonadUnliftIO m => MutableRead m (UpdateReader update) -> update -> m ())
     -> CreateView sel update ()
 cvReceiveUpdate mesrc recv = cvReceiveUpdates mesrc $ \unlift mr edits -> for_ edits (recv unlift mr)
 
@@ -113,7 +114,7 @@ cvBindUpdateFunction ::
 cvBindUpdateFunction mesrc ef setf = do
     initial <- cvLiftView $ viewObjectRead $ \_ mr -> updateFunctionRead ef mr ReadWhole
     cvLiftView $ setf initial
-    cvReceiveUpdates mesrc $ \(MkTransform unlift) ->
+    cvReceiveUpdates mesrc $ \(MkWMFunction unlift) ->
         mapReceiveUpdates ef $ \_ wupdates ->
             case lastWholeUpdate wupdates of
                 Just newval -> liftIO $ unlift $ setf newval

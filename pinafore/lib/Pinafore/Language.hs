@@ -153,12 +153,12 @@ interactLoop inh outh echo = do
                 else return ()
             liftIOWithUnlift $ \unlift ->
                 catches
-                    (runTransform unlift $ do
+                    (runWMFunction unlift $ do
                          p <- interactParse $ pack inputstr
                          case p of
                              LetInteractiveCommand fbind ->
                                  lift $ do
-                                     MkTransform bind <- liftRS fbind
+                                     MkWMFunction bind <- liftRS fbind
                                      liftRS $ bind $ return () -- check errors
                                      updateRS bind
                              ExpressionInteractiveCommand texpr -> do

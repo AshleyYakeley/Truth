@@ -18,7 +18,7 @@ import Pinafore.Language.TypeSystem
 import Shapes hiding (try)
 
 data InteractiveCommand baseupdate
-    = LetInteractiveCommand (PinaforeScoped baseupdate (Transform (PinaforeScoped baseupdate) (PinaforeScoped baseupdate)))
+    = LetInteractiveCommand (PinaforeScoped baseupdate (WMFunction (PinaforeScoped baseupdate) (PinaforeScoped baseupdate)))
     | ExpressionInteractiveCommand (PinaforeScoped baseupdate (QExpr baseupdate))
     | ShowTypeInteractiveCommand Bool
                                  (PinaforeScoped baseupdate (QExpr baseupdate))

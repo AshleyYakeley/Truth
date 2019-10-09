@@ -60,7 +60,7 @@ partialFullEditLens = let
         -> MutableRead m (UpdateReader update)
         -> IdentityT m (Maybe [UpdateEdit update])
     elPutEdits edits _ = return $ Just edits
-    in MkCloseUnlift identityUnlift MkAnEditLens {..}
+    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
 
 convertUpdateEditLens ::
        forall updateA updateB. UpdateEdit updateA ~ UpdateEdit updateB
@@ -87,7 +87,7 @@ convertUpdateEditLens ab = let
         -> MutableRead m (UpdateReader updateA)
         -> IdentityT m (Maybe [UpdateEdit updateA])
     elPutEdits edits _ = return $ Just edits
-    in MkCloseUnlift identityUnlift MkAnEditLens {..}
+    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
 
 partialEditLens :: forall update. EditLens update (PartialUpdate update)
 partialEditLens = convertUpdateEditLens KnownPartialUpdate
@@ -179,7 +179,7 @@ partialConvertUpdateFunction ::
        , SubjectReader (UpdateReader updateB)
        )
     => UpdateFunction updateA (PartialUpdate updateB)
-partialConvertUpdateFunction = MkCloseUnlift identityUnlift partialConvertAnUpdateFunction
+partialConvertUpdateFunction = MkCloseUnlift wUnIdentityT partialConvertAnUpdateFunction
 
 partialConvertEditLens ::
        forall updateA updateB.
@@ -203,4 +203,4 @@ partialConvertEditLens = let
         newsubject <- mapSubjectEdits editbs oldsubject
         editas <- getReplaceEditsFromSubject newsubject
         return $ Just editas
-    in MkCloseUnlift identityUnlift MkAnEditLens {..}
+    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}

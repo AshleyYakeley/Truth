@@ -62,7 +62,7 @@ readFunctionNoUpdateFunction rf = let
     ufGet :: forall . ReadFunctionT IdentityT ra (UpdateReader updateB)
     ufGet mra rb = lift $ rf mra rb
     ufUpdate edit _ = never edit
-    in MkCloseUnlift identityUnlift MkAnUpdateFunction {..}
+    in MkCloseUnlift wUnIdentityT MkAnUpdateFunction {..}
 
 readFunctionNoEditLens :: forall ra updateB. ReadFunction ra (UpdateReader updateB) -> EditLens (NoUpdate ra) updateB
 readFunctionNoEditLens rf = readOnlyEditLens $ readFunctionNoUpdateFunction rf

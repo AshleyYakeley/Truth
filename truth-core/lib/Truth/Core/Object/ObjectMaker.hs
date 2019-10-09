@@ -18,10 +18,10 @@ reflectingObjectMaker ::
        forall update. IsUpdate update
     => Object (UpdateEdit update)
     -> ObjectMaker update ()
-reflectingObjectMaker (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) recv =
+reflectingObjectMaker (MkCloseUnliftIO (run :: WIOFunction m) (MkAnObject r e)) recv =
     return $ let
-        run' :: UnliftIO (DeferActionT m)
-        run' = composeUnliftTransformCommute runDeferActionT run
+        run' :: WIOFunction (DeferActionT m)
+        run' = composeUntransFunctionCommute runDeferActionT run
         r' :: MutableRead (DeferActionT m) (UpdateReader update)
         r' = liftMutableRead r
         e' :: [UpdateEdit update] -> DeferActionT m (Maybe (EditSource -> DeferActionT m ()))
@@ -39,8 +39,8 @@ reflectingObjectMaker (MkCloseUnliftIO (run :: UnliftIO m) (MkAnObject r e)) rec
 mapUpdates ::
        forall updateA updateB. EditLens updateA updateB -> Object (UpdateEdit updateA) -> [updateA] -> IO [updateB]
 mapUpdates (MkCloseUnlift unlift (MkAnEditLens (MkAnUpdateFunction _ update) _)) (MkCloseUnliftIO unliftIO (MkAnObject mr _)) eas =
-    runTransform unliftIO $
-    runUnlift unlift $ withTransConstraintTM @MonadIO $ fmap mconcat $ for eas $ \ea -> update ea mr
+    runWMFunction unliftIO $
+    runWUntransFunction unlift $ withTransConstraintTM @MonadIO $ fmap mconcat $ for eas $ \ea -> update ea mr
 
 mapObjectMaker :: EditLens updateA updateB -> ObjectMaker updateA a -> ObjectMaker updateB a
 mapObjectMaker lens uobja recvb = do

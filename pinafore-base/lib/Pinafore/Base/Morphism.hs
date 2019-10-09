@@ -76,7 +76,7 @@ instance UnliftCategory (APinaforeFunctionMorphism baseupdate) where
 instance Arrow (PinaforeFunctionMorphism baseupdate) where
     arr ab =
         MkCloseUnlift
-            identityUnlift
+            wUnIdentityT
             MkAPinaforeFunctionMorphism {pfFuncRead = \_ a -> return $ ab a, pfUpdate = \_ _ -> return False}
     first (MkCloseUnlift unlift (MkAPinaforeFunctionMorphism bc u)) =
         MkCloseUnlift unlift $
@@ -154,7 +154,7 @@ mapPinaforeFunctionMorphismBase ::
     -> PinaforeFunctionMorphism baseB a b
 mapPinaforeFunctionMorphismBase ef morph = let
     call ::
-           forall t1 t2. (MonadTransUnlift t1, MonadTransUnlift t2)
+           forall t1 t2. (MonadTransUntrans t1, MonadTransUntrans t2)
         => APinaforeFunctionMorphism baseA t1 a b
         -> AnUpdateFunction t2 baseB baseA
         -> APinaforeFunctionMorphism baseB (ComposeT t1 t2) a b
@@ -211,7 +211,7 @@ pairPinaforeLensMorphism ::
     -> PinaforeLensMorphism baseupdate a (b, c)
 pairPinaforeLensMorphism = let
     call ::
-           forall t1 t2. (MonadTransUnlift t1, MonadTransUnlift t2)
+           forall t1 t2. (MonadTransUntrans t1, MonadTransUntrans t2)
         => APinaforeLensMorphism baseupdate t1 a b
         -> APinaforeLensMorphism baseupdate t2 a c
         -> APinaforeLensMorphism baseupdate (ComposeT t1 t2) a (b, c)
@@ -295,7 +295,7 @@ eitherPinaforeLensMorphism ::
     -> PinaforeLensMorphism baseupdate (Either a b) c
 eitherPinaforeLensMorphism = let
     call ::
-           forall t. MonadTransUnlift t
+           forall t. MonadTransUntrans t
         => APinaforeLensMorphism baseupdate t a c
         -> APinaforeLensMorphism baseupdate t b c
         -> APinaforeLensMorphism baseupdate t (Either a b) c
@@ -390,7 +390,7 @@ mapPinaforeLensMorphismBase ::
        forall baseA baseB a b. EditLens baseB baseA -> PinaforeLensMorphism baseA a b -> PinaforeLensMorphism baseB a b
 mapPinaforeLensMorphismBase lens morph = let
     call ::
-           forall t1 t2. (MonadTransUnlift t1, MonadTransUnlift t2)
+           forall t1 t2. (MonadTransUntrans t1, MonadTransUntrans t2)
         => APinaforeLensMorphism baseA t1 a b
         -> AnEditLens t2 baseB baseA
         -> APinaforeLensMorphism baseB (ComposeT t1 t2) a b
@@ -458,7 +458,7 @@ instance UnliftCategory (APinaforeLensMorphism baseupdate) where
         pmInverse = MkAPinaforeFunctionMorphism {..}
         in MkAPinaforeLensMorphism {..}
     ucCompose ::
-           forall tab tbc a b c. (MonadTransUnlift tab, MonadTransUnlift tbc)
+           forall tab tbc a b c. (MonadTransUntrans tab, MonadTransUntrans tbc)
         => APinaforeLensMorphism baseupdate tbc b c
         -> APinaforeLensMorphism baseupdate tab a b
         -> APinaforeLensMorphism baseupdate (ComposeT tbc tab) a c
@@ -586,7 +586,7 @@ funcPinaforeLensMorphism ab bsa bma = let
     pfUpdate _ _ = return False
     pmInverse :: APinaforeFunctionMorphism baseupdate IdentityT b [a]
     pmInverse = MkAPinaforeFunctionMorphism {..}
-    in MkCloseUnlift identityUnlift MkAPinaforeLensMorphism {..}
+    in MkCloseUnlift wUnIdentityT MkAPinaforeLensMorphism {..}
 
 nullPinaforeLensMorphism :: forall baseupdate a b. PinaforeLensMorphism baseupdate a b
 nullPinaforeLensMorphism = funcPinaforeLensMorphism (\_ -> Unknown) (\_ -> mempty) (\_ -> Nothing)
@@ -611,7 +611,7 @@ lensFunctionMorphism ::
        forall baseupdate a b.
        PinaforeLensMorphism baseupdate a b
     -> PinaforeFunctionMorphism baseupdate (Know a) (Know b)
-lensFunctionMorphism (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {..}) = let
+lensFunctionMorphism (MkCloseUnlift (unlift :: WUntransFunction t) MkAPinaforeLensMorphism {..}) = let
     funcRead ::
            forall m. MonadIO m
         => MutableRead m (UpdateReader baseupdate)
@@ -631,7 +631,7 @@ pmInverseEditLens ::
        forall baseupdate a b. Eq a
     => PinaforeLensMorphism baseupdate a b
     -> EditLens (ContextUpdate baseupdate (WholeUpdate (Know b))) (FiniteSetUpdate a)
-pmInverseEditLens (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {..}) = let
+pmInverseEditLens (MkCloseUnlift (unlift :: WUntransFunction t) MkAPinaforeLensMorphism {..}) = let
     getFiniteSet ::
            forall m update. MonadIO m
         => Know b
@@ -757,7 +757,7 @@ pmInverseEditLensSet ::
     => IO b
     -> PinaforeLensMorphism baseupdate a b
     -> EditLens (ContextUpdate baseupdate (FiniteSetUpdate b)) (FiniteSetUpdate a)
-pmInverseEditLensSet newb (MkCloseUnlift (unlift :: Unlift t) MkAPinaforeLensMorphism {..}) = let
+pmInverseEditLensSet newb (MkCloseUnlift (unlift :: WUntransFunction t) MkAPinaforeLensMorphism {..}) = let
     getPointPreimage ::
            forall m update. MonadIO m
         => b

@@ -48,19 +48,19 @@ undoQueueSubscriber ::
     -> IO (Subscriber update, UndoActions)
 undoQueueSubscriber sub = do
     queueVar <- newMVar $ MkUndoQueue [] []
-    MkCloseUnliftIO (runP :: UnliftIO ma) (MkASubscriber (MkAnObject readP pushP) subscribeP) <- return sub
+    MkCloseUnliftIO (runP :: WIOFunction ma) (MkASubscriber (MkAnObject readP pushP) subscribeP) <- return sub
     let
         undoActions = let
             uaUndo :: EditSource -> IO Bool
             uaUndo esrc =
-                mvarRun queueVar $ do
+                mVarRun queueVar $ do
                     MkUndoQueue ues res <- get
                     case ues of
                         [] -> return False -- nothing to undo
                         (entry:ee) -> do
                             did <-
                                 lift $
-                                runTransform runP $ do
+                                runWMFunction runP $ do
                                     maction <- pushP (snd entry)
                                     case maction of
                                         Just action -> do
@@ -74,14 +74,14 @@ undoQueueSubscriber sub = do
                                 else return False
             uaRedo :: EditSource -> IO Bool
             uaRedo esrc =
-                mvarRun queueVar $ do
+                mVarRun queueVar $ do
                     MkUndoQueue ues res <- get
                     case res of
                         [] -> return False -- nothing to redo
                         (entry:ee) -> do
                             did <-
                                 lift $
-                                runTransform runP $ do
+                                runWMFunction runP $ do
                                     maction <- pushP (fst entry)
                                     case maction of
                                         Just action -> do
@@ -100,7 +100,7 @@ undoQueueSubscriber sub = do
                 case maction of
                     Just action ->
                         Just $ \esrc -> do
-                            mvarRun queueVar $ updateUndoQueue readP edits
+                            mVarRun queueVar $ updateUndoQueue readP edits
                             action esrc
                     Nothing -> Nothing
         subC = MkCloseUnliftIO runP $ MkASubscriber (MkAnObject readP pushC) subscribeP
