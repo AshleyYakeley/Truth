@@ -4,7 +4,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.UnliftIO
+import Truth.Core.Object.Run
 import Truth.Core.Read
 
 cacheObject ::
@@ -12,7 +12,7 @@ cacheObject ::
     => Int
     -> Object edit
     -> LifeCycleIO (Object edit)
-cacheObject mus (MkCloseUnliftIO unlift (MkAnObject read push)) = do
+cacheObject mus (MkRunnableIO unlift (MkAnObject read push)) = do
     runAction <-
         asyncWaitRunner mus $ \editsnl -> runWMFunction unlift $ pushOrFail "cached object" noEditSource $ push editsnl
     cacheVar <- liftIO $ newMVar $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
@@ -33,4 +33,4 @@ cacheObject mus (MkCloseUnliftIO unlift (MkAnObject read push)) = do
             Just $ \_ -> do
                 editCacheUpdates edits
                 liftIO $ runAction $ Just edits
-        in MkCloseUnliftIO objRun MkAnObject {..}
+        in MkRunnableIO objRun MkAnObject {..}

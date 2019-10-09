@@ -3,7 +3,7 @@ module Truth.Core.Object.Update where
 import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.Object
-import Truth.Core.Object.UnliftIO
+import Truth.Core.Object.Run
 import Truth.Core.Read
 
 anObjectMapUpdates ::
@@ -20,7 +20,7 @@ objectMapUpdates ::
     -> Object (UpdateEdit updateA)
     -> [updateA]
     -> IO [updateB]
-objectMapUpdates (MkCloseUnlift unlift ef) (MkCloseUnliftIO objRun obj) editAs =
+objectMapUpdates (MkRunnableT2 unlift ef) (MkRunnableIO objRun obj) editAs =
     runWMFunction objRun $ runWUntransFunction unlift $ anObjectMapUpdates ef obj editAs
 
 mapUpdates ::
@@ -30,7 +30,7 @@ mapUpdates ::
     -> [updateA]
     -> (forall t. MonadTransUntrans t => MutableRead (t m) (UpdateReader updateB) -> [updateB] -> t m a)
     -> m a
-mapUpdates (MkCloseUnlift (unlift :: WUntransFunction t) ef@MkAnUpdateFunction {..}) (mrA :: MutableRead m (UpdateReader updateA)) editsA call =
+mapUpdates (MkRunnableT2 (unlift :: WUntransFunction t) ef@MkAnUpdateFunction {..}) (mrA :: MutableRead m (UpdateReader updateA)) editsA call =
     runWUntransFunction unlift $
     withTransConstraintTM @MonadUnliftIO $ do
         editsB <- ufUpdates ef editsA mrA
@@ -47,7 +47,7 @@ type ReceiveUpdatesT t update = forall m. MonadUnliftIO m => MutableRead m (Upda
 
 mapReceiveUpdates ::
        forall updateA updateB. UpdateFunction updateA updateB -> ReceiveUpdates updateB -> ReceiveUpdates updateA
-mapReceiveUpdates (MkCloseUnlift (unlift :: WUntransFunction t) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (UpdateReader updateA)) editsA =
+mapReceiveUpdates (MkRunnableT2 (unlift :: WUntransFunction t) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (UpdateReader updateA)) editsA =
     runWUntransFunction unlift $
     withTransConstraintTM @MonadUnliftIO $ do
         editsB <- ufUpdates ef editsA mrA
@@ -61,7 +61,7 @@ mapReceiveUpdatesT ::
     => UpdateFunction updateA updateB
     -> ReceiveUpdatesT t updateB
     -> ReceiveUpdatesT t updateA
-mapReceiveUpdatesT (MkCloseUnlift (unlift :: WUntransFunction tlens) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (UpdateReader updateA)) editsA =
+mapReceiveUpdatesT (MkRunnableT2 (unlift :: WUntransFunction tlens) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (UpdateReader updateA)) editsA =
     withTransConstraintTM @MonadUnliftIO $
     runWUntransFunction unlift $
     withTransConstraintTM @MonadUnliftIO $

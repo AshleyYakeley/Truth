@@ -47,7 +47,7 @@ dictWorkaround = Dict
 type ObjectSoupUpdate = SoupUpdate (ObjectUpdate ByteStringUpdate)
 
 directorySoup :: Object FSEdit -> FilePath -> Object (UpdateEdit ObjectSoupUpdate)
-directorySoup (MkCloseUnliftIO (runFS :: WIOFunction m) (MkAnObject readFS pushFS)) dirpath =
+directorySoup (MkRunnableIO (runFS :: WIOFunction m) (MkAnObject readFS pushFS)) dirpath =
     case hasTransConstraint @MonadUnliftIO @(CombineMonadIO m) @(AutoClose FilePath (Object ByteStringEdit)) of
         Dict -> let
             runSoup :: WIOFunction (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)))
@@ -94,4 +94,4 @@ directorySoup (MkCloseUnliftIO (runFS :: WIOFunction m) (MkAnObject readFS pushF
                                             for_ names $ \name -> pushFS [FSEditDeleteNonDirectory $ dirpath </> name]
                                     Nothing -> Nothing
             in case dictWorkaround @m of
-                   Dict -> MkCloseUnliftIO runSoup (MkAnObject readSoup pushSoup)
+                   Dict -> MkRunnableIO runSoup (MkAnObject readSoup pushSoup)

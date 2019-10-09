@@ -38,7 +38,7 @@ sumWholeLiftUpdateFunction ::
        forall updateA updateB. (SubjectReader (UpdateReader updateA), FullSubjectReader (UpdateReader updateB))
     => UpdateFunction updateA updateB
     -> UpdateFunction (SumWholeUpdate updateA) (SumWholeUpdate updateB)
-sumWholeLiftUpdateFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ sumWholeLiftAnUpdateFunction f
+sumWholeLiftUpdateFunction (MkRunnableT2 unlift f) = MkRunnableT2 unlift $ sumWholeLiftAnUpdateFunction f
 
 sumWholeLiftAnEditLens ::
        forall t updateA updateB.

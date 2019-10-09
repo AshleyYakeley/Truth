@@ -2,7 +2,7 @@ module Truth.Core.Edit.Function where
 
 import Truth.Core.Edit.Edit
 import Truth.Core.Edit.FullEdit
-import Truth.Core.Edit.Unlift
+import Truth.Core.Edit.Run
 import Truth.Core.Edit.Update
 import Truth.Core.Import
 import Truth.Core.Read
@@ -13,13 +13,13 @@ data AnUpdateFunction t updateA updateB = MkAnUpdateFunction
     -- ^ the MutableRead argument will reflect the new value
     }
 
-type UpdateFunction = CloseUnlift AnUpdateFunction
+type UpdateFunction = RunnableT2 AnUpdateFunction
 
 instance Unliftable AnUpdateFunction where
     fmapUnliftable t1t2 (MkAnUpdateFunction g u) =
         MkAnUpdateFunction (\mr rt -> t1t2 $ g mr rt) (\ea mr -> t1t2 $ u ea mr)
 
-instance UnliftCategory AnUpdateFunction where
+instance RunnableCategory AnUpdateFunction where
     ucId = let
         ufGet = remonadMutableRead IdentityT
         ufUpdate update _ = IdentityT $ return [update]
@@ -90,7 +90,7 @@ ioFuncUpdateFunction amb = let
         mSubjectToMutableRead $ do
             a <- mutableReadToSubject $ applyEdit (updateEdit updateA) mra
             liftIO $ amb a
-    in MkCloseUnlift wUnIdentityT MkAnUpdateFunction {..}
+    in MkRunnableT2 wUnIdentityT MkAnUpdateFunction {..}
 
 funcUpdateFunction ::
        forall updateA updateB.
@@ -107,7 +107,7 @@ funcUpdateFunction ab = ioFuncUpdateFunction $ \a -> return $ ab a
 immutableUpdateFunction ::
        (forall m. MonadIO m => MutableRead m (UpdateReader updateB)) -> UpdateFunction updateA updateB
 immutableUpdateFunction mr =
-    MkCloseUnlift wUnIdentityT $ MkAnUpdateFunction {ufGet = \_ -> mr, ufUpdate = \_ _ -> return []}
+    MkRunnableT2 wUnIdentityT $ MkAnUpdateFunction {ufGet = \_ -> mr, ufUpdate = \_ _ -> return []}
 
 ioConstUpdateFunction ::
        SubjectReader (UpdateReader updateB) => IO (UpdateSubject updateB) -> UpdateFunction updateA updateB
@@ -121,4 +121,4 @@ updateFunctionRead ::
     => UpdateFunction updateA updateB
     -> MutableRead m (UpdateReader updateA)
     -> MutableRead m (UpdateReader updateB)
-updateFunctionRead (MkCloseUnlift unlift (MkAnUpdateFunction g _)) mr rt = runWUntransFunction unlift $ g mr rt
+updateFunctionRead (MkRunnableT2 unlift (MkAnUpdateFunction g _)) mr rt = runWUntransFunction unlift $ g mr rt

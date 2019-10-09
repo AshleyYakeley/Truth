@@ -17,7 +17,7 @@ import Truth.Core.Edit.Edit
 import Truth.Core.Edit.FullEdit
 import Truth.Core.Edit.Function
 import Truth.Core.Edit.Lens
-import Truth.Core.Edit.Unlift
+import Truth.Core.Edit.Run
 import Truth.Core.Edit.Update
 import Truth.Core.Import
 import Truth.Core.Read
@@ -60,7 +60,7 @@ partialFullEditLens = let
         -> MutableRead m (UpdateReader update)
         -> IdentityT m (Maybe [UpdateEdit update])
     elPutEdits edits _ = return $ Just edits
-    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}
 
 convertUpdateEditLens ::
        forall updateA updateB. UpdateEdit updateA ~ UpdateEdit updateB
@@ -87,7 +87,7 @@ convertUpdateEditLens ab = let
         -> MutableRead m (UpdateReader updateA)
         -> IdentityT m (Maybe [UpdateEdit updateA])
     elPutEdits edits _ = return $ Just edits
-    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}
 
 partialEditLens :: forall update. EditLens update (PartialUpdate update)
 partialEditLens = convertUpdateEditLens KnownPartialUpdate
@@ -112,14 +112,14 @@ comapUpdateUpdateFunction ::
        forall updateA updateB updateC.
        (updateB -> Either updateC updateA)
     -> UpdateEdit updateA ~ UpdateEdit updateB => UpdateFunction updateA updateC -> UpdateFunction updateB updateC
-comapUpdateUpdateFunction bca (MkCloseUnlift unlift auf) = MkCloseUnlift unlift $ comapUpdateAnUpdateFunction bca auf
+comapUpdateUpdateFunction bca (MkRunnableT2 unlift auf) = MkRunnableT2 unlift $ comapUpdateAnUpdateFunction bca auf
 
 comapUpdateEditLens ::
        forall updateA updateB updateC.
        (updateB -> Either updateC updateA)
     -> UpdateEdit updateA ~ UpdateEdit updateB => EditLens updateA updateC -> EditLens updateB updateC
-comapUpdateEditLens bca (MkCloseUnlift unlift (MkAnEditLens auf p)) =
-    MkCloseUnlift unlift $ MkAnEditLens (comapUpdateAnUpdateFunction bca auf) p
+comapUpdateEditLens bca (MkRunnableT2 unlift (MkAnEditLens auf p)) =
+    MkRunnableT2 unlift $ MkAnEditLens (comapUpdateAnUpdateFunction bca auf) p
 
 partialiseUpdateFunction ::
        forall updateA updateB.
@@ -179,7 +179,7 @@ partialConvertUpdateFunction ::
        , SubjectReader (UpdateReader updateB)
        )
     => UpdateFunction updateA (PartialUpdate updateB)
-partialConvertUpdateFunction = MkCloseUnlift wUnIdentityT partialConvertAnUpdateFunction
+partialConvertUpdateFunction = MkRunnableT2 wUnIdentityT partialConvertAnUpdateFunction
 
 partialConvertEditLens ::
        forall updateA updateB.
@@ -203,4 +203,4 @@ partialConvertEditLens = let
         newsubject <- mapSubjectEdits editbs oldsubject
         editas <- getReplaceEditsFromSubject newsubject
         return $ Just editas
-    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}

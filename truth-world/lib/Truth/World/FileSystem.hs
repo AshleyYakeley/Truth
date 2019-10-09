@@ -131,10 +131,10 @@ fileSystemObject = let
                 FSEditRenameItem fromPath toPath ->
                     testEditAction ((&&) <$> doesPathExist fromPath <*> fmap not (doesPathExist toPath)) $ \_ ->
                         renamePath fromPath toPath
-    in MkCloseUnliftIO objRun MkAnObject {..}
+    in MkRunnableIO objRun MkAnObject {..}
 
 subdirectoryObject :: Bool -> FilePath -> Object FSEdit -> Object FSEdit
-subdirectoryObject create dir (MkCloseUnliftIO (MkWMFunction run :: WIOFunction m) (MkAnObject rd push)) = let
+subdirectoryObject create dir (MkRunnableIO (MkWMFunction run :: WIOFunction m) (MkAnObject rd push)) = let
     run' :: WIOFunction m
     run' =
         MkWMFunction $ \ma ->
@@ -177,4 +177,4 @@ subdirectoryObject create dir (MkCloseUnliftIO (MkWMFunction run :: WIOFunction 
     mapPath (FSEditRenameItem path1 path2) = FSEditRenameItem (insideToOutside path1) (insideToOutside path2)
     push' :: [FSEdit] -> m (Maybe (EditSource -> m ()))
     push' edits = push $ fmap mapPath edits
-    in MkCloseUnliftIO run' (MkAnObject rd' push')
+    in MkRunnableIO run' (MkAnObject rd' push')

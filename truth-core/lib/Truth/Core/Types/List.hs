@@ -245,4 +245,4 @@ listItemLens unlift = let
         -> MutableRead m (ListReader seq (UpdateReader update))
         -> StateT (SequencePoint seq) m (Maybe [ListEdit seq (UpdateEdit update)])
     elPutEdits = elPutEditsFromPutEdit elPutEdit
-    in MkCloseUnlift unlift MkAnEditLens {..}
+    in MkRunnableT2 unlift MkAnEditLens {..}

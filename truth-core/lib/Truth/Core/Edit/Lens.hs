@@ -3,7 +3,7 @@ module Truth.Core.Edit.Lens where
 import Truth.Core.Edit.Edit
 import Truth.Core.Edit.FullEdit
 import Truth.Core.Edit.Function
-import Truth.Core.Edit.Unlift
+import Truth.Core.Edit.Run
 import Truth.Core.Edit.Update
 import Truth.Core.Import
 import Truth.Core.Read
@@ -15,12 +15,12 @@ data AnEditLens t updateA updateB = MkAnEditLens
                                 [UpdateEdit updateB] -> MutableRead m (UpdateReader updateA) -> t m (Maybe [UpdateEdit updateA])
     }
 
-type EditLens = CloseUnlift AnEditLens
+type EditLens = RunnableT2 AnEditLens
 
 instance Unliftable AnEditLens where
     fmapUnliftable t1t2 (MkAnEditLens f pe) = MkAnEditLens (fmapUnliftable t1t2 f) (\eb mr -> t1t2 $ pe eb mr)
 
-instance UnliftCategory AnEditLens where
+instance RunnableCategory AnEditLens where
     ucId :: forall update. AnEditLens IdentityT update update
     ucId = let
         pe :: forall m. MonadIO m
@@ -78,14 +78,14 @@ elPutEditsFromSimplePutEdit putEdit editBs _ =
         return $ mconcat editAss
 
 editLensFunction :: EditLens updateA updateB -> UpdateFunction updateA updateB
-editLensFunction (MkCloseUnlift unlift (MkAnEditLens func _)) = MkCloseUnlift unlift func
+editLensFunction (MkRunnableT2 unlift (MkAnEditLens func _)) = MkRunnableT2 unlift func
 
 readOnlyEditLens :: UpdateFunction updateA updateB -> EditLens updateA updateB
-readOnlyEditLens (MkCloseUnlift unlift elFunction) = let
+readOnlyEditLens (MkRunnableT2 unlift elFunction) = let
     elPutEdits [] _ = withTransConstraintTM @MonadIO $ return $ Just []
     -- must allow empty update-lists so that composition works correctly
     elPutEdits (_:_) _ = withTransConstraintTM @MonadIO $ return Nothing
-    in MkCloseUnlift unlift $ MkAnEditLens {..}
+    in MkRunnableT2 unlift $ MkAnEditLens {..}
 
 funcEditLens ::
        forall updateA updateB.
@@ -137,7 +137,7 @@ convertUpdateFunction ::
        , FullEdit (UpdateEdit updateB)
        )
     => UpdateFunction updateA updateB
-convertUpdateFunction = MkCloseUnlift wUnIdentityT convertAnUpdateFunction
+convertUpdateFunction = MkRunnableT2 wUnIdentityT convertAnUpdateFunction
 
 convertEditLens ::
        forall updateA updateB.
@@ -159,7 +159,7 @@ convertEditLens = let
         newsubject <- lift $ mutableReadToSubject $ applyEdits editbs $ mSubjectToMutableRead $ mutableReadToSubject mr
         editas <- getReplaceEditsFromSubject newsubject
         return $ Just editas
-    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}
 
 class IsEditLens lens where
     type LensDomain lens :: Type

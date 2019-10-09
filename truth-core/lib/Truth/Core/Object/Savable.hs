@@ -9,7 +9,7 @@ import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
-import Truth.Core.Object.UnliftIO
+import Truth.Core.Object.Run
 import Truth.Core.Read
 import Truth.Core.Types.Whole
 
@@ -25,7 +25,7 @@ saveBufferObject ::
        forall update. (IsUpdate update, FullEdit (UpdateEdit update))
     => Object (WholeEdit (UpdateSubject update))
     -> ObjectMaker update SaveActions
-saveBufferObject (MkCloseUnliftIO (unliftP :: WIOFunction mp) (MkAnObject readP pushP)) update = do
+saveBufferObject (MkRunnableIO (unliftP :: WIOFunction mp) (MkAnObject readP pushP)) update = do
     firstVal <- liftIO $ runWMFunction unliftP $ readP ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
     let
@@ -48,7 +48,7 @@ saveBufferObject (MkCloseUnliftIO (unliftP :: WIOFunction mp) (MkAnObject readP 
                             return oldbuf
                     put (MkSaveBuffer newbuf True)
                     lift $ deferAction $ update (fmap editUpdate edits) $ editSourceContext esrc
-            in MkCloseUnliftIO runC $ MkAnObject readC pushC
+            in MkRunnableIO runC $ MkAnObject readC pushC
         saveAction :: EditSource -> IO Bool
         saveAction esrc =
             runWMFunction unliftP $ do

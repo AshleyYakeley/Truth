@@ -112,7 +112,7 @@ contextualiseAnUpdateFunction (MkAnUpdateFunction g u) = let
     in MkAnUpdateFunction g' u'
 
 contextualiseUpdateFunction :: UpdateFunction edita editb -> UpdateFunction edita (ContextUpdate edita editb)
-contextualiseUpdateFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ contextualiseAnUpdateFunction f
+contextualiseUpdateFunction (MkRunnableT2 unlift f) = MkRunnableT2 unlift $ contextualiseAnUpdateFunction f
 
 partitionContextEdits ::
        forall updateX updateN. [ContextUpdateEdit updateX updateN] -> ([UpdateEdit updateX], [UpdateEdit updateN])
@@ -142,7 +142,7 @@ contextualiseAnEditLens (MkAnEditLens f pe) = let
     in MkAnEditLens f' pe'
 
 contextualiseEditLens :: EditLens updateX updateN -> EditLens updateX (ContextUpdate updateX updateN)
-contextualiseEditLens (MkCloseUnlift unlift lens) = MkCloseUnlift unlift $ contextualiseAnEditLens lens
+contextualiseEditLens (MkRunnableT2 unlift lens) = MkRunnableT2 unlift $ contextualiseAnEditLens lens
 
 liftContentAnUpdateFunction ::
        forall t updateA updateB updateN. MonadTransUntrans t
@@ -168,7 +168,7 @@ liftContentUpdateFunction ::
        forall updateA updateB updateN.
        UpdateFunction updateA updateB
     -> UpdateFunction (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
-liftContentUpdateFunction (MkCloseUnlift unlift f) = MkCloseUnlift unlift $ liftContentAnUpdateFunction f
+liftContentUpdateFunction (MkRunnableT2 unlift f) = MkRunnableT2 unlift $ liftContentAnUpdateFunction f
 
 carryContextUpdateFunction ::
        UpdateFunction (ContextUpdate updateX updateA) updateB
@@ -200,7 +200,7 @@ liftContentEditLens ::
        forall updateA updateB updateN.
        EditLens updateA updateB
     -> EditLens (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
-liftContentEditLens (MkCloseUnlift unlift alens) = MkCloseUnlift unlift $ liftContentAnEditLens alens
+liftContentEditLens (MkRunnableT2 unlift alens) = MkRunnableT2 unlift $ liftContentAnEditLens alens
 
 carryContextEditLens ::
        EditLens (ContextUpdate updateX updateA) updateB

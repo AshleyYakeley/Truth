@@ -41,7 +41,7 @@ wholeFunctionMapEditLens pq qmp = let
             return $ do
                 p <- qmp q
                 return [MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit p)]
-    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}
 
 wholeFunctionPairEditLens ::
        forall a p q r.
@@ -85,4 +85,4 @@ wholeFunctionPairEditLens pqr rmpq = let
                     [ MkTupleUpdateEdit SelectFirst $ MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit p)
                     , MkTupleUpdateEdit SelectSecond $ MkTupleUpdateEdit (MkFunctionSelector a) (MkWholeReaderEdit q)
                     ]
-    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}

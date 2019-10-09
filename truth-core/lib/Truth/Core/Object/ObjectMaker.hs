@@ -9,7 +9,7 @@ import Truth.Core.Import
 import Truth.Core.Object.DeferActionT
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.UnliftIO
+import Truth.Core.Object.Run
 import Truth.Core.Read
 
 type ObjectMaker update a = ([update] -> EditContext -> IO ()) -> LifeCycleIO (Object (UpdateEdit update), a)
@@ -18,7 +18,7 @@ reflectingObjectMaker ::
        forall update. IsUpdate update
     => Object (UpdateEdit update)
     -> ObjectMaker update ()
-reflectingObjectMaker (MkCloseUnliftIO (run :: WIOFunction m) (MkAnObject r e)) recv =
+reflectingObjectMaker (MkRunnableIO (run :: WIOFunction m) (MkAnObject r e)) recv =
     return $ let
         run' :: WIOFunction (DeferActionT m)
         run' = composeUntransFunctionCommute runDeferActionT run
@@ -34,11 +34,11 @@ reflectingObjectMaker (MkCloseUnliftIO (run :: WIOFunction m) (MkAnObject r e)) 
                     Just $ \esrc -> do
                         lift $ action esrc
                         deferAction $ recv (fmap editUpdate edits) $ editSourceContext esrc
-        in (MkCloseUnliftIO run' $ MkAnObject r' e', ())
+        in (MkRunnableIO run' $ MkAnObject r' e', ())
 
 mapUpdates ::
        forall updateA updateB. EditLens updateA updateB -> Object (UpdateEdit updateA) -> [updateA] -> IO [updateB]
-mapUpdates (MkCloseUnlift unlift (MkAnEditLens (MkAnUpdateFunction _ update) _)) (MkCloseUnliftIO unliftIO (MkAnObject mr _)) eas =
+mapUpdates (MkRunnableT2 unlift (MkAnEditLens (MkAnUpdateFunction _ update) _)) (MkRunnableIO unliftIO (MkAnObject mr _)) eas =
     runWMFunction unliftIO $
     runWUntransFunction unlift $ withTransConstraintTM @MonadIO $ fmap mconcat $ for eas $ \ea -> update ea mr
 

@@ -93,7 +93,7 @@ fstLiftEditLens ::
        forall updateX updateA updateB.
        EditLens updateA updateB
     -> EditLens (PairUpdate updateA updateX) (PairUpdate updateB updateX)
-fstLiftEditLens (MkCloseUnlift (unlift :: WUntransFunction t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
+fstLiftEditLens (MkRunnableT2 (unlift :: WUntransFunction t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
     ufGet :: ReadFunctionT t (PairUpdateReader updateA updateX) (PairUpdateReader updateB updateX)
     ufGet mr (MkTupleUpdateReader SelectFirst rt) = g (firstReadFunction mr) rt
     ufGet mr (MkTupleUpdateReader SelectSecond rt) = lift $ mr (MkTupleUpdateReader SelectSecond rt)
@@ -121,13 +121,13 @@ fstLiftEditLens (MkCloseUnlift (unlift :: WUntransFunction t) (MkAnEditLens (MkA
                 getComposeM $ do
                     eas <- MkComposeM $ pe ebs $ firstReadFunction mr
                     return $ (fmap (MkTupleUpdateEdit SelectFirst) eas) ++ (fmap (MkTupleUpdateEdit SelectSecond) exs)
-    in MkCloseUnlift unlift $ MkAnEditLens {..}
+    in MkRunnableT2 unlift $ MkAnEditLens {..}
 
 sndLiftEditLens ::
        forall updateX updateA updateB.
        EditLens updateA updateB
     -> EditLens (PairUpdate updateX updateA) (PairUpdate updateX updateB)
-sndLiftEditLens (MkCloseUnlift (unlift :: WUntransFunction t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
+sndLiftEditLens (MkRunnableT2 (unlift :: WUntransFunction t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
     ufGet :: ReadFunctionT t (PairUpdateReader updateX updateA) (PairUpdateReader updateX updateB)
     ufGet mr (MkTupleUpdateReader SelectFirst rt) = lift $ mr (MkTupleUpdateReader SelectFirst rt)
     ufGet mr (MkTupleUpdateReader SelectSecond rt) = g (secondReadFunction mr) rt
@@ -155,7 +155,7 @@ sndLiftEditLens (MkCloseUnlift (unlift :: WUntransFunction t) (MkAnEditLens (MkA
                 getComposeM $ do
                     eas <- MkComposeM $ pe ebs $ secondReadFunction mr
                     return $ (fmap (MkTupleUpdateEdit SelectFirst) exs) ++ (fmap (MkTupleUpdateEdit SelectSecond) eas)
-    in MkCloseUnlift unlift $ MkAnEditLens {..}
+    in MkRunnableT2 unlift $ MkAnEditLens {..}
 
 pairCombineAnUpdateFunctions ::
        forall t updateA updateB1 updateB2. MonadTransUntrans t
@@ -253,4 +253,4 @@ partialPairEditLens = let
         elPutEditsFromSimplePutEdit $ \case
             MkTupleUpdateEdit SelectFirst edit -> return $ Just [MkTupleUpdateEdit SelectFirst edit]
             MkTupleUpdateEdit SelectSecond edit -> return $ Just [MkTupleUpdateEdit SelectSecond edit]
-    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}

@@ -82,7 +82,7 @@ finiteSetEditLens subj = let
         -> MutableRead m (FiniteSetReader subj)
         -> IdentityT m (Maybe [FiniteSetEdit subj])
     elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
-    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}
 
 instance Eq subj => JoinSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
     joinUpdateFunction = let
@@ -146,7 +146,7 @@ instance Eq subj => JoinSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
                     (True, _) -> []
                     (False, True) -> [KeyUpdateClear]
                     (False, False) -> fmap KeyUpdateDelete $ toList $ difference keys2 keys1
-        in MkCloseUnlift wUnIdentityT MkAnUpdateFunction {..}
+        in MkRunnableT2 wUnIdentityT MkAnUpdateFunction {..}
 
 instance Eq subj => MeetSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
     meetUpdateFunction = let
@@ -208,7 +208,7 @@ instance Eq subj => MeetSemiLatticeUpdateFunction (FiniteSetUpdate subj) where
                 if null $ keys2 /\ keys1
                     then []
                     else [KeyUpdateClear]
-        in MkCloseUnlift wUnIdentityT MkAnUpdateFunction {..}
+        in MkRunnableT2 wUnIdentityT MkAnUpdateFunction {..}
 
 bijectionFiniteSetEditLens :: forall a b. Bijection a b -> EditLens (FiniteSetUpdate a) (FiniteSetUpdate b)
 bijectionFiniteSetEditLens (MkIsomorphism ab ba) = let
@@ -243,7 +243,7 @@ bijectionFiniteSetEditLens (MkIsomorphism ab ba) = let
         -> MutableRead m (FiniteSetReader a)
         -> IdentityT m (Maybe [FiniteSetEdit a])
     elPutEdits ebs _ = return $ Just $ fmap (mapFiniteSetEdit ba) ebs
-    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}
 
 finiteSetCartesianSumEditLens ::
        forall a b. (Eq a, Eq b)
@@ -304,7 +304,7 @@ finiteSetCartesianSumEditLens = let
             KeyEditClear ->
                 return $
                 Just $ [MkTupleUpdateEdit SelectFirst KeyEditClear, MkTupleUpdateEdit SelectSecond KeyEditClear]
-    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}
 
 finiteSetCartesianProductUpdateFunction ::
        forall a b. UpdateFunction (PairUpdate (FiniteSetUpdate a) (FiniteSetUpdate b)) (FiniteSetUpdate (a, b))
@@ -346,7 +346,7 @@ finiteSetCartesianProductUpdateFunction = let
         lift $ do
             aa <- mr $ MkTupleUpdateReader SelectFirst KeyReadKeys
             return $ fmap (\a -> KeyUpdateInsertReplace (a, b)) $ toList aa
-    in MkCloseUnlift wUnIdentityT MkAnUpdateFunction {..}
+    in MkRunnableT2 wUnIdentityT MkAnUpdateFunction {..}
 
 finiteSetFunctionEditLens :: forall a. EditLens (FiniteSetUpdate a) (PartialSetUpdate a)
 finiteSetFunctionEditLens = let
@@ -389,7 +389,7 @@ finiteSetFunctionEditLens = let
         -> MutableRead m (FiniteSetReader a)
         -> IdentityT m (Maybe [FiniteSetEdit a])
     elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
-    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}
 
 filterFiniteSetUpdateFunction ::
        forall a. Eq a
@@ -463,4 +463,4 @@ filterFiniteSetUpdateFunction = let
         lift $ do
             edits <- getReplaceEdits $ firstReadFunction mr
             return $ fmap editUpdate edits
-    in MkCloseUnlift wUnIdentityT MkAnUpdateFunction {..}
+    in MkRunnableT2 wUnIdentityT MkAnUpdateFunction {..}

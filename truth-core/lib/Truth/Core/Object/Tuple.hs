@@ -9,24 +9,24 @@ import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
-import Truth.Core.Object.UnliftIO
+import Truth.Core.Object.Run
 import Truth.Core.Read
 import Truth.Core.Types
 
 noneTupleObject :: Object (TupleUpdateEdit (ListElementType '[]))
-noneTupleObject = MkCloseUnliftIO id noneTupleAObject
+noneTupleObject = MkRunnableIO id noneTupleAObject
 
 consTupleObjects ::
        forall update updates.
        Object (UpdateEdit update)
     -> Object (TupleUpdateEdit (ListElementType updates))
     -> Object (TupleUpdateEdit (ListElementType (update : updates)))
-consTupleObjects (MkCloseUnliftIO (runA :: WIOFunction ma) anobjA) (MkCloseUnliftIO (runB :: WIOFunction mb) anobjB) =
+consTupleObjects (MkRunnableIO (runA :: WIOFunction ma) anobjA) (MkRunnableIO (runB :: WIOFunction mb) anobjB) =
     case isCombineMonadIO @ma @mb of
         Dict -> let
             runAB :: WIOFunction (CombineMonadIO ma mb)
             runAB = combineUnliftIOs runA runB
-            in MkCloseUnliftIO runAB $ consTupleAObjects anobjA anobjB
+            in MkRunnableIO runAB $ consTupleAObjects anobjA anobjB
 
 partitionListTupleUpdateEdits ::
        forall update updates.

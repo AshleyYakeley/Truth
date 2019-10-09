@@ -80,21 +80,21 @@ cvReceiveIOUpdates recv = do
     -- monitor makes sure updates are ignored after the view has been closed
     monitor <- liftLifeCycleIO lifeCycleMonitor
     withUILock <- MkCreateView $ asks vcWithUILock
-    MkCloseUnliftIO run asub <- MkCreateView $ asks vcSubscriber
+    MkRunnableIO run asub <- MkCreateView $ asks vcSubscriber
     liftLifeCycleIO $
         remonad (runWMFunction run) $
         subscribe asub $ \edits MkEditContext {..} ->
             withUILock editContextTiming $ do
                 alive <- monitor
                 if alive
-                    then recv (MkCloseUnliftIO run $ subAnObject asub) edits editContextSource
+                    then recv (MkRunnableIO run $ subAnObject asub) edits editContextSource
                     else return ()
 
 cvReceiveUpdates ::
        Maybe EditSource -> (WIOFunction (View sel update) -> ReceiveUpdates update) -> CreateView sel update ()
 cvReceiveUpdates mesrc recv = do
     unliftIO <- cvLiftView $ liftIOView $ \unlift -> return $ MkWMFunction unlift
-    cvReceiveIOUpdates $ \(MkCloseUnliftIO unliftObj (MkAnObject mr _)) edits esrc ->
+    cvReceiveIOUpdates $ \(MkRunnableIO unliftObj (MkAnObject mr _)) edits esrc ->
         if mesrc == Just esrc
             then return ()
             else runWMFunction unliftObj $ recv unliftIO mr edits

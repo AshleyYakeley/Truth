@@ -1,11 +1,11 @@
-module Truth.Core.Object.UnliftIO where
+module Truth.Core.Object.Run where
 
 import Truth.Core.Import
 
-data CloseUnliftIO f (a :: k) =
+data RunnableIO f (a :: k) =
     forall m. MonadStackIO m =>
-                  MkCloseUnliftIO (WIOFunction m)
-                                  (f m a)
+                  MkRunnableIO (WIOFunction m)
+                               (f m a)
 
 lensObjectUnliftFull ::
        forall t m. (MonadTransUntrans t, MonadUnliftIO m)

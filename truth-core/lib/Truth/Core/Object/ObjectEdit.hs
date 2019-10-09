@@ -10,7 +10,7 @@ import Truth.Core.Edit
 import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
-import Truth.Core.Object.UnliftIO
+import Truth.Core.Object.Run
 import Truth.Core.Read
 import Truth.Core.Types.None
 
@@ -32,7 +32,7 @@ instance SubjectReader (EditReader edit) => SubjectReader (ObjectReader edit) wh
 
 instance FullSubjectReader (EditReader edit) => FullSubjectReader (ObjectReader edit) where
     mutableReadToSubject mr = do
-        MkCloseUnliftIO (MkWMFunction unlift) (MkAnObject mro _) <- mr ReadObject
+        MkRunnableIO (MkWMFunction unlift) (MkAnObject mro _) <- mr ReadObject
         liftIO $ unlift $ mutableReadToSubject mro
 
 type ObjectEdit edit = NoEdit (ObjectReader edit)
@@ -43,7 +43,7 @@ objectEditLens :: forall update. EditLens (ObjectUpdate update) update
 objectEditLens = let
     ufGet :: ReadFunctionT IdentityT (ObjectReader (UpdateEdit update)) (UpdateReader update)
     ufGet mr rt = do
-        (MkCloseUnliftIO (MkWMFunction run) (MkAnObject r _)) <- lift $ mr ReadObject
+        (MkRunnableIO (MkWMFunction run) (MkAnObject r _)) <- lift $ mr ReadObject
         liftIO $ run $ r rt
     ufUpdate ::
            forall m. MonadIO m
@@ -59,7 +59,7 @@ objectEditLens = let
         -> MutableRead m (EditReader (ObjectEdit (UpdateEdit update)))
         -> IdentityT m (Maybe [ObjectEdit (UpdateEdit update)])
     elPutEdits edits mr = do
-        (MkCloseUnliftIO (MkWMFunction run) (MkAnObject _ e)) <- lift $ mr ReadObject
+        (MkRunnableIO (MkWMFunction run) (MkAnObject _ e)) <- lift $ mr ReadObject
         liftIO $
             run $ do
                 maction <- e edits
@@ -67,7 +67,7 @@ objectEditLens = let
                     Just action -> action noEditSource
                     Nothing -> liftIO $ fail "objectEditLens: failed"
         return $ Just []
-    in MkCloseUnlift wUnIdentityT $ MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT $ MkAnEditLens {..}
 
 objectLiftEditLens ::
        forall updateA updateB. ApplicableEdit (UpdateEdit updateA)
@@ -93,4 +93,4 @@ objectLiftEditLens lens = let
         -> IdentityT m (Maybe [ObjectEdit (UpdateEdit updateA)])
     elPutEdits [] _ = return $ Just []
     elPutEdits (edit:_) _ = never edit
-    in MkCloseUnlift wUnIdentityT $ MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT $ MkAnEditLens {..}

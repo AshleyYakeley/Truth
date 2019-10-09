@@ -191,7 +191,7 @@ pinaforeSetRefMember (MkPinaforeSetRef eq lens) aref = let
                                     MkTupleUpdateEdit SelectFirst $
                                     MkTupleUpdateEdit (MkFunctionSelector a) $ MkWholeReaderEdit b
                                 _ -> Nothing
-        in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+        in MkRunnableT2 wUnIdentityT MkAnEditLens {..}
     in pinaforeLensToRef $ knowApplySetLens . pairCombineEditLenses lens (readOnlyEditLens afval)
 
 pinaforePredicateToSetRef :: forall baseupdate a. (a -> Bool) -> PinaforeSetRef baseupdate (MeetType Entity a)

@@ -14,17 +14,17 @@ import Truth.Core.Import
 import Truth.Core.Object.EditContext
 import Truth.Core.Object.Object
 import Truth.Core.Object.ObjectMaker
-import Truth.Core.Object.UnliftIO
+import Truth.Core.Object.Run
 
 data ASubscriber m update = MkASubscriber
     { subAnObject :: AnObject m (UpdateEdit update)
     , subscribe :: ([update] -> EditContext -> IO ()) -> LifeCycleT m ()
     }
 
-type Subscriber = CloseUnliftIO ASubscriber
+type Subscriber = RunnableIO ASubscriber
 
 subscriberObject :: Subscriber update -> Object (UpdateEdit update)
-subscriberObject (MkCloseUnliftIO run sub) = MkCloseUnliftIO run $ subAnObject sub
+subscriberObject (MkRunnableIO run sub) = MkRunnableIO run $ subAnObject sub
 
 type UpdateStoreEntry update = [update] -> EditContext -> IO ()
 
@@ -59,9 +59,9 @@ getRunner AsynchronousUpdateTiming recv = do
     return $ \edits ec -> runAsync $ singleUpdateQueue edits ec
 
 subscriberObjectMaker :: Subscriber update -> a -> ObjectMaker update a
-subscriberObjectMaker (MkCloseUnliftIO run MkASubscriber {..}) a update = do
+subscriberObjectMaker (MkRunnableIO run MkASubscriber {..}) a update = do
     remonad (runWMFunction run) $ subscribe update
-    return (MkCloseUnliftIO run subAnObject, a)
+    return (MkRunnableIO run subAnObject, a)
 
 makeSharedSubscriber :: forall update a. UpdateTiming -> ObjectMaker update a -> LifeCycleIO (Subscriber update, a)
 makeSharedSubscriber ut uobj = do
@@ -72,11 +72,11 @@ makeSharedSubscriber ut uobj = do
             store <- mVarRun var get
             for_ store $ \entry -> entry edits ectxt
     runAsync <- getRunner ut $ utReceiveUpdates ut updateP
-    (MkCloseUnliftIO unliftC anObjectC, a) <- uobj runAsync
+    (MkRunnableIO unliftC anObjectC, a) <- uobj runAsync
     let
         child :: Subscriber update
         child =
-            MkCloseUnliftIO unliftC $
+            MkRunnableIO unliftC $
             MkASubscriber anObjectC $ \updateC -> do
                 key <- liftIO $ mVarRun var $ addStoreStateT updateC
                 lifeCycleClose $ mVarRun var $ deleteStoreStateT key

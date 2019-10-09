@@ -21,7 +21,7 @@ clockObjectMaker basetime interval update = do
             MkWMFunction $ \rt -> do
                 t <- readIORef ref -- read once before opening, to keep value consistent while object is open
                 runReaderT rt t
-        object = MkCloseUnliftIO run $ immutableAnObject $ \ReadWhole -> ask
+        object = MkRunnableIO run $ immutableAnObject $ \ReadWhole -> ask
     return (object, ())
 
 makeClockTimeZoneEF :: IO (UpdateFunction (WholeUpdate UTCTime) (WholeUpdate TimeZone))

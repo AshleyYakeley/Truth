@@ -72,7 +72,7 @@ setCartesianProductUpdateFunction aeq beq = let
         return $ pure $ UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector (a', _)) ReadWhole) -> aeq a a'
     ufUpdate (MkTupleUpdate SelectSecond (MkTupleUpdate (MkFunctionSelector b) _)) _ =
         return $ pure $ UnknownPartialUpdate $ \(MkTupleUpdateReader (MkFunctionSelector (_, b')) ReadWhole) -> beq b b'
-    in MkCloseUnlift wUnIdentityT MkAnUpdateFunction {..}
+    in MkRunnableT2 wUnIdentityT MkAnUpdateFunction {..}
 
 setCartesianProductPartialUpdateFunction ::
        forall a b.

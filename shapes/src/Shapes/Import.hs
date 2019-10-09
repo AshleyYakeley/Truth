@@ -141,6 +141,7 @@ import Data.Witness as I
 
 -- open-witness
 import Data.OpenWitness as I
+import Data.OpenWitness.Order as I
 import Data.OpenWitness.Witnessed as I
 import Data.Type.Heterogeneous as I
 

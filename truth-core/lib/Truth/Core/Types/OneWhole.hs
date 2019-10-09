@@ -70,7 +70,7 @@ oneWholeLiftEditLens ::
        )
     => EditLens updateA updateB
     -> EditLens (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
-oneWholeLiftEditLens (MkCloseUnlift unlift lens) = MkCloseUnlift unlift $ oneWholeLiftAnEditLens lens
+oneWholeLiftEditLens (MkRunnableT2 unlift lens) = MkRunnableT2 unlift $ oneWholeLiftAnEditLens lens
 
 mustExistOneEditLens ::
        forall f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))
@@ -103,4 +103,4 @@ mustExistOneEditLens err = let
         -> MutableRead m (OneReader f (UpdateReader update))
         -> IdentityT m (Maybe [OneWholeEdit f (UpdateEdit update)])
     elPutEdits edits _ = return $ Just $ fmap (SumEditRight . MkOneEdit) edits
-    in MkCloseUnlift wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}

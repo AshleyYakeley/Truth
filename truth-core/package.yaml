@@ -24,7 +24,7 @@ library:
       - Truth.Core.Edit.Update
       - Truth.Core.Edit.FullEdit
       - Truth.Core.Edit.Cache
-      - Truth.Core.Edit.Unlift
+      - Truth.Core.Edit.Run
       - Truth.Core.Edit.Function
       - Truth.Core.Edit.Lens
       - Truth.Core.Edit.Partial
@@ -63,7 +63,7 @@ library:
       - Truth.Core.Types
       - Truth.Core.Object.DeferActionT
       - Truth.Core.Object.EditContext
-      - Truth.Core.Object.UnliftIO
+      - Truth.Core.Object.Run
       - Truth.Core.Object.Object
       - Truth.Core.Object.AutoClose
       - Truth.Core.Object.ObjectEdit

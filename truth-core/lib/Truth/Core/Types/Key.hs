@@ -298,7 +298,7 @@ unliftKeyElementEditLens newKeyGetter unlift = let
         -> MutableRead m (KeyReader cont (UpdateReader update))
         -> StateT (ContainerKey cont) m (Maybe [KeyEdit cont (UpdateEdit update)])
     elPutEdits = elPutEditsFromPutEdit elPutEdit
-    in MkCloseUnlift unlift MkAnEditLens {..}
+    in MkRunnableT2 unlift MkAnEditLens {..}
 
 getKeyElementEditLens ::
        forall cont update.
@@ -385,7 +385,7 @@ liftKeyElementUpdateFunction ::
        )
     => UpdateFunction updateA updateB
     -> UpdateFunction (KeyUpdate conta updateA) (KeyUpdate contb updateB)
-liftKeyElementUpdateFunction (MkCloseUnlift unlift ef) = MkCloseUnlift unlift $ liftKeyElementAnUpdateFunction ef
+liftKeyElementUpdateFunction (MkRunnableT2 unlift ef) = MkRunnableT2 unlift $ liftKeyElementAnUpdateFunction ef
 
 liftKeyElementEditLens ::
        forall conta contb updateA updateB.
@@ -401,7 +401,7 @@ liftKeyElementEditLens ::
     => (forall m. MonadIO m => UpdateSubject updateB -> m (Maybe (UpdateSubject updateA)))
     -> EditLens updateA updateB
     -> EditLens (KeyUpdate conta updateA) (KeyUpdate contb updateB)
-liftKeyElementEditLens bma (MkCloseUnlift (unlift :: WUntransFunction t) (MkAnEditLens ef pe)) = let
+liftKeyElementEditLens bma (MkRunnableT2 (unlift :: WUntransFunction t) (MkAnEditLens ef pe)) = let
     elFunction = liftKeyElementAnUpdateFunction ef
     elPutEdit ::
            forall m. MonadIO m
@@ -426,7 +426,7 @@ liftKeyElementEditLens bma (MkCloseUnlift (unlift :: WUntransFunction t) (MkAnEd
         -> MutableRead m (KeyReader conta (UpdateReader updateA))
         -> t m (Maybe [KeyEdit conta (UpdateEdit updateA)])
     elPutEdits = elPutEditsFromPutEdit elPutEdit
-    in MkCloseUnlift unlift $ MkAnEditLens {..}
+    in MkRunnableT2 unlift $ MkAnEditLens {..}
 
 findBy :: (a -> a -> Ordering) -> [a] -> a -> (Int, Bool)
 findBy cmp items x = let
@@ -503,4 +503,4 @@ orderedKeyList cmp = let
                 edits <- getReplaceEditsFromSubject item
                 return $ fmap (\edit -> ListUpdateItem i $ editUpdate edit) edits
     ufUpdate KeyUpdateClear _ = return [ListUpdateClear]
-    in MkCloseUnlift wUnIdentityT MkAnUpdateFunction {..}
+    in MkRunnableT2 wUnIdentityT MkAnUpdateFunction {..}

@@ -42,7 +42,7 @@ instance IsEditUpdate update => IsEditUpdate (ComonadUpdate w update) where
 
 comonadEditLens :: forall w update. EditLens (ComonadUpdate w update) update
 comonadEditLens =
-    MkCloseUnlift wUnIdentityT $ let
+    MkRunnableT2 wUnIdentityT $ let
         ufGet ::
                forall m. MonadIO m
             => MutableRead m (ComonadReader w (UpdateReader update))
@@ -70,7 +70,7 @@ comonadLiftEditLens ::
        forall w updateA updateB.
        EditLens updateA updateB
     -> EditLens (ComonadUpdate w updateA) (ComonadUpdate w updateB)
-comonadLiftEditLens (MkCloseUnlift (unlift :: WUntransFunction t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
+comonadLiftEditLens (MkRunnableT2 (unlift :: WUntransFunction t) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
     g' :: ReadFunctionT t (ComonadReader w (UpdateReader updateA)) (ComonadReader w (UpdateReader updateB))
     g' mr (ReadExtract rt) = g (comonadReadFunction mr) rt
     u' :: forall m. MonadIO m
@@ -89,4 +89,4 @@ comonadLiftEditLens (MkCloseUnlift (unlift :: WUntransFunction t) (MkAnEditLens 
             Dict ->
                 fmap (fmap $ fmap MkComonadEdit) $
                 pe (fmap (\(MkComonadEdit editb) -> editb) editbs) $ comonadReadFunction mr
-    in MkCloseUnlift unlift $ MkAnEditLens (MkAnUpdateFunction g' u') pe'
+    in MkRunnableT2 unlift $ MkAnEditLens (MkAnUpdateFunction g' u') pe'

@@ -60,7 +60,7 @@ oneLiftUpdateFunction ::
        forall f updateA updateB. MonadOne f
     => UpdateFunction updateA updateB
     -> UpdateFunction (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftUpdateFunction (MkCloseUnlift unlift ef) = MkCloseUnlift unlift $ oneLiftAnUpdateFunction ef
+oneLiftUpdateFunction (MkRunnableT2 unlift ef) = MkRunnableT2 unlift $ oneLiftAnUpdateFunction ef
 
 oneLiftAnEditLens ::
        forall t f updateA updateB. (MonadOne f, MonadTransTunnel t)
@@ -83,4 +83,4 @@ oneLiftEditLens ::
        forall f updateA updateB. MonadOne f
     => EditLens updateA updateB
     -> EditLens (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftEditLens (MkCloseUnlift unlift lens) = MkCloseUnlift unlift $ oneLiftAnEditLens lens
+oneLiftEditLens (MkRunnableT2 unlift lens) = MkRunnableT2 unlift $ oneLiftAnEditLens lens
