@@ -199,7 +199,7 @@ sqlitePinaforeLens = let
         -> MutableRead m (SQLiteReader PinaforeSchema)
         -> IdentityT m (Maybe [SQLiteEdit PinaforeSchema])
     elPutEdits = elPutEditsFromSimplePutEdit elPutEdit
-    in MkRunnableT2 wUnIdentityT $ MkAnEditLens {..}
+    in MkRunnableT2 identityUntrans $ MkAnEditLens {..}
 
 instance WitnessConstraint FiniteWitness PinaforeSchema where
     witnessConstraint PinaforeTriple = Dict

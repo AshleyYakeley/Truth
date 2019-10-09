@@ -41,7 +41,7 @@ testUpdateFunction = let
         liftIO $ hPutStrLn ?handle $ "lens update edit: " <> show s
         liftIO $ hPutStrLn ?handle $ "lens update MR: " <> show s'
         return [MkWholeReaderUpdate s]
-    in MkRunnableT2 wUnIdentityT MkAnUpdateFunction {..}
+    in MkRunnableT2 identityUntrans MkAnUpdateFunction {..}
 
 testUpdateObject :: TestTree
 testUpdateObject =
@@ -60,7 +60,7 @@ testUpdateObject =
             om' <- shareObjectMaker om
             (MkRunnableIO run MkAnObject {..}, ()) <- om' recv
             (_obj', ()) <- mapObjectMaker lens om' recv'
-            liftIO $ runWMFunction run $ do pushOrFail "failed" noEditSource $ objEdit [MkWholeReaderEdit "new"]
+            liftIO $ run $ do pushOrFail "failed" noEditSource $ objEdit [MkWholeReaderEdit "new"]
             return ()
 
 testOutputEditor ::
@@ -78,18 +78,18 @@ testOutputEditor name call = let
     outputLn :: MonadIO m => String -> m ()
     outputLn s = liftIO $ hPutStrLn ?handle $ name ++ ": " ++ s
     editorInit :: Object (UpdateEdit update) -> LifeCycleIO ()
-    editorInit (MkRunnableIO (MkWMFunction run) (MkAnObject r _)) =
+    editorInit (MkRunnableIO run (MkAnObject r _)) =
         liftIO $ do
             val <- run $ mutableReadToSubject r
             outputLn $ "init: " ++ show val
             return ()
     editorUpdate :: () -> Object (UpdateEdit update) -> [update] -> EditContext -> IO ()
-    editorUpdate () (MkRunnableIO (MkWMFunction run) (MkAnObject mr _)) edits _ = do
+    editorUpdate () (MkRunnableIO run (MkAnObject mr _)) edits _ = do
         outputLn $ "receive " ++ show edits
         val <- run $ mutableReadToSubject mr
         outputLn $ "receive " ++ show val
     editorDo :: () -> Object (UpdateEdit update) -> LifeCycleIO ()
-    editorDo () (MkRunnableIO (MkWMFunction run) (MkAnObject _ push)) = let
+    editorDo () (MkRunnableIO run (MkAnObject _ push)) = let
         subDontEdits :: [[UpdateEdit update]] -> LifeCycleIO ()
         subDontEdits editss =
             liftIO $ do

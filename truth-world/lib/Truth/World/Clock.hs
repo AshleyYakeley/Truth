@@ -16,11 +16,10 @@ clockObjectMaker basetime interval update = do
                 update [MkWholeReaderUpdate t] noEditContext
     let
         object :: Object (WholeEdit UTCTime)
-        run :: WIOFunction (ReaderT UTCTime IO)
-        run =
-            MkWMFunction $ \rt -> do
-                t <- readIORef ref -- read once before opening, to keep value consistent while object is open
-                runReaderT rt t
+        run :: IOFunction (ReaderT UTCTime IO)
+        run rt = do
+            t <- readIORef ref -- read once before opening, to keep value consistent while object is open
+            runReaderT rt t
         object = MkRunnableIO run $ immutableAnObject $ \ReadWhole -> ask
     return (object, ())
 

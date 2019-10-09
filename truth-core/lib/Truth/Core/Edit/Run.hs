@@ -4,7 +4,7 @@ import Truth.Core.Import
 
 data RunnableT2 f (a :: k) (b :: k) =
     forall t. MonadTransUntrans t =>
-                  MkRunnableT2 (WUntransFunction t)
+                  MkRunnableT2 (Untrans t)
                                (f t a b)
 
 class RunnableCategory (f :: ((Type -> Type) -> (Type -> Type)) -> k -> k -> Type) where
@@ -16,9 +16,9 @@ class RunnableCategory (f :: ((Type -> Type) -> (Type -> Type)) -> k -> k -> Typ
         -> f (ComposeT tbc tab) a c
 
 instance RunnableCategory f => Category (RunnableT2 f) where
-    id = MkRunnableT2 wUnIdentityT ucId
+    id = MkRunnableT2 identityUntrans ucId
     (MkRunnableT2 unliftBC fBC) . (MkRunnableT2 unliftAB fAB) =
-        MkRunnableT2 (composeUnlift unliftBC unliftAB) (ucCompose fBC fAB)
+        MkRunnableT2 (composeUntrans unliftBC unliftAB) (ucCompose fBC fAB)
 
 type TransLift t1 t2 = forall m. Monad m => MFunction (t1 m) (t2 m)
 
@@ -29,7 +29,7 @@ joinUnlifts ::
     -> RunnableT2 f2 a2 b2
     -> RunnableT2 f3 a3 b3
 joinUnlifts call (MkRunnableT2 unlift1 open1) (MkRunnableT2 unlift2 open2) =
-    MkRunnableT2 (composeUnlift unlift1 unlift2) $ call open1 open2
+    MkRunnableT2 (composeUntrans unlift1 unlift2) $ call open1 open2
 
 data PairUnlift f1 f2 (t :: (Type -> Type) -> (Type -> Type)) (a :: k) (b :: k) =
     MkPairUnlift (f1 t a b)

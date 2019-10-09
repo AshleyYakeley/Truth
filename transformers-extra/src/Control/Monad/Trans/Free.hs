@@ -75,8 +75,8 @@ instance MonadTransUntrans FreeT where
     getDiscardingUntrans =
         FreeT $
         withTransConstraintTM @Monad $ do
-            MkWUntransFunction unlift <- getDiscardingUntrans
-            return $ MkWUntransFunction $ \(FreeT tma) -> unlift tma
+            MkWUntrans unlift <- getDiscardingUntrans
+            return $ MkWUntrans $ \(FreeT tma) -> unlift tma
 
-unliftFreeT :: WUntransFunction FreeT
-unliftFreeT = MkWUntransFunction $ \ft -> runWUntransFunction wUnIdentityT $ runFreeT ft
+unliftFreeT :: WUntrans FreeT
+unliftFreeT = MkWUntrans $ \ft -> identityUntrans $ runFreeT ft

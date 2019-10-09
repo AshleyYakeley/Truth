@@ -137,7 +137,7 @@ convertUpdateFunction ::
        , FullEdit (UpdateEdit updateB)
        )
     => UpdateFunction updateA updateB
-convertUpdateFunction = MkRunnableT2 wUnIdentityT convertAnUpdateFunction
+convertUpdateFunction = MkRunnableT2 identityUntrans convertAnUpdateFunction
 
 convertEditLens ::
        forall updateA updateB.
@@ -159,7 +159,7 @@ convertEditLens = let
         newsubject <- lift $ mutableReadToSubject $ applyEdits editbs $ mSubjectToMutableRead $ mutableReadToSubject mr
         editas <- getReplaceEditsFromSubject newsubject
         return $ Just editas
-    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 identityUntrans MkAnEditLens {..}
 
 class IsEditLens lens where
     type LensDomain lens :: Type

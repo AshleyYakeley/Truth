@@ -21,7 +21,7 @@ objectMapUpdates ::
     -> [updateA]
     -> IO [updateB]
 objectMapUpdates (MkRunnableT2 unlift ef) (MkRunnableIO objRun obj) editAs =
-    runWMFunction objRun $ runWUntransFunction unlift $ anObjectMapUpdates ef obj editAs
+    objRun $ unlift $ anObjectMapUpdates ef obj editAs
 
 mapUpdates ::
        forall updateA updateB m a. MonadUnliftIO m
@@ -30,8 +30,8 @@ mapUpdates ::
     -> [updateA]
     -> (forall t. MonadTransUntrans t => MutableRead (t m) (UpdateReader updateB) -> [updateB] -> t m a)
     -> m a
-mapUpdates (MkRunnableT2 (unlift :: WUntransFunction t) ef@MkAnUpdateFunction {..}) (mrA :: MutableRead m (UpdateReader updateA)) editsA call =
-    runWUntransFunction unlift $
+mapUpdates (MkRunnableT2 (unlift :: Untrans t) ef@MkAnUpdateFunction {..}) (mrA :: MutableRead m (UpdateReader updateA)) editsA call =
+    unlift $
     withTransConstraintTM @MonadUnliftIO $ do
         editsB <- ufUpdates ef editsA mrA
         let
@@ -47,8 +47,8 @@ type ReceiveUpdatesT t update = forall m. MonadUnliftIO m => MutableRead m (Upda
 
 mapReceiveUpdates ::
        forall updateA updateB. UpdateFunction updateA updateB -> ReceiveUpdates updateB -> ReceiveUpdates updateA
-mapReceiveUpdates (MkRunnableT2 (unlift :: WUntransFunction t) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (UpdateReader updateA)) editsA =
-    runWUntransFunction unlift $
+mapReceiveUpdates (MkRunnableT2 (unlift :: Untrans t) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (UpdateReader updateA)) editsA =
+    unlift $
     withTransConstraintTM @MonadUnliftIO $ do
         editsB <- ufUpdates ef editsA mrA
         let
@@ -61,9 +61,9 @@ mapReceiveUpdatesT ::
     => UpdateFunction updateA updateB
     -> ReceiveUpdatesT t updateB
     -> ReceiveUpdatesT t updateA
-mapReceiveUpdatesT (MkRunnableT2 (unlift :: WUntransFunction tlens) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (UpdateReader updateA)) editsA =
+mapReceiveUpdatesT (MkRunnableT2 (unlift :: Untrans tlens) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (UpdateReader updateA)) editsA =
     withTransConstraintTM @MonadUnliftIO $
-    runWUntransFunction unlift $
+    unlift $
     withTransConstraintTM @MonadUnliftIO $
     case hasTransConstraint @MonadUnliftIO @tlens @m of
         Dict -> do

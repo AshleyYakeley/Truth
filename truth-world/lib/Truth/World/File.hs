@@ -5,13 +5,12 @@ import Truth.Core
 
 fileObject :: FilePath -> Object ByteStringEdit
 fileObject path = let
-    objRun :: WIOFunction (ReaderT Handle IO)
-    objRun =
-        MkWMFunction $ \rt -> do
-            h <- openBinaryFile path ReadWriteMode
-            r <- runReaderT rt h
-            hClose h
-            return r
+    objRun :: IOFunction (ReaderT Handle IO)
+    objRun rt = do
+        h <- openBinaryFile path ReadWriteMode
+        r <- runReaderT rt h
+        hClose h
+        return r
     objRead :: MutableRead (ReaderT Handle IO) ByteStringReader
     objRead ReadByteStringLength = do
         h <- ask

@@ -104,7 +104,7 @@ pattern MkWholeUpdate a = MkWholeReaderUpdate a
 
 wholeUpdateFunction :: forall a b. (a -> b) -> UpdateFunction (WholeUpdate a) (WholeUpdate b)
 wholeUpdateFunction ab =
-    MkRunnableT2 wUnIdentityT $
+    MkRunnableT2 identityUntrans $
     MkAnUpdateFunction
         { ufGet = \mr ReadWhole -> lift $ fmap ab $ mr ReadWhole
         , ufUpdate = \(MkWholeUpdate a) _ -> return [MkWholeUpdate $ ab a]
@@ -112,7 +112,7 @@ wholeUpdateFunction ab =
 
 ioWholeUpdateFunction :: forall a b. (a -> IO b) -> UpdateFunction (WholeUpdate a) (WholeUpdate b)
 ioWholeUpdateFunction aiob =
-    MkRunnableT2 wUnIdentityT $
+    MkRunnableT2 identityUntrans $
     MkAnUpdateFunction
         { ufGet =
               \mr ReadWhole ->
@@ -153,11 +153,11 @@ changeOnlyUpdateFunction = do
                 _ -> do
                     put $ Just newa
                     return [MkWholeUpdate newa]
-    return $ MkRunnableT2 (wMVarRun var) $ MkAnUpdateFunction {..}
+    return $ MkRunnableT2 (mVarRun var) $ MkAnUpdateFunction {..}
 
 ioWholeEditLens :: forall a b. (a -> IO b) -> (b -> a -> IO (Maybe a)) -> EditLens (WholeUpdate a) (WholeUpdate b)
 ioWholeEditLens ioget ioput =
-    MkRunnableT2 wUnIdentityT $
+    MkRunnableT2 identityUntrans $
     MkAnEditLens
         { elFunction =
               MkAnUpdateFunction
@@ -217,7 +217,7 @@ pairWholeUpdateFunction ::
        UpdateFunction update (WholeUpdate a)
     -> UpdateFunction update (WholeUpdate b)
     -> UpdateFunction update (WholeUpdate (a, b))
-pairWholeUpdateFunction (MkRunnableT2 (ula :: WUntransFunction ta) (MkAnUpdateFunction ga ua)) (MkRunnableT2 (ulb :: WUntransFunction tb) (MkAnUpdateFunction gb ub)) = let
+pairWholeUpdateFunction (MkRunnableT2 (ula :: Untrans ta) (MkAnUpdateFunction ga ua)) (MkRunnableT2 (ulb :: Untrans tb) (MkAnUpdateFunction gb ub)) = let
     gab :: ReadFunctionT (ComposeT ta tb) (UpdateReader update) (WholeReader (a, b))
     gab mr ReadWhole =
         withTransConstraintTM @MonadIO $ do
@@ -247,4 +247,4 @@ pairWholeUpdateFunction (MkRunnableT2 (ula :: WUntransFunction ta) (MkAnUpdateFu
                                         Just b -> return b
                                         Nothing -> lift2ComposeT $ gb mr ReadWhole
                                 return [MkWholeUpdate (a, b)]
-    in MkRunnableT2 (composeUnlift ula ulb) $ MkAnUpdateFunction gab uab
+    in MkRunnableT2 (composeUntrans ula ulb) $ MkAnUpdateFunction gab uab

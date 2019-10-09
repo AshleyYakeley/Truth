@@ -82,7 +82,7 @@ cvReceiveIOUpdates recv = do
     withUILock <- MkCreateView $ asks vcWithUILock
     MkRunnableIO run asub <- MkCreateView $ asks vcSubscriber
     liftLifeCycleIO $
-        remonad (runWMFunction run) $
+        remonad run $
         subscribe asub $ \edits MkEditContext {..} ->
             withUILock editContextTiming $ do
                 alive <- monitor
@@ -97,7 +97,7 @@ cvReceiveUpdates mesrc recv = do
     cvReceiveIOUpdates $ \(MkRunnableIO unliftObj (MkAnObject mr _)) edits esrc ->
         if mesrc == Just esrc
             then return ()
-            else runWMFunction unliftObj $ recv unliftIO mr edits
+            else unliftObj $ recv unliftIO mr edits
 
 cvReceiveUpdate ::
        Maybe EditSource

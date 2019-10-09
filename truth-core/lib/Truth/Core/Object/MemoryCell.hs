@@ -15,7 +15,8 @@ makeMemoryCellObject :: IO (Object (UpdateEdit MemoryCellUpdate))
 makeMemoryCellObject = do
     var <- newMVar ()
     let
-        objRun = mVarWIORun var
+        objRun :: IOFunction (StateT () IO)
+        objRun = mVarRun var
         objRead :: MutableRead (StateT () IO) (UpdateReader MemoryCellUpdate)
         objRead (MkTupleUpdateReader (MkDependentSelector ioref) ReadWhole) = liftIO $ readIORef $ unWitnessed ioref
         objEdit :: [UpdateEdit MemoryCellUpdate] -> StateT () IO (Maybe (EditSource -> StateT () IO ()))

@@ -48,7 +48,7 @@ undoQueueSubscriber ::
     -> IO (Subscriber update, UndoActions)
 undoQueueSubscriber sub = do
     queueVar <- newMVar $ MkUndoQueue [] []
-    MkRunnableIO (runP :: WIOFunction ma) (MkASubscriber (MkAnObject readP pushP) subscribeP) <- return sub
+    MkRunnableIO (runP :: IOFunction ma) (MkASubscriber (MkAnObject readP pushP) subscribeP) <- return sub
     let
         undoActions = let
             uaUndo :: EditSource -> IO Bool
@@ -60,7 +60,7 @@ undoQueueSubscriber sub = do
                         (entry:ee) -> do
                             did <-
                                 lift $
-                                runWMFunction runP $ do
+                                runP $ do
                                     maction <- pushP (snd entry)
                                     case maction of
                                         Just action -> do
@@ -81,7 +81,7 @@ undoQueueSubscriber sub = do
                         (entry:ee) -> do
                             did <-
                                 lift $
-                                runWMFunction runP $ do
+                                runP $ do
                                     maction <- pushP (fst entry)
                                     case maction of
                                         Just action -> do

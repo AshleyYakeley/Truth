@@ -25,7 +25,7 @@ noneObject = let
     objEdit :: [NoEdit (NoReader t)] -> IO (Maybe (EditSource -> IO ()))
     objEdit [] = return $ Just $ \_ -> return ()
     objEdit (e:_) = never e
-    in MkRunnableIO (MkWMFunction id) $ MkAnObject {..}
+    in MkRunnableIO id $ MkAnObject {..}
 
 mvarObject :: forall a. MVar a -> (a -> Bool) -> Object (WholeEdit a)
 mvarObject var allowed = let
@@ -38,7 +38,7 @@ mvarObject var allowed = let
             if allowed na
                 then Just $ \_ -> put na
                 else Nothing
-    in MkRunnableIO (mVarWIORun var) $ MkAnObject {..}
+    in MkRunnableIO (mVarRun var) $ MkAnObject {..}
 
 freeIOObject :: forall a. a -> (a -> Bool) -> IO (Object (WholeEdit a))
 freeIOObject firsta allowed = do
@@ -92,8 +92,9 @@ lensObject ::
     -> EditLens updateA updateB
     -> Object (UpdateEdit updateA)
     -> Object (UpdateEdit updateB)
-lensObject discard (MkRunnableT2 (lensUnlift :: WUntransFunction t) alens) (MkRunnableIO (objUnlift :: WIOFunction m) aobj)
+lensObject discard (MkRunnableT2 (lensUnlift :: Untrans t) alens) (MkRunnableIO (objUnlift :: IOFunction m) aobj)
     | Dict <- hasTransConstraint @MonadUnliftIO @t @m = let
+        objRunB :: IOFunction (t m)
         objRunB = lensObjectUnlift discard lensUnlift objUnlift
         in MkRunnableIO objRunB $ lensAnObject alens aobj
 
@@ -106,7 +107,7 @@ immutableAnObject mr =
         _ -> return Nothing
 
 readConstantObject :: MutableRead IO (EditReader edit) -> Object edit
-readConstantObject mr = MkRunnableIO (MkWMFunction id) $ immutableAnObject mr
+readConstantObject mr = MkRunnableIO id $ immutableAnObject mr
 
 constantObject :: SubjectReader (EditReader edit) => EditSubject edit -> Object edit
 constantObject subj = readConstantObject $ subjectToMutableRead subj
@@ -135,7 +136,7 @@ convertObject ::
        forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, SubjectMapEdit editb)
     => Object edita
     -> Object editb
-convertObject (MkRunnableIO (objRun :: WIOFunction m) (MkAnObject mra pe)) = let
+convertObject (MkRunnableIO (objRun :: IOFunction m) (MkAnObject mra pe)) = let
     objRead :: MutableRead m (EditReader editb)
     objRead = mSubjectToMutableRead $ mutableReadToSubject mra
     objEdit :: [editb] -> m (Maybe (EditSource -> m ()))
@@ -151,24 +152,23 @@ cacheWholeObject ::
        forall t. Eq t
     => Object (WholeEdit t)
     -> Object (WholeEdit t)
-cacheWholeObject (MkRunnableIO (MkWMFunction run :: WIOFunction m) (MkAnObject rd push)) = let
-    run' :: WIOFunction (StateT (t, Maybe EditSource) m)
-    run' =
-        MkWMFunction $ \ma ->
-            run $ do
-                oldval :: t <- rd ReadWhole
-                (r, (newval, mesrc)) <- runStateT ma (oldval, Nothing)
-                case mesrc of
-                    Just esrc ->
-                        if oldval == newval
-                            then return ()
-                            else do
-                                maction <- push [MkWholeReaderEdit newval]
-                                case maction of
-                                    Just action -> action esrc
-                                    Nothing -> liftIO $ fail "disallowed cached edit"
-                    Nothing -> return ()
-                return r
+cacheWholeObject (MkRunnableIO (run :: IOFunction m) (MkAnObject rd push)) = let
+    run' :: IOFunction (StateT (t, Maybe EditSource) m)
+    run' ma =
+        run $ do
+            oldval :: t <- rd ReadWhole
+            (r, (newval, mesrc)) <- runStateT ma (oldval, Nothing)
+            case mesrc of
+                Just esrc ->
+                    if oldval == newval
+                        then return ()
+                        else do
+                            maction <- push [MkWholeReaderEdit newval]
+                            case maction of
+                                Just action -> action esrc
+                                Nothing -> liftIO $ fail "disallowed cached edit"
+                Nothing -> return ()
+            return r
     rd' :: MutableRead (StateT (t, Maybe EditSource) m) (WholeReader t)
     rd' ReadWhole = do
         (t, _) <- get
@@ -178,16 +178,16 @@ cacheWholeObject (MkRunnableIO (MkWMFunction run :: WIOFunction m) (MkAnObject r
     in MkRunnableIO run' $ MkAnObject rd' push'
 
 copyObject :: FullEdit edit => EditSource -> Object edit -> Object edit -> IO ()
-copyObject esrc (MkRunnableIO (runSrc :: WIOFunction ms) (MkAnObject readSrc _)) (MkRunnableIO (runDest :: WIOFunction md) (MkAnObject _ pushDest)) =
+copyObject esrc (MkRunnableIO (runSrc :: IOFunction ms) (MkAnObject readSrc _)) (MkRunnableIO (runDest :: IOFunction md) (MkAnObject _ pushDest)) =
     case isCombineMonadIO @ms @md of
         Dict ->
-            runWMFunction (combineUnliftIOs runSrc runDest) $
+            combineIOFunctions runSrc runDest $
             replaceEdit (remonadMutableRead (combineFstMFunction @ms @md) readSrc) $ \edit ->
                 combineSndMFunction @ms @md $ pushOrFail "failed to copy object" esrc $ pushDest [edit]
 
 exclusiveObject :: forall edit. Object edit -> With IO (Object edit)
-exclusiveObject (MkRunnableIO (run :: WIOFunction m) (MkAnObject rd push)) call =
-    runWMFunction run $ liftIOWithUnlift $ \unlift -> call $ MkRunnableIO (MkWMFunction unlift) $ MkAnObject rd push
+exclusiveObject (MkRunnableIO (run :: IOFunction m) (MkAnObject rd push)) call =
+    run $ liftIOWithUnlift $ \unlift -> call $ MkRunnableIO unlift $ MkAnObject rd push
 
 getObjectSubject :: FullSubjectReader (EditReader edit) => Object edit -> IO (EditSubject edit)
-getObjectSubject (MkRunnableIO unlift (MkAnObject rd _)) = runWMFunction unlift $ mutableReadToSubject rd
+getObjectSubject (MkRunnableIO unlift (MkAnObject rd _)) = unlift $ mutableReadToSubject rd

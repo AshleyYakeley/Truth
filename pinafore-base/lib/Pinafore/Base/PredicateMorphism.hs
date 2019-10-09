@@ -117,7 +117,7 @@ predicateInverseFunction (MkEntityAdapter _ aget _) (MkEntityAdapter bp _ _) prd
 predicatePinaforeTableLensMorphism ::
        EntityAdapter a -> EntityAdapter b -> Predicate -> PinaforeLensMorphism PinaforeEntityUpdate a b
 predicatePinaforeTableLensMorphism pa pb prd =
-    MkRunnableT2 wUnIdentityT $
+    MkRunnableT2 identityUntrans $
     MkAPinaforeLensMorphism (predicatePinaforeMap pa pb prd) (predicateInverseFunction pa pb prd)
 
 propertyMorphism ::

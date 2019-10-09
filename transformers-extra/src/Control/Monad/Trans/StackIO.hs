@@ -63,6 +63,8 @@ combineSndMBackFunction ::
     => MBackFunction mb (CombineMonadIO ma mb)
 combineSndMBackFunction = liftWithUnlift
 
-combineUnliftIOs :: MonadStackIO ma => WIOFunction ma -> WIOFunction mb -> WIOFunction (CombineMonadIO ma mb)
-combineUnliftIOs (MkWMFunction unlifta) (MkWMFunction unliftb) =
-    MkWMFunction $ \cmr -> unlifta $ fromMonadStack $ remonad' unliftb cmr
+combineIOFunctions :: MonadStackIO ma => IOFunction ma -> IOFunction mb -> IOFunction (CombineMonadIO ma mb)
+combineIOFunctions unlifta unliftb cmr = unlifta $ fromMonadStack $ remonad' unliftb cmr
+
+combineWIOFunctions :: MonadStackIO ma => WIOFunction ma -> WIOFunction mb -> WIOFunction (CombineMonadIO ma mb)
+combineWIOFunctions (MkWMFunction unlifta) (MkWMFunction unliftb) = MkWMFunction $ combineIOFunctions unlifta unliftb

@@ -47,11 +47,11 @@ dictWorkaround = Dict
 type ObjectSoupUpdate = SoupUpdate (ObjectUpdate ByteStringUpdate)
 
 directorySoup :: Object FSEdit -> FilePath -> Object (UpdateEdit ObjectSoupUpdate)
-directorySoup (MkRunnableIO (runFS :: WIOFunction m) (MkAnObject readFS pushFS)) dirpath =
+directorySoup (MkRunnableIO (runFS :: IOFunction m) (MkAnObject readFS pushFS)) dirpath =
     case hasTransConstraint @MonadUnliftIO @(CombineMonadIO m) @(AutoClose FilePath (Object ByteStringEdit)) of
         Dict -> let
-            runSoup :: WIOFunction (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)))
-            runSoup = combineUnliftIOs runFS runAutoClose
+            runSoup :: IOFunction (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)))
+            runSoup = combineIOFunctions runFS runAutoClose
             readSoup ::
                    MutableRead (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit))) (UpdateReader ObjectSoupUpdate)
             readSoup KeyReadKeys = do

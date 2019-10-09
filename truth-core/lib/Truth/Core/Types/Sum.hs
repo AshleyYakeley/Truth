@@ -59,4 +59,4 @@ sumRightUpdateFunction = let
         -> MutableRead m (UpdateReader updateB)
         -> IdentityT m [SumUpdate updateA updateB]
     ufUpdate update _ = return [SumUpdateRight update]
-    in MkRunnableT2 wUnIdentityT MkAnUpdateFunction {..}
+    in MkRunnableT2 identityUntrans MkAnUpdateFunction {..}

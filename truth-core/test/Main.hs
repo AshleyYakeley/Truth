@@ -140,7 +140,7 @@ testLensGet :: TestTree
 testLensGet =
     testProperty "get" $ \run (base :: String) ->
         ioProperty $ do
-            MkRunnableT2 (MkWUntransFunction unlift) MkAnEditLens {..} <- stringSectionLens run
+            MkRunnableT2 unlift MkAnEditLens {..} <- stringSectionLens run
             let MkAnUpdateFunction {..} = elFunction
             unlift $
                 withTransConstraintTM @MonadIO $ do
@@ -181,7 +181,7 @@ lensUpdateGetProperty ::
     -> Property
 lensUpdateGetProperty getlens oldA editA =
     ioProperty @Property $ do
-        MkRunnableT2 (MkWUntransFunction unlift :: WUntransFunction t) (MkAnEditLens {..}) <- getlens
+        MkRunnableT2 (unlift :: Untrans t) (MkAnEditLens {..}) <- getlens
         case unsafeRefl @t @(StateT state) of
             Refl ->
                 unlift $ do

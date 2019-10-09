@@ -34,7 +34,7 @@ viewObjectRead ::
 viewObjectRead call = do
     unliftIO <- askUnliftIO
     MkRunnableIO objRun MkAnObject {..} <- viewObject
-    liftIO $ runWMFunction objRun $ call unliftIO $ objRead
+    liftIO $ objRun $ call unliftIO $ objRead
 
 viewObjectMaybeEdit ::
        (WIOFunction (View sel update) -> forall m.
@@ -44,7 +44,7 @@ viewObjectMaybeEdit ::
 viewObjectMaybeEdit call = do
     unliftIO <- askUnliftIO
     MkRunnableIO objRun MkAnObject {..} <- viewObject
-    liftIO $ runWMFunction objRun $ call unliftIO $ objEdit
+    liftIO $ objRun $ call unliftIO $ objEdit
 
 viewObjectPushEdit ::
        (WIOFunction (View sel update) -> forall m.

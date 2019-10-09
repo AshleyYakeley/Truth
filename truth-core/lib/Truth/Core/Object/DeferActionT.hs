@@ -52,15 +52,14 @@ instance MonadTransUntrans DeferActionT where
     liftWithUntrans utmr = MkDeferActionT $ liftWithUntrans $ \unlift -> utmr $ \(MkDeferActionT wma) -> unlift wma
     getDiscardingUntrans =
         MkDeferActionT $ do
-            MkWUntransFunction du <- getDiscardingUntrans
-            return $ MkWUntransFunction $ \(MkDeferActionT wma) -> du wma
+            MkWUntrans du <- getDiscardingUntrans
+            return $ MkWUntrans $ \(MkDeferActionT wma) -> du wma
 
 deferAction :: Monad m => IO () -> DeferActionT m ()
 deferAction action = MkDeferActionT $ tell [action]
 
-runDeferActionT :: WUntransFunction DeferActionT
-runDeferActionT =
-    MkWUntransFunction $ \(MkDeferActionT (WriterT wma)) -> do
-        (a, actions) <- wma
-        for_ actions liftIO
-        return a
+runDeferActionT :: Untrans DeferActionT
+runDeferActionT (MkDeferActionT (WriterT wma)) = do
+    (a, actions) <- wma
+    for_ actions liftIO
+    return a

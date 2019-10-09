@@ -191,15 +191,14 @@ sqliteObject ::
     -> SQLite.DatabaseSchema tablesel
     -> Object (SQLiteEdit tablesel)
 sqliteObject path schema@SQLite.MkDatabaseSchema {..} = let
-    objRun :: WIOFunction (ReaderT Connection IO)
-    objRun =
-        MkWMFunction $ \call -> do
-            exists <- doesFileExist path
-            withConnection path $ \conn -> do
-                if exists
-                    then return ()
-                    else for_ (SQLite.toSchema schema) $ execute_ conn -- create the database if we're creating the file
-                runReaderT call conn
+    objRun :: IOFunction (ReaderT Connection IO)
+    objRun call = do
+        exists <- doesFileExist path
+        withConnection path $ \conn -> do
+            if exists
+                then return ()
+                else for_ (SQLite.toSchema schema) $ execute_ conn -- create the database if we're creating the file
+            runReaderT call conn
     wherePart :: Schema (TupleWhereClause SQLiteDatabase row) -> TupleWhereClause SQLiteDatabase row -> QueryString
     wherePart rowSchema wc =
         case wc of

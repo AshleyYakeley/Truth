@@ -21,11 +21,11 @@ consTupleObjects ::
        Object (UpdateEdit update)
     -> Object (TupleUpdateEdit (ListElementType updates))
     -> Object (TupleUpdateEdit (ListElementType (update : updates)))
-consTupleObjects (MkRunnableIO (runA :: WIOFunction ma) anobjA) (MkRunnableIO (runB :: WIOFunction mb) anobjB) =
+consTupleObjects (MkRunnableIO (runA :: IOFunction ma) anobjA) (MkRunnableIO (runB :: IOFunction mb) anobjB) =
     case isCombineMonadIO @ma @mb of
         Dict -> let
-            runAB :: WIOFunction (CombineMonadIO ma mb)
-            runAB = combineUnliftIOs runA runB
+            runAB :: IOFunction (CombineMonadIO ma mb)
+            runAB = combineIOFunctions runA runB
             in MkRunnableIO runAB $ consTupleAObjects anobjA anobjB
 
 partitionListTupleUpdateEdits ::

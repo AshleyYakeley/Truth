@@ -103,4 +103,4 @@ mustExistOneEditLens err = let
         -> MutableRead m (OneReader f (UpdateReader update))
         -> IdentityT m (Maybe [OneWholeEdit f (UpdateEdit update)])
     elPutEdits edits _ = return $ Just $ fmap (SumEditRight . MkOneEdit) edits
-    in MkRunnableT2 wUnIdentityT MkAnEditLens {..}
+    in MkRunnableT2 identityUntrans MkAnEditLens {..}

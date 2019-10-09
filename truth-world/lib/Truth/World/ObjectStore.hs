@@ -51,7 +51,7 @@ type ObjectStoreUpdate name edit = FunctionUpdate name (SingleObjectUpdate edit)
 
 singleObjectUpdateFunction :: forall edit. UpdateFunction (SingleObjectUpdate edit) (WholeUpdate (Maybe (Object edit)))
 singleObjectUpdateFunction =
-    MkRunnableT2 wUnIdentityT $ let
+    MkRunnableT2 identityUntrans $ let
         ufGet :: ReadFunctionT IdentityT (SingleObjectReader edit) (WholeReader (Maybe (Object edit)))
         ufGet mr ReadWhole = lift $ mr ReadSingleObjectStore
         ufUpdate ::
@@ -67,7 +67,7 @@ singleObjectUpdateFunction =
 
 directoryObjectStore ::
        forall name. Object FSEdit -> (name -> String) -> Object (UpdateEdit (ObjectStoreUpdate name ByteStringEdit))
-directoryObjectStore (MkRunnableIO (objRun :: WIOFunction m) (MkAnObject rd push)) nameStr = let
+directoryObjectStore (MkRunnableIO (objRun :: IOFunction m) (MkAnObject rd push)) nameStr = let
     undoName :: String -> Int -> FilePath
     undoName name i = "undo/" ++ name ++ show i
     findUndoCode :: String -> Int -> m Int

@@ -17,7 +17,7 @@ import Prelude
 class MonadTransUntrans t => MonadTransAskUnlift t where
     askUnlift ::
            forall m. Monad m
-        => t m (WUntransFunction t)
+        => t m (WUntrans t)
 
 -- | A monad that has no effects over IO (such as state change or output)
 class MonadUnliftIO m => MonadAskUnliftIO m where
@@ -29,7 +29,7 @@ instance MonadAskUnliftIO IO where
 instance (MonadTransAskUnlift t, MonadAskUnliftIO m, MonadFail (t m), MonadIO (t m), MonadFix (t m)) =>
              MonadAskUnliftIO (t m) where
     askUnliftIO = do
-        MkWUntransFunction unlift <- askUnlift
+        MkWUntrans unlift <- askUnlift
         MkWMFunction unliftIO <- lift askUnliftIO
         return $ MkWMFunction $ unliftIO . unlift
 
@@ -38,9 +38,9 @@ instance MonadTransAskUnlift t => MonadTransConstraint MonadAskUnliftIO t where
         withTransConstraintDict @MonadFail $ withTransConstraintDict @MonadIO $ withTransConstraintDict @MonadFix $ Dict
 
 instance MonadTransAskUnlift IdentityT where
-    askUnlift = return wUnIdentityT
+    askUnlift = return identityWUntrans
 
 instance MonadTransAskUnlift (ReaderT s) where
     askUnlift = do
         s <- ask
-        return $ MkWUntransFunction $ \mr -> runReaderT mr s
+        return $ MkWUntrans $ \mr -> runReaderT mr s

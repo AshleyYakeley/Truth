@@ -13,18 +13,18 @@ cacheObject ::
     -> Object edit
     -> LifeCycleIO (Object edit)
 cacheObject mus (MkRunnableIO unlift (MkAnObject read push)) = do
-    runAction <-
-        asyncWaitRunner mus $ \editsnl -> runWMFunction unlift $ pushOrFail "cached object" noEditSource $ push editsnl
+    runAction <- asyncWaitRunner mus $ \editsnl -> unlift $ pushOrFail "cached object" noEditSource $ push editsnl
     cacheVar <- liftIO $ newMVar $ cacheEmpty @ListCache @(EditCacheKey ListCache edit)
     return $ let
-        objRun = mVarWIORun cacheVar
+        objRun :: IOFunction (StateT (ListCache (EditCacheKey ListCache edit)) IO)
+        objRun = mVarRun cacheVar
         objRead :: MutableRead (StateT (ListCache (EditCacheKey ListCache edit)) IO) (EditReader edit)
         objRead rt = do
             oldcache <- get
             case editCacheLookup @edit rt oldcache of
                 Just t -> return t
                 Nothing -> do
-                    t <- liftIO $ runWMFunction unlift $ read rt
+                    t <- liftIO $ unlift $ read rt
                     liftIO $ runAction Nothing -- still reading, don't push yet
                     editCacheAdd @edit rt t
                     return t

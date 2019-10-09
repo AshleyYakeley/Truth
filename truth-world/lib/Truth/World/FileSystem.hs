@@ -80,8 +80,8 @@ createFile path bs = do
 
 fileSystemObject :: Object FSEdit
 fileSystemObject = let
-    objRun :: WIOFunction IO
-    objRun = MkWMFunction id
+    objRun :: IOFunction IO
+    objRun = id
     objRead :: MutableRead IO FSReader
     objRead (FSReadDirectory path) = do
         isDir <- doesDirectoryExist path
@@ -134,16 +134,15 @@ fileSystemObject = let
     in MkRunnableIO objRun MkAnObject {..}
 
 subdirectoryObject :: Bool -> FilePath -> Object FSEdit -> Object FSEdit
-subdirectoryObject create dir (MkRunnableIO (MkWMFunction run :: WIOFunction m) (MkAnObject rd push)) = let
-    run' :: WIOFunction m
-    run' =
-        MkWMFunction $ \ma ->
-            run $ do
-                if create
-                    then pushOrFail ("couldn't create directory " <> show dir) noEditSource $
-                         push [FSEditCreateDirectory dir]
-                    else return ()
-                ma
+subdirectoryObject create dir (MkRunnableIO (run :: IOFunction m) (MkAnObject rd push)) = let
+    run' :: IOFunction m
+    run' ma =
+        run $ do
+            if create
+                then pushOrFail ("couldn't create directory " <> show dir) noEditSource $
+                     push [FSEditCreateDirectory dir]
+                else return ()
+            ma
     insideToOutside :: FilePath -> FilePath
     insideToOutside path = let
         relpath = makeRelative "/" path

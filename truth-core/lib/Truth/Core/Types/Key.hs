@@ -229,7 +229,7 @@ unliftKeyElementEditLens ::
        , FullSubjectReader (UpdateReader update)
        )
     => NewKeyGetter cont update
-    -> WUntransFunction (StateT (ContainerKey cont))
+    -> Untrans (StateT (ContainerKey cont))
     -> EditLens (KeyUpdate cont update) (MaybeUpdate update)
 unliftKeyElementEditLens newKeyGetter unlift = let
     ufGet ::
@@ -312,7 +312,7 @@ getKeyElementEditLens ::
     -> IO (EditLens (KeyUpdate cont update) (MaybeUpdate update))
 getKeyElementEditLens initial = do
     var <- newMVar initial
-    return $ unliftKeyElementEditLens updateKey $ wMVarRun var
+    return $ unliftKeyElementEditLens updateKey $ mVarRun var
 
 stableKeyElementEditLens ::
        forall cont update.
@@ -401,7 +401,7 @@ liftKeyElementEditLens ::
     => (forall m. MonadIO m => UpdateSubject updateB -> m (Maybe (UpdateSubject updateA)))
     -> EditLens updateA updateB
     -> EditLens (KeyUpdate conta updateA) (KeyUpdate contb updateB)
-liftKeyElementEditLens bma (MkRunnableT2 (unlift :: WUntransFunction t) (MkAnEditLens ef pe)) = let
+liftKeyElementEditLens bma (MkRunnableT2 (unlift :: Untrans t) (MkAnEditLens ef pe)) = let
     elFunction = liftKeyElementAnUpdateFunction ef
     elPutEdit ::
            forall m. MonadIO m
@@ -503,4 +503,4 @@ orderedKeyList cmp = let
                 edits <- getReplaceEditsFromSubject item
                 return $ fmap (\edit -> ListUpdateItem i $ editUpdate edit) edits
     ufUpdate KeyUpdateClear _ = return [ListUpdateClear]
-    in MkRunnableT2 wUnIdentityT MkAnUpdateFunction {..}
+    in MkRunnableT2 identityUntrans MkAnUpdateFunction {..}

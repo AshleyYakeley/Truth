@@ -60,7 +60,7 @@ getRunner AsynchronousUpdateTiming recv = do
 
 subscriberObjectMaker :: Subscriber update -> a -> ObjectMaker update a
 subscriberObjectMaker (MkRunnableIO run MkASubscriber {..}) a update = do
-    remonad (runWMFunction run) $ subscribe update
+    remonad run $ subscribe update
     return (MkRunnableIO run subAnObject, a)
 
 makeSharedSubscriber :: forall update a. UpdateTiming -> ObjectMaker update a -> LifeCycleIO (Subscriber update, a)

@@ -25,13 +25,13 @@ saveBufferObject ::
        forall update. (IsUpdate update, FullEdit (UpdateEdit update))
     => Object (WholeEdit (UpdateSubject update))
     -> ObjectMaker update SaveActions
-saveBufferObject (MkRunnableIO (unliftP :: WIOFunction mp) (MkAnObject readP pushP)) update = do
-    firstVal <- liftIO $ runWMFunction unliftP $ readP ReadWhole
+saveBufferObject (MkRunnableIO (unliftP :: IOFunction mp) (MkAnObject readP pushP)) update = do
+    firstVal <- liftIO $ unliftP $ readP ReadWhole
     sbVar <- liftIO $ newMVar $ MkSaveBuffer firstVal False
     let
         objC = let
-            runC :: WIOFunction (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO))
-            runC = composeUntransFunction (wMVarRun sbVar) $ composeUntransFunction runDeferActionT id
+            runC :: IOFunction (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO))
+            runC = composeUntransFunction (mVarRun sbVar) $ composeUntransFunction runDeferActionT id
             readC :: MutableRead (StateT (SaveBuffer (UpdateSubject update)) (DeferActionT IO)) (UpdateReader update)
             readC = mSubjectToMutableRead $ fmap saveBuffer get
             pushC ::
@@ -51,7 +51,7 @@ saveBufferObject (MkRunnableIO (unliftP :: WIOFunction mp) (MkAnObject readP pus
             in MkRunnableIO runC $ MkAnObject readC pushC
         saveAction :: EditSource -> IO Bool
         saveAction esrc =
-            runWMFunction unliftP $ do
+            unliftP $ do
                 MkSaveBuffer buf _ <- mVarRun sbVar get
                 maction <- pushP [MkWholeReaderEdit buf]
                 case maction of
@@ -63,7 +63,7 @@ saveBufferObject (MkRunnableIO (unliftP :: WIOFunction mp) (MkAnObject readP pus
         revertAction :: EditSource -> IO Bool
         revertAction esrc = do
             edits <-
-                runWMFunction unliftP $ do
+                unliftP $ do
                     buf <- readP ReadWhole
                     mVarRun sbVar $ put $ MkSaveBuffer buf False
                     getReplaceEditsFromSubject buf
@@ -72,7 +72,7 @@ saveBufferObject (MkRunnableIO (unliftP :: WIOFunction mp) (MkAnObject readP pus
         saveActions :: SaveActions
         saveActions =
             MkSaveActions $
-            runWMFunction unliftP $ do
+            unliftP $ do
                 MkSaveBuffer _ changed <- mVarRun sbVar get
                 return $
                     if changed

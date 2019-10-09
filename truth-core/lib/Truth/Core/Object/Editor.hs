@@ -44,5 +44,5 @@ subscribeEditor (MkRunnableIO run (MkASubscriber anobject sub)) editor = let
     in case editor of
            MkEditor initr update f -> do
                e <- initr object
-               remonad (runWMFunction run) $ sub $ update e object
+               remonad run $ sub $ update e object
                f e object
