@@ -49,10 +49,7 @@ deriving instance MonadTransTunnel DeferActionT
 instance MonadTransUnlift DeferActionT
 
 instance MonadTransUntrans DeferActionT where
-    liftWithUntrans utmr =
-        MkDeferActionT $
-        liftWithUntrans $ \(MkWUntransFunction unlift) ->
-            utmr $ MkWUntransFunction $ \(MkDeferActionT wma) -> unlift wma
+    liftWithUntrans utmr = MkDeferActionT $ liftWithUntrans $ \unlift -> utmr $ \(MkDeferActionT wma) -> unlift wma
     getDiscardingUntrans =
         MkDeferActionT $ do
             MkWUntransFunction du <- getDiscardingUntrans

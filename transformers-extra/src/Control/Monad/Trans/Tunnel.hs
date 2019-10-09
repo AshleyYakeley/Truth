@@ -47,6 +47,9 @@ remonad' ::
     -> MFunction (t m1) (t m2)
 remonad' mma sm1 = tunnel $ \tun -> mma $ tun sm1
 
+liftWMFunction' :: MonadTransTunnel t => WMFunction m1 m2 -> WMFunction (t m1) (t m2)
+liftWMFunction' (MkWMFunction mm) = MkWMFunction $ remonad' mm
+
 instance MonadTransSemiTunnel IdentityT
 
 instance MonadTransTunnel IdentityT where

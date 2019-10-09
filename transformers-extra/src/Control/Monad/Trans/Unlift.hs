@@ -1,5 +1,6 @@
 module Control.Monad.Trans.Unlift where
 
+import Control.Category
 import Control.Concurrent.MVar
 import Control.Monad
 import Control.Monad.Fail
@@ -16,7 +17,7 @@ import Control.Monad.Trans.Writer
 import Data.Constraint
 import Data.Kind
 import Data.Tuple
-import Prelude
+import Prelude hiding ((.), id)
 
 class ( MonadTransConstraint MonadFail t
       , MonadTransConstraint MonadIO t
@@ -24,12 +25,11 @@ class ( MonadTransConstraint MonadFail t
       , MonadTransSemiTunnel t
       ) => MonadTransUnlift t where
     liftWithUnlift ::
-           forall m r. MonadUnliftIO m
-        => (WMFunction (t m) m -> m r)
-        -> t m r
+           forall m. MonadUnliftIO m
+        => MBackFunction m (t m)
     -- ^ lift with a 'WMFunction' that accounts for the transformer's effects (using MVars where necessary)
-    default liftWithUnlift :: MonadTransUntrans t => forall m r. MonadUnliftIO m => (WMFunction (t m) m -> m r) -> t m r
-    liftWithUnlift call = liftWithUntrans $ \unlift -> call $ wUntransWMFunction unlift
+    default liftWithUnlift :: MonadTransUntrans t => forall m. MonadUnliftIO m => MBackFunction m (t m)
+    liftWithUnlift = liftWithUntrans
     getDiscardingUnlift ::
            forall m. MonadUnliftIO m
         => t m (WMFunction (t m) m)
@@ -38,6 +38,11 @@ class ( MonadTransConstraint MonadFail t
     getDiscardingUnlift =
         case hasTransConstraint @Monad @t @m of
             Dict -> fmap wUntransWMFunction getDiscardingUntrans
+
+liftWithUnliftW ::
+       forall t m. (MonadTransUnlift t, MonadUnliftIO m)
+    => WMBackFunction m (t m)
+liftWithUnliftW = MkWMBackFunction liftWithUnlift
 
 type UntransFunction t = forall (m :: Type -> Type). MonadUnliftIO m => MFunction (t m) m
 
@@ -52,8 +57,7 @@ wUnIdentityT :: WUntransFunction IdentityT
 wUnIdentityT = MkWUntransFunction runIdentityT
 
 mVarRun :: MVar s -> UntransFunction (StateT s)
-mVarRun var (StateT smr) =
-    liftIOWithUnlift $ \(MkWMFunction unlift) -> modifyMVar var $ \olds -> unlift $ fmap swap $ smr olds
+mVarRun var (StateT smr) = liftIOWithUnlift $ \unlift -> modifyMVar var $ \olds -> unlift $ fmap swap $ smr olds
 
 wMVarRun :: MVar s -> WUntransFunction (StateT s)
 wMVarRun var = MkWUntransFunction $ mVarRun var
@@ -71,7 +75,7 @@ liftWithMVarStateT vma = do
     return r
 
 readerTUnliftToT :: (MonadTransUntrans t, MonadUnliftIO m) => MFunction (ReaderT (WUntransFunction t) m) (t m)
-readerTUnliftToT rma = liftWithUntrans $ runReaderT rma
+readerTUnliftToT rma = liftWithUntrans $ \tr -> runReaderT rma $ MkWUntransFunction tr
 
 tToReaderTUnlift :: MonadUnliftIO m => MFunction (t m) (ReaderT (WUntransFunction t) m)
 tToReaderTUnlift tma = do
@@ -81,7 +85,7 @@ tToReaderTUnlift tma = do
 class (MonadTransConstraint MonadPlus t, MonadTransTunnel t, MonadTransUnlift t) => MonadTransUntrans t where
     liftWithUntrans ::
            forall m r. MonadUnliftIO m
-        => (WUntransFunction t -> m r)
+        => (UntransFunction t -> m r)
         -> t m r
     -- ^ lift with an 'WUntransFunction' that accounts for the transformer's effects (using MVars where necessary)
     getDiscardingUntrans ::
@@ -95,7 +99,7 @@ commuteT ::
     => MFunction (ta (tb m)) (tb (ta m))
 commuteT tatbmr =
     case hasTransConstraint @MonadUnliftIO @ta @m of
-        Dict -> liftWithUntrans $ \(MkWUntransFunction unlift) -> remonad' unlift tatbmr
+        Dict -> liftWithUntrans $ \unlift -> remonad' unlift tatbmr
 
 type WIOFunction m = WMFunction m IO
 
@@ -114,19 +118,20 @@ composeUntransFunctionCommute ::
 composeUntransFunctionCommute (MkWUntransFunction rt) (MkWMFunction rm) = MkWMFunction $ \tma -> rt $ remonad rm tma
 
 class (MonadFail m, MonadTunnelIO m, MonadFix m) => MonadUnliftIO m where
-    liftIOWithUnlift :: forall r. (WIOFunction m -> IO r) -> m r
+    liftIOWithUnlift :: forall r. (MFunction m IO -> IO r) -> m r
     -- ^ lift with an 'WIOFunction' that accounts for all transformer effects
     getDiscardingIOUnlift :: m (WIOFunction m)
     -- ^ return an 'WIOFunction' that discards all transformer effects (such as state change or output)
 
+ioWMBackFunction :: MonadUnliftIO m => WMBackFunction IO m
+ioWMBackFunction = MkWMBackFunction liftIOWithUnlift
+
 instance MonadUnliftIO IO where
-    liftIOWithUnlift call = call $ MkWMFunction id
+    liftIOWithUnlift call = call id
     getDiscardingIOUnlift = return $ MkWMFunction id
 
 instance (MonadTransUnlift t, MonadUnliftIO m, MonadFail (t m), MonadIO (t m), MonadFix (t m)) => MonadUnliftIO (t m) where
-    liftIOWithUnlift call =
-        liftWithUnlift $ \(MkWMFunction tmama) ->
-            liftIOWithUnlift $ \(MkWMFunction maioa) -> call $ MkWMFunction $ maioa . tmama
+    liftIOWithUnlift call = liftWithUnlift $ \tmama -> liftIOWithUnlift $ \maioa -> call $ maioa . tmama
     getDiscardingIOUnlift = do
         MkWMFunction unlift <- getDiscardingUnlift
         MkWMFunction unliftIO <- lift getDiscardingIOUnlift
@@ -139,13 +144,13 @@ instance MonadTransUnlift t => MonadTransConstraint MonadUnliftIO t where
 instance MonadTransUnlift IdentityT
 
 instance MonadTransUntrans IdentityT where
-    liftWithUntrans call = IdentityT $ call wUnIdentityT
+    liftWithUntrans call = IdentityT $ call runIdentityT
     getDiscardingUntrans = return wUnIdentityT
 
 instance MonadTransUnlift (ReaderT s)
 
 instance MonadTransUntrans (ReaderT s) where
-    liftWithUntrans call = ReaderT $ \s -> call $ MkWUntransFunction $ \(ReaderT smr) -> smr s
+    liftWithUntrans call = ReaderT $ \s -> call $ \(ReaderT smr) -> smr s
     getDiscardingUntrans = do
         s <- ask
         return $ MkWUntransFunction $ \mr -> runReaderT mr s
@@ -163,8 +168,7 @@ instance Monoid s => MonadTransUntrans (WriterT s) where
         var <- liftIO $ newMVar mempty
         r <-
             lift $
-            call $
-            MkWUntransFunction $ \(WriterT mrs) -> do
+            call $ \(WriterT mrs) -> do
                 (r, output) <- mrs
                 liftIO $ modifyMVar var $ \oldoutput -> return (mappend oldoutput output, ())
                 return r
@@ -182,7 +186,7 @@ stateDiscardingUntrans s =
         return r
 
 instance MonadTransUntrans (StateT s) where
-    liftWithUntrans call = liftWithMVarStateT (\var -> call $ wMVarRun var)
+    liftWithUntrans call = liftWithMVarStateT $ \var -> call $ mVarRun var
     getDiscardingUntrans = do
         s <- get
         return $ stateDiscardingUntrans s

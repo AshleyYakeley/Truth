@@ -1,5 +1,6 @@
 module Control.Monad.Trans.StackIO where
 
+import Control.Category
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Compose
@@ -10,12 +11,12 @@ import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift
 import Data.Constraint
 import Data.Kind
-import Prelude
+import Prelude hiding ((.), id)
 
 class (MonadTransUntrans (CombineMonadIO m), MonadUnliftIO m) => MonadStackIO m where
     type CombineMonadIO m :: (Type -> Type) -> (Type -> Type)
-    toMonadStack :: forall a. m a -> CombineMonadIO m IO a
-    fromMonadStack :: forall a. CombineMonadIO m IO a -> m a
+    toMonadStack :: MFunction m (CombineMonadIO m IO)
+    fromMonadStack :: MFunction (CombineMonadIO m IO) m
 
 instance MonadStackIO IO where
     type CombineMonadIO IO = IdentityT
@@ -47,10 +48,20 @@ combineFstMFunction ::
     => MFunction ma (CombineMonadIO ma mb)
 combineFstMFunction mar = remonad liftIO $ toMonadStack mar
 
+combineFstMBackFunction ::
+       forall ma mb. (MonadStackIO ma, MonadUnliftIO mb)
+    => MBackFunction ma (CombineMonadIO ma mb)
+combineFstMBackFunction mar = liftMBackFunction liftIOWithUnlift $ \tr -> toMonadStack $ mar $ fromMonadStack . tr
+
 combineSndMFunction ::
        forall ma mb. (MonadStackIO ma, Monad mb)
     => MFunction mb (CombineMonadIO ma mb)
 combineSndMFunction = lift
+
+combineSndMBackFunction ::
+       forall ma mb. (MonadStackIO ma, MonadUnliftIO mb)
+    => MBackFunction mb (CombineMonadIO ma mb)
+combineSndMBackFunction = liftWithUnlift
 
 combineUnliftIOs :: MonadStackIO ma => WIOFunction ma -> WIOFunction mb -> WIOFunction (CombineMonadIO ma mb)
 combineUnliftIOs (MkWMFunction unlifta) (MkWMFunction unliftb) =

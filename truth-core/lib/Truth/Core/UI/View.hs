@@ -23,7 +23,7 @@ newtype View sel update a =
     deriving (Functor, Applicative, Monad, MonadIO, MonadFail, MonadTunnelIO, MonadFix, MonadUnliftIO, MonadAskUnliftIO)
 
 liftIOView :: forall sel update a. ((forall r. View sel update r -> IO r) -> IO a) -> View sel update a
-liftIOView call = liftIOWithUnlift $ \(MkWMFunction unlift) -> call unlift
+liftIOView = liftIOWithUnlift
 
 viewObject :: View sel update (Object (UpdateEdit update))
 viewObject = MkView $ asks $ subscriberObject . vcSubscriber

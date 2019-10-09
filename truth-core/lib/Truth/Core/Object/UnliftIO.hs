@@ -13,7 +13,7 @@ lensObjectUnliftFull ::
     -> WIOFunction m
     -> WIOFunction (t m)
 lensObjectUnliftFull (MkWUntransFunction lensRun) (MkWMFunction objRunA) =
-    MkWMFunction $ \tmr -> objRunA $ lensRun $ liftWithUntrans $ \(MkWUntransFunction unlift) -> unlift tmr
+    MkWMFunction $ \tmr -> objRunA $ lensRun $ liftWithUntrans $ \unlift -> unlift tmr
 
 lensObjectUnliftDiscard ::
        forall t m. (MonadTransUntrans t, MonadUnliftIO m)

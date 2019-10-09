@@ -135,7 +135,7 @@ data RunState
 truthMainGTK :: TruthMain
 truthMainGTK appMain =
     runLifeCycle $
-    liftIOWithUnlift $ \(MkWMFunction unlift) -> do
+    liftIOWithUnlift $ \unlift -> do
         _ <- GI.init Nothing
         uiLockVar <- newMVar ()
         runVar <- newMVar RSRun

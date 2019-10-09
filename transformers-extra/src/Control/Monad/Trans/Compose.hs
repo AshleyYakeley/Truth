@@ -55,9 +55,7 @@ lift1ComposeTWithUnlift ::
     => ((forall a. ComposeT t1 t2 m a -> t1 m a) -> t1 m r)
     -> ComposeT t1 t2 m r
 lift1ComposeTWithUnlift call =
-    MkComposeT $
-    tunnel $ \tun ->
-        liftWithUntrans $ \(MkWUntransFunction unlift) -> tun $ call $ \(MkComposeT ttma) -> remonad' unlift ttma
+    MkComposeT $ tunnel $ \tun -> liftWithUntrans $ \unlift -> tun $ call $ \(MkComposeT ttma) -> remonad' unlift ttma
 
 lift2ComposeTWithUnlift ::
        forall t1 t2 m r. (MonadTransUntrans t1, MonadTransUntrans t2, MonadUnliftIO m)
@@ -65,7 +63,7 @@ lift2ComposeTWithUnlift ::
     -> ComposeT t1 t2 m r
 lift2ComposeTWithUnlift call =
     case hasTransConstraint @MonadUnliftIO @t2 @m of
-        Dict -> MkComposeT $ liftWithUntrans $ \(MkWUntransFunction unlift) -> call $ \(MkComposeT ttma) -> unlift ttma
+        Dict -> MkComposeT $ liftWithUntrans $ \unlift -> call $ \(MkComposeT ttma) -> unlift ttma
 
 composeUnlift :: MonadTransUntrans tb => WUntransFunction ta -> WUntransFunction tb -> WUntransFunction (ComposeT ta tb)
 composeUnlift (MkWUntransFunction ua) (MkWUntransFunction ub) =
@@ -159,18 +157,15 @@ instance (MonadTransTunnel t1, MonadTransTunnel t2) => MonadTransTunnel (Compose
 
 instance (MonadTransUnlift t1, MonadTransUnlift t2) => MonadTransUnlift (ComposeT t1 t2) where
     liftWithUnlift ::
-           forall m r. MonadUnliftIO m
-        => (WMFunction (ComposeT t1 t2 m) m -> m r)
-        -> ComposeT t1 t2 m r
+           forall m. MonadUnliftIO m
+        => MBackFunction m (ComposeT t1 t2 m)
     liftWithUnlift call =
         case hasTransConstraint @MonadUnliftIO @t2 @m of
             Dict ->
                 MkComposeT $
-                liftWithUnlift $ \(MkWMFunction unlift1) ->
-                    liftWithUnlift $ \(MkWMFunction unlift2) ->
-                        call $
-                        MkWMFunction $ \(MkComposeT t1t2ma) ->
-                            unlift2 $ withTransConstraintTM @MonadUnliftIO $ unlift1 t1t2ma
+                liftWithUnlift $ \unlift1 ->
+                    liftWithUnlift $ \unlift2 ->
+                        call $ \(MkComposeT t1t2ma) -> unlift2 $ withTransConstraintTM @MonadUnliftIO $ unlift1 t1t2ma
     getDiscardingUnlift ::
            forall m. MonadUnliftIO m
         => ComposeT t1 t2 m (WMFunction (ComposeT t1 t2 m) m)
@@ -190,17 +185,15 @@ instance (MonadTransUnlift t1, MonadTransUnlift t2) => MonadTransUnlift (Compose
 instance (MonadTransUntrans t1, MonadTransUntrans t2) => MonadTransUntrans (ComposeT t1 t2) where
     liftWithUntrans ::
            forall m r. MonadUnliftIO m
-        => (WUntransFunction (ComposeT t1 t2) -> m r)
+        => (UntransFunction (ComposeT t1 t2) -> m r)
         -> ComposeT t1 t2 m r
     liftWithUntrans call =
         case hasTransConstraint @MonadUnliftIO @t2 @m of
             Dict ->
                 MkComposeT $
-                liftWithUntrans $ \(MkWUntransFunction unlift1) ->
-                    liftWithUntrans $ \(MkWUntransFunction unlift2) ->
-                        call $
-                        MkWUntransFunction $ \(MkComposeT t1t2ma) ->
-                            unlift2 $ withTransConstraintTM @MonadUnliftIO $ unlift1 t1t2ma
+                liftWithUntrans $ \unlift1 ->
+                    liftWithUntrans $ \unlift2 ->
+                        call $ \(MkComposeT t1t2ma) -> unlift2 $ withTransConstraintTM @MonadUnliftIO $ unlift1 t1t2ma
     getDiscardingUntrans ::
            forall m. Monad m
         => ComposeT t1 t2 m (WUntransFunction (ComposeT t1 t2))

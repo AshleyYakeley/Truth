@@ -79,8 +79,7 @@ instance MonadTransUnlift LifeCycleT where
         var <- liftIO $ newMVar $ return ()
         r <-
             lift $
-            call $
-            MkWMFunction $ \(MkLifeCycleT ma) -> do
+            call $ \(MkLifeCycleT ma) -> do
                 (a, closer) <- ma
                 liftIO $ modifyMVar_ var $ \oldcloser -> return $ closer >> oldcloser
                 return a
@@ -100,7 +99,7 @@ type With m t = forall r. (t -> m r) -> m r
 withLifeCycle :: MonadUnliftIO m => LifeCycleT m t -> With m t
 withLifeCycle (MkLifeCycleT oc) run = do
     (t, closer) <- oc
-    liftIOWithUnlift $ \(MkWMFunction unlift) -> finally (unlift $ run t) (unlift closer)
+    liftIOWithUnlift $ \unlift -> finally (unlift $ run t) (unlift closer)
 
 runLifeCycle :: MonadUnliftIO m => LifeCycleT m t -> m t
 runLifeCycle lc = withLifeCycle lc return

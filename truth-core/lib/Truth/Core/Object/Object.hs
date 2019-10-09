@@ -187,7 +187,7 @@ copyObject esrc (MkCloseUnliftIO (runSrc :: WIOFunction ms) (MkAnObject readSrc 
 
 exclusiveObject :: forall edit. Object edit -> With IO (Object edit)
 exclusiveObject (MkCloseUnliftIO (run :: WIOFunction m) (MkAnObject rd push)) call =
-    runWMFunction run $ liftIOWithUnlift $ \unlift -> call $ MkCloseUnliftIO unlift $ MkAnObject rd push
+    runWMFunction run $ liftIOWithUnlift $ \unlift -> call $ MkCloseUnliftIO (MkWMFunction unlift) $ MkAnObject rd push
 
 getObjectSubject :: FullSubjectReader (EditReader edit) => Object edit -> IO (EditSubject edit)
 getObjectSubject (MkCloseUnliftIO unlift (MkAnObject rd _)) = runWMFunction unlift $ mutableReadToSubject rd

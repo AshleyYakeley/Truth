@@ -153,7 +153,7 @@ interactLoop inh outh echo = do
                 else return ()
             liftIOWithUnlift $ \unlift ->
                 catches
-                    (runWMFunction unlift $ do
+                    (unlift $ do
                          p <- interactParse $ pack inputstr
                          case p of
                              LetInteractiveCommand fbind ->

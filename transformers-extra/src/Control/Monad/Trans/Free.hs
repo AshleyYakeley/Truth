@@ -71,8 +71,7 @@ instance MonadTransTunnel FreeT where
 instance MonadTransUnlift FreeT
 
 instance MonadTransUntrans FreeT where
-    liftWithUntrans call =
-        FreeT $ liftWithUntrans $ \(MkWUntransFunction unlift) -> call $ MkWUntransFunction $ \(FreeT tma) -> unlift tma
+    liftWithUntrans call = FreeT $ liftWithUntrans $ \unlift -> call $ \(FreeT tma) -> unlift tma
     getDiscardingUntrans =
         FreeT $
         withTransConstraintTM @Monad $ do
