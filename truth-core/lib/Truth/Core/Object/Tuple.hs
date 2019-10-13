@@ -22,10 +22,10 @@ consTupleObjects ::
     -> Object (TupleUpdateEdit (ListElementType updates))
     -> Object (TupleUpdateEdit (ListElementType (update : updates)))
 consTupleObjects (MkRunnableIO (runA :: IOFunction ma) anobjA) (MkRunnableIO (runB :: IOFunction mb) anobjB) =
-    case isCombineMonadIO @ma @mb of
+    case isCombineMonadUnliftIOStack @ma @mb of
         Dict -> let
-            runAB :: IOFunction (CombineMonadIO ma mb)
-            runAB = combineIOFunctions runA runB
+            runAB :: IOFunction (CombineIOStack ma mb)
+            runAB = combineUnliftIOFunctions runA runB
             in MkRunnableIO runAB $ consTupleAObjects anobjA anobjB
 
 partitionListTupleUpdateEdits ::
@@ -50,27 +50,28 @@ noneTupleAObject = let
     in MkAnObject {..}
 
 consTupleAObjects ::
-       forall ma mb update updates. (MonadStackIO ma, MonadStackIO mb)
+       forall ma mb update updates. (MonadUnliftIOStack ma, MonadUnliftIOStack mb)
     => AnObject ma (UpdateEdit update)
     -> AnObject mb (TupleUpdateEdit (ListElementType updates))
-    -> AnObject (CombineMonadIO ma mb) (TupleUpdateEdit (ListElementType (update : updates)))
+    -> AnObject (CombineIOStack ma mb) (TupleUpdateEdit (ListElementType (update : updates)))
 consTupleAObjects (MkAnObject readA editA) (MkAnObject readB editB) =
-    case isCombineMonadIO @ma @mb of
+    case isCombineMonadUnliftIOStack @ma @mb of
         Dict -> let
-            readAB :: MutableRead (CombineMonadIO ma mb) (TupleUpdateReader (ListElementType (update : updates)))
-            readAB (MkTupleUpdateReader FirstElementType r) = combineFstMFunction @ma @mb $ readA r
+            readAB :: MutableRead (CombineIOStack ma mb) (TupleUpdateReader (ListElementType (update : updates)))
+            readAB (MkTupleUpdateReader FirstElementType r) = combineUnliftFstMFunction @ma @mb $ readA r
             readAB (MkTupleUpdateReader (RestElementType sel) r) =
-                combineSndMFunction @ma @mb $ readB $ MkTupleUpdateReader sel r
+                combineUnliftSndMFunction @ma @mb $ readB $ MkTupleUpdateReader sel r
             editAB ::
                    [TupleUpdateEdit (ListElementType (update : updates))]
-                -> CombineMonadIO ma mb (Maybe (EditSource -> CombineMonadIO ma mb ()))
+                -> CombineIOStack ma mb (Maybe (EditSource -> CombineIOStack ma mb ()))
             editAB edits = let
                 (eas, ebs) = partitionListTupleUpdateEdits edits
                 in liftA2
                        (liftA2 $
-                        liftA2 $ \mau mbu -> (>>) (combineFstMFunction @ma @mb mau) (combineSndMFunction @ma @mb mbu))
-                       (combineFstMFunction @ma @mb $ editA eas)
-                       (combineSndMFunction @ma @mb $ editB ebs)
+                        liftA2 $ \mau mbu ->
+                            (>>) (combineUnliftFstMFunction @ma @mb mau) (combineUnliftSndMFunction @ma @mb mbu))
+                       (combineUnliftFstMFunction @ma @mb $ editA eas)
+                       (combineUnliftSndMFunction @ma @mb $ editB ebs)
             in MkAnObject readAB editAB
 
 tupleListObjectM ::

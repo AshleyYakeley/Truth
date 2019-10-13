@@ -39,47 +39,43 @@ nameToUUID = Data.UUID.fromString
 uuidToName :: UUID -> String
 uuidToName = Data.UUID.toString
 
-dictWorkaround ::
-       forall m. MonadStackIO m
-    => Dict (MonadTransUntrans (CombineMonadIO m))
-dictWorkaround = Dict
-
 type ObjectSoupUpdate = SoupUpdate (ObjectUpdate ByteStringUpdate)
+
+type AutoCloseFile = AutoClose FilePath (Object ByteStringEdit)
 
 directorySoup :: Object FSEdit -> FilePath -> Object (UpdateEdit ObjectSoupUpdate)
 directorySoup (MkRunnableIO (runFS :: IOFunction m) (MkAnObject readFS pushFS)) dirpath =
-    case hasTransConstraint @MonadUnliftIO @(CombineMonadIO m) @(AutoClose FilePath (Object ByteStringEdit)) of
+    case isCombineMonadUnliftIOStack @m @AutoCloseFile of
         Dict -> let
-            runSoup :: IOFunction (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)))
-            runSoup = combineIOFunctions runFS runAutoClose
-            readSoup ::
-                   MutableRead (CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit))) (UpdateReader ObjectSoupUpdate)
+            runSoup :: IOFunction (CombineIOStack m AutoCloseFile)
+            runSoup = combineUnliftIOFunctions @m @AutoCloseFile runFS runAutoClose
+            readSoup :: MutableRead (CombineIOStack m AutoCloseFile) (UpdateReader ObjectSoupUpdate)
             readSoup KeyReadKeys = do
-                mnames <- combineFstMFunction $ readFS $ FSReadDirectory dirpath
+                mnames <- combineUnliftFstMFunction @m @AutoCloseFile $ readFS $ FSReadDirectory dirpath
                 return $
                     case mnames of
                         Just names -> mapMaybe nameToUUID $ MkFiniteSet names
                         Nothing -> mempty
             readSoup (KeyReadItem uuid (MkTupleUpdateReader SelectFirst ReadWhole)) = do
-                mitem <- combineFstMFunction $ readFS $ FSReadItem $ dirpath </> uuidToName uuid
+                mitem <- combineUnliftFstMFunction @m @AutoCloseFile $ readFS $ FSReadItem $ dirpath </> uuidToName uuid
                 case mitem of
                     Just (FSFileItem _) -> return $ Just uuid
                     _ -> return Nothing
             readSoup (KeyReadItem uuid (MkTupleUpdateReader SelectSecond ReadObject)) = do
                 let path = dirpath </> uuidToName uuid
-                mitem <- combineFstMFunction $ readFS $ FSReadItem path
+                mitem <- combineUnliftFstMFunction @m @AutoCloseFile $ readFS $ FSReadItem path
                 case mitem of
                     Just (FSFileItem object) -> do
-                        muted <- combineSndMFunction @m $ acOpenObject path $ \call -> call object -- pointless
+                        muted <- combineUnliftSndMFunction @m @AutoCloseFile $ acOpenObject path $ \call -> call object -- pointless
                         return $ Just muted
                     _ -> return Nothing
             pushSoup ::
                    [UpdateEdit ObjectSoupUpdate]
-                -> CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)) (Maybe (EditSource -> CombineMonadIO m (AutoClose FilePath (Object ByteStringEdit)) ()))
+                -> CombineIOStack m AutoCloseFile (Maybe (EditSource -> CombineIOStack m AutoCloseFile ()))
             pushSoup =
                 singleEdit $ \edit ->
-                    fmap (fmap (fmap combineFstMFunction)) $
-                    combineFstMFunction $
+                    fmap (fmap (fmap (combineUnliftFstMFunction @m @AutoCloseFile))) $
+                    combineUnliftFstMFunction @m @AutoCloseFile $
                     case edit of
                         KeyEditItem _uuid (MkTupleUpdateEdit SelectFirst iedit) -> never iedit
                         KeyEditItem _uuid (MkTupleUpdateEdit SelectSecond iedit) -> never iedit
@@ -93,5 +89,4 @@ directorySoup (MkRunnableIO (runFS :: IOFunction m) (MkAnObject readFS pushFS)) 
                                         Just $ \_ ->
                                             for_ names $ \name -> pushFS [FSEditDeleteNonDirectory $ dirpath </> name]
                                     Nothing -> Nothing
-            in case dictWorkaround @m of
-                   Dict -> MkRunnableIO runSoup (MkAnObject readSoup pushSoup)
+            in MkRunnableIO runSoup $ MkAnObject readSoup pushSoup

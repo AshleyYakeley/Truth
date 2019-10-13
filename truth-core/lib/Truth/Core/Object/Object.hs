@@ -177,13 +177,18 @@ cacheWholeObject (MkRunnableIO (run :: IOFunction m) (MkAnObject rd push)) = let
     push' = singleAlwaysEdit $ \(MkWholeReaderEdit t) esrc -> put (t, Just esrc)
     in MkRunnableIO run' $ MkAnObject rd' push'
 
-copyObject :: FullEdit edit => EditSource -> Object edit -> Object edit -> IO ()
+copyObject ::
+       forall edit. FullEdit edit
+    => EditSource
+    -> Object edit
+    -> Object edit
+    -> IO ()
 copyObject esrc (MkRunnableIO (runSrc :: IOFunction ms) (MkAnObject readSrc _)) (MkRunnableIO (runDest :: IOFunction md) (MkAnObject _ pushDest)) =
-    case isCombineMonadIO @ms @md of
+    case isCombineMonadUnliftIOStack @ms @md of
         Dict ->
-            combineIOFunctions runSrc runDest $
-            replaceEdit (remonadMutableRead (combineFstMFunction @ms @md) readSrc) $ \edit ->
-                combineSndMFunction @ms @md $ pushOrFail "failed to copy object" esrc $ pushDest [edit]
+            combineUnliftIOFunctions @ms @md runSrc runDest $
+            replaceEdit @edit (remonadMutableRead (combineUnliftFstMFunction @ms @md) readSrc) $ \edit ->
+                combineUnliftSndMFunction @ms @md $ pushOrFail "failed to copy object" esrc $ pushDest [edit]
 
 exclusiveObject :: forall edit. Object edit -> With IO (Object edit)
 exclusiveObject (MkRunnableIO (run :: IOFunction m) (MkAnObject rd push)) call =

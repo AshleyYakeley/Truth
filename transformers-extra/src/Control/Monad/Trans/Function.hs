@@ -1,6 +1,8 @@
 module Control.Monad.Trans.Function where
 
 import Control.Category
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
 import Data.Kind
 import Prelude hiding ((.), id)
 
@@ -10,11 +12,20 @@ newtype WMFunction (p :: k -> Type) (q :: k -> Type) = MkWMFunction
     { runWMFunction :: MFunction p q
     }
 
+wLift :: (MonadTrans t, Monad m) => WMFunction m (t m)
+wLift = MkWMFunction lift
+
+wLiftIO :: MonadIO m => WMFunction IO m
+wLiftIO = MkWMFunction liftIO
+
 instance Category WMFunction where
     id = MkWMFunction id
     (MkWMFunction bc) . (MkWMFunction ab) = MkWMFunction $ bc . ab
 
 type MBackFunction (ma :: k -> Type) (mb :: k -> Type) = forall (r :: k). (MFunction mb ma -> ma r) -> mb r
+
+mBackFunctionToFunction :: MBackFunction ma mb -> MFunction ma mb
+mBackFunctionToFunction mbf ma = mbf $ \_ -> ma
 
 newtype WMBackFunction (p :: k -> Type) (q :: k -> Type) = MkWMBackFunction
     { runWMBackFunction :: MBackFunction p q

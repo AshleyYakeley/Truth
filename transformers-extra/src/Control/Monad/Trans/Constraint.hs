@@ -21,6 +21,12 @@ class MonadTrans t => MonadTransConstraint (c :: (Type -> Type) -> Constraint) t
            forall (m :: Type -> Type). c m
         => Dict (c (t m))
 
+transConstraintDict ::
+       forall c t m. MonadTransConstraint c t
+    => Dict (c m)
+    -> Dict (c (t m))
+transConstraintDict Dict = hasTransConstraint @c @t @m
+
 withTransConstraintTM ::
        forall c t m a. (MonadTransConstraint c t, c m)
     => (c (t m) => t m a)

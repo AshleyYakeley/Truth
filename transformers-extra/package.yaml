@@ -19,6 +19,7 @@ library:
       - Control.Monad.Trans.AskUnlift
       - Control.Monad.Trans.Compose
       - Control.Monad.Trans.Free
-      - Control.Monad.Trans.StackIO
+      - Control.Monad.Trans.IOStack
+      - Control.Monad.Trans.UnliftIOStack
       - Control.Monad.Trans.ContExtra
       - Control.Monad.Trans.ReaderState
