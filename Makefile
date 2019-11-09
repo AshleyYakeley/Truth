@@ -1,10 +1,18 @@
 default: build
 
 ifeq ($(nodocker),1)
-STACKFLAGS := --no-docker
+DOCKERFLAGS := --no-docker
 else
-STACKFLAGS :=
+DOCKERFLAGS :=
 endif
+
+ifeq ($(single),1)
+JOBFLAGS := --no-keep-going --jobs 1
+else
+JOBFLAGS := --keep-going
+endif
+
+STACKFLAGS := $(DOCKERFLAGS) $(JOBFLAGS)
 
 ifeq ($(test),1)
 TESTFLAGS :=

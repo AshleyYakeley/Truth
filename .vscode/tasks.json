@@ -75,7 +75,7 @@
       },
       "label": "Quick Build",
       "type": "shell",
-      "command": "cd ${workspaceRoot} && make nodocker=1 build && echo OK",
+      "command": "cd ${workspaceRoot} && make nodocker=1 single=1 build && echo OK",
       "problemMatcher": [
         {
           "owner": "stack",
