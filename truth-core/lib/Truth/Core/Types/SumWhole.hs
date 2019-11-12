@@ -28,7 +28,7 @@ sumWholeLiftAnUpdateFunction (MkAnUpdateFunction g u) = let
         -> MutableRead m (UpdateReader updateA)
         -> ApplyStack tt m [SumWholeUpdate updateB]
     ufUpdate pupdatea mr =
-        case transStackUnliftMonadIO @tt @m of
+        case transStackDict @MonadIO @tt @m of
             Dict ->
                 case pupdatea of
                     SumUpdateLeft (MkWholeReaderUpdate a) -> do
@@ -43,7 +43,9 @@ sumWholeLiftUpdateFunction ::
        forall updateA updateB. (SubjectReader (UpdateReader updateA), FullSubjectReader (UpdateReader updateB))
     => UpdateFunction updateA updateB
     -> UpdateFunction (SumWholeUpdate updateA) (SumWholeUpdate updateB)
-sumWholeLiftUpdateFunction (MkRunnable2 run@(MkTransStackRunner _) f) = MkRunnable2 run $ sumWholeLiftAnUpdateFunction f
+sumWholeLiftUpdateFunction (MkRunnable2 trun f) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> MkRunnable2 trun $ sumWholeLiftAnUpdateFunction f
 
 sumWholeLiftAnEditLens ::
        forall tt updateA updateB.
@@ -64,7 +66,7 @@ sumWholeLiftAnEditLens pushback lens = let
         -> MutableRead m (UpdateReader updateA)
         -> ApplyStack tt m (Maybe [SumEdit (WholeReaderEdit (UpdateReader updateA)) (UpdateEdit updateA)])
     elPutEdit peditb mr =
-        case transStackUnliftMonadIO @tt @m of
+        case transStackDict @MonadIO @tt @m of
             Dict ->
                 case peditb of
                     SumEditLeft (MkWholeReaderEdit b) -> do

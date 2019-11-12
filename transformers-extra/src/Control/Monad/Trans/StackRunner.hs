@@ -1,4 +1,4 @@
-module Control.Monad.Trans.UnliftIOStack where
+module Control.Monad.Trans.StackRunner where
 
 import Control.Monad.Trans.Constraint
 import Control.Monad.Trans.Function
@@ -6,28 +6,6 @@ import Control.Monad.Trans.Stack
 import Control.Monad.Trans.Tunnel
 import Control.Monad.Trans.Unlift
 import Import
-
-type MonadTransStackUnliftAllWitness = ListType (Compose Dict MonadTransUnliftAll)
-
-monadTransStackUnliftAllWitness ::
-       forall tt. MonadTransStackUnliftAll tt
-    => MonadTransStackUnliftAllWitness tt
-monadTransStackUnliftAllWitness = representative @_ @MonadTransStackUnliftAllWitness @tt
-
-transStackUnliftMonad ::
-       forall tt m. (MonadTransStackUnliftAll tt, Monad m)
-    => Dict (Monad (ApplyStack tt m))
-transStackUnliftMonad = transStackDict @Monad @tt @m
-
-transStackUnliftMonadIO ::
-       forall tt m. (MonadTransStackUnliftAll tt, MonadIO m)
-    => Dict (MonadIO (ApplyStack tt m))
-transStackUnliftMonadIO = transStackDict @MonadIO @tt @m
-
-transStackUnliftMonadUnliftIO ::
-       forall tt m. (MonadTransStackUnliftAll tt, MonadUnliftIO m)
-    => Dict (MonadUnliftIO (ApplyStack tt m))
-transStackUnliftMonadUnliftIO = transStackDict @MonadUnliftIO @tt @m
 
 transStackConcatRefl ::
        forall (tt1 :: [TransKind]) (tt2 :: [TransKind]) m. MonadTransStackUnliftAll tt1
@@ -80,6 +58,9 @@ data TransStackRunner (tt :: [TransKind]) where
         => (forall m. MonadUnliftIO m => MFunction (ApplyStack tt m) m)
         -> TransStackRunner tt
 
+transStackRunnerUnliftAllDict :: TransStackRunner tt -> Dict (MonadTransStackUnliftAll tt)
+transStackRunnerUnliftAllDict (MkTransStackRunner _) = Dict
+
 runTransStackRunner ::
        forall tt r.
        TransStackRunner tt
@@ -116,7 +97,7 @@ instance ConcatMonoid TransStackRunner where
         mf12 =
             case transStackConcatRefl @tt1 @tt2 @m of
                 Refl ->
-                    case transStackUnliftMonadUnliftIO @tt2 @m of
+                    case transStackDict @MonadUnliftIO @tt2 @m of
                         Dict -> mf2 . mf1
         in case concatMonadTransStackUnliftAllDict @tt1 @tt2 of
                Dict -> MkTransStackRunner mf12
@@ -139,7 +120,7 @@ concatFstMFunction ::
 concatFstMFunction =
     case transStackConcatRefl @tt1 @tt2 @m of
         Refl ->
-            case transStackUnliftMonad @tt2 @m of
+            case transStackDict @Monad @tt2 @m of
                 Dict -> stackRemonad @tt1 $ stackLift @tt2 @m
 
 concatSndMFunction ::
@@ -148,7 +129,7 @@ concatSndMFunction ::
 concatSndMFunction =
     case transStackConcatRefl @tt1 @tt2 @m of
         Refl ->
-            case transStackUnliftMonad @tt2 @m of
+            case transStackDict @Monad @tt2 @m of
                 Dict -> stackLift @tt1
 
 fstTransListFunction ::
@@ -167,7 +148,7 @@ fstTransListFunction = let
     tlfBackFunction _ =
         case transStackConcatRefl @tt1 @tt2 @m of
             Refl ->
-                case transStackUnliftMonadUnliftIO @tt2 @m of
+                case transStackDict @MonadUnliftIO @tt2 @m of
                     Dict -> stackLiftMBackFunction @tt1 $ stackLiftWithUnlift @tt2 @m
     in MkTransListFunction {..}
 
@@ -187,7 +168,7 @@ sndTransListFunction = let
     tlfBackFunction _ =
         case transStackConcatRefl @tt1 @tt2 @m of
             Refl ->
-                case transStackUnliftMonadUnliftIO @tt2 @m of
+                case transStackDict @MonadUnliftIO @tt2 @m of
                     Dict -> stackLiftWithUnlift @tt1
     in MkTransListFunction {..}
 

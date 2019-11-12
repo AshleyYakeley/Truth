@@ -50,9 +50,9 @@ instance RunnableCategory AnEditLens where
                 Refl ->
                     case concatMonadTransStackUnliftAllDict @ttbc @ttab of
                         Dict ->
-                            case transStackUnliftMonad @(Concat ttbc ttab) @m of
+                            case transStackDict @Monad @(Concat ttbc ttab) @m of
                                 Dict ->
-                                    case transStackUnliftMonadIO @ttab @m of
+                                    case transStackDict @MonadIO @ttab @m of
                                         Dict ->
                                             getComposeM $ do
                                                 ebs <- MkComposeM $ peBC ec $ ufGet efAB mra
@@ -69,10 +69,10 @@ elPutEditsFromPutEdit ::
     -> MutableRead m (EditReader edita)
     -> ApplyStack tt m (Maybe [edita])
 elPutEditsFromPutEdit _ [] _ =
-    case transStackUnliftMonadIO @tt @m of
+    case transStackDict @MonadIO @tt @m of
         Dict -> getComposeM $ return []
 elPutEditsFromPutEdit elPutEdit (e:ee) mr =
-    case transStackUnliftMonadIO @tt @m of
+    case transStackDict @MonadIO @tt @m of
         Dict ->
             getComposeM $ do
                 ea <- MkComposeM $ elPutEdit e mr
@@ -86,7 +86,7 @@ elPutEditsFromSimplePutEdit ::
     -> MutableRead m (EditReader editA)
     -> ApplyStack tt m (Maybe [editA])
 elPutEditsFromSimplePutEdit putEdit editBs _ =
-    case transStackUnliftMonadIO @tt @m of
+    case transStackDict @MonadIO @tt @m of
         Dict ->
             getComposeM $ do
                 editAss <- for editBs $ \update -> MkComposeM $ putEdit update
@@ -96,20 +96,22 @@ editLensFunction :: EditLens updateA updateB -> UpdateFunction updateA updateB
 editLensFunction (MkRunnable2 unlift (MkAnEditLens func _)) = MkRunnable2 unlift func
 
 readOnlyEditLens :: forall updateA updateB. UpdateFunction updateA updateB -> EditLens updateA updateB
-readOnlyEditLens (MkRunnable2 (unlift@(MkTransStackRunner _) :: TransStackRunner tt) elFunction) = let
-    elPutEdits ::
-           forall m. MonadIO m
-        => [UpdateEdit updateB]
-        -> MutableRead m (UpdateReader updateA)
-        -> ApplyStack tt m (Maybe [UpdateEdit updateA])
-    elPutEdits edits _ =
-        case transStackUnliftMonadIO @tt @m of
-            Dict ->
-                return $
-                case edits of
-                    [] -> Just [] -- must allow empty update-lists so that composition works correctly
-                    (_:_) -> Nothing
-    in MkRunnable2 unlift $ MkAnEditLens {..}
+readOnlyEditLens (MkRunnable2 (trun :: TransStackRunner tt) elFunction) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> let
+            elPutEdits ::
+                   forall m. MonadIO m
+                => [UpdateEdit updateB]
+                -> MutableRead m (UpdateReader updateA)
+                -> ApplyStack tt m (Maybe [UpdateEdit updateA])
+            elPutEdits edits _ =
+                case transStackDict @MonadIO @tt @m of
+                    Dict ->
+                        return $
+                        case edits of
+                            [] -> Just [] -- must allow empty update-lists so that composition works correctly
+                            (_:_) -> Nothing
+            in MkRunnable2 trun $ MkAnEditLens {..}
 
 funcEditLens ::
        forall updateA updateB.

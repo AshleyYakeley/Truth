@@ -25,7 +25,7 @@ instance RunnableMap AnObject where
             r' rd = tlfFunction (Proxy @IO) $ r rd
             e' :: [_] -> ApplyStack tt2 IO (Maybe (EditSource -> ApplyStack tt2 IO ()))
             e' edits =
-                case transStackUnliftMonadIO @tt2 @IO of
+                case transStackDict @MonadIO @tt2 @IO of
                     Dict -> (fmap $ fmap $ fmap $ tlfFunction (Proxy @IO)) $ tlfFunction (Proxy @IO) $ e edits
             in MkAnObject r' e'
 
@@ -89,9 +89,9 @@ lensAnObject ::
 lensAnObject MkAnEditLens {..} (MkAnObject objReadA objEditA) =
     case transStackConcatRefl @ttl @tto @IO of
         Refl ->
-            case transStackUnliftMonadIO @tto @IO of
+            case transStackDict @MonadIO @tto @IO of
                 Dict ->
-                    case transStackUnliftMonadIO @ttl @(ApplyStack tto IO) of
+                    case transStackDict @MonadIO @ttl @(ApplyStack tto IO) of
                         Dict -> let
                             MkAnUpdateFunction {..} = elFunction
                             objReadB :: MutableRead (ApplyStack (Concat ttl tto) IO) (UpdateReader updateB)
@@ -143,10 +143,14 @@ lensObject ::
     -> EditLens updateA updateB
     -> Object (UpdateEdit updateA)
     -> Object (UpdateEdit updateB)
-lensObject discard (MkRunnable2 (lensRun@(MkTransStackRunner _) :: TransStackRunner ttl) alens) (MkRunnable1 (objRun@(MkTransStackRunner _) :: TransStackRunner tto) aobj) = let
-    objRunB :: TransStackRunner (Concat ttl tto)
-    objRunB = lensObjectUnlift discard lensRun objRun
-    in MkRunnable1 objRunB $ lensAnObject alens aobj
+lensObject discard (MkRunnable2 (lensRun :: TransStackRunner ttl) alens) (MkRunnable1 (objRun :: TransStackRunner tto) aobj) =
+    case transStackRunnerUnliftAllDict objRun of
+        Dict ->
+            case transStackRunnerUnliftAllDict lensRun of
+                Dict -> let
+                    objRunB :: TransStackRunner (Concat ttl tto)
+                    objRunB = lensObjectUnlift discard lensRun objRun
+                    in MkRunnable1 objRunB $ lensAnObject alens aobj
 
 immutableAnObject ::
        forall tt edit. MonadTransStackUnliftAll tt
@@ -191,18 +195,20 @@ convertObject ::
        forall edita editb. (EditSubject edita ~ EditSubject editb, FullEdit edita, SubjectMapEdit editb)
     => Object edita
     -> Object editb
-convertObject (MkRunnable1 (objRun@(MkTransStackRunner _) :: TransStackRunner tt) (MkAnObject mra pe)) =
-    case transStackUnliftMonadIO @tt @IO of
-        Dict -> let
-            objRead :: MutableRead (ApplyStack tt IO) (EditReader editb)
-            objRead = mSubjectToMutableRead $ mutableReadToSubject mra
-            objEdit :: [editb] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
-            objEdit ebs = do
-                oldsubj <- mutableReadToSubject mra
-                newsubj <- mapSubjectEdits ebs oldsubj
-                eas <- getReplaceEditsFromSubject newsubj
-                pe eas
-            in MkRunnable1 objRun MkAnObject {..}
+convertObject (MkRunnable1 (trun :: TransStackRunner tt) (MkAnObject mra pe)) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict ->
+            case transStackDict @MonadIO @tt @IO of
+                Dict -> let
+                    objRead :: MutableRead (ApplyStack tt IO) (EditReader editb)
+                    objRead = mSubjectToMutableRead $ mutableReadToSubject mra
+                    objEdit :: [editb] -> ApplyStack tt IO (Maybe (EditSource -> ApplyStack tt IO ()))
+                    objEdit ebs = do
+                        oldsubj <- mutableReadToSubject mra
+                        newsubj <- mapSubjectEdits ebs oldsubj
+                        eas <- getReplaceEditsFromSubject newsubj
+                        pe eas
+                    in MkRunnable1 trun MkAnObject {..}
 
 -- | Combines all the edits made in each call to the object.
 cacheWholeObject ::
@@ -210,7 +216,7 @@ cacheWholeObject ::
     => Object (WholeEdit a)
     -> Object (WholeEdit a)
 cacheWholeObject (MkRunnable1 (MkTransStackRunner run :: TransStackRunner tt) (MkAnObject rd push)) =
-    case transStackUnliftMonadIO @tt @IO of
+    case transStackDict @MonadIO @tt @IO of
         Dict -> let
             run' ::
                    forall m r. MonadUnliftIO m
@@ -254,19 +260,23 @@ copyObject ::
     -> Object edit
     -> IO ()
 copyObject esrc =
-    joinRunnable1Maps_ $ \(MkAnObject readSrc _) (MkAnObject _ pushDest) (MkTransStackRunner run :: TransStackRunner tt) ->
-        case transStackDict @MonadFail @tt @IO of
-            Dict ->
-                case transStackDict @MonadIO @tt @IO of
-                    Dict ->
-                        run $
-                        replaceEdit @edit readSrc $ \edit -> pushOrFail "failed to copy object" esrc $ pushDest [edit]
+    joinRunnable1Maps_ $ \(MkAnObject readSrc _) (MkAnObject _ pushDest) (trun :: TransStackRunner tt) ->
+        runMonoTransStackRunner trun $ \run ->
+            case transStackDict @MonadFail @tt @IO of
+                Dict ->
+                    case transStackDict @MonadIO @tt @IO of
+                        Dict ->
+                            run $
+                            replaceEdit @edit readSrc $ \edit ->
+                                pushOrFail "failed to copy object" esrc $ pushDest [edit]
 
 exclusiveObject :: forall edit. Object edit -> With IO (Object edit)
-exclusiveObject (MkRunnable1 (MkTransStackRunner run :: TransStackRunner tt) anobj) call =
-    run $ unStackT $ liftWithUnliftAll $ \unlift -> call $ MkRunnable1 (unliftStackTransStackRunner unlift) anobj
+exclusiveObject (MkRunnable1 (trun :: TransStackRunner tt) anobj) call =
+    runMonoTransStackRunner trun $ \run ->
+        run $ unStackT $ liftWithUnliftAll $ \unlift -> call $ MkRunnable1 (unliftStackTransStackRunner unlift) anobj
 
 getObjectSubject :: FullSubjectReader (EditReader edit) => Object edit -> IO (EditSubject edit)
-getObjectSubject (MkRunnable1 (MkTransStackRunner run :: TransStackRunner tt) (MkAnObject rd _)) =
-    case transStackUnliftMonadIO @tt @IO of
-        Dict -> run $ mutableReadToSubject rd
+getObjectSubject (MkRunnable1 (trun :: TransStackRunner tt) (MkAnObject rd _)) =
+    runMonoTransStackRunner trun $ \run ->
+        case transStackDict @MonadIO @tt @IO of
+            Dict -> run $ mutableReadToSubject rd

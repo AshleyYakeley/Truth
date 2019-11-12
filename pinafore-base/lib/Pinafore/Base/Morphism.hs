@@ -129,67 +129,74 @@ instance Arrow (PinaforeFunctionMorphism baseupdate) where
             cmEmpty
             MkAPinaforeFunctionMorphism {pfFuncRead = \_ a -> return $ ab a, pfUpdate = \_ _ -> return False}
     first :: forall b c d. PinaforeFunctionMorphism baseupdate b c -> PinaforeFunctionMorphism baseupdate (b, d) (c, d)
-    first (MkRunnable2 (run@(MkTransStackRunner _) :: TransStackRunner tt) (MkAPinaforeFunctionMorphism bc pfUpdate)) =
-        MkRunnable2 run $ let
-            pfFuncRead ::
-                   forall m. MonadIO m
-                => MutableRead m (UpdateReader baseupdate)
-                -> (b, d)
-                -> ApplyStack tt m (c, d)
-            pfFuncRead =
-                case transStackDict @MonadIO @tt @m of
-                    Dict ->
-                        \mr (b, d) -> do
-                            c <- bc mr b
-                            return (c, d)
-            in MkAPinaforeFunctionMorphism {..}
+    first (MkRunnable2 (run :: TransStackRunner tt) (MkAPinaforeFunctionMorphism bc pfUpdate)) =
+        case transStackRunnerUnliftAllDict run of
+            Dict ->
+                MkRunnable2 run $ let
+                    pfFuncRead ::
+                           forall m. MonadIO m
+                        => MutableRead m (UpdateReader baseupdate)
+                        -> (b, d)
+                        -> ApplyStack tt m (c, d)
+                    pfFuncRead =
+                        case transStackDict @MonadIO @tt @m of
+                            Dict ->
+                                \mr (b, d) -> do
+                                    c <- bc mr b
+                                    return (c, d)
+                    in MkAPinaforeFunctionMorphism {..}
     second = cfmap
 
 instance ArrowChoice (PinaforeFunctionMorphism baseupdate) where
-    left (MkRunnable2 (run@(MkTransStackRunner _) :: TransStackRunner tt) (MkAPinaforeFunctionMorphism pfr pfUpdate)) =
-        MkRunnable2 run $ let
-            pfFuncRead ::
-                   forall m. MonadIO m
-                => MutableRead m (UpdateReader baseupdate)
-                -> _
-                -> ApplyStack tt m _
-            pfFuncRead =
-                case transStackDict @MonadIO @tt @m of
-                    Dict ->
-                        \mr ebd ->
-                            case ebd of
-                                Left b -> fmap Left (pfr mr b)
-                                Right d -> return $ Right d
-            in MkAPinaforeFunctionMorphism {..}
-    right (MkRunnable2 (run@(MkTransStackRunner _) :: TransStackRunner tt) (MkAPinaforeFunctionMorphism pfr pfUpdate)) =
-        MkRunnable2 run $ let
-            pfFuncRead ::
-                   forall m. MonadIO m
-                => MutableRead m (UpdateReader baseupdate)
-                -> _
-                -> ApplyStack tt m _
-            pfFuncRead =
-                case transStackDict @MonadIO @tt @m of
-                    Dict ->
-                        \mr ebd ->
-                            case ebd of
-                                Left d -> return $ Left d
-                                Right b -> fmap Right (pfr mr b)
-            in MkAPinaforeFunctionMorphism {..}
+    left (MkRunnable2 (run :: TransStackRunner tt) (MkAPinaforeFunctionMorphism pfr pfUpdate)) =
+        case transStackRunnerUnliftAllDict run of
+            Dict ->
+                MkRunnable2 run $ let
+                    pfFuncRead ::
+                           forall m. MonadIO m
+                        => MutableRead m (UpdateReader baseupdate)
+                        -> _
+                        -> ApplyStack tt m _
+                    pfFuncRead =
+                        case transStackDict @MonadIO @tt @m of
+                            Dict ->
+                                \mr ebd ->
+                                    case ebd of
+                                        Left b -> fmap Left (pfr mr b)
+                                        Right d -> return $ Right d
+                    in MkAPinaforeFunctionMorphism {..}
+    right (MkRunnable2 (run :: TransStackRunner tt) (MkAPinaforeFunctionMorphism pfr pfUpdate)) =
+        case transStackRunnerUnliftAllDict run of
+            Dict ->
+                MkRunnable2 run $ let
+                    pfFuncRead ::
+                           forall m. MonadIO m
+                        => MutableRead m (UpdateReader baseupdate)
+                        -> _
+                        -> ApplyStack tt m _
+                    pfFuncRead =
+                        case transStackDict @MonadIO @tt @m of
+                            Dict ->
+                                \mr ebd ->
+                                    case ebd of
+                                        Left d -> return $ Left d
+                                        Right b -> fmap Right (pfr mr b)
+                    in MkAPinaforeFunctionMorphism {..}
 
 instance Traversable f => CatFunctor (PinaforeFunctionMorphism baseupdate) (PinaforeFunctionMorphism baseupdate) f where
     cfmap :: forall a b. PinaforeFunctionMorphism baseupdate a b -> PinaforeFunctionMorphism baseupdate (f a) (f b)
-    cfmap (MkRunnable2 (run@(MkTransStackRunner _) :: TransStackRunner tt) (MkAPinaforeFunctionMorphism f pfUpdate)) =
-        MkRunnable2 run $ let
-            pfFuncRead ::
-                   forall m. MonadIO m
-                => MutableRead m (UpdateReader baseupdate)
-                -> f a
-                -> ApplyStack tt m (f b)
-            pfFuncRead =
-                case transStackDict @MonadIO @tt @m of
-                    Dict -> \mr fa -> for fa $ f mr
-            in MkAPinaforeFunctionMorphism {..}
+    cfmap (MkRunnable2 (trun :: TransStackRunner tt) (MkAPinaforeFunctionMorphism f pfUpdate)) =
+        case transStackRunnerUnliftAllDict trun of
+            Dict -> let
+                pfFuncRead ::
+                       forall m. MonadIO m
+                    => MutableRead m (UpdateReader baseupdate)
+                    -> f a
+                    -> ApplyStack tt m (f b)
+                pfFuncRead =
+                    case transStackDict @MonadIO @tt @m of
+                        Dict -> \mr fa -> for fa $ f mr
+                in MkRunnable2 trun $ MkAPinaforeFunctionMorphism {..}
 
 type PinaforeFunctionValue baseupdate t = UpdateFunction baseupdate (WholeUpdate t)
 
@@ -782,131 +789,134 @@ pmInverseEditLens ::
        forall baseupdate a b. Eq a
     => PinaforeLensMorphism baseupdate a b
     -> EditLens (ContextUpdate baseupdate (WholeUpdate (Know b))) (FiniteSetUpdate a)
-pmInverseEditLens (MkRunnable2 (trun@(MkTransStackRunner _) :: TransStackRunner tt) MkAPinaforeLensMorphism {..}) = let
-    getFiniteSet ::
-           forall m update. (MonadIO m, MonadIO (ApplyStack tt m))
-        => Know b
-        -> MutableRead m (ContextUpdateReader baseupdate update)
-        -> ApplyStack tt m (FiniteSet a)
-    getFiniteSet (Known b) mr = fmap setFromList $ pfFuncRead pmInverse (tupleReadFunction SelectContext mr) b
-    getFiniteSet Unknown _ = return mempty
-    fsetReadFunction ::
-           ReadFunctionTT tt (ContextUpdateReader baseupdate (WholeUpdate (Know b))) (WholeReader (FiniteSet a))
-    fsetReadFunction (mr :: MutableRead m _) ReadWhole =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                kb <- stackLift @tt $ mr (MkTupleUpdateReader SelectContent ReadWhole)
-                getFiniteSet kb mr
-    ufGet :: ReadFunctionTT tt (ContextUpdateReader baseupdate (WholeUpdate (Know b))) (FiniteSetReader a)
-    ufGet (mr :: MutableRead m _) rt =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> wholeFiniteSetReadFunction (fsetReadFunction mr) rt
-    ufUpdate ::
-           forall m. MonadIO m
-        => ContextUpdate baseupdate (WholeUpdate (Know b))
-        -> MutableRead m (ContextUpdateReader baseupdate (WholeUpdate (Know b)))
-        -> ApplyStack tt m [FiniteSetUpdate a]
-    ufUpdate (MkTupleUpdate SelectContext pinupdate) mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                ch <- pfUpdate pmInverse pinupdate $ tupleReadFunction SelectContext mr
-                if ch
-                    then do
-                        kb <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent ReadWhole
+pmInverseEditLens (MkRunnable2 (trun :: TransStackRunner tt) MkAPinaforeLensMorphism {..}) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> let
+            getFiniteSet ::
+                   forall m update. (MonadIO m, MonadIO (ApplyStack tt m))
+                => Know b
+                -> MutableRead m (ContextUpdateReader baseupdate update)
+                -> ApplyStack tt m (FiniteSet a)
+            getFiniteSet (Known b) mr = fmap setFromList $ pfFuncRead pmInverse (tupleReadFunction SelectContext mr) b
+            getFiniteSet Unknown _ = return mempty
+            fsetReadFunction ::
+                   ReadFunctionTT tt (ContextUpdateReader baseupdate (WholeUpdate (Know b))) (WholeReader (FiniteSet a))
+            fsetReadFunction (mr :: MutableRead m _) ReadWhole =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        kb <- stackLift @tt $ mr (MkTupleUpdateReader SelectContent ReadWhole)
+                        getFiniteSet kb mr
+            ufGet :: ReadFunctionTT tt (ContextUpdateReader baseupdate (WholeUpdate (Know b))) (FiniteSetReader a)
+            ufGet (mr :: MutableRead m _) rt =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> wholeFiniteSetReadFunction (fsetReadFunction mr) rt
+            ufUpdate ::
+                   forall m. MonadIO m
+                => ContextUpdate baseupdate (WholeUpdate (Know b))
+                -> MutableRead m (ContextUpdateReader baseupdate (WholeUpdate (Know b)))
+                -> ApplyStack tt m [FiniteSetUpdate a]
+            ufUpdate (MkTupleUpdate SelectContext pinupdate) mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        ch <- pfUpdate pmInverse pinupdate $ tupleReadFunction SelectContext mr
+                        if ch
+                            then do
+                                kb <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent ReadWhole
+                                aset <- getFiniteSet kb mr
+                                aedits <- getReplaceEditsFromSubject aset
+                                return $ fmap editUpdate aedits
+                            else return []
+            ufUpdate (MkTupleUpdate SelectContent (MkWholeReaderUpdate kb)) mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
                         aset <- getFiniteSet kb mr
                         aedits <- getReplaceEditsFromSubject aset
                         return $ fmap editUpdate aedits
-                    else return []
-    ufUpdate (MkTupleUpdate SelectContent (MkWholeReaderUpdate kb)) mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                aset <- getFiniteSet kb mr
-                aedits <- getReplaceEditsFromSubject aset
-                return $ fmap editUpdate aedits
-    elFunction :: AnUpdateFunction tt (ContextUpdate baseupdate (WholeUpdate (Know b))) (FiniteSetUpdate a)
-    elFunction = MkAnUpdateFunction {..}
-    putEditBA ::
-           forall m. MonadIO m
-        => [WholeEdit (Know b)]
-        -> MutableRead m (ContextUpdateReader baseupdate (WholeUpdate (Know a)))
-        -> ApplyStack tt m (Maybe [ContextUpdateEdit baseupdate (WholeUpdate (Know a))])
-    MkAnEditLens _ putEditBA = pmForward
-    putEditAB ::
-           forall m. MonadIO m
-        => a
-        -> Know b
-        -> MutableRead m (UpdateReader baseupdate)
-        -> ApplyStack tt m (Maybe [UpdateEdit baseupdate])
-    putEditAB a kb mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                medits <-
-                    putEditBA @m [MkWholeReaderEdit kb] $ \case
-                        MkTupleUpdateReader SelectContext rt -> mr rt
-                        MkTupleUpdateReader SelectContent ReadWhole -> return $ Known a
-                return $
-                    fmap
-                        (\edits ->
-                             mapMaybe
-                                 (\case
-                                      MkTupleUpdateEdit SelectContext edit -> Just edit
-                                      MkTupleUpdateEdit SelectContent _ -> Nothing)
-                                 edits)
-                        medits
-    elPutEdit ::
-           forall m. MonadIO m
-        => FiniteSetEdit a
-        -> MutableRead m (ContextUpdateReader baseupdate (WholeUpdate (Know b)))
-        -> ApplyStack tt m (Maybe [ContextUpdateEdit baseupdate (WholeUpdate (Know b))])
-    elPutEdit (KeyEditItem _ update) _ = never update
-    elPutEdit (KeyEditDelete a) mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                mpedits <- putEditAB a Unknown $ tupleReadFunction SelectContext mr
-                return $ fmap (\pedits -> fmap (MkTupleUpdateEdit SelectContext) pedits) mpedits
-    elPutEdit (KeyEditInsertReplace a) mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                kb <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent ReadWhole
-                mpedits <- putEditAB a kb $ tupleReadFunction SelectContext mr
-                return $ fmap (\pedits -> fmap (MkTupleUpdateEdit SelectContext) pedits) mpedits
-    elPutEdit KeyEditClear mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                kb <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent ReadWhole
-                aa <- getFiniteSet kb mr
-                lmpedits <- for (toList aa) $ \a -> putEditAB a Unknown $ tupleReadFunction SelectContext mr
-                return $
-                    fmap (\lpedits -> fmap (MkTupleUpdateEdit SelectContext) $ mconcat lpedits) $ sequenceA lmpedits
-    applyEdit' ::
-           ContextUpdateEdit baseupdate (WholeUpdate (Know b))
-        -> ReadFunction (ContextUpdateReader baseupdate (WholeUpdate (Know b))) (ContextUpdateReader baseupdate (WholeUpdate (Know b)))
+            elFunction :: AnUpdateFunction tt (ContextUpdate baseupdate (WholeUpdate (Know b))) (FiniteSetUpdate a)
+            elFunction = MkAnUpdateFunction {..}
+            putEditBA ::
+                   forall m. MonadIO m
+                => [WholeEdit (Know b)]
+                -> MutableRead m (ContextUpdateReader baseupdate (WholeUpdate (Know a)))
+                -> ApplyStack tt m (Maybe [ContextUpdateEdit baseupdate (WholeUpdate (Know a))])
+            MkAnEditLens _ putEditBA = pmForward
+            putEditAB ::
+                   forall m. MonadIO m
+                => a
+                -> Know b
+                -> MutableRead m (UpdateReader baseupdate)
+                -> ApplyStack tt m (Maybe [UpdateEdit baseupdate])
+            putEditAB a kb mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        medits <-
+                            putEditBA @m [MkWholeReaderEdit kb] $ \case
+                                MkTupleUpdateReader SelectContext rt -> mr rt
+                                MkTupleUpdateReader SelectContent ReadWhole -> return $ Known a
+                        return $
+                            fmap
+                                (\edits ->
+                                     mapMaybe
+                                         (\case
+                                              MkTupleUpdateEdit SelectContext edit -> Just edit
+                                              MkTupleUpdateEdit SelectContent _ -> Nothing)
+                                         edits)
+                                medits
+            elPutEdit ::
+                   forall m. MonadIO m
+                => FiniteSetEdit a
+                -> MutableRead m (ContextUpdateReader baseupdate (WholeUpdate (Know b)))
+                -> ApplyStack tt m (Maybe [ContextUpdateEdit baseupdate (WholeUpdate (Know b))])
+            elPutEdit (KeyEditItem _ update) _ = never update
+            elPutEdit (KeyEditDelete a) mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        mpedits <- putEditAB a Unknown $ tupleReadFunction SelectContext mr
+                        return $ fmap (\pedits -> fmap (MkTupleUpdateEdit SelectContext) pedits) mpedits
+            elPutEdit (KeyEditInsertReplace a) mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        kb <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent ReadWhole
+                        mpedits <- putEditAB a kb $ tupleReadFunction SelectContext mr
+                        return $ fmap (\pedits -> fmap (MkTupleUpdateEdit SelectContext) pedits) mpedits
+            elPutEdit KeyEditClear mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        kb <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent ReadWhole
+                        aa <- getFiniteSet kb mr
+                        lmpedits <- for (toList aa) $ \a -> putEditAB a Unknown $ tupleReadFunction SelectContext mr
+                        return $
+                            fmap (\lpedits -> fmap (MkTupleUpdateEdit SelectContext) $ mconcat lpedits) $
+                            sequenceA lmpedits
+            applyEdit' ::
+                   ContextUpdateEdit baseupdate (WholeUpdate (Know b))
+                -> ReadFunction (ContextUpdateReader baseupdate (WholeUpdate (Know b))) (ContextUpdateReader baseupdate (WholeUpdate (Know b)))
     -- removed line to avoid (ApplicableEdit baseupdate) constraint, possibly kinda hacky.
     -- applyEdit' (MkTupleUpdateEdit SelectContext update) mr (MkTupleUpdateReader SelectContext rt) = applyEdit update (mr . MkTupleUpdateReader SelectContext) rt
-    applyEdit' (MkTupleUpdateEdit SelectContent update) mr (MkTupleUpdateReader SelectContent rt) =
-        applyEdit update (mr . MkTupleUpdateReader SelectContent) rt
-    applyEdit' _ mr rt = mr rt
-    applyEdits' ::
-           [ContextUpdateEdit baseupdate (WholeUpdate (Know b))]
-        -> ReadFunction (ContextUpdateReader baseupdate (WholeUpdate (Know b))) (ContextUpdateReader baseupdate (WholeUpdate (Know b)))
-    applyEdits' [] mr = mr
-    applyEdits' (e:es) mr = applyEdits' es $ applyEdit' e mr
-    elPutEdits ::
-           forall m. MonadIO m
-        => [FiniteSetEdit a]
-        -> MutableRead m (ContextUpdateReader baseupdate (WholeUpdate (Know b)))
-        -> ApplyStack tt m (Maybe [ContextUpdateEdit baseupdate (WholeUpdate (Know b))])
-    elPutEdits [] _ =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> getComposeM $ return []
-    elPutEdits (e:ee) mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict ->
-                getComposeM $ do
-                    ea <- MkComposeM $ elPutEdit e mr
-                    eea <- MkComposeM $ elPutEdits ee $ applyEdits' ea mr
-                    return $ ea ++ eea
-    in MkRunnable2 trun $ MkAnEditLens {..}
+            applyEdit' (MkTupleUpdateEdit SelectContent update) mr (MkTupleUpdateReader SelectContent rt) =
+                applyEdit update (mr . MkTupleUpdateReader SelectContent) rt
+            applyEdit' _ mr rt = mr rt
+            applyEdits' ::
+                   [ContextUpdateEdit baseupdate (WholeUpdate (Know b))]
+                -> ReadFunction (ContextUpdateReader baseupdate (WholeUpdate (Know b))) (ContextUpdateReader baseupdate (WholeUpdate (Know b)))
+            applyEdits' [] mr = mr
+            applyEdits' (e:es) mr = applyEdits' es $ applyEdit' e mr
+            elPutEdits ::
+                   forall m. MonadIO m
+                => [FiniteSetEdit a]
+                -> MutableRead m (ContextUpdateReader baseupdate (WholeUpdate (Know b)))
+                -> ApplyStack tt m (Maybe [ContextUpdateEdit baseupdate (WholeUpdate (Know b))])
+            elPutEdits [] _ =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> getComposeM $ return []
+            elPutEdits (e:ee) mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict ->
+                        getComposeM $ do
+                            ea <- MkComposeM $ elPutEdit e mr
+                            eea <- MkComposeM $ elPutEdits ee $ applyEdits' ea mr
+                            return $ ea ++ eea
+            in MkRunnable2 trun $ MkAnEditLens {..}
 
 applyInversePinaforeLens ::
        forall baseupdate a b. (Eq a, Eq b)
@@ -920,166 +930,168 @@ pmInverseEditLensSet ::
     => IO b
     -> PinaforeLensMorphism baseupdate a b
     -> EditLens (ContextUpdate baseupdate (FiniteSetUpdate b)) (FiniteSetUpdate a)
-pmInverseEditLensSet newb (MkRunnable2 (trun@(MkTransStackRunner _) :: TransStackRunner tt) MkAPinaforeLensMorphism {..}) = let
-    getPointPreimage ::
-           forall m update. (MonadIO m, MonadIO (ApplyStack tt m))
-        => b
-        -> MutableRead m (ContextUpdateReader baseupdate update)
-        -> ApplyStack tt m (FiniteSet a)
-    getPointPreimage b mr = fmap setFromList $ pfFuncRead pmInverse (tupleReadFunction SelectContext mr) b
-    getSetPreimage ::
-           forall m update. (MonadIO m, MonadIO (ApplyStack tt m))
-        => FiniteSet b
-        -> MutableRead m (ContextUpdateReader baseupdate update)
-        -> ApplyStack tt m (FiniteSet a)
-    getSetPreimage bs mr = do
-        as <- for bs $ \b -> getPointPreimage b mr
-        return $ mconcat $ toList as
-    getAB ::
-           forall m update. MonadIO m
-        => MutableRead m (ContextUpdateReader baseupdate update)
-        -> a
-        -> ApplyStack tt m (Know b)
-    getAB mr a = let
-        mra :: MutableRead m (ContextUpdateReader baseupdate (WholeUpdate (Know a)))
-        mra (MkTupleUpdateReader SelectContext rp) = mr $ MkTupleUpdateReader SelectContext rp
-        mra (MkTupleUpdateReader SelectContent ReadWhole) = return $ Known a
-        in ufGet (elFunction pmForward) mra ReadWhole
-    ufGet' :: ReadFunctionTT tt (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (FiniteSetReader a)
-    ufGet' (mr :: MutableRead m _) KeyReadKeys =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                bs <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent KeyReadKeys
-                getSetPreimage bs mr
-    ufGet' (mr :: MutableRead m (ContextUpdateReader baseupdate (FiniteSetUpdate b))) (KeyReadItem a ReadWhole) =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                kb <- getAB mr a
-                case kb of
-                    Known b -> do
-                        mb <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent $ KeyReadItem b ReadWhole
-                        case mb of
-                            Just _ -> return $ Just a
-                            Nothing -> return Nothing
-                    Unknown -> return Nothing
-    ufUpdate' ::
-           forall m. MonadIO m
-        => ContextUpdate baseupdate (FiniteSetUpdate b)
-        -> MutableRead m (ContextUpdateReader baseupdate (FiniteSetUpdate b))
-        -> ApplyStack tt m [FiniteSetUpdate a]
-    ufUpdate' (MkTupleUpdate SelectContext pinaedit) mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                ch <- pfUpdate pmInverse pinaedit $ tupleReadFunction SelectContext mr
-                if ch
-                    then do
+pmInverseEditLensSet newb (MkRunnable2 (trun :: TransStackRunner tt) MkAPinaforeLensMorphism {..}) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> let
+            getPointPreimage ::
+                   forall m update. (MonadIO m, MonadIO (ApplyStack tt m))
+                => b
+                -> MutableRead m (ContextUpdateReader baseupdate update)
+                -> ApplyStack tt m (FiniteSet a)
+            getPointPreimage b mr = fmap setFromList $ pfFuncRead pmInverse (tupleReadFunction SelectContext mr) b
+            getSetPreimage ::
+                   forall m update. (MonadIO m, MonadIO (ApplyStack tt m))
+                => FiniteSet b
+                -> MutableRead m (ContextUpdateReader baseupdate update)
+                -> ApplyStack tt m (FiniteSet a)
+            getSetPreimage bs mr = do
+                as <- for bs $ \b -> getPointPreimage b mr
+                return $ mconcat $ toList as
+            getAB ::
+                   forall m update. MonadIO m
+                => MutableRead m (ContextUpdateReader baseupdate update)
+                -> a
+                -> ApplyStack tt m (Know b)
+            getAB mr a = let
+                mra :: MutableRead m (ContextUpdateReader baseupdate (WholeUpdate (Know a)))
+                mra (MkTupleUpdateReader SelectContext rp) = mr $ MkTupleUpdateReader SelectContext rp
+                mra (MkTupleUpdateReader SelectContent ReadWhole) = return $ Known a
+                in ufGet (elFunction pmForward) mra ReadWhole
+            ufGet' :: ReadFunctionTT tt (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (FiniteSetReader a)
+            ufGet' (mr :: MutableRead m _) KeyReadKeys =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
                         bs <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent KeyReadKeys
-                        aset <- getSetPreimage bs mr
-                        aedits <- getReplaceEditsFromSubject aset
-                        return $ fmap editUpdate aedits
-                    else return []
-    ufUpdate' (MkTupleUpdate SelectContent (KeyUpdateItem _ update)) _ = never update
-    ufUpdate' (MkTupleUpdate SelectContent KeyUpdateClear) _ =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> return [KeyUpdateClear]
-    ufUpdate' (MkTupleUpdate SelectContent (KeyUpdateInsertReplace _)) _ =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> return []
-    ufUpdate' (MkTupleUpdate SelectContent (KeyUpdateDelete b)) mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                aset <- getPointPreimage b mr
-                return $ fmap KeyUpdateDelete $ toList aset
-    elFunction' :: AnUpdateFunction tt (ContextUpdate baseupdate (FiniteSetUpdate b)) (FiniteSetUpdate a)
-    elFunction' = MkAnUpdateFunction ufGet' ufUpdate'
-    applyEdit' ::
-           ContextUpdateEdit baseupdate (FiniteSetUpdate b)
-        -> ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (ContextUpdateReader baseupdate (FiniteSetUpdate b))
-    applyEdit' (MkTupleUpdateEdit SelectContent update) mr (MkTupleUpdateReader SelectContent rt) =
-        applyEdit update (mr . MkTupleUpdateReader SelectContent) rt
-    applyEdit' _ mr rt = mr rt
-    applyEdits' ::
-           [ContextUpdateEdit baseupdate (FiniteSetUpdate b)]
-        -> ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (ContextUpdateReader baseupdate (FiniteSetUpdate b))
-    applyEdits' [] mr = mr
-    applyEdits' (e:es) mr = applyEdits' es $ applyEdit' e mr
-    putEditBA ::
-           forall m. MonadIO m
-        => [WholeEdit (Know b)]
-        -> MutableRead m (ContextUpdateReader baseupdate (WholeUpdate (Know a)))
-        -> ApplyStack tt m (Maybe [ContextUpdateEdit baseupdate (WholeUpdate (Know a))])
-    MkAnEditLens _ putEditBA = pmForward
-    putEditAB ::
-           forall m. MonadIO m
-        => a
-        -> Know b
-        -> MutableRead m (UpdateReader baseupdate)
-        -> ApplyStack tt m (Maybe [UpdateEdit baseupdate])
-    putEditAB a b mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                medits <-
-                    putEditBA @m [MkWholeReaderEdit b] $ \case
-                        MkTupleUpdateReader SelectContext rt -> mr rt
-                        MkTupleUpdateReader SelectContent ReadWhole -> return $ Known a
-                return $
-                    fmap
-                        (\edits ->
-                             mapMaybe
-                                 (\case
-                                      MkTupleUpdateEdit SelectContext edit -> Just edit
-                                      MkTupleUpdateEdit SelectContent _ -> Nothing)
-                                 edits)
-                        medits
-    elPutEdit' ::
-           forall m. MonadIO m
-        => FiniteSetEdit a
-        -> MutableRead m (ContextUpdateReader baseupdate (FiniteSetUpdate b))
-        -> ApplyStack tt m (Maybe [ContextUpdateEdit baseupdate (FiniteSetUpdate b)])
-    elPutEdit' (KeyEditItem _ update) _ = never update
-    elPutEdit' (KeyEditDelete a) mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                mpedits <- putEditAB a Unknown $ tupleReadFunction SelectContext mr
-                return $ fmap (\pedits -> fmap (MkTupleUpdateEdit SelectContext) pedits) mpedits
-    elPutEdit' (KeyEditInsertReplace a) mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                b <- liftIO newb
-                getComposeM $ do
-                    pedits <- MkComposeM $ putEditAB a (Known b) $ tupleReadFunction SelectContext mr
-                    return $
-                        (MkTupleUpdateEdit SelectContent $ KeyEditInsertReplace b) :
-                        fmap (MkTupleUpdateEdit SelectContext) pedits
-    elPutEdit' KeyEditClear mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> do
-                bs <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent KeyReadKeys
-                getComposeM $ do
-                    lpedits <-
-                        for (toList bs) $ \b -> do
-                            aa <- lift $ pfFuncRead pmInverse (tupleReadFunction SelectContext mr) b
+                        getSetPreimage bs mr
+            ufGet' (mr :: MutableRead m (ContextUpdateReader baseupdate (FiniteSetUpdate b))) (KeyReadItem a ReadWhole) =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        kb <- getAB mr a
+                        case kb of
+                            Known b -> do
+                                mb <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent $ KeyReadItem b ReadWhole
+                                case mb of
+                                    Just _ -> return $ Just a
+                                    Nothing -> return Nothing
+                            Unknown -> return Nothing
+            ufUpdate' ::
+                   forall m. MonadIO m
+                => ContextUpdate baseupdate (FiniteSetUpdate b)
+                -> MutableRead m (ContextUpdateReader baseupdate (FiniteSetUpdate b))
+                -> ApplyStack tt m [FiniteSetUpdate a]
+            ufUpdate' (MkTupleUpdate SelectContext pinaedit) mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        ch <- pfUpdate pmInverse pinaedit $ tupleReadFunction SelectContext mr
+                        if ch
+                            then do
+                                bs <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent KeyReadKeys
+                                aset <- getSetPreimage bs mr
+                                aedits <- getReplaceEditsFromSubject aset
+                                return $ fmap editUpdate aedits
+                            else return []
+            ufUpdate' (MkTupleUpdate SelectContent (KeyUpdateItem _ update)) _ = never update
+            ufUpdate' (MkTupleUpdate SelectContent KeyUpdateClear) _ =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> return [KeyUpdateClear]
+            ufUpdate' (MkTupleUpdate SelectContent (KeyUpdateInsertReplace _)) _ =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> return []
+            ufUpdate' (MkTupleUpdate SelectContent (KeyUpdateDelete b)) mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        aset <- getPointPreimage b mr
+                        return $ fmap KeyUpdateDelete $ toList aset
+            elFunction' :: AnUpdateFunction tt (ContextUpdate baseupdate (FiniteSetUpdate b)) (FiniteSetUpdate a)
+            elFunction' = MkAnUpdateFunction ufGet' ufUpdate'
+            applyEdit' ::
+                   ContextUpdateEdit baseupdate (FiniteSetUpdate b)
+                -> ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (ContextUpdateReader baseupdate (FiniteSetUpdate b))
+            applyEdit' (MkTupleUpdateEdit SelectContent update) mr (MkTupleUpdateReader SelectContent rt) =
+                applyEdit update (mr . MkTupleUpdateReader SelectContent) rt
+            applyEdit' _ mr rt = mr rt
+            applyEdits' ::
+                   [ContextUpdateEdit baseupdate (FiniteSetUpdate b)]
+                -> ReadFunction (ContextUpdateReader baseupdate (FiniteSetUpdate b)) (ContextUpdateReader baseupdate (FiniteSetUpdate b))
+            applyEdits' [] mr = mr
+            applyEdits' (e:es) mr = applyEdits' es $ applyEdit' e mr
+            putEditBA ::
+                   forall m. MonadIO m
+                => [WholeEdit (Know b)]
+                -> MutableRead m (ContextUpdateReader baseupdate (WholeUpdate (Know a)))
+                -> ApplyStack tt m (Maybe [ContextUpdateEdit baseupdate (WholeUpdate (Know a))])
+            MkAnEditLens _ putEditBA = pmForward
+            putEditAB ::
+                   forall m. MonadIO m
+                => a
+                -> Know b
+                -> MutableRead m (UpdateReader baseupdate)
+                -> ApplyStack tt m (Maybe [UpdateEdit baseupdate])
+            putEditAB a b mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        medits <-
+                            putEditBA @m [MkWholeReaderEdit b] $ \case
+                                MkTupleUpdateReader SelectContext rt -> mr rt
+                                MkTupleUpdateReader SelectContent ReadWhole -> return $ Known a
+                        return $
+                            fmap
+                                (\edits ->
+                                     mapMaybe
+                                         (\case
+                                              MkTupleUpdateEdit SelectContext edit -> Just edit
+                                              MkTupleUpdateEdit SelectContent _ -> Nothing)
+                                         edits)
+                                medits
+            elPutEdit' ::
+                   forall m. MonadIO m
+                => FiniteSetEdit a
+                -> MutableRead m (ContextUpdateReader baseupdate (FiniteSetUpdate b))
+                -> ApplyStack tt m (Maybe [ContextUpdateEdit baseupdate (FiniteSetUpdate b)])
+            elPutEdit' (KeyEditItem _ update) _ = never update
+            elPutEdit' (KeyEditDelete a) mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        mpedits <- putEditAB a Unknown $ tupleReadFunction SelectContext mr
+                        return $ fmap (\pedits -> fmap (MkTupleUpdateEdit SelectContext) pedits) mpedits
+            elPutEdit' (KeyEditInsertReplace a) mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        b <- liftIO newb
+                        getComposeM $ do
+                            pedits <- MkComposeM $ putEditAB a (Known b) $ tupleReadFunction SelectContext mr
+                            return $
+                                (MkTupleUpdateEdit SelectContent $ KeyEditInsertReplace b) :
+                                fmap (MkTupleUpdateEdit SelectContext) pedits
+            elPutEdit' KeyEditClear mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> do
+                        bs <- stackLift @tt $ mr $ MkTupleUpdateReader SelectContent KeyReadKeys
+                        getComposeM $ do
                             lpedits <-
-                                for (toList aa) $ \a ->
-                                    MkComposeM $ putEditAB a Unknown $ tupleReadFunction SelectContext mr
-                            return $ mconcat lpedits
-                    return $ fmap (MkTupleUpdateEdit SelectContext) $ mconcat lpedits
-    elPutEdits' ::
-           forall m. MonadIO m
-        => [FiniteSetEdit a]
-        -> MutableRead m (ContextUpdateReader baseupdate (FiniteSetUpdate b))
-        -> ApplyStack tt m (Maybe [ContextUpdateEdit baseupdate (FiniteSetUpdate b)])
-    elPutEdits' [] _ =
-        case transStackDict @MonadIO @tt @m of
-            Dict -> getComposeM $ return []
-    elPutEdits' (e:ee) mr =
-        case transStackDict @MonadIO @tt @m of
-            Dict ->
-                getComposeM $ do
-                    ea <- MkComposeM $ elPutEdit' @m e mr
-                    eea <- MkComposeM $ elPutEdits' ee $ applyEdits' ea mr
-                    return $ ea ++ eea
-    in MkRunnable2 trun $ MkAnEditLens elFunction' elPutEdits'
+                                for (toList bs) $ \b -> do
+                                    aa <- lift $ pfFuncRead pmInverse (tupleReadFunction SelectContext mr) b
+                                    lpedits <-
+                                        for (toList aa) $ \a ->
+                                            MkComposeM $ putEditAB a Unknown $ tupleReadFunction SelectContext mr
+                                    return $ mconcat lpedits
+                            return $ fmap (MkTupleUpdateEdit SelectContext) $ mconcat lpedits
+            elPutEdits' ::
+                   forall m. MonadIO m
+                => [FiniteSetEdit a]
+                -> MutableRead m (ContextUpdateReader baseupdate (FiniteSetUpdate b))
+                -> ApplyStack tt m (Maybe [ContextUpdateEdit baseupdate (FiniteSetUpdate b)])
+            elPutEdits' [] _ =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> getComposeM $ return []
+            elPutEdits' (e:ee) mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict ->
+                        getComposeM $ do
+                            ea <- MkComposeM $ elPutEdit' @m e mr
+                            eea <- MkComposeM $ elPutEdits' ee $ applyEdits' ea mr
+                            return $ ea ++ eea
+            in MkRunnable2 trun $ MkAnEditLens elFunction' elPutEdits'
 
 applyInversePinaforeLensSet ::
        forall baseupdate a b. (Eq a, Eq b)

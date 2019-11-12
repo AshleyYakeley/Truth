@@ -106,15 +106,16 @@ contextualiseAnUpdateFunction (MkAnUpdateFunction g u) = let
        -> MutableRead m (UpdateReader updateX)
        -> ApplyStack tt m [ContextUpdate updateX updateN]
     u' ea mr =
-        case transStackUnliftMonadIO @tt @m of
+        case transStackDict @MonadIO @tt @m of
             Dict -> do
                 ebs <- u ea mr
                 return $ (MkTupleUpdate SelectContext ea) : (fmap (MkTupleUpdate SelectContent) ebs)
     in MkAnUpdateFunction g' u'
 
 contextualiseUpdateFunction :: UpdateFunction edita editb -> UpdateFunction edita (ContextUpdate edita editb)
-contextualiseUpdateFunction (MkRunnable2 run@(MkTransStackRunner _) f) =
-    MkRunnable2 run $ contextualiseAnUpdateFunction f
+contextualiseUpdateFunction (MkRunnable2 trun f) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> MkRunnable2 trun $ contextualiseAnUpdateFunction f
 
 partitionContextEdits ::
        forall updateX updateN. [ContextUpdateEdit updateX updateN] -> ([UpdateEdit updateX], [UpdateEdit updateN])
@@ -135,7 +136,7 @@ contextualiseAnEditLens (MkAnEditLens f pe) = let
         -> MutableRead m (UpdateReader updateX)
         -> ApplyStack tt m (Maybe [UpdateEdit updateX])
     pe' edits mr =
-        case transStackUnliftMonadIO @tt @m of
+        case transStackDict @MonadIO @tt @m of
             Dict ->
                 case partitionContextEdits edits of
                     (eas, ebs) ->
@@ -145,7 +146,9 @@ contextualiseAnEditLens (MkAnEditLens f pe) = let
     in MkAnEditLens f' pe'
 
 contextualiseEditLens :: EditLens updateX updateN -> EditLens updateX (ContextUpdate updateX updateN)
-contextualiseEditLens (MkRunnable2 run@(MkTransStackRunner _) lens) = MkRunnable2 run $ contextualiseAnEditLens lens
+contextualiseEditLens (MkRunnable2 trun lens) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> MkRunnable2 trun $ contextualiseAnEditLens lens
 
 liftContentAnUpdateFunction ::
        forall tt updateA updateB updateN. MonadTransStackUnliftAll tt
@@ -160,10 +163,10 @@ liftContentAnUpdateFunction (MkAnUpdateFunction g u) = let
        -> MutableRead m (ContextUpdateReader updateA updateN)
        -> ApplyStack tt m [ContextUpdate updateB updateN]
     u' (MkTupleUpdate SelectContent update) _ =
-        case transStackUnliftMonadIO @tt @m of
+        case transStackDict @MonadIO @tt @m of
             Dict -> return [MkTupleUpdate SelectContent update]
     u' (MkTupleUpdate SelectContext update) mr =
-        case transStackUnliftMonadIO @tt @m of
+        case transStackDict @MonadIO @tt @m of
             Dict -> do
                 updates <- u update (mr . MkTupleUpdateReader SelectContext)
                 return $ fmap (MkTupleUpdate SelectContext) updates
@@ -173,7 +176,9 @@ liftContentUpdateFunction ::
        forall updateA updateB updateN.
        UpdateFunction updateA updateB
     -> UpdateFunction (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
-liftContentUpdateFunction (MkRunnable2 run@(MkTransStackRunner _) f) = MkRunnable2 run $ liftContentAnUpdateFunction f
+liftContentUpdateFunction (MkRunnable2 trun f) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> MkRunnable2 trun $ liftContentAnUpdateFunction f
 
 carryContextUpdateFunction ::
        UpdateFunction (ContextUpdate updateX updateA) updateB
@@ -192,7 +197,7 @@ liftContentAnEditLens (MkAnEditLens f pe) = let
         -> MutableRead m (ContextUpdateReader updateA updateN)
         -> ApplyStack tt m (Maybe [ContextUpdateEdit updateA updateN])
     pe' edits mr =
-        case transStackUnliftMonadIO @tt @m of
+        case transStackDict @MonadIO @tt @m of
             Dict ->
                 case partitionContextEdits edits of
                     (exs, ens) ->
@@ -207,7 +212,9 @@ liftContentEditLens ::
        forall updateA updateB updateN.
        EditLens updateA updateB
     -> EditLens (ContextUpdate updateA updateN) (ContextUpdate updateB updateN)
-liftContentEditLens (MkRunnable2 run@(MkTransStackRunner _) alens) = MkRunnable2 run $ liftContentAnEditLens alens
+liftContentEditLens (MkRunnable2 trun alens) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> MkRunnable2 trun $ liftContentAnEditLens alens
 
 carryContextEditLens ::
        EditLens (ContextUpdate updateX updateA) updateB

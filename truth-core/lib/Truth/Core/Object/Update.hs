@@ -57,13 +57,15 @@ mapReceiveUpdatesTT ::
     => UpdateFunction updateA updateB
     -> ReceiveUpdatesTT tt updateB
     -> ReceiveUpdatesTT tt updateA
-mapReceiveUpdatesTT (MkRunnable2 (trun@(MkTransStackRunner _) :: TransStackRunner ttl) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (UpdateReader updateA)) editsA =
-    case (transStackDict @MonadUnliftIO @tt @m, transStackDict @MonadUnliftIO @ttl @m) of
-        (Dict, Dict) ->
-            runMonoTransStackRunner @(ApplyStack tt m) trun $ \run ->
-                run $ do
-                    editsB <- stackRemonad @ttl (stackLift @tt @m) $ ufUpdates ef editsA mrA
-                    let
-                        mrB :: MutableRead (ApplyStack ttl m) (UpdateReader updateB)
-                        mrB = ufGet mrA
-                    stackCommute @tt @ttl @m $ call mrB editsB
+mapReceiveUpdatesTT (MkRunnable2 (trun :: TransStackRunner ttl) ef@MkAnUpdateFunction {..}) call (mrA :: MutableRead m (UpdateReader updateA)) editsA =
+    case transStackRunnerUnliftAllDict trun of
+        Dict ->
+            case (transStackDict @MonadUnliftIO @tt @m, transStackDict @MonadUnliftIO @ttl @m) of
+                (Dict, Dict) ->
+                    runMonoTransStackRunner @(ApplyStack tt m) trun $ \run ->
+                        run $ do
+                            editsB <- stackRemonad @ttl (stackLift @tt @m) $ ufUpdates ef editsA mrA
+                            let
+                                mrB :: MutableRead (ApplyStack ttl m) (UpdateReader updateB)
+                                mrB = ufGet mrA
+                            stackCommute @tt @ttl @m $ call mrB editsB

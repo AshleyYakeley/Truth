@@ -218,7 +218,7 @@ pairWholeUpdateFunction =
     joinRunnable2Maps $ \(MkAnUpdateFunction ga ua :: AnUpdateFunction tt _ _) (MkAnUpdateFunction gb ub) -> let
         gab :: ReadFunctionTT tt (UpdateReader update) (WholeReader (a, b))
         gab (mr :: MutableRead m _) ReadWhole =
-            case transStackUnliftMonadIO @tt @m of
+            case transStackDict @MonadIO @tt @m of
                 Dict -> do
                     a <- ga mr ReadWhole
                     b <- gb mr ReadWhole
@@ -228,7 +228,7 @@ pairWholeUpdateFunction =
             -> MutableRead m (UpdateReader update)
             -> ApplyStack tt m [WholeUpdate (a, b)]
         uab update mr =
-            case transStackUnliftMonadIO @tt @m of
+            case transStackDict @MonadIO @tt @m of
                 Dict -> do
                     weas <- ua update mr
                     webs <- ub update mr

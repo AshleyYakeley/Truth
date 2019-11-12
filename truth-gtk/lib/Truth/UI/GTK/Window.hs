@@ -119,15 +119,6 @@ createWindowAndChild MkWindowSpec {..} =
             uiWindowShow = #show window
         return $ MkUIWindow {..}
 
-{-
-forkTask :: IO a -> IO (IO a)
-forkTask action = do
-    var <- newEmptyMVar
-    _ <- forkIO $ do
-        a <- action
-        putMVar var a
-    return $ takeMVar var
--}
 data RunState
     = RSRun
     | RSStop

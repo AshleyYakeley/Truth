@@ -70,23 +70,25 @@ comonadLiftEditLens ::
        forall w updateA updateB.
        EditLens updateA updateB
     -> EditLens (ComonadUpdate w updateA) (ComonadUpdate w updateB)
-comonadLiftEditLens (MkRunnable2 run@(MkTransStackRunner _ :: TransStackRunner tt) (MkAnEditLens (MkAnUpdateFunction g u) pe)) = let
-    g' :: ReadFunctionTT tt (ComonadReader w (UpdateReader updateA)) (ComonadReader w (UpdateReader updateB))
-    g' mr (ReadExtract rt) = g (comonadReadFunction mr) rt
-    u' :: forall m. MonadIO m
-       => ComonadUpdate w updateA
-       -> MutableRead m (ComonadReader w (UpdateReader updateA))
-       -> ApplyStack tt m [ComonadUpdate w updateB]
-    u' (MkComonadUpdate edita) mr =
-        case transStackUnliftMonadIO @tt @m of
-            Dict -> fmap (fmap MkComonadUpdate) $ u edita $ comonadReadFunction mr
-    pe' :: forall m. MonadIO m
-        => [ComonadEdit w (UpdateEdit updateB)]
-        -> MutableRead m (ComonadReader w (UpdateReader updateA))
-        -> ApplyStack tt m (Maybe [ComonadEdit w (UpdateEdit updateA)])
-    pe' editbs mr =
-        case transStackUnliftMonadIO @tt @m of
-            Dict ->
-                fmap (fmap $ fmap MkComonadEdit) $
-                pe (fmap (\(MkComonadEdit editb) -> editb) editbs) $ comonadReadFunction mr
-    in MkRunnable2 run $ MkAnEditLens (MkAnUpdateFunction g' u') pe'
+comonadLiftEditLens (MkRunnable2 (trun :: TransStackRunner tt) (MkAnEditLens (MkAnUpdateFunction g u) pe)) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> let
+            g' :: ReadFunctionTT tt (ComonadReader w (UpdateReader updateA)) (ComonadReader w (UpdateReader updateB))
+            g' mr (ReadExtract rt) = g (comonadReadFunction mr) rt
+            u' :: forall m. MonadIO m
+               => ComonadUpdate w updateA
+               -> MutableRead m (ComonadReader w (UpdateReader updateA))
+               -> ApplyStack tt m [ComonadUpdate w updateB]
+            u' (MkComonadUpdate edita) mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict -> fmap (fmap MkComonadUpdate) $ u edita $ comonadReadFunction mr
+            pe' :: forall m. MonadIO m
+                => [ComonadEdit w (UpdateEdit updateB)]
+                -> MutableRead m (ComonadReader w (UpdateReader updateA))
+                -> ApplyStack tt m (Maybe [ComonadEdit w (UpdateEdit updateA)])
+            pe' editbs mr =
+                case transStackDict @MonadIO @tt @m of
+                    Dict ->
+                        fmap (fmap $ fmap MkComonadEdit) $
+                        pe (fmap (\(MkComonadEdit editb) -> editb) editbs) $ comonadReadFunction mr
+            in MkRunnable2 trun $ MkAnEditLens (MkAnUpdateFunction g' u') pe'

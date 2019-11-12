@@ -20,12 +20,16 @@ consTupleObjects ::
        Object (UpdateEdit update)
     -> Object (TupleUpdateEdit (ListElementType updates))
     -> Object (TupleUpdateEdit (ListElementType (update : updates)))
-consTupleObjects (MkRunnable1 (runA@(MkTransStackRunner _) :: TransStackRunner tta) anobjA) (MkRunnable1 (runB@(MkTransStackRunner _) :: TransStackRunner ttb) anobjB) =
-    case concatMonadTransStackUnliftAllDict @tta @ttb of
-        Dict -> let
-            runAB :: TransStackRunner (Concat tta ttb)
-            runAB = cmAppend runA runB
-            in MkRunnable1 runAB $ consTupleAObjects anobjA anobjB
+consTupleObjects (MkRunnable1 (runA :: TransStackRunner tta) anobjA) (MkRunnable1 (runB :: TransStackRunner ttb) anobjB) =
+    case transStackRunnerUnliftAllDict runA of
+        Dict ->
+            case transStackRunnerUnliftAllDict runB of
+                Dict ->
+                    case concatMonadTransStackUnliftAllDict @tta @ttb of
+                        Dict -> let
+                            runAB :: TransStackRunner (Concat tta ttb)
+                            runAB = cmAppend runA runB
+                            in MkRunnable1 runAB $ consTupleAObjects anobjA anobjB
 
 partitionListTupleUpdateEdits ::
        forall update updates.

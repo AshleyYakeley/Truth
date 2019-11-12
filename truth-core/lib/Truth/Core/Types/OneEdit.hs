@@ -52,7 +52,7 @@ oneLiftAnUpdateFunction (MkAnUpdateFunction g u) = let
         -> MutableRead m (UpdateReader (OneUpdate f updateA))
         -> ApplyStack tt m [OneUpdate f updateB]
     ufUpdate (MkOneUpdate ea) mr =
-        case transStackUnliftMonadIO @tt @m of
+        case transStackDict @MonadIO @tt @m of
             Dict ->
                 fmap (fmap MkOneUpdate . fromMaybe [] . getMaybeOne) $
                 transStackComposeOne @tt @f @m $ u ea $ oneReadFunctionF mr
@@ -62,7 +62,9 @@ oneLiftUpdateFunction ::
        forall f updateA updateB. MonadOne f
     => UpdateFunction updateA updateB
     -> UpdateFunction (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftUpdateFunction (MkRunnable2 run@(MkTransStackRunner _) ef) = MkRunnable2 run $ oneLiftAnUpdateFunction ef
+oneLiftUpdateFunction (MkRunnable2 trun ef) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> MkRunnable2 trun $ oneLiftAnUpdateFunction ef
 
 oneLiftAnEditLens ::
        forall tt f updateA updateB. (MonadTransStackUnliftAll tt, MonadOne f)
@@ -76,7 +78,7 @@ oneLiftAnEditLens (MkAnEditLens ef pe) = let
         -> MutableRead m (EditReader (OneEdit f (UpdateEdit updateA)))
         -> ApplyStack tt m (Maybe [OneEdit f (UpdateEdit updateA)])
     elPutEdits ebs mr =
-        case transStackUnliftMonadIO @tt @m of
+        case transStackDict @MonadIO @tt @m of
             Dict ->
                 fmap (fmap (fmap MkOneEdit . fromMaybe []) . getMaybeOne) $
                 transStackComposeOne @tt @f @m $ pe (fmap (\(MkOneEdit eb) -> eb) ebs) $ oneReadFunctionF mr
@@ -86,4 +88,6 @@ oneLiftEditLens ::
        forall f updateA updateB. MonadOne f
     => EditLens updateA updateB
     -> EditLens (OneUpdate f updateA) (OneUpdate f updateB)
-oneLiftEditLens (MkRunnable2 run@(MkTransStackRunner _) lens) = MkRunnable2 run $ oneLiftAnEditLens lens
+oneLiftEditLens (MkRunnable2 trun lens) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> MkRunnable2 trun $ oneLiftAnEditLens lens

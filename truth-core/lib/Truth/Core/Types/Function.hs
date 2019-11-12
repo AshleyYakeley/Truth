@@ -78,7 +78,7 @@ functionLiftAnUpdateFunction (MkAnUpdateFunction g u) = let
         -> MutableRead m (FunctionUpdateReader a updateA)
         -> ApplyStack tt m [FunctionUpdate a updateB]
     ufUpdate (MkTupleUpdate (MkFunctionSelector a) update) mr =
-        case transStackUnliftMonadIO @tt @m of
+        case transStackDict @MonadIO @tt @m of
             Dict -> do
                 ebs <- u update (functionUnliftMutableRead a mr)
                 return $ fmap (\eb -> MkTupleUpdate (MkFunctionSelector a) eb) ebs
@@ -88,26 +88,29 @@ functionLiftUpdateFunction ::
        forall a updateA updateB.
        UpdateFunction updateA updateB
     -> UpdateFunction (FunctionUpdate a updateA) (FunctionUpdate a updateB)
-functionLiftUpdateFunction (MkRunnable2 run@(MkTransStackRunner _) auf) =
-    MkRunnable2 run $ functionLiftAnUpdateFunction auf
+functionLiftUpdateFunction (MkRunnable2 trun auf) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> MkRunnable2 trun $ functionLiftAnUpdateFunction auf
 
 functionLiftEditLens ::
        forall a updateA updateB. (Eq a, ApplicableEdit (UpdateEdit updateA))
     => EditLens updateA updateB
     -> EditLens (FunctionUpdate a updateA) (FunctionUpdate a updateB)
-functionLiftEditLens (MkRunnable2 (run@(MkTransStackRunner _) :: TransStackRunner tt) (MkAnEditLens auf pe)) = let
-    auf' = functionLiftAnUpdateFunction auf
-    pe' :: forall m. MonadIO m
-        => [FunctionUpdateEdit a updateB]
-        -> MutableRead m (FunctionUpdateReader a updateA)
-        -> ApplyStack tt m (Maybe [FunctionUpdateEdit a updateA])
-    pe' =
-        case transStackUnliftMonadIO @tt @m of
-            Dict ->
-                elPutEditsFromPutEdit @tt $ \(MkTupleUpdateEdit (MkFunctionSelector a) editb) mr -> do
-                    meditas <- pe [editb] $ functionUnliftMutableRead a mr
-                    return $ (fmap $ fmap $ MkTupleUpdateEdit (MkFunctionSelector a)) meditas
-    in MkRunnable2 run $ MkAnEditLens auf' pe'
+functionLiftEditLens (MkRunnable2 (trun :: TransStackRunner tt) (MkAnEditLens auf pe)) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> let
+            auf' = functionLiftAnUpdateFunction auf
+            pe' :: forall m. MonadIO m
+                => [FunctionUpdateEdit a updateB]
+                -> MutableRead m (FunctionUpdateReader a updateA)
+                -> ApplyStack tt m (Maybe [FunctionUpdateEdit a updateA])
+            pe' =
+                case transStackDict @MonadIO @tt @m of
+                    Dict ->
+                        elPutEditsFromPutEdit @tt $ \(MkTupleUpdateEdit (MkFunctionSelector a) editb) mr -> do
+                            meditas <- pe [editb] $ functionUnliftMutableRead a mr
+                            return $ (fmap $ fmap $ MkTupleUpdateEdit (MkFunctionSelector a)) meditas
+            in MkRunnable2 trun $ MkAnEditLens auf' pe'
 
 functionEitherPairEditLens ::
        forall a b update.

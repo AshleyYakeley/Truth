@@ -126,4 +126,5 @@ updateFunctionRead ::
     => UpdateFunction updateA updateB
     -> MutableRead m (UpdateReader updateA)
     -> MutableRead m (UpdateReader updateB)
-updateFunctionRead (MkRunnable2 (MkTransStackRunner runner) (MkAnUpdateFunction g _)) mr rt = runner $ g mr rt
+updateFunctionRead (MkRunnable2 trun (MkAnUpdateFunction g _)) mr rt =
+    runMonoTransStackRunner trun $ \run -> run $ g mr rt

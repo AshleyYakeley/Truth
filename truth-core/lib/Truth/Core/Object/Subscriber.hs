@@ -58,10 +58,11 @@ getRunner AsynchronousUpdateTiming recv = do
     return $ \edits ec -> runAsync $ singleUpdateQueue edits ec
 
 subscriberObjectMaker :: Subscriber update -> a -> ObjectMaker update a
-subscriberObjectMaker (MkRunnable1 trun@(MkTransStackRunner run :: TransStackRunner tt) MkASubscriber {..}) a update = do
-    Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
-    remonad run $ subscribe update
-    return (MkRunnable1 trun subAnObject, a)
+subscriberObjectMaker (MkRunnable1 (trun :: TransStackRunner tt) MkASubscriber {..}) a update =
+    runMonoTransStackRunner trun $ \run -> do
+        Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
+        remonad run $ subscribe update
+        return (MkRunnable1 trun subAnObject, a)
 
 makeSharedSubscriber :: forall update a. UpdateTiming -> ObjectMaker update a -> LifeCycleIO (Subscriber update, a)
 makeSharedSubscriber ut uobj = do
@@ -72,12 +73,13 @@ makeSharedSubscriber ut uobj = do
             store <- mVarRun var get
             for_ store $ \entry -> entry edits ectxt
     runAsync <- getRunner ut $ utReceiveUpdates ut updateP
-    (MkRunnable1 (unliftC@(MkTransStackRunner _) :: TransStackRunner tt) anObjectC, a) <- uobj runAsync
+    (MkRunnable1 (trunC :: TransStackRunner tt) anObjectC, a) <- uobj runAsync
+    Dict <- return $ transStackRunnerUnliftAllDict trunC
     Dict <- return $ transStackDict @MonadUnliftIO @tt @IO
     let
         child :: Subscriber update
         child =
-            MkRunnable1 unliftC $
+            MkRunnable1 trunC $
             MkASubscriber anObjectC $ \updateC -> do
                 key <- liftIO $ mVarRun var $ addStoreStateT updateC
                 lifeCycleClose $ mVarRun var $ deleteStoreStateT key

@@ -49,14 +49,14 @@ oneWholeLiftAnEditLens alens = sumWholeLiftAnEditLens pushback $ oneLiftAnEditLe
         -> MutableRead m (OneReader f (UpdateReader updateA))
         -> ApplyStack tt m (Maybe (f (UpdateSubject updateA)))
     pushback fb mr =
-        case transStackUnliftMonadIO @tt @m of
+        case transStackDict @MonadIO @tt @m of
             Dict ->
                 case retrieveOne fb of
                     FailureResult (MkLimit fx) -> return $ Just fx
                     SuccessResult b ->
                         fmap reshuffle $
                         transStackComposeOne @tt @f @m $
-                        case transStackUnliftMonadIO @tt @(ComposeM f m) of
+                        case transStackDict @MonadIO @tt @(ComposeM f m) of
                             Dict -> do
                                 editbs <- getReplaceEditsFromSubject b
                                 meditas <- elPutEdits alens editbs $ oneReadFunctionF mr
@@ -73,7 +73,9 @@ oneWholeLiftEditLens ::
        )
     => EditLens updateA updateB
     -> EditLens (OneWholeUpdate f updateA) (OneWholeUpdate f updateB)
-oneWholeLiftEditLens (MkRunnable2 run@(MkTransStackRunner _) lens) = MkRunnable2 run $ oneWholeLiftAnEditLens lens
+oneWholeLiftEditLens (MkRunnable2 trun lens) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> MkRunnable2 trun $ oneWholeLiftAnEditLens lens
 
 mustExistOneEditLens ::
        forall f update. (MonadOne f, IsUpdate update, FullEdit (UpdateEdit update))

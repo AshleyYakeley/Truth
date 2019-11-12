@@ -18,14 +18,18 @@ joinRunnable1Maps_ ::
     -> Runnable1 f1 a1
     -> Runnable1 f2 a2
     -> r
-joinRunnable1Maps_ ff (MkRunnable1 (run1@(MkTransStackRunner _) :: TransStackRunner tt1) fma1) (MkRunnable1 (run2@(MkTransStackRunner _) :: TransStackRunner tt2) fma2) =
-    case concatMonadTransStackUnliftAllDict @tt1 @tt2 of
+joinRunnable1Maps_ ff (MkRunnable1 (run1 :: TransStackRunner tt1) fma1) (MkRunnable1 (run2 :: TransStackRunner tt2) fma2) =
+    case transStackRunnerUnliftAllDict run1 of
         Dict ->
-            ff
-                @(Concat tt1 tt2)
-                ((unNestedMorphism $ mapRunnable $ fstTransListFunction @tt1 @tt2) fma1)
-                ((unNestedMorphism $ mapRunnable $ sndTransListFunction @tt1 @tt2) fma2)
-                (cmAppend run1 run2)
+            case transStackRunnerUnliftAllDict run2 of
+                Dict ->
+                    case concatMonadTransStackUnliftAllDict @tt1 @tt2 of
+                        Dict ->
+                            ff
+                                @(Concat tt1 tt2)
+                                ((unNestedMorphism $ mapRunnable $ fstTransListFunction @tt1 @tt2) fma1)
+                                ((unNestedMorphism $ mapRunnable $ sndTransListFunction @tt1 @tt2) fma2)
+                                (cmAppend run1 run2)
 
 joinRunnable1Maps ::
        forall k1 k2 k3 f1 f2 f3 (a1 :: k1) (a2 :: k2) (a3 :: k3). (InKind a1, InKind a2, RunnableMap f1, RunnableMap f2)
@@ -46,10 +50,14 @@ joinRunnable2s ::
     -> Runnable2 f1 a1 b1
     -> Runnable2 f2 a2 b2
     -> Runnable2 f3 a3 b3
-joinRunnable2s call (MkRunnable2 (run1@(MkTransStackRunner _) :: TransStackRunner tt1) open1) (MkRunnable2 (run2@(MkTransStackRunner _) :: TransStackRunner tt2) open2) =
-    MkRunnable2 (cmAppend run1 run2) $
-    case concatMonadTransStackUnliftAllDict @tt1 @tt2 of
-        Dict -> call open1 open2
+joinRunnable2s call (MkRunnable2 (run1 :: TransStackRunner tt1) open1) (MkRunnable2 (run2 :: TransStackRunner tt2) open2) =
+    case transStackRunnerUnliftAllDict run1 of
+        Dict ->
+            case transStackRunnerUnliftAllDict run2 of
+                Dict ->
+                    MkRunnable2 (cmAppend run1 run2) $
+                    case concatMonadTransStackUnliftAllDict @tt1 @tt2 of
+                        Dict -> call open1 open2
 
 class RunnableCategory (f :: [TransKind] -> k -> k -> Type) where
     ucId :: forall a. f '[] a a
@@ -83,27 +91,16 @@ joinRunnable211Maps ::
     -> Runnable2 f1 a1 b1
     -> Runnable1 f2 a2
     -> Runnable1 f3 a3
-joinRunnable211Maps ff (MkRunnable2 (run1@(MkTransStackRunner _) :: TransStackRunner tt1) fma1) (MkRunnable1 (run2@(MkTransStackRunner _) :: TransStackRunner tt2) fma2) =
-    MkRunnable1 (cmAppend run1 run2) $
-    case concatMonadTransStackUnliftAllDict @tt1 @tt2 of
+joinRunnable211Maps ff (MkRunnable2 (trun1 :: TransStackRunner tt1) fma1) (MkRunnable1 (trun2 :: TransStackRunner tt2) fma2) =
+    case transStackRunnerUnliftAllDict trun1 of
         Dict ->
-            ff
-                @(Concat tt1 tt2)
-                ((unNestedMorphism $ unNestedMorphism $ mapRunnable $ fstTransListFunction @tt1 @tt2) fma1)
-                ((unNestedMorphism $ mapRunnable $ sndTransListFunction @tt1 @tt2) fma2)
-{-
-data PairRunnable f1 f2 (m :: Type -> Type) (a :: k) (b :: k) =
-    MkPairRunnable (f1 m a b)
-                 (f2 m a b)
-
-instance (Runnable2Map f1, Runnable2Map f2) => Runnable2Map (PairRunnable f1 f2) where
-    mapRunnable2 mf (MkPairRunnable fm1 fm2) = MkPairRunnable (mapRunnable2 mf fm1) (mapRunnable2 mf fm2)
-
-instance (RunnableCategory f1, RunnableCategory f2) => RunnableCategory (PairRunnable f1 f2) where
-    ucId = MkPairRunnable ucId ucId
-    ucCompose (MkPairRunnable bc1 bc2) (MkPairRunnable ab1 ab2) = MkPairRunnable (ucCompose bc1 ab1) (ucCompose bc2 ab2)
-
-pairUnlift ::
-       (Runnable2Map f1, Runnable2Map f2) => Runnable2 f1 a b -> Runnable2 f2 a b -> Runnable2 (PairRunnable f1 f2) a b
-pairUnlift = joinRunnable2Maps MkPairRunnable
--}
+            case transStackRunnerUnliftAllDict trun2 of
+                Dict ->
+                    MkRunnable1 (cmAppend trun1 trun2) $
+                    case concatMonadTransStackUnliftAllDict @tt1 @tt2 of
+                        Dict ->
+                            ff
+                                @(Concat tt1 tt2)
+                                ((unNestedMorphism $ unNestedMorphism $ mapRunnable $ fstTransListFunction @tt1 @tt2)
+                                     fma1)
+                                ((unNestedMorphism $ mapRunnable $ sndTransListFunction @tt1 @tt2) fma2)

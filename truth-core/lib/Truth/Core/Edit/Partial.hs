@@ -102,7 +102,7 @@ comapUpdateAnUpdateFunction bca (MkAnUpdateFunction g u) = let
        -> MutableRead m (UpdateReader updateB)
        -> ApplyStack tt m [updateC]
     u' ub mr =
-        case transStackUnliftMonadIO @tt @m of
+        case transStackDict @MonadIO @tt @m of
             Dict ->
                 case bca ub of
                     Left uc -> return [uc]
@@ -113,15 +113,17 @@ comapUpdateUpdateFunction ::
        forall updateA updateB updateC.
        (updateB -> Either updateC updateA)
     -> UpdateEdit updateA ~ UpdateEdit updateB => UpdateFunction updateA updateC -> UpdateFunction updateB updateC
-comapUpdateUpdateFunction bca (MkRunnable2 run@(MkTransStackRunner _) auf) =
-    MkRunnable2 run $ comapUpdateAnUpdateFunction bca auf
+comapUpdateUpdateFunction bca (MkRunnable2 trun auf) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> MkRunnable2 trun $ comapUpdateAnUpdateFunction bca auf
 
 comapUpdateEditLens ::
        forall updateA updateB updateC.
        (updateB -> Either updateC updateA)
     -> UpdateEdit updateA ~ UpdateEdit updateB => EditLens updateA updateC -> EditLens updateB updateC
-comapUpdateEditLens bca (MkRunnable2 run@(MkTransStackRunner _) (MkAnEditLens auf p)) =
-    MkRunnable2 run $ MkAnEditLens (comapUpdateAnUpdateFunction bca auf) p
+comapUpdateEditLens bca (MkRunnable2 trun (MkAnEditLens auf p)) =
+    case transStackRunnerUnliftAllDict trun of
+        Dict -> MkRunnable2 trun $ MkAnEditLens (comapUpdateAnUpdateFunction bca auf) p
 
 partialiseUpdateFunction ::
        forall updateA updateB.
