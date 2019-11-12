@@ -12,19 +12,12 @@ packages:
   original:
     hackage: mime-0.4.0.2
 - completed:
-    cabal-file:
-      size: 4428
-      sha256: e9cd03672627da8e85225a8c855356df9ecaa7141e61b7d97860b511bfb6c7f0
-    name: haskell-src-exts
-    version: 1.21.1
-    git: https://github.com/AshleyYakeley/haskell-src-exts.git
+    hackage: haskell-src-exts-1.22.0@sha256:f558923a9c8f57402c33a8cc871b934027a5c65414404c87239f6cbd7357d54e,4541
     pantry-tree:
-      size: 97010
-      sha256: 429025c159bccacbea490310ae69f5319ab524a845a07a5c3d51328b18fe4be8
-    commit: 31e1466e35cee9a91fa6678d73c938f0f44759eb
+      size: 96940
+      sha256: 597b6f48bd409a4d0da013c4e356945c42e0d098966035d3aa68cd4a3ccd66c9
   original:
-    git: https://github.com/AshleyYakeley/haskell-src-exts.git
-    commit: 31e1466e35cee9a91fa6678d73c938f0f44759eb
+    hackage: haskell-src-exts-1.22.0
 - completed:
     cabal-file:
       size: 3609
@@ -33,12 +26,12 @@ packages:
     version: 5.3.0
     git: https://github.com/AshleyYakeley/hindent.git
     pantry-tree:
-      size: 1906
-      sha256: 7221b71f7191814395b94522ed9d3599bb58cdfbf780a5a1196b27bc85ddd310
-    commit: d240eb7334cd08c7e377b59fcb1977bdf95527d6
+      size: 1961
+      sha256: 859dfa966ef9e05e1904984a28e8b8d200e9f24619cab791bf64aa4e06666102
+    commit: b0d6fbdb7010382b620b6a15ce23991883b8decf
   original:
     git: https://github.com/AshleyYakeley/hindent.git
-    commit: d240eb7334cd08c7e377b59fcb1977bdf95527d6
+    commit: b0d6fbdb7010382b620b6a15ce23991883b8decf
 - completed:
     cabal-file:
       size: 1785
